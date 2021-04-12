@@ -13,8 +13,7 @@ NODE_OPERATORS_JSON=node_operators.json brownie run add_node_operators
   "node_operators": [
     {
       "name": "Test", 
-      "address": "0x000...", 
-      "staking_limit": 0
+      "address": "0x000..."
       },
     ...
   ]
