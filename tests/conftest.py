@@ -1,16 +1,9 @@
 import pytest
-from brownie import chain, Wei, ZERO_ADDRESS
+from brownie import chain
 
-from scripts.deploy import deploy_and_start_dao_vote
-
-from utils.config import (ldo_token_address, lido_dao_acl_address,
-                          lido_dao_agent_address, lido_dao_voting_address,
-                          lido_dao_token_manager_address)
-
-
-@pytest.fixture(scope="function", autouse=True)
-def shared_setup(fn_isolation):
-    pass
+from utils.config import (ldo_token_address, lido_dao_voting_address,
+                          lido_dao_token_manager_address,
+                          lido_dao_node_operators_registry)
 
 
 @pytest.fixture(scope='module')
@@ -20,24 +13,18 @@ def ldo_holder(accounts):
 
 
 @pytest.fixture(scope='module')
-def dao_acl(interface):
-    return interface.ACL(lido_dao_acl_address)
-
-
-@pytest.fixture(scope='module')
 def dao_voting(interface):
     return interface.Voting(lido_dao_voting_address)
 
 
 @pytest.fixture(scope='module')
+def node_operators_registry(interface):
+    return interface.NodeOperatorsRegistry(lido_dao_node_operators_registry)
+
+
+@pytest.fixture(scope='module')
 def dao_token_manager(interface):
     return interface.TokenManager(lido_dao_token_manager_address)
-
-
-# Lido DAO Agent app
-@pytest.fixture(scope='module')
-def dao_agent(interface):
-    return interface.Agent(lido_dao_agent_address)
 
 
 @pytest.fixture(scope='module')
@@ -46,50 +33,8 @@ def ldo_token(interface):
 
 
 class Helpers:
-    eth_banker = None
-
     @staticmethod
-    def fund_with_eth(addr, amount='1000 ether'):
-        Helpers.eth_banker.transfer(to=addr, amount=amount)
-
-    @staticmethod
-    def filter_events_from(addr, events):
-        return list(filter(lambda evt: evt.address == addr, events))
-
-    @staticmethod
-    def assert_single_event_named(evt_name, tx, evt_keys_dict=None):
-        receiver_events = Helpers.filter_events_from(tx.receiver,
-                                                     tx.events[evt_name])
-        assert len(receiver_events) == 1
-        if evt_keys_dict is not None:
-            assert dict(receiver_events[0]) == evt_keys_dict
-        return receiver_events[0]
-
-
-@pytest.fixture(scope='module')
-def helpers(accounts):
-    Helpers.eth_banker = accounts.at(
-        '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8', force=True)
-    return Helpers
-
-
-@pytest.fixture(scope='module')
-def deploy_executor_and_pass_dao_vote(accounts, ldo_holder, ldo_token, dao_acl,
-                                      dao_voting, dao_token_manager):
-    def deploy(eth_to_ldo_rate, vesting_cliff_delay, vesting_end_delay,
-               offer_expiration_delay, ldo_purchasers, allocations_total):
-        (executor, vote_id) = deploy_and_start_dao_vote(
-            {'from': ldo_holder},
-            eth_to_ldo_rate=eth_to_ldo_rate,
-            vesting_cliff_delay=vesting_cliff_delay,
-            vesting_end_delay=vesting_end_delay,
-            offer_expiration_delay=offer_expiration_delay,
-            ldo_purchasers=ldo_purchasers,
-            allocations_total=allocations_total)
-
-        print(f'vote id: {vote_id}')
-
-        # together these accounts hold 15% of LDO total supply
+    def execute_vote(accounts, vote_id, dao_voting):
         ldo_holders = [
             '0x3e40d73eb977dc6a537af587d48316fee66e9c8c',
             '0xb8d83908aab38a159f3da47a59d84db8e1838712',
@@ -111,13 +56,7 @@ def deploy_executor_and_pass_dao_vote(accounts, ldo_holder, ldo_token, dao_acl,
 
         print(f'vote executed')
 
-        total_ldo_assignment = sum([p[1] for p in ldo_purchasers])
-        assert ldo_token.balanceOf(executor) == total_ldo_assignment
 
-        ldo_assign_role = dao_token_manager.ASSIGN_ROLE()
-        assert dao_acl.hasPermission(executor, dao_token_manager,
-                                     ldo_assign_role)
-
-        return executor
-
-    return deploy
+@pytest.fixture(scope='module')
+def helpers():
+    return Helpers
