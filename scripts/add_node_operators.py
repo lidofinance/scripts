@@ -8,7 +8,7 @@ from utils.config import (lido_dao_voting_address,
                           get_deployer_account)
 from utils.evm_script import encode_call_script
 
-import json, sys, os, re
+import json, sys, os, re, time
 
 
 def encode_add_operator(name, address):
@@ -38,14 +38,19 @@ def main():
     file_path = os.environ['NODE_OPERATORS_JSON']
     with open(file_path) as json_file:
         data = json.load(json_file)
-        node_operators = [(no) for no in data["node_operators"]]
+        node_operators = data["node_operators"]
+        validate_node_operators_data(node_operators)
         (vote_id, _) = add_node_operators({"from": get_deployer_account()},
                                           node_operators)
-    return (f'Voting created: {vote_id}')
+        time.sleep(5)  # hack: waiting thread 2
+        print(f'Voting created: {vote_id}')
+    return 0
+
 
 def validate_node_operators_data(node_operators):
-    for node_operator in node_operators: 
-        assert re.search(r"^(0x)?[0-9a-f]{40}$", node_operator["address"], re.IGNORECASE ) is not None
-    
+    for node_operator in node_operators:
+        assert re.search(r"^(0x)?[0-9a-f]{40}$", node_operator["address"],
+                         re.IGNORECASE) is not None
+
     addresses = [no["address"] for no in node_operators]
     assert len(addresses) == len(set(addresses))
