@@ -52,5 +52,9 @@ def validate_node_operators_data(node_operators):
         assert re.search(r"^(0x)?[0-9a-f]{40}$", node_operator["address"],
                          re.IGNORECASE) is not None
 
+        assert 'name' in node_operator, "Node operator should contain \"name\""
+        assert bool(node_operator["name"].strip()
+                    ), "Node operators name should not be empty "
+
     addresses = [no["address"] for no in node_operators]
     assert len(addresses) == len(set(addresses))

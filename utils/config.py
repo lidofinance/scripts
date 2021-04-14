@@ -2,11 +2,11 @@ import os
 import sys
 from brownie import network, accounts
 
-if network.show_active() == "development":
+try:
+    if network.show_active() == "goerli":
+        raise ImportError
     from utils.config_mainnet import *
-elif network.show_active() == "mainnet":
-    from utils.config_mainnet import *
-elif network.show_active() == "goerli":
+except ImportError:
     from utils.config_goerli import *
 
 
