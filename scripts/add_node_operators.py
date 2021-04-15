@@ -1,5 +1,4 @@
-from brownie import ZERO_ADDRESS, accounts
-from brownie import interface, network
+from brownie import interface
 
 from utils.voting import create_vote
 from utils.config import (lido_dao_voting_address,
@@ -29,7 +28,8 @@ def add_node_operators(tx_params, node_operators):
     return create_vote(
         voting=interface.Voting(lido_dao_voting_address),
         token_manager=interface.TokenManager(lido_dao_token_manager_address),
-        vote_desc=f'Add operators : {str(node_operators)} with staking limit 0',
+        vote_desc=
+        f'Add node operators: \n{os.linesep.join(["{} with address {}".format(no["name"], no["address"]) for no in node_operators])}',
         evm_script=evm_script,
         tx_params=tx_params)
 

@@ -1,5 +1,4 @@
-from brownie import ZERO_ADDRESS, accounts
-from brownie import interface, network
+from brownie import interface
 
 from utils.voting import create_vote
 from utils.config import (lido_dao_voting_address,
@@ -28,7 +27,8 @@ def set_node_operator_staking_limits(tx_params, node_operators):
     return create_vote(
         voting=interface.Voting(lido_dao_voting_address),
         token_manager=interface.TokenManager(lido_dao_token_manager_address),
-        vote_desc=f'Set staking limit for operators: {str(node_operators)}',
+        vote_desc=
+        f'Set staking limit for operators: \n{os.linesep.join(["id {} set limit to {}".format(no["id"], no["limit"]) for no in node_operators])}',
         evm_script=evm_script,
         tx_params=tx_params)
 
