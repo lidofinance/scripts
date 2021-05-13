@@ -6,24 +6,14 @@ from utils.config import (lido_dao_voting_address,
                           lido_dao_node_operators_registry,
                           get_deployer_account)
 from utils.evm_script import encode_call_script
+from utils.node_operators import encode_set_node_operators_staking_limits_evm_script
 
 import json, sys, os, re, time
 
 
-def encode_set_node_operator_staking_limit(id, limit):
-    return (lido_dao_node_operators_registry,
-            interface.NodeOperatorsRegistry(lido_dao_node_operators_registry).
-            setNodeOperatorStakingLimit.encode_input(id, limit))
-
-
 def set_node_operator_staking_limits(tx_params, node_operators):
-
-    evm_script = encode_call_script([
-        encode_set_node_operator_staking_limit(id=node_operator["id"],
-                                               limit=node_operator["limit"])
-        for node_operator in node_operators
-    ])
-
+    registry = interface.NodeOperatorsRegistry(lido_dao_node_operators_registry)
+    evm_script = encode_set_node_operators_staking_limits_evm_script(node_operators, registry)
     return create_vote(
         voting=interface.Voting(lido_dao_voting_address),
         token_manager=interface.TokenManager(lido_dao_token_manager_address),
