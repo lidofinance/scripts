@@ -51,7 +51,7 @@ def start_omnibus_vote(tx_params):
         voting=voting,
         token_manager=token_manager,
         vote_desc=(
-            f'Omnibus vote: 1) revoke ASSIGN_ROLE from ldo-purchase-executor contract'
+            f'Omnibus vote: 1) revoke ASSIGN_ROLE from ldo-purchase-executor contract, '
             f'2) increase staking limits for node node operators #5,7,8'
         ),
         evm_script=evm_script,
