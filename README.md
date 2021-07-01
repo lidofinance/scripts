@@ -2,6 +2,16 @@
 
 Repository for internal scripts.
 
+## Mainnet setup
+
+By default, all scripts run in mainnet fork mode (don't forget to edit fork param at brownie config). To run scripts on actually mainnet you need to add param `--network mainnet` to the end of the command and set the following env variables:
+
+```bash
+export DEPLOYER=<brownie_wallet_name>
+export WEB3_INFURA_PROJECT_ID=<infura_key>
+
+```
+
 ## Adding node operators
 
 Script to pack up adding new node operators in one vote
