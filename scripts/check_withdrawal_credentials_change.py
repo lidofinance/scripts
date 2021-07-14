@@ -80,6 +80,7 @@ def run_checks(registry, lido, prev_withdrawal_credentials):
     print()
 
     withdrawal_credentials = lido.getWithdrawalCredentials()
+    pp('Previous withdrawal credentials', prev_withdrawal_credentials)
     pp('Current withdrawal credentials', withdrawal_credentials)
 
     assert withdrawal_credentials != prev_withdrawal_credentials
