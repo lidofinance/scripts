@@ -14,8 +14,7 @@ import time
 from brownie.utils import color
 from utils.voting import create_vote
 from utils.evm_script import encode_call_script
-from utils.node_operators import encode_set_node_operator_staking_limit
-from utils.permissions import encode_permission_revoke
+from utils.node_operators import encode_set_node_operator_staking_limit, get_node_operators
 
 
 from utils.config import (
@@ -39,10 +38,6 @@ def pp(text, value):
     print(text, color.highlight(value), end='')
 
 
-def fetch_node_operators(registry):
-    return [{**registry.getNodeOperator(i, True), **{'index': i}} for i in range(registry.getNodeOperatorsCount())]
-
-
 def set_withdrawal_credentials_vote(tx_params):
     print('You are about ot launch a vote for withdrawal credentials change...')
     voting = interface.Voting(lido_dao_voting_address)
@@ -53,7 +48,7 @@ def set_withdrawal_credentials_vote(tx_params):
     lido_dao_withdrawal_contract_address = '0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f'
     withdrawal_contract = interface.WithdrawalContractProxy(lido_dao_withdrawal_contract_address)
 
-    node_operators = fetch_node_operators(registry)
+    node_operators = get_node_operators(registry)
     node_operators = list(filter(lambda op: op['stakingLimit'] > op['usedSigningKeys'], node_operators))
 
     if (withdrawal_contract.proxy_getAdmin() != voting.address):

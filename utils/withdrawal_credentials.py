@@ -20,6 +20,25 @@ def encode_set_withdrawal_credentials(withdrawal_credentials, lido):
     )
 
 
+def extract_address_from_eth1_wc(withdrawal_credentials):
+    striped_wc = strip_byte_prefix(withdrawal_credentials)
+
+    if len(striped_wc) != 64:
+        raise Exception('withdrawal_contract has a not valid length')
+
+    prefix = striped_wc[0:2]
+    zero_pad = striped_wc[2:24]
+    address = striped_wc[24:]
+
+    if prefix != '01':
+        raise Exception('withdrawal_contract has not valid eth1 prefix')
+
+    if zero_pad != '0000000000000000000000':
+        raise Exception('withdrawal_contract has not valid zero_pad')
+
+    return '0x' + address
+
+
 def colorize_withdrawal_credentials(withdrawal_credentials):
     byte_prefix = withdrawal_credentials[:2]
     prefix = withdrawal_credentials[2:4]
