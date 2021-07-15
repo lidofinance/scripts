@@ -72,15 +72,12 @@ def make_refunds_call_script(refunds_in_wei, node_operators, finance):
 
 def start_vote(tx_params):
     new_staking_limits = {
-        'Staking Facilities': 4000,
-        'Certus One': 4000,
-        'P2P.ORG - P2P Validator': 4000,
         'Chorus One': 4000,
-        'stakefish': 4000,
+        'stakefish': 4500,
         'Blockscape': 4000,
-        'DSRV': 4000,
-        'Everstake': 4000,
-        'SkillZ': 4000
+        'DSRV': 500,
+        'Everstake': 1700,
+        'SkillZ': 1540
     }
 
     refunds_in_wei = {
