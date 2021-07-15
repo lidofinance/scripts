@@ -67,6 +67,7 @@ def main():
 
     registry = interface.NodeOperatorsRegistry(lido_dao_node_operators_registry)
     node_operators = get_node_operators(registry)
+    lido = interface.Lido(lido_dao_steth_address)
 
     print('Node Operators refunds (ETH):')
     for op_name, refund in refunds_in_wei.items():
@@ -88,11 +89,22 @@ def main():
             pp('{:<30}'.format(op['name']), (balances_after[i] - balances_before[i]) / 10 ** 18)
         print()
 
+        node_operators = get_node_operators(registry)
+
         print('Node Operators new staking limits:')
         for i in range(len(node_operators)):
             op = node_operators[i]
             pp('{:<30}'.format(op['name']), op['stakingLimit'])
         print()
 
-    print('All good!')
+        current_lido_balance = lido.balance()
+        assert current_lido_balance > 32 * 10 ** 18
+        ok('Lido has greater than 32 Eth in the buffer')
 
+        tx = lido.depositBufferedEther({'from': accounts[0]})
+
+        print()
+        print(tx.info())
+        print()
+
+    print('All good!')
