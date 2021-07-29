@@ -1,4 +1,4 @@
-from scripts.vote_22_07_21_cover_refund import (start_vote)
+from scripts.vote_2021_07_22_cover_refund import (start_vote)
 
 def test_set_operators_limit(ldo_holder, helpers, accounts, dao_voting):
 
