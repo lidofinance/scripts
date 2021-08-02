@@ -19,3 +19,19 @@ def encode_set_node_operators_staking_limits_evm_script(node_operators, registry
 
 def get_node_operators(registry):
     return [{**registry.getNodeOperator(i, True), **{'index': i}} for i in range(registry.getNodeOperatorsCount())]
+
+
+def encode_remove_signing_key(id, index_to_remove, registry):
+    return (
+        registry.address,
+        registry.removeSigningKey.encode_input(id, index_to_remove)
+    )
+
+
+def encode_remove_signing_keys(id, indexes_to_remove, registry: brownie.NodeOperatorsRegistryContract):
+    return encode_call_script([
+        encode_remove_signing_key(id=id,
+                                  index_to_remove=key_index,
+                                  registry=registry)
+        for key_index in indexes_to_remove
+    ])

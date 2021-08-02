@@ -11,4 +11,4 @@ networks:
       evm_version: istanbul
       mnemonic: brownie
       fork: https://localhost:9545
-      
+
