@@ -57,3 +57,12 @@ NODE_OPERATORS_JSON=node_operators.json brownie run set_node_operators_limit
 }
 
 ```
+
+
+## Remove node operator keys duplicates
+
+TODO:
+
+```bash
+KEY_DUPLICATES_JSON=key-duplication-config.json brownie run remove_node_operator_key_duplicates
+```

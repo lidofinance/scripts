@@ -28,10 +28,10 @@ def encode_remove_signing_key(id, index_to_remove, registry):
     )
 
 
-def encode_remove_signing_keys(id, indexes_to_remove, registry: brownie.NodeOperatorsRegistryContract):
-    return encode_call_script([
+def encode_remove_signing_keys(id, indexes_to_remove, registry):
+    return [
         encode_remove_signing_key(id=id,
                                   index_to_remove=key_index,
                                   registry=registry)
         for key_index in indexes_to_remove
-    ])
+    ]
