@@ -1,4 +1,4 @@
-from typing import List, Dict, TypedDict, Union
+from typing import List, Dict, TypedDict, Union, Optional
 
 from brownie.convert.datatypes import HexString
 
@@ -62,7 +62,7 @@ def get_signing_keys(node_operator_id: int, registry: NodeOperatorsRegistry, pro
     assert end_index < total_keys
 
     bar = ProgressBar(start_index, end_index, start_index, f"Fetching keys for OP #{node_operator_id} " +
-                                                           f"(from {start_index} to {end_index})")
+                      f"(from {start_index} to {end_index})")
 
     keys = []
     for i in range(start_index, end_index + 1):
@@ -156,3 +156,11 @@ def fetch_last_duplicated_indexes(node_operator_id: int, registry: NodeOperators
     signing_keys = get_signing_keys(node_operator_id, registry, False, start_index, end_index)
     last_duplicated_keys = find_last_duplicated_signing_keys(signing_keys)
     return get_signing_key_indexes(last_duplicated_keys)
+
+
+def get_signing_key_by_index(keys: List[SigningKeyIndexed], index: int) -> Optional[SigningKeyIndexed]:
+    for signing_key in keys:
+        if signing_key.get('index') == index:
+            return signing_key
+
+    return None

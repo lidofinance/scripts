@@ -9,7 +9,7 @@ from typing import Tuple, Any, List
 from generated.container import BrownieInterface
 from utils.utils import pp
 from utils.node_operators import encode_remove_signing_keys, get_node_operators, get_signing_keys, \
-    get_signing_key_indexes, fetch_last_duplicated_indexes, get_signing_key_pubkeys
+    get_signing_key_indexes, fetch_last_duplicated_indexes, get_signing_key_pubkeys, get_signing_key_by_index
 from utils.node_operators import find_last_duplicated_signing_keys
 from utils.config import (lido_dao_node_operators_registry)
 
@@ -37,7 +37,7 @@ def main():
     start_index = 1700
     end_index = 1810
 
-    signing_keys = get_signing_keys(node_operator_id, registry, True)
+    signing_keys = get_signing_keys(node_operator_id, registry, True, start_index, end_index)
     duplicated_signing_keys = find_last_duplicated_signing_keys(signing_keys)
     duplicated_signing_keys_indexes = get_signing_key_indexes(duplicated_signing_keys)
     duplicated_signing_keys_pubkeys = get_signing_key_pubkeys(duplicated_signing_keys, True)
@@ -50,14 +50,15 @@ def main():
         registry.removeSigningKeyOperatorBH(node_operator_id, index, {'from': operator_address})
         pp("Removed key with index", index)
 
-    updated_signing_keys = get_signing_keys(node_operator_id, registry, True)
-    updated_duplicated_signing_keys = find_last_duplicated_signing_keys(updated_signing_keys)
-    updated_duplicated_signing_keys_indexes = get_signing_key_indexes(updated_duplicated_signing_keys)
-    updated_duplicated_signing_keys_pubkeys = get_signing_key_pubkeys(updated_duplicated_signing_keys, True)
+    after_removal_signing_keys = get_signing_keys(node_operator_id, registry, True, start_index, end_index)
+    after_removal_duplicated_signing_keys = find_last_duplicated_signing_keys(after_removal_signing_keys)
+    after_removal_duplicated_signing_keys_indexes = get_signing_key_indexes(after_removal_duplicated_signing_keys)
+    after_removal_duplicated_signing_keys_pubkeys = get_signing_key_pubkeys(after_removal_duplicated_signing_keys, True)
 
-    pp('[AFTER REMOVAL] Duplicated signing keys qty', len(updated_duplicated_signing_keys))
-    pp('[AFTER REMOVAL] Duplicated signing keys indexes', updated_duplicated_signing_keys_indexes)
-    pp('[AFTER REMOVAL] Duplicated signing keys pubkeys', updated_duplicated_signing_keys_pubkeys)
+    pp('[AFTER REMOVAL] Duplicated signing keys qty', len(after_removal_duplicated_signing_keys))
+    pp('[AFTER REMOVAL] Duplicated signing keys indexes', after_removal_duplicated_signing_keys_indexes)
+    pp('[AFTER REMOVAL] Duplicated signing keys pubkeys', after_removal_duplicated_signing_keys_pubkeys)
 
     # TODO return keys with changed indexes
+
 
