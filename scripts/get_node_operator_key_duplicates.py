@@ -34,30 +34,17 @@ def main():
 
     assert node_operator_name == operator_name
 
-    start_index = 1700
+    start_index = 1690
     end_index = 1810
 
-    signing_keys = get_signing_keys(node_operator_id, registry, True)
+    signing_keys = get_signing_keys(node_operator_id, registry, True, start_index, end_index)
     duplicated_signing_keys = find_last_duplicated_signing_keys(signing_keys)
     duplicated_signing_keys_indexes = get_signing_key_indexes(duplicated_signing_keys)
     duplicated_signing_keys_pubkeys = get_signing_key_pubkeys(duplicated_signing_keys, True)
 
-    pp('[BEFORE REMOVAL] Duplicated signing keys qty', len(duplicated_signing_keys))
-    pp('[BEFORE REMOVAL] Duplicated signing keys indexes', duplicated_signing_keys_indexes)
-    pp('[BEFORE REMOVAL] Duplicated signing keys pubkeys', duplicated_signing_keys_pubkeys)
+    pp('Duplicated signing keys qty', len(duplicated_signing_keys))
+    pp('Duplicated signing keys indexes', duplicated_signing_keys_indexes)
+    pp('Duplicated signing keys pubkeys', duplicated_signing_keys_pubkeys)
 
-    for index in duplicated_signing_keys_indexes:
-        registry.removeSigningKeyOperatorBH(node_operator_id, index, {'from': operator_address})
-        pp("Removed key with index", index)
 
-    updated_signing_keys = get_signing_keys(node_operator_id, registry, True)
-    updated_duplicated_signing_keys = find_last_duplicated_signing_keys(updated_signing_keys)
-    updated_duplicated_signing_keys_indexes = get_signing_key_indexes(updated_duplicated_signing_keys)
-    updated_duplicated_signing_keys_pubkeys = get_signing_key_pubkeys(updated_duplicated_signing_keys, True)
-
-    pp('[AFTER REMOVAL] Duplicated signing keys qty', len(updated_duplicated_signing_keys))
-    pp('[AFTER REMOVAL] Duplicated signing keys indexes', updated_duplicated_signing_keys_indexes)
-    pp('[AFTER REMOVAL] Duplicated signing keys pubkeys', updated_duplicated_signing_keys_pubkeys)
-
-    # TODO return keys with changed indexes
 
