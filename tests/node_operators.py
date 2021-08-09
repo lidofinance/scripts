@@ -1,6 +1,6 @@
 from brownie.convert.datatypes import HexString
 from pytest import raises
-from generated.types import BrownieInterface
+from generated.container import BrownieInterface
 from utils.node_operators import find_last_duplicated_signing_keys, find_all_duplicated_signing_keys, \
     get_signing_key_indexes_by_unique_pubkeys, get_signing_key_indexes
 
