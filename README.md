@@ -61,8 +61,23 @@ NODE_OPERATORS_JSON=node_operators.json brownie run set_node_operators_limit
 
 ## Remove node operator keys duplicates
 
-TODO:
-
 ```bash
-KEY_DUPLICATES_JSON=key-duplication-config.json brownie run remove_node_operator_key_duplicates
+KEY_DUPLICATES_JSON=key-duplicates.json brownie run check_remove_node_operator_key_duplicates
+```
+
+key-duplicates.json
+
+```json
+{
+  "nodeOperatorId": 7,
+  "indexStart": 1700,
+  "indexEnd": 1800,
+  "signingKeys": [
+    {
+      "index": 1760,
+      "key": "0x8d66e1917a9109b6840f9584ab3195c1cfec19e18081963cb264d82795dee8bf3f70e7e387d03885c0d3751263fb6447"
+    },
+    ...
+  ]
+}
 ```

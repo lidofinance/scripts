@@ -35,9 +35,9 @@ def main():
     assert node_operator_name == operator_name
 
     start_index = 1700
-    end_index = 1810
+    end_index = 2200
 
-    signing_keys = get_signing_keys(node_operator_id, registry, True, start_index, end_index)
+    signing_keys = get_signing_keys(node_operator_id, registry, True, start_index)
     duplicated_signing_keys = find_last_duplicated_signing_keys(signing_keys)
     duplicated_signing_keys_indexes = get_signing_key_indexes(duplicated_signing_keys)
     duplicated_signing_keys_pubkeys = get_signing_key_pubkeys(duplicated_signing_keys, True)
@@ -46,11 +46,28 @@ def main():
     pp('[BEFORE REMOVAL] Duplicated signing keys indexes', duplicated_signing_keys_indexes)
     pp('[BEFORE REMOVAL] Duplicated signing keys pubkeys', duplicated_signing_keys_pubkeys)
 
+    # Checking according to file
+    file_path = os.environ['KEY_DUPLICATES_JSON']
+    with open(file_path) as json_file:
+        key_duplicates_data = json.load(json_file)
+
+        file_duplicated_signing_keys = key_duplicates_data["signingKeys"]
+
+        file_duplicated_signing_keys_indexes = get_signing_key_indexes(file_duplicated_signing_keys)
+        file_duplicated_signing_keys_pubkeys = get_signing_key_pubkeys(file_duplicated_signing_keys, True)
+
+        pp('[FROM FILE] Duplicated signing keys qty', len(file_duplicated_signing_keys))
+
+        assert file_duplicated_signing_keys_indexes == duplicated_signing_keys_indexes
+        assert file_duplicated_signing_keys_pubkeys == duplicated_signing_keys_pubkeys
+        print(f'File {file_path} is OK')
+
+    # removing keys
     for index in duplicated_signing_keys_indexes:
         registry.removeSigningKeyOperatorBH(node_operator_id, index, {'from': operator_address})
         pp("Removed key with index", index)
 
-    after_removal_signing_keys = get_signing_keys(node_operator_id, registry, True, start_index, end_index)
+    after_removal_signing_keys = get_signing_keys(node_operator_id, registry, True, start_index)
     after_removal_duplicated_signing_keys = find_last_duplicated_signing_keys(after_removal_signing_keys)
     after_removal_duplicated_signing_keys_indexes = get_signing_key_indexes(after_removal_duplicated_signing_keys)
     after_removal_duplicated_signing_keys_pubkeys = get_signing_key_pubkeys(after_removal_duplicated_signing_keys, True)
@@ -59,6 +76,13 @@ def main():
     pp('[AFTER REMOVAL] Duplicated signing keys indexes', after_removal_duplicated_signing_keys_indexes)
     pp('[AFTER REMOVAL] Duplicated signing keys pubkeys', after_removal_duplicated_signing_keys_pubkeys)
 
-    # TODO return keys with changed indexes
-
+    for after_removal_signing_key in after_removal_signing_keys:
+        after_removal_pubkey = after_removal_signing_key.get('key')
+        after_removal_index = after_removal_signing_key.get('index')
+        signing_key = get_signing_key_by_index(signing_keys, after_removal_index)
+        if signing_key:
+            pubkey = signing_key.get('key')
+            index = signing_key.get('index')
+            if pubkey != after_removal_pubkey:
+                print(f" pubkey: {pubkey} - new index [{after_removal_index}] old index [{index}]")
 

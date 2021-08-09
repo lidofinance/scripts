@@ -72,7 +72,7 @@ class ProgressBar:
     def stepTo(self, pos: int):
         self.pos = pos
         self.rel_pos = pos - self.start
-        percent = ("{0:." + str(self.decimals) + "f}").format(100 * (self.pos / float(self.end)))
+        percent = ("{0:." + str(self.decimals) + "f}").format(100 * (self.rel_pos / float(self.total)))
         filled_length = int(self.length * self.rel_pos // self.total)
         bar = self.fill * filled_length + '-' * (self.length - filled_length)
         print(f'\r{self.prefix} |{bar}| {percent}% [{self.rel_pos}/{self.total}] {self.suffix}', end=self.print_end)
