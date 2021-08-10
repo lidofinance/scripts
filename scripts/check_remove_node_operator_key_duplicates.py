@@ -63,8 +63,10 @@ def main():
         assert file_duplicated_signing_keys_pubkeys == duplicated_signing_keys_pubkeys
         print(f'File {file_path} is OK')
 
+    duplicated_signing_keys_indexes_sorted = sorted(duplicated_signing_keys_indexes, reverse=True)
+
     # removing keys
-    for index in duplicated_signing_keys_indexes:
+    for index in reversed(duplicated_signing_keys_indexes_sorted):
         registry.removeSigningKeyOperatorBH(node_operator_id, index, {'from': operator_address})
         pp("Removed key with index", index)
 
