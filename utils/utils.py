@@ -54,7 +54,7 @@ def pick_by(obj: Dict, predicate):
     return ret
 
 
-# Print iterations progress
+# Prints fancy progress bar
 class ProgressBar:
     def __init__(self, start, end, pos, prefix='Progress:', suffix='Complete', decimals=1, length=50, fill='█', print_end="\r"):
         self.start = start

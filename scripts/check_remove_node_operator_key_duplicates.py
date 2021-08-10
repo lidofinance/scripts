@@ -4,14 +4,16 @@ except ImportError:
     print("You're probably running inside Brownie console. Please call:")
     print("set_console_globals(interface=interface)")
 
-import json, sys, os, re, time
-from typing import Tuple, Any, List
+import json
+import os
+
 from generated.container import BrownieInterface
-from utils.utils import pp
-from utils.node_operators import encode_remove_signing_keys, get_node_operators, get_signing_keys, \
-    get_signing_key_indexes, fetch_last_duplicated_indexes, get_signing_key_pubkeys, get_signing_key_by_index
-from utils.node_operators import find_last_duplicated_signing_keys
 from utils.config import (lido_dao_node_operators_registry)
+from utils.node_operators import find_last_duplicated_signing_keys
+from utils.node_operators import get_signing_keys, \
+    get_signing_key_indexes, get_signing_key_pubkeys, \
+    print_signing_keys_diff
+from utils.utils import pp
 
 
 def set_console_globals(**kwargs):
@@ -35,7 +37,6 @@ def main():
     assert node_operator_name == operator_name
 
     start_index = 1700
-    end_index = 2200
 
     signing_keys = get_signing_keys(node_operator_id, registry, True, start_index)
     duplicated_signing_keys = find_last_duplicated_signing_keys(signing_keys)
@@ -76,13 +77,16 @@ def main():
     pp('[AFTER REMOVAL] Duplicated signing keys indexes', after_removal_duplicated_signing_keys_indexes)
     pp('[AFTER REMOVAL] Duplicated signing keys pubkeys', after_removal_duplicated_signing_keys_pubkeys)
 
-    for after_removal_signing_key in after_removal_signing_keys:
-        after_removal_pubkey = after_removal_signing_key.get('key')
-        after_removal_index = after_removal_signing_key.get('index')
-        signing_key = get_signing_key_by_index(signing_keys, after_removal_index)
-        if signing_key:
-            pubkey = signing_key.get('key')
-            index = signing_key.get('index')
-            if pubkey != after_removal_pubkey:
-                print(f" pubkey: {pubkey} - new index [{after_removal_index}] old index [{index}]")
+    removed_qty = len(duplicated_signing_keys)
+
+    assert len(after_removal_signing_keys) == (len(signing_keys) - removed_qty)
+    print(f'[AFTER REMOVAL] Removed signing keys qty [{removed_qty}] check OK')
+
+    last_n_signing_keys = get_signing_key_indexes(signing_keys[:removed_qty])
+
+    print('Last N signing keys to be moved to new indexes')
+    print(last_n_signing_keys)
+
+    print('SUMMARY of keys that changed their indexes or removed:')
+    print_signing_keys_diff(signing_keys, after_removal_signing_keys)
 

@@ -1,3 +1,4 @@
+import collections
 from typing import List, Dict, TypedDict, Union, Optional
 
 from brownie.convert.datatypes import HexString
@@ -164,3 +165,67 @@ def get_signing_key_by_index(keys: List[SigningKeyIndexed], index: int) -> Optio
             return signing_key
 
     return None
+
+
+def get_signing_keys_by_pubkey(keys: List[SigningKeyIndexed], pubkey: Union[str, HexString]) -> List[SigningKeyIndexed]:
+    res = []
+
+    for signing_key in keys:
+        if signing_key.get('key') == pubkey:
+            res.append(signing_key)
+
+    return res
+
+
+def get_signing_key_index_by_pubkey(keys: List[SigningKeyIndexed], pubkey: Union[str, HexString]) -> Optional[int]:
+    for signing_key in keys:
+        if signing_key.get('key') == pubkey:
+            return signing_key.get('index')
+
+    return None
+
+
+def print_signing_keys_diff(keys_a: List[SigningKeyIndexed], keys_b: List[SigningKeyIndexed]):
+    print(f'Length difference: A=[{len(keys_a)}] B=[{len(keys_b)}] diff [{len(keys_a) - len(keys_b)}]')
+
+    index_min = 1E100
+    index_max = 0
+
+    res = []
+
+    a_dict = {}
+    for key_a in keys_a:
+        a_index = key_a.get('index')
+        if index_min > a_index:
+            index_min = a_index
+        if index_max < a_index:
+            index_max = a_index
+        a_pubkey = key_a.get('key')
+        a_dict[a_index] = a_pubkey
+
+    b_dict = {}
+    for key_b in keys_b:
+        b_index = key_b.get('index')
+        if index_min > b_index:
+            index_min = b_index
+        if index_max < b_index:
+            index_max = b_index
+
+        b_pubkey = key_b.get('key')
+        b_dict[b_index] = b_pubkey
+
+    for i in range(index_min, index_max + 1):
+        key_a = a_dict.get(i, None)
+        key_b = b_dict.get(i, None)
+
+        if key_a is None and key_b is None:
+            print()
+        if key_a is None and key_b is not None:
+            print(f'-[{i}] A [NOT FOUND] -> B [{key_b}]')
+            continue
+        if key_b is None and key_a is not None:
+            print(f'-[{i}] A [{key_a}] -> B [NOT FOUND]')
+            continue
+        if key_b != key_a:
+            print(f'-[{i}] A [{key_a}] -> B [{key_b}]')
+            continue
