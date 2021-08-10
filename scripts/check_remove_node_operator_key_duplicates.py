@@ -75,6 +75,7 @@ def main():
     after_removal_duplicated_signing_keys_indexes = get_signing_key_indexes(after_removal_duplicated_signing_keys)
     after_removal_duplicated_signing_keys_pubkeys = get_signing_key_pubkeys(after_removal_duplicated_signing_keys, True)
 
+    print()
     pp('[AFTER REMOVAL] Duplicated signing keys qty', len(after_removal_duplicated_signing_keys))
     pp('[AFTER REMOVAL] Duplicated signing keys indexes', after_removal_duplicated_signing_keys_indexes)
     pp('[AFTER REMOVAL] Duplicated signing keys pubkeys', after_removal_duplicated_signing_keys_pubkeys)
@@ -84,11 +85,12 @@ def main():
     assert len(after_removal_signing_keys) == (len(signing_keys) - removed_qty)
     print(f'[AFTER REMOVAL] Removed signing keys qty [{removed_qty}] check OK')
 
-    last_n_signing_keys = get_signing_key_indexes(signing_keys[:removed_qty])
-
+    print()
     print('Last N signing keys to be moved to new indexes')
-    print(last_n_signing_keys)
+    last_n_signing_keys_pubkeys = get_signing_key_pubkeys(signing_keys[-removed_qty:])
+    print(last_n_signing_keys_pubkeys)
 
+    print()
     print('SUMMARY of keys that changed their indexes or removed:')
     print_signing_keys_diff(signing_keys, after_removal_signing_keys)
 

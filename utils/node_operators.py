@@ -2,6 +2,7 @@ import collections
 from typing import List, Dict, TypedDict, Union, Optional
 
 from brownie.convert.datatypes import HexString
+from brownie.exceptions import VirtualMachineError
 
 from utils.evm_script import encode_call_script
 from generated.types import NodeOperatorsRegistry
@@ -67,7 +68,10 @@ def get_signing_keys(node_operator_id: int, registry: NodeOperatorsRegistry, pro
 
     keys = []
     for i in range(start_index, end_index + 1):
-        keys.append({**registry.getSigningKey(node_operator_id, i), **{'index': i}})
+        try:
+            keys.append({**registry.getSigningKey(node_operator_id, i), **{'index': i}})
+        except VirtualMachineError:
+            keys.append({**registry.getSigningKey(node_operator_id, i), **{'index': i}})
         if progress:
             bar.stepTo(i)
 
@@ -191,8 +195,6 @@ def print_signing_keys_diff(keys_a: List[SigningKeyIndexed], keys_b: List[Signin
     index_min = 1E100
     index_max = 0
 
-    res = []
-
     a_dict = {}
     for key_a in keys_a:
         a_index = key_a.get('index')
@@ -224,7 +226,7 @@ def print_signing_keys_diff(keys_a: List[SigningKeyIndexed], keys_b: List[Signin
             print(f'-[{i}] A [NOT FOUND] -> B [{key_b}]')
             continue
         if key_a is not None and key_b is None:
-            # searching for possible key moves to another indexes
+            # searching for possible key shifts to another indexes
             moved_to_index = get_signing_key_index_by_pubkey(keys_b, key_a)
             if moved_to_index:
                 print(f'-[{i}] A [{key_a}] -> B [NOT FOUND] (moved to index [{moved_to_index}] on B)')
