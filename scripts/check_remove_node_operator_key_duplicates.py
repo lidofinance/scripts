@@ -36,7 +36,7 @@ def main():
 
     assert node_operator_name == operator_name
 
-    start_index = 1700
+    start_index = 0
 
     signing_keys = get_signing_keys(node_operator_id, registry, True, start_index)
     duplicated_signing_keys = find_last_duplicated_signing_keys(signing_keys)
