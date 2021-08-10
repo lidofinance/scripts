@@ -66,7 +66,7 @@ def main():
     duplicated_signing_keys_indexes_sorted = sorted(duplicated_signing_keys_indexes, reverse=True)
 
     # removing keys
-    for index in reversed(duplicated_signing_keys_indexes_sorted):
+    for index in duplicated_signing_keys_indexes_sorted:
         registry.removeSigningKeyOperatorBH(node_operator_id, index, {'from': operator_address})
         pp("Removed key with index", index)
 
