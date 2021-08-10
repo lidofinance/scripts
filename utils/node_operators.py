@@ -223,8 +223,13 @@ def print_signing_keys_diff(keys_a: List[SigningKeyIndexed], keys_b: List[Signin
         if key_a is None and key_b is not None:
             print(f'-[{i}] A [NOT FOUND] -> B [{key_b}]')
             continue
-        if key_b is None and key_a is not None:
-            print(f'-[{i}] A [{key_a}] -> B [NOT FOUND]')
+        if key_a is not None and key_b is None:
+            # searching for possible key moves to another indexes
+            moved_to_index = get_signing_key_index_by_pubkey(keys_b, key_a)
+            if moved_to_index:
+                print(f'-[{i}] A [{key_a}] -> B [NOT FOUND] (moved to index [{moved_to_index}] on B)')
+            else:
+                print(f'-[{i}] A [{key_a}] -> B [NOT FOUND]')
             continue
         if key_b != key_a:
             print(f'-[{i}] A [{key_a}] -> B [{key_b}]')
