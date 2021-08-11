@@ -4,15 +4,10 @@ except ImportError:
     print("You're probably running inside Brownie console. Please call:")
     print("set_console_globals(interface=interface)")
 
-import json
-import os
-
 from generated.container import BrownieInterface
 from utils.config import (lido_dao_node_operators_registry)
-from utils.node_operators import find_last_duplicated_signing_keys
-from utils.node_operators import get_signing_keys, \
-    get_signing_key_indexes, get_signing_key_pubkeys, \
-    print_signing_keys_diff
+from utils.node_operators import find_last_duplicated_signing_keys, get_signing_keys_by_pubkey
+from utils.node_operators import get_signing_keys
 from utils.utils import pp
 
 
@@ -59,15 +54,17 @@ def main():
 
     assert node_operator_name == operator_name
 
-    start_index = 1700
+    start_index = 0
 
     signing_keys = get_signing_keys(node_operator_id, registry, True, start_index)
     duplicated_signing_keys = find_last_duplicated_signing_keys(signing_keys)
     assert len(duplicated_signing_keys) == 0
 
-    removed_qty = len(pubkeys_shifted_to_new_indexes)
+    for key, index in pubkeys_shifted_to_new_indexes.items():
 
-    last_signing_keys = signing_keys[-removed_qty:]
+        found_signing_keys = get_signing_keys_by_pubkey(signing_keys, key)
+        assert len(found_signing_keys) == 1
 
-    for signing_key in last_signing_keys:
-        assert signing_key.get('index') == pubkeys_shifted_to_new_indexes[str(signing_key.get('key'))]
+        for signing_key in found_signing_keys:
+            print(f'Checking key {key}')
+            assert signing_key.get('index') == pubkeys_shifted_to_new_indexes[key]

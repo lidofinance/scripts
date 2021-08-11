@@ -34,10 +34,9 @@ def main():
 
     assert node_operator_name == operator_name
 
-    start_index = 1690
-    end_index = 1810
+    start_index = 0
 
-    signing_keys = get_signing_keys(node_operator_id, registry, True, start_index, end_index)
+    signing_keys = get_signing_keys(node_operator_id, registry, True, start_index)
     duplicated_signing_keys = find_last_duplicated_signing_keys(signing_keys)
     duplicated_signing_keys_indexes = get_signing_key_indexes(duplicated_signing_keys)
     duplicated_signing_keys_pubkeys = get_signing_key_pubkeys(duplicated_signing_keys, True)
