@@ -67,10 +67,10 @@ def start_vote(tx_params, silent=False):
     ldo_for_deversifi_in_wei = 92055343 * 10**16 # 920,553.43 LDO
 
     balancer_rewards_manager_address = '0x1dD909cDdF3dbe61aC08112dC0Fdf2Ab949f79D8'
-    ldo_for_rewards_in_wei = 1000000*10**18
+    ldo_for_rewards_in_wei = 100000*10**18
 
     LeXpunK_ops_multisig_address = '0x316dAa88D931C7221e2E4039F6B793ba2b724180'
-    LeXpunK_eth_in_wei = 333 * 10**18
+    LeXpunK_eth_in_wei = 333 * 10**18 # 1,000,000 USD (1 ETH = 3003 USD)
 
     finance = interface.Finance(lido_dao_finance_address)
     registry = interface.NodeOperatorsRegistry(lido_dao_node_operators_registry)
@@ -89,7 +89,7 @@ def start_vote(tx_params, silent=False):
       pp('{:<30}'.format(lido_finance_ops_multisig_address), ldo_for_deversifi_in_wei / 10 ** 18)
       print()
 
-      print('Fund Curve pool rewards (LDO):')
+      print('Fund Balancer pool rewards (LDO):')
       pp('{:<30}'.format(balancer_rewards_manager_address), ldo_for_rewards_in_wei / 10 ** 18)
       print()
 
@@ -161,7 +161,7 @@ def start_vote(tx_params, silent=False):
         voting=interface.Voting(lido_dao_voting_address),
         token_manager=interface.TokenManager(lido_dao_token_manager_address),
         vote_desc=(
-            f'Omnibus vote: 1) fund DeversiFi (refferal program period #2) payout with 97,680 LDO, '
+            f'Omnibus vote: 1) fund DeversiFi (refferal program second period) payout with 920,553.43 LDO, '
             f'2) seed Balancer LP rewards manager contract with 100,000 LDO, '
             f'3) fund LeXpunK DAO with 1,000,000 USD (333 ETH), '
             f'4) increase staking limits for Node Operators'
