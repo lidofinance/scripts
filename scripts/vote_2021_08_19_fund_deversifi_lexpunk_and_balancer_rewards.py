@@ -82,6 +82,7 @@ def start_vote(tx_params, silent=False):
       pp('Using finance contract at address', lido_dao_finance_address)
       pp('Using voting contract at address', lido_dao_voting_address)
       pp('Using NodeOperatorsRegistry at address', lido_dao_node_operators_registry)
+      pp('Using LDO token at address', ldo_token_address)
       print()
 
       print('Fund DeversiFi (refferal program) payout (LDO):')
@@ -171,6 +172,6 @@ def start_vote(tx_params, silent=False):
 
 
 def main():
-    (vote_id, _) = start_vote({'from': get_deployer_account()})
+    (vote_id, _) = start_vote({'from': get_deployer_account(), 'gas_price': '50 gwei'})
     print(f'Vote created: {vote_id}')
     time.sleep(5) # hack: waiting thread 2
