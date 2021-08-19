@@ -140,7 +140,7 @@ def start_vote(tx_params, silent=False):
     )
 
     call_script = [
-        fund_referral_call_script,
+        fund_balancer_rewards_call_script,
         fund_referral_call_script,
         fund_LeXpunK_call_script,
         p2p_staking_limit,
