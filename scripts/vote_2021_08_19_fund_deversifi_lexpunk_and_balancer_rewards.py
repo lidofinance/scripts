@@ -13,7 +13,9 @@ def set_console_globals(**kwargs):
 import time
 from brownie.utils import color
 from utils.voting import create_vote
-from utils.evm_script import encode_call_script
+from utils.evm_script import (
+    encode_call_script, decode_evm_script, calls_info_pretty_print
+)
 from utils.finance import encode_token_transfer
 from utils.node_operators import encode_set_node_operator_staking_limit, get_node_operators
 from utils.finance import encode_eth_transfer
@@ -148,10 +150,17 @@ def start_vote(tx_params, silent=False):
         skillz_staking_limit
     ]
 
+    encoded_call_script = encode_call_script(call_script)
     if not silent:
-      print('Callscriptfunds_in_wei')
-      for addr, action in call_script:
-          pp(addr, action)
+      print('Callscriptfunds_in_wei\n')
+      # for addr, action in call_script:
+      #     pp(addr, action)
+      for ind, call in enumerate(decode_evm_script(
+          encoded_call_script, verbose=False
+      )):
+          print(f'Script #{ind + 1}.')
+          calls_info_pretty_print(call)
+          print('-----------------------------------------------------------')
       print()
 
       print('Does it look good?')
