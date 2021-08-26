@@ -22,7 +22,7 @@ NODE_OPERATORS = [
     },
     {
         "id": 6,
-        "limit": 2880
+        "limit": 2900
     },
     {
         "id": 7,

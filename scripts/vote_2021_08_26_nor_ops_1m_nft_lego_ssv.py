@@ -61,12 +61,12 @@ def make_fund_lego_call_script(lego_address, ldo_for_lego_in_wei, finance):
             finance=finance
     )
 
-def encode_nft_transfer(sender, recipient, token_id, mintable_token, agent):
+def encode_nft_transfer(sender, recipient, token_id, nft_token, agent):
     return (
       agent.address,
       agent.forward.encode_input(
-        encode_call_script([(mintable_token.address,
-        mintable_token.safeTransferFrom.encode_input(
+        encode_call_script([(nft_token.address,
+        nft_token.safeTransferFrom.encode_input(
             sender,
             recipient,
             token_id
@@ -100,7 +100,7 @@ def start_vote(tx_params, silent=False):
       2: 4500,
       3: 5000,
       5: 5000,
-      6: 2880,
+      6: 2900,
       7: 3000,
       8: 5000
     }
@@ -158,7 +158,7 @@ def start_vote(tx_params, silent=False):
         finance
     )
 
-    nft_transfer_call_script = encode_nft_transfer(sender=lido_dao_agent_address, recipient=nft_receiver_address, token_id=nft_tokenId, mintable_token=rarible, agent = agent)
+    nft_transfer_call_script = encode_nft_transfer(sender=lido_dao_agent_address, recipient=nft_receiver_address, token_id=nft_tokenId, nft_token=rarible, agent = agent)
 
     staking_facilities_staking_limit = encode_set_node_operator_staking_limit(
         id=0,
