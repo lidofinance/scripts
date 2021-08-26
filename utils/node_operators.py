@@ -19,3 +19,7 @@ def encode_set_node_operators_staking_limits_evm_script(node_operators, registry
 
 def get_node_operators(registry):
     return [{**registry.getNodeOperator(i, True), **{'index': i}} for i in range(registry.getNodeOperatorsCount())]
+
+
+def encode_add_operator(address, name, registry):
+    return (registry.address, registry.addNodeOperator.encode_input(name, address, 0))
