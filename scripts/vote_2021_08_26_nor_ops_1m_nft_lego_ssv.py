@@ -76,7 +76,7 @@ def encode_nft_transfer(sender, recipient, token_id, nft_token, agent):
 
 
 def start_vote(tx_params, silent=False):
-    ldo_for_ssv_grant_in_wei = 16_450 * 10**18 # 16 450 LDO
+    ldo_for_ssv_grant_in_wei = 16_640 * 10**18 # 16,640 LDO
     blox_for_lego_address = '0xb35096b074fdb9bBac63E3AdaE0Bbde512B2E6b6'
     obol_for_lego_address = '0xC62188bDB24d2685AEd8fa491E33eFBa47Db63C2'
 

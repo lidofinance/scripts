@@ -84,8 +84,8 @@ def test_vote(ldo_holder, helpers, accounts, dao_voting, node_operators_registry
     blox_ldo_balance_after = ldo.balanceOf(blox_address)
     obol_ldo_balance_after = ldo.balanceOf(obol_address)
 
-    assert blox_ldo_balance_after - blox_ldo_balance_before == 16_450 * 10**18
-    assert obol_ldo_balance_after - obol_ldo_balance_before == 16_450 * 10**18
+    assert blox_ldo_balance_after - blox_ldo_balance_before == 16_640 * 10**18
+    assert obol_ldo_balance_after - obol_ldo_balance_before == 16_640 * 10**18
 
     assert ldo.balanceOf(lego_address) == 240_000 * 10**18
 
