@@ -146,7 +146,7 @@ def start_vote(tx_params, silent=False):
         finance
     )
 
-    lego_obol_call_script = make_fund_ssv_grant_blox_call_script(
+    lego_obol_call_script = make_fund_ssv_grant_obol_call_script(
         obol_for_lego_address,
         ldo_for_ssv_grant_in_wei,
         finance
