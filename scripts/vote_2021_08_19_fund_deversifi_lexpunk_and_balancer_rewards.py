@@ -151,15 +151,16 @@ def start_vote(tx_params, silent=False):
     ]
 
     encoded_call_script = encode_call_script(call_script)
+    calls = decode_evm_script(
+        encoded_call_script, verbose=False, repeat_is_error=True
+    )
     if not silent:
       print('Callscriptfunds_in_wei\n')
       # for addr, action in call_script:
       #     pp(addr, action)
-      for ind, call in enumerate(decode_evm_script(
-          encoded_call_script, verbose=False
-      )):
+      for ind, call in enumerate(calls):
           print(f'Script #{ind + 1}.')
-          calls_info_pretty_print(call)
+          print(calls_info_pretty_print(call))
           print('-----------------------------------------------------------')
       print()
 
@@ -175,7 +176,7 @@ def start_vote(tx_params, silent=False):
             f'3) fund LeXpunK DAO with 1,000,000 USD (333 ETH), '
             f'4) increase staking limits for Node Operators'
         ),
-        evm_script=encode_call_script(call_script),
+        evm_script=encoded_call_script,
         tx_params=tx_params
     )
 
