@@ -228,7 +228,7 @@ def start_vote(
             '2) Increase staking limits for Node Operators, '
             '3) Allocate LDO tokens (3 523 767.186 LDO) '
             'for the third referral '
-            'period rewards to finance.'
+            'period rewards to finance ops multisig.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
