@@ -13,7 +13,7 @@ Voting 02/09/2021.
 8. Raise key limit for Node Operator #10 (Figment) to 100
 9. Raise key limit for Node Operator #11 (Allnodes) to 100
 10. Raise key limit for Node Operator #12 (Anyblock) to 100
-11. Allocate LDO tokens (3 792 328.15 LDO) for the third referral period
+11. Allocate LDO tokens (3 523 767.186 LDO) for the third referral period
     rewards to finance
     address `0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb`
 """
@@ -67,12 +67,6 @@ def set_console_globals(**kwargs):
 def pp(text, value):
     """Pretty print with colorized."""
     print(text, color.highlight(str(value)), end='')
-
-
-def as_wei(amount: int, n_decimals: int = 0) -> int:
-    """Convert amount to wei."""
-    factor = 10 ** (18 - n_decimals)
-    return amount * factor
 
 
 def make_ldo_referral_payout(
@@ -164,7 +158,7 @@ def start_vote(
     # 11. Allocate 3 792 328.15 LDO
     #     to 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
     payout_referral_rewards = {
-        'amount': as_wei(3_523_767_186, n_decimals=3),
+        'amount': 3_523_767_186 * (10 ** 15),
         'address': '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb'
     }
 
@@ -236,7 +230,8 @@ def start_vote(
             '3) Raise key limit for Node Operator #9 (RockX) to 100; '
             '4) Raise key limit for Node Operator #10 (Figment) to 100; '
             '5) Raise key limit for Node Operator #12 (Anyblock) to 100; '
-            '6) Allocate LDO tokens (3 792 328.15 LDO) for the third referral '
+            '6) Allocate LDO tokens (3 523 767.186 LDO) '
+            'for the third referral '
             'period rewards to finance '
             'address 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb;'
         ),

@@ -42,15 +42,15 @@ NEW_NODE_OPERATORS = [
     )
 ]
 
-deversifi_ledger_referral_payout = ReferralPayout(
+referral_payout = ReferralPayout(
     address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
     amount=3_523_767_186 * (10 ** 15)
 )
 
 
-def _deversifi_ledger_balance(ldo) -> int:
+def _balance(ldo) -> int:
     """Return balance for target of referral payout."""
-    return ldo.balanceOf(deversifi_ledger_referral_payout.address)
+    return ldo.balanceOf(referral_payout.address)
 
 
 @pytest.fixture(scope='module')
@@ -59,72 +59,104 @@ def ldo():
     return interface.ERC20(ldo_token_address)
 
 
-@pytest.fixture(scope='module')
-def deversifi_ledger_balance_before(ldo):
-    """Get balance before payout."""
-    return _deversifi_ledger_balance(ldo)
-
-
-@pytest.fixture(scope='module')
-def _start_vote(
-        ldo_holder, helpers, accounts, dao_voting,
-        deversifi_ledger_balance_before
+def test_common(
+        ldo_holder, helpers, accounts,
+        dao_voting, ldo, node_operators_registry
 ):
-    """Prepare and execute voting."""
+    """Perform testing for the whole voting."""
+    referral_balance_before = _balance(ldo)
     vote_id, _ = start_vote({
         'from': ldo_holder
     }, silent=True)
     helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting
     )
-    return vote_id
+    referral_balance_after = _balance(ldo)
+    inc = referral_balance_after - referral_balance_before
+    assert inc == referral_payout.amount
 
+    for node_operator in NODE_OPERATORS:
+        assert node_operators_registry.getNodeOperator(
+            node_operator.id, True
+        )[3] == node_operator.limit, f'Failed on {node_operator.name}'
 
-@pytest.fixture(scope='module')
-def deversifi_ledger_balance_after(_start_vote, ldo):
-    """Get balance after payout."""
-    return _deversifi_ledger_balance(ldo)
+    for node_operator in NEW_NODE_OPERATORS:
+        no = node_operators_registry.getNodeOperator(
+            node_operator.id, True
+        )
 
+        message = f'Failed on {node_operator.name}'
+        assert no[0] is True, message
+        assert no[1] == node_operator.name, message
+        assert no[2] == node_operator.address, message
+        assert no[3] == 0
 
-def _ids(node_operator: Union[NodeOperatorIncLimit, NodeOperatorAdd]) -> str:
-    """Extract name for a test case."""
-    return node_operator.name
-
-
-@pytest.fixture(scope='module', params=NODE_OPERATORS, ids=_ids)
-def node_operator_limit(_start_vote, request):
-    """Return a single test case for limits increasing."""
-    return request.param
-
-
-@pytest.fixture(scope='module', params=NEW_NODE_OPERATORS, ids=_ids)
-def node_operator_new(_start_vote, request):
-    """Return a single test case for adding new operator."""
-    return request.param
-
-
-def test_referral_payout(
-        deversifi_ledger_balance_before, deversifi_ledger_balance_after
-):
-    """Perform testing of referral payout."""
-    inc = deversifi_ledger_balance_after - deversifi_ledger_balance_before
-    assert inc == deversifi_ledger_referral_payout.amount
-
-
-def test_limit_increasing(node_operator_limit, node_operators_registry):
-    """Perform testing for limits increasing."""
-    assert node_operators_registry.getNodeOperator(
-        node_operator_limit.id, True
-    )[3] == node_operator_limit.limit
-
-
-def test_add_node_operator(node_operator_new, node_operators_registry):
-    """Perform testing for adding new node operators."""
-    no = node_operators_registry.getNodeOperator(
-        node_operator_new.id, True
-    )
-
-    assert no[0] is True
-    assert no[1] == node_operator_new.name
-    assert no[2] == node_operator_new.address
-    assert no[3] == 0
+# @pytest.fixture(scope='module')
+# def deversifi_ledger_balance_before(ldo):
+#     """Get balance before payout."""
+#     return _deversifi_ledger_balance(ldo)
+#
+#
+# @pytest.fixture(scope='module')
+# def _start_vote(
+#         ldo_holder, helpers, accounts, dao_voting,
+#         deversifi_ledger_balance_before
+# ):
+#     """Prepare and execute voting."""
+#     vote_id, _ = start_vote({
+#         'from': ldo_holder
+#     }, silent=True)
+#     helpers.execute_vote(
+#         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting
+#     )
+#     return vote_id
+#
+#
+# @pytest.fixture(scope='module')
+# def deversifi_ledger_balance_after(_start_vote, ldo):
+#     """Get balance after payout."""
+#     return _deversifi_ledger_balance(ldo)
+#
+#
+# def _ids(node_operator: Union[NodeOperatorIncLimit, NodeOperatorAdd]) -> str:
+#     """Extract name for a test case."""
+#     return node_operator.name
+#
+#
+# @pytest.fixture(scope='module', params=NODE_OPERATORS, ids=_ids)
+# def node_operator_limit(_start_vote, request):
+#     """Return a single test case for limits increasing."""
+#     return request.param
+#
+#
+# @pytest.fixture(scope='module', params=NEW_NODE_OPERATORS, ids=_ids)
+# def node_operator_new(_start_vote, request):
+#     """Return a single test case for adding new operator."""
+#     return request.param
+#
+#
+# def test_referral_payout(
+#         deversifi_ledger_balance_before, deversifi_ledger_balance_after
+# ):
+#     """Perform testing of referral payout."""
+#     inc = deversifi_ledger_balance_after - deversifi_ledger_balance_before
+#     assert inc == deversifi_ledger_referral_payout.amount
+#
+#
+# def test_limit_increasing(node_operator_limit, node_operators_registry):
+#     """Perform testing for limits increasing."""
+#     assert node_operators_registry.getNodeOperator(
+#         node_operator_limit.id, True
+#     )[3] == node_operator_limit.limit
+#
+#
+# def test_add_node_operator(node_operator_new, node_operators_registry):
+#     """Perform testing for adding new node operators."""
+#     no = node_operators_registry.getNodeOperator(
+#         node_operator_new.id, True
+#     )
+#
+#     assert no[0] is True
+#     assert no[1] == node_operator_new.name
+#     assert no[2] == node_operator_new.address
+#     assert no[3] == 0
