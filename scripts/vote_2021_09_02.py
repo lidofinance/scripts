@@ -13,8 +13,8 @@ Voting 02/09/2021.
 8. Raise key limit for Node Operator #10 (Figment) to 100
 9. Raise key limit for Node Operator #11 (Allnodes) to 100
 10. Raise key limit for Node Operator #12 (Anyblock) to 100
-11. Allocate LDO tokens (3 792 328.15 LDO) for referral rewards
-    (to DeversiFi and Ledger) to finance
+11. Allocate LDO tokens (3 792 328.15 LDO) for the third referral period
+    rewards to finance
     address `0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb`
 """
 import time
@@ -163,8 +163,8 @@ def start_vote(
     }
     # 11. Allocate 3 792 328.15 LDO
     #     to 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
-    deversifi_and_ledger_referral_rewards = {
-        'amount': as_wei(3_792_328_15, n_decimals=2),
+    payout_referral_rewards = {
+        'amount': as_wei(3_523_767_186, n_decimals=3),
         'address': '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb'
     }
 
@@ -190,8 +190,8 @@ def start_vote(
         _encode_set_node_operator_staking_limit(**allnodes_limit),
         _encode_set_node_operator_staking_limit(**anyblock_limit),
         _make_ldo_referral_payout(
-            target_address=deversifi_and_ledger_referral_rewards['address'],
-            ldo_in_wei=deversifi_and_ledger_referral_rewards['amount'],
+            target_address=payout_referral_rewards['address'],
+            ldo_in_wei=payout_referral_rewards['amount'],
         )
     ])
     human_readable_script = decode_evm_script(
@@ -236,8 +236,8 @@ def start_vote(
             '3) Raise key limit for Node Operator #9 (RockX) to 100; '
             '4) Raise key limit for Node Operator #10 (Figment) to 100; '
             '5) Raise key limit for Node Operator #12 (Anyblock) to 100; '
-            '6) Allocate LDO tokens (3 792 328.15 LDO) for referral rewards '
-            '(to DeversiFi and Ledger) to finance '
+            '6) Allocate LDO tokens (3 792 328.15 LDO) for the third referral '
+            'period rewards to finance '
             'address 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb;'
         ),
         evm_script=encoded_call_script,
