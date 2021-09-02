@@ -83,7 +83,7 @@ def decode_evm_script(
         return [repr(err)]
 
     abi_provider = ABIProviderEtherscanApi(
-        ETHERSCAN_API_KEY, specific_net
+        ETHERSCAN_API_KEY, specific_net, retries=3
     )
 
     calls = []
@@ -108,10 +108,10 @@ def decode_evm_script(
             total = len(parsed.calls)
             message = (
                 f'!!! REPEATED SCRIPTS !!!:\n'
-                f'Previous is {jnd+1}/{total}:\n'
+                f'Previous is {jnd + 1}/{total}:\n'
                 f'{calls_info_pretty_print(prev_call_info)}\n'
                 f'-----------------------------------------\n'
-                f'Current is {ind+1}/{total}\n'
+                f'Current is {ind + 1}/{total}\n'
                 f'{calls_info_pretty_print(call_info)}'
             )
 
