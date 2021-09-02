@@ -155,7 +155,7 @@ def start_vote(
         'id': 12,
         'limit': 100
     }
-    # 11. Allocate 3 792 328.15 LDO
+    # 11. Allocate 3 523 767.186 LDO
     #     to 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
     payout_referral_rewards = {
         'amount': 3_523_767_186 * (10 ** 15),
@@ -224,16 +224,11 @@ def start_vote(
         token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
-            '1) Add node operator named Blockdaemon with reward '
-            'address 0x4f42A816dC2DBa82fF927b6996c14a741DCbD902; '
-            '2) Raise key limit for Node Operator #11 (Allnodes) to 100; '
-            '3) Raise key limit for Node Operator #9 (RockX) to 100; '
-            '4) Raise key limit for Node Operator #10 (Figment) to 100; '
-            '5) Raise key limit for Node Operator #12 (Anyblock) to 100; '
+            '1) Add Blockdaemon node operator, '
+            '2) Increase stacking limit, '
             '6) Allocate LDO tokens (3 523 767.186 LDO) '
             'for the third referral '
-            'period rewards to finance '
-            'address 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb;'
+            'period rewards to finance.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
