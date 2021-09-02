@@ -66,7 +66,7 @@ def deversifi_ledger_balance_before(ldo):
 
 
 @pytest.fixture(scope='module')
-def start_vote(
+def _start_vote(
         ldo_holder, helpers, accounts, dao_voting,
         deversifi_ledger_balance_before
 ):
@@ -81,7 +81,7 @@ def start_vote(
 
 
 @pytest.fixture(scope='module')
-def deversifi_ledger_balance_after(start_vote, ldo):
+def deversifi_ledger_balance_after(_start_vote, ldo):
     """Get balance after payout."""
     return _deversifi_ledger_balance(ldo)
 
@@ -92,13 +92,13 @@ def _ids(node_operator: Union[NodeOperatorIncLimit, NodeOperatorAdd]) -> str:
 
 
 @pytest.fixture(scope='module', params=NODE_OPERATORS, ids=_ids)
-def node_operator_limit(start_vote, request):
+def node_operator_limit(_start_vote, request):
     """Return a single test case for limits increasing."""
     return request.param
 
 
 @pytest.fixture(scope='module', params=NEW_NODE_OPERATORS, ids=_ids)
-def node_operator_new(start_vote, request):
+def node_operator_new(_start_vote, request):
     """Return a single test case for adding new operator."""
     return request.param
 
