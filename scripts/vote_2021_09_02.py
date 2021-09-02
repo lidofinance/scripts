@@ -74,7 +74,7 @@ def make_ldo_referral_payout(
         target_address: str, ldo_in_wei: int,
         finance: interface.Finance
 ) -> Tuple[str, str]:
-    """Encode referral payout for DeversiFi and Ledger"""
+    """Encode referral payout."""
     if not_specified:
         raise ValueError(
             'Please, specify all arguments with keywords.'
@@ -226,7 +226,7 @@ def start_vote(
             'Omnibus vote: '
             '1) Add Blockdaemon node operator, '
             '2) Increase staking limits for Node Operators, '
-            '6) Allocate LDO tokens (3 523 767.186 LDO) '
+            '3) Allocate LDO tokens (3 523 767.186 LDO) '
             'for the third referral '
             'period rewards to finance.'
         ),
