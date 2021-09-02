@@ -225,7 +225,7 @@ def start_vote(
         vote_desc=(
             'Omnibus vote: '
             '1) Add Blockdaemon node operator, '
-            '2) Increase stacking limit, '
+            '2) Increase staking limits for Node Operators, '
             '6) Allocate LDO tokens (3 523 767.186 LDO) '
             'for the third referral '
             'period rewards to finance.'
