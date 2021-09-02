@@ -90,8 +90,7 @@ def make_ldo_referral_payout(
         token_address=ldo_token_address,
         recipient=target_address,
         amount=ldo_in_wei,
-        reference=f'Referral payout for DeversiFi and Ledger to: '
-                  f'{target_address}',
+        reference='Referral program third period payout',
         finance=finance
     )
 
