@@ -1,5 +1,8 @@
+from brownie import exceptions
+
 from utils.evm_script import encode_call_script, EMPTY_CALLSCRIPT
 from utils.config import ldo_token_address
+
 
 
 def create_vote(voting, token_manager, vote_desc, evm_script, tx_params,
@@ -17,6 +20,11 @@ def create_vote(voting, token_manager, vote_desc, evm_script, tx_params,
     vote_id = tx.events['StartVote']['voteId']
 
     if verbose:
-        tx.call_trace()
+        try:
+            tx.call_trace()
+        except exceptions.RPCRequestError as err:
+            print(f'Node should be run with `--http.api=debug` flag for '
+                  f'traceback handling.\n'
+                  f'Raised exception: {repr(err)}')
 
     return (vote_id, tx)
