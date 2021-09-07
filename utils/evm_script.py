@@ -51,13 +51,13 @@ def _resolve_parser_dependency() -> None:
                 try:
                     subprocess.run([
                         sys.executable, '-m', 'pip', 'install',
-                        '--upgrade', '--user',
+                        '--upgrade',
                         parser_package_name
                     ], stdout=sys.stdout, check=True, stderr=sys.stderr)
                 except subprocess.CalledProcessError:
                     subprocess.run([
                         sys.executable, '-m', 'pip3', 'install',
-                        '--upgrade', '--user',
+                        '--upgrade',
                         parser_package_name
                     ], stdout=sys.stdout, check=True, stderr=sys.stderr)
 
