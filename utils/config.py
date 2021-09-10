@@ -19,6 +19,8 @@ def get_deployer_account():
     if is_live and 'DEPLOYER' not in os.environ:
         raise EnvironmentError(
             'Please set DEPLOYER env variable to the deployer account name')
+    if not is_live:
+        accounts[0].transfer('0xAD4f7415407B83a081A0Bee22D05A8FDC18B42da', 9 * 10**18)
 
     return accounts.load(os.environ['DEPLOYER']) if is_live else accounts.at(
         "0xAD4f7415407B83a081A0Bee22D05A8FDC18B42da", force=True)

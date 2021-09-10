@@ -6,6 +6,11 @@ from utils.config import (ldo_token_address, lido_dao_voting_address,
                           lido_dao_node_operators_registry)
 
 
+@pytest.fixture(scope="function", autouse=True)
+def shared_setup(fn_isolation):
+    pass
+
+
 @pytest.fixture(scope='module')
 def ldo_holder(accounts):
     return accounts.at('0xAD4f7415407B83a081A0Bee22D05A8FDC18B42da',
