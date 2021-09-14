@@ -2,8 +2,11 @@ import os
 import logging
 
 from functools import lru_cache
-from typing import List, Union, Optional
 from collections import defaultdict
+from typing import (
+    List, Union,
+    Optional, Callable
+)
 
 import eth_abi
 from web3 import Web3
@@ -77,7 +80,7 @@ def _resolve_parser_dependency() -> None:
 _resolve_parser_dependency()
 
 from evmscript_parser.core.parse import parse_script  # noqa
-from evmscript_parser.core.decode import Call  # noqa
+from evmscript_parser.core.decode import Call, FuncInput  # noqa
 from evmscript_parser.core.decode import decode_function_call  # noqa
 from evmscript_parser.core.ABI import get_cached_combined  # noqa
 from evmscript_parser.core.exceptions import (
@@ -125,10 +128,15 @@ def get_abi_cache(api_key: str, net: str):
     )
 
 
+def _is_decoded_script(data: FuncInput) -> bool:
+    return data.type == 'bytes'
+
+
 def decode_evm_script(
         script: str, verbose: bool = True,
         specific_net: str = 'mainnet', repeat_is_error: bool = True,
-        interface: Optional[str] = None
+        interface: Optional[str] = None,
+        is_decoded_script: Optional[Callable[[FuncInput], bool]] = None
 ) -> List[Union[str, Call]]:
     """Decode EVM script to human-readable format."""
     if verbose:
@@ -137,6 +145,9 @@ def decode_evm_script(
             format='%(levelname)s:%(message)s',
             level=logging.DEBUG
         )
+
+    if is_decoded_script is None:
+        is_decoded_script = _is_decoded_script
 
     try:
         parsed = parse_script(script)
@@ -158,6 +169,15 @@ def decode_evm_script(
                 call.encoded_call_data, abi_storage,
                 combined_key=True, interface_name=interface
             )
+
+            for inp in filter(is_decoded_script, call_info.inputs):
+                script = inp.value.hex()
+                inp.value = decode_evm_script(
+                    script, verbose=verbose, specific_net=specific_net,
+                    repeat_is_error=repeat_is_error, interface=interface,
+                    is_decoded_script=is_decoded_script
+                )
+
         except (
                 ABIEtherscanNetworkError,
                 ABIEtherscanStatusCode,
@@ -197,19 +217,43 @@ def decode_evm_script(
     return calls
 
 
-def calls_info_pretty_print(call: Union[str, Call]) -> str:
-    """Format printing for Call instance."""
+def _input_pretty_print(inp: FuncInput, tabs: int) -> str:
+    offset: str = ' ' * tabs
+
+    if isinstance(inp.value, list) and isinstance(inp.value[0], Call):
+        calls = '\n'.join(
+            _calls_info_pretty_print(call, tabs + 3)
+            for call in inp.value
+        )
+        return f'{offset}{inp.name}: {inp.type} = [\n{calls}\n]'
+
+    return f'{offset}{inp.name}: {inp.type} = {inp.value}'
+
+
+def _calls_info_pretty_print(
+        call: Union[str, Call], tabs: int = 0
+) -> str:
     if isinstance(call, str):
         return f'Decoding failed: {call}'
 
     else:
         inputs = '\n'.join([
-            f'{inp.name}: {inp.type} = {inp.value}'
+            _input_pretty_print(inp, tabs)
             for inp in call.inputs
         ])
-        return color.highlight(
-            f'Contract: {call.contract_address}\n'
-            f'Function: {call.function_name}\n'
-            f'Inputs:\n'
+
+        offset: str = ' ' * tabs
+
+        return (
+            f'{offset}Contract: {call.contract_address}\n'
+            f'{offset}Function: {call.function_name}\n'
+            f'{offset}Inputs:\n'
             f'{inputs}'
         )
+
+
+def calls_info_pretty_print(
+        call: Union[str, Call]
+) -> str:
+    """Format printing for Call instance."""
+    return color.highlight(_calls_info_pretty_print(call))
