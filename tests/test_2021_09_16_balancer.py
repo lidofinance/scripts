@@ -19,7 +19,7 @@ def test_2021_09_16_balancer(balancer_manager, ldo_holder, helpers, accounts, da
     chain.sleep(1631750400 - chain.time())  # Tuesday, 17 September 2021 
     chain.mine()
     print('\n')
-    print('Before votiong ')
+    print('Before voting ')
     print(time.ctime(chain.time()), 'allowance: ', balancer_manager.available_allocations())
     print('                                ', 'rate: ', balancer_manager.rewards_limit_per_period())
     vote_id, _ = start_vote({
@@ -33,11 +33,11 @@ def test_2021_09_16_balancer(balancer_manager, ldo_holder, helpers, accounts, da
     assert balancer_manager.available_allocations() == 75000 * 10**18
     assert balancer_manager.rewards_limit_per_period() == 75000 * 10**18
     print('\n')
-    print('After votiong ')
+    print('After voting ')
     print(time.ctime(chain.time()), 'allowance: ', balancer_manager.available_allocations())
     print('                                ', 'rate: ', balancer_manager.rewards_limit_per_period())
 
-    chain.sleep(1632096000 - chain.time())  # Tuesday, 17 September 2021 
+    chain.sleep(1632096000 - chain.time())  # 20 September 2021 
     chain.mine()
     print('\n')
     print('Next week')
@@ -47,7 +47,7 @@ def test_2021_09_16_balancer(balancer_manager, ldo_holder, helpers, accounts, da
     assert balancer_manager.rewards_limit_per_period() == 75000 * 10**18
 
 
-    chain.sleep(1632700800 - chain.time())  # Tuesday, 17 September 2021 
+    chain.sleep(1632700800 - chain.time())  # 27 September 2021 
     chain.mine()
     print('\n')
     print('Next week')
