@@ -3,6 +3,14 @@ Voting 16/09/2021.
 
 1. Increase balancer reward program rate to 75000 LDO
 2. Set balancer reward program allocations to 75000 LDO
+3. Raise key limit for Node Operator #7 (Everstake) to 3980
+4. Raise key limit for Node Operator #9 (RockX) to 1150
+5. Raise key limit for Node Operator #10 (Figment) to 600
+6. Raise key limit for Node Operator #11 (Allnodes) to 5000
+7. Raise key limit for Node Operator #12 (Anyblock Analytics) to 1800
+8. Transfer 200,000 LDO to 1inch reward program 0xf5436129Cf9d8fa2a1cb6e591347155276550635
+9. Transfer 1,320,784 LDO for the fourth referral period rewards payout to 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
+
 """
 
 import time
@@ -58,6 +66,32 @@ def pp(text, value):
     print(text, color.highlight(str(value)), end='')
 
 
+def encode_set_balancer_rewards_rate(rate):
+    agent = interface.Agent(lido_dao_agent_address)
+    balancerManager = interface.BalancerReawardsManager(balancer_rewards_manager)
+    return (
+      lido_dao_agent_address,
+      agent.forward.encode_input(
+        encode_call_script([(balancer_rewards_manager,
+        balancerManager.set_rewards_limit_per_period.encode_input(
+            rate
+        ))])
+      )
+    )
+
+def encode_set_balancer_allocations_amount(amount):
+    agent = interface.Agent(lido_dao_agent_address)
+    balancerManager = interface.BalancerReawardsManager(balancer_rewards_manager)
+    return (
+      lido_dao_agent_address,
+      agent.forward.encode_input(
+        encode_call_script([(balancer_rewards_manager,
+        balancerManager.set_allocations_limit.encode_input(
+            amount
+        ))])
+      )
+    )
+
 def make_ldo_payout(
         *not_specified,
         target_address: str,
@@ -80,30 +114,6 @@ def make_ldo_payout(
     )
 
 
-def encode_set_balancer_rewards_rate(rate, manager, agent):
-    return (
-      agent.address,
-      agent.forward.encode_input(
-        encode_call_script([(manager.address,
-        manager.set_rewards_limit_per_period.encode_input(
-            rate
-        ))])
-      )
-    )
-
-
-def encode_set_balancer_allocations_amount(amount, manager, agent):
-    return (
-      agent.address,
-      agent.forward.encode_input(
-        encode_call_script([(manager.address,
-        manager.set_allocations_limit.encode_input(
-            amount
-        ))])
-      )
-    )
-
-
 def start_vote(
         tx_params: Dict[str, str],
         silent: bool = False
@@ -114,37 +124,88 @@ def start_vote(
         lido_dao_node_operators_registry
     )
     finance = interface.Finance(lido_dao_finance_address)
-    agent = interface.Agent(lido_dao_agent_address)
-    balancerManager = interface.BalancerReawardsManager(balancer_rewards_manager)
     voting = interface.Voting(lido_dao_voting_address)
     token_manager = interface.TokenManager(
         lido_dao_token_manager_address
     )
 
-    # Vote specific addresses and constants:
+    # Set Lido contracts as parameters:
+    _encode_set_node_operator_staking_limit = partial(
+        encode_set_node_operator_staking_limit, registry=registry
+    )
+    _make_ldo_payout = partial(make_ldo_payout, finance=finance)
+
+    # Vote-specific addresses and constants:
     # 1. Increase balancer reward program rate to 75000 LDO.
-    balancer_rate = {
-        'rate': 75000 * 10**18
-    }
-    # 2. Set balancer reward program allocations to 75000 LDO.
-    balancer_allocations = {
-        'rate': 75000 * 10**18
-    }
+    balancer_rate = 75_000 * 10**18
     _set_allocations_rate_for_balancer_rewards_manager = encode_set_balancer_rewards_rate(
-        balancer_rate['rate'],
-        manager=balancerManager,
-        agent=agent,
+        balancer_rate,
     )
+    # 2. Set balancer reward program allocations to 75000 LDO.
+    balancer_allocations = 75_000 * 10**18
     _set_allocations_amount_for_balancer_rewards_manager = encode_set_balancer_allocations_amount(
-        balancer_allocations['rate'],
-        manager=balancerManager,
-        agent=agent,
+        balancer_allocations,
     )
+
+    # 3. Increase the limit for #7 Everstake to 3980.
+    everstake_limit = {
+        'id': 7,
+        'limit': 3980
+    }
+    # 4. Increase the limit for #9 RockX to 1150.
+    rockx_limit = {
+        'id': 9,
+        'limit': 1150
+    }
+    # 5. Increase the limit for #10 Figment to 600.
+    figment_limit = {
+        'id': 10,
+        'limit': 600
+    }
+    # 6. Increase the limit for #11 Allnodes to 5000.
+    allnodes_limit = {
+        'id': 11,
+        'limit': 5000
+    }
+    # 7. Increase the limit for #12 Anyblock Analytics to 1800.
+    anyblock_limit = {
+        'id': 12,
+        'limit': 1800
+    }
+
+    # 8. Transfer 200,000 LDO to 1inch rewards manager.
+    payout_1inch_rewards = {
+        'amount': 200_000 * (10 ** 18),
+        'address': '0xf5436129Cf9d8fa2a1cb6e591347155276550635',
+        'reference': '1inch pool LP rewards transfer',
+    }
+    # 9. Transfer 1,320,784 LDO to referral rewards.
+    payout_referral_rewards = {
+        'amount': 1_320_784 * (10 ** 18),
+        'address': '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
+        'reference': 'Referral program fourth period payout',
+    }
+
 
     # Encoding vote scripts:
     encoded_call_script = encode_call_script([
         _set_allocations_rate_for_balancer_rewards_manager,
-        _set_allocations_amount_for_balancer_rewards_manager
+        _set_allocations_amount_for_balancer_rewards_manager,
+        _encode_set_node_operator_staking_limit(**everstake_limit),
+        _encode_set_node_operator_staking_limit(**rockx_limit),
+        _encode_set_node_operator_staking_limit(**figment_limit),
+        _encode_set_node_operator_staking_limit(**allnodes_limit),
+        _encode_set_node_operator_staking_limit(**anyblock_limit),
+        _make_ldo_payout(
+            target_address=payout_1inch_rewards['address'],
+            ldo_in_wei=payout_1inch_rewards['amount'],
+            reference=payout_1inch_rewards['reference'],
+        ),
+        _make_ldo_payout(
+            target_address=payout_referral_rewards['address'],
+            ldo_in_wei=payout_referral_rewards['amount'],
+            reference=payout_referral_rewards['reference'],
+        ),
     ])
     human_readable_script = decode_evm_script(
         encoded_call_script, verbose=False,
@@ -185,6 +246,9 @@ def start_vote(
             'Omnibus vote: '
             '1) Increase balancer reward program rate to 75000 LDO, '
             '2) Set balancer reward program allocations to 75000 LDO, '
+            '3) Increase staking limits for Node Operators, '
+            '4) Allocate 200,000 LDO tokens to 1inch rewards distributor contract, '
+            '5) Allocate 1,320,784 LDO tokens to 4th period referral rewards'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
