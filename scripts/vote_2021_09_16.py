@@ -1,11 +1,11 @@
 """
 Voting 16/09/2021.
 
-1. Increase balancer reward program rate to 75000 LDO
-2. Set balancer reward program allocations to 75000 LDO
+1. Increase Balancer reward program rate to 75000 LDO
+2. Set Balancer reward program allocations to 75000 LDO
 3. Raise key limit for Node Operator #7 (Everstake) to 3980
 4. Raise key limit for Node Operator #9 (RockX) to 1150
-5. Raise key limit for Node Operator #10 (Figment) to 600
+5. Raise key limit for Node Operator #10 (Figment) to 1000
 6. Raise key limit for Node Operator #11 (Allnodes) to 5000
 7. Raise key limit for Node Operator #12 (Anyblock Analytics) to 1800
 8. Transfer 200,000 LDO to 1inch reward program 0xf5436129Cf9d8fa2a1cb6e591347155276550635
@@ -119,6 +119,7 @@ def start_vote(
         silent: bool = False
 ) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
+
     # Lido contracts and constants:
     registry = interface.NodeOperatorsRegistry(
         lido_dao_node_operators_registry
@@ -160,7 +161,7 @@ def start_vote(
     # 5. Increase the limit for #10 Figment to 600.
     figment_limit = {
         'id': 10,
-        'limit': 600
+        'limit': 1000
     }
     # 6. Increase the limit for #11 Allnodes to 5000.
     allnodes_limit = {
@@ -185,7 +186,6 @@ def start_vote(
         'address': '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
         'reference': 'Referral program fourth period payout',
     }
-
 
     # Encoding vote scripts:
     encoded_call_script = encode_call_script([
@@ -258,7 +258,7 @@ def start_vote(
 def main():
     vote_id, _ = start_vote({
         'from': get_deployer_account(),
-        'gas_price': '100 gwei'
+        'gas_price': '60 gwei'
     })
     print(f'Vote created: {vote_id}.')
     time.sleep(5)  # hack for waiting thread #2.

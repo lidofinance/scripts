@@ -72,7 +72,7 @@ NODE_OPERATORS = [
     # name, id, limit
     NodeOperatorIncLimit('Everstake', 7, 3980),
     NodeOperatorIncLimit('RockX', 9, 1150),
-    NodeOperatorIncLimit('Figment', 10, 600),
+    NodeOperatorIncLimit('Figment', 10, 1000),
     NodeOperatorIncLimit('Allnodes', 11, 5000),
     NodeOperatorIncLimit('Anyblock Analytics', 12, 1800),
 ]
