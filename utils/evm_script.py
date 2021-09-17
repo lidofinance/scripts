@@ -135,7 +135,6 @@ def _is_decoded_script(data: FuncInput) -> bool:
 def decode_evm_script(
         script: str, verbose: bool = True,
         specific_net: str = 'mainnet', repeat_is_error: bool = True,
-        interface: Optional[str] = None,
         is_decoded_script: Optional[Callable[[FuncInput], bool]] = None
 ) -> List[Union[str, Call]]:
     """Decode EVM script to human-readable format."""
@@ -166,15 +165,14 @@ def decode_evm_script(
         try:
             call_info = decode_function_call(
                 call.address, call.method_id,
-                call.encoded_call_data, abi_storage,
-                combined_key=True, interface_name=interface
+                call.encoded_call_data, abi_storage
             )
 
             for inp in filter(is_decoded_script, call_info.inputs):
                 script = inp.value.hex()
                 inp.value = decode_evm_script(
                     script, verbose=verbose, specific_net=specific_net,
-                    repeat_is_error=repeat_is_error, interface=interface,
+                    repeat_is_error=repeat_is_error,
                     is_decoded_script=is_decoded_script
                 )
 
