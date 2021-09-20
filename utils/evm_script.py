@@ -1,17 +1,16 @@
-import os
 import logging
-
-from functools import lru_cache
+import os
 from collections import defaultdict
+from functools import lru_cache
 from typing import (
     List, Union,
     Optional, Callable
 )
 
 import eth_abi
-from web3 import Web3
-from eth_typing.evm import HexAddress
 from brownie.utils import color
+from eth_typing.evm import HexAddress
+from web3 import Web3
 
 
 def _get_latest_version(package_name: str) -> str:
@@ -128,14 +127,14 @@ def get_abi_cache(api_key: str, net: str):
     )
 
 
-def _is_decoded_script(data: FuncInput) -> bool:
-    return data.type == 'bytes'
+def _is_encoded_script(data: FuncInput) -> bool:
+    return data.type == 'bytes' and data.name == '_evmScript'
 
 
 def decode_evm_script(
         script: str, verbose: bool = True,
         specific_net: str = 'mainnet', repeat_is_error: bool = True,
-        is_decoded_script: Optional[Callable[[FuncInput], bool]] = None
+        is_encoded_script: Optional[Callable[[FuncInput], bool]] = None
 ) -> List[Union[str, Call]]:
     """Decode EVM script to human-readable format."""
     if verbose:
@@ -145,8 +144,8 @@ def decode_evm_script(
             level=logging.DEBUG
         )
 
-    if is_decoded_script is None:
-        is_decoded_script = _is_decoded_script
+    if is_encoded_script is None:
+        is_encoded_script = _is_encoded_script
 
     try:
         parsed = parse_script(script)
@@ -168,12 +167,15 @@ def decode_evm_script(
                 call.encoded_call_data, abi_storage
             )
 
-            for inp in filter(is_decoded_script, call_info.inputs):
-                script = inp.value.hex()
+            if call_info is None:
+                continue
+
+            for inp in filter(is_encoded_script, call_info.inputs):
+                script = inp.value
                 inp.value = decode_evm_script(
                     script, verbose=verbose, specific_net=specific_net,
                     repeat_is_error=repeat_is_error,
-                    is_decoded_script=is_decoded_script
+                    is_encoded_script=is_encoded_script
                 )
 
         except (
