@@ -78,6 +78,7 @@ def _resolve_parser_dependency() -> None:
 
 _resolve_parser_dependency()
 
+from evmscript_parser.core.parse import SingleCall  # noqa
 from evmscript_parser.core.parse import parse_script  # noqa
 from evmscript_parser.core.decode import Call, FuncInput  # noqa
 from evmscript_parser.core.decode import decode_function_call  # noqa
@@ -167,16 +168,14 @@ def decode_evm_script(
                 call.encoded_call_data, abi_storage
             )
 
-            if call_info is None:
-                continue
-
-            for inp in filter(is_encoded_script, call_info.inputs):
-                script = inp.value
-                inp.value = decode_evm_script(
-                    script, verbose=verbose, specific_net=specific_net,
-                    repeat_is_error=repeat_is_error,
-                    is_encoded_script=is_encoded_script
-                )
+            if call_info is not None:
+                for inp in filter(is_encoded_script, call_info.inputs):
+                    script = inp.value
+                    inp.value = decode_evm_script(
+                        script, verbose=verbose, specific_net=specific_net,
+                        repeat_is_error=repeat_is_error,
+                        is_encoded_script=is_encoded_script
+                    )
 
         except (
                 ABIEtherscanNetworkError,
@@ -206,7 +205,10 @@ def decode_evm_script(
             else:
                 print(message)
 
-        calls.append(call_info)
+        if call_info is not None:
+            calls.append(call_info)
+        else:
+            calls.append(call)
         contract_calls[call.encoded_call_data] = (ind, call_info)
 
     if verbose:
@@ -231,18 +233,26 @@ def _input_pretty_print(inp: FuncInput, tabs: int) -> str:
 
 
 def _calls_info_pretty_print(
-        call: Union[str, Call], tabs: int = 0
+        call: Union[str, Call, SingleCall], tabs: int = 0
 ) -> str:
+    offset: str = ' ' * tabs
     if isinstance(call, str):
         return f'Decoding failed: {call}'
+
+    elif isinstance(call, SingleCall):
+        return (
+            f'{offset}Raw script:\n'
+            f'{offset}Contract address: {call.address}\n'
+            f'{offset}Function signature: {call.method_id}\n'
+            f'{offset}Call data length: {call.call_data_length}\n'
+            f'{offset}Call data: {call.encoded_call_data}\n'
+        )
 
     else:
         inputs = '\n'.join([
             _input_pretty_print(inp, tabs)
             for inp in call.inputs
         ])
-
-        offset: str = ' ' * tabs
 
         return (
             f'{offset}Contract: {call.contract_address}\n'
