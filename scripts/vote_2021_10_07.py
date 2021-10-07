@@ -3,8 +3,9 @@ Voting 07/10/2021.
 
 1. Transfer 3,550,000 LDO to Curve reward program 0x753D5167C31fBEB5b49624314d74A957Eb271709
 2. Transfer 300,000 LDO to Balancer reward program 0x1dD909cDdF3dbe61aC08112dC0Fdf2Ab949f79D8
-3. Transfer 462,962.9629629634 LDO to the purchase contract TBD for the treasury diversification
-4. Grant ASSIGN_ROLE to the purchase contract TBD
+3. Transfer 462,962.9629629634 LDO to the purchase contract 0x689E03565e36B034EcCf12d182c3DC38b2Bb7D33
+    for the treasury diversification
+4. Grant ASSIGN_ROLE to the purchase contract 0x689E03565e36B034EcCf12d182c3DC38b2Bb7D33
 5. Transfer $100k +20% buffer (by voting creation time prices) in LDO to Finance Multisig
     0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb to pay 100k DAI bounty to a white hat
 """
@@ -38,8 +39,7 @@ from utils.config import (
 
 from utils.permissions import encode_permission_grant
 
-# TODO: Set correct address after deployment of purchase contract
-PURCHASE_CONTRACT_PAYOUT_ADDRESS = '0x2a61d3ba5030Ef471C74f612962c7367ECa3a62d'
+PURCHASE_CONTRACT_PAYOUT_ADDRESS = '0x689E03565e36B034EcCf12d182c3DC38b2Bb7D33'
 
 try:
     from brownie import interface

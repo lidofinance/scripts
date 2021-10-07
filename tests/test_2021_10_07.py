@@ -16,9 +16,6 @@ from scripts.vote_2021_10_07 import (
 
 from utils.config import ldo_token_address, lido_dao_acl_address, lido_dao_token_manager_address
 
-# TODO: Set correct address before run
-PURCHASE_CONTRACT_PAYOUT_ADDRESS = '0x2a61d3ba5030Ef471C74f612962c7367ECa3a62d'
-
 def curve_balance(ldo) -> int:
     """Returns LDO balance of Curve rewards distributor"""
     return ldo.balanceOf(payout_curve_rewards['address'])
