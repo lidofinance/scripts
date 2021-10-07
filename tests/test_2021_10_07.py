@@ -5,16 +5,37 @@ import pytest
 
 from collections import namedtuple
 
-from scripts.vote_2021_10_07 import (
-    start_vote,
-    payout_curve_rewards,
-    payout_balancer_rewards,
-    payout_purchase_contract,
-    grant_role_purchase_contract,
-    payout_finance_multisig
-)
+from scripts.vote_2021_10_07 import (start_vote)
 
 from utils.config import ldo_token_address, lido_dao_acl_address, lido_dao_token_manager_address
+
+PURCHASE_CONTRACT_PAYOUT_ADDRESS = '0x689E03565e36B034EcCf12d182c3DC38b2Bb7D33'
+
+payout_curve_rewards = {
+    'amount': 3_550_000 * (10 ** 18),
+    'address': '0x753D5167C31fBEB5b49624314d74A957Eb271709',
+}
+
+payout_balancer_rewards = {
+    'amount': 300_000 * (10 ** 18),
+    'address': '0x1dD909cDdF3dbe61aC08112dC0Fdf2Ab949f79D8',
+}
+
+payout_purchase_contract = {
+    'amount': '462962962962963400000000', # 462,962.9629629634 * (10 ** 18)
+    'address': PURCHASE_CONTRACT_PAYOUT_ADDRESS,
+}
+
+grant_role_purchase_contract = {
+    'address': PURCHASE_CONTRACT_PAYOUT_ADDRESS,
+    'permission_name': 'ASSIGN_ROLE'
+}
+
+payout_finance_multisig = {
+    'amount': 30_392 * (10 ** 18), # TODO: Check current rate on 1inch before run
+    'address': '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
+    'reference': 'Finance multisig transfer to pay a bug bounty'
+}
 
 def curve_balance(ldo) -> int:
     """Returns LDO balance of Curve rewards distributor"""

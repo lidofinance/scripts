@@ -82,40 +82,6 @@ def make_ldo_payout(
         finance=finance
     )
 
-# 1. Transfer 3,550,000 LDO to Curve rewards manager
-payout_curve_rewards = {
-    'amount': 3_550_000 * (10 ** 18),
-    'address': '0x753D5167C31fBEB5b49624314d74A957Eb271709',
-    'reference': 'Curve pool LP rewards transfer'
-}
-
-# 2. Transfer 300,000 LDO to Balancer rewards manager
-payout_balancer_rewards = {
-    'amount': 300_000 * (10 ** 18),
-    'address': '0x1dD909cDdF3dbe61aC08112dC0Fdf2Ab949f79D8',
-    'reference': 'Balancer pool LP rewards transfer'
-}
-
-#3. Transfer 462,962.9629629634 LDO to the purchase contract for the treasury diversification
-payout_purchase_contract = {
-    'amount': '462962962962963400000000', # 462,962.9629629634 * (10 ** 18)
-    'address': PURCHASE_CONTRACT_PAYOUT_ADDRESS,
-    'reference': 'Treasury diversification purchase contract transfer'
-}
-
-#4. Grant ASSIGN_ROLE to the purchase contract
-grant_role_purchase_contract = {
-    'address': PURCHASE_CONTRACT_PAYOUT_ADDRESS,
-    'permission_name': 'ASSIGN_ROLE'
-}
-
-#5. Transfer 30,392 LDO (~120k DAI) to finance multisig for $100k bounty to a white hat
-payout_finance_multisig = {
-    'amount': 30_392 * (10 ** 18), # TODO: Check current rate on 1inch before run
-    'address': '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-    'reference': 'Finance multisig transfer to pay a bug bounty'
-}
-
 def start_vote(
         tx_params: Dict[str, str],
         silent: bool = False
@@ -134,6 +100,41 @@ def start_vote(
     )
 
     _make_ldo_payout = partial(make_ldo_payout, finance=finance)
+
+
+    # 1. Transfer 3,550,000 LDO to Curve rewards manager
+    payout_curve_rewards = {
+        'amount': 3_550_000 * (10 ** 18),
+        'address': '0x753D5167C31fBEB5b49624314d74A957Eb271709',
+        'reference': 'Curve pool LP rewards transfer'
+    }
+
+    # 2. Transfer 300,000 LDO to Balancer rewards manager
+    payout_balancer_rewards = {
+        'amount': 300_000 * (10 ** 18),
+        'address': '0x1dD909cDdF3dbe61aC08112dC0Fdf2Ab949f79D8',
+        'reference': 'Balancer pool LP rewards transfer'
+    }
+
+    #3. Transfer 462,962.9629629634 LDO to the purchase contract for the treasury diversification
+    payout_purchase_contract = {
+        'amount': '462962962962963400000000', # 462,962.9629629634 * (10 ** 18)
+        'address': PURCHASE_CONTRACT_PAYOUT_ADDRESS,
+        'reference': 'Treasury diversification purchase contract transfer'
+    }
+
+    #4. Grant ASSIGN_ROLE to the purchase contract
+    grant_role_purchase_contract = {
+        'address': PURCHASE_CONTRACT_PAYOUT_ADDRESS,
+        'permission_name': 'ASSIGN_ROLE'
+    }
+
+    #5. Transfer 30,392 LDO (~120k DAI) to finance multisig for $100k bounty to a white hat
+    payout_finance_multisig = {
+        'amount': 30_392 * (10 ** 18), # TODO: Check current rate on 1inch before run
+        'address': '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
+        'reference': 'Finance multisig transfer to pay a bug bounty'
+    }
 
     encoded_call_script = encode_call_script([
         _make_ldo_payout(
