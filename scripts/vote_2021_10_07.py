@@ -129,9 +129,9 @@ def start_vote(
         'permission_name': 'ASSIGN_ROLE'
     }
 
-    #5. Transfer 30,392 LDO (~120k DAI) to finance multisig for $100k bounty to a white hat
+    #5. Transfer 28,500 LDO (~120k DAI) to finance multisig for $100k bounty to a white hat
     payout_finance_multisig = {
-        'amount': 30_392 * (10 ** 18), # TODO: Check current rate on 1inch before run
+        'amount': 28_500 * (10 ** 18), # TODO: Check current rate on 1inch before run
         'address': '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
         'reference': 'Finance multisig transfer to pay a bug bounty'
     }
@@ -194,9 +194,9 @@ def start_vote(
             'Omnibus vote: '
             '1) Allocate 3,550,000 LDO tokens to Curve rewards distributor contract, '
             '2) Allocate 300,000 LDO tokens to Balancer rewards distributor contract, '
-            '3) Allocate 462,962.9629629634 LDO tokens to the purchase contract for the treasury diversification, '
-            '4) Grant ASSIGN_ROLE to the purchase contract, '
-            '5) Transfer 30,392 LDO to Finance Multisig for 100k DAI bounty to a white hat'
+            '3) Allocate 462,962.9629629634 LDO tokens to the treasury diversification contract, '
+            '4) Grant ASSIGN_ROLE to the treasury diversification contract, '
+            '5) Transfer 28,500 LDO to Finance Multisig for bounty payout'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params

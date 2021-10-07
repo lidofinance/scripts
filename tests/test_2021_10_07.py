@@ -3,8 +3,6 @@ Tests for voting 10/07/2021.
 """
 import pytest
 
-from collections import namedtuple
-
 from scripts.vote_2021_10_07 import (start_vote)
 
 from utils.config import ldo_token_address, lido_dao_acl_address, lido_dao_token_manager_address
@@ -32,7 +30,7 @@ grant_role_purchase_contract = {
 }
 
 payout_finance_multisig = {
-    'amount': 30_392 * (10 ** 18), # TODO: Check current rate on 1inch before run
+    'amount': 28_500 * (10 ** 18), # TODO: Check current rate on 1inch before run
     'address': '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
     'reference': 'Finance multisig transfer to pay a bug bounty'
 }
