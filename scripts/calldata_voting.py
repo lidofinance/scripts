@@ -74,11 +74,11 @@ def start_vote(
         token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
-            '1) Allocate 3,550,000 LDO tokens to Curve rewards distributor contract, '
-            '2) Allocate 300,000 LDO tokens to Balancer rewards distributor contract, '
-            '3) Allocate 462,962.9629629634 LDO tokens to the treasury diversification contract, '
-            '4) Grant ASSIGN_ROLE to the treasury diversification contract, '
-            '5) Transfer 28,500 LDO to Finance Multisig for bounty payout'
+            '1) Publishing new implementation in lido app APM repo'
+            '2) Updating implementaion of lido app with new one'
+            '3) Publishing new implementation in node operators registry app APM repo'
+            '4) Updating implementaion of node operators registry app with new one'
+            '5) Granting new permission DEPOSIT_ROLE'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
