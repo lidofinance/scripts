@@ -98,7 +98,7 @@ def start_vote(
     payout_referral = {
         'amount': 5_500 * (10 ** 18),
         'address': '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-        'reference': '16,666 DAI Jacob Blish monthly compensation'
+        'reference': 'Jacob Blish Nov 2021 comp'
     }
 
     encoded_call_script = encode_call_script([
@@ -141,8 +141,8 @@ def start_vote(
         token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
-            '1) Transfer 200,000 LDO to 1inch reward program'
-            '2) Transfer 5,500 LDO for Jacob Blish monthly compensation'
+            '1) Allocate 200,000 LDO to 1inch reward program'
+            '2) Allocate 5,500 LDO tokens to Jacob Blish Nov 2021 compensation'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
