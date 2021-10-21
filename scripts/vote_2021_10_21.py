@@ -2,7 +2,7 @@
 Voting 21/10/2021.
 
 1. Transfer 200,000 LDO to 1inch reward program 0xf5436129cf9d8fa2a1cb6e591347155276550635
-2. Transfer 5,500 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI Jacob Blish monthly compensation
+2. Transfer 5,500 LDO +20%  to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI Jacob Blish monthly compensation
 
 """
 
@@ -87,8 +87,8 @@ def start_vote(
 
     _make_ldo_payout = partial(make_ldo_payout, finance=finance)
 
-    # 1. Transfer 200,000 LDO to Sushi rewards manager
-    payout_sushi_rewards = {
+    # 1. Transfer 200,000 LDO to 1Inch rewards manager
+    payout_one_inch_rewards = {
         'amount': 200_000 * (10 ** 18),
         'address': '0xf5436129Cf9d8fa2a1cb6e591347155276550635',
         'reference': '1inch pool LP rewards transfer'
@@ -103,9 +103,9 @@ def start_vote(
 
     encoded_call_script = encode_call_script([
         _make_ldo_payout(
-            target_address=payout_sushi_rewards['address'],
-            ldo_in_wei=payout_sushi_rewards['amount'],
-            reference=payout_sushi_rewards['reference']
+            target_address=payout_one_inch_rewards['address'],
+            ldo_in_wei=payout_one_inch_rewards['amount'],
+            reference=payout_one_inch_rewards['reference']
         ),
         _make_ldo_payout(
             target_address=payout_referral['address'],
