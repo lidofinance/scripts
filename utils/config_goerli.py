@@ -1,3 +1,4 @@
+network="goerli"
 ldo_token_address = '0x56340274fB5a72af1A3C6609061c451De7961Bd4'
 lido_dao_agent_address = '0x4333218072D5d7008546737786663c38B4D561A4'
 lido_dao_finance_address = '0x75c7b1D23f1cad7Fb4D60281d7069E46440BC179'
@@ -8,3 +9,5 @@ lido_dao_steth_address = '0x1643E812aE58766192Cf7D2Cf9567dF2C37e9B7F'
 lido_dao_voting_repo = '0x14de4f901cE0B81F4EfcA594ad7b70935C276806'
 lido_dao_kernel = '0x1dD91b354Ebd706aB3Ac7c727455C7BAA164945A'
 balancer_rewards_manager = ''
+lido_dao_deposit_security_module_address = '0xed23ad3ea5fb9d10e7371caef1b141ad1c23a80c'
+finance_multisig_address = ''

@@ -3,7 +3,8 @@ from brownie import chain
 
 from utils.config import (ldo_token_address, lido_dao_voting_address,
                           lido_dao_token_manager_address,
-                          lido_dao_node_operators_registry)
+                          lido_dao_node_operators_registry,
+                          lido_dao_deposit_security_module_address)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -30,6 +31,11 @@ def node_operators_registry(interface):
 @pytest.fixture(scope='module')
 def dao_token_manager(interface):
     return interface.TokenManager(lido_dao_token_manager_address)
+
+
+@pytest.fixture(scope='module')
+def deposit_security_module(interface):
+    return interface.DepositSecurityModule(lido_dao_deposit_security_module_address)
 
 
 @pytest.fixture(scope='module')
