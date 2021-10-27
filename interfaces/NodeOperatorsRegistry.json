@@ -17,33 +17,6 @@
     "constant": false,
     "inputs": [
       {
-        "name": "_name",
-        "type": "string"
-      },
-      {
-        "name": "_rewardAddress",
-        "type": "address"
-      },
-      {
-        "name": "_stakingLimit",
-        "type": "uint64"
-      }
-    ],
-    "name": "addNodeOperator",
-    "outputs": [
-      {
-        "name": "id",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
         "name": "_operator_id",
         "type": "uint256"
       },
@@ -154,6 +127,28 @@
     "constant": false,
     "inputs": [
       {
+        "name": "_operator_id",
+        "type": "uint256"
+      },
+      {
+        "name": "_index",
+        "type": "uint256"
+      },
+      {
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "removeSigningKeysOperatorBH",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
         "name": "_id",
         "type": "uint256"
       },
@@ -236,6 +231,28 @@
       }
     ],
     "name": "removeSigningKey",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_operator_id",
+        "type": "uint256"
+      },
+      {
+        "name": "_index",
+        "type": "uint256"
+      },
+      {
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "removeSigningKeys",
     "outputs": [],
     "payable": false,
     "stateMutability": "nonpayable",
@@ -326,6 +343,29 @@
     ],
     "payable": false,
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_name",
+        "type": "string"
+      },
+      {
+        "name": "_rewardAddress",
+        "type": "address"
+      }
+    ],
+    "name": "addNodeOperator",
+    "outputs": [
+      {
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -598,6 +638,20 @@
       {
         "name": "",
         "type": "bytes32"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "getKeysOpIndex",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
       }
     ],
     "payable": false,
@@ -886,6 +940,23 @@
     "inputs": [
       {
         "indexed": true,
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "name": "totalKeysTrimmed",
+        "type": "uint64"
+      }
+    ],
+    "name": "NodeOperatorTotalKeysTrimmed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
         "name": "operatorId",
         "type": "uint256"
       },
@@ -913,6 +984,18 @@
       }
     ],
     "name": "SigningKeyRemoved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "name": "keysOpIndex",
+        "type": "uint256"
+      }
+    ],
+    "name": "KeysOpIndexSet",
     "type": "event"
   }
 ]
