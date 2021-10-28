@@ -1,4 +1,4 @@
-network="goerli"
+chain_network="goerli"
 ldo_token_address = '0x56340274fB5a72af1A3C6609061c451De7961Bd4'
 lido_dao_agent_address = '0x4333218072D5d7008546737786663c38B4D561A4'
 lido_dao_finance_address = '0x75c7b1D23f1cad7Fb4D60281d7069E46440BC179'

@@ -23,7 +23,7 @@ from utils.evm_script import (
     calls_info_pretty_print
 )
 from utils.config import (
-    network,
+    chain_network,
     prompt_bool,
     get_deployer_account,
     ldo_token_address,
@@ -115,7 +115,7 @@ def start_vote(
     # Show detailed description of prepared voting.
     if not silent:
         human_readable_script = decode_evm_script(
-            encoded_call_script, verbose=False, specific_net=network, repeat_is_error=True
+            encoded_call_script, verbose=False, specific_net=chain_network, repeat_is_error=True
         )
 
         print('\nPoints of voting:')

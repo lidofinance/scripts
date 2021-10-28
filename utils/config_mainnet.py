@@ -1,4 +1,4 @@
-network="mainnet"
+chain_network="mainnet"
 ldo_token_address = '0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32'
 lido_dao_acl_address = '0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb'
 lido_dao_agent_address = '0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c'
