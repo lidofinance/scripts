@@ -140,8 +140,8 @@ def start_vote(
         token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: \n'
-            '1. Unpause deposits in the protocol \n'
-            '2. Transfer 138,162.5642 LDO for referral rewards seventh period'
+            '1) Unpause deposits in the protocol \n'
+            '2) Allocate 138,162.5642 LDO tokens to 6th period referral rewards'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
