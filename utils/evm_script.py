@@ -13,80 +13,17 @@ from eth_typing.evm import HexAddress
 from packaging.version import LegacyVersion, Version
 from web3 import Web3
 
+from avotes_parser.core import (
+    parse_script, EncodedCall,
+    Call, FuncInput,
+    decode_function_call
+)
+from avotes_parser.core.ABI import get_cached_combined
 
-def _get_latest_version(package_name: str) -> Union[LegacyVersion, Version]:
-    import json
-    import urllib3
-
-    from packaging import version
-
-    url = f'https://pypi.org/pypi/{package_name}/json'
-
-    versions = list(version.parse(x) for x in json.loads(urllib3.PoolManager().request(
-        'GET', url
-    ).data)['releases'].keys())
-    versions.sort()
-
-    return versions[-1]
-
-
-def _resolve_parser_dependency() -> None:
-    parser_package_name = 'evmscript-parser'
-
-    import sys
-    import subprocess
-    import pkg_resources
-
-    from packaging import version
-
-    try:
-        installed_version = version.parse(
-            pkg_resources.get_distribution(
-                parser_package_name
-            ).version
-        )
-        if os.getenv(
-                'UPGRADE-EVMSCRIPT-PARSER',
-                1
-        ):
-            latest_version = _get_latest_version(parser_package_name)
-            if latest_version > installed_version:
-                try:
-                    subprocess.run([
-                        sys.executable, '-m', 'pip', 'install',
-                        '--upgrade',
-                        parser_package_name
-                    ], stdout=sys.stdout, check=True, stderr=sys.stderr)
-                except subprocess.CalledProcessError:
-                    subprocess.run([
-                        sys.executable, '-m', 'pip3', 'install',
-                        '--upgrade',
-                        parser_package_name
-                    ], stdout=sys.stdout, check=True, stderr=sys.stderr)
-
-    except pkg_resources.DistributionNotFound:
-        try:
-            subprocess.run([
-                sys.executable, '-m', 'pip', 'install', '--user',
-                parser_package_name
-            ], stdout=sys.stdout, check=True, stderr=sys.stderr)
-        except subprocess.CalledProcessError:
-            subprocess.run([
-                sys.executable, '-m', 'pip3', 'install', '--user',
-                parser_package_name
-            ], stdout=sys.stdout, check=True, stderr=sys.stderr)
-
-
-_resolve_parser_dependency()
-
-from evmscript_parser.core.parse import SingleCall  # noqa
-from evmscript_parser.core.parse import parse_script  # noqa
-from evmscript_parser.core.decode import Call, FuncInput  # noqa
-from evmscript_parser.core.decode import decode_function_call  # noqa
-from evmscript_parser.core.ABI import get_cached_combined  # noqa
-from evmscript_parser.core.exceptions import (
-    ABILocalFileNotExisted, ParseStructureError,
-    ABIEtherscanNetworkError, ABIEtherscanStatusCode  # noqa
+from avotes_parser.core.parsing import ParseStructureError
+from avotes_parser.core.ABI.utilities.exceptions import (
+    ABILocalNotFound, ABIEtherscanStatusCode,
+    ABIEtherscanNetworkError
 )
 
 EMPTY_CALLSCRIPT = '0x00000001'
@@ -137,7 +74,7 @@ def decode_evm_script(
         script: str, verbose: bool = True,
         specific_net: str = 'mainnet', repeat_is_error: bool = True,
         is_encoded_script: Optional[Callable[[FuncInput], bool]] = None
-) -> List[Union[str, Call]]:
+) -> List[Union[str, Call, EncodedCall]]:
     """Decode EVM script to human-readable format."""
     if verbose:
         # Switch-on debug messages from evmscript-parser package.
@@ -181,7 +118,7 @@ def decode_evm_script(
         except (
                 ABIEtherscanNetworkError,
                 ABIEtherscanStatusCode,
-                ABILocalFileNotExisted
+                ABILocalNotFound
         ) as err:
             call_info = repr(err)
 
@@ -220,51 +157,8 @@ def decode_evm_script(
     return calls
 
 
-def _input_pretty_print(inp: FuncInput, tabs: int) -> str:
-    offset: str = ' ' * tabs
-
-    if isinstance(inp.value, list) and isinstance(inp.value[0], Call):
-        calls = '\n'.join(
-            _calls_info_pretty_print(call, tabs + 3)
-            for call in inp.value
-        )
-        return f'{offset}{inp.name}: {inp.type} = [\n{calls}\n]'
-
-    return f'{offset}{inp.name}: {inp.type} = {inp.value}'
-
-
-def _calls_info_pretty_print(
-        call: Union[str, Call, SingleCall], tabs: int = 0
-) -> str:
-    offset: str = ' ' * tabs
-    if isinstance(call, str):
-        return f'Decoding failed: {call}'
-
-    elif isinstance(call, SingleCall):
-        return (
-            f'{offset}Raw script:\n'
-            f'{offset}Contract address: {call.address}\n'
-            f'{offset}Function signature: {call.method_id}\n'
-            f'{offset}Call data length: {call.call_data_length}\n'
-            f'{offset}Call data: {call.encoded_call_data}\n'
-        )
-
-    else:
-        inputs = '\n'.join([
-            _input_pretty_print(inp, tabs)
-            for inp in call.inputs
-        ])
-
-        return (
-            f'{offset}Contract: {call.contract_address}\n'
-            f'{offset}Function: {call.function_name}\n'
-            f'{offset}Inputs:\n'
-            f'{inputs}'
-        )
-
-
 def calls_info_pretty_print(
-        call: Union[str, Call]
+        call: Union[str, Call, EncodedCall]
 ) -> str:
     """Format printing for Call instance."""
-    return color.highlight(_calls_info_pretty_print(call))
+    return color.highlight(repr(call))
