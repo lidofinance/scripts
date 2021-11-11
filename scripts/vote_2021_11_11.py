@@ -5,7 +5,7 @@ Voting 11/11/2021.
 2. Unpause deposits in the protocol calling unpauseDeposits on 0xdb149235b6f40dc08810aa69869783be101790e7
    from Agent 0x3e40d73eb977dc6a537af587d48316fee66e9c8c
 3. Continue Sushi LP rewards with 200,000 LDO to 0xE5576eB1dD4aA524D67Cf9a32C8742540252b6F4
-4. Allocate 161980.4226 LDO tokens for the 8th (25.10.2021 - 08.11.2021) rewards referral period to finance multisig
+4. Allocate 161984.4659 LDO tokens for the 8th (25.10.2021 - 08.11.2021) rewards referral period to finance multisig
    0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
 """
 
@@ -15,7 +15,6 @@ from typing import (
     Dict, Tuple,
     Optional
 )
-from brownie.utils import color
 from brownie.network.transaction import TransactionReceipt
 
 from utils.voting import create_vote
@@ -53,10 +52,6 @@ def set_console_globals(**kwargs):
     global interface
     interface = kwargs['interface']
 
-
-def pp(text, value):
-    """Pretty print with colorized."""
-    print(text, color.highlight(str(value)), end='')
 
 def make_ldo_payout(
         *not_specified,
@@ -122,11 +117,11 @@ def start_vote(
             reference='Sushi pool LP rewards transfer'
         ),
 
-        # 4. Allocate 161980.4226 LDO tokens for the 8th (25.10.2021 - 08.11.2021) referral period rewards
+        # 4. Allocate 161984.4659 LDO tokens for the 8th (25.10.2021 - 08.11.2021) referral period rewards
         # to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
         _make_ldo_payout(
             target_address=finance_multisig_address,
-            ldo_in_wei=161_980_4226 * (10 ** 14),
+            ldo_in_wei=161_984_4659 * (10 ** 14),
             reference='Eighth period referral rewards'
         ),
     ])
@@ -161,7 +156,7 @@ def start_vote(
             '1) Revoke ASSIGN_ROLE from the treasury diversification contract, \n'
             '2) Call unpauseDeposits() on the DepositSecurityModule \n'
             '3) Allocate 200,000 LDO tokens to Sushi rewards distributor contract \n'
-            '4) Allocate 161980.4226 LDO tokens for the 8th period referral rewards'
+            '4) Allocate 161984.4659 LDO tokens for the 8th period referral rewards'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params

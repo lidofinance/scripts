@@ -32,7 +32,7 @@ def has_assign_role_permission(acl, token_manager, who) -> int:
 token_purchase_contract_address = '0x689E03565e36B034EcCf12d182c3DC38b2Bb7D33'
 referral_payout = Payout(
     address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-    amount=161_980_4226 * 10 ** 14
+    amount=161_984_4659 * 10 ** 14
 )
 sushi_rewards_payout = Payout(
     address='0xE5576eB1dD4aA524D67Cf9a32C8742540252b6F4',
