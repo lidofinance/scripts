@@ -153,10 +153,10 @@ def start_vote(
         token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
-            '1) Revoke ASSIGN_ROLE from the treasury diversification contract, \n'
-            '2) Call unpauseDeposits() on the DepositSecurityModule \n'
-            '3) Allocate 200,000 LDO tokens to Sushi rewards distributor contract \n'
-            '4) Allocate 161984.4659 LDO tokens for the 8th period referral rewards'
+            '1) Revoke ASSIGN_ROLE from the treasury diversification contract; '
+            '2) Call unpauseDeposits() on the DepositSecurityModule; '
+            '3) Allocate 200,000 LDO tokens to Sushi rewards distributor contract; '
+            '4) Allocate 161,984.4659 LDO tokens for the 8th period referral rewards.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
