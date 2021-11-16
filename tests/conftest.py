@@ -4,7 +4,8 @@ from brownie import chain
 from utils.config import (ldo_token_address, lido_dao_voting_address,
                           lido_dao_token_manager_address,
                           lido_dao_node_operators_registry,
-                          lido_dao_deposit_security_module_address)
+                          lido_dao_deposit_security_module_address,
+                          lido_dao_steth_address)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -41,6 +42,10 @@ def deposit_security_module(interface):
 @pytest.fixture(scope='module')
 def ldo_token(interface):
     return interface.ERC20(ldo_token_address)
+
+@pytest.fixture(scope='module')
+def lido(interface):
+    return interface.Lido(lido_dao_steth_address)
 
 
 class Helpers:
