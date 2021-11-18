@@ -5,7 +5,7 @@ Voting 18/11/2021.
 2. Allocate 5,000 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI
    Jacob Blish monthly comp (+20%)
 3. Allocate 3,000 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI
-   sign-in payment for Isidoros Passadis as Master of Validotors role (+20%)
+   sign-in payment for Isidoros Passadis as Master of Validators role (+20%)
 4. Raise key limit for Node Operator #9 (RockX) to 2100
 5. Raise key limit for Node Operator #13 (Blockdaemon) to 2050
 6. Top up 1inch LP reward program with 50,000 LDO to 0xf5436129Cf9d8fa2a1cb6e591347155276550635
@@ -37,7 +37,6 @@ from utils.config import (
     lido_dao_voting_address,
     lido_dao_finance_address,
     lido_dao_token_manager_address,
-    lido_dao_steth_address,
     lido_dao_node_operators_registry,
 )
 from utils.agent import agent_forward
@@ -78,14 +77,6 @@ def make_ldo_payout(
         finance=finance
     )
 
-def burn_steth_treasury(
-    amount_in_wei:
-    int,target_address: str,
-    lido=interface.Lido):
-    return (
-        lido.address,
-        lido.burnShares.encode_input(target_address, amount_in_wei)
-    )
 
 def new_lido_eth_address(ens: interface.ENS, target_address: str, lido_domain: str, controller_address: str):
     return agent_forward([(
@@ -100,7 +91,6 @@ def start_vote(
     """Prepare and run voting."""
 
     # Lido contracts and constants:
-    lido = interface.Lido(lido_dao_steth_address)
     finance = interface.Finance(lido_dao_finance_address)
     voting = interface.Voting(lido_dao_voting_address)
     token_manager = interface.TokenManager(
@@ -143,12 +133,12 @@ def start_vote(
             reference='Jacob Blish monthly comp'
         ),
 
-        # 3. Allocate 23,000 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI
+        # 3. Allocate 3,000 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI
         #    sign-in payment for Isidoros Passadis as Master of Validotors role
         _make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
             ldo_in_wei=3_000 * (10 ** 18),
-            reference='Eighth period referral rewards'
+            reference='Isidoros Passadis one-time welcome payment'
         ),
 
         # 4. Raise key limit for Node Operator #9 (RockX) to 2100
@@ -192,12 +182,12 @@ def start_vote(
         token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
-            '1) Set lido.eth to resolve to Lido smart contract 0xae7ab96520de3a18e5e111b5eaab095312d7fe84'
-            '2) Allocate 5,000 LDO tokens to Jacob Blish Nov 2021 compensation'
-            '3) Allocate 3,000 LDO to finance multisig for sign-in payment for Isidoros'
-            '4) Raise key limit for Node Operator #9 (RockX) to 2100'
-            '5) Raise key limit for Node Operator #13 (Blockdaemon) to 2050'
-            '6) Top up 1inch LP reward program with 50,000 LDO'
+            '1) Set lido.eth to resolve to Lido smart contract 0xae7ab96520de3a18e5e111b5eaab095312d7fe84;'
+            '2) Allocate 5,000 LDO tokens to Jacob Blish Nov 2021 compensation;'
+            '3) Allocate 3,000 LDO Isidoros Passadis one-time welcome payment;'
+            '4) Raise key limit for Node Operator #9 (RockX) to 2100;'
+            '5) Raise key limit for Node Operator #13 (Blockdaemon) to 2050;'
+            '6) Top up 1inch LP reward program with 50,000 LDO.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
