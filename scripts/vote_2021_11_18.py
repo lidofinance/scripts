@@ -1,18 +1,14 @@
 """
 Voting 18/11/2021.
 
-0. Use 7day lido-dao TWAP $4.033818
-
-1. Burn X stETH shares on treasury address 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c
-   to compensate for Chorus validation penalties
-2. Set lido.eth to resolve to Lido smart contract 0xae7ab96520de3a18e5e111b5eaab095312d7fe84
-3. Allocate 4960 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI
+1. Set lido.eth to resolve to Lido smart contract 0xae7ab96520de3a18e5e111b5eaab095312d7fe84
+2. Allocate 5,000 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI
    Jacob Blish monthly comp (+20%)
-4. Allocate 2980 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI
+3. Allocate 3,000 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI
    sign-in payment for Isidoros Passadis as Master of Validotors role (+20%)
-5. Increase key limits for operators which submitted new ones
-6. Increase NO limits to the max available keys
-7. Top up 1inch LP reward program with 50,000 LDO to 0xf5436129Cf9d8fa2a1cb6e591347155276550635
+4. Raise key limit for Node Operator #9 (RockX) to 2100
+5. Raise key limit for Node Operator #13 (Blockdaemon) to 2050
+6. Top up 1inch LP reward program with 50,000 LDO to 0xf5436129Cf9d8fa2a1cb6e591347155276550635
 """
 
 import time
@@ -22,9 +18,7 @@ from typing import (
     Optional
 )
 from brownie.network.transaction import TransactionReceipt
-from ens.utils import (
-    raw_name_to_hash,
-)
+from brownie import network
 
 from utils.voting import create_vote
 from utils.finance import encode_token_transfer
@@ -85,8 +79,8 @@ def make_ldo_payout(
     )
 
 def burn_steth_treasury(
-    amount_in_wei: 
-    int,target_address: str, 
+    amount_in_wei:
+    int,target_address: str,
     lido=interface.Lido):
     return (
         lido.address,
@@ -96,7 +90,7 @@ def burn_steth_treasury(
 def new_lido_eth_address(ens: interface.ENS, target_address: str, lido_domain: str, controller_address: str):
     return agent_forward([(
         controller_address,
-        ens.setAddr.encode_input(raw_name_to_hash(lido_domain), target_address)
+        ens.setAddr.encode_input(network.web3.ens.namehash(lido_domain), target_address)
     )])
 
 def start_vote(
@@ -116,11 +110,14 @@ def start_vote(
         lido_dao_node_operators_registry
     )
     ens = interface.ENS('0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e')
-    
-    # 5. Increase the limit for #9 RockX to 2100
+
     rockx_limit = {
         'id': 9,
         'limit': 2100
+    }
+    blockdaemon_limit = {
+        'id': 13,
+        'limit': 2050
     }
 
     _make_ldo_payout = partial(make_ldo_payout, finance=finance)
@@ -130,15 +127,7 @@ def start_vote(
     )
 
     encoded_call_script = encode_call_script([
-        # 1. Burn X stETH shares on treasury address 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c
-        #    to compensate for Chorus validation penalties
-        burn_steth_treasury(
-            lido=lido, 
-            target_address='0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c',
-            amount_in_wei=500 * 10 ** 18),
-
-
-        # 2. Set lido.eth to resolve to Lido smart contract 0xae7ab96520de3a18e5e111b5eaab095312d7fe84
+        # 1. Set lido.eth to resolve to Lido smart contract 0xae7ab96520de3a18e5e111b5eaab095312d7fe84
         new_lido_eth_address(
             ens=ens,
             lido_domain='lido.eth',
@@ -146,28 +135,29 @@ def start_vote(
             target_address='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84'
         ),
 
-        # 3. Allocate 4219.7469 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI
+        # 2. Allocate 5,000 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI
         #    Jacob Blish monthly comp
         _make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-            ldo_in_wei=4_219_7469 * (10 ** 14),
+            ldo_in_wei=5_000 * (10 ** 18),
             reference='Jacob Blish monthly comp'
         ),
 
-        # 4. Allocate 2531.9495 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI
+        # 3. Allocate 23,000 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI
         #    sign-in payment for Isidoros Passadis as Master of Validotors role
         _make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-            ldo_in_wei=2_531_9495 * (10 ** 14),
+            ldo_in_wei=3_000 * (10 ** 18),
             reference='Eighth period referral rewards'
         ),
 
-        # 5. Increase key limits for operators which submitted new ones
+        # 4. Raise key limit for Node Operator #9 (RockX) to 2100
         _encode_set_node_operator_staking_limit(**rockx_limit),
 
-        # 6. Increase NO limits to the max available keys
+        # 5. Raise key limit for Node Operator #13 (Blockdaemon) to 2050
+        _encode_set_node_operator_staking_limit(**blockdaemon_limit),
 
-        # 7. Top up 1inch LP reward program with 50,000 LDO to 0xf5436129Cf9d8fa2a1cb6e591347155276550635
+        # 6. Top up 1inch LP reward program with 50,000 LDO to 0xf5436129Cf9d8fa2a1cb6e591347155276550635
         _make_ldo_payout(
             target_address='0xf5436129Cf9d8fa2a1cb6e591347155276550635',
             ldo_in_wei=50_000 * (10 ** 18),
@@ -202,12 +192,11 @@ def start_vote(
         token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
-            '1) Revoke ASSIGN_ROLE from the treasury diversification contract; '
-            '2) Call unpauseDeposits() on the DepositSecurityModule; '
-            '3) Allocate 200,000 LDO tokens to Sushi rewards distributor contract; '
-            '4) Allocate 2531.9495 LDO to finance multisig for sign-in payment for Isidoros'
-            '5) Increase the limit for #9 RockX to 2100'
-            '6) Increase NO limits to the max available keys'
+            '1) Set lido.eth to resolve to Lido smart contract 0xae7ab96520de3a18e5e111b5eaab095312d7fe84'
+            '2) Allocate 5,000 LDO tokens to Jacob Blish Nov 2021 compensation'
+            '3) Allocate 3,000 LDO to finance multisig for sign-in payment for Isidoros'
+            '4) Raise key limit for Node Operator #9 (RockX) to 2100'
+            '5) Raise key limit for Node Operator #13 (Blockdaemon) to 2050'
             '6) Top up 1inch LP reward program with 50,000 LDO'
         ),
         evm_script=encoded_call_script,
