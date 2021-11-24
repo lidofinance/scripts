@@ -162,7 +162,8 @@ def start_vote(
 def main():
     vote_id, _ = start_vote({
         'from': get_deployer_account(),
-        'gas_price': '100 gwei'
+        'max_fee': '150 gwei',
+        'priority_fee': '3 gwei'
     })
     print(f'Vote created: {vote_id}.')
     time.sleep(5) # hack for waiting thread #2.
