@@ -61,3 +61,16 @@ def test_2021_11_25(helpers, accounts, lido, ldo_holder, dao_voting, ldo_token, 
     assert anyblock_an_limit_after > anyblock_an_limit_before
     assert anyblock_an_limit_after == anyblock_an_limits.limit
     assert anyblock_an_name == anyblock_an_limits.name
+    
+    helpers.print_tx_call_trace()
+    helpers.print_tx_events()
+
+    evs = helpers.tx.events
+
+    assert evs.count('VaultTransfer') == 2
+
+    assert evs['VaultTransfer'][0]['to'] == isidoros_payout.address
+    assert evs['VaultTransfer'][0]['amount'] == isidoros_payout.amount
+
+    assert evs['VaultTransfer'][1]['to'] == referral_payout.address
+    assert evs['VaultTransfer'][1]['amount'] == referral_payout.amount
