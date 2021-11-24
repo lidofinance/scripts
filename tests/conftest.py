@@ -7,6 +7,7 @@ from utils.config import (ldo_token_address, lido_dao_voting_address,
                           lido_dao_deposit_security_module_address,
                           lido_dao_steth_address)
 
+from utils.tx_review import tx_call_trace_filtered
 
 @pytest.fixture(scope="function", autouse=True)
 def shared_setup(fn_isolation):
@@ -49,8 +50,11 @@ def lido(interface):
 
 
 class Helpers:
-    @staticmethod
-    def execute_vote(accounts, vote_id, dao_voting):
+    @property
+    def tx(self):
+        return self._tx
+
+    def execute_vote(self, accounts, vote_id, dao_voting):
         ldo_holders = [
             '0x3e40d73eb977dc6a537af587d48316fee66e9c8c',
             '0xb8d83908aab38a159f3da47a59d84db8e1838712',
@@ -68,11 +72,24 @@ class Helpers:
         chain.mine()
 
         assert dao_voting.canExecute(vote_id)
-        dao_voting.executeVote(vote_id, {'from': accounts[0]})
+        self._tx = dao_voting.executeVote(vote_id, {'from': accounts[0]})
 
         print(f'vote executed')
 
+    def print_tx_call_trace(self):
+        tx_call_trace_filtered(self._tx,
+            lambda trace_item: any(s in trace_item['fn'] for s in
+                ['KernelProxy.',
+                'Voting._executeVote',
+                'EVMScriptRunner.getEVMScriptExecutor',
+                'Initializable.',
+                'TimeHelpers.',
+                'AppStorage.',
+                'ScriptHelpers.']))
+
+    def print_tx_events(self):
+        self._tx.info()
 
 @pytest.fixture(scope='module')
 def helpers():
-    return Helpers
+    return Helpers()
