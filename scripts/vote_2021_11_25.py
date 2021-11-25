@@ -5,6 +5,7 @@ Voting 25/11/2021.
    LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb 
    for 10,000 DAI Isidoros Passadis Nov comp (~3433.2799 LDO)
 2. Referral program payout of 140246.2696 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
+3. Raisekey limit for Node Operator #12 (Anyblock Analytics) to 1950
 """
 
 import time
@@ -17,6 +18,9 @@ from brownie.network.transaction import TransactionReceipt
 
 from utils.voting import create_vote
 from utils.finance import encode_token_transfer
+from utils.node_operators import (
+    encode_set_node_operator_staking_limit
+)
 from utils.evm_script import (
     decode_evm_script,
     encode_call_script,
@@ -28,7 +32,8 @@ from utils.config import (
     ldo_token_address,
     lido_dao_voting_address,
     lido_dao_token_manager_address,
-    lido_dao_finance_address
+    lido_dao_finance_address,
+    lido_dao_node_operators_registry
 )
 from utils.agent import agent_forward
 
@@ -78,7 +83,20 @@ def start_vote(
     token_manager = interface.TokenManager(
         lido_dao_token_manager_address
     )
+    registry = interface.NodeOperatorsRegistry(
+        lido_dao_node_operators_registry
+    )
+
+    anyblock_an_limit = {
+        'id': 12,
+        'limit': 1950
+    }
+
     _make_ldo_payout = partial(make_ldo_payout, finance=finance)
+
+    _encode_set_node_operator_staking_limit = partial(
+        encode_set_node_operator_staking_limit, registry=registry
+    )
 
     encoded_call_script = encode_call_script([
         # 1. Send X (10,000 DAI * 1.2 in LDO by the spot price) 
@@ -98,7 +116,11 @@ def start_vote(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
             ldo_in_wei=140246.2696 * (10 ** 18),
             reference="Referral program payout Nov 25"
-        )
+        ),
+
+        # 3. Raisekey limit for Node Operator #12 (Anyblock Analytics) to 1950
+
+        _encode_set_node_operator_staking_limit(**anyblock_an_limit)
 
     ])
     human_readable_script = decode_evm_script(
@@ -131,6 +153,7 @@ def start_vote(
             'Omnibus vote: '
             '1) Send X (10,000 DAI * 1.2 in LDO by the spot price) LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Nov comp'
             '2) Referral program payout of 140246.2696 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb'
+            '3) Raisekey limit for Node Operator #12 (Anyblock Analytics) to 1950'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
