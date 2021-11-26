@@ -1,12 +1,8 @@
 """
-Voting 25/11/2021.
+Voting 26/11/2021.
 
 1. Send 3,100 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Nov comp
 2. Referral program payout of 124,987.5031 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
-3. Raise key limit for Node Operator #12 (Anyblock Analytics) to 2300
-
-The vote REJECTED.
-
 """
 
 import time
@@ -19,9 +15,6 @@ from brownie.network.transaction import TransactionReceipt
 
 from utils.voting import create_vote
 from utils.finance import encode_token_transfer
-from utils.node_operators import (
-    encode_set_node_operator_staking_limit
-)
 from utils.evm_script import (
     decode_evm_script,
     encode_call_script,
@@ -83,20 +76,8 @@ def start_vote(
     token_manager = interface.TokenManager(
         lido_dao_token_manager_address
     )
-    registry = interface.NodeOperatorsRegistry(
-        lido_dao_node_operators_registry
-    )
-
-    anyblock_an_limit = {
-        'id': 12,
-        'limit': 2300
-    }
 
     _make_ldo_payout = partial(make_ldo_payout, finance=finance)
-
-    _encode_set_node_operator_staking_limit = partial(
-        encode_set_node_operator_staking_limit, registry=registry
-    )
 
     encoded_call_script = encode_call_script([
         # 1. Send 3,100 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Nov comp
@@ -114,10 +95,6 @@ def start_vote(
             ldo_in_wei=124_987_5031 * (10 ** 14),
             reference="Ninth period referral rewards"
         ),
-
-        # 3. Raisekey limit for Node Operator #12 (Anyblock Analytics) to 2300
-
-        _encode_set_node_operator_staking_limit(**anyblock_an_limit)
 
     ])
     human_readable_script = decode_evm_script(
@@ -150,7 +127,6 @@ def start_vote(
             'Omnibus vote: '
             '1) Allocate 3,100 LDO tokens to Master of Validators Nov 2021 compensation;'
             '2) Allocate 124,987.5031 LDO tokens for the 9th period referral rewards;'
-            '3) Raise key limit for Node Operator #12 (Anyblock Analytics) to 2300.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
@@ -159,9 +135,8 @@ def start_vote(
 def main():
     vote_id, _ = start_vote({
         'from': get_deployer_account(),
-        'max_fee': '165 gwei',
-        'priority_fee': '2 gwei',
-        'nonce': 410
+        'max_fee': '150 gwei',
+        'priority_fee': '3 gwei'
     })
     print(f'Vote created: {vote_id}.')
     time.sleep(5) # hack for waiting thread #2.
