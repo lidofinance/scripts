@@ -1,7 +1,7 @@
 """
 Voting 26/11/2021.
 
-1. Send 3,100 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Nov comp
+1. Send 3,500 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Nov comp
 2. Referral program payout of 124,987.5031 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
 """
 
@@ -26,8 +26,7 @@ from utils.config import (
     ldo_token_address,
     lido_dao_voting_address,
     lido_dao_token_manager_address,
-    lido_dao_finance_address,
-    lido_dao_node_operators_registry
+    lido_dao_finance_address
 )
 
 try:
@@ -80,11 +79,11 @@ def start_vote(
     _make_ldo_payout = partial(make_ldo_payout, finance=finance)
 
     encoded_call_script = encode_call_script([
-        # 1. Send 3,100 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Nov comp
+        # 1. Send 3,500 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Nov comp
 
         _make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-            ldo_in_wei=3_100 * (10 ** 18),
+            ldo_in_wei=3_500 * (10 ** 18),
             reference='Master of Validators monthly comp'
         ),
 
@@ -125,8 +124,8 @@ def start_vote(
         token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
-            '1) Allocate 3,100 LDO tokens to Master of Validators Nov 2021 compensation;'
-            '2) Allocate 124,987.5031 LDO tokens for the 9th period referral rewards;'
+            '1) Allocate 3,500 LDO tokens to Master of Validators Nov 2021 compensation;'
+            '2) Allocate 124,987.5031 LDO tokens for the 9th period referral rewards.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
@@ -135,8 +134,8 @@ def start_vote(
 def main():
     vote_id, _ = start_vote({
         'from': get_deployer_account(),
-        'max_fee': '150 gwei',
-        'priority_fee': '3 gwei'
+        'max_fee': '100 gwei',
+        'priority_fee': '2 gwei'
     })
     print(f'Vote created: {vote_id}.')
     time.sleep(5) # hack for waiting thread #2.

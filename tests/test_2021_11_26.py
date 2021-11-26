@@ -15,7 +15,7 @@ finance_multisig_address = '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb'
 
 isidoros_payout = Payout(
     address=finance_multisig_address,
-    amount=3_100 * (10 ** 18)
+    amount=3_500 * (10 ** 18)
 )
 
 referral_payout = Payout(
@@ -23,7 +23,7 @@ referral_payout = Payout(
     amount=124_987_5031 * (10 ** 14)
 )
 
-def test_2021_11_26(helpers, accounts, lido, ldo_holder, dao_voting, ldo_token):
+def test_2021_11_26(helpers, accounts, ldo_holder, dao_voting, ldo_token):
     multisig_balance_before = ldo_token.balanceOf(finance_multisig_address)
     dao_balance_before = ldo_token.balanceOf(dao_agent_address)
 
