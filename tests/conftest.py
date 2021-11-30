@@ -1,5 +1,9 @@
 import pytest
+
+from typing import Optional, List
+
 from brownie import chain
+from brownie.network.event import EventDict, _EventItem
 
 from utils.config import (ldo_token_address, lido_dao_voting_address,
                           lido_dao_token_manager_address,
@@ -7,7 +11,12 @@ from utils.config import (ldo_token_address, lido_dao_voting_address,
                           lido_dao_deposit_security_module_address,
                           lido_dao_steth_address)
 
-from utils.tx_review import tx_call_trace_filtered
+from utils.tx_review import (display_filtered_tx_call,
+                             tx_events_from_trace,
+                             group_tx_events,
+                             display_tx_events,
+                             GroupBy)
+
 
 @pytest.fixture(scope="function", autouse=True)
 def shared_setup(fn_isolation):
@@ -50,9 +59,40 @@ def lido(interface):
 
 
 class Helpers:
+    def __init__ (self):
+        self._tx = None
+        self._events = None
+        self._dict_events = None
+
+        self._vote_item_group = GroupBy(contract_name="CallsScript",
+                event_name="LogScriptCall",
+                group_title="Vote item #",
+                show_counter=True,
+                color='magenta')
+
+        self._vote_res_group = GroupBy(contract_name="Voting",
+                event_name="ScriptResult",
+                group_title="Service events",
+                show_counter=False,
+                color='bright yellow')
+
     @property
     def tx(self):
         return self._tx
+
+    @property
+    def events(self) -> Optional[List]:
+        if self._events is None:
+            self._events = tx_events_from_trace(self._tx)
+
+        return self._events
+
+    @property
+    def dict_events(self) -> Optional[List]:
+        if self._dict_events is None:
+            self._dict_events = EventDict(self.events)
+
+        return self._dict_events
 
     def execute_vote(self, accounts, vote_id, dao_voting):
         ldo_holders = [
@@ -76,8 +116,8 @@ class Helpers:
 
         print(f'vote executed')
 
-    def print_tx_call_trace(self):
-        tx_call_trace_filtered(self._tx,
+    def display_voting_call_trace(self):
+        display_filtered_tx_call(self._tx,
             lambda trace_item: any(s in trace_item['fn'] for s in
                 ['KernelProxy.',
                 'Voting._executeVote',
@@ -87,8 +127,20 @@ class Helpers:
                 'AppStorage.',
                 'ScriptHelpers.']))
 
-    def print_tx_events(self):
-        self._tx.info()
+    def group_voting_events(self) -> dict[str, EventDict]:
+        grouped_events = group_tx_events(self.events, self.dict_events,
+            [self._vote_item_group, self._vote_res_group])
+
+        as_list = [v for k,v in grouped_events if k == self._vote_item_group]
+        return {f'vote_item{i+1}' : v for i,v in enumerate(as_list)}
+
+    def display_voting_events(self) -> None:
+        display_tx_events(self.dict_events,
+            "Events registered during the vote execution",
+            [self._vote_item_group, self._vote_res_group])
+
+    def count_vote_items_by_events(self):
+        return self.dict_events.count('LogScriptCall')
 
 @pytest.fixture(scope='module')
 def helpers():
