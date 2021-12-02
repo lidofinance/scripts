@@ -5,7 +5,8 @@ from utils.config import (ldo_token_address, lido_dao_voting_address,
                           lido_dao_token_manager_address,
                           lido_dao_node_operators_registry,
                           lido_dao_deposit_security_module_address,
-                          lido_dao_steth_address)
+                          lido_dao_steth_address, lido_dao_acl_address,
+                          lido_dao_finance_address)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -46,6 +47,16 @@ def ldo_token(interface):
 @pytest.fixture(scope='module')
 def lido(interface):
     return interface.Lido(lido_dao_steth_address)
+
+
+@pytest.fixture(scope="module")
+def acl(interface):
+    return interface.ACL(lido_dao_acl_address)
+
+
+@pytest.fixture(scope="module")
+def finance(interface):
+    return interface.Finance(lido_dao_finance_address)
 
 
 class Helpers:
