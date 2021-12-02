@@ -1,8 +1,11 @@
 """
 Voting 02/12/2021
 
-1. Grant CREATE_PAYMENTS_ROLE role on the finance contract 0xb9e5cbb9ca5b0d659238807e84d0176930753d86 to the EVMScriptExecutor contract 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
-2. Grant SET_NODE_OPERATOR_LIMIT_ROLE role on the node operators registry contract 0x55032650b14df07b85bf18a3a3ec8e0af2e028d5 to the EVMScriptExecutor contract 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
+1. Grant CREATE_PAYMENTS_ROLE role on the finance contract 0xb9e5cbb9ca5b0d659238807e84d0176930753d86
+    to the EVMScriptExecutor contract 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
+2. Grant SET_NODE_OPERATOR_LIMIT_ROLE role on the node operators registry contract
+    0x55032650b14df07b85bf18a3a3ec8e0af2e028d5 to the EVMScriptExecutor
+    contract 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
 """
 import time
 from typing import Dict, Tuple, Optional
@@ -86,8 +89,8 @@ def start_vote(
         token_manager=interface.TokenManager(config.lido_dao_token_manager_address),
         vote_desc=(
             "Omnibus vote: "
-            "1) Grant CREATE_PAYMENTS_ROLE role to the EVMScriptExecutor contract"
-            "2) Grant SET_NODE_OPERATOR_LIMIT_ROLE role to the EVMScriptExecutor contract"
+            "1) Grant CREATE_PAYMENTS_ROLE role to the EVMScriptExecutor contract;"
+            "2) Grant SET_NODE_OPERATOR_LIMIT_ROLE role to the EVMScriptExecutor contract."
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params,
