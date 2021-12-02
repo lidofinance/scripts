@@ -2,7 +2,10 @@
 Tests for voting 02/12/2021.
 """
 
-from scripts.vote_2021_12_02 import start_vote, EVM_SCRIPT_EXECUTOR_ADDRESS
+from scripts.vote_2021_12_02 import start_vote
+
+
+EVM_SCRIPT_EXECUTOR_ADDRESS = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 
 
 def test_2021_12_02(
