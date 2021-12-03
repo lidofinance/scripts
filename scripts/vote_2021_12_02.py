@@ -6,6 +6,8 @@ Voting 02/12/2021
 2. Grant SET_NODE_OPERATOR_LIMIT_ROLE role on the node operators registry contract
     0x55032650b14df07b85bf18a3a3ec8e0af2e028d5 to the EVMScriptExecutor
     contract 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
+
+Vote passed & executed on Dec-03-2021 01:29:54 PM +UTC, block 13733854
 """
 import time
 from typing import Dict, Tuple, Optional
@@ -30,8 +32,8 @@ def main():
     vote_id, _ = start_vote(
         {
             "from": from_account,
-            "max_fee": "3 gwei",
-            "priority_fee": "2 gwei",
+            # "max_fee": "3 gwei",
+            "priority_fee": "3 gwei",
         }
     )
     print(f"Vote created: {vote_id}.")
