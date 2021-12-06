@@ -57,7 +57,6 @@ def ldo_token(interface):
 def lido(interface):
     return interface.Lido(lido_dao_steth_address)
 
-
 class Helpers:
     def __init__ (self):
         self._tx = None
@@ -127,12 +126,11 @@ class Helpers:
                 'AppStorage.',
                 'ScriptHelpers.']))
 
-    def group_voting_events(self) -> dict[str, EventDict]:
+    def group_voting_events(self) -> List[EventDict]:
         grouped_events = group_tx_events(self.events, self.dict_events,
             [self._vote_item_group, self._vote_res_group])
 
-        as_list = [v for k,v in grouped_events if k == self._vote_item_group]
-        return {f'vote_item{i+1}' : v for i,v in enumerate(as_list)}
+        return [v for k,v in grouped_events if k == self._vote_item_group]        
 
     def display_voting_events(self) -> None:
         display_tx_events(self.dict_events,

@@ -49,7 +49,7 @@ def test_2021_11_26(helpers, accounts, ldo_holder, dao_voting, ldo_token):
     evs = helpers.group_voting_events()
 
     # asserts on item 1
-    vote_item1_events = evs['vote_item1']
+    vote_item1_events = evs[0]
     assert vote_item1_events.count('VaultTransfer') == 1, "Incorrect vault transfers occurred"
     assert vote_item1_events.count('Transfer') == 1, "Incorrect LDO transfers occurred"
     assert vote_item1_events['VaultTransfer']['to'] == isidoros_payout.address
@@ -59,7 +59,7 @@ def test_2021_11_26(helpers, accounts, ldo_holder, dao_voting, ldo_token):
     assert expected_events_sequence1 == [i.name for i in vote_item1_events]
 
     # asserts on item 2
-    vote_item2_events = evs['vote_item2']
+    vote_item2_events = evs[1]
     assert vote_item2_events.count('VaultTransfer') == 1, "Incorrect vault transfers occurred"
     assert vote_item2_events.count('Transfer') == 1, "Incorrect LDO transfers occurred"
     assert vote_item2_events['VaultTransfer']['to'] == referral_payout.address
