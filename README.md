@@ -1,15 +1,26 @@
 # scripts
 
 Repository for internal scripts.
+Primarily, these scripts used on omnibus voting.
 
-## Mainnet setup
+## Network setup
+#### Mainnet-fork (default)
 
-By default, all scripts run in mainnet fork mode (don't forget to edit fork param at brownie config). To run scripts on actually mainnet you need to add param `--network mainnet` to the end of the command and set the following env variables:
+By default, all scripts run in mainnet fork mode (don't forget to review fork param at brownie config. 
+
+To run tests you need to set the additional brownie commandline params: `--network mainnet-fork` and `-s`. The first one needed for etherscan addresses resolving and the second one to reveal stdout. Also, define the following env variables: 
+
+```bash
+export ETHERSCAN_TOKEN=<etherscan_key>
+export WEB3_INFURA_PROJECT_ID=<infura_key>
+```
+#### Mainnet
+
+To run scripts on actually mainnet you need to add param `--network mainnet` to the end of the command and set the following env variables:
 
 ```bash
 export DEPLOYER=<brownie_wallet_name>
 export WEB3_INFURA_PROJECT_ID=<infura_key>
-
 ```
 
 ## Adding node operators
