@@ -1,5 +1,10 @@
 import pytest
+
+from typing import Optional, List
+
 from brownie import chain
+from brownie.network.transaction import TransactionReceipt
+from brownie.network.event import EventDict, _EventItem
 
 from utils.config import (ldo_token_address, lido_dao_voting_address,
                           lido_dao_token_manager_address,
@@ -7,7 +12,6 @@ from utils.config import (ldo_token_address, lido_dao_voting_address,
                           lido_dao_deposit_security_module_address,
                           lido_dao_steth_address, lido_dao_acl_address,
                           lido_dao_finance_address)
-
 
 @pytest.fixture(scope="function", autouse=True)
 def shared_setup(fn_isolation):
@@ -48,7 +52,6 @@ def ldo_token(interface):
 def lido(interface):
     return interface.Lido(lido_dao_steth_address)
 
-
 @pytest.fixture(scope="module")
 def acl(interface):
     return interface.ACL(lido_dao_acl_address)
@@ -57,7 +60,6 @@ def acl(interface):
 @pytest.fixture(scope="module")
 def finance(interface):
     return interface.Finance(lido_dao_finance_address)
-
 
 class Helpers:
     @staticmethod
@@ -79,11 +81,11 @@ class Helpers:
         chain.mine()
 
         assert dao_voting.canExecute(vote_id)
-        dao_voting.executeVote(vote_id, {'from': accounts[0]})
+        tx = dao_voting.executeVote(vote_id, {'from': accounts[0]})
 
         print(f'vote executed')
-
+        return tx
 
 @pytest.fixture(scope='module')
 def helpers():
-    return Helpers
+    return Helpers()
