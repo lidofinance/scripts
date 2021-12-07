@@ -5,21 +5,25 @@ import pytest
 from collections import namedtuple
 
 from scripts.vote_2021_11_26 import start_vote
+from tx_tracing_helpers import *
 
-Payout = namedtuple(
-    'Payout', ['address', 'amount']
-)
+from event_validators.payout import Payout, validate_payout_event
 
 dao_agent_address = '0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c'
 finance_multisig_address = '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb'
+lido_dao_token = '0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32'
 
 isidoros_payout = Payout(
-    address=finance_multisig_address,
+    token_addr=lido_dao_token,
+    from_addr=dao_agent_address,
+    to_addr=finance_multisig_address,
     amount=3_500 * (10 ** 18)
 )
 
 referral_payout = Payout(
-    address=finance_multisig_address,
+    token_addr=lido_dao_token,
+    from_addr=dao_agent_address,
+    to_addr=finance_multisig_address,
     amount=124_987_5031 * (10 ** 14)
 )
 
@@ -31,7 +35,7 @@ def test_2021_11_26(helpers, accounts, ldo_holder, dao_voting, ldo_token):
         'from': ldo_holder
     }, silent=True)
 
-    helpers.execute_vote(
+    tx: TransactionReceipt = helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting
     )
 
@@ -41,29 +45,19 @@ def test_2021_11_26(helpers, accounts, ldo_holder, dao_voting, ldo_token):
     assert multisig_balance_after - multisig_balance_before == isidoros_payout.amount + referral_payout.amount
     assert dao_balance_before - dao_balance_after == isidoros_payout.amount + referral_payout.amount
 
-    assert helpers.count_vote_items_by_events() == 2, "Incorrect voting items count"
+    ### validate vote events
 
-    helpers.display_voting_events()
-    # helpers.display_voting_call_trace() # uncomment for a paranoid mode ON
+    assert count_vote_items_by_events(tx) == 2, "Incorrect voting items count"
 
-    evs = helpers.group_voting_events()
+    display_voting_events(tx)
+    # display_voting_call_trace(tx) # uncomment for a paranoid mode ON
 
-    # asserts on item 1
-    vote_item1_events = evs[0]
-    assert vote_item1_events.count('VaultTransfer') == 1, "Incorrect vault transfers occurred"
-    assert vote_item1_events.count('Transfer') == 1, "Incorrect LDO transfers occurred"
-    assert vote_item1_events['VaultTransfer']['to'] == isidoros_payout.address
-    assert vote_item1_events['VaultTransfer']['amount'] == isidoros_payout.amount
+    evs = group_voting_events(tx)
 
-    expected_events_sequence1 = ['LogScriptCall', 'NewTransaction', 'Transfer', 'VaultTransfer']
-    assert expected_events_sequence1 == [i.name for i in vote_item1_events]
+    # asserts on vote item 1
+    validate_payout_event(evs[0], isidoros_payout)
 
-    # asserts on item 2
-    vote_item2_events = evs[1]
-    assert vote_item2_events.count('VaultTransfer') == 1, "Incorrect vault transfers occurred"
-    assert vote_item2_events.count('Transfer') == 1, "Incorrect LDO transfers occurred"
-    assert vote_item2_events['VaultTransfer']['to'] == referral_payout.address
-    assert vote_item2_events['VaultTransfer']['amount'] == referral_payout.amount
+    # asserts on vote item 2
+    validate_payout_event(evs[1], referral_payout)
 
-    expected_events_sequence2 = ['LogScriptCall', 'NewTransaction', 'Transfer', 'VaultTransfer']
-    assert expected_events_sequence2 == [i.name for i in vote_item2_events]
+    
