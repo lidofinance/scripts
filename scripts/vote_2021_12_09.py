@@ -2,7 +2,7 @@
 Voting 09/12/2021.
 
 1. Top up Curve LP reward program with 3,550,000 LDO to 0x753D5167C31fBEB5b49624314d74A957Eb271709.
-2. Top up Balancer LP reward program with 300,000 LDO to address 0x1dD909cDdF3dbe61aC08112dC0Fdf2Ab949f79D8 !!!! WRONG !!!!
+2. Top up Balancer LP reward program with 300,000 LDO to address 0x1dD909cDdF3dbe61aC08112dC0Fdf2Ab949f79D8
 3. Top up Sushi LP reward program with 50,000 LDO to 0xE5576eB1dD4aA524D67Cf9a32C8742540252b6F4
 4. Referral program payout of 140,414 LDO to financial multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
 
@@ -90,7 +90,7 @@ def start_vote(
             reference='Curve LP reward program'
         ),
 
-        # 2. Top up Balancer LP reward program with 300,000 LDO to address to be announced
+        # 2. Top up Balancer LP reward program with 300,000 LDO to 0x1dD909cDdF3dbe61aC08112dC0Fdf2Ab949f79D8
 
         _make_ldo_payout(
             target_address='0x1dD909cDdF3dbe61aC08112dC0Fdf2Ab949f79D8',
@@ -145,7 +145,7 @@ def start_vote(
             '1) Top up Curve LP reward program with 3,550,000 LDO;'
             '2) Top up Balancer LP reward program with 300,000 LDO;'
             '3) Top up Sushi LP reward program with 50,000 LDO;'
-            '4) Allocate 140414 LDO to the financial multisig for 10th period referral rewards.'
+            '4) Allocate 140,414 LDO to the financial multisig for 10th period referral rewards.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
