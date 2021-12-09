@@ -10,6 +10,8 @@ curve_rewards_manager_address = '0x753D5167C31fBEB5b49624314d74A957Eb271709'
 lido_dao_steth_address = '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84'
 balancer_rewards_manager = '0x1dD909cDdF3dbe61aC08112dC0Fdf2Ab949f79D8'
 lido_dao_voting_repo = '0x4Ee3118E3858E8D7164A634825BfE0F73d99C792'
+lido_dao_lido_repo = '0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1'
+lido_dao_node_operators_registry_repo = '0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1831'
 lido_dao_kernel = '0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc'
 lido_dao_deposit_security_module_address = '0xdb149235b6f40dc08810aa69869783be101790e7'
 

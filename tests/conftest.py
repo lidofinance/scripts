@@ -63,7 +63,7 @@ def finance(interface):
 
 class Helpers:
     @staticmethod
-    def execute_vote(accounts, vote_id, dao_voting):
+    def execute_vote(accounts, vote_id, dao_voting, topup = '0.1 ether'):
         ldo_holders = [
             '0x3e40d73eb977dc6a537af587d48316fee66e9c8c',
             '0xb8d83908aab38a159f3da47a59d84db8e1838712',
@@ -72,7 +72,7 @@ class Helpers:
 
         for holder_addr in ldo_holders:
             print('voting from acct:', holder_addr)
-            accounts[0].transfer(holder_addr, '0.1 ether')
+            accounts[0].transfer(holder_addr, topup)
             account = accounts.at(holder_addr, force=True)
             dao_voting.vote(vote_id, True, False, {'from': account})
 
