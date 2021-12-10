@@ -13,6 +13,8 @@ class Payout(NamedTuple):
 def validate_payout_event (event: EventDict, p: Payout):
     _ldo_events_chain = ['LogScriptCall', 'NewPeriod', 'NewTransaction', 'Transfer', 'VaultTransfer']
 
+    # We check that transaction events contained in _ldo_events_chain (ordering and occurrences count are preserved)
+    # e.g. duplicated chain will trigger assert
     events_chain = [e.name for e in event]
     for ev in events_chain:
         idx = next((_ldo_events_chain.index(e) for e in _ldo_events_chain if e == ev), len(_ldo_events_chain))
