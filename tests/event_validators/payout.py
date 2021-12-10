@@ -13,7 +13,11 @@ class Payout(NamedTuple):
 def validate_payout_event (event: EventDict, p: Payout):
     _ldo_events_chain = ['LogScriptCall', 'NewTransaction', 'Transfer', 'VaultTransfer']
 
-    assert _ldo_events_chain == [e.name for e in event], "Invalid LDO payout events chain"
+    events_chain = [e.name for e in event]
+    for ev in _ldo_events_chain:
+        idx = next((events_chain.index(e) for e in events_chain if e == ev), len(events_chain))
+        assert idx != len(events_chain), f"{ev} not found in the remaining {events_chain} events chain"
+        events_chain=events_chain[idx:]
 
     assert event.count('VaultTransfer') == 1
     assert event.count('Transfer') == 1
