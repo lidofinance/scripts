@@ -27,8 +27,8 @@ lido_old_app = {
 
 lido_new_app = {
     'address': '0xC7B5aF82B05Eb3b64F12241B04B2cF14469E39F7',
-    'ipfsCid': 'QmPR28q1qWFDcd1aYjnwqpFQYkUofoyBzQ6KCHE6PSQY6P',
-    'content_uri': '0x697066733a516d5052323871317157464463643161596a6e7771704651596b556f666f79427a51364b43484536505351593650',
+    'ipfsCid': 'QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS',
+    'content_uri': '0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053',
     'id': '0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320',
     'version': (2, 0, 1),
 }
@@ -42,13 +42,13 @@ nos_old_app = {
 }
 nos_new_app = {
     'address': '0xec3567ae258639a0FF5A02F7eAF4E4aE4416C5fe',
-    'ipfsCid': 'QmavVvQ1owa14nvpiwHa2WowAjGv5qt93itQoQxFzHi7se',
-    'content_uri': '0x697066733a516d6176567651316f776131346e76706977486132576f77416a477635717439336974516f5178467a4869377365',
+    'ipfsCid': 'Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G',
+    'content_uri': '0x697066733a516d61375058486d456a346a7332676a4d3976744850747176754b3832695335455950694a6d7a4b4c7a55353847',
     'id': '0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d',
     'version': (2, 0, 1),
 }
 
-def test_2021_12_02(
+def test_upgrade_apps(
     helpers, accounts, ldo_holder, dao_voting
 ):
     priority_fee("2 gwei")
