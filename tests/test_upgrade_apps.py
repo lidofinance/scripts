@@ -7,6 +7,7 @@ from scripts.upgrade_apps import start_vote
 from brownie.network import priority_fee
 from brownie import interface
 from brownie.convert import to_bytes
+from tx_tracing_helpers import *
 
 from utils.config import (
     prompt_bool,
@@ -51,7 +52,6 @@ nos_new_app = {
 def test_upgrade_apps(
     helpers, accounts, ldo_holder, dao_voting
 ):
-    priority_fee("2 gwei")
 
     accounts[0].transfer(ldo_holder, "5 ether")
 
@@ -86,7 +86,15 @@ def test_upgrade_apps(
     assert nos_old_app_ipfs == nos_old_ipfs
     
     vote_id, _ = start_vote({ 'from': ldo_holder }, silent=True)
-    helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='5 ether')
+    tx: TransactionReceipt = helpers.execute_vote(
+        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='5 ether'
+    )
+
+    ### validate vote events
+
+    assert count_vote_items_by_events(tx) == 2, "Incorrect voting items count"
+
+    display_voting_events(tx)
 
     ### LIDO APP
     #check only version and ipfs was changed
