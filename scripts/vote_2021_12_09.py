@@ -6,6 +6,8 @@ Voting 09/12/2021.
 3. Top up Sushi LP reward program with 50,000 LDO to 0xE5576eB1dD4aA524D67Cf9a32C8742540252b6F4
 4. Referral program payout of 140,414 LDO to financial multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
 
+Vote passed & executed on 2021-12-10, 15:34, block 13777444.
+
 """
 
 import time
