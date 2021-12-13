@@ -41,4 +41,6 @@ def group_voting_events(tx: TransactionReceipt) -> List[EventDict]:
     groups = [_vote_item_group, _service_item_group]
 
     grouped_events = group_tx_events(events, EventDict(events), groups)
-    return [v for k,v in grouped_events if k == _vote_item_group]
+    ret = [v for k,v in grouped_events if k == _vote_item_group]
+    assert ret, "Can't group voting events, please read 'README.md' and pass all of the required brownie flags (e.g. --network <net>)"
+    return ret

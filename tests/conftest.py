@@ -1,5 +1,7 @@
 import pytest
 
+import os
+
 from typing import Optional, List
 
 from brownie import chain
@@ -84,9 +86,31 @@ class Helpers:
         assert dao_voting.canExecute(vote_id)
         tx = dao_voting.executeVote(vote_id, {'from': accounts[0]})
 
-        print(f'vote executed')
+        print(f'vote #{vote_id} executed')
         return tx
 
 @pytest.fixture(scope='module')
 def helpers():
-    return Helpers()
+    return Helpers
+
+@pytest.fixture(scope='module')
+def vote_id_from_env() -> Optional[int]:
+    _env_name = "OMNIBUS_VOTE_ID"
+    if os.getenv(_env_name):
+        try:
+            vote_id = int(os.getenv(_env_name))
+            print(f'OMNIBUS_VOTE_ID env var is set, using existing vote #{vote_id}')
+            return vote_id
+        except:
+            pass
+
+    return None
+
+@pytest.fixture(scope='module')
+def bypass_events_decoding() -> bool:
+    _env_name = "OMNIBUS_BYPASS_EVENTS_DECODING"
+    if os.getenv(_env_name):
+        print(f'Warning: OMNIBUS_BYPASS_EVENTS_DECODING env var is set, events decoding disabled')
+        return True
+
+    return False

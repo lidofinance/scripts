@@ -45,7 +45,7 @@ referral_10th_payout = Payout(
     amount=140_414 * (10 ** 18)
 )
 
-def test_2021_12_09(helpers, accounts, ldo_holder, dao_voting, ldo_token):
+def test_2021_12_09(helpers, accounts, ldo_holder, dao_voting, ldo_token, vote_id_from_env, bypass_events_decoding):
     curve_LP_balance_before = ldo_token.balanceOf(curve_LP_reward_manager_address)
     balancer_LP_balance_before = ldo_token.balanceOf(balancer_LP_reward_manager_address)
     sushi_LP_balance_before = ldo_token.balanceOf(sushi_LP_reward_manager_address)
@@ -53,9 +53,12 @@ def test_2021_12_09(helpers, accounts, ldo_holder, dao_voting, ldo_token):
 
     dao_balance_before = ldo_token.balanceOf(dao_agent_address)
 
-    vote_id, _ = start_vote({
-        'from': ldo_holder
-    }, silent=True)
+    vote_id = vote_id_from_env
+
+    if vote_id is None:
+        vote_id, _ = start_vote({
+            'from': ldo_holder
+        }, silent=True)
 
     tx: TransactionReceipt = helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting
@@ -83,16 +86,17 @@ def test_2021_12_09(helpers, accounts, ldo_holder, dao_voting, ldo_token):
     display_voting_events(tx)
     # display_voting_call_trace(tx) # uncomment for a paranoid mode ON
 
-    evs = group_voting_events(tx)
+    if not bypass_events_decoding:
+        evs = group_voting_events(tx)
 
-    # asserts on vote item 1
-    validate_payout_event(evs[0], curve_LP_payout)
+        # asserts on vote item 1
+        validate_payout_event(evs[0], curve_LP_payout)
 
-    # asserts on vote item 2
-    validate_payout_event(evs[1], balancer_LP_payout)
+        # asserts on vote item 2
+        validate_payout_event(evs[1], balancer_LP_payout)
 
-    # asserts on vote item 3
-    validate_payout_event(evs[2], sushi_LP_payout)
+        # asserts on vote item 3
+        validate_payout_event(evs[2], sushi_LP_payout)
 
-    # asserts on vote item 4
-    validate_payout_event(evs[3], referral_10th_payout)
+        # asserts on vote item 4
+        validate_payout_event(evs[3], referral_10th_payout)
