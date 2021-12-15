@@ -72,10 +72,10 @@ class Helpers:
 
         if dao_voting.getVote(vote_id)[0]:
             for holder_addr in ldo_holders:
-                        print('voting from acct:', holder_addr)
-                        accounts[0].transfer(holder_addr, topup)
-                        account = accounts.at(holder_addr, force=True)
-                        dao_voting.vote(vote_id, True, False, {'from': account})
+                print('voting from acct:', holder_addr)
+                accounts[0].transfer(holder_addr, topup)
+                account = accounts.at(holder_addr, force=True)
+                dao_voting.vote(vote_id, True, False, {'from': account})
 
 
         # wait for the vote to end
