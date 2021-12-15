@@ -1,19 +1,14 @@
 """
-test for app upgrades
+Tests for voting 16/12/2021.
 """
 
 from sys import version
-from scripts.upgrade_apps import start_vote
-from brownie.network import priority_fee
+from brownie.network.main import priority_fee
+from scripts.vote_2021_12_16 import start_vote, burnSteth
 from brownie import interface
-from brownie.convert import to_bytes
 from tx_tracing_helpers import *
 
 from utils.config import (
-    prompt_bool,
-    get_deployer_account,
-    lido_dao_voting_address,
-    lido_dao_token_manager_address,
     lido_dao_lido_repo,
     lido_dao_node_operators_registry_repo,
 )
@@ -49,9 +44,12 @@ nos_new_app = {
     'version': (2, 0, 1),
 }
 
-def test_upgrade_apps(
-    helpers, accounts, ldo_holder, dao_voting
+def test_2021_12_16(
+    helpers, accounts, ldo_holder, dao_voting, lido
 ):
+
+    #set priority_fee for test on london hardfork
+    #priority_fee("2 gwei")
 
     accounts[0].transfer(ldo_holder, "5 ether")
 
@@ -84,17 +82,23 @@ def test_upgrade_apps(
     nos_old_ipfs = bytes_object.decode("ASCII")
     nos_old_app_ipfs = f"ipfs:{nos_old_app['ipfsCid']}"
     assert nos_old_app_ipfs == nos_old_ipfs
+
+    totalSharesBefore = lido.getTotalShares()
+    sharesToBurn = lido.getSharesByPooledEth(burnSteth)
     
     vote_id, _ = start_vote({ 'from': ldo_holder }, silent=True)
     tx: TransactionReceipt = helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='5 ether'
     )
 
-    ### validate vote events
-
-    assert count_vote_items_by_events(tx) == 2, "Incorrect voting items count"
-
     display_voting_events(tx)
+
+    ### validate vote events
+    assert count_vote_items_by_events(tx) == 3, "Incorrect voting items count"
+
+    #check burned shares
+    totalSharesAfter = lido.getTotalShares()
+    assert totalSharesBefore - totalSharesAfter == sharesToBurn
 
     ### LIDO APP
     #check only version and ipfs was changed
