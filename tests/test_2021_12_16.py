@@ -2,10 +2,7 @@
 Tests for voting 16/12/2021.
 """
 
-from sys import version
-from brownie.network.main import priority_fee
 from scripts.vote_2021_12_16 import start_vote
-from brownie import interface
 from tx_tracing_helpers import *
 
 def test_2021_12_16(
