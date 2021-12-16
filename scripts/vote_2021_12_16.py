@@ -1,9 +1,7 @@
 """
 Voting 16/12/2021.
 
-1. Update Lido app IPFS hash to QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS
-2. Update NOS app IPFS hash to Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G
-3. Burn 33.827287 stETH shares on treasury address 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to compensate for Chorus validation penalties
+1. Burn 33.827287 stETH shares on treasury address 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to compensate for Chorus validation penalties
 
 
 """
@@ -27,8 +25,6 @@ from utils.config import (
     lido_dao_steth_address,
     lido_dao_voting_address,
     lido_dao_token_manager_address,
-    lido_dao_lido_repo,
-    lido_dao_node_operators_registry_repo,
 )
 
 try:
@@ -46,22 +42,13 @@ def set_console_globals(**kwargs):
     interface = kwargs['interface']
 
 
-def add_implementation_to_repo(repo, version, address, content_uri):
-    return (
-      repo.address,
-      repo.newVersion.encode_input(
-          version,
-          address,
-          content_uri
-      )
-    )
-
 def burn_shares(lido, burn_address):
-    # Chorus send 33.827287 stETH by two transactions:
+    # Chorus sent 33.827287 stETH by two transactions:
     # 1. https://etherscan.io/tx/0xfb8da61b72ee87d862ffb12c6d453887120084749fcee1a718de42c2bc555ba3
     # 2. https://etherscan.io/tx/0xd715e946f51bd82d5a84d87bbc8469413b751fbeaa1eafb73e28be7ff1a86638
     #
     # we calculated shares on the latest block 13804410: 
+    # stethAmount = 33.827287 * 10^18
     # lido.getSharesByPooledEth(stethAmount) = 32145684728326685744
 
     sharesToBurn = 32145684728326685744
@@ -82,48 +69,12 @@ def start_vote(
 
     voting = interface.Voting(lido_dao_voting_address)
     lido = interface.Lido(lido_dao_steth_address)
-    lido_repo = interface.Repo(lido_dao_lido_repo)
-    nos_repo = interface.Repo(lido_dao_node_operators_registry_repo)
     token_manager = interface.TokenManager(
         lido_dao_token_manager_address
     )
 
-    update_lido_app = {
-        'address': '0xC7B5aF82B05Eb3b64F12241B04B2cF14469E39F7',
-        'ipfsCid': 'QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS',
-        'content_uri': '0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053',
-        'id': '0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320',
-        'version': (2, 0, 1),
-    }
-
-    update_node_operators_registry_app = {
-        'address': '0xec3567ae258639a0FF5A02F7eAF4E4aE4416C5fe',
-        'ipfsCid': 'Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G',
-        'content_uri': '0x697066733a516d61375058486d456a346a7332676a4d3976744850747176754b3832695335455950694a6d7a4b4c7a55353847',
-        'id': '0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d',
-        'version': (2, 0, 1),
-    }
-
     encoded_call_script = encode_call_script([
-        # 1. Top up Curve LP reward program with 3,550,000 LDO to 0x753D5167C31fBEB5b49624314d74A957Eb271709
-
-        add_implementation_to_repo(
-            lido_repo,
-            update_lido_app['version'],
-            update_lido_app['address'],
-            update_lido_app['content_uri'],
-        ),
-
-        # 2. Top up Balancer LP reward program with 300,000 LDO to 0x1dD909cDdF3dbe61aC08112dC0Fdf2Ab949f79D8
-
-        add_implementation_to_repo(
-            nos_repo,
-            update_node_operators_registry_app['version'],
-            update_node_operators_registry_app['address'],
-            update_node_operators_registry_app['content_uri'],
-        ),
-
-        # 3. Burn 33.827287 stETH shares on treasury address 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c 
+        # 1. Burn 33.827287 stETH shares on treasury address 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c 
         #    to compensate for Chorus validation penalties
         burn_shares(
             lido,
@@ -160,9 +111,7 @@ def start_vote(
         token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
-            '1) Update Lido app IPFS hash to QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS;'
-            '2) Update NOS app IPFS hash to Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G;'
-            '3) Burn 33.827287 stETH shares on treasury address 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c.'
+            '1) Burn 33.827287 stETH shares on treasury address 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
