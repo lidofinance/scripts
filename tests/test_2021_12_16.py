@@ -100,10 +100,10 @@ def test_2021_12_16(
 
     #check burned shares
     totalSharesAfter = lido.getTotalShares()
-    sharesAragonSharesAfter = lido.sharesOf(aragonAgentAddr)
+    sharesAragonAgentAfter = lido.sharesOf(aragonAgentAddr)
 
     assert totalSharesBefore - totalSharesAfter == sharesToBurn
-    assert sharesAragonAgentBefore - sharesAragonSharesAfter == sharesToBurn
+    assert sharesAragonAgentBefore - sharesAragonAgentAfter == sharesToBurn
 
     ### LIDO APP
     #check only version and ipfs was changed
