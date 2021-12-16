@@ -18,7 +18,7 @@ def test_2021_12_16(
     
     vote_id, _ = start_vote({ 'from': ldo_holder }, silent=True)
     tx: TransactionReceipt = helpers.execute_vote(
-        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='5 ether'
+        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting
     )
 
     display_voting_events(tx)
