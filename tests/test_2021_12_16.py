@@ -83,7 +83,10 @@ def test_2021_12_16(
     nos_old_app_ipfs = f"ipfs:{nos_old_app['ipfsCid']}"
     assert nos_old_app_ipfs == nos_old_ipfs
 
+    chorusAddr = '0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c'
+
     totalSharesBefore = lido.getTotalShares()
+    sharesChorusBefore = lido.sharesOf(chorusAddr)
 
     sharesToBurn = 32145684728326685744
     
@@ -99,7 +102,10 @@ def test_2021_12_16(
 
     #check burned shares
     totalSharesAfter = lido.getTotalShares()
+    sharesChorusAfter = lido.sharesOf(chorusAddr)
+
     assert totalSharesBefore - totalSharesAfter == sharesToBurn
+    assert sharesChorusBefore - sharesChorusAfter == sharesToBurn
 
     ### LIDO APP
     #check only version and ipfs was changed
