@@ -110,9 +110,7 @@ def start_vote(
         token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
-            '1) Update Lido app IPFS hash to QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS;'
-            '2) Update NOS app IPFS hash to Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G;'
-            '3) Burn 33.827287 stETH shares on treasury address 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c.'
+            '1) Burn 33.827287 stETH shares on treasury address 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
