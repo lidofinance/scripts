@@ -58,12 +58,17 @@ def add_implementation_to_repo(repo, version, address, content_uri):
       )
     )
 
-def burn_shares(lido, burn_address, stethAmount):
 
-    # Chorus latest block 13804410 - https://etherscan.io/tx/0xd715e946f51bd82d5a84d87bbc8469413b751fbeaa1eafb73e28be7ff1a86638 
-    # shares (32145684728326685744) block 13804410
-    # shares (32141404574646050732) block 13809844
-    sharesToBurn = lido.getSharesByPooledEth(stethAmount)
+
+def burn_shares(lido, burn_address, stethAmount):
+    # Chorus send 33.827287 stETH by two transactions:
+    # 1. https://etherscan.io/tx/0xfb8da61b72ee87d862ffb12c6d453887120084749fcee1a718de42c2bc555ba3
+    # 2. https://etherscan.io/tx/0xd715e946f51bd82d5a84d87bbc8469413b751fbeaa1eafb73e28be7ff1a86638
+    #
+    # we calculated shares on the latest block 13804410: 
+    # lido.getSharesByPooledEth(stethAmount) = 32145684728326685744
+
+    sharesToBurn = 32145684728326685744
 
     return (
         lido.address,
@@ -122,7 +127,7 @@ def start_vote(
             update_node_operators_registry_app['content_uri'],
         ),
 
-        # 3. TBurn 33.827287 stETH shares on treasury address 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c 
+        # 3. Burn 33.827287 stETH shares on treasury address 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c 
         #    to compensate for Chorus validation penalties
         burn_shares(
             lido,

@@ -84,7 +84,8 @@ def test_2021_12_16(
     assert nos_old_app_ipfs == nos_old_ipfs
 
     totalSharesBefore = lido.getTotalShares()
-    sharesToBurn = lido.getSharesByPooledEth(burnSteth)
+
+    sharesToBurn = 32145684728326685744
     
     vote_id, _ = start_vote({ 'from': ldo_holder }, silent=True)
     tx: TransactionReceipt = helpers.execute_vote(
