@@ -20,7 +20,7 @@ def shared_setup(fn_isolation):
 
 @pytest.fixture(scope='module')
 def ldo_holder(accounts):
-    return accounts.at('0xAD4f7415407B83a081A0Bee22D05A8FDC18B42da',
+    return accounts.at('0x9bb75183646e2a0dc855498bacd72b769ae6ced3',
                        force=True)
 
 

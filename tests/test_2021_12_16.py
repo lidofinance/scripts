@@ -4,7 +4,7 @@ Tests for voting 16/12/2021.
 
 from sys import version
 from brownie.network.main import priority_fee
-from scripts.vote_2021_12_16 import start_vote, burnSteth
+from scripts.vote_2021_12_16 import start_vote
 from brownie import interface
 from tx_tracing_helpers import *
 
@@ -51,8 +51,6 @@ def test_2021_12_16(
     #set priority_fee for test on london hardfork
     #priority_fee("2 gwei")
 
-    accounts[0].transfer(ldo_holder, "5 ether")
-
     ### LIDO APP
     lido_repo = interface.Repo(lido_dao_lido_repo)
     repoLidoOldVersion = lido_repo.getLatest();
@@ -83,10 +81,10 @@ def test_2021_12_16(
     nos_old_app_ipfs = f"ipfs:{nos_old_app['ipfsCid']}"
     assert nos_old_app_ipfs == nos_old_ipfs
 
-    chorusAddr = '0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c'
+    aragonAgentAddr = '0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c'
 
     totalSharesBefore = lido.getTotalShares()
-    sharesChorusBefore = lido.sharesOf(chorusAddr)
+    sharesChorusBefore = lido.sharesOf(aragonAgentAddr)
 
     sharesToBurn = 32145684728326685744
     
@@ -102,7 +100,7 @@ def test_2021_12_16(
 
     #check burned shares
     totalSharesAfter = lido.getTotalShares()
-    sharesChorusAfter = lido.sharesOf(chorusAddr)
+    sharesChorusAfter = lido.sharesOf(aragonAgentAddr)
 
     assert totalSharesBefore - totalSharesAfter == sharesToBurn
     assert sharesChorusBefore - sharesChorusAfter == sharesToBurn
