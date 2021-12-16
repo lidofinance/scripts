@@ -40,8 +40,6 @@ except ImportError:
         'set_console_globals(interface=interface)'
     )
 
-burnSteth = 33_827287 * 10**12
-
 def set_console_globals(**kwargs):
     """Extract interface from brownie environment."""
     global interface
@@ -58,9 +56,7 @@ def add_implementation_to_repo(repo, version, address, content_uri):
       )
     )
 
-
-
-def burn_shares(lido, burn_address, stethAmount):
+def burn_shares(lido, burn_address):
     # Chorus send 33.827287 stETH by two transactions:
     # 1. https://etherscan.io/tx/0xfb8da61b72ee87d862ffb12c6d453887120084749fcee1a718de42c2bc555ba3
     # 2. https://etherscan.io/tx/0xd715e946f51bd82d5a84d87bbc8469413b751fbeaa1eafb73e28be7ff1a86638
@@ -132,7 +128,6 @@ def start_vote(
         burn_shares(
             lido,
             '0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c',
-            burnSteth
         )
         
 

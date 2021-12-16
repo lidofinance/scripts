@@ -84,7 +84,7 @@ def test_2021_12_16(
     aragonAgentAddr = '0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c'
 
     totalSharesBefore = lido.getTotalShares()
-    sharesChorusBefore = lido.sharesOf(aragonAgentAddr)
+    sharesAragonAgentBefore = lido.sharesOf(aragonAgentAddr)
 
     sharesToBurn = 32145684728326685744
     
@@ -100,10 +100,10 @@ def test_2021_12_16(
 
     #check burned shares
     totalSharesAfter = lido.getTotalShares()
-    sharesChorusAfter = lido.sharesOf(aragonAgentAddr)
+    sharesAragonSharesAfter = lido.sharesOf(aragonAgentAddr)
 
     assert totalSharesBefore - totalSharesAfter == sharesToBurn
-    assert sharesChorusBefore - sharesChorusAfter == sharesToBurn
+    assert sharesAragonAgentBefore - sharesAragonSharesAfter == sharesToBurn
 
     ### LIDO APP
     #check only version and ipfs was changed
