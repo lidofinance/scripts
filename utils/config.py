@@ -21,7 +21,7 @@ def get_deployer_account():
             'Please set DEPLOYER env variable to the deployer account name')
 
     return accounts.load(os.environ['DEPLOYER']) if is_live else accounts.at(
-        "0x3BA21b6477F48273f41d241AA3722FFb9E07E247", force=True)
+        "0x3e40d73eb977dc6a537af587d48316fee66e9c8c", force=True)
 
 
 def prompt_bool():
