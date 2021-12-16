@@ -43,11 +43,12 @@ def set_console_globals(**kwargs):
 
 
 def burn_shares(lido, burn_address):
-    # Chorus send 33.827287 stETH by two transactions:
+    # Chorus sent 33.827287 stETH by two transactions:
     # 1. https://etherscan.io/tx/0xfb8da61b72ee87d862ffb12c6d453887120084749fcee1a718de42c2bc555ba3
     # 2. https://etherscan.io/tx/0xd715e946f51bd82d5a84d87bbc8469413b751fbeaa1eafb73e28be7ff1a86638
     #
     # we calculated shares on the latest block 13804410: 
+    # stethAmount = 33.827287 * 10^18
     # lido.getSharesByPooledEth(stethAmount) = 32145684728326685744
 
     sharesToBurn = 32145684728326685744
