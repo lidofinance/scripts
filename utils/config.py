@@ -1,13 +1,15 @@
 import os
 import sys
-from brownie import network, accounts
 
-try:
-    if network.show_active() == "goerli":
-        raise ImportError
-    from utils.config_mainnet import *
-except ImportError:
+from brownie import network, accounts
+from brownie.utils import color
+
+if network.show_active() == "goerli":
+    print(f'Using {color("cyan")}config_goerli.py{color} addresses')
     from utils.config_goerli import *
+else:
+    print(f'Using {color("magenta")}config_mainnet.py{color} addresses')
+    from utils.config_mainnet import *
 
 
 def get_is_live():
