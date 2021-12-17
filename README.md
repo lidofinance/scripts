@@ -14,6 +14,11 @@ To run tests you need to set the additional brownie commandline params: `--netwo
 export ETHERSCAN_TOKEN=<etherscan_key>
 export WEB3_INFURA_PROJECT_ID=<infura_key>
 ```
+
+###### Running tests inside mainnet fork
+
+* To re-use already created `vote_id` you can pass the `OMNIBUS_VOTE_ID` environment variable (e.g. `OMNIBUS_VOTE_ID=104`).
+* To forcely bypass etherscan contract and event names decoding set the `OMNIBUS_BYPASS_EVENTS_DECODING` environment variable to `1`.
 #### Mainnet
 
 To run scripts on actually mainnet you need to add param `--network mainnet` to the end of the command and set the following env variables:
@@ -22,7 +27,6 @@ To run scripts on actually mainnet you need to add param `--network mainnet` to 
 export DEPLOYER=<brownie_wallet_name>
 export WEB3_INFURA_PROJECT_ID=<infura_key>
 ```
-
 ## Adding node operators
 
 Script to pack up adding new node operators in one vote
