@@ -11,63 +11,16 @@ Vote passed & executed on 2021-12-10, 15:34, block 13777444.
 """
 
 import time
-from functools import partial
-from typing import (
-    Dict, Tuple,
-    Optional
-)
+
+from typing import (Dict, Tuple, Optional)
+
 from brownie.network.transaction import TransactionReceipt
 
-from utils.voting import create_vote
-from utils.finance import encode_token_transfer
-from utils.evm_script import (
-    decode_evm_script,
-    encode_call_script,
-    calls_info_pretty_print
-)
-from utils.config import (
-    prompt_bool,
-    get_deployer_account,
-    ldo_token_address,
-    lido_dao_voting_address,
-    lido_dao_token_manager_address,
-    lido_dao_finance_address
-)
+from utils.voting import confirm_vote_script, create_vote
+from utils.finance import make_ldo_payout
+from utils.evm_script import encode_call_script
 
-try:
-    from brownie import interface
-except ImportError:
-    print(
-        'You\'re probably running inside Brownie console. '
-        'Please call:\n'
-        'set_console_globals(interface=interface)'
-    )
-
-def set_console_globals(**kwargs):
-    """Extract interface from brownie environment."""
-    global interface
-    interface = kwargs['interface']
-
-def make_ldo_payout(
-        *not_specified,
-        target_address: str,
-        ldo_in_wei: int,
-        reference: str,
-        finance: interface.Finance
-) -> Tuple[str, str]:
-    """Encode LDO payout."""
-    if not_specified:
-        raise ValueError(
-            'Please, specify all arguments with keywords.'
-        )
-
-    return encode_token_transfer(
-        token_address=ldo_token_address,
-        recipient=target_address,
-        amount=ldo_in_wei,
-        reference=reference,
-        finance=finance
-    )
+from utils.config import get_deployer_account
 
 def start_vote(
     tx_params: Dict[str, str],
@@ -75,18 +28,10 @@ def start_vote(
 ) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
 
-    voting = interface.Voting(lido_dao_voting_address)
-    finance = interface.Finance(lido_dao_finance_address)
-    token_manager = interface.TokenManager(
-        lido_dao_token_manager_address
-    )
-
-    _make_ldo_payout = partial(make_ldo_payout, finance=finance)
-
     encoded_call_script = encode_call_script([
         # 1. Top up Curve LP reward program with 3,550,000 LDO to 0x753D5167C31fBEB5b49624314d74A957Eb271709
 
-        _make_ldo_payout(
+        make_ldo_payout(
             target_address='0x753D5167C31fBEB5b49624314d74A957Eb271709',
             ldo_in_wei=3_550_000 * (10 ** 18),
             reference='Curve LP reward program'
@@ -94,7 +39,7 @@ def start_vote(
 
         # 2. Top up Balancer LP reward program with 300,000 LDO to 0x1dD909cDdF3dbe61aC08112dC0Fdf2Ab949f79D8
 
-        _make_ldo_payout(
+        make_ldo_payout(
             target_address='0x1dD909cDdF3dbe61aC08112dC0Fdf2Ab949f79D8',
             ldo_in_wei=300_000 * (10 ** 18),
             reference="Balancer LP reward program"
@@ -102,7 +47,7 @@ def start_vote(
 
         # 3. Top up Sushi LP reward program with 50,000 LDO to 0xE5576eB1dD4aA524D67Cf9a32C8742540252b6F4
 
-        _make_ldo_payout(
+        make_ldo_payout(
             target_address='0xE5576eB1dD4aA524D67Cf9a32C8742540252b6F4',
             ldo_in_wei=50_000 * (10 ** 18),
             reference="Sushi LP reward program"
@@ -110,38 +55,14 @@ def start_vote(
 
         # 4. Referral program payout of 140,414 LDO to financial multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
 
-        _make_ldo_payout(
+        make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
             ldo_in_wei=140_414 * (10 ** 18),
             reference="Tenth period referral rewards"
         )
     ])
-    human_readable_script = decode_evm_script(
-        encoded_call_script, verbose=False, specific_net='mainnet', repeat_is_error=True
-    )
 
-    # Show detailed description of prepared voting.
-    if not silent:
-        print('\nPoints of voting:')
-        total = len(human_readable_script)
-        print(human_readable_script)
-        for ind, call in enumerate(human_readable_script):
-            print(f'Point #{ind + 1}/{total}.')
-            print(calls_info_pretty_print(call))
-            print('---------------------------')
-
-        print('Does it look good?')
-        resume = prompt_bool()
-        while resume is None:
-            resume = prompt_bool()
-
-        if not resume:
-            print('Exit without running.')
-            return -1, None
-
-    return create_vote(
-        voting=voting,
-        token_manager=token_manager,
+    return confirm_vote_script(encoded_call_script, silent) and create_vote(
         vote_desc=(
             'Omnibus vote: '
             '1) Top up Curve LP reward program with 3,550,000 LDO;'
@@ -159,5 +80,7 @@ def main():
         'max_fee': '100 gwei',
         'priority_fee': '2 gwei'
     })
-    print(f'Vote created: {vote_id}.')
+    
+    vote_id >= 0 and print(f'Vote created: {vote_id}.')
+
     time.sleep(5) # hack for waiting thread #2.
