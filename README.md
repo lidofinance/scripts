@@ -19,9 +19,16 @@ export WEB3_INFURA_PROJECT_ID=<infura_key>
 
 * To re-use already created `vote_id` you can pass the `OMNIBUS_VOTE_ID` environment variable (e.g. `OMNIBUS_VOTE_ID=104`).
 * To forcely bypass etherscan contract and event names decoding set the `OMNIBUS_BYPASS_EVENTS_DECODING` environment variable to `1`.
+#### Görli
+
+To run scrips on goerli testnet you need to add param `--network goerli` to the end of the command and set the following env variables:
+```bash
+export DEPLOYER=<brownie_wallet_name>
+export WEB3_INFURA_PROJECT_ID=<infura_key>
+```
 #### Mainnet
 
-To run scripts on actually mainnet you need to add param `--network mainnet` to the end of the command and set the following env variables:
+To run scripts on mainnet you need to add param `--network mainnet` to the end of the command and set the following env variables:
 
 ```bash
 export DEPLOYER=<brownie_wallet_name>
