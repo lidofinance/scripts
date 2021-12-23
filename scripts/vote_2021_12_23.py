@@ -4,8 +4,6 @@ Voting 23/12/2021.
 1. Send 4,200 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Dec comp
 2. Send 6,900 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI Jacob Blish Dec comp
 3. Referral program payout of 235,290 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
-4. Update Lido app IPFS hash to QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS
-5. Update NOs app IPFS hash to Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G
 
 """
 
@@ -135,26 +133,7 @@ def start_vote(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
             ldo_in_wei=235_290 * (10 ** 18),
             reference="11th period referral rewards"
-        ),
-
-        # 4. Update Lido app IPFS hash to QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS
-
-        add_implementation_to_repo(
-            lido_repo,
-            update_lido_app['version'],
-            update_lido_app['address'],
-            update_lido_app['content_uri'],
-        ),
-
-        # 2. Update NOS app IPFS hash to Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G
-
-        add_implementation_to_repo(
-            nos_repo,
-            update_node_operators_registry_app['version'],
-            update_node_operators_registry_app['address'],
-            update_node_operators_registry_app['content_uri'],
-        ),
-    
+        )    
     ])
     human_readable_script = decode_evm_script(
         encoded_call_script, verbose=False, specific_net='mainnet', repeat_is_error=True
@@ -186,9 +165,7 @@ def start_vote(
             'Omnibus vote: '
             '1) Allocate 4,200 LDO tokens to Master of Validators Dec 2021 compensation;'
             '2) Allocate 6,900 LDO tokens to Jacob Blish Dec 2021 compensation;'
-            '3) Allocate 235,290 LDO tokens for the 11th period referral rewards;'
-            '4) Update Lido app IPFS hash to QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS;'
-            '5) Update NOs app IPFS hash to Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G'
+            '3) Allocate 235,290 LDO tokens for the 11th period referral rewards.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
