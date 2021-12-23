@@ -12,6 +12,7 @@ from utils.config import (
 )
 
 from event_validators.payout import Payout, validate_payout_event
+from event_validators.repo_upgrade import RepoUpgrade, validate_repo_upgrade_event
 
 dao_agent_address = '0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c'
 finance_multisig_address = '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb'
@@ -21,7 +22,7 @@ isidoros_payout = Payout(
     token_addr=lido_dao_token,
     from_addr=dao_agent_address,
     to_addr=finance_multisig_address,
-    amount=4_100 * (10 ** 18)
+    amount=4_200 * (10 ** 18)
 )
 
 jacob_payout = Payout(
@@ -35,7 +36,12 @@ referral_payout = Payout(
     token_addr=lido_dao_token,
     from_addr=dao_agent_address,
     to_addr=finance_multisig_address,
-    amount=140_414 * (10 ** 18)
+    amount=235_290 * (10 ** 18)
+)
+
+repo_upgraded_version = RepoUpgrade(
+    version_id=3,
+    semantic_version=(2,0,1)
 )
 
 lido_old_app = {
@@ -117,25 +123,8 @@ def test_2021_12_16(
     multisig_balance_after = ldo_token.balanceOf(finance_multisig_address)
     dao_balance_after = ldo_token.balanceOf(dao_agent_address)
 
-    display_voting_events(tx)
-
-    ### validate vote events
-    assert count_vote_items_by_events(tx) == 5, "Incorrect voting items count"
-    
     assert multisig_balance_after - multisig_balance_before == isidoros_payout.amount + jacob_payout.amount + referral_payout.amount 
     assert dao_balance_before - dao_balance_after == isidoros_payout.amount +jacob_payout.amount + referral_payout.amount
-
-    evs = group_voting_events(tx)
-
-    # asserts on vote item 1
-    validate_payout_event(evs[0], isidoros_payout)
-
-    # asserts on vote item 2
-    validate_payout_event(evs[1], jacob_payout)
-
-    # asserts on vote item 2
-    validate_payout_event(evs[2], referral_payout)
-
 
     ### LIDO APP
     #check only version and ipfs was changed
@@ -162,3 +151,25 @@ def test_2021_12_16(
     lido_old_ipfs = bytes_object.decode("ASCII")
     nos_new_app_ipfs = f"ipfs:{nos_new_app['ipfsCid']}"
     assert nos_new_app_ipfs == lido_old_ipfs
+
+    ### validate vote events
+    assert count_vote_items_by_events(tx) == 5, "Incorrect voting items count"
+
+    display_voting_events(tx)
+
+    evs = group_voting_events(tx)
+
+    # asserts on vote item 1
+    validate_payout_event(evs[0], isidoros_payout)
+
+    # asserts on vote item 2
+    validate_payout_event(evs[1], jacob_payout)
+
+    # asserts on vote item 3
+    validate_payout_event(evs[2], referral_payout)
+
+    # asserts on vote item 4
+    validate_repo_upgrade_event(evs[3], repo_upgraded_version)
+
+    # asserts on vote item 5
+    validate_repo_upgrade_event(evs[4], repo_upgraded_version)

@@ -1,11 +1,11 @@
 """
 Voting 23/12/2021.
 
-1. Send 4,100 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Nov comp
-2. Allocate 6,900 (16,666 DAI * 1.2 in LDO by the spot price) LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI Jacob Blish Dec comp (1 DAI = X LDO)
-3. Send X LDO to the financial multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb  for 11th period referral rewards
+1. Send 4,200 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Dec comp
+2. Send 6,900 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI Jacob Blish Dec comp
+3. Referral program payout of 235,290 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
 4. Update Lido app IPFS hash to QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS
-5. Update NOS app IPFS hash to Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G
+5. Update NOs app IPFS hash to Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G
 
 """
 
@@ -114,27 +114,26 @@ def start_vote(
     }
 
     encoded_call_script = encode_call_script([
-        # 1. Send 4,100 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Nov comp
+        # 1. Send 4,200 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Dec comp
 
         _make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-            ldo_in_wei=4_100 * (10 ** 18),
+            ldo_in_wei=4_200 * (10 ** 18),
             reference='Master of Validators monthly comp'
         ),
 
-        # 2. Allocate 6,900 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI
-        #    Jacob Blish monthly comp
+        # 2. Send 6,900 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI Jacob Blish Dec comp
         _make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
             ldo_in_wei=6_900 * (10 ** 18),
             reference='Jacob Blish monthly comp'
         ),
 
-        # 3. Referral program payout of 140,414 LDO to financial multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
+        # 3. Referral program payout of 235,290 LDO to financial multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
 
         _make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-            ldo_in_wei=140_414 * (10 ** 18),
+            ldo_in_wei=235_290 * (10 ** 18),
             reference="11th period referral rewards"
         ),
 
@@ -185,11 +184,11 @@ def start_vote(
         token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
-            '1) Allocate 4,100 LDO tokens to Master of Validators Nov 2021 compensation;'
-            '2) Allocate 6,900 LDO tokens to Jacob Blish Nov 2021 compensation;'
-            '3) Allocate 124,987.5031 LDO tokens for the 11th period referral rewards;'
-            '4) Update Lido app IPFS hash;'
-            '5) Update NOS app IPFS hash.'
+            '1) Allocate 4,200 LDO tokens to Master of Validators Dec 2021 compensation;'
+            '2) Allocate 6,900 LDO tokens to Jacob Blish Dec 2021 compensation;'
+            '3) Allocate 235,290 LDO tokens for the 11th period referral rewards;'
+            '4) Update Lido app IPFS hash to QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS;'
+            '5) Update NOs app IPFS hash to Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
