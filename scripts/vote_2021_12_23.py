@@ -1,11 +1,9 @@
 """
 Voting 23/12/2021.
 
-1. Send 4,100 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Nov comp
-2. Allocate 6,900 (16,666 DAI * 1.2 in LDO by the spot price) LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI Jacob Blish Dec comp (1 DAI = X LDO)
-3. Send X LDO to the financial multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb  for 11th period referral rewards
-4. Update Lido app IPFS hash to QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS
-5. Update NOS app IPFS hash to Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G
+1. Send 4,200 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Master of Validators Dec comp
+2. Send 6,900 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI BizDev Leader Dec comp
+3. Referral program payout of 235,290 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
 
 """
 
@@ -31,9 +29,7 @@ from utils.config import (
     lido_dao_steth_address,
     lido_dao_voting_address,
     lido_dao_token_manager_address,
-    lido_dao_finance_address,
-    lido_dao_lido_repo,
-    lido_dao_node_operators_registry_repo,
+    lido_dao_finance_address
 )
 
 try:
@@ -71,16 +67,6 @@ def make_ldo_payout(
         finance=finance
     )
 
-def add_implementation_to_repo(repo, version, address, content_uri):
-    return (
-      repo.address,
-      repo.newVersion.encode_input(
-          version,
-          address,
-          content_uri
-      )
-    )
-
 def start_vote(
     tx_params: Dict[str, str],
     silent: bool = False
@@ -88,8 +74,6 @@ def start_vote(
     """Prepare and run voting."""
 
     voting = interface.Voting(lido_dao_voting_address)
-    lido_repo = interface.Repo(lido_dao_lido_repo)
-    nos_repo = interface.Repo(lido_dao_node_operators_registry_repo)
     finance = interface.Finance(lido_dao_finance_address)
     token_manager = interface.TokenManager(
         lido_dao_token_manager_address
@@ -97,65 +81,29 @@ def start_vote(
 
     _make_ldo_payout = partial(make_ldo_payout, finance=finance)
 
-    update_lido_app = {
-        'address': '0xC7B5aF82B05Eb3b64F12241B04B2cF14469E39F7',
-        'ipfsCid': 'QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS',
-        'content_uri': '0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053',
-        'id': '0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320',
-        'version': (2, 0, 1),
-    }
-
-    update_node_operators_registry_app = {
-        'address': '0xec3567ae258639a0FF5A02F7eAF4E4aE4416C5fe',
-        'ipfsCid': 'Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G',
-        'content_uri': '0x697066733a516d61375058486d456a346a7332676a4d3976744850747176754b3832695335455950694a6d7a4b4c7a55353847',
-        'id': '0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d',
-        'version': (2, 0, 1),
-    }
-
     encoded_call_script = encode_call_script([
-        # 1. Send 4,100 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Nov comp
+        # 1. Send 4,200 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Dec comp
 
         _make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-            ldo_in_wei=4_100 * (10 ** 18),
-            reference='Master of Validators monthly comp'
+            ldo_in_wei=4_200 * (10 ** 18),
+            reference='Master of Validators Dec comp'
         ),
 
-        # 2. Allocate 6,900 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI
-        #    Jacob Blish monthly comp
+        # 2. Send 6,900 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI Jacob Blish Dec comp
         _make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
             ldo_in_wei=6_900 * (10 ** 18),
-            reference='Jacob Blish monthly comp'
+            reference='BizDev Leader Dec comp'
         ),
 
-        # 3. Referral program payout of 140,414 LDO to financial multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
+        # 3. Referral program payout of 235,290 LDO to financial multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
 
         _make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-            ldo_in_wei=140_414 * (10 ** 18),
+            ldo_in_wei=235_290 * (10 ** 18),
             reference="11th period referral rewards"
-        ),
-
-        # 4. Update Lido app IPFS hash to QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS
-
-        add_implementation_to_repo(
-            lido_repo,
-            update_lido_app['version'],
-            update_lido_app['address'],
-            update_lido_app['content_uri'],
-        ),
-
-        # 2. Update NOS app IPFS hash to Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G
-
-        add_implementation_to_repo(
-            nos_repo,
-            update_node_operators_registry_app['version'],
-            update_node_operators_registry_app['address'],
-            update_node_operators_registry_app['content_uri'],
-        ),
-    
+        )    
     ])
     human_readable_script = decode_evm_script(
         encoded_call_script, verbose=False, specific_net='mainnet', repeat_is_error=True
@@ -185,11 +133,9 @@ def start_vote(
         token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
-            '1) Allocate 4,100 LDO tokens to Master of Validators Nov 2021 compensation;'
-            '2) Allocate 6,900 LDO tokens to Jacob Blish Nov 2021 compensation;'
-            '3) Allocate 124,987.5031 LDO tokens for the 11th period referral rewards;'
-            '4) Update Lido app IPFS hash;'
-            '5) Update NOS app IPFS hash.'
+            '1) Allocate 4,200 LDO tokens to Master of Validators Dec 2021 compensation;'
+            '2) Allocate 6,900 LDO tokens to BizDev Leader Dec 2021 compensation;'
+            '3) Allocate 235,290 LDO tokens for the 11th period referral rewards.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
