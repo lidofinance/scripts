@@ -1,4 +1,5 @@
 from brownie import exceptions
+from brownie.utils import color
 
 from utils.evm_script import (encode_call_script,
     decode_evm_script,
@@ -7,7 +8,7 @@ from utils.evm_script import (encode_call_script,
 
 from utils.config import (interface,
     prompt_bool,
-    chain_network, contracts)
+    chain_network, contracts, get_config_params)
 
 def create_vote(vote_desc, evm_script, tx_params, verbose: bool = False):
     voting = contracts.voting
@@ -43,6 +44,14 @@ def confirm_vote_script(encoded_call_script: str, silent: bool) -> bool:
 
     # Show detailed description of prepared voting.
     if not silent:
+        cfg_params = get_config_params()
+
+        config_repr = 'All known addresses extracted from a config file:\n'
+        for k,v in cfg_params.items():
+            config_repr += f'{k} => {v}\n'
+        config_repr = color.highlight(config_repr)
+        print(f'{config_repr}')
+
         print('\nPoints of voting:')
         total = len(human_readable_script)
         print(human_readable_script)

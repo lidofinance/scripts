@@ -1,7 +1,7 @@
 import os
 import sys
 
-from typing import Any, Union, Optional
+from typing import Any, Union, Optional, Dict
 
 from utils.brownie_prelude import *
 
@@ -40,6 +40,15 @@ def prompt_bool() -> Optional[bool]:
     else:
         sys.stdout.write("Please respond with 'yes' or 'no'")
 
+def get_config_params() -> Dict[str, str]:
+    ret = []
+    if network.show_active() == "goerli":
+        import utils.config_goerli
+        ret = {x:globals()[x] for x in dir(utils.config_goerli) if not x.startswith("__")}
+    else:
+        import utils.config_mainnet
+        ret = {x:globals()[x] for x in dir(utils.config_mainnet) if not x.startswith("__")}
+    return ret
 
 class ContractsLazyLoader:
     @property
