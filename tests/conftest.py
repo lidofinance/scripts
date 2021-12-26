@@ -13,7 +13,8 @@ from utils.config import (ldo_token_address, lido_dao_voting_address,
                           lido_dao_node_operators_registry,
                           lido_dao_deposit_security_module_address,
                           lido_dao_steth_address, lido_dao_acl_address,
-                          lido_dao_finance_address)
+                          lido_dao_finance_address, ldo_holder_address_for_tests,
+                          ldo_vote_executors_for_tests)
 
 @pytest.fixture(scope="function", autouse=True)
 def shared_setup(fn_isolation):
@@ -22,8 +23,7 @@ def shared_setup(fn_isolation):
 
 @pytest.fixture(scope='module')
 def ldo_holder(accounts):
-    return accounts.at('0x9bb75183646e2a0dc855498bacd72b769ae6ced3',
-                       force=True)
+    return accounts.at(ldo_holder_address_for_tests, force=True)
 
 
 @pytest.fixture(scope='module')
@@ -66,14 +66,8 @@ def finance(interface):
 class Helpers:
     @staticmethod
     def execute_vote(accounts, vote_id, dao_voting, topup = '0.1 ether'):
-        ldo_holders = [
-            '0x3e40d73eb977dc6a537af587d48316fee66e9c8c',
-            '0xb8d83908aab38a159f3da47a59d84db8e1838712',
-            '0xa2dfc431297aee387c05beef507e5335e684fbcd'
-        ]
-
         if dao_voting.getVote(vote_id)[0]:
-            for holder_addr in ldo_holders:
+            for holder_addr in ldo_vote_executors_for_tests:
                 print('voting from acct:', holder_addr)
                 accounts[0].transfer(holder_addr, topup)
                 account = accounts.at(holder_addr, force=True)
