@@ -28,7 +28,6 @@ from utils.config import (
     prompt_bool,
     get_deployer_account,
     ldo_token_address,
-    lido_dao_steth_address,
     lido_dao_voting_address,
     lido_dao_token_manager_address,
     lido_dao_finance_address

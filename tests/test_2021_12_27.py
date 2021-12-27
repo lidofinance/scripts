@@ -3,13 +3,7 @@ Tests for voting 27/12/2021.
 """
 
 from scripts.vote_2021_12_27 import start_vote
-from brownie import interface
 from tx_tracing_helpers import *
-
-from utils.config import (
-    lido_dao_lido_repo,
-    lido_dao_node_operators_registry_repo,
-)
 
 from event_validators.payout import Payout, validate_payout_event
 
@@ -56,7 +50,7 @@ def test_2021_12_16(
     dao_balance_after = ldo_token.balanceOf(dao_agent_address)
 
     assert multisig_balance_after - multisig_balance_before == isidoros_payout.amount + jacob_payout.amount + referral_payout.amount 
-    assert dao_balance_before - dao_balance_after == isidoros_payout.amount +jacob_payout.amount + referral_payout.amount
+    assert dao_balance_before - dao_balance_after == isidoros_payout.amount + jacob_payout.amount + referral_payout.amount
 
     ### validate vote events
     assert count_vote_items_by_events(tx) == 3, "Incorrect voting items count"
