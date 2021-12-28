@@ -1,11 +1,12 @@
 """
-Voting 23/12/2021.
+Voting 27/12/2021.
 
-1. Send 4,200 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Master of Validators Dec comp
-2. Send 6,900 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI BizDev Leader Dec comp
+1. Send 4,700 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Master of Validators Dec comp
+2. Send 7,800 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI BizDev Leader Dec comp
 3. Referral program payout of 235,290 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
 
-The vote rejected. Relaunch on 27 Dec.
+Vote passed & executed on Dec-28-2021 01:16:34 PM +UTC, block #13893957.
+TX URL: https://etherscan.io/tx/0x2ff29a41fa5bab347fc4926239080125f33febf824e55f8347072f9587333da0
 
 """
 
@@ -28,7 +29,6 @@ from utils.config import (
     prompt_bool,
     get_deployer_account,
     ldo_token_address,
-    lido_dao_steth_address,
     lido_dao_voting_address,
     lido_dao_token_manager_address,
     lido_dao_finance_address
@@ -84,18 +84,19 @@ def start_vote(
     _make_ldo_payout = partial(make_ldo_payout, finance=finance)
 
     encoded_call_script = encode_call_script([
-        # 1. Send 4,200 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Dec comp
+        # 1. Send 4,700 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Dec comp
 
         _make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-            ldo_in_wei=4_200 * (10 ** 18),
+            ldo_in_wei=4_700 * (10 ** 18),
             reference='Master of Validators Dec comp'
         ),
 
-        # 2. Send 6,900 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI Jacob Blish Dec comp
+        # 2. Send 7,800 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI Jacob Blish Dec comp
+
         _make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-            ldo_in_wei=6_900 * (10 ** 18),
+            ldo_in_wei=7_800 * (10 ** 18),
             reference='BizDev Leader Dec comp'
         ),
 
@@ -105,7 +106,7 @@ def start_vote(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
             ldo_in_wei=235_290 * (10 ** 18),
             reference="11th period referral rewards"
-        )    
+        )
     ])
     human_readable_script = decode_evm_script(
         encoded_call_script, verbose=False, specific_net='mainnet', repeat_is_error=True
@@ -135,8 +136,8 @@ def start_vote(
         token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
-            '1) Allocate 4,200 LDO tokens to Master of Validators Dec 2021 compensation;'
-            '2) Allocate 6,900 LDO tokens to BizDev Leader Dec 2021 compensation;'
+            '1) Allocate 4,700 LDO tokens to Master of Validators Dec 2021 compensation;'
+            '2) Allocate 7,800 LDO tokens to BizDev Leader Dec 2021 compensation;'
             '3) Allocate 235,290 LDO tokens for the 11th period referral rewards.'
         ),
         evm_script=encoded_call_script,
