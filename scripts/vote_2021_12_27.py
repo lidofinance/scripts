@@ -5,7 +5,8 @@ Voting 27/12/2021.
 2. Send 7,800 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI BizDev Leader Dec comp
 3. Referral program payout of 235,290 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
 
-
+Vote passed & executed on Dec-28-2021 01:16:34 PM +UTC, block #13893957.
+TX URL: https://etherscan.io/tx/0x2ff29a41fa5bab347fc4926239080125f33febf824e55f8347072f9587333da0
 
 """
 
