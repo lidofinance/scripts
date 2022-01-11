@@ -22,4 +22,4 @@ def get_node_operators(registry):
 
 
 def encode_add_operator(address, name, registry):
-    return (registry.address, registry.addNodeOperator.encode_input(name, address, 0))
+    return (registry.address, registry.addNodeOperator.encode_input(name, address))
