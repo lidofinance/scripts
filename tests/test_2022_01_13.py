@@ -1,9 +1,9 @@
 """
-Tests for voting 27/12/2021.
+Tests for voting 13/01/2022.
 """
 from sys import version
 from collections import namedtuple
-from brownie import interface
+from brownie import interface, reverts
 
 from scripts.vote_2022_01_13 import start_vote
 from tx_tracing_helpers import *
@@ -13,27 +13,27 @@ from utils.config import (
     lido_dao_node_operators_registry_repo,
 )
 
-lido_old_app = {  #?
+lido_old_app = {
     'address': '0xC7B5aF82B05Eb3b64F12241B04B2cF14469E39F7',
     'ipfsCid': 'QmbmPW5r9HMdyUARNJjjE7MNqBUGrXashwoWvqRZhc1t5b',
     'content_uri': '0x697066733a516d626d5057357239484d64795541524e4a6a6a45374d4e714255477258617368776f577671525a686331743562',
     'version': (2, 0, 0),
 }
 
-lido_new_app = {  #?
+lido_new_app = {
     'address': '0xC7B5aF82B05Eb3b64F12241B04B2cF14469E39F7',
     'ipfsCid': 'QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS',
     'content_uri': '0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053',
     'version': (2, 0, 1),
 }
 
-nos_old_app = {  #?
+nos_old_app = {
     'address': '0xec3567ae258639a0FF5A02F7eAF4E4aE4416C5fe',
     'ipfsCid': 'QmQExJkoyg7xWXJjLaYC75UAmsGY1STY41YTG3wEK7q8dd',
     'content_uri': '0x697066733a516d5145784a6b6f7967377857584a6a4c615943373555416d7347593153545934315954473377454b3771386464',
     'version': (2, 0, 0),
 }
-nos_new_app = {  #?
+nos_new_app = {
     'address': '0xec3567ae258639a0FF5A02F7eAF4E4aE4416C5fe',
     'ipfsCid': 'Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G',
     'content_uri': '0x697066733a516d61375058486d456a346a7332676a4d3976744850747176754b3832695335455950694a6d7a4b4c7a55353847',
@@ -47,28 +47,28 @@ NodeOperatorAdd = namedtuple(
 NEW_NODE_OPERATORS = [
     # name, id, address
     NodeOperatorAdd(
-        'Stakin', 14, '0xf6b0a1B771633DB40A3e21Cc49fD2FE35669eF46' #?
+        'Stakin', 14, '0xf6b0a1B771633DB40A3e21Cc49fD2FE35669eF46'
     ),
     NodeOperatorAdd(
-        'ChainLayer', 15, '0xd5aC23b1adE91A054C4974264C9dbdDD0E52BB05' #?
+        'ChainLayer', 15, '0xd5aC23b1adE91A054C4974264C9dbdDD0E52BB05'
     ),
     NodeOperatorAdd(
-        'Simply Staking', 16, '0xFEf3C7aa6956D03dbad8959c59155c4A465DCacd' #?
+        'Simply Staking', 16, '0xFEf3C7aa6956D03dbad8959c59155c4A465DCacd'
     ),
     NodeOperatorAdd(
-        'BridgeTower', 17, '0x40C20da8d0214A7eF33a84e287992858dB744e6d' #?
+        'BridgeTower', 17, '0x40C20da8d0214A7eF33a84e287992858dB744e6d'
     ),
     NodeOperatorAdd(
-        'Stakely', 18, '0x77d2CF58aa4da90b3AFCd283646568e4383193BF' #?
+        'Stakely', 18, '0x77d2CF58aa4da90b3AFCd283646568e4383193BF'
     ),
     NodeOperatorAdd(
-        'InfStones', 19, '0x60bC65e1ccA448F98578F8d9f9AB64c3BA70a4c3' #?
+        'InfStones', 19, '0x60bC65e1ccA448F98578F8d9f9AB64c3BA70a4c3'
     ),
     NodeOperatorAdd(
-        'HashQuark', 20, '0x065dAAb531e7Cd50f900D644E8caE8A208eEa4E9' #?
+        'HashQuark', 20, '0x065dAAb531e7Cd50f900D644E8caE8A208eEa4E9'
     ),
     NodeOperatorAdd(
-        'ConsenSys Codefi', 21, '0x5Bc5ec5130f66f13d5C21ac6811A7e624ED3C7c6' #?
+        'ConsenSys Codefi', 21, '0x5Bc5ec5130f66f13d5C21ac6811A7e624ED3C7c6'
     ),
 ]
 
@@ -104,6 +104,14 @@ def test_2022_01_13(
     nos_old_ipfs = bytes_object.decode("ASCII")
     nos_old_app_ipfs = f"ipfs:{nos_old_app['ipfsCid']}"
     assert nos_old_app_ipfs == nos_old_ipfs
+
+    # Check that all NOs are unknown yet
+    for node_operator in NEW_NODE_OPERATORS:
+        with reverts('NODE_OPERATOR_NOT_FOUND'):
+            no = node_operators_registry.getNodeOperator(
+                node_operator.id, True
+            )
+
     ##
     ## START VOTE
     ##
@@ -145,10 +153,10 @@ def test_2022_01_13(
         )
 
         message = f'Failed on {node_operator.name}'
-        assert no[0] is True, message
-        assert no[1] == node_operator.name, message
-        assert no[2] == node_operator.address, message
-        assert no[3] == 0
+        assert no[0] is True, message # is active
+        assert no[1] == node_operator.name, message # name
+        assert no[2] == node_operator.address, message # rewards address
+        assert no[3] == 0 # staking limit
 
     ### validate vote events (does not work for some reason) 
     # assert count_vote_items_by_events(tx) == 10, "Incorrect voting items count"
