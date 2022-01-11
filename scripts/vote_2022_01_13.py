@@ -98,7 +98,6 @@ def start_vote(
         'address': '0xC7B5aF82B05Eb3b64F12241B04B2cF14469E39F7',
         'ipfsCid': 'QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS', #?
         'content_uri': '0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053',
-        'id': '0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320',
         'version': (2, 0, 1),
     }
     # 2.  Update NOS app IPFS hash
@@ -106,7 +105,6 @@ def start_vote(
         'address': '0xec3567ae258639a0FF5A02F7eAF4E4aE4416C5fe',
         'ipfsCid': 'Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G', #?
         'content_uri': '0x697066733a516d61375058486d456a346a7332676a4d3976744850747176754b3832695335455950694a6d7a4b4c7a55353847',
-        'id': '0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d',
         'version': (2, 0, 1),
     }
     # 3. Add node operator named Stakin
