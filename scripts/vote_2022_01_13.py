@@ -96,7 +96,7 @@ def start_vote(
     # 1. Update Lido app IPFS hash
     update_lido_app = {
         'address': '0xC7B5aF82B05Eb3b64F12241B04B2cF14469E39F7',
-        'ipfsCid': 'QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS',
+        'ipfsCid': 'QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS', #?
         'content_uri': '0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053',
         'id': '0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320',
         'version': (2, 0, 1),
@@ -104,40 +104,47 @@ def start_vote(
     # 2.  Update NOS app IPFS hash
     update_node_operators_registry_app = {
         'address': '0xec3567ae258639a0FF5A02F7eAF4E4aE4416C5fe',
-        'ipfsCid': 'Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G',
+        'ipfsCid': 'Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G', #?
         'content_uri': '0x697066733a516d61375058486d456a346a7332676a4d3976744850747176754b3832695335455950694a6d7a4b4c7a55353847',
         'id': '0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d',
         'version': (2, 0, 1),
     }
-    # 3-10. Add eight new node operators (Wave 3).
+    # 3. Add node operator named Stakin
     stakin_node_operator = {
         'name': 'Stakin',
         'address': '0xf6b0a1B771633DB40A3e21Cc49fD2FE35669eF46' #?
     } 
+    # 4. Add node operator named ChainLayer
     chainlayer_node_operator = {
         'name': 'ChainLayer',
         'address': '0xd5aC23b1adE91A054C4974264C9dbdDD0E52BB05' #?
     } 
+    # 5. Add node operator named Simply Staking
     simplystaking_node_operator = {
         'name': 'Simply Staking',
         'address': '0xFEf3C7aa6956D03dbad8959c59155c4A465DCacd' #?
     } 
+    # 6. Add node operator named BridgeTower
     bridgetower_node_operator = {
         'name': 'BridgeTower',
         'address': '0x40C20da8d0214A7eF33a84e287992858dB744e6d' #?
     } 
+    # 7. Add node operator named Stakely
     stakely_node_operator = {
         'name': 'Stakely',
         'address': '0x77d2CF58aa4da90b3AFCd283646568e4383193BF' #?
     } 
+    # 8. Add node operator named InfStones
     infstones_node_operator = {
         'name': 'InfStones',
         'address': '0x60bC65e1ccA448F98578F8d9f9AB64c3BA70a4c3' #?
     } 
+    # 9. Add node operator named HashQuark
     hashquark_node_operator = {
         'name': 'HashQuark',
         'address': '0x065dAAb531e7Cd50f900D644E8caE8A208eEa4E9' #?
     } 
+    # 10. Add node operator named ConsenSys Codefi
     consensyscodefi_node_operator = {
         'name': 'ConsenSys Codefi',
         'address': '0x5Bc5ec5130f66f13d5C21ac6811A7e624ED3C7c6' #?
@@ -160,15 +167,21 @@ def start_vote(
             update_node_operators_registry_app['address'],
             update_node_operators_registry_app['content_uri'],
         ),
-        # 3-10. Add eight new node operators (Wave 3).
+        # 3. Add node operator named Stakin
         _encode_add_operator(**stakin_node_operator),
+        # 4. Add node operator named ChainLayer
         _encode_add_operator(**chainlayer_node_operator),
+        # 5. Add node operator named Simply Staking
         _encode_add_operator(**simplystaking_node_operator),
+        # 6. Add node operator named BridgeTower
         _encode_add_operator(**bridgetower_node_operator),
-
+        # 7. Add node operator named Stakely
         _encode_add_operator(**stakely_node_operator),
+        # 8. Add node operator named InfStones
         _encode_add_operator(**infstones_node_operator),
+        # 9. Add node operator named HashQuark
         _encode_add_operator(**hashquark_node_operator),
+        # 10. Add node operator named ConsenSys Codefi
         _encode_add_operator(**consensyscodefi_node_operator),
     ])
 

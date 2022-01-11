@@ -13,7 +13,7 @@ from utils.config import (
     lido_dao_node_operators_registry_repo,
 )
 
-lido_old_app = {
+lido_old_app = {  #?
     'address': '0xC7B5aF82B05Eb3b64F12241B04B2cF14469E39F7',
     'ipfsCid': 'QmbmPW5r9HMdyUARNJjjE7MNqBUGrXashwoWvqRZhc1t5b',
     'content_uri': '0x697066733a516d626d5057357239484d64795541524e4a6a6a45374d4e714255477258617368776f577671525a686331743562',
@@ -21,7 +21,7 @@ lido_old_app = {
     'version': (2, 0, 0),
 }
 
-lido_new_app = {
+lido_new_app = {  #?
     'address': '0xC7B5aF82B05Eb3b64F12241B04B2cF14469E39F7',
     'ipfsCid': 'QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS',
     'content_uri': '0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053',
@@ -29,14 +29,14 @@ lido_new_app = {
     'version': (2, 0, 1),
 }
 
-nos_old_app = {
+nos_old_app = {  #?
     'address': '0xec3567ae258639a0FF5A02F7eAF4E4aE4416C5fe',
     'ipfsCid': 'QmQExJkoyg7xWXJjLaYC75UAmsGY1STY41YTG3wEK7q8dd',
     'content_uri': '0x697066733a516d5145784a6b6f7967377857584a6a4c615943373555416d7347593153545934315954473377454b3771386464',
     'id': '0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d',
     'version': (2, 0, 0),
 }
-nos_new_app = {
+nos_new_app = {  #?
     'address': '0xec3567ae258639a0FF5A02F7eAF4E4aE4416C5fe',
     'ipfsCid': 'Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G',
     'content_uri': '0x697066733a516d61375058486d456a346a7332676a4d3976744850747176754b3832695335455950694a6d7a4b4c7a55353847',
