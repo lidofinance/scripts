@@ -213,16 +213,16 @@ def start_vote(
         token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
-            '1) Update Lido app IPFS hash to QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS;'
-            '2) Update NOs app IPFS hash to Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G'
-            '3) Add Stakin node operator, ' #?
-            '4) Add ChainLayer node operator, ' #?
-            '5) Add Simply Staking node operator, ' #?
-            '6) Add BridgeTower node operator, ' #?
-            '7) Add Stakely node operator, ' #?
-            '8) Add InfStones node operator, ' #?
-            '9) Add HashQuark node operator, ' #?
-            '10) Add ConsenSys Codefi node operator, ' #?
+            '1) Update Lido app IPFS hash to QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS;' #?
+            '2) Update NOs app IPFS hash to Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G;' #?
+            '3) Add Stakin node operator; ' #?
+            '4) Add ChainLayer node operator; ' #?
+            '5) Add Simply Staking node operator; ' #?
+            '6) Add BridgeTower node operator; ' #?
+            '7) Add Stakely node operator; ' #?
+            '8) Add InfStones node operator; ' #?
+            '9) Add HashQuark node operator; ' #?
+            '10) Add ConsenSys Codefi node operator.' #?
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
