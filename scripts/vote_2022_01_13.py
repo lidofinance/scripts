@@ -22,75 +22,26 @@ Voting 13/01/2022.
 """
 
 import time
-from typing import (
-    Dict, Tuple,
-    Optional
-)
+
+from typing import (Dict, Tuple, Optional)
+
 from brownie.network.transaction import TransactionReceipt
-from functools import partial
 
-from utils.voting import create_vote
-from utils.evm_script import (
-    decode_evm_script,
-    encode_call_script,
-    calls_info_pretty_print
+from utils.voting import confirm_vote_script, create_vote
+from utils.evm_script import encode_call_script
+from utils.node_operators import encode_add_operator_lido
+from utils.config import get_deployer_account
+
+from utils.repo import (
+    add_implementation_to_lido_app_repo,
+    add_implementation_to_nos_app_repo
 )
-from utils.node_operators import encode_add_operator
-from utils.config import (
-    prompt_bool,
-    get_deployer_account,
-    lido_dao_voting_address,
-    lido_dao_token_manager_address,
-    lido_dao_node_operators_registry,
-    lido_dao_lido_repo,
-    lido_dao_node_operators_registry_repo,
-)
-
-try:
-    from brownie import interface
-except ImportError:
-    print(
-        'You\'re probably running inside Brownie console. '
-        'Please call:\n'
-        'set_console_globals(interface=interface)'
-    )
-
-def set_console_globals(**kwargs):
-    """Extract interface from brownie environment."""
-    global interface
-    interface = kwargs['interface']
-
-def add_implementation_to_repo(repo, version, address, content_uri):
-    return (
-      repo.address,
-      repo.newVersion.encode_input(
-          version,
-          address,
-          content_uri
-      )
-    )
 
 def start_vote(
     tx_params: Dict[str, str],
     silent: bool = False
 ) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
-    # Lido contracts
-    voting = interface.Voting(
-        lido_dao_voting_address
-    )
-    token_manager = interface.TokenManager(
-        lido_dao_token_manager_address
-    )
-    registry = interface.NodeOperatorsRegistry(
-        lido_dao_node_operators_registry
-    )
-    lido_repo = interface.Repo(
-        lido_dao_lido_repo
-    )
-    nos_repo = interface.Repo(
-        lido_dao_node_operators_registry_repo
-    )
 
     # Vote specific addresses and constants:
     # 1. Update Lido app IPFS hash
@@ -148,67 +99,38 @@ def start_vote(
         'address': '0x5Bc5ec5130f66f13d5C21ac6811A7e624ED3C7c6'
     } 
 
-    _encode_add_operator = partial(encode_add_operator, registry=registry)
-
     encoded_call_script = encode_call_script([
         # 1. Update Lido app IPFS hash
-        add_implementation_to_repo(
-            lido_repo,
+        add_implementation_to_lido_app_repo(
             update_lido_app['version'],
             update_lido_app['address'],
             update_lido_app['content_uri'],
         ),
         # 2.  Update NOS app IPFS hash
-        add_implementation_to_repo(
-            nos_repo,
+        add_implementation_to_nos_app_repo(
             update_node_operators_registry_app['version'],
             update_node_operators_registry_app['address'],
             update_node_operators_registry_app['content_uri'],
         ),
         # 3. Add node operator named Stakin
-        _encode_add_operator(**stakin_node_operator),
+        encode_add_operator_lido(**stakin_node_operator),
         # 4. Add node operator named ChainLayer
-        _encode_add_operator(**chainlayer_node_operator),
+        encode_add_operator_lido(**chainlayer_node_operator),
         # 5. Add node operator named Simply Staking
-        _encode_add_operator(**simplystaking_node_operator),
+        encode_add_operator_lido(**simplystaking_node_operator),
         # 6. Add node operator named BridgeTower
-        _encode_add_operator(**bridgetower_node_operator),
+        encode_add_operator_lido(**bridgetower_node_operator),
         # 7. Add node operator named Stakely
-        _encode_add_operator(**stakely_node_operator),
+        encode_add_operator_lido(**stakely_node_operator),
         # 8. Add node operator named InfStones
-        _encode_add_operator(**infstones_node_operator),
+        encode_add_operator_lido(**infstones_node_operator),
         # 9. Add node operator named HashQuark
-        _encode_add_operator(**hashquark_node_operator),
+        encode_add_operator_lido(**hashquark_node_operator),
         # 10. Add node operator named ConsenSys Codefi
-        _encode_add_operator(**consensyscodefi_node_operator),
+        encode_add_operator_lido(**consensyscodefi_node_operator),
     ])
 
-    human_readable_script = decode_evm_script(
-        encoded_call_script, verbose=False, specific_net='mainnet', repeat_is_error=True
-    )
-
-    # Show detailed description of prepared voting.
-    if not silent:
-        print('\nPoints of voting:')
-        total = len(human_readable_script)
-        print(human_readable_script)
-        for ind, call in enumerate(human_readable_script):
-            print(f'Point #{ind + 1}/{total}.')
-            print(calls_info_pretty_print(call))
-            print('---------------------------')
-
-        print('Does it look good?')
-        resume = prompt_bool()
-        while resume is None:
-            resume = prompt_bool()
-
-        if not resume:
-            print('Exit without running.')
-            return -1, None
-
-    return create_vote(
-        voting=voting,
-        token_manager=token_manager,
+    return confirm_vote_script(encoded_call_script, silent) and create_vote(
         vote_desc=(
             'Omnibus vote: '
             '1) Update Lido app IPFS hash to QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS;' #?
@@ -232,5 +154,7 @@ def main():
         'max_fee': '100 gwei',
         'priority_fee': '2 gwei'
     })
-    print(f'Vote created: {vote_id}.')
+
+    vote_id >= 0 and print(f'Vote created: {vote_id}.')
+
     time.sleep(5) # hack for waiting thread #2.

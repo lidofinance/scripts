@@ -73,7 +73,9 @@ NEW_NODE_OPERATORS = [
 ]
 
 def test_2022_01_13(
-    helpers, accounts, ldo_holder, dao_voting, node_operators_registry
+    helpers, accounts, ldo_holder,
+    dao_voting, node_operators_registry,
+    vote_id_from_env
 ):
     ### LIDO APP
     lido_repo = interface.Repo(lido_dao_lido_repo)
@@ -115,7 +117,8 @@ def test_2022_01_13(
     ##
     ## START VOTE
     ##
-    vote_id, _ = start_vote({ 'from': ldo_holder }, silent=True)
+    vote_id = vote_id_from_env or start_vote({ 'from': ldo_holder }, silent=True)[0]
+
     tx: TransactionReceipt = helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting
     )
