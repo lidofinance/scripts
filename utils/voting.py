@@ -1,12 +1,19 @@
 from brownie import exceptions
+from brownie.utils import color
 
-from utils.evm_script import encode_call_script, EMPTY_CALLSCRIPT
-from utils.config import ldo_token_address
+from utils.evm_script import (encode_call_script,
+    decode_evm_script,
+    calls_info_pretty_print,
+    EMPTY_CALLSCRIPT)
 
+from utils.config import (interface,
+    prompt_bool,
+    chain_network, contracts, get_config_params)
 
+def create_vote(vote_desc, evm_script, tx_params, verbose: bool = False):
+    voting = contracts.voting
+    token_manager = contracts.token_manager
 
-def create_vote(voting, token_manager, vote_desc, evm_script, tx_params,
-                verbose: bool = False):
     new_vote_script = encode_call_script([
         (voting.address,
          voting.newVote.encode_input(
@@ -16,7 +23,8 @@ def create_vote(voting, token_manager, vote_desc, evm_script, tx_params,
     tx = token_manager.forward(new_vote_script, tx_params)
     if tx.revert_msg is not None:
         print(tx.traceback)
-        return -1, tx
+        return (-1, tx)
+
     vote_id = tx.events['StartVote']['voteId']
 
     if verbose:
@@ -28,3 +36,36 @@ def create_vote(voting, token_manager, vote_desc, evm_script, tx_params,
                   f'Raised exception: {repr(err)}')
 
     return (vote_id, tx)
+
+def confirm_vote_script(encoded_call_script: str, silent: bool) -> bool:
+    human_readable_script = decode_evm_script(
+        encoded_call_script, verbose=False, specific_net=chain_network, repeat_is_error=True
+    )
+
+    # Show detailed description of prepared voting.
+    if not silent:
+        cfg_params = get_config_params()
+
+        config_repr = 'All known addresses extracted from a config file:\n'
+        for k,v in cfg_params.items():
+            config_repr += f'{k} => {v}\n'
+        config_repr = color.highlight(config_repr)
+        print(f'{config_repr}')
+
+        print('\nPoints of voting:')
+        total = len(human_readable_script)
+        print(human_readable_script)
+        for ind, call in enumerate(human_readable_script):
+            print(f'Point #{ind + 1}/{total}.')
+            print(calls_info_pretty_print(call))
+            print('---------------------------')
+
+        print('Does it look good?')
+        resume = prompt_bool()
+        while resume is None:
+            resume = prompt_bool()
+
+        if not resume:
+            print('Exit without running.')
+            return False
+    return True

@@ -17,3 +17,10 @@ lido_dao_deposit_security_module_address = '0xdb149235b6f40dc08810aa69869783be10
 
 # Multisigs
 finance_multisig_address = '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb'
+
+ldo_holder_address_for_tests = '0x9bb75183646e2a0dc855498bacd72b769ae6ced3'
+ldo_vote_executors_for_tests = [
+            '0x3e40d73eb977dc6a537af587d48316fee66e9c8c',
+            '0xb8d83908aab38a159f3da47a59d84db8e1838712',
+            '0xa2dfc431297aee387c05beef507e5335e684fbcd'
+]
