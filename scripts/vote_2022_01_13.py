@@ -133,8 +133,8 @@ def start_vote(
     return confirm_vote_script(encoded_call_script, silent) and create_vote(
         vote_desc=(
             'Omnibus vote: '
-            '1) Update Lido app IPFS hash to QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS;' #?
-            '2) Update NOs app IPFS hash to Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G;' #?
+            '1) Update Lido app IPFS hash to QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS;'
+            '2) Update NOs app IPFS hash to Qma7PXHmEj4js2gjM9vtHPtqvuK82iS5EYPiJmzKLzU58G;'
             '3) Add Stakin node operator;'
             '4) Add ChainLayer node operator;'
             '5) Add Simply Staking node operator;'
@@ -151,7 +151,7 @@ def start_vote(
 def main():
     vote_id, _ = start_vote({
         'from': get_deployer_account(),
-        'max_fee': '100 gwei',
+        'max_fee': '200 gwei',
         'priority_fee': '2 gwei'
     })
 
