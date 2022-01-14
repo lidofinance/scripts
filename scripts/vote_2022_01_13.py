@@ -19,6 +19,10 @@ Voting 13/01/2022.
    `0x065dAAb531e7Cd50f900D644E8caE8A208eEa4E9`
 10. Add node operator named ConsenSys Codefi with reward address
    `0x5Bc5ec5130f66f13d5C21ac6811A7e624ED3C7c6`
+
+Vote passed & executed on Jan-14-2022 12:10:58 PM +UTC, block #14003547.
+TX URL: https://etherscan.io/tx/0xd7b6f290f6f7447e12ba4a3781ea08ad7cb699924e7bf75cf808c79533f88969
+
 """
 
 import time
