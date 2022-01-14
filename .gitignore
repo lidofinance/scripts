@@ -1,6 +1,7 @@
 __pycache__
 .history
 .hypothesis/
+.python-version
 build/
 reports/
 

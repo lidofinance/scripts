@@ -88,12 +88,20 @@ class ContractsLazyLoader:
         return interface.Agent(lido_dao_agent_address)
 
     @property
-    def note_operators_registry(self) -> interface.NodeOperatorsRegistry:
+    def node_operators_registry(self) -> interface.NodeOperatorsRegistry:
         return interface.NodeOperatorsRegistry(lido_dao_node_operators_registry)
 
     @property
     def kernel(self) -> interface.Kernel:
         return interface.Kernel(lido_dao_kernel)
+
+    @property
+    def lido_app_repo(self) -> interface.Repo:
+        return interface.Repo(lido_dao_lido_repo)
+
+    @property
+    def nos_app_repo(self) -> interface.Repo:
+        return interface.Repo(lido_dao_node_operators_registry_repo)
 
 
 def __getattr__(name: str) -> Any:
