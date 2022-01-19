@@ -6,11 +6,6 @@ from scripts.vote_2022_01_20 import start_vote
 from brownie import interface
 from tx_tracing_helpers import *
 
-from utils.config import (
-    lido_dao_lido_repo,
-    lido_dao_node_operators_registry_repo,
-)
-
 from event_validators.payout import Payout, validate_payout_event
 
 dao_agent_address = '0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c'
@@ -39,7 +34,8 @@ referral_payout = Payout(
 )
 
 def test_2022_01_20(
-    helpers, accounts, ldo_holder, dao_voting, ldo_token
+    helpers, accounts, ldo_holder, dao_voting, ldo_token,
+    vote_id_from_env, bypass_events_decoding
 ):
     multisig_balance_before = ldo_token.balanceOf(finance_multisig_address)
     dao_balance_before = ldo_token.balanceOf(dao_agent_address)
@@ -47,7 +43,8 @@ def test_2022_01_20(
     ##
     ## START VOTE
     ##
-    vote_id, _ = start_vote({ 'from': ldo_holder }, silent=True)
+    vote_id = vote_id_from_env or start_vote({ 'from': ldo_holder }, silent=True)[0]
+
     tx: TransactionReceipt = helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='5 ether'
     )
@@ -55,13 +52,16 @@ def test_2022_01_20(
     multisig_balance_after = ldo_token.balanceOf(finance_multisig_address)
     dao_balance_after = ldo_token.balanceOf(dao_agent_address)
 
-    assert multisig_balance_after - multisig_balance_before == isidoros_payout.amount + jacob_payout.amount + referral_payout.amount 
+    assert multisig_balance_after - multisig_balance_before == isidoros_payout.amount + jacob_payout.amount + referral_payout.amount
     assert dao_balance_before - dao_balance_after == isidoros_payout.amount + jacob_payout.amount + referral_payout.amount
 
     ### validate vote events
     assert count_vote_items_by_events(tx) == 3, "Incorrect voting items count"
 
     display_voting_events(tx)
+
+    if bypass_events_decoding:
+        return
 
     evs = group_voting_events(tx)
 
