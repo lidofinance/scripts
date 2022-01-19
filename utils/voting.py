@@ -60,7 +60,7 @@ def confirm_vote_script(encoded_call_script: str, silent: bool) -> bool:
             print(calls_info_pretty_print(call))
             print('---------------------------')
 
-        print('Does it look good?')
+        print('Does it look good? [yes/no]')
         resume = prompt_bool()
         while resume is None:
             resume = prompt_bool()
@@ -68,4 +68,6 @@ def confirm_vote_script(encoded_call_script: str, silent: bool) -> bool:
         if not resume:
             print('Exit without running.')
             return False
+
+    print(f'{color("yellow")}Voting confirmed, please wait a few seconds ...{color}')
     return True
