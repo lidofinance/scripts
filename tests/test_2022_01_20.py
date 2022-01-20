@@ -16,14 +16,14 @@ isidoros_payout = Payout(
     token_addr=lido_dao_token,
     from_addr=dao_agent_address,
     to_addr=finance_multisig_address,
-    amount=5_500 * (10 ** 18)
+    amount=5_300 * (10 ** 18)
 )
 
 jacob_payout = Payout(
     token_addr=lido_dao_token,
     from_addr=dao_agent_address,
     to_addr=finance_multisig_address,
-    amount=9_200 * (10 ** 18)
+    amount=8_900 * (10 ** 18)
 )
 
 referral_payout = Payout(
@@ -46,7 +46,7 @@ def test_2022_01_20(
     vote_id = vote_id_from_env or start_vote({ 'from': ldo_holder }, silent=True)[0]
 
     tx: TransactionReceipt = helpers.execute_vote(
-        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='5 ether'
+        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='0.37 ether'
     )
 
     multisig_balance_after = ldo_token.balanceOf(finance_multisig_address)
