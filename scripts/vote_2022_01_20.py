@@ -60,9 +60,9 @@ def start_vote(
 
 def main():
     vote_id, _ = start_vote({
-        'from': get_deployer_account()#,
-        #'max_fee': '100 gwei',
-        #'priority_fee': '2 gwei'
+        'from': get_deployer_account(),
+        'max_fee': '100 gwei',
+        'priority_fee': '2 gwei'
     })
 
     vote_id >= 0 and print(f'Vote created: {vote_id}.')
