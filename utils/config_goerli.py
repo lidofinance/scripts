@@ -14,6 +14,9 @@ lido_dao_lido_repo = '0xe9ede497d2417fd980d8b5338232666641b9b9ac'
 lido_dao_node_operators_registry_repo = '0x5f867429616b380f1ca7a7283ff18c53a0033073'
 lido_dao_kernel = '0x1dD91b354Ebd706aB3Ac7c727455C7BAA164945A'
 lido_dao_deposit_security_module_address = '0xed23ad3ea5fb9d10e7371caef1b141ad1c23a80c'
+lido_dao_oracle_address = '0x24d8451BC07e7aF4Ba94F69aCDD9ad3c6579D9FB'
+composite_post_rebase_beacon_receiver_address = '0x1D2219E0A1e2F09309643fD8a69Ca0EF7093B739'
+self_owned_steth_burner_address = '0xf6a64DcB06Ef7eB1ee94aDfD7D10ACB44D9A9888'
 
 #Multisigs
 finance_multisig_address = ''
