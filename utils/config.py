@@ -68,6 +68,10 @@ class ContractsLazyLoader:
         return interface.Lido(lido_dao_steth_address)
 
     @property
+    def oracle(self) -> interface.LidoOracle:
+        return interface.LidoOracle(lido_dao_oracle_address)
+
+    @property
     def voting(self) -> interface.Voting:
         return interface.Voting(lido_dao_voting_address)
 
@@ -102,6 +106,14 @@ class ContractsLazyLoader:
     @property
     def nos_app_repo(self) -> interface.Repo:
         return interface.Repo(lido_dao_node_operators_registry_repo)
+
+    @property
+    def composite_post_rebase_beacon_receiver(self) -> interface.CompositePostRebaseBeaconReceiver:
+        return interface.CompositePostRebaseBeaconReceiver(composite_post_rebase_beacon_receiver_address)
+
+    @property
+    def self_owned_steth_burner(self) -> interface.SelfOwnedStETHBurner:
+        return interface.SelfOwnedStETHBurner(self_owned_steth_burner_address)
 
 
 def __getattr__(name: str) -> Any:

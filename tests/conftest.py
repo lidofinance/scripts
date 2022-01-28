@@ -1,20 +1,11 @@
 import pytest
-
 import os
 
-from typing import Optional, List
+from typing import Optional
 
 from brownie import chain
-from brownie.network.transaction import TransactionReceipt
-from brownie.network.event import EventDict, _EventItem
 
-from utils.config import (ldo_token_address, lido_dao_voting_address,
-                          lido_dao_token_manager_address,
-                          lido_dao_node_operators_registry,
-                          lido_dao_deposit_security_module_address,
-                          lido_dao_steth_address, lido_dao_acl_address,
-                          lido_dao_finance_address, ldo_holder_address_for_tests,
-                          ldo_vote_executors_for_tests)
+from utils.config import *
 
 @pytest.fixture(scope="function", autouse=True)
 def shared_setup(fn_isolation):
@@ -30,6 +21,9 @@ def ldo_holder(accounts):
 def dao_voting(interface):
     return interface.Voting(lido_dao_voting_address)
 
+@pytest.fixture(scope='module')
+def dao_agent(interface):
+    return interface.Agent(lido_dao_agent_address)
 
 @pytest.fixture(scope='module')
 def node_operators_registry(interface):
@@ -58,6 +52,9 @@ def lido(interface):
 def acl(interface):
     return interface.ACL(lido_dao_acl_address)
 
+@pytest.fixture(scope="module")
+def oracle(interface):
+    return interface.LidoOracle(lido_dao_oracle_address)
 
 @pytest.fixture(scope="module")
 def finance(interface):
