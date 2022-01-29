@@ -1,0 +1,92 @@
+""" Aragon ACL permission parameters
+
+This module contains classes and functions to create permission parameters for Aragon ACL
+See https://hack.aragon.org/docs/aragonos-ref#parameter-interpretation for details
+"""
+
+from enum import Enum, IntEnum
+from typing import Union
+from brownie import convert
+
+
+class SpecialArgumentID(IntEnum):
+    """Special argument ids that enables different comparision modes"""
+    BLOCK_NUMBER_PARAM_ID = 200
+    TIMESTAMP_PARAM_ID = 201  #
+    ORACLE_PARAM_ID = 203  # auth call to IACLOracle
+    LOGIC_OP_PARAM_ID = 204  # logic operations
+    PARAM_VALUE_PARAM_ID = 205  # just a value to use with Op.RET
+
+
+ArgumentID = Union[int, SpecialArgumentID]
+"""Determines how the comparison value is fetched. From 0 to 200 it refers to the argument index number passed to the 
+role. After 200, there are some special Argument IDs: """
+
+
+class ArgumentValue(int):
+    """Argument Value (uint240): the value to compare against, depending on the argument. It is a regular Ethereum memory
+    word that loses its two most significant bytes of precision. The reason for this was to allow parameters to be saved
+    in just one storage slot, saving significant gas. Even though uint240s are used, it can be used to store any integer
+    up to 2^30 - 1, addresses, and bytes32. In the case of comparing hashes, losing 2 bytes of precision shouldn't be a
+    dealbreaker if the hash algorithm is secure. """
+
+    def __new__(cls, value: int):
+        return super().__new__(cls, _to_uint240(value))
+
+
+# enum Op { NONE, EQ, NEQ, GT, LT, GTE, LTE, NOT, AND, OR, XOR, IF_ELSE, RET }
+class Op(Enum):
+    NONE = 0
+    EQ = 1
+    NEQ = 2
+    GT = 3
+    LT = 4
+    GTE = 5
+    LTE = 6
+    NOT = 7
+    AND = 8
+    OR = 9
+    XOR = 10
+    IF_ELSE = 11
+    RET = 12
+
+
+class Param:
+    """ Special struct for encoding with Aragon ACL permission params
+        See https://hack.aragon.org/docs/aragonos-ref#parameter-interpretation
+    """
+    id: ArgumentID
+    op: Op
+    value: ArgumentValue
+
+    def __init__(self, raw_id: ArgumentID, op: Op, value: ArgumentValue):
+        self.id = raw_id
+        self.op = op
+        self.value = value
+
+    def to_uint256(self) -> int:
+        id8 = convert.to_uint(self.id, 'uint8')
+        op8 = convert.to_uint(self.op.value, 'uint8')
+        value240 = convert.to_uint(self.value, 'uint240')
+        return convert.to_uint((id8 << 248) + (op8 << 240) + value240, 'uint256')
+
+
+def encode_argument_value_op(left: int, right: int) -> ArgumentValue:
+    return encode_argument_value_if(left, right, 0)
+
+
+def encode_argument_value_if(condition: int, success: int, failure: int) -> ArgumentValue:
+    condition32 = convert.to_uint(condition, 'uint32')
+    success32 = convert.to_uint(success, 'uint32')
+    failure32 = convert.to_uint(failure, 'uint32')
+
+    value = condition32 + (success32 << 32) + (failure32 << 64)
+
+    return ArgumentValue(convert.to_uint(value, 'uint240'))
+
+
+def _to_uint240(val: Union[int, str]) -> int:
+    #  Possibly, not explicit enough way to handle addresses
+    if isinstance(val, str) and (val[:2] == "0x"):
+        val = int(val, 16)
+    return ~(0xff << 240) & val

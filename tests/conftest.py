@@ -16,6 +16,7 @@ from utils.config import (ldo_token_address, lido_dao_voting_address,
                           lido_dao_finance_address, ldo_holder_address_for_tests,
                           ldo_vote_executors_for_tests)
 
+
 @pytest.fixture(scope="function", autouse=True)
 def shared_setup(fn_isolation):
     pass
@@ -50,9 +51,11 @@ def deposit_security_module(interface):
 def ldo_token(interface):
     return interface.ERC20(ldo_token_address)
 
+
 @pytest.fixture(scope='module')
 def lido(interface):
     return interface.Lido(lido_dao_steth_address)
+
 
 @pytest.fixture(scope="module")
 def acl(interface):
@@ -63,16 +66,16 @@ def acl(interface):
 def finance(interface):
     return interface.Finance(lido_dao_finance_address)
 
+
 class Helpers:
     @staticmethod
-    def execute_vote(accounts, vote_id, dao_voting, topup = '0.1 ether'):
+    def execute_vote(accounts, vote_id, dao_voting, topup='0.1 ether'):
         if dao_voting.getVote(vote_id)[0]:
             for holder_addr in ldo_vote_executors_for_tests:
                 print('voting from acct:', holder_addr)
                 accounts[0].transfer(holder_addr, topup)
                 account = accounts.at(holder_addr, force=True)
                 dao_voting.vote(vote_id, True, False, {'from': account})
-
 
         # wait for the vote to end
         chain.sleep(3 * 60 * 60 * 24)
@@ -84,9 +87,11 @@ class Helpers:
         print(f'vote #{vote_id} executed')
         return tx
 
+
 @pytest.fixture(scope='module')
 def helpers():
     return Helpers
+
 
 @pytest.fixture(scope='module')
 def vote_id_from_env() -> Optional[int]:
@@ -100,6 +105,7 @@ def vote_id_from_env() -> Optional[int]:
             pass
 
     return None
+
 
 @pytest.fixture(scope='module')
 def bypass_events_decoding() -> bool:
