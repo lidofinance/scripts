@@ -1,5 +1,5 @@
 from typing import Tuple, List
-from utils.permission_parameters import Param
+from utils.permission_parameters import Param, encode_permission_params
 
 
 def encode_permission_grant(
@@ -26,6 +26,6 @@ def encode_permission_grant_p(
 ) -> Tuple[str, str]:
     permission_id = getattr(target_app, permission_name)()
 
-    uint256_params = list(map(lambda p: p.to_uint256(), params))
+    uint256_params = encode_permission_params(params)
 
     return acl.address, acl.grantPermissionP.encode_input(grant_to, target_app, permission_id, uint256_params)

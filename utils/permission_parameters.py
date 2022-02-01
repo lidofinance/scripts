@@ -1,11 +1,15 @@
 """ Aragon ACL permission parameters
 
-This module contains classes and functions to create permission parameters for Aragon ACL
+This module contains classes and functions to create permission parameters for Aragon ACL.
+It tries to recreate the original API for the sake of simplicity.
 See https://hack.aragon.org/docs/aragonos-ref#parameter-interpretation for details
+
+NB! Constants MUST be equal to ones in deployed Lido ACL contract
+https://etherscan.io/address/0x9f3b9198911054b122fdb865f8a5ac516201c339#code
 """
 
 from enum import Enum, IntEnum
-from typing import Union
+from typing import Union, List
 from brownie import convert
 
 
@@ -55,27 +59,7 @@ class ArgumentValue(int):
         return super().__new__(cls, _to_uint240(value))
 
 
-# enum Op { NONE, EQ, NEQ, GT, LT, GTE, LTE, NOT, AND, OR, XOR, IF_ELSE, RET }
-class Op(Enum):
-    NONE = 0
-    EQ = 1
-    NEQ = 2
-    GT = 3
-    LT = 4
-    GTE = 5
-    LTE = 6
-    NOT = 7
-    AND = 8
-    OR = 9
-    XOR = 10
-    IF_ELSE = 11
-    RET = 12
-
-
 class Param:
-    """ Special struct for encoding with Aragon ACL permission params
-        See https://hack.aragon.org/docs/aragonos-ref#parameter-interpretation
-    """
     id: ArgumentID
     op: Op
     value: ArgumentValue
@@ -90,6 +74,10 @@ class Param:
         op8 = convert.to_uint(self.op.value, 'uint8')
         value240 = convert.to_uint(self.value, 'uint240')
         return convert.to_uint((id8 << 248) + (op8 << 240) + value240, 'uint256')
+
+
+def encode_permission_params(params: List[Param]) -> List[int]:
+    return list(map(lambda p: p.to_uint256(), params))
 
 
 def encode_argument_value_op(left: int, right: int) -> ArgumentValue:
