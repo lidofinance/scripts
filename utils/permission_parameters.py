@@ -9,6 +9,27 @@ from typing import Union
 from brownie import convert
 
 
+# enum Op { NONE, EQ, NEQ, GT, LT, GTE, LTE, RET, NOT, AND, OR, XOR, IF_ELSE }
+class Op(Enum):
+    """Enum values depends on enum in ACL contract itself
+    See https://etherscan.io/address/0x9f3b9198911054b122fdb865f8a5ac516201c339#code#L802 to check
+    NB! It changes in future versions of the contract
+    """
+    NONE = 0
+    EQ = 1
+    NEQ = 2
+    GT = 3
+    LT = 4
+    GTE = 5
+    LTE = 6
+    RET = 7
+    NOT = 8
+    AND = 9
+    OR = 10
+    XOR = 11
+    IF_ELSE = 12
+
+
 class SpecialArgumentID(IntEnum):
     """Special argument ids that enables different comparision modes"""
     BLOCK_NUMBER_PARAM_ID = 200
