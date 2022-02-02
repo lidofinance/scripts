@@ -16,13 +16,13 @@ referral_payout = Payout(
     token_addr=lido_dao_token,
     from_addr=dao_agent_address,
     to_addr=finance_multisig_address,
-    amount=147_245 * (10 ** 18)  # ?
+    amount=180_278 * (10 ** 18)
 )
 
 
-def test_2022_01_20(
-    helpers, accounts, ldo_holder, dao_voting, ldo_token,
-    vote_id_from_env, bypass_events_decoding
+def test_2022_02_03(
+        helpers, accounts, ldo_holder, dao_voting, ldo_token,
+        vote_id_from_env, bypass_events_decoding
 ):
     multisig_balance_before = ldo_token.balanceOf(finance_multisig_address)
     dao_balance_before = ldo_token.balanceOf(dao_agent_address)
@@ -30,7 +30,7 @@ def test_2022_01_20(
     ##
     # START VOTE
     ##
-    vote_id = vote_id_from_env or start_vote({ 'from': ldo_holder }, silent=True)[0]
+    vote_id = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]
 
     tx: TransactionReceipt = helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='0.37 ether'

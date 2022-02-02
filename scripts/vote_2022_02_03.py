@@ -1,7 +1,7 @@
 """
 Voting 03/02/2022.
 
-1. Referral program payout of X LDO to finance multisig Y
+1. Referral program payout of 180,278 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
 
 """
 
@@ -24,10 +24,10 @@ def start_vote(
     """Prepare and run voting."""
 
     encoded_call_script = encode_call_script([
-        # 1. Referral program payout of 147,245 LDO to financial multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
+        # 1. Referral program payout of 180,278 LDO to financial multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
         make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-            ldo_in_wei=147_245 * (10 ** 18),  # ?
+            ldo_in_wei=180_278 * (10 ** 18),
             reference="14th period referral rewards"
         )
     ])
@@ -35,7 +35,7 @@ def start_vote(
     return confirm_vote_script(encoded_call_script, silent) and create_vote(
         vote_desc=(
             'Omnibus vote: '
-            '1) Allocate X LDO tokens for the 14th period referral rewards.'
+            '1) Allocate 180,278 LDO tokens for the 14th period referral rewards.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
