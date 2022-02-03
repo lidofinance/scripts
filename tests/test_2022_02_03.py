@@ -1,9 +1,8 @@
 """
-Tests for voting 20/01/2022.
+Tests for voting 03/02/2022.
 """
 
 from scripts.vote_2022_02_03 import start_vote
-from brownie import interface
 from tx_tracing_helpers import *
 
 from event_validators.payout import Payout, validate_payout_event
