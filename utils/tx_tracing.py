@@ -3,12 +3,11 @@
 from typing import Callable, Dict, Optional, List
 from dataclasses import dataclass
 
-import eth_event
-from eth_event import EventError
+from eth_event import StructLogError, decode_traceTransaction
 
 from brownie.network.transaction import TransactionReceipt
 from brownie.network.transaction import _step_internal, _step_external, _step_compare
-from brownie.network.event import EventDict, _EventItem, _decode_logs, _decode_trace, _topics
+from brownie.network.event import EventDict, _topics
 from brownie.network import state
 from brownie.convert.normalize import format_event
 
@@ -22,6 +21,25 @@ class GroupBy:
     group_title: str
     show_counter: bool
     color: str
+
+def _align_intval_to(val: int, multiple: int) -> int:
+    return val + (-val) % multiple
+
+def _align_logdata_len(trace: List) -> List:
+    for trace_item in trace:
+        if not trace_item["op"].startswith("LOG"):
+            continue
+
+        try:
+            length = int(trace_item["stack"][-2], 16)
+            proper_length = _align_intval_to(length, 32)
+            trace_item["stack"][-2] = hex(proper_length)
+        except KeyError:
+            raise StructLogError("StructLog has no stack")
+        except (IndexError, TypeError):
+            raise StructLogError("Malformed stack")
+
+    return trace
 
 def tx_events_from_trace(tx: TransactionReceipt) -> Optional[List]:
     """
@@ -39,13 +57,19 @@ def tx_events_from_trace(tx: TransactionReceipt) -> Optional[List]:
     # Brownie uses that way for the reverted transactions only.
     # Contracts resolution by addr works pretty well.
     tx._get_trace()
-    initial_address = str(tx.receiver or tx.contract_address)
     trace = tx._raw_trace
 
     if not trace:
         return None
 
-    events = eth_event.decode_traceTransaction(
+    # Seems like Ganache sometimes provides correct data
+    # but incorrect data length for the LOG traces.
+    # Force the length to be aligned to a 32-bytes boundary
+    trace = _align_logdata_len(trace)
+
+    initial_address = str(tx.receiver or tx.contract_address)
+
+    events = decode_traceTransaction(
         trace, _topics, allow_undecoded=True, initial_address=initial_address
     )
 
