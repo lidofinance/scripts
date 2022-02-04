@@ -17,14 +17,14 @@ def _get_latest_version(package_name: str) -> str:
     import json
     import urllib3
 
-    from distutils import version
+    from packaging import version
 
     url = f'https://pypi.org/pypi/{package_name}/json'
 
-    versions = list(json.loads(urllib3.PoolManager().request(
+    versions = list(version.parse(x) for x in json.loads(urllib3.PoolManager().request(
         'GET', url
     ).data)['releases'].keys())
-    versions.sort(key=version.StrictVersion)
+    versions.sort()
 
     return versions[-1]
 
@@ -36,10 +36,10 @@ def _resolve_parser_dependency() -> None:
     import subprocess
     import pkg_resources
 
-    from distutils import version
+    from packaging import version
 
     try:
-        installed_version = version.StrictVersion(
+        installed_version = version.parse(
             pkg_resources.get_distribution(
                 parser_package_name
             ).version
