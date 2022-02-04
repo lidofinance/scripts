@@ -1,9 +1,7 @@
 """
-Voting 03/02/2022.
+Voting 04/02/2022.
 
 1. Referral program payout of 180,278 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
-
-The vote REJECTED.
 
 """
 
