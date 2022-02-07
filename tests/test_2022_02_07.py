@@ -1,5 +1,5 @@
 """
-Tests for voting 04/02/2022.
+Tests for voting 07/02/2022.
 """
 
 from scripts.vote_2022_02_07 import start_vote
