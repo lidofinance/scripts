@@ -30,6 +30,29 @@ def has_burn_role_permission(acl, lido, who) -> int:
 def has_burn_role_permission_granular(acl, lido, who, acl_param) -> int:
     return acl.hasPermission['address,address,bytes32,uint[]'](who, lido, lido.BURN_ROLE(), acl_param)
 
+def cover_application_check(steth_burner, dao_voting, oracle, lido, agent):
+    steth_amount = 1 * 10**18
+
+    assert steth_burner.getCoverSharesBurnt() == 0, \
+        "incorrect amount of the shares burnt for cover"
+
+    lido.transfer(dao_voting.address, steth_amount, { 'from': agent.address })
+    lido.approve(steth_burner.address, steth_amount, { 'from': dao_voting.address })
+    shares_to_burn = lido.getSharesByPooledEth(steth_amount)
+    steth_burner.requestBurnMyStETHForCover(steth_amount, { 'from': dao_voting.address })
+
+    _, validators, beaconBalance = lido.getBeaconStat()
+
+    expectedEpoch = oracle.getExpectedEpochId()
+    reporters = oracle.getOracleMembers()
+    quorum = oracle.getQuorum()
+    for reporter in reporters[:quorum]:
+        print(f'reporting to oracle from: {reporter}')
+        oracle.reportBeacon(expectedEpoch, beaconBalance // 10**9, validators, { 'from': reporter })
+
+    assert steth_burner.getCoverSharesBurnt() == shares_to_burn, \
+        "incorrect amount of the shares burnt for cover"
+
 def test_setup_coverage(
     helpers, accounts, ldo_holder,
     dao_voting, lido, oracle, acl, dao_agent,
@@ -120,6 +143,11 @@ def test_setup_coverage(
     acl_param = require_first_param_is_addr(self_owned_steth_burner.address)
     assert has_burn_role_permission_granular(acl, lido, self_owned_steth_burner, acl_param), \
         "Incorrect granular permissions"
+
+    cover_application_check(
+        self_owned_steth_burner, dao_voting,
+        oracle, lido, dao_agent
+    )
 
     ### validate vote events
     assert count_vote_items_by_events(tx) == 4, "Incorrect voting items count"
