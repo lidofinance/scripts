@@ -19,3 +19,6 @@ networks:
       fork: https://mainnet.infura.io/v3/${WEB3_INFURA_PROJECT_ID}
       
 autofetch_sources: true
+
+hypothesis:
+       max_examples: 10
