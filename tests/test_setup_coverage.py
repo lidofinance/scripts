@@ -9,12 +9,12 @@ from utils.config import network_name
 from utils.permissions import require_first_param_is_addr
 
 composite_receiver_address = {
-    'mainnet': '0xBADDF00D',
+    'mainnet': None,
     'goerli': '0x1D2219E0A1e2F09309643fD8a69Ca0EF7093B739'
 }
 
 selfowned_steth_burner_address = {
-    'mainnet': '0xBADDF00D',
+    'mainnet': None,
     'goerli': '0xf6a64DcB06Ef7eB1ee94aDfD7D10ACB44D9A9888'
 }
 
@@ -23,12 +23,11 @@ selfowned_steth_burner_burnt_non_cover = {
     'goerli': 0
 }
 
-def has_burn_role_permission(acl, lido, who) -> int:
+def has_burn_role_permission(acl, lido, who, acc, sharesAmount) -> int:
     """Returns if address has BURN_ROLE on Lido(stETH) contract"""
-    return acl.hasPermission(who, lido, lido.BURN_ROLE())
-
-def has_burn_role_permission_granular(acl, lido, who, acl_param) -> int:
-    return acl.hasPermission['address,address,bytes32,uint[]'](who, lido, lido.BURN_ROLE(), acl_param)
+    return acl.hasPermission['address,address,bytes32,uint[]'](
+        who, lido, lido.BURN_ROLE(), [acc, sharesAmount]
+    )
 
 def cover_application_check(steth_burner, dao_voting, oracle, lido, agent):
     steth_amount = 1 * 10**18
@@ -99,8 +98,9 @@ def test_setup_coverage(
         == selfowned_steth_burner_burnt_non_cover[netname], \
         "Incorrect non-cover shares burnt amount"
 
-    assert has_burn_role_permission(acl, lido, dao_voting), "Incorrect permissions"
-    assert not has_burn_role_permission(acl, lido, self_owned_steth_burner), "Incorrect permissions"
+    assert has_burn_role_permission(acl, lido, dao_voting, dao_agent.address, 100), "Incorrect permissions"
+    assert not has_burn_role_permission(acl, lido, self_owned_steth_burner, dao_agent.address, 100), "Incorrect permissions"
+    assert not has_burn_role_permission(acl, lido, self_owned_steth_burner, self_owned_steth_burner.address, 100), "Incorrect permissions"
 
     ##
     ## START VOTE
@@ -137,11 +137,10 @@ def test_setup_coverage(
     assert self_owned_steth_burner.getNonCoverSharesBurnt() \
         == selfowned_steth_burner_burnt_non_cover[netname], "Incorrect non-cover shares burnt amount"
 
-    assert not has_burn_role_permission(acl, lido, dao_voting), "Incorrect permissions"
-    assert not has_burn_role_permission(acl, lido, self_owned_steth_burner), "Incorrect permissions"
+    assert not has_burn_role_permission(acl, lido, dao_voting, dao_agent.address, 100), "Incorrect permissions"
+    assert not has_burn_role_permission(acl, lido, self_owned_steth_burner, dao_agent.address, 100), "Incorrect permissions"
 
-    acl_param = require_first_param_is_addr(self_owned_steth_burner.address)
-    assert has_burn_role_permission_granular(acl, lido, self_owned_steth_burner, acl_param), \
+    assert has_burn_role_permission(acl, lido, self_owned_steth_burner, self_owned_steth_burner.address, 100), \
         "Incorrect granular permissions"
 
     cover_application_check(
