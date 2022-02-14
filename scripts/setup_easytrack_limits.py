@@ -10,6 +10,9 @@ from utils.config import (
     get_deployer_account,
     lido_dao_finance_address,
     lido_dao_acl_address,
+    lido_dao_steth_address,
+    ldo_token_address,
+    dai_token_address
 )
 from utils.evm_script import encode_call_script
 from utils.finance import ZERO_ADDRESS
@@ -35,17 +38,17 @@ eth = {
 
 steth = {
     'limit': 1_000 * (10 ** 18),
-    'address': '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
+    'address': lido_dao_steth_address,
 }
 
 ldo = {
     'limit': 5_000_000 * (10 ** 18),
-    'address': '0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32',
+    'address': ldo_token_address,
 }
 
 dai = {
     'limit': 100_000 * (10 ** 18),
-    'address': '0x6b175474e89094c44da98b954eedeac495271d0f'
+    'address': dai_token_address,
 }
 
 

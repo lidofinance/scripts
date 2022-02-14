@@ -24,3 +24,5 @@ ldo_vote_executors_for_tests = [
             '0xb8d83908aab38a159f3da47a59d84db8e1838712',
             '0xa2dfc431297aee387c05beef507e5335e684fbcd'
 ]
+
+dai_token_address = '0x6b175474e89094c44da98b954eedeac495271d0f'
