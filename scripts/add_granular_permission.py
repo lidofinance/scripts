@@ -28,12 +28,12 @@ except ImportError:
         'set_console_globals(interface=interface)'
     )
 
-eth_limit = 1_000
-steth_limit = 1_000
-ldo_limit = 1_000_000
+eth_limit = 1_000 * (10 ** 18)
+steth_limit = 1_000 * (10 ** 18)
+ldo_limit = 5_000_000 * (10 ** 18)
 
 
-def safety_permission_params() -> List[Param]:
+def require_amount_under_limits() -> List[Param]:
     """ Here we want to build such permissions that checks the _token and _amount pairs
         on each Finance#newImmediatePayment launch.
 
@@ -42,28 +42,31 @@ def safety_permission_params() -> List[Param]:
 
         See https://etherscan.io/address/0x836835289a2e81b66ae5d95b7c8dbc0480dcf9da#code#L1549
     """
-    token = 0
-    amount = 2
+    token_arg_index = 0
+    amount_arg_index = 2
 
     return [
         # 0: if (1) then (2) else (3)
-        Param(SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(1, 2, 3)),
+        Param(SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE,
+              encode_argument_value_if(condition=1, success=2, failure=3)),
         # 1: (_token == ETH)
-        Param(token, Op.EQ, ArgumentValue(ZERO_ADDRESS)),
+        Param(token_arg_index, Op.EQ, ArgumentValue(ZERO_ADDRESS)),
         # 2: { return _amount <= 1000 }
-        Param(amount, Op.LTE, ArgumentValue(eth_limit)),
+        Param(amount_arg_index, Op.LTE, ArgumentValue(eth_limit)),
         # 3: else if (4) then (5) else (6)
-        Param(SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(4, 5, 6)),
+        Param(SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE,
+              encode_argument_value_if(condition=4, success=5, failure=6)),
         # 4: (_token == LDO)
-        Param(token, Op.EQ, ArgumentValue(ldo_token_address)),
+        Param(token_arg_index, Op.EQ, ArgumentValue(ldo_token_address)),
         # 5: { return _amount <= 1_000_000 }
-        Param(amount, Op.LTE, ArgumentValue(ldo_limit)),
+        Param(amount_arg_index, Op.LTE, ArgumentValue(ldo_limit)),
         # 6: else if (7) then (8) else (9)
-        Param(SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(7, 8, 9)),
+        Param(SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE,
+              encode_argument_value_if(condition=7, success=8, failure=9)),
         # 7: (_token == stETH)
-        Param(token, Op.EQ, ArgumentValue(lido_dao_steth_address)),
+        Param(token_arg_index, Op.EQ, ArgumentValue(lido_dao_steth_address)),
         # 8: { return _amount <= 1000 }
-        Param(amount, Op.LTE, ArgumentValue(steth_limit)),
+        Param(amount_arg_index, Op.LTE, ArgumentValue(steth_limit)),
         # 9: else { return false }
         Param(SpecialArgumentID.PARAM_VALUE_PARAM_ID, Op.RET, ArgumentValue(0))
     ]
@@ -79,7 +82,8 @@ def start_vote(
     finance = interface.Finance(lido_dao_finance_address)
 
     encoded_call_script = encode_call_script([
-        encode_permission_grant_p(finance, 'CREATE_PAYMENTS_ROLE', tx_params['from'], acl, safety_permission_params())
+        encode_permission_grant_p(finance, 'CREATE_PAYMENTS_ROLE', tx_params['from'], acl,
+                                  params=require_amount_under_limits())
     ])
 
     return confirm_vote_script(encoded_call_script, silent) and create_vote(
