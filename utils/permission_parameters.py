@@ -55,7 +55,7 @@ class ArgumentValue(int):
     up to 2^30 - 1, addresses, and bytes32. In the case of comparing hashes, losing 2 bytes of precision shouldn't be a
     dealbreaker if the hash algorithm is secure. """
 
-    def __new__(cls, value: int):
+    def __new__(cls, value: Union[int, str]):
         return super().__new__(cls, _to_uint240(value))
 
 
