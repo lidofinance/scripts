@@ -1,12 +1,13 @@
 """
-Tests for voting 20/01/2022.
+Tests for Aragon ACL custom limit permission from scripts/setup_easytrack_limits.py
 """
 
 import brownie
 import pytest
 from brownie.test import given, strategy
 
-from scripts.setup_easytrack_limits import eth, steth, ldo, require_amount_limits
+from scripts.setup_easytrack_limits import require_amount_limits
+from test_setup_easytrack_limits import eth, steth, dai, ldo
 from utils.evm_script import encode_call_script
 from utils.permissions import encode_permission_grant_p
 from utils.voting import confirm_vote_script, create_vote
@@ -81,6 +82,25 @@ def test_permission_pass_for_ldo(acl, finance, ldo_holder, amount):
     finance.newImmediatePayment(ldo['address'], ldo_holder.address, amount, 'test', {'from': ldo_holder})
 
 
+@given(amount=strategy('uint', min_value=dai['limit'] + 1))
+def test_permission_fails_for_dai(acl, finance, ldo_holder, amount):
+    assert not acl.hasPermission['address,address,bytes32,uint[]'](dai['address'], finance,
+                                                                   finance.CREATE_PAYMENTS_ROLE(),
+                                                                   [dai['address'], ldo_holder.address, amount])
+    with brownie.reverts('APP_AUTH_FAILED'):
+        finance.newImmediatePayment(dai['address'], ldo_holder.address, amount, 'Should be reverted',
+                                    {'from': ldo_holder})
+
+
+@given(amount=strategy('uint', min_value=1, max_value=dai['limit']))
+def test_permission_pass_for_dai(acl, finance, ldo_holder, amount):
+    assert acl.hasPermission['address,address,bytes32,uint[]'](ldo_holder, finance, finance.CREATE_PAYMENTS_ROLE(),
+                                                               [dai['address'], ldo_holder.address, amount])
+
+    with brownie.reverts('VAULT_TOKEN_TRANSFER_REVERTED'):
+        finance.newImmediatePayment(dai['address'], ldo_holder.address, amount, 'test', {'from': ldo_holder})
+
+
 @given(amount=strategy('uint', min_value=1))
 def test_permission_fails_for_usdc(acl, finance, ldo_holder, amount):
     assert not acl.hasPermission['address,address,bytes32,uint[]'](ldo_holder, finance, finance.CREATE_PAYMENTS_ROLE(),
@@ -88,3 +108,13 @@ def test_permission_fails_for_usdc(acl, finance, ldo_holder, amount):
     with brownie.reverts('APP_AUTH_FAILED'):
         finance.newImmediatePayment(usdc_token, ldo_holder.address, amount, 'Should be reverted',
                                     {'from': ldo_holder})
+
+
+@pytest.mark.parametrize('token', [eth, steth, ldo, dai])
+@given(amount=strategy('uint', min_value=1))
+def test_permission_fails_for_other_sender(acl, finance, accounts, token, amount):
+    assert not acl.hasPermission['address,address,bytes32,uint[]'](accounts[0], finance, finance.CREATE_PAYMENTS_ROLE(),
+                                                                   [token['address'], accounts[0].address, amount])
+    with brownie.reverts('APP_AUTH_FAILED'):
+        finance.newImmediatePayment(token['address'], accounts[0].address, amount, 'Should be reverted',
+                                    {'from': accounts[0]})
