@@ -43,8 +43,8 @@ def test_setup_coverage(
     self_owned_steth_burner = interface.SelfOwnedStETHBurner(
         selfowned_steth_burner_address[netname]
     )
-    #assert oracle.getBeaconReportReceiver() == ZERO_ADDRESS, \
-    #    "Incorrect old beacon report receiver"
+    assert oracle.getBeaconReportReceiver() == ZERO_ADDRESS, \
+        "Incorrect old beacon report receiver"
     assert oracle.getLido() == lido.address, \
         "Incorrect lido address"
     assert lido.getOracle() == oracle.address, \
@@ -54,9 +54,8 @@ def test_setup_coverage(
 
     assert composite_post_rebase_beacon_receiver.ORACLE() == oracle.address, \
         "Incorrect oracle"
-    #assert composite_post_rebase_beacon_receiver.callbacksLength() == 0, \
-    #    "Incorrect callbacks length"
-    composite_post_rebase_beacon_receiver.removeCallback(0, {'from': dao_voting})
+    assert composite_post_rebase_beacon_receiver.callbacksLength() == 0, \
+        "Incorrect callbacks length"
     assert self_owned_steth_burner.VOTING() == dao_voting.address, \
         "Incorrect voting address"
     assert self_owned_steth_burner.LIDO() == lido.address, \
@@ -71,9 +70,9 @@ def test_setup_coverage(
     assert self_owned_steth_burner.getNonCoverSharesBurnt() == selfowned_steth_burner_burnt_non_cover[netname], \
         "Incorrect non-cover shares burnt amount"
 
-    #assert has_burn_role_permission(acl, lido, dao_voting, dao_agent.address, 100), "Incorrect permissions"
-    #assert not has_burn_role_permission(acl, lido, self_owned_steth_burner, dao_agent.address, 100), "Incorrect permissions"
-    #assert not has_burn_role_permission(acl, lido, self_owned_steth_burner, self_owned_steth_burner.address, 100), "Incorrect permissions"
+    assert has_burn_role_permission(acl, lido, dao_voting, dao_agent.address, 100), "Incorrect permissions"
+    assert not has_burn_role_permission(acl, lido, self_owned_steth_burner, dao_agent.address, 100), "Incorrect permissions"
+    assert not has_burn_role_permission(acl, lido, self_owned_steth_burner, self_owned_steth_burner.address, 100), "Incorrect permissions"
 
     ##
     ## START VOTE
