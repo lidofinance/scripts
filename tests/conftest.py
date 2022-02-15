@@ -60,6 +60,30 @@ def oracle(interface):
 def finance(interface):
     return interface.Finance(lido_dao_finance_address)
 
+@pytest.fixture(scope="module")
+def composite_post_rebase_beacon_receiver(interface):
+    return interface.CompositePostRebaseBeaconReceiver(
+        composite_post_rebase_beacon_receiver_address
+    )
+
+@pytest.fixture(scope="module")
+def self_owned_steth_burner(interface):
+    return interface.SelfOwnedStETHBurner(
+        self_owned_steth_burner_address
+    )
+
+@pytest.fixture(scope="module")
+def anchor_vault(interface):
+    return interface.AnchorVault(
+        anchor_vault_address
+    )
+
+@pytest.fixture(scope="module")
+def anchor_insurance_connector(interface):
+    return interface.InsuranceConnector(
+        anchor_insurance_connector_address
+    )
+
 class Helpers:
     @staticmethod
     def execute_vote(accounts, vote_id, dao_voting, topup = '0.1 ether'):

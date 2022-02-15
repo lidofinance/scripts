@@ -7,16 +7,6 @@ from brownie import ZERO_ADDRESS, interface, reverts
 from tx_tracing_helpers import *
 from utils.config import network_name
 
-composite_receiver_address = {
-    'mainnet': None,
-    'goerli': '0x1D2219E0A1e2F09309643fD8a69Ca0EF7093B739'
-}
-
-selfowned_steth_burner_address = {
-    'mainnet': None,
-    'goerli': '0xf6a64DcB06Ef7eB1ee94aDfD7D10ACB44D9A9888'
-}
-
 selfowned_steth_burner_burnt_non_cover = {
     'mainnet': 32145684728326685744,
     'goerli': 0
@@ -36,18 +26,14 @@ def has_burn_role_permission(acl, lido, who, acc, sharesAmount) -> int:
 def test_setup_coverage(
     helpers, accounts, ldo_holder,
     dao_voting, lido, oracle, acl, dao_agent,
+    composite_post_rebase_beacon_receiver,
+    self_owned_steth_burner, anchor_vault,
+    anchor_insurance_connector,
     vote_id_from_env, bypass_events_decoding
 ):
     netname = network_name().split('-')[0]
     assert netname in ("goerli", "mainnet"), "Incorrect network name"
 
-    # CHECKS BEFORE
-    composite_post_rebase_beacon_receiver = interface.CompositePostRebaseBeaconReceiver(
-        composite_receiver_address[netname]
-    )
-    self_owned_steth_burner = interface.SelfOwnedStETHBurner(
-        selfowned_steth_burner_address[netname]
-    )
     assert oracle.getBeaconReportReceiver() == ZERO_ADDRESS, \
         "Incorrect old beacon report receiver"
     assert oracle.getLido() == lido.address, \
