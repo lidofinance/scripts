@@ -1,11 +1,14 @@
 """
 Tests for setup_easytrack_permissions.py
 """
+import brownie
+import pytest
+from brownie.test import given, strategy
 
 from event_validators.permission import validate_permission_revoke_event, validate_permission_grantp_event, \
     Permission
-from scripts.setup_easytrack_limits import start_vote, evmscriptexecutor_address
-from tx_tracing_helpers import count_vote_items_by_events, TransactionReceipt, display_voting_events, \
+from scripts.setup_easytrack_limits import start_vote, evmscriptexecutor
+from tx_tracing_helpers import count_vote_items_by_events, display_voting_events, \
     group_voting_events
 
 permission = Permission(entity='0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977',
@@ -35,52 +38,103 @@ dai = {
 }
 
 
+@pytest.fixture(scope="module", autouse=True)
+def voting_tx(vote_id_from_env, ldo_holder, helpers, accounts, dao_voting):
+    vote_id = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]
+
+    return helpers.execute_vote(
+        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='0.5 ether'
+    )
+
+
 def has_payments_permission(acl, finance, sender, token, receiver, amount) -> bool:
     return acl.hasPermission['address,address,bytes32,uint[]'](sender, finance, finance.CREATE_PAYMENTS_ROLE(),
                                                                [token, receiver, amount])
 
 
-def test_setup_easytrack_permissions(
-        helpers, accounts, ldo_holder, dao_voting, vote_id_from_env, finance, acl
-):
-    ##
-    # START VOTE
-    ##
-    vote_id = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]
+def test_setup_events(voting_tx):
+    assert count_vote_items_by_events(voting_tx) == 2, "Incorrect voting items count"
 
-    tx: TransactionReceipt = helpers.execute_vote(
-        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='0.37 ether'
-    )
+    display_voting_events(voting_tx)
 
-    assert has_payments_permission(acl, finance, evmscriptexecutor_address, eth['address'], ldo_holder.address,
-                                   eth['limit']), 'Should pass under eth limit'
-    assert has_payments_permission(acl, finance, evmscriptexecutor_address, steth['address'], ldo_holder.address,
-                                   steth['limit']), 'Should pass under steth limit'
-    assert has_payments_permission(acl, finance, evmscriptexecutor_address, ldo['address'], ldo_holder.address,
-                                   ldo['limit']), 'Should pass under ldo limit'
-    assert has_payments_permission(acl, finance, evmscriptexecutor_address, dai['address'], ldo_holder.address,
-                                   dai['limit']), 'Should pass under dai limit'
-
-    assert not has_payments_permission(acl, finance, evmscriptexecutor_address, eth['address'], ldo_holder.address,
-                                       eth['limit'] + 1), 'Should not pass over eth limit'
-    assert not has_payments_permission(acl, finance, evmscriptexecutor_address, steth['address'], ldo_holder.address,
-                                       steth['limit'] + 1), 'Should not pass over steth limit'
-    assert not has_payments_permission(acl, finance, evmscriptexecutor_address, ldo['address'], ldo_holder.address,
-                                       ldo['limit'] + 1), 'Should not pass over ldo limit'
-    assert not has_payments_permission(acl, finance, evmscriptexecutor_address, dai['address'], ldo_holder.address,
-                                       dai['limit'] + 1), 'Should not pass over dai limit'
-
-    assert not has_payments_permission(acl, finance, evmscriptexecutor_address, usdc_token, ldo_holder.address,
-                                       1), 'Should not pass with usdc'
-    assert not has_payments_permission(acl, finance, accounts[0].address, eth['address'], ldo_holder.address,
-                                       eth['limit']), 'Should pass from random address'
-
-    assert count_vote_items_by_events(tx) == 2, "Incorrect voting items count"
-
-    display_voting_events(tx)
-
-    evs = group_voting_events(tx)
+    evs = group_voting_events(voting_tx)
 
     validate_permission_revoke_event(evs[0], permission)
 
     validate_permission_grantp_event(evs[1], permission)
+
+
+@given(amount=strategy('uint', min_value=1, max_value=eth['limit']))
+def test_permission_pass_for_eth(acl, finance, ldo_holder, amount):
+    assert has_payments_permission(acl, finance, evmscriptexecutor, eth['address'], ldo_holder.address, amount)
+    finance.newImmediatePayment(eth['address'], ldo_holder.address, amount, 'test', {'from': evmscriptexecutor})
+
+
+@given(amount=strategy('uint', min_value=1, max_value=steth['limit']))
+def test_permission_pass_for_steth(acl, finance, ldo_holder, amount):
+    assert has_payments_permission(acl, finance, evmscriptexecutor, steth['address'], ldo_holder.address, amount)
+    finance.newImmediatePayment(steth['address'], ldo_holder.address, amount, 'test', {'from': evmscriptexecutor})
+
+
+@given(amount=strategy('uint', min_value=1, max_value=ldo['limit']))
+def test_permission_pass_for_ldo(acl, finance, ldo_holder, amount):
+    assert has_payments_permission(acl, finance, evmscriptexecutor, ldo['address'], ldo_holder.address, amount)
+    finance.newImmediatePayment(ldo['address'], ldo_holder.address, amount, 'test', {'from': evmscriptexecutor})
+
+
+@given(amount=strategy('uint', min_value=1, max_value=dai['limit']))
+def test_permission_pass_for_dai(acl, finance, ldo_holder, amount):
+    assert has_payments_permission(acl, finance, evmscriptexecutor, dai['address'], ldo_holder.address, amount)
+
+    # won't pass here because we don't have dai in treasury
+    with brownie.reverts('VAULT_TOKEN_TRANSFER_REVERTED'):
+        finance.newImmediatePayment(dai['address'], ldo_holder.address, amount, 'test', {'from': evmscriptexecutor})
+
+
+@given(amount=strategy('uint', min_value=eth['limit'] + 1))
+def test_permission_fails_for_eth(acl, finance, ldo_holder, amount):
+    assert not has_payments_permission(acl, finance, evmscriptexecutor, eth['address'], ldo_holder.address, amount)
+    with brownie.reverts('APP_AUTH_FAILED'):
+        finance.newImmediatePayment(eth['address'], ldo_holder.address, amount, 'Should be reverted',
+                                    {'from': evmscriptexecutor})
+
+
+@given(amount=strategy('uint', min_value=steth['limit'] + 1))
+def test_permission_fails_for_steth(acl, finance, ldo_holder, amount):
+    assert not has_payments_permission(acl, finance, evmscriptexecutor, steth['address'], ldo_holder.address, amount)
+    with brownie.reverts('APP_AUTH_FAILED'):
+        finance.newImmediatePayment(steth['address'], ldo_holder.address, amount, 'Should be reverted',
+                                    {'from': evmscriptexecutor})
+
+
+@given(amount=strategy('uint', min_value=ldo['limit'] + 1))
+def test_permission_fails_for_ldo(acl, finance, ldo_holder, amount):
+    assert not has_payments_permission(acl, finance, evmscriptexecutor, ldo['address'], ldo_holder.address, amount)
+    with brownie.reverts('APP_AUTH_FAILED'):
+        finance.newImmediatePayment(ldo['address'], ldo_holder.address, amount, 'Should be reverted',
+                                    {'from': evmscriptexecutor})
+
+
+@given(amount=strategy('uint', min_value=dai['limit'] + 1))
+def test_permission_fails_for_dai(acl, finance, ldo_holder, amount):
+    assert not has_payments_permission(acl, finance, evmscriptexecutor, dai['address'], ldo_holder.address, amount)
+    with brownie.reverts('APP_AUTH_FAILED'):
+        finance.newImmediatePayment(dai['address'], ldo_holder.address, amount, 'Should be reverted',
+                                    {'from': evmscriptexecutor})
+
+
+@given(amount=strategy('uint', min_value=1))
+def test_permission_fails_for_usdc(acl, finance, ldo_holder, amount):
+    assert not has_payments_permission(acl, finance, evmscriptexecutor, usdc_token, ldo_holder.address, amount)
+    with brownie.reverts('APP_AUTH_FAILED'):
+        finance.newImmediatePayment(usdc_token, ldo_holder.address, amount, 'Should be reverted',
+                                    {'from': evmscriptexecutor})
+
+
+@pytest.mark.parametrize('token', [eth, steth, ldo, dai])
+@given(amount=strategy('uint', min_value=1))
+def test_permission_fails_for_other_sender(acl, finance, accounts, token, amount):
+    assert not has_payments_permission(acl, finance, accounts[0].address, usdc_token, accounts[0].address, amount)
+    with brownie.reverts('APP_AUTH_FAILED'):
+        finance.newImmediatePayment(token['address'], accounts[0].address, amount, 'Should be reverted',
+                                    {'from': accounts[0]})

@@ -29,7 +29,7 @@ except ImportError:
         'set_console_globals(interface=interface)'
     )
 
-evmscriptexecutor_address = '0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977'
+evmscriptexecutor = '0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977'
 
 eth = {
     'limit': 1_000 * (10 ** 18),
@@ -108,9 +108,9 @@ def start_vote(
     finance = interface.Finance(lido_dao_finance_address)
 
     encoded_call_script = encode_call_script([
-        encode_permission_revoke(finance, 'CREATE_PAYMENTS_ROLE', evmscriptexecutor_address, acl),
-        encode_permission_grant_p(finance, 'CREATE_PAYMENTS_ROLE', evmscriptexecutor_address, acl,
-                                  require_amount_limits())
+        encode_permission_revoke(finance, 'CREATE_PAYMENTS_ROLE', evmscriptexecutor, acl),
+        encode_permission_grant_p(finance, 'CREATE_PAYMENTS_ROLE', evmscriptexecutor, acl,
+                                  params=require_amount_limits())
     ])
 
     return confirm_vote_script(encoded_call_script, silent) and create_vote(
