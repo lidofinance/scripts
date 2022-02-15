@@ -22,6 +22,11 @@ selfowned_steth_burner_burnt_non_cover = {
     'goerli': 0
 }
 
+anchor_insurance_connector_old = {
+    'mainnet': '0x2BDfD3De0fF23373B621CDAD0aD3dF1580efE701',
+    'goerli': None
+}
+
 def has_burn_role_permission(acl, lido, who, acc, sharesAmount) -> int:
     """Returns if address has BURN_ROLE on Lido(stETH) contract"""
     return acl.hasPermission['address,address,bytes32,uint[]'](
@@ -69,6 +74,9 @@ def test_setup_coverage(
         "Incorrect cover shares burnt amount"
     assert self_owned_steth_burner.getNonCoverSharesBurnt() == selfowned_steth_burner_burnt_non_cover[netname], \
         "Incorrect non-cover shares burnt amount"
+
+    assert anchor_vault.insurance_connector() == anchor_insurance_connector_old[netname], \
+        "Incorrect insurance connector"
 
     assert has_burn_role_permission(acl, lido, dao_voting, dao_agent.address, 100), "Incorrect permissions"
     assert not has_burn_role_permission(acl, lido, self_owned_steth_burner, dao_agent.address, 100), "Incorrect permissions"
@@ -129,8 +137,16 @@ def test_setup_coverage(
         accounts, oracle, dao_voting
     )
 
+    assert anchor_vault.insurance_connector() == anchor_insurance_connector.address, \
+        "Incorrect insurance connector"
+    assert anchor_insurance_connector.total_shares_burnt() > 0, \
+        "Wrong connector"
+    assert anchor_insurance_connector.total_shares_burnt() \
+        == self_owned_steth_burner.getCoverSharesBurnt(), \
+        "Wrong connector"
+
     ### validate vote events
-    assert count_vote_items_by_events(tx) == 4, "Incorrect voting items count"
+    assert count_vote_items_by_events(tx) == 5, "Incorrect voting items count"
 
     display_voting_events(tx)
 

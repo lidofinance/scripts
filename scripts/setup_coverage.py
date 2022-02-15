@@ -27,6 +27,8 @@ def start_vote(
     lido = contracts.lido
     oracle = contracts.oracle
     voting = contracts.voting
+    anchor_vault = contracts.anchor_vault
+    anchor_insurance_connector = contracts.anchor_insurance_connector
     composite_receiver = contracts.composite_post_rebase_beacon_receiver
     steth_burner = contracts.self_owned_steth_burner
 
@@ -53,6 +55,12 @@ def start_vote(
             permission_name="BURN_ROLE",
             grant_to=steth_burner,
             acl_param=require_first_param_is_addr(steth_burner.address)
+        ),
+        (
+            anchor_vault.address,
+            anchor_vault.set_insurance_connector.encode_input(
+                anchor_insurance_connector.address
+            )
         )
     ])
 
@@ -62,7 +70,8 @@ def start_vote(
             '1) Wrap stETH burner into a composite receiver;'
             '2) Attach the composite receiver to the Lido oracle as a beacon report callback;'
             '3) Revoke `BURN_ROLE` permissions from Voting;'
-            '4) Grant `BURN_ROLE` constrained permissions to the stETH burner.'
+            '4) Grant `BURN_ROLE` constrained permissions to the stETH burner;'
+            '5) Set new InsuranceConnector to AnchorVault.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
