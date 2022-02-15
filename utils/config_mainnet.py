@@ -17,7 +17,8 @@ lido_dao_deposit_security_module_address = '0xdb149235b6f40dc08810aa69869783be10
 lido_dao_oracle_address = '0x442af784A788A5bd6F42A01Ebe9F287a871243fb'
 composite_post_rebase_beacon_receiver_address = ''
 self_owned_steth_burner_address = ''
-
+anchor_vault_address = '0xA2F987A546D4CD1c607Ee8141276876C26b72Bdf'
+anchor_insurance_connector_address = ''
 
 # Multisigs
 finance_multisig_address = '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb'

@@ -115,6 +115,14 @@ class ContractsLazyLoader:
     def self_owned_steth_burner(self) -> interface.SelfOwnedStETHBurner:
         return interface.SelfOwnedStETHBurner(self_owned_steth_burner_address)
 
+    @property
+    def anchor_vault(self) -> interface.AnchorVault:
+        return interface.AnchorVault(anchor_vault_address)
+
+    @property
+    def anchor_insurance_connector(self) -> interface.InsuranceConnector:
+        return interface.InsuranceConnector(anchor_insurance_connector_address)
+
 
 def __getattr__(name: str) -> Any:
     if name == "contracts":
