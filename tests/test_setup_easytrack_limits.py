@@ -7,7 +7,7 @@ from brownie.test import given, strategy
 
 from event_validators.permission import validate_permission_revoke_event, validate_permission_grantp_event, \
     Permission
-from scripts.setup_easytrack_limits import start_vote, evmscriptexecutor
+from scripts.setup_easytrack_limits import start_vote, evmscriptexecutor, amount_limits
 from tx_tracing_helpers import count_vote_items_by_events, display_voting_events, \
     group_voting_events
 
@@ -61,7 +61,7 @@ def test_setup_events(voting_tx):
 
     validate_permission_revoke_event(evs[0], permission)
 
-    validate_permission_grantp_event(evs[1], permission)
+    validate_permission_grantp_event(evs[1], permission, amount_limits())
 
 
 @given(amount=strategy('uint', min_value=1, max_value=eth['limit']))
