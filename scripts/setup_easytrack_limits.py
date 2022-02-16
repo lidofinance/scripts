@@ -53,7 +53,7 @@ dai = {
 }
 
 
-def require_amount_limits() -> List[Param]:
+def amount_limits() -> List[Param]:
     """ Here we want to build such permissions that checks the _token and _amount pairs
         on each Finance#newImmediatePayment launch.
 
@@ -69,31 +69,31 @@ def require_amount_limits() -> List[Param]:
         # 0: if (1) then (2) else (3)
         Param(SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE,
               encode_argument_value_if(condition=1, success=2, failure=3)),
-        # 1: (_token == ETH)
-        Param(token_arg_index, Op.EQ, ArgumentValue(eth['address'])),
-        # 2: { return _amount <= 1000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(eth['limit'])),
+        # 1: (_token == LDO)
+        Param(token_arg_index, Op.EQ, ArgumentValue(ldo['address'])),
+        # 2: { return _amount <= 5_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(ldo['limit'])),
         # 3: else if (4) then (5) else (6)
         Param(SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE,
               encode_argument_value_if(condition=4, success=5, failure=6)),
-        # 4: (_token == LDO)
-        Param(token_arg_index, Op.EQ, ArgumentValue(ldo['address'])),
-        # 5: { return _amount <= 5_000_000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(ldo['limit'])),
+        # 4: (_token == ETH)
+        Param(token_arg_index, Op.EQ, ArgumentValue(eth['address'])),
+        # 5: { return _amount <= 1000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(eth['limit'])),
         # 6: else if (7) then (8) else (9)
         Param(SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE,
               encode_argument_value_if(condition=7, success=8, failure=9)),
-        # 7: (_token == stETH)
-        Param(token_arg_index, Op.EQ, ArgumentValue(steth['address'])),
-        # 8: { return _amount <= 1000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(steth['limit'])),
+        # 7: (_token == DAI)
+        Param(token_arg_index, Op.EQ, ArgumentValue(dai['address'])),
+        # 8: { return _amount <= 100_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(dai['limit'])),
         # 9: else if (10) then (11) else (12)
         Param(SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE,
               encode_argument_value_if(condition=10, success=11, failure=12)),
-        # 10: (_token == DAI)
-        Param(token_arg_index, Op.EQ, ArgumentValue(dai['address'])),
-        # 11: { return _amount <= 100_000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(dai['limit'])),
+        # 10: (_token == stETH)
+        Param(token_arg_index, Op.EQ, ArgumentValue(steth['address'])),
+        # 11: { return _amount <= 1000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(steth['limit'])),
         # 12: else { return false }
         Param(SpecialArgumentID.PARAM_VALUE_PARAM_ID, Op.RET, ArgumentValue(0))
     ]
@@ -110,8 +110,7 @@ def start_vote(
 
     encoded_call_script = encode_call_script([
         encode_permission_revoke(finance, 'CREATE_PAYMENTS_ROLE', evmscriptexecutor, acl),
-        encode_permission_grant_p(finance, 'CREATE_PAYMENTS_ROLE', evmscriptexecutor, acl,
-                                  params=require_amount_limits())
+        encode_permission_grant_p(finance, 'CREATE_PAYMENTS_ROLE', evmscriptexecutor, acl, params=amount_limits())
     ])
 
     return confirm_vote_script(encoded_call_script, silent) and create_vote(
