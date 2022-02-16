@@ -15,6 +15,8 @@ lido_dao_node_operators_registry_repo = '0x5f867429616b380f1ca7a7283ff18c53a0033
 lido_dao_kernel = '0x1dD91b354Ebd706aB3Ac7c727455C7BAA164945A'
 lido_dao_deposit_security_module_address = '0xed23ad3ea5fb9d10e7371caef1b141ad1c23a80c'
 
+lido_easytrack_evmscriptexecutor = '0x3c9AcA237b838c59612d79198685e7f20C7fE783'
+
 #Multisigs
 finance_multisig_address = ''
 
@@ -24,3 +26,5 @@ ldo_vote_executors_for_tests = [
             '0x4333218072d5d7008546737786663c38b4d561a4',
             '0xfda7e01b2718c511bf016030010572e833c7ae6a'
 ]
+
+dai_token_address = '0x73967c6a0904aa032c103b4104747e88c566b1a2'
