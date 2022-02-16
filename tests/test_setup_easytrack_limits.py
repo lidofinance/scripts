@@ -134,7 +134,7 @@ def test_permission_fails_for_usdc(acl, finance, ldo_holder, amount):
 @pytest.mark.parametrize('token', [eth, steth, ldo, dai])
 @given(amount=strategy('uint', min_value=1))
 def test_permission_fails_for_other_sender(acl, finance, accounts, token, amount):
-    assert not has_payments_permission(acl, finance, accounts[0].address, usdc_token, accounts[0].address, amount)
+    assert not has_payments_permission(acl, finance, accounts[0].address, token['address'], accounts[0].address, amount)
     with brownie.reverts('APP_AUTH_FAILED'):
         finance.newImmediatePayment(token['address'], accounts[0].address, amount, 'Should be reverted',
                                     {'from': accounts[0]})
