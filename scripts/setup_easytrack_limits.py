@@ -12,7 +12,8 @@ from utils.config import (
     lido_dao_acl_address,
     lido_dao_steth_address,
     ldo_token_address,
-    dai_token_address
+    dai_token_address,
+    lido_easytrack_evmscriptexecutor
 )
 from utils.evm_script import encode_call_script
 from utils.finance import ZERO_ADDRESS
@@ -29,7 +30,7 @@ except ImportError:
         'set_console_globals(interface=interface)'
     )
 
-evmscriptexecutor = '0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977'
+evmscriptexecutor = lido_easytrack_evmscriptexecutor
 
 eth = {
     'limit': 1_000 * (10 ** 18),

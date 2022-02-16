@@ -15,6 +15,8 @@ lido_dao_node_operators_registry_repo = '0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1
 lido_dao_kernel = '0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc'
 lido_dao_deposit_security_module_address = '0xdb149235b6f40dc08810aa69869783be101790e7'
 
+lido_easytrack_evmscriptexecutor = '0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977'
+
 # Multisigs
 finance_multisig_address = '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb'
 
