@@ -1,9 +1,9 @@
 """
 Voting 17/02/2022.
 
-1. Referral program payout of X LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
-2. Send 6,400 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Master of Validators Feb comp
-3. Send 10,700 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI BizDev Leader Feb comp
+1. Referral program payout of 330,448 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
+2. Send 6,700 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Master of Validators Feb comp
+3. Send 11,200 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI BizDev Leader Feb comp
 4. Revoke role CREATE_PAYMENTS_ROLE from Easy Track EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
 5. Grant role CREATE_PAYMENTS_ROLE to Easy Track EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
 with limits: 1000 ETH, 1000 stETH, 5M LDO, 100K DAI
@@ -113,21 +113,21 @@ def start_vote(
         # 1. Referral program payout of 147,245 LDO to financial multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
         make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-            ldo_in_wei=147_245 * (10 ** 18),
+            ldo_in_wei=330_448 * (10 ** 18),
             reference="15th period referral rewards"
         ),
 
         # 2. Send 6,400 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis Feb comp
         make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-            ldo_in_wei=6_400 * (10 ** 18),
+            ldo_in_wei=6_700 * (10 ** 18),
             reference='Master of Validators Feb comp'
         ),
 
         # 3. Send 10,700 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI Jacob Blish Feb comp
         make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-            ldo_in_wei=10_700 * (10 ** 18),
+            ldo_in_wei=11_200 * (10 ** 18),
             reference='BizDev Leader Feb comp'
         ),
 
@@ -153,9 +153,9 @@ def start_vote(
     return confirm_vote_script(encoded_call_script, silent) and create_vote(
         vote_desc=(
             'Omnibus vote: '
-            '1) Allocate 6,400 LDO tokens to Master of Validators Feb 2022 compensation;'
-            '2) Allocate 10,700 LDO tokens to BizDev Leader Feb 2022 compensation;'
-            '3) Allocate 147,245 LDO tokens for the 15th period referral rewards;'
+            '1) Allocate 330,448 LDO tokens for the 15th period referral rewards;'
+            '2) Allocate 6,700 LDO tokens to Master of Validators Feb 2022 compensation;'
+            '3) Allocate 11,200 LDO tokens to BizDev Leader Feb 2022 compensation;'
             '4) Revoke role CREATE_PAYMENTS_ROLE from Easy Track EVMScriptExecutor;'
             '5) Grant role CREATE_PAYMENTS_ROLE to Easy Track EVMScriptExecutor with limits.'
         ),
