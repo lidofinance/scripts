@@ -98,4 +98,4 @@ def _to_uint240(val: Union[int, str]) -> int:
     #  Possibly, not explicit enough way to handle addresses
     if isinstance(val, str) and (val[:2] == "0x"):
         val = int(val, 16)
-    return ~(0xff << 240) & val
+    return ~(0xffff << 240) & val
