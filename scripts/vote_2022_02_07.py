@@ -3,6 +3,9 @@ Voting 07/02/2022.
 
 1. Referral program payout of 180,278 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
 
+Vote passed & executed on Feb-08-2022 12:34:18 PM +UTC, block #14165452.
+TX URL: https://etherscan.io/tx/0x4d195c86cc08136b832f1f2f0c75413647f32f7da1dea6dbae71d608d14ab480
+
 """
 
 import time

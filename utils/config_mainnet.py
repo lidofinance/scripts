@@ -20,6 +20,8 @@ self_owned_steth_burner_address = ''
 anchor_vault_address = '0xA2F987A546D4CD1c607Ee8141276876C26b72Bdf'
 anchor_insurance_connector_address = ''
 
+lido_easytrack_evmscriptexecutor = '0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977'
+
 # Multisigs
 finance_multisig_address = '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb'
 
@@ -29,3 +31,5 @@ ldo_vote_executors_for_tests = [
             '0xb8d83908aab38a159f3da47a59d84db8e1838712',
             '0xa2dfc431297aee387c05beef507e5335e684fbcd'
 ]
+
+dai_token_address = '0x6b175474e89094c44da98b954eedeac495271d0f'
