@@ -21,3 +21,9 @@ def test_parse_params():
     params = ast.literal_eval(params_string)
     parsed = list(map(lambda x: parse(x), params))
     assert parsed == amount_limits()
+
+
+def test_params_str():
+    param_int = 92293023275763683840113128248807091592764448837194831896495561762951005208577
+    param = parse(param_int)
+    assert str(param) == 'Param(ArgumentID=LOGIC_OP_PARAM_ID, op=Op.IF_ELSE, if=1 then=2 else=3)'
