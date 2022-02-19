@@ -11,6 +11,7 @@ from brownie.network.transaction import TransactionReceipt
 from utils.voting import confirm_vote_script, create_vote
 from utils.evm_script import encode_call_script
 from utils.config import get_deployer_account, contracts
+from utils.agent import agent_forward
 
 from utils.permissions import (
     encode_permission_revoke,
@@ -56,12 +57,12 @@ def start_vote(
             grant_to=steth_burner,
             acl_param=require_first_param_is_addr(steth_burner.address)
         ),
-        (
+        agent_forward([(
             anchor_vault.address,
             anchor_vault.set_insurance_connector.encode_input(
                 anchor_insurance_connector.address
             )
-        )
+        )])
     ])
 
     return confirm_vote_script(encoded_call_script, silent) and create_vote(
