@@ -7,7 +7,7 @@ See https://hack.aragon.org/docs/aragonos-ref#parameter-interpretation for detai
 NB! Constants MUST be equal to ones in deployed Lido ACL contract
 https://etherscan.io/address/0x9f3b9198911054b122fdb865f8a5ac516201c339#code
 """
-
+from dataclasses import dataclass
 from enum import Enum, IntEnum
 from typing import Union, List
 from brownie import convert
@@ -99,3 +99,10 @@ def _to_uint240(val: Union[int, str]) -> int:
     if isinstance(val, str) and (val[:2] == "0x"):
         val = int(val, 16)
     return ~(0xffff << 240) & val
+
+
+def parse(val: int) -> Param:
+    arg_id = (val & (0xff << 248)) >> 248
+    op = (val & (0xff << 240)) >> 240
+    val = _to_uint240(val)
+    return Param(arg_id, Op(op), ArgumentValue(val))
