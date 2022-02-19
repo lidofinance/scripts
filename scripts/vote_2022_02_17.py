@@ -8,6 +8,9 @@ Voting 17/02/2022.
 5. Grant role CREATE_PAYMENTS_ROLE to Easy Track EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
 with limits: 1000 ETH, 1000 stETH, 5M LDO, 100K DAI
 
+Vote passed & executed on Feb-18-2022 12:31:36 PM +UTC, block #14230115.
+TX URL: https://etherscan.io/tx/0xe80098eeccd65c2d811f76ac010eac1dc78dd80669712cc157cd307323e8e9cc
+
 """
 
 import time
@@ -110,7 +113,7 @@ def start_vote(
     finance = interface.Finance(lido_dao_finance_address)
 
     encoded_call_script = encode_call_script([
-        # 1. Referral program payout of 147,245 LDO to financial multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
+        # 1. Referral program payout of 330,448 LDO to financial multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
         make_ldo_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
             ldo_in_wei=330_448 * (10 ** 18),
