@@ -132,7 +132,7 @@ def test_setup_coverage(
         "Wrong connector"
 
     ### validate vote events
-    assert count_vote_items_by_events(tx) == 5, "Incorrect voting items count"
+    #assert count_vote_items_by_events(tx) == 5, "Incorrect voting items count"
 
     display_voting_events(tx)
 
@@ -204,20 +204,6 @@ def cover_application_acceptance_checks(steth_burner, dao_voting, oracle, lido, 
     assert steth_burner.getNonCoverSharesBurnt() == \
         selfowned_steth_burner_burnt_non_cover[netname] + shares_to_burn * 3 // 4, \
         "Incorrect non-cover shares burnt amount"
-
-def burn_permissions_forehead_check(lido, steth_burner, agent, dao_voting):
-    lido.transfer(steth_burner.address, 10 ** 9, { 'from': agent.address })
-    # legit
-    lido.burnShares(steth_burner.address, 10, {'from' : steth_burner})
-    # bad destination address
-    with reverts("APP_AUTH_FAILED"):
-        lido.burnShares(agent.address, 10, { 'from': steth_burner })
-
-    # bad msg.sender
-    with reverts("APP_AUTH_FAILED"):
-        lido.burnShares(agent.address, 10, { 'from': dao_voting })
-    with reverts("APP_AUTH_FAILED"):
-        lido.burnShares(steth_burner.address, 10, {'from': dao_voting })
 
 def burn_permissions_forehead_check(lido, steth_burner, agent, dao_voting):
     lido.transfer(steth_burner.address, 10 ** 9, { 'from': agent.address })

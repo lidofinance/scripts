@@ -15,10 +15,10 @@ lido_dao_node_operators_registry_repo = '0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1
 lido_dao_kernel = '0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc'
 lido_dao_deposit_security_module_address = '0xdb149235b6f40dc08810aa69869783be101790e7'
 lido_dao_oracle_address = '0x442af784A788A5bd6F42A01Ebe9F287a871243fb'
-composite_post_rebase_beacon_receiver_address = ''
-self_owned_steth_burner_address = ''
+composite_post_rebase_beacon_receiver_address = '0xEdd972c22870726F30253efa88a08608F9748907'
+self_owned_steth_burner_address = '0x1e0C8542A59c286e73c30c45612d9C3a674A6cbC'
 anchor_vault_address = '0xA2F987A546D4CD1c607Ee8141276876C26b72Bdf'
-anchor_insurance_connector_address = ''
+anchor_insurance_connector_address = '0x714E3BcddBdC2045Bd3BE35c8642885470b25b11'
 
 lido_easytrack_evmscriptexecutor = '0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977'
 
