@@ -1,4 +1,10 @@
 """
+Test script that creates a vote that adds a Aragon ACL permission with limits to EVMScriptExecutor.
+Was used for testing and as a base for vote_2022_02_17.py.
+
+Was executed on goerli 2022-02-16, 17:07
+https://testnet.testnet.fi/#/lido-testnet-prater/0xbc0b67b4553f4cf52a913de9a6ed0057e2e758db/vote/164/
+https://goerli.etherscan.io/tx/0x8e145a42ba753b153dd91c73e06628d91ff8d2243024a12383616ff3281b3b88
 """
 
 import time

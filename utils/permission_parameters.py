@@ -7,7 +7,7 @@ See https://hack.aragon.org/docs/aragonos-ref#parameter-interpretation for detai
 NB! Constants MUST be equal to ones in deployed Lido ACL contract
 https://etherscan.io/address/0x9f3b9198911054b122fdb865f8a5ac516201c339#code
 """
-
+from dataclasses import dataclass
 from enum import Enum, IntEnum
 from typing import Union, List
 from brownie import convert
@@ -59,21 +59,33 @@ class ArgumentValue(int):
         return super().__new__(cls, _to_uint240(value))
 
 
+@dataclass
 class Param:
     id: ArgumentID
     op: Op
     value: ArgumentValue
-
-    def __init__(self, raw_id: ArgumentID, op: Op, value: ArgumentValue):
-        self.id = raw_id
-        self.op = op
-        self.value = value
 
     def to_uint256(self) -> int:
         id8 = convert.to_uint(self.id, 'uint8')
         op8 = convert.to_uint(self.op.value, 'uint8')
         value240 = convert.to_uint(self.value, 'uint240')
         return convert.to_uint((id8 << 248) + (op8 << 240) + value240, 'uint256')
+
+    def __str__(self):
+        value = hex(self.value) if self.op == Op.EQ else self.value
+        special_id = SpecialArgumentID(self.id).name if self.id > 200 else self.id
+
+        value_clause = f'value={value})'
+        if self.op == Op.IF_ELSE:
+            if_param = value & 0xffffffff
+            then_param = (value & (0xffffffff << 32)) >> 32
+            else_param = (value & (0xffffffff << 64)) >> 64
+            value_clause = f'if={if_param} then={then_param} else={else_param}'
+        elif self.op == Op.AND or self.op == Op.OR or self.op == Op.NOT or self.op == Op.XOR:
+            left = value & 0xffffffff
+            right = (value & (0xffffffff << 32)) >> 32
+            value_clause = f'left={left} right={right}'
+        return f'Param(ArgumentID={special_id}, op={self.op}, {value_clause})'
 
 
 def encode_permission_params(params: List[Param]) -> List[int]:
@@ -98,4 +110,11 @@ def _to_uint240(val: Union[int, str]) -> int:
     #  Possibly, not explicit enough way to handle addresses
     if isinstance(val, str) and (val[:2] == "0x"):
         val = int(val, 16)
-    return ~(0xff << 240) & val
+    return ~(0xffff << 240) & val
+
+
+def parse(val: int) -> Param:
+    arg_id = (val & (0xff << 248)) >> 248
+    op = (val & (0xff << 240)) >> 240
+    val = _to_uint240(val)
+    return Param(arg_id, Op(op), ArgumentValue(val))
