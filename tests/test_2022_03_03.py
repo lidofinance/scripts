@@ -2,8 +2,6 @@
 Tests for voting 03/03/2022.
 """
 
-from brownie import reverts
-
 from event_validators.payout import Payout, validate_payout_event
 
 from scripts.vote_2022_03_03 import start_vote
@@ -56,4 +54,3 @@ def test_2022_03_03(
 
     # asserts on vote item 1
     validate_payout_event(evs[0], referral_payout)
-

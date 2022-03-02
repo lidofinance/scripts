@@ -7,11 +7,11 @@ Voting 03/03/2022.
 
 import time
 
-from typing import (Dict, Tuple, Optional, List)
+from typing import (Dict, Tuple, Optional)
 
 from brownie.network.transaction import TransactionReceipt
 
-from utils.finance import make_ldo_payout, ZERO_ADDRESS
+from utils.finance import make_ldo_payout
 from utils.voting import confirm_vote_script, create_vote
 from utils.evm_script import encode_call_script
 from utils.config import get_deployer_account
