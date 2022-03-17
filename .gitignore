@@ -7,3 +7,7 @@ reports/
 
 # PyCharm
 .idea
+/.vs/VSWorkspaceState.json
+/.vs/slnx.sqlite
+/.vs/PythonSettings.json
+/.vs/scripts/v17/.suo
