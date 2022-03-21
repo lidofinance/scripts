@@ -38,8 +38,9 @@ referral_payout = Payout(
     amount=235_290 * (10 ** 18)
 )
 
+
 def test_2021_12_16(
-    helpers, accounts, ldo_holder, dao_voting, ldo_token
+        helpers, accounts, ldo_holder, dao_voting, ldo_token
 ):
     multisig_balance_before = ldo_token.balanceOf(finance_multisig_address)
     dao_balance_before = ldo_token.balanceOf(dao_agent_address)
@@ -47,7 +48,7 @@ def test_2021_12_16(
     ##
     ## START VOTE
     ##
-    vote_id, _ = start_vote({ 'from': ldo_holder }, silent=True)
+    vote_id, _ = start_vote({'from': ldo_holder}, silent=True)
     tx: TransactionReceipt = helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='5 ether'
     )
@@ -55,8 +56,8 @@ def test_2021_12_16(
     multisig_balance_after = ldo_token.balanceOf(finance_multisig_address)
     dao_balance_after = ldo_token.balanceOf(dao_agent_address)
 
-    assert multisig_balance_after - multisig_balance_before == isidoros_payout.amount + jacob_payout.amount + referral_payout.amount 
-    assert dao_balance_before - dao_balance_after == isidoros_payout.amount +jacob_payout.amount + referral_payout.amount
+    assert multisig_balance_after - multisig_balance_before == isidoros_payout.amount + jacob_payout.amount + referral_payout.amount
+    assert dao_balance_before - dao_balance_after == isidoros_payout.amount + jacob_payout.amount + referral_payout.amount
 
     ### validate vote events
     assert count_vote_items_by_events(tx) == 3, "Incorrect voting items count"

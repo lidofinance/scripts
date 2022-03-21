@@ -1,13 +1,14 @@
+import json
+import os
+import re
+import time
+
 from brownie import interface
 
-from utils.voting import create_vote
-from utils.config import (lido_dao_voting_address,
-                          lido_dao_token_manager_address,
-                          lido_dao_node_operators_registry,
+from utils.config import (lido_dao_node_operators_registry,
                           get_deployer_account)
 from utils.evm_script import encode_call_script
-
-import json, sys, os, re, time
+from utils.voting import create_vote
 
 
 def encode_add_operator(name, address):
@@ -26,8 +27,6 @@ def add_node_operators(tx_params, node_operators):
     ])
 
     return create_vote(
-        voting=interface.Voting(lido_dao_voting_address),
-        token_manager=interface.TokenManager(lido_dao_token_manager_address),
         vote_desc=
         f'Add node operators: \n{os.linesep.join(["{} with address {}".format(no["name"], no["address"]) for no in node_operators])}',
         evm_script=evm_script,

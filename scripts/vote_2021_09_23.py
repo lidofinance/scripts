@@ -176,8 +176,6 @@ def start_vote(
             return -1, None
 
     return create_vote(
-        voting=voting,
-        token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
             '1) Increase staking limits for Node Operators, '

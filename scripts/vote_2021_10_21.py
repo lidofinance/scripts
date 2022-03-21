@@ -26,9 +26,7 @@ from utils.config import (
     prompt_bool,
     get_deployer_account,
     ldo_token_address,
-    lido_dao_voting_address,
     lido_dao_finance_address,
-    lido_dao_token_manager_address,
 )
 
 try:
@@ -51,6 +49,7 @@ def pp(text, value):
     """Pretty print with colorized."""
     print(text, color.highlight(str(value)), end='')
 
+
 def make_ldo_payout(
         *not_specified,
         target_address: str,
@@ -72,6 +71,7 @@ def make_ldo_payout(
         finance=finance
     )
 
+
 def start_vote(
         tx_params: Dict[str, str],
         silent: bool = False
@@ -80,10 +80,6 @@ def start_vote(
 
     # Lido contracts and constants:
     finance = interface.Finance(lido_dao_finance_address)
-    voting = interface.Voting(lido_dao_voting_address)
-    token_manager = interface.TokenManager(
-        lido_dao_token_manager_address
-    )
 
     _make_ldo_payout = partial(make_ldo_payout, finance=finance)
 
@@ -137,8 +133,6 @@ def start_vote(
             return -1, None
 
     return create_vote(
-        voting=voting,
-        token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
             '1) Allocate 200,000 LDO to 1inch reward program'
@@ -147,6 +141,7 @@ def start_vote(
         evm_script=encoded_call_script,
         tx_params=tx_params
     )
+
 
 def main():
     vote_id, _ = start_vote({

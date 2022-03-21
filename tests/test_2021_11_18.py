@@ -41,12 +41,13 @@ oneinch_payout = Payout(
 lido_ens = 'lido.eth'
 lido_old_address = '0x06601571AA9D3E8f5f7CDd5b993192618964bAB5'
 
+
 def test_2021_11_18(ldo_holder, helpers, accounts, dao_voting, ldo_token, lido, node_operators_registry):
     finance_balance_before = ldo_token.balanceOf(jacob_payout.address)
     oneinch_payout_balance_before = ldo_token.balanceOf(oneinch_payout.address)
 
-    rockx_limit_before = node_operators_registry.getNodeOperator( rockx_limits.id, True )[3]
-    blockdaemon_limit_before = node_operators_registry.getNodeOperator( blockdaemon_limits.id, True )[3]
+    rockx_limit_before = node_operators_registry.getNodeOperator(rockx_limits.id, True)[3]
+    blockdaemon_limit_before = node_operators_registry.getNodeOperator(blockdaemon_limits.id, True)[3]
 
     lido_domain_addr_before = network.web3.ens.resolve(lido_ens)
     assert lido_old_address == lido_domain_addr_before
@@ -61,11 +62,11 @@ def test_2021_11_18(ldo_holder, helpers, accounts, dao_voting, ldo_token, lido, 
 
     assert lido.address == network.web3.ens.resolve(lido_ens)
 
-    rockx_limit_after = node_operators_registry.getNodeOperator( rockx_limits.id, True )[3]
+    rockx_limit_after = node_operators_registry.getNodeOperator(rockx_limits.id, True)[3]
     assert rockx_limit_after > rockx_limit_before
     assert rockx_limit_after == rockx_limits.limit
 
-    blockdaemon_limit_after = node_operators_registry.getNodeOperator( blockdaemon_limits.id, True )[3]
+    blockdaemon_limit_after = node_operators_registry.getNodeOperator(blockdaemon_limits.id, True)[3]
     assert blockdaemon_limit_after > blockdaemon_limit_before
     assert blockdaemon_limit_after == blockdaemon_limits.limit
 

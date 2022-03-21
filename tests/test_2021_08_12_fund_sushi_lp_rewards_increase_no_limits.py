@@ -21,8 +21,8 @@ NODE_OPERATORS = [
     },
 ]
 
-def test_vote(ldo_holder, helpers, accounts, dao_voting, node_operators_registry):
 
+def test_vote(ldo_holder, helpers, accounts, dao_voting, node_operators_registry):
     ldo = interface.ERC20(ldo_token_address)
 
     ops_address = '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb'
@@ -37,7 +37,7 @@ def test_vote(ldo_holder, helpers, accounts, dao_voting, node_operators_registry
 
     ops_ldo_balance_after = ldo.balanceOf(ops_address)
 
-    assert ops_ldo_balance_after - ops_ldo_balance_before == 200_000*10**18
+    assert ops_ldo_balance_after - ops_ldo_balance_before == 200_000 * 10 ** 18
 
     for node_operator in NODE_OPERATORS:
         no = node_operators_registry.getNodeOperator(node_operator["id"], True)

@@ -17,7 +17,7 @@ NODE_OPERATORS = [{
 }]
 
 
-def getNodeOperatorsList(node_operators_registry):
+def get_node_operators(node_operators_registry):
     return [
         node_operators_registry.getNodeOperator(i, True)
         for i in range(int(node_operators_registry.getNodeOperatorsCount()))
@@ -32,13 +32,13 @@ def test_add_operators(ldo_holder, helpers, accounts, dao_voting,
                          accounts=accounts,
                          dao_voting=dao_voting)
     print(f'Vote {vote_id} executed')
-    active_node_operators = getNodeOperatorsList(node_operators_registry)
+    active_node_operators = get_node_operators(node_operators_registry)
 
     for node_operator in NODE_OPERATORS:
         assert len([
             no
             for no in active_node_operators if node_operator["name"] == no[1]
-            and node_operator["address"] == no[2]
+                                               and node_operator["address"] == no[2]
         ]) > 0
 
 
@@ -54,6 +54,6 @@ def test_validator_faild_on_duplicate():
 def test_validator_faild_on_address_length():
     with raises(Exception):
         validate_node_operators_data(({
-            "name":"Test",
-            "address":"0x54032650b14df07b85bF18A3a3eC8E02e028d5"
+            "name": "Test",
+            "address": "0x54032650b14df07b85bF18A3a3eC8E02e028d5"
         }))

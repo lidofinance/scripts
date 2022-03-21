@@ -72,21 +72,22 @@ NEW_NODE_OPERATORS = [
     ),
 ]
 
+
 def test_2022_01_13(
-    helpers, accounts, ldo_holder,
-    dao_voting, node_operators_registry,
-    vote_id_from_env
+        helpers, accounts, ldo_holder,
+        dao_voting, node_operators_registry,
+        vote_id_from_env
 ):
     ### LIDO APP
     lido_repo = interface.Repo(lido_dao_lido_repo)
     lido_old_app_from_chain = lido_repo.getLatest()
 
-    #check old versions of lido app is correct
+    # check old versions of lido app is correct
     assert lido_old_app['address'] == lido_old_app_from_chain[1]
     assert lido_old_app['version'] == lido_old_app_from_chain[0]
     assert lido_old_app['content_uri'] == lido_old_app_from_chain[2]
 
-    #check old ipfs link
+    # check old ipfs link
     bytes_object = lido_old_app_from_chain[2][:]
     lido_old_ipfs = bytes_object.decode("ASCII")
     lido_old_app_ipfs = f"ipfs:{lido_old_app['ipfsCid']}"
@@ -96,12 +97,12 @@ def test_2022_01_13(
     nos_repo = interface.Repo(lido_dao_node_operators_registry_repo)
     nos_old_app_from_chain = nos_repo.getLatest()
 
-    #check old versions of lido app is correct
+    # check old versions of lido app is correct
     assert nos_old_app['address'] == nos_old_app_from_chain[1]
     assert nos_old_app['version'] == nos_old_app_from_chain[0]
     assert nos_old_app['content_uri'] == nos_old_app_from_chain[2]
 
-    #check old ipfs link
+    # check old ipfs link
     bytes_object = nos_old_app_from_chain[2][:]
     nos_old_ipfs = bytes_object.decode("ASCII")
     nos_old_app_ipfs = f"ipfs:{nos_old_app['ipfsCid']}"
@@ -117,33 +118,33 @@ def test_2022_01_13(
     ##
     ## START VOTE
     ##
-    vote_id = vote_id_from_env or start_vote({ 'from': ldo_holder }, silent=True)[0]
+    vote_id = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]
 
     tx: TransactionReceipt = helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting
     )
 
     ### LIDO APP
-    #check only version and ipfs was changed
+    # check only version and ipfs was changed
     lido_new_app_from_chain = lido_repo.getLatest()
     assert lido_new_app['address'] == lido_new_app_from_chain[1]
     assert lido_new_app['version'] == lido_new_app_from_chain[0]
     assert lido_new_app['content_uri'] == lido_new_app_from_chain[2]
 
-    #check new ipfs link
+    # check new ipfs link
     bytes_object = lido_new_app_from_chain[2][:]
     lido_old_ipfs = bytes_object.decode("ASCII")
     lido_new_app_ipfs = f"ipfs:{lido_new_app['ipfsCid']}"
     assert lido_new_app_ipfs == lido_old_ipfs
 
     ### NOS APP
-    #check only version and ipfs was changed
+    # check only version and ipfs was changed
     nos_new_app_from_chain = nos_repo.getLatest()
     assert nos_new_app['address'] == nos_new_app_from_chain[1]
     assert nos_new_app['version'] == nos_new_app_from_chain[0]
     assert nos_new_app['content_uri'] == nos_new_app_from_chain[2]
 
-    #check new ipfs link
+    # check new ipfs link
     bytes_object = nos_new_app_from_chain[2][:]
     lido_old_ipfs = bytes_object.decode("ASCII")
     nos_new_app_ipfs = f"ipfs:{nos_new_app['ipfsCid']}"
@@ -156,10 +157,10 @@ def test_2022_01_13(
         )
 
         message = f'Failed on {node_operator.name}'
-        assert no[0] is True, message # is active
-        assert no[1] == node_operator.name, message # name
-        assert no[2] == node_operator.address, message # rewards address
-        assert no[3] == 0 # staking limit
+        assert no[0] is True, message  # is active
+        assert no[1] == node_operator.name, message  # name
+        assert no[2] == node_operator.address, message  # rewards address
+        assert no[3] == 0  # staking limit
 
     ### validate vote events (does not work for some reason) 
     # assert count_vote_items_by_events(tx) == 10, "Incorrect voting items count"

@@ -1,3 +1,18 @@
+import time
+from brownie.utils import color
+from utils.voting import create_vote
+from utils.evm_script import encode_call_script
+from utils.node_operators import encode_set_node_operator_staking_limit, get_node_operators
+from utils.finance import encode_eth_transfer
+
+from utils.config import (
+    lido_dao_voting_address,
+    lido_dao_finance_address,
+    lido_dao_node_operators_registry,
+    get_deployer_account,
+    prompt_bool
+)
+
 try:
     from brownie import interface
 except ImportError:
@@ -8,25 +23,6 @@ except ImportError:
 def set_console_globals(**kwargs):
     global interface
     interface = kwargs['interface']
-
-
-import time
-from brownie.utils import color
-from utils.voting import create_vote
-from utils.evm_script import encode_call_script
-from utils.node_operators import encode_set_node_operator_staking_limit, get_node_operators
-from utils.finance import encode_eth_transfer
-
-from utils.config import (
-    ldo_token_address,
-    lido_dao_voting_address,
-    lido_dao_finance_address,
-    lido_dao_token_manager_address,
-    lido_dao_node_operators_registry,
-    curve_rewards_manager_address,
-    get_deployer_account,
-    prompt_bool
-)
 
 
 def pp(text, value):
@@ -47,7 +43,7 @@ def make_staking_limits_call_script(new_staking_limits, node_operators, registry
                 ),
             )
 
-    assert len(new_staking_limits) == len(call_script) # defensive programming
+    assert len(new_staking_limits) == len(call_script)  # defensive programming
     return call_script
 
 
@@ -66,7 +62,7 @@ def make_refunds_call_script(refunds_in_wei, node_operators, finance):
                 )
             )
 
-    assert len(refunds_in_wei) == len(call_script) # defensive programming
+    assert len(refunds_in_wei) == len(call_script)  # defensive programming
     return call_script
 
 
@@ -122,8 +118,6 @@ def start_vote(tx_params):
     prompt_bool()
 
     return create_vote(
-        voting=interface.Voting(lido_dao_voting_address),
-        token_manager=interface.TokenManager(lido_dao_token_manager_address),
         vote_desc=(
             f'Omnibus vote: 1) increase staking limits for Node Operators, '
             f'2) refund gas spendings after withdrawal credentials change'
@@ -136,4 +130,4 @@ def start_vote(tx_params):
 def main():
     (vote_id, _) = start_vote({'from': get_deployer_account()})
     print(f'Vote created: {vote_id}')
-    time.sleep(5) # hack: waiting thread 2
+    time.sleep(5)  # hack: waiting thread 2

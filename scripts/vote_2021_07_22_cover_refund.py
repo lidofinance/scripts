@@ -1,3 +1,16 @@
+import time
+from brownie.utils import color
+from utils.voting import create_vote
+from utils.evm_script import encode_call_script
+from utils.finance import encode_eth_transfer
+
+from utils.config import (
+    lido_dao_voting_address,
+    lido_dao_finance_address,
+    get_deployer_account,
+    prompt_bool
+)
+
 try:
     from brownie import interface
 except ImportError:
@@ -8,21 +21,6 @@ except ImportError:
 def set_console_globals(**kwargs):
     global interface
     interface = kwargs['interface']
-
-
-import time
-from brownie.utils import color
-from utils.voting import create_vote
-from utils.evm_script import encode_call_script
-from utils.finance import encode_eth_transfer
-
-from utils.config import (
-    lido_dao_voting_address,
-    lido_dao_finance_address,
-    lido_dao_token_manager_address,
-    get_deployer_account,
-    prompt_bool
-)
 
 
 def pp(text, value):
@@ -48,31 +46,29 @@ def start_vote(tx_params, silent=False):
     finance = interface.Finance(lido_dao_finance_address)
 
     if not silent:
-      print()
-      pp('Using finance contract at address', lido_dao_finance_address)
-      pp('Using voting contract at address', lido_dao_voting_address)
-      print()
+        print()
+        pp('Using finance contract at address', lido_dao_finance_address)
+        pp('Using voting contract at address', lido_dao_voting_address)
+        print()
 
     if not silent:
-      print('Cover refund (ETH):')
-      pp('{:<30}'.format(refund_address), refund_in_wei / 10 ** 18)
-      print()
+        print('Cover refund (ETH):')
+        pp('{:<30}'.format(refund_address), refund_in_wei / 10 ** 18)
+        print()
 
     call_script = make_refund_call_script(refund_address, refund_in_wei, finance)
 
     if not silent:
-      print('Callscript:')
-      for addr, action in call_script:
-          pp(addr, action)
-      print()
+        print('Callscript:')
+        for addr, action in call_script:
+            pp(addr, action)
+        print()
 
     if not silent:
-      print('Does it look good?')
-      prompt_bool()
+        print('Does it look good?')
+        prompt_bool()
 
     return create_vote(
-        voting=interface.Voting(lido_dao_voting_address),
-        token_manager=interface.TokenManager(lido_dao_token_manager_address),
         vote_desc=(
             f'Omnibus vote: 1) refund dev team for the cover purchase'
         ),
@@ -84,4 +80,4 @@ def start_vote(tx_params, silent=False):
 def main():
     (vote_id, _) = start_vote({'from': get_deployer_account()})
     print(f'Vote created: {vote_id}')
-    time.sleep(5) # hack: waiting thread 2
+    time.sleep(5)  # hack: waiting thread 2

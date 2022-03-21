@@ -1,5 +1,3 @@
-import os
-
 
 ETH1_ADDRESS_WITHDRAWAL_PREFIX = '01'
 
@@ -51,4 +49,3 @@ def colorize_withdrawal_credentials(withdrawal_credentials):
     end_of_color = '\033[0m'
 
     return f'{hl_color}{byte_prefix}{yellow_color}{prefix}{gray_color}{zero_pad}{hl_color}{address}{end_of_color}'
-

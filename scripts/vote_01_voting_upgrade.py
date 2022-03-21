@@ -8,7 +8,6 @@ Voting 23/09/2021.
 """
 
 import time
-from functools import partial
 from typing import (
     Dict, Tuple,
     Optional
@@ -18,10 +17,6 @@ from brownie.utils import color
 from brownie.network.transaction import TransactionReceipt
 
 from utils.voting import create_vote
-from utils.finance import encode_token_transfer
-from utils.node_operators import (
-    encode_set_node_operator_staking_limit
-)
 from utils.evm_script import (
     decode_evm_script,
     encode_call_script,
@@ -60,13 +55,14 @@ def pp(text, value):
 
 def add_implementation_to_repo(repo, version, address, content_uri):
     return (
-      repo.address,
-      repo.newVersion.encode_input(
-          version,
-          address,
-          content_uri
-      )
+        repo.address,
+        repo.newVersion.encode_input(
+            version,
+            address,
+            content_uri
+        )
     )
+
 
 def update_app_implementation(kernel, app_id, new_implementation):
     return (
@@ -77,6 +73,7 @@ def update_app_implementation(kernel, app_id, new_implementation):
             new_implementation
         )
     )
+
 
 def grant_permission(acl, repo, voting, permission):
     return (
@@ -90,7 +87,7 @@ def grant_permission(acl, repo, voting, permission):
     )
 
 
-def unsafelyChangeVoteTime(voting, new_vote_time):
+def unsafely_change_vote_time(voting, new_vote_time):
     return (
         voting.address,
         voting.unsafelyChangeVoteTime.encode_input(
@@ -124,7 +121,7 @@ def start_vote(
         'content_uri': '0x697066733a516d5962774366374d6e6932797a31553358334769485667396f35316a6b53586731533877433257547755684859',
         'id': '0xee7f2abf043afe722001aaa900627a6e29adcbcce63a561fbd97e0a0c6429b94',
         'version': (2, 0, 0),
-        'new_vote_time': 259200 # 72 hours
+        'new_vote_time': 259200  # 72 hours
     }
 
     _add_implementation_to_repo = add_implementation_to_repo(
@@ -139,12 +136,12 @@ def start_vote(
         update_voting_app['new_address'],
     )
     _grant_permission_UNSAFELY_MODIFY_VOTE_TIME_ROLE = grant_permission(
-        acl, 
-        voting, 
-        voting, 
+        acl,
+        voting,
+        voting,
         '068ca51c9d69625c7add396c98ca4f3b27d894c3b973051ad3ee53017d7094ea'
     )
-    _unsafelyChangeVoteTime = unsafelyChangeVoteTime(
+    _unsafelyChangeVoteTime = unsafely_change_vote_time(
         voting,
         update_voting_app['new_vote_time'],
     )
@@ -156,7 +153,6 @@ def start_vote(
         _grant_permission_UNSAFELY_MODIFY_VOTE_TIME_ROLE,
         _unsafelyChangeVoteTime,
     ])
-
 
     # Show detailed description of prepared voting.
     if not silent:
@@ -189,8 +185,6 @@ def start_vote(
             return -1, None
 
     return create_vote(
-        voting=voting,
-        token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: \n'
             '1. Push new voting version to repo\n'

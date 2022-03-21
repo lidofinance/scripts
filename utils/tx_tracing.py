@@ -14,6 +14,7 @@ from brownie.convert.normalize import format_event
 from brownie.utils import color
 from brownie.utils.output import build_tree
 
+
 @dataclass(eq=True, frozen=True)
 class GroupBy:
     contract_name: str
@@ -22,8 +23,10 @@ class GroupBy:
     show_counter: bool
     color: str
 
+
 def _align_intval_to(val: int, multiple: int) -> int:
     return val + (-val) % multiple
+
 
 def _align_logdata_len(trace: List) -> List:
     for trace_item in trace:
@@ -40,6 +43,7 @@ def _align_logdata_len(trace: List) -> List:
             raise StructLogError("Malformed stack")
 
     return trace
+
 
 def tx_events_from_trace(tx: TransactionReceipt) -> Optional[List]:
     """
@@ -75,6 +79,7 @@ def tx_events_from_trace(tx: TransactionReceipt) -> Optional[List]:
 
     return [format_event(i) for i in events]
 
+
 def resolve_contract(addr: str) -> str:
     """
     Resolve contract name by provided address
@@ -91,6 +96,7 @@ def resolve_contract(addr: str) -> str:
         return contract.name()
     except Exception:
         return contract._name
+
 
 def group_tx_events(events: Optional[List], dict_events: EventDict, group: [GroupBy]) -> [(GroupBy, EventDict)]:
     """
@@ -122,17 +128,18 @@ def group_tx_events(events: Optional[List], dict_events: EventDict, group: [Grou
         for event in evs[:idx]:
             event_names.append(event.name)
 
-        current_grp = next((current_grp for current_grp in group if current_grp.contract_name == name and current_grp.event_name in event_names), None)
+        current_grp = next((current_grp for current_grp in group if
+                            current_grp.contract_name == name and current_grp.event_name in event_names), None)
         if current_grp:
             if group_stop_index >= group_start_index:
-                ret.append((prev_grp, EventDict(all_evs[group_start_index:group_stop_index+1])))
-                group_start_index = group_stop_index+1
+                ret.append((prev_grp, EventDict(all_evs[group_start_index:group_stop_index + 1])))
+                group_start_index = group_stop_index + 1
             prev_grp = current_grp
 
         evs = evs[idx:]
         group_stop_index += idx
 
-    ret.append((prev_grp, EventDict(all_evs[group_start_index:group_stop_index+1])))
+    ret.append((prev_grp, EventDict(all_evs[group_start_index:group_stop_index + 1])))
 
     return ret
 
@@ -175,7 +182,8 @@ def display_tx_events(events: EventDict, title: str, group: [GroupBy]) -> None:
             sub_tree.append([event.name, *(f"{k}: {v}" for k, v in event.items())])
             event_names.append(event.name)
 
-        current_grp = next((current_grp for current_grp in group if current_grp.contract_name == name and current_grp.event_name in event_names), None)
+        current_grp = next((current_grp for current_grp in group if
+                            current_grp.contract_name == name and current_grp.event_name in event_names), None)
         if current_grp:
             if len(active_tree) > 1:
                 active_tree.pop()
@@ -196,6 +204,7 @@ def display_tx_events(events: EventDict, title: str, group: [GroupBy]) -> None:
     event_tree = build_tree(call_tree, multiline_pad=0, pad_depth=[0, 1])
     result = f"{event_tree}"
     print(f"{result}")
+
 
 def display_filtered_tx_call(tx: TransactionReceipt, filter_func: Callable[[Dict], bool] = lambda _: False) -> None:
     """
@@ -253,7 +262,7 @@ def display_filtered_tx_call(tx: TransactionReceipt, filter_func: Callable[[Dict
         need_filtering = filter_func(trace[idx])
         if depth > last[1]:
             # called to a new contract
-            end = next((x[0] for x in trace_index[i + 1 :] if x[1] < depth), len(trace))
+            end = next((x[0] for x in trace_index[i + 1:] if x[1] < depth), len(trace))
             total_gas, internal_gas = tx._get_trace_gas(idx, end)
             key = _step_external(
                 trace[idx],
@@ -262,14 +271,14 @@ def display_filtered_tx_call(tx: TransactionReceipt, filter_func: Callable[[Dict
                 end,
                 (total_gas, internal_gas),
                 subcalls.pop(),
-                not need_filtering, # don't expand filtered items
+                not need_filtering,  # don't expand filtered items
             )
         elif depth == last[1] and jump_depth > last[2]:
             # jumped into an internal function
             end = next(
                 (
                     x[0]
-                    for x in trace_index[i + 1 :]
+                    for x in trace_index[i + 1:]
                     if x[1] < depth or (x[1] == depth and x[2] < jump_depth)
                 ),
                 len(trace),

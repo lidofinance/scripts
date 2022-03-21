@@ -36,8 +36,8 @@ NODE_OPERATORS = [
 
 ]
 
-def test_2021_10_05(ldo_holder, helpers, accounts, dao_voting, ldo, node_operators_registry):
 
+def test_2021_10_05(ldo_holder, helpers, accounts, dao_voting, ldo, node_operators_registry):
     vote_id, _ = start_vote({
         'from': ldo_holder
     }, silent=True)

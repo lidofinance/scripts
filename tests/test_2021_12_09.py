@@ -45,6 +45,7 @@ referral_10th_payout = Payout(
     amount=140_414 * (10 ** 18)
 )
 
+
 def test_2021_12_09(helpers, accounts, ldo_holder, dao_voting, ldo_token, vote_id_from_env, bypass_events_decoding):
     curve_LP_balance_before = ldo_token.balanceOf(curve_LP_reward_manager_address)
     balancer_LP_balance_before = ldo_token.balanceOf(balancer_LP_reward_manager_address)
@@ -53,7 +54,7 @@ def test_2021_12_09(helpers, accounts, ldo_holder, dao_voting, ldo_token, vote_i
 
     dao_balance_before = ldo_token.balanceOf(dao_agent_address)
 
-    vote_id = vote_id_from_env or start_vote({'from': ldo_holder }, silent=True)[0]
+    vote_id = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]
 
     tx: TransactionReceipt = helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting
@@ -72,7 +73,7 @@ def test_2021_12_09(helpers, accounts, ldo_holder, dao_voting, ldo_token, vote_i
     assert finance_multisig_balance_after - finance_multisig_balance_before == referral_10th_payout.amount
 
     assert (dao_balance_before - dao_balance_after ==
-        curve_LP_payout.amount + balancer_LP_payout.amount + sushi_LP_payout.amount + referral_10th_payout.amount)
+            curve_LP_payout.amount + balancer_LP_payout.amount + sushi_LP_payout.amount + referral_10th_payout.amount)
 
     ### validate vote events
 

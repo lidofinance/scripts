@@ -1,15 +1,3 @@
-try:
-    from brownie import interface
-except ImportError:
-    print("You're probably running inside Brownie console. Please call:")
-    print("set_console_globals(interface=interface)")
-
-
-def set_console_globals(**kwargs):
-    global interface
-    interface = kwargs['interface']
-
-
 import time
 from brownie.utils import color
 from utils.voting import create_vote
@@ -19,7 +7,6 @@ from utils.node_operators import encode_set_node_operator_staking_limit, get_nod
 
 from utils.config import (
     lido_dao_voting_address,
-    lido_dao_token_manager_address,
     lido_dao_node_operators_registry,
     lido_dao_steth_address,
     get_deployer_account,
@@ -33,6 +20,17 @@ from utils.withdrawal_credentials import (
     colorize_withdrawal_credentials
 )
 
+try:
+    from brownie import interface
+except ImportError:
+    print("You're probably running inside Brownie console. Please call:")
+    print("set_console_globals(interface=interface)")
+
+
+def set_console_globals(**kwargs):
+    global interface
+    interface = kwargs['interface']
+
 
 def pp(text, value):
     print(text, color.highlight(value), end='')
@@ -41,7 +39,6 @@ def pp(text, value):
 def set_withdrawal_credentials_vote(tx_params):
     print('You are about ot launch a vote for withdrawal credentials change...')
     voting = interface.Voting(lido_dao_voting_address)
-    token_manager = interface.TokenManager(lido_dao_token_manager_address)
     registry = interface.NodeOperatorsRegistry(lido_dao_node_operators_registry)
     lido = interface.Lido(lido_dao_steth_address)
 
@@ -75,14 +72,10 @@ def set_withdrawal_credentials_vote(tx_params):
     print()
     print('New withdrawal credentials', colorize_withdrawal_credentials(new_withdrawal_credentials))
 
-    call_script = []
-
-    call_script.append(
-        encode_set_withdrawal_credentials(
-            withdrawal_credentials=new_withdrawal_credentials,
-            lido=lido
-        )
-    )
+    call_script = [encode_set_withdrawal_credentials(
+        withdrawal_credentials=new_withdrawal_credentials,
+        lido=lido
+    )]
 
     for operator in node_operators:
         index = operator['index']
@@ -108,8 +101,6 @@ def set_withdrawal_credentials_vote(tx_params):
     prompt_bool()
 
     return create_vote(
-        voting=voting,
-        token_manager=token_manager,
         vote_desc=(
             f'1) set withdrawal_credentials to {new_withdrawal_credentials}, '
             f'2) reduce staking limits for node operators whose has approved keys but not used yet'
@@ -117,6 +108,7 @@ def set_withdrawal_credentials_vote(tx_params):
         evm_script=encode_call_script(call_script),
         tx_params=tx_params
     )
+
 
 def main():
     (vote_id, _) = set_withdrawal_credentials_vote({'from': get_deployer_account()})

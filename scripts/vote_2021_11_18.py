@@ -50,6 +50,7 @@ except ImportError:
         'set_console_globals(interface=interface)'
     )
 
+
 def set_console_globals(**kwargs):
     """Extract interface from brownie environment."""
     global interface
@@ -83,6 +84,7 @@ def new_lido_eth_address(ens: interface.ENS, target_address: str, lido_domain: s
         controller_address,
         ens.setAddr.encode_input(network.web3.ens.namehash(lido_domain), target_address)
     )])
+
 
 def start_vote(
         tx_params: Dict[str, str],
@@ -178,8 +180,6 @@ def start_vote(
             return -1, None
 
     return create_vote(
-        voting=voting,
-        token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
             '1) Set lido.eth to resolve to Lido smart contract 0xae7ab96520de3a18e5e111b5eaab095312d7fe84;'
@@ -192,6 +192,7 @@ def start_vote(
         evm_script=encoded_call_script,
         tx_params=tx_params
     )
+
 
 def main():
     vote_id, _ = start_vote({

@@ -4,12 +4,11 @@ Tests for voting 02/12/2021.
 
 from scripts.vote_2021_12_02 import start_vote
 
-
 EVM_SCRIPT_EXECUTOR_ADDRESS = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 
 
 def test_2021_12_02(
-    helpers, acl, finance, node_operators_registry, accounts, ldo_holder, dao_voting
+        helpers, acl, finance, node_operators_registry, accounts, ldo_holder, dao_voting
 ):
     assert not acl.hasPermission(
         EVM_SCRIPT_EXECUTOR_ADDRESS, finance, finance.CREATE_PAYMENTS_ROLE()

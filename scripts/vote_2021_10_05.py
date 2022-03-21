@@ -88,16 +88,16 @@ def start_vote(
 
     # Vote-specific addresses and constants:
 
-    _limit_2 = {'id':2, 'limit': 5265}
-    _limit_4 = {'id':4, 'limit': 5265}
-    _limit_5 = {'id':5, 'limit': 5265}
-    _limit_7 = {'id':7, 'limit': 3000}
-    _limit_8 = {'id':8, 'limit': 5265}
-    _limit_9 = {'id':9, 'limit': 684}
-    _limit_10 = {'id':10, 'limit': 683}
-    _limit_11 = {'id':11, 'limit': 683}
-    _limit_12 = {'id':12, 'limit': 683}
-    _limit_13 = {'id':13, 'limit': 683}
+    _limit_2 = {'id': 2, 'limit': 5265}
+    _limit_4 = {'id': 4, 'limit': 5265}
+    _limit_5 = {'id': 5, 'limit': 5265}
+    _limit_7 = {'id': 7, 'limit': 3000}
+    _limit_8 = {'id': 8, 'limit': 5265}
+    _limit_9 = {'id': 9, 'limit': 684}
+    _limit_10 = {'id': 10, 'limit': 683}
+    _limit_11 = {'id': 11, 'limit': 683}
+    _limit_12 = {'id': 12, 'limit': 683}
+    _limit_13 = {'id': 13, 'limit': 683}
 
     # Encoding vote scripts:
     encoded_call_script = encode_call_script([
@@ -146,8 +146,6 @@ def start_vote(
             return -1, None
 
     return create_vote(
-        voting=voting,
-        token_manager=token_manager,
         vote_desc=(
             'Fixing key limits for Node Operators'
         ),

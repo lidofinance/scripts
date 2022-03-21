@@ -31,8 +31,6 @@ from utils.config import (
     prompt_bool,
     get_deployer_account,
     ldo_token_address,
-    lido_dao_voting_address,
-    lido_dao_token_manager_address,
     lido_dao_finance_address,
     lido_dao_node_operators_registry
 )
@@ -46,10 +44,12 @@ except ImportError:
         'set_console_globals(interface=interface)'
     )
 
+
 def set_console_globals(**kwargs):
     """Extract interface from brownie environment."""
     global interface
     interface = kwargs['interface']
+
 
 def make_ldo_payout(
         *not_specified,
@@ -72,17 +72,14 @@ def make_ldo_payout(
         finance=finance
     )
 
+
 def start_vote(
-    tx_params: Dict[str, str],
-    silent: bool = False
+        tx_params: Dict[str, str],
+        silent: bool = False
 ) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
 
-    voting = interface.Voting(lido_dao_voting_address)
     finance = interface.Finance(lido_dao_finance_address)
-    token_manager = interface.TokenManager(
-        lido_dao_token_manager_address
-    )
     registry = interface.NodeOperatorsRegistry(
         lido_dao_node_operators_registry
     )
@@ -144,8 +141,6 @@ def start_vote(
             return -1, None
 
     return create_vote(
-        voting=voting,
-        token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
             '1) Allocate 3,100 LDO tokens to Master of Validators Nov 2021 compensation;'
@@ -156,6 +151,7 @@ def start_vote(
         tx_params=tx_params
     )
 
+
 def main():
     vote_id, _ = start_vote({
         'from': get_deployer_account(),
@@ -164,4 +160,4 @@ def main():
         'nonce': 410
     })
     print(f'Vote created: {vote_id}.')
-    time.sleep(5) # hack for waiting thread #2.
+    time.sleep(5)  # hack for waiting thread #2.

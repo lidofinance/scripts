@@ -25,8 +25,8 @@ NODE_OPERATORS = [
     NodeOperatorIncLimit('Blockdaemon', 13, 950),
 ]
 
-def test_2021_09_30(ldo_holder, helpers, accounts, dao_voting, ldo, node_operators_registry):
 
+def test_2021_09_30(ldo_holder, helpers, accounts, dao_voting, ldo, node_operators_registry):
     referral_payout_address = '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb'
     referral_payout_balance_before = ldo.balanceOf(referral_payout_address)
 
@@ -45,4 +45,4 @@ def test_2021_09_30(ldo_holder, helpers, accounts, dao_voting, ldo, node_operato
 
     referral_payout_balance_after = ldo.balanceOf(referral_payout_address)
 
-    assert referral_payout_balance_after - referral_payout_balance_before == 101_133_42 * 10**16
+    assert referral_payout_balance_after - referral_payout_balance_before == 101_133_42 * 10 ** 16

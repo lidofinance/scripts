@@ -10,10 +10,11 @@ from typing import (
 import eth_abi
 from brownie.utils import color
 from eth_typing.evm import HexAddress
+from packaging.version import LegacyVersion, Version
 from web3 import Web3
 
 
-def _get_latest_version(package_name: str) -> str:
+def _get_latest_version(package_name: str) -> Union[LegacyVersion, Version]:
     import json
     import urllib3
 

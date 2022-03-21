@@ -5,16 +5,18 @@ from typing import NamedTuple
 from brownie.network.event import EventDict
 from .common import validate_events_chain
 
+
 class Payout(NamedTuple):
     token_addr: str
     from_addr: str
     to_addr: str
     amount: int
 
-def validate_payout_event (event: EventDict, p: Payout):
+
+def validate_payout_event(event: EventDict, p: Payout):
     _ldo_events_chain = ['LogScriptCall', 'NewPeriod', 'NewTransaction', 'Transfer', 'VaultTransfer']
 
-    validate_events_chain ([e.name for e in event], _ldo_events_chain)
+    validate_events_chain([e.name for e in event], _ldo_events_chain)
 
     assert event.count('VaultTransfer') == 1
     assert event.count('Transfer') == 1
