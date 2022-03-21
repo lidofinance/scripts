@@ -4,6 +4,10 @@ Voting 17/03/2022.
 1. Send 722,962 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 17th period referral rewards
 2. Send 3,900 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 10,000 DAI Isidoros Passadis March comp
 3. Send 6,500 LDO to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb for 16,666 DAI Jacob Blish March comp
+
+Vote passed & executed on Mar-18-2022 12:12:25 PM +UTC, block #14410343.
+TX URL: https://etherscan.io/tx/0x43769496a76fe46117a23e3323daa6f660114b43508b43d0948ac7cc6ae5e2e6
+
 """
 
 import time
