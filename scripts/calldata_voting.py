@@ -8,7 +8,6 @@ from typing import (
     Dict, Tuple,
     Optional
 )
-from brownie.utils import color
 from brownie.network.transaction import TransactionReceipt
 
 from utils.voting import create_vote
@@ -70,8 +69,6 @@ def start_vote(
             return -1, None
 
     return create_vote(
-        voting=voting,
-        token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
             '1) Publishing new implementation in lido app APM repo'

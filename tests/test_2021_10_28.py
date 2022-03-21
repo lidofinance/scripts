@@ -15,6 +15,7 @@ referral_payout = Payout(
     amount=138_162_5642 * 10 ** 14
 )
 
+
 @pytest.fixture(scope='module')
 def deposit_security_module(interface):
     return interface.DepositSecurityModule('0xDb149235B6F40dC08810AA69869783Be101790e7')

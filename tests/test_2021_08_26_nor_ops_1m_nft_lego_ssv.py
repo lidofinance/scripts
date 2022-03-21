@@ -35,38 +35,40 @@ NODE_OPERATORS = [
 ]
 
 NEW_NODE_OPERATORS = [
-  {
-    "id": 9,
-    "name": "RockX",
-    "address": "0x258cB32B1875168858E57Bb31482054e008d344e",
-  },
-  {
-    "id": 10,
-    "name": "Figment",
-    "address": "0xfE78617EC612ac67bCc9CC145d376400f15a82cb",
-  },
-  {
-    "id": 11,
-    "name": "Allnodes",
-    "address": "0xd8d93E91EA5F24D0E2a328BC242055D40f00bE1A",
-  },
-  {
-    "id": 12,
-    "name": "Anyblock Analytics",
-    "address": "0x8b90ac446d4360332129e92F857a9d536DB9d7c2",
-  }
+    {
+        "id": 9,
+        "name": "RockX",
+        "address": "0x258cB32B1875168858E57Bb31482054e008d344e",
+    },
+    {
+        "id": 10,
+        "name": "Figment",
+        "address": "0xfE78617EC612ac67bCc9CC145d376400f15a82cb",
+    },
+    {
+        "id": 11,
+        "name": "Allnodes",
+        "address": "0xd8d93E91EA5F24D0E2a328BC242055D40f00bE1A",
+    },
+    {
+        "id": 12,
+        "name": "Anyblock Analytics",
+        "address": "0x8b90ac446d4360332129e92F857a9d536DB9d7c2",
+    }
 ]
+
 
 @pytest.fixture(scope='module')
 def rarible(interface):
     return interface.MintableToken('0x60f80121c31a0d46b5279700f9df786054aa5ee5')
 
+
 @pytest.fixture(scope='module')
 def agent(accounts):
-  return accounts.at('0x3e40d73eb977dc6a537af587d48316fee66e9c8c', force=True)
+    return accounts.at('0x3e40d73eb977dc6a537af587d48316fee66e9c8c', force=True)
+
 
 def test_vote(ldo_holder, helpers, accounts, dao_voting, node_operators_registry, rarible, agent):
-
     ldo = interface.ERC20(ldo_token_address)
 
     blox_address = '0xb35096b074fdb9bBac63E3AdaE0Bbde512B2E6b6'
@@ -84,10 +86,10 @@ def test_vote(ldo_holder, helpers, accounts, dao_voting, node_operators_registry
     blox_ldo_balance_after = ldo.balanceOf(blox_address)
     obol_ldo_balance_after = ldo.balanceOf(obol_address)
 
-    assert blox_ldo_balance_after - blox_ldo_balance_before == 16_640 * 10**18
-    assert obol_ldo_balance_after - obol_ldo_balance_before == 16_640 * 10**18
+    assert blox_ldo_balance_after - blox_ldo_balance_before == 16_640 * 10 ** 18
+    assert obol_ldo_balance_after - obol_ldo_balance_before == 16_640 * 10 ** 18
 
-    assert ldo.balanceOf(lego_address) == 240_000 * 10**18
+    assert ldo.balanceOf(lego_address) == 240_000 * 10 ** 18
 
     assert rarible.ownerOf(1225266) == '0x90102a92e8E40561f88be66611E5437FEb339e79'
 

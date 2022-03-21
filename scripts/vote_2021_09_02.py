@@ -30,7 +30,7 @@ from brownie.network.transaction import TransactionReceipt
 from utils.voting import create_vote
 from utils.finance import encode_token_transfer
 from utils.node_operators import (
-    encode_add_operator,
+    encode_add_operator_lido,
     encode_set_node_operator_staking_limit
 )
 from utils.evm_script import (
@@ -163,7 +163,6 @@ def start_vote(
     }
 
     # Set Lido contracts as parameters:
-    _encode_add_operator = partial(encode_add_operator, registry=registry)
     _encode_set_node_operator_staking_limit = partial(
         encode_set_node_operator_staking_limit, registry=registry
     )
@@ -173,7 +172,7 @@ def start_vote(
 
     # Encoding vote scripts:
     encoded_call_script = encode_call_script([
-        _encode_add_operator(**blockdaemon_node_operator),
+        encode_add_operator_lido(**blockdaemon_node_operator),
         _encode_set_node_operator_staking_limit(**p2p_limit),
         _encode_set_node_operator_staking_limit(**stakefish_limit),
         _encode_set_node_operator_staking_limit(**blockscape_limit),
@@ -220,8 +219,6 @@ def start_vote(
             return -1, None
 
     return create_vote(
-        voting=voting,
-        token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
             '1) Add Blockdaemon node operator, '

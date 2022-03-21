@@ -1,7 +1,7 @@
 from scripts.vote_2021_07_22_cover_refund import (start_vote)
 
-def test_set_operators_limit(ldo_holder, helpers, accounts, dao_voting):
 
+def test_set_operators_limit(ldo_holder, helpers, accounts, dao_voting):
     refund_address = '0xD089cc83f5B803993E266ACEB929e52A993Ca2C8'
     refund_acc = accounts.at(refund_address, force=True)
     refund_balance_before = refund_acc.balance()

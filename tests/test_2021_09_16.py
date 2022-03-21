@@ -13,13 +13,13 @@ from brownie import (interface, chain)
 def balancer_manager():
     return interface.BalancerReawardsManager(balancer_rewards_manager)
 
+
 @pytest.fixture(scope='module')
 def ldo():
     return interface.ERC20(ldo_token_address)
 
 
 def test_2021_09_16_balancer(balancer_manager, ldo_holder, helpers, accounts, dao_voting):
-
     chain.sleep(1631750400 - chain.time())  # Tuesday, 17 September 2021
     chain.mine()
     print('\n')
@@ -34,8 +34,8 @@ def test_2021_09_16_balancer(balancer_manager, ldo_holder, helpers, accounts, da
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting
     )
 
-    assert balancer_manager.available_allocations() == 75000 * 10**18
-    assert balancer_manager.rewards_limit_per_period() == 75000 * 10**18
+    assert balancer_manager.available_allocations() == 75000 * 10 ** 18
+    assert balancer_manager.rewards_limit_per_period() == 75000 * 10 ** 18
     print('\n')
     print('After voting ')
     print(time.ctime(chain.time()), 'allowance: ', balancer_manager.available_allocations())
@@ -47,9 +47,8 @@ def test_2021_09_16_balancer(balancer_manager, ldo_holder, helpers, accounts, da
     print('Next week')
     print(time.ctime(chain.time()), 'allowance: ', balancer_manager.available_allocations())
     print('                                ', 'rate: ', balancer_manager.rewards_limit_per_period())
-    assert balancer_manager.available_allocations() == 150000 * 10**18
-    assert balancer_manager.rewards_limit_per_period() == 75000 * 10**18
-
+    assert balancer_manager.available_allocations() == 150000 * 10 ** 18
+    assert balancer_manager.rewards_limit_per_period() == 75000 * 10 ** 18
 
     chain.sleep(1632700800 - chain.time())  # 27 September 2021
     chain.mine()
@@ -57,8 +56,8 @@ def test_2021_09_16_balancer(balancer_manager, ldo_holder, helpers, accounts, da
     print('Next week')
     print(time.ctime(chain.time()), 'allowance: ', balancer_manager.available_allocations())
     print('                                ', 'rate: ', balancer_manager.rewards_limit_per_period())
-    assert balancer_manager.available_allocations() == 225000 * 10**18
-    assert balancer_manager.rewards_limit_per_period() == 75000 * 10**18
+    assert balancer_manager.available_allocations() == 225000 * 10 ** 18
+    assert balancer_manager.rewards_limit_per_period() == 75000 * 10 ** 18
 
 
 NodeOperatorIncLimit = namedtuple(
@@ -79,7 +78,6 @@ NODE_OPERATORS = [
 
 
 def test_2021_09_16(balancer_manager, ldo_holder, helpers, accounts, dao_voting, ldo, node_operators_registry):
-
     _1inch_reward_address = '0xf5436129Cf9d8fa2a1cb6e591347155276550635'
     _1inch_reward_balance_before = ldo.balanceOf(_1inch_reward_address)
 
@@ -102,7 +100,7 @@ def test_2021_09_16(balancer_manager, ldo_holder, helpers, accounts, dao_voting,
     _1inch_reward_balance_after = ldo.balanceOf(_1inch_reward_address)
     referral_payout_balance_after = ldo.balanceOf(referral_payout_address)
 
-    assert _1inch_reward_balance_after - _1inch_reward_balance_before == 200_000 * 10**18
-    assert referral_payout_balance_after - referral_payout_balance_before == 1_320_784 * 10**18
+    assert _1inch_reward_balance_after - _1inch_reward_balance_before == 200_000 * 10 ** 18
+    assert referral_payout_balance_after - referral_payout_balance_before == 1_320_784 * 10 ** 18
 
-    assert balancer_manager.rewards_limit_per_period() == 75000 * 10**18
+    assert balancer_manager.rewards_limit_per_period() == 75000 * 10 ** 18

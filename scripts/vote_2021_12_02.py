@@ -87,8 +87,6 @@ def start_vote(
             return -1, None
 
     return voting.create_vote(
-        voting=interface.Voting(config.lido_dao_voting_address),
-        token_manager=interface.TokenManager(config.lido_dao_token_manager_address),
         vote_desc=(
             "Omnibus vote: "
             "1) Grant CREATE_PAYMENTS_ROLE role to the EVMScriptExecutor contract;"

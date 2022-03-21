@@ -29,7 +29,6 @@ from utils.config import (
     get_deployer_account,
     ldo_token_address,
     lido_dao_acl_address,
-    lido_dao_voting_address,
     lido_dao_finance_address,
     lido_dao_token_manager_address,
     finance_multisig_address,
@@ -46,6 +45,7 @@ except ImportError:
         'Please call:\n'
         'set_console_globals(interface=interface)'
     )
+
 
 def set_console_globals(**kwargs):
     """Extract interface from brownie environment."""
@@ -74,11 +74,13 @@ def make_ldo_payout(
         finance=finance
     )
 
+
 def unpause_deposits(deposit_security_module) -> Tuple[str, str]:
     return agent_forward([(
         deposit_security_module.address,
         deposit_security_module.unpauseDeposits.encode_input()
     )])
+
 
 def start_vote(
         tx_params: Dict[str, str],
@@ -89,7 +91,6 @@ def start_vote(
     # Lido contracts and constants:
     acl = interface.ACL(lido_dao_acl_address)
     finance = interface.Finance(lido_dao_finance_address)
-    voting = interface.Voting(lido_dao_voting_address)
     token_manager = interface.TokenManager(
         lido_dao_token_manager_address
     )
@@ -149,8 +150,6 @@ def start_vote(
             return -1, None
 
     return create_vote(
-        voting=voting,
-        token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
             '1) Revoke ASSIGN_ROLE from the treasury diversification contract; '
@@ -161,6 +160,7 @@ def start_vote(
         evm_script=encoded_call_script,
         tx_params=tx_params
     )
+
 
 def main():
     vote_id, _ = start_vote({

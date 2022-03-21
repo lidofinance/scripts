@@ -1,22 +1,10 @@
-try:
-    from brownie import interface
-except ImportError:
-    print("You're probably running inside Brownie console. Please call:")
-    print("set_console_globals(interface=interface)")
-
-
-def set_console_globals(**kwargs):
-    global interface
-    interface = kwargs['interface']
-
-
 import time
+
 from brownie.utils import color
 from utils.voting import create_vote
 from utils.evm_script import encode_call_script
 from utils.finance import encode_token_transfer
 from utils.node_operators import encode_set_node_operator_staking_limit, encode_add_operator, get_node_operators
-
 
 from utils.config import (
     ldo_token_address,
@@ -29,6 +17,17 @@ from utils.config import (
     prompt_bool
 )
 
+try:
+    from brownie import interface
+except ImportError:
+    print("You're probably running inside Brownie console. Please call:")
+    print("set_console_globals(interface=interface)")
+
+
+def set_console_globals(**kwargs):
+    global interface
+    interface = kwargs['interface']
+
 
 def pp(text, value):
     print(text, color.highlight(str(value)), end='')
@@ -36,55 +35,58 @@ def pp(text, value):
 
 def make_fund_ssv_grant_blox_call_script(blox_address, ldo_for_grant_in_wei, finance):
     return encode_token_transfer(
-            token_address=ldo_token_address,
-            recipient=blox_address,
-            amount=ldo_for_grant_in_wei,
-            reference=f'LEGO SSV grant: transfer to Blox Staking',
-            finance=finance
+        token_address=ldo_token_address,
+        recipient=blox_address,
+        amount=ldo_for_grant_in_wei,
+        reference=f'LEGO SSV grant: transfer to Blox Staking',
+        finance=finance
     )
+
 
 def make_fund_ssv_grant_obol_call_script(obol_address, ldo_for_grant_in_wei, finance):
     return encode_token_transfer(
-            token_address=ldo_token_address,
-            recipient=obol_address,
-            amount=ldo_for_grant_in_wei,
-            reference=f'LEGO SSV grant: transfer to Obol',
-            finance=finance
+        token_address=ldo_token_address,
+        recipient=obol_address,
+        amount=ldo_for_grant_in_wei,
+        reference=f'LEGO SSV grant: transfer to Obol',
+        finance=finance
     )
+
 
 def make_fund_lego_call_script(lego_address, ldo_for_lego_in_wei, finance):
     return encode_token_transfer(
-            token_address=ldo_token_address,
-            recipient=lego_address,
-            amount=ldo_for_lego_in_wei,
-            reference=f'LEGO next quarter: transfer to LEGO multisig',
-            finance=finance
+        token_address=ldo_token_address,
+        recipient=lego_address,
+        amount=ldo_for_lego_in_wei,
+        reference=f'LEGO next quarter: transfer to LEGO multisig',
+        finance=finance
     )
+
 
 def encode_nft_transfer(sender, recipient, token_id, nft_token, agent):
     return (
-      agent.address,
-      agent.forward.encode_input(
-        encode_call_script([(nft_token.address,
-        nft_token.safeTransferFrom.encode_input(
-            sender,
-            recipient,
-            token_id
-        ))])
-      )
+        agent.address,
+        agent.forward.encode_input(
+            encode_call_script([(nft_token.address,
+                                 nft_token.safeTransferFrom.encode_input(
+                                     sender,
+                                     recipient,
+                                     token_id
+                                 ))])
+        )
     )
 
 
 def start_vote(tx_params, silent=False):
-    ldo_for_ssv_grant_in_wei = 16_640 * 10**18 # 16,640 LDO
+    ldo_for_ssv_grant_in_wei = 16_640 * 10 ** 18  # 16,640 LDO
     blox_for_lego_address = '0xb35096b074fdb9bBac63E3AdaE0Bbde512B2E6b6'
     obol_for_lego_address = '0xC62188bDB24d2685AEd8fa491E33eFBa47Db63C2'
 
-    ldo_for_lego_in_wei = 123_250 * 10**18
+    ldo_for_lego_in_wei = 123_250 * 10 ** 18
     lego_multisig_address = '0x12a43b049A7D330cB8aEAB5113032D18AE9a9030'
 
     rarible_address = '0x60f80121c31a0d46b5279700f9df786054aa5ee5'
-    nft_receiver_address = '0x90102a92e8e40561f88be66611e5437feb339e79' # mevalphaleak.eth
+    nft_receiver_address = '0x90102a92e8e40561f88be66611e5437feb339e79'  # mevalphaleak.eth
     nft_tokenId = 1225266
 
     rarible = interface.MintableToken(rarible_address)
@@ -96,49 +98,48 @@ def start_vote(tx_params, silent=False):
     node_operators = get_node_operators(registry)
 
     node_operators_limits = {
-      0: 4400,
-      2: 4500,
-      3: 5000,
-      5: 5000,
-      6: 2900,
-      7: 3000,
-      8: 5000
+        0: 4400,
+        2: 4500,
+        3: 5000,
+        5: 5000,
+        6: 2900,
+        7: 3000,
+        8: 5000
     }
 
     if not silent:
-      print()
-      pp('Using finance contract at address', lido_dao_finance_address)
-      pp('Using voting contract at address', lido_dao_voting_address)
-      pp('Using NodeOperatorsRegistry at address', lido_dao_node_operators_registry)
-      pp('Using LDO token at address', ldo_token_address)
-      pp('Using Rarible at address', rarible_address)
-      print()
+        print()
+        pp('Using finance contract at address', lido_dao_finance_address)
+        pp('Using voting contract at address', lido_dao_voting_address)
+        pp('Using NodeOperatorsRegistry at address', lido_dao_node_operators_registry)
+        pp('Using LDO token at address', ldo_token_address)
+        pp('Using Rarible at address', rarible_address)
+        print()
 
-      print('LEGO SSV grant payout for Blox Staking (LDO):')
-      pp('{:<30}'.format(blox_for_lego_address), ldo_for_ssv_grant_in_wei / 10 ** 18)
-      print()
+        print('LEGO SSV grant payout for Blox Staking (LDO):')
+        pp('{:<30}'.format(blox_for_lego_address), ldo_for_ssv_grant_in_wei / 10 ** 18)
+        print()
 
-      print('LEGO SSV grant payout for Obol (LDO):')
-      pp('{:<30}'.format(obol_for_lego_address), ldo_for_ssv_grant_in_wei / 10 ** 18)
-      print()
+        print('LEGO SSV grant payout for Obol (LDO):')
+        pp('{:<30}'.format(obol_for_lego_address), ldo_for_ssv_grant_in_wei / 10 ** 18)
+        print()
 
-      print('LEGO next quarter top-up (LDO):')
-      pp('{:<30}'.format(lego_multisig_address), ldo_for_lego_in_wei / 10 ** 18)
-      print()
+        print('LEGO next quarter top-up (LDO):')
+        pp('{:<30}'.format(lego_multisig_address), ldo_for_lego_in_wei / 10 ** 18)
+        print()
 
-      print('1 mln stETH NFT transfer:')
-      pp('{:<30}'.format(nft_receiver_address), nft_tokenId)
-      print()
+        print('1 mln stETH NFT transfer:')
+        pp('{:<30}'.format(nft_receiver_address), nft_tokenId)
+        print()
 
-      print('Set node operators limits:')
-      pp('{:<30}'.format(node_operators[0]['name']), node_operators_limits[0])
-      pp('{:<30}'.format(node_operators[2]['name']), node_operators_limits[2])
-      pp('{:<30}'.format(node_operators[3]['name']), node_operators_limits[3])
-      pp('{:<30}'.format(node_operators[5]['name']), node_operators_limits[5])
-      pp('{:<30}'.format(node_operators[6]['name']), node_operators_limits[6])
-      pp('{:<30}'.format(node_operators[7]['name']), node_operators_limits[7])
-      pp('{:<30}'.format(node_operators[8]['name']), node_operators_limits[8])
-
+        print('Set node operators limits:')
+        pp('{:<30}'.format(node_operators[0]['name']), node_operators_limits[0])
+        pp('{:<30}'.format(node_operators[2]['name']), node_operators_limits[2])
+        pp('{:<30}'.format(node_operators[3]['name']), node_operators_limits[3])
+        pp('{:<30}'.format(node_operators[5]['name']), node_operators_limits[5])
+        pp('{:<30}'.format(node_operators[6]['name']), node_operators_limits[6])
+        pp('{:<30}'.format(node_operators[7]['name']), node_operators_limits[7])
+        pp('{:<30}'.format(node_operators[8]['name']), node_operators_limits[8])
 
     lego_blox_call_script = make_fund_ssv_grant_blox_call_script(
         blox_for_lego_address,
@@ -158,7 +159,8 @@ def start_vote(tx_params, silent=False):
         finance
     )
 
-    nft_transfer_call_script = encode_nft_transfer(sender=lido_dao_agent_address, recipient=nft_receiver_address, token_id=nft_tokenId, nft_token=rarible, agent = agent)
+    nft_transfer_call_script = encode_nft_transfer(sender=lido_dao_agent_address, recipient=nft_receiver_address,
+                                                   token_id=nft_tokenId, nft_token=rarible, agent=agent)
 
     staking_facilities_staking_limit = encode_set_node_operator_staking_limit(
         id=0,
@@ -202,10 +204,14 @@ def start_vote(tx_params, silent=False):
         registry=registry
     )
 
-    rockx_add_operator = encode_add_operator(address='0x258cB32B1875168858E57Bb31482054e008d344e', name='RockX', registry=registry)
-    figment_add_operator = encode_add_operator(address='0xfE78617EC612ac67bCc9CC145d376400f15a82cb', name='Figment', registry=registry)
-    allnodes_add_operator = encode_add_operator(address='0xd8d93E91EA5F24D0E2a328BC242055D40f00bE1A', name='Allnodes', registry=registry)
-    anyblock_add_operator = encode_add_operator(address='0x8b90ac446d4360332129e92F857a9d536DB9d7c2', name='Anyblock Analytics', registry=registry)
+    rockx_add_operator = encode_add_operator(address='0x258cB32B1875168858E57Bb31482054e008d344e', name='RockX',
+                                             registry=registry)
+    figment_add_operator = encode_add_operator(address='0xfE78617EC612ac67bCc9CC145d376400f15a82cb', name='Figment',
+                                               registry=registry)
+    allnodes_add_operator = encode_add_operator(address='0xd8d93E91EA5F24D0E2a328BC242055D40f00bE1A', name='Allnodes',
+                                                registry=registry)
+    anyblock_add_operator = encode_add_operator(address='0x8b90ac446d4360332129e92F857a9d536DB9d7c2',
+                                                name='Anyblock Analytics', registry=registry)
 
     call_script = [
         lego_blox_call_script,
@@ -226,17 +232,15 @@ def start_vote(tx_params, silent=False):
     ]
 
     if not silent:
-      print('Callscriptfunds_in_wei')
-      for addr, action in call_script:
-          pp(addr, action)
-      print()
+        print('Callscriptfunds_in_wei')
+        for addr, action in call_script:
+            pp(addr, action)
+        print()
 
-      print('Does it look good?')
-      prompt_bool()
+        print('Does it look good?')
+        prompt_bool()
 
     return create_vote(
-        voting=interface.Voting(lido_dao_voting_address),
-        token_manager=interface.TokenManager(lido_dao_token_manager_address),
         vote_desc=(
             f'Omnibus vote: 1) fund SSV grants for Blox Staking & Obol with $100,000 in LDO each, '
             f'2) fund LEGO for the next quarter with 123,250 LDO, '
@@ -256,4 +260,4 @@ def start_vote(tx_params, silent=False):
 def main():
     (vote_id, _) = start_vote({'from': get_deployer_account(), 'gas_price': '50 gwei'})
     print(f'Vote created: {vote_id}')
-    time.sleep(5) # hack: waiting thread 2
+    time.sleep(5)  # hack: waiting thread 2

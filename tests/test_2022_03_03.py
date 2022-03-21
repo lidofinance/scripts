@@ -7,7 +7,6 @@ from event_validators.payout import Payout, validate_payout_event
 from scripts.vote_2022_03_03 import start_vote
 from tx_tracing_helpers import *
 
-
 dao_agent_address = '0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c'
 finance_multisig_address = '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb'
 lido_dao_token = '0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32'

@@ -1,8 +1,10 @@
-ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 from typing import Tuple
 
 from utils.config import (contracts, ldo_token_address)
+
+ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+
 
 def encode_token_transfer(token_address, recipient, amount, reference, finance):
     return (
@@ -14,6 +16,7 @@ def encode_token_transfer(token_address, recipient, amount, reference, finance):
             reference
         )
     )
+
 
 # aragonOS and aragon-apps rely on address(0) to denote native ETH, in
 # contracts where both tokens and ETH are accepted
@@ -28,6 +31,7 @@ def encode_eth_transfer(recipient, amount, reference, finance):
             reference
         )
     )
+
 
 def make_ldo_payout(
         *not_specified,

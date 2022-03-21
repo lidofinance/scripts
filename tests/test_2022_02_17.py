@@ -15,7 +15,6 @@ from event_validators.payout import Payout, validate_payout_event
 from scripts.vote_2022_02_17 import amount_limits, start_vote
 from tx_tracing_helpers import *
 
-
 dao_agent_address = '0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c'
 finance_multisig_address = '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb'
 lido_dao_token = '0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32'
@@ -43,7 +42,7 @@ jacob_payout = Payout(
 
 eth = {
     'limit': 1_000 * (10 ** 18),
-    'address': '0x0000000000000000000000000000000000000000', # Aragon requires ZERO_ADDR to work with ether transfers
+    'address': '0x0000000000000000000000000000000000000000',  # Aragon requires ZERO_ADDR to work with ether transfers
 }
 
 steth = {
@@ -61,9 +60,9 @@ dai = {
     'address': '0x6b175474e89094c44da98b954eedeac495271d0f',
 }
 
-permission = Permission(entity='0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977', # EVMScriptExecutor
-                        app='0xB9E5CBB9CA5b0d659238807E84D0176930753d86', # Finance Aragon App
-                        role='0x5de467a460382d13defdc02aacddc9c7d6605d6d4e0b8bd2f70732cae8ea17bc') # keccak256('CREATE_PAYMENTS_ROLE')
+permission = Permission(entity='0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977',  # EVMScriptExecutor
+                        app='0xB9E5CBB9CA5b0d659238807E84D0176930753d86',  # Finance Aragon App
+                        role='0x5de467a460382d13defdc02aacddc9c7d6605d6d4e0b8bd2f70732cae8ea17bc')  # keccak256('CREATE_PAYMENTS_ROLE')
 
 usdc_token = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
 
@@ -72,18 +71,24 @@ def has_payments_permission(acl, finance, sender, token, receiver, amount) -> bo
     return acl.hasPermission['address,address,bytes32,uint[]'](sender, finance, finance.CREATE_PAYMENTS_ROLE(),
                                                                [token, receiver, amount])
 
+
 def emulate_transactions(finance, ldo_holder, evmscriptexecutor):
     finance.newImmediatePayment(eth['address'], ldo_holder.address, eth['limit'], 'test', {'from': evmscriptexecutor})
     with reverts('APP_AUTH_FAILED'):
-        finance.newImmediatePayment(eth['address'], ldo_holder.address, eth['limit'] + 1, 'test', {'from': evmscriptexecutor})
+        finance.newImmediatePayment(eth['address'], ldo_holder.address, eth['limit'] + 1, 'test',
+                                    {'from': evmscriptexecutor})
 
     finance.newImmediatePayment(ldo['address'], ldo_holder.address, ldo['limit'], 'test', {'from': evmscriptexecutor})
     with reverts('APP_AUTH_FAILED'):
-        finance.newImmediatePayment(ldo['address'], ldo_holder.address, ldo['limit'] + 1, 'test', {'from': evmscriptexecutor})
+        finance.newImmediatePayment(ldo['address'], ldo_holder.address, ldo['limit'] + 1, 'test',
+                                    {'from': evmscriptexecutor})
 
-    finance.newImmediatePayment(steth['address'], ldo_holder.address, steth['limit'], 'test', {'from': evmscriptexecutor})
+    finance.newImmediatePayment(steth['address'], ldo_holder.address, steth['limit'], 'test',
+                                {'from': evmscriptexecutor})
     with reverts('APP_AUTH_FAILED'):
-        finance.newImmediatePayment(steth['address'], ldo_holder.address, steth['limit'] + 1, 'test', {'from': evmscriptexecutor})
+        finance.newImmediatePayment(steth['address'], ldo_holder.address, steth['limit'] + 1, 'test',
+                                    {'from': evmscriptexecutor})
+
 
 def test_2022_02_17(
         helpers, accounts, ldo_holder, dao_voting, ldo_token,

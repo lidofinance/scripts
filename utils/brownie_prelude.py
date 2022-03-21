@@ -7,6 +7,7 @@ except ImportError:
         'set_console_globals(interface=interface)'
     )
 
+
 def set_console_globals(**kwargs):
     """Extract interface from brownie environment."""
     global interface

@@ -31,10 +31,8 @@ from utils.config import (
     get_deployer_account,
     ldo_token_address,
     lido_dao_acl_address,
-    lido_dao_voting_address,
     lido_dao_finance_address,
     lido_dao_token_manager_address,
-    lido_dao_node_operators_registry,
 )
 
 from utils.permissions import encode_permission_grant
@@ -61,6 +59,7 @@ def pp(text, value):
     """Pretty print with colorized."""
     print(text, color.highlight(str(value)), end='')
 
+
 def make_ldo_payout(
         *not_specified,
         target_address: str,
@@ -82,6 +81,7 @@ def make_ldo_payout(
         finance=finance
     )
 
+
 def start_vote(
         tx_params: Dict[str, str],
         silent: bool = False
@@ -90,17 +90,12 @@ def start_vote(
 
     # Lido contracts and constants:
     acl = interface.ACL(lido_dao_acl_address)
-    registry = interface.NodeOperatorsRegistry(
-        lido_dao_node_operators_registry
-    )
     finance = interface.Finance(lido_dao_finance_address)
-    voting = interface.Voting(lido_dao_voting_address)
     token_manager = interface.TokenManager(
         lido_dao_token_manager_address
     )
 
     _make_ldo_payout = partial(make_ldo_payout, finance=finance)
-
 
     # 1. Transfer 3,550,000 LDO to Curve rewards manager
     payout_curve_rewards = {
@@ -116,22 +111,22 @@ def start_vote(
         'reference': 'Balancer pool LP rewards transfer'
     }
 
-    #3. Transfer 462,962.9629629634 LDO to the purchase contract for the treasury diversification
+    # 3. Transfer 462,962.9629629634 LDO to the purchase contract for the treasury diversification
     payout_purchase_contract = {
-        'amount': '462962962962963400000000', # 462,962.9629629634 * (10 ** 18)
+        'amount': '462962962962963400000000',  # 462,962.9629629634 * (10 ** 18)
         'address': PURCHASE_CONTRACT_PAYOUT_ADDRESS,
         'reference': 'Treasury diversification purchase contract transfer'
     }
 
-    #4. Grant ASSIGN_ROLE to the purchase contract
+    # 4. Grant ASSIGN_ROLE to the purchase contract
     grant_role_purchase_contract = {
         'address': PURCHASE_CONTRACT_PAYOUT_ADDRESS,
         'permission_name': 'ASSIGN_ROLE'
     }
 
-    #5. Transfer 28,500 LDO (~120k DAI) to finance multisig for $100k bounty to a white hat
+    # 5. Transfer 28,500 LDO (~120k DAI) to finance multisig for $100k bounty to a white hat
     payout_finance_multisig = {
-        'amount': 28_500 * (10 ** 18), # TODO: Check current rate on 1inch before run
+        'amount': 28_500 * (10 ** 18),  # TODO: Check current rate on 1inch before run
         'address': '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
         'reference': 'Finance multisig transfer to pay a bug bounty'
     }
@@ -188,8 +183,6 @@ def start_vote(
             return -1, None
 
     return create_vote(
-        voting=voting,
-        token_manager=token_manager,
         vote_desc=(
             'Omnibus vote: '
             '1) Allocate 3,550,000 LDO tokens to Curve rewards distributor contract, '
@@ -201,6 +194,7 @@ def start_vote(
         evm_script=encoded_call_script,
         tx_params=tx_params
     )
+
 
 def main():
     vote_id, _ = start_vote({

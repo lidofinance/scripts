@@ -27,6 +27,7 @@ referral_payout = Payout(
     amount=124_987_5031 * (10 ** 14)
 )
 
+
 def test_2021_11_26(helpers, accounts, ldo_holder, dao_voting, ldo_token):
     multisig_balance_before = ldo_token.balanceOf(finance_multisig_address)
     dao_balance_before = ldo_token.balanceOf(dao_agent_address)
@@ -59,5 +60,3 @@ def test_2021_11_26(helpers, accounts, ldo_holder, dao_voting, ldo_token):
 
     # asserts on vote item 2
     validate_payout_event(evs[1], referral_payout)
-
-    

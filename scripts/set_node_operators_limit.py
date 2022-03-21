@@ -15,8 +15,6 @@ def set_node_operator_staking_limits(tx_params, node_operators):
     registry = interface.NodeOperatorsRegistry(lido_dao_node_operators_registry)
     evm_script = encode_set_node_operators_staking_limits_evm_script(node_operators, registry)
     return create_vote(
-        voting=interface.Voting(lido_dao_voting_address),
-        token_manager=interface.TokenManager(lido_dao_token_manager_address),
         vote_desc=
         f'Set staking limit for operators: \n{os.linesep.join(["id {} set limit to {}".format(no["id"], no["limit"]) for no in node_operators])}',
         evm_script=evm_script,

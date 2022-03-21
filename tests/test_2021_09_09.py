@@ -51,13 +51,16 @@ def curve_balance(ldo) -> int:
     """Return balance for target of curve payout."""
     return ldo.balanceOf(curve_payout.address)
 
+
 def balancer_balance(ldo) -> int:
     """Return balance for target of balancer payout."""
     return ldo.balanceOf(balancer_payout.address)
 
+
 def sushi_balance(ldo) -> int:
     """Return balance for target of sushi payout."""
     return ldo.balanceOf(sushi_payout.address)
+
 
 def grant_balance(ldo) -> int:
     """Return balance for target of grant payout."""
