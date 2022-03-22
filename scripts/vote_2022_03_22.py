@@ -86,7 +86,7 @@ def start_vote(
         create_permission(entity=voting, target_app=token_manager, permission_name='BURN_ROLE', manager=voting, acl=acl),
         # 2. Burn X LDO tokens on 0x48Acf41D10a063f9A6B718B9AAd2e2fF5B319Ca2
         burn_ldo(source_address, ldo_amount),
-        # 4. Revoke BURN_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db
+        # 3. Revoke BURN_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db
         encode_permission_revoke(target_app=token_manager, permission_name='BURN_ROLE', revoke_from=voting, acl=acl),
     ])
 
