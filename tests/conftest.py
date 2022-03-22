@@ -69,7 +69,7 @@ def finance(interface):
 
 class Helpers:
     @staticmethod
-    def execute_vote(accounts, vote_id, dao_voting, topup='0.1 ether'):
+    def execute_vote(accounts, vote_id, dao_voting, topup='0.1 ether', skip_time = 3 * 60 * 60 * 24):
         if dao_voting.getVote(vote_id)[0]:
             for holder_addr in ldo_vote_executors_for_tests:
                 print('voting from acct:', holder_addr)
@@ -78,7 +78,7 @@ class Helpers:
                 dao_voting.vote(vote_id, True, False, {'from': account})
 
         # wait for the vote to end
-        chain.sleep(3 * 60 * 60 * 24)
+        chain.sleep(skip_time)
         chain.mine()
 
         assert dao_voting.canExecute(vote_id)
