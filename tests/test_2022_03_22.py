@@ -4,8 +4,8 @@ Tests for voting 22/03/2022.
 from scripts.vote_2022_03_22 import start_vote
 from tx_tracing_helpers import *
 
-ldo_amount: int = 3_700_000 * 10 ** 18 # FIXME: CHANGE IT
-source_address: str = '0x48Acf41D10a063f9A6B718B9AAd2e2fF5B319Ca2' #FIXME: CHANGE IT
+ldo_amount: int = 3_691_500 * 10 ** 18
+source_address: str = '0x48Acf41D10a063f9A6B718B9AAd2e2fF5B319Ca2'
 
 lido_dao_token = '0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32'
 

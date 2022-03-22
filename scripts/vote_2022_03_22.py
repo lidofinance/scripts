@@ -3,7 +3,7 @@ Voting 22/03/2022.
 
 1. Create role BURN_ROLE for TokenManager 0xDfe76d11b365f5e0023343A367f0b311701B3bc1
 2. Create role ISSUE_ROLE for TokenManager 0xDfe76d11b365f5e0023343A367f0b311701B3bc1
-3. Burn X LDO tokens on 0x48Acf41D10a063f9A6B718B9AAd2e2fF5B319Ca2
+3. Burn 3,691,500 LDO tokens on 0x48Acf41D10a063f9A6B718B9AAd2e2fF5B319Ca2
 4. Revoke BURN_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db
 5. Revoke ISSUE_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db
 
@@ -79,9 +79,7 @@ def start_vote(
     voting: interface.Voting = contracts.voting
     acl: interface.ACL = contracts.acl
 
-    #FIXME!!! Update addrs and vals
-
-    ldo_amount: int = 3_700_000 * 10 ** 18 # FIXME: Should be recalculated according to the execution time with additional margin
+    ldo_amount: int = 3_691_500 * 10 ** 18
 
     source_address: str = '0x48Acf41D10a063f9A6B718B9AAd2e2fF5B319Ca2'
 
@@ -103,7 +101,7 @@ def start_vote(
             'Omnibus vote: '
             '1) Create role BURN_ROLE for TokenManager 0xDfe76d11b365f5e0023343A367f0b311701B3bc1;'
             '2) Create role ISSUE_ROLE for TokenManager 0xDfe76d11b365f5e0023343A367f0b311701B3bc1;'
-            '3) Burn X LDO tokens on 0x48Acf41D10a063f9A6B718B9AAd2e2fF5B319Ca2;'
+            '3) Burn 3,691,500 LDO tokens on 0x48Acf41D10a063f9A6B718B9AAd2e2fF5B319Ca2;'
             '4) Revoke BURN_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db;'
             '5) Revoke ISSUE_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db.'
         ),
