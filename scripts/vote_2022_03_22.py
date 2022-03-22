@@ -2,10 +2,8 @@
 Voting 22/03/2022.
 
 1. Create role BURN_ROLE for TokenManager 0xDfe76d11b365f5e0023343A367f0b311701B3bc1
-2. Create role ISSUE_ROLE for TokenManager 0xDfe76d11b365f5e0023343A367f0b311701B3bc1
-3. Burn 3,691,500 LDO tokens on 0x48Acf41D10a063f9A6B718B9AAd2e2fF5B319Ca2
-4. Revoke BURN_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db
-5. Revoke ISSUE_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db
+2. Burn 3,691,500 LDO tokens on 0x48Acf41D10a063f9A6B718B9AAd2e2fF5B319Ca2
+3. Revoke BURN_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db
 
 """
 
@@ -86,24 +84,18 @@ def start_vote(
     encoded_call_script = encode_call_script([
         # 1. Create role BURN_ROLE for TokenManager 0xDfe76d11b365f5e0023343A367f0b311701B3bc1
         create_permission(entity=voting, target_app=token_manager, permission_name='BURN_ROLE', manager=voting, acl=acl),
-        # 2. Create role ISSUE_ROLE for TokenManager 0xDfe76d11b365f5e0023343A367f0b311701B3bc1
-        create_permission(entity=voting, target_app=token_manager, permission_name='ISSUE_ROLE', manager=voting, acl=acl),
-        # 3. Burn X LDO tokens on 0x48Acf41D10a063f9A6B718B9AAd2e2fF5B319Ca2
+        # 2. Burn X LDO tokens on 0x48Acf41D10a063f9A6B718B9AAd2e2fF5B319Ca2
         burn_ldo(source_address, ldo_amount),
         # 4. Revoke BURN_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db
         encode_permission_revoke(target_app=token_manager, permission_name='BURN_ROLE', revoke_from=voting, acl=acl),
-        # 5. Revoke ISSUE_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db
-        encode_permission_revoke(target_app=token_manager, permission_name='ISSUE_ROLE', revoke_from=voting, acl=acl)
     ])
 
     return confirm_vote_script(encoded_call_script, silent) and create_vote(
         vote_desc=(
             'Omnibus vote: '
             '1) Create role BURN_ROLE for TokenManager 0xDfe76d11b365f5e0023343A367f0b311701B3bc1;'
-            '2) Create role ISSUE_ROLE for TokenManager 0xDfe76d11b365f5e0023343A367f0b311701B3bc1;'
-            '3) Burn 3,691,500 LDO tokens on 0x48Acf41D10a063f9A6B718B9AAd2e2fF5B319Ca2;'
-            '4) Revoke BURN_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db;'
-            '5) Revoke ISSUE_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db.'
+            '2) Burn 3,691,500 LDO tokens on 0x48Acf41D10a063f9A6B718B9AAd2e2fF5B319Ca2;'
+            '3) Revoke BURN_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params

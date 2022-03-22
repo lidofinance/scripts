@@ -19,7 +19,6 @@ def test_ldo_recover(
     token_manager_balance_before = ldo_token.balanceOf(dao_token_manager)
 
     assert not acl.hasPermission(dao_voting, dao_token_manager, dao_token_manager.BURN_ROLE())
-    assert not acl.hasPermission(dao_voting, dao_token_manager, dao_token_manager.ISSUE_ROLE())
 
     ##
     ## START VOTE
@@ -39,10 +38,9 @@ def test_ldo_recover(
     assert token_manager_balance_before == token_manager_balance_after, "Incorrect LDO amount"
 
     assert not acl.hasPermission(dao_voting, dao_token_manager, dao_token_manager.BURN_ROLE())
-    assert not acl.hasPermission(dao_voting, dao_token_manager, dao_token_manager.ISSUE_ROLE())
 
     ### validate vote events
-    assert count_vote_items_by_events(tx) == 5, "Incorrect voting items count"
+    assert count_vote_items_by_events(tx) == 3, "Incorrect voting items count"
 
     display_voting_events(tx)
 
