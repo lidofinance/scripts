@@ -14,7 +14,7 @@ from utils.config import (ldo_token_address, lido_dao_voting_address,
                           lido_dao_deposit_security_module_address,
                           lido_dao_steth_address, lido_dao_acl_address,
                           lido_dao_finance_address, ldo_holder_address_for_tests,
-                          ldo_vote_executors_for_tests)
+                          ldo_vote_executors_for_tests, lido_easytrack)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -65,6 +65,11 @@ def acl(interface):
 @pytest.fixture(scope="module")
 def finance(interface):
     return interface.Finance(lido_dao_finance_address)
+
+
+@pytest.fixture(scope="module")
+def easy_track(interface):
+    return interface.EasyTrack(lido_easytrack)
 
 
 class Helpers:

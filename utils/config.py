@@ -32,7 +32,14 @@ else:
 
 
 def get_is_live() -> bool:
-    return network_name() != 'development'
+    dev_networks = [
+        "development",
+        "hardhat",
+        "hardhat-fork",
+        "mainnet-fork",
+        "goerli-fork"
+    ]
+    return network.show_active() not in dev_networks
 
 
 def get_deployer_account() -> Union[LocalAccount, Account]:
@@ -72,8 +79,8 @@ class ContractsLazyLoader:
         return interface.Lido(lido_dao_steth_address)
 
     @property
-    def ldo_token(self) -> interface.MiniMiToken:
-        return interface.MiniMiToken(ldo_token_address)
+    def ldo_token(self) -> interface.MiniMeToken:
+        return interface.MiniMeToken(ldo_token_address)
 
     @property
     def voting(self) -> interface.Voting:
@@ -110,6 +117,10 @@ class ContractsLazyLoader:
     @property
     def nos_app_repo(self) -> interface.Repo:
         return interface.Repo(lido_dao_node_operators_registry_repo)
+
+    @property
+    def easy_track(self) -> interface.EasyTrack:
+        return interface.EasyTrack(lido_easytrack)
 
 
 def __getattr__(name: str) -> Any:
