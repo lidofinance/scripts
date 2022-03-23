@@ -45,6 +45,8 @@ def test_2022_03_24(
     helpers, accounts, ldo_holder, dao_voting, ldo_token,
     vote_id_from_env, bypass_events_decoding, easy_track
 ):
+    rewards_manager = interface.RewardsManager(one_inch_reward_manager)
+
     dao_balance_before = ldo_token.balanceOf(dao_agent_address)
     hr_multisig_balance_before = ldo_token.balanceOf(hyperelliptic_rockx_multisig)
     rewards_manager_balance_before = ldo_token.balanceOf(one_inch_reward_manager)
@@ -54,6 +56,8 @@ def test_2022_03_24(
         ldo_token.transfer(one_inch_reward_manager, 1 * 10 ** 18, {"from": ldo_holder})
     rewards_manager_balance_before = ldo_token.balanceOf(one_inch_reward_manager)
     assert rewards_manager_balance_before > 0
+
+    assert rewards_manager.owner() == dao_agent_address
 
     factories_before = easy_track.getEVMScriptFactories()
 
@@ -80,6 +84,8 @@ def test_2022_03_24(
 
     assert dao_balance_before - dao_balance_after == \
         hyperelliptic_rockx_comp.amount + (rewards_manager_balance_after - rewards_manager_balance_before)
+
+    assert rewards_manager.owner() == dao_agent_address
 
     for f in factories_to_add_with_vote:
         assert f.factory_addr in factories_after
@@ -117,13 +123,15 @@ def test_2022_03_24_zero_ldo_to_recover(
 
     rewards_manager_balance_before = ldo_token.balanceOf(one_inch_reward_manager)
     rewards_manager = interface.RewardsManager(one_inch_reward_manager)
-    dao_balance_before = ldo_token.balanceOf(dao_agent_address)
 
-    # if rewards manager has no tokens transfer it from agent
+    # if rewards manager has LDO tokens, recover them to agent before the voting execution
     if rewards_manager_balance_before > 0:
         rewards_manager.recover_erc20(ldo_token, rewards_manager_balance_before, {"from": dao_agent})
 
     assert ldo_token.balanceOf(one_inch_reward_manager) == 0
+    dao_balance_before = ldo_token.balanceOf(dao_agent_address)
+
+    assert rewards_manager.owner() == dao_agent_address
 
     ##
     ## START VOTE
@@ -137,8 +145,9 @@ def test_2022_03_24_zero_ldo_to_recover(
     rewards_manager_balance_after = ldo_token.balanceOf(one_inch_reward_manager)
     dao_balance_after = ldo_token.balanceOf(dao_agent_address)
 
-    assert dao_balance_before - dao_balance_after == hyperelliptic_rockx_comp.amount - rewards_manager_balance_before
+    assert dao_balance_before - dao_balance_after == hyperelliptic_rockx_comp.amount
     assert rewards_manager_balance_after == 0
+    assert rewards_manager.owner() == dao_agent_address
 
 
 def _encode_calldata(signature, values):
