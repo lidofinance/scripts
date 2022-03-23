@@ -1,6 +1,15 @@
 from typing import Tuple, List
 from utils.permission_parameters import Param, encode_permission_params
 
+def create_permission(
+    entity,
+    target_app,
+    permission_name,
+    manager,
+    acl
+) -> Tuple[str, str]:
+    permission_id = getattr(target_app, permission_name)()
+    return acl.address, acl.createPermission.encode_input(entity, target_app, permission_id, manager)
 
 def encode_permission_grant(
         target_app,
