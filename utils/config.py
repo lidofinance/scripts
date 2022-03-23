@@ -72,6 +72,10 @@ class ContractsLazyLoader:
         return interface.Lido(lido_dao_steth_address)
 
     @property
+    def ldo_token(self) -> interface.MiniMiToken:
+        return interface.MiniMiToken(ldo_token_address)
+
+    @property
     def voting(self) -> interface.Voting:
         return interface.Voting(lido_dao_voting_address)
 
