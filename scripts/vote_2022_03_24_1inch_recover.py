@@ -47,13 +47,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
                 ldo_token_address,
                 50_000 * 10 ** 18
             )
-        ),
-        agent_forward([
-            (
-                TOKENS_RECOVERER,
-                tokens_recoverer.release_ownership.encode_input(ONE_INCH_REWARDS_MANAGER)
-            )
-        ])
+        )
     ])
     return confirm_vote_script(encoded_call_script, silent) and create_vote(
         vote_desc=(
