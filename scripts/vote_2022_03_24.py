@@ -7,7 +7,7 @@ Voting 24/03/2022.
 4. Send 350,000 LDO to 0x3A043ce95876683768D3D3FB80057be2ee3f2814 for Hyperelliptic & RockX
    team for Lido-on-Avalanache comps
 5. Pass ownership of the 1inch rewarder 0xf5436129Cf9d8fa2a1cb6e591347155276550635
-   to TokensRecoverer 0x...
+   to TokensRecoverer 0x1bdfFe0EBef3FEAdF2723D3330727D73f538959C.
 6. Recover LDO funds from the 1inch rewarder 0xf5436129cf9d8fa2a1cb6e591347155276550635
    to DAO Agent
 
@@ -65,7 +65,7 @@ def start_vote(
             reference="Hyperelliptic & RockX team for Lido-on-Avalanache comps"
         ),
         # 5. Pass ownership of the 1inch rewarder 0xf5436129Cf9d8fa2a1cb6e591347155276550635
-        # to the TokensRecoverer 0x...
+        # to the TokensRecoverer 0x1bdfFe0EBef3FEAdF2723D3330727D73f538959C
         agent_forward([
              (
                  rewards_manager.address,
