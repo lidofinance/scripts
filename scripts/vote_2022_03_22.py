@@ -5,6 +5,9 @@ Voting 22/03/2022.
 2. Burn 3,691,500 LDO tokens on 0x48Acf41D10a063f9A6B718B9AAd2e2fF5B319Ca2
 3. Revoke BURN_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db
 
+Vote passed & executed on Mar-23-2022 11:20:00 AM +UTC, block #14442231.
+TX URL: https://etherscan.io/tx/0x209e9ef26e4847cfe70c8d052f0771a031f2d47461b05a76565ce36d34d9e929
+
 """
 
 import time
