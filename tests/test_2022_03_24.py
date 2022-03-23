@@ -8,6 +8,8 @@ from eth_abi import encode_single
 
 from event_validators.payout import Payout, validate_payout_event
 from event_validators.easy_track import EVMScriptFactoryAdded, validate_evmscript_factory_added_event
+from event_validators.tokens_recoverer import Recover, validate_recover_event
+from event_validators.rewards_manager import OwnershipTransferred, validate_ownership_transferred_event
 
 from scripts.vote_2022_03_24 import start_vote
 from tx_tracing_helpers import *
@@ -18,6 +20,11 @@ lido_dao_token = '0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32'
 
 one_inch_reward_manager = "0xf5436129Cf9d8fa2a1cb6e591347155276550635"
 tokens_recoverer = '0x1bdfFe0EBef3FEAdF2723D3330727D73f538959C'
+
+ownership_txd_event = OwnershipTransferred(
+    previous_owner_addr=dao_agent_address,
+    new_owner_addr=tokens_recoverer
+)
 
 factories_to_add_with_vote = [
     EVMScriptFactoryAdded(
@@ -114,10 +121,15 @@ def test_2022_03_24(
     # asserts on vote item 4
     validate_payout_event(evs[3], hyperelliptic_rockx_comp)
 
+    # asserts on vote item 5
+    validate_ownership_transferred_event(evs[4], ownership_txd_event)
+
+    # asserts on vote item 6
+    validate_recover_event(evs[5], _make_recover_event(rewards_manager_balance_before), dao_agent_address)
+
 def test_2022_03_24_zero_ldo_to_recover(
-    helpers, accounts, ldo_holder, dao_voting, ldo_token,
-    vote_id_from_env, bypass_events_decoding, easy_track,
-    dao_agent
+    helpers, accounts, ldo_holder, dao_voting,
+    ldo_token, vote_id_from_env, dao_agent
 ):
     assert dao_agent.address == dao_agent_address
 
@@ -149,6 +161,14 @@ def test_2022_03_24_zero_ldo_to_recover(
     assert rewards_manager_balance_after == 0
     assert rewards_manager.owner() == dao_agent_address
 
+def _make_recover_event(recovered: int) -> Recover:
+    return Recover(
+        sender_addr='0x2e59A20f205bB85a89C53f1936454680651E618e',
+        manager_addr='0xf5436129Cf9d8fa2a1cb6e591347155276550635',
+        token_addr=lido_dao_token,
+        amount=50_000 * 10 ** 18,
+        recovered_amount=recovered
+    )
 
 def _encode_calldata(signature, values):
     return "0x" + encode_single(signature, values).hex()
