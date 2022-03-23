@@ -92,13 +92,13 @@ def test_2022_03_24(
 
     _check_factories_sanity(accounts[5], accounts[6], ldo_token, easy_track)
 
-    ### validate vote events
-    # assert count_vote_items_by_events(tx) == 6, "Incorrect voting items count"
-
     display_voting_events(tx)
 
     if bypass_events_decoding:
         return
+
+    ### validate vote events
+    assert count_vote_items_by_events(tx, dao_voting) == 6, "Incorrect voting items count"
 
     evs = group_voting_events(tx)
 
