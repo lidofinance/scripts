@@ -9,12 +9,12 @@ from brownie.network.transaction import TransactionReceipt
 from brownie.network.event import EventDict, _EventItem
 
 from utils.config import (ldo_token_address, lido_dao_voting_address,
-                          lido_dao_token_manager_address,
+                          lido_dao_token_manager_address, lido_dao_agent_address,
                           lido_dao_node_operators_registry,
                           lido_dao_deposit_security_module_address,
                           lido_dao_steth_address, lido_dao_acl_address,
                           lido_dao_finance_address, ldo_holder_address_for_tests,
-                          ldo_vote_executors_for_tests)
+                          ldo_vote_executors_for_tests, lido_easytrack)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -31,6 +31,9 @@ def ldo_holder(accounts):
 def dao_voting(interface):
     return interface.Voting(lido_dao_voting_address)
 
+@pytest.fixture(scope='module')
+def dao_agent(interface):
+    return interface.Agent(lido_dao_agent_address)
 
 @pytest.fixture(scope='module')
 def node_operators_registry(interface):
@@ -65,6 +68,11 @@ def acl(interface):
 @pytest.fixture(scope="module")
 def finance(interface):
     return interface.Finance(lido_dao_finance_address)
+
+
+@pytest.fixture(scope="module")
+def easy_track(interface):
+    return interface.EasyTrack(lido_easytrack)
 
 
 class Helpers:

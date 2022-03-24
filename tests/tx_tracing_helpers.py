@@ -27,8 +27,15 @@ def display_voting_call_trace(tx: TransactionReceipt) -> None:
                                                      'ScriptHelpers.']))
 
 
-def count_vote_items_by_events(tx: TransactionReceipt) -> int:
-    return EventDict(tx_events_from_trace(tx)).count('LogScriptCall')
+def count_vote_items_by_events(tx: TransactionReceipt, voting: Optional[str]) -> int:
+    events = tx_events_from_trace(tx)
+    ev_dict = EventDict(events)
+
+    if not voting:
+        return ev_dict.count('LogScriptCall')
+
+    calls_slice = ev_dict['LogScriptCall']
+    return sum(map(lambda x : x['src'] == voting, calls_slice))
 
 
 def display_voting_events(tx: TransactionReceipt) -> None:
