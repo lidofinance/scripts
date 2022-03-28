@@ -11,6 +11,9 @@ Voting 24/03/2022.
 6. Recover LDO funds from the 1inch rewarder 0xf5436129cf9d8fa2a1cb6e591347155276550635
    to DAO Agent
 
+Vote passed & executed on Mar-25-2022 12:07:42 PM +UTC, block #14455339.
+TX URL: https://etherscan.io/tx/0xe37e30ebb742cdf0f002710fb0b13170cfdf201426c5d650e0484a13a4a8f6cf
+
 """
 
 import time
