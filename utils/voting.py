@@ -1,5 +1,6 @@
 from brownie import exceptions
 from brownie.utils import color
+from brownie.network.transaction import TransactionReceipt
 
 from utils.evm_script import (encode_call_script,
                               decode_evm_script,
@@ -9,7 +10,7 @@ from utils.evm_script import (encode_call_script,
 from utils.config import (prompt_bool, chain_network, contracts, get_config_params)
 
 
-def create_vote(vote_desc, evm_script, tx_params, verbose: bool = False):
+def create_vote(vote_desc, evm_script, tx_params, verbose: bool = False) -> (int, TransactionReceipt):
     voting = contracts.voting
     token_manager = contracts.token_manager
 
