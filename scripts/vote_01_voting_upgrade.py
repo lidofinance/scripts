@@ -120,7 +120,7 @@ def start_vote(
         'new_address': '0xfd5952Ef8dE4707f95E754299e8c0FfD1e876F34',
         'content_uri': '0x697066733a516d5962774366374d6e6932797a31553358334769485667396f35316a6b53586731533877433257547755684859',
         'id': '0xee7f2abf043afe722001aaa900627a6e29adcbcce63a561fbd97e0a0c6429b94',
-        'version': (2, 0, 0),
+        'version': (2, 0, 1),
         'new_vote_time': 259200  # 72 hours
     }
 
@@ -135,12 +135,12 @@ def start_vote(
         update_voting_app['id'],
         update_voting_app['new_address'],
     )
-    _grant_permission_UNSAFELY_MODIFY_VOTE_TIME_ROLE = grant_permission(
-        acl,
-        voting,
-        voting,
-        '068ca51c9d69625c7add396c98ca4f3b27d894c3b973051ad3ee53017d7094ea'
-    )
+    # _grant_permission_UNSAFELY_MODIFY_VOTE_TIME_ROLE = grant_permission(
+    #     acl,
+    #     voting,
+    #     voting,
+    #     '068ca51c9d69625c7add396c98ca4f3b27d894c3b973051ad3ee53017d7094ea'
+    # )
     _unsafelyChangeVoteTime = unsafely_change_vote_time(
         voting,
         update_voting_app['new_vote_time'],
@@ -150,7 +150,7 @@ def start_vote(
     encoded_call_script = encode_call_script([
         _add_implementation_to_repo,
         _update_app_implementation,
-        _grant_permission_UNSAFELY_MODIFY_VOTE_TIME_ROLE,
+        # _grant_permission_UNSAFELY_MODIFY_VOTE_TIME_ROLE,
         _unsafelyChangeVoteTime,
     ])
 
