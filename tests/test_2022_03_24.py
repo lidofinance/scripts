@@ -48,6 +48,7 @@ hyperelliptic_rockx_comp = Payout(
     amount=350_000 * (10 ** 18)
 )
 
+
 def test_2022_03_24(
     helpers, accounts, ldo_holder, dao_voting, ldo_token,
     vote_id_from_env, bypass_events_decoding, easy_track
@@ -127,6 +128,7 @@ def test_2022_03_24(
     # asserts on vote item 6
     validate_recover_event(evs[5], _make_recover_event(rewards_manager_balance_before), dao_agent_address)
 
+
 def test_2022_03_24_zero_ldo_to_recover(
     helpers, accounts, ldo_holder, dao_voting,
     ldo_token, vote_id_from_env, dao_agent
@@ -161,6 +163,7 @@ def test_2022_03_24_zero_ldo_to_recover(
     assert rewards_manager_balance_after == 0
     assert rewards_manager.owner() == dao_agent_address
 
+
 def _make_recover_event(recovered: int) -> Recover:
     return Recover(
         sender_addr='0x2e59A20f205bB85a89C53f1936454680651E618e',
@@ -170,8 +173,10 @@ def _make_recover_event(recovered: int) -> Recover:
         recovered_amount=recovered
     )
 
+
 def _encode_calldata(signature, values):
     return "0x" + encode_single(signature, values).hex()
+
 
 def _check_factories_sanity(
     reward_program_addr: str,
