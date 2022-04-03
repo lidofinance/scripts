@@ -1,3 +1,6 @@
+from typing import List, Dict
+
+import pytest
 # noinspection PyUnresolvedReferences
 from utils.brownie_prelude import *
 
@@ -5,7 +8,6 @@ from collections import namedtuple
 from brownie import accounts, chain
 from scripts.vote_2022_04_07 import start_vote
 from utils.config import ldo_vote_executors_for_tests
-from utils.mainnet_fork import chain_snapshot
 from utils.voting import create_vote
 from utils.evm_script import encode_call_script
 
@@ -23,9 +25,10 @@ def dictdiff(from_dict, to_dict):
     return result
 
 
-def snapshot(voting):
+def snapshot(voting, vote_id=None):
     length = voting.votesLength()
-    last_vote = voting.getVote(length - 1)
+    vote_idx = (length - 1) if vote_id is None else vote_id
+    last_vote = voting.getVote(vote_idx)
     return {
         'address': voting.address,
 
@@ -34,7 +37,6 @@ def snapshot(voting):
         'CREATE_VOTES_ROLE': voting.CREATE_VOTES_ROLE(),
         'MODIFY_SUPPORT_ROLE': voting.MODIFY_SUPPORT_ROLE(),
         'MODIFY_QUORUM_ROLE': voting.MODIFY_QUORUM_ROLE(),
-        'UNSAFELY_MODIFY_VOTE_TIME_ROLE': voting.UNSAFELY_MODIFY_VOTE_TIME_ROLE(),
 
         'minAcceptQuorumPct': voting.minAcceptQuorumPct(),
         'supportRequiredPct': voting.supportRequiredPct(),
@@ -51,15 +53,15 @@ def snapshot(voting):
         'lastVote_votingPower': last_vote[8],
         'lastVote_script': last_vote[9],
 
-        'lastVote_canExecute': voting.canExecute(length - 1)
+        'lastVote_canExecute': voting.canExecute(vote_idx)
     }
 
 
-def upgrade_voting(ldo_holder, helpers, accounts, dao_voting):
+def upgrade_voting(ldo_holder, helpers, dao_voting, skip_time=3 * 60 * 60 * 24):
     vote_id = start_vote({'from': ldo_holder}, silent=True)[0]
 
     helpers.execute_vote(
-        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='0.5 ether'
+        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='0.5 ether', skip_time=skip_time
     )
 
     return vote_id
@@ -77,14 +79,12 @@ def vote_for_a_vote(voting, vote_id, voter):
 
 
 def wait24h():
-    # wait for the vote to end
     chain.sleep(60 * 60 * 24)
     chain.mine()
 
 
 def wait48h():
-    # wait for the vote to end
-    chain.sleep(2 * 60 * 60 * 24)
+    chain.sleep(60 * 60 * 72)
     chain.mine()
 
 
@@ -93,78 +93,137 @@ def enact_a_vote(voting, vote_id):
 
 
 def record_create_pass_enact(voting, tx_params):
-    history = []
-    with chain_snapshot():
-        history.append(snapshot(voting))
+    steps = [snapshot(voting)]
 
-        vote_id = vote_start(tx_params)
-        history.append(snapshot(voting))
+    vote_id = vote_start(tx_params)
+    steps.append(snapshot(voting))
 
-        for voter in ldo_vote_executors_for_tests:
-            vote_for_a_vote(voting, vote_id, voter)
-            history.append(snapshot(voting))
+    for voter in ldo_vote_executors_for_tests:
+        vote_for_a_vote(voting, vote_id, voter)
+        steps.append(snapshot(voting))
 
-        wait24h()
-        history.append(snapshot(voting))
+    wait24h()
+    steps.append(snapshot(voting))
 
-        wait48h()
-        history.append(snapshot(voting))
+    wait48h()
+    steps.append(snapshot(voting))
 
-        enact_a_vote(voting, vote_id)
-        history.append(snapshot(voting))
-    return history
+    enact_a_vote(voting, vote_id)
+    steps.append(snapshot(voting))
+    return steps
 
 
-def check_last_vote(snapshot):
-    assert snapshot['voteTime'] == ValueChanged(14460, 259200), "voteTime changed"
-    assert snapshot['votesLength'].to_val == snapshot['votesLength'].from_val + 1, \
-        "We have one more voting in upgraded contract"
-    assert 'lastVote_startDate' in snapshot
-    assert 'lastVote_snapshotBlock' in snapshot
+@pytest.fixture(scope='function', autouse=True)
+def reference_steps(dao_voting, ldo_holder):
+    before_upgrade = record_create_pass_enact(dao_voting, {'from': ldo_holder})
+    chain.revert()
+    chain.mine(1)
+    return before_upgrade
 
 
-def test_create_pass_enact(dao_voting, ldo_holder, helpers, accounts):
-    before_upgrade = record_create_pass_enact(dao_voting,  {'from': ldo_holder})
+def check_optional_diff(diff, expected):
+    """Some keys are optional and can present depending on the state of the chain"""
+    for key in expected:
+        if key in diff:
+            del diff[key]
 
-    upgrade_voting(ldo_holder, helpers, accounts, dao_voting)
 
+def assert_diff(diff, expected):
+    for key in expected.keys():
+        assert diff[key] == expected[key]
+        del diff[key]
+
+
+def assert_time_changed(diff):
+    assert diff['voteTime'] == ValueChanged(14460, 259200), "voteTime changed from 24h to 72h"
+    del diff['voteTime']
+
+
+def assert_last_vote_not_same(diff):
+    assert 'lastVote_startDate' in diff, "Different start date"
+    assert 'lastVote_snapshotBlock' in diff, "Different start block"
+
+    del diff['lastVote_startDate']
+    del diff['lastVote_snapshotBlock']
+
+
+def assert_more_votes(diff):
+    assert diff['votesLength'].to_val == diff['votesLength'].from_val + 1, "Should be more votes after upgrade"
+    del diff['votesLength']
+
+
+def assert_no_more_diffs(diff):
+    assert len(diff) == 0, f"Unexpected diff {diff}"
+
+
+def test_smoke_snapshots(dao_voting, ldo_holder, helpers, reference_steps):
+    """
+    Run a smoke test before upgrade, then after upgrade, and compare snapshots at each step
+    """
+    upgrade_voting(ldo_holder, helpers, dao_voting)
     after_upgrade = record_create_pass_enact(dao_voting, {'from': ldo_holder})
 
-    step_pairs = zip(before_upgrade, after_upgrade)
-    diffs = list(map(lambda pair: dictdiff(pair[0], pair[1]), step_pairs))
+    step_diffs = list(map(lambda pair: dictdiff(pair[0], pair[1]), zip(reference_steps, after_upgrade)))
 
-    initial = diffs[0]
+    initial = step_diffs[0]
+    check_optional_diff(initial, ['lastVote_script', 'lastVote_yea', 'lastVote_ney'])
 
-    assert initial['voteTime'] == ValueChanged(14460, 259200), "voteTime changed"
-    assert initial['votesLength'].to_val == initial['votesLength'].from_val + 1, "One more voting in upgraded contract"
-    assert 'lastVote_script' in initial
-    assert 'lastVote_startDate' in initial
-    assert 'lastVote_snapshotBlock' in initial
-    assert len(initial) == 6, f"Unexpected diff {initial}"
+    after24h = step_diffs[5]
+    assert_diff(after24h, {'lastVote_open': ValueChanged(False, True)})
 
-    voting_created = diffs[1]
+    for indx, diff in enumerate(step_diffs):
+        print(f'Verifying step {indx}')
+        assert_time_changed(diff)
+        assert_last_vote_not_same(diff)
+        assert_more_votes(diff)
+        assert_no_more_diffs(diff)
 
-    assert voting_created['votesLength'].from_val == initial['votesLength'].from_val + 1
-    assert voting_created['votesLength'].to_val == initial['votesLength'].to_val + 1
-    check_last_vote(voting_created)
-    assert len(voting_created) == 4, f"Unexpected diff {voting_created}"
 
-    for voted in diffs[2:5]:
-        check_last_vote(voted)
-        assert len(voted) == 4, f"Unexpected diff {voted}"
+def test_upgrade_after_create(dao_voting, ldo_holder, helpers, reference_steps):
+    """
+    Create a vote then upgrade and check that all is going fine but longer
+    """
+    steps = [snapshot(dao_voting)]
+    vote_id = vote_start({'from': ldo_holder})
+    steps.append(snapshot(dao_voting, vote_id))
 
-    after24h = diffs[5]
+    for voter in ldo_vote_executors_for_tests:
+        vote_for_a_vote(dao_voting, vote_id, voter)
+        steps.append(snapshot(dao_voting, vote_id))
 
-    check_last_vote(after24h)
-    assert after24h['lastVote_open'] == ValueChanged(False, True)
-    assert len(after24h) == 5, f"Unexpected diff {after24h}"
+    upgrade_voting(ldo_holder, helpers, dao_voting, skip_time=60 * 60 * 24)  # wait24h
+    steps.append(snapshot(dao_voting, vote_id))
 
-    after72h = diffs[6]
+    wait48h()
+    steps.append(snapshot(dao_voting, vote_id))
 
-    check_last_vote(after72h)
-    assert len(after72h) == 4, f"Unexpected diff {after72h}"
+    enact_a_vote(dao_voting, vote_id)
+    steps.append(snapshot(dao_voting, vote_id))
 
-    afterEnact = diffs[7]
+    step_diffs = list(map(lambda pair: dictdiff(pair[0], pair[1]), zip(reference_steps, steps)))
 
-    check_last_vote(afterEnact)
-    assert len(after72h) == 4, f"Unexpected diff {afterEnact}"
+    # Verification
+
+    initial = step_diffs[0]
+    print(f'Verifying step 0')
+    assert_no_more_diffs(initial)
+
+    for indx, diff in enumerate(step_diffs[1:5]):
+        print(f'Verifying step {indx + 1}')
+        assert_last_vote_not_same(diff)
+        assert_no_more_diffs(diff)
+
+    afterUpgrade = step_diffs[5]
+    print(f'Verifying step 5')
+    assert_diff(afterUpgrade, {'lastVote_open': ValueChanged(from_val=False, to_val=True) })
+    assert_time_changed(afterUpgrade)
+    assert_more_votes(afterUpgrade)
+    assert_last_vote_not_same(afterUpgrade)
+    assert_no_more_diffs(afterUpgrade)
+
+    for indx, diff in enumerate(step_diffs[6:]):
+        print(f'Verifying step {indx + 6}')
+        assert_time_changed(diff)
+        assert_more_votes(diff)
+        assert_last_vote_not_same(diff)
+        assert_no_more_diffs(diff)

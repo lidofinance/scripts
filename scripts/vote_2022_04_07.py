@@ -27,6 +27,7 @@ from utils.config import (
     network_name
 )
 
+
 def unsafely_change_vote_time(voting, new_vote_time):
     return (
         voting.address,
@@ -34,6 +35,7 @@ def unsafely_change_vote_time(voting, new_vote_time):
             new_vote_time
         )
     )
+
 
 def start_vote(
     tx_params: Dict[str, str],

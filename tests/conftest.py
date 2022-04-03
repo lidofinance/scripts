@@ -2,11 +2,9 @@ import pytest
 
 import os
 
-from typing import Optional, List
+from typing import Optional
 
 from brownie import chain
-from brownie.network.transaction import TransactionReceipt
-from brownie.network.event import EventDict, _EventItem
 
 from utils.config import (ldo_token_address, lido_dao_voting_address,
                           lido_dao_token_manager_address, lido_dao_agent_address,
