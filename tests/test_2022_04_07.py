@@ -3,7 +3,7 @@ from utils.brownie_prelude import *
 
 from collections import namedtuple
 from brownie import accounts, chain
-from scripts.vote_01_voting_upgrade import start_vote
+from scripts.vote_2022_04_07 import start_vote
 from utils.config import ldo_vote_executors_for_tests
 from utils.mainnet_fork import chain_snapshot
 from utils.voting import create_vote
