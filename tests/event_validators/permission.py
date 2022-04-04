@@ -13,17 +13,22 @@ class Permission(NamedTuple):
     role: str
 
 
-def validate_permission_create(event: EventDict, p: Permission, manager):
-    _ldo_events_chain = ['LogScriptCall', 'CreatePermission']
+def validate_permission_create_event(event: EventDict, p: Permission, manager):
+    _ldo_events_chain = ['LogScriptCall', 'SetPermission', 'ChangePermissionManager']
 
     validate_events_chain([e.name for e in event], _ldo_events_chain)
 
     assert event.count('SetPermission') == 1
+    assert event.count('ChangePermissionManager') == 1
 
     assert event['SetPermission']['entity'] == p.entity, "Wrong entity"
     assert event['SetPermission']['app'] == p.app, "Wrong app address"
     assert event['SetPermission']['role'] == p.role, "Wrong role"
-    assert event['SetPermission']['manager'] == manager, "Wrong role"
+    assert event['SetPermission']['allowed'] is True, "Should be allowed"
+
+    assert event['ChangePermissionManager']['app'] == p.app, "Wrong app address"
+    assert event['ChangePermissionManager']['role'] == p.role, "Wrong role"
+    assert event['ChangePermissionManager']['manager'] == manager, "Wrong manager"
 
 
 def validate_permission_revoke_event(event: EventDict, p: Permission):

@@ -117,7 +117,7 @@ def start_vote(
 
 
 def main():
-    tx_params = { 'from': get_deployer_account() }
+    tx_params = {'from': get_deployer_account()}
 
     if get_is_live():
         tx_params['max_fee'] = '300 gwei'
