@@ -8,7 +8,7 @@ from scripts.vote_2022_04_07 import start_vote
 from utils.config import (
     ldo_vote_executors_for_tests,
     lido_dao_voting_repo,
-    lido_dao_voting_address,
+    lido_dao_voting_address
 )
 from utils.voting import create_vote
 from utils.evm_script import encode_call_script
@@ -17,7 +17,88 @@ from event_validators.permission import (Permission,
                                          validate_permission_create,
                                          validate_permission_grant_event,
                                          validate_permission_revoke_event)
+from event_validators.voting import validate_change_vote_time_event
 from tx_tracing_helpers import *
+
+
+voting_new_app = {
+    'address': '0x9059e060113b7394FC964bf86CD246f3e9D4210d',
+    'content_uri': '0x697066733a516d5962774366374d6e6932797a31553358334769485667396f35316a6b53586731533877433257547755684859',
+    'id': '0xee7f2abf043afe722001aaa900627a6e29adcbcce63a561fbd97e0a0c6429b94',
+    'version': (3, 0, 0),
+    'vote_time': 259200  # 72 hours
+}
+
+voting_old_app = {
+    'address': '0xfd5952Ef8dE4707f95E754299e8c0FfD1e876F34',
+    'content_uri': '0x697066733a516d5962774366374d6e6932797a31553358334769485667396f35316a6b53586731533877433257547755684859',
+    'id': '0xee7f2abf043afe722001aaa900627a6e29adcbcce63a561fbd97e0a0c6429b94',
+    'version': (2, 0, 0),
+    'vote_time': 14460
+}
+
+permission = Permission(entity='0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db',  # Voting
+                        app='0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db',  # Voting
+                        role='0x068ca51c9d69625c7add396c98ca4f3b27d894c3b973051ad3ee53017d7094ea')  # keccak256('UNSAFELY_MODIFY_VOTE_TIME_ROLE')
+
+
+def test_2022_04_07(ldo_holder, helpers, dao_voting):
+    voting_repo = interface.Repo(lido_dao_voting_repo)
+    voting_proxy = interface.AppProxyUpgradeable(lido_dao_voting_address)
+    voting_app_from_chain = voting_repo.getLatest()
+
+    assert voting_app_from_chain[0] == voting_old_app['version']
+    assert voting_app_from_chain[1] == voting_old_app['address']
+    assert voting_app_from_chain[2] == voting_old_app['content_uri']
+    assert voting_proxy.implementation() == voting_old_app['address']
+
+    assert dao_voting.voteTime() == voting_old_app['vote_time']
+
+    ##
+    # START VOTE
+    ##
+    vote_id = start_vote({'from': ldo_holder}, silent=True)[0]
+
+    tx: TransactionReceipt = helpers.execute_vote(
+        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='0.5 ether'
+    )
+
+    voting_app_from_chain = voting_repo.getLatest()
+
+    assert voting_app_from_chain[0] == voting_new_app['version']
+    assert voting_app_from_chain[1] == voting_new_app['address']
+    assert voting_app_from_chain[2] == voting_new_app['content_uri']
+
+    assert voting_proxy.implementation() == voting_new_app['address']
+    assert dao_voting.voteTime() == voting_new_app['vote_time']
+    assert dao_voting.UNSAFELY_MODIFY_VOTE_TIME_ROLE() == permission.role
+
+    # Validating events
+    # Need to have mainnet contract to have it right
+    # display_voting_events(tx)
+
+    # assert count_vote_items_by_events(tx, dao_voting) == 5, "Incorrect voting items count"
+    #
+    # evs = group_voting_events(tx)
+    # validate_push_to_repo_event()
+    # validate_app_update_event()
+    # validate_permission_create(evs[2], permission, lido_dao_voting_address)
+    # validate_change_vote_time_event(evs[3], voting_new_app['vote_time'])
+    # validate_permission_revoke_event(evs[4], permission)
+
+
+@pytest.fixture(scope='module', autouse=True)
+def vote_time(dao_voting):
+    return dao_voting.voteTime()
+
+
+@pytest.fixture(scope='function', autouse=True)
+def reference_steps(dao_voting, ldo_holder, vote_time):
+    before_upgrade = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time)
+    chain.revert()
+    chain.mine(1)
+    return before_upgrade
+
 
 ValueChanged = namedtuple('ValueChanged', ['from_val', 'to_val'])
 
@@ -116,19 +197,6 @@ def record_create_pass_enact(voting, tx_params, vote_time):
     return steps
 
 
-@pytest.fixture(scope='module', autouse=True)
-def vote_time(dao_voting):
-    return dao_voting.voteTime()
-
-
-@pytest.fixture(scope='function', autouse=True)
-def reference_steps(dao_voting, ldo_holder, vote_time):
-    before_upgrade = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time)
-    chain.revert()
-    chain.mine(1)
-    return before_upgrade
-
-
 def check_optional_diff(diff, expected):
     """Some keys are optional and can present depending on the state of the chain"""
     for key in expected:
@@ -191,22 +259,22 @@ def test_upgrade_after_create(dao_voting, ldo_holder, helpers, reference_steps, 
     """
     Create a vote then upgrade and check that all is going fine but longer
     """
-    steps = [snapshot(dao_voting)]
+    steps = [snapshot(dao_voting)]  # 0
     vote_id = vote_start({'from': ldo_holder})
-    steps.append(snapshot(dao_voting, vote_id))
+    steps.append(snapshot(dao_voting, vote_id))  # 1
 
     for voter in ldo_vote_executors_for_tests:
         vote_for_a_vote(dao_voting, vote_id, voter)
-        steps.append(snapshot(dao_voting, vote_id))
+        steps.append(snapshot(dao_voting, vote_id))  # 2-4
 
     upgrade_voting(ldo_holder, helpers, dao_voting, skip_time=vote_time)  # wait24h
-    steps.append(snapshot(dao_voting, vote_id))
+    steps.append(snapshot(dao_voting, vote_id))  # 5
 
     wait(72*60*60)
-    steps.append(snapshot(dao_voting, vote_id))
+    steps.append(snapshot(dao_voting, vote_id))  # 6
 
     enact_a_vote(dao_voting, vote_id)
-    steps.append(snapshot(dao_voting, vote_id))
+    steps.append(snapshot(dao_voting, vote_id))  # 7
 
     step_diffs = list(map(lambda pair: dictdiff(pair[0], pair[1]), zip(reference_steps, steps)))
 
@@ -252,7 +320,58 @@ def test_upgrade_after_pass(dao_voting, ldo_holder, helpers, reference_steps, vo
     wait(vote_time)
     steps.append(snapshot(dao_voting, vote_id))  # 5
 
-    upgrade_voting(ldo_holder, helpers, dao_voting, skip_time=60 * 60 * 72)  # wait48h
+    upgrade_voting(ldo_holder, helpers, dao_voting, skip_time=0)
+    steps.append(snapshot(dao_voting, vote_id))  # 6
+
+    wait(72*60*60)
+    enact_a_vote(dao_voting, vote_id)
+    steps.append(snapshot(dao_voting, vote_id))  # 7
+
+    step_diffs = list(map(lambda pair: dictdiff(pair[0], pair[1]), zip(reference_steps, steps)))
+
+    # Verification
+
+    initial = step_diffs[0]
+    print(f'Verifying step 0')
+    assert_no_more_diffs(initial)
+
+    for indx, diff in enumerate(step_diffs[1:6]):
+        print(f'Verifying step {indx + 1}')
+        assert_last_vote_not_same(diff)
+        assert_no_more_diffs(diff)
+
+    afterUpgrade = step_diffs[6]
+    print(f'Verifying step 6')
+    assert_diff(afterUpgrade, {'lastVote_open': ValueChanged(from_val=False, to_val=True)})
+    assert_time_changed(afterUpgrade)
+    assert_more_votes(afterUpgrade)
+    assert_last_vote_not_same(afterUpgrade)
+    assert_no_more_diffs(afterUpgrade)
+
+    for indx, diff in enumerate(step_diffs[7:]):
+        print(f'Verifying step {indx + 7}')
+        assert_time_changed(diff)
+        assert_more_votes(diff)
+        assert_last_vote_not_same(diff)
+        assert_no_more_diffs(diff)
+
+
+def test_upgrade_after_72h_after_pass(dao_voting, ldo_holder, helpers, reference_steps, vote_time):
+    """
+    Passed voting should not become open after upgrade if started out of 72h period
+    """
+    steps = [snapshot(dao_voting)]  # 0
+    vote_id = vote_start({'from': ldo_holder})
+    steps.append(snapshot(dao_voting, vote_id))  # 1
+
+    for voter in ldo_vote_executors_for_tests:
+        vote_for_a_vote(dao_voting, vote_id, voter)
+        steps.append(snapshot(dao_voting, vote_id))  # 2-4
+
+    wait(72 * 60 * 60)
+    steps.append(snapshot(dao_voting, vote_id))  # 5
+
+    upgrade_voting(ldo_holder, helpers, dao_voting, skip_time=0)
     steps.append(snapshot(dao_voting, vote_id))  # 6
 
     enact_a_vote(dao_voting, vote_id)
@@ -286,65 +405,52 @@ def test_upgrade_after_pass(dao_voting, ldo_holder, helpers, reference_steps, vo
         assert_no_more_diffs(diff)
 
 
-voting_new_app = {
-    'address': '0x9059e060113b7394FC964bf86CD246f3e9D4210d',
-    'content_uri': '0x697066733a516d5962774366374d6e6932797a31553358334769485667396f35316a6b53586731533877433257547755684859',
-    'id': '0xee7f2abf043afe722001aaa900627a6e29adcbcce63a561fbd97e0a0c6429b94',
-    'version': (3, 0, 0),
-    'vote_time': 259200  # 72 hours
-}
+def test_upgrade_after_enact(dao_voting, ldo_holder, helpers, reference_steps, vote_time):
+    """
+    Enacted voting should not become open after upgrade if started within 72h period
+    """
+    steps = [snapshot(dao_voting)]  # 0
+    vote_id = vote_start({'from': ldo_holder})
+    steps.append(snapshot(dao_voting, vote_id))  # 1
 
-voting_old_app = {
-    'address': '0xfd5952Ef8dE4707f95E754299e8c0FfD1e876F34',
-    'content_uri': '0x697066733a516d5962774366374d6e6932797a31553358334769485667396f35316a6b53586731533877433257547755684859',
-    'id': '0xee7f2abf043afe722001aaa900627a6e29adcbcce63a561fbd97e0a0c6429b94',
-    'version': (2, 0, 0),
-    'vote_time': 14460
-}
+    for voter in ldo_vote_executors_for_tests:
+        vote_for_a_vote(dao_voting, vote_id, voter)
+        steps.append(snapshot(dao_voting, vote_id))  # 2-4
 
-permission = Permission(entity='0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db',  # Voting
-                        app='0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db',  # Voting
-                        role='0x068ca51c9d69625c7add396c98ca4f3b27d894c3b973051ad3ee53017d7094ea')  # keccak256('UNSAFELY_MODIFY_VOTE_TIME_ROLE')
+    wait(vote_time)
+    steps.append(snapshot(dao_voting, vote_id))  # 5
 
+    enact_a_vote(dao_voting, vote_id)
+    steps.append(snapshot(dao_voting, vote_id))  # 6
 
-def test_2022_04_07(ldo_holder, helpers, dao_voting):
-    voting_repo = interface.Repo(lido_dao_voting_repo)
-    voting_proxy = interface.AppProxyUpgradeable(lido_dao_voting_address)
-    voting_app_from_chain = voting_repo.getLatest()
+    upgrade_voting(ldo_holder, helpers, dao_voting, skip_time=0)
+    steps.append(snapshot(dao_voting, vote_id))  # 7
 
-    assert voting_app_from_chain[0] == voting_old_app['version']
-    assert voting_app_from_chain[1] == voting_old_app['address']
-    assert voting_app_from_chain[2] == voting_old_app['content_uri']
-    assert voting_proxy.implementation() == voting_old_app['address']
+    step_diffs = list(map(lambda pair: dictdiff(pair[0], pair[1]), zip(reference_steps, steps)))
 
-    assert dao_voting.voteTime() == voting_old_app['vote_time']
+    # Verification
 
-    ##
-    # START VOTE
-    ##
-    vote_id = start_vote({'from': ldo_holder}, silent=True)[0]
+    initial = step_diffs[0]
+    print(f'Verifying step 0')
+    assert_no_more_diffs(initial)
 
-    tx: TransactionReceipt = helpers.execute_vote(
-        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='0.5 ether'
-    )
+    for indx, diff in enumerate(step_diffs[1:6]):
+        print(f'Verifying step {indx + 1}')
+        assert_last_vote_not_same(diff)
+        assert_no_more_diffs(diff)
 
-    voting_app_from_chain = voting_repo.getLatest()
+    afterEnact = step_diffs[6]
+    print(f'Verifying step 6')
+    assert_last_vote_not_same(afterEnact)
+    assert_diff(afterEnact, {
+        'lastVote_executed': ValueChanged(from_val=False, to_val=True),
+        'lastVote_canExecute': ValueChanged(from_val=True, to_val=False)
+    })
+    assert_no_more_diffs(afterEnact)
 
-    assert voting_app_from_chain[0] == voting_new_app['version']
-    assert voting_app_from_chain[1] == voting_new_app['address']
-    assert voting_app_from_chain[2] == voting_new_app['content_uri']
-
-    assert voting_proxy.implementation() == voting_new_app['address']
-    assert dao_voting.voteTime() == voting_new_app['vote_time']
-    assert dao_voting.UNSAFELY_MODIFY_VOTE_TIME_ROLE() == permission.role
-
-    # Validating events
-    display_voting_events(tx)
-
-    assert count_vote_items_by_events(tx, dao_voting) == 5, "Incorrect voting items count"
-
-    # evs = group_voting_events(tx)
-    #
-    # validate_permission_grant_event(evs[2], permission)
-    #
-    # validate_permission_revoke_event(evs[4], permission)
+    afterUpgrade = step_diffs[7]
+    print(f'Verifying step 6')
+    assert_time_changed(afterUpgrade)
+    assert_more_votes(afterUpgrade)
+    assert_last_vote_not_same(afterUpgrade)
+    assert_no_more_diffs(afterUpgrade)

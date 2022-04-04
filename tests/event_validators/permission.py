@@ -40,7 +40,7 @@ def validate_permission_revoke_event(event: EventDict, p: Permission):
 
 
 def validate_permission_grant_event(event: EventDict, p: Permission):
-    _ldo_events_chain = ['LogScriptCall', 'SetPermission', 'SetPermissionParams']
+    _ldo_events_chain = ['LogScriptCall', 'SetPermission']
 
     validate_events_chain([e.name for e in event], _ldo_events_chain)
 
