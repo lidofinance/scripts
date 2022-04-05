@@ -1,7 +1,7 @@
 # noinspection PyUnresolvedReferences
 from utils.brownie_prelude import *
 
-from brownie import accounts, interface
+from brownie import accounts, interface, reverts
 from scripts.vote_2022_04_07 import start_vote
 from utils.config import (
     lido_dao_voting_repo,
@@ -52,13 +52,15 @@ voting_old_app_goerli = {
     'vote_time': 14460
 }
 
+deployer_address = '0x3d3be777790ba9F279A188C3F249f0B6F94880Cd'
+
 permission_goerli = Permission(entity='0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db',  # Voting
                                app='0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db',  # Voting
                                role='0x068ca51c9d69625c7add396c98ca4f3b27d894c3b973051ad3ee53017d7094ea')
                                 # keccak256('UNSAFELY_MODIFY_VOTE_TIME_ROLE')
 
 
-def test_2022_04_07(ldo_holder, helpers, dao_voting):
+def test_2022_04_07(ldo_holder, helpers, dao_voting, dao_agent):
     voting_old_app = voting_old_app_goerli if network_name() == 'goerli-test' else voting_old_app_mainnet
     voting_new_app = voting_new_app_goerli if network_name() == 'goerli-test' else voting_new_app_mainnet
     permission = permission_goerli if network_name() == 'goerli-test' else permission_mainnet
@@ -74,6 +76,17 @@ def test_2022_04_07(ldo_holder, helpers, dao_voting):
 
     assert dao_voting.voteTime() == voting_old_app['vote_time']
 
+    acl_check_addrs: List[str] = [
+        dao_voting.address,
+        dao_agent.address,
+        ldo_holder.address,
+        accounts[0],
+        accounts[1],
+        deployer_address
+    ]
+
+    _acl_checks(dao_voting, acl_check_addrs, reason=None)
+
     ##
     # START VOTE
     ##
@@ -82,6 +95,8 @@ def test_2022_04_07(ldo_holder, helpers, dao_voting):
     tx: TransactionReceipt = helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='0.5 ether'
     )
+
+    _acl_checks(dao_voting, acl_check_addrs, reason='APP_AUTH_FAILED')
 
     voting_app_from_chain = voting_repo.getLatest()
 
@@ -106,3 +121,8 @@ def test_2022_04_07(ldo_holder, helpers, dao_voting):
         validate_permission_create_event(evs[2], permission, lido_dao_voting_address)
         validate_change_vote_time_event(evs[3], voting_new_app['vote_time'])
         validate_permission_revoke_event(evs[4], permission)
+
+def _acl_checks(dao_voting: interface.Voting, addrs: List[str], reason: Optional[str]) -> None:
+    for addr in addrs:
+        with reverts(reason):
+            dao_voting.unsafelyChangeVoteTime(250_000, {'from': addr})
