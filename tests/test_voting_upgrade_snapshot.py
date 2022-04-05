@@ -15,19 +15,15 @@ def vote_time(dao_voting):
     return dao_voting.voteTime()
 
 
-@pytest.fixture(scope='function', autouse=True)
-def reference_steps(dao_voting, ldo_holder, vote_time):
-    before_upgrade = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time)
-    chain.revert()
-    chain.mine(1)
-    return before_upgrade
-
-
-def test_smoke_snapshots(dao_voting, ldo_holder, helpers, reference_steps, vote_time):
+def test_smoke_snapshots(dao_voting, ldo_holder, helpers, vote_time):
     """
     Run a smoke test before upgrade, then after upgrade, and compare snapshots at each step
     """
+    reference_steps = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time)
+    chain.revert()
+
     upgrade_voting(ldo_holder, helpers, dao_voting)
+
     after_upgrade = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time)
 
     step_diffs = list(map(lambda pair: dictdiff(pair[0], pair[1]), zip(reference_steps, after_upgrade)))
@@ -50,10 +46,13 @@ def test_smoke_snapshots(dao_voting, ldo_holder, helpers, reference_steps, vote_
         assert_no_more_diffs(diff)
 
 
-def test_upgrade_after_create(dao_voting, ldo_holder, helpers, reference_steps, vote_time):
+def test_upgrade_after_create(dao_voting, ldo_holder, helpers, vote_time):
     """
     Create a vote then upgrade and check that all is going fine but longer
     """
+    reference_steps = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time)
+    chain.revert()
+
     steps = [snapshot(dao_voting)]  # 0
     vote_id = vote_start({'from': ldo_holder})
     steps.append(snapshot(dao_voting, vote_id))  # 1
@@ -103,10 +102,13 @@ def test_upgrade_after_create(dao_voting, ldo_holder, helpers, reference_steps, 
         assert_no_more_diffs(diff)
 
 
-def test_upgrade_after_pass(dao_voting, ldo_holder, helpers, reference_steps, vote_time):
+def test_upgrade_after_pass(dao_voting, ldo_holder, helpers, vote_time):
     """
     Passed voting should become open after upgrade if started within 72h
     """
+    reference_steps = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time)
+    chain.revert()
+
     steps = [snapshot(dao_voting)]  # 0
     vote_id = vote_start({'from': ldo_holder})
     steps.append(snapshot(dao_voting, vote_id))  # 1
@@ -157,10 +159,13 @@ def test_upgrade_after_pass(dao_voting, ldo_holder, helpers, reference_steps, vo
         assert_no_more_diffs(diff)
 
 
-def test_upgrade_after_72h_after_pass(dao_voting, ldo_holder, helpers, reference_steps, vote_time):
+def test_upgrade_after_72h_after_pass(dao_voting, ldo_holder, helpers, vote_time):
     """
     Passed voting should not become open after upgrade if started out of 72h period
     """
+    reference_steps = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time)
+    chain.revert()
+
     steps = [snapshot(dao_voting)]  # 0
     vote_id = vote_start({'from': ldo_holder})
     steps.append(snapshot(dao_voting, vote_id))  # 1
@@ -206,10 +211,13 @@ def test_upgrade_after_72h_after_pass(dao_voting, ldo_holder, helpers, reference
         assert_no_more_diffs(diff)
 
 
-def test_upgrade_after_enact(dao_voting, ldo_holder, helpers, reference_steps, vote_time):
+def test_upgrade_after_enact(dao_voting, ldo_holder, helpers, vote_time):
     """
     Enacted voting should not become open after upgrade if started within 72h period
     """
+    reference_steps = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time)
+    chain.revert()
+
     steps = [snapshot(dao_voting)]  # 0
     vote_id = vote_start({'from': ldo_holder})
     steps.append(snapshot(dao_voting, vote_id))  # 1
@@ -257,20 +265,6 @@ def test_upgrade_after_enact(dao_voting, ldo_holder, helpers, reference_steps, v
     assert_no_more_diffs(afterUpgrade)
 
 
-ValueChanged = namedtuple('ValueChanged', ['from_val', 'to_val'])
-
-
-def dictdiff(from_dict, to_dict):
-    result = {}
-
-    all_keys = from_dict.keys() | to_dict.keys()
-    for key in all_keys:
-        if from_dict.get(key) != to_dict.get(key):
-            result[key] = ValueChanged(from_dict.get(key), to_dict.get(key))
-
-    return result
-
-
 def snapshot(voting, vote_id=None):
     length = voting.votesLength()
     vote_idx = (length - 1) if vote_id is None else vote_id
@@ -306,6 +300,27 @@ def snapshot(voting, vote_id=None):
     }
 
 
+def record_create_pass_enact(voting, tx_params, vote_time):
+    steps = [snapshot(voting)]
+
+    vote_id = vote_start(tx_params)
+    steps.append(snapshot(voting))
+
+    for voter in ldo_vote_executors_for_tests:
+        vote_for_a_vote(voting, vote_id, voter)
+        steps.append(snapshot(voting))
+
+    wait(vote_time)
+    steps.append(snapshot(voting))
+
+    wait(72*60*60)
+    steps.append(snapshot(voting))
+
+    enact_a_vote(voting, vote_id)
+    steps.append(snapshot(voting))
+    return steps
+
+
 def upgrade_voting(ldo_holder, helpers, dao_voting, skip_time=3 * 60 * 60 * 24):
     vote_id = start_vote({'from': ldo_holder}, silent=True)[0]
 
@@ -336,27 +351,6 @@ def enact_a_vote(voting, vote_id):
     voting.executeVote(vote_id, {'from': accounts[0]})
 
 
-def record_create_pass_enact(voting, tx_params, vote_time):
-    steps = [snapshot(voting)]
-
-    vote_id = vote_start(tx_params)
-    steps.append(snapshot(voting))
-
-    for voter in ldo_vote_executors_for_tests:
-        vote_for_a_vote(voting, vote_id, voter)
-        steps.append(snapshot(voting))
-
-    wait(vote_time)
-    steps.append(snapshot(voting))
-
-    wait(72*60*60)
-    steps.append(snapshot(voting))
-
-    enact_a_vote(voting, vote_id)
-    steps.append(snapshot(voting))
-    return steps
-
-
 def check_optional_diff(diff, expected):
     """Some keys are optional and can present depending on the state of the chain"""
     for key in expected:
@@ -376,11 +370,9 @@ def assert_time_changed(diff, previous_vote_time):
 
 
 def assert_last_vote_not_same(diff):
-    assert 'vote_startDate' in diff, "Different start date"
-    assert 'vote_snapshotBlock' in diff, "Different start block"
-
+    assert 'vote_startDate' in diff, "Start date should be different"
     del diff['vote_startDate']
-    del diff['vote_snapshotBlock']
+    check_optional_diff(diff, ['vote_snapshotBlock'])
 
 
 def assert_more_votes(diff):
@@ -390,3 +382,17 @@ def assert_more_votes(diff):
 
 def assert_no_more_diffs(diff):
     assert len(diff) == 0, f"Unexpected diff {diff}"
+
+
+ValueChanged = namedtuple('ValueChanged', ['from_val', 'to_val'])
+
+
+def dictdiff(from_dict, to_dict):
+    result = {}
+
+    all_keys = from_dict.keys() | to_dict.keys()
+    for key in all_keys:
+        if from_dict.get(key) != to_dict.get(key):
+            result[key] = ValueChanged(from_dict.get(key), to_dict.get(key))
+
+    return result
