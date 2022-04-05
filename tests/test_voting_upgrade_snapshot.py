@@ -34,8 +34,10 @@ def test_smoke_snapshots(dao_voting, ldo_holder, helpers, vote_time):
 
     afterVoteTime = step_diffs[5]
     assert_diff(afterVoteTime, {
-        'vote_open': ValueChanged(False, True),
-        'vote_canExecute': ValueChanged(from_val=True, to_val=False)
+        'vote_open': ValueChanged(from_val=False, to_val=True),
+        'behaviour_vote': ValueChanged(from_val=False, to_val=True),
+        'vote_canExecute': ValueChanged(from_val=True, to_val=False),
+        'behaviour_enact': ValueChanged(from_val=True, to_val=False),
     })
 
     for indx, diff in enumerate(step_diffs):
@@ -87,7 +89,9 @@ def test_upgrade_after_create(dao_voting, ldo_holder, helpers, vote_time):
     print(f'Verifying step 5')
     assert_diff(afterUpgrade, {
         'vote_open': ValueChanged(from_val=False, to_val=True),
-        'vote_canExecute': ValueChanged(from_val=True, to_val=False)
+        'behaviour_vote': ValueChanged(from_val=False, to_val=True),
+        'vote_canExecute': ValueChanged(from_val=True, to_val=False),
+        'behaviour_enact': ValueChanged(from_val=True, to_val=False),
     })
     assert_time_changed(afterUpgrade, vote_time)
     assert_more_votes(afterUpgrade)
@@ -144,7 +148,9 @@ def test_upgrade_after_pass(dao_voting, ldo_holder, helpers, vote_time):
     print(f'Verifying step 6')
     assert_diff(afterUpgrade, {
         'vote_open': ValueChanged(from_val=False, to_val=True),
-        'vote_canExecute': ValueChanged(from_val=True, to_val=False)
+        'behaviour_vote': ValueChanged(from_val=False, to_val=True),
+        'vote_canExecute': ValueChanged(from_val=True, to_val=False),
+        'behaviour_enact': ValueChanged(from_val=True, to_val=False),
     })
     assert_time_changed(afterUpgrade, vote_time)
     assert_more_votes(afterUpgrade)
@@ -253,7 +259,8 @@ def test_upgrade_after_enact(dao_voting, ldo_holder, helpers, vote_time):
     assert_last_vote_not_same(afterEnact)
     assert_diff(afterEnact, {
         'vote_executed': ValueChanged(from_val=False, to_val=True),
-        'vote_canExecute': ValueChanged(from_val=True, to_val=False)
+        'vote_canExecute': ValueChanged(from_val=True, to_val=False),
+        'behaviour_enact': ValueChanged(from_val=True, to_val=False),
     })
     assert_no_more_diffs(afterEnact)
 
@@ -269,6 +276,25 @@ def snapshot(voting, vote_id=None):
     length = voting.votesLength()
     vote_idx = (length - 1) if vote_id is None else vote_id
     last_vote = voting.getVote(vote_idx)
+
+    def try_to_vote():
+        try:
+            vote_for_a_vote(voting, vote_idx, ldo_vote_executors_for_tests[0])
+            return True
+        except:
+            return False
+        finally:
+            chain.undo()
+
+    def try_to_enact():
+        try:
+            enact_a_vote(voting, vote_idx)
+            return True
+        except:
+            return False
+        finally:
+            chain.undo()
+
     return {
         'address': voting.address,
 
@@ -297,6 +323,9 @@ def snapshot(voting, vote_id=None):
         'vote_voter1_state': voting.getVoterState(vote_idx, ldo_vote_executors_for_tests[0]),
         'vote_voter2_state': voting.getVoterState(vote_idx, ldo_vote_executors_for_tests[1]),
         'vote_voter3_state': voting.getVoterState(vote_idx, ldo_vote_executors_for_tests[2]),
+
+        'behaviour_vote': try_to_vote(),
+        'behaviour_enact': try_to_enact(),
     }
 
 
@@ -313,7 +342,7 @@ def record_create_pass_enact(voting, tx_params, vote_time):
     wait(vote_time)
     steps.append(snapshot(voting))
 
-    wait(72*60*60)
+    wait(72*60*60 - vote_time)
     steps.append(snapshot(voting))
 
     enact_a_vote(voting, vote_id)
