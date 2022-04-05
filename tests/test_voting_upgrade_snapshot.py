@@ -41,7 +41,7 @@ def test_smoke_snapshots(dao_voting, ldo_holder, helpers, reference_steps, vote_
 
     for indx, diff in enumerate(step_diffs):
         print(f'Verifying step {indx}')
-        assert_time_changed(diff)
+        assert_time_changed(diff, vote_time)
         assert_last_vote_not_same(diff)
         assert_more_votes(diff)
         assert_no_more_diffs(diff)
@@ -91,7 +91,7 @@ def test_upgrade_after_create(dao_voting, ldo_holder, helpers, reference_steps, 
 
     for indx, diff in enumerate(step_diffs[6:]):
         print(f'Verifying step {indx + 6}')
-        assert_time_changed(diff)
+        assert_time_changed(diff, vote_time)
         assert_more_votes(diff)
         assert_last_vote_not_same(diff)
         assert_no_more_diffs(diff)
@@ -142,7 +142,7 @@ def test_upgrade_after_pass(dao_voting, ldo_holder, helpers, reference_steps, vo
 
     for indx, diff in enumerate(step_diffs[7:]):
         print(f'Verifying step {indx + 7}')
-        assert_time_changed(diff)
+        assert_time_changed(diff, vote_time)
         assert_more_votes(diff)
         assert_last_vote_not_same(diff)
         assert_no_more_diffs(diff)
@@ -184,14 +184,14 @@ def test_upgrade_after_72h_after_pass(dao_voting, ldo_holder, helpers, reference
 
     afterUpgrade = step_diffs[6]
     print(f'Verifying step 6')
-    assert_time_changed(afterUpgrade)
+    assert_time_changed(afterUpgrade, vote_time)
     assert_more_votes(afterUpgrade)
     assert_last_vote_not_same(afterUpgrade)
     assert_no_more_diffs(afterUpgrade)
 
     for indx, diff in enumerate(step_diffs[7:]):
         print(f'Verifying step {indx + 7}')
-        assert_time_changed(diff)
+        assert_time_changed(diff, vote_time)
         assert_more_votes(diff)
         assert_last_vote_not_same(diff)
         assert_no_more_diffs(diff)
@@ -242,7 +242,7 @@ def test_upgrade_after_enact(dao_voting, ldo_holder, helpers, reference_steps, v
 
     afterUpgrade = step_diffs[7]
     print(f'Verifying step 7')
-    assert_time_changed(afterUpgrade)
+    assert_time_changed(afterUpgrade, vote_time)
     assert_more_votes(afterUpgrade)
     assert_last_vote_not_same(afterUpgrade)
     assert_no_more_diffs(afterUpgrade)
@@ -361,8 +361,8 @@ def assert_diff(diff, expected):
         del diff[key]
 
 
-def assert_time_changed(diff):
-    assert diff['voteTime'] == ValueChanged(14460, 259200), "voteTime changed from 24h to 72h"
+def assert_time_changed(diff, previous_vote_time):
+    assert diff['voteTime'] == ValueChanged(previous_vote_time, 259200), "voteTime changed to 72h"
     del diff['voteTime']
 
 
