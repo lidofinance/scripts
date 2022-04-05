@@ -37,7 +37,10 @@ def test_smoke_snapshots(dao_voting, ldo_holder, helpers, reference_steps, vote_
                                   'vote_voter1_state', 'vote_voter2_state', 'vote_voter3_state'])
 
     afterVoteTime = step_diffs[5]
-    assert_diff(afterVoteTime, {'vote_open': ValueChanged(False, True)})
+    assert_diff(afterVoteTime, {
+        'vote_open': ValueChanged(False, True),
+        'vote_canExecute': ValueChanged(from_val=True, to_val=False)
+    })
 
     for indx, diff in enumerate(step_diffs):
         print(f'Verifying step {indx}')
@@ -83,8 +86,11 @@ def test_upgrade_after_create(dao_voting, ldo_holder, helpers, reference_steps, 
 
     afterUpgrade = step_diffs[5]
     print(f'Verifying step 5')
-    assert_diff(afterUpgrade, {'vote_open': ValueChanged(from_val=False, to_val=True)})
-    assert_time_changed(afterUpgrade)
+    assert_diff(afterUpgrade, {
+        'vote_open': ValueChanged(from_val=False, to_val=True),
+        'vote_canExecute': ValueChanged(from_val=True, to_val=False)
+    })
+    assert_time_changed(afterUpgrade, vote_time)
     assert_more_votes(afterUpgrade)
     assert_last_vote_not_same(afterUpgrade)
     assert_no_more_diffs(afterUpgrade)
@@ -112,10 +118,10 @@ def test_upgrade_after_pass(dao_voting, ldo_holder, helpers, reference_steps, vo
     wait(vote_time)
     steps.append(snapshot(dao_voting, vote_id))  # 5
 
-    upgrade_voting(ldo_holder, helpers, dao_voting, skip_time=0)
+    upgrade_voting(ldo_holder, helpers, dao_voting, skip_time=vote_time)
     steps.append(snapshot(dao_voting, vote_id))  # 6
 
-    wait(72*60*60)
+    wait(72*60*60 - vote_time)
     enact_a_vote(dao_voting, vote_id)
     steps.append(snapshot(dao_voting, vote_id))  # 7
 
@@ -134,8 +140,11 @@ def test_upgrade_after_pass(dao_voting, ldo_holder, helpers, reference_steps, vo
 
     afterUpgrade = step_diffs[6]
     print(f'Verifying step 6')
-    assert_diff(afterUpgrade, {'vote_open': ValueChanged(from_val=False, to_val=True)})
-    assert_time_changed(afterUpgrade)
+    assert_diff(afterUpgrade, {
+        'vote_open': ValueChanged(from_val=False, to_val=True),
+        'vote_canExecute': ValueChanged(from_val=True, to_val=False)
+    })
+    assert_time_changed(afterUpgrade, vote_time)
     assert_more_votes(afterUpgrade)
     assert_last_vote_not_same(afterUpgrade)
     assert_no_more_diffs(afterUpgrade)
@@ -160,10 +169,10 @@ def test_upgrade_after_72h_after_pass(dao_voting, ldo_holder, helpers, reference
         vote_for_a_vote(dao_voting, vote_id, voter)
         steps.append(snapshot(dao_voting, vote_id))  # 2-4
 
-    wait(72 * 60 * 60)
+    wait(72 * 60 * 60 - vote_time)
     steps.append(snapshot(dao_voting, vote_id))  # 5
 
-    upgrade_voting(ldo_holder, helpers, dao_voting, skip_time=0)
+    upgrade_voting(ldo_holder, helpers, dao_voting, skip_time=vote_time)
     steps.append(snapshot(dao_voting, vote_id))  # 6
 
     enact_a_vote(dao_voting, vote_id)
@@ -209,13 +218,13 @@ def test_upgrade_after_enact(dao_voting, ldo_holder, helpers, reference_steps, v
         vote_for_a_vote(dao_voting, vote_id, voter)
         steps.append(snapshot(dao_voting, vote_id))  # 2-4
 
-    wait(vote_time)
+    wait(72*60*60 - vote_time)
     steps.append(snapshot(dao_voting, vote_id))  # 5
 
     enact_a_vote(dao_voting, vote_id)
     steps.append(snapshot(dao_voting, vote_id))  # 6
 
-    upgrade_voting(ldo_holder, helpers, dao_voting, skip_time=0)
+    upgrade_voting(ldo_holder, helpers, dao_voting, skip_time=vote_time)
     steps.append(snapshot(dao_voting, vote_id))  # 7
 
     step_diffs = list(map(lambda pair: dictdiff(pair[0], pair[1]), zip(reference_steps, steps)))
