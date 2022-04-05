@@ -17,7 +17,7 @@ from event_validators.voting import validate_change_vote_time_event
 from tx_tracing_helpers import *
 
 voting_new_app_mainnet = {
-    'address': '0x8F37Fb31d618513553fdF93e90c4C11BD8bf112c',  # FIXME: Replace with deployed address
+    'address': '0x41D65FA420bBC714686E798a0eB0Df3799cEF092',
     'content_uri': '0x697066733a516d514d64696979653134765966724a7753594250646e68656a446f62417877584b72524e45663438735370444d',
     'id': '0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e',
     'version': (2, 0, 0),

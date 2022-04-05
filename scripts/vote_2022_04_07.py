@@ -55,7 +55,7 @@ def start_vote(
     }
 
     update_voting_app_mainnet = {
-        'new_address': '0xb935C3D80229d5D92f3761b17Cd81dC2610e3a45', #FIXME: REPLACE WITH NEW VERSION
+        'new_address': '0x41D65FA420bBC714686E798a0eB0Df3799cEF092',
         'content_uri': '0x697066733a516d514d64696979653134765966724a7753594250646e68656a446f62417877584b72524e45663438735370444d',
         'id': '0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e',
         'version': (2, 0, 0),
