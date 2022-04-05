@@ -17,7 +17,7 @@ from event_validators.voting import validate_change_vote_time_event
 from tx_tracing_helpers import *
 
 voting_new_app_mainnet = {
-    'address': '0xb935C3D80229d5D92f3761b17Cd81dC2610e3a45', # FIXME: Replace with deployed address
+    'address': '0x8F37Fb31d618513553fdF93e90c4C11BD8bf112c',  # FIXME: Replace with deployed address
     'content_uri': '0x697066733a516d514d64696979653134765966724a7753594250646e68656a446f62417877584b72524e45663438735370444d',
     'id': '0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e',
     'version': (2, 0, 0),
@@ -97,8 +97,8 @@ def test_2022_04_07(ldo_holder, helpers, dao_voting):
     # Need to have mainnet contract to have it right
     display_voting_events(tx)
 
-    if network_name() in ['mainnet-fork']:
-        assert count_vote_items_by_events(tx, dao_voting) == 2, "Incorrect voting items count"
+    if network_name() in ['mainnet-fork', 'mainnet']:
+        assert count_vote_items_by_events(tx, dao_voting) == 5, "Incorrect voting items count"
 
         evs = group_voting_events(tx)
         validate_push_to_repo_event(evs[0], voting_new_app['version'])
