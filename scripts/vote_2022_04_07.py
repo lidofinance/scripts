@@ -1,7 +1,7 @@
 """
 Voting 07/04/2022.
 
-1. Push new voting app version to Voting Repo 0x4ee3118e3858e8d7164a634825bfe0f73d99c792.
+1. Push new voting app version to Voting Repo 0x41D65FA420bBC714686E798a0eB0Df3799cEF092.
 2. Upgrade the DAO Voting 0x2e59A20f205bB85a89C53f1936454680651E618e contract implementation.
 3. Grant `UNSAFELY_MODIFY_VOTE_TIME_ROLE` to DAO Voting 0x2e59A20f205bB85a89C53f1936454680651E618e.
 4. Update voting duration with `unsafelyChangeVoteTime` to 72 hours.
@@ -105,7 +105,7 @@ def start_vote(
     return confirm_vote_script(encoded_call_script, silent) and create_vote(
         vote_desc=(
             'Omnibus vote: '
-            '1) Push new voting app version to Voting Repo 0x4ee3118e3858e8d7164a634825bfe0f73d99c792; '
+            '1) Push new voting app version to Voting Repo 0x41D65FA420bBC714686E798a0eB0Df3799cEF092; '
             '2) Upgrade the DAO Voting 0x2e59A20f205bB85a89C53f1936454680651E618e contract implementation; '
             '3) Grant `UNSAFELY_MODIFY_VOTE_TIME_ROLE` to DAO Voting 0x2e59A20f205bB85a89C53f1936454680651E618e; '
             '4) Update voting duration with `unsafelyChangeVoteTime` to 72 hours; '
