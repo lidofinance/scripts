@@ -18,3 +18,6 @@ def add_implementation_to_lido_app_repo(version, address, content_uri):
 
 def add_implementation_to_nos_app_repo(version, address, content_uri):
     return _add_implementation_to_repo(contracts.nos_app_repo, version, address, content_uri)
+
+def add_implementation_to_voting_app_repo(version, address, content_uri):
+    return _add_implementation_to_repo(contracts.voting_app_repo, version, address, content_uri)

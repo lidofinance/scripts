@@ -9,6 +9,7 @@ source_address: str = '0x48Acf41D10a063f9A6B718B9AAd2e2fF5B319Ca2'
 
 lido_dao_token = '0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32'
 
+
 def test_ldo_recover(
     helpers, accounts, ldo_holder, dao_voting,
     ldo_token, dao_token_manager, acl,
@@ -30,7 +31,7 @@ def test_ldo_recover(
     )
 
     total_supply_after = ldo_token.totalSupply()
-    source_balance_after= ldo_token.balanceOf(source_address)
+    source_balance_after = ldo_token.balanceOf(source_address)
     token_manager_balance_after = ldo_token.balanceOf(dao_token_manager)
 
     assert total_supply_before == (total_supply_after + ldo_amount), "Total supply changed"
