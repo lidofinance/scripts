@@ -15,16 +15,21 @@ def vote_time(dao_voting):
     return dao_voting.voteTime()
 
 
-def test_smoke_snapshots(dao_voting, ldo_holder, helpers, vote_time):
+@pytest.fixture(scope='module', autouse=True)
+def call_target():
+    return MockCallTarget.deploy({'from': accounts[0]})
+
+
+def test_smoke_snapshots(dao_voting, ldo_holder, helpers, vote_time, call_target):
     """
     Run a smoke test before upgrade, then after upgrade, and compare snapshots at each step
     """
-    reference_steps = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time)
+    reference_steps = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time, call_target)
     chain.revert()
 
     upgrade_voting(ldo_holder, helpers, dao_voting)
 
-    after_upgrade = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time)
+    after_upgrade = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time, call_target)
 
     step_diffs = list(map(lambda pair: dictdiff(pair[0], pair[1]), zip(reference_steps, after_upgrade)))
 
@@ -48,15 +53,14 @@ def test_smoke_snapshots(dao_voting, ldo_holder, helpers, vote_time):
         assert_no_more_diffs(diff)
 
 
-def test_upgrade_after_create(dao_voting, ldo_holder, helpers, vote_time):
+def test_upgrade_after_create(dao_voting, ldo_holder, helpers, vote_time, call_target):
     """
     Create a vote then upgrade and check that all is going fine but longer
     """
-    reference_steps = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time)
+    reference_steps = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time, call_target)
     chain.revert()
 
     steps = [snapshot(dao_voting)]  # 0
-    call_target = MockCallTarget.deploy({'from': accounts[0]})
     vote_id = vote_start(call_target, {'from': ldo_holder})
     steps.append(snapshot(dao_voting, vote_id))  # 1
 
@@ -107,15 +111,14 @@ def test_upgrade_after_create(dao_voting, ldo_holder, helpers, vote_time):
         assert_no_more_diffs(diff)
 
 
-def test_upgrade_after_pass(dao_voting, ldo_holder, helpers, vote_time):
+def test_upgrade_after_pass(dao_voting, ldo_holder, helpers, vote_time, call_target):
     """
     Passed voting should become open after upgrade if started within 72h
     """
-    reference_steps = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time)
+    reference_steps = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time, call_target)
     chain.revert()
 
     steps = [snapshot(dao_voting)]  # 0
-    call_target = MockCallTarget.deploy({'from': accounts[0]})
     vote_id = vote_start(call_target, {'from': ldo_holder})
     steps.append(snapshot(dao_voting, vote_id))  # 1
 
@@ -167,15 +170,14 @@ def test_upgrade_after_pass(dao_voting, ldo_holder, helpers, vote_time):
         assert_no_more_diffs(diff)
 
 
-def test_upgrade_after_72h_after_pass(dao_voting, ldo_holder, helpers, vote_time):
+def test_upgrade_after_72h_after_pass(dao_voting, ldo_holder, helpers, vote_time, call_target):
     """
     Passed voting should not become open after upgrade if started out of 72h period
     """
-    reference_steps = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time)
+    reference_steps = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time, call_target)
     chain.revert()
 
     steps = [snapshot(dao_voting)]  # 0
-    call_target = MockCallTarget.deploy({'from': accounts[0]})
     vote_id = vote_start(call_target, {'from': ldo_holder})
     steps.append(snapshot(dao_voting, vote_id))  # 1
 
@@ -220,15 +222,14 @@ def test_upgrade_after_72h_after_pass(dao_voting, ldo_holder, helpers, vote_time
         assert_no_more_diffs(diff)
 
 
-def test_upgrade_after_enact(dao_voting, ldo_holder, helpers, vote_time):
+def test_upgrade_after_enact(dao_voting, ldo_holder, helpers, vote_time, call_target):
     """
     Enacted voting should not become open after upgrade if started within 72h period
     """
-    reference_steps = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time)
+    reference_steps = record_create_pass_enact(dao_voting, {'from': ldo_holder}, vote_time, call_target)
     chain.revert()
 
     steps = [snapshot(dao_voting)]  # 0
-    call_target = MockCallTarget.deploy({'from': accounts[0]})
     vote_id = vote_start(call_target, {'from': ldo_holder})
     steps.append(snapshot(dao_voting, vote_id))  # 1
 
@@ -333,10 +334,9 @@ def snapshot(voting, vote_id=None):
     }
 
 
-def record_create_pass_enact(voting, tx_params, vote_time):
+def record_create_pass_enact(voting, tx_params, vote_time, call_target):
     steps = [snapshot(voting)]
 
-    call_target = MockCallTarget.deploy({'from': accounts[0]})
     vote_id = vote_start(call_target, tx_params)
     steps.append(snapshot(voting))
 
