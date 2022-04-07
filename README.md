@@ -3,7 +3,7 @@
   <img src="assets/voting.png" width="50" height="50" align="left" style="padding: 20px"/>
 </div>
 
-![python ~3.9](https://img.shields.io/badge/python-~3.9-blue)
+![python ~3.9](https://img.shields.io/badge/python->=3.8,<3.10-blue)
 ![poetry 1.1.13](https://img.shields.io/badge/poetry-1.1.13-blue)
 ![eth_brownie 1.18.1](https://img.shields.io/badge/eth__brownie-1.18.1-brown)
 ![AVotesParser 0.5](https://img.shields.io/badge/AVotesParser-0.5-brown)
@@ -11,53 +11,45 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 
 
-Repository for internal scripts.
-Primarily, these scripts are used for the Lido DAO Aragon omnibus votings.
+Lido DAO Aragon omnibus voting scripts.
 
-## Install dependencies and setup environment
+## 🏁 Getting started
 
-[`Poetry`](https://python-poetry.org/) is used to prepare scripts for running.
-It provides the simple way to manage dependencies and setup production-ready
-environment.
+- This project uses Brownie development framework. Learn more about [Brownie](https://eth-brownie.readthedocs.io/en/stable/index.html).
+- [Poetry](https://python-poetry.org/) dependency and packaging manager is used to bootstrap environment and keep the repo sane.
+### Prerequisites
 
-#### 1. Install Poetry
+- Python >= 3.8, <3.10
 
-From [the Poetry installation guide](https://python-poetry.org/docs/master/#installation):
+#### Step 1. Install Poetry
+
+Use the following snippet from [the Poetry installation guide](https://python-poetry.org/docs/master/#installation):
 
 ```shell
 curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -
 ```
 
-#### 2. Setup dependencies
+#### Step 2. Setup dependencies with poetry
 
 ```shell
 poetry install
 ```
 
-#### 3. Activate virtual environment
+#### Step 3. Activate virtual environment
 
-The first and the second steps you should enact only once to prepare the environment.
-After that for interaction with scripts you have to do only one step #3.
+📝 While previous steps needed only once to init the environment from scratch, the current step is used regularly to activate the environment every time you need it.
 
 ```shell
 poetry shell
 ```
 
-## Update dependencies
+## ⚗️ Workflow
 
-To add a new one you should call the `add` command for Poetry:
-
-```shell
-poetry add <package-name>
-```
-
-More detailed description for `add` [here](https://python-poetry.org/docs/master/cli#add).
-
-## Network setup
+### Network setup
 
 In a typical weekly omnibus workflow, you need only the `mainnet-fork` and `mainnet` networks. In the case of a large test campaign on Lido upgrades, it also could be useful to go with `görli` and `görli-fork` testnets first.
 
-## Mainnet setup
+#### Mainnet setup
 
 By default, all scripts run in mainnet fork mode (don't forget to edit fork
 param at brownie config). To run scripts on actually mainnet you need to add
@@ -66,7 +58,7 @@ variables:
 
 This section covers network configuration params and their usage.
 
-### Environment variables setup
+#### Environment variables setup
 
 Despite the chosen network you always need to set the following var:
 ```bash
@@ -83,12 +75,12 @@ To run tests with a contract name resolution guided by the Etherscan you should 
 export ETHERSCAN_TOKEN=<etherscan_api_key>
 ```
 
-### Command-line arguments requirements
+#### Command-line arguments requirements
 
 Always pass network name explicitly with `--network {network-name}` brownie command-line arguments for both vote and tests scripts.
 
 To reveal a full test output pass the `-s` flag when running test scripts with `brownie test`
-#### Fork-mode development networks
+##### Fork-mode development networks
 
 By default, you should start testing process in a network fork mode (don't forget to review brownie fork params). The Mainnet-fork mode exists in brownie by default. To add the Görli Testnet fork mode please run once the following command (to setup and save new network):
 ```bash
@@ -96,16 +88,18 @@ brownie networks add "Development" goerli-fork host=http://127.0.0.1 cmd=ganache
 ```
 Now you have the `goerli-fork` brownie network configuration to work with.
 
-##### Notes on running tests in a forked mode
+###### Notes on running tests in a forked mode
 
 * To forcibly bypass etherscan contract and event names decoding set the `OMNIBUS_BYPASS_EVENTS_DECODING` environment variable to `1`. It could be useful in case of etherscan downtimes or usage of some unverified contracts (especially, on the Görli Testnet).
 * To re-use the already created `vote_id` you can pass the `OMNIBUS_VOTE_ID` environment variable (e.g. `OMNIBUS_VOTE_ID=104`).
 
-#### Live networks
+##### Live networks
 
 You can start votes on the live networks by running scripts either on the Mainnet (setting `--network mainnet`) or on the Görli Testnet (`--network goerli`). You can't run tests on the live networks.
 
-## Notes for the node operators management ops
+## 💼 Use cases
+
+### 🕸️ Notes for the node operators management ops
 
 #### Adding node operators
 
@@ -153,7 +147,7 @@ NODE_OPERATORS_JSON=node_operators.json brownie run set_node_operators_limit --n
 
 ```
 
-## Rewards Manager Tokens Recoverer
+## 💸 Rewards Manager Tokens Recoverer
 
 This repo contains contract RewardsManagerTokensRecoverer to simplify tokens recovering from Lido's reward managers via Aragon voting.
 
