@@ -79,7 +79,7 @@ def start_vote(
         )
 
     encoded_call_script = encode_call_script([
-        # 1. Push new voting app version to Voting Repo 0x4ee3118e3858e8d7164a634825bfe0f73d99c792
+        # 1. Push new voting app version to Voting Repo 0x41D65FA420bBC714686E798a0eB0Df3799cEF092
         add_implementation_to_voting_app_repo(
             update_voting_app['version'],
             update_voting_app['new_address'],
