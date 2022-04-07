@@ -1,7 +1,7 @@
 import pytest
 from collections import namedtuple
 
-from brownie import accounts, chain
+from brownie import accounts, chain, MockCallTarget
 
 from scripts.vote_2022_04_07 import start_vote
 
@@ -56,7 +56,8 @@ def test_upgrade_after_create(dao_voting, ldo_holder, helpers, vote_time):
     chain.revert()
 
     steps = [snapshot(dao_voting)]  # 0
-    vote_id = vote_start({'from': ldo_holder})
+    call_target = MockCallTarget.deploy({'from': accounts[0]})
+    vote_id = vote_start(call_target, {'from': ldo_holder})
     steps.append(snapshot(dao_voting, vote_id))  # 1
 
     for voter in ldo_vote_executors_for_tests:
@@ -114,7 +115,8 @@ def test_upgrade_after_pass(dao_voting, ldo_holder, helpers, vote_time):
     chain.revert()
 
     steps = [snapshot(dao_voting)]  # 0
-    vote_id = vote_start({'from': ldo_holder})
+    call_target = MockCallTarget.deploy({'from': accounts[0]})
+    vote_id = vote_start(call_target, {'from': ldo_holder})
     steps.append(snapshot(dao_voting, vote_id))  # 1
 
     for voter in ldo_vote_executors_for_tests:
@@ -173,7 +175,8 @@ def test_upgrade_after_72h_after_pass(dao_voting, ldo_holder, helpers, vote_time
     chain.revert()
 
     steps = [snapshot(dao_voting)]  # 0
-    vote_id = vote_start({'from': ldo_holder})
+    call_target = MockCallTarget.deploy({'from': accounts[0]})
+    vote_id = vote_start(call_target, {'from': ldo_holder})
     steps.append(snapshot(dao_voting, vote_id))  # 1
 
     for voter in ldo_vote_executors_for_tests:
@@ -225,7 +228,8 @@ def test_upgrade_after_enact(dao_voting, ldo_holder, helpers, vote_time):
     chain.revert()
 
     steps = [snapshot(dao_voting)]  # 0
-    vote_id = vote_start({'from': ldo_holder})
+    call_target = MockCallTarget.deploy({'from': accounts[0]})
+    vote_id = vote_start(call_target, {'from': ldo_holder})
     steps.append(snapshot(dao_voting, vote_id))  # 1
 
     for voter in ldo_vote_executors_for_tests:
@@ -332,7 +336,8 @@ def snapshot(voting, vote_id=None):
 def record_create_pass_enact(voting, tx_params, vote_time):
     steps = [snapshot(voting)]
 
-    vote_id = vote_start(tx_params)
+    call_target = MockCallTarget.deploy({'from': accounts[0]})
+    vote_id = vote_start(call_target, tx_params)
     steps.append(snapshot(voting))
 
     for voter in ldo_vote_executors_for_tests:
@@ -345,7 +350,12 @@ def record_create_pass_enact(voting, tx_params, vote_time):
     wait(72*60*60 - vote_time)
     steps.append(snapshot(voting))
 
+    assert not call_target.called()
+
     enact_a_vote(voting, vote_id)
+
+    assert call_target.called()
+
     steps.append(snapshot(voting))
     return steps
 
@@ -360,8 +370,13 @@ def upgrade_voting(ldo_holder, helpers, dao_voting, skip_time=3 * 60 * 60 * 24):
     return vote_id
 
 
-def vote_start(tx_params) -> int:
-    callscript = encode_call_script([])
+def vote_start(call_target, tx_params) -> int:
+    callscript = encode_call_script([
+        (
+            call_target.address,
+            call_target.perform_call.encode_input()
+        )
+    ])
     return create_vote("Test voting", callscript, tx_params)[0]
 
 
