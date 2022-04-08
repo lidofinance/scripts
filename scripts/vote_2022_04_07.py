@@ -7,6 +7,9 @@ Voting 07/04/2022.
 4. Update voting duration with `unsafelyChangeVoteTime` to 72 hours.
 5. Revoke `UNSAFELY_MODIFY_VOTE_TIME_ROLE` from DAO Voting 0x2e59A20f205bB85a89C53f1936454680651E618e.
 
+Vote passed & executed on Apr-08-2022 12:09:17 PM +UTC, block #14545031.
+TX URL: https://etherscan.io/tx/0x2ca5ca6e7fb7ca0a8ffb01354c98c84ed4a6251ce7883a0b68ced069506542e8
+
 """
 
 import time
