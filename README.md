@@ -1,6 +1,6 @@
 <div style="display: flex;" align="center">
   <h1 align="center">Voting scripts</h1>
-  <img src="assets/voting.png" width="50" height="50" align="left" style="padding: 20px"/>
+  <img src="assets/voting.png" width="75" height="75" align="left" style="padding: 20px"/>
 </div>
 
 ![python ~3.9](https://img.shields.io/badge/python->=3.8,<3.10-blue)
