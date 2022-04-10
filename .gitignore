@@ -5,6 +5,7 @@ __pycache__
 .pytest_cache
 build/
 reports/
+dist/
 
 # PyCharm
 .idea

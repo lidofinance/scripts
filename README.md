@@ -20,16 +20,20 @@ Lido DAO Aragon omnibus voting scripts.
 ### Prerequisites
 
 - Python >= 3.8, <3.10
+- Pip >= 20.0
 
 #### Step 1. Install Poetry
 
-Use the following snippet from [the Poetry installation guide](https://python-poetry.org/docs/master/#installation):
+Use the following command to install poetry:
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -
+pip install poetry==1.1.13
 ```
 
 #### Step 2. Setup dependencies with poetry
+
+Ensure that poetry bin path is added to your '$PATH' env variable.
+Usually it's `$HOME/.local/bin` for Unix-like systems.
 
 ```shell
 poetry install
@@ -97,7 +101,7 @@ Now you have the `goerli-fork` brownie network configuration to work with.
 
 You can start votes on the live networks by running scripts either on the Mainnet (setting `--network mainnet`) or on the Görli Testnet (`--network goerli`). You can't run tests on the live networks.
 
-## 💼 Use cases
+## Use cases
 
 ### 🕸️ Notes for the node operators management ops
 
@@ -147,14 +151,14 @@ NODE_OPERATORS_JSON=node_operators.json brownie run set_node_operators_limit --n
 
 ```
 
-## 💸 Rewards Manager Tokens Recoverer
+### 💸 Rewards Manager Tokens Recoverer
 
 This repo contains contract RewardsManagerTokensRecoverer to simplify tokens recovering from Lido's reward managers via Aragon voting.
 
-### Deployment
+#### Deployment
 
 To run deployment of the RewardsManagerTokensRecoverer contract use the command `DEPLOYER=<DEPLOYER_ACCOUNT> brownie run deploy_rewards_manager_tokens_recoverer`.
 
-### Tests
+#### Tests
 
 To run tests for the RewardsManagerTokensRecoverer contract use the command `brownie test ./tests/test_rewards_manager_tokens_recoverer.py -s`.

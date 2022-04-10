@@ -7,8 +7,8 @@ license = "GPL-3.0"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.10"
-eth-brownie = "1.18.1"
-avotes-parser-core = "0.5.0"
+eth-brownie = ">=1.18.1"
+avotes-parser-core = { path = "../AVotesParser/production/avotes-parser-core" } # upgrade later
 
 [tool.poetry.dev-dependencies]
 
