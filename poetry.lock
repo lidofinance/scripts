@@ -80,17 +80,12 @@ description = "Aragon votings parser library"
 category = "main"
 optional = false
 python-versions = ">=3.8,<3.10"
-develop = false
 
 [package.dependencies]
-eth-brownie = "~1.18.1"
-pysha3 = "~1.0.2"
-requests = "~2.27.1"
-web3 = "~5.27.0"
-
-[package.source]
-type = "directory"
-url = "../AVotesParser/production/avotes-parser-core"
+eth-brownie = ">=1.18.1,<1.19.0"
+pysha3 = ">=1.0.2,<1.1.0"
+requests = ">=2.27.1,<2.28.0"
+web3 = ">=5.27.0,<5.28.0"
 
 [[package]]
 name = "base58"
@@ -1163,7 +1158,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.10"
-content-hash = "a9e6a90972110c0d4539977488f8b8e8980f68c8a042d7e5c57abf3953704017"
+content-hash = "ad9cf443fc43afa12069671664e44cb7f562625e6e9729fd566d149f27ab4718"
 
 [metadata.files]
 aiohttp = [
@@ -1260,7 +1255,10 @@ attrs = [
     {file = "attrs-21.4.0-py2.py3-none-any.whl", hash = "sha256:2d27e3784d7a565d36ab851fe94887c5eccd6a463168875832a1be79c82828b4"},
     {file = "attrs-21.4.0.tar.gz", hash = "sha256:626ba8234211db98e869df76230a137c4c40a12d72445c45d5f5b716f076e2fd"},
 ]
-avotes-parser-core = []
+avotes-parser-core = [
+    {file = "avotes-parser-core-0.5.0.tar.gz", hash = "sha256:a57f32aa30e1cd8ee670ad9f509be91b3a13f301e604a67836f8fc069ad1e96f"},
+    {file = "avotes_parser_core-0.5.0-py3-none-any.whl", hash = "sha256:646e4f82925036ff367c740962d8fa38616ef6df188a72cae89a5f498317c327"},
+]
 base58 = [
     {file = "base58-2.1.1-py3-none-any.whl", hash = "sha256:11a36f4d3ce51dfc1043f3218591ac4eb1ceb172919cebe05b52a5bcc8d245c2"},
     {file = "base58-2.1.1.tar.gz", hash = "sha256:c5d0cb3f5b6e81e8e35da5754388ddcc6d0d14b6c6a132cb93d69ed580a7278c"},

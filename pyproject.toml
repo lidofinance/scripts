@@ -3,12 +3,12 @@ name = "scripts"
 version = "0.1.0"
 description = "Repository for internal voting scripts."
 authors = ["Lido devteam"]
-license = "GPL-3.0"
+license = "MIT"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.10"
-eth-brownie = ">=1.18.1"
-avotes-parser-core = { path = "../AVotesParser/production/avotes-parser-core" } # upgrade later
+eth-brownie = "~1.18.1"
+avotes-parser-core = "~0.5.0"
 
 [tool.poetry.dev-dependencies]
 
