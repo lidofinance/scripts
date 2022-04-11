@@ -1,6 +1,9 @@
+from typing import Tuple
+
 from brownie import exceptions
 from brownie.utils import color
 from brownie.network.transaction import TransactionReceipt
+from brownie.network.contract import Contract
 
 from utils.evm_script import (encode_call_script,
                               decode_evm_script,
@@ -10,7 +13,7 @@ from utils.evm_script import (encode_call_script,
 from utils.config import (prompt_bool, chain_network, contracts, get_config_params)
 
 
-def create_vote(vote_desc, evm_script, tx_params, verbose: bool = False) -> (int, TransactionReceipt):
+def create_vote(vote_desc, evm_script, tx_params, verbose: bool = False) -> Tuple[int, TransactionReceipt]:
     voting = contracts.voting
     token_manager = contracts.token_manager
 
@@ -25,7 +28,16 @@ def create_vote(vote_desc, evm_script, tx_params, verbose: bool = False) -> (int
         print(tx.traceback)
         return -1, tx
 
-    vote_id = tx.events['StartVote']['voteId']
+    vote_id = None
+    try:
+        vote_id = tx.events['StartVote']['voteId']
+    except:
+        print(f'Looks like your brownie topics cache is out of date, '
+              f'fetching new abi from etherscan '
+              f'for "{voting.address}" address')
+        x = Contract.from_explorer(voting.address)
+        print(f'{x} downloaded, exiting... please restart the process again')
+        exit()
 
     if verbose:
         try:
