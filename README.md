@@ -1,6 +1,6 @@
 <div style="display: flex;" align="center">
   <h1 align="center">Voting scripts</h1>
-  <img src="assets/voting.png" width="75" height="75" align="left" style="padding: 20px"/>
+  <img src="assets/voting.png" width="60" height="60" align="left" style="padding: 20px"/>
 </div>
 
 ![python ~3.9](https://img.shields.io/badge/python->=3.8,<3.10-blue)
@@ -27,16 +27,37 @@ Lido DAO Aragon omnibus voting scripts.
 Use the following command to install poetry:
 
 ```shell
-pip install poetry==1.1.13
+pip install --user poetry==1.1.13
+```
+
+alternatively, you could proceed with `pipx`:
+
+```shell
+pipx install poetry==1.1.13
 ```
 
 #### Step 2. Setup dependencies with poetry
 
-Ensure that poetry bin path is added to your '$PATH' env variable.
-Usually it's `$HOME/.local/bin` for Unix-like systems.
+Ensure that poetry bin path is added to your `$PATH` env variable.
+Usually it's `$HOME/.local/bin` for most Unix-like systems.
 
 ```shell
 poetry install
+```
+
+Note: if you have encountered `Invalid hashes` errors while trying to run previous command, please remove poetry's cache:
+
+* GNU/Linux
+
+```shell
+rm -rf ~/.cache/pypoetry/cache/
+rm -rf ~/.cache/pypoetry/artifacts/
+```
+* MAC OS:
+
+```shell
+rm -rf ~/Library/Caches/pypoetry/cache
+rm -rf ~/Library/Caches/pypoetry/artifacts
 ```
 
 #### Step 3. Activate virtual environment
