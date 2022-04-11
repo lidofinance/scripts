@@ -7,7 +7,7 @@
 ![poetry 1.1.13](https://img.shields.io/badge/poetry-1.1.13-blue)
 ![eth_brownie 1.18.1](https://img.shields.io/badge/eth__brownie-1.18.1-brown)
 ![AVotesParser 0.5](https://img.shields.io/badge/AVotesParser-0.5-brown)
-![license GPL](https://img.shields.io/badge/license-GPL-green)
+![license MIT](https://img.shields.io/badge/license-MIT-green)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 
 
