@@ -30,9 +30,13 @@ def test_2022_04_12(
     helpers, accounts, ldo_holder, dao_voting,
     vote_id_from_env, bypass_events_decoding
 ):
-    finance_multisig_balance_before = accounts.at(finance_multisig_address, force=True)
-    depositor_multisig_balance_before = accounts.at(depositor_multisig_address, force=True)
-    dao_balance_before = accounts.at(dao_agent_address, force=True)
+    finance_multisig_account = accounts.at(finance_multisig_address, force=True)
+    depositor_multisig_account = accounts.at(depositor_multisig_address, force=True)
+    dao_agent_account = accounts.at(dao_agent_address, force=True)
+
+    finance_multisig_balance_before = finance_multisig_account.balance()
+    depositor_multisig_balance_before = depositor_multisig_account.balance()
+    dao_balance_before = dao_agent_account.balance()
 
     ##
     ## START VOTE
@@ -43,9 +47,9 @@ def test_2022_04_12(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting
     )
 
-    finance_multisig_balance_after = accounts.at(finance_multisig_address, force=True)
-    depositor_multisig_balance_after = accounts.at(depositor_multisig_address, force=True)
-    dao_balance_after = accounts.at(dao_agent_address, force=True)
+    finance_multisig_balance_after = finance_multisig_account.balance()
+    depositor_multisig_balance_after = depositor_multisig_account.balance()
+    dao_balance_after = dao_agent_account.balance()
 
     assert finance_multisig_balance_after - finance_multisig_balance_before == refund_payout.amount
     assert depositor_multisig_balance_after - depositor_multisig_balance_before == fund_payout.amount
