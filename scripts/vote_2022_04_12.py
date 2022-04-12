@@ -3,7 +3,7 @@ Voting 12/04/2022.
 
 1. Refund previous depositor' spending to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
    with 254.684812629886507249 ETH.
-2. Fund dedicated depositor multisig 0x5181d5D56Af4f823b96FE05f062D7a09761a5a53 with 130 ETH.
+2. Fund depositor bot with 130 ETH.
 
 """
 
@@ -37,9 +37,9 @@ def start_vote(
         ),
         # 2. Fund dedicated depositor multisig 0x5181d5D56Af4f823b96FE05f062D7a09761a5a53 with 130 ETH.
         make_eth_payout(
-            target_address='0x5181d5D56Af4f823b96FE05f062D7a09761a5a53',
+            target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
             eth_in_wei=130 * (10 ** 18),
-            reference='Fund depositor\'s multisig'
+            reference='Fund depositor bot'
         ),
     ])
 
@@ -47,7 +47,7 @@ def start_vote(
         vote_desc=(
             'Omnibus vote: '
             '1) Refund previous depositor\' spending to finance multisig with 254.684812629886507249 ETH; '
-            '2) Fund dedicated depositor multisig 0x5181d5D56Af4f823b96FE05f062D7a09761a5a53 with 130 ETH.'
+            '2) Fund depositor bot with 130 ETH.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params

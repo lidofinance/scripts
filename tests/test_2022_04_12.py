@@ -2,7 +2,10 @@
 Tests for voting 12/04/2022.
 """
 
-from event_validators.payout import Payout, validate_payout_event
+from event_validators.payout import (
+    Payout,
+    validate_ether_payout_event
+)
 
 from utils.finance import ZERO_ADDRESS
 from scripts.vote_2022_04_12 import start_vote
@@ -22,7 +25,7 @@ refund_payout = Payout(
 fund_payout = Payout(
     token_addr=ZERO_ADDRESS,
     from_addr=dao_agent_address,
-    to_addr=depositor_multisig_address,
+    to_addr=finance_multisig_address,
     amount=130 * (10 ** 18)
 )
 
@@ -44,16 +47,16 @@ def test_2022_04_12(
     vote_id = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]
 
     tx: TransactionReceipt = helpers.execute_vote(
-        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting
+        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='0.5 ether'
     )
 
     finance_multisig_balance_after = finance_multisig_account.balance()
     depositor_multisig_balance_after = depositor_multisig_account.balance()
     dao_balance_after = dao_agent_account.balance()
 
-    assert finance_multisig_balance_after - finance_multisig_balance_before == refund_payout.amount
-    assert depositor_multisig_balance_after - depositor_multisig_balance_before == fund_payout.amount
-    assert dao_balance_after - dao_balance_before == refund_payout.amount + fund_payout.amount
+    assert finance_multisig_balance_after - finance_multisig_balance_before == refund_payout.amount + fund_payout.amount
+    assert dao_balance_before - dao_balance_after == refund_payout.amount + fund_payout.amount - 5 * (10 ** 17)
+    assert depositor_multisig_balance_before == depositor_multisig_balance_after
 
     ### validate vote events
     assert count_vote_items_by_events(tx) == 2, "Incorrect voting items count"
@@ -66,7 +69,7 @@ def test_2022_04_12(
     evs = group_voting_events(tx)
 
     # asserts on vote item 1
-    validate_payout_event(evs[0], refund_payout)
+    validate_ether_payout_event(evs[0], refund_payout)
 
     # asserts on vote item 2
-    validate_payout_event(evs[1], fund_payout)
+    validate_ether_payout_event(evs[1], fund_payout)
