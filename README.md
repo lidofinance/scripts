@@ -122,6 +122,12 @@ Now you have the `goerli-fork` brownie network configuration to work with.
 
 You can start votes on the live networks by running scripts either on the Mainnet (setting `--network mainnet`) or on the Görli Testnet (`--network goerli`). You can't run tests on the live networks.
 
+## Repository housekeeping
+
+Please move your outdated scripts into `scripts/archive` and outdated tests into `tests/archive` directories.
+
+To mask obsoleted tests and prevent them from running by `brownie test` even when residing in archive directory, please consider to rename them: `test_` → `xtest_`.
+
 ## Use cases
 
 ### 🕸️ Notes for the node operators management ops
@@ -175,6 +181,14 @@ NODE_OPERATORS_JSON=node_operators.json brownie run set_node_operators_limit --n
 ### 💸 Rewards Manager Tokens Recoverer
 
 This repo contains contract RewardsManagerTokensRecoverer to simplify tokens recovering from Lido's reward managers via Aragon voting.
+
+#### Setup
+
+Please, bring back archived scripts and test first:
+```shell
+cp ./tests/archive/xtest_rewards_manager_tokens_recoverer.py ./tests/test_rewards_manager_tokens_recoverer.py
+cp ./scripts/archive/deploy_rewards_manager_tokens_recoverer.py ./scripts
+```
 
 #### Deployment
 
