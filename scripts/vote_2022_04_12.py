@@ -2,8 +2,8 @@
 Voting 12/04/2022.
 
 1. Refund previous depositor' spending to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
-   with 254.684812629886507249 ETH.
-2. Fund depositor bot with 130 ETH.
+   with 254.684812629886507249 stETH.
+2. Fund depositor bot multisig 0x5181d5D56Af4f823b96FE05f062D7a09761a5a53 with 130 stETH.
 
 """
 
@@ -14,7 +14,7 @@ from typing import (Dict, Tuple, Optional)
 from brownie.network.transaction import TransactionReceipt
 
 from utils.voting import confirm_vote_script, create_vote
-from utils.finance import make_eth_payout
+from utils.finance import make_steth_payout
 from utils.evm_script import encode_call_script
 from utils.config import (
     get_deployer_account,
@@ -29,25 +29,25 @@ def start_vote(
 
     encoded_call_script = encode_call_script([
         # 1. Refund previous depositor' spending to finance multisig 0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb
-        # with 254.684812629886507249 ETH.
-        make_eth_payout(
+        # with 254.684812629886507249 stETH.
+        make_steth_payout(
             target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-            eth_in_wei=254_684_812_629_886_507_249,
+            steth_in_wei=254_684_812_629_886_507_249,
             reference='Refund depositor\'s spending'
         ),
-        # 2. Fund dedicated depositor multisig 0x5181d5D56Af4f823b96FE05f062D7a09761a5a53 with 130 ETH.
-        make_eth_payout(
-            target_address='0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb',
-            eth_in_wei=130 * (10 ** 18),
-            reference='Fund depositor bot'
+        # 2. Fund dedicated depositor multisig 0x5181d5D56Af4f823b96FE05f062D7a09761a5a53 with 130 stETH.
+        make_steth_payout(
+            target_address='0x5181d5D56Af4f823b96FE05f062D7a09761a5a53',
+            steth_in_wei=130 * (10 ** 18),
+            reference='Fund depositor bot multisig'
         ),
     ])
 
     return confirm_vote_script(encoded_call_script, silent) and create_vote(
         vote_desc=(
             'Omnibus vote: '
-            '1) Refund previous depositor\' spending to finance multisig with 254.684812629886507249 ETH; '
-            '2) Fund depositor bot with 130 ETH.'
+            '1) Refund previous depositor\' spending to finance multisig with 254.684812629886507249 stETH; '
+            '2) Fund depositor bot multisig 0x5181d5D56Af4f823b96FE05f062D7a09761a5a53 with 130 stETH.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
