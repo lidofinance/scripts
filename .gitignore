@@ -2,8 +2,10 @@ __pycache__
 .history
 .hypothesis/
 .python-version
+.pytest_cache
 build/
 reports/
+dist/
 
 # PyCharm
 .idea
@@ -11,3 +13,6 @@ reports/
 /.vs/slnx.sqlite
 /.vs/PythonSettings.json
 /.vs/scripts/v17/.suo
+
+# virtual environment
+.venv

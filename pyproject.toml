@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "scripts"
+version = "0.1.0"
+description = "Repository for Lido DAO Aragon voting scripts."
+authors = ["Lido devteam"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://mainnet.lido.fi"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.10"
+eth-brownie = "~1.18.1"
+avotes-parser-core = "~0.5.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
