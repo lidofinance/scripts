@@ -67,7 +67,6 @@ def confirm_vote_script(encoded_call_script: str, silent: bool) -> bool:
 
         print('\nPoints of voting:')
         total = len(human_readable_script)
-        print(human_readable_script)
         for ind, call in enumerate(human_readable_script):
             print(f'Point #{ind + 1}/{total}.')
             print(calls_info_pretty_print(call))
