@@ -7,7 +7,8 @@
 ![poetry 1.1.13](https://img.shields.io/badge/poetry-1.1.13-blue)
 ![eth_brownie 1.18.1](https://img.shields.io/badge/eth__brownie-1.18.1-brown)
 ![AVotesParser 0.5](https://img.shields.io/badge/AVotesParser-0.5-brown)
-![license MIT](https://img.shields.io/badge/license-MIT-green)
+![Ganache ~7.0.4](https://img.shields.io/badge/ganache-7.0.4-orange)
+![license MIT](https://img.shields.io/badge/license-MIT-brightgreen)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 
 
@@ -21,6 +22,8 @@ Lido DAO Aragon omnibus voting scripts.
 
 - Python >= 3.8, <3.10
 - Pip >= 20.0
+- Node >= 16.0
+- yarn >= 1.22
 
 #### Step 1. Install Poetry
 
@@ -60,7 +63,13 @@ rm -rf ~/Library/Caches/pypoetry/cache
 rm -rf ~/Library/Caches/pypoetry/artifacts
 ```
 
-#### Step 3. Activate virtual environment
+#### Step 3. Install Ganache locally
+
+Simply run the following command from the project's directory
+```shell
+yarn
+```
+#### Step 4. Activate virtual environment
 
 📝 While previous steps needed only once to init the environment from scratch, the current step is used regularly to activate the environment every time you need it.
 
