@@ -5,6 +5,9 @@ Voting 12/04/2022.
    with 254.684812629886507249 stETH.
 2. Fund depositor bot multisig 0x5181d5D56Af4f823b96FE05f062D7a09761a5a53 with 130 stETH.
 
+Vote passed & executed on Apr-15-2022 05:34:30 PM +UTC, block #14591317.
+TX URL: https://etherscan.io/tx/0x3b5fff376df823e26857e68a468e161a8ed818afd29410983f0680c2d18042f5
+
 """
 
 import time
