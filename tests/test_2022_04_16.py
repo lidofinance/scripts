@@ -25,7 +25,7 @@ def test_2021_11_11(ldo_holder, helpers, accounts, dao_voting, deposit_security_
     assert not deposit_security_module.isPaused()
 
     ### validate vote events
-    assert count_vote_items_by_events(tx) == 2, "Incorrect voting items count"
+    assert count_vote_items_by_events(tx, dao_voting) == 1, "Incorrect voting items count"
 
     display_voting_events(tx)
 
@@ -36,5 +36,3 @@ def test_2021_11_11(ldo_holder, helpers, accounts, dao_voting, deposit_security_
 
     # asserts on vote item 1
     validate_unpause_event(evs[0])
-
-    

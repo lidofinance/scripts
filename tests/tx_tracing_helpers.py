@@ -27,7 +27,7 @@ def display_voting_call_trace(tx: TransactionReceipt) -> None:
                                                      'ScriptHelpers.']))
 
 
-def count_vote_items_by_events(tx: TransactionReceipt, voting: Optional[str] = None) -> int:
+def count_vote_items_by_events(tx: TransactionReceipt, voting: Optional[str]) -> int:
     events = tx_events_from_trace(tx)
     ev_dict = EventDict(events)
 
