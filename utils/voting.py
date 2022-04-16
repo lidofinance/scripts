@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 
 from brownie import exceptions
 from brownie.utils import color
@@ -13,7 +13,7 @@ from utils.evm_script import (encode_call_script,
 from utils.config import (prompt_bool, chain_network, contracts, get_config_params)
 
 
-def create_vote(vote_desc, evm_script, tx_params, verbose: bool = False) -> Tuple[int, TransactionReceipt]:
+def create_vote(vote_desc, evm_script, tx_params, verbose: bool = False) -> Tuple[int, Optional[TransactionReceipt]]:
     voting = contracts.voting
     token_manager = contracts.token_manager
 
@@ -37,7 +37,7 @@ def create_vote(vote_desc, evm_script, tx_params, verbose: bool = False) -> Tupl
               f'for "{voting.address}" address')
         x = Contract.from_explorer(voting.address)
         print(f'{x} downloaded, exiting... please restart the process again')
-        exit()
+        return -1, None
 
     if verbose:
         try:
