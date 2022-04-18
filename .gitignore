@@ -16,3 +16,6 @@ dist/
 
 # virtual environment
 .venv
+
+/node_modules
+yarn-error.log
