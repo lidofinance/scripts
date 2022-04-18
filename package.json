@@ -10,8 +10,5 @@
 
   "dependencies": {
     "ganache": "^7.0.4"
-  },
-  "scripts": {
-    "postinstall": "ln -sf $PWD/node_modules/.bin/ganache-cli $HOME/.local/bin/ganache-cli"
   }
 }

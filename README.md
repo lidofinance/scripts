@@ -16,8 +16,10 @@ Lido DAO Aragon omnibus voting scripts.
 
 ## 🏁 Getting started
 
-- This project uses Brownie development framework. Learn more about [Brownie](https://eth-brownie.readthedocs.io/en/stable/index.html).
-- [Poetry](https://python-poetry.org/) dependency and packaging manager is used to bootstrap environment and keep the repo sane.
+- This project uses Brownie development framework. Learn more about
+[Brownie](https://eth-brownie.readthedocs.io/en/stable/index.html).
+- [Poetry](https://python-poetry.org/) dependency and packaging manager is used
+to bootstrap environment and keep the repo sane.
 ### Prerequisites
 
 - Python >= 3.8, <3.10
@@ -71,7 +73,9 @@ yarn
 ```
 #### Step 4. Activate virtual environment
 
-📝 While previous steps needed only once to init the environment from scratch, the current step is used regularly to activate the environment every time you need it.
+📝 While previous steps needed only once to init the environment from scratch,
+the current step is used regularly to activate the environment every time you
+need it.
 
 ```shell
 poetry shell
@@ -81,7 +85,14 @@ poetry shell
 
 ### Network setup
 
-In a typical weekly omnibus workflow, you need only the `mainnet-fork` and `mainnet` networks. In the case of a large test campaign on Lido upgrades, it also could be useful to go with `görli` and `görli-fork` testnets first.
+In a typical weekly omnibus workflow, you need only the `mainnet-fork` and
+`mainnet` networks. In the case of a large test campaign on Lido upgrades,
+it also could be useful to go with `goerli` and `goerli-fork` testnets first.
+
+To setup all the fork networks to work with local ganache instance run
+```bash
+brownie networks import network-config.yaml True
+```
 
 #### Mainnet setup
 
@@ -111,31 +122,45 @@ export ETHERSCAN_TOKEN=<etherscan_api_key>
 
 #### Command-line arguments requirements
 
-Always pass network name explicitly with `--network {network-name}` brownie command-line arguments for both vote and tests scripts.
+Always pass network name explicitly with `--network {network-name}` brownie
+command-line arguments for both vote and tests scripts.
 
-To reveal a full test output pass the `-s` flag when running test scripts with `brownie test`
+To reveal a full test output pass the `-s` flag when running test scripts with
+`brownie test`
 ##### Fork-mode development networks
 
-By default, you should start testing process in a network fork mode (don't forget to review brownie fork params). The Mainnet-fork mode exists in brownie by default. To add the Görli Testnet fork mode please run once the following command (to setup and save new network):
+By default, you should start testing process in a network fork mode (don't forget
+to review brownie fork params). The Mainnet-fork mode exists in brownie by default.
+To add the Görli Testnet fork mode please run once the following command (to
+setup and save new network):
 ```bash
-brownie networks add "Development" goerli-fork host=http://127.0.0.1 cmd=ganache-cli port=8545 gas_limit=12000000 fork=https://goerli.infura.io/v3/${WEB3_INFURA_PROJECT_ID} chain_id=5 mnemonic=brownie accounts=10
+brownie networks import network-config.yaml True
 ```
 Now you have the `goerli-fork` brownie network configuration to work with.
 
 ###### Notes on running tests in a forked mode
 
-* To forcibly bypass etherscan contract and event names decoding set the `OMNIBUS_BYPASS_EVENTS_DECODING` environment variable to `1`. It could be useful in case of etherscan downtimes or usage of some unverified contracts (especially, on the Görli Testnet).
-* To re-use the already created `vote_id` you can pass the `OMNIBUS_VOTE_ID` environment variable (e.g. `OMNIBUS_VOTE_ID=104`).
+* To forcibly bypass etherscan contract and event names decoding set the
+`OMNIBUS_BYPASS_EVENTS_DECODING` environment variable to `1`. It could be useful
+in case of etherscan downtimes or usage of some unverified contracts (especially,
+on the Görli Testnet).
+* To re-use the already created `vote_id` you can pass the `OMNIBUS_VOTE_ID`
+environment variable (e.g. `OMNIBUS_VOTE_ID=104`).
 
 ##### Live networks
 
-You can start votes on the live networks by running scripts either on the Mainnet (setting `--network mainnet`) or on the Görli Testnet (`--network goerli`). You can't run tests on the live networks.
+You can start votes on the live networks by running scripts either on the Mainnet
+(setting `--network mainnet`) or on the Görli Testnet (`--network goerli`).
+You can't run tests on the live networks.
 
 ## Repository housekeeping
 
-Please move your outdated scripts into `scripts/archive` and outdated tests into `tests/archive` directories.
+Please move your outdated scripts into `scripts/archive` and outdated tests into
+`tests/archive` directories.
 
-To mask obsoleted tests and prevent them from running by `brownie test` even when residing in archive directory, please consider to rename them: `test_` → `xtest_`.
+To mask obsoleted tests and prevent them from running by `brownie test` even
+when residing in archive directory, please consider to rename them:
+`test_` → `xtest_`.
 
 ## Use cases
 
@@ -201,8 +226,10 @@ cp ./scripts/archive/deploy_rewards_manager_tokens_recoverer.py ./scripts
 
 #### Deployment
 
-To run deployment of the RewardsManagerTokensRecoverer contract use the command `DEPLOYER=<DEPLOYER_ACCOUNT> brownie run deploy_rewards_manager_tokens_recoverer`.
+To run deployment of the RewardsManagerTokensRecoverer contract use the command
+`DEPLOYER=<DEPLOYER_ACCOUNT> brownie run deploy_rewards_manager_tokens_recoverer`.
 
 #### Tests
 
-To run tests for the RewardsManagerTokensRecoverer contract use the command `brownie test ./tests/test_rewards_manager_tokens_recoverer.py -s`.
+To run tests for the RewardsManagerTokensRecoverer contract use the command
+`brownie test ./tests/test_rewards_manager_tokens_recoverer.py -s`.
