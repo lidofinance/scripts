@@ -16,3 +16,5 @@ dist/
 
 # virtual environment
 .venv
+
+/node_modules
