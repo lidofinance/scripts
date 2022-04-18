@@ -18,3 +18,4 @@ dist/
 .venv
 
 /node_modules
+yarn-error.log
