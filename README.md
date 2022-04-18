@@ -75,7 +75,7 @@ yarn
 #### Step 4. Import network config to connect brownie with local Ganache
 
 ```shell
-poetry brownie networks import network-config.yaml True
+poetry run brownie networks import network-config.yaml True
 ```
 
 #### Step 5. Activate virtual environment
