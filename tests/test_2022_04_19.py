@@ -16,14 +16,14 @@ steth_address = '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84'
 
 
 def steth_balance_checker(lhs_value: int, rhs_value: int):
-    assert (lhs_value + 9) // 10 == (rhs_value + 9) // 10
+    assert (lhs_value + 5) // 10 == (rhs_value + 5) // 10
 
 
 fund_payout = Payout(
     token_addr=steth_address,
     from_addr=dao_agent_address,
     to_addr=rcc_multisig_address,
-    amount=1337 * (10 ** 18) # ? TODO
+    amount=363_410_003_370_231_400_000
 )
 
 

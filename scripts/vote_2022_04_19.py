@@ -33,7 +33,10 @@ def start_vote(
         # 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437.
         make_steth_payout(
             target_address='0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437',
-            steth_in_wei= 1337 * 10**18,  # ? TODO
+            steth_in_wei=1_057_755 * 1.05 / 3056.17000000 * 10**18,
+            #  Price was taken from https://etherscan.io/address/0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8#readContract
+            #  latestTimestamp: 1650374735
+            #  latestAnswer: 305617000000
             reference='Fund RCC multisig'
         ),
     ])
