@@ -7,7 +7,7 @@ from event_validators.payout import (
     validate_token_payout_event
 )
 
-from scripts.vote_2022_04_12 import start_vote
+from scripts.archive.vote_2022_04_12 import start_vote
 from tx_tracing_helpers import *
 
 finance_multisig_address = '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb'

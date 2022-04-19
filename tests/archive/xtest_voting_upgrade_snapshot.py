@@ -3,7 +3,7 @@ from collections import namedtuple
 
 from brownie import accounts, chain, MockCallTarget
 
-from scripts.vote_2022_04_07 import start_vote
+from scripts.archive.vote_2022_04_07 import start_vote
 
 from utils.voting import create_vote
 from utils.evm_script import encode_call_script
