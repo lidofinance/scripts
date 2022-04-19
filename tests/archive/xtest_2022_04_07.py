@@ -2,7 +2,7 @@
 from utils.brownie_prelude import *
 
 from brownie import accounts, interface, reverts
-from scripts.vote_2022_04_07 import start_vote
+from scripts.archive.vote_2022_04_07 import start_vote
 from utils.config import (
     lido_dao_voting_repo,
     lido_dao_voting_address, network_name
