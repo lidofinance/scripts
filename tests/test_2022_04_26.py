@@ -23,6 +23,10 @@ def test_2022_04_26(
     chorus_balance_before = ldo_token.balanceOf(chorus_one_address)
     token_manager_balance_before = ldo_token.balanceOf(dao_token_manager)
 
+    chorus_vesting_length_before  = dao_token_manager.vestingsLengths(chorus_one_address)
+
+    assert chorus_vesting_length_before == 0, "Incorrect vesting length"
+
     assert token_manager_balance_before == 0, "Incorrect LDO amount"
     assert chorus_balance_before == 0, "Incorrect Chorus LDO ammount"
 
@@ -42,6 +46,9 @@ def test_2022_04_26(
     assert total_supply_after == total_supply_before, "Total supply changed"
     assert chorus_balance_after == chorus_balance_before + ldo_amount, "Incorrect LDO amount"
     assert token_manager_balance_after == token_manager_balance_before, "Incorrect LDO amount"
+
+    chorus_vesting_length_after  = dao_token_manager.vestingsLengths(chorus_one_address)
+    assert chorus_vesting_length_after == 1, "Incorrect vesting length "
 
     [amount, start, cliff, end, revokable] = dao_token_manager.getVesting(chorus_one_address, 0)
 
