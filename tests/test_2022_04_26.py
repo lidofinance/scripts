@@ -48,7 +48,7 @@ def test_2022_04_26(
     assert token_manager_balance_after == token_manager_balance_before, "Incorrect LDO amount"
 
     chorus_vesting_length_after  = dao_token_manager.vestingsLengths(chorus_one_address)
-    assert chorus_vesting_length_after == 1, "Incorrect vesting length"
+    assert chorus_vesting_length_after == 1, "Incorrect vesting length "
 
     [amount, start, cliff, end, revokable] = dao_token_manager.getVesting(chorus_one_address, 0)
 
