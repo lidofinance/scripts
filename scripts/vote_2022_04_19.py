@@ -5,6 +5,8 @@ Voting 16/04/2022.
 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437. The exact amount of stETH shall be determined when the Aragon vote is
 initiated.
 
+Vote passed & executed on Apr-22-2022 02:49:48 PM +UTC, block 14635310.
+
 """
 
 import time

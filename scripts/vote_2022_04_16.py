@@ -3,6 +3,8 @@ Voting 16/04/2022.
 
 1. Unpause deposits
 
+Vote passed & executed on Apr-19-2022 09:31:47 AM +UTC, block 14614759.
+
 """
 
 import time
