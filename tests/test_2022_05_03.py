@@ -1,7 +1,7 @@
 """
-Tests for voting *TBA*.
+Tests for voting 03/05/2022.
 """
-from scripts.vote_recover_vesting import start_vote
+from scripts.vote_2022_05_03 import start_vote
 
 from event_validators.permission import (
     validate_permission_create_event,
@@ -20,7 +20,7 @@ from tx_tracing_helpers import *
 
 ldo_amount: int = 3_691_500 * 10 ** 18
 lido_dao_token: str = '0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32'
-destination_address: str = '0x1bdfFe0EBef3FEAdF2723D3330727D73f538959C' #FIXME: insert the proper addres
+destination_address: str = '0xe15232f912D92077bF4fAd50dd7BFB0347AeF821'
 
 create_permission: Permission = Permission(
     entity='0x2e59A20f205bB85a89C53f1936454680651E618e', # Voting
@@ -38,8 +38,8 @@ issue: Issue = Issue(
 vested: Vested = Vested(
     destination_addr=destination_address,
     amount=ldo_amount,
-    start=1639785600,
-    cliff=1639785600,
+    start=1651852800,
+    cliff=1651852800,
     vesting=1671321600,
     revokable=False
 )

@@ -1,12 +1,10 @@
 """
-Voting *TBA*.
+Voting 03/05/2022.
 
-1. Create role ISSUE_ROLE for TokenManager 0xDfe76d11b365f5e0023343A367f0b311701B3bc1
-2. Issue 3,691,500 LDO tokens in favor of TokenManager 0xDfe76d11b365f5e0023343A367f0b311701B3bc1
-3. Assign vested 3,691,500 LDO tokens to 0x... *TBA* till Sun Dec 18 2022 00:00:00 +UTC
-4. Revoke ISSUE_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db
-
-#FIXME: replace all TBAs and addresses
+1. Create role ISSUE_ROLE for TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249
+2. Issue 3,691,500 LDO tokens in favor of TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249
+3. Assign vested 3,691,500 LDO tokens to 0xe15232f912d92077bf4fad50dd7bfb0347aef821 till Sun Dec 18 2022 00:00:00 +UTC
+4. Revoke ISSUE_ROLE from Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
 
 """
 
@@ -65,23 +63,21 @@ def start_vote(
 
     token_manager: interface.TokenManager = contracts.token_manager
     voting: interface.Voting = contracts.voting
-    acl: interface.ACL = contracts.acl
 
     ldo_amount: int = 3_691_500 * 10 ** 18
-    destination_vesting_address: str = '0x1bdfFe0EBef3FEAdF2723D3330727D73f538959C' #FIXME: insert proper address
+    destination_vesting_address: str = '0xe15232f912d92077bf4fad50dd7bfb0347aef821'
 
-    #FIXME: The numbers need to be updated
     # see also https://www.unixtimestamp.com/index.php for time conversions
-    start: int = 1639785600   # Sat Dec 18 2021 00:00:00 GMT+0000 (3 months ago)
-    cliff: int = 1639785600   # Sat Dec 18 2021 00:00:00 GMT+0000 (3 months ago)
-    vesting: int = 1671321600 # Sun Dec 18 2022 00:00:00 GMT+0000 (in 9 months)
+    start: int = 1651852800   # Fri May 06 2022 16:00:00 GMT+0000
+    cliff: int = 1651852800   # Fri May 06 2022 16:00:00 GMT+0000
+    vesting: int = 1671321600 # Sun Dec 18 2022 00:00:00 GMT+0000 (in 7 months)
 
     encoded_call_script = encode_call_script([
-        # 1. Create role ISSUE_ROLE for TokenManager 0xDfe76d11b365f5e0023343A367f0b311701B3bc1
+        # 1. Create role ISSUE_ROLE for TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249
         encode_permission_create(entity=voting, target_app=token_manager, permission_name='ISSUE_ROLE', manager=voting),
-        # 2. Issue 3,691,500 LDO tokens in favor of TokenManager 0xDfe76d11b365f5e0023343A367f0b311701B3bc1
+        # 2. Issue 3,691,500 LDO tokens in favor of TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249
         issue_ldo(ldo_amount),
-        # 3. Assign vested 3,691,500 LDO tokens to 0x... till Sun Dec 18 2022 00:00:00 +UTC
+        # 3. Assign vested 3,691,500 LDO tokens to 0xe15232f912d92077bf4fad50dd7bfb0347aef821 till Sun Dec 18 2022 00:00:00 +UTC
         assign_vested(
             destination_vesting_address,
             ldo_amount,
@@ -89,17 +85,17 @@ def start_vote(
             cliff=cliff,
             vesting=vesting
         ),
-        # 4. Revoke ISSUE_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db
+        # 4. Revoke ISSUE_ROLE from Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
         encode_permission_revoke(target_app=token_manager, permission_name='ISSUE_ROLE', revoke_from=voting),
     ])
 
     return confirm_vote_script(encoded_call_script, silent) and create_vote(
         vote_desc=(
             'Omnibus vote: '
-            '1) Create role ISSUE_ROLE for TokenManager 0xDfe76d11b365f5e0023343A367f0b311701B3bc1;'
-            '2) Issue 3,691,500 LDO tokens in favor of TokenManager 0xDfe76d11b365f5e0023343A367f0b311701B3bc1;'
-            '3) Assign vested 3,691,500 LDO tokens to 0x... till Sun Dec 18 2022 00:00:00 +UTC;'
-            '4) Revoke ISSUE_ROLE from Voting 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db.'
+            '1) Create role ISSUE_ROLE for TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249;'
+            '2) Issue 3,691,500 LDO tokens in favor of TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249;'
+            '3) Assign vested 3,691,500 LDO tokens to 0xe15232f912d92077bf4fad50dd7bfb0347aef821 till Sun Dec 18 2022 00:00:00 +UTC;'
+            '4) Revoke ISSUE_ROLE from Voting 0x2e59A20f205bB85a89C53f1936454680651E618e.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
