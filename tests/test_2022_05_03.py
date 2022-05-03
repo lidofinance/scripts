@@ -38,8 +38,8 @@ issue: Issue = Issue(
 vested: Vested = Vested(
     destination_addr=destination_address,
     amount=ldo_amount,
-    start=1651852800,
-    cliff=1651852800,
+    start=1648034400,
+    cliff=1648034400,
     vesting=1671321600,
     revokable=False
 )
