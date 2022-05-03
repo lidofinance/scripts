@@ -95,7 +95,7 @@ def start_vote(
             'Omnibus vote: '
             '1) Create permission ISSUE_ROLE for TokenManager assigned to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e; '
             '2) Issue 3,691,500 LDO tokens in favor of TokenManager; '
-            '3) Assign vested 3,691,500 LDO tokens to 0xe15232f912d92077bf4fad50dd7bfb0347aef821 till Sun Dec 18 2022 00:00:00 +UTC; '
+            '3) Assign 3,691,500 LDO tokens to 0xe15232f912d92077bf4fad50dd7bfb0347aef821 vested till Sun Dec 18 2022 00:00:00 +UTC; '
             '4) Revoke permission ISSUE_ROLE from Voting 0x2e59A20f205bB85a89C53f1936454680651E618e.'
         ),
         evm_script=encoded_call_script,
