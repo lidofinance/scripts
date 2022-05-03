@@ -6,6 +6,7 @@ Voting 26/04/2022.
 2. Assign 650,000 LDO from TokenManager contract with 2-year vesting for Chorus One to
    0x3983083d7fa05f66b175f282ffd83e0d861c777a
 
+Vote passed & executed on Apr-29-2022 02:19:26 PM +UTC, block 14679687
 """
 
 import time
