@@ -1,10 +1,11 @@
 """
 Voting 03/05/2022.
 
-1. Create role ISSUE_ROLE for TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249
+1. Create permission ISSUE_ROLE for TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249
+   assigned to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e.
 2. Issue 3,691,500 LDO tokens in favor of TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249
 3. Assign vested 3,691,500 LDO tokens to 0xe15232f912d92077bf4fad50dd7bfb0347aef821 till Sun Dec 18 2022 00:00:00 +UTC
-4. Revoke ISSUE_ROLE from Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
+4. Revoke permission ISSUE_ROLE from Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
 
 """
 
@@ -73,7 +74,7 @@ def start_vote(
     vesting: int = 1671321600 # Sun Dec 18 2022 00:00:00 GMT+0000
 
     encoded_call_script = encode_call_script([
-        # 1. Create role ISSUE_ROLE for TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249
+        # 1. Create permission ISSUE_ROLE for TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 assigned to Voting
         encode_permission_create(entity=voting, target_app=token_manager, permission_name='ISSUE_ROLE', manager=voting),
         # 2. Issue 3,691,500 LDO tokens in favor of TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249
         issue_ldo(ldo_amount),
@@ -85,17 +86,17 @@ def start_vote(
             cliff=cliff,
             vesting=vesting
         ),
-        # 4. Revoke ISSUE_ROLE from Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
+        # 4. Revoke permission ISSUE_ROLE from Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
         encode_permission_revoke(target_app=token_manager, permission_name='ISSUE_ROLE', revoke_from=voting),
     ])
 
     return confirm_vote_script(encoded_call_script, silent) and create_vote(
         vote_desc=(
             'Omnibus vote: '
-            '1) Create role ISSUE_ROLE for TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249;'
-            '2) Issue 3,691,500 LDO tokens in favor of TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249;'
-            '3) Assign vested 3,691,500 LDO tokens to 0xe15232f912d92077bf4fad50dd7bfb0347aef821 till Sun Dec 18 2022 00:00:00 +UTC;'
-            '4) Revoke ISSUE_ROLE from Voting 0x2e59A20f205bB85a89C53f1936454680651E618e.'
+            '1) Create permission ISSUE_ROLE for TokenManager assigned to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e; '
+            '2) Issue 3,691,500 LDO tokens in favor of TokenManager; '
+            '3) Assign vested 3,691,500 LDO tokens to 0xe15232f912d92077bf4fad50dd7bfb0347aef821 till Sun Dec 18 2022 00:00:00 +UTC; '
+            '4) Revoke permission ISSUE_ROLE from Voting 0x2e59A20f205bB85a89C53f1936454680651E618e.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params

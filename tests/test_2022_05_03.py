@@ -87,6 +87,10 @@ def test_ldo_recover(
 
     assert not acl.hasPermission(dao_voting, dao_token_manager, dao_token_manager.ISSUE_ROLE())
 
+    transferable_balance_after = dao_token_manager.transferableBalance(destination_address, 1651845600)
+    assert transferable_balance_after >= 600_000 * 10**18, "Incorrect transferrable balance"
+    assert transferable_balance_after < 610_000 * 10**18, "Incorrect transferrable balance"
+
     ### validate vote events
     assert count_vote_items_by_events(tx, dao_voting) == 4, "Incorrect voting items count"
 
