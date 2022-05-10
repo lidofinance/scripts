@@ -8,7 +8,7 @@ from event_validators.unpause import (
 
 from tx_tracing_helpers import *
 
-from scripts.vote_2022_04_16 import start_vote
+from scripts.archive.vote_2022_04_16 import start_vote
 
 
 def test_2022_04_16(ldo_holder, helpers, accounts, dao_voting, deposit_security_module, vote_id_from_env, bypass_events_decoding):
