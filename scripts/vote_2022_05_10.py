@@ -36,7 +36,7 @@ def start_vote(
         make_ldo_payout(
             target_address='0xF29Ff96aaEa6C9A1fBa851f74737f3c069d4f1a9',
             ldo_in_wei=2_000_000 * (10 ** 18),
-            reference="Transfer for the Protocol Guild"
+            reference="Protocol Guild transfer"
         ),
     ])
 
