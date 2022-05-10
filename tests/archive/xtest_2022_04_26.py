@@ -1,7 +1,7 @@
 """
 Tests for voting 26/04/2022.
 """
-from scripts.vote_2022_04_26 import start_vote
+from scripts.archive.vote_2022_04_26 import start_vote
 from tx_tracing_helpers import *
 
 ldo_amount: int = 650_000 * 10 ** 18
