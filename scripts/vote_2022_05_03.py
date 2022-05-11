@@ -7,6 +7,8 @@ Voting 03/05/2022.
 3. Assign vested 3,691,500 LDO tokens to 0xe15232f912d92077bf4fad50dd7bfb0347aef821 till Sun Dec 18 2022 00:00:00 +UTC
 4. Revoke permission ISSUE_ROLE from Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
 
+Vote passed & executed on May-06-2022 02:33:06 PM +UTC, block 14724071.
+
 """
 
 import time
