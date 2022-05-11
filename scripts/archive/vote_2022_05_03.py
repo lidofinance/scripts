@@ -24,6 +24,7 @@ from utils.config import get_deployer_account, contracts
 
 from utils.brownie_prelude import *
 
+
 def issue_ldo(
     amount: int,
 ) -> Tuple[str, str]:
@@ -35,6 +36,7 @@ def issue_ldo(
             amount
         )
     )
+
 
 def assign_vested(
     target_address: str,
@@ -58,6 +60,7 @@ def assign_vested(
         )
     )
 
+
 def start_vote(
     tx_params: Dict[str, str],
     silent: bool = False
@@ -71,9 +74,9 @@ def start_vote(
     destination_vesting_address: str = '0xe15232f912d92077bf4fad50dd7bfb0347aef821'
 
     # see also https://www.unixtimestamp.com/index.php for time conversions
-    start: int = 1648034400   # Wed Mar 23 2022 11:20:00 GMT+0000
-    cliff: int = 1648034400   # Wed Mar 23 2022 11:20:00 GMT+0000
-    vesting: int = 1671321600 # Sun Dec 18 2022 00:00:00 GMT+0000
+    start: int = 1648034400  # Wed Mar 23 2022 11:20:00 GMT+0000
+    cliff: int = 1648034400  # Wed Mar 23 2022 11:20:00 GMT+0000
+    vesting: int = 1671321600  # Sun Dec 18 2022 00:00:00 GMT+0000
 
     encoded_call_script = encode_call_script([
         # 1. Create permission ISSUE_ROLE for TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 assigned to Voting
