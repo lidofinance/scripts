@@ -123,6 +123,10 @@ class ContractsLazyLoader:
         return interface.Repo(lido_dao_voting_repo)
 
     @property
+    def oracle_app_repo(self) -> interface.Repo:
+        return interface.Repo(lido_dao_oracle_repo)
+
+    @property
     def easy_track(self) -> interface.EasyTrack:
         return interface.EasyTrack(lido_easytrack)
 
