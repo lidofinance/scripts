@@ -16,7 +16,7 @@ lido_dao_oracle = '0x24d8451BC07e7aF4Ba94F69aCDD9ad3c6579D9FB'
 lido_dao_voting_repo = '0x14de4f901cE0B81F4EfcA594ad7b70935C276806'
 lido_dao_lido_repo = '0xe9ede497d2417fd980d8b5338232666641b9b9ac'
 lido_dao_node_operators_registry_repo = '0x5f867429616b380f1ca7a7283ff18c53a0033073'
-lido_dao_oracle_repo = '0x1B56d009BCF3a417142be98a3BDc9bD265B5345D'
+lido_dao_oracle_repo = '0x9234e37Adeb44022A078557D9943b72AB89bF36a'
 
 curve_rewards_manager_address = ''
 balancer_rewards_manager = ''
