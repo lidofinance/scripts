@@ -39,7 +39,7 @@ from utils.config import (
     get_is_live,
     contracts, network_name
 )
-from utils.permissions import encode_permission_create
+from utils.permissions import encode_permission_create, encode_permission_grant
 from utils.brownie_prelude import *
 
 update_lido_app = {
@@ -88,6 +88,10 @@ if network_name() in ("goerli", "goerli-fork"):
 def encode_finalize_oracle_upgrade():
     oracle: interface.LidoOracle = contracts.lido_oracle
 
+    if network_name() in ("goerli", "goerli-fork"):
+        # we already have an upgraded oracle on goerli, so just do something harmless
+        return oracle.address, oracle.appId.encode_input()
+
     return oracle.address, oracle.finalizeUpgrade_v3.encode_input()
 
 
@@ -107,6 +111,16 @@ def encode_resume_staking(max_limit: int, limit_increase_per_block: int) -> Tupl
     lido: interface.Lido = contracts.lido
 
     return lido.address, lido.resumeStaking.encode_input(max_limit, limit_increase_per_block)
+
+
+def encode_permission_create_or_grant(permission_name: str) -> Tuple[str, str]:
+    lido: interface.Lido = contracts.lido
+    voting: interface.Voting = contracts.voting
+
+    if network_name() in ("goerli", "goerli-fork"):
+        return encode_permission_grant(lido, permission_name, voting)
+    else:
+        return encode_permission_create(voting, lido, permission_name, voting)
 
 
 def start_vote(
@@ -155,8 +169,7 @@ def start_vote(
         encode_finalize_oracle_upgrade(),
         # 8. Create permission for SET_MEV_TX_FEE_VAULT_ROLE of Lido app
         #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
-        encode_permission_create(entity=voting, target_app=lido, permission_name='SET_MEV_TX_FEE_VAULT_ROLE',
-                                 manager=voting),
+        encode_permission_create_or_grant(permission_name='SET_MEV_TX_FEE_VAULT_ROLE'),
         # 9. Create permission for SET_MEV_TX_FEE_WITHDRAWAL_LIMIT_ROLE of Lido app
         #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
         encode_permission_create(entity=voting, target_app=lido, permission_name='SET_MEV_TX_FEE_WITHDRAWAL_LIMIT_ROLE',

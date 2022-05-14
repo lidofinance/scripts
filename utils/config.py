@@ -108,7 +108,7 @@ class ContractsLazyLoader:
 
     @property
     def lido_oracle(self) -> interface.LidoOracle:
-        return interface.LidoOracle(lido_dao_oracle_repo)
+        return interface.LidoOracle(lido_dao_oracle)
 
     @property
     def kernel(self) -> interface.Kernel:
