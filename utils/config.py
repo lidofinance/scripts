@@ -49,7 +49,7 @@ def get_deployer_account() -> Union[LocalAccount, Account]:
             'Please set DEPLOYER env variable to the deployer account name')
 
     return accounts.load(os.environ['DEPLOYER']) if is_live else accounts.at(
-        "0x3e40d73eb977dc6a537af587d48316fee66e9c8c", force=True)
+        ldo_vote_executors_for_tests[0], force=True)
 
 
 def prompt_bool() -> Optional[bool]:
