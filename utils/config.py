@@ -107,6 +107,10 @@ class ContractsLazyLoader:
         return interface.NodeOperatorsRegistry(lido_dao_node_operators_registry)
 
     @property
+    def lido_oracle(self) -> interface.LidoOracle:
+        return interface.LidoOracle(lido_dao_oracle_repo)
+
+    @property
     def kernel(self) -> interface.Kernel:
         return interface.Kernel(lido_dao_kernel)
 
