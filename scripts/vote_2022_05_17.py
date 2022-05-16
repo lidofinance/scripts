@@ -123,57 +123,54 @@ def encode_permission_create_or_grant(permission_name: str) -> Tuple[str, str]:
         return encode_permission_create(voting, lido, permission_name, voting)
 
 
+def inject_contracts(lido, nos, oracle, mev_vault):
+    update_lido_app['new_address'] = lido
+    update_lido_app['mevtxfee_vault_address'] = mev_vault
+    update_nos_app['new_address'] = nos
+    update_oracle_app['new_address'] = oracle
+
+
 def start_vote(
     tx_params: Dict[str, str],
     silent: bool = False,
-    params = None
 ) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
     voting: interface.Voting = contracts.voting
     lido: interface.Lido = contracts.lido
 
-    if params:
-        update_lido_app_data = params['update_lido_app']
-        update_nos_app_data  = params['update_nos_app']
-        update_oracle_app_data  = params['update_oracle_app']
-    else: 
-        update_lido_app_data = update_lido_app
-        update_nos_app_data = update_nos_app
-        update_oracle_app_data = update_oracle_app
-
     encoded_call_script = encode_call_script([
         # 1. Publishing new implementation in Lido app APM repo 0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1
         add_implementation_to_lido_app_repo(
-            update_lido_app_data['version'],
-            update_lido_app_data['new_address'],
-            update_lido_app_data['content_uri']
+            update_lido_app['version'],
+            update_lido_app['new_address'],
+            update_lido_app['content_uri']
         ),
         # 2. Updating implementation of Lido app with the new one
         update_app_implementation(
-            update_lido_app_data['id'],
-            update_lido_app_data['new_address']
+            update_lido_app['id'],
+            update_lido_app['new_address']
         ),
         # 3. Publishing new implementation in Node Operators Registry app APM repo 0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1831
         add_implementation_to_nos_app_repo(
-            update_nos_app_data['version'],
-            update_nos_app_data['new_address'],
-            update_nos_app_data['content_uri']
+            update_nos_app['version'],
+            update_nos_app['new_address'],
+            update_nos_app['content_uri']
         ),
         # 4. Updating implementation of Node Operators Registry app with the new one
         update_app_implementation(
-            update_nos_app_data['id'],
-            update_nos_app_data['new_address']
+            update_nos_app['id'],
+            update_nos_app['new_address']
         ),
         # 5. Publishing new implementation in Oracle app APM repo 0xF9339DE629973c60c4d2b76749c81E6F40960E3A
         add_implementation_to_oracle_app_repo(
-            update_oracle_app_data['version'],
-            update_oracle_app_data['new_address'],
-            update_oracle_app_data['content_uri']
+            update_oracle_app['version'],
+            update_oracle_app['new_address'],
+            update_oracle_app['content_uri']
         ),
         # 6. Updating implementation of Oracle app with new one
         update_app_implementation(
-            update_oracle_app_data['id'],
-            update_oracle_app_data['new_address']
+            update_oracle_app['id'],
+            update_oracle_app['new_address']
         ),
         # 7. Finalize Oracle upgrade to version 3
         encode_finalize_oracle_upgrade(),
@@ -189,11 +186,11 @@ def start_vote(
         encode_permission_create(entity=voting, target_app=lido, permission_name='STAKING_RESUME_ROLE', manager=voting),
 
         # 11. Call Lido's setMevTxFeeVault() to connect deployed MevTxFeeVault
-        encode_set_mevtxfee_vault(update_lido_app_data['mevtxfee_vault_address']),
+        encode_set_mevtxfee_vault(update_lido_app['mevtxfee_vault_address']),
         # 12. Set MevTxFee Withdrawal Limit to 2BP
-        encode_set_mevtxfee_withdrawal_limit(update_lido_app_data['mevtxfee_withdrawal_limit']),
+        encode_set_mevtxfee_withdrawal_limit(update_lido_app['mevtxfee_withdrawal_limit']),
         # 13. Resume staking with rate limit roughly equal to 150,000 ETH per day
-        encode_resume_staking(update_lido_app_data['max_staking_limit'], update_lido_app_data['staking_limit_increase'])
+        encode_resume_staking(update_lido_app['max_staking_limit'], update_lido_app['staking_limit_increase'])
     ])
 
     return confirm_vote_script(encoded_call_script, silent) and create_vote(
