@@ -187,11 +187,20 @@ def test_handle_oracle_report_with_mev(
     assert lido.getBufferedEther() == buffered_ether_before + expected_mev_reward
 
     # validate that rewards were distributed
-    transfer_events_count = len(filter_transfer_logs(logs=tx.logs))
+    transfer_logs = filter_transfer_logs(logs=tx.logs)
     if beacon_balance_delta <= 0:
-        assert transfer_events_count == 0
+        assert len(transfer_logs) == 0
     else:
-        assert transfer_events_count > 0
+        assert len(transfer_logs) > 0
+
+        # validate that the correct amount of rewards was distributed
+        transfers = parse_transfer_logs(transfer_logs)
+        fee = lido.getFee()
+        total_transferred = sum(t["value"] for t in transfers)
+        # due to the stETH shares rounding distributed value might be less than the expected value
+        assert total_transferred - fee * (
+            beacon_balance_delta + expected_mev_reward
+        ) // TOTAL_BASIS_POINTS <= len(transfers)
 
 
 def assert_lido_mev_tx_fee_vault_set_log(log, mev_tx_fee_vault):
@@ -223,3 +232,16 @@ def assert_mev_tx_fee_received_log(log, amount):
 def filter_transfer_logs(logs):
     transfer_topic = web3.keccak(text="Transfer(address,address,uint256)")
     return list(filter(lambda l: l["topics"][0] == transfer_topic, logs))
+
+
+def parse_transfer_logs(transfer_logs):
+    res = []
+    for l in transfer_logs:
+        res.append(
+            {
+                "from": eth_abi.decode_abi(["address"], l["topics"][1]),
+                "to": eth_abi.decode_abi(["address"], l["topics"][2]),
+                "value": eth_abi.decode_single("uint256", bytes.fromhex(l["data"][2:])),
+            }
+        )
+    return res
