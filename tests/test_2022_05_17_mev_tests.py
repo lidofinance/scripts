@@ -1,20 +1,57 @@
 """
 Tests for mev distribution for voting 17/05/2022
 """
+import json
 import pytest
-from brownie import interface, reverts
+import eth_abi
+from brownie import interface, reverts, web3
 
 from utils.config import contracts
-from scripts.vote_2022_05_17 import start_vote
+from scripts.vote_2022_05_17 import start_vote, inject_contracts
 
 LIDO_MEV_TX_FEE_VAULT = "0x"
 TOTAL_BASIS_POINTS = 10000
-MEV_TX_FEE_WITHDRAWAL_LIMIT_POINTS = 200  # 2 %
+MEV_TX_FEE_WITHDRAWAL_LIMIT_POINTS = 2  # 2 %
+
+
+@pytest.fixture(scope="module", autouse=True)
+def autodeploy_contracts(accounts):
+    deployer = accounts[2]
+    lido_tx_data = json.load(open("./utils/txs/tx-13-1-deploy-lido-base.json"))["data"]
+    nos_tx_data = json.load(
+        open("./utils/txs/tx-13-1-deploy-node-operators-registry-base.json")
+    )["data"]
+    oracle_tx_data = json.load(open("./utils/txs/tx-13-1-deploy-oracle-base.json"))[
+        "data"
+    ]
+    mev_vault_tx_data = json.load(open("./utils/txs/tx-26-deploy-mev-vault.json"))[
+        "data"
+    ]
+
+    lido_tx = deployer.transfer(data=lido_tx_data)
+    nos_tx = deployer.transfer(data=nos_tx_data)
+    oracle_tx = deployer.transfer(data=oracle_tx_data)
+    mev_vault_tx = deployer.transfer(data=mev_vault_tx_data)
+
+    global LIDO_MEV_TX_FEE_VAULT
+    LIDO_MEV_TX_FEE_VAULT = mev_vault_tx.contract_address
+
+    inject_contracts(
+        lido_tx.contract_address,
+        nos_tx.contract_address,
+        oracle_tx.contract_address,
+        mev_vault_tx.contract_address,
+    )
 
 
 @pytest.fixture(scope="module")
 def stranger(accounts):
     return accounts[0]
+
+
+@pytest.fixture(scope="module")
+def eth_whale(accounts):
+    return accounts.at("0x00000000219ab540356cBB839Cbe05303d7705Fa", force=True)
 
 
 @pytest.fixture(scope="module")
@@ -45,21 +82,19 @@ def lido_oracle_as_eoa(accounts, stranger, lido_oracle, EtherFunder):
 
 @pytest.fixture(scope="module", autouse=True)
 def autoexecute_vote(vote_id_from_env, ldo_holder, helpers, accounts, dao_voting):
-    pass
-    # vote_id = vote_id_from_env or start_vote({"from": ldo_holder}, silent=True)[0]
-    # helpers.execute_vote(
-    #     vote_id=vote_id,
-    #     accounts=accounts,
-    #     dao_voting=dao_voting,
-    #     skip_time=3 * 60 * 60 * 24,
-    # )
-    # print(f"vote {vote_id} was executed")
+    vote_id = vote_id_from_env or start_vote({"from": ldo_holder}, silent=True)[0]
+    helpers.execute_vote(
+        vote_id=vote_id,
+        accounts=accounts,
+        dao_voting=dao_voting,
+        skip_time=3 * 60 * 60 * 24,
+    )
 
 
-def test_mev_views_values_is_correct(lido, lido_mev_tx_fee_vault):
+def test_mev_views_values_is_correct(lido, dao_agent, lido_mev_tx_fee_vault):
     # deployed LidoMevTxFeeVault has correct values
     assert lido_mev_tx_fee_vault.LIDO() == lido.address
-    assert lido_mev_tx_fee_vault.TREASURY() == agent.address
+    assert lido_mev_tx_fee_vault.TREASURY() == dao_agent.address
 
     # Lido contract MEV values were set correctly
     assert lido.getTotalMevTxFeeCollected() == 0
@@ -67,26 +102,38 @@ def test_mev_views_values_is_correct(lido, lido_mev_tx_fee_vault):
     assert lido.getMevTxFeeVault() == LIDO_MEV_TX_FEE_VAULT
 
 
-def test_set_mev_tx_fee(lido, stranger, dao_voting_as_eoa):
+def test_set_mev_tx_fee_vault(lido, stranger, dao_voting_as_eoa):
     # setMevTxFeeVault can't be called by stranger
     with reverts("APP_AUTH_FAILED"):
         lido.setMevTxFeeVault(stranger, {"from": stranger})
 
     # setMevTxFeeVault might be called by voting
     tx = lido.setMevTxFeeVault(stranger, {"from": dao_voting_as_eoa})
-    assert tx.events["LidoMevTxFeeVaultSet"]["mevTxFeeVault"] == stranger
+    assert len(tx.logs) == 1
+    assert_lido_mev_tx_fee_vault_set_log(
+        log=tx.logs[0], mev_tx_fee_vault=stranger.address
+    )
     assert lido.getMevTxFeeVault() == stranger
 
 
-def test_set_mev_tx_withdrawal_limit(lido, stranger):
+def test_set_mev_tx_withdrawal_limit(lido, stranger, dao_voting_as_eoa):
     # setMevTxFeeWithdrawalLimit can't be called by the stranger
     with reverts("APP_AUTH_FAILED"):
         lido.setMevTxFeeWithdrawalLimit(0, {"from": stranger})
 
-    # setMevTxFeeWithdrawalLimit might be called by the stranger
-    tx = lido.setMevTxFeeWithdrawalLimit(100, {"from": stranger})
-    assert tx.events["MevTxFeeWithdrawalLimitSet"]["limitPoints"] == 100
-    assert lido.getMevTxFeeWithdrawalLimitPoints() == 100
+    # setMevTxFeeWithdrawalLimit might be called by the voting
+    new_mev_tx_fee_withdrawal_limit_points = 100
+    tx = lido.setMevTxFeeWithdrawalLimit(
+        new_mev_tx_fee_withdrawal_limit_points, {"from": dao_voting_as_eoa}
+    )
+    assert len(tx.logs) == 1
+    assert_mev_tx_fee_withdrawal_limit_set_log(
+        log=tx.logs[0], limit_points=new_mev_tx_fee_withdrawal_limit_points
+    )
+    assert (
+        lido.getMevTxFeeWithdrawalLimitPoints()
+        == new_mev_tx_fee_withdrawal_limit_points
+    )
 
 
 def test_receive_mev_tx_fee_permissions(lido, stranger, mev_tx_fee_vault_as_eoa):
@@ -96,24 +143,25 @@ def test_receive_mev_tx_fee_permissions(lido, stranger, mev_tx_fee_vault_as_eoa)
 
     stranger.transfer(mev_tx_fee_vault_as_eoa, mev_amount)
     tx = lido.receiveMevTxFee({"from": mev_tx_fee_vault_as_eoa, "amount": mev_amount})
-    assert tx.events["MevTxFeeReceived"]["amount"] == mev_amount
-    assert lido.getMevTxFeeVault() == mev_amount
+    assert len(tx.logs) == 1
+    assert_mev_tx_fee_received_log(log=tx.logs[0], amount=mev_amount)
+    assert lido.getTotalMevTxFeeCollected() == mev_amount
 
 
-@pytest.mark.parametrize("mev_reward", [0, 100 * 10**18])
+@pytest.mark.parametrize("mev_reward", [0, 100 * 10**18, 1_000_000 * 10**18])
 @pytest.mark.parametrize("beacon_balance_delta", [0, 1000 * 10**18, -1000 * 10**18])
 def test_handle_oracle_report_with_mev(
     lido,
     lido_oracle,
     lido_oracle_as_eoa,
     lido_mev_tx_fee_vault,
-    stranger,
+    eth_whale,
     mev_reward,
     beacon_balance_delta,
 ):
     # prepare LidoMevTxFeeVaule
     if mev_reward > 0:
-        stranger.transfer(lido_mev_tx_fee_vault, mev_reward)
+        eth_whale.transfer(lido_mev_tx_fee_vault, mev_reward)
     assert lido_mev_tx_fee_vault.balance() == mev_reward
 
     # prepare new report data
@@ -122,19 +170,56 @@ def test_handle_oracle_report_with_mev(
     beacon_balance = prev_report["beaconBalance"] + beacon_balance_delta
     buffered_ether_before = lido.getBufferedEther()
 
+    max_allowed_mev_reward = (
+        (lido.getTotalPooledEther() + beacon_balance_delta)
+        * lido.getMevTxFeeWithdrawalLimitPoints()
+        // TOTAL_BASIS_POINTS
+    )
+
     # simulate oracle report
     tx = lido.handleOracleReport(
         beacon_validators, beacon_balance, {"from": lido_oracle_as_eoa}
     )
 
     # validate that MEV rewards were added to the buffered ether
-    expected_mev_reward = (
-        mev_reward * MEV_TX_FEE_WITHDRAWAL_LIMIT_POINTS // TOTAL_BASIS_POINTS
-    )
+    expected_mev_reward = min(max_allowed_mev_reward, mev_reward)
+
     assert lido.getBufferedEther() == buffered_ether_before + expected_mev_reward
 
     # validate that rewards were distributed
-    if beacon_balance_delta > 0:
-        assert len(tx.events["Transfer"]) > 0
+    transfer_events_count = len(filter_transfer_logs(logs=tx.logs))
+    if beacon_balance_delta <= 0:
+        assert transfer_events_count == 0
     else:
-        assert len(tx.events["Transfer"]) == 0
+        assert transfer_events_count > 0
+
+
+def assert_lido_mev_tx_fee_vault_set_log(log, mev_tx_fee_vault):
+    topic = web3.keccak(text="LidoMevTxFeeVaultSet(address)")
+    assert log["topics"][0] == topic
+
+    # validate params
+    assert (
+        log["data"] == "0x" + eth_abi.encode_abi(["address"], [mev_tx_fee_vault]).hex()
+    )
+
+
+def assert_mev_tx_fee_withdrawal_limit_set_log(log, limit_points):
+    topic = web3.keccak(text="MevTxFeeWithdrawalLimitSet(uint256)")
+    assert log["topics"][0] == topic
+
+    # validate params
+    assert log["data"] == "0x" + eth_abi.encode_abi(["uint256"], [limit_points]).hex()
+
+
+def assert_mev_tx_fee_received_log(log, amount):
+    topic = web3.keccak(text="MevTxFeeReceived(uint256)")
+    assert log["topics"][0] == topic
+
+    # validate params
+    assert log["data"] == "0x" + eth_abi.encode_abi(["uint256"], [amount]).hex()
+
+
+def filter_transfer_logs(logs):
+    transfer_topic = web3.keccak(text="Transfer(address,address,uint256)")
+    return list(filter(lambda l: l["topics"][0] == transfer_topic, logs))
