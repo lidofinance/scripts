@@ -1,8 +1,9 @@
 """
-Voting 10/05/2022.
+Voting 17/05/2022.
 
 1. Send 2,000,000 LDO from Lido treasury to the Protocol Guild vesting contract
 0xF29Ff96aaEa6C9A1fBa851f74737f3c069d4f1a9
+
 CHECK THE CONTRACT IS VERIFIED BEFORE STARTING THE VOTE
 
 """
