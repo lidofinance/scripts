@@ -150,7 +150,8 @@ def start_vote(
             update_lido_app['id'],
             update_lido_app['new_address']
         ),
-        # 3. Publishing new implementation in Node Operators Registry app APM repo 0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1831
+        # 3. Publishing new implementation in Node Operators Registry app
+        # APM repo 0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1831
         add_implementation_to_nos_app_repo(
             update_nos_app['version'],
             update_nos_app['new_address'],
