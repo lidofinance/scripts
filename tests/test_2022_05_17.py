@@ -289,6 +289,7 @@ def waitBlock(seconds):
 #     # asserts on vote item 1
 #     validate_token_payout_event(evs[0], protocol_guild_payout)
 
+
 def test_protocol_guild_vesting_params():
     vesting_module = interface.VestingModule(protocol_guild_address)
 
@@ -298,14 +299,119 @@ def test_protocol_guild_vesting_params():
     vesting_streams_count = vesting_module.numVestingStreams()
     assert vesting_streams_count == 3, "Incorrect Vesting nums"
 
-def test_protocol_vesting(
+
+# def test_protocol_vesting(
+#     helpers, accounts, ldo_holder, dao_voting,
+#     ldo_token,
+#     vote_id_from_env, bypass_events_decoding
+# ):
+#     protocol_guild_balance_before = ldo_token.balanceOf(protocol_guild_address)
+#     assert protocol_guild_balance_before == 0
+
+#     #
+#     # START VOTE
+#     #
+#     vote_id = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]
+
+#     tx: TransactionReceipt = helpers.execute_vote(
+#         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24
+#     )
+
+#     vesting_module = interface.VestingModule(protocol_guild_address)
+
+#     waitBlock(60*60)
+#     create_timestamp = chain.time()
+#     vesting_module.createVestingStreams([ldo_token], {"from": ldo_holder})
+
+#     vesting_streams_count = vesting_module.numVestingStreams()
+#     assert vesting_streams_count == 3 + 1, "Incorrect Vesting nums"
+
+#     ### Create vesting stream
+#     vestingId = vesting_streams_count - 1
+#     stream = vesting_module.vestingStream(vestingId)
+
+#     assert stream[0] == ldo_token, "Incorrect token"
+#     assert stream[1] == create_timestamp, "Incorrect timestamp"
+#     assert stream[2] == ldo_amount, "Incorrect total amount of tokens for vesting"
+#     assert stream[3] == 0, "Incorrect released amount of tokens"
+
+#     protocol_benefeciar_balance_before = ldo_token.balanceOf(protocol_beneficiary)
+#     assert protocol_benefeciar_balance_before == 0, "Incorrect token amount of beneficiary"
+
+#     ### Release vesting
+#     waitBlock(60)
+#     vesting_module.releaseFromVesting([vestingId], {"from": ldo_holder})
+
+#     #vestedTokensPerSec = int(ldo_amount / (60 * 60 * 24 * 365))
+
+#     stream = vesting_module.vestingStream(vestingId)
+#     released_tokens = stream[3]
+
+#     assert released_tokens >= 3805175038051750560
+#     assert released_tokens < 4122272957889396440
+
+#     protocol_benefeciar_balance_after = ldo_token.balanceOf(protocol_beneficiary)
+#     assert released_tokens == protocol_benefeciar_balance_after, "Incorrect token amount of beneficiary"
+
+#     split_main_module = interface.SplitMain(split_main_address)
+
+#     distributor_fee = 0
+#     distributor_address = ldo_holder
+
+#     # incorrect_guild_receipients = guild_receipients
+#     # incorrect_guild_receipients[0] = ldo_holder
+
+#     ## check incorrect receipients list
+#     with reverts():
+#         split_main_module.distributeERC20(
+#             protocol_beneficiary,
+#             lido_dao_token,
+#             [ldo_holder],
+#             guild_percents,
+#             distributor_fee,
+#             distributor_address,
+#             { "from": ldo_holder})
+
+#     ## Distibute tokens after vesting release
+#     split_main_module.distributeERC20(protocol_beneficiary, lido_dao_token, guild_receipients, guild_percents, distributor_fee, distributor_address, { "from": ldo_holder})
+
+#     released_tokens -= 1
+
+#     #переводится из воутинга
+#     #запускает левый чувак без ldo
+#     #distibutor fee == 0
+#     #проверка на год
+#     #проверка на 2й клейм подряд
+#     #подменить список если год ниче не происходило и забрать все деньги
+#     #updateSplit + distibute fee
+
+#     ## Holders withdrawals
+#     ##
+#     # for i in range(len(guild_receipients)):
+#     #     holder_balance_before = ldo_token.balanceOf(guild_receipients[i])
+#     #     assert holder_balance_before == 0, "Invalid holder amount"
+
+#     #     split_main_module.withdraw(guild_receipients[i], 0, [lido_dao_token], { "from": ldo_holder})
+#     #     holder_balance_after = ldo_token.balanceOf(guild_receipients[i])
+
+#     #     expected_balance = int(released_tokens * guild_percents[i] / 10000 / 100)
+#     #     print (str(holder_balance_after) + " expected " + str(expected_balance))
+#         # assert holder_balance_after == expected_balance, "Invalid holder balance " + guild_receipients[i] + " percent " + str(guild_percents[i])
+
+#     ##
+#     ## from the code https://etherscan.io/address/0x2ed6c4b5da6378c7897ac67ba9e43102feb694ee#code
+#     ## they leave 1 for gas efficiency
+#     ##
+#     benefeciar_balance_after_distibute = ldo_token.balanceOf(protocol_beneficiary)
+#     assert benefeciar_balance_after_distibute - 1 == 0, "Invalid benefeciar balance after"
+
+
+
+def test_protocol_update_scripts(
     helpers, accounts, ldo_holder, dao_voting,
     ldo_token,
     vote_id_from_env, bypass_events_decoding
 ):
-    protocol_guild_balance_before = ldo_token.balanceOf(protocol_guild_address)
-    assert protocol_guild_balance_before == 0
-
     #
     # START VOTE
     #
@@ -333,71 +439,122 @@ def test_protocol_vesting(
     assert stream[2] == ldo_amount, "Incorrect total amount of tokens for vesting"
     assert stream[3] == 0, "Incorrect released amount of tokens"
 
-    protocol_benefeciar_balance_before = ldo_token.balanceOf(protocol_beneficiary)
-    assert protocol_benefeciar_balance_before == 0, "Incorrect token amount of beneficiary"
-
-    ### Release vesting
-    waitBlock(60)
+    waitBlock(60 * 60 * 24 * 365 + 10)
     vesting_module.releaseFromVesting([vestingId], {"from": ldo_holder})
 
-    #vestedTokensPerSec = int(ldo_amount / (60 * 60 * 24 * 365))
+    multisig = accounts.at('0xF6CBDd6Ea6EC3C4359e33de0Ac823701Cc56C6c4', force=True)
 
-    stream = vesting_module.vestingStream(vestingId)
-    released_tokens = stream[3]
+    h1 = '0x0000006916a87b82333f4245046623b23794C65C'
+    h2 = '0x0B916095200313900104bAcfc288462682C38700'
+    h3 = '0x235c73bec456a3bf84E71f91554d68e3E651EC83'
+    h4 = '0x291f12Bc416a53235d2c3f79d96DdF15877A8D10'
+    h5 = '0x2D56Cd519540bE541A3261E22e95d6507F5504Ca'
+    h6 = '0x4Bfa4639Cc1f4554122aBB930Aa897CDAe90d13b'
 
-    assert released_tokens >= 3805175038051750560
-    assert released_tokens < 4122272957889396440
+    #minimum 2 accounts
+    accs = [h1, h2]
+    perc = [500000, 500000]
+    fee = 0
 
-    protocol_benefeciar_balance_after = ldo_token.balanceOf(protocol_beneficiary)
-    assert released_tokens == protocol_benefeciar_balance_after, "Incorrect token amount of beneficiary"
-
+    #change split
     split_main_module = interface.SplitMain(split_main_address)
+    split_main_module.updateSplit(protocol_beneficiary, accs, perc, fee, {"from": multisig})
+
+    benefeciar_balance_after_distibute = ldo_token.balanceOf(protocol_beneficiary)
+    assert benefeciar_balance_after_distibute == 2_000_000 * 10**18
+
 
     distributor_fee = 0
     distributor_address = ldo_holder
 
-    # incorrect_guild_receipients = guild_receipients
-    # incorrect_guild_receipients[0] = ldo_holder
+    # distibute tokens to new holders
+    split_main_module.distributeERC20(
+        protocol_beneficiary,
+        lido_dao_token,
+        accs,
+        perc,
+        distributor_fee,
+        distributor_address,
+        { "from": ldo_holder})
 
-    ## check incorrect receipients list
-    with reverts():
-        split_main_module.distributeERC20(
-            protocol_beneficiary,
-            lido_dao_token,
-            incorrect_guild_receipients,
-            [ldo_holder],
-            distributor_fee,
-            distributor_address,
-            { "from": ldo_holder})
 
-    ## Distibute tokens after vesting release
-    split_main_module.distributeERC20(protocol_beneficiary, lido_dao_token, guild_receipients, guild_percents, distributor_fee, distributor_address, { "from": ldo_holder})
+    split_main_module.withdraw(h1, 0, [lido_dao_token], { "from": ldo_holder})
+    h1_balance_after = ldo_token.balanceOf(h1)
 
-    released_tokens -= 1
-    print ("released tokens ")
-    print (released_tokens)
+    split_main_module.withdraw(h2, 0, [lido_dao_token], { "from": ldo_holder})
+    h2_balance_after = ldo_token.balanceOf(h2)
 
-    ## Holders withdrawals
-    for i in range(len(guild_receipients)):
-        holder_balance_before = ldo_token.balanceOf(guild_receipients[i])
-        assert holder_balance_before == 0, "Invalid holder amount"
+    assert h1_balance_after >= 999_999 * 10**18
+    assert h2_balance_after >= 999_999 * 10**18
 
-        split_main_module.withdraw(guild_receipients[i], 0, [lido_dao_token], { "from": ldo_holder})
-        holder_balance_after = ldo_token.balanceOf(guild_receipients[i])
 
-        expected_balance = int(released_tokens * guild_percents[i] / 10000 / 100)
-        print (str(holder_balance_after) + " expected " + str(expected_balance))
-        # assert holder_balance_after == expected_balance, "Invalid holder balance " + guild_receipients[i] + " percent " + str(guild_percents[i])
+def test_protocol_update_fee(
+    helpers, accounts, ldo_holder, dao_voting,
+    ldo_token,
+    vote_id_from_env,
+):
+    #
+    # START VOTE
+    #
+    vote_id = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]
 
-    ##
-    ## from the code https://etherscan.io/address/0x2ed6c4b5da6378c7897ac67ba9e43102feb694ee#code
-    ## they leave 1 for gas efficiency
-    ##
+    tx: TransactionReceipt = helpers.execute_vote(
+        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24
+    )
+
+    vesting_module = interface.VestingModule(protocol_guild_address)
+
+    waitBlock(60*60)
+    create_timestamp = chain.time()
+    vesting_module.createVestingStreams([ldo_token], {"from": ldo_holder})
+
+    vesting_streams_count = vesting_module.numVestingStreams()
+    assert vesting_streams_count == 3 + 1, "Incorrect Vesting nums"
+
+    ### Create vesting stream
+    vestingId = vesting_streams_count - 1
+    stream = vesting_module.vestingStream(vestingId)
+
+    assert stream[0] == ldo_token, "Incorrect token"
+    assert stream[1] == create_timestamp, "Incorrect timestamp"
+    assert stream[2] == ldo_amount, "Incorrect total amount of tokens for vesting"
+    assert stream[3] == 0, "Incorrect released amount of tokens"
+
+    waitBlock(60 * 60 * 24 * 365 + 10)
+    vesting_module.releaseFromVesting([vestingId], {"from": ldo_holder})
+
+
+    multisig = accounts.at('0xF6CBDd6Ea6EC3C4359e33de0Ac823701Cc56C6c4', force=True)
+
+    h6 = '0x4Bfa4639Cc1f4554122aBB930Aa897CDAe90d13b'
+
+    #  MAX_DISTRIBUTOR_FEE = 1e5;
+    distributor_fee = 100_000
+
+    #change split
+    split_main_module = interface.SplitMain(split_main_address)
+    split_main_module.updateSplit(protocol_beneficiary, guild_receipients, guild_percents, distributor_fee, {"from": multisig})
+
     benefeciar_balance_after_distibute = ldo_token.balanceOf(protocol_beneficiary)
-    assert benefeciar_balance_after_distibute - 1 == 0, "Invalid benefeciar balance after"
+    assert benefeciar_balance_after_distibute == 2_000_000 * 10**18
 
+    distributor_address = h6
 
+    # distibute tokens to new holders
+    split_main_module.distributeERC20(
+        protocol_beneficiary,
+        lido_dao_token,
+        guild_receipients,
+        guild_percents,
+        distributor_fee,
+        distributor_address,
+        { "from": ldo_holder})
 
+    h1_balance_after = ldo_token.balanceOf(h6)
+    print(h1_balance_after)
 
-
+    split_main_module.withdraw(h6, 0, [lido_dao_token], { "from": ldo_holder})
+    h6_balance_after = ldo_token.balanceOf(h6)
+    assert h6_balance_after >= 200_000 * 10**18
+    assert h6_balance_after < 210_000 * 10**18
 
