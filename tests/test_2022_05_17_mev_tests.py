@@ -101,8 +101,8 @@ def test_receive_mev_tx_fee_permissions(lido, stranger, mev_tx_fee_vault_as_eoa)
 
 
 @pytest.mark.parametrize("mev_reward", [0, 100 * 10**18])
-@pytest.mark.parametrize("beacon_balance_delta", [1000 * 10**18, -1000 * 10**18])
-def test_handle_oracle_report_with_non_zero_mev_rewards(
+@pytest.mark.parametrize("beacon_balance_delta", [0, 1000 * 10**18, -1000 * 10**18])
+def test_handle_oracle_report_with_mev(
     lido,
     lido_oracle,
     lido_oracle_as_eoa,
