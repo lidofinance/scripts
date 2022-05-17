@@ -29,22 +29,22 @@ def deployed_contracts(deployer):
         lido_tx_data = json.load(open('./utils/txs/tx-13-1-deploy-lido-base.json'))["data"]
         nos_tx_data = json.load(open('./utils/txs/tx-13-1-deploy-node-operators-registry-base.json'))["data"]
         oracle_tx_data = json.load(open('./utils/txs/tx-13-1-deploy-oracle-base.json'))["data"]
-        mev_vault_tx_data = json.load(open('./utils/txs/tx-26-deploy-mev-vault.json'))["data"]
+        execution_layer_rewards_vault_tx_data = json.load(open('./utils/txs/tx-26-deploy-execution-layer-rewards-vault.json'))["data"]
 
         lido_tx = deployer.transfer(data=lido_tx_data)
         nos_tx = deployer.transfer(data=nos_tx_data)
         oracle_tx = deployer.transfer(data=oracle_tx_data)
-        mev_vault_tx = deployer.transfer(data=mev_vault_tx_data)
+        execution_layer_rewards_vault_tx = deployer.transfer(data=execution_layer_rewards_vault_tx_data)
 
         update_lido_app['new_address'] = lido_tx.contract_address
-        update_lido_app['mevtxfee_vault_address'] = mev_vault_tx.contract_address
+        update_lido_app['execution_layer_rewards_vault_address'] = execution_layer_rewards_vault_tx.contract_address
         update_nos_app['new_address'] = nos_tx.contract_address
         update_oracle_app['new_address'] = oracle_tx.contract_address
 
         return {'lido': lido_tx.contract_address,
                 'nos': nos_tx.contract_address,
                 'oracle': oracle_tx.contract_address,
-                'mev_vault': mev_vault_tx.contract_address}
+                'mev_vault': execution_layer_rewards_vault_tx.contract_address}
     else:
         return {'lido': '',
                 'nos': '',
@@ -63,12 +63,12 @@ oracle_app_version = (3, 0, 0)
 
 oracle_contract_version = 3
 
-permission_mev_vault = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
-                                  app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
-                                  role='0x4e4933b1d536574ff4e80f3a1969722cbb193387fc0bb7b5952dbaffb59c9f44')
-permission_mev_withdrawal_limit = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
-                                             app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
-                                             role='0x7f8796bf332967f28d4937efe7af82a13783b9380c8dc67697837baa937d0959')
+permission_elrewards_vault = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
+                                        app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
+                                        role='0x9d68ad53a92b6f44b2e8fb18d211bf8ccb1114f6fafd56aa364515dfdf23c44f')
+permission_elrewards_withdrawal_limit = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
+                                                   app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
+                                                   role='0xca7d176c2da2028ed06be7e3b9457e6419ae0744dc311989e9b29f6a1ceb1003')
 permission_stake_resume = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
                                      app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
                                      role='0xb7fb61d30d1ce0378ffa8842e9f240cfd41ff78cd4eec7c5fe18311f7db8a242')
@@ -93,8 +93,8 @@ def test_2022_05_17(
     oracle_old_app = oracle_repo.getLatest()
 
     acl: interface.ACL = contracts.acl
-    assert not acl.hasPermission(*permission_mev_vault)
-    assert not acl.hasPermission(*permission_mev_withdrawal_limit)
+    assert not acl.hasPermission(*permission_elrewards_vault)
+    assert not acl.hasPermission(*permission_elrewards_withdrawal_limit)
     assert not acl.hasPermission(*permission_stake_resume)
 
     #
@@ -124,12 +124,12 @@ def test_2022_05_17(
     oracle_proxy = interface.AppProxyUpgradeable(lido_dao_oracle)
     assert oracle_proxy.implementation() == deployed_contracts['oracle'], 'Proxy should be updated'
 
-    assert acl.hasPermission(*permission_mev_vault)
-    assert acl.hasPermission(*permission_mev_withdrawal_limit)
+    assert acl.hasPermission(*permission_elrewards_vault)
+    assert acl.hasPermission(*permission_elrewards_withdrawal_limit)
     assert acl.hasPermission(*permission_stake_resume)
 
-    assert lido.getMevTxFeeVault() == deployed_contracts['mev_vault']
-    assert lido.getMevTxFeeWithdrawalLimitPoints() == 2
+    assert lido.getELRewardsVault() == deployed_contracts['mev_vault']
+    assert lido.getELRewardsWithdrawalLimit() == 2
     assert not lido.isStakingPaused()
 
     # validate vote events
@@ -153,9 +153,9 @@ def test_2022_05_17(
 
     validate_set_version_event(evs[6], oracle_contract_version)
 
-    validate_permission_create_event(evs[7], permission_mev_vault)
+    validate_permission_create_event(evs[7], permission_elrewards_vault)
 
-    validate_permission_create_event(evs[8], permission_mev_withdrawal_limit)
+    validate_permission_create_event(evs[8], permission_elrewards_withdrawal_limit)
 
     validate_permission_create_event(evs[9], permission_stake_resume)
 

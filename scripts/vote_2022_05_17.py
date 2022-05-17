@@ -8,14 +8,14 @@ Voting 17/05/2022.
 5. Publishing new implementation in Oracle app APM repo 0xF9339DE629973c60c4d2b76749c81E6F40960E3A
 6. Updating implementation of Oracle app with new one
 7. Call Oracle's finalizeUpgrade_v3() to update internal version counter
-8. Create permission for SET_MEV_TX_FEE_VAULT_ROLE of Lido app
+8. Create permission for SET_EL_REWARDS_VAULT_ROLE of Lido app
     assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
 9. Create permission for SET_MEV_TX_FEE_WITHDRAWAL_LIMIT_ROLE of Lido app
     assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
 10. Create permission for STAKING_RESUME_ROLE of Lido app
     assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
-11. Call Lido's setMevTxFeeVault() to connect deployed MevTxFeeVault #? need address
-12. Set MevTxFee Withdrawal Limit to 2BP
+11. Call Lido's setELRewardsVault() to connect deployed LidoExecutionLayerRewardsVault #? need address
+12. Call Lido's setELRewardsWithdrawalLimit() to set execution layer rewards withdrawal limit to 2BP
 13. Resume staking with rate limit roughly equal to 150,000 ETH per day
 
 """
@@ -47,7 +47,7 @@ update_lido_app = {
     'content_uri': '0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053',
     'id': '0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320',
     'version': (3, 0, 0),
-    'mevtxfee_vault_address': None,  # TBA
+    'execution_layer_rewards_vault_address': None,  # TBA
     'mevtxfee_withdrawal_limit': 2,
     'max_staking_limit': 150_000 * 10**18,
     'staking_limit_increase': 150_000 * 10**18 * 13.5 // (24 * 60 * 60),  # 13.5s per block as a rough average
@@ -69,7 +69,7 @@ update_oracle_app = {
 
 if network_name() in ("goerli", "goerli-fork"):
     update_lido_app['new_address'] = '0xb496DF40497Dd69c095470956b6A04cEF68fd50D'
-    update_lido_app['mevtxfee_vault_address'] = '0x5bA8C245E8aED7b676F2c3B74aa0a3204cB53196'
+    update_lido_app['execution_layer_rewards_vault_address'] = '0x5bA8C245E8aED7b676F2c3B74aa0a3204cB53196'
     update_lido_app['content_uri'] = '0x697066733a516d626d5057357239484d64795541524e4a6a6a45374d4e714255477258617368776f577671525a686331743562'
     update_lido_app['id'] = '0x79ac01111b462384f1b7fba84a17b9ec1f5d2fddcfcb99487d71b443832556ea'
     update_lido_app['version'] = (8, 0, 0)
@@ -95,16 +95,16 @@ def encode_finalize_oracle_upgrade():
     return oracle.address, oracle.finalizeUpgrade_v3.encode_input()
 
 
-def encode_set_mevtxfee_vault(vault_address: str) -> Tuple[str, str]:
+def encode_set_elrewards_vault(vault_address: str) -> Tuple[str, str]:
     lido: interface.Lido = contracts.lido
 
-    return lido.address, lido.setMevTxFeeVault.encode_input(vault_address)
+    return lido.address, lido.setELRewardsVault.encode_input(vault_address)
 
 
-def encode_set_mevtxfee_withdrawal_limit(limit_bp: int) -> Tuple[str, str]:
+def encode_set_elrewards_withdrawal_limit(limit_bp: int) -> Tuple[str, str]:
     lido: interface.Lido = contracts.lido
 
-    return lido.address, lido.setMevTxFeeWithdrawalLimit.encode_input(limit_bp)
+    return lido.address, lido.setELRewardsWithdrawalLimit.encode_input(limit_bp)
 
 
 def encode_resume_staking(max_limit: int, limit_increase_per_block: int) -> Tuple[str, str]:
@@ -168,21 +168,21 @@ def start_vote(
         ),
         # 7. Finalize Oracle upgrade to version 3
         encode_finalize_oracle_upgrade(),
-        # 8. Create permission for SET_MEV_TX_FEE_VAULT_ROLE of Lido app
+        # 8. Create permission for SET_EL_REWARDS_VAULT_ROLE of Lido app
         #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
-        encode_permission_create_or_grant(permission_name='SET_MEV_TX_FEE_VAULT_ROLE'),
-        # 9. Create permission for SET_MEV_TX_FEE_WITHDRAWAL_LIMIT_ROLE of Lido app
+        encode_permission_create_or_grant(permission_name='SET_EL_REWARDS_VAULT_ROLE'),
+        # 9. Create permission for SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE of Lido app
         #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
-        encode_permission_create(entity=voting, target_app=lido, permission_name='SET_MEV_TX_FEE_WITHDRAWAL_LIMIT_ROLE',
+        encode_permission_create(entity=voting, target_app=lido, permission_name='SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE',
                                  manager=voting),
         # 10. Create permission for STAKING_RESUME_ROLE of Lido app
         #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
         encode_permission_create(entity=voting, target_app=lido, permission_name='STAKING_RESUME_ROLE', manager=voting),
 
-        # 11. Call Lido's setMevTxFeeVault() to connect deployed MevTxFeeVault
-        encode_set_mevtxfee_vault(update_lido_app['mevtxfee_vault_address']),
-        # 12. Set MevTxFee Withdrawal Limit to 2BP
-        encode_set_mevtxfee_withdrawal_limit(update_lido_app['mevtxfee_withdrawal_limit']),
+        # 11. Call Lido's setELRewardsVault() to connect deployed LidoExecutionLayerRewardsVault
+        encode_set_elrewards_vault(update_lido_app['execution_layer_rewards_vault_address']),
+        # 12. Call Lido's setELRewardsWithdrawalLimit() to set execution layer rewards withdrawal limit to 2BP
+        encode_set_elrewards_withdrawal_limit(update_lido_app['mevtxfee_withdrawal_limit']),
         # 13. Resume staking with rate limit roughly equal to 150,000 ETH per day
         encode_resume_staking(update_lido_app['max_staking_limit'], update_lido_app['staking_limit_increase'])
     ])
@@ -197,11 +197,11 @@ def start_vote(
             '5) Publishing new implementation in Oracle app APM repo;'
             '6) Updating implementation of Oracle app with new one;',
             '7) Finalize Oracle upgrade to version 3;',
-            '8) Create permission for SET_MEV_TX_FEE_VAULT_ROLE assigning it to Voting;',
-            '9) Create permission for SET_MEV_TX_FEE_WITHDRAWAL_LIMIT_ROLE assigning it to Voting;',
+            '8) Create permission for SET_EL_REWARDS_VAULT_ROLE assigning it to Voting;',
+            '9) Create permission for SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE assigning it to Voting;',
             '10) Create permission for STAKING_RESUME_ROLE of Lido app assigning it to Voting;',
-            '11) Call setMevTxFeeVault() to connect deployed MevTxFeeVault to Lido;',
-            '12) Set MevTxFee Withdrawal Limit to 2BP;',
+            '11) Call setELRewardsVault() to connect deployed LidoExecutionLayerRewardsVault;',
+            '12) Set execution layer rewards withdrawal limit to 2BP;',
             '13) Resume staking with rate limit roughly equal to 150,000 ETH per day.'
         ),
         evm_script=encoded_call_script,
