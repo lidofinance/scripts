@@ -30,7 +30,7 @@ def autodeploy_contracts(accounts):
     oracle_tx_data = json.load(open("./utils/txs/tx-13-1-deploy-oracle-base.json"))[
         "data"
     ]
-    mev_vault_tx_data = json.load(open("./utils/txs/tx-26-deploy-mev-vault.json"))[
+    mev_vault_tx_data = json.load(open("./utils/txs/tx-26-deploy-execution-layer-rewards-vault.json"))[
         "data"
     ]
 

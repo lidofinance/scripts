@@ -28,7 +28,7 @@ def autodeploy_contracts(deployer):
     lido_tx_data = json.load(open('./utils/txs/tx-13-1-deploy-lido-base.json'))["data"]
     nos_tx_data = json.load(open('./utils/txs/tx-13-1-deploy-node-operators-registry-base.json'))["data"]
     oracle_tx_data = json.load(open('./utils/txs/tx-13-1-deploy-oracle-base.json'))["data"]
-    mev_vault_tx_data = json.load(open('./utils/txs/tx-26-deploy-mev-vault.json'))["data"]
+    mev_vault_tx_data = json.load(open('./utils/txs/tx-26-deploy-execution-layer-rewards-vault.json'))["data"]
 
     lido_tx = deployer.transfer(data=lido_tx_data)
     nos_tx = deployer.transfer(data=nos_tx_data)
