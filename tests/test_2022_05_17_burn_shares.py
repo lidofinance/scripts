@@ -6,7 +6,12 @@ import re
 import json
 import pytest
 from brownie import reverts, ZERO_ADDRESS, web3
-from scripts.vote_2022_05_17 import start_vote, update_lido_app, update_nos_app, update_oracle_app
+from scripts.vote_2022_05_17 import (
+    start_vote,
+    update_lido_app,
+    update_nos_app,
+    update_oracle_app,
+)
 
 
 @pytest.fixture(scope="module")
@@ -29,19 +34,23 @@ def autodeploy_contracts(accounts):
     oracle_tx_data = json.load(open("./utils/txs/tx-13-1-deploy-oracle-base.json"))[
         "data"
     ]
-    execution_layer_rewards_vault_tx_data = json.load(open("./utils/txs/tx-26-deploy-execution-layer-rewards-vault.json"))[
-        "data"
-    ]
+    execution_layer_rewards_vault_tx_data = json.load(
+        open("./utils/txs/tx-26-deploy-execution-layer-rewards-vault.json")
+    )["data"]
 
     lido_tx = deployer.transfer(data=lido_tx_data)
     nos_tx = deployer.transfer(data=nos_tx_data)
     oracle_tx = deployer.transfer(data=oracle_tx_data)
-    execution_layer_rewards_vault_tx = deployer.transfer(data=execution_layer_rewards_vault_tx_data)
+    execution_layer_rewards_vault_tx = deployer.transfer(
+        data=execution_layer_rewards_vault_tx_data
+    )
 
-    update_lido_app['new_address'] = lido_tx.contract_address
-    update_lido_app['execution_layer_rewards_vault_address'] = execution_layer_rewards_vault_tx.contract_address
-    update_nos_app['new_address'] = nos_tx.contract_address
-    update_oracle_app['new_address'] = oracle_tx.contract_address
+    update_lido_app["new_address"] = lido_tx.contract_address
+    update_lido_app[
+        "execution_layer_rewards_vault_address"
+    ] = execution_layer_rewards_vault_tx.contract_address
+    update_nos_app["new_address"] = nos_tx.contract_address
+    update_oracle_app["new_address"] = oracle_tx.contract_address
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -78,6 +87,7 @@ def test_burn_shares_by_voting(lido, stranger, dao_voting_as_eoa):
     # Test that voting can burnShares
     shares_before = lido.sharesOf(stranger)
     shares_to_burn = shares_before // 3
+    amount_to_burn = lido.getPooledEthByShares(shares_to_burn)
     tx = lido.burnShares(stranger, shares_to_burn, {"from": dao_voting_as_eoa})
 
     # Test that balance updated correctly
@@ -91,7 +101,7 @@ def test_burn_shares_by_voting(lido, stranger, dao_voting_as_eoa):
     assert_shares_burnt_log(
         log=tx.logs[0],
         account=stranger.address,
-        amount=balance_before - balance_after,
+        amount=amount_to_burn,
         shares_amount=shares_to_burn,
     )
 
