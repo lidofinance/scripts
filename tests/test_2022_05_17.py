@@ -134,7 +134,6 @@ def test_protocol_guild_vesting(
     assert protocol_guild_balance_before == 0
 
     vesting_module = interface.VestingModule(protocol_guild_address)
-
     vesting_streams_before = vesting_module.numVestingStreams()
 
     #
@@ -280,6 +279,10 @@ def test_protocol_rewards_hijack(
     ldo_token,
     vote_id_from_env
 ):
+
+    vesting_module = interface.VestingModule(protocol_guild_address)
+    vesting_streams_before = vesting_module.numVestingStreams()
+
     #
     # START VOTE
     #
@@ -289,15 +292,13 @@ def test_protocol_rewards_hijack(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24
     )
 
-    vesting_module = interface.VestingModule(protocol_guild_address)
-
     waitSecondsAndMine(60*60)
     create_timestamp_before = chain.time()
     vesting_module.createVestingStreams([ldo_token], {"from": unknown_person})
     create_timestamp_after = chain.time()
 
     vesting_streams_count = vesting_module.numVestingStreams()
-    assert vesting_streams_count == 4 + 1, "Incorrect Vesting nums"
+    assert vesting_streams_count == vesting_streams_before + 1, "Incorrect Vesting nums"
 
     ### Create vesting stream
     vestingId = vesting_streams_count - 1
@@ -361,16 +362,17 @@ def test_protocol_update_fee(
     ldo_token,
     vote_id_from_env,
 ):
+    vesting_module = interface.VestingModule(protocol_guild_address)
+    vesting_streams_before = vesting_module.numVestingStreams()
+
     #
     # START VOTE
     #
     vote_id = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]
 
-    tx: TransactionReceipt = helpers.execute_vote(
+    helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24
     )
-
-    vesting_module = interface.VestingModule(protocol_guild_address)
 
     waitSecondsAndMine(60*60)
     create_timestamp_before = chain.time()
@@ -378,7 +380,7 @@ def test_protocol_update_fee(
     create_timestamp_after = chain.time()
 
     vesting_streams_count = vesting_module.numVestingStreams()
-    assert vesting_streams_count == 4 + 1, "Incorrect Vesting nums"
+    assert vesting_streams_count == vesting_streams_before + 1, "Incorrect Vesting nums"
 
     ### Create vesting stream
     vestingId = vesting_streams_count - 1
@@ -441,6 +443,9 @@ def test_protocol_happy_path(
     ldo_token,
     vote_id_from_env,
 ):
+    vesting_module = interface.VestingModule(protocol_guild_address)
+    vesting_streams_before = vesting_module.numVestingStreams()
+
     #
     # START VOTE
     #
@@ -450,15 +455,13 @@ def test_protocol_happy_path(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24
     )
 
-    vesting_module = interface.VestingModule(protocol_guild_address)
-
     waitSecondsAndMine(60*60)
     create_timestamp_before = chain.time()
     vesting_module.createVestingStreams([ldo_token], {"from": unknown_person})
     create_timestamp_after = chain.time()
 
     vesting_streams_count = vesting_module.numVestingStreams()
-    assert vesting_streams_count == 4 + 1, "Incorrect Vesting nums"
+    assert vesting_streams_count == vesting_streams_before + 1, "Incorrect Vesting nums"
 
     ### Create vesting stream
     vestingId = vesting_streams_count - 1
