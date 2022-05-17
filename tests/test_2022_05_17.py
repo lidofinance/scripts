@@ -1,5 +1,8 @@
 """
 Tests for voting 17/05/2022.
+
+__NB!__ Use `brownie test tests/test_2022_05_17.py --network hardhat-fork -s` to run this test
+because ganache fails with `Invalid string length` error
 """
 import json
 import pytest
