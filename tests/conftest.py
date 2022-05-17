@@ -72,6 +72,9 @@ def finance(interface):
 def easy_track(interface):
     return interface.EasyTrack(lido_easytrack)
 
+@pytest.fixture(scope='module')
+def unknown_person(accounts):
+    return accounts.at('0x98ec059dc3adfbdd63429454aeb0c990fba4a128', force=True)
 
 class Helpers:
     @staticmethod

@@ -1,7 +1,6 @@
 """
-Tests for voting 10/05/2022.
+Tests for voting 17/05/2022.
 """
-import pytest
 from scripts.vote_2022_05_17 import start_vote
 from tx_tracing_helpers import *
 from event_validators.payout import Payout, validate_token_payout_event
@@ -9,6 +8,8 @@ from brownie import interface, chain, reverts
 
 ldo_amount: int = 2_000_000 * 10 ** 18
 
+steth_address = '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84'
+depositor_multisig_address = '0x5181d5D56Af4f823b96FE05f062D7a09761a5a53'
 lido_dao_token = '0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32'
 dao_agent_address = '0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c'  # from
 protocol_guild_address = '0xF29Ff96aaEa6C9A1fBa851f74737f3c069d4f1a9'  # to
@@ -25,6 +26,13 @@ protocol_guild_payout = Payout(
     from_addr=dao_agent_address,
     to_addr=protocol_guild_address,
     amount=ldo_amount
+)
+
+fund_payout = Payout(
+    token_addr=steth_address,
+    from_addr=dao_agent_address,
+    to_addr=depositor_multisig_address,
+    amount=235.8 * (10 ** 18)
 )
 
 # from https://protocol-guild.readthedocs.io/en/latest/9-membership.html#addresses-and-weights
@@ -261,21 +269,21 @@ def waitBlock(seconds):
     chain.sleep(seconds)
     chain.mine()
 
-@pytest.fixture(scope='module')
-def unknown_person(accounts):
-    return accounts.at('0x98ec059dc3adfbdd63429454aeb0c990fba4a128', force=True)
-
+def steth_balance_checker(lhs_value: int, rhs_value: int):
+    assert (lhs_value + 9) // 10 == (rhs_value + 9) // 10
 
 """
-Test LDO transfer from Lido Agent via Voting
+Test Voting
 """
 def test_transfer_ldo_tokens(
-    helpers, accounts, ldo_holder, dao_voting,
+    helpers, accounts, ldo_holder, dao_voting, lido,
     ldo_token,
     vote_id_from_env, bypass_events_decoding
 ):
     dao_agent_balance_before = ldo_token.balanceOf(dao_agent_address)
     protocol_guild_balance_before = ldo_token.balanceOf(protocol_guild_address)
+    depositor_multisig_balance_before = lido.balanceOf(depositor_multisig_address)
+    dao_balance_before = lido.balanceOf(dao_agent_address)
 
     #
     # START VOTE
@@ -288,12 +296,17 @@ def test_transfer_ldo_tokens(
 
     dao_agent_balance_after = ldo_token.balanceOf(dao_agent_address)
     protocol_guild_balance_after = ldo_token.balanceOf(protocol_guild_address)
+    depositor_multisig_balance_after = lido.balanceOf(depositor_multisig_address)
+    dao_balance_after = lido.balanceOf(dao_agent_address)
 
     assert protocol_guild_balance_after == protocol_guild_balance_before + ldo_amount, "Incorrect LDO amount"
     assert dao_agent_balance_after == dao_agent_balance_before - ldo_amount, "Incorrect LDO amount"
 
+    steth_balance_checker(depositor_multisig_balance_after - depositor_multisig_balance_before, fund_payout.amount)
+    steth_balance_checker(dao_balance_before - dao_balance_after, fund_payout.amount)
+
     # validate vote events
-    assert count_vote_items_by_events(tx, dao_voting) == 1, "Incorrect voting items count"
+    assert count_vote_items_by_events(tx, dao_voting) == 2, "Incorrect voting items count"
 
     display_voting_events(tx)
 
@@ -304,6 +317,9 @@ def test_transfer_ldo_tokens(
 
     # asserts on vote item 1
     validate_token_payout_event(evs[0], protocol_guild_payout)
+
+    # asserts on vote item 2
+    validate_token_payout_event(evs[1], fund_payout)
 
 
 """
