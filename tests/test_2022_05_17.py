@@ -23,7 +23,7 @@ def deployer(accounts):
     return accounts[2]
 
 
-@pytest.fixture(scope="module", autouse=True)tx-26-deploy-execution-layer-rewards-vault.json
+@pytest.fixture(scope="module", autouse=True)
 def deployed_contracts(deployer):
     if update_lido_app['new_address'] is None:
         lido_tx_data = json.load(open('./utils/txs/tx-13-1-deploy-lido-base.json'))["data"]
