@@ -9,7 +9,8 @@ from brownie import interface
 from scripts.vote_2022_05_17 import start_vote, update_lido_app, update_nos_app, update_oracle_app
 from tx_tracing_helpers import *
 from utils.config import contracts, lido_dao_steth_address, lido_dao_oracle, lido_dao_node_operators_registry
-from event_validators.permission import (Permission, validate_permission_create_event)
+from event_validators.permission import Permission, validate_permission_create_event
+from event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
 
 
 @pytest.fixture(scope="module")
@@ -45,6 +46,14 @@ def deployed_contracts(deployer):
                 'oracle': '',
                 'mev_vault': ''}  # Hardcode contract addresses here
 
+lido_app_id = '0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320'
+lido_app_version = (3, 0, 0)
+
+nos_app_id = '0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d'
+nos_app_version = (3, 0, 0)
+
+oracle_app_id = '0x8b47ba2a8454ec799cd91646e7ec47168e91fd139b23f017455f3e5898aaba93'
+oracle_app_version = (3, 0, 0)
 
 permission_mev_vault = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
                                   app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
@@ -120,6 +129,15 @@ def test_2022_05_17(
         return
 
     evs = group_voting_events(tx)
+
+    validate_push_to_repo_event(evs[0], lido_app_version)
+    validate_app_update_event(evs[1], lido_app_id, deployed_contracts['lido'])
+
+    validate_push_to_repo_event(evs[2], nos_app_version)
+    validate_app_update_event(evs[3], nos_app_id, deployed_contracts['nos'])
+
+    validate_push_to_repo_event(evs[4], oracle_app_version)
+    validate_app_update_event(evs[5], oracle_app_id, deployed_contracts['oracle'])
 
     validate_permission_create_event(evs[7], permission_mev_vault)
 
