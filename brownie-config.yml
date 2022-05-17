@@ -8,4 +8,4 @@ networks:
 autofetch_sources: true
 
 hypothesis:
-       max_examples: 10
+  max_examples: 10
