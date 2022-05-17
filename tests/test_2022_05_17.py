@@ -129,7 +129,7 @@ def test_2022_05_17(
     assert acl.hasPermission(*permission_stake_resume)
 
     assert lido.getELRewardsVault() == deployed_contracts['mev_vault']
-    assert lido.getELRewardsWithdrawalLimitPoints() == 2
+    assert lido.getELRewardsWithdrawalLimit() == 2
     assert not lido.isStakingPaused()
 
     # validate vote events
