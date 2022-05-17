@@ -47,7 +47,7 @@ update_lido_app = {
     'content_uri': '0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053',
     'id': '0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320',
     'version': (3, 0, 0),
-    'mevtxfee_vault_address': None,  # TBA
+    'execution_layer_rewards_vault_address': None,  # TBA
     'mevtxfee_withdrawal_limit': 2,
     'max_staking_limit': 150_000 * 10**18,
     'staking_limit_increase': 150_000 * 10**18 * 13.5 // (24 * 60 * 60),  # 13.5s per block as a rough average
@@ -69,7 +69,7 @@ update_oracle_app = {
 
 if network_name() in ("goerli", "goerli-fork"):
     update_lido_app['new_address'] = '0xb496DF40497Dd69c095470956b6A04cEF68fd50D'
-    update_lido_app['mevtxfee_vault_address'] = '0x5bA8C245E8aED7b676F2c3B74aa0a3204cB53196'
+    update_lido_app['execution_layer_rewards_vault_address'] = '0x5bA8C245E8aED7b676F2c3B74aa0a3204cB53196'
     update_lido_app['content_uri'] = '0x697066733a516d626d5057357239484d64795541524e4a6a6a45374d4e714255477258617368776f577671525a686331743562'
     update_lido_app['id'] = '0x79ac01111b462384f1b7fba84a17b9ec1f5d2fddcfcb99487d71b443832556ea'
     update_lido_app['version'] = (8, 0, 0)
@@ -180,7 +180,7 @@ def start_vote(
         encode_permission_create(entity=voting, target_app=lido, permission_name='STAKING_RESUME_ROLE', manager=voting),
 
         # 11. Call Lido's setMevTxFeeVault() to connect deployed MevTxFeeVault
-        encode_set_mevtxfee_vault(update_lido_app['mevtxfee_vault_address']),
+        encode_set_mevtxfee_vault(update_lido_app['execution_layer_rewards_vault_address']),
         # 12. Set MevTxFee Withdrawal Limit to 2BP
         encode_set_mevtxfee_withdrawal_limit(update_lido_app['mevtxfee_withdrawal_limit']),
         # 13. Resume staking with rate limit roughly equal to 150,000 ETH per day
