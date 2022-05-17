@@ -7,7 +7,7 @@ import eth_abi
 from brownie import interface, reverts, web3
 
 from utils.config import contracts
-from scripts.vote_2022_05_17 import start_vote, inject_contracts
+from scripts.vote_2022_05_17 import start_vote, update_lido_app, update_nos_app, update_oracle_app
 
 LIDO_MEV_TX_FEE_VAULT = "0x"
 TOTAL_BASIS_POINTS = 10000
@@ -36,12 +36,10 @@ def autodeploy_contracts(accounts):
     global LIDO_MEV_TX_FEE_VAULT
     LIDO_MEV_TX_FEE_VAULT = mev_vault_tx.contract_address
 
-    inject_contracts(
-        lido_tx.contract_address,
-        nos_tx.contract_address,
-        oracle_tx.contract_address,
-        mev_vault_tx.contract_address,
-    )
+    update_lido_app['new_address'] = lido_tx.contract_address
+    update_lido_app['mevtxfee_vault_address'] = mev_vault_tx.contract_address
+    update_nos_app['new_address'] = nos_tx.contract_address
+    update_oracle_app['new_address'] = oracle_tx.contract_address
 
 
 @pytest.fixture(scope="module")

@@ -6,7 +6,7 @@ import json
 
 from tx_tracing_helpers import *
 from brownie import reverts, ZERO_ADDRESS, chain
-from scripts.vote_2022_05_17 import start_vote, inject_contracts
+from scripts.vote_2022_05_17 import start_vote, update_lido_app, update_nos_app, update_oracle_app
 
 ether = 10 ** 18
 
@@ -40,12 +40,10 @@ def autodeploy_contracts(accounts):
     oracle_tx = deployer.transfer(data=oracle_tx_data)
     mev_vault_tx = deployer.transfer(data=mev_vault_tx_data)
 
-    inject_contracts(
-        lido_tx.contract_address,
-        nos_tx.contract_address,
-        oracle_tx.contract_address,
-        mev_vault_tx.contract_address,
-    )
+    update_lido_app['new_address'] = lido_tx.contract_address
+    update_lido_app['mevtxfee_vault_address'] = mev_vault_tx.contract_address
+    update_nos_app['new_address'] = nos_tx.contract_address
+    update_oracle_app['new_address'] = oracle_tx.contract_address
 
 
 @pytest.fixture(scope="module", autouse=True)
