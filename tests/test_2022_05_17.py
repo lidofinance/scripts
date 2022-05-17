@@ -352,7 +352,7 @@ def test_protocol_guild_vesting_params():
 - Test for 2 claim in a row for one holder
 - Test for 1 wei on contract balance after distribution (protocol feature)
 """
-def test_protocol_vesting(
+def test_protocol_guild_vesting(
     helpers, accounts, ldo_holder, dao_voting, unknown_person,
     ldo_token,
     vote_id_from_env
@@ -360,12 +360,14 @@ def test_protocol_vesting(
     protocol_guild_balance_before = ldo_token.balanceOf(protocol_guild_address)
     assert protocol_guild_balance_before == 0
 
+    vesting_streams_before = vesting_module.numVestingStreams()
+
     #
     # START VOTE
     #
     vote_id = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]
 
-    tx: TransactionReceipt = helpers.execute_vote(
+    helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24
     )
 
@@ -377,15 +379,15 @@ def test_protocol_vesting(
     create_timestamp_after = chain.time()
 
     vesting_streams_count = vesting_module.numVestingStreams()
-    assert vesting_streams_count == 4 + 1, "Incorrect Vesting nums"
+    assert vesting_streams_count == vesting_streams_before + 1, "Incorrect Vesting nums"
 
     ### Create vesting stream
     vestingId = vesting_streams_count - 1
     stream = vesting_module.vestingStream(vestingId)
 
     assert stream[0] == ldo_token, "Incorrect token"
-    assert stream[1] >=create_timestamp_before, "Incorrect timestamp"
-    assert stream[1] <=create_timestamp_after, "Incorrect timestamp"
+    assert stream[1] >= create_timestamp_before, "Incorrect timestamp"
+    assert stream[1] <= create_timestamp_after, "Incorrect timestamp"
     assert stream[2] == ldo_amount, "Incorrect total amount of tokens for vesting"
     assert stream[3] == 0, "Incorrect released amount of tokens"
 
@@ -406,8 +408,8 @@ def test_protocol_vesting(
     stream = vesting_module.vestingStream(vestingId)
     released_tokens = stream[3]
 
-    assert released_tokens >= min_expected_released_tokens, "Incorrect released tokens"
-    assert released_tokens <= max_expected_released_tokens, "Incorrect released tokens"
+    assert released_tokens >= min_expected_released_tokens, "Released less tokens than expected"
+    assert released_tokens <= max_expected_released_tokens, "Released more tokens than expected"
 
     protocol_beneficiary_balance_after = ldo_token.balanceOf(protocol_beneficiary)
     assert released_tokens == protocol_beneficiary_balance_after, "Incorrect token amount of beneficiary"
@@ -473,8 +475,8 @@ def test_protocol_vesting(
         holder_balance_after = ldo_token.balanceOf(guild_recipients[i])
 
         expected_balance = int(released_tokens * guild_percents[i] / 10000 / 100)
-        assert holder_balance_after >= expected_balance-10, "Invalid holder balance "
-        assert holder_balance_after < expected_balance+10, "Invalid holder balance "
+        assert holder_balance_after >= expected_balance-10, "Holder balance delta lower than expected"
+        assert holder_balance_after < expected_balance+10, "Holder balance delta higher than expected"
 
 
     ## check the 2 claims in a row
@@ -486,8 +488,8 @@ def test_protocol_vesting(
 
     holder_balance_after = ldo_token.balanceOf(guild_recipients[holder_index])
     expected_balance = int(released_tokens * guild_percents[holder_index] / 10000 / 100)
-    assert holder_balance_after >= holder_balance_before + expected_balance-10, "Invalid holder balance"
-    assert holder_balance_after < holder_balance_before + expected_balance+10, "Invalid holder balance"
+    assert holder_balance_after >= holder_balance_before + expected_balance-10, "Holder balance delta lower than expected"
+    assert holder_balance_after < holder_balance_before + expected_balance+10, "Holder balance delta higher than expected"
 
     ##
     ## from the code https://etherscan.io/address/0x2ed6c4b5da6378c7897ac67ba9e43102feb694ee#code
@@ -510,7 +512,7 @@ def test_protocol_rewards_hijack(
     #
     vote_id = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]
 
-    tx: TransactionReceipt = helpers.execute_vote(
+    helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24
     )
 
@@ -529,8 +531,8 @@ def test_protocol_rewards_hijack(
     stream = vesting_module.vestingStream(vestingId)
 
     assert stream[0] == ldo_token, "Incorrect token"
-    assert stream[1] >=create_timestamp_before, "Incorrect timestamp"
-    assert stream[1] <=create_timestamp_after, "Incorrect timestamp"
+    assert stream[1] >= create_timestamp_before, "Incorrect timestamp"
+    assert stream[1] <= create_timestamp_after, "Incorrect timestamp"
     assert stream[2] == ldo_amount, "Incorrect total amount of tokens for vesting"
     assert stream[3] == 0, "Incorrect released amount of tokens"
 
@@ -624,7 +626,7 @@ def test_protocol_update_fee(
 
     #  MAX_DISTRIBUTOR_FEE = 1e5;
     distributor_fee = 100_000
-    distributor_fee_incorrect = 500_000
+    distributor_fee_incorrect = 100_000 + 1
 
     #change split
     split_main_module = interface.SplitMain(split_main_address)
@@ -671,7 +673,7 @@ def test_protocol_happy_path(
     #
     vote_id = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]
 
-    tx: TransactionReceipt = helpers.execute_vote(
+    helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24
     )
 
@@ -690,8 +692,8 @@ def test_protocol_happy_path(
     stream = vesting_module.vestingStream(vestingId)
 
     assert stream[0] == ldo_token, "Incorrect token"
-    assert stream[1] >=create_timestamp_before, "Incorrect timestamp"
-    assert stream[1] <=create_timestamp_after, "Incorrect timestamp"
+    assert stream[1] >= create_timestamp_before, "Incorrect timestamp"
+    assert stream[1] <= create_timestamp_after, "Incorrect timestamp"
     assert stream[2] == ldo_amount, "Incorrect total amount of tokens for vesting"
     assert stream[3] == 0, "Incorrect released amount of tokens"
 
@@ -700,6 +702,8 @@ def test_protocol_happy_path(
 
     stream_after_released = vesting_module.vestingStream(vestingId)
     released_tokens = stream_after_released[3]
+
+    assert released_tokens == 2_000_000 * 10**18, "Released incorrect amount in stream"
 
     beneficiary_balance_after_release = ldo_token.balanceOf(protocol_beneficiary)
     assert beneficiary_balance_after_release == 2_000_000 * 10**18
