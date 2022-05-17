@@ -14,6 +14,8 @@ from tx_tracing_helpers import *
 from utils.config import contracts, lido_dao_steth_address, lido_dao_oracle, lido_dao_node_operators_registry
 from event_validators.permission import Permission, validate_permission_create_event
 from event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
+from event_validators.lido import (validate_set_version_event, validate_set_mev_vault_withdrawal_limit_event,
+                                   validate_set_mev_vault_event, validate_staking_resumed_event)
 
 
 @pytest.fixture(scope="module")
@@ -49,6 +51,7 @@ def deployed_contracts(deployer):
                 'oracle': '',
                 'mev_vault': ''}  # Hardcode contract addresses here
 
+
 lido_app_id = '0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320'
 lido_app_version = (3, 0, 0)
 
@@ -57,6 +60,8 @@ nos_app_version = (3, 0, 0)
 
 oracle_app_id = '0x8b47ba2a8454ec799cd91646e7ec47168e91fd139b23f017455f3e5898aaba93'
 oracle_app_version = (3, 0, 0)
+
+oracle_contract_version = 3
 
 permission_mev_vault = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
                                   app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
@@ -67,6 +72,10 @@ permission_mev_withdrawal_limit = Permission(entity='0x2e59A20f205bB85a89C53f193
 permission_stake_resume = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
                                      app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
                                      role='0xb7fb61d30d1ce0378ffa8842e9f240cfd41ff78cd4eec7c5fe18311f7db8a242')
+
+mev_limit_points = 2
+max_staking_limit = 150_000 * 10**18
+staking_limit_increase = 23.4375 * 10**18
 
 
 def test_2022_05_17(
@@ -142,11 +151,19 @@ def test_2022_05_17(
     validate_push_to_repo_event(evs[4], oracle_app_version)
     validate_app_update_event(evs[5], oracle_app_id, deployed_contracts['oracle'])
 
+    validate_set_version_event(evs[6], oracle_contract_version)
+
     validate_permission_create_event(evs[7], permission_mev_vault)
 
     validate_permission_create_event(evs[8], permission_mev_withdrawal_limit)
 
     validate_permission_create_event(evs[9], permission_stake_resume)
+
+    validate_set_mev_vault_event(evs[10], deployed_contracts['mev_vault'])
+
+    validate_set_mev_vault_withdrawal_limit_event(evs[11], mev_limit_points)
+
+    validate_staking_resumed_event(evs[12], max_staking_limit, staking_limit_increase)
 
 
 def assert_app_update(new_app, old_app, contract_address):
