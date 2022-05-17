@@ -5,7 +5,6 @@ import pytest
 import json
 
 from brownie import reverts
-from tx_tracing_helpers import *
 from scripts.vote_2022_05_17 import start_vote, inject_contracts
 
 
@@ -25,8 +24,7 @@ def deployer(accounts):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def autoexecute_vote(deployer, vote_id_from_env, ldo_holder, helpers, accounts, dao_voting):
-
+def autodeploy_contracts(deployer):
     lido_tx_data = json.load(open('./utils/txs/tx-13-1-deploy-lido-base.json'))["data"]
     nos_tx_data = json.load(open('./utils/txs/tx-13-1-deploy-node-operators-registry-base.json'))["data"]
     oracle_tx_data = json.load(open('./utils/txs/tx-13-1-deploy-oracle-base.json'))["data"]
@@ -40,17 +38,18 @@ def autoexecute_vote(deployer, vote_id_from_env, ldo_holder, helpers, accounts, 
     inject_contracts(lido_tx.contract_address, nos_tx.contract_address, oracle_tx.contract_address,
                      mev_vault_tx.contract_address)
 
+
+@pytest.fixture(scope="module", autouse=True)
+def autoexecute_vote(vote_id_from_env, ldo_holder, helpers, accounts, dao_voting):
     vote_id = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]
 
-    tx: TransactionReceipt = helpers.execute_vote(
+    helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24
     )
 
-    pass
-
 
 def test_transfer_shares(helpers, lido, stranger, another_stranger):
-    stranger.transfer(lido, 10*10**18)
+    stranger.transfer(lido, 10 * 10**18)
 
     shares_to_transfer = 10**18
     stranger_shares_before = lido.sharesOf(stranger)
