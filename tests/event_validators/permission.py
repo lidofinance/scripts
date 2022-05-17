@@ -12,6 +12,7 @@ class Permission(NamedTuple):
     app: str
     role: str
 
+
 def validate_permission_create_event(event: EventDict, p: Permission) -> None:
     _events_chain = ['LogScriptCall', 'SetPermission', 'ChangePermissionManager']
 
@@ -29,6 +30,7 @@ def validate_permission_create_event(event: EventDict, p: Permission) -> None:
     assert event['ChangePermissionManager']['app'] == p.app, "Wrong app address"
     assert event['ChangePermissionManager']['role'] == p.role, "Wrong role"
     assert event['ChangePermissionManager']['manager'] == p.entity, "Wring entity"
+
 
 def validate_permission_revoke_event(event: EventDict, p: Permission) -> None:
     _events_chain = ['LogScriptCall', 'SetPermission']

@@ -29,9 +29,11 @@ def ldo_holder(accounts):
 def dao_voting(interface):
     return interface.Voting(lido_dao_voting_address)
 
+
 @pytest.fixture(scope='module')
 def dao_agent(interface):
     return interface.Agent(lido_dao_agent_address)
+
 
 @pytest.fixture(scope='module')
 def node_operators_registry(interface):
@@ -81,16 +83,16 @@ def easy_track(interface):
 class Helpers:
     @staticmethod
     def filter_events_from(addr, events):
-      return list(filter(lambda evt: evt.address == addr, events))
+        return list(filter(lambda evt: evt.address == addr, events))
 
     @staticmethod
     def assert_single_event_named(evt_name, tx, evt_keys_dict):
-      receiver_events = Helpers.filter_events_from(tx.receiver, tx.events[evt_name])
-      assert len(receiver_events) == 1
-      assert dict(receiver_events[0]) == evt_keys_dict
+        receiver_events = Helpers.filter_events_from(tx.receiver, tx.events[evt_name])
+        assert len(receiver_events) == 1
+        assert dict(receiver_events[0]) == evt_keys_dict
 
     @staticmethod
-    def execute_vote(accounts, vote_id, dao_voting, topup='0.1 ether', skip_time = 3 * 60 * 60 * 24):
+    def execute_vote(accounts, vote_id, dao_voting, topup='0.1 ether', skip_time=3 * 60 * 60 * 24):
         if dao_voting.getVote(vote_id)[0]:
             for holder_addr in ldo_vote_executors_for_tests:
                 print('voting from acct:', holder_addr)

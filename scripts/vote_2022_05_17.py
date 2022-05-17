@@ -43,26 +43,26 @@ from utils.permissions import encode_permission_create, encode_permission_grant
 from utils.brownie_prelude import *
 
 update_lido_app = {
-    'new_address': '0xC7B5aF82B05Eb3b64F12241B04B2cF14469E39F7', # TBA
+    'new_address': None,  # TBA
     'content_uri': '0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053',
     'id': '0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320',
     'version': (3, 0, 0),
-    'mevtxfee_vault_address': '0xC7B5aF82B05Eb3b64F12241B04B2cF14469E39F7',  # TBA
+    'mevtxfee_vault_address': None,  # TBA
     'mevtxfee_withdrawal_limit': 2,
     'max_staking_limit': 150_000 * 10**18,
     'staking_limit_increase': 150_000 * 10**18 * 13.5 // (24 * 60 * 60),  # 13.5s per block as a rough average
 }
 
 update_nos_app = {
-    'new_address': '0xec3567ae258639a0FF5A02F7eAF4E4aE4416C5fe', # TBA
+    'new_address': None,  # TBA
     'content_uri': '0x697066733a516d61375058486d456a346a7332676a4d3976744850747176754b3832695335455950694a6d7a4b4c7a55353847',
     'id': '0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d',
     'version': (3, 0, 0),
 }
 
 update_oracle_app = {
-    'new_address': '0xADa6E33aa65590934870bFD204Fe8efe9c6Aa4bC', # TBA
-    'content_uri': '0x697066733a516d514d64696979653134765966724a7753594250646e68656a446f62417877584b72524e45663438735370444d',
+    'new_address': None,  # TBA
+    'content_uri': '0x697066733a516d554d506669454b71354d786d387932475951504c756a47614a69577a31747665703557374564414767435238',
     'id': '0x8b47ba2a8454ec799cd91646e7ec47168e91fd139b23f017455f3e5898aaba93',
     'version': (3, 0, 0),
 }
@@ -121,13 +121,6 @@ def encode_permission_create_or_grant(permission_name: str) -> Tuple[str, str]:
         return encode_permission_grant(lido, permission_name, voting)
     else:
         return encode_permission_create(voting, lido, permission_name, voting)
-
-
-def inject_contracts(lido, nos, oracle, mev_vault):
-    update_lido_app['new_address'] = lido
-    update_lido_app['mevtxfee_vault_address'] = mev_vault
-    update_nos_app['new_address'] = nos
-    update_oracle_app['new_address'] = oracle
 
 
 def start_vote(
