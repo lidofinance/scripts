@@ -133,6 +133,8 @@ def test_protocol_guild_vesting(
     protocol_guild_balance_before = ldo_token.balanceOf(protocol_guild_address)
     assert protocol_guild_balance_before == 0
 
+    vesting_module = interface.VestingModule(protocol_guild_address)
+
     vesting_streams_before = vesting_module.numVestingStreams()
 
     #
@@ -143,8 +145,6 @@ def test_protocol_guild_vesting(
     helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24
     )
-
-    vesting_module = interface.VestingModule(protocol_guild_address)
 
     waitSecondsAndMine(60*60)
     create_timestamp_before = chain.time()
