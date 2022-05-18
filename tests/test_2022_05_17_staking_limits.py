@@ -69,11 +69,6 @@ def autoexecute_vote(vote_id_from_env, ldo_holder, helpers, accounts, dao_voting
     )
 
 
-def test_is_initialized(lido):
-    # Should be running from the start
-    assert lido.hasInitialized() == True
-
-
 def test_is_staking_not_paused(lido):
     # Should be running from the start
     assert lido.isStakingPaused() == False
@@ -105,31 +100,41 @@ def test_resume_staking_access(lido, operator, stranger):
     lido.resumeStaking(ether, ether * 0.01, {"from": operator})
 
 
-def test_staking_limit_getter(lido, operator):
-    # Should return the same value as it is set because no block has been produced
+def test_resume_staking_event(lido, operator):
+    # Should emit event with correct params
     tx = lido.resumeStaking(ether, ether * 0.01, {"from": operator})
 
     assert len(tx.logs) == 1
-    assert lido.getCurrentStakeLimit() == ether
     assert_staking_is_resumed(
         tx.logs[0], ether, 10 ** 16
     )  # ether * 0.01 converts value to 1e+16
 
 
+def test_staking_limit_getter(lido, operator):
+    # Should return the same value as it is set because no block has been produced
+    assert lido.getCurrentStakeLimit() != ether
+
+    lido.resumeStaking(ether, ether * 0.01, {"from": operator})
+
+    assert lido.getCurrentStakeLimit() == ether
+
+
 def test_staking_limit_initial_not_zero(lido):
-    assert lido.getCurrentStakeLimit() > 0
+    # By default it's set to 150000 ETH per day
+    assert lido.getCurrentStakeLimit() == 150000 * 10 ** 18
 
 
 @pytest.mark.parametrize(
     "limit_max,limit_per_block",
     [(10 ** 6, 10 ** 4), (10 ** 12, 10 ** 10), (10 ** 18, 10 ** 16)],
 )
-def test_staking_limit_updates_correctly(
+def test_staking_limit_updates_per_block_correctly(
     lido, operator, stranger, limit_max, limit_per_block
 ):
     # Should update staking limits after submit
     lido.resumeStaking(limit_max, limit_per_block, {"from": operator})
     staking_limit_before = lido.getCurrentStakeLimit()
+    assert limit_max == staking_limit_before
     lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": limit_per_block})
 
     assert staking_limit_before - limit_per_block == lido.getCurrentStakeLimit()
@@ -139,17 +144,16 @@ def test_staking_limit_updates_correctly(
     assert staking_limit_before == lido.getCurrentStakeLimit()
 
 
-def test_staking_limit_is_zero(lido, operator, stranger):
+def test_staking_limit_is_zero(lido, operator):
     # Should be unlimited if 0 is set
-    lido.resumeStaking(1, 1, {"from": operator})
-    with reverts("STAKE_LIMIT"):
-        lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether * 10})
+    max_uint256 = convert.to_uint(
+        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    )
+    assert lido.getCurrentStakeLimit() != max_uint256
 
     tx = lido.resumeStaking(0, 0, {"from": operator})
     assert_staking_is_resumed(tx.logs[0], 0, 0)
-    assert lido.getCurrentStakeLimit() != 0
-
-    lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether * 10})
+    assert lido.getCurrentStakeLimit() == max_uint256
 
 
 def test_staking_limit_exceed(lido, operator, stranger):
