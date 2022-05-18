@@ -140,15 +140,16 @@ def test_staking_limit_updates_correctly(
 
 
 def test_staking_limit_is_zero(lido, operator, stranger):
-    # Should use previous limit if zero is set
+    # Should be unlimited if 0 is set
+    lido.resumeStaking(1, 1, {"from": operator})
+    with reverts("STAKE_LIMIT"):
+        lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether * 10})
 
     tx = lido.resumeStaking(0, 0, {"from": operator})
-    chain.mine(1)
     assert_staking_is_resumed(tx.logs[0], 0, 0)
-    assert lido.getCurrentStakeLimit() == 0
+    assert lido.getCurrentStakeLimit() != 0
 
-    with reverts("STAKE_LIMIT"):
-        lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether * 11})
+    lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether * 10})
 
 
 def test_staking_limit_exceed(lido, operator, stranger):
