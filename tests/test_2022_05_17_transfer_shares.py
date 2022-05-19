@@ -189,44 +189,44 @@ def test_submit(lido, stranger):
 
 def test_push_beacon(node_operators_registry, lido, oracle):
     current_ops_count = node_operators_registry.getActiveNodeOperatorsCount()
-    total_steth = lido.getTotalPooledEther()
-    shares_per_validator = 10**18
-    beacon_stats = lido.getBeaconStat()
+    beacon_stats = lido.getBeaconStat().dict()
 
-    report_amount = total_steth + lido.getSharesByPooledEth(beacon_stats[0] * shares_per_validator * 2 * 10)
-
-    tx = lido.handleOracleReport(beacon_stats[0], report_amount, {"from": oracle})
-    rewards_per_validator = int(tx.logs[1]["data"], 16)//beacon_stats[0] // 2
-    print(rewards_per_validator)
-    insurance_address = lido.getInsuranceFund()
+    rewards_amount = 500 * 10**18
+    report_amount = beacon_stats["beaconBalance"] + rewards_amount
     
-    assert_transfer(
-        tx.logs[0], 
-        ZERO_ADDRESS,
-        insurance_address,
-        shares_per_validator
-    ) 
+    tx = lido.handleOracleReport(beacon_stats["beaconValidators"], report_amount, {"from": oracle})
+    shares2mint = lido.getSharesByPooledEth(rewards_amount // 10)
+    
+    insurance_address = lido.getInsuranceFund()
+    insurance_reward_shares = shares2mint // 2
+    
     assert_transfer_shares(
         tx.logs[1], 
         ZERO_ADDRESS,
         insurance_address,
-        shares_per_validator // 20
+        insurance_reward_shares
     )
-
-    print(hex(report_amount // 20))
+    assert_transfer(
+        tx.logs[0], 
+        ZERO_ADDRESS,
+        insurance_address,
+        lido.getPooledEthByShares(insurance_reward_shares)
+    ) 
+    
+    shares_per_validator = shares2mint // 2 // beacon_stats["depositedValidators"]
     for no_index in range(current_ops_count):
         no = node_operators_registry.getNodeOperator(no_index, True)
         assert_transfer(
             tx.logs[2+no_index*2], 
             ZERO_ADDRESS,
             no[2],
-            lido.getPooledEthByShares(rewards_per_validator * beacon_stats[0])
+            lido.getPooledEthByShares(shares_per_validator * no[6])
         ) 
         assert_transfer_shares(
             tx.logs[2+no_index*2 + 1], 
             ZERO_ADDRESS,
             no[2],
-            rewards_per_validator * beacon_stats[0]
+            shares_per_validator * no[6]
         )
 
 
@@ -243,12 +243,11 @@ def assert_transfer_shares(log, sender, recipient, amount):
     assert log["topics"][0] == web3.keccak(text="TransferShares(address,address,uint256)")
     assert log["topics"][1] == eth_abi.encode_abi(["address"], [sender])
     assert log["topics"][2] == eth_abi.encode_abi(["address"], [recipient])
-    # assert log["data"] == "0x"+eth_abi.encode_abi(["uint256"], [amount]).hex()
+    assert log["data"] == "0x"+eth_abi.encode_abi(["uint256"], [amount]).hex()
 
 
 def assert_transfer(log, sender, recipient, amount):
     assert log["topics"][0] == web3.keccak(text="Transfer(address,address,uint256)")
     assert log["topics"][1] == eth_abi.encode_abi(["address"], [sender])
     assert log["topics"][2] == eth_abi.encode_abi(["address"], [recipient])
-    # assert log["data"] == "0x"+eth_abi.encode_abi(["uint256"], [amount]).hex()
-
+    assert log["data"] == "0x"+eth_abi.encode_abi(["uint256"], [amount]).hex()
