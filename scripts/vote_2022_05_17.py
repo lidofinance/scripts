@@ -117,16 +117,6 @@ def encode_set_staking_limit(max_limit: int, limit_increase_per_block: int) -> T
     return lido.address, lido.setStakingLimit.encode_input(max_limit, limit_increase_per_block)
 
 
-def encode_permission_create_or_grant(permission_name: str) -> Tuple[str, str]:
-    lido: interface.Lido = contracts.lido
-    voting: interface.Voting = contracts.voting
-
-    if network_name() in ("goerli", "goerli-fork"):
-        return encode_permission_grant(lido, permission_name, voting)
-    else:
-        return encode_permission_create(voting, lido, permission_name, voting)
-
-
 def start_vote(
     tx_params: Dict[str, str],
     silent: bool = False,
@@ -174,7 +164,8 @@ def start_vote(
         encode_finalize_oracle_upgrade(),
         # 8. Create permission for SET_EL_REWARDS_VAULT_ROLE of Lido app
         #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
-        encode_permission_create_or_grant(permission_name='SET_EL_REWARDS_VAULT_ROLE'),
+        encode_permission_create(entity=voting, target_app=lido, permission_name='SET_EL_REWARDS_VAULT_ROLE',
+                                 manager=voting),
         # 9. Create permission for STAKING_CONTROL_ROLE of Lido app
         #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
         encode_permission_create(entity=voting, target_app=lido, permission_name='STAKING_CONTROL_ROLE',
