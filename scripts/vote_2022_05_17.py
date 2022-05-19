@@ -66,18 +66,18 @@ update_oracle_app = {
 }
 
 if network_name() in ("goerli", "goerli-fork"):
-    update_lido_app['new_address'] = '0xb496DF40497Dd69c095470956b6A04cEF68fd50D'
-    update_lido_app['execution_layer_rewards_vault_address'] = '0x5bA8C245E8aED7b676F2c3B74aa0a3204cB53196'
+    update_lido_app['new_address'] = '0xb16876f11324Fbf02b9B294FBE307B3DB0C02DBB'
+    update_lido_app['execution_layer_rewards_vault_address'] = '0x94750381bE1AbA0504C666ee1DB118F68f0780D4'
     update_lido_app['content_uri'] = '0x697066733a516d626d5057357239484d64795541524e4a6a6a45374d4e714255477258617368776f577671525a686331743562'
     update_lido_app['id'] = '0x79ac01111b462384f1b7fba84a17b9ec1f5d2fddcfcb99487d71b443832556ea'
     update_lido_app['version'] = (8, 0, 0)
 
-    update_oracle_app['new_address'] = '0xfD7e9d4Db932c576bFd8A596894698bDDdA29175'
+    update_oracle_app['new_address'] = '0x7FDef26e3bBB8206135071A52e44f8460A243De5'
     update_oracle_app['content_uri'] = '0x697066733a516d66414348396f5348465767563831446838525356636761564264686b5a7548685a5932695a76357379424a4b'
     update_oracle_app['id'] = '0xb2977cfc13b000b6807b9ae3cf4d938f4cc8ba98e1d68ad911c58924d6aa4f11'
     update_oracle_app['version'] = (4, 0, 0)
 
-    update_nos_app['new_address'] = '0x779a5964BAC356142622Df28Ee1Ef99F27A1CD2d'
+    update_nos_app['new_address'] = '0xbb001978bD0d5b36D95c54025ac6a5822b2b1Aec'
     update_nos_app['content_uri'] = '0x697066733a516d5145784a6b6f7967377857584a6a4c615943373555416d7347593153545934315954473377454b3771386464'
     update_nos_app['id'] = '0x57384c8fcaf2c1c2144974769a6ea4e5cf69090d47f5327f8fc93827f8c0001a'
     update_nos_app['version'] = (6, 0, 0)
