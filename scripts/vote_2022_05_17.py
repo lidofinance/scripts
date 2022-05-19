@@ -12,11 +12,12 @@ Voting 17/05/2022.
     assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
 9. Create permission for SET_MEV_TX_FEE_WITHDRAWAL_LIMIT_ROLE of Lido app
     assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
-10. Create permission for STAKING_RESUME_ROLE of Lido app
+10. Create permission for STAKING_CONTROL_ROLE of Lido app
     assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
 11. Call Lido's setELRewardsVault() to connect deployed LidoExecutionLayerRewardsVault #? need address
 12. Call Lido's setELRewardsWithdrawalLimit() to set execution layer rewards withdrawal limit to 2BP
 13. Resume staking with rate limit roughly equal to 150,000 ETH per day
+14. Set staking limit rate to 150,000 ETH per day.
 
 """
 
@@ -107,10 +108,16 @@ def encode_set_elrewards_withdrawal_limit(limit_bp: int) -> Tuple[str, str]:
     return lido.address, lido.setELRewardsWithdrawalLimit.encode_input(limit_bp)
 
 
-def encode_resume_staking(max_limit: int, limit_increase_per_block: int) -> Tuple[str, str]:
+def encode_resume_staking() -> Tuple[str, str]:
     lido: interface.Lido = contracts.lido
 
-    return lido.address, lido.resumeStaking.encode_input(max_limit, limit_increase_per_block)
+    return lido.address, lido.resumeStaking.encode_input()
+
+
+def encode_set_staking_limit(max_limit: int, limit_increase_per_block: int) -> Tuple[str, str]:
+    lido: interface.Lido = contracts.lido
+
+    return lido.address, lido.setStakingLimit.encode_input(max_limit, limit_increase_per_block)
 
 
 def encode_permission_create_or_grant(permission_name: str) -> Tuple[str, str]:
@@ -175,16 +182,18 @@ def start_vote(
         #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
         encode_permission_create(entity=voting, target_app=lido, permission_name='SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE',
                                  manager=voting),
-        # 10. Create permission for STAKING_RESUME_ROLE of Lido app
+        # 10. Create permission for STAKING_CONTROL_ROLE of Lido app
         #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
-        encode_permission_create(entity=voting, target_app=lido, permission_name='STAKING_RESUME_ROLE', manager=voting),
+        encode_permission_create(entity=voting, target_app=lido, permission_name='STAKING_CONTROL_ROLE', manager=voting),
 
         # 11. Call Lido's setELRewardsVault() to connect deployed LidoExecutionLayerRewardsVault
         encode_set_elrewards_vault(update_lido_app['execution_layer_rewards_vault_address']),
         # 12. Call Lido's setELRewardsWithdrawalLimit() to set execution layer rewards withdrawal limit to 2BP
         encode_set_elrewards_withdrawal_limit(update_lido_app['mevtxfee_withdrawal_limit']),
-        # 13. Resume staking with rate limit roughly equal to 150,000 ETH per day
-        encode_resume_staking(update_lido_app['max_staking_limit'], update_lido_app['staking_limit_increase'])
+        # 13. Resume staking
+        encode_resume_staking(),
+        # 14 Set staking limit rate to 150,000 ETH per day.
+        encode_set_staking_limit(update_lido_app['max_staking_limit'], update_lido_app['staking_limit_increase'])
     ])
 
     return confirm_vote_script(encoded_call_script, silent) and create_vote(
@@ -199,10 +208,11 @@ def start_vote(
             '7) Finalize Oracle upgrade to version 3;',
             '8) Create permission for SET_EL_REWARDS_VAULT_ROLE assigning it to Voting;',
             '9) Create permission for SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE assigning it to Voting;',
-            '10) Create permission for STAKING_RESUME_ROLE of Lido app assigning it to Voting;',
+            '10) Create permission for STAKING_CONTROL_ROLE of Lido app assigning it to Voting;',
             '11) Call setELRewardsVault() to connect deployed LidoExecutionLayerRewardsVault;',
             '12) Set execution layer rewards withdrawal limit to 2BP;',
-            '13) Resume staking with rate limit roughly equal to 150,000 ETH per day.'
+            '13) Resume staking.',
+            '14) Set staking limit rate to 150,000 ETH per day.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
