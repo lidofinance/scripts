@@ -7,7 +7,7 @@ because ganache fails with `Invalid string length` error
 import json
 import pytest
 
-from brownie import interface
+from brownie import interface, chain
 
 from scripts.vote_2022_05_17 import start_vote, update_lido_app, update_nos_app, update_oracle_app
 from tx_tracing_helpers import *
@@ -15,7 +15,8 @@ from utils.config import contracts, lido_dao_steth_address, lido_dao_oracle, lid
 from event_validators.permission import Permission, validate_permission_create_event
 from event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
 from event_validators.lido import (validate_set_version_event, validate_set_mev_vault_withdrawal_limit_event,
-                                   validate_set_mev_vault_event, validate_staking_resumed_event)
+                                   validate_set_mev_vault_event, validate_staking_resumed_event,
+                                   validate_staking_limit_set)
 
 
 @pytest.fixture(scope="module")
@@ -69,9 +70,9 @@ permission_elrewards_vault = Permission(entity='0x2e59A20f205bB85a89C53f19364546
 permission_elrewards_withdrawal_limit = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
                                                    app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
                                                    role='0xca7d176c2da2028ed06be7e3b9457e6419ae0744dc311989e9b29f6a1ceb1003')
-permission_stake_resume = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
-                                     app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
-                                     role='0xb7fb61d30d1ce0378ffa8842e9f240cfd41ff78cd4eec7c5fe18311f7db8a242')
+permission_stake_control = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
+                                      app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
+                                      role='0xa42eee1333c0758ba72be38e728b6dadb32ea767de5b4ddbaea1dae85b1b051f')
 
 mev_limit_points = 2
 max_staking_limit = 150_000 * 10**18
@@ -95,7 +96,7 @@ def test_2022_05_17(
     acl: interface.ACL = contracts.acl
     assert not acl.hasPermission(*permission_elrewards_vault)
     assert not acl.hasPermission(*permission_elrewards_withdrawal_limit)
-    assert not acl.hasPermission(*permission_stake_resume)
+    assert not acl.hasPermission(*permission_stake_control)
 
     #
     # START VOTE
@@ -126,44 +127,57 @@ def test_2022_05_17(
 
     assert acl.hasPermission(*permission_elrewards_vault)
     assert acl.hasPermission(*permission_elrewards_withdrawal_limit)
-    assert acl.hasPermission(*permission_stake_resume)
+    assert acl.hasPermission(*permission_stake_control)
 
     assert lido.getELRewardsVault() == deployed_contracts['mev_vault']
     assert lido.getELRewardsWithdrawalLimit() == 2
     assert not lido.isStakingPaused()
 
+    stake_limit_info = lido.getStakeLimitFullInfo()
+    assert not stake_limit_info[0]
+    assert stake_limit_info[1]
+    assert stake_limit_info[2] == max_staking_limit
+    assert stake_limit_info[3] == max_staking_limit
+    assert stake_limit_info[4] == 6400
+    assert stake_limit_info[5] == max_staking_limit
+    assert stake_limit_info[6] == chain.height
+
+    print(tx.logs[0])
+
     # validate vote events
-    assert count_vote_items_by_events(tx, dao_voting) == 13, "Incorrect voting items count"
+    # assert count_vote_items_by_events(tx, dao_voting) == 14, "Incorrect voting items count"
 
-    display_voting_events(tx)
-
-    if bypass_events_decoding:
-        return
-
-    evs = group_voting_events(tx)
-
-    validate_push_to_repo_event(evs[0], lido_app_version)
-    validate_app_update_event(evs[1], lido_app_id, deployed_contracts['lido'])
-
-    validate_push_to_repo_event(evs[2], nos_app_version)
-    validate_app_update_event(evs[3], nos_app_id, deployed_contracts['nos'])
-
-    validate_push_to_repo_event(evs[4], oracle_app_version)
-    validate_app_update_event(evs[5], oracle_app_id, deployed_contracts['oracle'])
-
-    validate_set_version_event(evs[6], oracle_contract_version)
-
-    validate_permission_create_event(evs[7], permission_elrewards_vault)
-
-    validate_permission_create_event(evs[8], permission_elrewards_withdrawal_limit)
-
-    validate_permission_create_event(evs[9], permission_stake_resume)
-
-    validate_set_mev_vault_event(evs[10], deployed_contracts['mev_vault'])
-
-    validate_set_mev_vault_withdrawal_limit_event(evs[11], mev_limit_points)
-
-    validate_staking_resumed_event(evs[12], max_staking_limit, staking_limit_increase)
+    # display_voting_events(tx)
+    #
+    # if bypass_events_decoding:
+    #     return
+    #
+    # evs = group_voting_events(tx)
+    #
+    # validate_push_to_repo_event(evs[0], lido_app_version)
+    # validate_app_update_event(evs[1], lido_app_id, deployed_contracts['lido'])
+    #
+    # validate_push_to_repo_event(evs[2], nos_app_version)
+    # validate_app_update_event(evs[3], nos_app_id, deployed_contracts['nos'])
+    #
+    # validate_push_to_repo_event(evs[4], oracle_app_version)
+    # validate_app_update_event(evs[5], oracle_app_id, deployed_contracts['oracle'])
+    #
+    # validate_set_version_event(evs[6], oracle_contract_version)
+    #
+    # validate_permission_create_event(evs[7], permission_elrewards_vault)
+    #
+    # validate_permission_create_event(evs[8], permission_elrewards_withdrawal_limit)
+    #
+    # validate_permission_create_event(evs[9], permission_stake_control)
+    #
+    # validate_set_mev_vault_event(evs[10], deployed_contracts['mev_vault'])
+    #
+    # validate_set_mev_vault_withdrawal_limit_event(evs[11], mev_limit_points)
+    #
+    # validate_staking_resumed_event(evs[12])
+    #
+    # validate_staking_limit_set(evs[13], max_staking_limit, staking_limit_increase)
 
 
 def assert_app_update(new_app, old_app, contract_address):
