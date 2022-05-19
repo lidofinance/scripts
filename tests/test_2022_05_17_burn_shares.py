@@ -101,13 +101,16 @@ def test_burn_shares_by_voting(lido, stranger, dao_voting_as_eoa):
     assert_shares_burnt_log(
         log=tx.logs[0],
         account=stranger.address,
-        amount=amount_to_burn,
+        pre_rebase_token_amount=amount_to_burn,
+        post_reabse_token_amount=lido.getPooledEthByShares(shares_to_burn),
         shares_amount=shares_to_burn,
     )
 
 
-def assert_shares_burnt_log(log, account, amount, shares_amount):
-    topic = web3.keccak(text="SharesBurnt(address,uint256,uint256)")
+def assert_shares_burnt_log(
+    log, account, pre_rebase_token_amount, post_reabse_token_amount, shares_amount
+):
+    topic = web3.keccak(text="SharesBurnt(address,uint256,uint256,uint256)")
     assert log["topics"][0] == topic
 
     # validate indexed account topic
@@ -117,5 +120,8 @@ def assert_shares_burnt_log(log, account, amount, shares_amount):
     assert (
         log["data"]
         == "0x"
-        + eth_abi.encode_abi(["uint256", "uint256"], [amount, shares_amount]).hex()
+        + eth_abi.encode_abi(
+            ["uint256", "uint256", "uint256"],
+            [pre_rebase_token_amount, post_reabse_token_amount, shares_amount],
+        ).hex()
     )

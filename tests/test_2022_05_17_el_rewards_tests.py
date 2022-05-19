@@ -103,7 +103,6 @@ def autoexecute_vote(vote_id_from_env, ldo_holder, helpers, accounts, dao_voting
 def test_el_rewards_views_values_is_correct(
     lido, dao_agent, lido_execution_layer_rewards_vault
 ):
-    print("TS:", lido.totalSupply())
     # deployed LidoExecutionLayerRewardsVault has correct values
     assert lido_execution_layer_rewards_vault.LIDO() == lido.address
     assert lido_execution_layer_rewards_vault.TREASURY() == dao_agent.address
