@@ -7,15 +7,17 @@ because ganache fails with `Invalid string length` error
 import json
 import pytest
 
-from brownie import interface
+from brownie import interface, chain
 
 from scripts.vote_2022_05_17 import start_vote, update_lido_app, update_nos_app, update_oracle_app
 from tx_tracing_helpers import *
-from utils.config import contracts, lido_dao_steth_address, lido_dao_oracle, lido_dao_node_operators_registry
+from utils.config import contracts, lido_dao_steth_address, lido_dao_oracle, lido_dao_node_operators_registry, \
+    network_name
 from event_validators.permission import Permission, validate_permission_create_event
 from event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
-from event_validators.lido import (validate_set_version_event, validate_set_mev_vault_withdrawal_limit_event,
-                                   validate_set_mev_vault_event, validate_staking_resumed_event)
+from event_validators.lido import (validate_set_version_event,
+                                   validate_set_el_rewards_vault_event, validate_staking_resumed_event,
+                                   validate_staking_limit_set)
 
 
 @pytest.fixture(scope="module")
@@ -29,7 +31,8 @@ def deployed_contracts(deployer):
         lido_tx_data = json.load(open('./utils/txs/tx-13-1-deploy-lido-base.json'))["data"]
         nos_tx_data = json.load(open('./utils/txs/tx-13-1-deploy-node-operators-registry-base.json'))["data"]
         oracle_tx_data = json.load(open('./utils/txs/tx-13-1-deploy-oracle-base.json'))["data"]
-        execution_layer_rewards_vault_tx_data = json.load(open('./utils/txs/tx-26-deploy-execution-layer-rewards-vault.json'))["data"]
+        execution_layer_rewards_vault_tx_data = \
+            json.load(open('./utils/txs/tx-26-deploy-execution-layer-rewards-vault.json'))["data"]
 
         lido_tx = deployer.transfer(data=lido_tx_data)
         nos_tx = deployer.transfer(data=nos_tx_data)
@@ -41,15 +44,24 @@ def deployed_contracts(deployer):
         update_nos_app['new_address'] = nos_tx.contract_address
         update_oracle_app['new_address'] = oracle_tx.contract_address
 
-        return {'lido': lido_tx.contract_address,
-                'nos': nos_tx.contract_address,
-                'oracle': oracle_tx.contract_address,
-                'mev_vault': execution_layer_rewards_vault_tx.contract_address}
+        return {
+            'lido': lido_tx.contract_address,
+            'nos': nos_tx.contract_address,
+            'oracle': oracle_tx.contract_address,
+            'el_rewards_vault': execution_layer_rewards_vault_tx.contract_address
+        }
     else:
-        return {'lido': '',
-                'nos': '',
-                'oracle': '',
-                'mev_vault': ''}  # Hardcode contract addresses here
+        return { # Hardcode contract addresses here
+            'lido': '0xb16876f11324Fbf02b9B294FBE307B3DB0C02DBB',
+            'nos': '0xbb001978bD0d5b36D95c54025ac6a5822b2b1Aec',
+            'oracle': '0x7FDef26e3bBB8206135071A52e44f8460A243De5',
+            'el_rewards_vault': '0x94750381bE1AbA0504C666ee1DB118F68f0780D4'
+        } if network_name() in ("goerli", "goerli-fork") else {
+            'lido': '',
+            'nos': '',
+            'oracle': '',
+            'el_rewards_vault': ''
+        }
 
 
 lido_app_id = '0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320'
@@ -66,16 +78,21 @@ oracle_contract_version = 3
 permission_elrewards_vault = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
                                         app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
                                         role='0x9d68ad53a92b6f44b2e8fb18d211bf8ccb1114f6fafd56aa364515dfdf23c44f')
-permission_elrewards_withdrawal_limit = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
-                                                   app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
-                                                   role='0xca7d176c2da2028ed06be7e3b9457e6419ae0744dc311989e9b29f6a1ceb1003')
-permission_stake_resume = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
-                                     app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
-                                     role='0xb7fb61d30d1ce0378ffa8842e9f240cfd41ff78cd4eec7c5fe18311f7db8a242')
+permission_stake_control = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
+                                      app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
+                                      role='0xa42eee1333c0758ba72be38e728b6dadb32ea767de5b4ddbaea1dae85b1b051f')
+
+if network_name() in ("goerli", "goerli-fork"):
+    permission_elrewards_vault = Permission(entity='0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db',  # Voting
+                                            app='0x1643E812aE58766192Cf7D2Cf9567dF2C37e9B7F',  # Lido
+                                            role='0x9d68ad53a92b6f44b2e8fb18d211bf8ccb1114f6fafd56aa364515dfdf23c44f')
+    permission_stake_control = Permission(entity='0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db',  # Voting
+                                          app='0x1643E812aE58766192Cf7D2Cf9567dF2C37e9B7F',  # Lido
+                                          role='0xa42eee1333c0758ba72be38e728b6dadb32ea767de5b4ddbaea1dae85b1b051f')
 
 mev_limit_points = 2
-max_staking_limit = 150_000 * 10**18
-staking_limit_increase = 23.4375 * 10**18
+max_staking_limit = 150_000 * 10 ** 18
+staking_limit_increase = 23.4375 * 10 ** 18
 
 
 def test_2022_05_17(
@@ -94,8 +111,7 @@ def test_2022_05_17(
 
     acl: interface.ACL = contracts.acl
     assert not acl.hasPermission(*permission_elrewards_vault)
-    assert not acl.hasPermission(*permission_elrewards_withdrawal_limit)
-    assert not acl.hasPermission(*permission_stake_resume)
+    assert not acl.hasPermission(*permission_stake_control)
 
     #
     # START VOTE
@@ -125,19 +141,26 @@ def test_2022_05_17(
     assert oracle_proxy.implementation() == deployed_contracts['oracle'], 'Proxy should be updated'
 
     assert acl.hasPermission(*permission_elrewards_vault)
-    assert acl.hasPermission(*permission_elrewards_withdrawal_limit)
-    assert acl.hasPermission(*permission_stake_resume)
+    assert acl.hasPermission(*permission_stake_control)
 
-    assert lido.getELRewardsVault() == deployed_contracts['mev_vault']
-    assert lido.getELRewardsWithdrawalLimit() == 2
+    assert lido.getELRewardsVault() == deployed_contracts['el_rewards_vault']
     assert not lido.isStakingPaused()
 
+    stake_limit_info = lido.getStakeLimitFullInfo()
+    assert not stake_limit_info[0]
+    assert stake_limit_info[1]
+    assert stake_limit_info[2] == max_staking_limit
+    assert stake_limit_info[3] == max_staking_limit
+    assert stake_limit_info[4] == 6400
+    assert stake_limit_info[5] == max_staking_limit
+    assert stake_limit_info[6] == chain.height
+
     # validate vote events
-    assert count_vote_items_by_events(tx, dao_voting) == 13, "Incorrect voting items count"
+    assert count_vote_items_by_events(tx, dao_voting) == 12, "Incorrect voting items count"
 
     display_voting_events(tx)
 
-    if bypass_events_decoding:
+    if bypass_events_decoding or network_name() in ("goerli", "goerli-fork"):
         return
 
     evs = group_voting_events(tx)
@@ -155,15 +178,13 @@ def test_2022_05_17(
 
     validate_permission_create_event(evs[7], permission_elrewards_vault)
 
-    validate_permission_create_event(evs[8], permission_elrewards_withdrawal_limit)
+    validate_permission_create_event(evs[8], permission_stake_control)
 
-    validate_permission_create_event(evs[9], permission_stake_resume)
+    validate_set_el_rewards_vault_event(evs[9], deployed_contracts['el_rewards_vault'])
 
-    validate_set_mev_vault_event(evs[10], deployed_contracts['mev_vault'])
+    validate_staking_resumed_event(evs[10])
 
-    validate_set_mev_vault_withdrawal_limit_event(evs[11], mev_limit_points)
-
-    validate_staking_resumed_event(evs[12], max_staking_limit, staking_limit_increase)
+    validate_staking_limit_set(evs[11], max_staking_limit, staking_limit_increase)
 
 
 def assert_app_update(new_app, old_app, contract_address):
