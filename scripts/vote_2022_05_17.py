@@ -10,14 +10,11 @@ Voting 17/05/2022.
 7. Call Oracle's finalizeUpgrade_v3() to update internal version counter
 8. Create permission for SET_EL_REWARDS_VAULT_ROLE of Lido app
     assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
-9. Create permission for SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE of Lido app
+9. Create permission for STAKING_CONTROL_ROLE of Lido app
     assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
-10. Create permission for STAKING_CONTROL_ROLE of Lido app
-    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
-11. Set execution layer rewards vault to LidoExecutionLayerRewardsVault #? need address
-12. Set execution layer rewards withdrawal limit to 2BP;
-13. Resume staking with rate limit roughly equal to 150,000 ETH per day
-14. Set staking limit rate to 150,000 ETH per day.
+10. Set execution layer rewards vault to LidoExecutionLayerRewardsVault #? need address
+11. Resume staking with rate limit roughly equal to 150,000 ETH per day
+12. Set staking limit rate to 150,000 ETH per day.
 
 """
 
@@ -178,22 +175,16 @@ def start_vote(
         # 8. Create permission for SET_EL_REWARDS_VAULT_ROLE of Lido app
         #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
         encode_permission_create_or_grant(permission_name='SET_EL_REWARDS_VAULT_ROLE'),
-        # 9. Create permission for SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE of Lido app
-        #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
-        encode_permission_create(entity=voting, target_app=lido, permission_name='SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE',
-                                 manager=voting),
-        # 10. Create permission for STAKING_CONTROL_ROLE of Lido app
+        # 9. Create permission for STAKING_CONTROL_ROLE of Lido app
         #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
         encode_permission_create(entity=voting, target_app=lido, permission_name='STAKING_CONTROL_ROLE',
                                  manager=voting),
 
-        # 11. Call Lido's setELRewardsVault() to connect deployed LidoExecutionLayerRewardsVault
+        # 10. Set execution layer rewards vault to LidoExecutionLayerRewardsVault
         encode_set_elrewards_vault(update_lido_app['execution_layer_rewards_vault_address']),
-        # 12. Call Lido's setELRewardsWithdrawalLimit() to set execution layer rewards withdrawal limit to 2BP
-        encode_set_elrewards_withdrawal_limit(update_lido_app['mevtxfee_withdrawal_limit']),
-        # 13. Resume staking
+        # 11. Resume staking
         encode_resume_staking(),
-        # 14 Set staking limit rate to 150,000 ETH per day.
+        # 12. Set staking limit rate to 150,000 ETH per day.
         encode_set_staking_limit(update_lido_app['max_staking_limit'], update_lido_app['staking_limit_increase'])
     ])
 
@@ -208,12 +199,10 @@ def start_vote(
             '6) Updating implementation of Oracle app;',
             '7) Finalize Oracle upgrade to version 3;',
             '8) Create permission for SET_EL_REWARDS_VAULT_ROLE assigning it to Voting;',
-            '9) Create permission for SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE assigning it to Voting;',
-            '10) Create permission for STAKING_CONTROL_ROLE of Lido app assigning it to Voting;',
-            '11) Set execution layer rewards vault;',
-            '12) Set execution layer rewards withdrawal limit to 2BP;',
-            '13) Resume staking;',
-            '14) Set staking limit rate to 150,000 ETH per day.',
+            '9) Create permission for STAKING_CONTROL_ROLE of Lido app assigning it to Voting;',
+            '10) Set execution layer rewards vault;',
+            '11) Resume staking;',
+            '12) Set staking limit rate to 150,000 ETH per day.',
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params

@@ -12,7 +12,7 @@ def validate_set_version_event(event: EventDict, version: int):
     assert event['ContractVersionSet']['version'] == version
 
 
-def validate_set_mev_vault_event(event: EventDict, address: str):
+def validate_set_el_rewards_vault_event(event: EventDict, address: str):
     _events_chain = ['LogScriptCall', 'ELRewardsVaultSet']
 
     validate_events_chain([e.name for e in event], _events_chain)
@@ -22,7 +22,7 @@ def validate_set_mev_vault_event(event: EventDict, address: str):
     assert event['ELRewardsVaultSet']['executionLayerRewardsVault'] == address
 
 
-def validate_set_mev_vault_withdrawal_limit_event(event: EventDict, limit_points: int):
+def validate_set_el_rewards_vault_withdrawal_limit_event(event: EventDict, limit_points: int):
     _events_chain = ['LogScriptCall', 'ELRewardsWithdrawalLimitSet']
 
     validate_events_chain([e.name for e in event], _events_chain)

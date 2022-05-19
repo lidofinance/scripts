@@ -14,8 +14,8 @@ from tx_tracing_helpers import *
 from utils.config import contracts, lido_dao_steth_address, lido_dao_oracle, lido_dao_node_operators_registry
 from event_validators.permission import Permission, validate_permission_create_event
 from event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
-from event_validators.lido import (validate_set_version_event, validate_set_mev_vault_withdrawal_limit_event,
-                                   validate_set_mev_vault_event, validate_staking_resumed_event,
+from event_validators.lido import (validate_set_version_event,
+                                   validate_set_el_rewards_vault_event, validate_staking_resumed_event,
                                    validate_staking_limit_set)
 
 
@@ -45,7 +45,7 @@ def deployed_contracts(deployer):
         return {'lido': lido_tx.contract_address,
                 'nos': nos_tx.contract_address,
                 'oracle': oracle_tx.contract_address,
-                'mev_vault': execution_layer_rewards_vault_tx.contract_address}
+                'el_rewards_vault': execution_layer_rewards_vault_tx.contract_address}
     else:
         return {'lido': '',
                 'nos': '',
@@ -126,11 +126,9 @@ def test_2022_05_17(
     assert oracle_proxy.implementation() == deployed_contracts['oracle'], 'Proxy should be updated'
 
     assert acl.hasPermission(*permission_elrewards_vault)
-    assert acl.hasPermission(*permission_elrewards_withdrawal_limit)
     assert acl.hasPermission(*permission_stake_control)
 
-    assert lido.getELRewardsVault() == deployed_contracts['mev_vault']
-    assert lido.getELRewardsWithdrawalLimit() == 2
+    assert lido.getELRewardsVault() == deployed_contracts['el_rewards_vault']
     assert not lido.isStakingPaused()
 
     stake_limit_info = lido.getStakeLimitFullInfo()
@@ -142,42 +140,36 @@ def test_2022_05_17(
     assert stake_limit_info[5] == max_staking_limit
     assert stake_limit_info[6] == chain.height
 
-    print(tx.logs[0])
-
     # validate vote events
-    # assert count_vote_items_by_events(tx, dao_voting) == 14, "Incorrect voting items count"
+    assert count_vote_items_by_events(tx, dao_voting) == 12, "Incorrect voting items count"
 
-    # display_voting_events(tx)
-    #
-    # if bypass_events_decoding:
-    #     return
-    #
-    # evs = group_voting_events(tx)
-    #
-    # validate_push_to_repo_event(evs[0], lido_app_version)
-    # validate_app_update_event(evs[1], lido_app_id, deployed_contracts['lido'])
-    #
-    # validate_push_to_repo_event(evs[2], nos_app_version)
-    # validate_app_update_event(evs[3], nos_app_id, deployed_contracts['nos'])
-    #
-    # validate_push_to_repo_event(evs[4], oracle_app_version)
-    # validate_app_update_event(evs[5], oracle_app_id, deployed_contracts['oracle'])
-    #
-    # validate_set_version_event(evs[6], oracle_contract_version)
-    #
-    # validate_permission_create_event(evs[7], permission_elrewards_vault)
-    #
-    # validate_permission_create_event(evs[8], permission_elrewards_withdrawal_limit)
-    #
-    # validate_permission_create_event(evs[9], permission_stake_control)
-    #
-    # validate_set_mev_vault_event(evs[10], deployed_contracts['mev_vault'])
-    #
-    # validate_set_mev_vault_withdrawal_limit_event(evs[11], mev_limit_points)
-    #
-    # validate_staking_resumed_event(evs[12])
-    #
-    # validate_staking_limit_set(evs[13], max_staking_limit, staking_limit_increase)
+    display_voting_events(tx)
+
+    if bypass_events_decoding:
+        return
+
+    evs = group_voting_events(tx)
+
+    validate_push_to_repo_event(evs[0], lido_app_version)
+    validate_app_update_event(evs[1], lido_app_id, deployed_contracts['lido'])
+
+    validate_push_to_repo_event(evs[2], nos_app_version)
+    validate_app_update_event(evs[3], nos_app_id, deployed_contracts['nos'])
+
+    validate_push_to_repo_event(evs[4], oracle_app_version)
+    validate_app_update_event(evs[5], oracle_app_id, deployed_contracts['oracle'])
+
+    validate_set_version_event(evs[6], oracle_contract_version)
+
+    validate_permission_create_event(evs[7], permission_elrewards_vault)
+
+    validate_permission_create_event(evs[8], permission_stake_control)
+
+    validate_set_el_rewards_vault_event(evs[9], deployed_contracts['el_rewards_vault'])
+
+    validate_staking_resumed_event(evs[10])
+
+    validate_staking_limit_set(evs[11], max_staking_limit, staking_limit_increase)
 
 
 def assert_app_update(new_app, old_app, contract_address):
