@@ -5,7 +5,7 @@ Voting 17/05/2022.
 0xF29Ff96aaEa6C9A1fBa851f74737f3c069d4f1a9;
 2. Fund depositor bot multisig 0x5181d5D56Af4f823b96FE05f062D7a09761a5a53 with 235.8 stETH.
 
-
+Vote passed & executed on May-20-2022 02:30:28 PM +UTC, block 14811626.
 
 """
 
