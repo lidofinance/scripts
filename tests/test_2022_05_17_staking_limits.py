@@ -39,21 +39,17 @@ def autodeploy_contracts(accounts):
     oracle_tx_data = json.load(open("./utils/txs/tx-13-1-deploy-oracle-base.json"))[
         "data"
     ]
-    execution_layer_rewards_vault_tx_data = json.load(
+    mev_vault_tx_data = json.load(
         open("./utils/txs/tx-26-deploy-execution-layer-rewards-vault.json")
     )["data"]
 
     lido_tx = deployer.transfer(data=lido_tx_data)
     nos_tx = deployer.transfer(data=nos_tx_data)
     oracle_tx = deployer.transfer(data=oracle_tx_data)
-    execution_layer_rewards_vault_tx = deployer.transfer(
-        data=execution_layer_rewards_vault_tx_data
-    )
+    mev_vault_tx = deployer.transfer(data=mev_vault_tx_data)
 
     update_lido_app["new_address"] = lido_tx.contract_address
-    update_lido_app[
-        "execution_layer_rewards_vault_address"
-    ] = execution_layer_rewards_vault_tx.contract_address
+    update_lido_app["mevtxfee_vault_address"] = mev_vault_tx.contract_address
     update_nos_app["new_address"] = nos_tx.contract_address
     update_oracle_app["new_address"] = oracle_tx.contract_address
 
@@ -96,25 +92,38 @@ def test_pause_staking_works(lido, operator, stranger):
 def test_resume_staking_access(lido, operator, stranger):
     # Should not allow to resume staking from unauthorized account
     with reverts("APP_AUTH_FAILED"):
-        lido.resumeStaking(ether, ether * 0.01, {"from": stranger})
-    lido.resumeStaking(ether, ether * 0.01, {"from": operator})
+        lido.resumeStaking({"from": stranger})
+    lido.resumeStaking({"from": operator})
 
 
-def test_resume_staking_event(lido, operator):
+def test_resume_staking_works(lido, operator, stranger):
     # Should emit event with correct params
-    tx = lido.resumeStaking(ether, ether * 0.01, {"from": operator})
+    create_and_grant_role(operator, lido, "STAKING_PAUSE_ROLE")
+    tx = lido.pauseStaking({"from": operator})
+
+    with reverts("STAKING_PAUSED"):
+        lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether})
+
+    tx = lido.resumeStaking({"from": operator})
 
     assert len(tx.logs) == 1
-    assert_staking_is_resumed(
-        tx.logs[0], ether, 10 ** 16
-    )  # ether * 0.01 converts value to 1e+16
+    assert_staking_is_resumed(tx.logs[0])
+
+    lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether})
+
+
+def test_set_staking_limit_access(lido, operator, stranger):
+    # Should not allow to resume staking from unauthorized account
+    with reverts("APP_AUTH_FAILED"):
+        lido.setStakingLimit(ether, ether * 0.01, {"from": stranger})
+    lido.setStakingLimit(ether, ether * 0.01, {"from": operator})
 
 
 def test_staking_limit_getter(lido, operator):
     # Should return the same value as it is set because no block has been produced
     assert lido.getCurrentStakeLimit() != ether
 
-    lido.resumeStaking(ether, ether * 0.01, {"from": operator})
+    lido.setStakingLimit(ether, ether * 0.01, {"from": operator})
 
     assert lido.getCurrentStakeLimit() == ether
 
@@ -132,7 +141,7 @@ def test_staking_limit_updates_per_block_correctly(
     lido, operator, stranger, limit_max, limit_per_block
 ):
     # Should update staking limits after submit
-    lido.resumeStaking(limit_max, limit_per_block, {"from": operator})
+    lido.setStakingLimit(limit_max, limit_per_block, {"from": operator})
     staking_limit_before = lido.getCurrentStakeLimit()
     assert limit_max == staking_limit_before
     lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": limit_per_block})
@@ -146,22 +155,43 @@ def test_staking_limit_updates_per_block_correctly(
 
 def test_staking_limit_is_zero(lido, operator):
     # Should be unlimited if 0 is set
+    with reverts("ZERO_MAX_STAKE_LIMIT"):
+        lido.setStakingLimit(0, 0, {"from": operator})
+
+
+def test_staking_limit_is_uint256(lido, operator):
     max_uint256 = convert.to_uint(
         "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
     )
-    assert lido.getCurrentStakeLimit() != max_uint256
 
-    tx = lido.resumeStaking(0, 0, {"from": operator})
-    assert_staking_is_resumed(tx.logs[0], 0, 0)
-    assert lido.getCurrentStakeLimit() == max_uint256
+    with reverts("TOO_LARGE_MAX_STAKE_LIMIT"):
+        lido.setStakingLimit(max_uint256, max_uint256, {"from": operator})
 
 
 def test_staking_limit_exceed(lido, operator, stranger):
     # Should not allow to submit if limit is exceeded
-    lido.resumeStaking(ether, ether * 0.01, {"from": operator})
+    lido.setStakingLimit(ether, ether * 0.01, {"from": operator})
 
     with reverts("STAKE_LIMIT"):
         lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether * 10})
+
+
+def test_remove_staking_limit_access(lido, operator, stranger):
+    # Should not allow to resume staking from unauthorized account
+    with reverts("APP_AUTH_FAILED"):
+        lido.removeStakingLimit({"from": stranger})
+    lido.removeStakingLimit({"from": operator})
+
+
+def test_remove_staking_limit_works(lido, operator, stranger):
+    # Should not allow to resume staking from unauthorized account
+    lido.setStakingLimit(ether, ether * 0.01, {"from": operator})
+
+    with reverts("STAKE_LIMIT"):
+        lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether * 10})
+
+    lido.removeStakingLimit({"from": operator})
+    lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether * 10})
 
 
 def test_staking_ability(lido, stranger):
@@ -184,12 +214,16 @@ def create_and_grant_role(operator, target_app, permission_name):
 
 def assert_staking_is_paused(log):
     topic = web3.keccak(text="StakingPaused()")
-
     assert log["topics"][0] == topic
 
 
-def assert_staking_is_resumed(log, limit_max, limit_per_block):
-    topic = web3.keccak(text="StakingResumed(uint256,uint256)")
+def assert_staking_is_resumed(log):
+    topic = web3.keccak(text="StakingResumed()")
+    assert log["topics"][0] == topic
+
+
+def assert_set_staking_limit(log, limit_max, limit_per_block):
+    topic = web3.keccak(text="StakingLimitSet(uint256,uint256)")
 
     assert log["topics"][0] == topic
     assert (
