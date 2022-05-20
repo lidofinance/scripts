@@ -208,8 +208,21 @@ def test_staking_ability(lido, stranger):
 
 
 def test_staking_limit_full_info(lido, stranger):
-    data = lido.getStakeLimitFullInfo({"from": stranger})
-    print(data)
+    (
+        is_paused,
+        is_limit_set,
+        limit,
+        max_limit,
+        growth_limit,
+        prev_limit,
+        block_number,
+    ) = lido.getStakeLimitFullInfo({"from": stranger})
+    assert is_paused == False
+    assert is_limit_set == True
+    assert limit == 150000 * 10 ** 18
+    assert max_limit == 150000 * 10 ** 18
+    assert growth_limit == 6400
+    assert prev_limit == 150000 * 10 ** 18
 
 
 def create_and_grant_role(operator, target_app, permission_name):
