@@ -13,7 +13,7 @@ Voting 17/05/2022.
 9. Create permission for STAKING_CONTROL_ROLE of Lido app
     assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
 10. Set execution layer rewards vault to LidoExecutionLayerRewardsVault #? need address
-11. Resume staking with rate limit roughly equal to 150,000 ETH per day
+11. Resume staking
 12. Set staking limit rate to 150,000 ETH per day.
 
 """
