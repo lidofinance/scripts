@@ -4,6 +4,7 @@ Tests for EL rewards distribution for voting 17/05/2022
 import json
 import pytest
 import eth_abi
+from functools import partial
 from brownie import interface, reverts, web3
 
 from utils.config import contracts
@@ -16,7 +17,7 @@ from scripts.vote_2022_05_17 import (
 
 LIDO_EXECUTION_LAYER_REWARDS_VAULT = "0x"
 TOTAL_BASIS_POINTS = 10000
-EL_REWARDS_FEE_WITHDRAWAL_LIMIT = 0  # 0 %
+EL_REWARDS_FEE_WITHDRAWAL_LIMIT = 0
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -64,16 +65,6 @@ def eth_whale(accounts):
 
 
 @pytest.fixture(scope="module")
-def dao_voting_as_eoa(accounts, dao_voting):
-    return accounts.at(dao_voting.address, force=True)
-
-
-@pytest.fixture(scope="module")
-def lido_execution_layer_rewards_vault_as_eoa(accounts):
-    return accounts.at(LIDO_EXECUTION_LAYER_REWARDS_VAULT, force=True)
-
-
-@pytest.fixture(scope="module")
 def lido_oracle():
     return contracts.lido_oracle
 
@@ -81,12 +72,6 @@ def lido_oracle():
 @pytest.fixture(scope="module")
 def lido_execution_layer_rewards_vault():
     return interface.LidoExecutionLayerRewardsVault(LIDO_EXECUTION_LAYER_REWARDS_VAULT)
-
-
-@pytest.fixture(scope="module")
-def lido_oracle_as_eoa(accounts, stranger, lido_oracle, EtherFunder):
-    EtherFunder.deploy(lido_oracle, {"from": stranger, "amount": 10**18})
-    return accounts.at(lido_oracle, force=True)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -113,13 +98,19 @@ def test_el_rewards_views_values_is_correct(
     assert lido.getELRewardsVault() == LIDO_EXECUTION_LAYER_REWARDS_VAULT
 
 
-def test_set_el_rewards_vault(lido, stranger, dao_voting_as_eoa):
+def test_set_el_rewards_vault(acl, lido, stranger, dao_voting):
+    has_set_el_rewards_vault_role = partial(
+        has_role, acl=acl, app=lido, role="SET_EL_REWARDS_VAULT_ROLE"
+    )
+
     # setELRewardsVault can't be called by stranger
+    assert not has_set_el_rewards_vault_role(entity=stranger)
     with reverts("APP_AUTH_FAILED"):
         lido.setELRewardsVault(stranger, {"from": stranger})
 
     # setELRewardsVault might be called by voting
-    tx = lido.setELRewardsVault(stranger, {"from": dao_voting_as_eoa})
+    assert has_set_el_rewards_vault_role(entity=dao_voting)
+    tx = lido.setELRewardsVault(stranger, {"from": dao_voting})
     assert len(tx.logs) == 1
     assert_el_rewards_vault_set_log(
         log=tx.logs[0], lido_execution_layer_rewards_vault=stranger.address
@@ -127,30 +118,30 @@ def test_set_el_rewards_vault(lido, stranger, dao_voting_as_eoa):
     assert lido.getELRewardsVault() == stranger
 
 
-def test_set_el_tx_withdrawal_limit(lido, stranger, dao_voting_as_eoa, acl):
+def test_set_el_tx_withdrawal_limit(acl, lido, stranger, dao_voting):
+    set_el_rewards_withdrawal_limit_role = "SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE"
+    has_set_el_rewards_withdrawal_limit_role = partial(
+        has_role, acl=acl, app=lido, role=set_el_rewards_withdrawal_limit_role
+    )
     # setELRewardsWithdrawalLimit can't be called by the stranger
+    assert not has_set_el_rewards_withdrawal_limit_role(entity=stranger)
     with reverts("APP_AUTH_FAILED"):
         lido.setELRewardsWithdrawalLimit(0, {"from": stranger})
 
-    # grant SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE to the voting
-    set_el_rewards_withdrawal_limit_role = web3.keccak(
-        text="SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE"
-    )
-    acl.createPermission(
-        dao_voting_as_eoa,
-        lido,
-        set_el_rewards_withdrawal_limit_role,
-        dao_voting_as_eoa,
-        {"from": dao_voting_as_eoa},
-    )
-    assert acl.hasPermission["address,address,bytes32,uint[]"](
-        dao_voting_as_eoa, lido, set_el_rewards_withdrawal_limit_role, []
-    )
+    # ensure voting has SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE
+    if not has_set_el_rewards_withdrawal_limit_role(entity=dao_voting):
+        acl.createPermission(
+            dao_voting,
+            lido,
+            web3.keccak(text=set_el_rewards_withdrawal_limit_role),
+            dao_voting,
+            {"from": dao_voting},
+        )
 
     # setELRewardsWithdrawalLimit might be called by the voting
     new_el_tx_fee_withdrawal_limit = 100
     tx = lido.setELRewardsWithdrawalLimit(
-        new_el_tx_fee_withdrawal_limit, {"from": dao_voting_as_eoa}
+        new_el_tx_fee_withdrawal_limit, {"from": dao_voting}
     )
     assert len(tx.logs) == 1
     assert_el_tx_fee_withdrawal_limit_set_log(
@@ -159,34 +150,73 @@ def test_set_el_tx_withdrawal_limit(lido, stranger, dao_voting_as_eoa, acl):
     assert lido.getELRewardsWithdrawalLimit() == new_el_tx_fee_withdrawal_limit
 
 
+def test_lido_execution_layer_rewards_vault_receive_events(
+    stranger, lido_execution_layer_rewards_vault
+):
+    reward_amount = 10**18 + 1
+    tx = stranger.transfer(lido_execution_layer_rewards_vault, reward_amount)
+    assert lido_execution_layer_rewards_vault.balance() == reward_amount
+    assert_eth_received_log(log=tx.logs[0], value=reward_amount)
+
+
 def test_receive_el_rewards_permissions(
-    lido, stranger, lido_execution_layer_rewards_vault_as_eoa
+    lido, stranger, lido_execution_layer_rewards_vault
 ):
     reward_amount = 10**18
+
+    # receiveELRewards can't be called by the stranger
+    assert lido.getELRewardsVault() != stranger
     with reverts():
         lido.receiveELRewards({"from": stranger, "amount": reward_amount})
 
-    stranger.transfer(lido_execution_layer_rewards_vault_as_eoa, reward_amount)
+    # receiveELRewards might be called by LidoExecutionLayerRewardsVault
+    stranger.transfer(lido_execution_layer_rewards_vault, reward_amount)
+    assert lido_execution_layer_rewards_vault.balance() == reward_amount
+
+    lido_eth_balance_before = lido.balance()
     tx = lido.receiveELRewards(
-        {"from": lido_execution_layer_rewards_vault_as_eoa, "amount": reward_amount}
+        {"from": lido_execution_layer_rewards_vault, "amount": reward_amount}
     )
     assert len(tx.logs) == 1
     assert_el_rewards_received_log(log=tx.logs[0], amount=reward_amount)
+
     assert lido.getTotalELRewardsCollected() == reward_amount
+    assert lido_execution_layer_rewards_vault.balance() == 0
+    assert lido.balance() == lido_eth_balance_before + reward_amount
 
 
 @pytest.mark.parametrize("el_reward", [0, 100 * 10**18, 1_000_000 * 10**18])
 @pytest.mark.parametrize("beacon_balance_delta", [0, 1000 * 10**18, -1000 * 10**18])
 def test_handle_oracle_report_with_el_rewards(
+    acl,
     lido,
     lido_oracle,
-    lido_oracle_as_eoa,
+    dao_voting,
     lido_execution_layer_rewards_vault,
     eth_whale,
     el_reward,
     beacon_balance_delta,
     node_operators_registry,
 ):
+    if lido.getELRewardsWithdrawalLimit() == 0:
+        el_rewards_withdrawal_limit = 2
+        set_el_rewards_withdrawal_limit_role = "SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE"
+        has_set_el_rewards_withdrawal_limit_role = partial(
+            has_role, acl=acl, app=lido, role=set_el_rewards_withdrawal_limit_role
+        )
+        if not has_set_el_rewards_withdrawal_limit_role(entity=dao_voting):
+            acl.createPermission(
+                dao_voting,
+                lido,
+                web3.keccak(text=set_el_rewards_withdrawal_limit_role),
+                dao_voting,
+                {"from": dao_voting},
+            )
+        lido.setELRewardsWithdrawalLimit(
+            el_rewards_withdrawal_limit, {"from": dao_voting}
+        )
+        assert lido.getELRewardsWithdrawalLimit() == el_rewards_withdrawal_limit
+
     # prepare EL rewards
     if el_reward > 0:
         eth_whale.transfer(lido_execution_layer_rewards_vault, el_reward)
@@ -214,7 +244,7 @@ def test_handle_oracle_report_with_el_rewards(
 
     # simulate oracle report
     tx = lido.handleOracleReport(
-        beacon_validators, beacon_balance, {"from": lido_oracle_as_eoa}
+        beacon_validators, beacon_balance, {"from": lido_oracle}
     )
 
     # validate that EL rewards were added to the buffered ether
@@ -274,6 +304,23 @@ def test_handle_oracle_report_with_el_rewards(
             )
 
 
+def has_role(acl, entity, app, role):
+    encoded_role = web3.keccak(text=role)
+    return acl.hasPermission["address,address,bytes32,uint[]"](
+        entity, app, encoded_role, []
+    )
+
+
+def assert_role(acl, entity, app, role, is_granted):
+    encoded_role = web3.keccak(text=role)
+    assert (
+        acl.hasPermission["address,address,bytes32,uint[]"](
+            entity, app, encoded_role, []
+        )
+        == is_granted
+    )
+
+
 def assert_el_rewards_vault_set_log(log, lido_execution_layer_rewards_vault):
     topic = web3.keccak(text="ELRewardsVaultSet(address)")
     assert log["topics"][0] == topic
@@ -300,6 +347,12 @@ def assert_el_rewards_received_log(log, amount):
 
     # validate params
     assert log["data"] == "0x" + eth_abi.encode_abi(["uint256"], [amount]).hex()
+
+
+def assert_eth_received_log(log, value):
+    topic = web3.keccak(text="ETHReceived(uint256)")
+    assert log["topics"][0] == topic
+    assert log["data"] == "0x" + eth_abi.encode_single("uint256", value).hex()
 
 
 def filter_transfer_logs(logs):
