@@ -198,6 +198,28 @@ def test_remove_staking_limit_works(lido, operator, stranger):
     lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether * 10})
 
 
+def test_protocol_pause(lido, operator, stranger):
+    # Should revert if contract is paused
+
+    lido.stop({"from": operator})
+
+    with reverts("STAKING_PAUSED"):
+        lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether})
+
+
+def test_protocol_resume_after_pause(lido, operator, stranger):
+    # Should revert if contract is paused
+    create_and_grant_role(operator, lido, "RESUME_ROLE")
+
+    lido.stop({"from": operator})
+
+    with reverts("STAKING_PAUSED"):
+        lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether})
+
+    lido.resume({"from": operator})
+    lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether})
+
+
 def test_staking_ability(lido, stranger):
     # Should mint correct stETH amount to the staker account
     assert lido.balanceOf(stranger) == 0
@@ -253,3 +275,6 @@ def assert_set_staking_limit(log, limit_max, limit_per_block):
         == "0x"
         + eth_abi.encode_abi(["uint256", "uint256"], [limit_max, limit_per_block]).hex()
     )
+
+
+# проверить как ведет себя stopstaking /resume staking при stop/resume контракта
