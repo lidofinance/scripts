@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Callable, TypeVar, Optional
 
 ValueChanged = namedtuple('ValueChanged', ['from_val', 'to_val'])
 
@@ -9,7 +9,7 @@ def dict_diff(from_dict: Dict[str, any], to_dict: Dict[str, any]) -> Dict[str, V
 
     all_keys = from_dict.keys() | to_dict.keys()
     for key in all_keys:
-        if from_dict.get(key) != to_dict.get(key):
+        if type(from_dict.get(key)) != type(to_dict.get(key)) or from_dict.get(key) != to_dict.get(key):
             result[key] = ValueChanged(from_dict.get(key), to_dict.get(key))
 
     return result
@@ -24,3 +24,22 @@ def dict_zip(dict1: Dict[str, any], dict2: Dict[str, any]) -> Dict[str, Tuple[an
 
     return zipped_dict
 
+
+T = TypeVar('T')
+
+
+def try_or_none(runnable: Callable[[], T]) -> Optional[T]:
+    try:
+        return runnable()
+    except:
+        return None
+
+
+def assert_no_more_diffs(diff: Dict[str, ValueChanged]):
+    assert len(diff) == 0, f"Unexpected diffs {diff}"
+
+
+def assert_expected_diffs(diff, expected):
+    for key in expected.keys():
+        assert diff[key] == expected[key]
+        del diff[key]
