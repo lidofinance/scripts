@@ -1,20 +1,23 @@
 """
 Voting 17/05/2022.
 
-1. Publishing new implementation in Lido app APM repo 0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1
-2. Updating implementation of Lido app with the new one
-3. Publishing new implementation in Node Operators Registry app APM repo 0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1831
-4. Updating implementation of Node Operators Registry app with the new one
-5. Publishing new implementation in Oracle app APM repo 0xF9339DE629973c60c4d2b76749c81E6F40960E3A
-6. Updating implementation of Oracle app with new one
+1. Publishing new implementation (0x47EbaB13B806773ec2A2d16873e2dF770D130b50)
+    in Lido app APM repo 0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1
+2. Updating implementation of Lido app with the new one 0x47EbaB13B806773ec2A2d16873e2dF770D130b50
+3. Publishing new implementation (0x5d39ABaa161e622B99D45616afC8B837E9F19a25)
+    in Node Operators Registry app APM repo 0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1831
+4. Updating implementation of Node Operators Registry app with the new one 0x5d39ABaa161e622B99D45616afC8B837E9F19a25
+5. Publishing new implementation (0x1430194905301504e8830ce4B0b0df7187E84AbD)
+    in Oracle app APM repo 0xF9339DE629973c60c4d2b76749c81E6F40960E3A
+6. Updating implementation of Oracle app with new one 0x1430194905301504e8830ce4B0b0df7187E84AbD
 7. Call Oracle's finalizeUpgrade_v3() to update internal version counter
 8. Create permission for SET_EL_REWARDS_VAULT_ROLE of Lido app
     assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
 9. Create permission for STAKING_CONTROL_ROLE of Lido app
     assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
-10. Set execution layer rewards vault to LidoExecutionLayerRewardsVault #? need address
+10. Set execution layer rewards vault to LidoExecutionLayerRewardsVault 0x388C818CA8B9251b393131C08a736A67ccB19297
 11. Resume staking
-12. Set staking limit rate to 150,000 ETH per day.
+12. Set staking limit rate roughly to 150,000 ETH per day.
 
 """
 
@@ -41,25 +44,25 @@ from utils.permissions import encode_permission_create, encode_permission_grant
 from utils.brownie_prelude import *
 
 update_lido_app = {
-    'new_address': None,  # TBA
+    'new_address': '0x47EbaB13B806773ec2A2d16873e2dF770D130b50',
     'content_uri': '0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053',
     'id': '0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320',
     'version': (3, 0, 0),
-    'execution_layer_rewards_vault_address': None,  # TBA
+    'execution_layer_rewards_vault_address': '0x388C818CA8B9251b393131C08a736A67ccB19297',
     'mevtxfee_withdrawal_limit': 2,
     'max_staking_limit': 150_000 * 10**18,
     'staking_limit_increase': 150_000 * 10**18 * 13.5 // (24 * 60 * 60),  # 13.5s per block as a rough average
 }
 
 update_nos_app = {
-    'new_address': None,  # TBA
+    'new_address': '0x5d39ABaa161e622B99D45616afC8B837E9F19a25',
     'content_uri': '0x697066733a516d61375058486d456a346a7332676a4d3976744850747176754b3832695335455950694a6d7a4b4c7a55353847',
     'id': '0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d',
     'version': (3, 0, 0),
 }
 
 update_oracle_app = {
-    'new_address': None,  # TBA
+    'new_address': '0x1430194905301504e8830ce4B0b0df7187E84AbD',
     'content_uri': '0x697066733a516d554d506669454b71354d786d387932475951504c756a47614a69577a31747665703557374564414767435238',
     'id': '0x8b47ba2a8454ec799cd91646e7ec47168e91fd139b23f017455f3e5898aaba93',
     'version': (3, 0, 0),
@@ -126,36 +129,39 @@ def start_vote(
     lido: interface.Lido = contracts.lido
 
     encoded_call_script = encode_call_script([
-        # 1. Publishing new implementation in Lido app APM repo 0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1
+        # 1. Publishing new implementation(0x47EbaB13B806773ec2A2d16873e2dF770D130b50)
+        #                   in Lido app APM repo 0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1
         add_implementation_to_lido_app_repo(
             update_lido_app['version'],
             update_lido_app['new_address'],
             update_lido_app['content_uri']
         ),
-        # 2. Updating implementation of Lido app with the new one
+        # 2. Updating implementation of Lido app with the new one 0x47EbaB13B806773ec2A2d16873e2dF770D130b50
         update_app_implementation(
             update_lido_app['id'],
             update_lido_app['new_address']
         ),
-        # 3. Publishing new implementation in Node Operators Registry app
-        # APM repo 0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1831
+        # 3. Publishing new implementation (0x5d39ABaa161e622B99D45616afC8B837E9F19a25)
+        #                   in Node Operators Registry app APM repo 0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1831
         add_implementation_to_nos_app_repo(
             update_nos_app['version'],
             update_nos_app['new_address'],
             update_nos_app['content_uri']
         ),
-        # 4. Updating implementation of Node Operators Registry app with the new one
+        # 4. Updating implementation of Node Operators Registry app
+        #                   with the new one 0x5d39ABaa161e622B99D45616afC8B837E9F19a25
         update_app_implementation(
             update_nos_app['id'],
             update_nos_app['new_address']
         ),
-        # 5. Publishing new implementation in Oracle app APM repo 0xF9339DE629973c60c4d2b76749c81E6F40960E3A
+        # 5. Publishing new implementation (0x1430194905301504e8830ce4B0b0df7187E84AbD)
+        #     in Oracle app APM repo 0xF9339DE629973c60c4d2b76749c81E6F40960E3A
         add_implementation_to_oracle_app_repo(
             update_oracle_app['version'],
             update_oracle_app['new_address'],
             update_oracle_app['content_uri']
         ),
-        # 6. Updating implementation of Oracle app with new one
+        # 6. Updating implementation of Oracle app with new one 0x1430194905301504e8830ce4B0b0df7187E84AbD
         update_app_implementation(
             update_oracle_app['id'],
             update_oracle_app['new_address']
@@ -171,11 +177,12 @@ def start_vote(
         encode_permission_create(entity=voting, target_app=lido, permission_name='STAKING_CONTROL_ROLE',
                                  manager=voting),
 
-        # 10. Set execution layer rewards vault to LidoExecutionLayerRewardsVault
+        # 10. Set execution layer rewards vault
+        #               to LidoExecutionLayerRewardsVault 0x388C818CA8B9251b393131C08a736A67ccB19297
         encode_set_elrewards_vault(update_lido_app['execution_layer_rewards_vault_address']),
         # 11. Resume staking
         encode_resume_staking(),
-        # 12. Set staking limit rate to 150,000 ETH per day.
+        # 12. Set staking limit rate roughly to 150,000 ETH per day.
         encode_set_staking_limit(update_lido_app['max_staking_limit'], update_lido_app['staking_limit_increase'])
     ])
 
