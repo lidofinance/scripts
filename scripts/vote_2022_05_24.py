@@ -184,17 +184,17 @@ def start_vote(
     return confirm_vote_script(encoded_call_script, silent) and create_vote(
         vote_desc=(
             'Omnibus vote: '
-            '1) Publish new implementation in Lido app APM repo;',
-            '2) Updating implementation of Lido app;',
-            '3) Publishing new implementation in Node Operators Registry app APM repo;',
-            '4) Updating implementation of Node Operators Registry app;',
-            '5) Publishing new implementation in Oracle app APM repo;'
-            '6) Updating implementation of Oracle app;',
-            '7) Finalize Oracle upgrade to version 3;',
-            '8) Create permission for SET_EL_REWARDS_VAULT_ROLE assigning it to Voting;',
-            '9) Create permission for STAKING_CONTROL_ROLE of Lido app assigning it to Voting;',
-            '10) Set execution layer rewards vault on Lido;',
-            '11) Resume staking on Lido;',
+            '1) Publish new implementation in Lido app APM repo; ',
+            '2) Updating implementation of Lido app; ',
+            '3) Publishing new implementation in Node Operators Registry app APM repo; ',
+            '4) Updating implementation of Node Operators Registry app; ',
+            '5) Publishing new implementation in Oracle app APM repo; '
+            '6) Updating implementation of Oracle app; ',
+            '7) Finalize Oracle upgrade to version 3; ',
+            '8) Create permission for SET_EL_REWARDS_VAULT_ROLE assigning it to Voting; ',
+            '9) Create permission for STAKING_CONTROL_ROLE of Lido app assigning it to Voting; ',
+            '10) Set execution layer rewards vault on Lido; ',
+            '11) Resume staking on Lido; ',
             '12) Set staking limit rate to 150,000 ETH per day on Lido.',
         ),
         evm_script=encoded_call_script,
