@@ -1,4 +1,5 @@
 import pytest
+import copy
 
 from typing import Dict
 
@@ -21,7 +22,7 @@ def deployer():
 
 @pytest.fixture(scope='module')
 def old_fashioned_lido_oracle_report(lido):
-    push_beacon = list(filter(lambda abi_el: 'name' in abi_el and 'handleOracleReport' in abi_el['name'], lido.abi))
+    push_beacon = copy.deepcopy(list(filter(lambda abi_el: 'name' in abi_el and 'handleOracleReport' in abi_el['name'], lido.abi)))
     push_beacon[0]['name'] = 'pushBeacon'
     old_fashioned_lido = Contract.from_abi("Old-Fashioned Lido", lido.address, lido.abi + push_beacon)
 
@@ -36,7 +37,6 @@ def old_fashioned_lido_oracle_report(lido):
         beacon_balance += total_supply_inc
         assert beacon_balance > 0
         old_fashioned_lido.pushBeacon(beacon_validators, beacon_balance, {'from': lido_oracle})
-        push_beacon[0]['name'] = 'handleOracleReport'
     return report_beacon_state
 
 
