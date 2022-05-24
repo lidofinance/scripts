@@ -54,10 +54,10 @@ def deployed_contracts(deployer):
             'oracle': '0x7FDef26e3bBB8206135071A52e44f8460A243De5',
             'el_rewards_vault': '0x94750381bE1AbA0504C666ee1DB118F68f0780D4'
         } if network_name() in ("goerli", "goerli-fork") else {
-            'lido': '',
-            'nos': '',
-            'oracle': '',
-            'el_rewards_vault': ''
+            'lido': '0x47EbaB13B806773ec2A2d16873e2dF770D130b50',
+            'nos': '0x5d39ABaa161e622B99D45616afC8B837E9F19a25',
+            'oracle': '0x1430194905301504e8830ce4B0b0df7187E84AbD',
+            'el_rewards_vault': '0x388C818CA8B9251b393131C08a736A67ccB19297'
         }
 
 
