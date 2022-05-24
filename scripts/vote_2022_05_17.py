@@ -49,7 +49,6 @@ update_lido_app = {
     'id': '0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320',
     'version': (3, 0, 0),
     'execution_layer_rewards_vault_address': '0x388C818CA8B9251b393131C08a736A67ccB19297',
-    'mevtxfee_withdrawal_limit': 2,
     'max_staking_limit': 150_000 * 10**18,
     'staking_limit_increase': 150_000 * 10**18 * 13.5 // (24 * 60 * 60),  # 13.5s per block as a rough average
 }
