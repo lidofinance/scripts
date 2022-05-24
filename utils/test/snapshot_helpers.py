@@ -35,11 +35,12 @@ def try_or_none(runnable: Callable[[], T]) -> Optional[T]:
         return None
 
 
-def assert_no_more_diffs(diff: Dict[str, ValueChanged]):
-    assert len(diff) == 0, f"Unexpected diffs {diff}"
+def assert_no_more_diffs(step: str, diff: Dict[str, ValueChanged]):
+    assert len(diff) == 0, f"Unexpected diffs on step \'{step}\': {diff}"
 
 
-def assert_expected_diffs(diff, expected):
+def assert_expected_diffs(step, diff, expected):
     for key in expected.keys():
-        assert diff[key] == expected[key]
+        assert diff[key] == expected[key],\
+            f'Step \'{step}\': \'{key}\' was expected to be \'{expected[key]}\' but found {diff[key]}'
         del diff[key]

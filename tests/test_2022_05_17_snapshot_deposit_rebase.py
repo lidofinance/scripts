@@ -3,16 +3,11 @@ import pytest
 
 from typing import Dict
 
-from brownie import interface, accounts, chain, Contract, ZERO_ADDRESS, Wei
+from brownie import accounts, chain, Contract, ZERO_ADDRESS, Wei
 
 from scripts.vote_2022_05_17 import update_lido_app, update_nos_app, update_oracle_app, start_vote
-from utils.test.snapshot_helpers import dict_zip, dict_diff, try_or_none, assert_no_more_diffs, ValueChanged, \
-    assert_expected_diffs
-from utils.config import (contracts, network_name,
-                          lido_dao_agent_address,
-                          lido_dao_steth_address,
-                          ldo_token_address,
-                          lido_dao_voting_address)
+from utils.test.snapshot_helpers import dict_zip, dict_diff, assert_no_more_diffs, ValueChanged
+from utils.config import contracts, network_name
 
 
 @pytest.fixture(scope="module")
@@ -33,7 +28,7 @@ def old_fashioned_lido_oracle_report(lido):
 
     lido_oracle = accounts.at(lido.getOracle(), force=True)
     dao_voting = accounts.at(contracts.voting.address, force=True)
-    
+
     def report_beacon_state(steth_rebase_mult):
         lido.setFee(0, {'from': dao_voting})
         (deposited_validators, beacon_validators, beacon_balance) = lido.getBeaconStat()
@@ -49,7 +44,7 @@ def old_fashioned_lido_oracle_report(lido):
 def lido_oracle_report(lido):
     lido_oracle = accounts.at(lido.getOracle(), force=True)
     dao_voting = accounts.at(contracts.voting.address, force=True)
-    
+
     def report_beacon_state(steth_rebase_mult):
         lido.setFee(0, {'from': dao_voting})
         (deposited_validators, beacon_validators, beacon_balance) = lido.getBeaconStat()
@@ -110,9 +105,9 @@ def execute_vote(ldo_holder, helpers):
     )
 
 
-def make_snapshot(stranger, lido) -> Dict[str, any]:    
+def make_snapshot(stranger, lido) -> Dict[str, any]:
     curve_pool = '0xDC24316b9AE028F1497c275EB9192a3Ea0f67022'
-    
+
     _, beacon_validators, beacon_balance = lido.getBeaconStat()
 
     return {
@@ -138,9 +133,9 @@ def steps(stranger, lido, lido_oracle_report) -> Dict[str, Dict[str, any]]:
     after_deposit = make_snapshot(stranger, lido)
 
     lido_oracle_report(steth_rebase_mult=1.01)
-    
+
     after_rebase = make_snapshot(stranger, lido)
-    
+
     return {
         'before_deposit': before_deposit,
         'after_deposit': after_deposit,
@@ -160,7 +155,7 @@ def test_deposit_rebase(ldo_holder, stranger, lido, lido_oracle_report, old_fash
         (before, after) = pair_of_snapshots
         step_diffs[step] = dict_diff(before, after)
 
-    assert_no_more_diffs(step_diffs['before_deposit'])
-    assert_no_more_diffs(step_diffs['after_deposit'])
-    assert_no_more_diffs(step_diffs['after_rebase'])
+    assert_no_more_diffs('before_deposit',step_diffs['before_deposit'])
+    assert_no_more_diffs('after_deposit', step_diffs['after_deposit'])
+    assert_no_more_diffs('after_rebase', step_diffs['after_rebase'])
 

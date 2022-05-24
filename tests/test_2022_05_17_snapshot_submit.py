@@ -3,7 +3,7 @@ import pytest
 
 from typing import Dict
 
-from brownie import interface, accounts, chain
+from brownie import interface, accounts, chain, ZERO_ADDRESS
 
 from scripts.vote_2022_05_17 import update_lido_app, update_nos_app, update_oracle_app, start_vote
 from utils.test.snapshot_helpers import dict_zip, dict_diff, try_or_none, assert_no_more_diffs, ValueChanged, \
@@ -17,7 +17,12 @@ from utils.config import (contracts, network_name,
 
 @pytest.fixture(scope="module")
 def deployer():
-    return accounts[2]
+    return accounts.at('0xBC0EF071751448cD3aA0458FD2484fFF5DFD3b1B', force=True)
+
+
+@pytest.fixture(scope="module")
+def staker():
+    return accounts[0]
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -93,9 +98,8 @@ def snapshot() -> Dict[str, any]:
         'getBufferedEther()': lido.getBufferedEther(),
         'SIGNATURE_LENGTH()': lido.SIGNATURE_LENGTH(),
         'getWithdrawalCredentials()': lido.getWithdrawalCredentials(),
-        'balanceOf(TREASURY)': lido.balanceOf(lido_dao_agent_address),
         'getFeeDistribution()': lido.getFeeDistribution(),
-        'getPooledEthByShares(1)': lido.getPooledEthByShares(1),
+        'getPooledEthByShares(100)': lido.getPooledEthByShares(100),
         'allowRecoverability(LDO)': lido.allowRecoverability(ldo_token_address),
         'allowRecoverability(StETH)': lido.allowRecoverability(lido_dao_steth_address),
         'MANAGE_FEE': lido.MANAGE_FEE(),
@@ -113,10 +117,16 @@ def snapshot() -> Dict[str, any]:
         'kernel': lido.kernel(),
         'getTotalShares()': lido.getTotalShares(),
         'isPetrified()': lido.isPetrified(),
-        'sharesOf(TREASURY)': lido.sharesOf(lido_dao_agent_address),
-        'getSharesByPooledEth(1)': lido.getSharesByPooledEth(1),
+        'getSharesByPooledEth(1 ETH)': lido.getSharesByPooledEth(10 ** 18),
 
-        'allowance(TREASURY, accounts[0])': lido.allowance(lido_dao_agent_address, accounts[0]),
+        'allowance(accounts[0], TREASURY)': lido.allowance(accounts[0], lido_dao_agent_address),
+        'balanceOf(TREASURY)': lido.balanceOf(lido_dao_agent_address),
+        'sharesOf(TREASURY)': lido.sharesOf(lido_dao_agent_address),
+
+        'allowance(accounts[0], VOTING)': lido.allowance(accounts[0], lido_dao_voting_address),
+        'balanceOf(accounts[0])': lido.balanceOf(accounts[0]),
+        'sharesOf(accounts[0])': lido.sharesOf(accounts[0]),
+
         'canPerform()': lido.canPerform(lido_dao_voting_address, lido.PAUSE_ROLE(), []),
         'getEVMScriptExecutor()': lido.getEVMScriptExecutor(f'0x{str(1).zfill(8)}'),
 
@@ -136,9 +146,16 @@ def snapshot() -> Dict[str, any]:
     }
 
 
-def test_getters(ldo_holder, helpers):
+def test_submit(ldo_holder, helpers, lido, staker):
+    ether = 10 ** 18
+    stake_limit = 150_000 * 10 ** 18
+    height = chain.height
+
     def steps() -> Dict[str, Dict[str, any]]:
-        return {'init': snapshot()}
+        track = {'init': snapshot()}
+        lido.submit(ZERO_ADDRESS, {'from': staker, 'amount': ether})
+        track['submit'] = snapshot()
+        return track
 
     before: Dict[str, Dict[str, any]] = steps()
     chain.revert()
@@ -151,16 +168,23 @@ def test_getters(ldo_holder, helpers):
         (before, after) = pair_of_snapshots
         step_diffs[step] = dict_diff(before, after)
 
-    init = step_diffs['init']
+    step = 'init'
+    assert_stake_limit(step, step_diffs[step], stake_limit, height)
 
-    assert_new_methods(init)
-    assert_no_more_diffs(init)
+    step = 'submit'
+    assert_stake_limit(step, step_diffs[step], stake_limit - ether, height + 1)
+
+    for step_name, diff in step_diffs.items():
+        assert_new_static_methods(step_name, diff)
+        assert_no_more_diffs(step_name, diff)
 
 
-def assert_new_methods(diff):
-    assert_expected_diffs(diff, {
-        'implementation': ValueChanged(from_val='0xC7B5aF82B05Eb3b64F12241B04B2cF14469E39F7',
-                                       to_val='0x1596Ff8ED308a83897a731F3C1e814B19E11D68c'),
+def assert_new_static_methods(step, diff):
+    assert_expected_diffs(step, diff, {
+        'implementation': ValueChanged(
+            from_val='0xC7B5aF82B05Eb3b64F12241B04B2cF14469E39F7',
+            to_val='0x3bDa953CE646506Ff15198ebCACc164aa1632b6D'
+        ),
         'RESUME_ROLE': ValueChanged(
             from_val=None,
             to_val='0x2fc10cc8ae19568712f7a176fb4978616a610650813c9d05326c34abb62749c7'
@@ -185,13 +209,27 @@ def assert_new_methods(diff):
             from_val=None,
             to_val='0xa42eee1333c0758ba72be38e728b6dadb32ea767de5b4ddbaea1dae85b1b051f'
         ),
-        'getCurrentStakeLimit()': ValueChanged(from_val=None, to_val=150000000000000000000000),
-        'getStakeLimitFullInfo()': ValueChanged(
-            from_val=None, to_val=(
-                False, True, 150000000000000000000000, 150000000000000000000000, 6400, 150000000000000000000000,
-                14828618)),
         'isStakingPaused()': ValueChanged(from_val=None, to_val=False),
-        'getELRewardsVault()': ValueChanged(from_val=None, to_val='0x98E230B2eE9c99B23D96153E37EA536eBBcBD0f2'),
+        'getELRewardsVault()': ValueChanged(from_val=None, to_val='0xBBC6a4f6dAA7E265794524E691eac5D4AE469350'),
         'getTotalELRewardsCollected()': ValueChanged(from_val=None, to_val=0),
         'getELRewardsWithdrawalLimit()': ValueChanged(from_val=None, to_val=0),
     })
+
+
+def assert_stake_limit(step, diff, current_stake_limit, block_number):
+    assert_expected_diffs(step, diff,
+                          {'getCurrentStakeLimit()': ValueChanged(from_val=None, to_val=current_stake_limit)})
+
+    assert diff.get('getStakeLimitFullInfo()') is not None
+    full_info_diff = diff['getStakeLimitFullInfo()']
+    assert full_info_diff.from_val is None
+    new_full_info = full_info_diff.to_val
+    assert new_full_info[0] is False
+    assert new_full_info[1] is True
+    assert new_full_info[2] == current_stake_limit
+    assert new_full_info[3] == 150_000 * 10**18
+    assert new_full_info[4] == 6400
+    assert new_full_info[5] == current_stake_limit
+    assert new_full_info[6] > block_number
+
+    del diff['getStakeLimitFullInfo()']
