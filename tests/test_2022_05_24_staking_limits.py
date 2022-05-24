@@ -170,6 +170,11 @@ def test_protocol_pause(lido, operator, stranger):
     with reverts("STAKING_PAUSED"):
         lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether})
 
+    lido.resumeStaking({"from": operator})
+
+    with reverts("CONTRACT_IS_STOPPED"):
+        lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether})
+
 
 def test_protocol_resume_after_pause(lido, operator, stranger):
     # Should revert if contract is paused
@@ -239,5 +244,3 @@ def assert_set_staking_limit(log, limit_max, limit_per_block):
         == "0x"
         + eth_abi.encode_abi(["uint256", "uint256"], [limit_max, limit_per_block]).hex()
     )
-
-# проверить как ведет себя stopstaking /resume staking при stop/resume контракта
