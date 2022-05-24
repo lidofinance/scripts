@@ -1,5 +1,9 @@
 """
-The acceptance tests for the “LIP-10: Proxy initializations and LidoOracle upgrade”
+The acceptance tests for the
+“LIP-10: Proxy initializations and LidoOracle upgrade”
+and
+"LIP-11: Add a transfer shares function for stETH"
+
 """
 import pytest
 import eth_abi
@@ -16,11 +20,6 @@ def stranger(accounts):
 @pytest.fixture(scope="module")
 def another_stranger(accounts):
     return accounts[1]
-
-
-@pytest.fixture(scope="module")
-def deployer(accounts):
-    return accounts[2]
 
 
 @pytest.fixture(scope="module", autouse=True)
