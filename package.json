@@ -10,8 +10,5 @@
 
   "dependencies": {
     "ganache": "^7.0.4"
-  },
-  "devDependencies": {
-    "hardhat": "^2.9.5"
   }
 }
