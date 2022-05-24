@@ -15,11 +15,6 @@ def stranger(accounts):
     return accounts[0]
 
 
-@pytest.fixture(scope="module")
-def deployer():
-    return accounts[2]
-
-
 @pytest.fixture(scope='module')
 def old_fashioned_lido_oracle_report(lido):
     push_beacon = copy.deepcopy(
@@ -130,9 +125,8 @@ def test_submit_rebase(ldo_holder, stranger, lido, lido_oracle_report, old_fashi
         (before, after) = pair_of_snapshots
         step_diffs[step] = dict_diff(before, after)
 
-    assert_no_more_diffs('before_submit',step_diffs['before_submit'])
+    assert_no_more_diffs('before_submit', step_diffs['before_submit'])
     assert_no_more_diffs('after_submit', step_diffs['after_submit'])
     assert_no_more_diffs('after_positive_rebase', step_diffs['after_positive_rebase'])
-    assert_no_more_diffs('after_negative_rebase',step_diffs['after_negative_rebase'])
+    assert_no_more_diffs('after_negative_rebase', step_diffs['after_negative_rebase'])
     assert_no_more_diffs('after_last_submit', step_diffs['after_last_submit'])
-
