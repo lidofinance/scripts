@@ -8,5 +8,5 @@ def test_max_slippage(accounts, interface):
     vault = interface.AnchorVault('0xA2F987A546D4CD1c607Ee8141276876C26b72Bdf')
     liquidator = interface.AnchorLiquidator('0xE3c8A4De3b8A484ff890a38d6D7B5D278d697Fb7')
 
-    liquidator.configure(0.03*10**18,10**18,10**18,10**18,{"from":admin})
+    liquidator.configure(0.03*10**18,0.03*10**18,10**18,10**18,{"from":admin})
     vault.collect_rewards({"from": bot})
