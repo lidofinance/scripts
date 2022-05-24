@@ -1,12 +1,12 @@
 """
-Tests for voting 17/05/2022.
+Tests for voting 24/05/2022.
 """
 import json
 import pytest
 
 from brownie import interface, chain
 
-from scripts.vote_2022_05_17 import start_vote, update_lido_app, update_nos_app, update_oracle_app
+from scripts.vote_2022_05_24 import start_vote, update_lido_app, update_nos_app, update_oracle_app
 from tx_tracing_helpers import *
 from utils.config import contracts, lido_dao_steth_address, lido_dao_oracle, lido_dao_node_operators_registry, \
     network_name
@@ -92,7 +92,7 @@ max_staking_limit = 150_000 * 10 ** 18
 staking_limit_increase = 23.4375 * 10 ** 18
 
 
-def test_2022_05_17(
+def test_vote(
     helpers, accounts, ldo_holder, dao_voting,
     vote_id_from_env, bypass_events_decoding,
     deployed_contracts, lido,

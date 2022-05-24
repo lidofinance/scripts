@@ -3,16 +3,15 @@ import copy
 
 from typing import Dict
 
-from brownie import accounts, chain, Contract
+from brownie import accounts, chain, Contract, ZERO_ADDRESS, Wei
 
-from scripts.vote_2022_05_17 import start_vote
+from scripts.vote_2022_05_24 import start_vote
 from utils.test.snapshot_helpers import dict_zip, dict_diff, assert_no_more_diffs, ValueChanged
 from utils.config import contracts
-from utils.node_operators import get_node_operators
 
 
 @pytest.fixture(scope="module")
-def stranger():
+def stranger(accounts):
     return accounts[0]
 
 
@@ -66,40 +65,59 @@ def execute_vote(ldo_holder, helpers):
     )
 
 
-def make_snapshot(lido, node_operators_registry) -> Dict[str, any]:
-    node_operators = get_node_operators(node_operators_registry)
+def make_snapshot(stranger, lido) -> Dict[str, any]:
+    curve_pool = '0xDC24316b9AE028F1497c275EB9192a3Ea0f67022'
 
-    snapshot = {}
-    for node_operator in node_operators:
-        snapshot[node_operator['name']] = lido.balanceOf(node_operator['rewardAddress'])
-
-    return snapshot
-
-
-def steps(lido, node_operators_registry, lido_oracle_report) -> Dict[str, Dict[str, any]]:
-    before_rewards_distribution = make_snapshot(lido, node_operators_registry)
-
-    lido_oracle_report(steth_rebase_mult=1.01)
-
-    after_rewards_distribution = make_snapshot(lido, node_operators_registry)
-
-    lido_oracle_report(steth_rebase_mult=0.99)
-
-    after_negative_rebase_no_rewards = make_snapshot(lido, node_operators_registry)
+    _, beacon_validators, beacon_balance = lido.getBeaconStat()
 
     return {
-        'before_rewards_distribution': before_rewards_distribution,
-        'after_rewards_distribution': after_rewards_distribution,
-        'after_negative_rebase_no_rewards': after_negative_rebase_no_rewards
+        'stranger.steth_balance': lido.balanceOf(stranger),
+        'stranger.steth_shares': lido.sharesOf(stranger),
+
+        'curve_pool.steth_balance': lido.balanceOf(curve_pool),
+        'curve_pool.steth_shares': lido.sharesOf(curve_pool),
+
+        'steth.total_supply': lido.totalSupply(),
+        'steth.total_sthares': lido.getTotalShares(),
+
+        'lido.beacon_validators': beacon_validators,
+        'lido.beacon_balance': beacon_balance
     }
 
 
-def test_rewards_distribution(ldo_holder, lido, node_operators_registry, lido_oracle_report,
-                              old_fashioned_lido_oracle_report, helpers):
-    before: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, old_fashioned_lido_oracle_report)
+def steps(stranger, lido, lido_oracle_report) -> Dict[str, Dict[str, any]]:
+    before_submit = make_snapshot(stranger, lido)
+
+    lido.submit(ZERO_ADDRESS, {'from': stranger, 'value': Wei('50 ether')})
+
+    after_submit = make_snapshot(stranger, lido)
+
+    lido_oracle_report(steth_rebase_mult=1.01)
+
+    after_positive_rebase = make_snapshot(stranger, lido)
+
+    lido_oracle_report(steth_rebase_mult=0.99)
+
+    after_negative_rebase = make_snapshot(stranger, lido)
+
+    lido.submit(ZERO_ADDRESS, {'from': stranger, 'value': Wei('10 ether')})
+
+    after_last_submit = make_snapshot(stranger, lido)
+
+    return {
+        'before_submit': before_submit,
+        'after_submit': after_submit,
+        'after_positive_rebase': after_positive_rebase,
+        'after_negative_rebase': after_negative_rebase,
+        'after_last_submit': after_last_submit
+    }
+
+
+def test_submit_rebase(ldo_holder, stranger, lido, lido_oracle_report, old_fashioned_lido_oracle_report, helpers):
+    before: Dict[str, Dict[str, any]] = steps(stranger, lido, old_fashioned_lido_oracle_report)
     chain.revert()
     execute_vote(ldo_holder, helpers)
-    after: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, lido_oracle_report)
+    after: Dict[str, Dict[str, any]] = steps(stranger, lido, lido_oracle_report)
 
     step_diffs: Dict[str, Dict[str, ValueChanged]] = {}
 
@@ -107,6 +125,8 @@ def test_rewards_distribution(ldo_holder, lido, node_operators_registry, lido_or
         (before, after) = pair_of_snapshots
         step_diffs[step] = dict_diff(before, after)
 
-    assert_no_more_diffs('before_rewards_distribution', step_diffs['before_rewards_distribution'])
-    assert_no_more_diffs('after_rewards_distribution', step_diffs['after_rewards_distribution'])
-    assert_no_more_diffs('after_negative_rebase_no_rewards', step_diffs['after_negative_rebase_no_rewards'])
+    assert_no_more_diffs('before_submit', step_diffs['before_submit'])
+    assert_no_more_diffs('after_submit', step_diffs['after_submit'])
+    assert_no_more_diffs('after_positive_rebase', step_diffs['after_positive_rebase'])
+    assert_no_more_diffs('after_negative_rebase', step_diffs['after_negative_rebase'])
+    assert_no_more_diffs('after_last_submit', step_diffs['after_last_submit'])

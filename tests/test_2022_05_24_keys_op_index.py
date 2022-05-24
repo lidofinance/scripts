@@ -1,11 +1,11 @@
 """
-Tests for node operator registry key index counter for voting 17/05/2022
+Tests for node operator registry key index counter for voting 24/05/2022
 """
 import pytest
 import eth_abi
 
 from brownie import web3
-from scripts.vote_2022_05_17 import start_vote
+from scripts.vote_2022_05_24 import start_vote
 
 
 @pytest.fixture(scope="module")
