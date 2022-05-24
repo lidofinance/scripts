@@ -12,7 +12,7 @@ from utils.config import (ldo_token_address, lido_dao_voting_address,
                           lido_dao_deposit_security_module_address,
                           lido_dao_steth_address, lido_dao_acl_address,
                           lido_dao_finance_address, ldo_holder_address_for_tests,
-                          ldo_vote_executors_for_tests, lido_easytrack)
+                          ldo_vote_executors_for_tests, lido_easytrack, lido_dao_oracle)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -29,9 +29,11 @@ def ldo_holder(accounts):
 def dao_voting(interface):
     return interface.Voting(lido_dao_voting_address)
 
+
 @pytest.fixture(scope='module')
 def dao_agent(interface):
     return interface.Agent(lido_dao_agent_address)
+
 
 @pytest.fixture(scope='module')
 def node_operators_registry(interface):
@@ -69,13 +71,28 @@ def finance(interface):
 
 
 @pytest.fixture(scope="module")
+def oracle(interface):
+    return interface.LidoOracle(lido_dao_oracle)
+
+
+@pytest.fixture(scope="module")
 def easy_track(interface):
     return interface.EasyTrack(lido_easytrack)
 
 
 class Helpers:
     @staticmethod
-    def execute_vote(accounts, vote_id, dao_voting, topup='0.1 ether', skip_time = 3 * 60 * 60 * 24):
+    def filter_events_from(addr, events):
+        return list(filter(lambda evt: evt.address == addr, events))
+
+    @staticmethod
+    def assert_single_event_named(evt_name, tx, evt_keys_dict):
+        receiver_events = Helpers.filter_events_from(tx.receiver, tx.events[evt_name])
+        assert len(receiver_events) == 1
+        assert dict(receiver_events[0]) == evt_keys_dict
+
+    @staticmethod
+    def execute_vote(accounts, vote_id, dao_voting, topup='0.1 ether', skip_time=3 * 60 * 60 * 24):
         if dao_voting.getVote(vote_id)[0]:
             for holder_addr in ldo_vote_executors_for_tests:
                 print('voting from acct:', holder_addr)
