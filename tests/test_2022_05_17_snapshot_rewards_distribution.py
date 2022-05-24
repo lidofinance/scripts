@@ -78,7 +78,6 @@ def make_snapshot(lido, node_operators_registry) -> Dict[str, any]:
     for node_operator in node_operators:
         snapshot[node_operator['name']] = lido.balanceOf(node_operator['rewardAddress'])
 
-    print('snapshot', snapshot)
     return snapshot
 
 
@@ -93,14 +92,11 @@ def steps(lido, node_operators_registry, lido_oracle_report) -> Dict[str, Dict[s
 
     after_negative_rebase_no_rewards = make_snapshot(lido, node_operators_registry)
 
-
-    result = {
+    return {
         'before_rewards_distribution': before_rewards_distribution,
         'after_rewards_distribution': after_rewards_distribution,
         'after_negative_rebase_no_rewards': after_negative_rebase_no_rewards
     }
-    print('result', result)
-    return result
 
 def test_rewards_distribution(ldo_holder, lido, node_operators_registry, lido_oracle_report, old_fashioned_lido_oracle_report, helpers):
     before: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, old_fashioned_lido_oracle_report)
