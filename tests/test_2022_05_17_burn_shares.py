@@ -2,16 +2,9 @@
 Tests for lido burnShares method for voting 17/05/2022
 """
 import eth_abi
-import re
-import json
 import pytest
 from brownie import reverts, ZERO_ADDRESS, web3
-from scripts.vote_2022_05_17 import (
-    start_vote,
-    update_lido_app,
-    update_nos_app,
-    update_oracle_app,
-)
+from scripts.vote_2022_05_17 import start_vote
 
 
 @pytest.fixture(scope="module")

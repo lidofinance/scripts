@@ -48,7 +48,7 @@ def deployed_contracts(deployer):
             'el_rewards_vault': execution_layer_rewards_vault_tx.contract_address
         }
     else:
-        return { # Hardcode contract addresses here
+        return {  # Hardcode contract addresses here
             'lido': '0xb16876f11324Fbf02b9B294FBE307B3DB0C02DBB',
             'nos': '0xbb001978bD0d5b36D95c54025ac6a5822b2b1Aec',
             'oracle': '0x7FDef26e3bBB8206135071A52e44f8460A243De5',

@@ -2,11 +2,10 @@
 The acceptance tests for the “LIP-10: Proxy initializations and LidoOracle upgrade”
 """
 import pytest
-import json
 import eth_abi
 
 from brownie import ZERO_ADDRESS, reverts, web3
-from scripts.vote_2022_05_17 import start_vote, update_lido_app, update_nos_app, update_oracle_app
+from scripts.vote_2022_05_17 import start_vote
 
 
 @pytest.fixture(scope="module")
@@ -48,17 +47,17 @@ def test_transfer_shares(lido, stranger, another_stranger):
     assert lido.sharesOf(another_stranger) == another_stranger_shares_before + shares_to_transfer
 
     assert_transfer(
-        tx.logs[1], 
-        stranger.address, 
-        another_stranger.address, 
+        tx.logs[1],
+        stranger.address,
+        another_stranger.address,
         lido.getPooledEthByShares(shares_to_transfer)
-    ) 
+    )
     assert_transfer_shares(
-        tx.logs[0], 
-        stranger.address, 
-        another_stranger.address, 
+        tx.logs[0],
+        stranger.address,
+        another_stranger.address,
         shares_to_transfer
-    ) 
+    )
 
 
 def test_transfer(lido, stranger, another_stranger):
@@ -74,17 +73,17 @@ def test_transfer(lido, stranger, another_stranger):
     assert lido.balanceOf(another_stranger) == another_stranger_balance_before + amount_to_transfer - 1
 
     assert_transfer(
-        tx.logs[0], 
-        stranger.address, 
-        another_stranger.address, 
+        tx.logs[0],
+        stranger.address,
+        another_stranger.address,
         amount_to_transfer
-    ) 
+    )
     assert_transfer_shares(
-        tx.logs[1], 
-        stranger.address, 
-        another_stranger.address, 
+        tx.logs[1],
+        stranger.address,
+        another_stranger.address,
         lido.getSharesByPooledEth(amount_to_transfer)
-    ) 
+    )
 
 
 def test_transfer_from(lido, stranger, another_stranger):
@@ -101,17 +100,17 @@ def test_transfer_from(lido, stranger, another_stranger):
     assert lido.balanceOf(another_stranger) == another_stranger_balance_before + amount_to_transfer - 1
 
     assert_transfer(
-        tx.logs[0], 
-        stranger.address, 
-        another_stranger.address, 
+        tx.logs[0],
+        stranger.address,
+        another_stranger.address,
         amount_to_transfer
-    ) 
+    )
     assert_transfer_shares(
-        tx.logs[1], 
-        stranger.address, 
-        another_stranger.address, 
+        tx.logs[1],
+        stranger.address,
+        another_stranger.address,
         lido.getSharesByPooledEth(amount_to_transfer)
-    ) 
+    )
 
 
 def test_deposit(lido, stranger):
@@ -123,17 +122,17 @@ def test_deposit(lido, stranger):
     assert lido.balanceOf(stranger) == stranger_balance_before + amount_to_transfer - 1
 
     assert_transfer(
-        tx.logs[1], 
+        tx.logs[1],
         ZERO_ADDRESS,
         stranger.address,
-        amount_to_transfer - 1 
-    ) 
+        amount_to_transfer - 1
+    )
     assert_transfer_shares(
-        tx.logs[2], 
+        tx.logs[2],
         ZERO_ADDRESS,
         stranger.address,
         lido.getSharesByPooledEth(amount_to_transfer)
-    ) 
+    )
 
 
 def test_submit(lido, stranger):
@@ -145,13 +144,13 @@ def test_submit(lido, stranger):
     assert lido.balanceOf(stranger) == stranger_balance_before + amount_to_transfer - 1
 
     assert_transfer(
-        tx.logs[1], 
+        tx.logs[1],
         ZERO_ADDRESS,
         stranger.address,
-        amount_to_transfer - 1 
-    ) 
+        amount_to_transfer - 1
+    )
     assert_transfer_shares(
-        tx.logs[2], 
+        tx.logs[2],
         ZERO_ADDRESS,
         stranger.address,
         lido.getSharesByPooledEth(amount_to_transfer)
@@ -164,37 +163,37 @@ def test_push_beacon(node_operators_registry, lido, oracle):
 
     rewards_amount = 500 * 10**18
     report_amount = beacon_stats["beaconBalance"] + rewards_amount
-    
+
     tx = lido.handleOracleReport(beacon_stats["beaconValidators"], report_amount, {"from": oracle})
     shares2mint = lido.getSharesByPooledEth(rewards_amount // 10)
-    
+
     insurance_address = lido.getInsuranceFund()
     insurance_reward_shares = shares2mint // 2
-    
+
     assert_transfer_shares(
-        tx.logs[1], 
+        tx.logs[1],
         ZERO_ADDRESS,
         insurance_address,
         insurance_reward_shares
     )
     assert_transfer(
-        tx.logs[0], 
+        tx.logs[0],
         ZERO_ADDRESS,
         insurance_address,
         lido.getPooledEthByShares(insurance_reward_shares)
-    ) 
-    
+    )
+
     shares_per_validator = shares2mint // 2 // beacon_stats["depositedValidators"]
     for no_index in range(current_ops_count):
         no = node_operators_registry.getNodeOperator(no_index, True)
         assert_transfer(
-            tx.logs[2+no_index*2], 
+            tx.logs[2+no_index*2],
             ZERO_ADDRESS,
             no[2],
             lido.getPooledEthByShares(shares_per_validator * no[6])
-        ) 
+        )
         assert_transfer_shares(
-            tx.logs[2+no_index*2 + 1], 
+            tx.logs[2+no_index*2 + 1],
             ZERO_ADDRESS,
             no[2],
             shares_per_validator * no[6]

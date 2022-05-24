@@ -2,17 +2,10 @@
 Tests for node operator registry key index counter for voting 17/05/2022
 """
 import pytest
-import json
 import eth_abi
 
 from brownie import web3
-from tx_tracing_helpers import *
-from scripts.vote_2022_05_17 import (
-    start_vote,
-    update_lido_app,
-    update_nos_app,
-    update_oracle_app,
-)
+from scripts.vote_2022_05_17 import start_vote
 
 
 @pytest.fixture(scope="module")

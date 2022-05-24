@@ -15,11 +15,6 @@ from utils.config import (contracts,
 
 
 @pytest.fixture(scope="module")
-def deployer():
-    return accounts.at('0xBC0EF071751448cD3aA0458FD2484fFF5DFD3b1B', force=True)
-
-
-@pytest.fixture(scope="module")
 def staker():
     return accounts[0]
 

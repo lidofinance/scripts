@@ -11,18 +11,14 @@ from utils.config import contracts
 
 
 @pytest.fixture(scope="module")
-def stranger(accounts):
+def stranger():
     return accounts[0]
-
-
-@pytest.fixture(scope="module")
-def deployer():
-    return accounts[2]
 
 
 @pytest.fixture(scope='module')
 def old_fashioned_lido_oracle_report(lido):
-    push_beacon = copy.deepcopy(list(filter(lambda abi_el: 'name' in abi_el and 'handleOracleReport' in abi_el['name'], lido.abi)))
+    push_beacon = copy.deepcopy(
+        list(filter(lambda abi_el: 'name' in abi_el and 'handleOracleReport' in abi_el['name'], lido.abi)))
     push_beacon[0]['name'] = 'pushBeacon'
     old_fashioned_lido = Contract.from_abi("Old-Fashioned Lido", lido.address, lido.abi + push_beacon)
 
@@ -37,6 +33,7 @@ def old_fashioned_lido_oracle_report(lido):
         beacon_balance += total_supply_inc
         assert beacon_balance > 0
         old_fashioned_lido.pushBeacon(beacon_validators, beacon_balance, {'from': lido_oracle})
+
     return report_beacon_state
 
 
@@ -53,6 +50,7 @@ def lido_oracle_report(lido):
         beacon_balance += total_supply_inc
         assert beacon_balance > 0
         lido.handleOracleReport(beacon_validators, beacon_balance, {'from': lido_oracle})
+
     return report_beacon_state
 
 
@@ -116,7 +114,6 @@ def test_deposit_rebase(ldo_holder, stranger, lido, lido_oracle_report, old_fash
         (before, after) = pair_of_snapshots
         step_diffs[step] = dict_diff(before, after)
 
-    assert_no_more_diffs('before_deposit',step_diffs['before_deposit'])
+    assert_no_more_diffs('before_deposit', step_diffs['before_deposit'])
     assert_no_more_diffs('after_deposit', step_diffs['after_deposit'])
     assert_no_more_diffs('after_rebase', step_diffs['after_rebase'])
-

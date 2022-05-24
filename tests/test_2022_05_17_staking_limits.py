@@ -2,19 +2,12 @@
 Tests for lido staking limits for voting 17/05/2022
 """
 import pytest
-import json
 import eth_abi
 
 from web3 import Web3
-from tx_tracing_helpers import *
 from utils.config import contracts
 from brownie import web3, convert, reverts, ZERO_ADDRESS, chain
-from scripts.vote_2022_05_17 import (
-    start_vote,
-    update_lido_app,
-    update_nos_app,
-    update_oracle_app,
-)
+from scripts.vote_2022_05_17 import start_vote
 
 ether = 10 ** 18
 
@@ -246,6 +239,5 @@ def assert_set_staking_limit(log, limit_max, limit_per_block):
         == "0x"
         + eth_abi.encode_abi(["uint256", "uint256"], [limit_max, limit_per_block]).hex()
     )
-
 
 # проверить как ведет себя stopstaking /resume staking при stop/resume контракта

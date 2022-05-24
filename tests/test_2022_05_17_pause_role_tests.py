@@ -1,16 +1,10 @@
 """
 Tests for lido resume/pause roles 17/05/2022
 """
-import json
 import pytest
 from functools import partial
-from brownie import reverts, web3, ZERO_ADDRESS
-from scripts.vote_2022_05_17 import (
-    start_vote,
-    update_lido_app,
-    update_nos_app,
-    update_oracle_app,
-)
+from brownie import reverts, web3
+from scripts.vote_2022_05_17 import start_vote
 
 
 @pytest.fixture(scope="module")

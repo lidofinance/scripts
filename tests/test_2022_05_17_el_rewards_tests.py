@@ -1,19 +1,13 @@
 """
 Tests for EL rewards distribution for voting 17/05/2022
 """
-import json
 import pytest
 import eth_abi
 from functools import partial
 from brownie import interface, reverts, web3
 
 from utils.config import contracts
-from scripts.vote_2022_05_17 import (
-    start_vote,
-    update_lido_app,
-    update_nos_app,
-    update_oracle_app,
-)
+from scripts.vote_2022_05_17 import start_vote
 
 LIDO_EXECUTION_LAYER_REWARDS_VAULT = "0x388C818CA8B9251b393131C08a736A67ccB19297"
 TOTAL_BASIS_POINTS = 10000
@@ -119,7 +113,7 @@ def test_set_el_tx_withdrawal_limit(acl, lido, stranger, dao_voting):
 def test_lido_execution_layer_rewards_vault_receive_events(
     stranger, lido_execution_layer_rewards_vault
 ):
-    reward_amount = 10**18 + 1
+    reward_amount = 10 ** 18 + 1
     tx = stranger.transfer(lido_execution_layer_rewards_vault, reward_amount)
     assert lido_execution_layer_rewards_vault.balance() == reward_amount
     assert_eth_received_log(log=tx.logs[0], value=reward_amount)
@@ -128,7 +122,7 @@ def test_lido_execution_layer_rewards_vault_receive_events(
 def test_receive_el_rewards_permissions(
     lido, stranger, lido_execution_layer_rewards_vault
 ):
-    reward_amount = 10**18
+    reward_amount = 10 ** 18
 
     # receiveELRewards can't be called by the stranger
     assert lido.getELRewardsVault() != stranger
@@ -151,8 +145,8 @@ def test_receive_el_rewards_permissions(
     assert lido.balance() == lido_eth_balance_before + reward_amount
 
 
-@pytest.mark.parametrize("el_reward", [0, 100 * 10**18, 1_000_000 * 10**18])
-@pytest.mark.parametrize("beacon_balance_delta", [0, 1000 * 10**18, -1000 * 10**18])
+@pytest.mark.parametrize("el_reward", [0, 100 * 10 ** 18, 1_000_000 * 10 ** 18])
+@pytest.mark.parametrize("beacon_balance_delta", [0, 1000 * 10 ** 18, -1000 * 10 ** 18])
 def test_handle_oracle_report_with_el_rewards(
     acl,
     lido,
@@ -196,9 +190,9 @@ def test_handle_oracle_report_with_el_rewards(
         balance = lido.balanceOf(reward_address)
 
         # top up the node operator balance if it's too low to avoid reverts caused by the shares rounding
-        if balance <= 10**9:
-            eth_whale.transfer(lido, 2 * 10**9)
-            lido.transfer(reward_address, 10**9, {"from": eth_whale})
+        if balance <= 10 ** 9:
+            eth_whale.transfer(lido, 2 * 10 ** 9)
+            lido.transfer(reward_address, 10 ** 9, {"from": eth_whale})
             balance = lido.balanceOf(reward_address)
         node_operators_balances_before[reward_address] = balance
 
@@ -275,8 +269,8 @@ def test_handle_oracle_report_with_el_rewards(
             reward_address = node_operator["rewardAddress"]
 
             expected_node_operator_reward = (
-                node_operator["activeValidators"] - node_operator["stoppedValidators"]
-            ) * (total_node_operators_reward // total_number_of_node_operators)
+                                                node_operator["activeValidators"] - node_operator["stoppedValidators"]
+                                            ) * (total_node_operators_reward // total_number_of_node_operators)
 
             node_operator_balance_after = lido.balanceOf(reward_address)
 
