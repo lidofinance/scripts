@@ -1,12 +1,11 @@
 """
 Tests for voting 24/05/2022.
 """
-import json
 import pytest
 
 from brownie import interface, chain
 
-from scripts.vote_2022_05_24 import start_vote, update_lido_app, update_nos_app, update_oracle_app
+from scripts.vote_2022_05_24 import start_vote
 from tx_tracing_helpers import *
 from utils.config import contracts, lido_dao_steth_address, lido_dao_oracle, lido_dao_node_operators_registry, \
     network_name
@@ -17,48 +16,14 @@ from event_validators.lido import (validate_set_version_event,
                                    validate_staking_limit_set)
 
 
-@pytest.fixture(scope="module")
-def deployer(accounts):
-    return accounts[2]
-
-
 @pytest.fixture(scope="module", autouse=True)
-def deployed_contracts(deployer):
-    if update_lido_app['new_address'] is None:
-        lido_tx_data = json.load(open('./utils/txs/tx-13-1-deploy-lido-base.json'))["data"]
-        nos_tx_data = json.load(open('./utils/txs/tx-13-1-deploy-node-operators-registry-base.json'))["data"]
-        oracle_tx_data = json.load(open('./utils/txs/tx-13-1-deploy-oracle-base.json'))["data"]
-        execution_layer_rewards_vault_tx_data = \
-            json.load(open('./utils/txs/tx-26-deploy-execution-layer-rewards-vault.json'))["data"]
-
-        lido_tx = deployer.transfer(data=lido_tx_data)
-        nos_tx = deployer.transfer(data=nos_tx_data)
-        oracle_tx = deployer.transfer(data=oracle_tx_data)
-        execution_layer_rewards_vault_tx = deployer.transfer(data=execution_layer_rewards_vault_tx_data)
-
-        update_lido_app['new_address'] = lido_tx.contract_address
-        update_lido_app['execution_layer_rewards_vault_address'] = execution_layer_rewards_vault_tx.contract_address
-        update_nos_app['new_address'] = nos_tx.contract_address
-        update_oracle_app['new_address'] = oracle_tx.contract_address
-
-        return {
-            'lido': lido_tx.contract_address,
-            'nos': nos_tx.contract_address,
-            'oracle': oracle_tx.contract_address,
-            'el_rewards_vault': execution_layer_rewards_vault_tx.contract_address
-        }
-    else:
-        return {  # Hardcode contract addresses here
-            'lido': '0xb16876f11324Fbf02b9B294FBE307B3DB0C02DBB',
-            'nos': '0xbb001978bD0d5b36D95c54025ac6a5822b2b1Aec',
-            'oracle': '0x7FDef26e3bBB8206135071A52e44f8460A243De5',
-            'el_rewards_vault': '0x94750381bE1AbA0504C666ee1DB118F68f0780D4'
-        } if network_name() in ("goerli", "goerli-fork") else {
-            'lido': '0x47EbaB13B806773ec2A2d16873e2dF770D130b50',
-            'nos': '0x5d39ABaa161e622B99D45616afC8B837E9F19a25',
-            'oracle': '0x1430194905301504e8830ce4B0b0df7187E84AbD',
-            'el_rewards_vault': '0x388C818CA8B9251b393131C08a736A67ccB19297'
-        }
+def deployed_contracts():
+    return {
+        'lido': '0x47EbaB13B806773ec2A2d16873e2dF770D130b50',
+        'nos': '0x5d39ABaa161e622B99D45616afC8B837E9F19a25',
+        'oracle': '0x1430194905301504e8830ce4B0b0df7187E84AbD',
+        'el_rewards_vault': '0x388C818CA8B9251b393131C08a736A67ccB19297'
+    }
 
 
 lido_app_id = '0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320'
