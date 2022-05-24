@@ -1,23 +1,19 @@
 """
 Voting 17/05/2022.
 
-1. Publishing new implementation (0x47EbaB13B806773ec2A2d16873e2dF770D130b50)
-    in Lido app APM repo 0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1
-2. Updating implementation of Lido app with the new one 0x47EbaB13B806773ec2A2d16873e2dF770D130b50
-3. Publishing new implementation (0x5d39ABaa161e622B99D45616afC8B837E9F19a25)
-    in Node Operators Registry app APM repo 0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1831
-4. Updating implementation of Node Operators Registry app with the new one 0x5d39ABaa161e622B99D45616afC8B837E9F19a25
-5. Publishing new implementation (0x1430194905301504e8830ce4B0b0df7187E84AbD)
-    in Oracle app APM repo 0xF9339DE629973c60c4d2b76749c81E6F40960E3A
-6. Updating implementation of Oracle app with new one 0x1430194905301504e8830ce4B0b0df7187E84AbD
-7. Call Oracle's finalizeUpgrade_v3() to update internal version counter
-8. Create permission for SET_EL_REWARDS_VAULT_ROLE of Lido app
-    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
-9. Create permission for STAKING_CONTROL_ROLE of Lido app
-    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
-10. Set execution layer rewards vault to LidoExecutionLayerRewardsVault 0x388C818CA8B9251b393131C08a736A67ccB19297
-11. Resume staking
-12. Set staking limit rate roughly to 150,000 ETH per day.
+1. Publishing new implementation (0x47EbaB13B806773ec2A2d16873e2dF770D130b50) in Lido app APM repo
+2. Updating implementation of Lido app with the new one
+3. Publishing new implementation (0x5d39ABaa161e622B99D45616afC8B837E9F19a25) in Node Operators Registry app APM repo
+4. Updating implementation of Node Operators Registry app with the new one
+5. Publishing new implementation (0x1430194905301504e8830ce4B0b0df7187E84AbD) in Oracle app APM repo
+6. Updating implementation of Oracle app with new one
+7. Call Oracle's finalizeUpgrade_v3() to update internal version counter.
+8. Create permission for SET_EL_REWARDS_VAULT_ROLE of Lido app assigning it to Voting
+9. Create permission for STAKING_CONTROL_ROLE of Lido app assigning it to Voting
+10. Set execution layer rewards vault on Lido
+    to new LidoExecutionLayerRewardsVault (0x388C818CA8B9251b393131C08a736A67ccB19297)
+11. Resume staking on Lido
+12. Set staking limit rate roughly to 150,000 ETH per day on Lido.
 
 """
 
@@ -197,9 +193,9 @@ def start_vote(
             '7) Finalize Oracle upgrade to version 3;',
             '8) Create permission for SET_EL_REWARDS_VAULT_ROLE assigning it to Voting;',
             '9) Create permission for STAKING_CONTROL_ROLE of Lido app assigning it to Voting;',
-            '10) Set execution layer rewards vault;',
-            '11) Resume staking;',
-            '12) Set staking limit rate to 150,000 ETH per day.',
+            '10) Set execution layer rewards vault on Lido;',
+            '11) Resume staking on Lido;',
+            '12) Set staking limit rate to 150,000 ETH per day on Lido.',
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
