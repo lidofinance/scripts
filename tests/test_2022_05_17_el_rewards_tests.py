@@ -222,6 +222,20 @@ def test_handle_oracle_report_with_el_rewards(
         eth_whale.transfer(lido_execution_layer_rewards_vault, el_reward)
     assert lido_execution_layer_rewards_vault.balance() == el_reward
 
+    # prepare node operators data
+    node_operators = get_node_operators(node_operators_registry=node_operators_registry)
+    node_operators_balances_before = {}
+    for node_operator in node_operators:
+        reward_address = node_operator["rewardAddress"]
+        balance = lido.balanceOf(reward_address)
+
+        # top up the node operator balance if it's too low to avoid reverts caused by the shares rounding
+        if balance <= 10**9:
+            eth_whale.transfer(lido, 2 * 10**9)
+            lido.transfer(reward_address, 10**9, {"from": eth_whale})
+            balance = lido.balanceOf(reward_address)
+        node_operators_balances_before[reward_address] = balance
+
     # prepare new report data
     prev_report = lido.getBeaconStat().dict()
     beacon_validators = prev_report["beaconValidators"]
@@ -236,11 +250,6 @@ def test_handle_oracle_report_with_el_rewards(
 
     treasury_address = lido.getTreasury()
     treasury_fund_balance_before = lido.balanceOf(treasury_address)
-    node_operators = get_node_operators(node_operators_registry=node_operators_registry)
-    node_operators_balances_before = {}
-    for node_operator in node_operators:
-        reward_address = node_operator["rewardAddress"]
-        node_operators_balances_before[reward_address] = lido.balanceOf(reward_address)
 
     # simulate oracle report
     tx = lido.handleOracleReport(
@@ -267,7 +276,7 @@ def test_handle_oracle_report_with_el_rewards(
             // TOTAL_BASIS_POINTS
         )
         # due to the stETH shares rounding distributed value might be less than the expected value
-        assert total_rewards - total_reward_expected <= len(transfers)
+        assert abs(total_rewards - total_reward_expected) <= len(transfers)
 
         fee_distribution = lido.getFeeDistribution().dict()
         # validate treasury rewards
@@ -276,7 +285,7 @@ def test_handle_oracle_report_with_el_rewards(
                 fee_distribution["insuranceFeeBasisPoints"]
                 + fee_distribution["treasuryFeeBasisPoints"]
             )
-            * total_reward_expected
+            * total_rewards
             // TOTAL_BASIS_POINTS
         )
         assert (
@@ -289,14 +298,22 @@ def test_handle_oracle_report_with_el_rewards(
         total_number_of_node_operators = sum(
             no["activeValidators"] for no in active_node_operators
         )
+        total_node_operators_reward = (
+            fee_distribution["operatorsFeeBasisPoints"]
+            * total_rewards
+            // TOTAL_BASIS_POINTS
+        )
         for node_operator in active_node_operators:
+            # if node_operator["id"] == 11:
+            #     continue
             reward_address = node_operator["rewardAddress"]
+
             expected_node_operator_reward = (
-                fee_distribution["operatorsFeeBasisPoints"]
-                * total_reward_expected
-                * node_operator["activeValidators"]
-            ) // (TOTAL_BASIS_POINTS * total_number_of_node_operators)
+                node_operator["activeValidators"] - node_operator["stoppedValidators"]
+            ) * (total_node_operators_reward // total_number_of_node_operators)
+
             node_operator_balance_after = lido.balanceOf(reward_address)
+
             assert (
                 node_operator_balance_after
                 >= node_operators_balances_before[reward_address]
@@ -380,6 +397,7 @@ def get_node_operators(node_operators_registry):
         node_operator = node_operators_registry.getNodeOperator(
             node_operator_id, False
         ).dict()
+        node_operator["id"] = node_operator_id
         node_operator["activeValidators"] = (
             node_operator["usedSigningKeys"] - node_operator["stoppedValidators"]
         )
