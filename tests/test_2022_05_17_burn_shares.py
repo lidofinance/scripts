@@ -25,35 +25,6 @@ def dao_voting_as_eoa(accounts, dao_voting):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def autodeploy_contracts(accounts):
-    deployer = accounts[2]
-    lido_tx_data = json.load(open("./utils/txs/tx-13-1-deploy-lido-base.json"))["data"]
-    nos_tx_data = json.load(
-        open("./utils/txs/tx-13-1-deploy-node-operators-registry-base.json")
-    )["data"]
-    oracle_tx_data = json.load(open("./utils/txs/tx-13-1-deploy-oracle-base.json"))[
-        "data"
-    ]
-    execution_layer_rewards_vault_tx_data = json.load(
-        open("./utils/txs/tx-26-deploy-execution-layer-rewards-vault.json")
-    )["data"]
-
-    lido_tx = deployer.transfer(data=lido_tx_data)
-    nos_tx = deployer.transfer(data=nos_tx_data)
-    oracle_tx = deployer.transfer(data=oracle_tx_data)
-    execution_layer_rewards_vault_tx = deployer.transfer(
-        data=execution_layer_rewards_vault_tx_data
-    )
-
-    update_lido_app["new_address"] = lido_tx.contract_address
-    update_lido_app[
-        "execution_layer_rewards_vault_address"
-    ] = execution_layer_rewards_vault_tx.contract_address
-    update_nos_app["new_address"] = nos_tx.contract_address
-    update_oracle_app["new_address"] = oracle_tx.contract_address
-
-
-@pytest.fixture(scope="module", autouse=True)
 def autoexecute_vote(vote_id_from_env, ldo_holder, helpers, accounts, dao_voting):
     vote_id = vote_id_from_env or start_vote({"from": ldo_holder}, silent=True)[0]
     helpers.execute_vote(

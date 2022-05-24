@@ -104,6 +104,7 @@ def steps(stranger, lido, lido_oracle_report) -> Dict[str, Dict[str, any]]:
 
 
 def test_deposit_rebase(ldo_holder, stranger, lido, lido_oracle_report, old_fashioned_lido_oracle_report, helpers):
+    chain.snapshot()
     before: Dict[str, Dict[str, any]] = steps(stranger, lido, old_fashioned_lido_oracle_report)
     chain.revert()
     execute_vote(ldo_holder, helpers)

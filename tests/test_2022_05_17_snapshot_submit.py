@@ -107,6 +107,7 @@ def snapshot() -> Dict[str, any]:
 
 
 def test_submit(ldo_holder, helpers, lido, staker):
+    chain.snapshot()
     ether = 10 ** 18
     stake_limit = 150_000 * 10 ** 18
     height = chain.height
