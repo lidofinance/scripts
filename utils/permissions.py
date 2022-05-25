@@ -13,7 +13,7 @@ def encode_permission_create(
     manager
 ) -> Tuple[str, str]:
     acl = contracts.acl
-    permission_id = convert.to_int(Web3.keccak(text=permission_name))
+    permission_id = convert.to_uint(Web3.keccak(text=permission_name))
     return acl.address, acl.createPermission.encode_input(entity, target_app, permission_id, manager)
 
 
@@ -23,7 +23,7 @@ def encode_permission_grant(
     grant_to: str
 ) -> Tuple[str, str]:
     acl = contracts.acl
-    permission_id = convert.to_int(Web3.keccak(text=permission_name))
+    permission_id = convert.to_uint(Web3.keccak(text=permission_name))
     return acl.address, acl.grantPermission.encode_input(grant_to, target_app, permission_id)
 
 
@@ -33,7 +33,7 @@ def encode_permission_revoke(
     revoke_from
 ) -> Tuple[str, str]:
     acl = contracts.acl
-    permission_id = convert.to_int(Web3.keccak(text=permission_name))
+    permission_id = convert.to_uint(Web3.keccak(text=permission_name))
     return acl.address, acl.revokePermission.encode_input(revoke_from, target_app, permission_id)
 
 
@@ -44,7 +44,7 @@ def encode_permission_grant_p(
     params: List[Param],
 ) -> Tuple[str, str]:
     acl = contracts.acl
-    permission_id = convert.to_int(Web3.keccak(text=permission_name))
+    permission_id = convert.to_uint(Web3.keccak(text=permission_name))
 
     uint256_params = encode_permission_params(params)
 

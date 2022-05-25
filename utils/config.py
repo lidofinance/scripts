@@ -49,7 +49,7 @@ def get_deployer_account() -> Union[LocalAccount, Account]:
             'Please set DEPLOYER env variable to the deployer account name')
 
     return accounts.load(os.environ['DEPLOYER']) if is_live else accounts.at(
-        "0x3e40d73eb977dc6a537af587d48316fee66e9c8c", force=True)
+        ldo_vote_executors_for_tests[0], force=True)
 
 
 def prompt_bool() -> Optional[bool]:
@@ -107,6 +107,10 @@ class ContractsLazyLoader:
         return interface.NodeOperatorsRegistry(lido_dao_node_operators_registry)
 
     @property
+    def lido_oracle(self) -> interface.LidoOracle:
+        return interface.LidoOracle(lido_dao_oracle)
+
+    @property
     def kernel(self) -> interface.Kernel:
         return interface.Kernel(lido_dao_kernel)
 
@@ -121,6 +125,10 @@ class ContractsLazyLoader:
     @property
     def voting_app_repo(self) -> interface.Repo:
         return interface.Repo(lido_dao_voting_repo)
+
+    @property
+    def oracle_app_repo(self) -> interface.Repo:
+        return interface.Repo(lido_dao_oracle_repo)
 
     @property
     def easy_track(self) -> interface.EasyTrack:

@@ -1,5 +1,6 @@
 from utils.config import contracts
 
+
 def update_app_implementation(app_id, new_implementation):
     kernel = contracts.kernel
 
