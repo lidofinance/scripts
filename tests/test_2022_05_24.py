@@ -54,7 +54,7 @@ if network_name() in ("goerli", "goerli-fork"):
 
 mev_limit_points = 2
 max_staking_limit = 150_000 * 10 ** 18
-staking_limit_increase = 23.4375 * 10 ** 18
+staking_limit_increase = 234375 * 10 ** 18 // 10 ** 4
 
 
 def test_vote(

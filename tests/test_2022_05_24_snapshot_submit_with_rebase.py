@@ -11,7 +11,7 @@ from utils.config import contracts
 
 
 @pytest.fixture(scope="module")
-def stranger(accounts):
+def stranger():
     return accounts[0]
 
 

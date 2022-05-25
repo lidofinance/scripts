@@ -35,7 +35,7 @@ def autoexecute_vote(vote_id_from_env, ldo_holder, helpers, accounts, dao_voting
 
 def test_is_staking_not_paused(lido):
     # Should be running from the start
-    assert lido.isStakingPaused() == False
+    assert lido.isStakingPaused() is False
 
 
 def test_pause_staking_access(lido, operator, stranger):
@@ -67,7 +67,7 @@ def test_resume_staking_access(lido, operator, stranger):
 def test_resume_staking_works(lido, operator, stranger):
     # Should emit event with correct params
     create_and_grant_role(operator, lido, "STAKING_PAUSE_ROLE")
-    tx = lido.pauseStaking({"from": operator})
+    lido.pauseStaking({"from": operator})
 
     with reverts("STAKING_PAUSED"):
         lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether})
@@ -208,8 +208,8 @@ def test_staking_limit_full_info(lido, stranger):
         prev_limit,
         block_number,
     ) = lido.getStakeLimitFullInfo({"from": stranger})
-    assert is_paused == False
-    assert is_limit_set == True
+    assert is_paused is False
+    assert is_limit_set is True
     assert limit == 150000 * 10 ** 18
     assert max_limit == 150000 * 10 ** 18
     assert growth_limit == 6400
