@@ -101,13 +101,14 @@ def test_vote(
     assert not lido.isStakingPaused()
 
     stake_limit_info = lido.getStakeLimitFullInfo()
-    assert not stake_limit_info[0]
-    assert stake_limit_info[1]
-    assert stake_limit_info[2] == max_staking_limit
-    assert stake_limit_info[3] == max_staking_limit
-    assert stake_limit_info[4] == 6400
-    assert stake_limit_info[5] == max_staking_limit
-    assert stake_limit_info[6] == chain.height
+    assert not stake_limit_info[0], "Staking not paused"
+    assert stake_limit_info[1], "Staking limit is set"
+    assert stake_limit_info[2] == max_staking_limit, "Current stake limit is at max"
+    assert stake_limit_info[3] == max_staking_limit, "Max stake limit is set"
+    assert stake_limit_info[4] == max_staking_limit // staking_limit_increase, \
+        "6400 blocks to grow stake limit from zero to max"
+    assert stake_limit_info[5] == max_staking_limit, "Previous stake limit is max"
+    assert stake_limit_info[6] == chain.height , "Block number is chain height"
 
     # validate vote events
     assert count_vote_items_by_events(tx, dao_voting) == 12, "Incorrect voting items count"
@@ -143,6 +144,6 @@ def test_vote(
 
 def assert_app_update(new_app, old_app, contract_address):
     assert old_app[1] != new_app[1], "Address should change"
-    assert new_app[1] == contract_address
-    assert new_app[0][0] == old_app[0][0] + 1, "Version should increment"
+    assert new_app[1] == contract_address, "New address should match"
+    assert new_app[0][0] == old_app[0][0] + 1, "Major version should increment"
     assert old_app[2] == new_app[2], "Content uri remains"
