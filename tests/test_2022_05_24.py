@@ -44,14 +44,6 @@ permission_stake_control = Permission(entity='0x2e59A20f205bB85a89C53f1936454680
                                       app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
                                       role='0xa42eee1333c0758ba72be38e728b6dadb32ea767de5b4ddbaea1dae85b1b051f')
 
-if network_name() in ("goerli", "goerli-fork"):
-    permission_elrewards_vault = Permission(entity='0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db',  # Voting
-                                            app='0x1643E812aE58766192Cf7D2Cf9567dF2C37e9B7F',  # Lido
-                                            role='0x9d68ad53a92b6f44b2e8fb18d211bf8ccb1114f6fafd56aa364515dfdf23c44f')
-    permission_stake_control = Permission(entity='0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db',  # Voting
-                                          app='0x1643E812aE58766192Cf7D2Cf9567dF2C37e9B7F',  # Lido
-                                          role='0xa42eee1333c0758ba72be38e728b6dadb32ea767de5b4ddbaea1dae85b1b051f')
-
 mev_limit_points = 2
 max_staking_limit = 150_000 * 10 ** 18
 staking_limit_increase = 234375 * 10 ** 18 // 10 ** 4
