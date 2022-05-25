@@ -44,7 +44,6 @@ permission_stake_control = Permission(entity='0x2e59A20f205bB85a89C53f1936454680
                                       app='0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',  # Lido
                                       role='0xa42eee1333c0758ba72be38e728b6dadb32ea767de5b4ddbaea1dae85b1b051f')
 
-mev_limit_points = 2
 max_staking_limit = 150_000 * 10 ** 18
 staking_limit_increase = 234375 * 10 ** 18 // 10 ** 4
 
