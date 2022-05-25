@@ -1,5 +1,5 @@
 """
-Voting 17/05/2022.
+Voting 24/05/2022.
 
 1. Publishing new implementation (0x47EbaB13B806773ec2A2d16873e2dF770D130b50) in Lido app APM repo
 2. Updating implementation of Lido app with the new one
@@ -67,10 +67,6 @@ update_oracle_app = {
 
 def encode_finalize_oracle_upgrade():
     oracle: interface.LidoOracle = contracts.lido_oracle
-
-    if network_name() in ("goerli", "goerli-fork"):
-        # we already have an upgraded oracle on goerli, so just do something harmless
-        return oracle.address, oracle.appId.encode_input()
 
     return oracle.address, oracle.finalizeUpgrade_v3.encode_input()
 
