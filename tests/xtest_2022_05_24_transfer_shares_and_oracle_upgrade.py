@@ -9,7 +9,7 @@ import pytest
 import eth_abi
 
 from brownie import ZERO_ADDRESS, reverts, web3
-from scripts.vote_2022_05_24 import start_vote
+from scripts.archive.vote_2022_05_24 import start_vote
 
 
 @pytest.fixture(scope="module")
