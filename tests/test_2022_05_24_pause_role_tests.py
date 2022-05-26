@@ -4,7 +4,7 @@ Tests for lido resume/pause roles 24/05/2022
 import pytest
 from functools import partial
 from brownie import reverts, web3
-from scripts.archive.vote_2022_05_24 import start_vote
+from scripts.vote_2022_05_24 import start_vote
 
 
 @pytest.fixture(scope="module")

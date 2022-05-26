@@ -7,7 +7,7 @@ import eth_abi
 from web3 import Web3
 from utils.config import contracts
 from brownie import web3, convert, reverts, ZERO_ADDRESS, chain
-from scripts.archive.vote_2022_05_24 import start_vote
+from scripts.vote_2022_05_24 import start_vote
 
 ether = 10 ** 18
 

@@ -5,7 +5,7 @@ import pytest
 import eth_abi
 
 from brownie import web3
-from scripts.archive.vote_2022_05_24 import start_vote
+from scripts.vote_2022_05_24 import start_vote
 
 
 @pytest.fixture(scope="module")

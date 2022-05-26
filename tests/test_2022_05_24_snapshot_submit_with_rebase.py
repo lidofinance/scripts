@@ -5,7 +5,7 @@ from typing import Dict
 
 from brownie import accounts, chain, Contract, ZERO_ADDRESS, Wei
 
-from scripts.archive.vote_2022_05_24 import start_vote
+from scripts.vote_2022_05_24 import start_vote
 from utils.test.snapshot_helpers import dict_zip, dict_diff, assert_no_more_diffs, ValueChanged
 from utils.config import contracts
 
