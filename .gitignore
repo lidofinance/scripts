@@ -19,3 +19,6 @@ dist/
 
 /node_modules
 yarn-error.log
+
+# VSCode
+.vscode
