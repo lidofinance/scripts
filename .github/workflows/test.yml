@@ -34,7 +34,7 @@ jobs:
         run: poetry run brownie networks import network-config.yaml True
 
       - name: Run tests
-        run: >
+        run: |
           poetry shell
           brownie test -s --network mainnet-fork
         env:
