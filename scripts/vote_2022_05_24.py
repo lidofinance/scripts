@@ -15,6 +15,8 @@ Voting 24/05/2022.
 11. Resume staking on Lido
 12. Set staking limit rate roughly to 150,000 ETH per day on Lido.
 
+Vote passed & executed on May-28-2022 12:27:55 PM +UTC, block 14860268.
+
 """
 
 import time
