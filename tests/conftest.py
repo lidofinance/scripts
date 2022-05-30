@@ -12,7 +12,10 @@ from utils.config import (ldo_token_address, lido_dao_voting_address,
                           lido_dao_deposit_security_module_address,
                           lido_dao_steth_address, lido_dao_acl_address,
                           lido_dao_finance_address, ldo_holder_address_for_tests,
-                          ldo_vote_executors_for_tests, lido_easytrack, lido_dao_oracle)
+                          ldo_vote_executors_for_tests, lido_easytrack, lido_dao_oracle,
+                          lido_dao_composite_post_rebase_beacon_receiver,
+                          lido_dao_self_owned_steth_burner,
+                          )
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -48,6 +51,16 @@ def dao_token_manager(interface):
 @pytest.fixture(scope='module')
 def deposit_security_module(interface):
     return interface.DepositSecurityModule(lido_dao_deposit_security_module_address)
+
+
+@pytest.fixture(scope='module')
+def composite_post_rebase_beacon_receiver(interface):
+    return interface.CompositePostRebaseBeaconReceiver(lido_dao_composite_post_rebase_beacon_receiver)
+
+
+@pytest.fixture(scope='module')
+def self_owned_steth_burner(interface):
+    return interface.SelfOwnedStETHBurner(lido_dao_self_owned_steth_burner)
 
 
 @pytest.fixture(scope='module')
