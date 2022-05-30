@@ -27,16 +27,10 @@ from brownie.network.transaction import TransactionReceipt
 from utils.voting import confirm_vote_script, create_vote
 from utils.evm_script import encode_call_script
 
-from utils.config import (
-    get_deployer_account,
-    get_is_live,
-    contracts, network_name,
-    lido_dao_self_owned_steth_burner,
-    lido_dao_composite_post_rebase_beacon_receiver,
-    lido_dao_voting_address
-)
+from utils.config import (get_deployer_account, get_is_live, contracts)
 from utils.permissions import encode_permission_create, encode_permission_grant_p, encode_permission_revoke
 from utils.permission_parameters import Param, Op, ArgumentValue
+
 # noinspection PyUnresolvedReferences
 from utils.brownie_prelude import *
 
@@ -48,24 +42,27 @@ def encode_set_elrewards_withdrawal_limit(limit_bp: int) -> Tuple[str, str]:
 
 def encode_add_steth_burner_as_callback_to_composite_receiver() -> Tuple[str, str]:
     composite_receiver: interface.CompositePostRebaseBeaconReceiver = contracts.composite_post_rebase_beacon_receiver
+    self_owned_steth_burner: interface.SelfOwnedStETHBurner = contracts.self_owned_steth_burner
     return (
         composite_receiver.address,
-        composite_receiver.addCallback.encode_input(lido_dao_self_owned_steth_burner)
+        composite_receiver.addCallback.encode_input(self_owned_steth_burner)
     )
 
 
 def encode_attach_composite_receiver_to_oracle() -> Tuple[str, str]:
     oracle: interface.LidoOracle = contracts.lido_oracle
+    composite_receiver: interface.CompositePostRebaseBeaconReceiver = contracts.composite_post_rebase_beacon_receiver
     return (
         oracle.address,
-        oracle.setBeaconReportReceiver.encode_input(lido_dao_composite_post_rebase_beacon_receiver)
+        oracle.setBeaconReportReceiver.encode_input(composite_receiver)
     )
 
 
 def self_owned_burn_role_params() -> List[Param]:
     account_arg_index = 0
+    self_owned_steth_burner: interface.SelfOwnedStETHBurner = contracts.self_owned_steth_burner
     return [
-        Param(account_arg_index, Op.EQ, ArgumentValue(lido_dao_self_owned_steth_burner))
+        Param(account_arg_index, Op.EQ, ArgumentValue(self_owned_steth_burner.address))
     ]
 
 
@@ -76,9 +73,10 @@ def start_vote(
     """Prepare and run voting."""
     voting: interface.Voting = contracts.voting
     lido: interface.Lido = contracts.lido
+    self_owned_steth_burner: interface.SelfOwnedStETHBurner = contracts.self_owned_steth_burner
 
     encoded_call_script = encode_call_script([
-        # 1. Create role RESUME_ROLE and grant to Voting 
+        # 1. Create role RESUME_ROLE and grant to Voting
         encode_permission_create(entity=voting, target_app=lido, permission_name='RESUME_ROLE',
                                  manager=voting),
 
@@ -101,11 +99,11 @@ def start_vote(
 
         # 7. Revoke 'BURN_ROLE' permissions from Voting
         encode_permission_revoke(target_app=lido, permission_name='BURN_ROLE',
-                                 revoke_from=lido_dao_voting_address),
+                                 revoke_from=voting),
 
         # 8. Grant 'BURN_ROLE' constrained permissions to stETH burner
         encode_permission_grant_p(target_app=lido, permission_name='BURN_ROLE',
-                                  grant_to=lido_dao_self_owned_steth_burner,
+                                  grant_to=self_owned_steth_burner,
                                   params=self_owned_burn_role_params()),
 
         # 9. Create role MANAGE_PROTOCOL_CONTRACTS_ROLE and grant to Voting
@@ -139,7 +137,7 @@ def start_vote(
             '9) Create role MANAGE_PROTOCOL_CONTRACTS_ROLE and grant to Voting; ',
             '10) Revoke SET_TREASURY from Voting; ',
             '11) Revoke SET_INSURANCE_FUND from Voting; ',
-            '12) Revoke SET_ORACLE from Voting; ',
+            '12) Revoke SET_ORACLE from Voting.'
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params

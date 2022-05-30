@@ -7,14 +7,21 @@ from brownie import interface, ZERO_ADDRESS, reverts
 
 from scripts.vote_2022_05_31 import self_owned_burn_role_params, start_vote
 from tx_tracing_helpers import *
-from utils.config import (contracts, lido_dao_steth_address,
-    network_name, lido_dao_voting_address, 
-    lido_dao_composite_post_rebase_beacon_receiver, lido_dao_self_owned_steth_burner)
-from event_validators.permission import (Permission, PermissionP, validate_permission_create_event,
-    validate_permission_revoke_event, validate_permission_grantp_event)
+
+from utils.config import (
+    contracts, lido_dao_steth_address,
+    network_name, lido_dao_voting_address,
+    lido_dao_composite_post_rebase_beacon_receiver, lido_dao_self_owned_steth_burner
+)
+
+from event_validators.permission import (
+    Permission, PermissionP, validate_permission_create_event,
+    validate_permission_revoke_event, validate_permission_grantp_event
+)
 from event_validators.lido import validate_set_el_rewards_vault_withdrawal_limit_event
 from event_validators.oracle import validate_beacon_report_receiver_set_event
 from event_validators.composite_post_rebase_beacon_receiver import validate_composite_receiver_callback_added_event
+
 from utils.permission_parameters import encode_permission_params
 
 
@@ -22,56 +29,65 @@ from utils.permission_parameters import encode_permission_params
 permission_resume_role = Permission(
     entity=lido_dao_voting_address,
     app=lido_dao_steth_address,  # Lido
-    role='0x2fc10cc8ae19568712f7a176fb4978616a610650813c9d05326c34abb62749c7')
+    role='0x2fc10cc8ae19568712f7a176fb4978616a610650813c9d05326c34abb62749c7'
+)
 
-# STAKING_PAUSE_ROLE 
+# STAKING_PAUSE_ROLE
 permission_staking_pause_role = Permission(
     entity=lido_dao_voting_address,
     app=lido_dao_steth_address,  # Lido
-    role='0x84ea57490227bc2be925c684e2a367071d69890b629590198f4125a018eb1de8')
+    role='0x84ea57490227bc2be925c684e2a367071d69890b629590198f4125a018eb1de8'
+)
 
 # SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE
 permission_elrewards_set_limit_role = Permission(
     entity=lido_dao_voting_address,
     app=lido_dao_steth_address,  # Lido
-    role='0xca7d176c2da2028ed06be7e3b9457e6419ae0744dc311989e9b29f6a1ceb1003')
+    role='0xca7d176c2da2028ed06be7e3b9457e6419ae0744dc311989e9b29f6a1ceb1003'
+)
 
 # BURN_ROLE on Voting
 permission_burn_on_voting = Permission(
     entity=lido_dao_voting_address,
     app=lido_dao_steth_address,  # Lido
-    role='0xe97b137254058bd94f28d2f3eb79e2d34074ffb488d042e3bc958e0a57d2fa22')
+    role='0xe97b137254058bd94f28d2f3eb79e2d34074ffb488d042e3bc958e0a57d2fa22'
+)
 
 # BURN_ROLE on SelfOwnedStETHBurner
 permission_burn_on_steth_burner = PermissionP(
     entity=lido_dao_self_owned_steth_burner,
     app=lido_dao_steth_address,  # Lido
     role='0xe97b137254058bd94f28d2f3eb79e2d34074ffb488d042e3bc958e0a57d2fa22',
-    params=encode_permission_params(self_owned_burn_role_params()))
+    params=['0x000100000000000000000000B280E33812c0B09353180e92e27b8AD399B07f26']
+)
 
 # MANAGE_PROTOCOL_CONTRACTS_ROLE
 permission_manage_protocol_contracts = Permission(
     entity=lido_dao_voting_address,
     app=lido_dao_steth_address,  # Lido
-    role='0xeb7bfce47948ec1179e2358171d5ee7c821994c911519349b95313b685109031')
+    role='0xeb7bfce47948ec1179e2358171d5ee7c821994c911519349b95313b685109031'
+)
 
 # SET_TREASURY
 permission_set_treasury = Permission(
     entity=lido_dao_voting_address,
     app=lido_dao_steth_address,  # Lido
-    role='0x9f6f8058e4bcbf364e89c9e8da7eb7cada9d21b7aea6e2fd355b4669842c5795')
+    role='0x9f6f8058e4bcbf364e89c9e8da7eb7cada9d21b7aea6e2fd355b4669842c5795'
+)
 
 # SET_INSURANCE_FUND
 permission_set_insurance_fund = Permission(
     entity=lido_dao_voting_address,
     app=lido_dao_steth_address,  # Lido
-    role='0xd6c7fda17708c7d91354c17ac044fde6f58fb548a5ded80960beba862b1f1d7d')
+    role='0xd6c7fda17708c7d91354c17ac044fde6f58fb548a5ded80960beba862b1f1d7d'
+)
 
 # SET_ORACLE
 permission_set_oracle = Permission(
     entity=lido_dao_voting_address,
     app=lido_dao_steth_address,  # Lido
-    role='0x11eba3f259e2be865238d718fd308257e3874ad4b3a642ea3af386a4eea190bd')
+    role='0x11eba3f259e2be865238d718fd308257e3874ad4b3a642ea3af386a4eea190bd'
+)
 
 
 def validate_parametrized_burn_permissions(lido):
@@ -132,7 +148,7 @@ def test_vote(
     assert acl.hasPermission(*permission_resume_role)
     assert acl.hasPermission(*permission_staking_pause_role)
     assert acl.hasPermission(*permission_elrewards_set_limit_role)
-    
+
     assert lido.getELRewardsWithdrawalLimit() == 2
 
     assert composite_post_rebase_beacon_receiver.callbacksLength() == 1
@@ -160,7 +176,7 @@ def test_vote(
     validate_permission_create_event(evs[2], permission_elrewards_set_limit_role)
 
     validate_set_el_rewards_vault_withdrawal_limit_event(evs[3], 2)
-    
+
     validate_composite_receiver_callback_added_event(evs[4], self_owned_steth_burner.address, 0)
 
     validate_beacon_report_receiver_set_event(evs[5], lido_dao_composite_post_rebase_beacon_receiver)
@@ -173,4 +189,3 @@ def test_vote(
     validate_permission_revoke_event(evs[9], permission_set_treasury)
     validate_permission_revoke_event(evs[10], permission_set_insurance_fund)
     validate_permission_revoke_event(evs[11], permission_set_oracle)
-    
