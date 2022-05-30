@@ -3,10 +3,9 @@ Tests for voting 31/05/2022.
 """
 import pytest
 
-from brownie import interface, chain, ZERO_ADDRESS, reverts
+from brownie import interface, ZERO_ADDRESS, reverts
 
-from scripts.vote_2022_05_31 import (self_owned_burn_role_params, start_vote,
-     get_burn_role_old_owner)
+from scripts.vote_2022_05_31 import self_owned_burn_role_params, start_vote
 from tx_tracing_helpers import *
 from utils.config import (contracts, lido_dao_steth_address,
     network_name, lido_dao_voting_address, 
@@ -39,7 +38,7 @@ permission_elrewards_set_limit_role = Permission(
 
 # BURN_ROLE on Voting
 permission_burn_on_voting = Permission(
-    entity=get_burn_role_old_owner(),
+    entity=lido_dao_voting_address,
     app=lido_dao_steth_address,  # Lido
     role='0xe97b137254058bd94f28d2f3eb79e2d34074ffb488d042e3bc958e0a57d2fa22')
 
