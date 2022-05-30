@@ -7,7 +7,7 @@ from functools import partial
 from brownie import interface, reverts, web3
 
 from utils.config import contracts
-from scripts.vote_2022_05_24 import start_vote
+from scripts.archive.vote_2022_05_24 import start_vote
 
 LIDO_EXECUTION_LAYER_REWARDS_VAULT = "0x388C818CA8B9251b393131C08a736A67ccB19297"
 TOTAL_BASIS_POINTS = 10000
