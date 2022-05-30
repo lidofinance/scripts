@@ -26,7 +26,6 @@ from brownie.network.transaction import TransactionReceipt
 
 from utils.voting import confirm_vote_script, create_vote
 from utils.evm_script import encode_call_script
-from utils.agent import agent_forward
 
 from utils.config import (
     get_deployer_account,
@@ -73,8 +72,6 @@ def encode_attach_composite_receiver_to_oracle() -> Tuple[str, str]:
 
 
 def self_owned_burn_role_params() -> List[Param]:
-    # Role params bytes taken from lido-dao, 25-vote-self-owned-steth-burner.js for reference:
-    # 0x000100000000000000000000B280E33812c0B09353180e92e27b8AD399B07f26
     account_arg_index = 0
     return [
         Param(account_arg_index, Op.EQ, ArgumentValue(lido_dao_self_owned_steth_burner))

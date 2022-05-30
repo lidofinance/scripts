@@ -3,7 +3,7 @@ Tests for voting 31/05/2022.
 """
 import pytest
 
-from brownie import interface, chain, ZERO_ADDRESS
+from brownie import interface, chain, ZERO_ADDRESS, reverts
 
 from scripts.vote_2022_05_31 import (self_owned_burn_role_params, start_vote,
      get_burn_role_old_owner)
@@ -75,6 +75,26 @@ permission_set_oracle = Permission(
     role='0x11eba3f259e2be865238d718fd308257e3874ad4b3a642ea3af386a4eea190bd')
 
 
+def validate_parametrized_burn_permissions(lido):
+    with reverts('APP_AUTH_FAILED'):
+        lido.burnShares(lido.address, 123, { 'from': lido_dao_self_owned_steth_burner })
+
+    with reverts('APP_AUTH_FAILED'):
+        lido.burnShares(lido_dao_composite_post_rebase_beacon_receiver, 123,
+                        { 'from': lido_dao_self_owned_steth_burner })
+
+    with reverts('APP_AUTH_FAILED'):
+        lido.burnShares(lido_dao_voting_address, 123,
+                        { 'from': lido_dao_self_owned_steth_burner })
+
+    with reverts('BURN_AMOUNT_EXCEEDS_BALANCE'):
+        lido.burnShares(lido_dao_self_owned_steth_burner, 123,
+                        { 'from': lido_dao_self_owned_steth_burner })
+
+    with reverts('APP_AUTH_FAILED'):
+        lido.burnShares(lido_dao_self_owned_steth_burner, 123, { 'from': lido_dao_voting_address })
+
+
 def test_vote(
     helpers, accounts, ldo_holder, dao_voting,
     vote_id_from_env, bypass_events_decoding,
@@ -129,6 +149,7 @@ def test_vote(
 
     assert not acl.hasPermission(*permission_burn_on_voting)
     assert acl.hasPermission['address,address,bytes32,uint[]'](*permission_burn_on_steth_burner)
+    validate_parametrized_burn_permissions(lido)
 
     assert not acl.hasPermission(*permission_set_treasury)
     assert not acl.hasPermission(*permission_set_insurance_fund)
