@@ -4,7 +4,7 @@ Tests for lido burnShares method for voting 24/05/2022
 import eth_abi
 import pytest
 from brownie import reverts, ZERO_ADDRESS, web3
-from scripts.vote_2022_05_24 import start_vote
+from scripts.archive.vote_2022_05_24 import start_vote
 
 
 @pytest.fixture(scope="module")
