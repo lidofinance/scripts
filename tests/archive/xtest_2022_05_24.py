@@ -5,7 +5,7 @@ import pytest
 
 from brownie import interface, chain
 
-from scripts.vote_2022_05_24 import start_vote
+from scripts.archive.vote_2022_05_24 import start_vote
 from tx_tracing_helpers import *
 from utils.config import contracts, lido_dao_steth_address, lido_dao_oracle, lido_dao_node_operators_registry, \
     network_name
