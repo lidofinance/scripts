@@ -6,10 +6,10 @@ import pytest
 from brownie import interface, chain, ZERO_ADDRESS
 
 from scripts.vote_2022_05_31 import (self_owned_burn_role_params, start_vote,
-    get_proposed_deposit_security_module_address, get_burn_role_old_owner)
+     get_burn_role_old_owner)
 from tx_tracing_helpers import *
 from utils.config import (contracts, lido_dao_steth_address,
-    network_name, lido_dao_voting_address, lido_dao_deposit_security_module_address,
+    network_name, lido_dao_voting_address, 
     lido_dao_composite_post_rebase_beacon_receiver, lido_dao_self_owned_steth_burner)
 from event_validators.permission import (Permission, PermissionP, validate_permission_create_event,
     validate_permission_revoke_event, validate_permission_grantp_event)
@@ -36,18 +36,6 @@ permission_elrewards_set_limit_role = Permission(
     entity=lido_dao_voting_address,
     app=lido_dao_steth_address,  # Lido
     role='0xca7d176c2da2028ed06be7e3b9457e6419ae0744dc311989e9b29f6a1ceb1003')
-
-# DEPOSIT_ROLE on old DepositSecurityModule
-permission_old_deposit_role = Permission(
-    entity=lido_dao_deposit_security_module_address,
-    app=lido_dao_steth_address,  # Lido
-    role='0x2561bf26f818282a3be40719542054d2173eb0d38539e8a8d3cff22f29fd2384')
-
-# DEPOSIT_ROLE on new DepositSecurityModule
-permission_new_deposit_role = Permission(
-    entity=get_proposed_deposit_security_module_address(),
-    app=lido_dao_steth_address,  # Lido
-    role='0x2561bf26f818282a3be40719542054d2173eb0d38539e8a8d3cff22f29fd2384')
 
 # BURN_ROLE on Voting
 permission_burn_on_voting = Permission(
@@ -95,17 +83,10 @@ def test_vote(
     composite_post_rebase_beacon_receiver,
 ):
     acl: interface.ACL = contracts.acl
-    # TODO: DepositSecurityModule
-    # proposed_deposit_security_module = interface.DepositSecurityModule(get_proposed_deposit_security_module_address())
 
     assert not acl.hasPermission(*permission_resume_role)
     assert not acl.hasPermission(*permission_staking_pause_role)
     assert not acl.hasPermission(*permission_elrewards_set_limit_role)
-
-    # TODO: DepositSecurityModule
-    # assert acl.hasPermission(*permission_old_deposit_role)
-    # assert not acl.hasPermission(*permission_new_deposit_role)
-    # assert proposed_deposit_security_module.getOwner() == lido_dao_agent_address
 
     assert lido.getELRewardsWithdrawalLimit() == 0
 
@@ -140,14 +121,6 @@ def test_vote(
     assert acl.hasPermission(*permission_elrewards_set_limit_role)
     
     assert lido.getELRewardsWithdrawalLimit() == 2
-
-    # TODO: DepositSecurityModule
-    # assert not acl.hasPermission(*permission_old_deposit_role)
-    # assert acl.hasPermission(*permission_new_deposit_role)
-    # if network_name() in ('goerli', 'goerli-fork'):
-    #     assert deposit_security_module.getLastDepositBlock() == 0
-    # elif network_name() in ('mainnet', 'mainnet-fork'):
-    #     assert False
 
     assert composite_post_rebase_beacon_receiver.callbacksLength() == 1
     assert composite_post_rebase_beacon_receiver.callbacks(0) == self_owned_steth_burner.address
