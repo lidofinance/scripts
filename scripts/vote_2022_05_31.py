@@ -41,15 +41,6 @@ from utils.permission_parameters import Param, Op, ArgumentValue
 from utils.brownie_prelude import *
 
 
-def get_burn_role_old_owner():
-    if network_name() in ('goerli', 'goerli-fork'):
-        return '0xf6a64DcB06Ef7eB1ee94aDfD7D10ACB44D9A9888'
-    elif network_name() in ('mainnet', 'mainnet-fork'):
-        return lido_dao_voting_address
-    else:
-        assert False, f'Unsupported network "{network_name()}"'
-
-
 def encode_set_elrewards_withdrawal_limit(limit_bp: int) -> Tuple[str, str]:
     lido: interface.Lido = contracts.lido
     return lido.address, lido.setELRewardsWithdrawalLimit.encode_input(limit_bp)
@@ -76,7 +67,6 @@ def self_owned_burn_role_params() -> List[Param]:
     return [
         Param(account_arg_index, Op.EQ, ArgumentValue(lido_dao_self_owned_steth_burner))
     ]
-
 
 
 def start_vote(
@@ -111,7 +101,7 @@ def start_vote(
 
         # 7. Revoke 'BURN_ROLE' permissions from Voting
         encode_permission_revoke(target_app=lido, permission_name='BURN_ROLE',
-                                 revoke_from=get_burn_role_old_owner()),
+                                 revoke_from=lido_dao_voting_address),
 
         # 8. Grant 'BURN_ROLE' constrained permissions to stETH burner
         encode_permission_grant_p(target_app=lido, permission_name='BURN_ROLE',

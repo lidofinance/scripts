@@ -112,15 +112,9 @@ def test_vote(
 
     assert composite_post_rebase_beacon_receiver.callbacksLength() == 0
 
-    if network_name() not in ('goerli', 'goerli-fork'):
-        assert acl.hasPermission(*permission_burn_on_voting)
-
+    assert acl.hasPermission(*permission_burn_on_voting)
     assert not acl.hasPermission['address,address,bytes32,uint[]'](*permission_burn_on_steth_burner)
-
-    if network_name() in ('goerli', 'goerli-fork'):
-        assert oracle.getBeaconReportReceiver() != lido_dao_composite_post_rebase_beacon_receiver 
-    else:
-        assert oracle.getBeaconReportReceiver() == ZERO_ADDRESS
+    assert oracle.getBeaconReportReceiver() == ZERO_ADDRESS
 
     assert acl.hasPermission(*permission_set_treasury)
     assert acl.hasPermission(*permission_set_insurance_fund)
@@ -163,9 +157,7 @@ def test_vote(
     evs = group_voting_events(tx)
 
     validate_permission_create_event(evs[0], permission_resume_role)
-
     validate_permission_create_event(evs[1], permission_staking_pause_role)
-
     validate_permission_create_event(evs[2], permission_elrewards_set_limit_role)
 
     validate_set_el_rewards_vault_withdrawal_limit_event(evs[3], 2)
