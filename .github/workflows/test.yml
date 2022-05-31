@@ -1,0 +1,79 @@
+name: Tests
+
+on:
+  push:
+
+jobs:
+  run-tests:
+    name: Brownie tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.9
+
+      - name: Setup node.js version
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+
+      - name: Install poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        env:
+          POETRY_VERSION: "1.1.13"
+
+      - name: Load cached poetry deps
+        id: cached-poetry-deps
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pypoetry
+            .venv
+          key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Install poetry requirements
+        if: steps.cached-poetry-deps.outputs.cache-hit != 'true'
+        run: poetry install
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - name: Cache yarn cache
+        id: cache-yarn-cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: yarn-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v3
+        with:
+          path: '**/node_modules'
+          key: node_modules-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: node_modules-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install ganache
+        run: yarn
+        if: |
+          steps.cache-yarn-cache.outputs.cache-hit != 'true' ||
+          steps.cache-node-modules.outputs.cache-hit != 'true'
+
+      - name: Import network config to connect brownie with local Ganache
+        run: poetry run brownie networks import network-config.yaml True
+
+      - name: Run tests
+        run: >
+          poetry run
+          brownie test -s --network mainnet-fork
+        env:
+          WEB3_INFURA_PROJECT_ID: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
+          ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
