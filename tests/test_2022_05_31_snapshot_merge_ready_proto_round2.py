@@ -7,7 +7,7 @@ from brownie import interface, accounts, chain, ZERO_ADDRESS
 from scripts.vote_2022_05_31 import start_vote
 from utils.test.snapshot_helpers import (
     dict_zip, dict_diff, try_or_none,
-    assert_no_more_diffs, ValueChanged,
+    assert_no_diffs, ValueChanged,
     assert_expected_diffs
 )
 from utils.config import (
@@ -136,7 +136,7 @@ def test_submit(ldo_holder, helpers, lido, staker):
 
     for step_name, diff in step_diffs.items():
         assert_new_state(step_name, diff)
-        assert_no_more_diffs(step_name, diff)
+        assert_no_diffs(step_name, diff)
 
 
 def assert_new_state(step, diff):

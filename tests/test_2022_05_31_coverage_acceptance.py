@@ -7,7 +7,7 @@ from brownie import ZERO_ADDRESS, interface, reverts
 from tx_tracing_helpers import *
 from utils.config import network_name
 
-selfowned_steth_burner_burnt_non_cover = {
+self_owned_steth_burner_burnt_non_cover = {
     'mainnet': 32145684728326685744,
     'goerli': 0
 }
@@ -24,8 +24,8 @@ def test_setup_coverage(
     composite_post_rebase_beacon_receiver,
     self_owned_steth_burner, vote_id_from_env
 ):
-    netname = network_name().split('-')[0]
-    assert netname in ("goerli", "mainnet"), "Incorrect network name"
+    network = network_name().split('-')[0]
+    assert network in ("goerli", "mainnet"), "Incorrect network name"
 
     assert oracle.getBeaconReportReceiver() == ZERO_ADDRESS, \
         "Incorrect old beacon report receiver"
@@ -51,7 +51,7 @@ def test_setup_coverage(
 
     assert self_owned_steth_burner.getCoverSharesBurnt() == 0, \
         "Incorrect cover shares burnt amount"
-    assert self_owned_steth_burner.getNonCoverSharesBurnt() == selfowned_steth_burner_burnt_non_cover[netname], \
+    assert self_owned_steth_burner.getNonCoverSharesBurnt() == self_owned_steth_burner_burnt_non_cover[network], \
         "Incorrect non-cover shares burnt amount"
 
     assert has_burn_role_permission(acl, lido, dao_voting, dao_agent.address, 100), "Incorrect permissions"
@@ -89,7 +89,7 @@ def test_setup_coverage(
     assert self_owned_steth_burner.TREASURY() == dao_agent.address, "Incorrect lido treasury address"
     assert self_owned_steth_burner.getBurnAmountPerRunQuota() == 4, "Incorrect quota"
     assert self_owned_steth_burner.getCoverSharesBurnt() == 0, "Incorrect cover shares burnt amount"
-    assert self_owned_steth_burner.getNonCoverSharesBurnt() == selfowned_steth_burner_burnt_non_cover[netname], \
+    assert self_owned_steth_burner.getNonCoverSharesBurnt() == self_owned_steth_burner_burnt_non_cover[network], \
         "Incorrect non-cover shares burnt amount"
 
     assert not has_burn_role_permission(acl, lido, dao_voting, dao_agent.address, 100), "Incorrect permissions"
@@ -100,7 +100,7 @@ def test_setup_coverage(
 
     cover_application_acceptance_checks(
         self_owned_steth_burner, dao_voting,
-        oracle, lido, dao_agent, netname, accounts
+        oracle, lido, dao_agent, network, accounts
     )
 
     burn_permissions_forehead_check(
@@ -114,11 +114,11 @@ def test_setup_coverage(
     )
 
 
-def cover_application_acceptance_checks(steth_burner, dao_voting, oracle, lido, agent, netname, accounts):
+def cover_application_acceptance_checks(steth_burner, dao_voting, oracle, lido, agent, network, accounts):
     steth_amount = 10 ** 18
     shares_to_burn = lido.getSharesByPooledEth(steth_amount)
 
-    assert steth_burner.getNonCoverSharesBurnt() == selfowned_steth_burner_burnt_non_cover[netname], \
+    assert steth_burner.getNonCoverSharesBurnt() == self_owned_steth_burner_burnt_non_cover[network], \
         "Incorrect non-cover shares burnt amount"
     assert steth_burner.getCoverSharesBurnt() == 0, \
         "incorrect amount of the shares burnt for cover"
@@ -150,11 +150,11 @@ def cover_application_acceptance_checks(steth_burner, dao_voting, oracle, lido, 
     assert (lido.balanceOf(steth_burner.address) + 9) // 10 == (steth_amount + 9) // 10, \
         "Incorrect balance"
 
-    # abusing ERC721 recovert interface with stETH
+    # abusing ERC721 recovery interface with stETH
     with reverts("TRANSFER_AMOUNT_EXCEEDS_ALLOWANCE"):
         steth_burner.recoverERC721(lido, steth_amount, {'from': accounts[0]})
 
-    assert steth_burner.getNonCoverSharesBurnt() == selfowned_steth_burner_burnt_non_cover[netname], \
+    assert steth_burner.getNonCoverSharesBurnt() == self_owned_steth_burner_burnt_non_cover[network], \
         "Incorrect non-cover shares burnt amount"
     assert steth_burner.getCoverSharesBurnt() == 0, \
         "incorrect amount of the shares burnt for cover"
@@ -175,7 +175,7 @@ def cover_application_acceptance_checks(steth_burner, dao_voting, oracle, lido, 
     assert steth_burner.getCoverSharesBurnt() == shares_to_burn * 1 // 4, \
         "incorrect amount of the shares burnt for cover"
     assert steth_burner.getNonCoverSharesBurnt() == \
-        selfowned_steth_burner_burnt_non_cover[netname] + shares_to_burn * 3 // 4, \
+        self_owned_steth_burner_burnt_non_cover[network] + shares_to_burn * 3 // 4, \
         "Incorrect non-cover shares burnt amount"
 
 def burn_permissions_forehead_check(lido, steth_burner, agent, dao_voting):

@@ -5,7 +5,7 @@ from typing import Dict
 from brownie import accounts, chain, ZERO_ADDRESS, Wei
 
 from scripts.vote_2022_05_31 import start_vote
-from utils.test.snapshot_helpers import dict_zip, dict_diff, assert_no_more_diffs, ValueChanged
+from utils.test.snapshot_helpers import dict_zip, dict_diff, assert_no_diffs, ValueChanged
 from utils.config import contracts
 
 
@@ -53,7 +53,7 @@ def make_snapshot(stranger, lido) -> Dict[str, any]:
         'curve_pool.steth_shares': lido.sharesOf(curve_pool),
 
         'steth.total_supply': lido.totalSupply(),
-        'steth.total_sthares': lido.getTotalShares(),
+        'steth.total_shares': lido.getTotalShares(),
 
         'lido.beacon_validators': beacon_validators,
         'lido.beacon_balance': beacon_balance
@@ -100,8 +100,8 @@ def test_submit_rebase(ldo_holder, stranger, lido, lido_oracle_report, helpers):
         (before, after) = pair_of_snapshots
         step_diffs[step] = dict_diff(before, after)
 
-    assert_no_more_diffs('before_submit', step_diffs['before_submit'])
-    assert_no_more_diffs('after_submit', step_diffs['after_submit'])
-    assert_no_more_diffs('after_positive_rebase', step_diffs['after_positive_rebase'])
-    assert_no_more_diffs('after_negative_rebase', step_diffs['after_negative_rebase'])
-    assert_no_more_diffs('after_last_submit', step_diffs['after_last_submit'])
+    assert_no_diffs('before_submit', step_diffs['before_submit'])
+    assert_no_diffs('after_submit', step_diffs['after_submit'])
+    assert_no_diffs('after_positive_rebase', step_diffs['after_positive_rebase'])
+    assert_no_diffs('after_negative_rebase', step_diffs['after_negative_rebase'])
+    assert_no_diffs('after_last_submit', step_diffs['after_last_submit'])
