@@ -6,7 +6,7 @@ from typing import Dict
 from brownie import accounts, chain, Contract
 
 from scripts.archive.vote_2022_05_24 import start_vote
-from utils.test.snapshot_helpers import dict_zip, dict_diff, assert_no_more_diffs, ValueChanged
+from utils.test.snapshot_helpers import dict_zip, dict_diff, assert_no_diffs, ValueChanged
 from utils.config import contracts
 from utils.node_operators import get_node_operators
 
@@ -107,6 +107,6 @@ def test_rewards_distribution(ldo_holder, lido, node_operators_registry, lido_or
         (before, after) = pair_of_snapshots
         step_diffs[step] = dict_diff(before, after)
 
-    assert_no_more_diffs('before_rewards_distribution', step_diffs['before_rewards_distribution'])
-    assert_no_more_diffs('after_rewards_distribution', step_diffs['after_rewards_distribution'])
-    assert_no_more_diffs('after_negative_rebase_no_rewards', step_diffs['after_negative_rebase_no_rewards'])
+    assert_no_diffs('before_rewards_distribution', step_diffs['before_rewards_distribution'])
+    assert_no_diffs('after_rewards_distribution', step_diffs['after_rewards_distribution'])
+    assert_no_diffs('after_negative_rebase_no_rewards', step_diffs['after_negative_rebase_no_rewards'])

@@ -6,7 +6,7 @@ from typing import Dict
 from brownie import accounts, chain, Contract, ZERO_ADDRESS, Wei
 
 from scripts.archive.vote_2022_05_24 import start_vote
-from utils.test.snapshot_helpers import dict_zip, dict_diff, assert_no_more_diffs, ValueChanged
+from utils.test.snapshot_helpers import dict_zip, dict_diff, assert_no_diffs, ValueChanged
 from utils.config import contracts
 
 
@@ -125,8 +125,8 @@ def test_submit_rebase(ldo_holder, stranger, lido, lido_oracle_report, old_fashi
         (before, after) = pair_of_snapshots
         step_diffs[step] = dict_diff(before, after)
 
-    assert_no_more_diffs('before_submit', step_diffs['before_submit'])
-    assert_no_more_diffs('after_submit', step_diffs['after_submit'])
-    assert_no_more_diffs('after_positive_rebase', step_diffs['after_positive_rebase'])
-    assert_no_more_diffs('after_negative_rebase', step_diffs['after_negative_rebase'])
-    assert_no_more_diffs('after_last_submit', step_diffs['after_last_submit'])
+    assert_no_diffs('before_submit', step_diffs['before_submit'])
+    assert_no_diffs('after_submit', step_diffs['after_submit'])
+    assert_no_diffs('after_positive_rebase', step_diffs['after_positive_rebase'])
+    assert_no_diffs('after_negative_rebase', step_diffs['after_negative_rebase'])
+    assert_no_diffs('after_last_submit', step_diffs['after_last_submit'])

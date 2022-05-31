@@ -15,6 +15,7 @@ from utils.config import (ldo_token_address, lido_dao_voting_address,
                           ldo_vote_executors_for_tests, lido_easytrack, lido_dao_oracle,
                           lido_dao_composite_post_rebase_beacon_receiver,
                           lido_dao_self_owned_steth_burner,
+                          lido_dao_execution_layer_rewards_vault,
                           )
 
 
@@ -86,6 +87,11 @@ def finance(interface):
 @pytest.fixture(scope="module")
 def oracle(interface):
     return interface.LidoOracle(lido_dao_oracle)
+
+
+@pytest.fixture(scope="module")
+def execution_layer_rewards_vault(interface):
+    return interface.LidoExecutionLayerRewardsVault(lido_dao_execution_layer_rewards_vault)
 
 
 @pytest.fixture(scope="module")

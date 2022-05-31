@@ -110,6 +110,24 @@ def validate_parametrized_burn_permissions(lido):
         lido.burnShares(lido_dao_self_owned_steth_burner, 123, { 'from': lido_dao_voting_address })
 
 
+def validate_new_manage_contracts_role(lido, voting):
+    stranger = lido_dao_self_owned_steth_burner
+    new_oracle = '0x1111111111111111111111111111111111111111'
+    new_treasury = '0x2222222222222222222222222222222222222222'
+    new_insurance = '0x3333333333333333333333333333333333333333'
+
+    with reverts('APP_AUTH_FAILED'):
+        lido.setProtocolContracts(new_oracle, new_treasury, new_insurance, { 'from': stranger })
+    
+    assert not lido.getOracle() == new_oracle
+    assert not lido.getTreasury() == new_treasury
+    assert not lido.getInsuranceFund() == new_insurance
+    lido.setProtocolContracts(new_oracle, new_treasury, new_insurance, { 'from': voting.address })
+    assert lido.getOracle() == new_oracle
+    assert lido.getTreasury() == new_treasury
+    assert lido.getInsuranceFund() == new_insurance
+
+
 def test_vote(
     helpers, accounts, ldo_holder, dao_voting,
     vote_id_from_env, bypass_events_decoding,
@@ -131,6 +149,7 @@ def test_vote(
     assert not acl.hasPermission['address,address,bytes32,uint[]'](*permission_burn_on_steth_burner)
     assert oracle.getBeaconReportReceiver() == ZERO_ADDRESS
 
+    assert not acl.hasPermission(*permission_manage_protocol_contracts)
     assert acl.hasPermission(*permission_set_treasury)
     assert acl.hasPermission(*permission_set_insurance_fund)
     assert acl.hasPermission(*permission_set_oracle)
@@ -160,6 +179,8 @@ def test_vote(
     assert acl.hasPermission['address,address,bytes32,uint[]'](*permission_burn_on_steth_burner)
     validate_parametrized_burn_permissions(lido)
 
+    assert acl.hasPermission(*permission_manage_protocol_contracts)
+    validate_new_manage_contracts_role(lido, dao_voting)
     assert not acl.hasPermission(*permission_set_treasury)
     assert not acl.hasPermission(*permission_set_insurance_fund)
     assert not acl.hasPermission(*permission_set_oracle)

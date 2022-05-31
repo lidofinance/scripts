@@ -55,11 +55,9 @@ def steps(lido, node_operators_registry, lido_oracle_report) -> Dict[str, Dict[s
     before_rewards_distribution = make_snapshot(lido, node_operators_registry)
 
     lido_oracle_report(steth_rebase_mult=1.01)
-
     after_rewards_distribution = make_snapshot(lido, node_operators_registry)
 
     lido_oracle_report(steth_rebase_mult=0.99)
-
     after_negative_rebase_no_rewards = make_snapshot(lido, node_operators_registry)
 
     return {
@@ -84,3 +82,31 @@ def test_rewards_distribution(ldo_holder, lido, node_operators_registry, lido_or
     assert_no_diffs('before_rewards_distribution', step_diffs['before_rewards_distribution'])
     assert_no_diffs('after_rewards_distribution', step_diffs['after_rewards_distribution'])
     assert_no_diffs('after_negative_rebase_no_rewards', step_diffs['after_negative_rebase_no_rewards'])
+
+
+def test_rewards_distribution_with_el_rewards(
+    ldo_holder, lido, node_operators_registry, lido_oracle_report, helpers, stranger,
+    execution_layer_rewards_vault
+):
+    stranger.transfer(execution_layer_rewards_vault.address, '1 ether')
+    before: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, lido_oracle_report)
+    assert execution_layer_rewards_vault.balance() == '1 ether'
+
+    chain.revert()
+    execute_vote(ldo_holder, helpers)
+
+    stranger.transfer(execution_layer_rewards_vault.address, '1 ether')
+    assert execution_layer_rewards_vault.balance() == '1 ether'
+    after: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, lido_oracle_report)
+
+    step_diffs: Dict[str, Dict[str, ValueChanged]] = {}
+
+    for step, pair_of_snapshots in dict_zip(before, after).items():
+        (before, after) = pair_of_snapshots
+        step_diffs[step] = dict_diff(before, after)
+
+    assert_no_diffs('before_rewards_distribution', step_diffs['before_rewards_distribution'])
+
+    for _, value_change in step_diffs['after_rewards_distribution'].items():
+        assert value_change.to_val > value_change.from_val
+    
