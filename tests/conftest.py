@@ -12,7 +12,11 @@ from utils.config import (ldo_token_address, lido_dao_voting_address,
                           lido_dao_deposit_security_module_address,
                           lido_dao_steth_address, lido_dao_acl_address,
                           lido_dao_finance_address, ldo_holder_address_for_tests,
-                          ldo_vote_executors_for_tests, lido_easytrack, lido_dao_oracle)
+                          ldo_vote_executors_for_tests, lido_easytrack, lido_dao_oracle,
+                          lido_dao_composite_post_rebase_beacon_receiver,
+                          lido_dao_self_owned_steth_burner,
+                          lido_dao_execution_layer_rewards_vault,
+                          )
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -51,6 +55,16 @@ def deposit_security_module(interface):
 
 
 @pytest.fixture(scope='module')
+def composite_post_rebase_beacon_receiver(interface):
+    return interface.CompositePostRebaseBeaconReceiver(lido_dao_composite_post_rebase_beacon_receiver)
+
+
+@pytest.fixture(scope='module')
+def self_owned_steth_burner(interface):
+    return interface.SelfOwnedStETHBurner(lido_dao_self_owned_steth_burner)
+
+
+@pytest.fixture(scope='module')
 def ldo_token(interface):
     return interface.ERC20(ldo_token_address)
 
@@ -73,6 +87,11 @@ def finance(interface):
 @pytest.fixture(scope="module")
 def oracle(interface):
     return interface.LidoOracle(lido_dao_oracle)
+
+
+@pytest.fixture(scope="module")
+def execution_layer_rewards_vault(interface):
+    return interface.LidoExecutionLayerRewardsVault(lido_dao_execution_layer_rewards_vault)
 
 
 @pytest.fixture(scope="module")

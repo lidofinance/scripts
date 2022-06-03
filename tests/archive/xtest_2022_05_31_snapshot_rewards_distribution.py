@@ -1,11 +1,10 @@
 import pytest
-import copy
 
 from typing import Dict
 
-from brownie import accounts, chain, Contract
+from brownie import accounts, chain
 
-from scripts.archive.vote_2022_05_24 import start_vote
+from scripts.archive.vote_2022_05_31 import start_vote
 from utils.test.snapshot_helpers import dict_zip, dict_diff, assert_no_diffs, ValueChanged
 from utils.config import contracts
 from utils.node_operators import get_node_operators
@@ -15,30 +14,6 @@ from utils.node_operators import get_node_operators
 def stranger():
     return accounts[0]
 
-
-@pytest.fixture(scope='module')
-def old_fashioned_lido_oracle_report(lido):
-    push_beacon = copy.deepcopy(
-        list(filter(lambda abi_el: 'name' in abi_el and 'handleOracleReport' in abi_el['name'], lido.abi))
-    )
-    push_beacon[0]['name'] = 'pushBeacon'
-    old_fashioned_lido = Contract.from_abi("Old-Fashioned Lido", lido.address, lido.abi + push_beacon)
-
-    lido_oracle = accounts.at(lido.getOracle(), force=True)
-    dao_voting = accounts.at(contracts.voting.address, force=True)
-
-    def report_beacon_state(steth_rebase_mult):
-        lido.setFee(0, {'from': dao_voting})
-        (deposited_validators, beacon_validators, beacon_balance) = lido.getBeaconStat()
-        total_supply = lido.totalSupply()
-        total_supply_inc = (steth_rebase_mult - 1) * total_supply
-        beacon_balance += total_supply_inc
-        assert beacon_balance > 0
-        old_fashioned_lido.pushBeacon(beacon_validators, beacon_balance, {'from': lido_oracle})
-
-    return report_beacon_state
-
-
 @pytest.fixture(scope='module')
 def lido_oracle_report(lido):
     lido_oracle = accounts.at(lido.getOracle(), force=True)
@@ -46,7 +21,7 @@ def lido_oracle_report(lido):
 
     def report_beacon_state(steth_rebase_mult):
         lido.setFee(0, {'from': dao_voting})
-        (deposited_validators, beacon_validators, beacon_balance) = lido.getBeaconStat()
+        (_, beacon_validators, beacon_balance) = lido.getBeaconStat()
         total_supply = lido.totalSupply()
         total_supply_inc = (steth_rebase_mult - 1) * total_supply
         beacon_balance += total_supply_inc
@@ -80,11 +55,9 @@ def steps(lido, node_operators_registry, lido_oracle_report) -> Dict[str, Dict[s
     before_rewards_distribution = make_snapshot(lido, node_operators_registry)
 
     lido_oracle_report(steth_rebase_mult=1.01)
-
     after_rewards_distribution = make_snapshot(lido, node_operators_registry)
 
     lido_oracle_report(steth_rebase_mult=0.99)
-
     after_negative_rebase_no_rewards = make_snapshot(lido, node_operators_registry)
 
     return {
@@ -94,9 +67,8 @@ def steps(lido, node_operators_registry, lido_oracle_report) -> Dict[str, Dict[s
     }
 
 
-def test_rewards_distribution(ldo_holder, lido, node_operators_registry, lido_oracle_report,
-                              old_fashioned_lido_oracle_report, helpers):
-    before: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, old_fashioned_lido_oracle_report)
+def test_rewards_distribution(ldo_holder, lido, node_operators_registry, lido_oracle_report, helpers):
+    before: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, lido_oracle_report)
     chain.revert()
     execute_vote(ldo_holder, helpers)
     after: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, lido_oracle_report)
@@ -110,3 +82,31 @@ def test_rewards_distribution(ldo_holder, lido, node_operators_registry, lido_or
     assert_no_diffs('before_rewards_distribution', step_diffs['before_rewards_distribution'])
     assert_no_diffs('after_rewards_distribution', step_diffs['after_rewards_distribution'])
     assert_no_diffs('after_negative_rebase_no_rewards', step_diffs['after_negative_rebase_no_rewards'])
+
+
+def test_rewards_distribution_with_el_rewards(
+    ldo_holder, lido, node_operators_registry, lido_oracle_report, helpers, stranger,
+    execution_layer_rewards_vault
+):
+    stranger.transfer(execution_layer_rewards_vault.address, '1 ether')
+    before: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, lido_oracle_report)
+    assert execution_layer_rewards_vault.balance() == '1 ether'
+
+    chain.revert()
+    execute_vote(ldo_holder, helpers)
+
+    stranger.transfer(execution_layer_rewards_vault.address, '1 ether')
+    assert execution_layer_rewards_vault.balance() == '1 ether'
+    after: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, lido_oracle_report)
+
+    step_diffs: Dict[str, Dict[str, ValueChanged]] = {}
+
+    for step, pair_of_snapshots in dict_zip(before, after).items():
+        (before, after) = pair_of_snapshots
+        step_diffs[step] = dict_diff(before, after)
+
+    assert_no_diffs('before_rewards_distribution', step_diffs['before_rewards_distribution'])
+
+    for _, value_change in step_diffs['after_rewards_distribution'].items():
+        assert value_change.to_val > value_change.from_val
+    

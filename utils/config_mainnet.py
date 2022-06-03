@@ -23,6 +23,10 @@ balancer_rewards_manager = '0x1dD909cDdF3dbe61aC08112dC0Fdf2Ab949f79D8'
 
 lido_dao_deposit_security_module_address = '0xdb149235b6f40dc08810aa69869783be101790e7'
 
+lido_dao_composite_post_rebase_beacon_receiver = '0x55a7E1cbD678d9EbD50c7d69Dc75203B0dBdD431'
+lido_dao_self_owned_steth_burner = '0xB280E33812c0B09353180e92e27b8AD399B07f26'
+lido_dao_execution_layer_rewards_vault = '0x388C818CA8B9251b393131C08a736A67ccB19297'
+
 lido_easytrack = '0xF0211b7660680B49De1A7E9f25C65660F0a13Fea'
 lido_easytrack_evmscriptexecutor = '0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977'
 
@@ -31,9 +35,9 @@ finance_multisig_address = '0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb'
 
 ldo_holder_address_for_tests = '0x9bb75183646e2a0dc855498bacd72b769ae6ced3'
 ldo_vote_executors_for_tests = [
-            '0x3e40d73eb977dc6a537af587d48316fee66e9c8c',
-            '0xb8d83908aab38a159f3da47a59d84db8e1838712',
-            '0xa2dfc431297aee387c05beef507e5335e684fbcd'
+    '0x3e40d73eb977dc6a537af587d48316fee66e9c8c',
+    '0xb8d83908aab38a159f3da47a59d84db8e1838712',
+    '0xa2dfc431297aee387c05beef507e5335e684fbcd'
 ]
 
 dai_token_address = '0x6b175474e89094c44da98b954eedeac495271d0f'

@@ -35,7 +35,7 @@ def try_or_none(runnable: Callable[[], T]) -> Optional[T]:
         return None
 
 
-def assert_no_more_diffs(step: str, diff: Dict[str, ValueChanged]):
+def assert_no_diffs(step: str, diff: Dict[str, ValueChanged]):
     assert len(diff) == 0, f"Unexpected diffs on step \'{step}\': {diff}"
 
 

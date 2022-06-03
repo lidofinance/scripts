@@ -12,6 +12,12 @@ class Permission(NamedTuple):
     app: str
     role: str
 
+class PermissionP(NamedTuple):
+    entity: str
+    app: str
+    role: str
+    params: str
+
 
 def validate_permission_create_event(event: EventDict, p: Permission) -> None:
     _events_chain = ['LogScriptCall', 'SetPermission', 'ChangePermissionManager']
