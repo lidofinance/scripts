@@ -5,7 +5,7 @@ import pytest
 
 from brownie import interface, ZERO_ADDRESS, reverts
 
-from scripts.vote_2022_05_31 import self_owned_burn_role_params, start_vote
+from scripts.archive.vote_2022_05_31 import self_owned_burn_role_params, start_vote
 from tx_tracing_helpers import *
 
 from utils.config import (

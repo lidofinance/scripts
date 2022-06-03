@@ -4,7 +4,7 @@ from typing import Dict
 
 from brownie import interface, accounts, chain, ZERO_ADDRESS
 
-from scripts.vote_2022_05_31 import start_vote
+from scripts.archive.vote_2022_05_31 import start_vote
 from utils.test.snapshot_helpers import (
     dict_zip, dict_diff, try_or_none,
     assert_no_diffs, ValueChanged,

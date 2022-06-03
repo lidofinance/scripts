@@ -7,7 +7,7 @@ from brownie import interface, convert, web3
 from utils.config import contracts
 from event_validators.permission import Permission, PermissionP
 from brownie import reverts, ZERO_ADDRESS
-from scripts.vote_2022_05_31 import start_vote
+from scripts.archive.vote_2022_05_31 import start_vote
 
 
 @pytest.fixture(scope="module")
