@@ -16,6 +16,8 @@ Voting 31/05/2022.
 11. Revoke SET_INSURANCE_FUND from Voting
 12. Revoke SET_ORACLE from Voting
 
+Vote passed & executed on Jun-03-2022 02:53:55 PM +UTC, block 14897729.
+
 """
 
 import time
