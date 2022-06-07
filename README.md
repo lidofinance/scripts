@@ -161,6 +161,8 @@ The regression tests check the on-chain protocol state:
 
 The snapshot tests run only if the vote script exists.
 
+If there are multiple vote scripts all the common tests fail.
+
 ### Common tests in master branch
 
 As there is no vote script (as the workflow defines) only the regression tests run.
