@@ -29,8 +29,8 @@ voting_new_app = {  # goerli
     'content_uri': '0x697066733a516d5962774366374d6e6932797a31553358334769485667396f35316a6b53586731533877433257547755684859',
     'id': '0xee7f2abf043afe722001aaa900627a6e29adcbcce63a561fbd97e0a0c6429b94',
     'version': (4, 0, 0),
-    'vote_time': 300,  # 10 minute
-    'objection_time': 150  # 5 minute
+    'vote_time': 600,  # 10 minute
+    'objection_time': 300  # 5 minute
 }
 
 deployer_address = '0x3d3be777790ba9F279A188C3F249f0B6F94880Cd'
@@ -83,6 +83,7 @@ def test_vote(ldo_holder, helpers, dao_voting, dao_agent):
 
     assert voting_proxy.implementation() == voting_new_app['address']
     assert dao_voting.voteTime() == voting_new_app['vote_time']
+    assert dao_voting.objectionPhaseTime() == voting_new_app['objection_time']
     assert dao_voting.UNSAFELY_MODIFY_VOTE_TIME_ROLE() == permission.role
 
     # Validating events

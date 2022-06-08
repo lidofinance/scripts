@@ -98,9 +98,11 @@ def execution_layer_rewards_vault(interface):
 def easy_track(interface):
     return interface.EasyTrack(lido_easytrack)
 
+
 @pytest.fixture(scope='module')
 def unknown_person(accounts):
     return accounts.at('0x98ec059dc3adfbdd63429454aeb0c990fba4a128', force=True)
+
 
 class Helpers:
     @staticmethod
@@ -115,7 +117,7 @@ class Helpers:
 
     @staticmethod
     def execute_vote(accounts, vote_id, dao_voting, topup='0.1 ether', skip_time=3 * 60 * 60 * 24):
-        if dao_voting.getVote(vote_id)[0]:
+        if dao_voting.canVote(vote_id, ldo_vote_executors_for_tests[0]):
             for holder_addr in ldo_vote_executors_for_tests:
                 print('voting from acct:', holder_addr)
                 accounts[0].transfer(holder_addr, topup)

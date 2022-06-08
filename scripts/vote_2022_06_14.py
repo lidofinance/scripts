@@ -40,6 +40,7 @@ update_voting_app = {
 if network_name() in ("goerli", "goerli-fork"):
     update_voting_app['new_address'] = '0x12D103a07Ac0429519C77E96781dFD5186119582'  # TBA
     update_voting_app['content_uri'] = '0x697066733a516d5962774366374d6e6932797a31553358334769485667396f35316a6b53586731533877433257547755684859'  # TBA
+    update_voting_app['id'] = '0xee7f2abf043afe722001aaa900627a6e29adcbcce63a561fbd97e0a0c6429b94'
     update_voting_app['version'] = (4, 0, 0)
     update_voting_app['objection_time'] = 5 * 60  # 5 min
     update_voting_app['vote_time'] = 10 * 60  # 10 min
