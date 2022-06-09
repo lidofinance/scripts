@@ -50,6 +50,15 @@ def calc_last_deposit_block():
         assert False, f'Unsupported network "{network_name()}"'
 
 
+def get_lido_app_address():
+    if network_name() in ('goerli', 'goerli-fork'):
+        return '0xb16876f11324Fbf02b9B294FBE307B3DB0C02DBB'
+    elif network_name() in ('mainnet', 'mainnet-fork'):
+        return '0x47EbaB13B806773ec2A2d16873e2dF770D130b50'
+    else:
+        assert False, f'Unsupported network "{network_name()}"'
+
+
 def encode_set_last_deposit_block(last_deposit_block: int) -> Tuple[str, str]:
     deposit_security_module = interface.DepositSecurityModule(
         get_proposed_deposit_security_module_address())
@@ -62,7 +71,7 @@ def encode_set_last_deposit_block(last_deposit_block: int) -> Tuple[str, str]:
 
 def get_new_lido_app_params():
     return {
-        'address': '0x47ebab13b806773ec2a2d16873e2df770d130b50',
+        'address': get_lido_app_address(),
         'ipfsCid': 'QmcweCCxtTGubHuJVwDcTwikUevuvmAJJ7S5uoRicBxvxM',
         'content_uri': '0x697066733a516d637765434378745447756248754a567744635477696b55657675766d414a4a375335756f526963427876784d',
         'version': (3, 0, 1),

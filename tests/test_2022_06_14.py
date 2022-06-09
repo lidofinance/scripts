@@ -8,7 +8,8 @@ from brownie import interface, chain, ZERO_ADDRESS
 import scripts.vote_2022_06_14 as vote_script
 from scripts.vote_2022_06_14 import (
     start_vote,
-    get_proposed_deposit_security_module_address
+    get_proposed_deposit_security_module_address,
+    get_lido_app_address,
 )
 from tx_tracing_helpers import *
 from utils.config import (contracts, lido_dao_steth_address,
@@ -35,7 +36,7 @@ permission_new_deposit_role = Permission(
 
 
 lido_old_app = {
-    'address': '0x47EbaB13B806773ec2A2d16873e2dF770D130b50',
+    'address': get_lido_app_address(),
     'ipfsCid': 'QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS',
     'content_uri': '0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053',
     'version': (3, 0, 0),
@@ -43,7 +44,7 @@ lido_old_app = {
 
 
 lido_new_app = {
-    'address': '0x47EbaB13B806773ec2A2d16873e2dF770D130b50',
+    'address': get_lido_app_address(),
     'ipfsCid': 'QmcweCCxtTGubHuJVwDcTwikUevuvmAJJ7S5uoRicBxvxM',
     'content_uri': '0x697066733a516d637765434378745447756248754a567744635477696b55657675766d414a4a375335756f526963427876784d',
     'version': (3, 0, 1),
