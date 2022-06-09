@@ -161,7 +161,8 @@ The regression tests check the on-chain protocol state:
 
 The snapshot tests run only if the vote script exists.
 
-If there are multiple vote scripts all the common tests fail.
+If there are multiple vote scripts all the scripts are run and executed 
+sequentially in lexicographical order by script name.
 
 ### Common tests in master branch
 
