@@ -6,6 +6,7 @@ Voting 14/06/2022.
 3. Set lastDepositBlock of DepositSecurityModule to {{??? block number TBD}}
 
 """
+# noinspection PyUnresolvedReferences
 
 import time
 
@@ -24,7 +25,6 @@ from utils.config import (
     lido_dao_deposit_security_module_address
 )
 from utils.permissions import encode_permission_grant, encode_permission_revoke
-# noinspection PyUnresolvedReferences
 from utils.brownie_prelude import *
 
 
@@ -49,18 +49,10 @@ def get_last_deposit_block():
 def encode_set_last_deposit_block(last_deposit_block: int) -> Tuple[str, str]:
     deposit_security_module = interface.DepositSecurityModule(
         get_proposed_deposit_security_module_address())
-    # deposit_security_module: interface.DepositSecurityModule = contracts.deposit_security_module
-
-    # return agent_forward([(
-    #     deposit_security_module.address,
-    #     deposit_security_module.unpauseDeposits.encode_input()
-    # )])
 
     return agent_forward([(
-    # return (
         deposit_security_module.address,
         deposit_security_module.setLastDepositBlock.encode_input(last_deposit_block)
-    # )
     )])
 
 
