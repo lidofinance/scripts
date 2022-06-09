@@ -1,5 +1,5 @@
 """
-Voting 14/06/2022.
+Voting 21/06/2022.
 
 1. Push new voting app version to Voting Repo 0x41D65FA420bBC714686E798a0eB0Df3799cEF092.
 2. Upgrade the DAO Voting ##address TBA## contract implementation.

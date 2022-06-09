@@ -1,8 +1,12 @@
+"""
+Tests for voting 21/06/2022.
+"""
+
 # noinspection PyUnresolvedReferences
 from utils.brownie_prelude import *
 
 from brownie import accounts, interface, reverts
-from scripts.vote_2022_06_14 import start_vote
+from scripts.vote_2022_06_21 import start_vote
 from utils.config import (
     lido_dao_voting_repo,
     lido_dao_voting_address, network_name
