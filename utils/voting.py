@@ -1,6 +1,6 @@
 from typing import Tuple, Optional
 
-from brownie import exceptions, web3, convert
+from brownie import exceptions
 from brownie.utils import color
 from brownie.network.transaction import TransactionReceipt
 from brownie.network.contract import Contract
@@ -32,17 +32,12 @@ def create_vote(vote_desc, evm_script, tx_params, verbose: bool = False) -> Tupl
     try:
         vote_id = tx.events['StartVote']['voteId']
     except:
-        # If we're updating Voting itself there can be problems with parsing events from the log
-        try:
-            vote_id = find_vote_id_in_raw_logs(tx.logs)
-        except Exception as e:
-            print(e)
-            print(f'Looks like your brownie topics cache is out of date, '
-                  f'fetching new abi from etherscan '
-                  f'for "{voting.address}" address')
-            x = Contract.from_explorer(voting.address)
-            print(f'{x} downloaded, exiting... please restart the process again')
-            return -1, None
+        print(f'Looks like your brownie topics cache is out of date, '
+              f'fetching new abi from etherscan '
+              f'for "{voting.address}" address')
+        x = Contract.from_explorer(voting.address)
+        print(f'{x} downloaded, exiting... please restart the process again')
+        return -1, None
 
     if verbose:
         try:
@@ -53,17 +48,6 @@ def create_vote(vote_desc, evm_script, tx_params, verbose: bool = False) -> Tupl
                   f'Raised exception: {repr(err)}')
 
     return vote_id, tx
-
-
-def find_vote_id_in_raw_logs(logs) -> int:
-    start_vote_signature = web3.keccak(text="StartVote(uint256,address,string)")
-    start_vote_logs = list(filter(lambda log: log['topics'][0] == start_vote_signature, logs))
-
-    assert len(start_vote_logs) == 1, "Should be only one StartVote in tx"
-
-    start_vote_log = start_vote_logs[0]
-
-    return convert.to_uint(start_vote_log['topics'][1])
 
 
 def confirm_vote_script(encoded_call_script: str, silent: bool) -> bool:
