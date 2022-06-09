@@ -6,9 +6,9 @@ from brownie import accounts, chain, ZERO_ADDRESS, Wei
 
 from utils.test.snapshot_helpers import dict_zip, dict_diff, assert_no_diffs, ValueChanged
 from utils.config import contracts
-from utils.import_current_vote import import_current_vote
+from utils.import_current_vote import get_start_and_execute_votes_func
 
-start_vote = import_current_vote()
+start_and_execute_votes = get_start_and_execute_votes_func()
 
 
 @pytest.fixture(scope="module")
@@ -30,16 +30,6 @@ def lido_oracle_report(lido):
         lido.handleOracleReport(beacon_validators, beacon_balance, {'from': lido_oracle})
 
     return report_beacon_state
-
-
-def execute_vote(ldo_holder, helpers):
-    vote_id = start_vote({"from": ldo_holder}, silent=True)[0]
-    helpers.execute_vote(
-        vote_id=vote_id,
-        accounts=accounts,
-        dao_voting=contracts.voting,
-        skip_time=3 * 60 * 60 * 24,
-    )
 
 
 def make_snapshot(stranger, lido) -> Dict[str, any]:
@@ -90,13 +80,13 @@ def steps(stranger, lido, lido_oracle_report) -> Dict[str, Dict[str, any]]:
     }
 
 
-def test_submit_rebase(ldo_holder, stranger, lido, lido_oracle_report, helpers):
-    if start_vote is None:
-        pytest.skip('No vote script')
+def test_submit_rebase(dao_voting, stranger, lido, lido_oracle_report, helpers):
+    if start_and_execute_votes is None:
+        pytest.skip('No vote scripts')
 
     before: Dict[str, Dict[str, any]] = steps(stranger, lido, lido_oracle_report)
     chain.revert()
-    execute_vote(ldo_holder, helpers)
+    start_and_execute_votes(dao_voting, helpers)
     after: Dict[str, Dict[str, any]] = steps(stranger, lido, lido_oracle_report)
 
     step_diffs: Dict[str, Dict[str, ValueChanged]] = {}

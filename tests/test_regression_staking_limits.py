@@ -7,9 +7,11 @@ import eth_abi
 from web3 import Web3
 from utils.config import contracts
 from brownie import web3, convert, reverts, ZERO_ADDRESS, chain
-from utils.import_current_vote import import_current_vote
+from utils.import_current_vote import get_start_and_execute_votes_func
 
-start_vote = import_current_vote()
+
+start_and_execute_votes = get_start_and_execute_votes_func()
+
 
 ether = 10 ** 18
 
@@ -24,15 +26,14 @@ def operator(accounts, dao_voting):
     return accounts.at(dao_voting.address, force=True)
 
 
-@pytest.fixture(scope="module", autouse=(start_vote is not None))
-def autoexecute_vote(vote_id_from_env, ldo_holder, helpers, accounts, dao_voting):
-    vote_id = vote_id_from_env or start_vote({"from": ldo_holder}, silent=True)[0]
-    helpers.execute_vote(
-        vote_id=vote_id,
-        accounts=accounts,
-        dao_voting=dao_voting,
-        skip_time=3 * 60 * 60 * 24,
-    )
+@pytest.fixture(scope="module", autouse=(start_and_execute_votes is not None))
+def autoexecute_vote(vote_id_from_env, helpers, accounts, dao_voting):
+    if vote_id_from_env:
+        helpers.execute_vote(
+            vote_id=vote_id_from_env, accounts=accounts, dao_voting=dao_voting, topup='0.5 ether'
+        )
+    elif start_and_execute_votes:
+        start_and_execute_votes(dao_voting, helpers)
 
 
 def test_is_staking_not_paused(lido):

@@ -7,9 +7,9 @@ from brownie import accounts, chain
 from utils.test.snapshot_helpers import dict_zip, dict_diff, assert_no_diffs, ValueChanged
 from utils.config import contracts
 from utils.node_operators import get_node_operators
-from utils.import_current_vote import import_current_vote
+from utils.import_current_vote import get_start_and_execute_votes_func
 
-start_vote = import_current_vote()
+start_and_execute_votes = get_start_and_execute_votes_func()
 
 
 @pytest.fixture(scope="module")
@@ -32,16 +32,6 @@ def lido_oracle_report(lido):
         lido.handleOracleReport(beacon_validators, beacon_balance, {'from': lido_oracle})
 
     return report_beacon_state
-
-
-def execute_vote(ldo_holder, helpers):
-    vote_id = start_vote({"from": ldo_holder}, silent=True)[0]
-    helpers.execute_vote(
-        vote_id=vote_id,
-        accounts=accounts,
-        dao_voting=contracts.voting,
-        skip_time=3 * 60 * 60 * 24,
-    )
 
 
 def make_snapshot(lido, node_operators_registry) -> Dict[str, any]:
@@ -70,13 +60,13 @@ def steps(lido, node_operators_registry, lido_oracle_report) -> Dict[str, Dict[s
     }
 
 
-def test_rewards_distribution(ldo_holder, lido, node_operators_registry, lido_oracle_report, helpers):
-    if start_vote is None:
-        pytest.skip('No vote script')
+def test_rewards_distribution(dao_voting, lido, node_operators_registry, lido_oracle_report, helpers):
+    if start_and_execute_votes is None:
+        pytest.skip('No vote scripts')
 
     before: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, lido_oracle_report)
     chain.revert()
-    execute_vote(ldo_holder, helpers)
+    start_and_execute_votes(dao_voting, helpers)
     after: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, lido_oracle_report)
 
     step_diffs: Dict[str, Dict[str, ValueChanged]] = {}
@@ -91,17 +81,17 @@ def test_rewards_distribution(ldo_holder, lido, node_operators_registry, lido_or
 
 
 def test_rewards_distribution_with_el_rewards(
-    ldo_holder, lido, node_operators_registry, lido_oracle_report, helpers, stranger,
+    dao_voting, lido, node_operators_registry, lido_oracle_report, helpers, stranger,
     execution_layer_rewards_vault
 ):
-    if start_vote is None:
-        pytest.skip('No vote script')
+    if start_and_execute_votes is None:
+        pytest.skip('No vote scripts')
 
     stranger.transfer(execution_layer_rewards_vault.address, '1 ether')
     before: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, lido_oracle_report)
 
     chain.revert()
-    execute_vote(ldo_holder, helpers)
+    start_and_execute_votes(dao_voting, helpers)
 
     stranger.transfer(execution_layer_rewards_vault.address, '1 ether')
     assert execution_layer_rewards_vault.balance() == '1 ether'

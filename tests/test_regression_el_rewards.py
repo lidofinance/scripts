@@ -7,9 +7,9 @@ from functools import partial
 from brownie import interface, reverts, web3
 
 from utils.config import contracts
-from utils.import_current_vote import import_current_vote
+from utils.import_current_vote import get_start_and_execute_votes_func
 
-start_vote = import_current_vote()
+start_and_execute_votes = get_start_and_execute_votes_func()
 
 LIDO_EXECUTION_LAYER_REWARDS_VAULT = "0x388C818CA8B9251b393131C08a736A67ccB19297"
 TOTAL_BASIS_POINTS = 10000
@@ -36,15 +36,14 @@ def lido_execution_layer_rewards_vault():
     return interface.LidoExecutionLayerRewardsVault(LIDO_EXECUTION_LAYER_REWARDS_VAULT)
 
 
-@pytest.fixture(scope="module", autouse=(start_vote is not None))
+@pytest.fixture(scope="module", autouse=(start_and_execute_votes is not None))
 def autoexecute_vote(vote_id_from_env, ldo_holder, helpers, accounts, dao_voting):
-    vote_id = vote_id_from_env or start_vote({"from": ldo_holder}, silent=True)[0]
-    helpers.execute_vote(
-        vote_id=vote_id,
-        accounts=accounts,
-        dao_voting=dao_voting,
-        skip_time=3 * 60 * 60 * 24,
-    )
+    if vote_id_from_env:
+        helpers.execute_vote(
+            vote_id=vote_id_from_env, accounts=accounts, dao_voting=dao_voting, topup='0.5 ether'
+        )
+    elif start_and_execute_votes:
+        start_and_execute_votes(dao_voting, helpers)
 
 
 def test_el_rewards_views_values_is_correct(

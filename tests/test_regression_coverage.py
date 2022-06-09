@@ -5,9 +5,9 @@ Tests for coverage
 from brownie import ZERO_ADDRESS, interface, reverts
 from tx_tracing_helpers import *
 from utils.config import network_name
-from utils.import_current_vote import import_current_vote
+from utils.import_current_vote import get_start_and_execute_votes_func
 
-start_vote = import_current_vote()
+start_and_execute_votes = get_start_and_execute_votes_func()
 
 
 self_owned_steth_burner_burnt_non_cover = {
@@ -62,17 +62,20 @@ def test_setup_coverage(
     assert has_burn_role_permission(acl, lido, self_owned_steth_burner, self_owned_steth_burner.address, 100), "Incorrect permissions"
 
     # If no vote script do no after-the-voting checks
-    if start_vote is None:
+
+
+    ##
+    ## START VOTE OR EXIT
+    ##
+    if vote_id_from_env:
+        helpers.execute_vote(
+            vote_id=vote_id_from_env, accounts=accounts, dao_voting=dao_voting, topup='0.5 ether'
+        )
+    elif start_and_execute_votes is not None:
+        start_and_execute_votes(dao_voting, helpers)
+    else:
         return
 
-    ##
-    ## START VOTE
-    ##
-    vote_id = vote_id_from_env or start_vote({ 'from': ldo_holder }, silent=True)[0]
-
-    helpers.execute_vote(
-        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup='0.5 ether'
-    )
 
     # CHECKS AFTER
 

@@ -16,9 +16,9 @@ from utils.config import (
     ldo_token_address,
     lido_dao_voting_address
 )
-from utils.import_current_vote import import_current_vote
+from utils.import_current_vote import get_start_and_execute_votes_func
 
-start_vote = import_current_vote()
+start_and_execute_votes = get_start_and_execute_votes_func()
 
 
 @pytest.fixture(scope="module")
@@ -27,7 +27,7 @@ def staker():
 
 
 def execute_vote(ldo_holder, helpers):
-    vote_id = start_vote({"from": ldo_holder}, silent=True)[0]
+    vote_id = start_and_execute_votes({"from": ldo_holder}, silent=True)[0]
     helpers.execute_vote(
         vote_id=vote_id,
         accounts=accounts,
@@ -116,9 +116,9 @@ def snapshot() -> Dict[str, any]:
     }
 
 
-def test_submit_snapshot(ldo_holder, helpers, lido, staker):
-    if start_vote is None:
-        pytest.skip('No vote script')
+def test_submit_snapshot(ldo_holder, helpers, lido, staker, dao_voting):
+    if start_and_execute_votes is None:
+        pytest.skip('No vote scripts')
 
     ether = 10 ** 18
 
@@ -130,7 +130,7 @@ def test_submit_snapshot(ldo_holder, helpers, lido, staker):
 
     before: Dict[str, Dict[str, any]] = steps()
     chain.revert()
-    execute_vote(ldo_holder, helpers)
+    start_and_execute_votes(dao_voting, helpers)
     after: Dict[str, Dict[str, any]] = steps()
 
     step_diffs: Dict[str, Dict[str, ValueChanged]] = {}
