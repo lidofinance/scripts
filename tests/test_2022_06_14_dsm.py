@@ -16,7 +16,7 @@ new_dsm_address: str = '0x710B3303fB508a84F10793c1106e32bE873C24cd'
 def test_dsm_upgrade(
     helpers, accounts, ldo_holder, dao_voting,
     vote_id_from_env, dao_agent, lido
-):
+) -> None:
     old_dsm: interface.DepositSecurityModule = interface.DepositSecurityModule(old_dsm_address)
     new_dsm: interface.DepositSecurityModule = interface.DepositSecurityModule(new_dsm_address)
 
@@ -27,13 +27,13 @@ def test_dsm_upgrade(
     assert old_dsm_last_deposited_block >= 14929938, "old DSM: last deposit block should be sane"
     assert new_dsm.getLastDepositBlock() == 0, "new DSM: last deposit block should be zero initially" # should be uninitialized
 
+    pre_vote_block: int = web3.eth.block_number
     # 84 hours period and 13 seconds per block
-    pre_vote_block = web3.eth.block_number
-    block_offset = (84 * 60 * 60) // 13
-    new_dsm_last_deposited_block = pre_vote_block + block_offset
+    block_offset: int = (84 * 60 * 60) // 13
+    new_dsm_last_deposited_block: int = pre_vote_block + block_offset
 
     # START VOTE
-    vote_id = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]
+    vote_id: int = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]
 
     tx: TransactionReceipt = helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24
@@ -65,7 +65,7 @@ def test_dsm_upgrade(
 def assert_settings_are_same(
     old_dsm: interface.DepositSecurityModule,
     new_dsm: interface.DepositSecurityModule
-):
+) -> None:
     assert old_dsm.ATTEST_MESSAGE_PREFIX() == new_dsm.ATTEST_MESSAGE_PREFIX()
     assert old_dsm.DEPOSIT_CONTRACT() == new_dsm.DEPOSIT_CONTRACT()
     assert old_dsm.LIDO() == new_dsm.LIDO()
