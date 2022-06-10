@@ -6,12 +6,12 @@ import eth_abi
 from functools import partial
 from brownie import interface, reverts, web3
 
-from utils.config import contracts
+from utils.config import contracts, lido_dao_execution_layer_rewards_vault
 from utils.import_current_vote import get_start_and_execute_votes_func
 
 start_and_execute_votes = get_start_and_execute_votes_func()
 
-LIDO_EXECUTION_LAYER_REWARDS_VAULT = "0x388C818CA8B9251b393131C08a736A67ccB19297"
+LIDO_EXECUTION_LAYER_REWARDS_VAULT = lido_dao_execution_layer_rewards_vault
 TOTAL_BASIS_POINTS = 10000
 EL_REWARDS_FEE_WITHDRAWAL_LIMIT = 2
 
