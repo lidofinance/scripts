@@ -21,7 +21,7 @@ lido_dao_oracle_repo = '0x9234e37Adeb44022A078557D9943b72AB89bF36a'
 curve_rewards_manager_address = ''
 balancer_rewards_manager = ''
 
-lido_dao_deposit_security_module_address = '0xed23ad3ea5fb9d10e7371caef1b141ad1c23a80c'
+lido_dao_deposit_security_module_address = '0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe'
 
 lido_dao_composite_post_rebase_beacon_receiver = '0x5d2113f7691ac6Df5E3f41Fb938429ACEAD2C94f'
 lido_dao_self_owned_steth_burner = '0x6432756feF0fb527C06eFd4689A7CE0E195bD327'
