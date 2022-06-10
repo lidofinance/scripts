@@ -16,7 +16,7 @@ from tx_tracing_helpers import *
 from utils.config import (contracts, lido_dao_steth_address,
     network_name, lido_dao_deposit_security_module_address,
 )
-from event_validators.permission import (Permission, 
+from event_validators.permission import (Permission,
     validate_permission_revoke_event, validate_permission_grant_event)
 from event_validators.aragon import validate_push_to_repo_event
 from utils.config import lido_dao_lido_repo
@@ -64,10 +64,10 @@ lido_old_app = {
 
 lido_new_app = {
     'address': get_lido_app_address(),
-    'ipfsCid': 'QmcweCCxtTGubHuJVwDcTwikUevuvmAJJ7S5uoRicBxvxM',
-    'content_uri': '0x697066733a516d637765434378745447756248754a567744635477696b55657675766d414a4a375335756f526963427876784d',
+    'ipfsCid': 'QmURb5WALQG8b2iWuGmyGaQ7kY5q5vd4oNK5ZVDLjRjj2m',
+    'content_uri': '0x697066733a516d5552623557414c5147386232695775476d79476151376b593571357664346f4e4b355a56444c6a526a6a326d',
     'version': get_lido_app_old_version()[:2] + (1, ),
-} 
+}
 
 
 

@@ -4,7 +4,7 @@ Voting 14/06/2022.
 1. Revoke DEPOSIT_ROLE from old DepositSecurityModule 0xDb149235B6F40dC08810AA69869783Be101790e7
 2. Grant DEPOSIT_ROLE to new DepositSecurityModule 0x710B3303fB508a84F10793c1106e32bE873C24cd
 3. Set lastDepositBlock of DepositSecurityModule to {{TODO block number}}
-4. Set Lido app IPFS hash to QmcweCCxtTGubHuJVwDcTwikUevuvmAJJ7S5uoRicBxvxM
+4. Set Lido app IPFS hash to QmURb5WALQG8b2iWuGmyGaQ7kY5q5vd4oNK5ZVDLjRjj2m
 
 """
 # noinspection PyUnresolvedReferences
@@ -61,7 +61,7 @@ def get_lido_app_address():
 
 def get_lido_app_old_version():
     if network_name() in ('goerli', 'goerli-fork'):
-        return (8, 0, 0)
+        return (8, 0, 2)
     elif network_name() in ('mainnet', 'mainnet-fork'):
         return (3, 0, 0)
     else:
@@ -81,8 +81,8 @@ def encode_set_last_deposit_block(last_deposit_block: int) -> Tuple[str, str]:
 def get_new_lido_app_params():
     return {
         'address': get_lido_app_address(),
-        'ipfsCid': 'QmcweCCxtTGubHuJVwDcTwikUevuvmAJJ7S5uoRicBxvxM',
-        'content_uri': '0x697066733a516d637765434378745447756248754a567744635477696b55657675766d414a4a375335756f526963427876784d',
+        'ipfsCid': 'QmURb5WALQG8b2iWuGmyGaQ7kY5q5vd4oNK5ZVDLjRjj2m',
+        'content_uri': '0x697066733a516d5552623557414c5147386232695775476d79476151376b593571357664346f4e4b355a56444c6a526a6a326d',
         'version': get_lido_app_old_version()[:2] + (1, )
     }
 
@@ -129,7 +129,7 @@ def start_vote(
             '1) Revoke DEPOSIT_ROLE from the old DepositSecurityModule; ',
             '2) Grant DEPOSIT_ROLE to the new DepositSecurityModule; ',
             '3) Set lastDepositBlock of DepositSecurityModule to {{TBD}}; ',
-            '4) Set Lido app IPFS hash to QmcweCCxtTGubHuJVwDcTwikUevuvmAJJ7S5uoRicBxvxM. '
+            '4) Set Lido app IPFS hash to QmURb5WALQG8b2iWuGmyGaQ7kY5q5vd4oNK5ZVDLjRjj2m. '
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
