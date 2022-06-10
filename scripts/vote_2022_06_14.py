@@ -59,6 +59,15 @@ def get_lido_app_address():
         assert False, f'Unsupported network "{network_name()}"'
 
 
+def get_lido_app_old_version():
+    if network_name() in ('goerli', 'goerli-fork'):
+        return (8, 0, 0)
+    elif network_name() in ('mainnet', 'mainnet-fork'):
+        return (3, 0, 0)
+    else:
+        assert False, f'Unsupported network "{network_name()}"'
+
+
 def encode_set_last_deposit_block(last_deposit_block: int) -> Tuple[str, str]:
     deposit_security_module = interface.DepositSecurityModule(
         get_proposed_deposit_security_module_address())
@@ -74,7 +83,7 @@ def get_new_lido_app_params():
         'address': get_lido_app_address(),
         'ipfsCid': 'QmcweCCxtTGubHuJVwDcTwikUevuvmAJJ7S5uoRicBxvxM',
         'content_uri': '0x697066733a516d637765434378745447756248754a567744635477696b55657675766d414a4a375335756f526963427876784d',
-        'version': (3, 0, 1),
+        'version': get_lido_app_old_version()[:2] + (1, )
     }
 
 

@@ -10,6 +10,7 @@ from scripts.vote_2022_06_14 import (
     start_vote,
     get_proposed_deposit_security_module_address,
     get_lido_app_address,
+    get_lido_app_old_version,
 )
 from tx_tracing_helpers import *
 from utils.config import (contracts, lido_dao_steth_address,
@@ -19,6 +20,24 @@ from event_validators.permission import (Permission,
     validate_permission_revoke_event, validate_permission_grant_event)
 from event_validators.aragon import validate_push_to_repo_event
 from utils.config import lido_dao_lido_repo
+
+
+def get_lido_app_old_content_uri():
+    if network_name() in ('goerli', 'goerli-fork'):
+        return '0x697066733a516d626d5057357239484d64795541524e4a6a6a45374d4e714255477258617368776f577671525a686331743562'
+    elif network_name() in ('mainnet', 'mainnet-fork'):
+        return '0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053'
+    else:
+        assert False, f'Unsupported network "{network_name()}"'
+
+
+def get_lido_app_old_ipfs_cid():
+    if network_name() in ('goerli', 'goerli-fork'):
+        return 'QmbmPW5r9HMdyUARNJjjE7MNqBUGrXashwoWvqRZhc1t5b'
+    elif network_name() in ('mainnet', 'mainnet-fork'):
+        return 'QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS'
+    else:
+        assert False, f'Unsupported network "{network_name()}"'
 
 
 # DEPOSIT_ROLE on old DepositSecurityModule
@@ -37,9 +56,9 @@ permission_new_deposit_role = Permission(
 
 lido_old_app = {
     'address': get_lido_app_address(),
-    'ipfsCid': 'QmQkJMtvu4tyJvWrPXJfjLfyTWn959iayyNjp7YqNzX7pS',
-    'content_uri': '0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053',
-    'version': (3, 0, 0),
+    'ipfsCid': get_lido_app_old_ipfs_cid(),
+    'content_uri': get_lido_app_old_content_uri(),
+    'version': get_lido_app_old_version(),
 }
 
 
@@ -47,7 +66,7 @@ lido_new_app = {
     'address': get_lido_app_address(),
     'ipfsCid': 'QmcweCCxtTGubHuJVwDcTwikUevuvmAJJ7S5uoRicBxvxM',
     'content_uri': '0x697066733a516d637765434378745447756248754a567744635477696b55657675766d414a4a375335756f526963427876784d',
-    'version': (3, 0, 1),
+    'version': get_lido_app_old_version()[:2] + (1, ),
 } 
 
 
