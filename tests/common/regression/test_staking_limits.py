@@ -191,7 +191,7 @@ def test_staking_ability(lido, stranger):
 
     lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ether})
 
-    assert lido.balanceOf(stranger) >= ether - 1
+    assert lido.balanceOf(stranger) >= ether - 2
 
 
 def test_staking_limit_full_info(lido, stranger):

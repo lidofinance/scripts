@@ -27,7 +27,7 @@ def test_burn_shares_by_stranger(lido, stranger):
     stranger_submit_amount = 10**18
     lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": stranger_submit_amount})
     stranger_steth_balance_before = lido.balanceOf(stranger)
-    assert abs(stranger_submit_amount - stranger_steth_balance_before) <= 1
+    assert abs(stranger_submit_amount - stranger_steth_balance_before) <= 2
 
     # Test that stranger can't burnShares
     shares_to_burn = lido.sharesOf(stranger) // 3
