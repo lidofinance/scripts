@@ -12,11 +12,26 @@ class Permission(NamedTuple):
     app: str
     role: str
 
+
 class PermissionP(NamedTuple):
     entity: str
     app: str
     role: str
     params: str
+
+
+def validate_permission_grant_event(event: EventDict, p: Permission) -> None:
+    _events_chain = ['LogScriptCall', 'SetPermission']
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count('LogScriptCall') == 1
+    assert event.count('SetPermission') == 1
+
+    assert event['SetPermission']['entity'] == p.entity, "Wrong entity"
+    assert event['SetPermission']['app'] == p.app, "Wrong app address"
+    assert event['SetPermission']['role'] == p.role, "Wrong role"
+    assert event['SetPermission']['allowed'] is True, "Wrong role"
 
 
 def validate_permission_create_event(event: EventDict, p: Permission) -> None:

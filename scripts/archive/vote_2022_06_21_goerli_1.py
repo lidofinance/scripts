@@ -30,12 +30,20 @@ from utils.config import (
 
 update_voting_app = {
     'new_address': '',  # TBA
-    'content_uri':
-        '0x697066733a516d514d64696979653134765966724a7753594250646e68656a446f62417877584b72524e45663438735370444d',  # TBA
+    'content_uri': '',  # TBA
     'id': '0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e',
     'version': (3, 0, 0),
+    'vote_time': 172_800 + 86_400,  # 48 + 24 hours
     'objection_time': 86_400  # 24 hours
 }
+
+if network_name() in ("goerli", "goerli-fork"):
+    update_voting_app['new_address'] = '0x12D103a07Ac0429519C77E96781dFD5186119582'  # TBA
+    update_voting_app['content_uri'] = '0x697066733a516d5962774366374d6e6932797a31553358334769485667396f35316a6b53586731533877433257547755684859'  # TBA
+    update_voting_app['id'] = '0xee7f2abf043afe722001aaa900627a6e29adcbcce63a561fbd97e0a0c6429b94'
+    update_voting_app['version'] = (4, 0, 0)
+    update_voting_app['objection_time'] = 5 * 60  # 5 min
+    update_voting_app['vote_time'] = 10 * 60  # 10 min
 
 
 def unsafely_change_objection_time(voting, new_time):
@@ -80,6 +88,7 @@ def start_vote(
         ),
         # 4. Update objection duration with `unsafelyChangeObjectionTime()` to 24 hours
         unsafely_change_objection_time(voting, update_voting_app['objection_time']),
+        unsafely_change_vote_time(voting, update_voting_app['vote_time']),  # for goerli only
         # 5. Revoke `UNSAFELY_MODIFY_VOTE_TIME_ROLE` from DAO Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
         encode_permission_revoke(
             target_app=voting,

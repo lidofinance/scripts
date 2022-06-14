@@ -3,10 +3,13 @@ Tests for voting 21/06/2022.
 """
 
 # noinspection PyUnresolvedReferences
+import pytest
+
 from utils.brownie_prelude import *
 
 from brownie import accounts, interface, reverts
-from scripts.vote_2022_06_21 import start_vote
+from scripts.vote_2022_06_21 import start_vote, update_voting_app
+from utils.txs.deploy import deploy_from_prepared_tx
 from utils.config import (
     lido_dao_voting_repo,
     lido_dao_voting_address, network_name
@@ -15,40 +18,52 @@ from utils.config import (
 from event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
 
 from event_validators.permission import (Permission,
-                                         validate_permission_create_event,
+                                         validate_permission_grant_event,
                                          validate_permission_revoke_event)
-from event_validators.voting import validate_change_vote_time_event, validate_change_objection_time_event
+from event_validators.voting import validate_change_objection_time_event
 from tx_tracing_helpers import *
 
-voting_old_app = {  # goerli
-    'address': '0x9059e060113b7394FC964bf86CD246f3e9D4210d',
-    'content_uri': '0x697066733a516d5962774366374d6e6932797a31553358334769485667396f35316a6b53586731533877433257547755684859',
-    'id': '0xee7f2abf043afe722001aaa900627a6e29adcbcce63a561fbd97e0a0c6429b94',
-    'version': (3, 0, 0),
-    'vote_time': 259200,  # 72 h
+voting_old_app = {
+    'address': '0x41D65FA420bBC714686E798a0eB0Df3799cEF092',
+    'content_uri':
+        '0x697066733a516d514d64696979653134765966724a7753594250646e68656a446f62417877584b72524e45663438735370444d',
+    'version': (2, 0, 0),
+    'vote_time': 259_200,  # 72 h
 }
 
-voting_new_app = {  # goerli
-    'address': '0x12D103a07Ac0429519C77E96781dFD5186119582',  # TBA
-    'content_uri': '0x697066733a516d5962774366374d6e6932797a31553358334769485667396f35316a6b53586731533877433257547755684859',
-    'id': '0xee7f2abf043afe722001aaa900627a6e29adcbcce63a561fbd97e0a0c6429b94',
-    'version': (4, 0, 0),
-    'vote_time': 600,  # 10 minute
-    'objection_time': 300  # 5 minute
+voting_new_app = {
+    'address': '',
+    'content_uri':
+        '0x697066733a516d514d64696979653134765966724a7753594250646e68656a446f62417877584b72524e45663438735370444d',
+    'version': (3, 0, 0),
+    'vote_time': 259_200,  # 72 h
+    'objection_time': 86_400  # 24 hours
 }
 
 deployer_address = '0x3d3be777790ba9F279A188C3F249f0B6F94880Cd'
 
-permission = Permission(entity='0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db',  # Voting
-                               app='0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db',  # Voting
+permission = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
+                               app='0x2e59A20f205bB85a89C53f1936454680651E618e',  # Voting
                                role='0x068ca51c9d69625c7add396c98ca4f3b27d894c3b973051ad3ee53017d7094ea')
                                 # keccak256('UNSAFELY_MODIFY_VOTE_TIME_ROLE')
+
+
+@pytest.fixture(scope="module")
+def deployer():
+    return accounts.at(deployer_address, force=True)
+
+
+@pytest.fixture(scope="module", autouse=len(update_voting_app['new_address']) == 0)
+def autodeploy_contract(deployer):
+    address = deploy_from_prepared_tx(deployer, './utils/txs/tx-deploy-voting_for_upgrade.json')
+    voting_new_app['address'] = update_voting_app['new_address'] = address
 
 
 def test_vote(ldo_holder, helpers, dao_voting, dao_agent):
     voting_repo = interface.Repo(lido_dao_voting_repo)
     voting_proxy = interface.AppProxyUpgradeable(lido_dao_voting_address)
     voting_app_from_chain = voting_repo.getLatest()
+    voting_appId = voting_proxy.appId()
 
     assert voting_app_from_chain[0] == voting_old_app['version']
     assert voting_app_from_chain[1] == voting_old_app['address']
@@ -95,18 +110,19 @@ def test_vote(ldo_holder, helpers, dao_voting, dao_agent):
     display_voting_events(tx)
 
     if network_name() in ['mainnet-fork', 'mainnet']:
-        assert count_vote_items_by_events(tx, dao_voting) == 6, "Incorrect voting items count"
+        assert count_vote_items_by_events(tx, dao_voting) == 5, "Incorrect voting items count"
 
         evs = group_voting_events(tx)
         validate_push_to_repo_event(evs[0], voting_new_app['version'])
-        validate_app_update_event(evs[1], voting_new_app['id'], voting_new_app['address'])
-        validate_permission_create_event(evs[2], permission)
+        validate_app_update_event(evs[1], voting_appId, voting_new_app['address'])
+        validate_permission_grant_event(evs[2], permission)
         validate_change_objection_time_event(evs[3], voting_new_app['objection_time'])
-        validate_change_vote_time_event(evs[4], voting_new_app['vote_time'])
-        validate_permission_revoke_event(evs[5], permission)
+        validate_permission_revoke_event(evs[4], permission)
 
 
 def _acl_checks(dao_voting: interface.Voting, addrs: List[str], reason: Optional[str]) -> None:
     for addr in addrs:
         with reverts(reason):
             dao_voting.unsafelyChangeVoteTime(250_000, {'from': addr})
+        with reverts(reason):
+            dao_voting.unsafelyChangeObjectionPhaseTime(20_000, {'from': addr})
