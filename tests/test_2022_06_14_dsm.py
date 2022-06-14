@@ -8,7 +8,7 @@ from brownie import interface, reverts, chain
 from brownie import web3
 
 from scripts.vote_2022_06_14 import start_vote
-from tx_tracing_helpers import *
+from common.tx_tracing_helpers import *
 
 old_dsm_address: str = '0xDb149235B6F40dC08810AA69869783Be101790e7'
 new_dsm_address: str = '0x710B3303fB508a84F10793c1106e32bE873C24cd'

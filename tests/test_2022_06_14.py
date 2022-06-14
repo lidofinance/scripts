@@ -6,7 +6,7 @@ import pytest
 from brownie import interface, web3
 
 from scripts.vote_2022_06_14 import start_vote
-from tx_tracing_helpers import *
+from common.tx_tracing_helpers import *
 from utils.config import (contracts, lido_dao_steth_address)
 from event_validators.permission import (Permission, validate_permission_revoke_event, validate_permission_grant_event)
 from event_validators.aragon import validate_push_to_repo_event
