@@ -7,9 +7,7 @@ from brownie import accounts, chain
 from utils.test.snapshot_helpers import dict_zip, dict_diff, assert_no_diffs, ValueChanged
 from utils.config import contracts
 from utils.node_operators import get_node_operators
-from utils.import_current_vote import get_start_and_execute_votes_func
-
-start_and_execute_votes = get_start_and_execute_votes_func()
+from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 
 
 @pytest.fixture(scope="module")
@@ -61,7 +59,7 @@ def steps(lido, node_operators_registry, lido_oracle_report) -> Dict[str, Dict[s
 
 
 def test_rewards_distribution(dao_voting, lido, node_operators_registry, lido_oracle_report, helpers):
-    if start_and_execute_votes is None:
+    if not is_there_any_vote_scripts:
         pytest.skip('No vote scripts')
 
     before: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, lido_oracle_report)
@@ -84,7 +82,7 @@ def test_rewards_distribution_with_el_rewards(
     dao_voting, lido, node_operators_registry, lido_oracle_report, helpers, stranger,
     execution_layer_rewards_vault
 ):
-    if start_and_execute_votes is None:
+    if not is_there_any_vote_scripts:
         pytest.skip('No vote scripts')
 
     stranger.transfer(execution_layer_rewards_vault.address, '1 ether')

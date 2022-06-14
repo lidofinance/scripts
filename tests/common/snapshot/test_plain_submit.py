@@ -16,9 +16,7 @@ from utils.config import (
     ldo_token_address,
     lido_dao_voting_address
 )
-from utils.import_current_vote import get_start_and_execute_votes_func
-
-start_and_execute_votes = get_start_and_execute_votes_func()
+from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 
 
 @pytest.fixture(scope="module")
@@ -117,7 +115,7 @@ def snapshot() -> Dict[str, any]:
 
 
 def test_submit_snapshot(ldo_holder, helpers, lido, staker, dao_voting):
-    if start_and_execute_votes is None:
+    if not is_there_any_vote_scripts():
         pytest.skip('No vote scripts')
 
     ether = 10 ** 18

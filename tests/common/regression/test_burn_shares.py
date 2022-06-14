@@ -4,10 +4,7 @@ Tests for lido burnShares method
 import eth_abi
 import pytest
 from brownie import reverts, ZERO_ADDRESS, web3, interface, accounts
-from utils.import_current_vote import get_start_and_execute_votes_func
-
-
-start_and_execute_votes = get_start_and_execute_votes_func()
+from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 
 
 @pytest.fixture(scope="module")
@@ -15,7 +12,7 @@ def stranger(accounts):
     return accounts[0]
 
 
-@pytest.fixture(scope="module", autouse=(start_and_execute_votes is not None))
+@pytest.fixture(scope="module", autouse=is_there_any_vote_scripts())
 def autoexecute_vote(dao_voting, helpers, vote_id_from_env):
     if vote_id_from_env:
         helpers.execute_vote(
