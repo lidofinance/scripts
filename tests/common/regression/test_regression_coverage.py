@@ -3,7 +3,7 @@ Tests for coverage
 """
 
 from brownie import ZERO_ADDRESS, interface, reverts
-from tx_tracing_helpers import *
+from common.tx_tracing_helpers import *
 from utils.config import network_name
 from utils.import_current_vote import get_start_and_execute_votes_func
 
@@ -123,6 +123,8 @@ def test_setup_coverage(
         accounts, oracle, dao_voting
     )
 
+def _round10(num: int) -> int:
+    return ((num + 5) // 10) * 10
 
 def cover_application_acceptance_checks(steth_burner, dao_voting, oracle, lido, agent, network, accounts):
     steth_amount = 10 ** 18
@@ -182,10 +184,10 @@ def cover_application_acceptance_checks(steth_burner, dao_voting, oracle, lido, 
         print(f'reporting to oracle from: {reporter}')
         oracle.reportBeacon(expectedEpoch, beaconBalance // 10**9, validators, { 'from': reporter })
 
-    assert steth_burner.getCoverSharesBurnt() == shares_to_burn * 1 // 4, \
+    assert _round10(steth_burner.getCoverSharesBurnt()) == _round10(shares_to_burn * 1 // 4), \
         "incorrect amount of the shares burnt for cover"
-    assert steth_burner.getNonCoverSharesBurnt() == \
-        self_owned_steth_burner_burnt_non_cover[network] + shares_to_burn * 3 // 4, \
+    assert _round10(steth_burner.getNonCoverSharesBurnt()) == \
+        _round10(self_owned_steth_burner_burnt_non_cover[network] + shares_to_burn * 3 // 4), \
         "Incorrect non-cover shares burnt amount"
 
 def burn_permissions_forehead_check(lido, steth_burner, agent, dao_voting):
