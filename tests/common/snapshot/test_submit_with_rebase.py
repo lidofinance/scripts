@@ -6,9 +6,7 @@ from brownie import accounts, chain, ZERO_ADDRESS, Wei
 
 from utils.test.snapshot_helpers import dict_zip, dict_diff, assert_no_diffs, ValueChanged
 from utils.config import contracts
-from utils.import_current_vote import get_start_and_execute_votes_func
-
-start_and_execute_votes = get_start_and_execute_votes_func()
+from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 
 
 @pytest.fixture(scope="module")
@@ -81,7 +79,7 @@ def steps(stranger, lido, lido_oracle_report) -> Dict[str, Dict[str, any]]:
 
 
 def test_submit_rebase(dao_voting, stranger, lido, lido_oracle_report, helpers):
-    if start_and_execute_votes is None:
+    if not is_there_any_vote_scripts():
         pytest.skip('No vote scripts')
 
     before: Dict[str, Dict[str, any]] = steps(stranger, lido, lido_oracle_report)

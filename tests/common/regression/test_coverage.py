@@ -5,9 +5,7 @@ Tests for coverage application mechanism
 from brownie import ZERO_ADDRESS, interface, reverts
 from common.tx_tracing_helpers import *
 from utils.config import network_name
-from utils.import_current_vote import get_start_and_execute_votes_func
-
-start_and_execute_votes = get_start_and_execute_votes_func()
+from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 
 
 self_owned_steth_burner_burnt_non_cover = {
@@ -71,7 +69,7 @@ def test_setup_coverage(
         helpers.execute_vote(
             vote_id=vote_id_from_env, accounts=accounts, dao_voting=dao_voting, topup='0.5 ether'
         )
-    elif start_and_execute_votes is not None:
+    elif is_there_any_vote_scripts():
         start_and_execute_votes(dao_voting, helpers)
     else:
         return

@@ -5,9 +5,7 @@ import pytest
 
 from brownie import interface, convert, web3
 from event_validators.permission import Permission, PermissionP
-from utils.import_current_vote import get_start_and_execute_votes_func
-
-start_and_execute_votes = get_start_and_execute_votes_func()
+from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 
 
 @pytest.fixture(scope="module")
@@ -20,7 +18,7 @@ def operator(accounts, dao_voting):
     return accounts.at(dao_voting.address, force=True)
 
 
-@pytest.fixture(scope="module", autouse=(start_and_execute_votes is not None))
+@pytest.fixture(scope="module", autouse=is_there_any_vote_scripts())
 def autoexecute_vote(vote_id_from_env, helpers, accounts, dao_voting):
     if vote_id_from_env:
         helpers.execute_vote(

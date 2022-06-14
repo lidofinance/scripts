@@ -4,9 +4,7 @@ Tests for lido resume/pause roles 24/05/2022
 import pytest
 from functools import partial
 from brownie import reverts, web3
-from utils.import_current_vote import get_start_and_execute_votes_func
-
-start_and_execute_votes = get_start_and_execute_votes_func()
+from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 
 
 @pytest.fixture(scope="module")
@@ -14,7 +12,7 @@ def stranger(accounts):
     return accounts[0]
 
 
-@pytest.fixture(scope="module", autouse=(start_and_execute_votes is not None))
+@pytest.fixture(scope="module", autouse=is_there_any_vote_scripts())
 def autoexecute_vote(vote_id_from_env, helpers, accounts, dao_voting):
     if vote_id_from_env:
         helpers.execute_vote(
