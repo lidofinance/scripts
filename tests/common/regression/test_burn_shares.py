@@ -1,5 +1,5 @@
 """
-Tests for lido burnShares method for voting 24/05/2022
+Tests for lido burnShares method
 """
 import eth_abi
 import pytest
@@ -15,11 +15,6 @@ def stranger(accounts):
     return accounts[0]
 
 
-@pytest.fixture(scope="module")
-def dao_voting_as_eoa(accounts, dao_voting):
-    return accounts.at(dao_voting.address, force=True)
-
-
 @pytest.fixture(scope="module", autouse=(start_and_execute_votes is not None))
 def autoexecute_vote(dao_voting, helpers, vote_id_from_env):
     if vote_id_from_env:
@@ -30,7 +25,7 @@ def autoexecute_vote(dao_voting, helpers, vote_id_from_env):
         start_and_execute_votes(dao_voting, helpers)
 
 
-def test_burn_shares_by_stranger(lido, stranger, dao_voting_as_eoa):
+def test_burn_shares_by_stranger(lido, stranger):
     # Stake ETH by stranger to receive stETH
     stranger_submit_amount = 10**18
     lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": stranger_submit_amount})
