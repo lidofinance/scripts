@@ -59,7 +59,7 @@ def steps(lido, node_operators_registry, lido_oracle_report) -> Dict[str, Dict[s
 
 
 def test_rewards_distribution(dao_voting, lido, node_operators_registry, lido_oracle_report, helpers):
-    if not is_there_any_vote_scripts:
+    if not is_there_any_vote_scripts():
         pytest.skip('No vote scripts')
 
     before: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, lido_oracle_report)
@@ -82,7 +82,7 @@ def test_rewards_distribution_with_el_rewards(
     dao_voting, lido, node_operators_registry, lido_oracle_report, helpers, stranger,
     execution_layer_rewards_vault
 ):
-    if not is_there_any_vote_scripts:
+    if not is_there_any_vote_scripts():
         pytest.skip('No vote scripts')
 
     stranger.transfer(execution_layer_rewards_vault.address, '1 ether')

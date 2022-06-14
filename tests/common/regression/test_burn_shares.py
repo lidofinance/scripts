@@ -18,8 +18,8 @@ def autoexecute_vote(dao_voting, helpers, vote_id_from_env):
         helpers.execute_vote(
             vote_id=vote_id_from_env, accounts=accounts, dao_voting=dao_voting, topup='0.5 ether'
         )
-    elif start_and_execute_votes:
-        start_and_execute_votes(dao_voting, helpers)
+
+    start_and_execute_votes(dao_voting, helpers)
 
 
 def test_burn_shares_by_stranger(lido, stranger):
