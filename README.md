@@ -153,7 +153,7 @@ when residing in archive directory, please consider to rename them:
 ## Common tests
 
 There are two groups of common tests in `tests` directory: regression
-(`tests/test_regression*.py`) and snapshot (`tests/test_snapshot*.py`).
+(`tests/common/regression/test_*.py`) and snapshot (`tests/common/snapshot/test_*.py`).
 
 The regression tests check the on-chain protocol state:
 1) after executing the vote script `scripts/vote_*.py` if it exists
@@ -161,7 +161,7 @@ The regression tests check the on-chain protocol state:
 
 The snapshot tests run only if the vote script exists.
 
-If there are multiple vote scripts all the scripts are run and executed 
+If there are multiple vote scripts all the scripts are run and executed
 sequentially in lexicographical order by script name.
 
 ### Common tests in master branch
@@ -177,7 +177,7 @@ b) the snapshot tests run
 ### Snapshot tests
 
 By snapshot here we denote a subset of storage data of a contract (or multiple contracts).
-The ideas is to check that the voting doesn't modify a contract storage other than the 
+The ideas is to check that the voting doesn't modify a contract storage other than the
 expected changes.
 
 Snapshot tests work as follows:
@@ -194,6 +194,7 @@ be addressed in the future:
 1) expand the number of storage variables observed
 2) allow modification of the storage variables supposed not to be changed after
 the voting without modification of the common test files
+3) extract getters from ABIs automatically
 
 ## Use cases and scripts examples
 

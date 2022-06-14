@@ -1,5 +1,5 @@
 """
-Tests for coverage
+Tests for coverage application mechanism
 """
 
 from brownie import ZERO_ADDRESS, interface, reverts
