@@ -41,7 +41,7 @@ lido_new_app = {
     'address': '0x47ebab13b806773ec2a2d16873e2df770d130b50',
     'ipfsCid': 'QmRjCTdRbjkGUa7t6H2PnswGZyecnNSg8osk4kY2i82xUn',
     'content_uri': '0x697066733a516d526a43546452626a6b4755613774364832506e7377475a7965636e4e5367386f736b346b593269383278556e',
-    'version': (4, 0, 0),
+    'version': (3, 0, 1),
 }
 
 
@@ -74,8 +74,7 @@ def test_vote(
     lido_old_app_ipfs = f"ipfs:{lido_old_app['ipfsCid']}"
     assert lido_old_app_ipfs == lido_old_ipfs
 
-    #FIXME
-    last_deposited_block: int = web3.eth.block_number + (84 * 60 * 60)  // 13
+    last_deposited_block: int = 14985614
 
     # START VOTE
     vote_id: int = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]

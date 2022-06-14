@@ -27,10 +27,9 @@ def test_dsm_upgrade(
     assert old_dsm_last_deposited_block >= 14929938, "old DSM: last deposit block should be sane"
     assert new_dsm.getLastDepositBlock() == 0, "new DSM: last deposit block should be zero initially" # should be uninitialized
 
-    pre_vote_block: int = web3.eth.block_number
-    # 84 hours period and 13 seconds per block
-    block_offset: int = (84 * 60 * 60) // 13
-    new_dsm_last_deposited_block: int = pre_vote_block + block_offset
+    new_dsm_last_deposited_block: int = 14985614
+    pre_vote_block = web3.eth.block_number
+    block_offset = new_dsm_last_deposited_block - pre_vote_block
 
     # START VOTE
     vote_id: int = vote_id_from_env or start_vote({'from': ldo_holder}, silent=True)[0]

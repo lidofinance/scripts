@@ -3,7 +3,7 @@ Voting 14/06/2022.
 
 1. Revoke DEPOSIT_ROLE from old DepositSecurityModule 0xDb149235B6F40dC08810AA69869783Be101790e7
 2. Grant DEPOSIT_ROLE to new DepositSecurityModule 0x710B3303fB508a84F10793c1106e32bE873C24cd
-3. Set lastDepositBlock of DepositSecurityModule to {{TODO block number}}
+3. Set lastDepositBlock of DepositSecurityModule to 14985614
 4. Set Lido app IPFS hash to QmRjCTdRbjkGUa7t6H2PnswGZyecnNSg8osk4kY2i82xUn
 
 """
@@ -48,13 +48,13 @@ def start_vote(
 
     current_deposit_security_module_address = '0xDb149235B6F40dC08810AA69869783Be101790e7'
     proposed_deposit_security_module_address = '0x710B3303fB508a84F10793c1106e32bE873C24cd'
-    last_deposit_block: int = web3.eth.block_number + (84 * 60 * 60)  // 13
+    last_deposit_block: int = 14985614
 
     lido_app_update_params = {
         'address': '0x47EbaB13B806773ec2A2d16873e2dF770D130b50',
         'ipfsCid': 'QmRjCTdRbjkGUa7t6H2PnswGZyecnNSg8osk4kY2i82xUn',
         'content_uri': '0x697066733a516d526a43546452626a6b4755613774364832506e7377475a7965636e4e5367386f736b346b593269383278556e',
-        'version': (4, 0, 0)
+        'version': (3, 0, 1)
     }
 
     call_script_items = [
@@ -66,7 +66,7 @@ def start_vote(
         encode_permission_grant(target_app=lido, permission_name='DEPOSIT_ROLE',
                                 grant_to=proposed_deposit_security_module_address),
 
-        # 3. Set lastDepositBlock of DepositSecurityModule to {{TODO}}
+        # 3. Set lastDepositBlock of DepositSecurityModule to 14985614
         encode_set_last_deposit_block(proposed_deposit_security_module_address, last_deposit_block),
 
         # 4. Set Lido app IPFS hash to QmRjCTdRbjkGUa7t6H2PnswGZyecnNSg8osk4kY2i82xUn
@@ -80,7 +80,7 @@ def start_vote(
     vote_desc_items = [
         '1) Revoke DEPOSIT_ROLE from the old DepositSecurityModule',
         '2) Grant DEPOSIT_ROLE to the new DepositSecurityModule',
-        '3) Set lastDepositBlock of DepositSecurityModule to {{TBD}}',
+        '3) Set lastDepositBlock of DepositSecurityModule to 14985614',
         '4) Set Lido app IPFS hash to QmRjCTdRbjkGUa7t6H2PnswGZyecnNSg8osk4kY2i82xUn'
     ]
 
