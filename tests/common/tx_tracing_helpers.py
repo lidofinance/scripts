@@ -29,8 +29,6 @@ def display_voting_call_trace(tx: TransactionReceipt) -> None:
 
 
 def count_vote_items_by_events(tx: TransactionReceipt, voting_addr: str) -> int:
-    voting_fetched_instance_unused = Contract.from_explorer(voting_addr)
-
     events = tx_events_from_trace(tx)
     ev_dict = EventDict(events)
 
