@@ -13,6 +13,7 @@ from utils.import_current_votes import is_there_any_vote_scripts, start_and_exec
 def stranger():
     return accounts[0]
 
+
 @pytest.fixture(scope='module')
 def lido_oracle_report(lido):
     lido_oracle = accounts.at(lido.getOracle(), force=True)

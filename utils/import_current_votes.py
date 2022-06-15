@@ -2,10 +2,9 @@ from typing import List
 import os
 import glob
 
-from brownie import accounts, chain
+from brownie import accounts
 
-from utils.config import (ldo_holder_address_for_tests,)
-
+from utils.config import ldo_holder_address_for_tests
 
 
 def get_vote_script_files() -> List[str]:

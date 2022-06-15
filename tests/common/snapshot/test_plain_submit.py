@@ -24,16 +24,6 @@ def staker():
     return accounts[0]
 
 
-def execute_vote(ldo_holder, helpers):
-    vote_id = start_and_execute_votes({"from": ldo_holder}, silent=True)[0]
-    helpers.execute_vote(
-        vote_id=vote_id,
-        accounts=accounts,
-        dao_voting=contracts.voting,
-        skip_time=3 * 60 * 60 * 24,
-    )
-
-
 def snapshot() -> Dict[str, any]:
     lido = contracts.lido
     oracle = contracts.lido_oracle
@@ -138,10 +128,4 @@ def test_submit_snapshot(ldo_holder, helpers, lido, staker, dao_voting):
         step_diffs[step] = dict_diff(before, after)
 
     for step_name, diff in step_diffs.items():
-        assert_new_state(step_name, diff)
         assert_no_diffs(step_name, diff)
-
-
-def assert_new_state(step, diff):
-    assert_expected_diffs(step, diff, {
-    })

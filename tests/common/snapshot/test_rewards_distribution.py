@@ -105,4 +105,3 @@ def test_rewards_distribution_with_el_rewards(
 
     for _, value_change in step_diffs['after_rewards_distribution'].items():
         assert value_change.to_val > value_change.from_val
-    
