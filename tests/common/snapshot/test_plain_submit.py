@@ -104,10 +104,8 @@ def snapshot() -> Dict[str, any]:
     }
 
 
-def test_submit_snapshot(ldo_holder, helpers, lido, staker, dao_voting):
-    if not is_there_any_vote_scripts():
-        pytest.skip('No vote scripts')
-
+@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason='No votes')
+def test_submit_snapshot(helpers, lido, staker, dao_voting):
     ether = 10 ** 18
 
     def steps() -> Dict[str, Dict[str, any]]:

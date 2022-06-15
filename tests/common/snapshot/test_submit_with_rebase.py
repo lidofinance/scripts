@@ -79,10 +79,8 @@ def steps(stranger, lido, lido_oracle_report) -> Dict[str, Dict[str, any]]:
     }
 
 
+@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason='No votes')
 def test_submit_rebase(dao_voting, stranger, lido, lido_oracle_report, helpers):
-    if not is_there_any_vote_scripts():
-        pytest.skip('No vote scripts')
-
     before: Dict[str, Dict[str, any]] = steps(stranger, lido, lido_oracle_report)
     chain.revert()
     start_and_execute_votes(dao_voting, helpers)
