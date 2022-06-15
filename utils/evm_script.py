@@ -33,7 +33,7 @@ ETHERSCAN_API_KEY = os.getenv(
 )
 
 
-def create_executor_id(id):
+def create_executor_id(id) -> str:
     return '0x' + str(id).zfill(8)
 
 
@@ -41,7 +41,7 @@ def strip_byte_prefix(hexstr):
     return hexstr[2:] if hexstr[0:2] == '0x' else hexstr
 
 
-def encode_call_script(actions, spec_id=1):
+def encode_call_script(actions, spec_id=1) -> str:
     result = create_executor_id(spec_id)
     for to, calldata in actions:
         addr_bytes = Web3.toBytes(hexstr=HexAddress(to)).hex()

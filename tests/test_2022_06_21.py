@@ -9,7 +9,6 @@ from utils.brownie_prelude import *
 
 from brownie import accounts, interface, reverts
 from scripts.vote_2022_06_21 import start_vote, update_voting_app
-from utils.txs.deploy import deploy_from_prepared_tx
 from utils.config import (
     lido_dao_voting_repo,
     lido_dao_voting_address, network_name
@@ -21,7 +20,7 @@ from event_validators.permission import (Permission,
                                          validate_permission_grant_event,
                                          validate_permission_revoke_event)
 from event_validators.voting import validate_change_objection_time_event
-from tx_tracing_helpers import *
+from common.tx_tracing_helpers import *
 
 voting_old_app = {
     'address': '0x41D65FA420bBC714686E798a0eB0Df3799cEF092',
@@ -48,18 +47,10 @@ permission = Permission(entity='0x2e59A20f205bB85a89C53f1936454680651E618e',  # 
                                 # keccak256('UNSAFELY_MODIFY_VOTE_TIME_ROLE')
 
 
-@pytest.fixture(scope="module")
-def deployer():
-    return accounts.at(deployer_address, force=True)
-
-
-@pytest.fixture(scope="module", autouse=len(update_voting_app['new_address']) == 0)
-def autodeploy_contract(deployer):
-    address = deploy_from_prepared_tx(deployer, './utils/txs/tx-deploy-voting_for_upgrade.json')
-    voting_new_app['address'] = update_voting_app['new_address'] = address
-
-
 def test_vote(ldo_holder, helpers, dao_voting, dao_agent):
+    if len(voting_new_app['address']) == 0:
+        voting_new_app['address'] = update_voting_app['new_address']
+
     voting_repo = interface.Repo(lido_dao_voting_repo)
     voting_proxy = interface.AppProxyUpgradeable(lido_dao_voting_address)
     voting_app_from_chain = voting_repo.getLatest()

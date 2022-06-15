@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 from utils.tx_tracing import *
 
 _vote_item_group = GroupBy(contract_name="CallsScript",
