@@ -50,22 +50,6 @@ Usually it's `$HOME/.local/bin` for most Unix-like systems.
 poetry install
 ```
 
-Note: if you have encountered `Invalid hashes` errors while trying to run previous command, please remove poetry's cache:
-
-- GNU/Linux
-
-```shell
-rm -rf ~/.cache/pypoetry/cache/
-rm -rf ~/.cache/pypoetry/artifacts/
-```
-
-- MAC OS:
-
-```shell
-rm -rf ~/Library/Caches/pypoetry/cache
-rm -rf ~/Library/Caches/pypoetry/artifacts
-```
-
 #### Step 3. Install Ganache locally
 
 Simply run the following command from the project's directory
@@ -210,3 +194,23 @@ the voting without modification of the common test files
 
 - [Node operators management](usecase/node_operators_management.md)
 - [Reward manager tokens recovery](usecase/reward_manager_tokens_recovery.md)
+
+## Troubleshooting
+
+#### Invalid hashes (step 2)
+
+If you have encountered `Invalid hashes` errors while trying to run previous command, please remove poetry's cache:
+
+- GNU/Linux
+
+```shell
+rm -rf ~/.cache/pypoetry/cache/
+rm -rf ~/.cache/pypoetry/artifacts/
+```
+
+- MAC OS:
+
+```shell
+rm -rf ~/Library/Caches/pypoetry/cache
+rm -rf ~/Library/Caches/pypoetry/artifacts
+```
