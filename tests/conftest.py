@@ -6,6 +6,9 @@ from typing import Optional
 
 from brownie import chain, Contract
 
+from scripts.vote_2022_06_21 import update_voting_app
+from utils.evm_script import EMPTY_CALLSCRIPT
+
 from utils.config import (
     ldo_token_address, lido_dao_voting_address,
     lido_dao_token_manager_address, lido_dao_agent_address,
@@ -18,6 +21,7 @@ from utils.config import (
     lido_dao_self_owned_steth_burner,
     lido_dao_execution_layer_rewards_vault,
 )
+from utils.txs.deploy import deploy_from_prepared_tx
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -134,10 +138,9 @@ class Helpers:
         # try to fetch actual calls script executor
         # to deal with events parsing properly
         # on fresh brownie setup cases (mostly for CI)
-        vote_script = dao_voting.getVote(vote_id)[9]
-        executor_addr = dao_voting.getEVMScriptExecutor(vote_script)
+        executor_addr = dao_voting.getEVMScriptExecutor(EMPTY_CALLSCRIPT)
         try:
-            calls_script = Contract.from_explorer(executor_addr)
+            Contract.from_explorer(executor_addr)
         except:
             print('Unable to fetch CallsScript sources from an explorer')
             print('Trying to proceed further as is...')
@@ -175,3 +178,9 @@ def bypass_events_decoding() -> bool:
         return True
 
     return False
+
+
+@pytest.fixture(scope="module", autouse=len(update_voting_app['new_address']) == 0)
+def autodeploy_contract(accounts):
+    address = deploy_from_prepared_tx(accounts[0], './utils/txs/tx-deploy-voting_for_upgrade.json')
+    update_voting_app['new_address'] = address
