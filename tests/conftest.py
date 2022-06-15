@@ -4,7 +4,7 @@ import os
 
 from typing import Optional
 
-from brownie import chain, Contract
+from brownie import chain, interface
 
 from scripts.vote_2022_06_21 import update_voting_app
 from utils.evm_script import EMPTY_CALLSCRIPT

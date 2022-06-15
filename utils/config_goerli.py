@@ -1,4 +1,4 @@
-chain_network="goerli"
+chain_network = "goerli"
 # DAO
 lido_dao_kernel = '0x1dD91b354Ebd706aB3Ac7c727455C7BAA164945A'
 ldo_token_address = '0x56340274fB5a72af1A3C6609061c451De7961Bd4'

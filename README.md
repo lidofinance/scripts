@@ -134,17 +134,13 @@ environment variable (e.g. `OMNIBUS_VOTE_ID=104`).
 
 ## Repository housekeeping
 
-Please move your outdated scripts into `scripts/archive` and outdated tests into
-`tests/archive` directories.
-
-To mask obsoleted tests and prevent them from running by `brownie test` even
-when residing in archive directory, please consider to rename them:
-`test_` → `xtest_`.
+Please move your outdated scripts into `archive/scripts` and outdated tests into
+`archive/tests` directories.
 
 ## Common tests
 
 There are two groups of common tests in `tests` directory: regression
-(`tests/common/regression/test_*.py`) and snapshot (`tests/common/snapshot/test_*.py`).
+(`tests/regression/test_*.py`) and snapshot (`tests/snapshot/test_*.py`).
 
 The regression tests check the on-chain protocol state:
 

@@ -44,16 +44,18 @@ class SpecialArgumentID(IntEnum):
 
 
 ArgumentID = Union[int, SpecialArgumentID]
-"""Determines how the comparison value is fetched. From 0 to 200 it refers to the argument index number passed to the 
+"""Determines how the comparison value is fetched. From 0 to 200 it refers to the argument index number passed to the
 role. After 200, there are some special Argument IDs: """
 
 
 class ArgumentValue(int):
-    """Argument Value (uint240): the value to compare against, depending on the argument. It is a regular Ethereum memory
+    """
+    Argument Value (uint240): the value to compare against, depending on the argument. It is a regular Ethereum memory
     word that loses its two most significant bytes of precision. The reason for this was to allow parameters to be saved
     in just one storage slot, saving significant gas. Even though uint240s are used, it can be used to store any integer
     up to 2^30 - 1, addresses, and bytes32. In the case of comparing hashes, losing 2 bytes of precision shouldn't be a
-    dealbreaker if the hash algorithm is secure. """
+    dealbreaker if the hash algorithm is secure.
+    """
 
     def __new__(cls, value: Union[int, str]):
         return super().__new__(cls, _to_uint240(value))

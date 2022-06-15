@@ -5,25 +5,23 @@
 # noinspection PyUnresolvedReferences
 import pytest
 
-from typing import Dict, Tuple, List
-
-from utils.brownie_prelude import *
-from brownie.network.transaction import TransactionReceipt
+from typing import Tuple
 
 from brownie import accounts, interface, reverts
 from scripts.revert_vote_2022_06_21 import start_vote
 
-from event_validators.aragon import (
+from utils.test.event_validators.aragon import (
     validate_push_to_repo_event,
     validate_app_update_event,
 )
 
-from common.tx_tracing_helpers import *
+from utils.test.tx_tracing_helpers import *
 
 
 old_good_voting_app: Dict = {
     "address": "0x41D65FA420bBC714686E798a0eB0Df3799cEF092",
-    "content_uri": "0x697066733a516d514d64696979653134765966724a7753594250646e68656a446f62417877584b72524e45663438735370444d",
+    "content_uri":
+        "0x697066733a516d514d64696979653134765966724a7753594250646e68656a446f62417877584b72524e45663438735370444d",
     "version": (3, 0, 0),
     "vote_time": 72 * 60 * 60,
 }

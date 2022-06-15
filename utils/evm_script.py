@@ -10,7 +10,6 @@ from typing import (
 import eth_abi
 from brownie.utils import color
 from eth_typing.evm import HexAddress
-from packaging.version import LegacyVersion, Version
 from web3 import Web3
 
 from avotes_parser.core import (

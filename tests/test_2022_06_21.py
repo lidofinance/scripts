@@ -5,8 +5,6 @@ Tests for voting 21/06/2022.
 # noinspection PyUnresolvedReferences
 import pytest
 
-from utils.brownie_prelude import *
-
 from brownie import accounts, interface, reverts
 from scripts.vote_2022_06_21 import start_vote, update_voting_app
 from utils.config import (
@@ -14,13 +12,13 @@ from utils.config import (
     lido_dao_voting_address, network_name
 )
 
-from event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
+from utils.test.event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
 
-from event_validators.permission import (Permission,
-                                         validate_permission_grant_event,
-                                         validate_permission_revoke_event)
-from event_validators.voting import validate_change_objection_time_event
-from common.tx_tracing_helpers import *
+from utils.test.event_validators.permission import (Permission,
+                                                    validate_permission_grant_event,
+                                                    validate_permission_revoke_event)
+from utils.test.event_validators.voting import validate_change_objection_time_event
+from utils.test.tx_tracing_helpers import *
 
 voting_old_app = {
     'address': '0x41D65FA420bBC714686E798a0eB0Df3799cEF092',
