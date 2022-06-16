@@ -56,11 +56,11 @@ def start_vote(
 
     vote_items = bake_vote_items(
         vote_desc_items=[
-            "1) Push new voting app version to Voting Repo; ",
-            "2) Upgrade the DAO Voting contract implementation; ",
-            "3) Grant `UNSAFELY_MODIFY_VOTE_TIME_ROLE` to DAO Voting; ",
-            "4) Update objection phase duration with `unsafelyChangeObjectionTime` to 24 hours; ",
-            "5) Revoke `UNSAFELY_MODIFY_VOTE_TIME_ROLE` from DAO Voting.",
+            "1) Push new voting app version to Voting Repo",
+            "2) Upgrade the DAO Voting contract implementation",
+            "3) Grant `UNSAFELY_MODIFY_VOTE_TIME_ROLE` to DAO Voting",
+            "4) Update objection phase duration with `unsafelyChangeObjectionTime` to 24 hours",
+            "5) Revoke `UNSAFELY_MODIFY_VOTE_TIME_ROLE` from DAO Voting",
         ],
         call_script_items=[
             # 1. Push new voting app version to Voting Repo 0x41D65FA420bBC714686E798a0eB0Df3799cEF092
