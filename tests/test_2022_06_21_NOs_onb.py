@@ -7,7 +7,7 @@ from utils.brownie_prelude import *
 
 from brownie import accounts, reverts
 from scripts.vote_2022_06_21_NOs_onb import start_vote # , update_voting_app
-from common.tx_tracing_helpers import *
+from utils.test.tx_tracing_helpers  import *
 
 NodeOperatorAdd = namedtuple(
     'NodeOperatorAdd', ['name', 'id', 'address']
