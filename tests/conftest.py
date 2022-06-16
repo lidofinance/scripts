@@ -194,9 +194,8 @@ def bypass_events_decoding() -> bool:
     return False
 
 
-@pytest.fixture(scope="module", autouse=len(update_voting_app["new_address"]) == 0)
+@pytest.fixture(scope="module")
 def autodeploy_contract(accounts):
     address = deploy_from_prepared_tx(
         accounts[0], "./utils/txs/tx-deploy-voting_for_upgrade.json"
     )
-    update_voting_app["new_address"] = address

@@ -27,7 +27,7 @@ from utils.config import (
 )
 
 update_voting_app = {
-    'new_address': '',  # TBA
+    'new_address': '0x72fb5253AD16307B9E773d2A78CaC58E309d5Ba4',
     'content_uri':
         '0x697066733a516d514d64696979653134765966724a7753594250646e68656a446f62417877584b72524e45663438735370444d',
     # TBA
