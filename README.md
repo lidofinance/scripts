@@ -10,6 +10,7 @@
 ![Ganache ~7.3.0](https://img.shields.io/badge/ganache-7.3.0-orange)
 ![license MIT](https://img.shields.io/badge/license-MIT-brightgreen)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 Lido DAO Aragon omnibus voting scripts.
 
