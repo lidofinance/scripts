@@ -1,8 +1,8 @@
 """
-! Downgrade voting 21/06/2022 [in case of emergency].
+! Revert voting 21/06/2022 [in case of emergency].
 
-1. Downgrade voting app through the Voting Repo to 0x41D65FA420bBC714686E798a0eB0Df3799cEF092.
-2. Downgrade the DAO Voting 0x41D65FA420bBC714686E798a0eB0Df3799cEF092 contract implementation.
+1. Revert voting app through the Voting Repo to 0x41D65FA420bBC714686E798a0eB0Df3799cEF092.
+2. Revert the DAO Voting contract implementation to 0x41D65FA420bBC714686E798a0eB0Df3799cEF092.
 """
 
 import time
@@ -20,7 +20,7 @@ old_good_voting_app: Dict[str, Any] = {
     "new_address": "0x41D65FA420bBC714686E798a0eB0Df3799cEF092",
     "content_uri": "0x697066733a516d514d64696979653134765966724a7753594250646e68656a446f62417877584b72524e45663438735370444d",
     "id": "0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e",
-    "version": (3, 0, 0),  # Still need to bump version number even if it's revert
+    "version": (4, 0, 0),  # Still need to bump version number even if it's revert
 }
 
 
@@ -43,8 +43,8 @@ def start_vote(
     ]
 
     vote_desc_items: List[str] = [
-        "Downgrade voting app through the Voting Repo to 0x41D65FA420bBC714686E798a0eB0Df3799cEF092",
-        "Downgrade the DAO Voting 0x41D65FA420bBC714686E798a0eB0Df3799cEF092 contract implementation",
+        "Revert voting app through the Voting Repo to 0x41D65FA420bBC714686E798a0eB0Df3799cEF092",
+        "Revert the DAO Voting contract implementation to 0x41D65FA420bBC714686E798a0eB0Df3799cEF092",
     ]
 
     vote_items: Dict[str, Tuple[str, str]] = bake_vote_items(
