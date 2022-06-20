@@ -9,7 +9,7 @@ from typing import Tuple
 
 from brownie import accounts, interface, reverts
 from scripts.revert_vote_2022_06_21 import start_vote
-from scripts.vote_2022_06_21 import start_vote as start_upgrade_vote
+from scripts.upgrade_2022_06_21 import start_vote as start_upgrade_vote
 
 from utils.test.event_validators.aragon import (
     validate_push_to_repo_event,

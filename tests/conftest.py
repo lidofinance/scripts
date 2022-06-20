@@ -6,7 +6,7 @@ from typing import Optional
 
 from brownie import chain, interface
 
-from scripts.vote_2022_06_21 import update_voting_app
+from scripts.upgrade_2022_06_21 import update_voting_app
 from utils.evm_script import EMPTY_CALLSCRIPT
 
 from utils.config import (
@@ -67,9 +67,7 @@ def deposit_security_module(interface):
 
 @pytest.fixture(scope="module")
 def composite_post_rebase_beacon_receiver(interface):
-    return interface.CompositePostRebaseBeaconReceiver(
-        lido_dao_composite_post_rebase_beacon_receiver
-    )
+    return interface.CompositePostRebaseBeaconReceiver(lido_dao_composite_post_rebase_beacon_receiver)
 
 
 @pytest.fixture(scope="module")
@@ -104,9 +102,7 @@ def oracle(interface):
 
 @pytest.fixture(scope="module")
 def execution_layer_rewards_vault(interface):
-    return interface.LidoExecutionLayerRewardsVault(
-        lido_dao_execution_layer_rewards_vault
-    )
+    return interface.LidoExecutionLayerRewardsVault(lido_dao_execution_layer_rewards_vault)
 
 
 @pytest.fixture(scope="module")
@@ -131,9 +127,7 @@ class Helpers:
         assert dict(receiver_events[0]) == evt_keys_dict
 
     @staticmethod
-    def execute_vote(
-        accounts, vote_id, dao_voting, topup="0.1 ether", skip_time=3 * 60 * 60 * 24
-    ):
+    def execute_vote(accounts, vote_id, dao_voting, topup="0.1 ether", skip_time=3 * 60 * 60 * 24):
         if dao_voting.canVote(vote_id, ldo_vote_executors_for_tests[0]):
             for holder_addr in ldo_vote_executors_for_tests:
                 print("voting from acct:", holder_addr)
@@ -186,9 +180,7 @@ def vote_id_from_env() -> Optional[int]:
 def bypass_events_decoding() -> bool:
     _env_name = "OMNIBUS_BYPASS_EVENTS_DECODING"
     if os.getenv(_env_name):
-        print(
-            f"Warning: OMNIBUS_BYPASS_EVENTS_DECODING env var is set, events decoding disabled"
-        )
+        print(f"Warning: OMNIBUS_BYPASS_EVENTS_DECODING env var is set, events decoding disabled")
         return True
 
     return False
@@ -196,6 +188,4 @@ def bypass_events_decoding() -> bool:
 
 @pytest.fixture(scope="module")
 def autodeploy_contract(accounts):
-    address = deploy_from_prepared_tx(
-        accounts[0], "./utils/txs/tx-deploy-voting_for_upgrade.json"
-    )
+    address = deploy_from_prepared_tx(accounts[0], "./utils/txs/tx-deploy-voting_for_upgrade.json")

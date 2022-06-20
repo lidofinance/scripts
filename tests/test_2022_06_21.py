@@ -3,7 +3,7 @@ Tests for voting 21/06/2022.
 """
 
 from brownie import accounts, interface, reverts
-from scripts.vote_2022_06_21 import start_vote
+from scripts.upgrade_2022_06_21 import start_vote
 from utils.config import (
     lido_dao_voting_repo,
     lido_dao_lido_repo,
