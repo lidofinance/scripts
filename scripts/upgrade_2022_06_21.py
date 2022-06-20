@@ -1,11 +1,11 @@
 """
 Voting 21/06/2022.
 
-1. Push new Voting app version to Voting Repo 0x41D65FA420bBC714686E798a0eB0Df3799cEF092
+1. Push new Voting app version to Voting Repo 0x4Ee3118E3858E8D7164A634825BfE0F73d99C792
 2. Upgrade the Aragon Voting contract implementation 0x72fb5253AD16307B9E773d2A78CaC58E309d5Ba4
 3. Push new Lido app version to Lido Repo 0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1
 4. Grant `UNSAFELY_MODIFY_VOTE_TIME_ROLE` to Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
-5. Update objection phase duration with `unsafelyChangeObjectionTime()` to 24 hours
+5. Update Voting objection phase duration with `unsafelyChangeObjectionTime()` to 24 hours
 6. Revoke `UNSAFELY_MODIFY_VOTE_TIME_ROLE` from Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
 
 
@@ -69,11 +69,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
             "2) Upgrade the DAO Voting contract implementation",
             "3) Push new Lido app version to Lido Repo",
             "4) Grant `UNSAFELY_MODIFY_VOTE_TIME_ROLE` to DAO Voting",
-            "5) Update objection phase duration with `unsafelyChangeObjectionTime` to 24 hours",
+            "5) Update Voting objection phase duration to 24 hours",
             "6) Revoke `UNSAFELY_MODIFY_VOTE_TIME_ROLE` from DAO Voting",
         ],
         call_script_items=[
-            # 1. Push new Voting app version to Voting Repo 0x41D65FA420bBC714686E798a0eB0Df3799cEF092
+            # 1. Push new Voting app version to Voting Repo 0x4Ee3118E3858E8D7164A634825BfE0F73d99C792
             add_implementation_to_voting_app_repo(
                 update_voting_app["version"],
                 update_voting_app["new_address"],
@@ -93,7 +93,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
                 permission_name="UNSAFELY_MODIFY_VOTE_TIME_ROLE",
                 grant_to=voting,
             ),
-            # 5. Update objection duration with `unsafelyChangeObjectionTime()` to 24 hours
+            # 5. Update Voting objection phase duration with `unsafelyChangeObjectionTime()` to 24 hours
             unsafely_change_objection_time(voting, update_voting_app["objection_time"]),
             # 6. Revoke `UNSAFELY_MODIFY_VOTE_TIME_ROLE` from Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
             encode_permission_revoke(
