@@ -41,11 +41,8 @@ def assert_shares_burnt_log(log, account, pre_rebase_token_amount, post_rebase_t
     assert log["topics"][1] == eth_abi.encode_abi(["address"], [account])
 
     # validate other params
-    assert (
-        log["data"]
-        == "0x"
-        + eth_abi.encode_abi(
-            ["uint256", "uint256", "uint256"],
-            [pre_rebase_token_amount, post_rebase_token_amount, shares_amount],
-        ).hex()
+    other_param_bytes = eth_abi.encode_abi(
+        ["uint256", "uint256", "uint256"],
+        [pre_rebase_token_amount, post_rebase_token_amount, shares_amount],
     )
+    assert log["data"] == f"0x{other_param_bytes.hex()}"
