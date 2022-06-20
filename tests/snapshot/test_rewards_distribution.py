@@ -15,19 +15,19 @@ def stranger():
     return accounts[0]
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def lido_oracle_report(lido):
     lido_oracle = accounts.at(lido.getOracle(), force=True)
     dao_voting = accounts.at(contracts.voting.address, force=True)
 
     def report_beacon_state(steth_rebase_factor):
-        lido.setFee(0, {'from': dao_voting})
+        lido.setFee(0, {"from": dao_voting})
         (_, beacon_validators, beacon_balance) = lido.getBeaconStat()
         total_supply = lido.totalSupply()
         total_supply_inc = (steth_rebase_factor - 1) * total_supply
         beacon_balance += total_supply_inc
         assert beacon_balance > 0
-        lido.handleOracleReport(beacon_validators, beacon_balance, {'from': lido_oracle})
+        lido.handleOracleReport(beacon_validators, beacon_balance, {"from": lido_oracle})
 
     return report_beacon_state
 
@@ -37,7 +37,7 @@ def make_snapshot(lido, node_operators_registry) -> Dict[str, any]:
 
     snapshot = {}
     for node_operator in node_operators:
-        snapshot[node_operator['name']] = lido.balanceOf(node_operator['rewardAddress'])
+        snapshot[node_operator["name"]] = lido.balanceOf(node_operator["rewardAddress"])
 
     return snapshot
 
@@ -52,13 +52,13 @@ def steps(lido, node_operators_registry, lido_oracle_report) -> Dict[str, Dict[s
     after_negative_rebase_no_rewards = make_snapshot(lido, node_operators_registry)
 
     return {
-        'before_rewards_distribution': before_rewards_distribution,
-        'after_rewards_distribution': after_rewards_distribution,
-        'after_negative_rebase_no_rewards': after_negative_rebase_no_rewards
+        "before_rewards_distribution": before_rewards_distribution,
+        "after_rewards_distribution": after_rewards_distribution,
+        "after_negative_rebase_no_rewards": after_negative_rebase_no_rewards,
     }
 
 
-@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason='No votes')
+@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
 def test_rewards_distribution(dao_voting, lido, node_operators_registry, lido_oracle_report, helpers):
     before: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, lido_oracle_report)
     chain.revert()
@@ -71,24 +71,23 @@ def test_rewards_distribution(dao_voting, lido, node_operators_registry, lido_or
         (before, after) = pair_of_snapshots
         step_diffs[step] = dict_diff(before, after)
 
-    assert_no_diffs('before_rewards_distribution', step_diffs['before_rewards_distribution'])
-    assert_no_diffs('after_rewards_distribution', step_diffs['after_rewards_distribution'])
-    assert_no_diffs('after_negative_rebase_no_rewards', step_diffs['after_negative_rebase_no_rewards'])
+    assert_no_diffs("before_rewards_distribution", step_diffs["before_rewards_distribution"])
+    assert_no_diffs("after_rewards_distribution", step_diffs["after_rewards_distribution"])
+    assert_no_diffs("after_negative_rebase_no_rewards", step_diffs["after_negative_rebase_no_rewards"])
 
 
-@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason='No votes')
+@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
 def test_rewards_distribution_with_el_rewards(
-    dao_voting, lido, node_operators_registry, lido_oracle_report, helpers, stranger,
-    execution_layer_rewards_vault
+    dao_voting, lido, node_operators_registry, lido_oracle_report, helpers, stranger, execution_layer_rewards_vault
 ):
-    stranger.transfer(execution_layer_rewards_vault.address, '1 ether')
+    stranger.transfer(execution_layer_rewards_vault.address, "1 ether")
     before: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, lido_oracle_report)
 
     chain.revert()
     start_and_execute_votes(dao_voting, helpers)
 
-    stranger.transfer(execution_layer_rewards_vault.address, '1 ether')
-    assert execution_layer_rewards_vault.balance() == '1 ether'
+    stranger.transfer(execution_layer_rewards_vault.address, "1 ether")
+    assert execution_layer_rewards_vault.balance() == "1 ether"
     after: Dict[str, Dict[str, any]] = steps(lido, node_operators_registry, lido_oracle_report)
 
     step_diffs: Dict[str, Dict[str, ValueChanged]] = {}
@@ -97,7 +96,7 @@ def test_rewards_distribution_with_el_rewards(
         (before, after) = pair_of_snapshots
         step_diffs[step] = dict_diff(before, after)
 
-    assert_no_diffs('before_rewards_distribution', step_diffs['before_rewards_distribution'])
+    assert_no_diffs("before_rewards_distribution", step_diffs["before_rewards_distribution"])
 
-    for _, value_change in step_diffs['after_rewards_distribution'].items():
+    for _, value_change in step_diffs["after_rewards_distribution"].items():
         assert value_change.to_val > value_change.from_val

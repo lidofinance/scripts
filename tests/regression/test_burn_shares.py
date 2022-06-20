@@ -15,9 +15,7 @@ def stranger(accounts):
 @pytest.fixture(scope="module", autouse=is_there_any_vote_scripts())
 def autoexecute_vote(dao_voting, helpers, vote_id_from_env):
     if vote_id_from_env:
-        helpers.execute_vote(
-            vote_id=vote_id_from_env, accounts=accounts, dao_voting=dao_voting, topup='0.5 ether'
-        )
+        helpers.execute_vote(vote_id=vote_id_from_env, accounts=accounts, dao_voting=dao_voting, topup="0.5 ether")
 
     start_and_execute_votes(dao_voting, helpers)
 
@@ -35,9 +33,7 @@ def test_burn_shares_by_stranger(lido, stranger):
         lido.burnShares(stranger, shares_to_burn, {"from": stranger})
 
 
-def assert_shares_burnt_log(
-    log, account, pre_rebase_token_amount, post_rebase_token_amount, shares_amount
-):
+def assert_shares_burnt_log(log, account, pre_rebase_token_amount, post_rebase_token_amount, shares_amount):
     topic = web3.keccak(text="SharesBurnt(address,uint256,uint256,uint256)")
     assert log["topics"][0] == topic
 

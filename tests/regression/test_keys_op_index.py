@@ -16,18 +16,14 @@ def voting(accounts, dao_voting):
 @pytest.fixture(scope="module", autouse=is_there_any_vote_scripts())
 def autoexecute_vote(vote_id_from_env, helpers, accounts, dao_voting):
     if vote_id_from_env:
-        helpers.execute_vote(
-            vote_id=vote_id_from_env, accounts=accounts, dao_voting=dao_voting, topup='0.5 ether'
-        )
+        helpers.execute_vote(vote_id=vote_id_from_env, accounts=accounts, dao_voting=dao_voting, topup="0.5 ether")
 
     start_and_execute_votes(dao_voting, helpers)
 
 
 def test_keys_op_index_increases(lido, node_operators_registry, voting):
     # keys_op_index is increased after assignNextSigningKeys()
-    node_operators_registry.addNodeOperator(
-        "foo", "0x0000000000000000000000000000000000000001", {"from": voting}
-    )
+    node_operators_registry.addNodeOperator("foo", "0x0000000000000000000000000000000000000001", {"from": voting})
     node_operators_registry.addSigningKeys(
         0,
         1,

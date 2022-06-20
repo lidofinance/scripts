@@ -15,9 +15,7 @@ from utils.evm_script import (
 from utils.config import prompt_bool, chain_network, contracts, get_config_params
 
 
-def bake_vote_items(
-    vote_desc_items: List[str], call_script_items: List[Tuple[str, str]]
-) -> Dict[str, Tuple[str, str]]:
+def bake_vote_items(vote_desc_items: List[str], call_script_items: List[Tuple[str, str]]) -> Dict[str, Tuple[str, str]]:
     if not isinstance(call_script_items, list):
         raise TypeError("callscript should be passed as a list of items")
     if not isinstance(vote_desc_items, list):
@@ -98,9 +96,7 @@ def create_vote(
 
 def find_vote_id_in_raw_logs(logs) -> int:
     start_vote_signature = web3.keccak(text="StartVote(uint256,address,string)")
-    start_vote_logs = list(
-        filter(lambda log: log["topics"][0] == start_vote_signature, logs)
-    )
+    start_vote_logs = list(filter(lambda log: log["topics"][0] == start_vote_signature, logs))
 
     assert len(start_vote_logs) == 1, "Should be only one StartVote in tx"
 
