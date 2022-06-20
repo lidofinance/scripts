@@ -32,8 +32,8 @@ from utils.config import (
 
 update_voting_app = {
     "new_address": "0x72fb5253AD16307B9E773d2A78CaC58E309d5Ba4",
-    "content_uri": "0x697066733a516d514d64696979653134765966724a7753594250646e68656a446f62417877584b72524e45663438735370444d",
-    # TBA
+    "content_uri": "0x697066733a516d657369564c547931646476476f4c6e6f504367466551577446396974774e755956756661766e595761363567",
+    # TODO: check
     "id": "0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e",
     "version": (3, 0, 0),
     "objection_time": 86_400,  # 24 hours
@@ -41,7 +41,7 @@ update_voting_app = {
 
 update_lido_app = {
     "address": "0x47EbaB13B806773ec2A2d16873e2dF770D130b50",
-    "content_uri": "0x697066733a516d514d64696979653134765966724a7753594250646e68656a446f62417877584b72524e45663438735370444d",
+    "content_uri": "0x697066733a516d526a43546452626a6b4755613774364832506e7377475a7965636e4e5367386f736b346b593269383278556e",
     # TODO: check
     "version": (3, 1, 0),
 }
@@ -58,9 +58,7 @@ def unsafely_change_vote_time(voting, new_time):
     return (voting.address, voting.unsafelyChangeVoteTime.encode_input(new_time))
 
 
-def start_vote(
-    tx_params: Dict[str, str], silent: bool = False
-) -> Tuple[int, Optional[TransactionReceipt]]:
+def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
 
     voting: interface.Voting = contracts.voting
@@ -69,10 +67,10 @@ def start_vote(
         vote_desc_items=[
             "1) Push new Voting app version to Voting Repo",
             "2) Upgrade the DAO Voting contract implementation",
-            "3) Push new Lido app version to Lido Repo"
-            "3) Grant `UNSAFELY_MODIFY_VOTE_TIME_ROLE` to DAO Voting",
-            "4) Update objection phase duration with `unsafelyChangeObjectionTime` to 24 hours",
-            "5) Revoke `UNSAFELY_MODIFY_VOTE_TIME_ROLE` from DAO Voting",
+            "3) Push new Lido app version to Lido Repo",
+            "4) Grant `UNSAFELY_MODIFY_VOTE_TIME_ROLE` to DAO Voting",
+            "5) Update objection phase duration with `unsafelyChangeObjectionTime` to 24 hours",
+            "6) Revoke `UNSAFELY_MODIFY_VOTE_TIME_ROLE` from DAO Voting",
         ],
         call_script_items=[
             # 1. Push new Voting app version to Voting Repo 0x41D65FA420bBC714686E798a0eB0Df3799cEF092
@@ -82,9 +80,7 @@ def start_vote(
                 update_voting_app["content_uri"],
             ),
             # 2. Upgrade the Aragon Voting contract implementation 0x72fb5253AD16307B9E773d2A78CaC58E309d5Ba4.
-            update_app_implementation(
-                update_voting_app["id"], update_voting_app["new_address"]
-            ),
+            update_app_implementation(update_voting_app["id"], update_voting_app["new_address"]),
             # 3. Push new Lido app version to Lido Repo 0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1
             add_implementation_to_lido_app_repo(
                 update_lido_app["version"],
@@ -108,9 +104,7 @@ def start_vote(
         ],
     )
 
-    return confirm_vote_script(vote_items, silent) and create_vote(
-        vote_items, tx_params
-    )
+    return confirm_vote_script(vote_items, silent) and create_vote(vote_items, tx_params)
 
 
 def main():
