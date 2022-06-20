@@ -77,7 +77,7 @@ def self_owned_steth_burner(interface):
 
 @pytest.fixture(scope="module")
 def ldo_token(interface):
-    return interface.ERC20(ldo_token_address)
+    return interface.MiniMeToken(ldo_token_address)
 
 
 @pytest.fixture(scope="module")
@@ -155,6 +155,11 @@ class Helpers:
 
         print(f"vote #{vote_id} executed")
         return tx
+    
+    @staticmethod
+    def is_executed(vote_id, dao_voting):
+        vote_status = dao_voting.getVote(vote_id)
+        return vote_status[1]
 
 
 @pytest.fixture(scope="module")
