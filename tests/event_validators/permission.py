@@ -51,6 +51,19 @@ def validate_permission_revoke_event(event: EventDict, p: Permission) -> None:
     assert event['SetPermission']['allowed'] is False, "Wrong role"
 
 
+def validate_permission_grant_event(event: EventDict, p: Permission) -> None:
+    _events_chain = ['LogScriptCall', 'SetPermission']
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count('SetPermission') == 1
+
+    assert event['SetPermission']['entity'] == p.entity, "Wrong entity"
+    assert event['SetPermission']['app'] == p.app, "Wrong app address"
+    assert event['SetPermission']['role'] == p.role, "Wrong role"
+    assert event['SetPermission']['allowed'] is True, "Wrong allowed flag"
+
+
 def validate_permission_grantp_event(event: EventDict, p: Permission, params: List[Param]) -> None:
     _events_chain = ['LogScriptCall', 'SetPermission', 'SetPermissionParams']
 
