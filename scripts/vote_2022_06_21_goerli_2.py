@@ -20,14 +20,12 @@ from utils.config import (
 
 update_voting_app = {
     "new_address": "0x12D103a07Ac0429519C77E96781dFD5186119582",
-    "content_uri": "",  # TBA
+    "content_uri": "0x697066733a516d657369564c547931646476476f4c6e6f504367466551577446396974774e755956756661766e595761363567",
     "version": (4, 1, 0),
 }
 
 
-def start_vote(
-    tx_params: Dict[str, str], silent: bool = False
-) -> Tuple[int, Optional[TransactionReceipt]]:
+def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
 
     vote_items = bake_vote_items(
@@ -44,9 +42,7 @@ def start_vote(
         ],
     )
 
-    return confirm_vote_script(vote_items, silent) and create_vote(
-        vote_items, tx_params=tx_params
-    )
+    return confirm_vote_script(vote_items, silent) and create_vote(vote_items, tx_params=tx_params)
 
 
 def main():
