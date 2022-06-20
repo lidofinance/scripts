@@ -9,15 +9,14 @@ from utils.import_current_votes import is_there_any_vote_scripts, start_and_exec
 self_owned_steth_burner_burnt_non_cover = {"mainnet": 32145684728326685744, "goerli": 0}
 
 
-def has_burn_role_permission(acl, lido, who, acc, sharesAmount) -> int:
+def has_burn_role_permission(acl, lido, who, acc, shares_amount) -> int:
     """Returns if address has BURN_ROLE on Lido(stETH) contract"""
-    return acl.hasPermission["address,address,bytes32,uint[]"](who, lido, lido.BURN_ROLE(), [acc, sharesAmount])
+    return acl.hasPermission["address,address,bytes32,uint[]"](who, lido, lido.BURN_ROLE(), [acc, shares_amount])
 
 
 def test_setup_coverage(
     helpers,
     accounts,
-    ldo_holder,
     dao_voting,
     lido,
     oracle,
@@ -49,8 +48,6 @@ def test_setup_coverage(
         self_owned_steth_burner.getNonCoverSharesBurnt() == self_owned_steth_burner_burnt_non_cover[network]
     ), "Incorrect non-cover shares burnt amount"
 
-    # assert has_burn_role_permission(acl, lido, dao_voting, dao_agent.address, 100), "Incorrect permissions"
-    # assert not has_burn_role_permission(acl, lido, self_owned_steth_burner, dao_agent.address, 100), "Incorrect permissions"
     assert has_burn_role_permission(
         acl, lido, self_owned_steth_burner, self_owned_steth_burner.address, 100
     ), "Incorrect permissions"
