@@ -7,6 +7,7 @@ from utils.config import network_name
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 
 self_owned_steth_burner_burnt_non_cover = {"mainnet": 32145684728326685744, "goerli": 0}
+WEI_ROUNDING_TOLERANCE: int = 2
 
 
 def has_burn_role_permission(acl, lido, who, acc, shares_amount) -> int:
@@ -101,10 +102,6 @@ def test_setup_coverage(
     oracle_permissions_forehead_check(lido, dao_agent, self_owned_steth_burner, accounts, oracle, dao_voting)
 
 
-def _round10(num: int) -> int:
-    return ((num + 5) // 10) * 10
-
-
 def cover_application_acceptance_checks(steth_burner, dao_voting, oracle, lido, agent, network, accounts):
     steth_amount = 10**18
     shares_to_burn = lido.getSharesByPooledEth(steth_amount)
@@ -136,7 +133,7 @@ def cover_application_acceptance_checks(steth_burner, dao_voting, oracle, lido, 
 
     steth_burner.recoverExcessStETH({"from": accounts[0]})
 
-    assert (lido.balanceOf(steth_burner.address) + 9) // 10 == (steth_amount + 9) // 10, "Incorrect balance"
+    assert abs(lido.balanceOf(steth_burner.address) - steth_amount) <= WEI_ROUNDING_TOLERANCE, "Incorrect balance"
 
     # abusing ERC721 recovery interface with stETH
     with reverts("TRANSFER_AMOUNT_EXCEEDS_ALLOWANCE"):
@@ -146,7 +143,7 @@ def cover_application_acceptance_checks(steth_burner, dao_voting, oracle, lido, 
         steth_burner.getNonCoverSharesBurnt() == self_owned_steth_burner_burnt_non_cover[network]
     ), "Incorrect non-cover shares burnt amount"
     assert steth_burner.getCoverSharesBurnt() == 0, "incorrect amount of the shares burnt for cover"
-    assert (lido.balanceOf(steth_burner.address) + 9) // 10 == (steth_amount + 9) // 10, "Incorrect balance"
+    assert abs(lido.balanceOf(steth_burner.address) - steth_amount) <= WEI_ROUNDING_TOLERANCE, "Incorrect balance"
     assert steth_burner.getExcessStETH() == 0, "Incorrect excess stETH amount"
 
     _, validators, beaconBalance = lido.getBeaconStat()
@@ -158,11 +155,15 @@ def cover_application_acceptance_checks(steth_burner, dao_voting, oracle, lido, 
         print(f"reporting to oracle from: {reporter}")
         oracle.reportBeacon(expectedEpoch, beaconBalance // 10**9, validators, {"from": reporter})
 
-    assert _round10(steth_burner.getCoverSharesBurnt()) == _round10(
-        shares_to_burn * 1 // 4
+    assert (
+        abs(steth_burner.getCoverSharesBurnt() - shares_to_burn * 1 // 4) <= WEI_ROUNDING_TOLERANCE
     ), "incorrect amount of the shares burnt for cover"
-    assert _round10(steth_burner.getNonCoverSharesBurnt()) == _round10(
-        self_owned_steth_burner_burnt_non_cover[network] + shares_to_burn * 3 // 4
+    assert (
+        abs(
+            steth_burner.getNonCoverSharesBurnt()
+            - (self_owned_steth_burner_burnt_non_cover[network] + shares_to_burn * 3 // 4)
+        )
+        <= WEI_ROUNDING_TOLERANCE
     ), "Incorrect non-cover shares burnt amount"
 
 
