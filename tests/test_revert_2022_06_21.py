@@ -20,7 +20,7 @@ from utils.test.tx_tracing_helpers import *
 
 new_voting_app_to_revert: Dict = {
     "address": "0x72fb5253AD16307B9E773d2A78CaC58E309d5Ba4",
-    "content_uri": "0x697066733a516d514d64696979653134765966724a7753594250646e68656a446f62417877584b72524e45663438735370444d",
+    "content_uri": "0x697066733a516d657369564c547931646476476f4c6e6f504367466551577446396974774e755956756661766e595761363567",
     "version": (3, 0, 0),
     "vote_time": 259_200,  # 72 h
     "objection_time": 86_400,  # 24 hours
@@ -63,13 +63,9 @@ def execute_upgrade_vote(ldo_holder, helpers, dao_voting):
 
 def test_vote(execute_upgrade_vote, ldo_holder, helpers, dao_voting, acl_check_addrs):
     voting_repo: interface.Repo = interface.Repo(voting_repo_address)
-    voting_proxy: interface.AppProxyUpgradeable = interface.AppProxyUpgradeable(
-        dao_voting.address
-    )
+    voting_proxy: interface.AppProxyUpgradeable = interface.AppProxyUpgradeable(dao_voting.address)
 
-    voting_app_from_chain: Tuple[
-        Tuple[int, int, int], str, str
-    ] = voting_repo.getLatest()
+    voting_app_from_chain: Tuple[Tuple[int, int, int], str, str] = voting_repo.getLatest()
     voting_appId: str = dao_voting.appId()
 
     assert voting_app_from_chain[0] == new_voting_app_to_revert["version"]
@@ -109,17 +105,13 @@ def test_vote(execute_upgrade_vote, ldo_holder, helpers, dao_voting, acl_check_a
     # Need to have mainnet contract to have it right
     display_voting_events(tx)
 
-    assert (
-        count_vote_items_by_events(tx, dao_voting) == 2
-    ), "Incorrect voting items count"
+    assert count_vote_items_by_events(tx, dao_voting) == 2, "Incorrect voting items count"
     evs = group_voting_events(tx)
     validate_push_to_repo_event(evs[0], old_good_voting_app["version"])
     validate_app_update_event(evs[1], voting_appId, old_good_voting_app["address"])
 
 
-def _acl_checks(
-    dao_voting: interface.Voting, addrs: List[str], reason: Optional[str]
-) -> None:
+def _acl_checks(dao_voting: interface.Voting, addrs: List[str], reason: Optional[str]) -> None:
     for addr in addrs:
         with reverts(reason):
             dao_voting.unsafelyChangeVoteTime(250_000, {"from": addr})
