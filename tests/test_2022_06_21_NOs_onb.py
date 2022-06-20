@@ -26,7 +26,18 @@ NEW_NODE_OPERATORS = [
     NodeOperatorItem(
         "Kukis Global", 24, "0x8845D7F2Bbfe82249c3B95e378A6eD039Dd953F5", 0
     ),
-    NodeOperatorItem("Nethermind", 25, "0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91", 0),
+    NodeOperatorItem(
+        "Nethermind", 25, "0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91", 0
+    ),
+    NodeOperatorItem(
+        "ChainSafe", 26, "0xf82B1FdCD493B2dEFAB52c740399fF150bAA7a2A", 0
+    ),
+    NodeOperatorItem(
+        "Prysmatic Labs", 27, "0x3bF3A9260fE18A1239767aC6F0F0bc7c1E5d1cBC", 0
+    ),
+    NodeOperatorItem(
+        "Sigma Prime", 28, "0x07FE5F404778C27f4d3A0AB56dC59f8eFDd32d96", 0
+    ),
 ]
 
 
@@ -36,7 +47,6 @@ def test_vote(ldo_holder, helpers, dao_voting, node_operators_registry):
     for node_operator in NEW_NODE_OPERATORS:
         with reverts("NODE_OPERATOR_NOT_FOUND"):
             no = node_operators_registry.getNodeOperator(node_operator.id, True)
-
     ##
     ## START VOTE
     ##
@@ -45,7 +55,6 @@ def test_vote(ldo_holder, helpers, dao_voting, node_operators_registry):
     tx: TransactionReceipt = helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting
     )
-
     # Check that all NO was added
     for node_operator in NEW_NODE_OPERATORS:
         no = node_operators_registry.getNodeOperator(node_operator.id, True)
@@ -60,7 +69,7 @@ def test_vote(ldo_holder, helpers, dao_voting, node_operators_registry):
     display_voting_events(tx)
 
     assert (
-        count_vote_items_by_events(tx, dao_voting) == 4
+        count_vote_items_by_events(tx, dao_voting) == 7
     ), "Incorrect voting items count"
 
     evs = group_voting_events(tx)
