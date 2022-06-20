@@ -1,7 +1,7 @@
 """
-Voting 17/06/2022 for Goerli.
+Voting 20/06/2022 for Goerli.
 
-1. Push new voting app version to Voting Repo 0x41D65FA420bBC714686E798a0eB0Df3799cEF092.
+1. Push new voting app version to Voting Repo.
 
 """
 
