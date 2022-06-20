@@ -13,6 +13,7 @@ from utils.config import (
 )
 
 from utils.voting import create_vote, bake_vote_items
+from utils.evm_script import EMPTY_CALLSCRIPT
 
 from utils.test.tx_tracing_helpers import *
 
@@ -25,19 +26,21 @@ def create_dummy_vote(ldo_holder: str) -> int:
 
     tx_params = {"from": ldo_holder}
 
-    vote_id, _ = create_vote(vote_items, tx_params, cast_vote=True, executes_if_decided=True) 
+    vote_id, _ = create_vote(vote_items, tx_params, cast_vote=True, executes_if_decided=True)
     return vote_id
 
 
 def test_vote(ldo_holder, helpers, dao_voting, ldo_token, dao_token_manager):
     ldo_mega_amount = round(ldo_token.totalSupply() * 1.1)  # to constitute at least 51+%
-    ldo_token.generateTokens(ldo_holder, ldo_mega_amount, {"from": dao_token_manager.address})
+    ldo_token.generateTokens(dao_token_manager.address, ldo_mega_amount, {"from": dao_token_manager.address})
 
-    assert (ldo_token.balanceOf(ldo_holder) / ldo_token.totalSupply()) > 0.51
+    assert (ldo_token.balanceOf(dao_token_manager.address) / ldo_token.totalSupply()) > 0.51
 
-    dummy_vote_id = create_dummy_vote(ldo_holder)
+    tx = dao_voting.newVote(EMPTY_CALLSCRIPT, "", True, True, {"from": dao_token_manager.address})
 
-    print(dao_voting.getVote(dummy_vote_id))
+    dummy_vote_id = tx.events["StartVote"]["voteId"]
+
+    print(dummy_vote_id)
 
     snapshot_block = dao_voting.getVote(dummy_vote_id)[3]
     assert ldo_token.balanceOfAt(ldo_holder, snapshot_block) == ldo_token.balanceOf(ldo_holder)
@@ -45,18 +48,6 @@ def test_vote(ldo_holder, helpers, dao_voting, ldo_token, dao_token_manager):
     # TODO: why, why zero "yea" votes and not executed?
     assert dao_voting.getVote(dummy_vote_id)[6] > 0, 'there are NO votes "yea"'
     assert helpers.is_executed(dummy_vote_id, dao_voting)
-
-
-    # It works if cast and execute manually
-    dao_voting.vote(dummy_vote_id, True, True, {"from": ldo_holder})
-
-    print(dao_voting.getVote(dummy_vote_id))
-
-    assert helpers.is_executed(dummy_vote_id, dao_voting)
-
-
-    # TODO: check the other vote was auto-executed
-
 
     # ##
     # # START VOTE
@@ -67,7 +58,4 @@ def test_vote(ldo_holder, helpers, dao_voting, ldo_token, dao_token_manager):
     #     vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup="0.5 ether"
     # )
 
-
-
     # TODO: check the other vote isn't auto-executed
-
