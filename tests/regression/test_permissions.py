@@ -124,6 +124,12 @@ def permission_burn_role_burner_new(self_owned_steth_burner, lido):
     )
 
 
+@pytest.fixture(scope="module")
+def permission_unsafely_change_vote_time(dao_voting):
+    role = convert.to_uint(web3.keccak(text="UNSAFELY_MODIFY_VOTE_TIME_ROLE"))
+    return Permission(entity=dao_voting, app=dao_voting, role=role)  # Lido
+
+
 def test_permissions_after_vote(
     acl,
     permission_pause_role,
@@ -141,6 +147,7 @@ def test_permissions_after_vote(
     permission_manage_fee,
     permission_burn_role_voting_old,
     permission_burn_role_burner_new,
+    permission_unsafely_change_vote_time,
 ):
     assert acl.hasPermission(*permission_pause_role)
     assert acl.hasPermission(*permission_resume_role)
@@ -157,3 +164,4 @@ def test_permissions_after_vote(
     assert acl.hasPermission(*permission_manage_fee)
     assert not acl.hasPermission(*permission_burn_role_voting_old)
     assert acl.hasPermission["address,address,bytes32,uint[]"](*permission_burn_role_burner_new)
+    assert not acl.hasPermission(*permission_unsafely_change_vote_time)
