@@ -61,7 +61,6 @@ def test_vote_inverse_order(ldo_holder, helpers, dao_voting, dao_agent, node_ope
         account = accounts.at(holder_addr, force=True)
         dao_voting.vote(no_vote_id, True, False, {"from": account})
 
-
     # Wait 71 hours because we've already skipped 1 hour
     helpers.execute_vote(
         vote_id=upgrade_vote_id, accounts=accounts, dao_voting=dao_voting, topup="0.5 ether", skip_time=71 * 60 * 60
@@ -83,11 +82,11 @@ def test_vote_inverse_order(ldo_holder, helpers, dao_voting, dao_agent, node_ope
     # Execute vote
     assert dao_voting.canExecute(no_vote_id)
     dao_voting.executeVote(no_vote_id, {"from": ldo_holder})
-   
+
     # Check that all NO was added
     check_NO_vote_outcome(node_operators_registry)
 
-   
+
 def check_NO_vote_outcome(node_operators_registry: interface.NodeOperatorsRegistry) -> None:
     for node_operator in NEW_NODE_OPERATORS:
         no = node_operators_registry.getNodeOperator(node_operator.id, True)

@@ -58,7 +58,7 @@ permission = Permission(
 )
 
 
-def test_vote(ldo_holder, helpers, dao_voting, dao_agent):
+def test_vote(ldo_holder, helpers, dao_voting, dao_agent, vote_id_from_env):
     # Voting App before
     voting_repo = interface.Repo(lido_dao_voting_repo)
     voting_proxy = interface.AppProxyUpgradeable(lido_dao_voting_address)
@@ -97,7 +97,7 @@ def test_vote(ldo_holder, helpers, dao_voting, dao_agent):
     ##
     # START VOTE
     ##
-    vote_id = start_vote({"from": ldo_holder}, silent=True)[0]
+    vote_id = vote_id_from_env if vote_id_from_env is not None else start_vote({"from": ldo_holder}, silent=True)[0]
 
     tx: TransactionReceipt = helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup="0.5 ether"

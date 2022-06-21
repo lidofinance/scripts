@@ -6,7 +6,6 @@ from typing import Optional
 
 from brownie import chain, interface
 
-from scripts.upgrade_2022_06_21 import update_voting_app
 from utils.evm_script import EMPTY_CALLSCRIPT
 
 from utils.config import (
@@ -155,7 +154,7 @@ class Helpers:
 
         print(f"vote #{vote_id} executed")
         return tx
-    
+
     @staticmethod
     def is_executed(vote_id, dao_voting):
         vote_status = dao_voting.getVote(vote_id)
