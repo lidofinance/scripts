@@ -33,6 +33,8 @@ def create_vote(
     vote_items: Dict[str, Tuple[str, str]],
     tx_params: Dict[str, str],
     verbose: bool = False,
+    cast_vote: bool = False,
+    executes_if_decided: bool = False
 ) -> Tuple[int, Optional[TransactionReceipt]]:
     vote_desc_str = ""
     for v in vote_items.keys():
@@ -52,8 +54,8 @@ def create_vote(
                 voting.newVote.encode_input(
                     evm_script if evm_script is not None else EMPTY_CALLSCRIPT,
                     vote_desc_str,
-                    False,
-                    False,
+                    cast_vote,
+                    executes_if_decided,
                 ),
             )
         ]
