@@ -92,6 +92,7 @@ def start_vote(
         disable_validator(33),
         disable_validator(34),
         disable_validator(35),
+        decrease_validators_number(193),
         update_app_implementation(
             update_lido_app['id'],
             update_lido_app['old_address']
@@ -109,6 +110,10 @@ def start_vote(
             '2) Updating implementation of Lido app; ',
             '3) Publishing new implementation in Node Operators Registry app APM repo; ',
             '4) Updating implementation of Node Operators Registry app; ',
+            '5-11) Stoping validator with ids 20, 21, 22, 31, 33, 34, 35; ',
+            '12) Decreasing validators number by sum of disabled validators; ',
+            '13) Updating implementation of Lido app to old one; ',
+            '14) Updating implementation of Node Operators Registry app to old one; ',
         ),
         evm_script=encoded_call_script,
         tx_params=tx_params
