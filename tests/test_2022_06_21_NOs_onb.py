@@ -24,18 +24,18 @@ NEW_NODE_OPERATORS = [
 
 
 def test_vote(ldo_holder, helpers, dao_voting, node_operators_registry, vote_id_from_env):
-
     # Check that all NOs are unknown yet
     for node_operator in NEW_NODE_OPERATORS:
         with reverts("NODE_OPERATOR_NOT_FOUND"):
             no = node_operators_registry.getNodeOperator(node_operator.id, True)
+
     ##
     ## START VOTE
     ##
     vote_id = vote_id_from_env if vote_id_from_env is not None else start_vote({"from": ldo_holder}, silent=True)[0]
-
     tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=dao_voting)
-    # Check that all NO was added
+
+    # Check that all NO were added
     for node_operator in NEW_NODE_OPERATORS:
         no = node_operators_registry.getNodeOperator(node_operator.id, True)
 
@@ -52,5 +52,5 @@ def test_vote(ldo_holder, helpers, dao_voting, node_operators_registry, vote_id_
 
     evs = group_voting_events(tx)
 
-    for i in range(0, 4):
+    for i in range(len(NEW_NODE_OPERATORS)):
         validate_node_operator_added_event(evs[i], NEW_NODE_OPERATORS[i])
