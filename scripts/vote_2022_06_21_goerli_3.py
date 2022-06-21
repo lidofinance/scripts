@@ -1,7 +1,7 @@
 """
 Voting 21/06/2022 for Goerli.
 
-1. Push new Lido app version to Lido Repo.
+1. Push new voting app version to Voting Repo.
 
 """
 
@@ -18,10 +18,10 @@ from utils.config import (
     get_is_live,
 )
 
-update_lido_app = {
-    "new_address": "0xb16876f11324Fbf02b9B294FBE307B3DB0C02DBB",
+update_voting_app = {
+    "new_address": "0x12D103a07Ac0429519C77E96781dFD5186119582",
     "content_uri": "0x697066733a516d506f7478377a484743674265394445684d6f4238336572564a75764d74335971436e6454657a575652706441",
-    "version": (8, 0, 5),
+    "version": (4, 1, 1),
 }
 
 
@@ -35,9 +35,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
         call_script_items=[
             # 1. Push new voting app version to Voting Repo 0x41D65FA420bBC714686E798a0eB0Df3799cEF092
             add_implementation_to_voting_app_repo(
-                update_lido_app["version"],
-                update_lido_app["new_address"],
-                update_lido_app["content_uri"],
+                update_voting_app["version"],
+                update_voting_app["new_address"],
+                update_voting_app["content_uri"],
             ),
         ],
     )
