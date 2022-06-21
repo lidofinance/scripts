@@ -31,7 +31,7 @@ voting_old_app = {
 
 voting_new_app = {
     "address": "0x72fb5253AD16307B9E773d2A78CaC58E309d5Ba4",
-    "ipfsCid": "QmesiVLTy1ddvGoLnoPCgFeQWtF9itwNuYVufavnYWa65g",
+    "ipfsCid": "QmPotx7zHGCgBe9DEhMoB83erVJuvMt3YqCndTezWVRpdA",
     "version": (3, 0, 0),
     "vote_time": 259_200,  # 72 h
     "objection_time": 86_400,  # 24 hours
@@ -44,7 +44,7 @@ lido_old_app = {
 }
 
 lido_new_app = {
-    "ipfsCid": "QmRjCTdRbjkGUa7t6H2PnswGZyecnNSg8osk4kY2i82xUn",
+    "ipfsCid": "QmScYxzmmrAV1cDBjL3i7jzaZuiJ76UqdaFZiMgsxoFGzC",
     "version": (3, 1, 0),
 }
 
