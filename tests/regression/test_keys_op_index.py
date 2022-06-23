@@ -17,8 +17,8 @@ def voting(accounts, dao_voting):
 def autoexecute_vote(vote_id_from_env, helpers, accounts, dao_voting):
     if vote_id_from_env:
         helpers.execute_vote(vote_id=vote_id_from_env, accounts=accounts, dao_voting=dao_voting, topup="0.5 ether")
-
-    start_and_execute_votes(dao_voting, helpers)
+    else:
+        start_and_execute_votes(dao_voting, helpers)
 
 
 def test_keys_op_index_increases(lido, node_operators_registry, voting):

@@ -39,8 +39,8 @@ def lido_execution_layer_rewards_vault():
 def autoexecute_vote(vote_id_from_env, helpers, accounts, dao_voting):
     if vote_id_from_env:
         helpers.execute_vote(vote_id=vote_id_from_env, accounts=accounts, dao_voting=dao_voting, topup="0.5 ether")
-
-    start_and_execute_votes(dao_voting, helpers)
+    else:
+        start_and_execute_votes(dao_voting, helpers)
 
 
 def test_el_rewards_views_values_is_correct(lido, dao_agent, lido_execution_layer_rewards_vault):
