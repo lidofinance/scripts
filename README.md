@@ -79,7 +79,7 @@ poetry shell
 
 ### Network setup
 
-By default, you should start composing new scripts and test leveraging forked networks.
+By default, you should start composing new scripts and test using forked networks.
 You have two forked networks to work with:
 
 - `mainnet-fork`
@@ -132,6 +132,14 @@ in case of etherscan downtimes or usage of some unverified contracts (especially
 on the Görli Testnet).
 - To re-use the already created `vote_id` you can pass the `OMNIBUS_VOTE_ID`
 environment variable (e.g. `OMNIBUS_VOTE_ID=104`).
+
+## Code style
+
+Please, use the shared pre-commit hooks to maintain code style:
+
+```bash
+poetry run pre-commit install
+```
 
 ## Repository housekeeping
 
