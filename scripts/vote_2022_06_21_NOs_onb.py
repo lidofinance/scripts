@@ -7,6 +7,8 @@ Voting 21/06/2022.
 5. Add node operator named 'ChainSafe' with reward address `0xf82B1FdCD493B2dEFAB52c740399fF150bAA7a2A`
 6. Add node operator named 'Prysmatic Labs' with reward address `0x3bF3A9260fE18A1239767aC6F0F0bc7c1E5d1cBC`
 7. Add node operator named 'Sigma Prime' with reward address `0x07FE5F404778C27f4d3A0AB56dC59f8eFDd32d96`
+
+Vote passed & executed on Jun-24-2022 02:38:15 PM +UTC, block 15018777.
 """
 
 import time
@@ -20,9 +22,7 @@ from utils.node_operators import encode_add_operator_lido
 from utils.config import get_deployer_account
 
 
-def start_vote(
-    tx_params: Dict[str, str], silent: bool = False
-) -> Tuple[int, Optional[TransactionReceipt]]:
+def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
 
     # Vote specific addresses and constants:
@@ -90,9 +90,7 @@ def start_vote(
         ],
     )
 
-    return confirm_vote_script(vote_items, silent) and create_vote(
-        vote_items, tx_params
-    )
+    return confirm_vote_script(vote_items, silent) and create_vote(vote_items, tx_params)
 
 
 def main():
