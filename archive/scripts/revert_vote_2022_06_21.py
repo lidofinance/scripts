@@ -24,9 +24,7 @@ old_good_voting_app: Dict[str, Any] = {
 }
 
 
-def start_vote(
-    tx_params: Dict[str, str], silent: bool = False
-) -> Tuple[int, Optional[TransactionReceipt]]:
+def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
 
     call_script_items: List[Tuple[str, str]] = [
@@ -37,9 +35,7 @@ def start_vote(
             old_good_voting_app["content_uri"],
         ),
         # 2. Downgrade the DAO Voting to contract 0x41D65FA420bBC714686E798a0eB0Df3799cEF092 implementation
-        update_app_implementation(
-            old_good_voting_app["id"], old_good_voting_app["new_address"]
-        ),
+        update_app_implementation(old_good_voting_app["id"], old_good_voting_app["new_address"]),
     ]
 
     vote_desc_items: List[str] = [
@@ -47,13 +43,9 @@ def start_vote(
         "Revert the DAO Voting contract implementation to 0x41D65FA420bBC714686E798a0eB0Df3799cEF092",
     ]
 
-    vote_items: Dict[str, Tuple[str, str]] = bake_vote_items(
-        vote_desc_items, call_script_items
-    )
+    vote_items: Dict[str, Tuple[str, str]] = bake_vote_items(vote_desc_items, call_script_items)
 
-    return confirm_vote_script(vote_items, silent) and create_vote(
-        vote_items, tx_params
-    )
+    return confirm_vote_script(vote_items, silent) and create_vote(vote_items, tx_params)
 
 
 def main():

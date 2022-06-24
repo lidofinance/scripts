@@ -3,7 +3,7 @@ Test vote cannot be auto executed if created by 50%+ LDO holder.
 """
 
 from brownie import accounts
-from scripts.upgrade_2022_06_21 import start_vote
+from archive.scripts.upgrade_2022_06_21 import start_vote
 from utils.voting import create_vote, bake_vote_items
 
 

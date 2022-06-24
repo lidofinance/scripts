@@ -6,16 +6,16 @@ from brownie import accounts, chain, interface
 from utils.config import ldo_vote_executors_for_tests
 
 
-import scripts.upgrade_2022_06_21
-import scripts.vote_2022_06_21_NOs_onb
+import archive.scripts.upgrade_2022_06_21
+import archive.scripts.vote_2022_06_21_NOs_onb
 
 
 from test_2022_06_21 import voting_new_app, permission
 from test_2022_06_21_NOs_onb import NEW_NODE_OPERATORS
 
 
-start_upgrade_vote = scripts.upgrade_2022_06_21.start_vote
-start_NO_vote = scripts.vote_2022_06_21_NOs_onb.start_vote
+start_upgrade_vote = archive.scripts.upgrade_2022_06_21.start_vote
+start_NO_vote = archive.scripts.vote_2022_06_21_NOs_onb.start_vote
 
 
 def test_vote_straight_order(ldo_holder, helpers, dao_voting, dao_agent, node_operators_registry):

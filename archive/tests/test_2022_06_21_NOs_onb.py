@@ -2,7 +2,7 @@
 Tests for voting 21/06/2022.
 """
 from brownie import accounts, reverts
-from scripts.vote_2022_06_21_NOs_onb import start_vote  # , update_voting_app
+from archive.scripts.vote_2022_06_21_NOs_onb import start_vote  # , update_voting_app
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.node_operators_registry import (
     NodeOperatorItem,
