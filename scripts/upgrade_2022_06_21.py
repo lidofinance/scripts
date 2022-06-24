@@ -8,7 +8,7 @@ Voting 21/06/2022.
 5. Update Voting objection phase duration with `unsafelyChangeObjectionTime()` to 24 hours
 6. Revoke `UNSAFELY_MODIFY_VOTE_TIME_ROLE` from Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
 
-
+Vote passed & executed on Jun-24-2022 03:03:28 PM +UTC, block 15018878.
 """
 
 import time
