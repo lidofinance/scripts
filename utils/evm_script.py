@@ -10,7 +10,6 @@ from typing import (
 import eth_abi
 from brownie.utils import color
 from eth_typing.evm import HexAddress
-from packaging.version import LegacyVersion, Version
 from web3 import Web3
 
 from avotes_parser.core import (
@@ -33,7 +32,7 @@ ETHERSCAN_API_KEY = os.getenv(
 )
 
 
-def create_executor_id(id):
+def create_executor_id(id) -> str:
     return '0x' + str(id).zfill(8)
 
 
@@ -41,7 +40,7 @@ def strip_byte_prefix(hexstr):
     return hexstr[2:] if hexstr[0:2] == '0x' else hexstr
 
 
-def encode_call_script(actions, spec_id=1):
+def encode_call_script(actions, spec_id=1) -> str:
     result = create_executor_id(spec_id)
     for to, calldata in actions:
         addr_bytes = Web3.toBytes(hexstr=HexAddress(to)).hex()

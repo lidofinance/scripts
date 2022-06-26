@@ -63,7 +63,6 @@ def prompt_bool() -> Optional[bool]:
 
 
 def get_config_params() -> Dict[str, str]:
-    ret = []
     if network_name in ("goerli", "goerli-fork"):
         import utils.config_goerli
         ret = {x: globals()[x] for x in dir(utils.config_goerli) if not x.startswith("__")}

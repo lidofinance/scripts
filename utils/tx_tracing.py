@@ -115,7 +115,7 @@ def group_tx_events(events: Optional[List], dict_events: EventDict, group: [Grou
     all_evs = events
     ret = []
 
-    prev_grp: GroupBy = None
+    prev_grp: Optional[GroupBy] = None
     group_start_index = 0
     group_stop_index = -1
     while evs:
@@ -162,7 +162,6 @@ def display_tx_events(events: EventDict, title: str, group: [GroupBy]) -> None:
     events = list(events)
     call_tree: List = [[f'{color("bright cyan")}{title}{color}']]
     active_tree: List = [call_tree[0]]
-    group_id = 0
     counters = {}
 
     while events:
@@ -190,7 +189,7 @@ def display_tx_events(events: EventDict, title: str, group: [GroupBy]) -> None:
 
             counter_str = ""
             if current_grp.show_counter:
-                if not current_grp.group_title in counters:
+                if current_grp.group_title not in counters:
                     counters[current_grp.group_title] = 0
                 counters[current_grp.group_title] += 1
                 counter_str = counters[current_grp.group_title]

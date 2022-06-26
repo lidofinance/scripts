@@ -1,4 +1,4 @@
-chain_network="mainnet"
+chain_network = "mainnet"
 # DAO
 lido_dao_kernel = '0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc'
 ldo_token_address = '0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32'

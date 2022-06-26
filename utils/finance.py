@@ -1,4 +1,3 @@
-
 from typing import Tuple
 
 from utils.config import (contracts, ldo_token_address, lido_dao_steth_address)

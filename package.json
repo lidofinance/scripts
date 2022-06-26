@@ -9,6 +9,6 @@
   "homepage": "https://mainnet.lido.fi",
 
   "dependencies": {
-    "ganache": "^7.0.4"
+    "ganache": "^7.3.0"
   }
 }
