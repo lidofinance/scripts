@@ -42,8 +42,9 @@ def start_vote(
         encode_swap_treasury_and_insurance_fees(),
     ]
 
+    # NB: In case of single vote item the ending period is added automatically
     vote_desc_items = [
-        "1) Swap treasury and insurance fees: set treasury fee to 5000 bp and insurance fee to 0 bp.",
+        "1) Swap treasury and insurance fees: set treasury fee to 5000 bp and insurance fee to 0 bp",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
