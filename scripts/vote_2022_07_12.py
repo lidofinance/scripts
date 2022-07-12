@@ -1,7 +1,7 @@
 """
 Voting 12/07/2022.
 
-1. Redirect DAO fees from Insurance Fund to Treasury
+1. Redirect DAO Insurance Fund fees to DAO Treasury
 
 """
 # noinspection PyUnresolvedReferences
@@ -38,13 +38,13 @@ def start_vote(
     """Prepare and run voting."""
 
     call_script_items = [
-        # 1. Redirect DAO fees from Insurance Fund to Treasury
+        # 1. Redirect DAO Insurance Fund fees to DAO Treasury
         encode_swap_treasury_and_insurance_fees(),
     ]
 
     # NB: In case of single vote item the ending period is added automatically
     vote_desc_items = [
-        "1) Redirect DAO fees from Insurance Fund to Treasury",
+        "1) Redirect DAO Insurance Fund fees to DAO Treasury",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
