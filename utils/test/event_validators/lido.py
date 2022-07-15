@@ -49,3 +49,15 @@ def validate_staking_limit_set(event: EventDict, max_staking_limit: int, stake_l
 
     assert event['StakingLimitSet']['maxStakeLimit'] == max_staking_limit
     assert event['StakingLimitSet']['stakeLimitIncreasePerBlock'] == stake_limit_increase
+
+
+def validate_set_fee_distribution(event: EventDict, treasury_bp: int, insurance_bp: int, operators_bp: int):
+    _events_chain = ['LogScriptCall', 'FeeDistributionSet']
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count('FeeDistributionSet') == 1
+
+    assert event['FeeDistributionSet']['treasuryFeeBasisPoints'] == treasury_bp
+    assert event['FeeDistributionSet']['insuranceFeeBasisPoints'] == insurance_bp
+    assert event['FeeDistributionSet']['operatorsFeeBasisPoints'] == operators_bp
