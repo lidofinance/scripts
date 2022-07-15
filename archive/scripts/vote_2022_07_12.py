@@ -3,6 +3,8 @@ Voting 12/07/2022.
 
 1. Redirect DAO Insurance Fund fees to DAO Treasury
 
+Vote passed & executed on Jul-15-2022 02:02:21 PM +UTC, block 15147684.
+
 """
 # noinspection PyUnresolvedReferences
 
