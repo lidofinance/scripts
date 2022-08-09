@@ -130,7 +130,8 @@ class Helpers:
         if dao_voting.canVote(vote_id, ldo_vote_executors_for_tests[0]):
             for holder_addr in ldo_vote_executors_for_tests:
                 print("voting from acct:", holder_addr)
-                accounts[0].transfer(holder_addr, topup)
+                if accounts.at(holder_addr, force=True).balance() < topup:
+                    accounts[0].transfer(holder_addr, topup)
                 account = accounts.at(holder_addr, force=True)
                 dao_voting.vote(vote_id, True, False, {"from": account})
 

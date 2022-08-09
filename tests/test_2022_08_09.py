@@ -50,8 +50,6 @@ def test_vote(helpers, accounts, ldo_holder, dao_voting, vote_id_from_env, bypas
     # 1. Check ETH transfer
     assert rcc_multisig.balance() == rcc_eth_before + rcc_eth_payout.amount, \
         "RCC multisig ETH balance must increase by the correct amount"
-
-    # TODO: Fix this assert. It fails with 10**17 difference
     assert dao_agent.balance() == agent_eth_before - rcc_eth_payout.amount, \
       "Agent ETH balance must decrease by the correct amount"
 
