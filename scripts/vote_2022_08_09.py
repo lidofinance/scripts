@@ -1,8 +1,9 @@
 """
 Voting 09/08/2022.
 
-1. Send $1,117,380.00 +5% in ETH to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
-2. Send 67,017.32 LDO to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+1. Wrap $1,117,380.00 +5% ETH to WETH
+2. Send $1,117,380.00 +5% in WETH to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+3. Send 67,017.32 LDO to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
 
 """
 
@@ -17,27 +18,23 @@ from utils.config import (
     get_deployer_account,
     get_is_live,
     lido_dao_agent_address,
+    weth_token_address,
 )
-from utils.finance import make_ldo_payout
+from utils.finance import make_ldo_payout, make_weth_payout
 from utils.brownie_prelude import *
 
-lido_dao_token = '0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32'
-
 rcc_multisig_address = '0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437'
-eth_amount: int = 663 * (10 ** 18)  # 1_117_380 * 1.05 / 1769.54
+eth_amount: int = 690 * (10 ** 18)  # 1_117_380 * 1.05 / 1700
 ldo_amount: int = 67_017.32 * (10 ** 18)
 
 
-def encode_agent_execute_call(agent):
+def encode_weth_wrap_agent_execute_call(agent, weth_token):
+    weth_calldata = weth_token.deposit.encode_input()
+    calldata = agent.execute.encode_input(weth_token_address, eth_amount, weth_calldata)
+
     return (
         agent.address,
-        '0xb61d27f6000000000000000000000000de06d17db9295fa8c4082d4f73ff81592a3ac437000000000000000000000000000000000000000000000023f0f92b4683fc000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000'
-        # The code below generates partly incorrect calldata, thus the calldata is hardcoded
-        # agent.execute.encode_input(
-        #     rcc_multisig_address,
-        #     eth_amount,
-        #     ''
-        # )
+        calldata,
     )
 
 
@@ -47,12 +44,20 @@ def start_vote(
 ) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
     agent = interface.Agent(lido_dao_agent_address)
+    weth_token = interface.WethToken(weth_token_address)
 
     call_script_items = [
         # 1. Send $1,117,380.00 +5% in ETH to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
-        encode_agent_execute_call(agent),
+        encode_weth_wrap_agent_execute_call(agent, weth_token),
 
-        # 2. Send 67,017.32 LDO to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+        # 2. Send $1,117,380.00 +5% in WETH to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+        make_weth_payout(
+            target_address=rcc_multisig_address,
+            weth_in_wei=eth_amount,
+            reference="RCC Multisig Jul-Sep Payout"
+        ),
+
+        # 3. Send 67,017.32 LDO to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
         make_ldo_payout(
             target_address=rcc_multisig_address,
             ldo_in_wei=ldo_amount,
@@ -62,8 +67,9 @@ def start_vote(
 
     # NB: In case of single vote item the ending period is added automatically
     vote_desc_items = [
-        "1) Send $1,117,380.00 +5% in ETH to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437;",
-        "2) Send 67,017.32 LDO to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437.",
+        "1) Wrap $1,117,380.00 +5% ETH to WETH",
+        "2) Send $1,117,380.00 +5% in WETH to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437",
+        "3) Send 67,017.32 LDO to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)

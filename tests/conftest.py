@@ -25,6 +25,7 @@ from utils.config import (
     lido_dao_composite_post_rebase_beacon_receiver,
     lido_dao_self_owned_steth_burner,
     lido_dao_execution_layer_rewards_vault,
+    weth_token_address,
 )
 from utils.txs.deploy import deploy_from_prepared_tx
 
@@ -107,6 +108,11 @@ def execution_layer_rewards_vault(interface):
 @pytest.fixture(scope="module")
 def easy_track(interface):
     return interface.EasyTrack(lido_easytrack)
+
+
+@pytest.fixture(scope="module")
+def weth_token(interface):
+    return interface.WethToken(weth_token_address)
 
 
 @pytest.fixture(scope="module")
