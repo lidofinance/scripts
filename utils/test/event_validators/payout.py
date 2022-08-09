@@ -4,6 +4,7 @@ from typing import NamedTuple
 
 from brownie.network.event import EventDict
 from .common import validate_events_chain
+from utils.finance import ZERO_ADDRESS
 
 
 class Payout(NamedTuple):
@@ -47,3 +48,17 @@ def validate_ether_payout_event(event: EventDict, p: Payout):
 
     assert event['NewTransaction']['entity'] == p.to_addr
     assert event['NewTransaction']['amount'] == p.amount
+
+
+def validate_agent_execute_ether_payout_to_gnosis_event(event: EventDict, p: Payout):
+    _ldo_events_chain = ['LogScriptCall', 'SafeReceived', 'Execute']
+
+    validate_events_chain([e.name for e in event], _ldo_events_chain)
+
+    assert p.token_addr == ZERO_ADDRESS
+    assert event['SafeReceived']['sender'] == p.from_addr, "Wrong payout sender"
+    assert event['SafeReceived']['value'] == p.amount, "Wrong payout amount"
+
+    assert event['Execute']['target'] == p.to_addr, "Wrong payout receiver"
+    assert event['Execute']['ethValue'] == p.amount, "Wrong payout amount"
+    assert event['Execute']['data'] == '0x00', "Wrong Agent execute data"
