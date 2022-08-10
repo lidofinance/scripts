@@ -6,7 +6,7 @@ from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.payout import (
     Payout,
     validate_token_payout_event,
-    validate_agent_execute_ether_payout_to_gnosis_event,
+    validate_agent_execute_ether_wrap_event,
 )
 from utils.finance import ZERO_ADDRESS
 from brownie.network.transaction import TransactionReceipt
@@ -14,6 +14,7 @@ from brownie.network.transaction import TransactionReceipt
 
 dao_agent_address = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 lido_dao_token = "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32"
+weth_token = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 
 rcc_multisig_address = "0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437"
 
@@ -21,8 +22,12 @@ rcc_ldo_payout = Payout(
     token_addr=lido_dao_token, from_addr=dao_agent_address, to_addr=rcc_multisig_address, amount=67_017.32 * (10**18)
 )
 
-rcc_eth_payout = Payout(
-    token_addr=ZERO_ADDRESS, from_addr=dao_agent_address, to_addr=rcc_multisig_address, amount=700 * (10**18)
+rcc_weth_payout = Payout(
+    token_addr=weth_token, from_addr=dao_agent_address, to_addr=rcc_multisig_address, amount=700 * (10**18)
+)
+
+eth_wrap_deposit = Payout(
+    token_addr=ZERO_ADDRESS, from_addr=dao_agent_address, to_addr=weth_token, amount=rcc_weth_payout.amount
 )
 
 
@@ -61,11 +66,11 @@ def test_vote(
 
     assert rcc_multisig.balance() == rcc_eth_before, "RCC multisig ETH balance must remain the same"
     assert (
-        dao_agent.balance() == agent_eth_before - rcc_eth_payout.amount
+        dao_agent.balance() == agent_eth_before - rcc_weth_payout.amount
     ), "Agent ETH balance must decrease by the correct amount"
 
     assert (
-        weth_token.balanceOf(rcc_multisig_address) == rcc_weth_before + rcc_eth_payout.amount
+        weth_token.balanceOf(rcc_multisig_address) == rcc_weth_before + rcc_weth_payout.amount
     ), "Incorrect WETH amount on RCC multisig"
     assert weth_token.balanceOf(dao_agent.address) == agent_weth_before, "Incorrect WETH amount on DAO Agent"
 
@@ -83,5 +88,6 @@ def test_vote(
     display_voting_events(tx)
 
     evs = group_voting_events(tx)
-    validate_agent_execute_ether_payout_to_gnosis_event(evs[0], rcc_eth_payout)
-    validate_token_payout_event(evs[1], rcc_ldo_payout)
+    validate_agent_execute_ether_wrap_event(evs[0], eth_wrap_deposit)
+    validate_token_payout_event(evs[1], rcc_weth_payout)
+    validate_token_payout_event(evs[2], rcc_ldo_payout)
