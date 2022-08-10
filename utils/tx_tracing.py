@@ -36,7 +36,22 @@ def _align_logdata_len(trace: List) -> List:
         try:
             length = int(trace_item["stack"][-2], 16)
             proper_length = _align_intval_to(length, 32)
-            trace_item["stack"][-2] = hex(proper_length)
+            if proper_length > length:
+                # overwrite logdata length
+                trace_item["stack"][-2] = hex(proper_length)
+
+                offset = int(trace_item["stack"][-1], 16)
+                # determine memory word to expand
+                memory_word_id = (offset + length) // 32
+                # find the exact symbol position within the word
+                internal_offset = 2 * ((offset + length) % 32)
+
+                # expand the memory word in a factitious way
+                memory_word = trace_item["memory"][memory_word_id]
+
+                trace_item["memory"][memory_word_id] = (
+                    memory_word[:internal_offset] + "00" * (proper_length - length) + memory_word[internal_offset:]
+                )
         except KeyError:
             raise StructLogError("StructLog has no stack")
         except (IndexError, TypeError):
@@ -73,9 +88,7 @@ def tx_events_from_trace(tx: TransactionReceipt) -> Optional[List]:
 
     initial_address = str(tx.receiver or tx.contract_address)
 
-    events = decode_traceTransaction(
-        trace, _topics, allow_undecoded=True, initial_address=initial_address
-    )
+    events = decode_traceTransaction(trace, _topics, allow_undecoded=True, initial_address=initial_address)
 
     return [format_event(i) for i in events]
 
@@ -119,27 +132,31 @@ def group_tx_events(events: Optional[List], dict_events: EventDict, group: [Grou
     group_start_index = 0
     group_stop_index = -1
     while evs:
-        idx = next(
-            (evs.index(i) for i in evs if i.address != evs[0].address), len(evs)
-        )
+        idx = next((evs.index(i) for i in evs if i.address != evs[0].address), len(evs))
         name = resolve_contract(evs[0].address)
 
         event_names = []
         for event in evs[:idx]:
             event_names.append(event.name)
 
-        current_grp = next((current_grp for current_grp in group if
-                            current_grp.contract_name == name and current_grp.event_name in event_names), None)
+        current_grp = next(
+            (
+                current_grp
+                for current_grp in group
+                if current_grp.contract_name == name and current_grp.event_name in event_names
+            ),
+            None,
+        )
         if current_grp:
             if group_stop_index >= group_start_index:
-                ret.append((prev_grp, EventDict(all_evs[group_start_index:group_stop_index + 1])))
+                ret.append((prev_grp, EventDict(all_evs[group_start_index : group_stop_index + 1])))
                 group_start_index = group_stop_index + 1
             prev_grp = current_grp
 
         evs = evs[idx:]
         group_stop_index += idx
 
-    ret.append((prev_grp, EventDict(all_evs[group_start_index:group_stop_index + 1])))
+    ret.append((prev_grp, EventDict(all_evs[group_start_index : group_stop_index + 1])))
 
     return ret
 
@@ -165,9 +182,7 @@ def display_tx_events(events: EventDict, title: str, group: [GroupBy]) -> None:
     counters = {}
 
     while events:
-        idx = next(
-            (events.index(i) for i in events if i.address != events[0].address), len(events)
-        )
+        idx = next((events.index(i) for i in events if i.address != events[0].address), len(events))
 
         name = resolve_contract(events[0].address)
 
@@ -181,8 +196,14 @@ def display_tx_events(events: EventDict, title: str, group: [GroupBy]) -> None:
             sub_tree.append([event.name, *(f"{k}: {v}" for k, v in event.items())])
             event_names.append(event.name)
 
-        current_grp = next((current_grp for current_grp in group if
-                            current_grp.contract_name == name and current_grp.event_name in event_names), None)
+        current_grp = next(
+            (
+                current_grp
+                for current_grp in group
+                if current_grp.contract_name == name and current_grp.event_name in event_names
+            ),
+            None,
+        )
         if current_grp:
             if len(active_tree) > 1:
                 active_tree.pop()
@@ -223,9 +244,7 @@ def display_filtered_tx_call(tx: TransactionReceipt, filter_func: Callable[[Dict
         If filter_func returns `True` on current trace item, collapse it
     """
     trace = tx.trace
-    key = _step_internal(
-        trace[0], trace[-1], 0, len(trace), tx._get_trace_gas(0, len(tx.trace))
-    )
+    key = _step_internal(trace[0], trace[-1], 0, len(trace), tx._get_trace_gas(0, len(tx.trace)))
     call_tree: List = [[key]]
     active_tree: List = [call_tree[0]]
     # (index, depth, jumpDepth) for relevent steps in the trace
@@ -261,7 +280,7 @@ def display_filtered_tx_call(tx: TransactionReceipt, filter_func: Callable[[Dict
         need_filtering = filter_func(trace[idx])
         if depth > last[1]:
             # called to a new contract
-            end = next((x[0] for x in trace_index[i + 1:] if x[1] < depth), len(trace))
+            end = next((x[0] for x in trace_index[i + 1 :] if x[1] < depth), len(trace))
             total_gas, internal_gas = tx._get_trace_gas(idx, end)
             key = _step_external(
                 trace[idx],
@@ -275,17 +294,11 @@ def display_filtered_tx_call(tx: TransactionReceipt, filter_func: Callable[[Dict
         elif depth == last[1] and jump_depth > last[2]:
             # jumped into an internal function
             end = next(
-                (
-                    x[0]
-                    for x in trace_index[i + 1:]
-                    if x[1] < depth or (x[1] == depth and x[2] < jump_depth)
-                ),
+                (x[0] for x in trace_index[i + 1 :] if x[1] < depth or (x[1] == depth and x[2] < jump_depth)),
                 len(trace),
             )
             total_gas, internal_gas = tx._get_trace_gas(idx, end)
-            key = _step_internal(
-                trace[idx], trace[end - 1], idx, end, (total_gas, internal_gas)
-            )
+            key = _step_internal(trace[idx], trace[end - 1], idx, end, (total_gas, internal_gas))
         # show [collapsed] remark for the filtered tree node
         if need_filtering:
             key += f"{color('magenta')} [collapsed]{color}"
