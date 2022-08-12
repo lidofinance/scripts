@@ -1,6 +1,6 @@
 from typing import Tuple
 
-from utils.config import (contracts, ldo_token_address, lido_dao_steth_address)
+from utils.config import (contracts, ldo_token_address, lido_dao_steth_address, weth_token_address)
 
 ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -21,6 +21,26 @@ def make_ldo_payout(
         token_address=ldo_token_address,
         recipient=target_address,
         amount=ldo_in_wei,
+        reference=reference,
+        finance=contracts.finance
+    )
+
+def make_weth_payout(
+    *not_specified,
+    target_address: str,
+    weth_in_wei: int,
+    reference: str
+) -> Tuple[str, str]:
+    """Encode WETH payout."""
+    if not_specified:
+        raise ValueError(
+            'Please, specify all arguments with keywords.'
+        )
+
+    return _encode_token_transfer(
+        token_address=weth_token_address,
+        recipient=target_address,
+        amount=weth_in_wei,
         reference=reference,
         finance=contracts.finance
     )

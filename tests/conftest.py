@@ -25,6 +25,7 @@ from utils.config import (
     lido_dao_composite_post_rebase_beacon_receiver,
     lido_dao_self_owned_steth_burner,
     lido_dao_execution_layer_rewards_vault,
+    weth_token_address,
 )
 from utils.txs.deploy import deploy_from_prepared_tx
 
@@ -110,6 +111,11 @@ def easy_track(interface):
 
 
 @pytest.fixture(scope="module")
+def weth_token(interface):
+    return interface.WethToken(weth_token_address)
+
+
+@pytest.fixture(scope="module")
 def unknown_person(accounts):
     return accounts.at("0x98ec059dc3adfbdd63429454aeb0c990fba4a128", force=True)
 
@@ -130,7 +136,8 @@ class Helpers:
         if dao_voting.canVote(vote_id, ldo_vote_executors_for_tests[0]):
             for holder_addr in ldo_vote_executors_for_tests:
                 print("voting from acct:", holder_addr)
-                accounts[0].transfer(holder_addr, topup)
+                if accounts.at(holder_addr, force=True).balance() < topup:
+                    accounts[0].transfer(holder_addr, topup)
                 account = accounts.at(holder_addr, force=True)
                 dao_voting.vote(vote_id, True, False, {"from": account})
 
