@@ -5,8 +5,6 @@ Voting 16/08/2022.
 2. Send $1,117,380.00 +5% in WETH to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
 3. Send 67,017.32 LDO to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
 
-The vote REJECTED.
-
 """
 
 import time
@@ -46,7 +44,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     weth_token = interface.WethToken(weth_token_address)
 
     call_script_items = [
-        # 1. Send $1,117,380.00 +5% in ETH to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+        # 1. Wrap $1,117,380.00 +5% ETH to WETH
         encode_weth_wrap_agent_execute_call(agent, weth_token),
         # 2. Send $1,117,380.00 +5% in WETH to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
         make_weth_payout(
