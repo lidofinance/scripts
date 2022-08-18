@@ -43,3 +43,12 @@ ldo_vote_executors_for_tests = [
 dai_token_address = "0x73967c6a0904aa032c103b4104747e88c566b1a2"
 
 weth_token_address = "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6"
+
+# L2 bridges
+optimism_cross_domain_messenger = '0x5086d1eEF304eb5284A0f6720f79403b4e9bE294'
+arbitrum_inbox = '0x6BEbC4925716945D46F0Ec336D5C2564F419682C'
+
+# L2 Executors
+
+optimism_governance_executor = ''
+arbitrum_governance_executor = ''

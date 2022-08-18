@@ -17,3 +17,15 @@ def agent_forward(call_script: Sequence[Tuple[str, str]]) -> Tuple[str, str]:
             encode_call_script(call_script)
         )
     )
+
+
+def agent_exacute(target: str, value_in_wei: int, call_data: str):
+    agent = contracts.agent
+    return (
+        lido_dao_agent_address,
+        agent.execute.encode_input(
+            target,
+            value_in_wei,
+            call_data
+        )
+    )

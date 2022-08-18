@@ -145,6 +145,22 @@ class ContractsLazyLoader:
     def easy_track(self) -> interface.EasyTrack:
         return interface.EasyTrack(lido_easytrack)
 
+    @property
+    def arbitrum_inbox(self) -> interface.Inbox:
+        return interface.Inbox(arbitrum_inbox)
+
+    @property
+    def optimism_messenger(self) -> interface.L1CrossDomainMessenger:
+        return interface.L1CrossDomainMessenger(optimism_cross_domain_messenger)
+
+    @property
+    def arbitrum_governance_executor(self) -> interface.L2BridgeExecutor:
+        return interface.L2BridgeExecutor(arbitrum_governance_executor)
+
+    @property
+    def optimism_governance_executor(self) -> interface.L2BridgeExecutor:
+        return interface.L2BridgeExecutor(optimism_governance_executor)
+
 
 def __getattr__(name: str) -> Any:
     if name == "contracts":
