@@ -5,6 +5,9 @@ Voting 16/08/2022.
 2. Send $1,117,380.00 +5% in WETH to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
 3. Send 67,017.32 LDO to the RCC multisig 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
 
+Vote passed & executed on Aug-19-2022 02:48:23 PM +UTC, block 15371896.
+
+
 """
 
 import time
