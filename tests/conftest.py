@@ -133,7 +133,10 @@ class Helpers:
 
     @staticmethod
     def execute_vote(accounts, vote_id, dao_voting, topup="0.1 ether", skip_time=3 * 60 * 60 * 24):
-        if dao_voting.canVote(vote_id, ldo_vote_executors_for_tests[0]):
+        OBJECTION_PHASE_ID = 1
+        if dao_voting.canVote(vote_id, ldo_vote_executors_for_tests[0]) and (
+            dao_voting.getVotePhase(vote_id) != OBJECTION_PHASE_ID
+        ):
             for holder_addr in ldo_vote_executors_for_tests:
                 print("voting from acct:", holder_addr)
                 if accounts.at(holder_addr, force=True).balance() < topup:
