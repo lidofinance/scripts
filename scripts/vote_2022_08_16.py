@@ -24,7 +24,7 @@ from utils.finance import make_ldo_payout, make_weth_payout
 from utils.brownie_prelude import *
 
 rcc_multisig_address = "0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437"
-eth_amount: int = 620 * (10**18)  # 1_117_380 * 1.05 / 1892
+eth_amount: int = 625 * (10**18)  # 1_117_380 * 1.05 * 0.0005316
 ldo_amount: int = 67_017.32 * (10**18)
 
 
@@ -71,7 +71,7 @@ def main():
     tx_params = {"from": get_deployer_account()}
 
     if get_is_live():
-        tx_params["max_fee"] = "300 gwei"
+        tx_params["max_fee"] = "100 gwei"
         tx_params["priority_fee"] = "2 gwei"
 
     vote_id, _ = start_vote(tx_params=tx_params)

@@ -23,7 +23,7 @@ rcc_ldo_payout = Payout(
 )
 
 rcc_weth_payout = Payout(
-    token_addr=weth_token, from_addr=dao_agent_address, to_addr=rcc_multisig_address, amount=620 * (10**18)
+    token_addr=weth_token, from_addr=dao_agent_address, to_addr=rcc_multisig_address, amount=625 * (10**18)
 )
 
 eth_wrap_deposit = Payout(
