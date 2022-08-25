@@ -48,7 +48,10 @@ optimism_cross_domain_messenger = '0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1'
 arbitrum_inbox = '0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f'
 arbitrum_refund_address = ''
 
+arbitrum_rpc = 'https://arb1.arbitrum.io/rpc'
+arbitrum_node_interface = '0x00000000000000000000000000000000000000C8'
+
 # L2 Executors
 
 optimism_governance_executor = '0xEfa0dB536d2c8089685630fafe88CF7805966FC3'
-arbitrum_governance_executor = '0x1dca41859cd23b526cbe74da8f48ac96e14b1a29'
+arbitrum_governance_executor = '0x1dcA41859Cd23b526CBe74dA8F48aC96e14B1A29'

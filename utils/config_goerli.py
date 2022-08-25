@@ -47,6 +47,10 @@ weth_token_address = "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6"
 # L2 bridges
 optimism_cross_domain_messenger = '0x5086d1eEF304eb5284A0f6720f79403b4e9bE294'
 arbitrum_inbox = '0x6BEbC4925716945D46F0Ec336D5C2564F419682C'
+arbitrum_refund_address = ''
+
+arbitrum_rpc = 'https://goerli-rollup.arbitrum.io/rpc'
+arbitrum_node_interface = '0x00000000000000000000000000000000000000C8'
 
 # L2 Executors
 
