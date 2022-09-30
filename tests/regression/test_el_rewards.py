@@ -49,7 +49,7 @@ def test_el_rewards_views_values_is_correct(lido, dao_agent, lido_execution_laye
     assert lido_execution_layer_rewards_vault.TREASURY() == dao_agent.address
 
     # Lido contract EL rewards values were set correctly
-    assert lido.getTotalELRewardsCollected() == 0
+    assert lido.getTotalELRewardsCollected() > 0
     assert lido.getELRewardsWithdrawalLimit() == EL_REWARDS_FEE_WITHDRAWAL_LIMIT
     assert lido.getELRewardsVault() == LIDO_EXECUTION_LAYER_REWARDS_VAULT
 
@@ -100,8 +100,10 @@ def test_set_el_tx_withdrawal_limit(acl, lido, stranger, dao_voting):
 
 def test_lido_execution_layer_rewards_vault_receive_events(stranger, lido_execution_layer_rewards_vault):
     reward_amount = 10**18 + 1
+    el_balance_before = lido_execution_layer_rewards_vault.balance()
     tx = stranger.transfer(lido_execution_layer_rewards_vault, reward_amount)
-    assert lido_execution_layer_rewards_vault.balance() == reward_amount
+    el_balance_after = lido_execution_layer_rewards_vault.balance()
+    assert (el_balance_after - el_balance_before) == reward_amount
     assert_eth_received_log(log=tx.logs[0], value=reward_amount)
 
 
@@ -111,19 +113,22 @@ def test_receive_el_rewards_permissions(lido, stranger, lido_execution_layer_rew
     # receiveELRewards can't be called by the stranger
     assert lido.getELRewardsVault() != stranger
     with reverts():
-        lido.receiveELRewards({"from": stranger, "amount": reward_amount})
+        lido.receiveELRewards({"from": stranger, "value": reward_amount})
 
     # receiveELRewards might be called by LidoExecutionLayerRewardsVault
+    el_balance_before = lido_execution_layer_rewards_vault.balance()
     stranger.transfer(lido_execution_layer_rewards_vault, reward_amount)
-    assert lido_execution_layer_rewards_vault.balance() == reward_amount
+    el_balance_after = lido_execution_layer_rewards_vault.balance()
+    assert (el_balance_after - el_balance_before) == reward_amount
 
     lido_eth_balance_before = lido.balance()
-    tx = lido.receiveELRewards({"from": lido_execution_layer_rewards_vault, "amount": reward_amount})
+    lido_el_rewards_collected_before = lido.getTotalELRewardsCollected()
+    tx = lido.receiveELRewards({"from": lido_execution_layer_rewards_vault, "value": reward_amount})
     assert len(tx.logs) == 1
     assert_el_rewards_received_log(log=tx.logs[0], amount=reward_amount)
 
-    assert lido.getTotalELRewardsCollected() == reward_amount
-    assert lido_execution_layer_rewards_vault.balance() == 0
+    assert lido.getTotalELRewardsCollected() - lido_el_rewards_collected_before == reward_amount
+    assert lido_execution_layer_rewards_vault.balance() == (el_balance_after - reward_amount)
     assert lido.balance() == lido_eth_balance_before + reward_amount
 
 
@@ -157,10 +162,12 @@ def test_handle_oracle_report_with_el_rewards(
         lido.setELRewardsWithdrawalLimit(el_rewards_withdrawal_limit, {"from": dao_voting})
         assert lido.getELRewardsWithdrawalLimit() == el_rewards_withdrawal_limit
 
+    el_balance_before = lido_execution_layer_rewards_vault.balance()
     # prepare EL rewards
     if el_reward > 0:
         eth_whale.transfer(lido_execution_layer_rewards_vault, el_reward)
-    assert lido_execution_layer_rewards_vault.balance() == el_reward
+    el_balance_after = lido_execution_layer_rewards_vault.balance()
+    assert (el_balance_after - el_balance_before) == el_reward
 
     # prepare node operators data
     node_operators = get_node_operators(node_operators_registry=node_operators_registry)
@@ -193,7 +200,7 @@ def test_handle_oracle_report_with_el_rewards(
     tx = lido.handleOracleReport(beacon_validators, beacon_balance, {"from": lido_oracle})
 
     # validate that EL rewards were added to the buffered ether
-    expected_el_reward = min(max_allowed_el_reward, el_reward)
+    expected_el_reward = min(max_allowed_el_reward, el_balance_after)
     assert lido.getBufferedEther() == buffered_ether_before + expected_el_reward
 
     # validate that rewards were distributed
