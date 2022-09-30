@@ -1,25 +1,35 @@
 """
 Voting 04/10/2022.
 
-1. Change Insurance address to [TBD]
-2. Send 5466.46 shares to Insurance from Treasury
-3. Rekove `ASSIGN_ROLE` from LDO Seller
+1. Change Insurance address to `0x8B3f33234ABD88493c0Cd28De33D583B70beDe35`
+2. Send 5466.46 shares of stETH to Insurance Fund at `0x8B3f33234ABD88493c0Cd28De33D583B70beDe35`
+3. Revoke `ASSIGN_ROLE` from the LDO purchase executor contract at `0xA9b2F5ce3aAE7374a62313473a74C98baa7fa70E`
 
 """
 import time
 from typing import Dict, Optional, Tuple
 
 from brownie.network.transaction import TransactionReceipt
+from utils.permissions import encode_permission_revoke
 
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.brownie_prelude import *
-from utils.config import get_deployer_account, get_is_live, contracts
+from utils.config import (
+    get_deployer_account,
+    get_is_live,
+    contracts,
+    lido_dao_acl_address,
+    lido_dao_voting_address,
+    lido_dao_token_manager_address,
+)
+
 
 INSURANCE_FUND_ADDRESS = "0x8B3f33234ABD88493c0Cd28De33D583B70beDe35"
-INSURANCE_SHARES = 5466.46
+INSURANCE_SHARES = 5466.46 * 10**18
+LDO_PURCHASE_EXECUTOR = "0xA9b2F5ce3aAE7374a62313473a74C98baa7fa70E"
 
 
-def encode_set_insurance():
+def encode_set_insurance_address():
     lido: interface.Lido = contracts.lido
 
     oracle = lido.getOracle()
@@ -28,11 +38,18 @@ def encode_set_insurance():
     return lido.address, lido.setProtocolContracts.encode_input(oracle, treasury, INSURANCE_FUND_ADDRESS)
 
 
-def encode_send_shares():
+def encode_send_shares_to_insurance():
     lido: interface.Lido = contracts.lido
 
-    shares_wei = 5466.46 * 10**18
-    return lido.address, lido.transferShares.encode_input(INSURANCE_FUND_ADDRESS, shares_wei)
+    return lido.address, lido.transferShares.encode_input(INSURANCE_FUND_ADDRESS, INSURANCE_SHARES)
+
+
+def encode_revoke_assign_role_from_ldo_purchase_executor():
+    token_manager = interface.TokenManager(lido_dao_token_manager_address)
+
+    return encode_permission_revoke(
+        target_app=token_manager, permission_name="ASSIGN_ROLE", revoke_from=LDO_PURCHASE_EXECUTOR
+    )
 
 
 def start_vote(
@@ -42,13 +59,20 @@ def start_vote(
     """Prepare and run voting."""
 
     call_script_items = [
-        # 1. Change Insurance address to [TBD]
-        encode_set_insurance(),
-        encode_send_shares(),
+        # 1. Change Insurance address to `0x8B3f33234ABD88493c0Cd28De33D583B70beDe35`
+        encode_set_insurance_address(),
+        # 2. Send 5466.46 shares of stETH to Insurance Fund at `0x8B3f33234ABD88493c0Cd28De33D583B70beDe35`
+        encode_send_shares_to_insurance(),
+        # 3. Revoke `ASSIGN_ROLE` from the LDO purchase executor contract at `0xA9b2F5ce3aAE7374a62313473a74C98baa7fa70E`
+        encode_revoke_assign_role_from_ldo_purchase_executor(),
     ]
 
     # NB: In case of single vote item the ending period is added automatically
-    vote_desc_items = ["1) Change Insurance address", "2) Transfer self-insurance funds to Insurance Fund"]
+    vote_desc_items = [
+        "1) Change Insurance address to `0x8B3f33234ABD88493c0Cd28De33D583B70beDe35`",
+        "2) Send 5466.46 shares of stETH to Insurance Fund at `0x8B3f33234ABD88493c0Cd28De33D583B70beDe35`",
+        "3) Revoke `ASSIGN_ROLE` from the LDO purchase executor contract at `0xA9b2F5ce3aAE7374a62313473a74C98baa7fa70E`",
+    ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
     return confirm_vote_script(vote_items, silent) and create_vote(vote_items, tx_params)
