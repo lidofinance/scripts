@@ -8,7 +8,8 @@ Voting 04/10/2022.
 """
 import time
 from typing import Dict, Optional, Tuple
-import brownie
+
+from brownie.network.transaction import TransactionReceipt
 
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.brownie_prelude import *
@@ -17,10 +18,9 @@ from utils.config import get_deployer_account, get_is_live, contracts
 INSURANCE_FUND_ADDRESS = "0x8B3f33234ABD88493c0Cd28De33D583B70beDe35"
 INSURANCE_SHARES = 5466.46
 
-lido: interface.Lido = contracts.lido
-
 
 def encode_set_insurance():
+    lido: interface.Lido = contracts.lido
 
     oracle = lido.getOracle()
     treasury = lido.getTreasury()
@@ -29,6 +29,8 @@ def encode_set_insurance():
 
 
 def encode_send_shares():
+    lido: interface.Lido = contracts.lido
+
     shares_wei = 5466.46 * 10**18
     return lido.address, lido.transferShares.encode_input(INSURANCE_FUND_ADDRESS, shares_wei)
 
@@ -36,7 +38,7 @@ def encode_send_shares():
 def start_vote(
     tx_params: Dict[str, str],
     silent: bool = False,
-) -> Tuple[int, Optional[brownie.network.TransactionReceipt]]:
+) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
 
     call_script_items = [
