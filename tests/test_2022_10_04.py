@@ -3,17 +3,28 @@ from utils.test.tx_tracing_helpers import *
 
 
 INSURANCE_FUND_ADDRESS = "0x8B3f33234ABD88493c0Cd28De33D583B70beDe35"
-INSURANCE_SHARES = 1 * 10**18
+INSURANCE_SHARES = 5466.46 * 10**18
 LDO_PURCHASE_EXECUTOR = "0xA9b2F5ce3aAE7374a62313473a74C98baa7fa70E"
 
 
 def test_vote(
-    helpers, accounts, ldo_holder, dao_voting, acl, dao_token_manager, vote_id_from_env, bypass_events_decoding, lido
+    helpers,
+    accounts,
+    dao_agent,
+    ldo_holder,
+    dao_voting,
+    acl,
+    dao_token_manager,
+    vote_id_from_env,
+    bypass_events_decoding,
+    lido,
 ):
     # test assumed initial state
 
     # insurance is the same as treasury
     assert lido.getInsuranceFund() == lido.getTreasury()
+    # agent has sufficient shares
+    assert lido.sharesOf(dao_agent.address) >= INSURANCE_SHARES
     # insurance fund has no shares
     assert lido.sharesOf(INSURANCE_FUND_ADDRESS) == 0
     # ldo purchase executor has ASSIGN ROLE
