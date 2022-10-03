@@ -11,6 +11,7 @@ from typing import Dict, Optional, Tuple
 
 from brownie.network.transaction import TransactionReceipt
 from utils.permissions import encode_permission_revoke
+from utils.agent import agent_forward
 
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.brownie_prelude import *
@@ -18,8 +19,6 @@ from utils.config import (
     get_deployer_account,
     get_is_live,
     contracts,
-    lido_dao_acl_address,
-    lido_dao_voting_address,
     lido_dao_token_manager_address,
 )
 
@@ -41,7 +40,7 @@ def encode_set_insurance_address():
 def encode_send_shares_to_insurance():
     lido: interface.Lido = contracts.lido
 
-    return lido.address, lido.transferShares.encode_input(INSURANCE_FUND_ADDRESS, INSURANCE_SHARES)
+    return agent_forward([(lido.address, lido.transferShares.encode_input(INSURANCE_FUND_ADDRESS, INSURANCE_SHARES))])
 
 
 def encode_revoke_assign_role_from_ldo_purchase_executor():
