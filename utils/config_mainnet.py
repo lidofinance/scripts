@@ -42,3 +42,16 @@ ldo_vote_executors_for_tests = [
 
 dai_token_address = '0x6b175474e89094c44da98b954eedeac495271d0f'
 weth_token_address = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+
+# L2 bridges
+optimism_cross_domain_messenger = '0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1'
+arbitrum_inbox = '0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f'
+arbitrum_refund_address = ''
+
+arbitrum_rpc = 'https://arb1.arbitrum.io/rpc'
+arbitrum_node_interface = '0x00000000000000000000000000000000000000C8'
+
+# L2 Executors
+
+optimism_governance_executor = '0xEfa0dB536d2c8089685630fafe88CF7805966FC3'
+arbitrum_governance_executor = '0x1dcA41859Cd23b526CBe74dA8F48aC96e14B1A29'

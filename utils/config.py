@@ -9,6 +9,8 @@ from brownie import network, accounts
 from brownie.utils import color
 from brownie.network.account import Account, LocalAccount
 
+from web3 import Web3
+
 
 def network_name() -> Optional[str]:
     if network.show_active() is not None:
@@ -144,6 +146,29 @@ class ContractsLazyLoader:
     @property
     def easy_track(self) -> interface.EasyTrack:
         return interface.EasyTrack(lido_easytrack)
+
+    @property
+    def arbitrum_inbox(self) -> interface.Inbox:
+        return interface.Inbox(arbitrum_inbox)
+
+    @property
+    def optimism_messenger(self) -> interface.L1CrossDomainMessenger:
+        return interface.L1CrossDomainMessenger(optimism_cross_domain_messenger)
+
+    @property
+    def arbitrum_governance_executor(self) -> interface.L2BridgeExecutor:
+        return arb_node.eth.contract(address=arbitrum_governance_executor, abi=interface.L2BridgeExecutor.abi)
+
+    @property
+    def arbitrum_node_interface(self) -> interface.NodeInterface:
+        return arb_node.eth.contract(address=arbitrum_node_interface, abi=interface.NodeInterface.abi)
+
+    # @property
+    # def optimism_governance_executor(self) -> interface.L2BridgeExecutor:
+    #     return interface.L2BridgeExecutor(optimism_governance_executor)
+
+
+arb_node = Web3(Web3.HTTPProvider(arbitrum_rpc))
 
 
 def __getattr__(name: str) -> Any:
