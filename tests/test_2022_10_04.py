@@ -39,6 +39,9 @@ def test_vote(
     # ldo purchase executor has ASSIGN ROLE
     assert acl.hasPermission(permission.entity, permission.app, permission.role)
 
+    # remember agent shares
+    prev_agent_shares = lido.sharesOf(dao_agent.address)
+
     # start vote
     vote_id: int = vote_id_from_env or start_vote({"from": ldo_holder}, silent=True)[0]
 
@@ -48,6 +51,7 @@ def test_vote(
     # validate vote events
     assert count_vote_items_by_events(tx, dao_voting) == 3, "Incorrect voting items count"
 
+    assert lido.sharesOf(dao_agent.address) == prev_agent_shares - INSURANCE_SHARES
     assert lido.getInsuranceFund() == INSURANCE_FUND_ADDRESS
     assert lido.sharesOf(INSURANCE_FUND_ADDRESS) == INSURANCE_SHARES
     assert not acl.hasPermission(permission.entity, permission.app, permission.role)
