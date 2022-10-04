@@ -39,6 +39,12 @@ def test_vote(
     # ldo purchase executor has ASSIGN ROLE
     assert acl.hasPermission(permission.entity, permission.app, permission.role)
 
+    # remember oracle address before vote
+    oracle = lido.getOracle()
+
+    # remember treasury address before vote
+    treasury = lido.getTreasury()
+
     # remember agent shares
     prev_agent_shares = lido.sharesOf(dao_agent.address)
 
@@ -51,9 +57,16 @@ def test_vote(
     # validate vote events
     assert count_vote_items_by_events(tx, dao_voting) == 3, "Incorrect voting items count"
 
-    assert lido.sharesOf(dao_agent.address) == prev_agent_shares - INSURANCE_SHARES
+    # check vote item 1
+    assert lido.getOracle() == oracle
+    assert lido.getTreasury() == treasury
     assert lido.getInsuranceFund() == INSURANCE_FUND_ADDRESS
+
+    # check vote item 2
+    assert lido.sharesOf(dao_agent.address) == prev_agent_shares - INSURANCE_SHARES
     assert lido.sharesOf(INSURANCE_FUND_ADDRESS) == INSURANCE_SHARES
+
+    # check vote item 3
     assert not acl.hasPermission(permission.entity, permission.app, permission.role)
 
     # Check events if their decoding is available
