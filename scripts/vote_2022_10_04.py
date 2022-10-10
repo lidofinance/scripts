@@ -5,6 +5,8 @@ Voting 04/10/2022.
 2. Send 5466.46 shares of stETH to Insurance Fund at `0x8B3f33234ABD88493c0Cd28De33D583B70beDe35`
 3. Revoke `ASSIGN_ROLE` from the LDO purchase executor contract at `0xA9b2F5ce3aAE7374a62313473a74C98baa7fa70E`
 
+
+The vote REJECTED.
 """
 import time
 from typing import Dict, Optional, Tuple
