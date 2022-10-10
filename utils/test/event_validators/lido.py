@@ -61,3 +61,27 @@ def validate_set_fee_distribution(event: EventDict, treasury_bp: int, insurance_
     assert event['FeeDistributionSet']['treasuryFeeBasisPoints'] == treasury_bp
     assert event['FeeDistributionSet']['insuranceFeeBasisPoints'] == insurance_bp
     assert event['FeeDistributionSet']['operatorsFeeBasisPoints'] == operators_bp
+
+
+def validate_set_protocol_contracts(event, oracle, treasury, insurance_fund):
+    _events_chain = ["LogScriptCall", "ProtocolContactsSet"]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("ProtocolContactsSet") == 1
+
+    assert event["ProtocolContactsSet"]["oracle"] == oracle, "Incorrect oracle address"
+    assert event["ProtocolContactsSet"]["treasury"] == treasury, "Incorrect treasury address"
+    assert event["ProtocolContactsSet"]["insuranceFund"] == insurance_fund, "Incorrect insurance fund address"
+
+
+def validate_transfer_shares(event, sender, recipient, shares_amount):
+    _events_chain = ["LogScriptCall", "LogScriptCall", "TransferShares", "Transfer", "ScriptResult"]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("TransferShares") == 1
+
+    assert event["TransferShares"]["from"] == sender
+    assert event["TransferShares"]["to"] == recipient
+    assert event["TransferShares"]["sharesValue"] == shares_amount

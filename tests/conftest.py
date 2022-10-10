@@ -26,6 +26,7 @@ from utils.config import (
     lido_dao_self_owned_steth_burner,
     lido_dao_execution_layer_rewards_vault,
     weth_token_address,
+    lido_insurance_fund_address
 )
 from utils.txs.deploy import deploy_from_prepared_tx
 
@@ -113,6 +114,11 @@ def easy_track(interface):
 @pytest.fixture(scope="module")
 def weth_token(interface):
     return interface.WethToken(weth_token_address)
+
+
+@pytest.fixture(scope="module")
+def insurance_fund(interface):
+    return interface.InsuranceFund(lido_insurance_fund_address)
 
 
 @pytest.fixture(scope="module")
