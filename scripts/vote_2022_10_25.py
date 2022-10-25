@@ -65,7 +65,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
         make_weth_payout(
             target_address=bloxroute_address,
             weth_in_wei=eth_amount,
-            reference="Return 11 ETH back to bloXroute (in WETH form)",
+            reference="Send 11 ETH to bloXroute (in WETH form)",
         ),
     ]
 
