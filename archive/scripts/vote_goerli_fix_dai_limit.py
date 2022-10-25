@@ -130,8 +130,8 @@ def start_vote(
 
     # NB: In case of single vote item the ending period is added automatically
     vote_desc_items = [
-        "1) Revoke role CREATE_PAYMENTS_ROLE from Easy Track EVMScriptExecutor;",
-        "2) Grant role CREATE_PAYMENTS_ROLE to Easy Track EVMScriptExecutor with limits.",
+        "1) Revoke role CREATE_PAYMENTS_ROLE from Easy Track EVMScriptExecutor",
+        "2) Grant role CREATE_PAYMENTS_ROLE to Easy Track EVMScriptExecutor with limits",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
