@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "scripts"
+name = "lido-dao-scripts"
 version = "0.1.0"
 description = "Repository for Lido DAO Aragon voting scripts."
 authors = ["Lido devteam"]

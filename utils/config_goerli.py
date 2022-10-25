@@ -40,6 +40,6 @@ ldo_vote_executors_for_tests = [
     "0xfda7e01b2718c511bf016030010572e833c7ae6a",
 ]
 
-dai_token_address = "0x73967c6a0904aa032c103b4104747e88c566b1a2"
+dai_token_address = "0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844"
 
 weth_token_address = "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6"
