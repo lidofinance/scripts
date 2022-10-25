@@ -14,7 +14,7 @@ def network_name() -> Optional[str]:
     if network.show_active() is not None:
         return network.show_active()
     cli_args = sys.argv[1:]
-    net_ind = next((cli_args.index(arg) for arg in cli_args if arg == '--network'), len(cli_args))
+    net_ind = next((cli_args.index(arg) for arg in cli_args if arg == "--network"), len(cli_args))
 
     net_name = None
     if net_ind != len(cli_args):
@@ -32,42 +32,38 @@ else:
 
 
 def get_is_live() -> bool:
-    dev_networks = [
-        "development",
-        "hardhat",
-        "hardhat-fork",
-        "mainnet-fork",
-        "goerli-fork"
-    ]
+    dev_networks = ["development", "hardhat", "hardhat-fork", "mainnet-fork", "goerli-fork"]
     return network.show_active() not in dev_networks
 
 
 def get_deployer_account() -> Union[LocalAccount, Account]:
     is_live = get_is_live()
-    if is_live and 'DEPLOYER' not in os.environ:
-        raise EnvironmentError(
-            'Please set DEPLOYER env variable to the deployer account name')
+    if is_live and "DEPLOYER" not in os.environ:
+        raise EnvironmentError("Please set DEPLOYER env variable to the deployer account name")
 
-    return accounts.load(os.environ['DEPLOYER']) if is_live else accounts.at(
-        ldo_vote_executors_for_tests[0], force=True)
+    return (
+        accounts.load(os.environ["DEPLOYER"]) if is_live else accounts.at(ldo_vote_executors_for_tests[0], force=True)
+    )
 
 
 def prompt_bool() -> Optional[bool]:
     choice = input().lower()
-    if choice in {'yes', 'y'}:
+    if choice in {"yes", "y"}:
         return True
-    elif choice in {'no', 'n'}:
+    elif choice in {"no", "n"}:
         return False
     else:
         sys.stdout.write("Please respond with 'yes' or 'no'")
 
 
 def get_config_params() -> Dict[str, str]:
-    if network_name in ("goerli", "goerli-fork"):
+    if network_name() in ("goerli", "goerli-fork"):
         import utils.config_goerli
+
         ret = {x: globals()[x] for x in dir(utils.config_goerli) if not x.startswith("__")}
     else:
         import utils.config_mainnet
+
         ret = {x: globals()[x] for x in dir(utils.config_mainnet) if not x.startswith("__")}
     return ret
 
