@@ -4,9 +4,9 @@
 </div>
 
 ![python ~3.9](https://img.shields.io/badge/python->=3.8,<3.11-blue)
-![poetry 1.2.2](https://img.shields.io/badge/poetry-1.1.13-blue)
-![eth_brownie 1.19.1](https://img.shields.io/badge/eth__brownie-1.19.0-brown)
-![AVotesParser 0.5.2](https://img.shields.io/badge/AVotesParser-0.5.1-brown)
+![poetry 1.2.2](https://img.shields.io/badge/poetry-1.2.2-blue)
+![eth_brownie 1.19.1](https://img.shields.io/badge/eth__brownie-1.19.1-brown)
+![AVotesParser 0.5.2](https://img.shields.io/badge/AVotesParser-0.5.2-brown)
 ![Ganache ~7.3.0](https://img.shields.io/badge/ganache-7.3.0-orange)
 ![license MIT](https://img.shields.io/badge/license-MIT-brightgreen)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
