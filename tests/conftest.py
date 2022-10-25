@@ -118,11 +118,6 @@ def weth_token(interface):
 
 
 @pytest.fixture(scope="module")
-def dai_token(interface):
-    return interface.DaiToken(dai_token_address)
-
-
-@pytest.fixture(scope="module")
 def insurance_fund(interface):
     return interface.InsuranceFund(lido_insurance_fund_address)
 

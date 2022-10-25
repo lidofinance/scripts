@@ -10,6 +10,7 @@ from utils.test.event_validators.payout import (
 )
 from utils.finance import ZERO_ADDRESS
 from brownie.network.transaction import TransactionReceipt
+from brownie import interface
 
 
 dao_agent_address = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
@@ -59,8 +60,8 @@ def test_vote(
     ldo_token,
     dao_agent,
     weth_token,
-    dai_token,
 ):
+    dai_token = interface.ERC20(dai_token_address)
     rcc_multisig = accounts.at(rcc_multisig_address, force=True)
     bloxroute = accounts.at(bloxroute_address, force=True)
 
