@@ -1,8 +1,8 @@
 """
 Voting 25/10/2022.
 
-1. Send DAI 732,710 from Lido DAO Treasury to the RCC multisig wallet 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
-2. Send LDO 50,311 from Lido DAO Treasury to the RCC multisig wallet 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+1. Send 732,710 DAI from Lido DAO Treasury to the RCC multisig wallet 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+2. Send 50,311 LDO from Lido DAO Treasury to the RCC multisig wallet 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
 3. Wrap 11 ETH from Lido DAO Treasury to WETH
 4. Send 11 WETH from Lido DAO Treasury to the bloXroute address 0xea48ba2edefae9e4ddd43ea565aa8b9aa22baf08
 
@@ -47,13 +47,13 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     agent = interface.Agent(lido_dao_agent_address)
 
     call_script_items = [
-        # 1. Send DAI 732,710 from Lido DAO Treasury to the RCC multisig wallet 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+        # 1. Send 732,710 DAI from Lido DAO Treasury to the RCC multisig wallet 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
         make_dai_payout(
             target_address=rcc_multisig_address,
             dai_in_wei=dai_amount,
             reference="RCC Multisig Oct DAI Payout",
         ),
-        # 2. Send LDO 50,311 from Lido DAO Treasury to the RCC multisig wallet 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+        # 2. Send 50,311 LDO from Lido DAO Treasury to the RCC multisig wallet 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
         make_ldo_payout(
             target_address=rcc_multisig_address,
             ldo_in_wei=ldo_amount,
@@ -71,8 +71,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
 
     # NB: In case of single vote item the ending period is added automatically
     vote_desc_items = [
-        "1) Send DAI 732,710 to the RCC multisig wallet 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437",
-        "2) Send LDO 50,311 to the RCC multisig wallet 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437",
+        "1) Send 732,710 DAI to the RCC multisig wallet 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437",
+        "2) Send 50,311 LDO to the RCC multisig wallet 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437",
         "3) Wrap 11 ETH to WETH",
         "4) Send 11 WETH to the bloXroute address 0xea48ba2edefae9e4ddd43ea565aa8b9aa22baf08",
     ]
