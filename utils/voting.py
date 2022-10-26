@@ -34,7 +34,7 @@ def create_vote(
     tx_params: Dict[str, str],
     verbose: bool = False,
     cast_vote: bool = False,
-    executes_if_decided: bool = False
+    executes_if_decided: bool = False,
 ) -> Tuple[int, Optional[TransactionReceipt]]:
     vote_desc_str = ""
     for v in vote_items.keys():
@@ -119,20 +119,13 @@ def confirm_vote_script(vote_items: Dict[str, Tuple[str, str]], silent: bool) ->
 
     # Show detailed description of prepared voting.
     if not silent:
-        vote_descs = list(vote_items.keys())
-        cfg_params = get_config_params()
-
-        config_repr = "All known addresses extracted from a config file:\n"
-        for k, v in cfg_params.items():
-            config_repr += f"{k} => {v}\n"
-        config_repr = color.highlight(config_repr)
-        print(f"{config_repr}")
+        vote_descriptions = list(vote_items.keys())
 
         print("\nPoints of voting:")
         total = len(human_readable_script)
         for ind, call in enumerate(human_readable_script):
             print(f"Point #{ind + 1}/{total}.")
-            print(f'Description: {color("green")}{vote_descs[ind]}.{color}')
+            print(f'Description: {color("green")}{vote_descriptions[ind]}.{color}')
             print(calls_info_pretty_print(call))
             print("---------------------------")
 
