@@ -26,7 +26,8 @@ from utils.config import (
     lido_dao_self_owned_steth_burner,
     lido_dao_execution_layer_rewards_vault,
     weth_token_address,
-    lido_insurance_fund_address
+    lido_insurance_fund_address,
+    dai_token_address,
 )
 from utils.txs.deploy import deploy_from_prepared_tx
 
