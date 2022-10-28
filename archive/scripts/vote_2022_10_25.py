@@ -6,6 +6,7 @@ Voting 25/10/2022.
 3. Wrap 11 ETH from Lido DAO Treasury to WETH
 4. Send 11 WETH from Lido DAO Treasury to the bloXroute address 0xea48ba2edefae9e4ddd43ea565aa8b9aa22baf08
 
+Vote passed & executed on Oct-28-2022 03:09:11 PM +UTC, block 15847362
 """
 
 import time
