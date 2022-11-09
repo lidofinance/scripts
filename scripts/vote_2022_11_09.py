@@ -1,7 +1,7 @@
 """
 Voting 09/11/2022.
 
-1. Update ALLOWED_BEACON_BALANCE_INCREASE to 2800
+1. Update allowed beacon balance increase limit to 2800
 
 
 """
@@ -32,13 +32,13 @@ def start_vote(
     """Prepare and run voting."""
 
     call_script_items = [
-        # 1. Increase limit to 2800 BP
+        # 1. Update allowed beacon balance increase limit to 2800
         encode_set_allow_beacon_balance_increase_limit(),
     ]
 
     # NB: In case of single vote item the ending period is added automatically
     vote_desc_items = [
-        "1) Increase limit to 2800 BP",
+        "1) Update allowed beacon balance increase limit to 2800",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
