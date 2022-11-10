@@ -1,3 +1,4 @@
+import math
 import pytest
 from brownie import interface, chain
 from scripts.vote_2022_11_10 import start_vote
@@ -56,41 +57,51 @@ def test_report_beacon_with_el_rewards(
     epochsPerFrame, _, _, _ = lido_oracle.getBeaconSpec()
 
     print(f" Oracle report after the break")
+    expectedEpoch = lido_oracle.getExpectedEpochId()
+    # we waited 3 days for voting to be executed so we need to shift epochId on 3 frames
+    expectedEpoch += epochsPerFrame * 3  # 3 days for the voting
+
     prev_report = lido.getBeaconStat().dict()
     beacon_validators = prev_report["beaconValidators"]
     beacon_balance = prev_report["beaconBalance"] + beacon_balance_delta
     buffered_ether_before = lido.getBufferedEther()
+    tvl_before = lido.getTotalPooledEther()
     max_allowed_el_reward = (
-        (lido.getTotalPooledEther() + beacon_balance_delta) * lido.getELRewardsWithdrawalLimit() // TOTAL_BASIS_POINTS
+        (tvl_before + beacon_balance_delta) * lido.getELRewardsWithdrawalLimit() // TOTAL_BASIS_POINTS
     )
+    before_share_price = lido.getPooledEthByShares(10**27)
 
-    expectedEpoch = lido_oracle.getExpectedEpochId()
     reporters = lido_oracle.getOracleMembers()
     quorum = lido_oracle.getQuorum()
-
-    # we waited 3 days for voting to be executed so we need to shift epochId on 3 frames
-    expectedEpoch += epochsPerFrame * 3  # 3 days for the voting
 
     for reporter in reporters[:quorum]:
         lido_oracle.reportBeacon(expectedEpoch, beacon_balance // 10**9, beacon_validators, {"from": reporter})
 
     assert lido.getBufferedEther() == buffered_ether_before + max_allowed_el_reward
+    # see LidoOracle.sol#690
+    assert (
+        lido.getTotalPooledEther() - tvl_before
+    ) * 10000 * 365 <= lido_oracle.getAllowedBeaconBalanceAnnualRelativeIncrease() * 10000 * 365 * tvl_before
+    after_share_price = lido.getPooledEthByShares(10**27)
+    real_change = (after_share_price / before_share_price - 1.0) * 10000.0
+    # 2.75bp on rebase
+    assert math.isclose(1115 / 365 * 0.9, real_change, rel_tol=1e-2, abs_tol=0.0), "unexpected change"
 
     for days in range(1, 10):
         print(f" Following oracle reports: {days}")
         chain.sleep(24 * 60 * 60)
         chain.mine()
+        expectedEpoch = lido_oracle.getExpectedEpochId()
 
         prev_report = lido.getBeaconStat().dict()
         beacon_balance = prev_report["beaconBalance"] + beacon_balance_delta
         buffered_ether_before = lido.getBufferedEther()
+        tvl_before = lido.getTotalPooledEther()
         max_allowed_el_reward = (
-            (lido.getTotalPooledEther() + beacon_balance_delta)
-            * lido.getELRewardsWithdrawalLimit()
-            // TOTAL_BASIS_POINTS
+            (tvl_before + beacon_balance_delta) * lido.getELRewardsWithdrawalLimit() // TOTAL_BASIS_POINTS
         )
+        before_share_price = lido.getPooledEthByShares(10**27)
 
-        expectedEpoch = lido_oracle.getExpectedEpochId()
         reporters = lido_oracle.getOracleMembers()
         quorum = lido_oracle.getQuorum()
 
@@ -98,3 +109,11 @@ def test_report_beacon_with_el_rewards(
             lido_oracle.reportBeacon(expectedEpoch, beacon_balance // 10**9, beacon_validators, {"from": reporter})
 
         assert lido.getBufferedEther() == buffered_ether_before + max_allowed_el_reward
+        # see LidoOracle.sol#690
+        assert (
+            lido.getTotalPooledEther() - tvl_before
+        ) * 10000 * 365 <= lido_oracle.getAllowedBeaconBalanceAnnualRelativeIncrease() * 10000 * 365 * tvl_before
+        after_share_price = lido.getPooledEthByShares(10**27)
+        real_change = (after_share_price / before_share_price - 1.0) * 10000.0
+        # 2.75bp on rebase
+        assert math.isclose(1115 / 365 * 0.9, real_change, rel_tol=1e-2, abs_tol=0.0), "unexpected change"
