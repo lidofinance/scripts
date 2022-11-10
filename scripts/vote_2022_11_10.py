@@ -1,8 +1,7 @@
 """
 Voting 10/11/2022.
 
-1. Update allowed beacon balance increase limit to 1750
-
+1. Increase max APR security check limit to 1750 bp
 
 """
 import time
@@ -20,10 +19,14 @@ from utils.config import (
 
 ALLOWED_BEACON_BALANCE_INCREASE_LIMIT = 1750
 
+
 def encode_set_allow_beacon_balance_increase_limit():
     oracle: interface.LidoOracle = contracts.lido_oracle
 
-    return oracle.address, oracle.setAllowedBeaconBalanceAnnualRelativeIncrease.encode_input(ALLOWED_BEACON_BALANCE_INCREASE_LIMIT)
+    return oracle.address, oracle.setAllowedBeaconBalanceAnnualRelativeIncrease.encode_input(
+        ALLOWED_BEACON_BALANCE_INCREASE_LIMIT
+    )
+
 
 def start_vote(
     tx_params: Dict[str, str],
@@ -32,13 +35,13 @@ def start_vote(
     """Prepare and run voting."""
 
     call_script_items = [
-        # 1. Update allowed beacon balance increase limit to 1750
+        # 1. Increase max APR security check limit to 1750 bp
         encode_set_allow_beacon_balance_increase_limit(),
     ]
 
     # NB: In case of single vote item the ending period is added automatically
     vote_desc_items = [
-        "1) Update allowed beacon balance increase limit to 1750",
+        "1) Increase max APR security check limit to 1750 bp",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
