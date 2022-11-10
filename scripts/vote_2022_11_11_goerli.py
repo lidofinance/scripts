@@ -3,9 +3,9 @@ Voting 11/11/2022.
 
 !!! Görli network only
 
-1. Add `0x...` to the Lido Oracle member comittee list
-2. Add `0x...` to the Lido Oracle member comittee list
-3. Set the Oracle comittee quorum to 3
+1. Add `0x4c75FA734a39f3a21C57e583c1c29942F021C6B7` to the Lido Oracle set
+2. Add `0x982bd0d9b455d988d75194a5197095b9b7ae018D` to the Lido Oracle set
+3. Add `0x81E411f1BFDa43493D7994F82fb61A415F6b8Fd4` to the Lido Oracle set
 
 """
 
@@ -19,9 +19,10 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.config import get_deployer_account, get_is_live, network_name, contracts
 from utils.brownie_prelude import *
 
-new_oracle_committee_member_addr_1: str = "0x6432756feF0fb527C06eFd4689A7CE0E195bD327"
-new_oracle_committee_member_addr_2: str = "0xeabE95AC5f3D64aE16AcBB668Ed0efcd81B721Bc"
-new_quorum: int = 3
+new_oracle_committee_member_addr_1: str = "0x4c75FA734a39f3a21C57e583c1c29942F021C6B7"
+new_oracle_committee_member_addr_2: str = "0x982bd0d9b455d988d75194a5197095b9b7ae018D"
+new_oracle_committee_member_addr_3: str = "0x81E411f1BFDa43493D7994F82fb61A415F6b8Fd4"
+# new_quorum: int = 3
 
 
 def encode_add_oracle_member(new_addr: str) -> Tuple[str, str]:
@@ -43,19 +44,21 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     """Prepare and run voting."""
 
     call_script_items = [
-        # 1. Add `0x...` to the Lido Oracle member comittee list
+        # 1. Add `0x4c75FA734a39f3a21C57e583c1c29942F021C6B7` to the Lido Oracle set
         encode_add_oracle_member(new_oracle_committee_member_addr_1),
-        # 2. Add `0x...` to the Lido Oracle member comittee list
+        # 2. Add `0x982bd0d9b455d988d75194a5197095b9b7ae018D` to the Lido Oracle set
         encode_add_oracle_member(new_oracle_committee_member_addr_2),
-        # 3. Set the Oracle comittee quorum to 3
-        encode_set_quorum(new_quorum),
+        # 3. Add `0x81E411f1BFDa43493D7994F82fb61A415F6b8Fd4` to the Lido Oracle set
+        encode_add_oracle_member(new_oracle_committee_member_addr_3),
+        ## 3. Set the Oracle comittee quorum to 3
+        # encode_set_quorum(new_quorum),
     ]
 
     # NB: In case of single vote item the ending period is added automatically
     vote_desc_items = [
-        "1) Add `0x...` to the Lido Oracle member comittee list",
-        "2) Add `0x...` to the Lido Oracle member comittee list",
-        "3) Set the Oracle comittee quorum to 3",
+        "1) Add `0x4c75FA734a39f3a21C57e583c1c29942F021C6B7` to the Lido Oracle member comittee list",
+        "2) Add `0x982bd0d9b455d988d75194a5197095b9b7ae018D` to the Lido Oracle member comittee list",
+        "3) Add `0x81E411f1BFDa43493D7994F82fb61A415F6b8Fd4` to the Lido Oracle member comittee list",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)

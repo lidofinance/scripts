@@ -13,15 +13,16 @@ from brownie.network.transaction import TransactionReceipt
 from brownie import interface
 
 pre_vote_oracle_committee: int = 11
-post_vote_oracle_committee: int = pre_vote_oracle_committee + 2
+post_vote_oracle_committee: int = pre_vote_oracle_committee + 3
 
 post_vote_oracle_committee_member_addrs: List[str] = [
-    "0x6432756feF0fb527C06eFd4689A7CE0E195bD327",
-    "0xeabE95AC5f3D64aE16AcBB668Ed0efcd81B721Bc",
+    "0x4c75FA734a39f3a21C57e583c1c29942F021C6B7",
+    "0x982bd0d9b455d988d75194a5197095b9b7ae018D",
+    "0x81E411f1BFDa43493D7994F82fb61A415F6b8Fd4",
 ]
 
 pre_vote_quorum: int = 1
-post_vote_quorum: int = 3
+post_vote_quorum: int = 1
 
 
 def test_vote_2022_11_11(helpers, accounts, ldo_holder, dao_voting, vote_id_from_env, bypass_events_decoding, oracle):
@@ -66,4 +67,5 @@ def test_vote_2022_11_11(helpers, accounts, ldo_holder, dao_voting, vote_id_from
     evs = group_voting_events(tx)
     validate_oracle_member_added(evs[0], post_vote_oracle_committee_member_addrs[0])
     validate_oracle_member_added(evs[1], post_vote_oracle_committee_member_addrs[1])
-    validate_oracle_quorum_changed(evs[2], post_vote_quorum)
+    validate_oracle_member_added(evs[2], post_vote_oracle_committee_member_addrs[2])
+    # validate_oracle_quorum_changed(evs[2], post_vote_quorum)
