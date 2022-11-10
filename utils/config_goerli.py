@@ -30,6 +30,8 @@ lido_dao_execution_layer_rewards_vault = "0x94750381bE1AbA0504C666ee1DB118F68f07
 lido_easytrack = "0xAf072C8D368E4DD4A9d4fF6A76693887d6ae92Af"
 lido_easytrack_evmscriptexecutor = "0x3c9AcA237b838c59612d79198685e7f20C7fE783"
 
+lido_insurance_fund_address = "0x2FAe4D2D86Efb17249F24C9fb70855d4c58585A5"
+
 # Multisigs
 finance_multisig_address = ""
 
