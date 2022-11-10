@@ -1,14 +1,12 @@
 {
   "//": "see also pyproject.toml",
-
   "name": "scripts",
   "description": "Repository for Lido DAO Aragon voting scripts.",
   "authors": "Lido devteam",
   "license": "MIT",
   "readme": "README.md",
   "homepage": "https://mainnet.lido.fi",
-
   "dependencies": {
-    "ganache": "^7.3.0"
+    "ganache": "^7.5.0"
   }
 }
