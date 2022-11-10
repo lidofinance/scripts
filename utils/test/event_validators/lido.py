@@ -85,3 +85,12 @@ def validate_transfer_shares(event, sender, recipient, shares_amount):
     assert event["TransferShares"]["from"] == sender
     assert event["TransferShares"]["to"] == recipient
     assert event["TransferShares"]["sharesValue"] == shares_amount
+
+def validate_oracle_allowed_beacon_balance_increase_limit(event, value):
+    _events_chain = ["LogScriptCall", "AllowedBeaconBalanceAnnualRelativeIncreaseSet"]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("AllowedBeaconBalanceAnnualRelativeIncreaseSet") == 1
+
+    assert event["AllowedBeaconBalanceAnnualRelativeIncreaseSet"]["value"] == value, "Incorrect limit"

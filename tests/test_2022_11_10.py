@@ -1,10 +1,9 @@
-import math
-from scripts.vote_2022_11_09 import start_vote
+from scripts.vote_2022_11_10 import start_vote
 from utils.test.tx_tracing_helpers import *
+from utils.test.event_validators.lido import validate_oracle_allowed_beacon_balance_increase_limit
 
 ORACLE_ADDRESS = '0x442af784A788A5bd6F42A01Ebe9F287a871243fb'
-ALLOWED_BEACON_BALANCE_INCREASE_LIMIT = 2800
-
+ALLOWED_BEACON_BALANCE_INCREASE_LIMIT = 1750
 
 def test_vote(
     helpers,
@@ -27,9 +26,16 @@ def test_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24
     )
 
+    limit_after = oracle.getAllowedBeaconBalanceAnnualRelativeIncrease()
+    assert limit_after == ALLOWED_BEACON_BALANCE_INCREASE_LIMIT, "incorrect limit after upgrade"
+
+    # Validating events
+    display_voting_events(tx)
+
     # Validate vote events
     if not bypass_events_decoding:
         assert count_vote_items_by_events(tx, dao_voting) == 1, "Incorrect voting items count"
 
-    limit_after = oracle.getAllowedBeaconBalanceAnnualRelativeIncrease()
-    assert limit_after == ALLOWED_BEACON_BALANCE_INCREASE_LIMIT, "incorrect limit after upgrade"
+    evs = group_voting_events(tx)
+
+    validate_oracle_allowed_beacon_balance_increase_limit(evs[0], ALLOWED_BEACON_BALANCE_INCREASE_LIMIT)

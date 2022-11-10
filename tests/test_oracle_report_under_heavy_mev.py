@@ -1,7 +1,7 @@
 import pytest
 from functools import partial
 from brownie import interface, web3, chain
-from scripts.vote_2022_11_09 import start_vote
+from scripts.vote_2022_11_10 import start_vote
 
 from utils.config import contracts, lido_dao_execution_layer_rewards_vault
 
