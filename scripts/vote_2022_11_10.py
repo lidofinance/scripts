@@ -3,6 +3,7 @@ Voting 10/11/2022.
 
 1. Increase max APR security check limit to 1750 bp
 
+Vote passed & executed on Nov-13-2022 10:41:23 AM +UTC, block 15960570
 """
 import time
 from typing import Dict, Optional, Tuple
