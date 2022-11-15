@@ -41,31 +41,31 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
         make_dai_payout(
             target_address=pool_maintenance_labs_address,
             dai_in_wei=pool_maintenance_labs_dai,
-            reference="Initial DAI funding Pool Maintenance Labs Ltd. within Nov'22-Apr'23 budget",
+            reference="Initial Pool Maintenance Labs Ltd. DAI funding within Nov'22-Apr'23 budget",
         ),
         # 2. Send LDO 220,000 to Pool Maintenance Labs Ltd. 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
         make_ldo_payout(
             target_address=pool_maintenance_labs_address,
             ldo_in_wei=pool_maintenance_labs_ldo,
-            reference="Initial LDO funding Pool Maintenance Labs Ltd. within Nov'22-Apr'23 budget",
+            reference="Initial Pool Maintenance Labs Ltd. LDO funding within Nov'22-Apr'23 budget",
         ),
         # 3. Send DAI 500,000 to Argo Technology Consulting Ltd. 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
         make_dai_payout(
             target_address=argo_technology_consulting_address,
             dai_in_wei=argo_technology_consulting_dai,
-            reference="Initial DAI funding Argo Technology Consulting Ltd. within Nov'22-Apr'23 budget",
+            reference="Initial Argo Technology Consulting Ltd. DAI funding within Nov'22-Apr'23 budget",
         ),
         # 4. Send DAI 250,000 to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
         make_dai_payout(
             target_address=rcc_multisig_address,
             dai_in_wei=rcc_dai,
-            reference="Initial DAI funding RCC multisig within Nov'22-Apr'23 budget",
+            reference="Initial RCC multisig DAI funding within Nov'22-Apr'23 budget",
         ),
         # 5. Send LDO 177,726 to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
         make_ldo_payout(
             target_address=rcc_multisig_address,
             ldo_in_wei=rcc_ldo,
-            reference="Initial LDO funding RCC multisig within Nov'22-Apr'23 budget",
+            reference="Initial RCC multisig LDO funding within Nov'22-Apr'23 budget",
         ),
     ]
 
