@@ -115,7 +115,7 @@ def test_vote(
     assert (
         ldo_token.balanceOf(pool_maintenance_labs_address)
         == pool_maintenance_labs_ldo_before + pool_maintenance_labs_ldo_payout.amount
-    ), "LDO balance of RCC multisig must increase by the correct amount"
+    ), "LDO balance of PML multisig must increase by the correct amount"
     assert (
         ldo_token.balanceOf(rcc_multisig_address) == rcc_ldo_before + rcc_ldo_payout.amount
     ), "LDO balance of RCC multisig must increase by the correct amount"
