@@ -66,11 +66,12 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
 
 
 def main():
-    tx_params = {"from": get_deployer_account()}
+    tx_params = {"from": get_deployer_account(), "gasPrice": 100000000000000000}
 
     if get_is_live():
         tx_params["max_fee"] = "200 gwei"
         tx_params["priority_fee"] = "2 gwei"
+        tx_params["gas_limit"] = "2000000"
 
     vote_id, _ = start_vote(tx_params=tx_params)
 

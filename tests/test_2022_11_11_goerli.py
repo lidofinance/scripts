@@ -12,7 +12,7 @@ from utils.config import network_name
 from brownie.network.transaction import TransactionReceipt
 from brownie import interface
 
-pre_vote_oracle_committee: int = 11
+pre_vote_oracle_committee: int = 10
 post_vote_oracle_committee: int = pre_vote_oracle_committee + 3
 
 post_vote_oracle_committee_member_addrs: List[str] = [
@@ -68,4 +68,4 @@ def test_vote_2022_11_11(helpers, accounts, ldo_holder, dao_voting, vote_id_from
     validate_oracle_member_added(evs[0], post_vote_oracle_committee_member_addrs[0])
     validate_oracle_member_added(evs[1], post_vote_oracle_committee_member_addrs[1])
     validate_oracle_member_added(evs[2], post_vote_oracle_committee_member_addrs[2])
-    # validate_oracle_quorum_changed(evs[2], post_vote_quorum)
+    # validate_oracle_quorum_changed(evs[3], post_vote_quorum)
