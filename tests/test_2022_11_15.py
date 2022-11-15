@@ -7,14 +7,12 @@ from utils.test.event_validators.payout import (
     Payout,
     validate_token_payout_event,
 )
-from utils.finance import ZERO_ADDRESS
 from brownie.network.transaction import TransactionReceipt
 from brownie import interface
 
 
 dao_agent_address = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 lido_dao_token = "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32"
-weth_token = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 dai_token_address = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
 
 rcc_multisig_address = "0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437"
@@ -68,9 +66,6 @@ def test_vote(
     dao_agent,
 ):
     dai_token = interface.ERC20(dai_token_address)
-    # rcc_multisig = accounts.at(rcc_multisig_address, force=True)
-    # pool_maintenance_labs = accounts.at(pool_maintenance_labs_address, force=True)
-    # argo_technology_consulting = accounts.at(argo_technology_consulting_address, force=True)
 
     agent_eth_before = dao_agent.balance()
     agent_dai_before = dai_token.balanceOf(dao_agent.address)
