@@ -6,6 +6,8 @@ Voting 15/11/2022.
 3. Send DAI 500,000 to Argo Technology Consulting Ltd. 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
 4. Send DAI 250,000 to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
 5. Send LDO 177,726 to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+
+Vote passed & executed on Nov-18-2022 02:28:23 PM +UTC, block 15997497
 """
 
 import time
