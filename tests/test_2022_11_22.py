@@ -27,22 +27,14 @@ dao_agent_address = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 token_manager = "0xf73a1260d222f447210581DDf212D915c09a3249"
 
 
-start: int = 1664841600  # Tue Oct 04 2022 00:00:00 +UTC
-cliff: int = 1664841600  # Tue Oct 04 2022 00:00:00 +UTC
-vesting: int = 1728000000  # Fri Oct 04 2024 00:00:00 +UTC
+start: int = 1664928000  # Tue Oct 05 2022 00:00:00 +UTC
+cliff: int = 1664928000  # Tue Oct 05 2022 00:00:00 +UTC
+vesting: int = 1728086400  # Fri Oct 05 2024 00:00:00 +UTC
 
 ldo_vesting_amount: int = 150_000 * 10**18
 ldo_balance_change: int = ldo_vesting_amount * 2
 destination_address_chorus: str = "0x3983083d7FA05f66B175f282FfD83E0d861C777A"
 destination_address_p2p: str = "0xE22211Ba98213c866CC5DC8d7D9493b1e7EFD25A"
-
-create_permission: Permission = Permission(
-    entity="0x2e59A20f205bB85a89C53f1936454680651E618e",  # Voting
-    app="0xf73a1260d222f447210581DDf212D915c09a3249",  # Token Manager
-    role="0x2406f1e99f79cea012fb88c5c36566feaeefee0f4b98d3a376b49310222b53c4",  # keccak256('ISSUE_ROLE')
-)
-
-issue: Issue = Issue(token_manager_addr=create_permission.app, amount=ldo_balance_change)
 
 vested_chorus: Vested = Vested(
     destination_addr=destination_address_chorus,
@@ -107,12 +99,8 @@ def test_2022_11_22(
     vestings_after_chours = dao_token_manager.vestingsLengths(destination_address_chorus)
     vestings_after_p2p = dao_token_manager.vestingsLengths(destination_address_p2p)
 
-    assigned_vesting_chorus = dao_token_manager.getVesting(
-        destination_address_chorus, vestings_before_chorus
-    )
-    assigned_vesting_p2p = dao_token_manager.getVesting(
-        destination_address_p2p, vestings_before_p2p
-    )
+    assigned_vesting_chorus = dao_token_manager.getVesting(destination_address_chorus, vestings_before_chorus)
+    assigned_vesting_p2p = dao_token_manager.getVesting(destination_address_p2p, vestings_before_p2p)
 
     assert assigned_vesting_chorus["amount"] == vested_chorus.amount
     assert assigned_vesting_chorus["start"] == vested_chorus.start
@@ -129,9 +117,7 @@ def test_2022_11_22(
     assert (
         destination_balance_after_chorus == destination_balance_before_chorus + ldo_vesting_amount
     ), "Incorrect LDO amount"
-    assert (
-        destination_balance_after_p2p == destination_balance_before_p2p + ldo_vesting_amount
-    ), "Incorrect LDO amount"
+    assert destination_balance_after_p2p == destination_balance_before_p2p + ldo_vesting_amount, "Incorrect LDO amount"
 
     assert agent_ldo_after + ldo_balance_change == agent_ldo_before
     assert token_manager_balance_before == token_manager_balance_after, "Incorrect LDO amount"
