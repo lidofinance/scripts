@@ -67,9 +67,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     ]
 
     vote_desc_items = [
-        "1) Send 300,000 LDO tokens from treasury to the Token Manager 0xf73a1260d222f447210581DDf212D915c09a3249; ",
-        "2) Assign 150,000 LDO tokens to 0x3983083d7FA05f66B175f282FfD83E0d861C777A vested till Sat Oct 05 2024 00:00:00 +UTC; ",
-        "3) Assign 150,000 LDO tokens to 0xE22211Ba98213c866CC5DC8d7D9493b1e7EFD25A vested till Sat Oct 05 2024 00:00:00 +UTC; ",
+        "1) Send 300,000 LDO tokens from Treasury to the Token Manager 0xf73a1260d222f447210581DDf212D915c09a3249",
+        "2) Assign 150,000 LDO tokens to 0x3983083d7FA05f66B175f282FfD83E0d861C777A vested till Sat Oct 05 2024 00:00:00 +UTC",
+        "3) Assign 150,000 LDO tokens to 0xE22211Ba98213c866CC5DC8d7D9493b1e7EFD25A vested till Sat Oct 05 2024 00:00:00 +UTC",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
