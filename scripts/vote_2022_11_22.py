@@ -2,8 +2,8 @@
 Voting 22/11/2022.
 
 1. Send 300,000 LDO tokens from treasury to the Token Manager 0xf73a1260d222f447210581DDf212D915c09a3249
-2. Assign vested 150,000 LDO tokens to 0x3983083d7FA05f66B175f282FfD83E0d861C777A till Wed Sep 04 2024 00:00:00 +UTC
-3. Assign vested 150,000 LDO tokens to 0xE22211Ba98213c866CC5DC8d7D9493b1e7EFD25A till Wed Sep 04 2024 00:00:00 +UTC
+2. Assign vested 150,000 LDO tokens to 0x3983083d7FA05f66B175f282FfD83E0d861C777A till Fri Oct 04 2024 00:00:00 +UTC
+3. Assign vested 150,000 LDO tokens to 0xE22211Ba98213c866CC5DC8d7D9493b1e7EFD25A till Fri Oct 04 2024 00:00:00 +UTC
 """
 
 import time
@@ -40,9 +40,9 @@ def start_vote(
     ldo_balance_change: int = ldo_vesting_amount * 2
 
     # see also https://www.unixtimestamp.com/index.php for time conversions
-    vesting_start: int = 1662249600  # Sun Sep 04 2022 00:00:00 +UTC
-    vesting_cliff: int = 1662249600  # Sun Sep 04 2022 00:00:00 +UTC
-    vesting_vesting: int = 1725408000  # Wed Sep 04 2024 00:00:00 +UTC
+    vesting_start: int = 1664841600  # Tue Oct 04 2022 00:00:00 +UTC
+    vesting_cliff: int = 1664841600  # Tue Oct 04 2022 00:00:00 +UTC
+    vesting_vesting: int = 1728000000  # Fri Oct 04 2024 00:00:00 +UTC
 
     destination_address_chorus: str = "0x3983083d7FA05f66B175f282FfD83E0d861C777A"
     destination_address_p2p: str = "0xE22211Ba98213c866CC5DC8d7D9493b1e7EFD25A"
@@ -54,7 +54,7 @@ def start_vote(
             ldo_in_wei=ldo_balance_change,
             reference="Test",
         ),
-        # # 2. Assign vested 150,000 LDO tokens to 0x3983083d7FA05f66B175f282FfD83E0d861C777A till Wed Sep 04 2024 00:00:00 +UTC
+        # # 2. Assign vested 150,000 LDO tokens to 0x3983083d7FA05f66B175f282FfD83E0d861C777A till Fri Oct 04 2024 00:00:00 +UTC
         assign_vested(
             destination_address_chorus,
             ldo_vesting_amount,
@@ -62,7 +62,7 @@ def start_vote(
             cliff=vesting_cliff,
             vesting=vesting_vesting,
         ),
-        # # 3. Assign vested 150,000 LDO tokens to 0xE22211Ba98213c866CC5DC8d7D9493b1e7EFD25A till Wed Sep 04 2024 00:00:00 +UTC
+        # # 3. Assign vested 150,000 LDO tokens to 0xE22211Ba98213c866CC5DC8d7D9493b1e7EFD25A till Fri Oct 04 2024 00:00:00 +UTC
         assign_vested(
             destination_address_p2p,
             ldo_vesting_amount,
@@ -74,8 +74,8 @@ def start_vote(
 
     vote_desc_items = [
         "1) Send 300,000 LDO tokens from treasury to the Token Manager 0xf73a1260d222f447210581DDf212D915c09a3249; ",
-        "2) Assign 150,000 LDO tokens to 0x3983083d7FA05f66B175f282FfD83E0d861C777A vested till Wed Sep 04 2024 00:00:00 +UTC; ",
-        "3) Assign 150,000 LDO tokens to 0xE22211Ba98213c866CC5DC8d7D9493b1e7EFD25A vested till Wed Sep 04 2024 00:00:00 +UTC; ",
+        "2) Assign 150,000 LDO tokens to 0x3983083d7FA05f66B175f282FfD83E0d861C777A vested till Fri Oct 04 2024 00:00:00 +UTC; ",
+        "3) Assign 150,000 LDO tokens to 0xE22211Ba98213c866CC5DC8d7D9493b1e7EFD25A vested till Fri Oct 04 2024 00:00:00 +UTC; ",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)

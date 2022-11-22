@@ -27,9 +27,9 @@ dao_agent_address = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 token_manager = "0xf73a1260d222f447210581DDf212D915c09a3249"
 
 
-start: int = 1662249600  # Sun Sep 04 2022 00:00:00 +UTC
-cliff: int = 1662249600  # Sun Sep 04 2022 00:00:00 +UTC
-vesting: int = 1725408000  # Wed Sep 04 2024 00:00:00 +UTC
+start: int = 1664841600  # Tue Oct 04 2022 00:00:00 +UTC
+cliff: int = 1664841600  # Tue Oct 04 2022 00:00:00 +UTC
+vesting: int = 1728000000  # Fri Oct 04 2024 00:00:00 +UTC
 
 ldo_vesting_amount: int = 150_000 * 10**18
 ldo_balance_change: int = ldo_vesting_amount * 2
