@@ -52,7 +52,7 @@ def start_vote(
         make_ldo_payout(
             target_address=contracts.token_manager.address,
             ldo_in_wei=ldo_balance_change,
-            reference="Test",
+            reference="Send 300,000 LDO tokens from treasury to the Token Manager 0xf73a1260d222f447210581DDf212D915c09a3249",
         ),
         # # 2. Assign vested 150,000 LDO tokens to 0x3983083d7FA05f66B175f282FfD83E0d861C777A till Fri Oct 04 2024 00:00:00 +UTC
         assign_vested(
