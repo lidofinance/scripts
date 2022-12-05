@@ -83,7 +83,7 @@ def amount_limits() -> List[Param]:
         ),
         # 7: (_token == DAI)
         Param(token_arg_index, Op.EQ, ArgumentValue(dai["address"])),
-        # 8: { return _amount <= 100_000 }
+        # 8: { return _amount <= 2_000_000 }
         Param(amount_arg_index, Op.LTE, ArgumentValue(dai["limit"])),
         # 9: else if (10) then (11) else (12)
         Param(
@@ -116,7 +116,13 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     atc_dai_topup_factory = interface.TopUpAllowedRecipients("0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07")
     gas_refund_eth_topup_factory = interface.TopUpAllowedRecipients("0x41F9daC5F89092dD6061E59578A2611849317dc8")
 
-    reward_programs_registry = interface.RewardProgramsRegistry("0xfCaD241D9D2A2766979A2de208E8210eDf7b7D4F")
+    lego_dai_registry = interface.AllowedRecipientRegistry("0xb0FE4D300334461523D9d61AaD90D0494e1Abb43")
+    lego_ldo_registry = interface.AllowedRecipientRegistry("0x97615f72c3428A393d65A84A3ea6BBD9ad6C0D74")
+    rewards_registry = interface.AllowedRecipientRegistry("0xAa47c268e6b2D4ac7d7f7Ffb28A39484f5212c2A")
+    rcc_dai_registry = interface.AllowedRecipientRegistry("0xDc1A0C7849150f466F07d48b38eAA6cE99079f80")
+    pml_dai_registry = interface.AllowedRecipientRegistry("0xDFfCD3BF14796a62a804c1B16F877Cf7120379dB")
+    atc_dai_registry = interface.AllowedRecipientRegistry("0xe07305F43B11F230EaA951002F6a55a16419B707")
+    gas_refund_registry = interface.AllowedRecipientRegistry("0xCf46c4c7f936dF6aE12091ADB9897E3F2363f16F")
 
     call_script_items = [
         # 1. Revoke role CREATE_PAYMENTS_ROLE from EVM script executor
@@ -138,47 +144,54 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
         # 4. Add LEGO DAI top up EVM script factory 0x0535a67ea2D6d46f85fE568B7EaA91Ca16824FEC
         add_evmscript_factory(
             factory=lego_dai_factory,
-            permissions=create_permissions(finance, "newImmediatePayment"),
+            permissions=create_permissions(finance, "newImmediatePayment")
+            + create_permissions(lego_dai_registry, "updateSpentAmount")[2:],
         ),
         # 5. Add LEGO LDO top up EVM script factory 0x00caAeF11EC545B192f16313F53912E453c91458
         add_evmscript_factory(
             factory=lego_ldo_factory,
-            permissions=create_permissions(finance, "newImmediatePayment"),
+            permissions=create_permissions(finance, "newImmediatePayment")
+            + create_permissions(lego_ldo_registry, "updateSpentAmount")[2:],
         ),
         # 6. Add reWARDS top up EVM script factory 0x85d703B2A4BaD713b596c647badac9A1e95bB03d
         add_evmscript_factory(
             factory=rewards_topup_factory,
-            permissions=create_permissions(finance, "newImmediatePayment"),
+            permissions=create_permissions(finance, "newImmediatePayment")
+            + create_permissions(rewards_registry, "updateSpentAmount")[2:],
         ),
         # 7. Add reWARDS add recipient EVM script factory 0x1dCFc37719A99d73a0ce25CeEcbeFbF39938cF2C
         add_evmscript_factory(
             factory=rewards_add_recipient_factory,
-            permissions=create_permissions(reward_programs_registry, "addRewardProgram"),
+            permissions=create_permissions(rewards_registry, "addRecipient"),
         ),
         # 8. Add reWARDS remove recipient EVM script factory 0x00BB68a12180a8f7E20D8422ba9F81c07A19A79E
         add_evmscript_factory(
             factory=rewards_remove_recipient_factory,
-            permissions=create_permissions(reward_programs_registry, "removeRewardProgram"),
+            permissions=create_permissions(rewards_registry, "removeRecipient"),
         ),
         # 9. Add Lido Contributors Group DAI payment EVM script factory (RCC) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e
         add_evmscript_factory(
             factory=rcc_dai_topup_factory,
-            permissions=create_permissions(finance, "newImmediatePayment"),
+            permissions=create_permissions(finance, "newImmediatePayment")
+            + create_permissions(rcc_dai_registry, "updateSpentAmount")[2:],
         ),
         # 10. Add Lido Contributors Group DAI payment EVM script factory (PML) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD
         add_evmscript_factory(
             factory=pml_dai_topup_factory,
-            permissions=create_permissions(finance, "newImmediatePayment"),
+            permissions=create_permissions(finance, "newImmediatePayment")
+            + create_permissions(pml_dai_registry, "updateSpentAmount")[2:],
         ),
         # 11. Add Lido Contributors Group DAI payment EVM script factory (ATC) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07
         add_evmscript_factory(
             factory=atc_dai_topup_factory,
-            permissions=create_permissions(finance, "newImmediatePayment"),
+            permissions=create_permissions(finance, "newImmediatePayment")
+            + create_permissions(atc_dai_registry, "updateSpentAmount")[2:],
         ),
         # 12. Add Gas Funder ETH payment EVM script factory 0x41F9daC5F89092dD6061E59578A2611849317dc8
         add_evmscript_factory(
             factory=gas_refund_eth_topup_factory,
-            permissions=create_permissions(finance, "newImmediatePayment"),
+            permissions=create_permissions(finance, "newImmediatePayment")
+            + create_permissions(gas_refund_registry, "updateSpentAmount")[2:],
         ),
     ]
 
