@@ -83,6 +83,11 @@ def ldo_token(interface):
 
 
 @pytest.fixture(scope="module")
+def dai_token(interface):
+    return interface.ERC20(dai_token_address)
+
+
+@pytest.fixture(scope="module")
 def lido(interface):
     return interface.Lido(lido_dao_steth_address)
 

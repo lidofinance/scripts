@@ -100,22 +100,21 @@ def amount_limits() -> List[Param]:
     ]
 
 
-finance = interface.Finance(lido_dao_finance_address)
-
-lego_factory_old = interface.IEVMScriptFactory("0x648C8Be548F43eca4e482C0801Ebccccfb944931")
-lego_dai_factory = interface.TopUpAllowedRecipients("0x0535a67ea2D6d46f85fE568B7EaA91Ca16824FEC")
-lego_ldo_factory = interface.TopUpAllowedRecipients("0x00caAeF11EC545B192f16313F53912E453c91458")
-rewards_topup_factory = interface.TopUpAllowedRecipients("0x85d703B2A4BaD713b596c647badac9A1e95bB03d")
-rewards_add_recipient_factory = interface.AddAllowedRecipient("0x1dCFc37719A99d73a0ce25CeEcbeFbF39938cF2C")
-rewards_remove_recipient_factory = interface.RemoveAllowedRecipient("0x00BB68a12180a8f7E20D8422ba9F81c07A19A79E")
-rcc_dai_topup_factory = interface.TopUpAllowedRecipients("0x84f74733ede9bFD53c1B3Ea96338867C94EC313e")
-pml_dai_topup_factory = interface.TopUpAllowedRecipients("0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD")
-atc_dai_topup_factory = interface.TopUpAllowedRecipients("0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07")
-gas_refund_eth_topup_factory = interface.TopUpAllowedRecipients("0x41F9daC5F89092dD6061E59578A2611849317dc8")
-
-
 def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
+
+    finance = interface.Finance(lido_dao_finance_address)
+
+    lego_factory_old = interface.IEVMScriptFactory("0x648C8Be548F43eca4e482C0801Ebccccfb944931")
+    lego_dai_factory = interface.TopUpAllowedRecipients("0x0535a67ea2D6d46f85fE568B7EaA91Ca16824FEC")
+    lego_ldo_factory = interface.TopUpAllowedRecipients("0x00caAeF11EC545B192f16313F53912E453c91458")
+    rewards_topup_factory = interface.TopUpAllowedRecipients("0x85d703B2A4BaD713b596c647badac9A1e95bB03d")
+    rewards_add_recipient_factory = interface.AddAllowedRecipient("0x1dCFc37719A99d73a0ce25CeEcbeFbF39938cF2C")
+    rewards_remove_recipient_factory = interface.RemoveAllowedRecipient("0x00BB68a12180a8f7E20D8422ba9F81c07A19A79E")
+    rcc_dai_topup_factory = interface.TopUpAllowedRecipients("0x84f74733ede9bFD53c1B3Ea96338867C94EC313e")
+    pml_dai_topup_factory = interface.TopUpAllowedRecipients("0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD")
+    atc_dai_topup_factory = interface.TopUpAllowedRecipients("0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07")
+    gas_refund_eth_topup_factory = interface.TopUpAllowedRecipients("0x41F9daC5F89092dD6061E59578A2611849317dc8")
 
     reward_programs_registry = interface.RewardProgramsRegistry("0xfCaD241D9D2A2766979A2de208E8210eDf7b7D4F")
 
