@@ -1,0 +1,26 @@
+[
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_creator",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes",
+                "name": "_evmScriptCallData",
+                "type": "bytes"
+            }
+        ],
+        "name": "createEVMScript",
+        "outputs": [
+            {
+                "internalType": "bytes",
+                "name": "",
+                "type": "bytes"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]
