@@ -116,7 +116,7 @@ def test_vote(
 
     # 1. Revoke role CREATE_PAYMENTS_ROLE from EVM script executor
     # 2. Grant role CREATE_PAYMENTS_ROLE to EasyTrack EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
-    # with limits: 1000 ETH, 1000 stETH, 5M LDO, 100K DAI
+    # with limits: 1000 ETH, 1000 stETH, 5M LDO, 2M DAI
 
     assert has_payments_permission(acl, finance, permission.entity, eth["address"], ldo_holder.address, eth["limit"])
     assert has_payments_permission(
