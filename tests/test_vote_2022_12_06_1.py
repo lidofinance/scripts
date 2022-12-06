@@ -1,7 +1,7 @@
 """
 Tests for voting 06/12/2022.
 """
-
+import math
 from scripts.vote_2022_12_06_1 import start_vote
 
 from brownie import ZERO_ADDRESS, chain, reverts, web3, accounts
@@ -25,6 +25,8 @@ from utils.permission_parameters import Param, SpecialArgumentID, encode_argumen
 from utils.easy_track import create_permissions
 from utils.agent import agent_forward
 from utils.voting import confirm_vote_script, create_vote, bake_vote_items
+
+STETH_ERROR_MARGIN = 2
 
 permission = Permission(
     entity="0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977",  # EVMScriptExecutor
@@ -172,8 +174,12 @@ def test_vote(
     finance.newImmediatePayment(
         steth_token, unknown_person, 1000 * 10**18, "stETH transfer", {"from": evmscriptexecutor}
     )
-    assert steth_token.balanceOf(agent) == agent_steth_balance_before - 1000 * 10**18 + 1
-    assert steth_token.balanceOf(unknown_person) == stETH_balance_before + 1000 * 10**18 - 1
+    assert math.isclose(
+        steth_token.balanceOf(agent), agent_steth_balance_before - 1000 * 10**18, abs_tol=STETH_ERROR_MARGIN
+    )
+    assert math.isclose(
+        steth_token.balanceOf(unknown_person), stETH_balance_before + 1000 * 10**18, abs_tol=STETH_ERROR_MARGIN
+    )
 
     # 5_000_000 LDO
     agent_ldo_balance_before = ldo_token.balanceOf(agent)
@@ -574,6 +580,7 @@ def amount_limits() -> List[Param]:
 def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, dao_voting):
     recipient_candidate = accounts[0]
     title = "Recipient"
+    recipients_length_before = len(registry.getAllowedRecipients())
 
     assert not registry.isRecipientAllowed(recipient_candidate)
 
@@ -600,6 +607,7 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
     )
 
     assert registry.isRecipientAllowed(recipient_candidate)
+    assert len(registry.getAllowedRecipients()) == recipients_length_before + 1, 'Wrong whitelist length'
 
     call_script_items = [
         agent_forward(
@@ -624,3 +632,4 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
     )
 
     assert not registry.isRecipientAllowed(recipient_candidate)
+    assert len(registry.getAllowedRecipients()) == recipients_length_before, 'Wrong whitelist length'
