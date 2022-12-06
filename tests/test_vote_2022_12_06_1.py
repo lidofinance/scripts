@@ -23,12 +23,20 @@ from utils.test.event_validators.easy_track import (
 )
 from utils.permission_parameters import Param, SpecialArgumentID, encode_argument_value_if, ArgumentValue, Op
 from utils.easy_track import create_permissions
+from utils.agent import agent_forward
+from utils.voting import confirm_vote_script, create_vote, bake_vote_items
 
 permission = Permission(
     entity="0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977",  # EVMScriptExecutor
     app="0xB9E5CBB9CA5b0d659238807E84D0176930753d86",  # Finance Aragon App
     role="0x5de467a460382d13defdc02aacddc9c7d6605d6d4e0b8bd2f70732cae8ea17bc",
 )  # keccak256('CREATE_PAYMENTS_ROLE')
+
+
+def has_payments_permission(acl, finance, sender, token, receiver, amount) -> bool:
+    return acl.hasPermission["address,address,bytes32,uint[]"](
+        sender, finance, finance.CREATE_PAYMENTS_ROLE(), [token, receiver, amount]
+    )
 
 
 def test_vote(
@@ -44,10 +52,12 @@ def test_vote(
     steth_token = interface.ERC20("0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
     ldo_token = interface.ERC20("0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32")
     dai_token = interface.ERC20("0x6B175474E89094C44Da98b954EedeAC495271d0F")
+    usdc_token = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 
     finance = interface.Finance("0xB9E5CBB9CA5b0d659238807E84D0176930753d86")
     dao_voting = interface.Voting("0x2e59A20f205bB85a89C53f1936454680651E618e")
     easy_track = interface.EasyTrack("0xF0211b7660680B49De1A7E9f25C65660F0a13Fea")
+    acl = interface.ACL("0x9895f0f17cc1d1891b6f18ee0b483b6f221b37bb")
 
     evmscriptexecutor = accounts.at("0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977", {"force": True})
     agent = accounts.at("0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c", {"force": True})
@@ -87,7 +97,7 @@ def test_vote(
     assert rewards_remove_recipient_factory not in old_factories_list
     assert rcc_dai_topup_factory not in old_factories_list
     assert pml_dai_topup_factory not in old_factories_list
-    assert atc_dai_topup_factory not in old_factories_list    
+    assert atc_dai_topup_factory not in old_factories_list
 
     ##
     ## START VOTE
@@ -105,6 +115,31 @@ def test_vote(
     # 1. Revoke role CREATE_PAYMENTS_ROLE from EVM script executor
     # 2. Grant role CREATE_PAYMENTS_ROLE to EasyTrack EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
     # with limits: 1000 ETH, 1000 stETH, 5M LDO, 100K DAI
+
+    assert has_payments_permission(acl, finance, permission.entity, eth["address"], ldo_holder.address, eth["limit"])
+    assert has_payments_permission(
+        acl, finance, permission.entity, steth["address"], ldo_holder.address, steth["limit"]
+    )
+    assert has_payments_permission(acl, finance, permission.entity, ldo["address"], ldo_holder.address, ldo["limit"])
+    assert has_payments_permission(acl, finance, permission.entity, dai["address"], ldo_holder.address, dai["limit"])
+
+    assert not has_payments_permission(
+        acl, finance, permission.entity, eth["address"], ldo_holder.address, eth["limit"] + 1
+    )
+    assert not has_payments_permission(
+        acl, finance, permission.entity, steth["address"], ldo_holder.address, steth["limit"] + 1
+    )
+    assert not has_payments_permission(
+        acl, finance, permission.entity, ldo["address"], ldo_holder.address, ldo["limit"] + 1
+    )
+    assert not has_payments_permission(
+        acl, finance, permission.entity, dai["address"], ldo_holder.address, dai["limit"] + 1
+    )
+
+    assert not has_payments_permission(
+        acl, finance, accounts[0].address, eth["address"], ldo_holder.address, eth["limit"]
+    )
+    assert not has_payments_permission(acl, finance, accounts[0].address, usdc_token, ldo_holder.address, 1)
 
     # 1000 ETH
     agent_balance_before = agent.balance()
@@ -188,7 +223,7 @@ def test_vote(
         [10 * 10**18],
         unknown_person,
     )
-    add_remove_recipient(lego_dai_registry, agent)
+    check_add_and_remove_recipient_with_voting(lego_dai_registry, helpers, ldo_holder, dao_voting)
 
     # 5. Add LEGO LDO top up EVM script factory 0x00caAeF11EC545B192f16313F53912E453c91458
     assert lego_ldo_factory in updated_factories_list
@@ -201,7 +236,7 @@ def test_vote(
         [10 * 10**18],
         unknown_person,
     )
-    add_remove_recipient(lego_ldo_registry, agent)
+    check_add_and_remove_recipient_with_voting(lego_ldo_registry, helpers, ldo_holder, dao_voting)
 
     # 6. Add reWARDS top up EVM script factory 0x85d703B2A4BaD713b596c647badac9A1e95bB03d
     assert rewards_topup_factory in updated_factories_list
@@ -219,7 +254,7 @@ def test_vote(
         [10 * 10**18, 10 * 10**18, 10 * 10**18, 10 * 10**18],
         unknown_person,
     )
-    add_remove_recipient(rewards_registry, agent)
+    check_add_and_remove_recipient_with_voting(rewards_registry, helpers, ldo_holder, dao_voting)
 
     # 7. Add reWARDS add recipient EVM script factory 0x1dCFc37719A99d73a0ce25CeEcbeFbF39938cF2C
     assert rewards_add_recipient_factory in updated_factories_list
@@ -255,7 +290,7 @@ def test_vote(
         [10 * 10**18],
         unknown_person,
     )
-    add_remove_recipient(rcc_dai_registry, agent)
+    check_add_and_remove_recipient_with_voting(rcc_dai_registry, helpers, ldo_holder, dao_voting)
 
     # 10. Add Lido Contributors Group DAI payment EVM script factory (PML) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD
     assert pml_dai_topup_factory in updated_factories_list
@@ -268,7 +303,7 @@ def test_vote(
         [10 * 10**18],
         unknown_person,
     )
-    add_remove_recipient(pml_dai_registry, agent)
+    check_add_and_remove_recipient_with_voting(pml_dai_registry, helpers, ldo_holder, dao_voting)
 
     # 11. Add Lido Contributors Group DAI payment EVM script factory (ATC) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07
     create_and_enact_payment_motion(
@@ -280,7 +315,7 @@ def test_vote(
         [10 * 10**18],
         unknown_person,
     )
-    add_remove_recipient(atc_dai_registry, agent)
+    check_add_and_remove_recipient_with_voting(atc_dai_registry, helpers, ldo_holder, dao_voting)
 
     # validate vote events
     assert count_vote_items_by_events(tx, dao_voting) == 11, "Incorrect voting items count"
@@ -376,9 +411,7 @@ def create_and_enact_payment_motion(
 ):
     agent = accounts.at("0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c", {"force": True})
     agent_balance_before = token.balanceOf(agent)
-    recievers_balance_before = [
-        token.balanceOf(reciever) for reciever in recievers
-    ]
+    recievers_balance_before = [token.balanceOf(reciever) for reciever in recievers]
     motions_before = easy_track.getMotions()
 
     recievers_addresses = [reciever.address for reciever in recievers]
@@ -392,16 +425,14 @@ def create_and_enact_payment_motion(
 
     chain.sleep(60 * 60 * 24 * 3)
     chain.mine()
-    
+
     easy_track.enactMotion(
         motions[-1][0],
         tx.events["MotionCreated"]["_evmScriptCallData"],
         {"from": stranger},
     )
 
-    recievers_balance_after = [
-        token.balanceOf(reciever) for reciever in recievers
-    ]
+    recievers_balance_after = [token.balanceOf(reciever) for reciever in recievers]
     for i in range(len(recievers)):
         assert recievers_balance_after[i] == recievers_balance_before[i] + transfer_amounts[i]
 
@@ -540,17 +571,56 @@ def amount_limits() -> List[Param]:
     ]
 
 
-def add_remove_recipient(registry, agent):
+def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, dao_voting):
     recipient_candidate = accounts[0]
     title = "Recipient"
 
     assert not registry.isRecipientAllowed(recipient_candidate)
 
-    registry.addRecipient(recipient_candidate, title, {"from": agent})
+    call_script_items = [
+        agent_forward(
+            [
+                (
+                    registry.address,
+                    registry.addRecipient.encode_input(recipient_candidate, title),
+                )
+            ]
+        )
+    ]
+    vote_desc_items = ["Add recipient"]
+    vote_items = bake_vote_items(vote_desc_items, call_script_items)
+
+    vote_id = create_vote(vote_items, {"from": ldo_holder})[0]
+
+    helpers.execute_vote(
+        vote_id=vote_id,
+        accounts=accounts,
+        dao_voting=dao_voting,
+        skip_time=3 * 60 * 60 * 24,
+    )
 
     assert registry.isRecipientAllowed(recipient_candidate)
 
-    registry.removeRecipient(recipient_candidate, {"from": agent})
+    call_script_items = [
+        agent_forward(
+            [
+                (
+                    registry.address,
+                    registry.removeRecipient.encode_input(recipient_candidate),
+                )
+            ]
+        )
+    ]
+    vote_desc_items = ["Remove recipient"]
+    vote_items = bake_vote_items(vote_desc_items, call_script_items)
+
+    vote_id = create_vote(vote_items, {"from": ldo_holder})[0]
+
+    helpers.execute_vote(
+        vote_id=vote_id,
+        accounts=accounts,
+        dao_voting=dao_voting,
+        skip_time=3 * 60 * 60 * 24,
+    )
 
     assert not registry.isRecipientAllowed(recipient_candidate)
-    
