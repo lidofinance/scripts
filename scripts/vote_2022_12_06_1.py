@@ -11,7 +11,6 @@ Voting 06/12/2022.
 9. Add Lido Contributors Group DAI payment EVM script factory (RCC) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e
 10. Add Lido Contributors Group DAI payment EVM script factory (PML) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD
 11. Add Lido Contributors Group DAI payment EVM script factory (ATC) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07
-12. Add Gas Funder ETH payment EVM script factory 0x41F9daC5F89092dD6061E59578A2611849317dc8
 """
 
 import time
@@ -114,7 +113,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     rcc_dai_topup_factory = interface.TopUpAllowedRecipients("0x84f74733ede9bFD53c1B3Ea96338867C94EC313e")
     pml_dai_topup_factory = interface.TopUpAllowedRecipients("0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD")
     atc_dai_topup_factory = interface.TopUpAllowedRecipients("0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07")
-    gas_refund_eth_topup_factory = interface.TopUpAllowedRecipients("0x41F9daC5F89092dD6061E59578A2611849317dc8")
 
     lego_dai_registry = interface.AllowedRecipientRegistry("0xb0FE4D300334461523D9d61AaD90D0494e1Abb43")
     lego_ldo_registry = interface.AllowedRecipientRegistry("0x97615f72c3428A393d65A84A3ea6BBD9ad6C0D74")
@@ -122,7 +120,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     rcc_dai_registry = interface.AllowedRecipientRegistry("0xDc1A0C7849150f466F07d48b38eAA6cE99079f80")
     pml_dai_registry = interface.AllowedRecipientRegistry("0xDFfCD3BF14796a62a804c1B16F877Cf7120379dB")
     atc_dai_registry = interface.AllowedRecipientRegistry("0xe07305F43B11F230EaA951002F6a55a16419B707")
-    gas_refund_registry = interface.AllowedRecipientRegistry("0xCf46c4c7f936dF6aE12091ADB9897E3F2363f16F")
 
     call_script_items = [
         # 1. Revoke role CREATE_PAYMENTS_ROLE from EVM script executor
@@ -187,12 +184,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
             permissions=create_permissions(finance, "newImmediatePayment")
             + create_permissions(atc_dai_registry, "updateSpentAmount")[2:],
         ),
-        # 12. Add Gas Funder ETH payment EVM script factory 0x41F9daC5F89092dD6061E59578A2611849317dc8
-        add_evmscript_factory(
-            factory=gas_refund_eth_topup_factory,
-            permissions=create_permissions(finance, "newImmediatePayment")
-            + create_permissions(gas_refund_registry, "updateSpentAmount")[2:],
-        ),
     ]
 
     vote_desc_items = [
@@ -207,7 +198,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
         "9) Add Lido Contributors Group DAI payment EVM script factory (RCC) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e",
         "10) Add Lido Contributors Group DAI payment EVM script factory (PML) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD",
         "11) Add Lido Contributors Group DAI payment EVM script factory (ATC) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07",
-        "12) Add Gas Funder ETH payment EVM script factory 0x41F9daC5F89092dD6061E59578A2611849317dc8",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)

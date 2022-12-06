@@ -61,7 +61,6 @@ def test_vote(
     rcc_dai_topup_factory = interface.TopUpAllowedRecipients("0x84f74733ede9bFD53c1B3Ea96338867C94EC313e")
     pml_dai_topup_factory = interface.TopUpAllowedRecipients("0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD")
     atc_dai_topup_factory = interface.TopUpAllowedRecipients("0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07")
-    gas_refund_eth_topup_factory = interface.TopUpAllowedRecipients("0x41F9daC5F89092dD6061E59578A2611849317dc8")
 
     lego_dai_registry = interface.AllowedRecipientRegistry("0xb0FE4D300334461523D9d61AaD90D0494e1Abb43")
     lego_ldo_registry = interface.AllowedRecipientRegistry("0x97615f72c3428A393d65A84A3ea6BBD9ad6C0D74")
@@ -69,14 +68,12 @@ def test_vote(
     rcc_dai_registry = interface.AllowedRecipientRegistry("0xDc1A0C7849150f466F07d48b38eAA6cE99079f80")
     pml_dai_registry = interface.AllowedRecipientRegistry("0xDFfCD3BF14796a62a804c1B16F877Cf7120379dB")
     atc_dai_registry = interface.AllowedRecipientRegistry("0xe07305F43B11F230EaA951002F6a55a16419B707")
-    gas_refund_registry = interface.AllowedRecipientRegistry("0xCf46c4c7f936dF6aE12091ADB9897E3F2363f16F")
 
     lego_multisig = accounts.at("0x12a43b049A7D330cB8aEAB5113032D18AE9a9030", {"force": True})
     rewards_multisig = accounts.at("0x87D93d9B2C672bf9c9642d853a8682546a5012B5", {"force": True})
     rcc_funder = accounts.at("0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437", {"force": True})
     pml_funder = accounts.at("0x17F6b2C738a63a8D3A113a228cfd0b373244633D", {"force": True})
     atc_funder = accounts.at("0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956", {"force": True})
-    gas_funder = accounts.at("0x5181d5D56Af4f823b96FE05f062D7a09761a5a53", {"force": True})
 
     old_factories_list = easy_track.getEVMScriptFactories()
 
@@ -90,8 +87,7 @@ def test_vote(
     assert rewards_remove_recipient_factory not in old_factories_list
     assert rcc_dai_topup_factory not in old_factories_list
     assert pml_dai_topup_factory not in old_factories_list
-    assert atc_dai_topup_factory not in old_factories_list
-    assert gas_refund_eth_topup_factory not in old_factories_list
+    assert atc_dai_topup_factory not in old_factories_list    
 
     ##
     ## START VOTE
@@ -104,7 +100,7 @@ def test_vote(
     )
 
     updated_factories_list = easy_track.getEVMScriptFactories()
-    assert len(updated_factories_list) == 16
+    assert len(updated_factories_list) == 15
 
     # 1. Revoke role CREATE_PAYMENTS_ROLE from EVM script executor
     # 2. Grant role CREATE_PAYMENTS_ROLE to EasyTrack EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
@@ -113,7 +109,7 @@ def test_vote(
     # 1000 ETH
     agent_balance_before = agent.balance()
     eth_balance_before = unknown_person.balance()
-    with reverts(""):
+    with reverts("APP_AUTH_FAILED"):
         finance.newImmediatePayment(
             ZERO_ADDRESS,
             unknown_person,
@@ -130,7 +126,7 @@ def test_vote(
     # 1000 stETH
     agent_steth_balance_before = steth_token.balanceOf(agent)
     stETH_balance_before = steth_token.balanceOf(unknown_person)
-    with reverts(""):
+    with reverts("APP_AUTH_FAILED"):
         finance.newImmediatePayment(
             steth_token,
             unknown_person,
@@ -147,7 +143,7 @@ def test_vote(
     # 5_000_000 LDO
     agent_ldo_balance_before = ldo_token.balanceOf(agent)
     ldo_balance_before = ldo_token.balanceOf(unknown_person)
-    with reverts(""):
+    with reverts("APP_AUTH_FAILED"):
         finance.newImmediatePayment(
             ldo_token,
             unknown_person,
@@ -164,7 +160,7 @@ def test_vote(
     # 2_000_000 DAI
     agent_dai_balance_before = dai_token.balanceOf(agent)
     dai_balance_before = dai_token.balanceOf(unknown_person)
-    with reverts(""):
+    with reverts("APP_AUTH_FAILED"):
         finance.newImmediatePayment(
             dai_token,
             unknown_person,
@@ -286,22 +282,8 @@ def test_vote(
     )
     add_remove_recipient(atc_dai_registry, agent)
 
-    # 12. Add Gas Funder ETH payment EVM script factory 0x41F9daC5F89092dD6061E59578A2611849317dc8
-    assert gas_refund_eth_topup_factory in updated_factories_list
-
-    create_and_enact_payment_motion(
-        easy_track,
-        gas_funder,
-        gas_refund_eth_topup_factory,
-        ZERO_ADDRESS,
-        [gas_funder],
-        [10 * 10**18],
-        unknown_person,
-    )
-    add_remove_recipient(gas_refund_registry, agent)
-
     # validate vote events
-    assert count_vote_items_by_events(tx, dao_voting) == 12, "Incorrect voting items count"
+    assert count_vote_items_by_events(tx, dao_voting) == 11, "Incorrect voting items count"
 
     display_voting_events(tx)
 
@@ -377,14 +359,6 @@ def test_vote(
             + create_permissions(atc_dai_registry, "updateSpentAmount")[2:],
         ),
     )
-    validate_evmscript_factory_added_event(
-        evs[11],
-        EVMScriptFactoryAdded(
-            factory_addr=gas_refund_eth_topup_factory,
-            permissions=create_permissions(finance, "newImmediatePayment")
-            + create_permissions(gas_refund_registry, "updateSpentAmount")[2:],
-        ),
-    )
 
 
 def _encode_calldata(signature, values):
@@ -401,9 +375,9 @@ def create_and_enact_payment_motion(
     stranger,
 ):
     agent = accounts.at("0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c", {"force": True})
-    agent_balance_before = agent.balance() if token == ZERO_ADDRESS else token.balanceOf(agent)
+    agent_balance_before = token.balanceOf(agent)
     recievers_balance_before = [
-        reciever.balance() if token == ZERO_ADDRESS else token.balanceOf(reciever) for reciever in recievers
+        token.balanceOf(reciever) for reciever in recievers
     ]
     motions_before = easy_track.getMotions()
 
@@ -418,42 +392,20 @@ def create_and_enact_payment_motion(
 
     chain.sleep(60 * 60 * 24 * 3)
     chain.mine()
-    if token == ZERO_ADDRESS:
-        calldata = easy_track.enactMotion.encode_input(motions[-1][0], tx.events["MotionCreated"]["_evmScriptCallData"])
-
-        private_key = "0xbbfbee4961061d506ffbb11dfea64eba16355cbf1d9c29613126ba7fec0aed5d"
-        tx = {
-            "to": easy_track.address,
-            "type": "0x1",
-            "data": calldata,
-            "nonce": accounts[0].nonce,
-            "gasPrice": 100 * 10**9,
-            "gas": 10000000,
-            "chainId": 1,
-            "accessList": [
-                {
-                    "address": "0x5181d5D56Af4f823b96FE05f062D7a09761a5a53",
-                    "storageKeys": ["0x0000000000000000000000000000000000000000000000000000000000000000"],
-                },
-                {"address": "0xd9db270c1b5e3bd161e8c8503c55ceabee709552", "storageKeys": []},
-            ],
-        }
-        signed = web3.eth.account.sign_transaction(tx, private_key)
-        web3.eth.send_raw_transaction(signed.rawTransaction)
-    else:
-        easy_track.enactMotion(
-            motions[-1][0],
-            tx.events["MotionCreated"]["_evmScriptCallData"],
-            {"from": stranger},
-        )
+    
+    easy_track.enactMotion(
+        motions[-1][0],
+        tx.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
 
     recievers_balance_after = [
-        reciever.balance() if token == ZERO_ADDRESS else token.balanceOf(reciever) for reciever in recievers
+        token.balanceOf(reciever) for reciever in recievers
     ]
     for i in range(len(recievers)):
         assert recievers_balance_after[i] == recievers_balance_before[i] + transfer_amounts[i]
 
-    agent_balance_after = agent.balance() if token == ZERO_ADDRESS else token.balanceOf(agent)
+    agent_balance_after = token.balanceOf(agent)
 
     assert agent_balance_after == agent_balance_before - sum(transfer_amounts)
 
@@ -601,3 +553,4 @@ def add_remove_recipient(registry, agent):
     registry.removeRecipient(recipient_candidate, {"from": agent})
 
     assert not registry.isRecipientAllowed(recipient_candidate)
+    
