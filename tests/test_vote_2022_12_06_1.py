@@ -4,7 +4,7 @@ Tests for voting 06/12/2022.
 
 from scripts.vote_2022_12_06_1 import start_vote
 
-from brownie import ZERO_ADDRESS, chain, reverts
+from brownie import ZERO_ADDRESS, chain, reverts, web3, accounts
 from brownie.network.transaction import TransactionReceipt
 
 from eth_abi.abi import encode_single
@@ -271,21 +271,18 @@ def test_vote(
         unknown_person,
     )
 
-    # # 12. Add Gas Funder ETH payment EVM script factory 0x41F9daC5F89092dD6061E59578A2611849317dc8
+    # 12. Add Gas Funder ETH payment EVM script factory 0x41F9daC5F89092dD6061E59578A2611849317dc8
     assert gas_refund_eth_topup_factory in updated_factories_list
 
-    ## Reverts with VAULT_SEND_REVERTED
-    ## This issue is related to the new gnosis safe implementations.
-    ## Brownie doesn't support access list tx
-    # create_and_enact_payment_motion(
-    #     easy_track,
-    #     gas_funder,
-    #     gas_refund_eth_topup_factory,
-    #     ZERO_ADDRESS,
-    #     [gas_funder],
-    #     [10 * 10**18],
-    #     unknown_person,
-    # )
+    create_and_enact_payment_motion(
+        easy_track,
+        gas_funder,
+        gas_refund_eth_topup_factory,
+        ZERO_ADDRESS,
+        [gas_funder],
+        [10 * 10**18],
+        unknown_person,
+    )
 
     # validate vote events
     assert count_vote_items_by_events(tx, dao_voting) == 12, "Incorrect voting items count"
@@ -401,14 +398,38 @@ def create_and_enact_payment_motion(
     motions = easy_track.getMotions()
     assert len(motions) == len(motions_before) + 1
 
+    print(motions[-1][0])
+
     chain.sleep(60 * 60 * 24 * 3)
     chain.mine()
+    if token == ZERO_ADDRESS:
+        calldata = easy_track.enactMotion.encode_input(motions[-1][0], tx.events["MotionCreated"]["_evmScriptCallData"])
 
-    easy_track.enactMotion(
-        motions[-1][0],
-        tx.events["MotionCreated"]["_evmScriptCallData"],
-        {"from": stranger},
-    )
+        private_key = "0xbbfbee4961061d506ffbb11dfea64eba16355cbf1d9c29613126ba7fec0aed5d"
+        tx = {
+            "to": easy_track.address,
+            "type": "0x1",
+            "data": calldata,
+            "nonce": accounts[0].nonce,
+            "gasPrice": 100 * 10**9,
+            "gas": 10000000,
+            "chainId": 1,
+            "accessList": [
+                {
+                    "address": "0x5181d5D56Af4f823b96FE05f062D7a09761a5a53",
+                    "storageKeys": ["0x0000000000000000000000000000000000000000000000000000000000000000"],
+                },
+                {"address": "0xd9db270c1b5e3bd161e8c8503c55ceabee709552", "storageKeys": []},
+            ],
+        }
+        signed = web3.eth.account.sign_transaction(tx, private_key)
+        web3.eth.send_raw_transaction(signed.rawTransaction)
+    else:
+        easy_track.enactMotion(
+            motions[-1][0],
+            tx.events["MotionCreated"]["_evmScriptCallData"],
+            {"from": stranger},
+        )
 
     recievers_balance_after = [
         reciever.balance() if token == ZERO_ADDRESS else token.balanceOf(reciever) for reciever in recievers
