@@ -21,7 +21,7 @@ from utils.test.event_validators.node_operators_registry import (
     validate_node_operator_added_event,
 )
 
-new_node_op = NodeOperatorItem("Attestant Limited", 29, "0xcd51df5142156BD92E7A9494Dd2b9362f5078D64", 0)
+new_node_op = NodeOperatorItem("Attestant (BVI) Limited", 29, "0xcd51df5142156BD92E7A9494Dd2b9362f5078D64", 0)
 
 lido_dao_token = "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32"
 dao_agent_address = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"

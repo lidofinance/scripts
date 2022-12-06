@@ -4,7 +4,7 @@ Voting 06/12/2022.
 1. Send 300,000 LDO tokens from treasury to the Token Manager 0xf73a1260d222f447210581DDf212D915c09a3249
 2. Assign vested 150,000 LDO tokens to 0x3983083d7FA05f66B175f282FfD83E0d861C777A till Sat Oct 05 2024 00:00:00 +UTC
 3. Assign vested 150,000 LDO tokens to 0xE22211Ba98213c866CC5DC8d7D9493b1e7EFD25A till Sat Oct 05 2024 00:00:00 +UTC
-4. Add node operator named 'Attestant Limited' with reward address `0xcd51df5142156BD92E7A9494Dd2b9362f5078D64`
+4. Add node operator named 'Attestant (BVI) Limited' with reward address `0xcd51df5142156BD92E7A9494Dd2b9362f5078D64`
 """
 
 import time
@@ -20,7 +20,7 @@ from utils.node_operators import encode_add_operator_lido
 
 
 attestant_node_operator = {
-    "name": "Attestant Limited",
+    "name": "Attestant (BVI) Limited",
     "address": "0xcd51df5142156BD92E7A9494Dd2b9362f5078D64",
 }
 
@@ -72,7 +72,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
             cliff=vesting_cliff,
             vesting=vesting_vesting,
         ),
-        # # 4. Add node operator named 'Attestant Limited' with reward address `0xcd51df5142156BD92E7A9494Dd2b9362f5078D64`
+        # # 4. Add node operator named 'Attestant (BVI) Limited' with reward address `0xcd51df5142156BD92E7A9494Dd2b9362f5078D64`
         encode_add_operator_lido(**attestant_node_operator),
     ]
 
@@ -80,7 +80,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
         "1) Send 300,000 LDO tokens from Treasury to the Token Manager 0xf73a1260d222f447210581DDf212D915c09a3249",
         "2) Assign 150,000 LDO tokens to 0x3983083d7FA05f66B175f282FfD83E0d861C777A vested till Sat Oct 05 2024 00:00:00 +UTC",
         "3) Assign 150,000 LDO tokens to 0xE22211Ba98213c866CC5DC8d7D9493b1e7EFD25A vested till Sat Oct 05 2024 00:00:00 +UTC",
-        "4) Add Attestant Limited node operator with reward address 0xcd51df5142156BD92E7A9494Dd2b9362f5078D64",
+        "4) Add Attestant (BVI) Limited node operator with reward address 0xcd51df5142156BD92E7A9494Dd2b9362f5078D64",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
