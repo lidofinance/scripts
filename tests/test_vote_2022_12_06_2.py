@@ -63,7 +63,7 @@ token_manager_ldo_payout = Payout(
 )
 
 
-def test_2022_11_29(
+def test_vote(
     dao_agent,
     helpers,
     accounts,
