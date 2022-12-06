@@ -132,7 +132,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
             revoke_from=lido_easytrack_evmscriptexecutor,
         ),
         # 2. Grant role CREATE_PAYMENTS_ROLE to EasyTrack EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
-        # with limits: 1000 ETH, 1000 stETH, 5M LDO, 100K DAI
+        # with limits: 1000 ETH, 1000 stETH, 5M LDO, 2M DAI
         encode_permission_grant_p(
             target_app=finance,
             permission_name="CREATE_PAYMENTS_ROLE",

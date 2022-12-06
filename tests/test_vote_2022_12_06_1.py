@@ -50,6 +50,7 @@ def test_vote(
     easy_track = interface.EasyTrack("0xF0211b7660680B49De1A7E9f25C65660F0a13Fea")
 
     evmscriptexecutor = accounts.at("0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977", {"force": True})
+    agent = accounts.at("0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c", {"force": True})
 
     lego_factory_old = interface.IEVMScriptFactory("0x648C8Be548F43eca4e482C0801Ebccccfb944931")
     lego_dai_factory = interface.TopUpAllowedRecipients("0x0535a67ea2D6d46f85fE568B7EaA91Ca16824FEC")
@@ -110,6 +111,7 @@ def test_vote(
     # with limits: 1000 ETH, 1000 stETH, 5M LDO, 100K DAI
 
     # 1000 ETH
+    agent_balance_before = agent.balance()
     eth_balance_before = unknown_person.balance()
     with reverts(""):
         finance.newImmediatePayment(
@@ -122,9 +124,11 @@ def test_vote(
     finance.newImmediatePayment(
         ZERO_ADDRESS, unknown_person, 1000 * 10**18, "ETH transfer", {"from": evmscriptexecutor}
     )
+    assert agent.balance() == agent_balance_before - 1000 * 10**18
     assert unknown_person.balance() == eth_balance_before + 1000 * 10**18
 
     # 1000 stETH
+    agent_steth_balance_before = steth_token.balanceOf(agent)
     stETH_balance_before = steth_token.balanceOf(unknown_person)
     with reverts(""):
         finance.newImmediatePayment(
@@ -137,9 +141,11 @@ def test_vote(
     finance.newImmediatePayment(
         steth_token, unknown_person, 1000 * 10**18, "stETH transfer", {"from": evmscriptexecutor}
     )
+    assert steth_token.balanceOf(agent) == agent_steth_balance_before - 1000 * 10**18 + 1
     assert steth_token.balanceOf(unknown_person) == stETH_balance_before + 1000 * 10**18 - 1
 
     # 5_000_000 LDO
+    agent_ldo_balance_before = ldo_token.balanceOf(agent)
     ldo_balance_before = ldo_token.balanceOf(unknown_person)
     with reverts(""):
         finance.newImmediatePayment(
@@ -152,9 +158,11 @@ def test_vote(
     finance.newImmediatePayment(
         ldo_token, unknown_person, 5_000_000 * 10**18, "LDO transfer", {"from": evmscriptexecutor}
     )
+    assert ldo_token.balanceOf(agent) == agent_ldo_balance_before - 5_000_000 * 10**18
     assert ldo_token.balanceOf(unknown_person) == ldo_balance_before + 5_000_000 * 10**18
 
     # 2_000_000 DAI
+    agent_dai_balance_before = dai_token.balanceOf(agent)
     dai_balance_before = dai_token.balanceOf(unknown_person)
     with reverts(""):
         finance.newImmediatePayment(
@@ -167,6 +175,7 @@ def test_vote(
     finance.newImmediatePayment(
         dai_token, unknown_person, 2_000_000 * 10**18, "DAI transfer", {"from": evmscriptexecutor}
     )
+    assert dai_token.balanceOf(agent) == agent_dai_balance_before - 2_000_000 * 10**18
     assert dai_token.balanceOf(unknown_person) == dai_balance_before + 2_000_000 * 10**18
 
     # 3. Remove LEGO EVM script factory 0x648C8Be548F43eca4e482C0801Ebccccfb944931 from the EasyTrack
@@ -183,6 +192,7 @@ def test_vote(
         [10 * 10**18],
         unknown_person,
     )
+    add_remove_recipient(lego_dai_registry, agent)
 
     # 5. Add LEGO LDO top up EVM script factory 0x00caAeF11EC545B192f16313F53912E453c91458
     assert lego_ldo_factory in updated_factories_list
@@ -195,6 +205,7 @@ def test_vote(
         [10 * 10**18],
         unknown_person,
     )
+    add_remove_recipient(lego_ldo_registry, agent)
 
     # 6. Add reWARDS top up EVM script factory 0x85d703B2A4BaD713b596c647badac9A1e95bB03d
     assert rewards_topup_factory in updated_factories_list
@@ -212,6 +223,7 @@ def test_vote(
         [10 * 10**18, 10 * 10**18, 10 * 10**18, 10 * 10**18],
         unknown_person,
     )
+    add_remove_recipient(rewards_registry, agent)
 
     # 7. Add reWARDS add recipient EVM script factory 0x1dCFc37719A99d73a0ce25CeEcbeFbF39938cF2C
     assert rewards_add_recipient_factory in updated_factories_list
@@ -247,6 +259,7 @@ def test_vote(
         [10 * 10**18],
         unknown_person,
     )
+    add_remove_recipient(rcc_dai_registry, agent)
 
     # 10. Add Lido Contributors Group DAI payment EVM script factory (PML) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD
     assert pml_dai_topup_factory in updated_factories_list
@@ -259,6 +272,7 @@ def test_vote(
         [10 * 10**18],
         unknown_person,
     )
+    add_remove_recipient(pml_dai_registry, agent)
 
     # 11. Add Lido Contributors Group DAI payment EVM script factory (ATC) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07
     create_and_enact_payment_motion(
@@ -270,6 +284,7 @@ def test_vote(
         [10 * 10**18],
         unknown_person,
     )
+    add_remove_recipient(atc_dai_registry, agent)
 
     # 12. Add Gas Funder ETH payment EVM script factory 0x41F9daC5F89092dD6061E59578A2611849317dc8
     assert gas_refund_eth_topup_factory in updated_factories_list
@@ -283,6 +298,7 @@ def test_vote(
         [10 * 10**18],
         unknown_person,
     )
+    add_remove_recipient(gas_refund_registry, agent)
 
     # validate vote events
     assert count_vote_items_by_events(tx, dao_voting) == 12, "Incorrect voting items count"
@@ -384,6 +400,8 @@ def create_and_enact_payment_motion(
     transfer_amounts,
     stranger,
 ):
+    agent = accounts.at("0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c", {"force": True})
+    agent_balance_before = agent.balance() if token == ZERO_ADDRESS else token.balanceOf(agent)
     recievers_balance_before = [
         reciever.balance() if token == ZERO_ADDRESS else token.balanceOf(reciever) for reciever in recievers
     ]
@@ -397,8 +415,6 @@ def create_and_enact_payment_motion(
 
     motions = easy_track.getMotions()
     assert len(motions) == len(motions_before) + 1
-
-    print(motions[-1][0])
 
     chain.sleep(60 * 60 * 24 * 3)
     chain.mine()
@@ -436,6 +452,10 @@ def create_and_enact_payment_motion(
     ]
     for i in range(len(recievers)):
         assert recievers_balance_after[i] == recievers_balance_before[i] + transfer_amounts[i]
+
+    agent_balance_after = agent.balance() if token == ZERO_ADDRESS else token.balanceOf(agent)
+
+    assert agent_balance_after == agent_balance_before - sum(transfer_amounts)
 
 
 def create_and_enact_add_recipient_motion(
@@ -566,3 +586,18 @@ def amount_limits() -> List[Param]:
         # 12: else { return false }
         Param(SpecialArgumentID.PARAM_VALUE_PARAM_ID, Op.RET, ArgumentValue(0)),
     ]
+
+
+def add_remove_recipient(registry, agent):
+    recipient_candidate = accounts[0]
+    title = "Recipient"
+
+    assert not registry.isRecipientAllowed(recipient_candidate)
+
+    registry.addRecipient(recipient_candidate, title, {"from": agent})
+
+    assert registry.isRecipientAllowed(recipient_candidate)
+
+    registry.removeRecipient(recipient_candidate, {"from": agent})
+
+    assert not registry.isRecipientAllowed(recipient_candidate)
