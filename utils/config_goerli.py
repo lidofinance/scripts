@@ -43,3 +43,5 @@ ldo_vote_executors_for_tests = [
 dai_token_address = "0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844"
 
 weth_token_address = "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6"
+
+lido_insurance_fund_address = "0x2FAe4D2D86Efb17249F24C9fb70855d4c58585A5"
