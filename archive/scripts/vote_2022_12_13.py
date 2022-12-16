@@ -5,6 +5,9 @@ Voting 13/12/2022.
 2. Assign vested 150,000 LDO tokens to 0x3983083d7FA05f66B175f282FfD83E0d861C777A till Sat Oct 05 2024 00:00:00 +UTC
 3. Assign vested 150,000 LDO tokens to 0xE22211Ba98213c866CC5DC8d7D9493b1e7EFD25A till Sat Oct 05 2024 00:00:00 +UTC
 4. Add node operator named 'Attestant (BVI) Limited' with reward address `0xcd51df5142156BD92E7A9494Dd2b9362f5078D64`
+
+Vote passed & executed on 2022-12-16, 14:24, block 16197839.
+
 """
 
 import time
