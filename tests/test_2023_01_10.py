@@ -5,9 +5,10 @@ Tests for voting 10/01/2022.
 from scripts.vote_2023_01_10 import start_vote
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.oracle import validate_oracle_member_added, validate_oracle_quorum_changed
+from utils.test.event_validators.relay_allowed_list import validate_relay_allowed_list_manager_set
 from utils.config import network_name
 from brownie.network.transaction import TransactionReceipt
-from brownie import interface
+from brownie import interface, ZERO_ADDRESS
 
 pre_vote_oracle_committee: int = 5
 post_vote_oracle_committee: int = pre_vote_oracle_committee + 4
@@ -22,8 +23,11 @@ post_vote_oracle_committee_member_addrs: List[str] = [
 pre_vote_quorum: int = 3
 post_vote_quorum: int = 5
 
+relay_allowed_list_committee: str = "0x98be4a407Bff0c125e25fBE9Eb1165504349c37d"
 
-def test_vote_2023_01_10(helpers, accounts, ldo_holder, dao_voting, vote_id_from_env, bypass_events_decoding, oracle):
+def test_vote_2023_01_10(
+    helpers, accounts, ldo_holder, dao_voting, vote_id_from_env, bypass_events_decoding, oracle, relay_allowed_list
+):
     old_quorum: int = oracle.getQuorum()
     old_oracle_members: List[str] = oracle.getOracleMembers()
 
@@ -32,6 +36,8 @@ def test_vote_2023_01_10(helpers, accounts, ldo_holder, dao_voting, vote_id_from
 
     for m in post_vote_oracle_committee_member_addrs:
         assert not m in old_oracle_members, "already in committee"
+
+    assert relay_allowed_list.get_manager() == ZERO_ADDRESS, "wrong manager"
 
     # START VOTE
     vote_id: int = vote_id_from_env or start_vote({"from": ldo_holder}, silent=True)[0]
@@ -42,7 +48,7 @@ def test_vote_2023_01_10(helpers, accounts, ldo_holder, dao_voting, vote_id_from
 
     # Validate vote events
     if not bypass_events_decoding:
-        assert count_vote_items_by_events(tx, dao_voting) == 5, "Incorrect voting items count"
+        assert count_vote_items_by_events(tx, dao_voting) == 6, "Incorrect voting items count"
 
     new_quorum: int = oracle.getQuorum()
     new_oracle_members: List[str] = oracle.getOracleMembers()
@@ -52,6 +58,8 @@ def test_vote_2023_01_10(helpers, accounts, ldo_holder, dao_voting, vote_id_from
 
     for m in post_vote_oracle_committee_member_addrs:
         assert m in new_oracle_members, "must be in committee"
+
+    assert relay_allowed_list.get_manager() == relay_allowed_list_committee, "wrong manager"
 
     # Check events if their decoding is available
     if bypass_events_decoding:
@@ -68,3 +76,4 @@ def test_vote_2023_01_10(helpers, accounts, ldo_holder, dao_voting, vote_id_from
     validate_oracle_member_added(evs[2], post_vote_oracle_committee_member_addrs[2])
     validate_oracle_member_added(evs[3], post_vote_oracle_committee_member_addrs[3])
     validate_oracle_quorum_changed(evs[4], post_vote_quorum)
+    validate_relay_allowed_list_manager_set(evs[5], relay_allowed_list_committee)

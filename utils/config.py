@@ -141,6 +141,10 @@ class ContractsLazyLoader:
     def easy_track(self) -> interface.EasyTrack:
         return interface.EasyTrack(lido_easytrack)
 
+    @property
+    def relay_allowed_list(self) -> interface.MEVBoostRelayAllowedList:
+        return interface.MEVBoostRelayAllowedList(lido_relay_allowed_list)
+
 
 def __getattr__(name: str) -> Any:
     if name == "contracts":
