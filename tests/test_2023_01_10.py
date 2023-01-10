@@ -56,6 +56,9 @@ def test_vote_2023_01_10(
     assert new_quorum == post_vote_quorum, "wrong new quorum"
     assert len(new_oracle_members) == post_vote_oracle_committee, "wrong new committee size"
 
+    for old_m in old_oracle_members:
+        assert old_m in new_oracle_members, "old member not in the committee"
+
     for m in post_vote_oracle_committee_member_addrs:
         assert m in new_oracle_members, "must be in committee"
 
