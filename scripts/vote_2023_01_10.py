@@ -9,6 +9,8 @@ Voting 10/01/2023.
 6. Grant Relay Maintenance Committee 0x98be4a407Bff0c125e25fBE9Eb1165504349c37d the manager role
    in the MEV Boost Relay Allowed List smart contract 0xF95f069F9AD107938F6ba802a3da87892298610E
 
+Vote passed & executed on Jan-13-2023 02:21:35 PM +UTC, block 16398431
+
 """
 
 import time
