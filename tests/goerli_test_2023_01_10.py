@@ -12,11 +12,12 @@ from brownie.network.transaction import TransactionReceipt
 from brownie import interface, ZERO_ADDRESS
 
 relay_allowed_list_committee: str = "0xf1A6BD3193F93331C38828a3EBeE2fCa374ABACe"
+relay_allowed_list_prev_manager: str = "0xa5F1d7D49F581136Cf6e58B32cBE9a2039C48bA1"
 
 def test_vote_2023_01_10(
     helpers, accounts, ldo_holder, dao_voting, vote_id_from_env, bypass_events_decoding, relay_allowed_list
 ):
-    assert relay_allowed_list.get_manager() == ZERO_ADDRESS, "wrong manager"
+    assert relay_allowed_list.get_manager() == relay_allowed_list_prev_manager, "wrong manager"
 
     # START VOTE
     vote_id: int = vote_id_from_env or start_vote({"from": ldo_holder}, silent=True)[0]
