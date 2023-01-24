@@ -1,7 +1,7 @@
 """
 Voting 24/01/2023.
 
-1. Send 150,000 LDO to Polygon team 0x9cd7477521B7d7E7F9e2F091D2eA0084e8AaA290 for reaching 1% share milestone
+1. Send 150,000 LDO to Lido on Polygon team 0x9cd7477521B7d7E7F9e2F091D2eA0084e8AaA290 for reaching 1% share milestone
 """
 
 import time
@@ -25,17 +25,17 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     """Prepare and run voting."""
 
     call_script_items = [
-        # 1. Send 150,000 LDO to Polygon team 0x9cd7477521B7d7E7F9e2F091D2eA0084e8AaA290 for reaching 1% share milestone
+        # 1. Send 150,000 LDO to Lido on Polygon team 0x9cd7477521B7d7E7F9e2F091D2eA0084e8AaA290 for reaching 1% share milestone
         make_ldo_payout(
             target_address=polygon_team_address,
             ldo_in_wei=polygon_team_incentives_amount,
-            reference="Incentives for Polygon team 0x9cd7477521B7d7E7F9e2F091D2eA0084e8AaA290 for reaching 1% share milestone",
+            reference="Incentives for Lido on Polygon team 0x9cd7477521B7d7E7F9e2F091D2eA0084e8AaA290 for reaching 1% share milestone",
         ),
     ]
 
     # NB: In case of single vote item the ending period is added automatically
     vote_desc_items = [
-        "1) 1. Send 150,000 LDO to Polygon team 0x9cd7477521B7d7E7F9e2F091D2eA0084e8AaA290 for reaching 1% share milestone",
+        "1. Send 150,000 LDO to Lido on Polygon team 0x9cd7477521B7d7E7F9e2F091D2eA0084e8AaA290 for reaching 1% share milestone",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
