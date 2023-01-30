@@ -1,7 +1,7 @@
 """
 Tests for voting 24/01/2023.
 """
-from scripts.vote_2023_01_24 import start_vote
+from archive.scripts.vote_2023_01_24 import start_vote
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.payout import (
     Payout,
