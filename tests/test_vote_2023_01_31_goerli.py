@@ -30,6 +30,8 @@ def test_vote(
     interface,
     ldo_holder,
 ):
+    if not network_name() in ("goerli", "goerli-fork"):
+        return
 
     dai_token = interface.ERC20("0x11fe4b6ae13d2a6055c8d9cf65c55bac32b5d844")
 
