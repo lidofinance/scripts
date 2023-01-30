@@ -2,6 +2,8 @@
 Voting 24/01/2023.
 
 1. Send 150,000 LDO to Lido on Polygon team 0x9cd7477521B7d7E7F9e2F091D2eA0084e8AaA290 for reaching 1% share milestone
+
+Vote passed & executed on Jan-27-2023 02:26:59 PM +UTC, block 16498740
 """
 
 import time
