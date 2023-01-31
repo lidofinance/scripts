@@ -22,7 +22,6 @@ from utils.voting import create_vote, bake_vote_items
 
 eth = "0x0000000000000000000000000000000000000000"
 
-
 def test_vote(
     helpers,
     accounts,
@@ -66,10 +65,6 @@ def test_vote(
     rewards_add_factory_old = interface.IEVMScriptFactory("0x9D15032b91d01d5c1D940eb919461426AB0dD4e3")
     rewards_remove_factory_old = interface.IEVMScriptFactory("0xc21e5e72Ffc223f02fC410aAedE3084a63963932")
 
-    gas_funder_eth_registry = interface.AllowedRecipientRegistry("0xCf46c4c7f936dF6aE12091ADB9897E3F2363f16F")
-    gas_funder_eth_topup_factory = interface.TopUpAllowedRecipients("0x41F9daC5F89092dD6061E59578A2611849317dc8")
-    gas_funder_multisig = accounts.at("0x5181d5D56Af4f823b96FE05f062D7a09761a5a53", {"force": True})
-
     old_factories_list = easy_track.getEVMScriptFactories()
 
     assert len(old_factories_list) == 15
@@ -82,8 +77,6 @@ def test_vote(
     assert rewards_add_factory_old in old_factories_list
     assert rewards_remove_factory_old in old_factories_list
 
-    assert gas_funder_eth_topup_factory not in old_factories_list
-
     ##
     ## START VOTE
     ##
@@ -95,7 +88,7 @@ def test_vote(
     )
 
     updated_factories_list = easy_track.getEVMScriptFactories()
-    assert len(updated_factories_list) == 16
+    assert len(updated_factories_list) == 15
 
     # 1. Add Referral program DAI top up EVM script factory 0x009ffa22ce4388d2F5De128Ca8E6fD229A312450 to Easy Track
     assert referral_dai_topup_factory in updated_factories_list
@@ -142,22 +135,8 @@ def test_vote(
     # 6. Remove reWARDS remove recipient EVM script factory (old ver) 0xc21e5e72Ffc223f02fC410aAedE3084a63963932 from Easy Track
     assert rewards_remove_factory_old not in updated_factories_list
 
-    # 7. Add Gas Funder ETH top up EVM script factory 0x41F9daC5F89092dD6061E59578A2611849317dc8 to Easy Track
-    assert gas_funder_eth_topup_factory in updated_factories_list
-    '''create_and_enact_payment_motion(
-        easy_track,
-        gas_funder_multisig,
-        gas_funder_eth_topup_factory,
-        eth,
-        [gas_funder_multisig],
-        [10 * 10**18],
-        unknown_person,
-    )
-    '''
-    check_add_and_remove_recipient_with_voting(gas_funder_eth_registry, helpers, ldo_holder, dao_voting)
-
     # validate vote events
-    assert count_vote_items_by_events(tx, dao_voting) == 7, "Incorrect voting items count"
+    assert count_vote_items_by_events(tx, dao_voting) == 6, "Incorrect voting items count"
 
     display_voting_events(tx)
 
