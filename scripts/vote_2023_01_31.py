@@ -6,12 +6,13 @@ Voting 31/01/2023.
 4. Remove reWARDS top up EVM script factory (old ver) 0x77781A93C4824d2299a38AC8bBB11eb3cd6Bc3B7 from Easy Track
 5. Remove reWARDS add recipient EVM script factory (old ver) 0x9D15032b91d01d5c1D940eb919461426AB0dD4e3 from Easy Track
 6. Remove reWARDS remove recipient EVM script factory (old ver) 0xc21e5e72Ffc223f02fC410aAedE3084a63963932 from Easy Track
+7. Add Gas Funder ETH top up EVM script factory 0x41F9daC5F89092dD6061E59578A2611849317dc8 to Easy Track
 
 """
 
 import time
 
-from typing import Dict, Tuple, Optional, List
+from typing import Dict, Tuple, Optional
 
 from brownie import interface
 from brownie.network.transaction import TransactionReceipt
@@ -38,6 +39,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     rewards_add_factory_old = interface.IEVMScriptFactory("0x9D15032b91d01d5c1D940eb919461426AB0dD4e3")
     rewards_remove_factory_old = interface.IEVMScriptFactory("0xc21e5e72Ffc223f02fC410aAedE3084a63963932")
 
+    gas_funder_eth_registry = interface.AllowedRecipientRegistry("0xCf46c4c7f936dF6aE12091ADB9897E3F2363f16F")
+    gas_funder_eth_topup_factory = interface.TopUpAllowedRecipients("0x41F9daC5F89092dD6061E59578A2611849317dc8")
+
     call_script_items = [
         # 1. Add Referral program DAI top up EVM script factory 0x009ffa22ce4388d2F5De128Ca8E6fD229A312450 to Easy Track
         add_evmscript_factory(
@@ -61,6 +65,12 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
         remove_evmscript_factory(factory=rewards_add_factory_old),
         # 6. Remove reWARDS remove recipient EVM script factory (old ver) 0xc21e5e72Ffc223f02fC410aAedE3084a63963932 from Easy Track
         remove_evmscript_factory(factory=rewards_remove_factory_old),
+        # 7. Add Gas Funder ETH top up EVM script factory 0x41F9daC5F89092dD6061E59578A2611849317dc8 to Easy Track
+        add_evmscript_factory(
+            factory=gas_funder_eth_topup_factory,
+            permissions=create_permissions(finance, "newImmediatePayment")
+            + create_permissions(gas_funder_eth_registry, "updateSpentAmount")[2:],
+        ),
     ]
 
     vote_desc_items = [
@@ -70,6 +80,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
         "4) Remove reWARDS top up EVM script factory (old ver) 0x77781A93C4824d2299a38AC8bBB11eb3cd6Bc3B7 from Easy Track",
         "5) Remove reWARDS add recipient EVM script factory (old ver) 0x9D15032b91d01d5c1D940eb919461426AB0dD4e3 from Easy Track",
         "6) Remove reWARDS remove recipient EVM script factory (old ver) 0xc21e5e72Ffc223f02fC410aAedE3084a63963932 from Easy Track",
+        "7) Add Gas Funder ETH top up EVM script factory 0x41F9daC5F89092dD6061E59578A2611849317dc8 to Easy Track",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)

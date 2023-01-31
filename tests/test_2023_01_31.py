@@ -20,6 +20,7 @@ from utils.easy_track import create_permissions
 from utils.agent import agent_forward
 from utils.voting import create_vote, bake_vote_items
 
+eth = "0x0000000000000000000000000000000000000000"
 
 
 def test_vote(
@@ -31,6 +32,8 @@ def test_vote(
     interface,
     ldo_holder,
 ):
+
+    dai_token = interface.ERC20("0x6B175474E89094C44Da98b954EedeAC495271d0F")
 
     allowed_recipients = [
         accounts.at("0xaf8aE6955d07776aB690e565Ba6Fbc79B8dE3a5d", {"force": True}),
@@ -49,8 +52,6 @@ def test_vote(
         accounts.at("0x13C6eF8d45aFBCcF15ec0701567cC9fAD2b63CE8", {"force": True}),
     ]
 
-    dai_token = interface.ERC20("0x6B175474E89094C44Da98b954EedeAC495271d0F")
-
     finance = interface.Finance("0xB9E5CBB9CA5b0d659238807E84D0176930753d86")
     dao_voting = interface.Voting("0x2e59A20f205bB85a89C53f1936454680651E618e")
     easy_track = interface.EasyTrack("0xF0211b7660680B49De1A7E9f25C65660F0a13Fea")
@@ -59,12 +60,15 @@ def test_vote(
     referral_dai_topup_factory = interface.TopUpAllowedRecipients("0x009ffa22ce4388d2F5De128Ca8E6fD229A312450")
     referral_dai_add_recipient_factory = interface.AddAllowedRecipient("0x8F06a7f244F6Bb4B68Cd6dB05213042bFc0d7151")
     referral_dai_remove_recipient_factory = interface.RemoveAllowedRecipient("0xd8f9B72Cd97388f23814ECF429cd18815F6352c1")
+    referral_program_multisig = accounts.at("0xe2A682A9722354D825d1BbDF372cC86B2ea82c8C", {"force": True})
 
     rewards_topup_factory_old = interface.IEVMScriptFactory("0x77781A93C4824d2299a38AC8bBB11eb3cd6Bc3B7")
     rewards_add_factory_old = interface.IEVMScriptFactory("0x9D15032b91d01d5c1D940eb919461426AB0dD4e3")
     rewards_remove_factory_old = interface.IEVMScriptFactory("0xc21e5e72Ffc223f02fC410aAedE3084a63963932")
 
-    referral_program_multisig = accounts.at("0xe2A682A9722354D825d1BbDF372cC86B2ea82c8C", {"force": True})
+    gas_funder_eth_registry = interface.AllowedRecipientRegistry("0xCf46c4c7f936dF6aE12091ADB9897E3F2363f16F")
+    gas_funder_eth_topup_factory = interface.TopUpAllowedRecipients("0x41F9daC5F89092dD6061E59578A2611849317dc8")
+    gas_funder_multisig = accounts.at("0x5181d5D56Af4f823b96FE05f062D7a09761a5a53", {"force": True})
 
     old_factories_list = easy_track.getEVMScriptFactories()
 
@@ -78,6 +82,8 @@ def test_vote(
     assert rewards_add_factory_old in old_factories_list
     assert rewards_remove_factory_old in old_factories_list
 
+    assert gas_funder_eth_topup_factory not in old_factories_list
+
     ##
     ## START VOTE
     ##
@@ -89,7 +95,7 @@ def test_vote(
     )
 
     updated_factories_list = easy_track.getEVMScriptFactories()
-    assert len(updated_factories_list) == 15
+    assert len(updated_factories_list) == 16
 
     # 1. Add Referral program DAI top up EVM script factory 0x009ffa22ce4388d2F5De128Ca8E6fD229A312450 to Easy Track
     assert referral_dai_topup_factory in updated_factories_list
@@ -136,8 +142,22 @@ def test_vote(
     # 6. Remove reWARDS remove recipient EVM script factory (old ver) 0xc21e5e72Ffc223f02fC410aAedE3084a63963932 from Easy Track
     assert rewards_remove_factory_old not in updated_factories_list
 
+    # 7. Add Gas Funder ETH top up EVM script factory 0x41F9daC5F89092dD6061E59578A2611849317dc8 to Easy Track
+    assert gas_funder_eth_topup_factory in updated_factories_list
+    '''create_and_enact_payment_motion(
+        easy_track,
+        gas_funder_multisig,
+        gas_funder_eth_topup_factory,
+        eth,
+        [gas_funder_multisig],
+        [10 * 10**18],
+        unknown_person,
+    )
+    '''
+    check_add_and_remove_recipient_with_voting(gas_funder_eth_registry, helpers, ldo_holder, dao_voting)
+
     # validate vote events
-    assert count_vote_items_by_events(tx, dao_voting) == 6, "Incorrect voting items count"
+    assert count_vote_items_by_events(tx, dao_voting) == 7, "Incorrect voting items count"
 
     display_voting_events(tx)
 
@@ -188,8 +208,8 @@ def create_and_enact_payment_motion(
     stranger,
 ):
     agent = accounts.at("0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c", {"force": True})
-    agent_balance_before = token.balanceOf(agent)
-    recievers_balance_before = [token.balanceOf(reciever) for reciever in recievers]
+    agent_balance_before = balance_of(agent, token)
+    recievers_balance_before = [balance_of(reciever, token) for reciever in recievers]
     motions_before = easy_track.getMotions()
 
     recievers_addresses = [reciever.address for reciever in recievers]
@@ -210,13 +230,20 @@ def create_and_enact_payment_motion(
         {"from": stranger},
     )
 
-    recievers_balance_after = [token.balanceOf(reciever) for reciever in recievers]
+    recievers_balance_after = [balance_of(reciever, token)for reciever in recievers]
     for i in range(len(recievers)):
         assert recievers_balance_after[i] == recievers_balance_before[i] + transfer_amounts[i]
 
-    agent_balance_after = token.balanceOf(agent)
+    agent_balance_after = balance_of(agent, token)
 
     assert agent_balance_after == agent_balance_before - sum(transfer_amounts)
+
+
+def balance_of(address, token):
+    if token == eth:
+        return address.balance()
+    else:
+        return token.balanceOf(address)
 
 
 def create_and_enact_add_recipient_motion(
