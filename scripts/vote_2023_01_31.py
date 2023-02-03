@@ -7,6 +7,7 @@ Voting 31/01/2023.
 5. Remove reWARDS add recipient EVM script factory (old ver) 0x9D15032b91d01d5c1D940eb919461426AB0dD4e3 from Easy Track
 6. Remove reWARDS remove recipient EVM script factory (old ver) 0xc21e5e72Ffc223f02fC410aAedE3084a63963932 from Easy Track
 
+Vote passed & executed on Feb-03-2023 02:17:59 PM +UTC, block 16548800
 """
 
 import time
