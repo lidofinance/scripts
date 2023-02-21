@@ -38,39 +38,6 @@ blockdaemon_params_after = {
     "stakingLimit": 3800,
 }
 
-accessListIsh = {
-  "0x5181d5D56Af4f823b96FE05f062D7a09761a5a53": [
-    "0x0000000000000000000000000000000000000000000000000000000000000000",
-  ],
-  "0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552": [],
-}
-
-accessList = (
-    {
-        'address': '0x5181d5D56Af4f823b96FE05f062D7a09761a5a53',
-        'storageKeys': (
-            '0x0000000000000000000000000000000000000000000000000000000000000000',
-        )
-    },
-    {
-        'address': '0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552',
-        'storageKeys': ()
-    },
-)
-
-'''accessList = (
-    {
-        'address': '0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c',
-        'storageKeys': (
-            '0xebb05b386a8d34882b8711d156f463690983dc47815980fb82aeeff1aa43579e',
-            '0x665fd576fbbe6f247aff98f5c94a561e3f71ec2d3c988d56f12d342396c50cea',
-            '0xdee64df20d65e53d7f51cb6ab6d921a0a6a638a91e942e1d8d02df28e31c038e',
-        )
-    },
-)
-'''
-
-
 def check_no_params(no_params_from_registry, no_params_to_check):
     assert no_params_from_registry[0] == no_params_to_check["active"]
     assert no_params_from_registry[1] == no_params_to_check["name"]
@@ -98,10 +65,6 @@ def test_vote(
     TRP_registry = interface.AllowedRecipientRegistry("0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8")
     TRP_multisig = accounts.at("0x834560F580764Bc2e0B16925F8bF229bb00cB759", {"force": True})
 
-    Gas_funder_topup_factory = interface.TopUpAllowedRecipients("0x41F9daC5F89092dD6061E59578A2611849317dc8")
-    Gas_funder_registry = interface.AllowedRecipientRegistry("0xCf46c4c7f936dF6aE12091ADB9897E3F2363f16F")
-    Gas_funder_multisig = accounts.at("0x5181d5D56Af4f823b96FE05f062D7a09761a5a53", {"force": True})
-
     Blockdaemon_id = 13
 
 
@@ -111,7 +74,6 @@ def test_vote(
     assert len(old_factories_list) == 15
 
     assert TRP_topup_factory not in old_factories_list
-    assert Gas_funder_topup_factory not in old_factories_list
 
     check_no_params(node_operators_registry.getNodeOperator(Blockdaemon_id, True), blockdaemon_params_before)
 
@@ -125,10 +87,10 @@ def test_vote(
     )
 
     updated_factories_list = easy_track.getEVMScriptFactories()
-    assert len(updated_factories_list) == 17
+    assert len(updated_factories_list) == 16
 
     # 1. Add TRP LDO top up EVM script factory 0xBd2b6dC189EefD51B273F5cb2d99BA1ce565fb8C to Easy Track
-    '''assert TRP_topup_factory in updated_factories_list
+    assert TRP_topup_factory in updated_factories_list
     create_and_enact_payment_motion(
         easy_track,
         TRP_multisig,
@@ -140,23 +102,8 @@ def test_vote(
         dao_agent
     )
     check_add_and_remove_recipient_with_voting(TRP_registry, helpers, ldo_holder, dao_voting)
-    '''
 
-    # 2. Add Gas Funder ETH top up EVM script factory 0x41F9daC5F89092dD6061E59578A2611849317dc8 to Easy Track
-    assert Gas_funder_topup_factory in updated_factories_list
-    create_and_enact_payment_motion_eth(
-        easy_track,
-        Gas_funder_multisig,
-        Gas_funder_topup_factory,
-        eth,
-        [Gas_funder_multisig],
-        [1 * 10**18],
-        unknown_person,
-        dao_agent
-    )
-    #check_add_and_remove_recipient_with_voting(Gas_funder_registry, helpers, ldo_holder, dao_voting)
-
-    # 3. Set Staking limit for node operator Blockdaemon to 3800
+    # 2. Set Staking limit for node operator Blockdaemon to 3800
     check_no_params(node_operators_registry.getNodeOperator(Blockdaemon_id, True), blockdaemon_params_after)
 
     # validate vote events
@@ -286,76 +233,3 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
 
 def _encode_calldata(signature, values):
     return "0x" + encode_single(signature, values).hex()
-
-def create_and_enact_payment_motion_eth(
-    easy_track,
-    trusted_caller,
-    factory,
-    token,
-    recievers,
-    transfer_amounts,
-    stranger,
-    agent
-):
-    agent_balance_before = balance_of(agent, token)
-    recievers_balance_before = [balance_of(reciever, token) for reciever in recievers]
-    motions_before = easy_track.getMotions()
-
-    recievers_addresses = [reciever.address for reciever in recievers]
-
-    calldata = _encode_calldata("(address[],uint256[])", [recievers_addresses, transfer_amounts])
-
-    tx = easy_track.createMotion(factory, calldata, {"from": trusted_caller})
-
-    motions = easy_track.getMotions()
-    assert len(motions) == len(motions_before) + 1
-
-    chain.sleep(60 * 60 * 24 * 3)
-    chain.mine()
-
-    print(motions[-1][0])
-    print(tx.events["MotionCreated"]["_evmScriptCallData"])
-
-    '''print("Proceed? [yes/no]")
-    resume = prompt_bool()
-    while resume is None:
-        resume = prompt_bool()
-
-    if not resume:
-        print("Exit without running.")
-        return False
-    '''
-
-    tx2 = easy_track.enactMotion(
-        motions[-1][0],
-        tx.events["MotionCreated"]["_evmScriptCallData"],
-        {
-            "type": "0x2",
-            "from": stranger,
-            "accessList": (
-                {
-                    "address": "0x5181d5D56Af4f823b96FE05f062D7a09761a5a53",
-                    "storageKeys": (
-                        "0x0000000000000000000000000000000000000000000000000000000000000000",
-                    ),
-                },
-                {
-                    "address": "0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552",
-                    "storageKeys": (),
-                },
-            ),
-        }
-    )
-    #.buildTransaction(
-
-    #)
-    print(tx2)
-    #web3.eth.sendTransaction(tx2)
-
-    recievers_balance_after = [balance_of(reciever, token) for reciever in recievers]
-    for i in range(len(recievers)):
-        assert recievers_balance_after[i] == recievers_balance_before[i] + transfer_amounts[i]
-
-    agent_balance_after = balance_of(agent, token)
-
-    assert agent_balance_after == agent_balance_before - sum(transfer_amounts)
