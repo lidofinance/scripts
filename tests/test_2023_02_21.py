@@ -107,7 +107,7 @@ def test_vote(
     check_no_params(node_operators_registry.getNodeOperator(Blockdaemon_id, True), blockdaemon_params_after)
 
     # validate vote events
-    assert count_vote_items_by_events(tx, dao_voting) == 3, "Incorrect voting items count"
+    assert count_vote_items_by_events(tx, dao_voting) == 2, "Incorrect voting items count"
 
     display_voting_events(tx)
 
