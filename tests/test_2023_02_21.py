@@ -2,7 +2,6 @@
 Tests for voting 21/02/2023.
 
 """
-from tabnanny import check
 from scripts.vote_2023_02_21 import start_vote
 
 from brownie import ZERO_ADDRESS, chain, accounts
@@ -12,6 +11,10 @@ from eth_abi.abi import encode_single
 
 from utils.config import network_name
 from utils.test.tx_tracing_helpers import *
+from utils.test.event_validators.node_operators_registry import (
+    validate_node_operator_staking_limit_set_event,
+    NodeOperatorStakingLimitSetItem,
+)
 from utils.test.event_validators.easy_track import (
     validate_evmscript_factory_added_event,
     EVMScriptFactoryAdded,
@@ -19,10 +22,6 @@ from utils.test.event_validators.easy_track import (
 from utils.easy_track import create_permissions
 from utils.agent import agent_forward
 from utils.voting import create_vote, bake_vote_items
-from operator import truediv
-from utils.config import prompt_bool
-
-eth = "0x0000000000000000000000000000000000000000"
 
 blockdaemon_params_before = {
     "active": True,
@@ -66,7 +65,6 @@ def test_vote(
     TRP_multisig = accounts.at("0x834560F580764Bc2e0B16925F8bF229bb00cB759", {"force": True})
 
     Blockdaemon_id = 13
-
 
 
     old_factories_list = easy_track.getEVMScriptFactories()
@@ -125,6 +123,14 @@ def test_vote(
         ),
     )
 
+    validate_node_operator_staking_limit_set_event(
+        evs[1],
+        NodeOperatorStakingLimitSetItem(
+            id=13,
+            staking_limit=blockdaemon_params_after["stakingLimit"]
+        )
+    )
+
 
 def create_and_enact_payment_motion(
     easy_track,
@@ -168,10 +174,7 @@ def create_and_enact_payment_motion(
 
 
 def balance_of(address, token):
-    if token == eth:
-        return address.balance()
-    else:
-        return token.balanceOf(address)
+    return token.balanceOf(address)
 
 
 def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, dao_voting):
