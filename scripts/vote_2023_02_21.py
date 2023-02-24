@@ -3,6 +3,7 @@ Voting 21/02/2023.
 1. Add TRP LDO top up EVM script factory 0xBd2b6dC189EefD51B273F5cb2d99BA1ce565fb8C to Easy Track
 2. Set Staking limit for node operator Blockdaemon to 3800
 
+Vote passed & executed on Feb-24-2023 03:12:59 PM +UTC, block 16699006
 """
 
 import time
