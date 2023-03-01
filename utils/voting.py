@@ -110,15 +110,15 @@ def find_vote_id_in_raw_logs(logs) -> int:
 def confirm_vote_script(vote_items: Dict[str, Tuple[str, str]], silent: bool) -> bool:
     encoded_call_script = encode_call_script(vote_items.values())
 
-    human_readable_script = decode_evm_script(
-        encoded_call_script,
-        verbose=False,
-        specific_net=chain_network,
-        repeat_is_error=True,
-    )
-
     # Show detailed description of prepared voting.
     if not silent:
+        human_readable_script = decode_evm_script(
+            encoded_call_script,
+            verbose=False,
+            specific_net=chain_network,
+            repeat_is_error=True,
+        )
+
         vote_descriptions = list(vote_items.keys())
 
         print("\nPoints of voting:")

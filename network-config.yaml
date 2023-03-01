@@ -22,3 +22,14 @@ development:
     host: http://127.0.0.1
     id: goerli-fork
     name: goerli-fork
+  - cmd: ./ganache.sh
+    cmd_settings:
+      accounts: 10
+      chain_id: 5
+      fork: http://127.0.0.1:7777
+      gas_limit: 12000000
+      mnemonic: brownie
+      port: 8545
+    host: http://127.0.0.1
+    id: local-fork
+    name: local-fork
