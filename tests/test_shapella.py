@@ -157,6 +157,12 @@ def test_vote(
     lido_proxy = interface.AppProxyUpgradeable(lido_dao_steth_address)
     assert lido_proxy.implementation() == lido_new_implementation, "Proxy should be updated"
 
+    if bypass_events_decoding:
+        return
+
+    display_voting_events(tx)
+    evs = group_voting_events(tx)
+
 
 def assert_app_update(new_app, old_app, contract_address):
     assert old_app[1] != new_app[1], "Address should change"
