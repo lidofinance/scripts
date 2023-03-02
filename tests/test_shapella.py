@@ -22,7 +22,7 @@ def deploy_template_implementation(deployer):
     template_config = load_shapella_deploy_config()
 
     withdrawal_credentials = "0x0123456789"
-    emergency_pauser_multisig = lido_dao_voting_address
+    gate_seal = lido_dao_voting_address
     template_args = [
         template_config["lidoLocator"]["address"],
         template_config["eip712StETH"]["address"],
@@ -30,7 +30,7 @@ def deploy_template_implementation(deployer):
         template_config["app:node-operators-registry"]["proxyAddress"],
         template_config["hashConsensusForAccounting"]["address"],
         template_config["hashConsensusForValidatorsExitBus"]["address"],
-        emergency_pauser_multisig,
+        gate_seal,
         withdrawal_credentials,
         template_config["app:node-operators-registry"]["parameters"]["stuckPenaltyDelay"],
     ]
@@ -61,8 +61,8 @@ def get_template_configuration(template_address):
         "_voting": template._voting(),
         "_nodeOperatorsRegistry": template._nodeOperatorsRegistry(),
         "_hashConsensusForAccountingOracle": template._hashConsensusForAccountingOracle(),
-        "_hashConsensusForValidatorExitBusOracle": template._hashConsensusForValidatorExitBusOracle(),
-        "_emergencyPauserMultisig": template._emergencyPauserMultisig(),
+        "_hashConsensusForValidatorsExitBusOracle": template._hashConsensusForValidatorsExitBusOracle(),
+        "_gateSeal": template._gateSeal(),
         "_withdrawalCredentials": template._withdrawalCredentials(),
         "_nodeOperatorsRegistryStuckPenaltyDelay": template._nodeOperatorsRegistryStuckPenaltyDelay(),
         "_hardforkTimestamp": template._hardforkTimestamp(),

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.9;
+pragma solidity 0.8.9;
 
 
 interface IAccessControl {
@@ -75,6 +75,7 @@ interface IOssifiableProxy {
 interface IPausableUntil {
     function isPaused() external view returns (bool);
     function getResumeSinceTimestamp() external view returns (uint256);
+    function PAUSE_INFINITELY() external view returns (uint256);
 }
 
 interface IStakingRouter is IAccessControl {
@@ -88,7 +89,7 @@ interface IStakingRouter is IAccessControl {
     function initialize(address _admin, address _lido, bytes32 _withdrawalCredentials) external;
 }
 
-interface IValidatorExitBusOracle {
+interface IValidatorsExitBusOracle is IPausableUntil {
     function initialize(address admin, address pauser, address resumer, address consensusContract, uint256 consensusVersion, uint256 lastProcessingRefSlot) external;
 }
 
@@ -114,8 +115,8 @@ contract ShapellaUpgradeTemplate {
         address voting;
         address nodeOperatorsRegistry;
         address hashConsensusForAccountingOracle;
-        address hashConsensusForValidatorExitBusOracle;
-        address emergencyPauserMultisig; // TODO: rename to gateSeal?
+        address hashConsensusForValidatorsExitBusOracle;
+        address gateSeal;
         bytes32 withdrawalCredentials;
         uint256 nodeOperatorsRegistryStuckPenaltyDelay;
     }
@@ -137,8 +138,8 @@ contract ShapellaUpgradeTemplate {
     address public immutable _voting;
     address public immutable _nodeOperatorsRegistry;
     address public immutable _hashConsensusForAccountingOracle;
-    address public immutable _hashConsensusForValidatorExitBusOracle;
-    address public immutable _emergencyPauserMultisig; // TODO: rename to gateSeal?
+    address public immutable _hashConsensusForValidatorsExitBusOracle;
+    address public immutable _gateSeal; // TODO: rename to gateSeal?
     bytes32 public immutable _withdrawalCredentials;
     uint256 public immutable _nodeOperatorsRegistryStuckPenaltyDelay;
     uint256 public immutable _hardforkTimestamp;
@@ -157,6 +158,7 @@ contract ShapellaUpgradeTemplate {
     constructor(Config memory _config, ConfigImplementations memory _configImpl) {
         isPetrifiedImplementation = true;
 
+        // TODO mainnet/testnet: update the values
         _accountingOracleConsensusVersion = 1;
         _validatorsExitBusOracleConsensusVersion = 1;
         _nodeOperatorsRegistryStakingModuleType = bytes32(uint256(1));
@@ -168,8 +170,8 @@ contract ShapellaUpgradeTemplate {
         _voting = _config.voting;
         _nodeOperatorsRegistry = _config.nodeOperatorsRegistry;
         _hashConsensusForAccountingOracle = _config.hashConsensusForAccountingOracle;
-        _hashConsensusForValidatorExitBusOracle = _config.hashConsensusForValidatorExitBusOracle;
-        _emergencyPauserMultisig = _config.emergencyPauserMultisig; // TODO: rename to gateSeal?
+        _hashConsensusForValidatorsExitBusOracle = _config.hashConsensusForValidatorsExitBusOracle;
+        _gateSeal = _config.gateSeal; // TODO: rename to gateSeal?
         _withdrawalCredentials = _config.withdrawalCredentials;
         _nodeOperatorsRegistryStuckPenaltyDelay = _config.nodeOperatorsRegistryStuckPenaltyDelay;
         _withdrawalQueueImplementation = _configImpl.withdrawalQueueImplementation;
@@ -212,13 +214,13 @@ contract ShapellaUpgradeTemplate {
         );
 
         IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__upgradeTo(_validatorsExitBusOracleImplementation);
-        IValidatorExitBusOracle(_locator.validatorsExitBusOracle()).initialize(
+        IValidatorsExitBusOracle(_locator.validatorsExitBusOracle()).initialize(
             address(this),
-            _emergencyPauserMultisig,
+            _gateSeal,
             _voting, // resumer TODO
-            _hashConsensusForValidatorExitBusOracle,
+            _hashConsensusForValidatorsExitBusOracle,
             _validatorsExitBusOracleConsensusVersion,
-            0 // lastProcessingRefSlot TODO
+            0 // lastProcessingRefSlot TODO when get sure about ExitBus frame duration
         );
 
         _migrateLidoOracleCommitteeMembers();
@@ -228,7 +230,7 @@ contract ShapellaUpgradeTemplate {
         address[] memory members = ILidoOracle(_locator.legacyOracle()).getOracleMembers();
         uint256 quorum = ILidoOracle(_locator.legacyOracle()).getQuorum();
         IHashConsensus hcForAccounting = IHashConsensus(_hashConsensusForAccountingOracle);
-        IHashConsensus hcForExitBus = IHashConsensus(_hashConsensusForValidatorExitBusOracle);
+        IHashConsensus hcForExitBus = IHashConsensus(_hashConsensusForValidatorsExitBusOracle);
         bytes32 manage_members_role = hcForAccounting.MANAGE_MEMBERS_AND_QUORUM_ROLE();
         bytes32 submit_data_role = IAccountingOracle(_locator.accountingOracle()).SUBMIT_DATA_ROLE();
 
@@ -278,7 +280,7 @@ contract ShapellaUpgradeTemplate {
 
         IWithdrawalQueue(_locator.withdrawalQueue()).initialize(
             address(this),
-            _emergencyPauserMultisig,
+            _gateSeal,
             _voting, // resumer
             _locator.lido(),
             _locator.accountingOracle()
@@ -315,7 +317,7 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _passAdminRoleFromTemplateToVoting() internal {
-        _transferOZAdminFromThisToVoting(_hashConsensusForValidatorExitBusOracle);
+        _transferOZAdminFromThisToVoting(_hashConsensusForValidatorsExitBusOracle);
         _transferOZAdminFromThisToVoting(_hashConsensusForAccountingOracle);
         _transferOZAdminFromThisToVoting(_locator.burner());
         _transferOZAdminFromThisToVoting(_locator.stakingRouter());
@@ -330,6 +332,8 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _verifyUpgrade() internal view {
+
+        require(IVersioned(_locator.lido()).getContractVersion() == 2, "INVALID_LIDO_VERSION");
         require(IVersioned(_locator.legacyOracle()).getContractVersion() == 4, "INVALID_LO_VERSION");
         require(IVersioned(_locator.accountingOracle()).getContractVersion() == 1, "INVALID_AO_VERSION");
         require(IVersioned(_locator.stakingRouter()).getContractVersion() == 1, "INVALID_SR_VERSION");
@@ -342,7 +346,10 @@ contract ShapellaUpgradeTemplate {
         require(IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__getAdmin() == _voting, "INVALID_EB_PROXY_ADMIN");
         require(IOssifiableProxy(_locator.withdrawalQueue()).proxy__getAdmin() == _voting, "INVALID_WQ_PROXY_ADMIN");
 
-        require(IPausableUntil(_locator.validatorsExitBusOracle()).isPaused(), "EB_NOT_PAUSED");
+        IValidatorsExitBusOracle exitBus = IValidatorsExitBusOracle(_locator.validatorsExitBusOracle());
+        require(exitBus.isPaused(), "EB_NOT_PAUSED");
+        require(exitBus.getResumeSinceTimestamp() == exitBus.PAUSE_INFINITELY(), "INCORRECT_EB_RESUME_SINCE_TIMESTAMP");
+
         require(IPausableUntil(_locator.withdrawalQueue()).isPaused(), "WQ_NOT_PAUSED");
         require(IPausableUntil(_locator.withdrawalQueue()).getResumeSinceTimestamp() == _hardforkTimestamp, "INCORRECT_WQ_RESUME_SINCE_TIMESTAMP");
     }
