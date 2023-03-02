@@ -21,7 +21,7 @@ from utils.config import (
     ldo_holder_address_for_tests,
     ldo_vote_executors_for_tests,
     lido_easytrack,
-    lido_dao_oracle,
+    lido_dao_legacy_oracle,
     lido_dao_composite_post_rebase_beacon_receiver,
     lido_dao_self_owned_steth_burner,
     lido_dao_execution_layer_rewards_vault,
@@ -105,7 +105,7 @@ def finance(interface):
 
 @pytest.fixture(scope="module")
 def oracle(interface):
-    return interface.LidoOracle(lido_dao_oracle)
+    return interface.LegacyOracle(lido_dao_legacy_oracle)
 
 
 @pytest.fixture(scope="module")
@@ -127,9 +127,11 @@ def weth_token(interface):
 def insurance_fund(interface):
     return interface.InsuranceFund(lido_insurance_fund_address)
 
+
 @pytest.fixture(scope="module")
 def relay_allowed_list(interface):
     return interface.MEVBoostRelayAllowedList(lido_relay_allowed_list)
+
 
 @pytest.fixture(scope="module")
 def unknown_person(accounts):

@@ -102,8 +102,8 @@ class ContractsLazyLoader:
         return interface.NodeOperatorsRegistry(lido_dao_node_operators_registry)
 
     @property
-    def lido_oracle(self) -> interface.LidoOracle:
-        return interface.LidoOracle(lido_dao_oracle)
+    def legacy_oracle(self) -> interface.LegacyOracle:
+        return interface.LegacyOracle(lido_dao_legacy_oracle)
 
     @property
     def deposit_security_module(self) -> interface.DepositSecurityModule:
@@ -135,7 +135,7 @@ class ContractsLazyLoader:
 
     @property
     def oracle_app_repo(self) -> interface.Repo:
-        return interface.Repo(lido_dao_oracle_repo)
+        return interface.Repo(lido_dao_legacy_oracle_repo)
 
     @property
     def easy_track(self) -> interface.EasyTrack:

@@ -11,12 +11,12 @@ lido_dao_token_manager_address = '0xf73a1260d222f447210581DDf212D915c09a3249'
 # Our custom Aragon apps
 lido_dao_node_operators_registry = '0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5'
 lido_dao_steth_address = '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84'
-lido_dao_oracle = '0x442af784A788A5bd6F42A01Ebe9F287a871243fb'
+lido_dao_legacy_oracle = '0x442af784A788A5bd6F42A01Ebe9F287a871243fb'
 # Aragon APM Repos
 lido_dao_voting_repo = '0x4Ee3118E3858E8D7164A634825BfE0F73d99C792'
 lido_dao_lido_repo = '0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1'
 lido_dao_node_operators_registry_repo = '0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1831'
-lido_dao_oracle_repo = '0xF9339DE629973c60c4d2b76749c81E6F40960E3A'
+lido_dao_legacy_oracle_repo = '0xF9339DE629973c60c4d2b76749c81E6F40960E3A'
 
 curve_rewards_manager_address = '0x753D5167C31fBEB5b49624314d74A957Eb271709'
 balancer_rewards_manager = '0x1dD909cDdF3dbe61aC08112dC0Fdf2Ab949f79D8'
