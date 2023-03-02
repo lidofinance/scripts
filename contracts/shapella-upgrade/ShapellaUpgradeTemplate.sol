@@ -4,14 +4,14 @@ pragma solidity ^0.8.9;
 
 
 interface IAccessControl {
+    function DEFAULT_ADMIN_ROLE() external returns (bytes32);
     function grantRole(bytes32 role, address account) external;
     function renounceRole(bytes32 role, address account) external;
-    function DEFAULT_ADMIN_ROLE() external returns (bytes32);
 }
 
 interface IAccountingOracle {
-    function initialize(address admin, address consensusContract, uint256 consensusVersion) external;
     function SUBMIT_DATA_ROLE() external view returns (bytes32);
+    function initialize(address admin, address consensusContract, uint256 consensusVersion) external;
 }
 
 interface IBaseOracle {
@@ -23,9 +23,9 @@ interface IBurner is IAccessControl {
 }
 
 interface IHashConsensus {
+    function MANAGE_MEMBERS_AND_QUORUM_ROLE() external view returns (bytes32);
     function addMember(address addr, uint256 quorum) external;
     function getFrameConfig() external view returns (uint256 initialEpoch, uint256 epochsPerFrame, uint256 fastLaneLengthSlots);
-    function MANAGE_MEMBERS_AND_QUORUM_ROLE() external view returns (bytes32);
     function updateInitialEpoch(uint256 initialEpoch) external;
 }
 
@@ -78,7 +78,6 @@ interface IPausableUntil {
 }
 
 interface IStakingRouter is IAccessControl {
-    function initialize(address _admin, address _lido, bytes32 _withdrawalCredentials) external;
     function MANAGE_WITHDRAWAL_CREDENTIALS_ROLE() external returns (bytes32);
     function STAKING_MODULE_PAUSE_ROLE() external returns (bytes32);
     function STAKING_MODULE_RESUME_ROLE() external returns (bytes32);
@@ -86,6 +85,7 @@ interface IStakingRouter is IAccessControl {
     function REPORT_EXITED_VALIDATORS_ROLE() external returns (bytes32);
     function UNSAFE_SET_EXITED_VALIDATORS_ROLE() external returns (bytes32);
     function REPORT_REWARDS_MINTED_ROLE() external returns (bytes32);
+    function initialize(address _admin, address _lido, bytes32 _withdrawalCredentials) external;
 }
 
 interface IValidatorExitBusOracle {
@@ -97,9 +97,11 @@ interface IVersioned {
 }
 
 interface IWithdrawalQueue is IAccessControl, IPausableUntil {
+    function PAUSE_ROLE() external returns (bytes32);
+    function RESUME_ROLE() external returns (bytes32);
     function initialize(address _admin, address _pauser, address _resumer, address _finalizer, address _bunkerReporter) external;
     function pause(uint256 _duration) external;
-    function PAUSE_ROLE() external returns (bytes32);
+    function resume() external;
 }
 
 
@@ -158,7 +160,7 @@ contract ShapellaUpgradeTemplate {
         _accountingOracleConsensusVersion = 1;
         _validatorsExitBusOracleConsensusVersion = 1;
         _nodeOperatorsRegistryStakingModuleType = bytes32(uint256(1));
-        _hardforkTimestamp = 1678698793;  // 2023-03-13 13:13:13
+        _hardforkTimestamp = 1678698791;  // 2023-03-13 13:13:11
 
         // TODO mainnet: hardcoode the values
         _locator = _config.locator;
@@ -199,9 +201,10 @@ contract ShapellaUpgradeTemplate {
 
         (, uint256 epochsPerFrame, ) = IHashConsensus(_hashConsensusForAccountingOracle).getFrameConfig();
         uint256 lastLidoOracleCompletedEpochId = ILidoOracle(_locator.legacyOracle()).getLastCompletedEpochId();
-        IHashConsensus(_hashConsensusForAccountingOracle).updateInitialEpoch(lastLidoOracleCompletedEpochId + epochsPerFrame);
-        require(false, "DBG-1");
+
+        // NB: HashConsensus.updateInitialEpoch must be called after AccountingOracle implementation is binded to proxy
         IOssifiableProxy(_locator.accountingOracle()).proxy__upgradeTo(_accountingOracleImplementation);
+        IHashConsensus(_hashConsensusForAccountingOracle).updateInitialEpoch(lastLidoOracleCompletedEpochId + epochsPerFrame);
         IAccountingOracle(_locator.accountingOracle()).initialize(
             address(this),
             _hashConsensusForAccountingOracle,
@@ -274,7 +277,7 @@ contract ShapellaUpgradeTemplate {
         );
 
         IWithdrawalQueue(_locator.withdrawalQueue()).initialize(
-            _voting,
+            address(this),
             _emergencyPauserMultisig,
             _voting, // resumer
             _locator.lido(),
@@ -318,6 +321,7 @@ contract ShapellaUpgradeTemplate {
         _transferOZAdminFromThisToVoting(_locator.stakingRouter());
         _transferOZAdminFromThisToVoting(_locator.accountingOracle());
         _transferOZAdminFromThisToVoting(_locator.validatorsExitBusOracle());
+        _transferOZAdminFromThisToVoting(_locator.withdrawalQueue());
 
         IOssifiableProxy(_locator.stakingRouter()).proxy__changeAdmin(_voting);
         IOssifiableProxy(_locator.accountingOracle()).proxy__changeAdmin(_voting);
@@ -352,9 +356,17 @@ contract ShapellaUpgradeTemplate {
     function _pauseWithdrawalQueueUntil(uint256 _resumeSince) internal {
         require(_resumeSince > block.timestamp, "UNTIL_TIMESTAMP_MUST_BE_IN_FUTURE");
         uint256 duration = _resumeSince - block.timestamp;
-        require(duration % SECONDS_PER_BLOCK == 0, "UNTIL_TIMESTAMP_MUST_BE_FACTOR_OF_12");
+
+        // TODO mainnet: recheck this requirement and maybe uncomment
+        // require(duration % SECONDS_PER_BLOCK == 0, "UNTIL_TIMESTAMP_MUST_BE_FACTOR_OF_12");
 
         IWithdrawalQueue queue = IWithdrawalQueue(_locator.withdrawalQueue());
+
+        // Need to resume first, otherwise cannot pause
+        queue.grantRole(queue.RESUME_ROLE(), address(this));
+        queue.resume();
+        queue.renounceRole(queue.RESUME_ROLE(), address(this));
+
         queue.grantRole(queue.PAUSE_ROLE(), address(this));
         queue.pause(duration);
         queue.renounceRole(queue.PAUSE_ROLE(), address(this));

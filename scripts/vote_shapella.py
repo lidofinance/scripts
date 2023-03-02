@@ -145,6 +145,7 @@ def start_vote(
         ),
         # 8. Finalize upgrade via template
         encode_template_finish_upgrade(template_address),
+        # TODO
         encode_template_proxy_ossify(template_address),
     ]
 

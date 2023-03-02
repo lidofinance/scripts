@@ -45,12 +45,12 @@ def deploy_template_implementation(deployer):
     return template_implementation
 
 
-def dbg_bind_template_impl(proxy, implementation):
+def bind_template_implementation(proxy, implementation):
     template = interface.OssifiableProxy(proxy)
     template.proxy__upgradeTo(implementation, {"from": lido_dao_voting_address})
 
 
-def dbg_print_template_configuration(template_address):
+def get_template_configuration(template_address):
     template = ShapellaUpgradeTemplate.at(template_address)
     config = {
         "_accountingOracleConsensusVersion": template._accountingOracleConsensusVersion(),
@@ -71,7 +71,7 @@ def dbg_print_template_configuration(template_address):
         "_accountingOracleImplementation": template._accountingOracleImplementation(),
         "_validatorsExitBusOracleImplementation": template._validatorsExitBusOracleImplementation(),
     }
-    pprint(config)
+    return config
 
 
 def debug_locator_addresses(locator_address):
@@ -133,9 +133,9 @@ def test_vote(
     template = ShapellaUpgradeTemplate.at(template_address)
 
     # DEBUG: Uncomment if want to upgrade as a separate tx
-    # dbg_bind_template_impl(template_address, template_implementation)
+    # bind_template_implementation(template_address, template_implementation)
 
-    dbg_print_template_configuration(template_address)
+    pprint(get_template_configuration(template_implementation))
 
     # DEBUG: Uncomment if want to upgrade as a separate tx
     # template.startUpgrade({'from': lido_dao_voting_address})
@@ -149,7 +149,7 @@ def test_vote(
     # template.finishUpgrade({'from': lido_dao_voting_address})
 
     # Template checks
-    assert template.isUpgraded()
+    assert template.isUpgradeFinished()
 
     # Lido app upgrade
     lido_new_app = lido_repo.getLatest()
