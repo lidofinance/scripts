@@ -89,8 +89,10 @@ interface IStakingRouter is IAccessControl {
     function initialize(address _admin, address _lido, bytes32 _withdrawalCredentials) external;
 }
 
-interface IValidatorsExitBusOracle is IPausableUntil {
-    function initialize(address admin, address pauser, address resumer, address consensusContract, uint256 consensusVersion, uint256 lastProcessingRefSlot) external;
+interface IValidatorsExitBusOracle is IAccessControl, IPausableUntil {
+    function PAUSE_ROLE() external returns (bytes32);
+    function RESUME_ROLE() external returns (bytes32);
+    function initialize(address admin, address consensusContract, uint256 consensusVersion, uint256 lastProcessingRefSlot) external;
 }
 
 interface IVersioned {
@@ -100,8 +102,10 @@ interface IVersioned {
 interface IWithdrawalQueue is IAccessControl, IPausableUntil {
     function PAUSE_ROLE() external returns (bytes32);
     function RESUME_ROLE() external returns (bytes32);
-    function initialize(address _admin, address _pauser, address _resumer, address _finalizer, address _bunkerReporter) external;
-    function pause(uint256 _duration) external;
+    function FINALIZE_ROLE() external returns (bytes32);
+    function ORACLE_ROLE() external returns (bytes32);
+    function initialize(address _admin) external;
+    function pauseFor(uint256 _duration) external;
     function resume() external;
 }
 
@@ -139,45 +143,46 @@ contract ShapellaUpgradeTemplate {
     address public immutable _nodeOperatorsRegistry;
     address public immutable _hashConsensusForAccountingOracle;
     address public immutable _hashConsensusForValidatorsExitBusOracle;
-    address public immutable _gateSeal; // TODO: rename to gateSeal?
-    bytes32 public immutable _withdrawalCredentials;
-    uint256 public immutable _nodeOperatorsRegistryStuckPenaltyDelay;
-    uint256 public immutable _hardforkTimestamp;
+    address public immutable _gateSeal;
     address public immutable _withdrawalQueueImplementation;
     address public immutable _stakingRouterImplementation;
     address public immutable _accountingOracleImplementation;
     address public immutable _validatorsExitBusOracleImplementation;
+    bytes32 public immutable _withdrawalCredentials;
+    uint256 public immutable _nodeOperatorsRegistryStuckPenaltyDelay;
+    uint256 public immutable _hardforkTimestamp;
 
     //
     // STRUCTURED STORAGE
     //
-    bool internal isPetrifiedImplementation;
     bool public isUpgradeStarted;
     bool public isUpgradeFinished;
 
     constructor(Config memory _config, ConfigImplementations memory _configImpl) {
-        isPetrifiedImplementation = true;
-
         // TODO mainnet/testnet: update the values
         _accountingOracleConsensusVersion = 1;
         _validatorsExitBusOracleConsensusVersion = 1;
-        _nodeOperatorsRegistryStakingModuleType = bytes32(uint256(1));
-        _hardforkTimestamp = 1678698791;  // 2023-03-13 13:13:11
+        _nodeOperatorsRegistryStakingModuleType = bytes32("curated-onchain-v1");
+        _hardforkTimestamp = 1678816800;  // goerli hardfork 2023-03-14 22:00:00
 
-        // TODO mainnet: hardcoode the values
+        // TODO mainnet: hardcode the values
         _locator = _config.locator;
         _eip712StETH = _config.eip712StETH;
         _voting = _config.voting;
         _nodeOperatorsRegistry = _config.nodeOperatorsRegistry;
         _hashConsensusForAccountingOracle = _config.hashConsensusForAccountingOracle;
         _hashConsensusForValidatorsExitBusOracle = _config.hashConsensusForValidatorsExitBusOracle;
-        _gateSeal = _config.gateSeal; // TODO: rename to gateSeal?
+        _gateSeal = _config.gateSeal;
         _withdrawalCredentials = _config.withdrawalCredentials;
         _nodeOperatorsRegistryStuckPenaltyDelay = _config.nodeOperatorsRegistryStuckPenaltyDelay;
         _withdrawalQueueImplementation = _configImpl.withdrawalQueueImplementation;
         _stakingRouterImplementation = _configImpl.stakingRouterImplementation;
         _accountingOracleImplementation = _configImpl.accountingOracleImplementation;
         _validatorsExitBusOracleImplementation = _configImpl.validatorsExitBusOracleImplementation;
+    }
+
+    function verifyInitialState() external view {
+        _verifyInitialState();
     }
 
     /// Need to be called before LidoOracle implementation is upgraded to LegacyOracle
@@ -195,16 +200,16 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _startUpgrade() internal {
-        require(!isPetrifiedImplementation, "IMPLEMENTATION_IS_PETRIFIED");
         require(msg.sender == _voting, "ONLY_VOTING_CAN_UPGRADE");
         require(!isUpgradeStarted, "CAN_ONLY_START_ONCE");
-        require(ILidoOracle(_locator.legacyOracle()).getVersion() == 3, "LIDO_ORACLE_MUST_NOT_BE_UPGRADED_TO_LEGACY_YET");
         isUpgradeStarted = true;
+
+        _verifyInitialState();
 
         (, uint256 epochsPerFrame, ) = IHashConsensus(_hashConsensusForAccountingOracle).getFrameConfig();
         uint256 lastLidoOracleCompletedEpochId = ILidoOracle(_locator.legacyOracle()).getLastCompletedEpochId();
 
-        // NB: HashConsensus.updateInitialEpoch must be called after AccountingOracle implementation is binded to proxy
+        // NB: HashConsensus.updateInitialEpoch must be called after AccountingOracle implementation is bound to proxy
         IOssifiableProxy(_locator.accountingOracle()).proxy__upgradeTo(_accountingOracleImplementation);
         IHashConsensus(_hashConsensusForAccountingOracle).updateInitialEpoch(lastLidoOracleCompletedEpochId + epochsPerFrame);
         IAccountingOracle(_locator.accountingOracle()).initialize(
@@ -216,14 +221,23 @@ contract ShapellaUpgradeTemplate {
         IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__upgradeTo(_validatorsExitBusOracleImplementation);
         IValidatorsExitBusOracle(_locator.validatorsExitBusOracle()).initialize(
             address(this),
-            _gateSeal,
-            _voting, // resumer TODO
             _hashConsensusForValidatorsExitBusOracle,
             _validatorsExitBusOracleConsensusVersion,
             0 // lastProcessingRefSlot TODO when get sure about ExitBus frame duration
         );
 
         _migrateLidoOracleCommitteeMembers();
+    }
+
+    function _verifyInitialState() internal view {
+        require(ILidoOracle(_locator.legacyOracle()).getVersion() == 3, "LIDO_ORACLE_MUST_NOT_BE_UPGRADED_TO_LEGACY_YET");
+
+        require(IOssifiableProxy(_locator.withdrawalQueue()).proxy__getAdmin() == address(this), "WRONG_WQ_ADMIN");
+        require(IOssifiableProxy(_locator.stakingRouter()).proxy__getAdmin() == address(this), "WRONG_SQ_ADMIN");
+        require(IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__getAdmin() == address(this), "WRONG_EB_ADMIN");
+        require(IOssifiableProxy(_locator.accountingOracle()).proxy__getAdmin() == address(this), "WRONG_AO_ADMIN");
+
+        // TODO: check ONLY template is admin of roles of OZ AccessControl contracts
     }
 
     function _migrateLidoOracleCommitteeMembers() internal {
@@ -248,12 +262,12 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _finishUpgrade() internal {
-        require(!isPetrifiedImplementation, "IMPLEMENTATION_IS_PETRIFIED");
         require(msg.sender == _voting, "ONLY_VOTING_CAN_UPGRADE");
         require(isUpgradeStarted, "MUST_INITIALIZE_ACCOUNTING_ORACLE_BEFORE");
         require(!isUpgradeFinished, "CANNOT_UPGRADE_TWICE");
 
         /// Here we check that the contract got new ABI function getContractVersion(), although it is 0 yet
+        /// because in the new contract version is stored in a different slot
         require(ILegacyOracle(_locator.legacyOracle()).getContractVersion() == 0, "LIDO_ORACLE_IMPL_MUST_BE_UPGRADED_TO_LEGACY");
 
         isUpgradeFinished = true;
@@ -274,17 +288,9 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _doInitializations() internal {
-        ILegacyOracle(_locator.legacyOracle()).finalizeUpgrade_v4(
-            _locator.accountingOracle()
-        );
+        ILegacyOracle(_locator.legacyOracle()).finalizeUpgrade_v4(_locator.accountingOracle());
 
-        IWithdrawalQueue(_locator.withdrawalQueue()).initialize(
-            address(this),
-            _gateSeal,
-            _voting, // resumer
-            _locator.lido(),
-            _locator.accountingOracle()
-        );
+        IWithdrawalQueue(_locator.withdrawalQueue()).initialize(address(this));
         _pauseWithdrawalQueueUntil(_hardforkTimestamp);
 
         ILido(_locator.lido()).finalizeUpgrade_v2(address(_locator), _eip712StETH);
@@ -294,6 +300,7 @@ contract ShapellaUpgradeTemplate {
             _locator.lido(),
             _withdrawalCredentials
         );
+        // TODO: maybe attach NOR as module to staking router
 
         INodeOperatorsRegistry(_nodeOperatorsRegistry).finalizeUpgrade_v2(
             address(_locator),
@@ -312,8 +319,16 @@ contract ShapellaUpgradeTemplate {
         router.grantRole(router.REPORT_EXITED_VALIDATORS_ROLE(), _locator.accountingOracle());
         router.grantRole(router.REPORT_REWARDS_MINTED_ROLE(), _locator.lido());
 
-        // TODO: grant WQ roles after the new WQ contract version arrived
-        // TODO: grant EB roles after the new EB contract version arrived
+        IValidatorsExitBusOracle exitBusOracle = IValidatorsExitBusOracle(_locator.validatorsExitBusOracle());
+        exitBusOracle.grantRole(exitBusOracle.PAUSE_ROLE(), _gateSeal);
+        exitBusOracle.grantRole(exitBusOracle.RESUME_ROLE(), _voting);
+
+        IWithdrawalQueue withdrawalQueue = IWithdrawalQueue(_locator.withdrawalQueue());
+        withdrawalQueue.grantRole(withdrawalQueue.PAUSE_ROLE(), _gateSeal);
+        withdrawalQueue.grantRole(withdrawalQueue.RESUME_ROLE(), _voting);
+        withdrawalQueue.grantRole(withdrawalQueue.FINALIZE_ROLE(), _locator.lido());
+        withdrawalQueue.grantRole(withdrawalQueue.RESUME_ROLE(), _locator.accountingOracle());
+
     }
 
     function _passAdminRoleFromTemplateToVoting() internal {
@@ -375,7 +390,7 @@ contract ShapellaUpgradeTemplate {
         queue.renounceRole(queue.RESUME_ROLE(), address(this));
 
         queue.grantRole(queue.PAUSE_ROLE(), address(this));
-        queue.pause(duration);
+        queue.pauseFor(duration);
         queue.renounceRole(queue.PAUSE_ROLE(), address(this));
     }
 }

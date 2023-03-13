@@ -11,7 +11,7 @@ from pprint import pprint
 
 
 # Private constant taken from Lido contract
-INITIAL_TOKEN_HOLDER = "0xdead000000000000000000000000000000000000"
+INITIAL_TOKEN_HOLDER = "0x000000000000000000000000000000000000dead"
 
 
 def topup_initial_token_holder(lido, funder):
@@ -32,7 +32,7 @@ def deploy_template_implementation(deployer):
         template_config["hashConsensusForValidatorsExitBus"]["address"],
         gate_seal,
         withdrawal_credentials,
-        template_config["app:node-operators-registry"]["parameters"]["stuckPenaltyDelay"],
+        template_config["nodeOperatorsRegistry"]["parameters"]["stuckPenaltyDelay"],
     ]
     config_implementations = [
         template_config["withdrawalQueueERC721"]["implementation"],
@@ -43,11 +43,6 @@ def deploy_template_implementation(deployer):
 
     template_implementation = ShapellaUpgradeTemplate.deploy(template_args, config_implementations, {"from": deployer})
     return template_implementation
-
-
-def bind_template_implementation(proxy, implementation):
-    template = interface.OssifiableProxy(proxy)
-    template.proxy__upgradeTo(implementation, {"from": lido_dao_voting_address})
 
 
 def get_template_configuration(template_address):
@@ -95,6 +90,30 @@ def debug_locator_addresses(locator_address):
     pprint(locator_config)
 
 
+def pass_ownership_to_template(owner, template, config):
+    stakingRouter = config["stakingRouter"]["address"]
+    accountingOracle = config["accountingOracle"]["address"]
+    exitBusOracle = config["validatorsExitBusOracle"]["address"]
+    withdrawalQueue = config["withdrawalQueueERC721"]["address"]
+    burner = config["burner"]["address"]
+    hcForAccounting = config["hashConsensusForAccounting"]["address"]
+    hcForExitBus = config["hashConsensusForValidatorsExitBus"]["address"]
+
+    admin_role = interface.AccessControlEnumerable(burner).DEFAULT_ADMIN_ROLE()
+
+    def transfer_admin_role(contract):
+        interface.AccessControlEnumerable(contract).grantRole(admin_role, template, {"from": owner})
+        interface.AccessControlEnumerable(contract).revokeRole(admin_role, owner, {"from": owner})
+
+    transfer_admin_role(burner)
+    transfer_admin_role(hcForAccounting)
+    transfer_admin_role(hcForExitBus)
+    interface.OssifiableProxy(stakingRouter).proxy__changeAdmin(template, {"from": owner})
+    interface.OssifiableProxy(accountingOracle).proxy__changeAdmin(template, {"from": owner})
+    interface.OssifiableProxy(exitBusOracle).proxy__changeAdmin(template, {"from": owner})
+    interface.OssifiableProxy(withdrawalQueue).proxy__changeAdmin(template, {"from": owner})
+
+
 def test_vote(
     helpers,
     accounts,
@@ -112,7 +131,7 @@ def test_vote(
     lido_new_implementation = config["app:lido"]["implementation"]
     nor_new_implementation = config["app:node-operators-registry"]["implementation"]
     oracle_new_implementation = config["app:oracle"]["implementation"]
-    template_address = config["shapellaUpgradeTemplate"]["address"]
+    temporary_admin = config["temporaryAdmin"]
 
     lido_repo: interface.Repo = contracts.lido_app_repo
     lido_old_app = lido_repo.getLatest()
@@ -124,18 +143,12 @@ def test_vote(
     # Need this, otherwise Lido.finalizeUpgradeV2 reverts
     assert lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
 
-    template_implementation = deploy_template_implementation(accounts[0])
+    template = deploy_template_implementation(accounts[0])
+    pprint(get_template_configuration(template))
+    pass_ownership_to_template(temporary_admin, template, config)
 
     # START VOTE
-    vote_id, _ = start_vote({"from": ldo_holder}, True, template_implementation)
-
-    print("template proxy address", template_address)
-    template = ShapellaUpgradeTemplate.at(template_address)
-
-    # DEBUG: Uncomment if want to upgrade as a separate tx
-    # bind_template_implementation(template_address, template_implementation)
-
-    pprint(get_template_configuration(template_implementation))
+    vote_id, _ = start_vote({"from": ldo_holder}, True, template)
 
     # DEBUG: Uncomment if want to upgrade as a separate tx
     # template.startUpgrade({'from': lido_dao_voting_address})
@@ -143,7 +156,7 @@ def test_vote(
     tx: TransactionReceipt = helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24
     )
-    print(f"GAS USED: {tx.gas_used}")
+    print(f"UPGRADE TX GAS USED: {tx.gas_used}")
 
     # DEBUG: Uncomment if want to upgrade as a separate tx
     # template.finishUpgrade({'from': lido_dao_voting_address})
