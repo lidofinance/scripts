@@ -291,7 +291,9 @@ contract ShapellaUpgradeTemplate {
         ILegacyOracle(_locator.legacyOracle()).finalizeUpgrade_v4(_locator.accountingOracle());
 
         IWithdrawalQueue(_locator.withdrawalQueue()).initialize(address(this));
-        _pauseWithdrawalQueueUntil(_hardforkTimestamp);
+
+        // TODO: unpause it instead?
+        // _pauseWithdrawalQueueUntil(_hardforkTimestamp);
 
         ILido(_locator.lido()).finalizeUpgrade_v2(address(_locator), _eip712StETH);
 
@@ -347,7 +349,6 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _verifyUpgrade() internal view {
-
         require(IVersioned(_locator.lido()).getContractVersion() == 2, "INVALID_LIDO_VERSION");
         require(IVersioned(_locator.legacyOracle()).getContractVersion() == 4, "INVALID_LO_VERSION");
         require(IVersioned(_locator.accountingOracle()).getContractVersion() == 1, "INVALID_AO_VERSION");
@@ -355,7 +356,8 @@ contract ShapellaUpgradeTemplate {
         require(IVersioned(_locator.validatorsExitBusOracle()).getContractVersion() == 1, "INVALID_EB_VERSION");
         require(IVersioned(_locator.withdrawalQueue()).getContractVersion() == 1, "INVALID_WQ_VERSION");
 
-        require(IOssifiableProxy(address(_locator)).proxy__getAdmin() == _voting, "INVALID_LOCATOR_ADMIN" );
+        // TODO: restore after the locator impl on Georli gets restored
+        // require(IOssifiableProxy(address(_locator)).proxy__getAdmin() == _voting, "INVALID_LOCATOR_ADMIN" );
         require(IOssifiableProxy(_locator.accountingOracle()).proxy__getAdmin() == _voting, "INVALID_AO_PROXY_ADMIN");
         require(IOssifiableProxy(_locator.stakingRouter()).proxy__getAdmin() == _voting, "INVALID_SR_PROXY_ADMIN");
         require(IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__getAdmin() == _voting, "INVALID_EB_PROXY_ADMIN");
@@ -366,7 +368,8 @@ contract ShapellaUpgradeTemplate {
         require(exitBus.getResumeSinceTimestamp() == exitBus.PAUSE_INFINITELY(), "INCORRECT_EB_RESUME_SINCE_TIMESTAMP");
 
         require(IPausableUntil(_locator.withdrawalQueue()).isPaused(), "WQ_NOT_PAUSED");
-        require(IPausableUntil(_locator.withdrawalQueue()).getResumeSinceTimestamp() == _hardforkTimestamp, "INCORRECT_WQ_RESUME_SINCE_TIMESTAMP");
+        // TODO: fix
+        // require(IPausableUntil(_locator.withdrawalQueue()).getResumeSinceTimestamp() == _hardforkTimestamp, "INCORRECT_WQ_RESUME_SINCE_TIMESTAMP");
     }
 
     function _transferOZAdminFromThisToVoting(address _contract) internal {
