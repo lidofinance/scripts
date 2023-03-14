@@ -147,6 +147,8 @@ def start_vote(
         ),
         # 8. Finalize upgrade via template
         encode_template_finish_upgrade(template_address),
+        # 9+. Revoke obsolete roles
+        # TODO: on goerli the list is larger
         encode_permission_revoke(lido, "MANAGE_FEE", revoke_from=voting),
         encode_permission_revoke(lido, "MANAGE_WITHDRAWAL_KEY", revoke_from=voting),
         encode_permission_revoke(lido, "MANAGE_PROTOCOL_CONTRACTS_ROLE", revoke_from=voting),
