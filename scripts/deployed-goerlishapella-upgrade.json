@@ -305,7 +305,7 @@
       "symbol": "unstETH"
     },
     "contract": "WithdrawalQueueERC721",
-    "implementation": "0x55bD074b6aC68084667fa4A1a31D38FbD9638D1f",
+    "implementation": "0x57d31c50dB78e4d95C49Ab83EC011B4D0b0acF59",
     "address": "0xCF117961421cA9e546cD7f50bC73abCdB3039533",
     "constructorArgs": [
       "0x6320cD32aA674d2898A68ec82e869385Fc5f7E2f",
