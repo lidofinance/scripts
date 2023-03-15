@@ -116,14 +116,9 @@ def pass_ownership_to_template(owner, template, config):
 
 def test_vote(
     helpers,
+    bypass_events_decoding,
     accounts,
     ldo_holder,
-    dao_voting,
-    vote_id_from_env,
-    bypass_events_decoding,
-    ldo_token,
-    dao_agent,
-    lido,
 ):
     config = load_shapella_deploy_config()
     debug_locator_addresses(config["lidoLocator"]["address"])
@@ -138,10 +133,10 @@ def test_vote(
 
     # TODO: remove this
     steth_holder = ldo_vote_executors_for_tests[0]
-    topup_initial_token_holder(lido, steth_holder)
+    topup_initial_token_holder(contracts.lido, steth_holder)
 
     # Need this, otherwise Lido.finalizeUpgradeV2 reverts
-    assert lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
+    assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
 
     template = deploy_template_implementation(accounts[0])
     pprint(get_template_configuration(template))
@@ -154,7 +149,7 @@ def test_vote(
     # template.startUpgrade({'from': lido_dao_voting_address})
 
     tx: TransactionReceipt = helpers.execute_vote(
-        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24
+        vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting, skip_time=3 * 60 * 60 * 24
     )
     print(f"UPGRADE TX GAS USED: {tx.gas_used}")
 

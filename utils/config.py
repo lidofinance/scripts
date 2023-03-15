@@ -118,6 +118,10 @@ class ContractsLazyLoader:
         return interface.SelfOwnedStETHBurner(lido_dao_self_owned_steth_burner)
 
     @property
+    def execution_layer_rewards_vault(self) -> interface.LidoExecutionLayerRewardsVault:
+        return interface.LidoExecutionLayerRewardsVault(lido_dao_execution_layer_rewards_vault)
+
+    @property
     def kernel(self) -> interface.Kernel:
         return interface.Kernel(lido_dao_kernel)
 
@@ -144,6 +148,14 @@ class ContractsLazyLoader:
     @property
     def relay_allowed_list(self) -> interface.MEVBoostRelayAllowedList:
         return interface.MEVBoostRelayAllowedList(lido_relay_allowed_list)
+
+    @property
+    def dai_token(self) -> interface.ERC20:
+        return interface.ERC20(dai_token_address)
+
+    @property
+    def weth_token(self) -> interface.WethToken:
+        return interface.WethToken(weth_token_address)
 
 
 def __getattr__(name: str) -> Any:
