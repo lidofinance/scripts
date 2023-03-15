@@ -23,8 +23,7 @@ balancer_rewards_manager = ""
 
 lido_dao_deposit_security_module_address = "0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe"
 
-lido_dao_composite_post_rebase_beacon_receiver = "0x5d2113f7691ac6Df5E3f41Fb938429ACEAD2C94f"
-lido_dao_self_owned_steth_burner = "0x6432756feF0fb527C06eFd4689A7CE0E195bD327"
+lido_dao_burner = "0x6432756feF0fb527C06eFd4689A7CE0E195bD327"
 lido_dao_execution_layer_rewards_vault = "0x94750381bE1AbA0504C666ee1DB118F68f0780D4"
 
 lido_easytrack = "0xAf072C8D368E4DD4A9d4fF6A76693887d6ae92Af"

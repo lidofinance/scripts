@@ -110,12 +110,8 @@ class ContractsLazyLoader:
         return interface.DepositSecurityModule(lido_dao_deposit_security_module_address)
 
     @property
-    def composite_post_rebase_beacon_receiver(self) -> interface.CompositePostRebaseBeaconReceiver:
-        return interface.CompositePostRebaseBeaconReceiver(lido_dao_composite_post_rebase_beacon_receiver)
-
-    @property
-    def self_owned_steth_burner(self) -> interface.SelfOwnedStETHBurner:
-        return interface.SelfOwnedStETHBurner(lido_dao_self_owned_steth_burner)
+    def burner(self) -> interface.Burner:
+        return interface.Burner(lido_dao_burner)
 
     @property
     def execution_layer_rewards_vault(self) -> interface.LidoExecutionLayerRewardsVault:
