@@ -24,6 +24,11 @@ balancer_rewards_manager = ""
 lido_dao_deposit_security_module_address_old = "0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe"
 lido_dao_deposit_security_module_address = "0x262C73ac3f0B72919Fa9a1143c6fF09915c9e249"
 
+# Needed only for the tests development. Before the voting start the LidoLocator
+# proxy is to be to the implementation
+lido_dao_lido_locator_implementation = "0xD245B3Ca1FFaCb81604A8DFC913162D4261ac566"
+
+lido_dao_lido_locator = "0x1eDf09b5023DC86737b59dE68a8130De878984f5"
 lido_dao_burner = "0x20c61C07C2E2FAb04BF5b4E12ce45a459a18f3B1"
 lido_dao_execution_layer_rewards_vault = "0x94750381bE1AbA0504C666ee1DB118F68f0780D4"
 lido_dao_hash_consensus_for_accounting_oracle = "0x821688406B8000FE3bAa8B074F8e1CbCD72c0035"
@@ -32,7 +37,8 @@ lido_dao_hash_consensus_for_validators_exit_bus_oracle = "0xe47EA5f0406C1A976cE4
 lido_dao_validators_exit_bus_oracle = "0xb75A55EFab5A8f5224Ae93B34B25741EDd3da98b"
 lido_dao_oracle_report_sanity_checker = "0x43c7FA62b3FD800d02edb1d38fd5b079d3ff84c6"
 lido_dao_withdrawal_queue = "0xCF117961421cA9e546cD7f50bC73abCdB3039533"
-lido_dao_lido_locator = "0xD245B3Ca1FFaCb81604A8DFC913162D4261ac566"
+
+
 lido_dao_eip712_steth = "0xB4300103FfD326f77FfB3CA54248099Fb29C3b9e"
 lido_dao_withdrawal_vault = "0xAD9928A0863964a901f49e290a2AeAE68bE6EAFb"
 lido_dao_beacon_chain_depositor = "0xf94De698703575932bfc88DE8b2cd54720D5c4A7"
