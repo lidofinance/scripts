@@ -9,26 +9,8 @@ from brownie import chain, interface
 from utils.evm_script import EMPTY_CALLSCRIPT
 
 from utils.config import (
-    ldo_token_address,
-    lido_dao_voting_address,
-    lido_dao_token_manager_address,
-    lido_dao_agent_address,
-    lido_dao_node_operators_registry,
-    lido_dao_deposit_security_module_address,
-    lido_dao_steth_address,
-    lido_dao_acl_address,
-    lido_dao_finance_address,
     ldo_holder_address_for_tests,
     ldo_vote_executors_for_tests,
-    lido_easytrack,
-    lido_dao_legacy_oracle,
-    lido_dao_composite_post_rebase_beacon_receiver,
-    lido_dao_self_owned_steth_burner,
-    lido_dao_execution_layer_rewards_vault,
-    weth_token_address,
-    lido_insurance_fund_address,
-    lido_relay_allowed_list,
-    dai_token_address,
 )
 from utils.txs.deploy import deploy_from_prepared_tx
 

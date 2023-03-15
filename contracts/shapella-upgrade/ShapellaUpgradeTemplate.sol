@@ -342,6 +342,8 @@ contract ShapellaUpgradeTemplate {
         _transferOZAdminFromThisToVoting(_locator.validatorsExitBusOracle());
         _transferOZAdminFromThisToVoting(_locator.withdrawalQueue());
 
+        // TODO
+        // IOssifiableProxy(address(_locator)).proxy__changeAdmin(_voting);
         IOssifiableProxy(_locator.stakingRouter()).proxy__changeAdmin(_voting);
         IOssifiableProxy(_locator.accountingOracle()).proxy__changeAdmin(_voting);
         IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__changeAdmin(_voting);
@@ -356,7 +358,7 @@ contract ShapellaUpgradeTemplate {
         require(IVersioned(_locator.validatorsExitBusOracle()).getContractVersion() == 1, "INVALID_EB_VERSION");
         require(IVersioned(_locator.withdrawalQueue()).getContractVersion() == 1, "INVALID_WQ_VERSION");
 
-        // TODO: restore after the locator impl on Georli gets restored
+        // TODO: restore after the locator impl on Goerli gets restored
         // require(IOssifiableProxy(address(_locator)).proxy__getAdmin() == _voting, "INVALID_LOCATOR_ADMIN" );
         require(IOssifiableProxy(_locator.accountingOracle()).proxy__getAdmin() == _voting, "INVALID_AO_PROXY_ADMIN");
         require(IOssifiableProxy(_locator.stakingRouter()).proxy__getAdmin() == _voting, "INVALID_SR_PROXY_ADMIN");

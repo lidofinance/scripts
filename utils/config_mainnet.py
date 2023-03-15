@@ -25,6 +25,17 @@ lido_dao_deposit_security_module_address = "0xdb149235b6f40dc08810aa69869783be10
 
 lido_dao_burner = "0xB280E33812c0B09353180e92e27b8AD399B07f26"
 lido_dao_execution_layer_rewards_vault = "0x388C818CA8B9251b393131C08a736A67ccB19297"
+lido_dao_hash_consensus_for_accounting_oracle = ""
+lido_dao_accounting_oracle = ""
+lido_dao_hash_consensus_for_validators_exit_bus_oracle = ""
+lido_dao_validators_exit_bus_oracle = ""
+lido_dao_oracle_report_sanity_checker = ""
+lido_dao_withdrawal_queue = ""
+lido_dao_lido_locator = ""
+lido_dao_eip712_steth = ""
+lido_dao_withdrawal_vault = ""
+lido_dao_beacon_chain_depositor = ""
+lido_dao_staking_router = ""
 
 lido_easytrack = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 lido_easytrack_evmscriptexecutor = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"

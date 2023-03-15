@@ -24,12 +24,12 @@ def deploy_template_implementation(deployer):
     withdrawal_credentials = "0x0123456789"
     gate_seal = lido_dao_voting_address
     template_args = [
-        template_config["lidoLocator"]["address"],
-        template_config["eip712StETH"]["address"],
-        lido_dao_voting_address,
-        template_config["app:node-operators-registry"]["proxyAddress"],
-        template_config["hashConsensusForAccounting"]["address"],
-        template_config["hashConsensusForValidatorsExitBus"]["address"],
+        contracts.lido_locator.address,
+        contracts.eip712_steth.address,
+        contracts.voting.address,
+        contracts.node_operators_registry.address,
+        contracts.hash_consensus_for_accounting_oracle.address,
+        contracts.hash_consensus_for_validators_exit_bus_oracle,
         gate_seal,
         withdrawal_credentials,
         template_config["nodeOperatorsRegistry"]["parameters"]["stuckPenaltyDelay"],
@@ -91,13 +91,14 @@ def debug_locator_addresses(locator_address):
 
 
 def pass_ownership_to_template(owner, template, config):
-    stakingRouter = config["stakingRouter"]["address"]
-    accountingOracle = config["accountingOracle"]["address"]
-    exitBusOracle = config["validatorsExitBusOracle"]["address"]
-    withdrawalQueue = config["withdrawalQueueERC721"]["address"]
-    burner = config["burner"]["address"]
-    hcForAccounting = config["hashConsensusForAccounting"]["address"]
-    hcForExitBus = config["hashConsensusForValidatorsExitBus"]["address"]
+    stakingRouter = contracts.staking_router.address
+    accountingOracle = contracts.accounting_oracle.address
+    exitBusOracle = contracts.validators_exit_bus_oracle.address
+    withdrawalQueue = contracts.withdrawal_queue.address
+    burner = contracts.burner.address
+    hcForAccounting = contracts.hash_consensus_for_accounting_oracle.address
+    hcForExitBus = contracts.hash_consensus_for_validators_exit_bus_oracle.address
+    locator = contracts.lido_locator.address
 
     admin_role = interface.AccessControlEnumerable(burner).DEFAULT_ADMIN_ROLE()
 
@@ -112,6 +113,7 @@ def pass_ownership_to_template(owner, template, config):
     interface.OssifiableProxy(accountingOracle).proxy__changeAdmin(template, {"from": owner})
     interface.OssifiableProxy(exitBusOracle).proxy__changeAdmin(template, {"from": owner})
     interface.OssifiableProxy(withdrawalQueue).proxy__changeAdmin(template, {"from": owner})
+    # interface.OssifiableProxy(locator).proxy__changeAdmin(template, {"from": owner})
 
 
 def test_vote(
@@ -121,7 +123,7 @@ def test_vote(
     ldo_holder,
 ):
     config = load_shapella_deploy_config()
-    debug_locator_addresses(config["lidoLocator"]["address"])
+    debug_locator_addresses(contracts.lido_locator.address)
 
     lido_new_implementation = config["app:lido"]["implementation"]
     nor_new_implementation = config["app:node-operators-registry"]["implementation"]

@@ -118,6 +118,50 @@ class ContractsLazyLoader:
         return interface.LidoExecutionLayerRewardsVault(lido_dao_execution_layer_rewards_vault)
 
     @property
+    def hash_consensus_for_accounting_oracle(self) -> interface.HashConsensus:
+        return interface.HashConsensus(lido_dao_hash_consensus_for_accounting_oracle)
+
+    @property
+    def accounting_oracle(self) -> interface.AccountingOracle:
+        return interface.AccountingOracle(lido_dao_accounting_oracle)
+
+    @property
+    def hash_consensus_for_validators_exit_bus_oracle(self) -> interface.HashConsensus:
+        return interface.HashConsensus(lido_dao_hash_consensus_for_validators_exit_bus_oracle)
+
+    @property
+    def validators_exit_bus_oracle(self) -> interface.ValidatorsExitBusOracle:
+        return interface.ValidatorsExitBusOracle(lido_dao_validators_exit_bus_oracle)
+
+    @property
+    def oracle_report_sanity_checker(self) -> interface.OracleReportSanityChecker:
+        return interface.OracleReportSanityChecker(lido_dao_oracle_report_sanity_checker)
+
+    @property
+    def withdrawal_queue(self) -> interface.WithdrawalQueueERC721:
+        return interface.WithdrawalQueueERC721(lido_dao_withdrawal_queue)
+
+    @property
+    def lido_locator(self) -> interface.LidoLocator:
+        return interface.LidoLocator(lido_dao_lido_locator)
+
+    @property
+    def eip712_steth(self) -> interface.EIP712StETH:
+        return interface.EIP712StETH(lido_dao_eip712_steth)
+
+    @property
+    def withdrawal_vault(self) -> interface.WithdrawalVault:
+        return interface.WithdrawalVault(lido_dao_withdrawal_vault)
+
+    @property
+    def beacon_chain_depositor(self) -> interface.BeaconChainDepositor:
+        return interface.BeaconChainDepositor(lido_dao_beacon_chain_depositor)
+
+    @property
+    def staking_router(self) -> interface.StakingRouter:
+        return interface.StakingRouter(lido_dao_staking_router)
+
+    @property
     def kernel(self) -> interface.Kernel:
         return interface.Kernel(lido_dao_kernel)
 
