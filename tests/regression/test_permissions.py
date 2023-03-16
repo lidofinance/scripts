@@ -6,162 +6,186 @@ import pytest
 from brownie import interface, convert, web3
 from utils.test.event_validators.permission import Permission, PermissionP
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
-
-
-@pytest.fixture(scope="module")
-def stranger(accounts):
-    return accounts[0]
-
-
-@pytest.fixture(scope="module")
-def operator(accounts, dao_voting):
-    return accounts.at(dao_voting.address, force=True)
+from utils.config import contracts, oracle_committee, gate_seal, guardians
 
 
 @pytest.fixture(scope="module", autouse=is_there_any_vote_scripts())
-def autoexecute_vote(vote_id_from_env, helpers, accounts, dao_voting):
+def autoexecute_vote(vote_id_from_env, helpers, accounts):
     if vote_id_from_env:
-        helpers.execute_vote(vote_id=vote_id_from_env, accounts=accounts, dao_voting=dao_voting, topup="0.5 ether")
+        helpers.execute_vote(vote_id=vote_id_from_env, accounts=accounts, voting=contracts.voting, topup="0.5 ether")
     else:
-        start_and_execute_votes(dao_voting, helpers)
+        start_and_execute_votes(helpers)
 
 
 @pytest.fixture(scope="module")
-def permission_pause_role(dao_voting, lido):
-    return Permission(entity=dao_voting, app=lido, role=convert.to_uint(web3.keccak(text="PAUSE_ROLE")))  # Lido
+def protocol_permissions():
+    return {
+        "LidoLocator": {
+            "contract": contracts.lido_locator,
+            "type": "CustomApp",
+            "proxy_owner": contracts.voting,
+            "roles": {},
+        },
+        "Burner": {
+            "contract": contracts.burner,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "REQUEST_BURN_MY_STETH_ROLE": [],
+                "RECOVER_ASSETS_ROLE": [],
+                "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry],
+            },
+        },
+        "StakingRouter": {
+            "contract": contracts.staking_router,
+            "type": "CustomApp",
+            "proxy_owner": contracts.voting,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "MANAGE_WITHDRAWAL_CREDENTIALS_ROLE": [],
+                "STAKING_MODULE_PAUSE_ROLE": [contracts.deposit_security_module],
+                "STAKING_MODULE_RESUME_ROLE": [contracts.deposit_security_module],
+                "STAKING_MODULE_MANAGE_ROLE": [],
+                "REPORT_EXITED_VALIDATORS_ROLE": [contracts.accounting_oracle],
+                "UNSAFE_SET_EXITED_VALIDATORS_ROLE": [],
+                "REPORT_REWARDS_MINTED_ROLE": [contracts.lido],
+            },
+        },
+        "WithdrawalQueue": {
+            "contract": contracts.withdrawal_queue,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "PAUSE_ROLE": [gate_seal],
+                "RESUME_ROLE": [],
+                "FINALIZE_ROLE": [contracts.lido],
+                "ORACLE_ROLE": [contracts.accounting_oracle],
+                "MANAGE_TOKEN_URI_ROLE": []
+            }
+        },
+        "AccountingOracle": {
+            "contract": contracts.accounting_oracle,
+            "type": "CustomApp",
+            "proxy_owner": contracts.voting,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "SUBMIT_DATA_ROLE": oracle_committee,
+                "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
+                "MANAGE_CONSENSUS_VERSION_ROLE": [],
+            },
+        },
+        "ValidatorsExitBusOracle": {
+            "contract": contracts.validators_exit_bus_oracle,
+            "type": "CustomApp",
+            "proxy_owner": contracts.voting,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "SUBMIT_DATA_ROLE": oracle_committee,
+                "PAUSE_ROLE": [gate_seal],
+                "RESUME_ROLE": [],
+                "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
+                "MANAGE_CONSENSUS_VERSION_ROLE": []
+            }
+        },
+        "AccountingHashConsensus": {
+            "contract": contracts.hash_consensus_for_accounting_oracle,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "MANAGE_MEMBERS_AND_QUORUM_ROLE": [],
+                "DISABLE_CONSENSUS_ROLE": [],
+                "MANAGE_FRAME_CONFIG_ROLE": [],
+                "MANAGE_FAST_LANE_CONFIG_ROLE": [],
+                "MANAGE_REPORT_PROCESSOR_ROLE": [],
+            },
+        },
+        "ValidatorsExitBusHashConsensus": {
+            "contract": contracts.hash_consensus_for_validators_exit_bus_oracle,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "MANAGE_MEMBERS_AND_QUORUM_ROLE": [],
+                "DISABLE_CONSENSUS_ROLE": [],
+                "MANAGE_FRAME_CONFIG_ROLE": [],
+                "MANAGE_FAST_LANE_CONFIG_ROLE": [],
+                "MANAGE_REPORT_PROCESSOR_ROLE": [],
+            },
+        },
+        "OracleReportSanityChecker": {
+            "contract": contracts.oracle_report_sanity_checker,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "ALL_LIMITS_MANAGER_ROLE": [],
+                "CHURN_VALIDATORS_PER_DAY_LIMIT_MANGER_ROLE": [],
+                "ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE": [],
+                "ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE": [],
+                "SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE": [],
+                "MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_ROLE": [],
+                "MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE": [],
+                "MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE": [],
+                "REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE": [],
+                "MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE": [],
+            },
+        },
+        "DepositSecurityModule": {
+            "contract": contracts.deposit_security_module,
+            "type": "CustomApp",
+            # "fields": {"getOwner": contracts.voting, "getGuardians": guardians},
+            "roles": {},
+        },
+        "Lido": {
+            "contract": contracts.lido,
+            "type": "AragonApp",
+            "roles": {
+                "PAUSE_ROLE": [contracts.voting],
+                "RESUME_ROLE": [contracts.voting],
+                "STAKING_PAUSE_ROLE": [contracts.voting],
+                "STAKING_CONTROL_ROLE": [contracts.voting],
+                "UNSAFE_CHANGE_DEPOSITED_VALIDATORS_ROLE": [],
+            },
+        },
+        "NodeOperatorsRegistry": {
+            "contract": contracts.node_operators_registry,
+            "type": "AragonApp",
+            "roles": {
+                "STAKING_ROUTER_ROLE": [contracts.staking_router],
+                "MANAGE_NODE_OPERATOR_ROLE": [],
+                "MANAGE_SIGNING_KEYS": [contracts.voting],
+                "SET_NODE_OPERATOR_LIMIT_ROLE": [contracts.voting],
+            },
+        },
+    }
 
 
-@pytest.fixture(scope="module")
-def permission_resume_role(dao_voting, lido):
-    return Permission(entity=dao_voting, app=lido, role=convert.to_uint(web3.keccak(text="RESUME_ROLE")))  # Lido
+def test_permissions_after_vote(protocol_permissions):
+    for contract_name, permissions_config in protocol_permissions.items():
+        print("Contract: {0}".format(contract_name))
+        if permissions_config["type"] == "AragonApp":
+            for role, holders in permissions_config["roles"].items():
+                for holder in holders:
+                    permission = Permission(
+                        entity=holder, app=permissions_config["contract"], role=convert.to_uint(web3.keccak(text=role))
+                    )
+                    assert contracts.acl.hasPermission(*permission), "account {0} isn't holder of {1}".format(
+                        holder, role
+                    )
 
+        elif permissions_config["type"] == "CustomApp":
+            if "proxy_owner" in permissions_config:
+                assert (
+                    interface.OssifiableProxy(permissions_config["contract"].address).proxy__getAdmin()
+                    == permissions_config["proxy_owner"]
+                )
 
-@pytest.fixture(scope="module")
-def permission_staking_pause_role(dao_voting, lido):
-    return Permission(entity=dao_voting, app=lido, role=convert.to_uint(web3.keccak(text="STAKING_PAUSE_ROLE")))  # Lido
+            for role, holders in permissions_config["roles"].items():
+                role_keccak = web3.keccak(text=role) if role != "DEFAULT_ADMIN_ROLE" else "0x00"
 
+                assert permissions_config["contract"].getRoleMemberCount(role_keccak) == len(
+                    holders
+                ), "number of {0} role holders in contract {1} mismatched".format(role, contract_name)
 
-@pytest.fixture(scope="module", autouse=True)
-def permission_staking_control_role(dao_voting, lido):
-    return Permission(
-        entity=dao_voting, app=lido, role=convert.to_uint(web3.keccak(text="STAKING_CONTROL_ROLE"))  # Lido
-    )
-
-
-@pytest.fixture(scope="module")
-def permission_set_el_rewards_withdraw_limit_role(dao_voting, lido):
-    return Permission(
-        entity=dao_voting,
-        app=lido,  # Lido
-        role=convert.to_uint(web3.keccak(text="SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE")),
-    )
-
-
-@pytest.fixture(scope="module")
-def permission_set_el_rewards_vault_role(dao_voting, lido):
-    return Permission(
-        entity=dao_voting, app=lido, role=convert.to_uint(web3.keccak(text="SET_EL_REWARDS_VAULT_ROLE"))  # Lido
-    )
-
-
-@pytest.fixture(scope="module")
-def permission_set_treasury(dao_voting, lido):
-    return Permission(entity=dao_voting, app=lido, role=convert.to_uint(web3.keccak(text="SET_TREASURY")))  # Lido
-
-
-@pytest.fixture(scope="module")
-def permission_set_insurance_fund(dao_voting, lido):
-    return Permission(entity=dao_voting, app=lido, role=convert.to_uint(web3.keccak(text="SET_INSURANCE_FUND")))  # Lido
-
-
-@pytest.fixture(scope="module")
-def permission_set_oracle(dao_voting, lido):
-    return Permission(entity=dao_voting, app=lido, role=convert.to_uint(web3.keccak(text="SET_ORACLE")))  # Lido
-
-
-@pytest.fixture(scope="module")
-def permission_manage_protocol_contracts(dao_voting, lido):
-    return Permission(
-        entity=dao_voting, app=lido, role=convert.to_uint(web3.keccak(text="MANAGE_PROTOCOL_CONTRACTS_ROLE"))  # Lido
-    )
-
-
-@pytest.fixture(scope="module")
-def permission_old_deposit_role(lido):
-    return Permission(
-        entity=interface.DepositSecurityModule("0xDb149235B6F40dC08810AA69869783Be101790e7"),
-        app=lido,  # Lido
-        role=convert.to_uint(web3.keccak(text="DEPOSIT_ROLE")),
-    )
-
-
-@pytest.fixture(scope="module")
-def permission_new_deposit_role(lido):
-    return Permission(
-        entity=interface.DepositSecurityModule("0x710B3303fB508a84F10793c1106e32bE873C24cd"),
-        app=lido,  # Lido
-        role=convert.to_uint(web3.keccak(text="DEPOSIT_ROLE")),
-    )
-
-
-@pytest.fixture(scope="module")
-def permission_manage_fee(dao_voting, lido):
-    return Permission(entity=dao_voting, app=lido, role=convert.to_uint(web3.keccak(text="MANAGE_FEE")))  # Lido
-
-
-@pytest.fixture(scope="module")
-def permission_burn_role_voting_old(dao_voting, lido):
-    return Permission(entity=dao_voting, app=lido, role=convert.to_uint(web3.keccak(text="BURN_ROLE")))  # Lido
-
-
-@pytest.fixture(scope="module")
-def permission_burn_role_burner_new(self_owned_steth_burner, lido):
-    return PermissionP(
-        entity=self_owned_steth_burner,
-        app=lido,  # Lido
-        role=convert.to_uint(web3.keccak(text="BURN_ROLE")),
-        params=["0x000100000000000000000000B280E33812c0B09353180e92e27b8AD399B07f26"],
-    )
-
-
-@pytest.fixture(scope="module")
-def permission_unsafely_change_vote_time(dao_voting):
-    role = convert.to_uint(web3.keccak(text="UNSAFELY_MODIFY_VOTE_TIME_ROLE"))
-    return Permission(entity=dao_voting, app=dao_voting, role=role)  # Lido
-
-
-def test_permissions_after_vote(
-    acl,
-    permission_pause_role,
-    permission_resume_role,
-    permission_staking_control_role,
-    permission_staking_pause_role,
-    permission_set_el_rewards_vault_role,
-    permission_set_el_rewards_withdraw_limit_role,
-    permission_set_oracle,
-    permission_set_treasury,
-    permission_set_insurance_fund,
-    permission_manage_protocol_contracts,
-    permission_old_deposit_role,
-    permission_new_deposit_role,
-    permission_manage_fee,
-    permission_burn_role_voting_old,
-    permission_burn_role_burner_new,
-    permission_unsafely_change_vote_time,
-):
-    assert acl.hasPermission(*permission_pause_role)
-    assert acl.hasPermission(*permission_resume_role)
-    assert acl.hasPermission(*permission_staking_control_role)
-    assert acl.hasPermission(*permission_staking_pause_role)
-    assert acl.hasPermission(*permission_set_el_rewards_vault_role)
-    assert acl.hasPermission(*permission_set_el_rewards_withdraw_limit_role)
-    assert not acl.hasPermission(*permission_set_oracle)
-    assert not acl.hasPermission(*permission_set_treasury)
-    assert not acl.hasPermission(*permission_set_insurance_fund)
-    assert acl.hasPermission(*permission_manage_protocol_contracts)
-    assert not acl.hasPermission(*permission_old_deposit_role)
-    assert acl.hasPermission(*permission_new_deposit_role)
-    assert acl.hasPermission(*permission_manage_fee)
-    assert not acl.hasPermission(*permission_burn_role_voting_old)
-    assert acl.hasPermission["address,address,bytes32,uint[]"](*permission_burn_role_burner_new)
-    assert not acl.hasPermission(*permission_unsafely_change_vote_time)
+                for holder in holders:
+                    assert permissions_config["contract"].hasRole(
+                        role_keccak, holder
+                    ), "account {0} isn't holder of {1}".format(holder, role)
