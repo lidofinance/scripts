@@ -213,8 +213,8 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _startUpgrade() internal {
-        require(msg.sender == _voting, "ONLY_VOTING_CAN_UPGRADE");
-        require(!isUpgradeStarted, "CAN_ONLY_START_ONCE");
+        if (msg.sender != _voting) revert OnlyVotingCanUpgrade();
+        if (isUpgradeStarted) revert CanOnlyStartOnce();
         isUpgradeStarted = true;
 
         // Need to check / set locator implementation first because the other initial state checks depend on correct locator
@@ -236,7 +236,7 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _verifyInitialState() internal view {
-        require(ILidoOracle(_locator.legacyOracle()).getVersion() == 3, "LIDO_ORACLE_MUST_NOT_BE_UPGRADED_TO_LEGACY_YET");
+        if (ILidoOracle(_locator.legacyOracle()).getVersion() != 3) revert LidoOracleMustNotBeUpgradedToLegacyYet();
 
         _verifyProxyAdmins(address(this));
 
@@ -245,39 +245,31 @@ contract ShapellaUpgradeTemplate {
 
         _verifyOZAdmins(address(this));
 
-        require(IDepositSecurityModule(_locator.depositSecurityModule()).getOwner() == address(this), "WRONG_DSM_OWNER");
+        if (IDepositSecurityModule(_locator.depositSecurityModule()).getOwner() != address(this)) revert WrongDsmOwner();
     }
 
     function _verifyProxyAdmins(address admin) internal view {
-        require(IOssifiableProxy(address(_locator)).proxy__getAdmin() == admin, "WRONG_LO_ADMIN");
-        require(IOssifiableProxy(_locator.withdrawalQueue()).proxy__getAdmin() == admin, "WRONG_WQ_ADMIN");
-        require(IOssifiableProxy(_locator.stakingRouter()).proxy__getAdmin() == admin, "WRONG_SQ_ADMIN");
-        require(IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__getAdmin() == admin, "WRONG_EB_ADMIN");
-        require(IOssifiableProxy(_locator.accountingOracle()).proxy__getAdmin() == admin, "WRONG_AO_ADMIN");
+        if (IOssifiableProxy(address(_locator)).proxy__getAdmin() != admin) revert WrongLocatorAdmin();
+        if (IOssifiableProxy(_locator.withdrawalQueue()).proxy__getAdmin() != admin) revert WrongWQAdmin();
+        if (IOssifiableProxy(_locator.stakingRouter()).proxy__getAdmin() != admin) revert WrongSQAdmin();
+        if (IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__getAdmin() != admin) revert WrongEBAdmin();
+        if (IOssifiableProxy(_locator.accountingOracle()).proxy__getAdmin() != admin) revert WrongAOAdmin();
     }
 
     function _verifyInitialProxyImplementations() internal view {
-        require(IOssifiableProxy(_locator.withdrawalQueue()).proxy__getImplementation() == _dummyImplementation, "WRONG_WQ_INITIAL_IMPL");
-        require(IOssifiableProxy(_locator.stakingRouter()).proxy__getImplementation() == _dummyImplementation, "WRONG_SR_INITIAL_IMPL");
-        require(IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__getImplementation() == _dummyImplementation, "WRONG_EB_INITIAL_IMPL");
-        require(IOssifiableProxy(_locator.accountingOracle()).proxy__getImplementation() == _dummyImplementation, "WRONG_AO_INITIAL_IMPL");
+        if (IOssifiableProxy(_locator.withdrawalQueue()).proxy__getImplementation() != _dummyImplementation) revert WrongWQInitialImpl();
+        if (IOssifiableProxy(_locator.stakingRouter()).proxy__getImplementation() != _dummyImplementation) revert WrongSRInitialImpl();
+        if (IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__getImplementation() != _dummyImplementation) revert WrongEBInitialImpl();
+        if (IOssifiableProxy(_locator.accountingOracle()).proxy__getImplementation() != _dummyImplementation) revert WrongAOInitialImpl();
     }
 
     function _verifyOZAdmins(address admin) internal view {
-        require(IAccessControlEnumerable(_hashConsensusForAccountingOracle)
-            .getRoleMemberCount(DEFAULT_ADMIN_ROLE) == 1, "MULTIPLE_ADMINS_HCAO");
-        require(IAccessControlEnumerable(_hashConsensusForAccountingOracle)
-            .getRoleMember(DEFAULT_ADMIN_ROLE, 0) == admin, "WRONG_ADMIN_HCAO");
-
-        require(IAccessControlEnumerable(_hashConsensusForValidatorsExitBusOracle)
-            .getRoleMemberCount(DEFAULT_ADMIN_ROLE) == 1, "MULTIPLE_ADMINS_HCEB");
-        require(IAccessControlEnumerable(_hashConsensusForValidatorsExitBusOracle)
-            .getRoleMember(DEFAULT_ADMIN_ROLE, 0) == admin, "WRONG_ADMIN_HCEB");
-
-        require(IAccessControlEnumerable(_locator.burner())
-            .getRoleMemberCount(DEFAULT_ADMIN_ROLE) == 1, "MULTIPLE_ADMINS_BU");
-        require(IAccessControlEnumerable(_locator.burner())
-            .getRoleMember(DEFAULT_ADMIN_ROLE, 0) == admin, "WRONG_ADMIN_BU");
+        if (IAccessControlEnumerable(_hashConsensusForAccountingOracle).getRoleMemberCount(DEFAULT_ADMIN_ROLE) != 1) revert MultipleAdminsHCAO();
+        if (IAccessControlEnumerable(_hashConsensusForAccountingOracle).getRoleMember(DEFAULT_ADMIN_ROLE, 0) != admin) revert WrongAdminHCAO();
+        if (IAccessControlEnumerable(_hashConsensusForValidatorsExitBusOracle).getRoleMemberCount(DEFAULT_ADMIN_ROLE) != 1) revert MultipleAdminsHCEB();
+        if (IAccessControlEnumerable(_hashConsensusForValidatorsExitBusOracle).getRoleMember(DEFAULT_ADMIN_ROLE, 0) != admin) revert WrongAdminHCEB();
+        if (IAccessControlEnumerable(_locator.burner()).getRoleMemberCount(DEFAULT_ADMIN_ROLE) != 1) revert MultipleAdminsBU();
+        if (IAccessControlEnumerable(_locator.burner()).getRoleMember(DEFAULT_ADMIN_ROLE, 0) != admin) revert WrongAdminBU();
     }
 
     function _prepareAccountingOracle() internal {
@@ -326,12 +318,12 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _finishUpgrade() internal {
-        require(msg.sender == _voting, "ONLY_VOTING_CAN_UPGRADE");
-        require(isUpgradeStarted, "MUST_INITIALIZE_ACCOUNTING_ORACLE_BEFORE");
-        require(!isUpgradeFinished, "CANNOT_UPGRADE_TWICE");
+        if (msg.sender != _voting) revert OnlyVotingCanUpgrade();
+        if (!isUpgradeStarted) revert StartMustBeCalledBeforeFinish();
+        if (isUpgradeFinished) revert CanOnlyFinishOnce();
         /// Here we check that the contract got new ABI function getContractVersion(), although it is 0 yet
         /// because in the new contract version is stored in a different slot
-        require(ILegacyOracle(_locator.legacyOracle()).getContractVersion() == 0, "LIDO_ORACLE_IMPL_MUST_BE_UPGRADED_TO_LEGACY");
+        if (ILegacyOracle(_locator.legacyOracle()).getContractVersion() != 0) revert LidoOracleMustBeUpgradedToLegacy();
         isUpgradeFinished = true;
 
         ILegacyOracle(_locator.legacyOracle()).finalizeUpgrade_v4(_locator.accountingOracle());
@@ -405,18 +397,18 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _verifyUpgrade() internal view {
-        require(IVersioned(_locator.lido()).getContractVersion() == 2, "INVALID_LIDO_VERSION");
-        require(IVersioned(_locator.legacyOracle()).getContractVersion() == 4, "INVALID_LO_VERSION");
-        require(IVersioned(_locator.accountingOracle()).getContractVersion() == 1, "INVALID_AO_VERSION");
-        require(IVersioned(_locator.stakingRouter()).getContractVersion() == 1, "INVALID_SR_VERSION");
-        require(IVersioned(_locator.validatorsExitBusOracle()).getContractVersion() == 1, "INVALID_EB_VERSION");
-        require(IVersioned(_locator.withdrawalQueue()).getContractVersion() == 1, "INVALID_WQ_VERSION");
+        if (IVersioned(_locator.lido()).getContractVersion() != 2) revert InvalidLidoVersion();
+        if (IVersioned(_locator.legacyOracle()).getContractVersion() != 4) revert InvalidLOVersion();
+        if (IVersioned(_locator.accountingOracle()).getContractVersion() != 1) revert InvalidAOVersion();
+        if (IVersioned(_locator.stakingRouter()).getContractVersion() != 1) revert InvalidSRVersion();
+        if (IVersioned(_locator.validatorsExitBusOracle()).getContractVersion() != 1) revert InvalidEBVersion();
+        if (IVersioned(_locator.withdrawalQueue()).getContractVersion() != 1) revert InvalidWQVersion();
 
         _verifyProxyAdmins(_voting);
 
         _verifyOZAdmins(_voting);
 
-        require(IDepositSecurityModule(_locator.depositSecurityModule()).getOwner() == address(this), "WRONG_DSM_OWNER");
+        if (IDepositSecurityModule(_locator.depositSecurityModule()).getOwner() != address(this)) revert WrongDsmOwner();
 
         IValidatorsExitBusOracle exitBus = IValidatorsExitBusOracle(_locator.validatorsExitBusOracle());
         require(exitBus.isPaused(), "EB_NOT_PAUSED");
@@ -438,4 +430,35 @@ contract ShapellaUpgradeTemplate {
         queue.resume();
         queue.renounceRole(queue.RESUME_ROLE(), address(this));
     }
+
+    error OnlyVotingCanUpgrade();
+    error CanOnlyStartOnce();
+    error CanOnlyFinishOnce();
+    error StartMustBeCalledBeforeFinish();
+    error LidoOracleMustNotBeUpgradedToLegacyYet();
+    error LidoOracleMustBeUpgradedToLegacy();
+    error WrongDsmOwner();
+    error WrongLocatorAdmin();
+    error WrongWQAdmin();
+    error WrongSQAdmin();
+    error WrongEBAdmin();
+    error WrongAOAdmin();
+    error WrongWQInitialImpl();
+    error WrongSRInitialImpl();
+    error WrongEBInitialImpl();
+    error WrongAOInitialImpl();
+    error InvalidLidoVersion();
+    error InvalidLOVersion();
+    error InvalidAOVersion();
+    error InvalidSRVersion();
+    error InvalidEBVersion();
+    error InvalidWQVersion();
+    error MultipleAdminsHCAO();
+    error WrongAdminHCAO();
+    error MultipleAdminsHCEB();
+    error WrongAdminHCEB();
+    error MultipleAdminsBU();
+    error WrongAdminBU();
+    error WQNotResumed();
+    error EBNotResumed();
 }
