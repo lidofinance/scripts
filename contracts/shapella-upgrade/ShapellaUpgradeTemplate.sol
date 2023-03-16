@@ -28,9 +28,7 @@ interface IDepositSecurityModule {
     function getOwner() external view returns (address);
     function setOwner(address newValue) external;
     function getGuardianQuorum() external view returns (uint256);
-    function setGuardianQuorum(uint256 newValue) external;
     function getGuardians() external view returns (address[] memory);
-    function addGuardian(address addr, uint256 newQuorum) external;
     function addGuardians(address[] memory addresses, uint256 newQuorum) external;
 }
 
@@ -222,8 +220,8 @@ contract ShapellaUpgradeTemplate {
     }
 
     /// Perform basic checks to revert the entire upgrade if something gone wrong
-    function verifyUpgrade() external view {
-        _verifyUpgrade();
+    function verifyFinishedUpgrade() external view {
+        _verifyFinishedUpgrade();
     }
 
     function _startUpgrade() internal {
@@ -363,7 +361,7 @@ contract ShapellaUpgradeTemplate {
 
         _passAdminRoleFromTemplateToVoting();
 
-        _verifyUpgrade();
+        _verifyFinishedUpgrade();
     }
 
     function _prepareWithdrawalQueue() internal {
@@ -432,9 +430,11 @@ contract ShapellaUpgradeTemplate {
         IOssifiableProxy(_locator.accountingOracle()).proxy__changeAdmin(_voting);
         IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__changeAdmin(_voting);
         IOssifiableProxy(_locator.withdrawalQueue()).proxy__changeAdmin(_voting);
+
+        IDepositSecurityModule(_locator.depositSecurityModule()).setOwner(_voting);
     }
 
-    function _verifyUpgrade() internal view {
+    function _verifyFinishedUpgrade() internal view {
         // TODO: uncomment if enough gas
         // _checkContractVersions();
 
@@ -444,7 +444,7 @@ contract ShapellaUpgradeTemplate {
 
         // TODO: maybe check non admin roles?
 
-        if (IDepositSecurityModule(_locator.depositSecurityModule()).getOwner() != address(this)) revert WrongDsmOwner();
+        if (IDepositSecurityModule(_locator.depositSecurityModule()).getOwner() != _voting) revert WrongDsmOwner();
 
         if (IPausableUntil(_locator.withdrawalQueue()).isPaused()) revert WQNotResumed();
         if (IPausableUntil(_locator.validatorsExitBusOracle()).isPaused()) revert EBNotResumed();
