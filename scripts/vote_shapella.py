@@ -38,7 +38,6 @@ from utils.config import (
     get_is_live,
     contracts,
     network_name,
-    lido_dao_voting_address,
 )
 from utils.permissions import encode_permission_create, encode_permission_revoke
 

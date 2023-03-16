@@ -39,6 +39,8 @@ def deploy_template_implementation(deployer):
         template_config["stakingRouter"]["implementation"],
         template_config["accountingOracle"]["implementation"],
         template_config["validatorsExitBusOracle"]["implementation"],
+        template_config["dummyImplementation"]["address"],
+        lido_dao_lido_locator_implementation,
     ]
 
     template_implementation = ShapellaUpgradeTemplate.deploy(template_args, config_implementations, {"from": deployer})
@@ -60,7 +62,6 @@ def get_template_configuration(template_address):
         "_gateSeal": template._gateSeal(),
         "_withdrawalCredentials": template._withdrawalCredentials(),
         "_nodeOperatorsRegistryStuckPenaltyDelay": template._nodeOperatorsRegistryStuckPenaltyDelay(),
-        "_hardforkTimestamp": template._hardforkTimestamp(),
         "_withdrawalQueueImplementation": template._withdrawalQueueImplementation(),
         "_stakingRouterImplementation": template._stakingRouterImplementation(),
         "_accountingOracleImplementation": template._accountingOracleImplementation(),
@@ -90,7 +91,7 @@ def debug_locator_addresses(locator_address):
     pprint(locator_config)
 
 
-def pass_ownership_to_template(owner, template, config):
+def pass_ownership_to_template(owner, template):
     admin_role = interface.AccessControlEnumerable(contracts.burner).DEFAULT_ADMIN_ROLE()
 
     def transfer_oz_admin_to_template(contract):
@@ -99,6 +100,8 @@ def pass_ownership_to_template(owner, template, config):
 
     def transfer_proxy_admin_to_template(contract):
         interface.OssifiableProxy(contract).proxy__changeAdmin(template, {"from": owner})
+
+    contracts.deposit_security_module.setOwner(template, {"from": owner})
 
     transfer_oz_admin_to_template(contracts.burner)
     transfer_oz_admin_to_template(contracts.hash_consensus_for_accounting_oracle)
@@ -137,17 +140,16 @@ def test_vote(
 
     template = deploy_template_implementation(accounts[0])
     pprint(get_template_configuration(template))
-    print("locator proxy", contracts.lido_locator.address)
     interface.OssifiableProxy(contracts.lido_locator).proxy__upgradeTo(
         lido_dao_lido_locator_implementation, {"from": temporary_admin}
     )
-    pass_ownership_to_template(temporary_admin, template, config)
+    pass_ownership_to_template(temporary_admin, template)
 
     # START VOTE
     vote_id, _ = start_vote({"from": ldo_holder}, True, template)
 
     # DEBUG: Uncomment if want to make part of the upgrade as a separate tx
-    # template.startUpgrade({'from': lido_dao_voting_address})
+    # template.startUpgrade({'from': contracts.voting.address})
 
     tx: TransactionReceipt = helpers.execute_vote(
         vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting, skip_time=3 * 60 * 60 * 24
@@ -155,7 +157,7 @@ def test_vote(
     print(f"UPGRADE TX GAS USED: {tx.gas_used}")
 
     # DEBUG: Uncomment if want to make part of the upgrade as a separate tx
-    # template.finishUpgrade({'from': lido_dao_voting_address})
+    # template.finishUpgrade({'from': contracts.voting.address})
 
     # Template checks
     assert template.isUpgradeFinished()
