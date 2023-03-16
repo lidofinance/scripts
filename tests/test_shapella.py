@@ -114,6 +114,23 @@ def pass_ownership_to_template(owner, template):
     transfer_proxy_admin_to_template(contracts.lido_locator)
 
 
+def prepare_for_voting(accounts, temporary_admin):
+    # TODO: topup the holder on the live network and remove this
+    steth_holder = ldo_vote_executors_for_tests[0]
+    topup_initial_token_holder(contracts.lido, steth_holder)
+
+    # Need this, otherwise Lido.finalizeUpgradeV2 reverts
+    assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
+
+    template = deploy_template_implementation(accounts[0])
+    pprint(get_template_configuration(template))
+    interface.OssifiableProxy(contracts.lido_locator).proxy__upgradeTo(
+        lido_dao_lido_locator_implementation, {"from": temporary_admin}
+    )
+    pass_ownership_to_template(temporary_admin, template)
+    return template
+
+
 def test_vote(
     helpers,
     bypass_events_decoding,
@@ -131,19 +148,7 @@ def test_vote(
     lido_repo: interface.Repo = contracts.lido_app_repo
     lido_old_app = lido_repo.getLatest()
 
-    # TODO: remove this
-    steth_holder = ldo_vote_executors_for_tests[0]
-    topup_initial_token_holder(contracts.lido, steth_holder)
-
-    # Need this, otherwise Lido.finalizeUpgradeV2 reverts
-    assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
-
-    template = deploy_template_implementation(accounts[0])
-    pprint(get_template_configuration(template))
-    interface.OssifiableProxy(contracts.lido_locator).proxy__upgradeTo(
-        lido_dao_lido_locator_implementation, {"from": temporary_admin}
-    )
-    pass_ownership_to_template(temporary_admin, template)
+    template = prepare_for_voting(accounts, temporary_admin)
 
     # START VOTE
     vote_id, _ = start_vote({"from": ldo_holder}, True, template)

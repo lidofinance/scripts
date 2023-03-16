@@ -27,6 +27,11 @@ interface IBurner is IAccessControlEnumerable {
 interface IDepositSecurityModule {
     function getOwner() external view returns (address);
     function setOwner(address newValue) external;
+    function getGuardianQuorum() external view returns (uint256);
+    function setGuardianQuorum(uint256 newValue) external;
+    function getGuardians() external view returns (address[] memory);
+    function addGuardian(address addr, uint256 newQuorum) external;
+    function addGuardians(address[] memory addresses, uint256 newQuorum) external;
 }
 
 interface IHashConsensus {
@@ -100,6 +105,13 @@ interface IStakingRouter is IAccessControlEnumerable {
     function UNSAFE_SET_EXITED_VALIDATORS_ROLE() external returns (bytes32);
     function REPORT_REWARDS_MINTED_ROLE() external returns (bytes32);
     function initialize(address _admin, address _lido, bytes32 _withdrawalCredentials) external;
+    function addStakingModule(
+        string calldata _name,
+        address _stakingModuleAddress,
+        uint256 _targetShare,
+        uint256 _stakingModuleFee,
+        uint256 _treasuryFee
+    ) external;
 }
 
 interface IValidatorsExitBusOracle is IAccessControlEnumerable, IPausableUntil {
@@ -143,6 +155,8 @@ contract ShapellaUpgradeTemplate {
 
     uint256 public constant SECONDS_PER_BLOCK = 12;
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
+    string public constant NOR_STAKING_MODULE_NAME = "curated-onchain-v1";
+    bytes32 public constant NOR_STAKING_MODULE_NAME_BYTES = bytes32("curated-onchain-v1");
 
     // TODO mainnet: maybe make the immutables constants
     uint256 public immutable _accountingOracleConsensusVersion;
@@ -174,7 +188,7 @@ contract ShapellaUpgradeTemplate {
         // TODO mainnet/testnet: update the values
         _accountingOracleConsensusVersion = 1;
         _validatorsExitBusOracleConsensusVersion = 1;
-        _nodeOperatorsRegistryStakingModuleType = bytes32("curated-onchain-v1");
+        _nodeOperatorsRegistryStakingModuleType = NOR_STAKING_MODULE_NAME_BYTES;
 
         // TODO mainnet: hardcode the values
         _locator = _config.locator;
@@ -233,6 +247,8 @@ contract ShapellaUpgradeTemplate {
         _prepareWithdrawalQueue();
 
         _prepareStakingRouter();
+
+        _migrateDSMGuardians();
     }
 
     function _verifyInitialState() internal view {
@@ -317,6 +333,13 @@ contract ShapellaUpgradeTemplate {
         IAccessControlEnumerable(address(hcForExitBus)).renounceRole(manage_members_role, address(this));
     }
 
+    function _migrateDSMGuardians() internal {
+        IDepositSecurityModule dsm = IDepositSecurityModule(_locator.depositSecurityModule());
+        address[] memory guardians = dsm.getGuardians();
+        uint256 quorum = dsm.getGuardianQuorum();
+        dsm.addGuardians(guardians, quorum);
+    }
+
     function _finishUpgrade() internal {
         if (msg.sender != _voting) revert OnlyVotingCanUpgrade();
         if (!isUpgradeStarted) revert StartMustBeCalledBeforeFinish();
@@ -357,7 +380,21 @@ contract ShapellaUpgradeTemplate {
             _locator.lido(),
             _withdrawalCredentials
         );
+        _attachNORToStakingRouter();
         // TODO: maybe attach NOR as module to staking router
+    }
+
+    function _attachNORToStakingRouter() internal {
+        bytes32 role = IStakingRouter(_locator.stakingRouter()).STAKING_MODULE_MANAGE_ROLE();
+        IAccessControlEnumerable(_locator.stakingRouter()).grantRole(role, address(this));
+        IStakingRouter(_locator.stakingRouter()).addStakingModule(
+            NOR_STAKING_MODULE_NAME,
+            _nodeOperatorsRegistry,
+            10000, // 100% target share
+            500, // 5% staking module fee
+            500 // 5% treasury fee
+        );
+        IAccessControlEnumerable(_locator.stakingRouter()).renounceRole(role, address(this));
     }
 
     function _grantRoles() internal {
@@ -398,21 +435,28 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _verifyUpgrade() internal view {
+        // TODO: uncomment if enough gas
+        // _checkContractVersions();
+
+        _verifyProxyAdmins(_voting);
+
+        _verifyOZAdmins(_voting);
+
+        // TODO: maybe check non admin roles?
+
+        if (IDepositSecurityModule(_locator.depositSecurityModule()).getOwner() != address(this)) revert WrongDsmOwner();
+
+        if (IPausableUntil(_locator.withdrawalQueue()).isPaused()) revert WQNotResumed();
+        if (IPausableUntil(_locator.validatorsExitBusOracle()).isPaused()) revert EBNotResumed();
+    }
+
+    function _checkContractVersions() internal view {
         if (IVersioned(_locator.lido()).getContractVersion() != 2) revert InvalidLidoVersion();
         if (IVersioned(_locator.legacyOracle()).getContractVersion() != 4) revert InvalidLOVersion();
         if (IVersioned(_locator.accountingOracle()).getContractVersion() != 1) revert InvalidAOVersion();
         if (IVersioned(_locator.stakingRouter()).getContractVersion() != 1) revert InvalidSRVersion();
         if (IVersioned(_locator.validatorsExitBusOracle()).getContractVersion() != 1) revert InvalidEBVersion();
         if (IVersioned(_locator.withdrawalQueue()).getContractVersion() != 1) revert InvalidWQVersion();
-
-        _verifyProxyAdmins(_voting);
-
-        _verifyOZAdmins(_voting);
-
-        if (IDepositSecurityModule(_locator.depositSecurityModule()).getOwner() != address(this)) revert WrongDsmOwner();
-
-        if (IPausableUntil(_locator.withdrawalQueue()).isPaused()) revert WQNotResumed();
-        if (IPausableUntil(_locator.validatorsExitBusOracle()).isPaused()) revert EBNotResumed();
     }
 
     function _transferOZAdminFromThisToVoting(address contractAddress) internal {
