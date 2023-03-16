@@ -37,6 +37,7 @@ lido_dao_hash_consensus_for_validators_exit_bus_oracle = "0xe47EA5f0406C1A976cE4
 lido_dao_validators_exit_bus_oracle = "0xb75A55EFab5A8f5224Ae93B34B25741EDd3da98b"
 lido_dao_oracle_report_sanity_checker = "0x43c7FA62b3FD800d02edb1d38fd5b079d3ff84c6"
 lido_dao_withdrawal_queue = "0xCF117961421cA9e546cD7f50bC73abCdB3039533"
+gate_seal = "0x1111111111111111111111111111111111111111"
 
 
 lido_dao_eip712_steth = "0xB4300103FfD326f77FfB3CA54248099Fb29C3b9e"

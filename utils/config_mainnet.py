@@ -40,6 +40,7 @@ lido_dao_eip712_steth = ""
 lido_dao_withdrawal_vault = ""
 lido_dao_beacon_chain_depositor = ""
 lido_dao_staking_router = ""
+gate_seal = ""
 
 lido_easytrack = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 lido_easytrack_evmscriptexecutor = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"

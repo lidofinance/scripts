@@ -84,6 +84,11 @@ interface IPausableUntil {
     function isPaused() external view returns (bool);
     function getResumeSinceTimestamp() external view returns (uint256);
     function PAUSE_INFINITELY() external view returns (uint256);
+
+    // The following methods actually belong to the oracle but are identical
+    function PAUSE_ROLE() external returns (bytes32);
+    function RESUME_ROLE() external returns (bytes32);
+    function resume() external;
 }
 
 interface IStakingRouter is IAccessControlEnumerable {
@@ -98,8 +103,6 @@ interface IStakingRouter is IAccessControlEnumerable {
 }
 
 interface IValidatorsExitBusOracle is IAccessControlEnumerable, IPausableUntil {
-    function PAUSE_ROLE() external returns (bytes32);
-    function RESUME_ROLE() external returns (bytes32);
     function initialize(address admin, address consensusContract, uint256 consensusVersion, uint256 lastProcessingRefSlot) external;
 }
 
@@ -108,13 +111,10 @@ interface IVersioned {
 }
 
 interface IWithdrawalQueue is IAccessControlEnumerable, IPausableUntil {
-    function PAUSE_ROLE() external returns (bytes32);
-    function RESUME_ROLE() external returns (bytes32);
     function FINALIZE_ROLE() external returns (bytes32);
     function ORACLE_ROLE() external returns (bytes32);
     function initialize(address _admin) external;
     function pauseFor(uint256 _duration) external;
-    function resume() external;
 }
 
 
@@ -346,7 +346,8 @@ contract ShapellaUpgradeTemplate {
     function _prepareWithdrawalQueue() internal {
         IOssifiableProxy(_locator.withdrawalQueue()).proxy__upgradeTo(_withdrawalQueueImplementation);
         IWithdrawalQueue(_locator.withdrawalQueue()).initialize(address(this));
-        _resumeWithdrawalQueue();
+        _resumePausableContract(_locator.withdrawalQueue());
+        _resumePausableContract(_locator.validatorsExitBusOracle());
     }
 
     function _prepareStakingRouter() internal {
@@ -377,7 +378,7 @@ contract ShapellaUpgradeTemplate {
         withdrawalQueue.grantRole(withdrawalQueue.PAUSE_ROLE(), _gateSeal);
         withdrawalQueue.grantRole(withdrawalQueue.RESUME_ROLE(), _voting);
         withdrawalQueue.grantRole(withdrawalQueue.FINALIZE_ROLE(), _locator.lido());
-        withdrawalQueue.grantRole(withdrawalQueue.RESUME_ROLE(), _locator.accountingOracle());
+        withdrawalQueue.grantRole(withdrawalQueue.ORACLE_ROLE(), _locator.accountingOracle());
     }
 
     function _passAdminRoleFromTemplateToVoting() internal {
@@ -410,25 +411,22 @@ contract ShapellaUpgradeTemplate {
 
         if (IDepositSecurityModule(_locator.depositSecurityModule()).getOwner() != address(this)) revert WrongDsmOwner();
 
-        IValidatorsExitBusOracle exitBus = IValidatorsExitBusOracle(_locator.validatorsExitBusOracle());
-        require(exitBus.isPaused(), "EB_NOT_PAUSED");
-        require(exitBus.getResumeSinceTimestamp() == exitBus.PAUSE_INFINITELY(), "INCORRECT_EB_RESUME_SINCE_TIMESTAMP");
-
-        require(!IPausableUntil(_locator.withdrawalQueue()).isPaused(), "WQ_NOT_PAUSED");
+        if (IPausableUntil(_locator.withdrawalQueue()).isPaused()) revert WQNotResumed();
+        if (IPausableUntil(_locator.validatorsExitBusOracle()).isPaused()) revert EBNotResumed();
     }
 
-    function _transferOZAdminFromThisToVoting(address _contract) internal {
-        IAccessControlEnumerable(_contract).grantRole(DEFAULT_ADMIN_ROLE, _voting);
-        IAccessControlEnumerable(_contract).renounceRole(DEFAULT_ADMIN_ROLE, address(this));
+    function _transferOZAdminFromThisToVoting(address contractAddress) internal {
+        IAccessControlEnumerable(contractAddress).grantRole(DEFAULT_ADMIN_ROLE, _voting);
+        IAccessControlEnumerable(contractAddress).renounceRole(DEFAULT_ADMIN_ROLE, address(this));
     }
 
-    function _resumeWithdrawalQueue() internal {
-        IWithdrawalQueue queue = IWithdrawalQueue(_locator.withdrawalQueue());
+    function _resumePausableContract(address contractAddress) internal {
+        IPausableUntil pausable = IPausableUntil(contractAddress);
 
         // Need to resume first, otherwise cannot pause
-        queue.grantRole(queue.RESUME_ROLE(), address(this));
-        queue.resume();
-        queue.renounceRole(queue.RESUME_ROLE(), address(this));
+        IAccessControlEnumerable(address(pausable)).grantRole(pausable.RESUME_ROLE(), address(this));
+        pausable.resume();
+        IAccessControlEnumerable(address(pausable)).renounceRole(pausable.RESUME_ROLE(), address(this));
     }
 
     error OnlyVotingCanUpgrade();
