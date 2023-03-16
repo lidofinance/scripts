@@ -22,11 +22,11 @@ curve_rewards_manager_address = ""
 balancer_rewards_manager = ""
 
 lido_dao_deposit_security_module_address_old = "0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe"
-lido_dao_deposit_security_module_address = "0x262C73ac3f0B72919Fa9a1143c6fF09915c9e249"
+lido_dao_deposit_security_module_address = "0x07c1e7eDC8a19c9A9b936DecDd531a6365D2a434"
 
 # Needed only for the tests development. Before the voting start the LidoLocator
-# proxy is to be to the implementation
-lido_dao_lido_locator_implementation = "0xD245B3Ca1FFaCb81604A8DFC913162D4261ac566"
+# proxy is to be set to the implementation
+lido_dao_lido_locator_implementation = "0x4D2C33595e82d9eE44B653D6632BAd2b3fC9aF9c"
 
 lido_dao_lido_locator = "0x1eDf09b5023DC86737b59dE68a8130De878984f5"
 lido_dao_burner = "0x20c61C07C2E2FAb04BF5b4E12ce45a459a18f3B1"
