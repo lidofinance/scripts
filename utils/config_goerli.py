@@ -37,7 +37,7 @@ lido_dao_hash_consensus_for_validators_exit_bus_oracle = "0xe47EA5f0406C1A976cE4
 lido_dao_validators_exit_bus_oracle = "0xb75A55EFab5A8f5224Ae93B34B25741EDd3da98b"
 lido_dao_oracle_report_sanity_checker = "0x43c7FA62b3FD800d02edb1d38fd5b079d3ff84c6"
 lido_dao_withdrawal_queue = "0xCF117961421cA9e546cD7f50bC73abCdB3039533"
-gate_seal = "0x1111111111111111111111111111111111111111"
+gate_seal = "0x75A77AE52d88999D0b12C6e5fABB1C1ef7E92638"
 
 
 lido_dao_eip712_steth = "0xB4300103FfD326f77FfB3CA54248099Fb29C3b9e"
@@ -74,9 +74,7 @@ oracle_committee = [
     "0xCFd533f909741B78a564e399F64C83B783c27597",
     "0x81E411f1BFDa43493D7994F82fb61A415F6b8Fd4",
     "0xb29dD2f6672C0DFF2d2f173087739A42877A5172",
-    "0x3799bDA7B884D33F79CEC926af21160dc47fbe05"
+    "0x3799bDA7B884D33F79CEC926af21160dc47fbe05",
 ]
 
-guardians = [
-    "0xdA1A296F9Df18D04e0aEfcfF658B80B3EF824ec9"
-]
+guardians = ["0xdA1A296F9Df18D04e0aEfcfF658B80B3EF824ec9"]
