@@ -60,8 +60,8 @@ def protocol_permissions():
                 "RESUME_ROLE": [],
                 "FINALIZE_ROLE": [contracts.lido],
                 "ORACLE_ROLE": [contracts.accounting_oracle],
-                "MANAGE_TOKEN_URI_ROLE": []
-            }
+                "MANAGE_TOKEN_URI_ROLE": [],
+            },
         },
         "AccountingOracle": {
             "contract": contracts.accounting_oracle,
@@ -84,8 +84,8 @@ def protocol_permissions():
                 "PAUSE_ROLE": [gate_seal],
                 "RESUME_ROLE": [],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
-                "MANAGE_CONSENSUS_VERSION_ROLE": []
-            }
+                "MANAGE_CONSENSUS_VERSION_ROLE": [],
+            },
         },
         "AccountingHashConsensus": {
             "contract": contracts.hash_consensus_for_accounting_oracle,
@@ -131,7 +131,7 @@ def protocol_permissions():
         "DepositSecurityModule": {
             "contract": contracts.deposit_security_module,
             "type": "CustomApp",
-            # "fields": {"getOwner": contracts.voting, "getGuardians": guardians},
+            "state": {"getOwner": contracts.voting, "getGuardians": guardians},
             "roles": {},
         },
         "Lido": {
@@ -161,6 +161,17 @@ def protocol_permissions():
 def test_permissions_after_vote(protocol_permissions):
     for contract_name, permissions_config in protocol_permissions.items():
         print("Contract: {0}".format(contract_name))
+
+        abi_roles_list = [
+            method for method in permissions_config["contract"].signatures.keys() if method.endswith("_ROLE")
+        ]
+
+        roles = permissions_config["roles"]
+
+        assert len(abi_roles_list) == len(roles.keys()), "number of roles doesn't match"
+        for role in set(permissions_config["roles"].keys()):
+            assert role in abi_roles_list, "no {} described for contract {}".format(role, contract_name)
+
         if permissions_config["type"] == "AragonApp":
             for role, holders in permissions_config["roles"].items():
                 for holder in holders:
@@ -189,3 +200,9 @@ def test_permissions_after_vote(protocol_permissions):
                     assert permissions_config["contract"].hasRole(
                         role_keccak, holder
                     ), "account {0} isn't holder of {1}".format(holder, role)
+
+        if "state" in permissions_config:
+            for method, value in permissions_config["state"].items():
+                method_sig = permissions_config["contract"].signatures[method]
+                actual_value = permissions_config["contract"].get_method_object(method_sig)()
+                assert actual_value == value, "method {} returns {} instead of {}".format(method, actual_value, value)
