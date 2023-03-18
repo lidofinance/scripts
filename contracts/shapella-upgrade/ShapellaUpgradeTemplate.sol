@@ -174,6 +174,7 @@ contract ShapellaUpgradeTemplate {
     bytes32 public immutable _withdrawalCredentials;
     uint256 public immutable _nodeOperatorsRegistryStuckPenaltyDelay;
     address public immutable _dummyImplementation;
+    address public immutable _previousDepositSecurityModule;
     address public immutable _locatorImplementation;
 
     //
@@ -188,22 +189,27 @@ contract ShapellaUpgradeTemplate {
         _validatorsExitBusOracleConsensusVersion = 1;
         _nodeOperatorsRegistryStakingModuleType = NOR_STAKING_MODULE_NAME_BYTES;
 
-        // TODO mainnet: hardcode the values
-        _locator = _config.locator;
-        _eip712StETH = _config.eip712StETH;
-        _voting = _config.voting;
-        _nodeOperatorsRegistry = _config.nodeOperatorsRegistry;
-        _hashConsensusForAccountingOracle = _config.hashConsensusForAccountingOracle;
-        _hashConsensusForValidatorsExitBusOracle = _config.hashConsensusForValidatorsExitBusOracle;
-        _gateSeal = _config.gateSeal;
-        _withdrawalCredentials = _config.withdrawalCredentials;
-        _nodeOperatorsRegistryStuckPenaltyDelay = _config.nodeOperatorsRegistryStuckPenaltyDelay;
-        _withdrawalQueueImplementation = _configImpl.withdrawalQueueImplementation;
-        _stakingRouterImplementation = _configImpl.stakingRouterImplementation;
-        _accountingOracleImplementation = _configImpl.accountingOracleImplementation;
-        _validatorsExitBusOracleImplementation = _configImpl.validatorsExitBusOracleImplementation;
-        _dummyImplementation = _configImpl.dummyImplementation;
-        _locatorImplementation = _configImpl.locatorImplementation;
+
+
+        _locator = ILidoLocator(0x1eDf09b5023DC86737b59dE68a8130De878984f5);
+        _eip712StETH = 0xB4300103FfD326f77FfB3CA54248099Fb29C3b9e;
+        _voting = 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db;
+        _nodeOperatorsRegistry = 0x9D4AF1Ee19Dad8857db3a45B0374c81c8A1C6320;
+        _hashConsensusForAccountingOracle = 0x821688406B8000FE3bAa8B074F8e1CbCD72c0035;
+        _hashConsensusForValidatorsExitBusOracle = 0xe47EA5f0406C1A976cE43f97cEdcB8f3dee5484A;
+        _gateSeal = 0x75A77AE52d88999D0b12C6e5fABB1C1ef7E92638;
+
+        _withdrawalCredentials = 0x010000000000000000000000AD9928A0863964a901f49e290a2AeAE68bE6EAFb;
+        _nodeOperatorsRegistryStuckPenaltyDelay = 172800;
+
+        _withdrawalQueueImplementation = 0x57d31c50dB78e4d95C49Ab83EC011B4D0b0acF59;
+        _stakingRouterImplementation = 0x73dC7d1d5B3517141eA43fbFC6d092B6fEaFC20A;
+        _accountingOracleImplementation = 0x0310fABFa308eFb71CFba9d86193710fFD763B71;
+        _validatorsExitBusOracleImplementation = 0x3eb5f9aC4d71f76B5F6B4DE82f7aefFf414c5854;
+        _dummyImplementation = 0x6A03b1BbB79460169a205eFBCBc77ebE1011bCf8;
+        _previousDepositSecurityModule = 0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe;
+        _locatorImplementation = 0x4D2C33595e82d9eE44B653D6632BAd2b3fC9aF9c;
+
     }
 
     function verifyInitialState() external view {
