@@ -338,10 +338,10 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _migrateDSMGuardians() internal {
-        IDepositSecurityModule dsm = IDepositSecurityModule(_locator.depositSecurityModule());
-        address[] memory guardians = dsm.getGuardians();
-        uint256 quorum = dsm.getGuardianQuorum();
-        dsm.addGuardians(guardians, quorum);
+        IDepositSecurityModule previousDSM = IDepositSecurityModule(_previousDepositSecurityModule);
+        address[] memory guardians = previousDSM.getGuardians();
+        uint256 quorum = previousDSM.getGuardianQuorum();
+        IDepositSecurityModule(_locator.depositSecurityModule()).addGuardians(guardians, quorum);
     }
 
     function _finishUpgrade() internal {
@@ -413,11 +413,9 @@ contract ShapellaUpgradeTemplate {
 
         IValidatorsExitBusOracle exitBusOracle = IValidatorsExitBusOracle(_locator.validatorsExitBusOracle());
         exitBusOracle.grantRole(exitBusOracle.PAUSE_ROLE(), _gateSeal);
-        exitBusOracle.grantRole(exitBusOracle.RESUME_ROLE(), _voting);
 
         IWithdrawalQueue withdrawalQueue = IWithdrawalQueue(_locator.withdrawalQueue());
         withdrawalQueue.grantRole(withdrawalQueue.PAUSE_ROLE(), _gateSeal);
-        withdrawalQueue.grantRole(withdrawalQueue.RESUME_ROLE(), _voting);
         withdrawalQueue.grantRole(withdrawalQueue.FINALIZE_ROLE(), _locator.lido());
         withdrawalQueue.grantRole(withdrawalQueue.ORACLE_ROLE(), _locator.accountingOracle());
     }
