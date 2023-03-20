@@ -1,7 +1,8 @@
 """
 Tests for voting ???
 """
-from scripts.vote_shapella import start_vote, load_shapella_deploy_config
+from scripts.upgrade_shapella_goerli import start_vote
+from utils.shapella_upgrade import load_shapella_deploy_config
 from utils.test.tx_tracing_helpers import *
 from utils.config import contracts, ldo_vote_executors_for_tests, lido_dao_lido_locator_implementation
 from brownie.network.transaction import TransactionReceipt

@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2023 Lido <info@lido.fi>
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.9;
@@ -11,7 +12,7 @@ interface IAccessControlEnumerable {
     function getRoleMember(bytes32 role, uint256 index) external view returns (address);
 }
 
-interface IAccountingOracle {
+interface IAccountingOracle is IAccessControlEnumerable {
     function SUBMIT_DATA_ROLE() external view returns (bytes32);
     function initialize(address admin, address consensusContract, uint256 consensusVersion) external;
 }
@@ -40,7 +41,7 @@ interface IHashConsensus {
 }
 
 interface ILido {
-    function finalizeUpgrade_v2(address _lidoLocator, address _eip712StETH) external;
+    function finalizeUpgrade_v2(address lidoLocator, address eip712StETH) external;
 }
 
 interface ILidoLocator {
@@ -61,7 +62,7 @@ interface ILidoLocator {
 }
 
 interface ILegacyOracle {
-    function finalizeUpgrade_v4(address _accountingOracle) external;
+    function finalizeUpgrade_v4(address accountingOracle) external;
     function getContractVersion() external view returns (uint256);
 }
 
@@ -73,12 +74,12 @@ interface ILidoOracle {
 }
 
 interface INodeOperatorsRegistry {
-    function finalizeUpgrade_v2(address _locator, bytes32 _type, uint256 _stuckPenaltyDelay) external;
+    function finalizeUpgrade_v2(address locator, bytes32 stakingModuleType, uint256 stuckPenaltyDelay) external;
 }
 
 interface IOssifiableProxy {
-    function proxy__upgradeTo(address newImplementation_) external;
-    function proxy__changeAdmin(address newAdmin_) external;
+    function proxy__upgradeTo(address newImplementation) external;
+    function proxy__changeAdmin(address newAdmin) external;
     function proxy__getAdmin() external view returns (address);
     function proxy__getImplementation() external view returns (address);
 }
@@ -102,13 +103,13 @@ interface IStakingRouter is IAccessControlEnumerable {
     function REPORT_EXITED_VALIDATORS_ROLE() external returns (bytes32);
     function UNSAFE_SET_EXITED_VALIDATORS_ROLE() external returns (bytes32);
     function REPORT_REWARDS_MINTED_ROLE() external returns (bytes32);
-    function initialize(address _admin, address _lido, bytes32 _withdrawalCredentials) external;
+    function initialize(address admin, address lido, bytes32 withdrawalCredentials) external;
     function addStakingModule(
-        string calldata _name,
-        address _stakingModuleAddress,
-        uint256 _targetShare,
-        uint256 _stakingModuleFee,
-        uint256 _treasuryFee
+        string calldata name,
+        address stakingModuleAddress,
+        uint256 targetShare,
+        uint256 stakingModuleFee,
+        uint256 treasuryFee
     ) external;
 }
 
@@ -129,29 +130,6 @@ interface IWithdrawalQueue is IAccessControlEnumerable, IPausableUntil {
 
 
 contract ShapellaUpgradeTemplate {
-
-    // TODO mainnet: remove the structs
-    struct Config {
-        ILidoLocator locator;
-        address eip712StETH;
-        address voting;
-        address nodeOperatorsRegistry;
-        address hashConsensusForAccountingOracle;
-        address hashConsensusForValidatorsExitBusOracle;
-        address gateSeal;
-        bytes32 withdrawalCredentials;
-        uint256 nodeOperatorsRegistryStuckPenaltyDelay;
-    }
-    struct ConfigImplementations {
-        address withdrawalQueueImplementation;
-        address stakingRouterImplementation;
-        address accountingOracleImplementation;
-        address validatorsExitBusOracleImplementation;
-        address dummyImplementation;
-        address locatorImplementation;
-    }
-
-    uint256 public constant SECONDS_PER_BLOCK = 12;
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
     string public constant NOR_STAKING_MODULE_NAME = "curated-onchain-v1";
     bytes32 public constant NOR_STAKING_MODULE_NAME_BYTES = bytes32("curated-onchain-v1");
@@ -183,13 +161,12 @@ contract ShapellaUpgradeTemplate {
     bool public isUpgradeStarted;
     bool public isUpgradeFinished;
 
-    constructor(Config memory _config, ConfigImplementations memory _configImpl) {
-        // TODO mainnet/testnet: update the values
+    constructor() {
         _accountingOracleConsensusVersion = 1;
         _validatorsExitBusOracleConsensusVersion = 1;
         _nodeOperatorsRegistryStakingModuleType = NOR_STAKING_MODULE_NAME_BYTES;
-
-
+        _withdrawalCredentials = 0x010000000000000000000000AD9928A0863964a901f49e290a2AeAE68bE6EAFb;
+        _nodeOperatorsRegistryStuckPenaltyDelay = 172800;
 
         _locator = ILidoLocator(0x1eDf09b5023DC86737b59dE68a8130De878984f5);
         _eip712StETH = 0xB4300103FfD326f77FfB3CA54248099Fb29C3b9e;
@@ -198,10 +175,6 @@ contract ShapellaUpgradeTemplate {
         _hashConsensusForAccountingOracle = 0x821688406B8000FE3bAa8B074F8e1CbCD72c0035;
         _hashConsensusForValidatorsExitBusOracle = 0xe47EA5f0406C1A976cE43f97cEdcB8f3dee5484A;
         _gateSeal = 0x75A77AE52d88999D0b12C6e5fABB1C1ef7E92638;
-
-        _withdrawalCredentials = 0x010000000000000000000000AD9928A0863964a901f49e290a2AeAE68bE6EAFb;
-        _nodeOperatorsRegistryStuckPenaltyDelay = 172800;
-
         _withdrawalQueueImplementation = 0x57d31c50dB78e4d95C49Ab83EC011B4D0b0acF59;
         _stakingRouterImplementation = 0x73dC7d1d5B3517141eA43fbFC6d092B6fEaFC20A;
         _accountingOracleImplementation = 0x0310fABFa308eFb71CFba9d86193710fFD763B71;
@@ -260,10 +233,9 @@ contract ShapellaUpgradeTemplate {
 
         _verifyProxyAdmins(address(this));
 
-        // TODO: put back if enough gas
         _verifyInitialProxyImplementations();
 
-        _verifyOZAdmins(address(this));
+        _verifyOZAccessControlAdmins(address(this));
 
         if (IDepositSecurityModule(_locator.depositSecurityModule()).getOwner() != address(this)) revert WrongDsmOwner();
     }
@@ -283,7 +255,7 @@ contract ShapellaUpgradeTemplate {
         if (IOssifiableProxy(_locator.accountingOracle()).proxy__getImplementation() != _dummyImplementation) revert WrongAOInitialImpl();
     }
 
-    function _verifyOZAdmins(address admin) internal view {
+    function _verifyOZAccessControlAdmins(address admin) internal view {
         if (IAccessControlEnumerable(_hashConsensusForAccountingOracle).getRoleMemberCount(DEFAULT_ADMIN_ROLE) != 1) revert MultipleAdminsHCAO();
         if (IAccessControlEnumerable(_hashConsensusForAccountingOracle).getRoleMember(DEFAULT_ADMIN_ROLE, 0) != admin) revert WrongAdminHCAO();
         if (IAccessControlEnumerable(_hashConsensusForValidatorsExitBusOracle).getRoleMemberCount(DEFAULT_ADMIN_ROLE) != 1) revert MultipleAdminsHCEB();
@@ -363,6 +335,8 @@ contract ShapellaUpgradeTemplate {
             _nodeOperatorsRegistryStuckPenaltyDelay
         );
 
+        _attachNORToStakingRouter();
+
         _grantRoles();
 
         _passAdminRoleFromTemplateToVoting();
@@ -384,13 +358,11 @@ contract ShapellaUpgradeTemplate {
             _locator.lido(),
             _withdrawalCredentials
         );
-        _attachNORToStakingRouter();
-        // TODO: maybe attach NOR as module to staking router
     }
 
     function _attachNORToStakingRouter() internal {
-        bytes32 role = IStakingRouter(_locator.stakingRouter()).STAKING_MODULE_MANAGE_ROLE();
-        IAccessControlEnumerable(_locator.stakingRouter()).grantRole(role, address(this));
+        bytes32 sm_manage_role = IStakingRouter(_locator.stakingRouter()).STAKING_MODULE_MANAGE_ROLE();
+        IAccessControlEnumerable(_locator.stakingRouter()).grantRole(sm_manage_role, address(this));
         IStakingRouter(_locator.stakingRouter()).addStakingModule(
             NOR_STAKING_MODULE_NAME,
             _nodeOperatorsRegistry,
@@ -398,7 +370,7 @@ contract ShapellaUpgradeTemplate {
             500, // 5% staking module fee
             500 // 5% treasury fee
         );
-        IAccessControlEnumerable(_locator.stakingRouter()).renounceRole(role, address(this));
+        IAccessControlEnumerable(_locator.stakingRouter()).renounceRole(sm_manage_role, address(this));
     }
 
     function _grantRoles() internal {
@@ -439,12 +411,12 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _verifyFinishedUpgrade() internal view {
-        // TODO: uncomment if enough gas
+        // TODO: uncomment if enough contract bytecode size
         // _checkContractVersions();
 
         _verifyProxyAdmins(_voting);
 
-        _verifyOZAdmins(_voting);
+        _verifyOZAccessControlAdmins(_voting);
 
         // TODO: maybe check non admin roles?
 
