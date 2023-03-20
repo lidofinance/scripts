@@ -214,7 +214,7 @@ contract ShapellaUpgradeTemplate {
     function _verifyInitialState() internal view {
         if (ILidoOracle(_locator.legacyOracle()).getVersion() != 3) revert LidoOracleMustNotBeUpgradedToLegacyYet();
 
-        _verifyProxyAdmins(address(this));
+        _verifyAdminsOfProxies(address(this));
 
         _verifyInitialProxyImplementations();
 
@@ -223,21 +223,29 @@ contract ShapellaUpgradeTemplate {
         if (IDepositSecurityModule(_locator.depositSecurityModule()).getOwner() != address(this)) revert WrongDsmOwner();
     }
 
-    function _verifyProxyAdmins(address admin) internal view {
-        if (IOssifiableProxy(_locator.accountingOracle()).proxy__getAdmin() != admin) revert WrongAOAdmin();
-        if (IOssifiableProxy(address(_locator)).proxy__getAdmin() != admin) revert WrongLocatorAdmin();
-        if (IOssifiableProxy(_locator.stakingRouter()).proxy__getAdmin() != admin) revert WrongSQAdmin();
-        if (IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__getAdmin() != admin) revert WrongEBAdmin();
-        if (IOssifiableProxy(_locator.withdrawalQueue()).proxy__getAdmin() != admin) revert WrongWQAdmin();
-        if (IOssifiableProxy(_locator.withdrawalVault()).proxy__getAdmin() != admin) revert WrongWQAdmin();
+    function _verifyAdminsOfProxies(address admin) internal view {
+        _verifyProxyAdmin(_locator.accountingOracle(), admin);
+        _verifyProxyAdmin(address(_locator), admin);
+        _verifyProxyAdmin(_locator.stakingRouter(), admin);
+        _verifyProxyAdmin(_locator.validatorsExitBusOracle(), admin);
+        _verifyProxyAdmin(_locator.withdrawalQueue(), admin);
+        _verifyProxyAdmin(_locator.withdrawalVault(), admin);
+    }
+
+    function _verifyProxyAdmin(address proxy, address admin) internal view {
+        if (IOssifiableProxy(proxy).proxy__getAdmin() != admin) revert WrongProxyAdmin(proxy);
     }
 
     function _verifyInitialProxyImplementations() internal view {
-        if (IOssifiableProxy(_locator.accountingOracle()).proxy__getImplementation() != _dummyImplementation) revert WrongAOInitialImpl();
-        if (IOssifiableProxy(_locator.stakingRouter()).proxy__getImplementation() != _dummyImplementation) revert WrongSRInitialImpl();
-        if (IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__getImplementation() != _dummyImplementation) revert WrongEBInitialImpl();
-        if (IOssifiableProxy(_locator.withdrawalQueue()).proxy__getImplementation() != _dummyImplementation) revert WrongWQInitialImpl();
-        if (IOssifiableProxy(_locator.withdrawalVault()).proxy__getImplementation() != _dummyImplementation) revert WrongWQInitialImpl();
+        _verifyInitialImplementation(_locator.accountingOracle());
+        _verifyInitialImplementation(_locator.stakingRouter());
+        _verifyInitialImplementation(_locator.validatorsExitBusOracle());
+        _verifyInitialImplementation(_locator.withdrawalQueue());
+        _verifyInitialImplementation(_locator.withdrawalVault());
+    }
+
+    function _verifyInitialImplementation(address proxy) internal view {
+        if (IOssifiableProxy(proxy).proxy__getImplementation() != _dummyImplementation) revert WrongInitialImplementation(proxy);
     }
 
     function _verifyOZAccessControlAdmins(address admin) internal view {
@@ -247,8 +255,11 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _verifySingleOZAdmin(address contractAddress, address admin) internal view {
-        if (IAccessControlEnumerable(contractAddress).getRoleMemberCount(DEFAULT_ADMIN_ROLE) != 1) revert MultipleAdminsHCAO();
-        if (IAccessControlEnumerable(contractAddress).getRoleMember(DEFAULT_ADMIN_ROLE, 0) != admin) revert WrongAdminHCAO();
+        if (IAccessControlEnumerable(contractAddress).getRoleMemberCount(DEFAULT_ADMIN_ROLE) != 1
+         || IAccessControlEnumerable(contractAddress).getRoleMember(DEFAULT_ADMIN_ROLE, 0) != admin
+        ) {
+            revert WrongOZAccessControlAdmin(contractAddress);
+        }
     }
 
     function _prepareWithdrawalVault() internal {
@@ -404,10 +415,9 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _verifyFinishedUpgrade() internal view {
-        // TODO: uncomment if enough contract bytecode size
-        // _checkContractVersions();
+        _checkContractVersions();
 
-        _verifyProxyAdmins(_voting);
+        _verifyAdminsOfProxies(_voting);
 
         _verifyOZAccessControlAdmins(_voting);
 
@@ -420,13 +430,19 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _checkContractVersions() internal view {
-        if (IVersioned(_locator.lido()).getContractVersion() != 2) revert InvalidLidoVersion();
-        if (IVersioned(_locator.legacyOracle()).getContractVersion() != 4) revert InvalidLOVersion();
-        if (IVersioned(_locator.accountingOracle()).getContractVersion() != 1) revert InvalidAOVersion();
-        if (IVersioned(_locator.stakingRouter()).getContractVersion() != 1) revert InvalidSRVersion();
-        if (IVersioned(_locator.validatorsExitBusOracle()).getContractVersion() != 1) revert InvalidEBVersion();
-        if (IVersioned(_locator.withdrawalQueue()).getContractVersion() != 1) revert InvalidWQVersion();
-        if (IVersioned(_locator.withdrawalVault()).getContractVersion() != 1) revert InvalidWVVersion();
+        _verifyContractVersion(_locator.lido(), 2);
+        _verifyContractVersion(_locator.legacyOracle(), 4);
+        _verifyContractVersion(_locator.accountingOracle(), 1);
+        _verifyContractVersion(_locator.stakingRouter(), 1);
+        _verifyContractVersion(_locator.validatorsExitBusOracle(), 1);
+        _verifyContractVersion(_locator.withdrawalQueue(), 1);
+        _verifyContractVersion(_locator.withdrawalVault(), 1);
+    }
+
+    function _verifyContractVersion(address contractAddress, uint256 expectedVersion) internal view {
+        if (IVersioned(contractAddress).getContractVersion() != expectedVersion) {
+            revert InvalidContractVersion(contractAddress, expectedVersion);
+        }
     }
 
     function _transferOZAdminFromThisToVoting(address contractAddress) internal {
@@ -450,28 +466,10 @@ contract ShapellaUpgradeTemplate {
     error LidoOracleMustNotBeUpgradedToLegacyYet();
     error LidoOracleMustBeUpgradedToLegacy();
     error WrongDsmOwner();
-    error WrongLocatorAdmin();
-    error WrongWQAdmin();
-    error WrongSQAdmin();
-    error WrongEBAdmin();
-    error WrongAOAdmin();
-    error WrongWQInitialImpl();
-    error WrongSRInitialImpl();
-    error WrongEBInitialImpl();
-    error WrongAOInitialImpl();
-    error InvalidLidoVersion();
-    error InvalidLOVersion();
-    error InvalidAOVersion();
-    error InvalidSRVersion();
-    error InvalidEBVersion();
-    error InvalidWQVersion();
-    error InvalidWVVersion();
-    error MultipleAdminsHCAO();
-    error WrongAdminHCAO();
-    error MultipleAdminsHCEB();
-    error WrongAdminHCEB();
-    error MultipleAdminsBU();
-    error WrongAdminBU();
+    error WrongProxyAdmin(address proxy);
+    error WrongInitialImplementation(address proxy);
+    error InvalidContractVersion(address contractAddress, uint256 actualVersion);
+    error WrongOZAccessControlAdmin(address contractAddress);
     error WQNotResumed();
     error EBNotResumed();
 }
