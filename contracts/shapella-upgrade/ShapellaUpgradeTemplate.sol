@@ -128,6 +128,10 @@ interface IWithdrawalQueue is IAccessControlEnumerable, IPausableUntil {
     function pauseFor(uint256 _duration) external;
 }
 
+interface IWithdrawalVault {
+    function initialize() external;
+}
+
 
 contract ShapellaUpgradeTemplate {
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
@@ -162,7 +166,6 @@ contract ShapellaUpgradeTemplate {
     bool public isUpgradeStarted;
     bool public isUpgradeFinished;
 
-
     function verifyInitialState() external view {
         _verifyInitialState();
     }
@@ -193,6 +196,8 @@ contract ShapellaUpgradeTemplate {
 
         _verifyInitialState();
 
+        _prepareWithdrawalVault();
+
         _prepareAccountingOracle();
 
         _prepareValidatorsExitBus();
@@ -219,27 +224,36 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _verifyProxyAdmins(address admin) internal view {
+        if (IOssifiableProxy(_locator.accountingOracle()).proxy__getAdmin() != admin) revert WrongAOAdmin();
         if (IOssifiableProxy(address(_locator)).proxy__getAdmin() != admin) revert WrongLocatorAdmin();
-        if (IOssifiableProxy(_locator.withdrawalQueue()).proxy__getAdmin() != admin) revert WrongWQAdmin();
         if (IOssifiableProxy(_locator.stakingRouter()).proxy__getAdmin() != admin) revert WrongSQAdmin();
         if (IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__getAdmin() != admin) revert WrongEBAdmin();
-        if (IOssifiableProxy(_locator.accountingOracle()).proxy__getAdmin() != admin) revert WrongAOAdmin();
+        if (IOssifiableProxy(_locator.withdrawalQueue()).proxy__getAdmin() != admin) revert WrongWQAdmin();
+        if (IOssifiableProxy(_locator.withdrawalVault()).proxy__getAdmin() != admin) revert WrongWQAdmin();
     }
 
     function _verifyInitialProxyImplementations() internal view {
-        if (IOssifiableProxy(_locator.withdrawalQueue()).proxy__getImplementation() != _dummyImplementation) revert WrongWQInitialImpl();
+        if (IOssifiableProxy(_locator.accountingOracle()).proxy__getImplementation() != _dummyImplementation) revert WrongAOInitialImpl();
         if (IOssifiableProxy(_locator.stakingRouter()).proxy__getImplementation() != _dummyImplementation) revert WrongSRInitialImpl();
         if (IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__getImplementation() != _dummyImplementation) revert WrongEBInitialImpl();
-        if (IOssifiableProxy(_locator.accountingOracle()).proxy__getImplementation() != _dummyImplementation) revert WrongAOInitialImpl();
+        if (IOssifiableProxy(_locator.withdrawalQueue()).proxy__getImplementation() != _dummyImplementation) revert WrongWQInitialImpl();
+        if (IOssifiableProxy(_locator.withdrawalVault()).proxy__getImplementation() != _dummyImplementation) revert WrongWQInitialImpl();
     }
 
     function _verifyOZAccessControlAdmins(address admin) internal view {
-        if (IAccessControlEnumerable(_hashConsensusForAccountingOracle).getRoleMemberCount(DEFAULT_ADMIN_ROLE) != 1) revert MultipleAdminsHCAO();
-        if (IAccessControlEnumerable(_hashConsensusForAccountingOracle).getRoleMember(DEFAULT_ADMIN_ROLE, 0) != admin) revert WrongAdminHCAO();
-        if (IAccessControlEnumerable(_hashConsensusForValidatorsExitBusOracle).getRoleMemberCount(DEFAULT_ADMIN_ROLE) != 1) revert MultipleAdminsHCEB();
-        if (IAccessControlEnumerable(_hashConsensusForValidatorsExitBusOracle).getRoleMember(DEFAULT_ADMIN_ROLE, 0) != admin) revert WrongAdminHCEB();
-        if (IAccessControlEnumerable(_locator.burner()).getRoleMemberCount(DEFAULT_ADMIN_ROLE) != 1) revert MultipleAdminsBU();
-        if (IAccessControlEnumerable(_locator.burner()).getRoleMember(DEFAULT_ADMIN_ROLE, 0) != admin) revert WrongAdminBU();
+        _verifySingleOZAdmin(_hashConsensusForAccountingOracle, admin);
+        _verifySingleOZAdmin(_hashConsensusForValidatorsExitBusOracle, admin);
+        _verifySingleOZAdmin(_locator.burner(), admin);
+    }
+
+    function _verifySingleOZAdmin(address contractAddress, address admin) internal view {
+        if (IAccessControlEnumerable(contractAddress).getRoleMemberCount(DEFAULT_ADMIN_ROLE) != 1) revert MultipleAdminsHCAO();
+        if (IAccessControlEnumerable(contractAddress).getRoleMember(DEFAULT_ADMIN_ROLE, 0) != admin) revert WrongAdminHCAO();
+    }
+
+    function _prepareWithdrawalVault() internal {
+        IOssifiableProxy(_locator.withdrawalVault()).proxy__upgradeTo(_withdrawalVaultImplementation);
+        IWithdrawalVault(_locator.withdrawalVault()).initialize();
     }
 
     function _prepareAccountingOracle() internal {
@@ -384,6 +398,7 @@ contract ShapellaUpgradeTemplate {
         IOssifiableProxy(_locator.accountingOracle()).proxy__changeAdmin(_voting);
         IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__changeAdmin(_voting);
         IOssifiableProxy(_locator.withdrawalQueue()).proxy__changeAdmin(_voting);
+        IOssifiableProxy(_locator.withdrawalVault()).proxy__changeAdmin(_voting);
 
         IDepositSecurityModule(_locator.depositSecurityModule()).setOwner(_voting);
     }
@@ -411,6 +426,7 @@ contract ShapellaUpgradeTemplate {
         if (IVersioned(_locator.stakingRouter()).getContractVersion() != 1) revert InvalidSRVersion();
         if (IVersioned(_locator.validatorsExitBusOracle()).getContractVersion() != 1) revert InvalidEBVersion();
         if (IVersioned(_locator.withdrawalQueue()).getContractVersion() != 1) revert InvalidWQVersion();
+        if (IVersioned(_locator.withdrawalVault()).getContractVersion() != 1) revert InvalidWVVersion();
     }
 
     function _transferOZAdminFromThisToVoting(address contractAddress) internal {
@@ -449,6 +465,7 @@ contract ShapellaUpgradeTemplate {
     error InvalidSRVersion();
     error InvalidEBVersion();
     error InvalidWQVersion();
+    error InvalidWVVersion();
     error MultipleAdminsHCAO();
     error WrongAdminHCAO();
     error MultipleAdminsHCEB();

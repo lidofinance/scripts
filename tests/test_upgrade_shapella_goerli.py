@@ -4,7 +4,7 @@ Tests for voting ???
 from scripts.upgrade_shapella_goerli import start_vote
 from utils.shapella_upgrade import load_shapella_deploy_config
 from utils.test.tx_tracing_helpers import *
-from utils.config import contracts, ldo_vote_executors_for_tests, lido_dao_lido_locator_implementation
+from utils.config import contracts
 from brownie.network.transaction import TransactionReceipt
 from brownie import interface
 from brownie import ShapellaUpgradeTemplate
@@ -44,16 +44,12 @@ def test_vote(
     lido_new_implementation = config["app:lido"]["implementation"]
     nor_new_implementation = config["app:node-operators-registry"]["implementation"]
     oracle_new_implementation = config["app:oracle"]["implementation"]
-    # temporary_admin = config["temporaryAdmin"]
 
     lido_repo: interface.Repo = contracts.lido_app_repo
     lido_old_app = lido_repo.getLatest()
 
-    # template = prepare_for_voting(accounts, temporary_admin)
-
     # START VOTE
     vote_id, _, template = start_vote({"from": ldo_holder}, True)
-    # template = interface.ShapellaUpgradeContract(template_address)
 
     # DEBUG: Uncomment if want to make part of the upgrade as a separate tx
     # template.startUpgrade({'from': contracts.voting.address})
