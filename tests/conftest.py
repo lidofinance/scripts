@@ -10,7 +10,7 @@ from utils.evm_script import EMPTY_CALLSCRIPT
 
 from datetime import datetime
 
-from utils.config import contracts
+from utils.config import contracts, network_name
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 
 from utils.config import (
@@ -34,6 +34,12 @@ def ldo_holder(accounts):
 def unknown_person(accounts):
     return accounts.at("0x98ec059dc3adfbdd63429454aeb0c990fba4a128", force=True)
 
+@pytest.fixture(scope="module")
+def eth_whale(accounts):
+    if network_name() in ("goerli", "goerli-fork"):
+        return accounts.at("0xC48E23C5F6e1eA0BaEf6530734edC3968f79Af2e", force=True)
+    else:
+        return accounts.at("0x00000000219ab540356cBB839Cbe05303d7705Fa", force=True)
 
 class Helpers:
     @staticmethod
@@ -127,6 +133,7 @@ def stranger(accounts):
 
 @pytest.fixture(scope="session", autouse=is_there_any_vote_scripts())
 def autoexecute_vote(helpers, vote_id_from_env, accounts):
+    return
     if vote_id_from_env:
         helpers.execute_vote(vote_id=vote_id_from_env, accounts=accounts, dao_voting=contracts.voting, topup="0.5 ether")
     else:
