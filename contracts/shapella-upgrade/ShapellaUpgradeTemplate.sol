@@ -135,8 +135,8 @@ interface IWithdrawalVault is IVersioned, IOssifiableProxy {
 
 contract ShapellaUpgradeTemplate {
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
+    uint256 public constant NOT_INITIALIZED_CONTRACT_VERSION = 0;
 
-    // TODO mainnet: maybe make the immutables constants
     uint256 public constant _accountingOracleConsensusVersion = 1;
     uint256 public constant _validatorsExitBusOracleConsensusVersion = 1;
     string public constant NOR_STAKING_MODULE_NAME = "curated-onchain-v1";
@@ -171,7 +171,6 @@ contract ShapellaUpgradeTemplate {
     uint256 public constant EXPECTED_FINAL_VALIDATORS_EXIT_BUS_ORACLE_VERSION = 1;
     uint256 public constant EXPECTED_FINAL_WITHDRAWAL_QUEUE_VERSION = 1;
     uint256 public constant EXPECTED_FINAL_WITHDRAWAL_VAULT_VERSION = 1;
-    uint256 public constant NOT_INITIALIZED_CONTRACT_VERSION = 0;
 
     //
     // STRUCTURED STORAGE
@@ -208,10 +207,7 @@ contract ShapellaUpgradeTemplate {
         if (isUpgradeStarted) revert CanOnlyStartOnce();
         isUpgradeStarted = true;
 
-        // Need to check / set locator implementation first because the other initial state checks depend on correct locator
-        if (_locator.proxy__getImplementation() != _locatorImplementation) {
-            _locator.proxy__upgradeTo(_locatorImplementation);
-        }
+        _locator.proxy__upgradeTo(_locatorImplementation);
 
         _verifyInitialState();
 
