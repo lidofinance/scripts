@@ -28,6 +28,9 @@ lido_dao_deposit_security_module_address = "0x07c1e7eDC8a19c9A9b936DecDd531a6365
 # proxy is to be set to the implementation
 lido_dao_lido_locator_implementation = "0xf47F64a3B2AA52A77dC080D50927Af378d7dA7B8"
 
+# Needed temporary only for Shapella upgrade
+deployer_eoa = "0xa5F1d7D49F581136Cf6e58B32cBE9a2039C48bA1"
+
 lido_dao_lido_locator = "0x1eDf09b5023DC86737b59dE68a8130De878984f5"
 lido_dao_burner = "0x20c61C07C2E2FAb04BF5b4E12ce45a459a18f3B1"
 lido_dao_execution_layer_rewards_vault = "0x94750381bE1AbA0504C666ee1DB118F68f0780D4"

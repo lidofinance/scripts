@@ -69,6 +69,9 @@ def get_config_params() -> Dict[str, str]:
 
 
 class ContractsLazyLoader:
+    # Stored here temporarily, for debug purposes
+    upgrade_template = None
+
     @property
     def lido(self) -> interface.Lido:
         return interface.Lido(lido_dao_steth_address)

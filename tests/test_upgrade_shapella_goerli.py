@@ -2,15 +2,22 @@
 Tests for voting ???
 """
 from scripts.upgrade_shapella_goerli import start_vote
-from utils.shapella_upgrade import load_shapella_deploy_config, debug_locator_addresses
+from utils.shapella_upgrade import load_shapella_deploy_config, debug_locator_addresses, prepare_for_voting
 from utils.test.tx_tracing_helpers import *
-from utils.config import contracts, lido_dao_staking_router, lido_dao_node_operators_registry
+from utils.config import (
+    contracts,
+    lido_dao_staking_router,
+    lido_dao_node_operators_registry,
+    ContractsLazyLoader,
+    deployer_eoa,
+)
 from utils.test.event_validators.permission import Permission, validate_permission_create_event
 from utils.test.event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
 from brownie.network.transaction import TransactionReceipt
 from brownie import interface
 from brownie import ShapellaUpgradeTemplate
 from pprint import pprint
+from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 
 
 # STAKING_ROUTER_ROLE
@@ -54,13 +61,14 @@ def test_vote(
 
     acl: interface.ACL = contracts.acl
 
-    # Validate preliminary state
-    # TODO: template.verifyInitialState
-
     assert not acl.hasPermission(*permission_staking_router)
 
+    template = prepare_for_voting(deployer_eoa)
+    ContractsLazyLoader.upgrade_template = template
+    template.verifyInitialState()  # reverts if the state is not correct
+
     # START VOTE
-    vote_id, _, template = start_vote({"from": ldo_holder}, True)
+    vote_id, _ = start_vote({"from": ldo_holder}, True)
 
     # DEBUG: Uncomment if want to make part of the upgrade as a separate tx
     # template.startUpgrade({'from': contracts.voting.address})
