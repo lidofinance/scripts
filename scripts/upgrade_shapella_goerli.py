@@ -1,6 +1,6 @@
 """
 TODO description
-Voting ??/??/2023.
+Voting 23/03/2023.
 
 Shapella Protocol Upgrade
 
@@ -17,14 +17,13 @@ Shapella Protocol Upgrade
 """
 
 import time
-import json
-from pprint import pprint
 
 from typing import Dict, Tuple, Optional
 
 from brownie.network.transaction import TransactionReceipt
 from brownie import ShapellaUpgradeTemplate
 
+from utils.shapella_upgrade import prepare_for_voting
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.evm_script import encode_call_script
 from utils.repo import (
@@ -45,45 +44,30 @@ from utils.permissions import encode_permission_create, encode_permission_revoke
 from utils.brownie_prelude import *
 
 
-def load_shapella_deploy_config():
-    config_files = {
-        "local-fork": "scripts/deployed-mainnet-fork-shapella-upgrade.json",
-        "goerli-fork": "scripts/deployed-goerlishapella-upgrade.json",
-    }
-    with open(config_files[network_name()]) as fp:
-        return json.load(fp)
-
-
-def is_goerli():
-    return network_name() == "goerli-fork"
+DEPLOYER_EOA = "0xa5F1d7D49F581136Cf6e58B32cBE9a2039C48bA1"
+STAKING_ROUTER = "0x2fa2Cdd94C11B0e8B50205E1F304e97D9797ae09"
 
 
 # TODO: set content_uri
 update_lido_app = {
-    "new_address": load_shapella_deploy_config()["app:lido"]["implementation"],
+    "new_address": "0xf798159E0908FB988220eFbab94985De68F4FB55",
     "content_uri": "0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053",
-    "id": "0x79ac01111b462384f1b7fba84a17b9ec1f5d2fddcfcb99487d71b443832556ea"
-    if is_goerli()
-    else "0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
-    "version": (10, 0, 0) if is_goerli() else (4, 0, 0),
+    "id": "0x79ac01111b462384f1b7fba84a17b9ec1f5d2fddcfcb99487d71b443832556ea",
+    "version": (10, 0, 0),
 }
 
 update_nos_app = {
-    "new_address": load_shapella_deploy_config()["app:node-operators-registry"]["implementation"],
+    "new_address": "0x1fE9E1015DBa106B4dc9d6B7C206aA66129b0a9f",
     "content_uri": "0x697066733a516d61375058486d456a346a7332676a4d3976744850747176754b3832695335455950694a6d7a4b4c7a55353847",
-    "id": "0x57384c8fcaf2c1c2144974769a6ea4e5cf69090d47f5327f8fc93827f8c0001a"
-    if is_goerli()
-    else "0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d",
-    "version": (8, 0, 0) if is_goerli() else (4, 0, 0),
+    "id": "0x57384c8fcaf2c1c2144974769a6ea4e5cf69090d47f5327f8fc93827f8c0001a",
+    "version": (8, 0, 0),
 }
 
 update_oracle_app = {
-    "new_address": load_shapella_deploy_config()["app:oracle"]["implementation"],
+    "new_address": "0x37d30AB66797326FEb4A80E413cAe8b569eCf460",
     "content_uri": "0x697066733a516d554d506669454b71354d786d387932475951504c756a47614a69577a31747665703557374564414767435238",
-    "id": "0xb2977cfc13b000b6807b9ae3cf4d938f4cc8ba98e1d68ad911c58924d6aa4f11"
-    if is_goerli()
-    else "0x8b47ba2a8454ec799cd91646e7ec47168e91fd139b23f017455f3e5898aaba93",
-    "version": (5, 0, 0) if is_goerli() else (4, 0, 0),
+    "id": "0xb2977cfc13b000b6807b9ae3cf4d938f4cc8ba98e1d68ad911c58924d6aa4f11",
+    "version": (5, 0, 0),
 }
 
 
@@ -97,11 +81,11 @@ def encode_template_finish_upgrade(template_address: str) -> Tuple[str, str]:
     return template.address, template.finishUpgrade.encode_input()
 
 
-def start_vote(
-    tx_params: Dict[str, str], silent: bool, template_address: str
-) -> Tuple[int, Optional[TransactionReceipt]]:
+def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
-    upgrade_config = load_shapella_deploy_config()
+
+    template = prepare_for_voting(DEPLOYER_EOA)
+    template_address = template.address
 
     # TODO: add upgrade_ prefix to the voting script to enable snapshot tests
 
@@ -109,7 +93,6 @@ def start_vote(
     lido: interface.Lido = contracts.lido
     lido_oracle: interface.LegacyOracle = contracts.legacy_oracle
     node_operators_registry: interface.NodeOperatorsRegistry = contracts.node_operators_registry
-    staking_router = upgrade_config["stakingRouter"]["address"]
 
     call_script_items = [
         # TODO
@@ -136,10 +119,10 @@ def start_vote(
         ),
         # 6. Updating implementation of Oracle app with new one TODO
         update_app_implementation(update_oracle_app["id"], update_oracle_app["new_address"]),
-        # 7. Create permission for SET_EL_REWARDS_VAULT_ROLE of Lido app
+        # 7. Create permission for STAKING_ROUTER of Lido app
         #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
         encode_permission_create(
-            entity=staking_router,
+            entity=STAKING_ROUTER,
             target_app=node_operators_registry,
             permission_name="STAKING_ROUTER_ROLE",
             manager=voting,
@@ -194,8 +177,7 @@ def start_vote(
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
 
-    # TODO: remove redefinition of "silent" to True
-    return confirm_vote_script(vote_items, silent) and create_vote(vote_items, tx_params)
+    return confirm_vote_script(vote_items, silent) and list(create_vote(vote_items, tx_params)) + [template]
 
 
 def main():
@@ -205,7 +187,7 @@ def main():
         tx_params["max_fee"] = "300 gwei"
         tx_params["priority_fee"] = "2 gwei"
 
-    vote_id, _ = start_vote(tx_params=tx_params)
+    vote_id, _, _ = start_vote(tx_params=tx_params)
 
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 

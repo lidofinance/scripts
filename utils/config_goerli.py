@@ -26,7 +26,7 @@ lido_dao_deposit_security_module_address = "0x07c1e7eDC8a19c9A9b936DecDd531a6365
 
 # Needed only for the tests development. Before the voting start the LidoLocator
 # proxy is to be set to the implementation
-lido_dao_lido_locator_implementation = "0x4D2C33595e82d9eE44B653D6632BAd2b3fC9aF9c"
+lido_dao_lido_locator_implementation = "0xf47F64a3B2AA52A77dC080D50927Af378d7dA7B8"
 
 lido_dao_lido_locator = "0x1eDf09b5023DC86737b59dE68a8130De878984f5"
 lido_dao_burner = "0x20c61C07C2E2FAb04BF5b4E12ce45a459a18f3B1"
@@ -41,7 +41,7 @@ gate_seal = "0x75A77AE52d88999D0b12C6e5fABB1C1ef7E92638"
 
 
 lido_dao_eip712_steth = "0xB4300103FfD326f77FfB3CA54248099Fb29C3b9e"
-lido_dao_withdrawal_vault = "0xAD9928A0863964a901f49e290a2AeAE68bE6EAFb"
+lido_dao_withdrawal_vault = "0x70760635A8862c562C5Ad0374D7f9CEA4A7193D2"
 lido_dao_beacon_chain_depositor = "0xf94De698703575932bfc88DE8b2cd54720D5c4A7"
 lido_dao_staking_router = "0x2fa2Cdd94C11B0e8B50205E1F304e97D9797ae09"
 
@@ -77,4 +77,14 @@ oracle_committee = [
     "0x3799bDA7B884D33F79CEC926af21160dc47fbe05",
 ]
 
-guardians = ["0xdA1A296F9Df18D04e0aEfcfF658B80B3EF824ec9"]
+guardians = [
+    "0x3dc4cF780F2599B528F37dedB34449Fb65Ef7d4A",
+    "0x96fD3D127Abd0D77724D49B7bdDECdc89f684bB6",
+    "0x79A132BE0c25cED09e745629D47cf05e531bb2bb",
+    "0x43464Fe06c18848a2E2e913194D64c1970f4326a",
+    "0xD15B778e954b02d44f343c2fC7b54D4B08d9b1be",
+    "0xf060ab3d5dCfdC6a0DFd5ca0645ac569b8f105CA",
+    "0xC34D33b95D7D6DF2255D6051ddB12F8bd7AEF64c",
+    "0xdA1A296F9Df18D04e0aEfcfF658B80B3EF824ec9",
+    "0x25F76608A3FbC9C75840E070e3c285ce1732F834",
+]
