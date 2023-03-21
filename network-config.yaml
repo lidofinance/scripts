@@ -2,7 +2,6 @@ development:
   - cmd: ./ganache.sh
     cmd_settings:
       accounts: 10
-      evm_version: london
       fork: mainnet
       gas_limit: 12000000
       mnemonic: brownie
@@ -16,7 +15,6 @@ development:
       accounts: 10
       chain_id: 5
       fork: goerli
-      evm_version: london
       gas_limit: 12000000
       mnemonic: brownie
       port: 8545
@@ -26,7 +24,6 @@ development:
     timeout: 120
   - cmd: ./ganache.sh
     cmd_settings:
-      evm_version: london
       accounts: 10
       chain_id: 5
       fork: http://127.0.0.1:7777
