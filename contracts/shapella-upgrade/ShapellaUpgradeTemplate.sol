@@ -143,6 +143,10 @@ contract ShapellaUpgradeTemplate {
     bytes32 public constant _nodeOperatorsRegistryStakingModuleType = bytes32("curated-onchain-v1");
     uint256 public constant _nodeOperatorsRegistryStuckPenaltyDelay = 172800;
     bytes32 public constant _withdrawalCredentials = 0x010000000000000000000000AD9928A0863964a901f49e290a2AeAE68bE6EAFb;
+    uint256 public constant NOR_STAKING_MODULE_TARGET_SHARE_BP = 10000; // 100%
+    uint256 public constant NOR_STAKING_MODULE_MODULE_FEE_BP = 500; // 5%
+    uint256 public constant NOR_STAKING_MODULE_TREASURY_FEE_BP = 500; // 5%
+    uint256 public constant VEBO_LAST_PROCESSING_REF_SLOT = 0;
 
     ILidoLocator public constant _locator = ILidoLocator(0x1eDf09b5023DC86737b59dE68a8130De878984f5);
     IHashConsensus public constant _hashConsensusForAccountingOracle = IHashConsensus(0x821688406B8000FE3bAa8B074F8e1CbCD72c0035);
@@ -159,6 +163,15 @@ contract ShapellaUpgradeTemplate {
     address public constant _locatorImplementation = 0xf47F64a3B2AA52A77dC080D50927Af378d7dA7B8;
     address public constant _withdrawalVaultImplementation = 0x26852993A6420dDa2692b033b5AF3b0846c15d5B;
     address public constant _previousDepositSecurityModule = 0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe;
+
+    uint256 public constant EXPECTED_FINAL_LIDO_VERSION = 2;
+    uint256 public constant EXPECTED_FINAL_LEGACY_ORACLE_VERSION = 4;
+    uint256 public constant EXPECTED_FINAL_ACCOUNTING_ORACLE_VERSION = 1;
+    uint256 public constant EXPECTED_FINAL_STAKING_ROUTER_VERSION = 1;
+    uint256 public constant EXPECTED_FINAL_VALIDATORS_EXIT_BUS_ORACLE_VERSION = 1;
+    uint256 public constant EXPECTED_FINAL_WITHDRAWAL_QUEUE_VERSION = 1;
+    uint256 public constant EXPECTED_FINAL_WITHDRAWAL_VAULT_VERSION = 1;
+    uint256 public constant NOT_INITIALIZED_CONTRACT_VERSION = 0;
 
     //
     // STRUCTURED STORAGE
@@ -182,6 +195,12 @@ contract ShapellaUpgradeTemplate {
     /// Perform basic checks to revert the entire upgrade if something gone wrong
     function verifyFinishedUpgrade() external view {
         _verifyFinishedUpgrade();
+    }
+
+    function revertIfUpgradeNotFinished() external view {
+        if (!isUpgradeFinished) {
+            revert UpgradeIsNotFinished();
+        }
     }
 
     function _startUpgrade() internal {
@@ -287,7 +306,7 @@ contract ShapellaUpgradeTemplate {
             address(this),
             address(_hashConsensusForValidatorsExitBusOracle),
             _validatorsExitBusOracleConsensusVersion,
-            0 // lastProcessingRefSlot TODO when get sure about ExitBus frame duration
+            VEBO_LAST_PROCESSING_REF_SLOT
         );
     }
 
@@ -323,7 +342,9 @@ contract ShapellaUpgradeTemplate {
         if (isUpgradeFinished) revert CanOnlyFinishOnce();
         /// Here we check that the contract got new ABI function getContractVersion(), although it is 0 yet
         /// because in the new contract version is stored in a different slot
-        if (_legacyOracle().getContractVersion() != 0) revert LidoOracleMustBeUpgradedToLegacy();
+        if (_legacyOracle().getContractVersion() != NOT_INITIALIZED_CONTRACT_VERSION) {
+            revert LidoOracleMustBeUpgradedToLegacy();
+        }
         isUpgradeFinished = true;
 
         _legacyOracle().finalizeUpgrade_v4(address(_accountingOracle()));
@@ -363,9 +384,9 @@ contract ShapellaUpgradeTemplate {
         _stakingRouter().addStakingModule(
             NOR_STAKING_MODULE_NAME,
             _nodeOperatorsRegistry,
-            10000, // 100% target share
-            500, // 5% staking module fee
-            500 // 5% treasury fee
+            NOR_STAKING_MODULE_TARGET_SHARE_BP,
+            NOR_STAKING_MODULE_MODULE_FEE_BP,
+            NOR_STAKING_MODULE_TREASURY_FEE_BP
         );
         _stakingRouter().renounceRole(sm_manage_role, address(this));
     }
@@ -424,13 +445,13 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _checkContractVersions() internal view {
-        _verifyContractVersion(_lido(), 2);
-        _verifyContractVersion(_legacyOracle(), 4);
-        _verifyContractVersion(_accountingOracle(), 1);
-        _verifyContractVersion(_stakingRouter(), 1);
-        _verifyContractVersion(_validatorsExitBusOracle(), 1);
-        _verifyContractVersion(_withdrawalQueue(), 1);
-        _verifyContractVersion(_withdrawalVault(), 1);
+        _verifyContractVersion(_lido(), EXPECTED_FINAL_LIDO_VERSION);
+        _verifyContractVersion(_legacyOracle(), EXPECTED_FINAL_LEGACY_ORACLE_VERSION);
+        _verifyContractVersion(_accountingOracle(), EXPECTED_FINAL_ACCOUNTING_ORACLE_VERSION);
+        _verifyContractVersion(_stakingRouter(), EXPECTED_FINAL_STAKING_ROUTER_VERSION);
+        _verifyContractVersion(_validatorsExitBusOracle(), EXPECTED_FINAL_VALIDATORS_EXIT_BUS_ORACLE_VERSION);
+        _verifyContractVersion(_withdrawalQueue(), EXPECTED_FINAL_WITHDRAWAL_QUEUE_VERSION);
+        _verifyContractVersion(_withdrawalVault(), EXPECTED_FINAL_WITHDRAWAL_VAULT_VERSION);
     }
 
     function _verifyContractVersion(IVersioned versioned, uint256 expectedVersion) internal view {
@@ -498,6 +519,7 @@ contract ShapellaUpgradeTemplate {
     error CanOnlyStartOnce();
     error CanOnlyFinishOnce();
     error StartMustBeCalledBeforeFinish();
+    error UpgradeIsNotFinished();
     error LidoOracleMustNotBeUpgradedToLegacyYet();
     error LidoOracleMustBeUpgradedToLegacy();
     error WrongDsmOwner();
