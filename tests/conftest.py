@@ -8,11 +8,21 @@ from brownie import chain, interface
 
 from utils.evm_script import EMPTY_CALLSCRIPT
 
+from datetime import datetime
+
+from utils.config import contracts
+from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
+
 from utils.config import (
     ldo_holder_address_for_tests,
     ldo_vote_executors_for_tests,
 )
 from utils.txs.deploy import deploy_from_prepared_tx
+
+
+@pytest.fixture(scope="function", autouse=True)
+def shared_setup(fn_isolation):
+    pass
 
 
 @pytest.fixture(scope="module")
@@ -76,12 +86,12 @@ class Helpers:
         return vote_status[1]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def helpers():
     return Helpers
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def vote_id_from_env() -> Optional[int]:
     _env_name = "OMNIBUS_VOTE_ID"
     if os.getenv(_env_name):
@@ -108,3 +118,16 @@ def bypass_events_decoding() -> bool:
 @pytest.fixture(scope="module")
 def autodeploy_contract(accounts):
     address = deploy_from_prepared_tx(accounts[0], "./utils/txs/tx-deploy-voting_for_upgrade.json")
+
+
+@pytest.fixture(scope="session")
+def stranger(accounts):
+    return accounts[0]
+
+
+@pytest.fixture(scope="session", autouse=is_there_any_vote_scripts())
+def autoexecute_vote(helpers, vote_id_from_env, accounts):
+    if vote_id_from_env:
+        helpers.execute_vote(vote_id=vote_id_from_env, accounts=accounts, dao_voting=contracts.voting, topup="0.5 ether")
+    else:
+        start_and_execute_votes(contracts.voting, helpers)
