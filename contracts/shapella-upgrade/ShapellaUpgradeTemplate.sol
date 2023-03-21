@@ -5,7 +5,6 @@ pragma solidity 0.8.9;
 
 
 interface IAccessControlEnumerable {
-    function DEFAULT_ADMIN_ROLE() external returns (bytes32);
     function grantRole(bytes32 role, address account) external;
     function renounceRole(bytes32 role, address account) external;
     function getRoleMemberCount(bytes32 role) external view returns (uint256);
@@ -136,11 +135,11 @@ interface IWithdrawalVault is IVersioned, IOssifiableProxy {
 
 contract ShapellaUpgradeTemplate {
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
-    string public constant NOR_STAKING_MODULE_NAME = "curated-onchain-v1";
 
     // TODO mainnet: maybe make the immutables constants
     uint256 public constant _accountingOracleConsensusVersion = 1;
     uint256 public constant _validatorsExitBusOracleConsensusVersion = 1;
+    string public constant NOR_STAKING_MODULE_NAME = "curated-onchain-v1";
     bytes32 public constant _nodeOperatorsRegistryStakingModuleType = bytes32("curated-onchain-v1");
     uint256 public constant _nodeOperatorsRegistryStuckPenaltyDelay = 172800;
     bytes32 public constant _withdrawalCredentials = 0x010000000000000000000000AD9928A0863964a901f49e290a2AeAE68bE6EAFb;

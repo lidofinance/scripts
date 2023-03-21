@@ -119,7 +119,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         ),
         # 6. Updating implementation of Oracle app with new one TODO
         update_app_implementation(update_oracle_app["id"], update_oracle_app["new_address"]),
-        # 7. Create permission for SET_EL_REWARDS_VAULT_ROLE of Lido app
+        # 7. Create permission for STAKING_ROUTER of Lido app
         #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
         encode_permission_create(
             entity=STAKING_ROUTER,

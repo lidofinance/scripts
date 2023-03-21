@@ -54,6 +54,27 @@ def get_template_configuration(template_address):
     return config
 
 
+def debug_locator_addresses(locator_address):
+    locator = interface.LidoLocator(locator_address)
+    locator_config = {
+        "accountingOracle": locator.accountingOracle(),
+        "depositSecurityModule": locator.depositSecurityModule(),
+        "elRewardsVault": locator.elRewardsVault(),
+        "legacyOracle": locator.legacyOracle(),
+        "lido": locator.lido(),
+        "oracleReportSanityChecker": locator.oracleReportSanityChecker(),
+        "postTokenRebaseReceiver": locator.postTokenRebaseReceiver(),
+        "burner": locator.burner(),
+        "stakingRouter": locator.stakingRouter(),
+        "treasury": locator.treasury(),
+        "validatorsExitBusOracle": locator.validatorsExitBusOracle(),
+        "withdrawalQueue": locator.withdrawalQueue(),
+        "withdrawalVault": locator.withdrawalVault(),
+        "oracleDaemonConfig": locator.oracleDaemonConfig(),
+    }
+    pprint(locator_config)
+
+
 def pass_ownership_to_template(owner, template):
     admin_role = interface.AccessControlEnumerable(contracts.burner).DEFAULT_ADMIN_ROLE()
 
