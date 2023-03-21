@@ -49,8 +49,30 @@ def get_template_configuration(template_address):
         "_stakingRouterImplementation": template._stakingRouterImplementation(),
         "_accountingOracleImplementation": template._accountingOracleImplementation(),
         "_validatorsExitBusOracleImplementation": template._validatorsExitBusOracleImplementation(),
+        "_validatorsExitBusOracleImplementation": template._withdrawalVaultImplementation(),
     }
     return config
+
+
+def debug_locator_addresses(locator_address):
+    locator = interface.LidoLocator(locator_address)
+    locator_config = {
+        "accountingOracle": locator.accountingOracle(),
+        "depositSecurityModule": locator.depositSecurityModule(),
+        "elRewardsVault": locator.elRewardsVault(),
+        "legacyOracle": locator.legacyOracle(),
+        "lido": locator.lido(),
+        "oracleReportSanityChecker": locator.oracleReportSanityChecker(),
+        "postTokenRebaseReceiver": locator.postTokenRebaseReceiver(),
+        "burner": locator.burner(),
+        "stakingRouter": locator.stakingRouter(),
+        "treasury": locator.treasury(),
+        "validatorsExitBusOracle": locator.validatorsExitBusOracle(),
+        "withdrawalQueue": locator.withdrawalQueue(),
+        "withdrawalVault": locator.withdrawalVault(),
+        "oracleDaemonConfig": locator.oracleDaemonConfig(),
+    }
+    pprint(locator_config)
 
 
 def pass_ownership_to_template(owner, template):
@@ -69,11 +91,12 @@ def pass_ownership_to_template(owner, template):
     transfer_oz_admin_to_template(contracts.hash_consensus_for_accounting_oracle)
     transfer_oz_admin_to_template(contracts.hash_consensus_for_validators_exit_bus_oracle)
 
-    transfer_proxy_admin_to_template(contracts.staking_router)
     transfer_proxy_admin_to_template(contracts.accounting_oracle)
+    transfer_proxy_admin_to_template(contracts.lido_locator)
+    transfer_proxy_admin_to_template(contracts.staking_router)
     transfer_proxy_admin_to_template(contracts.validators_exit_bus_oracle)
     transfer_proxy_admin_to_template(contracts.withdrawal_queue)
-    transfer_proxy_admin_to_template(contracts.lido_locator)
+    transfer_proxy_admin_to_template(contracts.withdrawal_vault)
 
 
 def prepare_for_voting(temporary_admin):
