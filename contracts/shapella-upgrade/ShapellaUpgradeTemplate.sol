@@ -396,6 +396,7 @@ contract ShapellaUpgradeTemplate {
         router.grantRole(router.STAKING_MODULE_RESUME_ROLE(), address(_depositSecurityModule()));
         router.grantRole(router.REPORT_EXITED_VALIDATORS_ROLE(), address(_accountingOracle()));
         router.grantRole(router.REPORT_REWARDS_MINTED_ROLE(), address(_lido()));
+        router.grantRole(router.MANAGE_WITHDRAWAL_CREDENTIALS_ROLE(), _voting);
 
         IValidatorsExitBusOracle exitBusOracle = _validatorsExitBusOracle();
         exitBusOracle.grantRole(exitBusOracle.PAUSE_ROLE(), _gateSeal);

@@ -127,6 +127,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             permission_name="STAKING_ROUTER_ROLE",
             manager=voting,
         ),
+        # 7. Create permission for MANAGE_NODE_OPERATOR_ROLE of NodeOperatorsRegistry app
+        #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
+        encode_permission_create(
+            entity=voting,
+            target_app=node_operators_registry,
+            permission_name="MANAGE_NODE_OPERATOR_ROLE",
+            manager=voting,
+        ),
         # 8. Finalize upgrade via template
         encode_template_finish_upgrade(template_address),
         # 9+. Revoke obsolete roles
@@ -157,7 +165,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         "5) Publishing new implementation in Oracle app APM repo",
         "6) Updating implementation of Oracle app",
         "7) Create permission for STAKING_ROUTER_ROLE of NodeOperatorsRegistry assigning it to StakingRouter",
-        "8) Finalize upgrade by calling finalizeUpgrade() of ShapellaUpgradeTemplate",
+        "8) Create permission for MANAGE_NODE_OPERATOR_ROLE of NodeOperatorsRegistry assigning it to Voting",
+        "9) Finalize upgrade by calling finalizeUpgrade() of ShapellaUpgradeTemplate",
         "X) TODO revoke 1",
         "X) TODO revoke 2",
         "X) TODO revoke 3",
