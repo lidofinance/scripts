@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2023 Lido <info@lido.fi>
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.9;
@@ -11,7 +12,7 @@ interface IAccessControlEnumerable {
     function getRoleMember(bytes32 role, uint256 index) external view returns (address);
 }
 
-interface IAccountingOracle {
+interface IAccountingOracle is IAccessControlEnumerable {
     function SUBMIT_DATA_ROLE() external view returns (bytes32);
     function initialize(address admin, address consensusContract, uint256 consensusVersion) external;
 }
@@ -40,7 +41,7 @@ interface IHashConsensus {
 }
 
 interface ILido {
-    function finalizeUpgrade_v2(address _lidoLocator, address _eip712StETH) external;
+    function finalizeUpgrade_v2(address lidoLocator, address eip712StETH) external;
 }
 
 interface ILidoLocator {
@@ -61,7 +62,7 @@ interface ILidoLocator {
 }
 
 interface ILegacyOracle {
-    function finalizeUpgrade_v4(address _accountingOracle) external;
+    function finalizeUpgrade_v4(address accountingOracle) external;
     function getContractVersion() external view returns (uint256);
 }
 
@@ -73,12 +74,12 @@ interface ILidoOracle {
 }
 
 interface INodeOperatorsRegistry {
-    function finalizeUpgrade_v2(address _locator, bytes32 _type, uint256 _stuckPenaltyDelay) external;
+    function finalizeUpgrade_v2(address locator, bytes32 stakingModuleType, uint256 stuckPenaltyDelay) external;
 }
 
 interface IOssifiableProxy {
-    function proxy__upgradeTo(address newImplementation_) external;
-    function proxy__changeAdmin(address newAdmin_) external;
+    function proxy__upgradeTo(address newImplementation) external;
+    function proxy__changeAdmin(address newAdmin) external;
     function proxy__getAdmin() external view returns (address);
     function proxy__getImplementation() external view returns (address);
 }
@@ -102,13 +103,13 @@ interface IStakingRouter is IAccessControlEnumerable {
     function REPORT_EXITED_VALIDATORS_ROLE() external returns (bytes32);
     function UNSAFE_SET_EXITED_VALIDATORS_ROLE() external returns (bytes32);
     function REPORT_REWARDS_MINTED_ROLE() external returns (bytes32);
-    function initialize(address _admin, address _lido, bytes32 _withdrawalCredentials) external;
+    function initialize(address admin, address lido, bytes32 withdrawalCredentials) external;
     function addStakingModule(
-        string calldata _name,
-        address _stakingModuleAddress,
-        uint256 _targetShare,
-        uint256 _stakingModuleFee,
-        uint256 _treasuryFee
+        string calldata name,
+        address stakingModuleAddress,
+        uint256 targetShare,
+        uint256 stakingModuleFee,
+        uint256 treasuryFee
     ) external;
 }
 
@@ -127,84 +128,43 @@ interface IWithdrawalQueue is IAccessControlEnumerable, IPausableUntil {
     function pauseFor(uint256 _duration) external;
 }
 
+interface IWithdrawalVault {
+    function initialize() external;
+}
+
 
 contract ShapellaUpgradeTemplate {
-
-    // TODO mainnet: remove the structs
-    struct Config {
-        ILidoLocator locator;
-        address eip712StETH;
-        address voting;
-        address nodeOperatorsRegistry;
-        address hashConsensusForAccountingOracle;
-        address hashConsensusForValidatorsExitBusOracle;
-        address gateSeal;
-        bytes32 withdrawalCredentials;
-        uint256 nodeOperatorsRegistryStuckPenaltyDelay;
-    }
-    struct ConfigImplementations {
-        address withdrawalQueueImplementation;
-        address stakingRouterImplementation;
-        address accountingOracleImplementation;
-        address validatorsExitBusOracleImplementation;
-        address dummyImplementation;
-        address locatorImplementation;
-    }
-
-    uint256 public constant SECONDS_PER_BLOCK = 12;
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
     string public constant NOR_STAKING_MODULE_NAME = "curated-onchain-v1";
-    bytes32 public constant NOR_STAKING_MODULE_NAME_BYTES = bytes32("curated-onchain-v1");
 
     // TODO mainnet: maybe make the immutables constants
-    uint256 public immutable _accountingOracleConsensusVersion;
-    uint256 public immutable _validatorsExitBusOracleConsensusVersion;
-    bytes32 public immutable _nodeOperatorsRegistryStakingModuleType;
-    ILidoLocator public immutable _locator;
-    address public immutable _eip712StETH;
-    address public immutable _voting;
-    address public immutable _nodeOperatorsRegistry;
-    address public immutable _hashConsensusForAccountingOracle;
-    address public immutable _hashConsensusForValidatorsExitBusOracle;
-    address public immutable _gateSeal;
-    address public immutable _withdrawalQueueImplementation;
-    address public immutable _stakingRouterImplementation;
-    address public immutable _accountingOracleImplementation;
-    address public immutable _validatorsExitBusOracleImplementation;
-    bytes32 public immutable _withdrawalCredentials;
-    uint256 public immutable _nodeOperatorsRegistryStuckPenaltyDelay;
-    address public immutable _dummyImplementation;
-    address public immutable _locatorImplementation;
+    uint256 public constant _accountingOracleConsensusVersion = 1;
+    uint256 public constant _validatorsExitBusOracleConsensusVersion = 1;
+    bytes32 public constant _nodeOperatorsRegistryStakingModuleType = bytes32("curated-onchain-v1");
+    uint256 public constant _nodeOperatorsRegistryStuckPenaltyDelay = 172800;
+    bytes32 public constant _withdrawalCredentials = 0x010000000000000000000000AD9928A0863964a901f49e290a2AeAE68bE6EAFb;
+
+    ILidoLocator public constant _locator = ILidoLocator(0x1eDf09b5023DC86737b59dE68a8130De878984f5);
+    address public constant _eip712StETH = 0xB4300103FfD326f77FfB3CA54248099Fb29C3b9e;
+    address public constant _voting = 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db;
+    address public constant _nodeOperatorsRegistry = 0x9D4AF1Ee19Dad8857db3a45B0374c81c8A1C6320;
+    address public constant _hashConsensusForAccountingOracle = 0x821688406B8000FE3bAa8B074F8e1CbCD72c0035;
+    address public constant _hashConsensusForValidatorsExitBusOracle = 0xe47EA5f0406C1A976cE43f97cEdcB8f3dee5484A;
+    address public constant _gateSeal = 0x75A77AE52d88999D0b12C6e5fABB1C1ef7E92638;
+    address public constant _withdrawalQueueImplementation = 0x57d31c50dB78e4d95C49Ab83EC011B4D0b0acF59;
+    address public constant _stakingRouterImplementation = 0x73dC7d1d5B3517141eA43fbFC6d092B6fEaFC20A;
+    address public constant _accountingOracleImplementation = 0x0310fABFa308eFb71CFba9d86193710fFD763B71;
+    address public constant _validatorsExitBusOracleImplementation = 0x3eb5f9aC4d71f76B5F6B4DE82f7aefFf414c5854;
+    address public constant _dummyImplementation = 0x6A03b1BbB79460169a205eFBCBc77ebE1011bCf8;
+    address public constant _locatorImplementation = 0xf47F64a3B2AA52A77dC080D50927Af378d7dA7B8;
+    address public constant _withdrawalVaultImplementation = 0x26852993A6420dDa2692b033b5AF3b0846c15d5B;
+    address public constant _previousDepositSecurityModule = 0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe;
 
     //
     // STRUCTURED STORAGE
     //
     bool public isUpgradeStarted;
     bool public isUpgradeFinished;
-
-    constructor(Config memory _config, ConfigImplementations memory _configImpl) {
-        // TODO mainnet/testnet: update the values
-        _accountingOracleConsensusVersion = 1;
-        _validatorsExitBusOracleConsensusVersion = 1;
-        _nodeOperatorsRegistryStakingModuleType = NOR_STAKING_MODULE_NAME_BYTES;
-
-        // TODO mainnet: hardcode the values
-        _locator = _config.locator;
-        _eip712StETH = _config.eip712StETH;
-        _voting = _config.voting;
-        _nodeOperatorsRegistry = _config.nodeOperatorsRegistry;
-        _hashConsensusForAccountingOracle = _config.hashConsensusForAccountingOracle;
-        _hashConsensusForValidatorsExitBusOracle = _config.hashConsensusForValidatorsExitBusOracle;
-        _gateSeal = _config.gateSeal;
-        _withdrawalCredentials = _config.withdrawalCredentials;
-        _nodeOperatorsRegistryStuckPenaltyDelay = _config.nodeOperatorsRegistryStuckPenaltyDelay;
-        _withdrawalQueueImplementation = _configImpl.withdrawalQueueImplementation;
-        _stakingRouterImplementation = _configImpl.stakingRouterImplementation;
-        _accountingOracleImplementation = _configImpl.accountingOracleImplementation;
-        _validatorsExitBusOracleImplementation = _configImpl.validatorsExitBusOracleImplementation;
-        _dummyImplementation = _configImpl.dummyImplementation;
-        _locatorImplementation = _configImpl.locatorImplementation;
-    }
 
     function verifyInitialState() external view {
         _verifyInitialState();
@@ -236,6 +196,8 @@ contract ShapellaUpgradeTemplate {
 
         _verifyInitialState();
 
+        _prepareWithdrawalVault();
+
         _prepareAccountingOracle();
 
         _prepareValidatorsExitBus();
@@ -252,38 +214,57 @@ contract ShapellaUpgradeTemplate {
     function _verifyInitialState() internal view {
         if (ILidoOracle(_locator.legacyOracle()).getVersion() != 3) revert LidoOracleMustNotBeUpgradedToLegacyYet();
 
-        _verifyProxyAdmins(address(this));
+        _verifyAdminsOfProxies(address(this));
 
-        // TODO: put back if enough gas
         _verifyInitialProxyImplementations();
 
-        _verifyOZAdmins(address(this));
+        _verifyOZAccessControlAdmins(address(this));
 
         if (IDepositSecurityModule(_locator.depositSecurityModule()).getOwner() != address(this)) revert WrongDsmOwner();
     }
 
-    function _verifyProxyAdmins(address admin) internal view {
-        if (IOssifiableProxy(address(_locator)).proxy__getAdmin() != admin) revert WrongLocatorAdmin();
-        if (IOssifiableProxy(_locator.withdrawalQueue()).proxy__getAdmin() != admin) revert WrongWQAdmin();
-        if (IOssifiableProxy(_locator.stakingRouter()).proxy__getAdmin() != admin) revert WrongSQAdmin();
-        if (IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__getAdmin() != admin) revert WrongEBAdmin();
-        if (IOssifiableProxy(_locator.accountingOracle()).proxy__getAdmin() != admin) revert WrongAOAdmin();
+    function _verifyAdminsOfProxies(address admin) internal view {
+        _verifyProxyAdmin(_locator.accountingOracle(), admin);
+        _verifyProxyAdmin(address(_locator), admin);
+        _verifyProxyAdmin(_locator.stakingRouter(), admin);
+        _verifyProxyAdmin(_locator.validatorsExitBusOracle(), admin);
+        _verifyProxyAdmin(_locator.withdrawalQueue(), admin);
+        _verifyProxyAdmin(_locator.withdrawalVault(), admin);
+    }
+
+    function _verifyProxyAdmin(address proxy, address admin) internal view {
+        if (IOssifiableProxy(proxy).proxy__getAdmin() != admin) revert WrongProxyAdmin(proxy);
     }
 
     function _verifyInitialProxyImplementations() internal view {
-        if (IOssifiableProxy(_locator.withdrawalQueue()).proxy__getImplementation() != _dummyImplementation) revert WrongWQInitialImpl();
-        if (IOssifiableProxy(_locator.stakingRouter()).proxy__getImplementation() != _dummyImplementation) revert WrongSRInitialImpl();
-        if (IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__getImplementation() != _dummyImplementation) revert WrongEBInitialImpl();
-        if (IOssifiableProxy(_locator.accountingOracle()).proxy__getImplementation() != _dummyImplementation) revert WrongAOInitialImpl();
+        _verifyInitialImplementation(_locator.accountingOracle());
+        _verifyInitialImplementation(_locator.stakingRouter());
+        _verifyInitialImplementation(_locator.validatorsExitBusOracle());
+        _verifyInitialImplementation(_locator.withdrawalQueue());
+        _verifyInitialImplementation(_locator.withdrawalVault());
     }
 
-    function _verifyOZAdmins(address admin) internal view {
-        if (IAccessControlEnumerable(_hashConsensusForAccountingOracle).getRoleMemberCount(DEFAULT_ADMIN_ROLE) != 1) revert MultipleAdminsHCAO();
-        if (IAccessControlEnumerable(_hashConsensusForAccountingOracle).getRoleMember(DEFAULT_ADMIN_ROLE, 0) != admin) revert WrongAdminHCAO();
-        if (IAccessControlEnumerable(_hashConsensusForValidatorsExitBusOracle).getRoleMemberCount(DEFAULT_ADMIN_ROLE) != 1) revert MultipleAdminsHCEB();
-        if (IAccessControlEnumerable(_hashConsensusForValidatorsExitBusOracle).getRoleMember(DEFAULT_ADMIN_ROLE, 0) != admin) revert WrongAdminHCEB();
-        if (IAccessControlEnumerable(_locator.burner()).getRoleMemberCount(DEFAULT_ADMIN_ROLE) != 1) revert MultipleAdminsBU();
-        if (IAccessControlEnumerable(_locator.burner()).getRoleMember(DEFAULT_ADMIN_ROLE, 0) != admin) revert WrongAdminBU();
+    function _verifyInitialImplementation(address proxy) internal view {
+        if (IOssifiableProxy(proxy).proxy__getImplementation() != _dummyImplementation) revert WrongInitialImplementation(proxy);
+    }
+
+    function _verifyOZAccessControlAdmins(address admin) internal view {
+        _verifySingleOZAdmin(_hashConsensusForAccountingOracle, admin);
+        _verifySingleOZAdmin(_hashConsensusForValidatorsExitBusOracle, admin);
+        _verifySingleOZAdmin(_locator.burner(), admin);
+    }
+
+    function _verifySingleOZAdmin(address contractAddress, address admin) internal view {
+        if (IAccessControlEnumerable(contractAddress).getRoleMemberCount(DEFAULT_ADMIN_ROLE) != 1
+         || IAccessControlEnumerable(contractAddress).getRoleMember(DEFAULT_ADMIN_ROLE, 0) != admin
+        ) {
+            revert WrongOZAccessControlAdmin(contractAddress);
+        }
+    }
+
+    function _prepareWithdrawalVault() internal {
+        IOssifiableProxy(_locator.withdrawalVault()).proxy__upgradeTo(_withdrawalVaultImplementation);
+        IWithdrawalVault(_locator.withdrawalVault()).initialize();
     }
 
     function _prepareAccountingOracle() internal {
@@ -332,10 +313,10 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _migrateDSMGuardians() internal {
-        IDepositSecurityModule dsm = IDepositSecurityModule(_locator.depositSecurityModule());
-        address[] memory guardians = dsm.getGuardians();
-        uint256 quorum = dsm.getGuardianQuorum();
-        dsm.addGuardians(guardians, quorum);
+        IDepositSecurityModule previousDSM = IDepositSecurityModule(_previousDepositSecurityModule);
+        address[] memory guardians = previousDSM.getGuardians();
+        uint256 quorum = previousDSM.getGuardianQuorum();
+        IDepositSecurityModule(_locator.depositSecurityModule()).addGuardians(guardians, quorum);
     }
 
     function _finishUpgrade() internal {
@@ -356,6 +337,8 @@ contract ShapellaUpgradeTemplate {
             _nodeOperatorsRegistryStakingModuleType,
             _nodeOperatorsRegistryStuckPenaltyDelay
         );
+
+        _attachNORToStakingRouter();
 
         _grantRoles();
 
@@ -378,13 +361,11 @@ contract ShapellaUpgradeTemplate {
             _locator.lido(),
             _withdrawalCredentials
         );
-        _attachNORToStakingRouter();
-        // TODO: maybe attach NOR as module to staking router
     }
 
     function _attachNORToStakingRouter() internal {
-        bytes32 role = IStakingRouter(_locator.stakingRouter()).STAKING_MODULE_MANAGE_ROLE();
-        IAccessControlEnumerable(_locator.stakingRouter()).grantRole(role, address(this));
+        bytes32 sm_manage_role = IStakingRouter(_locator.stakingRouter()).STAKING_MODULE_MANAGE_ROLE();
+        IAccessControlEnumerable(_locator.stakingRouter()).grantRole(sm_manage_role, address(this));
         IStakingRouter(_locator.stakingRouter()).addStakingModule(
             NOR_STAKING_MODULE_NAME,
             _nodeOperatorsRegistry,
@@ -392,7 +373,7 @@ contract ShapellaUpgradeTemplate {
             500, // 5% staking module fee
             500 // 5% treasury fee
         );
-        IAccessControlEnumerable(_locator.stakingRouter()).renounceRole(role, address(this));
+        IAccessControlEnumerable(_locator.stakingRouter()).renounceRole(sm_manage_role, address(this));
     }
 
     function _grantRoles() internal {
@@ -407,11 +388,9 @@ contract ShapellaUpgradeTemplate {
 
         IValidatorsExitBusOracle exitBusOracle = IValidatorsExitBusOracle(_locator.validatorsExitBusOracle());
         exitBusOracle.grantRole(exitBusOracle.PAUSE_ROLE(), _gateSeal);
-        exitBusOracle.grantRole(exitBusOracle.RESUME_ROLE(), _voting);
 
         IWithdrawalQueue withdrawalQueue = IWithdrawalQueue(_locator.withdrawalQueue());
         withdrawalQueue.grantRole(withdrawalQueue.PAUSE_ROLE(), _gateSeal);
-        withdrawalQueue.grantRole(withdrawalQueue.RESUME_ROLE(), _voting);
         withdrawalQueue.grantRole(withdrawalQueue.FINALIZE_ROLE(), _locator.lido());
         withdrawalQueue.grantRole(withdrawalQueue.ORACLE_ROLE(), _locator.accountingOracle());
     }
@@ -430,17 +409,17 @@ contract ShapellaUpgradeTemplate {
         IOssifiableProxy(_locator.accountingOracle()).proxy__changeAdmin(_voting);
         IOssifiableProxy(_locator.validatorsExitBusOracle()).proxy__changeAdmin(_voting);
         IOssifiableProxy(_locator.withdrawalQueue()).proxy__changeAdmin(_voting);
+        IOssifiableProxy(_locator.withdrawalVault()).proxy__changeAdmin(_voting);
 
         IDepositSecurityModule(_locator.depositSecurityModule()).setOwner(_voting);
     }
 
     function _verifyFinishedUpgrade() internal view {
-        // TODO: uncomment if enough gas
-        // _checkContractVersions();
+        _checkContractVersions();
 
-        _verifyProxyAdmins(_voting);
+        _verifyAdminsOfProxies(_voting);
 
-        _verifyOZAdmins(_voting);
+        _verifyOZAccessControlAdmins(_voting);
 
         // TODO: maybe check non admin roles?
 
@@ -451,12 +430,19 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _checkContractVersions() internal view {
-        if (IVersioned(_locator.lido()).getContractVersion() != 2) revert InvalidLidoVersion();
-        if (IVersioned(_locator.legacyOracle()).getContractVersion() != 4) revert InvalidLOVersion();
-        if (IVersioned(_locator.accountingOracle()).getContractVersion() != 1) revert InvalidAOVersion();
-        if (IVersioned(_locator.stakingRouter()).getContractVersion() != 1) revert InvalidSRVersion();
-        if (IVersioned(_locator.validatorsExitBusOracle()).getContractVersion() != 1) revert InvalidEBVersion();
-        if (IVersioned(_locator.withdrawalQueue()).getContractVersion() != 1) revert InvalidWQVersion();
+        _verifyContractVersion(_locator.lido(), 2);
+        _verifyContractVersion(_locator.legacyOracle(), 4);
+        _verifyContractVersion(_locator.accountingOracle(), 1);
+        _verifyContractVersion(_locator.stakingRouter(), 1);
+        _verifyContractVersion(_locator.validatorsExitBusOracle(), 1);
+        _verifyContractVersion(_locator.withdrawalQueue(), 1);
+        _verifyContractVersion(_locator.withdrawalVault(), 1);
+    }
+
+    function _verifyContractVersion(address contractAddress, uint256 expectedVersion) internal view {
+        if (IVersioned(contractAddress).getContractVersion() != expectedVersion) {
+            revert InvalidContractVersion(contractAddress, expectedVersion);
+        }
     }
 
     function _transferOZAdminFromThisToVoting(address contractAddress) internal {
@@ -480,27 +466,10 @@ contract ShapellaUpgradeTemplate {
     error LidoOracleMustNotBeUpgradedToLegacyYet();
     error LidoOracleMustBeUpgradedToLegacy();
     error WrongDsmOwner();
-    error WrongLocatorAdmin();
-    error WrongWQAdmin();
-    error WrongSQAdmin();
-    error WrongEBAdmin();
-    error WrongAOAdmin();
-    error WrongWQInitialImpl();
-    error WrongSRInitialImpl();
-    error WrongEBInitialImpl();
-    error WrongAOInitialImpl();
-    error InvalidLidoVersion();
-    error InvalidLOVersion();
-    error InvalidAOVersion();
-    error InvalidSRVersion();
-    error InvalidEBVersion();
-    error InvalidWQVersion();
-    error MultipleAdminsHCAO();
-    error WrongAdminHCAO();
-    error MultipleAdminsHCEB();
-    error WrongAdminHCEB();
-    error MultipleAdminsBU();
-    error WrongAdminBU();
+    error WrongProxyAdmin(address proxy);
+    error WrongInitialImplementation(address proxy);
+    error InvalidContractVersion(address contractAddress, uint256 actualVersion);
+    error WrongOZAccessControlAdmin(address contractAddress);
     error WQNotResumed();
     error EBNotResumed();
 }

@@ -19,6 +19,7 @@ class Op(Enum):
     See https://etherscan.io/address/0x9f3b9198911054b122fdb865f8a5ac516201c339#code#L802 to check
     NB! It changes in future versions of the contract
     """
+
     NONE = 0
     EQ = 1
     NEQ = 2
@@ -35,7 +36,8 @@ class Op(Enum):
 
 
 class SpecialArgumentID(IntEnum):
-    """Special argument ids that enables different comparision modes"""
+    """Special argument ids that enables different comparison modes"""
+
     BLOCK_NUMBER_PARAM_ID = 200
     TIMESTAMP_PARAM_ID = 201  #
     ORACLE_PARAM_ID = 203  # auth call to IACLOracle
@@ -68,26 +70,26 @@ class Param:
     value: ArgumentValue
 
     def to_uint256(self) -> int:
-        id8 = convert.to_uint(self.id, 'uint8')
-        op8 = convert.to_uint(self.op.value, 'uint8')
-        value240 = convert.to_uint(self.value, 'uint240')
-        return convert.to_uint((id8 << 248) + (op8 << 240) + value240, 'uint256')
+        id8 = convert.to_uint(self.id, "uint8")
+        op8 = convert.to_uint(self.op.value, "uint8")
+        value240 = convert.to_uint(self.value, "uint240")
+        return convert.to_uint((id8 << 248) + (op8 << 240) + value240, "uint256")
 
     def __str__(self):
         value = hex(self.value) if self.op == Op.EQ else self.value
         special_id = SpecialArgumentID(self.id).name if self.id > 200 else self.id
 
-        value_clause = f'value={value})'
+        value_clause = f"value={value})"
         if self.op == Op.IF_ELSE:
-            if_param = value & 0xffffffff
-            then_param = (value & (0xffffffff << 32)) >> 32
-            else_param = (value & (0xffffffff << 64)) >> 64
-            value_clause = f'if={if_param} then={then_param} else={else_param}'
+            if_param = value & 0xFFFFFFFF
+            then_param = (value & (0xFFFFFFFF << 32)) >> 32
+            else_param = (value & (0xFFFFFFFF << 64)) >> 64
+            value_clause = f"if={if_param} then={then_param} else={else_param}"
         elif self.op == Op.AND or self.op == Op.OR or self.op == Op.NOT or self.op == Op.XOR:
-            left = value & 0xffffffff
-            right = (value & (0xffffffff << 32)) >> 32
-            value_clause = f'left={left} right={right}'
-        return f'Param(ArgumentID={special_id}, op={self.op}, {value_clause})'
+            left = value & 0xFFFFFFFF
+            right = (value & (0xFFFFFFFF << 32)) >> 32
+            value_clause = f"left={left} right={right}"
+        return f"Param(ArgumentID={special_id}, op={self.op}, {value_clause})"
 
 
 def encode_permission_params(params: List[Param]) -> List[int]:
@@ -99,24 +101,24 @@ def encode_argument_value_op(left: int, right: int) -> ArgumentValue:
 
 
 def encode_argument_value_if(condition: int, success: int, failure: int) -> ArgumentValue:
-    condition32 = convert.to_uint(condition, 'uint32')
-    success32 = convert.to_uint(success, 'uint32')
-    failure32 = convert.to_uint(failure, 'uint32')
+    condition32 = convert.to_uint(condition, "uint32")
+    success32 = convert.to_uint(success, "uint32")
+    failure32 = convert.to_uint(failure, "uint32")
 
     value = condition32 + (success32 << 32) + (failure32 << 64)
 
-    return ArgumentValue(convert.to_uint(value, 'uint240'))
+    return ArgumentValue(convert.to_uint(value, "uint240"))
 
 
 def _to_uint240(val: Union[int, str]) -> int:
     #  Possibly, not explicit enough way to handle addresses
     if isinstance(val, str) and (val[:2] == "0x"):
         val = int(val, 16)
-    return ~(0xffff << 240) & val
+    return ~(0xFFFF << 240) & val
 
 
 def parse(val: int) -> Param:
-    arg_id = (val & (0xff << 248)) >> 248
-    op = (val & (0xff << 240)) >> 240
+    arg_id = (val & (0xFF << 248)) >> 248
+    op = (val & (0xFF << 240)) >> 240
     val = _to_uint240(val)
     return Param(arg_id, Op(op), ArgumentValue(val))

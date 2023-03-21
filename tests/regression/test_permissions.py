@@ -14,7 +14,7 @@ def autoexecute_vote(vote_id_from_env, helpers, accounts):
     if vote_id_from_env:
         helpers.execute_vote(vote_id=vote_id_from_env, accounts=accounts, voting=contracts.voting, topup="0.5 ether")
     else:
-        start_and_execute_votes(helpers)
+        start_and_execute_votes(contracts.voting, helpers)
 
 
 @pytest.fixture(scope="module")
