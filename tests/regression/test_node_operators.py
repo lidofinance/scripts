@@ -1,26 +1,22 @@
+import os
 import pytest
 import random
 import textwrap
-from brownie import Wei, network
+from brownie import Wei, network, chain
 
 from utils.config import contracts
 from utils.mainnet_fork import chain_snapshot
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
-from utils.test.node_operators_helpers import assert_node_operators, assert_summaries
+from utils.test.node_operators_helpers import assert_node_operators, assert_summaries, assert_node_operator_added_event
 
 PUBKEY_LENGTH = 48
 SIGNATURE_LENGTH = 96
 DEPOSIT_SIZE = Wei("32 ether")
 
 
-@pytest.fixture(scope="module", autouse=is_there_any_vote_scripts())
-def autoexecute_vote(vote_id_from_env, helpers, accounts):
-    if vote_id_from_env:
-        helpers.execute_vote(
-            vote_id=vote_id_from_env, accounts=accounts, dao_voting=contracts.voting, topup="0.5 ether"
-        )
-    else:
-        start_and_execute_votes(contracts.voting, helpers)
+@pytest.fixture(scope="module", autouse=True)
+def shared_setup(module_isolation):
+    pass
 
 
 @pytest.fixture(scope="module")
@@ -38,16 +34,19 @@ def reward_address(accounts):
     return accounts[7]
 
 
-def test_add_node_operator(nor, voting_eoa, reward_address):
+@pytest.fixture(scope="module")
+def new_node_operator_id(nor):
+    return nor.getNodeOperatorsCount()
+
+
+def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id):
     new_node_operator_name = "new_node_operator"
 
     node_operators_count_before = nor.getNodeOperatorsCount()
     active_node_operators_count_before = nor.getActiveNodeOperatorsCount()
 
-    new_node_operator_id = node_operators_count_before
+    # new_node_operator_id = node_operators_count_before
     tx = nor.addNodeOperator("new_node_operator", reward_address, {"from": voting_eoa})
-    print(tx.contract_name)
-    print(tx.logs)
 
     node_operator_count_after = nor.getNodeOperatorsCount()
     active_node_operators_count_after = nor.getActiveNodeOperatorsCount()
@@ -55,9 +54,8 @@ def test_add_node_operator(nor, voting_eoa, reward_address):
     assert node_operator_count_after == node_operators_count_before + 1
     assert active_node_operators_count_after == active_node_operators_count_before + 1
 
-    added_node_operator = nor.getNodeOperator(new_node_operator_id, True)
     assert_node_operators(
-        added_node_operator,
+        nor.getNodeOperator(new_node_operator_id, True),
         {
             "active": True,
             "name": new_node_operator_name,
@@ -68,6 +66,21 @@ def test_add_node_operator(nor, voting_eoa, reward_address):
             "stakingLimit": 0,
         },
     )
+
+    assert_summaries(
+        nor.getNodeOperatorSummary(new_node_operator_id),
+        {
+            "isTargetLimitActive": False,
+            "targetValidatorsCount": 0,
+            "stuckValidatorsCount": 0,
+            "refundedValidatorsCount": 0,
+            "stuckPenaltyEndTimestamp": 0,
+            "totalExitedValidators": 0,
+            "totalDepositedValidators": 0,
+            "depositableValidatorsCount": 0,
+        },
+    )
+    assert_node_operator_added_event(tx, new_node_operator_id, new_node_operator_name, reward_address, staking_limit=0)
 
     # assert added_node_operator["active"] == True
     # assert added_node_operator["name"] == new_node_operator_name
@@ -84,7 +97,7 @@ def test_add_node_operator(nor, voting_eoa, reward_address):
     # assert tx.events["NodeOperatorAdded"]["stakingLimit"] == 0
 
 
-def test_add_signing_keys_operator_bh(nor, reward_address):
+def test_add_signing_keys_operator_bh(nor, reward_address, new_node_operator_id):
     node_operator_id = nor.getNodeOperatorsCount() - 1
 
     keys_count = 13
@@ -132,7 +145,6 @@ def test_set_node_operator_staking_limit(nor, voting_eoa):
     node_operator_summary_before = nor.getNodeOperatorSummary(node_operator_id)
 
     new_staking_limit = nor.getTotalSigningKeyCount(node_operator_id)
-    print(node_operator_before, new_staking_limit)
     assert new_staking_limit != node_operator_before["stakingLimit"], "invalid new staking limit"
 
     tx = nor.setNodeOperatorStakingLimit(node_operator_id, new_staking_limit, {"from": voting_eoa})
