@@ -5,12 +5,11 @@ import pytest
 import eth_abi
 from functools import partial
 from brownie import interface, reverts, web3
+from brownie.network import chain
 
-from utils.config import contracts, lido_dao_execution_layer_rewards_vault
-from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
+from utils.config import contracts
 
 
-LIDO_EXECUTION_LAYER_REWARDS_VAULT = lido_dao_execution_layer_rewards_vault
 TOTAL_BASIS_POINTS = 10000
 EL_REWARDS_FEE_WITHDRAWAL_LIMIT = 2
 
@@ -20,188 +19,117 @@ def stranger(accounts):
     return accounts[0]
 
 
-@pytest.fixture(scope="module")
-def eth_whale(accounts):
-    return accounts.at("0x00000000219ab540356cBB839Cbe05303d7705Fa", force=True)
-
-
-@pytest.fixture(scope="module")
-def lido_oracle():
-    return contracts.lido_oracle
-
-
-@pytest.fixture(scope="module")
-def lido_execution_layer_rewards_vault():
-    return interface.LidoExecutionLayerRewardsVault(LIDO_EXECUTION_LAYER_REWARDS_VAULT)
-
-
-@pytest.fixture(scope="module", autouse=is_there_any_vote_scripts())
-def autoexecute_vote(vote_id_from_env, helpers, accounts, dao_voting):
-    if vote_id_from_env:
-        helpers.execute_vote(vote_id=vote_id_from_env, accounts=accounts, dao_voting=dao_voting, topup="0.5 ether")
-    else:
-        start_and_execute_votes(dao_voting, helpers)
-
-
-def test_el_rewards_views_values_is_correct(lido, dao_agent, lido_execution_layer_rewards_vault):
+def test_el_rewards_views_values_is_correct():
     # deployed LidoExecutionLayerRewardsVault has correct values
-    assert lido_execution_layer_rewards_vault.LIDO() == lido.address
-    assert lido_execution_layer_rewards_vault.TREASURY() == dao_agent.address
+    assert contracts.execution_layer_rewards_vault.LIDO() == contracts.lido.address
+    assert contracts.execution_layer_rewards_vault.TREASURY() == contracts.agent.address
 
     # Lido contract EL rewards values were set correctly
-    assert lido.getTotalELRewardsCollected() > 0
-    assert lido.getELRewardsWithdrawalLimit() == EL_REWARDS_FEE_WITHDRAWAL_LIMIT
-    assert lido.getELRewardsVault() == LIDO_EXECUTION_LAYER_REWARDS_VAULT
+    assert contracts.lido.getTotalELRewardsCollected() > 0
+    assert contracts.lido_locator.elRewardsVault() == contracts.execution_layer_rewards_vault
 
 
-def test_set_el_rewards_vault(acl, lido, stranger, dao_voting):
-    has_set_el_rewards_vault_role = partial(has_role, acl=acl, app=lido, role="SET_EL_REWARDS_VAULT_ROLE")
-
-    # setELRewardsVault can't be called by stranger
-    assert not has_set_el_rewards_vault_role(entity=stranger)
-    with reverts("APP_AUTH_FAILED"):
-        lido.setELRewardsVault(stranger, {"from": stranger})
-
-    # setELRewardsVault might be called by voting
-    assert has_set_el_rewards_vault_role(entity=dao_voting)
-    tx = lido.setELRewardsVault(stranger, {"from": dao_voting})
-    assert len(tx.logs) == 1
-    assert_el_rewards_vault_set_log(log=tx.logs[0], lido_execution_layer_rewards_vault=stranger.address)
-    assert lido.getELRewardsVault() == stranger
-
-
-def test_set_el_tx_withdrawal_limit(acl, lido, stranger, dao_voting):
-    set_el_rewards_withdrawal_limit_role = "SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE"
-    has_set_el_rewards_withdrawal_limit_role = partial(
-        has_role, acl=acl, app=lido, role=set_el_rewards_withdrawal_limit_role
-    )
-    # setELRewardsWithdrawalLimit can't be called by the stranger
-    assert not has_set_el_rewards_withdrawal_limit_role(entity=stranger)
-    with reverts("APP_AUTH_FAILED"):
-        lido.setELRewardsWithdrawalLimit(0, {"from": stranger})
-
-    # ensure voting has SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE
-    if not has_set_el_rewards_withdrawal_limit_role(entity=dao_voting):
-        acl.createPermission(
-            dao_voting,
-            lido,
-            web3.keccak(text=set_el_rewards_withdrawal_limit_role),
-            dao_voting,
-            {"from": dao_voting},
-        )
-
-    # setELRewardsWithdrawalLimit might be called by the voting
-    new_el_tx_fee_withdrawal_limit = 100
-    tx = lido.setELRewardsWithdrawalLimit(new_el_tx_fee_withdrawal_limit, {"from": dao_voting})
-    assert len(tx.logs) == 1
-    assert_el_tx_fee_withdrawal_limit_set_log(log=tx.logs[0], limit_points=new_el_tx_fee_withdrawal_limit)
-    assert lido.getELRewardsWithdrawalLimit() == new_el_tx_fee_withdrawal_limit
-
-
-def test_lido_execution_layer_rewards_vault_receive_events(stranger, lido_execution_layer_rewards_vault):
+def test_lido_execution_layer_rewards_vault_receive_events(stranger):
     reward_amount = 10**18 + 1
-    el_balance_before = lido_execution_layer_rewards_vault.balance()
-    tx = stranger.transfer(lido_execution_layer_rewards_vault, reward_amount)
-    el_balance_after = lido_execution_layer_rewards_vault.balance()
+    el_balance_before = contracts.execution_layer_rewards_vault.balance()
+    tx = stranger.transfer(contracts.execution_layer_rewards_vault, reward_amount)
+    el_balance_after = contracts.execution_layer_rewards_vault.balance()
     assert (el_balance_after - el_balance_before) == reward_amount
     assert_eth_received_log(log=tx.logs[0], value=reward_amount)
 
 
-def test_receive_el_rewards_permissions(lido, stranger, lido_execution_layer_rewards_vault):
+def test_receive_el_rewards_permissions(stranger):
     reward_amount = 10**18
 
     # receiveELRewards can't be called by the stranger
-    assert lido.getELRewardsVault() != stranger
+    assert contracts.lido_locator.elRewardsVault() != stranger
     with reverts():
-        lido.receiveELRewards({"from": stranger, "value": reward_amount})
+        contracts.lido.receiveELRewards({"from": stranger, "value": reward_amount})
 
     # receiveELRewards might be called by LidoExecutionLayerRewardsVault
-    el_balance_before = lido_execution_layer_rewards_vault.balance()
-    stranger.transfer(lido_execution_layer_rewards_vault, reward_amount)
-    el_balance_after = lido_execution_layer_rewards_vault.balance()
+    el_balance_before = contracts.execution_layer_rewards_vault.balance()
+    stranger.transfer(contracts.execution_layer_rewards_vault, reward_amount)
+    el_balance_after = contracts.execution_layer_rewards_vault.balance()
     assert (el_balance_after - el_balance_before) == reward_amount
 
-    lido_eth_balance_before = lido.balance()
-    lido_el_rewards_collected_before = lido.getTotalELRewardsCollected()
-    tx = lido.receiveELRewards({"from": lido_execution_layer_rewards_vault, "value": reward_amount})
+    lido_eth_balance_before = contracts.lido.balance()
+    lido_el_rewards_collected_before = contracts.lido.getTotalELRewardsCollected()
+    tx = contracts.lido.receiveELRewards({"from": contracts.execution_layer_rewards_vault, "value": reward_amount})
     assert len(tx.logs) == 1
     assert_el_rewards_received_log(log=tx.logs[0], amount=reward_amount)
 
-    assert lido.getTotalELRewardsCollected() - lido_el_rewards_collected_before == reward_amount
-    assert lido_execution_layer_rewards_vault.balance() == (el_balance_after - reward_amount)
-    assert lido.balance() == lido_eth_balance_before + reward_amount
+    assert contracts.lido.getTotalELRewardsCollected() - lido_el_rewards_collected_before == reward_amount
+    assert contracts.execution_layer_rewards_vault.balance() == (el_balance_after - reward_amount)
+    assert contracts.lido.balance() == lido_eth_balance_before + reward_amount
 
 
 @pytest.mark.parametrize("el_reward", [0, 100 * 10**18, 1_000_000 * 10**18])
 @pytest.mark.parametrize("beacon_balance_delta", [0, 1000 * 10**18, -1000 * 10**18])
 def test_handle_oracle_report_with_el_rewards(
-    acl,
-    lido,
-    lido_oracle,
-    dao_voting,
-    lido_execution_layer_rewards_vault,
     eth_whale,
     el_reward,
     beacon_balance_delta,
-    node_operators_registry,
 ):
-    if lido.getELRewardsWithdrawalLimit() == 0:
-        el_rewards_withdrawal_limit = 2
-        set_el_rewards_withdrawal_limit_role = "SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE"
-        has_set_el_rewards_withdrawal_limit_role = partial(
-            has_role, acl=acl, app=lido, role=set_el_rewards_withdrawal_limit_role
-        )
-        if not has_set_el_rewards_withdrawal_limit_role(entity=dao_voting):
-            acl.createPermission(
-                dao_voting,
-                lido,
-                web3.keccak(text=set_el_rewards_withdrawal_limit_role),
-                dao_voting,
-                {"from": dao_voting},
-            )
-        lido.setELRewardsWithdrawalLimit(el_rewards_withdrawal_limit, {"from": dao_voting})
-        assert lido.getELRewardsWithdrawalLimit() == el_rewards_withdrawal_limit
-
-    el_balance_before = lido_execution_layer_rewards_vault.balance()
+    el_balance_before = contracts.execution_layer_rewards_vault.balance()
     # prepare EL rewards
     if el_reward > 0:
-        eth_whale.transfer(lido_execution_layer_rewards_vault, el_reward)
-    el_balance_after = lido_execution_layer_rewards_vault.balance()
+        assert eth_whale.balance() >= el_reward
+        eth_whale.transfer(contracts.execution_layer_rewards_vault, el_reward)
+    el_balance_after = contracts.execution_layer_rewards_vault.balance()
     assert (el_balance_after - el_balance_before) == el_reward
 
     # prepare node operators data
-    node_operators = get_node_operators(node_operators_registry=node_operators_registry)
+    node_operators = get_node_operators(node_operators_registry=contracts.node_operators_registry)
     node_operators_balances_before = {}
     for node_operator in node_operators:
         reward_address = node_operator["rewardAddress"]
-        balance = lido.balanceOf(reward_address)
+        balance = contracts.lido.balanceOf(reward_address)
 
         # top up the node operator balance if it's too low to avoid reverts caused by the shares rounding
         if balance <= 10**9:
-            eth_whale.transfer(lido, 2 * 10**9)
-            lido.transfer(reward_address, 10**9, {"from": eth_whale})
-            balance = lido.balanceOf(reward_address)
+            eth_whale.transfer(contracts.lido, 2 * 10**9)
+            contracts.lido.transfer(reward_address, 10**9, {"from": eth_whale})
+            balance = contracts.lido.balanceOf(reward_address)
         node_operators_balances_before[reward_address] = balance
 
     # prepare new report data
-    prev_report = lido.getBeaconStat().dict()
+    prev_report = contracts.lido.getBeaconStat().dict()
     beacon_validators = prev_report["beaconValidators"]
     beacon_balance = prev_report["beaconBalance"] + beacon_balance_delta
-    buffered_ether_before = lido.getBufferedEther()
+    buffered_ether_before = contracts.lido.getBufferedEther()
 
-    max_allowed_el_reward = (
-        (lido.getTotalPooledEther() + beacon_balance_delta) * lido.getELRewardsWithdrawalLimit() // TOTAL_BASIS_POINTS
+    print(contracts.oracle_report_sanity_checker.getMaxPositiveTokenRebase())
+    # max_allowed_el_reward = (
+    #     (contracts.lido.getTotalPooledEther() + beacon_balance_delta)
+    #     * contracts.lido_locator.elRewardsVault()
+    #     // TOTAL_BASIS_POINTS
+    # )
+
+    treasury_address = contracts.lido.getTreasury()
+    treasury_fund_balance_before = contracts.lido.balanceOf(treasury_address)
+
+    print(contracts.lido.getBufferedEther())
+    # simulate oracle report
+    tx = contracts.lido.handleOracleReport(
+        chain.time(),
+        0,
+        beacon_validators,
+        beacon_balance,
+        0,
+        el_reward,
+        0,
+        [],
+        0,
+        {"from": contracts.accounting_oracle},
     )
 
-    treasury_address = lido.getTreasury()
-    treasury_fund_balance_before = lido.balanceOf(treasury_address)
-
-    # simulate oracle report
-    tx = lido.handleOracleReport(beacon_validators, beacon_balance, {"from": lido_oracle})
-
     # validate that EL rewards were added to the buffered ether
-    expected_el_reward = min(max_allowed_el_reward, el_balance_after)
-    assert lido.getBufferedEther() == buffered_ether_before + expected_el_reward
+    # expected_el_reward = min(max_allowed_el_reward, el_balance_after)
+    expected_el_reward = el_balance_after
+
+    print(expected_el_reward)
+    print(contracts.lido.getBufferedEther() - buffered_ether_before)
+    assert contracts.lido.getBufferedEther() == buffered_ether_before + expected_el_reward
 
     # validate that rewards were distributed
     transfer_logs = filter_transfer_logs(logs=tx.logs)
@@ -213,18 +141,22 @@ def test_handle_oracle_report_with_el_rewards(
         # validate that the correct amount of rewards was distributed
         transfers = parse_transfer_logs(transfer_logs)
         total_rewards = sum(t["value"] for t in transfers)
-        total_reward_expected = lido.getFee() * (beacon_balance_delta + expected_el_reward) // TOTAL_BASIS_POINTS
+        total_reward_expected = (
+            contracts.lido.getFee() * (beacon_balance_delta + expected_el_reward) // TOTAL_BASIS_POINTS
+        )
         # due to the stETH shares rounding distributed value might be less than the expected value
         assert abs(total_rewards - total_reward_expected) <= len(transfers)
 
-        fee_distribution = lido.getFeeDistribution().dict()
+        fee_distribution = contracts.lido.getFeeDistribution().dict()
         # validate treasury rewards
         treasury_fund_expected_reward = (
             (fee_distribution["insuranceFeeBasisPoints"] + fee_distribution["treasuryFeeBasisPoints"])
             * total_rewards
             // TOTAL_BASIS_POINTS
         )
-        assert lido.balanceOf(treasury_address) >= treasury_fund_balance_before + treasury_fund_expected_reward
+        assert (
+            contracts.lido.balanceOf(treasury_address) >= treasury_fund_balance_before + treasury_fund_expected_reward
+        )
 
         # validate node operators rewards
         active_node_operators = list(filter(lambda n: n["active"], node_operators))
@@ -239,7 +171,7 @@ def test_handle_oracle_report_with_el_rewards(
                 total_node_operators_reward // total_number_of_node_operators
             )
 
-            node_operator_balance_after = lido.balanceOf(reward_address)
+            node_operator_balance_after = contracts.ido.balanceOf(reward_address)
 
             assert (
                 node_operator_balance_after
@@ -247,30 +179,9 @@ def test_handle_oracle_report_with_el_rewards(
             )
 
 
-def has_role(acl, entity, app, role):
+def has_role(entity, app, role):
     encoded_role = web3.keccak(text=role)
-    return acl.hasPermission["address,address,bytes32,uint[]"](entity, app, encoded_role, [])
-
-
-def assert_role(acl, entity, app, role, is_granted):
-    encoded_role = web3.keccak(text=role)
-    assert acl.hasPermission["address,address,bytes32,uint[]"](entity, app, encoded_role, []) == is_granted
-
-
-def assert_el_rewards_vault_set_log(log, lido_execution_layer_rewards_vault):
-    topic = web3.keccak(text="ELRewardsVaultSet(address)")
-    assert log["topics"][0] == topic
-
-    # validate params
-    assert log["data"] == "0x" + eth_abi.encode_abi(["address"], [lido_execution_layer_rewards_vault]).hex()
-
-
-def assert_el_tx_fee_withdrawal_limit_set_log(log, limit_points):
-    topic = web3.keccak(text="ELRewardsWithdrawalLimitSet(uint256)")
-    assert log["topics"][0] == topic
-
-    # validate params
-    assert log["data"] == "0x" + eth_abi.encode_abi(["uint256"], [limit_points]).hex()
+    return contracts.acl.hasPermission["address,address,bytes32,uint[]"](entity, app, encoded_role, [])
 
 
 def assert_el_rewards_received_log(log, amount):

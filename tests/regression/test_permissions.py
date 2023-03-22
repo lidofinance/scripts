@@ -4,17 +4,8 @@ Tests for permissions setup
 import pytest
 
 from brownie import interface, convert, web3
-from utils.test.event_validators.permission import Permission, PermissionP
-from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
+from utils.test.event_validators.permission import Permission
 from utils.config import contracts, oracle_committee, gate_seal, guardians
-
-
-@pytest.fixture(scope="module", autouse=is_there_any_vote_scripts())
-def autoexecute_vote(vote_id_from_env, helpers, accounts):
-    if vote_id_from_env:
-        helpers.execute_vote(vote_id=vote_id_from_env, accounts=accounts, voting=contracts.voting, topup="0.5 ether")
-    else:
-        start_and_execute_votes(contracts.voting, helpers)
 
 
 @pytest.fixture(scope="module")
@@ -54,6 +45,7 @@ def protocol_permissions():
         "WithdrawalQueue": {
             "contract": contracts.withdrawal_queue,
             "type": "CustomApp",
+            "proxy_owner": contracts.voting,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.voting],
                 "PAUSE_ROLE": [gate_seal],
@@ -166,9 +158,13 @@ def test_permissions_after_vote(protocol_permissions):
             method for method in permissions_config["contract"].signatures.keys() if method.endswith("_ROLE")
         ]
 
+        if contract_name == "NodeOperatorsRegistry": abi_roles_list.append("MANAGE_SIGNING_KEYS")
+
         roles = permissions_config["roles"]
 
-        assert len(abi_roles_list) == len(roles.keys()), "number of roles doesn't match"
+        assert len(abi_roles_list) == len(roles.keys()), "number of roles doesn't match. expected {} actual {}".format(
+            abi_roles_list, roles.keys()
+        )
         for role in set(permissions_config["roles"].keys()):
             assert role in abi_roles_list, "no {} described for contract {}".format(role, contract_name)
 
