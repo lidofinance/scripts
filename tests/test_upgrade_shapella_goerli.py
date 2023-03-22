@@ -44,8 +44,6 @@ def test_vote(
     ldo_holder,
 ):
     config = load_shapella_deploy_config()
-    debug_locator_addresses(contracts.lido_locator.address)
-
     lido_new_implementation = config["app:lido"]["implementation"]
     nor_new_implementation = config["app:node-operators-registry"]["implementation"]
     oracle_new_implementation = config["app:oracle"]["implementation"]
@@ -63,19 +61,18 @@ def test_vote(
 
     assert not acl.hasPermission(*permission_staking_router)
 
-    template = prepare_for_voting(deployer_eoa)
-    ContractsLazyLoader.upgrade_template = template
-    template.assertCorrectInitialState()  # reverts if the state is not correct
-
     # START VOTE
-    vote_id, _ = start_vote({"from": ldo_holder}, True)
+    # vote_id, _ = start_vote({"from": ldo_holder}, True)
+    _, vote_transactions = start_and_execute_votes(contracts.voting, helpers)
+    tx = vote_transactions[0]
+    template = ContractsLazyLoader.upgrade_template
 
     # DEBUG: Uncomment if want to make part of the upgrade as a separate tx
     # template.startUpgrade({'from': contracts.voting.address})
 
-    tx: TransactionReceipt = helpers.execute_vote(
-        vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting, skip_time=3 * 60 * 60 * 24
-    )
+    # tx: TransactionReceipt = helpers.execute_vote(
+    #     vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting, skip_time=3 * 60 * 60 * 24
+    # )
     print(f"UPGRADE TX GAS USED: {tx.gas_used}")
 
     # DEBUG: Uncomment if want to make part of the upgrade as a separate tx
