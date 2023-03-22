@@ -1,7 +1,7 @@
 """
 Tests for voting ???
 """
-from scripts.upgrade_shapella_goerli import start_vote
+from scripts.upgrade_shapella_1_goerli import start_vote
 from utils.shapella_upgrade import load_shapella_deploy_config, debug_locator_addresses, prepare_for_voting
 from utils.test.tx_tracing_helpers import *
 from utils.config import (
@@ -10,6 +10,9 @@ from utils.config import (
     lido_dao_node_operators_registry,
     ContractsLazyLoader,
     deployer_eoa,
+    lido_dao_voting_address,
+    lido_dao_steth_address,
+    lido_dao_legacy_oracle,
 )
 from utils.test.event_validators.permission import Permission, validate_permission_create_event
 from utils.test.event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
@@ -36,12 +39,88 @@ nos_app_version = (8, 0, 0)
 oracle_app_id = "0xb2977cfc13b000b6807b9ae3cf4d938f4cc8ba98e1d68ad911c58924d6aa4f11"
 oracle_app_version = (5, 0, 0)
 
+permissions_to_revoke = [
+    Permission(  # MANAGE_FEE
+        entity=lido_dao_voting_address,
+        app=lido_dao_steth_address,
+        role="0x46b8504718b48a11e89304b407879435528b3cd3af96afde67dfe598e4683bd8",
+    ),
+    Permission(  # MANAGE_WITHDRAWAL_KEY
+        entity=lido_dao_voting_address,
+        app=lido_dao_steth_address,
+        role="0x46b8504718b48a11e89304b407879435528b3cd3af96afde67dfe598e4683bd8",
+    ),
+    Permission(  # MANAGE_PROTOCOL_CONTRACTS_ROLE
+        entity=lido_dao_voting_address,
+        app=lido_dao_steth_address,
+        role="0xeb7bfce47948ec1179e2358171d5ee7c821994c911519349b95313b685109031",
+    ),
+    Permission(  # SET_EL_REWARDS_VAULT_ROLE
+        entity=lido_dao_voting_address,
+        app=lido_dao_steth_address,
+        role="0x9d68ad53a92b6f44b2e8fb18d211bf8ccb1114f6fafd56aa364515dfdf23c44f",
+    ),
+    Permission(  # SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE
+        entity=lido_dao_voting_address,
+        app=lido_dao_steth_address,
+        role="0xca7d176c2da2028ed06be7e3b9457e6419ae0744dc311989e9b29f6a1ceb1003",
+    ),
+    Permission(  # ADD_NODE_OPERATOR_ROLE
+        entity=lido_dao_voting_address,
+        app=lido_dao_node_operators_registry,
+        role="0xe9367af2d321a2fc8d9c8f1e67f0fc1e2adf2f9844fb89ffa212619c713685b2",
+    ),
+    Permission(  # SET_NODE_OPERATOR_ACTIVE_ROLE
+        entity=lido_dao_voting_address,
+        app=lido_dao_node_operators_registry,
+        role="0xd856e115ac9805c675a51831fa7d8ce01c333d666b0e34b3fc29833b7c68936a",
+    ),
+    Permission(  # SET_NODE_OPERATOR_NAME_ROLE
+        entity=lido_dao_voting_address,
+        app=lido_dao_node_operators_registry,
+        role="0x58412970477f41493548d908d4307dfca38391d6bc001d56ffef86bd4f4a72e8",
+    ),
+    Permission(  # SET_NODE_OPERATOR_ADDRESS_ROLE
+        entity=lido_dao_voting_address,
+        app=lido_dao_node_operators_registry,
+        role="0xbf4b1c236312ab76e456c7a8cca624bd2f86c74a4f8e09b3a26d60b1ce492183",
+    ),
+    Permission(  # REPORT_STOPPED_VALIDATORS_ROLE
+        entity=lido_dao_voting_address,
+        app=lido_dao_node_operators_registry,
+        role="0x18ad851afd4930ecc8d243c8869bd91583210624f3f1572e99ee8b450315c80f",
+    ),
+    Permission(  # MANAGE_MEMBERS
+        entity=lido_dao_voting_address,
+        app=lido_dao_legacy_oracle,
+        role="0xbf6336045918ae0015f4cdb3441a2fdbfaa4bcde6558c8692aac7f56c69fb067",
+    ),
+    Permission(  # MANAGE_QUORUM
+        entity=lido_dao_voting_address,
+        app=lido_dao_legacy_oracle,
+        role="0xa5ffa9f45fa52c446078e834e1914561bd9c2ab1e833572d62af775da092ccbc",
+    ),
+    Permission(  # SET_BEACON_SPEC
+        entity=lido_dao_voting_address,
+        app=lido_dao_legacy_oracle,
+        role="0x16a273d48baf8111397316e6d961e6836913acb23b181e6c5fb35ec0bd2648fc",
+    ),
+    Permission(  # SET_REPORT_BOUNDARIES
+        entity=lido_dao_voting_address,
+        app=lido_dao_legacy_oracle,
+        role="0x44adaee26c92733e57241cb0b26ffaa2d182ed7120ba3ecd7e0dce3635c01dc1",
+    ),
+    Permission(  # SET_BEACON_REPORT_RECEIVER
+        entity=lido_dao_voting_address,
+        app=lido_dao_legacy_oracle,
+        role="0xe22a455f1bfbaf705ac3e891a64e156da92cb0b42cfc389158e6e82bd57f37be",
+    ),
+]
+
 
 def test_vote(
     helpers,
     bypass_events_decoding,
-    accounts,
-    ldo_holder,
 ):
     config = load_shapella_deploy_config()
     lido_new_implementation = config["app:lido"]["implementation"]
@@ -58,8 +137,9 @@ def test_vote(
     oracle_old_app = oracle_repo.getLatest()
 
     acl: interface.ACL = contracts.acl
-
     assert not acl.hasPermission(*permission_staking_router)
+    for permission in permissions_to_revoke:
+        assert acl.hasPermission(*permission), f"No starting role {permission.role} on {permission.entity}"
 
     # START VOTE
     # vote_id, _ = start_vote({"from": ldo_holder}, True)
@@ -106,6 +186,8 @@ def test_vote(
     # Aragon ACL checks
     #
     assert acl.hasPermission(*permission_staking_router)
+    for permission in permissions_to_revoke:
+        assert not acl.hasPermission(*permission), f"Role {permission.role} is still on {permission.entity}"
 
     #
     # Template checks
