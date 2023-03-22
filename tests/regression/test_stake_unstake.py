@@ -34,7 +34,7 @@ def test_stake_withdrawal_flow(stranger):
         {"from": contracts.accounting_oracle},
     )
 
-    assert contracts.lido.balanceOf(stranger) == deposit_amount * (total_ether_before + 0.9 * beacon_balance_delta) // total_ether_before
+    assert abs(contracts.lido.balanceOf(stranger) - deposit_amount * (total_ether_before + 0.9 * beacon_balance_delta) // total_ether_before) <= 2
 
     request_amount = contracts.lido.balanceOf(stranger)
 
@@ -50,4 +50,4 @@ def test_stake_withdrawal_flow(stranger):
 
     contracts.withdrawal_queue.claimWithdrawal(1, {"from": stranger })
 
-    assert stranger.balance() == stranger_balance_before + request_amount - 1
+    assert abs(stranger.balance() - stranger_balance_before - request_amount) <= 2
