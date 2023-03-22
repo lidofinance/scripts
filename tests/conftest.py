@@ -133,7 +133,6 @@ def stranger(accounts):
 
 @pytest.fixture(scope="session", autouse=is_there_any_vote_scripts())
 def autoexecute_vote(helpers, vote_id_from_env, accounts):
-    return
     if vote_id_from_env:
         helpers.execute_vote(vote_id=vote_id_from_env, accounts=accounts, dao_voting=contracts.voting, topup="0.5 ether")
     else:
