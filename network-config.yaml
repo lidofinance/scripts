@@ -2,7 +2,6 @@ development:
   - cmd: ./ganache.sh
     cmd_settings:
       accounts: 10
-      evm_version: istanbul
       fork: mainnet
       gas_limit: 12000000
       mnemonic: brownie
