@@ -65,7 +65,7 @@ def test_vote(
 
     template = prepare_for_voting(deployer_eoa)
     ContractsLazyLoader.upgrade_template = template
-    template.verifyInitialState()  # reverts if the state is not correct
+    template.assertCorrectInitialState()  # reverts if the state is not correct
 
     # START VOTE
     vote_id, _ = start_vote({"from": ldo_holder}, True)
