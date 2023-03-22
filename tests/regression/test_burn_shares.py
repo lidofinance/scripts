@@ -3,46 +3,34 @@ Tests for lido burnShares method
 """
 import eth_abi
 import pytest
+from utils.config import contracts
 from brownie import reverts, ZERO_ADDRESS, web3, accounts
-from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 
+def test_burn_shares_by_stranger(stranger):
+    lido = accounts.at(contracts.lido, force=True)
 
-@pytest.fixture(scope="module")
-def stranger(accounts):
-    return accounts[0]
-
-
-@pytest.fixture(scope="module", autouse=is_there_any_vote_scripts())
-def autoexecute_vote(dao_voting, helpers, vote_id_from_env):
-    if vote_id_from_env:
-        helpers.execute_vote(vote_id=vote_id_from_env, accounts=accounts, dao_voting=dao_voting, topup="0.5 ether")
-    else:
-        start_and_execute_votes(dao_voting, helpers)
-
-
-def test_burn_shares_by_stranger(lido, stranger):
     # Stake ETH by stranger to receive stETH
     stranger_submit_amount = 10**18
-    lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": stranger_submit_amount})
-    stranger_steth_balance_before = lido.balanceOf(stranger)
+    contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": stranger_submit_amount})
+    stranger_steth_balance_before = contracts.lido.balanceOf(stranger)
+    shares_to_burn = contracts.lido.sharesOf(stranger)
     assert abs(stranger_submit_amount - stranger_steth_balance_before) <= 2
 
+    total_eth = contracts.lido.totalSupply()
+    total_shares = contracts.lido.getTotalShares()
+
     # Test that stranger can't burnShares
-    shares_to_burn = lido.sharesOf(stranger) // 3
-    with reverts("APP_AUTH_FAILED"):
-        lido.burnShares(stranger, shares_to_burn, {"from": stranger})
+    with reverts("typed error: 0x7e717823"): # keccak256("AppAuthLidoFailed()")
+        contracts.burner.commitSharesToBurn(shares_to_burn, {"from": stranger})
+
+    contracts.lido.approve(contracts.burner, 10**24, {"from": stranger})
+
+    contracts.burner.requestBurnSharesForCover(stranger, shares_to_burn, {"from": lido})
+
+    tx = contracts.burner.commitSharesToBurn(shares_to_burn, {"from": lido})
 
 
-def assert_shares_burnt_log(log, account, pre_rebase_token_amount, post_rebase_token_amount, shares_amount):
-    topic = web3.keccak(text="SharesBurnt(address,uint256,uint256,uint256)")
-    assert log["topics"][0] == topic
 
-    # validate indexed account topic
-    assert log["topics"][1] == eth_abi.encode_abi(["address"], [account])
-
-    # validate other params
-    other_param_bytes = eth_abi.encode_abi(
-        ["uint256", "uint256", "uint256"],
-        [pre_rebase_token_amount, post_rebase_token_amount, shares_amount],
-    )
-    assert log["data"] == f"0x{other_param_bytes.hex()}"
+    assert contracts.lido.sharesOf(stranger) == 0
+    assert contracts.lido.totalSupply() == total_eth
+    assert contracts.lido.getTotalShares() == total_shares - shares_to_burn

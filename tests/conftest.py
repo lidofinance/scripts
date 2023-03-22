@@ -8,11 +8,18 @@ from brownie import chain, interface
 
 from utils.evm_script import EMPTY_CALLSCRIPT
 
+from utils.config import contracts, network_name
+
 from utils.config import (
     ldo_holder_address_for_tests,
     ldo_vote_executors_for_tests,
 )
 from utils.txs.deploy import deploy_from_prepared_tx
+
+
+@pytest.fixture(scope="function", autouse=True)
+def shared_setup(fn_isolation):
+    pass
 
 
 @pytest.fixture(scope="module")
@@ -23,6 +30,14 @@ def ldo_holder(accounts):
 @pytest.fixture(scope="module")
 def unknown_person(accounts):
     return accounts.at("0x98ec059dc3adfbdd63429454aeb0c990fba4a128", force=True)
+
+
+@pytest.fixture(scope="module")
+def eth_whale(accounts):
+    if network_name() in ("goerli", "goerli-fork"):
+        return accounts.at("0xC48E23C5F6e1eA0BaEf6530734edC3968f79Af2e", force=True)
+    else:
+        return accounts.at("0x00000000219ab540356cBB839Cbe05303d7705Fa", force=True)
 
 
 class Helpers:
@@ -76,12 +91,12 @@ class Helpers:
         return vote_status[1]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def helpers():
     return Helpers
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def vote_id_from_env() -> Optional[int]:
     _env_name = "OMNIBUS_VOTE_ID"
     if os.getenv(_env_name):
@@ -108,3 +123,8 @@ def bypass_events_decoding() -> bool:
 @pytest.fixture(scope="module")
 def autodeploy_contract(accounts):
     address = deploy_from_prepared_tx(accounts[0], "./utils/txs/tx-deploy-voting_for_upgrade.json")
+
+
+@pytest.fixture(scope="session")
+def stranger(accounts):
+    return accounts[9]

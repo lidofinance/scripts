@@ -28,9 +28,12 @@ lido_dao_deposit_security_module_address = "0x07c1e7eDC8a19c9A9b936DecDd531a6365
 # proxy is to be set to the implementation
 lido_dao_lido_locator_implementation = "0xf47F64a3B2AA52A77dC080D50927Af378d7dA7B8"
 
+# Needed temporary only for Shapella upgrade
+deployer_eoa = "0xa5F1d7D49F581136Cf6e58B32cBE9a2039C48bA1"
+
 lido_dao_lido_locator = "0x1eDf09b5023DC86737b59dE68a8130De878984f5"
 lido_dao_burner = "0x20c61C07C2E2FAb04BF5b4E12ce45a459a18f3B1"
-lido_dao_execution_layer_rewards_vault = "0x94750381bE1AbA0504C666ee1DB118F68f0780D4"
+lido_dao_execution_layer_rewards_vault = "0x27Dec30CC9EfDDDAF04C7CA2737759CBf6405ecb"
 lido_dao_hash_consensus_for_accounting_oracle = "0x821688406B8000FE3bAa8B074F8e1CbCD72c0035"
 lido_dao_accounting_oracle = "0x5864490e56B6f013Bc702Cf137Ed32Dc2C86F818"
 lido_dao_hash_consensus_for_validators_exit_bus_oracle = "0xe47EA5f0406C1A976cE43f97cEdcB8f3dee5484A"
@@ -64,6 +67,8 @@ ldo_vote_executors_for_tests = [
 dai_token_address = "0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844"
 
 weth_token_address = "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6"
+
+oracle_daemon_config = "0x081f55c1Eb944E868e8bA48FC9DF701945FE65b3"
 
 oracle_committee = [
     "0xfdA7E01B2718C511bF016030010572e833C7aE6A",

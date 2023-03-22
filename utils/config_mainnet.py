@@ -27,6 +27,9 @@ lido_dao_deposit_security_module_address = "0xdb149235b6f40dc08810aa69869783be10
 # proxy is to be to the implementation
 lido_dao_lido_locator_implementation = ""
 
+# Needed temporary only for Shapella upgrade
+deployer_eoa = ""
+
 lido_dao_lido_locator = ""
 lido_dao_burner = "0xB280E33812c0B09353180e92e27b8AD399B07f26"
 lido_dao_execution_layer_rewards_vault = "0x388C818CA8B9251b393131C08a736A67ccB19297"
@@ -70,7 +73,7 @@ oracle_committee = [
     "0xEC4BfbAF681eb505B94E4a7849877DC6c600Ca3A",
     "0x61c91ECd902EB56e314bB2D5c5C07785444Ea1c8",
     "0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d",
-    "0xA7410857ABbf75043d61ea54e07D57A6EB6EF186"
+    "0xA7410857ABbf75043d61ea54e07D57A6EB6EF186",
 ]
 
 guardians = [
@@ -79,5 +82,5 @@ guardians = [
     "0x14D5d5B71E048d2D75a39FfC5B407e3a3AB6F314",
     "0xf82D88217C249297C6037BA77CE34b3d8a90ab43",
     "0xa56b128Ea2Ea237052b0fA2a96a387C0E43157d8",
-    "0xd4EF84b638B334699bcf5AF4B0410B8CCD71943f"
+    "0xd4EF84b638B334699bcf5AF4B0410B8CCD71943f",
 ]

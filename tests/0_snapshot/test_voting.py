@@ -7,13 +7,13 @@ from brownie import accounts, chain, MockCallTarget, Contract, interface
 from utils.test.snapshot_helpers import ValueChanged, dict_zip, dict_diff, assert_no_diffs, assert_expected_diffs
 
 from utils.voting import create_vote, bake_vote_items
-from utils.config import ldo_vote_executors_for_tests, lido_dao_voting_address, ldo_holder_address_for_tests
+from utils.config import ldo_vote_executors_for_tests, ldo_holder_address_for_tests, contracts
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 
 
 @pytest.fixture(scope='module')
-def vote_time(dao_voting):
-    return dao_voting.voteTime()
+def vote_time():
+    return contracts.voting.voteTime()
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -24,8 +24,8 @@ def call_target():
 @pytest.fixture(scope='module')
 def old_voting():
     return Contract.from_explorer(
-        address=lido_dao_voting_address,
-        as_proxy_for=interface.AppProxyUpgradeable(lido_dao_voting_address).implementation()
+        address=contracts.voting,
+        as_proxy_for=interface.AppProxyUpgradeable(contracts.voting).implementation()
     )
 
 
@@ -90,15 +90,15 @@ def steps(voting, call_target, vote_time) -> Dict[str, Dict[str, ValueChanged]]:
 
 
 @pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason='No votes')
-def test_create_wait_enact(dao_voting, old_voting, helpers, vote_time, call_target):
+def test_create_wait_enact(old_voting, helpers, vote_time, call_target):
     """
     Run a smoke test before upgrade, then after upgrade, and compare snapshots at each step
     """
     votesLength = old_voting.votesLength()
     before: Dict[str, Dict[str, any]] = steps(old_voting, call_target, vote_time)
     chain.revert()
-    start_and_execute_votes(dao_voting, helpers)
-    after: Dict[str, Dict[str, any]] = steps(dao_voting, call_target, vote_time)
+    start_and_execute_votes(contracts.voting, helpers)
+    after: Dict[str, Dict[str, any]] = steps(contracts.voting, call_target, vote_time)
 
     step_diffs: Dict[str, Dict[str, ValueChanged]] = {}
 
@@ -110,6 +110,6 @@ def test_create_wait_enact(dao_voting, old_voting, helpers, vote_time, call_targ
         assert_expected_diffs(
             step_name,
             diff,
-            {'votesLength': ValueChanged(from_val=votesLength + 1, to_val=votesLength + 2)}
+            {'votesLength': ValueChanged(from_val=votesLength + 1, to_val=votesLength + 3)}
         )
         assert_no_diffs(step_name, diff)

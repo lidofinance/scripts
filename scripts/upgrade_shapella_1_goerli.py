@@ -13,7 +13,6 @@ Shapella Protocol Upgrade
 
 # 7. Call Oracle's finalizeUpgrade_v3() to update internal version counter.
 # 8. Create permission for SET_EL_REWARDS_VAULT_ROLE of Lido app assigning it to Voting
-
 """
 
 import time
@@ -37,15 +36,13 @@ from utils.config import (
     get_is_live,
     contracts,
     network_name,
+    lido_dao_staking_router,
+    ContractsLazyLoader,
 )
 from utils.permissions import encode_permission_create, encode_permission_revoke
 
 # noinspection PyUnresolvedReferences
 from utils.brownie_prelude import *
-
-
-DEPLOYER_EOA = "0xa5F1d7D49F581136Cf6e58B32cBE9a2039C48bA1"
-STAKING_ROUTER = "0x2fa2Cdd94C11B0e8B50205E1F304e97D9797ae09"
 
 
 # TODO: set content_uri
@@ -84,14 +81,9 @@ def encode_template_finish_upgrade(template_address: str) -> Tuple[str, str]:
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
 
-    template = prepare_for_voting(DEPLOYER_EOA)
-    template_address = template.address
-
-    # TODO: add upgrade_ prefix to the voting script to enable snapshot tests
+    template_address = ContractsLazyLoader.upgrade_template.address
 
     voting: interface.Voting = contracts.voting
-    lido: interface.Lido = contracts.lido
-    lido_oracle: interface.LegacyOracle = contracts.legacy_oracle
     node_operators_registry: interface.NodeOperatorsRegistry = contracts.node_operators_registry
 
     call_script_items = [
@@ -122,12 +114,12 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         # 7. Create permission for STAKING_ROUTER of Lido app
         #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
         encode_permission_create(
-            entity=STAKING_ROUTER,
+            entity=lido_dao_staking_router,
             target_app=node_operators_registry,
             permission_name="STAKING_ROUTER_ROLE",
             manager=voting,
         ),
-        # 7. Create permission for MANAGE_NODE_OPERATOR_ROLE of NodeOperatorsRegistry app
+        # 8. Create permission for MANAGE_NODE_OPERATOR_ROLE of NodeOperatorsRegistry app
         #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
         encode_permission_create(
             entity=voting,
@@ -135,25 +127,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             permission_name="MANAGE_NODE_OPERATOR_ROLE",
             manager=voting,
         ),
-        # 8. Finalize upgrade via template
+        # 9. Finalize upgrade via template
         encode_template_finish_upgrade(template_address),
-        # 9+. Revoke obsolete roles
-        # TODO: on goerli the list is larger
-        encode_permission_revoke(lido, "MANAGE_FEE", revoke_from=voting),
-        encode_permission_revoke(lido, "MANAGE_WITHDRAWAL_KEY", revoke_from=voting),
-        encode_permission_revoke(lido, "MANAGE_PROTOCOL_CONTRACTS_ROLE", revoke_from=voting),
-        encode_permission_revoke(lido, "SET_EL_REWARDS_VAULT_ROLE", revoke_from=voting),
-        encode_permission_revoke(lido, "SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE", revoke_from=voting),
-        encode_permission_revoke(node_operators_registry, "ADD_NODE_OPERATOR_ROLE", revoke_from=voting),
-        encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_ACTIVE_ROLE", revoke_from=voting),
-        encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_NAME_ROLE", revoke_from=voting),
-        encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_ADDRESS_ROLE", revoke_from=voting),
-        encode_permission_revoke(node_operators_registry, "REPORT_STOPPED_VALIDATORS_ROLE", revoke_from=voting),
-        encode_permission_revoke(lido_oracle, "MANAGE_MEMBERS", revoke_from=voting),
-        encode_permission_revoke(lido_oracle, "MANAGE_QUORUM", revoke_from=voting),
-        encode_permission_revoke(lido_oracle, "SET_BEACON_SPEC", revoke_from=voting),
-        encode_permission_revoke(lido_oracle, "SET_REPORT_BOUNDARIES", revoke_from=voting),
-        encode_permission_revoke(lido_oracle, "SET_BEACON_REPORT_RECEIVER", revoke_from=voting),
     ]
 
     vote_desc_items = [
@@ -167,26 +142,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         "7) Create permission for STAKING_ROUTER_ROLE of NodeOperatorsRegistry assigning it to StakingRouter",
         "8) Create permission for MANAGE_NODE_OPERATOR_ROLE of NodeOperatorsRegistry assigning it to Voting",
         "9) Finalize upgrade by calling finalizeUpgrade() of ShapellaUpgradeTemplate",
-        "X) TODO revoke 1",
-        "X) TODO revoke 2",
-        "X) TODO revoke 3",
-        "X) TODO revoke 4",
-        "X) TODO revoke 5",
-        "X) TODO revoke 6",
-        "X) TODO revoke 7",
-        "X) TODO revoke 8",
-        "X) TODO revoke 9",
-        "X) TODO revoke 10",
-        "X) TODO revoke 11",
-        "X) TODO revoke 12",
-        "X) TODO revoke 13",
-        "X) TODO revoke 14",
-        "X) TODO revoke 15",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
 
-    return confirm_vote_script(vote_items, silent) and list(create_vote(vote_items, tx_params)) + [template]
+    return confirm_vote_script(vote_items, silent) and list(create_vote(vote_items, tx_params))
 
 
 def main():

@@ -69,6 +69,9 @@ def get_config_params() -> Dict[str, str]:
 
 
 class ContractsLazyLoader:
+    # Stored here temporarily, for debug purposes
+    upgrade_template = None
+
     @property
     def lido_v1(self) -> interface.LidoV1:
         return interface.LidoV1(lido_dao_steth_address)
@@ -204,6 +207,10 @@ class ContractsLazyLoader:
     @property
     def weth_token(self) -> interface.WethToken:
         return interface.WethToken(weth_token_address)
+
+    @property
+    def oracle_daemon_config(self) -> interface.OracleDaemonConfig:
+        return interface.WethToken(oracle_daemon_config)
 
 
 def __getattr__(name: str) -> Any:
