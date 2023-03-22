@@ -14,14 +14,14 @@ def protocol_permissions():
         "LidoLocator": {
             "contract": contracts.lido_locator,
             "type": "CustomApp",
-            "proxy_owner": contracts.voting,
+            "proxy_owner": contracts.agent,
             "roles": {},
         },
         "Burner": {
             "contract": contracts.burner,
             "type": "CustomApp",
             "roles": {
-                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "REQUEST_BURN_MY_STETH_ROLE": [],
                 "RECOVER_ASSETS_ROLE": [],
                 "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry],
@@ -30,9 +30,9 @@ def protocol_permissions():
         "StakingRouter": {
             "contract": contracts.staking_router,
             "type": "CustomApp",
-            "proxy_owner": contracts.voting,
+            "proxy_owner": contracts.agent,
             "roles": {
-                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_WITHDRAWAL_CREDENTIALS_ROLE": [],
                 "STAKING_MODULE_PAUSE_ROLE": [contracts.deposit_security_module],
                 "STAKING_MODULE_RESUME_ROLE": [contracts.deposit_security_module],
@@ -45,9 +45,9 @@ def protocol_permissions():
         "WithdrawalQueue": {
             "contract": contracts.withdrawal_queue,
             "type": "CustomApp",
-            "proxy_owner": contracts.voting,
+            "proxy_owner": contracts.agent,
             "roles": {
-                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "PAUSE_ROLE": [gate_seal],
                 "RESUME_ROLE": [],
                 "FINALIZE_ROLE": [contracts.lido],
@@ -58,9 +58,9 @@ def protocol_permissions():
         "AccountingOracle": {
             "contract": contracts.accounting_oracle,
             "type": "CustomApp",
-            "proxy_owner": contracts.voting,
+            "proxy_owner": contracts.agent,
             "roles": {
-                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "SUBMIT_DATA_ROLE": oracle_committee,
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
                 "MANAGE_CONSENSUS_VERSION_ROLE": [],
@@ -69,9 +69,9 @@ def protocol_permissions():
         "ValidatorsExitBusOracle": {
             "contract": contracts.validators_exit_bus_oracle,
             "type": "CustomApp",
-            "proxy_owner": contracts.voting,
+            "proxy_owner": contracts.agent,
             "roles": {
-                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "SUBMIT_DATA_ROLE": oracle_committee,
                 "PAUSE_ROLE": [gate_seal],
                 "RESUME_ROLE": [],
@@ -83,7 +83,7 @@ def protocol_permissions():
             "contract": contracts.hash_consensus_for_accounting_oracle,
             "type": "CustomApp",
             "roles": {
-                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_MEMBERS_AND_QUORUM_ROLE": [],
                 "DISABLE_CONSENSUS_ROLE": [],
                 "MANAGE_FRAME_CONFIG_ROLE": [],
@@ -95,7 +95,7 @@ def protocol_permissions():
             "contract": contracts.hash_consensus_for_validators_exit_bus_oracle,
             "type": "CustomApp",
             "roles": {
-                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_MEMBERS_AND_QUORUM_ROLE": [],
                 "DISABLE_CONSENSUS_ROLE": [],
                 "MANAGE_FRAME_CONFIG_ROLE": [],
@@ -107,7 +107,7 @@ def protocol_permissions():
             "contract": contracts.oracle_report_sanity_checker,
             "type": "CustomApp",
             "roles": {
-                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "ALL_LIMITS_MANAGER_ROLE": [],
                 "CHURN_VALIDATORS_PER_DAY_LIMIT_MANGER_ROLE": [],
                 "ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE": [],
@@ -123,7 +123,7 @@ def protocol_permissions():
         "DepositSecurityModule": {
             "contract": contracts.deposit_security_module,
             "type": "CustomApp",
-            "state": {"getOwner": contracts.voting, "getGuardians": guardians},
+            "state": {"getOwner": contracts.agent, "getGuardians": guardians},
             "roles": {},
         },
         "Lido": {
@@ -147,6 +147,14 @@ def protocol_permissions():
                 "SET_NODE_OPERATOR_LIMIT_ROLE": [contracts.voting],
             },
         },
+        "OracleDaemonConfig": {
+            "contract": contracts.oracle_daemon_config,
+            "type": "CustomApp",
+            "roles": {
+                "STAKING_ROUTER_ROLE": [contracts.agent],
+                "CONFIG_MANAGER_ROLE": [],
+            },
+        }
     }
 
 
