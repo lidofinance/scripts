@@ -8,10 +8,7 @@ from brownie import chain, interface
 
 from utils.evm_script import EMPTY_CALLSCRIPT
 
-from datetime import datetime
-
 from utils.config import contracts, network_name
-from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 
 from utils.config import (
     ldo_holder_address_for_tests,
@@ -130,14 +127,4 @@ def autodeploy_contract(accounts):
 
 @pytest.fixture(scope="session")
 def stranger(accounts):
-    return accounts[0]
-
-
-# @pytest.fixture(scope="session", autouse=is_there_any_vote_scripts())
-def autoexecute_vote(helpers, vote_id_from_env, accounts):
-    if vote_id_from_env:
-        helpers.execute_vote(
-            vote_id=vote_id_from_env, accounts=accounts, dao_voting=contracts.voting, topup="0.5 ether"
-        )
-    else:
-        start_and_execute_votes(contracts.voting, helpers)
+    return accounts[9]

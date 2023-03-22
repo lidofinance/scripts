@@ -200,6 +200,10 @@ class ContractsLazyLoader:
     def weth_token(self) -> interface.WethToken:
         return interface.WethToken(weth_token_address)
 
+    @property
+    def oracle_daemon_config(self) -> interface.OracleDaemonConfig:
+        return interface.WethToken(oracle_daemon_config)
+
 
 def __getattr__(name: str) -> Any:
     if name == "contracts":

@@ -7,7 +7,6 @@ from brownie import interface, accounts, chain, ZERO_ADDRESS
 from utils.test.snapshot_helpers import (
     dict_zip,
     dict_diff,
-    try_or_none,
     assert_no_diffs,
     ValueChanged,
 )
@@ -28,45 +27,28 @@ def staker():
 
 def snapshot() -> Dict[str, any]:
     lido = contracts.lido
-    oracle = contracts.lido_oracle
-    self_owned_steth_burner = contracts.self_owned_steth_burner
-    composite_receiver = contracts.composite_post_rebase_beacon_receiver
 
     return {
         "address": lido.address,
-        "implementation": interface.AppProxyUpgradeable(lido.address).implementation(),
         "name": lido.name(),
         "hasInitialized()": lido.hasInitialized(),
         "PAUSE_ROLE": lido.PAUSE_ROLE(),
-        "DEPOSIT_ROLE": lido.DEPOSIT_ROLE(),
-        "DEPOSIT_SIZE": lido.DEPOSIT_SIZE(),
-        "MANAGE_WITHDRAWAL_KEY": lido.MANAGE_WITHDRAWAL_KEY(),
-        "getInsuranceFund()": lido.getInsuranceFund(),
         "totalSupply": lido.totalSupply(),
-        "getOperators()": lido.getOperators(),
         "decimals": lido.decimals(),
         "getRecoveryVault()": lido.getRecoveryVault(),
         "getTotalPooledEther()": lido.getTotalPooledEther(),
         "getTreasury()": lido.getTreasury(),
         "isStopped()": lido.isStopped(),
         "getBufferedEther()": lido.getBufferedEther(),
-        "SIGNATURE_LENGTH()": lido.SIGNATURE_LENGTH(),
-        "getWithdrawalCredentials()": lido.getWithdrawalCredentials(),
-        "getFeeDistribution()": lido.getFeeDistribution(),
         "getPooledEthByShares(100)": lido.getPooledEthByShares(100),
         "allowRecoverability(LDO)": lido.allowRecoverability(ldo_token_address),
         "allowRecoverability(StETH)": lido.allowRecoverability(lido_dao_steth_address),
-        "MANAGE_FEE": lido.MANAGE_FEE(),
         "appId": lido.appId(),
         "getOracle()": lido.getOracle(),
         "getInitializationBlock()": lido.getInitializationBlock(),
         "symbol": lido.symbol(),
-        "WITHDRAWAL_CREDENTIALS_LENGTH": lido.WITHDRAWAL_CREDENTIALS_LENGTH(),
         "getEVMScriptRegistry": lido.getEVMScriptRegistry(),
-        "PUBKEY_LENGTH": lido.PUBKEY_LENGTH(),
-        "getDepositContract()": lido.getDepositContract(),
         "getBeaconStat()": lido.getBeaconStat(),
-        "BURN_ROLE": lido.BURN_ROLE(),
         "getFee()": lido.getFee(),
         "kernel": lido.kernel(),
         "getTotalShares()": lido.getTotalShares(),
@@ -83,36 +65,24 @@ def snapshot() -> Dict[str, any]:
         "STAKING_CONTROL_ROLE": lido.STAKING_CONTROL_ROLE(),
         "RESUME_ROLE": lido.RESUME_ROLE(),
         "isStakingPaused()": lido.isStakingPaused(),
-        "getELRewardsWithdrawalLimit()": lido.getELRewardsWithdrawalLimit(),
-        "SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE": lido.SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE(),
-        "getELRewardsVault()": lido.getELRewardsVault(),
-        "MANAGE_PROTOCOL_CONTRACTS_ROLE": lido.MANAGE_PROTOCOL_CONTRACTS_ROLE(),
-        "SET_EL_REWARDS_VAULT_ROLE": lido.SET_EL_REWARDS_VAULT_ROLE(),
         "STAKING_PAUSE_ROLE": lido.STAKING_PAUSE_ROLE(),
         "getTotalELRewardsCollected()": lido.getTotalELRewardsCollected(),
-        "getBeaconReportReceiver()": oracle.getBeaconReportReceiver(),
-        "callbacksLength()": composite_receiver.callbacksLength(),
-        "callbacks(0)": try_or_none(lambda: composite_receiver.callbacks(0)),
-        "getCoverSharesBurnt": self_owned_steth_burner.getCoverSharesBurnt(),
-        "getNonCoverSharesBurnt": self_owned_steth_burner.getNonCoverSharesBurnt(),
-        "getBurnAmountPerRunQuota": self_owned_steth_burner.getBurnAmountPerRunQuota(),
-        "getExcessStETH": self_owned_steth_burner.getExcessStETH(),
     }
 
 
 @pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
-def test_submit_snapshot(helpers, lido, staker, dao_voting):
+def test_submit_snapshot(helpers, staker):
     ether = 10**18
 
     def steps() -> Dict[str, Dict[str, any]]:
         track = {"init": snapshot()}
-        lido.submit(ZERO_ADDRESS, {"from": staker, "amount": ether})
+        contracts.lido.submit(ZERO_ADDRESS, {"from": staker, "amount": ether})
         track["submit"] = snapshot()
         return track
 
     before: Dict[str, Dict[str, any]] = steps()
     chain.revert()
-    start_and_execute_votes(dao_voting, helpers)
+    start_and_execute_votes(contracts.voting, helpers)
     after: Dict[str, Dict[str, any]] = steps()
 
     step_diffs: Dict[str, Dict[str, ValueChanged]] = {}

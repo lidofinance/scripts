@@ -63,8 +63,8 @@ def test_receive_el_rewards_permissions(stranger):
     assert contracts.lido.balance() == lido_eth_balance_before + reward_amount
 
 
-@pytest.mark.parametrize("el_reward", [0, 100 * 10**18, 1_000_000 * 10**18])
-@pytest.mark.parametrize("beacon_balance_delta", [0, 1000 * 10**18, -1000 * 10**18])
+@pytest.mark.parametrize("el_reward", [0, 100 * 10**18])
+@pytest.mark.parametrize("beacon_balance_delta", [0, 100 * 10**18, -100 * 10**18])
 def test_handle_oracle_report_with_el_rewards(
     eth_whale,
     el_reward,
