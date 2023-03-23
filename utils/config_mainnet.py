@@ -108,6 +108,6 @@ report_limits = {
     "maxValidatorExitRequestsPerReport": 500,
     "maxAccountingExtraDataListItemsCount": 500,
     "maxNodeOperatorsPerExtraDataItemCount": 100,
-    "requestTimestampMargin": 7200,
+    "requestTimestampMargin": 7680,
     "maxPositiveTokenRebase": 750000,
 }
