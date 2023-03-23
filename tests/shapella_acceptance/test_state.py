@@ -1,5 +1,10 @@
 from brownie import interface, web3, ZERO_ADDRESS
-from utils.config import contracts, lido_dao_withdrawal_vault_implementation, oracle_daemon_config_values
+from utils.config import (
+    contracts,
+    lido_dao_withdrawal_vault_implementation,
+    oracle_daemon_config_values,
+    lido_dao_lido_locator_implementation,
+)
 
 from test_upgrade_shapella_goerli import lido_app_id
 
@@ -134,3 +139,12 @@ def test_oracle_daemon_config_state():
 
     for key, value in oracle_daemon_config_values.items():
         assert int(str(contract.get(key)), 16) == value
+
+
+def test_locator_state():
+    # All immutable addresses are tested in respective functions
+
+    # OssifiableProxy
+    proxy = interface.OssifiableProxy(contracts.lido_locator)
+    assert proxy.proxy__getImplementation() == lido_dao_lido_locator_implementation
+    assert proxy.proxy__getAdmin() == contracts.agent.address
