@@ -165,10 +165,6 @@ class ContractsLazyLoader:
         return interface.WithdrawalVault(lido_dao_withdrawal_vault)
 
     @property
-    def beacon_chain_depositor(self) -> interface.BeaconChainDepositor:
-        return interface.BeaconChainDepositor(lido_dao_beacon_chain_depositor)
-
-    @property
     def staking_router(self) -> interface.StakingRouter:
         return interface.StakingRouter(lido_dao_staking_router)
 
@@ -210,7 +206,11 @@ class ContractsLazyLoader:
 
     @property
     def oracle_daemon_config(self) -> interface.OracleDaemonConfig:
-        return interface.WethToken(oracle_daemon_config)
+        return interface.OracleDaemonConfig(oracle_daemon_config)
+
+    @property
+    def wsteth(self) -> interface.WstETH:
+        return interface.WstETH(wsteth_token_address)
 
 
 def __getattr__(name: str) -> Any:

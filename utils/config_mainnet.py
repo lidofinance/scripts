@@ -41,9 +41,10 @@ lido_dao_oracle_report_sanity_checker = ""
 lido_dao_withdrawal_queue = ""
 lido_dao_eip712_steth = ""
 lido_dao_withdrawal_vault = ""
-lido_dao_beacon_chain_depositor = ""
 lido_dao_staking_router = ""
 gate_seal = ""
+oracle_daemon_config = ""
+shapella_upgrade_template = ""
 
 lido_easytrack = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 lido_easytrack_evmscriptexecutor = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
@@ -84,3 +85,29 @@ guardians = [
     "0xa56b128Ea2Ea237052b0fA2a96a387C0E43157d8",
     "0xd4EF84b638B334699bcf5AF4B0410B8CCD71943f",
 ]
+
+wsteth_token_address = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
+
+oracle_daemon_config_values = {
+    "NORMALIZED_CL_REWARD_PER_EPOCH": 64,
+    "NORMALIZED_CL_REWARD_MISTAKE_RATE_BP": 1000,
+    "REBASE_CHECK_NEAREST_EPOCH_DISTANCE": 2,
+    "REBASE_CHECK_DISTANT_EPOCH_DISTANCE": 4,
+    "VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS": 3600,
+    "VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS": 7200,
+    "PREDICTION_DURATION_IN_SLOTS": 7200,
+    "FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT": 128,
+    "NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP": 100,
+}
+
+report_limits = {
+    "churnValidatorsPerDayLimit": 12375,
+    "oneOffCLBalanceDecreaseBPLimit": 500,
+    "annualBalanceIncreaseBPLimit": 1000,
+    "simulatedShareRateDeviationBPLimit": 10,
+    "maxValidatorExitRequestsPerReport": 500,
+    "maxAccountingExtraDataListItemsCount": 500,
+    "maxNodeOperatorsPerExtraDataItemCount": 100,
+    "requestTimestampMargin": 7200,
+    "maxPositiveTokenRebase": 750000,
+}

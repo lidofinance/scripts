@@ -38,6 +38,8 @@ from utils.config import (
     network_name,
     lido_dao_staking_router,
     ContractsLazyLoader,
+    lido_dao_withdrawal_vault,
+    lido_dao_withdrawal_vault_implementation,
 )
 from utils.permissions import encode_permission_create, encode_permission_revoke
 
@@ -47,21 +49,21 @@ from utils.brownie_prelude import *
 
 # TODO: set content_uri
 update_lido_app = {
-    "new_address": "0xf798159E0908FB988220eFbab94985De68F4FB55",
+    "new_address": "0xEE227CC91A769881b1e81350224AEeF7587eBe76",
     "content_uri": "0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053",
     "id": "0x79ac01111b462384f1b7fba84a17b9ec1f5d2fddcfcb99487d71b443832556ea",
     "version": (10, 0, 0),
 }
 
 update_nos_app = {
-    "new_address": "0x1fE9E1015DBa106B4dc9d6B7C206aA66129b0a9f",
+    "new_address": "0xCAfe9Ac6a4bE2eAfCFf949693C0da9eebF985C3B",
     "content_uri": "0x697066733a516d61375058486d456a346a7332676a4d3976744850747176754b3832695335455950694a6d7a4b4c7a55353847",
     "id": "0x57384c8fcaf2c1c2144974769a6ea4e5cf69090d47f5327f8fc93827f8c0001a",
     "version": (8, 0, 0),
 }
 
 update_oracle_app = {
-    "new_address": "0x37d30AB66797326FEb4A80E413cAe8b569eCf460",
+    "new_address": "0x7D505d1CCd49C64C2dc0b15acbAE235C4651F50B",
     "content_uri": "0x697066733a516d554d506669454b71354d786d387932475951504c756a47614a69577a31747665703557374564414767435238",
     "id": "0xb2977cfc13b000b6807b9ae3cf4d938f4cc8ba98e1d68ad911c58924d6aa4f11",
     "version": (5, 0, 0),
@@ -78,16 +80,23 @@ def encode_template_finish_upgrade(template_address: str) -> Tuple[str, str]:
     return template.address, template.finishUpgrade.encode_input()
 
 
+def encode_withdrawal_vault_proxy_update(vault_proxy_address: str, implementation: str) -> Tuple[str, str]:
+    proxy = interface.WithdrawalVaultManager(vault_proxy_address)
+    return proxy.address, proxy.proxy_upgradeTo.encode_input(implementation, b"")
+
+
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
 
-    template_address = ContractsLazyLoader.upgrade_template.address
+    template_address = ContractsLazyLoader.upgrade_template
+    assert template_address != "", "Upgrade template must be deployed preliminary"
 
     voting: interface.Voting = contracts.voting
     node_operators_registry: interface.NodeOperatorsRegistry = contracts.node_operators_registry
 
     call_script_items = [
         # TODO
+        encode_withdrawal_vault_proxy_update(lido_dao_withdrawal_vault, lido_dao_withdrawal_vault_implementation),
         encode_template_start_upgrade(template_address),
         # 1. Publishing new implementation(TODO)
         #                   in Lido app APM repo 0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1
@@ -132,6 +141,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
     ]
 
     vote_desc_items = [
+        "X) Update WithdrawalVault proxy implementation",
         "X) TODO startUpgrade",
         "1) Publish new implementation in Lido app APM repo",
         "2) Updating implementation of Lido app",

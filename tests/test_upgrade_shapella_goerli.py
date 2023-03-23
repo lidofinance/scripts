@@ -2,24 +2,21 @@
 Tests for voting ???
 """
 from scripts.upgrade_shapella_1_goerli import start_vote
-from utils.shapella_upgrade import load_shapella_deploy_config, debug_locator_addresses, prepare_for_voting
 from utils.test.tx_tracing_helpers import *
 from utils.config import (
     contracts,
     lido_dao_staking_router,
     lido_dao_node_operators_registry,
     ContractsLazyLoader,
-    deployer_eoa,
     lido_dao_voting_address,
     lido_dao_steth_address,
     lido_dao_legacy_oracle,
+    shapella_upgrade_template,
 )
 from utils.test.event_validators.permission import Permission, validate_permission_create_event
 from utils.test.event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
 from brownie.network.transaction import TransactionReceipt
-from brownie import interface
-from brownie import ShapellaUpgradeTemplate
-from pprint import pprint
+from brownie import interface, ShapellaUpgradeTemplate
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 
 
@@ -31,12 +28,15 @@ permission_staking_router = Permission(
 )
 
 lido_app_id = "0x79ac01111b462384f1b7fba84a17b9ec1f5d2fddcfcb99487d71b443832556ea"
+lido_new_implementation = "0xEE227CC91A769881b1e81350224AEeF7587eBe76"
 lido_app_version = (10, 0, 0)
 
-nos_app_id = "0x57384c8fcaf2c1c2144974769a6ea4e5cf69090d47f5327f8fc93827f8c0001a"
-nos_app_version = (8, 0, 0)
+nor_app_id = "0x57384c8fcaf2c1c2144974769a6ea4e5cf69090d47f5327f8fc93827f8c0001a"
+nor_new_implementation = "0xCAfe9Ac6a4bE2eAfCFf949693C0da9eebF985C3B"
+nor_app_version = (8, 0, 0)
 
 oracle_app_id = "0xb2977cfc13b000b6807b9ae3cf4d938f4cc8ba98e1d68ad911c58924d6aa4f11"
+oracle_new_implementation = "0x7D505d1CCd49C64C2dc0b15acbAE235C4651F50B"
 oracle_app_version = (5, 0, 0)
 
 permissions_to_revoke = [
@@ -122,11 +122,6 @@ def test_vote(
     helpers,
     bypass_events_decoding,
 ):
-    config = load_shapella_deploy_config()
-    lido_new_implementation = config["app:lido"]["implementation"]
-    nor_new_implementation = config["app:node-operators-registry"]["implementation"]
-    oracle_new_implementation = config["app:oracle"]["implementation"]
-
     lido_repo: interface.Repo = contracts.lido_app_repo
     lido_old_app = lido_repo.getLatest()
 
@@ -141,11 +136,14 @@ def test_vote(
     for permission in permissions_to_revoke:
         assert acl.hasPermission(*permission), f"No starting role {permission.role} on {permission.entity}"
 
+    if shapella_upgrade_template != "":
+        template = ShapellaUpgradeTemplate.at(shapella_upgrade_template)
+        template.assertCorrectInitialState()
+
     # START VOTE
-    # vote_id, _ = start_vote({"from": ldo_holder}, True)
     _, vote_transactions = start_and_execute_votes(contracts.voting, helpers)
     tx = vote_transactions[0]
-    template = ContractsLazyLoader.upgrade_template
+    template = ShapellaUpgradeTemplate.at(ContractsLazyLoader.upgrade_template)
 
     # DEBUG: Uncomment if want to make part of the upgrade as a separate tx
     # template.startUpgrade({'from': contracts.voting.address})
@@ -203,8 +201,8 @@ def test_vote(
     validate_push_to_repo_event(evs[0], lido_app_version)
     validate_app_update_event(evs[1], lido_app_id, lido_new_implementation)
 
-    validate_push_to_repo_event(evs[2], nos_app_version)
-    validate_app_update_event(evs[3], nos_app_id, nor_new_implementation)
+    validate_push_to_repo_event(evs[2], nor_app_version)
+    validate_app_update_event(evs[3], nor_app_id, nor_new_implementation)
 
     validate_push_to_repo_event(evs[4], oracle_app_version)
     validate_app_update_event(evs[5], oracle_app_id, oracle_new_implementation)
