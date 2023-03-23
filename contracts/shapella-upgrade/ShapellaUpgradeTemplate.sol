@@ -26,6 +26,7 @@ interface IPausableUntil {
     function resume() external;
 }
 
+
 interface IOssifiableProxy {
     function proxy__upgradeTo(address newImplementation) external;
     function proxy__changeAdmin(address newAdmin) external;
@@ -96,6 +97,23 @@ interface INodeOperatorsRegistry {
     function finalizeUpgrade_v2(address locator, bytes32 stakingModuleType, uint256 stuckPenaltyDelay) external;
 }
 
+interface IOracleDaemonConfig is IAccessControlEnumerable {
+    function CONFIG_MANAGER_ROLE() external view returns (bytes32);
+    function get(string calldata _key) external view returns (bytes memory);
+}
+
+interface IOracleReportSanityChecker is IAccessControlEnumerable {
+    function ALL_LIMITS_MANAGER_ROLE() external view returns (bytes32);
+    function CHURN_VALIDATORS_PER_DAY_LIMIT_MANGER_ROLE() external view returns (bytes32);
+    function ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE() external view returns (bytes32);
+    function ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE() external view returns (bytes32);
+    function SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE() external view returns (bytes32);
+    function MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_ROLE() external view returns (bytes32);
+    function MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE() external view returns (bytes32);
+    function MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE() external view returns (bytes32);
+    function REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE() external view returns (bytes32);
+    function MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE() external view returns (bytes32);
+}
 
 interface IStakingRouter is IVersioned, IAccessControlEnumerable, IOssifiableProxy {
     function MANAGE_WITHDRAWAL_CREDENTIALS_ROLE() external view returns (bytes32);
@@ -172,6 +190,15 @@ contract ShapellaUpgradeTemplate {
     uint256 public constant EXPECTED_FINAL_WITHDRAWAL_QUEUE_VERSION = 1;
     uint256 public constant EXPECTED_FINAL_WITHDRAWAL_VAULT_VERSION = 1;
 
+    struct KeyValue {
+        string key;
+        bytes value;
+    }
+
+    // KeyValue[] oracleDaemonConfigParams = [
+        // KeyValue("foo", bytes(bytes32(uint256(10))))
+    // ];
+
     //
     // STRUCTURED STORAGE
     //
@@ -244,6 +271,11 @@ contract ShapellaUpgradeTemplate {
         _assertSingleOZRoleHolder(_hashConsensusForValidatorsExitBusOracle, DEFAULT_ADMIN_ROLE, address(this));
         _assertSingleOZRoleHolder(_burner(), DEFAULT_ADMIN_ROLE, address(this));
         if (_depositSecurityModule().getOwner() != address(this)) revert WrongDsmOwner();
+
+        _assertSingleOZRoleHolder(_burner(), DEFAULT_ADMIN_ROLE, address(this));
+
+        // _assertOracleDaemonConfigInitialState();
+        _assertOracleReportSanityCheckerInitialState();
     }
 
     function _upgradeProxyImplementations() internal {
@@ -265,6 +297,30 @@ contract ShapellaUpgradeTemplate {
 
     function _assertProxyAdmin(IOssifiableProxy proxy, address admin) internal view {
         if (proxy.proxy__getAdmin() != admin) revert WrongProxyAdmin(address(proxy));
+    }
+
+    function _assertOracleReportSanityCheckerInitialState() internal view {
+        IOracleReportSanityChecker checker = _oracleReportSanityChecker();
+        _assertSingleOZRoleHolder(checker, DEFAULT_ADMIN_ROLE, _agent);
+        // TODO: revoke the role preliminary?
+        _assertSingleOZRoleHolder(checker, checker.ALL_LIMITS_MANAGER_ROLE(), _voting);
+        _assertZeroRoleHolders(checker, checker.CHURN_VALIDATORS_PER_DAY_LIMIT_MANGER_ROLE());
+        _assertZeroRoleHolders(checker, checker.ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE());
+        _assertZeroRoleHolders(checker, checker.ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE());
+        _assertZeroRoleHolders(checker, checker.SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE());
+        _assertZeroRoleHolders(checker, checker.MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_ROLE());
+        _assertZeroRoleHolders(checker, checker.MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE());
+        _assertZeroRoleHolders(checker, checker.MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE());
+        _assertZeroRoleHolders(checker, checker.REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE());
+        _assertZeroRoleHolders(checker, checker.MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE());
+    }
+
+    function _assertOracleDaemonConfigInitialState() internal view {
+        IOracleDaemonConfig config = _oracleDaemonConfig();
+        _assertSingleOZRoleHolder(config, DEFAULT_ADMIN_ROLE, _agent);
+        // TODO: revoke the role preliminary?
+        _assertSingleOZRoleHolder(config, config.CONFIG_MANAGER_ROLE(), _voting);
+        // TODO: check key-values
     }
 
     function _assertInitialDummyProxyImplementations() internal view {
@@ -509,6 +565,14 @@ contract ShapellaUpgradeTemplate {
     // Returns the same address as _lidoOracle()
     function _legacyOracle() internal view returns (ILegacyOracle) {
         return ILegacyOracle(_locator.legacyOracle());
+    }
+
+    function _oracleDaemonConfig() internal view returns (IOracleDaemonConfig) {
+        return IOracleDaemonConfig(_locator.oracleDaemonConfig());
+    }
+
+    function _oracleReportSanityChecker() internal view returns (IOracleReportSanityChecker) {
+        return IOracleReportSanityChecker(_locator.oracleReportSanityChecker());
     }
 
     function _stakingRouter() internal view returns (IStakingRouter) {

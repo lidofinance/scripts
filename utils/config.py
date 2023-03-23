@@ -157,10 +157,6 @@ class ContractsLazyLoader:
         return interface.WithdrawalVault(lido_dao_withdrawal_vault)
 
     @property
-    def beacon_chain_depositor(self) -> interface.BeaconChainDepositor:
-        return interface.BeaconChainDepositor(lido_dao_beacon_chain_depositor)
-
-    @property
     def staking_router(self) -> interface.StakingRouter:
         return interface.StakingRouter(lido_dao_staking_router)
 

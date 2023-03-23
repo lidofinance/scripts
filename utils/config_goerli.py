@@ -45,7 +45,6 @@ gate_seal = "0x75A77AE52d88999D0b12C6e5fABB1C1ef7E92638"
 
 lido_dao_eip712_steth = "0xB4300103FfD326f77FfB3CA54248099Fb29C3b9e"
 lido_dao_withdrawal_vault = "0x70760635A8862c562C5Ad0374D7f9CEA4A7193D2"
-lido_dao_beacon_chain_depositor = "0xf94De698703575932bfc88DE8b2cd54720D5c4A7"
 lido_dao_staking_router = "0x2fa2Cdd94C11B0e8B50205E1F304e97D9797ae09"
 
 lido_easytrack = "0xAf072C8D368E4DD4A9d4fF6A76693887d6ae92Af"
