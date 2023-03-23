@@ -96,6 +96,7 @@ def prepare_for_voting(temporary_admin):
     assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
 
     template = deploy_template_implementation(temporary_admin)
+    print(f"=== Deployed template {template.address} ===")
     pprint(get_template_configuration(template))
     interface.OssifiableProxy(contracts.lido_locator).proxy__upgradeTo(
         lido_dao_lido_locator_implementation, {"from": temporary_admin}

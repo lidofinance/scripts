@@ -88,7 +88,8 @@ def encode_withdrawal_vault_proxy_update(vault_proxy_address: str, implementatio
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
 
-    template_address = ContractsLazyLoader.upgrade_template.address
+    template_address = ContractsLazyLoader.upgrade_template
+    assert template_address != "", "Upgrade template must be deployed preliminary"
 
     voting: interface.Voting = contracts.voting
     node_operators_registry: interface.NodeOperatorsRegistry = contracts.node_operators_registry

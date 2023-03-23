@@ -43,7 +43,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
 
     call_script_items = [
         # TODO
-        encode_template_check_upgrade_finished(ContractsLazyLoader.upgrade_template.address),
+        encode_template_check_upgrade_finished(ContractsLazyLoader.upgrade_template),
         # 9+. Revoke obsolete roles
         # TODO: on goerli the list is larger
         encode_permission_revoke(lido, "MANAGE_FEE", revoke_from=voting),

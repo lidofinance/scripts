@@ -11,12 +11,12 @@ from utils.config import (
     lido_dao_voting_address,
     lido_dao_steth_address,
     lido_dao_legacy_oracle,
+    shapella_upgrade_template,
 )
 from utils.test.event_validators.permission import Permission, validate_permission_create_event
 from utils.test.event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
 from brownie.network.transaction import TransactionReceipt
-from brownie import interface
-from brownie import ShapellaUpgradeTemplate
+from brownie import interface, ShapellaUpgradeTemplate
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 
 
@@ -136,11 +136,14 @@ def test_vote(
     for permission in permissions_to_revoke:
         assert acl.hasPermission(*permission), f"No starting role {permission.role} on {permission.entity}"
 
+    if shapella_upgrade_template != "":
+        template = ShapellaUpgradeTemplate.at(shapella_upgrade_template)
+        template.assertCorrectInitialState()
+
     # START VOTE
-    # vote_id, _ = start_vote({"from": ldo_holder}, True)
     _, vote_transactions = start_and_execute_votes(contracts.voting, helpers)
     tx = vote_transactions[0]
-    template = ContractsLazyLoader.upgrade_template
+    template = ShapellaUpgradeTemplate.at(ContractsLazyLoader.upgrade_template)
 
     # DEBUG: Uncomment if want to make part of the upgrade as a separate tx
     # template.startUpgrade({'from': contracts.voting.address})

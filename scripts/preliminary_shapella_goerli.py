@@ -17,6 +17,7 @@ from brownie import ShapellaUpgradeTemplate
 from utils.shapella_upgrade import prepare_for_voting
 from utils.config import (
     get_deployer_account,
+    network_name,
     deployer_eoa,
 )
 from utils.permissions import encode_permission_create, encode_permission_revoke
