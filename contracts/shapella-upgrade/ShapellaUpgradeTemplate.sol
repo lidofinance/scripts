@@ -145,12 +145,18 @@ interface IWithdrawalQueue is IAccessControlEnumerable, IPausableUntil, IVersion
     function pauseFor(uint256 _duration) external;
 }
 
-interface IWithdrawalVault is IVersioned, IOssifiableProxy {
+interface IWithdrawalsManagerProxy {
+    function proxy_getAdmin() external view returns (address);
+    function implementation() external view returns (address);
+}
+
+interface IWithdrawalVault is IVersioned, IWithdrawalsManagerProxy {
     function initialize() external;
 }
 
 
 contract ShapellaUpgradeTemplate {
+
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
     uint256 public constant NOT_INITIALIZED_CONTRACT_VERSION = 0;
 
@@ -159,27 +165,27 @@ contract ShapellaUpgradeTemplate {
     string public constant NOR_STAKING_MODULE_NAME = "curated-onchain-v1";
     bytes32 public constant _nodeOperatorsRegistryStakingModuleType = bytes32("curated-onchain-v1");
     uint256 public constant _nodeOperatorsRegistryStuckPenaltyDelay = 172800;
-    bytes32 public constant _withdrawalCredentials = 0x010000000000000000000000AD9928A0863964a901f49e290a2AeAE68bE6EAFb;
+    bytes32 public constant _withdrawalCredentials = 0x010000000000000000000000dc62f9e8c34be08501cdef4ebde0a280f576d762;
     uint256 public constant NOR_STAKING_MODULE_TARGET_SHARE_BP = 10000; // 100%
     uint256 public constant NOR_STAKING_MODULE_MODULE_FEE_BP = 500; // 5%
     uint256 public constant NOR_STAKING_MODULE_TREASURY_FEE_BP = 500; // 5%
     uint256 public constant VEBO_LAST_PROCESSING_REF_SLOT = 0;
 
     ILidoLocator public constant _locator = ILidoLocator(0x1eDf09b5023DC86737b59dE68a8130De878984f5);
-    IHashConsensus public constant _hashConsensusForAccountingOracle = IHashConsensus(0x821688406B8000FE3bAa8B074F8e1CbCD72c0035);
-    IHashConsensus public constant _hashConsensusForValidatorsExitBusOracle = IHashConsensus(0xe47EA5f0406C1A976cE43f97cEdcB8f3dee5484A);
+    IHashConsensus public constant _hashConsensusForAccountingOracle = IHashConsensus(0x8EA83346E60261DdF1fA3B64056B096e337541b2);
+    IHashConsensus public constant _hashConsensusForValidatorsExitBusOracle = IHashConsensus(0x8D4bCbc063da5A813FC13c3f4c817afcA7cb1eD6);
     address public constant _eip712StETH = 0xB4300103FfD326f77FfB3CA54248099Fb29C3b9e;
     address public constant _voting = 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db;
     address public constant _agent = 0x4333218072D5d7008546737786663c38B4D561A4;
     address public constant _nodeOperatorsRegistry = 0x9D4AF1Ee19Dad8857db3a45B0374c81c8A1C6320;
     address public constant _gateSeal = 0x75A77AE52d88999D0b12C6e5fABB1C1ef7E92638;
-    address public constant _withdrawalQueueImplementation = 0x57d31c50dB78e4d95C49Ab83EC011B4D0b0acF59;
-    address public constant _stakingRouterImplementation = 0x73dC7d1d5B3517141eA43fbFC6d092B6fEaFC20A;
-    address public constant _accountingOracleImplementation = 0x0310fABFa308eFb71CFba9d86193710fFD763B71;
-    address public constant _validatorsExitBusOracleImplementation = 0x3eb5f9aC4d71f76B5F6B4DE82f7aefFf414c5854;
+    address public constant _withdrawalQueueImplementation = 0x265be9738fA32B29180867E07eaf1d6fa02a34dB;
+    address public constant _stakingRouterImplementation = 0x249565350CcaD707bB68cE9980B366751649F4cd;
+    address public constant _accountingOracleImplementation = 0x8C55A49639b456F98E1A8D7DAa3b29B378CADc8b;
+    address public constant _validatorsExitBusOracleImplementation = 0x304F1B78B975AB79B479AdA70cE2Fc9A5a1A2a54;
     address public constant _dummyImplementation = 0x6A03b1BbB79460169a205eFBCBc77ebE1011bCf8;
-    address public constant _locatorImplementation = 0xf47F64a3B2AA52A77dC080D50927Af378d7dA7B8;
-    address public constant _withdrawalVaultImplementation = 0x26852993A6420dDa2692b033b5AF3b0846c15d5B;
+    address public constant _locatorImplementation = 0xa55bBf0245890fC5F5A231778732b8966300a80e;
+    address public constant _withdrawalVaultImplementation = 0x297Eb629655C8c488Eb26442cF4dfC8A7Cc32fFb;
     address public constant _previousDepositSecurityModule = 0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe;
 
     uint256 public constant EXPECTED_FINAL_LIDO_VERSION = 2;
@@ -189,15 +195,6 @@ contract ShapellaUpgradeTemplate {
     uint256 public constant EXPECTED_FINAL_VALIDATORS_EXIT_BUS_ORACLE_VERSION = 1;
     uint256 public constant EXPECTED_FINAL_WITHDRAWAL_QUEUE_VERSION = 1;
     uint256 public constant EXPECTED_FINAL_WITHDRAWAL_VAULT_VERSION = 1;
-
-    struct KeyValue {
-        string key;
-        bytes value;
-    }
-
-    // KeyValue[] oracleDaemonConfigParams = [
-        // KeyValue("foo", bytes(bytes32(uint256(10))))
-    // ];
 
     //
     // STRUCTURED STORAGE
@@ -264,7 +261,7 @@ contract ShapellaUpgradeTemplate {
 
         _assertAdminsOfProxies(address(this));
 
-        _assertInitialDummyProxyImplementations();
+        _assertInitialProxyImplementations();
 
         // Check roles of non-proxy contracts (can do without binding implementations)
         _assertSingleOZRoleHolder(_hashConsensusForAccountingOracle, DEFAULT_ADMIN_ROLE, address(this));
@@ -274,7 +271,7 @@ contract ShapellaUpgradeTemplate {
 
         _assertSingleOZRoleHolder(_burner(), DEFAULT_ADMIN_ROLE, address(this));
 
-        // _assertOracleDaemonConfigInitialState();
+        _assertOracleDaemonConfigInitialState();
         _assertOracleReportSanityCheckerInitialState();
     }
 
@@ -282,17 +279,16 @@ contract ShapellaUpgradeTemplate {
         _accountingOracle().proxy__upgradeTo(_accountingOracleImplementation);
         _validatorsExitBusOracle().proxy__upgradeTo(_validatorsExitBusOracleImplementation);
         _stakingRouter().proxy__upgradeTo(_stakingRouterImplementation);
-        _withdrawalVault().proxy__upgradeTo(_withdrawalVaultImplementation);
         _withdrawalQueue().proxy__upgradeTo(_withdrawalQueueImplementation);
     }
 
     function _assertAdminsOfProxies(address admin) internal view {
+        if (_withdrawalVault().proxy_getAdmin() != _voting) revert WrongProxyAdmin(address(_withdrawalVault()));
         _assertProxyAdmin(_accountingOracle(), admin);
         _assertProxyAdmin(_locator, admin);
         _assertProxyAdmin(_stakingRouter(), admin);
         _assertProxyAdmin(_validatorsExitBusOracle(), admin);
         _assertProxyAdmin(_withdrawalQueue(), admin);
-        _assertProxyAdmin(_withdrawalVault(), admin);
     }
 
     function _assertProxyAdmin(IOssifiableProxy proxy, address admin) internal view {
@@ -302,8 +298,7 @@ contract ShapellaUpgradeTemplate {
     function _assertOracleReportSanityCheckerInitialState() internal view {
         IOracleReportSanityChecker checker = _oracleReportSanityChecker();
         _assertSingleOZRoleHolder(checker, DEFAULT_ADMIN_ROLE, _agent);
-        // TODO: revoke the role preliminary?
-        _assertSingleOZRoleHolder(checker, checker.ALL_LIMITS_MANAGER_ROLE(), _voting);
+        _assertZeroRoleHolders(checker, checker.ALL_LIMITS_MANAGER_ROLE());
         _assertZeroRoleHolders(checker, checker.CHURN_VALIDATORS_PER_DAY_LIMIT_MANGER_ROLE());
         _assertZeroRoleHolders(checker, checker.ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE());
         _assertZeroRoleHolders(checker, checker.ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE());
@@ -318,17 +313,16 @@ contract ShapellaUpgradeTemplate {
     function _assertOracleDaemonConfigInitialState() internal view {
         IOracleDaemonConfig config = _oracleDaemonConfig();
         _assertSingleOZRoleHolder(config, DEFAULT_ADMIN_ROLE, _agent);
-        // TODO: revoke the role preliminary?
-        _assertSingleOZRoleHolder(config, config.CONFIG_MANAGER_ROLE(), _voting);
-        // TODO: check key-values
+        _assertZeroRoleHolders(config, config.CONFIG_MANAGER_ROLE());
+
     }
 
-    function _assertInitialDummyProxyImplementations() internal view {
+    function _assertInitialProxyImplementations() internal view {
+        if (_withdrawalVault().implementation() != _withdrawalVaultImplementation) revert WrongInitialImplementation(address(_withdrawalVault()));
         _assertInitialDummyImplementation(_accountingOracle());
         _assertInitialDummyImplementation(_stakingRouter());
         _assertInitialDummyImplementation(_validatorsExitBusOracle());
         _assertInitialDummyImplementation(_withdrawalQueue());
-        _assertInitialDummyImplementation(_withdrawalVault());
     }
 
     function _assertInitialDummyImplementation(IOssifiableProxy proxy) internal view {
@@ -491,7 +485,6 @@ contract ShapellaUpgradeTemplate {
         _accountingOracle().proxy__changeAdmin(_agent);
         _validatorsExitBusOracle().proxy__changeAdmin(_agent);
         _withdrawalQueue().proxy__changeAdmin(_agent);
-        _withdrawalVault().proxy__changeAdmin(_agent);
 
         _depositSecurityModule().setOwner(_agent);
     }

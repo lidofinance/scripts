@@ -1,24 +1,13 @@
 from brownie import ShapellaUpgradeTemplate, interface
 from utils.config import (
     contracts,
-    network_name,
     lido_dao_lido_locator_implementation,
     ldo_vote_executors_for_tests,
 )
-import json
 from pprint import pprint
 
 # Private constant taken from Lido contract
 INITIAL_TOKEN_HOLDER = "0x000000000000000000000000000000000000dead"
-
-
-def load_shapella_deploy_config():
-    config_files = {
-        "local-fork": "scripts/deployed-mainnet-fork-shapella-upgrade.json",
-        "goerli-fork": "scripts/deployed-goerlishapella-upgrade.json",
-    }
-    with open(config_files[network_name()]) as fp:
-        return json.load(fp)
 
 
 def topup_initial_token_holder(lido, funder):
@@ -96,7 +85,6 @@ def pass_ownership_to_template(owner, template):
     transfer_proxy_admin_to_template(contracts.staking_router)
     transfer_proxy_admin_to_template(contracts.validators_exit_bus_oracle)
     transfer_proxy_admin_to_template(contracts.withdrawal_queue)
-    transfer_proxy_admin_to_template(contracts.withdrawal_vault)
 
 
 def prepare_for_voting(temporary_admin):

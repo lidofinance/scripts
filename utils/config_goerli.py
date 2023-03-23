@@ -22,30 +22,29 @@ curve_rewards_manager_address = ""
 balancer_rewards_manager = ""
 
 lido_dao_deposit_security_module_address_old = "0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe"
-lido_dao_deposit_security_module_address = "0x07c1e7eDC8a19c9A9b936DecDd531a6365D2a434"
+lido_dao_deposit_security_module_address = "0xdBC149BaAC351A1102E48B91D7073fd36da24694"
 
 # Needed only for the tests development. Before the voting start the LidoLocator
 # proxy is to be set to the implementation
-lido_dao_lido_locator_implementation = "0xf47F64a3B2AA52A77dC080D50927Af378d7dA7B8"
+lido_dao_lido_locator_implementation = "0xa55bBf0245890fC5F5A231778732b8966300a80e"
 
 # Needed temporary only for Shapella upgrade
 deployer_eoa = "0xa5F1d7D49F581136Cf6e58B32cBE9a2039C48bA1"
 
 lido_dao_lido_locator = "0x1eDf09b5023DC86737b59dE68a8130De878984f5"
 lido_dao_burner = "0x20c61C07C2E2FAb04BF5b4E12ce45a459a18f3B1"
-lido_dao_execution_layer_rewards_vault = "0x27Dec30CC9EfDDDAF04C7CA2737759CBf6405ecb"
-lido_dao_hash_consensus_for_accounting_oracle = "0x821688406B8000FE3bAa8B074F8e1CbCD72c0035"
-lido_dao_accounting_oracle = "0x5864490e56B6f013Bc702Cf137Ed32Dc2C86F818"
-lido_dao_hash_consensus_for_validators_exit_bus_oracle = "0xe47EA5f0406C1A976cE43f97cEdcB8f3dee5484A"
-lido_dao_validators_exit_bus_oracle = "0xb75A55EFab5A8f5224Ae93B34B25741EDd3da98b"
-lido_dao_oracle_report_sanity_checker = "0x43c7FA62b3FD800d02edb1d38fd5b079d3ff84c6"
+lido_dao_execution_layer_rewards_vault = "0x94750381bE1AbA0504C666ee1DB118F68f0780D4"
+lido_dao_hash_consensus_for_accounting_oracle = "0x8EA83346E60261DdF1fA3B64056B096e337541b2"
+lido_dao_accounting_oracle = "0x76f358A842defa0E179a8970767CFf668Fc134d6"
+lido_dao_hash_consensus_for_validators_exit_bus_oracle = "0x8D4bCbc063da5A813FC13c3f4c817afcA7cb1eD6"
+lido_dao_validators_exit_bus_oracle = "0x712198c5459bCCf09f4603F203a9b73d139Ad280"
+lido_dao_oracle_report_sanity_checker = "0x9Ae2Ead18B2Fe57647da4d1fD881A9723946f666"
 lido_dao_withdrawal_queue = "0xCF117961421cA9e546cD7f50bC73abCdB3039533"
 gate_seal = "0x75A77AE52d88999D0b12C6e5fABB1C1ef7E92638"
-
-
 lido_dao_eip712_steth = "0xB4300103FfD326f77FfB3CA54248099Fb29C3b9e"
-lido_dao_withdrawal_vault = "0x70760635A8862c562C5Ad0374D7f9CEA4A7193D2"
-lido_dao_staking_router = "0x2fa2Cdd94C11B0e8B50205E1F304e97D9797ae09"
+lido_dao_withdrawal_vault = "0xdc62f9e8C34be08501Cdef4EBDE0a280f576D762"
+lido_dao_withdrawal_vault_implementation = "0x297Eb629655C8c488Eb26442cF4dfC8A7Cc32fFb"
+lido_dao_staking_router = "0xa3Dbd317E53D363176359E10948BA0b1c0A4c820"
 
 lido_easytrack = "0xAf072C8D368E4DD4A9d4fF6A76693887d6ae92Af"
 lido_easytrack_evmscriptexecutor = "0x3c9AcA237b838c59612d79198685e7f20C7fE783"
