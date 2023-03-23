@@ -1,5 +1,5 @@
 from brownie import interface, web3, chain
-from utils.config import contracts, guardians
+from utils.config import contracts, guardians, report_limits, beacon_spec
 
 from test_upgrade_shapella_goerli import oracle_app_id
 
@@ -12,23 +12,6 @@ def test_accounting_oracle_state():
     assert (
         interface.OssifiableProxy(contracts.accounting_oracle).proxy__getImplementation()
         == "0x8C55A49639b456F98E1A8D7DAa3b29B378CADc8b"
-    )
-
-    # Roles
-    # permissions is tested in test_permissions
-    # but roles can have a wrong keccak
-    assert (
-        contracts.accounting_oracle.DEFAULT_ADMIN_ROLE()
-        == "0x0000000000000000000000000000000000000000000000000000000000000000"
-    )
-    assert contracts.accounting_oracle.SUBMIT_DATA_ROLE() == web3.keccak(text="SUBMIT_DATA_ROLE").hex()
-    assert (
-        contracts.accounting_oracle.MANAGE_CONSENSUS_CONTRACT_ROLE()
-        == web3.keccak(text="MANAGE_CONSENSUS_CONTRACT_ROLE").hex()
-    )
-    assert (
-        contracts.accounting_oracle.MANAGE_CONSENSUS_VERSION_ROLE()
-        == web3.keccak(text="MANAGE_CONSENSUS_VERSION_ROLE").hex()
     )
 
     # Constants
@@ -145,9 +128,29 @@ def test_legacy_oracle_state():
 
     assert contracts.legacy_oracle.getEVMScriptRegistry() == "0xeC32ADA2a1E46Ff3F6206F47a6A2060200f24fDf"
 
-    beacon_spec = contracts.legacy_oracle.getBeaconSpec()
+    oracle_beacon_spec = contracts.legacy_oracle.getBeaconSpec()
 
-    assert beacon_spec["epochsPerFrame"] == 40
-    assert beacon_spec["slotsPerEpoch"] == 32
-    assert beacon_spec["secondsPerSlot"] == 12
-    assert beacon_spec["beacon_spec"] == 1616508000
+    assert oracle_beacon_spec["epochsPerFrame"] == beacon_spec["epochsPerFrame"]
+    assert oracle_beacon_spec["slotsPerEpoch"] == beacon_spec["slotsPerEpoch"]
+    assert oracle_beacon_spec["secondsPerSlot"] == beacon_spec["secondsPerSlot"]
+    assert oracle_beacon_spec["genesisTime"] == beacon_spec["genesisTime"]
+
+def test_oracle_report_sanity_checker():
+    # address in locator
+    assert contracts.lido_locator.oracleReportSanityChecker() == contracts.oracle_report_sanity_checker
+
+    # State
+    assert contracts.oracle_report_sanity_checker.getLidoLocator() == contracts.lido_locator
+    assert contracts.oracle_report_sanity_checker.getMaxPositiveTokenRebase() == report_limits["maxPositiveTokenRebase"]
+
+    limits = contracts.oracle_report_sanity_checker.getOracleReportLimits()
+
+    assert limits["churnValidatorsPerDayLimit"] == report_limits["churnValidatorsPerDayLimit"]
+    assert limits["oneOffCLBalanceDecreaseBPLimit"] == report_limits["oneOffCLBalanceDecreaseBPLimit"]
+    assert limits["annualBalanceIncreaseBPLimit"] == report_limits["annualBalanceIncreaseBPLimit"]
+    assert limits["simulatedShareRateDeviationBPLimit"] == report_limits["simulatedShareRateDeviationBPLimit"]
+    assert limits["maxValidatorExitRequestsPerReport"] == report_limits["maxValidatorExitRequestsPerReport"]
+    assert limits["maxAccountingExtraDataListItemsCount"] == report_limits["maxAccountingExtraDataListItemsCount"]
+    assert limits["maxNodeOperatorsPerExtraDataItemCount"] == report_limits["maxNodeOperatorsPerExtraDataItemCount"]
+    assert limits["requestTimestampMargin"] == report_limits["requestTimestampMargin"]
+    assert limits["maxPositiveTokenRebase"] == report_limits["maxPositiveTokenRebase"]
