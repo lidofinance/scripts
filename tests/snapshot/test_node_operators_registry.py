@@ -60,7 +60,7 @@ def voting_eoa(accounts):
 
 
 @pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
-def test_finalize_upgrade(
+def test_node_operator_basic_flow(
     accounts, helpers, old_deposit_security_module_eoa, new_deposit_security_module_eoa, voting_eoa, agent_eoa
 ):
     deposits_count = 8
