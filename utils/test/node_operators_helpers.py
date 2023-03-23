@@ -4,6 +4,8 @@ from brownie import web3, network
 from typing import Dict
 from eth_abi import encode_abi, decode_abi
 
+SIGNING_KEY_KEYS = ["key", "depositSignature", "used"]
+
 NODE_OPERATOR_KEYS = [
     "active",
     "name",
@@ -28,6 +30,9 @@ NODE_OPERATOR_SUMMARY_KEYS = [
 EVENT_SIGNATURES = {"NodeOperatorAdded": "NodeOperatorAdded(uint256,string,address,uint64)"}
 
 
+def assert_signing_key(first, second, skip=[]):
+    assert_dict_values(first, second, SIGNING_KEY_KEYS, skip)
+
 def assert_node_operator_added_event(tx, node_operator_id, name, reward_address, staking_limit):
     event_signature = EVENT_SIGNATURES["NodeOperatorAdded"]
     log = get_event_log(tx, event_signature)
@@ -45,7 +50,7 @@ def assert_node_operators(first: Dict[str, any], second: Dict[str, any], skip: [
     assert_dict_values(first, second, NODE_OPERATOR_KEYS, skip)
 
 
-def assert_summaries(first, second, skip=[]):
+def assert_node_operator_summaries(first, second, skip=[]):
     assert_dict_values(first, second, NODE_OPERATOR_SUMMARY_KEYS, skip)
 
 
