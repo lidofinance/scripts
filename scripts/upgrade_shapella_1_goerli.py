@@ -1,18 +1,19 @@
 """
-TODO description
-Voting 23/03/2023.
+Voting 24/03/2023.
 
-Shapella Protocol Upgrade
+Lido V2 (Shapella-ready) protocol upgrade on Görli
 
-1. Publishing new implementation (0x47EbaB13B806773ec2A2d16873e2dF770D130b50) in Lido app APM repo
-2. Updating implementation of Lido app with the new one
-3. Publishing new implementation (0x5d39ABaa161e622B99D45616afC8B837E9F19a25) in Node Operators Registry app APM repo
-4. Updating implementation of Node Operators Registry app with the new one
-5. Publishing new implementation (0x1430194905301504e8830ce4B0b0df7187E84AbD) in Oracle app APM repo
-6. Updating implementation of Oracle app with new one
+1. Update `WithdwawalVault` proxy implementation
+2. Call `ShapellaUpgradeTemplate.startUpgrade()`
+3. Publish new `Lido` implementation in Lido app APM repo
+4. Update `Lido` implementation
+5. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
+6. Update `NodeOperatorsRegistry` implementation
+7. Publish new `LidoOracle` implementation in LidoOracle app APM repo
+8. Update `LidoOracle` implementation to `LegacyOracle`
+9. Create new role `STAKING_ROLE_ROLE` and assign to `StakingRouter`
+10. Call `ShapellaUpgradeTemplate.finishUpgrade()`
 
-# 7. Call Oracle's finalizeUpgrade_v3() to update internal version counter.
-# 8. Create permission for SET_EL_REWARDS_VAULT_ROLE of Lido app assigning it to Voting
 """
 
 import time
@@ -133,16 +134,16 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
     ]
 
     vote_desc_items = [
-        "X) Update WithdrawalVault proxy implementation",
-        "X) TODO startUpgrade",
-        "1) Publish new implementation in Lido app APM repo",
-        "2) Updating implementation of Lido app",
-        "3) Publishing new implementation in Node Operators Registry app APM repo",
-        "4) Updating implementation of Node Operators Registry app",
-        "5) Publishing new implementation in Oracle app APM repo",
-        "6) Updating implementation of Oracle app",
-        "7) Create permission for STAKING_ROUTER_ROLE of NodeOperatorsRegistry assigning it to StakingRouter",
-        "8) Finalize upgrade by calling finalizeUpgrade() of ShapellaUpgradeTemplate",
+        "1) Update `WithdwawalVault` proxy implementation",
+        "2) Call `ShapellaUpgradeTemplate.startUpgrade()",
+        "3) Publish new implementation in Lido app APM repo",
+        "4) Updating implementation of Lido app",
+        "5) Publishing new implementation in Node Operators Registry app APM repo",
+        "6) Updating implementation of Node Operators Registry app",
+        "7) Publishing new implementation in Oracle app APM repo",
+        "8) Updating implementation of Oracle app",
+        "9) Create permission for STAKING_ROUTER_ROLE of NodeOperatorsRegistry assigning it to StakingRouter",
+        "10) Finalize upgrade by calling finalizeUpgrade() of ShapellaUpgradeTemplate",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)

@@ -1,8 +1,25 @@
 """
-TODO description
+
 Voting 23/03/2023.
 
-Shapella Protocol Upgrade - 2
+Lido V2 (Shapella-ready) protocol upgrade on Görli
+
+1. Call `ShapellaUpgradeTemplate.assertUpgradeIsFinishedCorrectly()`
+2. Revoke `MANAGE_FEE` role from `Voting`
+3. Revoke `MANAGE_WITHDRAWAL_KEY` role from `Voting`
+4. Revoke `MANAGE_PROTOCOL_CONTRACTS_ROLE` role from `Voting`
+5. Revoke `SET_EL_REWARDS_VAULT_ROLE` role from `Voting`
+6. Revoke `SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE` role from `Voting`
+7. Revoke `ADD_NODE_OPERATOR_ROLE` role from `Voting`
+8. Revoke `SET_NODE_OPERATOR_ACTIVE_ROLE`
+9. Revoke `SET_NODE_OPERATOR_NAME_ROLE`
+10. Revoke `SET_NODE_OPERATOR_ADDRESS_ROLE`
+11. Revoke `REPORT_STOPPED_VALIDATORS_ROLE`
+12. Revoke `MANAGE_MEMBERS`
+13. Revoke `MANAGE_QUORUM`
+14. Revoke `SET_BEACON_SPEC`
+15. Revoke `SET_REPORT_BOUNDARIES`
+16. Revoke `SET_BEACON_REPORT_RECEIVER`
 
 """
 
@@ -64,22 +81,22 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
     ]
 
     vote_desc_items = [
-        "X) Check protocol upgrade is finished",
-        "X) TODO revoke 1",
-        "X) TODO revoke 2",
-        "X) TODO revoke 3",
-        "X) TODO revoke 4",
-        "X) TODO revoke 5",
-        "X) TODO revoke 6",
-        "X) TODO revoke 7",
-        "X) TODO revoke 8",
-        "X) TODO revoke 9",
-        "X) TODO revoke 10",
-        "X) TODO revoke 11",
-        "X) TODO revoke 12",
-        "X) TODO revoke 13",
-        "X) TODO revoke 14",
-        "X) TODO revoke 15",
+        "1) Call `ShapellaUpgradeTemplate.assertUpgradeIsFinishedCorrectly()`",
+        "2) Revoke `MANAGE_FEE` role from `Voting`",
+        "3) Revoke `MANAGE_WITHDRAWAL_KEY` role from `Voting`",
+        "4) Revoke `MANAGE_PROTOCOL_CONTRACTS_ROLE` role from `Voting`",
+        "5) Revoke `SET_EL_REWARDS_VAULT_ROLE` role from `Voting`",
+        "6) Revoke `SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE` role from `Voting`",
+        "7) Revoke `ADD_NODE_OPERATOR_ROLE` role from `Voting`",
+        "8) Revoke `SET_NODE_OPERATOR_ACTIVE_ROLE`",
+        "9) Revoke `SET_NODE_OPERATOR_NAME_ROLE`",
+        "10) Revoke `SET_NODE_OPERATOR_ADDRESS_ROLE`",
+        "11) Revoke `REPORT_STOPPED_VALIDATORS_ROLE`",
+        "12) Revoke `MANAGE_MEMBERS`",
+        "13) Revoke `MANAGE_QUORUM`",
+        "14) Revoke `SET_BEACON_SPEC`",
+        "15) Revoke `SET_REPORT_BOUNDARIES`",
+        "16) Revoke `SET_BEACON_REPORT_RECEIVER`",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)

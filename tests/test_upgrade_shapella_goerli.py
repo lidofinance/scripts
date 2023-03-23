@@ -1,5 +1,5 @@
 """
-Tests for voting ???
+Tests for voting 24/03/2023
 """
 from scripts.upgrade_shapella_1_goerli import start_vote
 from utils.test.tx_tracing_helpers import *
