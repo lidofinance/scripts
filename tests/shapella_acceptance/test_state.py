@@ -33,6 +33,8 @@ def test_lido_state():
     assert contracts.lido.sharesOf(INITIAL_TOKEN_HOLDER) > 0
 
     assert contracts.lido.getTotalShares() > contracts.lido.sharesOf(INITIAL_TOKEN_HOLDER)
+    # unlimited allowance for burner to burn shares from withdrawal queue
+    assert contracts.lido.allowance(contracts.withdrawal_queue, contracts.burner) == 2 ** 256 - 1
 
     # Lido
     # permissions is tested in test_permissions
