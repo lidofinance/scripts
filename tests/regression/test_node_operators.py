@@ -2,7 +2,8 @@ import os
 import pytest
 import random
 import textwrap
-from brownie import Wei, network, chain
+from web3 import Web3
+from brownie import Wei, network, chain, convert
 
 from utils.config import contracts
 from utils.mainnet_fork import chain_snapshot
@@ -24,9 +25,29 @@ def shared_setup(module_isolation):
     pass
 
 
+@pytest.fixture(scope="module", autouse=True)
+def grant_roles(voting_eoa, agent_eoa):
+    contracts.staking_router.grantRole(
+        contracts.staking_router.MANAGE_WITHDRAWAL_CREDENTIALS_ROLE(), voting_eoa, {"from": agent_eoa}
+    )
+
+    contracts.acl.createPermission(
+        contracts.voting,
+        contracts.node_operators_registry,
+        convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
+        contracts.voting,
+        {"from": contracts.voting},
+    )
+
+
 @pytest.fixture(scope="module")
 def nor(accounts, interface):
     return interface.NodeOperatorsRegistry(contracts.node_operators_registry.address)
+
+
+@pytest.fixture(scope="module")
+def agent_eoa(accounts):
+    return accounts.at(contracts.agent.address, force=True)
 
 
 @pytest.fixture(scope="module")

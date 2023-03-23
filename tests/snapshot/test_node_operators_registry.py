@@ -1,7 +1,9 @@
 import random
 import pytest
+from web3 import Web3
+from datetime import datetime
 from typing import Dict, Callable
-from brownie import ZERO_ADDRESS, Wei
+from brownie import ZERO_ADDRESS, Wei, convert, accounts
 from brownie.convert.datatypes import ReturnValue
 
 from utils.config import contracts
@@ -12,12 +14,38 @@ from utils.import_current_votes import is_there_any_vote_scripts, start_and_exec
 PUBKEY_LENGTH = 48
 SIGNATURE_LENGTH = 96
 DEPOSIT_SIZE = Wei("32 ether")
+RANDOM_SEED = datetime.now().timestamp()
+OLD_DSM_ADDRESS = "0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe"
+
+
+@pytest.fixture(scope="module", autouse=True)
+def shared_setup(module_isolation):
+    pass
+
+
+def grant_roles(voting_eoa, agent_eoa):
+    contracts.staking_router.grantRole(
+        contracts.staking_router.MANAGE_WITHDRAWAL_CREDENTIALS_ROLE(), voting_eoa, {"from": agent_eoa}
+    )
+
+    contracts.acl.createPermission(
+        contracts.voting,
+        contracts.node_operators_registry,
+        convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
+        contracts.voting,
+        {"from": contracts.voting},
+    )
+
+
+@pytest.fixture(scope="module")
+def agent_eoa(accounts):
+    return accounts.at(contracts.agent.address, force=True)
 
 
 @pytest.fixture(scope="module")
 def old_deposit_security_module_eoa(accounts, EtherFunder):
-    EtherFunder.deploy("0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe", {"from": accounts[0], "amount": "10 ether"})
-    return accounts.at("0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe", force=True)
+    EtherFunder.deploy(OLD_DSM_ADDRESS, {"from": accounts[0], "amount": "10 ether"})
+    return accounts.at(OLD_DSM_ADDRESS, force=True)
 
 
 @pytest.fixture(scope="module")
@@ -30,9 +58,10 @@ def new_deposit_security_module_eoa(accounts, EtherFunder):
 def voting_eoa(accounts):
     return accounts.at(contracts.voting.address, force=True)
 
+
 @pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
 def test_finalize_upgrade(
-    accounts, helpers, old_deposit_security_module_eoa, new_deposit_security_module_eoa, voting_eoa
+    accounts, helpers, old_deposit_security_module_eoa, new_deposit_security_module_eoa, voting_eoa, agent_eoa
 ):
     deposits_count = 8
     submit_amount = deposits_count * DEPOSIT_SIZE
@@ -123,6 +152,7 @@ def test_finalize_upgrade(
 
     with chain_snapshot():
         start_and_execute_votes(contracts.voting, helpers)
+        grant_roles(voting_eoa, agent_eoa)
         snapshot_after_update = run_scenario(actions=new_version_actions, snapshooter=make_snapshot_v2)
 
     assert snapshot_before_update.keys() == snapshot_after_update.keys()
@@ -153,7 +183,7 @@ def make_snapshot_v2() -> Dict[str, any]:
 
 
 def make_snapshot(node_operators_registry) -> Dict[str, any]:
-    signing_keys_range_length = 10
+    random.seed(RANDOM_SEED)
     node_operators_count = node_operators_registry.getNodeOperatorsCount()
     snapshot = {
         "keys_op_index": node_operators_registry.getKeysOpIndex(),
@@ -172,19 +202,13 @@ def make_snapshot(node_operators_registry) -> Dict[str, any]:
         snapshot["unused_signing_keys_count"][id] = node_operators_registry.getUnusedSigningKeyCount(id)
 
         snapshot["signing_keys"][id] = []
-        if snapshot["node_operators"][id]["usedSigningKeys"] == 0:
+        if snapshot["node_operators"][id]["totalSigningKeys"] == 0:
             continue
 
-        from_signing_key_index = max(
-            0, snapshot["node_operators"][id]["stakingLimit"] - signing_keys_range_length // 2
-        )
-        to_signing_key_index = min(
-            snapshot["node_operators"][id]["stakingLimit"],
-            snapshot["node_operators"][id]["totalSigningKeys"],
-            snapshot["node_operators"][id]["usedSigningKeys"] + signing_keys_range_length // 2,
-        )
+        signing_keys_count = snapshot["node_operators"][id]["totalSigningKeys"]
+        signing_key_indices = random.sample(range(0, signing_keys_count), min(10, signing_keys_count))
 
-        for index in range(from_signing_key_index, to_signing_key_index):
+        for index in signing_key_indices:
             snapshot["signing_keys"][id].append(node_operators_registry.getSigningKey(id, index).dict())
 
     return snapshot

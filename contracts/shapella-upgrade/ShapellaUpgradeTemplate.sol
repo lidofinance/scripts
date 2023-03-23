@@ -447,7 +447,6 @@ contract ShapellaUpgradeTemplate {
         sr.grantRole(sr.STAKING_MODULE_PAUSE_ROLE(), address(_depositSecurityModule()));
         sr.grantRole(sr.REPORT_EXITED_VALIDATORS_ROLE(), address(_accountingOracle()));
         sr.grantRole(sr.REPORT_REWARDS_MINTED_ROLE(), address(_lido()));
-        sr.grantRole(sr.MANAGE_WITHDRAWAL_CREDENTIALS_ROLE(), _voting);
     }
 
     function _initializeValidatorsExitBus() internal {
