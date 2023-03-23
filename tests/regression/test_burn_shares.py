@@ -27,23 +27,22 @@ def test_burn_shares_by_stranger(stranger):
 
     contracts.burner.requestBurnSharesForCover(stranger, shares_to_burn, {"from": lido})
 
-    contracts.burner.commitSharesToBurn(shares_to_burn, {"from": lido})
     prev_report = contracts.lido.getBeaconStat().dict()
     beacon_validators = prev_report["beaconValidators"]
     beacon_balance = prev_report["beaconBalance"]
-    # contracts.lido.handleOracleReport(
-    #     chain.time(),
-    #     0,
-    #     beacon_validators,
-    #     beacon_balance,
-    #     0,
-    #     0,
-    #     shares_to_burn,
-    #     [],
-    #     0,
-    #     {"from": contracts.accounting_oracle},
-    # )
+    contracts.lido.handleOracleReport(
+        chain.time(),
+        0,
+        beacon_validators,
+        beacon_balance,
+        0,
+        0,
+        shares_to_burn,
+        [],
+        0,
+        {"from": contracts.accounting_oracle},
+    )
 
     assert contracts.lido.sharesOf(stranger) == 0
     assert contracts.lido.totalSupply() == total_eth
-    # assert contracts.lido.getTotalShares() == total_shares - shares_to_burn
+    assert contracts.lido.getTotalShares() == total_shares - shares_to_burn
