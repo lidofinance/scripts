@@ -64,7 +64,7 @@ update_nos_app = {
 }
 
 update_oracle_app = {
-    "new_address": "0x7D505d1CCd49C64C2dc0b15acbAE235C4651F50B",
+    "new_address": "0xcF9d64942DC9096520a8962a2d4496e680c6403b",
     "content_uri": "0x697066733a516d554d506669454b71354d786d387932475951504c756a47614a69577a31747665703557374564414767435238",
     "id": "0xb2977cfc13b000b6807b9ae3cf4d938f4cc8ba98e1d68ad911c58924d6aa4f11",
     "version": (5, 0, 0),
