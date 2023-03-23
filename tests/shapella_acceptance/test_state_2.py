@@ -1,8 +1,8 @@
 from brownie import interface, web3
-from utils.config import contracts
+from utils.config import contracts, guardians
 
 
-def test_lido_state():
+def test_accounting_oracle_state():
     # address in locator
     assert contracts.lido_locator.accountingOracle() == contracts.accounting_oracle
 
@@ -67,3 +67,30 @@ def test_lido_state():
     assert report[1] == 5254400
     assert report[2] == 0
     assert report[3] == False
+
+
+def test_deposit_security_module_state():
+    # address in locator
+    assert contracts.lido_locator.depositSecurityModule() == contracts.deposit_security_module
+
+    assert contracts.deposit_security_module.getOwner() == contracts.agent
+
+    # Constants
+    assert contracts.deposit_security_module.LIDO() == contracts.lido
+    assert contracts.deposit_security_module.DEPOSIT_CONTRACT() == "0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b"
+    assert contracts.deposit_security_module.STAKING_ROUTER() == contracts.staking_router
+    assert contracts.deposit_security_module.PAUSE_MESSAGE_PREFIX() == "0x39acbf79283b8870cb37759cd96364cacb1465f74fb35e70990411fff054fec0"
+    assert contracts.deposit_security_module.ATTEST_MESSAGE_PREFIX() == "0x9c8f4b970da39223460d0221dc6580b494021c2aefa5c066432baeecf943e380"
+
+    # state
+    assert contracts.deposit_security_module.getMaxDeposits() == 150
+    assert contracts.deposit_security_module.getMinDepositBlockDistance() == 1200
+
+    assert contracts.deposit_security_module.getGuardians() == guardians
+    assert contracts.deposit_security_module.getGuardianQuorum() == 1
+
+    for guardian in guardians:
+        assert contracts.deposit_security_module.getGuardianIndex(guardian) >= 0
+        assert contracts.deposit_security_module.isGuardian(guardian) == True
+
+    assert contracts.deposit_security_module.getPauseIntentValidityPeriodBlocks() == 10
