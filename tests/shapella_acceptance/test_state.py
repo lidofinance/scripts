@@ -1,5 +1,5 @@
 from brownie import interface, web3
-from utils.config import contracts
+from utils.config import contracts, lido_dao_withdrawal_vault_implementation
 
 from test_upgrade_shapella_goerli import lido_app_id
 
@@ -11,9 +11,8 @@ def test_lido_state():
     assert contracts.lido_locator.lido() == contracts.lido
 
     # AppProxyUpgradeable
-    assert (
-        interface.AppProxyUpgradeable(contracts.lido).implementation() == "0xEE227CC91A769881b1e81350224AEeF7587eBe76"
-    )
+    proxy = interface.AppProxyUpgradeable(contracts.lido)
+    assert proxy.implementation() == "0xEE227CC91A769881b1e81350224AEeF7587eBe76"
 
     # Pausable
     assert contracts.lido.isStopped() == False
@@ -67,3 +66,22 @@ def test_lido_state():
     assert beacon_stat[2] >= 32 * 1e18 * beacon_stat[1]  # reasonable expectation before first withdrawals
 
     assert contracts.lido.getTotalELRewardsCollected() > 0
+
+
+def test_withdrawal_vault_state():
+    # address in locator
+    assert contracts.lido_locator.withdrawalVault() == contracts.withdrawal_vault
+
+    # WithdrawalVaultManager
+    proxy = interface.WithdrawalVaultManager(contracts.withdrawal_vault)
+    assert proxy.implementation() == lido_dao_withdrawal_vault_implementation
+    assert proxy.proxy_getAdmin() == contracts.voting.address
+
+    # Versioned
+    assert contracts.withdrawal_vault.getContractVersion() == 1
+
+    # WithdrawalsVault
+    assert contracts.withdrawal_vault.LIDO() == contracts.lido
+    assert contracts.withdrawal_vault.TREASURY() == contracts.agent
+    assert contracts.withdrawal_vault.LIDO() == contracts.lido_locator.lido()
+    assert contracts.withdrawal_vault.TREASURY() == contracts.lido_locator.treasury()
