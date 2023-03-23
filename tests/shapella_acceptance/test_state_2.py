@@ -104,3 +104,50 @@ def test_el_rewards_vault_state():
     # Constants
     assert contracts.execution_layer_rewards_vault.LIDO() == contracts.lido
     assert contracts.execution_layer_rewards_vault.TREASURY() == contracts.agent
+
+def test_legacy_oracle_state():
+    # address in locator
+    assert contracts.lido_locator.legacyOracle() == contracts.legacy_oracle
+
+    # Aragon app
+    assert contracts.legacy_oracle.hasInitialized() == True
+    assert contracts.legacy_oracle.getVersion() == 4
+    assert contracts.legacy_oracle.appId() == oracle_app_id
+    assert contracts.legacy_oracle.kernel() == contracts.kernel
+
+    # AppProxyUpgradeable
+    proxy = interface.AppProxyUpgradeable(contracts.legacy_oracle).implementation() == "0x7D505d1CCd49C64C2dc0b15acbAE235C4651F50B"
+
+    # Versioned
+    assert contracts.legacy_oracle.getContractVersion() == 4
+
+    # State
+    assert contracts.legacy_oracle.getLido() == contracts.lido
+    assert contracts.legacy_oracle.getAccountingOracle() == contracts.accounting_oracle
+    assert contracts.legacy_oracle.getRecoveryVault() == contracts.agent
+    assert contracts.legacy_oracle.allowRecoverability(contracts.ldo_token) == True
+    assert contracts.legacy_oracle.isPetrified() == False
+
+    reported_delta = contracts.legacy_oracle.getLastCompletedReportDelta()
+    assert reported_delta["postTotalPooledEther"] > 0
+    assert reported_delta["preTotalPooledEther"] > 0
+    assert reported_delta["timeElapsed"] > 0
+
+    current_frame = contracts.legacy_oracle.getCurrentFrame()
+    assert current_frame["frameEpochId"] > 0
+    assert current_frame["frameStartTime"] > 0
+    assert current_frame["frameEndTime"] > 0
+
+    assert contracts.legacy_oracle.getLastCompletedEpochId() > 0
+
+    assert contracts.legacy_oracle.getInitializationBlock() > 0
+    assert contracts.legacy_oracle.getInitializationBlock() <= chain.height
+
+    assert contracts.legacy_oracle.getEVMScriptRegistry() == "0xeC32ADA2a1E46Ff3F6206F47a6A2060200f24fDf"
+
+    beacon_spec = contracts.legacy_oracle.getBeaconSpec()
+
+    assert beacon_spec["epochsPerFrame"] == 40
+    assert beacon_spec["slotsPerEpoch"] == 32
+    assert beacon_spec["secondsPerSlot"] == 12
+    assert beacon_spec["beacon_spec"] == 1616508000
