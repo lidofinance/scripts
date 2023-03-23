@@ -490,17 +490,21 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _initializeAccountingOracle() internal {
-        (, uint256 epochsPerFrame, ) = _hashConsensusForAccountingOracle.getFrameConfig();
-        uint256 lastLidoOracleCompletedEpochId = _lidoOracle().getLastCompletedEpochId();
 
         // NB: HashConsensus.updateInitialEpoch must be called after AccountingOracle implementation is bound to proxy
-        _hashConsensusForAccountingOracle.updateInitialEpoch(lastLidoOracleCompletedEpochId + epochsPerFrame);
+        _hashConsensusForAccountingOracle.updateInitialEpoch(_calcInitialEpochForAccountingOracleHashConsensus());
 
         _accountingOracle().initialize(
             address(this),
             address(_hashConsensusForAccountingOracle),
             _accountingOracleConsensusVersion
         );
+    }
+
+    function _calcInitialEpochForAccountingOracleHashConsensus() internal view returns (uint256) {
+        (, uint256 epochsPerFrame, ) = _hashConsensusForAccountingOracle.getFrameConfig();
+        uint256 lastLidoOracleCompletedEpochId = _lidoOracle().getLastCompletedEpochId();
+        return lastLidoOracleCompletedEpochId + epochsPerFrame;
     }
 
     function _initializeWithdrawalQueue() internal {
@@ -522,6 +526,8 @@ contract ShapellaUpgradeTemplate {
 
     function _initializeValidatorsExitBus() internal {
         IValidatorsExitBusOracle vebo = _validatorsExitBusOracle();
+        // NB: Taking same initial epoch as for AccountingOracle on purpose
+        _hashConsensusForValidatorsExitBusOracle.updateInitialEpoch(_calcInitialEpochForAccountingOracleHashConsensus());
         vebo.initialize(
             address(this),
             address(_hashConsensusForValidatorsExitBusOracle),
