@@ -64,8 +64,14 @@ def test_deposit_security_module_state():
     assert contracts.deposit_security_module.LIDO() == contracts.lido
     assert contracts.deposit_security_module.DEPOSIT_CONTRACT() == "0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b"
     assert contracts.deposit_security_module.STAKING_ROUTER() == contracts.staking_router
-    assert contracts.deposit_security_module.PAUSE_MESSAGE_PREFIX() == "0x39acbf79283b8870cb37759cd96364cacb1465f74fb35e70990411fff054fec0"
-    assert contracts.deposit_security_module.ATTEST_MESSAGE_PREFIX() == "0x9c8f4b970da39223460d0221dc6580b494021c2aefa5c066432baeecf943e380"
+    assert (
+        contracts.deposit_security_module.PAUSE_MESSAGE_PREFIX()
+        == "0x39acbf79283b8870cb37759cd96364cacb1465f74fb35e70990411fff054fec0"
+    )
+    assert (
+        contracts.deposit_security_module.ATTEST_MESSAGE_PREFIX()
+        == "0x9c8f4b970da39223460d0221dc6580b494021c2aefa5c066432baeecf943e380"
+    )
 
     # state
     assert contracts.deposit_security_module.getMaxDeposits() == 150
@@ -80,6 +86,7 @@ def test_deposit_security_module_state():
 
     assert contracts.deposit_security_module.getPauseIntentValidityPeriodBlocks() == 10
 
+
 def test_el_rewards_vault_state():
     # address in locator
     assert contracts.lido_locator.elRewardsVault() == contracts.execution_layer_rewards_vault
@@ -87,6 +94,7 @@ def test_el_rewards_vault_state():
     # Constants
     assert contracts.execution_layer_rewards_vault.LIDO() == contracts.lido
     assert contracts.execution_layer_rewards_vault.TREASURY() == contracts.agent
+
 
 def test_legacy_oracle_state():
     # address in locator
@@ -99,7 +107,10 @@ def test_legacy_oracle_state():
     assert contracts.legacy_oracle.kernel() == contracts.kernel
 
     # AppProxyUpgradeable
-    proxy = interface.AppProxyUpgradeable(contracts.legacy_oracle).implementation() == "0x7D505d1CCd49C64C2dc0b15acbAE235C4651F50B"
+    proxy = (
+        interface.AppProxyUpgradeable(contracts.legacy_oracle).implementation()
+        == "0x7D505d1CCd49C64C2dc0b15acbAE235C4651F50B"
+    )
 
     # Versioned
     assert contracts.legacy_oracle.getContractVersion() == 4
@@ -135,6 +146,7 @@ def test_legacy_oracle_state():
     assert oracle_beacon_spec["secondsPerSlot"] == beacon_spec["secondsPerSlot"]
     assert oracle_beacon_spec["genesisTime"] == beacon_spec["genesisTime"]
 
+
 def test_oracle_report_sanity_checker():
     # address in locator
     assert contracts.lido_locator.oracleReportSanityChecker() == contracts.oracle_report_sanity_checker
@@ -154,3 +166,21 @@ def test_oracle_report_sanity_checker():
     assert limits["maxNodeOperatorsPerExtraDataItemCount"] == report_limits["maxNodeOperatorsPerExtraDataItemCount"]
     assert limits["requestTimestampMargin"] == report_limits["requestTimestampMargin"]
     assert limits["maxPositiveTokenRebase"] == report_limits["maxPositiveTokenRebase"]
+
+
+def test_burner_state():
+    # address in locator
+    assert contracts.lido_locator.burner() == contracts.burner
+
+    # Constants
+    assert contracts.burner.STETH() == contracts.lido
+    assert contracts.burner.TREASURY() == contracts.agent
+
+    shares_requested_to_burn = contracts.burner.getSharesRequestedToBurn()
+
+    assert shares_requested_to_burn["coverShares"] == 0
+    assert shares_requested_to_burn["nonCoverShares"] == 0
+
+    assert contracts.burner.getCoverSharesBurnt() == 0
+    assert contracts.burner.getExcessStETH() == 0
+    assert contracts.burner.getNonCoverSharesBurnt() == 0
