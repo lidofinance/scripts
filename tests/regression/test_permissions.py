@@ -61,7 +61,7 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "SUBMIT_DATA_ROLE": oracle_committee,
+                "SUBMIT_DATA_ROLE": [],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
                 "MANAGE_CONSENSUS_VERSION_ROLE": [],
             },
@@ -72,7 +72,7 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "SUBMIT_DATA_ROLE": oracle_committee,
+                "SUBMIT_DATA_ROLE": [],
                 "PAUSE_ROLE": [gate_seal],
                 "RESUME_ROLE": [],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
