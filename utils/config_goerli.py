@@ -27,6 +27,7 @@ lido_dao_deposit_security_module_address = "0xC8a75E7196b11aE2DEbC39a2F8583f852E
 # Needed only for the tests development. Before the voting start the LidoLocator
 # proxy is to be set to the implementation
 lido_dao_lido_locator_implementation = "0x6D5b7439c166A1BDc5c8DB547c1a871c082CE22C"
+lido_dao_accounting_oracle_implementation = "0x49cc40EE660BfD5f46423f04891502410d32E965"
 
 # Needed temporary only for Shapella upgrade
 deployer_eoa = "0xa5F1d7D49F581136Cf6e58B32cBE9a2039C48bA1"
@@ -43,6 +44,7 @@ lido_dao_withdrawal_queue = "0xCF117961421cA9e546cD7f50bC73abCdB3039533"
 gate_seal = "0x75A77AE52d88999D0b12C6e5fABB1C1ef7E92638"
 lido_dao_eip712_steth = "0xB4300103FfD326f77FfB3CA54248099Fb29C3b9e"
 lido_dao_withdrawal_vault = "0xdc62f9e8C34be08501Cdef4EBDE0a280f576D762"
+lido_dao_withdrawal_credentials = "0x010000000000000000000000dc62f9e8c34be08501cdef4ebde0a280f576d762"
 lido_dao_withdrawal_vault_implementation = "0x297Eb629655C8c488Eb26442cF4dfC8A7Cc32fFb"
 lido_dao_staking_router = "0xa3Dbd317E53D363176359E10948BA0b1c0A4c820"
 oracle_daemon_config = "0xad55833Dec7ab353B47691e58779Bd979d459388"
@@ -124,3 +126,8 @@ report_limits = {
     "requestTimestampMargin": 384,
     "maxPositiveTokenRebase": 750000,
 }
+
+deposit_contract = "0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b"
+
+dsm_pause_message_prefix = "0x96fb0fbfa778f006dfba3aa6b85092a74f70410605456fcc1c790f1da5d8d2c3"
+dsm_attest_message_prefix = "0x64e835cfe046dee3386c39f07432e1862c7ba0eef04e8de08b17ef8b74e39526"

@@ -111,3 +111,5 @@ report_limits = {
     "requestTimestampMargin": 7680,
     "maxPositiveTokenRebase": 750000,
 }
+
+deposit_contract = "0x00000000219ab540356cBB839Cbe05303d7705Fa"
