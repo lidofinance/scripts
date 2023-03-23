@@ -60,6 +60,7 @@ interface IHashConsensus is IAccessControlEnumerable {
     function addMember(address addr, uint256 quorum) external;
     function getFrameConfig() external view returns (uint256 initialEpoch, uint256 epochsPerFrame, uint256 fastLaneLengthSlots);
     function updateInitialEpoch(uint256 initialEpoch) external;
+    function getReportProcessor() external view returns (address);
 }
 
 interface ILido is IVersioned {
@@ -664,17 +665,19 @@ contract ShapellaUpgradeTemplate {
         address[] memory sealables = IGateSeal(_gateSeal).get_sealables();
         if (
             sealables[0] != address(_withdrawalQueue())
-        //  || sealables[1] != address(_validatorsExitBusOracle())
+         || sealables[1] != address(_validatorsExitBusOracle())
          ) {
             revert WrongSealGateSealables();
         }
     }
 
     function _assertCorrectOracleAndConsensusContractsBinding(IBaseOracle oracle, IHashConsensus hashConsensus) internal view {
-        if (oracle.getConsensusContract() != address(hashConsensus)) {
+        if (
+            oracle.getConsensusContract() != address(hashConsensus)
+         || hashConsensus.getReportProcessor() != address(oracle)
+        ) {
             revert IncorrectOracleAndHashConsensusBinding(address(oracle), address(hashConsensus));
         }
-        // TODO: check the binding in opposite direction when the view is added to HashConsensus
     }
 
     function _checkContractVersions() internal view {
