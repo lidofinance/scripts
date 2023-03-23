@@ -1,5 +1,5 @@
 from brownie import interface, web3, ZERO_ADDRESS
-from utils.config import contracts, lido_dao_withdrawal_vault_implementation, wsteth_token_address
+from utils.config import contracts, lido_dao_withdrawal_vault_implementation
 
 from test_upgrade_shapella_goerli import lido_app_id
 
@@ -35,6 +35,7 @@ def test_lido_state():
     assert contracts.lido.getTotalShares() > contracts.lido.sharesOf(INITIAL_TOKEN_HOLDER)
     # unlimited allowance for burner to burn shares from withdrawal queue
     assert contracts.lido.allowance(contracts.withdrawal_queue, contracts.burner) == 2**256 - 1
+    assert contracts.lido.allowance(contracts.node_operators_registry, contracts.burner) == 2**256 - 1
 
     # Lido
     # permissions is tested in test_permissions
