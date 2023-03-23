@@ -45,9 +45,9 @@ from utils.permissions import encode_permission_revoke
 from utils.brownie_prelude import *
 
 
-def encode_template_check_upgrade_finished(template_address: str) -> Tuple[str, str]:
+def encode_template_check_upgrade_enacted(template_address: str) -> Tuple[str, str]:
     template = ShapellaUpgradeTemplate.at(template_address)
-    return template.address, template.revertIfUpgradeNotFinished.encode_input()
+    return template.address, template.revertIfUpgradeNotEnacted.encode_input()
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
@@ -58,25 +58,39 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
     lido_oracle: interface.LegacyOracle = contracts.legacy_oracle
     node_operators_registry: interface.NodeOperatorsRegistry = contracts.node_operators_registry
 
+    # TODO: on goerli the list is larger
     call_script_items = [
-        # TODO
-        encode_template_check_upgrade_finished(ContractsLazyLoader.upgrade_template),
-        # 9+. Revoke obsolete roles
-        # TODO: on goerli the list is larger
+        # 1)
+        encode_template_check_upgrade_enacted(ContractsLazyLoader.upgrade_template),
+        # 2)
         encode_permission_revoke(lido, "MANAGE_FEE", revoke_from=voting),
+        # 3)
         encode_permission_revoke(lido, "MANAGE_WITHDRAWAL_KEY", revoke_from=voting),
+        # 4)
         encode_permission_revoke(lido, "MANAGE_PROTOCOL_CONTRACTS_ROLE", revoke_from=voting),
+        # 5)
         encode_permission_revoke(lido, "SET_EL_REWARDS_VAULT_ROLE", revoke_from=voting),
+        # 6)
         encode_permission_revoke(lido, "SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE", revoke_from=voting),
+        # 7)
         encode_permission_revoke(node_operators_registry, "ADD_NODE_OPERATOR_ROLE", revoke_from=voting),
+        # 8)
         encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_ACTIVE_ROLE", revoke_from=voting),
+        # 9)
         encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_NAME_ROLE", revoke_from=voting),
+        # 10)
         encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_ADDRESS_ROLE", revoke_from=voting),
+        # 11)
         encode_permission_revoke(node_operators_registry, "REPORT_STOPPED_VALIDATORS_ROLE", revoke_from=voting),
+        # 12)
         encode_permission_revoke(lido_oracle, "MANAGE_MEMBERS", revoke_from=voting),
+        # 13)
         encode_permission_revoke(lido_oracle, "MANAGE_QUORUM", revoke_from=voting),
+        # 14)
         encode_permission_revoke(lido_oracle, "SET_BEACON_SPEC", revoke_from=voting),
+        # 15)
         encode_permission_revoke(lido_oracle, "SET_REPORT_BOUNDARIES", revoke_from=voting),
+        # 16)
         encode_permission_revoke(lido_oracle, "SET_BEACON_REPORT_RECEIVER", revoke_from=voting),
     ]
 

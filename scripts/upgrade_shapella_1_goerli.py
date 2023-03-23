@@ -3,7 +3,7 @@ Voting 24/03/2023.
 
 Lido V2 (Shapella-ready) protocol upgrade on Görli
 
-1. Update `WithdwawalVault` proxy implementation
+1. Update `WithdrawalVault` proxy implementation
 2. Call `ShapellaUpgradeTemplate.startUpgrade()`
 3. Publish new `Lido` implementation in Lido app APM repo
 4. Update `Lido` implementation
@@ -36,7 +36,6 @@ from utils.config import (
     get_deployer_account,
     get_is_live,
     contracts,
-    network_name,
     lido_dao_staking_router,
     ContractsLazyLoader,
     lido_dao_withdrawal_vault,
@@ -96,45 +95,41 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
     node_operators_registry: interface.NodeOperatorsRegistry = contracts.node_operators_registry
 
     call_script_items = [
-        # TODO
+        # 1)
         encode_withdrawal_vault_proxy_update(lido_dao_withdrawal_vault, lido_dao_withdrawal_vault_implementation),
+        # 2)
         encode_template_start_upgrade(template_address),
-        # 1. Publishing new implementation(TODO)
-        #                   in Lido app APM repo 0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1
+        # 3)
         add_implementation_to_lido_app_repo(
             update_lido_app["version"], update_lido_app["new_address"], update_lido_app["content_uri"]
         ),
-        # 2. Updating implementation of Lido app with the new one TODO
+        # 4)
         update_app_implementation(update_lido_app["id"], update_lido_app["new_address"]),
-        # 3. Publishing new implementation (TODO)
-        #                   in Node Operators Registry app APM repo 0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1831
+        # 5)
         add_implementation_to_nos_app_repo(
             update_nos_app["version"], update_nos_app["new_address"], update_nos_app["content_uri"]
         ),
-        # 4. Updating implementation of Node Operators Registry app
-        #                   with the new one TODO
+        # 6)
         update_app_implementation(update_nos_app["id"], update_nos_app["new_address"]),
-        # 5. Publishing new implementation (TODO)
-        #     in Oracle app APM repo 0xF9339DE629973c60c4d2b76749c81E6F40960E3A
+        # 7)
         add_implementation_to_oracle_app_repo(
             update_oracle_app["version"], update_oracle_app["new_address"], update_oracle_app["content_uri"]
         ),
-        # 6. Updating implementation of Oracle app with new one TODO
+        # 8)
         update_app_implementation(update_oracle_app["id"], update_oracle_app["new_address"]),
-        # 7. Create permission for STAKING_ROUTER of Lido app
-        #    assigning it to Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
+        # 9)
         encode_permission_create(
             entity=lido_dao_staking_router,
             target_app=node_operators_registry,
             permission_name="STAKING_ROUTER_ROLE",
             manager=voting,
         ),
-        # 8. Finalize upgrade via template
+        # 10)
         encode_template_finish_upgrade(template_address),
     ]
 
     vote_desc_items = [
-        "1) Update `WithdwawalVault` proxy implementation",
+        "1) Update `WithdrawalVault` proxy implementation",
         "2) Call `ShapellaUpgradeTemplate.startUpgrade()",
         "3) Publish new implementation in Lido app APM repo",
         "4) Updating implementation of Lido app",
@@ -143,7 +138,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         "7) Publishing new implementation in Oracle app APM repo",
         "8) Updating implementation of Oracle app",
         "9) Create permission for STAKING_ROUTER_ROLE of NodeOperatorsRegistry assigning it to StakingRouter",
-        "10) Finalize upgrade by calling finalizeUpgrade() of ShapellaUpgradeTemplate",
+        "10) Finalize upgrade by calling `ShapellaUpgradeTemplate.finalizeUpgrade()`",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)

@@ -135,6 +135,8 @@ interface IStakingRouter is IVersioned, IAccessControlEnumerable, IOssifiablePro
         uint256 treasuryFee
     ) external;
     function hasStakingModule(uint256 _stakingModuleId) external view returns (bool);
+    function getStakingModulesCount() external view returns (uint256);
+    function getStakingModule(uint256 _stakingModuleId) external view returns (StakingModule memory);
 }
 
 interface IValidatorsExitBusOracle is IBaseOracle, IPausableUntil, IOssifiableProxy {
@@ -204,6 +206,37 @@ struct LimitsList {
     uint256 maxPositiveTokenRebase;
 }
 
+enum StakingModuleStatus {
+    Active, // deposits and rewards allowed
+    DepositsPaused, // deposits NOT allowed, rewards allowed
+    Stopped // deposits and rewards NOT allowed
+}
+
+struct StakingModule {
+    /// @notice unique id of the staking module
+    uint24 id;
+    /// @notice address of staking module
+    address stakingModuleAddress;
+    /// @notice part of the fee taken from staking rewards that goes to the staking module
+    uint16 stakingModuleFee;
+    /// @notice part of the fee taken from staking rewards that goes to the treasury
+    uint16 treasuryFee;
+    /// @notice target percent of total validators in protocol, in BP
+    uint16 targetShare;
+    /// @notice staking module status if staking module can not accept the deposits or can participate in further reward distribution
+    uint8 status;
+    /// @notice name of staking module
+    string name;
+    /// @notice block.timestamp of the last deposit of the staking module
+    /// @dev NB: lastDepositAt gets updated even if the deposit value was 0 and no actual deposit happened
+    uint64 lastDepositAt;
+    /// @notice block.number of the last deposit of the staking module
+    /// @dev NB: lastDepositBlock gets updated even if the deposit value was 0 and no actual deposit happened
+    uint256 lastDepositBlock;
+    /// @notice number of exited validators
+    uint256 exitedValidatorsCount;
+}
+
 /**
 * @title Shapella Lido Upgrade Template
 *
@@ -224,6 +257,7 @@ contract ShapellaUpgradeTemplate {
     bytes32 public constant _nodeOperatorsRegistryStakingModuleType = bytes32("curated-onchain-v1");
     uint256 public constant _nodeOperatorsRegistryStuckPenaltyDelay = 172800;
     bytes32 public constant _withdrawalCredentials = 0x010000000000000000000000dc62f9e8c34be08501cdef4ebde0a280f576d762;
+    uint256 public constant NOR_STAKING_MODULE_ID = 1;
     uint256 public constant NOR_STAKING_MODULE_TARGET_SHARE_BP = 10000; // 100%
     uint256 public constant NOR_STAKING_MODULE_MODULE_FEE_BP = 500; // 5%
     uint256 public constant NOR_STAKING_MODULE_TREASURY_FEE_BP = 500; // 5%
@@ -269,6 +303,34 @@ contract ShapellaUpgradeTemplate {
     uint256 public constant sanityLimit_requestTimestampMargin = 384;
     uint256 public constant sanityLimit_maxPositiveTokenRebase = 750000;
 
+    string public constant NORMALIZED_CL_REWARD_PER_EPOCH_KEY = "NORMALIZED_CL_REWARD_PER_EPOCH";
+    bytes public constant NORMALIZED_CL_REWARD_PER_EPOCH_VALUE = hex"40";
+
+    string public constant NORMALIZED_CL_REWARD_MISTAKE_RATE_BP_KEY = "NORMALIZED_CL_REWARD_MISTAKE_RATE_BP";
+    bytes public constant NORMALIZED_CL_REWARD_MISTAKE_RATE_BP_VALUE = hex"03e8";
+
+    string public constant REBASE_CHECK_NEAREST_EPOCH_DISTANCE_KEY = "REBASE_CHECK_NEAREST_EPOCH_DISTANCE";
+    bytes public constant REBASE_CHECK_NEAREST_EPOCH_DISTANCE_VALUE = hex"04";
+
+    string public constant REBASE_CHECK_DISTANT_EPOCH_DISTANCE_KEY = "REBASE_CHECK_DISTANT_EPOCH_DISTANCE";
+    bytes public constant REBASE_CHECK_DISTANT_EPOCH_DISTANCE_VALUE = hex"0a";
+
+    string public constant VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS_KEY = "VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS";
+    bytes public constant VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS_VALUE = hex"1c20";
+
+    string public constant VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS_KEY = "VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS";
+    bytes public constant VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS_VALUE = hex"5460";
+
+    string public constant PREDICTION_DURATION_IN_SLOTS_KEY = "PREDICTION_DURATION_IN_SLOTS";
+    bytes public constant PREDICTION_DURATION_IN_SLOTS_VALUE = hex"c4e0";
+
+    string public constant FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFTS_KEY = "FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT";
+    bytes public constant FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_VALUE = hex"0546";
+
+    string public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_KEY = "NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP";
+    bytes public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_VALUE = hex"64";
+
+
     //
     // STRUCTURED STORAGE
     //
@@ -294,9 +356,9 @@ contract ShapellaUpgradeTemplate {
         _assertUpgradeIsFinishedCorrectly();
     }
 
-    function revertIfUpgradeNotFinished() external view {
+    function revertIfUpgradeNotEnacted() external view {
         if (!isUpgradeFinished) {
-            revert UpgradeIsNotFinished();
+            revert UpgradeNotEnacted();
         }
     }
 
@@ -324,9 +386,9 @@ contract ShapellaUpgradeTemplate {
 
         _initializeValidatorsExitBus();
 
-        _migrateLidoOracleCommitteeMembers();
-
         _initializeStakingRouter();
+
+        _migrateLidoOracleCommitteeMembers();
 
         _migrateDSMGuardians();
 
@@ -335,7 +397,7 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _assertCorrectInitialState() internal view {
-        if (ILidoOracle(address(_legacyOracle())).getVersion() != EXPECTED_FINAL_LEGACY_ORACLE_VERSION - 1) {
+        if (_lidoOracle().getVersion() != EXPECTED_FINAL_LEGACY_ORACLE_VERSION - 1) {
             revert LidoOracleMustNotBeUpgradedToLegacyYet();
         }
 
@@ -350,6 +412,7 @@ contract ShapellaUpgradeTemplate {
         if (_depositSecurityModule().getOwner() != address(this)) revert WrongDsmOwner();
 
         _assertOracleDaemonConfigRoles();
+        _assertOracleDaemonConfigParameters();
         _assertOracleReportSanityCheckerRoles();
 
         _assertCorrectDSMParameters();
@@ -432,7 +495,24 @@ contract ShapellaUpgradeTemplate {
         IOracleDaemonConfig config = _oracleDaemonConfig();
         _assertSingleOZRoleHolder(config, DEFAULT_ADMIN_ROLE, _agent);
         _assertZeroOZRoleHolders(config, config.CONFIG_MANAGER_ROLE());
+    }
 
+    function _assertOracleDaemonConfigParameters() internal view {
+        _assertKeyValue(NORMALIZED_CL_REWARD_PER_EPOCH_KEY, NORMALIZED_CL_REWARD_PER_EPOCH_VALUE);
+        _assertKeyValue(NORMALIZED_CL_REWARD_MISTAKE_RATE_BP_KEY, NORMALIZED_CL_REWARD_MISTAKE_RATE_BP_VALUE);
+        _assertKeyValue(REBASE_CHECK_NEAREST_EPOCH_DISTANCE_KEY, REBASE_CHECK_NEAREST_EPOCH_DISTANCE_VALUE);
+        _assertKeyValue(REBASE_CHECK_DISTANT_EPOCH_DISTANCE_KEY, REBASE_CHECK_DISTANT_EPOCH_DISTANCE_VALUE);
+        _assertKeyValue(VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS_KEY, VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS_VALUE);
+        _assertKeyValue(VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS_KEY, VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS_VALUE);
+        _assertKeyValue(PREDICTION_DURATION_IN_SLOTS_KEY, PREDICTION_DURATION_IN_SLOTS_VALUE);
+        _assertKeyValue(FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFTS_KEY, FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_VALUE);
+        _assertKeyValue(NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_KEY, NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_VALUE);
+    }
+
+    function _assertKeyValue(string memory key, bytes memory value) internal view {
+        if (keccak256(_oracleDaemonConfig().get(key)) != keccak256(value)) {
+            revert WrongOracleDaemonConfigKeyValue(key);
+        }
     }
 
     function _assertInitialProxyImplementations() internal view {
@@ -445,6 +525,12 @@ contract ShapellaUpgradeTemplate {
 
     function _assertInitialDummyImplementation(IOssifiableProxy proxy) internal view {
         if (proxy.proxy__getImplementation() != _dummyImplementation) revert WrongInitialImplementation(address(proxy));
+    }
+
+    function _assertZeroOZRoleHolders(IAccessControlEnumerable accessControlled, bytes32 role) internal view {
+        if (accessControlled.getRoleMemberCount(role) != 0) {
+            revert NonZeroRoleHolders(address(accessControlled), role);
+        }
     }
 
     function _assertSingleOZRoleHolder(IAccessControlEnumerable accessControlled, bytes32 role, address holder) internal view {
@@ -482,12 +568,6 @@ contract ShapellaUpgradeTemplate {
         _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().PAUSE_ROLE());
         _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().FINALIZE_ROLE());
         _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().ORACLE_ROLE());
-    }
-
-    function _assertZeroOZRoleHolders(IAccessControlEnumerable accessControlled, bytes32 role) internal view {
-        if (accessControlled.getRoleMemberCount(role) != 0) {
-            revert NonZeroRoleHolders(address(accessControlled), role);
-        }
     }
 
     function _initializeAccountingOracle() internal {
@@ -631,6 +711,7 @@ contract ShapellaUpgradeTemplate {
         _assertProxyOZAccessControlContractsAdmin(_agent);
         _assertNonProxyOZAccessControlContractsAdmin(_agent);
         _assertOracleDaemonConfigRoles();
+        _assertOracleDaemonConfigParameters();
         _assertOracleReportSanityCheckerRoles();
 
         _assertGateSealSealables();
@@ -655,19 +736,46 @@ contract ShapellaUpgradeTemplate {
         if (_withdrawalQueue().isPaused()) revert WQNotResumed();
         if (_validatorsExitBusOracle().isPaused()) revert VEBONotResumed();
 
-        if (!_stakingRouter().hasStakingModule(1) || _stakingRouter().hasStakingModule(2)) {
-            revert WrongStakingModulesCount();
-        }
+        _assertCorrectStakingModule();
     }
 
     function _assertGateSealSealables() internal view {
-        // TODO: sync VEBO proxy and its sealable at re-deploy
         address[] memory sealables = IGateSeal(_gateSeal).get_sealables();
         if (
-            sealables[0] != address(_withdrawalQueue())
+            sealables.length != 2
+         || sealables[0] != address(_withdrawalQueue())
          || sealables[1] != address(_validatorsExitBusOracle())
          ) {
             revert WrongSealGateSealables();
+        }
+    }
+
+
+    function _assertCorrectStakingModule() internal view {
+        IStakingRouter sr = _stakingRouter();
+
+        if (
+            !sr.hasStakingModule(NOR_STAKING_MODULE_ID)
+         || sr.hasStakingModule(NOR_STAKING_MODULE_ID + 1)
+         || sr.getStakingModulesCount() != 1
+         ) {
+            revert WrongStakingModulesCount();
+        }
+
+        StakingModule memory module = sr.getStakingModule(NOR_STAKING_MODULE_ID);
+        if (
+            module.id != NOR_STAKING_MODULE_ID
+         || module.stakingModuleAddress != address(_nodeOperatorsRegistry)
+         || module.stakingModuleFee != NOR_STAKING_MODULE_MODULE_FEE_BP
+         || module.treasuryFee != NOR_STAKING_MODULE_TREASURY_FEE_BP
+         || module.targetShare != NOR_STAKING_MODULE_TARGET_SHARE_BP
+         || module.status != uint8(StakingModuleStatus.Active)
+         || keccak256(abi.encodePacked(module.name)) != keccak256(abi.encodePacked(NOR_STAKING_MODULE_NAME))
+         || module.lastDepositAt != block.timestamp
+         || module.lastDepositBlock != block.number
+         || module.exitedValidatorsCount != 0
+        ) {
+            revert WrongStakingModuleParameters();
         }
     }
 
@@ -774,7 +882,7 @@ contract ShapellaUpgradeTemplate {
     error CanOnlyStartOnce();
     error CanOnlyFinishOnce();
     error StartMustBeCalledBeforeFinish();
-    error UpgradeIsNotFinished();
+    error UpgradeNotEnacted();
     error LidoOracleMustNotBeUpgradedToLegacyYet();
     error LidoOracleMustBeUpgradedToLegacy();
     error WrongDsmOwner();
@@ -791,4 +899,6 @@ contract ShapellaUpgradeTemplate {
     error WrongStakingModulesCount();
     error InvalidOracleReportSanityCheckerConfig();
     error WrongSealGateSealables();
+    error WrongStakingModuleParameters();
+    error WrongOracleDaemonConfigKeyValue(string key);
 }
