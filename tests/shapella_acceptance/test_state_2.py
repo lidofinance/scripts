@@ -1,5 +1,7 @@
-from brownie import interface, web3
+from brownie import interface, web3, chain
 from utils.config import contracts, guardians
+
+from test_upgrade_shapella_goerli import oracle_app_id
 
 
 def test_accounting_oracle_state():
@@ -48,25 +50,25 @@ def test_accounting_oracle_state():
 
     # Processing state
     state = contracts.accounting_oracle.getProcessingState()
-    assert state[0] > 5254400
-    assert state[1] == 0
-    assert state[2] == "0x0000000000000000000000000000000000000000000000000000000000000000"
-    assert state[3] == False
-    assert state[4] == "0x0000000000000000000000000000000000000000000000000000000000000000"
-    assert state[5] == 0
-    assert state[6] == False
-    assert state[7] == 0
-    assert state[8] == 0
+    assert state["currentFrameRefSlot"] > 5254400
+    assert state["processingDeadlineTime"] == 0
+    assert state["mainDataHash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
+    assert state["mainDataSubmitted"] == False
+    assert state["extraDataHash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
+    assert state["extraDataFormat"] == 0
+    assert state["extraDataSubmitted"] == False
+    assert state["extraDataItemsCount"] == 0
+    assert state["extraDataItemsSubmitted"] == 0
 
     assert contracts.accounting_oracle.getLastProcessingRefSlot() == 5254400
 
     # Consensus
     assert contracts.accounting_oracle.getConsensusContract() == "0x8EA83346E60261DdF1fA3B64056B096e337541b2"
     report = contracts.accounting_oracle.getConsensusReport()
-    assert report[0] == "0x0000000000000000000000000000000000000000000000000000000000000000"
-    assert report[1] == 5254400
-    assert report[2] == 0
-    assert report[3] == False
+    assert report["hash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
+    assert report["refSlot"] == 5254400
+    assert report["processingDeadlineTime"] == 0
+    assert report["processingStarted"] == False
 
 
 def test_deposit_security_module_state():
@@ -94,3 +96,11 @@ def test_deposit_security_module_state():
         assert contracts.deposit_security_module.isGuardian(guardian) == True
 
     assert contracts.deposit_security_module.getPauseIntentValidityPeriodBlocks() == 10
+
+def test_el_rewards_vault_state():
+    # address in locator
+    assert contracts.lido_locator.elRewardsVault() == contracts.execution_layer_rewards_vault
+
+    # Constants
+    assert contracts.execution_layer_rewards_vault.LIDO() == contracts.lido
+    assert contracts.execution_layer_rewards_vault.TREASURY() == contracts.agent
