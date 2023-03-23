@@ -144,7 +144,6 @@ interface IWithdrawalQueue is IAccessControlEnumerable, IPausableUntil, IVersion
     function FINALIZE_ROLE() external view returns (bytes32);
     function ORACLE_ROLE() external view returns (bytes32);
     function initialize(address _admin) external;
-    function pauseFor(uint256 _duration) external;
 }
 
 interface IWithdrawalsManagerProxy {
@@ -199,7 +198,7 @@ contract ShapellaUpgradeTemplate {
     address public constant _previousDepositSecurityModule = 0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe;
 
     uint256 public constant EXPECTED_FINAL_LIDO_VERSION = 2;
-    uint256 public constant EXPECTED_FINAL_NOR_VERSION = 2;
+    uint256 public constant EXPECTED_FINAL_NODE_OPERATORS_REGISTRY_VERSION = 2;
     uint256 public constant EXPECTED_FINAL_LEGACY_ORACLE_VERSION = 4;
     uint256 public constant EXPECTED_FINAL_ACCOUNTING_ORACLE_VERSION = 1;
     uint256 public constant EXPECTED_FINAL_STAKING_ROUTER_VERSION = 1;
@@ -459,7 +458,6 @@ contract ShapellaUpgradeTemplate {
         _hashConsensusForValidatorsExitBusOracle.grantRole(manage_members_role, address(this));
         for (uint256 i; i < members.length; ++i) {
             _hashConsensusForAccountingOracle.addMember(members[i], quorum);
-
             _hashConsensusForValidatorsExitBusOracle.addMember(members[i], quorum);
         }
         _hashConsensusForAccountingOracle.renounceRole(manage_members_role, address(this));
@@ -548,7 +546,7 @@ contract ShapellaUpgradeTemplate {
         if (_depositSecurityModule().getOwner() != _agent) revert WrongDsmOwner();
 
         if (_withdrawalQueue().isPaused()) revert WQNotResumed();
-        if (_validatorsExitBusOracle().isPaused()) revert EBNotResumed();
+        if (_validatorsExitBusOracle().isPaused()) revert VEBONotResumed();
     }
 
     function _assertCorrectOracleAndConsensusContractsBinding(IBaseOracle oracle, IHashConsensus hashConsensus) internal view {
@@ -560,7 +558,7 @@ contract ShapellaUpgradeTemplate {
 
     function _checkContractVersions() internal view {
         _assertContractVersion(_lido(), EXPECTED_FINAL_LIDO_VERSION);
-        _assertContractVersion(_nodeOperatorsRegistry, EXPECTED_FINAL_NOR_VERSION);
+        _assertContractVersion(_nodeOperatorsRegistry, EXPECTED_FINAL_NODE_OPERATORS_REGISTRY_VERSION);
         _assertContractVersion(_legacyOracle(), EXPECTED_FINAL_LEGACY_ORACLE_VERSION);
         _assertContractVersion(_accountingOracle(), EXPECTED_FINAL_ACCOUNTING_ORACLE_VERSION);
         _assertContractVersion(_stakingRouter(), EXPECTED_FINAL_STAKING_ROUTER_VERSION);
@@ -653,7 +651,7 @@ contract ShapellaUpgradeTemplate {
     error WrongSingleRoleHolder(address contractAddress, bytes32 role);
     error NonZeroRoleHolders(address contractAddress, bytes32 role);
     error WQNotResumed();
-    error EBNotResumed();
+    error VEBONotResumed();
     error IncorrectOracleAndHashConsensusBinding(address oracle, address hashConsensus);
     error IncorrectDepositSecurityModuleParameters(address _depositSecurityModule);
 }
