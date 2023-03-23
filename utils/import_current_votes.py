@@ -5,7 +5,7 @@ import glob
 from brownie import accounts
 from brownie.network.transaction import TransactionReceipt
 
-from utils.config import ldo_holder_address_for_tests, ContractsLazyLoader, deployer_eoa
+from utils.config import ldo_holder_address_for_tests, ContractsLazyLoader, deployer_eoa, shapella_upgrade_template
 from utils.shapella_upgrade import prepare_for_voting
 
 
@@ -25,7 +25,13 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
     vote_files = get_vote_script_files()
     assert len(vote_files) > 0
 
-    ContractsLazyLoader.upgrade_template = prepare_for_voting(deployer_eoa)
+    if os.getenv("SKIP_SHAPELLA_PRELIMINARY_STEP"):
+        assert (
+            shapella_upgrade_template != ""
+        ), "If SKIP_SHAPELLA_PRELIMINARY_STEP is set 'shapella_upgrade_template' must be specified in the config"
+        ContractsLazyLoader.upgrade_template = shapella_upgrade_template
+    else:
+        ContractsLazyLoader.upgrade_template = prepare_for_voting(deployer_eoa)
 
     vote_ids = []
     vote_transactions = []

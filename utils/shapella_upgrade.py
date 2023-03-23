@@ -64,7 +64,7 @@ def debug_locator_addresses(locator_address):
     pprint(locator_config)
 
 
-def pass_ownership_to_template(owner, template):
+def transfer_ownership_to_template(owner, template):
     admin_role = interface.AccessControlEnumerable(contracts.burner).DEFAULT_ADMIN_ROLE()
 
     def transfer_oz_admin_to_template(contract):
@@ -89,8 +89,7 @@ def pass_ownership_to_template(owner, template):
 
 def prepare_for_voting(temporary_admin):
     print("=== Do the on-chain preparations before starting the vote ===")
-    # TODO: topup the holder on the live network and remove this
-    steth_holder = ldo_vote_executors_for_tests[0]
+    steth_holder = temporary_admin
     topup_initial_token_holder(contracts.lido, steth_holder)
 
     # Need this, otherwise Lido.finalizeUpgradeV2 reverts
@@ -101,5 +100,5 @@ def prepare_for_voting(temporary_admin):
     interface.OssifiableProxy(contracts.lido_locator).proxy__upgradeTo(
         lido_dao_lido_locator_implementation, {"from": temporary_admin}
     )
-    pass_ownership_to_template(temporary_admin, template)
+    transfer_ownership_to_template(temporary_admin, template)
     return template

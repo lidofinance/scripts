@@ -8,7 +8,6 @@ from utils.config import (
     lido_dao_staking_router,
     lido_dao_node_operators_registry,
     ContractsLazyLoader,
-    deployer_eoa,
     lido_dao_voting_address,
     lido_dao_steth_address,
     lido_dao_legacy_oracle,
@@ -18,7 +17,6 @@ from utils.test.event_validators.aragon import validate_push_to_repo_event, vali
 from brownie.network.transaction import TransactionReceipt
 from brownie import interface
 from brownie import ShapellaUpgradeTemplate
-from pprint import pprint
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 
 
