@@ -51,11 +51,16 @@ interface IDepositSecurityModule {
     function getMinDepositBlockDistance() external view returns (uint256);
 }
 
+interface IGateSeal {
+    function get_sealables() external view returns (address[] memory);
+}
+
 interface IHashConsensus is IAccessControlEnumerable {
     function MANAGE_MEMBERS_AND_QUORUM_ROLE() external view returns (bytes32);
     function addMember(address addr, uint256 quorum) external;
     function getFrameConfig() external view returns (uint256 initialEpoch, uint256 epochsPerFrame, uint256 fastLaneLengthSlots);
     function updateInitialEpoch(uint256 initialEpoch) external;
+    function getReportProcessor() external view returns (address);
 }
 
 interface ILido is IVersioned {
@@ -110,6 +115,7 @@ interface IOracleReportSanityChecker is IAccessControlEnumerable {
     function MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE() external view returns (bytes32);
     function REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE() external view returns (bytes32);
     function MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE() external view returns (bytes32);
+    function getOracleReportLimits() external view returns (LimitsList memory);
 }
 
 interface IStakingRouter is IVersioned, IAccessControlEnumerable, IOssifiableProxy {
@@ -129,6 +135,8 @@ interface IStakingRouter is IVersioned, IAccessControlEnumerable, IOssifiablePro
         uint256 treasuryFee
     ) external;
     function hasStakingModule(uint256 _stakingModuleId) external view returns (bool);
+    function getStakingModulesCount() external view returns (uint256);
+    function getStakingModule(uint256 _stakingModuleId) external view returns (StakingModule memory);
 }
 
 interface IValidatorsExitBusOracle is IBaseOracle, IPausableUntil, IOssifiableProxy {
@@ -157,6 +165,78 @@ interface IWithdrawalVault is IVersioned, IWithdrawalsManagerProxy {
     function initialize() external;
 }
 
+struct LimitsList {
+    /// @notice The max possible number of validators that might appear or exit on the Consensus
+    ///     Layer during one day
+    /// @dev Must fit into uint16 (<= 65_535)
+    uint256 churnValidatorsPerDayLimit;
+
+    /// @notice The max decrease of the total validators' balances on the Consensus Layer since
+    ///     the previous oracle report
+    /// @dev Represented in the Basis Points (100% == 10_000)
+    uint256 oneOffCLBalanceDecreaseBPLimit;
+
+    /// @notice The max annual increase of the total validators' balances on the Consensus Layer
+    ///     since the previous oracle report
+    /// @dev Represented in the Basis Points (100% == 10_000)
+    uint256 annualBalanceIncreaseBPLimit;
+
+    /// @notice The max deviation of the provided `simulatedShareRate`
+    ///     and the actual one within the currently processing oracle report
+    /// @dev Represented in the Basis Points (100% == 10_000)
+    uint256 simulatedShareRateDeviationBPLimit;
+
+    /// @notice The max number of exit requests allowed in report to ValidatorsExitBusOracle
+    uint256 maxValidatorExitRequestsPerReport;
+
+    /// @notice The max number of data list items reported to accounting oracle in extra data
+    /// @dev Must fit into uint16 (<= 65_535)
+    uint256 maxAccountingExtraDataListItemsCount;
+
+    /// @notice The max number of node operators reported per extra data list item
+    /// @dev Must fit into uint16 (<= 65_535)
+    uint256 maxNodeOperatorsPerExtraDataItemCount;
+
+    /// @notice The min time required to be passed from the creation of the request to be
+    ///     finalized till the time of the oracle report
+    uint256 requestTimestampMargin;
+
+    /// @notice The positive token rebase allowed per single LidoOracle report
+    /// @dev uses 1e9 precision, e.g.: 1e6 - 0.1%; 1e9 - 100%, see `setMaxPositiveTokenRebase()`
+    uint256 maxPositiveTokenRebase;
+}
+
+enum StakingModuleStatus {
+    Active, // deposits and rewards allowed
+    DepositsPaused, // deposits NOT allowed, rewards allowed
+    Stopped // deposits and rewards NOT allowed
+}
+
+struct StakingModule {
+    /// @notice unique id of the staking module
+    uint24 id;
+    /// @notice address of staking module
+    address stakingModuleAddress;
+    /// @notice part of the fee taken from staking rewards that goes to the staking module
+    uint16 stakingModuleFee;
+    /// @notice part of the fee taken from staking rewards that goes to the treasury
+    uint16 treasuryFee;
+    /// @notice target percent of total validators in protocol, in BP
+    uint16 targetShare;
+    /// @notice staking module status if staking module can not accept the deposits or can participate in further reward distribution
+    uint8 status;
+    /// @notice name of staking module
+    string name;
+    /// @notice block.timestamp of the last deposit of the staking module
+    /// @dev NB: lastDepositAt gets updated even if the deposit value was 0 and no actual deposit happened
+    uint64 lastDepositAt;
+    /// @notice block.number of the last deposit of the staking module
+    /// @dev NB: lastDepositBlock gets updated even if the deposit value was 0 and no actual deposit happened
+    uint256 lastDepositBlock;
+    /// @notice number of exited validators
+    uint256 exitedValidatorsCount;
+}
+
 /**
 * @title Shapella Lido Upgrade Template
 *
@@ -177,25 +257,26 @@ contract ShapellaUpgradeTemplate {
     bytes32 public constant _nodeOperatorsRegistryStakingModuleType = bytes32("curated-onchain-v1");
     uint256 public constant _nodeOperatorsRegistryStuckPenaltyDelay = 172800;
     bytes32 public constant _withdrawalCredentials = 0x010000000000000000000000dc62f9e8c34be08501cdef4ebde0a280f576d762;
+    uint256 public constant NOR_STAKING_MODULE_ID = 1;
     uint256 public constant NOR_STAKING_MODULE_TARGET_SHARE_BP = 10000; // 100%
     uint256 public constant NOR_STAKING_MODULE_MODULE_FEE_BP = 500; // 5%
     uint256 public constant NOR_STAKING_MODULE_TREASURY_FEE_BP = 500; // 5%
     uint256 public constant VEBO_LAST_PROCESSING_REF_SLOT = 0;
 
     ILidoLocator public constant _locator = ILidoLocator(0x1eDf09b5023DC86737b59dE68a8130De878984f5);
-    IHashConsensus public constant _hashConsensusForAccountingOracle = IHashConsensus(0x8EA83346E60261DdF1fA3B64056B096e337541b2);
-    IHashConsensus public constant _hashConsensusForValidatorsExitBusOracle = IHashConsensus(0x8D4bCbc063da5A813FC13c3f4c817afcA7cb1eD6);
+    IHashConsensus public constant _hashConsensusForAccountingOracle = IHashConsensus(0x8d87A8BCF8d4e542fd396D1c50223301c164417b);
+    IHashConsensus public constant _hashConsensusForValidatorsExitBusOracle = IHashConsensus(0x8374B4aC337D7e367Ea1eF54bB29880C3f036A51);
     address public constant _eip712StETH = 0xB4300103FfD326f77FfB3CA54248099Fb29C3b9e;
     address public constant _voting = 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db;
     address public constant _agent = 0x4333218072D5d7008546737786663c38B4D561A4;
     INodeOperatorsRegistry public constant _nodeOperatorsRegistry = INodeOperatorsRegistry(0x9D4AF1Ee19Dad8857db3a45B0374c81c8A1C6320);
     address public constant _gateSeal = 0x75A77AE52d88999D0b12C6e5fABB1C1ef7E92638;
-    address public constant _withdrawalQueueImplementation = 0x265be9738fA32B29180867E07eaf1d6fa02a34dB;
-    address public constant _stakingRouterImplementation = 0x249565350CcaD707bB68cE9980B366751649F4cd;
-    address public constant _accountingOracleImplementation = 0x8C55A49639b456F98E1A8D7DAa3b29B378CADc8b;
-    address public constant _validatorsExitBusOracleImplementation = 0x304F1B78B975AB79B479AdA70cE2Fc9A5a1A2a54;
+    address public constant _withdrawalQueueImplementation = 0xF7a378BB9E911550baA5e729f5Ab1592aDD905A5;
+    address public constant _stakingRouterImplementation = 0xb02791097DE4B7B83265C9516640C8223830a351;
+    address public constant _accountingOracleImplementation = 0x49cc40EE660BfD5f46423f04891502410d32E965;
+    address public constant _validatorsExitBusOracleImplementation = 0xBE378f865Ab69f51d8874aeB9508cbbC42B3FBDE;
     address public constant _dummyImplementation = 0x6A03b1BbB79460169a205eFBCBc77ebE1011bCf8;
-    address public constant _locatorImplementation = 0xa55bBf0245890fC5F5A231778732b8966300a80e;
+    address public constant _locatorImplementation = 0x6D5b7439c166A1BDc5c8DB547c1a871c082CE22C;
     address public constant _withdrawalVaultImplementation = 0x297Eb629655C8c488Eb26442cF4dfC8A7Cc32fFb;
     address public constant _previousDepositSecurityModule = 0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe;
 
@@ -208,9 +289,47 @@ contract ShapellaUpgradeTemplate {
     uint256 public constant EXPECTED_FINAL_WITHDRAWAL_QUEUE_VERSION = 1;
     uint256 public constant EXPECTED_FINAL_WITHDRAWAL_VAULT_VERSION = 1;
 
-    uint256 public constant EXPECTED_DSM_MAX_DEPOSITS_PER_BLOCK = 150;
-    uint256 public constant EXPECTED_DSM_MIN_DEPOSIT_BLOCK_DISTANCE = 5;
-    uint256 public constant EXPECTED_DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS = 6646;
+    uint256 public constant EXPECTED_DSM_MAX_DEPOSITS_PER_BLOCK = 0;
+    uint256 public constant EXPECTED_DSM_MIN_DEPOSIT_BLOCK_DISTANCE = 1200;
+    uint256 public constant EXPECTED_DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS = 10;
+
+    uint256 public constant sanityLimit_churnValidatorsPerDayLimit = 1500;
+    uint256 public constant sanityLimit_oneOffCLBalanceDecreaseBPLimit = 500;
+    uint256 public constant sanityLimit_annualBalanceIncreaseBPLimit = 1000;
+    uint256 public constant sanityLimit_simulatedShareRateDeviationBPLimit = 10;
+    uint256 public constant sanityLimit_maxValidatorExitRequestsPerReport = 500;
+    uint256 public constant sanityLimit_maxAccountingExtraDataListItemsCount = 500;
+    uint256 public constant sanityLimit_maxNodeOperatorsPerExtraDataItemCount = 100;
+    uint256 public constant sanityLimit_requestTimestampMargin = 384;
+    uint256 public constant sanityLimit_maxPositiveTokenRebase = 750000;
+
+    string public constant NORMALIZED_CL_REWARD_PER_EPOCH_KEY = "NORMALIZED_CL_REWARD_PER_EPOCH";
+    bytes public constant NORMALIZED_CL_REWARD_PER_EPOCH_VALUE = hex"40";
+
+    string public constant NORMALIZED_CL_REWARD_MISTAKE_RATE_BP_KEY = "NORMALIZED_CL_REWARD_MISTAKE_RATE_BP";
+    bytes public constant NORMALIZED_CL_REWARD_MISTAKE_RATE_BP_VALUE = hex"03e8";
+
+    string public constant REBASE_CHECK_NEAREST_EPOCH_DISTANCE_KEY = "REBASE_CHECK_NEAREST_EPOCH_DISTANCE";
+    bytes public constant REBASE_CHECK_NEAREST_EPOCH_DISTANCE_VALUE = hex"04";
+
+    string public constant REBASE_CHECK_DISTANT_EPOCH_DISTANCE_KEY = "REBASE_CHECK_DISTANT_EPOCH_DISTANCE";
+    bytes public constant REBASE_CHECK_DISTANT_EPOCH_DISTANCE_VALUE = hex"0a";
+
+    string public constant VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS_KEY = "VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS";
+    bytes public constant VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS_VALUE = hex"1c20";
+
+    string public constant VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS_KEY = "VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS";
+    bytes public constant VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS_VALUE = hex"5460";
+
+    string public constant PREDICTION_DURATION_IN_SLOTS_KEY = "PREDICTION_DURATION_IN_SLOTS";
+    bytes public constant PREDICTION_DURATION_IN_SLOTS_VALUE = hex"c4e0";
+
+    string public constant FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFTS_KEY = "FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT";
+    bytes public constant FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_VALUE = hex"0546";
+
+    string public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_KEY = "NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP";
+    bytes public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_VALUE = hex"64";
+
 
     //
     // STRUCTURED STORAGE
@@ -237,9 +356,9 @@ contract ShapellaUpgradeTemplate {
         _assertUpgradeIsFinishedCorrectly();
     }
 
-    function revertIfUpgradeNotFinished() external view {
+    function revertIfUpgradeNotEnacted() external view {
         if (!isUpgradeFinished) {
-            revert UpgradeIsNotFinished();
+            revert UpgradeNotEnacted();
         }
     }
 
@@ -267,9 +386,9 @@ contract ShapellaUpgradeTemplate {
 
         _initializeValidatorsExitBus();
 
-        _migrateLidoOracleCommitteeMembers();
-
         _initializeStakingRouter();
+
+        _migrateLidoOracleCommitteeMembers();
 
         _migrateDSMGuardians();
 
@@ -278,7 +397,7 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _assertCorrectInitialState() internal view {
-        if (ILidoOracle(address(_legacyOracle())).getVersion() != EXPECTED_FINAL_LEGACY_ORACLE_VERSION - 1) {
+        if (_lidoOracle().getVersion() != EXPECTED_FINAL_LEGACY_ORACLE_VERSION - 1) {
             revert LidoOracleMustNotBeUpgradedToLegacyYet();
         }
 
@@ -293,6 +412,7 @@ contract ShapellaUpgradeTemplate {
         if (_depositSecurityModule().getOwner() != address(this)) revert WrongDsmOwner();
 
         _assertOracleDaemonConfigRoles();
+        _assertOracleDaemonConfigParameters();
         _assertOracleReportSanityCheckerRoles();
 
         _assertCorrectDSMParameters();
@@ -344,23 +464,55 @@ contract ShapellaUpgradeTemplate {
     function _assertOracleReportSanityCheckerRoles() internal view {
         IOracleReportSanityChecker checker = _oracleReportSanityChecker();
         _assertSingleOZRoleHolder(checker, DEFAULT_ADMIN_ROLE, _agent);
-        _assertZeroRoleHolders(checker, checker.ALL_LIMITS_MANAGER_ROLE());
-        _assertZeroRoleHolders(checker, checker.CHURN_VALIDATORS_PER_DAY_LIMIT_MANGER_ROLE());
-        _assertZeroRoleHolders(checker, checker.ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE());
-        _assertZeroRoleHolders(checker, checker.ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE());
-        _assertZeroRoleHolders(checker, checker.SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE());
-        _assertZeroRoleHolders(checker, checker.MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_ROLE());
-        _assertZeroRoleHolders(checker, checker.MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE());
-        _assertZeroRoleHolders(checker, checker.MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE());
-        _assertZeroRoleHolders(checker, checker.REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE());
-        _assertZeroRoleHolders(checker, checker.MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.ALL_LIMITS_MANAGER_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.CHURN_VALIDATORS_PER_DAY_LIMIT_MANGER_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE());
+
+        LimitsList memory limitsList = checker.getOracleReportLimits();
+        if (
+            limitsList.churnValidatorsPerDayLimit != sanityLimit_churnValidatorsPerDayLimit
+         || limitsList.oneOffCLBalanceDecreaseBPLimit != sanityLimit_oneOffCLBalanceDecreaseBPLimit
+         || limitsList.annualBalanceIncreaseBPLimit != sanityLimit_annualBalanceIncreaseBPLimit
+         || limitsList.simulatedShareRateDeviationBPLimit != sanityLimit_simulatedShareRateDeviationBPLimit
+         || limitsList.maxValidatorExitRequestsPerReport != sanityLimit_maxValidatorExitRequestsPerReport
+         || limitsList.maxAccountingExtraDataListItemsCount != sanityLimit_maxAccountingExtraDataListItemsCount
+         || limitsList.maxNodeOperatorsPerExtraDataItemCount != sanityLimit_maxNodeOperatorsPerExtraDataItemCount
+         || limitsList.requestTimestampMargin != sanityLimit_requestTimestampMargin
+         || limitsList.maxPositiveTokenRebase != sanityLimit_maxPositiveTokenRebase
+         ) {
+            revert InvalidOracleReportSanityCheckerConfig();
+         }
     }
 
     function _assertOracleDaemonConfigRoles() internal view {
         IOracleDaemonConfig config = _oracleDaemonConfig();
         _assertSingleOZRoleHolder(config, DEFAULT_ADMIN_ROLE, _agent);
-        _assertZeroRoleHolders(config, config.CONFIG_MANAGER_ROLE());
+        _assertZeroOZRoleHolders(config, config.CONFIG_MANAGER_ROLE());
+    }
 
+    function _assertOracleDaemonConfigParameters() internal view {
+        _assertKeyValue(NORMALIZED_CL_REWARD_PER_EPOCH_KEY, NORMALIZED_CL_REWARD_PER_EPOCH_VALUE);
+        _assertKeyValue(NORMALIZED_CL_REWARD_MISTAKE_RATE_BP_KEY, NORMALIZED_CL_REWARD_MISTAKE_RATE_BP_VALUE);
+        _assertKeyValue(REBASE_CHECK_NEAREST_EPOCH_DISTANCE_KEY, REBASE_CHECK_NEAREST_EPOCH_DISTANCE_VALUE);
+        _assertKeyValue(REBASE_CHECK_DISTANT_EPOCH_DISTANCE_KEY, REBASE_CHECK_DISTANT_EPOCH_DISTANCE_VALUE);
+        _assertKeyValue(VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS_KEY, VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS_VALUE);
+        _assertKeyValue(VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS_KEY, VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS_VALUE);
+        _assertKeyValue(PREDICTION_DURATION_IN_SLOTS_KEY, PREDICTION_DURATION_IN_SLOTS_VALUE);
+        _assertKeyValue(FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFTS_KEY, FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_VALUE);
+        _assertKeyValue(NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_KEY, NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_VALUE);
+    }
+
+    function _assertKeyValue(string memory key, bytes memory value) internal view {
+        if (keccak256(_oracleDaemonConfig().get(key)) != keccak256(value)) {
+            revert WrongOracleDaemonConfigKeyValue(key);
+        }
     }
 
     function _assertInitialProxyImplementations() internal view {
@@ -373,6 +525,12 @@ contract ShapellaUpgradeTemplate {
 
     function _assertInitialDummyImplementation(IOssifiableProxy proxy) internal view {
         if (proxy.proxy__getImplementation() != _dummyImplementation) revert WrongInitialImplementation(address(proxy));
+    }
+
+    function _assertZeroOZRoleHolders(IAccessControlEnumerable accessControlled, bytes32 role) internal view {
+        if (accessControlled.getRoleMemberCount(role) != 0) {
+            revert NonZeroRoleHolders(address(accessControlled), role);
+        }
     }
 
     function _assertSingleOZRoleHolder(IAccessControlEnumerable accessControlled, bytes32 role, address holder) internal view {
@@ -395,41 +553,39 @@ contract ShapellaUpgradeTemplate {
     function _assertCorrectInitialRoleHolders() internal view {
         _assertSingleOZRoleHolder(_burner(), _burner().REQUEST_BURN_SHARES_ROLE(), address(_lido()));
 
-        _assertZeroRoleHolders(_accountingOracle(), DEFAULT_ADMIN_ROLE);
+        _assertZeroOZRoleHolders(_accountingOracle(), DEFAULT_ADMIN_ROLE);
 
-        _assertZeroRoleHolders(_stakingRouter(), DEFAULT_ADMIN_ROLE);
-        _assertZeroRoleHolders(_stakingRouter(), _stakingRouter().STAKING_MODULE_PAUSE_ROLE());
-        _assertZeroRoleHolders(_stakingRouter(), _stakingRouter().STAKING_MODULE_RESUME_ROLE());
-        _assertZeroRoleHolders(_stakingRouter(), _stakingRouter().REPORT_EXITED_VALIDATORS_ROLE());
-        _assertZeroRoleHolders(_stakingRouter(), _stakingRouter().REPORT_REWARDS_MINTED_ROLE());
+        _assertZeroOZRoleHolders(_stakingRouter(), DEFAULT_ADMIN_ROLE);
+        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().STAKING_MODULE_PAUSE_ROLE());
+        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().STAKING_MODULE_RESUME_ROLE());
+        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().REPORT_EXITED_VALIDATORS_ROLE());
+        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().REPORT_REWARDS_MINTED_ROLE());
 
-        _assertZeroRoleHolders(_validatorsExitBusOracle(), DEFAULT_ADMIN_ROLE);
-        _assertZeroRoleHolders(_validatorsExitBusOracle(), _validatorsExitBusOracle().PAUSE_ROLE());
+        _assertZeroOZRoleHolders(_validatorsExitBusOracle(), DEFAULT_ADMIN_ROLE);
+        _assertZeroOZRoleHolders(_validatorsExitBusOracle(), _validatorsExitBusOracle().PAUSE_ROLE());
 
-        _assertZeroRoleHolders(_withdrawalQueue(), DEFAULT_ADMIN_ROLE);
-        _assertZeroRoleHolders(_withdrawalQueue(), _withdrawalQueue().PAUSE_ROLE());
-        _assertZeroRoleHolders(_withdrawalQueue(), _withdrawalQueue().FINALIZE_ROLE());
-        _assertZeroRoleHolders(_withdrawalQueue(), _withdrawalQueue().ORACLE_ROLE());
-    }
-
-    function _assertZeroRoleHolders(IAccessControlEnumerable accessControlled, bytes32 role) internal view {
-        if (accessControlled.getRoleMemberCount(role) != 0) {
-            revert NonZeroRoleHolders(address(accessControlled), role);
-        }
+        _assertZeroOZRoleHolders(_withdrawalQueue(), DEFAULT_ADMIN_ROLE);
+        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().PAUSE_ROLE());
+        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().FINALIZE_ROLE());
+        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().ORACLE_ROLE());
     }
 
     function _initializeAccountingOracle() internal {
-        (, uint256 epochsPerFrame, ) = _hashConsensusForAccountingOracle.getFrameConfig();
-        uint256 lastLidoOracleCompletedEpochId = _lidoOracle().getLastCompletedEpochId();
 
         // NB: HashConsensus.updateInitialEpoch must be called after AccountingOracle implementation is bound to proxy
-        _hashConsensusForAccountingOracle.updateInitialEpoch(lastLidoOracleCompletedEpochId + epochsPerFrame);
+        _hashConsensusForAccountingOracle.updateInitialEpoch(_calcInitialEpochForAccountingOracleHashConsensus());
 
         _accountingOracle().initialize(
             address(this),
             address(_hashConsensusForAccountingOracle),
             _accountingOracleConsensusVersion
         );
+    }
+
+    function _calcInitialEpochForAccountingOracleHashConsensus() internal view returns (uint256) {
+        (, uint256 epochsPerFrame, ) = _hashConsensusForAccountingOracle.getFrameConfig();
+        uint256 lastLidoOracleCompletedEpochId = _lidoOracle().getLastCompletedEpochId();
+        return lastLidoOracleCompletedEpochId + epochsPerFrame;
     }
 
     function _initializeWithdrawalQueue() internal {
@@ -451,6 +607,8 @@ contract ShapellaUpgradeTemplate {
 
     function _initializeValidatorsExitBus() internal {
         IValidatorsExitBusOracle vebo = _validatorsExitBusOracle();
+        // NB: Taking same initial epoch as for AccountingOracle on purpose
+        _hashConsensusForValidatorsExitBusOracle.updateInitialEpoch(_calcInitialEpochForAccountingOracleHashConsensus());
         vebo.initialize(
             address(this),
             address(_hashConsensusForValidatorsExitBusOracle),
@@ -527,6 +685,8 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _passAdminRoleFromTemplateToAgent() internal {
+        // NB: No need to pass OracleDaemonConfig and OracleReportSanityChecker admin roles
+        // because they were Agent at the beginning and are needed by the template
         _transferOZAdminFromThisToAgent(_hashConsensusForValidatorsExitBusOracle);
         _transferOZAdminFromThisToAgent(_hashConsensusForAccountingOracle);
         _transferOZAdminFromThisToAgent(_burner());
@@ -551,10 +711,24 @@ contract ShapellaUpgradeTemplate {
         _assertProxyOZAccessControlContractsAdmin(_agent);
         _assertNonProxyOZAccessControlContractsAdmin(_agent);
         _assertOracleDaemonConfigRoles();
+        _assertOracleDaemonConfigParameters();
         _assertOracleReportSanityCheckerRoles();
+
+        _assertGateSealSealables();
+
+        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().RESUME_ROLE());
+        _assertSingleOZRoleHolder(_withdrawalQueue(), _withdrawalQueue().PAUSE_ROLE(), _gateSeal);
+        _assertSingleOZRoleHolder(_withdrawalQueue(), _withdrawalQueue().FINALIZE_ROLE(), address(_lido()));
+        _assertSingleOZRoleHolder(_withdrawalQueue(), _withdrawalQueue().ORACLE_ROLE(), address(_accountingOracle()));
+        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().STAKING_MODULE_RESUME_ROLE());
+        _assertSingleOZRoleHolder(_stakingRouter(), _stakingRouter().STAKING_MODULE_PAUSE_ROLE(), address(_depositSecurityModule()));
+        _assertSingleOZRoleHolder(_stakingRouter(), _stakingRouter().REPORT_EXITED_VALIDATORS_ROLE(), address(_accountingOracle()));
+        _assertSingleOZRoleHolder(_stakingRouter(), _stakingRouter().REPORT_REWARDS_MINTED_ROLE(), address(_lido()));
         _assertTwoOZRoleHolders(_burner(), _burner().REQUEST_BURN_SHARES_ROLE(), address(_lido()), address(_nodeOperatorsRegistry));
+        _assertZeroOZRoleHolders(_validatorsExitBusOracle(), _validatorsExitBusOracle().RESUME_ROLE());
+        _assertSingleOZRoleHolder(_validatorsExitBusOracle(), _validatorsExitBusOracle().PAUSE_ROLE(), _gateSeal);
+
         if (_depositSecurityModule().getOwner() != _agent) revert WrongDsmOwner();
-        // TODO: maybe check non admin roles if enough contract bytecode size?
 
         _assertCorrectOracleAndConsensusContractsBinding(_accountingOracle(), _hashConsensusForAccountingOracle);
         _assertCorrectOracleAndConsensusContractsBinding(_validatorsExitBusOracle(), _hashConsensusForValidatorsExitBusOracle);
@@ -562,16 +736,56 @@ contract ShapellaUpgradeTemplate {
         if (_withdrawalQueue().isPaused()) revert WQNotResumed();
         if (_validatorsExitBusOracle().isPaused()) revert VEBONotResumed();
 
-        if (!_stakingRouter().hasStakingModule(1) || _stakingRouter().hasStakingModule(2)) {
+        _assertCorrectStakingModule();
+    }
+
+    function _assertGateSealSealables() internal view {
+        address[] memory sealables = IGateSeal(_gateSeal).get_sealables();
+        if (
+            sealables.length != 2
+         || sealables[0] != address(_withdrawalQueue())
+         || sealables[1] != address(_validatorsExitBusOracle())
+         ) {
+            revert WrongSealGateSealables();
+        }
+    }
+
+
+    function _assertCorrectStakingModule() internal view {
+        IStakingRouter sr = _stakingRouter();
+
+        if (
+            !sr.hasStakingModule(NOR_STAKING_MODULE_ID)
+         || sr.hasStakingModule(NOR_STAKING_MODULE_ID + 1)
+         || sr.getStakingModulesCount() != 1
+         ) {
             revert WrongStakingModulesCount();
+        }
+
+        StakingModule memory module = sr.getStakingModule(NOR_STAKING_MODULE_ID);
+        if (
+            module.id != NOR_STAKING_MODULE_ID
+         || module.stakingModuleAddress != address(_nodeOperatorsRegistry)
+         || module.stakingModuleFee != NOR_STAKING_MODULE_MODULE_FEE_BP
+         || module.treasuryFee != NOR_STAKING_MODULE_TREASURY_FEE_BP
+         || module.targetShare != NOR_STAKING_MODULE_TARGET_SHARE_BP
+         || module.status != uint8(StakingModuleStatus.Active)
+         || keccak256(abi.encodePacked(module.name)) != keccak256(abi.encodePacked(NOR_STAKING_MODULE_NAME))
+         || module.lastDepositAt != block.timestamp
+         || module.lastDepositBlock != block.number
+         || module.exitedValidatorsCount != 0
+        ) {
+            revert WrongStakingModuleParameters();
         }
     }
 
     function _assertCorrectOracleAndConsensusContractsBinding(IBaseOracle oracle, IHashConsensus hashConsensus) internal view {
-        if (oracle.getConsensusContract() != address(hashConsensus)) {
+        if (
+            oracle.getConsensusContract() != address(hashConsensus)
+         || hashConsensus.getReportProcessor() != address(oracle)
+        ) {
             revert IncorrectOracleAndHashConsensusBinding(address(oracle), address(hashConsensus));
         }
-        // TODO: check the binding in opposite direction when the view is added to HashConsensus
     }
 
     function _checkContractVersions() internal view {
@@ -630,12 +844,12 @@ contract ShapellaUpgradeTemplate {
         return ILido(_locator.lido());
     }
 
-    // Returns the same address as _legacyOracle()
+    // Returns the same address as _legacyOracle(): we're renaming the contract, but it's on the same address
     function _lidoOracle() internal view returns (ILidoOracle) {
         return ILidoOracle(_locator.legacyOracle());
     }
 
-    // Returns the same address as _lidoOracle()
+    // Returns the same address as _lidoOracle(): we're renaming the contract, but it's on the same address
     function _legacyOracle() internal view returns (ILegacyOracle) {
         return ILegacyOracle(_locator.legacyOracle());
     }
@@ -668,7 +882,7 @@ contract ShapellaUpgradeTemplate {
     error CanOnlyStartOnce();
     error CanOnlyFinishOnce();
     error StartMustBeCalledBeforeFinish();
-    error UpgradeIsNotFinished();
+    error UpgradeNotEnacted();
     error LidoOracleMustNotBeUpgradedToLegacyYet();
     error LidoOracleMustBeUpgradedToLegacy();
     error WrongDsmOwner();
@@ -683,4 +897,8 @@ contract ShapellaUpgradeTemplate {
     error IncorrectOracleAndHashConsensusBinding(address oracle, address hashConsensus);
     error IncorrectDepositSecurityModuleParameters(address _depositSecurityModule);
     error WrongStakingModulesCount();
+    error InvalidOracleReportSanityCheckerConfig();
+    error WrongSealGateSealables();
+    error WrongStakingModuleParameters();
+    error WrongOracleDaemonConfigKeyValue(string key);
 }

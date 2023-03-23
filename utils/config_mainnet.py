@@ -108,6 +108,8 @@ report_limits = {
     "maxValidatorExitRequestsPerReport": 500,
     "maxAccountingExtraDataListItemsCount": 500,
     "maxNodeOperatorsPerExtraDataItemCount": 100,
-    "requestTimestampMargin": 7200,
+    "requestTimestampMargin": 7680,
     "maxPositiveTokenRebase": 750000,
 }
+
+deposit_contract = "0x00000000219ab540356cBB839Cbe05303d7705Fa"

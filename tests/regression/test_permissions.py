@@ -35,7 +35,7 @@ def protocol_permissions():
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_WITHDRAWAL_CREDENTIALS_ROLE": [],
                 "STAKING_MODULE_PAUSE_ROLE": [contracts.deposit_security_module],
-                "STAKING_MODULE_RESUME_ROLE": [contracts.deposit_security_module],
+                "STAKING_MODULE_RESUME_ROLE": [],
                 "STAKING_MODULE_MANAGE_ROLE": [],
                 "REPORT_EXITED_VALIDATORS_ROLE": [contracts.accounting_oracle],
                 "UNSAFE_SET_EXITED_VALIDATORS_ROLE": [],
@@ -61,7 +61,7 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "SUBMIT_DATA_ROLE": oracle_committee,
+                "SUBMIT_DATA_ROLE": [],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
                 "MANAGE_CONSENSUS_VERSION_ROLE": [],
             },
@@ -72,7 +72,7 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "SUBMIT_DATA_ROLE": oracle_committee,
+                "SUBMIT_DATA_ROLE": [],
                 "PAUSE_ROLE": [gate_seal],
                 "RESUME_ROLE": [],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
@@ -154,7 +154,7 @@ def protocol_permissions():
                 "STAKING_ROUTER_ROLE": [contracts.agent],
                 "CONFIG_MANAGER_ROLE": [],
             },
-        }
+        },
     }
 
 
@@ -166,7 +166,8 @@ def test_permissions_after_vote(protocol_permissions):
             method for method in permissions_config["contract"].signatures.keys() if method.endswith("_ROLE")
         ]
 
-        if contract_name == "NodeOperatorsRegistry": abi_roles_list.append("MANAGE_SIGNING_KEYS")
+        if contract_name == "NodeOperatorsRegistry":
+            abi_roles_list.append("MANAGE_SIGNING_KEYS")
 
         roles = permissions_config["roles"]
 

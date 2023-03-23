@@ -1,8 +1,25 @@
 """
-TODO description
-Voting 23/03/2023.
 
-Shapella Protocol Upgrade - 2
+Voting 24/03/2023.
+
+Lido V2 (Shapella-ready) protocol upgrade on Görli
+
+1. Call `ShapellaUpgradeTemplate.assertUpgradeIsFinishedCorrectly()`
+2. Revoke `MANAGE_FEE` role from `Voting`
+3. Revoke `MANAGE_WITHDRAWAL_KEY` role from `Voting`
+4. Revoke `MANAGE_PROTOCOL_CONTRACTS_ROLE` role from `Voting`
+5. Revoke `SET_EL_REWARDS_VAULT_ROLE` role from `Voting`
+6. Revoke `SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE` role from `Voting`
+7. Revoke `ADD_NODE_OPERATOR_ROLE` role from `Voting`
+8. Revoke `SET_NODE_OPERATOR_ACTIVE_ROLE` role from `Voting`
+9. Revoke `SET_NODE_OPERATOR_NAME_ROLE` role from `Voting`
+10. Revoke `SET_NODE_OPERATOR_ADDRESS_ROLE` role from `Voting`
+11. Revoke `REPORT_STOPPED_VALIDATORS_ROLE` role from `Voting`
+12. Revoke `MANAGE_MEMBERS` role from `Voting`
+13. Revoke `MANAGE_QUORUM` role from `Voting`
+14. Revoke `SET_BEACON_SPEC` role from `Voting`
+15. Revoke `SET_REPORT_BOUNDARIES` role from `Voting`
+16. Revoke `SET_BEACON_REPORT_RECEIVER` role from `Voting`
 
 """
 
@@ -28,9 +45,9 @@ from utils.permissions import encode_permission_revoke
 from utils.brownie_prelude import *
 
 
-def encode_template_check_upgrade_finished(template_address: str) -> Tuple[str, str]:
+def encode_template_check_upgrade_enacted(template_address: str) -> Tuple[str, str]:
     template = ShapellaUpgradeTemplate.at(template_address)
-    return template.address, template.revertIfUpgradeNotFinished.encode_input()
+    return template.address, template.revertIfUpgradeNotEnacted.encode_input()
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
@@ -41,45 +58,59 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
     lido_oracle: interface.LegacyOracle = contracts.legacy_oracle
     node_operators_registry: interface.NodeOperatorsRegistry = contracts.node_operators_registry
 
+    # TODO: on goerli the list is larger
     call_script_items = [
-        # TODO
-        encode_template_check_upgrade_finished(ContractsLazyLoader.upgrade_template),
-        # 9+. Revoke obsolete roles
-        # TODO: on goerli the list is larger
+        # 1)
+        encode_template_check_upgrade_enacted(ContractsLazyLoader.upgrade_template),
+        # 2)
         encode_permission_revoke(lido, "MANAGE_FEE", revoke_from=voting),
+        # 3)
         encode_permission_revoke(lido, "MANAGE_WITHDRAWAL_KEY", revoke_from=voting),
+        # 4)
         encode_permission_revoke(lido, "MANAGE_PROTOCOL_CONTRACTS_ROLE", revoke_from=voting),
+        # 5)
         encode_permission_revoke(lido, "SET_EL_REWARDS_VAULT_ROLE", revoke_from=voting),
+        # 6)
         encode_permission_revoke(lido, "SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE", revoke_from=voting),
+        # 7)
         encode_permission_revoke(node_operators_registry, "ADD_NODE_OPERATOR_ROLE", revoke_from=voting),
+        # 8)
         encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_ACTIVE_ROLE", revoke_from=voting),
+        # 9)
         encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_NAME_ROLE", revoke_from=voting),
+        # 10)
         encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_ADDRESS_ROLE", revoke_from=voting),
+        # 11)
         encode_permission_revoke(node_operators_registry, "REPORT_STOPPED_VALIDATORS_ROLE", revoke_from=voting),
+        # 12)
         encode_permission_revoke(lido_oracle, "MANAGE_MEMBERS", revoke_from=voting),
+        # 13)
         encode_permission_revoke(lido_oracle, "MANAGE_QUORUM", revoke_from=voting),
+        # 14)
         encode_permission_revoke(lido_oracle, "SET_BEACON_SPEC", revoke_from=voting),
+        # 15)
         encode_permission_revoke(lido_oracle, "SET_REPORT_BOUNDARIES", revoke_from=voting),
+        # 16)
         encode_permission_revoke(lido_oracle, "SET_BEACON_REPORT_RECEIVER", revoke_from=voting),
     ]
 
     vote_desc_items = [
-        "X) Check protocol upgrade is finished",
-        "X) TODO revoke 1",
-        "X) TODO revoke 2",
-        "X) TODO revoke 3",
-        "X) TODO revoke 4",
-        "X) TODO revoke 5",
-        "X) TODO revoke 6",
-        "X) TODO revoke 7",
-        "X) TODO revoke 8",
-        "X) TODO revoke 9",
-        "X) TODO revoke 10",
-        "X) TODO revoke 11",
-        "X) TODO revoke 12",
-        "X) TODO revoke 13",
-        "X) TODO revoke 14",
-        "X) TODO revoke 15",
+        "1) Call `ShapellaUpgradeTemplate.assertUpgradeIsFinishedCorrectly()`",
+        "2) Revoke `MANAGE_FEE` role from `Voting`",
+        "3) Revoke `MANAGE_WITHDRAWAL_KEY` role from `Voting`",
+        "4) Revoke `MANAGE_PROTOCOL_CONTRACTS_ROLE` role from `Voting`",
+        "5) Revoke `SET_EL_REWARDS_VAULT_ROLE` role from `Voting`",
+        "6) Revoke `SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE` role from `Voting`",
+        "7) Revoke `ADD_NODE_OPERATOR_ROLE` role from `Voting`",
+        "8) Revoke `SET_NODE_OPERATOR_ACTIVE_ROLE` role from `Voting",
+        "9) Revoke `SET_NODE_OPERATOR_NAME_ROLE` role from `Voting`",
+        "10) Revoke `SET_NODE_OPERATOR_ADDRESS_ROLE` role from `Voting`",
+        "11) Revoke `REPORT_STOPPED_VALIDATORS_ROLE` role from `Voting`",
+        "12) Revoke `MANAGE_MEMBERS` role from `Voting`",
+        "13) Revoke `MANAGE_QUORUM` role from `Voting`",
+        "14) Revoke `SET_BEACON_SPEC` role from `Voting`",
+        "15) Revoke `SET_REPORT_BOUNDARIES` role from `Voting`",
+        "16) Revoke `SET_BEACON_REPORT_RECEIVER` role from `Voting`",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)

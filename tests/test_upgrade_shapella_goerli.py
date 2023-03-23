@@ -1,5 +1,5 @@
 """
-Tests for voting ???
+Tests for voting 24/03/2023
 """
 from scripts.upgrade_shapella_1_goerli import start_vote
 from utils.test.tx_tracing_helpers import *
@@ -36,7 +36,7 @@ nor_new_implementation = "0xCAfe9Ac6a4bE2eAfCFf949693C0da9eebF985C3B"
 nor_app_version = (8, 0, 0)
 
 oracle_app_id = "0xb2977cfc13b000b6807b9ae3cf4d938f4cc8ba98e1d68ad911c58924d6aa4f11"
-oracle_new_implementation = "0x7D505d1CCd49C64C2dc0b15acbAE235C4651F50B"
+oracle_new_implementation = "0xcF9d64942DC9096520a8962a2d4496e680c6403b"
 oracle_app_version = (5, 0, 0)
 
 permissions_to_revoke = [

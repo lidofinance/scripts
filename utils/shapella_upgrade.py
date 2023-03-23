@@ -98,6 +98,7 @@ def prepare_for_voting(temporary_admin):
     template = deploy_template_implementation(temporary_admin)
     print(f"=== Deployed template {template.address} ===")
     pprint(get_template_configuration(template))
+    assert interface.OssifiableProxy(contracts.lido_locator).proxy__getAdmin() == temporary_admin
     interface.OssifiableProxy(contracts.lido_locator).proxy__upgradeTo(
         lido_dao_lido_locator_implementation, {"from": temporary_admin}
     )
