@@ -51,6 +51,10 @@ interface IDepositSecurityModule {
     function getMinDepositBlockDistance() external view returns (uint256);
 }
 
+interface IGateSeal {
+    function get_sealables() external view returns (address[] memory);
+}
+
 interface IHashConsensus is IAccessControlEnumerable {
     function MANAGE_MEMBERS_AND_QUORUM_ROLE() external view returns (bytes32);
     function addMember(address addr, uint256 quorum) external;
@@ -110,6 +114,7 @@ interface IOracleReportSanityChecker is IAccessControlEnumerable {
     function MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE() external view returns (bytes32);
     function REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE() external view returns (bytes32);
     function MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE() external view returns (bytes32);
+    function getOracleReportLimits() external view returns (LimitsList memory);
 }
 
 interface IStakingRouter is IVersioned, IAccessControlEnumerable, IOssifiableProxy {
@@ -155,6 +160,47 @@ interface IWithdrawalsManagerProxy {
 
 interface IWithdrawalVault is IVersioned, IWithdrawalsManagerProxy {
     function initialize() external;
+}
+
+struct LimitsList {
+    /// @notice The max possible number of validators that might appear or exit on the Consensus
+    ///     Layer during one day
+    /// @dev Must fit into uint16 (<= 65_535)
+    uint256 churnValidatorsPerDayLimit;
+
+    /// @notice The max decrease of the total validators' balances on the Consensus Layer since
+    ///     the previous oracle report
+    /// @dev Represented in the Basis Points (100% == 10_000)
+    uint256 oneOffCLBalanceDecreaseBPLimit;
+
+    /// @notice The max annual increase of the total validators' balances on the Consensus Layer
+    ///     since the previous oracle report
+    /// @dev Represented in the Basis Points (100% == 10_000)
+    uint256 annualBalanceIncreaseBPLimit;
+
+    /// @notice The max deviation of the provided `simulatedShareRate`
+    ///     and the actual one within the currently processing oracle report
+    /// @dev Represented in the Basis Points (100% == 10_000)
+    uint256 simulatedShareRateDeviationBPLimit;
+
+    /// @notice The max number of exit requests allowed in report to ValidatorsExitBusOracle
+    uint256 maxValidatorExitRequestsPerReport;
+
+    /// @notice The max number of data list items reported to accounting oracle in extra data
+    /// @dev Must fit into uint16 (<= 65_535)
+    uint256 maxAccountingExtraDataListItemsCount;
+
+    /// @notice The max number of node operators reported per extra data list item
+    /// @dev Must fit into uint16 (<= 65_535)
+    uint256 maxNodeOperatorsPerExtraDataItemCount;
+
+    /// @notice The min time required to be passed from the creation of the request to be
+    ///     finalized till the time of the oracle report
+    uint256 requestTimestampMargin;
+
+    /// @notice The positive token rebase allowed per single LidoOracle report
+    /// @dev uses 1e9 precision, e.g.: 1e6 - 0.1%; 1e9 - 100%, see `setMaxPositiveTokenRebase()`
+    uint256 maxPositiveTokenRebase;
 }
 
 /**
@@ -211,6 +257,16 @@ contract ShapellaUpgradeTemplate {
     uint256 public constant EXPECTED_DSM_MAX_DEPOSITS_PER_BLOCK = 150;
     uint256 public constant EXPECTED_DSM_MIN_DEPOSIT_BLOCK_DISTANCE = 5;
     uint256 public constant EXPECTED_DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS = 6646;
+
+    uint256 public constant sanityLimit_churnValidatorsPerDayLimit = 1500;
+    uint256 public constant sanityLimit_oneOffCLBalanceDecreaseBPLimit = 500;
+    uint256 public constant sanityLimit_annualBalanceIncreaseBPLimit = 1000;
+    uint256 public constant sanityLimit_simulatedShareRateDeviationBPLimit = 250;
+    uint256 public constant sanityLimit_maxValidatorExitRequestsPerReport = 2000;
+    uint256 public constant sanityLimit_maxAccountingExtraDataListItemsCount = 100;
+    uint256 public constant sanityLimit_maxNodeOperatorsPerExtraDataItemCount = 100;
+    uint256 public constant sanityLimit_requestTimestampMargin = 128;
+    uint256 public constant sanityLimit_maxPositiveTokenRebase = 5000000;
 
     //
     // STRUCTURED STORAGE
@@ -344,22 +400,37 @@ contract ShapellaUpgradeTemplate {
     function _assertOracleReportSanityCheckerRoles() internal view {
         IOracleReportSanityChecker checker = _oracleReportSanityChecker();
         _assertSingleOZRoleHolder(checker, DEFAULT_ADMIN_ROLE, _agent);
-        _assertZeroRoleHolders(checker, checker.ALL_LIMITS_MANAGER_ROLE());
-        _assertZeroRoleHolders(checker, checker.CHURN_VALIDATORS_PER_DAY_LIMIT_MANGER_ROLE());
-        _assertZeroRoleHolders(checker, checker.ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE());
-        _assertZeroRoleHolders(checker, checker.ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE());
-        _assertZeroRoleHolders(checker, checker.SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE());
-        _assertZeroRoleHolders(checker, checker.MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_ROLE());
-        _assertZeroRoleHolders(checker, checker.MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE());
-        _assertZeroRoleHolders(checker, checker.MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE());
-        _assertZeroRoleHolders(checker, checker.REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE());
-        _assertZeroRoleHolders(checker, checker.MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.ALL_LIMITS_MANAGER_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.CHURN_VALIDATORS_PER_DAY_LIMIT_MANGER_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE());
+
+        LimitsList memory limitsList = checker.getOracleReportLimits();
+        if (
+            limitsList.churnValidatorsPerDayLimit != sanityLimit_churnValidatorsPerDayLimit
+         || limitsList.oneOffCLBalanceDecreaseBPLimit != sanityLimit_oneOffCLBalanceDecreaseBPLimit
+         || limitsList.annualBalanceIncreaseBPLimit != sanityLimit_annualBalanceIncreaseBPLimit
+         || limitsList.simulatedShareRateDeviationBPLimit != sanityLimit_simulatedShareRateDeviationBPLimit
+         || limitsList.maxValidatorExitRequestsPerReport != sanityLimit_maxValidatorExitRequestsPerReport
+         || limitsList.maxAccountingExtraDataListItemsCount != sanityLimit_maxAccountingExtraDataListItemsCount
+         || limitsList.maxNodeOperatorsPerExtraDataItemCount != sanityLimit_maxNodeOperatorsPerExtraDataItemCount
+         || limitsList.requestTimestampMargin != sanityLimit_requestTimestampMargin
+         || limitsList.maxPositiveTokenRebase != sanityLimit_maxPositiveTokenRebase
+         ) {
+            revert InvalidOracleReportSanityCheckerConfig();
+         }
     }
 
     function _assertOracleDaemonConfigRoles() internal view {
         IOracleDaemonConfig config = _oracleDaemonConfig();
         _assertSingleOZRoleHolder(config, DEFAULT_ADMIN_ROLE, _agent);
-        _assertZeroRoleHolders(config, config.CONFIG_MANAGER_ROLE());
+        _assertZeroOZRoleHolders(config, config.CONFIG_MANAGER_ROLE());
 
     }
 
@@ -395,24 +466,24 @@ contract ShapellaUpgradeTemplate {
     function _assertCorrectInitialRoleHolders() internal view {
         _assertSingleOZRoleHolder(_burner(), _burner().REQUEST_BURN_SHARES_ROLE(), address(_lido()));
 
-        _assertZeroRoleHolders(_accountingOracle(), DEFAULT_ADMIN_ROLE);
+        _assertZeroOZRoleHolders(_accountingOracle(), DEFAULT_ADMIN_ROLE);
 
-        _assertZeroRoleHolders(_stakingRouter(), DEFAULT_ADMIN_ROLE);
-        _assertZeroRoleHolders(_stakingRouter(), _stakingRouter().STAKING_MODULE_PAUSE_ROLE());
-        _assertZeroRoleHolders(_stakingRouter(), _stakingRouter().STAKING_MODULE_RESUME_ROLE());
-        _assertZeroRoleHolders(_stakingRouter(), _stakingRouter().REPORT_EXITED_VALIDATORS_ROLE());
-        _assertZeroRoleHolders(_stakingRouter(), _stakingRouter().REPORT_REWARDS_MINTED_ROLE());
+        _assertZeroOZRoleHolders(_stakingRouter(), DEFAULT_ADMIN_ROLE);
+        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().STAKING_MODULE_PAUSE_ROLE());
+        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().STAKING_MODULE_RESUME_ROLE());
+        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().REPORT_EXITED_VALIDATORS_ROLE());
+        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().REPORT_REWARDS_MINTED_ROLE());
 
-        _assertZeroRoleHolders(_validatorsExitBusOracle(), DEFAULT_ADMIN_ROLE);
-        _assertZeroRoleHolders(_validatorsExitBusOracle(), _validatorsExitBusOracle().PAUSE_ROLE());
+        _assertZeroOZRoleHolders(_validatorsExitBusOracle(), DEFAULT_ADMIN_ROLE);
+        _assertZeroOZRoleHolders(_validatorsExitBusOracle(), _validatorsExitBusOracle().PAUSE_ROLE());
 
-        _assertZeroRoleHolders(_withdrawalQueue(), DEFAULT_ADMIN_ROLE);
-        _assertZeroRoleHolders(_withdrawalQueue(), _withdrawalQueue().PAUSE_ROLE());
-        _assertZeroRoleHolders(_withdrawalQueue(), _withdrawalQueue().FINALIZE_ROLE());
-        _assertZeroRoleHolders(_withdrawalQueue(), _withdrawalQueue().ORACLE_ROLE());
+        _assertZeroOZRoleHolders(_withdrawalQueue(), DEFAULT_ADMIN_ROLE);
+        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().PAUSE_ROLE());
+        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().FINALIZE_ROLE());
+        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().ORACLE_ROLE());
     }
 
-    function _assertZeroRoleHolders(IAccessControlEnumerable accessControlled, bytes32 role) internal view {
+    function _assertZeroOZRoleHolders(IAccessControlEnumerable accessControlled, bytes32 role) internal view {
         if (accessControlled.getRoleMemberCount(role) != 0) {
             revert NonZeroRoleHolders(address(accessControlled), role);
         }
@@ -527,6 +598,8 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _passAdminRoleFromTemplateToAgent() internal {
+        // NB: No need to pass OracleDaemonConfig and OracleReportSanityChecker admin roles
+        // because they were Agent at the beginning and are needed by the template
         _transferOZAdminFromThisToAgent(_hashConsensusForValidatorsExitBusOracle);
         _transferOZAdminFromThisToAgent(_hashConsensusForAccountingOracle);
         _transferOZAdminFromThisToAgent(_burner());
@@ -552,9 +625,22 @@ contract ShapellaUpgradeTemplate {
         _assertNonProxyOZAccessControlContractsAdmin(_agent);
         _assertOracleDaemonConfigRoles();
         _assertOracleReportSanityCheckerRoles();
+
+        _assertGateSealSealables();
+
+        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().RESUME_ROLE());
+        _assertSingleOZRoleHolder(_withdrawalQueue(), _withdrawalQueue().PAUSE_ROLE(), _gateSeal);
+        _assertSingleOZRoleHolder(_withdrawalQueue(), _withdrawalQueue().FINALIZE_ROLE(), address(_lido()));
+        _assertSingleOZRoleHolder(_withdrawalQueue(), _withdrawalQueue().ORACLE_ROLE(), address(_accountingOracle()));
+        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().STAKING_MODULE_RESUME_ROLE());
+        _assertSingleOZRoleHolder(_stakingRouter(), _stakingRouter().STAKING_MODULE_PAUSE_ROLE(), address(_depositSecurityModule()));
+        _assertSingleOZRoleHolder(_stakingRouter(), _stakingRouter().REPORT_EXITED_VALIDATORS_ROLE(), address(_accountingOracle()));
+        _assertSingleOZRoleHolder(_stakingRouter(), _stakingRouter().REPORT_REWARDS_MINTED_ROLE(), address(_lido()));
         _assertTwoOZRoleHolders(_burner(), _burner().REQUEST_BURN_SHARES_ROLE(), address(_lido()), address(_nodeOperatorsRegistry));
+        _assertZeroOZRoleHolders(_validatorsExitBusOracle(), _validatorsExitBusOracle().RESUME_ROLE());
+        _assertSingleOZRoleHolder(_validatorsExitBusOracle(), _validatorsExitBusOracle().PAUSE_ROLE(), _gateSeal);
+
         if (_depositSecurityModule().getOwner() != _agent) revert WrongDsmOwner();
-        // TODO: maybe check non admin roles if enough contract bytecode size?
 
         _assertCorrectOracleAndConsensusContractsBinding(_accountingOracle(), _hashConsensusForAccountingOracle);
         _assertCorrectOracleAndConsensusContractsBinding(_validatorsExitBusOracle(), _hashConsensusForValidatorsExitBusOracle);
@@ -564,6 +650,17 @@ contract ShapellaUpgradeTemplate {
 
         if (!_stakingRouter().hasStakingModule(1) || _stakingRouter().hasStakingModule(2)) {
             revert WrongStakingModulesCount();
+        }
+    }
+
+    function _assertGateSealSealables() internal view {
+        // TODO: sync VEBO proxy and its sealable at re-deploy
+        address[] memory sealables = IGateSeal(_gateSeal).get_sealables();
+        if (
+            sealables[0] != address(_withdrawalQueue())
+        //  || sealables[1] != address(_validatorsExitBusOracle())
+         ) {
+            revert WrongSealGateSealables();
         }
     }
 
@@ -630,12 +727,12 @@ contract ShapellaUpgradeTemplate {
         return ILido(_locator.lido());
     }
 
-    // Returns the same address as _legacyOracle()
+    // Returns the same address as _legacyOracle(): we're renaming the contract, but it's on the same address
     function _lidoOracle() internal view returns (ILidoOracle) {
         return ILidoOracle(_locator.legacyOracle());
     }
 
-    // Returns the same address as _lidoOracle()
+    // Returns the same address as _lidoOracle(): we're renaming the contract, but it's on the same address
     function _legacyOracle() internal view returns (ILegacyOracle) {
         return ILegacyOracle(_locator.legacyOracle());
     }
@@ -683,4 +780,6 @@ contract ShapellaUpgradeTemplate {
     error IncorrectOracleAndHashConsensusBinding(address oracle, address hashConsensus);
     error IncorrectDepositSecurityModuleParameters(address _depositSecurityModule);
     error WrongStakingModulesCount();
+    error InvalidOracleReportSanityCheckerConfig();
+    error WrongSealGateSealables();
 }
