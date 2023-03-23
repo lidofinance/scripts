@@ -1,5 +1,5 @@
-from brownie import interface, web3
-from utils.config import contracts, lido_dao_withdrawal_vault_implementation
+from brownie import interface, web3, ZERO_ADDRESS
+from utils.config import contracts, lido_dao_withdrawal_vault_implementation, wsteth_token_address
 
 from test_upgrade_shapella_goerli import lido_app_id
 
@@ -34,7 +34,7 @@ def test_lido_state():
 
     assert contracts.lido.getTotalShares() > contracts.lido.sharesOf(INITIAL_TOKEN_HOLDER)
     # unlimited allowance for burner to burn shares from withdrawal queue
-    assert contracts.lido.allowance(contracts.withdrawal_queue, contracts.burner) == 2 ** 256 - 1
+    assert contracts.lido.allowance(contracts.withdrawal_queue, contracts.burner) == 2**256 - 1
 
     # Lido
     # permissions is tested in test_permissions
@@ -87,3 +87,40 @@ def test_withdrawal_vault_state():
     assert contracts.withdrawal_vault.TREASURY() == contracts.agent
     assert contracts.withdrawal_vault.LIDO() == contracts.lido_locator.lido()
     assert contracts.withdrawal_vault.TREASURY() == contracts.lido_locator.treasury()
+
+
+def test_withdrawal_queue_state():
+    contract = contracts.withdrawal_queue
+    # address in locator
+    assert contract == contracts.lido_locator.withdrawalQueue()
+
+    # Versioned
+    assert contract.getContractVersion() == 1
+
+    # OssifiableProxy
+    proxy = interface.OssifiableProxy(contract)
+    assert proxy.proxy__getImplementation() == "0x265be9738fA32B29180867E07eaf1d6fa02a34dB"
+    assert proxy.proxy__getAdmin() == contracts.agent.address
+
+    # WithdrawalQueueERC721
+    assert contract.name() == "stETH Withdrawal NFT"
+    assert contract.symbol() == "unstETH"
+    assert contract.getBaseURI() == ""
+    assert contract.getNFTDescriptorAddress() == ZERO_ADDRESS
+
+    # WithdrawalQueue
+    assert contract.WSTETH() == contracts.wsteth
+    assert contract.STETH() == contracts.lido
+    assert contract.bunkerModeSinceTimestamp() == contract.BUNKER_MODE_DISABLED_TIMESTAMP()
+
+    # PausableUntil
+    assert contract.isPaused() == False
+    assert contract.getResumeSinceTimestamp() > 0
+
+    # WithdrawalQueueBase
+
+    assert contract.getLastRequestId() == 0
+    assert contract.getLastFinalizedRequestId() == 0
+    assert contract.getLockedEtherAmount() == 0
+    assert contract.getLastCheckpointIndex() == 0
+    assert contract.unfinalizedStETH() == 0

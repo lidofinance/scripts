@@ -91,3 +91,5 @@ guardians = [
     "0xdA1A296F9Df18D04e0aEfcfF658B80B3EF824ec9",
     "0x25F76608A3FbC9C75840E070e3c285ce1732F834",
 ]
+
+wsteth_token_address = "0x6320cd32aa674d2898a68ec82e869385fc5f7e2f"
