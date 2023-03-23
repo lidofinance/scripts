@@ -26,7 +26,6 @@ interface IPausableUntil {
     function resume() external;
 }
 
-
 interface IOssifiableProxy {
     function proxy__upgradeTo(address newImplementation) external;
     function proxy__changeAdmin(address newAdmin) external;
@@ -34,12 +33,12 @@ interface IOssifiableProxy {
     function proxy__getImplementation() external view returns (address);
 }
 
-interface IAccountingOracle is IAccessControlEnumerable, IVersioned, IOssifiableProxy {
-    function initialize(address admin, address consensusContract, uint256 consensusVersion) external;
+interface IBaseOracle is IAccessControlEnumerable, IVersioned {
+    function getConsensusContract() external view returns (address);
 }
 
-interface IBaseOracle {
-    function getConsensusContract() external view returns (address);
+interface IAccountingOracle is IBaseOracle, IOssifiableProxy {
+    function initialize(address admin, address consensusContract, uint256 consensusVersion) external;
 }
 
 interface IBurner is IAccessControlEnumerable {
@@ -52,6 +51,9 @@ interface IDepositSecurityModule {
     function getGuardianQuorum() external view returns (uint256);
     function getGuardians() external view returns (address[] memory);
     function addGuardians(address[] memory addresses, uint256 newQuorum) external;
+    function getMaxDeposits() external view returns (uint256);
+    function getPauseIntentValidityPeriodBlocks() external view returns (uint256);
+    function getMinDepositBlockDistance() external view returns (uint256);
 }
 
 interface IHashConsensus is IAccessControlEnumerable {
@@ -93,7 +95,7 @@ interface ILidoOracle {
     function getLastCompletedEpochId() external view returns (uint256);
 }
 
-interface INodeOperatorsRegistry {
+interface INodeOperatorsRegistry is IVersioned {
     function finalizeUpgrade_v2(address locator, bytes32 stakingModuleType, uint256 stuckPenaltyDelay) external;
 }
 
@@ -133,7 +135,7 @@ interface IStakingRouter is IVersioned, IAccessControlEnumerable, IOssifiablePro
     ) external;
 }
 
-interface IValidatorsExitBusOracle is IAccessControlEnumerable, IPausableUntil, IVersioned, IOssifiableProxy {
+interface IValidatorsExitBusOracle is IBaseOracle, IPausableUntil, IOssifiableProxy {
     function initialize(address admin, address consensusContract, uint256 consensusVersion, uint256 lastProcessingRefSlot) external;
 }
 
@@ -154,7 +156,15 @@ interface IWithdrawalVault is IVersioned, IWithdrawalsManagerProxy {
     function initialize() external;
 }
 
-
+/**
+* @title Shapella Lido Upgrade Template
+*
+* @dev Auxiliary contracts which performs binding of already deployed Shapella upgrade contracts.
+* Must be used by means of two calls:
+*   - `startUpgrade()` before updating implementation of Aragon apps
+*   - `finishUpgrade()` after updating implementation of Aragon apps
+* The required initial on-chain state is checked in `assertCorrectInitialState()`
+*/
 contract ShapellaUpgradeTemplate {
 
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
@@ -177,7 +187,7 @@ contract ShapellaUpgradeTemplate {
     address public constant _eip712StETH = 0xB4300103FfD326f77FfB3CA54248099Fb29C3b9e;
     address public constant _voting = 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db;
     address public constant _agent = 0x4333218072D5d7008546737786663c38B4D561A4;
-    address public constant _nodeOperatorsRegistry = 0x9D4AF1Ee19Dad8857db3a45B0374c81c8A1C6320;
+    INodeOperatorsRegistry public constant _nodeOperatorsRegistry = INodeOperatorsRegistry(0x9D4AF1Ee19Dad8857db3a45B0374c81c8A1C6320);
     address public constant _gateSeal = 0x75A77AE52d88999D0b12C6e5fABB1C1ef7E92638;
     address public constant _withdrawalQueueImplementation = 0x265be9738fA32B29180867E07eaf1d6fa02a34dB;
     address public constant _stakingRouterImplementation = 0x249565350CcaD707bB68cE9980B366751649F4cd;
@@ -189,12 +199,17 @@ contract ShapellaUpgradeTemplate {
     address public constant _previousDepositSecurityModule = 0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe;
 
     uint256 public constant EXPECTED_FINAL_LIDO_VERSION = 2;
+    uint256 public constant EXPECTED_FINAL_NOR_VERSION = 2;
     uint256 public constant EXPECTED_FINAL_LEGACY_ORACLE_VERSION = 4;
     uint256 public constant EXPECTED_FINAL_ACCOUNTING_ORACLE_VERSION = 1;
     uint256 public constant EXPECTED_FINAL_STAKING_ROUTER_VERSION = 1;
     uint256 public constant EXPECTED_FINAL_VALIDATORS_EXIT_BUS_ORACLE_VERSION = 1;
     uint256 public constant EXPECTED_FINAL_WITHDRAWAL_QUEUE_VERSION = 1;
     uint256 public constant EXPECTED_FINAL_WITHDRAWAL_VAULT_VERSION = 1;
+
+    uint256 public constant EXPECTED_DSM_MAX_DEPOSITS_PER_BLOCK = 150;
+    uint256 public constant EXPECTED_DSM_MIN_DEPOSIT_BLOCK_DISTANCE = 5;
+    uint256 public constant EXPECTED_DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS = 6646;
 
     //
     // STRUCTURED STORAGE
@@ -239,7 +254,7 @@ contract ShapellaUpgradeTemplate {
         _upgradeProxyImplementations();
 
         // Need to have the implementations already attached at this moment
-        _assertCorrectNonAdminRoleHolders();
+        _assertCorrectInitialNonAdminRoleHolders();
 
         _withdrawalVault().initialize();
 
@@ -254,25 +269,40 @@ contract ShapellaUpgradeTemplate {
         _initializeStakingRouter();
 
         _migrateDSMGuardians();
+
+        // Need to have the implementations and proxy contracts initialize at this moment
+        _assertProxyOZAccessControlContractsAdmin(address(this));
     }
 
     function _assertCorrectInitialState() internal view {
         if (ILidoOracle(address(_legacyOracle())).getVersion() != 3) revert LidoOracleMustNotBeUpgradedToLegacyYet();
 
         _assertAdminsOfProxies(address(this));
+        if (_withdrawalVault().proxy_getAdmin() != _voting) revert WrongProxyAdmin(address(_withdrawalVault()));
 
         _assertInitialProxyImplementations();
 
         // Check roles of non-proxy contracts (can do without binding implementations)
-        _assertSingleOZRoleHolder(_hashConsensusForAccountingOracle, DEFAULT_ADMIN_ROLE, address(this));
-        _assertSingleOZRoleHolder(_hashConsensusForValidatorsExitBusOracle, DEFAULT_ADMIN_ROLE, address(this));
-        _assertSingleOZRoleHolder(_burner(), DEFAULT_ADMIN_ROLE, address(this));
+        _assertNonProxyOZAccessControlContractsAdmin(address(this));
+
         if (_depositSecurityModule().getOwner() != address(this)) revert WrongDsmOwner();
 
         _assertSingleOZRoleHolder(_burner(), DEFAULT_ADMIN_ROLE, address(this));
 
         _assertOracleDaemonConfigInitialState();
         _assertOracleReportSanityCheckerInitialState();
+        _assertCorrectDSMParameters();
+    }
+
+    function _assertCorrectDSMParameters() internal view {
+        IDepositSecurityModule dsm = _depositSecurityModule();
+        if (
+            dsm.getMaxDeposits() != EXPECTED_DSM_MAX_DEPOSITS_PER_BLOCK
+         || dsm.getPauseIntentValidityPeriodBlocks() != EXPECTED_DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS
+         || dsm.getMinDepositBlockDistance() != EXPECTED_DSM_MIN_DEPOSIT_BLOCK_DISTANCE
+        ) {
+            revert IncorrectDepositSecurityModuleParameters(address(dsm));
+        }
     }
 
     function _upgradeProxyImplementations() internal {
@@ -282,8 +312,20 @@ contract ShapellaUpgradeTemplate {
         _withdrawalQueue().proxy__upgradeTo(_withdrawalQueueImplementation);
     }
 
+    function _assertNonProxyOZAccessControlContractsAdmin(address admin) internal view {
+        _assertSingleOZRoleHolder(_hashConsensusForAccountingOracle, DEFAULT_ADMIN_ROLE, admin);
+        _assertSingleOZRoleHolder(_hashConsensusForValidatorsExitBusOracle, DEFAULT_ADMIN_ROLE, admin);
+        _assertSingleOZRoleHolder(_burner(), DEFAULT_ADMIN_ROLE, admin);
+    }
+
+    function _assertProxyOZAccessControlContractsAdmin(address admin) internal view {
+        _assertSingleOZRoleHolder(_accountingOracle(), DEFAULT_ADMIN_ROLE, admin);
+        _assertSingleOZRoleHolder(_stakingRouter(), DEFAULT_ADMIN_ROLE, admin);
+        _assertSingleOZRoleHolder(_validatorsExitBusOracle(), DEFAULT_ADMIN_ROLE, admin);
+        _assertSingleOZRoleHolder(_withdrawalQueue(), DEFAULT_ADMIN_ROLE, admin);
+    }
+
     function _assertAdminsOfProxies(address admin) internal view {
-        if (_withdrawalVault().proxy_getAdmin() != _voting) revert WrongProxyAdmin(address(_withdrawalVault()));
         _assertProxyAdmin(_accountingOracle(), admin);
         _assertProxyAdmin(_locator, admin);
         _assertProxyAdmin(_stakingRouter(), admin);
@@ -337,7 +379,7 @@ contract ShapellaUpgradeTemplate {
         }
     }
 
-    function _assertCorrectNonAdminRoleHolders() internal view {
+    function _assertCorrectInitialNonAdminRoleHolders() internal view {
         _assertSingleOZRoleHolder(_burner(), _burner().REQUEST_BURN_SHARES_ROLE(), address(_lido()));
 
         _assertZeroRoleHolders(_accountingOracle(), DEFAULT_ADMIN_ROLE);
@@ -368,7 +410,6 @@ contract ShapellaUpgradeTemplate {
         uint256 lastLidoOracleCompletedEpochId = _lidoOracle().getLastCompletedEpochId();
 
         // NB: HashConsensus.updateInitialEpoch must be called after AccountingOracle implementation is bound to proxy
-        // _accountingOracle().proxy__upgradeTo(_accountingOracleImplementation);
         _hashConsensusForAccountingOracle.updateInitialEpoch(lastLidoOracleCompletedEpochId + epochsPerFrame);
         _accountingOracle().initialize(
             address(this),
@@ -397,6 +438,8 @@ contract ShapellaUpgradeTemplate {
 
     function _initializeValidatorsExitBus() internal {
         IValidatorsExitBusOracle vebo = _validatorsExitBusOracle();
+        // TODO: ?
+        // _hashConsensusForValidatorsExitBusOracle.updateInitialEpoch(lastLidoOracleCompletedEpochId + epochsPerFrame);
         vebo.initialize(
             address(this),
             address(_hashConsensusForValidatorsExitBusOracle),
@@ -445,7 +488,7 @@ contract ShapellaUpgradeTemplate {
 
         _lido().finalizeUpgrade_v2(address(_locator), _eip712StETH);
 
-        INodeOperatorsRegistry(_nodeOperatorsRegistry).finalizeUpgrade_v2(
+        _nodeOperatorsRegistry.finalizeUpgrade_v2(
             address(_locator),
             _nodeOperatorsRegistryStakingModuleType,
             _nodeOperatorsRegistryStuckPenaltyDelay
@@ -463,7 +506,7 @@ contract ShapellaUpgradeTemplate {
         _stakingRouter().grantRole(sm_manage_role, address(this));
         _stakingRouter().addStakingModule(
             NOR_STAKING_MODULE_NAME,
-            _nodeOperatorsRegistry,
+            address(_nodeOperatorsRegistry),
             NOR_STAKING_MODULE_TARGET_SHARE_BP,
             NOR_STAKING_MODULE_MODULE_FEE_BP,
             NOR_STAKING_MODULE_TREASURY_FEE_BP
@@ -494,8 +537,11 @@ contract ShapellaUpgradeTemplate {
 
         _assertAdminsOfProxies(_agent);
 
-        // TODO
-        // _assertOZAccessControlAdmins(_agent);
+        _assertProxyOZAccessControlContractsAdmin(_agent);
+        _assertNonProxyOZAccessControlContractsAdmin(_agent);
+
+        _assertCorrectOracleAndConsensusContractsBinding(_accountingOracle(), _hashConsensusForAccountingOracle);
+        _assertCorrectOracleAndConsensusContractsBinding(_validatorsExitBusOracle(), _hashConsensusForValidatorsExitBusOracle);
 
         // TODO: maybe check non admin roles if enough contract bytecode size?
 
@@ -505,8 +551,16 @@ contract ShapellaUpgradeTemplate {
         if (_validatorsExitBusOracle().isPaused()) revert EBNotResumed();
     }
 
+    function _assertCorrectOracleAndConsensusContractsBinding(IBaseOracle oracle, IHashConsensus hashConsensus) internal view {
+        if (oracle.getConsensusContract() != address(hashConsensus)) {
+            revert IncorrectOracleAndHashConsensusBinding(address(oracle), address(hashConsensus));
+        }
+        // TODO: check the binding in opposite direction when the view is added to HashConsensus
+    }
+
     function _checkContractVersions() internal view {
         _assertContractVersion(_lido(), EXPECTED_FINAL_LIDO_VERSION);
+        _assertContractVersion(_nodeOperatorsRegistry, EXPECTED_FINAL_NOR_VERSION);
         _assertContractVersion(_legacyOracle(), EXPECTED_FINAL_LEGACY_ORACLE_VERSION);
         _assertContractVersion(_accountingOracle(), EXPECTED_FINAL_ACCOUNTING_ORACLE_VERSION);
         _assertContractVersion(_stakingRouter(), EXPECTED_FINAL_STAKING_ROUTER_VERSION);
@@ -600,4 +654,6 @@ contract ShapellaUpgradeTemplate {
     error NonZeroRoleHolders(address contractAddress, bytes32 role);
     error WQNotResumed();
     error EBNotResumed();
+    error IncorrectOracleAndHashConsensusBinding(address oracle, address hashConsensus);
+    error IncorrectDepositSecurityModuleParameters(address _depositSecurityModule);
 }

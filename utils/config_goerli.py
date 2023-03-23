@@ -45,6 +45,7 @@ lido_dao_eip712_steth = "0xB4300103FfD326f77FfB3CA54248099Fb29C3b9e"
 lido_dao_withdrawal_vault = "0xdc62f9e8C34be08501Cdef4EBDE0a280f576D762"
 lido_dao_withdrawal_vault_implementation = "0x297Eb629655C8c488Eb26442cF4dfC8A7Cc32fFb"
 lido_dao_staking_router = "0xa3Dbd317E53D363176359E10948BA0b1c0A4c820"
+oracle_daemon_config = "0xad55833Dec7ab353B47691e58779Bd979d459388"
 shapella_upgrade_template = ""
 
 lido_easytrack = "0xAf072C8D368E4DD4A9d4fF6A76693887d6ae92Af"
@@ -66,8 +67,6 @@ ldo_vote_executors_for_tests = [
 dai_token_address = "0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844"
 
 weth_token_address = "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6"
-
-oracle_daemon_config = "0x081f55c1Eb944E868e8bA48FC9DF701945FE65b3"
 
 oracle_committee = [
     "0xfdA7E01B2718C511bF016030010572e833C7aE6A",

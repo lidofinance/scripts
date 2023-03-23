@@ -43,6 +43,7 @@ lido_dao_eip712_steth = ""
 lido_dao_withdrawal_vault = ""
 lido_dao_staking_router = ""
 gate_seal = ""
+oracle_daemon_config = ""
 shapella_upgrade_template = ""
 
 lido_easytrack = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
