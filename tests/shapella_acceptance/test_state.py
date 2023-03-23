@@ -60,18 +60,18 @@ def test_lido_state():
 
     # state
     stake_limit = contracts.lido.getStakeLimitFullInfo()
-    assert stake_limit[0] == False  # isStakingPaused
-    assert stake_limit[1] == True  # isStakingLimitSet
-    assert stake_limit[3] == 150_000 * 1e18
+    assert stake_limit["isStakingPaused"] == False
+    assert stake_limit["isStakingLimitSet"] == True
+    assert stake_limit["maxStakeLimit"] == 150_000 * 1e18
 
     assert contracts.lido.getBufferedEther() > 0
 
     beacon_stat = contracts.lido.getBeaconStat()
-    assert beacon_stat[0] > 0  # deposited validators
-    assert beacon_stat[1] > 0  # cl validators
-    assert beacon_stat[2] > 0  # cl balance
-    assert beacon_stat[0] >= beacon_stat[1]
-    assert beacon_stat[2] >= 32 * 1e18 * beacon_stat[1]  # reasonable expectation before first withdrawals
+    assert beacon_stat["depositedValidators"] > 0
+    assert beacon_stat["beaconValidators"] > 0
+    assert beacon_stat["beaconBalance"] > 0
+    assert beacon_stat["depositedValidators"] >= beacon_stat["beaconValidators"]
+    assert beacon_stat["beaconBalance"] >= 32 * 1e18 * beacon_stat[1]  # reasonable expectation before first withdrawals
 
     assert contracts.lido.getTotalELRewardsCollected() > 0
 
@@ -105,7 +105,7 @@ def test_withdrawal_queue_state():
 
     # OssifiableProxy
     proxy = interface.OssifiableProxy(contract)
-    assert proxy.proxy__getImplementation() == "0x265be9738fA32B29180867E07eaf1d6fa02a34dB"
+    assert proxy.proxy__getImplementation() == "0xF7a378BB9E911550baA5e729f5Ab1592aDD905A5"
     assert proxy.proxy__getAdmin() == contracts.agent.address
 
     # WithdrawalQueueERC721
@@ -148,3 +148,47 @@ def test_locator_state():
     proxy = interface.OssifiableProxy(contracts.lido_locator)
     assert proxy.proxy__getImplementation() == lido_dao_lido_locator_implementation
     assert proxy.proxy__getAdmin() == contracts.agent.address
+
+
+def test_veb_oracle_state():
+    contract = contracts.validators_exit_bus_oracle
+    # address in locator
+    assert contract == contracts.lido_locator.validatorsExitBusOracle()
+
+    # Versioned
+    assert contract.getContractVersion() == 1
+
+    # OssifiableProxy
+    proxy = interface.OssifiableProxy(contract)
+    assert proxy.proxy__getImplementation() == "0xBE378f865Ab69f51d8874aeB9508cbbC42B3FBDE"
+    assert proxy.proxy__getAdmin() == contracts.agent.address
+
+    # PausableUntil
+    assert contract.isPaused() == False
+    assert contract.getResumeSinceTimestamp() > 0
+
+    # BaseOracle
+    assert contract.SECONDS_PER_SLOT() == 12
+    assert contract.GENESIS_TIME() == 1616508000
+    assert contract.getConsensusVersion() == 1
+    assert contract.getConsensusContract() == "0x8374B4aC337D7e367Ea1eF54bB29880C3f036A51"
+
+    report = contract.getConsensusReport()
+    assert report["hash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
+    assert report["refSlot"] == 0
+    assert report["processingDeadlineTime"] == 0
+    assert report["processingStarted"] == False
+
+    assert contract.getLastProcessingRefSlot() == 0
+
+    # ValidatorExitBusOracle
+
+    assert contract.getTotalRequestsProcessed() == 0
+    state = contract.getProcessingState()
+    assert state["currentFrameRefSlot"] > 5254400
+    assert state["processingDeadlineTime"] == 0
+    assert state["dataHash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
+    assert state["dataSubmitted"] == False
+    assert state["dataFormat"] == 0
+    assert state["requestsCount"] == 0
+    assert state["requestsSubmitted"] == 0
