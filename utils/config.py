@@ -198,7 +198,7 @@ class ContractsLazyLoader:
 
     @property
     def oracle_daemon_config(self) -> interface.OracleDaemonConfig:
-        return interface.WethToken(oracle_daemon_config)
+        return interface.OracleDaemonConfig(oracle_daemon_config)
 
     @property
     def wsteth(self) -> interface.WstETH:

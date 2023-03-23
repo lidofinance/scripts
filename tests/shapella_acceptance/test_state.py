@@ -1,5 +1,5 @@
 from brownie import interface, web3, ZERO_ADDRESS
-from utils.config import contracts, lido_dao_withdrawal_vault_implementation
+from utils.config import contracts, lido_dao_withdrawal_vault_implementation, oracle_daemon_config_values
 
 from test_upgrade_shapella_goerli import lido_app_id
 
@@ -125,3 +125,12 @@ def test_withdrawal_queue_state():
     assert contract.getLockedEtherAmount() == 0
     assert contract.getLastCheckpointIndex() == 0
     assert contract.unfinalizedStETH() == 0
+
+
+def test_oracle_daemon_config_state():
+    contract = contracts.oracle_daemon_config
+    # address in locator
+    assert contract == contracts.lido_locator.oracleDaemonConfig()
+
+    for key, value in oracle_daemon_config_values.items():
+        assert int(str(contract.get(key)), 16) == value
