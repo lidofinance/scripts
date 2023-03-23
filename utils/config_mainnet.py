@@ -99,3 +99,15 @@ oracle_daemon_config_values = {
     "FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT": 128,
     "NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP": 100,
 }
+
+report_limits = {
+    "churnValidatorsPerDayLimit": 12375,
+    "oneOffCLBalanceDecreaseBPLimit": 500,
+    "annualBalanceIncreaseBPLimit": 1000,
+    "simulatedShareRateDeviationBPLimit": 10,
+    "maxValidatorExitRequestsPerReport": 500,
+    "maxAccountingExtraDataListItemsCount": 500,
+    "maxNodeOperatorsPerExtraDataItemCount": 100,
+    "requestTimestampMargin": 7200,
+    "maxPositiveTokenRebase": 750000,
+}
