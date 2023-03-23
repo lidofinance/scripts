@@ -229,19 +229,19 @@ contract ShapellaUpgradeTemplate {
     uint256 public constant VEBO_LAST_PROCESSING_REF_SLOT = 0;
 
     ILidoLocator public constant _locator = ILidoLocator(0x1eDf09b5023DC86737b59dE68a8130De878984f5);
-    IHashConsensus public constant _hashConsensusForAccountingOracle = IHashConsensus(0x8EA83346E60261DdF1fA3B64056B096e337541b2);
-    IHashConsensus public constant _hashConsensusForValidatorsExitBusOracle = IHashConsensus(0x8D4bCbc063da5A813FC13c3f4c817afcA7cb1eD6);
+    IHashConsensus public constant _hashConsensusForAccountingOracle = IHashConsensus(0x8d87A8BCF8d4e542fd396D1c50223301c164417b);
+    IHashConsensus public constant _hashConsensusForValidatorsExitBusOracle = IHashConsensus(0x8374B4aC337D7e367Ea1eF54bB29880C3f036A51);
     address public constant _eip712StETH = 0xB4300103FfD326f77FfB3CA54248099Fb29C3b9e;
     address public constant _voting = 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db;
     address public constant _agent = 0x4333218072D5d7008546737786663c38B4D561A4;
     INodeOperatorsRegistry public constant _nodeOperatorsRegistry = INodeOperatorsRegistry(0x9D4AF1Ee19Dad8857db3a45B0374c81c8A1C6320);
     address public constant _gateSeal = 0x75A77AE52d88999D0b12C6e5fABB1C1ef7E92638;
-    address public constant _withdrawalQueueImplementation = 0x265be9738fA32B29180867E07eaf1d6fa02a34dB;
-    address public constant _stakingRouterImplementation = 0x249565350CcaD707bB68cE9980B366751649F4cd;
-    address public constant _accountingOracleImplementation = 0x8C55A49639b456F98E1A8D7DAa3b29B378CADc8b;
-    address public constant _validatorsExitBusOracleImplementation = 0x304F1B78B975AB79B479AdA70cE2Fc9A5a1A2a54;
+    address public constant _withdrawalQueueImplementation = 0xF7a378BB9E911550baA5e729f5Ab1592aDD905A5;
+    address public constant _stakingRouterImplementation = 0xb02791097DE4B7B83265C9516640C8223830a351;
+    address public constant _accountingOracleImplementation = 0x49cc40EE660BfD5f46423f04891502410d32E965;
+    address public constant _validatorsExitBusOracleImplementation = 0xBE378f865Ab69f51d8874aeB9508cbbC42B3FBDE;
     address public constant _dummyImplementation = 0x6A03b1BbB79460169a205eFBCBc77ebE1011bCf8;
-    address public constant _locatorImplementation = 0xa55bBf0245890fC5F5A231778732b8966300a80e;
+    address public constant _locatorImplementation = 0x6D5b7439c166A1BDc5c8DB547c1a871c082CE22C;
     address public constant _withdrawalVaultImplementation = 0x297Eb629655C8c488Eb26442cF4dfC8A7Cc32fFb;
     address public constant _previousDepositSecurityModule = 0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe;
 
@@ -254,19 +254,19 @@ contract ShapellaUpgradeTemplate {
     uint256 public constant EXPECTED_FINAL_WITHDRAWAL_QUEUE_VERSION = 1;
     uint256 public constant EXPECTED_FINAL_WITHDRAWAL_VAULT_VERSION = 1;
 
-    uint256 public constant EXPECTED_DSM_MAX_DEPOSITS_PER_BLOCK = 150;
-    uint256 public constant EXPECTED_DSM_MIN_DEPOSIT_BLOCK_DISTANCE = 5;
-    uint256 public constant EXPECTED_DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS = 6646;
+    uint256 public constant EXPECTED_DSM_MAX_DEPOSITS_PER_BLOCK = 0;
+    uint256 public constant EXPECTED_DSM_MIN_DEPOSIT_BLOCK_DISTANCE = 1200;
+    uint256 public constant EXPECTED_DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS = 10;
 
     uint256 public constant sanityLimit_churnValidatorsPerDayLimit = 1500;
     uint256 public constant sanityLimit_oneOffCLBalanceDecreaseBPLimit = 500;
     uint256 public constant sanityLimit_annualBalanceIncreaseBPLimit = 1000;
-    uint256 public constant sanityLimit_simulatedShareRateDeviationBPLimit = 250;
-    uint256 public constant sanityLimit_maxValidatorExitRequestsPerReport = 2000;
-    uint256 public constant sanityLimit_maxAccountingExtraDataListItemsCount = 100;
+    uint256 public constant sanityLimit_simulatedShareRateDeviationBPLimit = 10;
+    uint256 public constant sanityLimit_maxValidatorExitRequestsPerReport = 500;
+    uint256 public constant sanityLimit_maxAccountingExtraDataListItemsCount = 500;
     uint256 public constant sanityLimit_maxNodeOperatorsPerExtraDataItemCount = 100;
-    uint256 public constant sanityLimit_requestTimestampMargin = 128;
-    uint256 public constant sanityLimit_maxPositiveTokenRebase = 5000000;
+    uint256 public constant sanityLimit_requestTimestampMargin = 384;
+    uint256 public constant sanityLimit_maxPositiveTokenRebase = 750000;
 
     //
     // STRUCTURED STORAGE
