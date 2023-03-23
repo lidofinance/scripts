@@ -1,6 +1,6 @@
 """
 
-Voting 23/03/2023.
+Voting 24/03/2023.
 
 Lido V2 (Shapella-ready) protocol upgrade on Görli
 
@@ -11,15 +11,15 @@ Lido V2 (Shapella-ready) protocol upgrade on Görli
 5. Revoke `SET_EL_REWARDS_VAULT_ROLE` role from `Voting`
 6. Revoke `SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE` role from `Voting`
 7. Revoke `ADD_NODE_OPERATOR_ROLE` role from `Voting`
-8. Revoke `SET_NODE_OPERATOR_ACTIVE_ROLE`
-9. Revoke `SET_NODE_OPERATOR_NAME_ROLE`
-10. Revoke `SET_NODE_OPERATOR_ADDRESS_ROLE`
-11. Revoke `REPORT_STOPPED_VALIDATORS_ROLE`
-12. Revoke `MANAGE_MEMBERS`
-13. Revoke `MANAGE_QUORUM`
-14. Revoke `SET_BEACON_SPEC`
-15. Revoke `SET_REPORT_BOUNDARIES`
-16. Revoke `SET_BEACON_REPORT_RECEIVER`
+8. Revoke `SET_NODE_OPERATOR_ACTIVE_ROLE` role from `Voting`
+9. Revoke `SET_NODE_OPERATOR_NAME_ROLE` role from `Voting`
+10. Revoke `SET_NODE_OPERATOR_ADDRESS_ROLE` role from `Voting`
+11. Revoke `REPORT_STOPPED_VALIDATORS_ROLE` role from `Voting`
+12. Revoke `MANAGE_MEMBERS` role from `Voting`
+13. Revoke `MANAGE_QUORUM` role from `Voting`
+14. Revoke `SET_BEACON_SPEC` role from `Voting`
+15. Revoke `SET_REPORT_BOUNDARIES` role from `Voting`
+16. Revoke `SET_BEACON_REPORT_RECEIVER` role from `Voting`
 
 """
 
@@ -88,15 +88,15 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         "5) Revoke `SET_EL_REWARDS_VAULT_ROLE` role from `Voting`",
         "6) Revoke `SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE` role from `Voting`",
         "7) Revoke `ADD_NODE_OPERATOR_ROLE` role from `Voting`",
-        "8) Revoke `SET_NODE_OPERATOR_ACTIVE_ROLE`",
-        "9) Revoke `SET_NODE_OPERATOR_NAME_ROLE`",
-        "10) Revoke `SET_NODE_OPERATOR_ADDRESS_ROLE`",
-        "11) Revoke `REPORT_STOPPED_VALIDATORS_ROLE`",
-        "12) Revoke `MANAGE_MEMBERS`",
-        "13) Revoke `MANAGE_QUORUM`",
-        "14) Revoke `SET_BEACON_SPEC`",
-        "15) Revoke `SET_REPORT_BOUNDARIES`",
-        "16) Revoke `SET_BEACON_REPORT_RECEIVER`",
+        "8) Revoke `SET_NODE_OPERATOR_ACTIVE_ROLE` role from `Voting",
+        "9) Revoke `SET_NODE_OPERATOR_NAME_ROLE` role from `Voting`",
+        "10) Revoke `SET_NODE_OPERATOR_ADDRESS_ROLE` role from `Voting`",
+        "11) Revoke `REPORT_STOPPED_VALIDATORS_ROLE` role from `Voting`",
+        "12) Revoke `MANAGE_MEMBERS` role from `Voting`",
+        "13) Revoke `MANAGE_QUORUM` role from `Voting`",
+        "14) Revoke `SET_BEACON_SPEC` role from `Voting`",
+        "15) Revoke `SET_REPORT_BOUNDARIES` role from `Voting`",
+        "16) Revoke `SET_BEACON_REPORT_RECEIVER` role from `Voting`",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
