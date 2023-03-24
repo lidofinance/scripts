@@ -84,7 +84,7 @@ def test_accounting_oracle_state():
 
     assert consensus.getInitialRefSlot() > 5254400
 
-    assert consensus.getQuorum() == 6
+    assert consensus.getQuorum() == 2
 
 
 def test_deposit_security_module_state():

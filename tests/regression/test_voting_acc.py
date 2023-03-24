@@ -7,7 +7,7 @@ import pytest
 
 from brownie import MockCallTarget, accounts, chain, reverts
 from brownie.network.transaction import TransactionReceipt
-
+from utils.voting import create_vote, bake_vote_items
 from utils.config import ldo_vote_executors_for_tests
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.config import contracts
@@ -18,9 +18,10 @@ def call_target():
     return MockCallTarget.deploy({"from": accounts[0]})
 
 
-@pytest.fixture(scope="module", autouse=True)
-def shared_setup(module_isolation):
-    pass
+@pytest.fixture(scope="module")
+def test_vote(ldo_holder, call_target) -> Tuple[int, Optional[TransactionReceipt]]:
+    vote_items = [(call_target.address, call_target.perform_call.encode_input())]
+    return create_vote(bake_vote_items(["Test voting"], vote_items), {"from": ldo_holder})
 
 
 def test_stranger_cant_do_anything(test_vote, stranger):

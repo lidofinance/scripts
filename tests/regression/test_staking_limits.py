@@ -16,11 +16,6 @@ def voting(accounts):
     return accounts.at(contracts.voting, force=True)
 
 
-@pytest.fixture(scope="module", autouse=True)
-def shared_setup(module_isolation):
-    pass
-
-
 def test_is_staking_not_paused(voting):
     contracts.lido.resumeStaking({"from": voting})
     # Should be running from the start

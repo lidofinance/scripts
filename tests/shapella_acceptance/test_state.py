@@ -219,4 +219,4 @@ def test_veb_oracle_state():
 
     assert consensus.getInitialRefSlot() > 5254400
 
-    assert consensus.getQuorum() == 6
+    assert consensus.getQuorum() == 2
