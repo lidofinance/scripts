@@ -37,7 +37,7 @@ from utils.config import (
     get_deployer_account,
     get_is_live,
     contracts,
-    ContractsLazyLoader,
+    shapella_upgrade_template,
 )
 from utils.permissions import encode_permission_revoke
 
@@ -61,7 +61,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
     # TODO: on goerli the list is larger
     call_script_items = [
         # 1)
-        encode_template_check_upgrade_enacted(ContractsLazyLoader.upgrade_template),
+        encode_template_check_upgrade_enacted(shapella_upgrade_template),
         # 2)
         encode_permission_revoke(lido, "MANAGE_FEE", revoke_from=voting),
         # 3)
@@ -125,7 +125,7 @@ def main():
         tx_params["max_fee"] = "300 gwei"
         tx_params["priority_fee"] = "2 gwei"
 
-    vote_id, _, _ = start_vote(tx_params=tx_params)
+    vote_id, _ = start_vote(tx_params=tx_params, silent=False)
 
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 

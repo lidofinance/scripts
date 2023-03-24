@@ -123,6 +123,8 @@ permissions_to_revoke = [
 def test_vote(
     helpers,
     bypass_events_decoding,
+    vote_ids_from_env,
+    accounts,
 ):
     lido_repo: interface.Repo = contracts.lido_app_repo
     lido_old_app = lido_repo.getLatest()
@@ -152,9 +154,14 @@ def test_vote(
         assert acl.hasPermission(*permission), f"No starting role {permission.role} on {permission.entity}"
 
     # START VOTE
-    _, vote_transactions = start_and_execute_votes(contracts.voting, helpers)
-    tx = vote_transactions[0]
-    print(f"UPGRADE TX GAS USED: {tx.gas_used}")
+    if len(vote_ids_from_env) > 0:
+        vote_ids = vote_ids_from_env
+        vote_transactions = helpers.execute_votes_sequential(accounts, vote_ids, contracts.voting)
+    else:
+        vote_ids, vote_transactions = start_and_execute_votes(contracts.voting, helpers)
+
+    gas_usages = [(vote_id, tx.gas_used) for vote_id, tx in zip(vote_ids, vote_transactions)]
+    print(f"UPGRADE TXs (voteId, gasUsed): {gas_usages}")
 
     #
     # WithdrawalVault upgrade checks

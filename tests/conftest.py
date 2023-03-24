@@ -2,7 +2,7 @@ import pytest
 
 import os
 
-from typing import Optional
+from typing import Optional, List
 
 from brownie import chain, interface
 
@@ -52,23 +52,26 @@ class Helpers:
         assert dict(receiver_events[0]) == evt_keys_dict
 
     @staticmethod
-    def execute_vote(accounts, vote_id, dao_voting, topup="0.1 ether", skip_time=3 * 60 * 60 * 24):
+    def execute_votes_sequential(accounts, vote_ids, dao_voting, topup="0.1 ether", skip_time=3 * 60 * 60 * 24):
         OBJECTION_PHASE_ID = 1
-        if dao_voting.canVote(vote_id, ldo_vote_executors_for_tests[0]) and (
-            dao_voting.getVotePhase(vote_id) != OBJECTION_PHASE_ID
-        ):
-            for holder_addr in ldo_vote_executors_for_tests:
-                print("voting from acct:", holder_addr)
-                if accounts.at(holder_addr, force=True).balance() < topup:
-                    accounts[0].transfer(holder_addr, topup)
-                account = accounts.at(holder_addr, force=True)
-                dao_voting.vote(vote_id, True, False, {"from": account})
+        for vote_id in vote_ids:
+            print(f"Vote #{vote_id}")
+            if dao_voting.canVote(vote_id, ldo_vote_executors_for_tests[0]) and (
+                dao_voting.getVotePhase(vote_id) != OBJECTION_PHASE_ID
+            ):
+                for holder_addr in ldo_vote_executors_for_tests:
+                    print("voting from acct:", holder_addr)
+                    if accounts.at(holder_addr, force=True).balance() < topup:
+                        accounts[0].transfer(holder_addr, topup)
+                    account = accounts.at(holder_addr, force=True)
+                    dao_voting.vote(vote_id, True, False, {"from": account})
 
         # wait for the vote to end
         chain.sleep(skip_time)
         chain.mine()
 
-        assert dao_voting.canExecute(vote_id)
+        for vote_id in vote_ids:
+            assert dao_voting.canExecute(vote_id)
 
         # try to instantiate script executor
         # to deal with events parsing properly
@@ -80,10 +83,12 @@ class Helpers:
             print("Unable to instantiate CallsScript")
             print("Trying to proceed further as is...")
 
-        tx = dao_voting.executeVote(vote_id, {"from": accounts[0]})
-
-        print(f"vote #{vote_id} executed")
-        return tx
+        execution_transactions = []
+        for vote_id in vote_ids:
+            tx = dao_voting.executeVote(vote_id, {"from": accounts[0]})
+            print(f"vote #{vote_id} executed")
+            execution_transactions.append(tx)
+        return execution_transactions
 
     @staticmethod
     def is_executed(vote_id, dao_voting):
@@ -97,17 +102,18 @@ def helpers():
 
 
 @pytest.fixture(scope="session")
-def vote_id_from_env() -> Optional[int]:
-    _env_name = "OMNIBUS_VOTE_ID"
+def vote_ids_from_env() -> List[int]:
+    _env_name = "OMNIBUS_VOTE_IDS"
     if os.getenv(_env_name):
         try:
-            vote_id = int(os.getenv(_env_name))
-            print(f"OMNIBUS_VOTE_ID env var is set, using existing vote #{vote_id}")
-            return vote_id
+            vote_ids_str = os.getenv(_env_name)
+            vote_ids = [int(s) for s in vote_ids_str.split(",")]
+            print(f"OMNIBUS_VOTE_IDS env var is set, using existing votes {vote_ids}")
+            return vote_ids
         except:
             pass
 
-    return None
+    return []
 
 
 @pytest.fixture(scope="module")

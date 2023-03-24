@@ -37,9 +37,9 @@ from utils.config import (
     get_is_live,
     contracts,
     lido_dao_staking_router,
-    ContractsLazyLoader,
     lido_dao_withdrawal_vault,
     lido_dao_withdrawal_vault_implementation,
+    shapella_upgrade_template,
 )
 from utils.permissions import encode_permission_create, encode_permission_revoke
 
@@ -87,8 +87,7 @@ def encode_withdrawal_vault_proxy_update(vault_proxy_address: str, implementatio
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
 
-    template_address = ContractsLazyLoader.upgrade_template
-    assert template_address != "", "Upgrade template must be deployed preliminary"
+    assert shapella_upgrade_template != "", "Upgrade template must be deployed preliminary"
 
     voting: interface.Voting = contracts.voting
     node_operators_registry: interface.NodeOperatorsRegistry = contracts.node_operators_registry
@@ -97,7 +96,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         # 1)
         encode_withdrawal_vault_proxy_update(lido_dao_withdrawal_vault, lido_dao_withdrawal_vault_implementation),
         # 2)
-        encode_template_start_upgrade(template_address),
+        encode_template_start_upgrade(shapella_upgrade_template),
         # 3)
         add_implementation_to_lido_app_repo(
             update_lido_app["version"], update_lido_app["new_address"], update_lido_app["content_uri"]
@@ -124,7 +123,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             manager=voting,
         ),
         # 10)
-        encode_template_finish_upgrade(template_address),
+        encode_template_finish_upgrade(shapella_upgrade_template),
     ]
 
     vote_desc_items = [
@@ -152,7 +151,7 @@ def main():
         tx_params["max_fee"] = "300 gwei"
         tx_params["priority_fee"] = "2 gwei"
 
-    vote_id, _, _ = start_vote(tx_params=tx_params)
+    vote_id, _ = start_vote(tx_params=tx_params, silent=False)
 
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 
