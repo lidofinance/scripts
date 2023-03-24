@@ -54,9 +54,7 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
         start_vote = locals()[start_vote_name]
 
         vote_id, _ = start_vote({"from": ldo_holder_address_for_tests}, silent=True)
-        tx = helpers.execute_vote(
-            vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, topup="0.5 ether", skip_time=3 * 60 * 60 * 24
-        )
+        (tx,) = helpers.execute_votes_sequential(accounts, [vote_id], dao_voting, topup="0.5 ether")
         vote_ids.append(vote_id)
         vote_transactions.append(tx)
     return vote_ids, vote_transactions
