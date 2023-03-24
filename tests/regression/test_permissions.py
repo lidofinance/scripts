@@ -151,7 +151,7 @@ def protocol_permissions():
             "contract": contracts.oracle_daemon_config,
             "type": "CustomApp",
             "roles": {
-                "STAKING_ROUTER_ROLE": [contracts.agent],
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "CONFIG_MANAGER_ROLE": [],
             },
         },
