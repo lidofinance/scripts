@@ -73,6 +73,14 @@ class ContractsLazyLoader:
     upgrade_template = None
 
     @property
+    def lido_v1(self) -> interface.LidoV1:
+        return interface.LidoV1(lido_dao_steth_address)
+
+    @property
+    def node_operators_registry_v1(self) -> interface.NodeOperatorsRegistryV1:
+        return interface.NodeOperatorsRegistryV1(lido_dao_node_operators_registry)
+
+    @property
     def lido(self) -> interface.Lido:
         return interface.Lido(lido_dao_steth_address)
 
