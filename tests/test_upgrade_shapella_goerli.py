@@ -134,9 +134,6 @@ def test_vote(
     oracle_old_app = oracle_repo.getLatest()
 
     acl: interface.ACL = contracts.acl
-    assert not acl.hasPermission(*permission_staking_router)
-    for permission in permissions_to_revoke:
-        assert acl.hasPermission(*permission), f"No starting role {permission.role} on {permission.entity}"
 
     withdrawal_vault_manager = interface.WithdrawalVaultManager(lido_dao_withdrawal_vault)
 
@@ -149,6 +146,10 @@ def test_vote(
         withdrawal_vault_manager.implementation() != lido_dao_withdrawal_vault_implementation
     ), "Wrong WithdrawalVault proxy initial implementation"
     assert withdrawal_vault_manager.proxy_getAdmin() == lido_dao_voting_address
+
+    assert not acl.hasPermission(*permission_staking_router)
+    for permission in permissions_to_revoke:
+        assert acl.hasPermission(*permission), f"No starting role {permission.role} on {permission.entity}"
 
     # START VOTE
     _, vote_transactions = start_and_execute_votes(contracts.voting, helpers)
