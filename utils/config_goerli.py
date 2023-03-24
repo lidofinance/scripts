@@ -52,6 +52,7 @@ shapella_upgrade_template = ""
 
 lido_easytrack = "0xAf072C8D368E4DD4A9d4fF6A76693887d6ae92Af"
 lido_easytrack_evmscriptexecutor = "0x3c9AcA237b838c59612d79198685e7f20C7fE783"
+lido_easytrack_increase_nop_staking_limit_factory = "0xE033673D83a8a60500BcE02aBd9007ffAB587714"
 
 lido_insurance_fund_address = "0x2FAe4D2D86Efb17249F24C9fb70855d4c58585A5"
 lido_relay_allowed_list = "0xeabE95AC5f3D64aE16AcBB668Ed0efcd81B721Bc"
