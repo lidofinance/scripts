@@ -30,7 +30,7 @@ from typing import Dict, Tuple, Optional
 from brownie.network.transaction import TransactionReceipt
 from brownie import ShapellaUpgradeTemplate
 
-from utils.shapella_upgrade import prepare_for_voting
+from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.evm_script import encode_call_script
 from utils.config import (

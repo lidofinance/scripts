@@ -5,8 +5,14 @@ import glob
 from brownie import accounts
 from brownie.network.transaction import TransactionReceipt
 
-from utils.config import ldo_holder_address_for_tests, ContractsLazyLoader, deployer_eoa, shapella_upgrade_template
-from utils.shapella_upgrade import prepare_for_voting
+from utils.config import (
+    ldo_holder_address_for_tests,
+    ContractsLazyLoader,
+    deployer_eoa,
+    shapella_upgrade_template,
+    get_is_live,
+)
+from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
 
 
 def get_vote_script_files() -> List[str]:
@@ -31,7 +37,11 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
         ), "If SKIP_SHAPELLA_PRELIMINARY_STEP is set 'shapella_upgrade_template' must be specified in the config"
         ContractsLazyLoader.upgrade_template = shapella_upgrade_template
     else:
-        ContractsLazyLoader.upgrade_template = prepare_for_voting(deployer_eoa)
+        assert (
+            not get_is_live(),
+            "ERROR: will not do preliminary actions on live network. run `preliminary_shapella...py` script manually",
+        )
+        ContractsLazyLoader.upgrade_template = prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
 
     vote_ids = []
     vote_transactions = []

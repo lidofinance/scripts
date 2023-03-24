@@ -3,6 +3,8 @@ from utils.config import (
     contracts,
     lido_dao_lido_locator_implementation,
     ldo_vote_executors_for_tests,
+    shapella_upgrade_template,
+    prompt_bool,
 )
 from pprint import pprint
 
@@ -87,20 +89,34 @@ def transfer_ownership_to_template(owner, template):
     transfer_proxy_admin_to_template(contracts.withdrawal_queue)
 
 
-def prepare_for_voting(temporary_admin):
-    print("=== Do the on-chain preparations before starting the vote ===")
-    steth_holder = temporary_admin
-    topup_initial_token_holder(contracts.lido, steth_holder)
+def prepare_for_shapella_upgrade_voting(temporary_admin, silent=False):
+    if shapella_upgrade_template != "":
+        template = ShapellaUpgradeTemplate.at(shapella_upgrade_template)
+        print(f"=== Using upgrade template from config {template.address} ===")
+    else:
+        template = deploy_template_implementation(temporary_admin)
+        print(f"=== Deployed upgrade template {template.address} ===")
 
     # Need this, otherwise Lido.finalizeUpgradeV2 reverts
+    print("=== Top up 0xdead with a bit of steth (aka The Stone) ===")
+    topup_initial_token_holder(contracts.lido, temporary_admin)
     assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
 
-    template = deploy_template_implementation(temporary_admin)
-    print(f"=== Deployed template {template.address} ===")
-    pprint(get_template_configuration(template))
     assert interface.OssifiableProxy(contracts.lido_locator).proxy__getAdmin() == temporary_admin
     interface.OssifiableProxy(contracts.lido_locator).proxy__upgradeTo(
         lido_dao_lido_locator_implementation, {"from": temporary_admin}
     )
-    transfer_ownership_to_template(temporary_admin, template)
+    print(f"=== Upgrade lido locator implementation to {lido_dao_lido_locator_implementation} ===")
+
+    if not silent:
+        print(f"!!! Going to transfer ownership to contract {template.address}. This irreversible!")
+        print("Does it look good? [yes/no]")
+        resume = prompt_bool()
+        while resume is None:
+            resume = prompt_bool()
+        if not resume:
+            print("Trying to continue without transferring ownership to the upgrade template.")
+            return None
+
+    transfer_ownership_to_template(temporary_admin, template.address)
     return template
