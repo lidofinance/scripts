@@ -47,24 +47,23 @@ from utils.permissions import encode_permission_create, encode_permission_revoke
 from utils.brownie_prelude import *
 
 
-# TODO: set content_uri
 update_lido_app = {
     "new_address": "0xEE227CC91A769881b1e81350224AEeF7587eBe76",
-    "content_uri": "0x697066733a516d516b4a4d7476753474794a76577250584a666a4c667954576e393539696179794e6a703759714e7a58377053",
+    "content_uri": "0x697066733a516d63354a64475a3576326844466d64516844535a70514a6554394a55364e34386d5678546474685667677a766d",
     "id": "0x79ac01111b462384f1b7fba84a17b9ec1f5d2fddcfcb99487d71b443832556ea",
     "version": (10, 0, 0),
 }
 
-update_nos_app = {
+update_nor_app = {
     "new_address": "0xCAfe9Ac6a4bE2eAfCFf949693C0da9eebF985C3B",
-    "content_uri": "0x697066733a516d61375058486d456a346a7332676a4d3976744850747176754b3832695335455950694a6d7a4b4c7a55353847",
+    "content_uri": "0x697066733a516d5342796b4e4a61363734547146334b7366677642666444315a545158794c4a6e707064776b36477463534c4d",
     "id": "0x57384c8fcaf2c1c2144974769a6ea4e5cf69090d47f5327f8fc93827f8c0001a",
     "version": (8, 0, 0),
 }
 
 update_oracle_app = {
     "new_address": "0xcF9d64942DC9096520a8962a2d4496e680c6403b",
-    "content_uri": "0x697066733a516d554d506669454b71354d786d387932475951504c756a47614a69577a31747665703557374564414767435238",
+    "content_uri": "0x697066733a516d66414348396f5348465767563831446838525356636761564264686b5a7548685a5932695a76357379424a4b",
     "id": "0xb2977cfc13b000b6807b9ae3cf4d938f4cc8ba98e1d68ad911c58924d6aa4f11",
     "version": (5, 0, 0),
 }
@@ -107,10 +106,10 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         update_app_implementation(update_lido_app["id"], update_lido_app["new_address"]),
         # 5)
         add_implementation_to_nos_app_repo(
-            update_nos_app["version"], update_nos_app["new_address"], update_nos_app["content_uri"]
+            update_nor_app["version"], update_nor_app["new_address"], update_nor_app["content_uri"]
         ),
         # 6)
-        update_app_implementation(update_nos_app["id"], update_nos_app["new_address"]),
+        update_app_implementation(update_nor_app["id"], update_nor_app["new_address"]),
         # 7)
         add_implementation_to_oracle_app_repo(
             update_oracle_app["version"], update_oracle_app["new_address"], update_oracle_app["content_uri"]
