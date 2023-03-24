@@ -139,22 +139,9 @@ def test_vote(
     # START VOTE
     _, vote_transactions = start_and_execute_votes(contracts.voting, helpers)
     tx = vote_transactions[0]
-    template = (
-        ShapellaUpgradeTemplate.at(shapella_upgrade_template)
-        if shapella_upgrade_template != ""
-        else ShapellaUpgradeTemplate.at(ContractsLazyLoader.upgrade_template)
-    )
-
-    # DEBUG: Uncomment if want to make part of the upgrade as a separate tx
-    # template.startUpgrade({'from': contracts.voting.address})
-
-    # tx: TransactionReceipt = helpers.execute_vote(
-    #     vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting, skip_time=3 * 60 * 60 * 24
-    # )
     print(f"UPGRADE TX GAS USED: {tx.gas_used}")
 
-    # DEBUG: Uncomment if want to make part of the upgrade as a separate tx
-    # template.finishUpgrade({'from': contracts.voting.address})
+    template = ShapellaUpgradeTemplate.at(shapella_upgrade_template)
 
     #
     # Lido app upgrade checks
