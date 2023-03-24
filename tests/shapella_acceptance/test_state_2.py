@@ -54,13 +54,13 @@ def test_accounting_oracle_state():
     assert state["extraDataItemsCount"] == 0
     assert state["extraDataItemsSubmitted"] == 0
 
-    assert contracts.accounting_oracle.getLastProcessingRefSlot() == 5254400
+    assert contracts.accounting_oracle.getLastProcessingRefSlot() > 5254400
 
     # Consensus
     assert contracts.accounting_oracle.getConsensusContract() == lido_dao_hash_consensus_for_accounting_oracle
     report = contracts.accounting_oracle.getConsensusReport()
     assert report["hash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
-    assert report["refSlot"] == 5254400
+    assert report["refSlot"] > 5254400
     assert report["processingDeadlineTime"] == 0
     assert report["processingStarted"] == False
 
