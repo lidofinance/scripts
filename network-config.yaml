@@ -9,7 +9,7 @@ development:
     host: http://127.0.0.1
     id: mainnet-fork
     name: Ganache-CLI (Mainnet Fork)
-    timeout: 120
+    timeout: 180
   - cmd: ./ganache.sh
     cmd_settings:
       accounts: 10
@@ -21,7 +21,7 @@ development:
     host: http://127.0.0.1
     id: goerli-fork
     name: goerli-fork
-    timeout: 120
+    timeout: 180
   - cmd: ./ganache.sh
     cmd_settings:
       accounts: 10
@@ -33,4 +33,4 @@ development:
     host: http://127.0.0.1
     id: local-fork
     name: local-fork
-    timeout: 120
+    timeout: 180
