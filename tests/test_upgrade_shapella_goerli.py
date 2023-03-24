@@ -12,6 +12,8 @@ from utils.config import (
     lido_dao_steth_address,
     lido_dao_legacy_oracle,
     shapella_upgrade_template,
+    lido_dao_withdrawal_vault,
+    lido_dao_withdrawal_vault_implementation,
 )
 from utils.test.event_validators.permission import Permission, validate_permission_create_event
 from utils.test.event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
@@ -136,12 +138,29 @@ def test_vote(
     for permission in permissions_to_revoke:
         assert acl.hasPermission(*permission), f"No starting role {permission.role} on {permission.entity}"
 
+    withdrawal_vault_manager = interface.WithdrawalVaultManager(lido_dao_withdrawal_vault)
+
+    template = ShapellaUpgradeTemplate.at(shapella_upgrade_template)
+
+    #
+    # Preliminary checks
+    #
+    assert (
+        withdrawal_vault_manager.implementation() != lido_dao_withdrawal_vault_implementation
+    ), "Wrong WithdrawalVault proxy initial implementation"
+    assert withdrawal_vault_manager.proxy_getAdmin() == lido_dao_voting_address
+
     # START VOTE
     _, vote_transactions = start_and_execute_votes(contracts.voting, helpers)
     tx = vote_transactions[0]
     print(f"UPGRADE TX GAS USED: {tx.gas_used}")
 
-    template = ShapellaUpgradeTemplate.at(shapella_upgrade_template)
+    #
+    # WithdrawalVault upgrade checks
+    #
+    assert (
+        withdrawal_vault_manager.implementation() == lido_dao_withdrawal_vault_implementation
+    ), "Wrong WithdrawalVault proxy implementation"
 
     #
     # Lido app upgrade checks
