@@ -16,9 +16,9 @@ def topup_initial_token_holder(lido, funder):
     lido.transfer(INITIAL_TOKEN_HOLDER, 2, {"from": funder})
 
 
-def deploy_template_implementation(deployer):
-    template_implementation = ShapellaUpgradeTemplate.deploy({"from": deployer})
-    return template_implementation
+def deploy_shapella_upgrade_template(deployer):
+    template = ShapellaUpgradeTemplate.deploy({"from": deployer})
+    return template
 
 
 def get_template_configuration(template_address):
@@ -94,7 +94,7 @@ def prepare_for_shapella_upgrade_voting(temporary_admin, silent=False):
         template = ShapellaUpgradeTemplate.at(shapella_upgrade_template)
         print(f"=== Using upgrade template from config {template.address} ===")
     else:
-        template = deploy_template_implementation(temporary_admin)
+        template = deploy_shapella_upgrade_template(temporary_admin)
         print(f"=== Deployed upgrade template {template.address} ===")
 
     # Need this, otherwise Lido.finalizeUpgradeV2 reverts

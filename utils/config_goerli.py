@@ -48,7 +48,7 @@ lido_dao_withdrawal_credentials = "0x010000000000000000000000dc62f9e8c34be08501c
 lido_dao_withdrawal_vault_implementation = "0x297Eb629655C8c488Eb26442cF4dfC8A7Cc32fFb"
 lido_dao_staking_router = "0xa3Dbd317E53D363176359E10948BA0b1c0A4c820"
 oracle_daemon_config = "0xad55833Dec7ab353B47691e58779Bd979d459388"
-shapella_upgrade_template = ""
+shapella_upgrade_template = "0xD2fEf3d3544ddf64028784aC3f166413A2A61393"
 
 lido_easytrack = "0xAf072C8D368E4DD4A9d4fF6A76693887d6ae92Af"
 lido_easytrack_evmscriptexecutor = "0x3c9AcA237b838c59612d79198685e7f20C7fE783"

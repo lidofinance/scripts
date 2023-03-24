@@ -9,7 +9,8 @@ Includes:
 
 import time
 
-from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
+from brownie import ShapellaUpgradeTemplate
+from utils.shapella_upgrade import deploy_shapella_upgrade_template
 from utils.config import (
     get_deployer_account,
     network_name,
@@ -21,8 +22,12 @@ from utils.brownie_prelude import *
 
 
 def main():
-    assert get_deployer_account() == deployer_eoa, "Need to set DEPLOYER to the deployer_eoa"
-    assert network_name() != "mainnet" and network_name() != "mainnet-fork"
+    deployer = get_deployer_account()
+    assert deployer == deployer_eoa, "Need to set DEPLOYER to the deployer_eoa"
 
-    prepare_for_shapella_upgrade_voting(deployer_eoa, silent=False)
+    template = ShapellaUpgradeTemplate.deploy({"from": deployer})
+    print(f"Shapella upgrade template is deployed at {template}")
+
+    ShapellaUpgradeTemplate.publish_source(template)
+
     time.sleep(5)  # hack for waiting thread #2.
