@@ -10,7 +10,6 @@ from brownie.network.transaction import TransactionReceipt
 
 from utils.config import ldo_vote_executors_for_tests
 from utils.evm_script import EMPTY_CALLSCRIPT
-from utils.voting import create_vote, bake_vote_items
 from utils.config import contracts
 
 
@@ -19,13 +18,12 @@ def call_target():
     return MockCallTarget.deploy({"from": accounts[0]})
 
 
-@pytest.fixture(scope="module")
-def test_vote(ldo_holder, call_target) -> Tuple[int, Optional[TransactionReceipt]]:
-    vote_items = [(call_target.address, call_target.perform_call.encode_input())]
-    return create_vote(bake_vote_items(["Test voting"], vote_items), {"from": ldo_holder})
+@pytest.fixture(scope="module", autouse=True)
+def shared_setup(module_isolation):
+    pass
 
 
-def test_stranger_cant_do_anything( test_vote, stranger):
+def test_stranger_cant_do_anything(test_vote, stranger):
     with reverts("APP_AUTH_FAILED"):
         contracts.voting.newVote(EMPTY_CALLSCRIPT, "Test", {"from": stranger})
 
@@ -52,7 +50,7 @@ def test_stranger_cant_do_anything( test_vote, stranger):
         contracts.voting.vote(vote_id, False, False, {"from": stranger})
 
 
-def test_non_existant_vote( ldo_holder, stranger):
+def test_non_existant_vote(ldo_holder, stranger):
     vote_id = contracts.voting.votesLength()  # wrong vote_id
 
     with reverts("VOTING_NO_VOTE"):
@@ -62,7 +60,7 @@ def test_non_existant_vote( ldo_holder, stranger):
         contracts.voting.executeVote(vote_id, {"from": stranger})
 
 
-def test_phases( call_target, stranger, test_vote):
+def test_phases(call_target, stranger, test_vote):
     vote_id = test_vote[0]
 
     assert contracts.voting.getVotePhase(vote_id) == 0  # Main phase
@@ -94,7 +92,7 @@ def test_phases( call_target, stranger, test_vote):
     assert call_target.called()
 
 
-def test_can_object( stranger, test_vote):
+def test_can_object(stranger, test_vote):
     vote_id = test_vote[0]
 
     for voter in ldo_vote_executors_for_tests[1:]:

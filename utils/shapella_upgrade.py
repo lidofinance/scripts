@@ -109,7 +109,7 @@ def prepare_for_shapella_upgrade_voting(temporary_admin, silent=False):
     print(f"=== Upgrade lido locator implementation to {lido_dao_lido_locator_implementation} ===")
 
     if not silent:
-        print(f"!!! Going to transfer ownership to contract {template.address}. This irreversible!")
+        print(f"!!! Going to transfer ownership to contract {template.address}. This is IRREVERSIBLE!")
         print("Does it look good? [yes/no]")
         resume = prompt_bool()
         while resume is None:

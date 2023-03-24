@@ -1,3 +1,4 @@
+import pytest
 from brownie import interface, web3, chain
 from utils.config import (
     contracts,

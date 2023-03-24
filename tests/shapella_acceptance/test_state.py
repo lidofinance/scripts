@@ -1,3 +1,4 @@
+import pytest
 from brownie import interface, web3, ZERO_ADDRESS
 from utils.config import (
     contracts,
@@ -10,6 +11,11 @@ from utils.config import (
 from test_upgrade_shapella_goerli import lido_app_id
 
 INITIAL_TOKEN_HOLDER = "0x000000000000000000000000000000000000dead"
+
+
+@pytest.fixture(scope="module", autouse=True)
+def shared_setup(module_isolation):
+    pass
 
 
 def test_lido_state():
