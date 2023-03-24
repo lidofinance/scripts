@@ -64,6 +64,27 @@ def test_accounting_oracle_state():
     assert report["processingDeadlineTime"] == 0
     assert report["processingStarted"] == False
 
+    # HashConsensus
+    consensus = interface.HashConsensus(contracts.accounting_oracle.getConsensusContract())
+
+    currentFrame = consensus.getCurrentFrame()
+    assert currentFrame["refSlot"] > 5254400
+    assert currentFrame["reportProcessingDeadlineSlot"] > 5254400
+
+    chainConfig = consensus.getChainConfig()
+    assert chainConfig["slotsPerEpoch"] == beacon_spec["slotsPerEpoch"]
+    assert chainConfig["secondsPerSlot"] == beacon_spec["secondsPerSlot"]
+    assert chainConfig["genesisTime"] == beacon_spec["genesisTime"]
+
+    frameConfig = consensus.getFrameConfig()
+    assert frameConfig["initialEpoch"] > 5254400 / 32
+    assert frameConfig["epochsPerFrame"] == beacon_spec["epochsPerFrame"]
+    assert frameConfig["fastLaneLengthSlots"] == 10
+
+    assert consensus.getInitialRefSlot() > 5254400
+
+    assert consensus.getQuorum() == 6
+
 
 def test_deposit_security_module_state():
     # address in locator

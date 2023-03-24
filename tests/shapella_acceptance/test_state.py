@@ -4,6 +4,7 @@ from utils.config import (
     lido_dao_withdrawal_vault_implementation,
     oracle_daemon_config_values,
     lido_dao_lido_locator_implementation,
+    beacon_spec,
 )
 
 from test_upgrade_shapella_goerli import lido_app_id
@@ -192,3 +193,24 @@ def test_veb_oracle_state():
     assert state["dataFormat"] == 0
     assert state["requestsCount"] == 0
     assert state["requestsSubmitted"] == 0
+
+    # HashConsensus
+    consensus = interface.HashConsensus(contract.getConsensusContract())
+
+    currentFrame = consensus.getCurrentFrame()
+    assert currentFrame["refSlot"] > 5254400
+    assert currentFrame["reportProcessingDeadlineSlot"] > 5254400
+
+    chainConfig = consensus.getChainConfig()
+    assert chainConfig["slotsPerEpoch"] == beacon_spec["slotsPerEpoch"]
+    assert chainConfig["secondsPerSlot"] == beacon_spec["secondsPerSlot"]
+    assert chainConfig["genesisTime"] == beacon_spec["genesisTime"]
+
+    frameConfig = consensus.getFrameConfig()
+    assert frameConfig["initialEpoch"] > 5254400 / 32
+    assert frameConfig["epochsPerFrame"] == 20
+    assert frameConfig["fastLaneLengthSlots"] == 10
+
+    assert consensus.getInitialRefSlot() > 5254400
+
+    assert consensus.getQuorum() == 6
