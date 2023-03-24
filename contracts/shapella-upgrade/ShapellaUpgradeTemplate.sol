@@ -244,7 +244,7 @@ struct StakingModule {
 * Must be used by means of two calls:
 *   - `startUpgrade()` before updating implementation of Aragon apps
 *   - `finishUpgrade()` after updating implementation of Aragon apps
-* The required initial on-chain state is checked in `assertCorrectInitialState()`
+* The required initial on-chain state is checked in `startUpgrade()`
 */
 contract ShapellaUpgradeTemplate {
 
@@ -330,17 +330,11 @@ contract ShapellaUpgradeTemplate {
     string public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_KEY = "NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP";
     bytes public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_VALUE = hex"64";
 
-
     //
     // STRUCTURED STORAGE
     //
     bool public isUpgradeStarted;
     bool public isUpgradeFinished;
-
-    /// Check chain is in the correct state to start the upgrade
-    function assertCorrectInitialState() external view {
-        _assertCorrectInitialState();
-    }
 
     /// Need to be called before LidoOracle implementation is upgraded to LegacyOracle
     function startUpgrade() external {
@@ -365,57 +359,60 @@ contract ShapellaUpgradeTemplate {
     function _startUpgrade() internal {
         if (msg.sender != _voting) revert OnlyVotingCanUpgrade();
         if (isUpgradeStarted) revert CanOnlyStartOnce();
+        if (_lidoOracle().getVersion() != EXPECTED_FINAL_LEGACY_ORACLE_VERSION - 1) {
+            revert LidoOracleMustNotBeUpgradedToLegacyYet();
+        }
+        _assertInitialProxyImplementations();
         isUpgradeStarted = true;
 
         _locator.proxy__upgradeTo(_locatorImplementation);
 
-        // Locator must be upgraded at this point
-        _assertCorrectInitialState();
-
-        // Upgrade proxy implementation
         _upgradeProxyImplementations();
 
-        // Need to have the implementations already attached at this point
-        _assertCorrectInitialRoleHolders();
+        // Need to have the implementations attached to the proxies at this point
+        _assertInitialACL();
 
         _withdrawalVault().initialize();
-
         _initializeWithdrawalQueue();
-
         _initializeAccountingOracle();
-
         _initializeValidatorsExitBus();
-
         _initializeStakingRouter();
 
         _migrateLidoOracleCommitteeMembers();
-
         _migrateDSMGuardians();
-
-        // Need to have the implementations and proxy contracts initialize at this point
-        _assertProxyOZAccessControlContractsAdmin(address(this));
     }
 
-    function _assertCorrectInitialState() internal view {
-        if (_lidoOracle().getVersion() != EXPECTED_FINAL_LEGACY_ORACLE_VERSION - 1) {
-            revert LidoOracleMustNotBeUpgradedToLegacyYet();
-        }
-
-        _assertAdminsOfProxies(address(this));
+    function _assertInitialACL() internal view {
         if (_withdrawalVault().proxy_getAdmin() != _voting) revert WrongProxyAdmin(address(_withdrawalVault()));
-
-        _assertInitialProxyImplementations();
-
-        // Check roles of non-proxy contracts (can do without binding implementations)
-        _assertNonProxyOZAccessControlContractsAdmin(address(this));
+        _assertAdminsOfProxies(address(this));
 
         if (_depositSecurityModule().getOwner() != address(this)) revert WrongDsmOwner();
 
         _assertOracleDaemonConfigRoles();
-        _assertOracleDaemonConfigParameters();
         _assertOracleReportSanityCheckerRoles();
 
-        _assertCorrectDSMParameters();
+        _assertSingleOZRoleHolder(_burner(), DEFAULT_ADMIN_ROLE, address(this));
+        _assertSingleOZRoleHolder(_burner(), _burner().REQUEST_BURN_SHARES_ROLE(), address(_lido()));
+
+        _assertSingleOZRoleHolder(_hashConsensusForAccountingOracle, DEFAULT_ADMIN_ROLE, address(this));
+        _assertZeroOZRoleHolders(_accountingOracle(), DEFAULT_ADMIN_ROLE);
+
+        _assertSingleOZRoleHolder(_hashConsensusForValidatorsExitBusOracle, DEFAULT_ADMIN_ROLE, address(this));
+        _assertZeroOZRoleHolders(_validatorsExitBusOracle(), DEFAULT_ADMIN_ROLE);
+        _assertZeroOZRoleHolders(_validatorsExitBusOracle(), _validatorsExitBusOracle().RESUME_ROLE());
+        _assertZeroOZRoleHolders(_validatorsExitBusOracle(), _validatorsExitBusOracle().PAUSE_ROLE());
+
+        _assertZeroOZRoleHolders(_stakingRouter(), DEFAULT_ADMIN_ROLE);
+        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().STAKING_MODULE_PAUSE_ROLE());
+        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().STAKING_MODULE_RESUME_ROLE());
+        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().REPORT_EXITED_VALIDATORS_ROLE());
+        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().REPORT_REWARDS_MINTED_ROLE());
+
+        _assertZeroOZRoleHolders(_withdrawalQueue(), DEFAULT_ADMIN_ROLE);
+        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().RESUME_ROLE());
+        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().PAUSE_ROLE());
+        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().FINALIZE_ROLE());
+        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().ORACLE_ROLE());
     }
 
     function _assertCorrectDSMParameters() internal view {
@@ -434,19 +431,6 @@ contract ShapellaUpgradeTemplate {
         _validatorsExitBusOracle().proxy__upgradeTo(_validatorsExitBusOracleImplementation);
         _stakingRouter().proxy__upgradeTo(_stakingRouterImplementation);
         _withdrawalQueue().proxy__upgradeTo(_withdrawalQueueImplementation);
-    }
-
-    function _assertNonProxyOZAccessControlContractsAdmin(address admin) internal view {
-        _assertSingleOZRoleHolder(_hashConsensusForAccountingOracle, DEFAULT_ADMIN_ROLE, admin);
-        _assertSingleOZRoleHolder(_hashConsensusForValidatorsExitBusOracle, DEFAULT_ADMIN_ROLE, admin);
-        _assertSingleOZRoleHolder(_burner(), DEFAULT_ADMIN_ROLE, admin);
-    }
-
-    function _assertProxyOZAccessControlContractsAdmin(address admin) internal view {
-        _assertSingleOZRoleHolder(_accountingOracle(), DEFAULT_ADMIN_ROLE, admin);
-        _assertSingleOZRoleHolder(_stakingRouter(), DEFAULT_ADMIN_ROLE, admin);
-        _assertSingleOZRoleHolder(_validatorsExitBusOracle(), DEFAULT_ADMIN_ROLE, admin);
-        _assertSingleOZRoleHolder(_withdrawalQueue(), DEFAULT_ADMIN_ROLE, admin);
     }
 
     function _assertAdminsOfProxies(address admin) internal view {
@@ -474,8 +458,10 @@ contract ShapellaUpgradeTemplate {
         _assertZeroOZRoleHolders(checker, checker.MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE());
         _assertZeroOZRoleHolders(checker, checker.REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE());
         _assertZeroOZRoleHolders(checker, checker.MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE());
+    }
 
-        LimitsList memory limitsList = checker.getOracleReportLimits();
+    function _assertOracleReportSanityCheckerParameters() internal view {
+        LimitsList memory limitsList = _oracleReportSanityChecker().getOracleReportLimits();
         if (
             limitsList.churnValidatorsPerDayLimit != sanityLimit_churnValidatorsPerDayLimit
          || limitsList.oneOffCLBalanceDecreaseBPLimit != sanityLimit_oneOffCLBalanceDecreaseBPLimit
@@ -550,28 +536,7 @@ contract ShapellaUpgradeTemplate {
         }
     }
 
-    function _assertCorrectInitialRoleHolders() internal view {
-        _assertSingleOZRoleHolder(_burner(), _burner().REQUEST_BURN_SHARES_ROLE(), address(_lido()));
-
-        _assertZeroOZRoleHolders(_accountingOracle(), DEFAULT_ADMIN_ROLE);
-
-        _assertZeroOZRoleHolders(_stakingRouter(), DEFAULT_ADMIN_ROLE);
-        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().STAKING_MODULE_PAUSE_ROLE());
-        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().STAKING_MODULE_RESUME_ROLE());
-        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().REPORT_EXITED_VALIDATORS_ROLE());
-        _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().REPORT_REWARDS_MINTED_ROLE());
-
-        _assertZeroOZRoleHolders(_validatorsExitBusOracle(), DEFAULT_ADMIN_ROLE);
-        _assertZeroOZRoleHolders(_validatorsExitBusOracle(), _validatorsExitBusOracle().PAUSE_ROLE());
-
-        _assertZeroOZRoleHolders(_withdrawalQueue(), DEFAULT_ADMIN_ROLE);
-        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().PAUSE_ROLE());
-        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().FINALIZE_ROLE());
-        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().ORACLE_ROLE());
-    }
-
     function _initializeAccountingOracle() internal {
-
         // NB: HashConsensus.updateInitialEpoch must be called after AccountingOracle implementation is bound to proxy
         _hashConsensusForAccountingOracle.updateInitialEpoch(_calcInitialEpochForAccountingOracleHashConsensus());
 
@@ -707,36 +672,50 @@ contract ShapellaUpgradeTemplate {
     function _assertUpgradeIsFinishedCorrectly() internal view {
         _checkContractVersions();
 
-        _assertAdminsOfProxies(_agent);
-        _assertProxyOZAccessControlContractsAdmin(_agent);
-        _assertNonProxyOZAccessControlContractsAdmin(_agent);
-        _assertOracleDaemonConfigRoles();
+        _assertFinalACL();
+
         _assertOracleDaemonConfigParameters();
+        _assertOracleReportSanityCheckerParameters();
+        _assertCorrectDSMParameters();
+        _assertGateSealSealables();
+        _assertCorrectOracleAndConsensusContractsBinding(_accountingOracle(), _hashConsensusForAccountingOracle);
+        _assertCorrectOracleAndConsensusContractsBinding(_validatorsExitBusOracle(), _hashConsensusForValidatorsExitBusOracle);
+        _assertCorrectStakingModule();
+        if (_withdrawalQueue().isPaused()) revert WQNotResumed();
+        if (_validatorsExitBusOracle().isPaused()) revert VEBONotResumed();
+    }
+
+    function _assertFinalACL() internal view {
+        if (_withdrawalVault().proxy_getAdmin() != _voting) revert WrongProxyAdmin(address(_withdrawalVault()));
+        _assertAdminsOfProxies(_agent);
+
+        if (_depositSecurityModule().getOwner() != _agent) revert WrongDsmOwner();
+
+        _assertOracleDaemonConfigRoles();
         _assertOracleReportSanityCheckerRoles();
 
-        _assertGateSealSealables();
+        _assertSingleOZRoleHolder(_burner(), DEFAULT_ADMIN_ROLE, _agent);
+        _assertTwoOZRoleHolders(_burner(), _burner().REQUEST_BURN_SHARES_ROLE(), address(_lido()), address(_nodeOperatorsRegistry));
 
-        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().RESUME_ROLE());
-        _assertSingleOZRoleHolder(_withdrawalQueue(), _withdrawalQueue().PAUSE_ROLE(), _gateSeal);
-        _assertSingleOZRoleHolder(_withdrawalQueue(), _withdrawalQueue().FINALIZE_ROLE(), address(_lido()));
-        _assertSingleOZRoleHolder(_withdrawalQueue(), _withdrawalQueue().ORACLE_ROLE(), address(_accountingOracle()));
+        _assertSingleOZRoleHolder(_hashConsensusForAccountingOracle, DEFAULT_ADMIN_ROLE, _agent);
+        _assertSingleOZRoleHolder(_accountingOracle(), DEFAULT_ADMIN_ROLE, _agent);
+
+        _assertSingleOZRoleHolder(_hashConsensusForValidatorsExitBusOracle, DEFAULT_ADMIN_ROLE, _agent);
+        _assertSingleOZRoleHolder(_validatorsExitBusOracle(), DEFAULT_ADMIN_ROLE, _agent);
+        _assertZeroOZRoleHolders(_validatorsExitBusOracle(), _validatorsExitBusOracle().RESUME_ROLE());
+        _assertSingleOZRoleHolder(_validatorsExitBusOracle(), _validatorsExitBusOracle().PAUSE_ROLE(), _gateSeal);
+
+        _assertSingleOZRoleHolder(_stakingRouter(), DEFAULT_ADMIN_ROLE, _agent);
         _assertZeroOZRoleHolders(_stakingRouter(), _stakingRouter().STAKING_MODULE_RESUME_ROLE());
         _assertSingleOZRoleHolder(_stakingRouter(), _stakingRouter().STAKING_MODULE_PAUSE_ROLE(), address(_depositSecurityModule()));
         _assertSingleOZRoleHolder(_stakingRouter(), _stakingRouter().REPORT_EXITED_VALIDATORS_ROLE(), address(_accountingOracle()));
         _assertSingleOZRoleHolder(_stakingRouter(), _stakingRouter().REPORT_REWARDS_MINTED_ROLE(), address(_lido()));
-        _assertTwoOZRoleHolders(_burner(), _burner().REQUEST_BURN_SHARES_ROLE(), address(_lido()), address(_nodeOperatorsRegistry));
-        _assertZeroOZRoleHolders(_validatorsExitBusOracle(), _validatorsExitBusOracle().RESUME_ROLE());
-        _assertSingleOZRoleHolder(_validatorsExitBusOracle(), _validatorsExitBusOracle().PAUSE_ROLE(), _gateSeal);
 
-        if (_depositSecurityModule().getOwner() != _agent) revert WrongDsmOwner();
-
-        _assertCorrectOracleAndConsensusContractsBinding(_accountingOracle(), _hashConsensusForAccountingOracle);
-        _assertCorrectOracleAndConsensusContractsBinding(_validatorsExitBusOracle(), _hashConsensusForValidatorsExitBusOracle);
-
-        if (_withdrawalQueue().isPaused()) revert WQNotResumed();
-        if (_validatorsExitBusOracle().isPaused()) revert VEBONotResumed();
-
-        _assertCorrectStakingModule();
+        _assertSingleOZRoleHolder(_withdrawalQueue(), DEFAULT_ADMIN_ROLE, _agent);
+        _assertZeroOZRoleHolders(_withdrawalQueue(), _withdrawalQueue().RESUME_ROLE());
+        _assertSingleOZRoleHolder(_withdrawalQueue(), _withdrawalQueue().PAUSE_ROLE(), _gateSeal);
+        _assertSingleOZRoleHolder(_withdrawalQueue(), _withdrawalQueue().FINALIZE_ROLE(), address(_lido()));
+        _assertSingleOZRoleHolder(_withdrawalQueue(), _withdrawalQueue().ORACLE_ROLE(), address(_accountingOracle()));
     }
 
     function _assertGateSealSealables() internal view {
@@ -749,7 +728,6 @@ contract ShapellaUpgradeTemplate {
             revert WrongSealGateSealables();
         }
     }
-
 
     function _assertCorrectStakingModule() internal view {
         IStakingRouter sr = _stakingRouter();

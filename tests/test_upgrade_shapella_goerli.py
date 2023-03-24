@@ -136,14 +136,14 @@ def test_vote(
     for permission in permissions_to_revoke:
         assert acl.hasPermission(*permission), f"No starting role {permission.role} on {permission.entity}"
 
-    if shapella_upgrade_template != "":
-        template = ShapellaUpgradeTemplate.at(shapella_upgrade_template)
-        template.assertCorrectInitialState()
-
     # START VOTE
     _, vote_transactions = start_and_execute_votes(contracts.voting, helpers)
     tx = vote_transactions[0]
-    template = ShapellaUpgradeTemplate.at(ContractsLazyLoader.upgrade_template)
+    template = (
+        ShapellaUpgradeTemplate.at(shapella_upgrade_template)
+        if shapella_upgrade_template != ""
+        else ShapellaUpgradeTemplate.at(ContractsLazyLoader.upgrade_template)
+    )
 
     # DEBUG: Uncomment if want to make part of the upgrade as a separate tx
     # template.startUpgrade({'from': contracts.voting.address})
