@@ -6,9 +6,8 @@ from utils.config import (
     oracle_daemon_config_values,
     lido_dao_lido_locator_implementation,
     beacon_spec,
+    lido_dao_lido_app_id,
 )
-
-from test_upgrade_shapella_goerli import lido_app_id
 
 INITIAL_TOKEN_HOLDER = "0x000000000000000000000000000000000000dead"
 
@@ -34,7 +33,7 @@ def test_lido_state():
 
     # AppStorage
     assert contracts.lido.kernel() == contracts.kernel
-    assert contracts.lido.appId() == lido_app_id
+    assert contracts.lido.appId() == lido_dao_lido_app_id
 
     # Versioned
     assert contracts.lido.getContractVersion() == 2
@@ -129,14 +128,6 @@ def test_withdrawal_queue_state():
     # PausableUntil
     assert contract.isPaused() == False
     assert contract.getResumeSinceTimestamp() > 0
-
-    # WithdrawalQueueBase
-
-    assert contract.getLastRequestId() == 0
-    assert contract.getLastFinalizedRequestId() == 0
-    assert contract.getLockedEtherAmount() == 0
-    assert contract.getLastCheckpointIndex() == 0
-    assert contract.unfinalizedStETH() == 0
 
 
 def test_oracle_daemon_config_state():

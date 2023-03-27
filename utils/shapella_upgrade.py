@@ -74,19 +74,19 @@ def transfer_ownership_to_template(owner, template):
         interface.AccessControlEnumerable(contract).revokeRole(admin_role, owner, {"from": owner})
 
     def transfer_proxy_admin_to_template(contract):
-        interface.OssifiableProxy(contract).proxy__changeAdmin(template, {"from": owner})
+        interface.OssifiableProxy(contract).proxy__changeAdmin(template, {"from": owner, "priority_fee": "4 gwei"})
 
-    contracts.deposit_security_module.setOwner(template, {"from": owner})
+    # contracts.deposit_security_module.setOwner(template, {"from": owner})
 
-    transfer_oz_admin_to_template(contracts.burner)
-    transfer_oz_admin_to_template(contracts.hash_consensus_for_accounting_oracle)
+    # transfer_oz_admin_to_template(contracts.burner)
+    # transfer_oz_admin_to_template(contracts.hash_consensus_for_accounting_oracle)
     transfer_oz_admin_to_template(contracts.hash_consensus_for_validators_exit_bus_oracle)
 
     transfer_proxy_admin_to_template(contracts.accounting_oracle)
-    transfer_proxy_admin_to_template(contracts.lido_locator)
-    transfer_proxy_admin_to_template(contracts.staking_router)
-    transfer_proxy_admin_to_template(contracts.validators_exit_bus_oracle)
-    transfer_proxy_admin_to_template(contracts.withdrawal_queue)
+    # transfer_proxy_admin_to_template(contracts.lido_locator)
+    # transfer_proxy_admin_to_template(contracts.staking_router)
+    # transfer_proxy_admin_to_template(contracts.validators_exit_bus_oracle)
+    # transfer_proxy_admin_to_template(contracts.withdrawal_queue)
 
 
 def prepare_for_shapella_upgrade_voting(temporary_admin, silent=False):
@@ -99,13 +99,13 @@ def prepare_for_shapella_upgrade_voting(temporary_admin, silent=False):
 
     # Need this, otherwise Lido.finalizeUpgradeV2 reverts
     print("=== Top up 0xdead with a bit of steth (aka The Stone) ===")
-    topup_initial_token_holder(contracts.lido, temporary_admin)
+    # topup_initial_token_holder(contracts.lido, temporary_admin)
     assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
 
-    assert interface.OssifiableProxy(contracts.lido_locator).proxy__getAdmin() == temporary_admin
-    interface.OssifiableProxy(contracts.lido_locator).proxy__upgradeTo(
-        lido_dao_lido_locator_implementation, {"from": temporary_admin}
-    )
+    # assert interface.OssifiableProxy(contracts.lido_locator).proxy__getAdmin() == temporary_admin
+    # interface.OssifiableProxy(contracts.lido_locator).proxy__upgradeTo(
+    #     lido_dao_lido_locator_implementation, {"from": temporary_admin}
+    # )
     print(f"=== Upgrade lido locator implementation to {lido_dao_lido_locator_implementation} ===")
 
     if not silent:

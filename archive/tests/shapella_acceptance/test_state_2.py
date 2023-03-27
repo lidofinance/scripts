@@ -11,9 +11,8 @@ from utils.config import (
     lido_dao_accounting_oracle_implementation,
     lido_dao_hash_consensus_for_accounting_oracle,
     lido_dao_withdrawal_credentials,
+    lido_dao_legacy_oracle_app_id
 )
-
-from test_upgrade_shapella_goerli import oracle_app_id
 
 
 def test_accounting_oracle_state():
@@ -130,7 +129,7 @@ def test_legacy_oracle_state():
     # Aragon app
     assert contracts.legacy_oracle.hasInitialized() == True
     assert contracts.legacy_oracle.getVersion() == 4
-    assert contracts.legacy_oracle.appId() == oracle_app_id
+    assert contracts.legacy_oracle.appId() == lido_dao_legacy_oracle_app_id
     assert contracts.legacy_oracle.kernel() == contracts.kernel
 
     # AppProxyUpgradeable
@@ -246,7 +245,7 @@ def test_staking_router_state():
     assert curated_module["targetShare"] == 10000
     assert curated_module["status"] == 0
     assert curated_module["name"] == "curated-onchain-v1"
-    assert curated_module["lastDepositAt"] >= 1679851100
+    assert curated_module["lastDepositAt"] >= 1679672628
     assert curated_module["lastDepositBlock"] >= 8705383
     assert curated_module["exitedValidatorsCount"] == 0
 

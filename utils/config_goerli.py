@@ -17,6 +17,9 @@ lido_dao_voting_repo = "0x14de4f901cE0B81F4EfcA594ad7b70935C276806"
 lido_dao_lido_repo = "0xe9ede497d2417fd980d8b5338232666641b9b9ac"
 lido_dao_node_operators_registry_repo = "0x5f867429616b380f1ca7a7283ff18c53a0033073"
 lido_dao_legacy_oracle_repo = "0x9234e37Adeb44022A078557D9943b72AB89bF36a"
+# Aragon app ids
+lido_dao_legacy_oracle_app_id = "0x79ac01111b462384f1b7fba84a17b9ec1f5d2fddcfcb99487d71b443832556ea"
+lido_dao_lido_app_id = "0xb2977cfc13b000b6807b9ae3cf4d938f4cc8ba98e1d68ad911c58924d6aa4f11"
 
 curve_rewards_manager_address = ""
 balancer_rewards_manager = ""
