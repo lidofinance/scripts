@@ -2,11 +2,9 @@ from brownie import ShapellaUpgradeTemplate, interface
 from utils.config import (
     contracts,
     lido_dao_lido_locator_implementation,
-    ldo_vote_executors_for_tests,
     shapella_upgrade_template_address,
     prompt_bool,
 )
-from pprint import pprint
 
 # Private constant taken from Lido contract
 INITIAL_TOKEN_HOLDER = "0x000000000000000000000000000000000000dEaD"
@@ -19,51 +17,6 @@ def topup_initial_token_holder(lido, funder):
 def deploy_shapella_upgrade_template(deployer):
     template = ShapellaUpgradeTemplate.deploy({"from": deployer})
     return template
-
-
-def get_template_configuration(template_address):
-    template = ShapellaUpgradeTemplate.at(template_address)
-    config = {
-        "_accountingOracleConsensusVersion": template._accountingOracleConsensusVersion(),
-        "_validatorsExitBusOracleConsensusVersion": template._validatorsExitBusOracleConsensusVersion(),
-        "_nodeOperatorsRegistryStakingModuleType": template._nodeOperatorsRegistryStakingModuleType(),
-        "_locator": template._locator(),
-        "_eip712StETH": template._eip712StETH(),
-        "_voting": template._voting(),
-        "_nodeOperatorsRegistry": template._nodeOperatorsRegistry(),
-        "_hashConsensusForAccountingOracle": template._hashConsensusForAccountingOracle(),
-        "_hashConsensusForValidatorsExitBusOracle": template._hashConsensusForValidatorsExitBusOracle(),
-        "_gateSeal": template._gateSeal(),
-        "_withdrawalCredentials": template._withdrawalCredentials(),
-        "_nodeOperatorsRegistryStuckPenaltyDelay": template._nodeOperatorsRegistryStuckPenaltyDelay(),
-        "_withdrawalQueueImplementation": template._withdrawalQueueImplementation(),
-        "_stakingRouterImplementation": template._stakingRouterImplementation(),
-        "_accountingOracleImplementation": template._accountingOracleImplementation(),
-        "_validatorsExitBusOracleImplementation": template._validatorsExitBusOracleImplementation(),
-        "_validatorsExitBusOracleImplementation": template._withdrawalVaultImplementation(),
-    }
-    return config
-
-
-def debug_locator_addresses(locator_address):
-    locator = interface.LidoLocator(locator_address)
-    locator_config = {
-        "accountingOracle": locator.accountingOracle(),
-        "depositSecurityModule": locator.depositSecurityModule(),
-        "elRewardsVault": locator.elRewardsVault(),
-        "legacyOracle": locator.legacyOracle(),
-        "lido": locator.lido(),
-        "oracleReportSanityChecker": locator.oracleReportSanityChecker(),
-        "postTokenRebaseReceiver": locator.postTokenRebaseReceiver(),
-        "burner": locator.burner(),
-        "stakingRouter": locator.stakingRouter(),
-        "treasury": locator.treasury(),
-        "validatorsExitBusOracle": locator.validatorsExitBusOracle(),
-        "withdrawalQueue": locator.withdrawalQueue(),
-        "withdrawalVault": locator.withdrawalVault(),
-        "oracleDaemonConfig": locator.oracleDaemonConfig(),
-    }
-    pprint(locator_config)
 
 
 def transfer_ownership_to_template(owner, template):

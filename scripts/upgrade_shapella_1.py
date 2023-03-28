@@ -23,9 +23,7 @@ from typing import Dict, Tuple, Optional
 from brownie.network.transaction import TransactionReceipt
 from brownie import ShapellaUpgradeTemplate
 
-from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
-from utils.evm_script import encode_call_script
 from utils.repo import (
     add_implementation_to_lido_app_repo,
     add_implementation_to_nos_app_repo,
@@ -39,7 +37,6 @@ from utils.config import (
     lido_dao_staking_router,
     lido_dao_withdrawal_vault,
     lido_dao_withdrawal_vault_implementation,
-    shapella_upgrade_template_address,
 )
 from utils.permissions import encode_permission_create
 
