@@ -10,10 +10,8 @@ Includes:
 import time
 
 from brownie import ShapellaUpgradeTemplate
-from utils.shapella_upgrade import deploy_shapella_upgrade_template
 from utils.config import (
     get_deployer_account,
-    network_name,
     deployer_eoa,
 )
 
@@ -25,7 +23,7 @@ def main():
     deployer = get_deployer_account()
     assert deployer == deployer_eoa, "Need to set DEPLOYER to the deployer_eoa"
 
-    template = ShapellaUpgradeTemplate.deploy({"from": deployer})
+    template = ShapellaUpgradeTemplate.deploy("INVALID_ARG_REPLACE_ME", {"from": deployer})
     print(f"Shapella upgrade template is deployed at {template}")
 
     ShapellaUpgradeTemplate.publish_source(template)

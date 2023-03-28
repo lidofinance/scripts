@@ -9,13 +9,11 @@ from utils.config import (
 # Private constant taken from Lido contract
 INITIAL_TOKEN_HOLDER = "0x000000000000000000000000000000000000dEaD"
 
-
-def topup_initial_token_holder(lido, funder):
-    lido.transfer(INITIAL_TOKEN_HOLDER, 2, {"from": funder})
+FAR_FUTURE_TIMESTAMP = 2532100931
 
 
 def deploy_shapella_upgrade_template(deployer):
-    template = ShapellaUpgradeTemplate.deploy({"from": deployer})
+    template = ShapellaUpgradeTemplate.deploy(FAR_FUTURE_TIMESTAMP, {"from": deployer})
     return template
 
 

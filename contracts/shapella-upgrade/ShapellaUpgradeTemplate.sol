@@ -431,29 +431,46 @@ contract ShapellaUpgradeTemplate {
     string public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_KEY = "NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP";
     bytes public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_VALUE = hex"64";
 
+    // Immutables
+    // Timestamp since any external function of the contract reverts with Expired()
+    uint256 public EXPIRES_SINCE_INCLUSIVE;
+
     //
     // Structured storage
     //
     bool public _isUpgradeStarted;
     bool public _isUpgradeFinished;
 
+    constructor(uint256 expiresSinceInclusive) {
+        if (expiresSinceInclusive <= block.timestamp) revert ExpireSinceMustBeInFuture();
+
+        EXPIRES_SINCE_INCLUSIVE = expiresSinceInclusive;
+    }
+
     /// Need to be called before LidoOracle implementation is upgraded to LegacyOracle
     function startUpgrade() external {
+        _revertIfExpired();
         _startUpgrade();
     }
 
     /// Need to be called after LidoOracle implementation is upgraded to LegacyOracle
     function finishUpgrade() external {
+        _revertIfExpired();
+
         _finishUpgrade();
     }
 
     /// Perform basic checks to revert the entire upgrade if something gone wrong
     function assertUpgradeIsFinishedCorrectly() external view {
+        _revertIfExpired();
+
         _assertUpgradeIsFinishedCorrectly();
     }
 
     /// Needed for 2nd Aragon voting (roles revoke) to fail if 1st voting isn't enacted
     function revertIfUpgradeNotEnacted() external view {
+        _revertIfExpired();
+
         if (!_isUpgradeFinished) {
             revert UpgradeNotEnacted();
         }
@@ -946,6 +963,10 @@ contract ShapellaUpgradeTemplate {
         accessControlled.renounceRole(DEFAULT_ADMIN_ROLE, address(this));
     }
 
+    function _revertIfExpired() internal view {
+        if (block.timestamp >= EXPIRES_SINCE_INCLUSIVE) revert Expired();
+    }
+
     function _resumeWithdrawalQueue() internal {
         IWithdrawalQueue wq = _withdrawalQueue;
         bytes32 resume_role = wq.RESUME_ROLE();
@@ -990,4 +1011,6 @@ contract ShapellaUpgradeTemplate {
     error WrongLocatorAddresses();
     error WrongAragonAppImplementation(address repo, address implementation);
     error WrongFeeDistribution();
+    error Expired();
+    error ExpireSinceMustBeInFuture();
 }
