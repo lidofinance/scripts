@@ -405,9 +405,8 @@ contract ShapellaUpgradeTemplate {
             revert LidoOracleMustNotBeUpgradedToLegacyYet();
         }
         _assertInitialProxyImplementations();
-        _isUpgradeStarted = true;
 
-        _locator.proxy__upgradeTo(_locatorImplementation);
+        _isUpgradeStarted = true;
 
         _upgradeProxyImplementations();
 
@@ -415,14 +414,9 @@ contract ShapellaUpgradeTemplate {
         _assertInitialACL();
         _assertFeeDistribution();
 
-        _withdrawalVault.initialize();
-        _initializeWithdrawalQueue();
-        _initializeAccountingOracle();
-        _initializeValidatorsExitBus();
-        _initializeStakingRouter();
-
+        // Both rely on the old LidoOracle contract, so must be performed before update to the LegacyOracle impl
         _migrateLidoOracleCommitteeMembers();
-        _migrateDSMGuardians();
+        _initializeAccountingOracle();
     }
 
     function _assertInitialACL() internal view {
@@ -498,6 +492,7 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _upgradeProxyImplementations() internal {
+        _locator.proxy__upgradeTo(_locatorImplementation);
         _accountingOracle.proxy__upgradeTo(_accountingOracleImplementation);
         _validatorsExitBusOracle.proxy__upgradeTo(_validatorsExitBusOracleImplementation);
         _stakingRouter.proxy__upgradeTo(_stakingRouterImplementation);
@@ -692,6 +687,15 @@ contract ShapellaUpgradeTemplate {
         }
         _isUpgradeFinished = true;
 
+        _withdrawalVault.initialize();
+
+
+        _initializeWithdrawalQueue();
+
+        _initializeValidatorsExitBus();
+
+        _initializeStakingRouter();
+
         _legacyOracle.finalizeUpgrade_v4(address(_accountingOracle));
 
         _lido.finalizeUpgrade_v2(address(_locator), _eip712StETH);
@@ -701,6 +705,8 @@ contract ShapellaUpgradeTemplate {
             NODE_OPERATORS_REGISTRY_STAKING_MODULE_TYPE,
             NODE_OPERATORS_REGISTRY_STUCK_PENALTY_DELAY
         );
+
+        _migrateDSMGuardians();
 
         _attachNORToStakingRouter();
 
