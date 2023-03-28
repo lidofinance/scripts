@@ -36,6 +36,10 @@ interface IAccountingOracle is IBaseOracle, IOssifiableProxy {
     function initialize(address admin, address consensusContract, uint256 consensusVersion) external;
 }
 
+interface IAragonAppRepo {
+    function getLatest() external view returns (uint16[3] memory, address, bytes memory);
+}
+
 interface IBurner is IAccessControlEnumerable {
     function REQUEST_BURN_SHARES_ROLE() external view returns (bytes32);
 }
@@ -65,6 +69,21 @@ interface IHashConsensus is IAccessControlEnumerable {
 
 interface ILido is IVersioned {
     function finalizeUpgrade_v2(address lidoLocator, address eip712StETH) external;
+
+    /**
+     * @notice Returns current fee distribution
+     * @dev DEPRECATED: Now fees information is stored in StakingRouter and
+     * with higher precision. Use StakingRouter.getStakingFeeAggregateDistribution() instead.
+     * @return treasuryFeeBasisPoints return treasury fee in TOTAL_BASIS_POINTS (10000 is 100% fee) precision
+     * @return insuranceFeeBasisPoints always returns 0 because the capability to send fees to
+     * insurance from Lido contract is removed.
+     * @return operatorsFeeBasisPoints return total fee for all operators of all staking modules in
+     * TOTAL_BASIS_POINTS (10000 is 100% fee) precision.
+     * Previously returned total fee of all node operators of NodeOperatorsRegistry (Curated staking module now)
+     * The value might be inaccurate because the actual value is truncated here to 1e4 precision.
+     */
+    function getFeeDistribution() external view
+        returns (uint16 treasuryFeeBasisPoints, uint16 insuranceFeeBasisPoints, uint16 operatorsFeeBasisPoints);
 }
 
 interface ILidoLocator is IOssifiableProxy {
@@ -256,43 +275,51 @@ contract ShapellaUpgradeTemplate {
     string public constant NOR_STAKING_MODULE_NAME = "curated-onchain-v1";
     bytes32 public constant _nodeOperatorsRegistryStakingModuleType = bytes32("curated-onchain-v1");
     uint256 public constant _nodeOperatorsRegistryStuckPenaltyDelay = 172800;
-    bytes32 public constant _withdrawalCredentials = 0x010000000000000000000000dc62f9e8c34be08501cdef4ebde0a280f576d762;
+    bytes32 public constant _withdrawalCredentials = 0x010000000000000000000000b9d7934878b5fb9610b3fe8a5e441e8fad7e293f;
     uint256 public constant NOR_STAKING_MODULE_ID = 1;
     uint256 public constant NOR_STAKING_MODULE_TARGET_SHARE_BP = 10000; // 100%
     uint256 public constant NOR_STAKING_MODULE_MODULE_FEE_BP = 500; // 5%
     uint256 public constant NOR_STAKING_MODULE_TREASURY_FEE_BP = 500; // 5%
     uint256 public constant VEBO_LAST_PROCESSING_REF_SLOT = 0;
 
-    ILidoLocator public constant _locator = ILidoLocator(0x1eDf09b5023DC86737b59dE68a8130De878984f5);
-    IHashConsensus public constant _hashConsensusForAccountingOracle = IHashConsensus(0x8d87A8BCF8d4e542fd396D1c50223301c164417b);
-    IHashConsensus public constant _hashConsensusForValidatorsExitBusOracle = IHashConsensus(0x8374B4aC337D7e367Ea1eF54bB29880C3f036A51);
-    address public constant _eip712StETH = 0xB4300103FfD326f77FfB3CA54248099Fb29C3b9e;
-    address public constant _voting = 0xbc0B67b4553f4CF52a913DE9A6eD0057E2E758Db;
-    address public constant _agent = 0x4333218072D5d7008546737786663c38B4D561A4;
-    INodeOperatorsRegistry public constant _nodeOperatorsRegistry = INodeOperatorsRegistry(0x9D4AF1Ee19Dad8857db3a45B0374c81c8A1C6320);
-    address public constant _gateSeal = 0x75A77AE52d88999D0b12C6e5fABB1C1ef7E92638;
-    address public constant _withdrawalQueueImplementation = 0xF7a378BB9E911550baA5e729f5Ab1592aDD905A5;
-    address public constant _stakingRouterImplementation = 0xb02791097DE4B7B83265C9516640C8223830a351;
-    address public constant _accountingOracleImplementation = 0x49cc40EE660BfD5f46423f04891502410d32E965;
-    address public constant _validatorsExitBusOracleImplementation = 0xBE378f865Ab69f51d8874aeB9508cbbC42B3FBDE;
-    address public constant _dummyImplementation = 0x6A03b1BbB79460169a205eFBCBc77ebE1011bCf8;
-    address public constant _locatorImplementation = 0x6D5b7439c166A1BDc5c8DB547c1a871c082CE22C;
-    address public constant _withdrawalVaultImplementation = 0x297Eb629655C8c488Eb26442cF4dfC8A7Cc32fFb;
-    address public constant _previousDepositSecurityModule = 0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe;
+    ILidoLocator public constant _locator = ILidoLocator(0xd75C357F32Df60A67111BAa62a168c0D644d1C32);
+    IHashConsensus public constant _hashConsensusForAccountingOracle = IHashConsensus(0x379EBeeD117c96380034c6a6234321e4e64fCa0B);
+    IHashConsensus public constant _hashConsensusForValidatorsExitBusOracle = IHashConsensus(0x2330b9F113784a58d74c7DB49366e9FB792DeABf);
+    address public constant _eip712StETH = 0x8dF3c29C96fd4c4d496954646B8B6a48dFFcA83F;
+    address public constant _voting = 0x2e59A20f205bB85a89C53f1936454680651E618e;
+    address public constant _agent = 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c;
+    INodeOperatorsRegistry public constant _nodeOperatorsRegistry = INodeOperatorsRegistry(0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5);
+    address public constant _gateSeal = 0x0000000000000000000000000000000000000001;
+    address public constant _withdrawalQueueImplementation = 0x5EfF11Cb6bD446370FC3ce46019F2b501ba06c2D;
+    address public constant _stakingRouterImplementation = 0x4384fB5DcaC0576B93e36b8af6CdfEB739888894;
+    address public constant _accountingOracleImplementation = 0x115065ad19aDae715576b926CF6e26067F64e741;
+    address public constant _validatorsExitBusOracleImplementation = 0xfdfad30ae5e5c9Dc4fb51aC35AB60674FcBdefB3;
+    address public constant _dummyImplementation = 0xE2f969983c8859E986d6e19892EDBd1eea7371D2;
+    address public constant _locatorImplementation = 0x7948f9cf80D99DDb7C7258Eb23a693E9dFBc97EC;
+    address public constant _withdrawalVaultImplementation = 0x654f166BA493551899212917d8eAa30CE977b794;
+    address public constant _previousDepositSecurityModule = 0x710B3303fB508a84F10793c1106e32bE873C24cd;
+    IAragonAppRepo public constant _aragonAppLidoRepo = IAragonAppRepo(0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1);
+    IAragonAppRepo public constant _aragonAppNodeOperatorsRegistryRepo = IAragonAppRepo(0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1831);
+    IAragonAppRepo public constant _aragonAppLegacyOracleRepo = IAragonAppRepo(0xF9339DE629973c60c4d2b76749c81E6F40960E3A);
 
-    IAccountingOracle public constant _accountingOracle = IAccountingOracle(0x76f358A842defa0E179a8970767CFf668Fc134d6);
-    IBurner public constant _burner = IBurner(0x20c61C07C2E2FAb04BF5b4E12ce45a459a18f3B1);
-    IDepositSecurityModule public constant _depositSecurityModule = IDepositSecurityModule(0xC8a75E7196b11aE2DEbC39a2F8583f852E5BB7c3);
-    ILido public constant _lido = ILido(0x1643E812aE58766192Cf7D2Cf9567dF2C37e9B7F);
-    ILidoOracle public constant _lidoOracle = ILidoOracle(0x24d8451BC07e7aF4Ba94F69aCDD9ad3c6579D9FB);
+    IAccountingOracle public constant _accountingOracle = IAccountingOracle(0x9FE21EeCC385a1FeE057E58427Bfb9588E249231);
+    IBurner public constant _burner = IBurner(0xFc810b3F9acc7ee0C3820B5f7a9bb0ee88C3cBd2);
+    IDepositSecurityModule public constant _depositSecurityModule = IDepositSecurityModule(0xe44E11BBb629Dc23e72e6eAC4e538AaCb66A0c88);
+    ILido public constant _lido = ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
+    ILidoOracle public constant _lidoOracle = ILidoOracle(0x442af784A788A5bd6F42A01Ebe9F287a871243fb);
     // _legacyOracle has the same address as _lidoOracle: we're renaming the contract, but it's on the same address
     ILegacyOracle public constant _legacyOracle = ILegacyOracle(address(_lidoOracle));
-    IOracleDaemonConfig public constant _oracleDaemonConfig = IOracleDaemonConfig(0xad55833Dec7ab353B47691e58779Bd979d459388);
-    IOracleReportSanityChecker public constant _oracleReportSanityChecker = IOracleReportSanityChecker(0x0F3475f755FA356f1356ABC80B4aE4a786d8aae5);
-    IStakingRouter public constant _stakingRouter = IStakingRouter(0xa3Dbd317E53D363176359E10948BA0b1c0A4c820);
-    IValidatorsExitBusOracle public constant _validatorsExitBusOracle = IValidatorsExitBusOracle(0xb75A55EFab5A8f5224Ae93B34B25741EDd3da98b);
-    IWithdrawalQueue public constant _withdrawalQueue = IWithdrawalQueue(0xCF117961421cA9e546cD7f50bC73abCdB3039533);
-    IWithdrawalVault public constant _withdrawalVault = IWithdrawalVault(0xdc62f9e8C34be08501Cdef4EBDE0a280f576D762);
+    IOracleDaemonConfig public constant _oracleDaemonConfig = IOracleDaemonConfig(0xbA3981771AB991960028B2F83ae83664Fd003F61);
+    IOracleReportSanityChecker public constant _oracleReportSanityChecker = IOracleReportSanityChecker(0x499A11A07ebe21685953583B6DA9f237E792aEE3);
+    IStakingRouter public constant _stakingRouter = IStakingRouter(0x5A2a6cB5e0f57A30085A9411f7F5f07be8ad1Ec7);
+    IValidatorsExitBusOracle public constant _validatorsExitBusOracle = IValidatorsExitBusOracle(0x6e7Da71eF6E0Aaa85E59554C1FAe44128fA649Ed);
+    IWithdrawalQueue public constant _withdrawalQueue = IWithdrawalQueue(0xFb4E291D12734af4300B89585A16dF932160b840);
+    IWithdrawalVault public constant _withdrawalVault = IWithdrawalVault(0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f);
+
+    // Aragon Apps new implementations
+    address public constant _lidoImplementation = 0xAb3bcE27F31Ca36AAc6c6ec2bF3e79569105ec2c;
+    address public constant _nodeOperatorsRegistryImplementation = 0x9cBbA6CDA09C7dadA8343C4076c21eE06CCa4836;
+    address public constant _legacyOracleImplementation = 0xcA3cE6bf0CB2bbaC5dF3874232AE3F5b67C6b146;
 
     uint256 public constant EXPECTED_FINAL_LIDO_VERSION = 2;
     uint256 public constant EXPECTED_FINAL_NODE_OPERATORS_REGISTRY_VERSION = 2;
@@ -303,18 +330,18 @@ contract ShapellaUpgradeTemplate {
     uint256 public constant EXPECTED_FINAL_WITHDRAWAL_QUEUE_VERSION = 1;
     uint256 public constant EXPECTED_FINAL_WITHDRAWAL_VAULT_VERSION = 1;
 
-    uint256 public constant EXPECTED_DSM_MAX_DEPOSITS_PER_BLOCK = 0;
-    uint256 public constant EXPECTED_DSM_MIN_DEPOSIT_BLOCK_DISTANCE = 1200;
-    uint256 public constant EXPECTED_DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS = 10;
+    uint256 public constant EXPECTED_DSM_MAX_DEPOSITS_PER_BLOCK = 150;
+    uint256 public constant EXPECTED_DSM_MIN_DEPOSIT_BLOCK_DISTANCE = 5;  // TODO: change to 25 after redeploy
+    uint256 public constant EXPECTED_DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS = 6646;
 
-    uint256 public constant sanityLimit_churnValidatorsPerDayLimit = 1500;
+    uint256 public constant sanityLimit_churnValidatorsPerDayLimit = 12375;
     uint256 public constant sanityLimit_oneOffCLBalanceDecreaseBPLimit = 500;
     uint256 public constant sanityLimit_annualBalanceIncreaseBPLimit = 1000;
     uint256 public constant sanityLimit_simulatedShareRateDeviationBPLimit = 10;
     uint256 public constant sanityLimit_maxValidatorExitRequestsPerReport = 500;
     uint256 public constant sanityLimit_maxAccountingExtraDataListItemsCount = 500;
     uint256 public constant sanityLimit_maxNodeOperatorsPerExtraDataItemCount = 100;
-    uint256 public constant sanityLimit_requestTimestampMargin = 384;
+    uint256 public constant sanityLimit_requestTimestampMargin = 7680;
     uint256 public constant sanityLimit_maxPositiveTokenRebase = 750000;
 
     string public constant NORMALIZED_CL_REWARD_PER_EPOCH_KEY = "NORMALIZED_CL_REWARD_PER_EPOCH";
@@ -338,7 +365,7 @@ contract ShapellaUpgradeTemplate {
     string public constant PREDICTION_DURATION_IN_SLOTS_KEY = "PREDICTION_DURATION_IN_SLOTS";
     bytes public constant PREDICTION_DURATION_IN_SLOTS_VALUE = hex"c4e0";
 
-    string public constant FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFTS_KEY = "FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT";
+    string public constant FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_KEY = "FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT";
     bytes public constant FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_VALUE = hex"0546";
 
     string public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_KEY = "NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP";
@@ -385,6 +412,7 @@ contract ShapellaUpgradeTemplate {
 
         // Need to have the implementations attached to the proxies at this point
         _assertInitialACL();
+        _assertFeeDistribution();
 
         _withdrawalVault.initialize();
         _initializeWithdrawalQueue();
@@ -444,6 +472,16 @@ contract ShapellaUpgradeTemplate {
          || _locator.withdrawalVault() != address(_withdrawalVault)
         ) {
             revert WrongLocatorAddresses();
+        }
+    }
+
+    function _assertFeeDistribution() internal view {
+        // TODO: remove *10 after fix and redeploy
+        (uint16 treasuryFeeBasisPoints, , uint16 operatorsFeeBasisPoints) = _lido.getFeeDistribution();
+        if (NOR_STAKING_MODULE_MODULE_FEE_BP * 10 != operatorsFeeBasisPoints
+         || NOR_STAKING_MODULE_TREASURY_FEE_BP * 10 != treasuryFeeBasisPoints
+        ) {
+            revert WrongFeeDistribution();
         }
     }
 
@@ -523,7 +561,7 @@ contract ShapellaUpgradeTemplate {
         _assertKeyValue(VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS_KEY, VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS_VALUE);
         _assertKeyValue(VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS_KEY, VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS_VALUE);
         _assertKeyValue(PREDICTION_DURATION_IN_SLOTS_KEY, PREDICTION_DURATION_IN_SLOTS_VALUE);
-        _assertKeyValue(FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFTS_KEY, FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_VALUE);
+        _assertKeyValue(FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_KEY, FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_VALUE);
         _assertKeyValue(NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_KEY, NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_VALUE);
     }
 
@@ -711,15 +749,30 @@ contract ShapellaUpgradeTemplate {
 
         _assertFinalACL();
 
+        _assertNewAragonAppImplementations();
         _assertOracleDaemonConfigParameters();
         _assertOracleReportSanityCheckerParameters();
         _assertCorrectDSMParameters();
-        _assertGateSealSealables();
+        // TODO: restore the check when gateSeal gets deployed
+        // _assertGateSealSealables();
         _assertCorrectOracleAndConsensusContractsBinding(_accountingOracle, _hashConsensusForAccountingOracle);
         _assertCorrectOracleAndConsensusContractsBinding(_validatorsExitBusOracle, _hashConsensusForValidatorsExitBusOracle);
         _assertCorrectStakingModule();
         if (_withdrawalQueue.isPaused()) revert WQNotResumed();
         if (_validatorsExitBusOracle.isPaused()) revert VEBONotResumed();
+    }
+
+    function _assertNewAragonAppImplementations() internal view {
+        _assertSingleAragonAppImplementation(_aragonAppLidoRepo, _lidoImplementation);
+        _assertSingleAragonAppImplementation(_aragonAppNodeOperatorsRegistryRepo, _nodeOperatorsRegistryImplementation);
+        _assertSingleAragonAppImplementation(_aragonAppLegacyOracleRepo, _legacyOracleImplementation);
+    }
+
+    function _assertSingleAragonAppImplementation(IAragonAppRepo repo, address implementation) internal view {
+        (, address actualImplementation, ) = repo.getLatest();
+        if (actualImplementation != implementation) {
+            revert WrongAragonAppImplementation(address(repo), implementation);
+        }
     }
 
     function _assertFinalACL() internal view {
@@ -867,4 +920,6 @@ contract ShapellaUpgradeTemplate {
     error WrongStakingModuleParameters();
     error WrongOracleDaemonConfigKeyValue(string key);
     error WrongLocatorAddresses();
+    error WrongAragonAppImplementation(address repo, address implementation);
+    error WrongFeeDistribution();
 }
