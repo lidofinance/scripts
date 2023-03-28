@@ -5,7 +5,7 @@ from typing import Any, Union, Optional, Dict
 
 from utils.brownie_prelude import *
 
-from brownie import network, accounts
+from brownie import network, accounts, ShapellaUpgradeTemplate
 from brownie.utils import color
 from brownie.network.account import Account, LocalAccount
 
@@ -211,6 +211,13 @@ class ContractsLazyLoader:
     @property
     def wsteth(self) -> interface.WstETH:
         return interface.WstETH(wsteth_token_address)
+
+    @property
+    def shapella_upgrade_template(self) -> ShapellaUpgradeTemplate:
+        if shapella_upgrade_template_address != "":
+            return ShapellaUpgradeTemplate.at(shapella_upgrade_template_address)
+        else:
+            return ShapellaUpgradeTemplate.at(ContractsLazyLoader.upgrade_template)
 
 
 def __getattr__(name: str) -> Any:

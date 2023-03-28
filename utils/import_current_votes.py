@@ -9,7 +9,7 @@ from utils.config import (
     ldo_holder_address_for_tests,
     ContractsLazyLoader,
     deployer_eoa,
-    shapella_upgrade_template,
+    shapella_upgrade_template_address,
     get_is_live,
 )
 from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
@@ -35,7 +35,7 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
         assert (
             shapella_upgrade_template != ""
         ), "If SKIP_SHAPELLA_PRELIMINARY_STEP is set 'shapella_upgrade_template' must be specified in the config"
-        ContractsLazyLoader.upgrade_template = shapella_upgrade_template
+        # ContractsLazyLoader.upgrade_template = shapella_upgrade_template
     else:
         assert (
             not get_is_live(),
