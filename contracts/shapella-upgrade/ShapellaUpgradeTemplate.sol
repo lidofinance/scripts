@@ -267,59 +267,68 @@ struct StakingModule {
 */
 contract ShapellaUpgradeTemplate {
 
-    bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
-    uint256 public constant NOT_INITIALIZED_CONTRACT_VERSION = 0;
-
-    uint256 public constant _accountingOracleConsensusVersion = 1;
-    uint256 public constant _validatorsExitBusOracleConsensusVersion = 1;
-    string public constant NOR_STAKING_MODULE_NAME = "curated-onchain-v1";
-    bytes32 public constant _nodeOperatorsRegistryStakingModuleType = bytes32("curated-onchain-v1");
-    uint256 public constant _nodeOperatorsRegistryStuckPenaltyDelay = 172800;
-    bytes32 public constant _withdrawalCredentials = 0x010000000000000000000000b9d7934878b5fb9610b3fe8a5e441e8fad7e293f;
-    uint256 public constant NOR_STAKING_MODULE_ID = 1;
-    uint256 public constant NOR_STAKING_MODULE_TARGET_SHARE_BP = 10000; // 100%
-    uint256 public constant NOR_STAKING_MODULE_MODULE_FEE_BP = 500; // 5%
-    uint256 public constant NOR_STAKING_MODULE_TREASURY_FEE_BP = 500; // 5%
-    uint256 public constant VEBO_LAST_PROCESSING_REF_SLOT = 0;
-
+    // New proxies
     ILidoLocator public constant _locator = ILidoLocator(0xd75C357F32Df60A67111BAa62a168c0D644d1C32);
+    IAccountingOracle public constant _accountingOracle = IAccountingOracle(0x9FE21EeCC385a1FeE057E58427Bfb9588E249231);
+    address public constant _eip712StETH = 0x8dF3c29C96fd4c4d496954646B8B6a48dFFcA83F;
+    INodeOperatorsRegistry public constant _nodeOperatorsRegistry = INodeOperatorsRegistry(0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5);
+    IStakingRouter public constant _stakingRouter = IStakingRouter(0x5A2a6cB5e0f57A30085A9411f7F5f07be8ad1Ec7);
+    IValidatorsExitBusOracle public constant _validatorsExitBusOracle = IValidatorsExitBusOracle(0x6e7Da71eF6E0Aaa85E59554C1FAe44128fA649Ed);
+    IWithdrawalQueue public constant _withdrawalQueue = IWithdrawalQueue(0xFb4E291D12734af4300B89585A16dF932160b840);
+
+    // New non-proxy contracts
     IHashConsensus public constant _hashConsensusForAccountingOracle = IHashConsensus(0x379EBeeD117c96380034c6a6234321e4e64fCa0B);
     IHashConsensus public constant _hashConsensusForValidatorsExitBusOracle = IHashConsensus(0x2330b9F113784a58d74c7DB49366e9FB792DeABf);
-    address public constant _eip712StETH = 0x8dF3c29C96fd4c4d496954646B8B6a48dFFcA83F;
-    address public constant _voting = 0x2e59A20f205bB85a89C53f1936454680651E618e;
-    address public constant _agent = 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c;
-    INodeOperatorsRegistry public constant _nodeOperatorsRegistry = INodeOperatorsRegistry(0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5);
+    // TODO: update gateSeal address
     address public constant _gateSeal = 0x0000000000000000000000000000000000000001;
+    IBurner public constant _burner = IBurner(0xFc810b3F9acc7ee0C3820B5f7a9bb0ee88C3cBd2);
+    IDepositSecurityModule public constant _depositSecurityModule = IDepositSecurityModule(0xe44E11BBb629Dc23e72e6eAC4e538AaCb66A0c88);
+    IOracleDaemonConfig public constant _oracleDaemonConfig = IOracleDaemonConfig(0xbA3981771AB991960028B2F83ae83664Fd003F61);
+    IOracleReportSanityChecker public constant _oracleReportSanityChecker = IOracleReportSanityChecker(0x499A11A07ebe21685953583B6DA9f237E792aEE3);
+
+    // New implementations
+    address public constant _withdrawalVaultImplementation = 0x654f166BA493551899212917d8eAa30CE977b794;
     address public constant _withdrawalQueueImplementation = 0x5EfF11Cb6bD446370FC3ce46019F2b501ba06c2D;
     address public constant _stakingRouterImplementation = 0x4384fB5DcaC0576B93e36b8af6CdfEB739888894;
     address public constant _accountingOracleImplementation = 0x115065ad19aDae715576b926CF6e26067F64e741;
     address public constant _validatorsExitBusOracleImplementation = 0xfdfad30ae5e5c9Dc4fb51aC35AB60674FcBdefB3;
     address public constant _dummyImplementation = 0xE2f969983c8859E986d6e19892EDBd1eea7371D2;
     address public constant _locatorImplementation = 0x7948f9cf80D99DDb7C7258Eb23a693E9dFBc97EC;
-    address public constant _withdrawalVaultImplementation = 0x654f166BA493551899212917d8eAa30CE977b794;
-    address public constant _previousDepositSecurityModule = 0x710B3303fB508a84F10793c1106e32bE873C24cd;
+
+    // Existing proxies and contracts
+    address public constant _agent = 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c;
     IAragonAppRepo public constant _aragonAppLidoRepo = IAragonAppRepo(0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1);
     IAragonAppRepo public constant _aragonAppNodeOperatorsRegistryRepo = IAragonAppRepo(0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1831);
     IAragonAppRepo public constant _aragonAppLegacyOracleRepo = IAragonAppRepo(0xF9339DE629973c60c4d2b76749c81E6F40960E3A);
-
-    IAccountingOracle public constant _accountingOracle = IAccountingOracle(0x9FE21EeCC385a1FeE057E58427Bfb9588E249231);
-    IBurner public constant _burner = IBurner(0xFc810b3F9acc7ee0C3820B5f7a9bb0ee88C3cBd2);
-    IDepositSecurityModule public constant _depositSecurityModule = IDepositSecurityModule(0xe44E11BBb629Dc23e72e6eAC4e538AaCb66A0c88);
     ILido public constant _lido = ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
     ILidoOracle public constant _lidoOracle = ILidoOracle(0x442af784A788A5bd6F42A01Ebe9F287a871243fb);
     // _legacyOracle has the same address as _lidoOracle: we're renaming the contract, but it's on the same address
     ILegacyOracle public constant _legacyOracle = ILegacyOracle(address(_lidoOracle));
-    IOracleDaemonConfig public constant _oracleDaemonConfig = IOracleDaemonConfig(0xbA3981771AB991960028B2F83ae83664Fd003F61);
-    IOracleReportSanityChecker public constant _oracleReportSanityChecker = IOracleReportSanityChecker(0x499A11A07ebe21685953583B6DA9f237E792aEE3);
-    IStakingRouter public constant _stakingRouter = IStakingRouter(0x5A2a6cB5e0f57A30085A9411f7F5f07be8ad1Ec7);
-    IValidatorsExitBusOracle public constant _validatorsExitBusOracle = IValidatorsExitBusOracle(0x6e7Da71eF6E0Aaa85E59554C1FAe44128fA649Ed);
-    IWithdrawalQueue public constant _withdrawalQueue = IWithdrawalQueue(0xFb4E291D12734af4300B89585A16dF932160b840);
+    address public constant _previousDepositSecurityModule = 0x710B3303fB508a84F10793c1106e32bE873C24cd;
+    address public constant _voting = 0x2e59A20f205bB85a89C53f1936454680651E618e;
     IWithdrawalVault public constant _withdrawalVault = IWithdrawalVault(0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f);
 
     // Aragon Apps new implementations
     address public constant _lidoImplementation = 0xAb3bcE27F31Ca36AAc6c6ec2bF3e79569105ec2c;
-    address public constant _nodeOperatorsRegistryImplementation = 0x9cBbA6CDA09C7dadA8343C4076c21eE06CCa4836;
     address public constant _legacyOracleImplementation = 0xcA3cE6bf0CB2bbaC5dF3874232AE3F5b67C6b146;
+    address public constant _nodeOperatorsRegistryImplementation = 0x9cBbA6CDA09C7dadA8343C4076c21eE06CCa4836;
+
+    // Values to set
+    uint256 public constant ACCOUNTING_ORACLE_CONSENSUS_VERSION = 1;
+    string public constant NOR_STAKING_MODULE_NAME = "curated-onchain-v1";
+    bytes32 public constant NODE_OPERATORS_REGISTRY_STAKING_MODULE_TYPE = bytes32("curated-onchain-v1");
+    uint256 public constant NODE_OPERATORS_REGISTRY_STUCK_PENALTY_DELAY = 172800;
+    bytes32 public constant WITHDRAWAL_CREDENTIALS = 0x010000000000000000000000b9d7934878b5fb9610b3fe8a5e441e8fad7e293f;
+    uint256 public constant NOR_STAKING_MODULE_ID = 1;
+    uint256 public constant NOR_STAKING_MODULE_TARGET_SHARE_BP = 10000; // 100%
+    uint256 public constant NOR_STAKING_MODULE_MODULE_FEE_BP = 500; // 5%
+    uint256 public constant NOR_STAKING_MODULE_TREASURY_FEE_BP = 500; // 5%
+    uint256 public constant VEBO_LAST_PROCESSING_REF_SLOT = 0;
+    uint256 public constant VALIDATORS_EXIT_BUS_ORACLE_CONSENSUS_VERSION = 1;
+
+    // Values for checks to compare with or other
+    bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
+    uint256 public constant NOT_INITIALIZED_CONTRACT_VERSION = 0;
 
     uint256 public constant EXPECTED_FINAL_LIDO_VERSION = 2;
     uint256 public constant EXPECTED_FINAL_NODE_OPERATORS_REGISTRY_VERSION = 2;
@@ -334,48 +343,40 @@ contract ShapellaUpgradeTemplate {
     uint256 public constant EXPECTED_DSM_MIN_DEPOSIT_BLOCK_DISTANCE = 5;  // TODO: change to 25 after redeploy
     uint256 public constant EXPECTED_DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS = 6646;
 
-    uint256 public constant sanityLimit_churnValidatorsPerDayLimit = 12375;
-    uint256 public constant sanityLimit_oneOffCLBalanceDecreaseBPLimit = 500;
-    uint256 public constant sanityLimit_annualBalanceIncreaseBPLimit = 1000;
-    uint256 public constant sanityLimit_simulatedShareRateDeviationBPLimit = 10;
-    uint256 public constant sanityLimit_maxValidatorExitRequestsPerReport = 500;
-    uint256 public constant sanityLimit_maxAccountingExtraDataListItemsCount = 500;
-    uint256 public constant sanityLimit_maxNodeOperatorsPerExtraDataItemCount = 100;
-    uint256 public constant sanityLimit_requestTimestampMargin = 7680;
-    uint256 public constant sanityLimit_maxPositiveTokenRebase = 750000;
+    uint256 public constant SANITY_LIMIT_churnValidatorsPerDayLimit = 12375;
+    uint256 public constant SANITY_LIMIT_oneOffCLBalanceDecreaseBPLimit = 500;
+    uint256 public constant SANITY_LIMIT_annualBalanceIncreaseBPLimit = 1000;
+    uint256 public constant SANITY_LIMIT_simulatedShareRateDeviationBPLimit = 10;
+    uint256 public constant SANITY_LIMIT_maxValidatorExitRequestsPerReport = 500;
+    uint256 public constant SANITY_LIMIT_maxAccountingExtraDataListItemsCount = 500;
+    uint256 public constant SANITY_LIMIT_maxNodeOperatorsPerExtraDataItemCount = 100;
+    uint256 public constant SANITY_LIMIT_requestTimestampMargin = 7680;
+    uint256 public constant SANITY_LIMIT_maxPositiveTokenRebase = 750000;
 
     string public constant NORMALIZED_CL_REWARD_PER_EPOCH_KEY = "NORMALIZED_CL_REWARD_PER_EPOCH";
     bytes public constant NORMALIZED_CL_REWARD_PER_EPOCH_VALUE = hex"40";
-
     string public constant NORMALIZED_CL_REWARD_MISTAKE_RATE_BP_KEY = "NORMALIZED_CL_REWARD_MISTAKE_RATE_BP";
     bytes public constant NORMALIZED_CL_REWARD_MISTAKE_RATE_BP_VALUE = hex"03e8";
-
     string public constant REBASE_CHECK_NEAREST_EPOCH_DISTANCE_KEY = "REBASE_CHECK_NEAREST_EPOCH_DISTANCE";
     bytes public constant REBASE_CHECK_NEAREST_EPOCH_DISTANCE_VALUE = hex"04";
-
     string public constant REBASE_CHECK_DISTANT_EPOCH_DISTANCE_KEY = "REBASE_CHECK_DISTANT_EPOCH_DISTANCE";
     bytes public constant REBASE_CHECK_DISTANT_EPOCH_DISTANCE_VALUE = hex"0a";
-
     string public constant VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS_KEY = "VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS";
     bytes public constant VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS_VALUE = hex"1c20";
-
     string public constant VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS_KEY = "VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS";
     bytes public constant VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS_VALUE = hex"5460";
-
     string public constant PREDICTION_DURATION_IN_SLOTS_KEY = "PREDICTION_DURATION_IN_SLOTS";
     bytes public constant PREDICTION_DURATION_IN_SLOTS_VALUE = hex"c4e0";
-
     string public constant FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_KEY = "FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT";
     bytes public constant FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_VALUE = hex"0546";
-
     string public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_KEY = "NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP";
     bytes public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_VALUE = hex"64";
 
     //
     // STRUCTURED STORAGE
     //
-    bool public isUpgradeStarted;
-    bool public isUpgradeFinished;
+    bool public _isUpgradeStarted;
+    bool public _isUpgradeFinished;
 
     /// Need to be called before LidoOracle implementation is upgraded to LegacyOracle
     function startUpgrade() external {
@@ -392,19 +393,19 @@ contract ShapellaUpgradeTemplate {
     }
 
     function revertIfUpgradeNotEnacted() external view {
-        if (!isUpgradeFinished) {
+        if (!_isUpgradeFinished) {
             revert UpgradeNotEnacted();
         }
     }
 
     function _startUpgrade() internal {
         if (msg.sender != _voting) revert OnlyVotingCanUpgrade();
-        if (isUpgradeStarted) revert CanOnlyStartOnce();
+        if (_isUpgradeStarted) revert CanOnlyStartOnce();
         if (_lidoOracle.getVersion() != EXPECTED_FINAL_LEGACY_ORACLE_VERSION - 1) {
             revert LidoOracleMustNotBeUpgradedToLegacyYet();
         }
         _assertInitialProxyImplementations();
-        isUpgradeStarted = true;
+        _isUpgradeStarted = true;
 
         _locator.proxy__upgradeTo(_locatorImplementation);
 
@@ -533,15 +534,15 @@ contract ShapellaUpgradeTemplate {
     function _assertOracleReportSanityCheckerParameters() internal view {
         LimitsList memory limitsList = _oracleReportSanityChecker.getOracleReportLimits();
         if (
-            limitsList.churnValidatorsPerDayLimit != sanityLimit_churnValidatorsPerDayLimit
-         || limitsList.oneOffCLBalanceDecreaseBPLimit != sanityLimit_oneOffCLBalanceDecreaseBPLimit
-         || limitsList.annualBalanceIncreaseBPLimit != sanityLimit_annualBalanceIncreaseBPLimit
-         || limitsList.simulatedShareRateDeviationBPLimit != sanityLimit_simulatedShareRateDeviationBPLimit
-         || limitsList.maxValidatorExitRequestsPerReport != sanityLimit_maxValidatorExitRequestsPerReport
-         || limitsList.maxAccountingExtraDataListItemsCount != sanityLimit_maxAccountingExtraDataListItemsCount
-         || limitsList.maxNodeOperatorsPerExtraDataItemCount != sanityLimit_maxNodeOperatorsPerExtraDataItemCount
-         || limitsList.requestTimestampMargin != sanityLimit_requestTimestampMargin
-         || limitsList.maxPositiveTokenRebase != sanityLimit_maxPositiveTokenRebase
+            limitsList.churnValidatorsPerDayLimit != SANITY_LIMIT_churnValidatorsPerDayLimit
+         || limitsList.oneOffCLBalanceDecreaseBPLimit != SANITY_LIMIT_oneOffCLBalanceDecreaseBPLimit
+         || limitsList.annualBalanceIncreaseBPLimit != SANITY_LIMIT_annualBalanceIncreaseBPLimit
+         || limitsList.simulatedShareRateDeviationBPLimit != SANITY_LIMIT_simulatedShareRateDeviationBPLimit
+         || limitsList.maxValidatorExitRequestsPerReport != SANITY_LIMIT_maxValidatorExitRequestsPerReport
+         || limitsList.maxAccountingExtraDataListItemsCount != SANITY_LIMIT_maxAccountingExtraDataListItemsCount
+         || limitsList.maxNodeOperatorsPerExtraDataItemCount != SANITY_LIMIT_maxNodeOperatorsPerExtraDataItemCount
+         || limitsList.requestTimestampMargin != SANITY_LIMIT_requestTimestampMargin
+         || limitsList.maxPositiveTokenRebase != SANITY_LIMIT_maxPositiveTokenRebase
          ) {
             revert InvalidOracleReportSanityCheckerConfig();
          }
@@ -615,7 +616,7 @@ contract ShapellaUpgradeTemplate {
         _accountingOracle.initialize(
             address(this),
             address(_hashConsensusForAccountingOracle),
-            _accountingOracleConsensusVersion
+            ACCOUNTING_ORACLE_CONSENSUS_VERSION
         );
     }
 
@@ -636,7 +637,7 @@ contract ShapellaUpgradeTemplate {
 
     function _initializeStakingRouter() internal {
         IStakingRouter sr = _stakingRouter;
-        sr.initialize(address(this), address(_lido), _withdrawalCredentials);
+        sr.initialize(address(this), address(_lido), WITHDRAWAL_CREDENTIALS);
         sr.grantRole(sr.STAKING_MODULE_PAUSE_ROLE(), address(_depositSecurityModule));
         sr.grantRole(sr.REPORT_EXITED_VALIDATORS_ROLE(), address(_accountingOracle));
         sr.grantRole(sr.REPORT_REWARDS_MINTED_ROLE(), address(_lido));
@@ -651,7 +652,7 @@ contract ShapellaUpgradeTemplate {
         vebo.initialize(
             address(this),
             address(_hashConsensusForValidatorsExitBusOracle),
-            _validatorsExitBusOracleConsensusVersion,
+            VALIDATORS_EXIT_BUS_ORACLE_CONSENSUS_VERSION,
             VEBO_LAST_PROCESSING_REF_SLOT
         );
         vebo.grantRole(vebo.PAUSE_ROLE(), _gateSeal);
@@ -682,14 +683,14 @@ contract ShapellaUpgradeTemplate {
 
     function _finishUpgrade() internal {
         if (msg.sender != _voting) revert OnlyVotingCanUpgrade();
-        if (!isUpgradeStarted) revert StartMustBeCalledBeforeFinish();
-        if (isUpgradeFinished) revert CanOnlyFinishOnce();
+        if (!_isUpgradeStarted) revert StartMustBeCalledBeforeFinish();
+        if (_isUpgradeFinished) revert CanOnlyFinishOnce();
         /// Here we check that the contract got new ABI function getContractVersion(), although it is 0 yet
         /// because in the new contract version is stored in a different slot
         if (_legacyOracle.getContractVersion() != NOT_INITIALIZED_CONTRACT_VERSION) {
             revert LidoOracleMustBeUpgradedToLegacy();
         }
-        isUpgradeFinished = true;
+        _isUpgradeFinished = true;
 
         _legacyOracle.finalizeUpgrade_v4(address(_accountingOracle));
 
@@ -697,8 +698,8 @@ contract ShapellaUpgradeTemplate {
 
         _nodeOperatorsRegistry.finalizeUpgrade_v2(
             address(_locator),
-            _nodeOperatorsRegistryStakingModuleType,
-            _nodeOperatorsRegistryStuckPenaltyDelay
+            NODE_OPERATORS_REGISTRY_STAKING_MODULE_TYPE,
+            NODE_OPERATORS_REGISTRY_STUCK_PENALTY_DELAY
         );
 
         _attachNORToStakingRouter();
