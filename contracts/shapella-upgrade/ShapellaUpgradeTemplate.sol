@@ -60,10 +60,21 @@ interface IGateSeal {
 }
 
 interface IHashConsensus is IAccessControlEnumerable {
+    /// @notice An ACL role granting the permission to modify members list members and
+    /// change the quorum by calling addMember, removeMember, and setQuorum functions.
     function MANAGE_MEMBERS_AND_QUORUM_ROLE() external view returns (bytes32);
-    function addMember(address addr, uint256 quorum) external;
+
+
+    /// @notice Returns the time-related configuration.
+    ///
+    /// @return initialEpoch Epoch of the frame with zero index.
+    /// @return epochsPerFrame Length of a frame in epochs.
+    /// @return fastLaneLengthSlots Length of the fast lane interval in slots; see `getIsFastLaneMember`.
+    ///
     function getFrameConfig() external view returns (uint256 initialEpoch, uint256 epochsPerFrame, uint256 fastLaneLengthSlots);
+
     function updateInitialEpoch(uint256 initialEpoch) external;
+    function addMember(address addr, uint256 quorum) external;
     function getReportProcessor() external view returns (address);
 }
 
@@ -104,13 +115,29 @@ interface ILidoLocator is IOssifiableProxy {
 }
 
 interface ILegacyOracle is IVersioned {
+    /**
+     * @notice A function to finalize upgrade v3 -> v4 (the compat-only deprecated impl).
+     * Can be called only once.
+     */
     function finalizeUpgrade_v4(address accountingOracle) external;
 }
 
 interface ILidoOracle {
     function getVersion() external view returns (uint256);
+
+    /**
+     * @notice Return the current oracle member committee list
+     */
     function getOracleMembers() external view returns (address[] memory);
+
+    /**
+     * @notice Return the number of exactly the same reports needed to finalize the epoch
+     */
     function getQuorum() external view returns (uint256);
+
+    /**
+     * @notice Return last completed epoch
+     */
     function getLastCompletedEpochId() external view returns (uint256);
 }
 
@@ -153,25 +180,51 @@ interface IStakingRouter is IVersioned, IAccessControlEnumerable, IOssifiablePro
         uint256 stakingModuleFee,
         uint256 treasuryFee
     ) external;
+
+    /**
+     * @dev Returns true if staking module with the given id was registered via `addStakingModule`, false otherwise
+     */
     function hasStakingModule(uint256 _stakingModuleId) external view returns (bool);
+
+    /**
+     * @dev Returns total number of staking modules
+     */
     function getStakingModulesCount() external view returns (uint256);
+
     function getStakingModule(uint256 _stakingModuleId) external view returns (StakingModule memory);
 }
 
 interface IValidatorsExitBusOracle is IBaseOracle, IPausableUntil, IOssifiableProxy {
     function initialize(address admin, address consensusContract, uint256 consensusVersion, uint256 lastProcessingRefSlot) external;
+
+    /// @notice An ACL role granting the permission to pause accepting validator exit requests
     function PAUSE_ROLE() external view returns (bytes32);
+
+    /// @notice An ACL role granting the permission to resume accepting validator exit requests
     function RESUME_ROLE() external view returns (bytes32);
+
+    /// @notice Resume accepting validator exit requests
+    ///
+    /// @dev Reverts with `PausedExpected()` if contract is already resumed
+    /// @dev Reverts with `AccessControl:...` reason if sender has no `RESUME_ROLE`
+    ///
     function resume() external;
 }
-
 
 interface IWithdrawalQueue is IAccessControlEnumerable, IPausableUntil, IVersioned, IOssifiableProxy {
     function FINALIZE_ROLE() external view returns (bytes32);
     function ORACLE_ROLE() external view returns (bytes32);
-    function initialize(address _admin) external;
     function PAUSE_ROLE() external view returns (bytes32);
     function RESUME_ROLE() external view returns (bytes32);
+
+    /// @notice Initialize the contract storage explicitly.
+    /// @param _admin admin address that can change every role.
+    /// @dev Reverts if `_admin` equals to `address(0)`
+    /// @dev NB! It's initialized in paused state by default and should be resumed explicitly to start
+    /// @dev NB! Bunker mode is disabled by default
+    function initialize(address _admin) external;
+
+    /// @notice Resume withdrawal requests placement and finalization
     function resume() external;
 }
 
@@ -181,6 +234,10 @@ interface IWithdrawalsManagerProxy {
 }
 
 interface IWithdrawalVault is IVersioned, IWithdrawalsManagerProxy {
+    /**
+     * @notice Initialize the contract explicitly.
+     * Sets the contract version to '1'.
+     */
     function initialize() external;
 }
 
@@ -326,7 +383,9 @@ contract ShapellaUpgradeTemplate {
     uint256 public constant VEBO_LAST_PROCESSING_REF_SLOT = 0;
     uint256 public constant VALIDATORS_EXIT_BUS_ORACLE_CONSENSUS_VERSION = 1;
 
+    //
     // Values for checks to compare with or other
+    //
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
     uint256 public constant NOT_INITIALIZED_CONTRACT_VERSION = 0;
 
@@ -373,7 +432,7 @@ contract ShapellaUpgradeTemplate {
     bytes public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_VALUE = hex"64";
 
     //
-    // STRUCTURED STORAGE
+    // Structured storage
     //
     bool public _isUpgradeStarted;
     bool public _isUpgradeFinished;
@@ -383,6 +442,7 @@ contract ShapellaUpgradeTemplate {
         _startUpgrade();
     }
 
+    /// Need to be called after LidoOracle implementation is upgraded to LegacyOracle
     function finishUpgrade() external {
         _finishUpgrade();
     }
@@ -392,6 +452,7 @@ contract ShapellaUpgradeTemplate {
         _assertUpgradeIsFinishedCorrectly();
     }
 
+    /// Needed for 2nd Aragon voting (roles revoke) to fail if 1st voting isn't enacted
     function revertIfUpgradeNotEnacted() external view {
         if (!_isUpgradeFinished) {
             revert UpgradeNotEnacted();
@@ -410,7 +471,7 @@ contract ShapellaUpgradeTemplate {
 
         _upgradeProxyImplementations();
 
-        // Need to have the implementations attached to the proxies at this point
+        // Need to have the implementations attached to the proxies to perform part of the inner checks
         _assertInitialACL();
         _assertFeeDistribution();
 
