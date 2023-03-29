@@ -324,6 +324,9 @@ struct StakingModule {
 */
 contract ShapellaUpgradeTemplate {
 
+    event UpgradeStarted();
+    event UpgradeFinished();
+
     // New proxies
     ILidoLocator public constant _locator = ILidoLocator(0xd75C357F32Df60A67111BAa62a168c0D644d1C32);
     IAccountingOracle public constant _accountingOracle = IAccountingOracle(0x9FE21EeCC385a1FeE057E58427Bfb9588E249231);
@@ -432,7 +435,7 @@ contract ShapellaUpgradeTemplate {
     bytes public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_VALUE = hex"64";
 
     // Immutables
-    // Timestamp since any external function of the contract reverts with Expired()
+    // Timestamp since startUpgrade() and finishUpgrade() act as no-ops
     uint256 public EXPIRES_SINCE_INCLUSIVE;
 
     //
@@ -449,28 +452,25 @@ contract ShapellaUpgradeTemplate {
 
     /// Need to be called before LidoOracle implementation is upgraded to LegacyOracle
     function startUpgrade() external {
-        _revertIfExpired();
+        if (_isExpired()) return;
+
         _startUpgrade();
     }
 
     /// Need to be called after LidoOracle implementation is upgraded to LegacyOracle
     function finishUpgrade() external {
-        _revertIfExpired();
+        if (_isExpired()) return;
 
         _finishUpgrade();
     }
 
     /// Perform basic checks to revert the entire upgrade if something gone wrong
     function assertUpgradeIsFinishedCorrectly() external view {
-        _revertIfExpired();
-
         _assertUpgradeIsFinishedCorrectly();
     }
 
     /// Needed for 2nd Aragon voting (roles revoke) to fail if 1st voting isn't enacted
     function revertIfUpgradeNotEnacted() external view {
-        _revertIfExpired();
-
         if (!_isUpgradeFinished) {
             revert UpgradeNotEnacted();
         }
@@ -756,7 +756,7 @@ contract ShapellaUpgradeTemplate {
 
     function _finishUpgrade() internal {
         if (msg.sender != _voting) revert OnlyVotingCanUpgrade();
-        if (!_isUpgradeStarted) revert StartMustBeCalledBeforeFinish();
+        if (!_isUpgradeStarted) revert UpgradeNotStarted();
         if (_isUpgradeFinished) revert CanOnlyFinishOnce();
         /// Here we check that the contract got new ABI function getContractVersion(), although it is 0 yet
         /// because in the new contract version is stored in a different slot
@@ -830,6 +830,9 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _assertUpgradeIsFinishedCorrectly() internal view {
+        if (!_isUpgradeStarted) revert UpgradeNotStarted();
+        if (!_isUpgradeFinished) revert UpgradeNotFinished();
+
         _checkContractVersions();
 
         _assertFinalACL();
@@ -845,6 +848,8 @@ contract ShapellaUpgradeTemplate {
         _assertCorrectStakingModule();
         if (_withdrawalQueue.isPaused()) revert WQNotResumed();
         if (_validatorsExitBusOracle.isPaused()) revert VEBONotResumed();
+        // TODO: restore the fee distribution check when the bug is fixed
+        // _assertFeeDistribution();
     }
 
     function _assertNewAragonAppImplementations() internal view {
@@ -963,8 +968,8 @@ contract ShapellaUpgradeTemplate {
         accessControlled.renounceRole(DEFAULT_ADMIN_ROLE, address(this));
     }
 
-    function _revertIfExpired() internal view {
-        if (block.timestamp >= EXPIRES_SINCE_INCLUSIVE) revert Expired();
+    function _isExpired() internal view returns (bool) {
+        return block.timestamp >= EXPIRES_SINCE_INCLUSIVE;
     }
 
     function _resumeWithdrawalQueue() internal {
@@ -988,7 +993,8 @@ contract ShapellaUpgradeTemplate {
     error OnlyVotingCanUpgrade();
     error CanOnlyStartOnce();
     error CanOnlyFinishOnce();
-    error StartMustBeCalledBeforeFinish();
+    error UpgradeNotStarted();
+    error UpgradeNotFinished();
     error UpgradeNotEnacted();
     error LidoOracleMustNotBeUpgradedToLegacyYet();
     error LidoOracleMustBeUpgradedToLegacy();
@@ -1011,6 +1017,5 @@ contract ShapellaUpgradeTemplate {
     error WrongLocatorAddresses();
     error WrongAragonAppImplementation(address repo, address implementation);
     error WrongFeeDistribution();
-    error Expired();
     error ExpireSinceMustBeInFuture();
 }

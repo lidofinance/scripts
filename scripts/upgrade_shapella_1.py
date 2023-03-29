@@ -43,6 +43,7 @@ from utils.permissions import encode_permission_create
 # noinspection PyUnresolvedReferences
 from utils.brownie_prelude import *
 
+# TODO: update all three apps content_uri when the apps get deployed
 
 update_lido_app = {
     "new_address": "0xAb3bcE27F31Ca36AAc6c6ec2bF3e79569105ec2c",
