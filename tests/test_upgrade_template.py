@@ -2,6 +2,7 @@
 Tests for voting ??/05/2023
 """
 from brownie import reverts, ShapellaUpgradeTemplate, chain, web3
+from collections import OrderedDict
 
 
 def get_current_timestamp():
@@ -28,14 +29,17 @@ def test_allowed_expiration_timestamp(accounts):
     with reverts(typed_error("ExpireSinceMustBeInFuture")):
         ShapellaUpgradeTemplate.deploy(get_current_timestamp(), {"from": accounts[0]})
 
-    ShapellaUpgradeTemplate.deploy(get_current_timestamp() + 1, {"from": accounts[0]})
+    ShapellaUpgradeTemplate.deploy(get_current_timestamp() + 2, {"from": accounts[0]})
 
 
 def test_expiration(accounts):
     expire_in = 100
     tx_args = {"from": accounts[0]}
+    expire_since = get_current_timestamp() + expire_in
 
-    template = ShapellaUpgradeTemplate.deploy(get_current_timestamp() + expire_in, tx_args)
+    template = ShapellaUpgradeTemplate.deploy(expire_since, tx_args)
+    assert len(template.tx.events) == 1
+    assert template.tx.events["TemplateCreated"] == OrderedDict([("expiresSinceInclusive", expire_since)])
 
     with reverts(typed_error("OnlyVotingCanUpgrade")):
         template.startUpgrade(tx_args)
@@ -45,9 +49,11 @@ def test_expiration(accounts):
 
     chain.sleep(2 * expire_in)
 
-    template.startUpgrade(tx_args)
+    tx = template.startUpgrade(tx_args)
+    assert len(tx.events) == 0
 
-    template.finishUpgrade(tx_args)
+    tx = template.finishUpgrade(tx_args)
+    assert len(tx.events) == 0
 
     # NB: for unknown reason it reverts with empty typed error string, although it mustn't
     with reverts():

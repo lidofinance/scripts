@@ -206,7 +206,12 @@ def test_vote(
     if bypass_events_decoding:
         return
 
+    # TODO: events from the template
+    # TODO: revoke roles events
+    # TODO: first vote all items events
+
     tx = vote_transactions[0]
+
     display_voting_events(tx)
     evs = group_voting_events(tx)
 

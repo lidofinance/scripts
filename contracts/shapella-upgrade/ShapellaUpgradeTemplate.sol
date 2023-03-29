@@ -326,8 +326,15 @@ struct StakingModule {
 */
 contract ShapellaUpgradeTemplate {
 
+    event TemplateCreated(uint256 expiresSinceInclusive);
     event UpgradeStarted();
     event UpgradeFinished();
+
+    /// Emitted when AccountingOracle migrated
+    event OracleMigrated(
+        uint256 lastCompletedEpochId,
+        uint256 nextExpectedFrameInitialEpochId
+    );
 
     // New proxies
     ILidoLocator public constant _locator = ILidoLocator(0xd75C357F32Df60A67111BAa62a168c0D644d1C32);
@@ -451,20 +458,22 @@ contract ShapellaUpgradeTemplate {
         if (expiresSinceInclusive <= block.timestamp) revert ExpireSinceMustBeInFuture();
 
         EXPIRES_SINCE_INCLUSIVE = expiresSinceInclusive;
+
+        emit TemplateCreated(EXPIRES_SINCE_INCLUSIVE);
     }
 
     /// Need to be called before LidoOracle implementation is upgraded to LegacyOracle
     function startUpgrade() external {
         if (_isExpired()) return;
-
         _startUpgrade();
+        emit UpgradeStarted();
     }
 
     /// Need to be called after LidoOracle implementation is upgraded to LegacyOracle
     function finishUpgrade() external {
         if (_isExpired()) return;
-
         _finishUpgrade();
+        emit UpgradeFinished();
     }
 
     /// Perform basic checks to revert the entire upgrade if something gone wrong
@@ -690,21 +699,22 @@ contract ShapellaUpgradeTemplate {
 
     function _initializeAccountingOracle() internal {
         // NB: HashConsensus.updateInitialEpoch must be called after AccountingOracle implementation is bound to proxy
-        _hashConsensusForAccountingOracle.updateInitialEpoch(
-            _calcInitialEpochForAccountingOracleHashConsensus()
-        );
+        uint256 lastCompletedEpochId = _lidoOracle.getLastCompletedEpochId();
+        uint256 nextExpectedFrameInitialEpoch = _calcInitialEpochForAccountingOracleHashConsensus(lastCompletedEpochId);
+        _hashConsensusForAccountingOracle.updateInitialEpoch(nextExpectedFrameInitialEpoch);
 
         _accountingOracle.initialize(
             address(this),
             address(_hashConsensusForAccountingOracle),
             ACCOUNTING_ORACLE_CONSENSUS_VERSION
         );
+
+        emit OracleMigrated(lastCompletedEpochId, nextExpectedFrameInitialEpoch);
     }
 
-    function _calcInitialEpochForAccountingOracleHashConsensus() internal view returns (uint256) {
+    function _calcInitialEpochForAccountingOracleHashConsensus(uint256 lastCompletedEpochId) internal view returns (uint256) {
         (, uint256 epochsPerFrame, ) = _hashConsensusForAccountingOracle.getFrameConfig();
-        uint256 lastLidoOracleCompletedEpochId = _lidoOracle.getLastCompletedEpochId();
-        return lastLidoOracleCompletedEpochId + epochsPerFrame;
+        return lastCompletedEpochId + epochsPerFrame;
     }
 
     function _initializeWithdrawalQueue() internal {
@@ -727,8 +737,9 @@ contract ShapellaUpgradeTemplate {
     function _initializeValidatorsExitBus() internal {
         IValidatorsExitBusOracle vebo = _validatorsExitBusOracle;
         // NB: Setting same initial epoch as for AccountingOracle on purpose
+        uint256 lastCompletedEpochId = _lidoOracle.getLastCompletedEpochId();
         _hashConsensusForValidatorsExitBusOracle.updateInitialEpoch(
-            _calcInitialEpochForAccountingOracleHashConsensus()
+            _calcInitialEpochForAccountingOracleHashConsensus(lastCompletedEpochId)
         );
         vebo.initialize(
             address(this),
@@ -856,6 +867,7 @@ contract ShapellaUpgradeTemplate {
         _assertCorrectStakingModule();
         if (_withdrawalQueue.isPaused()) revert WQNotResumed();
         if (_validatorsExitBusOracle.isPaused()) revert VEBONotResumed();
+
         // Check new version of feeDistribution() after Lido implementation updated
         _assertFeeDistribution();
     }
