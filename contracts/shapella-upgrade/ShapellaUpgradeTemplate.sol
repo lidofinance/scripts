@@ -95,6 +95,8 @@ interface ILido is IVersioned {
      */
     function getFeeDistribution() external view
         returns (uint16 treasuryFeeBasisPoints, uint16 insuranceFeeBasisPoints, uint16 operatorsFeeBasisPoints);
+
+    function getFee() external view returns (uint16 totalFee);
 }
 
 interface ILidoLocator is IOssifiableProxy {
@@ -391,6 +393,7 @@ contract ShapellaUpgradeTemplate {
     //
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
     uint256 public constant NOT_INITIALIZED_CONTRACT_VERSION = 0;
+    uint256 public constant TOTAL_BASIS_POINTS = 10000;
 
     uint256 public constant EXPECTED_FINAL_LIDO_VERSION = 2;
     uint256 public constant EXPECTED_FINAL_NODE_OPERATORS_REGISTRY_VERSION = 2;
@@ -402,7 +405,7 @@ contract ShapellaUpgradeTemplate {
     uint256 public constant EXPECTED_FINAL_WITHDRAWAL_VAULT_VERSION = 1;
 
     uint256 public constant EXPECTED_DSM_MAX_DEPOSITS_PER_BLOCK = 150;
-    uint256 public constant EXPECTED_DSM_MIN_DEPOSIT_BLOCK_DISTANCE = 5;  // TODO: change to 25 after redeploy
+    uint256 public constant EXPECTED_DSM_MIN_DEPOSIT_BLOCK_DISTANCE = 25;
     uint256 public constant EXPECTED_DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS = 6646;
 
     uint256 public constant SANITY_LIMIT_churnValidatorsPerDayLimit = 12375;
@@ -489,7 +492,9 @@ contract ShapellaUpgradeTemplate {
         _upgradeProxyImplementations();
 
         // Need to have the implementations attached to the proxies to perform part of the inner checks
+
         _assertInitialACL();
+        // Check initial version of feeDistribution() before Lido implementation updated
         _assertFeeDistribution();
 
         // Both rely on the old LidoOracle contract, so must be performed before update to the LegacyOracle impl
@@ -549,10 +554,13 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _assertFeeDistribution() internal view {
-        // TODO: remove *10 after fix and redeploy
         (uint16 treasuryFeeBasisPoints, , uint16 operatorsFeeBasisPoints) = _lido.getFeeDistribution();
-        if (NOR_STAKING_MODULE_MODULE_FEE_BP * 10 != operatorsFeeBasisPoints
-         || NOR_STAKING_MODULE_TREASURY_FEE_BP * 10 != treasuryFeeBasisPoints
+        // New fee values for staking module are set as values relative to the all rewards gained
+        // Although Lido.getFeeDistribution() returns values relative to total fee taken by the protocol from all rewards
+        // So need to convert "relative" hardcoded values into their "absolute" form
+        uint256 totalFee = _lido.getFee();
+        if ((NOR_STAKING_MODULE_MODULE_FEE_BP * TOTAL_BASIS_POINTS) / totalFee != operatorsFeeBasisPoints
+         || (NOR_STAKING_MODULE_TREASURY_FEE_BP * TOTAL_BASIS_POINTS) / totalFee != treasuryFeeBasisPoints
         ) {
             revert WrongFeeDistribution();
         }
@@ -848,8 +856,8 @@ contract ShapellaUpgradeTemplate {
         _assertCorrectStakingModule();
         if (_withdrawalQueue.isPaused()) revert WQNotResumed();
         if (_validatorsExitBusOracle.isPaused()) revert VEBONotResumed();
-        // TODO: restore the fee distribution check when the bug is fixed
-        // _assertFeeDistribution();
+        // Check new version of feeDistribution() after Lido implementation updated
+        _assertFeeDistribution();
     }
 
     function _assertNewAragonAppImplementations() internal view {
