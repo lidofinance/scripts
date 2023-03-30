@@ -337,7 +337,7 @@ contract ShapellaUpgradeTemplate {
     //
     // Events
     //
-    event TemplateCreated(uint256 expiresSinceInclusive);
+    event TemplateCreated(uint256 expireSinceInclusive);
     event UpgradeStarted();
     event UpgradeFinished();
 
@@ -410,7 +410,7 @@ contract ShapellaUpgradeTemplate {
     uint256 public constant NOR_STAKING_MODULE_TARGET_SHARE_BP = 10000; // 100%
     uint256 public constant NOR_STAKING_MODULE_MODULE_FEE_BP = 500; // 5%
     uint256 public constant NOR_STAKING_MODULE_TREASURY_FEE_BP = 500; // 5%
-    uint256 public constant VEBO_LAST_PROCESSING_REF_SLOT = 0;
+    uint256 public constant VALIDATORS_EXIT_BUS_ORACLE_LAST_PROCESSING_REF_SLOT = 0;
     uint256 public constant VALIDATORS_EXIT_BUS_ORACLE_CONSENSUS_VERSION = 1;
 
     //
@@ -466,7 +466,7 @@ contract ShapellaUpgradeTemplate {
     // Immutables
     //
     // Timestamp since startUpgrade() and finishUpgrade() act as no-ops
-    uint256 public EXPIRES_SINCE_INCLUSIVE;
+    uint256 public EXPIRE_SINCE_INCLUSIVE;
 
     //
     // Structured storage
@@ -474,12 +474,12 @@ contract ShapellaUpgradeTemplate {
     bool public _isUpgradeStarted;
     bool public _isUpgradeFinished;
 
-    constructor(uint256 expiresSinceInclusive) {
-        if (expiresSinceInclusive <= block.timestamp) revert ExpireSinceMustBeInFuture();
+    constructor(uint256 expireSinceInclusive) {
+        if (expireSinceInclusive <= block.timestamp) revert ExpireSinceMustBeInFuture();
 
-        EXPIRES_SINCE_INCLUSIVE = expiresSinceInclusive;
+        EXPIRE_SINCE_INCLUSIVE = expireSinceInclusive;
 
-        emit TemplateCreated(EXPIRES_SINCE_INCLUSIVE);
+        emit TemplateCreated(EXPIRE_SINCE_INCLUSIVE);
     }
 
     /// @notice Need to be called before LidoOracle implementation is upgraded to LegacyOracle
@@ -520,13 +520,13 @@ contract ShapellaUpgradeTemplate {
 
         _upgradeProxyImplementations();
 
-        // Need to have the implementations attached to the proxies to perform part of the inner checks
+        // Need to have the implementations attached to the proxies to perform part of the following checks
 
         _assertInitialACL();
         // Check initial version of feeDistribution() before Lido implementation updated
         _assertFeeDistribution();
 
-        // Both rely on the old LidoOracle contract, so these must be performed before LegacyOracle impl upgrade
+        // Both checks below rely on old LidoOracle, so must be performed before the impl upgraded to LegacyOracle
         _migrateLidoOracleCommitteeMembers();
         _initializeAccountingOracle();
     }
@@ -541,46 +541,51 @@ contract ShapellaUpgradeTemplate {
         _assertOracleDaemonConfigRoles();
         _assertOracleReportSanityCheckerRoles();
 
-        _assertSingleOZRoleHolder(_burner, DEFAULT_ADMIN_ROLE, address(this));
-        _assertSingleOZRoleHolder(_burner, _burner.REQUEST_BURN_SHARES_ROLE(), address(_lido));
+        IBurner burner = _burner;
+        _assertSingleOZRoleHolder(burner, DEFAULT_ADMIN_ROLE, address(this));
+        _assertSingleOZRoleHolder(burner, burner.REQUEST_BURN_SHARES_ROLE(), address(_lido));
 
         _assertSingleOZRoleHolder(_hashConsensusForAccountingOracle, DEFAULT_ADMIN_ROLE, address(this));
         _assertZeroOZRoleHolders(_accountingOracle, DEFAULT_ADMIN_ROLE);
 
         _assertSingleOZRoleHolder(_hashConsensusForValidatorsExitBusOracle, DEFAULT_ADMIN_ROLE, address(this));
-        _assertZeroOZRoleHolders(_validatorsExitBusOracle, DEFAULT_ADMIN_ROLE);
-        _assertZeroOZRoleHolders(_validatorsExitBusOracle, _validatorsExitBusOracle.RESUME_ROLE());
-        _assertZeroOZRoleHolders(_validatorsExitBusOracle, _validatorsExitBusOracle.PAUSE_ROLE());
+        IValidatorsExitBusOracle vebo = _validatorsExitBusOracle;
+        _assertZeroOZRoleHolders(vebo, DEFAULT_ADMIN_ROLE);
+        _assertZeroOZRoleHolders(vebo, vebo.RESUME_ROLE());
+        _assertZeroOZRoleHolders(vebo, vebo.PAUSE_ROLE());
 
-        _assertZeroOZRoleHolders(_stakingRouter, DEFAULT_ADMIN_ROLE);
-        _assertZeroOZRoleHolders(_stakingRouter, _stakingRouter.STAKING_MODULE_PAUSE_ROLE());
-        _assertZeroOZRoleHolders(_stakingRouter, _stakingRouter.STAKING_MODULE_RESUME_ROLE());
-        _assertZeroOZRoleHolders(_stakingRouter, _stakingRouter.REPORT_EXITED_VALIDATORS_ROLE());
-        _assertZeroOZRoleHolders(_stakingRouter, _stakingRouter.REPORT_REWARDS_MINTED_ROLE());
+        IStakingRouter sr = _stakingRouter;
+        _assertZeroOZRoleHolders(sr, DEFAULT_ADMIN_ROLE);
+        _assertZeroOZRoleHolders(sr, sr.STAKING_MODULE_PAUSE_ROLE());
+        _assertZeroOZRoleHolders(sr, sr.STAKING_MODULE_RESUME_ROLE());
+        _assertZeroOZRoleHolders(sr, sr.REPORT_EXITED_VALIDATORS_ROLE());
+        _assertZeroOZRoleHolders(sr, sr.REPORT_REWARDS_MINTED_ROLE());
 
-        _assertZeroOZRoleHolders(_withdrawalQueue, DEFAULT_ADMIN_ROLE);
-        _assertZeroOZRoleHolders(_withdrawalQueue, _withdrawalQueue.RESUME_ROLE());
-        _assertZeroOZRoleHolders(_withdrawalQueue, _withdrawalQueue.PAUSE_ROLE());
-        _assertZeroOZRoleHolders(_withdrawalQueue, _withdrawalQueue.FINALIZE_ROLE());
-        _assertZeroOZRoleHolders(_withdrawalQueue, _withdrawalQueue.ORACLE_ROLE());
+        IWithdrawalQueue wq = _withdrawalQueue;
+        _assertZeroOZRoleHolders(wq, DEFAULT_ADMIN_ROLE);
+        _assertZeroOZRoleHolders(wq, wq.RESUME_ROLE());
+        _assertZeroOZRoleHolders(wq, wq.PAUSE_ROLE());
+        _assertZeroOZRoleHolders(wq, wq.FINALIZE_ROLE());
+        _assertZeroOZRoleHolders(wq, wq.ORACLE_ROLE());
     }
 
     function _assertLocatorAddresses() internal view {
+        ILidoLocator locator = _locator;
         if (
-            _locator.accountingOracle() != address(_accountingOracle)
-         || _locator.burner() != address(_burner)
-         || _locator.depositSecurityModule() != address(_depositSecurityModule)
-         || _locator.elRewardsVault() != _elRewardsVault
-         || _locator.lido() != address(_lido)
-         || _locator.legacyOracle() != address(_legacyOracle)
-         || _locator.oracleDaemonConfig() != address(_oracleDaemonConfig)
-         || _locator.oracleReportSanityChecker() != address(_oracleReportSanityChecker)
-         || _locator.postTokenRebaseReceiver() != address(_legacyOracle)
-         || _locator.stakingRouter() != address(_stakingRouter)
-         || _locator.treasury() != _agent
-         || _locator.validatorsExitBusOracle() != address(_validatorsExitBusOracle)
-         || _locator.withdrawalQueue() != address(_withdrawalQueue)
-         || _locator.withdrawalVault() != address(_withdrawalVault)
+            locator.accountingOracle() != address(_accountingOracle)
+         || locator.burner() != address(_burner)
+         || locator.depositSecurityModule() != address(_depositSecurityModule)
+         || locator.elRewardsVault() != _elRewardsVault
+         || locator.lido() != address(_lido)
+         || locator.legacyOracle() != address(_legacyOracle)
+         || locator.oracleDaemonConfig() != address(_oracleDaemonConfig)
+         || locator.oracleReportSanityChecker() != address(_oracleReportSanityChecker)
+         || locator.postTokenRebaseReceiver() != address(_legacyOracle)
+         || locator.stakingRouter() != address(_stakingRouter)
+         || locator.treasury() != _agent
+         || locator.validatorsExitBusOracle() != address(_validatorsExitBusOracle)
+         || locator.withdrawalQueue() != address(_withdrawalQueue)
+         || locator.withdrawalVault() != address(_withdrawalVault)
         ) {
             revert IncorrectLocatorAddresses();
         }
@@ -592,7 +597,8 @@ contract ShapellaUpgradeTemplate {
         // Although Lido.getFeeDistribution() returns values relative to total fee taken by the protocol from all rewards
         // So need to convert "relative" hardcoded values into their "absolute" form
         uint256 totalFee = _lido.getFee();
-        if ((NOR_STAKING_MODULE_MODULE_FEE_BP * TOTAL_BASIS_POINTS) / totalFee != operatorsFeeBasisPoints
+        if (
+            (NOR_STAKING_MODULE_MODULE_FEE_BP * TOTAL_BASIS_POINTS) / totalFee != operatorsFeeBasisPoints
          || (NOR_STAKING_MODULE_TREASURY_FEE_BP * TOTAL_BASIS_POINTS) / totalFee != treasuryFeeBasisPoints
         ) {
             revert IncorrectFeeDistribution();
@@ -637,6 +643,7 @@ contract ShapellaUpgradeTemplate {
 
     function _assertOracleReportSanityCheckerRoles() internal view {
         IOracleReportSanityChecker checker = _oracleReportSanityChecker;
+        // NB: oracleReportSanityChecker admin is set to agent upon deployment at once
         _assertSingleOZRoleHolder(checker, DEFAULT_ADMIN_ROLE, _agent);
         _assertZeroOZRoleHolders(checker, checker.ALL_LIMITS_MANAGER_ROLE());
         _assertZeroOZRoleHolders(checker, checker.CHURN_VALIDATORS_PER_DAY_LIMIT_MANGER_ROLE());
@@ -669,6 +676,7 @@ contract ShapellaUpgradeTemplate {
 
     function _assertOracleDaemonConfigRoles() internal view {
         IOracleDaemonConfig config = _oracleDaemonConfig;
+        // NB: oracleDaemonConfig admin is set to agent upon deployment at once
         _assertSingleOZRoleHolder(config, DEFAULT_ADMIN_ROLE, _agent);
         _assertZeroOZRoleHolders(config, config.CONFIG_MANAGER_ROLE());
     }
@@ -774,7 +782,7 @@ contract ShapellaUpgradeTemplate {
             address(this),
             address(_hashConsensusForValidatorsExitBusOracle),
             VALIDATORS_EXIT_BUS_ORACLE_CONSENSUS_VERSION,
-            VEBO_LAST_PROCESSING_REF_SLOT
+            VALIDATORS_EXIT_BUS_ORACLE_LAST_PROCESSING_REF_SLOT
         );
         vebo.grantRole(vebo.PAUSE_ROLE(), _gateSeal);
         _resumeValidatorsExitBusOracle();
@@ -783,16 +791,18 @@ contract ShapellaUpgradeTemplate {
     function _migrateLidoOracleCommitteeMembers() internal {
         address[] memory members = _lidoOracle.getOracleMembers();
         uint256 quorum = _lidoOracle.getQuorum();
-        bytes32 manage_members_role = _hashConsensusForAccountingOracle.MANAGE_MEMBERS_AND_QUORUM_ROLE();
+        IHashConsensus hcForAO = _hashConsensusForAccountingOracle;
+        IHashConsensus hcForVEBO = _hashConsensusForValidatorsExitBusOracle;
+        bytes32 manage_members_role = hcForAO.MANAGE_MEMBERS_AND_QUORUM_ROLE();
 
-        _hashConsensusForAccountingOracle.grantRole(manage_members_role, address(this));
-        _hashConsensusForValidatorsExitBusOracle.grantRole(manage_members_role, address(this));
+        hcForAO.grantRole(manage_members_role, address(this));
+        hcForVEBO.grantRole(manage_members_role, address(this));
         for (uint256 i; i < members.length; ++i) {
-            _hashConsensusForAccountingOracle.addMember(members[i], quorum);
-            _hashConsensusForValidatorsExitBusOracle.addMember(members[i], quorum);
+            hcForAO.addMember(members[i], quorum);
+            hcForVEBO.addMember(members[i], quorum);
         }
-        _hashConsensusForAccountingOracle.renounceRole(manage_members_role, address(this));
-        _hashConsensusForValidatorsExitBusOracle.renounceRole(manage_members_role, address(this));
+        hcForAO.renounceRole(manage_members_role, address(this));
+        hcForVEBO.renounceRole(manage_members_role, address(this));
 
         emit OracleCommitteeMigrated(members, quorum);
     }
@@ -837,16 +847,17 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _attachNORToStakingRouter() internal {
-        bytes32 sm_manage_role = _stakingRouter.STAKING_MODULE_MANAGE_ROLE();
-        _stakingRouter.grantRole(sm_manage_role, address(this));
-        _stakingRouter.addStakingModule(
+        IStakingRouter sr = _stakingRouter;
+        bytes32 sm_manage_role = sr.STAKING_MODULE_MANAGE_ROLE();
+        sr.grantRole(sm_manage_role, address(this));
+        sr.addStakingModule(
             NOR_STAKING_MODULE_NAME,
             address(_nodeOperatorsRegistry),
             NOR_STAKING_MODULE_TARGET_SHARE_BP,
             NOR_STAKING_MODULE_MODULE_FEE_BP,
             NOR_STAKING_MODULE_TREASURY_FEE_BP
         );
-        _stakingRouter.renounceRole(sm_manage_role, address(this));
+        sr.renounceRole(sm_manage_role, address(this));
     }
 
     function _passAdminRoleFromTemplateToAgent() internal {
@@ -912,38 +923,43 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _assertFinalACL() internal view {
+        address agent = _agent;
         // withdrawalVault is already checked in _assertInitialACL, but check again the upgrade hasn't changed it
         if (_withdrawalVault.proxy_getAdmin() != _voting) revert IncorrectProxyAdmin(address(_withdrawalVault));
         // withdrawalVault proxy admin is checked separately because it has voting admin, not _agent
-        _assertAdminsOfProxies(_agent);
+        _assertAdminsOfProxies(agent);
 
-        if (_depositSecurityModule.getOwner() != _agent) revert IncorrectDsmOwner();
+        if (_depositSecurityModule.getOwner() != agent) revert IncorrectDsmOwner();
 
         _assertOracleDaemonConfigRoles();
         _assertOracleReportSanityCheckerRoles();
 
-        _assertSingleOZRoleHolder(_burner, DEFAULT_ADMIN_ROLE, _agent);
-        _assertTwoOZRoleHolders(_burner, _burner.REQUEST_BURN_SHARES_ROLE(), address(_lido), address(_nodeOperatorsRegistry));
+        IBurner burner = _burner;
+        _assertSingleOZRoleHolder(burner, DEFAULT_ADMIN_ROLE, agent);
+        _assertTwoOZRoleHolders(burner, burner.REQUEST_BURN_SHARES_ROLE(), address(_lido), address(_nodeOperatorsRegistry));
 
-        _assertSingleOZRoleHolder(_hashConsensusForAccountingOracle, DEFAULT_ADMIN_ROLE, _agent);
-        _assertSingleOZRoleHolder(_accountingOracle, DEFAULT_ADMIN_ROLE, _agent);
+        _assertSingleOZRoleHolder(_hashConsensusForAccountingOracle, DEFAULT_ADMIN_ROLE, agent);
+        _assertSingleOZRoleHolder(_accountingOracle, DEFAULT_ADMIN_ROLE, agent);
 
-        _assertSingleOZRoleHolder(_hashConsensusForValidatorsExitBusOracle, DEFAULT_ADMIN_ROLE, _agent);
-        _assertSingleOZRoleHolder(_validatorsExitBusOracle, DEFAULT_ADMIN_ROLE, _agent);
-        _assertZeroOZRoleHolders(_validatorsExitBusOracle, _validatorsExitBusOracle.RESUME_ROLE());
-        _assertSingleOZRoleHolder(_validatorsExitBusOracle, _validatorsExitBusOracle.PAUSE_ROLE(), _gateSeal);
+        _assertSingleOZRoleHolder(_hashConsensusForValidatorsExitBusOracle, DEFAULT_ADMIN_ROLE, agent);
+        IValidatorsExitBusOracle vebo = _validatorsExitBusOracle;
+        _assertSingleOZRoleHolder(vebo, DEFAULT_ADMIN_ROLE, agent);
+        _assertZeroOZRoleHolders(vebo, vebo.RESUME_ROLE());
+        _assertSingleOZRoleHolder(vebo, vebo.PAUSE_ROLE(), _gateSeal);
 
-        _assertSingleOZRoleHolder(_stakingRouter, DEFAULT_ADMIN_ROLE, _agent);
-        _assertZeroOZRoleHolders(_stakingRouter, _stakingRouter.STAKING_MODULE_RESUME_ROLE());
-        _assertSingleOZRoleHolder(_stakingRouter, _stakingRouter.STAKING_MODULE_PAUSE_ROLE(), address(_depositSecurityModule));
-        _assertSingleOZRoleHolder(_stakingRouter, _stakingRouter.REPORT_EXITED_VALIDATORS_ROLE(), address(_accountingOracle));
-        _assertSingleOZRoleHolder(_stakingRouter, _stakingRouter.REPORT_REWARDS_MINTED_ROLE(), address(_lido));
+        IStakingRouter sr = _stakingRouter;
+        _assertSingleOZRoleHolder(sr, DEFAULT_ADMIN_ROLE, agent);
+        _assertZeroOZRoleHolders(sr, sr.STAKING_MODULE_RESUME_ROLE());
+        _assertSingleOZRoleHolder(sr, sr.STAKING_MODULE_PAUSE_ROLE(), address(_depositSecurityModule));
+        _assertSingleOZRoleHolder(sr, sr.REPORT_EXITED_VALIDATORS_ROLE(), address(_accountingOracle));
+        _assertSingleOZRoleHolder(sr, sr.REPORT_REWARDS_MINTED_ROLE(), address(_lido));
 
-        _assertSingleOZRoleHolder(_withdrawalQueue, DEFAULT_ADMIN_ROLE, _agent);
-        _assertZeroOZRoleHolders(_withdrawalQueue, _withdrawalQueue.RESUME_ROLE());
-        _assertSingleOZRoleHolder(_withdrawalQueue, _withdrawalQueue.PAUSE_ROLE(), _gateSeal);
-        _assertSingleOZRoleHolder(_withdrawalQueue, _withdrawalQueue.FINALIZE_ROLE(), address(_lido));
-        _assertSingleOZRoleHolder(_withdrawalQueue, _withdrawalQueue.ORACLE_ROLE(), address(_accountingOracle));
+        IWithdrawalQueue wq = _withdrawalQueue;
+        _assertSingleOZRoleHolder(wq, DEFAULT_ADMIN_ROLE, agent);
+        _assertZeroOZRoleHolders(wq, wq.RESUME_ROLE());
+        _assertSingleOZRoleHolder(wq, wq.PAUSE_ROLE(), _gateSeal);
+        _assertSingleOZRoleHolder(wq, wq.FINALIZE_ROLE(), address(_lido));
+        _assertSingleOZRoleHolder(wq, wq.ORACLE_ROLE(), address(_accountingOracle));
     }
 
     function _assertGateSealSealables() internal view {
@@ -1017,7 +1033,7 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _isExpired() internal view returns (bool) {
-        return block.timestamp >= EXPIRES_SINCE_INCLUSIVE;
+        return block.timestamp >= EXPIRE_SINCE_INCLUSIVE;
     }
 
     function _resumeWithdrawalQueue() internal {
