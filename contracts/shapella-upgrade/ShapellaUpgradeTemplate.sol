@@ -353,6 +353,9 @@ contract ShapellaUpgradeTemplate {
         uint256 quorum
     );
 
+    /// Emitted at `startUpgrade()` and `finishUpgrade()` calls if the template has expired
+    event NoOpSinceTheTemplateExpired();
+
     // New proxies
     ILidoLocator public constant _locator = ILidoLocator(0xd75C357F32Df60A67111BAa62a168c0D644d1C32);
     IAccountingOracle public constant _accountingOracle = IAccountingOracle(0x9FE21EeCC385a1FeE057E58427Bfb9588E249231);
@@ -484,14 +487,22 @@ contract ShapellaUpgradeTemplate {
 
     /// @notice Need to be called before LidoOracle implementation is upgraded to LegacyOracle
     function startUpgrade() external {
-        if (_isExpired()) return;
+        if (_isExpired()) {
+            emit NoOpSinceTheTemplateExpired();
+            return;
+        }
+
         _startUpgrade();
         emit UpgradeStarted();
     }
 
     /// @notice Need to be called after LidoOracle implementation is upgraded to LegacyOracle
     function finishUpgrade() external {
-        if (_isExpired()) return;
+        if (_isExpired()) {
+            emit NoOpSinceTheTemplateExpired();
+            return;
+        }
+
         _finishUpgrade();
         emit UpgradeFinished();
     }
