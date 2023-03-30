@@ -1,4 +1,4 @@
-from brownie import ShapellaUpgradeTemplate, interface
+from brownie import ShapellaUpgradeTemplate, GateSealMock, interface
 from utils.config import (
     contracts,
     lido_dao_lido_locator_implementation,
@@ -10,11 +10,6 @@ from utils.config import (
 INITIAL_TOKEN_HOLDER = "0x000000000000000000000000000000000000dEaD"
 
 FAR_FUTURE_TIMESTAMP = 2532100931
-
-
-def deploy_shapella_upgrade_template(deployer):
-    template = ShapellaUpgradeTemplate.deploy(FAR_FUTURE_TIMESTAMP, {"from": deployer})
-    return template
 
 
 def transfer_ownership_to_template(owner, template):
@@ -56,11 +51,18 @@ def ask_confirmation(silent, template_address):
 
 
 def prepare_for_shapella_upgrade_voting(temporary_admin, silent=False):
+    # Deploy Gate Seal mock
+    gate_seal = GateSealMock.deploy(
+        contracts.withdrawal_queue, contracts.validators_exit_bus_oracle, {"from": temporary_admin}
+    )
+    print(f"gate_seal = {gate_seal.address}")
+
+    # Deploy the upgrade template if needed
     if shapella_upgrade_template_address != "":
         template = ShapellaUpgradeTemplate.at(shapella_upgrade_template_address)
         print(f"=== Using upgrade template from config {template.address} ===")
     else:
-        template = deploy_shapella_upgrade_template(temporary_admin)
+        template = ShapellaUpgradeTemplate.deploy(FAR_FUTURE_TIMESTAMP, {"from": temporary_admin})
         print(f"=== Deployed upgrade template {template.address} ===")
 
     # To get sure the "stone" is in place

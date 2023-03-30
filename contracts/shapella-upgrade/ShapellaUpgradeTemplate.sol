@@ -350,7 +350,8 @@ contract ShapellaUpgradeTemplate {
     IBurner public constant _burner = IBurner(0xFc810b3F9acc7ee0C3820B5f7a9bb0ee88C3cBd2);
     IDepositSecurityModule public constant _depositSecurityModule = IDepositSecurityModule(0xe44E11BBb629Dc23e72e6eAC4e538AaCb66A0c88);
     address public constant _eip712StETH = 0x8dF3c29C96fd4c4d496954646B8B6a48dFFcA83F;
-    address public constant _gateSeal = 0x0000000000000000000000000000000000000001; // TODO: update gateSeal address
+    // NB: this gate seal address is taken from mock address deployed in prepare_for_shapella_upgrade_voting
+    address public constant _gateSeal = 0xD59f8Bc37BAead58cbCfD99b03997655A13f56d9;
     IHashConsensus public constant _hashConsensusForAccountingOracle = IHashConsensus(0x379EBeeD117c96380034c6a6234321e4e64fCa0B);
     IHashConsensus public constant _hashConsensusForValidatorsExitBusOracle = IHashConsensus(0x2330b9F113784a58d74c7DB49366e9FB792DeABf);
     IOracleDaemonConfig public constant _oracleDaemonConfig = IOracleDaemonConfig(0xbA3981771AB991960028B2F83ae83664Fd003F61);
@@ -596,11 +597,16 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _upgradeProxyImplementations() internal {
-        _locator.proxy__upgradeTo(_locatorImplementation);
-        _accountingOracle.proxy__upgradeTo(_accountingOracleImplementation);
-        _validatorsExitBusOracle.proxy__upgradeTo(_validatorsExitBusOracleImplementation);
-        _stakingRouter.proxy__upgradeTo(_stakingRouterImplementation);
-        _withdrawalQueue.proxy__upgradeTo(_withdrawalQueueImplementation);
+        _upgradeOssifiableProxy(_locator, _locatorImplementation);
+        _upgradeOssifiableProxy(_accountingOracle, _accountingOracleImplementation);
+        _upgradeOssifiableProxy(_validatorsExitBusOracle, _validatorsExitBusOracleImplementation);
+        _upgradeOssifiableProxy(_stakingRouter, _stakingRouterImplementation);
+        _upgradeOssifiableProxy(_withdrawalQueue, _withdrawalQueueImplementation);
+    }
+
+    function _upgradeOssifiableProxy(IOssifiableProxy proxy, address newImplementation) internal {
+        // NB: Such separation of external call into a separate function saves contract bytecode size
+        proxy.proxy__upgradeTo(newImplementation);
     }
 
     function _assertAdminsOfProxies(address admin) internal view {
@@ -839,13 +845,18 @@ contract ShapellaUpgradeTemplate {
         _transferOZAdminFromThisToAgent(_validatorsExitBusOracle);
         _transferOZAdminFromThisToAgent(_withdrawalQueue);
 
-        _locator.proxy__changeAdmin(_agent);
-        _stakingRouter.proxy__changeAdmin(_agent);
-        _accountingOracle.proxy__changeAdmin(_agent);
-        _validatorsExitBusOracle.proxy__changeAdmin(_agent);
-        _withdrawalQueue.proxy__changeAdmin(_agent);
+        _changeOssifiableProxyAdmin(_locator, _agent);
+        _changeOssifiableProxyAdmin(_stakingRouter, _agent);
+        _changeOssifiableProxyAdmin(_accountingOracle, _agent);
+        _changeOssifiableProxyAdmin(_validatorsExitBusOracle, _agent);
+        _changeOssifiableProxyAdmin(_withdrawalQueue, _agent);
 
         _depositSecurityModule.setOwner(_agent);
+    }
+
+    function _changeOssifiableProxyAdmin(IOssifiableProxy proxy, address newAdmin) internal {
+        // NB: Such separation of external call into a separate function saves contract bytecode size
+        proxy.proxy__changeAdmin(newAdmin);
     }
 
     function _assertUpgradeIsFinishedCorrectly() internal view {
@@ -860,8 +871,7 @@ contract ShapellaUpgradeTemplate {
         _assertOracleDaemonConfigParameters();
         _assertOracleReportSanityCheckerParameters();
         _assertCorrectDSMParameters();
-        // TODO: restore the check when gateSeal gets deployed
-        // _assertGateSealSealables();
+        _assertGateSealSealables();
         _assertCorrectOracleAndConsensusContractsBinding(_accountingOracle, _hashConsensusForAccountingOracle);
         _assertCorrectOracleAndConsensusContractsBinding(_validatorsExitBusOracle, _hashConsensusForValidatorsExitBusOracle);
         _assertCorrectStakingModule();
