@@ -35,6 +35,7 @@ from utils.config import (
     get_deployer_account,
     get_is_live,
     contracts,
+    get_priority_fee,
 )
 from utils.permissions import encode_permission_revoke
 
@@ -120,7 +121,7 @@ def main():
 
     if get_is_live():
         tx_params["max_fee"] = "300 gwei"
-        tx_params["priority_fee"] = "2 gwei"
+        tx_params["priority_fee"] = get_priority_fee()
 
     vote_id, _ = start_vote(tx_params=tx_params, silent=False)
 

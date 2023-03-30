@@ -37,6 +37,7 @@ from utils.config import (
     lido_dao_staking_router,
     lido_dao_withdrawal_vault,
     lido_dao_withdrawal_vault_implementation,
+    get_priority_fee,
 )
 from utils.permissions import encode_permission_create
 
@@ -147,7 +148,7 @@ def main():
 
     if get_is_live():
         tx_params["max_fee"] = "300 gwei"
-        tx_params["priority_fee"] = "2 gwei"
+        tx_params["priority_fee"] = get_priority_fee()
 
     vote_id, _ = start_vote(tx_params=tx_params, silent=False)
 

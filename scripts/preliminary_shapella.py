@@ -22,7 +22,7 @@ from utils.brownie_prelude import *
 
 def main():
     assert get_deployer_account() == deployer_eoa, "Need to set DEPLOYER to the deployer_eoa"
-    assert network_name() != "mainnet" and network_name() != "mainnet-fork"
+    # assert network_name() != "mainnet" and network_name() != "mainnet-fork"
 
     prepare_for_shapella_upgrade_voting(deployer_eoa, silent=False)
     time.sleep(5)  # hack for waiting thread #2.
