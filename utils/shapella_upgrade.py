@@ -57,7 +57,7 @@ def ask_shapella_upgrade_confirmation(template_address, locator_implementation):
 
 
 def prepare_for_shapella_upgrade_voting(temporary_admin, silent=False):
-    assert not silent and shapella_upgrade_template_address != ""
+    assert silent or shapella_upgrade_template_address != ""
 
     if not silent:
         ask_shapella_upgrade_confirmation(shapella_upgrade_template_address, lido_dao_lido_locator_implementation)

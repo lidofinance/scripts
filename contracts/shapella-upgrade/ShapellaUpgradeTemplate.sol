@@ -64,7 +64,6 @@ interface IHashConsensus is IAccessControlEnumerable {
     /// change the quorum by calling addMember, removeMember, and setQuorum functions.
     function MANAGE_MEMBERS_AND_QUORUM_ROLE() external view returns (bytes32);
 
-
     /// @notice Returns the time-related configuration.
     ///
     /// @return initialEpoch Epoch of the frame with zero index.
@@ -82,7 +81,7 @@ interface ILido is IVersioned {
     function finalizeUpgrade_v2(address lidoLocator, address eip712StETH) external;
 
     /**
-     * @notice Returns current fee distribution
+     * @notice Returns current fee distribution, values relative to the total fee (getFee())
      * @dev DEPRECATED: Now fees information is stored in StakingRouter and
      * with higher precision. Use StakingRouter.getStakingFeeAggregateDistribution() instead.
      * @return treasuryFeeBasisPoints return treasury fee in TOTAL_BASIS_POINTS (10000 is 100% fee) precision
@@ -96,6 +95,13 @@ interface ILido is IVersioned {
     function getFeeDistribution() external view
         returns (uint16 treasuryFeeBasisPoints, uint16 insuranceFeeBasisPoints, uint16 operatorsFeeBasisPoints);
 
+    /**
+     * @notice Returns current staking rewards fee rate
+     * @dev DEPRECATED: Now fees information is stored in StakingRouter and
+     * with higher precision. Use StakingRouter.getStakingFeeAggregateDistribution() instead.
+     * @return totalFee total rewards fee in 1e4 precision (10000 is 100%). The value might be
+     * inaccurate because the actual value is truncated here to 1e4 precision.
+     */
     function getFee() external view returns (uint16 totalFee);
 }
 
@@ -125,6 +131,9 @@ interface ILegacyOracle is IVersioned {
 }
 
 interface ILidoOracle {
+    /**
+     * @notice Return the initialized version of this contract starting from 0
+     */
     function getVersion() external view returns (uint256);
 
     /**
@@ -325,7 +334,6 @@ struct StakingModule {
 * The required initial on-chain state is checked in `startUpgrade()`
 */
 contract ShapellaUpgradeTemplate {
-
     //
     // Events
     //
@@ -333,10 +341,16 @@ contract ShapellaUpgradeTemplate {
     event UpgradeStarted();
     event UpgradeFinished();
 
-    /// Emitted when AccountingOracle migrated
-    event OracleMigrated(
+    /// Emitted when AccountingOracle is initialized
+    event AccountingOracleInitialized(
         uint256 lastCompletedEpochId,
         uint256 nextExpectedFrameInitialEpochId
+    );
+
+    /// Emitted when old oracle committee members migrated to hash consensuses of AccountingOracle and ValidatorsExitBusOracle
+    event OracleCommitteeMigrated(
+        address[] members,
+        uint256 quorum
     );
 
     // New proxies
@@ -724,7 +738,7 @@ contract ShapellaUpgradeTemplate {
             ACCOUNTING_ORACLE_CONSENSUS_VERSION
         );
 
-        emit OracleMigrated(lastCompletedEpochId, nextExpectedFrameInitialEpoch);
+        emit AccountingOracleInitialized(lastCompletedEpochId, nextExpectedFrameInitialEpoch);
     }
 
     function _calcInitialEpochForAccountingOracleHashConsensus(uint256 lastCompletedEpochId) internal view returns (uint256) {
@@ -779,6 +793,8 @@ contract ShapellaUpgradeTemplate {
         }
         _hashConsensusForAccountingOracle.renounceRole(manage_members_role, address(this));
         _hashConsensusForValidatorsExitBusOracle.renounceRole(manage_members_role, address(this));
+
+        emit OracleCommitteeMigrated(members, quorum);
     }
 
     function _migrateDSMGuardians() internal {
