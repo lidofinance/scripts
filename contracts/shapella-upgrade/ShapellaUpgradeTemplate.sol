@@ -137,7 +137,7 @@ interface ILidoOracle {
     function getVersion() external view returns (uint256);
 
     /**
-     * @notice Return the current oracle member committee list
+     * @notice Return the current oracle committee member list
      */
     function getOracleMembers() external view returns (address[] memory);
 
@@ -232,7 +232,6 @@ interface IWithdrawalQueue is IAccessControlEnumerable, IPausableUntil, IVersion
     /// @param _admin admin address that can change every role.
     /// @dev Reverts if `_admin` equals to `address(0)`
     /// @dev NB! It's initialized in paused state by default and should be resumed explicitly to start
-    /// @dev NB! Bunker mode is disabled by default
     function initialize(address _admin) external;
 
     /// @notice Resume withdrawal requests placement and finalization
@@ -353,8 +352,9 @@ contract ShapellaUpgradeTemplate {
         uint256 quorum
     );
 
-    /// Emitted at `startUpgrade()` and `finishUpgrade()` calls if the template has expired
-    event NoOpSinceTheTemplateExpired();
+    // NB: current hardcoded addresses are the result of dev deployment on ganache with --deterministic
+    //     flag via deploy script from lido-dao. Address of the preliminary deployed ganache mock also stays
+    //     the same if it is the next tx of the first ganache account (which is used as the deployerEOA)
 
     // New proxies
     ILidoLocator public constant _locator = ILidoLocator(0xd75C357F32Df60A67111BAa62a168c0D644d1C32);
@@ -422,6 +422,7 @@ contract ShapellaUpgradeTemplate {
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
     uint256 public constant NOT_INITIALIZED_CONTRACT_VERSION = 0;
     uint256 public constant TOTAL_BASIS_POINTS = 10000;
+    uint256 internal constant UPGRADE_NOT_STARTED = 0;
 
     uint256 public constant EXPECTED_FINAL_LIDO_VERSION = 2;
     uint256 public constant EXPECTED_FINAL_NODE_OPERATORS_REGISTRY_VERSION = 2;
@@ -468,13 +469,16 @@ contract ShapellaUpgradeTemplate {
     //
     // Immutables
     //
-    // Timestamp since startUpgrade() and finishUpgrade() act as no-ops
-    uint256 public EXPIRE_SINCE_INCLUSIVE;
+    // Timestamp since startUpgrade() and finishUpgrade() revert with Expired()
+    // This behavior is introduced to disarm the template if the upgrade voting creation or enactment didn't
+    // happen in proper time period
+    uint256 immutable public EXPIRE_SINCE_INCLUSIVE;
 
     //
     // Structured storage
     //
-    bool public _isUpgradeStarted;
+    /// UPGRADE_NOT_STARTED (zero) by default
+    uint256 public _upgradeBlockNumber;
     bool public _isUpgradeFinished;
 
     constructor(uint256 expireSinceInclusive) {
@@ -487,22 +491,14 @@ contract ShapellaUpgradeTemplate {
 
     /// @notice Need to be called before LidoOracle implementation is upgraded to LegacyOracle
     function startUpgrade() external {
-        if (_isExpired()) {
-            emit NoOpSinceTheTemplateExpired();
-            return;
-        }
-
+        _assertNotExpired();
         _startUpgrade();
         emit UpgradeStarted();
     }
 
     /// @notice Need to be called after LidoOracle implementation is upgraded to LegacyOracle
     function finishUpgrade() external {
-        if (_isExpired()) {
-            emit NoOpSinceTheTemplateExpired();
-            return;
-        }
-
+        _assertNotExpired();
         _finishUpgrade();
         emit UpgradeFinished();
     }
@@ -521,13 +517,13 @@ contract ShapellaUpgradeTemplate {
 
     function _startUpgrade() internal {
         if (msg.sender != _voting) revert OnlyVotingCanUpgrade();
-        if (_isUpgradeStarted) revert UpgradeAlreadyStarted();
+        if (_upgradeBlockNumber != UPGRADE_NOT_STARTED) revert UpgradeAlreadyStarted();
         if (_lidoOracle.getVersion() != EXPECTED_FINAL_LEGACY_ORACLE_VERSION - 1) {
             revert LidoOracleMustNotBeUpgradedToLegacyYet();
         }
         _assertInitialProxyImplementations();
 
-        _isUpgradeStarted = true;
+        _upgradeBlockNumber = block.number;
 
         _upgradeProxyImplementations();
 
@@ -654,7 +650,6 @@ contract ShapellaUpgradeTemplate {
 
     function _assertOracleReportSanityCheckerRoles() internal view {
         IOracleReportSanityChecker checker = _oracleReportSanityChecker;
-        // NB: oracleReportSanityChecker admin is set to agent upon deployment at once
         _assertSingleOZRoleHolder(checker, DEFAULT_ADMIN_ROLE, _agent);
         _assertZeroOZRoleHolders(checker, checker.ALL_LIMITS_MANAGER_ROLE());
         _assertZeroOZRoleHolders(checker, checker.CHURN_VALIDATORS_PER_DAY_LIMIT_MANGER_ROLE());
@@ -687,7 +682,6 @@ contract ShapellaUpgradeTemplate {
 
     function _assertOracleDaemonConfigRoles() internal view {
         IOracleDaemonConfig config = _oracleDaemonConfig;
-        // NB: oracleDaemonConfig admin is set to agent upon deployment at once
         _assertSingleOZRoleHolder(config, DEFAULT_ADMIN_ROLE, _agent);
         _assertZeroOZRoleHolders(config, config.CONFIG_MANAGER_ROLE());
     }
@@ -827,8 +821,9 @@ contract ShapellaUpgradeTemplate {
 
     function _finishUpgrade() internal {
         if (msg.sender != _voting) revert OnlyVotingCanUpgrade();
-        if (!_isUpgradeStarted) revert UpgradeNotStarted();
+        if (_upgradeBlockNumber == UPGRADE_NOT_STARTED) revert UpgradeNotStarted();
         if (_isUpgradeFinished) revert CanOnlyFinishOnce();
+        if (_upgradeBlockNumber != block.number) revert StartAndFinishMustBeInSameBlock();
         /// Here we check that the contract got new ABI function getContractVersion(), although it is 0 yet
         /// because in the new contract version is stored in a different slot
         if (_legacyOracle.getContractVersion() != NOT_INITIALIZED_CONTRACT_VERSION) {
@@ -898,7 +893,7 @@ contract ShapellaUpgradeTemplate {
     }
 
     function _assertUpgradeIsFinishedCorrectly() internal view {
-        if (!_isUpgradeStarted) revert UpgradeNotStarted();
+        if (_upgradeBlockNumber == UPGRADE_NOT_STARTED) revert UpgradeNotStarted();
         if (!_isUpgradeFinished) revert UpgradeNotFinished();
 
         _checkContractVersions();
@@ -1043,8 +1038,10 @@ contract ShapellaUpgradeTemplate {
         accessControlled.renounceRole(DEFAULT_ADMIN_ROLE, address(this));
     }
 
-    function _isExpired() internal view returns (bool) {
-        return block.timestamp >= EXPIRE_SINCE_INCLUSIVE;
+    function _assertNotExpired() internal view {
+        if (block.timestamp >= EXPIRE_SINCE_INCLUSIVE) {
+            revert Expired();
+        }
     }
 
     function _resumeWithdrawalQueue() internal {
@@ -1093,4 +1090,6 @@ contract ShapellaUpgradeTemplate {
     error IncorrectAragonAppImplementation(address repo, address implementation);
     error IncorrectFeeDistribution();
     error ExpireSinceMustBeInFuture();
+    error StartAndFinishMustBeInSameBlock();
+    error Expired();
 }

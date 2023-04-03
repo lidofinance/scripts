@@ -60,6 +60,16 @@ def _align_logdata_len(trace: List) -> List:
     return trace
 
 
+def _find_fist_index_of_event_with_different_from_first_event_address(events):
+    first_event_contract = events[0].address
+    idx = 1
+    for i in range(1, len(events)):
+        if events[i].address != first_event_contract:
+            idx = i
+            break
+    return idx
+
+
 def tx_events_from_trace(tx: TransactionReceipt) -> Optional[List]:
     """
     Parse and build events list from transaction receipt
@@ -132,7 +142,7 @@ def group_tx_events(events: Optional[List], dict_events: EventDict, group: [Grou
     group_start_index = 0
     group_stop_index = -1
     while evs:
-        idx = next((evs.index(i) for i in evs if i.address != evs[0].address), len(evs))
+        idx = _find_fist_index_of_event_with_different_from_first_event_address(evs)
         name = resolve_contract(evs[0].address)
 
         event_names = []
@@ -182,7 +192,7 @@ def display_tx_events(events: EventDict, title: str, group: [GroupBy]) -> None:
     counters = {}
 
     while events:
-        idx = next((events.index(i) for i in events if i.address != events[0].address), len(events))
+        idx = _find_fist_index_of_event_with_different_from_first_event_address(events)
 
         name = resolve_contract(events[0].address)
 
