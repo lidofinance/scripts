@@ -18,12 +18,6 @@ lido_dao_voting_repo = "0x14de4f901cE0B81F4EfcA594ad7b70935C276806"
 lido_dao_lido_repo = "0xe9ede497d2417fd980d8b5338232666641b9b9ac"
 lido_dao_node_operators_registry_repo = "0x5f867429616b380f1ca7a7283ff18c53a0033073"
 lido_dao_legacy_oracle_repo = "0x9234e37Adeb44022A078557D9943b72AB89bF36a"
-# Aragon app ids
-lido_dao_legacy_oracle_app_id = "0x79ac01111b462384f1b7fba84a17b9ec1f5d2fddcfcb99487d71b443832556ea"
-lido_dao_lido_app_id = "0xb2977cfc13b000b6807b9ae3cf4d938f4cc8ba98e1d68ad911c58924d6aa4f11"
-
-curve_rewards_manager_address = ""
-balancer_rewards_manager = ""
 
 lido_dao_deposit_security_module_address_old = "0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe"
 lido_dao_deposit_security_module_address = "0xC8a75E7196b11aE2DEbC39a2F8583f852E5BB7c3"
@@ -59,9 +53,6 @@ lido_easytrack_increase_nop_staking_limit_factory = "0xE033673D83a8a60500BcE02aB
 
 lido_insurance_fund_address = "0x2FAe4D2D86Efb17249F24C9fb70855d4c58585A5"
 lido_relay_allowed_list = "0xeabE95AC5f3D64aE16AcBB668Ed0efcd81B721Bc"
-
-# Multisigs
-finance_multisig_address = ""
 
 ldo_holder_address_for_tests = "0x709abe1880E3B7A813A297B68a1cdB8976025550"
 ldo_vote_executors_for_tests = [

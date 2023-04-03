@@ -1,5 +1,5 @@
 from eth_abi.abi import encode_single
-from brownie import accounts, chain, interface
+from brownie import accounts, chain, interface  # type: ignore
 from utils.config import contracts, lido_easytrack_increase_nop_staking_limit_factory
 
 NODE_OPERATOR_ID = 0
