@@ -45,7 +45,7 @@ lido_dao_eip712_steth = "0x8dF3c29C96fd4c4d496954646B8B6a48dFFcA83F"
 lido_dao_withdrawal_vault = "0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f"
 lido_dao_withdrawal_vault_implementation = "0x654f166BA493551899212917d8eAa30CE977b794"
 lido_dao_staking_router = "0x5A2a6cB5e0f57A30085A9411f7F5f07be8ad1Ec7"
-gate_seal = "0x0000000000000000000000000000000000000001"
+gate_seal = "0xD59f8Bc37BAead58cbCfD99b03997655A13f56d9"
 oracle_daemon_config = "0xbA3981771AB991960028B2F83ae83664Fd003F61"
 shapella_upgrade_template_address = ""
 
@@ -69,7 +69,7 @@ ldo_vote_executors_for_tests = [
 dai_token_address = "0x6b175474e89094c44da98b954eedeac495271d0f"
 weth_token_address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 
-oracle_committee = [
+oracle_committee = (
     "0x140Bd8FbDc884f48dA7cb1c09bE8A2fAdfea776E",
     "0x1d0813bf088BE3047d827D98524fBf779Bc25F00",
     "0x404335BcE530400a5814375E7Ec1FB55fAff3eA2",
@@ -79,7 +79,7 @@ oracle_committee = [
     "0x61c91ECd902EB56e314bB2D5c5C07785444Ea1c8",
     "0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d",
     "0xA7410857ABbf75043d61ea54e07D57A6EB6EF186",
-]
+)
 
 guardians = [
     "0x5fd0dDbC3351d009eb3f88DE7Cd081a614C519F1",
