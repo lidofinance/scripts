@@ -4,7 +4,6 @@ Tests for voting ??/05/2023
 import pytest
 
 from brownie import web3, interface, convert
-from collections import OrderedDict
 from utils.config import (
     contracts,
     lido_dao_voting_address,
