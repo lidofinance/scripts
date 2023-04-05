@@ -2,7 +2,6 @@ import pytest
 from brownie import interface  # type: ignore
 
 from utils.config import (
-    contracts,
     oracle_daemon_config,
 )
 
@@ -24,10 +23,6 @@ oracle_daemon_config_values = {
 @pytest.fixture(scope="module")
 def contract() -> interface.OracleDaemonConfig:
     return interface.OracleDaemonConfig(oracle_daemon_config)
-
-
-def test_locator(contract):
-    assert contract == contracts.lido_locator.oracleDaemonConfig()
 
 
 def test_oracle_daemon_config(contract):

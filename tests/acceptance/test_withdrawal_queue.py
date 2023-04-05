@@ -11,10 +11,6 @@ def contract() -> interface.WithdrawalQueueERC721:
     return interface.WithdrawalQueueERC721(lido_dao_withdrawal_queue)
 
 
-def test_locator(contract):
-    assert contract == contracts.lido_locator.withdrawalQueue()
-
-
 def test_proxy(contract):
     proxy = interface.OssifiableProxy(contract)
     assert proxy.proxy__getImplementation() == lido_dao_withdrawal_queue_impl

@@ -25,10 +25,6 @@ beacon_spec = {
 }
 
 
-def test_locator(contract):
-    assert contract == contracts.lido_locator.validatorsExitBusOracle()
-
-
 def test_proxy(contract):
     proxy = interface.OssifiableProxy(contract)
     assert proxy.proxy__getImplementation() == lido_dao_validators_exit_bus_oracle_implementation

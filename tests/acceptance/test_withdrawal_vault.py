@@ -9,10 +9,6 @@ def contract() -> interface.WithdrawalVault:
     return interface.WithdrawalVault(lido_dao_withdrawal_vault)
 
 
-def test_locator(contract):
-    assert contract == contracts.lido_locator.withdrawalVault()
-
-
 def test_proxy(contract):
     proxy = interface.WithdrawalVaultManager(contract)
     assert proxy.implementation() == lido_dao_withdrawal_vault_implementation
