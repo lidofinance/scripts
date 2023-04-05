@@ -183,9 +183,9 @@ def test_permissions_after_vote(protocol_permissions):
                     permission = Permission(
                         entity=holder, app=permissions_config["contract"], role=convert.to_uint(web3.keccak(text=role))
                     )
-                    assert contracts.acl.hasPermission(*permission), "account {0} isn't holder of {1}".format(
-                        holder, role
-                    )
+                    assert contracts.acl.hasPermission(
+                        *permission
+                    ), "account {0} isn't holder of role {1} at contract {2}".format(holder, role, contract_name)
 
         elif permissions_config["type"] == "CustomApp":
             if "proxy_owner" in permissions_config:
@@ -204,7 +204,7 @@ def test_permissions_after_vote(protocol_permissions):
                 for holder in holders:
                     assert permissions_config["contract"].hasRole(
                         role_keccak, holder
-                    ), "account {0} isn't holder of {1}".format(holder, role)
+                    ), "account {0} isn't holder of role {1} at contract {2}".format(holder, role, contract_name)
 
         if "state" in permissions_config:
             for method, value in permissions_config["state"].items():

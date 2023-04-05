@@ -40,13 +40,14 @@ lido_dao_accounting_oracle = "0x9FE21EeCC385a1FeE057E58427Bfb9588E249231"
 lido_dao_accounting_oracle_implementation = "0x115065ad19aDae715576b926CF6e26067F64e741"
 lido_dao_hash_consensus_for_validators_exit_bus_oracle = "0x2330b9F113784a58d74c7DB49366e9FB792DeABf"
 lido_dao_validators_exit_bus_oracle = "0x6e7Da71eF6E0Aaa85E59554C1FAe44128fA649Ed"
+lido_dao_validators_exit_bus_oracle_implementation = "0xfdfad30ae5e5c9Dc4fb51aC35AB60674FcBdefB3"
 lido_dao_oracle_report_sanity_checker = "0x499A11A07ebe21685953583B6DA9f237E792aEE3"
 lido_dao_withdrawal_queue = "0xFb4E291D12734af4300B89585A16dF932160b840"
 lido_dao_eip712_steth = "0x8dF3c29C96fd4c4d496954646B8B6a48dFFcA83F"
 lido_dao_withdrawal_vault = "0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f"
 lido_dao_withdrawal_vault_implementation = "0x654f166BA493551899212917d8eAa30CE977b794"
 lido_dao_staking_router = "0x5A2a6cB5e0f57A30085A9411f7F5f07be8ad1Ec7"
-gate_seal = "0x0000000000000000000000000000000000000001"
+gate_seal = "0xD59f8Bc37BAead58cbCfD99b03997655A13f56d9"
 oracle_daemon_config = "0xbA3981771AB991960028B2F83ae83664Fd003F61"
 shapella_upgrade_template_address = ""
 
@@ -70,7 +71,7 @@ ldo_vote_executors_for_tests = [
 dai_token_address = "0x6b175474e89094c44da98b954eedeac495271d0f"
 weth_token_address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 
-oracle_committee = [
+oracle_committee = (
     "0x140Bd8FbDc884f48dA7cb1c09bE8A2fAdfea776E",
     "0x1d0813bf088BE3047d827D98524fBf779Bc25F00",
     "0x404335BcE530400a5814375E7Ec1FB55fAff3eA2",
@@ -80,7 +81,7 @@ oracle_committee = [
     "0x61c91ECd902EB56e314bB2D5c5C07785444Ea1c8",
     "0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d",
     "0xA7410857ABbf75043d61ea54e07D57A6EB6EF186",
-]
+)
 
 guardians = [
     "0x5fd0dDbC3351d009eb3f88DE7Cd081a614C519F1",

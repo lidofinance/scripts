@@ -163,7 +163,7 @@ interface IOracleDaemonConfig is IAccessControlEnumerable {
 
 interface IOracleReportSanityChecker is IAccessControlEnumerable {
     function ALL_LIMITS_MANAGER_ROLE() external view returns (bytes32);
-    function CHURN_VALIDATORS_PER_DAY_LIMIT_MANGER_ROLE() external view returns (bytes32);
+    function CHURN_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE() external view returns (bytes32);
     function ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE() external view returns (bytes32);
     function ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE() external view returns (bytes32);
     function SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE() external view returns (bytes32);
@@ -652,7 +652,7 @@ contract ShapellaUpgradeTemplate {
         IOracleReportSanityChecker checker = _oracleReportSanityChecker;
         _assertSingleOZRoleHolder(checker, DEFAULT_ADMIN_ROLE, _agent);
         _assertZeroOZRoleHolders(checker, checker.ALL_LIMITS_MANAGER_ROLE());
-        _assertZeroOZRoleHolders(checker, checker.CHURN_VALIDATORS_PER_DAY_LIMIT_MANGER_ROLE());
+        _assertZeroOZRoleHolders(checker, checker.CHURN_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE());
         _assertZeroOZRoleHolders(checker, checker.ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE());
         _assertZeroOZRoleHolders(checker, checker.ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE());
         _assertZeroOZRoleHolders(checker, checker.SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE());

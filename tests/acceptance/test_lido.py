@@ -27,6 +27,7 @@ def test_locator(contract):
 def test_proxy(contract):
     proxy = interface.AppProxyUpgradeable(contract)
     assert proxy.implementation() == lido_v2_implementation
+    # TODO: check that proxy is owned by the agent
 
 
 def test_role_keccaks(contract):

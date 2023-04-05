@@ -16,18 +16,14 @@ def encode_calldata(signature, values):
 
 def triggerConsensusOnHash(hash):
     members = contracts.hash_consensus_for_accounting_oracle.getMembers()
-    first_member = accounts.at(members[0][0], force=True)
-    second_member = accounts.at(members[0][1], force=True)
+    quorum = contracts.hash_consensus_for_accounting_oracle.getQuorum()
     frame = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
-    print(frame)
-    print(frame["refSlot"])
-    contracts.hash_consensus_for_accounting_oracle.submitReport(
-        frame["refSlot"], hash, CONSENSUS_VERSION, {"from": first_member}
-    )
-    contracts.hash_consensus_for_accounting_oracle.submitReport(
-        frame["refSlot"], hash, CONSENSUS_VERSION, {"from": second_member}
-    )
 
+    for i in range(quorum):
+        member = accounts.at(members[0][i], force=True)
+        contracts.hash_consensus_for_accounting_oracle.submitReport(
+            frame["refSlot"], hash, CONSENSUS_VERSION, {"from": member}
+        )
 
 def reportOracle(
     num_validators,
@@ -50,13 +46,14 @@ def reportOracle(
             0,
             False,
             0,
-            b'',
+            b"",
             0,
         ],
     )
 
-    hash = web3.keccak(text=data).hex()
-    report = ( CONSENSUS_VERSION,
+    hash = "0x0ee589c5cff2181e74d9fa0651b5a8cae156ff894b2b3a8a9e53f9723b0eff46"  #web3.keccak(text=data).hex()
+    report = (
+            CONSENSUS_VERSION,
             frame["refSlot"],
             num_validators,
             cl_balance // 10**9,
@@ -69,19 +66,20 @@ def reportOracle(
             0,
             False,
             0,
-            "",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
             0
         )
 
-    # triggerConsensusOnHash(hash)
-    # assert contracts.hash_consensus_for_accounting_oracle.getConsensusState()[1] == hash
+    triggerConsensusOnHash(hash)
 
-    # members = contracts.hash_consensus_for_accounting_oracle.getMembers()
-    # first_member = accounts.at(members[0][0], force=True)
+    assert contracts.hash_consensus_for_accounting_oracle.getConsensusState()[1] == hash
 
-    # oracleVersion = contracts.accounting_oracle.getContractVersion()
-    # contracts.accounting_oracle.submitReportData(report, oracleVersion, { "from": first_member })
-    # contracts.accounting_oracle.submitReportExtraDataEmpty({ "from": first_member })
+    members = contracts.hash_consensus_for_accounting_oracle.getMembers()
+    member = accounts.at(members[0][0], force=True)
+
+    oracleVersion = contracts.accounting_oracle.getContractVersion()
+    contracts.accounting_oracle.submitReportData(report, oracleVersion, {"from": member})
+    contracts.accounting_oracle.submitReportExtraDataEmpty({ "from": member })
 
 
 def test_stake_withdrawal_flow(stranger):

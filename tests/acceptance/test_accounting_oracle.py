@@ -26,7 +26,9 @@ def test_locator(contract):
 
 
 def test_proxy(contract):
-    assert interface.OssifiableProxy(contract).proxy__getImplementation() == lido_dao_accounting_oracle_implementation
+    proxy = interface.OssifiableProxy(contract)
+    assert proxy.proxy__getImplementation() == lido_dao_accounting_oracle_implementation
+    assert proxy.proxy__getAdmin() == contracts.agent.address
 
 
 def test_constants(contract):
@@ -37,7 +39,7 @@ def test_constants(contract):
     assert contract.EXTRA_DATA_FORMAT_LIST() == 1
     assert contract.EXTRA_DATA_TYPE_STUCK_VALIDATORS() == 1
     assert contract.EXTRA_DATA_TYPE_EXITED_VALIDATORS() == 2
-    assert contract.SECONDS_PER_SLOT() == 12
+    assert contract.SECONDS_PER_SLOT() == beacon_spec["secondsPerSlot"]
     assert contract.GENESIS_TIME() == beacon_spec["genesisTime"]
 
 

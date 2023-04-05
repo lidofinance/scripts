@@ -15,7 +15,7 @@ PUBKEY_LENGTH = 48
 SIGNATURE_LENGTH = 96
 DEPOSIT_SIZE = Wei("32 ether")
 RANDOM_SEED = datetime.now().timestamp()
-OLD_DSM_ADDRESS = "0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe"
+OLD_DSM_ADDRESS = "0x710B3303fB508a84F10793c1106e32bE873C24cd"
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -245,7 +245,7 @@ def assert_rewards_distribution(before, after):
         assert almost_eq(
             rewards_distribution_before["shares"][i],
             rewards_distribution_after["shares"][i],
-            epsilon=len(rewards_distribution_after["recipients"]) ** 2,
+            epsilon=200000, # estimated divergence is number of deposited validators
         )
         assert not rewards_distribution_after["penalized"][i]
 
