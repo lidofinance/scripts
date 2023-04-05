@@ -15,19 +15,13 @@ def contract() -> interface.DepositSecurityModule:
     return interface.DepositSecurityModule(lido_dao_deposit_security_module_address)
 
 
-def test_locator(contract):
-    assert contract == contracts.lido_locator.depositSecurityModule()
-
-
 def test_owner(contract):
     assert contract.getOwner() == contracts.agent
 
 
 def test_links(contract):
     assert contract.LIDO() == contracts.lido
-    assert contract.LIDO() == contracts.lido_locator.lido()
     assert contract.STAKING_ROUTER() == contracts.staking_router
-    assert contract.STAKING_ROUTER() == contracts.lido_locator.stakingRouter()
     assert contract.DEPOSIT_CONTRACT() == deposit_contract
 
 

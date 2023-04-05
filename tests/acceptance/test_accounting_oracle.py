@@ -6,6 +6,7 @@ from utils.config import (
     lido_dao_hash_consensus_for_accounting_oracle,
     lido_dao_accounting_oracle_implementation,
     lido_dao_accounting_oracle,
+    oracle_committee,
 )
 
 
@@ -19,10 +20,6 @@ beacon_spec = {
     "secondsPerSlot": 12,
     "genesisTime": 1606824023,
 }
-
-
-def test_locator(contract):
-    assert contract == contracts.lido_locator.accountingOracle()
 
 
 def test_proxy(contract):
@@ -97,4 +94,5 @@ def test_accounting_hash_consensus(contract):
 
     assert consensus.getQuorum() == 5
 
-    # TODO: test comittee members
+    members = consensus.getMembers()
+    assert members["addresses"] == oracle_committee

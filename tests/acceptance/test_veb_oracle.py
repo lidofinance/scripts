@@ -7,6 +7,7 @@ from utils.config import (
     lido_dao_hash_consensus_for_accounting_oracle,
     lido_dao_validators_exit_bus_oracle_implementation,
     lido_dao_validators_exit_bus_oracle,
+    oracle_committee,
 )
 
 last_seen_ref_slot = 6189855
@@ -95,3 +96,6 @@ def test_vebo_hash_consensus(contract):
     assert consensus.getInitialRefSlot() > 0  # TODO: check the value
 
     assert consensus.getQuorum() == 5
+
+    members = consensus.getMembers()
+    assert members["addresses"] == oracle_committee

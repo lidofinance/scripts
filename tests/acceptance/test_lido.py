@@ -19,15 +19,13 @@ def contract() -> interface.AccountingOracle:
     return interface.Lido(lido_dao_steth_address)
 
 
-def test_locator(contract):
-    assert contract == contracts.lido_locator.lido()
-    assert contract.getLidoLocator() == contracts.lido_locator
-
-
-def test_proxy(contract):
+def test_aragon(contract):
     proxy = interface.AppProxyUpgradeable(contract)
     assert proxy.implementation() == lido_v2_implementation
-    # TODO: check that proxy is owned by the agent
+    assert contract.kernel() == contracts.kernel
+    assert contract.appId() == lido_dao_lido_app_id
+    assert contract.hasInitialized() == True
+    assert contract.isPetrified() == False
 
 
 def test_role_keccaks(contract):
@@ -45,18 +43,13 @@ def test_pausable(contract):
     assert contract.isStopped() == False
 
 
-def test_eip712(contract):
-    assert contract.getEIP712StETH() == contracts.eip712_steth
-    # TODO: check domain separator and stuff
-
-
 def test_versioned(contract):
     assert contract.getContractVersion() == 2
 
 
-def test_aragon_app_storage(contract):
-    assert contract.kernel() == contracts.kernel
-    assert contract.appId() == lido_dao_lido_app_id
+def test_links(contract):
+    assert contract.getEIP712StETH() == contracts.eip712_steth  # TODO: check eip712_steth contract
+    assert contract.getLidoLocator() == contracts.lido_locator
 
 
 def test_steth(contract):
