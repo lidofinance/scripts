@@ -801,12 +801,15 @@ contract ShapellaUpgradeTemplate {
         bytes32 manage_members_role = hcForAO.MANAGE_MEMBERS_AND_QUORUM_ROLE();
 
         hcForAO.grantRole(manage_members_role, address(this));
-        hcForVEBO.grantRole(manage_members_role, address(this));
         for (uint256 i; i < members.length; ++i) {
             hcForAO.addMember(members[i], quorum);
-            hcForVEBO.addMember(members[i], quorum);
         }
         hcForAO.renounceRole(manage_members_role, address(this));
+
+        hcForVEBO.grantRole(manage_members_role, address(this));
+        for (uint256 i; i < members.length; ++i) {
+            hcForVEBO.addMember(members[i], quorum);
+        }
         hcForVEBO.renounceRole(manage_members_role, address(this));
 
         emit OracleCommitteeMigrated(members, quorum);
