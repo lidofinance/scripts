@@ -30,6 +30,7 @@ lido_dao_lido_locator_implementation = "0x7948f9cf80D99DDb7C7258Eb23a693E9dFBc97
 
 # Needed temporary only for Shapella upgrade
 deployer_eoa = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
+dummy_implementation_address = "0xE2f969983c8859E986d6e19892EDBd1eea7371D2"
 
 lido_dao_lido_locator = "0xd75C357F32Df60A67111BAa62a168c0D644d1C32"
 lido_dao_burner = "0xFc810b3F9acc7ee0C3820B5f7a9bb0ee88C3cBd2"
