@@ -50,7 +50,7 @@ def validate_permission_create_event(event: EventDict, p: Permission) -> None:
 
     assert event["ChangePermissionManager"]["app"] == p.app, "Wrong app address"
     assert event["ChangePermissionManager"]["role"] == p.role, "Wrong role"
-    assert event["ChangePermissionManager"]["manager"] == p.entity, "Wring entity"
+    assert event["ChangePermissionManager"]["manager"] == p.entity, "Wrong entity"
 
 
 def validate_permission_revoke_event(event: EventDict, p: Permission) -> None:

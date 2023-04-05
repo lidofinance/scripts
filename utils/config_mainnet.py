@@ -4,6 +4,7 @@ lido_dao_kernel = "0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc"
 ldo_token_address = "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32"
 # Standard (or forked) Aragon apps
 lido_dao_acl_address = "0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb"
+lido_dao_acl_implementation_address = "0x9f3b9198911054B122fDb865f8A5Ac516201c339"
 lido_dao_agent_address = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 lido_dao_finance_address = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
 lido_dao_voting_address = "0x2e59A20f205bB85a89C53f1936454680651E618e"
@@ -11,7 +12,9 @@ lido_dao_token_manager_address = "0xf73a1260d222f447210581DDf212D915c09a3249"
 # Our custom Aragon apps
 lido_dao_node_operators_registry = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
 lido_dao_steth_address = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
+lido_dao_steth_implementation_address = "0xAb3bcE27F31Ca36AAc6c6ec2bF3e79569105ec2c"
 lido_dao_legacy_oracle = "0x442af784A788A5bd6F42A01Ebe9F287a871243fb"
+lido_dao_legacy_oracle_implementation = "0xcA3cE6bf0CB2bbaC5dF3874232AE3F5b67C6b146"
 # Aragon APM Repos
 lido_dao_voting_repo = "0x4Ee3118E3858E8D7164A634825BfE0F73d99C792"
 lido_dao_lido_repo = "0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1"
@@ -93,3 +96,32 @@ guardians = [
 
 wsteth_token_address = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
 deposit_contract = "0x00000000219ab540356cBB839Cbe05303d7705Fa"
+
+# Used if env variable PARSE_EVENTS_FROM_LOCAL_ABI is set
+# Needed to enable events checking if ABI from Etherscan not available for any reason
+contract_address_mapping = {
+    "AccountingOracle": [lido_dao_accounting_oracle, lido_dao_accounting_oracle_implementation],
+    "ACL": [lido_dao_acl_implementation_address],
+    "Burner": [lido_dao_burner],
+    "CallsScript": ["0x5cEb19e1890f677c3676d5ecDF7c501eBA01A054"],
+    "DepositSecurityModule": [lido_dao_deposit_security_module_address],
+    "EIP712StETH": [lido_dao_eip712_steth],
+    "HashConsensus": [
+        lido_dao_hash_consensus_for_accounting_oracle,
+        lido_dao_hash_consensus_for_validators_exit_bus_oracle,
+    ],
+    "LegacyOracle": [lido_dao_legacy_oracle, lido_dao_legacy_oracle_implementation],
+    "Lido": [lido_dao_steth_address, lido_dao_steth_implementation_address],
+    "LidoLocator": [lido_dao_lido_locator],
+    "LidoExecutionLayerRewardsVault": [lido_dao_execution_layer_rewards_vault],
+    "Kernel": ["0x2b33CF282f867A7FF693A66e11B0FcC5552e4425"],
+    "NodeOperatorsRegistry": [lido_dao_node_operators_registry, "0x9cBbA6CDA09C7dadA8343C4076c21eE06CCa4836"],
+    "OracleDaemonConfig": [oracle_daemon_config],
+    "OracleReportSanityChecker": [lido_dao_oracle_report_sanity_checker],
+    "Repo": ["0xa8A358E9bbB9fF60D4B89CBE5b2FE88f98b51B9D"],
+    "StakingRouter": [lido_dao_staking_router, "0x4384fB5DcaC0576B93e36b8af6CdfEB739888894"],
+    "ValidatorsExitBusOracle": [lido_dao_validators_exit_bus_oracle, "0xfdfad30ae5e5c9Dc4fb51aC35AB60674FcBdefB3"],
+    "Voting": ["0x72fb5253AD16307B9E773d2A78CaC58E309d5Ba4"],
+    "WithdrawalQueueERC721": [lido_dao_withdrawal_queue, "0x5EfF11Cb6bD446370FC3ce46019F2b501ba06c2D"],
+    "WithdrawalVault": [lido_dao_withdrawal_vault, lido_dao_withdrawal_vault_implementation],
+}
