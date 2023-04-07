@@ -63,6 +63,8 @@ def test_upgrade_template_addresses():
     template = prepare_for_shapella_upgrade_voting(conf.deployer_eoa, silent=True)
     upgrade_withdrawal_vault()
 
+    assert interface.OssifiableProxy(template._locator()).proxy__getImplementation() == conf.lido_dao_lido_locator_implementation
+
     assert template._locator() == conf.lido_dao_lido_locator
     assert template._accountingOracle() == conf.lido_dao_accounting_oracle
     assert template._stakingRouter() == conf.lido_dao_staking_router
