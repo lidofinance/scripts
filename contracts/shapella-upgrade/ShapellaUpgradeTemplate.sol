@@ -466,6 +466,9 @@ contract ShapellaUpgradeTemplate {
     string public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_KEY = "NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP";
     bytes public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_VALUE = hex"64";
 
+    uint256 public constant VOTING_DURATION = 3 days;
+    uint256 public constant MAX_EXPIRE_SINCE_INCLUSIVE = 1688155200; // 2023-07-01 00:00:00
+
     //
     // Immutables
     //
@@ -481,8 +484,17 @@ contract ShapellaUpgradeTemplate {
     uint256 public _upgradeBlockNumber;
     bool public _isUpgradeFinished;
 
+
+    /// @notice ShapellaUpgradeTemplate ctor
+    /// @param expireSinceInclusive For additional safety limited to be in range:
+    ///        [<block.timestamp + VOTING_DURATION; MAX_EXPIRE_SINCE_INCLUSIVE]
     constructor(uint256 expireSinceInclusive) {
-        if (expireSinceInclusive <= block.timestamp) revert ExpireSinceMustBeInFuture();
+        uint256 minExpireSinceInclusive = block.timestamp + VOTING_DURATION;
+        if (expireSinceInclusive < minExpireSinceInclusive
+         || expireSinceInclusive > MAX_EXPIRE_SINCE_INCLUSIVE
+        ) {
+            revert ExpireSinceMustBeInRange(minExpireSinceInclusive, MAX_EXPIRE_SINCE_INCLUSIVE);
+        }
 
         EXPIRE_SINCE_INCLUSIVE = expireSinceInclusive;
 
@@ -508,10 +520,10 @@ contract ShapellaUpgradeTemplate {
         _assertUpgradeIsFinishedCorrectly();
     }
 
-    /// @notice Needed for 2nd Aragon voting (roles revoke) to fail if 1st voting isn't enacted
-    function revertIfUpgradeNotEnacted() external view {
+    /// @notice Used externally for 2nd Aragon voting (roles revoke) to fail if 1st voting isn't enacted
+    function revertIfUpgradeNotFinished() public view {
         if (!_isUpgradeFinished) {
-            revert UpgradeNotEnacted();
+            revert UpgradeNotFinished();
         }
     }
 
@@ -897,7 +909,7 @@ contract ShapellaUpgradeTemplate {
 
     function _assertUpgradeIsFinishedCorrectly() internal view {
         if (_upgradeBlockNumber == UPGRADE_NOT_STARTED) revert UpgradeNotStarted();
-        if (!_isUpgradeFinished) revert UpgradeNotFinished();
+        revertIfUpgradeNotFinished();
 
         _checkContractVersions();
 
@@ -1070,7 +1082,6 @@ contract ShapellaUpgradeTemplate {
     error CanOnlyFinishOnce();
     error UpgradeNotStarted();
     error UpgradeNotFinished();
-    error UpgradeNotEnacted();
     error LidoOracleMustNotBeUpgradedToLegacyYet();
     error LidoOracleMustBeUpgradedToLegacy();
     error IncorrectDsmOwner();
@@ -1092,7 +1103,7 @@ contract ShapellaUpgradeTemplate {
     error IncorrectLocatorAddresses();
     error IncorrectAragonAppImplementation(address repo, address implementation);
     error IncorrectFeeDistribution();
-    error ExpireSinceMustBeInFuture();
+    error ExpireSinceMustBeInRange(uint256 minValue, uint256 maxValue);
     error StartAndFinishMustBeInSameBlock();
     error Expired();
 }

@@ -156,7 +156,7 @@ def test_vote(
     # START VOTE
     if len(vote_ids_from_env) > 0:
         vote_ids = vote_ids_from_env
-        vote_transactions = helpers.execute_votes_sequential(accounts, vote_ids, contracts.voting)
+        vote_transactions = helpers.execute_votes(accounts, vote_ids, contracts.voting)
     else:
         vote_ids, vote_transactions = start_and_execute_votes(contracts.voting, helpers)
 

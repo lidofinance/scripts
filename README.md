@@ -138,8 +138,9 @@ See [here](tests/README.md) to learn more about tests
 `OMNIBUS_BYPASS_EVENTS_DECODING` environment variable to `1`. It could be useful
 in case of etherscan downtimes or usage of some unverified contracts (especially,
 on the Görli Testnet).
-- To re-use the already created `vote_id` you can pass the `OMNIBUS_VOTE_ID`
-environment variable (e.g. `OMNIBUS_VOTE_ID=104`).
+- To re-use the already created `vote_id` you can pass the `OMNIBUS_VOTE_IDS`
+environment variable (e.g. `OMNIBUS_VOTE_IDS=104`).
+- To re-use multiple created votes list the ids comma-separated (e.g. `OMNIBUS_VOTE_IDS=104,105`)
 
 ## Code style
 
