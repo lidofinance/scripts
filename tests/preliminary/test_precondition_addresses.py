@@ -107,6 +107,21 @@ def test_locator_addresses():
 
     locator = interface.LidoLocator(conf.lido_dao_lido_locator)
 
+    assert locator.accountingOracle() == conf.lido_dao_accounting_oracle
+    assert locator.depositSecurityModule() == conf.lido_dao_deposit_security_module_address
+    assert locator.elRewardsVault() == conf.lido_dao_execution_layer_rewards_vault
+    assert locator.legacyOracle() == conf.lido_dao_legacy_oracle
+    assert locator.lido() == conf.lido_dao_steth_address
+    assert locator.oracleReportSanityChecker() == conf.lido_dao_oracle_report_sanity_checker
+    assert locator.postTokenRebaseReceiver() == conf.lido_dao_legacy_oracle
+    assert locator.burner() == conf.lido_dao_burner
+    assert locator.stakingRouter() == conf.lido_dao_staking_router
+    assert locator.treasury() == conf.lido_dao_agent_address
+    assert locator.validatorsExitBusOracle() == conf.lido_dao_validators_exit_bus_oracle
+    assert locator.withdrawalQueue() == conf.lido_dao_withdrawal_queue
+    assert locator.withdrawalVault() == conf.lido_dao_withdrawal_vault
+    assert locator.oracleDaemonConfig() == conf.oracle_daemon_config
+
     core_components = locator.coreComponents()
     assert core_components[0] == conf.lido_dao_execution_layer_rewards_vault
     assert core_components[1] == conf.lido_dao_oracle_report_sanity_checker
