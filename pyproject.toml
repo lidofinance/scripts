@@ -25,3 +25,12 @@ build-backend = "poetry.core.masonry.api"
 line-length = 120
 target-version = ['py310']
 include = '\.pyi?$'
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
+filterwarnings = [
+    "ignore:abi.(decode|encode):DeprecationWarning",
+    "ignore:rpc.(snapshot|revert):FutureWarning",
+]
