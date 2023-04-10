@@ -29,6 +29,7 @@ lido_dao_accounting_oracle_implementation = "0x49cc40EE660BfD5f46423f04891502410
 
 # Needed temporary only for Shapella upgrade
 deployer_eoa = "0xa5F1d7D49F581136Cf6e58B32cBE9a2039C48bA1"
+dummy_implementation_address = ""
 
 lido_dao_lido_locator = "0x1eDf09b5023DC86737b59dE68a8130De878984f5"
 lido_dao_burner = "0x20c61C07C2E2FAb04BF5b4E12ce45a459a18f3B1"

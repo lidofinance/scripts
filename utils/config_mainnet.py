@@ -33,6 +33,7 @@ lido_dao_lido_locator_implementation = "0x7948f9cf80D99DDb7C7258Eb23a693E9dFBc97
 
 # Needed temporary only for Shapella upgrade
 deployer_eoa = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
+dummy_implementation_address = "0xE2f969983c8859E986d6e19892EDBd1eea7371D2"
 
 lido_dao_lido_locator = "0xd75C357F32Df60A67111BAa62a168c0D644d1C32"
 lido_dao_burner = "0xFc810b3F9acc7ee0C3820B5f7a9bb0ee88C3cBd2"
@@ -48,6 +49,7 @@ lido_dao_withdrawal_queue = "0xFb4E291D12734af4300B89585A16dF932160b840"
 lido_dao_eip712_steth = "0x8dF3c29C96fd4c4d496954646B8B6a48dFFcA83F"
 lido_dao_withdrawal_vault = "0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f"
 lido_dao_withdrawal_vault_implementation = "0x654f166BA493551899212917d8eAa30CE977b794"
+lido_dao_withdrawal_vault_stub_implementation = "0xe681faB8851484B57F32143FD78548f25fD59980"
 lido_dao_staking_router = "0x5A2a6cB5e0f57A30085A9411f7F5f07be8ad1Ec7"
 gate_seal = "0xD59f8Bc37BAead58cbCfD99b03997655A13f56d9"
 oracle_daemon_config = "0xbA3981771AB991960028B2F83ae83664Fd003F61"
