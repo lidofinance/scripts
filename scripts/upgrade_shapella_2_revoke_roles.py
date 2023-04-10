@@ -43,9 +43,16 @@ from utils.permissions import encode_permission_revoke
 from utils.brownie_prelude import *
 
 
-def encode_template_check_upgrade_enacted(template_address: str) -> Tuple[str, str]:
+TEMPLATE_ADDRESS = (
+    "0xF9a393Baab3C575c2B31166636082AB58a3dae62"
+    if contracts.shapella_upgrade_template is None
+    else contracts.shapella_upgrade_template.address
+)
+
+
+def encode_template_check_upgrade_finished(template_address: str) -> Tuple[str, str]:
     template = ShapellaUpgradeTemplate.at(template_address)
-    return template.address, template.revertIfUpgradeNotEnacted.encode_input()
+    return template.address, template.revertIfUpgradeNotFinished.encode_input()
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
@@ -56,10 +63,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
     lido_oracle: interface.LegacyOracle = contracts.legacy_oracle
     node_operators_registry: interface.NodeOperatorsRegistry = contracts.node_operators_registry
 
-    # TODO: on goerli the list is larger
     call_script_items = [
         # 1)
-        encode_template_check_upgrade_enacted(contracts.shapella_upgrade_template.address),
+        encode_template_check_upgrade_finished(TEMPLATE_ADDRESS),
         # 2)
         encode_permission_revoke(lido, "MANAGE_FEE", revoke_from=voting),
         # 3)

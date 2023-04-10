@@ -33,7 +33,7 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
 
     if os.getenv("SKIP_SHAPELLA_PRELIMINARY_STEP"):
         assert (
-            shapella_upgrade_template != ""
+            shapella_upgrade_template_address != ""
         ), "If SKIP_SHAPELLA_PRELIMINARY_STEP is set 'shapella_upgrade_template' must be specified in the config"
         # ContractsLazyLoader.upgrade_template = shapella_upgrade_template
     else:
@@ -54,7 +54,7 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
         start_vote = locals()[start_vote_name]
 
         vote_id, _ = start_vote({"from": ldo_holder_address_for_tests}, silent=True)
-        (tx,) = helpers.execute_votes_sequential(accounts, [vote_id], dao_voting, topup="0.5 ether")
+        (tx,) = helpers.execute_votes(accounts, [vote_id], dao_voting, topup="0.5 ether")
         vote_ids.append(vote_id)
         vote_transactions.append(tx)
     return vote_ids, vote_transactions

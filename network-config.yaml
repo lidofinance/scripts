@@ -25,7 +25,7 @@ development:
   - cmd: ./ganache.sh
     cmd_settings:
       accounts: 10
-      chain_id: 5
+      chain_id: 1
       fork: http://127.0.0.1:7777
       gas_limit: 12000000
       mnemonic: brownie

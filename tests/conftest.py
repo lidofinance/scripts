@@ -59,7 +59,12 @@ class Helpers:
         assert dict(receiver_events[0]) == evt_keys_dict
 
     @staticmethod
-    def execute_votes_sequential(accounts, vote_ids, dao_voting, topup="0.1 ether", skip_time=3 * 60 * 60 * 24):
+    def execute_vote(accounts, vote_id, dao_voting, topup="0.1 ether", skip_time=3 * 60 * 60 * 24):
+        (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup, skip_time)
+        return tx
+
+    @staticmethod
+    def execute_votes(accounts, vote_ids, dao_voting, topup="0.1 ether", skip_time=3 * 60 * 60 * 24):
         OBJECTION_PHASE_ID = 1
         for vote_id in vote_ids:
             print(f"Vote #{vote_id}")
@@ -153,4 +158,6 @@ def parse_events_from_local_abi():
                 with open(interface_path_template.format(contract_name)) as fp:
                     abi = json.load(fp)
                 contract = Contract.from_abi(contract_name, addr, abi)
+                # See https://eth-brownie.readthedocs.io/en/stable/api-network.html?highlight=_add_contract#brownie.network.state._add_contract
+                # Added contract will resolve from address during state._find_contract without a request to Etherscan
                 state._add_contract(contract)

@@ -184,7 +184,7 @@ class ContractsLazyLoader:
         return interface.Repo(lido_dao_lido_repo)
 
     @property
-    def nos_app_repo(self) -> interface.Repo:
+    def nor_app_repo(self) -> interface.Repo:
         return interface.Repo(lido_dao_node_operators_registry_repo)
 
     @property
@@ -223,8 +223,10 @@ class ContractsLazyLoader:
     def shapella_upgrade_template(self) -> ShapellaUpgradeTemplate:
         if shapella_upgrade_template_address != "":
             return ShapellaUpgradeTemplate.at(shapella_upgrade_template_address)
-        else:
+        elif ContractsLazyLoader.upgrade_template is not None:
             return ShapellaUpgradeTemplate.at(ContractsLazyLoader.upgrade_template)
+        else:
+            return None
 
 
 def __getattr__(name: str) -> Any:

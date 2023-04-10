@@ -28,7 +28,7 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.evm_script import encode_call_script
 from utils.repo import (
     add_implementation_to_lido_app_repo,
-    add_implementation_to_nos_app_repo,
+    add_implementation_to_nor_app_repo,
     add_implementation_to_oracle_app_repo,
 )
 from utils.kernel import update_app_implementation

@@ -26,7 +26,7 @@ from brownie import ShapellaUpgradeTemplate
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.repo import (
     add_implementation_to_lido_app_repo,
-    add_implementation_to_nos_app_repo,
+    add_implementation_to_nor_app_repo,
     add_implementation_to_oracle_app_repo,
 )
 from utils.kernel import update_app_implementation
@@ -44,10 +44,16 @@ from utils.permissions import encode_permission_create
 # noinspection PyUnresolvedReferences
 from utils.brownie_prelude import *
 
-# TODO: update all three apps content_uri when the apps get deployed
+# TODO: remove this test dev if-else setup
+TEMPLATE_ADDRESS = (
+    "0xF9a393Baab3C575c2B31166636082AB58a3dae62"
+    if contracts.shapella_upgrade_template is None
+    else contracts.shapella_upgrade_template.address
+)
 
 update_lido_app = {
     "new_address": "0xAb3bcE27F31Ca36AAc6c6ec2bF3e79569105ec2c",
+    # TODO: set content_uri after Aragon UI deployment
     "content_uri": "0x697066733a516d63354a64475a3576326844466d64516844535a70514a6554394a55364e34386d5678546474685667677a766d",
     "id": "0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
     "version": (4, 0, 0),
@@ -55,6 +61,7 @@ update_lido_app = {
 
 update_nor_app = {
     "new_address": "0x9cBbA6CDA09C7dadA8343C4076c21eE06CCa4836",
+    # TODO: set content_uri after Aragon UI deployment
     "content_uri": "0x697066733a516d5342796b4e4a61363734547146334b7366677642666444315a545158794c4a6e707064776b36477463534c4d",
     "id": "0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d",
     "version": (4, 0, 0),
@@ -62,6 +69,7 @@ update_nor_app = {
 
 update_oracle_app = {
     "new_address": "0xcA3cE6bf0CB2bbaC5dF3874232AE3F5b67C6b146",
+    # TODO: set content_uri after Aragon UI deployment
     "content_uri": "0x697066733a516d66414348396f5348465767563831446838525356636761564264686b5a7548685a5932695a76357379424a4b",
     "id": "0x8b47ba2a8454ec799cd91646e7ec47168e91fd139b23f017455f3e5898aaba93",
     "version": (4, 0, 0),
@@ -86,16 +94,11 @@ def encode_withdrawal_vault_proxy_update(vault_proxy_address: str, implementatio
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
 
-    # assert shapella_upgrade_template != "", "Upgrade template must be deployed preliminary"
-
-    voting: interface.Voting = contracts.voting
-    node_operators_registry: interface.NodeOperatorsRegistry = contracts.node_operators_registry
-
     call_script_items = [
         # 1)
         encode_withdrawal_vault_proxy_update(lido_dao_withdrawal_vault, lido_dao_withdrawal_vault_implementation),
         # 2)
-        encode_template_start_upgrade(contracts.shapella_upgrade_template.address),
+        encode_template_start_upgrade(TEMPLATE_ADDRESS),
         # 3)
         add_implementation_to_lido_app_repo(
             update_lido_app["version"], update_lido_app["new_address"], update_lido_app["content_uri"]
@@ -103,7 +106,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         # 4)
         update_app_implementation(update_lido_app["id"], update_lido_app["new_address"]),
         # 5)
-        add_implementation_to_nos_app_repo(
+        add_implementation_to_nor_app_repo(
             update_nor_app["version"], update_nor_app["new_address"], update_nor_app["content_uri"]
         ),
         # 6)
@@ -117,12 +120,12 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         # 9)
         encode_permission_create(
             entity=lido_dao_staking_router,
-            target_app=node_operators_registry,
+            target_app=contracts.node_operators_registry,
             permission_name="STAKING_ROUTER_ROLE",
-            manager=voting,
+            manager=contracts.voting,
         ),
         # 10)
-        encode_template_finish_upgrade(contracts.shapella_upgrade_template.address),
+        encode_template_finish_upgrade(TEMPLATE_ADDRESS),
     ]
 
     vote_desc_items = [
