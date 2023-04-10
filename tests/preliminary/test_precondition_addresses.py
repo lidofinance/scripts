@@ -12,6 +12,14 @@ def shared_setup(fn_isolation):
     pass
 
 
+def get_proxy_impl_app(addr):
+    return interface.AppProxyUpgradeable(addr).implementation()
+
+
+def get_proxy_impl_ossifiable(addr):
+    return interface.OssifiableProxy(addr).proxy__getImplementation()
+
+
 def upgrade_withdrawal_vault():
     vault = interface.WithdrawalVaultManager(conf.lido_dao_withdrawal_vault)
     vault.proxy_upgradeTo(conf.lido_dao_withdrawal_vault_implementation, b"", {"from": conf.contracts.voting.address})
@@ -33,7 +41,6 @@ def test_el_rewards_vault_did_not_changed():
 # Withdrawals vault addr did not changed
 def test_withdrawals_vault_addr_did_not_changed():
     template = prepare_for_shapella_upgrade_voting(conf.deployer_eoa, silent=True)
-    upgrade_withdrawal_vault()
 
     locator = interface.LidoLocator(conf.lido_dao_lido_locator)
     core_components = locator.coreComponents()
@@ -51,7 +58,6 @@ def test_withdrawals_vault_addr_matching_with_wc():
     assert withdrawal_credentials_addresss == conf.lido_dao_withdrawal_vault.lower()
 
     prepare_for_shapella_upgrade_voting(conf.deployer_eoa, silent=True)
-    upgrade_withdrawal_vault()
 
     withdrawal_credentials = conf.contracts.lido.getWithdrawalCredentials()
     withdrawal_credentials_addresss = extract_address_from_eth1_wc(str(withdrawal_credentials))
@@ -61,9 +67,8 @@ def test_withdrawals_vault_addr_matching_with_wc():
 
 def test_upgrade_template_addresses():
     template = prepare_for_shapella_upgrade_voting(conf.deployer_eoa, silent=True)
-    upgrade_withdrawal_vault()
 
-    assert interface.OssifiableProxy(template._locator()).proxy__getImplementation() == conf.lido_dao_lido_locator_implementation
+    assert get_proxy_impl_ossifiable(template._locator()) == conf.lido_dao_lido_locator_implementation
 
     assert template._locator() == conf.lido_dao_lido_locator
     assert template._accountingOracle() == conf.lido_dao_accounting_oracle
@@ -94,16 +99,32 @@ def test_upgrade_template_addresses():
     assert template._legacyOracleImplementation() == conf.lido_dao_legacy_oracle_implementation
     assert template._nodeOperatorsRegistryImplementation() == conf.lido_dao_node_operators_registry_implementation
     assert template._accountingOracleImplementation() == conf.lido_dao_accounting_oracle_implementation
-    # assert template._dummyImplementation() == conf.
+    assert template._dummyImplementation() == conf.dummy_implementation_address
     assert template._locatorImplementation() == conf.lido_dao_lido_locator_implementation
     assert template._stakingRouterImplementation() == conf.lido_dao_staking_router_implementation
     assert template._validatorsExitBusOracleImplementation() == conf.lido_dao_validators_exit_bus_oracle_implementation
     assert template._withdrawalVaultImplementation() == conf.lido_dao_withdrawal_vault_implementation
     assert template._withdrawalQueueImplementation() == conf.lido_dao_withdrawal_queue_implementation
 
+
+
+def test_proxyfied_implementation_adresses():
+    prepare_for_shapella_upgrade_voting(conf.deployer_eoa, silent=True)
+
+    assert get_proxy_impl_app(conf.lido_dao_acl_address) == conf.lido_dao_acl_implementation_address
+    assert get_proxy_impl_app(conf.lido_dao_node_operators_registry) == conf.lido_dao_node_operators_registry_implementation_v1
+    assert get_proxy_impl_app(conf.lido_dao_steth_address) == conf.lido_dao_steth_implementation_address_v1
+    assert get_proxy_impl_app(conf.lido_dao_legacy_oracle) == conf.lido_dao_legacy_oracle_implementation_v1
+    assert get_proxy_impl_ossifiable(conf.lido_dao_lido_locator) == conf.lido_dao_lido_locator_implementation
+    assert get_proxy_impl_ossifiable(conf.lido_dao_accounting_oracle) == conf.dummy_implementation_address # dummy
+    assert get_proxy_impl_ossifiable(conf.lido_dao_validators_exit_bus_oracle) == conf.dummy_implementation_address # dummy
+    assert get_proxy_impl_ossifiable(conf.lido_dao_withdrawal_queue) == conf.dummy_implementation_address # dummy
+    assert get_proxy_impl_app(conf.lido_dao_withdrawal_vault) == conf.lido_dao_withdrawal_vault_implementation_v1
+    assert get_proxy_impl_ossifiable(conf.lido_dao_staking_router) == conf.dummy_implementation_address # dummy
+
+
 def test_locator_addresses():
     prepare_for_shapella_upgrade_voting(conf.deployer_eoa, silent=True)
-    upgrade_withdrawal_vault()
 
     locator = interface.LidoLocator(conf.lido_dao_lido_locator)
 
