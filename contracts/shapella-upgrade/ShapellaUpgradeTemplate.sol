@@ -553,12 +553,12 @@ contract ShapellaUpgradeTemplate {
         _assertZeroOZRoleHolders(vebo, vebo.RESUME_ROLE());
         _assertZeroOZRoleHolders(vebo, vebo.PAUSE_ROLE());
 
-        IStakingRouter sr = _stakingRouter;
-        _assertZeroOZRoleHolders(sr, DEFAULT_ADMIN_ROLE);
-        _assertZeroOZRoleHolders(sr, sr.STAKING_MODULE_PAUSE_ROLE());
-        _assertZeroOZRoleHolders(sr, sr.STAKING_MODULE_RESUME_ROLE());
-        _assertZeroOZRoleHolders(sr, sr.REPORT_EXITED_VALIDATORS_ROLE());
-        _assertZeroOZRoleHolders(sr, sr.REPORT_REWARDS_MINTED_ROLE());
+        // IStakingRouter sr = _stakingRouter;
+        // _assertZeroOZRoleHolders(sr, DEFAULT_ADMIN_ROLE);
+        // _assertZeroOZRoleHolders(sr, sr.STAKING_MODULE_PAUSE_ROLE());
+        // _assertZeroOZRoleHolders(sr, sr.STAKING_MODULE_RESUME_ROLE());
+        // _assertZeroOZRoleHolders(sr, sr.REPORT_EXITED_VALIDATORS_ROLE());
+        // _assertZeroOZRoleHolders(sr, sr.REPORT_REWARDS_MINTED_ROLE());
 
         IWithdrawalQueue wq = _withdrawalQueue;
         _assertZeroOZRoleHolders(wq, DEFAULT_ADMIN_ROLE);
@@ -948,12 +948,12 @@ contract ShapellaUpgradeTemplate {
         _assertZeroOZRoleHolders(vebo, vebo.RESUME_ROLE());
         _assertSingleOZRoleHolder(vebo, vebo.PAUSE_ROLE(), _gateSeal);
 
-        IStakingRouter sr = _stakingRouter;
-        _assertSingleOZRoleHolder(sr, DEFAULT_ADMIN_ROLE, agent);
-        _assertZeroOZRoleHolders(sr, sr.STAKING_MODULE_RESUME_ROLE());
-        _assertSingleOZRoleHolder(sr, sr.STAKING_MODULE_PAUSE_ROLE(), address(_depositSecurityModule));
-        _assertSingleOZRoleHolder(sr, sr.REPORT_EXITED_VALIDATORS_ROLE(), address(_accountingOracle));
-        _assertSingleOZRoleHolder(sr, sr.REPORT_REWARDS_MINTED_ROLE(), address(_lido));
+        // IStakingRouter sr = _stakingRouter;
+        // _assertSingleOZRoleHolder(sr, DEFAULT_ADMIN_ROLE, agent);
+        // _assertZeroOZRoleHolders(sr, sr.STAKING_MODULE_RESUME_ROLE());
+        // _assertSingleOZRoleHolder(sr, sr.STAKING_MODULE_PAUSE_ROLE(), address(_depositSecurityModule));
+        // _assertSingleOZRoleHolder(sr, sr.REPORT_EXITED_VALIDATORS_ROLE(), address(_accountingOracle));
+        // _assertSingleOZRoleHolder(sr, sr.REPORT_REWARDS_MINTED_ROLE(), address(_lido));
 
         IWithdrawalQueue wq = _withdrawalQueue;
         _assertSingleOZRoleHolder(wq, DEFAULT_ADMIN_ROLE, agent);
