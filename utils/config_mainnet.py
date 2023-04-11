@@ -11,10 +11,14 @@ lido_dao_voting_address = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 lido_dao_token_manager_address = "0xf73a1260d222f447210581DDf212D915c09a3249"
 # Our custom Aragon apps
 lido_dao_node_operators_registry = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
+lido_dao_node_operators_registry_implementation_v1 = "0x5d39ABaa161e622B99D45616afC8B837E9F19a25"
+lido_dao_node_operators_registry_implementation = "0x9cBbA6CDA09C7dadA8343C4076c21eE06CCa4836"
 lido_dao_steth_address = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
 lido_dao_steth_implementation_address = "0xAb3bcE27F31Ca36AAc6c6ec2bF3e79569105ec2c"
+lido_dao_steth_implementation_address_v1 = "0x47EbaB13B806773ec2A2d16873e2dF770D130b50"
 lido_dao_legacy_oracle = "0x442af784A788A5bd6F42A01Ebe9F287a871243fb"
 lido_dao_legacy_oracle_implementation = "0xcA3cE6bf0CB2bbaC5dF3874232AE3F5b67C6b146"
+lido_dao_legacy_oracle_implementation_v1 = "0x1430194905301504e8830ce4B0b0df7187E84AbD"
 # Aragon APM Repos
 lido_dao_voting_repo = "0x4Ee3118E3858E8D7164A634825BfE0F73d99C792"
 lido_dao_lido_repo = "0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1"
@@ -31,6 +35,9 @@ lido_dao_deposit_security_module_address = "0xe44E11BBb629Dc23e72e6eAC4e538AaCb6
 # proxy is to be to the implementation
 lido_dao_lido_locator_implementation = "0x7948f9cf80D99DDb7C7258Eb23a693E9dFBc97EC"
 
+# Dummy implementation
+dummy_implementation_address = "0xE2f969983c8859E986d6e19892EDBd1eea7371D2"
+
 # Needed temporary only for Shapella upgrade
 deployer_eoa = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
 dummy_implementation_address = "0xE2f969983c8859E986d6e19892EDBd1eea7371D2"
@@ -46,11 +53,14 @@ lido_dao_validators_exit_bus_oracle = "0x6e7Da71eF6E0Aaa85E59554C1FAe44128fA649E
 lido_dao_validators_exit_bus_oracle_implementation = "0xfdfad30ae5e5c9Dc4fb51aC35AB60674FcBdefB3"
 lido_dao_oracle_report_sanity_checker = "0x499A11A07ebe21685953583B6DA9f237E792aEE3"
 lido_dao_withdrawal_queue = "0xFb4E291D12734af4300B89585A16dF932160b840"
+lido_dao_withdrawal_queue_implementation = "0x5EfF11Cb6bD446370FC3ce46019F2b501ba06c2D"
 lido_dao_eip712_steth = "0x8dF3c29C96fd4c4d496954646B8B6a48dFFcA83F"
 lido_dao_withdrawal_vault = "0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f"
 lido_dao_withdrawal_vault_implementation = "0x654f166BA493551899212917d8eAa30CE977b794"
+lido_dao_withdrawal_vault_implementation_v1 = "0xe681faB8851484B57F32143FD78548f25fD59980"
 lido_dao_withdrawal_vault_stub_implementation = "0xe681faB8851484B57F32143FD78548f25fD59980"
 lido_dao_staking_router = "0x5A2a6cB5e0f57A30085A9411f7F5f07be8ad1Ec7"
+lido_dao_staking_router_implementation = "0x4384fB5DcaC0576B93e36b8af6CdfEB739888894"
 gate_seal = "0xD59f8Bc37BAead58cbCfD99b03997655A13f56d9"
 oracle_daemon_config = "0xbA3981771AB991960028B2F83ae83664Fd003F61"
 shapella_upgrade_template_address = ""
