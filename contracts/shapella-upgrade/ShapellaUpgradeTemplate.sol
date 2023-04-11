@@ -553,6 +553,7 @@ contract ShapellaUpgradeTemplate {
         _assertZeroOZRoleHolders(vebo, vebo.RESUME_ROLE());
         _assertZeroOZRoleHolders(vebo, vebo.PAUSE_ROLE());
 
+        // Disabled because modified StakingRouter inherits AccessControl but AccessControlEnumerable
         // IStakingRouter sr = _stakingRouter;
         // _assertZeroOZRoleHolders(sr, DEFAULT_ADMIN_ROLE);
         // _assertZeroOZRoleHolders(sr, sr.STAKING_MODULE_PAUSE_ROLE());
@@ -948,6 +949,7 @@ contract ShapellaUpgradeTemplate {
         _assertZeroOZRoleHolders(vebo, vebo.RESUME_ROLE());
         _assertSingleOZRoleHolder(vebo, vebo.PAUSE_ROLE(), _gateSeal);
 
+        // Disabled because modified StakingRouter inherits AccessControl but AccessControlEnumerable
         // IStakingRouter sr = _stakingRouter;
         // _assertSingleOZRoleHolder(sr, DEFAULT_ADMIN_ROLE, agent);
         // _assertZeroOZRoleHolders(sr, sr.STAKING_MODULE_RESUME_ROLE());
