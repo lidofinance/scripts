@@ -10,10 +10,10 @@ NODE_OPERATOR_KEYS = [
     "active",
     "name",
     "rewardAddress",
-    "stakingLimit",
-    "stoppedValidators",
-    "totalSigningKeys",
-    "usedSigningKeys",
+    "totalVettedValidators",
+    "totalExitedValidators",
+    "totalAddedValidators",
+    "totalDepositedValidators",
 ]
 
 NODE_OPERATOR_SUMMARY_KEYS = [

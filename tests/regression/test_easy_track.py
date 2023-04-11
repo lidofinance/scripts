@@ -15,11 +15,11 @@ def test_increase_nop_staking_limit(
     factory = interface.IncreaseNodeOperatorStakingLimit(lido_easytrack_increase_nop_staking_limit_factory)
     node_operator = contracts.node_operators_registry.getNodeOperator(NODE_OPERATOR_ID, False)
     trusted_caller = accounts.at(node_operator["rewardAddress"], force=True)
-    new_staking_limit = node_operator["stakingLimit"] + 1
+    new_staking_limit = node_operator["totalVettedValidators"] + 1
 
     motions_before = contracts.easy_track.getMotions()
 
-    if node_operator["totalSigningKeys"] < new_staking_limit:
+    if node_operator["totalAddedValidators"] < new_staking_limit:
         contracts.node_operators_registry.addSigningKeys(
             NODE_OPERATOR_ID,
             1,
@@ -47,4 +47,4 @@ def test_increase_nop_staking_limit(
 
     updated_node_operator = contracts.node_operators_registry.getNodeOperator(NODE_OPERATOR_ID, False)
 
-    assert updated_node_operator["stakingLimit"] == new_staking_limit
+    assert updated_node_operator["totalVettedValidators"] == new_staking_limit

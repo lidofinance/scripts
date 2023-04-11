@@ -90,10 +90,10 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
             "active": True,
             "name": new_node_operator_name,
             "rewardAddress": reward_address,
-            "usedSigningKeys": 0,
-            "stoppedValidators": 0,
-            "totalSigningKeys": 0,
-            "stakingLimit": 0,
+            "totalDepositedValidators": 0,
+            "totalExitedValidators": 0,
+            "totalAddedValidators": 0,
+            "totalVettedValidators": 0,
         },
     )
 
@@ -167,7 +167,7 @@ def test_set_node_operator_staking_limit(nor, voting_eoa, new_node_operator_id):
     node_operator_summary_before = nor.getNodeOperatorSummary(new_node_operator_id)
 
     new_staking_limit = nor.getTotalSigningKeyCount(new_node_operator_id)
-    assert new_staking_limit != node_operator_before["stakingLimit"], "invalid new staking limit"
+    assert new_staking_limit != node_operator_before["totalVettedValidators"], "invalid new staking limit"
 
     tx = nor.setNodeOperatorStakingLimit(new_node_operator_id, new_staking_limit, {"from": voting_eoa})
 
@@ -175,8 +175,8 @@ def test_set_node_operator_staking_limit(nor, voting_eoa, new_node_operator_id):
     node_operator_after = nor.getNodeOperator(new_node_operator_id, True)
     node_operator_summary_after = nor.getNodeOperatorSummary(new_node_operator_id)
 
-    assert_node_operators(node_operator_before, node_operator_after, skip=["stakingLimit"])
-    assert node_operator_after["stakingLimit"] == new_staking_limit
+    assert_node_operators(node_operator_before, node_operator_after, skip=["totalVettedValidators"])
+    assert node_operator_after["totalVettedValidators"] == new_staking_limit
 
     assert_node_operator_summaries(
         node_operator_summary_before, node_operator_summary_after, skip=["depositableValidatorsCount"]
@@ -203,10 +203,10 @@ def test_deactivate_node_operator(nor, voting_eoa, new_node_operator_id):
     assert active_node_operators_count_after == active_node_operators_count_before - 1
 
     node_operator_after = nor.getNodeOperator(new_node_operator_id, False)
-    assert_node_operators(node_operator_after, node_operator_before, skip=["active", "stakingLimit"])
+    assert_node_operators(node_operator_after, node_operator_before, skip=["active", "totalVettedValidators"])
     assert node_operator_after["active"] == False
     # after deactivation vetted keys count trimmed to used
-    assert node_operator_after["stakingLimit"] == node_operator_before["usedSigningKeys"]
+    assert node_operator_after["totalVettedValidators"] == node_operator_before["usedSigningKeys"]
 
     node_operator_summary_after = nor.getNodeOperatorSummary(new_node_operator_id)
     assert_node_operator_summaries(
@@ -249,7 +249,7 @@ def test_set_staking_limit_via_evm_script_executor(nor, evm_script_executor_eoa,
     node_operator_summary_before = nor.getNodeOperatorSummary(new_node_operator_id)
 
     new_staking_limit = nor.getTotalSigningKeyCount(new_node_operator_id)
-    assert new_staking_limit != node_operator_before["stakingLimit"], "invalid new staking limit"
+    assert new_staking_limit != node_operator_before["totalVettedValidators"], "invalid new staking limit"
 
     tx = nor.setNodeOperatorStakingLimit(new_node_operator_id, new_staking_limit, {"from": evm_script_executor_eoa})
 
@@ -257,8 +257,8 @@ def test_set_staking_limit_via_evm_script_executor(nor, evm_script_executor_eoa,
     node_operator_after = nor.getNodeOperator(new_node_operator_id, True)
     node_operator_summary_after = nor.getNodeOperatorSummary(new_node_operator_id)
 
-    assert_node_operators(node_operator_before, node_operator_after, skip=["stakingLimit"])
-    assert node_operator_after["stakingLimit"] == new_staking_limit
+    assert_node_operators(node_operator_before, node_operator_after, skip=["totalVettedValidators"])
+    assert node_operator_after["totalVettedValidators"] == new_staking_limit
 
     assert_node_operator_summaries(
         node_operator_summary_before, node_operator_summary_after, skip=["depositableValidatorsCount"]
