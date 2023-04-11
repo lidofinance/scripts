@@ -72,7 +72,7 @@ def petrified_implementations(shapella_upgrade_template):
             "implementation_type": "AragonApp",
         },
         "NosRepo": {
-            "contract_address": contracts.nos_app_repo.address,
+            "contract_address": contracts.nor_app_repo.address,
             "proxy_type": "AppProxyUpgradeable",
             "implementation_type": "AragonApp",
         },
