@@ -48,7 +48,7 @@ def test_versioned(contract):
 
 
 def test_links(contract):
-    assert contract.getEIP712StETH() == contracts.eip712_steth  # TODO: check eip712_steth contract
+    assert contract.getEIP712StETH() == contracts.eip712_steth
     assert contract.getLidoLocator() == contracts.lido_locator
 
 
