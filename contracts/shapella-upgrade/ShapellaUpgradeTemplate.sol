@@ -336,7 +336,6 @@ contract ShapellaUpgradeTemplate {
     //
     // Events
     //
-    event TemplateCreated(uint256 expireSinceInclusive);
     event UpgradeStarted();
     event UpgradeFinished();
 
@@ -466,16 +465,13 @@ contract ShapellaUpgradeTemplate {
     string public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_KEY = "NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP";
     bytes public constant NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP_VALUE = hex"64";
 
-    uint256 public constant VOTING_DURATION = 3 days;
-    uint256 public constant MAX_EXPIRE_SINCE_INCLUSIVE = 1688155200; // 2023-07-01 00:00:00
-
     //
     // Immutables
     //
     // Timestamp since startUpgrade() and finishUpgrade() revert with Expired()
     // This behavior is introduced to disarm the template if the upgrade voting creation or enactment didn't
     // happen in proper time period
-    uint256 immutable public EXPIRE_SINCE_INCLUSIVE;
+    uint256 public EXPIRE_SINCE_INCLUSIVE = 1688169600; // 2023-07-01 00:00:00 UTC
 
     //
     // Structured storage
@@ -484,22 +480,6 @@ contract ShapellaUpgradeTemplate {
     uint256 public _upgradeBlockNumber;
     bool public _isUpgradeFinished;
 
-
-    /// @notice ShapellaUpgradeTemplate ctor
-    /// @param expireSinceInclusive For additional safety limited to be in range:
-    ///        [<block.timestamp + VOTING_DURATION; MAX_EXPIRE_SINCE_INCLUSIVE]
-    constructor(uint256 expireSinceInclusive) {
-        uint256 minExpireSinceInclusive = block.timestamp + VOTING_DURATION;
-        if (expireSinceInclusive < minExpireSinceInclusive
-         || expireSinceInclusive > MAX_EXPIRE_SINCE_INCLUSIVE
-        ) {
-            revert ExpireSinceMustBeInRange(minExpireSinceInclusive, MAX_EXPIRE_SINCE_INCLUSIVE);
-        }
-
-        EXPIRE_SINCE_INCLUSIVE = expireSinceInclusive;
-
-        emit TemplateCreated(EXPIRE_SINCE_INCLUSIVE);
-    }
 
     /// @notice Need to be called before LidoOracle implementation is upgraded to LegacyOracle
     function startUpgrade() external {
@@ -1103,7 +1083,6 @@ contract ShapellaUpgradeTemplate {
     error IncorrectLocatorAddresses();
     error IncorrectAragonAppImplementation(address repo, address implementation);
     error IncorrectFeeDistribution();
-    error ExpireSinceMustBeInRange(uint256 minValue, uint256 maxValue);
     error StartAndFinishMustBeInSameBlock();
     error Expired();
 }

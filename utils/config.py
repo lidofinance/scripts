@@ -10,6 +10,9 @@ from brownie.utils import color
 from brownie.network.account import Account, LocalAccount
 
 
+MAINNET_VOTE_DURATION = 3 * 24 * 60 * 60
+
+
 def network_name() -> Optional[str]:
     if network.show_active() is not None:
         return network.show_active()

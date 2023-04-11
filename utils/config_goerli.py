@@ -92,3 +92,7 @@ guardians = [
 
 wsteth_token_address = "0x6320cd32aa674d2898a68ec82e869385fc5f7e2f"
 deposit_contract = "0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b"
+
+# Used if env variable PARSE_EVENTS_FROM_LOCAL_ABI is set
+# Needed to enable events checking if ABI from Etherscan not available for any reason
+contract_address_mapping = {}

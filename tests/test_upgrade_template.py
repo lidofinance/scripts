@@ -2,24 +2,23 @@
 Tests for voting ??/05/2023
 """
 from brownie import reverts, ShapellaUpgradeTemplate, chain, web3, interface, ZERO_ADDRESS
-from brownie.convert import to_uint
+from scripts.upgrade_shapella_1 import start_vote
 from collections import OrderedDict
 from utils.config import (
     contracts,
     deployer_eoa,
     lido_dao_withdrawal_vault,
     lido_dao_withdrawal_vault_implementation,
+    ldo_holder_address_for_tests,
+    MAINNET_VOTE_DURATION,
 )
 from utils.shapella_upgrade import (
     prepare_for_shapella_upgrade_voting,
-    prepare_deploy_upgrade_template,
-    TIMESTAMP_FIRST_SECOND_OF_JULY_2023,
+    TIMESTAMP_FIRST_SECOND_OF_JULY_2023_UTC,
 )
 
-VOTING_DURATION = 3 * 24 * 60 * 60
 
-
-def get_current_timestamp():
+def get_current_chain_timestamp():
     return web3.eth.get_block("latest").timestamp
 
 
@@ -42,6 +41,7 @@ def typed_error(error, *values):
         "Expired": get_error_msg("0x203d82d8", values),
         "UpgradeAlreadyStarted": get_error_msg("0x18364e28", values),
         "UpgradeNotStarted": get_error_msg("0x3b7e326c", values),
+        "UpgradeNotFinished": get_error_msg("0x3b7e326c", values),
         "OnlyVotingCanUpgrade": get_error_msg("0x8391d412", values),
     }[error]
 
@@ -63,41 +63,19 @@ def deploy_template_with_preparation():
     return template
 
 
-def test_expire_since_allowed_values_range(accounts):
-    def get_min_expire_since():
-        return get_current_timestamp() + VOTING_DURATION
-
-    # with reverts(typed_error("ExpireSinceMustBeInRange", get_min_expire_since(), TIMESTAMP_FIRST_SECOND_OF_JULY_2023)):
-    #     ShapellaUpgradeTemplate.deploy(0, {"from": accounts[0]})
-
-    # min_expire_since = get_min_expire_since()
-    # with reverts(typed_error("ExpireSinceMustBeInRange", min_expire_since, TIMESTAMP_FIRST_SECOND_OF_JULY_2023)):
-    #     ShapellaUpgradeTemplate.deploy(min_expire_since - 1, {"from": accounts[0]})
-
-    # ShapellaUpgradeTemplate.deploy(get_min_expire_since(), {"from": accounts[0]})
-    ShapellaUpgradeTemplate.deploy(TIMESTAMP_FIRST_SECOND_OF_JULY_2023, {"from": accounts[0]})
-
-    # with reverts(typed_error("ExpireSinceMustBeInRange", get_min_expire_since(), TIMESTAMP_FIRST_SECOND_OF_JULY_2023)):
-    #     ShapellaUpgradeTemplate.deploy(TIMESTAMP_FIRST_SECOND_OF_JULY_2023 + 1, {"from": accounts[0]})
-
-    # ShapellaUpgradeTemplate.deploy(get_current_timestamp() + 2, {"from": accounts[0]})
+def test_expire_since_constant(accounts):
+    template = ShapellaUpgradeTemplate.deploy({"from": accounts[0]})
+    assert template.EXPIRE_SINCE_INCLUSIVE() == TIMESTAMP_FIRST_SECOND_OF_JULY_2023_UTC
 
 
-def test_expiration(accounts):
-    expire_in = 4 * 24 * 60 * 60
+def test_fail_if_expired(accounts):
     tx_args = {"from": accounts[0]}
-    expire_since = get_current_timestamp() + expire_in
+    expire_since = TIMESTAMP_FIRST_SECOND_OF_JULY_2023_UTC
 
-    template = ShapellaUpgradeTemplate.deploy(expire_since, tx_args)
-    assert_single_event(template.tx, "TemplateCreated", {"expireSinceInclusive": expire_since})
+    template = ShapellaUpgradeTemplate.deploy(tx_args)
 
-    with reverts(typed_error("OnlyVotingCanUpgrade")):
-        template.startUpgrade(tx_args)
-
-    with reverts(typed_error("OnlyVotingCanUpgrade")):
-        template.finishUpgrade(tx_args)
-
-    chain.sleep(expire_in)
+    time_to_sleep = expire_since - get_current_chain_timestamp() + 1
+    chain.sleep(time_to_sleep)
 
     with reverts(typed_error("Expired")):
         template.startUpgrade(tx_args)
@@ -105,15 +83,39 @@ def test_expiration(accounts):
     with reverts(typed_error("Expired")):
         template.finishUpgrade(tx_args)
 
-    # NB: for unknown reason brownie returns empty revert string, although it must fail with typed error
-    #     that's why don't check the revert message here
-    with reverts():
-        template.assertUpgradeIsFinishedCorrectly(tx_args)
+
+def test_succeed_if_5_minutes_before_expire(accounts, helpers):
+    """It is hard to control time in the chain via brownie so just checking ~5 minutes before"""
+    template = deploy_template_with_preparation()
+
+    tx_params = {"from": ldo_holder_address_for_tests}
+    vote_id, _ = start_vote(tx_params, silent=True, template_address=template.address)
+
+    time_to_sleep = TIMESTAMP_FIRST_SECOND_OF_JULY_2023_UTC - get_current_chain_timestamp() - 5 * 60
+    assert time_to_sleep > MAINNET_VOTE_DURATION, "this test is not supposed to work after 3 days before 1st of July"
+    helpers.execute_votes(accounts, [vote_id], contracts.voting, skip_time=time_to_sleep)
+
+
+def test_revert_if_upgrade_not_finished(accounts, helpers):
+    template = deploy_template_with_preparation()
 
     # NB: for unknown reason brownie returns empty revert string, although it must fail with typed error
     #     that's why don't check the revert message here
     with reverts():
-        template.revertIfUpgradeNotFinished(tx_args)
+        template.revertIfUpgradeNotFinished()
+
+    # NB: for unknown reason brownie returns empty revert string, although it must fail with typed error
+    #     that's why don't check the revert message here
+    with reverts():
+        template.assertUpgradeIsFinishedCorrectly()
+
+    tx_params = {"from": ldo_holder_address_for_tests}
+    vote_id, _ = start_vote(tx_params, silent=True, template_address=template.address)
+    helpers.execute_votes(accounts, [vote_id], contracts.voting)
+
+    # Expect no revert
+    template.revertIfUpgradeNotFinished()
+    template.assertUpgradeIsFinishedCorrectly()
 
 
 def test_fail_start_if_not_from_voting(accounts):

@@ -11,7 +11,7 @@ from utils.config import (
 # Private constant taken from Lido contract
 INITIAL_TOKEN_HOLDER = "0x000000000000000000000000000000000000dEaD"
 
-TIMESTAMP_FIRST_SECOND_OF_JULY_2023 = 1688155200
+TIMESTAMP_FIRST_SECOND_OF_JULY_2023_UTC = 1688169600
 
 
 def ask_shapella_upgrade_confirmation(template_address, locator_implementation):
@@ -42,7 +42,7 @@ def prepare_deploy_gate_seal_mock(deployer):
 
 
 def prepare_deploy_upgrade_template(deployer):
-    template = ShapellaUpgradeTemplate.deploy(TIMESTAMP_FIRST_SECOND_OF_JULY_2023, get_tx_params(deployer))
+    template = ShapellaUpgradeTemplate.deploy(get_tx_params(deployer))
     print(f"=== Deployed upgrade template {template.address} ===")
     return template
 

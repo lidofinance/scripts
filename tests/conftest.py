@@ -10,7 +10,7 @@ from brownie.network.contract import Contract
 
 from utils.evm_script import EMPTY_CALLSCRIPT
 
-from utils.config import contracts, network_name
+from utils.config import contracts, network_name, MAINNET_VOTE_DURATION
 
 from utils.config import (
     ldo_holder_address_for_tests,
@@ -59,12 +59,12 @@ class Helpers:
         assert dict(receiver_events[0]) == evt_keys_dict
 
     @staticmethod
-    def execute_vote(accounts, vote_id, dao_voting, topup="0.1 ether", skip_time=3 * 60 * 60 * 24):
+    def execute_vote(accounts, vote_id, dao_voting, topup="0.1 ether", skip_time=MAINNET_VOTE_DURATION):
         (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup, skip_time)
         return tx
 
     @staticmethod
-    def execute_votes(accounts, vote_ids, dao_voting, topup="0.1 ether", skip_time=3 * 60 * 60 * 24):
+    def execute_votes(accounts, vote_ids, dao_voting, topup="0.1 ether", skip_time=MAINNET_VOTE_DURATION):
         OBJECTION_PHASE_ID = 1
         for vote_id in vote_ids:
             print(f"Vote #{vote_id}")

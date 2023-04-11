@@ -44,12 +44,6 @@ from utils.permissions import encode_permission_create
 # noinspection PyUnresolvedReferences
 from utils.brownie_prelude import *
 
-# TODO: remove this test dev if-else setup
-TEMPLATE_ADDRESS = (
-    "0xF9a393Baab3C575c2B31166636082AB58a3dae62"
-    if contracts.shapella_upgrade_template is None
-    else contracts.shapella_upgrade_template.address
-)
 
 update_lido_app = {
     "new_address": "0xAb3bcE27F31Ca36AAc6c6ec2bF3e79569105ec2c",
@@ -91,14 +85,25 @@ def encode_withdrawal_vault_proxy_update(vault_proxy_address: str, implementatio
     return proxy.address, proxy.proxy_upgradeTo.encode_input(implementation, b"")
 
 
-def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
+def start_vote(
+    tx_params: Dict[str, str], silent: bool, template_address: str = None
+) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
+
+    # TODO: when the template is deployed remove the if-else setup
+    if template_address is None:
+        if contracts.shapella_upgrade_template is None:
+            # Deterministic address from dev local-fork deployment
+            template_address = "0xF9a393Baab3C575c2B31166636082AB58a3dae62"
+        else:
+            # Use pre-deployed template specified in config
+            template_address = contracts.shapella_upgrade_template.address
 
     call_script_items = [
         # 1)
         encode_withdrawal_vault_proxy_update(lido_dao_withdrawal_vault, lido_dao_withdrawal_vault_implementation),
         # 2)
-        encode_template_start_upgrade(TEMPLATE_ADDRESS),
+        encode_template_start_upgrade(template_address),
         # 3)
         add_implementation_to_lido_app_repo(
             update_lido_app["version"], update_lido_app["new_address"], update_lido_app["content_uri"]
@@ -125,7 +130,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             manager=contracts.voting,
         ),
         # 10)
-        encode_template_finish_upgrade(TEMPLATE_ADDRESS),
+        encode_template_finish_upgrade(template_address),
     ]
 
     vote_desc_items = [
