@@ -1,7 +1,6 @@
 """
 Tests for voting ??/05/2023
 """
-from sys import exit
 from brownie import interface, ZERO_ADDRESS
 from utils.config import (
     contracts,
@@ -147,7 +146,7 @@ EPOCHS_PER_FRAME_FOR_ACCOUNTING_ORACLE = 225
 EPOCHS_PER_FRAME_FOR_VALIDATORS_EXIT_BUS_ORACLE = 56
 
 # Deployment parameter
-STUCK_PENALTY_DELAY = 172800
+STUCK_PENALTY_DELAY = 432000
 
 # Helper constant to mark that value of an event field is not checked
 ANY_VALUE = None

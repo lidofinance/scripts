@@ -38,7 +38,7 @@ def test_nor_state(contract):
     assert node_operators_count == 30
     assert contract.getActiveNodeOperatorsCount() == 30
     assert contract.getNonce() >= 7315
-    assert contract.getStuckPenaltyDelay() == 172800
+    assert contract.getStuckPenaltyDelay() == 432000
     assert contract.getType() == _str_to_bytes32("curated-onchain-v1")
 
     summary = contract.getStakingModuleSummary()

@@ -406,7 +406,7 @@ contract ShapellaUpgradeTemplate {
     uint256 public constant ACCOUNTING_ORACLE_CONSENSUS_VERSION = 1;
     string public constant NOR_STAKING_MODULE_NAME = "curated-onchain-v1";
     bytes32 public constant NODE_OPERATORS_REGISTRY_STAKING_MODULE_TYPE = bytes32("curated-onchain-v1");
-    uint256 public constant NODE_OPERATORS_REGISTRY_STUCK_PENALTY_DELAY = 172800;
+    uint256 public constant NODE_OPERATORS_REGISTRY_STUCK_PENALTY_DELAY = 432000;
     bytes32 public constant WITHDRAWAL_CREDENTIALS = 0x010000000000000000000000b9d7934878b5fb9610b3fe8a5e441e8fad7e293f;
     uint256 public constant NOR_STAKING_MODULE_ID = 1;
     uint256 public constant NOR_STAKING_MODULE_TARGET_SHARE_BP = 10000; // 100%
@@ -451,13 +451,13 @@ contract ShapellaUpgradeTemplate {
     string public constant NORMALIZED_CL_REWARD_MISTAKE_RATE_BP_KEY = "NORMALIZED_CL_REWARD_MISTAKE_RATE_BP";
     bytes public constant NORMALIZED_CL_REWARD_MISTAKE_RATE_BP_VALUE = hex"03e8";
     string public constant REBASE_CHECK_NEAREST_EPOCH_DISTANCE_KEY = "REBASE_CHECK_NEAREST_EPOCH_DISTANCE";
-    bytes public constant REBASE_CHECK_NEAREST_EPOCH_DISTANCE_VALUE = hex"04";
+    bytes public constant REBASE_CHECK_NEAREST_EPOCH_DISTANCE_VALUE = hex"01";
     string public constant REBASE_CHECK_DISTANT_EPOCH_DISTANCE_KEY = "REBASE_CHECK_DISTANT_EPOCH_DISTANCE";
-    bytes public constant REBASE_CHECK_DISTANT_EPOCH_DISTANCE_VALUE = hex"0a";
+    bytes public constant REBASE_CHECK_DISTANT_EPOCH_DISTANCE_VALUE = hex"17";
     string public constant VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS_KEY = "VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS";
     bytes public constant VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS_VALUE = hex"1c20";
     string public constant VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS_KEY = "VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS";
-    bytes public constant VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS_VALUE = hex"5460";
+    bytes public constant VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS_VALUE = hex"7080";
     string public constant PREDICTION_DURATION_IN_SLOTS_KEY = "PREDICTION_DURATION_IN_SLOTS";
     bytes public constant PREDICTION_DURATION_IN_SLOTS_VALUE = hex"c4e0";
     string public constant FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_KEY = "FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT";
@@ -471,7 +471,7 @@ contract ShapellaUpgradeTemplate {
     // Timestamp since startUpgrade() and finishUpgrade() revert with Expired()
     // This behavior is introduced to disarm the template if the upgrade voting creation or enactment didn't
     // happen in proper time period
-    uint256 public EXPIRE_SINCE_INCLUSIVE = 1688169600; // 2023-07-01 00:00:00 UTC
+    uint256 public constant EXPIRE_SINCE_INCLUSIVE = 1688169600; // 2023-07-01 00:00:00 UTC
 
     //
     // Structured storage
