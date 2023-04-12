@@ -1,11 +1,13 @@
 from contextlib import contextmanager
-from typing import Any, Callable, TypedDict
+from functools import partial as _call
+from typing import Any, Callable, Sequence, TypedDict
 
 import brownie
 import pytest
 from brownie import ZERO_ADDRESS, chain, rpc, web3
 from brownie.network.account import Account
 from brownie.network.state import _notify_registry
+from pytest_check import check
 from web3.types import Wei
 
 from tests.conftest import Helpers
@@ -17,12 +19,13 @@ from utils.import_current_votes import start_and_execute_votes
 class Frame(TypedDict):
     """A snapshot of the state before and after an action."""
 
-    init: dict[str, Any]
-    post: dict[str, Any]
+    snap: dict[str, Any]
+    func: str
 
 
+Stack = Sequence[Frame]
 SnapshotFn = Callable[[], dict]
-SandwichFn = Callable[..., tuple[Frame, Frame]]
+SandwichFn = Callable[..., tuple[Stack, Stack]]
 
 
 UINT256_MAX = 2**256 - 1
@@ -32,11 +35,10 @@ _1ETH = Wei(10**18)
 def test_lido_no_changes_in_views(sandwich_upgrade: SandwichFn):
     """Test that no views change during the upgrade process."""
 
-    frames = sandwich_upgrade(
-        lambda: chain.mine(),  # just upgrade and move forward
+    stacks = sandwich_upgrade(
+        (lambda: chain.mine(),),  # just upgrade and move forward
     )
-
-    _frames_equal(frames)
+    _stacks_equal(stacks)
 
 
 def test_lido_end_user_snapshot(
@@ -45,92 +47,99 @@ def test_lido_end_user_snapshot(
     some_contract: Account,
     unknown_person: Account,
 ):
-    def _script():
-        lido = contracts.lido
+    lido = contracts.lido
 
-        eth_amount = Wei(_1ETH - 42)
-        assert eth_whale.balance() >= eth_amount
-        assert lido.balanceOf(eth_whale) == 0
+    eth_amount = Wei(_1ETH - 42)
+    assert eth_whale.balance() >= eth_amount
+    assert lido.balanceOf(eth_whale) == 0
 
+    actions = (
         # send ether to Lido to mint stETH
-        web3.eth.send_transaction(
+        _call(
+            web3.eth.send_transaction,
             {
                 "from": eth_whale.address,
                 "to": lido.address,
                 "value": Wei(eth_amount // 2),
-            }
-        )
-        lido.submit(
+            },
+        ),
+        _call(
+            lido.submit,
             ZERO_ADDRESS,
             {
                 "from": eth_whale,
                 "amount": Wei(eth_amount // 2),
             },
-        )
-
+        ),
         # play with allowance
-        lido.approve(
+        _call(
+            lido.approve,
             some_contract,
             UINT256_MAX,
             {"from": eth_whale},
-        )
-
-        lido.decreaseAllowance(
+        ),
+        _call(
+            lido.decreaseAllowance,
             some_contract,
             13,
             {"from": eth_whale},
-        )
-        lido.increaseAllowance(
+        ),
+        _call(
+            lido.increaseAllowance,
             some_contract,
             13,
             {"from": eth_whale},
-        )
-
-        lido.approve(
+        ),
+        _call(
+            lido.approve,
             some_contract,
             42,
             {"from": eth_whale},
-        )
-
+        ),
         # send funds by different mechanisms
-        lido.transferFrom(
+        _call(
+            lido.transferFrom,
             eth_whale,
             some_contract.address,
             42,
             {"from": some_contract},
-        )
-        lido.transfer(
+        ),
+        _call(
+            lido.transfer,
             unknown_person,
             17,
             {"from": eth_whale},
-        )
-        lido.transferShares(
+        ),
+        _call(
+            lido.transferShares,
             unknown_person,
             23,
             {"from": some_contract},
-        )
-
+        ),
         # revoke allowance
-        lido.approve(
+        _call(
+            lido.approve,
             some_contract,
             0,
             {"from": eth_whale},
-        )
-
+        ),
         # split funds accross accounts
-        lido.transfer(
+        _call(
+            lido.transfer,
             eth_whale,
             11,
             {"from": unknown_person},
-        )
-        lido.transfer(
+        ),
+        _call(
+            lido.transfer,
             some_contract,
             13,
             {"from": unknown_person},
-        )
+        ),
+    )
 
-    frames = sandwich_upgrade(_script)
-    _frames_equal(frames)
+    stacks = sandwich_upgrade(actions)
+    _stacks_equal(stacks)
 
 
 def test_lido_send_ether_snapshot(
@@ -138,94 +147,103 @@ def test_lido_send_ether_snapshot(
     eth_whale: Account,
     steth_whale: Account,
 ):
-    def _script():
-        el_vault = contracts.execution_layer_rewards_vault
-        lido = contracts.lido
+    el_vault = contracts.execution_layer_rewards_vault
+    lido = contracts.lido
 
-        assert lido.balanceOf(eth_whale) == 0
-        assert eth_whale.balance() >= _1ETH
-        assert el_vault.balance() >= _1ETH
+    assert lido.balanceOf(eth_whale) == 0
+    assert eth_whale.balance() >= _1ETH
+    assert el_vault.balance() >= _1ETH
 
+    actions = (
         # send ether to Lido to mint stETH
-        lido.submit(
+        _call(
+            lido.submit,
             ZERO_ADDRESS,
             {
                 "from": eth_whale,
                 "amount": 42,
             },
-        )
-        lido.submit(
+        ),
+        _call(
+            lido.submit,
             steth_whale.address,
             {
                 "from": eth_whale,
                 "amount": 42,
             },
-        )
-
+        ),
         # toggle contract state to STOPPED
-        lido.stop({"from": contracts.voting})
-
+        _call(
+            lido.stop,
+            {"from": contracts.voting},
+        ),
         # toggle contract state to RUNNING
-        lido.resume({"from": contracts.voting})
-
-        lido.submit(
+        _call(
+            lido.resume,
+            {"from": contracts.voting},
+        ),
+        _call(
+            lido.submit,
             ZERO_ADDRESS,
             {
                 "from": eth_whale,
                 "amount": 17,
             },
-        )
-
+        ),
         # receive EL rewards
-        lido.receiveELRewards(
+        _call(
+            lido.receiveELRewards,
             {
                 "value": _1ETH - 42,
                 "from": el_vault,
-            }
-        )
-
-        lido.submit(
+            },
+        ),
+        _call(
+            lido.submit,
             steth_whale,
             {
                 "from": eth_whale,
                 "amount": 13,
             },
-        )
+        ),
+    )
 
-    frames = sandwich_upgrade(_script)
-    _frames_equal(frames)
+    stacks = sandwich_upgrade(actions)
+    _stacks_equal(stacks)
 
 
 def test_lido_dao_ops_snapshot(sandwich_upgrade: SandwichFn):
-    def _script():
-        el_vault = contracts.execution_layer_rewards_vault
-        voting = contracts.voting
-        lido = contracts.lido
+    el_vault = contracts.execution_layer_rewards_vault
+    voting = contracts.voting
+    lido = contracts.lido
 
-        assert lido.getCurrentStakeLimit() > 0
-        assert lido.isStakingPaused() is False
-        assert el_vault.balance() >= _1ETH
-        assert lido.isStopped() is False
+    assert lido.getCurrentStakeLimit() > 0
+    assert lido.isStakingPaused() is False
+    assert el_vault.balance() >= _1ETH
+    assert lido.isStopped() is False
 
-        lido.pauseStaking({"from": voting})
-        lido.stop({"from": voting})
-        lido.resumeStaking({"from": voting})
-        lido.pauseStaking({"from": voting})
-        lido.removeStakingLimit({"from": voting})
-        lido.resumeStaking({"from": voting})
-        lido.receiveELRewards(
+    actions = (
+        _call(lido.pauseStaking, {"from": voting}),
+        _call(lido.stop, {"from": voting}),
+        _call(lido.resumeStaking, {"from": voting}),
+        _call(lido.pauseStaking, {"from": voting}),
+        _call(lido.removeStakingLimit, {"from": voting}),
+        _call(lido.resumeStaking, {"from": voting}),
+        _call(
+            lido.receiveELRewards,
             {
                 "from": el_vault,
                 "value": _1ETH,
-            }
-        )
-        lido.pauseStaking({"from": voting})
-        lido.setStakingLimit(17, 3, {"from": voting})
-        lido.resume({"from": voting})
-        lido.stop({"from": voting})
+            },
+        ),
+        _call(lido.pauseStaking, {"from": voting}),
+        _call(lido.setStakingLimit, 17, 3, {"from": voting}),
+        _call(lido.resume, {"from": voting}),
+        _call(lido.stop, {"from": voting}),
+    )
 
-    frames = sandwich_upgrade(_script)
-    _frames_equal(frames)
+    stacks = sandwich_upgrade(actions)
+    _stacks_equal(stacks)
 
 
 @pytest.fixture(scope="module")
@@ -240,7 +258,7 @@ def do_snapshot(
 
     def _snap():
         block = chain.height
-        with brownie.multicall(address="0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696", block_identifier=block):
+        with brownie.multicall(block_identifier=block):
             return {
                 "block_number": chain.height,
                 "address": lido.address,
@@ -320,29 +338,35 @@ def sandwich_upgrade(
     do_snapshot: SnapshotFn,
     far_block: int,
     helpers: Helpers,
-) -> Callable[..., tuple[Frame, Frame]]:
-    """Snapshot the state before and after the upgrade and return the two frames."""
+) -> Callable[..., tuple[Stack, Stack]]:
+    """Snapshot the state before and after the upgrade and return the two frames"""
 
     def _do(
-        action_fn: Callable,
+        actions_list: Sequence[Callable],
         snapshot_fn=do_snapshot,
         snapshot_block=far_block,
     ):
-        with _chain_snapshot():
+        def _actions_snaps():
             _sleep_till_block(snapshot_block)
-            v1_snap = _snap_action(action_fn, snapshot_fn)
+
+            yield Frame(snap=snapshot_fn(), func="init")
+
+            for action_fn in actions_list:
+                action_fn()
+                yield Frame(
+                    snap=snapshot_fn(),
+                    func=repr(action_fn),
+                )
+
+        with _chain_snapshot():
+            v1_frames = tuple(_actions_snaps())
 
         start_and_execute_votes(contracts.voting, helpers)
-        _sleep_till_block(snapshot_block)
 
         # do not call _chain_snapshot here to be able to interact with the environment in the test
-        v2_snap = _snap_action(action_fn, snapshot_fn)
+        v2_frames = tuple(_actions_snaps())
 
-        # make simple check to make sure we are not comparing the same block snapshots
-        assert v1_snap["init"]["block_number"] != v1_snap["post"]["block_number"]
-        assert v2_snap["init"]["block_number"] != v2_snap["post"]["block_number"]
-
-        return v1_snap, v2_snap
+        return v1_frames, v2_frames
 
     return _do
 
@@ -357,9 +381,17 @@ def _sleep_till_block(block: int) -> None:
     chain.mine(block - curr_block)
 
 
+def _stacks_equal(stacks: tuple[Stack, Stack]) -> None:
+    """Compare two stacks, asserting that they are equal"""
+
+    for v1_frame, v2_frame in zip(*stacks, strict=True):
+        with check:  # soft asserts
+            assert v1_frame["snap"] == v2_frame["snap"], f"Snapshots after {v1_frame['func']} are not equal"
+
+
 @contextmanager
 def _chain_snapshot():
-    """Custom chain snapshot context manager to avoid moving snapshots pointer."""
+    """Custom chain snapshot context manager to avoid moving snapshots pointer"""
     id_ = rpc.snapshot()
 
     try:
@@ -370,30 +402,3 @@ def _chain_snapshot():
 
         block = rpc.revert(id_)
         _notify_registry(block)
-
-
-def _snap_action(action_fn: Callable, snapshot_fn: Callable[[], dict]) -> Frame:
-    """Snapshot the state before and after an action and return the frame."""
-
-    _init = snapshot_fn()
-
-    action_fn()
-
-    _post = snapshot_fn()
-
-    return Frame(init=_init, post=_post)
-
-
-def _frames_equal(frames: tuple[Frame, Frame], *, skip_keys: list[str] | None = None) -> None:
-    """Compare two frames, asserting that they are equal."""
-
-    v1_snap, v2_snap = frames[0].copy(), frames[1].copy()
-    skip_keys = skip_keys or []
-
-    for frame in (v1_snap, v2_snap):
-        for key in skip_keys:
-            frame["init"].pop(key, None)
-            frame["post"].pop(key, None)
-
-    assert v2_snap["init"] == v1_snap["init"], "snapshots before action should be equal"
-    assert v2_snap["post"] == v1_snap["post"], "snapshots after action should be equal"

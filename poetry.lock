@@ -1766,6 +1766,21 @@ toml = "*"
 testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "requests", "xmlschema"]
 
 [[package]]
+name = "pytest-check"
+version = "2.1.4"
+description = "A pytest plugin that allows multiple failures per test."
+category = "dev"
+optional = false
+python-versions = ">3.7"
+files = [
+    {file = "pytest-check-2.1.4.tar.gz", hash = "sha256:01b37fd703da0fa667b7017af1f0460c744a85f1ee87675ee3e0f94acc3df172"},
+    {file = "pytest_check-2.1.4-py3-none-any.whl", hash = "sha256:0c15d8c01ce31a13b73eb875854d060aca6f6c529aa9dd9fa0bd690c744eb171"},
+]
+
+[package.dependencies]
+pytest = "*"
+
+[[package]]
 name = "pytest-forked"
 version = "1.4.0"
 description = "run tests in isolated forked subprocesses"
@@ -2428,4 +2443,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "98480ae98b68f160db637ba2b560c1e4a0ff7486bbfec078ee339fe45827cceb"
+content-hash = "12127e5ccadfd02b70b35298bb7cf003927b0e780b8253d050b34a148ad77f37"
