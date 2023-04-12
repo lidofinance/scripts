@@ -4,10 +4,10 @@ from brownie import interface  # type: ignore
 from utils.config import contracts, lido_dao_oracle_report_sanity_checker
 
 report_limits = {
-    "churnValidatorsPerDayLimit": 12375,
+    "churnValidatorsPerDayLimit": 40000,
     "oneOffCLBalanceDecreaseBPLimit": 500,
     "annualBalanceIncreaseBPLimit": 1000,
-    "simulatedShareRateDeviationBPLimit": 10,
+    "simulatedShareRateDeviationBPLimit": 50,
     "maxValidatorExitRequestsPerReport": 500,
     "maxAccountingExtraDataListItemsCount": 500,
     "maxNodeOperatorsPerExtraDataItemCount": 100,

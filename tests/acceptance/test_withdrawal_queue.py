@@ -3,7 +3,7 @@ from brownie import interface, ZERO_ADDRESS  # type: ignore
 
 from utils.config import contracts, lido_dao_withdrawal_queue
 
-lido_dao_withdrawal_queue_impl = "0x5EfF11Cb6bD446370FC3ce46019F2b501ba06c2D"
+lido_dao_withdrawal_queue_impl = "0x8e625031D47721E5FA1D13cEA033EC1dd067F663"
 
 
 @pytest.fixture(scope="module")
