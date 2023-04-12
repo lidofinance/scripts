@@ -45,7 +45,7 @@ from utils.brownie_prelude import *
 
 TEMPLATE_ADDRESS = (
     # Deterministic address from dev local-fork deployment
-    "0xF9a393Baab3C575c2B31166636082AB58a3dae62"
+    "0x32429d2AD4023A6fd46a690DEf62bc51990ba497"
     if contracts.shapella_upgrade_template is None
     else contracts.shapella_upgrade_template.address
 )

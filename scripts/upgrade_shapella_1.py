@@ -46,7 +46,7 @@ from utils.brownie_prelude import *
 
 
 update_lido_app = {
-    "new_address": "0xAb3bcE27F31Ca36AAc6c6ec2bF3e79569105ec2c",
+    "new_address": "0xE5418393B2D9D36e94b7a8906Fb2e4E9dce9DEd3",
     # TODO: set content_uri after Aragon UI deployment
     "content_uri": "0x697066733a516d63354a64475a3576326844466d64516844535a70514a6554394a55364e34386d5678546474685667677a766d",
     "id": "0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
@@ -54,7 +54,7 @@ update_lido_app = {
 }
 
 update_nor_app = {
-    "new_address": "0x9cBbA6CDA09C7dadA8343C4076c21eE06CCa4836",
+    "new_address": "0x18Ce1d296Cebe2596A5c295202a195F898021E5D",
     # TODO: set content_uri after Aragon UI deployment
     "content_uri": "0x697066733a516d5342796b4e4a61363734547146334b7366677642666444315a545158794c4a6e707064776b36477463534c4d",
     "id": "0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d",
@@ -62,7 +62,7 @@ update_nor_app = {
 }
 
 update_oracle_app = {
-    "new_address": "0xcA3cE6bf0CB2bbaC5dF3874232AE3F5b67C6b146",
+    "new_address": "0xCb461e10f5AD0575172e7261589049e44aAf209B",
     # TODO: set content_uri after Aragon UI deployment
     "content_uri": "0x697066733a516d66414348396f5348465767563831446838525356636761564264686b5a7548685a5932695a76357379424a4b",
     "id": "0x8b47ba2a8454ec799cd91646e7ec47168e91fd139b23f017455f3e5898aaba93",
@@ -94,7 +94,7 @@ def start_vote(
     if template_address is None:
         if contracts.shapella_upgrade_template is None:
             # Deterministic address from dev local-fork deployment
-            template_address = "0xF9a393Baab3C575c2B31166636082AB58a3dae62"
+            template_address = "0x32429d2AD4023A6fd46a690DEf62bc51990ba497"
         else:
             # Use pre-deployed template specified in config
             template_address = contracts.shapella_upgrade_template.address
