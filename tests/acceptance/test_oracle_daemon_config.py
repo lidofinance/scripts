@@ -6,8 +6,8 @@ from utils.config import (
 )
 
 
-# TODO: check that config is mainnet ready
-oracle_daemon_config_values = {
+# Source of truth: https://hackmd.io/pdix1r4yR46fXUqiHaNKyw?view
+mainnet_config: dict[str, int] = {
     "NORMALIZED_CL_REWARD_PER_EPOCH": 64,
     "NORMALIZED_CL_REWARD_MISTAKE_RATE_BP": 1000,
     "REBASE_CHECK_NEAREST_EPOCH_DISTANCE": 1,
@@ -26,5 +26,10 @@ def contract() -> interface.OracleDaemonConfig:
 
 
 def test_oracle_daemon_config(contract):
-    for key, value in oracle_daemon_config_values.items():
-        assert int(str(contract.get(key)), 16) == value
+    def values_to_int(values) -> list[int]:
+        return list(map(lambda x: int(str(x), 16), values))
+
+    contract_values = contract.getList(list(mainnet_config.keys()))
+    contract_config = dict(zip(mainnet_config.keys(), values_to_int(contract_values)))
+
+    assert mainnet_config == contract_config, "OracleDaemonConfig values are incorrect"
