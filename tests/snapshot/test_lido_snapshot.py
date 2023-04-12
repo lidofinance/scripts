@@ -39,252 +39,192 @@ def test_lido_no_changes_in_views(sandwich_upgrade: SandwichFn):
     _frames_equal(frames)
 
 
+def test_lido_end_user_snapshot(
+    sandwich_upgrade: SandwichFn,
+    eth_whale: Account,
+    some_contract: Account,
+    unknown_person: Account,
+):
+    def _script():
+        lido = contracts.lido
+
+        eth_amount = Wei(_1ETH - 42)
+        assert eth_whale.balance() >= eth_amount
+        assert lido.balanceOf(eth_whale) == 0
+
+        # send ether to Lido to mint stETH
+        web3.eth.send_transaction(
+            {
+                "from": eth_whale.address,
+                "to": lido.address,
+                "value": Wei(eth_amount // 2),
+            }
+        )
+        lido.submit(
+            ZERO_ADDRESS,
+            {
+                "from": eth_whale,
+                "amount": Wei(eth_amount // 2),
+            },
+        )
+
+        # play with allowance
+        lido.approve(
+            some_contract,
+            UINT256_MAX,
+            {"from": eth_whale},
+        )
+
+        lido.decreaseAllowance(
+            some_contract,
+            13,
+            {"from": eth_whale},
+        )
+        lido.increaseAllowance(
+            some_contract,
+            13,
+            {"from": eth_whale},
+        )
+
+        lido.approve(
+            some_contract,
+            42,
+            {"from": eth_whale},
+        )
+
+        # send funds by different mechanisms
+        lido.transferFrom(
+            eth_whale,
+            some_contract.address,
+            42,
+            {"from": some_contract},
+        )
+        lido.transfer(
+            unknown_person,
+            17,
+            {"from": eth_whale},
+        )
+        lido.transferShares(
+            unknown_person,
+            23,
+            {"from": some_contract},
+        )
+
+        # revoke allowance
+        lido.approve(
+            some_contract,
+            0,
+            {"from": eth_whale},
+        )
+
+        # split funds accross accounts
+        lido.transfer(
+            eth_whale,
+            11,
+            {"from": unknown_person},
+        )
+        lido.transfer(
+            some_contract,
+            13,
+            {"from": unknown_person},
+        )
+
+    frames = sandwich_upgrade(_script)
+    _frames_equal(frames)
+
+
 def test_lido_send_ether_snapshot(
     sandwich_upgrade: SandwichFn,
     eth_whale: Account,
+    steth_whale: Account,
 ):
-    assert eth_whale.balance() >= _1ETH
-    assert contracts.lido.balanceOf(eth_whale) == 0
+    def _script():
+        el_vault = contracts.execution_layer_rewards_vault
+        lido = contracts.lido
 
-    frames = sandwich_upgrade(
-        lambda: web3.eth.send_transaction(
-            {
-                "to": contracts.lido.address,
-                "from": eth_whale.address,
-                "value": _1ETH,
-            }
-        ),
-    )
+        assert lido.balanceOf(eth_whale) == 0
+        assert eth_whale.balance() >= _1ETH
+        assert el_vault.balance() >= _1ETH
 
-    assert contracts.lido.balanceOf(eth_whale) > 0
-
-    _frames_equal(frames)
-
-
-def test_lido_submit_snapshot(
-    sandwich_upgrade: SandwichFn,
-    staker: Account,
-):
-    assert staker.balance() >= _1ETH
-    assert contracts.lido.balanceOf(staker) == 0
-
-    frames = sandwich_upgrade(
-        lambda: contracts.lido.submit(
+        # send ether to Lido to mint stETH
+        lido.submit(
             ZERO_ADDRESS,
             {
-                "from": staker,
-                "amount": _1ETH,
+                "from": eth_whale,
+                "amount": 42,
             },
-        ),
-    )
-
-    assert contracts.lido.balanceOf(staker) > 0
-
-    _frames_equal(frames)
-
-
-def test_lido_appove_snapshot(
-    sandwich_upgrade: SandwichFn,
-    unknown_person: Account,
-    eth_whale: Account,
-):
-    frames = sandwich_upgrade(
-        lambda: contracts.lido.approve(
-            unknown_person,
-            _1ETH,
-            {"from": eth_whale},
-        ),
-    )
-
-    _frames_equal(frames)
-
-
-def test_lido_increase_allowance(
-    sandwich_upgrade: SandwichFn,
-    unknown_person: Account,
-    steth_whale: Account,
-):
-    frames = sandwich_upgrade(
-        lambda: contracts.lido.increaseAllowance(
-            unknown_person,
-            _1ETH,
-            {"from": steth_whale},
-        ),
-    )
-
-    _frames_equal(frames)
-
-
-def test_lido_decrease_allowance(
-    sandwich_upgrade: SandwichFn,
-    unknown_person: Account,
-    steth_whale: Account,
-):
-    contracts.lido.approve(unknown_person, _1ETH, {"from": steth_whale})
-
-    frames = sandwich_upgrade(
-        lambda: contracts.lido.decreaseAllowance(
-            unknown_person,
-            _1ETH - 1,
-            {"from": steth_whale},
-        ),
-    )
-
-    _frames_equal(frames)
-
-
-def test_lido_transfer_snapshot(
-    sandwich_upgrade: SandwichFn,
-    unknown_person: Account,
-    steth_whale: Account,
-):
-    frames = sandwich_upgrade(
-        lambda: contracts.lido.transfer(
-            unknown_person,
-            100,
-            {"from": steth_whale},
-        ),
-    )
-
-    _frames_equal(frames)
-
-
-def test_lido_transfer_from_snapshot(
-    sandwich_upgrade: SandwichFn,
-    unknown_person: Account,
-    steth_whale: Account,
-):
-    contracts.lido.approve(unknown_person, _1ETH, {"from": steth_whale})
-
-    frames = sandwich_upgrade(
-        lambda: contracts.lido.transferFrom(
-            steth_whale,
-            unknown_person,
-            _1ETH - 1,
-            {"from": unknown_person},
-        ),
-    )
-
-    _frames_equal(frames)
-
-
-def test_lido_transfer_shares_snapshot(
-    sandwich_upgrade: SandwichFn,
-    unknown_person: Account,
-    steth_whale: Account,
-):
-    frames = sandwich_upgrade(
-        lambda: contracts.lido.transferShares(
-            unknown_person,
-            100,
-            {"from": steth_whale},
-        ),
-    )
-
-    _frames_equal(frames)
-
-
-def test_lido_pause_staking_snapshot(sandwich_upgrade: SandwichFn):
-    frames = sandwich_upgrade(
-        lambda: contracts.lido.pauseStaking(
-            {"from": contracts.voting.address},
-        ),
-    )
-
-    assert contracts.lido.isStakingPaused() is True
-
-    _frames_equal(frames)
-
-
-@pytest.mark.parametrize("value", [0, 1, 58992, _1ETH])
-def test_lido_receive_el_rewards_snapshot(
-    sandwich_upgrade: SandwichFn,
-    value: int,
-):
-    assert contracts.execution_layer_rewards_vault.balance() >= _1ETH
-    init_el_rewards = contracts.lido.getTotalELRewardsCollected()
-
-    frames = sandwich_upgrade(
-        lambda: contracts.lido.receiveELRewards(
+        )
+        lido.submit(
+            steth_whale.address,
             {
-                "from": contracts.execution_layer_rewards_vault.address,
-                "value": value,
+                "from": eth_whale,
+                "amount": 42,
+            },
+        )
+
+        # toggle contract state to STOPPED
+        lido.stop({"from": contracts.voting})
+
+        # toggle contract state to RUNNING
+        lido.resume({"from": contracts.voting})
+
+        lido.submit(
+            ZERO_ADDRESS,
+            {
+                "from": eth_whale,
+                "amount": 17,
+            },
+        )
+
+        # receive EL rewards
+        lido.receiveELRewards(
+            {
+                "value": _1ETH - 42,
+                "from": el_vault,
             }
-        ),
-    )
+        )
 
-    assert contracts.lido.getTotalELRewardsCollected() - init_el_rewards == value
+        lido.submit(
+            steth_whale,
+            {
+                "from": eth_whale,
+                "amount": 13,
+            },
+        )
 
+    frames = sandwich_upgrade(_script)
     _frames_equal(frames)
 
 
-def test_lido_set_staking_limit_snapshot(sandwich_upgrade: SandwichFn):
-    frames = sandwich_upgrade(
-        lambda: contracts.lido.setStakingLimit(
-            17,
-            3,
-            {"from": contracts.voting.address},
-        ),
-    )
+def test_lido_dao_ops_snapshot(sandwich_upgrade: SandwichFn):
+    def _script():
+        el_vault = contracts.execution_layer_rewards_vault
+        voting = contracts.voting
+        lido = contracts.lido
 
-    assert contracts.lido.getCurrentStakeLimit() == 17
+        assert lido.getCurrentStakeLimit() > 0
+        assert lido.isStakingPaused() is False
+        assert el_vault.balance() >= _1ETH
+        assert lido.isStopped() is False
 
-    _frames_equal(frames)
+        lido.pauseStaking({"from": voting})
+        lido.stop({"from": voting})
+        lido.resumeStaking({"from": voting})
+        lido.pauseStaking({"from": voting})
+        lido.removeStakingLimit({"from": voting})
+        lido.resumeStaking({"from": voting})
+        lido.receiveELRewards(
+            {
+                "from": el_vault,
+                "value": _1ETH,
+            }
+        )
+        lido.pauseStaking({"from": voting})
+        lido.setStakingLimit(17, 3, {"from": voting})
+        lido.resume({"from": voting})
+        lido.stop({"from": voting})
 
-
-def test_lido_remove_staking_limit(sandwich_upgrade: SandwichFn):
-    assert contracts.lido.getCurrentStakeLimit() > 0
-
-    frames = sandwich_upgrade(
-        lambda: contracts.lido.removeStakingLimit({"from": contracts.voting.address}),
-    )
-
-    assert contracts.lido.getCurrentStakeLimit() == UINT256_MAX
-
-    _frames_equal(frames)
-
-
-def test_lido_resume_snapshot(sandwich_upgrade: SandwichFn):
-    contracts.lido.stop({"from": contracts.voting.address})
-    assert contracts.lido.isStopped() is True
-
-    frames = sandwich_upgrade(
-        lambda: contracts.lido.resume(
-            {"from": contracts.voting.address},
-        ),
-    )
-
-    assert contracts.lido.isStopped() is False
-
-    _frames_equal(frames)
-
-
-def test_lido_resume_staking_snapshot(sandwich_upgrade: SandwichFn):
-    contracts.lido.pauseStaking({"from": contracts.voting.address})
-    assert contracts.lido.isStakingPaused() is True
-
-    frames = sandwich_upgrade(
-        lambda: contracts.lido.resumeStaking(
-            {"from": contracts.voting.address},
-        ),
-    )
-
-    assert contracts.lido.isStakingPaused() is False
-
-    _frames_equal(frames)
-
-
-def test_lido_stop_snapshot(sandwich_upgrade: SandwichFn):
-    assert contracts.lido.isStopped() is False
-
-    frames = sandwich_upgrade(
-        lambda: contracts.lido.stop(
-            {"from": contracts.voting.address},
-        ),
-    )
-
-    assert contracts.lido.isStopped() is True
-
+    frames = sandwich_upgrade(_script)
     _frames_equal(frames)
 
 
@@ -300,7 +240,7 @@ def do_snapshot(
 
     def _snap():
         block = chain.height
-        with brownie.multicall(block_identifier=block):
+        with brownie.multicall(address="0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696", block_identifier=block):
             return {
                 "block_number": chain.height,
                 "address": lido.address,
@@ -362,11 +302,6 @@ def do_snapshot(
 @pytest.fixture(scope="module")
 def far_block() -> int:
     return chain.height + 1_000
-
-
-@pytest.fixture(scope="module")
-def staker(accounts) -> Account:
-    return accounts[0]
 
 
 @pytest.fixture(scope="module")
