@@ -9,6 +9,11 @@ from utils.config import (
     deposit_contract,
 )
 
+# Source of truth: https://hackmd.io/pdix1r4yR46fXUqiHaNKyw?view
+max_deposits = 150
+min_deposit_block_distance = 25
+pause_intent_validity_period = 6646
+
 
 @pytest.fixture(scope="module")
 def contract() -> interface.DepositSecurityModule:
@@ -38,8 +43,9 @@ def test_migration(contract):
 
 
 def test_deposit_security_module(contract):
-    assert contract.getMaxDeposits() == 150
-    assert contract.getMinDepositBlockDistance() == 25
+    assert contract.getMaxDeposits() == max_deposits
+    assert contract.getMinDepositBlockDistance() == min_deposit_block_distance
+    assert contract.getPauseIntentValidityPeriodBlocks() == pause_intent_validity_period
 
     assert contract.getGuardians() == guardians
     assert contract.getGuardianQuorum() == 4
@@ -47,8 +53,6 @@ def test_deposit_security_module(contract):
     for guardian in guardians:
         assert contract.getGuardianIndex(guardian) >= 0
         assert contract.isGuardian(guardian) == True
-
-    assert contract.getPauseIntentValidityPeriodBlocks() == 6646
 
 
 def test_prefixes(contract):

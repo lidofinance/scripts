@@ -3,6 +3,9 @@ from brownie import ZERO_ADDRESS, interface, web3  # type: ignore
 
 from utils.config import contracts, lido_dao_node_operators_registry, lido_dao_node_operators_registry_implementation
 
+# Source of truth: https://hackmd.io/pdix1r4yR46fXUqiHaNKyw?view
+stuck_penalty_delay = 432000
+
 
 @pytest.fixture(scope="module")
 def contract() -> interface.NodeOperatorsRegistry:
@@ -38,7 +41,7 @@ def test_nor_state(contract):
     assert node_operators_count == 30
     assert contract.getActiveNodeOperatorsCount() == 30
     assert contract.getNonce() >= 7315
-    assert contract.getStuckPenaltyDelay() == 432000
+    assert contract.getStuckPenaltyDelay() == stuck_penalty_delay
     assert contract.getType() == _str_to_bytes32("curated-onchain-v1")
 
     summary = contract.getStakingModuleSummary()

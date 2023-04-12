@@ -3,11 +3,12 @@ from brownie import interface  # type: ignore
 
 from utils.config import contracts, lido_dao_oracle_report_sanity_checker
 
+# Source of truth: https://hackmd.io/pdix1r4yR46fXUqiHaNKyw?view
 report_limits = {
-    "churnValidatorsPerDayLimit": 12375,
+    "churnValidatorsPerDayLimit": 40000,
     "oneOffCLBalanceDecreaseBPLimit": 500,
     "annualBalanceIncreaseBPLimit": 1000,
-    "simulatedShareRateDeviationBPLimit": 10,
+    "simulatedShareRateDeviationBPLimit": 50,
     "maxValidatorExitRequestsPerReport": 500,
     "maxAccountingExtraDataListItemsCount": 500,
     "maxNodeOperatorsPerExtraDataItemCount": 100,
@@ -28,14 +29,4 @@ def test_links(contract):
 def test_limits(contract):
     assert contract.getMaxPositiveTokenRebase() == report_limits["maxPositiveTokenRebase"]
 
-    limits = contract.getOracleReportLimits()
-
-    assert limits["churnValidatorsPerDayLimit"] == report_limits["churnValidatorsPerDayLimit"]
-    assert limits["oneOffCLBalanceDecreaseBPLimit"] == report_limits["oneOffCLBalanceDecreaseBPLimit"]
-    assert limits["annualBalanceIncreaseBPLimit"] == report_limits["annualBalanceIncreaseBPLimit"]
-    assert limits["simulatedShareRateDeviationBPLimit"] == report_limits["simulatedShareRateDeviationBPLimit"]
-    assert limits["maxValidatorExitRequestsPerReport"] == report_limits["maxValidatorExitRequestsPerReport"]
-    assert limits["maxAccountingExtraDataListItemsCount"] == report_limits["maxAccountingExtraDataListItemsCount"]
-    assert limits["maxNodeOperatorsPerExtraDataItemCount"] == report_limits["maxNodeOperatorsPerExtraDataItemCount"]
-    assert limits["requestTimestampMargin"] == report_limits["requestTimestampMargin"]
-    assert limits["maxPositiveTokenRebase"] == report_limits["maxPositiveTokenRebase"]
+    assert dict(zip(report_limits.keys(), contract.getOracleReportLimits())) == report_limits
