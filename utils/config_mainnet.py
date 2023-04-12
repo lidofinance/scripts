@@ -58,7 +58,7 @@ lido_dao_withdrawal_vault_implementation_v1 = "0xe681faB8851484B57F32143FD78548f
 lido_dao_withdrawal_vault_stub_implementation = "0xe681faB8851484B57F32143FD78548f25fD59980"
 lido_dao_staking_router = "0xaE2D1ef2061389e106726CFD158eBd6f5DE07De5"
 lido_dao_staking_router_implementation = "0x9BcF19B36770969979840A91d1b4dc352b1Bd648"
-gate_seal = "0x2faE8f0A4D8D11B6EC35d04d3Ea6a0d195EB6D3F"
+gate_seal = "0x32429d2AD4023A6fd46a690DEf62bc51990ba497"
 oracle_daemon_config = "0xFc5768E73f8974f087c840470FBF132eD059aEbc"
 shapella_upgrade_template_address = ""
 

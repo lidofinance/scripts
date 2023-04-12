@@ -51,7 +51,7 @@ def reportOracle(
         ],
     )
 
-    hash = "172ed631ccaddd5ab37609bf0e8a708f064b41a3c5e634dddd26b89c78786ab6"  #web3.keccak(text=data).hex()
+    hash = "0xc4007e6a4a8b1c0591224f97331b3fcd5d1a4bf239f392c7de0bf73a1e79383b"  #web3.keccak(text=data).hex()
     report = (
             CONSENSUS_VERSION,
             frame["refSlot"],

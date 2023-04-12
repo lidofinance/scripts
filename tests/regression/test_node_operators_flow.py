@@ -142,8 +142,8 @@ def test_add_signing_keys_operator_bh(nor, reward_address, new_node_operator_id)
     assert total_signing_keys_count_after == total_signing_keys_count_before + keys_count
     assert unused_signing_keys_count_after == unused_signing_keys_count_before + keys_count
 
-    assert_node_operators(node_operator_before, node_operator_after, skip=["totalSigningKeys"])
-    assert node_operator_after["totalSigningKeys"] == node_operator_before["totalSigningKeys"] + keys_count
+    assert_node_operators(node_operator_before, node_operator_after, skip=["totalAddedValidators"])
+    assert node_operator_after["totalAddedValidators"] == node_operator_before["totalAddedValidators"] + keys_count
 
     assert_node_operator_summaries(node_operator_summary_before, node_operator_summary_after)
 
@@ -206,7 +206,7 @@ def test_deactivate_node_operator(nor, voting_eoa, new_node_operator_id):
     assert_node_operators(node_operator_after, node_operator_before, skip=["active", "totalVettedValidators"])
     assert node_operator_after["active"] == False
     # after deactivation vetted keys count trimmed to used
-    assert node_operator_after["totalVettedValidators"] == node_operator_before["usedSigningKeys"]
+    assert node_operator_after["totalVettedValidators"] == node_operator_before["totalDepositedValidators"]
 
     node_operator_summary_after = nor.getNodeOperatorSummary(new_node_operator_id)
     assert_node_operator_summaries(
