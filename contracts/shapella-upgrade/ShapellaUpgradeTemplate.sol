@@ -436,10 +436,10 @@ contract ShapellaUpgradeTemplate {
     uint256 public constant EXPECTED_DSM_MIN_DEPOSIT_BLOCK_DISTANCE = 25;
     uint256 public constant EXPECTED_DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS = 6646;
 
-    uint256 public constant SANITY_LIMIT_churnValidatorsPerDayLimit = 12375;
+    uint256 public constant SANITY_LIMIT_churnValidatorsPerDayLimit = 40000;
     uint256 public constant SANITY_LIMIT_oneOffCLBalanceDecreaseBPLimit = 500;
     uint256 public constant SANITY_LIMIT_annualBalanceIncreaseBPLimit = 1000;
-    uint256 public constant SANITY_LIMIT_simulatedShareRateDeviationBPLimit = 10;
+    uint256 public constant SANITY_LIMIT_simulatedShareRateDeviationBPLimit = 50;
     uint256 public constant SANITY_LIMIT_maxValidatorExitRequestsPerReport = 500;
     uint256 public constant SANITY_LIMIT_maxAccountingExtraDataListItemsCount = 500;
     uint256 public constant SANITY_LIMIT_maxNodeOperatorsPerExtraDataItemCount = 100;
