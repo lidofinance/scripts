@@ -94,7 +94,7 @@ def start_vote(
     if template_address is None:
         if contracts.shapella_upgrade_template is None:
             # Deterministic address from dev local-fork deployment
-            template_address = "0x32429d2AD4023A6fd46a690DEf62bc51990ba497"
+            template_address = "0xc601E93D9F48D5E374820957CdA57516e2523d6C"
         else:
             # Use pre-deployed template specified in config
             template_address = contracts.shapella_upgrade_template.address
