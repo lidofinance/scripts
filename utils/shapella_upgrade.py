@@ -90,11 +90,7 @@ def prepare_for_shapella_upgrade_voting(temporary_admin, silent=False):
     prepare_deploy_gate_seal_mock(temporary_admin)
 
     # Deploy the upgrade template if needed
-    if shapella_upgrade_template_address == "":
-        template = prepare_deploy_upgrade_template(temporary_admin)
-    else:
-        template = ShapellaUpgradeTemplate.at(shapella_upgrade_template_address)
-        print(f"=== Using upgrade template from config {template.address} ===")
+    template = prepare_deploy_upgrade_template(temporary_admin)
 
     # To get sure the "stone" is in place
     assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0

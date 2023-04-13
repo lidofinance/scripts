@@ -61,9 +61,7 @@ lido_dao_withdrawal_vault_implementation_v1 = "0xe681faB8851484B57F32143FD78548f
 lido_dao_withdrawal_vault_stub_implementation = "0xe681faB8851484B57F32143FD78548f25fD59980"
 lido_dao_staking_router = "0x5A2a6cB5e0f57A30085A9411f7F5f07be8ad1Ec7"
 lido_dao_staking_router_implementation = "0x4384fB5DcaC0576B93e36b8af6CdfEB739888894"
-gate_seal = "0xD59f8Bc37BAead58cbCfD99b03997655A13f56d9"
 oracle_daemon_config = "0xbA3981771AB991960028B2F83ae83664Fd003F61"
-shapella_upgrade_template_address = ""
 
 lido_easytrack = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 lido_easytrack_evmscriptexecutor = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
@@ -71,6 +69,10 @@ lido_easytrack_increase_nop_staking_limit_factory = "0xFeBd8FAC16De88206d4b18764
 
 lido_insurance_fund_address = "0x8B3f33234ABD88493c0Cd28De33D583B70beDe35"
 lido_relay_allowed_list = "0xF95f069F9AD107938F6ba802a3da87892298610E"
+
+# Yet deployed in preliminary steps
+gate_seal = "0xD59f8Bc37BAead58cbCfD99b03997655A13f56d9"
+shapella_upgrade_template_address = "0xF9a393Baab3C575c2B31166636082AB58a3dae62"
 
 # Multisigs
 finance_multisig_address = "0x48F300bD3C52c7dA6aAbDE4B683dEB27d38B9ABb"
