@@ -91,13 +91,11 @@ def test_succeed_if_5_minutes_before_expire(accounts, helpers):
 
 
 def test_revert_if_upgrade_not_finished(accounts, helpers, template):
-    # NB: for unknown reason brownie returns empty revert string, although it must fail with typed error
-    #     that's why don't check the revert message here
+    # NB: due to some bug brownie returns empty revert string for view function
     with reverts(""):
         template.revertIfUpgradeNotFinished()
 
-    # NB: for unknown reason brownie returns empty revert string, although it must fail with typed error
-    #     that's why don't check the revert message here
+    # NB: due to some bug brownie returns empty revert string for view function
     with reverts(""):
         template.assertUpgradeIsFinishedCorrectly()
 
@@ -136,8 +134,7 @@ def test_revert_if_upgrade_not_finished_after_start(template):
     upgrade_withdrawal_vault()
     template.startUpgrade({"from": contracts.voting})
 
-    # NB: for unknown reason brownie returns empty revert string, although it must fail with typed error
-    #     that's why don't check the revert message here
+    # NB: due to some bug brownie returns empty revert string for view function
     with reverts(""):
         template.revertIfUpgradeNotFinished()
 
