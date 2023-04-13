@@ -251,9 +251,13 @@ interface IWithdrawalVault is IVersioned, IWithdrawalsManagerProxy {
     function initialize() external;
 }
 
+/// @notice The set of restrictions used in the sanity checks of the oracle report
+/// @dev struct is loaded from the storage and stored in memory during the tx running
 struct LimitsList {
-    /// @notice The max possible number of validators that might appear or exit on the Consensus
-    ///     Layer during one day
+    /// @notice The max possible number of validators that might been reported as `appeared` or `exited`
+    ///     during a single day
+    /// NB: `appeared` means `pending` (maybe not `activated` yet), see further explanations
+    //      in docs for the `setChurnValidatorsPerDayLimit` func below.
     /// @dev Must fit into uint16 (<= 65_535)
     uint256 churnValidatorsPerDayLimit;
 
@@ -1047,8 +1051,6 @@ contract ShapellaUpgradeTemplate {
         wq.renounceRole(resume_role, address(this));
     }
 
-    // To be strict need two almost identical _resume... function because RESUME_ROLE and resume()
-    // do not actually belong to PausableUntil contract
     function _resumeValidatorsExitBusOracle() internal {
         IValidatorsExitBusOracle vebo = _validatorsExitBusOracle;
         bytes32 resume_role = vebo.RESUME_ROLE();
