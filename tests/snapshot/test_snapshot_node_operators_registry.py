@@ -245,7 +245,7 @@ def assert_rewards_distribution(before, after):
         assert almost_eq(
             rewards_distribution_before["shares"][i],
             rewards_distribution_after["shares"][i],
-            epsilon=200000, # estimated divergence is number of deposited validators
+            epsilon=200000,  # estimated divergence is number of deposited validators
         )
         assert not rewards_distribution_after["penalized"][i]
 

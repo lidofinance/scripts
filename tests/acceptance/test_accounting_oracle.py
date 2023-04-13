@@ -9,17 +9,16 @@ from utils.config import (
     oracle_committee,
 )
 
-
-@pytest.fixture(scope="module")
-def contract() -> interface.AccountingOracle:
-    return interface.AccountingOracle(lido_dao_accounting_oracle)
-
-
 beacon_spec = {
     "slotsPerEpoch": 32,
     "secondsPerSlot": 12,
     "genesisTime": 1606824023,
 }
+
+
+@pytest.fixture(scope="module")
+def contract() -> interface.AccountingOracle:
+    return interface.AccountingOracle(lido_dao_accounting_oracle)
 
 
 def test_proxy(contract):
@@ -76,19 +75,19 @@ def test_accounting_hash_consensus(contract):
     # HashConsensus
     consensus = interface.HashConsensus(contract.getConsensusContract())
 
-    currentFrame = consensus.getCurrentFrame()
-    assert currentFrame["refSlot"] > 5254400
-    assert currentFrame["reportProcessingDeadlineSlot"] > 5254400
+    current_frame = consensus.getCurrentFrame()
+    assert current_frame["refSlot"] > 5254400
+    assert current_frame["reportProcessingDeadlineSlot"] > 5254400
 
-    chainConfig = consensus.getChainConfig()
-    assert chainConfig["slotsPerEpoch"] == beacon_spec["slotsPerEpoch"]
-    assert chainConfig["secondsPerSlot"] == beacon_spec["secondsPerSlot"]
-    assert chainConfig["genesisTime"] == beacon_spec["genesisTime"]
+    chain_config = consensus.getChainConfig()
+    assert chain_config["slotsPerEpoch"] == beacon_spec["slotsPerEpoch"]
+    assert chain_config["secondsPerSlot"] == beacon_spec["secondsPerSlot"]
+    assert chain_config["genesisTime"] == beacon_spec["genesisTime"]
 
-    frameConfig = consensus.getFrameConfig()
-    assert frameConfig["initialEpoch"] > 5254400 / 32
-    assert frameConfig["epochsPerFrame"] == 225
-    assert frameConfig["fastLaneLengthSlots"] == 10
+    frame_config = consensus.getFrameConfig()
+    assert frame_config["initialEpoch"] > 5254400 / 32
+    assert frame_config["epochsPerFrame"] == 225
+    assert frame_config["fastLaneLengthSlots"] == 10
 
     assert consensus.getInitialRefSlot() > 5254400
 
