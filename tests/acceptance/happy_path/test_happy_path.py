@@ -1,6 +1,6 @@
 import pytest
-from brownie import interface  # type: ignore
-
+from brownie import interface, web3, chain  # type: ignore
+import math
 from utils.config import (
     contracts,
     lido_dao_hash_consensus_for_accounting_oracle,
@@ -9,9 +9,20 @@ from utils.config import (
     oracle_committee,
 )
 
+ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000"
+ONE_DAY = 1 * 24 * 60 * 60
+
 
 def ETH(amount):
-    return amount * 10**18
+    return math.floor(amount * 10**18)
+
+
+def SHARES(amount):
+    return ETH(amount)
+
+
+def SHARE_RATE(amount):
+    return math.floor(amount * 10**27)
 
 
 @pytest.fixture(scope="module")
@@ -27,6 +38,181 @@ def steth_balance(account):
 
 def almostEqEth(b1, b2):
     return abs(b1 - b2) < 10
+
+
+def advance_chain_time(time):
+    chain.sleep(time)
+    chain.mine(1)
+
+
+def prepare_report(
+    refSlot,
+    numValidators,
+    clBalance,
+    withdrawalVaultBalance,
+    elRewardsVaultBalance,
+    sharesRequestedToBurn,
+    simulatedShareRate,
+    stakingModuleIdsWithNewlyExitedValidators=[],
+    numExitedValidatorsByStakingModule=[],
+    consensusVersion=1,
+    withdrawalFinalizationBatches=[],
+    isBunkerMode=False,
+    extraDataFormat=0,
+    extraDataHash=ZERO_BYTES32,
+    extraDataItemsCount=0,
+):
+    items = [
+        consensusVersion,
+        refSlot,
+        numValidators,
+        clBalance // (10**9),
+        [int(i) for i in stakingModuleIdsWithNewlyExitedValidators],
+        [int(i) for i in numExitedValidatorsByStakingModule],
+        int(withdrawalVaultBalance),
+        int(elRewardsVaultBalance),
+        int(sharesRequestedToBurn),
+        [int(i) for i in withdrawalFinalizationBatches],
+        int(simulatedShareRate),
+        isBunkerMode,
+        int(extraDataFormat),
+        extraDataHash,
+        int(extraDataItemsCount),
+    ]
+    hash = web3.solidityKeccak(
+        [
+            "uint256",
+            "uint256",
+            "uint256",
+            "uint256",
+            "uint256[]",
+            "uint256[]",
+            "uint256",
+            "uint256",
+            "uint256",
+            "uint256[]",
+            "uint256",
+            "bool",
+            "uint256",
+            "bytes32",
+            "uint256",
+        ],
+        items,
+    )
+
+    return (items, hash)
+
+
+def get_finalization_batches(share_rate: int, withdrawal_vault_balance, el_rewards_vault_balance) -> list[int]:
+    buffered_ether = contracts.lido.getBufferedEther()
+    unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
+    reserved_buffer = min(buffered_ether, unfinalized_steth)
+    available_eth = withdrawal_vault_balance + el_rewards_vault_balance + reserved_buffer
+    max_timestamp = chain.time()
+
+    batchesState = contracts.withdrawal_queue.calculateFinalizationBatches(
+        share_rate, max_timestamp, 10000, (available_eth, False, [0 for _ in range(36)], 0)
+    )
+
+    while not batchesState[1]:  # batchesState.finished
+        batchesState = contracts.withdrawal_queue.calculateFinalizationBatches(
+            share_rate, max_timestamp, 10000, batchesState
+        )
+
+    return list(filter(lambda value: value > 0, batchesState[2]))
+
+
+def reach_consensus(slot, report, version):
+    (members, *_) = contracts.hash_consensus_for_accounting_oracle.getFastLaneMembers()
+    for member in members:
+        contracts.hash_consensus_for_accounting_oracle.submitReport(slot, report, version, {"from": member})
+    return members[0]
+
+
+def push_oracle_report(
+    clBalance,
+    numValidators,
+    withdrawalVaultBalance,
+    elRewardsVaultBalance,
+    sharesRequestedToBurn,
+    simulatedShareRate,
+    stakingModuleIdsWithNewlyExitedValidators=[],
+    numExitedValidatorsByStakingModule=[],
+    withdrawalFinalizationBatches=[],
+    isBunkerMode=False,
+    extraDataFormat=0,
+    extraDataHash=ZERO_BYTES32,
+    extraDataItemsCount=0,
+):
+    (refSlot, *_) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
+    consensusVersion = contracts.accounting_oracle.getConsensusVersion()
+    oracleVersion = contracts.accounting_oracle.getContractVersion()
+    (items, hash) = prepare_report(
+        refSlot,
+        numValidators,
+        clBalance,
+        withdrawalVaultBalance,
+        elRewardsVaultBalance,
+        sharesRequestedToBurn,
+        simulatedShareRate,
+        stakingModuleIdsWithNewlyExitedValidators,
+        numExitedValidatorsByStakingModule,
+        consensusVersion,
+        withdrawalFinalizationBatches,
+        isBunkerMode,
+        extraDataFormat,
+        extraDataHash,
+        extraDataItemsCount,
+    )
+    submitter = reach_consensus(refSlot, hash, consensusVersion)
+    report_tx = contracts.accounting_oracle.submitReportData(items, oracleVersion, {"from": submitter})
+    extra_report_tx = contracts.accounting_oracle.submitReportExtraDataEmpty({"from": submitter})
+    return (report_tx, extra_report_tx)
+
+
+def oracle_report():
+    advance_chain_time(ONE_DAY)
+    (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME) = contracts.hash_consensus_for_accounting_oracle.getChainConfig()
+    (refSlot, reportProcessingDeadlineSlot) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
+    reportTime = GENESIS_TIME + refSlot * SECONDS_PER_SLOT
+
+    elRewardsVaultBalance = web3.eth.getBalance(contracts.execution_layer_rewards_vault.address)
+    withdrawalVaultBalance = web3.eth.getBalance(contracts.withdrawal_vault.address)
+    totalSharesBefore = contracts.lido.getTotalShares()
+    (depositedValidators, beaconValidators, beaconBalance) = contracts.lido.getBeaconStat()
+    balanceBufferBefore = contracts.lido.getBufferedEther()
+    totalPooledBefore = contracts.lido.getTotalPooledEther()
+    withdrawalSharePrice = contracts.lido.getPooledEthByShares(SHARES(1))
+
+    postCLBalance = beaconBalance + ETH(10)
+
+    (postTotalPooledEther, postTotalShares, withdrawals, elRewards) = contracts.lido.handleOracleReport.call(
+        reportTime,
+        ONE_DAY,
+        beaconValidators,
+        postCLBalance,
+        withdrawalVaultBalance,
+        elRewardsVaultBalance,
+        0,
+        [],
+        0,
+        {"from": contracts.accounting_oracle.address},
+    )
+    simulatedShareRate = math.floor(postTotalPooledEther * SHARE_RATE(1) / postTotalShares)
+    (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()
+    sharesRequestedToBurn = coverShares + nonCoverShares
+
+    finalization_batches = get_finalization_batches(simulatedShareRate, withdrawals, elRewards)
+
+    push_oracle_report(
+        clBalance=postCLBalance,
+        numValidators=beaconValidators,
+        withdrawalVaultBalance=withdrawalVaultBalance,
+        sharesRequestedToBurn=sharesRequestedToBurn,
+        withdrawalFinalizationBatches=finalization_batches,
+        elRewardsVaultBalance=elRewardsVaultBalance,
+        simulatedShareRate=simulatedShareRate,
+    )
 
 
 def test_withdraw(holder):
@@ -57,3 +243,5 @@ def test_withdraw(holder):
         assert not isFinalized
         assert not isClaimed
         assert claimableEther[i] == 0
+
+    oracle_report()
