@@ -118,14 +118,6 @@ interface ILidoLocator is IOssifiableProxy {
     function oracleDaemonConfig() external view returns(address);
 }
 
-interface ILegacyOracle is IVersioned {
-    /**
-     * @notice A function to finalize upgrade v3 -> v4 (the compat-only deprecated impl).
-     * Can be called only once.
-     */
-    function finalizeUpgrade_v4(address accountingOracle) external;
-}
-
 interface ILidoOracle {
     /**
      * @notice Return the initialized version of this contract starting from 0
@@ -150,25 +142,6 @@ interface ILidoOracle {
 
 interface INodeOperatorsRegistry is IVersioned {
     function finalizeUpgrade_v2(address locator, bytes32 stakingModuleType, uint256 stuckPenaltyDelay) external;
-}
-
-interface IOracleDaemonConfig is IAccessControlEnumerable {
-    function CONFIG_MANAGER_ROLE() external view returns (bytes32);
-    function get(string calldata _key) external view returns (bytes memory);
-}
-
-interface IOracleReportSanityChecker is IAccessControlEnumerable {
-    function ALL_LIMITS_MANAGER_ROLE() external view returns (bytes32);
-    function CHURN_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE() external view returns (bytes32);
-    function ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE() external view returns (bytes32);
-    function ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE() external view returns (bytes32);
-    function SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE() external view returns (bytes32);
-    function MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_ROLE() external view returns (bytes32);
-    function MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE() external view returns (bytes32);
-    function MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE() external view returns (bytes32);
-    function REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE() external view returns (bytes32);
-    function MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE() external view returns (bytes32);
-    function getOracleReportLimits() external view returns (LimitsList memory);
 }
 
 interface IStakingRouter is IVersioned, IAccessControlEnumerable, IOssifiableProxy {
@@ -364,31 +337,17 @@ contract ProtocolDebugBinder {
     IDepositSecurityModule public constant _depositSecurityModule = IDepositSecurityModule(0x0dCa6e1cc2c3816F1c880c9861E6c2478DD0e052);
     address public constant _eip712StETH = 0x075CEf9752b42e332Dab0bae1Ca63801AD8E28C7;
     // NB: this gate seal address is taken from mock address deployed in prepare_for_shapella_upgrade_voting
-    address public constant _gateSeal = 0x32429d2AD4023A6fd46a690DEf62bc51990ba497;
     IHashConsensus public constant _hashConsensusForAccountingOracle = IHashConsensus(0x64bc157ec2585FAc63D33a31cEd56Cee4cB421eA);
     IHashConsensus public constant _hashConsensusForValidatorsExitBusOracle = IHashConsensus(0x8D108EB23306c9F860b1F667d9Fcdf0dA273fA89);
-    IOracleDaemonConfig public constant _oracleDaemonConfig = IOracleDaemonConfig(0xFc5768E73f8974f087c840470FBF132eD059aEbc);
-    IOracleReportSanityChecker public constant _oracleReportSanityChecker = IOracleReportSanityChecker(0x7cCecf849DcaE53bcA9ba810Fc86390Ef96D05E0);
 
     // Existing proxies and contracts
-    address public constant _agent = 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c;
-    IAragonAppRepo public constant _aragonAppLidoRepo = IAragonAppRepo(0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1);
-    IAragonAppRepo public constant _aragonAppNodeOperatorsRegistryRepo = IAragonAppRepo(0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1831);
-    IAragonAppRepo public constant _aragonAppLegacyOracleRepo = IAragonAppRepo(0xF9339DE629973c60c4d2b76749c81E6F40960E3A);
-    address public constant _elRewardsVault = 0x388C818CA8B9251b393131C08a736A67ccB19297;
-    // ILido public constant _lido = ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
     ILidoOracle public constant _lidoOracle = ILidoOracle(0x442af784A788A5bd6F42A01Ebe9F287a871243fb);
     // _legacyOracle has the same address as _lidoOracle: we're renaming the contract, but it's on the same address
-    ILegacyOracle public constant _legacyOracle = ILegacyOracle(address(_lidoOracle));
     INodeOperatorsRegistry public constant _nodeOperatorsRegistry = INodeOperatorsRegistry(0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5);
     address public constant _previousDepositSecurityModule = 0x710B3303fB508a84F10793c1106e32bE873C24cd;
-    address public constant _voting = 0x2e59A20f205bB85a89C53f1936454680651E618e;
-    IWithdrawalVault public constant _withdrawalVault = IWithdrawalVault(0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f);
 
     // Aragon Apps new implementations
     address public constant _lidoImplementation = 0xE5418393B2D9D36e94b7a8906Fb2e4E9dce9DEd3;
-    address public constant _legacyOracleImplementation = 0xCb461e10f5AD0575172e7261589049e44aAf209B;
-    address public constant _nodeOperatorsRegistryImplementation = 0x18Ce1d296Cebe2596A5c295202a195F898021E5D;
 
     // New non-aragon implementations
     address public constant _accountingOracleImplementation = 0xE1987a83C5427182bC70FFDC02DBf51EB21B1115;
@@ -396,7 +355,6 @@ contract ProtocolDebugBinder {
     address public constant _locatorImplementation = 0x2faE8f0A4D8D11B6EC35d04d3Ea6a0d195EB6D3F;
     address public constant _stakingRouterImplementation = 0x9BcF19B36770969979840A91d1b4dc352b1Bd648;
     address public constant _validatorsExitBusOracleImplementation = 0xAb6Feb60775FbeFf855c9a3cBdE64F2f3e1B03fD;
-    address public constant _withdrawalVaultImplementation = 0xcd26Aa57a3DC7015A7FCD7ECBb51CC4E291Ff0c5;
     address public constant _withdrawalQueueImplementation = 0x8e625031D47721E5FA1D13cEA033EC1dd067F663;
 
     // Values to set
@@ -414,7 +372,7 @@ contract ProtocolDebugBinder {
     // Values for checks to compare with or other
     //
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
-    uint256 internal constant UPGRADE_NOT_STARTED = 0;
+    uint256 internal constant NOT_BOUND = 0;
 
     //
     // Immutables
@@ -427,17 +385,18 @@ contract ProtocolDebugBinder {
     //
     // Structured storage
     //
-    /// UPGRADE_NOT_STARTED (zero) by default
-    uint256 public _upgradeBlockNumber;
+    /// NOT_BOUND (zero) by default
+    uint256 public _bindBlockNumber;
 
 
     /// @notice Need to be called before LidoOracle implementation is upgraded to LegacyOracle
     function bind() external {
         if (msg.sender != ADMIN) revert OnlyAdminCanBind();
         _assertNotExpired();
+        _assertProxyAdmin(_locator, ADMIN);
 
-        require(_upgradeBlockNumber == UPGRADE_NOT_STARTED, "already bound");
-        _upgradeBlockNumber = block.number;
+        require(_bindBlockNumber == NOT_BOUND, "already bound");
+        _bindBlockNumber = block.number;
 
         _upgradeProxyImplementations();
 
@@ -551,7 +510,6 @@ contract ProtocolDebugBinder {
     function _initializeWithdrawalQueue() internal {
         IWithdrawalQueue wq = _withdrawalQueue;
         wq.initialize(address(this));
-        wq.grantRole(wq.PAUSE_ROLE(), _gateSeal);
         wq.grantRole(wq.FINALIZE_ROLE(), address(_lidoImplementation));
         wq.grantRole(wq.ORACLE_ROLE(), address(_accountingOracle));
         _resumeWithdrawalQueue();
