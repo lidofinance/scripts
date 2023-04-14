@@ -1,17 +1,22 @@
-import pytest
-from brownie import interface, web3, chain  # type: ignore
-from eth_abi import encode_single, encode_abi, encode
 import math
+
+import pytest
+from brownie import chain, interface, web3  # type: ignore
+from eth_abi.abi import encode
+from hexbytes import HexBytes
+
 from utils.config import (
     contracts,
-    lido_dao_hash_consensus_for_accounting_oracle,
-    lido_dao_accounting_oracle_implementation,
     lido_dao_accounting_oracle,
+    lido_dao_accounting_oracle_implementation,
+    lido_dao_hash_consensus_for_accounting_oracle,
     oracle_committee,
 )
 
-ZERO_BYTES32 = b"0"
+ZERO_HASH = bytes([0] * 32)
+ZERO_BYTES32 = HexBytes(ZERO_HASH)
 ONE_DAY = 1 * 24 * 60 * 60
+SHARE_RATE_PRECISION = 10**27
 
 
 def ETH(amount):
@@ -20,10 +25,6 @@ def ETH(amount):
 
 def SHARES(amount):
     return ETH(amount)
-
-
-def SHARE_RATE(amount):
-    return math.floor(amount * 10**27)
 
 
 @pytest.fixture(scope="module")
@@ -126,6 +127,8 @@ def reach_consensus(slot, report, version):
     (members, *_) = contracts.hash_consensus_for_accounting_oracle.getFastLaneMembers()
     for member in members:
         contracts.hash_consensus_for_accounting_oracle.submitReport(slot, report, version, {"from": member})
+    (_, hash_, _) = contracts.hash_consensus_for_accounting_oracle.getConsensusState()
+    assert hash_ == report.hex(), "HashConsensus points to unexpected report"
     return members[0]
 
 
@@ -198,7 +201,7 @@ def oracle_report():
         0,
         {"from": contracts.accounting_oracle.address},
     )
-    simulatedShareRate = math.floor(postTotalPooledEther * SHARE_RATE(1) / postTotalShares)
+    simulatedShareRate = postTotalPooledEther * SHARE_RATE_PRECISION // postTotalShares
     (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()
     sharesRequestedToBurn = coverShares + nonCoverShares
 
