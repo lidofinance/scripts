@@ -1,5 +1,6 @@
 import pytest
 from brownie import interface, web3, chain  # type: ignore
+from eth_abi import encode_single, encode_abi, encode
 import math
 from utils.config import (
     contracts,
@@ -9,7 +10,7 @@ from utils.config import (
     oracle_committee,
 )
 
-ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000"
+ZERO_BYTES32 = b"0"
 ONE_DAY = 1 * 24 * 60 * 60
 
 
@@ -62,11 +63,11 @@ def prepare_report(
     extraDataHash=ZERO_BYTES32,
     extraDataItemsCount=0,
 ):
-    items = [
-        consensusVersion,
-        refSlot,
-        numValidators,
-        clBalance // (10**9),
+    items = (
+        int(consensusVersion),
+        int(refSlot),
+        int(numValidators),
+        int(clBalance // (10**9)),
         [int(i) for i in stakingModuleIdsWithNewlyExitedValidators],
         [int(i) for i in numExitedValidatorsByStakingModule],
         int(withdrawalVaultBalance),
@@ -74,32 +75,31 @@ def prepare_report(
         int(sharesRequestedToBurn),
         [int(i) for i in withdrawalFinalizationBatches],
         int(simulatedShareRate),
-        isBunkerMode,
+        bool(isBunkerMode),
         int(extraDataFormat),
         extraDataHash,
         int(extraDataItemsCount),
-    ]
-    hash = web3.solidityKeccak(
-        [
-            "uint256",
-            "uint256",
-            "uint256",
-            "uint256",
-            "uint256[]",
-            "uint256[]",
-            "uint256",
-            "uint256",
-            "uint256",
-            "uint256[]",
-            "uint256",
-            "bool",
-            "uint256",
-            "bytes32",
-            "uint256",
-        ],
-        items,
     )
-
+    report_data_abi = [
+        "uint256",
+        "uint256",
+        "uint256",
+        "uint256",
+        "uint256[]",
+        "uint256[]",
+        "uint256",
+        "uint256",
+        "uint256",
+        "uint256[]",
+        "uint256",
+        "bool",
+        "uint256",
+        "bytes32",
+        "uint256",
+    ]
+    report_str_abi = ",".join(report_data_abi)
+    encoded = encode([f"({report_str_abi})"], [items])
+    hash = web3.keccak(encoded)
     return (items, hash)
 
 
