@@ -1,16 +1,12 @@
 import math
 
 import pytest
-from brownie import chain, interface, web3  # type: ignore
+from brownie import chain, accounts, web3  # type: ignore
 from eth_abi.abi import encode
 from hexbytes import HexBytes
 
 from utils.config import (
     contracts,
-    lido_dao_accounting_oracle,
-    lido_dao_accounting_oracle_implementation,
-    lido_dao_hash_consensus_for_accounting_oracle,
-    oracle_committee,
 )
 
 ZERO_HASH = bytes([0] * 32)
@@ -126,6 +122,7 @@ def get_finalization_batches(share_rate: int, withdrawal_vault_balance, el_rewar
 def reach_consensus(slot, report, version):
     (members, *_) = contracts.hash_consensus_for_accounting_oracle.getFastLaneMembers()
     for member in members:
+        print(f"Member ${member} submitting report to hashConsensus")
         contracts.hash_consensus_for_accounting_oracle.submitReport(slot, report, version, {"from": member})
     (_, hash_, _) = contracts.hash_consensus_for_accounting_oracle.getConsensusState()
     assert hash_ == report.hex(), "HashConsensus points to unexpected report"
@@ -133,6 +130,7 @@ def reach_consensus(slot, report, version):
 
 
 def push_oracle_report(
+    refSlot,
     clBalance,
     numValidators,
     withdrawalVaultBalance,
@@ -147,7 +145,7 @@ def push_oracle_report(
     extraDataHash=ZERO_BYTES32,
     extraDataItemsCount=0,
 ):
-    (refSlot, *_) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
+    print(f"Preparing oracle report for refSlot: ${refSlot}")
     consensusVersion = contracts.accounting_oracle.getConsensusVersion()
     oracleVersion = contracts.accounting_oracle.getContractVersion()
     (items, hash) = prepare_report(
@@ -169,7 +167,31 @@ def push_oracle_report(
     )
     submitter = reach_consensus(refSlot, hash, consensusVersion)
     report_tx = contracts.accounting_oracle.submitReportData(items, oracleVersion, {"from": submitter})
+    print(f"Submitted report data")
+    # TODO add support for extra data type 1
     extra_report_tx = contracts.accounting_oracle.submitReportExtraDataEmpty({"from": submitter})
+    print(f"Submitted empty extra data report")
+
+    (
+        currentFrameRefSlot,
+        _,
+        mainDataHash,
+        mainDataSubmitted,
+        state_extraDataHash,
+        state_extraDataFormat,
+        extraDataSubmitted,
+        state_extraDataItemsCount,
+        extraDataItemsSubmitted,
+    ) = contracts.accounting_oracle.getProcessingState()
+
+    assert refSlot == currentFrameRefSlot
+    assert mainDataHash == hash.hex()
+    assert mainDataSubmitted
+    assert state_extraDataHash == extraDataHash.hex()
+    assert state_extraDataFormat == extraDataFormat
+    assert extraDataSubmitted
+    assert state_extraDataItemsCount == extraDataItemsCount
+    assert extraDataItemsSubmitted == extraDataItemsCount
     return (report_tx, extra_report_tx)
 
 
@@ -181,14 +203,11 @@ def oracle_report():
 
     elRewardsVaultBalance = web3.eth.getBalance(contracts.execution_layer_rewards_vault.address)
     withdrawalVaultBalance = web3.eth.getBalance(contracts.withdrawal_vault.address)
-    totalSharesBefore = contracts.lido.getTotalShares()
-    (depositedValidators, beaconValidators, beaconBalance) = contracts.lido.getBeaconStat()
-    balanceBufferBefore = contracts.lido.getBufferedEther()
-    totalPooledBefore = contracts.lido.getTotalPooledEther()
-    withdrawalSharePrice = contracts.lido.getPooledEthByShares(SHARES(1))
+    (_, beaconValidators, beaconBalance) = contracts.lido.getBeaconStat()
 
     postCLBalance = beaconBalance + ETH(10)
 
+    # simulated report
     (postTotalPooledEther, postTotalShares, withdrawals, elRewards) = contracts.lido.handleOracleReport.call(
         reportTime,
         ONE_DAY,
@@ -205,9 +224,11 @@ def oracle_report():
     (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()
     sharesRequestedToBurn = coverShares + nonCoverShares
 
+    # calculate batches
     finalization_batches = get_finalization_batches(simulatedShareRate, withdrawals, elRewards)
 
     push_oracle_report(
+        refSlot=refSlot,
         clBalance=postCLBalance,
         numValidators=beaconValidators,
         withdrawalVaultBalance=withdrawalVaultBalance,
@@ -219,32 +240,92 @@ def oracle_report():
 
 
 def test_withdraw(holder):
-    # approve
-    contracts.lido.approve(contracts.withdrawal_queue.address, ETH(100), {"from": holder})
+    account = accounts.at(holder, force=True)
+    REQUESTS_COUNT = 10
+    REQUEST_AMOUNT = ETH(1)
+    REQUESTS_SUM = REQUESTS_COUNT * REQUEST_AMOUNT
+
+    # pre request
+
+    no_requests = contracts.withdrawal_queue.getWithdrawalRequests(holder, {"from": holder})
+    assert len(no_requests) == 0
 
     # request
-    balance_before = steth_balance(holder)
-    request_tx = contracts.withdrawal_queue.requestWithdrawals([ETH(1) for _ in range(10)], holder, {"from": holder})
-    balance_after = steth_balance(holder)
+    contracts.lido.approve(contracts.withdrawal_queue.address, REQUESTS_SUM, {"from": holder})
+    steth_balance_before = steth_balance(holder)
+    request_tx = contracts.withdrawal_queue.requestWithdrawals(
+        [REQUEST_AMOUNT for _ in range(REQUESTS_COUNT)], holder, {"from": holder}
+    )
+    steth_balance_after = steth_balance(holder)
     # post request checks
-    assert almostEqEth(balance_before - balance_after, ETH(10))
-    assert request_tx.events.count("WithdrawalRequested") == 10
+    assert almostEqEth(steth_balance_before - steth_balance_after, REQUESTS_SUM)
+    assert request_tx.events.count("WithdrawalRequested") == REQUESTS_COUNT
 
     # check each request
     requests_ids = contracts.withdrawal_queue.getWithdrawalRequests(holder, {"from": holder})
     statuses = contracts.withdrawal_queue.getWithdrawalStatus(requests_ids, {"from": holder})
     claimableEther = contracts.withdrawal_queue.getClaimableEther(requests_ids, [0 for _ in requests_ids])
-    assert len(requests_ids) == 10
-    assert len(statuses) == 10
+    assert len(requests_ids) == REQUESTS_COUNT
+    assert len(statuses) == REQUESTS_COUNT
 
     for i, request_id in enumerate(requests_ids):
         assert i + 1 == request_id
         (amountOfStETH, amountOfShares, owner, _, isFinalized, isClaimed) = statuses[i]
-        assert almostEqEth(amountOfStETH, ETH(1))
+        assert almostEqEth(amountOfStETH, REQUEST_AMOUNT)
         assert almostEqEth(amountOfShares, contracts.lido.getSharesByPooledEth(amountOfStETH))
         assert owner == holder
         assert not isFinalized
         assert not isClaimed
         assert claimableEther[i] == 0
 
+    pre_lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
+    assert pre_lastCheckpointIndex == 0
+
     oracle_report()
+    # post report WQ state
+    assert contracts.withdrawal_queue.getLastFinalizedRequestId() == requests_ids[-1]
+    lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
+    assert lastCheckpointIndex == 1
+
+    # post report requests cehck
+
+    hints = contracts.withdrawal_queue.findCheckpointHints(requests_ids, 1, lastCheckpointIndex)
+    assert len(hints) == REQUESTS_COUNT
+
+    post_report_statuses = contracts.withdrawal_queue.getWithdrawalStatus(requests_ids, {"from": holder})
+    post_report_claimableEther = contracts.withdrawal_queue.getClaimableEther(requests_ids, hints)
+
+    for i, request_id in enumerate(requests_ids):
+        assert i + 1 == request_id
+        (amountOfStETH, amountOfShares, owner, _, isFinalized, isClaimed) = post_report_statuses[i]
+        assert amountOfStETH == statuses[i][0]  # amountOfShares remains unchanged
+        assert amountOfShares == statuses[i][1]  # amountOfShares remains unchanged
+        assert owner == holder
+        assert isFinalized
+        assert not isClaimed
+        assert almostEqEth(post_report_claimableEther[i], REQUEST_AMOUNT)
+        # single first finalization hint is 1
+        assert hints[i] == 1
+
+    # claim
+    claim_balance_before = account.balance()
+    claim_tx = contracts.withdrawal_queue.claimWithdrawals(requests_ids, hints, {"from": holder})
+    assert claim_tx.events.count("WithdrawalClaimed") == REQUESTS_COUNT
+    claim_balance_after = account.balance()
+    assert almostEqEth(
+        claim_balance_after - claim_balance_before + claim_tx.gas_used * claim_tx.gas_price, REQUESTS_SUM
+    )
+
+    post_claim_statuses = contracts.withdrawal_queue.getWithdrawalStatus(requests_ids, {"from": holder})
+    post_claim_claimableEther = contracts.withdrawal_queue.getClaimableEther(requests_ids, hints)
+
+    for i, request_id in enumerate(requests_ids):
+        assert i + 1 == request_id
+        (amountOfStETH, amountOfShares, owner, _, isFinalized, isClaimed) = post_claim_statuses[i]
+        assert amountOfStETH == statuses[i][0]  # amountOfShares remains unchanged
+        assert amountOfShares == statuses[i][1]  # amountOfShares remains unchanged
+        assert owner == holder
+        assert isFinalized
+        assert isClaimed
+        assert almostEqEth(post_report_claimableEther[i], REQUEST_AMOUNT)
+        assert post_claim_claimableEther[i] == 0
