@@ -1,6 +1,4 @@
-import math
-
-from brownie import chain, accounts, web3  # type: ignore
+from brownie import chain, web3  # type: ignore
 from eth_abi.abi import encode
 from hexbytes import HexBytes
 
@@ -16,9 +14,10 @@ SHARE_RATE_PRECISION = 10**27
 
 
 def prepare_report(
+    *,
     refSlot,
-    numValidators,
     clBalance,
+    numValidators,
     withdrawalVaultBalance,
     elRewardsVaultBalance,
     sharesRequestedToBurn,
@@ -121,27 +120,28 @@ def push_oracle_report(
     silent=False,
 ):
     if not silent:
-        print(f"Preparing oracle report for refSlot: ${refSlot}")
+        print("Preparing oracle report for refSlot: ${refSlot}")
     consensusVersion = contracts.accounting_oracle.getConsensusVersion()
     oracleVersion = contracts.accounting_oracle.getContractVersion()
     (items, hash) = prepare_report(
-        refSlot,
-        numValidators,
-        clBalance,
-        withdrawalVaultBalance,
-        elRewardsVaultBalance,
-        sharesRequestedToBurn,
-        simulatedShareRate,
-        stakingModuleIdsWithNewlyExitedValidators,
-        numExitedValidatorsByStakingModule,
-        consensusVersion,
-        withdrawalFinalizationBatches,
-        isBunkerMode,
-        extraDataFormat,
-        extraDataHash,
-        extraDataItemsCount,
+        refSlot=refSlot,
+        clBalance=clBalance,
+        numValidators=numValidators,
+        withdrawalVaultBalance=withdrawalVaultBalance,
+        elRewardsVaultBalance=elRewardsVaultBalance,
+        sharesRequestedToBurn=sharesRequestedToBurn,
+        simulatedShareRate=simulatedShareRate,
+        stakingModuleIdsWithNewlyExitedValidators=stakingModuleIdsWithNewlyExitedValidators,
+        numExitedValidatorsByStakingModule=numExitedValidatorsByStakingModule,
+        consensusVersion=consensusVersion,
+        withdrawalFinalizationBatches=withdrawalFinalizationBatches,
+        isBunkerMode=isBunkerMode,
+        extraDataFormat=extraDataFormat,
+        extraDataHash=extraDataHash,
+        extraDataItemsCount=extraDataItemsCount,
     )
     submitter = reach_consensus(refSlot, hash, consensusVersion, silent)
+    print(items)
     report_tx = contracts.accounting_oracle.submitReportData(items, oracleVersion, {"from": submitter})
     if not silent:
         print(f"Submitted report data")

@@ -2,8 +2,6 @@ import math
 
 import pytest
 from brownie import chain, accounts, web3  # type: ignore
-from eth_abi.abi import encode
-from hexbytes import HexBytes
 from utils.test.oracle_report_helpers import (
     ONE_DAY,
     SHARE_RATE_PRECISION,
@@ -52,13 +50,13 @@ def holder(accounts):
 def oracle_report():
     advance_chain_time(ONE_DAY)
 
-    (refSlot) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
+    (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
     elRewardsVaultBalance = eth_balance(contracts.execution_layer_rewards_vault.address)
     withdrawalVaultBalance = eth_balance(contracts.withdrawal_vault.address)
     (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()
     (_, beaconValidators, beaconBalance) = contracts.lido.getBeaconStat()
 
-    postCLBalance = beaconBalance + ETH(10)
+    postCLBalance = beaconBalance + ETH(20)
 
     (postTotalPooledEther, postTotalShares, withdrawals, elRewards) = simulate_report(
         refSlot=refSlot,
