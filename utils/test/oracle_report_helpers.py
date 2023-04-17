@@ -120,7 +120,7 @@ def push_oracle_report(
     silent=False,
 ):
     if not silent:
-        print("Preparing oracle report for refSlot: ${refSlot}")
+        print(f"Preparing oracle report for refSlot: {refSlot}")
     consensusVersion = contracts.accounting_oracle.getConsensusVersion()
     oracleVersion = contracts.accounting_oracle.getContractVersion()
     (items, hash) = prepare_report(
@@ -141,7 +141,7 @@ def push_oracle_report(
         extraDataItemsCount=extraDataItemsCount,
     )
     submitter = reach_consensus(refSlot, hash, consensusVersion, silent)
-    print(items)
+    # print(contracts.oracle_report_sanity_checker.getOracleReportLimits())
     report_tx = contracts.accounting_oracle.submitReportData(items, oracleVersion, {"from": submitter})
     if not silent:
         print(f"Submitted report data")
@@ -188,3 +188,15 @@ def simulate_report(*, refSlot, beaconValidators, postCLBalance, withdrawalVault
         0,
         {"from": contracts.accounting_oracle.address},
     )
+
+
+def wait_to_next_available_report_time():
+    (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME) = contracts.hash_consensus_for_accounting_oracle.getChainConfig()
+    (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
+    time = chain.time()
+    (_, EPOCHS_PER_FRAME, _) = contracts.hash_consensus_for_accounting_oracle.getFrameConfig()
+    frame_start_with_offset = GENESIS_TIME + (refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME + 1) * SECONDS_PER_SLOT
+    chain.sleep(frame_start_with_offset - time)
+    chain.mine(1)
+    (nextRefSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
+    assert nextRefSlot == refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME, "should be next frame"

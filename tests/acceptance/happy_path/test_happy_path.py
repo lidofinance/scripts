@@ -1,13 +1,14 @@
 import math
 
 import pytest
-from brownie import chain, accounts, web3  # type: ignore
+from brownie import accounts, web3  # type: ignore
 from utils.test.oracle_report_helpers import (
     ONE_DAY,
     SHARE_RATE_PRECISION,
     push_oracle_report,
     get_finalization_batches,
     simulate_report,
+    wait_to_next_available_report_time,
 )
 
 from utils.config import (
@@ -35,11 +36,6 @@ def almostEqEth(b1, b2):
     return abs(b1 - b2) <= 10
 
 
-def advance_chain_time(time):
-    chain.sleep(time)
-    chain.mine(1)
-
-
 @pytest.fixture(scope="module")
 def holder(accounts):
     whale = "0x41318419CFa25396b47A94896FfA2C77c6434040"
@@ -48,7 +44,7 @@ def holder(accounts):
 
 
 def oracle_report():
-    advance_chain_time(ONE_DAY)
+    wait_to_next_available_report_time()
 
     (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
     elRewardsVaultBalance = eth_balance(contracts.execution_layer_rewards_vault.address)
@@ -130,7 +126,7 @@ def test_withdraw(holder):
     lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
     assert lastCheckpointIndex == 1
 
-    # post report requests cehck
+    # post report requests check
 
     hints = contracts.withdrawal_queue.findCheckpointHints(requests_ids, 1, lastCheckpointIndex)
     assert len(hints) == REQUESTS_COUNT
