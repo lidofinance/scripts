@@ -360,7 +360,7 @@ contract ShapellaUpgradeTemplate {
     //     the same if it is the next tx of the first ganache account (which is used as the deployerEOA)
 
     // New proxies
-    ILidoLocator public constant _locator = ILidoLocator(0xd75C357F32Df60A67111BAa62a168c0D644d1C32);
+    ILidoLocator public constant _locator = ILidoLocator(0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb);
     IAccountingOracle public constant _accountingOracle = IAccountingOracle(0x9FE21EeCC385a1FeE057E58427Bfb9588E249231);
     IStakingRouter public constant _stakingRouter = IStakingRouter(0x5A2a6cB5e0f57A30085A9411f7F5f07be8ad1Ec7);
     IValidatorsExitBusOracle public constant _validatorsExitBusOracle = IValidatorsExitBusOracle(0x6e7Da71eF6E0Aaa85E59554C1FAe44128fA649Ed);

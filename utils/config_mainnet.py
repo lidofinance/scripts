@@ -88,7 +88,7 @@ deployer_eoa = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
 # TODO: add LidoLocator proxy here
 
 # New contracts (yet deployed in preliminary steps)
-lido_dao_lido_locator = "0xd75C357F32Df60A67111BAa62a168c0D644d1C32"
+lido_dao_lido_locator = "0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb"
 gate_seal = "0xD59f8Bc37BAead58cbCfD99b03997655A13f56d9"
 shapella_upgrade_template_address = "0xF9a393Baab3C575c2B31166636082AB58a3dae62"
 lido_dao_steth_implementation_address = "0xAb3bcE27F31Ca36AAc6c6ec2bF3e79569105ec2c"
