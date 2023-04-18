@@ -4,10 +4,7 @@ Tests for voting 18/04/2023.
 """
 from scripts.vote_2023_04_18 import start_vote
 
-from brownie import ZERO_ADDRESS, chain, accounts
 from brownie.network.transaction import TransactionReceipt
-
-from eth_abi.abi import encode_single
 
 from utils.config import network_name
 from utils.test.tx_tracing_helpers import *
@@ -15,13 +12,6 @@ from utils.test.event_validators.node_operators_registry import (
     validate_node_operator_staking_limit_set_event,
     NodeOperatorStakingLimitSetItem,
 )
-from utils.test.event_validators.easy_track import (
-    validate_evmscript_factory_added_event,
-    EVMScriptFactoryAdded,
-)
-from utils.easy_track import create_permissions
-from utils.agent import agent_forward
-from utils.voting import create_vote, bake_vote_items
 
 rockLogic_params_before = {
     "active": True,
@@ -49,15 +39,9 @@ def test_vote(
     accounts,
     vote_id_from_env,
     bypass_events_decoding,
-    unknown_person,
-    interface,
     ldo_holder,
     dao_voting,
-    ldo_token,
-    easy_track,
-    finance,
-    node_operators_registry,
-    dao_agent
+    node_operators_registry
 ):
 
     RockLogic_id = 22
