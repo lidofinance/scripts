@@ -1,6 +1,6 @@
 """
 Voting 18/04/2023.
-1. Set Staking limit for node operator RockLogic GmbH to 5800
+1. Set Staking limit for Node Operator RockLogic GmbH to 5800
 """
 
 import time
@@ -32,7 +32,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     ]
 
     vote_desc_items = [
-        "1) Set Staking limit for node operator RockLogic GmbH to 5800",
+        "1) Set Staking limit for Node Operator RockLogic GmbH to 5800",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
@@ -41,7 +41,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
 
 
 def main():
-    vote_id, _ = start_vote({"from": get_deployer_account(), "max_fee": "300 gwei", "priority_fee": "2 gwei"})
+    vote_id, _ = start_vote({"from": get_deployer_account(), "priority_fee": "4 gwei"})
 
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 
