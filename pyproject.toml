@@ -16,6 +16,7 @@ setuptools = "~65.5.1"
 [tool.poetry.dev-dependencies]
 black = "~22.10.0"
 pre-commit = "~2.19.0"
+pytest-check = "^2.1.4"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -25,3 +26,12 @@ build-backend = "poetry.core.masonry.api"
 line-length = 120
 target-version = ['py310']
 include = '\.pyi?$'
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
+filterwarnings = [
+    "ignore:abi.(decode|encode):DeprecationWarning",
+    "ignore:rpc.(snapshot|revert):FutureWarning",
+]
