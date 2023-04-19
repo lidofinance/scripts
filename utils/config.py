@@ -124,6 +124,10 @@ class ContractsLazyLoader:
         return interface.LegacyOracle(lido_dao_legacy_oracle)
 
     @property
+    def deposit_security_module_v1(self) -> interface.DepositSecurityModule:
+        return interface.DepositSecurityModuleV1(lido_dao_deposit_security_module_address_old)
+
+    @property
     def deposit_security_module(self) -> interface.DepositSecurityModule:
         return interface.DepositSecurityModule(lido_dao_deposit_security_module_address)
 
