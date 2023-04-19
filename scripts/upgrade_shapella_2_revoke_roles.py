@@ -43,14 +43,6 @@ from utils.permissions import encode_permission_revoke
 from utils.brownie_prelude import *
 
 
-TEMPLATE_ADDRESS = (
-    # Deterministic address from dev local-fork deployment
-    "0xF9a393Baab3C575c2B31166636082AB58a3dae62"
-    if contracts.shapella_upgrade_template is None
-    else contracts.shapella_upgrade_template.address
-)
-
-
 def encode_template_check_upgrade_finished(template_address: str) -> Tuple[str, str]:
     template = ShapellaUpgradeTemplate.at(template_address)
     return template.address, template.revertIfUpgradeNotFinished.encode_input()
@@ -66,7 +58,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
 
     call_script_items = [
         # 1)
-        encode_template_check_upgrade_finished(TEMPLATE_ADDRESS),
+        encode_template_check_upgrade_finished(contracts.shapella_upgrade_template.address),
         # 2)
         encode_permission_revoke(lido, "MANAGE_FEE", revoke_from=voting),
         # 3)

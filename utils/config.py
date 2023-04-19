@@ -79,9 +79,6 @@ def get_config_params() -> Dict[str, str]:
 
 
 class ContractsLazyLoader:
-    # Stored here temporarily, for debug purposes
-    upgrade_template = None
-
     @property
     def lido_v1(self) -> interface.LidoV1:
         return interface.LidoV1(lido_dao_steth_address)
@@ -224,12 +221,8 @@ class ContractsLazyLoader:
 
     @property
     def shapella_upgrade_template(self) -> ShapellaUpgradeTemplate:
-        if shapella_upgrade_template_address != "":
-            return ShapellaUpgradeTemplate.at(shapella_upgrade_template_address)
-        elif ContractsLazyLoader.upgrade_template is not None:
-            return ShapellaUpgradeTemplate.at(ContractsLazyLoader.upgrade_template)
-        else:
-            return None
+        assert shapella_upgrade_template_address != ""
+        return ShapellaUpgradeTemplate.at(shapella_upgrade_template_address)
 
 
 def __getattr__(name: str) -> Any:

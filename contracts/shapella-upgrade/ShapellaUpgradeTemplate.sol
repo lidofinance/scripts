@@ -251,9 +251,13 @@ interface IWithdrawalVault is IVersioned, IWithdrawalsManagerProxy {
     function initialize() external;
 }
 
+/// @notice The set of restrictions used in the sanity checks of the oracle report
+/// @dev struct is loaded from the storage and stored in memory during the tx running
 struct LimitsList {
-    /// @notice The max possible number of validators that might appear or exit on the Consensus
-    ///     Layer during one day
+    /// @notice The max possible number of validators that might been reported as `appeared` or `exited`
+    ///     during a single day
+    /// NB: `appeared` means `pending` (maybe not `activated` yet), see further explanations
+    //      in docs for the `setChurnValidatorsPerDayLimit` func below.
     /// @dev Must fit into uint16 (<= 65_535)
     uint256 churnValidatorsPerDayLimit;
 
@@ -356,7 +360,7 @@ contract ShapellaUpgradeTemplate {
     //     the same if it is the next tx of the first ganache account (which is used as the deployerEOA)
 
     // New proxies
-    ILidoLocator public constant _locator = ILidoLocator(0xd75C357F32Df60A67111BAa62a168c0D644d1C32);
+    ILidoLocator public constant _locator = ILidoLocator(0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb);
     IAccountingOracle public constant _accountingOracle = IAccountingOracle(0x9FE21EeCC385a1FeE057E58427Bfb9588E249231);
     IStakingRouter public constant _stakingRouter = IStakingRouter(0x5A2a6cB5e0f57A30085A9411f7F5f07be8ad1Ec7);
     IValidatorsExitBusOracle public constant _validatorsExitBusOracle = IValidatorsExitBusOracle(0x6e7Da71eF6E0Aaa85E59554C1FAe44128fA649Ed);
@@ -1047,8 +1051,6 @@ contract ShapellaUpgradeTemplate {
         wq.renounceRole(resume_role, address(this));
     }
 
-    // To be strict need two almost identical _resume... function because RESUME_ROLE and resume()
-    // do not actually belong to PausableUntil contract
     function _resumeValidatorsExitBusOracle() internal {
         IValidatorsExitBusOracle vebo = _validatorsExitBusOracle;
         bytes32 resume_role = vebo.RESUME_ROLE();

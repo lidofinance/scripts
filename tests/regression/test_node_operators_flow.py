@@ -76,7 +76,7 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
     node_operators_count_before = nor.getNodeOperatorsCount()
     active_node_operators_count_before = nor.getActiveNodeOperatorsCount()
 
-    tx = nor.addNodeOperator("new_node_operator", reward_address, {"from": voting_eoa})
+    tx = nor.addNodeOperator(new_node_operator_name, reward_address, {"from": voting_eoa})
 
     node_operator_count_after = nor.getNodeOperatorsCount()
     active_node_operators_count_after = nor.getActiveNodeOperatorsCount()
@@ -142,7 +142,7 @@ def test_add_signing_keys_operator_bh(nor, reward_address, new_node_operator_id)
     assert total_signing_keys_count_after == total_signing_keys_count_before + keys_count
     assert unused_signing_keys_count_after == unused_signing_keys_count_before + keys_count
 
-    assert_node_operators(node_operator_before, node_operator_after, skip=["totalSigningKeys"])
+    assert_node_operators(node_operator_before, node_operator_after, skip=["totalAddedValidators"])
 
     assert_node_operator_summaries(node_operator_summary_before, node_operator_summary_after)
 

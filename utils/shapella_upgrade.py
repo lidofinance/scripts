@@ -1,4 +1,5 @@
 from brownie import ShapellaUpgradeTemplate, GateSealMock, interface
+from brownie.network.account import LocalAccount
 from utils.config import (
     contracts,
     lido_dao_lido_locator_implementation,
@@ -6,6 +7,7 @@ from utils.config import (
     prompt_bool,
     get_priority_fee,
     get_is_live,
+    get_deployer_account,
 )
 
 # Private constant taken from Lido contract
@@ -47,7 +49,23 @@ def prepare_deploy_upgrade_template(deployer):
     return template
 
 
+def change_locator_proxy_admin_to_local_one(local_admin):
+    mainnet_deployer_eoa = "0x2A78076BF797dAC2D25c9568F79b61aFE565B88C"
+
+    # To use the production LidoLocator mainnet proxy need to replace its admin to the local test fork admin
+    assert not get_is_live(), "Must not run any preliminary steps on live network!"
+    deployer_account = get_deployer_account()
+    assert not isinstance(deployer_account, LocalAccount), "mainnet deployer oea must be impersonated in tests"
+    assert get_deployer_account() != mainnet_deployer_eoa
+
+    change_admin_tx_params = get_tx_params(local_admin)
+    change_admin_tx_params["from"] = mainnet_deployer_eoa
+    interface.OssifiableProxy(contracts.lido_locator).proxy__changeAdmin(local_admin, change_admin_tx_params)
+
+
 def prepare_upgrade_locator(admin):
+    change_locator_proxy_admin_to_local_one(admin)
+
     assert interface.OssifiableProxy(contracts.lido_locator).proxy__getAdmin() == admin
     interface.OssifiableProxy(contracts.lido_locator).proxy__upgradeTo(
         lido_dao_lido_locator_implementation, get_tx_params(admin)
@@ -90,11 +108,7 @@ def prepare_for_shapella_upgrade_voting(temporary_admin, silent=False):
     prepare_deploy_gate_seal_mock(temporary_admin)
 
     # Deploy the upgrade template if needed
-    if shapella_upgrade_template_address == "":
-        template = prepare_deploy_upgrade_template(temporary_admin)
-    else:
-        template = ShapellaUpgradeTemplate.at(shapella_upgrade_template_address)
-        print(f"=== Using upgrade template from config {template.address} ===")
+    template = prepare_deploy_upgrade_template(temporary_admin)
 
     # To get sure the "stone" is in place
     assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
