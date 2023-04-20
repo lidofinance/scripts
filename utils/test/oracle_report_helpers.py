@@ -205,12 +205,17 @@ def wait_to_next_available_report_time():
     assert nextRefSlot == refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME, "should be next frame"
 
 
-def oracle_report(cl_diff=ETH(10)):
+# exclude_vaults_balances safely forces LIDO to see vault balances as empty allowing zero/negative rebase
+def oracle_report(cl_diff=ETH(10), exclude_vaults_balances=False):
     wait_to_next_available_report_time()
 
     (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
+
     elRewardsVaultBalance = eth_balance(contracts.execution_layer_rewards_vault.address)
     withdrawalVaultBalance = eth_balance(contracts.withdrawal_vault.address)
+    if exclude_vaults_balances:
+        elRewardsVaultBalance = 0
+
     (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()
     (_, beaconValidators, beaconBalance) = contracts.lido.getBeaconStat()
 
@@ -227,6 +232,10 @@ def oracle_report(cl_diff=ETH(10)):
     sharesRequestedToBurn = coverShares + nonCoverShares
 
     finalization_batches = get_finalization_batches(simulatedShareRate, withdrawals, elRewards)
+
+    # simulate needs proper w-vault balance
+    if exclude_vaults_balances:
+        withdrawalVaultBalance = 0
 
     push_oracle_report(
         refSlot=refSlot,
