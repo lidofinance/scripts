@@ -109,16 +109,16 @@ class ExtraDataService:
 
             for ((_, no_id), validators_count) in list(operators_by_module)[:max_no_in_payload_count]:
                 operator_ids.append(no_id.to_bytes(
-                    ExtraDataService.Lengths.NODE_OPERATOR_IDS))
+                    ExtraDataService.Lengths.NODE_OPERATOR_IDS, byteorder='big'))
                 vals_count.append(validators_count.to_bytes(
-                    ExtraDataService.Lengths.STUCK_OR_EXITED_VALS_COUNT))
+                    ExtraDataService.Lengths.STUCK_OR_EXITED_VALS_COUNT, byteorder='big'))
 
             payloads.append(
                 ItemPayload(
                     module_id=module_id.to_bytes(
-                        ExtraDataService.Lengths.MODULE_ID),
+                        ExtraDataService.Lengths.MODULE_ID, byteorder='big'),
                     node_ops_count=len(operator_ids).to_bytes(
-                        ExtraDataService.Lengths.NODE_OPS_COUNT),
+                        ExtraDataService.Lengths.NODE_OPS_COUNT, byteorder='big'),
                     node_operator_ids=b"".join(operator_ids),
                     vals_counts=b"".join(vals_count),
                 )
@@ -138,7 +138,7 @@ class ExtraDataService:
             for payload in payloads:
                 extra_data.append(ExtraDataItem(
                     item_index=index.to_bytes(
-                        ExtraDataService.Lengths.ITEM_INDEX),
+                        ExtraDataService.Lengths.ITEM_INDEX, byteorder='big'),
                     item_type=item_type,
                     item_payload=payload
                 ))
@@ -155,7 +155,7 @@ class ExtraDataService:
         for item in extra_data:
             extra_data_bytes += item.item_index
             extra_data_bytes += item.item_type.value.to_bytes(
-                ExtraDataService.Lengths.ITEM_TYPE)
+                ExtraDataService.Lengths.ITEM_TYPE, byteorder='big')
             extra_data_bytes += item.item_payload.module_id
             extra_data_bytes += item.item_payload.node_ops_count
             extra_data_bytes += item.item_payload.node_operator_ids

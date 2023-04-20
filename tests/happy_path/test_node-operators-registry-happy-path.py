@@ -65,7 +65,7 @@ def extra_data_service():
     return ExtraDataService()
 
 
-def oracle_report(extraDataFormat=0, extraDataHash=ZERO_BYTES32, extraDataItemsCount=0, extraDataList=''):
+def oracle_report(extraDataFormat=0, extraDataHash=ZERO_BYTES32, extraDataItemsCount=0, extraDataList='', increaseBalance=0):
     wait_to_next_available_report_time()
 
     (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
@@ -84,7 +84,7 @@ def oracle_report(extraDataFormat=0, extraDataHash=ZERO_BYTES32, extraDataItemsC
     print("withdrawalVaultBalance", withdrawalVaultBalance)
     print("elRewardsVaultBalance", elRewardsVaultBalance)
 
-    postCLBalance = beacon_balance
+    postCLBalance = beacon_balance + ETH(increaseBalance)
 
     (postTotalPooledEther, postTotalShares, withdrawals, elRewards) = simulate_report(
         refSlot=refSlot,
@@ -100,7 +100,7 @@ def oracle_report(extraDataFormat=0, extraDataHash=ZERO_BYTES32, extraDataItemsC
     finalization_batches = get_finalization_batches(
         simulatedShareRate, withdrawals, elRewards)
 
-    tx = push_oracle_report(
+    return push_oracle_report(
         refSlot=refSlot,
         clBalance=postCLBalance,
         numValidators=beacon_validators,
@@ -114,7 +114,6 @@ def oracle_report(extraDataFormat=0, extraDataHash=ZERO_BYTES32, extraDataItemsC
         extraDataItemsCount=extraDataItemsCount,
         extraDataList=extraDataList
     )
-    print("tx", tx)
 
 
 StakingModuleId = NewType('StakingModuleId', int)
@@ -140,14 +139,19 @@ def test_node_operator_normal_report(
     node_operator_second = nor.getNodeOperatorSummary(1)
     address_second = nor.getNodeOperator(1, False)['rewardAddress']
 
+    node_operator_third = nor.getNodeOperatorSummary(2)
+    address_third = nor.getNodeOperator(2, False)['rewardAddress']
+
     assert contracts.lido.balanceOf(address_first) == 21873108333133797622
     assert contracts.lido.balanceOf(address_second) == 113089997075720349764
+    assert contracts.lido.balanceOf(address_third) == 32478609417541091991
 
     oracle_report()
 
     # TODO: add calc of expected NO balace (now it is + 10 ETH)
     assert contracts.lido.balanceOf(address_first) == 31165004784634247170
     assert contracts.lido.balanceOf(address_second) == 114421525910389078269
+    assert contracts.lido.balanceOf(address_third) == 41777664582273516463
 
     assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
 
@@ -159,6 +163,7 @@ def test_node_operator_normal_report(
 
     assert contracts.lido.balanceOf(address_first) == 31165004784634247170
     assert contracts.lido.balanceOf(address_second) == 114421525910389078269
+    assert contracts.lido.balanceOf(address_third) == 41777664582273516463
 
     extraData = {
         'exitedKeys': [{'moduleId': 1, 'nodeOpIds': [0], 'keysCounts': [2]}],
@@ -166,13 +171,41 @@ def test_node_operator_normal_report(
     }
 
     vals_stuck_non_zero = {
-        node_operator(1, 0): 1,
+        node_operator(1, 0): 500,
+        node_operator(1, 1): 500,
     }
     vals_exited_non_zero = {
-        node_operator(1, 0): 2,
+        node_operator(1, 0): 100,
+        node_operator(1, 1): 100,
     }
 
     extra_data = extra_data_service.collect(
         vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
 
-    oracle_report(1, extra_data.data_hash, 2, extra_data.extra_data)
+    (report_tx, extra_report_tx) = oracle_report(
+        1, extra_data.data_hash, 2, extra_data.extra_data, 1000)
+
+    print('report_tx', report_tx.events)
+
+    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['nodeOperatorId'] == 0
+    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['exitedValidatorsCount'] == 100
+
+    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][1]['nodeOperatorId'] == 1
+    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][1]['exitedValidatorsCount'] == 100
+
+    assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['nodeOperatorId'] == 0
+    assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['stuckValidatorsCount'] == 500
+
+    assert extra_report_tx.events['StuckPenaltyStateChanged'][1]['nodeOperatorId'] == 1
+    assert extra_report_tx.events['StuckPenaltyStateChanged'][1]['stuckValidatorsCount'] == 500
+
+    print('------------', 31165004784634247170 - 31186041162863875287)
+    print('------------', 114421525910389078269 - 114498760440378590897)
+    print('------------', 41777664582273516463 - 41805864505866551087)
+
+    # increase -21036378229628117 ~ -0.021
+    assert contracts.lido.balanceOf(address_first) == 31186041162863875287
+    # increase -77234529989512628 ~ -0.077
+    assert contracts.lido.balanceOf(address_second) == 114498760440378590897
+    # increase -28199923593034624 ~ -0.028
+    assert contracts.lido.balanceOf(address_third) == 41805864505866551087
