@@ -7,7 +7,7 @@ import pytest
 from brownie import Contract, accounts, chain, rpc, web3
 from brownie.network.account import Account
 from brownie.network.state import _notify_registry
-from pytest_check import check
+from pytest_check import almost_equal, check
 from typing_extensions import Protocol
 
 from tests.conftest import Helpers
@@ -30,7 +30,7 @@ SnapshotFn = Callable[[Any], dict]
 class SandwichFn(Protocol):
     @staticmethod
     def __call__(
-        actions_list: Sequence[Callable],
+        actions_list: dict[str, Callable],
         snapshot_fn: SnapshotFn = ...,
         snapshot_block: int = ...,
     ) -> tuple[Stack, Stack]:
@@ -40,7 +40,7 @@ class SandwichFn(Protocol):
 def test_dsm_no_changes_in_views(sandwich_upgrade: SandwichFn):
     """Test that no views change during the upgrade process"""
 
-    stacks = sandwich_upgrade([])
+    stacks = sandwich_upgrade({})
     _stacks_equal(stacks)
 
 
@@ -54,30 +54,30 @@ def test_dsm_no_changes_in_views_with_ops(
     """Test that no views change during the upgrade process"""
 
     stacks = sandwich_upgrade(
-        (
-            pause_deposits,
-            lambda dsm: dsm.setOwner(new_owner.address, {"from": dsm.getOwner()}),
-            lambda dsm: dsm.setMaxDeposits(42, {"from": new_owner.address}),
-            lambda dsm: dsm.setMinDepositBlockDistance(
+        {
+            "pauseDeposits": pause_deposits,
+            "setOwner": lambda dsm: dsm.setOwner(new_owner.address, {"from": dsm.getOwner()}),
+            "setMaxDeposits(42)": lambda dsm: dsm.setMaxDeposits(42, {"from": new_owner.address}),
+            "setMinDepositBlockDistance(17)": lambda dsm: dsm.setMinDepositBlockDistance(
                 17,
                 {"from": new_owner.address},
             ),
-            lambda dsm: dsm.removeGuardian(
+            "removeGuardian(existing)": lambda dsm: dsm.removeGuardian(
                 guardian.address,
                 3,
                 {"from": new_owner.address},
             ),
-            lambda dsm: dsm.addGuardian(
+            "addGuardian(new)": lambda dsm: dsm.addGuardian(
                 some_eoa.address,
                 4,
                 {"from": new_owner.address},
             ),
-            lambda dsm: dsm.removeGuardian(
+            "removeGuardian(new)": lambda dsm: dsm.removeGuardian(
                 some_eoa.address,
                 3,
                 {"from": new_owner.address},
             ),
-            lambda dsm: dsm.addGuardians(
+            "addGuardians": lambda dsm: dsm.addGuardians(
                 [
                     some_contract.address,
                     some_eoa.address,
@@ -85,19 +85,19 @@ def test_dsm_no_changes_in_views_with_ops(
                 4,
                 {"from": new_owner.address},
             ),
-            lambda dsm: dsm.removeGuardian(
+            "removeGuardian(contract)": lambda dsm: dsm.removeGuardian(
                 some_contract.address,
                 4,
                 {"from": new_owner.address},
             ),
-            lambda dsm: dsm.setPauseIntentValidityPeriodBlocks(
+            "setPauseIntentValidityPeriodBlocks": lambda dsm: dsm.setPauseIntentValidityPeriodBlocks(
                 42,
                 {"from": new_owner.address},
             ),
-            lambda dsm: dsm.setGuardianQuorum(0, {"from": new_owner.address}),
-            lambda dsm: dsm.setGuardianQuorum(3, {"from": new_owner.address}),
-            resume_deposits,
-        )
+            "setGuardianQuorum(0)": lambda dsm: dsm.setGuardianQuorum(0, {"from": new_owner.address}),
+            "setGuardianQuorum(3)": lambda dsm: dsm.setGuardianQuorum(3, {"from": new_owner.address}),
+            "unpauseDeposits": resume_deposits,
+        }
     )
     _stacks_equal(stacks)
 
@@ -213,7 +213,7 @@ def sandwich_upgrade(
     """Snapshot the state before and after the upgrade and return the two frames"""
 
     def _do(
-        actions_list: Sequence[Callable],
+        actions_list: dict[str, Callable],
         snapshot_fn=do_snapshot,
         snapshot_block=far_block,
     ):
@@ -222,11 +222,11 @@ def sandwich_upgrade(
 
             yield Frame(snap=snapshot_fn(dsm), func="init")
 
-            for action_fn in actions_list:
+            for desc, action_fn in actions_list.items():
                 action_fn(dsm)
                 yield Frame(
                     snap=snapshot_fn(dsm),
-                    func=repr(action_fn),
+                    func=desc,
                 )
 
         with _chain_snapshot():
@@ -279,6 +279,15 @@ def _stacks_equal(stacks: tuple[Stack, Stack]) -> None:
     for v1_frame, v2_frame in zip(*stacks, strict=True):
         for k in v1_frame["snap"]:
             with check:  # soft asserts
+                if k == "chain_time":
+                    almost_equal(
+                        v1_frame["snap"][k],
+                        v2_frame["snap"][k],
+                        1,  # 1 second tolerance
+                        msg=f"Large chain time difference after '{v1_frame['func']}'",
+                    )
+                    continue
+
                 assert (
                     v1_frame["snap"][k] == v2_frame["snap"][k]
                 ), f"Snapshots for key '{k}' after '{v1_frame['func']}' are not equal"
