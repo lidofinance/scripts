@@ -2,7 +2,6 @@ import math
 import pytest
 import random
 from brownie import web3, interface, convert, reverts, chain
-from utils.config import contracts
 from utils.mainnet_fork import chain_snapshot
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 from hexbytes import HexBytes
@@ -22,7 +21,8 @@ from utils.test.oracle_report_helpers import (
     simulate_report,
     wait_to_next_available_report_time,
 )
-from utils.config import (contracts)
+from utils.config import (contracts, deposit_contract,
+                          lido_dao_steth_address, lido_dao_voting_address)
 
 PUBKEY_LENGTH = 48
 SIGNATURE_LENGTH = 96
@@ -65,6 +65,11 @@ def extra_data_service():
     return ExtraDataService()
 
 
+@pytest.fixture(scope="module")
+def voting_eoa(accounts):
+    return accounts.at(contracts.voting.address, force=True)
+
+
 def oracle_report(extraDataFormat=0, extraDataHash=ZERO_BYTES32, extraDataItemsCount=0, extraDataList='', increaseBalance=0):
     wait_to_next_available_report_time()
 
@@ -77,7 +82,7 @@ def oracle_report(extraDataFormat=0, extraDataHash=ZERO_BYTES32, extraDataItemsC
     prev_report = contracts.lido.getBeaconStat().dict()
     beacon_validators = prev_report["beaconValidators"]
     beacon_balance = prev_report["beaconBalance"]
-    buffered_ether_before = contracts.lido.getBufferedEther()
+    # buffered_ether_before = contracts.lido.getBufferedEther()
 
     print("beaconBalance", beacon_balance)
     print("beaconValidators", beacon_validators)
@@ -131,7 +136,7 @@ def nor(accounts, interface):
 
 
 def test_node_operator_normal_report(
-        nor, accounts, extra_data_service
+        nor, accounts, extra_data_service, voting_eoa
 ):
     node_operator_first = nor.getNodeOperatorSummary(0)
     address_first = nor.getNodeOperator(0, False)['rewardAddress']
@@ -148,7 +153,7 @@ def test_node_operator_normal_report(
 
     oracle_report()
 
-    # TODO: add calc of expected NO balace (now it is + 10 ETH)
+    # TODO: add calc of expected NO balace (now it is + ~10)
     assert contracts.lido.balanceOf(address_first) == 31165004784634247170
     assert contracts.lido.balanceOf(address_second) == 114421525910389078269
     assert contracts.lido.balanceOf(address_third) == 41777664582273516463
@@ -171,12 +176,12 @@ def test_node_operator_normal_report(
     }
 
     vals_stuck_non_zero = {
-        node_operator(1, 0): 500,
-        node_operator(1, 1): 500,
+        node_operator(1, 0): 2,
+        node_operator(1, 1): 2,
     }
     vals_exited_non_zero = {
-        node_operator(1, 0): 100,
-        node_operator(1, 1): 100,
+        node_operator(1, 0): 5,
+        node_operator(1, 1): 5,
     }
 
     extra_data = extra_data_service.collect(
@@ -185,27 +190,103 @@ def test_node_operator_normal_report(
     (report_tx, extra_report_tx) = oracle_report(
         1, extra_data.data_hash, 2, extra_data.extra_data, 1000)
 
-    print('report_tx', report_tx.events)
+    print('extra_report_tx', extra_report_tx.events)
 
     assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['nodeOperatorId'] == 0
-    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['exitedValidatorsCount'] == 100
+    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['exitedValidatorsCount'] == 5
 
     assert extra_report_tx.events['ExitedSigningKeysCountChanged'][1]['nodeOperatorId'] == 1
-    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][1]['exitedValidatorsCount'] == 100
+    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][1]['exitedValidatorsCount'] == 5
 
     assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['nodeOperatorId'] == 0
-    assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['stuckValidatorsCount'] == 500
+    assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['stuckValidatorsCount'] == 2
 
     assert extra_report_tx.events['StuckPenaltyStateChanged'][1]['nodeOperatorId'] == 1
-    assert extra_report_tx.events['StuckPenaltyStateChanged'][1]['stuckValidatorsCount'] == 500
+    assert extra_report_tx.events['StuckPenaltyStateChanged'][1]['stuckValidatorsCount'] == 2
 
-    print('------------', 31165004784634247170 - 31186041162863875287)
-    print('------------', 114421525910389078269 - 114498760440378590897)
-    print('------------', 41777664582273516463 - 41805864505866551087)
+    # print('------------', 31186041162863875287 - 31165004784634247170)
+    # print('------------', 114498760440378590897 - 114421525910389078269)
+    # print('------------', 41805864505866551087 - 41777664582273516463)
 
-    # increase -21036378229628117 ~ -0.021
+    # increase 21036378229628117 ~ 0.021
     assert contracts.lido.balanceOf(address_first) == 31186041162863875287
-    # increase -77234529989512628 ~ -0.077
+    # increase 77234529989512628 ~ 0.077
     assert contracts.lido.balanceOf(address_second) == 114498760440378590897
-    # increase -28199923593034624 ~ -0.028
+    # increase 28199923593034624 ~ 0.028
     assert contracts.lido.balanceOf(address_third) == 41805864505866551087
+
+    # Deposite TODO
+
+    # depositCallCountBefore = deposit_contract.totalCalls()
+    # stakingModuleSummaryBefore = nor.getStakingModuleSummary()
+
+    # lido = interface.Lido(lido_dao_steth_address)
+    # lido.depositBufferedEther(
+    #     {'from': accounts[0]})
+
+    # depositCallCount = deposit_contract.totalCalls()
+    # stakingModuleSummary = nor.getStakingModuleSummary()
+
+    # balances after deposit
+    assert contracts.lido.balanceOf(address_first) == 31186041162863875287
+    assert contracts.lido.balanceOf(address_second) == 114498760440378590897
+    assert contracts.lido.balanceOf(address_third) == 41805864505866551087
+
+
+# Report with node operator 0 exited 2 + 5 keys an stuck 0
+    vals_exited_non_zero = {
+        node_operator(1, 0): 7,
+    }
+    extra_data = extra_data_service.collect(
+        {}, vals_exited_non_zero, 10, 10)
+
+    (report_tx, extra_report_tx) = oracle_report(
+        1, extra_data.data_hash, 1, extra_data.extra_data, 1000)
+
+    print('extra_report_tx', extra_report_tx.events)
+
+    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['exitedValidatorsCount'] == 7
+
+    # TODO: clac balances after report
+    assert contracts.lido.balanceOf(address_first) == 31207091740648808403
+    assert contracts.lido.balanceOf(address_second) == 114576047103675846446
+    assert contracts.lido.balanceOf(address_third) == 41834083464408011009
+
+    (bool_value_0, name_0, address_0, totalVettedValidators_0, totalExitedValidators_0, totalAddedValidators_0, totalDepositedValidators_0) = nor.getNodeOperator(
+        0, True)
+    (bool_value_1, name_1, address_1, totalVettedValidators_1, totalExitedValidators_1, totalAddedValidators_1, totalDepositedValidators_1) = nor.getNodeOperator(
+        1, True)
+
+    # print('-------totalDepositedValidators_0', totalDepositedValidators_0)
+    # nor.removeSigningKeys(0, totalDepositedValidators_0 + 1, 7, {
+    #                       'from': voting_eoa})
+    # nor.removeSigningKeys(1, totalDepositedValidators_1 + 1, 5, {
+    #                       'from': voting_eoa})
+
+    stuckPenaltyEndTimestamp = extra_report_tx.events[
+        'StuckPenaltyStateChanged'][0]['stuckPenaltyEndTimestamp']
+
+    print('---------- current timestamp',
+          web3.eth.get_block("latest").timestamp)
+    # sleep PENALTY_DELAY time
+    chain.sleep(stuckPenaltyEndTimestamp -
+                web3.eth.get_block("latest").timestamp + 1)
+    print('----------- afetr sleep')
+    chain.mine()
+
+    # new report with good node operator 0
+    vals_stuck_non_zero = {
+        node_operator(1, 0): 0,
+        node_operator(1, 1): 2,
+    }
+    vals_exited_non_zero = {
+        node_operator(1, 0): 0,
+        node_operator(1, 1): 0,
+    }
+    extra_data = extra_data_service.collect(
+        vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
+
+    (report_tx, extra_report_tx) = oracle_report(
+        1, extra_data.data_hash, 2, extra_data.extra_data, 1000)
+
+    print('extra_report_tx', extra_report_tx.events)

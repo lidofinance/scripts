@@ -141,12 +141,13 @@ def push_oracle_report(
     if extraDataFormat == 0:
         extra_report_tx = contracts.accounting_oracle.submitReportExtraDataEmpty({
             "from": submitter})
+        if not silent:
+            print(f"Submitted empty extra data report")
     else:
         extra_report_tx = contracts.accounting_oracle.submitReportExtraDataList(extraDataList, {
             "from": submitter})
-
-    if not silent:
-        print(f"Submitted empty extra data report")
+        if not silent:
+            print(f"Submitted NOT empty extra data report")
 
     (
         currentFrameRefSlot,
@@ -200,5 +201,9 @@ def wait_to_next_available_report_time():
     chain.sleep(frame_start_with_offset - time)
     chain.mine(1)
     (nextRefSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
+    print("nextRefSlot", nextRefSlot)
+    print("current", refSlot + SLOTS_PER_EPOCH *
+          EPOCHS_PER_FRAME)
+
     assert nextRefSlot == refSlot + SLOTS_PER_EPOCH * \
         EPOCHS_PER_FRAME, "should be next frame"
