@@ -1,9 +1,14 @@
 import itertools
 from dataclasses import dataclass
 from enum import Enum
+from typing import NewType, Tuple
 
 from hexbytes import HexBytes
 from brownie import web3
+
+StakingModuleId = NewType('StakingModuleId', int)
+NodeOperatorId = NewType('NodeOperatorId', int)
+NodeOperatorGlobalIndex = Tuple[StakingModuleId, NodeOperatorId]
 
 ZERO_HASH = bytes([0]*32)
 
@@ -64,8 +69,8 @@ class ExtraDataService:
 
     def collect(
         self,
-        stuck_validators,
-        exited_validators,
+        stuck_validators: dict[NodeOperatorGlobalIndex, int],
+        exited_validators: dict[NodeOperatorGlobalIndex, int],
         max_items_count: int,
         max_no_in_payload_count: int,
     ) -> ExtraData:
@@ -95,7 +100,7 @@ class ExtraDataService:
 
     @staticmethod
     def build_validators_payloads(
-        validators,
+        validators: dict[NodeOperatorGlobalIndex, int],
         max_no_in_payload_count: int,
     ) -> list[ItemPayload]:
         # sort by module id and node operator id

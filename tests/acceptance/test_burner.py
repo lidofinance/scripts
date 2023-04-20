@@ -22,4 +22,8 @@ def test_burner(contract):
 
     assert contract.getCoverSharesBurnt() == 0
     assert contract.getExcessStETH() == 0
-    assert contract.getNonCoverSharesBurnt() == 0
+
+    # proofs:
+    # - https://vote.lido.fi/vote/106
+    # - https://etherscan.io/address/0xB280E33812c0B09353180e92e27b8AD399B07f26#readContract#F7
+    assert contract.getNonCoverSharesBurnt() == 32145684728326685744
