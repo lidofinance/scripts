@@ -6,7 +6,7 @@ from utils.config import (
     lido_dao_steth_address,
 )
 
-lido_v2_implementation = "0xAb3bcE27F31Ca36AAc6c6ec2bF3e79569105ec2c"
+lido_v2_implementation = "0x11638262f6d34D807aE469166f0368c8Dc2a5689"
 lido_dao_lido_app_id = "0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320"
 initial_token_holder = "0x000000000000000000000000000000000000dead"
 last_seen_deposited_validators = 176018
