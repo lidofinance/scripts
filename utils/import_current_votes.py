@@ -35,13 +35,13 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
         assert (
             shapella_upgrade_template_address != ""
         ), "If SKIP_SHAPELLA_PRELIMINARY_STEP is set 'shapella_upgrade_template' must be specified in the config"
-        # ContractsLazyLoader.upgrade_template = shapella_upgrade_template
     else:
         assert (
             not get_is_live(),
             "ERROR: will not do preliminary actions on live network. run `preliminary_shapella...py` script manually",
         )
-        ContractsLazyLoader.upgrade_template = prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
+        deployed_upgrade_template = prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
+        assert deployed_upgrade_template.address == shapella_upgrade_template_address
 
     vote_ids = []
     vote_transactions = []

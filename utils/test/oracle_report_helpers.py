@@ -6,6 +6,8 @@ from utils.config import (
     contracts,
 )
 
+from utils.test.helpers import ETH, eth_balance
+
 
 ZERO_HASH = bytes([0] * 32)
 ZERO_BYTES32 = HexBytes(ZERO_HASH)
@@ -72,19 +74,21 @@ def prepare_report(
 
 
 def get_finalization_batches(share_rate: int, withdrawal_vault_balance, el_rewards_vault_balance) -> list[int]:
+    (_, _, _, _, _, _, _, requestTimestampMargin, _) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
     buffered_ether = contracts.lido.getBufferedEther()
     unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
     reserved_buffer = min(buffered_ether, unfinalized_steth)
     available_eth = withdrawal_vault_balance + el_rewards_vault_balance + reserved_buffer
-    max_timestamp = chain.time()
+    max_timestamp = chain.time() - requestTimestampMargin
+    MAX_REQUESTS_PER_CALL = 1000
 
     batchesState = contracts.withdrawal_queue.calculateFinalizationBatches(
-        share_rate, max_timestamp, 10000, (available_eth, False, [0 for _ in range(36)], 0)
+        share_rate, max_timestamp, MAX_REQUESTS_PER_CALL, (available_eth, False, [0 for _ in range(36)], 0)
     )
 
     while not batchesState[1]:  # batchesState.finished
         batchesState = contracts.withdrawal_queue.calculateFinalizationBatches(
-            share_rate, max_timestamp, 10000, batchesState
+            share_rate, max_timestamp, MAX_REQUESTS_PER_CALL, batchesState
         )
 
     return list(filter(lambda value: value > 0, batchesState[2]))
@@ -173,7 +177,9 @@ def push_oracle_report(
     return (report_tx, extra_report_tx)
 
 
-def simulate_report(*, refSlot, beaconValidators, postCLBalance, withdrawalVaultBalance, elRewardsVaultBalance):
+def simulate_report(
+    *, refSlot, beaconValidators, postCLBalance, withdrawalVaultBalance, elRewardsVaultBalance, block_identifier=None
+):
     (_, SECONDS_PER_SLOT, GENESIS_TIME) = contracts.hash_consensus_for_accounting_oracle.getChainConfig()
     reportTime = GENESIS_TIME + refSlot * SECONDS_PER_SLOT
     return contracts.lido.handleOracleReport.call(
@@ -187,6 +193,7 @@ def simulate_report(*, refSlot, beaconValidators, postCLBalance, withdrawalVault
         [],
         0,
         {"from": contracts.accounting_oracle.address},
+        block_identifier=block_identifier,
     )
 
 
@@ -200,3 +207,48 @@ def wait_to_next_available_report_time():
     chain.mine(1)
     (nextRefSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
     assert nextRefSlot == refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME, "should be next frame"
+
+
+def oracle_report(cl_diff=ETH(10), exclude_vaults_balances=False, simulation_block_identifier=None):
+    """fast forwards time to next report, compiles report, pushes through consensus and to AccountingOracle"""
+    wait_to_next_available_report_time()
+
+    (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
+
+    elRewardsVaultBalance = eth_balance(contracts.execution_layer_rewards_vault.address)
+    withdrawalVaultBalance = eth_balance(contracts.withdrawal_vault.address)
+    # exclude_vaults_balances safely forces LIDO to see vault balances as empty allowing zero/negative rebase
+
+    (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()
+    (_, beaconValidators, beaconBalance) = contracts.lido.getBeaconStat()
+
+    postCLBalance = beaconBalance + cl_diff
+
+    (postTotalPooledEther, postTotalShares, withdrawals, elRewards) = simulate_report(
+        refSlot=refSlot,
+        beaconValidators=beaconValidators,
+        postCLBalance=postCLBalance,
+        withdrawalVaultBalance=withdrawalVaultBalance,
+        elRewardsVaultBalance=elRewardsVaultBalance,
+        block_identifier=simulation_block_identifier,
+    )
+    simulatedShareRate = postTotalPooledEther * SHARE_RATE_PRECISION // postTotalShares
+    sharesRequestedToBurn = coverShares + nonCoverShares
+
+    finalization_batches = get_finalization_batches(simulatedShareRate, withdrawals, elRewards)
+
+    # simulate_reports needs proper withdrawal and elRewards vaults balances
+    if exclude_vaults_balances:
+        withdrawalVaultBalance = 0
+        elRewardsVaultBalance = 0
+
+    push_oracle_report(
+        refSlot=refSlot,
+        clBalance=postCLBalance,
+        numValidators=beaconValidators,
+        withdrawalVaultBalance=withdrawalVaultBalance,
+        sharesRequestedToBurn=sharesRequestedToBurn,
+        withdrawalFinalizationBatches=finalization_batches,
+        elRewardsVaultBalance=elRewardsVaultBalance,
+        simulatedShareRate=simulatedShareRate,
+    )

@@ -57,7 +57,7 @@ lido_relay_allowed_list = "0xeabE95AC5f3D64aE16AcBB668Ed0efcd81B721Bc"
 
 ldo_holder_address_for_tests = "0x709abe1880E3B7A813A297B68a1cdB8976025550"
 ldo_vote_executors_for_tests = [
-    "0xa5f1d7d49f581136cf6e58b32cbe9a2039c48ba1",
+    "0x319d5370715D24A1225817009BB23e676aE741D3",
     "0x4333218072d5d7008546737786663c38b4d561a4",
     "0xfda7e01b2718c511bf016030010572e833c7ae6a",
 ]
