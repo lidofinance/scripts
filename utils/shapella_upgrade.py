@@ -1,8 +1,11 @@
-from brownie import ShapellaUpgradeTemplate, GateSealMock, interface
+from brownie import ShapellaUpgradeTemplate, interface
 from brownie.network.account import LocalAccount
 from utils.config import (
     contracts,
     lido_dao_lido_locator_implementation,
+    lido_dao_withdrawal_queue,
+    lido_dao_validators_exit_bus_oracle,
+    gate_seal_factory_address,
     shapella_upgrade_template_address,
     prompt_bool,
     get_priority_fee,
@@ -37,10 +40,17 @@ def get_tx_params(deployer):
 
 
 def prepare_deploy_gate_seal_mock(deployer):
-    gate_seal = GateSealMock.deploy(
-        contracts.withdrawal_queue, contracts.validators_exit_bus_oracle, get_tx_params(deployer)
+    gate_seal_factory = interface.GateSeal(gate_seal_factory_address)
+    committee = deployer
+    seal_duration = 10 * 24 * 60 * 60  # 10 days
+    sealables = [lido_dao_withdrawal_queue, lido_dao_validators_exit_bus_oracle]
+    expiry_timestamp = 1701393006  # 2023-12-01
+    tx = gate_seal_factory.create_gate_seal(
+        committee, seal_duration, sealables, expiry_timestamp, get_tx_params(deployer)
     )
-    print(f"GateSealMock deployed at {gate_seal.address}")
+    gate_seal_address = tx.events[0]["gate_seal"]
+
+    print(f"GateSeal deployed at {gate_seal_address}")
 
 
 def prepare_deploy_upgrade_template(deployer):

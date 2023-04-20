@@ -6,7 +6,7 @@ from utils.config import (
     lido_dao_legacy_oracle,
 )
 
-implementation = "0xcA3cE6bf0CB2bbaC5dF3874232AE3F5b67C6b146"
+implementation = "0x599E51510719e94525eF406d4519949eca4242ac"
 app_id = "0x8b47ba2a8454ec799cd91646e7ec47168e91fd139b23f017455f3e5898aaba93"
 lastSeenTotalPooledEther = 5879742251110033487920093
 

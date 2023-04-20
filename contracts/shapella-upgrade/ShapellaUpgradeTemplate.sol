@@ -361,21 +361,21 @@ contract ShapellaUpgradeTemplate {
 
     // New proxies
     ILidoLocator public constant _locator = ILidoLocator(0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb);
-    IAccountingOracle public constant _accountingOracle = IAccountingOracle(0x9FE21EeCC385a1FeE057E58427Bfb9588E249231);
-    IStakingRouter public constant _stakingRouter = IStakingRouter(0x5A2a6cB5e0f57A30085A9411f7F5f07be8ad1Ec7);
-    IValidatorsExitBusOracle public constant _validatorsExitBusOracle = IValidatorsExitBusOracle(0x6e7Da71eF6E0Aaa85E59554C1FAe44128fA649Ed);
-    IWithdrawalQueue public constant _withdrawalQueue = IWithdrawalQueue(0xFb4E291D12734af4300B89585A16dF932160b840);
+    IAccountingOracle public constant _accountingOracle = IAccountingOracle(0x3751203ccb564F30bf413DabEBbA957cD45F311A);
+    IStakingRouter public constant _stakingRouter = IStakingRouter(0x7F17B9C7BaC5769A354E2133963553996FB1a0eC);
+    IValidatorsExitBusOracle public constant _validatorsExitBusOracle = IValidatorsExitBusOracle(0x110406b2714A48741417a8B78B5D9c291652dc59);
+    IWithdrawalQueue public constant _withdrawalQueue = IWithdrawalQueue(0x0E4FCfa76d83A6974269Ebe29AEbC61f827B2D05);
 
     // New non-proxy contracts
-    IBurner public constant _burner = IBurner(0xFc810b3F9acc7ee0C3820B5f7a9bb0ee88C3cBd2);
-    IDepositSecurityModule public constant _depositSecurityModule = IDepositSecurityModule(0xe44E11BBb629Dc23e72e6eAC4e538AaCb66A0c88);
-    address public constant _eip712StETH = 0x8dF3c29C96fd4c4d496954646B8B6a48dFFcA83F;
+    IBurner public constant _burner = IBurner(0x73C53b124D5200CA4BA9Ea696786e74cA78060A1);
+    IDepositSecurityModule public constant _depositSecurityModule = IDepositSecurityModule(0xae39af54e982D3e343b248Ace96fa6B7a0E6FB2c);
+    address public constant _eip712StETH = 0xE5FCaDa1cE2E3DE88C2e79b8299740b8551E4649;
     // NB: this gate seal address is taken from mock address deployed in prepare_for_shapella_upgrade_voting
-    address public constant _gateSeal = 0xD59f8Bc37BAead58cbCfD99b03997655A13f56d9;
-    IHashConsensus public constant _hashConsensusForAccountingOracle = IHashConsensus(0x379EBeeD117c96380034c6a6234321e4e64fCa0B);
-    IHashConsensus public constant _hashConsensusForValidatorsExitBusOracle = IHashConsensus(0x2330b9F113784a58d74c7DB49366e9FB792DeABf);
-    IOracleDaemonConfig public constant _oracleDaemonConfig = IOracleDaemonConfig(0xbA3981771AB991960028B2F83ae83664Fd003F61);
-    IOracleReportSanityChecker public constant _oracleReportSanityChecker = IOracleReportSanityChecker(0x499A11A07ebe21685953583B6DA9f237E792aEE3);
+    address public constant _gateSeal = 0x1aD5cb2955940F998081c1eF5f5F00875431aA90;
+    IHashConsensus public constant _hashConsensusForAccountingOracle = IHashConsensus(0x289029fDA5E5155f581E276E66c7f367b3D433c0);
+    IHashConsensus public constant _hashConsensusForValidatorsExitBusOracle = IHashConsensus(0x08aFd6e128423fE661432b2A4872F53C98Da11Bf);
+    IOracleDaemonConfig public constant _oracleDaemonConfig = IOracleDaemonConfig(0xA3821b42f1c1D587CaDd3deF3Dd4BD252Bb11Ac9);
+    IOracleReportSanityChecker public constant _oracleReportSanityChecker = IOracleReportSanityChecker(0xAB58bA6bb1d30e48d4f5439A77D9B38bc53B7Ec0);
 
     // Existing proxies and contracts
     address public constant _agent = 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c;
@@ -393,18 +393,18 @@ contract ShapellaUpgradeTemplate {
     IWithdrawalVault public constant _withdrawalVault = IWithdrawalVault(0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f);
 
     // Aragon Apps new implementations
-    address public constant _lidoImplementation = 0xAb3bcE27F31Ca36AAc6c6ec2bF3e79569105ec2c;
-    address public constant _legacyOracleImplementation = 0xcA3cE6bf0CB2bbaC5dF3874232AE3F5b67C6b146;
-    address public constant _nodeOperatorsRegistryImplementation = 0x9cBbA6CDA09C7dadA8343C4076c21eE06CCa4836;
+    address public constant _lidoImplementation = 0x11638262f6d34D807aE469166f0368c8Dc2a5689;
+    address public constant _legacyOracleImplementation = 0x599E51510719e94525eF406d4519949eca4242ac;
+    address public constant _nodeOperatorsRegistryImplementation = 0x8e409ad726C887890d8129530B352A6fDf0e25Ad;
 
     // New non-aragon implementations
-    address public constant _accountingOracleImplementation = 0x115065ad19aDae715576b926CF6e26067F64e741;
-    address public constant _dummyImplementation = 0xE2f969983c8859E986d6e19892EDBd1eea7371D2;
-    address public constant _locatorImplementation = 0x7948f9cf80D99DDb7C7258Eb23a693E9dFBc97EC;
-    address public constant _stakingRouterImplementation = 0x4384fB5DcaC0576B93e36b8af6CdfEB739888894;
-    address public constant _validatorsExitBusOracleImplementation = 0xfdfad30ae5e5c9Dc4fb51aC35AB60674FcBdefB3;
-    address public constant _withdrawalVaultImplementation = 0x654f166BA493551899212917d8eAa30CE977b794;
-    address public constant _withdrawalQueueImplementation = 0x5EfF11Cb6bD446370FC3ce46019F2b501ba06c2D;
+    address public constant _accountingOracleImplementation = 0x41d3219AA3AF7CDA24B3B24ebCf415DB59d69662;
+    address public constant _dummyImplementation = 0xf10Aa372B5FB8bCFCec860C145770C399fcc1eF4;
+    address public constant _locatorImplementation = 0x2d15B9620875A6d613B45739E8d23D50Dad0f688;
+    address public constant _stakingRouterImplementation = 0xF28459782bD32200d1475b0163e86216F35b9315;
+    address public constant _validatorsExitBusOracleImplementation = 0x6f2FBD3b7E76E7A17345Adb0F828840c963b382D;
+    address public constant _withdrawalVaultImplementation = 0xd457411A7B8e36aedC5c1080c6793414fa163793;
+    address public constant _withdrawalQueueImplementation = 0x851f572d3382Ff19ec1f0E04E65B625E32bF21CB;
 
     // Values to set
     uint256 public constant ACCOUNTING_ORACLE_CONSENSUS_VERSION = 1;
