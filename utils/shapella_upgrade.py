@@ -7,6 +7,7 @@ from utils.config import (
     lido_dao_validators_exit_bus_oracle,
     gate_seal_factory_address,
     shapella_upgrade_template_address,
+    gate_seal,
     prompt_bool,
     get_priority_fee,
     get_is_live,
@@ -39,8 +40,8 @@ def get_tx_params(deployer):
     return tx_params
 
 
-def prepare_deploy_gate_seal_mock(deployer):
-    gate_seal_factory = interface.GateSeal(gate_seal_factory_address)
+def prepare_deploy_gate_seal(deployer):
+    gate_seal_factory = interface.GateSealFactory(gate_seal_factory_address)
     committee = deployer
     seal_duration = 10 * 24 * 60 * 60  # 10 days
     sealables = [lido_dao_withdrawal_queue, lido_dao_validators_exit_bus_oracle]
@@ -49,7 +50,7 @@ def prepare_deploy_gate_seal_mock(deployer):
         committee, seal_duration, sealables, expiry_timestamp, get_tx_params(deployer)
     )
     gate_seal_address = tx.events[0]["gate_seal"]
-
+    assert gate_seal_address == gate_seal
     print(f"GateSeal deployed at {gate_seal_address}")
 
 
@@ -115,7 +116,7 @@ def prepare_for_shapella_upgrade_voting(temporary_admin, silent=False):
     if not silent:
         ask_shapella_upgrade_confirmation(shapella_upgrade_template_address, lido_dao_lido_locator_implementation)
 
-    prepare_deploy_gate_seal_mock(temporary_admin)
+    prepare_deploy_gate_seal(temporary_admin)
 
     # Deploy the upgrade template if needed
     template = prepare_deploy_upgrade_template(temporary_admin)

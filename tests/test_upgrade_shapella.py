@@ -19,7 +19,7 @@ from utils.test.event_validators.aragon import validate_push_to_repo_event, vali
 from scripts.upgrade_shapella_1 import start_vote as start_vote_1
 from scripts.upgrade_shapella_2_revoke_roles import start_vote as start_vote_2
 from utils.shapella_upgrade import (
-    prepare_deploy_gate_seal_mock,
+    prepare_deploy_gate_seal,
     prepare_deploy_upgrade_template,
     prepare_upgrade_locator,
     prepare_transfer_ownership_to_template,
@@ -269,7 +269,7 @@ def test_vote(
         vote_ids = vote_ids_from_env
         template = contracts.shapella_upgrade_template
     else:
-        prepare_deploy_gate_seal_mock(deployer_eoa)
+        prepare_deploy_gate_seal(deployer_eoa)
         template = prepare_deploy_upgrade_template(deployer_eoa)
         prepare_upgrade_locator(deployer_eoa)
         prepare_transfer_ownership_to_template(deployer_eoa, template)
