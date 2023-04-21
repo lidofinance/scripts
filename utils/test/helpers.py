@@ -20,7 +20,7 @@ def steth_balance(account):
 
 
 def eth_balance(account):
-    return web3.eth.getBalance(account)
+    return web3.eth.get_balance(account)
 
 
 def almostEqEth(b1, b2):

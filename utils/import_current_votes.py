@@ -14,13 +14,23 @@ from utils.config import (
 )
 from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
 
+def get_vote_scripts_dir() -> str:
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    dir_path = os.path.join(os.path.split(dir_path)[0], "scripts")
+    return dir_path
+
 
 def get_vote_script_files() -> List[str]:
     """Return List of abs paths to vote scripts"""
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    dir_path = os.path.join(os.path.split(dir_path)[0], "scripts")
+    dir_path = get_vote_scripts_dir()
     vote_files = glob.glob(os.path.join(dir_path, "upgrade_*.py"))
     return vote_files
+
+
+def get_vote_script_file_by_name(vote_name) -> str:
+    dir_path = get_vote_scripts_dir()
+    vote_file = os.path.join(dir_path, f"upgrade_{vote_name}.py")
+    return vote_file
 
 
 def is_there_any_vote_scripts() -> bool:
