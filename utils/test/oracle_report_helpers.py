@@ -214,8 +214,9 @@ def wait_to_next_available_report_time():
 
 
 def oracle_report(
-        cl_diff=ETH(10), exclude_vaults_balances=False, simulation_block_identifier=None,
-        extraDataFormat=0, extraDataHash=ZERO_BYTES32, extraDataItemsCount=0, extraDataList=''):
+    cl_diff=ETH(10), exclude_vaults_balances=False, simulation_block_identifier=None,
+    extraDataFormat=0, extraDataHash=ZERO_BYTES32, extraDataItemsCount=0, extraDataList='', stakingModuleIdsWithNewlyExitedValidators=[],
+        numExitedValidatorsByStakingModule=[]):
     """fast forwards time to next report, compiles report, pushes through consensus and to AccountingOracle"""
     wait_to_next_available_report_time()
 
@@ -263,5 +264,7 @@ def oracle_report(
         extraDataFormat=extraDataFormat,
         extraDataHash=extraDataHash,
         extraDataItemsCount=extraDataItemsCount,
-        extraDataList=extraDataList
+        extraDataList=extraDataList,
+        stakingModuleIdsWithNewlyExitedValidators=stakingModuleIdsWithNewlyExitedValidators,
+        numExitedValidatorsByStakingModule=numExitedValidatorsByStakingModule,
     )

@@ -1,5 +1,6 @@
 import pytest
-from brownie import chain
+from web3 import Web3
+from brownie import chain, ZERO_ADDRESS
 from hexbytes import HexBytes
 from typing import NewType, Tuple
 
@@ -7,7 +8,10 @@ from utils.test.extra_data import (
     ExtraDataService,
 )
 from utils.test.helpers import (
-    steth_balance
+    steth_balance,
+    shares_balance,
+    ETH,
+    almostEq
 )
 from utils.test.oracle_report_helpers import (
     oracle_report,
@@ -46,49 +50,134 @@ def nor(accounts, interface):
     return interface.NodeOperatorsRegistry(contracts.node_operators_registry.address)
 
 
-def test_node_operators(
-        nor, accounts, extra_data_service, voting_eoa
+def calc_no_rewards(
+    nor, no_id, report_shares
 ):
-    tested_no_id_first = 0
-    tested_no_id_second = 4
-    base_no_id = 2
+    total_signing_keys = nor.getNodeOperatorSummary(no_id)[
+        'totalDepositedValidators'] - nor.getNodeOperatorSummary(no_id)['totalExitedValidators']
+    total_deposite_keys = nor.getStakingModuleSummary()[
+        'totalDepositedValidators'] - nor.getStakingModuleSummary()['totalExitedValidators']
 
-    first_tested_no_keys = 7391
-    second_tested_no_keys = 7391
-    base_no_keys = 7391
+    return report_shares // 2 * total_signing_keys // total_deposite_keys
+
+
+def increase_limit(nor, first, second, base, keys_count, voting_eoa):
+    current_first_keys = max(nor.getNodeOperator(first, True)['totalVettedValidators'], nor.getNodeOperator(
+        first, True)['totalAddedValidators'])
+    current_second_keys = max(nor.getNodeOperator(second, True)['totalVettedValidators'], nor.getNodeOperator(
+        second, True)['totalAddedValidators'])
+    current_base_keys = max(nor.getNodeOperator(base, True)['totalVettedValidators'], nor.getNodeOperator(
+        base, True)['totalAddedValidators'])
+
+    nor.setNodeOperatorStakingLimit(
+        first, current_first_keys + keys_count, {'from': voting_eoa})
+    nor.setNodeOperatorStakingLimit(
+        second, current_second_keys + keys_count, {'from': voting_eoa})
+    nor.setNodeOperatorStakingLimit(
+        base, current_base_keys + keys_count, {'from': voting_eoa})
+
+
+def deposit_and_check_keys(nor, first_no_id, second_no_id, base_no_id, keys_count):
+
+    deposited_keys_first_before = nor.getNodeOperatorSummary(
+        first_no_id)['totalDepositedValidators']
+    deposited_keys_second_before = nor.getNodeOperatorSummary(
+        second_no_id)['totalDepositedValidators']
+    deposited_keys_base_before = nor.getNodeOperatorSummary(
+        base_no_id)['totalDepositedValidators']
+
+    module_total_deposited_keys_before = nor.getStakingModuleSummary()[
+        'totalDepositedValidators']
+
+    contracts.lido.deposit(keys_count, 1, '0x', {
+        'from': contracts.deposit_security_module.address})
+
+    module_total_deposited_keys_after = nor.getStakingModuleSummary()[
+        'totalDepositedValidators']
+
+    assert module_total_deposited_keys_before < module_total_deposited_keys_after
+
+    deposited_keys_first_after = nor.getNodeOperatorSummary(
+        first_no_id)['totalDepositedValidators']
+    deposited_keys_second_after = nor.getNodeOperatorSummary(
+        second_no_id)['totalDepositedValidators']
+    deposited_keys_base_after = nor.getNodeOperatorSummary(
+        base_no_id)['totalDepositedValidators']
+
+    return (deposited_keys_first_before, deposited_keys_second_before, deposited_keys_base_before,
+            deposited_keys_first_after, deposited_keys_second_after, deposited_keys_base_after)
+
+
+def test_node_operators(
+        nor, accounts, extra_data_service, voting_eoa, eth_whale
+):
+    contracts.staking_router.grantRole(
+        Web3.keccak(text="STAKING_MODULE_MANAGE_ROLE"),
+        voting_eoa,
+        {"from": contracts.agent.address},
+    )
+    contracts.lido.submit(
+        ZERO_ADDRESS, {'from': eth_whale, 'amount': ETH(1000)})
+
+    tested_no_id_first = 21
+    tested_no_id_second = 22
+    base_no_id = 23
+
+    increase_limit(nor, tested_no_id_first,
+                   tested_no_id_second, base_no_id, 3, voting_eoa)
+
+    # посмотреть что totalVettedValidators больше чем totalDepositedValidators, totalAddedValidators >= totalVettedValidators
+
+    # nor.setNodeOperatorStakingLimit(
+    #     tested_no_id_second, 7500, {'from': voting_eoa})
+
+    # до репорта дергаю дистрибьюшен с любым числом
+    # репорт что стакается
+    # после репорта такой же запрос с такими же значениями и посмотреть что поменялось
 
     penalty_delay = nor.getStuckPenaltyDelay()
+
+    print('-----getRewardsDistribution', nor.getRewardsDistribution(1000000))
 
     node_operator_first = nor.getNodeOperatorSummary(tested_no_id_first)
     address_first = nor.getNodeOperator(
         tested_no_id_first, False)['rewardAddress']
+    node_operator_first_balance_shares_before = shares_balance(address_first)
 
     node_operator_second = nor.getNodeOperatorSummary(tested_no_id_second)
     address_second = nor.getNodeOperator(
         tested_no_id_second, False)['rewardAddress']
+    node_operator_second_balance_shares_before = shares_balance(address_second)
 
     node_operator_base = nor.getNodeOperatorSummary(base_no_id)
     address_base_no = nor.getNodeOperator(base_no_id, False)['rewardAddress']
-
-    assert steth_balance(address_first) == 16358968722850069260
-    assert steth_balance(address_second) == 97610994862333549973
-    assert steth_balance(address_base_no) == 36971193293606281302
+    node_operator_base_balance_shares_before = shares_balance(address_base_no)
 
 # First report - base
-    oracle_report()
+    (report_tx, extra_report_tx) = oracle_report(
+        exclude_vaults_balances=True)
 
-    # print('------------', 25640665277143807417 - 16358968722850069260)
-    # print('------------', 106947536534271439480 - 97610994862333549973)
-    # print('------------', 46266803099485279902 - 36971193293606281302)
+    node_operator_first_balance_shares_after = shares_balance(address_first)
+    node_operator_second_balance_shares_after = shares_balance(address_second)
+    node_operator_base_balance_shares_after = shares_balance(address_base_no)
 
-    # TODO: add calc of expected NO balace (now it is + ~10)
-    # increase 9281696554293738157 ~ 9.28
-    assert steth_balance(address_first) == 25640665277143807417
-    # increase 9336541671937889507> ~ 9.33
-    assert steth_balance(address_second) == 106947536534271439480
-    # increase 9295609805878998600 ~ 9.29
-    assert steth_balance(address_base_no) == 46266803099485279902
+    # expeected shares
+    node_operator_first_rewards_after_first_report = calc_no_rewards(
+        nor, no_id=tested_no_id_first, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+    node_operator_second_rewards_after_first_report = calc_no_rewards(
+        nor, no_id=tested_no_id_second, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+    node_operator_base_rewards_after_first_report = calc_no_rewards(
+        nor, no_id=base_no_id, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
 
+    # check shares by empty report
+    assert node_operator_first_balance_shares_after - \
+        node_operator_first_balance_shares_before == node_operator_first_rewards_after_first_report
+    assert node_operator_second_balance_shares_after - \
+        node_operator_second_balance_shares_before == node_operator_second_rewards_after_first_report
+    assert node_operator_base_balance_shares_after - \
+        node_operator_base_balance_shares_before == node_operator_base_rewards_after_first_report
+
+    # Prepare bad extra data
     vals_stuck_non_zero = {
         node_operator(1, tested_no_id_first): 2,
         node_operator(1, tested_no_id_second): 2,
@@ -97,38 +186,72 @@ def test_node_operators(
         node_operator(1, tested_no_id_first): 5,
         node_operator(1, tested_no_id_second): 5,
     }
-
     extra_data = extra_data_service.collect(
         vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
 
-# Second report - 0 NO and 1 NO has stuck/exited
-    (report_tx, extra_report_tx) = oracle_report(
-        1000, False, None, 1, extra_data.data_hash, 2, extra_data.extra_data)
+    # shares before report
+    node_operator_first_balance_shares_before = shares_balance(address_first)
+    node_operator_second_balance_shares_before = shares_balance(address_second)
+    node_operator_base_balance_shares_before = shares_balance(address_base_no)
 
+# Second report - first NO and second NO has stuck/exited
+    (report_tx, extra_report_tx) = oracle_report(
+        exclude_vaults_balances=True,
+        extraDataFormat=1, extraDataHash=extra_data.data_hash, extraDataItemsCount=2,
+        extraDataList=extra_data.extra_data,
+        numExitedValidatorsByStakingModule=[10],
+        stakingModuleIdsWithNewlyExitedValidators=[1])
+
+    # shares after report
     node_operator_first = nor.getNodeOperatorSummary(tested_no_id_first)
     node_operator_second = nor.getNodeOperatorSummary(tested_no_id_second)
     node_operator_base = nor.getNodeOperatorSummary(base_no_id)
 
-    assert node_operator_base['stuckValidatorsCount'] == 0
-    assert node_operator_base['totalExitedValidators'] == 0
-    assert node_operator_base['refundedValidatorsCount'] == 0
-    assert node_operator_base['totalDepositedValidators'] == base_no_keys
-    assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
+    # expected shares
+    node_operator_first_rewards_after_second_report = calc_no_rewards(
+        nor, no_id=tested_no_id_first, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+    node_operator_second_rewards_after_second_report = calc_no_rewards(
+        nor, no_id=tested_no_id_second, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+    node_operator_base_rewards_after_second_report = calc_no_rewards(
+        nor, no_id=base_no_id, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
 
+    node_operator_first_balance_shares_after = shares_balance(address_first)
+    node_operator_second_balance_shares_after = shares_balance(address_second)
+    node_operator_base_balance_shares_after = shares_balance(address_base_no)
+
+    print('2 ============', node_operator_first_balance_shares_after -
+          node_operator_first_balance_shares_before, node_operator_second_balance_shares_after -
+          node_operator_second_balance_shares_before)
+
+    # check shares by bad report wit penalty
+    assert node_operator_first_balance_shares_after - \
+        node_operator_first_balance_shares_before == node_operator_first_rewards_after_second_report // 2
+    assert node_operator_second_balance_shares_after - \
+        node_operator_second_balance_shares_before == node_operator_second_rewards_after_second_report // 2
+    assert node_operator_base_balance_shares_after - \
+        node_operator_base_balance_shares_before == node_operator_base_rewards_after_second_report
+
+    # NO stats
     assert node_operator_first['stuckValidatorsCount'] == 2
     assert node_operator_first['totalExitedValidators'] == 5
     assert node_operator_first['refundedValidatorsCount'] == 0
-    assert node_operator_first['totalDepositedValidators'] == first_tested_no_keys
     assert node_operator_first['stuckPenaltyEndTimestamp'] == 0
 
     assert node_operator_second['stuckValidatorsCount'] == 2
     assert node_operator_second['totalExitedValidators'] == 5
     assert node_operator_second['refundedValidatorsCount'] == 0
-    assert node_operator_second['totalDepositedValidators'] == second_tested_no_keys
     assert node_operator_second['stuckPenaltyEndTimestamp'] == 0
 
-    print('2 ------ extra_report_tx', extra_report_tx.events)
+    assert node_operator_base['stuckValidatorsCount'] == 0
+    assert node_operator_base['totalExitedValidators'] == 0
+    assert node_operator_base['refundedValidatorsCount'] == 0
+    assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
 
+    assert nor.isOperatorPenalized(tested_no_id_first) == True
+    assert nor.isOperatorPenalized(tested_no_id_second) == True
+    assert nor.isOperatorPenalized(base_no_id) == False
+
+    # Events
     assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['nodeOperatorId'] == tested_no_id_first
     assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['exitedValidatorsCount'] == 5
 
@@ -141,38 +264,24 @@ def test_node_operators(
     assert extra_report_tx.events['StuckPenaltyStateChanged'][1]['nodeOperatorId'] == tested_no_id_second
     assert extra_report_tx.events['StuckPenaltyStateChanged'][1]['stuckValidatorsCount'] == 2
 
-    # print('------------', 25657972726205879487 - 25640665277143807417)
-    # print('------------', 107019726121432072702 - 106947536534271439480)
-    # print('------------', 46298033191577432466 - 46266803099485279902)
 
-    # increase 17307449062072070 ~ 0.017
-    assert steth_balance(address_first) == 25657972726205879487
-    # increase 72189587160633222 ~ 0.72
-    assert steth_balance(address_second) == 107019726121432072702
-    # increase 31230092092152564 ~ 0.031
-    assert steth_balance(address_base_no) == 46298033191577432466
+# Deposite keys
+    (deposited_keys_first_before, deposited_keys_second_before, deposited_keys_base_before,
+     deposited_keys_first_after, deposited_keys_second_after, deposited_keys_base_after
+     ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 10)
 
-# Deposite TODO
+    # check don't change deposited keys for penalized NO
+    assert deposited_keys_first_before == deposited_keys_first_after
+    assert deposited_keys_second_before == deposited_keys_second_after
+    assert deposited_keys_base_before != deposited_keys_base_after
 
-    # depositCallCountBefore = deposit_contract.totalCalls()
-    # stakingModuleSummaryBefore = nor.getStakingModuleSummary()
+    # # Refund keys 0 NO
+    # nor.updateRefundedValidatorsCount(
+    #     tested_no_id_first, 2, {"from": lido_dao_staking_router})
 
-    # lido = interface.Lido(lido_dao_steth_address)
-    # lido.depositBufferedEther(
-    #     {'from': accounts[0]})
-
-    # depositCallCount = deposit_contract.totalCalls()
-    # stakingModuleSummary = nor.getStakingModuleSummary()
-
-    # balances after deposit
-    assert steth_balance(address_first) == 25657972726205879487
-    assert steth_balance(address_second) == 107019726121432072702
-    assert steth_balance(address_base_no) == 46298033191577432466
-
-    # Report with node operator 0 exited 2 + 5 keys an stuck 0
+    # Prepare extra data - first node operator has exited 2 + 5 keys an stuck 0
     vals_stuck_non_zero = {
         node_operator(1, tested_no_id_first): 0,
-        node_operator(1, tested_no_id_second): 2,
     }
     vals_exited_non_zero = {
         node_operator(1, tested_no_id_first): 7,
@@ -180,58 +289,85 @@ def test_node_operators(
     extra_data = extra_data_service.collect(
         vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
 
-# Third report - 0 NO: increase stuck to 0, desc exited to 7 = 5 + 2
-# 1 NO: same as prev report
-    (report_tx, extra_report_tx) = oracle_report(
-        1000, False, None, 1, extra_data.data_hash, 2, extra_data.extra_data)
+    # shares before report
+    node_operator_first_balance_shares_before = shares_balance(address_first)
+    node_operator_second_balance_shares_before = shares_balance(address_second)
+    node_operator_base_balance_shares_before = shares_balance(address_base_no)
+
+    # TODO: добавить проверку что если разные эексид ключи то шар будет 0
+
+# Third report - first NO: increase stuck to 0, desc exited to 7 = 5 + 2
+    # Second NO: same as prev report
+    (report_tx, extra_report_tx) = oracle_report(cl_diff=ETH(10), exclude_vaults_balances=True,
+                                                 extraDataFormat=1, extraDataHash=extra_data.data_hash,
+                                                 extraDataItemsCount=2, extraDataList=extra_data.extra_data,
+                                                 numExitedValidatorsByStakingModule=[12], stakingModuleIdsWithNewlyExitedValidators=[1])
 
     node_operator_first = nor.getNodeOperatorSummary(tested_no_id_first)
     node_operator_second = nor.getNodeOperatorSummary(tested_no_id_second)
+    node_operator_base = nor.getNodeOperatorSummary(base_no_id)
 
+    # shares after report
+    node_operator_first_balance_shares_after = shares_balance(address_first)
+    node_operator_second_balance_shares_after = shares_balance(address_second)
+    node_operator_base_balance_shares_after = shares_balance(address_base_no)
+
+    # expected shares
+    node_operator_first_rewards_after_third_report = calc_no_rewards(
+        nor, no_id=tested_no_id_first, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+    node_operator_second_rewards_after__third_report = calc_no_rewards(
+        nor, no_id=tested_no_id_second, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+    node_operator_base_rewards_after__third_report = calc_no_rewards(
+        nor, no_id=base_no_id, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+
+    # first NO has penalty has a penalty until stuckPenaltyEndTimestamp
+    # check shares by bad report wit penalty
+    # diff by 1 share because of rounding
+    assert almostEq(node_operator_first_balance_shares_after -
+                    node_operator_first_balance_shares_before, node_operator_first_rewards_after_third_report // 2, 1)
+    assert almostEq(node_operator_second_balance_shares_after -
+                    node_operator_second_balance_shares_before, node_operator_second_rewards_after__third_report // 2, 1)
+    assert almostEq(node_operator_base_balance_shares_after -
+                    node_operator_base_balance_shares_before, node_operator_base_rewards_after__third_report, 1)
+
+    # TODO: расчитать сколько на самом деле получил в шарах
+
+    # NO stats
     assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
 
     assert node_operator_first['stuckValidatorsCount'] == 0
     assert node_operator_first['totalExitedValidators'] == 7
     assert node_operator_first['refundedValidatorsCount'] == 0
-    assert node_operator_first['totalDepositedValidators'] == first_tested_no_keys
-    assert node_operator_first['stuckPenaltyEndTimestamp'] > 0
+    # first NO has penalty has a penalty until stuckPenaltyEndTimestamp
+    assert node_operator_first['stuckPenaltyEndTimestamp'] > chain.time()
 
     assert node_operator_second['stuckValidatorsCount'] == 2
     assert node_operator_second['totalExitedValidators'] == 5
     assert node_operator_second['refundedValidatorsCount'] == 0
-    assert node_operator_second['totalDepositedValidators'] == second_tested_no_keys
-    assert node_operator_second['stuckPenaltyEndTimestamp'] == 0  # WHY??
+    assert node_operator_second['stuckPenaltyEndTimestamp'] == 0
 
-    print('3 ------ extra_report_tx', extra_report_tx.events)
+    assert nor.isOperatorPenalized(tested_no_id_first) == True
+    assert nor.isOperatorPenalized(tested_no_id_second) == True
+    assert nor.isOperatorPenalized(base_no_id) == False
 
+    # events
     assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['nodeOperatorId'] == tested_no_id_first
     assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['exitedValidatorsCount'] == 7
 
     assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['nodeOperatorId'] == tested_no_id_first
     assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['stuckValidatorsCount'] == 0
 
-    stuckPenaltyEndTimestamp = extra_report_tx.events[
-        'StuckPenaltyStateChanged'][0]['stuckPenaltyEndTimestamp']
+    # stuckPenaltyEndTimestamp = extra_report_tx.events[
+    #     'StuckPenaltyStateChanged'][0]['stuckPenaltyEndTimestamp']
 
-    # print('------------', 25675291857796068456 - 25657972726205879487)
-    # print('------------', 107091964436564039351 - 107019726121432072702)
-    # print('------------', 46329284363981747233 - 46298033191577432466)
-
-    # TODO: clac balances after report
-    # increase 17319131590188969 ~ 0.017
-    assert steth_balance(address_first) == 25675291857796068456
-    # increase 72238315131966649 ~ 0.072
-    assert steth_balance(address_second) == 107091964436564039351
-    # increase 31251172404314767 ~ 0.031
-    assert steth_balance(address_base_no) == 46329284363981747233
+    # Burner проверить что в след репорте шары сожгуться которые getSharesRequestedToBurn()
 
 
 # sleep PENALTY_DELAY time
-    # chain.sleep(stuckPenaltyEndTimestamp -
-    #             web3.eth.get_block("latest").timestamp + 1)
     chain.sleep(penalty_delay + 1)
     chain.mine()
 
+    # Prepare extra data for bad report by second NO
     vals_stuck_non_zero = {
         node_operator(1, tested_no_id_second): 2,
     }
@@ -241,118 +377,195 @@ def test_node_operators(
     extra_data = extra_data_service.collect(
         vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
 
-# Fourth report - 1 NO: has stuck 2 keys
+    # shares before report
+    node_operator_first_balance_shares_before = shares_balance(address_first)
+    node_operator_second_balance_shares_before = shares_balance(address_second)
+    node_operator_base_balance_shares_before = shares_balance(address_base_no)
+
+# Fourth report - second NO: has stuck 2 keys
     (report_tx, extra_report_tx) = oracle_report(
-        1000, False, None, 1, extra_data.data_hash, 2, extra_data.extra_data)
+        exclude_vaults_balances=True,
+        extraDataFormat=1, extraDataHash=extra_data.data_hash, extraDataItemsCount=2, extraDataList=extra_data.extra_data,
+        numExitedValidatorsByStakingModule=[12], stakingModuleIdsWithNewlyExitedValidators=[1])
 
     node_operator_first = nor.getNodeOperatorSummary(tested_no_id_first)
     node_operator_second = nor.getNodeOperatorSummary(tested_no_id_second)
+    node_operator_base = nor.getNodeOperatorSummary(base_no_id)
+
+    # shares after report
+    node_operator_first_balance_shares_after = shares_balance(address_first)
+    node_operator_second_balance_shares_after = shares_balance(address_second)
+    node_operator_base_balance_shares_after = shares_balance(address_base_no)
+
+    # expected shares
+    node_operator_first_rewards_after_fourth_report = calc_no_rewards(
+        nor, no_id=tested_no_id_first, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+    node_operator_second_rewards_after__fourth_report = calc_no_rewards(
+        nor, no_id=tested_no_id_second, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+    node_operator_base_rewards_after__fourth_report = calc_no_rewards(
+        nor, no_id=base_no_id, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+
+    # Penalty ended for first operator
+    # check shares by bad report with penalty for second NO
+    # diff by 1 share because of rounding
+    assert almostEq(node_operator_first_balance_shares_after -
+                    node_operator_first_balance_shares_before, node_operator_first_rewards_after_fourth_report, 1)
+    assert almostEq(node_operator_second_balance_shares_after -
+                    node_operator_second_balance_shares_before, node_operator_second_rewards_after__fourth_report // 2, 1)
+    assert almostEq(node_operator_base_balance_shares_after -
+                    node_operator_base_balance_shares_before, node_operator_base_rewards_after__fourth_report, 1)
 
     assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
 
     assert node_operator_first['stuckValidatorsCount'] == 0
     assert node_operator_first['totalExitedValidators'] == 7
     assert node_operator_first['refundedValidatorsCount'] == 0
-    assert node_operator_first['totalDepositedValidators'] == first_tested_no_keys
-    assert node_operator_first['stuckPenaltyEndTimestamp'] > 0
+    # Penalty ended for first operator
+    assert node_operator_first['stuckPenaltyEndTimestamp'] < chain.time()
 
     assert node_operator_second['stuckValidatorsCount'] == 2
     assert node_operator_second['totalExitedValidators'] == 5
     assert node_operator_second['refundedValidatorsCount'] == 0
-    assert node_operator_second['totalDepositedValidators'] == second_tested_no_keys
-    assert node_operator_second['stuckPenaltyEndTimestamp'] == 0  # WHY??
+    assert node_operator_second['stuckPenaltyEndTimestamp'] == 0
 
-    print('4 ------ extra_report_tx', extra_report_tx.events)
+    assert nor.isOperatorPenalized(tested_no_id_first) == False
+    assert nor.isOperatorPenalized(tested_no_id_second) == True
+    assert nor.isOperatorPenalized(base_no_id) == False
 
-    # print('------------', 25692622679800080802 - 25675291857796068456)
-    # print('------------', 107164251512558720077 - 107091964436564039351)
-    # print('------------', 46360556630927434913 - 46329284363981747233)
+# Deposite
+    (deposited_keys_first_before, deposited_keys_second_before, deposited_keys_base_before,
+     deposited_keys_first_after, deposited_keys_second_after, deposited_keys_base_after
+     ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 30)
 
-    # TODO: clac balances after report
-    # increase 17330822004012346 ~ 0.017
-    assert steth_balance(address_first) == 25692622679800080802
-    # increase 72238315131966649 ~ 0.072
-    assert steth_balance(address_second) == 107164251512558720077
-    # increase 31272266945687680 ~ 0.031
-    assert steth_balance(address_base_no) == 46360556630927434913
+    print('tested_no_id_first------getNodeOperator-', nor.getNodeOperator(tested_no_id_first,
+          True))
 
-# Deposite TODO
+    print('tested_no_id_first-------getNodeOperatorSummary',
+          nor.getNodeOperatorSummary(tested_no_id_first))
+    print('base_no_id-------getNodeOperatorSummary',
+          nor.getNodeOperatorSummary(base_no_id))
+    print('tested_no_id_second-------getNodeOperatorSummary',
+          nor.getNodeOperatorSummary(tested_no_id_second))
 
-    # Refund keys 1 NO
-    nor.updateRefundedValidatorsCount(
-        4, 2, {"from": lido_dao_staking_router})
+    print('-------- ', deposited_keys_first_before, deposited_keys_first_after)
+
+    # check don't change deposited keys for penalized NO (only second NO)
+    assert deposited_keys_first_before == deposited_keys_first_after  # TODO !=
+    assert deposited_keys_second_before == deposited_keys_second_after
+    assert deposited_keys_base_before != deposited_keys_base_after
+
+    # # Refund 2 keys Second NO
+    contracts.staking_router.updateRefundedValidatorsCount(
+        1, tested_no_id_second, 2, {"from": voting_eoa})
+
+    # shares before report
+    node_operator_first_balance_shares_before = shares_balance(address_first)
+    node_operator_second_balance_shares_before = shares_balance(address_second)
+    node_operator_base_balance_shares_before = shares_balance(address_base_no)
 
 # Fifth report
-    (report_tx, extra_report_tx) = oracle_report()
+    (report_tx, extra_report_tx) = oracle_report(exclude_vaults_balances=True)
 
-    print('5 ------ extra_report_tx', extra_report_tx.events)
+    # shares after report
+    node_operator_first_balance_shares_after = shares_balance(address_first)
+    node_operator_second_balance_shares_after = shares_balance(address_second)
+    node_operator_base_balance_shares_after = shares_balance(address_base_no)
 
     node_operator_first = nor.getNodeOperatorSummary(tested_no_id_first)
     node_operator_second = nor.getNodeOperatorSummary(tested_no_id_second)
+    node_operator_base = nor.getNodeOperatorSummary(base_no_id)
+
+    # expected shares
+    node_operator_first_rewards_after_fifth_report = calc_no_rewards(
+        nor, no_id=tested_no_id_first, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+    node_operator_second_rewards_after_fifth_report = calc_no_rewards(
+        nor, no_id=tested_no_id_second, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+    node_operator_base_rewards_after_fifth_report = calc_no_rewards(
+        nor, no_id=base_no_id, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+
+    # Penalty only for second operator
+    # diff by 1 share because of rounding
+    assert almostEq(node_operator_first_balance_shares_after -
+                    node_operator_first_balance_shares_before, node_operator_first_rewards_after_fifth_report, 1)
+    assert almostEq(node_operator_second_balance_shares_after -
+                    node_operator_second_balance_shares_before, node_operator_second_rewards_after_fifth_report // 2, 1)
+    assert almostEq(node_operator_base_balance_shares_after -
+                    node_operator_base_balance_shares_before, node_operator_base_rewards_after_fifth_report, 1)
 
     assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
 
     assert node_operator_first['stuckValidatorsCount'] == 0
     assert node_operator_first['totalExitedValidators'] == 7
     assert node_operator_first['refundedValidatorsCount'] == 0
-    assert node_operator_first['totalDepositedValidators'] == first_tested_no_keys
-    assert node_operator_first['stuckPenaltyEndTimestamp'] > 0
+    assert node_operator_first['stuckPenaltyEndTimestamp'] < chain.time()
 
     assert node_operator_second['stuckValidatorsCount'] == 2
     assert node_operator_second['totalExitedValidators'] == 5
     assert node_operator_second['refundedValidatorsCount'] == 2
-    assert node_operator_second['totalDepositedValidators'] == second_tested_no_keys
-    assert node_operator_second['stuckPenaltyEndTimestamp'] > 0
+    assert node_operator_second['stuckPenaltyEndTimestamp'] > chain.time()
 
-    # print('------------', 25709965200108945857 - 25692622679800080802)
-    # print('------------', 107236587382329697213 - 107164251512558720077)
-    # print('------------', 46391850006653310931 - 46360556630927434913)
-
-    # TODO: clac balances after report
-    # increase 17342520308865055 ~ 0.017
-    assert steth_balance(address_first) == 25709965200108945857
-    # increase 72287075994680726 ~ 0.072
-    assert steth_balance(address_second) == 107236587382329697213
-    # increase 31293375725876018 ~ 0.031
-    assert steth_balance(address_base_no) == 46391850006653310931
-
-    # getStuckPenaltyDelay
-    # isOperatorPenaltyCleared
-    print('------------ getStuckPenaltyDelay', nor.getStuckPenaltyDelay())
+    assert nor.isOperatorPenaltyCleared(
+        tested_no_id_first) == False  # TODO True
+    assert nor.isOperatorPenaltyCleared(
+        tested_no_id_second) == False  # TODO True
 
     chain.sleep(penalty_delay + 1)
     chain.mine()
 
+    # shares before report
+    node_operator_first_balance_shares_before = shares_balance(address_first)
+    node_operator_second_balance_shares_before = shares_balance(address_second)
+    node_operator_base_balance_shares_before = shares_balance(address_base_no)
+
 # Seventh report
     (report_tx, extra_report_tx) = oracle_report()
+
+    # shares after report
+    node_operator_first_balance_shares_after = shares_balance(address_first)
+    node_operator_second_balance_shares_after = shares_balance(address_second)
+    node_operator_base_balance_shares_after = shares_balance(address_base_no)
+
+    assert nor.isOperatorPenaltyCleared(
+        tested_no_id_first) == False  # TODO True
+    assert nor.isOperatorPenaltyCleared(
+        tested_no_id_second) == False  # TODO True
 
     node_operator_first = nor.getNodeOperatorSummary(tested_no_id_first)
     node_operator_second = nor.getNodeOperatorSummary(tested_no_id_second)
 
-    assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
+    # expected shares
+    node_operator_first_rewards_after_seventh_report = calc_no_rewards(
+        nor, no_id=tested_no_id_first, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+    node_operator_second_rewards_after_seventh_report = calc_no_rewards(
+        nor, no_id=tested_no_id_second, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+    node_operator_base_rewards_after_seventh_report = calc_no_rewards(
+        nor, no_id=base_no_id, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+
+    # No penalty
+    # diff by 1 share because of rounding
+    assert almostEq(node_operator_first_balance_shares_after -
+                    node_operator_first_balance_shares_before, node_operator_first_rewards_after_seventh_report, 1)
+    assert almostEq(node_operator_second_balance_shares_after -
+                    node_operator_second_balance_shares_before, node_operator_second_rewards_after_seventh_report, 1)
+    assert almostEq(node_operator_base_balance_shares_after -
+                    node_operator_base_balance_shares_before, node_operator_base_rewards_after_seventh_report, 1)
 
     assert node_operator_first['stuckValidatorsCount'] == 0
     assert node_operator_first['totalExitedValidators'] == 7
     assert node_operator_first['refundedValidatorsCount'] == 0
-    assert node_operator_first['totalDepositedValidators'] == first_tested_no_keys
-    assert node_operator_first['stuckPenaltyEndTimestamp'] > 0
+    assert node_operator_first['stuckPenaltyEndTimestamp'] < chain.time()
 
     assert node_operator_second['stuckValidatorsCount'] == 2
     assert node_operator_second['totalExitedValidators'] == 5
     assert node_operator_second['refundedValidatorsCount'] == 2
-    assert node_operator_second['totalDepositedValidators'] == second_tested_no_keys
-    assert node_operator_second['stuckPenaltyEndTimestamp'] > 0
+    assert node_operator_second['stuckPenaltyEndTimestamp'] < chain.time()
 
-    # print('------------', 25727319426619019395 - 25692622679800080802)
-    # print('------------', 924997828491045603113 - 107236587382329697213)
-    # print('------------', 46423164505407801916 - 46360556630927434913)
+    # Deposite
+    (deposited_keys_first_before, deposited_keys_second_before, deposited_keys_base_before,
+     deposited_keys_first_after, deposited_keys_second_after, deposited_keys_base_after
+     ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 30)
 
-    # TODO: clac balances after report
-    # increase 34696746818938593 ~ 0.034
-    assert steth_balance(address_first) == 25727319426619019395
-    # increase 72335869770977136 ~ 0.072
-    assert steth_balance(address_second) == 107308972078812769759
-    # increase 62607874480367003 ~ 0.062
-    assert steth_balance(address_base_no) == 46423164505407801916
-
-# Deposite TODO and check balances
+    # check don't change deposited keys for penalized NO (only second NO)
+    assert deposited_keys_first_before == deposited_keys_first_after  # TODO !=
+    assert deposited_keys_second_before == deposited_keys_second_after  # TODO !=
+    assert deposited_keys_base_before != deposited_keys_base_after

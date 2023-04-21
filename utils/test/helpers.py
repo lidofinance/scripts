@@ -23,3 +23,11 @@ def eth_balance(account):
 
 def almostEqEth(b1, b2):
     return abs(b1 - b2) <= 10
+
+
+def shares_balance(account):
+    return contracts.lido.sharesOf(account)
+
+
+def almostEq(b1, b2, diff):
+    return abs(b1 - b2) <= diff
