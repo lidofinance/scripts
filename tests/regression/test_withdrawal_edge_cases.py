@@ -64,12 +64,7 @@ def test_bunker_multiple_batches(accounts):
 
     assert not contracts.withdrawal_queue.isBunkerModeActive()
 
-    [
-        (_, _, _, _, is_finalized_first, _),
-        (_, _, _, _, is_finalized_second, _),
-    ] = contracts.withdrawal_queue.getWithdrawalStatus(request_ids)
-
-    assert is_finalized_first == is_finalized_second == True
+    check_all_requests_finalization(request_ids, stranger)
 
     lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
     hints = contracts.withdrawal_queue.findCheckpointHints(request_ids, 1, lastCheckpointIndex)
@@ -114,12 +109,8 @@ def test_oracle_report_missed(accounts):
 
     oracle_report(cl_diff=ETH(1), exclude_vaults_balances=True)
 
-    [
-        (_, _, _, _, is_finalized, _),
-    ] = contracts.withdrawal_queue.getWithdrawalStatus(request_ids)
-
     # successful report has finalized request
-    assert is_finalized
+    check_all_requests_finalization(request_ids, stranger)
 
     lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
     hints = contracts.withdrawal_queue.findCheckpointHints(request_ids, 1, lastCheckpointIndex)
