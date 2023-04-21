@@ -40,11 +40,12 @@ def test_bunker_multiple_batches(accounts):
     assert contracts.withdrawal_queue.isBunkerModeActive()
 
     second_request_id = create_single_withdrawal_request(withdrawal_amount, stranger)
+    request_ids = [first_request_id, second_request_id]
 
     [
         (first_steth_emount, first_shares, _, _, _, _),
         (second_steth_emount, second_shares, _, _, _, _),
-    ] = contracts.withdrawal_queue.getWithdrawalStatus([first_request_id, second_request_id])
+    ] = contracts.withdrawal_queue.getWithdrawalStatus(request_ids)
 
     # amount of requested eth should be equal, but shares are different
     # because second request was affected by negative rebase twice
@@ -58,11 +59,10 @@ def test_bunker_multiple_batches(accounts):
     [
         (_, _, _, _, is_finalized_first, _),
         (_, _, _, _, is_finalized_second, _),
-    ] = contracts.withdrawal_queue.getWithdrawalStatus([first_request_id, second_request_id])
+    ] = contracts.withdrawal_queue.getWithdrawalStatus(request_ids)
 
     assert is_finalized_first == is_finalized_second == True
-
-    request_ids = [first_request_id, second_request_id]
+    
     lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
     hints = contracts.withdrawal_queue.findCheckpointHints(request_ids, 1, lastCheckpointIndex)
     withdrawal_tx = contracts.withdrawal_queue.claimWithdrawals(
