@@ -213,7 +213,9 @@ def wait_to_next_available_report_time():
         EPOCHS_PER_FRAME, "should be next frame"
 
 
-def oracle_report(cl_diff=ETH(10), exclude_vaults_balances=False, simulation_block_identifier=None):
+def oracle_report(
+        cl_diff=ETH(10), exclude_vaults_balances=False, simulation_block_identifier=None,
+        extraDataFormat=0, extraDataHash=ZERO_BYTES32, extraDataItemsCount=0, extraDataList=''):
     """fast forwards time to next report, compiles report, pushes through consensus and to AccountingOracle"""
     wait_to_next_available_report_time()
 
@@ -249,7 +251,7 @@ def oracle_report(cl_diff=ETH(10), exclude_vaults_balances=False, simulation_blo
         withdrawalVaultBalance = 0
         elRewardsVaultBalance = 0
 
-    push_oracle_report(
+    return push_oracle_report(
         refSlot=refSlot,
         clBalance=postCLBalance,
         numValidators=beaconValidators,
@@ -258,4 +260,8 @@ def oracle_report(cl_diff=ETH(10), exclude_vaults_balances=False, simulation_blo
         withdrawalFinalizationBatches=finalization_batches,
         elRewardsVaultBalance=elRewardsVaultBalance,
         simulatedShareRate=simulatedShareRate,
+        extraDataFormat=extraDataFormat,
+        extraDataHash=extraDataHash,
+        extraDataItemsCount=extraDataItemsCount,
+        extraDataList=extraDataList
     )

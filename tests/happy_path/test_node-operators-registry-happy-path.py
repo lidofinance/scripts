@@ -7,17 +7,10 @@ from utils.test.extra_data import (
     ExtraDataService,
 )
 from utils.test.helpers import (
-    ETH,
-    eth_balance,
     steth_balance
 )
 from utils.test.oracle_report_helpers import (
-    ONE_DAY,
-    SHARE_RATE_PRECISION,
-    push_oracle_report,
-    get_finalization_batches,
-    simulate_report,
-    wait_to_next_available_report_time,
+    oracle_report,
 )
 from utils.config import (contracts, lido_dao_staking_router)
 
@@ -37,57 +30,6 @@ def extra_data_service():
 @pytest.fixture(scope="module")
 def voting_eoa(accounts):
     return accounts.at(contracts.voting.address, force=True)
-
-
-def oracle_report(increaseBalance=0, extraDataFormat=0, extraDataHash=ZERO_BYTES32, extraDataItemsCount=0, extraDataList=''):
-    wait_to_next_available_report_time()
-
-    (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
-    elRewardsVaultBalance = eth_balance(
-        contracts.execution_layer_rewards_vault.address)
-    withdrawalVaultBalance = eth_balance(contracts.withdrawal_vault.address)
-    (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()
-
-    prev_report = contracts.lido.getBeaconStat().dict()
-    beacon_validators = prev_report["beaconValidators"]
-    beacon_balance = prev_report["beaconBalance"]
-    # buffered_ether_before = contracts.lido.getBufferedEther()
-
-    print("beaconBalance", beacon_balance)
-    print("beaconValidators", beacon_validators)
-    print("withdrawalVaultBalance", withdrawalVaultBalance)
-    print("elRewardsVaultBalance", elRewardsVaultBalance)
-
-    postCLBalance = beacon_balance + ETH(increaseBalance)
-
-    (postTotalPooledEther, postTotalShares, withdrawals, elRewards) = simulate_report(
-        refSlot=refSlot,
-        beaconValidators=beacon_validators,
-        postCLBalance=postCLBalance,
-        withdrawalVaultBalance=withdrawalVaultBalance,
-        elRewardsVaultBalance=elRewardsVaultBalance,
-    )
-    simulatedShareRate = postTotalPooledEther * \
-        SHARE_RATE_PRECISION // postTotalShares
-    sharesRequestedToBurn = coverShares + nonCoverShares
-
-    finalization_batches = get_finalization_batches(
-        simulatedShareRate, withdrawals, elRewards)
-
-    return push_oracle_report(
-        refSlot=refSlot,
-        clBalance=postCLBalance,
-        numValidators=beacon_validators,
-        withdrawalVaultBalance=withdrawalVaultBalance,
-        sharesRequestedToBurn=sharesRequestedToBurn,
-        withdrawalFinalizationBatches=finalization_batches,
-        elRewardsVaultBalance=elRewardsVaultBalance,
-        simulatedShareRate=simulatedShareRate,
-        extraDataFormat=extraDataFormat,
-        extraDataHash=extraDataHash,
-        extraDataItemsCount=extraDataItemsCount,
-        extraDataList=extraDataList
-    )
 
 
 StakingModuleId = NewType('StakingModuleId', int)
@@ -115,7 +57,7 @@ def test_node_operators(
     node_operator_second = nor.getNodeOperatorSummary(1)
     address_second = nor.getNodeOperator(1, False)['rewardAddress']
 
-    node_operator_third = nor.getNodeOperatorSummary(2)
+    node_operator_base = nor.getNodeOperatorSummary(2)
     address_base_no = nor.getNodeOperator(2, False)['rewardAddress']
 
     assert steth_balance(address_first) == 16358968722850069260
@@ -151,7 +93,7 @@ def test_node_operators(
 
 # Second report - 0 NO and 1 NO has stuck/exited
     (report_tx, extra_report_tx) = oracle_report(
-        1000, 1, extra_data.data_hash, 2, extra_data.extra_data)
+        1000, False, None, 1, extra_data.data_hash, 2, extra_data.extra_data)
 
     node_operator_first = nor.getNodeOperatorSummary(0)
     node_operator_second = nor.getNodeOperatorSummary(1)
@@ -231,7 +173,7 @@ def test_node_operators(
 # Third report - 0 NO: increase stuck to 0, desc exited to 7 = 5 + 2
 # 1 NO: same as prev report
     (report_tx, extra_report_tx) = oracle_report(
-        1000, 1, extra_data.data_hash, 2, extra_data.extra_data)
+        1000, False, None, 1, extra_data.data_hash, 2, extra_data.extra_data)
 
     node_operator_first = nor.getNodeOperatorSummary(0)
     node_operator_second = nor.getNodeOperatorSummary(1)
@@ -291,7 +233,7 @@ def test_node_operators(
 
 # Fourth report - 1 NO: has stuck 2 keys
     (report_tx, extra_report_tx) = oracle_report(
-        1000, 1, extra_data.data_hash, 2, extra_data.extra_data)
+        1000, False, None, 1, extra_data.data_hash, 2, extra_data.extra_data)
 
     node_operator_first = nor.getNodeOperatorSummary(0)
     node_operator_second = nor.getNodeOperatorSummary(1)
@@ -403,4 +345,4 @@ def test_node_operators(
     # increase 62607874480367003 ~ 0.062
     assert steth_balance(address_base_no) == 46423164505407801916
 
-# Deposite TODO
+# Deposite TODO and check balances
