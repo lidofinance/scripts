@@ -1,6 +1,8 @@
 """
 Voting 18/04/2023.
 1. Set Staking limit for Node Operator RockLogic GmbH to 5800
+
+Vote passed & executed on Apr-21-2023 04:02:11 PM +UTC, block 17095814
 """
 
 import time
