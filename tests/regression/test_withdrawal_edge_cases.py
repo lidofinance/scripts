@@ -13,6 +13,7 @@ def create_single_withdrawal_request(amount, holder):
 def test_bunker_multiple_batches(accounts):
     amount = ETH(100)
     stranger = accounts[0]
+    withdrawal_amount = ETH(10)
 
     assert contracts.lido.balanceOf(stranger) == 0
     assert contracts.withdrawal_queue.getLastRequestId() == 0
@@ -29,7 +30,7 @@ def test_bunker_multiple_batches(accounts):
     assert steth_initial_balance > steth_first_negative_report_balance
     assert contracts.withdrawal_queue.isBunkerModeActive()
 
-    first_request_id = create_single_withdrawal_request(ETH(10), stranger)
+    first_request_id = create_single_withdrawal_request(withdrawal_amount, stranger)
 
     oracle_report(cl_diff=-ETH(100), exclude_vaults_balances=True)
 
@@ -38,7 +39,7 @@ def test_bunker_multiple_batches(accounts):
     assert steth_first_negative_report_balance > steth_second_negative_report_balance
     assert contracts.withdrawal_queue.isBunkerModeActive()
 
-    second_request_id = create_single_withdrawal_request(ETH(10), stranger)
+    second_request_id = create_single_withdrawal_request(withdrawal_amount, stranger)
 
     [
         (first_steth_emount, first_shares, _, _, _, _),
@@ -71,5 +72,5 @@ def test_bunker_multiple_batches(accounts):
     claims = withdrawal_tx.events["WithdrawalClaimed"]
 
     # first claimed request should be less than requested amount because it caught negative rebase
-    assert claims[0]["amountOfETH"] < ETH(10)
-    assert claims[1]["amountOfETH"] == ETH(10)
+    assert claims[0]["amountOfETH"] < withdrawal_amount
+    assert claims[1]["amountOfETH"] == withdrawal_amount
