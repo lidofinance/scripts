@@ -14,6 +14,8 @@ from utils.config import contracts, ldo_token_address
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.import_current_votes import start_and_execute_votes
 
+from .utils import get_slot
+
 
 class Frame(TypedDict):
     """A snapshot of the state before and after an action."""
@@ -52,8 +54,10 @@ def do_snapshot(
 
     def _snap():
         block = chain.height
+        res = {}
+
         with brownie.multicall(block_identifier=block):
-            return {
+            res |= {
                 "block_number": chain.height,
                 "chain_time": web3.eth.get_block(chain.height)["timestamp"],
                 "address": oracle.address,
@@ -77,6 +81,40 @@ def do_snapshot(
                 "getInitializationBlock": oracle.getInitializationBlock(),
                 "hasInitialized": oracle.hasInitialized(),
             }
+
+        for v1_slot in (
+            # LidoOracle.sol
+            "lido.LidoOracle.allowedBeaconBalanceAnnualRelativeIncrease",
+            "lido.LidoOracle.allowedBeaconBalanceDecrease",
+            "lido.LidoOracle.beaconReportReceiver",
+            "lido.LidoOracle.beaconSpec",
+            "lido.LidoOracle.expectedEpochId",
+            "lido.LidoOracle.lastCompletedEpochId",
+            "lido.LidoOracle.lastReportedEpochId",
+            "lido.LidoOracle.lido",
+            "lido.LidoOracle.postCompletedTotalPooledEther",
+            "lido.LidoOracle.preCompletedTotalPooledEther",
+            "lido.LidoOracle.quorum",
+            "lido.LidoOracle.reportsBitMask",
+            "lido.LidoOracle.timeElapsed",
+            # AragonApp.sol
+            "aragonOS.appStorage.kernel",
+            "aragonOS.appStorage.appId",
+        ):
+            res[v1_slot] = get_slot(
+                oracle.address,
+                name=v1_slot,
+                block=block,
+            )
+
+        res["members"] = get_slot(
+            oracle.address,
+            pos=0,
+            as_list=True,
+            block=block,
+        )
+
+        return res
 
     return _snap
 
