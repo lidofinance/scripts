@@ -1,17 +1,15 @@
-import math
 import pytest
-import random
-from brownie import web3, interface, convert, reverts, chain
-from utils.mainnet_fork import chain_snapshot
-from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
+from brownie import chain
 from hexbytes import HexBytes
-from typing import TYPE_CHECKING, NewType, Tuple
+from typing import NewType, Tuple
 
 from utils.test.extra_data import (
     ExtraDataService,
-    FormatList,
-    ItemType,
-    ItemPayload,
+)
+from utils.test.helpers import (
+    ETH,
+    eth_balance,
+    steth_balance
 )
 from utils.test.oracle_report_helpers import (
     ONE_DAY,
@@ -21,8 +19,7 @@ from utils.test.oracle_report_helpers import (
     simulate_report,
     wait_to_next_available_report_time,
 )
-from utils.config import (contracts, deposit_contract, lido_dao_node_operators_registry, lido_dao_staking_router,
-                          lido_dao_steth_address, lido_dao_voting_address)
+from utils.config import (contracts, lido_dao_staking_router)
 
 PUBKEY_LENGTH = 48
 SIGNATURE_LENGTH = 96
@@ -30,34 +27,6 @@ INITIAL_TOKEN_HOLDER = "0x000000000000000000000000000000000000dead"
 TOTAL_BASIS_POINTS = 10000
 ZERO_HASH = bytes([0] * 32)
 ZERO_BYTES32 = HexBytes(ZERO_HASH)
-
-
-def ETH(amount):
-    return math.floor(amount * 10**18)
-
-
-def SHARES(amount):
-    return ETH(amount)
-
-
-def steth_balance(account):
-    return contracts.lido.balanceOf(account)
-
-
-def eth_balance(account):
-    return web3.eth.get_balance(account)
-
-
-def almostEqEth(b1, b2):
-    return abs(b1 - b2) <= 10
-
-
-def random_hexstr(length):
-    return "0x" + random.randbytes(length).hex()
-
-
-def packExtraDataList(extraDataItems):
-    return '0x' + ''.join(item[2:] for item in extraDataItems)
 
 
 @pytest.fixture()
@@ -149,9 +118,9 @@ def test_node_operators(
     node_operator_third = nor.getNodeOperatorSummary(2)
     address_base_no = nor.getNodeOperator(2, False)['rewardAddress']
 
-    assert contracts.lido.balanceOf(address_first) == 16358968722850069260
-    assert contracts.lido.balanceOf(address_second) == 1
-    assert contracts.lido.balanceOf(address_base_no) == 36971193293606281302
+    assert steth_balance(address_first) == 16358968722850069260
+    assert steth_balance(address_second) == 1
+    assert steth_balance(address_base_no) == 36971193293606281302
 
 # First report - base
     oracle_report()
@@ -162,11 +131,11 @@ def test_node_operators(
 
     # TODO: add calc of expected NO balace (now it is + ~10)
     # increase 9281696554293738157 ~ 9.28
-    assert contracts.lido.balanceOf(address_first) == 25640665277143807417
+    assert steth_balance(address_first) == 25640665277143807417
     # increase 9281696554293738157 ~ 1.25
-    assert contracts.lido.balanceOf(address_second) == 1254316635151645834
+    assert steth_balance(address_second) == 1254316635151645834
     # increase 9295609805878998600 ~ 9.29
-    assert contracts.lido.balanceOf(address_base_no) == 46266803099485279902
+    assert steth_balance(address_base_no) == 46266803099485279902
 
     vals_stuck_non_zero = {
         node_operator(1, 0): 2,
@@ -225,11 +194,11 @@ def test_node_operators(
     # print('------------', 46298033191577432466 - 46266803099485279902)
 
     # increase 17307449062072070 ~ 0.017
-    assert contracts.lido.balanceOf(address_first) == 25657972726205879487
+    assert steth_balance(address_first) == 25657972726205879487
     # increase 846663728727361 ~ 0.0008
-    assert contracts.lido.balanceOf(address_second) == 1255163298880373195
+    assert steth_balance(address_second) == 1255163298880373195
     # increase 31230092092152564 ~ 0.031
-    assert contracts.lido.balanceOf(address_base_no) == 46298033191577432466
+    assert steth_balance(address_base_no) == 46298033191577432466
 
 # Deposite TODO
 
@@ -244,9 +213,9 @@ def test_node_operators(
     # stakingModuleSummary = nor.getStakingModuleSummary()
 
     # balances after deposit
-    assert contracts.lido.balanceOf(address_first) == 25657972726205879487
-    assert contracts.lido.balanceOf(address_second) == 1255163298880373195
-    assert contracts.lido.balanceOf(address_base_no) == 46298033191577432466
+    assert steth_balance(address_first) == 25657972726205879487
+    assert steth_balance(address_second) == 1255163298880373195
+    assert steth_balance(address_base_no) == 46298033191577432466
 
     # Report with node operator 0 exited 2 + 5 keys an stuck 0
     vals_stuck_non_zero = {
@@ -298,11 +267,11 @@ def test_node_operators(
 
     # TODO: clac balances after report
     # increase 17319131590188969 ~ 0.017
-    assert contracts.lido.balanceOf(address_first) == 25675291857796068456
+    assert steth_balance(address_first) == 25675291857796068456
     # increase 847235226744252 ~ 0.0008
-    assert contracts.lido.balanceOf(address_second) == 1256010534107117447
+    assert steth_balance(address_second) == 1256010534107117447
     # increase 31251172404314767 ~ 0.031
-    assert contracts.lido.balanceOf(address_base_no) == 46329284363981747233
+    assert steth_balance(address_base_no) == 46329284363981747233
 
 
 # sleep PENALTY_DELAY time
@@ -349,11 +318,11 @@ def test_node_operators(
 
     # TODO: clac balances after report
     # increase 17330822004012346 ~ 0.017
-    assert contracts.lido.balanceOf(address_first) == 25692622679800080802
+    assert steth_balance(address_first) == 25692622679800080802
     # increase 847807110522305 ~ 0.0008
-    assert contracts.lido.balanceOf(address_second) == 1256858341217639752
+    assert steth_balance(address_second) == 1256858341217639752
     # increase 31272266945687680 ~ 0.031
-    assert contracts.lido.balanceOf(address_base_no) == 46360556630927434913
+    assert steth_balance(address_base_no) == 46360556630927434913
 
 # Deposite TODO
 
@@ -389,11 +358,11 @@ def test_node_operators(
 
     # TODO: clac balances after report
     # increase 17342520308865055 ~ 0.017
-    assert contracts.lido.balanceOf(address_first) == 25709965200108945857
+    assert steth_balance(address_first) == 25709965200108945857
     # increase 848379380321906 ~ 0.0008
-    assert contracts.lido.balanceOf(address_second) == 1257706720597961658
+    assert steth_balance(address_second) == 1257706720597961658
     # increase 31293375725876018 ~ 0.031
-    assert contracts.lido.balanceOf(address_base_no) == 46391850006653310931
+    assert steth_balance(address_base_no) == 46391850006653310931
 
     # getStuckPenaltyDelay
     # isOperatorPenaltyCleared
@@ -428,10 +397,10 @@ def test_node_operators(
 
     # TODO: clac balances after report
     # increase 34696746818938593 ~ 0.034
-    assert contracts.lido.balanceOf(address_first) == 25727319426619019395
+    assert steth_balance(address_first) == 25727319426619019395
     # increase 1697331416725531 ~ 0.0001
-    assert contracts.lido.balanceOf(address_second) == 1258555672634365283
+    assert steth_balance(address_second) == 1258555672634365283
     # increase 62607874480367003 ~ 0.062
-    assert contracts.lido.balanceOf(address_base_no) == 46423164505407801916
+    assert steth_balance(address_base_no) == 46423164505407801916
 
 # Deposite TODO
