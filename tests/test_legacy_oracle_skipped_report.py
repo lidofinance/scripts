@@ -98,9 +98,4 @@ def test_legacy_oracle_report_skipped(helpers, vote_ids_from_env, accounts):
     chain.mine(1)
 
     # Now oracle report can pass because contracts were upgraded
-    oracle_report(wait_to_next_report_time=False)
-
-    # TODO: This option was suggestet by dzhon, but it reverts
-    #       To fix it we can try to gather report data in the same time block_number_23_hours_after_upgrade was remembered,
-    #       before waiting one more hour. And after that wait one more hour and then submit previously report with simulation_block_identifier
-    # oracle_report(simulation_block_identifier=block_number_23_hours_after_upgrade, wait_to_next_report_time=False)
+    oracle_report(simulation_block_identifier=block_number_23_hours_after_upgrade, wait_to_next_report_time=False)
