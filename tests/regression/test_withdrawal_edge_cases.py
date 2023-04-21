@@ -52,6 +52,8 @@ def test_bunker_multiple_batches(accounts):
 
     oracle_report(cl_diff=ETH(0.1), exclude_vaults_balances=True)
 
+    assert not contracts.withdrawal_queue.isBunkerModeActive()
+
     [
         (_, _, _, _, is_finalized_first, _),
         (_, _, _, _, is_finalized_second, _),
