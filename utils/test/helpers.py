@@ -4,6 +4,8 @@ from utils.config import (
     contracts,
 )
 
+ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+
 
 def ETH(amount):
     return math.floor(amount * 10**18)

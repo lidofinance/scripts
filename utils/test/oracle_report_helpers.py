@@ -242,7 +242,7 @@ def oracle_report(cl_diff=ETH(10), exclude_vaults_balances=False, simulation_blo
         withdrawalVaultBalance = 0
         elRewardsVaultBalance = 0
 
-    push_oracle_report(
+    return push_oracle_report(
         refSlot=refSlot,
         clBalance=postCLBalance,
         numValidators=beaconValidators,
