@@ -209,9 +209,10 @@ def wait_to_next_available_report_time():
     assert nextRefSlot == refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME, "should be next frame"
 
 
-def oracle_report(cl_diff=ETH(10), exclude_vaults_balances=False, simulation_block_identifier=None):
-    """fast forwards time to next report, compiles report, pushes through consensus and to AccountingOracle"""
-    wait_to_next_available_report_time()
+def oracle_report(cl_diff=ETH(10), exclude_vaults_balances=False, simulation_block_identifier=None, wait_to_next_report_time=True):
+    if (wait_to_next_report_time):
+        """fast forwards time to next report, compiles report, pushes through consensus and to AccountingOracle"""
+        wait_to_next_available_report_time()
 
     (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
 
