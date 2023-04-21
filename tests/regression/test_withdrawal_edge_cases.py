@@ -1,6 +1,6 @@
-from brownie import ZERO_ADDRESS
+from brownie import ZERO_ADDRESS, chain
 
-from utils.test.oracle_report_helpers import oracle_report
+from utils.test.oracle_report_helpers import oracle_report, wait_to_next_available_report_time
 from utils.test.helpers import ETH
 from utils.config import contracts
 
@@ -62,7 +62,7 @@ def test_bunker_multiple_batches(accounts):
     ] = contracts.withdrawal_queue.getWithdrawalStatus(request_ids)
 
     assert is_finalized_first == is_finalized_second == True
-    
+
     lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
     hints = contracts.withdrawal_queue.findCheckpointHints(request_ids, 1, lastCheckpointIndex)
     withdrawal_tx = contracts.withdrawal_queue.claimWithdrawals(
@@ -74,3 +74,51 @@ def test_bunker_multiple_batches(accounts):
     # first claimed request should be less than requested amount because it caught negative rebase
     assert claims[0]["amountOfETH"] < withdrawal_amount
     assert claims[1]["amountOfETH"] == withdrawal_amount
+
+
+def test_oracle_report_missed(accounts):
+    amount = ETH(100)
+    stranger = accounts[0]
+
+    assert contracts.lido.balanceOf(stranger) == 0
+    assert contracts.withdrawal_queue.getLastRequestId() == 0
+
+    contracts.lido.approve(contracts.withdrawal_queue.address, amount, {"from": stranger})
+    contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": amount})
+
+    oracle_report(cl_diff=ETH(1), exclude_vaults_balances=True)
+
+    withdrawal_request_id = create_single_withdrawal_request(amount, stranger)
+    request_ids = [withdrawal_request_id]
+
+    # skipping next report by waiting 24h more
+    chain_time_before_missed_report = chain.time()
+    wait_to_next_available_report_time()
+    chain_time_after_missed_report = chain.time()
+
+    [
+        (_, _, _, _, is_finalized, _),
+    ] = contracts.withdrawal_queue.getWithdrawalStatus(request_ids)
+
+    # time is passed but request still not finalized
+    assert chain_time_before_missed_report < chain_time_after_missed_report
+    assert not is_finalized
+
+    oracle_report(cl_diff=ETH(1), exclude_vaults_balances=True)
+
+    [
+        (_, _, _, _, is_finalized, _),
+    ] = contracts.withdrawal_queue.getWithdrawalStatus(request_ids)
+
+    # successful report has finalized request
+    assert is_finalized
+
+    lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
+    hints = contracts.withdrawal_queue.findCheckpointHints(request_ids, 1, lastCheckpointIndex)
+    withdrawal_tx = contracts.withdrawal_queue.claimWithdrawals(
+        request_ids, hints, {"from": stranger}
+    )
+
+    claims = withdrawal_tx.events["WithdrawalClaimed"]
+
+    assert claims[0]["amountOfETH"] == amount
