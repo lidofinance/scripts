@@ -186,6 +186,13 @@ def test_node_operators(
 
     node_operator_first = nor.getNodeOperatorSummary(0)
     node_operator_second = nor.getNodeOperatorSummary(1)
+    node_operator_base = nor.getNodeOperatorSummary(2)
+
+    assert node_operator_base['stuckValidatorsCount'] == 0
+    assert node_operator_base['totalExitedValidators'] == 0
+    assert node_operator_base['refundedValidatorsCount'] == 0
+    assert node_operator_base['totalDepositedValidators'] == 7391
+    assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
 
     assert node_operator_first['stuckValidatorsCount'] == 2
     assert node_operator_first['totalExitedValidators'] == 5
@@ -260,6 +267,8 @@ def test_node_operators(
     node_operator_first = nor.getNodeOperatorSummary(0)
     node_operator_second = nor.getNodeOperatorSummary(1)
 
+    assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
+
     assert node_operator_first['stuckValidatorsCount'] == 0
     assert node_operator_first['totalExitedValidators'] == 7
     assert node_operator_first['refundedValidatorsCount'] == 0
@@ -318,6 +327,8 @@ def test_node_operators(
     node_operator_first = nor.getNodeOperatorSummary(0)
     node_operator_second = nor.getNodeOperatorSummary(1)
 
+    assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
+
     assert node_operator_first['stuckValidatorsCount'] == 0
     assert node_operator_first['totalExitedValidators'] == 7
     assert node_operator_first['refundedValidatorsCount'] == 0
@@ -358,6 +369,8 @@ def test_node_operators(
     node_operator_first = nor.getNodeOperatorSummary(0)
     node_operator_second = nor.getNodeOperatorSummary(1)
 
+    assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
+
     assert node_operator_first['stuckValidatorsCount'] == 0
     assert node_operator_first['totalExitedValidators'] == 7
     assert node_operator_first['refundedValidatorsCount'] == 0
@@ -394,6 +407,8 @@ def test_node_operators(
 
     node_operator_first = nor.getNodeOperatorSummary(0)
     node_operator_second = nor.getNodeOperatorSummary(1)
+
+    assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
 
     assert node_operator_first['stuckValidatorsCount'] == 0
     assert node_operator_first['totalExitedValidators'] == 7
