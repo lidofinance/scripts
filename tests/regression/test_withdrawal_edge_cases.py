@@ -130,3 +130,55 @@ def test_oracle_report_missed(accounts):
     claims = withdrawal_tx.events["WithdrawalClaimed"]
 
     assert claims[0]["amountOfETH"] == amount
+
+
+def test_several_rebases(accounts):
+    amount = ETH(100)
+    stranger = accounts[0]
+    withdrawal_amount = ETH(10)
+
+    assert contracts.lido.balanceOf(stranger) == 0
+    assert contracts.withdrawal_queue.getLastRequestId() == 0
+
+    contracts.lido.approve(contracts.withdrawal_queue.address, amount, {"from": stranger})
+    contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": amount})
+
+    request_ids = []
+
+    oracle_report(cl_diff=ETH(100), exclude_vaults_balances=True)
+
+    first_request_id = create_single_withdrawal_request(withdrawal_amount, stranger)
+    request_ids.append(first_request_id)
+
+    oracle_report(cl_diff=-ETH(100), exclude_vaults_balances=True)
+    assert contracts.withdrawal_queue.isBunkerModeActive()
+
+    check_all_requests_finalization(request_ids, stranger)
+
+    second_request_id = create_single_withdrawal_request(withdrawal_amount, stranger)
+    request_ids.append(second_request_id)
+
+    oracle_report(cl_diff=-ETH(100), exclude_vaults_balances=True)
+
+    assert contracts.withdrawal_queue.isBunkerModeActive()
+
+    third_request_id = create_single_withdrawal_request(withdrawal_amount, stranger)
+    request_ids.append(third_request_id)
+
+    oracle_report(cl_diff=ETH(100), exclude_vaults_balances=True)
+
+    assert not contracts.withdrawal_queue.isBunkerModeActive()
+
+    check_all_requests_finalization(request_ids, stranger)
+
+    lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
+    hints = contracts.withdrawal_queue.findCheckpointHints(request_ids, 1, lastCheckpointIndex)
+    withdrawal_tx = contracts.withdrawal_queue.claimWithdrawals(
+        request_ids, hints, {"from": stranger}
+    )
+
+    claims = withdrawal_tx.events["WithdrawalClaimed"]
+
+    assert claims[0]["amountOfETH"] < withdrawal_amount
+    assert claims[1]["amountOfETH"] < withdrawal_amount
+    assert claims[2]["amountOfETH"] == withdrawal_amount
