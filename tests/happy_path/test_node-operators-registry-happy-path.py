@@ -21,7 +21,7 @@ from utils.test.oracle_report_helpers import (
     simulate_report,
     wait_to_next_available_report_time,
 )
-from utils.config import (contracts, deposit_contract,
+from utils.config import (contracts, deposit_contract, lido_dao_node_operators_registry, lido_dao_staking_router,
                           lido_dao_steth_address, lido_dao_voting_address)
 
 PUBKEY_LENGTH = 48
@@ -70,7 +70,7 @@ def voting_eoa(accounts):
     return accounts.at(contracts.voting.address, force=True)
 
 
-def oracle_report(extraDataFormat=0, extraDataHash=ZERO_BYTES32, extraDataItemsCount=0, extraDataList='', increaseBalance=0):
+def oracle_report(increaseBalance=0, extraDataFormat=0, extraDataHash=ZERO_BYTES32, extraDataItemsCount=0, extraDataList=''):
     wait_to_next_available_report_time()
 
     (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
@@ -138,6 +138,8 @@ def nor(accounts, interface):
 def test_node_operator_normal_report(
         nor, accounts, extra_data_service, voting_eoa
 ):
+    penalty_delay = nor.getStuckPenaltyDelay()
+
     node_operator_first = nor.getNodeOperatorSummary(0)
     address_first = nor.getNodeOperator(0, False)['rewardAddress']
 
@@ -151,29 +153,13 @@ def test_node_operator_normal_report(
     assert contracts.lido.balanceOf(address_second) == 113089997075720349764
     assert contracts.lido.balanceOf(address_third) == 32478609417541091991
 
+# First report - base
     oracle_report()
 
     # TODO: add calc of expected NO balace (now it is + ~10)
     assert contracts.lido.balanceOf(address_first) == 31165004784634247170
     assert contracts.lido.balanceOf(address_second) == 114421525910389078269
     assert contracts.lido.balanceOf(address_third) == 41777664582273516463
-
-    assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
-
-    node_operator_first = nor.getNodeOperatorSummary(0)
-    address_first = nor.getNodeOperator(0, False)['rewardAddress']
-
-    node_operator_second = nor.getNodeOperatorSummary(1)
-    address_second = nor.getNodeOperator(1, False)['rewardAddress']
-
-    assert contracts.lido.balanceOf(address_first) == 31165004784634247170
-    assert contracts.lido.balanceOf(address_second) == 114421525910389078269
-    assert contracts.lido.balanceOf(address_third) == 41777664582273516463
-
-    extraData = {
-        'exitedKeys': [{'moduleId': 1, 'nodeOpIds': [0], 'keysCounts': [2]}],
-        'stuckKeys': [{'moduleId': 1, 'nodeOpIds': [1, 2], 'keysCounts': [1, 1]}]
-    }
 
     vals_stuck_non_zero = {
         node_operator(1, 0): 2,
@@ -187,10 +173,26 @@ def test_node_operator_normal_report(
     extra_data = extra_data_service.collect(
         vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
 
+# Second report - 0 and 1 has stuck/exited
     (report_tx, extra_report_tx) = oracle_report(
-        1, extra_data.data_hash, 2, extra_data.extra_data, 1000)
+        1000, 1, extra_data.data_hash, 2, extra_data.extra_data)
 
-    print('extra_report_tx', extra_report_tx.events)
+    node_operator_first = nor.getNodeOperatorSummary(0)
+    node_operator_second = nor.getNodeOperatorSummary(1)
+
+    assert node_operator_first['stuckValidatorsCount'] == 2
+    assert node_operator_first['totalExitedValidators'] == 5
+    assert node_operator_first['refundedValidatorsCount'] == 0
+    assert node_operator_first['totalDepositedValidators'] == 7391
+    assert node_operator_first['stuckPenaltyEndTimestamp'] == 0
+
+    assert node_operator_second['stuckValidatorsCount'] == 2
+    assert node_operator_second['totalExitedValidators'] == 5
+    assert node_operator_second['refundedValidatorsCount'] == 0
+    assert node_operator_second['totalDepositedValidators'] == 1000
+    assert node_operator_first['stuckPenaltyEndTimestamp'] == 0
+
+    print('2 ------ extra_report_tx', extra_report_tx.events)
 
     assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['nodeOperatorId'] == 0
     assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['exitedValidatorsCount'] == 5
@@ -215,7 +217,7 @@ def test_node_operator_normal_report(
     # increase 28199923593034624 ~ 0.028
     assert contracts.lido.balanceOf(address_third) == 41805864505866551087
 
-    # Deposite TODO
+# Deposite TODO
 
     # depositCallCountBefore = deposit_contract.totalCalls()
     # stakingModuleSummaryBefore = nor.getStakingModuleSummary()
@@ -232,61 +234,173 @@ def test_node_operator_normal_report(
     assert contracts.lido.balanceOf(address_second) == 114498760440378590897
     assert contracts.lido.balanceOf(address_third) == 41805864505866551087
 
-
-# Report with node operator 0 exited 2 + 5 keys an stuck 0
-    vals_exited_non_zero = {
-        node_operator(1, 0): 7,
-    }
-    extra_data = extra_data_service.collect(
-        {}, vals_exited_non_zero, 10, 10)
-
-    (report_tx, extra_report_tx) = oracle_report(
-        1, extra_data.data_hash, 1, extra_data.extra_data, 1000)
-
-    print('extra_report_tx', extra_report_tx.events)
-
-    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['exitedValidatorsCount'] == 7
-
-    # TODO: clac balances after report
-    assert contracts.lido.balanceOf(address_first) == 31207091740648808403
-    assert contracts.lido.balanceOf(address_second) == 114576047103675846446
-    assert contracts.lido.balanceOf(address_third) == 41834083464408011009
-
-    (bool_value_0, name_0, address_0, totalVettedValidators_0, totalExitedValidators_0, totalAddedValidators_0, totalDepositedValidators_0) = nor.getNodeOperator(
-        0, True)
-    (bool_value_1, name_1, address_1, totalVettedValidators_1, totalExitedValidators_1, totalAddedValidators_1, totalDepositedValidators_1) = nor.getNodeOperator(
-        1, True)
-
-    # print('-------totalDepositedValidators_0', totalDepositedValidators_0)
-    # nor.removeSigningKeys(0, totalDepositedValidators_0 + 1, 7, {
-    #                       'from': voting_eoa})
-    # nor.removeSigningKeys(1, totalDepositedValidators_1 + 1, 5, {
-    #                       'from': voting_eoa})
-
-    stuckPenaltyEndTimestamp = extra_report_tx.events[
-        'StuckPenaltyStateChanged'][0]['stuckPenaltyEndTimestamp']
-
-    print('---------- current timestamp',
-          web3.eth.get_block("latest").timestamp)
-    # sleep PENALTY_DELAY time
-    chain.sleep(stuckPenaltyEndTimestamp -
-                web3.eth.get_block("latest").timestamp + 1)
-    print('----------- afetr sleep')
-    chain.mine()
-
-    # new report with good node operator 0
+    # Report with node operator 0 exited 2 + 5 keys an stuck 0
     vals_stuck_non_zero = {
         node_operator(1, 0): 0,
         node_operator(1, 1): 2,
     }
     vals_exited_non_zero = {
-        node_operator(1, 0): 0,
-        node_operator(1, 1): 0,
+        node_operator(1, 0): 7,
     }
     extra_data = extra_data_service.collect(
         vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
 
+# Third report - 0: increase stuck to 0, desc exited to 7 = 5 + 2
+# 1: same as prev report
     (report_tx, extra_report_tx) = oracle_report(
-        1, extra_data.data_hash, 2, extra_data.extra_data, 1000)
+        1000, 1, extra_data.data_hash, 2, extra_data.extra_data)
 
-    print('extra_report_tx', extra_report_tx.events)
+    node_operator_first = nor.getNodeOperatorSummary(0)
+    node_operator_second = nor.getNodeOperatorSummary(1)
+
+    assert node_operator_first['stuckValidatorsCount'] == 0
+    assert node_operator_first['totalExitedValidators'] == 7
+    assert node_operator_first['refundedValidatorsCount'] == 0
+    assert node_operator_first['totalDepositedValidators'] == 7391
+    assert node_operator_first['stuckPenaltyEndTimestamp'] > 0
+
+    assert node_operator_second['stuckValidatorsCount'] == 2
+    assert node_operator_second['totalExitedValidators'] == 5
+    assert node_operator_second['refundedValidatorsCount'] == 0
+    assert node_operator_second['totalDepositedValidators'] == 1000
+    assert node_operator_first['stuckPenaltyEndTimestamp'] > 0
+
+    print('3 ------ extra_report_tx', extra_report_tx.events)
+
+    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['nodeOperatorId'] == 0
+    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['exitedValidatorsCount'] == 7
+
+    assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['nodeOperatorId'] == 0
+    assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['stuckValidatorsCount'] == 0
+
+    stuckPenaltyEndTimestamp = extra_report_tx.events[
+        'StuckPenaltyStateChanged'][0]['stuckPenaltyEndTimestamp']
+
+    # TODO: clac balances after report
+    # increase 21050577784933116 ~ 0.021
+    assert contracts.lido.balanceOf(address_first) == 31207091740648808403
+    # increase 77286663297255549 ~ 0.077
+    assert contracts.lido.balanceOf(address_second) == 114576047103675846446
+    # increase 28218958541459922 ~ 0.028
+    assert contracts.lido.balanceOf(address_third) == 41834083464408011009
+
+
+# sleep PENALTY_DELAY time
+    # chain.sleep(stuckPenaltyEndTimestamp -
+    #             web3.eth.get_block("latest").timestamp + 1)
+    chain.sleep(penalty_delay + 1)
+    chain.mine()
+
+    vals_stuck_non_zero = {
+        node_operator(1, 1): 2,
+    }
+    vals_exited_non_zero = {
+        node_operator(1, 1): 5,
+    }
+    extra_data = extra_data_service.collect(
+        vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
+
+# Fourth report - 1: has stuck 2 keys
+    (report_tx, extra_report_tx) = oracle_report(
+        1000, 1, extra_data.data_hash, 2, extra_data.extra_data)
+
+    node_operator_first = nor.getNodeOperatorSummary(0)
+    node_operator_second = nor.getNodeOperatorSummary(1)
+
+    assert node_operator_first['stuckValidatorsCount'] == 0
+    assert node_operator_first['totalExitedValidators'] == 7
+    assert node_operator_first['refundedValidatorsCount'] == 0
+    assert node_operator_first['totalDepositedValidators'] == 7391
+    assert node_operator_first['stuckPenaltyEndTimestamp'] > 0
+
+    assert node_operator_second['stuckValidatorsCount'] == 2
+    assert node_operator_second['totalExitedValidators'] == 5
+    assert node_operator_second['refundedValidatorsCount'] == 0
+    assert node_operator_second['totalDepositedValidators'] == 1000
+    assert node_operator_first['stuckPenaltyEndTimestamp'] > 0
+
+    print('4 ------ extra_report_tx', extra_report_tx.events)
+
+    # print('------------', 31228156527573746349 - 31207091740648808403)
+    # print('------------', 114653385935470827642 - 114576047103675846446)
+    # print('------------', 41862321470746486416 - 41834083464408011009)
+
+    # TODO: clac balances after report
+    # increase 21064786924937946 ~ 0.021
+    assert contracts.lido.balanceOf(address_first) == 31228156527573746349
+    # increase 77338831794981196 ~ 0.077
+    assert contracts.lido.balanceOf(address_second) == 114653385935470827642
+    # increase 28238006338475407 ~ 0.028
+    assert contracts.lido.balanceOf(address_third) == 41862321470746486416
+
+# Deposite TODO
+
+    # Refund keys
+    nor.updateRefundedValidatorsCount(
+        1, 2, {"from": lido_dao_staking_router})
+
+# Fifth report
+    (report_tx, extra_report_tx) = oracle_report(1000)
+
+    print('5 ------ extra_report_tx', extra_report_tx.events)
+
+    node_operator_first = nor.getNodeOperatorSummary(0)
+    node_operator_second = nor.getNodeOperatorSummary(1)
+
+    assert node_operator_first['stuckValidatorsCount'] == 0
+    assert node_operator_first['totalExitedValidators'] == 7
+    assert node_operator_first['refundedValidatorsCount'] == 0
+    assert node_operator_first['totalDepositedValidators'] == 7391
+    assert node_operator_first['stuckPenaltyEndTimestamp'] > 0
+
+    assert node_operator_second['stuckValidatorsCount'] == 2
+    assert node_operator_second['totalExitedValidators'] == 5
+    assert node_operator_second['refundedValidatorsCount'] == 2
+    assert node_operator_second['totalDepositedValidators'] == 1000
+    assert node_operator_first['stuckPenaltyEndTimestamp'] > 0
+
+    # print('------------', 31249235533229858627 - 31228156527573746349)
+    # print('------------', 114730776970977270451 - 114653385935470827642)
+    # print('------------', 41890578537739240295 - 41862321470746486416)
+
+    # TODO: clac balances after report
+    # increase 21079005656112278 ~ 0.021
+    assert contracts.lido.balanceOf(address_first) == 31249235533229858627
+    # increase 77391035506442809 ~ 0.077
+    assert contracts.lido.balanceOf(address_second) == 114730776970977270451
+    # increase 28257066992753879 ~ 0.028
+    assert contracts.lido.balanceOf(address_third) == 41890578537739240295
+
+    # getStuckPenaltyDelay
+    # isOperatorPenaltyCleared
+    print('------------ getStuckPenaltyDelay', nor.getStuckPenaltyDelay())
+
+    chain.sleep(penalty_delay + 1)
+
+# Seventh report
+    (report_tx, extra_report_tx) = oracle_report(1000)
+
+    node_operator_first = nor.getNodeOperatorSummary(0)
+    node_operator_second = nor.getNodeOperatorSummary(1)
+
+    assert node_operator_first['stuckValidatorsCount'] == 0
+    assert node_operator_first['totalExitedValidators'] == 7
+    assert node_operator_first['refundedValidatorsCount'] == 0
+    assert node_operator_first['totalDepositedValidators'] == 7391
+    assert node_operator_first['stuckPenaltyEndTimestamp'] > 0
+
+    assert node_operator_second['stuckValidatorsCount'] == 2
+    assert node_operator_second['totalExitedValidators'] == 5
+    assert node_operator_second['refundedValidatorsCount'] == 2
+    assert node_operator_second['totalDepositedValidators'] == 1000
+    assert node_operator_first['stuckPenaltyEndTimestamp'] > 0
+
+    # TODO: clac balances after report
+    # increase 21079005656112278 ~ 0.021
+    assert contracts.lido.balanceOf(address_first) == 31249235533229858627
+    # increase 77391035506442809 ~ 0.077
+    assert contracts.lido.balanceOf(address_second) == 114730776970977270451
+    # increase 28257066992753879 ~ 0.028
+    assert contracts.lido.balanceOf(address_third) == 41890578537739240295
+
+# Deposite TODO
