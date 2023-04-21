@@ -135,7 +135,7 @@ def nor(accounts, interface):
     return interface.NodeOperatorsRegistry(contracts.node_operators_registry.address)
 
 
-def test_node_operator_normal_report(
+def test_node_operators(
         nor, accounts, extra_data_service, voting_eoa
 ):
     penalty_delay = nor.getStuckPenaltyDelay()
@@ -147,19 +147,26 @@ def test_node_operator_normal_report(
     address_second = nor.getNodeOperator(1, False)['rewardAddress']
 
     node_operator_third = nor.getNodeOperatorSummary(2)
-    address_third = nor.getNodeOperator(2, False)['rewardAddress']
+    address_base_no = nor.getNodeOperator(2, False)['rewardAddress']
 
-    assert contracts.lido.balanceOf(address_first) == 21873108333133797622
-    assert contracts.lido.balanceOf(address_second) == 113089997075720349764
-    assert contracts.lido.balanceOf(address_third) == 32478609417541091991
+    assert contracts.lido.balanceOf(address_first) == 16358968722850069260
+    assert contracts.lido.balanceOf(address_second) == 1
+    assert contracts.lido.balanceOf(address_base_no) == 36971193293606281302
 
 # First report - base
     oracle_report()
 
+    # print('------------', 25640665277143807417 - 16358968722850069260)
+    # print('------------', 1254316635151645834 - 1)
+    # print('------------', 46266803099485279902 - 36971193293606281302)
+
     # TODO: add calc of expected NO balace (now it is + ~10)
-    assert contracts.lido.balanceOf(address_first) == 31165004784634247170
-    assert contracts.lido.balanceOf(address_second) == 114421525910389078269
-    assert contracts.lido.balanceOf(address_third) == 41777664582273516463
+    # increase 9281696554293738157 ~ 9.28
+    assert contracts.lido.balanceOf(address_first) == 25640665277143807417
+    # increase 9281696554293738157 ~ 1.25
+    assert contracts.lido.balanceOf(address_second) == 1254316635151645834
+    # increase 9295609805878998600 ~ 9.29
+    assert contracts.lido.balanceOf(address_base_no) == 46266803099485279902
 
     vals_stuck_non_zero = {
         node_operator(1, 0): 2,
@@ -173,7 +180,7 @@ def test_node_operator_normal_report(
     extra_data = extra_data_service.collect(
         vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
 
-# Second report - 0 and 1 has stuck/exited
+# Second report - 0 NO and 1 NO has stuck/exited
     (report_tx, extra_report_tx) = oracle_report(
         1000, 1, extra_data.data_hash, 2, extra_data.extra_data)
 
@@ -206,16 +213,16 @@ def test_node_operator_normal_report(
     assert extra_report_tx.events['StuckPenaltyStateChanged'][1]['nodeOperatorId'] == 1
     assert extra_report_tx.events['StuckPenaltyStateChanged'][1]['stuckValidatorsCount'] == 2
 
-    # print('------------', 31186041162863875287 - 31165004784634247170)
-    # print('------------', 114498760440378590897 - 114421525910389078269)
-    # print('------------', 41805864505866551087 - 41777664582273516463)
+    # print('------------', 25657972726205879487 - 25640665277143807417)
+    # print('------------', 1255163298880373195 - 1254316635151645834)
+    # print('------------', 46298033191577432466 - 46266803099485279902)
 
-    # increase 21036378229628117 ~ 0.021
-    assert contracts.lido.balanceOf(address_first) == 31186041162863875287
-    # increase 77234529989512628 ~ 0.077
-    assert contracts.lido.balanceOf(address_second) == 114498760440378590897
-    # increase 28199923593034624 ~ 0.028
-    assert contracts.lido.balanceOf(address_third) == 41805864505866551087
+    # increase 17307449062072070 ~ 0.017
+    assert contracts.lido.balanceOf(address_first) == 25657972726205879487
+    # increase 846663728727361 ~ 0.0008
+    assert contracts.lido.balanceOf(address_second) == 1255163298880373195
+    # increase 31230092092152564 ~ 0.031
+    assert contracts.lido.balanceOf(address_base_no) == 46298033191577432466
 
 # Deposite TODO
 
@@ -230,9 +237,9 @@ def test_node_operator_normal_report(
     # stakingModuleSummary = nor.getStakingModuleSummary()
 
     # balances after deposit
-    assert contracts.lido.balanceOf(address_first) == 31186041162863875287
-    assert contracts.lido.balanceOf(address_second) == 114498760440378590897
-    assert contracts.lido.balanceOf(address_third) == 41805864505866551087
+    assert contracts.lido.balanceOf(address_first) == 25657972726205879487
+    assert contracts.lido.balanceOf(address_second) == 1255163298880373195
+    assert contracts.lido.balanceOf(address_base_no) == 46298033191577432466
 
     # Report with node operator 0 exited 2 + 5 keys an stuck 0
     vals_stuck_non_zero = {
@@ -245,8 +252,8 @@ def test_node_operator_normal_report(
     extra_data = extra_data_service.collect(
         vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
 
-# Third report - 0: increase stuck to 0, desc exited to 7 = 5 + 2
-# 1: same as prev report
+# Third report - 0 NO: increase stuck to 0, desc exited to 7 = 5 + 2
+# 1 NO: same as prev report
     (report_tx, extra_report_tx) = oracle_report(
         1000, 1, extra_data.data_hash, 2, extra_data.extra_data)
 
@@ -276,13 +283,17 @@ def test_node_operator_normal_report(
     stuckPenaltyEndTimestamp = extra_report_tx.events[
         'StuckPenaltyStateChanged'][0]['stuckPenaltyEndTimestamp']
 
+    # print('------------', 25675291857796068456 - 25657972726205879487)
+    # print('------------', 1256010534107117447 - 1255163298880373195)
+    # print('------------', 46329284363981747233 - 46298033191577432466)
+
     # TODO: clac balances after report
-    # increase 21050577784933116 ~ 0.021
-    assert contracts.lido.balanceOf(address_first) == 31207091740648808403
-    # increase 77286663297255549 ~ 0.077
-    assert contracts.lido.balanceOf(address_second) == 114576047103675846446
-    # increase 28218958541459922 ~ 0.028
-    assert contracts.lido.balanceOf(address_third) == 41834083464408011009
+    # increase 17319131590188969 ~ 0.017
+    assert contracts.lido.balanceOf(address_first) == 25675291857796068456
+    # increase 847235226744252 ~ 0.0008
+    assert contracts.lido.balanceOf(address_second) == 1256010534107117447
+    # increase 31251172404314767 ~ 0.031
+    assert contracts.lido.balanceOf(address_base_no) == 46329284363981747233
 
 
 # sleep PENALTY_DELAY time
@@ -300,7 +311,7 @@ def test_node_operator_normal_report(
     extra_data = extra_data_service.collect(
         vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
 
-# Fourth report - 1: has stuck 2 keys
+# Fourth report - 1 NO: has stuck 2 keys
     (report_tx, extra_report_tx) = oracle_report(
         1000, 1, extra_data.data_hash, 2, extra_data.extra_data)
 
@@ -321,21 +332,21 @@ def test_node_operator_normal_report(
 
     print('4 ------ extra_report_tx', extra_report_tx.events)
 
-    # print('------------', 31228156527573746349 - 31207091740648808403)
-    # print('------------', 114653385935470827642 - 114576047103675846446)
-    # print('------------', 41862321470746486416 - 41834083464408011009)
+    # print('------------', 25692622679800080802 - 25675291857796068456)
+    # print('------------', 1256858341217639752 - 1256010534107117447)
+    # print('------------', 46360556630927434913 - 46329284363981747233)
 
     # TODO: clac balances after report
-    # increase 21064786924937946 ~ 0.021
-    assert contracts.lido.balanceOf(address_first) == 31228156527573746349
-    # increase 77338831794981196 ~ 0.077
-    assert contracts.lido.balanceOf(address_second) == 114653385935470827642
-    # increase 28238006338475407 ~ 0.028
-    assert contracts.lido.balanceOf(address_third) == 41862321470746486416
+    # increase 17330822004012346 ~ 0.017
+    assert contracts.lido.balanceOf(address_first) == 25692622679800080802
+    # increase 847807110522305 ~ 0.0008
+    assert contracts.lido.balanceOf(address_second) == 1256858341217639752
+    # increase 31272266945687680 ~ 0.031
+    assert contracts.lido.balanceOf(address_base_no) == 46360556630927434913
 
 # Deposite TODO
 
-    # Refund keys
+    # Refund keys 1 NO
     nor.updateRefundedValidatorsCount(
         1, 2, {"from": lido_dao_staking_router})
 
@@ -359,23 +370,24 @@ def test_node_operator_normal_report(
     assert node_operator_second['totalDepositedValidators'] == 1000
     assert node_operator_first['stuckPenaltyEndTimestamp'] > 0
 
-    # print('------------', 31249235533229858627 - 31228156527573746349)
-    # print('------------', 114730776970977270451 - 114653385935470827642)
-    # print('------------', 41890578537739240295 - 41862321470746486416)
+    # print('------------', 25709965200108945857 - 25692622679800080802)
+    # print('------------', 1257706720597961658 - 1256858341217639752)
+    # print('------------', 46391850006653310931 - 46360556630927434913)
 
     # TODO: clac balances after report
-    # increase 21079005656112278 ~ 0.021
-    assert contracts.lido.balanceOf(address_first) == 31249235533229858627
-    # increase 77391035506442809 ~ 0.077
-    assert contracts.lido.balanceOf(address_second) == 114730776970977270451
-    # increase 28257066992753879 ~ 0.028
-    assert contracts.lido.balanceOf(address_third) == 41890578537739240295
+    # increase 17342520308865055 ~ 0.017
+    assert contracts.lido.balanceOf(address_first) == 25709965200108945857
+    # increase 848379380321906 ~ 0.0008
+    assert contracts.lido.balanceOf(address_second) == 1257706720597961658
+    # increase 31293375725876018 ~ 0.031
+    assert contracts.lido.balanceOf(address_base_no) == 46391850006653310931
 
     # getStuckPenaltyDelay
     # isOperatorPenaltyCleared
     print('------------ getStuckPenaltyDelay', nor.getStuckPenaltyDelay())
 
     chain.sleep(penalty_delay + 1)
+    chain.mine()
 
 # Seventh report
     (report_tx, extra_report_tx) = oracle_report(1000)
@@ -395,12 +407,16 @@ def test_node_operator_normal_report(
     assert node_operator_second['totalDepositedValidators'] == 1000
     assert node_operator_first['stuckPenaltyEndTimestamp'] > 0
 
+    # print('------------', 25727319426619019395 - 25692622679800080802)
+    # print('------------', 1258555672634365283 - 1256858341217639752)
+    # print('------------', 46423164505407801916 - 46360556630927434913)
+
     # TODO: clac balances after report
-    # increase 21079005656112278 ~ 0.021
-    assert contracts.lido.balanceOf(address_first) == 31249235533229858627
-    # increase 77391035506442809 ~ 0.077
-    assert contracts.lido.balanceOf(address_second) == 114730776970977270451
-    # increase 28257066992753879 ~ 0.028
-    assert contracts.lido.balanceOf(address_third) == 41890578537739240295
+    # increase 34696746818938593 ~ 0.034
+    assert contracts.lido.balanceOf(address_first) == 25727319426619019395
+    # increase 1697331416725531 ~ 0.0001
+    assert contracts.lido.balanceOf(address_second) == 1258555672634365283
+    # increase 62607874480367003 ~ 0.062
+    assert contracts.lido.balanceOf(address_base_no) == 46423164505407801916
 
 # Deposite TODO
