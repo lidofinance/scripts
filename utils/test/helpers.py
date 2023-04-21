@@ -1,8 +1,9 @@
 import math
-from brownie import web3  # type: ignore
-from utils.config import (
-    contracts,
-)
+
+from brownie import web3
+from web3.types import BlockIdentifier  # type: ignore
+
+from utils.config import contracts
 
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -19,8 +20,8 @@ def steth_balance(account):
     return contracts.lido.balanceOf(account)
 
 
-def eth_balance(account):
-    return web3.eth.get_balance(account)
+def eth_balance(account: str, block_identifier: BlockIdentifier = "latest"):
+    return web3.eth.get_balance(account, block_identifier=block_identifier)
 
 
 def almostEqEth(b1, b2):
