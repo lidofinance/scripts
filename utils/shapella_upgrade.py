@@ -7,7 +7,7 @@ from utils.config import (
     lido_dao_validators_exit_bus_oracle,
     gate_seal_factory_address,
     shapella_upgrade_template_address,
-    gate_seal,
+    gate_seal_address,
     prompt_bool,
     get_priority_fee,
     get_is_live,
@@ -43,14 +43,14 @@ def get_tx_params(deployer):
 def prepare_deploy_gate_seal(deployer):
     gate_seal_factory = interface.GateSealFactory(gate_seal_factory_address)
     committee = deployer
-    seal_duration = 10 * 24 * 60 * 60  # 10 days
+    seal_duration = 6 * 24 * 60 * 60  # 6 days
     sealables = [lido_dao_withdrawal_queue, lido_dao_validators_exit_bus_oracle]
-    expiry_timestamp = 1701393006  # 2023-12-01
+    expiry_timestamp = 1713139200  # 2024-04-15 00:00GMT
     tx = gate_seal_factory.create_gate_seal(
         committee, seal_duration, sealables, expiry_timestamp, get_tx_params(deployer)
     )
-    gate_seal_address = tx.events[0]["gate_seal"]
-    assert gate_seal_address == gate_seal
+    deployed_gate_seal_address = tx.events[0]["gate_seal"]
+    assert deployed_gate_seal_address == gate_seal_address
     print(f"GateSeal deployed at {gate_seal_address}")
 
 

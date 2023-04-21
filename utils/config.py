@@ -225,7 +225,7 @@ class ContractsLazyLoader:
 
     @property
     def gate_seal(self) -> interface.GateSeal:
-        return interface.GateSeal(gate_seal)
+        return interface.GateSeal(gate_seal_address)
 
     @property
     def shapella_upgrade_template(self) -> ShapellaUpgradeTemplate:

@@ -1,15 +1,13 @@
 import pytest
 from brownie import interface
-from utils.withdrawal_credentials import (
-    extract_address_from_eth1_wc
-)
+from utils.withdrawal_credentials import extract_address_from_eth1_wc
 from utils.finance import ZERO_ADDRESS
 from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
 from utils.import_current_votes import start_and_execute_votes
 from utils.config import (
     contracts,
     oracle_daemon_config,
-    gate_seal,
+    gate_seal_address,
     deployer_eoa,
     wsteth_token_address,
     dummy_implementation_address,
@@ -126,7 +124,7 @@ def test_upgrade_template_addresses():
     assert template._burner() == lido_dao_burner
     assert template._depositSecurityModule() == lido_dao_deposit_security_module_address
     assert template._eip712StETH() == lido_dao_eip712_steth
-    assert template._gateSeal() == gate_seal
+    assert template._gateSeal() == gate_seal_address
     assert template._hashConsensusForAccountingOracle() == lido_dao_hash_consensus_for_accounting_oracle
     assert template._hashConsensusForValidatorsExitBusOracle() == lido_dao_hash_consensus_for_validators_exit_bus_oracle
     assert template._oracleDaemonConfig() == oracle_daemon_config
@@ -155,7 +153,6 @@ def test_upgrade_template_addresses():
     assert template._withdrawalQueueImplementation() == lido_dao_withdrawal_queue_implementation
 
 
-
 def test_proxyfied_implementation_adresses_prepared():
     prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
 
@@ -164,11 +161,11 @@ def test_proxyfied_implementation_adresses_prepared():
     assert get_proxy_impl_app(lido_dao_steth_address) == lido_dao_steth_implementation_address_v1
     assert get_proxy_impl_app(lido_dao_legacy_oracle) == lido_dao_legacy_oracle_implementation_v1
     assert get_proxy_impl_ossifiable(lido_dao_lido_locator) == lido_dao_lido_locator_implementation
-    assert get_proxy_impl_ossifiable(lido_dao_accounting_oracle) == dummy_implementation_address # dummy
-    assert get_proxy_impl_ossifiable(lido_dao_validators_exit_bus_oracle) == dummy_implementation_address # dummy
-    assert get_proxy_impl_ossifiable(lido_dao_withdrawal_queue) == dummy_implementation_address # dummy
+    assert get_proxy_impl_ossifiable(lido_dao_accounting_oracle) == dummy_implementation_address  # dummy
+    assert get_proxy_impl_ossifiable(lido_dao_validators_exit_bus_oracle) == dummy_implementation_address  # dummy
+    assert get_proxy_impl_ossifiable(lido_dao_withdrawal_queue) == dummy_implementation_address  # dummy
     assert get_proxy_impl_app(lido_dao_withdrawal_vault) == lido_dao_withdrawal_vault_implementation_v1
-    assert get_proxy_impl_ossifiable(lido_dao_staking_router) == dummy_implementation_address # dummy
+    assert get_proxy_impl_ossifiable(lido_dao_staking_router) == dummy_implementation_address  # dummy
 
 
 def test_proxyfied_implementation_adresses_after_upgrade(helpers):
@@ -180,7 +177,10 @@ def test_proxyfied_implementation_adresses_after_upgrade(helpers):
     assert get_proxy_impl_app(lido_dao_legacy_oracle) == lido_dao_legacy_oracle_implementation
     assert get_proxy_impl_ossifiable(lido_dao_lido_locator) == lido_dao_lido_locator_implementation
     assert get_proxy_impl_ossifiable(lido_dao_accounting_oracle) == lido_dao_accounting_oracle_implementation
-    assert get_proxy_impl_ossifiable(lido_dao_validators_exit_bus_oracle) == lido_dao_validators_exit_bus_oracle_implementation
+    assert (
+        get_proxy_impl_ossifiable(lido_dao_validators_exit_bus_oracle)
+        == lido_dao_validators_exit_bus_oracle_implementation
+    )
     assert get_proxy_impl_ossifiable(lido_dao_withdrawal_queue) == lido_dao_withdrawal_queue_implementation
     assert get_proxy_impl_app(lido_dao_withdrawal_vault) == lido_dao_withdrawal_vault_implementation
     assert get_proxy_impl_ossifiable(lido_dao_staking_router) == lido_dao_staking_router_implementation
@@ -270,7 +270,7 @@ def test_stored_addresses_after_upgrade(helpers):
     # Withdrawal Queue
     assert contracts.withdrawal_queue.STETH() == lido_dao_steth_address
     assert contracts.withdrawal_queue.WSTETH() == wsteth_token_address
-    assert contracts.withdrawal_queue.getNFTDescriptorAddress() == ZERO_ADDRESS # TODO: double check this
+    assert contracts.withdrawal_queue.getNFTDescriptorAddress() == ZERO_ADDRESS  # TODO: double check this
 
     # Withdrawal vault
     assert contracts.withdrawal_vault.LIDO() == lido_dao_steth_address
@@ -283,10 +283,16 @@ def test_stored_addresses_after_upgrade(helpers):
     assert contracts.accounting_oracle.getConsensusContract() == lido_dao_hash_consensus_for_accounting_oracle
 
     # Validators Exit Bus Oracle
-    assert contracts.validators_exit_bus_oracle.getConsensusContract() == lido_dao_hash_consensus_for_validators_exit_bus_oracle
+    assert (
+        contracts.validators_exit_bus_oracle.getConsensusContract()
+        == lido_dao_hash_consensus_for_validators_exit_bus_oracle
+    )
 
     # Hash Consensus for Accounting Oracle
     assert contracts.hash_consensus_for_accounting_oracle.getReportProcessor() == lido_dao_accounting_oracle
 
     # Hash Consensus for Validators Exit Bus Oracle
-    assert contracts.hash_consensus_for_validators_exit_bus_oracle.getReportProcessor() == lido_dao_validators_exit_bus_oracle
+    assert (
+        contracts.hash_consensus_for_validators_exit_bus_oracle.getReportProcessor()
+        == lido_dao_validators_exit_bus_oracle
+    )
