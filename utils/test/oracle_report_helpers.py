@@ -82,6 +82,9 @@ def get_finalization_batches(share_rate: int, withdrawal_vault_balance, el_rewar
     max_timestamp = chain.time() - requestTimestampMargin
     MAX_REQUESTS_PER_CALL = 1000
 
+    if not available_eth:
+        return []
+
     batchesState = contracts.withdrawal_queue.calculateFinalizationBatches(
         share_rate, max_timestamp, MAX_REQUESTS_PER_CALL, (available_eth, False, [0 for _ in range(36)], 0)
     )
@@ -223,7 +226,14 @@ def oracle_report(cl_diff=ETH(10), exclude_vaults_balances=False, simulation_blo
     (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()
     (_, beaconValidators, beaconBalance) = contracts.lido.getBeaconStat()
 
+    preTotalPooledEther = contracts.lido.getTotalPooledEther()
+
     postCLBalance = beaconBalance + cl_diff
+
+    # simulate_reports needs proper withdrawal and elRewards vaults balances
+    if exclude_vaults_balances:
+        withdrawalVaultBalance = 0
+        elRewardsVaultBalance = 0
 
     (postTotalPooledEther, postTotalShares, withdrawals, elRewards) = simulate_report(
         refSlot=refSlot,
@@ -238,10 +248,7 @@ def oracle_report(cl_diff=ETH(10), exclude_vaults_balances=False, simulation_blo
 
     finalization_batches = get_finalization_batches(simulatedShareRate, withdrawals, elRewards)
 
-    # simulate_reports needs proper withdrawal and elRewards vaults balances
-    if exclude_vaults_balances:
-        withdrawalVaultBalance = 0
-        elRewardsVaultBalance = 0
+    is_bunker = preTotalPooledEther > postTotalPooledEther
 
     return push_oracle_report(
         refSlot=refSlot,
@@ -252,4 +259,5 @@ def oracle_report(cl_diff=ETH(10), exclude_vaults_balances=False, simulation_blo
         withdrawalFinalizationBatches=finalization_batches,
         elRewardsVaultBalance=elRewardsVaultBalance,
         simulatedShareRate=simulatedShareRate,
+        isBunkerMode=is_bunker,
     )
