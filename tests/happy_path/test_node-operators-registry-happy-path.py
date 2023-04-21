@@ -49,8 +49,8 @@ def nor(accounts, interface):
 def test_node_operators(
         nor, accounts, extra_data_service, voting_eoa
 ):
-    first_tested_no_id = 0
-    second_tested_no_id = 4
+    tested_no_id_first = 0
+    tested_no_id_second = 4
     base_no_id = 2
 
     first_tested_no_keys = 7391
@@ -59,13 +59,13 @@ def test_node_operators(
 
     penalty_delay = nor.getStuckPenaltyDelay()
 
-    node_operator_first = nor.getNodeOperatorSummary(first_tested_no_id)
+    node_operator_first = nor.getNodeOperatorSummary(tested_no_id_first)
     address_first = nor.getNodeOperator(
-        first_tested_no_id, False)['rewardAddress']
+        tested_no_id_first, False)['rewardAddress']
 
-    node_operator_second = nor.getNodeOperatorSummary(second_tested_no_id)
+    node_operator_second = nor.getNodeOperatorSummary(tested_no_id_second)
     address_second = nor.getNodeOperator(
-        second_tested_no_id, False)['rewardAddress']
+        tested_no_id_second, False)['rewardAddress']
 
     node_operator_base = nor.getNodeOperatorSummary(base_no_id)
     address_base_no = nor.getNodeOperator(base_no_id, False)['rewardAddress']
@@ -90,12 +90,12 @@ def test_node_operators(
     assert steth_balance(address_base_no) == 46266803099485279902
 
     vals_stuck_non_zero = {
-        node_operator(1, first_tested_no_id): 2,
-        node_operator(1, second_tested_no_id): 2,
+        node_operator(1, tested_no_id_first): 2,
+        node_operator(1, tested_no_id_second): 2,
     }
     vals_exited_non_zero = {
-        node_operator(1, first_tested_no_id): 5,
-        node_operator(1, second_tested_no_id): 5,
+        node_operator(1, tested_no_id_first): 5,
+        node_operator(1, tested_no_id_second): 5,
     }
 
     extra_data = extra_data_service.collect(
@@ -105,8 +105,8 @@ def test_node_operators(
     (report_tx, extra_report_tx) = oracle_report(
         1000, False, None, 1, extra_data.data_hash, 2, extra_data.extra_data)
 
-    node_operator_first = nor.getNodeOperatorSummary(first_tested_no_id)
-    node_operator_second = nor.getNodeOperatorSummary(second_tested_no_id)
+    node_operator_first = nor.getNodeOperatorSummary(tested_no_id_first)
+    node_operator_second = nor.getNodeOperatorSummary(tested_no_id_second)
     node_operator_base = nor.getNodeOperatorSummary(base_no_id)
 
     assert node_operator_base['stuckValidatorsCount'] == 0
@@ -129,16 +129,16 @@ def test_node_operators(
 
     print('2 ------ extra_report_tx', extra_report_tx.events)
 
-    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['nodeOperatorId'] == first_tested_no_id
+    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['nodeOperatorId'] == tested_no_id_first
     assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['exitedValidatorsCount'] == 5
 
-    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][1]['nodeOperatorId'] == second_tested_no_id
+    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][1]['nodeOperatorId'] == tested_no_id_second
     assert extra_report_tx.events['ExitedSigningKeysCountChanged'][1]['exitedValidatorsCount'] == 5
 
-    assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['nodeOperatorId'] == first_tested_no_id
+    assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['nodeOperatorId'] == tested_no_id_first
     assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['stuckValidatorsCount'] == 2
 
-    assert extra_report_tx.events['StuckPenaltyStateChanged'][1]['nodeOperatorId'] == second_tested_no_id
+    assert extra_report_tx.events['StuckPenaltyStateChanged'][1]['nodeOperatorId'] == tested_no_id_second
     assert extra_report_tx.events['StuckPenaltyStateChanged'][1]['stuckValidatorsCount'] == 2
 
     # print('------------', 25657972726205879487 - 25640665277143807417)
@@ -171,11 +171,11 @@ def test_node_operators(
 
     # Report with node operator 0 exited 2 + 5 keys an stuck 0
     vals_stuck_non_zero = {
-        node_operator(1, first_tested_no_id): 0,
-        node_operator(1, second_tested_no_id): 2,
+        node_operator(1, tested_no_id_first): 0,
+        node_operator(1, tested_no_id_second): 2,
     }
     vals_exited_non_zero = {
-        node_operator(1, first_tested_no_id): 7,
+        node_operator(1, tested_no_id_first): 7,
     }
     extra_data = extra_data_service.collect(
         vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
@@ -185,8 +185,8 @@ def test_node_operators(
     (report_tx, extra_report_tx) = oracle_report(
         1000, False, None, 1, extra_data.data_hash, 2, extra_data.extra_data)
 
-    node_operator_first = nor.getNodeOperatorSummary(first_tested_no_id)
-    node_operator_second = nor.getNodeOperatorSummary(second_tested_no_id)
+    node_operator_first = nor.getNodeOperatorSummary(tested_no_id_first)
+    node_operator_second = nor.getNodeOperatorSummary(tested_no_id_second)
 
     assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
 
@@ -204,10 +204,10 @@ def test_node_operators(
 
     print('3 ------ extra_report_tx', extra_report_tx.events)
 
-    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['nodeOperatorId'] == first_tested_no_id
+    assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['nodeOperatorId'] == tested_no_id_first
     assert extra_report_tx.events['ExitedSigningKeysCountChanged'][0]['exitedValidatorsCount'] == 7
 
-    assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['nodeOperatorId'] == first_tested_no_id
+    assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['nodeOperatorId'] == tested_no_id_first
     assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['stuckValidatorsCount'] == 0
 
     stuckPenaltyEndTimestamp = extra_report_tx.events[
@@ -233,10 +233,10 @@ def test_node_operators(
     chain.mine()
 
     vals_stuck_non_zero = {
-        node_operator(1, second_tested_no_id): 2,
+        node_operator(1, tested_no_id_second): 2,
     }
     vals_exited_non_zero = {
-        node_operator(1, second_tested_no_id): 5,
+        node_operator(1, tested_no_id_second): 5,
     }
     extra_data = extra_data_service.collect(
         vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
@@ -245,8 +245,8 @@ def test_node_operators(
     (report_tx, extra_report_tx) = oracle_report(
         1000, False, None, 1, extra_data.data_hash, 2, extra_data.extra_data)
 
-    node_operator_first = nor.getNodeOperatorSummary(first_tested_no_id)
-    node_operator_second = nor.getNodeOperatorSummary(second_tested_no_id)
+    node_operator_first = nor.getNodeOperatorSummary(tested_no_id_first)
+    node_operator_second = nor.getNodeOperatorSummary(tested_no_id_second)
 
     assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
 
@@ -283,12 +283,12 @@ def test_node_operators(
         4, 2, {"from": lido_dao_staking_router})
 
 # Fifth report
-    (report_tx, extra_report_tx) = oracle_report(1000)
+    (report_tx, extra_report_tx) = oracle_report()
 
     print('5 ------ extra_report_tx', extra_report_tx.events)
 
-    node_operator_first = nor.getNodeOperatorSummary(first_tested_no_id)
-    node_operator_second = nor.getNodeOperatorSummary(second_tested_no_id)
+    node_operator_first = nor.getNodeOperatorSummary(tested_no_id_first)
+    node_operator_second = nor.getNodeOperatorSummary(tested_no_id_second)
 
     assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
 
@@ -324,10 +324,10 @@ def test_node_operators(
     chain.mine()
 
 # Seventh report
-    (report_tx, extra_report_tx) = oracle_report(1000)
+    (report_tx, extra_report_tx) = oracle_report()
 
-    node_operator_first = nor.getNodeOperatorSummary(first_tested_no_id)
-    node_operator_second = nor.getNodeOperatorSummary(second_tested_no_id)
+    node_operator_first = nor.getNodeOperatorSummary(tested_no_id_first)
+    node_operator_second = nor.getNodeOperatorSummary(tested_no_id_second)
 
     assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
 
