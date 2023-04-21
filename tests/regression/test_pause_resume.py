@@ -97,6 +97,26 @@ class TestEventsEmitted:
 
         assert contracts.staking_router.getStakingModuleIsStopped(1)
 
+    def test_pause_resume_withdrawal_queue(self, helpers, stranger):
+        inf = contracts.withdrawal_queue.PAUSE_INFINITELY()
+        contracts.withdrawal_queue.grantRole(
+            web3.keccak(text="PAUSE_ROLE"),
+            stranger,
+            {"from": contracts.agent},
+        )
+        tx = contracts.withdrawal_queue.pauseFor(inf, {"from": stranger})
+        helpers.assert_single_event_named("Paused", tx, {"duration": inf})
+        assert contracts.withdrawal_queue.isPaused()
+
+        contracts.withdrawal_queue.grantRole(
+            web3.keccak(text="RESUME_ROLE"),
+            stranger,
+            {"from": contracts.agent},
+        )
+        tx = contracts.withdrawal_queue.resume({"from": stranger})
+        helpers.assert_single_event_named("Resumed", tx, {})
+        assert not contracts.withdrawal_queue.isPaused()
+
 
 class TestRevertedSecondCalls:
     def test_revert_second_stop_resume(self):
@@ -154,6 +174,27 @@ class TestRevertedSecondCalls:
             contracts.staking_router.setStakingModuleStatus(1,
                                                             StakingModuleStatus.Stopped,
                                                             {"from": stranger})
+
+    def test_revert_second_pause_resume_withdrawal_queue(self, helpers, stranger):
+        inf = contracts.withdrawal_queue.PAUSE_INFINITELY()
+        contracts.withdrawal_queue.grantRole(
+            web3.keccak(text="PAUSE_ROLE"),
+            stranger,
+            {"from": contracts.agent},
+        )
+        contracts.withdrawal_queue.pauseFor(inf, {"from": stranger})
+        with brownie.reverts(encode_error('ResumedExpected()')):
+            contracts.withdrawal_queue.pauseFor(inf, {"from": stranger})
+
+        contracts.withdrawal_queue.grantRole(
+            web3.keccak(text="RESUME_ROLE"),
+            stranger,
+            {"from": contracts.agent},
+        )
+        contracts.withdrawal_queue.resume({"from": stranger})
+        with brownie.reverts(encode_error('PausedExpected()')):
+            contracts.withdrawal_queue.resume({"from": stranger})
+
 
 # Lido contract tests
 
@@ -234,3 +275,48 @@ def test_stopped_staking_module_cant_reward(stranger):
                                                     {"from": stranger})
     oracle_report()
     assert contracts.lido.sharesOf(module_address) == 0
+
+def test_stopped_lido_cant_reward(stranger):
+    contracts.lido.stop({"from": contracts.voting})
+
+    with brownie.reverts("CONTRACT_IS_STOPPED"):
+        oracle_report()
+
+# Withdrawal queue tests
+
+def make_withdrawal_request(stranger):
+    stranger.transfer(contracts.lido, DEPOSIT_AMOUNT)
+    contracts.lido.approve(contracts.withdrawal_queue, DEPOSIT_AMOUNT - 1, {"from": stranger})
+    contracts.withdrawal_queue.requestWithdrawals([DEPOSIT_AMOUNT - 1], stranger, {"from": stranger})
+
+def pause_withdrawal_queue(stranger):
+    contracts.withdrawal_queue.grantRole(
+        web3.keccak(text="PAUSE_ROLE"),
+        stranger,
+        {"from": contracts.agent},
+    )
+    inf = contracts.withdrawal_queue.PAUSE_INFINITELY()
+    contracts.withdrawal_queue.pauseFor(inf, {"from": stranger})
+
+def test_paused_withdrawal_queue_cant_withdraw(stranger):
+    pause_withdrawal_queue(stranger)
+
+    with brownie.reverts(encode_error('ResumedExpected()')):
+        make_withdrawal_request(stranger)
+
+def test_paused_withdrawal_queue_can_stake(stranger):
+    pause_withdrawal_queue(stranger)
+    stranger.transfer(contracts.lido, DEPOSIT_AMOUNT)
+
+def test_paused_withdrawal_queue_can_rebase(stranger):
+    pause_withdrawal_queue(stranger)
+    oracle_report()
+
+def test_stopped_lido_cant_withdraw(stranger):
+    stranger.transfer(contracts.lido, DEPOSIT_AMOUNT)
+    contracts.lido.approve(contracts.withdrawal_queue, DEPOSIT_AMOUNT - 1, {"from": stranger})
+
+    contracts.lido.stop({"from": contracts.voting})
+
+    with brownie.reverts("CONTRACT_IS_STOPPED"):
+        contracts.withdrawal_queue.requestWithdrawals([DEPOSIT_AMOUNT - 1], stranger, {"from": stranger})
