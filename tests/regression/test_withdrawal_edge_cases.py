@@ -10,6 +10,14 @@ def create_single_withdrawal_request(amount, holder):
     return request_tx.events["WithdrawalRequested"][0]["requestId"]
 
 
+def check_all_requests_finalization(request_ids, holder):
+    statuses = contracts.withdrawal_queue.getWithdrawalStatus(request_ids, {"from": holder})
+
+    for request_status in statuses:
+        (_, _, _, _, is_finalized, _) = request_status
+        assert is_finalized
+
+
 def test_bunker_multiple_batches(accounts):
     amount = ETH(100)
     stranger = accounts[0]
