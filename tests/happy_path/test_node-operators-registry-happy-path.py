@@ -568,12 +568,61 @@ def test_node_operators(
     assert node_operator_second['refundedValidatorsCount'] == 2
     assert node_operator_second['stuckPenaltyEndTimestamp'] < chain.time()
 
-    # Deposite
+# Deposite
     (deposited_keys_first_before, deposited_keys_second_before, deposited_keys_base_before,
      deposited_keys_first_after, deposited_keys_second_after, deposited_keys_base_after
      ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 30)
 
     # check deposit is applied for all NOs
+    assert deposited_keys_first_before != deposited_keys_first_after
+    assert deposited_keys_second_before != deposited_keys_second_after
+    assert deposited_keys_base_before != deposited_keys_base_after
+
+
+# Activate target limit
+    first_no_summary_before = nor.getNodeOperatorSummary(tested_no_id_first)
+
+    assert first_no_summary_before['depositableValidatorsCount'] > 0
+
+    target_limit_tx = nor.updateTargetValidatorsLimits(tested_no_id_first, True, 0, {
+        'from': lido_dao_staking_router})
+
+    assert target_limit_tx.events['TargetValidatorsCountChanged'][0]['nodeOperatorId'] == tested_no_id_first
+    assert target_limit_tx.events['TargetValidatorsCountChanged'][0]['targetValidatorsCount'] == 0
+
+    first_no_summary_after = nor.getNodeOperatorSummary(tested_no_id_first)
+
+    assert first_no_summary_after['depositableValidatorsCount'] == 0
+    assert first_no_summary_after['isTargetLimitActive'] == True
+
+
+# Deposite
+    (deposited_keys_first_before, deposited_keys_second_before, deposited_keys_base_before,
+     deposited_keys_first_after, deposited_keys_second_after, deposited_keys_base_after
+     ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 30)
+
+    # check deposit is not applied for first NO
+    assert deposited_keys_first_before == deposited_keys_first_after
+    assert deposited_keys_second_before != deposited_keys_second_after
+    assert deposited_keys_base_before != deposited_keys_base_after
+
+# Disable target limit
+    target_limit_tx = nor.updateTargetValidatorsLimits(tested_no_id_first, False, 0, {
+        'from': lido_dao_staking_router})
+
+    assert target_limit_tx.events['TargetValidatorsCountChanged'][0]['nodeOperatorId'] == tested_no_id_first
+
+    first_no_summary_after = nor.getNodeOperatorSummary(tested_no_id_first)
+
+    assert first_no_summary_after['depositableValidatorsCount'] > 0
+    assert first_no_summary_after['isTargetLimitActive'] == False
+
+# Deposite
+    (deposited_keys_first_before, deposited_keys_second_before, deposited_keys_base_before,
+     deposited_keys_first_after, deposited_keys_second_after, deposited_keys_base_after
+     ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 30)
+
+    # check deposit is not applied for all NOs
     assert deposited_keys_first_before != deposited_keys_first_after
     assert deposited_keys_second_before != deposited_keys_second_after
     assert deposited_keys_base_before != deposited_keys_base_after
