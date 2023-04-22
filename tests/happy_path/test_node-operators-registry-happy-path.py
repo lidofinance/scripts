@@ -10,7 +10,7 @@ from utils.test.extra_data import (
 from utils.test.helpers import (
     shares_balance,
     ETH,
-    almostEq
+    almostEqWithDiff
 )
 from utils.test.oracle_report_helpers import (
     oracle_report,
@@ -31,7 +31,7 @@ def extra_data_service():
 
 
 @pytest.fixture(scope="module")
-def voting_eoa(accounts):
+def impersonated_voting(accounts):
     return accounts.at(contracts.voting.address, force=True)
 
 
@@ -40,7 +40,7 @@ NodeOperatorId = NewType('NodeOperatorId', int)
 NodeOperatorGlobalIndex = Tuple[StakingModuleId, NodeOperatorId]
 
 
-def node_operator(module_id, node_operator_id) -> NodeOperatorGlobalIndex:
+def node_operator_gindex(module_id, node_operator_id) -> NodeOperatorGlobalIndex:
     return module_id, node_operator_id
 
 
@@ -52,28 +52,37 @@ def nor(interface):
 def calc_no_rewards(
     nor, no_id, report_shares
 ):
-    total_signing_keys = nor.getNodeOperatorSummary(no_id)[
-        'totalDepositedValidators'] - nor.getNodeOperatorSummary(no_id)['totalExitedValidators']
-    total_deposite_keys = nor.getStakingModuleSummary()[
-        'totalDepositedValidators'] - nor.getStakingModuleSummary()['totalExitedValidators']
+    operator_summary = nor.getNodeOperatorSummary(no_id)
+    module_summary = nor.getStakingModuleSummary()
 
-    return report_shares // 2 * total_signing_keys // total_deposite_keys
+    operator_total_active_keys = operator_summary['totalDepositedValidators'] - \
+        operator_summary['totalExitedValidators']
+    module_total_active_keys = module_summary['totalDepositedValidators'] - \
+        module_summary['totalExitedValidators']
+
+    nor_shares = report_shares // 2
+
+    return nor_shares * operator_total_active_keys // module_total_active_keys
 
 
-def increase_limit(nor, first, second, base, keys_count, voting_eoa):
-    current_first_keys = max(nor.getNodeOperator(first, True)['totalVettedValidators'], nor.getNodeOperator(
-        first, True)['totalAddedValidators'])
-    current_second_keys = max(nor.getNodeOperator(second, True)['totalVettedValidators'], nor.getNodeOperator(
-        second, True)['totalAddedValidators'])
-    current_base_keys = max(nor.getNodeOperator(base, True)['totalVettedValidators'], nor.getNodeOperator(
-        base, True)['totalAddedValidators'])
+def increase_limit(nor, first_id, second_id, base_id, keys_count, impersonated_voting):
+    first_no = nor.getNodeOperator(first_id, True)
+    second_no = nor.getNodeOperator(second_id, True)
+    base_no = nor.getNodeOperator(base_id, True)
+
+    current_first_keys = first_no['totalVettedValidators'] - \
+        first_no['totalExitedValidators']
+    current_second_keys = second_no['totalVettedValidators'] - \
+        second_no['totalExitedValidators']
+    current_base_keys = base_no['totalVettedValidators'] - \
+        base_no['totalExitedValidators']
 
     nor.setNodeOperatorStakingLimit(
-        first, current_first_keys + keys_count, {'from': voting_eoa})
+        first_id, current_first_keys + keys_count, {'from': impersonated_voting})
     nor.setNodeOperatorStakingLimit(
-        second, current_second_keys + keys_count, {'from': voting_eoa})
+        second_id, current_second_keys + keys_count, {'from': impersonated_voting})
     nor.setNodeOperatorStakingLimit(
-        base, current_base_keys + keys_count, {'from': voting_eoa})
+        base_id, current_base_keys + keys_count, {'from': impersonated_voting})
 
 
 def deposit_and_check_keys(nor, first_no_id, second_no_id, base_no_id, keys_count):
@@ -108,11 +117,11 @@ def deposit_and_check_keys(nor, first_no_id, second_no_id, base_no_id, keys_coun
 
 
 def test_node_operators(
-        nor, extra_data_service, voting_eoa, eth_whale
+        nor, extra_data_service, impersonated_voting, eth_whale
 ):
     contracts.staking_router.grantRole(
         Web3.keccak(text="STAKING_MODULE_MANAGE_ROLE"),
-        voting_eoa,
+        impersonated_voting,
         {"from": contracts.agent.address},
     )
     contracts.lido.submit(
@@ -123,7 +132,7 @@ def test_node_operators(
     base_no_id = 23
 
     increase_limit(nor, tested_no_id_first,
-                   tested_no_id_second, base_no_id, 3, voting_eoa)
+                   tested_no_id_second, base_no_id, 3, impersonated_voting)
 
     penalty_delay = nor.getStuckPenaltyDelay()
 
@@ -165,14 +174,14 @@ def test_node_operators(
     assert node_operator_base_balance_shares_after - \
         node_operator_base_balance_shares_before == node_operator_base_rewards_after_first_report
 
-    # Prepare bad extra data
+    # Prepare extra data
     vals_stuck_non_zero = {
-        node_operator(1, tested_no_id_first): 2,
-        node_operator(1, tested_no_id_second): 2,
+        node_operator_gindex(1, tested_no_id_first): 2,
+        node_operator_gindex(1, tested_no_id_second): 2,
     }
     vals_exited_non_zero = {
-        node_operator(1, tested_no_id_first): 5,
-        node_operator(1, tested_no_id_second): 5,
+        node_operator_gindex(1, tested_no_id_first): 5,
+        node_operator_gindex(1, tested_no_id_second): 5,
     }
     extra_data = extra_data_service.collect(
         vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
@@ -207,7 +216,7 @@ def test_node_operators(
     node_operator_second_balance_shares_after = shares_balance(address_second)
     node_operator_base_balance_shares_after = shares_balance(address_base_no)
 
-    # check shares by bad report wit penalty
+    # check shares by report with penalty
     assert node_operator_first_balance_shares_after - \
         node_operator_first_balance_shares_before == node_operator_first_rewards_after_second_report // 2
     assert node_operator_second_balance_shares_after - \
@@ -219,7 +228,7 @@ def test_node_operators(
     amount_penalty_first_no = node_operator_first_rewards_after_second_report // 2
     amount_penalty_second_no = node_operator_second_rewards_after_second_report // 2
     penalty_shares = amount_penalty_first_no + amount_penalty_second_no
-    assert almostEq(
+    assert almostEqWithDiff(
         extra_report_tx.events['StETHBurnRequested']['amountOfShares'], penalty_shares, 2)
 
     # NO stats
@@ -268,10 +277,10 @@ def test_node_operators(
 
     # Prepare extra data - first node operator has exited 2 + 5 keys an stuck 0
     vals_stuck_non_zero = {
-        node_operator(1, tested_no_id_first): 0,
+        node_operator_gindex(1, tested_no_id_first): 0,
     }
     vals_exited_non_zero = {
-        node_operator(1, tested_no_id_first): 7,
+        node_operator_gindex(1, tested_no_id_first): 7,
     }
     extra_data = extra_data_service.collect(
         vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
@@ -306,21 +315,21 @@ def test_node_operators(
         nor, no_id=base_no_id, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
 
     # first NO has penalty has a penalty until stuckPenaltyEndTimestamp
-    # check shares by bad report wit penalty
+    # check shares by report with penalty
     # diff by 1 share because of rounding
-    assert almostEq(node_operator_first_balance_shares_after -
-                    node_operator_first_balance_shares_before, node_operator_first_rewards_after_third_report // 2, 1)
-    assert almostEq(node_operator_second_balance_shares_after -
-                    node_operator_second_balance_shares_before, node_operator_second_rewards_after__third_report // 2, 1)
-    assert almostEq(node_operator_base_balance_shares_after -
-                    node_operator_base_balance_shares_before, node_operator_base_rewards_after__third_report, 1)
+    assert almostEqWithDiff(node_operator_first_balance_shares_after -
+                            node_operator_first_balance_shares_before, node_operator_first_rewards_after_third_report // 2, 1)
+    assert almostEqWithDiff(node_operator_second_balance_shares_after -
+                            node_operator_second_balance_shares_before, node_operator_second_rewards_after__third_report // 2, 1)
+    assert almostEqWithDiff(node_operator_base_balance_shares_after -
+                            node_operator_base_balance_shares_before, node_operator_base_rewards_after__third_report, 1)
 
 # Check burn shares
     amount_penalty_first_no = node_operator_first_rewards_after_third_report // 2
     amount_penalty_second_no = node_operator_second_rewards_after__third_report // 2
     penalty_shares = amount_penalty_first_no + amount_penalty_second_no
     # diff by 2 share because of rounding
-    assert almostEq(
+    assert almostEqWithDiff(
         extra_report_tx.events['StETHBurnRequested']['amountOfShares'], penalty_shares, 2)
 
     # NO stats
@@ -354,14 +363,15 @@ def test_node_operators(
     chain.mine()
 
     # Clear penalty for first NO after penalty delay
-    nor.clearNodeOperatorPenalty(tested_no_id_first, {'from': voting_eoa})
+    nor.clearNodeOperatorPenalty(
+        tested_no_id_first, {'from': impersonated_voting})
 
-    # Prepare extra data for bad report by second NO
+    # Prepare extra data for report by second NO
     vals_stuck_non_zero = {
-        node_operator(1, tested_no_id_second): 2,
+        node_operator_gindex(1, tested_no_id_second): 2,
     }
     vals_exited_non_zero = {
-        node_operator(1, tested_no_id_second): 5,
+        node_operator_gindex(1, tested_no_id_second): 5,
     }
     extra_data = extra_data_service.collect(
         vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
@@ -395,19 +405,19 @@ def test_node_operators(
         nor, no_id=base_no_id, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
 
     # Penalty ended for first operator
-    # check shares by bad report with penalty for second NO
+    # check shares by report with penalty for second NO
     # diff by 1 share because of rounding
-    assert almostEq(node_operator_first_balance_shares_after -
-                    node_operator_first_balance_shares_before, node_operator_first_rewards_after_fourth_report, 1)
-    assert almostEq(node_operator_second_balance_shares_after -
-                    node_operator_second_balance_shares_before, node_operator_second_rewards_after__fourth_report // 2, 1)
-    assert almostEq(node_operator_base_balance_shares_after -
-                    node_operator_base_balance_shares_before, node_operator_base_rewards_after__fourth_report, 1)
+    assert almostEqWithDiff(node_operator_first_balance_shares_after -
+                            node_operator_first_balance_shares_before, node_operator_first_rewards_after_fourth_report, 1)
+    assert almostEqWithDiff(node_operator_second_balance_shares_after -
+                            node_operator_second_balance_shares_before, node_operator_second_rewards_after__fourth_report // 2, 1)
+    assert almostEqWithDiff(node_operator_base_balance_shares_after -
+                            node_operator_base_balance_shares_before, node_operator_base_rewards_after__fourth_report, 1)
 
 # Check burn shares
     amount_penalty_second_no = node_operator_second_rewards_after__fourth_report // 2
     # diff by 2 share because of rounding
-    assert almostEq(
+    assert almostEqWithDiff(
         extra_report_tx.events['StETHBurnRequested']['amountOfShares'], amount_penalty_second_no, 1)
 
     assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
@@ -439,7 +449,7 @@ def test_node_operators(
 
     # # Refund 2 keys Second NO
     contracts.staking_router.updateRefundedValidatorsCount(
-        1, tested_no_id_second, 2, {"from": voting_eoa})
+        1, tested_no_id_second, 2, {"from": impersonated_voting})
 
     # shares before report
     node_operator_first_balance_shares_before = shares_balance(address_first)
@@ -468,17 +478,17 @@ def test_node_operators(
 
     # Penalty only for second operator
     # diff by 1 share because of rounding
-    assert almostEq(node_operator_first_balance_shares_after -
-                    node_operator_first_balance_shares_before, node_operator_first_rewards_after_fifth_report, 1)
-    assert almostEq(node_operator_second_balance_shares_after -
-                    node_operator_second_balance_shares_before, node_operator_second_rewards_after_fifth_report // 2, 1)
-    assert almostEq(node_operator_base_balance_shares_after -
-                    node_operator_base_balance_shares_before, node_operator_base_rewards_after_fifth_report, 1)
+    assert almostEqWithDiff(node_operator_first_balance_shares_after -
+                            node_operator_first_balance_shares_before, node_operator_first_rewards_after_fifth_report, 1)
+    assert almostEqWithDiff(node_operator_second_balance_shares_after -
+                            node_operator_second_balance_shares_before, node_operator_second_rewards_after_fifth_report // 2, 1)
+    assert almostEqWithDiff(node_operator_base_balance_shares_after -
+                            node_operator_base_balance_shares_before, node_operator_base_rewards_after_fifth_report, 1)
 
 # Check burn shares
     amount_penalty_second_no = node_operator_second_rewards_after_fifth_report // 2
     # diff by 2 share because of rounding
-    assert almostEq(
+    assert almostEqWithDiff(
         extra_report_tx.events['StETHBurnRequested']['amountOfShares'], amount_penalty_second_no, 1)
 
     assert node_operator_base['stuckPenaltyEndTimestamp'] == 0
@@ -503,7 +513,8 @@ def test_node_operators(
     chain.mine()
 
     # Clear penalty for second NO after penalty delay
-    nor.clearNodeOperatorPenalty(tested_no_id_second, {'from': voting_eoa})
+    nor.clearNodeOperatorPenalty(
+        tested_no_id_second, {'from': impersonated_voting})
 
     # shares before report
     node_operator_first_balance_shares_before = shares_balance(address_first)
@@ -540,12 +551,12 @@ def test_node_operators(
 
     # No penalty
     # diff by 1 share because of rounding
-    assert almostEq(node_operator_first_balance_shares_after -
-                    node_operator_first_balance_shares_before, node_operator_first_rewards_after_seventh_report, 1)
-    assert almostEq(node_operator_second_balance_shares_after -
-                    node_operator_second_balance_shares_before, node_operator_second_rewards_after_seventh_report, 1)
-    assert almostEq(node_operator_base_balance_shares_after -
-                    node_operator_base_balance_shares_before, node_operator_base_rewards_after_seventh_report, 1)
+    assert almostEqWithDiff(node_operator_first_balance_shares_after -
+                            node_operator_first_balance_shares_before, node_operator_first_rewards_after_seventh_report, 1)
+    assert almostEqWithDiff(node_operator_second_balance_shares_after -
+                            node_operator_second_balance_shares_before, node_operator_second_rewards_after_seventh_report, 1)
+    assert almostEqWithDiff(node_operator_base_balance_shares_after -
+                            node_operator_base_balance_shares_before, node_operator_base_rewards_after_seventh_report, 1)
 
     assert node_operator_first['stuckValidatorsCount'] == 0
     assert node_operator_first['totalExitedValidators'] == 7

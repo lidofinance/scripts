@@ -31,5 +31,5 @@ def shares_balance(account):
     return contracts.lido.sharesOf(account)
 
 
-def almostEq(b1, b2, diff):
+def almostEqWithDiff(b1, b2, diff):
     return abs(b1 - b2) <= diff

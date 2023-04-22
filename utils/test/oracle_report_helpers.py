@@ -59,14 +59,14 @@ def prepare_report(
     return (items, hash)
 
 
-def get_finalization_batches(share_rate: int, withdrawal_vault_balance, el_rewards_vault_balance) -> list[int]:
+def get_finalization_batches(share_rate: int, limited_withdrawal_vault_balance, limited_el_rewards_vault_balance) -> list[int]:
     (_, _, _, _, _, _, _, requestTimestampMargin,
      _) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
     buffered_ether = contracts.lido.getBufferedEther()
     unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
     reserved_buffer = min(buffered_ether, unfinalized_steth)
-    available_eth = withdrawal_vault_balance + \
-        el_rewards_vault_balance + reserved_buffer
+    available_eth = limited_withdrawal_vault_balance + \
+        limited_el_rewards_vault_balance + reserved_buffer
     max_timestamp = chain.time() - requestTimestampMargin
     MAX_REQUESTS_PER_CALL = 1000
 
@@ -144,8 +144,7 @@ def push_oracle_report(
         items, oracleVersion, {"from": submitter})
     if not silent:
         print(f"Submitted report data")
-        print("extraDataList", extraDataList)
-    # TODO add support for extra data type 1
+        print(f"extraDataList {extraDataList}")
     if extraDataFormat == 0:
         extra_report_tx = contracts.accounting_oracle.submitReportExtraDataEmpty({
             "from": submitter})
