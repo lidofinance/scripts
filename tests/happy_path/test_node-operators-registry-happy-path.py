@@ -149,7 +149,7 @@ def test_node_operators(
     node_operator_second_balance_shares_after = shares_balance(address_second)
     node_operator_base_balance_shares_after = shares_balance(address_base_no)
 
-    # expeected shares
+    # expected shares
     node_operator_first_rewards_after_first_report = calc_no_rewards(
         nor, no_id=tested_no_id_first, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
     node_operator_second_rewards_after_first_report = calc_no_rewards(
