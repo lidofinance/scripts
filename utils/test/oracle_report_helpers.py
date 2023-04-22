@@ -70,6 +70,9 @@ def get_finalization_batches(share_rate: int, withdrawal_vault_balance, el_rewar
     max_timestamp = chain.time() - requestTimestampMargin
     MAX_REQUESTS_PER_CALL = 1000
 
+    if not available_eth:
+        return []
+
     batchesState = contracts.withdrawal_queue.calculateFinalizationBatches(
         share_rate, max_timestamp, MAX_REQUESTS_PER_CALL, (available_eth, False, [
                                                            0 for _ in range(36)], 0)
@@ -214,11 +217,13 @@ def wait_to_next_available_report_time():
 
 
 def oracle_report(
-    cl_diff=ETH(10), exclude_vaults_balances=False, simulation_block_identifier=None,
+    cl_diff=ETH(10), exclude_vaults_balances=False, simulation_block_identifier=None, wait_to_next_report_time=True,
     extraDataFormat=0, extraDataHash=ZERO_BYTES32, extraDataItemsCount=0, extraDataList='', stakingModuleIdsWithNewlyExitedValidators=[],
         numExitedValidatorsByStakingModule=[]):
     """fast forwards time to next report, compiles report, pushes through consensus and to AccountingOracle"""
-    wait_to_next_available_report_time()
+    if (wait_to_next_report_time):
+        """fast forwards time to next report, compiles report, pushes through consensus and to AccountingOracle"""
+        wait_to_next_available_report_time()
 
     (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
 
@@ -230,7 +235,14 @@ def oracle_report(
     (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()
     (_, beaconValidators, beaconBalance) = contracts.lido.getBeaconStat()
 
+    preTotalPooledEther = contracts.lido.getTotalPooledEther()
+
     postCLBalance = beaconBalance + cl_diff
+
+    # simulate_reports needs proper withdrawal and elRewards vaults balances
+    if exclude_vaults_balances:
+        withdrawalVaultBalance = 0
+        elRewardsVaultBalance = 0
 
     (postTotalPooledEther, postTotalShares, withdrawals, elRewards) = simulate_report(
         refSlot=refSlot,
@@ -247,10 +259,7 @@ def oracle_report(
     finalization_batches = get_finalization_batches(
         simulatedShareRate, withdrawals, elRewards)
 
-    # simulate_reports needs proper withdrawal and elRewards vaults balances
-    if exclude_vaults_balances:
-        withdrawalVaultBalance = 0
-        elRewardsVaultBalance = 0
+    is_bunker = preTotalPooledEther > postTotalPooledEther
 
     return push_oracle_report(
         refSlot=refSlot,
@@ -267,4 +276,5 @@ def oracle_report(
         extraDataList=extraDataList,
         stakingModuleIdsWithNewlyExitedValidators=stakingModuleIdsWithNewlyExitedValidators,
         numExitedValidatorsByStakingModule=numExitedValidatorsByStakingModule,
+        isBunkerMode=is_bunker,
     )

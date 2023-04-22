@@ -15,6 +15,8 @@ from utils.config import contracts, ldo_token_address, lido_dao_voting_address, 
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.import_current_votes import start_and_execute_votes
 
+from .utils import get_slot
+
 
 class Frame(TypedDict):
     """A snapshot of the state before and after an action."""
@@ -258,8 +260,10 @@ def do_snapshot(
 
     def _snap():
         block = chain.height
+        res = {}
+
         with brownie.multicall(block_identifier=block):
-            return {
+            res |= {
                 "block_number": chain.height,
                 "address": lido.address,
                 # AppProxyUpgradeable
@@ -313,6 +317,42 @@ def do_snapshot(
                 "getInitializationBlock": lido.getInitializationBlock(),
                 "hasInitialized": lido.hasInitialized(),
             }
+
+        for v1_slot in (
+            # Lido.sol
+            "lido.Lido.beaconBalance",
+            "lido.Lido.beaconValidators",
+            "lido.Lido.bufferedEther",
+            "lido.Lido.depositContract",
+            "lido.Lido.depositedValidators",
+            "lido.Lido.ELRewardsWithdrawalLimit",
+            "lido.Lido.executionLayerRewardsVault",
+            "lido.Lido.fee",
+            "lido.Lido.insuranceFee",
+            "lido.Lido.insuranceFund",
+            "lido.Lido.nodeOperatorsFee",
+            "lido.Lido.nodeOperatorsRegistry",
+            "lido.Lido.oracle",
+            "lido.Lido.stakeLimit",
+            "lido.Lido.totalELRewardsCollected",
+            "lido.Lido.treasury",
+            "lido.Lido.treasuryFee",
+            "lido.Lido.withdrawalCredentials",
+            # StETH.sol
+            "lido.StETH.totalShares",
+            # Pausable.sol
+            "lido.Pausable.activeFlag",
+            # AragonApp.sol
+            "aragonOS.appStorage.kernel",
+            "aragonOS.appStorage.appId",
+        ):
+            res[v1_slot] = get_slot(
+                lido.address,
+                name=v1_slot,
+                block=block,
+            )
+
+        return res
 
     return _snap
 

@@ -2,9 +2,10 @@ import random
 import pytest
 from web3 import Web3
 from datetime import datetime
-from typing import Dict, Callable
-from brownie import ZERO_ADDRESS, Wei, convert, accounts
+from typing import Any, Dict, Callable
+from brownie import ZERO_ADDRESS, Wei, convert
 from brownie.convert.datatypes import ReturnValue
+from tests.snapshot.utils import get_slot
 
 from utils.config import contracts
 from utils.mainnet_fork import chain_snapshot
@@ -66,9 +67,9 @@ def test_node_operator_basic_flow(
     deposits_count = 8
     submit_amount = deposits_count * DEPOSIT_SIZE
 
-    staker, depositor = accounts[0], accounts[1]
-    new_node_operator_id = contracts.node_operators_registry_v1.getNodeOperatorsCount()
-    new_node_operator_validators_count = 10
+    staker, _ = accounts[0], accounts[1]
+    # new_node_operator_id = contracts.node_operators_registry_v1.getNodeOperatorsCount()
+    # new_node_operator_validators_count = 10
     new_node_operator = {
         "id": contracts.node_operators_registry_v1.getNodeOperatorsCount(),
         "reward_address": accounts[3].address,
@@ -166,23 +167,23 @@ def test_node_operator_basic_flow(
         assert_snapshot(snapshot_before_update[key], snapshot_after_update[key])
 
 
-def run_scenario(actions: Dict[str, Callable], snapshooter: Callable[[], Dict[str, any]]) -> Dict[str, any]:
-    res: Dict[str, any] = {"root": snapshooter()}
+def run_scenario(actions: Dict[str, Callable], snapshooter: Callable[[], Dict[str, Any]]) -> Dict[str, Any]:
+    res: Dict[str, Any] = {"root": snapshooter()}
     for name, action in actions.items():
         action()
         res[f"after_{name}"] = snapshooter()
     return res
 
 
-def make_snapshot_v1() -> Dict[str, any]:
+def make_snapshot_v1() -> Dict[str, Any]:
     return make_snapshot(contracts.node_operators_registry_v1)
 
 
-def make_snapshot_v2() -> Dict[str, any]:
+def make_snapshot_v2() -> Dict[str, Any]:
     return make_snapshot(contracts.node_operators_registry)
 
 
-def make_snapshot(node_operators_registry) -> Dict[str, any]:
+def make_snapshot(node_operators_registry) -> Dict[str, Any]:
     random.seed(RANDOM_SEED)
     node_operators_count = node_operators_registry.getNodeOperatorsCount()
     snapshot = {
@@ -195,6 +196,18 @@ def make_snapshot(node_operators_registry) -> Dict[str, any]:
         "unused_signing_keys_count": {},
         "active_node_operators_count": node_operators_registry.getActiveNodeOperatorsCount(),
     }
+
+    for v1_slot in (
+        # NodeOperatorsRegistry.sol
+        "lido.NodeOperatorsRegistry.activeOperatorsCount",
+        "lido.NodeOperatorsRegistry.keysOpIndex",
+        "lido.NodeOperatorsRegistry.lido",
+        "lido.NodeOperatorsRegistry.totalOperatorsCount",
+        # AragonApp.sol
+        "aragonOS.appStorage.kernel",
+        "aragonOS.appStorage.appId",
+    ):
+        snapshot[v1_slot] = get_slot(node_operators_registry.address, name=v1_slot)
 
     for id in range(node_operators_count):
         snapshot["node_operators"][id] = node_operators_registry.getNodeOperator(id, True).dict()
@@ -250,7 +263,7 @@ def assert_rewards_distribution(before, after):
         assert not rewards_distribution_after["penalized"][i]
 
 
-def assert_node_operators(before: Dict[int, ReturnValue], after: Dict[int, ReturnValue]):
+def assert_node_operators(before: Dict[str, ReturnValue], after: Dict[str, ReturnValue]):
     for id, node_operators_pair in dict_zip(before["node_operators"], after["node_operators"]).items():
         node_operator_before = node_operators_pair[0]
         node_operator_after = node_operators_pair[1]
