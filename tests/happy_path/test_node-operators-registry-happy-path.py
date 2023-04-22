@@ -367,6 +367,9 @@ def test_node_operators(
     chain.sleep(penalty_delay + 1)
     chain.mine()
 
+    # Clear penalty for first NO after penalty delay
+    nor.clearNodeOperatorPenalty(tested_no_id_first, {'from': voting_eoa})
+
     # Prepare extra data for bad report by second NO
     vals_stuck_non_zero = {
         node_operator(1, tested_no_id_second): 2,
@@ -437,20 +440,8 @@ def test_node_operators(
      deposited_keys_first_after, deposited_keys_second_after, deposited_keys_base_after
      ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 30)
 
-    print('tested_no_id_first------getNodeOperator-', nor.getNodeOperator(tested_no_id_first,
-          True))
-
-    print('tested_no_id_first-------getNodeOperatorSummary',
-          nor.getNodeOperatorSummary(tested_no_id_first))
-    print('base_no_id-------getNodeOperatorSummary',
-          nor.getNodeOperatorSummary(base_no_id))
-    print('tested_no_id_second-------getNodeOperatorSummary',
-          nor.getNodeOperatorSummary(tested_no_id_second))
-
-    print('-------- ', deposited_keys_first_before, deposited_keys_first_after)
-
     # check don't change deposited keys for penalized NO (only second NO)
-    assert deposited_keys_first_before == deposited_keys_first_after  # TODO !=
+    assert deposited_keys_first_before != deposited_keys_first_after
     assert deposited_keys_second_before == deposited_keys_second_after
     assert deposited_keys_base_before != deposited_keys_base_after
 
@@ -505,12 +496,15 @@ def test_node_operators(
     assert node_operator_second['stuckPenaltyEndTimestamp'] > chain.time()
 
     assert nor.isOperatorPenaltyCleared(
-        tested_no_id_first) == False  # TODO True
+        tested_no_id_first) == True
     assert nor.isOperatorPenaltyCleared(
-        tested_no_id_second) == False  # TODO True
+        tested_no_id_second) == False
 
     chain.sleep(penalty_delay + 1)
     chain.mine()
+
+    # Clear penalty for second NO after penalty delay
+    nor.clearNodeOperatorPenalty(tested_no_id_second, {'from': voting_eoa})
 
     # shares before report
     node_operator_first_balance_shares_before = shares_balance(address_first)
@@ -520,15 +514,19 @@ def test_node_operators(
 # Seventh report
     (report_tx, extra_report_tx) = oracle_report()
 
+    assert nor.isOperatorPenalized(tested_no_id_first) == False
+    assert nor.isOperatorPenalized(tested_no_id_second) == False
+    assert nor.isOperatorPenalized(base_no_id) == False
+
     # shares after report
     node_operator_first_balance_shares_after = shares_balance(address_first)
     node_operator_second_balance_shares_after = shares_balance(address_second)
     node_operator_base_balance_shares_after = shares_balance(address_base_no)
 
     assert nor.isOperatorPenaltyCleared(
-        tested_no_id_first) == False  # TODO True
+        tested_no_id_first) == True
     assert nor.isOperatorPenaltyCleared(
-        tested_no_id_second) == False  # TODO True
+        tested_no_id_second) == True
 
     node_operator_first = nor.getNodeOperatorSummary(tested_no_id_first)
     node_operator_second = nor.getNodeOperatorSummary(tested_no_id_second)
@@ -565,7 +563,7 @@ def test_node_operators(
      deposited_keys_first_after, deposited_keys_second_after, deposited_keys_base_after
      ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 30)
 
-    # check don't change deposited keys for penalized NO (only second NO)
-    assert deposited_keys_first_before == deposited_keys_first_after  # TODO !=
-    assert deposited_keys_second_before == deposited_keys_second_after  # TODO !=
+    # check deposit is applied for all NOs
+    assert deposited_keys_first_before != deposited_keys_first_after
+    assert deposited_keys_second_before != deposited_keys_second_after
     assert deposited_keys_base_before != deposited_keys_base_after
