@@ -97,8 +97,10 @@ def deposit_and_check_keys(nor, first_no_id, second_no_id, base_no_id, keys_coun
     module_total_deposited_keys_before = nor.getStakingModuleSummary()[
         'totalDepositedValidators']
 
-    contracts.lido.deposit(keys_count, 1, '0x', {
+    tx = contracts.lido.deposit(keys_count, 1, '0x', {
         'from': contracts.deposit_security_module.address})
+
+    assert tx.events['Unbuffered']['amount'] == keys_count * ETH(32)
 
     module_total_deposited_keys_after = nor.getStakingModuleSummary()[
         'totalDepositedValidators']
@@ -150,7 +152,7 @@ def test_node_operators(
     address_base_no = nor.getNodeOperator(base_no_id, False)['rewardAddress']
     node_operator_base_balance_shares_before = shares_balance(address_base_no)
 
-# First report - base
+# First report - base empty report
     (report_tx, extra_report_tx) = oracle_report(
         exclude_vaults_balances=True)
 
@@ -173,6 +175,17 @@ def test_node_operators(
         node_operator_second_balance_shares_before == node_operator_second_rewards_after_first_report
     assert node_operator_base_balance_shares_after - \
         node_operator_base_balance_shares_before == node_operator_base_rewards_after_first_report
+
+
+# Case 1
+# --- operator "First" had 5 keys (exited), and 2 keys got stuck (stuck)
+# --- operator "Second" had 5 keys (exited), and 2 keys got stuck (stuck)
+# - Send report
+# - Check rewards shares for base NO and tested NO (should be half of expected)
+# - Check deposits (should be 0 for penalized NOs)
+# - Check burned shares
+# - Check NOs stats
+# - Check Report events
 
     # Prepare extra data
     vals_stuck_non_zero = {
@@ -275,6 +288,15 @@ def test_node_operators(
     assert deposited_keys_second_before == deposited_keys_second_after
     assert deposited_keys_base_before != deposited_keys_base_after
 
+# Case 2
+# --- "First" NO exited the keys (stuck == 0, exited increased by the number of stacks)
+# --- BUT the penalty still affects both
+# - Send report
+# - Check rewards shares for base NO and tested NO (should be half of expected)
+# - Check burned shares
+# - Check NOs stats
+# - Check Report events
+
     # Prepare extra data - first node operator has exited 2 + 5 keys an stuck 0
     vals_stuck_non_zero = {
         node_operator_gindex(1, tested_no_id_first): 0,
@@ -357,6 +379,16 @@ def test_node_operators(
     assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['nodeOperatorId'] == tested_no_id_first
     assert extra_report_tx.events['StuckPenaltyStateChanged'][0]['stuckValidatorsCount'] == 0
 
+# Case 3
+# -- PENALTY_DELAY time passes
+# -- A new report comes in and says "Second" NO still has a stuck of keys
+# -- "First" NO is fine
+# - Wait PENALTY_DELAY time
+# - Send report
+# - Check rewards shares for base NO and tested NO (should be half for "Second" NO)
+# - Check deposits (should be 0 for "Second" NO)
+# - Check burned shares
+# - Check NOs stats
 
 # sleep PENALTY_DELAY time
     chain.sleep(penalty_delay + 1)
@@ -440,12 +472,21 @@ def test_node_operators(
 # Deposite
     (deposited_keys_first_before, deposited_keys_second_before, deposited_keys_base_before,
      deposited_keys_first_after, deposited_keys_second_after, deposited_keys_base_after
-     ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 30)
+     ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 20)
 
     # check don't change deposited keys for penalized NO (only second NO)
     assert deposited_keys_first_before != deposited_keys_first_after
     assert deposited_keys_second_before == deposited_keys_second_after
     assert deposited_keys_base_before != deposited_keys_base_after
+
+# Case 4
+# -- Do key refend (redunded == stuck) for X2
+# -- A new report arrives and says that everything remains the same
+# _ Refund 2 keys Second NO
+# - Send report
+# - Check rewards shares for base NO and tested NO (should be half for "Second" NO)
+# - Check burned shares
+# - Check NOs stats
 
     # # Refund 2 keys Second NO
     contracts.staking_router.updateRefundedValidatorsCount(
@@ -507,6 +548,15 @@ def test_node_operators(
         tested_no_id_first) == True
     assert nor.isOperatorPenaltyCleared(
         tested_no_id_second) == False
+
+# Case 5
+# -- PENALTY_DELAY time passes
+# -- A new report arrives
+# - Wait for penalty delay time
+# - Send report
+# - Check rewards shares for base NO and tested NO (should be full for all NOs)
+# - Check deposits (should be full for all NOs)
+# - Check NOs stats
 
 # Wait for penalty delay time
     chain.sleep(penalty_delay + 1)
@@ -571,13 +621,25 @@ def test_node_operators(
 # Deposite
     (deposited_keys_first_before, deposited_keys_second_before, deposited_keys_base_before,
      deposited_keys_first_after, deposited_keys_second_after, deposited_keys_base_after
-     ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 30)
+     ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 20)
 
     # check deposit is applied for all NOs
     assert deposited_keys_first_before != deposited_keys_first_after
     assert deposited_keys_second_before != deposited_keys_second_after
     assert deposited_keys_base_before != deposited_keys_base_after
 
+# Case 6
+# -- SActivate target limit for "First" NO
+# -- Check deposits
+# -- Disable target limit for "First" NO
+# - Set target limit for "First" NO with 0 validators
+# - Check events
+# - Check NO stats
+# - Check deposits (should be 0 for "First" NO)
+# - Disable target limit for "First" NO
+# - Check events
+# - Check NO stats
+# - Check deposits (should be not 0 for "First" NO)
 
 # Activate target limit
     first_no_summary_before = nor.getNodeOperatorSummary(tested_no_id_first)
@@ -599,7 +661,7 @@ def test_node_operators(
 # Deposite
     (deposited_keys_first_before, deposited_keys_second_before, deposited_keys_base_before,
      deposited_keys_first_after, deposited_keys_second_after, deposited_keys_base_after
-     ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 30)
+     ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 20)
 
     # check deposit is not applied for first NO
     assert deposited_keys_first_before == deposited_keys_first_after
@@ -620,7 +682,7 @@ def test_node_operators(
 # Deposite
     (deposited_keys_first_before, deposited_keys_second_before, deposited_keys_base_before,
      deposited_keys_first_after, deposited_keys_second_after, deposited_keys_base_after
-     ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 30)
+     ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 20)
 
     # check deposit is not applied for all NOs
     assert deposited_keys_first_before != deposited_keys_first_after
