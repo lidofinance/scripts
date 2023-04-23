@@ -50,7 +50,7 @@ def nor(interface):
 
 
 def calc_no_rewards(
-    nor, no_id, report_shares
+    nor, no_id, shares_minted_as_fees
 ):
     operator_summary = nor.getNodeOperatorSummary(no_id)
     module_summary = nor.getStakingModuleSummary()
@@ -60,7 +60,7 @@ def calc_no_rewards(
     module_total_active_keys = module_summary['totalDepositedValidators'] - \
         module_summary['totalExitedValidators']
 
-    nor_shares = report_shares // 2
+    nor_shares = shares_minted_as_fees // 2
 
     return nor_shares * operator_total_active_keys // module_total_active_keys
 
