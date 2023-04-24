@@ -1,6 +1,6 @@
 from brownie import chain, web3  # type: ignore
-from eth_abi.abi import encode
 from hexbytes import HexBytes
+from eth_abi import encode_abi
 
 from utils.config import (
     contracts,
@@ -50,35 +50,23 @@ def prepare_report(
         extraDataHash,
         int(extraDataItemsCount),
     )
-    report_data_abi = [
-        "uint256",
-        "uint256",
-        "uint256",
-        "uint256",
-        "uint256[]",
-        "uint256[]",
-        "uint256",
-        "uint256",
-        "uint256",
-        "uint256[]",
-        "uint256",
-        "bool",
-        "uint256",
-        "bytes32",
-        "uint256",
-    ]
-    report_str_abi = ",".join(report_data_abi)
-    encoded = encode([f"({report_str_abi})"], [items])
-    hash = web3.keccak(encoded)
+
+    data = encode_abi(
+        ['(uint256,uint256,uint256,uint256,uint256[],uint256[],uint256,uint256,uint256,uint256[],uint256,bool,uint256,bytes32,uint256)'],
+        [items]
+    )
+    hash = web3.keccak(data)
     return (items, hash)
 
 
-def get_finalization_batches(share_rate: int, withdrawal_vault_balance, el_rewards_vault_balance) -> list[int]:
-    (_, _, _, _, _, _, _, requestTimestampMargin, _) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
+def get_finalization_batches(share_rate: int, limited_withdrawal_vault_balance, limited_el_rewards_vault_balance) -> list[int]:
+    (_, _, _, _, _, _, _, requestTimestampMargin,
+     _) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
     buffered_ether = contracts.lido.getBufferedEther()
     unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
     reserved_buffer = min(buffered_ether, unfinalized_steth)
-    available_eth = withdrawal_vault_balance + el_rewards_vault_balance + reserved_buffer
+    available_eth = limited_withdrawal_vault_balance + \
+        limited_el_rewards_vault_balance + reserved_buffer
     max_timestamp = chain.time() - requestTimestampMargin
     MAX_REQUESTS_PER_CALL = 1000
 
@@ -86,7 +74,8 @@ def get_finalization_batches(share_rate: int, withdrawal_vault_balance, el_rewar
         return []
 
     batchesState = contracts.withdrawal_queue.calculateFinalizationBatches(
-        share_rate, max_timestamp, MAX_REQUESTS_PER_CALL, (available_eth, False, [0 for _ in range(36)], 0)
+        share_rate, max_timestamp, MAX_REQUESTS_PER_CALL, (available_eth, False, [
+                                                           0 for _ in range(36)], 0)
     )
 
     while not batchesState[1]:  # batchesState.finished
@@ -102,7 +91,8 @@ def reach_consensus(slot, report, version, silent=False):
     for member in members:
         if not silent:
             print(f"Member ${member} submitting report to hashConsensus")
-        contracts.hash_consensus_for_accounting_oracle.submitReport(slot, report, version, {"from": member})
+        contracts.hash_consensus_for_accounting_oracle.submitReport(
+            slot, report, version, {"from": member})
     (_, hash_, _) = contracts.hash_consensus_for_accounting_oracle.getConsensusState()
     assert hash_ == report.hex(), "HashConsensus points to unexpected report"
     return members[0]
@@ -125,6 +115,7 @@ def push_oracle_report(
     extraDataHash=ZERO_BYTES32,
     extraDataItemsCount=0,
     silent=False,
+    extraDataList='',
 ):
     if not silent:
         print(f"Preparing oracle report for refSlot: {refSlot}")
@@ -149,13 +140,21 @@ def push_oracle_report(
     )
     submitter = reach_consensus(refSlot, hash, consensusVersion, silent)
     # print(contracts.oracle_report_sanity_checker.getOracleReportLimits())
-    report_tx = contracts.accounting_oracle.submitReportData(items, oracleVersion, {"from": submitter})
+    report_tx = contracts.accounting_oracle.submitReportData(
+        items, oracleVersion, {"from": submitter})
     if not silent:
         print(f"Submitted report data")
-    # TODO add support for extra data type 1
-    extra_report_tx = contracts.accounting_oracle.submitReportExtraDataEmpty({"from": submitter})
-    if not silent:
-        print(f"Submitted empty extra data report")
+        print(f"extraDataList {extraDataList}")
+    if extraDataFormat == 0:
+        extra_report_tx = contracts.accounting_oracle.submitReportExtraDataEmpty({
+            "from": submitter})
+        if not silent:
+            print(f"Submitted empty extra data report")
+    else:
+        extra_report_tx = contracts.accounting_oracle.submitReportExtraDataList(extraDataList, {
+            "from": submitter})
+        if not silent:
+            print(f"Submitted NOT empty extra data report")
 
     (
         currentFrameRefSlot,
@@ -183,7 +182,8 @@ def push_oracle_report(
 def simulate_report(
     *, refSlot, beaconValidators, postCLBalance, withdrawalVaultBalance, elRewardsVaultBalance, block_identifier=None
 ):
-    (_, SECONDS_PER_SLOT, GENESIS_TIME) = contracts.hash_consensus_for_accounting_oracle.getChainConfig()
+    (_, SECONDS_PER_SLOT,
+     GENESIS_TIME) = contracts.hash_consensus_for_accounting_oracle.getChainConfig()
     reportTime = GENESIS_TIME + refSlot * SECONDS_PER_SLOT
     return contracts.lido.handleOracleReport.call(
         reportTime,
@@ -201,37 +201,36 @@ def simulate_report(
 
 
 def wait_to_next_available_report_time():
-    (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME) = contracts.hash_consensus_for_accounting_oracle.getChainConfig()
+    (SLOTS_PER_EPOCH, SECONDS_PER_SLOT,
+     GENESIS_TIME) = contracts.hash_consensus_for_accounting_oracle.getChainConfig()
     (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
     time = chain.time()
     (_, EPOCHS_PER_FRAME, _) = contracts.hash_consensus_for_accounting_oracle.getFrameConfig()
-    frame_start_with_offset = GENESIS_TIME + (refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME + 1) * SECONDS_PER_SLOT
+    frame_start_with_offset = GENESIS_TIME + \
+        (refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME + 1) * SECONDS_PER_SLOT
     chain.sleep(frame_start_with_offset - time)
     chain.mine(1)
     (nextRefSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
-    assert nextRefSlot == refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME, "should be next frame"
-
+    assert nextRefSlot == refSlot + SLOTS_PER_EPOCH * \
+        EPOCHS_PER_FRAME, "should be next frame"
 
 def get_time_config():
     (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME) = contracts.hash_consensus_for_accounting_oracle.getChainConfig()
     (INITIAL_EPOCH, EPOCHS_PER_FRAME, FAST_LANE_SLOTS) = contracts.hash_consensus_for_accounting_oracle.getFrameConfig()
     return (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME, INITIAL_EPOCH, EPOCHS_PER_FRAME, FAST_LANE_SLOTS)
 
-
 def oracle_report(
-    cl_diff=ETH(10),
-    exclude_vaults_balances=False,
-    simulation_block_identifier=None,
-    wait_to_next_report_time=True,
-    silent=False,
-):
+    cl_diff=ETH(10), exclude_vaults_balances=False, simulation_block_identifier=None, wait_to_next_report_time=True,
+    extraDataFormat=0, extraDataHash=ZERO_BYTES32, extraDataItemsCount=0, extraDataList='', stakingModuleIdsWithNewlyExitedValidators=[],
+        numExitedValidatorsByStakingModule=[], silent=False):
     if wait_to_next_report_time:
         """fast forwards time to next report, compiles report, pushes through consensus and to AccountingOracle"""
         wait_to_next_available_report_time()
 
     (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
 
-    elRewardsVaultBalance = eth_balance(contracts.execution_layer_rewards_vault.address)
+    elRewardsVaultBalance = eth_balance(
+        contracts.execution_layer_rewards_vault.address)
     withdrawalVaultBalance = eth_balance(contracts.withdrawal_vault.address)
     # exclude_vaults_balances safely forces LIDO to see vault balances as empty allowing zero/negative rebase
 
@@ -255,10 +254,12 @@ def oracle_report(
         elRewardsVaultBalance=elRewardsVaultBalance,
         block_identifier=simulation_block_identifier,
     )
-    simulatedShareRate = postTotalPooledEther * SHARE_RATE_PRECISION // postTotalShares
+    simulatedShareRate = postTotalPooledEther * \
+        SHARE_RATE_PRECISION // postTotalShares
     sharesRequestedToBurn = coverShares + nonCoverShares
 
-    finalization_batches = get_finalization_batches(simulatedShareRate, withdrawals, elRewards)
+    finalization_batches = get_finalization_batches(
+        simulatedShareRate, withdrawals, elRewards)
 
     is_bunker = preTotalPooledEther > postTotalPooledEther
 
@@ -271,6 +272,12 @@ def oracle_report(
         withdrawalFinalizationBatches=finalization_batches,
         elRewardsVaultBalance=elRewardsVaultBalance,
         simulatedShareRate=simulatedShareRate,
+        extraDataFormat=extraDataFormat,
+        extraDataHash=extraDataHash,
+        extraDataItemsCount=extraDataItemsCount,
+        extraDataList=extraDataList,
+        stakingModuleIdsWithNewlyExitedValidators=stakingModuleIdsWithNewlyExitedValidators,
+        numExitedValidatorsByStakingModule=numExitedValidatorsByStakingModule,
         silent=silent,
         isBunkerMode=is_bunker,
     )
