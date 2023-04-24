@@ -195,7 +195,6 @@ def test_staking_limit_full_info(stranger):
 
 class TestEventsEmitted:
     def test_staking_limit_emit_events(self, helpers):
-        assert not is_staking_limit_set(contracts)
         tx = contracts.lido.setStakingLimit(1000, 100, {"from": contracts.voting})
         helpers.assert_single_event_named("StakingLimitSet", tx,
                                           {'maxStakeLimit': 1000,

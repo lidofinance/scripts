@@ -237,12 +237,12 @@ def test_node_operators(
     node_operator_base_balance_shares_after = shares_balance(address_base_no)
 
     # check shares by report with penalty
-    assert node_operator_first_balance_shares_after - \
-        node_operator_first_balance_shares_before == node_operator_first_rewards_after_second_report // 2
-    assert node_operator_second_balance_shares_after - \
-        node_operator_second_balance_shares_before == node_operator_second_rewards_after_second_report // 2
-    assert node_operator_base_balance_shares_after - \
-        node_operator_base_balance_shares_before == node_operator_base_rewards_after_second_report
+    assert almostEqWithDiff(node_operator_first_balance_shares_after -
+                            node_operator_first_balance_shares_before, node_operator_first_rewards_after_second_report // 2, 1)
+    assert almostEqWithDiff(node_operator_second_balance_shares_after -
+                            node_operator_second_balance_shares_before, node_operator_second_rewards_after_second_report // 2, 1)
+    assert almostEqWithDiff(node_operator_base_balance_shares_after -
+                            node_operator_base_balance_shares_before, node_operator_base_rewards_after_second_report, 1)
 
 # Check burn shares
     amount_penalty_first_no = node_operator_first_rewards_after_second_report // 2

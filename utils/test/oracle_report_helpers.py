@@ -219,6 +219,12 @@ def get_time_config():
     (INITIAL_EPOCH, EPOCHS_PER_FRAME, FAST_LANE_SLOTS) = contracts.hash_consensus_for_accounting_oracle.getFrameConfig()
     return (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME, INITIAL_EPOCH, EPOCHS_PER_FRAME, FAST_LANE_SLOTS)
 
+def get_time_config():
+    (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME) = contracts.hash_consensus_for_accounting_oracle.getChainConfig()
+    (INITIAL_EPOCH, EPOCHS_PER_FRAME, FAST_LANE_SLOTS) = contracts.hash_consensus_for_accounting_oracle.getFrameConfig()
+    return (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME, INITIAL_EPOCH, EPOCHS_PER_FRAME, FAST_LANE_SLOTS)
+
+
 def oracle_report(
     cl_diff=ETH(10), exclude_vaults_balances=False, simulation_block_identifier=None, wait_to_next_report_time=True,
     extraDataFormat=0, extraDataHash=ZERO_BYTES32, extraDataItemsCount=0, extraDataList='', stakingModuleIdsWithNewlyExitedValidators=[],
