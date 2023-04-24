@@ -89,7 +89,7 @@ deployer_eoa = "0xBC862d4beE4E1cd82B9e8519b4375c3457fc6A5a"
 
 # New contracts (yet deployed in preliminary steps)
 lido_dao_lido_locator = "0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb"
-gate_seal = "0x1aD5cb2955940F998081c1eF5f5F00875431aA90"
+gate_seal_address = "0x1aD5cb2955940F998081c1eF5f5F00875431aA90"
 gate_seal_factory_address = "0x6C82877cAC5a7A739f16Ca0A89c0A328B8764A24"
 shapella_upgrade_template_address = "0xc205B6c6bA5660E2A6e67A367eE65f83073C2f7D"
 lido_dao_steth_implementation_address = "0x11638262f6d34D807aE469166f0368c8Dc2a5689"

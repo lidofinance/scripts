@@ -2,6 +2,7 @@ import os
 import json
 from typing import Optional, List
 
+import brownie.exceptions
 import pytest
 
 from brownie import chain, interface
@@ -57,6 +58,15 @@ class Helpers:
         receiver_events = Helpers.filter_events_from(tx.receiver, tx.events[evt_name])
         assert len(receiver_events) == 1
         assert dict(receiver_events[0]) == evt_keys_dict
+
+    @staticmethod
+    def assert_event_not_emitted(evt_name, tx):
+        try:
+            _ = tx.events[evt_name]
+        except brownie.exceptions.EventLookupError:
+            pass
+        else:
+            raise AssertionError(f"Event {evt_name} was fired")
 
     @staticmethod
     def execute_vote(accounts, vote_id, dao_voting, topup="0.1 ether", skip_time=MAINNET_VOTE_DURATION):

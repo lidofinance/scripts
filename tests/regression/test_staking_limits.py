@@ -193,6 +193,31 @@ def test_staking_limit_full_info(stranger):
     assert prev_limit <= 150000 * 10**18
 
 
+class TestEventsEmitted:
+    def test_staking_limit_emit_events(self, helpers):
+        assert not is_staking_limit_set(contracts)
+        tx = contracts.lido.setStakingLimit(1000, 100, {"from": contracts.voting})
+        helpers.assert_single_event_named("StakingLimitSet", tx,
+                                          {'maxStakeLimit': 1000,
+                                           'stakeLimitIncreasePerBlock': 100})
+        assert is_staking_limit_set(contracts)
+
+    def test_staking_limit_change_emit_events(self, helpers):
+        contracts.lido.setStakingLimit(1000, 100, {"from": contracts.voting})
+        tx = contracts.lido.setStakingLimit(2000, 200, {"from": contracts.voting})
+        helpers.assert_single_event_named("StakingLimitSet", tx,
+                                          {'maxStakeLimit': 2000,
+                                           'stakeLimitIncreasePerBlock': 200})
+        assert is_staking_limit_set(contracts)
+
+    def test_staking_limit_remove_emit_events(self, helpers):
+        contracts.lido.setStakingLimit(1000, 100, {"from": contracts.voting})
+
+        tx = contracts.lido.removeStakingLimit({"from": contracts.voting})
+        helpers.assert_single_event_named("StakingLimitRemoved", tx, {})
+        helpers.assert_event_not_emitted("StakingLimitSet", tx)
+        assert not is_staking_limit_set(contracts)
+
 def assert_staking_is_paused(log):
     topic = web3.keccak(text="StakingPaused()")
     assert log["topics"][0] == topic
@@ -208,3 +233,7 @@ def assert_set_staking_limit(log, limit_max, limit_per_block):
 
     assert log["topics"][0] == topic
     assert log["data"] == "0x" + eth_abi.encode_abi(["uint256", "uint256"], [limit_max, limit_per_block]).hex()
+
+def is_staking_limit_set(contracts):
+    _, value, *_ = contracts.lido.getStakeLimitFullInfo()
+    return value

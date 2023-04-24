@@ -5,7 +5,7 @@ import pytest
 
 from brownie import interface, convert, web3
 from utils.test.event_validators.permission import Permission
-from utils.config import contracts, oracle_committee, gate_seal, guardians
+from utils.config import contracts, oracle_committee, gate_seal_address, guardians
 
 
 @pytest.fixture(scope="module")
@@ -48,7 +48,7 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "PAUSE_ROLE": [gate_seal],
+                "PAUSE_ROLE": [gate_seal_address],
                 "RESUME_ROLE": [],
                 "FINALIZE_ROLE": [contracts.lido],
                 "ORACLE_ROLE": [contracts.accounting_oracle],
@@ -73,7 +73,7 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "SUBMIT_DATA_ROLE": [],
-                "PAUSE_ROLE": [gate_seal],
+                "PAUSE_ROLE": [gate_seal_address],
                 "RESUME_ROLE": [],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
                 "MANAGE_CONSENSUS_VERSION_ROLE": [],
