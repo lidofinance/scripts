@@ -21,7 +21,7 @@ def test_versioned(contract):
     assert contract.getContractVersion() == 1
 
 
-def test_pusable_until(contract):
+def test_pausable_until(contract):
     assert contract.isPaused() == False
     assert contract.getResumeSinceTimestamp() > 0
 

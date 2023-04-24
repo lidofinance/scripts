@@ -10,6 +10,7 @@ from typing import (
 import eth_abi
 from brownie.utils import color
 from eth_typing.evm import HexAddress
+from eth_utils import keccak
 from web3 import Web3
 
 from avotes_parser.core import (
@@ -161,3 +162,7 @@ def calls_info_pretty_print(
 ) -> str:
     """Format printing for Call instance."""
     return color.highlight(repr(call))
+
+
+def encode_error(error: str) -> str:
+    return f"typed error: 0x{keccak(text=error)[:4].hex()}"
