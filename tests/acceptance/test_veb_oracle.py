@@ -73,7 +73,7 @@ def test_vebo_hash_consensus_synced_with_accounting_one(contract):
     accounting_consensus = interface.HashConsensus(lido_dao_hash_consensus_for_accounting_oracle)
 
     assert frameConfig["initialEpoch"] == accounting_consensus.getFrameConfig()["initialEpoch"]
-    assert frameConfig["epochsPerFrame"] == 56
+    assert frameConfig["epochsPerFrame"] == 75
     assert frameConfig["fastLaneLengthSlots"] == 10
 
     assert consensus.getInitialRefSlot() == accounting_consensus.getInitialRefSlot()
