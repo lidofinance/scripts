@@ -236,6 +236,10 @@ def test_resumed_lido_can_deposit(stranger):
     contracts.lido.deposit(1, 1, "0x", {"from": contracts.deposit_security_module}),
 
 
+def test_paused_staking_can_report():
+    contracts.lido.pauseStaking({"from": contracts.voting})
+    oracle_report()
+
 # Staking module tests
 
 def test_paused_staking_module_cant_stake(stranger, helpers):
@@ -245,10 +249,11 @@ def test_paused_staking_module_cant_stake(stranger, helpers):
 
 
 def test_paused_staking_module_can_reward(stranger, helpers):
-    contracts.staking_router.pauseStakingModule(1, {"from": contracts.deposit_security_module})
-    oracle_report()
     _, module_address, *_ = contracts.staking_router.getStakingModule(1)
-    assert contracts.lido.sharesOf(module_address) > 0
+    contracts.staking_router.pauseStakingModule(1, {"from": contracts.deposit_security_module})
+    shares_before = contracts.lido.sharesOf(module_address)
+    oracle_report()
+    assert contracts.lido.sharesOf(module_address) > shares_before
 
 
 def test_stopped_staking_module_cant_stake(stranger):
@@ -273,8 +278,9 @@ def test_stopped_staking_module_cant_reward(stranger):
     _, module_address, *_ = contracts.staking_router.getStakingModule(1)
     contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.Stopped,
                                                     {"from": stranger})
+    shares_before = contracts.lido.sharesOf(module_address)
     oracle_report()
-    assert contracts.lido.sharesOf(module_address) == 0
+    assert contracts.lido.sharesOf(module_address) == shares_before
 
 def test_stopped_lido_cant_reward(stranger):
     contracts.lido.stop({"from": contracts.voting})
