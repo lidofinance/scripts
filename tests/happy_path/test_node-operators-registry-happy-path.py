@@ -93,6 +93,8 @@ def deposit_and_check_keys(nor, first_no_id, second_no_id, base_no_id, keys_coun
         second_no_id)['totalDepositedValidators']
     deposited_keys_base_before = nor.getNodeOperatorSummary(
         base_no_id)['totalDepositedValidators']
+    validators_before = contracts.lido.getBeaconStat().dict()[
+        'depositedValidators']
 
     module_total_deposited_keys_before = nor.getStakingModuleSummary()[
         'totalDepositedValidators']
@@ -100,12 +102,17 @@ def deposit_and_check_keys(nor, first_no_id, second_no_id, base_no_id, keys_coun
     tx = contracts.lido.deposit(keys_count, 1, '0x', {
         'from': contracts.deposit_security_module.address})
 
-    assert tx.events['Unbuffered']['amount'] == keys_count * ETH(32)
-
+    validators_after = contracts.lido.getBeaconStat().dict()[
+        'depositedValidators']
     module_total_deposited_keys_after = nor.getStakingModuleSummary()[
         'totalDepositedValidators']
 
-    assert module_total_deposited_keys_before < module_total_deposited_keys_after
+    just_deposited = validators_after - validators_before
+
+    assert tx.events['DepositedValidatorsChanged']['depositedValidators'] == validators_after
+    assert tx.events['Unbuffered']['amount'] == just_deposited * ETH(32)
+    assert module_total_deposited_keys_before + \
+        just_deposited == module_total_deposited_keys_after
 
     deposited_keys_first_after = nor.getNodeOperatorSummary(
         first_no_id)['totalDepositedValidators']
@@ -162,11 +169,11 @@ def test_node_operators(
 
     # expected shares
     node_operator_first_rewards_after_first_report = calc_no_rewards(
-        nor, no_id=tested_no_id_first, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=tested_no_id_first, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
     node_operator_second_rewards_after_first_report = calc_no_rewards(
-        nor, no_id=tested_no_id_second, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=tested_no_id_second, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
     node_operator_base_rewards_after_first_report = calc_no_rewards(
-        nor, no_id=base_no_id, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=base_no_id, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
 
     # check shares by empty report
     assert node_operator_first_balance_shares_after - \
@@ -219,11 +226,11 @@ def test_node_operators(
 
     # expected shares
     node_operator_first_rewards_after_second_report = calc_no_rewards(
-        nor, no_id=tested_no_id_first, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=tested_no_id_first, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
     node_operator_second_rewards_after_second_report = calc_no_rewards(
-        nor, no_id=tested_no_id_second, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=tested_no_id_second, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
     node_operator_base_rewards_after_second_report = calc_no_rewards(
-        nor, no_id=base_no_id, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=base_no_id, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
 
     node_operator_first_balance_shares_after = shares_balance(address_first)
     node_operator_second_balance_shares_after = shares_balance(address_second)
@@ -330,11 +337,11 @@ def test_node_operators(
 
     # expected shares
     node_operator_first_rewards_after_third_report = calc_no_rewards(
-        nor, no_id=tested_no_id_first, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=tested_no_id_first, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
     node_operator_second_rewards_after__third_report = calc_no_rewards(
-        nor, no_id=tested_no_id_second, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=tested_no_id_second, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
     node_operator_base_rewards_after__third_report = calc_no_rewards(
-        nor, no_id=base_no_id, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=base_no_id, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
 
     # first NO has penalty has a penalty until stuckPenaltyEndTimestamp
     # check shares by report with penalty
@@ -430,11 +437,11 @@ def test_node_operators(
 
     # expected shares
     node_operator_first_rewards_after_fourth_report = calc_no_rewards(
-        nor, no_id=tested_no_id_first, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=tested_no_id_first, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
     node_operator_second_rewards_after__fourth_report = calc_no_rewards(
-        nor, no_id=tested_no_id_second, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=tested_no_id_second, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
     node_operator_base_rewards_after__fourth_report = calc_no_rewards(
-        nor, no_id=base_no_id, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=base_no_id, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
 
     # Penalty ended for first operator
     # check shares by report with penalty for second NO
@@ -511,11 +518,11 @@ def test_node_operators(
 
     # expected shares
     node_operator_first_rewards_after_fifth_report = calc_no_rewards(
-        nor, no_id=tested_no_id_first, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=tested_no_id_first, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
     node_operator_second_rewards_after_fifth_report = calc_no_rewards(
-        nor, no_id=tested_no_id_second, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=tested_no_id_second, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
     node_operator_base_rewards_after_fifth_report = calc_no_rewards(
-        nor, no_id=base_no_id, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=base_no_id, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
 
     # Penalty only for second operator
     # diff by 1 share because of rounding
@@ -593,11 +600,11 @@ def test_node_operators(
 
     # expected shares
     node_operator_first_rewards_after_seventh_report = calc_no_rewards(
-        nor, no_id=tested_no_id_first, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=tested_no_id_first, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
     node_operator_second_rewards_after_seventh_report = calc_no_rewards(
-        nor, no_id=tested_no_id_second, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=tested_no_id_second, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
     node_operator_base_rewards_after_seventh_report = calc_no_rewards(
-        nor, no_id=base_no_id, report_shares=report_tx.events['TokenRebased']['sharesMintedAsFees'])
+        nor, no_id=base_no_id, shares_minted_as_fees=report_tx.events['TokenRebased']['sharesMintedAsFees'])
 
     # No penalty
     # diff by 1 share because of rounding
@@ -684,7 +691,7 @@ def test_node_operators(
      deposited_keys_first_after, deposited_keys_second_after, deposited_keys_base_after
      ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 20)
 
-    # check deposit is not applied for all NOs
+    # check - deposit not applied to NOs.
     assert deposited_keys_first_before != deposited_keys_first_after
     assert deposited_keys_second_before != deposited_keys_second_after
     assert deposited_keys_base_before != deposited_keys_base_after
