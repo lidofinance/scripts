@@ -80,6 +80,7 @@ FINALIZE_ROLE = "0x485191a2ef18512555bd4426d18a716ce8e98c80ec2de16394dcf86d7d91b
 ORACLE_ROLE = "0x68e79a7bf1e0bc45d0a330c573bc367f9cf464fd326078812f301165fbda4ef1"
 # StakingRouter roles
 STAKING_MODULE_PAUSE_ROLE = "0x00b1e70095ba5bacc3202c3db9faf1f7873186f0ed7b6c84e80c0018dcc6e38e"
+STAKING_MODULE_RESUME_ROLE = "0x9a2f67efb89489040f2c48c3b2c38f719fba1276678d2ced3bd9049fb5edc6b2"
 STAKING_MODULE_MANAGE_ROLE = "0x3105bcbf19d4417b73ae0e58d508a65ecf75665e46c2622d8521732de6080c48"
 REPORT_EXITED_VALIDATORS_ROLE = "0xc23292b191d95d2a7dd94fc6436eb44338fda9e1307d9394fd27c28157c1b33c"
 REPORT_REWARDS_MINTED_ROLE = "0x779e5c23cb7a5bcb9bfe1e9a5165a00057f12bcdfd13e374540fdf1a1cd91137"
@@ -145,7 +146,7 @@ WITHDRAWAL_CREDENTIALS = "0x010000000000000000000000b9d7934878b5fb9610b3fe8a5e44
 # Deployment parameters, see https://hackmd.io/pdix1r4yR46fXUqiHaNKyw
 STUCK_PENALTY_DELAY = 432000
 EPOCHS_PER_FRAME_FOR_ACCOUNTING_ORACLE = 225
-EPOCHS_PER_FRAME_FOR_VALIDATORS_EXIT_BUS_ORACLE = 56
+EPOCHS_PER_FRAME_FOR_VALIDATORS_EXIT_BUS_ORACLE = 75
 
 # Helper constant to mark that value of an event field is not checked
 ANY_VALUE = None
@@ -521,6 +522,10 @@ def validate_finish_upgrade_events(events: EventDict):
             (
                 "RoleGranted",
                 {"role": STAKING_MODULE_PAUSE_ROLE, "account": DEPOSIT_SECURITY_MODULE, "sender": TEMPLATE_ADDRESS},
+            ),
+            (
+                "RoleGranted",
+                {"role": STAKING_MODULE_RESUME_ROLE, "account": DEPOSIT_SECURITY_MODULE, "sender": TEMPLATE_ADDRESS},
             ),
             (
                 "RoleGranted",

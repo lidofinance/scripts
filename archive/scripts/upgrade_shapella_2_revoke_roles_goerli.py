@@ -4,7 +4,7 @@ Voting 24/03/2023.
 
 Lido V2 (Shapella-ready) protocol upgrade on Görli
 
-1. Call `ShapellaUpgradeTemplate.assertUpgradeIsFinishedCorrectly()`
+1. Call `ShapellaUpgradeTemplate.revertIfUpgradeNotFinished()`
 2. Revoke `MANAGE_FEE` role from `Voting`
 3. Revoke `MANAGE_WITHDRAWAL_KEY` role from `Voting`
 4. Revoke `MANAGE_PROTOCOL_CONTRACTS_ROLE` role from `Voting`
@@ -95,7 +95,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
     ]
 
     vote_desc_items = [
-        "1) Call `ShapellaUpgradeTemplate.assertUpgradeIsFinishedCorrectly()`",
+        "1) Call `ShapellaUpgradeTemplate.revertIfUpgradeNotFinished()`",
         "2) Revoke `MANAGE_FEE` role from `Voting`",
         "3) Revoke `MANAGE_WITHDRAWAL_KEY` role from `Voting`",
         "4) Revoke `MANAGE_PROTOCOL_CONTRACTS_ROLE` role from `Voting`",
