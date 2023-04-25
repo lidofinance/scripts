@@ -118,35 +118,35 @@ def test_vote(
     evs = group_voting_events(tx)
 
 
-    validate_node_operator_name_set_event(
+    validate_motions_count_limit_changed_event(
         evs[0],
+        motionsCountLimit_after
+    )
+    validate_node_operator_name_set_event(
+        evs[1],
         NodeOperatorNameSetItem(
             id=1,
             name=CertusOne_Jumpcrypto_name_after
         )
     )
     validate_node_operator_name_set_event(
-        evs[1],
+        evs[2],
         NodeOperatorNameSetItem(
             id=21,
             name=ConsenSysCodefi_Consensys_name_after
         )
     )
     validate_node_operator_name_set_event(
-        evs[2],
+        evs[3],
         NodeOperatorNameSetItem(
             id=8,
             name=SkillZ_Kiln_name_after
         )
     )
     validate_node_operator_reward_address_set_event(
-        evs[3],
+        evs[4],
         NodeOperatorRewardAddressSetItem(
             id=8,
             reward_address=SkillZ_Kiln_address_after
         )
-    )
-    validate_motions_count_limit_changed_event(
-        evs[4],
-        motionsCountLimit_after
     )
