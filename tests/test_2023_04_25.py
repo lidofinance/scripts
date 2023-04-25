@@ -46,18 +46,25 @@ def test_vote(
     motionsCountLimit_before = 12
     motionsCountLimit_after = 20
 
+    # NO's data indexes
+    active_index = 0
+    name_index = 1
+    rewardAddress_index = 2
+    stakingLimit_index = 3
+    stoppedValidators_index = 4
+
     # get NO's data before
     CertusOne_Jumpcrypto_data_before = node_operators_registry.getNodeOperator(CertusOne_Jumpcrypto_id, True)
     ConsenSysCodefi_Consensys_data_before = node_operators_registry.getNodeOperator(ConsenSysCodefi_Consensys_id, True)
     SkillZ_Kiln_data_before = node_operators_registry.getNodeOperator(SkillZ_Kiln_id, True)
 
     # check names before
-    assert CertusOne_Jumpcrypto_data_before[1] == CertusOne_Jumpcrypto_name_before, "Incorrect NO#1 name before"
-    assert ConsenSysCodefi_Consensys_data_before[1] == ConsenSysCodefi_Consensys_name_before, "Incorrect NO#21 name before"
-    assert SkillZ_Kiln_data_before[1] == SkillZ_Kiln_name_before, "Incorrect NO#8 name before"
+    assert CertusOne_Jumpcrypto_data_before[name_index] == CertusOne_Jumpcrypto_name_before, "Incorrect NO#1 name before"
+    assert ConsenSysCodefi_Consensys_data_before[name_index] == ConsenSysCodefi_Consensys_name_before, "Incorrect NO#21 name before"
+    assert SkillZ_Kiln_data_before[name_index] == SkillZ_Kiln_name_before, "Incorrect NO#8 name before"
 
     # check SkillZ_Kiln reward address before
-    assert SkillZ_Kiln_data_before[2] == SkillZ_Kiln_address_before, "Incorrect NO#8 reward address before"
+    assert SkillZ_Kiln_data_before[rewardAddress_index] == SkillZ_Kiln_address_before, "Incorrect NO#8 reward address before"
 
     # check Easy Track motions count limit before
     easy_track.motionsCountLimit() == motionsCountLimit_before, "Incorrect motions count limit before"
@@ -77,25 +84,25 @@ def test_vote(
     SkillZ_Kiln_data_after = node_operators_registry.getNodeOperator(SkillZ_Kiln_id, True)
 
     # compare NO#1 (CertusOne -> Jumpcrypto) data before and after
-    assert CertusOne_Jumpcrypto_data_before[0] == CertusOne_Jumpcrypto_data_after[0] # active
-    assert CertusOne_Jumpcrypto_name_after == CertusOne_Jumpcrypto_data_after[1] # name
-    assert CertusOne_Jumpcrypto_data_before[2] == CertusOne_Jumpcrypto_data_after[2] # rewardAddress
-    assert CertusOne_Jumpcrypto_data_before[3] == CertusOne_Jumpcrypto_data_after[3] # stakingLimit
-    assert CertusOne_Jumpcrypto_data_before[4] == CertusOne_Jumpcrypto_data_after[4] # stoppedValidators
+    assert CertusOne_Jumpcrypto_data_before[active_index] == CertusOne_Jumpcrypto_data_after[active_index] # active
+    assert CertusOne_Jumpcrypto_name_after == CertusOne_Jumpcrypto_data_after[name_index] # name
+    assert CertusOne_Jumpcrypto_data_before[rewardAddress_index] == CertusOne_Jumpcrypto_data_after[rewardAddress_index] # rewardAddress
+    assert CertusOne_Jumpcrypto_data_before[stakingLimit_index] == CertusOne_Jumpcrypto_data_after[stakingLimit_index] # stakingLimit
+    assert CertusOne_Jumpcrypto_data_before[stoppedValidators_index] == CertusOne_Jumpcrypto_data_after[stoppedValidators_index] # stoppedValidators
 
     # compare NO#21 (ConsenSysCodefi -> Consensys) data before and after
-    assert ConsenSysCodefi_Consensys_data_before[0] == ConsenSysCodefi_Consensys_data_after[0] # active
-    assert ConsenSysCodefi_Consensys_name_after == ConsenSysCodefi_Consensys_data_after[1] # name
-    assert ConsenSysCodefi_Consensys_data_before[2] == ConsenSysCodefi_Consensys_data_after[2] # rewardAddress
-    assert ConsenSysCodefi_Consensys_data_before[3] == ConsenSysCodefi_Consensys_data_after[3] # stakingLimit
-    assert ConsenSysCodefi_Consensys_data_before[4] == ConsenSysCodefi_Consensys_data_after[4] # stoppedValidators
+    assert ConsenSysCodefi_Consensys_data_before[active_index] == ConsenSysCodefi_Consensys_data_after[active_index] # active
+    assert ConsenSysCodefi_Consensys_name_after == ConsenSysCodefi_Consensys_data_after[name_index] # name
+    assert ConsenSysCodefi_Consensys_data_before[rewardAddress_index] == ConsenSysCodefi_Consensys_data_after[rewardAddress_index] # rewardAddress
+    assert ConsenSysCodefi_Consensys_data_before[stakingLimit_index] == ConsenSysCodefi_Consensys_data_after[stakingLimit_index] # stakingLimit
+    assert ConsenSysCodefi_Consensys_data_before[stoppedValidators_index] == ConsenSysCodefi_Consensys_data_after[stoppedValidators_index] # stoppedValidators
 
     # compare NO#8 (ConsenSysCodefi -> Consensys) data before and after
-    assert SkillZ_Kiln_data_before[0] == SkillZ_Kiln_data_after[0] # active
-    assert SkillZ_Kiln_name_after == SkillZ_Kiln_data_after[1] # name
-    assert SkillZ_Kiln_address_after == SkillZ_Kiln_data_after[2] # rewardAddress
-    assert SkillZ_Kiln_data_before[3] == SkillZ_Kiln_data_after[3] # stakingLimit
-    assert SkillZ_Kiln_data_before[4] == SkillZ_Kiln_data_after[4] # stoppedValidators
+    assert SkillZ_Kiln_data_before[active_index] == SkillZ_Kiln_data_after[active_index] # active
+    assert SkillZ_Kiln_name_after == SkillZ_Kiln_data_after[name_index] # name
+    assert SkillZ_Kiln_address_after == SkillZ_Kiln_data_after[rewardAddress_index] # rewardAddress
+    assert SkillZ_Kiln_data_before[stakingLimit_index] == SkillZ_Kiln_data_after[stakingLimit_index] # stakingLimit
+    assert SkillZ_Kiln_data_before[stoppedValidators_index] == SkillZ_Kiln_data_after[stoppedValidators_index] # stoppedValidators
 
     # check Easy Track motions count limit after
     easy_track.motionsCountLimit() == motionsCountLimit_after, "Incorrect motions count limit after"
