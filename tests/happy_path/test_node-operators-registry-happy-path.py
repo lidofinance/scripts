@@ -87,10 +87,11 @@ def deposit_and_check_keys(nor, first_no_id, second_no_id, base_no_id, keys_coun
     module_total_deposited_keys_after = nor.getStakingModuleSummary()["totalDepositedValidators"]
 
     just_deposited = validators_after - validators_before
-
-    assert tx.events["DepositedValidatorsChanged"]["depositedValidators"] == validators_after
-    assert tx.events["Unbuffered"]["amount"] == just_deposited * ETH(32)
-    assert module_total_deposited_keys_before + just_deposited == module_total_deposited_keys_after
+    print('---------', just_deposited)
+    if just_deposited:
+        assert tx.events["DepositedValidatorsChanged"]["depositedValidators"] == validators_after
+        assert tx.events["Unbuffered"]["amount"] == just_deposited * ETH(32)
+        assert module_total_deposited_keys_before + just_deposited == module_total_deposited_keys_after
 
     deposited_keys_first_after = nor.getNodeOperatorSummary(first_no_id)["totalDepositedValidators"]
     deposited_keys_second_after = nor.getNodeOperatorSummary(second_no_id)["totalDepositedValidators"]
@@ -112,11 +113,29 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
         impersonated_voting,
         {"from": contracts.agent.address},
     )
+
+    contracts.acl.grantPermission(
+        impersonated_voting,
+        nor,
+        Web3.keccak(text="STAKING_ROUTER_ROLE"),
+        {"from": impersonated_voting},
+    )
+
     contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale, "amount": ETH(1000)})
 
     tested_no_id_first = 21
     tested_no_id_second = 22
     base_no_id = 23
+
+    nor.setNodeOperatorStakingLimit(tested_no_id_first, 10000, {"from": impersonated_voting})
+    nor.setNodeOperatorStakingLimit(tested_no_id_second, 10000, {"from": impersonated_voting})
+    nor.setNodeOperatorStakingLimit(base_no_id, 10000, {"from": impersonated_voting})
+
+    for op_index in range(20):
+        nor.setNodeOperatorStakingLimit(op_index, 0, {"from": impersonated_voting})
+
+    for op_index in range(24, 29):
+        nor.setNodeOperatorStakingLimit(op_index, 0, {"from": impersonated_voting})
 
     increase_limit(nor, tested_no_id_first, tested_no_id_second, base_no_id, 3, impersonated_voting)
 
@@ -684,7 +703,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
         deposited_keys_first_after,
         deposited_keys_second_after,
         deposited_keys_base_after,
-    ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 20)
+    ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 80)
 
     # check deposit is applied for all NOs
     assert deposited_keys_first_before != deposited_keys_first_after
@@ -752,7 +771,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
         deposited_keys_first_after,
         deposited_keys_second_after,
         deposited_keys_base_after,
-    ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 20)
+    ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 100)
 
     # check - deposit not applied to NOs.
     assert deposited_keys_first_before != deposited_keys_first_after

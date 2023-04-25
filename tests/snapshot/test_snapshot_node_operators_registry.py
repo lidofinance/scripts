@@ -213,11 +213,16 @@ def make_snapshot(node_operators_registry) -> Dict[str, Any]:
         snapshot["total_signing_keys_count"][id] = node_operators_registry.getTotalSigningKeyCount(id)
         snapshot["unused_signing_keys_count"][id] = node_operators_registry.getUnusedSigningKeyCount(id)
 
+        signing_keys_count = (
+            snapshot["node_operators"][id]["totalSigningKeys"]
+            if "totalSigningKeys" in snapshot["node_operators"][id]
+            else snapshot["node_operators"][id]["totalAddedValidators"]
+        )
+
         snapshot["signing_keys"][id] = []
-        if snapshot["node_operators"][id]["totalSigningKeys"] == 0:
+        if signing_keys_count == 0:
             continue
 
-        signing_keys_count = snapshot["node_operators"][id]["totalSigningKeys"]
         signing_key_indices = random.sample(range(0, signing_keys_count), min(10, signing_keys_count))
 
         for index in signing_key_indices:
@@ -269,15 +274,15 @@ def assert_node_operators(before: Dict[str, ReturnValue], after: Dict[str, Retur
         assert node_operator_before["active"] == node_operator_after["active"]
         assert node_operator_before["name"] == node_operator_after["name"]
         assert node_operator_before["rewardAddress"] == node_operator_after["rewardAddress"]
-        assert node_operator_before["usedSigningKeys"] == node_operator_after["usedSigningKeys"]
-        assert node_operator_before["stoppedValidators"] == node_operator_after["stoppedValidators"]
-        assert node_operator_before["totalSigningKeys"] == node_operator_after["totalSigningKeys"]
+        assert node_operator_before["usedSigningKeys"] == node_operator_after["totalDepositedValidators"]
+        assert node_operator_before["stoppedValidators"] == node_operator_after["totalExitedValidators"]
+        assert node_operator_before["totalSigningKeys"] == node_operator_after["totalAddedValidators"]
         if not node_operator_before["active"]:
-            assert node_operator_after["stakingLimit"] == node_operator_after["usedSigningKeys"]
+            assert node_operator_after["totalVettedValidators"] == node_operator_after["totalDepositedValidators"]
         elif node_operator_before["stakingLimit"] > node_operator_before["totalSigningKeys"]:
-            assert node_operator_after["stakingLimit"] == node_operator_after["totalSigningKeys"]
+            assert node_operator_after["totalVettedValidators"] == node_operator_after["totalAddedValidators"]
         else:
-            assert node_operator_before["stakingLimit"] == node_operator_after["stakingLimit"]
+            assert node_operator_before["stakingLimit"] == node_operator_after["totalVettedValidators"]
 
 
 def almost_eq(a, b, epsilon=0):
