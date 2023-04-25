@@ -1,7 +1,33 @@
+from typing import Literal, overload
+
+from brownie import web3
 from eth_typing.evm import ChecksumAddress
 from hexbytes import HexBytes
 from web3 import Web3
-from brownie import web3
+
+
+@overload
+def get_slot(
+    address: ChecksumAddress,
+    *,
+    name: str | None = ...,
+    pos: int | None = ...,
+    as_list: Literal[False] = ...,
+    block: int | None = ...,
+) -> HexBytes:
+    ...
+
+
+@overload
+def get_slot(
+    address: ChecksumAddress,
+    *,
+    name: str | None = ...,
+    pos: int | None = ...,
+    as_list: Literal[True],
+    block: int | None = ...,
+) -> list[HexBytes]:
+    ...
 
 
 def get_slot(
