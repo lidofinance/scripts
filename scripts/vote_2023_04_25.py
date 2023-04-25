@@ -49,7 +49,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
 
     call_script_items = [
         # 1. Increase Easy Track motions amount limit: set motionsCountLimit to 20
-        set_motions_count_limit(motionsCountLimit)
+        set_motions_count_limit(motionsCountLimit),
         # 2. Change the on-chain name of node operator with id 1 from 'Certus One' to 'jumpcrypto'
         encode_set_node_operator_name(CertusOne_Jumpcrypto_id, CertusOne_Jumpcrypto_new_name, NO_registry),
         # 3. Change the on-chain name of node operator with id 21 from 'ConsenSys Codefi' to 'Consensys'
@@ -57,7 +57,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
         # 4. Change the on-chain name of node operator with id 8 from 'SkillZ' to 'Kiln'
         encode_set_node_operator_name(SkillZ_Kiln_id, SkillZ_Kiln_new_name, NO_registry),
         # 5. Change the reward address of node operator with id 8 from 0xe080E860741b7f9e8369b61645E68AD197B1e74C to 0xD6B7d52E15678B9195F12F3a6D6cb79dcDcCb690
-        encode_set_node_operator_reward_address(SkillZ_Kiln_id, SkillZ_Kiln_new_address, NO_registry),
+        encode_set_node_operator_reward_address(SkillZ_Kiln_id, SkillZ_Kiln_new_address, NO_registry)
     ]
 
     vote_desc_items = [
