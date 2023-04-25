@@ -38,7 +38,7 @@ from utils.config import (
     lido_dao_legacy_oracle,
     lido_dao_legacy_oracle,
     lido_dao_node_operators_registry,
-    lido_dao_deposit_security_module_address_old,
+    lido_dao_deposit_security_module_address_v1,
     lido_dao_voting_address,
     lido_dao_withdrawal_vault,
     lido_dao_steth_implementation_address,
@@ -138,7 +138,7 @@ def test_upgrade_template_addresses():
     assert template._lidoOracle() == lido_dao_legacy_oracle
     assert template._legacyOracle() == lido_dao_legacy_oracle
     assert template._nodeOperatorsRegistry() == lido_dao_node_operators_registry
-    assert template._previousDepositSecurityModule() == lido_dao_deposit_security_module_address_old
+    assert template._previousDepositSecurityModule() == lido_dao_deposit_security_module_address_v1
     assert template._voting() == lido_dao_voting_address
     assert template._withdrawalVault() == lido_dao_withdrawal_vault
     assert template._lidoImplementation() == lido_dao_steth_implementation_address

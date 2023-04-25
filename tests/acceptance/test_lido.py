@@ -4,11 +4,11 @@ from brownie import interface, web3  # type: ignore
 from utils.config import (
     contracts,
     lido_dao_steth_address,
+    lido_dao_steth_implementation_address,
+    initial_dead_token_holder,
+    LIDO_APP_ID,
 )
 
-lido_v2_implementation = "0x11638262f6d34D807aE469166f0368c8Dc2a5689"
-lido_dao_lido_app_id = "0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320"
-initial_token_holder = "0x000000000000000000000000000000000000dead"
 last_seen_deposited_validators = 176018
 last_seen_total_rewards_collected = 50327973200740183385860
 last_seen_beacon_validators = 175906
@@ -21,9 +21,9 @@ def contract() -> interface.AccountingOracle:
 
 def test_aragon(contract):
     proxy = interface.AppProxyUpgradeable(contract)
-    assert proxy.implementation() == lido_v2_implementation
+    assert proxy.implementation() == lido_dao_steth_implementation_address
     assert contract.kernel() == contracts.kernel
-    assert contract.appId() == lido_dao_lido_app_id
+    assert contract.appId() == LIDO_APP_ID
     assert contract.hasInitialized() == True
     assert contract.isPetrified() == False
 
@@ -54,10 +54,10 @@ def test_links(contract):
 
 def test_steth(contract):
     # stone
-    assert contract.balanceOf(initial_token_holder) > 0
-    assert contract.sharesOf(initial_token_holder) > 0
+    assert contract.balanceOf(initial_dead_token_holder) > 0
+    assert contract.sharesOf(initial_dead_token_holder) > 0
 
-    assert contract.getTotalShares() > contract.sharesOf(initial_token_holder)
+    assert contract.getTotalShares() > contract.sharesOf(initial_dead_token_holder)
     # unlimited allowance for burner to burn shares from withdrawal queue
     assert contract.allowance(contracts.withdrawal_queue, contracts.burner) == 2**256 - 1
     assert contract.allowance(contracts.node_operators_registry, contracts.burner) == 2**256 - 1

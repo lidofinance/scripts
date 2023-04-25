@@ -5,7 +5,7 @@ import pytest
 
 from brownie import interface, convert, web3
 from utils.test.event_validators.permission import Permission
-from utils.config import contracts, oracle_committee, gate_seal_address, guardians
+from utils.config import contracts, oracle_committee, gate_seal_address, deposit_security_module_guardians
 
 
 @pytest.fixture(scope="module")
@@ -123,7 +123,7 @@ def protocol_permissions():
         "DepositSecurityModule": {
             "contract": contracts.deposit_security_module,
             "type": "CustomApp",
-            "state": {"getOwner": contracts.agent, "getGuardians": guardians},
+            "state": {"getOwner": contracts.agent, "getGuardians": deposit_security_module_guardians},
             "roles": {},
         },
         "Lido": {

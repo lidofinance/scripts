@@ -1,5 +1,5 @@
 from typing import Tuple
-
+from brownie import ZERO_ADDRESS
 from utils.config import (
     contracts,
     ldo_token_address,
@@ -7,8 +7,6 @@ from utils.config import (
     weth_token_address,
     dai_token_address,
 )
-
-ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 
 def make_ldo_payout(*not_specified, target_address: str, ldo_in_wei: int, reference: str) -> Tuple[str, str]:

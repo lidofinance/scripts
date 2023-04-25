@@ -7,7 +7,7 @@ from brownie import ZERO_ADDRESS, Wei, convert
 from brownie.convert.datatypes import ReturnValue
 from tests.snapshot.utils import get_slot
 
-from utils.config import contracts
+from utils.config import contracts, lido_dao_deposit_security_module_address_v1
 from utils.mainnet_fork import chain_snapshot
 from utils.test.snapshot_helpers import dict_zip
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
@@ -16,7 +16,6 @@ PUBKEY_LENGTH = 48
 SIGNATURE_LENGTH = 96
 DEPOSIT_SIZE = Wei("32 ether")
 RANDOM_SEED = datetime.now().timestamp()
-OLD_DSM_ADDRESS = "0x710B3303fB508a84F10793c1106e32bE873C24cd"
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -45,8 +44,8 @@ def agent_eoa(accounts):
 
 @pytest.fixture(scope="module")
 def old_deposit_security_module_eoa(accounts, EtherFunder):
-    EtherFunder.deploy(OLD_DSM_ADDRESS, {"from": accounts[0], "amount": "10 ether"})
-    return accounts.at(OLD_DSM_ADDRESS, force=True)
+    EtherFunder.deploy(lido_dao_deposit_security_module_address_v1, {"from": accounts[0], "amount": "10 ether"})
+    return accounts.at(lido_dao_deposit_security_module_address_v1, force=True)
 
 
 @pytest.fixture(scope="module")
