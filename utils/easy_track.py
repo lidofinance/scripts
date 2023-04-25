@@ -29,3 +29,12 @@ def remove_evmscript_factory(factory: Contract) -> Tuple[str, str]:
 
 def create_permissions(contract: Contract, method: str) -> str:
     return contract.address + getattr(contract, method).signature[2:]
+
+
+def set_motions_count_limit(motionsCountLimit: int) -> Tuple[str, str]:
+    easy_track = contracts.easy_track
+
+    return (
+        easy_track.address,
+        easy_track.setMotionsCountLimit.encode_input(motionsCountLimit)
+    )
