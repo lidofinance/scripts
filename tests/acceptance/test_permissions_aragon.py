@@ -127,17 +127,17 @@ def test_protocol_permissions_events(protocol_permissions):
 
     event_signature_hash = w3.keccak(
         text="SetPermission(address,address,bytes32,bool)").hex()
-    events = w3.eth.filter({"address": contracts.acl.address, "fromBlock": 11473216, "topics": [
+    events_before_voting = w3.eth.filter({"address": contracts.acl.address, "fromBlock": 11473216, "topics": [
         event_signature_hash]}).get_all_entries()
 
     history = TxHistory()
-    last_vote_block = history[0].block_number
+    vote_block = history[0].block_number
 
-    events_after_voting = web3.eth.filter({"address": contracts.acl.address, "fromBlock": last_vote_block, "topics": [
+    events_after_voting = web3.eth.filter({"address": contracts.acl.address, "fromBlock": vote_block, "topics": [
         event_signature_hash]}).get_all_entries()
 
-    decoded_events = _decode_logs(events)
-    permission_events_before_voting = decoded_events['SetPermission']
+    permission_events_before_voting = _decode_logs(
+        events_before_voting)['SetPermission']
     permission_events_after_voting = _decode_logs(
         events_after_voting)['SetPermission']
 
