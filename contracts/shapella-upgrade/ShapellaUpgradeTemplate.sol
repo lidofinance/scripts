@@ -394,21 +394,28 @@ contract ShapellaUpgradeTemplate {
     // (stored instead of reading from the contracts to save contract bytecode size)
     //
     bytes32 internal constant DEFAULT_ADMIN_ROLE = 0x00;
+    // Burner
     bytes32 internal constant REQUEST_BURN_SHARES_ROLE = keccak256("REQUEST_BURN_SHARES_ROLE");
+    bytes32 internal constant REQUEST_BURN_MY_STETH_ROLE = keccak256("REQUEST_BURN_MY_STETH_ROLE");
+    // HashConsensus
     bytes32 internal constant MANAGE_MEMBERS_AND_QUORUM_ROLE = keccak256("MANAGE_MEMBERS_AND_QUORUM_ROLE");
     bytes32 internal constant DISABLE_CONSENSUS_ROLE = keccak256("DISABLE_CONSENSUS_ROLE");
     bytes32 internal constant MANAGE_FRAME_CONFIG_ROLE = keccak256("MANAGE_FRAME_CONFIG_ROLE");
     bytes32 internal constant MANAGE_FAST_LANE_CONFIG_ROLE = keccak256("MANAGE_FAST_LANE_CONFIG_ROLE");
     bytes32 internal constant MANAGE_REPORT_PROCESSOR_ROLE = keccak256("MANAGE_REPORT_PROCESSOR_ROLE");
-    bytes32 internal constant REQUEST_BURN_MY_STETH_ROLE = keccak256("REQUEST_BURN_MY_STETH_ROLE");
-    bytes32 internal constant RESUME_ROLE = keccak256("RESUME_ROLE");
-    bytes32 internal constant PAUSE_ROLE = keccak256("PAUSE_ROLE");
+    // StakingRouter
     bytes32 internal constant STAKING_MODULE_PAUSE_ROLE = keccak256("STAKING_MODULE_PAUSE_ROLE");
     bytes32 internal constant STAKING_MODULE_RESUME_ROLE = keccak256("STAKING_MODULE_RESUME_ROLE");
+    bytes32 internal constant STAKING_MODULE_MANAGE_ROLE = keccak256("STAKING_MODULE_MANAGE_ROLE");
     bytes32 internal constant REPORT_EXITED_VALIDATORS_ROLE = keccak256("REPORT_EXITED_VALIDATORS_ROLE");
     bytes32 internal constant REPORT_REWARDS_MINTED_ROLE = keccak256("REPORT_REWARDS_MINTED_ROLE");
+    // WithdrawalQueue
     bytes32 internal constant FINALIZE_ROLE = keccak256("FINALIZE_ROLE");
     bytes32 internal constant ORACLE_ROLE = keccak256("ORACLE_ROLE");
+    // WithdrawalQueue and ValidatorsExitBusOracle
+    bytes32 internal constant RESUME_ROLE = keccak256("RESUME_ROLE");
+    bytes32 internal constant PAUSE_ROLE = keccak256("PAUSE_ROLE");
+    // OracleReportSanityChecker
     bytes32 internal constant ALL_LIMITS_MANAGER_ROLE = keccak256("ALL_LIMITS_MANAGER_ROLE");
     bytes32 internal constant CHURN_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE = keccak256("CHURN_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE");
     bytes32 internal constant ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE = keccak256("ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE");
@@ -419,8 +426,8 @@ contract ShapellaUpgradeTemplate {
     bytes32 internal constant MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE = keccak256("MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE");
     bytes32 internal constant REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE = keccak256("REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE");
     bytes32 internal constant MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE = keccak256("MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE");
+    // OracleDaemonConfig
     bytes32 internal constant CONFIG_MANAGER_ROLE = keccak256("CONFIG_MANAGER_ROLE");
-    bytes32 internal constant STAKING_MODULE_MANAGE_ROLE = keccak256("STAKING_MODULE_MANAGE_ROLE");
 
     // Auxiliary constants
     uint256 internal constant NOT_INITIALIZED_CONTRACT_VERSION = 0;
