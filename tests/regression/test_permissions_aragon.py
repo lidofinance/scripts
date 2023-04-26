@@ -166,6 +166,7 @@ def test_protocol_permissions_events(protocol_permissions):
         lido_easytrack_evmscriptexecutor: 'lido_easytrack_EVMScriptExecutor',
     }
 
+    print('========================== ROLES after votes ==========================')
     for event_app, event_roles in events_by_app.items():
         print("App: {0}".format(app_names[event_app]))
 
@@ -196,7 +197,8 @@ def test_protocol_permissions_events(protocol_permissions):
                 assert_has_not_permissions_in_list(
                     event_app, event_role, events_by_app[event_app][event_role])
 
-    # check what events_by_app matches with aragon_apps
+    print('\n')
+    print('========================== CHECKING ROLES with tests/regression/test_permissions.py ==========================')
     for app in aragon_apps:
         address = app['contract'].address
         print("Aragon App: {0}".format(app_names[address]))
