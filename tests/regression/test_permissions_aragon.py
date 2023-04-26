@@ -81,7 +81,7 @@ def test_protocol_permissions_events(protocol_permissions):
 
     events_by_app = collect_permissions_from_events(permission_events)
 
-    exceptions = {
+    roles_after_votes = {
         contracts.acl.address: {
             'roles': {
                 'CREATE_PERMISSIONS_ROLE': [contracts.voting.address]
@@ -170,21 +170,21 @@ def test_protocol_permissions_events(protocol_permissions):
         print("App: {0}".format(app_names[event_app]))
 
         for event_role in event_roles:
-            app = exceptions.get(event_app)
+            app = roles_after_votes.get(event_app)
             if app is None:
                 assert_has_not_permissions_in_list(
                     event_app, event_role, events_by_app[event_app][event_role])
                 continue
 
             keccak_roles = [w3.keccak(text=role).hex()
-                            for role in exceptions[event_app]['roles']]
+                            for role in roles_after_votes[event_app]['roles']]
 
             if event_role in keccak_roles:
-                current_role_string = [x for x in exceptions[event_app]['roles'] if w3.keccak(
+                current_role_string = [x for x in roles_after_votes[event_app]['roles'] if w3.keccak(
                     text=x).hex() == event_role][0]
 
                 for address in events_by_app[event_app][event_role]:
-                    if address in exceptions[event_app]['roles'][current_role_string]:
+                    if address in roles_after_votes[event_app]['roles'][current_role_string]:
                         print(
                             f'     {address} {entity_names[address]} has {current_role_string}')
                         assert_has_permissions(
