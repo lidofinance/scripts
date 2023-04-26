@@ -64,9 +64,9 @@ def collect_permissions_from_events(permission_events):
     return apps
 
 
-@pytest.mark.skipif(condition=not os.getenv("INFURA_TEST_PROVIDER"), reason="No votes")
 def test_protocol_permissions_events(protocol_permissions):
-    w3 = Web3(Web3.HTTPProvider(os.getenv("INFURA_TEST_PROVIDER")))
+    w3 = Web3(Web3.HTTPProvider(
+        f'https://mainnet.infura.io/v3/{os.getenv("WEB3_INFURA_PROJECT_ID")}'))
 
     event_signature_hash = w3.keccak(
         text="SetPermission(address,address,bytes32,bool)").hex()
