@@ -1,7 +1,7 @@
 from typing import TypedDict, TypeVar
 
 import pytest
-from brownie import Contract, accounts, chain
+from brownie import Contract, accounts, chain, web3
 from brownie.exceptions import brownie
 from brownie.network.account import Account
 from web3 import Web3
@@ -27,6 +27,11 @@ def lido() -> Contract:
 @pytest.fixture(scope="module")
 def el_vault() -> Contract:
     return contracts.execution_layer_rewards_vault
+
+
+@pytest.fixture(scope="module")
+def withdrawal_vault() -> Contract:
+    return contracts.withdrawal_vault
 
 
 def test_accounting_no_cl_rebase(accounting_oracle: Contract, lido: Contract):
@@ -153,6 +158,10 @@ def test_accounting_cl_rebase_at_limits(accounting_oracle: Contract, lido: Contr
     ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
 
     minted_shares_sum = sum(shares_as_fees_list)
+
+    token_rebased_event = _first_event(tx, TokenRebased)
+    assert token_rebased_event["sharesMintedAsFees"] == minted_shares_sum, "TokenRebased: sharesMintedAsFee mismatch"
+
     assert lido.getTotalShares(block_identifier=block_before_report) + minted_shares_sum == lido.getTotalShares(
         block_identifier=block_after_report,
     ), "TotalShares change mismatch"
@@ -385,6 +394,181 @@ def test_accounting_el_rewards_above_limits(
     ), "Expected EL vault to be filled with excess rewards"
 
 
+def test_accounting_no_withdrawals(accounting_oracle: Contract, lido: Contract):
+    """Test rebase with no withdrawals"""
+
+    block_before_report = chain.height
+    tx, _ = oracle_report(cl_diff=0, exclude_vaults_balances=True)
+    block_after_report = chain.height
+
+    assert accounting_oracle.getLastProcessingRefSlot(
+        block_identifier=block_before_report
+    ) < accounting_oracle.getLastProcessingRefSlot(
+        block_identifier=block_after_report,
+    ), "LastProcessingRefSlot should be updated"
+
+    assert lido.getTotalELRewardsCollected(block_identifier=block_before_report) == lido.getTotalELRewardsCollected(
+        block_identifier=block_after_report
+    ), "TotalELRewardsCollected has changed"
+
+    assert lido.getTotalPooledEther(block_identifier=block_before_report) == lido.getTotalPooledEther(
+        block_identifier=block_after_report,
+    ), "TotalPooledEther has changed"
+
+    assert lido.getTotalShares(block_identifier=block_before_report) == lido.getTotalShares(
+        block_identifier=block_after_report,
+    ), "TotalShares has changed"
+
+    assert eth_balance(lido.address, block_before_report) == eth_balance(
+        lido.address, block_after_report
+    ), "Lido ETH balance has changed"
+
+    with pytest.raises(AssertionError, match="Event WithdrawalsReceived was not found"):
+        _first_event(tx, WithdrawalsReceived)
+
+
+def test_accounting_withdrawals_at_limits(
+    accounting_oracle: Contract,
+    lido: Contract,
+    withdrawal_vault: Contract,
+):
+    """Test rebase with normal withdrawals amount"""
+
+    block_before_report = chain.height
+
+    withdrawals = _rebase_limit_wei(block_identifier=block_before_report)
+
+    web3.manager.request_blocking(
+        "evm_setAccountBalance",  # type: ignore
+        [
+            withdrawal_vault.address,
+            Web3.toHex(withdrawals),
+        ],
+    )
+
+    tx, _ = oracle_report(
+        cl_diff=0,
+        report_el_vault=False,
+        report_withdrawals_vault=True,
+    )
+
+    block_after_report = chain.height
+
+    assert accounting_oracle.getLastProcessingRefSlot(
+        block_identifier=block_before_report
+    ) < accounting_oracle.getLastProcessingRefSlot(
+        block_identifier=block_after_report,
+    ), "LastProcessingRefSlot should be updated"
+
+    assert lido.getTotalELRewardsCollected(block_identifier=block_before_report) == lido.getTotalELRewardsCollected(
+        block_identifier=block_after_report
+    ), "TotalELRewardsCollected has changed"
+
+    assert lido.getTotalPooledEther(block_identifier=block_before_report) + withdrawals == lido.getTotalPooledEther(
+        block_identifier=block_after_report,
+    ), "TotalPooledEther change mismatch"
+
+    shares_as_fees_list = [e["sharesValue"] for e in _get_events(tx, TransferShares)]
+
+    assert len(shares_as_fees_list) == 2, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+    assert almostEqWithDiff(
+        shares_as_fees_list[0],
+        shares_as_fees_list[1],
+        1,
+    ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
+
+    minted_shares_sum = sum(shares_as_fees_list)
+
+    token_rebased_event = _first_event(tx, TokenRebased)
+    assert token_rebased_event["sharesMintedAsFees"] == minted_shares_sum, "TokenRebased: sharesMintedAsFee mismatch"
+
+    assert lido.getTotalShares(block_identifier=block_before_report) + minted_shares_sum == lido.getTotalShares(
+        block_identifier=block_after_report,
+    ), "TotalShares change mismatch"
+
+    shares_rate_before, shares_rate_after = _shares_rate_from_event(tx)
+    assert shares_rate_after > shares_rate_before, "Shares rate has not increased"
+
+    assert _first_event(tx, WithdrawalsReceived)["amount"] == withdrawals, "WithdrawalsReceived: amount mismatch"
+
+    assert eth_balance(withdrawal_vault.address, block_after_report) == 0, "Expected withdrawals vault to be empty"
+
+
+def test_accounting_withdrawals_above_limits(
+    accounting_oracle: Contract,
+    lido: Contract,
+    withdrawal_vault: Contract,
+):
+    """Test rebase with excess withdrawals amount"""
+
+    block_before_report = chain.height
+
+    expected_withdrawals = _rebase_limit_wei(block_identifier=block_before_report)
+    withdrawals_excess = ETH(10)
+    withdrawals = expected_withdrawals + withdrawals_excess
+
+    web3.manager.request_blocking(
+        "evm_setAccountBalance",  # type: ignore
+        [
+            withdrawal_vault.address,
+            Web3.toHex(withdrawals),
+        ],
+    )
+
+    tx, _ = oracle_report(
+        cl_diff=0,
+        report_el_vault=False,
+        report_withdrawals_vault=True,
+    )
+
+    block_after_report = chain.height
+
+    assert accounting_oracle.getLastProcessingRefSlot(
+        block_identifier=block_before_report
+    ) < accounting_oracle.getLastProcessingRefSlot(
+        block_identifier=block_after_report,
+    ), "LastProcessingRefSlot should be updated"
+
+    assert lido.getTotalELRewardsCollected(block_identifier=block_before_report) == lido.getTotalELRewardsCollected(
+        block_identifier=block_after_report
+    ), "TotalELRewardsCollected has changed"
+
+    assert lido.getTotalPooledEther(
+        block_identifier=block_before_report
+    ) + expected_withdrawals == lido.getTotalPooledEther(
+        block_identifier=block_after_report,
+    ), "TotalPooledEther change mismatch"
+
+    shares_as_fees_list = [e["sharesValue"] for e in _get_events(tx, TransferShares)]
+
+    assert len(shares_as_fees_list) == 2, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+    assert almostEqWithDiff(
+        shares_as_fees_list[0],
+        shares_as_fees_list[1],
+        1,
+    ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
+
+    minted_shares_sum = sum(shares_as_fees_list)
+
+    token_rebased_event = _first_event(tx, TokenRebased)
+    assert token_rebased_event["sharesMintedAsFees"] == minted_shares_sum, "TokenRebased: sharesMintedAsFee mismatch"
+
+    assert lido.getTotalShares(block_identifier=block_before_report) + minted_shares_sum == lido.getTotalShares(
+        block_identifier=block_after_report,
+    ), "TotalShares change mismatch"
+
+    shares_rate_before, shares_rate_after = _shares_rate_from_event(tx)
+    assert shares_rate_after > shares_rate_before, "Shares rate has not increased"
+
+    assert (
+        _first_event(tx, WithdrawalsReceived)["amount"] == expected_withdrawals
+    ), "WithdrawalsReceived: amount mismatch"
+
+    assert (
+        eth_balance(withdrawal_vault.address, block_after_report) == withdrawals_excess
+    ), "Expected withdrawal vault to be filled with excess rewards"
+
+
 class ETHDistributed(TypedDict):
     """ETHDistributed event definition"""
 
@@ -414,11 +598,17 @@ class TokenRebased(TypedDict):
     preTotalEther: int
     postTotalShares: int
     postTotalEther: int
-    sharesMintedAsFee: int
+    sharesMintedAsFees: int
 
 
 class ELRewardsReceived(TypedDict):
     """ELRewardsReceived event definition"""
+
+    amount: int
+
+
+class WithdrawalsReceived(TypedDict):
+    """WithdrawalsReceived event definition"""
 
     amount: int
 
