@@ -15,6 +15,7 @@ dist/
 /.vs/scripts/v17/.suo
 
 # virtual environment
+.direnv
 .venv
 
 /node_modules
