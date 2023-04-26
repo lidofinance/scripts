@@ -5,7 +5,7 @@ import pytest
 
 from brownie import interface, convert, web3
 from utils.test.event_validators.permission import Permission
-from utils.config import contracts, oracle_committee, gate_seal_address, guardians
+from utils.config import contracts, oracle_committee, gate_seal_address, deposit_security_module_guardians
 
 
 @pytest.fixture(scope="module")
@@ -35,7 +35,7 @@ def protocol_permissions():
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_WITHDRAWAL_CREDENTIALS_ROLE": [],
                 "STAKING_MODULE_PAUSE_ROLE": [contracts.deposit_security_module],
-                "STAKING_MODULE_RESUME_ROLE": [],
+                "STAKING_MODULE_RESUME_ROLE": [contracts.deposit_security_module],
                 "STAKING_MODULE_MANAGE_ROLE": [],
                 "REPORT_EXITED_VALIDATORS_ROLE": [contracts.accounting_oracle],
                 "UNSAFE_SET_EXITED_VALIDATORS_ROLE": [],
@@ -123,7 +123,7 @@ def protocol_permissions():
         "DepositSecurityModule": {
             "contract": contracts.deposit_security_module,
             "type": "CustomApp",
-            "state": {"getOwner": contracts.agent, "getGuardians": guardians},
+            "state": {"getOwner": contracts.agent, "getGuardians": deposit_security_module_guardians},
             "roles": {},
         },
         "Lido": {

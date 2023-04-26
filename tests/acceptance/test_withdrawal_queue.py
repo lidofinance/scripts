@@ -1,9 +1,11 @@
 import pytest
 from brownie import interface, ZERO_ADDRESS  # type: ignore
 
-from utils.config import contracts, lido_dao_withdrawal_queue
-
-lido_dao_withdrawal_queue_impl = "0x851f572d3382Ff19ec1f0E04E65B625E32bF21CB"
+from utils.config import (
+    contracts,
+    lido_dao_withdrawal_queue,
+    lido_dao_withdrawal_queue_implementation,
+)
 
 
 @pytest.fixture(scope="module")
@@ -13,7 +15,7 @@ def contract() -> interface.WithdrawalQueueERC721:
 
 def test_proxy(contract):
     proxy = interface.OssifiableProxy(contract)
-    assert proxy.proxy__getImplementation() == lido_dao_withdrawal_queue_impl
+    assert proxy.proxy__getImplementation() == lido_dao_withdrawal_queue_implementation
     assert proxy.proxy__getAdmin() == contracts.agent.address
 
 

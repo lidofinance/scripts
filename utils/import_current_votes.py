@@ -9,10 +9,11 @@ from utils.config import (
     ldo_holder_address_for_tests,
     ContractsLazyLoader,
     deployer_eoa,
-    shapella_upgrade_template_address,
+    lido_dao_template_address,
     get_is_live,
 )
 from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
+
 
 def get_vote_scripts_dir() -> str:
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -43,7 +44,7 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
 
     if os.getenv("SKIP_SHAPELLA_PRELIMINARY_STEP"):
         assert (
-            shapella_upgrade_template_address != ""
+            lido_dao_template_address != ""
         ), "If SKIP_SHAPELLA_PRELIMINARY_STEP is set 'shapella_upgrade_template' must be specified in the config"
     else:
         assert (
@@ -51,7 +52,7 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
             "ERROR: will not do preliminary actions on live network. run `preliminary_shapella...py` script manually",
         )
         deployed_upgrade_template = prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
-        assert deployed_upgrade_template.address == shapella_upgrade_template_address
+        assert deployed_upgrade_template.address == lido_dao_template_address
 
     vote_ids = []
     vote_transactions = []

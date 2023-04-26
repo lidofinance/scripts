@@ -7,7 +7,7 @@ from brownie import ZERO_ADDRESS, Wei, convert
 from brownie.convert.datatypes import ReturnValue
 from tests.snapshot.utils import get_slot
 
-from utils.config import contracts
+from utils.config import contracts, lido_dao_deposit_security_module_address_v1
 from utils.mainnet_fork import chain_snapshot
 from utils.test.snapshot_helpers import dict_zip
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
@@ -16,7 +16,6 @@ PUBKEY_LENGTH = 48
 SIGNATURE_LENGTH = 96
 DEPOSIT_SIZE = Wei("32 ether")
 RANDOM_SEED = datetime.now().timestamp()
-OLD_DSM_ADDRESS = "0x710B3303fB508a84F10793c1106e32bE873C24cd"
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -45,8 +44,8 @@ def agent_eoa(accounts):
 
 @pytest.fixture(scope="module")
 def old_deposit_security_module_eoa(accounts, EtherFunder):
-    EtherFunder.deploy(OLD_DSM_ADDRESS, {"from": accounts[0], "amount": "10 ether"})
-    return accounts.at(OLD_DSM_ADDRESS, force=True)
+    EtherFunder.deploy(lido_dao_deposit_security_module_address_v1, {"from": accounts[0], "amount": "10 ether"})
+    return accounts.at(lido_dao_deposit_security_module_address_v1, force=True)
 
 
 @pytest.fixture(scope="module")
@@ -214,11 +213,16 @@ def make_snapshot(node_operators_registry) -> Dict[str, Any]:
         snapshot["total_signing_keys_count"][id] = node_operators_registry.getTotalSigningKeyCount(id)
         snapshot["unused_signing_keys_count"][id] = node_operators_registry.getUnusedSigningKeyCount(id)
 
+        signing_keys_count = (
+            snapshot["node_operators"][id]["totalSigningKeys"]
+            if "totalSigningKeys" in snapshot["node_operators"][id]
+            else snapshot["node_operators"][id]["totalAddedValidators"]
+        )
+
         snapshot["signing_keys"][id] = []
-        if snapshot["node_operators"][id]["totalSigningKeys"] == 0:
+        if signing_keys_count == 0:
             continue
 
-        signing_keys_count = snapshot["node_operators"][id]["totalSigningKeys"]
         signing_key_indices = random.sample(range(0, signing_keys_count), min(10, signing_keys_count))
 
         for index in signing_key_indices:
@@ -270,15 +274,15 @@ def assert_node_operators(before: Dict[str, ReturnValue], after: Dict[str, Retur
         assert node_operator_before["active"] == node_operator_after["active"]
         assert node_operator_before["name"] == node_operator_after["name"]
         assert node_operator_before["rewardAddress"] == node_operator_after["rewardAddress"]
-        assert node_operator_before["usedSigningKeys"] == node_operator_after["usedSigningKeys"]
-        assert node_operator_before["stoppedValidators"] == node_operator_after["stoppedValidators"]
-        assert node_operator_before["totalSigningKeys"] == node_operator_after["totalSigningKeys"]
+        assert node_operator_before["usedSigningKeys"] == node_operator_after["totalDepositedValidators"]
+        assert node_operator_before["stoppedValidators"] == node_operator_after["totalExitedValidators"]
+        assert node_operator_before["totalSigningKeys"] == node_operator_after["totalAddedValidators"]
         if not node_operator_before["active"]:
-            assert node_operator_after["stakingLimit"] == node_operator_after["usedSigningKeys"]
+            assert node_operator_after["totalVettedValidators"] == node_operator_after["totalDepositedValidators"]
         elif node_operator_before["stakingLimit"] > node_operator_before["totalSigningKeys"]:
-            assert node_operator_after["stakingLimit"] == node_operator_after["totalSigningKeys"]
+            assert node_operator_after["totalVettedValidators"] == node_operator_after["totalAddedValidators"]
         else:
-            assert node_operator_before["stakingLimit"] == node_operator_after["stakingLimit"]
+            assert node_operator_before["stakingLimit"] == node_operator_after["totalVettedValidators"]
 
 
 def almost_eq(a, b, epsilon=0):

@@ -4,8 +4,8 @@ from brownie import interface, web3  # type: ignore
 from utils.config import (
     contracts,
     lido_dao_deposit_security_module_address,
-    guardians,
-    lido_dao_deposit_security_module_address_old,
+    deposit_security_module_guardians,
+    lido_dao_deposit_security_module_address_v1,
     deposit_contract,
 )
 
@@ -31,7 +31,7 @@ def test_links(contract):
 
 
 def test_migration(contract):
-    old_dsm = interface.DepositSecurityModule(lido_dao_deposit_security_module_address_old)
+    old_dsm = interface.DepositSecurityModule(lido_dao_deposit_security_module_address_v1)
 
     assert contract.PAUSE_MESSAGE_PREFIX() != old_dsm.PAUSE_MESSAGE_PREFIX()
     assert contract.ATTEST_MESSAGE_PREFIX() != old_dsm.ATTEST_MESSAGE_PREFIX()
@@ -47,10 +47,10 @@ def test_deposit_security_module(contract):
     assert contract.getMinDepositBlockDistance() == min_deposit_block_distance
     assert contract.getPauseIntentValidityPeriodBlocks() == pause_intent_validity_period
 
-    assert contract.getGuardians() == guardians
+    assert contract.getGuardians() == deposit_security_module_guardians
     assert contract.getGuardianQuorum() == 4
 
-    for guardian in guardians:
+    for guardian in deposit_security_module_guardians:
         assert contract.getGuardianIndex(guardian) >= 0
         assert contract.isGuardian(guardian) == True
 

@@ -6,7 +6,7 @@ from utils.config import (
     lido_dao_withdrawal_queue,
     lido_dao_validators_exit_bus_oracle,
     gate_seal_factory_address,
-    shapella_upgrade_template_address,
+    lido_dao_template_address,
     gate_seal_address,
     prompt_bool,
     get_priority_fee,
@@ -112,9 +112,9 @@ def prepare_transfer_ownership_to_template(owner, template):
 
 
 def prepare_for_shapella_upgrade_voting(temporary_admin, silent=False):
-    assert silent or shapella_upgrade_template_address != ""
+    assert silent or lido_dao_template_address != ""
     if not silent:
-        ask_shapella_upgrade_confirmation(shapella_upgrade_template_address, lido_dao_lido_locator_implementation)
+        ask_shapella_upgrade_confirmation(lido_dao_template_address, lido_dao_lido_locator_implementation)
 
     prepare_deploy_gate_seal(temporary_admin)
 

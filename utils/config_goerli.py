@@ -19,7 +19,7 @@ lido_dao_lido_repo = "0xe9ede497d2417fd980d8b5338232666641b9b9ac"
 lido_dao_node_operators_registry_repo = "0x5f867429616b380f1ca7a7283ff18c53a0033073"
 lido_dao_legacy_oracle_repo = "0x9234e37Adeb44022A078557D9943b72AB89bF36a"
 
-lido_dao_deposit_security_module_address_old = "0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe"
+lido_dao_deposit_security_module_address_v1 = "0x7DC1C1ff64078f73C98338e2f17D1996ffBb2eDe"
 lido_dao_deposit_security_module_address = "0xC8a75E7196b11aE2DEbC39a2F8583f852E5BB7c3"
 
 # Needed only for the tests development. Before the voting start the LidoLocator
@@ -46,7 +46,7 @@ lido_dao_withdrawal_vault = "0xdc62f9e8C34be08501Cdef4EBDE0a280f576D762"
 lido_dao_withdrawal_vault_implementation = "0x297Eb629655C8c488Eb26442cF4dfC8A7Cc32fFb"
 lido_dao_staking_router = "0xa3Dbd317E53D363176359E10948BA0b1c0A4c820"
 oracle_daemon_config = "0xad55833Dec7ab353B47691e58779Bd979d459388"
-shapella_upgrade_template_address = "0xD2fEf3d3544ddf64028784aC3f166413A2A61393"
+lido_dao_template_address = "0xD2fEf3d3544ddf64028784aC3f166413A2A61393"
 
 lido_easytrack = "0xAf072C8D368E4DD4A9d4fF6A76693887d6ae92Af"
 lido_easytrack_evmscriptexecutor = "0x3c9AcA237b838c59612d79198685e7f20C7fE783"
@@ -78,7 +78,7 @@ oracle_committee = [
     "0x3799bDA7B884D33F79CEC926af21160dc47fbe05",
 ]
 
-guardians = [
+deposit_security_module_guardians = [
     "0x3dc4cF780F2599B528F37dedB34449Fb65Ef7d4A",
     "0x96fD3D127Abd0D77724D49B7bdDECdc89f684bB6",
     "0x79A132BE0c25cED09e745629D47cf05e531bb2bb",
@@ -92,7 +92,3 @@ guardians = [
 
 wsteth_token_address = "0x6320cd32aa674d2898a68ec82e869385fc5f7e2f"
 deposit_contract = "0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b"
-
-# Used if env variable PARSE_EVENTS_FROM_LOCAL_ABI is set
-# Needed to enable events checking if ABI from Etherscan not available for any reason
-contract_address_mapping = {}

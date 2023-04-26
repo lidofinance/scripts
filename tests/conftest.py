@@ -13,11 +13,7 @@ from utils.evm_script import EMPTY_CALLSCRIPT
 
 from utils.config import contracts, network_name, MAINNET_VOTE_DURATION
 
-from utils.config import (
-    ldo_holder_address_for_tests,
-    ldo_vote_executors_for_tests,
-    contract_address_mapping,
-)
+from utils.config import *
 from utils.txs.deploy import deploy_from_prepared_tx
 
 ENV_OMNIBUS_BYPASS_EVENTS_DECODING = "OMNIBUS_BYPASS_EVENTS_DECODING"
@@ -161,13 +157,47 @@ def parse_events_from_local_abi():
     if os.getenv(ENV_OMNIBUS_BYPASS_EVENTS_DECODING):
         return
 
-    if os.getenv(ENV_PARSE_EVENTS_FROM_LOCAL_ABI):
-        interface_path_template = "interfaces/{}.json"
-        for contract_name, addresses in contract_address_mapping.items():
-            for addr in addresses:
-                with open(interface_path_template.format(contract_name)) as fp:
-                    abi = json.load(fp)
-                contract = Contract.from_abi(contract_name, addr, abi)
-                # See https://eth-brownie.readthedocs.io/en/stable/api-network.html?highlight=_add_contract#brownie.network.state._add_contract
-                # Added contract will resolve from address during state._find_contract without a request to Etherscan
-                state._add_contract(contract)
+    if not os.getenv(ENV_PARSE_EVENTS_FROM_LOCAL_ABI):
+        return
+
+    # Used if env variable PARSE_EVENTS_FROM_LOCAL_ABI is set
+    # Needed to enable events checking if ABI from Etherscan not available for any reason
+    contract_address_mapping = {
+        "AccountingOracle": [lido_dao_accounting_oracle, lido_dao_accounting_oracle_implementation],
+        "ACL": [lido_dao_acl_implementation_address],
+        "Burner": [lido_dao_burner],
+        "CallsScript": [lido_dao_calls_script],
+        "DepositSecurityModule": [lido_dao_deposit_security_module_address],
+        "EIP712StETH": [lido_dao_eip712_steth],
+        "HashConsensus": [
+            lido_dao_hash_consensus_for_accounting_oracle,
+            lido_dao_hash_consensus_for_validators_exit_bus_oracle,
+        ],
+        "LegacyOracle": [lido_dao_legacy_oracle, lido_dao_legacy_oracle_implementation],
+        "Lido": [lido_dao_steth_address, lido_dao_steth_implementation_address],
+        "LidoLocator": [lido_dao_lido_locator],
+        "LidoExecutionLayerRewardsVault": [lido_dao_execution_layer_rewards_vault],
+        "Kernel": [lido_dao_kernel_implementation],
+        "NodeOperatorsRegistry": [lido_dao_node_operators_registry, lido_dao_node_operators_registry_implementation],
+        "OracleDaemonConfig": [oracle_daemon_config],
+        "OracleReportSanityChecker": [lido_dao_oracle_report_sanity_checker],
+        "Repo": [lido_dao_aragon_repo],
+        "StakingRouter": [lido_dao_staking_router, lido_dao_staking_router_implementation],
+        "ValidatorsExitBusOracle": [
+            lido_dao_validators_exit_bus_oracle,
+            lido_dao_validators_exit_bus_oracle_implementation,
+        ],
+        "Voting": [lido_dao_voting_implementation_address],
+        "WithdrawalQueueERC721": [lido_dao_withdrawal_queue, lido_dao_withdrawal_queue_implementation],
+        "WithdrawalVault": [lido_dao_withdrawal_vault, lido_dao_withdrawal_vault_implementation],
+    }
+
+    interface_path_template = "interfaces/{}.json"
+    for contract_name, addresses in contract_address_mapping.items():
+        for addr in addresses:
+            with open(interface_path_template.format(contract_name)) as fp:
+                abi = json.load(fp)
+            contract = Contract.from_abi(contract_name, addr, abi)
+            # See https://eth-brownie.readthedocs.io/en/stable/api-network.html?highlight=_add_contract#brownie.network.state._add_contract
+            # Added contract will resolve from address during state._find_contract without a request to Etherscan
+            state._add_contract(contract)

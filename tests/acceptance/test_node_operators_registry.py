@@ -1,7 +1,12 @@
 import pytest
 from brownie import ZERO_ADDRESS, interface, web3  # type: ignore
 
-from utils.config import contracts, lido_dao_node_operators_registry, lido_dao_node_operators_registry_implementation
+from utils.config import (
+    contracts,
+    lido_dao_node_operators_registry,
+    lido_dao_node_operators_registry_implementation,
+    NODE_OPERATORS_REGISTRY_APP_ID,
+)
 
 # Source of truth: https://hackmd.io/pdix1r4yR46fXUqiHaNKyw?view
 stuck_penalty_delay = 432000
@@ -20,7 +25,7 @@ def test_aragon(contract):
     proxy = interface.AppProxyUpgradeable(contract)
     assert proxy.implementation() == lido_dao_node_operators_registry_implementation
     assert contract.kernel() == contracts.kernel
-    assert contract.appId() == "0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d"
+    assert contract.appId() == NODE_OPERATORS_REGISTRY_APP_ID
     assert contract.hasInitialized() == True
     assert contract.isPetrified() == False
 

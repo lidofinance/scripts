@@ -33,6 +33,9 @@ else:
     print(f'Using {color("magenta")}config_mainnet.py{color} addresses')
     from utils.config_mainnet import *
 
+    print(f'Using {color("magenta")}config_shapella_mainnet.py{color} addresses')
+    from utils.config_shapella_mainnet import *
+
 
 def get_is_live() -> bool:
     dev_networks = ["development", "hardhat", "hardhat-fork", "mainnet-fork", "goerli-fork", "local-fork"]
@@ -125,7 +128,7 @@ class ContractsLazyLoader:
 
     @property
     def deposit_security_module_v1(self) -> interface.DepositSecurityModule:
-        return interface.DepositSecurityModuleV1(lido_dao_deposit_security_module_address_old)
+        return interface.DepositSecurityModuleV1(lido_dao_deposit_security_module_address_v1)
 
     @property
     def deposit_security_module(self) -> interface.DepositSecurityModule:
@@ -229,8 +232,7 @@ class ContractsLazyLoader:
 
     @property
     def shapella_upgrade_template(self) -> ShapellaUpgradeTemplate:
-        assert shapella_upgrade_template_address != ""
-        return ShapellaUpgradeTemplate.at(shapella_upgrade_template_address)
+        return ShapellaUpgradeTemplate.at(lido_dao_template_address)
 
 
 def __getattr__(name: str) -> Any:

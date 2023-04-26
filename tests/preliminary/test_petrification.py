@@ -14,12 +14,12 @@ from utils.config import (
     lido_dao_withdrawal_vault_stub_implementation,
     lido_dao_lido_locator_implementation,
     dummy_implementation_address,
+    initial_dead_token_holder,
     accounts,
 )
 
 
 PETRIFICATION_MARK = 115792089237316195423570985008687907853269984665640564039457584007913129639935
-INITIAL_TOKEN_HOLDER = "0x000000000000000000000000000000000000dead"
 
 
 @pytest.fixture(scope="module")
@@ -192,5 +192,5 @@ def test_is_petrified(petrified_implementations):
 
 
 def test_stone(shapella_upgrade_template):
-    assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
-    assert contracts.lido.sharesOf(INITIAL_TOKEN_HOLDER) > 0
+    assert contracts.lido.balanceOf(initial_dead_token_holder) > 0
+    assert contracts.lido.sharesOf(initial_dead_token_holder) > 0

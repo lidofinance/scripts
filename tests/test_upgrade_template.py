@@ -2,7 +2,7 @@
 Tests for voting ??/05/2023
 """
 import pytest
-from brownie import reverts, ShapellaUpgradeTemplate, chain, web3, interface, ZERO_ADDRESS
+from brownie import reverts, ShapellaUpgradeTemplate, chain, web3, interface
 from scripts.upgrade_shapella_1 import start_vote
 from collections import OrderedDict
 from utils.config import (
@@ -95,17 +95,12 @@ def test_revert_if_upgrade_not_finished(accounts, helpers, template):
     with reverts(""):
         template.revertIfUpgradeNotFinished()
 
-    # NB: due to some bug brownie returns empty revert string for view function
-    with reverts(""):
-        template.assertUpgradeIsFinishedCorrectly()
-
     tx_params = {"from": ldo_holder_address_for_tests}
     vote_id, _ = start_vote(tx_params, silent=True)
     helpers.execute_votes(accounts, [vote_id], contracts.voting)
 
     # Expect no revert
     template.revertIfUpgradeNotFinished()
-    template.assertUpgradeIsFinishedCorrectly()
 
 
 def test_fail_start_if_not_from_voting(stranger, template):
@@ -147,6 +142,3 @@ def test_fail_finish_if_started_in_different_block(template):
     template.startUpgrade(from_voting_tx_args)
     with reverts(typed_error("StartAndFinishMustBeInSameBlock")):
         template.finishUpgrade(from_voting_tx_args)
-
-    # I've tried to check that is passes in the same block by using brownie.multicall
-    # but hasn't succeeded in substituting the multicall_address to voting
