@@ -6,6 +6,8 @@ import pytest
 from brownie import interface, convert, web3
 from utils.test.event_validators.permission import Permission
 from utils.config import contracts, oracle_committee, gate_seal_address, deposit_security_module_guardians
+from utils.config_mainnet import (
+    lido_easytrack_evmscriptexecutor, lido_easytrack_evmscriptexecutor)
 
 
 @pytest.fixture(scope="module")
@@ -145,22 +147,7 @@ def protocol_permissions():
                 "MANAGE_NODE_OPERATOR_ROLE": [],
                 "MANAGE_SIGNING_KEYS": [contracts.voting],
                 "SET_NODE_OPERATOR_LIMIT_ROLE": [contracts.voting],
-                "ADD_NODE_OPERATOR_ROLE": [],
-                "SET_NODE_OPERATOR_ACTIVE_ROLE": [],
-                "SET_NODE_OPERATOR_NAME_ROLE": [],
-                "SET_NODE_OPERATOR_ADDRESS_ROLE": [],
-                "REPORT_STOPPED_VALIDATORS_ROLE": []
-            },
-        },
-        "LegacyOracle": {
-            "contract": contracts.legacy_oracle,
-            "type": "AragonApp",
-            "roles": {
-                "MANAGE_MEMBERS": [],
-                "MANAGE_QUORUM": [],
-                "SET_BEACON_SPEC": [],
-                "SET_REPORT_BOUNDARIES": [],
-                "SET_BEACON_REPORT_RECEIVER": [],
+                "SET_NODE_OPERATOR_LIMIT_ROLE": [lido_easytrack_evmscriptexecutor, contracts.voting]
             },
         },
         "OracleDaemonConfig": {

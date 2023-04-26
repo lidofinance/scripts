@@ -1,13 +1,12 @@
-import pytest
 import os
 from web3 import Web3
-from brownie import interface, convert
+from brownie import web3
 from brownie.network.event import _decode_logs
-from utils.test.event_validators.permission import Permission
+from brownie.network.state import TxHistory
 from utils.config import contracts
 from tests.regression.test_permissions import protocol_permissions
 from utils.config_mainnet import (
-    lido_dao_agent_address, lido_easytrack_evmscriptexecutor, lido_dao_deposit_security_module_address_old, lido_easytrack_evmscriptexecutor)
+    lido_dao_agent_address, lido_easytrack_evmscriptexecutor, lido_easytrack_evmscriptexecutor)
 
 
 def has_permissions(app, role, entity):
@@ -15,12 +14,12 @@ def has_permissions(app, role, entity):
 
 
 def assert_has_permissions(app, role, entity):
-    assert has_permissions(
+    assert True == has_permissions(
         app, role, entity), f'Entity {entity} should have permission {role} for app {app}'
 
 
 def assert_has_not_permissions(app, role, entity, role_name=None):
-    assert not has_permissions(
+    assert False == has_permissions(
         app, role, entity), f'Entity {entity} should not have permission {role_name or role} for app {app}'
 
 
@@ -36,16 +35,11 @@ def assert_has_permissions_in_list(app, role, entity_list):
 
 def assert_not_match_with_events_in_list(app, role, entity_list, role_name=None, app_name=None):
     for address in entity_list:
-        # assert not has_permissions(
-        #     app, role, address), f'{address} with role {role_name or role} for app {app} does not match with permission events'
         assert_not_match_with_events(app, role, address, role_name, app_name)
 
 
 def assert_not_match_with_events(app, role, entity, role_name=None, app_name=None):
-    has = has_permissions(app, role, entity)
-    if has == True:
-        print(
-            f'\033[91m {entity} with role {role_name or role} for app {app_name or app} does not match with permission events \033[0m')
+    assert not has_permissions(app, role, entity)
 
 
 def collect_permissions_from_events(permission_events):
@@ -64,24 +58,8 @@ def collect_permissions_from_events(permission_events):
     return apps
 
 
-def test_protocol_permissions_events(protocol_permissions):
-    w3 = Web3(Web3.HTTPProvider(
-        f'https://mainnet.infura.io/v3/{os.getenv("WEB3_INFURA_PROJECT_ID")}'))
-
-    event_signature_hash = w3.keccak(
-        text="SetPermission(address,address,bytes32,bool)").hex()
-    events = w3.eth.filter({"address": contracts.acl.address, "fromBlock": 11473216, "topics": [
-        event_signature_hash]}).get_all_entries()
-
-    decoded_events = _decode_logs(events)
-    permission_events = decoded_events['SetPermission']
-
-    aragon_apps = [app for app in protocol_permissions.values()
-                   if app['type'] == 'AragonApp']
-
-    events_by_app = collect_permissions_from_events(permission_events)
-
-    roles_after_votes = {
+def permissions_after_votes():
+    return {
         contracts.acl.address: {
             'roles': {
                 'CREATE_PERMISSIONS_ROLE': [contracts.voting.address]
@@ -136,15 +114,42 @@ def test_protocol_permissions_events(protocol_permissions):
         contracts.node_operators_registry.address: {
             'roles': {
                 'MANAGE_SIGNING_KEYS': [contracts.voting.address],
-                'SET_NODE_OPERATOR_LIMIT_ROLE': [contracts.voting.address, lido_easytrack_evmscriptexecutor]
+                'SET_NODE_OPERATOR_LIMIT_ROLE': [contracts.voting.address, lido_easytrack_evmscriptexecutor],
+                'STAKING_ROUTER_ROLE': [contracts.staking_router.address]
             }
         }
     }
 
-    # {
-    #     'app': {'role': ['entity', 'entity']},
-    #     'app': {'role': ['entity', 'entity']},
-    # }
+
+def test_protocol_permissions_events(protocol_permissions):
+    w3 = Web3(Web3.HTTPProvider(
+        f'https://mainnet.infura.io/v3/{os.getenv("WEB3_INFURA_PROJECT_ID")}'))
+
+    event_signature_hash = w3.keccak(
+        text="SetPermission(address,address,bytes32,bool)").hex()
+    events = w3.eth.filter({"address": contracts.acl.address, "fromBlock": 11473216, "topics": [
+        event_signature_hash]}).get_all_entries()
+
+    history = TxHistory()
+    last_vote_block = history[0].block_number
+
+    events_after_voting = web3.eth.filter({"address": contracts.acl.address, "fromBlock": last_vote_block, "topics": [
+        event_signature_hash]}).get_all_entries()
+
+    decoded_events = _decode_logs(events)
+    permission_events_before_voting = decoded_events['SetPermission']
+    permission_events_after_voting = _decode_logs(
+        events_after_voting)['SetPermission']
+
+    permission_events = []
+    permission_events.extend(permission_events_before_voting)
+    permission_events.extend(permission_events_after_voting)
+
+    aragon_apps = [app for app in protocol_permissions.values()
+                   if app['type'] == 'AragonApp']
+
+    events_by_app = collect_permissions_from_events(permission_events)
+    roles_after_votes = permissions_after_votes()
 
     app_names = {
         contracts.acl.address: 'Acl',
@@ -160,10 +165,11 @@ def test_protocol_permissions_events(protocol_permissions):
     }
     entity_names = {
         contracts.voting.address: 'Voting',
-        lido_dao_deposit_security_module_address_old: 'OLD_DepositSecurityModule',
+        contracts.deposit_security_module_v1.address: 'OLD_DepositSecurityModule',
         contracts.finance.address: 'Finance',
         contracts.token_manager.address: 'lido_dao_token_manager_address',
         lido_easytrack_evmscriptexecutor: 'lido_easytrack_EVMScriptExecutor',
+        contracts.staking_router.address: 'StakingRouter',
     }
 
     print('========================== ROLES after votes ==========================')
@@ -215,11 +221,6 @@ def test_protocol_permissions_events(protocol_permissions):
                     else:
                         assert_not_match_with_events(
                             address, keccak_role, entity, role, app_names[address])
-                    # assert address in app['roles'][role], f'{address} {entity_names[address]} has {role}'
-                    # if address not in app['roles'][role]:
-                    #     print(
-                    #         f'\033[91m     {address} {entity_names[address]} has {role} but not in protocol_permissions file\033[0m')
-                    # print('--', role, address, entity_names[address])
             else:
                 assert_not_match_with_events_in_list(
                     address, keccak_role, app['roles'][role], role, app_names[address])
