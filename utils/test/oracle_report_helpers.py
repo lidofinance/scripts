@@ -1,3 +1,4 @@
+import warnings
 from brownie import chain, web3  # type: ignore
 from brownie.exceptions import VirtualMachineError  # type: ignore
 from eth_abi import encode
@@ -225,8 +226,11 @@ def wait_to_next_available_report_time(oracle_contract):
 
 
 def oracle_report(
+    *,
     cl_diff=ETH(10),
     exclude_vaults_balances=False,
+    report_el_vault=True,
+    report_withdrawals_vault=True,
     simulation_block_identifier=None,
     wait_to_next_report_time=True,
     extraDataFormat=0,
@@ -256,7 +260,15 @@ def oracle_report(
 
     # simulate_reports needs proper withdrawal and elRewards vaults balances
     if exclude_vaults_balances:
+        if not report_withdrawals_vault or not report_el_vault:
+            warnings.warn("exclude_vaults_balances overrides report_withdrawals_vault and report_el_vault")
+
+        report_withdrawals_vault = False
+        report_el_vault = False
+
+    if not report_withdrawals_vault:
         withdrawalVaultBalance = 0
+    if not report_el_vault:
         elRewardsVaultBalance = 0
 
     (postTotalPooledEther, postTotalShares, withdrawals, elRewards) = simulate_report(
