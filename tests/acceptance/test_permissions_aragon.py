@@ -14,12 +14,12 @@ def has_permissions(app, role, entity):
 
 
 def assert_has_permissions(app, role, entity):
-    assert True == has_permissions(
+    assert has_permissions(
         app, role, entity), f'Entity {entity} should have permission {role} for app {app}'
 
 
 def assert_has_not_permissions(app, role, entity, role_name=None):
-    assert False == has_permissions(
+    assert not has_permissions(
         app, role, entity), f'Entity {entity} should not have permission {role_name or role} for app {app}'
 
 
