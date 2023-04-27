@@ -7,6 +7,7 @@ from utils.config import contracts
 from tests.regression.test_permissions import protocol_permissions
 from utils.config_mainnet import (
     lido_dao_agent_address, lido_easytrack_evmscriptexecutor, lido_easytrack_evmscriptexecutor)
+from utils.config_shapella_mainnet import (lido_dao_evm_script_registry)
 
 
 def has_permissions(app, role, entity):
@@ -70,7 +71,7 @@ def permissions_after_votes():
                 'APP_MANAGER_ROLE': [contracts.voting.address]
             }
         },
-        '0x853cc0D5917f49B57B8e9F89e491F5E18919093A': {
+        lido_dao_evm_script_registry: {
             'roles': {
                 'REGISTRY_MANAGER_ROLE': [contracts.voting.address],
                 'REGISTRY_ADD_EXECUTOR_ROLE': [contracts.voting.address]
@@ -154,7 +155,7 @@ def test_protocol_permissions_events(protocol_permissions):
     app_names = {
         contracts.acl.address: 'Acl',
         contracts.kernel.address: 'lido_dao_kernel',
-        '0x853cc0D5917f49B57B8e9F89e491F5E18919093A': 'EVMScriptRegistry',
+        lido_dao_evm_script_registry: 'EVMScriptRegistry',
         contracts.token_manager.address: 'lido_dao_token_manager_address',
         contracts.lido.address: 'Lido',
         lido_dao_agent_address: 'lido_dao_agent',
