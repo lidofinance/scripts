@@ -100,15 +100,15 @@ def test_withdrawals_vault_addr_did_not_changed():
 # WithdrawalVault address is matching with WithdrawalCredentials
 def test_withdrawals_vault_addr_matching_with_wc():
     withdrawal_credentials = contracts.lido.getWithdrawalCredentials()
-    withdrawal_credentials_addresss = extract_address_from_eth1_wc(str(withdrawal_credentials))
-    assert withdrawal_credentials_addresss == lido_dao_withdrawal_vault.lower()
+    withdrawal_credentials_address = extract_address_from_eth1_wc(str(withdrawal_credentials))
+    assert withdrawal_credentials_address == lido_dao_withdrawal_vault.lower()
 
     prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
 
     withdrawal_credentials = contracts.lido.getWithdrawalCredentials()
-    withdrawal_credentials_addresss = extract_address_from_eth1_wc(str(withdrawal_credentials))
+    withdrawal_credentials_address = extract_address_from_eth1_wc(str(withdrawal_credentials))
 
-    assert withdrawal_credentials_addresss == lido_dao_withdrawal_vault.lower()
+    assert withdrawal_credentials_address == lido_dao_withdrawal_vault.lower()
 
 
 def test_upgrade_template_addresses():
@@ -153,7 +153,7 @@ def test_upgrade_template_addresses():
     assert template._withdrawalQueueImplementation() == lido_dao_withdrawal_queue_implementation
 
 
-def test_proxyfied_implementation_adresses_prepared():
+def test_proxyfied_implementation_addresses_prepared():
     prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
 
     assert get_proxy_impl_app(lido_dao_acl_address) == lido_dao_acl_implementation_address
@@ -168,7 +168,7 @@ def test_proxyfied_implementation_adresses_prepared():
     assert get_proxy_impl_ossifiable(lido_dao_staking_router) == dummy_implementation_address  # dummy
 
 
-def test_proxyfied_implementation_adresses_after_upgrade(helpers):
+def test_proxyfied_implementation_addresses_after_upgrade(helpers):
     start_and_execute_votes(contracts.voting, helpers)
 
     assert get_proxy_impl_app(lido_dao_acl_address) == lido_dao_acl_implementation_address

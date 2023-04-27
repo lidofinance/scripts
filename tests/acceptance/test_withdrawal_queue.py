@@ -5,6 +5,9 @@ from utils.config import (
     contracts,
     lido_dao_withdrawal_queue,
     lido_dao_withdrawal_queue_implementation,
+    WITHDRAWAL_QUEUE_ERC721_NAME,
+    WITHDRAWAL_QUEUE_ERC721_SYMBOL,
+    WITHDRAWAL_QUEUE_ERC721_BASE_URI,
 )
 
 
@@ -35,7 +38,7 @@ def test_withdrawal_queue(contract):
 
 
 def test_withdrawal_queue_erc721(contract):
-    assert contract.name() == "stETH Withdrawal NFT"
-    assert contract.symbol() == "unstETH"
-    assert contract.getBaseURI() == ""
+    assert contract.name() == WITHDRAWAL_QUEUE_ERC721_NAME
+    assert contract.symbol() == WITHDRAWAL_QUEUE_ERC721_SYMBOL
+    assert contract.getBaseURI() == WITHDRAWAL_QUEUE_ERC721_BASE_URI
     assert contract.getNFTDescriptorAddress() == ZERO_ADDRESS

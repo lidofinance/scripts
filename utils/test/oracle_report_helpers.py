@@ -4,7 +4,7 @@ from eth_abi.abi import encode_abi
 from hexbytes import HexBytes
 
 from utils.config import contracts
-from utils.test.helpers import ETH, eth_balance
+from utils.test.helpers import ETH, eth_balance, GWEI
 
 ZERO_HASH = bytes([0] * 32)
 ZERO_BYTES32 = HexBytes(ZERO_HASH)
@@ -34,7 +34,7 @@ def prepare_report(
         int(consensusVersion),
         int(refSlot),
         int(numValidators),
-        int(clBalance // (10**9)),
+        int(clBalance // GWEI),
         [int(i) for i in stakingModuleIdsWithNewlyExitedValidators],
         [int(i) for i in numExitedValidatorsByStakingModule],
         int(withdrawalVaultBalance),

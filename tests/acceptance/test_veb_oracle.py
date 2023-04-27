@@ -8,6 +8,12 @@ from utils.config import (
     lido_dao_validators_exit_bus_oracle_implementation,
     lido_dao_validators_exit_bus_oracle,
     oracle_committee,
+    CHAIN_SLOTS_PER_EPOCH,
+    CHAIN_SECONDS_PER_SLOT,
+    CHAIN_GENESIS_TIME,
+    VALIDATORS_EXIT_BUS_ORACLE_EPOCHS_PER_FRAME,
+    FAST_LANE_LENGTH_SLOTS,
+    ORACLE_QUORUM,
 )
 
 last_seen_ref_slot = 6189855
@@ -18,13 +24,6 @@ def contract() -> interface.ValidatorsExitBusOracle:
     return interface.ValidatorsExitBusOracle(lido_dao_validators_exit_bus_oracle)
 
 
-beacon_spec = {
-    "slotsPerEpoch": 32,
-    "secondsPerSlot": 12,
-    "genesisTime": 1606824023,
-}
-
-
 def test_proxy(contract):
     proxy = interface.OssifiableProxy(contract)
     assert proxy.proxy__getImplementation() == lido_dao_validators_exit_bus_oracle_implementation
@@ -32,8 +31,8 @@ def test_proxy(contract):
 
 
 def test_immutables(contract):
-    assert contract.SECONDS_PER_SLOT() == beacon_spec["secondsPerSlot"]
-    assert contract.GENESIS_TIME() == beacon_spec["genesisTime"]
+    assert contract.SECONDS_PER_SLOT() == CHAIN_SECONDS_PER_SLOT
+    assert contract.GENESIS_TIME() == CHAIN_GENESIS_TIME
 
 
 def test_versioned(contract):
@@ -73,8 +72,8 @@ def test_vebo_hash_consensus_synced_with_accounting_one(contract):
     accounting_consensus = interface.HashConsensus(lido_dao_hash_consensus_for_accounting_oracle)
 
     assert frameConfig["initialEpoch"] == accounting_consensus.getFrameConfig()["initialEpoch"]
-    assert frameConfig["epochsPerFrame"] == 75
-    assert frameConfig["fastLaneLengthSlots"] == 10
+    assert frameConfig["epochsPerFrame"] == VALIDATORS_EXIT_BUS_ORACLE_EPOCHS_PER_FRAME
+    assert frameConfig["fastLaneLengthSlots"] == FAST_LANE_LENGTH_SLOTS
 
     assert consensus.getInitialRefSlot() == accounting_consensus.getInitialRefSlot()
 
@@ -88,11 +87,11 @@ def test_vebo_hash_consensus(contract):
     assert currentFrame["reportProcessingDeadlineSlot"] > last_seen_ref_slot
 
     chainConfig = consensus.getChainConfig()
-    assert chainConfig["slotsPerEpoch"] == beacon_spec["slotsPerEpoch"]
-    assert chainConfig["secondsPerSlot"] == beacon_spec["secondsPerSlot"]
-    assert chainConfig["genesisTime"] == beacon_spec["genesisTime"]
+    assert chainConfig["slotsPerEpoch"] == CHAIN_SLOTS_PER_EPOCH
+    assert chainConfig["secondsPerSlot"] == CHAIN_SECONDS_PER_SLOT
+    assert chainConfig["genesisTime"] == CHAIN_GENESIS_TIME
 
-    assert consensus.getQuorum() == 5
+    assert consensus.getQuorum() == ORACLE_QUORUM
 
     members = consensus.getMembers()
     assert members["addresses"] == oracle_committee

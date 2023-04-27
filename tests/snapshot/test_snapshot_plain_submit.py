@@ -18,6 +18,7 @@ from utils.config import (
     lido_dao_voting_address,
 )
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
+from utils.test.helpers import ONE_ETH
 
 
 @pytest.fixture(scope="module")
@@ -72,11 +73,9 @@ def snapshot() -> Dict[str, any]:
 
 @pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
 def test_submit_snapshot(helpers, staker):
-    ether = 10**18
-
     def steps() -> Dict[str, Dict[str, any]]:
         track = {"init": snapshot()}
-        contracts.lido.submit(ZERO_ADDRESS, {"from": staker, "amount": ether})
+        contracts.lido.submit(ZERO_ADDRESS, {"from": staker, "amount": ONE_ETH})
         track["submit"] = snapshot()
         return track
 

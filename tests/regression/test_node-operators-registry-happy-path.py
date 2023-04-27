@@ -1,7 +1,6 @@
 import pytest
 from web3 import Web3
 from brownie import chain, ZERO_ADDRESS
-from hexbytes import HexBytes
 from typing import NewType, Tuple
 
 from utils.test.extra_data import (
@@ -12,12 +11,6 @@ from utils.test.oracle_report_helpers import (
     oracle_report,
 )
 from utils.config import contracts, lido_dao_staking_router
-
-PUBKEY_LENGTH = 48
-SIGNATURE_LENGTH = 96
-TOTAL_BASIS_POINTS = 10000
-ZERO_HASH = bytes([0] * 32)
-ZERO_BYTES32 = HexBytes(ZERO_HASH)
 
 
 @pytest.fixture()
@@ -87,7 +80,7 @@ def deposit_and_check_keys(nor, first_no_id, second_no_id, base_no_id, keys_coun
     module_total_deposited_keys_after = nor.getStakingModuleSummary()["totalDepositedValidators"]
 
     just_deposited = validators_after - validators_before
-    print('---------', just_deposited)
+    print("---------", just_deposited)
     if just_deposited:
         assert tx.events["DepositedValidatorsChanged"]["depositedValidators"] == validators_after
         assert tx.events["Unbuffered"]["amount"] == just_deposited * ETH(32)
@@ -298,7 +291,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
     assert extra_report_tx.events["StuckPenaltyStateChanged"][1]["nodeOperatorId"] == tested_no_id_second
     assert extra_report_tx.events["StuckPenaltyStateChanged"][1]["stuckValidatorsCount"] == 2
 
-    # Deposite keys
+    # Deposit keys
     (
         deposited_keys_first_before,
         deposited_keys_second_before,
@@ -524,7 +517,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
     assert nor.isOperatorPenalized(tested_no_id_second) == True
     assert nor.isOperatorPenalized(base_no_id) == False
 
-    # Deposite
+    # Deposit
     (
         deposited_keys_first_before,
         deposited_keys_second_before,
@@ -695,7 +688,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
     assert node_operator_second["refundedValidatorsCount"] == 2
     assert node_operator_second["stuckPenaltyEndTimestamp"] < chain.time()
 
-    # Deposite
+    # Deposit
     (
         deposited_keys_first_before,
         deposited_keys_second_before,
@@ -738,7 +731,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
     assert first_no_summary_after["depositableValidatorsCount"] == 0
     assert first_no_summary_after["isTargetLimitActive"] == True
 
-    # Deposite
+    # Deposit
     (
         deposited_keys_first_before,
         deposited_keys_second_before,
@@ -763,7 +756,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
     assert first_no_summary_after["depositableValidatorsCount"] > 0
     assert first_no_summary_after["isTargetLimitActive"] == False
 
-    # Deposite
+    # Deposit
     (
         deposited_keys_first_before,
         deposited_keys_second_before,

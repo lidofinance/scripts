@@ -1,13 +1,10 @@
-import os
 import pytest
 import random
 import textwrap
 from web3 import Web3
-from brownie import Wei, network, chain, convert
+from brownie import Wei, convert
 
 from utils.config import contracts
-from utils.mainnet_fork import chain_snapshot
-from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 from utils.test.node_operators_helpers import (
     assert_signing_key,
     assert_node_operators,
@@ -146,7 +143,7 @@ def test_add_signing_keys_operator_bh(nor, reward_address, new_node_operator_id)
 
     assert_node_operator_summaries(node_operator_summary_before, node_operator_summary_after)
 
-    new_pubkeys = parse_pukeys_batch(pubkeys_batch)
+    new_pubkeys = parse_pubkeys_batch(pubkeys_batch)
     new_signatures = parse_signatures_batch(signatures_batch)
 
     for local_key_index in range(keys_count):
@@ -275,7 +272,7 @@ def random_signatures_batch(signautes_count: int):
     return random_hexstr(signautes_count * SIGNATURE_LENGTH)
 
 
-def parse_pukeys_batch(pubkeys_batch: str):
+def parse_pubkeys_batch(pubkeys_batch: str):
     return hex_chunks(pubkeys_batch, PUBKEY_LENGTH)
 
 

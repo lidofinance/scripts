@@ -6,10 +6,10 @@ from utils.config import (
     lido_dao_node_operators_registry,
     lido_dao_node_operators_registry_implementation,
     NODE_OPERATORS_REGISTRY_APP_ID,
+    STUCK_PENALTY_DELAY,
+    CURATED_NODE_OPERATORS_COUNT,
+    CURATED_NODE_OPERATORS_ACTIVE_COUNT,
 )
-
-# Source of truth: https://hackmd.io/pdix1r4yR46fXUqiHaNKyw?view
-stuck_penalty_delay = 432000
 
 
 @pytest.fixture(scope="module")
@@ -43,10 +43,10 @@ def test_versioned(contract):
 
 def test_nor_state(contract):
     node_operators_count = contract.getNodeOperatorsCount()
-    assert node_operators_count == 30
-    assert contract.getActiveNodeOperatorsCount() == 30
+    assert node_operators_count == CURATED_NODE_OPERATORS_COUNT
+    assert contract.getActiveNodeOperatorsCount() == CURATED_NODE_OPERATORS_ACTIVE_COUNT
     assert contract.getNonce() >= 7315
-    assert contract.getStuckPenaltyDelay() == stuck_penalty_delay
+    assert contract.getStuckPenaltyDelay() == STUCK_PENALTY_DELAY
     assert contract.getType() == _str_to_bytes32("curated-onchain-v1")
 
     summary = contract.getStakingModuleSummary()

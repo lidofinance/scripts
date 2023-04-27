@@ -1,9 +1,7 @@
 import pytest
 
 from utils.config import (
-    contracts,
     deployer_eoa,
-    ContractsLazyLoader,
 )
 
 

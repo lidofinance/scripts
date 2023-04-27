@@ -28,13 +28,16 @@ def network_name() -> Optional[str]:
 
 if network_name() in ("goerli", "goerli-fork"):
     print(f'Using {color("cyan")}config_goerli.py{color} addresses')
-    from utils.config_goerli import *
+    from configs.config_goerli import *
 else:
     print(f'Using {color("magenta")}config_mainnet.py{color} addresses')
-    from utils.config_mainnet import *
+    from configs.config_mainnet import *
 
-    print(f'Using {color("magenta")}config_shapella_mainnet.py{color} addresses')
-    from utils.config_shapella_mainnet import *
+    print(f'Using {color("magenta")}config_shapella_addresses_mainnet.py{color} addresses')
+    from configs.config_shapella_addresses_mainnet import *
+
+    print(f'Using {color("magenta")}config_shapella_other_mainnet.py{color} values')
+    from configs.config_shapella_other_mainnet import *
 
 
 def get_is_live() -> bool:

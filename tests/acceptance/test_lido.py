@@ -1,12 +1,14 @@
 import pytest
 from brownie import interface, web3  # type: ignore
 
+from utils.test.helpers import ONE_ETH
 from utils.config import (
     contracts,
     lido_dao_steth_address,
     lido_dao_steth_implementation_address,
     initial_dead_token_holder,
     LIDO_APP_ID,
+    LIDO_MAX_STAKE_LIMIT_ETH,
 )
 
 last_seen_deposited_validators = 176018
@@ -67,7 +69,7 @@ def test_lido_state(contract):
     stake_limit = contract.getStakeLimitFullInfo()
     assert stake_limit["isStakingPaused"] == False
     assert stake_limit["isStakingLimitSet"] == True
-    assert stake_limit["maxStakeLimit"] == 150_000 * 1e18
+    assert stake_limit["maxStakeLimit"] == LIDO_MAX_STAKE_LIMIT_ETH * ONE_ETH
 
     assert contract.getBufferedEther() > 0
 

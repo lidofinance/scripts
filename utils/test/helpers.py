@@ -1,11 +1,16 @@
 import math
 
+from hexbytes import HexBytes
 from brownie import web3
 from web3.types import BlockIdentifier  # type: ignore
 
 from utils.config import contracts
 
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+GWEI = 10**9
+ONE_ETH = 10**18
+ZERO_HASH = bytes([0] * 32)
+ZERO_BYTES32 = HexBytes(ZERO_HASH)
 
 
 def ETH(amount):

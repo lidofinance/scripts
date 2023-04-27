@@ -36,6 +36,15 @@ from utils.config import (
     LIDO_APP_ID,
     ORACLE_APP_ID,
     NODE_OPERATORS_REGISTRY_APP_ID,
+    STUCK_PENALTY_DELAY,
+    ACCOUNTING_ORACLE_EPOCHS_PER_FRAME,
+    VALIDATORS_EXIT_BUS_ORACLE_EPOCHS_PER_FRAME,
+    ORACLE_QUORUM,
+    DSM_GUARDIAN_QUORUM,
+    WITHDRAWAL_CREDENTIALS,
+    STAKING_MODULE_NOR_ID,
+    STAKING_MODULE_NOR_NAME,
+    STAKING_MODULE_NOR_TYPE,
 )
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.permission import Permission, validate_permission_create_event
@@ -57,29 +66,11 @@ NODE_OPERATORS_REGISTRY_APP_VERSION = (4, 0, 0)
 ORACLE_APP_VERSION = (4, 0, 0)
 
 
-# New parameters
-STAKING_MODULE_NOR_ID = 1
-STAKING_MODULE_NOR_NAME = "curated-onchain-v1"
-STAKING_MODULE_NOR_TYPE = (
-    "0x637572617465642d6f6e636861696e2d76310000000000000000000000000000"  # bytes32("curated-onchain-v1");
-)
-
-# 0x01...withdrawal_vault or Lido.getWithdrawalCredentials()
-WITHDRAWAL_CREDENTIALS = "0x010000000000000000000000b9d7934878b5fb9610b3fe8a5e441e8fad7e293f"
-
-LIDO_ORACLE_QUORUM = 5
-DEPOSIT_SECURITY_MODULE_GUARDIANS_QUORUM = 4
-
 # type(uint256).max
 TYPE_UINT256_MAX = 2**256 - 1
 
 # PAUSE_INFINITELY from PausableUntil.sol
 PAUSE_INFINITELY = TYPE_UINT256_MAX
-
-# Deployment parameters, see https://hackmd.io/pdix1r4yR46fXUqiHaNKyw
-STUCK_PENALTY_DELAY = 432000
-EPOCHS_PER_FRAME_FOR_ACCOUNTING_ORACLE = 225
-EPOCHS_PER_FRAME_FOR_VALIDATORS_EXIT_BUS_ORACLE = 75
 
 # Helper constant to mark that value of an event field is not to be checked
 ANY_VALUE = None
@@ -391,9 +382,9 @@ def validate_start_upgrade_events(events: EventDict):
                 ),
                 (
                     "MemberAdded",
-                    {"addr": oracle_committee[0], "newTotalMembers": 1, "newQuorum": LIDO_ORACLE_QUORUM},
+                    {"addr": oracle_committee[0], "newTotalMembers": 1, "newQuorum": ORACLE_QUORUM},
                 ),
-                ("QuorumSet", {"newQuorum": LIDO_ORACLE_QUORUM, "totalMembers": 1, "prevQuorum": 0}),
+                ("QuorumSet", {"newQuorum": ORACLE_QUORUM, "totalMembers": 1, "prevQuorum": 0}),
             ]
             + [
                 (
@@ -401,7 +392,7 @@ def validate_start_upgrade_events(events: EventDict):
                     {
                         "addr": oracle_committee[i],
                         "newTotalMembers": i + 1,
-                        "newQuorum": LIDO_ORACLE_QUORUM,
+                        "newQuorum": ORACLE_QUORUM,
                     },
                 )
                 for i in range(1, len(oracle_committee))
@@ -438,11 +429,11 @@ def validate_start_upgrade_events(events: EventDict):
         + hash_consensus_migration_events()
         + [
             # Template reports committee migrated
-            ("OracleCommitteeMigrated", {"members": oracle_committee, "quorum": LIDO_ORACLE_QUORUM}),
+            ("OracleCommitteeMigrated", {"members": oracle_committee, "quorum": ORACLE_QUORUM}),
             # AccountingOracle + HashConsensus initialization
             (
                 "FrameConfigSet",
-                {"newInitialEpoch": ANY_VALUE, "newEpochsPerFrame": EPOCHS_PER_FRAME_FOR_ACCOUNTING_ORACLE},
+                {"newInitialEpoch": ANY_VALUE, "newEpochsPerFrame": ACCOUNTING_ORACLE_EPOCHS_PER_FRAME},
             ),
             (
                 "RoleGranted",
@@ -548,7 +539,7 @@ def validate_finish_upgrade_events(events: EventDict):
             # Initialize HashConsensus + ValidatorsExitBusOracle
             (
                 "FrameConfigSet",
-                {"newInitialEpoch": ANY_VALUE, "newEpochsPerFrame": EPOCHS_PER_FRAME_FOR_VALIDATORS_EXIT_BUS_ORACLE},
+                {"newInitialEpoch": ANY_VALUE, "newEpochsPerFrame": VALIDATORS_EXIT_BUS_ORACLE_EPOCHS_PER_FRAME},
             ),
             (
                 "RoleGranted",
@@ -711,7 +702,7 @@ def validate_finish_upgrade_events(events: EventDict):
         # Migrate DepositSecurityModule
         + [("GuardianAdded", {"guardian": guardian}) for guardian in deposit_security_module_guardians]
         + [
-            ("GuardianQuorumChanged", {"newValue": DEPOSIT_SECURITY_MODULE_GUARDIANS_QUORUM}),
+            ("GuardianQuorumChanged", {"newValue": DSM_GUARDIAN_QUORUM}),
         ]
         # Transfer OZ admin roles for 7 contracts: HC for VEBO, HC for AO, Burner, SR, AO, VEBO, WQ
         + 7 * transfer_oz_admin_from_template_to_agent()

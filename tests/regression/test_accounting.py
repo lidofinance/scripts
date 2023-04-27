@@ -6,12 +6,11 @@ from brownie.exceptions import brownie
 from web3 import Web3
 
 from utils.config import contracts
-from utils.test.helpers import ETH, almostEqWithDiff, eth_balance
+from utils.test.helpers import ETH, almostEqWithDiff, eth_balance, GWEI
 from utils.test.oracle_report_helpers import ONE_DAY, SHARE_RATE_PRECISION, oracle_report
 
 LIMITER_PRECISION_BASE = 10**9
 MAX_BASIS_POINTS = 10_000
-GWEI = 10**9
 
 
 @pytest.fixture(scope="module")

@@ -7,12 +7,11 @@ from utils.config import (
     deposit_security_module_guardians,
     lido_dao_deposit_security_module_address_v1,
     deposit_contract,
+    DSM_MAX_DEPOSITS_PER_BLOCK,
+    DSM_MIN_DEPOSIT_BLOCK_DISTANCE,
+    DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS,
+    DSM_GUARDIAN_QUORUM,
 )
-
-# Source of truth: https://hackmd.io/pdix1r4yR46fXUqiHaNKyw?view
-max_deposits = 150
-min_deposit_block_distance = 25
-pause_intent_validity_period = 6646
 
 
 @pytest.fixture(scope="module")
@@ -43,12 +42,12 @@ def test_migration(contract):
 
 
 def test_deposit_security_module(contract):
-    assert contract.getMaxDeposits() == max_deposits
-    assert contract.getMinDepositBlockDistance() == min_deposit_block_distance
-    assert contract.getPauseIntentValidityPeriodBlocks() == pause_intent_validity_period
+    assert contract.getMaxDeposits() == DSM_MAX_DEPOSITS_PER_BLOCK
+    assert contract.getMinDepositBlockDistance() == DSM_MIN_DEPOSIT_BLOCK_DISTANCE
+    assert contract.getPauseIntentValidityPeriodBlocks() == DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS
 
     assert contract.getGuardians() == deposit_security_module_guardians
-    assert contract.getGuardianQuorum() == 4
+    assert contract.getGuardianQuorum() == DSM_GUARDIAN_QUORUM
 
     for guardian in deposit_security_module_guardians:
         assert contract.getGuardianIndex(guardian) >= 0

@@ -7,15 +7,13 @@ from utils.config import (
     lido_dao_legacy_oracle_implementation,
     ORACLE_APP_ID,
     lido_dao_evm_script_registry,
+    CHAIN_SLOTS_PER_EPOCH,
+    CHAIN_SECONDS_PER_SLOT,
+    CHAIN_GENESIS_TIME,
+    ACCOUNTING_ORACLE_EPOCHS_PER_FRAME,
 )
 
 lastSeenTotalPooledEther = 5879742251110033487920093
-
-beacon_spec = {
-    "slotsPerEpoch": 32,
-    "secondsPerSlot": 12,
-    "genesisTime": 1606824023,
-}
 
 
 @pytest.fixture(scope="module")
@@ -65,7 +63,7 @@ def test_legacy_oracle_state(contract):
 
     oracle_beacon_spec = contracts.legacy_oracle.getBeaconSpec()
 
-    assert oracle_beacon_spec["epochsPerFrame"] == 225
-    assert oracle_beacon_spec["slotsPerEpoch"] == beacon_spec["slotsPerEpoch"]
-    assert oracle_beacon_spec["secondsPerSlot"] == beacon_spec["secondsPerSlot"]
-    assert oracle_beacon_spec["genesisTime"] == beacon_spec["genesisTime"]
+    assert oracle_beacon_spec["epochsPerFrame"] == ACCOUNTING_ORACLE_EPOCHS_PER_FRAME
+    assert oracle_beacon_spec["slotsPerEpoch"] == CHAIN_SLOTS_PER_EPOCH
+    assert oracle_beacon_spec["secondsPerSlot"] == CHAIN_SECONDS_PER_SLOT
+    assert oracle_beacon_spec["genesisTime"] == CHAIN_GENESIS_TIME

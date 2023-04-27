@@ -7,13 +7,13 @@ from utils.config import (
     lido_dao_accounting_oracle_implementation,
     lido_dao_accounting_oracle,
     oracle_committee,
+    ACCOUNTING_ORACLE_EPOCHS_PER_FRAME,
+    FAST_LANE_LENGTH_SLOTS,
+    CHAIN_SLOTS_PER_EPOCH,
+    CHAIN_SECONDS_PER_SLOT,
+    CHAIN_GENESIS_TIME,
+    ORACLE_QUORUM,
 )
-
-beacon_spec = {
-    "slotsPerEpoch": 32,
-    "secondsPerSlot": 12,
-    "genesisTime": 1606824023,
-}
 
 
 @pytest.fixture(scope="module")
@@ -35,8 +35,8 @@ def test_constants(contract):
     assert contract.EXTRA_DATA_FORMAT_LIST() == 1
     assert contract.EXTRA_DATA_TYPE_STUCK_VALIDATORS() == 1
     assert contract.EXTRA_DATA_TYPE_EXITED_VALIDATORS() == 2
-    assert contract.SECONDS_PER_SLOT() == beacon_spec["secondsPerSlot"]
-    assert contract.GENESIS_TIME() == beacon_spec["genesisTime"]
+    assert contract.SECONDS_PER_SLOT() == CHAIN_SECONDS_PER_SLOT
+    assert contract.GENESIS_TIME() == CHAIN_GENESIS_TIME
 
 
 def test_versioned(contract):
@@ -80,18 +80,18 @@ def test_accounting_hash_consensus(contract):
     assert current_frame["reportProcessingDeadlineSlot"] > 5254400
 
     chain_config = consensus.getChainConfig()
-    assert chain_config["slotsPerEpoch"] == beacon_spec["slotsPerEpoch"]
-    assert chain_config["secondsPerSlot"] == beacon_spec["secondsPerSlot"]
-    assert chain_config["genesisTime"] == beacon_spec["genesisTime"]
+    assert chain_config["slotsPerEpoch"] == CHAIN_SLOTS_PER_EPOCH
+    assert chain_config["secondsPerSlot"] == CHAIN_SECONDS_PER_SLOT
+    assert chain_config["genesisTime"] == CHAIN_GENESIS_TIME
 
     frame_config = consensus.getFrameConfig()
-    assert frame_config["initialEpoch"] > 5254400 / 32
-    assert frame_config["epochsPerFrame"] == 225
-    assert frame_config["fastLaneLengthSlots"] == 10
+    assert frame_config["initialEpoch"] > 5254400 / CHAIN_SLOTS_PER_EPOCH
+    assert frame_config["epochsPerFrame"] == ACCOUNTING_ORACLE_EPOCHS_PER_FRAME
+    assert frame_config["fastLaneLengthSlots"] == FAST_LANE_LENGTH_SLOTS
 
     assert consensus.getInitialRefSlot() > 5254400
 
-    assert consensus.getQuorum() == 5
+    assert consensus.getQuorum() == ORACLE_QUORUM
 
     members = consensus.getMembers()
     assert members["addresses"] == oracle_committee
