@@ -33,6 +33,8 @@ def test_all_round_happy_path(accounts):
     assert almostEqEth(steth_balance_after_submit, steth_balance_before_submit + amount)
     assert eth_balance_before_submit == stranger.balance() + amount
 
+    shares_to_be_minted = contracts.lido.getSharesByPooledEth(amount)
+
     submit_event = submit_tx.events["Submitted"]
     transfer_shares_event = submit_tx.events["TransferShares"]
 
@@ -42,6 +44,8 @@ def test_all_round_happy_path(accounts):
 
     shares_minted_on_submit = contracts.lido.getSharesByPooledEth(amount)
 
+    assert shares_to_be_minted == contracts.lido.sharesOf(stranger)
+    assert shares_to_be_minted == shares_minted_on_submit
     assert transfer_shares_event["from"] == ZERO_ADDRESS
     assert transfer_shares_event["to"] == stranger
     assert almostEqEth(transfer_shares_event["sharesValue"], shares_minted_on_submit)
