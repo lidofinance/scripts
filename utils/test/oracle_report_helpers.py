@@ -1,6 +1,6 @@
 from brownie import chain, web3  # type: ignore
 from brownie.exceptions import VirtualMachineError  # type: ignore
-from eth_abi.abi import encode_abi
+from eth_abi import encode
 from hexbytes import HexBytes
 
 from utils.config import contracts
@@ -48,14 +48,17 @@ def prepare_report(
         int(extraDataItemsCount),
     )
 
-    data = encode_abi(
-        [
-            "(uint256,uint256,uint256,uint256,uint256[],uint256[],uint256,uint256,uint256,uint256[],uint256,bool,uint256,bytes32,uint256)"
-        ],
-        [items],
-    )
+    data = encode_data_from_abi(items, contracts.accounting_oracle.abi, "submitReportData")
+
     hash = web3.keccak(data)
     return (items, hash)
+
+
+def encode_data_from_abi(data, abi, func_name):
+    report_function_abi = next(x for x in abi if x.get('name') == func_name)
+    report_data_abi = report_function_abi['inputs'][0]['components']  # type: ignore
+    report_str_abi = ','.join(map(lambda x: x['type'], report_data_abi))  # type: ignore
+    return encode([f'({report_str_abi})'], [data])
 
 
 def get_finalization_batches(

@@ -1,14 +1,12 @@
 import dataclasses
 
-import pytest
 from brownie import web3
 from brownie.convert.datatypes import HexString
-from eth_abi import encode
 
 from utils.config import contracts
 from utils.test.exit_bus_data import encode_data, LidoValidator
 from utils.test.oracle_report_helpers import (
-    wait_to_next_available_report_time, reach_consensus,
+    wait_to_next_available_report_time, reach_consensus, encode_data_from_abi,
 )
 
 
@@ -22,24 +20,6 @@ class ProcessingState:
     requests_count: int
     requests_submitted: int
 
-
-@pytest.fixture()
-def stranger(stranger):
-    contracts.validators_exit_bus_oracle.grantRole(
-        web3.keccak(text="SUBMIT_DATA_ROLE"),
-        stranger,
-        {"from": contracts.agent},
-    )
-    return stranger
-
-
-def _encode_data_from_abi(report_data, abi, func_name):
-    report_function_abi = next(x for x in abi if x.get('name') == func_name)
-    report_data_abi = report_function_abi['inputs'][0]['components']  # type: ignore
-    report_str_abi = ','.join(map(lambda x: x['type'], report_data_abi))  # type: ignore
-    return encode([f'({report_str_abi})'], [report_data])
-
-
 def _wait_for_next_ref_slot():
     wait_to_next_available_report_time(contracts.hash_consensus_for_validators_exit_bus_oracle)
     ref_slot, _ = contracts.hash_consensus_for_validators_exit_bus_oracle.getCurrentFrame()
@@ -52,7 +32,7 @@ def _get_report_data(validators_to_exit, ref_slot):
     report = (
         consensus_version, ref_slot, len(validators_to_exit), data_format, data
     )
-    report_data = _encode_data_from_abi(report, contracts.validators_exit_bus_oracle.abi, 'submitReportData')
+    report_data = encode_data_from_abi(report, contracts.validators_exit_bus_oracle.abi, 'submitReportData')
     if not validators_to_exit:
         report_data = report_data[:-32]
         assert len(
@@ -72,7 +52,7 @@ def send_report_with_consensus(ref_slot, report, report_hash):
     return contracts.validators_exit_bus_oracle.submitReportData(report, contract_version, {"from": submitter})
 
 
-def test_send_zero_validators_to_exit(stranger, helpers):
+def test_send_zero_validators_to_exit(helpers):
     ref_slot = _wait_for_next_ref_slot()
     report, report_hash = _get_report_data([], ref_slot)
     report_hash_hex = HexString(report_hash, "bytes")
@@ -106,7 +86,7 @@ def test_send_zero_validators_to_exit(stranger, helpers):
     assert processing_state_after.requests_submitted == processing_state_before.requests_submitted
 
 
-def test_send_validator_to_exit(stranger, helpers, web3):
+def test_send_validator_to_exit(helpers, web3):
     no_global_index = (module_id, no_id) = (1, 1)
     validator_id = 1
     validator_key = contracts.node_operators_registry.getSigningKey(no_id, validator_id)[0]
@@ -156,7 +136,7 @@ def test_send_validator_to_exit(stranger, helpers, web3):
     assert processing_state_after.requests_submitted == processing_state_before.requests_submitted + 1
 
 
-def test_send_multiple_validators_to_exit(stranger, helpers, web3):
+def test_send_multiple_validators_to_exit(helpers, web3):
     """
     The same as test above but with multiple validators on different node operators
     """
