@@ -6,6 +6,8 @@ import pytest
 from brownie import interface, convert, web3
 from utils.test.event_validators.permission import Permission
 from utils.config import contracts, oracle_committee, gate_seal_address, deposit_security_module_guardians
+from utils.config_mainnet import (
+    lido_easytrack_evmscriptexecutor, lido_easytrack_evmscriptexecutor)
 
 
 @pytest.fixture(scope="module")
@@ -145,6 +147,7 @@ def protocol_permissions():
                 "MANAGE_NODE_OPERATOR_ROLE": [],
                 "MANAGE_SIGNING_KEYS": [contracts.voting],
                 "SET_NODE_OPERATOR_LIMIT_ROLE": [contracts.voting],
+                "SET_NODE_OPERATOR_LIMIT_ROLE": [lido_easytrack_evmscriptexecutor, contracts.voting]
             },
         },
         "OracleDaemonConfig": {
@@ -175,13 +178,15 @@ def test_permissions_after_vote(protocol_permissions):
             abi_roles_list, roles.keys()
         )
         for role in set(permissions_config["roles"].keys()):
-            assert role in abi_roles_list, "no {} described for contract {}".format(role, contract_name)
+            assert role in abi_roles_list, "no {} described for contract {}".format(
+                role, contract_name)
 
         if permissions_config["type"] == "AragonApp":
             for role, holders in permissions_config["roles"].items():
                 for holder in holders:
                     permission = Permission(
-                        entity=holder, app=permissions_config["contract"], role=convert.to_uint(web3.keccak(text=role))
+                        entity=holder, app=permissions_config["contract"], role=convert.to_uint(
+                            web3.keccak(text=role))
                     )
                     assert contracts.acl.hasPermission(
                         *permission
@@ -190,12 +195,14 @@ def test_permissions_after_vote(protocol_permissions):
         elif permissions_config["type"] == "CustomApp":
             if "proxy_owner" in permissions_config:
                 assert (
-                    interface.OssifiableProxy(permissions_config["contract"].address).proxy__getAdmin()
+                    interface.OssifiableProxy(
+                        permissions_config["contract"].address).proxy__getAdmin()
                     == permissions_config["proxy_owner"]
                 )
 
             for role, holders in permissions_config["roles"].items():
-                role_keccak = web3.keccak(text=role) if role != "DEFAULT_ADMIN_ROLE" else "0x00"
+                role_keccak = web3.keccak(
+                    text=role) if role != "DEFAULT_ADMIN_ROLE" else "0x00"
 
                 assert permissions_config["contract"].getRoleMemberCount(role_keccak) == len(
                     holders
@@ -209,5 +216,7 @@ def test_permissions_after_vote(protocol_permissions):
         if "state" in permissions_config:
             for method, value in permissions_config["state"].items():
                 method_sig = permissions_config["contract"].signatures[method]
-                actual_value = permissions_config["contract"].get_method_object(method_sig)()
-                assert actual_value == value, "method {} returns {} instead of {}".format(method, actual_value, value)
+                actual_value = permissions_config["contract"].get_method_object(
+                    method_sig)()
+                assert actual_value == value, "method {} returns {} instead of {}".format(
+                    method, actual_value, value)
