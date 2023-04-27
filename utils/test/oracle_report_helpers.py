@@ -1,6 +1,6 @@
 from brownie import chain, web3  # type: ignore
 from brownie.exceptions import VirtualMachineError  # type: ignore
-from eth_abi.abi import encode_abi
+from eth_abi import encode
 from hexbytes import HexBytes
 
 from utils.config import contracts
@@ -48,14 +48,17 @@ def prepare_report(
         int(extraDataItemsCount),
     )
 
-    data = encode_abi(
-        [
-            "(uint256,uint256,uint256,uint256,uint256[],uint256[],uint256,uint256,uint256,uint256[],uint256,bool,uint256,bytes32,uint256)"
-        ],
-        [items],
-    )
+    data = encode_data_from_abi(items, contracts.accounting_oracle.abi, "submitReportData")
+
     hash = web3.keccak(data)
     return (items, hash)
+
+
+def encode_data_from_abi(data, abi, func_name):
+    report_function_abi = next(x for x in abi if x.get('name') == func_name)
+    report_data_abi = report_function_abi['inputs'][0]['components']  # type: ignore
+    report_str_abi = ','.join(map(lambda x: x['type'], report_data_abi))  # type: ignore
+    return encode([f'({report_str_abi})'], [data])
 
 
 def get_finalization_batches(
@@ -84,13 +87,13 @@ def get_finalization_batches(
     return list(filter(lambda value: value > 0, batchesState[2]))
 
 
-def reach_consensus(slot, report, version, silent=False):
-    (members, *_) = contracts.hash_consensus_for_accounting_oracle.getFastLaneMembers()
+def reach_consensus(slot, report, version, oracle_contract, silent=False):
+    (members, *_) = oracle_contract.getFastLaneMembers()
     for member in members:
         if not silent:
             print(f"Member ${member} submitting report to hashConsensus")
-        contracts.hash_consensus_for_accounting_oracle.submitReport(slot, report, version, {"from": member})
-    (_, hash_, _) = contracts.hash_consensus_for_accounting_oracle.getConsensusState()
+        oracle_contract.submitReport(slot, report, version, {"from": member})
+    (_, hash_, _) = oracle_contract.getConsensusState()
     assert hash_ == report.hex(), "HashConsensus points to unexpected report"
     return members[0]
 
@@ -135,7 +138,7 @@ def push_oracle_report(
         extraDataHash=extraDataHash,
         extraDataItemsCount=extraDataItemsCount,
     )
-    submitter = reach_consensus(refSlot, hash, consensusVersion, silent)
+    submitter = reach_consensus(refSlot, hash, consensusVersion, contracts.hash_consensus_for_accounting_oracle, silent)
     # print(contracts.oracle_report_sanity_checker.getOracleReportLimits())
     report_tx = contracts.accounting_oracle.submitReportData(items, oracleVersion, {"from": submitter})
     if not silent:
@@ -209,22 +212,16 @@ def simulate_report(
         raise  # unreachable, for static analysis only
 
 
-def wait_to_next_available_report_time():
-    (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME) = contracts.hash_consensus_for_accounting_oracle.getChainConfig()
-    (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
+def wait_to_next_available_report_time(oracle_contract):
+    (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME) = oracle_contract.getChainConfig()
+    (refSlot, _) = oracle_contract.getCurrentFrame()
     time = chain.time()
-    (_, EPOCHS_PER_FRAME, _) = contracts.hash_consensus_for_accounting_oracle.getFrameConfig()
+    (_, EPOCHS_PER_FRAME, _) = oracle_contract.getFrameConfig()
     frame_start_with_offset = GENESIS_TIME + (refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME + 1) * SECONDS_PER_SLOT
     chain.sleep(frame_start_with_offset - time)
     chain.mine(1)
-    (nextRefSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
+    (nextRefSlot, _) = oracle_contract.getCurrentFrame()
     assert nextRefSlot == refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME, "should be next frame"
-
-
-def get_time_config():
-    (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME) = contracts.hash_consensus_for_accounting_oracle.getChainConfig()
-    (INITIAL_EPOCH, EPOCHS_PER_FRAME, FAST_LANE_SLOTS) = contracts.hash_consensus_for_accounting_oracle.getFrameConfig()
-    return (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME, INITIAL_EPOCH, EPOCHS_PER_FRAME, FAST_LANE_SLOTS)
 
 
 def oracle_report(
@@ -242,7 +239,7 @@ def oracle_report(
 ):
     if wait_to_next_report_time:
         """fast forwards time to next report, compiles report, pushes through consensus and to AccountingOracle"""
-        wait_to_next_available_report_time()
+        wait_to_next_available_report_time(contracts.hash_consensus_for_accounting_oracle)
 
     (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
 

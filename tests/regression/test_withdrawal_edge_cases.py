@@ -96,7 +96,7 @@ def test_oracle_report_missed(accounts):
 
     # skipping next report by waiting 24h more
     chain_time_before_missed_report = chain.time()
-    wait_to_next_available_report_time()
+    wait_to_next_available_report_time(contracts.hash_consensus_for_accounting_oracle)
     chain_time_after_missed_report = chain.time()
 
     [
