@@ -1,12 +1,13 @@
 from typing import TypedDict, TypeVar
 
 import pytest
-from brownie import Contract, chain
+from brownie import Contract, accounts, chain
 from brownie.exceptions import brownie
+from brownie.network.account import Account
 from web3 import Web3
 
 from utils.config import contracts
-from utils.test.helpers import ETH, almostEqWithDiff, eth_balance, GWEI
+from utils.test.helpers import ETH, GWEI, ZERO_ADDRESS, almostEqWithDiff, eth_balance
 from utils.test.oracle_report_helpers import ONE_DAY, SHARE_RATE_PRECISION, oracle_report
 
 LIMITER_PRECISION_BASE = 10**9
@@ -21,6 +22,11 @@ def accounting_oracle() -> Contract:
 @pytest.fixture(scope="module")
 def lido() -> Contract:
     return contracts.lido
+
+
+@pytest.fixture(scope="module")
+def el_vault() -> Contract:
+    return contracts.execution_layer_rewards_vault
 
 
 def test_accounting_no_cl_rebase(accounting_oracle: Contract, lido: Contract):
@@ -165,17 +171,12 @@ def test_accounting_cl_rebase_at_limits(accounting_oracle: Contract, lido: Contr
     ), "PostTotalShares: TotalPooledEther has not increased"
 
 
-def test_accounting_cl_rebase_above_limits(lido: Contract):
+def test_accounting_cl_rebase_above_limits():
     """Check that report reverts on sanity checks"""
 
     block_before_report = chain.height
 
-    max_cl_rebase_via_limiter = (
-        contracts.oracle_report_sanity_checker.getMaxPositiveTokenRebase(block_identifier=block_before_report)
-        * lido.getTotalPooledEther(block_identifier=block_before_report)
-        // LIMITER_PRECISION_BASE
-    )
-
+    max_cl_rebase_via_limiter = _rebase_limit_wei(block_identifier=block_before_report)
     annual_increase_limit = contracts.oracle_report_sanity_checker.getOracleReportLimits()[2]
     pre_cl_balance = contracts.lido.getBeaconStat()[-1]
 
@@ -185,6 +186,203 @@ def test_accounting_cl_rebase_above_limits(lido: Contract):
     error_hash = Web3.keccak(text="IncorrectCLBalanceIncrease(uint256)")[:4]
     with brownie.reverts(revert_pattern=f"typed error: {error_hash.hex()}[0-9a-f]+"):  # type: ignore
         oracle_report(cl_diff=rebase_amount, exclude_vaults_balances=True)
+
+
+def test_accounting_no_el_rewards(accounting_oracle: Contract, lido: Contract):
+    """Test rebase with no EL rewards"""
+
+    block_before_report = chain.height
+    tx, _ = oracle_report(cl_diff=0, exclude_vaults_balances=True)
+    block_after_report = chain.height
+
+    assert accounting_oracle.getLastProcessingRefSlot(
+        block_identifier=block_before_report
+    ) < accounting_oracle.getLastProcessingRefSlot(
+        block_identifier=block_after_report,
+    ), "LastProcessingRefSlot should be updated"
+
+    assert lido.getTotalELRewardsCollected(block_identifier=block_before_report) == lido.getTotalELRewardsCollected(
+        block_identifier=block_after_report
+    ), "TotalELRewardsCollected has changed"
+
+    assert lido.getTotalPooledEther(block_identifier=block_before_report) == lido.getTotalPooledEther(
+        block_identifier=block_after_report,
+    ), "TotalPooledEther has changed"
+
+    assert lido.getTotalShares(block_identifier=block_before_report) == lido.getTotalShares(
+        block_identifier=block_after_report,
+    ), "TotalShares has changed"
+
+    assert eth_balance(lido.address, block_before_report) == eth_balance(
+        lido.address, block_after_report
+    ), "Lido ETH balance has changed"
+
+    with pytest.raises(AssertionError, match="Event ELRewardsReceived was not found"):
+        _first_event(tx, ELRewardsReceived)
+
+
+def test_accounting_normal_el_rewards(accounting_oracle: Contract, lido: Contract, el_vault: Contract):
+    """Test rebase with normal EL rewards"""
+
+    block_before_report = chain.height
+
+    el_rewards = eth_balance(el_vault.address, block_before_report)
+    assert el_rewards > 0, "Expected EL vault to be non-empty"
+
+    tx, _ = oracle_report(
+        cl_diff=0,
+        report_el_vault=True,
+        report_withdrawals_vault=False,
+    )
+
+    block_after_report = chain.height
+
+    assert accounting_oracle.getLastProcessingRefSlot(
+        block_identifier=block_before_report
+    ) < accounting_oracle.getLastProcessingRefSlot(
+        block_identifier=block_after_report,
+    ), "LastProcessingRefSlot should be updated"
+
+    assert lido.getTotalELRewardsCollected(
+        block_identifier=block_before_report
+    ) + el_rewards == lido.getTotalELRewardsCollected(
+        block_identifier=block_after_report
+    ), "TotalELRewardsCollected change mismatch"
+
+    assert _first_event(tx, ELRewardsReceived)["amount"] == el_rewards, "ELRewardsReceived: amount mismatch"
+
+    assert lido.getTotalPooledEther(block_identifier=block_before_report) + el_rewards == lido.getTotalPooledEther(
+        block_identifier=block_after_report,
+    ), "TotalPooledEther change mismatch"
+
+    assert lido.getTotalShares(block_identifier=block_before_report) == lido.getTotalShares(
+        block_identifier=block_after_report,
+    ), "TotalShares has changed"
+
+    assert eth_balance(lido.address, block_before_report) + el_rewards == eth_balance(
+        lido.address, block_after_report
+    ), "Lido ETH balance change mismatch"
+
+    assert eth_balance(el_vault.address, block_after_report) == 0, "Expected EL vault to be empty"
+
+
+def test_accounting_el_rewards_at_limits(
+    accounting_oracle: Contract,
+    lido: Contract,
+    el_vault: Contract,
+    eth_whale: Account,
+):
+    """Test rebase with EL rewards at limits"""
+
+    block_before_report = chain.height
+    el_rewards = _rebase_limit_wei(block_identifier=block_before_report)
+
+    _drain_eth(el_vault.address)
+    eth_whale.transfer(
+        Account(el_vault.address),
+        el_rewards,
+        silent=True,
+    )
+
+    tx, _ = oracle_report(
+        cl_diff=0,
+        report_el_vault=True,
+        report_withdrawals_vault=False,
+    )
+
+    block_after_report = chain.height
+
+    assert accounting_oracle.getLastProcessingRefSlot(
+        block_identifier=block_before_report
+    ) < accounting_oracle.getLastProcessingRefSlot(
+        block_identifier=block_after_report,
+    ), "LastProcessingRefSlot should be updated"
+
+    assert lido.getTotalELRewardsCollected(
+        block_identifier=block_before_report
+    ) + el_rewards == lido.getTotalELRewardsCollected(
+        block_identifier=block_after_report
+    ), "TotalELRewardsCollected change mismatch"
+
+    assert _first_event(tx, ELRewardsReceived)["amount"] == el_rewards, "ELRewardsReceived: amount mismatch"
+
+    assert lido.getTotalPooledEther(block_identifier=block_before_report) + el_rewards == lido.getTotalPooledEther(
+        block_identifier=block_after_report,
+    ), "TotalPooledEther change mismatch"
+
+    assert lido.getTotalShares(block_identifier=block_before_report) == lido.getTotalShares(
+        block_identifier=block_after_report,
+    ), "TotalShares has changed"
+
+    assert eth_balance(lido.address, block_before_report) + el_rewards == eth_balance(
+        lido.address, block_after_report
+    ), "Lido ETH balance change mismatch"
+
+    assert (
+        eth_balance(contracts.execution_layer_rewards_vault.address, block_after_report) == 0
+    ), "Expected EL vault to be empty"
+
+
+def test_accounting_el_rewards_above_limits(
+    accounting_oracle: Contract,
+    lido: Contract,
+    el_vault: Contract,
+    eth_whale: Account,
+):
+    """Test rebase with EL rewards above limits"""
+
+    block_before_report = chain.height
+
+    rewards_excess = ETH(10)
+    expected_rewards = _rebase_limit_wei(block_identifier=block_before_report)
+    el_rewards = expected_rewards + rewards_excess
+
+    _drain_eth(el_vault.address)
+    eth_whale.transfer(
+        Account(el_vault.address),
+        el_rewards,
+        silent=True,
+    )
+
+    tx, _ = oracle_report(
+        cl_diff=0,
+        report_el_vault=True,
+        report_withdrawals_vault=False,
+    )
+
+    block_after_report = chain.height
+
+    assert accounting_oracle.getLastProcessingRefSlot(
+        block_identifier=block_before_report
+    ) < accounting_oracle.getLastProcessingRefSlot(
+        block_identifier=block_after_report,
+    ), "LastProcessingRefSlot should be updated"
+
+    assert lido.getTotalELRewardsCollected(
+        block_identifier=block_before_report
+    ) + expected_rewards == lido.getTotalELRewardsCollected(
+        block_identifier=block_after_report
+    ), "TotalELRewardsCollected change mismatch"
+
+    assert _first_event(tx, ELRewardsReceived)["amount"] == expected_rewards, "ELRewardsReceived: amount mismatch"
+
+    assert lido.getTotalPooledEther(
+        block_identifier=block_before_report
+    ) + expected_rewards == lido.getTotalPooledEther(
+        block_identifier=block_after_report,
+    ), "TotalPooledEther change mismatch"
+
+    assert lido.getTotalShares(block_identifier=block_before_report) == lido.getTotalShares(
+        block_identifier=block_after_report,
+    ), "TotalShares has changed"
+
+    assert eth_balance(lido.address, block_before_report) + expected_rewards == eth_balance(
+        lido.address, block_after_report
+    ), "Lido ETH balance change mismatch"
+
+    assert (
+        eth_balance(contracts.execution_layer_rewards_vault.address, block_after_report) == rewards_excess
+    ), "Expected EL vault to be filled with excess rewards"
 
 
 class ETHDistributed(TypedDict):
@@ -217,6 +415,12 @@ class TokenRebased(TypedDict):
     postTotalShares: int
     postTotalEther: int
     sharesMintedAsFee: int
+
+
+class ELRewardsReceived(TypedDict):
+    """ELRewardsReceived event definition"""
+
+    amount: int
 
 
 TransferShares = TypedDict(
@@ -257,3 +461,24 @@ def _round_to_gwei(amount: int) -> int:
     """Round amount to gwei"""
 
     return amount // GWEI * GWEI
+
+
+def _drain_eth(address: str):
+    """Drain ETH from address"""
+
+    accounts.at(address, force=True).transfer(
+        Account(ZERO_ADDRESS),
+        eth_balance(address),
+        silent=True,
+    )
+    assert eth_balance(address) == 0, f"Expected account {address} to be empty"
+
+
+def _rebase_limit_wei(block_identifier: int) -> int:
+    """Get positive rebase limit from oracle report sanity checker contract"""
+
+    return (
+        contracts.oracle_report_sanity_checker.getMaxPositiveTokenRebase(block_identifier=block_identifier)
+        * contracts.lido.getTotalPooledEther(block_identifier=block_identifier)
+        // LIMITER_PRECISION_BASE
+    )
