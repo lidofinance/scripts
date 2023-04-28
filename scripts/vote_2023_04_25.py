@@ -6,6 +6,8 @@ Voting 25/04/2023.
 3. Change the on-chain name of node operator with id 21 from 'ConsenSys Codefi' to 'Consensys'
 4. Change the on-chain name of node operator with id 8 from 'SkillZ' to 'Kiln'
 5. Change the reward address of node operator with id 8 from 0xe080E860741b7f9e8369b61645E68AD197B1e74C to 0xD6B7d52E15678B9195F12F3a6D6cb79dcDcCb690
+
+The vote REJECTED.
 """
 
 import time
