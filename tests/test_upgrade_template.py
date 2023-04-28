@@ -13,6 +13,7 @@ from utils.config import (
     ldo_holder_address_for_tests,
     MAINNET_VOTE_DURATION,
 )
+from utils.evm_script import encode_error
 from utils.shapella_upgrade import (
     prepare_for_shapella_upgrade_voting,
     TIMESTAMP_FIRST_SECOND_OF_JULY_2023_UTC,
@@ -29,25 +30,15 @@ def get_current_chain_timestamp():
 
 
 def typed_error(error, *values):
-    def hex_encode(value):
-        padding = 66
-        return f"{value:#0{padding}x}"[2:]
-
-    def get_error_msg(hash, values):
-        s = f"typed error: {hash}"
-        for v in values:
-            s += hex_encode(v)
-        return s
-
     # NB: brownie fails to resolve custom error names and reverts with messages like 'type error: 0x00112233
     return {
-        "OnlyVotingCanUpgrade": get_error_msg("0x8391d412", values),
-        "ExpireSinceMustBeInRange": get_error_msg("0x3c225381", values),
-        "StartAndFinishMustBeInSameBlock": get_error_msg("0xec65b7ba", values),
-        "Expired": get_error_msg("0x203d82d8", values),
-        "UpgradeAlreadyStarted": get_error_msg("0x18364e28", values),
-        "UpgradeNotStarted": get_error_msg("0x3b7e326c", values),
-        "OnlyVotingCanUpgrade": get_error_msg("0x8391d412", values),
+        "OnlyVotingCanUpgrade": encode_error("OnlyVotingCanUpgrade()", values),
+        "ExpireSinceMustBeInRange": encode_error("ExpireSinceMustBeInRange()", values),
+        "StartAndFinishMustBeInSameBlock": encode_error("StartAndFinishMustBeInSameBlock()", values),
+        "Expired": encode_error("Expired()", values),
+        "UpgradeAlreadyStarted": encode_error("UpgradeAlreadyStarted()", values),
+        "UpgradeNotStarted": encode_error("UpgradeNotStarted()", values),
+        "OnlyVotingCanUpgrade": encode_error("OnlyVotingCanUpgrade()", values),
     }[error]
 
 

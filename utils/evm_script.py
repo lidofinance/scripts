@@ -164,5 +164,16 @@ def calls_info_pretty_print(
     return color.highlight(repr(call))
 
 
-def encode_error(error: str) -> str:
-    return f"typed error: 0x{keccak(text=error)[:4].hex()}"
+def encode_error(error: str, values=None) -> str:
+    def hex_encode(value):
+        padding = 66
+        return f"{value:#0{padding}x}"[2:]
+
+    def get_error_msg(hash, values):
+        s = f"typed error: {hash}"
+        for v in values:
+            s += hex_encode(v)
+        return s
+    hash = f"0x{keccak(text=error)[:4].hex()}"
+    values = values if values else []
+    return get_error_msg(hash, values)

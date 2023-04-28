@@ -5,6 +5,7 @@ from eth_abi import encode
 from hexbytes import HexBytes
 
 from utils.config import contracts
+from utils.test.exit_bus_data import encode_data
 from utils.test.helpers import ETH, eth_balance, GWEI
 
 ZERO_HASH = bytes([0] * 32)
@@ -13,7 +14,7 @@ ONE_DAY = 1 * 24 * 60 * 60
 SHARE_RATE_PRECISION = 10**27
 
 
-def prepare_report(
+def prepare_accounting_report(
     *,
     refSlot,
     clBalance,
@@ -53,6 +54,22 @@ def prepare_report(
 
     hash = web3.keccak(data)
     return (items, hash)
+
+
+def prepare_exit_bus_report(validators_to_exit, ref_slot):
+    consensus_version = contracts.validators_exit_bus_oracle.getConsensusVersion()
+    data, data_format = encode_data(validators_to_exit)
+    report = (
+        consensus_version, ref_slot, len(validators_to_exit), data_format, data
+    )
+    report_data = encode_data_from_abi(report, contracts.validators_exit_bus_oracle.abi, 'submitReportData')
+    if not validators_to_exit:
+        report_data = report_data[:-32]
+        assert len(
+            report_data) == 224, 'We cut off the last 32 bytes because there is a problem with the encoding of empty bytes array in the eth_abi package. ' \
+                                 'Remove this condition when eth_abi is bumped to the latest version.'
+    report_hash = web3.keccak(report_data)
+    return report, report_hash
 
 
 def encode_data_from_abi(data, abi, func_name):
@@ -122,7 +139,7 @@ def push_oracle_report(
         print(f"Preparing oracle report for refSlot: {refSlot}")
     consensusVersion = contracts.accounting_oracle.getConsensusVersion()
     oracleVersion = contracts.accounting_oracle.getContractVersion()
-    (items, hash) = prepare_report(
+    (items, hash) = prepare_accounting_report(
         refSlot=refSlot,
         clBalance=clBalance,
         numValidators=numValidators,
@@ -213,15 +230,15 @@ def simulate_report(
         raise  # unreachable, for static analysis only
 
 
-def wait_to_next_available_report_time(oracle_contract):
-    (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME) = oracle_contract.getChainConfig()
-    (refSlot, _) = oracle_contract.getCurrentFrame()
+def wait_to_next_available_report_time(consensus_contract):
+    (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME) = consensus_contract.getChainConfig()
+    (refSlot, _) = consensus_contract.getCurrentFrame()
     time = chain.time()
-    (_, EPOCHS_PER_FRAME, _) = oracle_contract.getFrameConfig()
+    (_, EPOCHS_PER_FRAME, _) = consensus_contract.getFrameConfig()
     frame_start_with_offset = GENESIS_TIME + (refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME + 1) * SECONDS_PER_SLOT
     chain.sleep(frame_start_with_offset - time)
     chain.mine(1)
-    (nextRefSlot, _) = oracle_contract.getCurrentFrame()
+    (nextRefSlot, _) = consensus_contract.getCurrentFrame()
     assert nextRefSlot == refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME, "should be next frame"
 
 
