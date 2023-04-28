@@ -97,7 +97,7 @@ def test_vote(
     assert ConsenSysCodefi_Consensys_data_before[stakingLimit_index] == ConsenSysCodefi_Consensys_data_after[stakingLimit_index] # stakingLimit
     assert ConsenSysCodefi_Consensys_data_before[stoppedValidators_index] == ConsenSysCodefi_Consensys_data_after[stoppedValidators_index] # stoppedValidators
 
-    # compare NO#8 (ConsenSysCodefi -> Consensys) data before and after
+    # compare NO#8 (SkillZ -> Kiln) data before and after
     assert SkillZ_Kiln_data_before[active_index] == SkillZ_Kiln_data_after[active_index] # active
     assert SkillZ_Kiln_name_after == SkillZ_Kiln_data_after[name_index] # name
     assert SkillZ_Kiln_address_after == SkillZ_Kiln_data_after[rewardAddress_index] # rewardAddress
