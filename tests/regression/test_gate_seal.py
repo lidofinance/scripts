@@ -1,9 +1,9 @@
 import pytest
 
 from brownie import reverts, accounts, chain  # type: ignore
-from utils.test.oracle_report_helpers import oracle_report, get_time_config, ZERO_BYTES32
+from utils.test.oracle_report_helpers import oracle_report, ZERO_BYTES32
 
-from utils.test.helpers import almostEqEth, ETH, ZERO_ADDRESS
+from utils.test.helpers import almostEqEth, ETH
 from utils.config import (
     contracts,
     deployer_eoa,
@@ -12,6 +12,9 @@ from utils.config import (
     gate_seal_address,
     GATE_SEAL_PAUSE_DURATION_SECONDS,
     GATE_SEAL_EXPIRY_TIMESTAMP,
+    CHAIN_SLOTS_PER_EPOCH,
+    CHAIN_SECONDS_PER_SLOT,
+    ACCOUNTING_ORACLE_EPOCHS_PER_FRAME,
 )
 
 
@@ -140,16 +143,10 @@ def test_gate_seal_scenario(steth_holder):
     assert claim_tx.events.count("WithdrawalClaimed") == REQUESTS_COUNT
 
     """ accounting oracle reports until we pass pause and claim"""
-    (
-        SLOTS_PER_EPOCH,
-        SECONDS_PER_SLOT,
-        _,
-        _,
-        EPOCHS_PER_FRAME,
-        _,
-    ) = get_time_config()
     MAX_REPORTS_UNTIL_RESUME = (
-        GATE_SEAL_PAUSE_DURATION_SECONDS // (SECONDS_PER_SLOT * SLOTS_PER_EPOCH * EPOCHS_PER_FRAME) + 2
+        GATE_SEAL_PAUSE_DURATION_SECONDS
+        // (CHAIN_SECONDS_PER_SLOT * CHAIN_SLOTS_PER_EPOCH * ACCOUNTING_ORACLE_EPOCHS_PER_FRAME)
+        + 2
     )
     reports_passed = 0
     while True:
