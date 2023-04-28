@@ -3,7 +3,7 @@ Tests for voting ??/05/2023
 """
 import pytest
 from brownie import reverts, ShapellaUpgradeTemplate, chain, web3, interface
-from scripts.upgrade_shapella_1 import start_vote
+from scripts.upgrade_shapella import start_vote
 from collections import OrderedDict
 from utils.config import (
     contracts,

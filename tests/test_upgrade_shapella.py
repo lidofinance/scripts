@@ -1,5 +1,5 @@
 """
-Tests for voting ??/05/2023
+Tests for Lido V2 (Shapella-ready) upgrade voting 12/05/2023
 """
 from brownie import interface, ZERO_ADDRESS
 from utils.config import (
@@ -30,9 +30,11 @@ from utils.config import (
     lido_dao_withdrawal_queue_implementation,
     lido_dao_hash_consensus_for_accounting_oracle,
     lido_dao_hash_consensus_for_validators_exit_bus_oracle,
+    lido_dao_deposit_security_module_address_v1,
     gate_seal_address,
     lido_dao_deposit_security_module_address,
     lido_dao_withdrawal_vault_implementation,
+    lido_dao_withdrawal_vault_implementation_v1,
     LIDO_APP_ID,
     ORACLE_APP_ID,
     NODE_OPERATORS_REGISTRY_APP_ID,
@@ -47,11 +49,14 @@ from utils.config import (
     STAKING_MODULE_NOR_TYPE,
 )
 from utils.test.tx_tracing_helpers import *
-from utils.test.event_validators.permission import Permission, validate_permission_create_event
+from utils.test.event_validators.permission import (
+    Permission,
+    validate_permission_create_event,
+    validate_permission_revoke_event,
+)
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
-from scripts.upgrade_shapella_1 import start_vote as start_vote_1
-from scripts.upgrade_shapella_2_revoke_roles import start_vote as start_vote_2
+from scripts.upgrade_shapella import start_vote
 from utils.shapella_upgrade import (
     prepare_deploy_gate_seal,
     prepare_deploy_upgrade_template,
@@ -102,10 +107,11 @@ REPORT_REWARDS_MINTED_ROLE = "0x779e5c23cb7a5bcb9bfe1e9a5165a00057f12bcdfd13e374
 STAKING_ROUTER_ROLE = "0xbb75b874360e0bfd87f964eadd8276d8efb7c942134fc329b513032d0803e0c6"
 # Aragon roles to revoke
 MANAGE_FEE = "0x46b8504718b48a11e89304b407879435528b3cd3af96afde67dfe598e4683bd8"
-MANAGE_WITHDRAWAL_KEY = "0x46b8504718b48a11e89304b407879435528b3cd3af96afde67dfe598e4683bd8"
+MANAGE_WITHDRAWAL_KEY = "0x96088a8483023eb2f67b12aabbaf17d1d055e6ef387e563902adc1bba1e4028b"
 MANAGE_PROTOCOL_CONTRACTS_ROLE = "0xeb7bfce47948ec1179e2358171d5ee7c821994c911519349b95313b685109031"
 SET_EL_REWARDS_VAULT_ROLE = "0x9d68ad53a92b6f44b2e8fb18d211bf8ccb1114f6fafd56aa364515dfdf23c44f"
 SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE = "0xca7d176c2da2028ed06be7e3b9457e6419ae0744dc311989e9b29f6a1ceb1003"
+DEPOSIT_ROLE = "0x2561bf26f818282a3be40719542054d2173eb0d38539e8a8d3cff22f29fd2384"
 ADD_NODE_OPERATOR_ROLE = "0xe9367af2d321a2fc8d9c8f1e67f0fc1e2adf2f9844fb89ffa212619c713685b2"
 SET_NODE_OPERATOR_ACTIVE_ROLE = "0xd856e115ac9805c675a51831fa7d8ce01c333d666b0e34b3fc29833b7c68936a"
 SET_NODE_OPERATOR_NAME_ROLE = "0x58412970477f41493548d908d4307dfca38391d6bc001d56ffef86bd4f4a72e8"
@@ -151,6 +157,11 @@ permissions_to_revoke = [
         entity=lido_dao_voting_address,
         app=lido_dao_steth_address,
         role=SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE,
+    ),
+    Permission(
+        entity=lido_dao_deposit_security_module_address_v1,
+        app=lido_dao_steth_address,
+        role=DEPOSIT_ROLE,
     ),
     Permission(
         entity=lido_dao_voting_address,
@@ -220,20 +231,21 @@ def test_vote(
     # Preliminary checks
     #
     assert (
-        withdrawal_vault_manager.implementation() != lido_dao_withdrawal_vault_implementation
+        withdrawal_vault_manager.implementation() == lido_dao_withdrawal_vault_implementation_v1
     ), "Wrong WithdrawalVault proxy initial implementation"
     assert withdrawal_vault_manager.proxy_getAdmin() == lido_dao_voting_address
 
-    # Vote #1 ACL checks
+    # ACL grant checks
     assert not contracts.acl.hasPermission(*permission_staking_router)
 
-    # Vote #2 ACL checks
+    # ACL revoke checks
     for permission in permissions_to_revoke:
         assert contracts.acl.hasPermission(*permission), f"No starting role {permission.role} on {permission.entity}"
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
-        vote_ids = vote_ids_from_env
+        assert len(vote_ids_from_env) == 1, "This test script supports only single vote id"
+        (vote_id,) = vote_ids_from_env
         template = contracts.shapella_upgrade_template
     else:
         prepare_deploy_gate_seal(deployer_eoa)
@@ -241,14 +253,11 @@ def test_vote(
         prepare_upgrade_locator(deployer_eoa)
         prepare_transfer_ownership_to_template(deployer_eoa, template)
         tx_params = {"from": ldo_holder_address_for_tests}
-        vote1_id, _ = start_vote_1(tx_params, silent=True)
-        vote2_id, _ = start_vote_2(tx_params, silent=True)
-        vote_ids = [vote1_id, vote2_id]
+        vote_id, _ = start_vote(tx_params, silent=True)
 
-    vote_transactions = helpers.execute_votes(accounts, vote_ids, contracts.voting)
+    vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
 
-    gas_usages = [(vote_id, tx.gas_used) for vote_id, tx in zip(vote_ids, vote_transactions)]
-    print(f"UPGRADE TXs (voteId, gasUsed): {gas_usages}")
+    print(f"UPGRADE TX voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
     #
     # WithdrawalVault upgrade checks
@@ -281,10 +290,10 @@ def test_vote(
     assert_app_update(oracle_new_app, oracle_old_app, lido_dao_legacy_oracle_implementation)
     assert oracle_proxy.implementation() == lido_dao_legacy_oracle_implementation, "Proxy should be updated"
 
-    # Vote #1 ACL checks
+    # ACL grant checks
     assert contracts.acl.hasPermission(*permission_staking_router)
 
-    # Vote #2 ACL checks
+    # ACL revoke checks
     for permission in permissions_to_revoke:
         assert not contracts.acl.hasPermission(*permission), f"Role {permission.role} is still on {permission.entity}"
 
@@ -296,9 +305,9 @@ def test_vote(
     if bypass_events_decoding:
         return
 
-    (vote1_tx, vote2_tx) = vote_transactions
+    display_voting_events(vote_tx)
 
-    display_voting_events(vote1_tx)
+    grouped_voting_events = group_voting_events(vote_tx)
 
     (
         events_withdrawal_vault_upgrade,
@@ -311,7 +320,8 @@ def test_vote(
         events_update_oracle_impl,
         events_grant_staking_router_role,
         events_template_finish,
-    ) = group_voting_events(vote1_tx)
+        *revoke_roles_events,
+    ) = grouped_voting_events
 
     validate_withdrawal_vault_manager_upgrade_events(
         events_withdrawal_vault_upgrade, lido_dao_withdrawal_vault_implementation
@@ -330,9 +340,8 @@ def test_vote(
     )
     validate_finish_upgrade_events(events_template_finish)
 
-    # TODO: fix, it fails with "brownie.exceptions.RPCRequestError: Invalid string length" at `tx._get_trace()`
-    # display_voting_events(vote2_tx)
-    # TODO: check vote2_tx events
+    for e, permission in zip(revoke_roles_events, permissions_to_revoke):
+        validate_permission_revoke_event(e, permission)
 
 
 def assert_app_update(new_app, old_app, contract_address):

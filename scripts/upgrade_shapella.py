@@ -1,7 +1,7 @@
 """
-Voting ??/05/2023.
+Voting 12/05/2023.
 
-Lido V2 (Shapella-ready) protocol upgrade on Görli
+Lido V2 (Shapella-ready) protocol upgrade
 
 1. Update `WithdrawalVault` proxy implementation
 2. Call `ShapellaUpgradeTemplate.startUpgrade()`
@@ -13,7 +13,22 @@ Lido V2 (Shapella-ready) protocol upgrade on Görli
 8. Update `LidoOracle` implementation to `LegacyOracle`
 9. Create new role `STAKING_ROLE_ROLE` and assign to `StakingRouter`
 10. Call `ShapellaUpgradeTemplate.finishUpgrade()`
-
+11. Revoke `MANAGE_FEE` role from `Voting`
+12. Revoke `MANAGE_WITHDRAWAL_KEY` role from `Voting`
+13. Revoke `MANAGE_PROTOCOL_CONTRACTS_ROLE` role from `Voting`
+14. Revoke `SET_EL_REWARDS_VAULT_ROLE` role from `Voting`
+15. Revoke `SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE` role from `Voting`
+16. Revoke `DEPOSIT_ROLE` role from old `DepositSecurityModule`
+17. Revoke `ADD_NODE_OPERATOR_ROLE` role from `Voting`
+18. Revoke `SET_NODE_OPERATOR_ACTIVE_ROLE` role from `Voting`
+19. Revoke `SET_NODE_OPERATOR_NAME_ROLE` role from `Voting`
+20. Revoke `SET_NODE_OPERATOR_ADDRESS_ROLE` role from `Voting`
+21. Revoke `REPORT_STOPPED_VALIDATORS_ROLE` role from `Voting`
+22. Revoke `MANAGE_MEMBERS` role from `Voting`
+23. Revoke `MANAGE_QUORUM` role from `Voting`
+24. Revoke `SET_BEACON_SPEC` role from `Voting`
+25. Revoke `SET_REPORT_BOUNDARIES` role from `Voting`
+26. Revoke `SET_BEACON_REPORT_RECEIVER` role from `Voting`
 """
 
 import time
@@ -39,7 +54,7 @@ from utils.config import (
     lido_dao_withdrawal_vault_implementation,
     get_priority_fee,
 )
-from utils.permissions import encode_permission_create
+from utils.permissions import encode_permission_create, encode_permission_revoke
 
 # noinspection PyUnresolvedReferences
 from utils.brownie_prelude import *
@@ -87,12 +102,16 @@ def encode_withdrawal_vault_proxy_update(vault_proxy_address: str, implementatio
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
+    voting = contracts.voting
+    node_operators_registry = contracts.node_operators_registry
+    lido = contracts.lido
+    legacy_oracle = contracts.legacy_oracle
 
     call_script_items = [
         # 1)
         encode_withdrawal_vault_proxy_update(lido_dao_withdrawal_vault, lido_dao_withdrawal_vault_implementation),
         # 2)
-        encode_template_start_upgrade(contracts.shapella_upgrade_template.address),
+        encode_template_start_upgrade(contracts.shapella_upgrade_template),
         # 3)
         add_implementation_to_lido_app_repo(
             update_lido_app["version"], update_lido_app["new_address"], update_lido_app["content_uri"]
@@ -113,13 +132,42 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         update_app_implementation(update_oracle_app["id"], update_oracle_app["new_address"]),
         # 9)
         encode_permission_create(
-            entity=lido_dao_staking_router,
-            target_app=contracts.node_operators_registry,
-            permission_name="STAKING_ROUTER_ROLE",
-            manager=contracts.voting,
+            lido_dao_staking_router, node_operators_registry, "STAKING_ROUTER_ROLE", manager=voting
         ),
         # 10)
-        encode_template_finish_upgrade(contracts.shapella_upgrade_template.address),
+        encode_template_finish_upgrade(contracts.shapella_upgrade_template),
+        # 11)
+        encode_permission_revoke(lido, "MANAGE_FEE", revoke_from=voting),
+        # 12)
+        encode_permission_revoke(lido, "MANAGE_WITHDRAWAL_KEY", revoke_from=voting),
+        # 13)
+        encode_permission_revoke(lido, "MANAGE_PROTOCOL_CONTRACTS_ROLE", revoke_from=voting),
+        # 14)
+        encode_permission_revoke(lido, "SET_EL_REWARDS_VAULT_ROLE", revoke_from=voting),
+        # 15)
+        encode_permission_revoke(lido, "SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE", revoke_from=voting),
+        # 16)
+        encode_permission_revoke(lido, "DEPOSIT_ROLE", revoke_from=contracts.deposit_security_module_v1),
+        # 17)
+        encode_permission_revoke(node_operators_registry, "ADD_NODE_OPERATOR_ROLE", revoke_from=voting),
+        # 18)
+        encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_ACTIVE_ROLE", revoke_from=voting),
+        # 19)
+        encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_NAME_ROLE", revoke_from=voting),
+        # 20)
+        encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_ADDRESS_ROLE", revoke_from=voting),
+        # 21)
+        encode_permission_revoke(node_operators_registry, "REPORT_STOPPED_VALIDATORS_ROLE", revoke_from=voting),
+        # 22)
+        encode_permission_revoke(legacy_oracle, "MANAGE_MEMBERS", revoke_from=voting),
+        # 23)
+        encode_permission_revoke(legacy_oracle, "MANAGE_QUORUM", revoke_from=voting),
+        # 24)
+        encode_permission_revoke(legacy_oracle, "SET_BEACON_SPEC", revoke_from=voting),
+        # 25)
+        encode_permission_revoke(legacy_oracle, "SET_REPORT_BOUNDARIES", revoke_from=voting),
+        # 26)
+        encode_permission_revoke(legacy_oracle, "SET_BEACON_REPORT_RECEIVER", revoke_from=voting),
     ]
 
     vote_desc_items = [
@@ -132,7 +180,23 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         "7) Publishing new implementation in Oracle app APM repo",
         "8) Updating implementation of Oracle app",
         "9) Create permission for STAKING_ROUTER_ROLE of NodeOperatorsRegistry assigning it to StakingRouter",
-        "10) Finalize upgrade by calling `ShapellaUpgradeTemplate.finalizeUpgrade()`",
+        "10) Finish upgrade by calling `ShapellaUpgradeTemplate.finishUpgrade()`",
+        "11) Revoke `MANAGE_FEE` role from `Voting`",
+        "12) Revoke `MANAGE_WITHDRAWAL_KEY` role from `Voting`",
+        "13) Revoke `MANAGE_PROTOCOL_CONTRACTS_ROLE` role from `Voting`",
+        "14) Revoke `SET_EL_REWARDS_VAULT_ROLE` role from `Voting`",
+        "15) Revoke `SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE` role from `Voting`",
+        "16) Revoke `DEPOSIT_ROLE` role from old `DepositSecurityModule`",
+        "17) Revoke `ADD_NODE_OPERATOR_ROLE` role from `Voting`",
+        "18) Revoke `SET_NODE_OPERATOR_ACTIVE_ROLE` role from `Voting",
+        "19) Revoke `SET_NODE_OPERATOR_NAME_ROLE` role from `Voting`",
+        "20) Revoke `SET_NODE_OPERATOR_ADDRESS_ROLE` role from `Voting`",
+        "21) Revoke `REPORT_STOPPED_VALIDATORS_ROLE` role from `Voting`",
+        "22) Revoke `MANAGE_MEMBERS` role from `Voting`",
+        "23) Revoke `MANAGE_QUORUM` role from `Voting`",
+        "24) Revoke `SET_BEACON_SPEC` role from `Voting`",
+        "25) Revoke `SET_REPORT_BOUNDARIES` role from `Voting`",
+        "26) Revoke `SET_BEACON_REPORT_RECEIVER` role from `Voting`",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
