@@ -5,28 +5,30 @@ from brownie.network.event import _decode_logs
 from brownie.network.state import TxHistory
 from utils.config import contracts
 from tests.regression.test_permissions import protocol_permissions
-from utils.config_mainnet import (
-    lido_dao_agent_address, lido_easytrack_evmscriptexecutor, lido_easytrack_evmscriptexecutor)
-from utils.config_shapella_mainnet import (lido_dao_evm_script_registry)
+from configs.config_mainnet import (
+    lido_dao_agent_address, lido_easytrack_evmscriptexecutor)
+from configs.config_shapella_addresses_mainnet import (
+    lido_dao_evm_script_registry)
+from configs.config_shapella_other_mainnet import expected_permissions_after_votes, ACL_DEPLOY_BLOCK_NUMBER
 
 
 def has_permissions(app, role, entity):
     return contracts.acl.hasPermission(entity, app, role)
 
 
-def assert_has_permissions(app, role, entity):
+def assert_has_permissions(app, role, entity, role_name=None, app_name=None):
     assert has_permissions(
-        app, role, entity), f'Entity {entity} should have permission {role} for app {app}'
+        app, role, entity), f'Entity {entity} should have permission {role_name or role} for app {app_name or app}'
 
 
-def assert_has_not_permissions(app, role, entity, role_name=None):
+def assert_has_not_permissions(app, role, entity, role_name=None, app_name=None):
     assert not has_permissions(
-        app, role, entity), f'Entity {entity} should not have permission {role_name or role} for app {app}'
+        app, role, entity), f'Entity {entity} should not have permission {role_name or role} for app {app_name or app}'
 
 
-def assert_has_not_permissions_in_list(app, role, entity_list, role_name=None):
+def assert_has_not_permissions_in_list(app, role, entity_list, role_name=None, app_name=None):
     for address in entity_list:
-        assert_has_not_permissions(app, role, address, role_name)
+        assert_has_not_permissions(app, role, address, role_name, app_name)
 
 
 def assert_has_permissions_in_list(app, role, entity_list):
@@ -40,7 +42,7 @@ def assert_not_match_with_events_in_list(app, role, entity_list, role_name=None,
 
 
 def assert_not_match_with_events(app, role, entity, role_name=None, app_name=None):
-    assert not has_permissions(app, role, entity)
+    assert not has_permissions(app, role, entity, role_name, app_name)
 
 
 def collect_permissions_from_events(permission_events):
@@ -59,76 +61,13 @@ def collect_permissions_from_events(permission_events):
     return apps
 
 
-def permissions_after_votes():
-    return {
-        contracts.acl.address: {
-            'roles': {
-                'CREATE_PERMISSIONS_ROLE': [contracts.voting.address]
-            }
-        },
-        contracts.kernel.address: {
-            'roles': {
-                'APP_MANAGER_ROLE': [contracts.voting.address]
-            }
-        },
-        lido_dao_evm_script_registry: {
-            'roles': {
-                'REGISTRY_MANAGER_ROLE': [contracts.voting.address],
-                'REGISTRY_ADD_EXECUTOR_ROLE': [contracts.voting.address]
-            }
-        },
-        contracts.token_manager.address: {
-            'roles': {
-                'ASSIGN_ROLE': [contracts.voting.address]
-            }
-        },
-        contracts.lido.address: {
-            'roles': {
-                'PAUSE_ROLE': [contracts.voting.address],
-                'STAKING_CONTROL_ROLE': [contracts.voting.address],
-                'RESUME_ROLE': [contracts.voting.address],
-                'STAKING_PAUSE_ROLE': [contracts.voting.address],
-                'DEPOSIT_ROLE': [contracts.deposit_security_module_v1.address]
-            }
-        },
-        lido_dao_agent_address: {
-            'roles': {
-                'EXECUTE_ROLE': [contracts.voting.address],
-                'RUN_SCRIPT_ROLE': [contracts.voting.address],
-                'TRANSFER_ROLE': [contracts.finance.address]
-            }
-        },
-        contracts.finance.address: {
-            'roles': {
-                'EXECUTE_PAYMENTS_ROLE': [contracts.voting.address],
-                'MANAGE_PAYMENTS_ROLE': [contracts.voting.address],
-                'CREATE_PAYMENTS_ROLE': [contracts.voting.address]
-            }
-        },
-        contracts.voting.address: {
-            'roles': {
-                'MODIFY_QUORUM_ROLE': [contracts.voting.address],
-                'MODIFY_SUPPORT_ROLE': [contracts.voting.address],
-                'CREATE_VOTES_ROLE': [contracts.token_manager.address]
-            }
-        },
-        contracts.node_operators_registry.address: {
-            'roles': {
-                'MANAGE_SIGNING_KEYS': [contracts.voting.address],
-                'SET_NODE_OPERATOR_LIMIT_ROLE': [contracts.voting.address, lido_easytrack_evmscriptexecutor],
-                'STAKING_ROUTER_ROLE': [contracts.staking_router.address]
-            }
-        }
-    }
-
-
 def test_protocol_permissions_events(protocol_permissions):
     w3 = Web3(Web3.HTTPProvider(
         f'https://mainnet.infura.io/v3/{os.getenv("WEB3_INFURA_PROJECT_ID")}'))
 
     event_signature_hash = w3.keccak(
         text="SetPermission(address,address,bytes32,bool)").hex()
-    events_before_voting = w3.eth.filter({"address": contracts.acl.address, "fromBlock": 11473216, "topics": [
+    events_before_voting = w3.eth.filter({"address": contracts.acl.address, "fromBlock": ACL_DEPLOY_BLOCK_NUMBER, "topics": [
         event_signature_hash]}).get_all_entries()
 
     history = TxHistory()
@@ -150,7 +89,7 @@ def test_protocol_permissions_events(protocol_permissions):
                    if app['type'] == 'AragonApp']
 
     events_by_app = collect_permissions_from_events(permission_events)
-    roles_after_votes = permissions_after_votes()
+    roles_after_votes = expected_permissions_after_votes
 
     app_names = {
         contracts.acl.address: 'Acl',
@@ -196,10 +135,10 @@ def test_protocol_permissions_events(protocol_permissions):
                         print(
                             f'     {address} {entity_names[address]} has {current_role_string}')
                         assert_has_permissions(
-                            event_app, event_role, address)
+                            event_app, event_role, address, current_role_string, app_names[event_app])
                     else:
                         assert_has_not_permissions(
-                            event_app, event_role, address)
+                            event_app, event_role, address, current_role_string, app_names[event_app])
             else:
                 assert_has_not_permissions_in_list(
                     event_app, event_role, events_by_app[event_app][event_role])

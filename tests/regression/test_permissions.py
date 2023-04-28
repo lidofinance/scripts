@@ -6,7 +6,7 @@ import pytest
 from brownie import interface, convert, web3
 from utils.test.event_validators.permission import Permission
 from utils.config import contracts, oracle_committee, gate_seal_address, deposit_security_module_guardians
-from utils.config_mainnet import (
+from configs.config_mainnet import (
     lido_easytrack_evmscriptexecutor, lido_easytrack_evmscriptexecutor)
 
 

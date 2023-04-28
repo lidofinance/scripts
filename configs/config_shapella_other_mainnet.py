@@ -1,3 +1,19 @@
+from configs.config_mainnet import (
+    lido_dao_agent_address,
+    lido_easytrack_evmscriptexecutor,
+    lido_dao_token_manager_address,
+    lido_dao_steth_address,
+    lido_dao_finance_address,
+    lido_dao_node_operators_registry,
+    lido_dao_acl_address,
+    lido_dao_voting_address,
+    lido_dao_kernel,
+)
+from configs.config_shapella_addresses_mainnet import (
+    lido_dao_evm_script_registry,
+    lido_dao_staking_router,
+    lido_dao_deposit_security_module_address_v1
+)
 #
 # Other
 #
@@ -75,7 +91,8 @@ DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS = 6646
 STAKING_MODULE_NOR_ID = 1
 STAKING_MODULE_NOR_NAME = "curated-onchain-v1"
 STAKING_MODULE_NOR_TYPE = (
-    "0x637572617465642d6f6e636861696e2d76310000000000000000000000000000"  # bytes32("curated-onchain-v1");
+    # bytes32("curated-onchain-v1");
+    "0x637572617465642d6f6e636861696e2d76310000000000000000000000000000"
 )
 STAKING_MODULE_NOR_MODULE_FEE = 500
 STAKING_MODULE_NOR_TREASURY_FEE = 500
@@ -96,3 +113,66 @@ WITHDRAWAL_QUEUE_ERC721_BASE_URI = ""
 # GateSeal
 GATE_SEAL_PAUSE_DURATION_SECONDS = 6 * 24 * 60 * 60  # 6 days
 GATE_SEAL_EXPIRY_TIMESTAMP = 1713139200  # 2024-04-15 00:00GMT
+
+# Aragon Permissions
+expected_permissions_after_votes = {
+    lido_dao_acl_address: {
+        'roles': {
+            'CREATE_PERMISSIONS_ROLE': [lido_dao_voting_address]
+        }
+    },
+    lido_dao_kernel: {
+        'roles': {
+            'APP_MANAGER_ROLE': [lido_dao_voting_address]
+        }
+    },
+    lido_dao_evm_script_registry: {
+        'roles': {
+            'REGISTRY_MANAGER_ROLE': [lido_dao_voting_address],
+            'REGISTRY_ADD_EXECUTOR_ROLE': [lido_dao_voting_address]
+        }
+    },
+    lido_dao_token_manager_address: {
+        'roles': {
+            'ASSIGN_ROLE': [lido_dao_voting_address]
+        }
+    },
+    lido_dao_steth_address: {
+        'roles': {
+            'PAUSE_ROLE': [lido_dao_voting_address],
+            'STAKING_CONTROL_ROLE': [lido_dao_voting_address],
+            'RESUME_ROLE': [lido_dao_voting_address],
+            'STAKING_PAUSE_ROLE': [lido_dao_voting_address],
+            'DEPOSIT_ROLE': [lido_dao_deposit_security_module_address_v1]
+        }
+    },
+    lido_dao_agent_address: {
+        'roles': {
+            'EXECUTE_ROLE': [lido_dao_voting_address],
+            'RUN_SCRIPT_ROLE': [lido_dao_voting_address],
+            'TRANSFER_ROLE': [lido_dao_finance_address]
+        }
+    },
+    lido_dao_finance_address: {
+        'roles': {
+            'EXECUTE_PAYMENTS_ROLE': [lido_dao_voting_address],
+            'MANAGE_PAYMENTS_ROLE': [lido_dao_voting_address],
+            'CREATE_PAYMENTS_ROLE': [lido_dao_voting_address]
+        }
+    },
+    lido_dao_voting_address: {
+        'roles': {
+            'MODIFY_QUORUM_ROLE': [lido_dao_voting_address],
+            'MODIFY_SUPPORT_ROLE': [lido_dao_voting_address],
+            'CREATE_VOTES_ROLE': [lido_dao_token_manager_address]
+        }
+    },
+    lido_dao_node_operators_registry: {
+        'roles': {
+            'MANAGE_SIGNING_KEYS': [lido_dao_voting_address],
+            'SET_NODE_OPERATOR_LIMIT_ROLE': [lido_dao_voting_address, lido_easytrack_evmscriptexecutor],
+            'STAKING_ROUTER_ROLE': [lido_dao_staking_router]
+        }
+    }
+}
+ACL_DEPLOY_BLOCK_NUMBER = 11473216
