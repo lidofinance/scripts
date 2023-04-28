@@ -6,6 +6,7 @@ from brownie.exceptions import brownie
 from brownie.network.account import Account
 from web3 import Web3
 
+from tests.conftest import Helpers
 from utils.config import contracts
 from utils.test.helpers import ETH, GWEI, ZERO_ADDRESS, almostEqWithDiff, eth_balance
 from utils.test.oracle_report_helpers import ONE_DAY, SHARE_RATE_PRECISION, oracle_report
@@ -39,7 +40,7 @@ def withdrawal_vault() -> Contract:
     return contracts.withdrawal_vault
 
 
-def test_accounting_no_cl_rebase(accounting_oracle: Contract, lido: Contract):
+def test_accounting_no_cl_rebase(accounting_oracle: Contract, lido: Contract, helpers: Helpers):
     """Check Lido rebase after accounting report with no CL rebase"""
 
     block_before_report = chain.height
@@ -76,6 +77,8 @@ def test_accounting_no_cl_rebase(accounting_oracle: Contract, lido: Contract):
     assert (
         post_ttl_shares_event["preTotalPooledEther"] == post_ttl_shares_event["postTotalPooledEther"]
     ), "PostTotalShares preTotalPooledEther <> postTotalPooledEther"
+
+    helpers.assert_event_not_emitted(SharesBurnt.__name__, tx)
 
     assert eth_balance(lido.address, block_before_report) == eth_balance(
         lido.address, block_after_report
@@ -202,7 +205,7 @@ def test_accounting_cl_rebase_above_limits():
         oracle_report(cl_diff=rebase_amount, exclude_vaults_balances=True)
 
 
-def test_accounting_no_el_rewards(accounting_oracle: Contract, lido: Contract):
+def test_accounting_no_el_rewards(accounting_oracle: Contract, lido: Contract, helpers: Helpers):
     """Test rebase with no EL rewards"""
 
     block_before_report = chain.height
@@ -231,8 +234,7 @@ def test_accounting_no_el_rewards(accounting_oracle: Contract, lido: Contract):
         lido.address, block_after_report
     ), "Lido ETH balance has changed"
 
-    with pytest.raises(AssertionError, match="Event ELRewardsReceived was not found"):
-        _first_event(tx, ELRewardsReceived)
+    helpers.assert_event_not_emitted(WithdrawalsReceived.__name__, tx)
 
 
 def test_accounting_normal_el_rewards(accounting_oracle: Contract, lido: Contract, el_vault: Contract):
@@ -399,7 +401,7 @@ def test_accounting_el_rewards_above_limits(
     ), "Expected EL vault to be filled with excess rewards"
 
 
-def test_accounting_no_withdrawals(accounting_oracle: Contract, lido: Contract):
+def test_accounting_no_withdrawals(accounting_oracle: Contract, lido: Contract, helpers: Helpers):
     """Test rebase with no withdrawals"""
 
     block_before_report = chain.height
@@ -428,8 +430,7 @@ def test_accounting_no_withdrawals(accounting_oracle: Contract, lido: Contract):
         lido.address, block_after_report
     ), "Lido ETH balance has changed"
 
-    with pytest.raises(AssertionError, match="Event WithdrawalsReceived was not found"):
-        _first_event(tx, WithdrawalsReceived)
+    helpers.assert_event_not_emitted(WithdrawalsReceived.__name__, tx)
 
 
 def test_accounting_withdrawals_at_limits(
@@ -661,6 +662,77 @@ def test_accounting_shares_burn_above_limits(burner: Contract, lido: Contract, s
     assert lido.sharesOf(burner.address) == 0, "Expected burner to have no shares"
 
 
+def test_accounting_overfill_both_vaults(
+    lido: Contract,
+    withdrawal_vault: Contract,
+    el_vault: Contract,
+    helpers: Helpers,
+):
+    """Test rebase with excess ETH amount on both vaults"""
+
+    limit = _rebase_limit_wei(block_identifier=chain.height)
+    excess = ETH(10)
+
+    web3.manager.request_blocking(
+        "evm_setAccountBalance",  # type: ignore
+        [
+            withdrawal_vault.address,
+            Web3.toHex(limit + excess),
+        ],
+    )
+    web3.manager.request_blocking(
+        "evm_setAccountBalance",  # type: ignore
+        [
+            el_vault.address,
+            Web3.toHex(limit + excess),
+        ],
+    )
+
+    initial_block = chain.height
+
+    tx, _ = oracle_report(cl_diff=0, report_el_vault=True, report_withdrawals_vault=True)
+    updated_limit = _rebase_limit_wei(block_identifier=chain.height)
+    el_vault_excess = (limit + excess) - (updated_limit - excess)
+
+    assert (
+        eth_balance(withdrawal_vault.address) == excess
+    ), "Expected withdrawals vault to be filled with excess rewards"
+    assert _first_event(tx, WithdrawalsReceived)["amount"] == limit, "WithdrawalsReceived: amount mismatch"
+
+    assert eth_balance(el_vault.address) == eth_balance(
+        el_vault.address, block_identifier=initial_block
+    ), "Expected EL vault to be kept unchanged"
+    helpers.assert_event_not_emitted(ELRewardsReceived.__name__, tx)
+
+    tx, _ = oracle_report(cl_diff=0, report_el_vault=True, report_withdrawals_vault=True)
+
+    assert eth_balance(withdrawal_vault.address) == 0, "Expected withdrawals vault to be emptied"
+    assert _first_event(tx, WithdrawalsReceived)["amount"] == excess, "WithdrawalsReceived: amount mismatch"
+
+    assert eth_balance(el_vault.address) == el_vault_excess, "Expected EL vault to be filled with excess rewards"
+    assert _first_event(tx, ELRewardsReceived)["amount"] == updated_limit - excess, "ELRewardsReceived: amount mismatch"
+
+    tx, _ = oracle_report(cl_diff=0, report_el_vault=True, report_withdrawals_vault=True)
+
+    helpers.assert_event_not_emitted(WithdrawalsReceived.__name__, tx)
+    assert eth_balance(el_vault.address) == 0, "Expected EL vault to be emptied"
+    assert _first_event(tx, ELRewardsReceived)["amount"] == el_vault_excess, "ELRewardsReceived: amount mismatch"
+
+    assert lido.getTotalELRewardsCollected(
+        block_identifier=initial_block
+    ) + limit + excess == lido.getTotalELRewardsCollected(
+        block_identifier=chain.height
+    ), "TotalELRewardsCollected change mismatch"
+
+    assert lido.getTotalPooledEther(block_identifier=initial_block) + (limit + excess) * 2 == lido.getTotalPooledEther(
+        block_identifier=chain.height,
+    ), "TotalPooledEther change mismatch"
+
+    assert eth_balance(lido.address, initial_block) + (limit + excess) * 2 == eth_balance(
+        lido.address, chain.height
+    ), "Lido ETH balance change mismatch"
+
+
 class ETHDistributed(TypedDict):
     """ETHDistributed event definition"""
 
@@ -790,7 +862,4 @@ def _shares_burn_limit_no_pooled_ether_changes(block_identifier: int | str = "la
     rebase_limit = contracts.oracle_report_sanity_checker.getMaxPositiveTokenRebase(block_identifier=block_identifier)
     rebase_limit_plus_1 = rebase_limit + LIMITER_PRECISION_BASE
 
-    return (
-        contracts.lido.getTotalShares(block_identifier=block_identifier)
-        * rebase_limit // rebase_limit_plus_1
-    )
+    return contracts.lido.getTotalShares(block_identifier=block_identifier) * rebase_limit // rebase_limit_plus_1
