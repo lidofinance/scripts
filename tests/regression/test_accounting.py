@@ -30,6 +30,11 @@ def el_vault() -> Contract:
 
 
 @pytest.fixture(scope="module")
+def burner() -> Contract:
+    return contracts.burner
+
+
+@pytest.fixture(scope="module")
 def withdrawal_vault() -> Contract:
     return contracts.withdrawal_vault
 
@@ -569,6 +574,93 @@ def test_accounting_withdrawals_above_limits(
     ), "Expected withdrawal vault to be filled with excess rewards"
 
 
+def test_accounting_shares_burn_at_limits(burner: Contract, lido: Contract, steth_whale: Account):
+    """Test shares burnt with amount at the limit"""
+
+    shares_limit = _shares_burn_limit_no_pooled_ether_changes()
+    assert lido.sharesOf(burner.address) == 0, "Expected burner to have no shares"
+    assert lido.sharesOf(steth_whale.address) > shares_limit, "Not enough shares on whale account"
+    steth_of_shares = lido.getPooledEthByShares(shares_limit)
+    lido.approve(burner.address, steth_of_shares, {"from": steth_whale.address})
+
+    cover_shares, no_cover_shares = shares_limit // 3, shares_limit - shares_limit // 3
+
+    tx = burner.requestBurnShares(steth_whale.address, no_cover_shares, {"from": lido.address})
+    shares_burn_request_event = _first_event(tx, StETHBurnRequested)
+    assert shares_burn_request_event["amountOfShares"] == no_cover_shares, "StETHBurnRequested: amountOfShares mismatch"
+    assert shares_burn_request_event["isCover"] is False, "StETHBurnRequested: isCover mismatch"
+    assert lido.sharesOf(burner.address) == no_cover_shares, "Burner shares mismatch"
+
+    tx = burner.requestBurnSharesForCover(steth_whale.address, cover_shares, {"from": lido.address})
+    shares_burn_request_event = _first_event(tx, StETHBurnRequested)
+    assert shares_burn_request_event["amountOfShares"] == cover_shares, "StETHBurnRequested: amountOfShares mismatch"
+    assert shares_burn_request_event["isCover"] is True, "StETHBurnRequested: isCover mismatch"
+    assert lido.sharesOf(burner.address) == shares_limit, "Burner shares mismatch"
+
+    block_before_report = chain.height
+    tx, _ = oracle_report(cl_diff=0, exclude_vaults_balances=True)
+    block_after_report = chain.height
+
+    shares_burned_event = _first_event(tx, SharesBurnt)
+    assert shares_burned_event["sharesAmount"] == shares_limit, "SharesBurnt: sharesAmount mismatch"
+
+    shares_rate_before, shares_rate_after = _shares_rate_from_event(tx)
+    assert shares_rate_after > shares_rate_before, "Shares rate has not increased"
+
+    assert lido.getTotalShares(block_identifier=block_before_report) - shares_limit == lido.getTotalShares(
+        block_identifier=block_after_report
+    ), "TotalShares change mismatch"
+
+    assert lido.sharesOf(burner.address) == 0, "Expected burner to have no shares"
+
+
+def test_accounting_shares_burn_above_limits(burner: Contract, lido: Contract, steth_whale: Account):
+    """Test shares burnt with amount above the limit"""
+
+    shares_limit = _shares_burn_limit_no_pooled_ether_changes()
+    excess_amount = 42
+
+    assert lido.sharesOf(burner.address) == 0, "Expected burner to have no shares"
+    assert lido.sharesOf(steth_whale.address) > shares_limit + excess_amount, "Not enough shares on whale account"
+    steth_of_shares = lido.getPooledEthByShares(shares_limit + excess_amount)
+    lido.approve(burner.address, steth_of_shares, {"from": steth_whale.address})
+
+    cover_shares, no_cover_shares = shares_limit // 3, shares_limit - shares_limit // 3 + excess_amount
+
+    tx = burner.requestBurnShares(steth_whale.address, no_cover_shares, {"from": lido.address})
+    shares_burn_request_event = _first_event(tx, StETHBurnRequested)
+    assert shares_burn_request_event["amountOfShares"] == no_cover_shares, "StETHBurnRequested: amountOfShares mismatch"
+    assert shares_burn_request_event["isCover"] is False, "StETHBurnRequested: isCover mismatch"
+    assert lido.sharesOf(burner.address) == no_cover_shares, "Burner shares mismatch"
+
+    tx = burner.requestBurnSharesForCover(steth_whale.address, cover_shares, {"from": lido.address})
+    shares_burn_request_event = _first_event(tx, StETHBurnRequested)
+    assert shares_burn_request_event["amountOfShares"] == cover_shares, "StETHBurnRequested: amountOfShares mismatch"
+    assert shares_burn_request_event["isCover"] is True, "StETHBurnRequested: isCover mismatch"
+    assert lido.sharesOf(burner.address) == shares_limit + excess_amount, "Burner shares mismatch"
+
+    block_before_report = chain.height
+    tx, _ = oracle_report(cl_diff=0, exclude_vaults_balances=True)
+    block_after_report = chain.height
+
+    shares_burned_event = _first_event(tx, SharesBurnt)
+    assert shares_burned_event["sharesAmount"] == shares_limit, "SharesBurnt: sharesAmount mismatch"
+
+    shares_rate_before, shares_rate_after = _shares_rate_from_event(tx)
+    assert shares_rate_after > shares_rate_before, "Shares rate has not increased"
+
+    assert lido.getTotalShares(block_identifier=block_before_report) - shares_limit == lido.getTotalShares(
+        block_identifier=block_after_report
+    ), "TotalShares change mismatch"
+
+    assert lido.sharesOf(burner.address) == excess_amount, "Expected burner to have excess shares"
+
+    tx, _ = oracle_report(cl_diff=0, exclude_vaults_balances=True)
+    shares_burned_event = _first_event(tx, SharesBurnt)
+    assert shares_burned_event["sharesAmount"] == excess_amount, "SharesBurnt: sharesAmount mismatch"
+    assert lido.sharesOf(burner.address) == 0, "Expected burner to have no shares"
+
+
 class ETHDistributed(TypedDict):
     """ETHDistributed event definition"""
 
@@ -617,6 +709,24 @@ TransferShares = TypedDict(
     "TransferShares",
     {"from": str, "to": str, "sharesValue": int},
 )
+
+
+class SharesBurnt(TypedDict):
+    """SharesBurnt event definition"""
+
+    account: str
+    preRebaseTokenAmount: int
+    postRebaseTokenAmount: int
+    sharesAmount: int
+
+
+class StETHBurnRequested(TypedDict):
+    """StETHBurnRequested event definition"""
+
+    isCover: bool
+    requestedBy: str
+    amountOfStETH: int
+    amountOfShares: int
 
 
 T = TypeVar("T")
@@ -671,4 +781,16 @@ def _rebase_limit_wei(block_identifier: int) -> int:
         contracts.oracle_report_sanity_checker.getMaxPositiveTokenRebase(block_identifier=block_identifier)
         * contracts.lido.getTotalPooledEther(block_identifier=block_identifier)
         // LIMITER_PRECISION_BASE
+    )
+
+
+def _shares_burn_limit_no_pooled_ether_changes(block_identifier: int | str = "latest") -> int:
+    """Get shares burn limit from oracle report sanity checker contract when no changes in pooled Ether are expected"""
+
+    rebase_limit = contracts.oracle_report_sanity_checker.getMaxPositiveTokenRebase(block_identifier=block_identifier)
+    rebase_limit_plus_1 = rebase_limit + LIMITER_PRECISION_BASE
+
+    return (
+        contracts.lido.getTotalShares(block_identifier=block_identifier)
+        * rebase_limit // rebase_limit_plus_1
     )

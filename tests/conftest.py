@@ -44,6 +44,12 @@ def eth_whale(accounts):
         return accounts.at("0x00000000219ab540356cBB839Cbe05303d7705Fa", force=True)
 
 
+@pytest.fixture(scope="module")
+def steth_whale(accounts) -> Account:
+    # TODO: add steth whale for goerli
+    return accounts.at(lido_insurance_fund_address, force=True)
+
+
 class Helpers:
     @staticmethod
     def filter_events_from(addr, events):
