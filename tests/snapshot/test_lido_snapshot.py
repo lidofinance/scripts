@@ -363,11 +363,6 @@ def far_block() -> int:
 
 
 @pytest.fixture(scope="module")
-def steth_whale(accounts) -> Account:
-    return accounts.at(lido_insurance_fund_address, force=True)
-
-
-@pytest.fixture(scope="module")
 def some_contract(accounts) -> Account:
     # Multicall3 contract deployed almost on the every network on the same address
     return accounts.at("0xcA11bde05977b3631167028862bE2a173976CA11", force=True)
