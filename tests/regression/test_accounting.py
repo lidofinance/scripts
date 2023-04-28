@@ -789,11 +789,8 @@ def _shares_burn_limit_no_pooled_ether_changes(block_identifier: int | str = "la
 
     rebase_limit = contracts.oracle_report_sanity_checker.getMaxPositiveTokenRebase(block_identifier=block_identifier)
     rebase_limit_plus_1 = rebase_limit + LIMITER_PRECISION_BASE
-    total_pooled_ether = contracts.lido.getTotalPooledEther(block_identifier=block_identifier)
-    pooled_ether_rate = total_pooled_ether * LIMITER_PRECISION_BASE // total_pooled_ether
 
     return (
         contracts.lido.getTotalShares(block_identifier=block_identifier)
-        * (rebase_limit_plus_1 - pooled_ether_rate)
-        // rebase_limit_plus_1
+        * rebase_limit // rebase_limit_plus_1
     )
