@@ -7,7 +7,7 @@ from brownie import web3, interface, convert
 from utils.config import (
     contracts,
     lido_dao_voting_address,
-    lido_dao_withdrawal_vault_stub_implementation,
+    lido_dao_withdrawal_vault_implementation_v1,
     lido_dao_lido_locator_implementation,
     dummy_implementation_address,
 )
@@ -22,7 +22,7 @@ def protocol_preliminary_permissions(shapella_upgrade_template):
             "contract": interface.WithdrawalVaultManager(contracts.withdrawal_vault.address),
             "type": "WithdrawalsManagerProxy",
             "state": {
-                "implementation": lido_dao_withdrawal_vault_stub_implementation,
+                "implementation": lido_dao_withdrawal_vault_implementation_v1,
                 "proxy_getAdmin": lido_dao_voting_address,
             },
         },

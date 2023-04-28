@@ -11,7 +11,7 @@ from utils.config import (
     lido_dao_staking_router_implementation,
     lido_dao_accounting_oracle_implementation,
     lido_dao_validators_exit_bus_oracle_implementation,
-    lido_dao_withdrawal_vault_stub_implementation,
+    lido_dao_withdrawal_vault_implementation_v1,
     lido_dao_lido_locator_implementation,
     dummy_implementation_address,
     initial_dead_token_holder,
@@ -180,7 +180,7 @@ def test_is_petrified(petrified_implementations):
         if implementation_type == "AragonApp":
             assert interface.ACL(implementation_address).isPetrified()
         elif implementation_type == "WithdrawalVaultDummy":
-            assert implementation_address == lido_dao_withdrawal_vault_stub_implementation
+            assert implementation_address == lido_dao_withdrawal_vault_implementation_v1
         elif implementation_type == "LidoLocatorFixed":
             assert implementation_address == lido_dao_lido_locator_implementation
         elif implementation_type == "Dummy":

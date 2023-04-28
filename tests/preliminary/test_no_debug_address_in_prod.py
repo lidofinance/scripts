@@ -1,12 +1,10 @@
 import pytest
 from brownie import interface
-from utils.withdrawal_credentials import (
-    extract_address_from_eth1_wc
-)
+from utils.withdrawal_credentials import extract_address_from_eth1_wc
 from utils.finance import ZERO_ADDRESS
 from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
 from utils.import_current_votes import start_and_execute_votes
-from utils.config import (contracts, deployer_eoa)
+from utils.config import contracts, deployer_eoa
 import utils.config as config
 
 ####################################
@@ -34,11 +32,11 @@ lido_dao_eip712_steth = "0x075CEf9752b42e332Dab0bae1Ca63801AD8E28C7"
 lido_dao_withdrawal_vault = "0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f"
 lido_dao_withdrawal_vault_implementation = "0xcd26Aa57a3DC7015A7FCD7ECBb51CC4E291Ff0c5"
 lido_dao_withdrawal_vault_implementation_v1 = "0xe681faB8851484B57F32143FD78548f25fD59980"
-lido_dao_withdrawal_vault_stub_implementation = "0xe681faB8851484B57F32143FD78548f25fD59980"
 lido_dao_staking_router = "0xaE2D1ef2061389e106726CFD158eBd6f5DE07De5"
 lido_dao_staking_router_implementation = "0x9BcF19B36770969979840A91d1b4dc352b1Bd648"
 gate_seal = "0x32429d2AD4023A6fd46a690DEf62bc51990ba497"
 oracle_daemon_config = "0xFc5768E73f8974f087c840470FBF132eD059aEbc"
+
 
 @pytest.fixture(scope="function", autouse=True)
 def shared_setup(fn_isolation):
@@ -81,22 +79,26 @@ def test_upgrade_template_addresses():
     assert template._withdrawalQueueImplementation() != lido_dao_withdrawal_queue_implementation
 
 
-
 def test_proxyfied_implementation_adresses_prepared():
     prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
 
     assert get_proxy_impl_ossifiable(config.lido_dao_lido_locator) != lido_dao_lido_locator_implementation
-    assert get_proxy_impl_ossifiable(config.lido_dao_accounting_oracle) != dummy_implementation_address # dummy
-    assert get_proxy_impl_ossifiable(config.lido_dao_validators_exit_bus_oracle) != dummy_implementation_address # dummy
-    assert get_proxy_impl_ossifiable(config.lido_dao_withdrawal_queue) != dummy_implementation_address # dummy
-    assert get_proxy_impl_ossifiable(config.lido_dao_staking_router) != dummy_implementation_address # dummy
+    assert get_proxy_impl_ossifiable(config.lido_dao_accounting_oracle) != dummy_implementation_address  # dummy
+    assert (
+        get_proxy_impl_ossifiable(config.lido_dao_validators_exit_bus_oracle) != dummy_implementation_address
+    )  # dummy
+    assert get_proxy_impl_ossifiable(config.lido_dao_withdrawal_queue) != dummy_implementation_address  # dummy
+    assert get_proxy_impl_ossifiable(config.lido_dao_staking_router) != dummy_implementation_address  # dummy
 
 
 def test_proxyfied_implementation_adresses_after_upgrade(helpers):
     start_and_execute_votes(contracts.voting, helpers)
     assert get_proxy_impl_ossifiable(config.lido_dao_lido_locator) != lido_dao_lido_locator_implementation
     assert get_proxy_impl_ossifiable(config.lido_dao_accounting_oracle) != lido_dao_accounting_oracle_implementation
-    assert get_proxy_impl_ossifiable(config.lido_dao_validators_exit_bus_oracle) != lido_dao_validators_exit_bus_oracle_implementation
+    assert (
+        get_proxy_impl_ossifiable(config.lido_dao_validators_exit_bus_oracle)
+        != lido_dao_validators_exit_bus_oracle_implementation
+    )
     assert get_proxy_impl_ossifiable(config.lido_dao_withdrawal_queue) != lido_dao_withdrawal_queue_implementation
     assert get_proxy_impl_app(config.lido_dao_withdrawal_vault) != lido_dao_withdrawal_vault_implementation
     assert get_proxy_impl_ossifiable(config.lido_dao_staking_router) != lido_dao_staking_router_implementation
@@ -128,7 +130,6 @@ def test_locator_addresses():
     assert oracle_report_components[4] != lido_dao_withdrawal_queue
 
 
-
 def test_stored_addresses_after_upgrade(helpers):
     start_and_execute_votes(contracts.voting, helpers)
 
@@ -139,10 +140,16 @@ def test_stored_addresses_after_upgrade(helpers):
     assert contracts.accounting_oracle.getConsensusContract() != lido_dao_hash_consensus_for_accounting_oracle
 
     # Validators Exit Bus Oracle
-    assert contracts.validators_exit_bus_oracle.getConsensusContract() != lido_dao_hash_consensus_for_validators_exit_bus_oracle
+    assert (
+        contracts.validators_exit_bus_oracle.getConsensusContract()
+        != lido_dao_hash_consensus_for_validators_exit_bus_oracle
+    )
 
     # Hash Consensus for Accounting Oracle
     assert contracts.hash_consensus_for_accounting_oracle.getReportProcessor() != lido_dao_accounting_oracle
 
     # Hash Consensus for Validators Exit Bus Oracle
-    assert contracts.hash_consensus_for_validators_exit_bus_oracle.getReportProcessor() != lido_dao_validators_exit_bus_oracle
+    assert (
+        contracts.hash_consensus_for_validators_exit_bus_oracle.getReportProcessor()
+        != lido_dao_validators_exit_bus_oracle
+    )
