@@ -1,12 +1,11 @@
 import dataclasses
 
-from brownie import web3
 from brownie.convert.datatypes import HexString
 
 from utils.config import contracts
-from utils.test.exit_bus_data import encode_data, LidoValidator
+from utils.test.exit_bus_data import LidoValidator
 from utils.test.oracle_report_helpers import (
-    wait_to_next_available_report_time, reach_consensus, encode_data_from_abi,
+    wait_to_next_available_report_time, reach_consensus, prepare_exit_bus_report
 )
 
 
@@ -25,23 +24,6 @@ def _wait_for_next_ref_slot():
     ref_slot, _ = contracts.hash_consensus_for_validators_exit_bus_oracle.getCurrentFrame()
     return ref_slot
 
-
-def _get_report_data(validators_to_exit, ref_slot):
-    consensus_version = contracts.validators_exit_bus_oracle.getConsensusVersion()
-    data, data_format = encode_data(validators_to_exit)
-    report = (
-        consensus_version, ref_slot, len(validators_to_exit), data_format, data
-    )
-    report_data = encode_data_from_abi(report, contracts.validators_exit_bus_oracle.abi, 'submitReportData')
-    if not validators_to_exit:
-        report_data = report_data[:-32]
-        assert len(
-            report_data) == 224, 'We cut off the last 32 bytes because there is a problem with the encoding of empty bytes array in the eth_abi package. ' \
-                                 'Remove this condition when eth_abi is bumped to the latest version.'
-    report_hash = web3.keccak(report_data)
-    return report, report_hash
-
-
 def send_report_with_consensus(ref_slot, report, report_hash):
     consensus_version = contracts.validators_exit_bus_oracle.getConsensusVersion()
     contract_version = contracts.validators_exit_bus_oracle.getContractVersion()
@@ -54,7 +36,7 @@ def send_report_with_consensus(ref_slot, report, report_hash):
 
 def test_send_zero_validators_to_exit(helpers):
     ref_slot = _wait_for_next_ref_slot()
-    report, report_hash = _get_report_data([], ref_slot)
+    report, report_hash = prepare_exit_bus_report([], ref_slot)
     report_hash_hex = HexString(report_hash, "bytes")
 
     # Collect state before
@@ -93,7 +75,7 @@ def test_send_validator_to_exit(helpers, web3):
     validator = LidoValidator(validator_id, validator_key)
 
     ref_slot = _wait_for_next_ref_slot()
-    report, report_hash = _get_report_data([(no_global_index, validator)], ref_slot)
+    report, report_hash = prepare_exit_bus_report([(no_global_index, validator)], ref_slot)
     report_hash_hex = HexString(report_hash, "bytes")
 
     # Collect state before
@@ -150,7 +132,7 @@ def test_send_multiple_validators_to_exit(helpers, web3):
     second_validator = LidoValidator(second_validator_id, second_validator_key)
 
     ref_slot = _wait_for_next_ref_slot()
-    report, report_hash = _get_report_data(
+    report, report_hash = prepare_exit_bus_report(
         [(first_no_global_index, first_validator), (second_no_global_index, second_validator)], ref_slot)
     report_hash_hex = HexString(report_hash, "bytes")
 
