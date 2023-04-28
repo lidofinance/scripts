@@ -17,7 +17,7 @@ last_seen_beacon_validators = 175906
 
 
 @pytest.fixture(scope="module")
-def contract() -> interface.AccountingOracle:
+def contract() -> interface.Lido:
     return interface.Lido(lido_dao_steth_address)
 
 

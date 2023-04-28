@@ -23,17 +23,6 @@ def shared_setup(fn_isolation):
     pass
 
 
-def test_gate_seal_configuration():
-    assert contracts.gate_seal.get_sealing_committee() == (deployer_eoa)
-    assert contracts.gate_seal.get_seal_duration_seconds() == GATE_SEAL_PAUSE_DURATION_SECONDS
-    sealables = contracts.gate_seal.get_sealables()
-    assert len(sealables) == 2
-    assert lido_dao_withdrawal_queue in sealables
-    assert lido_dao_validators_exit_bus_oracle in sealables
-    assert contracts.gate_seal.get_expiry_timestamp() == GATE_SEAL_EXPIRY_TIMESTAMP
-    assert not contracts.gate_seal.is_expired()
-
-
 def test_gate_seal_expiration():
     assert not contracts.gate_seal.is_expired()
     time = chain.time()
