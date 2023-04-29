@@ -261,12 +261,18 @@ def oracle_report(
     numExitedValidatorsByStakingModule=[],
     silent=False,
     sharesRequestedToBurn=None,
+    withdrawalFinalizationBatches=[],
 ):
     if wait_to_next_report_time:
         """fast forwards time to next report, compiles report, pushes through consensus and to AccountingOracle"""
         wait_to_next_available_report_time(contracts.hash_consensus_for_accounting_oracle)
 
     (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
+
+    (_, beaconValidators, beaconBalance) = contracts.lido.getBeaconStat()
+
+    postCLBalance = beaconBalance + cl_diff
+    postBeaconValidators = beaconValidators + cl_appeared_validators
 
     elRewardsVaultBalance = (
         eth_balance(contracts.execution_layer_rewards_vault.address)
@@ -276,15 +282,8 @@ def oracle_report(
     withdrawalVaultBalance = (
         eth_balance(contracts.withdrawal_vault.address) if withdrawalVaultBalance is None else withdrawalVaultBalance
     )
+
     # exclude_vaults_balances safely forces LIDO to see vault balances as empty allowing zero/negative rebase
-
-    (_, beaconValidators, beaconBalance) = contracts.lido.getBeaconStat()
-
-    preTotalPooledEther = contracts.lido.getTotalPooledEther()
-
-    postCLBalance = beaconBalance + cl_diff
-    postBeaconValidators = beaconValidators + cl_appeared_validators
-
     # simulate_reports needs proper withdrawal and elRewards vaults balances
     if exclude_vaults_balances:
         if not report_withdrawals_vault or not report_el_vault:
@@ -303,7 +302,6 @@ def oracle_report(
         sharesRequestedToBurn = coverShares + nonCoverShares
 
     simulatedShareRate = 0
-    finalization_batches = []
     is_bunker = False
 
     if not skip_withdrawals:
@@ -317,7 +315,13 @@ def oracle_report(
         )
         simulatedShareRate = postTotalPooledEther * SHARE_RATE_PRECISION // postTotalShares
 
-        finalization_batches = get_finalization_batches(simulatedShareRate, withdrawals, elRewards)
+        withdrawalFinalizationBatches = (
+            get_finalization_batches(simulatedShareRate, withdrawals, elRewards)
+            if withdrawalFinalizationBatches == []
+            else withdrawalFinalizationBatches
+        )
+
+        preTotalPooledEther = contracts.lido.getTotalPooledEther()
         is_bunker = preTotalPooledEther > postTotalPooledEther
 
     return push_oracle_report(
@@ -326,7 +330,7 @@ def oracle_report(
         numValidators=postBeaconValidators,
         withdrawalVaultBalance=withdrawalVaultBalance,
         sharesRequestedToBurn=sharesRequestedToBurn,
-        withdrawalFinalizationBatches=finalization_batches,
+        withdrawalFinalizationBatches=withdrawalFinalizationBatches,
         elRewardsVaultBalance=elRewardsVaultBalance,
         simulatedShareRate=simulatedShareRate,
         extraDataFormat=extraDataFormat,

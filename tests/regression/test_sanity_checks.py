@@ -1,6 +1,6 @@
 import pytest
 from brownie import web3, reverts, accounts  # type: ignore
-from utils.test.oracle_report_helpers import oracle_report
+from utils.test.oracle_report_helpers import oracle_report, wait_to_next_available_report_time
 from utils.evm_script import encode_error
 
 from utils.test.helpers import ETH, eth_balance
@@ -134,6 +134,16 @@ def test_shares_on_burner_report_more():
         oracle_report(sharesRequestedToBurn=shares_requested_to_burn + 1, skip_withdrawals=True, silent=True)
 
 
+def test_withdrawal_queue_timestamp(steth_holder):
+    wait_to_next_available_report_time(contracts.hash_consensus_for_accounting_oracle)
+
+    request_id = create_withdrawal_request(steth_holder)
+    request_timestamp = contracts.withdrawal_queue.getWithdrawalStatus([request_id])[0][3]
+
+    with reverts(encode_error("IncorrectRequestFinalization(uint256)", [request_timestamp])):
+        oracle_report(withdrawalFinalizationBatches=[request_id], silent=True, wait_to_next_report_time=False)
+
+
 def fake_deposited_validators_increase(cl_validators_diff):
     (deposited, _, _) = contracts.lido.getBeaconStat()
 
@@ -147,3 +157,10 @@ def fake_deposited_validators_increase(cl_validators_diff):
     )
 
     contracts.lido.unsafeChangeDepositedValidators(deposited + cl_validators_diff, {"from": voting})
+
+
+def create_withdrawal_request(steth_holder):
+    contracts.lido.approve(contracts.withdrawal_queue.address, ETH(1), {"from": steth_holder})
+    contracts.withdrawal_queue.requestWithdrawals([ETH(1)], steth_holder, {"from": steth_holder})
+
+    return contracts.withdrawal_queue.getLastRequestId()
