@@ -59,24 +59,23 @@ def prepare_accounting_report(
 def prepare_exit_bus_report(validators_to_exit, ref_slot):
     consensus_version = contracts.validators_exit_bus_oracle.getConsensusVersion()
     data, data_format = encode_data(validators_to_exit)
-    report = (
-        consensus_version, ref_slot, len(validators_to_exit), data_format, data
-    )
-    report_data = encode_data_from_abi(report, contracts.validators_exit_bus_oracle.abi, 'submitReportData')
+    report = (consensus_version, ref_slot, len(validators_to_exit), data_format, data)
+    report_data = encode_data_from_abi(report, contracts.validators_exit_bus_oracle.abi, "submitReportData")
     if not validators_to_exit:
         report_data = report_data[:-32]
-        assert len(
-            report_data) == 224, 'We cut off the last 32 bytes because there is a problem with the encoding of empty bytes array in the eth_abi package. ' \
-                                 'Remove this condition when eth_abi is bumped to the latest version.'
+        assert len(report_data) == 224, (
+            "We cut off the last 32 bytes because there is a problem with the encoding of empty bytes array in the eth_abi package. "
+            "Remove this condition when eth_abi is bumped to the latest version."
+        )
     report_hash = web3.keccak(report_data)
     return report, report_hash
 
 
 def encode_data_from_abi(data, abi, func_name):
-    report_function_abi = next(x for x in abi if x.get('name') == func_name)
-    report_data_abi = report_function_abi['inputs'][0]['components']  # type: ignore
-    report_str_abi = ','.join(map(lambda x: x['type'], report_data_abi))  # type: ignore
-    return encode([f'({report_str_abi})'], [data])
+    report_function_abi = next(x for x in abi if x.get("name") == func_name)
+    report_data_abi = report_function_abi["inputs"][0]["components"]  # type: ignore
+    report_str_abi = ",".join(map(lambda x: x["type"], report_data_abi))  # type: ignore
+    return encode([f"({report_str_abi})"], [data])
 
 
 def get_finalization_batches(
@@ -245,10 +244,12 @@ def wait_to_next_available_report_time(consensus_contract):
 def oracle_report(
     *,
     cl_diff=ETH(10),
+    cl_appeared_validators=0,
     exclude_vaults_balances=False,
     report_el_vault=True,
     report_withdrawals_vault=True,
     simulation_block_identifier=None,
+    skip_withdrawals=False,
     wait_to_next_report_time=True,
     extraDataFormat=0,
     extraDataHash=ZERO_BYTES32,
@@ -274,6 +275,7 @@ def oracle_report(
     preTotalPooledEther = contracts.lido.getTotalPooledEther()
 
     postCLBalance = beaconBalance + cl_diff
+    postBeaconValidators = beaconValidators + cl_appeared_validators
 
     # simulate_reports needs proper withdrawal and elRewards vaults balances
     if exclude_vaults_balances:
@@ -288,25 +290,29 @@ def oracle_report(
     if not report_el_vault:
         elRewardsVaultBalance = 0
 
-    (postTotalPooledEther, postTotalShares, withdrawals, elRewards) = simulate_report(
-        refSlot=refSlot,
-        beaconValidators=beaconValidators,
-        postCLBalance=postCLBalance,
-        withdrawalVaultBalance=withdrawalVaultBalance,
-        elRewardsVaultBalance=elRewardsVaultBalance,
-        block_identifier=simulation_block_identifier,
-    )
-    simulatedShareRate = postTotalPooledEther * SHARE_RATE_PRECISION // postTotalShares
     sharesRequestedToBurn = coverShares + nonCoverShares
+    simulatedShareRate = 0
+    finalization_batches = []
+    is_bunker = False
 
-    finalization_batches = get_finalization_batches(simulatedShareRate, withdrawals, elRewards)
+    if not skip_withdrawals:
+        (postTotalPooledEther, postTotalShares, withdrawals, elRewards) = simulate_report(
+            refSlot=refSlot,
+            beaconValidators=postBeaconValidators,
+            postCLBalance=postCLBalance,
+            withdrawalVaultBalance=withdrawalVaultBalance,
+            elRewardsVaultBalance=elRewardsVaultBalance,
+            block_identifier=simulation_block_identifier,
+        )
+        simulatedShareRate = postTotalPooledEther * SHARE_RATE_PRECISION // postTotalShares
 
-    is_bunker = preTotalPooledEther > postTotalPooledEther
+        finalization_batches = get_finalization_batches(simulatedShareRate, withdrawals, elRewards)
+        is_bunker = preTotalPooledEther > postTotalPooledEther
 
     return push_oracle_report(
         refSlot=refSlot,
         clBalance=postCLBalance,
-        numValidators=beaconValidators,
+        numValidators=postBeaconValidators,
         withdrawalVaultBalance=withdrawalVaultBalance,
         sharesRequestedToBurn=sharesRequestedToBurn,
         withdrawalFinalizationBatches=finalization_batches,
