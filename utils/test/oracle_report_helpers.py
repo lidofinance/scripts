@@ -247,7 +247,9 @@ def oracle_report(
     cl_appeared_validators=0,
     exclude_vaults_balances=False,
     report_el_vault=True,
+    elRewardsVaultBalance=None,
     report_withdrawals_vault=True,
+    withdrawalVaultBalance=None,
     simulation_block_identifier=None,
     skip_withdrawals=False,
     wait_to_next_report_time=True,
@@ -265,8 +267,14 @@ def oracle_report(
 
     (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
 
-    elRewardsVaultBalance = eth_balance(contracts.execution_layer_rewards_vault.address)
-    withdrawalVaultBalance = eth_balance(contracts.withdrawal_vault.address)
+    elRewardsVaultBalance = (
+        eth_balance(contracts.execution_layer_rewards_vault.address)
+        if elRewardsVaultBalance is None
+        else elRewardsVaultBalance
+    )
+    withdrawalVaultBalance = (
+        eth_balance(contracts.withdrawal_vault.address) if withdrawalVaultBalance is None else withdrawalVaultBalance
+    )
     # exclude_vaults_balances safely forces LIDO to see vault balances as empty allowing zero/negative rebase
 
     (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()

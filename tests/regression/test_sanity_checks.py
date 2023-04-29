@@ -115,6 +115,18 @@ def test_too_large_cl_decrease(pre_cl_balance):
         oracle_report(cl_diff=-error_cl_decrease, skip_withdrawals=True, silent=True)
 
 
+def test_withdrawal_vault_report_more():
+    withdrawal_vault_balance = eth_balance(contracts.withdrawal_vault.address)
+    with reverts(encode_error("IncorrectWithdrawalsVaultBalance(uint256)", [withdrawal_vault_balance])):
+        oracle_report(withdrawalVaultBalance=withdrawal_vault_balance + 1, skip_withdrawals=True, silent=True)
+
+
+def test_el_vault_report_more():
+    el_vault_balance = eth_balance(contracts.execution_layer_rewards_vault.address)
+    with reverts(encode_error("IncorrectELRewardsVaultBalance(uint256)", [el_vault_balance])):
+        oracle_report(elRewardsVaultBalance=el_vault_balance + 1, skip_withdrawals=True, silent=True)
+
+
 def fake_deposited_validators_increase(cl_validators_diff):
     (deposited, _, _) = contracts.lido.getBeaconStat()
 
