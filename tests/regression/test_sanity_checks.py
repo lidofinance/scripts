@@ -127,6 +127,13 @@ def test_el_vault_report_more():
         oracle_report(elRewardsVaultBalance=el_vault_balance + 1, skip_withdrawals=True, silent=True)
 
 
+def test_shares_on_burner_report_more():
+    (cover_shares, non_cover_shares) = contracts.burner.getSharesRequestedToBurn()
+    shares_requested_to_burn = cover_shares + non_cover_shares
+    with reverts(encode_error("IncorrectSharesRequestedToBurn(uint256)", [shares_requested_to_burn])):
+        oracle_report(sharesRequestedToBurn=shares_requested_to_burn + 1, skip_withdrawals=True, silent=True)
+
+
 def fake_deposited_validators_increase(cl_validators_diff):
     (deposited, _, _) = contracts.lido.getBeaconStat()
 

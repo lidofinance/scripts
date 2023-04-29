@@ -260,6 +260,7 @@ def oracle_report(
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,
+    sharesRequestedToBurn=None,
 ):
     if wait_to_next_report_time:
         """fast forwards time to next report, compiles report, pushes through consensus and to AccountingOracle"""
@@ -277,7 +278,6 @@ def oracle_report(
     )
     # exclude_vaults_balances safely forces LIDO to see vault balances as empty allowing zero/negative rebase
 
-    (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()
     (_, beaconValidators, beaconBalance) = contracts.lido.getBeaconStat()
 
     preTotalPooledEther = contracts.lido.getTotalPooledEther()
@@ -298,7 +298,10 @@ def oracle_report(
     if not report_el_vault:
         elRewardsVaultBalance = 0
 
-    sharesRequestedToBurn = coverShares + nonCoverShares
+    if sharesRequestedToBurn is None:
+        (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()
+        sharesRequestedToBurn = coverShares + nonCoverShares
+
     simulatedShareRate = 0
     finalization_batches = []
     is_bunker = False
