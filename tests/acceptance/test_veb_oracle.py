@@ -1,5 +1,5 @@
 import pytest
-from brownie import interface  # type: ignore
+from brownie import interface, reverts  # type: ignore
 
 from utils.config import (
     contracts,
@@ -15,6 +15,7 @@ from utils.config import (
     FAST_LANE_LENGTH_SLOTS,
     ORACLE_QUORUM,
 )
+from utils.evm_script import encode_error
 
 last_seen_ref_slot = 6189855
 
@@ -37,6 +38,29 @@ def test_immutables(contract):
 
 def test_versioned(contract):
     assert contract.getContractVersion() == 1
+
+
+def test_initialize(contract):
+    with reverts(encode_error("NonZeroContractVersionOnInit()")):
+        contract.initialize(
+            contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
+            lido_dao_hash_consensus_for_accounting_oracle,
+            1,
+            1,
+            {"from": contracts.voting},
+        )
+
+
+def test_petrified(contract):
+    impl = interface.ValidatorsExitBusOracle(lido_dao_validators_exit_bus_oracle_implementation)
+    with reverts(encode_error("NonZeroContractVersionOnInit()")):
+        impl.initialize(
+            contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
+            lido_dao_hash_consensus_for_accounting_oracle,
+            1,
+            1,
+            {"from": contracts.voting},
+        )
 
 
 def test_consensus(contract):

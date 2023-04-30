@@ -1,5 +1,5 @@
 import pytest
-from brownie import interface  # type: ignore
+from brownie import interface, reverts  # type: ignore
 
 from utils.config import (
     contracts,
@@ -14,6 +14,7 @@ from utils.config import (
     CHAIN_GENESIS_TIME,
     ORACLE_QUORUM,
 )
+from utils.evm_script import encode_error
 
 
 @pytest.fixture(scope="module")
@@ -41,6 +42,43 @@ def test_constants(contract):
 
 def test_versioned(contract):
     assert contract.getContractVersion() == 1
+
+
+def test_initialize(contract):
+    with reverts(encode_error("NonZeroContractVersionOnInit()")):
+        contract.initialize(
+            contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
+            lido_dao_hash_consensus_for_accounting_oracle,
+            1,
+            {"from": contracts.voting},
+        )
+    with reverts(encode_error("NonZeroContractVersionOnInit()")):
+        contract.initializeWithoutMigration(
+            contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
+            lido_dao_hash_consensus_for_accounting_oracle,
+            1,
+            1,
+            {"from": contracts.voting},
+        )
+
+
+def test_petrified(contract):
+    impl = interface.AccountingOracle(lido_dao_accounting_oracle_implementation)
+    with reverts(encode_error("NonZeroContractVersionOnInit()")):
+        impl.initialize(
+            contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
+            lido_dao_hash_consensus_for_accounting_oracle,
+            1,
+            {"from": contracts.voting},
+        )
+    with reverts(encode_error("NonZeroContractVersionOnInit()")):
+        impl.initializeWithoutMigration(
+            contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
+            lido_dao_hash_consensus_for_accounting_oracle,
+            1,
+            1,
+            {"from": contracts.voting},
+        )
 
 
 def test_consensus(contract):
