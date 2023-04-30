@@ -262,6 +262,7 @@ def oracle_report(
     silent=False,
     sharesRequestedToBurn=None,
     withdrawalFinalizationBatches=[],
+    simulatedShareRate=None,
 ):
     if wait_to_next_report_time:
         """fast forwards time to next report, compiles report, pushes through consensus and to AccountingOracle"""
@@ -301,7 +302,6 @@ def oracle_report(
         (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()
         sharesRequestedToBurn = coverShares + nonCoverShares
 
-    simulatedShareRate = 0
     is_bunker = False
 
     if not skip_withdrawals:
@@ -313,7 +313,8 @@ def oracle_report(
             elRewardsVaultBalance=elRewardsVaultBalance,
             block_identifier=simulation_block_identifier,
         )
-        simulatedShareRate = postTotalPooledEther * SHARE_RATE_PRECISION // postTotalShares
+        if simulatedShareRate is None:
+            simulatedShareRate = postTotalPooledEther * SHARE_RATE_PRECISION // postTotalShares
 
         withdrawalFinalizationBatches = (
             get_finalization_batches(simulatedShareRate, withdrawals, elRewards)
@@ -323,6 +324,8 @@ def oracle_report(
 
         preTotalPooledEther = contracts.lido.getTotalPooledEther()
         is_bunker = preTotalPooledEther > postTotalPooledEther
+    elif simulatedShareRate is None:
+        simulatedShareRate = 0
 
     return push_oracle_report(
         refSlot=refSlot,

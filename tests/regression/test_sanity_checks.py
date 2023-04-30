@@ -1,20 +1,24 @@
 import pytest
 from brownie import web3, reverts, accounts  # type: ignore
-from utils.test.oracle_report_helpers import oracle_report, wait_to_next_available_report_time
+from utils.test.exit_bus_data import LidoValidator
+from utils.test.extra_data import ExtraDataService
+from utils.test.oracle_report_helpers import (
+    oracle_report,
+    prepare_exit_bus_report,
+    reach_consensus,
+    wait_to_next_available_report_time,
+)
 from utils.evm_script import encode_error
 
-from utils.test.helpers import ETH, eth_balance
+from utils.test.helpers import ETH, GWEI, eth_balance
 from utils.config import (
     contracts,
     CHURN_VALIDATORS_PER_DAY_LIMIT,
     ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT,
     ANNUAL_BALANCE_INCREASE_BP_LIMIT,
-    SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT,
     MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT,
     MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
     MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT,
-    REQUEST_TIMESTAMP_MARGIN,
-    MAX_POSITIVE_TOKEN_REBASE,
 )
 
 ONE_DAY = 1 * 24 * 60 * 60
@@ -36,6 +40,11 @@ def pre_cl_balance():
 @pytest.fixture(scope="module", autouse=True)
 def first_report():
     oracle_report(silent=True)
+
+
+@pytest.fixture()
+def extra_data_service():
+    return ExtraDataService()
 
 
 def test_cant_report_more_validators_than_deposited():
@@ -144,6 +153,67 @@ def test_withdrawal_queue_timestamp(steth_holder):
         oracle_report(withdrawalFinalizationBatches=[request_id], silent=True, wait_to_next_report_time=False)
 
 
+def test_report_deviated_simulated_share_rate(steth_holder):
+    simulated_share_rate = 1
+    create_withdrawal_request(steth_holder)
+
+    error_msg_start = encode_error("IncorrectSimulatedShareRate(uint256,uint256)", [simulated_share_rate])
+    with reverts(revert_pattern=f"{error_msg_start}.*"):
+        oracle_report(cl_diff=0, simulatedShareRate=simulated_share_rate)
+
+
+def test_accounting_oracle_too_much_extra_data(extra_data_service):
+    item_count = MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT + 1
+    extra_data = extra_data_service.collect({(1, 1): 1}, {}, 1, 1)
+    with reverts(
+        encode_error(
+            "MaxAccountingExtraDataItemsCountExceeded(uint256,uint256)",
+            [MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT, item_count],
+        )
+    ):
+        oracle_report(
+            extraDataFormat=1,
+            extraDataHash=extra_data.data_hash,
+            extraDataItemsCount=item_count,
+            extraDataList=extra_data.extra_data,
+        )
+
+
+@pytest.mark.skip("ganache throws 'RPCRequestError: Invalid string length' on such long extra data")
+def test_accounting_oracle_too_node_ops_per_extra_data_item(extra_data_service):
+    item_count = MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT * 10
+    extra_data = extra_data_service.collect({(1, i): i for i in range(item_count)}, {}, 1, item_count)
+    with reverts(
+        encode_error(
+            "TooManyNodeOpsPerExtraDataItem(uint256,uint256)",
+            [MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT, item_count],
+        )
+    ):
+        oracle_report(
+            extraDataFormat=1,
+            extraDataHash=extra_data.data_hash,
+            extraDataItemsCount=1,
+            extraDataList=extra_data.extra_data,
+        )
+
+
+def test_veb_oracle_too_much_extra_data():
+    item_count = MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT + 1
+
+    ref_slot = _wait_for_next_ref_slot()
+    validator_key = contracts.node_operators_registry.getSigningKey(1, 1)[0]
+    validator = LidoValidator(1, validator_key)
+    report, report_hash = prepare_exit_bus_report([((i, i), validator) for i in range(item_count)], ref_slot)
+
+    with reverts(
+        encode_error(
+            "IncorrectNumberOfExitRequestsPerReport(uint256)",
+            [MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT],
+        )
+    ):
+        send_report_with_consensus(ref_slot, report, report_hash)
+
+
 def fake_deposited_validators_increase(cl_validators_diff):
     (deposited, _, _) = contracts.lido.getBeaconStat()
 
@@ -164,3 +234,20 @@ def create_withdrawal_request(steth_holder):
     contracts.withdrawal_queue.requestWithdrawals([ETH(1)], steth_holder, {"from": steth_holder})
 
     return contracts.withdrawal_queue.getLastRequestId()
+
+
+def _wait_for_next_ref_slot():
+    wait_to_next_available_report_time(contracts.hash_consensus_for_validators_exit_bus_oracle)
+    ref_slot, _ = contracts.hash_consensus_for_validators_exit_bus_oracle.getCurrentFrame()
+    return ref_slot
+
+
+def send_report_with_consensus(ref_slot, report, report_hash):
+    consensus_version = contracts.validators_exit_bus_oracle.getConsensusVersion()
+    contract_version = contracts.validators_exit_bus_oracle.getContractVersion()
+
+    submitter = reach_consensus(
+        ref_slot, report_hash, consensus_version, contracts.hash_consensus_for_validators_exit_bus_oracle
+    )
+
+    return contracts.validators_exit_bus_oracle.submitReportData(report, contract_version, {"from": submitter})
