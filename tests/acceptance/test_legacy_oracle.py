@@ -1,10 +1,12 @@
 import pytest
-from brownie import interface, chain  # type: ignore
+from brownie import interface, chain, reverts  # type: ignore
 
 from utils.config import (
     contracts,
     lido_dao_legacy_oracle,
     lido_dao_legacy_oracle_implementation,
+    lido_dao_hash_consensus_for_accounting_oracle,
+    lido_dao_accounting_oracle,
     ORACLE_APP_ID,
     lido_dao_evm_script_registry,
     CHAIN_SLOTS_PER_EPOCH,
@@ -38,6 +40,29 @@ def test_aragon(contract):
 
 def test_versioned(contract):
     assert contract.getContractVersion() == 4
+
+
+def test_initialize(contract):
+    with reverts("INIT_ALREADY_INITIALIZED"):
+        contract.initialize(
+            contracts.lido_locator, lido_dao_hash_consensus_for_accounting_oracle, {"from": contracts.voting}
+        )
+
+
+def test_finalize_upgrade(contract):
+    with reverts("WRONG_BASE_VERSION"):
+        contract.finalizeUpgrade_v4(lido_dao_accounting_oracle, {"from": contracts.voting})
+
+
+def test_petrified():
+    impl = interface.LegacyOracle(lido_dao_legacy_oracle_implementation)
+    with reverts("INIT_ALREADY_INITIALIZED"):
+        impl.initialize(
+            contracts.lido_locator, lido_dao_hash_consensus_for_accounting_oracle, {"from": contracts.voting}
+        )
+
+    with reverts("WRONG_BASE_VERSION"):
+        impl.finalizeUpgrade_v4(lido_dao_accounting_oracle, {"from": contracts.voting})
 
 
 def test_recoverability(contract):

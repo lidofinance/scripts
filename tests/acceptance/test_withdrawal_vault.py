@@ -1,7 +1,8 @@
 import pytest
-from brownie import interface  # type: ignore
+from brownie import interface, reverts  # type: ignore
 
 from utils.config import contracts, lido_dao_withdrawal_vault, lido_dao_withdrawal_vault_implementation
+from utils.evm_script import encode_error
 
 
 @pytest.fixture(scope="module")
@@ -17,6 +18,17 @@ def test_proxy(contract):
 
 def test_versioned(contract):
     assert contract.getContractVersion() == 1
+
+
+def test_initialize(contract):
+    with reverts(encode_error("NonZeroContractVersionOnInit()")):
+        contract.initialize({"from": contracts.voting})
+
+
+def test_petrified():
+    impl = interface.WithdrawalVault(lido_dao_withdrawal_vault_implementation)
+    with reverts(encode_error("NonZeroContractVersionOnInit()")):
+        impl.initialize({"from": contracts.voting})
 
 
 def test_withdrawals_vault(contract):

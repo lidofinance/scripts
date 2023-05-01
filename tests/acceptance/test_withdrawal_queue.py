@@ -1,5 +1,5 @@
 import pytest
-from brownie import interface, ZERO_ADDRESS  # type: ignore
+from brownie import interface, ZERO_ADDRESS, reverts  # type: ignore
 
 from utils.config import (
     contracts,
@@ -9,6 +9,7 @@ from utils.config import (
     WITHDRAWAL_QUEUE_ERC721_SYMBOL,
     WITHDRAWAL_QUEUE_ERC721_BASE_URI,
 )
+from utils.evm_script import encode_error
 
 
 @pytest.fixture(scope="module")
@@ -24,6 +25,17 @@ def test_proxy(contract):
 
 def test_versioned(contract):
     assert contract.getContractVersion() == 1
+
+
+def test_initialize(contract):
+    with reverts(encode_error("NonZeroContractVersionOnInit()")):
+        contract.initialize(contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0), {"from": contracts.voting})
+
+
+def test_petrified(contract):
+    impl = interface.WithdrawalQueueERC721(lido_dao_withdrawal_queue_implementation)
+    with reverts(encode_error("NonZeroContractVersionOnInit()")):
+        impl.initialize(contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0), {"from": contracts.voting})
 
 
 def test_pausable_until(contract):

@@ -1,5 +1,5 @@
 import pytest
-from brownie import interface, web3  # type: ignore
+from brownie import interface, web3, reverts  # type: ignore
 
 from utils.test.helpers import ONE_ETH
 from utils.config import (
@@ -47,6 +47,25 @@ def test_pausable(contract):
 
 def test_versioned(contract):
     assert contract.getContractVersion() == 2
+
+
+def test_initialize(contract):
+    with reverts("INIT_ALREADY_INITIALIZED"):
+        contract.initialize(contracts.lido_locator, contracts.eip712_steth, {"from": contracts.voting})
+
+
+def test_finalize_upgrade(contract):
+    with reverts("UNEXPECTED_CONTRACT_VERSION"):
+        contract.finalizeUpgrade_v2(contracts.lido_locator, contracts.eip712_steth, {"from": contracts.voting})
+
+
+def test_petrified():
+    impl = interface.Lido(lido_dao_steth_implementation_address)
+    with reverts("INIT_ALREADY_INITIALIZED"):
+        impl.initialize(contracts.lido_locator, contracts.eip712_steth, {"from": contracts.voting})
+
+    with reverts("UNEXPECTED_CONTRACT_VERSION"):
+        impl.finalizeUpgrade_v2(contracts.lido_locator, contracts.eip712_steth, {"from": contracts.voting})
 
 
 def test_links(contract):

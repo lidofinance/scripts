@@ -1,9 +1,10 @@
 import pytest
-from brownie import interface  # type: ignore
+from brownie import interface, reverts  # type: ignore
 
 from utils.config import (
     contracts,
     lido_dao_staking_router,
+    lido_dao_staking_router_implementation,
     deposit_contract,
     lido_dao_withdrawal_vault,
     STAKING_MODULES_FEE_E4,
@@ -16,11 +17,18 @@ from utils.config import (
     STAKING_MODULE_NOR_TREASURY_FEE,
     WITHDRAWAL_CREDENTIALS,
 )
+from utils.evm_script import encode_error
 
 
 @pytest.fixture(scope="module")
 def contract() -> interface.StakingRouter:
     return interface.StakingRouter(lido_dao_staking_router)
+
+
+def test_proxy(contract):
+    proxy = interface.OssifiableProxy(contract)
+    assert proxy.proxy__getImplementation() == lido_dao_staking_router_implementation
+    assert proxy.proxy__getAdmin() == contracts.agent.address
 
 
 def test_links(contract):
@@ -30,6 +38,27 @@ def test_links(contract):
 
 def test_versioned(contract):
     assert contract.getContractVersion() == 1
+
+
+def test_initialize(contract):
+    with reverts(encode_error("NonZeroContractVersionOnInit()")):
+        contract.initialize(
+            contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
+            contracts.lido,
+            WITHDRAWAL_CREDENTIALS,
+            {"from": contracts.voting},
+        )
+
+
+def test_petrified(contract):
+    impl = interface.StakingRouter(lido_dao_staking_router_implementation)
+    with reverts(encode_error("NonZeroContractVersionOnInit()")):
+        impl.initialize(
+            contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
+            contracts.lido,
+            WITHDRAWAL_CREDENTIALS,
+            {"from": contracts.voting},
+        )
 
 
 def test_constants(contract):

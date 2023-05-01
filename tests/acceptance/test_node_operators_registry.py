@@ -1,5 +1,5 @@
 import pytest
-from brownie import ZERO_ADDRESS, interface, web3  # type: ignore
+from brownie import ZERO_ADDRESS, interface, web3, reverts  # type: ignore
 
 from utils.config import (
     contracts,
@@ -9,6 +9,7 @@ from utils.config import (
     STUCK_PENALTY_DELAY,
     CURATED_NODE_OPERATORS_COUNT,
     CURATED_NODE_OPERATORS_ACTIVE_COUNT,
+    STAKING_MODULE_NOR_TYPE,
 )
 
 
@@ -39,6 +40,33 @@ def test_role_keccaks(contract):
 
 def test_versioned(contract):
     assert contract.getContractVersion() == 2
+
+
+def test_initialize(contract):
+    with reverts("INIT_ALREADY_INITIALIZED"):
+        contract.initialize(
+            contracts.lido_locator, STAKING_MODULE_NOR_TYPE, STUCK_PENALTY_DELAY, {"from": contracts.voting}
+        )
+
+
+def test_finalize_upgrade(contract):
+    with reverts("UNEXPECTED_CONTRACT_VERSION"):
+        contract.finalizeUpgrade_v2(
+            contracts.lido_locator, STAKING_MODULE_NOR_TYPE, STUCK_PENALTY_DELAY, {"from": contracts.voting}
+        )
+
+
+def test_petrified():
+    contract = interface.NodeOperatorsRegistry(lido_dao_node_operators_registry_implementation)
+    with reverts("INIT_ALREADY_INITIALIZED"):
+        contract.initialize(
+            contracts.lido_locator, STAKING_MODULE_NOR_TYPE, STUCK_PENALTY_DELAY, {"from": contracts.voting}
+        )
+
+    with reverts("CONTRACT_NOT_INITIALIZED"):
+        contract.finalizeUpgrade_v2(
+            contracts.lido_locator, STAKING_MODULE_NOR_TYPE, STUCK_PENALTY_DELAY, {"from": contracts.voting}
+        )
 
 
 def test_nor_state(contract):
