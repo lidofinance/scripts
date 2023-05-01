@@ -1,5 +1,5 @@
 import pytest
-from brownie import web3, reverts, accounts  # type: ignore
+from brownie import web3, reverts, accounts, chain  # type: ignore
 from utils.test.exit_bus_data import LidoValidator
 from utils.test.extra_data import ExtraDataService
 from utils.test.oracle_report_helpers import (
@@ -19,6 +19,7 @@ from utils.config import (
     MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT,
     MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
     MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT,
+    REQUEST_TIMESTAMP_MARGIN,
 )
 
 ONE_DAY = 1 * 24 * 60 * 60
@@ -144,10 +145,19 @@ def test_shares_on_burner_report_more():
 
 
 def test_withdrawal_queue_timestamp(steth_holder):
-    wait_to_next_available_report_time(contracts.hash_consensus_for_accounting_oracle)
+    (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME) = contracts.hash_consensus_for_accounting_oracle.getChainConfig()
+    (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
+    time = chain.time()
+    (_, EPOCHS_PER_FRAME, _) = contracts.hash_consensus_for_accounting_oracle.getFrameConfig()
+    frame_start_with_offset = GENESIS_TIME + (refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME + 1) * SECONDS_PER_SLOT
+    chain.sleep(frame_start_with_offset - time - REQUEST_TIMESTAMP_MARGIN)
+    chain.mine(1)
 
     request_id = create_withdrawal_request(steth_holder)
     request_timestamp = contracts.withdrawal_queue.getWithdrawalStatus([request_id])[0][3]
+
+    chain.sleep(REQUEST_TIMESTAMP_MARGIN)
+    chain.mine(1)
 
     with reverts(encode_error("IncorrectRequestFinalization(uint256)", [request_timestamp])):
         oracle_report(withdrawalFinalizationBatches=[request_id], silent=True, wait_to_next_report_time=False)
