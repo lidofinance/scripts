@@ -6,11 +6,12 @@ from utils.test.oracle_report_helpers import (
     oracle_report,
     prepare_exit_bus_report,
     reach_consensus,
+    simulate_report,
     wait_to_next_available_report_time,
 )
 from utils.evm_script import encode_error
 
-from utils.test.helpers import ETH, GWEI, eth_balance
+from utils.test.helpers import ETH, eth_balance
 from utils.config import (
     contracts,
     CHURN_VALIDATORS_PER_DAY_LIMIT,
@@ -20,6 +21,7 @@ from utils.config import (
     MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
     MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT,
     REQUEST_TIMESTAMP_MARGIN,
+    SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT,
 )
 
 ONE_DAY = 1 * 24 * 60 * 60
@@ -164,11 +166,33 @@ def test_withdrawal_queue_timestamp(steth_holder):
 
 
 def test_report_deviated_simulated_share_rate(steth_holder):
-    simulated_share_rate = 1
     create_withdrawal_request(steth_holder)
 
-    error_msg_start = encode_error("IncorrectSimulatedShareRate(uint256,uint256)", [simulated_share_rate])
-    with reverts(revert_pattern=f"{error_msg_start}.*"):
+    (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
+    (_, beaconValidators, beaconBalance) = contracts.lido.getBeaconStat()
+    (postTotalPooledEther, postTotalShares, _, _) = simulate_report(
+        refSlot=refSlot,
+        beaconValidators=beaconValidators,
+        postCLBalance=beaconBalance,
+        withdrawalVaultBalance=eth_balance(contracts.withdrawal_vault.address),
+        elRewardsVaultBalance=eth_balance(contracts.execution_layer_rewards_vault.address),
+    )
+    actual_share_rate = postTotalPooledEther * 10**27 // postTotalShares
+
+    simulated_share_rate = (
+        actual_share_rate * (MAX_BASIS_POINTS + SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT + 2) // MAX_BASIS_POINTS
+    )
+    with reverts(
+        encode_error("IncorrectSimulatedShareRate(uint256,uint256)", [simulated_share_rate, actual_share_rate])
+    ):
+        oracle_report(cl_diff=0, simulatedShareRate=simulated_share_rate)
+
+    simulated_share_rate = (
+        actual_share_rate * (MAX_BASIS_POINTS - SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT - 1) // MAX_BASIS_POINTS
+    )
+    with reverts(
+        encode_error("IncorrectSimulatedShareRate(uint256,uint256)", [simulated_share_rate, actual_share_rate])
+    ):
         oracle_report(cl_diff=0, simulatedShareRate=simulated_share_rate)
 
 
