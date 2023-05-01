@@ -65,7 +65,11 @@ def increase_limit(nor, first_id, second_id, base_id, keys_count, impersonated_v
     nor.setNodeOperatorStakingLimit(base_id, current_base_keys + keys_count, {"from": impersonated_voting})
 
 
-def deposit_and_check_keys(nor, first_no_id, second_no_id, base_no_id, keys_count):
+def deposit_and_check_keys(nor, first_no_id, second_no_id, base_no_id, keys_count, impersonated_voting):
+
+    for op_index in (first_no_id, second_no_id, base_no_id):
+        no = nor.getNodeOperator(op_index, True)
+        nor.setNodeOperatorStakingLimit(op_index, no["totalDepositedValidators"] + 10, {"from": impersonated_voting})
 
     deposited_keys_first_before = nor.getNodeOperatorSummary(first_no_id)["totalDepositedValidators"]
     deposited_keys_second_before = nor.getNodeOperatorSummary(second_no_id)["totalDepositedValidators"]
@@ -299,7 +303,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
         deposited_keys_first_after,
         deposited_keys_second_after,
         deposited_keys_base_after,
-    ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 10)
+    ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 30, impersonated_voting)
 
     # check don't change deposited keys for penalized NO
     assert deposited_keys_first_before == deposited_keys_first_after
@@ -525,7 +529,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
         deposited_keys_first_after,
         deposited_keys_second_after,
         deposited_keys_base_after,
-    ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 20)
+    ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 30, impersonated_voting)
 
     # check don't change deposited keys for penalized NO (only second NO)
     assert deposited_keys_first_before != deposited_keys_first_after
@@ -696,12 +700,17 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
         deposited_keys_first_after,
         deposited_keys_second_after,
         deposited_keys_base_after,
-    ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 80)
+    ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 30, impersonated_voting)
 
     # check deposit is applied for all NOs
     assert deposited_keys_first_before != deposited_keys_first_after
     assert deposited_keys_second_before != deposited_keys_second_after
     assert deposited_keys_base_before != deposited_keys_base_after
+
+
+    for op_index in (tested_no_id_first, tested_no_id_second, base_no_id):
+        no = nor.getNodeOperator(op_index, True)
+        nor.setNodeOperatorStakingLimit(op_index, no["totalDepositedValidators"] + 10, {"from": impersonated_voting})
 
     # Case 6
     # -- SActivate target limit for "First" NO
@@ -739,7 +748,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
         deposited_keys_first_after,
         deposited_keys_second_after,
         deposited_keys_base_after,
-    ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 20)
+    ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 30, impersonated_voting)
 
     # check deposit is not applied for first NO
     assert deposited_keys_first_before == deposited_keys_first_after
@@ -764,7 +773,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
         deposited_keys_first_after,
         deposited_keys_second_after,
         deposited_keys_base_after,
-    ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 100)
+    ) = deposit_and_check_keys(nor, tested_no_id_first, tested_no_id_second, base_no_id, 30, impersonated_voting)
 
     # check - deposit not applied to NOs.
     assert deposited_keys_first_before != deposited_keys_first_after

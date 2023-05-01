@@ -142,8 +142,7 @@ expected_permissions_after_votes = {
             'PAUSE_ROLE': [lido_dao_voting_address],
             'STAKING_CONTROL_ROLE': [lido_dao_voting_address],
             'RESUME_ROLE': [lido_dao_voting_address],
-            'STAKING_PAUSE_ROLE': [lido_dao_voting_address],
-            'DEPOSIT_ROLE': [lido_dao_deposit_security_module_address_v1]
+            'STAKING_PAUSE_ROLE': [lido_dao_voting_address]
         }
     },
     lido_dao_agent_address: {
