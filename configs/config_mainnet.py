@@ -21,6 +21,7 @@ lido_dao_legacy_oracle_repo = "0xF9339DE629973c60c4d2b76749c81E6F40960E3A"
 curve_rewards_manager_address = "0x753D5167C31fBEB5b49624314d74A957Eb271709"
 balancer_rewards_manager = "0x1dD909cDdF3dbe61aC08112dC0Fdf2Ab949f79D8"
 
+lido_dao_self_owned_steth_burner = "0xB280E33812c0B09353180e92e27b8AD399B07f26"
 lido_dao_execution_layer_rewards_vault = "0x388C818CA8B9251b393131C08a736A67ccB19297"
 
 lido_easytrack = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"

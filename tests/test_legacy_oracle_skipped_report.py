@@ -16,6 +16,7 @@ from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
 
 ONE_HOUR = 1 * 60 * 60
 
+
 def start_vote_by_name(vote_name):
     vote_file = get_vote_script_file_by_name(vote_name)
 
@@ -70,13 +71,13 @@ def test_legacy_oracle_report_skipped(helpers, vote_ids_from_env, accounts):
     prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
 
     # start voting, but not sleep — only start and do votes
-    vote_id = start_vote_by_name("shapella_1")
+    vote_id = start_vote_by_name("shapella")
 
     # mine block in a hour before upgrade
     chain.sleep(MAINNET_VOTE_DURATION - ONE_HOUR)
     chain.mine(1)
 
-    # remember thisblock
+    # remember this block
     block_number_hour_before_upgrade = web3.eth.block_number
 
     # wait for upgrade

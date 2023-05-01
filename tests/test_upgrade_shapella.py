@@ -35,6 +35,7 @@ from utils.config import (
     lido_dao_deposit_security_module_address,
     lido_dao_withdrawal_vault_implementation,
     lido_dao_withdrawal_vault_implementation_v1,
+    lido_dao_self_owned_steth_burner,
     LIDO_APP_ID,
     ORACLE_APP_ID,
     NODE_OPERATORS_REGISTRY_APP_ID,
@@ -51,6 +52,7 @@ from utils.config import (
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.permission import (
     Permission,
+    PermissionP,
     validate_permission_create_event,
     validate_permission_revoke_event,
 )
@@ -112,6 +114,7 @@ MANAGE_PROTOCOL_CONTRACTS_ROLE = "0xeb7bfce47948ec1179e2358171d5ee7c821994c91151
 SET_EL_REWARDS_VAULT_ROLE = "0x9d68ad53a92b6f44b2e8fb18d211bf8ccb1114f6fafd56aa364515dfdf23c44f"
 SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE = "0xca7d176c2da2028ed06be7e3b9457e6419ae0744dc311989e9b29f6a1ceb1003"
 DEPOSIT_ROLE = "0x2561bf26f818282a3be40719542054d2173eb0d38539e8a8d3cff22f29fd2384"
+BURN_ROLE = "0xe97b137254058bd94f28d2f3eb79e2d34074ffb488d042e3bc958e0a57d2fa22"
 ADD_NODE_OPERATOR_ROLE = "0xe9367af2d321a2fc8d9c8f1e67f0fc1e2adf2f9844fb89ffa212619c713685b2"
 SET_NODE_OPERATOR_ACTIVE_ROLE = "0xd856e115ac9805c675a51831fa7d8ce01c333d666b0e34b3fc29833b7c68936a"
 SET_NODE_OPERATOR_NAME_ROLE = "0x58412970477f41493548d908d4307dfca38391d6bc001d56ffef86bd4f4a72e8"
@@ -162,6 +165,13 @@ permissions_to_revoke = [
         entity=lido_dao_deposit_security_module_address_v1,
         app=lido_dao_steth_address,
         role=DEPOSIT_ROLE,
+    ),
+    PermissionP(
+        entity=lido_dao_self_owned_steth_burner,
+        app=lido_dao_steth_address,
+        role=BURN_ROLE,
+        # See 4th arg of vote item 8 of https://vote.lido.fi/vote/130 (need to convert from in to hex)
+        params=["0x000100000000000000000000B280E33812c0B09353180e92e27b8AD399B07f26"],
     ),
     Permission(
         entity=lido_dao_voting_address,
@@ -240,7 +250,7 @@ def test_vote(
 
     # ACL revoke checks
     for permission in permissions_to_revoke:
-        assert contracts.acl.hasPermission(*permission), f"No starting role {permission.role} on {permission.entity}"
+        assert acl_has_permission(permission), f"No starting role {permission.role} on {permission.entity}"
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -295,7 +305,7 @@ def test_vote(
 
     # ACL revoke checks
     for permission in permissions_to_revoke:
-        assert not contracts.acl.hasPermission(*permission), f"Role {permission.role} is still on {permission.entity}"
+        assert not acl_has_permission(permission), f"Role {permission.role} is still on {permission.entity}"
 
     #
     # Template checks
@@ -342,6 +352,15 @@ def test_vote(
 
     for e, permission in zip(revoke_roles_events, permissions_to_revoke):
         validate_permission_revoke_event(e, permission)
+
+
+def acl_has_permission(permission):
+    if isinstance(permission, Permission):
+        return contracts.acl.hasPermission(*permission)
+    elif isinstance(permission, PermissionP):
+        return contracts.acl.hasPermission["address,address,bytes32,uint[]"](*permission)
+    else:
+        assert False, "unexpected permission type structure"
 
 
 def assert_app_update(new_app, old_app, contract_address):

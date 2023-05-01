@@ -19,16 +19,17 @@ Lido V2 (Shapella-ready) protocol upgrade
 14. Revoke `SET_EL_REWARDS_VAULT_ROLE` role from `Voting`
 15. Revoke `SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE` role from `Voting`
 16. Revoke `DEPOSIT_ROLE` role from old `DepositSecurityModule`
-17. Revoke `ADD_NODE_OPERATOR_ROLE` role from `Voting`
-18. Revoke `SET_NODE_OPERATOR_ACTIVE_ROLE` role from `Voting`
-19. Revoke `SET_NODE_OPERATOR_NAME_ROLE` role from `Voting`
-20. Revoke `SET_NODE_OPERATOR_ADDRESS_ROLE` role from `Voting`
-21. Revoke `REPORT_STOPPED_VALIDATORS_ROLE` role from `Voting`
-22. Revoke `MANAGE_MEMBERS` role from `Voting`
-23. Revoke `MANAGE_QUORUM` role from `Voting`
-24. Revoke `SET_BEACON_SPEC` role from `Voting`
-25. Revoke `SET_REPORT_BOUNDARIES` role from `Voting`
-26. Revoke `SET_BEACON_REPORT_RECEIVER` role from `Voting`
+17. Revoke `BURN_ROLE` role from `SelfOwnedStETHBurner`
+18. Revoke `ADD_NODE_OPERATOR_ROLE` role from `Voting`
+19. Revoke `SET_NODE_OPERATOR_ACTIVE_ROLE` role from `Voting`
+20. Revoke `SET_NODE_OPERATOR_NAME_ROLE` role from `Voting`
+21. Revoke `SET_NODE_OPERATOR_ADDRESS_ROLE` role from `Voting`
+22. Revoke `REPORT_STOPPED_VALIDATORS_ROLE` role from `Voting`
+23. Revoke `MANAGE_MEMBERS` role from `Voting`
+24. Revoke `MANAGE_QUORUM` role from `Voting`
+25. Revoke `SET_BEACON_SPEC` role from `Voting`
+26. Revoke `SET_REPORT_BOUNDARIES` role from `Voting`
+27. Revoke `SET_BEACON_REPORT_RECEIVER` role from `Voting`
 """
 
 import time
@@ -52,6 +53,7 @@ from utils.config import (
     lido_dao_staking_router,
     lido_dao_withdrawal_vault,
     lido_dao_withdrawal_vault_implementation,
+    lido_dao_self_owned_steth_burner,
     get_priority_fee,
 )
 from utils.permissions import encode_permission_create, encode_permission_revoke
@@ -149,24 +151,26 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         # 16)
         encode_permission_revoke(lido, "DEPOSIT_ROLE", revoke_from=contracts.deposit_security_module_v1),
         # 17)
-        encode_permission_revoke(node_operators_registry, "ADD_NODE_OPERATOR_ROLE", revoke_from=voting),
+        encode_permission_revoke(lido, "BURN_ROLE", revoke_from=lido_dao_self_owned_steth_burner),
         # 18)
-        encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_ACTIVE_ROLE", revoke_from=voting),
+        encode_permission_revoke(node_operators_registry, "ADD_NODE_OPERATOR_ROLE", revoke_from=voting),
         # 19)
-        encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_NAME_ROLE", revoke_from=voting),
+        encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_ACTIVE_ROLE", revoke_from=voting),
         # 20)
-        encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_ADDRESS_ROLE", revoke_from=voting),
+        encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_NAME_ROLE", revoke_from=voting),
         # 21)
-        encode_permission_revoke(node_operators_registry, "REPORT_STOPPED_VALIDATORS_ROLE", revoke_from=voting),
+        encode_permission_revoke(node_operators_registry, "SET_NODE_OPERATOR_ADDRESS_ROLE", revoke_from=voting),
         # 22)
-        encode_permission_revoke(legacy_oracle, "MANAGE_MEMBERS", revoke_from=voting),
+        encode_permission_revoke(node_operators_registry, "REPORT_STOPPED_VALIDATORS_ROLE", revoke_from=voting),
         # 23)
-        encode_permission_revoke(legacy_oracle, "MANAGE_QUORUM", revoke_from=voting),
+        encode_permission_revoke(legacy_oracle, "MANAGE_MEMBERS", revoke_from=voting),
         # 24)
-        encode_permission_revoke(legacy_oracle, "SET_BEACON_SPEC", revoke_from=voting),
+        encode_permission_revoke(legacy_oracle, "MANAGE_QUORUM", revoke_from=voting),
         # 25)
-        encode_permission_revoke(legacy_oracle, "SET_REPORT_BOUNDARIES", revoke_from=voting),
+        encode_permission_revoke(legacy_oracle, "SET_BEACON_SPEC", revoke_from=voting),
         # 26)
+        encode_permission_revoke(legacy_oracle, "SET_REPORT_BOUNDARIES", revoke_from=voting),
+        # 27)
         encode_permission_revoke(legacy_oracle, "SET_BEACON_REPORT_RECEIVER", revoke_from=voting),
     ]
 
@@ -187,16 +191,17 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         "14) Revoke `SET_EL_REWARDS_VAULT_ROLE` role from `Voting`",
         "15) Revoke `SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE` role from `Voting`",
         "16) Revoke `DEPOSIT_ROLE` role from old `DepositSecurityModule`",
-        "17) Revoke `ADD_NODE_OPERATOR_ROLE` role from `Voting`",
-        "18) Revoke `SET_NODE_OPERATOR_ACTIVE_ROLE` role from `Voting",
-        "19) Revoke `SET_NODE_OPERATOR_NAME_ROLE` role from `Voting`",
-        "20) Revoke `SET_NODE_OPERATOR_ADDRESS_ROLE` role from `Voting`",
-        "21) Revoke `REPORT_STOPPED_VALIDATORS_ROLE` role from `Voting`",
-        "22) Revoke `MANAGE_MEMBERS` role from `Voting`",
-        "23) Revoke `MANAGE_QUORUM` role from `Voting`",
-        "24) Revoke `SET_BEACON_SPEC` role from `Voting`",
-        "25) Revoke `SET_REPORT_BOUNDARIES` role from `Voting`",
-        "26) Revoke `SET_BEACON_REPORT_RECEIVER` role from `Voting`",
+        "17) Revoke `BURN_ROLE` role from `SelfOwnedStETHBurner`",
+        "18) Revoke `ADD_NODE_OPERATOR_ROLE` role from `Voting`",
+        "19) Revoke `SET_NODE_OPERATOR_ACTIVE_ROLE` role from `Voting",
+        "20) Revoke `SET_NODE_OPERATOR_NAME_ROLE` role from `Voting`",
+        "21) Revoke `SET_NODE_OPERATOR_ADDRESS_ROLE` role from `Voting`",
+        "22) Revoke `REPORT_STOPPED_VALIDATORS_ROLE` role from `Voting`",
+        "23) Revoke `MANAGE_MEMBERS` role from `Voting`",
+        "24) Revoke `MANAGE_QUORUM` role from `Voting`",
+        "25) Revoke `SET_BEACON_SPEC` role from `Voting`",
+        "26) Revoke `SET_REPORT_BOUNDARIES` role from `Voting`",
+        "27) Revoke `SET_BEACON_REPORT_RECEIVER` role from `Voting`",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
