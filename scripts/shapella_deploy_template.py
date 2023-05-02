@@ -1,12 +1,3 @@
-"""
-Auxiliary script needed to be run to prepare on-chain state for the Shapella upgrade.
-Includes:
-- deployment of the ShapellaUpgradeTemplate
-- transferring admin roles from deployerEAO to ShapellaUpgradeTemplate
-- transferring a bit of steth to dead address (known aka "putting the stone")
-- upgrade lido locator implementation
-"""
-
 import time
 
 from brownie import ShapellaUpgradeTemplate

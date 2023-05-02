@@ -7,7 +7,6 @@ from scripts.upgrade_shapella import start_vote
 from collections import OrderedDict
 from utils.config import (
     contracts,
-    deployer_eoa,
     lido_dao_withdrawal_vault,
     lido_dao_withdrawal_vault_implementation,
     ldo_holder_address_for_tests,
@@ -22,7 +21,7 @@ from utils.shapella_upgrade import (
 
 @pytest.fixture(scope="function", autouse=True)
 def template():
-    return prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
+    return prepare_for_shapella_upgrade_voting(silent=True)
 
 
 def get_current_chain_timestamp():

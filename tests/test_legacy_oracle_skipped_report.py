@@ -7,7 +7,6 @@ from utils.import_current_votes import get_vote_script_file_by_name
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.config import (
     contracts,
-    deployer_eoa,
     ldo_holder_address_for_tests,
     ldo_vote_executors_for_tests,
     MAINNET_VOTE_DURATION,
@@ -68,7 +67,7 @@ def test_legacy_oracle_report_skipped(helpers, vote_ids_from_env, accounts):
     # BEFORE the upgraded contracts were activated via the upgrade vote
 
     # prepare upgrade
-    prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
+    prepare_for_shapella_upgrade_voting(silent=True)
 
     # start voting, but not sleep — only start and do votes
     vote_id = start_vote_by_name("shapella")

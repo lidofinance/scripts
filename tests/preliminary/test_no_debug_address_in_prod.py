@@ -1,10 +1,8 @@
 import pytest
 from brownie import interface
-from utils.withdrawal_credentials import extract_address_from_eth1_wc
-from utils.finance import ZERO_ADDRESS
 from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
 from utils.import_current_votes import start_and_execute_votes
-from utils.config import contracts, deployer_eoa
+from utils.config import contracts
 import utils.config as config
 
 ####################################
@@ -52,7 +50,7 @@ def get_proxy_impl_ossifiable(addr):
 
 
 def test_upgrade_template_addresses():
-    template = prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
+    template = prepare_for_shapella_upgrade_voting(silent=True)
 
     assert get_proxy_impl_ossifiable(template._locator()) != lido_dao_lido_locator_implementation
     assert template._accountingOracle() != lido_dao_accounting_oracle
@@ -79,8 +77,8 @@ def test_upgrade_template_addresses():
     assert template._withdrawalQueueImplementation() != lido_dao_withdrawal_queue_implementation
 
 
-def test_proxyfied_implementation_adresses_prepared():
-    prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
+def test_proxyfied_implementation_addresses_prepared():
+    prepare_for_shapella_upgrade_voting(silent=True)
 
     assert get_proxy_impl_ossifiable(config.lido_dao_lido_locator) != lido_dao_lido_locator_implementation
     assert get_proxy_impl_ossifiable(config.lido_dao_accounting_oracle) != dummy_implementation_address  # dummy
@@ -91,7 +89,7 @@ def test_proxyfied_implementation_adresses_prepared():
     assert get_proxy_impl_ossifiable(config.lido_dao_staking_router) != dummy_implementation_address  # dummy
 
 
-def test_proxyfied_implementation_adresses_after_upgrade(helpers):
+def test_proxyfied_implementation_addresses_after_upgrade(helpers):
     start_and_execute_votes(contracts.voting, helpers)
     assert get_proxy_impl_ossifiable(config.lido_dao_lido_locator) != lido_dao_lido_locator_implementation
     assert get_proxy_impl_ossifiable(config.lido_dao_accounting_oracle) != lido_dao_accounting_oracle_implementation
@@ -105,7 +103,7 @@ def test_proxyfied_implementation_adresses_after_upgrade(helpers):
 
 
 def test_locator_addresses():
-    prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
+    prepare_for_shapella_upgrade_voting(silent=True)
 
     locator = interface.LidoLocator(config.lido_dao_lido_locator)
 

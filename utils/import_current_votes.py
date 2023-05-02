@@ -8,7 +8,6 @@ from brownie.network.transaction import TransactionReceipt
 from utils.config import (
     ldo_holder_address_for_tests,
     ContractsLazyLoader,
-    deployer_eoa,
     lido_dao_template_address,
     get_is_live,
 )
@@ -51,7 +50,7 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
             not get_is_live(),
             "ERROR: will not do preliminary actions on live network. run `preliminary_shapella...py` script manually",
         )
-        deployed_upgrade_template = prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
+        deployed_upgrade_template = prepare_for_shapella_upgrade_voting(silent=True)
         assert deployed_upgrade_template.address == lido_dao_template_address
 
     vote_ids = []

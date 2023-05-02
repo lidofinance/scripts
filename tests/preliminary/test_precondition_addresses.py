@@ -8,7 +8,6 @@ from utils.config import (
     contracts,
     oracle_daemon_config,
     gate_seal_address,
-    deployer_eoa,
     wsteth_token_address,
     dummy_implementation_address,
     lido_dao_acl_address,
@@ -73,7 +72,7 @@ def upgrade_withdrawal_vault():
 
 # ElRewardsVault did not changed
 def test_el_rewards_vault_did_not_changed():
-    template = prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
+    template = prepare_for_shapella_upgrade_voting(silent=True)
 
     locator = interface.LidoLocator(lido_dao_lido_locator)
     core_components = locator.coreComponents()
@@ -86,7 +85,7 @@ def test_el_rewards_vault_did_not_changed():
 
 # Withdrawals vault addr did not changed
 def test_withdrawals_vault_addr_did_not_changed():
-    template = prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
+    template = prepare_for_shapella_upgrade_voting(silent=True)
 
     locator = interface.LidoLocator(lido_dao_lido_locator)
     core_components = locator.coreComponents()
@@ -103,7 +102,7 @@ def test_withdrawals_vault_addr_matching_with_wc():
     withdrawal_credentials_address = extract_address_from_eth1_wc(str(withdrawal_credentials))
     assert withdrawal_credentials_address == lido_dao_withdrawal_vault.lower()
 
-    prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
+    prepare_for_shapella_upgrade_voting(silent=True)
 
     withdrawal_credentials = contracts.lido.getWithdrawalCredentials()
     withdrawal_credentials_address = extract_address_from_eth1_wc(str(withdrawal_credentials))
@@ -112,7 +111,7 @@ def test_withdrawals_vault_addr_matching_with_wc():
 
 
 def test_upgrade_template_addresses():
-    template = prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
+    template = prepare_for_shapella_upgrade_voting(silent=True)
 
     assert get_proxy_impl_ossifiable(template._locator()) == lido_dao_lido_locator_implementation
 
@@ -154,7 +153,7 @@ def test_upgrade_template_addresses():
 
 
 def test_proxyfied_implementation_addresses_prepared():
-    prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
+    prepare_for_shapella_upgrade_voting(silent=True)
 
     assert get_proxy_impl_app(lido_dao_acl_address) == lido_dao_acl_implementation_address
     assert get_proxy_impl_app(lido_dao_node_operators_registry) == lido_dao_node_operators_registry_implementation_v1
@@ -187,7 +186,7 @@ def test_proxyfied_implementation_addresses_after_upgrade(helpers):
 
 
 def test_locator_addresses():
-    prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
+    prepare_for_shapella_upgrade_voting(silent=True)
 
     locator = interface.LidoLocator(lido_dao_lido_locator)
 
@@ -225,7 +224,7 @@ def test_locator_addresses():
 
 
 def test_stored_addresses_after_prepared():
-    prepare_for_shapella_upgrade_voting(deployer_eoa, silent=True)
+    prepare_for_shapella_upgrade_voting(silent=True)
 
     # EL Rewards Vault
     assert contracts.execution_layer_rewards_vault.LIDO() == lido_dao_steth_address

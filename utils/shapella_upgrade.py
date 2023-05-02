@@ -12,6 +12,8 @@ from utils.config import (
     get_priority_fee,
     get_is_live,
     get_deployer_account,
+    deployer_eoa,
+    deployer_eoa_locator,
 )
 
 # Private constant taken from Lido contract
@@ -40,6 +42,13 @@ def get_tx_params(deployer):
     return tx_params
 
 
+def assert_locator_deployer_eoa_is_impersonated():
+    assert not get_is_live(), "Must not run any preliminary steps on live network!"
+    deployer_account = get_deployer_account()
+    assert not isinstance(deployer_account, LocalAccount), "mainnet deployer oea must be impersonated in tests"
+    assert get_deployer_account() != deployer_eoa_locator
+
+
 def prepare_deploy_gate_seal(deployer):
     gate_seal_factory = interface.GateSealFactory(gate_seal_factory_address)
     committee = deployer
@@ -60,22 +69,8 @@ def prepare_deploy_upgrade_template(deployer):
     return template
 
 
-def change_locator_proxy_admin_to_local_one(local_admin):
-    mainnet_deployer_eoa = "0x2A78076BF797dAC2D25c9568F79b61aFE565B88C"
-
-    # To use the production LidoLocator mainnet proxy need to replace its admin to the local test fork admin
-    assert not get_is_live(), "Must not run any preliminary steps on live network!"
-    deployer_account = get_deployer_account()
-    assert not isinstance(deployer_account, LocalAccount), "mainnet deployer oea must be impersonated in tests"
-    assert get_deployer_account() != mainnet_deployer_eoa
-
-    change_admin_tx_params = get_tx_params(local_admin)
-    change_admin_tx_params["from"] = mainnet_deployer_eoa
-    interface.OssifiableProxy(contracts.lido_locator).proxy__changeAdmin(local_admin, change_admin_tx_params)
-
-
-def prepare_upgrade_locator(admin):
-    change_locator_proxy_admin_to_local_one(admin)
+def prepare_upgrade_locator_impl(admin):
+    assert_locator_deployer_eoa_is_impersonated()
 
     assert interface.OssifiableProxy(contracts.lido_locator).proxy__getAdmin() == admin
     interface.OssifiableProxy(contracts.lido_locator).proxy__upgradeTo(
@@ -84,7 +79,7 @@ def prepare_upgrade_locator(admin):
     print(f"=== Upgrade lido locator implementation to {lido_dao_lido_locator_implementation} ===")
 
 
-def prepare_transfer_ownership_to_template(owner, template):
+def prepare_transfer_ownership_to_template_no_locator(owner, template):
     admin_role = interface.AccessControlEnumerable(contracts.burner).DEFAULT_ADMIN_ROLE()
     tx_params = get_tx_params(owner)
 
@@ -105,27 +100,32 @@ def prepare_transfer_ownership_to_template(owner, template):
     transfer_oz_admin_to_template(contracts.hash_consensus_for_validators_exit_bus_oracle)
 
     transfer_proxy_admin_to_template(contracts.accounting_oracle)
-    transfer_proxy_admin_to_template(contracts.lido_locator)
     transfer_proxy_admin_to_template(contracts.staking_router)
     transfer_proxy_admin_to_template(contracts.validators_exit_bus_oracle)
     transfer_proxy_admin_to_template(contracts.withdrawal_queue)
 
 
-def prepare_for_shapella_upgrade_voting(temporary_admin, silent=False):
-    assert silent or lido_dao_template_address != ""
+def prepare_transfer_locator_ownership_to_template(admin, template):
+    assert_locator_deployer_eoa_is_impersonated()
+    interface.OssifiableProxy(contracts.lido_locator).proxy__changeAdmin(template, get_tx_params(admin))
+
+
+def prepare_for_shapella_upgrade_voting(silent=False):
     if not silent:
         ask_shapella_upgrade_confirmation(lido_dao_template_address, lido_dao_lido_locator_implementation)
-
-    prepare_deploy_gate_seal(temporary_admin)
-
-    # Deploy the upgrade template if needed
-    template = prepare_deploy_upgrade_template(temporary_admin)
 
     # To get sure the "stone" is in place
     assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
 
-    prepare_upgrade_locator(temporary_admin)
+    # Deploy the upgrade template if needed
+    template = prepare_deploy_upgrade_template(deployer_eoa)
 
-    prepare_transfer_ownership_to_template(temporary_admin, template.address)
+    prepare_deploy_gate_seal(deployer_eoa)
+
+    prepare_transfer_ownership_to_template_no_locator(deployer_eoa, template.address)
+
+    prepare_upgrade_locator_impl(deployer_eoa_locator)
+
+    prepare_transfer_locator_ownership_to_template(deployer_eoa_locator, template.address)
 
     return template

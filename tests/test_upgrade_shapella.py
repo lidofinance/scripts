@@ -11,6 +11,7 @@ from utils.config import (
     lido_dao_withdrawal_vault,
     ldo_holder_address_for_tests,
     deployer_eoa,
+    deployer_eoa_locator,
     oracle_committee,
     deposit_security_module_guardians,
     lido_dao_steth_implementation_address,
@@ -62,8 +63,9 @@ from scripts.upgrade_shapella import start_vote
 from utils.shapella_upgrade import (
     prepare_deploy_gate_seal,
     prepare_deploy_upgrade_template,
-    prepare_upgrade_locator,
-    prepare_transfer_ownership_to_template,
+    prepare_upgrade_locator_impl,
+    prepare_transfer_ownership_to_template_no_locator,
+    prepare_transfer_locator_ownership_to_template,
 )
 
 
@@ -258,10 +260,11 @@ def test_vote(
         (vote_id,) = vote_ids_from_env
         template = contracts.shapella_upgrade_template
     else:
-        prepare_deploy_gate_seal(deployer_eoa)
         template = prepare_deploy_upgrade_template(deployer_eoa)
-        prepare_upgrade_locator(deployer_eoa)
-        prepare_transfer_ownership_to_template(deployer_eoa, template)
+        prepare_deploy_gate_seal(deployer_eoa)
+        prepare_transfer_ownership_to_template_no_locator(deployer_eoa, template)
+        prepare_upgrade_locator_impl(deployer_eoa_locator)
+        prepare_transfer_locator_ownership_to_template(deployer_eoa_locator, template)
         tx_params = {"from": ldo_holder_address_for_tests}
         vote_id, _ = start_vote(tx_params, silent=True)
 
