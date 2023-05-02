@@ -439,7 +439,7 @@ contract ShapellaUpgradeTemplate {
     //
     uint256 internal constant HC_FOR_AO_EPOCHS_PER_FRAME = 225;
     uint256 internal constant HC_FOR_VEBO_EPOCHS_PER_FRAME = 75;
-    uint256 internal constant HC_FAST_LANE_LENGTH_SLOTS = 10;
+    uint256 internal constant HC_FAST_LANE_LENGTH_SLOTS = 30;
     // HC_FAR_FUTURE_EPOCH calculated by `_computeEpochAtTimestamp(type(uint64).max)` as in HashConsensus
     uint256 internal constant HC_FAR_FUTURE_EPOCH = 48038396021100853;
 
@@ -456,12 +456,12 @@ contract ShapellaUpgradeTemplate {
     uint256 internal constant EXPECTED_DSM_MIN_DEPOSIT_BLOCK_DISTANCE = 25;
     uint256 internal constant EXPECTED_DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS = 6646;
 
-    uint256 internal constant SANITY_LIMIT_churnValidatorsPerDayLimit = 40000;
+    uint256 internal constant SANITY_LIMIT_churnValidatorsPerDayLimit = 20000;
     uint256 internal constant SANITY_LIMIT_oneOffCLBalanceDecreaseBPLimit = 500;
     uint256 internal constant SANITY_LIMIT_annualBalanceIncreaseBPLimit = 1000;
     uint256 internal constant SANITY_LIMIT_simulatedShareRateDeviationBPLimit = 50;
-    uint256 internal constant SANITY_LIMIT_maxValidatorExitRequestsPerReport = 500;
-    uint256 internal constant SANITY_LIMIT_maxAccountingExtraDataListItemsCount = 500;
+    uint256 internal constant SANITY_LIMIT_maxValidatorExitRequestsPerReport = 600;
+    uint256 internal constant SANITY_LIMIT_maxAccountingExtraDataListItemsCount = 200;
     uint256 internal constant SANITY_LIMIT_maxNodeOperatorsPerExtraDataItemCount = 100;
     uint256 internal constant SANITY_LIMIT_requestTimestampMargin = 7680;
     uint256 internal constant SANITY_LIMIT_maxPositiveTokenRebase = 750000;

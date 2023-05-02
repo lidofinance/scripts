@@ -12,8 +12,9 @@ from configs.config_mainnet import (
 from configs.config_shapella_addresses_mainnet import (
     lido_dao_evm_script_registry,
     lido_dao_staking_router,
-    lido_dao_deposit_security_module_address_v1
+    lido_dao_deposit_security_module_address_v1,
 )
+
 #
 # Other
 #
@@ -71,12 +72,12 @@ PREDICTION_DURATION_IN_SLOTS = 50400
 FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT = 1350
 NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP = 100
 # OracleReportSanityChecker
-CHURN_VALIDATORS_PER_DAY_LIMIT = 40000
+CHURN_VALIDATORS_PER_DAY_LIMIT = 20000
 ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT = 500
 ANNUAL_BALANCE_INCREASE_BP_LIMIT = 1000
 SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT = 50
-MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT = 500
-MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT = 500
+MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT = 600
+MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT = 2
 MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT = 100
 REQUEST_TIMESTAMP_MARGIN = 7680
 MAX_POSITIVE_TOKEN_REBASE = 750000
@@ -105,9 +106,9 @@ ACCOUNTING_ORACLE_EPOCHS_PER_FRAME = 225
 # ValidatorsExitBusOracle
 VALIDATORS_EXIT_BUS_ORACLE_EPOCHS_PER_FRAME = 75
 # AccountingOracle and ValidatorsExitBusOracle
-FAST_LANE_LENGTH_SLOTS = 10
+FAST_LANE_LENGTH_SLOTS = 30
 # WithdrawalQueueERC721
-WITHDRAWAL_QUEUE_ERC721_NAME = "stETH Withdrawal NFT"
+WITHDRAWAL_QUEUE_ERC721_NAME = "Lido: stETH Withdrawal NFT"
 WITHDRAWAL_QUEUE_ERC721_SYMBOL = "unstETH"
 WITHDRAWAL_QUEUE_ERC721_BASE_URI = ""
 # GateSeal
@@ -116,62 +117,50 @@ GATE_SEAL_EXPIRY_TIMESTAMP = 1713139200  # 2024-04-15 00:00GMT
 
 # Aragon Permissions
 expected_permissions_after_votes = {
-    lido_dao_acl_address: {
-        'roles': {
-            'CREATE_PERMISSIONS_ROLE': [lido_dao_voting_address]
-        }
-    },
-    lido_dao_kernel: {
-        'roles': {
-            'APP_MANAGER_ROLE': [lido_dao_voting_address]
-        }
-    },
+    lido_dao_acl_address: {"roles": {"CREATE_PERMISSIONS_ROLE": [lido_dao_voting_address]}},
+    lido_dao_kernel: {"roles": {"APP_MANAGER_ROLE": [lido_dao_voting_address]}},
     lido_dao_evm_script_registry: {
-        'roles': {
-            'REGISTRY_MANAGER_ROLE': [lido_dao_voting_address],
-            'REGISTRY_ADD_EXECUTOR_ROLE': [lido_dao_voting_address]
+        "roles": {
+            "REGISTRY_MANAGER_ROLE": [lido_dao_voting_address],
+            "REGISTRY_ADD_EXECUTOR_ROLE": [lido_dao_voting_address],
         }
     },
-    lido_dao_token_manager_address: {
-        'roles': {
-            'ASSIGN_ROLE': [lido_dao_voting_address]
-        }
-    },
+    lido_dao_token_manager_address: {"roles": {"ASSIGN_ROLE": [lido_dao_voting_address]}},
     lido_dao_steth_address: {
-        'roles': {
-            'PAUSE_ROLE': [lido_dao_voting_address],
-            'STAKING_CONTROL_ROLE': [lido_dao_voting_address],
-            'RESUME_ROLE': [lido_dao_voting_address],
-            'STAKING_PAUSE_ROLE': [lido_dao_voting_address]
+        "roles": {
+            "PAUSE_ROLE": [lido_dao_voting_address],
+            "STAKING_CONTROL_ROLE": [lido_dao_voting_address],
+            "RESUME_ROLE": [lido_dao_voting_address],
+            "STAKING_PAUSE_ROLE": [lido_dao_voting_address],
         }
     },
     lido_dao_agent_address: {
-        'roles': {
-            'EXECUTE_ROLE': [lido_dao_voting_address],
-            'RUN_SCRIPT_ROLE': [lido_dao_voting_address],
-            'TRANSFER_ROLE': [lido_dao_finance_address]
+        "roles": {
+            "EXECUTE_ROLE": [lido_dao_voting_address],
+            "RUN_SCRIPT_ROLE": [lido_dao_voting_address],
+            "TRANSFER_ROLE": [lido_dao_finance_address],
         }
     },
     lido_dao_finance_address: {
-        'roles': {
-            'EXECUTE_PAYMENTS_ROLE': [lido_dao_voting_address],
-            'MANAGE_PAYMENTS_ROLE': [lido_dao_voting_address],
-            'CREATE_PAYMENTS_ROLE': [lido_dao_voting_address]
+        "roles": {
+            "EXECUTE_PAYMENTS_ROLE": [lido_dao_voting_address],
+            "MANAGE_PAYMENTS_ROLE": [lido_dao_voting_address],
+            "CREATE_PAYMENTS_ROLE": [lido_dao_voting_address],
         }
     },
     lido_dao_voting_address: {
-        'roles': {
-            'MODIFY_QUORUM_ROLE': [lido_dao_voting_address],
-            'MODIFY_SUPPORT_ROLE': [lido_dao_voting_address],
-            'CREATE_VOTES_ROLE': [lido_dao_token_manager_address]
+        "roles": {
+            "MODIFY_QUORUM_ROLE": [lido_dao_voting_address],
+            "MODIFY_SUPPORT_ROLE": [lido_dao_voting_address],
+            "CREATE_VOTES_ROLE": [lido_dao_token_manager_address],
         }
     },
     lido_dao_node_operators_registry: {
-        'roles': {
-            'MANAGE_SIGNING_KEYS': [lido_dao_voting_address],
-            'SET_NODE_OPERATOR_LIMIT_ROLE': [lido_dao_voting_address, lido_easytrack_evmscriptexecutor],
-            'STAKING_ROUTER_ROLE': [lido_dao_staking_router]
+        "roles": {
+            "MANAGE_SIGNING_KEYS": [lido_dao_voting_address],
+            "SET_NODE_OPERATOR_LIMIT_ROLE": [lido_dao_voting_address, lido_easytrack_evmscriptexecutor],
+            "STAKING_ROUTER_ROLE": [lido_dao_staking_router],
         }
-    }
+    },
 }
 ACL_DEPLOY_BLOCK_NUMBER = 11473216
