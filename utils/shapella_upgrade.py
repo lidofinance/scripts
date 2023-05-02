@@ -51,20 +51,6 @@ def assert_locator_deployer_eoa_is_impersonated():
     assert get_deployer_account() != deployer_eoa_locator
 
 
-def prepare_deploy_gate_seal(deployer):
-    gate_seal_factory = interface.GateSealFactory(gate_seal_factory_address)
-    committee = deployer
-    seal_duration = 6 * 24 * 60 * 60  # 6 days
-    sealables = [lido_dao_withdrawal_queue, lido_dao_validators_exit_bus_oracle]
-    expiry_timestamp = 1713139200  # 2024-04-15 00:00GMT
-    tx = gate_seal_factory.create_gate_seal(
-        committee, seal_duration, sealables, expiry_timestamp, get_tx_params(deployer)
-    )
-    deployed_gate_seal_address = tx.events[0]["gate_seal"]
-    assert deployed_gate_seal_address == gate_seal_address
-    print(f"GateSeal deployed at {gate_seal_address}")
-
-
 def prepare_deploy_upgrade_template(deployer):
     template = ShapellaUpgradeTemplate.deploy(get_tx_params(deployer))
     print(f"=== Deployed upgrade template {template.address} ===")
@@ -121,8 +107,6 @@ def prepare_for_shapella_upgrade_voting(silent=False):
 
     # Deploy the upgrade template if needed
     template = prepare_deploy_upgrade_template(deployer_eoa)
-
-    prepare_deploy_gate_seal(deployer_eoa)
 
     prepare_transfer_ownership_to_template_no_locator(deployer_eoa, template.address)
 

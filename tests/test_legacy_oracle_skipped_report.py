@@ -73,7 +73,7 @@ def test_legacy_oracle_report_skipped(helpers, vote_ids_from_env, accounts):
     vote_id = start_vote_by_name("shapella")
 
     # mine block in a hour before upgrade
-    chain.sleep(MAINNET_VOTE_DURATION - ONE_HOUR)
+    chain.sleep(MAINNET_VOTE_DURATION)
     chain.mine(1)
 
     # remember this block
