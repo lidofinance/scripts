@@ -7,7 +7,7 @@ from utils.config import GATE_SEAL_EXPIRY_TIMESTAMP, GATE_SEAL_PAUSE_DURATION_SE
 
 @pytest.fixture(scope="module")
 def gate_seal_committee(accounts) -> Account:
-    return accounts.at(gate_seal_committee_address)
+    return accounts.at(gate_seal_committee_address, force=True)
 
 
 @pytest.fixture(scope="module")
