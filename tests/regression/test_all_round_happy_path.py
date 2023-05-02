@@ -1,5 +1,5 @@
 import math
-from brownie import ZERO_ADDRESS
+from brownie import ZERO_ADDRESS, chain
 
 from utils.test.oracle_report_helpers import oracle_report
 from utils.test.helpers import ETH, almostEqEth
@@ -19,17 +19,27 @@ def test_all_round_happy_path(accounts):
 
     # Submitting ETH
 
+    stakeLimitInfo = contracts.lido.getStakeLimitFullInfo()
+    growthPerBlock = stakeLimitInfo["maxStakeLimit"] // stakeLimitInfo["maxStakeLimitGrowthBlocks"]
+
+    print(growthPerBlock)
+
     total_supply_before_submit = contracts.lido.totalSupply()
     buffered_ether_before_submit = contracts.lido.getBufferedEther()
     staking_limit_before_submit = contracts.lido.getCurrentStakeLimit()
 
+    print('block before: ', chain.height)
+
     submit_tx = contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": amount})
+
+    print('block after submit: ', chain.height)
 
     steth_balance_after_submit = contracts.lido.balanceOf(stranger)
     total_supply_after_submit = contracts.lido.totalSupply()
     buffered_ether_after_submit = contracts.lido.getBufferedEther()
     staking_limit_after_submit = contracts.lido.getCurrentStakeLimit()
 
+    print('block after view: ', chain.height)
     assert almostEqEth(steth_balance_after_submit, steth_balance_before_submit + amount)
     assert eth_balance_before_submit == stranger.balance() + amount
 
@@ -52,7 +62,7 @@ def test_all_round_happy_path(accounts):
 
     assert total_supply_after_submit == total_supply_before_submit + amount
     assert buffered_ether_after_submit == buffered_ether_before_submit + amount
-    assert staking_limit_after_submit == staking_limit_before_submit - amount
+    assert staking_limit_after_submit == staking_limit_before_submit - amount + growthPerBlock
 
     # Depositing ETH
     dsm = accounts.at(contracts.deposit_security_module.address, force=True)
