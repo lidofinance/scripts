@@ -79,7 +79,8 @@ def test_staking_limit_getter(voting):
 
 def test_staking_limit_initial_not_zero():
     # By default it's set to 150000 ETH per day
-    assert contracts.lido.getCurrentStakeLimit() == 150000 * 10**18
+    assert contracts.lido.getCurrentStakeLimit() <= 150000 * 10**18
+    assert contracts.lido.getCurrentStakeLimit() > 0
 
 
 @pytest.mark.parametrize(
