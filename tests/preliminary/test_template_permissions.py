@@ -80,7 +80,7 @@ def protocol_preliminary_permissions(shapella_upgrade_template):
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "ALL_LIMITS_MANAGER_ROLE": [],
-                "CHURN_VALIDATORS_PER_DAY_LIMIT_MANGER_ROLE": [],
+                "CHURN_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE": [],
                 "ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE": [],
                 "ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE": [],
                 "SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE": [],
@@ -98,7 +98,6 @@ def protocol_preliminary_permissions(shapella_upgrade_template):
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [template],
                 "REQUEST_BURN_MY_STETH_ROLE": [],
-                "RECOVER_ASSETS_ROLE": [],
                 "REQUEST_BURN_SHARES_ROLE": [contracts.lido],
             },
         },
