@@ -18,14 +18,16 @@ deposit_contract = "0x00000000219ab540356cBB839Cbe05303d7705Fa"
 lido_dao_withdrawal_vault = "0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f"
 
 #
-deployer_eoa = "0xBC862d4beE4E1cd82B9e8519b4375c3457fc6A5a"
+deployer_eoa_locator = "0x2A78076BF797dAC2D25c9568F79b61aFE565B88C"
+deployer_eoa = "0x8Ea83AD72396f1E0cD2f8E72b1461db8Eb6aF7B5"
 
 # New contracts (deployed mainnet)
 lido_dao_lido_locator = "0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb"
+gate_seal_factory_address = "0x6C82877cAC5a7A739f16Ca0A89c0A328B8764A24"
 
 # New contracts (yet deployed in preliminary steps)
 gate_seal_address = "0x1aD5cb2955940F998081c1eF5f5F00875431aA90"
-gate_seal_factory_address = "0x6C82877cAC5a7A739f16Ca0A89c0A328B8764A24"
+lido_dao_template_address = "0xa818fF9EC93122Bf9401ab4340C42De638CD600a"
 lido_dao_template_address = "0xc205B6c6bA5660E2A6e67A367eE65f83073C2f7D"
 lido_dao_steth_implementation_address = "0x11638262f6d34D807aE469166f0368c8Dc2a5689"
 lido_dao_node_operators_registry_implementation = "0x8e409ad726C887890d8129530B352A6fDf0e25Ad"
