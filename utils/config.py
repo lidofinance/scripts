@@ -41,7 +41,7 @@ else:
 
 
 def get_is_live() -> bool:
-    dev_networks = ["development", "hardhat", "hardhat-fork", "mainnet-fork", "goerli-fork", "local-fork"]
+    dev_networks = ["development", "hardhat", "hardhat-fork", "goerli-fork", "local-fork"]
     return network.show_active() not in dev_networks
 
 
@@ -50,6 +50,13 @@ def get_priority_fee() -> str:
         return os.environ["OMNIBUS_PRIORITY_FEE"]
     else:
         return "2 gwei"
+
+
+def get_max_fee() -> str:
+    if "OMNIBUS_MAX_FEE" in os.environ:
+        return os.environ["OMNIBUS_MAX_FEE"]
+    else:
+        return "100 gwei"
 
 
 def get_deployer_account() -> Union[LocalAccount, Account]:

@@ -10,6 +10,7 @@ from utils.config import (
     gate_seal_address,
     prompt_bool,
     get_priority_fee,
+    get_max_fee,
     get_is_live,
     get_deployer_account,
     deployer_eoa,
@@ -39,6 +40,7 @@ def get_tx_params(deployer):
     tx_params = {"from": deployer}
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
+        tx_params["max_fee"] = get_max_fee()
     return tx_params
 
 
