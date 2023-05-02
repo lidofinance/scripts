@@ -439,7 +439,7 @@ contract ShapellaUpgradeTemplate {
     //
     uint256 internal constant HC_FOR_AO_EPOCHS_PER_FRAME = 225;
     uint256 internal constant HC_FOR_VEBO_EPOCHS_PER_FRAME = 75;
-    uint256 internal constant HC_FAST_LANE_LENGTH_SLOTS = 30;
+    uint256 internal constant HC_FAST_LANE_LENGTH_SLOTS = 100;
     // HC_FAR_FUTURE_EPOCH calculated by `_computeEpochAtTimestamp(type(uint64).max)` as in HashConsensus
     uint256 internal constant HC_FAR_FUTURE_EPOCH = 48038396021100853;
 
