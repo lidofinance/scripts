@@ -14,7 +14,7 @@ def main():
     deployer = get_deployer_account()
     assert deployer == deployer_eoa, "Need to set DEPLOYER to the deployer_eoa"
 
-    template = ShapellaUpgradeTemplate.deploy("INVALID_ARG_REPLACE_ME", {"from": deployer})
+    template = ShapellaUpgradeTemplate.deploy({"from": deployer})
     print(f"Shapella upgrade template is deployed at {template}")
 
     ShapellaUpgradeTemplate.publish_source(template)
