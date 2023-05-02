@@ -63,7 +63,7 @@ from utils.brownie_prelude import *
 
 
 update_lido_app = {
-    "new_address": "0x11638262f6d34D807aE469166f0368c8Dc2a5689",
+    "new_address": "0x17144556fd3424EDC8Fc8A4C940B2D04936d17eb",
     # TODO: set content_uri after Aragon UI deployment
     "content_uri": "0x697066733a516d63354a64475a3576326844466d64516844535a70514a6554394a55364e34386d5678546474685667677a766d",
     "id": "0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
@@ -71,7 +71,7 @@ update_lido_app = {
 }
 
 update_nor_app = {
-    "new_address": "0x8e409ad726C887890d8129530B352A6fDf0e25Ad",
+    "new_address": "0x8538930c385C0438A357d2c25CB3eAD95Ab6D8ed",
     # TODO: set content_uri after Aragon UI deployment
     "content_uri": "0x697066733a516d5342796b4e4a61363734547146334b7366677642666444315a545158794c4a6e707064776b36477463534c4d",
     "id": "0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d",
@@ -79,7 +79,7 @@ update_nor_app = {
 }
 
 update_oracle_app = {
-    "new_address": "0x599E51510719e94525eF406d4519949eca4242ac",
+    "new_address": "0xa29b819654cE6224A222bb5f586920105E2D7E0E",
     # TODO: set content_uri after Aragon UI deployment
     "content_uri": "0x697066733a516d66414348396f5348465767563831446838525356636761564264686b5a7548685a5932695a76357379424a4b",
     "id": "0x8b47ba2a8454ec799cd91646e7ec47168e91fd139b23f017455f3e5898aaba93",

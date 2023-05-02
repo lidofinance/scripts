@@ -10,6 +10,8 @@ development:
     id: mainnet-fork
     name: Ganache-CLI (Mainnet Fork)
     timeout: 180
+    # https://github.com/mds1/multicall#multicall2-contract-addresses
+    multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
   - cmd: ./ganache.sh
     cmd_settings:
       accounts: 10
