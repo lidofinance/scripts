@@ -2,12 +2,12 @@ import pytest
 from brownie import Contract, interface, web3  # type: ignore
 from brownie.network.account import Account
 
-from utils.config import GATE_SEAL_EXPIRY_TIMESTAMP, GATE_SEAL_PAUSE_DURATION_SECONDS, contracts, gate_seal_address, gateseal_committee
+from utils.config import GATE_SEAL_EXPIRY_TIMESTAMP, GATE_SEAL_PAUSE_DURATION_SECONDS, contracts, gate_seal_address, gate_seal_committee_address
 
 
 @pytest.fixture(scope="module")
 def gate_seal_committee(accounts) -> Account:
-    return accounts.at(gateseal_committee)
+    return accounts.at(gate_seal_committee_address)
 
 
 @pytest.fixture(scope="module")
