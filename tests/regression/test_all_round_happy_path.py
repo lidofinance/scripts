@@ -30,6 +30,8 @@ def test_all_round_happy_path(accounts):
 
     print('block before: ', chain.height)
 
+    # TODO: do calculation right
+
     submit_tx = contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": amount})
 
     print('block after submit: ', chain.height)
@@ -62,7 +64,11 @@ def test_all_round_happy_path(accounts):
 
     assert total_supply_after_submit == total_supply_before_submit + amount
     assert buffered_ether_after_submit == buffered_ether_before_submit + amount
-    assert staking_limit_after_submit == staking_limit_before_submit - amount + growthPerBlock
+
+    if (staking_limit_before_submit >= stakeLimitInfo["maxStakeLimit"] - growthPerBlock):
+        assert staking_limit_after_submit == staking_limit_before_submit - amount
+    else:
+        assert staking_limit_after_submit == staking_limit_before_submit - amount + growthPerBlock
 
     # Depositing ETH
     dsm = accounts.at(contracts.deposit_security_module.address, force=True)
