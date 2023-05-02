@@ -127,9 +127,12 @@ class Helpers:
     @staticmethod
     def _prefetch_contracts_from_etherscan():
         if not Helpers._etherscan_is_fetched:
+            print(f"prefetch Lido V2 contracts from Etherscan to parse events")
+
             Contract.from_explorer(lido_dao_validators_exit_bus_oracle)
             Contract.from_explorer(lido_dao_withdrawal_queue)
             Contract.from_explorer(lido_dao_staking_router)
+
             Helpers._etherscan_is_fetched = True
 
 
