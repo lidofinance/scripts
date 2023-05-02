@@ -11,10 +11,13 @@ def extra_data_service():
 
 
 def test_accounting_oracle_too_node_ops_per_extra_data_item(extra_data_service):
-    nos_per_item_count = MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT
+    nos_per_item_count = 30
     item_count = MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT
     extra_data = extra_data_service.collect(
-        {(1, i): i for i in range(10)}, {(1, i): i for i in range(30)}, item_count, nos_per_item_count
+        {(1, i): i for i in range(nos_per_item_count)},
+        {(1, i): i for i in range(nos_per_item_count)},
+        item_count,
+        nos_per_item_count,
     )
 
     oracle_report(
