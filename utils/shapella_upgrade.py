@@ -61,32 +61,6 @@ def prepare_upgrade_locator_impl(admin):
     print(f"=== Upgrade lido locator implementation to {lido_dao_lido_locator_implementation} ===")
 
 
-def prepare_transfer_ownership_to_template_no_locator(owner, template):
-    admin_role = interface.AccessControlEnumerable(contracts.burner).DEFAULT_ADMIN_ROLE()
-    tx_params = get_tx_params(owner)
-
-    def transfer_oz_admin_to_template(contract):
-        assert interface.AccessControlEnumerable(contract).getRoleMember(admin_role, 0) == owner
-        interface.AccessControlEnumerable(contract).grantRole(admin_role, template, tx_params)
-        interface.AccessControlEnumerable(contract).revokeRole(admin_role, owner, tx_params)
-
-    def transfer_proxy_admin_to_template(contract):
-        assert interface.OssifiableProxy(contract).proxy__getAdmin() == owner
-        interface.OssifiableProxy(contract).proxy__changeAdmin(template, tx_params)
-
-    assert contracts.deposit_security_module.getOwner() == owner
-    contracts.deposit_security_module.setOwner(template, tx_params)
-
-    transfer_oz_admin_to_template(contracts.burner)
-    transfer_oz_admin_to_template(contracts.hash_consensus_for_accounting_oracle)
-    transfer_oz_admin_to_template(contracts.hash_consensus_for_validators_exit_bus_oracle)
-
-    transfer_proxy_admin_to_template(contracts.accounting_oracle)
-    transfer_proxy_admin_to_template(contracts.staking_router)
-    transfer_proxy_admin_to_template(contracts.validators_exit_bus_oracle)
-    transfer_proxy_admin_to_template(contracts.withdrawal_queue)
-
-
 def prepare_transfer_locator_ownership_to_template(admin, template):
     assert_locator_deployer_eoa_is_impersonated()
     interface.OssifiableProxy(contracts.lido_locator).proxy__changeAdmin(template, get_tx_params(admin))
