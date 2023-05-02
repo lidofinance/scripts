@@ -41,7 +41,7 @@ else:
 
 
 def get_is_live() -> bool:
-    dev_networks = ["development", "hardhat", "hardhat-fork", "goerli-fork", "local-fork"]
+    dev_networks = ["development", "hardhat", "hardhat-fork", "goerli-fork", "local-fork", "mainnet-fork"]
     return network.show_active() not in dev_networks
 
 

@@ -114,6 +114,7 @@ WITHDRAWAL_QUEUE_ERC721_BASE_URI = ""
 # GateSeal
 GATE_SEAL_PAUSE_DURATION_SECONDS = 6 * 24 * 60 * 60  # 6 days
 GATE_SEAL_EXPIRY_TIMESTAMP = 1714521600  # 2024-05-01 00:00GMT
+gate_seal_committee_address="0x8772E3a2D86B9347A2688f9bc1808A6d8917760C"
 
 # Aragon Permissions
 expected_permissions_after_votes = {

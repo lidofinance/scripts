@@ -2,11 +2,12 @@ import pytest
 
 from brownie import reverts, accounts, chain  # type: ignore
 from utils.test.oracle_report_helpers import oracle_report, ZERO_BYTES32
+from brownie.network.account import Account
 
 from utils.test.helpers import almostEqEth, ETH
 from utils.config import (
+    gate_seal_committee_address,
     contracts,
-    deployer_eoa,
     lido_dao_withdrawal_queue,
     lido_dao_validators_exit_bus_oracle,
     gate_seal_address,
@@ -23,19 +24,24 @@ def shared_setup(fn_isolation):
     pass
 
 
-def test_gate_seal_expiration():
+@pytest.fixture(scope="module")
+def gate_seal_committee(accounts) -> Account:
+    return accounts.at(gate_seal_committee_address, force=True)
+
+
+def test_gate_seal_expiration(gate_seal_committee):
     assert not contracts.gate_seal.is_expired()
     time = chain.time()
-    chain.sleep(GATE_SEAL_EXPIRY_TIMESTAMP - time)
+    chain.sleep(GATE_SEAL_EXPIRY_TIMESTAMP - time + 1)
     chain.mine(1)
     assert contracts.gate_seal.is_expired()
     with reverts("gate seal: expired"):
         contracts.gate_seal.seal(
-            [lido_dao_withdrawal_queue, lido_dao_validators_exit_bus_oracle], {"from": deployer_eoa}
+            [lido_dao_withdrawal_queue, lido_dao_validators_exit_bus_oracle], {"from": gate_seal_committee}
         )
 
 
-def test_gate_seal_scenario(steth_holder):
+def test_gate_seal_scenario(steth_holder, gate_seal_committee):
     account = accounts.at(steth_holder, force=True)
     REQUESTS_COUNT = 2
     REQUEST_AMOUNT = ETH(1)
@@ -70,13 +76,13 @@ def test_gate_seal_scenario(steth_holder):
 
     """ sealing """
     sealables = [lido_dao_withdrawal_queue, lido_dao_validators_exit_bus_oracle]
-    seal_tx = contracts.gate_seal.seal(sealables, {"from": deployer_eoa})
+    seal_tx = contracts.gate_seal.seal(sealables, {"from": gate_seal_committee})
 
     assert seal_tx.events.count("Sealed") == 2
     for i, seal_event in enumerate(seal_tx.events["Sealed"]):
         assert seal_event["gate_seal"] == gate_seal_address
         assert seal_event["sealed_for"] == GATE_SEAL_PAUSE_DURATION_SECONDS
-        assert seal_event["sealed_by"] == deployer_eoa
+        assert seal_event["sealed_by"] == gate_seal_committee
         assert seal_event["sealable"] == sealables[i]
         assert seal_event["sealed_at"] == seal_tx.timestamp
 
@@ -87,7 +93,7 @@ def test_gate_seal_scenario(steth_holder):
 
     assert contracts.gate_seal.is_expired()
     with reverts("gate seal: expired"):
-        seal_tx = contracts.gate_seal.seal(sealables, {"from": deployer_eoa})
+        seal_tx = contracts.gate_seal.seal(sealables, {"from": gate_seal_committee})
 
     assert contracts.withdrawal_queue.isPaused()
     assert contracts.withdrawal_queue.getResumeSinceTimestamp() == seal_tx.timestamp + GATE_SEAL_PAUSE_DURATION_SECONDS

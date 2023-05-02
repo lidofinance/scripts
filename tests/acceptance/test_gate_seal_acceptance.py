@@ -2,12 +2,12 @@ import pytest
 from brownie import Contract, interface, web3  # type: ignore
 from brownie.network.account import Account
 
-from utils.config import GATE_SEAL_EXPIRY_TIMESTAMP, GATE_SEAL_PAUSE_DURATION_SECONDS, contracts, gate_seal_address
+from utils.config import GATE_SEAL_EXPIRY_TIMESTAMP, GATE_SEAL_PAUSE_DURATION_SECONDS, contracts, gate_seal_address, gateseal_committee
 
 
 @pytest.fixture(scope="module")
-def gate_seal_committee() -> Account:
-    ...
+def gate_seal_committee(accounts) -> Account:
+    return accounts.at(gateseal_committee)
 
 
 @pytest.fixture(scope="module")
@@ -15,7 +15,6 @@ def contract() -> Contract:
     return interface.GateSeal(gate_seal_address)
 
 
-@pytest.mark.skip(reason="No actual committee multisig yet")
 def test_gate_seal(contract: Contract, gate_seal_committee: Account):
     assert contract.get_sealing_committee() == gate_seal_committee
 
