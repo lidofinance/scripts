@@ -461,7 +461,7 @@ contract ShapellaUpgradeTemplate {
     uint256 internal constant SANITY_LIMIT_annualBalanceIncreaseBPLimit = 1000;
     uint256 internal constant SANITY_LIMIT_simulatedShareRateDeviationBPLimit = 50;
     uint256 internal constant SANITY_LIMIT_maxValidatorExitRequestsPerReport = 600;
-    uint256 internal constant SANITY_LIMIT_maxAccountingExtraDataListItemsCount = 200;
+    uint256 internal constant SANITY_LIMIT_maxAccountingExtraDataListItemsCount = 2;
     uint256 internal constant SANITY_LIMIT_maxNodeOperatorsPerExtraDataItemCount = 100;
     uint256 internal constant SANITY_LIMIT_requestTimestampMargin = 7680;
     uint256 internal constant SANITY_LIMIT_maxPositiveTokenRebase = 750000;
