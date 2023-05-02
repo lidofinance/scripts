@@ -99,8 +99,6 @@ def prepare_for_shapella_upgrade_voting(silent=False):
     # To get sure the "stone" is in place
     assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
 
-    prepare_transfer_ownership_to_template_no_locator(deployer_eoa, lido_dao_template_address)
-
     prepare_upgrade_locator_impl(deployer_eoa_locator)
 
     prepare_transfer_locator_ownership_to_template(deployer_eoa_locator, lido_dao_template_address)

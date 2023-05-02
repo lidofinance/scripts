@@ -62,7 +62,6 @@ from utils.test.event_validators.aragon import validate_push_to_repo_event, vali
 from scripts.upgrade_shapella import start_vote
 from utils.shapella_upgrade import (
     prepare_upgrade_locator_impl,
-    prepare_transfer_ownership_to_template_no_locator,
     prepare_transfer_locator_ownership_to_template,
 )
 
@@ -259,7 +258,6 @@ def test_vote(
         template = contracts.shapella_upgrade_template
     else:
         template = contracts.shapella_upgrade_template
-        prepare_transfer_ownership_to_template_no_locator(deployer_eoa, template)
         prepare_upgrade_locator_impl(deployer_eoa_locator)
         prepare_transfer_locator_ownership_to_template(deployer_eoa_locator, template)
         tx_params = {"from": ldo_holder_address_for_tests}
