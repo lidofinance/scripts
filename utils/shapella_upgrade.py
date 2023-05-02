@@ -51,12 +51,6 @@ def assert_locator_deployer_eoa_is_impersonated():
     assert get_deployer_account() != deployer_eoa_locator
 
 
-def prepare_deploy_upgrade_template(deployer):
-    template = ShapellaUpgradeTemplate.deploy(get_tx_params(deployer))
-    print(f"=== Deployed upgrade template {template.address} ===")
-    return template
-
-
 def prepare_upgrade_locator_impl(admin):
     assert_locator_deployer_eoa_is_impersonated()
 
@@ -105,13 +99,10 @@ def prepare_for_shapella_upgrade_voting(silent=False):
     # To get sure the "stone" is in place
     assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
 
-    # Deploy the upgrade template if needed
-    template = prepare_deploy_upgrade_template(deployer_eoa)
-
-    prepare_transfer_ownership_to_template_no_locator(deployer_eoa, template.address)
+    prepare_transfer_ownership_to_template_no_locator(deployer_eoa, lido_dao_template_address)
 
     prepare_upgrade_locator_impl(deployer_eoa_locator)
 
-    prepare_transfer_locator_ownership_to_template(deployer_eoa_locator, template.address)
+    prepare_transfer_locator_ownership_to_template(deployer_eoa_locator, lido_dao_template_address)
 
-    return template
+    return ShapellaUpgradeTemplate.at(lido_dao_template_address)
