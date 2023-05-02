@@ -51,6 +51,8 @@ def steth_whale(accounts) -> Account:
 
 
 class Helpers:
+    _etherscan_is_fetched: bool = False
+
     @staticmethod
     def filter_events_from(addr, events):
         return list(filter(lambda evt: evt.address == addr, events))
@@ -112,12 +114,23 @@ class Helpers:
             tx = dao_voting.executeVote(vote_id, {"from": accounts[0]})
             print(f"vote #{vote_id} executed")
             execution_transactions.append(tx)
+
+        Helpers._prefetch_contracts_from_etherscan()
+
         return execution_transactions
 
     @staticmethod
     def is_executed(vote_id, dao_voting):
         vote_status = dao_voting.getVote(vote_id)
         return vote_status[1]
+
+    @staticmethod
+    def _prefetch_contracts_from_etherscan():
+        if not Helpers._etherscan_is_fetched:
+            Contract.from_explorer(lido_dao_validators_exit_bus_oracle)
+            Contract.from_explorer(lido_dao_withdrawal_queue)
+            Contract.from_explorer(lido_dao_staking_router)
+            Helpers._etherscan_is_fetched = True
 
 
 @pytest.fixture(scope="session")
