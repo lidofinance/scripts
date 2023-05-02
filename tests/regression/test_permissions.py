@@ -8,6 +8,7 @@ from utils.test.event_validators.permission import Permission
 from utils.config import contracts, oracle_committee, gate_seal_address, deposit_security_module_guardians
 from configs.config_mainnet import (
     lido_easytrack_evmscriptexecutor, lido_easytrack_evmscriptexecutor)
+from utils.test.helpers import ZERO_BYTES32
 
 
 @pytest.fixture(scope="module")
@@ -201,7 +202,10 @@ def test_permissions_after_vote(protocol_permissions):
 
             for role, holders in permissions_config["roles"].items():
                 role_keccak = web3.keccak(
-                    text=role) if role != "DEFAULT_ADMIN_ROLE" else "0x00"
+                    text=role).hex() if role != "DEFAULT_ADMIN_ROLE" else ZERO_BYTES32.hex()
+
+                role_signature = permissions_config["contract"].signatures[role]
+                assert permissions_config["contract"].get_method_object(role_signature)() == role_keccak
 
                 assert permissions_config["contract"].getRoleMemberCount(role_keccak) == len(
                     holders
