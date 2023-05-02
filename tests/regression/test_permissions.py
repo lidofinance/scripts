@@ -25,7 +25,6 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "REQUEST_BURN_MY_STETH_ROLE": [],
-                "RECOVER_ASSETS_ROLE": [],
                 "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry],
             },
         },
@@ -111,7 +110,7 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "ALL_LIMITS_MANAGER_ROLE": [],
-                "CHURN_VALIDATORS_PER_DAY_LIMIT_MANGER_ROLE": [],
+                "CHURN_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE": [],
                 "ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE": [],
                 "ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE": [],
                 "SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE": [],
