@@ -18,7 +18,9 @@ VALIDATOR_INDEX_LENGTH = 8
 VALIDATOR_PUB_KEY_LENGTH = 48
 
 
-def encode_data(validators_to_eject: list[tuple[NodeOperatorGlobalIndex, LidoValidator]]):
+def encode_data(
+    validators_to_eject: list[tuple[NodeOperatorGlobalIndex, LidoValidator]], sort=True
+):
     """
     Encodes report data for Exit Bus Contract into bytes.
 
@@ -26,14 +28,18 @@ def encode_data(validators_to_eject: list[tuple[NodeOperatorGlobalIndex, LidoVal
     |  3 bytes   |  5 bytes   |     8 bytes      |    48 bytes     |
     |  moduleId  |  nodeOpId  |  validatorIndex  | validatorPubkey |
     """
-    validators = sort_validators_to_eject(validators_to_eject)
 
-    result = b''
+    if sort:
+        validators = sort_validators_to_eject(validators_to_eject)
+    else:
+        validators = validators_to_eject
+
+    result = b""
 
     for (module_id, op_id), validator in validators:
-        result += module_id.to_bytes(MODULE_ID_LENGTH, 'big')
-        result += op_id.to_bytes(NODE_OPERATOR_ID_LENGTH, 'big')
-        result += int(validator.index).to_bytes(VALIDATOR_INDEX_LENGTH, 'big')
+        result += module_id.to_bytes(MODULE_ID_LENGTH, "big")
+        result += op_id.to_bytes(NODE_OPERATOR_ID_LENGTH, "big")
+        result += int(validator.index).to_bytes(VALIDATOR_INDEX_LENGTH, "big")
 
         pubkey_bytes = bytes.fromhex(str(validator.pubkey)[2:])
 

@@ -302,3 +302,40 @@ def test_handle_consensus_report_data_second_exit(contract, ref_slot):
         )
     ):
         contract.submitReportData(report, contract_version, {"from": submitter})
+
+
+def test_handle_consensus_report_data_invalid_request_order(contract, ref_slot):
+    no_global_index = (_, no_id) = (1, 1)
+    validator_id = 1
+    validator_key = contracts.node_operators_registry.getSigningKey(no_id, validator_id)[0]
+    validator = LidoValidator(validator_id, validator_key)
+    validator_2 = LidoValidator(
+        2, contracts.node_operators_registry.getSigningKey(no_id, validator_id + 1)[0]
+    )
+
+    contract_version = contract.getContractVersion()
+    consensus_version = contract.getConsensusVersion()
+
+    data, data_format = encode_data(
+        [(no_global_index, validator_2), ((no_global_index), validator)], sort=False
+    )
+    report = (
+        consensus_version,
+        ref_slot,
+        2,
+        data_format,
+        data,
+    )
+    report_data = encode_data_from_abi(
+        report, contracts.validators_exit_bus_oracle.abi, "submitReportData"
+    )
+    report_hash = web3.keccak(report_data)
+    submitter = reach_consensus(
+        ref_slot,
+        report_hash,
+        consensus_version,
+        contracts.hash_consensus_for_validators_exit_bus_oracle,
+    )
+
+    with reverts(encode_error("InvalidRequestsDataSortOrder()")):
+        contract.submitReportData(report, contract_version, {"from": submitter})
