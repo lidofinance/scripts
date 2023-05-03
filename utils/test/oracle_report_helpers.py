@@ -59,24 +59,23 @@ def prepare_accounting_report(
 def prepare_exit_bus_report(validators_to_exit, ref_slot):
     consensus_version = contracts.validators_exit_bus_oracle.getConsensusVersion()
     data, data_format = encode_data(validators_to_exit)
-    report = (
-        consensus_version, ref_slot, len(validators_to_exit), data_format, data
-    )
-    report_data = encode_data_from_abi(report, contracts.validators_exit_bus_oracle.abi, 'submitReportData')
+    report = (consensus_version, ref_slot, len(validators_to_exit), data_format, data)
+    report_data = encode_data_from_abi(report, contracts.validators_exit_bus_oracle.abi, "submitReportData")
     if not validators_to_exit:
         report_data = report_data[:-32]
-        assert len(
-            report_data) == 224, 'We cut off the last 32 bytes because there is a problem with the encoding of empty bytes array in the eth_abi package. ' \
-                                 'Remove this condition when eth_abi is bumped to the latest version.'
+        assert len(report_data) == 224, (
+            "We cut off the last 32 bytes because there is a problem with the encoding of empty bytes array in the eth_abi package. "
+            "Remove this condition when eth_abi is bumped to the latest version."
+        )
     report_hash = web3.keccak(report_data)
     return report, report_hash
 
 
 def encode_data_from_abi(data, abi, func_name):
-    report_function_abi = next(x for x in abi if x.get('name') == func_name)
-    report_data_abi = report_function_abi['inputs'][0]['components']  # type: ignore
-    report_str_abi = ','.join(map(lambda x: x['type'], report_data_abi))  # type: ignore
-    return encode([f'({report_str_abi})'], [data])
+    report_function_abi = next(x for x in abi if x.get("name") == func_name)
+    report_data_abi = report_function_abi["inputs"][0]["components"]  # type: ignore
+    report_str_abi = ",".join(map(lambda x: x["type"], report_data_abi))  # type: ignore
+    return encode([f"({report_str_abi})"], [data])
 
 
 def get_finalization_batches(
@@ -245,10 +244,14 @@ def wait_to_next_available_report_time(consensus_contract):
 def oracle_report(
     *,
     cl_diff=ETH(10),
+    cl_appeared_validators=0,
     exclude_vaults_balances=False,
     report_el_vault=True,
+    elRewardsVaultBalance=None,
     report_withdrawals_vault=True,
+    withdrawalVaultBalance=None,
     simulation_block_identifier=None,
+    skip_withdrawals=False,
     wait_to_next_report_time=True,
     extraDataFormat=0,
     extraDataHash=ZERO_BYTES32,
@@ -257,6 +260,9 @@ def oracle_report(
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,
+    sharesRequestedToBurn=None,
+    withdrawalFinalizationBatches=[],
+    simulatedShareRate=None,
 ):
     if wait_to_next_report_time:
         """fast forwards time to next report, compiles report, pushes through consensus and to AccountingOracle"""
@@ -264,17 +270,21 @@ def oracle_report(
 
     (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
 
-    elRewardsVaultBalance = eth_balance(contracts.execution_layer_rewards_vault.address)
-    withdrawalVaultBalance = eth_balance(contracts.withdrawal_vault.address)
-    # exclude_vaults_balances safely forces LIDO to see vault balances as empty allowing zero/negative rebase
-
-    (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()
     (_, beaconValidators, beaconBalance) = contracts.lido.getBeaconStat()
 
-    preTotalPooledEther = contracts.lido.getTotalPooledEther()
-
     postCLBalance = beaconBalance + cl_diff
+    postBeaconValidators = beaconValidators + cl_appeared_validators
 
+    elRewardsVaultBalance = (
+        eth_balance(contracts.execution_layer_rewards_vault.address)
+        if elRewardsVaultBalance is None
+        else elRewardsVaultBalance
+    )
+    withdrawalVaultBalance = (
+        eth_balance(contracts.withdrawal_vault.address) if withdrawalVaultBalance is None else withdrawalVaultBalance
+    )
+
+    # exclude_vaults_balances safely forces LIDO to see vault balances as empty allowing zero/negative rebase
     # simulate_reports needs proper withdrawal and elRewards vaults balances
     if exclude_vaults_balances:
         if not report_withdrawals_vault or not report_el_vault:
@@ -288,28 +298,42 @@ def oracle_report(
     if not report_el_vault:
         elRewardsVaultBalance = 0
 
-    (postTotalPooledEther, postTotalShares, withdrawals, elRewards) = simulate_report(
-        refSlot=refSlot,
-        beaconValidators=beaconValidators,
-        postCLBalance=postCLBalance,
-        withdrawalVaultBalance=withdrawalVaultBalance,
-        elRewardsVaultBalance=elRewardsVaultBalance,
-        block_identifier=simulation_block_identifier,
-    )
-    simulatedShareRate = postTotalPooledEther * SHARE_RATE_PRECISION // postTotalShares
-    sharesRequestedToBurn = coverShares + nonCoverShares
+    if sharesRequestedToBurn is None:
+        (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()
+        sharesRequestedToBurn = coverShares + nonCoverShares
 
-    finalization_batches = get_finalization_batches(simulatedShareRate, withdrawals, elRewards)
+    is_bunker = False
 
-    is_bunker = preTotalPooledEther > postTotalPooledEther
+    if not skip_withdrawals:
+        (postTotalPooledEther, postTotalShares, withdrawals, elRewards) = simulate_report(
+            refSlot=refSlot,
+            beaconValidators=postBeaconValidators,
+            postCLBalance=postCLBalance,
+            withdrawalVaultBalance=withdrawalVaultBalance,
+            elRewardsVaultBalance=elRewardsVaultBalance,
+            block_identifier=simulation_block_identifier,
+        )
+        if simulatedShareRate is None:
+            simulatedShareRate = postTotalPooledEther * SHARE_RATE_PRECISION // postTotalShares
+
+        withdrawalFinalizationBatches = (
+            get_finalization_batches(simulatedShareRate, withdrawals, elRewards)
+            if withdrawalFinalizationBatches == []
+            else withdrawalFinalizationBatches
+        )
+
+        preTotalPooledEther = contracts.lido.getTotalPooledEther()
+        is_bunker = preTotalPooledEther > postTotalPooledEther
+    elif simulatedShareRate is None:
+        simulatedShareRate = 0
 
     return push_oracle_report(
         refSlot=refSlot,
         clBalance=postCLBalance,
-        numValidators=beaconValidators,
+        numValidators=postBeaconValidators,
         withdrawalVaultBalance=withdrawalVaultBalance,
         sharesRequestedToBurn=sharesRequestedToBurn,
-        withdrawalFinalizationBatches=finalization_batches,
+        withdrawalFinalizationBatches=withdrawalFinalizationBatches,
         elRewardsVaultBalance=elRewardsVaultBalance,
         simulatedShareRate=simulatedShareRate,
         extraDataFormat=extraDataFormat,
