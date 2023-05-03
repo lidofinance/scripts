@@ -13,7 +13,7 @@ from configs.config_shapella_other_mainnet import expected_permissions_after_vot
 
 
 def has_permissions(app, role, entity):
-    return contracts.acl.hasPermission(entity, app, role)
+    return contracts.acl.hasPermission(entity, app, role) or contracts.acl.getPermissionParamsLength(entity, app, role) > 0
 
 
 def assert_has_permissions(app, role, entity, role_name=None, app_name=None):
