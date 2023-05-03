@@ -5,6 +5,7 @@ Tests for voting goerli_change_trp_manager.
 from scripts.vote_2023_05_03_goerli import start_vote
 
 from brownie.network.transaction import TransactionReceipt
+from utils.config import network_name
 
 from utils.test.tx_tracing_helpers import *
 
@@ -17,6 +18,8 @@ def test_vote(
     dao_voting,
     trp_factory,
 ):
+    if not network_name() in ("goerli", "goerli-fork"):
+        return
 
     expected_manager_before = "0xE80efD4bA1E683DcB681715EEfDFA741B99828e8"
     expected_manager_after = "0xde0a8383c0c16c472bdf540e38ad9d85b12eff1e"
