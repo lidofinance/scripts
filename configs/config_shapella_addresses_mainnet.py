@@ -2,19 +2,31 @@
 # New entires for the Shapella Upgrade
 #
 # Existed contracts
+deposit_contract = "0x00000000219ab540356cBB839Cbe05303d7705Fa"
+
 lido_easytrack_increase_nop_staking_limit_factory = "0xFeBd8FAC16De88206d4b18764e826AF38546AfE0"
-lido_dao_aragon_repo = "0xa8A358E9bbB9fF60D4B89CBE5b2FE88f98b51B9D"
+
+# lido_dao_aragon_repo_implementation is common for Lido, NodeOperatorsRegistry, Oracle aragon apps
+lido_dao_aragon_repo_implementation = "0xa8A358E9bbB9fF60D4B89CBE5b2FE88f98b51B9D"
+
+# For lido_dao_evm_script_registry see Aragon Agent 0x853cc0D5917f49B57B8e9F89e491F5E18919093A
 lido_dao_evm_script_registry = "0x853cc0D5917f49B57B8e9F89e491F5E18919093A"
+
+
+# See getEVMScriptExecutor(0x00000001) of any Aragon App
+# or callsScript of lido_easytrack_evmscriptexecutor
+lido_dao_calls_script = "0x5cEb19e1890f677c3676d5ecDF7c501eBA01A054"
+
 lido_dao_voting_implementation_address = "0x72fb5253AD16307B9E773d2A78CaC58E309d5Ba4"
 lido_dao_kernel_implementation = "0x2b33CF282f867A7FF693A66e11B0FcC5552e4425"
-lido_dao_calls_script = "0x5cEb19e1890f677c3676d5ecDF7c501eBA01A054"
 lido_dao_acl_implementation_address = "0x9f3b9198911054B122fDb865f8A5Ac516201c339"
-lido_dao_legacy_oracle_implementation_v1 = "0x1430194905301504e8830ce4B0b0df7187E84AbD"
+
 lido_dao_steth_implementation_address_v1 = "0x47EbaB13B806773ec2A2d16873e2dF770D130b50"
+lido_dao_legacy_oracle_implementation_v1 = "0x1430194905301504e8830ce4B0b0df7187E84AbD"
 lido_dao_node_operators_registry_implementation_v1 = "0x5d39ABaa161e622B99D45616afC8B837E9F19a25"
+
 lido_dao_deposit_security_module_address_v1 = "0x710B3303fB508a84F10793c1106e32bE873C24cd"
 wsteth_token_address = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
-deposit_contract = "0x00000000219ab540356cBB839Cbe05303d7705Fa"
 lido_dao_withdrawal_vault = "0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f"
 
 #

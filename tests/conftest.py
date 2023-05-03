@@ -203,7 +203,7 @@ def parse_events_from_local_abi():
         "NodeOperatorsRegistry": [lido_dao_node_operators_registry, lido_dao_node_operators_registry_implementation],
         "OracleDaemonConfig": [oracle_daemon_config],
         "OracleReportSanityChecker": [lido_dao_oracle_report_sanity_checker],
-        "Repo": [lido_dao_aragon_repo],
+        "Repo": [lido_dao_aragon_repo_implementation],
         "StakingRouter": [lido_dao_staking_router, lido_dao_staking_router_implementation],
         "ValidatorsExitBusOracle": [
             lido_dao_validators_exit_bus_oracle,
