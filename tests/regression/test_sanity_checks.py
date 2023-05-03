@@ -51,13 +51,14 @@ def extra_data_service():
 
 
 def test_cant_report_more_validators_than_deposited():
+    (deposited, clValidators, _) = contracts.lido.getBeaconStat()
     with reverts("REPORTED_MORE_DEPOSITED"):
-        oracle_report(cl_diff=ETH(100), cl_appeared_validators=1000, skip_withdrawals=True, silent=True)
+        oracle_report(cl_appeared_validators=deposited - clValidators + 1, skip_withdrawals=True, silent=True)
 
 
 def test_validators_cant_decrease():
     with reverts("REPORTED_LESS_VALIDATORS"):
-        oracle_report(cl_diff=ETH(100), cl_appeared_validators=-1, skip_withdrawals=True, silent=True)
+        oracle_report(cl_appeared_validators=-1, skip_withdrawals=True, silent=True)
 
 
 def test_too_large_cl_increase(pre_cl_balance):
