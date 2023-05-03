@@ -7,7 +7,7 @@ from brownie import web3
 from utils.config import contracts
 from utils.evm_script import encode_error
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
-from utils.test.oracle_report_helpers import oracle_report
+from utils.test.oracle_report_helpers import oracle_report, prepare_exit_bus_report
 
 DEPOSIT_AMOUNT = 100 * 10 ** 18
 
@@ -117,6 +117,26 @@ class TestEventsEmitted:
         helpers.assert_single_event_named("Resumed", tx, {})
         assert not contracts.withdrawal_queue.isPaused()
 
+    def test_pause_resume_validators_exit_bus(self, helpers, stranger):
+        inf = contracts.validators_exit_bus_oracle.PAUSE_INFINITELY()
+        contracts.validators_exit_bus_oracle.grantRole(
+            web3.keccak(text="PAUSE_ROLE"),
+            stranger,
+            {"from": contracts.agent},
+        )
+        tx = contracts.validators_exit_bus_oracle.pauseFor(inf, {"from": stranger})
+        helpers.assert_single_event_named("Paused", tx, {"duration": inf})
+        assert contracts.validators_exit_bus_oracle.isPaused()
+
+        contracts.validators_exit_bus_oracle.grantRole(
+            web3.keccak(text="RESUME_ROLE"),
+            stranger,
+            {"from": contracts.agent},
+        )
+        tx = contracts.validators_exit_bus_oracle.resume({"from": stranger})
+        helpers.assert_single_event_named("Resumed", tx, {})
+        assert not contracts.validators_exit_bus_oracle.isPaused()
+
 
 class TestRevertedSecondCalls:
     def test_revert_second_stop_resume(self):
@@ -194,6 +214,26 @@ class TestRevertedSecondCalls:
         contracts.withdrawal_queue.resume({"from": stranger})
         with brownie.reverts(encode_error('PausedExpected()')):
             contracts.withdrawal_queue.resume({"from": stranger})
+
+    def test_revert_second_pause_resume_validators_exit_bus(self, helpers, stranger):
+        inf = contracts.validators_exit_bus_oracle.PAUSE_INFINITELY()
+        contracts.validators_exit_bus_oracle.grantRole(
+            web3.keccak(text="PAUSE_ROLE"),
+            stranger,
+            {"from": contracts.agent},
+        )
+        contracts.validators_exit_bus_oracle.pauseFor(inf, {"from": stranger})
+        with brownie.reverts(encode_error('ResumedExpected()')):
+            contracts.validators_exit_bus_oracle.pauseFor(inf, {"from": stranger})
+
+        contracts.validators_exit_bus_oracle.grantRole(
+            web3.keccak(text="RESUME_ROLE"),
+            stranger,
+            {"from": contracts.agent},
+        )
+        contracts.validators_exit_bus_oracle.resume({"from": stranger})
+        with brownie.reverts(encode_error('PausedExpected()')):
+            contracts.validators_exit_bus_oracle.resume({"from": stranger})
 
 
 # Lido contract tests
@@ -326,3 +366,42 @@ def test_stopped_lido_cant_withdraw(stranger):
 
     with brownie.reverts("CONTRACT_IS_STOPPED"):
         contracts.withdrawal_queue.requestWithdrawals([DEPOSIT_AMOUNT - 1], stranger, {"from": stranger})
+
+
+# Validators exit bus tests
+
+def prepare_report():
+    ref_slot, _ = contracts.hash_consensus_for_validators_exit_bus_oracle.getCurrentFrame()
+    consensus_version = contracts.validators_exit_bus_oracle.getConsensusVersion()
+    items, hash = prepare_exit_bus_report([], ref_slot)
+    fast_lane_members, _ = contracts.hash_consensus_for_validators_exit_bus_oracle.getFastLaneMembers()
+    for m in fast_lane_members:
+        contracts.hash_consensus_for_validators_exit_bus_oracle.submitReport(ref_slot, hash, consensus_version, {"from": m})
+    return items, m
+
+
+def pause_validators_exit_bus(stranger):
+    contracts.validators_exit_bus_oracle.grantRole(
+        web3.keccak(text="PAUSE_ROLE"),
+        stranger,
+        {"from": contracts.agent},
+    )
+    inf = contracts.validators_exit_bus_oracle.PAUSE_INFINITELY()
+    contracts.validators_exit_bus_oracle.pauseFor(inf, {"from": stranger})
+
+def test_paused_validators_exit_bus_cant_submit_report(stranger):
+    contract_version = contracts.validators_exit_bus_oracle.getContractVersion()
+
+    pause_validators_exit_bus(stranger)
+
+    report, member = prepare_report()
+    with brownie.reverts(encode_error('ResumedExpected()')):
+        contracts.validators_exit_bus_oracle.submitReportData(report, contract_version, {"from": member})
+
+def test_stopped_lido_can_exit_validators(stranger):
+    contract_version = contracts.validators_exit_bus_oracle.getContractVersion()
+
+    contracts.lido.stop({"from": contracts.voting})
+
+    report, member = prepare_report()
+    contracts.validators_exit_bus_oracle.submitReportData(report, contract_version, {"from": member})
