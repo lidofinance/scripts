@@ -33,12 +33,6 @@ else:
     print(f'Using {color("magenta")}config_mainnet.py{color} addresses')
     from configs.config_mainnet import *
 
-    print(f'Using {color("magenta")}config_shapella_addresses_mainnet.py{color} addresses')
-    from configs.config_shapella_addresses_mainnet import *
-
-    print(f'Using {color("magenta")}config_shapella_other_mainnet.py{color} values')
-    from configs.config_shapella_other_mainnet import *
-
 
 def get_is_live() -> bool:
     dev_networks = ["development", "hardhat", "hardhat-fork", "goerli-fork", "local-fork", "mainnet-fork"]
