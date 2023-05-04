@@ -13,6 +13,7 @@ from utils.config import (
     CHAIN_SECONDS_PER_SLOT,
     CHAIN_GENESIS_TIME,
     ORACLE_QUORUM,
+    ACCOUNTING_ORACLE_CONSENSUS_VERSION,
 )
 from utils.evm_script import encode_error
 
@@ -82,7 +83,7 @@ def test_petrified(contract):
 
 
 def test_consensus(contract):
-    assert contract.getConsensusVersion() == 1
+    assert contract.getConsensusVersion() == ACCOUNTING_ORACLE_CONSENSUS_VERSION
     assert contract.getConsensusContract() == lido_dao_hash_consensus_for_accounting_oracle
 
 

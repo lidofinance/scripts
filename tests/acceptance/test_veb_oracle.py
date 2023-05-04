@@ -14,6 +14,7 @@ from utils.config import (
     VALIDATORS_EXIT_BUS_ORACLE_EPOCHS_PER_FRAME,
     FAST_LANE_LENGTH_SLOTS,
     ORACLE_QUORUM,
+    VALIDATORS_EXIT_BUS_CONSENSUS_VERSION,
 )
 from utils.evm_script import encode_error
 
@@ -64,7 +65,7 @@ def test_petrified(contract):
 
 
 def test_consensus(contract):
-    assert contract.getConsensusVersion() == 1
+    assert contract.getConsensusVersion() == VALIDATORS_EXIT_BUS_CONSENSUS_VERSION
     assert contract.getConsensusContract() == lido_dao_hash_consensus_for_validators_exit_bus_oracle
 
 
