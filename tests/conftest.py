@@ -29,6 +29,7 @@ from utils.config import (
     lido_insurance_fund_address,
     lido_relay_allowed_list,
     dai_token_address,
+    trp_escrow_factory_address,
 )
 from utils.txs.deploy import deploy_from_prepared_tx
 
@@ -127,9 +128,16 @@ def weth_token(interface):
 def insurance_fund(interface):
     return interface.InsuranceFund(lido_insurance_fund_address)
 
+
 @pytest.fixture(scope="module")
 def relay_allowed_list(interface):
     return interface.MEVBoostRelayAllowedList(lido_relay_allowed_list)
+
+
+@pytest.fixture(scope="module")
+def trp_factory(interface):
+    return interface.VestingEscrowFactory(trp_escrow_factory_address)
+
 
 @pytest.fixture(scope="module")
 def unknown_person(accounts):

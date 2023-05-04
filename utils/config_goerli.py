@@ -38,7 +38,8 @@ finance_multisig_address = ""
 
 ldo_holder_address_for_tests = "0x709abe1880E3B7A813A297B68a1cdB8976025550"
 ldo_vote_executors_for_tests = [
-    "0xa5f1d7d49f581136cf6e58b32cbe9a2039c48ba1",
+    # THere are some issues with the addresses below
+    #"0xa5f1d7d49f581136cf6e58b32cbe9a2039c48ba1",
     "0x4333218072d5d7008546737786663c38b4d561a4",
     "0xfda7e01b2718c511bf016030010572e833c7ae6a",
 ]
@@ -46,3 +47,5 @@ ldo_vote_executors_for_tests = [
 dai_token_address = "0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844"
 
 weth_token_address = "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6"
+
+trp_escrow_factory_address = "0x8d20fd1ac547e035bf01089cfb92459054f82ff7"
