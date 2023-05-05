@@ -8,7 +8,7 @@ from utils.config import (
     lido_dao_accounting_oracle,
     oracle_committee,
     ACCOUNTING_ORACLE_EPOCHS_PER_FRAME,
-    FAST_LANE_LENGTH_SLOTS,
+    ACCOUNTING_ORACLE_FAST_LANE_LENGTH_SLOTS,
     CHAIN_SLOTS_PER_EPOCH,
     CHAIN_SECONDS_PER_SLOT,
     CHAIN_GENESIS_TIME,
@@ -126,7 +126,7 @@ def test_accounting_hash_consensus(contract):
     frame_config = consensus.getFrameConfig()
     assert frame_config["initialEpoch"] > 5254400 / CHAIN_SLOTS_PER_EPOCH
     assert frame_config["epochsPerFrame"] == ACCOUNTING_ORACLE_EPOCHS_PER_FRAME
-    assert frame_config["fastLaneLengthSlots"] == FAST_LANE_LENGTH_SLOTS
+    assert frame_config["fastLaneLengthSlots"] == ACCOUNTING_ORACLE_FAST_LANE_LENGTH_SLOTS
 
     assert consensus.getInitialRefSlot() > 5254400
 

@@ -13,6 +13,7 @@ from utils.config import (
     STAKING_MODULES_TREASURY_FEE_E20,
     STAKING_MODULE_NOR_NAME,
     STAKING_MODULE_NOR_ID,
+    STAKING_MODULE_NOR_TARGET_SHARE_BP,
     STAKING_MODULE_NOR_MODULE_FEE,
     STAKING_MODULE_NOR_TREASURY_FEE,
     WITHDRAWAL_CREDENTIALS,
@@ -83,7 +84,7 @@ def test_staking_modules(contract):
     assert curated_module["stakingModuleAddress"] == contracts.node_operators_registry
     assert curated_module["stakingModuleFee"] == STAKING_MODULE_NOR_MODULE_FEE
     assert curated_module["treasuryFee"] == STAKING_MODULE_NOR_TREASURY_FEE
-    assert curated_module["targetShare"] == 10000
+    assert curated_module["targetShare"] == STAKING_MODULE_NOR_TARGET_SHARE_BP
     assert curated_module["status"] == 0
     assert curated_module["name"] == STAKING_MODULE_NOR_NAME
     assert curated_module["lastDepositAt"] >= 1679672628

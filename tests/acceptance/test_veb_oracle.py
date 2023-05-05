@@ -12,7 +12,7 @@ from utils.config import (
     CHAIN_SECONDS_PER_SLOT,
     CHAIN_GENESIS_TIME,
     VALIDATORS_EXIT_BUS_ORACLE_EPOCHS_PER_FRAME,
-    FAST_LANE_LENGTH_SLOTS,
+    VALIDATORS_EXIT_BUS_FAST_LANE_LENGTH_SLOTS,
     ORACLE_QUORUM,
     VALIDATORS_EXIT_BUS_CONSENSUS_VERSION,
 )
@@ -98,7 +98,7 @@ def test_vebo_hash_consensus_synced_with_accounting_one(contract):
 
     assert frameConfig["initialEpoch"] == accounting_consensus.getFrameConfig()["initialEpoch"]
     assert frameConfig["epochsPerFrame"] == VALIDATORS_EXIT_BUS_ORACLE_EPOCHS_PER_FRAME
-    assert frameConfig["fastLaneLengthSlots"] == FAST_LANE_LENGTH_SLOTS
+    assert frameConfig["fastLaneLengthSlots"] == VALIDATORS_EXIT_BUS_FAST_LANE_LENGTH_SLOTS
 
     assert consensus.getInitialRefSlot() == accounting_consensus.getInitialRefSlot()
 
