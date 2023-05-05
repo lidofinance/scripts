@@ -1,17 +1,62 @@
 import warnings
+from dataclasses import astuple, dataclass
+from typing import Literal, overload
+
 from brownie import chain, web3  # type: ignore
-from brownie.exceptions import VirtualMachineError  # type: ignore
-from eth_abi import encode
+from brownie.exceptions import VirtualMachineError
+from brownie.typing import TransactionReceipt  # type: ignore
+from eth_abi.abi import encode
 from hexbytes import HexBytes
 
 from utils.config import contracts
 from utils.test.exit_bus_data import encode_data
-from utils.test.helpers import ETH, eth_balance, GWEI
+from utils.test.helpers import ETH, GWEI, eth_balance
 
 ZERO_HASH = bytes([0] * 32)
 ZERO_BYTES32 = HexBytes(ZERO_HASH)
 ONE_DAY = 1 * 24 * 60 * 60
 SHARE_RATE_PRECISION = 10**27
+EXTRA_DATA_FORMAT_EMPTY = 0
+EXTRA_DATA_FORMAT_LIST = 1
+
+
+@dataclass
+class AccountingReport:
+    """Accounting oracle ReportData struct"""
+
+    consensusVersion: int
+    refSlot: int
+    numValidators: int
+    clBalanceGwei: int
+    stakingModuleIdsWithNewlyExitedValidators: list[int]
+    numExitedValidatorsByStakingModule: list[int]
+    withdrawalVaultBalance: int
+    elRewardsVaultBalance: int
+    sharesRequestedToBurn: int
+    withdrawalFinalizationBatches: list[int]
+    simulatedShareRate: int
+    isBunkerMode: bool
+    extraDataFormat: int
+    extraDataHash: HexBytes
+    extraDataItemsCount: int
+
+    @property
+    def items(self) -> tuple:
+        return astuple(self)
+
+    @property
+    def hash(self) -> HexBytes:
+        data = encode_data_from_abi(
+            astuple(self),
+            contracts.accounting_oracle.abi,
+            "submitReportData",
+        )
+
+        return web3.keccak(data)
+
+    def copy(self) -> "AccountingReport":
+        return AccountingReport(*self.items)
+
 
 
 def prepare_accounting_report(
@@ -28,11 +73,11 @@ def prepare_accounting_report(
     consensusVersion=1,
     withdrawalFinalizationBatches=[],
     isBunkerMode=False,
-    extraDataFormat=0,
+    extraDataFormat=EXTRA_DATA_FORMAT_EMPTY,
     extraDataHash=ZERO_BYTES32,
     extraDataItemsCount=0,
 ):
-    items = (
+    report = AccountingReport(
         int(consensusVersion),
         int(refSlot),
         int(numValidators),
@@ -50,10 +95,7 @@ def prepare_accounting_report(
         int(extraDataItemsCount),
     )
 
-    data = encode_data_from_abi(items, contracts.accounting_oracle.abi, "submitReportData")
-
-    hash = web3.keccak(data)
-    return (items, hash)
+    return (report.items, report.hash)
 
 
 def prepare_exit_bus_report(validators_to_exit, ref_slot):
@@ -64,8 +106,8 @@ def prepare_exit_bus_report(validators_to_exit, ref_slot):
     if not validators_to_exit:
         report_data = report_data[:-32]
         assert len(report_data) == 224, (
-            "We cut off the last 32 bytes because there is a problem with the encoding of empty bytes array in the eth_abi package. "
-            "Remove this condition when eth_abi is bumped to the latest version."
+            "We cut off the last 32 bytes because there is a problem with the encoding of empty bytes array in the"
+            "eth_abi package. Remove this condition when eth_abi is bumped to the latest version."
         )
     report_hash = web3.keccak(report_data)
     return report, report_hash
@@ -132,7 +174,7 @@ def push_oracle_report(
     extraDataHash=ZERO_BYTES32,
     extraDataItemsCount=0,
     silent=False,
-    extraDataList="",
+    extraDataList=b"",
 ):
     if not silent:
         print(f"Preparing oracle report for refSlot: {refSlot}")
@@ -159,16 +201,16 @@ def push_oracle_report(
     # print(contracts.oracle_report_sanity_checker.getOracleReportLimits())
     report_tx = contracts.accounting_oracle.submitReportData(items, oracleVersion, {"from": submitter})
     if not silent:
-        print(f"Submitted report data")
+        print("Submitted report data")
         print(f"extraDataList {extraDataList}")
     if extraDataFormat == 0:
         extra_report_tx = contracts.accounting_oracle.submitReportExtraDataEmpty({"from": submitter})
         if not silent:
-            print(f"Submitted empty extra data report")
+            print("Submitted empty extra data report")
     else:
         extra_report_tx = contracts.accounting_oracle.submitReportExtraDataList(extraDataList, {"from": submitter})
         if not silent:
-            print(f"Submitted NOT empty extra data report")
+            print("Submitted NOT empty extra data report")
 
     (
         currentFrameRefSlot,
@@ -241,6 +283,7 @@ def wait_to_next_available_report_time(consensus_contract):
     assert nextRefSlot == refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME, "should be next frame"
 
 
+@overload
 def oracle_report(
     *,
     cl_diff=ETH(10),
@@ -256,13 +299,69 @@ def oracle_report(
     extraDataFormat=0,
     extraDataHash=ZERO_BYTES32,
     extraDataItemsCount=0,
-    extraDataList="",
+    extraDataList=b"",
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,
     sharesRequestedToBurn=None,
     withdrawalFinalizationBatches=[],
     simulatedShareRate=None,
+    dry_run: Literal[False] = False,
+) -> tuple[TransactionReceipt, TransactionReceipt]:
+    ...
+
+
+@overload
+def oracle_report(
+    *,
+    cl_diff=ETH(10),
+    cl_appeared_validators=0,
+    exclude_vaults_balances=False,
+    report_el_vault=True,
+    elRewardsVaultBalance=None,
+    report_withdrawals_vault=True,
+    withdrawalVaultBalance=None,
+    simulation_block_identifier=None,
+    skip_withdrawals=False,
+    wait_to_next_report_time=True,
+    extraDataFormat=0,
+    extraDataHash=ZERO_BYTES32,
+    extraDataItemsCount=0,
+    extraDataList=b"",
+    stakingModuleIdsWithNewlyExitedValidators=[],
+    numExitedValidatorsByStakingModule=[],
+    silent=False,
+    sharesRequestedToBurn=None,
+    withdrawalFinalizationBatches=[],
+    simulatedShareRate=None,
+    dry_run: Literal[True],
+) -> AccountingReport:
+    ...
+
+
+def oracle_report(
+    *,
+    cl_diff=ETH(10),
+    cl_appeared_validators=0,
+    exclude_vaults_balances=False,
+    report_el_vault=True,
+    elRewardsVaultBalance=None,
+    report_withdrawals_vault=True,
+    withdrawalVaultBalance=None,
+    simulation_block_identifier=None,
+    skip_withdrawals=False,
+    wait_to_next_report_time=True,
+    extraDataFormat=0,
+    extraDataHash=ZERO_BYTES32,
+    extraDataItemsCount=0,
+    extraDataList=b"",
+    stakingModuleIdsWithNewlyExitedValidators=[],
+    numExitedValidatorsByStakingModule=[],
+    silent=False,
+    sharesRequestedToBurn=None,
+    withdrawalFinalizationBatches=[],
+    simulatedShareRate=None,
+    dry_run=False,
 ):
     if wait_to_next_report_time:
         """fast forwards time to next report, compiles report, pushes through consensus and to AccountingOracle"""
@@ -326,6 +425,25 @@ def oracle_report(
         is_bunker = preTotalPooledEther > postTotalPooledEther
     elif simulatedShareRate is None:
         simulatedShareRate = 0
+
+    if dry_run:
+        return AccountingReport(
+            consensusVersion=contracts.accounting_oracle.getConsensusVersion(),
+            refSlot=refSlot,
+            numValidators=postBeaconValidators,
+            clBalanceGwei=postCLBalance // GWEI,
+            stakingModuleIdsWithNewlyExitedValidators=stakingModuleIdsWithNewlyExitedValidators,
+            numExitedValidatorsByStakingModule=numExitedValidatorsByStakingModule,
+            withdrawalVaultBalance=withdrawalVaultBalance,
+            elRewardsVaultBalance=elRewardsVaultBalance,
+            sharesRequestedToBurn=sharesRequestedToBurn,
+            withdrawalFinalizationBatches=withdrawalFinalizationBatches,
+            simulatedShareRate=simulatedShareRate,
+            isBunkerMode=is_bunker,
+            extraDataFormat=extraDataFormat,
+            extraDataHash=extraDataHash,
+            extraDataItemsCount=extraDataItemsCount,
+        )
 
     return push_oracle_report(
         refSlot=refSlot,
