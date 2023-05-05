@@ -100,7 +100,7 @@ lido_dao_legacy_oracle_implementation = "0xa29b819654cE6224A222bb5f586920105E2D7
 ## see LidoOracle's proxy appId()
 ORACLE_APP_ID = "0x8b47ba2a8454ec799cd91646e7ec47168e91fd139b23f017455f3e5898aaba93"
 
-# NodeOperatorsRegistry
+# NodeOperatorsRegistry akd Curated Staking Module
 lido_dao_node_operators_registry_implementation = "0x8538930c385C0438A357d2c25CB3eAD95Ab6D8ed"
 # see NodeOperatorsRegistry's proxy appId()
 NODE_OPERATORS_REGISTRY_APP_ID = "0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d"
@@ -110,6 +110,12 @@ STAKING_MODULE_NOR_MODULE_FEE = 500
 STAKING_MODULE_NOR_TREASURY_FEE = 500
 CURATED_NODE_OPERATORS_COUNT = 30
 CURATED_NODE_OPERATORS_ACTIVE_COUNT = 30
+STAKING_MODULE_NOR_ID = 1
+STAKING_MODULE_NOR_NAME = "curated-onchain-v1"
+STAKING_MODULE_NOR_TYPE = (
+    # bytes32("curated-onchain-v1")
+    "0x637572617465642d6f6e636861696e2d76310000000000000000000000000000"
+)
 
 # OracleDaemonConfig
 oracle_daemon_config = "0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09"
@@ -207,16 +213,10 @@ lido_dao_withdrawal_vault_implementation = "0xCC52f17756C04bBa7E377716d7062fC36D
 # EIP712StETH
 lido_dao_eip712_steth = "0x8F73e4C2A6D852bb4ab2A45E6a9CF5715b3228B7"
 
-# StakingRouter and StakingModules
+# StakingRouter
 lido_dao_staking_router = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
 lido_dao_staking_router_implementation = "0xD8784e748f59Ba711fB5643191Ec3fAdD50Fb6df"
 deposit_contract = "0x00000000219ab540356cBB839Cbe05303d7705Fa"
-STAKING_MODULE_NOR_ID = 1
-STAKING_MODULE_NOR_NAME = "curated-onchain-v1"
-STAKING_MODULE_NOR_TYPE = (
-    # bytes32("curated-onchain-v1");
-    "0x637572617465642d6f6e636861696e2d76310000000000000000000000000000"
-)
 STAKING_MODULES_FEE_E4 = STAKING_MODULE_NOR_MODULE_FEE
 STAKING_MODULES_TREASURY_FEE_E4 = STAKING_MODULE_NOR_TREASURY_FEE
 STAKING_MODULES_FEE_E20 = 5 * 10**18
