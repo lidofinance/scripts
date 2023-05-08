@@ -59,7 +59,9 @@ def get_deployer_account() -> Union[LocalAccount, Account]:
         raise EnvironmentError("Please set DEPLOYER env variable to the deployer account name")
 
     return (
-        accounts.load(os.environ["DEPLOYER"]) if is_live else accounts.at(ldo_vote_executors_for_tests[0], force=True)
+        accounts.load(os.environ["DEPLOYER"])
+        if (is_live or "DEPLOYER" in os.environ)
+        else accounts.at(ldo_vote_executors_for_tests[0], force=True)
     )
 
 
