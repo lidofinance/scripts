@@ -30,6 +30,9 @@ Lido V2 (Shapella-ready) protocol upgrade
 25. Revoke `SET_BEACON_SPEC` role from `Voting`
 26. Revoke `SET_REPORT_BOUNDARIES` role from `Voting`
 27. Revoke `SET_BEACON_REPORT_RECEIVER` role from `Voting`
+28. Grant a `MANAGE_TOKEN_URI_ROLE` role to `Voting`
+29. Set `WithdrawalQueueERC721` baseUri to `https://wq-api.lido.fi/v1/nft`
+30. Revoke `MANAGE_TOKEN_URI_ROLE` role from `Voting`
 """
 
 import time
@@ -37,7 +40,8 @@ import time
 from typing import Dict, Tuple, Optional
 
 from brownie.network.transaction import TransactionReceipt
-from brownie import ShapellaUpgradeTemplate
+from brownie import ShapellaUpgradeTemplate  # type: ignore
+from utils.agent import agent_forward
 
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.repo import (
@@ -56,7 +60,12 @@ from utils.config import (
     lido_dao_self_owned_steth_burner,
     get_priority_fee,
 )
-from utils.permissions import encode_permission_create, encode_permission_revoke
+from utils.permissions import (
+    encode_oz_grant_role,
+    encode_oz_revoke_role,
+    encode_permission_create,
+    encode_permission_revoke,
+)
 
 # noinspection PyUnresolvedReferences
 from utils.brownie_prelude import *
@@ -86,6 +95,8 @@ update_oracle_app = {
     "version": (4, 0, 0),
 }
 
+WITHDRAWAL_QUEUE_ERC721_BASE_URI = "https://wq-api.lido.fi/v1/nft"
+
 
 def encode_template_start_upgrade(template_address: str) -> Tuple[str, str]:
     template = ShapellaUpgradeTemplate.at(template_address)
@@ -102,12 +113,18 @@ def encode_withdrawal_vault_proxy_update(vault_proxy_address: str, implementatio
     return proxy.address, proxy.proxy_upgradeTo.encode_input(implementation, b"")
 
 
+def encode_withdrawal_queue_base_uri_update(withdrawal_queue_address: str, base_uri: str) -> Tuple[str, str]:
+    withdrawal_queue = interface.WithdrawalQueueERC721(withdrawal_queue_address)
+    return withdrawal_queue.address, withdrawal_queue.setBaseURI.encode_input(base_uri)
+
+
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
     voting = contracts.voting
     node_operators_registry = contracts.node_operators_registry
     lido = contracts.lido
     legacy_oracle = contracts.legacy_oracle
+    withdrawal_queue = contracts.withdrawal_queue
 
     call_script_items = [
         # 1)
@@ -172,6 +189,12 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         encode_permission_revoke(legacy_oracle, "SET_REPORT_BOUNDARIES", revoke_from=voting),
         # 27)
         encode_permission_revoke(legacy_oracle, "SET_BEACON_REPORT_RECEIVER", revoke_from=voting),
+        # 28)
+        agent_forward([encode_oz_grant_role(withdrawal_queue, "MANAGE_TOKEN_URI_ROLE", grant_to=voting)]),
+        # 29)
+        encode_withdrawal_queue_base_uri_update(withdrawal_queue, base_uri=WITHDRAWAL_QUEUE_ERC721_BASE_URI),
+        # 30)
+        agent_forward([encode_oz_revoke_role(withdrawal_queue, "MANAGE_TOKEN_URI_ROLE", revoke_from=voting)]),
     ]
 
     vote_desc_items = [
@@ -202,6 +225,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         "25) Revoke `SET_BEACON_SPEC` role from `Voting`",
         "26) Revoke `SET_REPORT_BOUNDARIES` role from `Voting`",
         "27) Revoke `SET_BEACON_REPORT_RECEIVER` role from `Voting`",
+        "28) Assign a `MANAGE_TOKEN_URI_ROLE` role to Voting",
+        "29) Set `WithdrawalQueueERC721` baseUri to `https://wq-api.lido.fi/v1/nft`",
+        "30) Revoke `MANAGE_TOKEN_URI_ROLE` role from `Voting`",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)

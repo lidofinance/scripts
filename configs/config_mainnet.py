@@ -204,7 +204,7 @@ lido_dao_withdrawal_queue = "0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1"
 lido_dao_withdrawal_queue_implementation = "0xE42C659Dc09109566720EA8b2De186c2Be7D94D9"
 WITHDRAWAL_QUEUE_ERC721_NAME = "Lido: stETH Withdrawal NFT"
 WITHDRAWAL_QUEUE_ERC721_SYMBOL = "unstETH"
-WITHDRAWAL_QUEUE_ERC721_BASE_URI = ""
+WITHDRAWAL_QUEUE_ERC721_BASE_URI = "https://wq-api.lido.fi/v1/nft"
 
 # WithdrawalsVault
 lido_dao_withdrawal_vault_implementation_v1 = "0xe681faB8851484B57F32143FD78548f25fD59980"
