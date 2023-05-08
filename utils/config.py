@@ -50,7 +50,7 @@ def get_max_fee() -> str:
     if "OMNIBUS_MAX_FEE" in os.environ:
         return os.environ["OMNIBUS_MAX_FEE"]
     else:
-        return "100 gwei"
+        return "300 gwei"
 
 
 def get_deployer_account() -> Union[LocalAccount, Account]:
@@ -61,7 +61,7 @@ def get_deployer_account() -> Union[LocalAccount, Account]:
     return (
         accounts.load(os.environ["DEPLOYER"])
         if (is_live or "DEPLOYER" in os.environ)
-        else accounts.at(ldo_vote_executors_for_tests[0], force=True)
+        else accounts.at(accounts[4], force=True)
     )
 
 
