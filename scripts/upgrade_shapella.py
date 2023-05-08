@@ -30,7 +30,7 @@ Lido V2 (Shapella-ready) protocol upgrade
 25. Revoke `SET_BEACON_SPEC` role from `Voting`
 26. Revoke `SET_REPORT_BOUNDARIES` role from `Voting`
 27. Revoke `SET_BEACON_REPORT_RECEIVER` role from `Voting`
-28. Grant a `MANAGE_TOKEN_URI_ROLE` role to `Voting`
+28. Grant `MANAGE_TOKEN_URI_ROLE` role to `Voting`
 29. Set `WithdrawalQueueERC721` baseUri to `https://wq-api.lido.fi/v1/nft`
 30. Revoke `MANAGE_TOKEN_URI_ROLE` role from `Voting`
 """
@@ -225,7 +225,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         "25) Revoke `SET_BEACON_SPEC` role from `Voting`",
         "26) Revoke `SET_REPORT_BOUNDARIES` role from `Voting`",
         "27) Revoke `SET_BEACON_REPORT_RECEIVER` role from `Voting`",
-        "28) Assign a `MANAGE_TOKEN_URI_ROLE` role to Voting",
+        "28) Grant `MANAGE_TOKEN_URI_ROLE` role to `Voting`",
         "29) Set `WithdrawalQueueERC721` baseUri to `https://wq-api.lido.fi/v1/nft`",
         "30) Revoke `MANAGE_TOKEN_URI_ROLE` role from `Voting`",
     ]
