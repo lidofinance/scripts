@@ -8,7 +8,7 @@ import pytest
 from brownie import MockCallTarget, accounts, chain, reverts
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import create_vote, bake_vote_items
-from utils.config import ldo_vote_executors_for_tests
+from utils.config import LDO_VOTE_EXECUTORS_FOR_TESTS
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.config import contracts
 
@@ -66,7 +66,7 @@ def test_phases(call_target, stranger, test_vote):
 
     assert contracts.voting.getVotePhase(vote_id) == 0  # Main phase
 
-    for voter in ldo_vote_executors_for_tests:
+    for voter in LDO_VOTE_EXECUTORS_FOR_TESTS:
         contracts.voting.vote(vote_id, True, False, {"from": accounts.at(voter, force=True)})
 
     chain.sleep(contracts.voting.voteTime() - contracts.voting.objectionPhaseTime())
@@ -75,7 +75,7 @@ def test_phases(call_target, stranger, test_vote):
     assert contracts.voting.getVotePhase(vote_id) == 1  # Objection phase
 
     # change the previous vote to object
-    contracts.voting.vote(vote_id, False, False, {"from": accounts.at(ldo_vote_executors_for_tests[2], force=True)})
+    contracts.voting.vote(vote_id, False, False, {"from": accounts.at(LDO_VOTE_EXECUTORS_FOR_TESTS[2], force=True)})
 
     with reverts("VOTING_CAN_NOT_EXECUTE"):
         contracts.voting.executeVote(vote_id, {"from": stranger})
@@ -86,7 +86,7 @@ def test_phases(call_target, stranger, test_vote):
     assert contracts.voting.getVotePhase(vote_id) == 2  # Closed phase
 
     with reverts("VOTING_CAN_NOT_VOTE"):
-        contracts.voting.vote(vote_id, False, False, {"from": accounts.at(ldo_vote_executors_for_tests[2], force=True)})
+        contracts.voting.vote(vote_id, False, False, {"from": accounts.at(LDO_VOTE_EXECUTORS_FOR_TESTS[2], force=True)})
 
     assert not call_target.called()
     contracts.voting.executeVote(vote_id, {"from": stranger})
@@ -96,27 +96,27 @@ def test_phases(call_target, stranger, test_vote):
 def test_can_object(stranger, test_vote):
     vote_id = test_vote[0]
 
-    for voter in ldo_vote_executors_for_tests[1:]:
+    for voter in LDO_VOTE_EXECUTORS_FOR_TESTS[1:]:
         contracts.voting.vote(vote_id, True, False, {"from": accounts.at(voter, force=True)})
 
     # change the vote to ney
-    contracts.voting.vote(vote_id, False, False, {"from": accounts.at(ldo_vote_executors_for_tests[2], force=True)})
+    contracts.voting.vote(vote_id, False, False, {"from": accounts.at(LDO_VOTE_EXECUTORS_FOR_TESTS[2], force=True)})
 
     chain.sleep(contracts.voting.voteTime() - contracts.voting.objectionPhaseTime())
     chain.mine()
 
     # change the vote to yay again but late
     with reverts("VOTING_CAN_NOT_VOTE"):
-        contracts.voting.vote(vote_id, True, False, {"from": accounts.at(ldo_vote_executors_for_tests[2], force=True)})
+        contracts.voting.vote(vote_id, True, False, {"from": accounts.at(LDO_VOTE_EXECUTORS_FOR_TESTS[2], force=True)})
 
     # fresh objection
-    contracts.voting.vote(vote_id, False, False, {"from": accounts.at(ldo_vote_executors_for_tests[0], force=True)})
+    contracts.voting.vote(vote_id, False, False, {"from": accounts.at(LDO_VOTE_EXECUTORS_FOR_TESTS[0], force=True)})
 
     chain.sleep(contracts.voting.objectionPhaseTime())
     chain.mine()
 
     with reverts("VOTING_CAN_NOT_VOTE"):
-        contracts.voting.vote(vote_id, False, False, {"from": accounts.at(ldo_vote_executors_for_tests[2], force=True)})
+        contracts.voting.vote(vote_id, False, False, {"from": accounts.at(LDO_VOTE_EXECUTORS_FOR_TESTS[2], force=True)})
 
     # rejected vote cannot be executed
     with reverts("VOTING_CAN_NOT_EXECUTE"):

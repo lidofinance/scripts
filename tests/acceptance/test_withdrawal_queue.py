@@ -3,23 +3,23 @@ from brownie import interface, ZERO_ADDRESS, reverts  # type: ignore
 
 from utils.config import (
     contracts,
-    lido_dao_withdrawal_queue,
-    lido_dao_withdrawal_queue_implementation,
-    WITHDRAWAL_QUEUE_ERC721_NAME,
-    WITHDRAWAL_QUEUE_ERC721_SYMBOL,
-    WITHDRAWAL_QUEUE_ERC721_BASE_URI,
+    LIDO_WITHDRAWAL_QUEUE,
+    LIDO_WITHDRAWAL_QUEUE_IMPL,
+    WQ_ERC721_TOKEN_NAME,
+    WQ_ERC721_TOKEN_SYMBOL,
+    WQ_ERC721_TOKEN_BASE_URI,
 )
 from utils.evm_script import encode_error
 
 
 @pytest.fixture(scope="module")
 def contract() -> interface.WithdrawalQueueERC721:
-    return interface.WithdrawalQueueERC721(lido_dao_withdrawal_queue)
+    return interface.WithdrawalQueueERC721(LIDO_WITHDRAWAL_QUEUE)
 
 
 def test_proxy(contract):
     proxy = interface.OssifiableProxy(contract)
-    assert proxy.proxy__getImplementation() == lido_dao_withdrawal_queue_implementation
+    assert proxy.proxy__getImplementation() == LIDO_WITHDRAWAL_QUEUE_IMPL
     assert proxy.proxy__getAdmin() == contracts.agent.address
 
 
@@ -33,7 +33,7 @@ def test_initialize(contract):
 
 
 def test_petrified(contract):
-    impl = interface.WithdrawalQueueERC721(lido_dao_withdrawal_queue_implementation)
+    impl = interface.WithdrawalQueueERC721(LIDO_WITHDRAWAL_QUEUE_IMPL)
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         impl.initialize(contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0), {"from": contracts.voting})
 
@@ -50,7 +50,7 @@ def test_withdrawal_queue(contract):
 
 
 def test_withdrawal_queue_erc721(contract):
-    assert contract.name() == WITHDRAWAL_QUEUE_ERC721_NAME
-    assert contract.symbol() == WITHDRAWAL_QUEUE_ERC721_SYMBOL
-    assert contract.getBaseURI() == WITHDRAWAL_QUEUE_ERC721_BASE_URI
+    assert contract.name() == WQ_ERC721_TOKEN_NAME
+    assert contract.symbol() == WQ_ERC721_TOKEN_SYMBOL
+    assert contract.getBaseURI() == WQ_ERC721_TOKEN_BASE_URI
     assert contract.getNFTDescriptorAddress() == ZERO_ADDRESS

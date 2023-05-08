@@ -3,19 +3,19 @@ from brownie import ZERO_ADDRESS, interface, web3, reverts  # type: ignore
 
 from utils.config import (
     contracts,
-    lido_dao_node_operators_registry,
-    lido_dao_node_operators_registry_implementation,
+    LIDO_NODE_OPERATORS_REGISTRY,
+    LIDO_NODE_OPERATORS_REGISTRY_IMPL,
     NODE_OPERATORS_REGISTRY_APP_ID,
-    STUCK_PENALTY_DELAY,
-    CURATED_NODE_OPERATORS_COUNT,
-    CURATED_NODE_OPERATORS_ACTIVE_COUNT,
-    STAKING_MODULE_NOR_TYPE,
+    CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
+    CURATED_STAKING_MODULE_OPERATORS_COUNT,
+    CURATED_STAKING_MODULE_OPERATORS_ACTIVE_COUNT,
+    CURATED_STAKING_MODULE_TYPE,
 )
 
 
 @pytest.fixture(scope="module")
 def contract() -> interface.NodeOperatorsRegistry:
-    return interface.NodeOperatorsRegistry(lido_dao_node_operators_registry)
+    return interface.NodeOperatorsRegistry(LIDO_NODE_OPERATORS_REGISTRY)
 
 
 def test_links(contract):
@@ -24,7 +24,7 @@ def test_links(contract):
 
 def test_aragon(contract):
     proxy = interface.AppProxyUpgradeable(contract)
-    assert proxy.implementation() == lido_dao_node_operators_registry_implementation
+    assert proxy.implementation() == LIDO_NODE_OPERATORS_REGISTRY_IMPL
     assert contract.kernel() == contracts.kernel
     assert contract.appId() == NODE_OPERATORS_REGISTRY_APP_ID
     assert contract.hasInitialized() == True
@@ -45,36 +45,48 @@ def test_versioned(contract):
 def test_initialize(contract):
     with reverts("INIT_ALREADY_INITIALIZED"):
         contract.initialize(
-            contracts.lido_locator, STAKING_MODULE_NOR_TYPE, STUCK_PENALTY_DELAY, {"from": contracts.voting}
+            contracts.lido_locator,
+            CURATED_STAKING_MODULE_TYPE,
+            CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
+            {"from": contracts.voting},
         )
 
 
 def test_finalize_upgrade(contract):
     with reverts("UNEXPECTED_CONTRACT_VERSION"):
         contract.finalizeUpgrade_v2(
-            contracts.lido_locator, STAKING_MODULE_NOR_TYPE, STUCK_PENALTY_DELAY, {"from": contracts.voting}
+            contracts.lido_locator,
+            CURATED_STAKING_MODULE_TYPE,
+            CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
+            {"from": contracts.voting},
         )
 
 
 def test_petrified():
-    contract = interface.NodeOperatorsRegistry(lido_dao_node_operators_registry_implementation)
+    contract = interface.NodeOperatorsRegistry(LIDO_NODE_OPERATORS_REGISTRY_IMPL)
     with reverts("INIT_ALREADY_INITIALIZED"):
         contract.initialize(
-            contracts.lido_locator, STAKING_MODULE_NOR_TYPE, STUCK_PENALTY_DELAY, {"from": contracts.voting}
+            contracts.lido_locator,
+            CURATED_STAKING_MODULE_TYPE,
+            CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
+            {"from": contracts.voting},
         )
 
     with reverts("CONTRACT_NOT_INITIALIZED"):
         contract.finalizeUpgrade_v2(
-            contracts.lido_locator, STAKING_MODULE_NOR_TYPE, STUCK_PENALTY_DELAY, {"from": contracts.voting}
+            contracts.lido_locator,
+            CURATED_STAKING_MODULE_TYPE,
+            CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
+            {"from": contracts.voting},
         )
 
 
 def test_nor_state(contract):
     node_operators_count = contract.getNodeOperatorsCount()
-    assert node_operators_count == CURATED_NODE_OPERATORS_COUNT
-    assert contract.getActiveNodeOperatorsCount() == CURATED_NODE_OPERATORS_ACTIVE_COUNT
+    assert node_operators_count == CURATED_STAKING_MODULE_OPERATORS_COUNT
+    assert contract.getActiveNodeOperatorsCount() == CURATED_STAKING_MODULE_OPERATORS_ACTIVE_COUNT
     assert contract.getNonce() >= 7315
-    assert contract.getStuckPenaltyDelay() == STUCK_PENALTY_DELAY
+    assert contract.getStuckPenaltyDelay() == CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY
     assert contract.getType() == _str_to_bytes32("curated-onchain-v1")
 
     summary = contract.getStakingModuleSummary()

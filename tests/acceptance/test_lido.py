@@ -4,9 +4,9 @@ from brownie import interface, web3, reverts  # type: ignore
 from utils.test.helpers import ONE_ETH
 from utils.config import (
     contracts,
-    lido_dao_steth_address,
-    lido_dao_steth_implementation_address,
-    initial_dead_token_holder,
+    LIDO_LIDO,
+    LIDO_LIDO_IMPL,
+    INITIAL_DEAD_TOKEN_HOLDER,
     LIDO_APP_ID,
     LIDO_MAX_STAKE_LIMIT_ETH,
 )
@@ -18,12 +18,12 @@ last_seen_beacon_validators = 175906
 
 @pytest.fixture(scope="module")
 def contract() -> interface.Lido:
-    return interface.Lido(lido_dao_steth_address)
+    return interface.Lido(LIDO_LIDO)
 
 
 def test_aragon(contract):
     proxy = interface.AppProxyUpgradeable(contract)
-    assert proxy.implementation() == lido_dao_steth_implementation_address
+    assert proxy.implementation() == LIDO_LIDO_IMPL
     assert contract.kernel() == contracts.kernel
     assert contract.appId() == LIDO_APP_ID
     assert contract.hasInitialized() == True
@@ -60,7 +60,7 @@ def test_finalize_upgrade(contract):
 
 
 def test_petrified():
-    impl = interface.Lido(lido_dao_steth_implementation_address)
+    impl = interface.Lido(LIDO_LIDO_IMPL)
     with reverts("INIT_ALREADY_INITIALIZED"):
         impl.initialize(contracts.lido_locator, contracts.eip712_steth, {"from": contracts.voting})
 
@@ -75,10 +75,10 @@ def test_links(contract):
 
 def test_steth(contract):
     # stone
-    assert contract.balanceOf(initial_dead_token_holder) > 0
-    assert contract.sharesOf(initial_dead_token_holder) > 0
+    assert contract.balanceOf(INITIAL_DEAD_TOKEN_HOLDER) > 0
+    assert contract.sharesOf(INITIAL_DEAD_TOKEN_HOLDER) > 0
 
-    assert contract.getTotalShares() > contract.sharesOf(initial_dead_token_holder)
+    assert contract.getTotalShares() > contract.sharesOf(INITIAL_DEAD_TOKEN_HOLDER)
     # unlimited allowance for burner to burn shares from withdrawal queue
     assert contract.allowance(contracts.withdrawal_queue, contracts.burner) == 2**256 - 1
     assert contract.allowance(contracts.node_operators_registry, contracts.burner) == 2**256 - 1

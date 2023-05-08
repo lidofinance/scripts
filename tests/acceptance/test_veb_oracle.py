@@ -3,18 +3,18 @@ from brownie import interface, reverts  # type: ignore
 
 from utils.config import (
     contracts,
-    lido_dao_hash_consensus_for_validators_exit_bus_oracle,
-    lido_dao_hash_consensus_for_accounting_oracle,
-    lido_dao_validators_exit_bus_oracle_implementation,
-    lido_dao_validators_exit_bus_oracle,
-    oracle_committee,
+    LIDO_HASH_CONSENSUS_FOR_VEBO,
+    LIDO_HASH_CONSENSUS_FOR_AO,
+    LIDO_VALIDATORS_EXIT_BUS_ORACLE_IMPL,
+    LIDO_VALIDATORS_EXIT_BUS_ORACLE,
+    ORACLE_COMMITTEE,
     CHAIN_SLOTS_PER_EPOCH,
     CHAIN_SECONDS_PER_SLOT,
     CHAIN_GENESIS_TIME,
-    VALIDATORS_EXIT_BUS_ORACLE_EPOCHS_PER_FRAME,
-    VALIDATORS_EXIT_BUS_FAST_LANE_LENGTH_SLOTS,
+    VEBO_EPOCHS_PER_FRAME,
+    VEBO_FAST_LANE_LENGTH_SLOTS,
     ORACLE_QUORUM,
-    VALIDATORS_EXIT_BUS_CONSENSUS_VERSION,
+    VEBO_CONSENSUS_VERSION,
 )
 from utils.evm_script import encode_error
 
@@ -23,12 +23,12 @@ last_seen_ref_slot = 6189855
 
 @pytest.fixture(scope="module")
 def contract() -> interface.ValidatorsExitBusOracle:
-    return interface.ValidatorsExitBusOracle(lido_dao_validators_exit_bus_oracle)
+    return interface.ValidatorsExitBusOracle(LIDO_VALIDATORS_EXIT_BUS_ORACLE)
 
 
 def test_proxy(contract):
     proxy = interface.OssifiableProxy(contract)
-    assert proxy.proxy__getImplementation() == lido_dao_validators_exit_bus_oracle_implementation
+    assert proxy.proxy__getImplementation() == LIDO_VALIDATORS_EXIT_BUS_ORACLE_IMPL
     assert proxy.proxy__getAdmin() == contracts.agent.address
 
 
@@ -45,7 +45,7 @@ def test_initialize(contract):
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         contract.initialize(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
-            lido_dao_hash_consensus_for_accounting_oracle,
+            LIDO_HASH_CONSENSUS_FOR_AO,
             1,
             1,
             {"from": contracts.voting},
@@ -53,11 +53,11 @@ def test_initialize(contract):
 
 
 def test_petrified(contract):
-    impl = interface.ValidatorsExitBusOracle(lido_dao_validators_exit_bus_oracle_implementation)
+    impl = interface.ValidatorsExitBusOracle(LIDO_VALIDATORS_EXIT_BUS_ORACLE_IMPL)
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         impl.initialize(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
-            lido_dao_hash_consensus_for_accounting_oracle,
+            LIDO_HASH_CONSENSUS_FOR_AO,
             1,
             1,
             {"from": contracts.voting},
@@ -65,8 +65,8 @@ def test_petrified(contract):
 
 
 def test_consensus(contract):
-    assert contract.getConsensusVersion() == VALIDATORS_EXIT_BUS_CONSENSUS_VERSION
-    assert contract.getConsensusContract() == lido_dao_hash_consensus_for_validators_exit_bus_oracle
+    assert contract.getConsensusVersion() == VEBO_CONSENSUS_VERSION
+    assert contract.getConsensusContract() == LIDO_HASH_CONSENSUS_FOR_VEBO
 
 
 def test_processing_state(contract):
@@ -94,11 +94,11 @@ def test_report(contract):
 def test_vebo_hash_consensus_synced_with_accounting_one(contract):
     consensus = interface.HashConsensus(contract.getConsensusContract())
     frameConfig = consensus.getFrameConfig()
-    accounting_consensus = interface.HashConsensus(lido_dao_hash_consensus_for_accounting_oracle)
+    accounting_consensus = interface.HashConsensus(LIDO_HASH_CONSENSUS_FOR_AO)
 
     assert frameConfig["initialEpoch"] == accounting_consensus.getFrameConfig()["initialEpoch"]
-    assert frameConfig["epochsPerFrame"] == VALIDATORS_EXIT_BUS_ORACLE_EPOCHS_PER_FRAME
-    assert frameConfig["fastLaneLengthSlots"] == VALIDATORS_EXIT_BUS_FAST_LANE_LENGTH_SLOTS
+    assert frameConfig["epochsPerFrame"] == VEBO_EPOCHS_PER_FRAME
+    assert frameConfig["fastLaneLengthSlots"] == VEBO_FAST_LANE_LENGTH_SLOTS
 
     assert consensus.getInitialRefSlot() == accounting_consensus.getInitialRefSlot()
 
@@ -119,4 +119,4 @@ def test_vebo_hash_consensus(contract):
     assert consensus.getQuorum() == ORACLE_QUORUM
 
     members = consensus.getMembers()
-    assert members["addresses"] == oracle_committee
+    assert members["addresses"] == ORACLE_COMMITTEE

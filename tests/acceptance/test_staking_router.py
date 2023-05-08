@@ -3,38 +3,39 @@ from brownie import interface, reverts  # type: ignore
 
 from utils.config import (
     contracts,
-    lido_dao_staking_router,
-    lido_dao_staking_router_implementation,
-    deposit_contract,
-    lido_dao_withdrawal_vault,
-    STAKING_MODULES_FEE_E4,
-    STAKING_MODULES_TREASURY_FEE_E4,
-    STAKING_MODULES_FEE_E20,
-    STAKING_MODULES_TREASURY_FEE_E20,
-    STAKING_MODULE_NOR_NAME,
-    STAKING_MODULE_NOR_ID,
-    STAKING_MODULE_NOR_TARGET_SHARE_BP,
-    STAKING_MODULE_NOR_MODULE_FEE,
-    STAKING_MODULE_NOR_TREASURY_FEE,
-    WITHDRAWAL_CREDENTIALS,
+    LIDO_STAKING_ROUTER,
+    LIDO_STAKING_ROUTER_IMPL,
+    CHAIN_DEPOSIT_CONTRACT,
+    LIDO_WITHDRAWAL_VAULT,
+    SR_MODULES_FEE_BP,
+    SR_TREASURY_FEE_BP,
+    SR_MODULES_FEE_E20,
+    SR_TREASURY_FEE_E20,
+    SR_BASE_PRECISION_E20,
+    CURATED_STAKING_MODULE_NAME,
+    CURATED_STAKING_MODULE_ID,
+    CURATED_STAKING_MODULE_TARGET_SHARE_BP,
+    CURATED_STAKING_MODULE_MODULE_BP,
+    CURATED_STAKING_MODULE_TREASURY_FEE_BP,
+    LIDO_WITHDRAWAL_CREDENTIALS,
 )
 from utils.evm_script import encode_error
 
 
 @pytest.fixture(scope="module")
 def contract() -> interface.StakingRouter:
-    return interface.StakingRouter(lido_dao_staking_router)
+    return interface.StakingRouter(LIDO_STAKING_ROUTER)
 
 
 def test_proxy(contract):
     proxy = interface.OssifiableProxy(contract)
-    assert proxy.proxy__getImplementation() == lido_dao_staking_router_implementation
+    assert proxy.proxy__getImplementation() == LIDO_STAKING_ROUTER_IMPL
     assert proxy.proxy__getAdmin() == contracts.agent.address
 
 
 def test_links(contract):
     assert contract.getLido() == contracts.lido
-    assert contract.DEPOSIT_CONTRACT() == deposit_contract
+    assert contract.DEPOSIT_CONTRACT() == CHAIN_DEPOSIT_CONTRACT
 
 
 def test_versioned(contract):
@@ -46,18 +47,18 @@ def test_initialize(contract):
         contract.initialize(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
             contracts.lido,
-            WITHDRAWAL_CREDENTIALS,
+            LIDO_WITHDRAWAL_CREDENTIALS,
             {"from": contracts.voting},
         )
 
 
 def test_petrified(contract):
-    impl = interface.StakingRouter(lido_dao_staking_router_implementation)
+    impl = interface.StakingRouter(LIDO_STAKING_ROUTER_IMPL)
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         impl.initialize(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
             contracts.lido,
-            WITHDRAWAL_CREDENTIALS,
+            LIDO_WITHDRAWAL_CREDENTIALS,
             {"from": contracts.voting},
         )
 
@@ -72,7 +73,7 @@ def test_constants(contract):
 def test_staking_modules(contract):
     assert contract.getStakingModulesCount() == 1
 
-    assert contract.getStakingModuleIds() == [STAKING_MODULE_NOR_ID]
+    assert contract.getStakingModuleIds() == [CURATED_STAKING_MODULE_ID]
     assert contract.getStakingModuleIsActive(1) == True
     assert contract.getStakingModuleIsStopped(1) == False
     assert contract.getStakingModuleIsDepositsPaused(1) == False
@@ -80,30 +81,30 @@ def test_staking_modules(contract):
     assert contract.getStakingModuleStatus(1) == 0
 
     curated_module = contract.getStakingModule(1)
-    assert curated_module["id"] == STAKING_MODULE_NOR_ID
+    assert curated_module["id"] == CURATED_STAKING_MODULE_ID
     assert curated_module["stakingModuleAddress"] == contracts.node_operators_registry
-    assert curated_module["stakingModuleFee"] == STAKING_MODULE_NOR_MODULE_FEE
-    assert curated_module["treasuryFee"] == STAKING_MODULE_NOR_TREASURY_FEE
-    assert curated_module["targetShare"] == STAKING_MODULE_NOR_TARGET_SHARE_BP
+    assert curated_module["stakingModuleFee"] == CURATED_STAKING_MODULE_MODULE_BP
+    assert curated_module["treasuryFee"] == CURATED_STAKING_MODULE_TREASURY_FEE_BP
+    assert curated_module["targetShare"] == CURATED_STAKING_MODULE_TARGET_SHARE_BP
     assert curated_module["status"] == 0
-    assert curated_module["name"] == STAKING_MODULE_NOR_NAME
+    assert curated_module["name"] == CURATED_STAKING_MODULE_NAME
     assert curated_module["lastDepositAt"] >= 1679672628
     assert curated_module["lastDepositBlock"] >= 8705383
     assert curated_module["exitedValidatorsCount"] == 0
 
     fee_aggregate_distribution = contract.getStakingFeeAggregateDistribution()
-    assert fee_aggregate_distribution["modulesFee"] == STAKING_MODULES_FEE_E20
-    assert fee_aggregate_distribution["treasuryFee"] == STAKING_MODULES_TREASURY_FEE_E20
-    assert fee_aggregate_distribution["basePrecision"] == 100 * 10**18
+    assert fee_aggregate_distribution["modulesFee"] == SR_MODULES_FEE_E20
+    assert fee_aggregate_distribution["treasuryFee"] == SR_TREASURY_FEE_E20
+    assert fee_aggregate_distribution["basePrecision"] == SR_BASE_PRECISION_E20
 
     fee_aggregate_distribution_e4 = contract.getStakingFeeAggregateDistributionE4Precision()
-    assert fee_aggregate_distribution_e4["modulesFee"] == STAKING_MODULES_FEE_E4
-    assert fee_aggregate_distribution_e4["treasuryFee"] == STAKING_MODULES_TREASURY_FEE_E4
+    assert fee_aggregate_distribution_e4["modulesFee"] == SR_MODULES_FEE_BP
+    assert fee_aggregate_distribution_e4["treasuryFee"] == SR_TREASURY_FEE_BP
 
     assert contract.getTotalFeeE4Precision() == 1000
 
     assert contract.getStakingModuleActiveValidatorsCount(1) >= 3521
 
     assert contract.getWithdrawalCredentials().hex().startswith("01")
-    assert contract.getWithdrawalCredentials().hex().endswith(lido_dao_withdrawal_vault[2:].lower())
-    assert f"0x{contract.getWithdrawalCredentials().hex()}" == WITHDRAWAL_CREDENTIALS
+    assert contract.getWithdrawalCredentials().hex().endswith(LIDO_WITHDRAWAL_VAULT[2:].lower())
+    assert f"0x{contract.getWithdrawalCredentials().hex()}" == LIDO_WITHDRAWAL_CREDENTIALS

@@ -50,10 +50,10 @@ from utils.config import (
     get_deployer_account,
     get_is_live,
     contracts,
-    lido_dao_staking_router,
-    lido_dao_withdrawal_vault,
-    lido_dao_withdrawal_vault_implementation,
-    lido_dao_self_owned_steth_burner,
+    LIDO_STAKING_ROUTER,
+    LIDO_WITHDRAWAL_VAULT,
+    LIDO_WITHDRAWAL_VAULT_IMPL,
+    LIDO_SELF_OWNED_STETH_BURNER,
     get_priority_fee,
 )
 from utils.permissions import encode_permission_create, encode_permission_revoke
@@ -111,7 +111,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
 
     call_script_items = [
         # 1)
-        encode_withdrawal_vault_proxy_update(lido_dao_withdrawal_vault, lido_dao_withdrawal_vault_implementation),
+        encode_withdrawal_vault_proxy_update(LIDO_WITHDRAWAL_VAULT, LIDO_WITHDRAWAL_VAULT_IMPL),
         # 2)
         encode_template_start_upgrade(contracts.shapella_upgrade_template),
         # 3)
@@ -133,9 +133,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         # 8)
         update_app_implementation(update_oracle_app["id"], update_oracle_app["new_address"]),
         # 9)
-        encode_permission_create(
-            lido_dao_staking_router, node_operators_registry, "STAKING_ROUTER_ROLE", manager=voting
-        ),
+        encode_permission_create(LIDO_STAKING_ROUTER, node_operators_registry, "STAKING_ROUTER_ROLE", manager=voting),
         # 10)
         encode_template_finish_upgrade(contracts.shapella_upgrade_template),
         # 11)
@@ -151,7 +149,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         # 16)
         encode_permission_revoke(lido, "DEPOSIT_ROLE", revoke_from=contracts.deposit_security_module_v1),
         # 17)
-        encode_permission_revoke(lido, "BURN_ROLE", revoke_from=lido_dao_self_owned_steth_burner),
+        encode_permission_revoke(lido, "BURN_ROLE", revoke_from=LIDO_SELF_OWNED_STETH_BURNER),
         # 18)
         encode_permission_revoke(node_operators_registry, "ADD_NODE_OPERATOR_ROLE", revoke_from=voting),
         # 19)

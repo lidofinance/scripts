@@ -2,19 +2,14 @@ from brownie import ShapellaUpgradeTemplate, interface
 from brownie.network.account import LocalAccount
 from utils.config import (
     contracts,
-    lido_dao_lido_locator_implementation,
-    lido_dao_withdrawal_queue,
-    lido_dao_validators_exit_bus_oracle,
-    gate_seal_factory_address,
-    lido_dao_template_address,
-    gate_seal_address,
+    LIDO_LOCATOR_IMPL,
+    LIDO_TEMPLATE,
     prompt_bool,
     get_priority_fee,
     get_max_fee,
     get_is_live,
     get_deployer_account,
-    deployer_eoa,
-    deployer_eoa_locator,
+    DEPLOYER_EOA_LOCATOR,
 )
 
 # Private constant taken from Lido contract
@@ -48,17 +43,15 @@ def assert_locator_deployer_eoa_is_impersonated():
     assert not get_is_live(), "Must not run any preliminary steps on live network!"
     deployer_account = get_deployer_account()
     assert not isinstance(deployer_account, LocalAccount), "mainnet deployer oea must be impersonated in tests"
-    assert get_deployer_account() != deployer_eoa_locator
+    assert get_deployer_account() != DEPLOYER_EOA_LOCATOR
 
 
 def prepare_upgrade_locator_impl(admin):
     assert_locator_deployer_eoa_is_impersonated()
 
     assert interface.OssifiableProxy(contracts.lido_locator).proxy__getAdmin() == admin
-    interface.OssifiableProxy(contracts.lido_locator).proxy__upgradeTo(
-        lido_dao_lido_locator_implementation, get_tx_params(admin)
-    )
-    print(f"=== Upgrade lido locator implementation to {lido_dao_lido_locator_implementation} ===")
+    interface.OssifiableProxy(contracts.lido_locator).proxy__upgradeTo(LIDO_LOCATOR_IMPL, get_tx_params(admin))
+    print(f"=== Upgrade lido locator implementation to {LIDO_LOCATOR_IMPL} ===")
 
 
 def prepare_transfer_locator_ownership_to_template(admin, template):
@@ -68,13 +61,13 @@ def prepare_transfer_locator_ownership_to_template(admin, template):
 
 def prepare_for_shapella_upgrade_voting(silent=False):
     if not silent:
-        ask_shapella_upgrade_confirmation(lido_dao_template_address, lido_dao_lido_locator_implementation)
+        ask_shapella_upgrade_confirmation(LIDO_TEMPLATE, LIDO_LOCATOR_IMPL)
 
     # To get sure the "stone" is in place
     assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
 
-    prepare_upgrade_locator_impl(deployer_eoa_locator)
+    prepare_upgrade_locator_impl(DEPLOYER_EOA_LOCATOR)
 
-    prepare_transfer_locator_ownership_to_template(deployer_eoa_locator, lido_dao_template_address)
+    prepare_transfer_locator_ownership_to_template(DEPLOYER_EOA_LOCATOR, LIDO_TEMPLATE)
 
-    return ShapellaUpgradeTemplate.at(lido_dao_template_address)
+    return ShapellaUpgradeTemplate.at(LIDO_TEMPLATE)

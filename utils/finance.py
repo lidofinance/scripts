@@ -2,10 +2,10 @@ from typing import Tuple
 from brownie import ZERO_ADDRESS
 from utils.config import (
     contracts,
-    ldo_token_address,
-    lido_dao_steth_address,
-    weth_token_address,
-    dai_token_address,
+    LDO_TOKEN,
+    LIDO_LIDO,
+    WETH_TOKEN,
+    DAI_TOKEN,
 )
 
 
@@ -15,7 +15,7 @@ def make_ldo_payout(*not_specified, target_address: str, ldo_in_wei: int, refere
         raise ValueError("Please, specify all arguments with keywords.")
 
     return _encode_token_transfer(
-        token_address=ldo_token_address,
+        token_address=LDO_TOKEN,
         recipient=target_address,
         amount=ldo_in_wei,
         reference=reference,
@@ -29,7 +29,7 @@ def make_weth_payout(*not_specified, target_address: str, weth_in_wei: int, refe
         raise ValueError("Please, specify all arguments with keywords.")
 
     return _encode_token_transfer(
-        token_address=weth_token_address,
+        token_address=WETH_TOKEN,
         recipient=target_address,
         amount=weth_in_wei,
         reference=reference,
@@ -43,7 +43,7 @@ def make_steth_payout(*not_specified, target_address: str, steth_in_wei: int, re
         raise ValueError("Please, specify all arguments with keywords.")
 
     return _encode_token_transfer(
-        token_address=lido_dao_steth_address,
+        token_address=LIDO_LIDO,
         recipient=target_address,
         amount=steth_in_wei,
         reference=reference,
@@ -67,7 +67,7 @@ def make_dai_payout(*not_specified, target_address: str, dai_in_wei: int, refere
         raise ValueError("Please, specify all arguments with keywords.")
 
     return _encode_token_transfer(
-        token_address=dai_token_address,
+        token_address=DAI_TOKEN,
         recipient=target_address,
         amount=dai_in_wei,
         reference=reference,
