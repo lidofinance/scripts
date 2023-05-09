@@ -6,7 +6,7 @@ from brownie import interface, reverts, accounts, web3  # type: ignore
 from utils.test.exit_bus_data import LidoValidator
 from utils.config import (
     contracts,
-    LIDO_VALIDATORS_EXIT_BUS_ORACLE,
+    VALIDATORS_EXIT_BUS_ORACLE,
 )
 from utils.test.exit_bus_data import encode_data
 from utils.evm_script import encode_error
@@ -20,7 +20,7 @@ from utils.test.oracle_report_helpers import (
 
 @pytest.fixture(scope="module")
 def contract() -> interface.ValidatorsExitBusOracle:
-    return interface.ValidatorsExitBusOracle(LIDO_VALIDATORS_EXIT_BUS_ORACLE)
+    return interface.ValidatorsExitBusOracle(VALIDATORS_EXIT_BUS_ORACLE)
 
 
 @pytest.fixture(scope="function")

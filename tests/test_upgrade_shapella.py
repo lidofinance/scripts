@@ -4,47 +4,47 @@ Tests for Lido V2 (Shapella-ready) upgrade voting 12/05/2023
 from brownie import interface, ZERO_ADDRESS
 from utils.config import (
     contracts,
-    LIDO_NODE_OPERATORS_REGISTRY,
-    LIDO_VOTING,
-    LIDO_LIDO,
-    LIDO_LEGACY_ORACLE,
-    LIDO_WITHDRAWAL_VAULT,
+    NODE_OPERATORS_REGISTRY,
+    VOTING,
+    LIDO,
+    LEGACY_ORACLE,
+    WITHDRAWAL_VAULT,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
     DEPLOYER_EOA_LOCATOR,
     ORACLE_COMMITTEE,
     DSM_GUARDIANS,
-    LIDO_LIDO_IMPL,
-    LIDO_NODE_OPERATORS_REGISTRY_IMPL,
-    LIDO_LEGACY_ORACLE_IMPL,
-    LIDO_TEMPLATE,
+    LIDO_IMPL,
+    NODE_OPERATORS_REGISTRY_IMPL,
+    LEGACY_ORACLE_IMPL,
+    LIDO_V2_UPGRADE_TEMPLATE,
     LIDO_LOCATOR,
     LIDO_LOCATOR_IMPL,
-    LIDO_BURNER,
-    LIDO_EIP712_STETH,
-    LIDO_ACCOUNTING_ORACLE,
-    LIDO_ACCOUNTING_ORACLE_IMPL,
-    LIDO_VALIDATORS_EXIT_BUS_ORACLE_IMPL,
-    LIDO_STAKING_ROUTER,
-    LIDO_STAKING_ROUTER_IMPL,
-    LIDO_WITHDRAWAL_QUEUE,
-    LIDO_WITHDRAWAL_QUEUE_IMPL,
-    LIDO_HASH_CONSENSUS_FOR_AO,
-    LIDO_HASH_CONSENSUS_FOR_VEBO,
-    LIDO_DEPOSIT_SECURITY_MODULE_V1,
+    BURNER,
+    EIP712_STETH,
+    ACCOUNTING_ORACLE,
+    ACCOUNTING_ORACLE_IMPL,
+    VALIDATORS_EXIT_BUS_ORACLE_IMPL,
+    STAKING_ROUTER,
+    STAKING_ROUTER_IMPL,
+    WITHDRAWAL_QUEUE,
+    WITHDRAWAL_QUEUE_IMPL,
+    HASH_CONSENSUS_FOR_AO,
+    HASH_CONSENSUS_FOR_VEBO,
+    DEPOSIT_SECURITY_MODULE_V1,
     GATE_SEAL,
-    LIDO_DEPOSIT_SECURITY_MODULE,
-    LIDO_WITHDRAWAL_VAULT_IMPL,
-    LIDO_WITHDRAWAL_VAULT_IMPL_V1,
-    LIDO_SELF_OWNED_STETH_BURNER,
-    LIDO_APP_ID,
-    ORACLE_APP_ID,
-    NODE_OPERATORS_REGISTRY_APP_ID,
+    DEPOSIT_SECURITY_MODULE,
+    WITHDRAWAL_VAULT_IMPL,
+    WITHDRAWAL_VAULT_IMPL_V1,
+    SELF_OWNED_STETH_BURNER,
+    LIDO_ARAGON_APP_ID,
+    ORACLE_ARAGON_APP_ID,
+    NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
     CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
     AO_EPOCHS_PER_FRAME,
     VEBO_EPOCHS_PER_FRAME,
     ORACLE_QUORUM,
     DSM_GUARDIAN_QUORUM,
-    LIDO_WITHDRAWAL_CREDENTIALS,
+    WITHDRAWAL_CREDENTIALS,
     CURATED_STAKING_MODULE_ID,
     CURATED_STAKING_MODULE_NAME,
     CURATED_STAKING_MODULE_TYPE,
@@ -127,98 +127,98 @@ SET_BEACON_REPORT_RECEIVER = "0xe22a455f1bfbaf705ac3e891a64e156da92cb0b42cfc3891
 
 # Roles related to vote #1
 permission_staking_router = Permission(
-    entity=LIDO_STAKING_ROUTER,
-    app=LIDO_NODE_OPERATORS_REGISTRY,
+    entity=STAKING_ROUTER,
+    app=NODE_OPERATORS_REGISTRY,
     role=STAKING_ROUTER_ROLE,
 )
 
 # Roles related to vote #2
 permissions_to_revoke = [
     Permission(
-        entity=LIDO_VOTING,
-        app=LIDO_LIDO,
+        entity=VOTING,
+        app=LIDO,
         role=MANAGE_FEE,
     ),
     Permission(
-        entity=LIDO_VOTING,
-        app=LIDO_LIDO,
+        entity=VOTING,
+        app=LIDO,
         role=MANAGE_WITHDRAWAL_KEY,
     ),
     Permission(
-        entity=LIDO_VOTING,
-        app=LIDO_LIDO,
+        entity=VOTING,
+        app=LIDO,
         role=MANAGE_PROTOCOL_CONTRACTS_ROLE,
     ),
     Permission(
-        entity=LIDO_VOTING,
-        app=LIDO_LIDO,
+        entity=VOTING,
+        app=LIDO,
         role=SET_EL_REWARDS_VAULT_ROLE,
     ),
     Permission(
-        entity=LIDO_VOTING,
-        app=LIDO_LIDO,
+        entity=VOTING,
+        app=LIDO,
         role=SET_EL_REWARDS_WITHDRAWAL_LIMIT_ROLE,
     ),
     Permission(
-        entity=LIDO_DEPOSIT_SECURITY_MODULE_V1,
-        app=LIDO_LIDO,
+        entity=DEPOSIT_SECURITY_MODULE_V1,
+        app=LIDO,
         role=DEPOSIT_ROLE,
     ),
     PermissionP(
-        entity=LIDO_SELF_OWNED_STETH_BURNER,
-        app=LIDO_LIDO,
+        entity=SELF_OWNED_STETH_BURNER,
+        app=LIDO,
         role=BURN_ROLE,
         # See 4th arg of vote item 8 of https://vote.lido.fi/vote/130 (need to convert from in to hex)
         params=["0x000100000000000000000000B280E33812c0B09353180e92e27b8AD399B07f26"],
     ),
     Permission(
-        entity=LIDO_VOTING,
-        app=LIDO_NODE_OPERATORS_REGISTRY,
+        entity=VOTING,
+        app=NODE_OPERATORS_REGISTRY,
         role=ADD_NODE_OPERATOR_ROLE,
     ),
     Permission(
-        entity=LIDO_VOTING,
-        app=LIDO_NODE_OPERATORS_REGISTRY,
+        entity=VOTING,
+        app=NODE_OPERATORS_REGISTRY,
         role=SET_NODE_OPERATOR_ACTIVE_ROLE,
     ),
     Permission(
-        entity=LIDO_VOTING,
-        app=LIDO_NODE_OPERATORS_REGISTRY,
+        entity=VOTING,
+        app=NODE_OPERATORS_REGISTRY,
         role=SET_NODE_OPERATOR_NAME_ROLE,
     ),
     Permission(
-        entity=LIDO_VOTING,
-        app=LIDO_NODE_OPERATORS_REGISTRY,
+        entity=VOTING,
+        app=NODE_OPERATORS_REGISTRY,
         role=SET_NODE_OPERATOR_ADDRESS_ROLE,
     ),
     Permission(
-        entity=LIDO_VOTING,
-        app=LIDO_NODE_OPERATORS_REGISTRY,
+        entity=VOTING,
+        app=NODE_OPERATORS_REGISTRY,
         role=REPORT_STOPPED_VALIDATORS_ROLE,
     ),
     Permission(
-        entity=LIDO_VOTING,
-        app=LIDO_LEGACY_ORACLE,
+        entity=VOTING,
+        app=LEGACY_ORACLE,
         role=MANAGE_MEMBERS,
     ),
     Permission(
-        entity=LIDO_VOTING,
-        app=LIDO_LEGACY_ORACLE,
+        entity=VOTING,
+        app=LEGACY_ORACLE,
         role=MANAGE_QUORUM,
     ),
     Permission(
-        entity=LIDO_VOTING,
-        app=LIDO_LEGACY_ORACLE,
+        entity=VOTING,
+        app=LEGACY_ORACLE,
         role=SET_BEACON_SPEC,
     ),
     Permission(
-        entity=LIDO_VOTING,
-        app=LIDO_LEGACY_ORACLE,
+        entity=VOTING,
+        app=LEGACY_ORACLE,
         role=SET_REPORT_BOUNDARIES,
     ),
     Permission(
-        entity=LIDO_VOTING,
-        app=LIDO_LEGACY_ORACLE,
+        entity=VOTING,
+        app=LEGACY_ORACLE,
         role=SET_BEACON_REPORT_RECEIVER,
     ),
 ]
@@ -230,7 +230,7 @@ def test_vote(
     vote_ids_from_env,
     accounts,
 ):
-    withdrawal_vault_manager = interface.WithdrawalVaultManager(LIDO_WITHDRAWAL_VAULT)
+    withdrawal_vault_manager = interface.WithdrawalVaultManager(WITHDRAWAL_VAULT)
     lido_old_app = contracts.lido_app_repo.getLatest()
     nor_old_app = contracts.nor_app_repo.getLatest()
     oracle_old_app = contracts.oracle_app_repo.getLatest()
@@ -239,9 +239,9 @@ def test_vote(
     # Preliminary checks
     #
     assert (
-        withdrawal_vault_manager.implementation() == LIDO_WITHDRAWAL_VAULT_IMPL_V1
+        withdrawal_vault_manager.implementation() == WITHDRAWAL_VAULT_IMPL_V1
     ), "Wrong WithdrawalVault proxy initial implementation"
-    assert withdrawal_vault_manager.proxy_getAdmin() == LIDO_VOTING
+    assert withdrawal_vault_manager.proxy_getAdmin() == VOTING
 
     # ACL grant checks
     assert not contracts.acl.hasPermission(*permission_staking_router)
@@ -270,7 +270,7 @@ def test_vote(
     # WithdrawalVault upgrade checks
     #
     assert (
-        withdrawal_vault_manager.implementation() == LIDO_WITHDRAWAL_VAULT_IMPL
+        withdrawal_vault_manager.implementation() == WITHDRAWAL_VAULT_IMPL
     ), "Wrong WithdrawalVault proxy implementation"
 
     #
@@ -278,24 +278,24 @@ def test_vote(
     #
     lido_new_app = contracts.lido_app_repo.getLatest()
     lido_proxy = interface.AppProxyUpgradeable(contracts.lido)
-    assert_app_update(lido_new_app, lido_old_app, LIDO_LIDO_IMPL)
-    assert lido_proxy.implementation() == LIDO_LIDO_IMPL, "Proxy should be updated"
+    assert_app_update(lido_new_app, lido_old_app, LIDO_IMPL)
+    assert lido_proxy.implementation() == LIDO_IMPL, "Proxy should be updated"
 
     #
     # NodeOperatorsRegistry app upgrade checks
     #
     nor_new_app = contracts.nor_app_repo.getLatest()
     nor_proxy = interface.AppProxyUpgradeable(contracts.node_operators_registry)
-    assert_app_update(nor_new_app, nor_old_app, LIDO_NODE_OPERATORS_REGISTRY_IMPL)
-    assert nor_proxy.implementation() == LIDO_NODE_OPERATORS_REGISTRY_IMPL, "Proxy should be updated"
+    assert_app_update(nor_new_app, nor_old_app, NODE_OPERATORS_REGISTRY_IMPL)
+    assert nor_proxy.implementation() == NODE_OPERATORS_REGISTRY_IMPL, "Proxy should be updated"
 
     #
     # LidoOracle app upgrade checks
     #
     oracle_new_app = contracts.oracle_app_repo.getLatest()
     oracle_proxy = interface.AppProxyUpgradeable(contracts.legacy_oracle)
-    assert_app_update(oracle_new_app, oracle_old_app, LIDO_LEGACY_ORACLE_IMPL)
-    assert oracle_proxy.implementation() == LIDO_LEGACY_ORACLE_IMPL, "Proxy should be updated"
+    assert_app_update(oracle_new_app, oracle_old_app, LEGACY_ORACLE_IMPL)
+    assert oracle_proxy.implementation() == LEGACY_ORACLE_IMPL, "Proxy should be updated"
 
     # ACL grant checks
     assert contracts.acl.hasPermission(*permission_staking_router)
@@ -330,14 +330,16 @@ def test_vote(
         *revoke_roles_events,
     ) = grouped_voting_events
 
-    validate_withdrawal_vault_manager_upgrade_events(events_withdrawal_vault_upgrade, LIDO_WITHDRAWAL_VAULT_IMPL)
+    validate_withdrawal_vault_manager_upgrade_events(events_withdrawal_vault_upgrade, WITHDRAWAL_VAULT_IMPL)
     validate_start_upgrade_events(events_template_start)
     validate_push_to_repo_event(events_publish_lido_app, LIDO_APP_VERSION)
-    validate_app_update_event(events_update_lido_impl, LIDO_APP_ID, LIDO_LIDO_IMPL)
+    validate_app_update_event(events_update_lido_impl, LIDO_ARAGON_APP_ID, LIDO_IMPL)
     validate_push_to_repo_event(events_publish_nor_app, NODE_OPERATORS_REGISTRY_APP_VERSION)
-    validate_app_update_event(events_update_nor_impl, NODE_OPERATORS_REGISTRY_APP_ID, LIDO_NODE_OPERATORS_REGISTRY_IMPL)
+    validate_app_update_event(
+        events_update_nor_impl, NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL
+    )
     validate_push_to_repo_event(events_publish_oracle_app, ORACLE_APP_VERSION)
-    validate_app_update_event(events_update_oracle_impl, ORACLE_APP_ID, LIDO_LEGACY_ORACLE_IMPL)
+    validate_app_update_event(events_update_oracle_impl, ORACLE_ARAGON_APP_ID, LEGACY_ORACLE_IMPL)
     validate_permission_create_event(
         events_grant_staking_router_role, permission_staking_router, manager=contracts.voting
     )
@@ -397,8 +399,8 @@ def validate_start_upgrade_events(events: EventDict):
                     "RoleGranted",
                     {
                         "role": MANAGE_MEMBERS_AND_QUORUM_ROLE,
-                        "account": LIDO_TEMPLATE,
-                        "sender": LIDO_TEMPLATE,
+                        "account": LIDO_V2_UPGRADE_TEMPLATE,
+                        "sender": LIDO_V2_UPGRADE_TEMPLATE,
                     },
                 ),
                 (
@@ -423,8 +425,8 @@ def validate_start_upgrade_events(events: EventDict):
                     "RoleRevoked",
                     {
                         "role": MANAGE_MEMBERS_AND_QUORUM_ROLE,
-                        "account": LIDO_TEMPLATE,
-                        "sender": LIDO_TEMPLATE,
+                        "account": LIDO_V2_UPGRADE_TEMPLATE,
+                        "sender": LIDO_V2_UPGRADE_TEMPLATE,
                     },
                 ),
             ]
@@ -435,14 +437,14 @@ def validate_start_upgrade_events(events: EventDict):
             # Vote item start
             (
                 "LogScriptCall",
-                {"sender": ANY_VALUE, "src": LIDO_VOTING, "dst": LIDO_TEMPLATE},
+                {"sender": ANY_VALUE, "src": VOTING, "dst": LIDO_V2_UPGRADE_TEMPLATE},
             ),
             # Proxy upgrades
             ("Upgraded", {"implementation": LIDO_LOCATOR_IMPL}),
-            ("Upgraded", {"implementation": LIDO_ACCOUNTING_ORACLE_IMPL}),
-            ("Upgraded", {"implementation": LIDO_VALIDATORS_EXIT_BUS_ORACLE_IMPL}),
-            ("Upgraded", {"implementation": LIDO_STAKING_ROUTER_IMPL}),
-            ("Upgraded", {"implementation": LIDO_WITHDRAWAL_QUEUE_IMPL}),
+            ("Upgraded", {"implementation": ACCOUNTING_ORACLE_IMPL}),
+            ("Upgraded", {"implementation": VALIDATORS_EXIT_BUS_ORACLE_IMPL}),
+            ("Upgraded", {"implementation": STAKING_ROUTER_IMPL}),
+            ("Upgraded", {"implementation": WITHDRAWAL_QUEUE_IMPL}),
         ]
         # Migrate oracle committee for HashConsensus for AccountingOracle
         + hash_consensus_migration_events()
@@ -460,14 +462,14 @@ def validate_start_upgrade_events(events: EventDict):
                 "RoleGranted",
                 {
                     "role": DEFAULT_ADMIN_ROLE,
-                    "account": LIDO_TEMPLATE,
-                    "sender": LIDO_TEMPLATE,
+                    "account": LIDO_V2_UPGRADE_TEMPLATE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             ("ContractVersionSet", {"version": 1}),
             (
                 "ConsensusHashContractSet",
-                {"addr": LIDO_HASH_CONSENSUS_FOR_AO, "prevAddr": ZERO_ADDRESS},
+                {"addr": HASH_CONSENSUS_FOR_AO, "prevAddr": ZERO_ADDRESS},
             ),
             ("ConsensusVersionSet", {"version": 1, "prevVersion": 0}),
             (
@@ -489,15 +491,15 @@ def validate_finish_upgrade_events(events: EventDict):
                 {
                     "role": DEFAULT_ADMIN_ROLE,
                     "account": contracts.agent.address,
-                    "sender": LIDO_TEMPLATE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             (
                 "RoleRevoked",
                 {
                     "role": DEFAULT_ADMIN_ROLE,
-                    "account": LIDO_TEMPLATE,
-                    "sender": LIDO_TEMPLATE,
+                    "account": LIDO_V2_UPGRADE_TEMPLATE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
         ]
@@ -507,7 +509,7 @@ def validate_finish_upgrade_events(events: EventDict):
             # Vote item start
             (
                 "LogScriptCall",
-                {"sender": ANY_VALUE, "src": LIDO_VOTING, "dst": LIDO_TEMPLATE},
+                {"sender": ANY_VALUE, "src": VOTING, "dst": LIDO_V2_UPGRADE_TEMPLATE},
             ),
             # Initialize WithdrawalVault
             ("ContractVersionSet", {"version": 1}),
@@ -518,25 +520,25 @@ def validate_finish_upgrade_events(events: EventDict):
                 "RoleGranted",
                 {
                     "role": DEFAULT_ADMIN_ROLE,
-                    "account": LIDO_TEMPLATE,
-                    "sender": LIDO_TEMPLATE,
+                    "account": LIDO_V2_UPGRADE_TEMPLATE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
-            ("InitializedV1", {"_admin": LIDO_TEMPLATE}),
+            ("InitializedV1", {"_admin": LIDO_V2_UPGRADE_TEMPLATE}),
             (
                 "RoleGranted",
-                {"role": PAUSE_ROLE, "account": GATE_SEAL, "sender": LIDO_TEMPLATE},
+                {"role": PAUSE_ROLE, "account": GATE_SEAL, "sender": LIDO_V2_UPGRADE_TEMPLATE},
             ),
             (
                 "RoleGranted",
-                {"role": FINALIZE_ROLE, "account": contracts.lido.address, "sender": LIDO_TEMPLATE},
+                {"role": FINALIZE_ROLE, "account": contracts.lido.address, "sender": LIDO_V2_UPGRADE_TEMPLATE},
             ),
             (
                 "RoleGranted",
                 {
                     "role": ORACLE_ROLE,
-                    "account": LIDO_ACCOUNTING_ORACLE,
-                    "sender": LIDO_TEMPLATE,
+                    "account": ACCOUNTING_ORACLE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             # Resume WithdrawalQueue
@@ -544,8 +546,8 @@ def validate_finish_upgrade_events(events: EventDict):
                 "RoleGranted",
                 {
                     "role": RESUME_ROLE,
-                    "account": LIDO_TEMPLATE,
-                    "sender": LIDO_TEMPLATE,
+                    "account": LIDO_V2_UPGRADE_TEMPLATE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             ("Resumed", {}),
@@ -553,8 +555,8 @@ def validate_finish_upgrade_events(events: EventDict):
                 "RoleRevoked",
                 {
                     "role": RESUME_ROLE,
-                    "account": LIDO_TEMPLATE,
-                    "sender": LIDO_TEMPLATE,
+                    "account": LIDO_V2_UPGRADE_TEMPLATE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             # Initialize HashConsensus + ValidatorsExitBusOracle
@@ -566,28 +568,28 @@ def validate_finish_upgrade_events(events: EventDict):
                 "RoleGranted",
                 {
                     "role": DEFAULT_ADMIN_ROLE,
-                    "account": LIDO_TEMPLATE,
-                    "sender": LIDO_TEMPLATE,
+                    "account": LIDO_V2_UPGRADE_TEMPLATE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             ("Paused", {"duration": PAUSE_INFINITELY}),
             ("ContractVersionSet", {"version": 1}),
             (
                 "ConsensusHashContractSet",
-                {"addr": LIDO_HASH_CONSENSUS_FOR_VEBO, "prevAddr": ZERO_ADDRESS},
+                {"addr": HASH_CONSENSUS_FOR_VEBO, "prevAddr": ZERO_ADDRESS},
             ),
             ("ConsensusVersionSet", {"version": 1, "prevVersion": 0}),
             (
                 "RoleGranted",
-                {"role": PAUSE_ROLE, "account": GATE_SEAL, "sender": LIDO_TEMPLATE},
+                {"role": PAUSE_ROLE, "account": GATE_SEAL, "sender": LIDO_V2_UPGRADE_TEMPLATE},
             ),
             # Resume ValidatorsExitBusOracle
             (
                 "RoleGranted",
                 {
                     "role": RESUME_ROLE,
-                    "account": LIDO_TEMPLATE,
-                    "sender": LIDO_TEMPLATE,
+                    "account": LIDO_V2_UPGRADE_TEMPLATE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             ("Resumed", {}),
@@ -595,8 +597,8 @@ def validate_finish_upgrade_events(events: EventDict):
                 "RoleRevoked",
                 {
                     "role": RESUME_ROLE,
-                    "account": LIDO_TEMPLATE,
-                    "sender": LIDO_TEMPLATE,
+                    "account": LIDO_V2_UPGRADE_TEMPLATE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             # Initialize StakingRouter
@@ -605,36 +607,36 @@ def validate_finish_upgrade_events(events: EventDict):
                 "RoleGranted",
                 {
                     "role": DEFAULT_ADMIN_ROLE,
-                    "account": LIDO_TEMPLATE,
-                    "sender": LIDO_TEMPLATE,
+                    "account": LIDO_V2_UPGRADE_TEMPLATE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             (
                 "WithdrawalCredentialsSet",
-                {"withdrawalCredentials": LIDO_WITHDRAWAL_CREDENTIALS, "setBy": LIDO_TEMPLATE},
+                {"withdrawalCredentials": WITHDRAWAL_CREDENTIALS, "setBy": LIDO_V2_UPGRADE_TEMPLATE},
             ),
             (
                 "RoleGranted",
                 {
                     "role": STAKING_MODULE_PAUSE_ROLE,
-                    "account": LIDO_DEPOSIT_SECURITY_MODULE,
-                    "sender": LIDO_TEMPLATE,
+                    "account": DEPOSIT_SECURITY_MODULE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             (
                 "RoleGranted",
                 {
                     "role": STAKING_MODULE_RESUME_ROLE,
-                    "account": LIDO_DEPOSIT_SECURITY_MODULE,
-                    "sender": LIDO_TEMPLATE,
+                    "account": DEPOSIT_SECURITY_MODULE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             (
                 "RoleGranted",
                 {
                     "role": REPORT_EXITED_VALIDATORS_ROLE,
-                    "account": LIDO_ACCOUNTING_ORACLE,
-                    "sender": LIDO_TEMPLATE,
+                    "account": ACCOUNTING_ORACLE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             (
@@ -642,15 +644,15 @@ def validate_finish_upgrade_events(events: EventDict):
                 {
                     "role": REPORT_REWARDS_MINTED_ROLE,
                     "account": contracts.lido.address,
-                    "sender": LIDO_TEMPLATE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             # finalizeUpgrade LegacyOracle
             ("ContractVersionSet", {"version": 4}),
             # finalizeUpgrade Lido
             ("ContractVersionSet", {"version": 2}),
-            ("EIP712StETHInitialized", {"eip712StETH": LIDO_EIP712_STETH}),
-            ("Approval", {"owner": LIDO_WITHDRAWAL_QUEUE, "spender": LIDO_BURNER, "value": TYPE_UINT256_MAX}),
+            ("EIP712StETHInitialized", {"eip712StETH": EIP712_STETH}),
+            ("Approval", {"owner": WITHDRAWAL_QUEUE, "spender": BURNER, "value": TYPE_UINT256_MAX}),
             ("LidoLocatorSet", {"lidoLocator": LIDO_LOCATOR}),
             # Grant burner role
             (
@@ -658,7 +660,7 @@ def validate_finish_upgrade_events(events: EventDict):
                 {
                     "role": REQUEST_BURN_SHARES_ROLE,
                     "account": contracts.node_operators_registry.address,
-                    "sender": LIDO_TEMPLATE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             # finalizeUpgrade NodeOperatorsRegistry
@@ -668,7 +670,7 @@ def validate_finish_upgrade_events(events: EventDict):
                 "Approval",
                 {
                     "owner": contracts.node_operators_registry.address,
-                    "spender": LIDO_BURNER,
+                    "spender": BURNER,
                     "value": TYPE_UINT256_MAX,
                 },
             ),
@@ -680,8 +682,8 @@ def validate_finish_upgrade_events(events: EventDict):
                 "RoleGranted",
                 {
                     "role": STAKING_MODULE_MANAGE_ROLE,
-                    "account": LIDO_TEMPLATE,
-                    "sender": LIDO_TEMPLATE,
+                    "account": LIDO_V2_UPGRADE_TEMPLATE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             ("StakingRouterETHDeposited", {"stakingModuleId": CURATED_STAKING_MODULE_ID, "amount": 0}),
@@ -691,7 +693,7 @@ def validate_finish_upgrade_events(events: EventDict):
                     "stakingModuleId": CURATED_STAKING_MODULE_ID,
                     "stakingModule": contracts.node_operators_registry.address,
                     "name": CURATED_STAKING_MODULE_NAME,
-                    "createdBy": LIDO_TEMPLATE,
+                    "createdBy": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             (
@@ -699,7 +701,7 @@ def validate_finish_upgrade_events(events: EventDict):
                 {
                     "stakingModuleId": CURATED_STAKING_MODULE_ID,
                     "targetShare": 10000,
-                    "setBy": LIDO_TEMPLATE,
+                    "setBy": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             (
@@ -708,15 +710,15 @@ def validate_finish_upgrade_events(events: EventDict):
                     "stakingModuleId": CURATED_STAKING_MODULE_ID,
                     "stakingModuleFee": 500,
                     "treasuryFee": 500,
-                    "setBy": LIDO_TEMPLATE,
+                    "setBy": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
             (
                 "RoleRevoked",
                 {
                     "role": STAKING_MODULE_MANAGE_ROLE,
-                    "account": LIDO_TEMPLATE,
-                    "sender": LIDO_TEMPLATE,
+                    "account": LIDO_V2_UPGRADE_TEMPLATE,
+                    "sender": LIDO_V2_UPGRADE_TEMPLATE,
                 },
             ),
         ]
@@ -728,7 +730,7 @@ def validate_finish_upgrade_events(events: EventDict):
         # Transfer OZ admin roles for 7 contracts: HC for VEBO, HC for AO, Burner, SR, AO, VEBO, WQ
         + 7 * transfer_oz_admin_from_template_to_agent()
         # Change proxy admin for proxies of: Locator, SR, AO, VEBO, WQ
-        + 5 * [("AdminChanged", {"previousAdmin": LIDO_TEMPLATE, "newAdmin": contracts.agent.address})]
+        + 5 * [("AdminChanged", {"previousAdmin": LIDO_V2_UPGRADE_TEMPLATE, "newAdmin": contracts.agent.address})]
         + [
             # Change DepositSecurityModule owner
             ("OwnerChanged", {"newValue": contracts.agent.address}),

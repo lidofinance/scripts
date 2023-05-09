@@ -7,7 +7,7 @@ from brownie.network.transaction import TransactionReceipt
 
 from utils.config import (
     LDO_HOLDER_ADDRESS_FOR_TESTS,
-    LIDO_TEMPLATE,
+    LIDO_V2_UPGRADE_TEMPLATE,
     get_is_live,
 )
 from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
@@ -42,7 +42,7 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
 
     if os.getenv("SKIP_SHAPELLA_PRELIMINARY_STEP"):
         assert (
-            LIDO_TEMPLATE != ""
+            LIDO_V2_UPGRADE_TEMPLATE != ""
         ), "If SKIP_SHAPELLA_PRELIMINARY_STEP is set 'shapella_upgrade_template' must be specified in the config"
     else:
         assert (
@@ -50,7 +50,7 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
             "ERROR: will not do preliminary actions on live network. run `preliminary_shapella...py` script manually",
         )
         deployed_upgrade_template = prepare_for_shapella_upgrade_voting(silent=True)
-        assert deployed_upgrade_template.address == LIDO_TEMPLATE
+        assert deployed_upgrade_template.address == LIDO_V2_UPGRADE_TEMPLATE
 
     vote_ids = []
     vote_transactions = []

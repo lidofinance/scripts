@@ -3,7 +3,7 @@ from brownie import interface  # type: ignore
 
 from utils.config import (
     contracts,
-    LIDO_BURNER,
+    BURNER,
     TOTAL_NON_COVER_SHARES_BURNT,
     TOTAL_COVER_SHARES_BURNT,
 )
@@ -11,7 +11,7 @@ from utils.config import (
 
 @pytest.fixture(scope="module")
 def contract() -> interface.Burner:
-    return interface.Burner(LIDO_BURNER)
+    return interface.Burner(BURNER)
 
 
 def test_links(contract):

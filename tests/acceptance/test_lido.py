@@ -4,10 +4,10 @@ from brownie import interface, web3, reverts  # type: ignore
 from utils.test.helpers import ONE_ETH
 from utils.config import (
     contracts,
-    LIDO_LIDO,
-    LIDO_LIDO_IMPL,
+    LIDO,
+    LIDO_IMPL,
     INITIAL_DEAD_TOKEN_HOLDER,
-    LIDO_APP_ID,
+    LIDO_ARAGON_APP_ID,
     LIDO_MAX_STAKE_LIMIT_ETH,
 )
 
@@ -18,14 +18,14 @@ last_seen_beacon_validators = 175906
 
 @pytest.fixture(scope="module")
 def contract() -> interface.Lido:
-    return interface.Lido(LIDO_LIDO)
+    return interface.Lido(LIDO)
 
 
 def test_aragon(contract):
     proxy = interface.AppProxyUpgradeable(contract)
-    assert proxy.implementation() == LIDO_LIDO_IMPL
+    assert proxy.implementation() == LIDO_IMPL
     assert contract.kernel() == contracts.kernel
-    assert contract.appId() == LIDO_APP_ID
+    assert contract.appId() == LIDO_ARAGON_APP_ID
     assert contract.hasInitialized() == True
     assert contract.isPetrified() == False
 
@@ -60,7 +60,7 @@ def test_finalize_upgrade(contract):
 
 
 def test_petrified():
-    impl = interface.Lido(LIDO_LIDO_IMPL)
+    impl = interface.Lido(LIDO_IMPL)
     with reverts("INIT_ALREADY_INITIALIZED"):
         impl.initialize(contracts.lido_locator, contracts.eip712_steth, {"from": contracts.voting})
 

@@ -88,15 +88,15 @@ def get_config_params() -> Dict[str, str]:
 class ContractsLazyLoader:
     @property
     def lido_v1(self) -> interface.LidoV1:
-        return interface.LidoV1(LIDO_LIDO)
+        return interface.LidoV1(LIDO)
 
     @property
     def node_operators_registry_v1(self) -> interface.NodeOperatorsRegistryV1:
-        return interface.NodeOperatorsRegistryV1(LIDO_NODE_OPERATORS_REGISTRY)
+        return interface.NodeOperatorsRegistryV1(NODE_OPERATORS_REGISTRY)
 
     @property
     def lido(self) -> interface.Lido:
-        return interface.Lido(LIDO_LIDO)
+        return interface.Lido(LIDO)
 
     @property
     def ldo_token(self) -> interface.MiniMeToken:
@@ -104,71 +104,71 @@ class ContractsLazyLoader:
 
     @property
     def voting(self) -> interface.Voting:
-        return interface.Voting(LIDO_VOTING)
+        return interface.Voting(VOTING)
 
     @property
     def token_manager(self) -> interface.TokenManager:
-        return interface.TokenManager(LIDO_TOKEN_MANAGER)
+        return interface.TokenManager(TOKEN_MANAGER)
 
     @property
     def finance(self) -> interface.Finance:
-        return interface.Finance(LIDO_FINANCE)
+        return interface.Finance(FINANCE)
 
     @property
     def acl(self) -> interface.ACL:
-        return interface.ACL(LIDO_ACL)
+        return interface.ACL(ACL)
 
     @property
     def agent(self) -> interface.Agent:
-        return interface.Agent(LIDO_AGENT)
+        return interface.Agent(AGENT)
 
     @property
     def node_operators_registry(self) -> interface.NodeOperatorsRegistry:
-        return interface.NodeOperatorsRegistry(LIDO_NODE_OPERATORS_REGISTRY)
+        return interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
 
     @property
     def legacy_oracle(self) -> interface.LegacyOracle:
-        return interface.LegacyOracle(LIDO_LEGACY_ORACLE)
+        return interface.LegacyOracle(LEGACY_ORACLE)
 
     @property
     def deposit_security_module_v1(self) -> interface.DepositSecurityModule:
-        return interface.DepositSecurityModuleV1(LIDO_DEPOSIT_SECURITY_MODULE_V1)
+        return interface.DepositSecurityModuleV1(DEPOSIT_SECURITY_MODULE_V1)
 
     @property
     def deposit_security_module(self) -> interface.DepositSecurityModule:
-        return interface.DepositSecurityModule(LIDO_DEPOSIT_SECURITY_MODULE)
+        return interface.DepositSecurityModule(DEPOSIT_SECURITY_MODULE)
 
     @property
     def burner(self) -> interface.Burner:
-        return interface.Burner(LIDO_BURNER)
+        return interface.Burner(BURNER)
 
     @property
     def execution_layer_rewards_vault(self) -> interface.LidoExecutionLayerRewardsVault:
-        return interface.LidoExecutionLayerRewardsVault(LIDO_EXECUTION_LAYER_REWARDS_VAULT)
+        return interface.LidoExecutionLayerRewardsVault(EXECUTION_LAYER_REWARDS_VAULT)
 
     @property
     def hash_consensus_for_accounting_oracle(self) -> interface.HashConsensus:
-        return interface.HashConsensus(LIDO_HASH_CONSENSUS_FOR_AO)
+        return interface.HashConsensus(HASH_CONSENSUS_FOR_AO)
 
     @property
     def accounting_oracle(self) -> interface.AccountingOracle:
-        return interface.AccountingOracle(LIDO_ACCOUNTING_ORACLE)
+        return interface.AccountingOracle(ACCOUNTING_ORACLE)
 
     @property
     def hash_consensus_for_validators_exit_bus_oracle(self) -> interface.HashConsensus:
-        return interface.HashConsensus(LIDO_HASH_CONSENSUS_FOR_VEBO)
+        return interface.HashConsensus(HASH_CONSENSUS_FOR_VEBO)
 
     @property
     def validators_exit_bus_oracle(self) -> interface.ValidatorsExitBusOracle:
-        return interface.ValidatorsExitBusOracle(LIDO_VALIDATORS_EXIT_BUS_ORACLE)
+        return interface.ValidatorsExitBusOracle(VALIDATORS_EXIT_BUS_ORACLE)
 
     @property
     def oracle_report_sanity_checker(self) -> interface.OracleReportSanityChecker:
-        return interface.OracleReportSanityChecker(LIDO_ORACLE_REPORT_SANITY_CHECKER)
+        return interface.OracleReportSanityChecker(ORACLE_REPORT_SANITY_CHECKER)
 
     @property
     def withdrawal_queue(self) -> interface.WithdrawalQueueERC721:
-        return interface.WithdrawalQueueERC721(LIDO_WITHDRAWAL_QUEUE)
+        return interface.WithdrawalQueueERC721(WITHDRAWAL_QUEUE)
 
     @property
     def lido_locator(self) -> interface.LidoLocator:
@@ -176,43 +176,43 @@ class ContractsLazyLoader:
 
     @property
     def eip712_steth(self) -> interface.EIP712StETH:
-        return interface.EIP712StETH(LIDO_EIP712_STETH)
+        return interface.EIP712StETH(EIP712_STETH)
 
     @property
     def withdrawal_vault(self) -> interface.WithdrawalVault:
-        return interface.WithdrawalVault(LIDO_WITHDRAWAL_VAULT)
+        return interface.WithdrawalVault(WITHDRAWAL_VAULT)
 
     @property
     def staking_router(self) -> interface.StakingRouter:
-        return interface.StakingRouter(LIDO_STAKING_ROUTER)
+        return interface.StakingRouter(STAKING_ROUTER)
 
     @property
     def kernel(self) -> interface.Kernel:
-        return interface.Kernel(LIDO_DAO_KERNEL)
+        return interface.Kernel(ARAGON_KERNEL)
 
     @property
     def lido_app_repo(self) -> interface.Repo:
-        return interface.Repo(LIDO_LIDO_REPO)
+        return interface.Repo(LIDO_REPO)
 
     @property
     def nor_app_repo(self) -> interface.Repo:
-        return interface.Repo(LIDO_NODE_OPERATORS_REGISTRY_REPO)
+        return interface.Repo(NODE_OPERATORS_REGISTRY_REPO)
 
     @property
     def voting_app_repo(self) -> interface.Repo:
-        return interface.Repo(LIDO_VOTING_REPO)
+        return interface.Repo(VOTING_REPO)
 
     @property
     def oracle_app_repo(self) -> interface.Repo:
-        return interface.Repo(LIDO_LEGACY_ORACLE_REPO)
+        return interface.Repo(LEGACY_ORACLE_REPO)
 
     @property
     def easy_track(self) -> interface.EasyTrack:
-        return interface.EasyTrack(LIDO_EASYTRACK)
+        return interface.EasyTrack(EASYTRACK)
 
     @property
     def relay_allowed_list(self) -> interface.MEVBoostRelayAllowedList:
-        return interface.MEVBoostRelayAllowedList(LIDO_RELAY_ALLOWED_LIST)
+        return interface.MEVBoostRelayAllowedList(RELAY_ALLOWED_LIST)
 
     @property
     def dai_token(self) -> interface.ERC20:
@@ -224,11 +224,11 @@ class ContractsLazyLoader:
 
     @property
     def oracle_daemon_config(self) -> interface.OracleDaemonConfig:
-        return interface.OracleDaemonConfig(LIDO_ORACLE_DAEMON_CONFIG)
+        return interface.OracleDaemonConfig(ORACLE_DAEMON_CONFIG)
 
     @property
     def wsteth(self) -> interface.WstETH:
-        return interface.WstETH(LIDO_WSTETH_TOKEN)
+        return interface.WstETH(WSTETH_TOKEN)
 
     @property
     def gate_seal(self) -> interface.GateSeal:
@@ -236,7 +236,7 @@ class ContractsLazyLoader:
 
     @property
     def shapella_upgrade_template(self) -> ShapellaUpgradeTemplate:
-        return ShapellaUpgradeTemplate.at(LIDO_TEMPLATE)
+        return ShapellaUpgradeTemplate.at(LIDO_V2_UPGRADE_TEMPLATE)
 
 
 def __getattr__(name: str) -> Any:

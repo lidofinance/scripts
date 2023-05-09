@@ -11,7 +11,7 @@ from pytest_check import check
 from web3.types import Wei
 
 from tests.conftest import Helpers
-from utils.config import contracts, LDO_TOKEN, LIDO_VOTING
+from utils.config import contracts, LDO_TOKEN, VOTING
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.import_current_votes import start_and_execute_votes
 
@@ -308,7 +308,7 @@ def do_snapshot(
                 "STAKING_CONTROL_ROLE": lido.STAKING_CONTROL_ROLE(),
                 "STAKING_PAUSE_ROLE": lido.STAKING_PAUSE_ROLE(),
                 # AragonApp
-                "canPerform()": lido.canPerform(LIDO_VOTING, lido.PAUSE_ROLE(), []),
+                "canPerform()": lido.canPerform(VOTING, lido.PAUSE_ROLE(), []),
                 "getRecoveryVault": lido.getRecoveryVault(),
                 "kernel": lido.kernel(),
                 "appId": lido.appId(),

@@ -12,7 +12,7 @@ from utils.evm_script import (
     EMPTY_CALLSCRIPT,
 )
 
-from utils.config import prompt_bool, CHAIN_NETWORK, contracts, get_config_params
+from utils.config import prompt_bool, CHAIN_NETWORK_NAME, contracts, get_config_params
 
 
 def bake_vote_items(vote_desc_items: List[str], call_script_items: List[Tuple[str, str]]) -> Dict[str, Tuple[str, str]]:
@@ -115,7 +115,7 @@ def confirm_vote_script(vote_items: Dict[str, Tuple[str, str]], silent: bool) ->
         human_readable_script = decode_evm_script(
             encoded_call_script,
             verbose=False,
-            specific_net=CHAIN_NETWORK,
+            specific_net=CHAIN_NETWORK_NAME,
             repeat_is_error=True,
         )
 

@@ -3,9 +3,9 @@ from brownie import interface, web3  # type: ignore
 
 from utils.config import (
     contracts,
-    LIDO_DEPOSIT_SECURITY_MODULE,
+    DEPOSIT_SECURITY_MODULE,
     DSM_GUARDIANS,
-    LIDO_DEPOSIT_SECURITY_MODULE_V1,
+    DEPOSIT_SECURITY_MODULE_V1,
     CHAIN_DEPOSIT_CONTRACT,
     DSM_MAX_DEPOSITS_PER_BLOCK,
     DSM_MIN_DEPOSIT_BLOCK_DISTANCE,
@@ -16,7 +16,7 @@ from utils.config import (
 
 @pytest.fixture(scope="module")
 def contract() -> interface.DepositSecurityModule:
-    return interface.DepositSecurityModule(LIDO_DEPOSIT_SECURITY_MODULE)
+    return interface.DepositSecurityModule(DEPOSIT_SECURITY_MODULE)
 
 
 def test_owner(contract):
@@ -30,7 +30,7 @@ def test_links(contract):
 
 
 def test_migration(contract):
-    old_dsm = interface.DepositSecurityModule(LIDO_DEPOSIT_SECURITY_MODULE_V1)
+    old_dsm = interface.DepositSecurityModule(DEPOSIT_SECURITY_MODULE_V1)
 
     assert contract.PAUSE_MESSAGE_PREFIX() != old_dsm.PAUSE_MESSAGE_PREFIX()
     assert contract.ATTEST_MESSAGE_PREFIX() != old_dsm.ATTEST_MESSAGE_PREFIX()
@@ -63,7 +63,7 @@ def test_prefixes(contract):
             [
                 web3.keccak(text="lido.DepositSecurityModule.PAUSE_MESSAGE").hex(),
                 1,
-                LIDO_DEPOSIT_SECURITY_MODULE,
+                DEPOSIT_SECURITY_MODULE,
             ],
         ).hex()
     )
@@ -74,7 +74,7 @@ def test_prefixes(contract):
             [
                 web3.keccak(text="lido.DepositSecurityModule.ATTEST_MESSAGE").hex(),
                 1,
-                LIDO_DEPOSIT_SECURITY_MODULE,
+                DEPOSIT_SECURITY_MODULE,
             ],
         ).hex()
     )

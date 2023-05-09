@@ -3,9 +3,9 @@ from brownie import ZERO_ADDRESS, interface, web3, reverts  # type: ignore
 
 from utils.config import (
     contracts,
-    LIDO_NODE_OPERATORS_REGISTRY,
-    LIDO_NODE_OPERATORS_REGISTRY_IMPL,
-    NODE_OPERATORS_REGISTRY_APP_ID,
+    NODE_OPERATORS_REGISTRY,
+    NODE_OPERATORS_REGISTRY_IMPL,
+    NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
     CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
     CURATED_STAKING_MODULE_OPERATORS_COUNT,
     CURATED_STAKING_MODULE_OPERATORS_ACTIVE_COUNT,
@@ -15,7 +15,7 @@ from utils.config import (
 
 @pytest.fixture(scope="module")
 def contract() -> interface.NodeOperatorsRegistry:
-    return interface.NodeOperatorsRegistry(LIDO_NODE_OPERATORS_REGISTRY)
+    return interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
 
 
 def test_links(contract):
@@ -24,9 +24,9 @@ def test_links(contract):
 
 def test_aragon(contract):
     proxy = interface.AppProxyUpgradeable(contract)
-    assert proxy.implementation() == LIDO_NODE_OPERATORS_REGISTRY_IMPL
+    assert proxy.implementation() == NODE_OPERATORS_REGISTRY_IMPL
     assert contract.kernel() == contracts.kernel
-    assert contract.appId() == NODE_OPERATORS_REGISTRY_APP_ID
+    assert contract.appId() == NODE_OPERATORS_REGISTRY_ARAGON_APP_ID
     assert contract.hasInitialized() == True
     assert contract.isPetrified() == False
 
@@ -63,7 +63,7 @@ def test_finalize_upgrade(contract):
 
 
 def test_petrified():
-    contract = interface.NodeOperatorsRegistry(LIDO_NODE_OPERATORS_REGISTRY_IMPL)
+    contract = interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY_IMPL)
     with reverts("INIT_ALREADY_INITIALIZED"):
         contract.initialize(
             contracts.lido_locator,

@@ -3,8 +3,8 @@ from brownie import interface, ZERO_ADDRESS, reverts  # type: ignore
 
 from utils.config import (
     contracts,
-    LIDO_WITHDRAWAL_QUEUE,
-    LIDO_WITHDRAWAL_QUEUE_IMPL,
+    WITHDRAWAL_QUEUE,
+    WITHDRAWAL_QUEUE_IMPL,
     WQ_ERC721_TOKEN_NAME,
     WQ_ERC721_TOKEN_SYMBOL,
     WQ_ERC721_TOKEN_BASE_URI,
@@ -14,12 +14,12 @@ from utils.evm_script import encode_error
 
 @pytest.fixture(scope="module")
 def contract() -> interface.WithdrawalQueueERC721:
-    return interface.WithdrawalQueueERC721(LIDO_WITHDRAWAL_QUEUE)
+    return interface.WithdrawalQueueERC721(WITHDRAWAL_QUEUE)
 
 
 def test_proxy(contract):
     proxy = interface.OssifiableProxy(contract)
-    assert proxy.proxy__getImplementation() == LIDO_WITHDRAWAL_QUEUE_IMPL
+    assert proxy.proxy__getImplementation() == WITHDRAWAL_QUEUE_IMPL
     assert proxy.proxy__getAdmin() == contracts.agent.address
 
 
@@ -33,7 +33,7 @@ def test_initialize(contract):
 
 
 def test_petrified(contract):
-    impl = interface.WithdrawalQueueERC721(LIDO_WITHDRAWAL_QUEUE_IMPL)
+    impl = interface.WithdrawalQueueERC721(WITHDRAWAL_QUEUE_IMPL)
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         impl.initialize(contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0), {"from": contracts.voting})
 

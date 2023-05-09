@@ -6,7 +6,7 @@ import pytest
 from brownie import interface, convert, web3
 from utils.test.event_validators.permission import Permission
 from utils.config import contracts, GATE_SEAL, DSM_GUARDIANS
-from configs.config_mainnet import LIDO_EASYTRACK_EVMSCRIPTEXECUTOR
+from configs.config_mainnet import EASYTRACK_EVMSCRIPT_EXECUTOR
 from utils.test.helpers import ZERO_BYTES32
 
 
@@ -146,7 +146,7 @@ def protocol_permissions():
                 "MANAGE_NODE_OPERATOR_ROLE": [],
                 "MANAGE_SIGNING_KEYS": [contracts.voting],
                 "SET_NODE_OPERATOR_LIMIT_ROLE": [contracts.voting],
-                "SET_NODE_OPERATOR_LIMIT_ROLE": [LIDO_EASYTRACK_EVMSCRIPTEXECUTOR, contracts.voting],
+                "SET_NODE_OPERATOR_LIMIT_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR, contracts.voting],
             },
         },
         "OracleDaemonConfig": {

@@ -10,7 +10,7 @@ from utils.test.helpers import shares_balance, ETH, almostEqWithDiff
 from utils.test.oracle_report_helpers import (
     oracle_report,
 )
-from utils.config import contracts, LIDO_STAKING_ROUTER
+from utils.config import contracts, STAKING_ROUTER
 
 
 @pytest.fixture()
@@ -726,7 +726,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
 
     assert first_no_summary_before["depositableValidatorsCount"] > 0
 
-    target_limit_tx = nor.updateTargetValidatorsLimits(tested_no_id_first, True, 0, {"from": LIDO_STAKING_ROUTER})
+    target_limit_tx = nor.updateTargetValidatorsLimits(tested_no_id_first, True, 0, {"from": STAKING_ROUTER})
 
     assert target_limit_tx.events["TargetValidatorsCountChanged"][0]["nodeOperatorId"] == tested_no_id_first
     assert target_limit_tx.events["TargetValidatorsCountChanged"][0]["targetValidatorsCount"] == 0
@@ -752,7 +752,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
     assert deposited_keys_base_before != deposited_keys_base_after
 
     # Disable target limit
-    target_limit_tx = nor.updateTargetValidatorsLimits(tested_no_id_first, False, 0, {"from": LIDO_STAKING_ROUTER})
+    target_limit_tx = nor.updateTargetValidatorsLimits(tested_no_id_first, False, 0, {"from": STAKING_ROUTER})
 
     assert target_limit_tx.events["TargetValidatorsCountChanged"][0]["nodeOperatorId"] == tested_no_id_first
 

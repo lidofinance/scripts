@@ -7,8 +7,8 @@ from scripts.upgrade_shapella import start_vote
 from collections import OrderedDict
 from utils.config import (
     contracts,
-    LIDO_WITHDRAWAL_VAULT,
-    LIDO_WITHDRAWAL_VAULT_IMPL,
+    WITHDRAWAL_VAULT,
+    WITHDRAWAL_VAULT_IMPL,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
     MAINNET_VOTE_DURATION,
 )
@@ -47,8 +47,8 @@ def assert_single_event(tx, name, params):
 
 
 def upgrade_withdrawal_vault():
-    vault = interface.WithdrawalVaultManager(LIDO_WITHDRAWAL_VAULT)
-    vault.proxy_upgradeTo(LIDO_WITHDRAWAL_VAULT_IMPL, b"", {"from": contracts.voting.address})
+    vault = interface.WithdrawalVaultManager(WITHDRAWAL_VAULT)
+    vault.proxy_upgradeTo(WITHDRAWAL_VAULT_IMPL, b"", {"from": contracts.voting.address})
 
 
 def test_expire_since_constant(accounts):

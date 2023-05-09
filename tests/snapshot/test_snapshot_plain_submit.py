@@ -12,10 +12,10 @@ from utils.test.snapshot_helpers import (
 )
 from utils.config import (
     contracts,
-    LIDO_AGENT,
-    LIDO_LIDO,
+    AGENT,
+    LIDO,
     LDO_TOKEN,
-    LIDO_VOTING,
+    VOTING,
 )
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 from utils.test.helpers import ONE_ETH
@@ -43,7 +43,7 @@ def snapshot() -> Dict[str, any]:
         "getBufferedEther()": lido.getBufferedEther(),
         "getPooledEthByShares(100)": lido.getPooledEthByShares(100),
         "allowRecoverability(LDO)": lido.allowRecoverability(LDO_TOKEN),
-        "allowRecoverability(StETH)": lido.allowRecoverability(LIDO_LIDO),
+        "allowRecoverability(StETH)": lido.allowRecoverability(LIDO),
         "appId": lido.appId(),
         "getOracle()": lido.getOracle(),
         "getInitializationBlock()": lido.getInitializationBlock(),
@@ -55,13 +55,13 @@ def snapshot() -> Dict[str, any]:
         "getTotalShares()": lido.getTotalShares(),
         "isPetrified()": lido.isPetrified(),
         "getSharesByPooledEth(1 ETH)": lido.getSharesByPooledEth(10**18),
-        "allowance(accounts[0], TREASURY)": lido.allowance(accounts[0], LIDO_AGENT),
-        "balanceOf(TREASURY)": lido.balanceOf(LIDO_AGENT),
-        "sharesOf(TREASURY)": lido.sharesOf(LIDO_AGENT),
-        "allowance(accounts[0], VOTING)": lido.allowance(accounts[0], LIDO_VOTING),
+        "allowance(accounts[0], TREASURY)": lido.allowance(accounts[0], AGENT),
+        "balanceOf(TREASURY)": lido.balanceOf(AGENT),
+        "sharesOf(TREASURY)": lido.sharesOf(AGENT),
+        "allowance(accounts[0], VOTING)": lido.allowance(accounts[0], VOTING),
         "balanceOf(accounts[0])": lido.balanceOf(accounts[0]),
         "sharesOf(accounts[0])": lido.sharesOf(accounts[0]),
-        "canPerform()": lido.canPerform(LIDO_VOTING, lido.PAUSE_ROLE(), []),
+        "canPerform()": lido.canPerform(VOTING, lido.PAUSE_ROLE(), []),
         "getEVMScriptExecutor()": lido.getEVMScriptExecutor(f"0x{str(1).zfill(8)}"),
         "STAKING_CONTROL_ROLE": lido.STAKING_CONTROL_ROLE(),
         "RESUME_ROLE": lido.RESUME_ROLE(),

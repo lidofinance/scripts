@@ -3,7 +3,7 @@ from brownie import ZERO_ADDRESS
 from utils.config import (
     contracts,
     LDO_TOKEN,
-    LIDO_LIDO,
+    LIDO,
     WETH_TOKEN,
     DAI_TOKEN,
 )
@@ -43,7 +43,7 @@ def make_steth_payout(*not_specified, target_address: str, steth_in_wei: int, re
         raise ValueError("Please, specify all arguments with keywords.")
 
     return _encode_token_transfer(
-        token_address=LIDO_LIDO,
+        token_address=LIDO,
         recipient=target_address,
         amount=steth_in_wei,
         reference=reference,

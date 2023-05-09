@@ -3,10 +3,10 @@ from brownie import interface, reverts  # type: ignore
 
 from utils.config import (
     contracts,
-    LIDO_HASH_CONSENSUS_FOR_VEBO,
-    LIDO_HASH_CONSENSUS_FOR_AO,
-    LIDO_VALIDATORS_EXIT_BUS_ORACLE_IMPL,
-    LIDO_VALIDATORS_EXIT_BUS_ORACLE,
+    HASH_CONSENSUS_FOR_VEBO,
+    HASH_CONSENSUS_FOR_AO,
+    VALIDATORS_EXIT_BUS_ORACLE_IMPL,
+    VALIDATORS_EXIT_BUS_ORACLE,
     ORACLE_COMMITTEE,
     CHAIN_SLOTS_PER_EPOCH,
     CHAIN_SECONDS_PER_SLOT,
@@ -23,12 +23,12 @@ last_seen_ref_slot = 6189855
 
 @pytest.fixture(scope="module")
 def contract() -> interface.ValidatorsExitBusOracle:
-    return interface.ValidatorsExitBusOracle(LIDO_VALIDATORS_EXIT_BUS_ORACLE)
+    return interface.ValidatorsExitBusOracle(VALIDATORS_EXIT_BUS_ORACLE)
 
 
 def test_proxy(contract):
     proxy = interface.OssifiableProxy(contract)
-    assert proxy.proxy__getImplementation() == LIDO_VALIDATORS_EXIT_BUS_ORACLE_IMPL
+    assert proxy.proxy__getImplementation() == VALIDATORS_EXIT_BUS_ORACLE_IMPL
     assert proxy.proxy__getAdmin() == contracts.agent.address
 
 
@@ -45,7 +45,7 @@ def test_initialize(contract):
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         contract.initialize(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
-            LIDO_HASH_CONSENSUS_FOR_AO,
+            HASH_CONSENSUS_FOR_AO,
             1,
             1,
             {"from": contracts.voting},
@@ -53,11 +53,11 @@ def test_initialize(contract):
 
 
 def test_petrified(contract):
-    impl = interface.ValidatorsExitBusOracle(LIDO_VALIDATORS_EXIT_BUS_ORACLE_IMPL)
+    impl = interface.ValidatorsExitBusOracle(VALIDATORS_EXIT_BUS_ORACLE_IMPL)
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         impl.initialize(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
-            LIDO_HASH_CONSENSUS_FOR_AO,
+            HASH_CONSENSUS_FOR_AO,
             1,
             1,
             {"from": contracts.voting},
@@ -66,7 +66,7 @@ def test_petrified(contract):
 
 def test_consensus(contract):
     assert contract.getConsensusVersion() == VEBO_CONSENSUS_VERSION
-    assert contract.getConsensusContract() == LIDO_HASH_CONSENSUS_FOR_VEBO
+    assert contract.getConsensusContract() == HASH_CONSENSUS_FOR_VEBO
 
 
 def test_processing_state(contract):
@@ -94,7 +94,7 @@ def test_report(contract):
 def test_vebo_hash_consensus_synced_with_accounting_one(contract):
     consensus = interface.HashConsensus(contract.getConsensusContract())
     frameConfig = consensus.getFrameConfig()
-    accounting_consensus = interface.HashConsensus(LIDO_HASH_CONSENSUS_FOR_AO)
+    accounting_consensus = interface.HashConsensus(HASH_CONSENSUS_FOR_AO)
 
     assert frameConfig["initialEpoch"] == accounting_consensus.getFrameConfig()["initialEpoch"]
     assert frameConfig["epochsPerFrame"] == VEBO_EPOCHS_PER_FRAME

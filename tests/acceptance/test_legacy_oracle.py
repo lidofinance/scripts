@@ -3,12 +3,12 @@ from brownie import interface, chain, reverts  # type: ignore
 
 from utils.config import (
     contracts,
-    LIDO_LEGACY_ORACLE,
-    LIDO_LEGACY_ORACLE_IMPL,
-    LIDO_HASH_CONSENSUS_FOR_AO,
-    LIDO_ACCOUNTING_ORACLE,
-    ORACLE_APP_ID,
-    LIDO_EVM_SCRIPT_REGISTRY,
+    LEGACY_ORACLE,
+    LEGACY_ORACLE_IMPL,
+    HASH_CONSENSUS_FOR_AO,
+    ACCOUNTING_ORACLE,
+    ORACLE_ARAGON_APP_ID,
+    ARAGON_EVMSCRIPT_REGISTRY,
     CHAIN_SLOTS_PER_EPOCH,
     CHAIN_SECONDS_PER_SLOT,
     CHAIN_GENESIS_TIME,
@@ -20,20 +20,20 @@ lastSeenTotalPooledEther = 5879742251110033487920093
 
 @pytest.fixture(scope="module")
 def contract() -> interface.LegacyOracle:
-    return interface.LegacyOracle(LIDO_LEGACY_ORACLE)
+    return interface.LegacyOracle(LEGACY_ORACLE)
 
 
 def test_links(contract):
     assert contract.getLido() == contracts.lido
     assert contract.getAccountingOracle() == contracts.accounting_oracle
-    assert contract.getEVMScriptRegistry() == LIDO_EVM_SCRIPT_REGISTRY
+    assert contract.getEVMScriptRegistry() == ARAGON_EVMSCRIPT_REGISTRY
 
 
 def test_aragon(contract):
     proxy = interface.AppProxyUpgradeable(contract)
-    assert proxy.implementation() == LIDO_LEGACY_ORACLE_IMPL
+    assert proxy.implementation() == LEGACY_ORACLE_IMPL
     assert contract.kernel() == contracts.kernel
-    assert contract.appId() == ORACLE_APP_ID
+    assert contract.appId() == ORACLE_ARAGON_APP_ID
     assert contract.hasInitialized() == True
     assert contract.isPetrified() == False
 
@@ -44,21 +44,21 @@ def test_versioned(contract):
 
 def test_initialize(contract):
     with reverts("INIT_ALREADY_INITIALIZED"):
-        contract.initialize(contracts.lido_locator, LIDO_HASH_CONSENSUS_FOR_AO, {"from": contracts.voting})
+        contract.initialize(contracts.lido_locator, HASH_CONSENSUS_FOR_AO, {"from": contracts.voting})
 
 
 def test_finalize_upgrade(contract):
     with reverts("WRONG_BASE_VERSION"):
-        contract.finalizeUpgrade_v4(LIDO_ACCOUNTING_ORACLE, {"from": contracts.voting})
+        contract.finalizeUpgrade_v4(ACCOUNTING_ORACLE, {"from": contracts.voting})
 
 
 def test_petrified():
-    impl = interface.LegacyOracle(LIDO_LEGACY_ORACLE_IMPL)
+    impl = interface.LegacyOracle(LEGACY_ORACLE_IMPL)
     with reverts("INIT_ALREADY_INITIALIZED"):
-        impl.initialize(contracts.lido_locator, LIDO_HASH_CONSENSUS_FOR_AO, {"from": contracts.voting})
+        impl.initialize(contracts.lido_locator, HASH_CONSENSUS_FOR_AO, {"from": contracts.voting})
 
     with reverts("WRONG_BASE_VERSION"):
-        impl.finalizeUpgrade_v4(LIDO_ACCOUNTING_ORACLE, {"from": contracts.voting})
+        impl.finalizeUpgrade_v4(ACCOUNTING_ORACLE, {"from": contracts.voting})
 
 
 def test_recoverability(contract):

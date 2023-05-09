@@ -6,8 +6,8 @@ import pytest
 from brownie import web3, interface, convert
 from utils.config import (
     contracts,
-    LIDO_VOTING,
-    LIDO_WITHDRAWAL_VAULT_IMPL_V1,
+    VOTING,
+    WITHDRAWAL_VAULT_IMPL_V1,
     LIDO_LOCATOR_IMPL,
     DUMMY_IMPL,
 )
@@ -22,8 +22,8 @@ def protocol_preliminary_permissions(shapella_upgrade_template):
             "contract": interface.WithdrawalVaultManager(contracts.withdrawal_vault.address),
             "type": "WithdrawalsManagerProxy",
             "state": {
-                "implementation": LIDO_WITHDRAWAL_VAULT_IMPL_V1,
-                "proxy_getAdmin": LIDO_VOTING,
+                "implementation": WITHDRAWAL_VAULT_IMPL_V1,
+                "proxy_getAdmin": VOTING,
             },
         },
         # empty proxies _assertAdminsOfProxies

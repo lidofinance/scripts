@@ -3,10 +3,10 @@ from brownie import interface, reverts  # type: ignore
 
 from utils.config import (
     contracts,
-    LIDO_STAKING_ROUTER,
-    LIDO_STAKING_ROUTER_IMPL,
+    STAKING_ROUTER,
+    STAKING_ROUTER_IMPL,
     CHAIN_DEPOSIT_CONTRACT,
-    LIDO_WITHDRAWAL_VAULT,
+    WITHDRAWAL_VAULT,
     SR_MODULES_FEE_BP,
     SR_TREASURY_FEE_BP,
     SR_MODULES_FEE_E20,
@@ -17,19 +17,19 @@ from utils.config import (
     CURATED_STAKING_MODULE_TARGET_SHARE_BP,
     CURATED_STAKING_MODULE_MODULE_BP,
     CURATED_STAKING_MODULE_TREASURY_FEE_BP,
-    LIDO_WITHDRAWAL_CREDENTIALS,
+    WITHDRAWAL_CREDENTIALS,
 )
 from utils.evm_script import encode_error
 
 
 @pytest.fixture(scope="module")
 def contract() -> interface.StakingRouter:
-    return interface.StakingRouter(LIDO_STAKING_ROUTER)
+    return interface.StakingRouter(STAKING_ROUTER)
 
 
 def test_proxy(contract):
     proxy = interface.OssifiableProxy(contract)
-    assert proxy.proxy__getImplementation() == LIDO_STAKING_ROUTER_IMPL
+    assert proxy.proxy__getImplementation() == STAKING_ROUTER_IMPL
     assert proxy.proxy__getAdmin() == contracts.agent.address
 
 
@@ -47,18 +47,18 @@ def test_initialize(contract):
         contract.initialize(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
             contracts.lido,
-            LIDO_WITHDRAWAL_CREDENTIALS,
+            WITHDRAWAL_CREDENTIALS,
             {"from": contracts.voting},
         )
 
 
 def test_petrified(contract):
-    impl = interface.StakingRouter(LIDO_STAKING_ROUTER_IMPL)
+    impl = interface.StakingRouter(STAKING_ROUTER_IMPL)
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         impl.initialize(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
             contracts.lido,
-            LIDO_WITHDRAWAL_CREDENTIALS,
+            WITHDRAWAL_CREDENTIALS,
             {"from": contracts.voting},
         )
 
@@ -106,5 +106,5 @@ def test_staking_modules(contract):
     assert contract.getStakingModuleActiveValidatorsCount(1) >= 3521
 
     assert contract.getWithdrawalCredentials().hex().startswith("01")
-    assert contract.getWithdrawalCredentials().hex().endswith(LIDO_WITHDRAWAL_VAULT[2:].lower())
-    assert f"0x{contract.getWithdrawalCredentials().hex()}" == LIDO_WITHDRAWAL_CREDENTIALS
+    assert contract.getWithdrawalCredentials().hex().endswith(WITHDRAWAL_VAULT[2:].lower())
+    assert f"0x{contract.getWithdrawalCredentials().hex()}" == WITHDRAWAL_CREDENTIALS

@@ -3,7 +3,7 @@ from brownie.network.account import LocalAccount
 from utils.config import (
     contracts,
     LIDO_LOCATOR_IMPL,
-    LIDO_TEMPLATE,
+    LIDO_V2_UPGRADE_TEMPLATE,
     prompt_bool,
     get_priority_fee,
     get_max_fee,
@@ -61,13 +61,13 @@ def prepare_transfer_locator_ownership_to_template(admin, template):
 
 def prepare_for_shapella_upgrade_voting(silent=False):
     if not silent:
-        ask_shapella_upgrade_confirmation(LIDO_TEMPLATE, LIDO_LOCATOR_IMPL)
+        ask_shapella_upgrade_confirmation(LIDO_V2_UPGRADE_TEMPLATE, LIDO_LOCATOR_IMPL)
 
     # To get sure the "stone" is in place
     assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
 
     prepare_upgrade_locator_impl(DEPLOYER_EOA_LOCATOR)
 
-    prepare_transfer_locator_ownership_to_template(DEPLOYER_EOA_LOCATOR, LIDO_TEMPLATE)
+    prepare_transfer_locator_ownership_to_template(DEPLOYER_EOA_LOCATOR, LIDO_V2_UPGRADE_TEMPLATE)
 
-    return ShapellaUpgradeTemplate.at(LIDO_TEMPLATE)
+    return ShapellaUpgradeTemplate.at(LIDO_V2_UPGRADE_TEMPLATE)

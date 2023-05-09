@@ -7,7 +7,7 @@ from brownie import ZERO_ADDRESS, Wei, convert
 from brownie.convert.datatypes import ReturnValue
 from tests.snapshot.utils import get_slot
 
-from utils.config import contracts, LIDO_DEPOSIT_SECURITY_MODULE_V1
+from utils.config import contracts, DEPOSIT_SECURITY_MODULE_V1
 from utils.mainnet_fork import chain_snapshot
 from utils.test.snapshot_helpers import dict_zip
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
@@ -44,8 +44,8 @@ def agent_eoa(accounts):
 
 @pytest.fixture(scope="module")
 def old_deposit_security_module_eoa(accounts, EtherFunder):
-    EtherFunder.deploy(LIDO_DEPOSIT_SECURITY_MODULE_V1, {"from": accounts[0], "amount": "10 ether"})
-    return accounts.at(LIDO_DEPOSIT_SECURITY_MODULE_V1, force=True)
+    EtherFunder.deploy(DEPOSIT_SECURITY_MODULE_V1, {"from": accounts[0], "amount": "10 ether"})
+    return accounts.at(DEPOSIT_SECURITY_MODULE_V1, force=True)
 
 
 @pytest.fixture(scope="module")

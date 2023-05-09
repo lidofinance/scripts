@@ -47,7 +47,7 @@ def eth_whale(accounts):
 @pytest.fixture(scope="module")
 def steth_whale(accounts) -> Account:
     # TODO: add steth whale for goerli
-    return accounts.at(LIDO_INSURANCE_FUND, force=True)
+    return accounts.at(INSURANCE_FUND, force=True)
 
 
 class Helpers:
@@ -129,9 +129,9 @@ class Helpers:
         if not Helpers._etherscan_is_fetched:
             print(f"prefetch Lido V2 contracts from Etherscan to parse events")
 
-            Contract.from_explorer(LIDO_VALIDATORS_EXIT_BUS_ORACLE)
-            Contract.from_explorer(LIDO_WITHDRAWAL_QUEUE)
-            Contract.from_explorer(LIDO_STAKING_ROUTER)
+            Contract.from_explorer(VALIDATORS_EXIT_BUS_ORACLE)
+            Contract.from_explorer(WITHDRAWAL_QUEUE)
+            Contract.from_explorer(STAKING_ROUTER)
 
             Helpers._etherscan_is_fetched = True
 
@@ -185,33 +185,33 @@ def parse_events_from_local_abi():
     # Used if env variable PARSE_EVENTS_FROM_LOCAL_ABI is set
     # Needed to enable events checking if ABI from Etherscan not available for any reason
     contract_address_mapping = {
-        "AccountingOracle": [LIDO_ACCOUNTING_ORACLE, LIDO_ACCOUNTING_ORACLE_IMPL],
-        "ACL": [LIDO_ACL_IMPL],
-        "Burner": [LIDO_BURNER],
-        "CallsScript": [LIDO_CALLS_SCRIPT],
-        "DepositSecurityModule": [LIDO_DEPOSIT_SECURITY_MODULE],
-        "EIP712StETH": [LIDO_EIP712_STETH],
+        "AccountingOracle": [ACCOUNTING_ORACLE, ACCOUNTING_ORACLE_IMPL],
+        "ACL": [ACL_IMPL],
+        "Burner": [BURNER],
+        "CallsScript": [ARAGON_CALLS_SCRIPT],
+        "DepositSecurityModule": [DEPOSIT_SECURITY_MODULE],
+        "EIP712StETH": [EIP712_STETH],
         "HashConsensus": [
-            LIDO_HASH_CONSENSUS_FOR_AO,
-            LIDO_HASH_CONSENSUS_FOR_VEBO,
+            HASH_CONSENSUS_FOR_AO,
+            HASH_CONSENSUS_FOR_VEBO,
         ],
-        "LegacyOracle": [LIDO_LEGACY_ORACLE, LIDO_LEGACY_ORACLE_IMPL],
-        "Lido": [LIDO_LIDO, LIDO_LIDO_IMPL],
+        "LegacyOracle": [LEGACY_ORACLE, LEGACY_ORACLE_IMPL],
+        "Lido": [LIDO, LIDO_IMPL],
         "LidoLocator": [LIDO_LOCATOR],
-        "LidoExecutionLayerRewardsVault": [LIDO_EXECUTION_LAYER_REWARDS_VAULT],
-        "Kernel": [LIDO_ARAGON_KERNEL_IMPL],
-        "NodeOperatorsRegistry": [LIDO_NODE_OPERATORS_REGISTRY, LIDO_NODE_OPERATORS_REGISTRY_IMPL],
-        "OracleDaemonConfig": [LIDO_ORACLE_DAEMON_CONFIG],
-        "OracleReportSanityChecker": [LIDO_ORACLE_REPORT_SANITY_CHECKER],
-        "Repo": [LIDO_ARAGON_REPO_IMPL],
-        "StakingRouter": [LIDO_STAKING_ROUTER, LIDO_STAKING_ROUTER_IMPL],
+        "LidoExecutionLayerRewardsVault": [EXECUTION_LAYER_REWARDS_VAULT],
+        "Kernel": [ARAGON_KERNEL_IMPL],
+        "NodeOperatorsRegistry": [NODE_OPERATORS_REGISTRY, NODE_OPERATORS_REGISTRY_IMPL],
+        "OracleDaemonConfig": [ORACLE_DAEMON_CONFIG],
+        "OracleReportSanityChecker": [ORACLE_REPORT_SANITY_CHECKER],
+        "Repo": [ARAGON_COMMON_REPO_IMPL],
+        "StakingRouter": [STAKING_ROUTER, STAKING_ROUTER_IMPL],
         "ValidatorsExitBusOracle": [
-            LIDO_VALIDATORS_EXIT_BUS_ORACLE,
-            LIDO_VALIDATORS_EXIT_BUS_ORACLE_IMPL,
+            VALIDATORS_EXIT_BUS_ORACLE,
+            VALIDATORS_EXIT_BUS_ORACLE_IMPL,
         ],
-        "Voting": [LIDO_VOTING_IMPL],
-        "WithdrawalQueueERC721": [LIDO_WITHDRAWAL_QUEUE, LIDO_WITHDRAWAL_QUEUE_IMPL],
-        "WithdrawalVault": [LIDO_WITHDRAWAL_VAULT, LIDO_WITHDRAWAL_VAULT_IMPL],
+        "Voting": [VOTING_IMPL],
+        "WithdrawalQueueERC721": [WITHDRAWAL_QUEUE, WITHDRAWAL_QUEUE_IMPL],
+        "WithdrawalVault": [WITHDRAWAL_VAULT, WITHDRAWAL_VAULT_IMPL],
     }
 
     interface_path_template = "interfaces/{}.json"

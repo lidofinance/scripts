@@ -8,8 +8,8 @@ from utils.test.helpers import almostEqEth, ETH
 from utils.config import (
     GATE_SEAL_COMMITTEE,
     contracts,
-    LIDO_WITHDRAWAL_QUEUE,
-    LIDO_VALIDATORS_EXIT_BUS_ORACLE,
+    WITHDRAWAL_QUEUE,
+    VALIDATORS_EXIT_BUS_ORACLE,
     GATE_SEAL,
     GATE_SEAL_PAUSE_DURATION,
     GATE_SEAL_EXPIRY_TIMESTAMP,
@@ -36,9 +36,7 @@ def test_gate_seal_expiration(gate_seal_committee):
     chain.mine(1)
     assert contracts.gate_seal.is_expired()
     with reverts("gate seal: expired"):
-        contracts.gate_seal.seal(
-            [LIDO_WITHDRAWAL_QUEUE, LIDO_VALIDATORS_EXIT_BUS_ORACLE], {"from": gate_seal_committee}
-        )
+        contracts.gate_seal.seal([WITHDRAWAL_QUEUE, VALIDATORS_EXIT_BUS_ORACLE], {"from": gate_seal_committee})
 
 
 def test_gate_seal_scenario(steth_holder, gate_seal_committee):
@@ -75,7 +73,7 @@ def test_gate_seal_scenario(steth_holder, gate_seal_committee):
     pending_request_ids = [event["requestId"] for event in request_tx.events["WithdrawalRequested"]]
 
     """ sealing """
-    sealables = [LIDO_WITHDRAWAL_QUEUE, LIDO_VALIDATORS_EXIT_BUS_ORACLE]
+    sealables = [WITHDRAWAL_QUEUE, VALIDATORS_EXIT_BUS_ORACLE]
     seal_tx = contracts.gate_seal.seal(sealables, {"from": gate_seal_committee})
 
     assert seal_tx.events.count("Sealed") == 2

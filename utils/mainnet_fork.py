@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 from brownie import chain, accounts, interface
 
-from utils.config import LIDO_VOTING
+from utils.config import VOTING
 
 
 @contextmanager
@@ -16,7 +16,7 @@ def chain_snapshot():
 
 
 def pass_and_exec_dao_vote(vote_id):
-    dao_voting = interface.Voting(LIDO_VOTING)
+    dao_voting = interface.Voting(VOTING)
 
     if dao_voting.getVote(vote_id)["executed"]:
         print(f"[ok] Vote {vote_id} already executed")

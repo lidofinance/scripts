@@ -1,6 +1,6 @@
 from eth_abi.abi import encode_single
 from brownie import accounts, chain, interface  # type: ignore
-from utils.config import contracts, LIDO_EASYTRACK_INCREASE_NOP_STAKING_LIMIT_FACTORY
+from utils.config import contracts, EASYTRACK_INCREASE_NOP_STAKING_LIMIT_FACTORY
 
 NODE_OPERATOR_ID = 0
 
@@ -12,7 +12,7 @@ def _encode_calldata(signature, values):
 def test_increase_nop_staking_limit(
     stranger,
 ):
-    factory = interface.IncreaseNodeOperatorStakingLimit(LIDO_EASYTRACK_INCREASE_NOP_STAKING_LIMIT_FACTORY)
+    factory = interface.IncreaseNodeOperatorStakingLimit(EASYTRACK_INCREASE_NOP_STAKING_LIMIT_FACTORY)
     node_operator = contracts.node_operators_registry.getNodeOperator(NODE_OPERATOR_ID, False)
     trusted_caller = accounts.at(node_operator["rewardAddress"], force=True)
     new_staking_limit = node_operator["totalVettedValidators"] + 1

@@ -2,7 +2,7 @@ import pytest
 from brownie import interface  # type: ignore
 
 from utils.config import (
-    LIDO_ORACLE_DAEMON_CONFIG,
+    ORACLE_DAEMON_CONFIG,
     NORMALIZED_CL_REWARD_PER_EPOCH,
     NORMALIZED_CL_REWARD_MISTAKE_RATE_BP,
     REBASE_CHECK_NEAREST_EPOCH_DISTANCE,
@@ -30,7 +30,7 @@ mainnet_config: dict[str, int] = {
 
 @pytest.fixture(scope="module")
 def contract() -> interface.OracleDaemonConfig:
-    return interface.OracleDaemonConfig(LIDO_ORACLE_DAEMON_CONFIG)
+    return interface.OracleDaemonConfig(ORACLE_DAEMON_CONFIG)
 
 
 def test_oracle_daemon_config(contract):

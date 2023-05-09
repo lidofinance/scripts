@@ -6,12 +6,12 @@ import pytest
 from brownie import web3, interface, convert, reverts
 from utils.config import (
     contracts,
-    LIDO_WITHDRAWAL_QUEUE_IMPL,
-    LIDO_WITHDRAWAL_VAULT_IMPL,
-    LIDO_STAKING_ROUTER_IMPL,
-    LIDO_ACCOUNTING_ORACLE_IMPL,
-    LIDO_VALIDATORS_EXIT_BUS_ORACLE_IMPL,
-    LIDO_WITHDRAWAL_VAULT_IMPL_V1,
+    WITHDRAWAL_QUEUE_IMPL,
+    WITHDRAWAL_VAULT_IMPL,
+    STAKING_ROUTER_IMPL,
+    ACCOUNTING_ORACLE_IMPL,
+    VALIDATORS_EXIT_BUS_ORACLE_IMPL,
+    WITHDRAWAL_VAULT_IMPL_V1,
     LIDO_LOCATOR_IMPL,
     DUMMY_IMPL,
     INITIAL_DEAD_TOKEN_HOLDER,
@@ -119,32 +119,32 @@ def petrified_implementations(shapella_upgrade_template):
         },
         # pure implementations
         "WithdrawalQueueImplementation": {
-            "contract_address": LIDO_WITHDRAWAL_QUEUE_IMPL,
+            "contract_address": WITHDRAWAL_QUEUE_IMPL,
             "proxy_type": "Implementation",
             "implementation_type": "Versioned",
         },
         "WithdrawalVaultImplementation": {
-            "contract_address": LIDO_WITHDRAWAL_VAULT_IMPL,
+            "contract_address": WITHDRAWAL_VAULT_IMPL,
             "proxy_type": "Implementation",
             "implementation_type": "Versioned",
         },
         "StakingRouterImplementation": {
-            "contract_address": LIDO_STAKING_ROUTER_IMPL,
+            "contract_address": STAKING_ROUTER_IMPL,
             "proxy_type": "Implementation",
             "implementation_type": "Versioned",
         },
         "AccountingOracleImplementation": {
-            "contract_address": LIDO_ACCOUNTING_ORACLE_IMPL,
+            "contract_address": ACCOUNTING_ORACLE_IMPL,
             "proxy_type": "Implementation",
             "implementation_type": "Versioned",
         },
         "ValidatorsExitBusOracleImplementation": {
-            "contract_address": LIDO_VALIDATORS_EXIT_BUS_ORACLE_IMPL,
+            "contract_address": VALIDATORS_EXIT_BUS_ORACLE_IMPL,
             "proxy_type": "Implementation",
             "implementation_type": "Versioned",
         },
         "LidoLocatorImplementation": {
-            "contract_address": LIDO_VALIDATORS_EXIT_BUS_ORACLE_IMPL,
+            "contract_address": VALIDATORS_EXIT_BUS_ORACLE_IMPL,
             "proxy_type": "Implementation",
             "implementation_type": "Versioned",
         },
@@ -179,7 +179,7 @@ def test_is_petrified(petrified_implementations):
         if implementation_type == "AragonApp":
             assert interface.ACL(implementation_address).isPetrified()
         elif implementation_type == "WithdrawalVaultDummy":
-            assert implementation_address == LIDO_WITHDRAWAL_VAULT_IMPL_V1
+            assert implementation_address == WITHDRAWAL_VAULT_IMPL_V1
         elif implementation_type == "LidoLocatorFixed":
             assert implementation_address == LIDO_LOCATOR_IMPL
         elif implementation_type == "Dummy":

@@ -3,9 +3,9 @@ from brownie import interface, reverts  # type: ignore
 
 from utils.config import (
     contracts,
-    LIDO_HASH_CONSENSUS_FOR_AO,
-    LIDO_ACCOUNTING_ORACLE_IMPL,
-    LIDO_ACCOUNTING_ORACLE,
+    HASH_CONSENSUS_FOR_AO,
+    ACCOUNTING_ORACLE_IMPL,
+    ACCOUNTING_ORACLE,
     ORACLE_COMMITTEE,
     AO_EPOCHS_PER_FRAME,
     AO_FAST_LANE_LENGTH_SLOTS,
@@ -20,12 +20,12 @@ from utils.evm_script import encode_error
 
 @pytest.fixture(scope="module")
 def contract() -> interface.AccountingOracle:
-    return interface.AccountingOracle(LIDO_ACCOUNTING_ORACLE)
+    return interface.AccountingOracle(ACCOUNTING_ORACLE)
 
 
 def test_proxy(contract):
     proxy = interface.OssifiableProxy(contract)
-    assert proxy.proxy__getImplementation() == LIDO_ACCOUNTING_ORACLE_IMPL
+    assert proxy.proxy__getImplementation() == ACCOUNTING_ORACLE_IMPL
     assert proxy.proxy__getAdmin() == contracts.agent.address
 
 
@@ -49,14 +49,14 @@ def test_initialize(contract):
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         contract.initialize(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
-            LIDO_HASH_CONSENSUS_FOR_AO,
+            HASH_CONSENSUS_FOR_AO,
             1,
             {"from": contracts.voting},
         )
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         contract.initializeWithoutMigration(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
-            LIDO_HASH_CONSENSUS_FOR_AO,
+            HASH_CONSENSUS_FOR_AO,
             1,
             1,
             {"from": contracts.voting},
@@ -64,18 +64,18 @@ def test_initialize(contract):
 
 
 def test_petrified(contract):
-    impl = interface.AccountingOracle(LIDO_ACCOUNTING_ORACLE_IMPL)
+    impl = interface.AccountingOracle(ACCOUNTING_ORACLE_IMPL)
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         impl.initialize(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
-            LIDO_HASH_CONSENSUS_FOR_AO,
+            HASH_CONSENSUS_FOR_AO,
             1,
             {"from": contracts.voting},
         )
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         impl.initializeWithoutMigration(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
-            LIDO_HASH_CONSENSUS_FOR_AO,
+            HASH_CONSENSUS_FOR_AO,
             1,
             1,
             {"from": contracts.voting},
@@ -84,7 +84,7 @@ def test_petrified(contract):
 
 def test_consensus(contract):
     assert contract.getConsensusVersion() == AO_CONSENSUS_VERSION
-    assert contract.getConsensusContract() == LIDO_HASH_CONSENSUS_FOR_AO
+    assert contract.getConsensusContract() == HASH_CONSENSUS_FOR_AO
 
 
 def test_processing_state(contract):
