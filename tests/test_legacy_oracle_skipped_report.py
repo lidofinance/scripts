@@ -11,7 +11,6 @@ from utils.config import (
     ldo_vote_executors_for_tests,
     MAINNET_VOTE_DURATION,
 )
-from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
 
 ONE_HOUR = 1 * 60 * 60
 
@@ -60,14 +59,11 @@ def shared_setup(fn_isolation):
     pass
 
 
-def test_legacy_oracle_report_skipped(helpers, vote_ids_from_env, accounts):
+def test_legacy_oracle_report_skipped():
     # we don't track real reference slots in this tests purposefully
     # because this test doesn't rely on exact slot numbers
     # the only meaningful check — trying to send first oracle report using an arbitrary reference slot
     # BEFORE the upgraded contracts were activated via the upgrade vote
-
-    # prepare upgrade
-    prepare_for_shapella_upgrade_voting(silent=True)
 
     # start voting, but not sleep — only start and do votes
     vote_id = start_vote_by_name("shapella")

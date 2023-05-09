@@ -1,6 +1,5 @@
 import pytest
 from brownie import interface
-from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
 from utils.import_current_votes import start_and_execute_votes
 from utils.config import contracts
 import utils.config as config
@@ -50,7 +49,7 @@ def get_proxy_impl_ossifiable(addr):
 
 
 def test_upgrade_template_addresses():
-    template = prepare_for_shapella_upgrade_voting(silent=True)
+    template = contracts.shapella_upgrade_template
 
     assert get_proxy_impl_ossifiable(template._locator()) != lido_dao_lido_locator_implementation
     assert template._accountingOracle() != lido_dao_accounting_oracle
@@ -78,7 +77,6 @@ def test_upgrade_template_addresses():
 
 
 def test_proxyfied_implementation_addresses_prepared():
-    prepare_for_shapella_upgrade_voting(silent=True)
 
     assert get_proxy_impl_ossifiable(config.lido_dao_lido_locator) != lido_dao_lido_locator_implementation
     assert get_proxy_impl_ossifiable(config.lido_dao_accounting_oracle) != dummy_implementation_address  # dummy
@@ -103,8 +101,6 @@ def test_proxyfied_implementation_addresses_after_upgrade(helpers):
 
 
 def test_locator_addresses():
-    prepare_for_shapella_upgrade_voting(silent=True)
-
     locator = interface.LidoLocator(config.lido_dao_lido_locator)
 
     assert locator.accountingOracle() != lido_dao_accounting_oracle
