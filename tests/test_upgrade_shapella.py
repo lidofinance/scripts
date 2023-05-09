@@ -1,7 +1,7 @@
 """
 Tests for Lido V2 (Shapella-ready) upgrade voting 12/05/2023
 """
-from brownie import interface, ZERO_ADDRESS
+from brownie import interface, ZERO_ADDRESS, web3  # type: ignore
 from utils.config import (
     contracts,
     lido_dao_node_operators_registry,
@@ -10,7 +10,6 @@ from utils.config import (
     lido_dao_legacy_oracle,
     lido_dao_withdrawal_vault,
     ldo_holder_address_for_tests,
-    deployer_eoa,
     deployer_eoa_locator,
     oracle_committee,
     deposit_security_module_guardians,
@@ -49,13 +48,16 @@ from utils.config import (
     STAKING_MODULE_NOR_ID,
     STAKING_MODULE_NOR_NAME,
     STAKING_MODULE_NOR_TYPE,
+    WITHDRAWAL_QUEUE_ERC721_BASE_URI,
 )
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.permission import (
     Permission,
     PermissionP,
+    validate_grant_role_event,
     validate_permission_create_event,
     validate_permission_revoke_event,
+    validate_revoke_role_event,
 )
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
@@ -124,6 +126,7 @@ MANAGE_QUORUM = "0xa5ffa9f45fa52c446078e834e1914561bd9c2ab1e833572d62af775da092c
 SET_BEACON_SPEC = "0x16a273d48baf8111397316e6d961e6836913acb23b181e6c5fb35ec0bd2648fc"
 SET_REPORT_BOUNDARIES = "0x44adaee26c92733e57241cb0b26ffaa2d182ed7120ba3ecd7e0dce3635c01dc1"
 SET_BEACON_REPORT_RECEIVER = "0xe22a455f1bfbaf705ac3e891a64e156da92cb0b42cfc389158e6e82bd57f37be"
+MANAGE_TOKEN_URI_ROLE = web3.keccak(text="MANAGE_TOKEN_URI_ROLE").hex()
 
 
 # Roles related to vote #1
@@ -315,7 +318,7 @@ def test_vote(
 
     display_voting_events(vote_tx)
 
-    grouped_voting_events = group_voting_events(vote_tx)
+    grouped_voting_events: List[EventDict] = group_voting_events(vote_tx)
 
     (
         events_withdrawal_vault_upgrade,
@@ -328,8 +331,17 @@ def test_vote(
         events_update_oracle_impl,
         events_grant_staking_router_role,
         events_template_finish,
-        *revoke_roles_events,
+        *remaining_events,
     ) = grouped_voting_events
+
+    revoke_roles_events = remaining_events[:17]
+    (
+        events_grant_base_uri_manager_role,
+        events_set_base_uri,
+        events_revoke_base_uri_manager_role,
+    ) = remaining_events[17:]
+
+    assert len(grouped_voting_events) == 30
 
     validate_withdrawal_vault_manager_upgrade_events(
         events_withdrawal_vault_upgrade, lido_dao_withdrawal_vault_implementation
@@ -350,6 +362,14 @@ def test_vote(
 
     for e, permission in zip(revoke_roles_events, permissions_to_revoke):
         validate_permission_revoke_event(e, permission)
+
+    validate_grant_role_event(
+        events_grant_base_uri_manager_role, MANAGE_TOKEN_URI_ROLE, contracts.voting, contracts.agent.address
+    )
+    validate_set_base_uri_event(events_set_base_uri, WITHDRAWAL_QUEUE_ERC721_BASE_URI)
+    validate_revoke_role_event(
+        events_revoke_base_uri_manager_role, MANAGE_TOKEN_URI_ROLE, contracts.voting, contracts.agent.address
+    )
 
 
 def acl_has_permission(permission):
@@ -385,6 +405,13 @@ def assert_events_equal(actual_events, expected_events):
     assert len(expected_events) == len(actual_events)
     for actual, expected in zip(actual_events, expected_events):
         assert_single_event_equal(actual, expected)
+
+
+def validate_set_base_uri_event(events: EventDict, base_uri: str):
+    _events_chain = ["LogScriptCall", "BaseURISet"]
+    validate_events_chain([e.name for e in events], _events_chain)
+    assert events.count("BaseURISet") == 1
+    assert events["BaseURISet"]["baseURI"] == base_uri, "Wrong base uri"
 
 
 def validate_withdrawal_vault_manager_upgrade_events(events: EventDict, implementation: str):
