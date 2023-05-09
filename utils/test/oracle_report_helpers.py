@@ -263,12 +263,13 @@ def oracle_report(
     sharesRequestedToBurn=None,
     withdrawalFinalizationBatches=[],
     simulatedShareRate=None,
+    refSlot=None,
 ):
     if wait_to_next_report_time:
         """fast forwards time to next report, compiles report, pushes through consensus and to AccountingOracle"""
         wait_to_next_available_report_time(contracts.hash_consensus_for_accounting_oracle)
-
-    (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
+    if refSlot is None:
+        (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
 
     (_, beaconValidators, beaconBalance) = contracts.lido.getBeaconStat()
 
