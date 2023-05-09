@@ -22,20 +22,6 @@ INITIAL_TOKEN_HOLDER = "0x000000000000000000000000000000000000dEaD"
 
 TIMESTAMP_FIRST_SECOND_OF_JULY_2023_UTC = 1688169600
 
-
-def ask_shapella_upgrade_confirmation(template_address, locator_implementation):
-    print(f"!!! Going to do preliminary shapella upgrade actions. Namely:")
-    print(f"  - upgrade LidoLocator proxy implementation to {locator_implementation}")
-    print(f"  - transfer OZ admin and proxy ownership to the upgrade template {template_address}.")
-    print(f"This is IRREVERSIBLE!")
-    print("Does it look good? [yes/no]")
-    resume = prompt_bool()
-    while resume is None:
-        resume = prompt_bool()
-    if not resume:
-        raise RuntimeError("User termination execution")
-
-
 def get_tx_params(deployer):
     tx_params = {"from": deployer}
     if get_is_live():
@@ -46,15 +32,3 @@ def get_tx_params(deployer):
 
 def prepare_transfer_locator_ownership_to_template(admin, template):
     interface.OssifiableProxy(contracts.lido_locator).proxy__changeAdmin(template, get_tx_params(admin))
-
-
-def prepare_for_shapella_upgrade_voting(silent=False):
-    if not silent:
-        ask_shapella_upgrade_confirmation(lido_dao_template_address, lido_dao_lido_locator_implementation)
-
-    # To get sure the "stone" is in place
-    assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
-
-    prepare_transfer_locator_ownership_to_template(deployer_eoa_locator, lido_dao_template_address)
-
-    return ShapellaUpgradeTemplate.at(lido_dao_template_address)

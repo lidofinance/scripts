@@ -23,7 +23,7 @@ PETRIFICATION_MARK = 11579208923731619542357098500868790785326998466564056403945
 
 
 @pytest.fixture(scope="module")
-def petrified_implementations(shapella_upgrade_template):
+def petrified_implementations():
     return {
         # dao aragon app contracts
         "Lido": {
@@ -191,6 +191,6 @@ def test_is_petrified(petrified_implementations):
             assert False, "implementation_type"
 
 
-def test_stone(shapella_upgrade_template):
+def test_stone():
     assert contracts.lido.balanceOf(initial_dead_token_holder) > 0
     assert contracts.lido.sharesOf(initial_dead_token_holder) > 0

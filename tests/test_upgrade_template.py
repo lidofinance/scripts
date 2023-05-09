@@ -13,15 +13,12 @@ from utils.config import (
     MAINNET_VOTE_DURATION,
 )
 from utils.evm_script import encode_error
-from utils.shapella_upgrade import (
-    prepare_for_shapella_upgrade_voting,
-    TIMESTAMP_FIRST_SECOND_OF_JULY_2023_UTC,
-)
+from utils.shapella_upgrade import TIMESTAMP_FIRST_SECOND_OF_JULY_2023_UTC
 
 
 @pytest.fixture(scope="function", autouse=True)
 def template():
-    return prepare_for_shapella_upgrade_voting(silent=True)
+    return contracts.shapella_upgrade_template
 
 
 def get_current_chain_timestamp():

@@ -62,9 +62,6 @@ from utils.test.event_validators.permission import (
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
 from scripts.upgrade_shapella import start_vote
-from utils.shapella_upgrade import (
-    prepare_transfer_locator_ownership_to_template,
-)
 
 
 # See Aragon apps getLatest()
@@ -253,14 +250,13 @@ def test_vote(
     for permission in permissions_to_revoke:
         assert acl_has_permission(permission), f"No starting role {permission.role} on {permission.entity}"
 
+    template = contracts.shapella_upgrade_template
+
     # START VOTE
     if len(vote_ids_from_env) > 0:
         assert len(vote_ids_from_env) == 1, "This test script supports only single vote id"
         (vote_id,) = vote_ids_from_env
-        template = contracts.shapella_upgrade_template
     else:
-        template = contracts.shapella_upgrade_template
-        prepare_transfer_locator_ownership_to_template(deployer_eoa_locator, template)
         tx_params = {"from": ldo_holder_address_for_tests}
         vote_id, _ = start_vote(tx_params, silent=True)
 
