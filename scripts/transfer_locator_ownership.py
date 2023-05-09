@@ -20,7 +20,7 @@ def main():
     assert interface.OssifiableProxy(contracts.lido_locator).proxy__getAdmin() == deployer
 
     print(f"=== Network is {network_name()}")
-    print(f"=== Lido locator implementation is {interface.OssifiableProxy(contracts.lido_locator).proxy__implementation()} ===")
+    print(f"=== Lido locator implementation is {interface.OssifiableProxy(contracts.lido_locator).proxy__getImplementation()} ===")
     print(f"=== Change lido locator proxy admin to {lido_dao_template_address} ===")
     print(f"=== Deployer: {deployer} ===")
 
