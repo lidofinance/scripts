@@ -44,25 +44,7 @@ def get_tx_params(deployer):
     return tx_params
 
 
-def assert_locator_deployer_eoa_is_impersonated():
-    assert not get_is_live(), "Must not run any preliminary steps on live network!"
-    deployer_account = get_deployer_account()
-    assert not isinstance(deployer_account, LocalAccount), "mainnet deployer oea must be impersonated in tests"
-    assert get_deployer_account() != deployer_eoa_locator
-
-
-def prepare_upgrade_locator_impl(admin):
-    assert_locator_deployer_eoa_is_impersonated()
-
-    assert interface.OssifiableProxy(contracts.lido_locator).proxy__getAdmin() == admin
-    interface.OssifiableProxy(contracts.lido_locator).proxy__upgradeTo(
-        lido_dao_lido_locator_implementation, get_tx_params(admin)
-    )
-    print(f"=== Upgrade lido locator implementation to {lido_dao_lido_locator_implementation} ===")
-
-
 def prepare_transfer_locator_ownership_to_template(admin, template):
-    assert_locator_deployer_eoa_is_impersonated()
     interface.OssifiableProxy(contracts.lido_locator).proxy__changeAdmin(template, get_tx_params(admin))
 
 
@@ -72,8 +54,6 @@ def prepare_for_shapella_upgrade_voting(silent=False):
 
     # To get sure the "stone" is in place
     assert contracts.lido.balanceOf(INITIAL_TOKEN_HOLDER) > 0
-
-    prepare_upgrade_locator_impl(deployer_eoa_locator)
 
     prepare_transfer_locator_ownership_to_template(deployer_eoa_locator, lido_dao_template_address)
 
