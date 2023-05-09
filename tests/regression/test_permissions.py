@@ -84,6 +84,7 @@ def protocol_permissions():
         "AccountingHashConsensus": {
             "contract": contracts.hash_consensus_for_accounting_oracle,
             "type": "CustomApp",
+            "state": {"getMembers": (oracle_committee, contracts.hash_consensus_for_accounting_oracle.getMembers()[1])},
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_MEMBERS_AND_QUORUM_ROLE": [],
@@ -96,6 +97,7 @@ def protocol_permissions():
         "ValidatorsExitBusHashConsensus": {
             "contract": contracts.hash_consensus_for_validators_exit_bus_oracle,
             "type": "CustomApp",
+            "state": {"getMembers": (oracle_committee, contracts.hash_consensus_for_validators_exit_bus_oracle.getMembers()[1])},
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_MEMBERS_AND_QUORUM_ROLE": [],
