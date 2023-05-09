@@ -146,7 +146,6 @@ def protocol_permissions():
                 "STAKING_ROUTER_ROLE": [contracts.staking_router],
                 "MANAGE_NODE_OPERATOR_ROLE": [],
                 "MANAGE_SIGNING_KEYS": [contracts.voting],
-                "SET_NODE_OPERATOR_LIMIT_ROLE": [contracts.voting],
                 "SET_NODE_OPERATOR_LIMIT_ROLE": [lido_easytrack_evmscriptexecutor, contracts.voting]
             },
         },
