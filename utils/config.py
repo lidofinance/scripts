@@ -50,7 +50,7 @@ def get_max_fee() -> str:
     if "OMNIBUS_MAX_FEE" in os.environ:
         return os.environ["OMNIBUS_MAX_FEE"]
     else:
-        return "100 gwei"
+        return "300 gwei"
 
 
 def get_deployer_account() -> Union[LocalAccount, Account]:
@@ -59,7 +59,9 @@ def get_deployer_account() -> Union[LocalAccount, Account]:
         raise EnvironmentError("Please set DEPLOYER env variable to the deployer account name")
 
     return (
-        accounts.load(os.environ["DEPLOYER"]) if is_live else accounts[4]
+        accounts.load(os.environ["DEPLOYER"])
+        if (is_live or "DEPLOYER" in os.environ)
+        else accounts[4])
     )
 
 
