@@ -61,7 +61,7 @@ def get_deployer_account() -> Union[LocalAccount, Account]:
     return (
         accounts.load(os.environ["DEPLOYER"])
         if (is_live or "DEPLOYER" in os.environ)
-        else accounts[4]
+        else accounts.at("0x2A78076BF797dAC2D25c9568F79b61aFE565B88C", force=True)
     )
 
 
