@@ -15,7 +15,7 @@ from utils.config import (
     CURATED_STAKING_MODULE_NAME,
     CURATED_STAKING_MODULE_ID,
     CURATED_STAKING_MODULE_TARGET_SHARE_BP,
-    CURATED_STAKING_MODULE_MODULE_BP,
+    CURATED_STAKING_MODULE_MODULE_FEE_BP,
     CURATED_STAKING_MODULE_TREASURY_FEE_BP,
     WITHDRAWAL_CREDENTIALS,
 )
@@ -83,7 +83,7 @@ def test_staking_modules(contract):
     curated_module = contract.getStakingModule(1)
     assert curated_module["id"] == CURATED_STAKING_MODULE_ID
     assert curated_module["stakingModuleAddress"] == contracts.node_operators_registry
-    assert curated_module["stakingModuleFee"] == CURATED_STAKING_MODULE_MODULE_BP
+    assert curated_module["stakingModuleFee"] == CURATED_STAKING_MODULE_MODULE_FEE_BP
     assert curated_module["treasuryFee"] == CURATED_STAKING_MODULE_TREASURY_FEE_BP
     assert curated_module["targetShare"] == CURATED_STAKING_MODULE_TARGET_SHARE_BP
     assert curated_module["status"] == 0
