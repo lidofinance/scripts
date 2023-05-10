@@ -56,7 +56,7 @@ def petrified_implementations(shapella_upgrade_template):
             "implementation_type": "AragonApp",
         },
         "LegacyOracle": {
-            "contract_address": contracts.node_operators_registry_v1.address,
+            "contract_address": contracts.legacy_oracle.address,
             "proxy_type": "AppProxyUpgradeable",
             "implementation_type": "AragonApp",
         },
@@ -144,9 +144,9 @@ def petrified_implementations(shapella_upgrade_template):
             "implementation_type": "Versioned",
         },
         "LidoLocatorImplementation": {
-            "contract_address": VALIDATORS_EXIT_BUS_ORACLE_IMPL,
+            "contract_address": LIDO_LOCATOR_IMPL,
             "proxy_type": "Implementation",
-            "implementation_type": "Versioned",
+            "implementation_type": "LidoLocatorFixed",
         },
     }
 

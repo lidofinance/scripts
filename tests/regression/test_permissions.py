@@ -5,8 +5,7 @@ import pytest
 
 from brownie import interface, convert, web3
 from utils.test.event_validators.permission import Permission
-from utils.config import contracts, GATE_SEAL, DSM_GUARDIANS
-from configs.config_mainnet import EASYTRACK_EVMSCRIPT_EXECUTOR
+from utils.config import contracts, GATE_SEAL, DSM_GUARDIANS, EASYTRACK_EVMSCRIPT_EXECUTOR, ORACLE_COMMITTEE
 from utils.test.helpers import ZERO_BYTES32
 
 
@@ -83,6 +82,7 @@ def protocol_permissions():
         "AccountingHashConsensus": {
             "contract": contracts.hash_consensus_for_accounting_oracle,
             "type": "CustomApp",
+            "state": {"getMembers": (ORACLE_COMMITTEE, contracts.hash_consensus_for_accounting_oracle.getMembers()[1])},
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_MEMBERS_AND_QUORUM_ROLE": [],
@@ -95,6 +95,12 @@ def protocol_permissions():
         "ValidatorsExitBusHashConsensus": {
             "contract": contracts.hash_consensus_for_validators_exit_bus_oracle,
             "type": "CustomApp",
+            "state": {
+                "getMembers": (
+                    ORACLE_COMMITTEE,
+                    contracts.hash_consensus_for_validators_exit_bus_oracle.getMembers()[1],
+                )
+            },
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_MEMBERS_AND_QUORUM_ROLE": [],
@@ -145,7 +151,6 @@ def protocol_permissions():
                 "STAKING_ROUTER_ROLE": [contracts.staking_router],
                 "MANAGE_NODE_OPERATOR_ROLE": [],
                 "MANAGE_SIGNING_KEYS": [contracts.voting],
-                "SET_NODE_OPERATOR_LIMIT_ROLE": [contracts.voting],
                 "SET_NODE_OPERATOR_LIMIT_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR, contracts.voting],
             },
         },
