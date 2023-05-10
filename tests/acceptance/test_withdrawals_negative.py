@@ -1,11 +1,11 @@
-from brownie.exceptions import brownie
 from brownie.network.account import Account
 import pytest
-from brownie import Contract, interface, reverts, Wei  # type: ignore
+from brownie import Contract, interface, reverts, Wei, chain  # type: ignore
 from tests.snapshot.test_lido_snapshot import UINT256_MAX
 
 from utils.config import lido_dao_withdrawal_queue, contracts
 from utils.evm_script import encode_error
+from utils.test.oracle_report_helpers import oracle_report
 
 MIN_STETH_WITHDRAWAL_AMOUNT = Wei(100)
 MAX_STETH_WITHDRAWAL_AMOUNT = Wei(1000 * 10**18)
@@ -87,24 +87,32 @@ def test_wq_prefinalize(wq: Contract, steth_whale: Account):
     with reverts(encode_error("EmptyBatches()")):
         wq.prefinalize.transact([], 1, {"from": wq.address})
 
-    with reverts(encode_error("ZeroShareRate()")):
-        wq.prefinalize.transact([], 0, {"from": wq.address})
-
     last_finalized_id = wq.getLastFinalizedRequestId()  # 0 after enacment
-
-    with reverts(encode_error("InvalidRequestId(uint256)", [last_finalized_id])):
-        wq.prefinalize.transact([last_finalized_id], 1, {"from": wq.address})
-
     fill_wq(wq, steth_whale, count=3)
 
+    with reverts(encode_error("InvalidRequestId(uint256)", [last_finalized_id])):
+        oracle_report(withdrawalFinalizationBatches=[last_finalized_id])
+
     with reverts(encode_error("InvalidRequestId(uint256)", [4])):
-        wq.prefinalize.transact([1, 4], 1, {"from": wq.address})
+        oracle_report(withdrawalFinalizationBatches=[1, 4])
 
     with reverts(encode_error("BatchesAreNotSorted()")):
-        wq.prefinalize.transact([3, 2], 1, {"from": wq.address})
+        oracle_report(withdrawalFinalizationBatches=[3, 2])
 
     with reverts(encode_error("BatchesAreNotSorted()")):
-        wq.prefinalize.transact([1, 1], 1, {"from": wq.address})
+        oracle_report(withdrawalFinalizationBatches=[1, 1])
+
+    with reverts(encode_error("ZeroShareRate()")):
+        oracle_report(withdrawalFinalizationBatches=[1, 2], simulatedShareRate=0)
+
+
+def test_request_to_finalize_to_close(wq: Contract, steth_whale: Account):
+    fill_wq(wq, steth_whale, count=1)
+    with reverts(encode_error("IncorrectRequestFinalization(uint256)", [chain.time()])):
+        oracle_report(
+            withdrawalFinalizationBatches=[1],
+            wait_to_next_report_time=False,
+        )
 
 
 def test_wq_finalize(wq: Contract, steth_whale: Account):
