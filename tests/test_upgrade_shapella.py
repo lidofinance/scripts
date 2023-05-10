@@ -4,6 +4,7 @@ Tests for Lido V2 (Shapella-ready) upgrade voting 12/05/2023
 from brownie import interface, ZERO_ADDRESS, web3  # type: ignore
 from utils.config import (
     contracts,
+    lido_dao_agent_address,
     lido_dao_node_operators_registry,
     lido_dao_voting_address,
     lido_dao_steth_address,
@@ -50,6 +51,7 @@ from utils.config import (
     STAKING_MODULE_NOR_TYPE,
     WITHDRAWAL_QUEUE_ERC721_BASE_URI,
 )
+from utils.test.helpers import almostEqEth
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.permission import (
     Permission,
@@ -61,6 +63,7 @@ from utils.test.event_validators.permission import (
 )
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
+from utils.test.event_validators.payout import Payout, validate_token_payout_event
 from scripts.upgrade_shapella import start_vote
 from utils.shapella_upgrade import (
     prepare_upgrade_locator_impl,
@@ -128,6 +131,14 @@ SET_REPORT_BOUNDARIES = "0x44adaee26c92733e57241cb0b26ffaa2d182ed7120ba3ecd7e0dc
 SET_BEACON_REPORT_RECEIVER = "0xe22a455f1bfbaf705ac3e891a64e156da92cb0b42cfc389158e6e82bd57f37be"
 MANAGE_TOKEN_URI_ROLE = web3.keccak(text="MANAGE_TOKEN_URI_ROLE").hex()
 
+GAS_FUNDER_MSIG = "0x5181d5D56Af4f823b96FE05f062D7a09761a5a53"
+
+fund_payout = Payout(
+    token_addr=lido_dao_steth_address,
+    from_addr=lido_dao_agent_address,
+    to_addr=GAS_FUNDER_MSIG,
+    amount=50 * (10 ** 18)
+)
 
 # Roles related to vote #1
 permission_staking_router = Permission(
@@ -227,7 +238,6 @@ permissions_to_revoke = [
     ),
 ]
 
-
 def test_vote(
     helpers,
     bypass_events_decoding,
@@ -254,6 +264,9 @@ def test_vote(
     for permission in permissions_to_revoke:
         assert acl_has_permission(permission), f"No starting role {permission.role} on {permission.entity}"
 
+    depositor_multisig_balance_before = contracts.lido.balanceOf(GAS_FUNDER_MSIG)
+    dao_balance_before = contracts.lido.balanceOf(lido_dao_agent_address)
+
     # START VOTE
     if len(vote_ids_from_env) > 0:
         assert len(vote_ids_from_env) == 1, "This test script supports only single vote id"
@@ -269,6 +282,12 @@ def test_vote(
     vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
 
     print(f"UPGRADE TX voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
+
+    depositor_multisig_balance_after = contracts.lido.balanceOf(GAS_FUNDER_MSIG)
+    dao_balance_after = contracts.lido.balanceOf(lido_dao_agent_address)
+
+    assert almostEqEth(depositor_multisig_balance_after - depositor_multisig_balance_before, fund_payout.amount)
+    assert almostEqEth(dao_balance_before - dao_balance_after, fund_payout.amount)
 
     #
     # WithdrawalVault upgrade checks
@@ -319,6 +338,7 @@ def test_vote(
     display_voting_events(vote_tx)
 
     grouped_voting_events: List[EventDict] = group_voting_events(vote_tx)
+    assert len(grouped_voting_events) == 31
 
     (
         events_withdrawal_vault_upgrade,
@@ -339,9 +359,8 @@ def test_vote(
         events_grant_base_uri_manager_role,
         events_set_base_uri,
         events_revoke_base_uri_manager_role,
+        events_fund_gas_funder
     ) = remaining_events[17:]
-
-    assert len(grouped_voting_events) == 30
 
     validate_withdrawal_vault_manager_upgrade_events(
         events_withdrawal_vault_upgrade, lido_dao_withdrawal_vault_implementation
@@ -370,6 +389,7 @@ def test_vote(
     validate_revoke_role_event(
         events_revoke_base_uri_manager_role, MANAGE_TOKEN_URI_ROLE, contracts.voting, contracts.agent.address
     )
+    validate_token_payout_event(events_fund_gas_funder, fund_payout, is_steth=True)
 
 
 def acl_has_permission(permission):

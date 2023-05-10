@@ -14,10 +14,14 @@ class Payout(NamedTuple):
     amount: int
 
 
-def validate_token_payout_event(event: EventDict, p: Payout):
-    _ldo_events_chain = ["LogScriptCall", "NewPeriod", "NewTransaction", "Transfer", "VaultTransfer"]
+def validate_token_payout_event(event: EventDict, p: Payout, is_steth: bool = False):
+    _token_events_chain = ["LogScriptCall", "NewPeriod", "NewTransaction", "Transfer"]
+    if is_steth:
+        _token_events_chain += ["TransferShares"]
 
-    validate_events_chain([e.name for e in event], _ldo_events_chain)
+    _token_events_chain += ["VaultTransfer"]
+
+    validate_events_chain([e.name for e in event], _token_events_chain)
 
     assert event.count("VaultTransfer") == 1
     assert event.count("Transfer") == 1
@@ -47,9 +51,9 @@ def validate_token_payout_event(event: EventDict, p: Payout):
 
 
 def validate_ether_payout_event(event: EventDict, p: Payout):
-    _ldo_events_chain = ["LogScriptCall", "NewPeriod", "NewTransaction", "VaultTransfer"]
+    _ether_events_chain = ["LogScriptCall", "NewPeriod", "NewTransaction", "VaultTransfer"]
 
-    validate_events_chain([e.name for e in event], _ldo_events_chain)
+    validate_events_chain([e.name for e in event], _ether_events_chain)
 
     assert event.count("VaultTransfer") == 1
     assert event.count("NewTransaction") == 1
@@ -63,9 +67,9 @@ def validate_ether_payout_event(event: EventDict, p: Payout):
 
 
 def validate_agent_execute_ether_wrap_event(event: EventDict, p: Payout):
-    _ldo_events_chain = ["LogScriptCall", "Deposit", "Execute"]
+    _ether_wrap_events_chain = ["LogScriptCall", "Deposit", "Execute"]
 
-    validate_events_chain([e.name for e in event], _ldo_events_chain)
+    validate_events_chain([e.name for e in event], _ether_wrap_events_chain)
 
     assert p.token_addr == ZERO_ADDRESS
     assert event["Deposit"]["dst"] == p.from_addr, "Wrong payout sender"
