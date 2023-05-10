@@ -5,9 +5,7 @@ import pytest
 
 from brownie import interface, convert, web3
 from utils.test.event_validators.permission import Permission
-from utils.config import contracts, oracle_committee, gate_seal_address, deposit_security_module_guardians
-from configs.config_mainnet import (
-    lido_easytrack_evmscriptexecutor, lido_easytrack_evmscriptexecutor)
+from utils.config import contracts, GATE_SEAL, DSM_GUARDIANS, EASYTRACK_EVMSCRIPT_EXECUTOR, ORACLE_COMMITTEE
 from utils.test.helpers import ZERO_BYTES32
 
 
@@ -50,7 +48,7 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "PAUSE_ROLE": [gate_seal_address],
+                "PAUSE_ROLE": [GATE_SEAL],
                 "RESUME_ROLE": [],
                 "FINALIZE_ROLE": [contracts.lido],
                 "ORACLE_ROLE": [contracts.accounting_oracle],
@@ -75,7 +73,7 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "SUBMIT_DATA_ROLE": [],
-                "PAUSE_ROLE": [gate_seal_address],
+                "PAUSE_ROLE": [GATE_SEAL],
                 "RESUME_ROLE": [],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
                 "MANAGE_CONSENSUS_VERSION_ROLE": [],
@@ -84,7 +82,7 @@ def protocol_permissions():
         "AccountingHashConsensus": {
             "contract": contracts.hash_consensus_for_accounting_oracle,
             "type": "CustomApp",
-            "state": {"getMembers": (oracle_committee, contracts.hash_consensus_for_accounting_oracle.getMembers()[1])},
+            "state": {"getMembers": (ORACLE_COMMITTEE, contracts.hash_consensus_for_accounting_oracle.getMembers()[1])},
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_MEMBERS_AND_QUORUM_ROLE": [],
@@ -97,7 +95,12 @@ def protocol_permissions():
         "ValidatorsExitBusHashConsensus": {
             "contract": contracts.hash_consensus_for_validators_exit_bus_oracle,
             "type": "CustomApp",
-            "state": {"getMembers": (oracle_committee, contracts.hash_consensus_for_validators_exit_bus_oracle.getMembers()[1])},
+            "state": {
+                "getMembers": (
+                    ORACLE_COMMITTEE,
+                    contracts.hash_consensus_for_validators_exit_bus_oracle.getMembers()[1],
+                )
+            },
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_MEMBERS_AND_QUORUM_ROLE": [],
@@ -127,7 +130,7 @@ def protocol_permissions():
         "DepositSecurityModule": {
             "contract": contracts.deposit_security_module,
             "type": "CustomApp",
-            "state": {"getOwner": contracts.agent, "getGuardians": deposit_security_module_guardians},
+            "state": {"getOwner": contracts.agent, "getGuardians": DSM_GUARDIANS},
             "roles": {},
         },
         "Lido": {
@@ -148,7 +151,7 @@ def protocol_permissions():
                 "STAKING_ROUTER_ROLE": [contracts.staking_router],
                 "MANAGE_NODE_OPERATOR_ROLE": [],
                 "MANAGE_SIGNING_KEYS": [contracts.voting],
-                "SET_NODE_OPERATOR_LIMIT_ROLE": [lido_easytrack_evmscriptexecutor, contracts.voting]
+                "SET_NODE_OPERATOR_LIMIT_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR, contracts.voting],
             },
         },
         "OracleDaemonConfig": {
@@ -179,15 +182,13 @@ def test_permissions_after_vote(protocol_permissions):
             abi_roles_list, roles.keys()
         )
         for role in set(permissions_config["roles"].keys()):
-            assert role in abi_roles_list, "no {} described for contract {}".format(
-                role, contract_name)
+            assert role in abi_roles_list, "no {} described for contract {}".format(role, contract_name)
 
         if permissions_config["type"] == "AragonApp":
             for role, holders in permissions_config["roles"].items():
                 for holder in holders:
                     permission = Permission(
-                        entity=holder, app=permissions_config["contract"], role=convert.to_uint(
-                            web3.keccak(text=role))
+                        entity=holder, app=permissions_config["contract"], role=convert.to_uint(web3.keccak(text=role))
                     )
                     assert contracts.acl.hasPermission(
                         *permission
@@ -196,14 +197,12 @@ def test_permissions_after_vote(protocol_permissions):
         elif permissions_config["type"] == "CustomApp":
             if "proxy_owner" in permissions_config:
                 assert (
-                    interface.OssifiableProxy(
-                        permissions_config["contract"].address).proxy__getAdmin()
+                    interface.OssifiableProxy(permissions_config["contract"].address).proxy__getAdmin()
                     == permissions_config["proxy_owner"]
                 )
 
             for role, holders in permissions_config["roles"].items():
-                role_keccak = web3.keccak(
-                    text=role).hex() if role != "DEFAULT_ADMIN_ROLE" else ZERO_BYTES32.hex()
+                role_keccak = web3.keccak(text=role).hex() if role != "DEFAULT_ADMIN_ROLE" else ZERO_BYTES32.hex()
 
                 role_signature = permissions_config["contract"].signatures[role]
                 assert permissions_config["contract"].get_method_object(role_signature)() == role_keccak
@@ -220,7 +219,5 @@ def test_permissions_after_vote(protocol_permissions):
         if "state" in permissions_config:
             for method, value in permissions_config["state"].items():
                 method_sig = permissions_config["contract"].signatures[method]
-                actual_value = permissions_config["contract"].get_method_object(
-                    method_sig)()
-                assert actual_value == value, "method {} returns {} instead of {}".format(
-                    method, actual_value, value)
+                actual_value = permissions_config["contract"].get_method_object(method_sig)()
+                assert actual_value == value, "method {} returns {} instead of {}".format(method, actual_value, value)

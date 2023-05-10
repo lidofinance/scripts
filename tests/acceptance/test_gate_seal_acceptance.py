@@ -2,17 +2,17 @@ import pytest
 from brownie import Contract, interface, web3  # type: ignore
 from brownie.network.account import Account
 
-from utils.config import GATE_SEAL_EXPIRY_TIMESTAMP, GATE_SEAL_PAUSE_DURATION_SECONDS, contracts, gate_seal_address, gate_seal_committee_address
+from utils.config import GATE_SEAL_EXPIRY_TIMESTAMP, GATE_SEAL_PAUSE_DURATION, contracts, GATE_SEAL, GATE_SEAL_COMMITTEE
 
 
 @pytest.fixture(scope="module")
 def gate_seal_committee(accounts) -> Account:
-    return accounts.at(gate_seal_committee_address, force=True)
+    return accounts.at(GATE_SEAL_COMMITTEE, force=True)
 
 
 @pytest.fixture(scope="module")
 def contract() -> Contract:
-    return interface.GateSeal(gate_seal_address)
+    return interface.GateSeal(GATE_SEAL)
 
 
 def test_gate_seal(contract: Contract, gate_seal_committee: Account):
@@ -26,7 +26,7 @@ def test_gate_seal(contract: Contract, gate_seal_committee: Account):
     _check_role(contracts.validators_exit_bus_oracle, "PAUSE_ROLE", contract.address)
     _check_role(contracts.withdrawal_queue, "PAUSE_ROLE", contract.address)
 
-    assert contract.get_seal_duration_seconds() == GATE_SEAL_PAUSE_DURATION_SECONDS
+    assert contract.get_seal_duration_seconds() == GATE_SEAL_PAUSE_DURATION
     assert contract.get_expiry_timestamp() == GATE_SEAL_EXPIRY_TIMESTAMP
     assert not contract.is_expired()
 

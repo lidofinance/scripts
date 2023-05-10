@@ -3,16 +3,16 @@ from brownie import interface, chain, reverts  # type: ignore
 
 from utils.config import (
     contracts,
-    lido_dao_legacy_oracle,
-    lido_dao_legacy_oracle_implementation,
-    lido_dao_hash_consensus_for_accounting_oracle,
-    lido_dao_accounting_oracle,
-    ORACLE_APP_ID,
-    lido_dao_evm_script_registry,
+    LEGACY_ORACLE,
+    LEGACY_ORACLE_IMPL,
+    HASH_CONSENSUS_FOR_AO,
+    ACCOUNTING_ORACLE,
+    ORACLE_ARAGON_APP_ID,
+    ARAGON_EVMSCRIPT_REGISTRY,
     CHAIN_SLOTS_PER_EPOCH,
     CHAIN_SECONDS_PER_SLOT,
     CHAIN_GENESIS_TIME,
-    ACCOUNTING_ORACLE_EPOCHS_PER_FRAME,
+    AO_EPOCHS_PER_FRAME,
 )
 
 lastSeenTotalPooledEther = 5879742251110033487920093
@@ -20,20 +20,20 @@ lastSeenTotalPooledEther = 5879742251110033487920093
 
 @pytest.fixture(scope="module")
 def contract() -> interface.LegacyOracle:
-    return interface.LegacyOracle(lido_dao_legacy_oracle)
+    return interface.LegacyOracle(LEGACY_ORACLE)
 
 
 def test_links(contract):
     assert contract.getLido() == contracts.lido
     assert contract.getAccountingOracle() == contracts.accounting_oracle
-    assert contract.getEVMScriptRegistry() == lido_dao_evm_script_registry
+    assert contract.getEVMScriptRegistry() == ARAGON_EVMSCRIPT_REGISTRY
 
 
 def test_aragon(contract):
     proxy = interface.AppProxyUpgradeable(contract)
-    assert proxy.implementation() == lido_dao_legacy_oracle_implementation
+    assert proxy.implementation() == LEGACY_ORACLE_IMPL
     assert contract.kernel() == contracts.kernel
-    assert contract.appId() == ORACLE_APP_ID
+    assert contract.appId() == ORACLE_ARAGON_APP_ID
     assert contract.hasInitialized() == True
     assert contract.isPetrified() == False
 
@@ -44,25 +44,21 @@ def test_versioned(contract):
 
 def test_initialize(contract):
     with reverts("INIT_ALREADY_INITIALIZED"):
-        contract.initialize(
-            contracts.lido_locator, lido_dao_hash_consensus_for_accounting_oracle, {"from": contracts.voting}
-        )
+        contract.initialize(contracts.lido_locator, HASH_CONSENSUS_FOR_AO, {"from": contracts.voting})
 
 
 def test_finalize_upgrade(contract):
     with reverts("WRONG_BASE_VERSION"):
-        contract.finalizeUpgrade_v4(lido_dao_accounting_oracle, {"from": contracts.voting})
+        contract.finalizeUpgrade_v4(ACCOUNTING_ORACLE, {"from": contracts.voting})
 
 
 def test_petrified():
-    impl = interface.LegacyOracle(lido_dao_legacy_oracle_implementation)
+    impl = interface.LegacyOracle(LEGACY_ORACLE_IMPL)
     with reverts("INIT_ALREADY_INITIALIZED"):
-        impl.initialize(
-            contracts.lido_locator, lido_dao_hash_consensus_for_accounting_oracle, {"from": contracts.voting}
-        )
+        impl.initialize(contracts.lido_locator, HASH_CONSENSUS_FOR_AO, {"from": contracts.voting})
 
     with reverts("WRONG_BASE_VERSION"):
-        impl.finalizeUpgrade_v4(lido_dao_accounting_oracle, {"from": contracts.voting})
+        impl.finalizeUpgrade_v4(ACCOUNTING_ORACLE, {"from": contracts.voting})
 
 
 def test_recoverability(contract):
@@ -88,7 +84,7 @@ def test_legacy_oracle_state(contract):
 
     oracle_beacon_spec = contracts.legacy_oracle.getBeaconSpec()
 
-    assert oracle_beacon_spec["epochsPerFrame"] == ACCOUNTING_ORACLE_EPOCHS_PER_FRAME
+    assert oracle_beacon_spec["epochsPerFrame"] == AO_EPOCHS_PER_FRAME
     assert oracle_beacon_spec["slotsPerEpoch"] == CHAIN_SLOTS_PER_EPOCH
     assert oracle_beacon_spec["secondsPerSlot"] == CHAIN_SECONDS_PER_SLOT
     assert oracle_beacon_spec["genesisTime"] == CHAIN_GENESIS_TIME

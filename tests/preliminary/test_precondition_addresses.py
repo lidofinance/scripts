@@ -2,53 +2,50 @@ import pytest
 from brownie import interface
 from utils.withdrawal_credentials import extract_address_from_eth1_wc
 from utils.finance import ZERO_ADDRESS
-from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
 from utils.import_current_votes import start_and_execute_votes
 from utils.config import (
     contracts,
-    oracle_daemon_config,
-    gate_seal_address,
-    wsteth_token_address,
-    dummy_implementation_address,
-    lido_dao_acl_address,
-    lido_dao_acl_implementation_address,
-    lido_dao_node_operators_registry_implementation_v1,
-    lido_dao_steth_implementation_address_v1,
-    lido_dao_legacy_oracle_implementation_v1,
-    lido_dao_withdrawal_vault_implementation_v1,
-    lido_dao_acl_implementation_address,
-    lido_dao_lido_locator,
-    lido_dao_accounting_oracle,
-    lido_dao_staking_router,
-    lido_dao_validators_exit_bus_oracle,
-    lido_dao_withdrawal_queue,
-    lido_dao_burner,
-    lido_dao_deposit_security_module_address,
-    lido_dao_eip712_steth,
-    lido_dao_hash_consensus_for_accounting_oracle,
-    lido_dao_hash_consensus_for_validators_exit_bus_oracle,
-    lido_dao_oracle_report_sanity_checker,
-    lido_dao_agent_address,
-    lido_dao_lido_repo,
-    lido_dao_node_operators_registry_repo,
-    lido_dao_legacy_oracle_repo,
-    lido_dao_execution_layer_rewards_vault,
-    lido_dao_steth_address,
-    lido_dao_legacy_oracle,
-    lido_dao_legacy_oracle,
-    lido_dao_node_operators_registry,
-    lido_dao_deposit_security_module_address_v1,
-    lido_dao_voting_address,
-    lido_dao_withdrawal_vault,
-    lido_dao_steth_implementation_address,
-    lido_dao_legacy_oracle_implementation,
-    lido_dao_node_operators_registry_implementation,
-    lido_dao_accounting_oracle_implementation,
-    lido_dao_lido_locator_implementation,
-    lido_dao_staking_router_implementation,
-    lido_dao_validators_exit_bus_oracle_implementation,
-    lido_dao_withdrawal_vault_implementation,
-    lido_dao_withdrawal_queue_implementation,
+    ORACLE_DAEMON_CONFIG,
+    GATE_SEAL,
+    WSTETH_TOKEN,
+    DUMMY_IMPL,
+    ACL,
+    NODE_OPERATORS_REGISTRY_IMPL_V1,
+    LIDO_IMPL_V1,
+    LEGACY_ORACLE_IMPL_V1,
+    WITHDRAWAL_VAULT_IMPL_V1,
+    ACL_IMPL,
+    LIDO_LOCATOR,
+    ACCOUNTING_ORACLE,
+    STAKING_ROUTER,
+    VALIDATORS_EXIT_BUS_ORACLE,
+    WITHDRAWAL_QUEUE,
+    BURNER,
+    DEPOSIT_SECURITY_MODULE,
+    EIP712_STETH,
+    HASH_CONSENSUS_FOR_AO,
+    HASH_CONSENSUS_FOR_VEBO,
+    ORACLE_REPORT_SANITY_CHECKER,
+    AGENT,
+    LIDO_REPO,
+    NODE_OPERATORS_REGISTRY_REPO,
+    LEGACY_ORACLE_REPO,
+    EXECUTION_LAYER_REWARDS_VAULT,
+    LIDO,
+    LEGACY_ORACLE,
+    NODE_OPERATORS_REGISTRY,
+    DEPOSIT_SECURITY_MODULE_V1,
+    VOTING,
+    WITHDRAWAL_VAULT,
+    LIDO_IMPL,
+    LEGACY_ORACLE_IMPL,
+    NODE_OPERATORS_REGISTRY_IMPL,
+    ACCOUNTING_ORACLE_IMPL,
+    LIDO_LOCATOR_IMPL,
+    STAKING_ROUTER_IMPL,
+    VALIDATORS_EXIT_BUS_ORACLE_IMPL,
+    WITHDRAWAL_VAULT_IMPL,
+    WITHDRAWAL_QUEUE_IMPL,
 )
 
 
@@ -66,232 +63,218 @@ def get_proxy_impl_ossifiable(addr):
 
 
 def upgrade_withdrawal_vault():
-    vault = interface.WithdrawalVaultManager(lido_dao_withdrawal_vault)
-    vault.proxy_upgradeTo(lido_dao_withdrawal_vault_implementation, b"", {"from": contracts.voting.address})
+    vault = interface.WithdrawalVaultManager(WITHDRAWAL_VAULT)
+    vault.proxy_upgradeTo(WITHDRAWAL_VAULT_IMPL, b"", {"from": contracts.voting.address})
 
 
 # ElRewardsVault did not changed
 def test_el_rewards_vault_did_not_changed():
-    template = prepare_for_shapella_upgrade_voting(silent=True)
+    template = contracts.shapella_upgrade_template
 
-    locator = interface.LidoLocator(lido_dao_lido_locator)
+    locator = interface.LidoLocator(LIDO_LOCATOR)
     core_components = locator.coreComponents()
     oracle_report_components = locator.oracleReportComponentsForLido()
 
-    assert template._elRewardsVault() == lido_dao_execution_layer_rewards_vault
-    assert core_components[0] == lido_dao_execution_layer_rewards_vault
-    assert oracle_report_components[1] == lido_dao_execution_layer_rewards_vault
+    assert template._elRewardsVault() == EXECUTION_LAYER_REWARDS_VAULT
+    assert core_components[0] == EXECUTION_LAYER_REWARDS_VAULT
+    assert oracle_report_components[1] == EXECUTION_LAYER_REWARDS_VAULT
 
 
 # Withdrawals vault addr did not changed
 def test_withdrawals_vault_addr_did_not_changed():
-    template = prepare_for_shapella_upgrade_voting(silent=True)
+    template = contracts.shapella_upgrade_template
 
-    locator = interface.LidoLocator(lido_dao_lido_locator)
+    locator = interface.LidoLocator(LIDO_LOCATOR)
     core_components = locator.coreComponents()
     oracle_report_components = locator.oracleReportComponentsForLido()
 
-    assert template._withdrawalVault() == lido_dao_withdrawal_vault.lower()
-    assert core_components[5] == lido_dao_withdrawal_vault.lower()
-    assert oracle_report_components[5] == lido_dao_withdrawal_vault.lower()
+    assert template._withdrawalVault() == WITHDRAWAL_VAULT.lower()
+    assert core_components[5] == WITHDRAWAL_VAULT.lower()
+    assert oracle_report_components[5] == WITHDRAWAL_VAULT.lower()
 
 
 # WithdrawalVault address is matching with WithdrawalCredentials
 def test_withdrawals_vault_addr_matching_with_wc():
     withdrawal_credentials = contracts.lido.getWithdrawalCredentials()
     withdrawal_credentials_address = extract_address_from_eth1_wc(str(withdrawal_credentials))
-    assert withdrawal_credentials_address == lido_dao_withdrawal_vault.lower()
-
-    prepare_for_shapella_upgrade_voting(silent=True)
+    assert withdrawal_credentials_address == WITHDRAWAL_VAULT.lower()
 
     withdrawal_credentials = contracts.lido.getWithdrawalCredentials()
     withdrawal_credentials_address = extract_address_from_eth1_wc(str(withdrawal_credentials))
 
-    assert withdrawal_credentials_address == lido_dao_withdrawal_vault.lower()
+    assert withdrawal_credentials_address == WITHDRAWAL_VAULT.lower()
 
 
 def test_upgrade_template_addresses():
-    template = prepare_for_shapella_upgrade_voting(silent=True)
+    template = contracts.shapella_upgrade_template
 
-    assert get_proxy_impl_ossifiable(template._locator()) == lido_dao_lido_locator_implementation
+    assert get_proxy_impl_ossifiable(template._locator()) == LIDO_LOCATOR_IMPL
 
-    assert template._locator() == lido_dao_lido_locator
-    assert template._accountingOracle() == lido_dao_accounting_oracle
-    assert template._stakingRouter() == lido_dao_staking_router
-    assert template._validatorsExitBusOracle() == lido_dao_validators_exit_bus_oracle
-    assert template._withdrawalQueue() == lido_dao_withdrawal_queue
-    assert template._burner() == lido_dao_burner
-    assert template._depositSecurityModule() == lido_dao_deposit_security_module_address
-    assert template._eip712StETH() == lido_dao_eip712_steth
-    assert template._gateSeal() == gate_seal_address
-    assert template._hashConsensusForAccountingOracle() == lido_dao_hash_consensus_for_accounting_oracle
-    assert template._hashConsensusForValidatorsExitBusOracle() == lido_dao_hash_consensus_for_validators_exit_bus_oracle
-    assert template._oracleDaemonConfig() == oracle_daemon_config
-    assert template._oracleReportSanityChecker() == lido_dao_oracle_report_sanity_checker
-    assert template._agent() == lido_dao_agent_address
-    assert template._aragonAppLidoRepo() == lido_dao_lido_repo
-    assert template._aragonAppNodeOperatorsRegistryRepo() == lido_dao_node_operators_registry_repo
-    assert template._aragonAppLegacyOracleRepo() == lido_dao_legacy_oracle_repo
-    assert template._elRewardsVault() == lido_dao_execution_layer_rewards_vault
-    assert template._lido() == lido_dao_steth_address
-    assert template._lidoOracle() == lido_dao_legacy_oracle
-    assert template._legacyOracle() == lido_dao_legacy_oracle
-    assert template._nodeOperatorsRegistry() == lido_dao_node_operators_registry
-    assert template._previousDepositSecurityModule() == lido_dao_deposit_security_module_address_v1
-    assert template._voting() == lido_dao_voting_address
-    assert template._withdrawalVault() == lido_dao_withdrawal_vault
-    assert template._lidoImplementation() == lido_dao_steth_implementation_address
-    assert template._legacyOracleImplementation() == lido_dao_legacy_oracle_implementation
-    assert template._nodeOperatorsRegistryImplementation() == lido_dao_node_operators_registry_implementation
-    assert template._accountingOracleImplementation() == lido_dao_accounting_oracle_implementation
-    assert template._dummyImplementation() == dummy_implementation_address
-    assert template._locatorImplementation() == lido_dao_lido_locator_implementation
-    assert template._stakingRouterImplementation() == lido_dao_staking_router_implementation
-    assert template._validatorsExitBusOracleImplementation() == lido_dao_validators_exit_bus_oracle_implementation
-    assert template._withdrawalVaultImplementation() == lido_dao_withdrawal_vault_implementation
-    assert template._withdrawalQueueImplementation() == lido_dao_withdrawal_queue_implementation
+    assert template._locator() == LIDO_LOCATOR
+    assert template._accountingOracle() == ACCOUNTING_ORACLE
+    assert template._stakingRouter() == STAKING_ROUTER
+    assert template._validatorsExitBusOracle() == VALIDATORS_EXIT_BUS_ORACLE
+    assert template._withdrawalQueue() == WITHDRAWAL_QUEUE
+    assert template._burner() == BURNER
+    assert template._depositSecurityModule() == DEPOSIT_SECURITY_MODULE
+    assert template._eip712StETH() == EIP712_STETH
+    assert template._gateSeal() == GATE_SEAL
+    assert template._hashConsensusForAccountingOracle() == HASH_CONSENSUS_FOR_AO
+    assert template._hashConsensusForValidatorsExitBusOracle() == HASH_CONSENSUS_FOR_VEBO
+    assert template._oracleDaemonConfig() == ORACLE_DAEMON_CONFIG
+    assert template._oracleReportSanityChecker() == ORACLE_REPORT_SANITY_CHECKER
+    assert template._agent() == AGENT
+    assert template._aragonAppLidoRepo() == LIDO_REPO
+    assert template._aragonAppNodeOperatorsRegistryRepo() == NODE_OPERATORS_REGISTRY_REPO
+    assert template._aragonAppLegacyOracleRepo() == LEGACY_ORACLE_REPO
+    assert template._elRewardsVault() == EXECUTION_LAYER_REWARDS_VAULT
+    assert template._lido() == LIDO
+    assert template._lidoOracle() == LEGACY_ORACLE
+    assert template._legacyOracle() == LEGACY_ORACLE
+    assert template._nodeOperatorsRegistry() == NODE_OPERATORS_REGISTRY
+    assert template._previousDepositSecurityModule() == DEPOSIT_SECURITY_MODULE_V1
+    assert template._voting() == VOTING
+    assert template._withdrawalVault() == WITHDRAWAL_VAULT
+    assert template._lidoImplementation() == LIDO_IMPL
+    assert template._legacyOracleImplementation() == LEGACY_ORACLE_IMPL
+    assert template._nodeOperatorsRegistryImplementation() == NODE_OPERATORS_REGISTRY_IMPL
+    assert template._accountingOracleImplementation() == ACCOUNTING_ORACLE_IMPL
+    assert template._dummyImplementation() == DUMMY_IMPL
+    assert template._locatorImplementation() == LIDO_LOCATOR_IMPL
+    assert template._stakingRouterImplementation() == STAKING_ROUTER_IMPL
+    assert template._validatorsExitBusOracleImplementation() == VALIDATORS_EXIT_BUS_ORACLE_IMPL
+    assert template._withdrawalVaultImplementation() == WITHDRAWAL_VAULT_IMPL
+    assert template._withdrawalQueueImplementation() == WITHDRAWAL_QUEUE_IMPL
 
 
 def test_proxyfied_implementation_addresses_prepared():
-    prepare_for_shapella_upgrade_voting(silent=True)
 
-    assert get_proxy_impl_app(lido_dao_acl_address) == lido_dao_acl_implementation_address
-    assert get_proxy_impl_app(lido_dao_node_operators_registry) == lido_dao_node_operators_registry_implementation_v1
-    assert get_proxy_impl_app(lido_dao_steth_address) == lido_dao_steth_implementation_address_v1
-    assert get_proxy_impl_app(lido_dao_legacy_oracle) == lido_dao_legacy_oracle_implementation_v1
-    assert get_proxy_impl_ossifiable(lido_dao_lido_locator) == lido_dao_lido_locator_implementation
-    assert get_proxy_impl_ossifiable(lido_dao_accounting_oracle) == dummy_implementation_address  # dummy
-    assert get_proxy_impl_ossifiable(lido_dao_validators_exit_bus_oracle) == dummy_implementation_address  # dummy
-    assert get_proxy_impl_ossifiable(lido_dao_withdrawal_queue) == dummy_implementation_address  # dummy
-    assert get_proxy_impl_app(lido_dao_withdrawal_vault) == lido_dao_withdrawal_vault_implementation_v1
-    assert get_proxy_impl_ossifiable(lido_dao_staking_router) == dummy_implementation_address  # dummy
+    assert get_proxy_impl_app(ACL) == ACL_IMPL
+    assert get_proxy_impl_app(NODE_OPERATORS_REGISTRY) == NODE_OPERATORS_REGISTRY_IMPL_V1
+    assert get_proxy_impl_app(LIDO) == LIDO_IMPL_V1
+    assert get_proxy_impl_app(LEGACY_ORACLE) == LEGACY_ORACLE_IMPL_V1
+    assert get_proxy_impl_ossifiable(LIDO_LOCATOR) == LIDO_LOCATOR_IMPL
+    assert get_proxy_impl_ossifiable(ACCOUNTING_ORACLE) == DUMMY_IMPL  # dummy
+    assert get_proxy_impl_ossifiable(VALIDATORS_EXIT_BUS_ORACLE) == DUMMY_IMPL  # dummy
+    assert get_proxy_impl_ossifiable(WITHDRAWAL_QUEUE) == DUMMY_IMPL  # dummy
+    assert get_proxy_impl_app(WITHDRAWAL_VAULT) == WITHDRAWAL_VAULT_IMPL_V1
+    assert get_proxy_impl_ossifiable(STAKING_ROUTER) == DUMMY_IMPL  # dummy
 
 
 def test_proxyfied_implementation_addresses_after_upgrade(helpers):
     start_and_execute_votes(contracts.voting, helpers)
 
-    assert get_proxy_impl_app(lido_dao_acl_address) == lido_dao_acl_implementation_address
-    assert get_proxy_impl_app(lido_dao_node_operators_registry) == lido_dao_node_operators_registry_implementation
-    assert get_proxy_impl_app(lido_dao_steth_address) == lido_dao_steth_implementation_address
-    assert get_proxy_impl_app(lido_dao_legacy_oracle) == lido_dao_legacy_oracle_implementation
-    assert get_proxy_impl_ossifiable(lido_dao_lido_locator) == lido_dao_lido_locator_implementation
-    assert get_proxy_impl_ossifiable(lido_dao_accounting_oracle) == lido_dao_accounting_oracle_implementation
-    assert (
-        get_proxy_impl_ossifiable(lido_dao_validators_exit_bus_oracle)
-        == lido_dao_validators_exit_bus_oracle_implementation
-    )
-    assert get_proxy_impl_ossifiable(lido_dao_withdrawal_queue) == lido_dao_withdrawal_queue_implementation
-    assert get_proxy_impl_app(lido_dao_withdrawal_vault) == lido_dao_withdrawal_vault_implementation
-    assert get_proxy_impl_ossifiable(lido_dao_staking_router) == lido_dao_staking_router_implementation
+    assert get_proxy_impl_app(ACL) == ACL_IMPL
+    assert get_proxy_impl_app(NODE_OPERATORS_REGISTRY) == NODE_OPERATORS_REGISTRY_IMPL
+    assert get_proxy_impl_app(LIDO) == LIDO_IMPL
+    assert get_proxy_impl_app(LEGACY_ORACLE) == LEGACY_ORACLE_IMPL
+    assert get_proxy_impl_ossifiable(LIDO_LOCATOR) == LIDO_LOCATOR_IMPL
+    assert get_proxy_impl_ossifiable(ACCOUNTING_ORACLE) == ACCOUNTING_ORACLE_IMPL
+    assert get_proxy_impl_ossifiable(VALIDATORS_EXIT_BUS_ORACLE) == VALIDATORS_EXIT_BUS_ORACLE_IMPL
+    assert get_proxy_impl_ossifiable(WITHDRAWAL_QUEUE) == WITHDRAWAL_QUEUE_IMPL
+    assert get_proxy_impl_app(WITHDRAWAL_VAULT) == WITHDRAWAL_VAULT_IMPL
+    assert get_proxy_impl_ossifiable(STAKING_ROUTER) == STAKING_ROUTER_IMPL
 
 
 def test_locator_addresses():
-    prepare_for_shapella_upgrade_voting(silent=True)
 
-    locator = interface.LidoLocator(lido_dao_lido_locator)
+    locator = interface.LidoLocator(LIDO_LOCATOR)
 
-    assert locator.accountingOracle() == lido_dao_accounting_oracle
-    assert locator.depositSecurityModule() == lido_dao_deposit_security_module_address
-    assert locator.elRewardsVault() == lido_dao_execution_layer_rewards_vault
-    assert locator.legacyOracle() == lido_dao_legacy_oracle
-    assert locator.lido() == lido_dao_steth_address
-    assert locator.oracleReportSanityChecker() == lido_dao_oracle_report_sanity_checker
-    assert locator.postTokenRebaseReceiver() == lido_dao_legacy_oracle
-    assert locator.burner() == lido_dao_burner
-    assert locator.stakingRouter() == lido_dao_staking_router
-    assert locator.treasury() == lido_dao_agent_address
-    assert locator.validatorsExitBusOracle() == lido_dao_validators_exit_bus_oracle
-    assert locator.withdrawalQueue() == lido_dao_withdrawal_queue
-    assert locator.withdrawalVault() == lido_dao_withdrawal_vault
-    assert locator.oracleDaemonConfig() == oracle_daemon_config
+    assert locator.accountingOracle() == ACCOUNTING_ORACLE
+    assert locator.depositSecurityModule() == DEPOSIT_SECURITY_MODULE
+    assert locator.elRewardsVault() == EXECUTION_LAYER_REWARDS_VAULT
+    assert locator.legacyOracle() == LEGACY_ORACLE
+    assert locator.lido() == LIDO
+    assert locator.oracleReportSanityChecker() == ORACLE_REPORT_SANITY_CHECKER
+    assert locator.postTokenRebaseReceiver() == LEGACY_ORACLE
+    assert locator.burner() == BURNER
+    assert locator.stakingRouter() == STAKING_ROUTER
+    assert locator.treasury() == AGENT
+    assert locator.validatorsExitBusOracle() == VALIDATORS_EXIT_BUS_ORACLE
+    assert locator.withdrawalQueue() == WITHDRAWAL_QUEUE
+    assert locator.withdrawalVault() == WITHDRAWAL_VAULT
+    assert locator.oracleDaemonConfig() == ORACLE_DAEMON_CONFIG
 
     core_components = locator.coreComponents()
-    assert core_components[0] == lido_dao_execution_layer_rewards_vault
-    assert core_components[1] == lido_dao_oracle_report_sanity_checker
-    assert core_components[2] == lido_dao_staking_router
-    assert core_components[3] == lido_dao_agent_address
-    assert core_components[4] == lido_dao_withdrawal_queue
-    assert core_components[5] == lido_dao_withdrawal_vault
+    assert core_components[0] == EXECUTION_LAYER_REWARDS_VAULT
+    assert core_components[1] == ORACLE_REPORT_SANITY_CHECKER
+    assert core_components[2] == STAKING_ROUTER
+    assert core_components[3] == AGENT
+    assert core_components[4] == WITHDRAWAL_QUEUE
+    assert core_components[5] == WITHDRAWAL_VAULT
 
     oracle_report_components = locator.oracleReportComponentsForLido()
-    assert oracle_report_components[0] == lido_dao_accounting_oracle
-    assert oracle_report_components[1] == lido_dao_execution_layer_rewards_vault
-    assert oracle_report_components[2] == lido_dao_oracle_report_sanity_checker
-    assert oracle_report_components[3] == lido_dao_burner
-    assert oracle_report_components[4] == lido_dao_withdrawal_queue
-    assert oracle_report_components[5] == lido_dao_withdrawal_vault
-    assert oracle_report_components[6] == lido_dao_legacy_oracle
+    assert oracle_report_components[0] == ACCOUNTING_ORACLE
+    assert oracle_report_components[1] == EXECUTION_LAYER_REWARDS_VAULT
+    assert oracle_report_components[2] == ORACLE_REPORT_SANITY_CHECKER
+    assert oracle_report_components[3] == BURNER
+    assert oracle_report_components[4] == WITHDRAWAL_QUEUE
+    assert oracle_report_components[5] == WITHDRAWAL_VAULT
+    assert oracle_report_components[6] == LEGACY_ORACLE
 
 
 def test_stored_addresses_after_prepared():
-    prepare_for_shapella_upgrade_voting(silent=True)
 
     # EL Rewards Vault
-    assert contracts.execution_layer_rewards_vault.LIDO() == lido_dao_steth_address
-    assert contracts.execution_layer_rewards_vault.TREASURY() == lido_dao_agent_address
+    assert contracts.execution_layer_rewards_vault.LIDO() == LIDO
+    assert contracts.execution_layer_rewards_vault.TREASURY() == AGENT
 
     # Burner
-    assert contracts.burner.STETH() == lido_dao_steth_address
-    assert contracts.burner.TREASURY() == lido_dao_agent_address
+    assert contracts.burner.STETH() == LIDO
+    assert contracts.burner.TREASURY() == AGENT
 
     # Oracle Report Sanity Checker
-    assert contracts.oracle_report_sanity_checker.getLidoLocator() == lido_dao_lido_locator
+    assert contracts.oracle_report_sanity_checker.getLidoLocator() == LIDO_LOCATOR
 
 
 def test_stored_addresses_after_upgrade(helpers):
     start_and_execute_votes(contracts.voting, helpers)
 
     # Lido
-    assert contracts.lido.getLidoLocator() == lido_dao_lido_locator
-    assert contracts.lido.getOracle() == lido_dao_legacy_oracle
+    assert contracts.lido.getLidoLocator() == LIDO_LOCATOR
+    assert contracts.lido.getOracle() == LEGACY_ORACLE
 
     # EL Rewards Vault
-    assert contracts.execution_layer_rewards_vault.LIDO() == lido_dao_steth_address
-    assert contracts.execution_layer_rewards_vault.TREASURY() == lido_dao_agent_address
+    assert contracts.execution_layer_rewards_vault.LIDO() == LIDO
+    assert contracts.execution_layer_rewards_vault.TREASURY() == AGENT
 
     # Burner
-    assert contracts.burner.STETH() == lido_dao_steth_address
-    assert contracts.burner.TREASURY() == lido_dao_agent_address
+    assert contracts.burner.STETH() == LIDO
+    assert contracts.burner.TREASURY() == AGENT
 
     # Oracle Report Sanity Checker
-    assert contracts.oracle_report_sanity_checker.getLidoLocator() == lido_dao_lido_locator
+    assert contracts.oracle_report_sanity_checker.getLidoLocator() == LIDO_LOCATOR
 
     # Node Operators Registry
-    assert contracts.node_operators_registry.getLocator() == lido_dao_lido_locator
+    assert contracts.node_operators_registry.getLocator() == LIDO_LOCATOR
 
     # Legacy Oracle
-    assert contracts.legacy_oracle.getLido() == lido_dao_steth_address
-    assert contracts.legacy_oracle.getAccountingOracle() == lido_dao_accounting_oracle
+    assert contracts.legacy_oracle.getLido() == LIDO
+    assert contracts.legacy_oracle.getAccountingOracle() == ACCOUNTING_ORACLE
 
     # Staking Router
-    assert contracts.staking_router.getLido() == lido_dao_steth_address
+    assert contracts.staking_router.getLido() == LIDO
 
     # Withdrawal Queue
-    assert contracts.withdrawal_queue.STETH() == lido_dao_steth_address
-    assert contracts.withdrawal_queue.WSTETH() == wsteth_token_address
+    assert contracts.withdrawal_queue.STETH() == LIDO
+    assert contracts.withdrawal_queue.WSTETH() == WSTETH_TOKEN
     assert contracts.withdrawal_queue.getNFTDescriptorAddress() == ZERO_ADDRESS  # TODO: double check this
 
     # Withdrawal vault
-    assert contracts.withdrawal_vault.LIDO() == lido_dao_steth_address
-    assert contracts.withdrawal_vault.TREASURY() == lido_dao_agent_address
+    assert contracts.withdrawal_vault.LIDO() == LIDO
+    assert contracts.withdrawal_vault.TREASURY() == AGENT
 
     # Accounting Oracle
-    assert contracts.accounting_oracle.LIDO() == lido_dao_steth_address
-    assert contracts.accounting_oracle.LOCATOR() == lido_dao_lido_locator
-    assert contracts.accounting_oracle.LEGACY_ORACLE() == lido_dao_legacy_oracle
-    assert contracts.accounting_oracle.getConsensusContract() == lido_dao_hash_consensus_for_accounting_oracle
+    assert contracts.accounting_oracle.LIDO() == LIDO
+    assert contracts.accounting_oracle.LOCATOR() == LIDO_LOCATOR
+    assert contracts.accounting_oracle.LEGACY_ORACLE() == LEGACY_ORACLE
+    assert contracts.accounting_oracle.getConsensusContract() == HASH_CONSENSUS_FOR_AO
 
     # Validators Exit Bus Oracle
-    assert (
-        contracts.validators_exit_bus_oracle.getConsensusContract()
-        == lido_dao_hash_consensus_for_validators_exit_bus_oracle
-    )
+    assert contracts.validators_exit_bus_oracle.getConsensusContract() == HASH_CONSENSUS_FOR_VEBO
 
     # Hash Consensus for Accounting Oracle
-    assert contracts.hash_consensus_for_accounting_oracle.getReportProcessor() == lido_dao_accounting_oracle
+    assert contracts.hash_consensus_for_accounting_oracle.getReportProcessor() == ACCOUNTING_ORACLE
 
     # Hash Consensus for Validators Exit Bus Oracle
-    assert (
-        contracts.hash_consensus_for_validators_exit_bus_oracle.getReportProcessor()
-        == lido_dao_validators_exit_bus_oracle
-    )
+    assert contracts.hash_consensus_for_validators_exit_bus_oracle.getReportProcessor() == VALIDATORS_EXIT_BUS_ORACLE
