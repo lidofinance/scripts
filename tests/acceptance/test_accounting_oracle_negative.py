@@ -7,7 +7,7 @@ from brownie import ZERO_ADDRESS, Contract, MockHashConsensus, accounts, chain, 
 from brownie.network.account import Account
 from configs.config_mainnet import MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT
 
-from utils.config import contracts, deployer_eoa, lido_dao_accounting_oracle
+from utils.config import contracts, DEPLOYER_EOA, ACCOUNTING_ORACLE
 from utils.evm_script import encode_error
 from utils.test.extra_data import ExtraDataService, ItemType
 from utils.test.oracle_report_helpers import (
@@ -744,7 +744,7 @@ def shared_setup(fn_isolation):
 
 @pytest.fixture(scope="module")
 def accounting_oracle() -> interface.AccountingOracle:
-    return interface.AccountingOracle(lido_dao_accounting_oracle)
+    return interface.AccountingOracle(ACCOUNTING_ORACLE)
 
 
 @pytest.fixture(scope="module")
@@ -759,7 +759,7 @@ def aragon_agent() -> Account:
 
 @pytest.fixture(scope="module")
 def deployer():
-    return accounts.at(deployer_eoa, force=True)
+    return accounts.at(DEPLOYER_EOA, force=True)
 
 
 @pytest.fixture(scope="module")
