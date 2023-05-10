@@ -8,6 +8,7 @@ from utils.test.snapshot_helpers import (
     dict_zip,
     dict_diff,
     assert_no_diffs,
+    assert_expected_diffs,
     ValueChanged,
 )
 from utils.config import (
@@ -79,6 +80,12 @@ def test_submit_snapshot(helpers, staker):
         track["submit"] = snapshot()
         return track
 
+    lido = contracts.lido
+    shares_of_treasury_before = lido.sharesOf(lido_dao_agent_address)
+    balance_treasury_before = lido.balanceOf(lido_dao_agent_address)
+    shares_of_treasury_after = shares_of_treasury_before - lido.getSharesByPooledEth(50 * (10**18))
+    balance_treasury_after = lido.getPooledEthByShares(shares_of_treasury_after)
+
     before: Dict[str, Dict[str, any]] = steps()
     chain.revert()
     start_and_execute_votes(contracts.voting, helpers)
@@ -91,4 +98,15 @@ def test_submit_snapshot(helpers, staker):
         step_diffs[step] = dict_diff(before, after)
 
     for step_name, diff in step_diffs.items():
+        assert_expected_diffs(
+            step_name, diff, {
+                "sharesOf(TREASURY)": ValueChanged(
+                    from_val=shares_of_treasury_before, to_val=shares_of_treasury_after
+                ),
+                "balanceOf(TREASURY)": ValueChanged(
+                    from_val=balance_treasury_before,
+                    to_val=balance_treasury_after
+                )
+            }
+        )
         assert_no_diffs(step_name, diff)

@@ -1,15 +1,8 @@
-from brownie import ShapellaUpgradeTemplate, interface
-from brownie.network.account import LocalAccount
+
 from utils.config import (
-    contracts,
-    LIDO_LOCATOR_IMPL,
-    LIDO_V2_UPGRADE_TEMPLATE,
-    prompt_bool,
     get_priority_fee,
     get_max_fee,
-    get_is_live,
-    get_deployer_account,
-    DEPLOYER_EOA_LOCATOR,
+    get_is_live
 )
 
 # Private constant taken from Lido contract

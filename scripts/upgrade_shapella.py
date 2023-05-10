@@ -33,6 +33,7 @@ Lido V2 (Shapella-ready) protocol upgrade
 28. Grant `MANAGE_TOKEN_URI_ROLE` role to `Voting`
 29. Set `WithdrawalQueueERC721` baseUri to `https://wq-api.lido.fi/v1/nft`
 30. Revoke `MANAGE_TOKEN_URI_ROLE` role from `Voting`
+31. Fund Gas Funder multisig 0x5181d5D56Af4f823b96FE05f062D7a09761a5a53 for deposits with 50 stETH
 """
 
 import time
@@ -42,6 +43,7 @@ from typing import Dict, Tuple, Optional
 from brownie.network.transaction import TransactionReceipt
 from brownie import ShapellaUpgradeTemplate  # type: ignore
 from utils.agent import agent_forward
+from utils.finance import make_steth_payout
 
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.repo import (
@@ -193,6 +195,12 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         encode_withdrawal_queue_base_uri_update(withdrawal_queue, base_uri=WITHDRAWAL_QUEUE_ERC721_BASE_URI),
         # 30)
         agent_forward([encode_oz_revoke_role(withdrawal_queue, "MANAGE_TOKEN_URI_ROLE", revoke_from=voting)]),
+        # 31)
+        make_steth_payout(
+            target_address="0x5181d5D56Af4f823b96FE05f062D7a09761a5a53",
+            steth_in_wei=50 * (10**18),
+            reference="Fund Gas Funder multisig"
+        )
     ]
 
     vote_desc_items = [
@@ -226,6 +234,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         "28) Grant `MANAGE_TOKEN_URI_ROLE` role to `Voting`",
         "29) Set `WithdrawalQueueERC721` baseUri to `https://wq-api.lido.fi/v1/nft`",
         "30) Revoke `MANAGE_TOKEN_URI_ROLE` role from `Voting`",
+        "31) Fund Gas Funder multisig 0x5181d5D56Af4f823b96FE05f062D7a09761a5a53 for deposits with 50 stETH"
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
