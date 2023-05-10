@@ -10,7 +10,7 @@ from pytest_check import check
 from typing_extensions import Protocol
 
 from tests.conftest import Helpers
-from utils.config import contracts, ldo_token_address
+from utils.config import contracts, LDO_TOKEN
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.import_current_votes import start_and_execute_votes
 
@@ -64,7 +64,7 @@ def do_snapshot(
                 # AppProxyUpgradeable
                 "isDepositable": interface.AppProxyUpgradeable(oracle.address).isDepositable(),
                 # Oracle
-                "allowRecoverability(LDO)": oracle.allowRecoverability(ldo_token_address),
+                "allowRecoverability(LDO)": oracle.allowRecoverability(LDO_TOKEN),
                 "allowRecoverability(SOME_CONTRACT)": oracle.allowRecoverability(some_contract),
                 "getBeaconSpec": oracle.getBeaconSpec(),
                 "getCurrentEpochId": oracle.getCurrentEpochId(),

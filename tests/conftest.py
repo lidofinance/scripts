@@ -28,7 +28,7 @@ def shared_setup(fn_isolation):
 
 @pytest.fixture(scope="module")
 def ldo_holder(accounts):
-    return accounts.at(ldo_holder_address_for_tests, force=True)
+    return accounts.at(LDO_HOLDER_ADDRESS_FOR_TESTS, force=True)
 
 
 @pytest.fixture(scope="module")
@@ -47,7 +47,7 @@ def eth_whale(accounts):
 @pytest.fixture(scope="module")
 def steth_whale(accounts) -> Account:
     # TODO: add steth whale for goerli
-    return accounts.at(lido_insurance_fund_address, force=True)
+    return accounts.at(INSURANCE_FUND, force=True)
 
 
 class Helpers:
@@ -82,10 +82,10 @@ class Helpers:
         OBJECTION_PHASE_ID = 1
         for vote_id in vote_ids:
             print(f"Vote #{vote_id}")
-            if dao_voting.canVote(vote_id, ldo_vote_executors_for_tests[0]) and (
+            if dao_voting.canVote(vote_id, LDO_VOTE_EXECUTORS_FOR_TESTS[0]) and (
                 dao_voting.getVotePhase(vote_id) != OBJECTION_PHASE_ID
             ):
-                for holder_addr in ldo_vote_executors_for_tests:
+                for holder_addr in LDO_VOTE_EXECUTORS_FOR_TESTS:
                     print("voting from acct:", holder_addr)
                     if accounts.at(holder_addr, force=True).balance() < topup:
                         accounts[0].transfer(holder_addr, topup)
@@ -129,9 +129,9 @@ class Helpers:
         if not Helpers._etherscan_is_fetched:
             print(f"prefetch Lido V2 contracts from Etherscan to parse events")
 
-            Contract.from_explorer(lido_dao_validators_exit_bus_oracle)
-            Contract.from_explorer(lido_dao_withdrawal_queue)
-            Contract.from_explorer(lido_dao_staking_router)
+            Contract.from_explorer(VALIDATORS_EXIT_BUS_ORACLE)
+            Contract.from_explorer(WITHDRAWAL_QUEUE)
+            Contract.from_explorer(STAKING_ROUTER)
 
             Helpers._etherscan_is_fetched = True
 
@@ -185,33 +185,33 @@ def parse_events_from_local_abi():
     # Used if env variable PARSE_EVENTS_FROM_LOCAL_ABI is set
     # Needed to enable events checking if ABI from Etherscan not available for any reason
     contract_address_mapping = {
-        "AccountingOracle": [lido_dao_accounting_oracle, lido_dao_accounting_oracle_implementation],
-        "ACL": [lido_dao_acl_implementation_address],
-        "Burner": [lido_dao_burner],
-        "CallsScript": [lido_dao_calls_script],
-        "DepositSecurityModule": [lido_dao_deposit_security_module_address],
-        "EIP712StETH": [lido_dao_eip712_steth],
+        "AccountingOracle": [ACCOUNTING_ORACLE, ACCOUNTING_ORACLE_IMPL],
+        "ACL": [ACL_IMPL],
+        "Burner": [BURNER],
+        "CallsScript": [ARAGON_CALLS_SCRIPT],
+        "DepositSecurityModule": [DEPOSIT_SECURITY_MODULE],
+        "EIP712StETH": [EIP712_STETH],
         "HashConsensus": [
-            lido_dao_hash_consensus_for_accounting_oracle,
-            lido_dao_hash_consensus_for_validators_exit_bus_oracle,
+            HASH_CONSENSUS_FOR_AO,
+            HASH_CONSENSUS_FOR_VEBO,
         ],
-        "LegacyOracle": [lido_dao_legacy_oracle, lido_dao_legacy_oracle_implementation],
-        "Lido": [lido_dao_steth_address, lido_dao_steth_implementation_address],
-        "LidoLocator": [lido_dao_lido_locator],
-        "LidoExecutionLayerRewardsVault": [lido_dao_execution_layer_rewards_vault],
-        "Kernel": [lido_dao_kernel_implementation],
-        "NodeOperatorsRegistry": [lido_dao_node_operators_registry, lido_dao_node_operators_registry_implementation],
-        "OracleDaemonConfig": [oracle_daemon_config],
-        "OracleReportSanityChecker": [lido_dao_oracle_report_sanity_checker],
-        "Repo": [lido_dao_aragon_repo_implementation],
-        "StakingRouter": [lido_dao_staking_router, lido_dao_staking_router_implementation],
+        "LegacyOracle": [LEGACY_ORACLE, LEGACY_ORACLE_IMPL],
+        "Lido": [LIDO, LIDO_IMPL],
+        "LidoLocator": [LIDO_LOCATOR],
+        "LidoExecutionLayerRewardsVault": [EXECUTION_LAYER_REWARDS_VAULT],
+        "Kernel": [ARAGON_KERNEL_IMPL],
+        "NodeOperatorsRegistry": [NODE_OPERATORS_REGISTRY, NODE_OPERATORS_REGISTRY_IMPL],
+        "OracleDaemonConfig": [ORACLE_DAEMON_CONFIG],
+        "OracleReportSanityChecker": [ORACLE_REPORT_SANITY_CHECKER],
+        "Repo": [ARAGON_COMMON_REPO_IMPL],
+        "StakingRouter": [STAKING_ROUTER, STAKING_ROUTER_IMPL],
         "ValidatorsExitBusOracle": [
-            lido_dao_validators_exit_bus_oracle,
-            lido_dao_validators_exit_bus_oracle_implementation,
+            VALIDATORS_EXIT_BUS_ORACLE,
+            VALIDATORS_EXIT_BUS_ORACLE_IMPL,
         ],
-        "Voting": [lido_dao_voting_implementation_address],
-        "WithdrawalQueueERC721": [lido_dao_withdrawal_queue, lido_dao_withdrawal_queue_implementation],
-        "WithdrawalVault": [lido_dao_withdrawal_vault, lido_dao_withdrawal_vault_implementation],
+        "Voting": [VOTING_IMPL],
+        "WithdrawalQueueERC721": [WITHDRAWAL_QUEUE, WITHDRAWAL_QUEUE_IMPL],
+        "WithdrawalVault": [WITHDRAWAL_VAULT, WITHDRAWAL_VAULT_IMPL],
     }
 
     interface_path_template = "interfaces/{}.json"

@@ -8,15 +8,14 @@ from utils.import_current_votes import get_vote_script_file_by_name
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.config import (
     contracts,
-    ldo_holder_address_for_tests,
-    ldo_vote_executors_for_tests,
+    LDO_HOLDER_ADDRESS_FOR_TESTS,
+    LDO_VOTE_EXECUTORS_FOR_TESTS,
     MAINNET_VOTE_DURATION,
     lido_dao_legacy_oracle,
     CHAIN_SLOTS_PER_EPOCH,
     CHAIN_SECONDS_PER_SLOT,
     CHAIN_GENESIS_TIME,
 )
-from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
 
 ONE_HOUR = 1 * 60 * 60
 SECONDS_PER_EPOCH = CHAIN_SLOTS_PER_EPOCH * CHAIN_SECONDS_PER_SLOT
@@ -31,11 +30,11 @@ def start_vote_by_name(vote_name):
     exec(f"from {name_for_import} import start_vote as {start_vote_name}")
     start_vote = locals()[start_vote_name]
 
-    vote_id, _ = start_vote({"from": ldo_holder_address_for_tests}, silent=True)
+    vote_id, _ = start_vote({"from": LDO_HOLDER_ADDRESS_FOR_TESTS}, silent=True)
 
     topup = "0.5 ether"
     print(f"Vote #{vote_id}")
-    for holder_addr in ldo_vote_executors_for_tests:
+    for holder_addr in LDO_VOTE_EXECUTORS_FOR_TESTS:
         print("voting from acct:", holder_addr)
         if accounts.at(holder_addr, force=True).balance() < topup:
             accounts[0].transfer(holder_addr, topup)

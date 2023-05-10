@@ -6,16 +6,15 @@ import pytest
 from brownie import web3, interface, convert, reverts
 from utils.config import (
     contracts,
-    lido_dao_withdrawal_queue_implementation,
-    lido_dao_withdrawal_vault_implementation,
-    lido_dao_staking_router_implementation,
-    lido_dao_accounting_oracle_implementation,
-    lido_dao_validators_exit_bus_oracle_implementation,
-    lido_dao_withdrawal_vault_implementation_v1,
-    lido_dao_lido_locator_implementation,
-    dummy_implementation_address,
-    initial_dead_token_holder,
-    accounts,
+    WITHDRAWAL_QUEUE_IMPL,
+    WITHDRAWAL_VAULT_IMPL,
+    STAKING_ROUTER_IMPL,
+    ACCOUNTING_ORACLE_IMPL,
+    VALIDATORS_EXIT_BUS_ORACLE_IMPL,
+    WITHDRAWAL_VAULT_IMPL_V1,
+    LIDO_LOCATOR_IMPL,
+    DUMMY_IMPL,
+    INITIAL_DEAD_TOKEN_HOLDER,
 )
 
 
@@ -23,7 +22,7 @@ PETRIFICATION_MARK = 11579208923731619542357098500868790785326998466564056403945
 
 
 @pytest.fixture(scope="module")
-def petrified_implementations(shapella_upgrade_template):
+def petrified_implementations():
     return {
         # dao aragon app contracts
         "Lido": {
@@ -120,32 +119,32 @@ def petrified_implementations(shapella_upgrade_template):
         },
         # pure implementations
         "WithdrawalQueueImplementation": {
-            "contract_address": lido_dao_withdrawal_queue_implementation,
+            "contract_address": WITHDRAWAL_QUEUE_IMPL,
             "proxy_type": "Implementation",
             "implementation_type": "Versioned",
         },
         "WithdrawalVaultImplementation": {
-            "contract_address": lido_dao_withdrawal_vault_implementation,
+            "contract_address": WITHDRAWAL_VAULT_IMPL,
             "proxy_type": "Implementation",
             "implementation_type": "Versioned",
         },
         "StakingRouterImplementation": {
-            "contract_address": lido_dao_staking_router_implementation,
+            "contract_address": STAKING_ROUTER_IMPL,
             "proxy_type": "Implementation",
             "implementation_type": "Versioned",
         },
         "AccountingOracleImplementation": {
-            "contract_address": lido_dao_accounting_oracle_implementation,
+            "contract_address": ACCOUNTING_ORACLE_IMPL,
             "proxy_type": "Implementation",
             "implementation_type": "Versioned",
         },
         "ValidatorsExitBusOracleImplementation": {
-            "contract_address": lido_dao_validators_exit_bus_oracle_implementation,
+            "contract_address": VALIDATORS_EXIT_BUS_ORACLE_IMPL,
             "proxy_type": "Implementation",
             "implementation_type": "Versioned",
         },
         "LidoLocatorImplementation": {
-            "contract_address": lido_dao_lido_locator_implementation,
+            "contract_address": LIDO_LOCATOR_IMPL,
             "proxy_type": "Implementation",
             "implementation_type": "LidoLocatorFixed",
         },
@@ -180,17 +179,17 @@ def test_is_petrified(petrified_implementations):
         if implementation_type == "AragonApp":
             assert interface.ACL(implementation_address).isPetrified()
         elif implementation_type == "WithdrawalVaultDummy":
-            assert implementation_address == lido_dao_withdrawal_vault_implementation_v1
+            assert implementation_address == WITHDRAWAL_VAULT_IMPL_V1
         elif implementation_type == "LidoLocatorFixed":
-            assert implementation_address == lido_dao_lido_locator_implementation
+            assert implementation_address == LIDO_LOCATOR_IMPL
         elif implementation_type == "Dummy":
-            assert implementation_address == dummy_implementation_address
+            assert implementation_address == DUMMY_IMPL
         elif implementation_type == "Versioned":
             assert interface.Versioned(implementation_address).getContractVersion() == PETRIFICATION_MARK
         else:
             assert False, "implementation_type"
 
 
-def test_stone(shapella_upgrade_template):
-    assert contracts.lido.balanceOf(initial_dead_token_holder) > 0
-    assert contracts.lido.sharesOf(initial_dead_token_holder) > 0
+def test_stone():
+    assert contracts.lido.balanceOf(INITIAL_DEAD_TOKEN_HOLDER) > 0
+    assert contracts.lido.sharesOf(INITIAL_DEAD_TOKEN_HOLDER) > 0

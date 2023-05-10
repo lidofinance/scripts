@@ -6,24 +6,24 @@ import pytest
 from brownie import web3, interface, convert
 from utils.config import (
     contracts,
-    lido_dao_voting_address,
-    lido_dao_withdrawal_vault_implementation_v1,
-    lido_dao_lido_locator_implementation,
-    dummy_implementation_address,
+    VOTING,
+    WITHDRAWAL_VAULT_IMPL_V1,
+    LIDO_LOCATOR_IMPL,
+    DUMMY_IMPL,
 )
 from utils.test.event_validators.permission import Permission
 
 
 @pytest.fixture(scope="module")
-def protocol_preliminary_permissions(shapella_upgrade_template):
-    template = shapella_upgrade_template.address
+def protocol_preliminary_permissions():
+    template = contracts.shapella_upgrade_template.address
     return {
         "Withdrawal_vault": {
             "contract": interface.WithdrawalVaultManager(contracts.withdrawal_vault.address),
             "type": "WithdrawalsManagerProxy",
             "state": {
-                "implementation": lido_dao_withdrawal_vault_implementation_v1,
-                "proxy_getAdmin": lido_dao_voting_address,
+                "implementation": WITHDRAWAL_VAULT_IMPL_V1,
+                "proxy_getAdmin": VOTING,
             },
         },
         # empty proxies _assertAdminsOfProxies
@@ -31,31 +31,31 @@ def protocol_preliminary_permissions(shapella_upgrade_template):
             "contract": interface.OssifiableProxy(contracts.lido_locator.address),
             "type": "Proxy",
             "proxy_owner": template,
-            "state": {"proxy__getImplementation": lido_dao_lido_locator_implementation},
+            "state": {"proxy__getImplementation": LIDO_LOCATOR_IMPL},
         },
         "StakingRouter": {
             "contract": interface.OssifiableProxy(contracts.staking_router.address),
             "type": "CustomApp",
             "proxy_owner": template,
-            "state": {"proxy__getImplementation": dummy_implementation_address},
+            "state": {"proxy__getImplementation": DUMMY_IMPL},
         },
         "WithdrawalQueue": {
             "contract": interface.OssifiableProxy(contracts.withdrawal_queue.address),
             "type": "Proxy",
             "proxy_owner": template,
-            "state": {"proxy__getImplementation": dummy_implementation_address},
+            "state": {"proxy__getImplementation": DUMMY_IMPL},
         },
         "AccountingOracle": {
             "contract": interface.OssifiableProxy(contracts.accounting_oracle.address),
             "type": "Proxy",
             "proxy_owner": template,
-            "state": {"proxy__getImplementation": dummy_implementation_address},
+            "state": {"proxy__getImplementation": DUMMY_IMPL},
         },
         "ValidatorsExitBusOracle": {
             "contract": interface.OssifiableProxy(contracts.validators_exit_bus_oracle.address),
             "type": "Proxy",
             "proxy_owner": template,
-            "state": {"proxy__getImplementation": dummy_implementation_address},
+            "state": {"proxy__getImplementation": DUMMY_IMPL},
         },
         # _depositSecurityModule.getOwner()
         "DepositSecurityModule": {

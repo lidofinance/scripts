@@ -53,8 +53,13 @@ def skip_slots() -> Sequence[tuple[str, int]]:
         (
             # new slot in the contract _nodeOperatorSummary
             contracts.node_operators_registry.address,
-            1,
+            0x01,
         ),
+        (
+            # finance slot changing due to deposit bot funding
+            contracts.finance,
+            0x07
+        )
     ]
 
 

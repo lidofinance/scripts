@@ -3,29 +3,29 @@ from brownie import interface, reverts  # type: ignore
 
 from utils.config import (
     contracts,
-    lido_dao_hash_consensus_for_accounting_oracle,
-    lido_dao_accounting_oracle_implementation,
-    lido_dao_accounting_oracle,
-    oracle_committee,
-    ACCOUNTING_ORACLE_EPOCHS_PER_FRAME,
-    ACCOUNTING_ORACLE_FAST_LANE_LENGTH_SLOTS,
+    HASH_CONSENSUS_FOR_AO,
+    ACCOUNTING_ORACLE_IMPL,
+    ACCOUNTING_ORACLE,
+    ORACLE_COMMITTEE,
+    AO_EPOCHS_PER_FRAME,
+    AO_FAST_LANE_LENGTH_SLOTS,
     CHAIN_SLOTS_PER_EPOCH,
     CHAIN_SECONDS_PER_SLOT,
     CHAIN_GENESIS_TIME,
     ORACLE_QUORUM,
-    ACCOUNTING_ORACLE_CONSENSUS_VERSION,
+    AO_CONSENSUS_VERSION,
 )
 from utils.evm_script import encode_error
 
 
 @pytest.fixture(scope="module")
 def contract() -> interface.AccountingOracle:
-    return interface.AccountingOracle(lido_dao_accounting_oracle)
+    return interface.AccountingOracle(ACCOUNTING_ORACLE)
 
 
 def test_proxy(contract):
     proxy = interface.OssifiableProxy(contract)
-    assert proxy.proxy__getImplementation() == lido_dao_accounting_oracle_implementation
+    assert proxy.proxy__getImplementation() == ACCOUNTING_ORACLE_IMPL
     assert proxy.proxy__getAdmin() == contracts.agent.address
 
 
@@ -49,14 +49,14 @@ def test_initialize(contract):
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         contract.initialize(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
-            lido_dao_hash_consensus_for_accounting_oracle,
+            HASH_CONSENSUS_FOR_AO,
             1,
             {"from": contracts.voting},
         )
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         contract.initializeWithoutMigration(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
-            lido_dao_hash_consensus_for_accounting_oracle,
+            HASH_CONSENSUS_FOR_AO,
             1,
             1,
             {"from": contracts.voting},
@@ -64,18 +64,18 @@ def test_initialize(contract):
 
 
 def test_petrified(contract):
-    impl = interface.AccountingOracle(lido_dao_accounting_oracle_implementation)
+    impl = interface.AccountingOracle(ACCOUNTING_ORACLE_IMPL)
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         impl.initialize(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
-            lido_dao_hash_consensus_for_accounting_oracle,
+            HASH_CONSENSUS_FOR_AO,
             1,
             {"from": contracts.voting},
         )
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         impl.initializeWithoutMigration(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
-            lido_dao_hash_consensus_for_accounting_oracle,
+            HASH_CONSENSUS_FOR_AO,
             1,
             1,
             {"from": contracts.voting},
@@ -83,8 +83,8 @@ def test_petrified(contract):
 
 
 def test_consensus(contract):
-    assert contract.getConsensusVersion() == ACCOUNTING_ORACLE_CONSENSUS_VERSION
-    assert contract.getConsensusContract() == lido_dao_hash_consensus_for_accounting_oracle
+    assert contract.getConsensusVersion() == AO_CONSENSUS_VERSION
+    assert contract.getConsensusContract() == HASH_CONSENSUS_FOR_AO
 
 
 def test_processing_state(contract):
@@ -92,10 +92,10 @@ def test_processing_state(contract):
     assert state["currentFrameRefSlot"] > 5254400
     assert state["processingDeadlineTime"] == 0
     assert state["mainDataHash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
-    assert state["mainDataSubmitted"] == False
+    assert state["mainDataSubmitted"] is False
     assert state["extraDataHash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
     assert state["extraDataFormat"] == 0
-    assert state["extraDataSubmitted"] == False
+    assert state["extraDataSubmitted"] is False
     assert state["extraDataItemsCount"] == 0
     assert state["extraDataItemsSubmitted"] == 0
 
@@ -107,7 +107,7 @@ def test_report(contract):
     assert report["hash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
     assert report["refSlot"] > 5254400
     assert report["processingDeadlineTime"] == 0
-    assert report["processingStarted"] == False
+    assert report["processingStarted"] is False
 
 
 def test_accounting_hash_consensus(contract):
@@ -125,12 +125,12 @@ def test_accounting_hash_consensus(contract):
 
     frame_config = consensus.getFrameConfig()
     assert frame_config["initialEpoch"] > 5254400 / CHAIN_SLOTS_PER_EPOCH
-    assert frame_config["epochsPerFrame"] == ACCOUNTING_ORACLE_EPOCHS_PER_FRAME
-    assert frame_config["fastLaneLengthSlots"] == ACCOUNTING_ORACLE_FAST_LANE_LENGTH_SLOTS
+    assert frame_config["epochsPerFrame"] == AO_EPOCHS_PER_FRAME
+    assert frame_config["fastLaneLengthSlots"] == AO_FAST_LANE_LENGTH_SLOTS
 
     assert consensus.getInitialRefSlot() > 5254400
 
     assert consensus.getQuorum() == ORACLE_QUORUM
 
     members = consensus.getMembers()
-    assert members["addresses"] == oracle_committee
+    assert members["addresses"] == ORACLE_COMMITTEE

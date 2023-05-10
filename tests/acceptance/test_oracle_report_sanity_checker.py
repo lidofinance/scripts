@@ -3,7 +3,7 @@ from brownie import interface  # type: ignore
 
 from utils.config import (
     contracts,
-    lido_dao_oracle_report_sanity_checker,
+    ORACLE_REPORT_SANITY_CHECKER,
     CHURN_VALIDATORS_PER_DAY_LIMIT,
     ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT,
     ANNUAL_BALANCE_INCREASE_BP_LIMIT,
@@ -31,7 +31,7 @@ report_limits = {
 
 @pytest.fixture(scope="module")
 def contract() -> interface.OracleReportSanityChecker:
-    return interface.OracleReportSanityChecker(lido_dao_oracle_report_sanity_checker)
+    return interface.OracleReportSanityChecker(ORACLE_REPORT_SANITY_CHECKER)
 
 
 def test_links(contract):

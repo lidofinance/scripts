@@ -7,64 +7,64 @@ from tests.regression.test_permissions import protocol_permissions
 
 from utils.config import (
     contracts,
-    lido_dao_agent_address,
-    lido_easytrack_evmscriptexecutor,
-    lido_dao_evm_script_registry,
+    AGENT,
+    EASYTRACK_EVMSCRIPT_EXECUTOR,
+    ARAGON_EVMSCRIPT_REGISTRY,
     ACL_DEPLOY_BLOCK_NUMBER,
-    lido_dao_voting_address,
-    lido_dao_token_manager_address,
-    lido_dao_steth_address,
-    lido_dao_kernel,
-    lido_dao_acl_address,
-    lido_dao_finance_address,
-    lido_dao_node_operators_registry,
-    lido_dao_staking_router,
+    VOTING,
+    TOKEN_MANAGER,
+    LIDO,
+    ARAGON_KERNEL,
+    ACL,
+    FINANCE,
+    NODE_OPERATORS_REGISTRY,
+    STAKING_ROUTER,
 )
 
 EXPECTED_PERMISSIONS_AFTER_VOTES = {
-    lido_dao_acl_address: {"roles": {"CREATE_PERMISSIONS_ROLE": [lido_dao_voting_address]}},
-    lido_dao_kernel: {"roles": {"APP_MANAGER_ROLE": [lido_dao_voting_address]}},
-    lido_dao_evm_script_registry: {
+    ACL: {"roles": {"CREATE_PERMISSIONS_ROLE": [VOTING]}},
+    ARAGON_KERNEL: {"roles": {"APP_MANAGER_ROLE": [VOTING]}},
+    ARAGON_EVMSCRIPT_REGISTRY: {
         "roles": {
-            "REGISTRY_MANAGER_ROLE": [lido_dao_voting_address],
-            "REGISTRY_ADD_EXECUTOR_ROLE": [lido_dao_voting_address],
+            "REGISTRY_MANAGER_ROLE": [VOTING],
+            "REGISTRY_ADD_EXECUTOR_ROLE": [VOTING],
         }
     },
-    lido_dao_token_manager_address: {"roles": {"ASSIGN_ROLE": [lido_dao_voting_address]}},
-    lido_dao_steth_address: {
+    TOKEN_MANAGER: {"roles": {"ASSIGN_ROLE": [VOTING]}},
+    LIDO: {
         "roles": {
-            "PAUSE_ROLE": [lido_dao_voting_address],
-            "STAKING_CONTROL_ROLE": [lido_dao_voting_address],
-            "RESUME_ROLE": [lido_dao_voting_address],
-            "STAKING_PAUSE_ROLE": [lido_dao_voting_address],
+            "PAUSE_ROLE": [VOTING],
+            "STAKING_CONTROL_ROLE": [VOTING],
+            "RESUME_ROLE": [VOTING],
+            "STAKING_PAUSE_ROLE": [VOTING],
         }
     },
-    lido_dao_agent_address: {
+    AGENT: {
         "roles": {
-            "EXECUTE_ROLE": [lido_dao_voting_address],
-            "RUN_SCRIPT_ROLE": [lido_dao_voting_address],
-            "TRANSFER_ROLE": [lido_dao_finance_address],
+            "EXECUTE_ROLE": [VOTING],
+            "RUN_SCRIPT_ROLE": [VOTING],
+            "TRANSFER_ROLE": [FINANCE],
         }
     },
-    lido_dao_finance_address: {
+    FINANCE: {
         "roles": {
-            "EXECUTE_PAYMENTS_ROLE": [lido_dao_voting_address],
-            "MANAGE_PAYMENTS_ROLE": [lido_dao_voting_address],
-            "CREATE_PAYMENTS_ROLE": [lido_dao_voting_address, lido_easytrack_evmscriptexecutor],
+            "EXECUTE_PAYMENTS_ROLE": [VOTING],
+            "MANAGE_PAYMENTS_ROLE": [VOTING],
+            "CREATE_PAYMENTS_ROLE": [VOTING, EASYTRACK_EVMSCRIPT_EXECUTOR],
         }
     },
-    lido_dao_voting_address: {
+    VOTING: {
         "roles": {
-            "MODIFY_QUORUM_ROLE": [lido_dao_voting_address],
-            "MODIFY_SUPPORT_ROLE": [lido_dao_voting_address],
-            "CREATE_VOTES_ROLE": [lido_dao_token_manager_address],
+            "MODIFY_QUORUM_ROLE": [VOTING],
+            "MODIFY_SUPPORT_ROLE": [VOTING],
+            "CREATE_VOTES_ROLE": [TOKEN_MANAGER],
         }
     },
-    lido_dao_node_operators_registry: {
+    NODE_OPERATORS_REGISTRY: {
         "roles": {
-            "MANAGE_SIGNING_KEYS": [lido_dao_voting_address],
-            "SET_NODE_OPERATOR_LIMIT_ROLE": [lido_dao_voting_address, lido_easytrack_evmscriptexecutor],
-            "STAKING_ROUTER_ROLE": [lido_dao_staking_router],
+            "MANAGE_SIGNING_KEYS": [VOTING],
+            "SET_NODE_OPERATOR_LIMIT_ROLE": [VOTING, EASYTRACK_EVMSCRIPT_EXECUTOR],
+            "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
         }
     },
 }
@@ -151,11 +151,11 @@ def test_protocol_permissions_events(protocol_permissions):
 
     app_names = {
         contracts.acl.address: "Acl",
-        contracts.kernel.address: "lido_dao_kernel",
-        lido_dao_evm_script_registry: "EVMScriptRegistry",
-        contracts.token_manager.address: "lido_dao_token_manager_address",
+        contracts.kernel.address: "LIDO_DAO_KERNEL",
+        ARAGON_EVMSCRIPT_REGISTRY: "EVMScriptRegistry",
+        contracts.token_manager.address: "LIDO_TOKEN_MANAGER",
         contracts.lido.address: "Lido",
-        lido_dao_agent_address: "lido_dao_agent",
+        AGENT: "lido_dao_agent",
         contracts.finance.address: "Finance",
         contracts.voting.address: "Voting",
         contracts.legacy_oracle.address: "LegacyOracle",
@@ -165,8 +165,8 @@ def test_protocol_permissions_events(protocol_permissions):
         contracts.voting.address: "Voting",
         contracts.deposit_security_module_v1.address: "OLD_DepositSecurityModule",
         contracts.finance.address: "Finance",
-        contracts.token_manager.address: "lido_dao_token_manager_address",
-        lido_easytrack_evmscriptexecutor: "lido_easytrack_EVMScriptExecutor",
+        contracts.token_manager.address: "LIDO_TOKEN_MANAGER",
+        EASYTRACK_EVMSCRIPT_EXECUTOR: "lido_easytrack_EVMScriptExecutor",
         contracts.staking_router.address: "StakingRouter",
     }
 

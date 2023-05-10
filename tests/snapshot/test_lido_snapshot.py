@@ -11,7 +11,7 @@ from pytest_check import check
 from web3.types import Wei
 
 from tests.conftest import Helpers
-from utils.config import contracts, ldo_token_address, lido_dao_voting_address, lido_insurance_fund_address
+from utils.config import contracts, LDO_TOKEN, VOTING
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.import_current_votes import start_and_execute_votes
 
@@ -299,7 +299,7 @@ def do_snapshot(
                 "isStakingPaused": lido.isStakingPaused(),
                 "isPetrified": lido.isPetrified(),
                 "isStopped": lido.isStopped(),
-                "allowRecoverability(LDO)": lido.allowRecoverability(ldo_token_address),
+                "allowRecoverability(LDO)": lido.allowRecoverability(LDO_TOKEN),
                 "allowRecoverability(StETH)": lido.allowRecoverability(lido.address),
                 "allowRecoverability(SOME_CONTRACT)": lido.allowRecoverability(some_contract),
                 # constants
@@ -308,7 +308,7 @@ def do_snapshot(
                 "STAKING_CONTROL_ROLE": lido.STAKING_CONTROL_ROLE(),
                 "STAKING_PAUSE_ROLE": lido.STAKING_PAUSE_ROLE(),
                 # AragonApp
-                "canPerform()": lido.canPerform(lido_dao_voting_address, lido.PAUSE_ROLE(), []),
+                "canPerform()": lido.canPerform(VOTING, lido.PAUSE_ROLE(), []),
                 "getRecoveryVault": lido.getRecoveryVault(),
                 "kernel": lido.kernel(),
                 "appId": lido.appId(),
