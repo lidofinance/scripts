@@ -11,7 +11,7 @@ from utils.config import (
     LDO_HOLDER_ADDRESS_FOR_TESTS,
     LDO_VOTE_EXECUTORS_FOR_TESTS,
     MAINNET_VOTE_DURATION,
-    lido_dao_legacy_oracle,
+    LEGACY_ORACLE,
     CHAIN_SLOTS_PER_EPOCH,
     CHAIN_SECONDS_PER_SLOT,
     CHAIN_GENESIS_TIME,
@@ -61,7 +61,7 @@ def execute_vote_by_id(vote_id):
 
 
 def legacy_report(_epochId, _beaconBalance, _beaconValidators):
-    oracle = interface.LidoOracle(lido_dao_legacy_oracle)
+    oracle = interface.LidoOracle(LEGACY_ORACLE)
     quorum = oracle.getQuorum()
     members = oracle.getOracleMembers()
 
@@ -117,7 +117,7 @@ def chain_sleep(slots):
 
 
 def wait_for_next_reportable_epoch():
-    oracle = interface.LidoOracle(lido_dao_legacy_oracle)
+    oracle = interface.LidoOracle(LEGACY_ORACLE)
 
     current_epoch_id = oracle.getCurrentEpochId()
     next_expected_epoch_id = oracle.getExpectedEpochId()
@@ -127,7 +127,7 @@ def wait_for_next_reportable_epoch():
 
 
 def test_legacy_oracle_happy_path():
-    oracle = interface.LidoOracle(lido_dao_legacy_oracle)
+    oracle = interface.LidoOracle(LEGACY_ORACLE)
 
     # Align chain to next oracle report
     wait_for_next_reportable_epoch()
@@ -140,9 +140,6 @@ def test_legacy_oracle_happy_path():
     ## Wait for 2 hours after oracle report
     slots_to_mine = 2 * ONE_HOUR // CHAIN_SECONDS_PER_SLOT
     chain_sleep(slots_to_mine)
-
-    # prepare upgrade
-    prepare_for_shapella_upgrade_voting(silent=True)
 
     # start voting, but not sleep — only start and do votes
     vote_id = start_vote_by_name("shapella")
@@ -188,7 +185,7 @@ def test_legacy_oracle_happy_path():
 
 @pytest.mark.parametrize("legacy_reports", [0, 1, 2])
 def test_legacy_oracle_report_skipped(legacy_reports):
-    oracle = interface.LidoOracle(lido_dao_legacy_oracle)
+    oracle = interface.LidoOracle(LEGACY_ORACLE)
 
     # Align chain to next oracle report
     wait_for_next_reportable_epoch()
@@ -201,9 +198,6 @@ def test_legacy_oracle_report_skipped(legacy_reports):
     ## Wait for 2 hours after oracle report
     slots_to_mine = 2 * ONE_HOUR // CHAIN_SECONDS_PER_SLOT
     chain_sleep(slots_to_mine)
-
-    # prepare upgrade
-    prepare_for_shapella_upgrade_voting(silent=True)
 
     # start voting, but not sleep — only start and do votes
     vote_id = start_vote_by_name("shapella")
@@ -218,9 +212,7 @@ def test_legacy_oracle_report_skipped(legacy_reports):
         legacy_report(expected_epoch_id, beacon_stats["beaconBalance"]//10 ** 9, beacon_stats["beaconValidators"])
         print("Legacy report ", datetime.fromtimestamp(chain.time()))
 
-    print(vote_start_block + 72 * ONE_HOUR // CHAIN_SECONDS_PER_SLOT - chain.height + 1)
-
-    chain_sleep(vote_start_block + 72 * ONE_HOUR // CHAIN_SECONDS_PER_SLOT - chain.height + 2)
+    chain_sleep(vote_start_block + 72 * ONE_HOUR // CHAIN_SECONDS_PER_SLOT - chain.height + 10)
 
     assert contracts.voting.canExecute(vote_id)
 

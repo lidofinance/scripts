@@ -3,7 +3,7 @@ import pytest
 from brownie import Contract, interface, reverts, Wei, chain  # type: ignore
 from tests.snapshot.test_lido_snapshot import UINT256_MAX
 
-from utils.config import lido_dao_withdrawal_queue, contracts
+from utils.config import WITHDRAWAL_QUEUE, contracts
 from utils.evm_script import encode_error
 from utils.test.oracle_report_helpers import oracle_report
 
@@ -156,7 +156,7 @@ def shared_setup(fn_isolation):
 
 @pytest.fixture(scope="module")
 def wq() -> Contract:
-    return interface.WithdrawalQueueERC721(lido_dao_withdrawal_queue)
+    return interface.WithdrawalQueueERC721(WITHDRAWAL_QUEUE)
 
 
 @pytest.fixture(scope="function", autouse=True)
