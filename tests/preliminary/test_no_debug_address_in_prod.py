@@ -1,8 +1,7 @@
 import pytest
 from brownie import interface
-from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
 from utils.import_current_votes import start_and_execute_votes
-from utils.config import contracts
+from utils.config import contracts, LIDO_LOCATOR
 import utils.config as config
 
 ####################################
@@ -50,7 +49,7 @@ def get_proxy_impl_ossifiable(addr):
 
 
 def test_upgrade_template_addresses():
-    template = prepare_for_shapella_upgrade_voting(silent=True)
+    template = contracts.shapella_upgrade_template
 
     assert get_proxy_impl_ossifiable(template._locator()) != LIDO_LOCATOR_IMPL
     assert template._accountingOracle() != ACCOUNTING_ORACLE
@@ -78,7 +77,6 @@ def test_upgrade_template_addresses():
 
 
 def test_proxyfied_implementation_addresses_prepared():
-    prepare_for_shapella_upgrade_voting(silent=True)
 
     assert get_proxy_impl_ossifiable(config.LIDO_LOCATOR) != LIDO_LOCATOR_IMPL
     assert get_proxy_impl_ossifiable(config.ACCOUNTING_ORACLE) != DUMMY_IMPL  # dummy
@@ -98,9 +96,7 @@ def test_proxyfied_implementation_addresses_after_upgrade(helpers):
 
 
 def test_locator_addresses():
-    prepare_for_shapella_upgrade_voting(silent=True)
-
-    locator = interface.LidoLocator(config.LIDO_LOCATOR)
+    locator = interface.LidoLocator(LIDO_LOCATOR)
 
     assert locator.accountingOracle() != ACCOUNTING_ORACLE
     assert locator.depositSecurityModule() != LIDO_DEPOSIT_SECURITY_MODULE

@@ -22,7 +22,7 @@ PETRIFICATION_MARK = 11579208923731619542357098500868790785326998466564056403945
 
 
 @pytest.fixture(scope="module")
-def petrified_implementations(shapella_upgrade_template):
+def petrified_implementations():
     return {
         # dao aragon app contracts
         "Lido": {

@@ -5,12 +5,7 @@ import glob
 from brownie import accounts
 from brownie.network.transaction import TransactionReceipt
 
-from utils.config import (
-    LDO_HOLDER_ADDRESS_FOR_TESTS,
-    LIDO_V2_UPGRADE_TEMPLATE,
-    get_is_live,
-)
-from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
+from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS, LIDO_V2_UPGRADE_TEMPLATE, get_is_live, contracts
 
 
 def get_vote_scripts_dir() -> str:
@@ -39,18 +34,6 @@ def is_there_any_vote_scripts() -> bool:
 def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[TransactionReceipt]]:
     vote_files = get_vote_script_files()
     assert len(vote_files) > 0
-
-    if os.getenv("SKIP_SHAPELLA_PRELIMINARY_STEP"):
-        assert (
-            LIDO_V2_UPGRADE_TEMPLATE != ""
-        ), "If SKIP_SHAPELLA_PRELIMINARY_STEP is set 'shapella_upgrade_template' must be specified in the config"
-    else:
-        assert (
-            not get_is_live(),
-            "ERROR: will not do preliminary actions on live network. run `preliminary_shapella...py` script manually",
-        )
-        deployed_upgrade_template = prepare_for_shapella_upgrade_voting(silent=True)
-        assert deployed_upgrade_template.address == LIDO_V2_UPGRADE_TEMPLATE
 
     vote_ids = []
     vote_transactions = []

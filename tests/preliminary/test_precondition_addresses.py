@@ -2,7 +2,6 @@ import pytest
 from brownie import interface
 from utils.withdrawal_credentials import extract_address_from_eth1_wc
 from utils.finance import ZERO_ADDRESS
-from utils.shapella_upgrade import prepare_for_shapella_upgrade_voting
 from utils.import_current_votes import start_and_execute_votes
 from utils.config import (
     contracts,
@@ -70,7 +69,7 @@ def upgrade_withdrawal_vault():
 
 # ElRewardsVault did not changed
 def test_el_rewards_vault_did_not_changed():
-    template = prepare_for_shapella_upgrade_voting(silent=True)
+    template = contracts.shapella_upgrade_template
 
     locator = interface.LidoLocator(LIDO_LOCATOR)
     core_components = locator.coreComponents()
@@ -83,7 +82,7 @@ def test_el_rewards_vault_did_not_changed():
 
 # Withdrawals vault addr did not changed
 def test_withdrawals_vault_addr_did_not_changed():
-    template = prepare_for_shapella_upgrade_voting(silent=True)
+    template = contracts.shapella_upgrade_template
 
     locator = interface.LidoLocator(LIDO_LOCATOR)
     core_components = locator.coreComponents()
@@ -100,8 +99,6 @@ def test_withdrawals_vault_addr_matching_with_wc():
     withdrawal_credentials_address = extract_address_from_eth1_wc(str(withdrawal_credentials))
     assert withdrawal_credentials_address == WITHDRAWAL_VAULT.lower()
 
-    prepare_for_shapella_upgrade_voting(silent=True)
-
     withdrawal_credentials = contracts.lido.getWithdrawalCredentials()
     withdrawal_credentials_address = extract_address_from_eth1_wc(str(withdrawal_credentials))
 
@@ -109,7 +106,7 @@ def test_withdrawals_vault_addr_matching_with_wc():
 
 
 def test_upgrade_template_addresses():
-    template = prepare_for_shapella_upgrade_voting(silent=True)
+    template = contracts.shapella_upgrade_template
 
     assert get_proxy_impl_ossifiable(template._locator()) == LIDO_LOCATOR_IMPL
 
@@ -151,7 +148,6 @@ def test_upgrade_template_addresses():
 
 
 def test_proxyfied_implementation_addresses_prepared():
-    prepare_for_shapella_upgrade_voting(silent=True)
 
     assert get_proxy_impl_app(ACL) == ACL_IMPL
     assert get_proxy_impl_app(NODE_OPERATORS_REGISTRY) == NODE_OPERATORS_REGISTRY_IMPL_V1
@@ -181,7 +177,6 @@ def test_proxyfied_implementation_addresses_after_upgrade(helpers):
 
 
 def test_locator_addresses():
-    prepare_for_shapella_upgrade_voting(silent=True)
 
     locator = interface.LidoLocator(LIDO_LOCATOR)
 
@@ -219,7 +214,6 @@ def test_locator_addresses():
 
 
 def test_stored_addresses_after_prepared():
-    prepare_for_shapella_upgrade_voting(silent=True)
 
     # EL Rewards Vault
     assert contracts.execution_layer_rewards_vault.LIDO() == LIDO

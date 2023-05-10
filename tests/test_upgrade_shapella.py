@@ -62,10 +62,6 @@ from utils.test.event_validators.permission import (
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
 from scripts.upgrade_shapella import start_vote
-from utils.shapella_upgrade import (
-    prepare_upgrade_locator_impl,
-    prepare_transfer_locator_ownership_to_template,
-)
 
 
 # See Aragon apps getLatest()
@@ -258,11 +254,7 @@ def test_vote(
     if len(vote_ids_from_env) > 0:
         assert len(vote_ids_from_env) == 1, "This test script supports only single vote id"
         (vote_id,) = vote_ids_from_env
-        template = contracts.shapella_upgrade_template
     else:
-        template = contracts.shapella_upgrade_template
-        prepare_upgrade_locator_impl(DEPLOYER_EOA_LOCATOR)
-        prepare_transfer_locator_ownership_to_template(DEPLOYER_EOA_LOCATOR, template)
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
         vote_id, _ = start_vote(tx_params, silent=True)
 
@@ -311,7 +303,7 @@ def test_vote(
     #
     # Template checks
     #
-    assert template._isUpgradeFinished()
+    assert contracts.shapella_upgrade_template._isUpgradeFinished()
 
     if bypass_events_decoding:
         return

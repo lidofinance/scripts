@@ -15,8 +15,8 @@ from utils.test.event_validators.permission import Permission
 
 
 @pytest.fixture(scope="module")
-def protocol_preliminary_permissions(shapella_upgrade_template):
-    template = shapella_upgrade_template.address
+def protocol_preliminary_permissions():
+    template = contracts.shapella_upgrade_template.address
     return {
         "Withdrawal_vault": {
             "contract": interface.WithdrawalVaultManager(contracts.withdrawal_vault.address),
