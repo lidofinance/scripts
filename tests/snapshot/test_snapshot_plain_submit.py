@@ -81,8 +81,8 @@ def test_submit_snapshot(helpers, staker):
         return track
 
     lido = contracts.lido
-    shares_of_treasury_before = lido.sharesOf(lido_dao_agent_address)
-    balance_treasury_before = lido.balanceOf(lido_dao_agent_address)
+    shares_of_treasury_before = lido.sharesOf(AGENT)
+    balance_treasury_before = lido.balanceOf(AGENT)
     shares_of_treasury_after = shares_of_treasury_before - lido.getSharesByPooledEth(50 * (10**18))
     balance_treasury_after = lido.getPooledEthByShares(shares_of_treasury_after)
 
