@@ -5,13 +5,7 @@ import glob
 from brownie import accounts
 from brownie.network.transaction import TransactionReceipt
 
-from utils.config import (
-    ldo_holder_address_for_tests,
-    ContractsLazyLoader,
-    lido_dao_template_address,
-    get_is_live,
-    contracts
-)
+from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS, LIDO_V2_UPGRADE_TEMPLATE, get_is_live, contracts
 
 
 def get_vote_scripts_dir() -> str:
@@ -51,7 +45,7 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
         exec(f"from {name_for_import} import start_vote as {start_vote_name}")
         start_vote = locals()[start_vote_name]
 
-        vote_id, _ = start_vote({"from": ldo_holder_address_for_tests}, silent=True)
+        vote_id, _ = start_vote({"from": LDO_HOLDER_ADDRESS_FOR_TESTS}, silent=True)
         (tx,) = helpers.execute_votes(accounts, [vote_id], dao_voting, topup="0.5 ether")
         vote_ids.append(vote_id)
         vote_transactions.append(tx)

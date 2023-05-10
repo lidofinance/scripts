@@ -7,9 +7,9 @@ from scripts.upgrade_shapella import start_vote
 from collections import OrderedDict
 from utils.config import (
     contracts,
-    lido_dao_withdrawal_vault,
-    lido_dao_withdrawal_vault_implementation,
-    ldo_holder_address_for_tests,
+    WITHDRAWAL_VAULT,
+    WITHDRAWAL_VAULT_IMPL,
+    LDO_HOLDER_ADDRESS_FOR_TESTS,
     MAINNET_VOTE_DURATION,
 )
 from utils.evm_script import encode_error
@@ -44,8 +44,8 @@ def assert_single_event(tx, name, params):
 
 
 def upgrade_withdrawal_vault():
-    vault = interface.WithdrawalVaultManager(lido_dao_withdrawal_vault)
-    vault.proxy_upgradeTo(lido_dao_withdrawal_vault_implementation, b"", {"from": contracts.voting.address})
+    vault = interface.WithdrawalVaultManager(WITHDRAWAL_VAULT)
+    vault.proxy_upgradeTo(WITHDRAWAL_VAULT_IMPL, b"", {"from": contracts.voting.address})
 
 
 def test_expire_since_constant(accounts):
@@ -69,7 +69,7 @@ def test_fail_if_expired(accounts, template):
 
 def test_succeed_if_5_minutes_before_expire(accounts, helpers):
     """It is hard to control time in the chain via brownie so just checking ~5 minutes before"""
-    tx_params = {"from": ldo_holder_address_for_tests}
+    tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
     vote_id, _ = start_vote(tx_params, silent=True)
 
     time_to_sleep = TIMESTAMP_FIRST_SECOND_OF_JULY_2023_UTC - get_current_chain_timestamp() - 5 * 60
@@ -82,7 +82,7 @@ def test_revert_if_upgrade_not_finished(accounts, helpers, template):
     with reverts(""):
         template.revertIfUpgradeNotFinished()
 
-    tx_params = {"from": ldo_holder_address_for_tests}
+    tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
     vote_id, _ = start_vote(tx_params, silent=True)
     helpers.execute_votes(accounts, [vote_id], contracts.voting)
 

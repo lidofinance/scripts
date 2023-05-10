@@ -3,10 +3,10 @@ from brownie import interface, web3  # type: ignore
 
 from utils.config import (
     contracts,
-    lido_dao_deposit_security_module_address,
-    deposit_security_module_guardians,
-    lido_dao_deposit_security_module_address_v1,
-    deposit_contract,
+    DEPOSIT_SECURITY_MODULE,
+    DSM_GUARDIANS,
+    DEPOSIT_SECURITY_MODULE_V1,
+    CHAIN_DEPOSIT_CONTRACT,
     DSM_MAX_DEPOSITS_PER_BLOCK,
     DSM_MIN_DEPOSIT_BLOCK_DISTANCE,
     DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS,
@@ -16,7 +16,7 @@ from utils.config import (
 
 @pytest.fixture(scope="module")
 def contract() -> interface.DepositSecurityModule:
-    return interface.DepositSecurityModule(lido_dao_deposit_security_module_address)
+    return interface.DepositSecurityModule(DEPOSIT_SECURITY_MODULE)
 
 
 def test_owner(contract):
@@ -26,11 +26,11 @@ def test_owner(contract):
 def test_links(contract):
     assert contract.LIDO() == contracts.lido
     assert contract.STAKING_ROUTER() == contracts.staking_router
-    assert contract.DEPOSIT_CONTRACT() == deposit_contract
+    assert contract.DEPOSIT_CONTRACT() == CHAIN_DEPOSIT_CONTRACT
 
 
 def test_migration(contract):
-    old_dsm = interface.DepositSecurityModule(lido_dao_deposit_security_module_address_v1)
+    old_dsm = interface.DepositSecurityModule(DEPOSIT_SECURITY_MODULE_V1)
 
     assert contract.PAUSE_MESSAGE_PREFIX() != old_dsm.PAUSE_MESSAGE_PREFIX()
     assert contract.ATTEST_MESSAGE_PREFIX() != old_dsm.ATTEST_MESSAGE_PREFIX()
@@ -46,10 +46,10 @@ def test_deposit_security_module(contract):
     assert contract.getMinDepositBlockDistance() == DSM_MIN_DEPOSIT_BLOCK_DISTANCE
     assert contract.getPauseIntentValidityPeriodBlocks() == DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS
 
-    assert contract.getGuardians() == deposit_security_module_guardians
+    assert contract.getGuardians() == DSM_GUARDIANS
     assert contract.getGuardianQuorum() == DSM_GUARDIAN_QUORUM
 
-    for guardian in deposit_security_module_guardians:
+    for guardian in DSM_GUARDIANS:
         assert contract.getGuardianIndex(guardian) >= 0
         assert contract.isGuardian(guardian) == True
 
@@ -63,7 +63,7 @@ def test_prefixes(contract):
             [
                 web3.keccak(text="lido.DepositSecurityModule.PAUSE_MESSAGE").hex(),
                 1,
-                lido_dao_deposit_security_module_address,
+                DEPOSIT_SECURITY_MODULE,
             ],
         ).hex()
     )
@@ -74,7 +74,7 @@ def test_prefixes(contract):
             [
                 web3.keccak(text="lido.DepositSecurityModule.ATTEST_MESSAGE").hex(),
                 1,
-                lido_dao_deposit_security_module_address,
+                DEPOSIT_SECURITY_MODULE,
             ],
         ).hex()
     )
