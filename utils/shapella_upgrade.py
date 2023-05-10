@@ -28,7 +28,3 @@ def get_tx_params(deployer):
         tx_params["priority_fee"] = get_priority_fee()
         tx_params["max_fee"] = get_max_fee()
     return tx_params
-
-
-def prepare_transfer_locator_ownership_to_template(admin, template):
-    interface.OssifiableProxy(contracts.lido_locator).proxy__changeAdmin(template, get_tx_params(admin))
