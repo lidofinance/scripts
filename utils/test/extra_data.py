@@ -16,6 +16,7 @@ ZERO_HASH = bytes([0]*32)
 class ItemType(Enum):
     EXTRA_DATA_TYPE_STUCK_VALIDATORS = 1
     EXTRA_DATA_TYPE_EXITED_VALIDATORS = 2
+    UNSUPPORTED = 3
 
 
 class FormatList(Enum):
