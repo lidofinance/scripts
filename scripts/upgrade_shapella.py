@@ -72,27 +72,26 @@ from utils.permissions import (
 # noinspection PyUnresolvedReferences
 from utils.brownie_prelude import *
 
-
+# Content URI: https://github.com/lidofinance/lido-dao/blob/1ce8f1fd7098b6f8490513fcf412f2412e6457c0/apps/lido/README.md
 update_lido_app = {
     "new_address": "0x17144556fd3424EDC8Fc8A4C940B2D04936d17eb",
-    # TODO: set content_uri after Aragon UI deployment
-    "content_uri": "0x697066733a516d63354a64475a3576326844466d64516844535a70514a6554394a55364e34386d5678546474685667677a766d",
+    "content_uri": "0x697066733a516d525358415a724632785235726762556445724456364c47746a7151315434415a677336796f586f734d516333",
     "id": "0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
     "version": (4, 0, 0),
 }
 
+# Content URI: https://github.com/lidofinance/lido-dao/blob/1ce8f1fd7098b6f8490513fcf412f2412e6457c0/apps/node-operators-registry/README.md
 update_nor_app = {
     "new_address": "0x8538930c385C0438A357d2c25CB3eAD95Ab6D8ed",
-    # TODO: set content_uri after Aragon UI deployment
-    "content_uri": "0x697066733a516d5342796b4e4a61363734547146334b7366677642666444315a545158794c4a6e707064776b36477463534c4d",
+    "content_uri": "0x697066733a516d54346a64693146684d454b5576575351316877786e33365748394b6a656743755a7441684a6b6368526b7a70",
     "id": "0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d",
     "version": (4, 0, 0),
 }
 
+# Content URI: https://github.com/lidofinance/lido-dao/blob/1ce8f1fd7098b6f8490513fcf412f2412e6457c0/apps/lidooracle/README.md
 update_oracle_app = {
     "new_address": "0xa29b819654cE6224A222bb5f586920105E2D7E0E",
-    # TODO: set content_uri after Aragon UI deployment
-    "content_uri": "0x697066733a516d66414348396f5348465767563831446838525356636761564264686b5a7548685a5932695a76357379424a4b",
+    "content_uri": "0x697066733a516d575461635041557251614376414d5663716e5458766e7239544c666a57736861736334786a536865717a3269",
     "id": "0x8b47ba2a8454ec799cd91646e7ec47168e91fd139b23f017455f3e5898aaba93",
     "version": (4, 0, 0),
 }
