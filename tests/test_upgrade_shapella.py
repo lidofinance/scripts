@@ -128,6 +128,10 @@ MANAGE_TOKEN_URI_ROLE = web3.keccak(text="MANAGE_TOKEN_URI_ROLE").hex()
 
 GAS_FUNDER_MSIG = "0x5181d5D56Af4f823b96FE05f062D7a09761a5a53"
 
+LIDO_ARAGON_CONTENT_URI="0x697066733a516d525358415a724632785235726762556445724456364c47746a7151315434415a677336796f586f734d516333"
+NOR_ARAGON_CONTENT_URI="0x697066733a516d54346a64693146684d454b5576575351316877786e33365748394b6a656743755a7441684a6b6368526b7a70"
+ORACLE_ARAGON_CONTENT_URI="0x697066733a516d575461635041557251614376414d5663716e5458766e7239544c666a57736861736334786a536865717a3269"
+
 fund_payout = Payout(
     token_addr=LIDO,
     from_addr=AGENT,
@@ -292,7 +296,7 @@ def test_vote(
     #
     lido_new_app = contracts.lido_app_repo.getLatest()
     lido_proxy = interface.AppProxyUpgradeable(contracts.lido)
-    assert_app_update(lido_new_app, lido_old_app, LIDO_IMPL)
+    assert_app_update(lido_new_app, lido_old_app, LIDO_IMPL, LIDO_ARAGON_CONTENT_URI)
     assert lido_proxy.implementation() == LIDO_IMPL, "Proxy should be updated"
 
     #
@@ -300,7 +304,7 @@ def test_vote(
     #
     nor_new_app = contracts.nor_app_repo.getLatest()
     nor_proxy = interface.AppProxyUpgradeable(contracts.node_operators_registry)
-    assert_app_update(nor_new_app, nor_old_app, NODE_OPERATORS_REGISTRY_IMPL)
+    assert_app_update(nor_new_app, nor_old_app, NODE_OPERATORS_REGISTRY_IMPL, NOR_ARAGON_CONTENT_URI)
     assert nor_proxy.implementation() == NODE_OPERATORS_REGISTRY_IMPL, "Proxy should be updated"
 
     #
@@ -308,7 +312,7 @@ def test_vote(
     #
     oracle_new_app = contracts.oracle_app_repo.getLatest()
     oracle_proxy = interface.AppProxyUpgradeable(contracts.legacy_oracle)
-    assert_app_update(oracle_new_app, oracle_old_app, LEGACY_ORACLE_IMPL)
+    assert_app_update(oracle_new_app, oracle_old_app, LEGACY_ORACLE_IMPL, ORACLE_ARAGON_CONTENT_URI)
     assert oracle_proxy.implementation() == LEGACY_ORACLE_IMPL, "Proxy should be updated"
 
     # ACL grant checks
@@ -390,11 +394,12 @@ def acl_has_permission(permission):
         assert False, "unexpected permission type structure"
 
 
-def assert_app_update(new_app, old_app, contract_address):
+def assert_app_update(new_app, old_app, contract_address, new_content_uri):
     assert old_app[1] != new_app[1], "Address should change"
     assert new_app[1] == contract_address, "New address should match"
     assert new_app[0][0] == old_app[0][0] + 1, "Major version should increment"
     assert old_app[2] != new_app[2], "Content uri must change"
+    assert new_app[2] == new_content_uri, "Content uri should match"
 
 
 def assert_single_event_equal(actual, expected):
