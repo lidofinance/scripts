@@ -72,7 +72,7 @@ from utils.permissions import (
 # noinspection PyUnresolvedReferences
 from utils.brownie_prelude import *
 
-# Content URI: https://github.com/lidofinance/lido-dao/blob/1ce8f1fd7098b6f8490513fcf412f2412e6457c0/apps/lido/README.md
+# Content URI: https://github.com/lidofinance/lido-dao/blob/34f5d0d428fcb51aae74f0cb7387b9bd59916817/apps/lido/README.md
 update_lido_app = {
     "new_address": "0x17144556fd3424EDC8Fc8A4C940B2D04936d17eb",
     "content_uri": "0x697066733a516d525358415a724632785235726762556445724456364c47746a7151315434415a677336796f586f734d516333",
@@ -80,7 +80,7 @@ update_lido_app = {
     "version": (4, 0, 0),
 }
 
-# Content URI: https://github.com/lidofinance/lido-dao/blob/1ce8f1fd7098b6f8490513fcf412f2412e6457c0/apps/node-operators-registry/README.md
+# Content URI: https://github.com/lidofinance/lido-dao/blob/34f5d0d428fcb51aae74f0cb7387b9bd59916817/apps/node-operators-registry/README.md
 update_nor_app = {
     "new_address": "0x8538930c385C0438A357d2c25CB3eAD95Ab6D8ed",
     "content_uri": "0x697066733a516d54346a64693146684d454b5576575351316877786e33365748394b6a656743755a7441684a6b6368526b7a70",
@@ -88,7 +88,7 @@ update_nor_app = {
     "version": (4, 0, 0),
 }
 
-# Content URI: https://github.com/lidofinance/lido-dao/blob/1ce8f1fd7098b6f8490513fcf412f2412e6457c0/apps/lidooracle/README.md
+# Content URI: https://github.com/lidofinance/lido-dao/blob/34f5d0d428fcb51aae74f0cb7387b9bd59916817/apps/lidooracle/README.md
 update_oracle_app = {
     "new_address": "0xa29b819654cE6224A222bb5f586920105E2D7E0E",
     "content_uri": "0x697066733a516d575461635041557251614376414d5663716e5458766e7239544c666a57736861736334786a536865717a3269",
