@@ -105,7 +105,8 @@ def test_create_wait_enact(old_voting, helpers, vote_time, call_target, vote_ids
         step_diffs[step] = dict_diff(before, after)
 
     for step_name, diff in step_diffs.items():
-        assert_expected_diffs(
-            step_name, diff, {"votesLength": ValueChanged(from_val=votesLength + 1, to_val=votesLength + 2)}
-        )
+        if not vote_ids_from_env:
+            assert_expected_diffs(
+                step_name, diff, {"votesLength": ValueChanged(from_val=votesLength + 1, to_val=votesLength + 2)}
+            )
         assert_no_diffs(step_name, diff)
