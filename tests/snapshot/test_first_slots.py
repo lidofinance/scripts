@@ -2,7 +2,7 @@ from contextlib import contextmanager
 from typing import Any, Callable, Sequence, TypedDict
 
 import pytest
-from brownie import Contract, chain, rpc, web3
+from brownie import Contract, chain, rpc, web3, accounts
 from brownie.network.state import _notify_registry
 from hexbytes import HexBytes
 from pytest_check import check
@@ -130,6 +130,7 @@ def sandwich_upgrade(
     far_block: int,
     far_ts: int,
     helpers: Helpers,
+    vote_ids_from_env: int,
 ) -> SandwichFn:
     """Snapshot the state before and after the upgrade and return the two frames"""
 
@@ -141,7 +142,10 @@ def sandwich_upgrade(
         with _chain_snapshot():
             v1_frames = tuple(_actions_snaps())
 
-        start_and_execute_votes(contracts.voting, helpers)
+        if vote_ids_from_env:
+            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
+        else:
+            start_and_execute_votes(contracts.voting, helpers)
 
         # do not call _chain_snapshot here to be able to interact with the environment in the test
         v2_frames = tuple(_actions_snaps())

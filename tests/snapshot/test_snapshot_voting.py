@@ -84,14 +84,18 @@ def steps(voting, call_target, vote_time) -> Dict[str, Dict[str, ValueChanged]]:
 
 
 @pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
-def test_create_wait_enact(old_voting, helpers, vote_time, call_target):
+def test_create_wait_enact(old_voting, helpers, vote_time, call_target, vote_ids_from_env):
     """
     Run a smoke test before upgrade, then after upgrade, and compare snapshots at each step
     """
     votesLength = old_voting.votesLength()
     before: Dict[str, Dict[str, any]] = steps(old_voting, call_target, vote_time)
     chain.revert()
-    start_and_execute_votes(contracts.voting, helpers)
+
+    if vote_ids_from_env:
+        helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
+    else:
+        start_and_execute_votes(contracts.voting, helpers)
     after: Dict[str, Dict[str, any]] = steps(contracts.voting, call_target, vote_time)
 
     step_diffs: Dict[str, Dict[str, ValueChanged]] = {}

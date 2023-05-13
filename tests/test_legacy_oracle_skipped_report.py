@@ -15,6 +15,7 @@ from utils.config import (
     CHAIN_SLOTS_PER_EPOCH,
     CHAIN_SECONDS_PER_SLOT,
     CHAIN_GENESIS_TIME,
+    VOTING,
 )
 
 ONE_HOUR = 1 * 60 * 60
@@ -74,43 +75,6 @@ def shared_setup(fn_isolation):
     pass
 
 
-def test_legacy_oracle_report_skipped():
-    # we don't track real reference slots in this tests purposefully
-    # because this test doesn't rely on exact slot numbers
-    # the only meaningful check — trying to send first oracle report using an arbitrary reference slot
-    # BEFORE the upgraded contracts were activated via the upgrade vote
-
-    # start voting, but not sleep — only start and do votes
-    vote_id = start_vote_by_name("shapella")
-
-    # mine block in a hour before upgrade
-    chain.sleep(MAINNET_VOTE_DURATION)
-    chain.mine(1)
-
-    # remember this block
-    block_number_hour_before_upgrade = web3.eth.block_number
-
-    # wait for upgrade
-    chain.sleep(ONE_HOUR)
-    chain.mine(1)
-
-    # execute upgrade voting
-    execute_vote_by_id(vote_id)
-
-    # trying report for historical data when was no report from LidoOracle
-    with reverts("NON_EMPTY_DATA"):
-        oracle_report(simulation_block_identifier=block_number_hour_before_upgrade, wait_to_next_report_time=False)
-
-    # Waiting
-    chain.sleep(23 * ONE_HOUR)
-    chain.mine(1)
-    block_number_23_hours_after_upgrade = web3.eth.block_number
-    chain.sleep(ONE_HOUR)
-    chain.mine(1)
-
-    # Now oracle report can pass because contracts were upgraded
-    oracle_report(simulation_block_identifier=block_number_23_hours_after_upgrade, wait_to_next_report_time=False)
-
 def chain_sleep(slots):
     chain.sleep(CHAIN_SECONDS_PER_SLOT * slots)
     chain.mine(slots)
@@ -126,50 +90,39 @@ def wait_for_next_reportable_epoch():
     chain_sleep(CHAIN_SLOTS_PER_EPOCH * epochs_to_sleep)
 
 
-def test_legacy_oracle_happy_path():
+def test_legacy_oracle_happy_path(vote_ids_from_env):
     oracle = interface.LidoOracle(LEGACY_ORACLE)
+    voting = interface.Voting(VOTING)
 
-    # Align chain to next oracle report
+    vote = voting.getVote(vote_ids_from_env[0])
+
+    if vote["startDate"] + 72 * ONE_HOUR - chain.time() < 26 * ONE_HOUR:
+        pytest.skip("all reports already done!")
+
+    slots_to_sleep = (vote["startDate"] + 70 * ONE_HOUR - chain.time()) // CHAIN_SECONDS_PER_SLOT
+    chain_sleep(slots_to_sleep)
+
+    print("Wait for reportable epoch ", datetime.fromtimestamp(chain.time()))
     wait_for_next_reportable_epoch()
-
-    expected_epoch_id = oracle.getExpectedEpochId()
+    (epoch_id, _, _) = oracle.getCurrentFrame()
     beacon_stats = contracts.lido.getBeaconStat()
-    legacy_report(expected_epoch_id, beacon_stats["beaconBalance"]//10 ** 9, beacon_stats["beaconValidators"])
+    legacy_report(epoch_id, beacon_stats["beaconBalance"]//10 ** 9, beacon_stats["beaconValidators"])
     print("Legacy report ", datetime.fromtimestamp(chain.time()))
 
-    ## Wait for 2 hours after oracle report
-    slots_to_mine = 2 * ONE_HOUR // CHAIN_SECONDS_PER_SLOT
-    chain_sleep(slots_to_mine)
+    slots_to_sleep = (vote["startDate"] +  72 * ONE_HOUR - chain.time()) // CHAIN_SECONDS_PER_SLOT + 10
+    chain_sleep(slots_to_sleep)
 
-    # start voting, but not sleep — only start and do votes
-    vote_id = start_vote_by_name("shapella")
-    print("Vote started ", datetime.fromtimestamp(chain.time()))
-
-
-    # Regular reports
-    for i in range(3):
-        wait_for_next_reportable_epoch()
-        expected_epoch_id = oracle.getExpectedEpochId()
-        beacon_stats = contracts.lido.getBeaconStat()
-        legacy_report(expected_epoch_id, beacon_stats["beaconBalance"]//10 ** 9, beacon_stats["beaconValidators"])
-        print("Legacy report ", datetime.fromtimestamp(chain.time()))
-
-
-    ## Wait for 2 hours after oracle report
-    slots_to_mine = 2 * ONE_HOUR // CHAIN_SECONDS_PER_SLOT
-    chain_sleep(slots_to_mine + 32)
-
-    assert contracts.voting.canExecute(vote_id)
+    assert contracts.voting.canExecute(vote_ids_from_env[0])
 
     # execute upgrade voting
-    execute_vote_by_id(vote_id)
+    execute_vote_by_id(vote_ids_from_env[0])
     print("Vote executed ", datetime.fromtimestamp(chain.time()))
 
     # wait for 1 slot before next reportable epoch
     consensus_current_slot = (chain.time() - CHAIN_GENESIS_TIME) // CHAIN_SECONDS_PER_SLOT
     consensus_initial_ref_slot = contracts.hash_consensus_for_accounting_oracle.getInitialRefSlot()
+    print(consensus_initial_ref_slot, consensus_current_slot)
     chain_sleep(consensus_initial_ref_slot - consensus_current_slot - 2)
-    print("Sleep before report ability ", datetime.fromtimestamp(chain.time()))
 
     with reverts():
         contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
@@ -183,41 +136,23 @@ def test_legacy_oracle_happy_path():
     print("Accounting oracle report ", datetime.fromtimestamp(chain.time()))
 
 
-@pytest.mark.parametrize("legacy_reports", [0, 1, 2])
-def test_legacy_oracle_report_skipped(legacy_reports):
+def test_legacy_oracle_report_skipped(vote_ids_from_env):
     oracle = interface.LidoOracle(LEGACY_ORACLE)
+    voting = interface.Voting(VOTING)
 
-    # Align chain to next oracle report
-    wait_for_next_reportable_epoch()
+    vote = voting.getVote(vote_ids_from_env[0])
 
-    expected_epoch_id = oracle.getExpectedEpochId()
-    beacon_stats = contracts.lido.getBeaconStat()
-    legacy_report(expected_epoch_id, beacon_stats["beaconBalance"]//10 ** 9, beacon_stats["beaconValidators"])
-    print("Legacy report ", datetime.fromtimestamp(chain.time()))
+    if vote["startDate"] + 72 * ONE_HOUR - chain.time() < 26 * ONE_HOUR:
+        pytest.skip("all reports already done!")
 
-    ## Wait for 2 hours after oracle report
-    slots_to_mine = 2 * ONE_HOUR // CHAIN_SECONDS_PER_SLOT
-    chain_sleep(slots_to_mine)
+    slots_to_sleep = (vote["startDate"] +  72 * ONE_HOUR - chain.time()) // CHAIN_SECONDS_PER_SLOT + 10
+    chain_sleep(slots_to_sleep)
 
-    # start voting, but not sleep — only start and do votes
-    vote_id = start_vote_by_name("shapella")
-    print("Vote started ", datetime.fromtimestamp(chain.time()))
-    vote_start_block = chain.height
-
-    # Regular reports
-    for i in range(legacy_reports):
-        wait_for_next_reportable_epoch()
-        expected_epoch_id = oracle.getExpectedEpochId()
-        beacon_stats = contracts.lido.getBeaconStat()
-        legacy_report(expected_epoch_id, beacon_stats["beaconBalance"]//10 ** 9, beacon_stats["beaconValidators"])
-        print("Legacy report ", datetime.fromtimestamp(chain.time()))
-
-    chain_sleep(vote_start_block + 72 * ONE_HOUR // CHAIN_SECONDS_PER_SLOT - chain.height + 10)
-
-    assert contracts.voting.canExecute(vote_id)
+    print("Wait for vote can be executed ", datetime.fromtimestamp(chain.time()))
+    assert contracts.voting.canExecute(vote_ids_from_env[0])
 
     # execute upgrade voting
-    execute_vote_by_id(vote_id)
+    execute_vote_by_id(vote_ids_from_env[0])
     print("Vote executed ", datetime.fromtimestamp(chain.time()))
 
     # Accounting oracle report

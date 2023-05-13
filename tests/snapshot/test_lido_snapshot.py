@@ -4,7 +4,7 @@ from typing import Any, Callable, Sequence, TypedDict
 
 import brownie
 import pytest
-from brownie import ZERO_ADDRESS, chain, rpc, web3
+from brownie import ZERO_ADDRESS, chain, rpc, web3, accounts
 from brownie.network.account import Account
 from brownie.network.state import _notify_registry
 from pytest_check import check
@@ -373,6 +373,7 @@ def sandwich_upgrade(
     do_snapshot: SnapshotFn,
     far_block: int,
     helpers: Helpers,
+    vote_ids_from_env,
 ) -> Callable[..., tuple[Stack, Stack]]:
     """Snapshot the state before and after the upgrade and return the two frames"""
 
@@ -396,7 +397,10 @@ def sandwich_upgrade(
         with _chain_snapshot():
             v1_frames = tuple(_actions_snaps())
 
-        start_and_execute_votes(contracts.voting, helpers)
+        if vote_ids_from_env:
+            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
+        else:
+            start_and_execute_votes(contracts.voting, helpers)
 
         # do not call _chain_snapshot here to be able to interact with the environment in the test
         v2_frames = tuple(_actions_snaps())

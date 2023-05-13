@@ -3,7 +3,7 @@ import pytest
 from web3 import Web3
 from datetime import datetime
 from typing import Any, Dict, Callable
-from brownie import ZERO_ADDRESS, Wei, convert
+from brownie import ZERO_ADDRESS, Wei, convert, accounts
 from brownie.convert.datatypes import ReturnValue
 from tests.snapshot.utils import get_slot
 
@@ -61,7 +61,13 @@ def voting_eoa(accounts):
 
 @pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
 def test_node_operator_basic_flow(
-    accounts, helpers, old_deposit_security_module_eoa, new_deposit_security_module_eoa, voting_eoa, agent_eoa
+    accounts,
+    helpers,
+    old_deposit_security_module_eoa,
+    new_deposit_security_module_eoa,
+    voting_eoa,
+    agent_eoa,
+    vote_ids_from_env,
 ):
     deposits_count = 8
     submit_amount = deposits_count * DEPOSIT_SIZE
@@ -151,7 +157,11 @@ def test_node_operator_basic_flow(
         snapshot_before_update = run_scenario(actions=old_version_actions, snapshooter=make_snapshot_v1)
 
     with chain_snapshot():
-        start_and_execute_votes(contracts.voting, helpers)
+
+        if vote_ids_from_env:
+            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
+        else:
+            start_and_execute_votes(contracts.voting, helpers)
         grant_roles(voting_eoa, agent_eoa)
         snapshot_after_update = run_scenario(actions=new_version_actions, snapshooter=make_snapshot_v2)
 

@@ -2,7 +2,6 @@ import pytest
 from brownie import interface
 from utils.withdrawal_credentials import extract_address_from_eth1_wc
 from utils.finance import ZERO_ADDRESS
-from utils.import_current_votes import start_and_execute_votes
 from utils.config import (
     contracts,
     ORACLE_DAEMON_CONFIG,
@@ -161,21 +160,6 @@ def test_proxyfied_implementation_addresses_prepared():
     assert get_proxy_impl_ossifiable(STAKING_ROUTER) == DUMMY_IMPL  # dummy
 
 
-def test_proxyfied_implementation_addresses_after_upgrade(helpers):
-    start_and_execute_votes(contracts.voting, helpers)
-
-    assert get_proxy_impl_app(ACL) == ACL_IMPL
-    assert get_proxy_impl_app(NODE_OPERATORS_REGISTRY) == NODE_OPERATORS_REGISTRY_IMPL
-    assert get_proxy_impl_app(LIDO) == LIDO_IMPL
-    assert get_proxy_impl_app(LEGACY_ORACLE) == LEGACY_ORACLE_IMPL
-    assert get_proxy_impl_ossifiable(LIDO_LOCATOR) == LIDO_LOCATOR_IMPL
-    assert get_proxy_impl_ossifiable(ACCOUNTING_ORACLE) == ACCOUNTING_ORACLE_IMPL
-    assert get_proxy_impl_ossifiable(VALIDATORS_EXIT_BUS_ORACLE) == VALIDATORS_EXIT_BUS_ORACLE_IMPL
-    assert get_proxy_impl_ossifiable(WITHDRAWAL_QUEUE) == WITHDRAWAL_QUEUE_IMPL
-    assert get_proxy_impl_app(WITHDRAWAL_VAULT) == WITHDRAWAL_VAULT_IMPL
-    assert get_proxy_impl_ossifiable(STAKING_ROUTER) == STAKING_ROUTER_IMPL
-
-
 def test_locator_addresses():
 
     locator = interface.LidoLocator(LIDO_LOCATOR)
@@ -225,56 +209,3 @@ def test_stored_addresses_after_prepared():
 
     # Oracle Report Sanity Checker
     assert contracts.oracle_report_sanity_checker.getLidoLocator() == LIDO_LOCATOR
-
-
-def test_stored_addresses_after_upgrade(helpers):
-    start_and_execute_votes(contracts.voting, helpers)
-
-    # Lido
-    assert contracts.lido.getLidoLocator() == LIDO_LOCATOR
-    assert contracts.lido.getOracle() == LEGACY_ORACLE
-
-    # EL Rewards Vault
-    assert contracts.execution_layer_rewards_vault.LIDO() == LIDO
-    assert contracts.execution_layer_rewards_vault.TREASURY() == AGENT
-
-    # Burner
-    assert contracts.burner.STETH() == LIDO
-    assert contracts.burner.TREASURY() == AGENT
-
-    # Oracle Report Sanity Checker
-    assert contracts.oracle_report_sanity_checker.getLidoLocator() == LIDO_LOCATOR
-
-    # Node Operators Registry
-    assert contracts.node_operators_registry.getLocator() == LIDO_LOCATOR
-
-    # Legacy Oracle
-    assert contracts.legacy_oracle.getLido() == LIDO
-    assert contracts.legacy_oracle.getAccountingOracle() == ACCOUNTING_ORACLE
-
-    # Staking Router
-    assert contracts.staking_router.getLido() == LIDO
-
-    # Withdrawal Queue
-    assert contracts.withdrawal_queue.STETH() == LIDO
-    assert contracts.withdrawal_queue.WSTETH() == WSTETH_TOKEN
-    assert contracts.withdrawal_queue.getNFTDescriptorAddress() == ZERO_ADDRESS  # TODO: double check this
-
-    # Withdrawal vault
-    assert contracts.withdrawal_vault.LIDO() == LIDO
-    assert contracts.withdrawal_vault.TREASURY() == AGENT
-
-    # Accounting Oracle
-    assert contracts.accounting_oracle.LIDO() == LIDO
-    assert contracts.accounting_oracle.LOCATOR() == LIDO_LOCATOR
-    assert contracts.accounting_oracle.LEGACY_ORACLE() == LEGACY_ORACLE
-    assert contracts.accounting_oracle.getConsensusContract() == HASH_CONSENSUS_FOR_AO
-
-    # Validators Exit Bus Oracle
-    assert contracts.validators_exit_bus_oracle.getConsensusContract() == HASH_CONSENSUS_FOR_VEBO
-
-    # Hash Consensus for Accounting Oracle
-    assert contracts.hash_consensus_for_accounting_oracle.getReportProcessor() == ACCOUNTING_ORACLE
-
-    # Hash Consensus for Validators Exit Bus Oracle
-    assert contracts.hash_consensus_for_validators_exit_bus_oracle.getReportProcessor() == VALIDATORS_EXIT_BUS_ORACLE

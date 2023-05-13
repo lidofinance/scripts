@@ -73,7 +73,7 @@ def snapshot() -> Dict[str, any]:
 
 
 @pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
-def test_submit_snapshot(helpers, staker):
+def test_submit_snapshot(helpers, staker, vote_ids_from_env):
     def steps() -> Dict[str, Dict[str, any]]:
         track = {"init": snapshot()}
         contracts.lido.submit(ZERO_ADDRESS, {"from": staker, "amount": ONE_ETH})
@@ -88,7 +88,11 @@ def test_submit_snapshot(helpers, staker):
 
     before: Dict[str, Dict[str, any]] = steps()
     chain.revert()
-    start_and_execute_votes(contracts.voting, helpers)
+
+    if vote_ids_from_env:
+        helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
+    else:
+        start_and_execute_votes(contracts.voting, helpers)
     after: Dict[str, Dict[str, any]] = steps()
 
     step_diffs: Dict[str, Dict[str, ValueChanged]] = {}

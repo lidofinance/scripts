@@ -209,6 +209,7 @@ def sandwich_upgrade(
     far_block: int,
     far_ts: int,
     helpers: Helpers,
+    vote_ids_from_env: Any,
 ) -> SandwichFn:
     """Snapshot the state before and after the upgrade and return the two frames"""
 
@@ -232,7 +233,11 @@ def sandwich_upgrade(
         with _chain_snapshot():
             v1_frames = tuple(_actions_snaps(dsm_v1))
 
-        start_and_execute_votes(contracts.voting, helpers)
+        if vote_ids_from_env:
+            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
+        else:
+            start_and_execute_votes(contracts.voting, helpers)
+
         # NOTE: grant role to DSM to be able to resume deposits
         contracts.staking_router.grantRole(
             Web3.keccak(text="STAKING_MODULE_RESUME_ROLE"),

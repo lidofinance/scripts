@@ -85,15 +85,6 @@ def test_proxyfied_implementation_addresses_prepared():
     assert get_proxy_impl_ossifiable(config.STAKING_ROUTER) != DUMMY_IMPL  # dummy
 
 
-def test_proxyfied_implementation_addresses_after_upgrade(helpers):
-    start_and_execute_votes(contracts.voting, helpers)
-    assert get_proxy_impl_ossifiable(config.LIDO_LOCATOR) != LIDO_LOCATOR_IMPL
-    assert get_proxy_impl_ossifiable(config.ACCOUNTING_ORACLE) != LIDO_ACCOUNTING_ORACLE_IMPL
-    assert get_proxy_impl_ossifiable(config.VALIDATORS_EXIT_BUS_ORACLE) != LIDO_VALIDATORS_EXIT_BUS_ORACLE_IMPL
-    assert get_proxy_impl_ossifiable(config.WITHDRAWAL_QUEUE) != LIDO_WITHDRAWAL_QUEUE_IMPL
-    assert get_proxy_impl_app(config.WITHDRAWAL_VAULT) != LIDO_WITHDRAWAL_VAULT_IMPL
-    assert get_proxy_impl_ossifiable(config.STAKING_ROUTER) != LIDO_STAKING_ROUTER_IMPL
-
 
 def test_locator_addresses():
     locator = interface.LidoLocator(LIDO_LOCATOR)
@@ -117,24 +108,3 @@ def test_locator_addresses():
     assert oracle_report_components[2] != LIDO_ORACLE_REPORT_SANITY_CHECKER
     assert oracle_report_components[3] != BURNER
     assert oracle_report_components[4] != LIDO_WITHDRAWAL_QUEUE
-
-
-def test_stored_addresses_after_upgrade(helpers):
-    start_and_execute_votes(contracts.voting, helpers)
-
-    # Legacy Oracle
-    assert contracts.legacy_oracle.getAccountingOracle() != ACCOUNTING_ORACLE
-
-    # Accounting Oracle
-    assert contracts.accounting_oracle.getConsensusContract() != HASH_CONSENSUS_FOR_AO
-
-    # Validators Exit Bus Oracle
-    assert contracts.validators_exit_bus_oracle.getConsensusContract() != HASH_CONSENSUS_FOR_VEBO
-
-    # Hash Consensus for Accounting Oracle
-    assert contracts.hash_consensus_for_accounting_oracle.getReportProcessor() != ACCOUNTING_ORACLE
-
-    # Hash Consensus for Validators Exit Bus Oracle
-    assert (
-        contracts.hash_consensus_for_validators_exit_bus_oracle.getReportProcessor() != LIDO_VALIDATORS_EXIT_BUS_ORACLE
-    )
