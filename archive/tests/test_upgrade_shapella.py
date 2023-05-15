@@ -63,7 +63,7 @@ from utils.test.event_validators.permission import (
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.aragon import validate_push_to_repo_event, validate_app_update_event
 from utils.test.event_validators.payout import Payout, validate_token_payout_event
-from archive.scripts.upgrade_shapella import start_vote
+from scripts.upgrade_shapella import start_vote
 
 
 # See Aragon apps getLatest()
