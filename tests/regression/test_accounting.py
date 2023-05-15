@@ -614,7 +614,6 @@ def test_accounting_shares_burn_at_limits(burner: Contract, lido: Contract, stet
 
     assert lido.sharesOf(burner.address) == 0, "Expected burner to have no shares"
 
-
 def test_accounting_shares_burn_above_limits(burner: Contract, lido: Contract, steth_whale: Account):
     """Test shares burnt with amount above the limit"""
 
@@ -724,9 +723,11 @@ def test_accounting_overfill_both_vaults(
         block_identifier=chain.height
     ), "TotalELRewardsCollected change mismatch"
 
+    withdrawal_unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
+
     assert lido.getTotalPooledEther(block_identifier=initial_block) + (limit + excess) * 2 == lido.getTotalPooledEther(
         block_identifier=chain.height,
-    ), "TotalPooledEther change mismatch"
+    ) + withdrawal_unfinalized_steth, "TotalPooledEther change mismatch"
 
     assert eth_balance(lido.address, initial_block) + (limit + excess) * 2 == eth_balance(
         lido.address, chain.height

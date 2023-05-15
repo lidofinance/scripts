@@ -74,7 +74,9 @@ def test_all_round_happy_path(accounts):
     dsm = accounts.at(contracts.deposit_security_module.address, force=True)
     deposited_validators_before_deposit, _, _ = contracts.lido.getBeaconStat()
 
-    assert contracts.lido.getDepositableEther() == buffered_ether_after_submit
+    withdrawal_unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
+
+    assert contracts.lido.getDepositableEther() == buffered_ether_after_submit - withdrawal_unfinalized_steth
 
     deposit_tx = contracts.lido.deposit(max_deposit, curated_module_id, "0x0", {"from": dsm})
     buffered_ether_after_deposit = contracts.lido.getBufferedEther()
@@ -107,7 +109,7 @@ def test_all_round_happy_path(accounts):
 
     assert extra_tx.events.count("Transfer") == nor_operators_count
     assert report_tx.events.count("TokenRebased") == 1
-    assert report_tx.events.count("WithdrawalsFinalized") == 0
+    assert report_tx.events.count("WithdrawalsFinalized") == 1
     assert (
         token_rebased_event["postTotalShares"]
         == token_rebased_event["preTotalShares"] + token_rebased_event["sharesMintedAsFees"]
@@ -144,7 +146,7 @@ def test_all_round_happy_path(accounts):
     assert approve_event["owner"] == stranger
     assert approve_event["spender"] == contracts.withdrawal_queue.address
 
-    assert contracts.withdrawal_queue.getLastRequestId() == 0
+    last_request_id_before = contracts.withdrawal_queue.getLastRequestId()
 
     withdrawal_request_tx = contracts.withdrawal_queue.requestWithdrawals(
         [amount_with_rewards], stranger, {"from": stranger}
@@ -174,7 +176,7 @@ def test_all_round_happy_path(accounts):
         steth_balance_after_withdrawal_request, steth_balance_after_rebase - amount_with_rewards
     )
     assert len(contracts.withdrawal_queue.getWithdrawalRequests(stranger, {"from": stranger})) == 1
-    assert contracts.withdrawal_queue.getLastRequestId() == 1
+    assert contracts.withdrawal_queue.getLastRequestId() == last_request_id_before + 1
     assert not finalized
 
     # Rebasing (Withdrawal finalization)
