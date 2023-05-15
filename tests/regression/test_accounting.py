@@ -26,6 +26,11 @@ def lido() -> Contract:
 
 
 @pytest.fixture(scope="module")
+def withdrawal_queue() -> Contract:
+    return contracts.withdrawal_queue
+
+
+@pytest.fixture(scope="module")
 def el_vault() -> Contract:
     return contracts.execution_layer_rewards_vault
 
@@ -40,12 +45,19 @@ def withdrawal_vault() -> Contract:
     return contracts.withdrawal_vault
 
 
-def test_accounting_no_cl_rebase(accounting_oracle: Contract, lido: Contract, helpers: Helpers):
+def test_accounting_no_cl_rebase(
+    accounting_oracle: Contract,
+    lido: Contract,
+    helpers: Helpers
+):
     """Check Lido rebase after accounting report with no CL rebase"""
 
     block_before_report = chain.height
     tx, _ = oracle_report(cl_diff=0, exclude_vaults_balances=True)
     block_after_report = chain.height
+
+    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
+    shares_burnt = _first_event(tx, SharesBurnt)
 
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
@@ -59,30 +71,23 @@ def test_accounting_no_cl_rebase(accounting_oracle: Contract, lido: Contract, he
 
     assert lido.getTotalPooledEther(block_identifier=block_before_report) == lido.getTotalPooledEther(
         block_identifier=block_after_report,
-    ), "TotalPooledEther has changed"
+    ) + withdrawals_finalized["amountOfETHLocked"], "TotalPooledEther has changed"
 
     assert lido.getTotalShares(block_identifier=block_before_report) == lido.getTotalShares(
         block_identifier=block_after_report,
-    ), "TotalShares has changed"
+    ) + shares_burnt["sharesAmount"], "TotalShares has changed"
 
     shares_rate_before, shares_rate_after = _shares_rate_from_event(tx)
-    assert shares_rate_before == shares_rate_after, "Shares rate has changed"
-
-    eth_distributed_event = _first_event(tx, ETHDistributed)
-    assert (
-        eth_distributed_event["preCLBalance"] == eth_distributed_event["postCLBalance"]
-    ), "ETHDistributed preCLBalance <> postCLBalance"
+    assert shares_rate_before <= shares_rate_after, "Shares rate lowered"
 
     post_ttl_shares_event = _first_event(tx, PostTotalShares)
     assert (
-        post_ttl_shares_event["preTotalPooledEther"] == post_ttl_shares_event["postTotalPooledEther"]
+        post_ttl_shares_event["preTotalPooledEther"] == post_ttl_shares_event["postTotalPooledEther"] + withdrawals_finalized["amountOfETHLocked"]
     ), "PostTotalShares preTotalPooledEther <> postTotalPooledEther"
-
-    helpers.assert_event_not_emitted(SharesBurnt.__name__, tx)
 
     assert eth_balance(lido.address, block_before_report) == eth_balance(
         lido.address, block_after_report
-    ), "Lido ETH balance has changed"
+    ) + withdrawals_finalized["amountOfETHLocked"], "Lido ETH balance has changed"
 
 
 @pytest.mark.parametrize(
@@ -96,6 +101,9 @@ def test_accounting_negative_cl_rebase(accounting_oracle: Contract, lido: Contra
     tx, _ = oracle_report(cl_diff=rebase_amount, exclude_vaults_balances=True)
     block_after_report = chain.height
 
+    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
+    shares_burnt = _first_event(tx, SharesBurnt)
+
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
     ) < accounting_oracle.getLastProcessingRefSlot(
@@ -108,11 +116,11 @@ def test_accounting_negative_cl_rebase(accounting_oracle: Contract, lido: Contra
 
     assert lido.getTotalPooledEther(block_identifier=block_before_report) + rebase_amount == lido.getTotalPooledEther(
         block_identifier=block_after_report,
-    ), "TotalPooledEther change mismatch"
+    ) + withdrawals_finalized["amountOfETHLocked"], "TotalPooledEther change mismatch"
 
     assert lido.getTotalShares(block_identifier=block_before_report) == lido.getTotalShares(
         block_identifier=block_after_report,
-    ), "TotalShares has changed"
+    ) + shares_burnt["sharesAmount"], "TotalShares has changed"
 
     shares_rate_before, shares_rate_after = _shares_rate_from_event(tx)
     assert shares_rate_after < shares_rate_before, "Shares rate has not decreased"
@@ -124,7 +132,8 @@ def test_accounting_negative_cl_rebase(accounting_oracle: Contract, lido: Contra
 
     post_ttl_shares_event = _first_event(tx, PostTotalShares)
     assert (
-        post_ttl_shares_event["preTotalPooledEther"] + rebase_amount == post_ttl_shares_event["postTotalPooledEther"]
+        post_ttl_shares_event["preTotalPooledEther"] + rebase_amount
+            == post_ttl_shares_event["postTotalPooledEther"] + withdrawals_finalized["amountOfETHLocked"]
     ), "PostTotalShares: TotalPooledEther differs from expected"
 
 
@@ -142,6 +151,9 @@ def test_accounting_cl_rebase_at_limits(accounting_oracle: Contract, lido: Contr
     tx, _ = oracle_report(cl_diff=rebase_amount, exclude_vaults_balances=True)
     block_after_report = chain.height
 
+    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
+    shares_burnt = _first_event(tx, SharesBurnt)
+
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
     ) < accounting_oracle.getLastProcessingRefSlot(
@@ -154,25 +166,25 @@ def test_accounting_cl_rebase_at_limits(accounting_oracle: Contract, lido: Contr
 
     assert lido.getTotalPooledEther(block_identifier=block_before_report) + rebase_amount == lido.getTotalPooledEther(
         block_identifier=block_after_report,
-    ), "TotalPooledEther change mismatch"
+    ) + withdrawals_finalized["amountOfETHLocked"], "TotalPooledEther change mismatch"
 
     shares_as_fees_list = [e["sharesValue"] for e in _get_events(tx, TransferShares)]
 
-    assert len(shares_as_fees_list) == 2, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+    assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
     assert almostEqWithDiff(
-        shares_as_fees_list[0],
         shares_as_fees_list[1],
+        shares_as_fees_list[2],
         1,
     ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
 
-    minted_shares_sum = sum(shares_as_fees_list)
+    minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2]
 
     token_rebased_event = _first_event(tx, TokenRebased)
     assert token_rebased_event["sharesMintedAsFees"] == minted_shares_sum, "TokenRebased: sharesMintedAsFee mismatch"
 
     assert lido.getTotalShares(block_identifier=block_before_report) + minted_shares_sum == lido.getTotalShares(
         block_identifier=block_after_report,
-    ), "TotalShares change mismatch"
+    ) + shares_burnt["sharesAmount"], "TotalShares change mismatch"
 
     shares_rate_before, shares_rate_after = _shares_rate_from_event(tx)
     assert shares_rate_after > shares_rate_before, "Shares rate has not increased"
@@ -185,7 +197,7 @@ def test_accounting_cl_rebase_at_limits(accounting_oracle: Contract, lido: Contr
     post_ttl_shares_event = _first_event(tx, PostTotalShares)
     assert (
         post_ttl_shares_event["preTotalPooledEther"] + rebase_amount == post_ttl_shares_event["postTotalPooledEther"]
-    ), "PostTotalShares: TotalPooledEther has not increased"
+    ) + withdrawals_finalized["amountOfETHLocked"], "PostTotalShares: TotalPooledEther has not increased"
 
 
 def test_accounting_cl_rebase_above_limits():
@@ -212,6 +224,9 @@ def test_accounting_no_el_rewards(accounting_oracle: Contract, lido: Contract, h
     tx, _ = oracle_report(cl_diff=0, exclude_vaults_balances=True)
     block_after_report = chain.height
 
+    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
+    shares_burnt = _first_event(tx, SharesBurnt)
+
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
     ) < accounting_oracle.getLastProcessingRefSlot(
@@ -224,15 +239,15 @@ def test_accounting_no_el_rewards(accounting_oracle: Contract, lido: Contract, h
 
     assert lido.getTotalPooledEther(block_identifier=block_before_report) == lido.getTotalPooledEther(
         block_identifier=block_after_report,
-    ), "TotalPooledEther has changed"
+    ) + withdrawals_finalized["amountOfETHLocked"], "TotalPooledEther has changed"
 
     assert lido.getTotalShares(block_identifier=block_before_report) == lido.getTotalShares(
         block_identifier=block_after_report,
-    ), "TotalShares has changed"
+    ) + shares_burnt["sharesAmount"], "TotalShares has changed"
 
     assert eth_balance(lido.address, block_before_report) == eth_balance(
         lido.address, block_after_report
-    ), "Lido ETH balance has changed"
+    ) + withdrawals_finalized["amountOfETHLocked"], "Lido ETH balance has changed"
 
     helpers.assert_event_not_emitted(WithdrawalsReceived.__name__, tx)
 
@@ -253,6 +268,9 @@ def test_accounting_normal_el_rewards(accounting_oracle: Contract, lido: Contrac
 
     block_after_report = chain.height
 
+    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
+    shares_burnt = _first_event(tx, SharesBurnt)
+
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
     ) < accounting_oracle.getLastProcessingRefSlot(
@@ -269,15 +287,15 @@ def test_accounting_normal_el_rewards(accounting_oracle: Contract, lido: Contrac
 
     assert lido.getTotalPooledEther(block_identifier=block_before_report) + el_rewards == lido.getTotalPooledEther(
         block_identifier=block_after_report,
-    ), "TotalPooledEther change mismatch"
+    ) + withdrawals_finalized["amountOfETHLocked"], "TotalPooledEther change mismatch"
 
     assert lido.getTotalShares(block_identifier=block_before_report) == lido.getTotalShares(
         block_identifier=block_after_report,
-    ), "TotalShares has changed"
+    ) + shares_burnt["sharesAmount"], "TotalShares has changed"
 
     assert eth_balance(lido.address, block_before_report) + el_rewards == eth_balance(
         lido.address, block_after_report
-    ), "Lido ETH balance change mismatch"
+    ) + withdrawals_finalized["amountOfETHLocked"], "Lido ETH balance change mismatch"
 
     assert eth_balance(el_vault.address, block_after_report) == 0, "Expected EL vault to be empty"
 
@@ -308,6 +326,9 @@ def test_accounting_el_rewards_at_limits(
 
     block_after_report = chain.height
 
+    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
+    shares_burnt = _first_event(tx, SharesBurnt)
+
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
     ) < accounting_oracle.getLastProcessingRefSlot(
@@ -324,15 +345,15 @@ def test_accounting_el_rewards_at_limits(
 
     assert lido.getTotalPooledEther(block_identifier=block_before_report) + el_rewards == lido.getTotalPooledEther(
         block_identifier=block_after_report,
-    ), "TotalPooledEther change mismatch"
+    ) + withdrawals_finalized["amountOfETHLocked"], "TotalPooledEther change mismatch"
 
     assert lido.getTotalShares(block_identifier=block_before_report) == lido.getTotalShares(
         block_identifier=block_after_report,
-    ), "TotalShares has changed"
+    ) + shares_burnt["sharesAmount"], "TotalShares has changed"
 
     assert eth_balance(lido.address, block_before_report) + el_rewards == eth_balance(
         lido.address, block_after_report
-    ), "Lido ETH balance change mismatch"
+    ) + withdrawals_finalized["amountOfETHLocked"], "Lido ETH balance change mismatch"
 
     assert (
         eth_balance(contracts.execution_layer_rewards_vault.address, block_after_report) == 0
@@ -368,6 +389,9 @@ def test_accounting_el_rewards_above_limits(
 
     block_after_report = chain.height
 
+    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
+    shares_burnt = _first_event(tx, SharesBurnt)
+
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
     ) < accounting_oracle.getLastProcessingRefSlot(
@@ -386,15 +410,15 @@ def test_accounting_el_rewards_above_limits(
         block_identifier=block_before_report
     ) + expected_rewards == lido.getTotalPooledEther(
         block_identifier=block_after_report,
-    ), "TotalPooledEther change mismatch"
+    ) + withdrawals_finalized["amountOfETHLocked"], "TotalPooledEther change mismatch"
 
     assert lido.getTotalShares(block_identifier=block_before_report) == lido.getTotalShares(
         block_identifier=block_after_report,
-    ), "TotalShares has changed"
+    ) + shares_burnt["sharesAmount"], "TotalShares has changed"
 
     assert eth_balance(lido.address, block_before_report) + expected_rewards == eth_balance(
         lido.address, block_after_report
-    ), "Lido ETH balance change mismatch"
+    ) + withdrawals_finalized["amountOfETHLocked"], "Lido ETH balance change mismatch"
 
     assert (
         eth_balance(contracts.execution_layer_rewards_vault.address, block_after_report) == rewards_excess
@@ -408,6 +432,9 @@ def test_accounting_no_withdrawals(accounting_oracle: Contract, lido: Contract, 
     tx, _ = oracle_report(cl_diff=0, exclude_vaults_balances=True)
     block_after_report = chain.height
 
+    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
+    shares_burnt = _first_event(tx, SharesBurnt)
+
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
     ) < accounting_oracle.getLastProcessingRefSlot(
@@ -420,15 +447,15 @@ def test_accounting_no_withdrawals(accounting_oracle: Contract, lido: Contract, 
 
     assert lido.getTotalPooledEther(block_identifier=block_before_report) == lido.getTotalPooledEther(
         block_identifier=block_after_report,
-    ), "TotalPooledEther has changed"
+    ) + withdrawals_finalized["amountOfETHLocked"], "TotalPooledEther has changed"
 
     assert lido.getTotalShares(block_identifier=block_before_report) == lido.getTotalShares(
         block_identifier=block_after_report,
-    ), "TotalShares has changed"
+    ) + shares_burnt["sharesAmount"], "TotalShares has changed"
 
     assert eth_balance(lido.address, block_before_report) == eth_balance(
         lido.address, block_after_report
-    ), "Lido ETH balance has changed"
+    ) + withdrawals_finalized["amountOfETHLocked"], "Lido ETH balance has changed"
 
     helpers.assert_event_not_emitted(WithdrawalsReceived.__name__, tx)
 
@@ -460,6 +487,9 @@ def test_accounting_withdrawals_at_limits(
 
     block_after_report = chain.height
 
+    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
+    shares_burnt = _first_event(tx, SharesBurnt)
+
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
     ) < accounting_oracle.getLastProcessingRefSlot(
@@ -472,25 +502,25 @@ def test_accounting_withdrawals_at_limits(
 
     assert lido.getTotalPooledEther(block_identifier=block_before_report) + withdrawals == lido.getTotalPooledEther(
         block_identifier=block_after_report,
-    ), "TotalPooledEther change mismatch"
+    ) + withdrawals_finalized["amountOfETHLocked"], "TotalPooledEther change mismatch"
 
     shares_as_fees_list = [e["sharesValue"] for e in _get_events(tx, TransferShares)]
 
-    assert len(shares_as_fees_list) == 2, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+    assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
     assert almostEqWithDiff(
-        shares_as_fees_list[0],
         shares_as_fees_list[1],
+        shares_as_fees_list[2],
         1,
     ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
 
-    minted_shares_sum = sum(shares_as_fees_list)
+    minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2]
 
     token_rebased_event = _first_event(tx, TokenRebased)
     assert token_rebased_event["sharesMintedAsFees"] == minted_shares_sum, "TokenRebased: sharesMintedAsFee mismatch"
 
     assert lido.getTotalShares(block_identifier=block_before_report) + minted_shares_sum == lido.getTotalShares(
         block_identifier=block_after_report,
-    ), "TotalShares change mismatch"
+    ) + shares_burnt["sharesAmount"], "TotalShares change mismatch"
 
     shares_rate_before, shares_rate_after = _shares_rate_from_event(tx)
     assert shares_rate_after > shares_rate_before, "Shares rate has not increased"
@@ -529,6 +559,9 @@ def test_accounting_withdrawals_above_limits(
 
     block_after_report = chain.height
 
+    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
+    shares_burnt = _first_event(tx, SharesBurnt)
+
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
     ) < accounting_oracle.getLastProcessingRefSlot(
@@ -543,25 +576,25 @@ def test_accounting_withdrawals_above_limits(
         block_identifier=block_before_report
     ) + expected_withdrawals == lido.getTotalPooledEther(
         block_identifier=block_after_report,
-    ), "TotalPooledEther change mismatch"
+    ) + withdrawals_finalized["amountOfETHLocked"], "TotalPooledEther change mismatch"
 
     shares_as_fees_list = [e["sharesValue"] for e in _get_events(tx, TransferShares)]
 
-    assert len(shares_as_fees_list) == 2, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+    assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
     assert almostEqWithDiff(
-        shares_as_fees_list[0],
         shares_as_fees_list[1],
+        shares_as_fees_list[2],
         1,
     ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
 
-    minted_shares_sum = sum(shares_as_fees_list)
+    minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2]
 
     token_rebased_event = _first_event(tx, TokenRebased)
     assert token_rebased_event["sharesMintedAsFees"] == minted_shares_sum, "TokenRebased: sharesMintedAsFee mismatch"
 
     assert lido.getTotalShares(block_identifier=block_before_report) + minted_shares_sum == lido.getTotalShares(
         block_identifier=block_after_report,
-    ), "TotalShares change mismatch"
+    ) + shares_burnt["sharesAmount"], "TotalShares change mismatch"
 
     shares_rate_before, shares_rate_after = _shares_rate_from_event(tx)
     assert shares_rate_after > shares_rate_before, "Shares rate has not increased"
@@ -603,6 +636,10 @@ def test_accounting_shares_burn_at_limits(burner: Contract, lido: Contract, stet
     block_after_report = chain.height
 
     shares_burned_event = _first_event(tx, SharesBurnt)
+    finalized_withdrawals = _first_event(tx, WithdrawalsFinalized)
+    withdrawals_shares = finalized_withdrawals["sharesToBurn"]
+    shares_limit += withdrawals_shares
+
     assert shares_burned_event["sharesAmount"] == shares_limit, "SharesBurnt: sharesAmount mismatch"
 
     shares_rate_before, shares_rate_after = _shares_rate_from_event(tx)
@@ -693,6 +730,9 @@ def test_accounting_overfill_both_vaults(
     updated_limit = _rebase_limit_wei(block_identifier=chain.height)
     el_vault_excess = (limit + excess) - (updated_limit - excess)
 
+    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
+    shares_burnt = _first_event(tx, SharesBurnt)
+
     assert (
         eth_balance(withdrawal_vault.address) == excess
     ), "Expected withdrawals vault to be filled with excess rewards"
@@ -723,15 +763,13 @@ def test_accounting_overfill_both_vaults(
         block_identifier=chain.height
     ), "TotalELRewardsCollected change mismatch"
 
-    withdrawal_unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
-
     assert lido.getTotalPooledEther(block_identifier=initial_block) + (limit + excess) * 2 == lido.getTotalPooledEther(
         block_identifier=chain.height,
-    ) + withdrawal_unfinalized_steth, "TotalPooledEther change mismatch"
+    ) + withdrawals_finalized["amountOfETHLocked"], "TotalPooledEther change mismatch"
 
     assert eth_balance(lido.address, initial_block) + (limit + excess) * 2 == eth_balance(
         lido.address, chain.height
-    ), "Lido ETH balance change mismatch"
+    ) + withdrawals_finalized["amountOfETHLocked"], "Lido ETH balance change mismatch"
 
 
 class ETHDistributed(TypedDict):
@@ -792,6 +830,10 @@ class SharesBurnt(TypedDict):
     postRebaseTokenAmount: int
     sharesAmount: int
 
+WithdrawalsFinalized = TypedDict(
+    "WithdrawalsFinalized",
+    { "from": str, "to": str, "amountOfETHLocked": int, "sharesToBurn": int, "timestamp": int },
+)
 
 class StETHBurnRequested(TypedDict):
     """StETHBurnRequested event definition"""
@@ -858,9 +900,23 @@ def _rebase_limit_wei(block_identifier: int) -> int:
 
 
 def _shares_burn_limit_no_pooled_ether_changes(block_identifier: int | str = "latest") -> int:
-    """Get shares burn limit from oracle report sanity checker contract when no changes in pooled Ether are expected"""
+    """Get shares burn limit from oracle report sanity checker contract when NO changes in pooled Ether are expected"""
 
     rebase_limit = contracts.oracle_report_sanity_checker.getMaxPositiveTokenRebase(block_identifier=block_identifier)
     rebase_limit_plus_1 = rebase_limit + LIMITER_PRECISION_BASE
 
     return contracts.lido.getTotalShares(block_identifier=block_identifier) * rebase_limit // rebase_limit_plus_1
+
+def _shares_burn_limit_pooled_ether_changes(block_identifier: int | str = "latest") -> int:
+    """Get shares burn limit from oracle report sanity checker contract when changes in pooled Ether ARE expected"""
+
+    rebase_limit = contracts.oracle_report_sanity_checker.getMaxPositiveTokenRebase(block_identifier=block_identifier)
+    rebase_limit_plus_1 = rebase_limit + LIMITER_PRECISION_BASE
+
+    pooled_ether_rate = (
+        contracts.lido.getTotalPooledEther() * LIMITER_PRECISION_BASE
+    ) / contracts.lido.getTotalPooledEther(block_identifier=block_identifier)
+
+    return contracts.lido.getTotalShares(block_identifier=block_identifier) * (
+        rebase_limit_plus_1 - pooled_ether_rate
+    ) // rebase_limit_plus_1
