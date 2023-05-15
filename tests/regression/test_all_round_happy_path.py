@@ -28,20 +28,20 @@ def test_all_round_happy_path(accounts):
     buffered_ether_before_submit = contracts.lido.getBufferedEther()
     staking_limit_before_submit = contracts.lido.getCurrentStakeLimit()
 
-    print('block before: ', chain.height)
+    print("block before: ", chain.height)
 
     # TODO: do calculation right
 
     submit_tx = contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": amount})
 
-    print('block after submit: ', chain.height)
+    print("block after submit: ", chain.height)
 
     steth_balance_after_submit = contracts.lido.balanceOf(stranger)
     total_supply_after_submit = contracts.lido.totalSupply()
     buffered_ether_after_submit = contracts.lido.getBufferedEther()
     staking_limit_after_submit = contracts.lido.getCurrentStakeLimit()
 
-    print('block after view: ', chain.height)
+    print("block after view: ", chain.height)
     assert almostEqEth(steth_balance_after_submit, steth_balance_before_submit + amount)
     assert eth_balance_before_submit == stranger.balance() + amount
 
@@ -65,7 +65,7 @@ def test_all_round_happy_path(accounts):
     assert total_supply_after_submit == total_supply_before_submit + amount
     assert buffered_ether_after_submit == buffered_ether_before_submit + amount
 
-    if (staking_limit_before_submit >= stakeLimitInfo["maxStakeLimit"] - growthPerBlock):
+    if staking_limit_before_submit >= stakeLimitInfo["maxStakeLimit"] - growthPerBlock:
         assert staking_limit_after_submit == staking_limit_before_submit - amount
     else:
         assert staking_limit_after_submit == staking_limit_before_submit - amount + growthPerBlock
@@ -88,8 +88,7 @@ def test_all_round_happy_path(accounts):
 
     assert buffered_ether_after_deposit == buffered_ether_after_submit - unbuffered_event["amount"]
     assert (
-        deposit_validators_changed_event["depositedValidators"]
-        == deposited_validators_before_deposit + deposits_count
+        deposit_validators_changed_event["depositedValidators"] == deposited_validators_before_deposit + deposits_count
     )
 
     # Rebasing (Increasing balance)
@@ -110,20 +109,27 @@ def test_all_round_happy_path(accounts):
     assert extra_tx.events.count("Transfer") == nor_operators_count
     assert report_tx.events.count("TokenRebased") == 1
     assert report_tx.events.count("WithdrawalsFinalized") == 1
+    assert report_tx.events.count("StETHBurnt") == 1
+
     assert (
         token_rebased_event["postTotalShares"]
-        == token_rebased_event["preTotalShares"] + token_rebased_event["sharesMintedAsFees"]
+        == token_rebased_event["preTotalShares"]
+        + token_rebased_event["sharesMintedAsFees"]
+        - report_tx.events["StETHBurnt"]["amountOfShares"]
     )
 
-    assert transfer_event[0]["from"] == ZERO_ADDRESS
-    assert transfer_event[0]["to"] == nor
+    assert transfer_event[0]["from"] == contracts.withdrawal_queue
+    assert transfer_event[0]["to"] == contracts.burner
 
     assert transfer_event[1]["from"] == ZERO_ADDRESS
-    assert transfer_event[1]["to"] == treasury
+    assert transfer_event[1]["to"] == nor
+
+    assert transfer_event[2]["from"] == ZERO_ADDRESS
+    assert transfer_event[2]["to"] == treasury
+
     assert almostEqEth(
         treasury_balance_after_rebase,
-        treasury_balance_before_rebase
-        + contracts.lido.getSharesByPooledEth(transfer_event[0]["value"]),
+        treasury_balance_before_rebase + contracts.lido.getSharesByPooledEth(transfer_event[2]["value"]),
     )
 
     assert treasury_balance_after_rebase > treasury_balance_before_rebase
@@ -136,9 +142,7 @@ def test_all_round_happy_path(accounts):
 
     amount_with_rewards = contracts.lido.balanceOf(stranger)
 
-    approve_tx = contracts.lido.approve(
-        contracts.withdrawal_queue.address, amount_with_rewards, {"from": stranger}
-    )
+    approve_tx = contracts.lido.approve(contracts.withdrawal_queue.address, amount_with_rewards, {"from": stranger})
 
     approve_event = approve_tx.events["Approval"]
 
@@ -172,9 +176,7 @@ def test_all_round_happy_path(accounts):
     steth_balance_after_withdrawal_request = contracts.lido.balanceOf(stranger)
     [(_, _, _, _, finalized, _)] = contracts.withdrawal_queue.getWithdrawalStatus(request_ids)
 
-    assert almostEqEth(
-        steth_balance_after_withdrawal_request, steth_balance_after_rebase - amount_with_rewards
-    )
+    assert almostEqEth(steth_balance_after_withdrawal_request, steth_balance_after_rebase - amount_with_rewards)
     assert len(contracts.withdrawal_queue.getWithdrawalRequests(stranger, {"from": stranger})) == 1
     assert contracts.withdrawal_queue.getLastRequestId() == last_request_id_before + 1
     assert not finalized
@@ -193,10 +195,7 @@ def test_all_round_happy_path(accounts):
     assert withdrawal_finalized_event["amountOfETHLocked"] == amount_with_rewards
     assert withdrawal_finalized_event["from"] == request_ids[0]
     assert withdrawal_finalized_event["to"] == request_ids[0]
-    assert (
-        locked_ether_amount_before_finalization
-        == locked_ether_amount_after_finalization - amount_with_rewards
-    )
+    assert locked_ether_amount_before_finalization == locked_ether_amount_after_finalization - amount_with_rewards
 
     # Withdrawing
 
@@ -204,9 +203,7 @@ def test_all_round_happy_path(accounts):
     hints = contracts.withdrawal_queue.findCheckpointHints(request_ids, 1, lastCheckpointIndex)
     [(_, _, _, _, finalized, _)] = contracts.withdrawal_queue.getWithdrawalStatus(request_ids)
 
-    [claimable_ether_before_claim] = contracts.withdrawal_queue.getClaimableEther(
-        request_ids, hints
-    )
+    [claimable_ether_before_claim] = contracts.withdrawal_queue.getClaimableEther(request_ids, hints)
     eth_balance_before_withdrawal = stranger.balance()
 
     assert finalized
@@ -231,9 +228,7 @@ def test_all_round_happy_path(accounts):
         == contracts.withdrawal_queue.getLockedEtherAmount() + amount_with_rewards
     )
 
-    [(_, _, _, _, finalized, claimed)] = contracts.withdrawal_queue.getWithdrawalStatus(
-        request_ids, {"from": stranger}
-    )
+    [(_, _, _, _, finalized, claimed)] = contracts.withdrawal_queue.getWithdrawalStatus(request_ids, {"from": stranger})
     [claimable_ether_after_claim] = contracts.withdrawal_queue.getClaimableEther(request_ids, hints)
 
     assert finalized
