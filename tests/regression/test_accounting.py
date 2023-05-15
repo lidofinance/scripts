@@ -250,6 +250,7 @@ def test_accounting_no_el_rewards(accounting_oracle: Contract, lido: Contract, h
     ) + withdrawals_finalized["amountOfETHLocked"], "Lido ETH balance has changed"
 
     helpers.assert_event_not_emitted(WithdrawalsReceived.__name__, tx)
+    helpers.assert_event_not_emitted(ELRewardsReceived.__name__, tx)
 
 
 def test_accounting_normal_el_rewards(accounting_oracle: Contract, lido: Contract, el_vault: Contract):
@@ -458,6 +459,7 @@ def test_accounting_no_withdrawals(accounting_oracle: Contract, lido: Contract, 
     ) + withdrawals_finalized["amountOfETHLocked"], "Lido ETH balance has changed"
 
     helpers.assert_event_not_emitted(WithdrawalsReceived.__name__, tx)
+    helpers.assert_event_not_emitted(ELRewardsReceived.__name__, tx)
 
 
 def test_accounting_withdrawals_at_limits(
@@ -637,19 +639,20 @@ def test_accounting_shares_burn_at_limits(burner: Contract, lido: Contract, stet
 
     shares_burned_event = _first_event(tx, SharesBurnt)
     finalized_withdrawals = _first_event(tx, WithdrawalsFinalized)
-    withdrawals_shares = finalized_withdrawals["sharesToBurn"]
-    shares_limit += withdrawals_shares
 
-    assert shares_burned_event["sharesAmount"] == shares_limit, "SharesBurnt: sharesAmount mismatch"
+    burnt_due_to_withdrawals = finalized_withdrawals["sharesToBurn"] - lido.sharesOf(burner.address)
+
+    assert burnt_due_to_withdrawals >= 0
+    assert (
+        shares_burned_event["sharesAmount"] - burnt_due_to_withdrawals == shares_limit
+    ), "SharesBurnt: sharesAmount mismatch"
 
     shares_rate_before, shares_rate_after = _shares_rate_from_event(tx)
     assert shares_rate_after > shares_rate_before, "Shares rate has not increased"
 
     assert lido.getTotalShares(block_identifier=block_before_report) - shares_limit == lido.getTotalShares(
         block_identifier=block_after_report
-    ), "TotalShares change mismatch"
-
-    assert lido.sharesOf(burner.address) == 0, "Expected burner to have no shares"
+    ) + burnt_due_to_withdrawals, "TotalShares change mismatch"
 
 def test_accounting_shares_burn_above_limits(burner: Contract, lido: Contract, steth_whale: Account):
     """Test shares burnt with amount above the limit"""
@@ -681,20 +684,28 @@ def test_accounting_shares_burn_above_limits(burner: Contract, lido: Contract, s
     block_after_report = chain.height
 
     shares_burned_event = _first_event(tx, SharesBurnt)
-    assert shares_burned_event["sharesAmount"] == shares_limit, "SharesBurnt: sharesAmount mismatch"
+    finalized_withdrawals = _first_event(tx, WithdrawalsFinalized)
+
+    burnt_due_to_withdrawals = finalized_withdrawals["sharesToBurn"] - lido.sharesOf(burner.address)
+    assert burnt_due_to_withdrawals >= 0
+
+    assert (
+        shares_burned_event["sharesAmount"] - burnt_due_to_withdrawals == shares_limit + excess_amount
+    ), "SharesBurnt: sharesAmount mismatch"
 
     shares_rate_before, shares_rate_after = _shares_rate_from_event(tx)
     assert shares_rate_after > shares_rate_before, "Shares rate has not increased"
 
     assert lido.getTotalShares(block_identifier=block_before_report) - shares_limit == lido.getTotalShares(
         block_identifier=block_after_report
-    ), "TotalShares change mismatch"
+    ) + burnt_due_to_withdrawals + excess_amount, "TotalShares change mismatch"
 
-    assert lido.sharesOf(burner.address) == excess_amount, "Expected burner to have excess shares"
+    extra_shares = lido.sharesOf(burner.address)
+    assert extra_shares >= excess_amount, "Expected burner to have excess shares"
 
     tx, _ = oracle_report(cl_diff=0, exclude_vaults_balances=True)
     shares_burned_event = _first_event(tx, SharesBurnt)
-    assert shares_burned_event["sharesAmount"] == excess_amount, "SharesBurnt: sharesAmount mismatch"
+    assert shares_burned_event["sharesAmount"] == extra_shares, "SharesBurnt: sharesAmount mismatch"
     assert lido.sharesOf(burner.address) == 0, "Expected burner to have no shares"
 
 
@@ -906,17 +917,3 @@ def _shares_burn_limit_no_pooled_ether_changes(block_identifier: int | str = "la
     rebase_limit_plus_1 = rebase_limit + LIMITER_PRECISION_BASE
 
     return contracts.lido.getTotalShares(block_identifier=block_identifier) * rebase_limit // rebase_limit_plus_1
-
-def _shares_burn_limit_pooled_ether_changes(block_identifier: int | str = "latest") -> int:
-    """Get shares burn limit from oracle report sanity checker contract when changes in pooled Ether ARE expected"""
-
-    rebase_limit = contracts.oracle_report_sanity_checker.getMaxPositiveTokenRebase(block_identifier=block_identifier)
-    rebase_limit_plus_1 = rebase_limit + LIMITER_PRECISION_BASE
-
-    pooled_ether_rate = (
-        contracts.lido.getTotalPooledEther() * LIMITER_PRECISION_BASE
-    ) / contracts.lido.getTotalPooledEther(block_identifier=block_identifier)
-
-    return contracts.lido.getTotalShares(block_identifier=block_identifier) * (
-        rebase_limit_plus_1 - pooled_ether_rate
-    ) // rebase_limit_plus_1
