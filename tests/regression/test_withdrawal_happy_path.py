@@ -21,8 +21,11 @@ def test_withdraw(steth_holder):
 
     no_requests = contracts.withdrawal_queue.getWithdrawalRequests(steth_holder, {"from": steth_holder})
     assert len(no_requests) == 0
+
+    last_request_id = contracts.withdrawal_queue.getLastRequestId()
+    unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
     PRE_REPORT_REQUEST_SHARES = contracts.lido.getSharesByPooledEth(REQUEST_AMOUNT)
-    PRE_REPORT_REQUEST_SHARES_SUM = contracts.lido.getSharesByPooledEth(REQUESTS_SUM)
+    PRE_REPORT_REQUEST_SHARES_SUM = contracts.lido.getSharesByPooledEth(REQUESTS_SUM + unfinalized_steth)
 
     """ request """
     contracts.lido.approve(contracts.withdrawal_queue.address, REQUESTS_SUM, {"from": steth_holder})
@@ -34,11 +37,10 @@ def test_withdraw(steth_holder):
     # post request checks
 
     assert almostEqEth(steth_balance_before - steth_balance_after, REQUESTS_SUM)
-
     # Withdrawal Events
     assert request_tx.events.count("WithdrawalRequested") == REQUESTS_COUNT
     for i, event in enumerate(request_tx.events["WithdrawalRequested"]):
-        assert event["requestId"] == i + 1
+        assert event["requestId"] == i + last_request_id + 1
         assert almostEqEth(event["amountOfStETH"], REQUEST_AMOUNT)
         assert almostEqEth(event["amountOfShares"], PRE_REPORT_REQUEST_SHARES)
         assert event["requestor"] == steth_holder
@@ -48,7 +50,7 @@ def test_withdraw(steth_holder):
     nft_events = [event for event in request_tx.events["Transfer"] if not "value" in event]
     assert len(nft_events) == REQUESTS_COUNT
     for i, event in enumerate(nft_events):
-        assert event["tokenId"] == i + 1
+        assert event["tokenId"] == i + last_request_id + 1
         assert event["from"] == ZERO_ADDRESS
         assert event["to"] == steth_holder
 
@@ -60,7 +62,7 @@ def test_withdraw(steth_holder):
     assert len(statuses) == REQUESTS_COUNT
 
     for i, request_id in enumerate(requests_ids):
-        assert i + 1 == request_id
+        assert i + last_request_id + 1 == request_id
         (amountOfStETH, amountOfShares, owner, _, isFinalized, isClaimed) = statuses[i]
         assert almostEqEth(amountOfStETH, REQUEST_AMOUNT)
         assert almostEqEth(amountOfShares, PRE_REPORT_REQUEST_SHARES)
@@ -83,9 +85,9 @@ def test_withdraw(steth_holder):
     # post report event
     finalization_event = report_tx.events["WithdrawalsFinalized"]
     assert finalization_event["from"] == 1
-    assert finalization_event["to"] == REQUESTS_COUNT
-    assert almostEqEth(finalization_event["amountOfETHLocked"], REQUESTS_SUM)
-    assert almostEqEth(finalization_event["sharesToBurn"], PRE_REPORT_REQUEST_SHARES_SUM)
+    assert finalization_event["to"] == REQUESTS_COUNT + last_request_id
+    assert almostEqEth(finalization_event["amountOfETHLocked"], REQUESTS_SUM + unfinalized_steth)
+    assert almostEqEth(finalization_event["sharesToBurn"], contracts.lido.getSharesByPooledEth(REQUESTS_SUM + unfinalized_steth))
 
     # post reports WQ state
     assert contracts.withdrawal_queue.getLastFinalizedRequestId() == requests_ids[-1]
@@ -100,7 +102,7 @@ def test_withdraw(steth_holder):
     post_report_claimableEther = contracts.withdrawal_queue.getClaimableEther(requests_ids, hints)
 
     for i, request_id in enumerate(requests_ids):
-        assert i + 1 == request_id
+        assert i + last_request_id + 1 == request_id
         (amountOfStETH, amountOfShares, owner, _, isFinalized, isClaimed) = post_report_statuses[i]
         assert amountOfStETH == statuses[i][0]  # amountOfShares remains unchanged
         assert amountOfShares == statuses[i][1]  # amountOfShares remains unchanged
@@ -124,14 +126,14 @@ def test_withdraw(steth_holder):
     # events
     assert claim_tx.events.count("WithdrawalClaimed") == REQUESTS_COUNT
     for i, event in enumerate(claim_tx.events["WithdrawalClaimed"]):
-        assert event["requestId"] == i + 1
+        assert event["requestId"] == i + last_request_id + 1
         assert event["receiver"] == steth_holder
         assert event["owner"] == steth_holder
         assert almostEqEth(event["amountOfETH"], REQUEST_AMOUNT)
 
     assert claim_tx.events.count("Transfer") == REQUESTS_COUNT
     for i, event in enumerate(claim_tx.events["Transfer"]):
-        assert event["tokenId"] == i + 1
+        assert event["tokenId"] == i + last_request_id + 1
         assert event["to"] == ZERO_ADDRESS
         assert event["from"] == steth_holder
 
@@ -139,7 +141,7 @@ def test_withdraw(steth_holder):
     post_claim_claimableEther = contracts.withdrawal_queue.getClaimableEther(requests_ids, hints)
 
     for i, request_id in enumerate(requests_ids):
-        assert i + 1 == request_id
+        assert i + last_request_id + 1 == request_id
         (amountOfStETH, amountOfShares, owner, _, isFinalized, isClaimed) = post_claim_statuses[i]
         assert amountOfStETH == statuses[i][0]  # amountOfShares remains unchanged
         assert amountOfShares == statuses[i][1]  # amountOfShares remains unchanged
@@ -151,13 +153,13 @@ def test_withdraw(steth_holder):
 
     assert claim_tx.events.count("WithdrawalClaimed") == REQUESTS_COUNT
     for i, event in enumerate(claim_tx.events["WithdrawalClaimed"]):
-        assert event["requestId"] == i + 1
+        assert event["requestId"] == i + last_request_id + 1
         assert event["receiver"] == steth_holder
         assert event["owner"] == steth_holder
         assert almostEqEth(event["amountOfETH"], REQUEST_AMOUNT)
 
     assert claim_tx.events.count("Transfer") == REQUESTS_COUNT
     for i, event in enumerate(claim_tx.events["Transfer"]):
-        assert event["tokenId"] == i + 1
+        assert event["tokenId"] == i + last_request_id + 1
         assert event["to"] == ZERO_ADDRESS
         assert event["from"] == steth_holder
