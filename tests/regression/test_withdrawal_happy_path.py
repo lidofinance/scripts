@@ -34,6 +34,8 @@ def test_withdraw(steth_holder):
         [REQUEST_AMOUNT for _ in range(REQUESTS_COUNT)], steth_holder, {"from": steth_holder}
     )
     steth_balance_after = steth_balance(steth_holder)
+
+    shares_to_burn = contracts.lido.sharesOf(contracts.withdrawal_queue)
     # post request checks
 
     assert almostEqEth(steth_balance_before - steth_balance_after, REQUESTS_SUM)
@@ -87,7 +89,7 @@ def test_withdraw(steth_holder):
     assert finalization_event["from"] == 1
     assert finalization_event["to"] == REQUESTS_COUNT + last_request_id
     assert almostEqEth(finalization_event["amountOfETHLocked"], REQUESTS_SUM + unfinalized_steth)
-    assert almostEqEth(finalization_event["sharesToBurn"], PRE_REPORT_REQUEST_SHARES_SUM)
+    assert almostEqEth(finalization_event["sharesToBurn"], shares_to_burn)
 
     # post reports WQ state
     assert contracts.withdrawal_queue.getLastFinalizedRequestId() == requests_ids[-1]
