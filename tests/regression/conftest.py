@@ -15,6 +15,6 @@ def autoexecute_vote(helpers, vote_ids_from_env, accounts):
 
 @pytest.fixture()
 def steth_holder(accounts):
-    whale = "0x41318419CFa25396b47A94896FfA2C77c6434040"
+    whale = "0x00000000219ab540356cBB839Cbe05303d7705Fa"
     contracts.lido.transfer(accounts[0], ETH(101), {"from": whale})
     return accounts[0]
