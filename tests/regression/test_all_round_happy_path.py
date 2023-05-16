@@ -6,13 +6,14 @@ from utils.test.helpers import ETH, almostEqEth
 from utils.config import contracts
 
 
-def test_all_round_happy_path(accounts):
-    stranger = accounts[0]
+def test_all_round_happy_path(accounts, stranger, steth_holder):
     amount = ETH(100)
     max_deposit = 150
     curated_module_id = 1
 
 
+    contracts.lido.approve(contracts.withdrawal_queue.address, 1000, {"from": steth_holder})
+    contracts.withdrawal_queue.requestWithdrawals([1000], steth_holder, {"from": steth_holder})
 
     steth_balance_before_submit = contracts.lido.balanceOf(stranger)
     eth_balance_before_submit = stranger.balance()
