@@ -28,7 +28,6 @@ def oracle_contract(contract_variants):
     return contract_variants[1]
 
 
-@pytest.fixture
 def valid_report_hash(consensus_contract):
     ref_slot, _ = consensus_contract.getCurrentFrame()
     if consensus_contract == contracts.hash_consensus_for_accounting_oracle:
@@ -152,16 +151,19 @@ def test_set_report_processor(consensus_contract, stranger):
         consensus_contract.setReportProcessor(prev_report_processor, {"from": stranger})
 
 
-def test_submit_report(consensus_contract, oracle_contract, valid_report_hash, stranger):
+def test_submit_report(consensus_contract, oracle_contract, stranger):
+
     """
     - StaleReport can not be received because DEADLINE_SLOT_OFFSET is zero
     """
-    valid_report, valid_hash = valid_report_hash
+    wait_to_next_available_report_time(consensus_contract)
+    valid_report, valid_hash = valid_report_hash(consensus_contract)
     consensus_version = oracle_contract.getConsensusVersion()
     contract_version = oracle_contract.getContractVersion()
     members, _ = consensus_contract.getMembers()
     member = members[0]
     fast_lane_members, _ = consensus_contract.getFastLaneMembers()
+    fast_lane_member = fast_lane_members[0]
     non_fast_lane_members = [m for m in members if m not in fast_lane_members]
     # we get the second in order to receive a non-zero fast lane subset
     second_non_fastlane_member = non_fast_lane_members[1]
@@ -187,16 +189,16 @@ def test_submit_report(consensus_contract, oracle_contract, valid_report_hash, s
 
     # reaching consensus
     ref_slot, _ = consensus_contract.getCurrentFrame()
-    for m in members:
+    for m in fast_lane_members:
         consensus_contract.submitReport(ref_slot, valid_hash, consensus_version, {"from": m})
 
     with reverts(encode_error("DuplicateReport()")):
-        consensus_contract.submitReport(ref_slot, valid_hash, consensus_version, {"from": member})
+        consensus_contract.submitReport(ref_slot, valid_hash, consensus_version, {"from": fast_lane_member})
 
     # start processing
     oracle_contract.submitReportData(valid_report, contract_version, {"from": member})
     with reverts(encode_error("ConsensusReportAlreadyProcessing()")):
-        consensus_contract.submitReport(ref_slot, valid_hash, consensus_version, {"from": member})
+        consensus_contract.submitReport(ref_slot, valid_hash, consensus_version, {"from": fast_lane_member})
 
     wait_to_next_available_report_time(consensus_contract)
     ref_slot, _ = consensus_contract.getCurrentFrame()

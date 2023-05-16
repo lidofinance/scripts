@@ -23,6 +23,8 @@ def test_withdraw(steth_holder):
     assert len(no_requests) == 0
 
     last_request_id = contracts.withdrawal_queue.getLastRequestId()
+    last_finalized_request_id = contracts.withdrawal_queue.getLastFinalizedRequestId()
+    last_checkpoint_index_before = contracts.withdrawal_queue.getLastCheckpointIndex()
     unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
     PRE_REPORT_REQUEST_SHARES = contracts.lido.getSharesByPooledEth(REQUEST_AMOUNT)
     PRE_REPORT_REQUEST_SHARES_SUM = contracts.lido.getSharesByPooledEth(REQUESTS_SUM + unfinalized_steth)
@@ -74,7 +76,7 @@ def test_withdraw(steth_holder):
         assert claimableEther[i] == 0
 
     pre_lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
-    assert pre_lastCheckpointIndex == 0
+    assert pre_lastCheckpointIndex > 0
 
     """ report """
     report_tx = None
@@ -86,18 +88,18 @@ def test_withdraw(steth_holder):
 
     # post report event
     finalization_event = report_tx.events["WithdrawalsFinalized"]
-    assert finalization_event["from"] == 1
+    assert finalization_event["from"] == last_finalized_request_id + 1
     assert finalization_event["to"] == REQUESTS_COUNT + last_request_id
     assert almostEqEth(finalization_event["amountOfETHLocked"], REQUESTS_SUM + unfinalized_steth)
     assert almostEqEth(finalization_event["sharesToBurn"], shares_to_burn)
 
     # post reports WQ state
     assert contracts.withdrawal_queue.getLastFinalizedRequestId() == requests_ids[-1]
-    lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
-    assert lastCheckpointIndex == 1
+    last_checkpoint_index = contracts.withdrawal_queue.getLastCheckpointIndex()
+    assert last_checkpoint_index == last_checkpoint_index_before + 1
 
     # post report requests check
-    hints = contracts.withdrawal_queue.findCheckpointHints(requests_ids, 1, lastCheckpointIndex)
+    hints = contracts.withdrawal_queue.findCheckpointHints(requests_ids, 1, last_checkpoint_index)
     assert len(hints) == REQUESTS_COUNT
 
     post_report_statuses = contracts.withdrawal_queue.getWithdrawalStatus(requests_ids, {"from": steth_holder})
@@ -112,8 +114,7 @@ def test_withdraw(steth_holder):
         assert isFinalized
         assert not isClaimed
         assert almostEqEth(post_report_claimableEther[i], REQUEST_AMOUNT)
-        # single first finalization hint is 1
-        assert hints[i] == 1
+        assert hints[i] == last_checkpoint_index
 
     """ claim """
     claim_balance_before = account.balance()

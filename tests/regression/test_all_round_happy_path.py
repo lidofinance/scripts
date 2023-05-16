@@ -12,6 +12,8 @@ def test_all_round_happy_path(accounts):
     max_deposit = 150
     curated_module_id = 1
 
+
+
     steth_balance_before_submit = contracts.lido.balanceOf(stranger)
     eth_balance_before_submit = stranger.balance()
 
