@@ -94,13 +94,13 @@ def test_wq_prefinalize(wq: Contract, steth_whale: Account):
         oracle_report(withdrawalFinalizationBatches=[last_finalized_id])
 
     with reverts(encode_error("BatchesAreNotSorted()")):
-        oracle_report(withdrawalFinalizationBatches=[3, 2])
+        oracle_report(withdrawalFinalizationBatches=[last_finalized_id + 2, last_finalized_id + 1])
 
     with reverts(encode_error("BatchesAreNotSorted()")):
-        oracle_report(withdrawalFinalizationBatches=[1, 1])
+        oracle_report(withdrawalFinalizationBatches=[last_finalized_id + 1, last_finalized_id + 1])
 
     with reverts(encode_error("ZeroShareRate()")):
-        oracle_report(withdrawalFinalizationBatches=[1, 2], simulatedShareRate=0)
+        oracle_report(withdrawalFinalizationBatches=[last_finalized_id + 1, last_finalized_id + 2], simulatedShareRate=0)
 
 
 def test_request_to_finalize_to_close(wq: Contract, steth_whale: Account):
