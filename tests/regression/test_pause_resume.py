@@ -2,7 +2,7 @@ from enum import IntEnum
 
 import brownie
 import pytest
-from brownie import web3
+from brownie import ZERO_ADDRESS, web3
 
 from utils.config import contracts
 from utils.evm_script import encode_error
@@ -292,8 +292,14 @@ def test_paused_staking_module_can_reward(stranger, helpers):
     _, module_address, *_ = contracts.staking_router.getStakingModule(1)
     contracts.staking_router.pauseStakingModule(1, {"from": contracts.deposit_security_module})
     shares_before = contracts.lido.sharesOf(module_address)
-    oracle_report()
-    assert contracts.lido.sharesOf(module_address) > shares_before
+    (report_tx, _) = oracle_report()
+
+    assert report_tx.events["Transfer"][1]["to"] == module_address
+    assert report_tx.events["Transfer"][1]["from"] == ZERO_ADDRESS
+    assert report_tx.events["Transfer"][2]["to"] == contracts.agent
+    assert report_tx.events["Transfer"][2]["from"] == ZERO_ADDRESS
+    assert report_tx.events["Transfer"][1]["value"] == report_tx.events["Transfer"][2]["value"]
+    assert report_tx.events["Transfer"][1]["value"] > 0
 
 
 def test_stopped_staking_module_cant_stake(stranger):
