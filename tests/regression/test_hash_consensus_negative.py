@@ -201,6 +201,10 @@ def test_submit_report(consensus_contract, oracle_contract, stranger):
         consensus_contract.submitReport(ref_slot, valid_hash, consensus_version, {"from": fast_lane_member})
 
     wait_to_next_available_report_time(consensus_contract)
+
+    fast_lane_members, _ = consensus_contract.getFastLaneMembers()
+    non_fast_lane_members = [m for m in members if m not in fast_lane_members]
+
     ref_slot, _ = consensus_contract.getCurrentFrame()
     with reverts(encode_error("NonFastLaneMemberCannotReportWithinFastLaneInterval()")):
-        consensus_contract.submitReport(ref_slot, valid_hash, consensus_version, {"from": second_non_fastlane_member})
+        consensus_contract.submitReport(ref_slot, valid_hash, consensus_version, {"from": non_fast_lane_members[0]})
