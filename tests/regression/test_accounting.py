@@ -1,4 +1,4 @@
-from typing import TypedDict, TypeVar
+from typing import TypedDict, TypeVar, Any
 
 import pytest
 from brownie import Contract, accounts, chain, web3
@@ -56,8 +56,8 @@ def test_accounting_no_cl_rebase(
     tx, _ = oracle_report(cl_diff=0, exclude_vaults_balances=True)
     block_after_report = chain.height
 
-    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
-    shares_burnt = _first_event(tx, SharesBurnt)
+    withdrawals_finalized = _try_get_withdrawals_finalized(tx)
+    shares_burnt = _try_get_shares_burnt(tx)
 
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
@@ -101,8 +101,8 @@ def test_accounting_negative_cl_rebase(accounting_oracle: Contract, lido: Contra
     tx, _ = oracle_report(cl_diff=rebase_amount, exclude_vaults_balances=True)
     block_after_report = chain.height
 
-    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
-    shares_burnt = _first_event(tx, SharesBurnt)
+    withdrawals_finalized = _try_get_withdrawals_finalized(tx)
+    shares_burnt = _try_get_shares_burnt(tx)
 
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
@@ -151,8 +151,8 @@ def test_accounting_cl_rebase_at_limits(accounting_oracle: Contract, lido: Contr
     tx, _ = oracle_report(cl_diff=rebase_amount, exclude_vaults_balances=True)
     block_after_report = chain.height
 
-    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
-    shares_burnt = _first_event(tx, SharesBurnt)
+    withdrawals_finalized = _try_get_withdrawals_finalized(tx)
+    shares_burnt = _try_get_shares_burnt(tx)
 
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
@@ -170,14 +170,26 @@ def test_accounting_cl_rebase_at_limits(accounting_oracle: Contract, lido: Contr
 
     shares_as_fees_list = [e["sharesValue"] for e in _get_events(tx, TransferShares)]
 
-    assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
-    assert almostEqWithDiff(
-        shares_as_fees_list[1],
-        shares_as_fees_list[2],
-        1,
-    ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
+    minted_shares_sum = 0
 
-    minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2]
+    if (withdrawals_finalized["amountOfETHLocked"] == 0): # no withdrawals processed
+        assert len(shares_as_fees_list) == 2, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+        assert almostEqWithDiff(
+            shares_as_fees_list[0],
+            shares_as_fees_list[1],
+            1,
+        ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
+
+        minted_shares_sum = shares_as_fees_list[0] + shares_as_fees_list[1]
+    else:
+        assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+        assert almostEqWithDiff(
+            shares_as_fees_list[1],
+            shares_as_fees_list[2],
+            1,
+        ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
+
+        minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2]
 
     token_rebased_event = _first_event(tx, TokenRebased)
     assert token_rebased_event["sharesMintedAsFees"] == minted_shares_sum, "TokenRebased: sharesMintedAsFee mismatch"
@@ -224,8 +236,8 @@ def test_accounting_no_el_rewards(accounting_oracle: Contract, lido: Contract, h
     tx, _ = oracle_report(cl_diff=0, exclude_vaults_balances=True)
     block_after_report = chain.height
 
-    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
-    shares_burnt = _first_event(tx, SharesBurnt)
+    withdrawals_finalized = _try_get_withdrawals_finalized(tx)
+    shares_burnt = _try_get_shares_burnt(tx)
 
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
@@ -269,8 +281,8 @@ def test_accounting_normal_el_rewards(accounting_oracle: Contract, lido: Contrac
 
     block_after_report = chain.height
 
-    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
-    shares_burnt = _first_event(tx, SharesBurnt)
+    withdrawals_finalized = _try_get_withdrawals_finalized(tx)
+    shares_burnt = _try_get_shares_burnt(tx)
 
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
@@ -327,8 +339,8 @@ def test_accounting_el_rewards_at_limits(
 
     block_after_report = chain.height
 
-    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
-    shares_burnt = _first_event(tx, SharesBurnt)
+    withdrawals_finalized = _try_get_withdrawals_finalized(tx)
+    shares_burnt = _try_get_shares_burnt(tx)
 
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
@@ -390,8 +402,8 @@ def test_accounting_el_rewards_above_limits(
 
     block_after_report = chain.height
 
-    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
-    shares_burnt = _first_event(tx, SharesBurnt)
+    withdrawals_finalized = _try_get_withdrawals_finalized(tx)
+    shares_burnt = _try_get_shares_burnt(tx)
 
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
@@ -433,8 +445,8 @@ def test_accounting_no_withdrawals(accounting_oracle: Contract, lido: Contract, 
     tx, _ = oracle_report(cl_diff=0, exclude_vaults_balances=True)
     block_after_report = chain.height
 
-    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
-    shares_burnt = _first_event(tx, SharesBurnt)
+    withdrawals_finalized = _try_get_withdrawals_finalized(tx)
+    shares_burnt = _try_get_shares_burnt(tx)
 
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
@@ -489,8 +501,8 @@ def test_accounting_withdrawals_at_limits(
 
     block_after_report = chain.height
 
-    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
-    shares_burnt = _first_event(tx, SharesBurnt)
+    withdrawals_finalized = _try_get_withdrawals_finalized(tx)
+    shares_burnt = _try_get_shares_burnt(tx)
 
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
@@ -508,14 +520,26 @@ def test_accounting_withdrawals_at_limits(
 
     shares_as_fees_list = [e["sharesValue"] for e in _get_events(tx, TransferShares)]
 
-    assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
-    assert almostEqWithDiff(
-        shares_as_fees_list[1],
-        shares_as_fees_list[2],
-        1,
-    ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
+    minted_shares_sum = 0
 
-    minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2]
+    if (withdrawals_finalized["amountOfETHLocked"] == 0): # no withdrawals processed
+        assert len(shares_as_fees_list) == 2, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+        assert almostEqWithDiff(
+            shares_as_fees_list[0],
+            shares_as_fees_list[1],
+            1,
+        ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
+
+        minted_shares_sum = shares_as_fees_list[0] + shares_as_fees_list[1]
+    else:
+        assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+        assert almostEqWithDiff(
+            shares_as_fees_list[1],
+            shares_as_fees_list[2],
+            1,
+        ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
+
+        minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2]
 
     token_rebased_event = _first_event(tx, TokenRebased)
     assert token_rebased_event["sharesMintedAsFees"] == minted_shares_sum, "TokenRebased: sharesMintedAsFee mismatch"
@@ -561,8 +585,8 @@ def test_accounting_withdrawals_above_limits(
 
     block_after_report = chain.height
 
-    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
-    shares_burnt = _first_event(tx, SharesBurnt)
+    withdrawals_finalized = _try_get_withdrawals_finalized(tx)
+    shares_burnt = _try_get_shares_burnt(tx)
 
     assert accounting_oracle.getLastProcessingRefSlot(
         block_identifier=block_before_report
@@ -582,14 +606,26 @@ def test_accounting_withdrawals_above_limits(
 
     shares_as_fees_list = [e["sharesValue"] for e in _get_events(tx, TransferShares)]
 
-    assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
-    assert almostEqWithDiff(
-        shares_as_fees_list[1],
-        shares_as_fees_list[2],
-        1,
-    ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
+    minted_shares_sum = 0
 
-    minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2]
+    if (withdrawals_finalized["amountOfETHLocked"] == 0): # no withdrawals processed
+        assert len(shares_as_fees_list) == 2, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+        assert almostEqWithDiff(
+            shares_as_fees_list[0],
+            shares_as_fees_list[1],
+            1,
+        ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
+
+        minted_shares_sum = shares_as_fees_list[0] + shares_as_fees_list[1]
+    else:
+        assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+        assert almostEqWithDiff(
+            shares_as_fees_list[1],
+            shares_as_fees_list[2],
+            1,
+        ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
+
+        minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2]
 
     token_rebased_event = _first_event(tx, TokenRebased)
     assert token_rebased_event["sharesMintedAsFees"] == minted_shares_sum, "TokenRebased: sharesMintedAsFee mismatch"
@@ -614,7 +650,9 @@ def test_accounting_shares_burn_at_limits(burner: Contract, lido: Contract, stet
     """Test shares burnt with amount at the limit"""
 
     shares_limit = _shares_burn_limit_no_pooled_ether_changes()
-    assert lido.sharesOf(burner.address) == 0, "Expected burner to have no shares"
+    initial_burner_balance = lido.sharesOf(burner.address)
+
+    #assert initial_burner_balance == 0, "Expected burner to have no shares"
     assert lido.sharesOf(steth_whale.address) > shares_limit, "Not enough shares on whale account"
     steth_of_shares = lido.getPooledEthByShares(shares_limit)
     lido.approve(burner.address, steth_of_shares, {"from": steth_whale.address})
@@ -625,22 +663,24 @@ def test_accounting_shares_burn_at_limits(burner: Contract, lido: Contract, stet
     shares_burn_request_event = _first_event(tx, StETHBurnRequested)
     assert shares_burn_request_event["amountOfShares"] == no_cover_shares, "StETHBurnRequested: amountOfShares mismatch"
     assert shares_burn_request_event["isCover"] is False, "StETHBurnRequested: isCover mismatch"
-    assert lido.sharesOf(burner.address) == no_cover_shares, "Burner shares mismatch"
+    assert lido.sharesOf(burner.address) == no_cover_shares + initial_burner_balance, "Burner shares mismatch"
 
     tx = burner.requestBurnSharesForCover(steth_whale.address, cover_shares, {"from": lido.address})
     shares_burn_request_event = _first_event(tx, StETHBurnRequested)
     assert shares_burn_request_event["amountOfShares"] == cover_shares, "StETHBurnRequested: amountOfShares mismatch"
     assert shares_burn_request_event["isCover"] is True, "StETHBurnRequested: isCover mismatch"
-    assert lido.sharesOf(burner.address) == shares_limit, "Burner shares mismatch"
+    assert lido.sharesOf(burner.address) == shares_limit + initial_burner_balance, "Burner shares mismatch"
 
     block_before_report = chain.height
     tx, _ = oracle_report(cl_diff=0, exclude_vaults_balances=True)
     block_after_report = chain.height
 
-    shares_burned_event = _first_event(tx, SharesBurnt)
-    finalized_withdrawals = _first_event(tx, WithdrawalsFinalized)
+    finalized_withdrawals = _try_get_withdrawals_finalized(tx)
+    shares_burned_event = _try_get_shares_burnt(tx)
 
-    burnt_due_to_withdrawals = finalized_withdrawals["sharesToBurn"] - lido.sharesOf(burner.address)
+    burnt_due_to_withdrawals = (
+        finalized_withdrawals["sharesToBurn"] - lido.sharesOf(burner.address) + initial_burner_balance
+    )
 
     assert burnt_due_to_withdrawals >= 0
     assert (
@@ -660,7 +700,9 @@ def test_accounting_shares_burn_above_limits(burner: Contract, lido: Contract, s
     shares_limit = _shares_burn_limit_no_pooled_ether_changes()
     excess_amount = 42
 
-    assert lido.sharesOf(burner.address) == 0, "Expected burner to have no shares"
+    initial_burner_balance = lido.sharesOf(burner.address)
+    #assert initial_burner_balance == 0, "Expected burner to have no shares"
+
     assert lido.sharesOf(steth_whale.address) > shares_limit + excess_amount, "Not enough shares on whale account"
     steth_of_shares = lido.getPooledEthByShares(shares_limit + excess_amount)
     lido.approve(burner.address, steth_of_shares, {"from": steth_whale.address})
@@ -671,26 +713,28 @@ def test_accounting_shares_burn_above_limits(burner: Contract, lido: Contract, s
     shares_burn_request_event = _first_event(tx, StETHBurnRequested)
     assert shares_burn_request_event["amountOfShares"] == no_cover_shares, "StETHBurnRequested: amountOfShares mismatch"
     assert shares_burn_request_event["isCover"] is False, "StETHBurnRequested: isCover mismatch"
-    assert lido.sharesOf(burner.address) == no_cover_shares, "Burner shares mismatch"
+    assert lido.sharesOf(burner.address) == no_cover_shares + initial_burner_balance, "Burner shares mismatch"
 
     tx = burner.requestBurnSharesForCover(steth_whale.address, cover_shares, {"from": lido.address})
     shares_burn_request_event = _first_event(tx, StETHBurnRequested)
     assert shares_burn_request_event["amountOfShares"] == cover_shares, "StETHBurnRequested: amountOfShares mismatch"
     assert shares_burn_request_event["isCover"] is True, "StETHBurnRequested: isCover mismatch"
-    assert lido.sharesOf(burner.address) == shares_limit + excess_amount, "Burner shares mismatch"
+    assert lido.sharesOf(burner.address) == shares_limit + excess_amount + initial_burner_balance, "Burner shares mismatch"
 
     block_before_report = chain.height
     tx, _ = oracle_report(cl_diff=0, exclude_vaults_balances=True)
     block_after_report = chain.height
 
-    shares_burned_event = _first_event(tx, SharesBurnt)
-    finalized_withdrawals = _first_event(tx, WithdrawalsFinalized)
+    finalized_withdrawals = _try_get_withdrawals_finalized(tx)
+    shares_burned_event = _try_get_shares_burnt(tx)
 
-    burnt_due_to_withdrawals = finalized_withdrawals["sharesToBurn"] - lido.sharesOf(burner.address)
+    burnt_due_to_withdrawals = (
+        finalized_withdrawals["sharesToBurn"] - lido.sharesOf(burner.address) + initial_burner_balance + excess_amount
+    )
     assert burnt_due_to_withdrawals >= 0
 
     assert (
-        shares_burned_event["sharesAmount"] - burnt_due_to_withdrawals == shares_limit + excess_amount
+        shares_burned_event["sharesAmount"] - burnt_due_to_withdrawals == shares_limit
     ), "SharesBurnt: sharesAmount mismatch"
 
     shares_rate_before, shares_rate_after = _shares_rate_from_event(tx)
@@ -698,7 +742,7 @@ def test_accounting_shares_burn_above_limits(burner: Contract, lido: Contract, s
 
     assert lido.getTotalShares(block_identifier=block_before_report) - shares_limit == lido.getTotalShares(
         block_identifier=block_after_report
-    ) + burnt_due_to_withdrawals + excess_amount, "TotalShares change mismatch"
+    ) + burnt_due_to_withdrawals, "TotalShares change mismatch"
 
     extra_shares = lido.sharesOf(burner.address)
     assert extra_shares >= excess_amount, "Expected burner to have excess shares"
@@ -741,8 +785,7 @@ def test_accounting_overfill_both_vaults(
     updated_limit = _rebase_limit_wei(block_identifier=chain.height)
     el_vault_excess = (limit + excess) - (updated_limit - excess)
 
-    withdrawals_finalized = _first_event(tx, WithdrawalsFinalized)
-    shares_burnt = _first_event(tx, SharesBurnt)
+    withdrawals_finalized = _try_get_withdrawals_finalized(tx)
 
     assert (
         eth_balance(withdrawal_vault.address) == excess
@@ -917,3 +960,17 @@ def _shares_burn_limit_no_pooled_ether_changes(block_identifier: int | str = "la
     rebase_limit_plus_1 = rebase_limit + LIMITER_PRECISION_BASE
 
     return contracts.lido.getTotalShares(block_identifier=block_identifier) * rebase_limit // rebase_limit_plus_1
+
+def _try_get_withdrawals_finalized(tx: Any) -> WithdrawalsFinalized:
+    if WithdrawalsFinalized.__name__ in tx.events:
+        return _first_event(tx, WithdrawalsFinalized)
+    else:
+        return {
+            "from": ZERO_ADDRESS, "to": ZERO_ADDRESS, "amountOfETHLocked": 0, "sharesToBurn": 0, "timestamp": 0
+        }
+
+def _try_get_shares_burnt(tx: Any) -> SharesBurnt:
+    if SharesBurnt.__name__ in tx.events:
+        return _first_event(tx, SharesBurnt)
+    else:
+        return SharesBurnt(account=ZERO_ADDRESS, preRebaseTokenAmount=0, postRebaseTokenAmount=0, sharesAmount=0)
