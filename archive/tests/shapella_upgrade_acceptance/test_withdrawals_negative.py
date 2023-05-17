@@ -1,6 +1,7 @@
 from brownie.network.account import Account
 import pytest
 from brownie import Contract, interface, reverts, Wei, chain  # type: ignore
+from tests.snapshot.test_lido_snapshot import UINT256_MAX
 
 from utils.config import WITHDRAWAL_QUEUE, contracts
 from utils.evm_script import encode_error
@@ -8,7 +9,6 @@ from utils.test.oracle_report_helpers import oracle_report
 
 MIN_STETH_WITHDRAWAL_AMOUNT = Wei(100)
 MAX_STETH_WITHDRAWAL_AMOUNT = Wei(1000 * 10**18)
-UINT256_MAX = 2**256 - 1
 
 
 def test_request_withdrawals_steth(wq: Contract, steth_whale: Account):
@@ -93,43 +93,58 @@ def test_wq_prefinalize(wq: Contract, steth_whale: Account):
     with reverts(encode_error("InvalidRequestId(uint256)", [last_finalized_id])):
         oracle_report(withdrawalFinalizationBatches=[last_finalized_id])
 
-    with reverts(encode_error("BatchesAreNotSorted()")):
-        oracle_report(withdrawalFinalizationBatches=[last_finalized_id + 2, last_finalized_id + 1])
+    with reverts(encode_error("InvalidRequestId(uint256)", [4])):
+        oracle_report(withdrawalFinalizationBatches=[1, 4])
 
     with reverts(encode_error("BatchesAreNotSorted()")):
-        oracle_report(withdrawalFinalizationBatches=[last_finalized_id + 1, last_finalized_id + 1])
+        oracle_report(withdrawalFinalizationBatches=[3, 2])
+
+    with reverts(encode_error("BatchesAreNotSorted()")):
+        oracle_report(withdrawalFinalizationBatches=[1, 1])
 
     with reverts(encode_error("ZeroShareRate()")):
-        oracle_report(withdrawalFinalizationBatches=[last_finalized_id + 1, last_finalized_id + 2], simulatedShareRate=0)
+        oracle_report(withdrawalFinalizationBatches=[1, 2], simulatedShareRate=0)
 
 
 def test_request_to_finalize_to_close(wq: Contract, steth_whale: Account):
     fill_wq(wq, steth_whale, count=1)
     with reverts(encode_error("IncorrectRequestFinalization(uint256)", [chain.time()])):
         oracle_report(
-            withdrawalFinalizationBatches=[wq.getLastRequestId()],
+            withdrawalFinalizationBatches=[1],
             wait_to_next_report_time=False,
         )
 
 
 def test_wq_finalize(wq: Contract, steth_whale: Account):
-    last_request_id = wq.getLastRequestId()
+    last_finalized_id = wq.getLastFinalizedRequestId()  # 0 after enacment
 
-    if wq.getLastFinalizedRequestId() < last_request_id:
-        wq.finalize(last_request_id, 1, {"from": contracts.lido})
+    with reverts(encode_error("InvalidRequestId(uint256)", [last_finalized_id])):
+        wq.finalize(last_finalized_id, 1, {"from": contracts.lido})
 
     with reverts(
         encode_error(
             "InvalidRequestId(uint256)",
-            [last_request_id + 1],
+            [last_finalized_id + 1],
         )
     ):
-        wq.finalize(last_request_id + 1, 1, {"from": contracts.lido})
+        wq.finalize(last_finalized_id + 1, 1, {"from": contracts.lido})
 
     max_eth = fill_wq(wq, steth_whale, count=3)
 
     with reverts(encode_error("InvalidRequestId(uint256)", [4])):
         wq.finalize(4, 1, {"from": contracts.lido})
+
+    with reverts(
+        encode_error(
+            "TooMuchEtherToFinalize(uint256,uint256)",
+            [
+                max_eth + 1,
+                max_eth,
+            ],
+        )
+    ):
+        wq.finalize(3, 1, {"from": contracts.lido, "value": Wei(max_eth + 1)})
+
 
 # === Fixtures ===
 

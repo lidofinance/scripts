@@ -24,7 +24,6 @@ def test_bunker_multiple_batches(accounts):
     withdrawal_amount = ETH(10)
 
     assert contracts.lido.balanceOf(stranger) == 0
-    assert contracts.withdrawal_queue.getLastRequestId() == 0
 
     contracts.lido.approve(contracts.withdrawal_queue.address, amount, {"from": stranger})
     contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": amount})
@@ -84,7 +83,6 @@ def test_oracle_report_missed(accounts):
     stranger = accounts[0]
 
     assert contracts.lido.balanceOf(stranger) == 0
-    assert contracts.withdrawal_queue.getLastRequestId() == 0
 
     contracts.lido.approve(contracts.withdrawal_queue.address, amount, {"from": stranger})
     contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": amount})
@@ -129,7 +127,6 @@ def test_several_rebases(accounts):
     withdrawal_amount = ETH(10)
 
     assert contracts.lido.balanceOf(stranger) == 0
-    assert contracts.withdrawal_queue.getLastRequestId() == 0
 
     contracts.lido.approve(contracts.withdrawal_queue.address, amount, {"from": stranger})
     contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": amount})

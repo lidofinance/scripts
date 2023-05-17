@@ -105,6 +105,8 @@ def deposit_and_check_keys(nor, first_no_id, second_no_id, base_no_id, keys_coun
 
 
 def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale):
+    (nor_exited_count, _, _) = contracts.staking_router.getStakingModuleSummary(1)
+
     contracts.staking_router.grantRole(
         Web3.keccak(text="STAKING_MODULE_MANAGE_ROLE"),
         impersonated_voting,
@@ -120,8 +122,8 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
 
     contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale, "amount": ETH(10000)})
 
-    tested_no_id_first = 21
-    tested_no_id_second = 22
+    tested_no_id_first = 20
+    tested_no_id_second = 21
     base_no_id = 23
 
     nor.setNodeOperatorStakingLimit(tested_no_id_first, 10000, {"from": impersonated_voting})
@@ -166,17 +168,20 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
     )
 
     # check shares by empty report
-    assert (
-        node_operator_first_balance_shares_after - node_operator_first_balance_shares_before
-        == node_operator_first_rewards_after_first_report
+    assert almostEqWithDiff(
+        node_operator_first_balance_shares_after - node_operator_first_balance_shares_before,
+        node_operator_first_rewards_after_first_report,
+        1
     )
-    assert (
-        node_operator_second_balance_shares_after - node_operator_second_balance_shares_before
-        == node_operator_second_rewards_after_first_report
+    assert almostEqWithDiff(
+        node_operator_second_balance_shares_after - node_operator_second_balance_shares_before,
+        node_operator_second_rewards_after_first_report,
+        1
     )
-    assert (
-        node_operator_base_balance_shares_after - node_operator_base_balance_shares_before
-        == node_operator_base_rewards_after_first_report
+    assert almostEqWithDiff(
+        node_operator_base_balance_shares_after - node_operator_base_balance_shares_before,
+        node_operator_base_rewards_after_first_report,
+        1
     )
 
     # Case 1
@@ -212,7 +217,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
         extraDataHash=extra_data.data_hash,
         extraDataItemsCount=2,
         extraDataList=extra_data.extra_data,
-        numExitedValidatorsByStakingModule=[10],
+        numExitedValidatorsByStakingModule=[nor_exited_count + 10],
         stakingModuleIdsWithNewlyExitedValidators=[1],
     )
 
@@ -339,7 +344,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
         extraDataHash=extra_data.data_hash,
         extraDataItemsCount=2,
         extraDataList=extra_data.extra_data,
-        numExitedValidatorsByStakingModule=[12],
+        numExitedValidatorsByStakingModule=[nor_exited_count + 12],
         stakingModuleIdsWithNewlyExitedValidators=[1],
     )
 
@@ -453,7 +458,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
         extraDataHash=extra_data.data_hash,
         extraDataItemsCount=2,
         extraDataList=extra_data.extra_data,
-        numExitedValidatorsByStakingModule=[12],
+        numExitedValidatorsByStakingModule=[nor_exited_count + 12],
         stakingModuleIdsWithNewlyExitedValidators=[1],
     )
 

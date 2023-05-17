@@ -106,7 +106,7 @@ def test_too_much_validators_exited():
         )
     ):
         oracle_report(
-            numExitedValidatorsByStakingModule=[CHURN_VALIDATORS_PER_DAY_LIMIT + 1],
+            numExitedValidatorsByStakingModule=[CHURN_VALIDATORS_PER_DAY_LIMIT + 12],
             stakingModuleIdsWithNewlyExitedValidators=[1],
             skip_withdrawals=True,
             silent=True,
