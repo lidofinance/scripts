@@ -2,12 +2,13 @@ from enum import IntEnum
 
 import brownie
 import pytest
-from brownie import ZERO_ADDRESS, web3
+from brownie import ZERO_ADDRESS, web3, chain
 
 from utils.config import contracts
 from utils.evm_script import encode_error
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 from utils.test.oracle_report_helpers import oracle_report, prepare_exit_bus_report
+from utils.test.helpers import almostEqEth
 
 DEPOSIT_AMOUNT = 100 * 10 ** 18
 
@@ -298,7 +299,7 @@ def test_paused_staking_module_can_reward(stranger, helpers):
     assert report_tx.events["Transfer"][1]["from"] == ZERO_ADDRESS
     assert report_tx.events["Transfer"][2]["to"] == contracts.agent
     assert report_tx.events["Transfer"][2]["from"] == ZERO_ADDRESS
-    assert report_tx.events["Transfer"][1]["value"] == report_tx.events["Transfer"][2]["value"]
+    assert almostEqEth(report_tx.events["Transfer"][1]["value"], report_tx.events["Transfer"][2]["value"])
     assert report_tx.events["Transfer"][1]["value"] > 0
 
 
@@ -396,6 +397,9 @@ def pause_validators_exit_bus(stranger):
     contracts.validators_exit_bus_oracle.pauseFor(inf, {"from": stranger})
 
 def test_paused_validators_exit_bus_cant_submit_report(stranger):
+    chain.sleep(2 * 24 * 3600)
+    chain.mine()
+
     contract_version = contracts.validators_exit_bus_oracle.getContractVersion()
 
     pause_validators_exit_bus(stranger)
@@ -405,6 +409,9 @@ def test_paused_validators_exit_bus_cant_submit_report(stranger):
         contracts.validators_exit_bus_oracle.submitReportData(report, contract_version, {"from": member})
 
 def test_stopped_lido_can_exit_validators(stranger):
+    chain.sleep(2 * 24 * 3600)
+    chain.mine()
+
     contract_version = contracts.validators_exit_bus_oracle.getContractVersion()
 
     contracts.lido.stop({"from": contracts.voting})

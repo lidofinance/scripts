@@ -1,4 +1,7 @@
 from typing import Dict, Tuple, Callable, TypeVar, Optional, Any, TypeVar, NamedTuple, Union
+from contextlib import contextmanager
+from brownie import rpc, web3
+from brownie.network.state import _notify_registry
 
 T, U = TypeVar("T"), TypeVar("U")
 ValueChanged = NamedTuple("ValueChanged", [("from_val", T), ("to_val", T)])
@@ -42,3 +45,17 @@ def assert_expected_diffs(step, diff, expected) -> None:
             diff[key] == expected[key]
         ), f"Step '{step}': '{key}' was expected to be '{expected[key]}' but found {diff[key]}"
         del diff[key]
+
+@contextmanager
+def _chain_snapshot():
+    """Custom chain snapshot context manager to avoid moving snapshots pointer"""
+    id_ = rpc.snapshot()
+
+    try:
+        yield
+    finally:
+        if not web3.isConnected() or not rpc.is_active():
+            return
+
+        block = rpc.revert(id_)
+        _notify_registry(block)

@@ -18,11 +18,6 @@ DEPOSIT_SIZE = Wei("32 ether")
 
 
 @pytest.fixture(scope="module", autouse=True)
-def shared_setup(module_isolation):
-    pass
-
-
-@pytest.fixture(scope="module", autouse=True)
 def grant_roles(voting_eoa, agent_eoa):
     contracts.staking_router.grantRole(
         contracts.staking_router.MANAGE_WITHDRAWAL_CREDENTIALS_ROLE(), voting_eoa, {"from": agent_eoa}
@@ -67,7 +62,7 @@ def new_node_operator_id(nor):
     return nor.getNodeOperatorsCount()
 
 
-def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id):
+def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id, evm_script_executor_eoa):
     new_node_operator_name = "new_node_operator"
 
     node_operators_count_before = nor.getNodeOperatorsCount()
@@ -110,7 +105,6 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
     assert_node_operator_added_event(tx, new_node_operator_id, new_node_operator_name, reward_address, staking_limit=0)
 
 
-def test_add_signing_keys_operator_bh(nor, reward_address, new_node_operator_id):
     keys_count = 13
     pubkeys_batch = random_pubkeys_batch(keys_count)
     signatures_batch = random_signatures_batch(keys_count)
@@ -157,7 +151,6 @@ def test_add_signing_keys_operator_bh(nor, reward_address, new_node_operator_id)
     # TODO: validate events
 
 
-def test_set_node_operator_staking_limit(nor, voting_eoa, new_node_operator_id):
     nonce_before = nor.getNonce()
     node_operator_before = nor.getNodeOperator(new_node_operator_id, True)
     node_operator_summary_before = nor.getNodeOperatorSummary(new_node_operator_id)
@@ -182,7 +175,6 @@ def test_set_node_operator_staking_limit(nor, voting_eoa, new_node_operator_id):
     # TODO: validate events
 
 
-def test_deactivate_node_operator(nor, voting_eoa, new_node_operator_id):
     node_operators_count_before = nor.getNodeOperatorsCount()
     active_node_operators_count_before = nor.getActiveNodeOperatorsCount()
 
@@ -213,7 +205,6 @@ def test_deactivate_node_operator(nor, voting_eoa, new_node_operator_id):
     # TODO: validate events
 
 
-def test_activate_node_operator(nor, voting_eoa, new_node_operator_id):
     node_operator_before = nor.getNodeOperator(new_node_operator_id, True)
     assert node_operator_before["active"] == False
 
@@ -239,7 +230,6 @@ def test_activate_node_operator(nor, voting_eoa, new_node_operator_id):
     # TODO: validate events
 
 
-def test_set_staking_limit_via_evm_script_executor(nor, evm_script_executor_eoa, new_node_operator_id):
     nonce_before = nor.getNonce()
     node_operator_before = nor.getNodeOperator(new_node_operator_id, True)
     node_operator_summary_before = nor.getNodeOperatorSummary(new_node_operator_id)

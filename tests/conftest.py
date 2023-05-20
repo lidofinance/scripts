@@ -1,11 +1,11 @@
 import os
 import json
-from typing import Optional, List
+from typing import List
 
 import brownie.exceptions
 import pytest
 
-from brownie import chain, interface
+from brownie import chain, interface, web3
 from brownie.network import state
 from brownie.network.contract import Contract
 
@@ -15,6 +15,7 @@ from utils.config import contracts, network_name, MAINNET_VOTE_DURATION
 
 from utils.config import *
 from utils.txs.deploy import deploy_from_prepared_tx
+from utils.test.helpers import ETH
 
 ENV_OMNIBUS_BYPASS_EVENTS_DECODING = "OMNIBUS_BYPASS_EVENTS_DECODING"
 ENV_PARSE_EVENTS_FROM_LOCAL_ABI = "PARSE_EVENTS_FROM_LOCAL_ABI"
@@ -26,14 +27,30 @@ def shared_setup(fn_isolation):
     pass
 
 
+@pytest.fixture(scope="function")
+def deployer():
+    return accounts[0]
+
+
+@pytest.fixture()
+def steth_holder(accounts):
+    steth_holder = accounts.at("0x176F3DAb24a159341c0509bB36B833E7fdd0a131", force=True)
+    web3.provider.make_request("evm_setAccountBalance", [steth_holder.address, "0x152D02C7E14AF6800000"])
+    steth_holder.transfer(contracts.lido, ETH(10000))
+    return steth_holder
+
+
 @pytest.fixture(scope="module")
 def ldo_holder(accounts):
     return accounts.at(LDO_HOLDER_ADDRESS_FOR_TESTS, force=True)
 
 
-@pytest.fixture(scope="module")
-def unknown_person(accounts):
-    return accounts.at("0x98ec059dc3adfbdd63429454aeb0c990fba4a128", force=True)
+@pytest.fixture(scope="function")
+def stranger(accounts):
+    stranger = accounts.at("0x98eC059dC3aDFbdd63429454aeB0C990fbA4a124", force=True)
+    web3.provider.make_request("evm_setAccountBalance", [stranger.address, "0x152D02C7E14AF6800000"])
+    assert stranger.balance() == ETH(100000)
+    return stranger
 
 
 @pytest.fixture(scope="module")
@@ -167,11 +184,6 @@ def bypass_events_decoding() -> bool:
 @pytest.fixture(scope="module")
 def autodeploy_contract(accounts):
     address = deploy_from_prepared_tx(accounts[0], "./utils/txs/tx-deploy-voting_for_upgrade.json")
-
-
-@pytest.fixture(scope="session")
-def stranger(accounts):
-    return accounts[9]
 
 
 @pytest.fixture(scope="session", autouse=True)
