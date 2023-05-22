@@ -28,3 +28,13 @@ def validate_evmscript_factory_removed_event(event: EventDict, factory_addr: str
     assert event.count("EVMScriptFactoryRemoved") == 1
 
     assert event["EVMScriptFactoryRemoved"]["_evmScriptFactory"] == factory_addr
+
+
+def validate_motions_count_limit_changed_event(event: EventDict, motions_count_limit: int):
+    _events_chain = ["LogScriptCall", "MotionsCountLimitChanged"]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("MotionsCountLimitChanged") == 1
+
+    assert event["MotionsCountLimitChanged"]["_newMotionsCountLimit"] == motions_count_limit

@@ -10,9 +10,17 @@ class NodeOperatorItem(NamedTuple):
     reward_address: str
     staking_limit: int
 
-class NodeOperatorStakingLimitSetItem(NamedTuple):    
+class NodeOperatorStakingLimitSetItem(NamedTuple):
     id: int
     staking_limit: int
+
+class NodeOperatorNameSetItem(NamedTuple):
+    id: int
+    name: str
+
+class NodeOperatorRewardAddressSetItem(NamedTuple):
+    id: int
+    reward_address: str
 
 
 def validate_node_operator_added_event(
@@ -43,4 +51,29 @@ def validate_node_operator_staking_limit_set_event(
     assert event.count("NodeOperatorStakingLimitSet") == 1
 
     assert event["NodeOperatorStakingLimitSet"]["id"] == node_operator_staking_limit_item.id
-    assert event["NodeOperatorStakingLimitSet"]["stakingLimit"] == node_operator_staking_limit_item.staking_limit   
+    assert event["NodeOperatorStakingLimitSet"]["stakingLimit"] == node_operator_staking_limit_item.staking_limit
+
+
+def validate_node_operator_name_set_event(
+    event: EventDict, node_operator_name_item: NodeOperatorNameSetItem
+):
+    _events_chain = ["LogScriptCall", "KeysOpIndexSet", "NodeOperatorNameSet"]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("NodeOperatorNameSet") == 1
+
+    assert event["NodeOperatorNameSet"]["id"] == node_operator_name_item.id
+    assert event["NodeOperatorNameSet"]["name"] == node_operator_name_item.name
+
+def validate_node_operator_reward_address_set_event(
+    event: EventDict, node_operator_reward_address_item: NodeOperatorRewardAddressSetItem
+):
+    _events_chain = ["LogScriptCall", "KeysOpIndexSet", "NodeOperatorRewardAddressSet"]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("NodeOperatorRewardAddressSet") == 1
+
+    assert event["NodeOperatorRewardAddressSet"]["id"] == node_operator_reward_address_item.id
+    assert event["NodeOperatorRewardAddressSet"]["rewardAddress"] == node_operator_reward_address_item.reward_address
