@@ -12,6 +12,12 @@ def test_all_round_happy_path(accounts, stranger, steth_holder):
     max_deposit = 150
     curated_module_id = 1
 
+    """ report """
+    while (
+        contracts.withdrawal_queue.getLastRequestId()
+            != contracts.withdrawal_queue.getLastFinalizedRequestId()):
+        # finalize all current requests first
+        report_tx = oracle_report()[0]
 
     contracts.lido.approve(contracts.withdrawal_queue.address, 1000, {"from": steth_holder})
     contracts.withdrawal_queue.requestWithdrawals([1000], steth_holder, {"from": steth_holder})
