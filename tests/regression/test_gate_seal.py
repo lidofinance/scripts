@@ -49,10 +49,14 @@ def test_gate_seal_scenario(steth_holder, gate_seal_committee):
 
     """ finalization """
     report_tx = oracle_report(silent=True)[0]
+
     # on second report requests will get finalized for sure
     if not report_tx.events.count("WithdrawalsFinalized") == 1:
         report_tx = oracle_report(silent=True)[0]
-    assert report_tx.events.count("WithdrawalsFinalized") == 1
+
+    while report_tx.events["WithdrawalsFinalized"][0]["to"] != claimable_request_ids[-1]:
+        report_tx = oracle_report(silent=True)[0]
+        assert report_tx.events.count("WithdrawalsFinalized") == 1
 
     post_report_statuses = contracts.withdrawal_queue.getWithdrawalStatus(claimable_request_ids, {"from": steth_holder})
     for i, _ in enumerate(claimable_request_ids):
