@@ -697,6 +697,13 @@ def test_accounting_shares_burn_at_limits(burner: Contract, lido: Contract, stet
 def test_accounting_shares_burn_above_limits(burner: Contract, lido: Contract, steth_whale: Account):
     """Test shares burnt with amount above the limit"""
 
+    """ report """
+    while (
+        contracts.withdrawal_queue.getLastRequestId()
+            != contracts.withdrawal_queue.getLastFinalizedRequestId()):
+        # finalize all current requests first
+        report_tx = oracle_report()[0]
+
     shares_limit = _shares_burn_limit_no_pooled_ether_changes()
     excess_amount = 42
 
@@ -760,6 +767,13 @@ def test_accounting_overfill_both_vaults(
     helpers: Helpers,
 ):
     """Test rebase with excess ETH amount on both vaults"""
+
+    """ report """
+    while (
+        contracts.withdrawal_queue.getLastRequestId()
+            != contracts.withdrawal_queue.getLastFinalizedRequestId()):
+        # finalize all current requests first
+        report_tx = oracle_report()[0]
 
     limit = _rebase_limit_wei(block_identifier=chain.height)
     excess = ETH(10)
