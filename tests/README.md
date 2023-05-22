@@ -1,27 +1,32 @@
 # Tests
 
-There are two groups of common tests in `tests` directory: regression
-(`tests/regression/test_*.py`) and snapshot (`tests/snapshot/test_*.py`).
+There are three groups of common tests in `tests` directory:
+- acceptance (`tests/acceptance/test_*.py`)
+- regression (`tests/regression/test_*.py`)
+- snapshot (`tests/snapshot/test_*.py`).
 
-The regression tests check the on-chain protocol state:
+The acceptance and regression tests check the on-chain protocol state:
 
 1) after executing the vote script `scripts/vote_*.py` if it exists
 2) just the current on-chain state otherwise
+
+Acceptance tests are devoted to the contract's state, while regression tests are for various scenario.
 
 The snapshot tests run only if the vote script exists.
 
 If there are multiple vote scripts all the scripts are run and executed
 sequentially in lexicographical order by script name.
 
-## Regression tests in master branch
+## Acceptance and regression tests in master branch
 
-As there is no vote script (as the workflow defines) only the regression tests run.
+As there is no vote script (as the workflow defines) only the acceptance and regression tests run.
 
-## Regression tests in omnibus branch
+## Acceptance and regression tests in omnibus branch
 
 As the vote script exists (as the workflow defines):
-a) the regression tests run after executing the vote
-b) the snapshot tests run
+a) the acceptance tests run after execution the vote
+b) the regression tests run after executing the vote
+c) the snapshot tests run
 
 ## Snapshot tests
 

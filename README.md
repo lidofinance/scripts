@@ -3,11 +3,11 @@
   <img src="assets/voting.png" width="60" height="60" align="left" style="padding: 20px"/>
 </div>
 
-![python ~3.9](https://img.shields.io/badge/python->=3.8,<3.11-blue)
-![poetry 1.2.2](https://img.shields.io/badge/poetry-1.2.2-blue)
-![eth_brownie 1.19.2](https://img.shields.io/badge/eth__brownie-1.19.2-brown)
-![AVotesParser 0.5.3](https://img.shields.io/badge/AVotesParser-0.5.3-brown)
-![Ganache ~7.5.0](https://img.shields.io/badge/ganache-7.5.0-orange)
+![python ~3.10](https://img.shields.io/badge/python->=3.10,<3.11-blue)
+![poetry 1.5.0](https://img.shields.io/badge/poetry-1.5.0-blue)
+![eth_brownie 1.19.3](https://img.shields.io/badge/eth__brownie-1.19.3-brown)
+![AVotesParser 0.5.4](https://img.shields.io/badge/AVotesParser-0.5.4-brown)
+![Ganache ~7.6.0](https://img.shields.io/badge/ganache-7.6.0-orange)
 ![license MIT](https://img.shields.io/badge/license-MIT-brightgreen)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -23,7 +23,7 @@ to bootstrap environment and keep the repo sane.
 
 ### Prerequisites
 
-- Python >= 3.8, <3.11
+- Python >= 3.10, <3.11
 - Pip >= 20.0
 - Node >= 16.0
 - yarn >= 1.22
@@ -33,13 +33,13 @@ to bootstrap environment and keep the repo sane.
 Use the following command to install poetry:
 
 ```shell
-pip install --user poetry==1.2.2
+pip install --user poetry==1.5.0
 ```
 
 alternatively, you could proceed with `pipx`:
 
 ```shell
-pipx install poetry==1.2.2
+pipx install poetry==1.5.0
 ```
 
 #### Step 2. Setup dependencies with poetry
