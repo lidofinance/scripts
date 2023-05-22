@@ -1,37 +1,25 @@
+import os
+import json
+from typing import List
+
+import brownie.exceptions
 import pytest
 
-import os
-
-from typing import Optional
-
-from brownie import chain, interface
+from brownie import chain, interface, web3
+from brownie.network import state
+from brownie.network.contract import Contract
 
 from utils.evm_script import EMPTY_CALLSCRIPT
 
-from utils.config import (
-    ldo_token_address,
-    lido_dao_voting_address,
-    lido_dao_token_manager_address,
-    lido_dao_agent_address,
-    lido_dao_node_operators_registry,
-    lido_dao_deposit_security_module_address,
-    lido_dao_steth_address,
-    lido_dao_acl_address,
-    lido_dao_finance_address,
-    ldo_holder_address_for_tests,
-    ldo_vote_executors_for_tests,
-    lido_easytrack,
-    lido_dao_oracle,
-    lido_dao_composite_post_rebase_beacon_receiver,
-    lido_dao_self_owned_steth_burner,
-    lido_dao_execution_layer_rewards_vault,
-    weth_token_address,
-    lido_insurance_fund_address,
-    lido_relay_allowed_list,
-    dai_token_address,
-    trp_escrow_factory_address,
-)
+from utils.config import contracts, network_name, MAINNET_VOTE_DURATION
+
+from utils.config import *
 from utils.txs.deploy import deploy_from_prepared_tx
+from utils.test.helpers import ETH
+
+ENV_OMNIBUS_BYPASS_EVENTS_DECODING = "OMNIBUS_BYPASS_EVENTS_DECODING"
+ENV_PARSE_EVENTS_FROM_LOCAL_ABI = "PARSE_EVENTS_FROM_LOCAL_ABI"
+ENV_OMNIBUS_VOTE_IDS = "OMNIBUS_VOTE_IDS"
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -39,112 +27,49 @@ def shared_setup(fn_isolation):
     pass
 
 
+@pytest.fixture(scope="function")
+def deployer():
+    return accounts[0]
+
+
+@pytest.fixture()
+def steth_holder(accounts):
+    steth_holder = accounts.at("0x176F3DAb24a159341c0509bB36B833E7fdd0a131", force=True)
+    web3.provider.make_request("evm_setAccountBalance", [steth_holder.address, "0x152D02C7E14AF6800000"])
+    steth_holder.transfer(contracts.lido, ETH(10000))
+    return steth_holder
+
+
 @pytest.fixture(scope="module")
 def ldo_holder(accounts):
-    return accounts.at(ldo_holder_address_for_tests, force=True)
+    return accounts.at(LDO_HOLDER_ADDRESS_FOR_TESTS, force=True)
+
+
+@pytest.fixture(scope="function")
+def stranger(accounts):
+    stranger = accounts.at("0x98eC059dC3aDFbdd63429454aeB0C990fbA4a124", force=True)
+    web3.provider.make_request("evm_setAccountBalance", [stranger.address, "0x152D02C7E14AF6800000"])
+    assert stranger.balance() == ETH(100000)
+    return stranger
 
 
 @pytest.fixture(scope="module")
-def dao_voting(interface):
-    return interface.Voting(lido_dao_voting_address)
+def eth_whale(accounts):
+    if network_name() in ("goerli", "goerli-fork"):
+        return accounts.at("0xC48E23C5F6e1eA0BaEf6530734edC3968f79Af2e", force=True)
+    else:
+        return accounts.at("0x00000000219ab540356cBB839Cbe05303d7705Fa", force=True)
 
 
 @pytest.fixture(scope="module")
-def dao_agent(interface):
-    return interface.Agent(lido_dao_agent_address)
-
-
-@pytest.fixture(scope="module")
-def node_operators_registry(interface):
-    return interface.NodeOperatorsRegistry(lido_dao_node_operators_registry)
-
-
-@pytest.fixture(scope="module")
-def dao_token_manager(interface):
-    return interface.TokenManager(lido_dao_token_manager_address)
-
-
-@pytest.fixture(scope="module")
-def deposit_security_module(interface):
-    return interface.DepositSecurityModule(lido_dao_deposit_security_module_address)
-
-
-@pytest.fixture(scope="module")
-def composite_post_rebase_beacon_receiver(interface):
-    return interface.CompositePostRebaseBeaconReceiver(lido_dao_composite_post_rebase_beacon_receiver)
-
-
-@pytest.fixture(scope="module")
-def self_owned_steth_burner(interface):
-    return interface.SelfOwnedStETHBurner(lido_dao_self_owned_steth_burner)
-
-
-@pytest.fixture(scope="module")
-def ldo_token(interface):
-    return interface.MiniMeToken(ldo_token_address)
-
-
-@pytest.fixture(scope="module")
-def dai_token(interface):
-    return interface.ERC20(dai_token_address)
-
-
-@pytest.fixture(scope="module")
-def lido(interface):
-    return interface.Lido(lido_dao_steth_address)
-
-
-@pytest.fixture(scope="module")
-def acl(interface):
-    return interface.ACL(lido_dao_acl_address)
-
-
-@pytest.fixture(scope="module")
-def finance(interface):
-    return interface.Finance(lido_dao_finance_address)
-
-
-@pytest.fixture(scope="module")
-def oracle(interface):
-    return interface.LidoOracle(lido_dao_oracle)
-
-
-@pytest.fixture(scope="module")
-def execution_layer_rewards_vault(interface):
-    return interface.LidoExecutionLayerRewardsVault(lido_dao_execution_layer_rewards_vault)
-
-
-@pytest.fixture(scope="module")
-def easy_track(interface):
-    return interface.EasyTrack(lido_easytrack)
-
-
-@pytest.fixture(scope="module")
-def weth_token(interface):
-    return interface.WethToken(weth_token_address)
-
-
-@pytest.fixture(scope="module")
-def insurance_fund(interface):
-    return interface.InsuranceFund(lido_insurance_fund_address)
-
-
-@pytest.fixture(scope="module")
-def relay_allowed_list(interface):
-    return interface.MEVBoostRelayAllowedList(lido_relay_allowed_list)
-
-
-@pytest.fixture(scope="module")
-def trp_factory(interface):
-    return interface.VestingEscrowFactory(trp_escrow_factory_address)
-
-
-@pytest.fixture(scope="module")
-def unknown_person(accounts):
-    return accounts.at("0x98ec059dc3adfbdd63429454aeb0c990fba4a128", force=True)
+def steth_whale(accounts) -> Account:
+    # TODO: add steth whale for goerli
+    return accounts.at(INSURANCE_FUND, force=True)
 
 
 class Helpers:
+    _etherscan_is_fetched: bool = False
+
     @staticmethod
     def filter_events_from(addr, events):
         return list(filter(lambda evt: evt.address == addr, events))
@@ -156,23 +81,40 @@ class Helpers:
         assert dict(receiver_events[0]) == evt_keys_dict
 
     @staticmethod
-    def execute_vote(accounts, vote_id, dao_voting, topup="0.1 ether", skip_time=3 * 60 * 60 * 24):
+    def assert_event_not_emitted(evt_name, tx):
+        try:
+            _ = tx.events[evt_name]
+        except brownie.exceptions.EventLookupError:
+            pass
+        else:
+            raise AssertionError(f"Event {evt_name} was fired")
+
+    @staticmethod
+    def execute_vote(accounts, vote_id, dao_voting, topup="0.1 ether", skip_time=MAINNET_VOTE_DURATION):
+        (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup, skip_time)
+        return tx
+
+    @staticmethod
+    def execute_votes(accounts, vote_ids, dao_voting, topup="0.1 ether", skip_time=MAINNET_VOTE_DURATION):
         OBJECTION_PHASE_ID = 1
-        if dao_voting.canVote(vote_id, ldo_vote_executors_for_tests[0]) and (
-            dao_voting.getVotePhase(vote_id) != OBJECTION_PHASE_ID
-        ):
-            for holder_addr in ldo_vote_executors_for_tests:
-                print("voting from acct:", holder_addr)
-                if accounts.at(holder_addr, force=True).balance() < topup:
-                    accounts[0].transfer(holder_addr, topup)
-                account = accounts.at(holder_addr, force=True)
-                dao_voting.vote(vote_id, True, False, {"from": account})
+        for vote_id in vote_ids:
+            print(f"Vote #{vote_id}")
+            if dao_voting.canVote(vote_id, LDO_VOTE_EXECUTORS_FOR_TESTS[0]) and (
+                dao_voting.getVotePhase(vote_id) != OBJECTION_PHASE_ID
+            ):
+                for holder_addr in LDO_VOTE_EXECUTORS_FOR_TESTS:
+                    print("voting from acct:", holder_addr)
+                    if accounts.at(holder_addr, force=True).balance() < topup:
+                        accounts[0].transfer(holder_addr, topup)
+                    account = accounts.at(holder_addr, force=True)
+                    dao_voting.vote(vote_id, True, False, {"from": account})
 
         # wait for the vote to end
         chain.sleep(skip_time)
         chain.mine()
 
-        assert dao_voting.canExecute(vote_id)
+        for vote_id in vote_ids:
+            assert dao_voting.canExecute(vote_id)
 
         # try to instantiate script executor
         # to deal with events parsing properly
@@ -184,41 +126,56 @@ class Helpers:
             print("Unable to instantiate CallsScript")
             print("Trying to proceed further as is...")
 
-        tx = dao_voting.executeVote(vote_id, {"from": accounts[0]})
+        execution_transactions = []
+        for vote_id in vote_ids:
+            tx = dao_voting.executeVote(vote_id, {"from": accounts[0]})
+            print(f"vote #{vote_id} executed")
+            execution_transactions.append(tx)
 
-        print(f"vote #{vote_id} executed")
-        return tx
+        #Helpers._prefetch_contracts_from_etherscan()
+
+        return execution_transactions
 
     @staticmethod
     def is_executed(vote_id, dao_voting):
         vote_status = dao_voting.getVote(vote_id)
         return vote_status[1]
 
+    @staticmethod
+    def _prefetch_contracts_from_etherscan():
+        if not Helpers._etherscan_is_fetched:
+            print(f"prefetch Lido V2 contracts from Etherscan to parse events")
 
-@pytest.fixture(scope="module")
+            Contract.from_explorer(VALIDATORS_EXIT_BUS_ORACLE)
+            Contract.from_explorer(WITHDRAWAL_QUEUE)
+            Contract.from_explorer(STAKING_ROUTER)
+
+            Helpers._etherscan_is_fetched = True
+
+
+@pytest.fixture(scope="session")
 def helpers():
     return Helpers
 
 
-@pytest.fixture(scope="module")
-def vote_id_from_env() -> Optional[int]:
-    _env_name = "OMNIBUS_VOTE_ID"
-    if os.getenv(_env_name):
+@pytest.fixture(scope="session")
+def vote_ids_from_env() -> List[int]:
+    if os.getenv(ENV_OMNIBUS_VOTE_IDS):
         try:
-            vote_id = int(os.getenv(_env_name))
-            print(f"OMNIBUS_VOTE_ID env var is set, using existing vote #{vote_id}")
-            return vote_id
+            vote_ids_str = os.getenv(ENV_OMNIBUS_VOTE_IDS)
+            vote_ids = [int(s) for s in vote_ids_str.split(",")]
+            print(f"OMNIBUS_VOTE_IDS env var is set, using existing votes {vote_ids}")
+            return vote_ids
         except:
             pass
 
-    return None
+    return []
 
 
 @pytest.fixture(scope="module")
 def bypass_events_decoding() -> bool:
-    _env_name = "OMNIBUS_BYPASS_EVENTS_DECODING"
-    if os.getenv(_env_name):
-        print(f"Warning: OMNIBUS_BYPASS_EVENTS_DECODING env var is set, events decoding disabled")
+    if os.getenv(ENV_OMNIBUS_BYPASS_EVENTS_DECODING):
+        print(f"Warning: {ENV_OMNIBUS_BYPASS_EVENTS_DECODING} env var is set, events decoding disabled")
         return True
 
     return False
@@ -227,3 +184,54 @@ def bypass_events_decoding() -> bool:
 @pytest.fixture(scope="module")
 def autodeploy_contract(accounts):
     address = deploy_from_prepared_tx(accounts[0], "./utils/txs/tx-deploy-voting_for_upgrade.json")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def parse_events_from_local_abi():
+    if os.getenv(ENV_OMNIBUS_BYPASS_EVENTS_DECODING):
+        return
+
+    if not os.getenv(ENV_PARSE_EVENTS_FROM_LOCAL_ABI):
+        return
+
+    # Used if env variable PARSE_EVENTS_FROM_LOCAL_ABI is set
+    # Needed to enable events checking if ABI from Etherscan not available for any reason
+    contract_address_mapping = {
+        "AccountingOracle": [ACCOUNTING_ORACLE, ACCOUNTING_ORACLE_IMPL],
+        "ACL": [ACL_IMPL],
+        "Burner": [BURNER],
+        "CallsScript": [ARAGON_CALLS_SCRIPT],
+        "DepositSecurityModule": [DEPOSIT_SECURITY_MODULE],
+        "EIP712StETH": [EIP712_STETH],
+        "HashConsensus": [
+            HASH_CONSENSUS_FOR_AO,
+            HASH_CONSENSUS_FOR_VEBO,
+        ],
+        "LegacyOracle": [LEGACY_ORACLE, LEGACY_ORACLE_IMPL],
+        "Lido": [LIDO, LIDO_IMPL],
+        "LidoLocator": [LIDO_LOCATOR],
+        "LidoExecutionLayerRewardsVault": [EXECUTION_LAYER_REWARDS_VAULT],
+        "Kernel": [ARAGON_KERNEL_IMPL],
+        "NodeOperatorsRegistry": [NODE_OPERATORS_REGISTRY, NODE_OPERATORS_REGISTRY_IMPL],
+        "OracleDaemonConfig": [ORACLE_DAEMON_CONFIG],
+        "OracleReportSanityChecker": [ORACLE_REPORT_SANITY_CHECKER],
+        "Repo": [ARAGON_COMMON_REPO_IMPL],
+        "StakingRouter": [STAKING_ROUTER, STAKING_ROUTER_IMPL],
+        "ValidatorsExitBusOracle": [
+            VALIDATORS_EXIT_BUS_ORACLE,
+            VALIDATORS_EXIT_BUS_ORACLE_IMPL,
+        ],
+        "Voting": [VOTING_IMPL],
+        "WithdrawalQueueERC721": [WITHDRAWAL_QUEUE, WITHDRAWAL_QUEUE_IMPL],
+        "WithdrawalVault": [WITHDRAWAL_VAULT, WITHDRAWAL_VAULT_IMPL],
+    }
+
+    interface_path_template = "interfaces/{}.json"
+    for contract_name, addresses in contract_address_mapping.items():
+        for addr in addresses:
+            with open(interface_path_template.format(contract_name)) as fp:
+                abi = json.load(fp)
+            contract = Contract.from_abi(contract_name, addr, abi)
+            # See https://eth-brownie.readthedocs.io/en/stable/api-network.html?highlight=_add_contract#brownie.network.state._add_contract
+            # Added contract will resolve from address during state._find_contract without a request to Etherscan
+            state._add_contract(contract)

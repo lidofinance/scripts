@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Callable, Dict, Optional, List
+from typing import Callable, Dict, Optional, List, Annotated, Tuple
 from dataclasses import dataclass
 
 from eth_event import StructLogError, decode_traceTransaction
@@ -60,6 +60,15 @@ def _align_logdata_len(trace: List) -> List:
     return trace
 
 
+def _find_fist_index_of_event_with_different_from_first_event_address(events):
+    first_event_address = events[0].address
+    for idx in range(len(events)):
+        e = events[idx]
+        if e.address != first_event_address:
+            return idx
+    return len(events)
+
+
 def tx_events_from_trace(tx: TransactionReceipt) -> Optional[List]:
     """
     Parse and build events list from transaction receipt
@@ -75,6 +84,7 @@ def tx_events_from_trace(tx: TransactionReceipt) -> Optional[List]:
     # Parsing events from trace.
     # Brownie uses that way for the reverted transactions only.
     # Contracts resolution by addr works pretty well.
+    print(f"Parsing events from tx trace...", end="")
     tx._get_trace()
     trace = tx._raw_trace
 
@@ -89,6 +99,7 @@ def tx_events_from_trace(tx: TransactionReceipt) -> Optional[List]:
     initial_address = str(tx.receiver or tx.contract_address)
 
     events = decode_traceTransaction(trace, _topics, allow_undecoded=True, initial_address=initial_address)
+    print(f" Done")
 
     return [format_event(i) for i in events]
 
@@ -111,7 +122,16 @@ def resolve_contract(addr: str) -> str:
         return contract._name
 
 
-def group_tx_events(events: Optional[List], dict_events: EventDict, group: [GroupBy]) -> [(GroupBy, EventDict)]:
+def get_event_group(event, contract_name, groups: List[GroupBy]) -> Optional[GroupBy]:
+    for g in groups:
+        if g.contract_name == contract_name and g.event_name == event.name:
+            return g
+    return None
+
+
+def group_tx_events(
+    events: Optional[List], dict_events: EventDict, groups: List[GroupBy]
+) -> List[Annotated[Tuple[GroupBy, EventDict], 2]]:
     """
     Group events with provided markers
 
@@ -121,7 +141,7 @@ def group_tx_events(events: Optional[List], dict_events: EventDict, group: [Grou
         Raw transaction events (logs)
     dict_events : EventDict
         Repacked transaction events (logs)
-    group: [GroupBy]
+    groups: [GroupBy]
         Event grouping markers
     """
     evs = list(dict_events)
@@ -132,22 +152,18 @@ def group_tx_events(events: Optional[List], dict_events: EventDict, group: [Grou
     group_start_index = 0
     group_stop_index = -1
     while evs:
-        idx = next((evs.index(i) for i in evs if i.address != evs[0].address), len(evs))
-        name = resolve_contract(evs[0].address)
+        first_event = evs[0]
+        idx = _find_fist_index_of_event_with_different_from_first_event_address(evs)
+        contract_name = resolve_contract(first_event.address)
+        if contract_name == "":
+            print(f"WARNING: cannot resolve contract name at {first_event.address}")
 
         event_names = []
         for event in evs[:idx]:
             event_names.append(event.name)
 
-        current_grp = next(
-            (
-                current_grp
-                for current_grp in group
-                if current_grp.contract_name == name and current_grp.event_name in event_names
-            ),
-            None,
-        )
-        if current_grp:
+        current_grp = get_event_group(first_event, contract_name, groups)
+        if current_grp is not None:
             if group_stop_index >= group_start_index:
                 ret.append((prev_grp, EventDict(all_evs[group_start_index : group_stop_index + 1])))
                 group_start_index = group_stop_index + 1
@@ -161,7 +177,7 @@ def group_tx_events(events: Optional[List], dict_events: EventDict, group: [Grou
     return ret
 
 
-def display_tx_events(events: EventDict, title: str, group: [GroupBy]) -> None:
+def display_tx_events(events: EventDict, title: str, groups: List[GroupBy]) -> None:
     """
     Display tx events registered during the transaction.
     Output data has a tree layout, the root node has 'title' text.
@@ -173,7 +189,7 @@ def display_tx_events(events: EventDict, title: str, group: [GroupBy]) -> None:
         Transaction events (logs)
     title: str
         Tree root node text
-    group: [GroupBy]
+    groups: [GroupBy]
         Event grouping markers
     """
     events = list(events)
@@ -182,29 +198,24 @@ def display_tx_events(events: EventDict, title: str, group: [GroupBy]) -> None:
     counters = {}
 
     while events:
-        idx = next((events.index(i) for i in events if i.address != events[0].address), len(events))
+        first_event = events[0]
+        idx = _find_fist_index_of_event_with_different_from_first_event_address(events)
 
-        name = resolve_contract(events[0].address)
-
-        if name:
-            sub_tree: List = [f"{name} ({events[0].address})"]
+        contract_name = resolve_contract(first_event.address)
+        if contract_name:
+            sub_tree: List = [f"{contract_name} ({first_event.address})"]
         else:
-            sub_tree = [f"{events[0].address}"]
+            print(f"WARNING: cannot resolve contract name at {first_event.address}")
+            sub_tree = [f"{first_event.address}"]
 
         event_names = []
         for event in events[:idx]:
             sub_tree.append([event.name, *(f"{k}: {v}" for k, v in event.items())])
             event_names.append(event.name)
 
-        current_grp = next(
-            (
-                current_grp
-                for current_grp in group
-                if current_grp.contract_name == name and current_grp.event_name in event_names
-            ),
-            None,
-        )
-        if current_grp:
+        current_grp = get_event_group(first_event, contract_name, groups)
+
+        if current_grp is not None:
             if len(active_tree) > 1:
                 active_tree.pop()
 
@@ -247,7 +258,7 @@ def display_filtered_tx_call(tx: TransactionReceipt, filter_func: Callable[[Dict
     key = _step_internal(trace[0], trace[-1], 0, len(trace), tx._get_trace_gas(0, len(tx.trace)))
     call_tree: List = [[key]]
     active_tree: List = [call_tree[0]]
-    # (index, depth, jumpDepth) for relevent steps in the trace
+    # (index, depth, jumpDepth) for relevant steps in the trace
     trace_index = [(0, 0, 0)] + [
         (i, trace[i]["depth"], trace[i]["jumpDepth"])
         for i in range(1, len(trace))

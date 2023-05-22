@@ -1,0 +1,128 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "name": "gate_seal",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "sealed_by",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "sealed_for",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "name": "sealable",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "sealed_at",
+        "type": "uint256"
+      }
+    ],
+    "name": "Sealed",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "name": "_sealing_committee",
+        "type": "address"
+      },
+      {
+        "name": "_seal_duration_seconds",
+        "type": "uint256"
+      },
+      {
+        "name": "_sealables",
+        "type": "address[]"
+      },
+      {
+        "name": "_expiry_timestamp",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "get_sealing_committee",
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "get_seal_duration_seconds",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "get_sealables",
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "get_expiry_timestamp",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "is_expired",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "name": "_sealables",
+        "type": "address[]"
+      }
+    ],
+    "name": "seal",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]
