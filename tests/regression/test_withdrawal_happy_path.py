@@ -17,8 +17,14 @@ def test_withdraw(steth_holder):
     REQUEST_AMOUNT = ETH(1)
     REQUESTS_SUM = REQUESTS_COUNT * REQUEST_AMOUNT
 
-    """ pre request """
+    """ report """
+    while (
+        contracts.withdrawal_queue.getLastRequestId()
+            != contracts.withdrawal_queue.getLastFinalizedRequestId()):
+        # finalize all current requests first
+        report_tx = oracle_report()[0]
 
+    """ pre request """
     no_requests = contracts.withdrawal_queue.getWithdrawalRequests(steth_holder, {"from": steth_holder})
     assert len(no_requests) == 0
 
@@ -78,9 +84,7 @@ def test_withdraw(steth_holder):
     pre_lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
     assert pre_lastCheckpointIndex > 0
 
-    """ report """
-    report_tx = None
-    # first oracle report, requests might not get finalized due to sanity check requestTimestampMargin depending on current fork time
+    # first report
     report_tx = oracle_report()[0]
     # second report requests will get finalized for sure
     if not report_tx.events.count("WithdrawalsFinalized") == 1:
