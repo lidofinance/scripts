@@ -28,12 +28,6 @@ ONE_DAY = 1 * 24 * 60 * 60
 ONE_YEAR = 365 * ONE_DAY
 MAX_BASIS_POINTS = 10000
 
-
-@pytest.fixture(scope="module")
-def eth_whale(accounts):
-    return accounts.at("0x00000000219ab540356cBB839Cbe05303d7705Fa", force=True)
-
-
 @pytest.fixture(scope="module")
 def pre_cl_balance():
     (_, _, pre_cl_balance) = contracts.lido.getBeaconStat()

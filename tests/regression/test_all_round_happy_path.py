@@ -7,6 +7,7 @@ from utils.config import contracts
 
 
 def test_all_round_happy_path(accounts, stranger, steth_holder):
+    print(stranger, stranger.balance())
     amount = ETH(100)
     max_deposit = 150
     curated_module_id = 1
@@ -15,6 +16,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder):
     contracts.lido.approve(contracts.withdrawal_queue.address, 1000, {"from": steth_holder})
     contracts.withdrawal_queue.requestWithdrawals([1000], steth_holder, {"from": steth_holder})
 
+    print(stranger, stranger.balance())
     steth_balance_before_submit = contracts.lido.balanceOf(stranger)
     eth_balance_before_submit = stranger.balance()
 
@@ -34,6 +36,8 @@ def test_all_round_happy_path(accounts, stranger, steth_holder):
     print("block before: ", chain.height)
 
     # TODO: do calculation right
+
+    print(stranger, stranger.balance())
 
     submit_tx = contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": amount})
 

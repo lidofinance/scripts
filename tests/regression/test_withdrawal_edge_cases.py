@@ -18,9 +18,8 @@ def check_all_requests_finalization(request_ids, holder):
         assert is_finalized
 
 
-def test_bunker_multiple_batches(accounts):
+def test_bunker_multiple_batches(stranger):
     amount = ETH(100)
-    stranger = accounts[0]
     withdrawal_amount = ETH(10)
 
     assert contracts.lido.balanceOf(stranger) == 0
@@ -78,9 +77,8 @@ def test_bunker_multiple_batches(accounts):
     assert claims[1]["amountOfETH"] == withdrawal_amount
 
 
-def test_oracle_report_missed(accounts):
+def test_oracle_report_missed(stranger):
     amount = ETH(100)
-    stranger = accounts[0]
 
     assert contracts.lido.balanceOf(stranger) == 0
 
@@ -121,9 +119,8 @@ def test_oracle_report_missed(accounts):
     assert claims[0]["amountOfETH"] == amount
 
 
-def test_several_rebases(accounts):
+def test_several_rebases(stranger):
     amount = ETH(100)
-    stranger = accounts[0]
     withdrawal_amount = ETH(10)
 
     assert contracts.lido.balanceOf(stranger) == 0

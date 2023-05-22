@@ -1,7 +1,6 @@
 import pytest
 from web3 import Web3
 from brownie import chain, ZERO_ADDRESS
-from typing import NewType, Tuple
 
 from utils.test.extra_data import (
     ExtraDataService,
@@ -11,6 +10,7 @@ from utils.test.oracle_report_helpers import (
     oracle_report,
 )
 from utils.config import contracts, STAKING_ROUTER
+from utils.test.node_operators_helpers import node_operator_gindex
 
 
 @pytest.fixture()
@@ -21,15 +21,6 @@ def extra_data_service():
 @pytest.fixture(scope="module")
 def impersonated_voting(accounts):
     return accounts.at(contracts.voting.address, force=True)
-
-
-StakingModuleId = NewType("StakingModuleId", int)
-NodeOperatorId = NewType("NodeOperatorId", int)
-NodeOperatorGlobalIndex = Tuple[StakingModuleId, NodeOperatorId]
-
-
-def node_operator_gindex(module_id, node_operator_id) -> NodeOperatorGlobalIndex:
-    return module_id, node_operator_id
 
 
 @pytest.fixture(scope="module")

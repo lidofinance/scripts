@@ -5,7 +5,7 @@ from typing import Any, Union, Optional, Dict
 
 from utils.brownie_prelude import *
 
-from brownie import network, accounts, ShapellaUpgradeTemplate
+from brownie import network, accounts
 from brownie.utils import color
 from brownie.network.account import Account, LocalAccount
 
@@ -87,10 +87,6 @@ class ContractsLazyLoader:
     @property
     def lido_v1(self) -> interface.LidoV1:
         return interface.LidoV1(LIDO)
-
-    @property
-    def node_operators_registry_v1(self) -> interface.NodeOperatorsRegistryV1:
-        return interface.NodeOperatorsRegistryV1(NODE_OPERATORS_REGISTRY)
 
     @property
     def lido(self) -> interface.Lido:
@@ -233,8 +229,8 @@ class ContractsLazyLoader:
         return interface.GateSeal(GATE_SEAL)
 
     @property
-    def shapella_upgrade_template(self) -> ShapellaUpgradeTemplate:
-        return ShapellaUpgradeTemplate.at(LIDO_V2_UPGRADE_TEMPLATE)
+    def evm_script_registry(self) -> interface.EVMScriptRegistry:
+        return interface.EVMScriptRegistry(ARAGON_EVMSCRIPT_REGISTRY)
 
 
 def __getattr__(name: str) -> Any:

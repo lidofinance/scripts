@@ -5,7 +5,6 @@ from utils.config import (
     contracts,
     DEPOSIT_SECURITY_MODULE,
     DSM_GUARDIANS,
-    DEPOSIT_SECURITY_MODULE_V1,
     CHAIN_DEPOSIT_CONTRACT,
     DSM_MAX_DEPOSITS_PER_BLOCK,
     DSM_MIN_DEPOSIT_BLOCK_DISTANCE,
@@ -15,49 +14,37 @@ from utils.config import (
 
 
 @pytest.fixture(scope="module")
-def contract() -> interface.DepositSecurityModule:
-    return interface.DepositSecurityModule(DEPOSIT_SECURITY_MODULE)
+def dsm() -> interface.DepositSecurityModule:
+    return contracts.deposit_security_module
 
 
-def test_owner(contract):
-    assert contract.getOwner() == contracts.agent
+def test_owner(dsm):
+    assert dsm.getOwner() == contracts.agent
 
 
-def test_links(contract):
-    assert contract.LIDO() == contracts.lido
-    assert contract.STAKING_ROUTER() == contracts.staking_router
-    assert contract.DEPOSIT_CONTRACT() == CHAIN_DEPOSIT_CONTRACT
+def test_links(dsm):
+    assert dsm.LIDO() == contracts.lido
+    assert dsm.STAKING_ROUTER() == contracts.staking_router
+    assert dsm.DEPOSIT_CONTRACT() == CHAIN_DEPOSIT_CONTRACT
 
 
-def test_migration(contract):
-    old_dsm = interface.DepositSecurityModule(DEPOSIT_SECURITY_MODULE_V1)
+def test_deposit_security_module(dsm):
+    assert dsm.getMaxDeposits() == DSM_MAX_DEPOSITS_PER_BLOCK
+    assert dsm.getMinDepositBlockDistance() == DSM_MIN_DEPOSIT_BLOCK_DISTANCE
+    assert dsm.getPauseIntentValidityPeriodBlocks() == DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS
 
-    assert contract.PAUSE_MESSAGE_PREFIX() != old_dsm.PAUSE_MESSAGE_PREFIX()
-    assert contract.ATTEST_MESSAGE_PREFIX() != old_dsm.ATTEST_MESSAGE_PREFIX()
-    assert contract.getMaxDeposits() == old_dsm.getMaxDeposits()
-    assert contract.getMinDepositBlockDistance() == old_dsm.getMinDepositBlockDistance()
-    assert contract.getGuardians() == old_dsm.getGuardians()
-    assert contract.getGuardianQuorum() == old_dsm.getGuardianQuorum()
-    assert contract.getPauseIntentValidityPeriodBlocks() == old_dsm.getPauseIntentValidityPeriodBlocks()
-
-
-def test_deposit_security_module(contract):
-    assert contract.getMaxDeposits() == DSM_MAX_DEPOSITS_PER_BLOCK
-    assert contract.getMinDepositBlockDistance() == DSM_MIN_DEPOSIT_BLOCK_DISTANCE
-    assert contract.getPauseIntentValidityPeriodBlocks() == DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS
-
-    assert contract.getGuardians() == DSM_GUARDIANS
-    assert contract.getGuardianQuorum() == DSM_GUARDIAN_QUORUM
+    assert dsm.getGuardians() == DSM_GUARDIANS
+    assert dsm.getGuardianQuorum() == DSM_GUARDIAN_QUORUM
 
     for guardian in DSM_GUARDIANS:
-        assert contract.getGuardianIndex(guardian) >= 0
-        assert contract.isGuardian(guardian) == True
+        assert dsm.getGuardianIndex(guardian) >= 0
+        assert dsm.isGuardian(guardian) == True
 
 
-def test_prefixes(contract):
+def test_prefixes(dsm):
     """Test that prefixes are calculated correctly. Fails if chainId of the fork was not =1 during dsm deploy"""
     assert (
-        contract.PAUSE_MESSAGE_PREFIX()
+        dsm.PAUSE_MESSAGE_PREFIX()
         == web3.solidityKeccak(
             ["bytes32", "uint256", "address"],
             [
@@ -68,7 +55,7 @@ def test_prefixes(contract):
         ).hex()
     )
     assert (
-        contract.ATTEST_MESSAGE_PREFIX()
+        dsm.ATTEST_MESSAGE_PREFIX()
         == web3.solidityKeccak(
             ["bytes32", "uint256", "address"],
             [

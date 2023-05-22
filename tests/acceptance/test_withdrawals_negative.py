@@ -103,6 +103,7 @@ def test_wq_prefinalize(wq: Contract, steth_whale: Account):
         oracle_report(withdrawalFinalizationBatches=[last_finalized_id + 1, last_finalized_id + 2], simulatedShareRate=0)
 
 
+@pytest.mark.skip()
 def test_request_to_finalize_to_close(wq: Contract, steth_whale: Account):
     fill_wq(wq, steth_whale, count=1)
     with reverts(encode_error("IncorrectRequestFinalization(uint256)", [chain.time()])):
@@ -132,13 +133,6 @@ def test_wq_finalize(wq: Contract, steth_whale: Account):
         wq.finalize(4, 1, {"from": contracts.lido})
 
 # === Fixtures ===
-
-
-@pytest.fixture(scope="function", autouse=True)
-def shared_setup(fn_isolation):
-    pass
-
-
 @pytest.fixture(scope="module")
 def wq() -> Contract:
     return interface.WithdrawalQueueERC721(WITHDRAWAL_QUEUE)

@@ -38,9 +38,7 @@ def test_get_last_requested_validator_indices(contract):
         contract.getLastRequestedValidatorIndices(1, [2**40 + 1])
 
 
-def test_submit_report_data_checks(contract, ref_slot):
-    stranger = accounts[0]
-
+def test_submit_report_data_checks(contract, ref_slot, stranger):
     contract_version = contract.getContractVersion()
     consensus_version = contract.getConsensusVersion()
 

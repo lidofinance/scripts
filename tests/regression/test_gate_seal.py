@@ -19,11 +19,6 @@ from utils.config import (
 )
 
 
-@pytest.fixture(autouse=True)
-def shared_setup(fn_isolation):
-    pass
-
-
 @pytest.fixture(scope="module")
 def gate_seal_committee(accounts) -> Account:
     return accounts.at(GATE_SEAL_COMMITTEE, force=True)

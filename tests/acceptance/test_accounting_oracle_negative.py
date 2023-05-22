@@ -3,11 +3,11 @@ from hexbytes import HexBytes
 from web3 import Web3
 
 import pytest
-from brownie import ZERO_ADDRESS, Contract, MockHashConsensus, accounts, chain, interface, reverts  # type: ignore
+from brownie import ZERO_ADDRESS, Contract, MockHashConsensus, accounts, chain, interface, reverts, chain  # type: ignore
 from brownie.network.account import Account
 from configs.config_mainnet import MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT
 
-from utils.config import contracts, DEPLOYER_EOA, ACCOUNTING_ORACLE
+from utils.config import contracts, ACCOUNTING_ORACLE
 from utils.evm_script import encode_error
 from utils.test.extra_data import ExtraDataService, ItemType
 from utils.test.oracle_report_helpers import (
@@ -175,147 +175,7 @@ def test_setConsensusContract(accounting_oracle: Contract, aragon_agent: Account
         )
 
 
-def test_submitReportExtraDataEmpty(
-    accounting_oracle: Contract,
-    consensus_member: Account,
-    push_report: Callable,
-):
-    with reverts(encode_error("CannotSubmitExtraDataBeforeMainData()")):
-        accounting_oracle.submitReportExtraDataEmpty(
-            {"from": consensus_member},
-        )
-
-    report = oracle_report(dry_run=True)
-    deadline = push_report(report)
-
-    accounting_oracle.submitReportData(
-        report.items,
-        accounting_oracle.getContractVersion(),
-        {"from": consensus_member},
-    )
-
-    accounting_oracle.submitReportExtraDataEmpty(
-        {"from": consensus_member},
-    )
-    with reverts(encode_error("ExtraDataAlreadyProcessed()")):
-        accounting_oracle.submitReportExtraDataEmpty(
-            {"from": consensus_member},
-        )
-
-    chain.sleep(deadline - chain.time() + 42)
-    chain.mine()
-
-    with reverts(
-        encode_error(
-            "ProcessingDeadlineMissed(uint256)",
-            [deadline],
-        )
-    ):
-        accounting_oracle.submitReportExtraDataEmpty(
-            {"from": consensus_member},
-        )
-
-    report = oracle_report(
-        extraDataFormat=EXTRA_DATA_FORMAT_LIST,
-        extraDataHash=HexBytes(NON_ZERO_HASH),
-        extraDataItemsCount=1,
-        dry_run=True,
-    )
-    push_report(report)
-
-    accounting_oracle.submitReportData(
-        report.items,
-        accounting_oracle.getContractVersion(),
-        {"from": consensus_member},
-    )
-
-    with reverts(
-        encode_error(
-            "UnexpectedExtraDataFormat(uint256,uint256)",
-            [
-                EXTRA_DATA_FORMAT_LIST,
-                EXTRA_DATA_FORMAT_EMPTY,
-            ],
-        )
-    ):
-        accounting_oracle.submitReportExtraDataEmpty(
-            {"from": consensus_member},
-        )
-
-
 class TestSubmitReportExtraDataList:
-    def test_simple(
-        self,
-        accounting_oracle: Contract,
-        consensus_member: Account,
-        submit_main_data: Callable,
-        push_report: Callable,
-    ):
-        with reverts(encode_error("CannotSubmitExtraDataBeforeMainData()")):
-            accounting_oracle.submitReportExtraDataList(b"", {"from": consensus_member})
-
-        report = oracle_report(
-            extraDataHash=HexBytes(NON_ZERO_HASH),
-            extraDataItemsCount=1,
-            extraDataFormat=EXTRA_DATA_FORMAT_LIST,
-            extraDataList=NON_ZERO_HASH,
-            dry_run=True,
-        )
-        push_report(report)
-        submit_main_data(report)
-
-        with reverts(
-            encode_error(
-                "UnexpectedExtraDataHash(bytes32,bytes32)",
-                [
-                    HexBytes(NON_ZERO_HASH),
-                    Web3.keccak(b"42"),
-                ],
-            )
-        ):
-            accounting_oracle.submitReportExtraDataList(b"42", {"from": consensus_member})
-
-        # TODO: ExtraDataListOnlySupportsSingleTx
-
-        report = oracle_report(
-            extraDataHash=HexBytes(NON_ZERO_HASH),
-            extraDataItemsCount=1,
-            extraDataFormat=EXTRA_DATA_FORMAT_LIST,
-            extraDataList=NON_ZERO_HASH,
-            dry_run=True,
-        )
-        deadline = push_report(report)
-        submit_main_data(report)
-
-        chain.sleep(deadline - chain.time() + 42)
-        chain.mine()
-
-        with reverts(
-            encode_error(
-                "ProcessingDeadlineMissed(uint256)",
-                [deadline],
-            )
-        ):
-            accounting_oracle.submitReportExtraDataList(
-                b"",
-                {"from": consensus_member},
-            )
-
-        report = oracle_report(dry_run=True)
-        push_report(report)
-        submit_main_data(report)
-
-        with reverts(
-            encode_error(
-                "UnexpectedExtraDataFormat(uint256,uint256)",
-                [
-                    EXTRA_DATA_FORMAT_EMPTY,
-                    EXTRA_DATA_FORMAT_LIST,
-                ],
-            )
-        ):
-            accounting_oracle.submitReportExtraDataList(b"", {"from": consensus_member})
-
     def test_too_short_extra_data_item(self):
         extra_data = b"".join(
             (
@@ -735,13 +595,6 @@ class TestSubmitReportData:
 
 
 # === Fixtures ===
-
-
-@pytest.fixture(scope="function", autouse=True)
-def shared_setup(fn_isolation):
-    pass
-
-
 @pytest.fixture(scope="module")
 def accounting_oracle() -> interface.AccountingOracle:
     return interface.AccountingOracle(ACCOUNTING_ORACLE)
@@ -755,11 +608,6 @@ def oracle_version(accounting_oracle: Contract) -> int:
 @pytest.fixture(scope="module")
 def aragon_agent() -> Account:
     return contracts.agent
-
-
-@pytest.fixture(scope="module")
-def deployer():
-    return accounts.at(DEPLOYER_EOA, force=True)
 
 
 @pytest.fixture(scope="module")

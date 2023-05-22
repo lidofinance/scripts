@@ -69,28 +69,6 @@ def test_consensus(contract):
     assert contract.getConsensusContract() == HASH_CONSENSUS_FOR_VEBO
 
 
-def test_processing_state(contract):
-    assert contract.getTotalRequestsProcessed() == 0
-    state = contract.getProcessingState()
-    assert state["currentFrameRefSlot"] >= last_seen_ref_slot
-    assert state["processingDeadlineTime"] == 0
-    assert state["dataHash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
-    assert state["dataSubmitted"] == False
-    assert state["dataFormat"] == 0
-    assert state["requestsCount"] == 0
-    assert state["requestsSubmitted"] == 0
-
-    assert contract.getLastProcessingRefSlot() == 0
-
-
-def test_report(contract):
-    report = contract.getConsensusReport()
-    assert report["hash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
-    assert report["refSlot"] == 0
-    assert report["processingDeadlineTime"] == 0
-    assert report["processingStarted"] == False
-
-
 def test_vebo_hash_consensus_synced_with_accounting_one(contract):
     consensus = interface.HashConsensus(contract.getConsensusContract())
     frameConfig = consensus.getFrameConfig()

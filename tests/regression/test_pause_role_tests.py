@@ -7,10 +7,6 @@ from brownie import reverts, web3
 
 from utils.config import contracts
 
-@pytest.fixture(scope="module")
-def stranger(accounts):
-    return accounts[0]
-
 
 @pytest.fixture(scope="function")
 def stop_lido():

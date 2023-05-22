@@ -3,6 +3,7 @@ import math
 from brownie import web3, network
 from typing import Dict, List
 from eth_abi import encode_abi, decode_abi
+from typing import  NewType, Tuple
 
 SIGNING_KEY_KEYS = ["key", "depositSignature", "used"]
 
@@ -29,6 +30,13 @@ NODE_OPERATOR_SUMMARY_KEYS = [
 
 EVENT_SIGNATURES = {"NodeOperatorAdded": "NodeOperatorAdded(uint256,string,address,uint64)"}
 
+StakingModuleId = NewType("StakingModuleId", int)
+NodeOperatorId = NewType("NodeOperatorId", int)
+NodeOperatorGlobalIndex = Tuple[StakingModuleId, NodeOperatorId]
+
+
+def node_operator_gindex(module_id, node_operator_id) -> NodeOperatorGlobalIndex:
+    return module_id, node_operator_id
 
 def assert_signing_key(first, second, skip=[]):
     assert_dict_values(first, second, SIGNING_KEY_KEYS, skip)
