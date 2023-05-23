@@ -114,7 +114,7 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
     contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale, "amount": ETH(10000)})
 
     tested_no_id_first = 20
-    tested_no_id_second = 21
+    tested_no_id_second = 28
     base_no_id = 23
 
     nor.setNodeOperatorStakingLimit(tested_no_id_first, 10000, {"from": impersonated_voting})
