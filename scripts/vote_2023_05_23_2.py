@@ -1,13 +1,11 @@
 """
-Voting 23/05/2023 — take 2.
+Voting 23/05/2023
 
-. Burn 13.45978634 stETHs as cover
-
-. Set Anyblocks Analytics key limit to 0
-
-. Send 170 stETH to reWARDS 0x87D93d9B2C672bf9c9642d853a8682546a5012B5
-
-. Increase Easy Track motions amount limit: set motionsCountLimit to 20
+1) Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent
+2) Set Anyblock Analytics targetValidatorsLimits to 0
+3) Renounce STAKING_MODULE_MANAGE_ROLE from Lido Agent
+4) Fund the reWARDS for June 2023 with 170 stETH
+5) Increase Easy Track motions amount limit: set motionsCountLimit to 20
 
 """
 
@@ -39,66 +37,19 @@ from utils.easy_track import (
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
-
-    # Burn 13.45978634 stETHs as cover
-    stETH_to_burn = 13.45978634 * 1e18
-    REQUEST_BURN_MY_STETH_ROLE = "0x28186f938b759084eea36948ef1cd8b40ec8790a98d5f1a09b70879fe054e5cc"
-
-    # Set Anyblocks Analytics key limit to 0
-
+    
+    ANYBLOCK_ANALYTICS_ID = 12
     STAKING_MODULE_MANAGE_ROLE = "0x3105bcbf19d4417b73ae0e58d508a65ecf75665e46c2622d8521732de6080c48"
 
-    # Send 170 stETH to reWARDS 0x87D93d9B2C672bf9c9642d853a8682546a5012B5    
-
-    # 1 Increase Easy Track motions amount limit
     motionsCountLimit = 20
+
+    REWARDS_MULTISIG_ADDRESS = "0x87D93d9B2C672bf9c9642d853a8682546a5012B5"
+    REWARDS_JUNE_BUDGET = 170*1e18
     
-
     call_script_items = [
-        # Burn 13.45978634 stETHs as cover
-        agent_forward(
-            [
-                (
-                    contracts.insurance_fund.address,
-                    contracts.insurance_fund.transferERC20.encode_input(contracts.lido.address, contracts.agent.address, stETH_to_burn),
-                )
-            ]
-        ),
-        agent_forward(
-            [
-                (
-                    contracts.lido.address,
-                    contracts.lido.approve.encode_input(contracts.burner.address, stETH_to_burn),
-                )
-            ]
-        ),
-        agent_forward(
-            [
-                (
-                    contracts.burner.address,
-                    contracts.burner.grantRole.encode_input(REQUEST_BURN_MY_STETH_ROLE, contracts.agent.address),
-                )
-            ]
-        ),
-        agent_forward(
-            [
-                (
-                    contracts.burner.address,
-                    contracts.burner.requestBurnMyStETHForCover.encode_input(stETH_to_burn),
-                )
-            ]
-        ),
-        agent_forward(
-            [
-                (
-                    contracts.burner.address,
-                    contracts.burner.renounceRole.encode_input(REQUEST_BURN_MY_STETH_ROLE, contracts.agent.address),
-                )
-            ]
-        ),
+        # Set Anyblock Analytics targetValidatorsLimits to 0
 
-        # # Set Anyblocks Analytics key limit to 0
-
+        ## Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent
         agent_forward(
             [
                 (
@@ -107,14 +58,16 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                 )
             ]
         ),
+        ## Set Anyblock Analytics targetValidatorsLimits to 0
         agent_forward(
             [
                 (
                     contracts.staking_router.address,
-                    contracts.staking_router.updateTargetValidatorsLimits.encode_input(1, 12, True, 0),
+                    contracts.staking_router.updateTargetValidatorsLimits.encode_input(1, ANYBLOCK_ANALYTICS_ID, True, 0),
                 )
             ]
         ),
+        ## Renounce STAKING_MODULE_MANAGE_ROLE
         agent_forward(
             [
                 (
@@ -124,28 +77,23 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ]
         ),
 
-        # reWARDS payment
+        # Send the reWARDS June payment
         make_steth_payout(
-            target_address='0x87D93d9B2C672bf9c9642d853a8682546a5012B5',
-            steth_in_wei=170*1e18,
+            target_address=REWARDS_MULTISIG_ADDRESS,
+            steth_in_wei=REWARDS_JUNE_BUDGET,
             reference='reWARDS June 2023 budget'
         ),
         
-        # 
+        # Set max EasyTrack motions limit to 20
         set_motions_count_limit(motionsCountLimit),
     ]
 
     vote_desc_items = [
-        "ururu1",
-        "ururu2",
-        "ururu3",
-        "ururu4",
-        "ururu5",
-        "ururu6",
-        "ururu7",
-        "ururu8",
-        "ururu9",
-        "Increase Easy Track motions amount limit: set motionsCountLimit to 20",
+        "1) Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent",
+        "2) Set Anyblock Analytics targetValidatorsLimits to 0",
+        "3) Renounce STAKING_MODULE_MANAGE_ROLE from Lido Agent",
+        "4) Fund the reWARDS for June 2023 with 170 stETH",
+        "5) Increase Easy Track motions amount limit: set motionsCountLimit to 20",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
@@ -157,7 +105,6 @@ def main():
     tx_params = {"from": get_deployer_account()}
 
     if get_is_live():
-        tx_params["max_fee"] = "300 gwei"
         tx_params["priority_fee"] = get_priority_fee()
 
     vote_id, _ = start_vote(tx_params=tx_params, silent=False)
