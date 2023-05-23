@@ -1,14 +1,13 @@
 """
-Tests for voting 25/04/2023 — take 2.
+Tests for voting 23/05/2023 — take 2.
 
 """
-from scripts.vote_2023_05_23_2 import start_vote
+from scripts.vote_2023_05_23 import start_vote
 
 from brownie import chain, accounts, web3
 from brownie.network.transaction import TransactionReceipt
 from eth_abi.abi import encode_single
 
-from utils.test.oracle_report_helpers import ONE_DAY, SHARE_RATE_PRECISION, oracle_report
 
 from utils.config import (
     network_name,
@@ -27,7 +26,6 @@ from utils.test.event_validators.easy_track import (
 )
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 from utils.test.helpers import almostEqWithDiff
-import math
 
 #####
 # CONSTANTS
@@ -44,44 +42,26 @@ def test_vote(
 ):
 
     ## parameters
-    finance = contracts.finance
     agent = contracts.agent
-    insurance_fund = contracts.insurance_fund
-    burner = contracts.burner
-    lido = contracts.lido
     node_operators_registry = contracts.node_operators_registry
     rewards_multisig_address = "0x87D93d9B2C672bf9c9642d853a8682546a5012B5"
     staking_router = contracts.staking_router
-    staking_module_id = 1
+    easy_track = contracts.easy_track
     target_NO_id = 12
-
-    # web3.keccak(text="STAKING_MODULE_MANAGE_ROLE")
-    STAKING_MODULE_MANAGE_ROLE = "0x3105bcbf19d4417b73ae0e58d508a65ecf75665e46c2622d8521732de6080c48"
-    
-    stETH_token = interface.ERC20("0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
-
-    agent_balance_before = stETH_token.balanceOf(agent.address)
-    rewards_balance_before = stETH_token.balanceOf(rewards_multisig_address)
-    NO_summary_before = node_operators_registry.getNodeOperatorSummary(target_NO_id)
-
-    rewards_payout = Payout(
-        token_addr=stETH_token.address,
-        from_addr=agent.address,
-        to_addr=rewards_multisig_address,
-        amount=170 * (10 ** 18)
-    )    
-
     target_validators_count_change_request = TargetValidatorsCountChanged(
-        nodeOperatorId=12,
+        nodeOperatorId=target_NO_id,
         targetValidatorsCount=0
     )
 
-    assert staking_router.hasRole(STAKING_MODULE_MANAGE_ROLE, agent.address) == False
-        
-    easy_track = contracts.easy_track
-    motionsCountLimit_before = 12
-    motionsCountLimit_expected = 20  
+    # web3.keccak(text="STAKING_MODULE_MANAGE_ROLE")
+    STAKING_MODULE_MANAGE_ROLE = "0x3105bcbf19d4417b73ae0e58d508a65ecf75665e46c2622d8521732de6080c48"
 
+    stETH_token = interface.ERC20("0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
+
+    # 1-3
+    assert staking_router.hasRole(STAKING_MODULE_MANAGE_ROLE, agent.address) == False
+
+    NO_summary_before = node_operators_registry.getNodeOperatorSummary(target_NO_id)
     assert NO_summary_before[0] == False
     assert NO_summary_before[1] == 0
     assert NO_summary_before[2] == 0
@@ -91,7 +71,21 @@ def test_vote(
     assert NO_summary_before[6] == 2300
     assert NO_summary_before[7] == 0
 
-    easy_track.motionsCountLimit() == motionsCountLimit_before, "Incorrect motions count limit before"    
+    # 4
+    agent_balance_before = stETH_token.balanceOf(agent.address)
+    rewards_balance_before = stETH_token.balanceOf(rewards_multisig_address)
+    rewards_payout = Payout(
+        token_addr=stETH_token.address,
+        from_addr=agent.address,
+        to_addr=rewards_multisig_address,
+        amount=170 * (10 ** 18)
+    )
+
+    # 5
+    motionsCountLimit_before = 12
+    motionsCountLimit_expected = 20
+    easy_track.motionsCountLimit() == motionsCountLimit_before, "Incorrect motions count limit before"
+
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -107,7 +101,7 @@ def test_vote(
      # validate vote events
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 5, "Incorrect voting items count"
 
-    display_voting_events(vote_tx)    
+    display_voting_events(vote_tx)
 
     assert staking_router.hasRole(STAKING_MODULE_MANAGE_ROLE, agent.address) == False
 
@@ -115,7 +109,7 @@ def test_vote(
     rewards_balance_after = stETH_token.balanceOf(rewards_multisig_address)
 
     assert almostEqWithDiff(agent_balance_after, agent_balance_before - rewards_payout.amount, STETH_ERROR_MARGIN)
-    assert almostEqWithDiff(rewards_balance_after, rewards_balance_before + rewards_payout.amount, STETH_ERROR_MARGIN)   
+    assert almostEqWithDiff(rewards_balance_after, rewards_balance_before + rewards_payout.amount, STETH_ERROR_MARGIN)
 
     NO_summary_after = node_operators_registry.getNodeOperatorSummary(target_NO_id)
     assert NO_summary_after[0]
@@ -126,24 +120,23 @@ def test_vote(
     assert NO_summary_after[5] == 0
     assert NO_summary_after[6] == 2300
     assert NO_summary_after[7] == 0
-    
+
     assert easy_track.motionsCountLimit() == motionsCountLimit_expected, "Incorrect motions count limit after"
 
     if bypass_events_decoding or network_name() in ("goerli", "goerli-fork"):
         return
 
     evs = group_voting_events(vote_tx)
-    
+
     validate_grant_role_event(evs[0], STAKING_MODULE_MANAGE_ROLE, agent.address, agent.address)
 
     validate_target_validators_count_changed_event(evs[1], target_validators_count_change_request)
-    
+
     validate_revoke_role_event(evs[2], STAKING_MODULE_MANAGE_ROLE, agent.address, agent.address)
-    
+
     validate_token_payout_event(evs[3], rewards_payout, True)
-    
+
     validate_motions_count_limit_changed_event(
         evs[4],
         motionsCountLimit_expected
     )
-

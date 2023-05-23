@@ -2,9 +2,9 @@
 Voting 23/05/2023
 
 1) Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent
-2) Set Anyblock Analytics targetValidatorsLimits to 0
+2) Set Anyblock Analytics targetValidatorsCount to 0
 3) Renounce STAKING_MODULE_MANAGE_ROLE from Lido Agent
-4) Fund the reWARDS for June 2023 with 170 stETH
+4) Fund the reWARDS committee for June 2023 with 170 stETH
 5) Increase Easy Track motions amount limit: set motionsCountLimit to 20
 
 """
@@ -37,7 +37,7 @@ from utils.easy_track import (
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
-    
+
     ANYBLOCK_ANALYTICS_ID = 12
     STAKING_MODULE_MANAGE_ROLE = "0x3105bcbf19d4417b73ae0e58d508a65ecf75665e46c2622d8521732de6080c48"
 
@@ -45,9 +45,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
 
     REWARDS_MULTISIG_ADDRESS = "0x87D93d9B2C672bf9c9642d853a8682546a5012B5"
     REWARDS_JUNE_BUDGET = 170*1e18
-    
+
     call_script_items = [
-        # Set Anyblock Analytics targetValidatorsLimits to 0
+        # Set Anyblock Analytics targetValidatorsCount to 0
 
         ## Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent
         agent_forward(
@@ -58,7 +58,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                 )
             ]
         ),
-        ## Set Anyblock Analytics targetValidatorsLimits to 0
+        ## Set Anyblock Analytics targetValidatorsCount to 0
         agent_forward(
             [
                 (
@@ -83,16 +83,16 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             steth_in_wei=REWARDS_JUNE_BUDGET,
             reference='reWARDS June 2023 budget'
         ),
-        
+
         # Set max EasyTrack motions limit to 20
         set_motions_count_limit(motionsCountLimit),
     ]
 
     vote_desc_items = [
         "1) Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent",
-        "2) Set Anyblock Analytics targetValidatorsLimits to 0",
+        "2) Set Anyblock Analytics targetValidatorsCount to 0",
         "3) Renounce STAKING_MODULE_MANAGE_ROLE from Lido Agent",
-        "4) Fund the reWARDS for June 2023 with 170 stETH",
+        "4) Fund the reWARDS committee for June 2023 with 170 stETH",
         "5) Increase Easy Track motions amount limit: set motionsCountLimit to 20",
     ]
 
