@@ -2,7 +2,7 @@
 Tests for voting 25/04/2023.
 
 """
-from scripts.vote_2023_05_23 import start_vote
+from archive.scripts.vote_2023_05_23_cancelled import start_vote
 
 from brownie import chain, accounts
 from brownie.network.transaction import TransactionReceipt
