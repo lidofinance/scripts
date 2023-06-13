@@ -7,6 +7,8 @@ Voting 23/05/2023
 4) Fund the reWARDS committee for June 2023 with 170 stETH
 5) Increase Easy Track motions amount limit: set motionsCountLimit to 20
 
+Vote passed & executed on May-26-2023 04:51:35 PM +UTC, block 17344569
+
 """
 
 import time
