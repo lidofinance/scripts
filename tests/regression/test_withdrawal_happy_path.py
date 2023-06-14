@@ -11,7 +11,7 @@ from utils.config import (
 )
 
 
-def test_withdraw(steth_holder):
+def test_withdraw(steth_holder, eth_whale):
     account = accounts.at(steth_holder, force=True)
     REQUESTS_COUNT = 10
     REQUEST_AMOUNT = ETH(1)
@@ -20,9 +20,12 @@ def test_withdraw(steth_holder):
     """ report """
     while (
         contracts.withdrawal_queue.getLastRequestId()
-            != contracts.withdrawal_queue.getLastFinalizedRequestId()):
+            != contracts.withdrawal_queue.getLastFinalizedRequestId()
+    ):
         # finalize all current requests first
         report_tx = oracle_report()[0]
+        # stake new ether to increase buffer
+        contracts.lido.submit(ZERO_ADDRESS, { 'from': eth_whale.address, 'value': ETH(10000) })
 
     """ pre request """
     no_requests = contracts.withdrawal_queue.getWithdrawalRequests(steth_holder, {"from": steth_holder})

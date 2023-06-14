@@ -18,7 +18,18 @@ def check_all_requests_finalization(request_ids, holder):
         assert is_finalized
 
 
-def test_bunker_multiple_batches(stranger):
+def test_bunker_multiple_batches(stranger, eth_whale):
+    """ report """
+    while (
+        contracts.withdrawal_queue.getLastRequestId()
+            != contracts.withdrawal_queue.getLastFinalizedRequestId()
+    ):
+        # finalize all current requests first
+        report_tx = oracle_report()[0]
+        # stake new ether to increase buffer
+        contracts.lido.submit(ZERO_ADDRESS, { 'from': eth_whale.address, 'value': ETH(10000) })
+
+
     amount = ETH(100)
     withdrawal_amount = ETH(10)
 
@@ -77,7 +88,18 @@ def test_bunker_multiple_batches(stranger):
     assert claims[1]["amountOfETH"] == withdrawal_amount
 
 
-def test_oracle_report_missed(stranger):
+def test_oracle_report_missed(stranger, eth_whale):
+    """ report """
+    while (
+        contracts.withdrawal_queue.getLastRequestId()
+            != contracts.withdrawal_queue.getLastFinalizedRequestId()
+    ):
+        # finalize all current requests first
+        report_tx = oracle_report()[0]
+        # stake new ether to increase buffer
+        contracts.lido.submit(ZERO_ADDRESS, { 'from': eth_whale.address, 'value': ETH(10000) })
+
+
     amount = ETH(100)
 
     assert contracts.lido.balanceOf(stranger) == 0
@@ -119,7 +141,18 @@ def test_oracle_report_missed(stranger):
     assert claims[0]["amountOfETH"] == amount
 
 
-def test_several_rebases(stranger):
+def test_several_rebases(stranger, eth_whale):
+    """ report """
+    while (
+        contracts.withdrawal_queue.getLastRequestId()
+            != contracts.withdrawal_queue.getLastFinalizedRequestId()
+    ):
+        # finalize all current requests first
+        report_tx = oracle_report()[0]
+        # stake new ether to increase buffer
+        contracts.lido.submit(ZERO_ADDRESS, { 'from': eth_whale.address, 'value': ETH(10000) })
+
+
     amount = ETH(100)
     withdrawal_amount = ETH(10)
 

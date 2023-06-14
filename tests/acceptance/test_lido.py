@@ -95,7 +95,9 @@ def test_lido_state(contract):
     beacon_stat = contract.getBeaconStat()
     assert beacon_stat["depositedValidators"] >= last_seen_deposited_validators
     assert beacon_stat["beaconValidators"] >= last_seen_beacon_validators
-    assert beacon_stat["beaconBalance"] >= 32 * 1e18 * beacon_stat["beaconValidators"], "no full withdrawals happened"
+    # might break once enough exited validators registered
+    # they are not excluded from the 'beaconValidators' counter even though have zero balance
+    assert beacon_stat["beaconBalance"] >= 31 * 1e18 * beacon_stat["beaconValidators"], "no full withdrawals happened"
     assert beacon_stat["depositedValidators"] >= beacon_stat["beaconValidators"]
 
     assert contract.getTotalELRewardsCollected() >= last_seen_total_rewards_collected

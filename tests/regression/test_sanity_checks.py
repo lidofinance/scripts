@@ -93,6 +93,8 @@ def test_too_much_validators_appeared():
 
 
 def test_too_much_validators_exited():
+    previously_exited = contracts.node_operators_registry.getStakingModuleSummary()[0]
+
     with reverts(
         encode_error(
             "ExitedValidatorsLimitExceeded(uint256,uint256)",
@@ -100,7 +102,7 @@ def test_too_much_validators_exited():
         )
     ):
         oracle_report(
-            numExitedValidatorsByStakingModule=[CHURN_VALIDATORS_PER_DAY_LIMIT + 12],
+            numExitedValidatorsByStakingModule=[CHURN_VALIDATORS_PER_DAY_LIMIT + previously_exited + 1],
             stakingModuleIdsWithNewlyExitedValidators=[1],
             skip_withdrawals=True,
             silent=True,

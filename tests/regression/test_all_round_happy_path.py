@@ -6,7 +6,7 @@ from utils.test.helpers import ETH, almostEqEth
 from utils.config import contracts
 
 
-def test_all_round_happy_path(accounts, stranger, steth_holder):
+def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     print(stranger, stranger.balance())
     amount = ETH(100)
     max_deposit = 150
@@ -15,9 +15,12 @@ def test_all_round_happy_path(accounts, stranger, steth_holder):
     """ report """
     while (
         contracts.withdrawal_queue.getLastRequestId()
-            != contracts.withdrawal_queue.getLastFinalizedRequestId()):
+            != contracts.withdrawal_queue.getLastFinalizedRequestId()
+    ):
         # finalize all current requests first
         report_tx = oracle_report()[0]
+        # stake new ether to increase buffer
+        contracts.lido.submit(ZERO_ADDRESS, { 'from': eth_whale.address, 'value': ETH(10000) })
 
     contracts.lido.approve(contracts.withdrawal_queue.address, 1000, {"from": steth_holder})
     contracts.withdrawal_queue.requestWithdrawals([1000], steth_holder, {"from": steth_holder})
