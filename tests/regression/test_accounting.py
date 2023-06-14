@@ -694,15 +694,23 @@ def test_accounting_shares_burn_at_limits(burner: Contract, lido: Contract, stet
         block_identifier=block_after_report
     ) + burnt_due_to_withdrawals, "TotalShares change mismatch"
 
-def test_accounting_shares_burn_above_limits(burner: Contract, lido: Contract, steth_whale: Account):
+def test_accounting_shares_burn_above_limits(
+    burner: Contract,
+    lido: Contract,
+    steth_whale: Account,
+    eth_whale: Account
+):
     """Test shares burnt with amount above the limit"""
 
     """ report """
     while (
         contracts.withdrawal_queue.getLastRequestId()
-            != contracts.withdrawal_queue.getLastFinalizedRequestId()):
+            != contracts.withdrawal_queue.getLastFinalizedRequestId()
+    ):
         # finalize all current requests first
         report_tx = oracle_report()[0]
+        # stake new ether to increase buffer
+        lido.submit(ZERO_ADDRESS, { 'from': eth_whale.address, 'value': ETH(10000) })
 
     shares_limit = _shares_burn_limit_no_pooled_ether_changes()
     excess_amount = 42
@@ -765,6 +773,7 @@ def test_accounting_overfill_both_vaults(
     withdrawal_vault: Contract,
     el_vault: Contract,
     helpers: Helpers,
+    eth_whale: Account
 ):
     """Test rebase with excess ETH amount on both vaults"""
 
@@ -774,6 +783,8 @@ def test_accounting_overfill_both_vaults(
             != contracts.withdrawal_queue.getLastFinalizedRequestId()):
         # finalize all current requests first
         report_tx = oracle_report()[0]
+        # stake new ether to increase buffer
+        lido.submit(ZERO_ADDRESS, { 'from': eth_whale.address, 'value': ETH(10000) })
 
     limit = _rebase_limit_wei(block_identifier=chain.height)
     excess = ETH(10)

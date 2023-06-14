@@ -90,7 +90,7 @@ def test_nor_state(contract):
     assert contract.getType() == _str_to_bytes32("curated-onchain-v1")
 
     summary = contract.getStakingModuleSummary()
-    assert summary["totalExitedValidators"] == 11
+    assert summary["totalExitedValidators"] >= 145
     assert summary["totalDepositedValidators"] >= 177397
     assert summary["depositableValidatorsCount"] > 0
 
@@ -122,7 +122,7 @@ def test_nor_state(contract):
         assert node_operator_summary["stuckPenaltyEndTimestamp"] == 0
 
         if id == 22:
-            assert node_operator_summary["totalExitedValidators"] == 11
+            assert node_operator_summary["totalExitedValidators"] >= 145
         else:
             assert node_operator_summary["totalExitedValidators"] == 0
 

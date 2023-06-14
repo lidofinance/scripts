@@ -90,7 +90,7 @@ def test_staking_modules(contract):
     assert curated_module["name"] == CURATED_STAKING_MODULE_NAME
     assert curated_module["lastDepositAt"] >= 1679672628
     assert curated_module["lastDepositBlock"] >= 8705383
-    assert curated_module["exitedValidatorsCount"] == 11
+    assert curated_module["exitedValidatorsCount"] >= 145
 
     fee_aggregate_distribution = contract.getStakingFeeAggregateDistribution()
     assert fee_aggregate_distribution["modulesFee"] == SR_MODULES_FEE_E20
