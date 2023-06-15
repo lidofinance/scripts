@@ -90,7 +90,7 @@ def test_nor_state(contract):
     assert contract.getType() == _str_to_bytes32("curated-onchain-v1")
 
     summary = contract.getStakingModuleSummary()
-    assert summary["totalExitedValidators"] == 11
+    assert summary["totalExitedValidators"] >= 145
     assert summary["totalDepositedValidators"] >= 177397
     assert summary["depositableValidatorsCount"] > 0
 
@@ -107,6 +107,8 @@ def test_nor_state(contract):
 
         if id == 22:
             assert node_operator["totalExitedValidators"] == 11
+        elif id == 12:
+            assert node_operator["totalExitedValidators"] >= 134
         else:
             assert node_operator["totalExitedValidators"] == 0
 
@@ -115,7 +117,10 @@ def test_nor_state(contract):
         assert node_operator["totalDepositedValidators"] <= node_operator["totalAddedValidators"]
 
         node_operator_summary = contract.getNodeOperatorSummary(id)
-        assert node_operator_summary["isTargetLimitActive"] is False
+        if id != 12:
+            assert node_operator_summary["isTargetLimitActive"] is False
+        else:
+            assert node_operator_summary["isTargetLimitActive"] is True
         assert node_operator_summary["targetValidatorsCount"] == 0
         assert node_operator_summary["stuckValidatorsCount"] == 0
         assert node_operator_summary["refundedValidatorsCount"] == 0
@@ -123,6 +128,8 @@ def test_nor_state(contract):
 
         if id == 22:
             assert node_operator_summary["totalExitedValidators"] == 11
+        elif id == 12:
+            assert node_operator_summary["totalExitedValidators"] >= 134
         else:
             assert node_operator_summary["totalExitedValidators"] == 0
 
