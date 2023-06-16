@@ -12,12 +12,13 @@ from utils.config import (
     LDO_HOLDER_ADDRESS_FOR_TESTS,
 )
 from utils.test.tx_tracing_helpers import *
-from utils.test.event_validators.node_operators_registry import (
-    validate_target_validators_count_changed_event,
-    TargetValidatorsCountChanged,
+from utils.test.event_validators.burner import validate_steth_burn_requested_event, StETH_burn_request
+from utils.test.event_validators.erc20_token import (
+    ERC20Transfer,
+    ERC20Approval,
+    validate_erc20_approval_event,
+    validate_erc20_transfer_event,
 )
-
-from utils.test.event_validators.payout import Payout, validate_token_payout_event
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 from utils.test.helpers import almostEqWithDiff
 
@@ -33,6 +34,22 @@ def test_vote(
     interface,
 ):
     ## parameters
+    burn_request: StETH_burn_request = StETH_burn_request(
+        requestedBy=contracts.agent.address,
+        amountOfStETH=1345978634 * 10**10,  # 13.45978634 stETH
+        amountOfShares=contracts.lido.getSharesByPooledEth(1345978634 * 10**10),
+        isCover=True,
+    )
+
+    transfer_from_insurance_fund: ERC20Transfer = ERC20Transfer(
+        from_addr=contracts.insurance_fund.address,
+        to_addr=contracts.agent.address,
+        value=burn_request.amountOfStETH,
+    )
+
+    approval_to_burner: ERC20Approval = ERC20Approval(
+        owner=contracts.agent.address, spender=contracts.burner.address, amount=burn_request.amountOfStETH
+    )
 
     ## checks before the vote
     insurance_fund_steth_balance_before: int = contracts.lido.balanceOf(contracts.insurance_fund.address)
@@ -79,7 +96,7 @@ def test_vote(
 
     assert almostEqWithDiff(
         insurance_fund_steth_balance_before - insurance_fund_steth_balance_after,
-        1345978634 * 10**10,  # 13.45978634 stETH
+        burn_request.amountOfStETH,
         STETH_ERROR_MARGIN_WEI,
     )
 
@@ -99,6 +116,7 @@ def test_vote(
 
     burner_assigned_for_cover_burn_after: int = contracts.burner.getSharesRequestedToBurn()[0]
     assert insurance_fund_shares_before - insurance_fund_shares_after == burner_assigned_for_cover_burn_after
+    assert almostEqWithDiff(burner_assigned_for_cover_burn_after, burn_request.amountOfShares, STETH_ERROR_MARGIN_WEI)
 
     burner_assigned_for_noncover_burn_after: int = contracts.burner.getSharesRequestedToBurn()[1]
     assert burner_assigned_for_noncover_burn_after == burner_assigned_for_noncover_burn_before
@@ -113,14 +131,15 @@ def test_vote(
 
     evs = group_voting_events(vote_tx)
 
-    ## validate events
-
-    # TODO:
-    # validate_insurance_fund_erc20_transfer
-    # validate_token_approval
-    # validate_grant_role_event
-    # validate_request_burn_my_steth_for_cover
-    # validate_revoke_role_event
+    validate_erc20_transfer_event(evs[0], transfer_from_insurance_fund, is_steth=True)
+    validate_erc20_approval_event(evs[1], approval_to_burner)
+    validate_grant_role_event(
+        evs[2], contracts.burner.REQUEST_BURN_MY_STETH_ROLE(), contracts.agent.address, contracts.agent.address
+    )
+    validate_steth_burn_requested_event(evs[3], burn_request)
+    validate_revoke_role_event(
+        evs[4], contracts.burner.REQUEST_BURN_MY_STETH_ROLE(), contracts.agent.address, contracts.agent.address
+    )
 
 
 """
