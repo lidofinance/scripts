@@ -3,6 +3,8 @@ Tests for voting 20/06/2023.
 """
 from scripts.vote_2023_06_20 import start_vote
 
+from typing import TypedDict, TypeVar, Any
+
 from brownie import chain, accounts, web3
 from brownie.network.transaction import TransactionReceipt
 
@@ -21,6 +23,7 @@ from utils.test.event_validators.erc20_token import (
 )
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 from utils.test.helpers import almostEqWithDiff
+from utils.test.oracle_report_helpers import ONE_DAY, SHARE_RATE_PRECISION, oracle_report
 
 
 STETH_ERROR_MARGIN_WEI: int = 2
@@ -142,10 +145,7 @@ def test_vote(
     )
 
 
-"""
-
-# TODO:
-def test_vote(
+def test_coverage_application_on_report(
     helpers,
     bypass_events_decoding,
     vote_ids_from_env,
@@ -159,7 +159,64 @@ def test_vote(
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
         vote_id, _ = start_vote(tx_params, silent=True)
 
-    vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
+    block_before_vote_execution = chain.height
+    vote_tx: TransactionReceipt = helpers.execute_vote(accounts, vote_id, contracts.voting)
+
+    block_before_report = chain.height
+    oracle_tx, _ = oracle_report(cl_diff=0, exclude_vaults_balances=True)
+    block_after_report = chain.height
+
+    withdrawals_finalized = _try_get_withdrawals_finalized(oracle_tx)
+    shares_burnt = _try_get_shares_burnt(oracle_tx)
+    token_rebased_event = _first_event(oracle_tx, TokenRebased)
+
+    tvl_before = contracts.lido.totalSupply(block_identifier=block_before_report)
+    shares_before = contracts.lido.getTotalShares(block_identifier=block_before_report)
+
+    tvl_after = contracts.lido.totalSupply(block_identifier=block_after_report)
+    shares_after = contracts.lido.getTotalShares(block_identifier=block_after_report)
+
+    assert tvl_before == tvl_after + withdrawals_finalized["amountOfETHLocked"]
+    assert (
+        shares_before
+        == shares_after
+        + contracts.burner.getSharesRequestedToBurn(block_identifier=block_before_report)[0]
+        + withdrawals_finalized["sharesToBurn"]
+    )
+    assert shares_burnt["sharesAmount"] == shares_before - shares_after
+    assert token_rebased_event["sharesMintedAsFees"] == 0  # no fee
+
+    assert (
+        contracts.burner.getCoverSharesBurnt(block_identifier=block_after_report)
+        == shares_burnt["sharesAmount"] - withdrawals_finalized["sharesToBurn"]
+    )
+    assert (
+        contracts.burner.getCoverSharesBurnt(block_identifier=block_after_report)
+        == contracts.burner.getSharesRequestedToBurn(block_identifier=block_before_report)[0]
+    )
+    assert (
+        contracts.burner.getNonCoverSharesBurnt(block_identifier=block_after_report)
+        == contracts.burner.getNonCoverSharesBurnt(block_identifier=block_before_report)
+        + withdrawals_finalized["sharesToBurn"]
+    )
+
+    assert contracts.lido.sharesOf(
+        contracts.agent.address, block_identifier=block_before_report
+    ) == contracts.lido.sharesOf(contracts.agent, block_identifier=block_after_report)
+    assert contracts.lido.sharesOf(
+        contracts.node_operators_registry.getNodeOperator(10, False)["rewardAddress"],
+        block_identifier=block_before_report,
+    ) == contracts.lido.sharesOf(
+        contracts.node_operators_registry.getNodeOperator(10, False)["rewardAddress"],
+        block_identifier=block_after_report,
+    )
+    assert contracts.lido.sharesOf(
+        contracts.node_operators_registry.getNodeOperator(22, False)["rewardAddress"],
+        block_identifier=block_before_report,
+    ) == contracts.lido.sharesOf(
+        contracts.node_operators_registry.getNodeOperator(22, False)["rewardAddress"],
+        block_identifier=block_after_report,
+    )
 
     # simulate oracle report
 
@@ -172,4 +229,62 @@ def test_vote(
     # - Events
     # - TVL / Total shares
     # - Rebase
-"""
+
+
+class TokenRebased(TypedDict):
+    """TokenRebased event definition"""
+
+    reportTimestamp: int
+    timeElapsed: int
+    preTotalShares: int
+    preTotalEther: int
+    postTotalShares: int
+    postTotalEther: int
+    sharesMintedAsFees: int
+
+
+class SharesBurnt(TypedDict):
+    """SharesBurnt event definition"""
+
+    account: str
+    preRebaseTokenAmount: int
+    postRebaseTokenAmount: int
+    sharesAmount: int
+
+
+WithdrawalsFinalized = TypedDict(
+    "WithdrawalsFinalized",
+    {"from": str, "to": str, "amountOfETHLocked": int, "sharesToBurn": int, "timestamp": int},
+)
+
+
+T = TypeVar("T")
+
+
+def _first_event(tx, event: type[T]) -> T:
+    """Get first event of type T from transaction"""
+
+    events = _get_events(tx, event)
+    assert len(events) == 1, f"Event {event.__name__} was found more than once in the transaction"
+    return events[0]
+
+
+def _get_events(tx, event: type[T]) -> list[T]:
+    """Get event of type T from transaction"""
+
+    assert event.__name__ in tx.events, f"Event {event.__name__} was not found in the transaction"
+    return tx.events[event.__name__]
+
+
+def _try_get_withdrawals_finalized(tx: Any) -> WithdrawalsFinalized:
+    if WithdrawalsFinalized.__name__ in tx.events:
+        return _first_event(tx, WithdrawalsFinalized)
+    else:
+        return {"from": ZERO_ADDRESS, "to": ZERO_ADDRESS, "amountOfETHLocked": 0, "sharesToBurn": 0, "timestamp": 0}
+
+
+def _try_get_shares_burnt(tx: Any) -> SharesBurnt:
+    if SharesBurnt.__name__ in tx.events:
+        return _first_event(tx, SharesBurnt)
+    else:
+        return SharesBurnt(account=ZERO_ADDRESS, preRebaseTokenAmount=0, postRebaseTokenAmount=0, sharesAmount=0)
