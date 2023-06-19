@@ -1,30 +1,19 @@
 """
-Tests for voting 20/06/2023.
+Coverage application scenario tests for voting 20/06/2023.
 """
 from scripts.vote_2023_06_20 import start_vote
 
 from typing import TypedDict, TypeVar, Any
 
 from brownie import chain
-from brownie.network.transaction import TransactionReceipt
 
 from utils.mainnet_fork import chain_snapshot
 from utils.config import (
     AGENT,
-    network_name,
     contracts,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
 )
-from utils.test.tx_tracing_helpers import *
-from utils.test.event_validators.burner import validate_steth_burn_requested_event, StETH_burn_request
-from utils.test.event_validators.erc20_token import (
-    ERC20Transfer,
-    ERC20Approval,
-    validate_erc20_approval_event,
-    validate_erc20_transfer_event,
-)
-from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
-from utils.test.helpers import ETH, almostEqWithDiff
+from utils.test.helpers import ETH
 from utils.test.oracle_report_helpers import ONE_DAY, SHARE_RATE_PRECISION, oracle_report
 
 
@@ -34,6 +23,7 @@ NODE_OPERATOR_ID_2: int = 23
 TREASURY: str = AGENT
 REBASE_PRECISION: int = 10**9
 
+
 def test_coverage_application_on_zero_rewards_report(helpers, vote_ids_from_env, accounts, steth_whale):
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -42,9 +32,11 @@ def test_coverage_application_on_zero_rewards_report(helpers, vote_ids_from_env,
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
         vote_id, _ = start_vote(tx_params, silent=True)
 
+    # EXECUTE VOTE
     block_before_vote_execution = chain.height
-    vote_tx: TransactionReceipt = helpers.execute_vote(accounts, vote_id, contracts.voting)
+    helpers.execute_vote(accounts, vote_id, contracts.voting)
 
+    # RUN ORACLE REPORT
     block_before_report = chain.height
     oracle_tx, _ = oracle_report(cl_diff=0, exclude_vaults_balances=True)
     block_after_report = chain.height
@@ -59,6 +51,7 @@ def test_coverage_application_on_zero_rewards_report(helpers, vote_ids_from_env,
     tvl_after = contracts.lido.totalSupply(block_identifier=block_after_report)
     shares_after = contracts.lido.getTotalShares(block_identifier=block_after_report)
 
+    # TESTS
     assert tvl_before == tvl_after + withdrawals_finalized["amountOfETHLocked"]
     assert (
         shares_before
@@ -136,6 +129,7 @@ def test_coverage_application_on_zero_rewards_report(helpers, vote_ids_from_env,
         // contracts.lido.getTotalShares(block_identifier=block_after_report)
     )
 
+    # Ensure rebase correctness for various accounts
     rebase = share_rate_after_report * REBASE_PRECISION // share_rate_before_report
     assert rebase > 0
 
@@ -172,6 +166,10 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
     node_operator_1_addr = contracts.node_operators_registry.getNodeOperator(NODE_OPERATOR_ID_1, False)["rewardAddress"]
     node_operator_2_addr = contracts.node_operators_registry.getNodeOperator(NODE_OPERATOR_ID_2, False)["rewardAddress"]
 
+    # wait for one day to ensure withdrawals finalization
+    chain.sleep(ONE_DAY)
+    chain.mine()
+
     # Execute oracle report without the vote to exclude the coverage application
     # Save the obtained numbers
     no_coverage_tvl_after_report: int = 0
@@ -182,11 +180,6 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
     no_coverage_node_operator_1_shares_after_report: int = 0
     no_coverage_node_operator_2_shares_after_report: int = 0
     no_coverage_steth_whale_shares_after_report: int = 0
-
-    # wait for one day to ensure withdrawals finalization
-    chain.sleep(ONE_DAY)
-    chain.mine()
-
     with chain_snapshot():
         oracle_tx, _ = oracle_report(cl_diff=ETH(523), exclude_vaults_balances=False)
 
@@ -208,14 +201,14 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
         no_coverage_node_operator_2_shares_after_report = contracts.lido.sharesOf(node_operator_2_addr)
         no_coverage_steth_whale_shares_after_report = contracts.lido.sharesOf(steth_whale)
 
-    # START VOTE
+    # Execute the vote and oracle report both to include coverage application
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
     else:
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
         vote_id, _ = start_vote(tx_params, silent=True)
 
-    vote_tx: TransactionReceipt = helpers.execute_vote(accounts, vote_id, contracts.voting)
+    helpers.execute_vote(accounts, vote_id, contracts.voting)
 
     coverage_shares_to_burn = contracts.burner.getSharesRequestedToBurn()[0]
 
@@ -246,6 +239,9 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
 
     steth_whale_shares_after_report = contracts.lido.sharesOf(steth_whale)
     assert steth_whale_shares_after_report == no_coverage_steth_whale_shares_after_report
+
+
+# Internal helpers
 
 
 class TokenRebased(TypedDict):
@@ -294,6 +290,7 @@ def _get_events(tx, event: type[T]) -> list[T]:
 
 
 def _try_get_withdrawals_finalized(tx: Any) -> WithdrawalsFinalized:
+    """Get the WithdrawalsFinalized event from the given tx, return a zeroed structure otherwise"""
     if WithdrawalsFinalized.__name__ in tx.events:
         return _first_event(tx, WithdrawalsFinalized)
     else:
@@ -301,6 +298,7 @@ def _try_get_withdrawals_finalized(tx: Any) -> WithdrawalsFinalized:
 
 
 def _try_get_shares_burnt(tx: Any) -> SharesBurnt:
+    """Get the SharesBurnt event from the given tx, return a zeroed structure otherwise"""
     if SharesBurnt.__name__ in tx.events:
         return _first_event(tx, SharesBurnt)
     else:
