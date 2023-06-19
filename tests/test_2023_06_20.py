@@ -66,7 +66,7 @@ def test_vote(
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
     # validate vote events
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 27, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 29, "Incorrect voting items count"
 
     display_voting_events(vote_tx)
 
