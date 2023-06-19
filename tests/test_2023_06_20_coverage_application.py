@@ -30,7 +30,7 @@ from utils.test.oracle_report_helpers import ONE_DAY, SHARE_RATE_PRECISION, orac
 
 STETH_ERROR_MARGIN_WEI: int = 2
 NODE_OPERATOR_ID_1: int = 10
-NODE_OPERATOR_ID_2: int = 22
+NODE_OPERATOR_ID_2: int = 23
 TREASURY: str = AGENT
 REBASE_PRECISION: int = 10**9
 
@@ -130,7 +130,7 @@ def test_coverage_vote(
     assert burner_assigned_for_noncover_burn_after == burner_assigned_for_noncover_burn_before
 
     # validate vote events
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 27, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 29, "Incorrect voting items count"
 
     display_voting_events(vote_tx)
 
