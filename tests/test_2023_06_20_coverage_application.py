@@ -8,6 +8,7 @@ from typing import TypedDict, TypeVar, Any
 from brownie import chain
 from brownie.network.transaction import TransactionReceipt
 
+from utils.mainnet_fork import chain_snapshot
 from utils.config import (
     AGENT,
     network_name,
@@ -23,7 +24,7 @@ from utils.test.event_validators.erc20_token import (
     validate_erc20_transfer_event,
 )
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
-from utils.test.helpers import almostEqWithDiff
+from utils.test.helpers import ETH, almostEqWithDiff
 from utils.test.oracle_report_helpers import ONE_DAY, SHARE_RATE_PRECISION, oracle_report
 
 
@@ -284,6 +285,45 @@ def test_coverage_application_on_zero_rewards_report(helpers, vote_ids_from_env,
 
 
 def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_env, accounts, steth_whale):
+    node_operator_1_addr = contracts.node_operators_registry.getNodeOperator(NODE_OPERATOR_ID_1, False)["rewardAddress"]
+    node_operator_2_addr = contracts.node_operators_registry.getNodeOperator(NODE_OPERATOR_ID_2, False)["rewardAddress"]
+
+    # Execute oracle report without the vote to exclude the coverage application
+    # Save the obtained numbers
+    no_coverage_tvl_after_report: int = 0
+    no_coverage_total_shares_after_report: int = 0
+    no_coverage_fees: int = 0
+    no_coverage_shares_burnt_overall: int = 0
+    no_coverage_treasury_shares_after_report: int = 0
+    no_coverage_node_operator_1_shares_after_report: int = 0
+    no_coverage_node_operator_2_shares_after_report: int = 0
+    no_coverage_steth_whale_shares_after_report: int = 0
+
+    # wait for one day to ensure withdrawals finalization
+    chain.sleep(ONE_DAY)
+    chain.mine()
+
+    with chain_snapshot():
+        oracle_tx, _ = oracle_report(cl_diff=ETH(523), exclude_vaults_balances=False)
+
+        token_rebased_event = _first_event(oracle_tx, TokenRebased)
+
+        no_coverage_tvl_after_report = contracts.lido.totalSupply()
+        assert no_coverage_tvl_after_report > 0
+        no_coverage_total_shares_after_report = contracts.lido.getTotalShares()
+        assert no_coverage_total_shares_after_report > 0
+
+        no_coverage_fees = token_rebased_event["sharesMintedAsFees"]
+        assert no_coverage_fees > 0
+
+        assert contracts.burner.getCoverSharesBurnt() == 0
+        no_coverage_shares_burnt_overall = contracts.burner.getNonCoverSharesBurnt() + 0  # see above
+
+        no_coverage_treasury_shares_after_report = contracts.lido.sharesOf(TREASURY)
+        no_coverage_node_operator_1_shares_after_report = contracts.lido.sharesOf(node_operator_1_addr)
+        no_coverage_node_operator_2_shares_after_report = contracts.lido.sharesOf(node_operator_2_addr)
+        no_coverage_steth_whale_shares_after_report = contracts.lido.sharesOf(steth_whale)
+
     # START VOTE
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
@@ -291,7 +331,37 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
         vote_id, _ = start_vote(tx_params, silent=True)
 
-    # simulate oracle report
+    vote_tx: TransactionReceipt = helpers.execute_vote(accounts, vote_id, contracts.voting)
+
+    coverage_shares_to_burn = contracts.burner.getSharesRequestedToBurn()[0]
+
+    oracle_tx, _ = oracle_report(cl_diff=ETH(523), exclude_vaults_balances=False)
+
+    token_rebased_event = _first_event(oracle_tx, TokenRebased)
+
+    tvl_after_report = contracts.lido.totalSupply()
+    assert tvl_after_report == no_coverage_tvl_after_report
+
+    total_shares_after_report = contracts.lido.getTotalShares()
+    assert total_shares_after_report == no_coverage_total_shares_after_report - coverage_shares_to_burn
+
+    fees = token_rebased_event["sharesMintedAsFees"]
+    assert fees == no_coverage_fees
+
+    shares_burnt_overall = contracts.burner.getNonCoverSharesBurnt() + contracts.burner.getCoverSharesBurnt()
+    assert shares_burnt_overall == no_coverage_shares_burnt_overall + coverage_shares_to_burn
+
+    treasury_shares_after_report = contracts.lido.sharesOf(TREASURY)
+    assert treasury_shares_after_report == no_coverage_treasury_shares_after_report
+
+    node_operator_1_shares_after_report = contracts.lido.sharesOf(node_operator_1_addr)
+    assert node_operator_1_shares_after_report == no_coverage_node_operator_1_shares_after_report
+
+    node_operator_2_shares_after_report = contracts.lido.sharesOf(node_operator_2_addr)
+    assert node_operator_2_shares_after_report == no_coverage_node_operator_2_shares_after_report
+
+    steth_whale_shares_after_report = contracts.lido.sharesOf(steth_whale)
+    assert steth_whale_shares_after_report == no_coverage_steth_whale_shares_after_report
 
 
 class TokenRebased(TypedDict):

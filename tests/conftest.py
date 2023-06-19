@@ -64,7 +64,7 @@ def eth_whale(accounts):
 @pytest.fixture(scope="module")
 def steth_whale(accounts) -> Account:
     # TODO: add steth whale for goerli
-    return accounts.at(INSURANCE_FUND, force=True)
+    return accounts.at(WSTETH_TOKEN, force=True)
 
 
 class Helpers:
@@ -132,7 +132,7 @@ class Helpers:
             print(f"vote #{vote_id} executed")
             execution_transactions.append(tx)
 
-        #Helpers._prefetch_contracts_from_etherscan()
+        # Helpers._prefetch_contracts_from_etherscan()
 
         return execution_transactions
 
