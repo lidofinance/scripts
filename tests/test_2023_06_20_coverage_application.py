@@ -5,10 +5,11 @@ from scripts.vote_2023_06_20 import start_vote
 
 from typing import TypedDict, TypeVar, Any
 
-from brownie import chain, accounts, web3
+from brownie import chain
 from brownie.network.transaction import TransactionReceipt
 
 from utils.config import (
+    AGENT,
     network_name,
     contracts,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
@@ -27,14 +28,17 @@ from utils.test.oracle_report_helpers import ONE_DAY, SHARE_RATE_PRECISION, orac
 
 
 STETH_ERROR_MARGIN_WEI: int = 2
+NODE_OPERATOR_ID_1: int = 10
+NODE_OPERATOR_ID_2: int = 22
+TREASURY: str = AGENT
+REBASE_PRECISION: int = 10**9
 
 
-def test_vote(
+def test_coverage_vote(
     helpers,
     bypass_events_decoding,
     vote_ids_from_env,
     accounts,
-    interface,
 ):
     ## parameters
     burn_request: StETH_burn_request = StETH_burn_request(
@@ -145,13 +149,7 @@ def test_vote(
     )
 
 
-def test_coverage_application_on_report(
-    helpers,
-    bypass_events_decoding,
-    vote_ids_from_env,
-    accounts,
-    interface,
-):
+def test_coverage_application_on_zero_rewards_report(helpers, vote_ids_from_env, accounts, steth_whale):
     # START VOTE
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
@@ -200,35 +198,100 @@ def test_coverage_application_on_report(
         + withdrawals_finalized["sharesToBurn"]
     )
 
+    # no new fees sent to TREASURY (Agent)
+    assert contracts.lido.sharesOf(TREASURY, block_identifier=block_before_report) == contracts.lido.sharesOf(
+        TREASURY, block_identifier=block_after_report
+    )
+    assert contracts.lido.sharesOf(TREASURY, block_identifier=block_before_vote_execution) == contracts.lido.sharesOf(
+        TREASURY, block_identifier=block_after_report
+    )
+
+    node_operator_1_addr = contracts.node_operators_registry.getNodeOperator(NODE_OPERATOR_ID_1, False)["rewardAddress"]
+    node_operator_2_addr = contracts.node_operators_registry.getNodeOperator(NODE_OPERATOR_ID_2, False)["rewardAddress"]
+
+    # no new fees sent to node operators
     assert contracts.lido.sharesOf(
-        contracts.agent.address, block_identifier=block_before_report
-    ) == contracts.lido.sharesOf(contracts.agent, block_identifier=block_after_report)
-    assert contracts.lido.sharesOf(
-        contracts.node_operators_registry.getNodeOperator(10, False)["rewardAddress"],
+        node_operator_1_addr,
         block_identifier=block_before_report,
     ) == contracts.lido.sharesOf(
-        contracts.node_operators_registry.getNodeOperator(10, False)["rewardAddress"],
+        node_operator_1_addr,
         block_identifier=block_after_report,
     )
     assert contracts.lido.sharesOf(
-        contracts.node_operators_registry.getNodeOperator(22, False)["rewardAddress"],
-        block_identifier=block_before_report,
+        node_operator_1_addr,
+        block_identifier=block_before_vote_execution,
     ) == contracts.lido.sharesOf(
-        contracts.node_operators_registry.getNodeOperator(22, False)["rewardAddress"],
+        node_operator_1_addr,
         block_identifier=block_after_report,
     )
+    assert contracts.lido.sharesOf(
+        node_operator_2_addr,
+        block_identifier=block_before_report,
+    ) == contracts.lido.sharesOf(
+        node_operator_2_addr,
+        block_identifier=block_after_report,
+    )
+    assert contracts.lido.sharesOf(
+        node_operator_2_addr,
+        block_identifier=block_before_vote_execution,
+    ) == contracts.lido.sharesOf(
+        node_operator_2_addr,
+        block_identifier=block_after_report,
+    )
+
+    share_rate_before_report = (
+        contracts.lido.totalSupply(block_identifier=block_before_report)
+        * SHARE_RATE_PRECISION
+        // contracts.lido.getTotalShares(block_identifier=block_before_report)
+    )
+
+    share_rate_after_report = (
+        contracts.lido.totalSupply(block_identifier=block_after_report)
+        * SHARE_RATE_PRECISION
+        // contracts.lido.getTotalShares(block_identifier=block_after_report)
+    )
+
+    rebase = share_rate_after_report * REBASE_PRECISION // share_rate_before_report
+    assert rebase > 0
+
+    assert (
+        contracts.lido.balanceOf(steth_whale, block_identifier=block_after_report)
+        * REBASE_PRECISION
+        // contracts.lido.balanceOf(steth_whale, block_identifier=block_before_report)
+        == rebase
+    )
+
+    assert (
+        contracts.lido.balanceOf(TREASURY, block_identifier=block_after_report)
+        * REBASE_PRECISION
+        // contracts.lido.balanceOf(TREASURY, block_identifier=block_before_report)
+        == rebase
+    )
+
+    assert (
+        contracts.lido.balanceOf(node_operator_1_addr, block_identifier=block_after_report)
+        * REBASE_PRECISION
+        // contracts.lido.balanceOf(node_operator_1_addr, block_identifier=block_before_report)
+        == rebase
+    )
+
+    assert (
+        contracts.lido.balanceOf(node_operator_2_addr, block_identifier=block_after_report)
+        * REBASE_PRECISION
+        // contracts.lido.balanceOf(node_operator_2_addr, block_identifier=block_before_report)
+        == rebase
+    )
+
+
+def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_env, accounts, steth_whale):
+    # START VOTE
+    if len(vote_ids_from_env) > 0:
+        (vote_id,) = vote_ids_from_env
+    else:
+        tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
+        vote_id, _ = start_vote(tx_params, silent=True)
 
     # simulate oracle report
-
-    # 1. Need to check that cover is applied “correctly”:
-    # 1. regular balances see correct extra rebase (no new shares, extra balance delta prop to the share)
-    # 2. Agent balance sees correct extra rebase (new shares from the rewards only (not from cover), extra balance delta prop to the share)
-    # 3. any NO balance sees correct extra rebase (new shares from the rewards only (not from cover), extra balance delta prop to the share)
-    # Additions:
-    # - Burner counters before - middle - after
-    # - Events
-    # - TVL / Total shares
-    # - Rebase
 
 
 class TokenRebased(TypedDict):
