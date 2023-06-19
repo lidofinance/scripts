@@ -130,7 +130,7 @@ def test_coverage_vote(
     assert burner_assigned_for_noncover_burn_after == burner_assigned_for_noncover_burn_before
 
     # validate vote events
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 5, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 27, "Incorrect voting items count"
 
     display_voting_events(vote_tx)
 
