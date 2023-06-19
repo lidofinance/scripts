@@ -4,7 +4,7 @@ from utils.test.oracle_report_helpers import (
     oracle_report,
 )
 
-from utils.test.helpers import almostEqEth, steth_balance, ETH, ZERO_ADDRESS
+from utils.test.helpers import almostEqEth, almostEqWithDiff, steth_balance, ETH, ZERO_ADDRESS
 
 from utils.config import (
     contracts,
@@ -18,14 +18,11 @@ def test_withdraw(steth_holder, eth_whale):
     REQUESTS_SUM = REQUESTS_COUNT * REQUEST_AMOUNT
 
     """ report """
-    while (
-        contracts.withdrawal_queue.getLastRequestId()
-            != contracts.withdrawal_queue.getLastFinalizedRequestId()
-    ):
+    while contracts.withdrawal_queue.getLastRequestId() != contracts.withdrawal_queue.getLastFinalizedRequestId():
         # finalize all current requests first
         report_tx = oracle_report()[0]
         # stake new ether to increase buffer
-        contracts.lido.submit(ZERO_ADDRESS, { 'from': eth_whale.address, 'value': ETH(10000) })
+        contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale.address, "value": ETH(10000)})
 
     """ pre request """
     no_requests = contracts.withdrawal_queue.getWithdrawalRequests(steth_holder, {"from": steth_holder})
@@ -49,7 +46,7 @@ def test_withdraw(steth_holder, eth_whale):
     shares_to_burn = contracts.lido.sharesOf(contracts.withdrawal_queue)
     # post request checks
 
-    assert almostEqEth(steth_balance_before - steth_balance_after, REQUESTS_SUM)
+    assert almostEqWithDiff(steth_balance_before - steth_balance_after, REQUESTS_SUM, 2 * REQUESTS_COUNT)
     # Withdrawal Events
     assert request_tx.events.count("WithdrawalRequested") == REQUESTS_COUNT
     for i, event in enumerate(request_tx.events["WithdrawalRequested"]):
