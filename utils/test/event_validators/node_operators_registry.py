@@ -15,11 +15,11 @@ class NodeOperatorStakingLimitSetItem(NamedTuple):
     staking_limit: int
 
 class NodeOperatorNameSetItem(NamedTuple):
-    id: int
+    nodeOperatorId: int
     name: str
 
 class NodeOperatorRewardAddressSetItem(NamedTuple):
-    id: int
+    nodeOperatorId: int
     reward_address: str
 
 class TargetValidatorsCountChanged(NamedTuple):
@@ -66,7 +66,7 @@ def validate_node_operator_name_set_event(
 
     assert event.count("NodeOperatorNameSet") == 1
 
-    assert event["NodeOperatorNameSet"]["id"] == node_operator_name_item.id
+    assert event["NodeOperatorNameSet"]["nodeOperatorId"] == node_operator_name_item.nodeOperatorId
     assert event["NodeOperatorNameSet"]["name"] == node_operator_name_item.name
 
 def validate_node_operator_reward_address_set_event(
@@ -78,7 +78,7 @@ def validate_node_operator_reward_address_set_event(
 
     assert event.count("NodeOperatorRewardAddressSet") == 1
 
-    assert event["NodeOperatorRewardAddressSet"]["id"] == node_operator_reward_address_item.id
+    assert event["NodeOperatorRewardAddressSet"]["nodeOperatorId"] == node_operator_reward_address_item.nodeOperatorId
     assert event["NodeOperatorRewardAddressSet"]["rewardAddress"] == node_operator_reward_address_item.reward_address
 
 def validate_target_validators_count_changed_event(event: EventDict, t: TargetValidatorsCountChanged):
