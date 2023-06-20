@@ -33,7 +33,7 @@ V. Remove LDO and DAI referral factories
 
 VI. Send 150,000 LDO to Lido on Polygon team 0x9cd7477521B7d7E7F9e2F091D2eA0084e8AaA290 for reaching 3% share milestone
 
-VII. Send 200,000 LDO to PML multisig 0x17F6b2C738a63a8D3A113a228cfd0b373244633D for 1 next year of Hasu's compensation
+VII. Send 200,000 LDO to PML multisig 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
 
 VIII. Change NO names and addresses
 23. Create permission for MANAGE_NODE_OPERATOR_ROLE assigning it to Voting
@@ -267,7 +267,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         "19) Remove referral program add recipient EVM script factory for DAI  #0x8F06a7f244F6Bb4B68Cd6dB05213042bFc0d7151 from Easy Track",
         "20) Remove referral program remove recipient EVM script factory for DAI #0xd8f9B72Cd97388f23814ECF429cd18815F6352c1 from Easy Track",
         "21) Send 150,000 LDO to Lido on Polygon team 0x9cd7477521B7d7E7F9e2F091D2eA0084e8AaA290 for reaching 3% share milestone",
-        "22) Send 200,000 LDO to PML multisig 0x17F6b2C738a63a8D3A113a228cfd0b373244633D for 1 next year of #Hasu's compensation",
+        "22) Send 200,000 LDO to PML multisig 0x17F6b2C738a63a8D3A113a228cfd0b373244633D",
         "23) Create permission for MANAGE_NODE_OPERATOR_ROLE assigning it to Voting",
         "24) Change the on-chain name of node operator with id 1 from 'Certus One' to 'Jump Crypto'",
         "25) Change the on-chain name of node operator with id 21 from 'ConsenSys Codefi' to 'Consensys'",
