@@ -3,7 +3,7 @@ Tests for voting 20/06/2023.
 
 !! goerli only
 """
-from scripts.vote_2023_06_20_goerli import start_vote
+from archive.scripts.vote_2023_06_20_goerli import start_vote
 
 from brownie import ZERO_ADDRESS, chain, accounts
 from brownie.network.transaction import TransactionReceipt
