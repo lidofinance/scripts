@@ -1,7 +1,7 @@
 """
 Voting
 
-1) Stake all Lido Agents ETH
+1) Stake all Treasury ETH in Lido
 """
 
 import time
@@ -31,7 +31,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
     print(
             contracts.lido.address,
             current_agent_balance,
-            'Staking all Lido Agents ETH'
+            'Stake all Treasury ETH in Lido'
         )
     call_script_items = [
         agent_execute(
@@ -42,7 +42,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
     ]
 
     vote_desc_items = [
-        "1) Stake all Lido Agents ETH"
+        "1) Stake all Treasury ETH in Lido"
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)

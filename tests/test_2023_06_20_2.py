@@ -20,9 +20,7 @@ from brownie import ZERO_ADDRESS
 #####
 
 STETH_ERROR_MARGIN = 2
-AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
-STETH = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
-VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
+
 
 def test_vote(
     helpers,
@@ -31,10 +29,11 @@ def test_vote(
     accounts,
     interface,
 ):
-    agent = interface.Agent(AGENT)
-    stETH_token = interface.StETH(STETH)
+    agent = contracts.agent
+    stETH_token = contracts.lido
 
     agent_steth_balance_before = stETH_token.balanceOf(agent.address)
+    agent_steth_shares_before = stETH_token.sharesOf(agent.address)
     agent_eth_balance_before = agent.balance()
 
     # START VOTE
@@ -48,15 +47,23 @@ def test_vote(
 
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
-     # validate vote events
+    # validate vote events
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 1, "Incorrect voting items count"
 
     display_voting_events(vote_tx)
 
     agent_steth_balance_after = stETH_token.balanceOf(agent.address)
+    agent_steth_shares_after = stETH_token.sharesOf(agent.address)
     agent_eth_balance_after = agent.balance()
 
-    assert almostEqWithDiff(agent_steth_balance_after, agent_steth_balance_before + agent_eth_balance_before, STETH_ERROR_MARGIN)
+    assert almostEqWithDiff(
+        agent_steth_balance_after, agent_steth_balance_before + agent_eth_balance_before, STETH_ERROR_MARGIN
+    )
+    assert almostEqWithDiff(
+        agent_steth_shares_after,
+        agent_steth_shares_before + stETH_token.getSharesByPooledEth(agent_eth_balance_before),
+        STETH_ERROR_MARGIN,
+    )
     assert agent_eth_balance_after == 0
 
     if bypass_events_decoding or network_name() in ("goerli", "goerli-fork"):
@@ -72,19 +79,21 @@ def validate_submit_event(event: EventDict, value: int, steth: any):
 
     validate_events_chain([e.name for e in event], _events_chain)
 
-    assert event["Submitted"]["sender"] == AGENT
+    assert event["Submitted"]["sender"] == contracts.agent
     assert event["Submitted"]["amount"] == value
     assert event["Submitted"]["referral"] == ZERO_ADDRESS
 
     assert event["Transfer"]["from"] == ZERO_ADDRESS
-    assert event["Transfer"]["to"] == AGENT
+    assert event["Transfer"]["to"] == contracts.agent
     assert almostEqWithDiff(event["Transfer"]["value"], value, STETH_ERROR_MARGIN)
 
     assert event["TransferShares"]["from"] == ZERO_ADDRESS
-    assert event["TransferShares"]["to"] == AGENT
-    assert almostEqWithDiff(event["TransferShares"]["sharesValue"], steth.getSharesByPooledEth(value), STETH_ERROR_MARGIN)
+    assert event["TransferShares"]["to"] == contracts.agent
+    assert almostEqWithDiff(
+        event["TransferShares"]["sharesValue"], steth.getSharesByPooledEth(value), STETH_ERROR_MARGIN
+    )
 
-    assert event["Execute"]["sender"] == VOTING
-    assert event["Execute"]["target"] == STETH
+    assert event["Execute"]["sender"] == contracts.voting
+    assert event["Execute"]["target"] == contracts.lido
     assert event["Execute"]["ethValue"] == value
     assert event["Execute"]["data"] == steth.submit.encode_input(ZERO_ADDRESS)
