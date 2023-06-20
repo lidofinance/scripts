@@ -51,6 +51,9 @@ def test_coverage_application_on_zero_rewards_report(helpers, vote_ids_from_env,
     tvl_after = contracts.lido.totalSupply(block_identifier=block_after_report)
     shares_after = contracts.lido.getTotalShares(block_identifier=block_after_report)
 
+    assert contracts.lido.sharesOf(contracts.burner, block_identifier=block_after_report) == 0
+    assert contracts.lido.balanceOf(contracts.burner, block_identifier=block_after_report) == 0
+
     # TESTS
     assert tvl_before == tvl_after + withdrawals_finalized["amountOfETHLocked"]
     assert (
@@ -131,7 +134,8 @@ def test_coverage_application_on_zero_rewards_report(helpers, vote_ids_from_env,
 
     # Ensure rebase correctness for various accounts
     rebase = share_rate_after_report * REBASE_PRECISION // share_rate_before_report
-    assert rebase > 0
+    assert rebase > REBASE_PRECISION
+    print(f"rebase {rebase}")
 
     assert (
         contracts.lido.balanceOf(steth_whale, block_identifier=block_after_report)
@@ -180,6 +184,10 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
     no_coverage_node_operator_1_shares_after_report: int = 0
     no_coverage_node_operator_2_shares_after_report: int = 0
     no_coverage_steth_whale_shares_after_report: int = 0
+    no_coverage_treasury_balance_after_report: int = 0
+    no_coverage_node_operator_1_balance_after_report: int = 0
+    no_coverage_node_operator_2_balance_after_report: int = 0
+    no_coverage_steth_whale_balance_after_report: int = 0
     with chain_snapshot():
         oracle_tx, _ = oracle_report(cl_diff=ETH(523), exclude_vaults_balances=False)
 
@@ -201,6 +209,14 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
         no_coverage_node_operator_2_shares_after_report = contracts.lido.sharesOf(node_operator_2_addr)
         no_coverage_steth_whale_shares_after_report = contracts.lido.sharesOf(steth_whale)
 
+        no_coverage_treasury_balance_after_report = contracts.lido.balanceOf(TREASURY)
+        no_coverage_node_operator_1_balance_after_report = contracts.lido.balanceOf(node_operator_1_addr)
+        no_coverage_node_operator_2_balance_after_report = contracts.lido.balanceOf(node_operator_2_addr)
+        no_coverage_steth_whale_balance_after_report = contracts.lido.balanceOf(steth_whale)
+
+        assert contracts.lido.sharesOf(contracts.burner) == 0
+        assert contracts.lido.balanceOf(contracts.burner) == 0
+
     # Execute the vote and oracle report both to include coverage application
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
@@ -212,6 +228,9 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
 
     coverage_shares_to_burn = contracts.burner.getSharesRequestedToBurn()[0]
 
+    tvl_before_report = contracts.lido.totalSupply()
+    total_shares_before_report = contracts.lido.getTotalShares()
+
     oracle_tx, _ = oracle_report(cl_diff=ETH(523), exclude_vaults_balances=False)
 
     token_rebased_event = _first_event(oracle_tx, TokenRebased)
@@ -222,23 +241,67 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
     total_shares_after_report = contracts.lido.getTotalShares()
     assert total_shares_after_report == no_coverage_total_shares_after_report - coverage_shares_to_burn
 
+    assert contracts.lido.sharesOf(contracts.burner) == 0
+    assert contracts.lido.balanceOf(contracts.burner) == 0
+
+    share_rate_before_report = tvl_before_report * SHARE_RATE_PRECISION // total_shares_before_report
+    share_rate_after_report = tvl_after_report * SHARE_RATE_PRECISION // total_shares_after_report
+
+    # Ensure rebase correctness for various accounts
+    rebase = share_rate_after_report * REBASE_PRECISION // share_rate_before_report
+    assert rebase > REBASE_PRECISION
+    print(f"rebase: {rebase}")
+
     fees = token_rebased_event["sharesMintedAsFees"]
     assert fees == no_coverage_fees
 
     shares_burnt_overall = contracts.burner.getNonCoverSharesBurnt() + contracts.burner.getCoverSharesBurnt()
     assert shares_burnt_overall == no_coverage_shares_burnt_overall + coverage_shares_to_burn
 
+    steth_whale_shares_after_report = contracts.lido.sharesOf(steth_whale)
+    assert steth_whale_shares_after_report == no_coverage_steth_whale_shares_after_report
+    steth_whale_balance_after_report = contracts.lido.balanceOf(steth_whale)
+    assert (
+        steth_whale_balance_after_report
+        == steth_whale_shares_after_report * tvl_after_report // total_shares_after_report
+    )
+    assert (
+        no_coverage_steth_whale_balance_after_report
+        == steth_whale_shares_after_report * no_coverage_tvl_after_report // no_coverage_total_shares_after_report
+    )
+
     treasury_shares_after_report = contracts.lido.sharesOf(TREASURY)
     assert treasury_shares_after_report == no_coverage_treasury_shares_after_report
+    treasury_balance_after_report = contracts.lido.balanceOf(TREASURY)
+    assert treasury_balance_after_report == treasury_shares_after_report * tvl_after_report // total_shares_after_report
+    assert (
+        no_coverage_treasury_balance_after_report
+        == treasury_shares_after_report * no_coverage_tvl_after_report // no_coverage_total_shares_after_report
+    )
 
     node_operator_1_shares_after_report = contracts.lido.sharesOf(node_operator_1_addr)
     assert node_operator_1_shares_after_report == no_coverage_node_operator_1_shares_after_report
+    node_operator_1_balance_after_report = contracts.lido.balanceOf(node_operator_1_addr)
+    assert (
+        node_operator_1_balance_after_report
+        == node_operator_1_shares_after_report * tvl_after_report // total_shares_after_report
+    )
+    assert (
+        no_coverage_node_operator_1_balance_after_report
+        == node_operator_1_shares_after_report * no_coverage_tvl_after_report // no_coverage_total_shares_after_report
+    )
 
     node_operator_2_shares_after_report = contracts.lido.sharesOf(node_operator_2_addr)
     assert node_operator_2_shares_after_report == no_coverage_node_operator_2_shares_after_report
-
-    steth_whale_shares_after_report = contracts.lido.sharesOf(steth_whale)
-    assert steth_whale_shares_after_report == no_coverage_steth_whale_shares_after_report
+    node_operator_2_balance_after_report = contracts.lido.balanceOf(node_operator_2_addr)
+    assert (
+        node_operator_2_balance_after_report
+        == node_operator_2_shares_after_report * tvl_after_report // total_shares_after_report
+    )
+    assert (
+        no_coverage_node_operator_2_balance_after_report
+        == node_operator_2_shares_after_report * no_coverage_tvl_after_report // no_coverage_total_shares_after_report
+    )
 
 
 # Internal helpers
