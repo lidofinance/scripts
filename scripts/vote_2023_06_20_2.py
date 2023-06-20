@@ -1,5 +1,5 @@
 """
-Voting
+Voting 20/06/2023 part 2
 
 1) Stake all Treasury ETH in Lido
 """
@@ -28,11 +28,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
     current_agent_balance = contracts.agent.balance()
 
     submit_calldata = contracts.lido.submit.encode_input(ZERO_ADDRESS)
-    print(
-            contracts.lido.address,
-            current_agent_balance,
-            'Stake all Treasury ETH in Lido'
-        )
+
     call_script_items = [
         agent_execute(
             target=contracts.lido.address,
