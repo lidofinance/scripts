@@ -117,6 +117,48 @@ provide the etherscan API token:
 export ETHERSCAN_TOKEN=<etherscan_api_key>
 ```
 
+To skip events decoding while testing set the following var:
+
+```bash
+export OMNIBUS_BYPASS_EVENTS_DECODING=1
+```
+
+To run tests with already started vote provide its id:
+
+```bash
+export OMNIBUS_VOTE_IDS=156
+```
+
+To use local ABIs for events decoding use:
+
+```bash
+export ENV_PARSE_EVENTS_FROM_LOCAL_ABI=1
+```
+
+To make default report for acceptance and regression tests after voting execution set:
+
+```bash
+export REPORT_AFTER_VOTE=1
+```
+
+## Tests structure
+
+### `tests/acceptance`
+
+Directory contains state based tests. This tests run every time when tests suite started, if there are any voting scripts or upgrade scripts they will be applied before.
+
+### `tests/regression`
+
+Directory contains scenario tests. This tests run every time when tests suite started, if there are any voting scripts or upgrade scripts they will be applied before.
+
+### `tests/snapshot`
+
+Directory contains snapshot-scenario tests. This tests run only if there are any upgrade scripts.
+
+### `test/vote_*.py`
+
+Tests for current voting
+
 ### Test run
 
 To run all the test on `mainnet-fork` execute

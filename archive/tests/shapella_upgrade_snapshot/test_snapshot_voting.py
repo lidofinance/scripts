@@ -83,7 +83,6 @@ def steps(voting, call_target, vote_time) -> Dict[str, Dict[str, ValueChanged]]:
     return result
 
 
-@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
 def test_create_wait_enact(old_voting, helpers, vote_time, call_target, vote_ids_from_env):
     """
     Run a smoke test before upgrade, then after upgrade, and compare snapshots at each step

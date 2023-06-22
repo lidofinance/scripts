@@ -17,6 +17,12 @@ def get_vote_scripts_dir() -> str:
 def get_vote_script_files() -> List[str]:
     """Return List of abs paths to vote scripts"""
     dir_path = get_vote_scripts_dir()
+    vote_files = glob.glob(os.path.join(dir_path, "vote_*.py"))
+    return vote_files
+
+def get_upgrade_script_files() -> List[str]:
+    """Return List of abs paths to vote scripts"""
+    dir_path = get_vote_scripts_dir()
     vote_files = glob.glob(os.path.join(dir_path, "upgrade_*.py"))
     return vote_files
 
@@ -31,8 +37,14 @@ def is_there_any_vote_scripts() -> bool:
     return len(get_vote_script_files()) > 0
 
 
+def is_there_any_upgrade_scripts() -> bool:
+    return len(get_upgrade_script_files()) > 0
+
+
 def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[TransactionReceipt]]:
     vote_files = get_vote_script_files()
+    upgrade_files = get_upgrade_script_files()
+    vote_files.extend(upgrade_files)
     assert len(vote_files) > 0
 
     vote_ids = []

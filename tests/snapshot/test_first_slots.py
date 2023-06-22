@@ -38,7 +38,7 @@ class SandwichFn(Protocol):
     ) -> tuple[Stack, Stack]:
         ...
 
-@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
+
 def test_first_slots(sandwich_upgrade: SandwichFn):
     """Test that first slots has not been changed in contracts"""
 

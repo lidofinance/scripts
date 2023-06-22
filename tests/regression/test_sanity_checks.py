@@ -28,13 +28,13 @@ ONE_DAY = 1 * 24 * 60 * 60
 ONE_YEAR = 365 * ONE_DAY
 MAX_BASIS_POINTS = 10000
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def pre_cl_balance():
     (_, _, pre_cl_balance) = contracts.lido.getBeaconStat()
     return pre_cl_balance
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def first_report():
     oracle_report(silent=True)
 

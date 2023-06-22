@@ -33,7 +33,7 @@ SandwichFn = Callable[..., tuple[Stack, Stack]]
 UINT256_MAX = 2**256 - 1
 _1ETH = Wei(10**18)
 
-@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
+
 def test_lido_no_changes_in_views(sandwich_upgrade: SandwichFn):
     """Test that no views change during the upgrade process."""
 
@@ -43,7 +43,6 @@ def test_lido_no_changes_in_views(sandwich_upgrade: SandwichFn):
     _stacks_equal(stacks)
 
 
-@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
 def test_lido_end_user_snapshot(
     sandwich_upgrade: SandwichFn,
     eth_whale: Account,
@@ -145,7 +144,6 @@ def test_lido_end_user_snapshot(
     _stacks_equal(stacks)
 
 
-@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
 def test_lido_send_ether_snapshot(
     sandwich_upgrade: SandwichFn,
     eth_whale: Account,
@@ -216,7 +214,6 @@ def test_lido_send_ether_snapshot(
     _stacks_equal(stacks)
 
 
-@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
 def test_lido_dao_ops_snapshot(sandwich_upgrade: SandwichFn):
     el_vault = contracts.execution_layer_rewards_vault
     voting = contracts.voting
