@@ -38,6 +38,8 @@ def test_vote(
 
     agent_eth_balance_to_stake = 20304356786192398999068
 
+    assert agent_eth_balance_before >= agent_eth_balance_to_stake
+
     # START VOTE
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
