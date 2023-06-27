@@ -34,7 +34,8 @@ def test_vote(
 
     agent_steth_balance_before = stETH_token.balanceOf(agent.address)
     agent_steth_shares_before = stETH_token.sharesOf(agent.address)
-    agent_eth_balance_before = agent.balance()
+
+    agent_eth_balance_to_stake = 20304356786192398999068
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -57,21 +58,17 @@ def test_vote(
     agent_eth_balance_after = agent.balance()
 
     assert almostEqWithDiff(
-        agent_steth_balance_after, agent_steth_balance_before + agent_eth_balance_before, STETH_ERROR_MARGIN
+        agent_steth_balance_after, agent_steth_balance_before + agent_eth_balance_to_stake, STETH_ERROR_MARGIN
     )
-    assert almostEqWithDiff(
-        agent_steth_shares_after,
-        agent_steth_shares_before + stETH_token.getSharesByPooledEth(agent_eth_balance_before),
-        STETH_ERROR_MARGIN,
-    )
-    assert agent_eth_balance_after == 0
+    assert agent_steth_shares_after == agent_steth_shares_before + stETH_token.getSharesByPooledEth(agent_eth_balance_to_stake)
+    assert agent_eth_balance_after == agent_steth_balance_before - agent_eth_balance_to_stake
 
     if bypass_events_decoding or network_name() in ("goerli", "goerli-fork"):
         return
 
     evs = group_voting_events(vote_tx)
 
-    validate_submit_event(evs[0], agent_eth_balance_before, stETH_token)
+    validate_submit_event(evs[0], agent_eth_balance_to_stake, stETH_token)
 
 
 def validate_submit_event(event: EventDict, value: int, steth: any):

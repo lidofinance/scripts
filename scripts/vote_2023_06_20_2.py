@@ -25,7 +25,7 @@ from utils.config import (
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
 
-    current_agent_balance = contracts.agent.balance()
+    current_agent_balance = 20304356786192398999068
 
     submit_calldata = contracts.lido.submit.encode_input(ZERO_ADDRESS)
 
