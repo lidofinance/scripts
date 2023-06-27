@@ -244,6 +244,8 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
             no_coverage_node_operators_balance_after_report[no_addr] = contracts.lido.balanceOf(no_addr)
         no_coverage_steth_whale_balance_after_report = contracts.lido.balanceOf(steth_whale)
 
+        # Checks could revert while rebase limits exceeded (eg sum of withdrawal vault and EL rewards vault income)
+        # Could be temporary fixed with excluding vaults balances at line 222
         assert contracts.lido.sharesOf(contracts.burner) == 0
         assert contracts.lido.balanceOf(contracts.burner) == 0
 
@@ -273,6 +275,8 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
     total_shares_after_report = contracts.lido.getTotalShares()
     assert total_shares_after_report == no_coverage_total_shares_after_report - coverage_shares_to_burn
 
+    # Checks could revert while rebase limits exceeded (eg sum of withdrawal vault and EL rewards vault income)
+    # Could be temporary fixed with excluding vaults balances at line 268
     assert contracts.lido.sharesOf(contracts.burner) == 0
     assert contracts.lido.balanceOf(contracts.burner) == 0
 
