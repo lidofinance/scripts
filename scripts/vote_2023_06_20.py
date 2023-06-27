@@ -287,7 +287,6 @@ def main():
     tx_params = {"from": get_deployer_account()}
 
     if get_is_live():
-        tx_params["max_fee"] = "300 gwei"
         tx_params["priority_fee"] = get_priority_fee()
 
     vote_id, _ = start_vote(tx_params=tx_params, silent=False)

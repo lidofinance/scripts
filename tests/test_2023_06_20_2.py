@@ -41,15 +41,18 @@ def test_vote(
     assert agent_eth_balance_before >= agent_eth_balance_to_stake
 
     # START VOTE
+    vote_ids = []
     if len(vote_ids_from_env) > 0:
-        (vote_id,) = vote_ids_from_env
+        vote_ids = vote_ids_from_env
     else:
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
         vote_id, _ = start_vote(tx_params, silent=True)
+        vote_ids = [vote_id]
 
-    vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
+    ## 160,161 <— this vote is 161
+    (_, vote_tx) = helpers.execute_votes(accounts, vote_ids, contracts.voting)
 
-    print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
+    print(f"voteId = {vote_ids}, gasUsed = {vote_tx.gas_used}")
 
     # validate vote events
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 1, "Incorrect voting items count"

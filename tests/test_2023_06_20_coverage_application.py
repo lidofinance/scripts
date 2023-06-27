@@ -49,15 +49,18 @@ COVER_INDEX: int = 0
 #
 def test_coverage_application_on_zero_rewards_report(helpers, vote_ids_from_env, accounts, steth_whale):
     # START VOTE
+    vote_ids = []
     if len(vote_ids_from_env) > 0:
-        (vote_id,) = vote_ids_from_env
+        vote_ids = vote_ids_from_env
     else:
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
         vote_id, _ = start_vote(tx_params, silent=True)
-
-    # EXECUTE VOTE
+        vote_ids = [vote_id]
+    
     block_before_vote_execution = chain.height
-    helpers.execute_vote(accounts, vote_id, contracts.voting)
+    
+    # EXECUTE VOTE
+    helpers.execute_votes(accounts, vote_ids, contracts.voting)    
 
     # RUN ORACLE REPORT
     block_before_report = chain.height
@@ -250,13 +253,15 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
         assert contracts.lido.balanceOf(contracts.burner) == 0
 
     # Execute the vote and oracle report both to include coverage application
+    vote_ids = []
     if len(vote_ids_from_env) > 0:
-        (vote_id,) = vote_ids_from_env
+        vote_ids = vote_ids_from_env
     else:
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
         vote_id, _ = start_vote(tx_params, silent=True)
+        vote_ids = [vote_id]
 
-    helpers.execute_vote(accounts, vote_id, contracts.voting)
+    helpers.execute_votes(accounts, vote_ids, contracts.voting)
 
     nos = contracts.node_operators_registry.getNodeOperatorsCount()
     no_addrs = [contracts.node_operators_registry.getNodeOperator(no, False)["rewardAddress"] for no in range(nos)]
