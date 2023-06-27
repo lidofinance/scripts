@@ -37,7 +37,7 @@ COVER_INDEX: int = 0
 # Invariants to check after the oracle report:
 # - total supply was changed only due to withdrawals finalization
 # - there were burnt only shares due to withdrawals AND coverage applications
-#   + they're different only for the Burner's internals
+#   + only Burner treats this burn events differently (internal counters)
 # - no fees were minted on behalf of treasury and node operators
 #   + shares of the following accounts weren't changed:
 #     + treasury
@@ -160,6 +160,7 @@ def test_coverage_application_on_zero_rewards_report(helpers, vote_ids_from_env,
     )
 
     for no_addr in no_addrs:
+        # prevent rounding errors for the dust-containing accounts
         if contracts.lido.balanceOf(no_addr, block_identifier=block_before_report) < REBASE_PRECISION:
             continue
 
@@ -218,7 +219,7 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
     with chain_snapshot():
         nos = contracts.node_operators_registry.getNodeOperatorsCount()
         no_addrs = [contracts.node_operators_registry.getNodeOperator(no, False)["rewardAddress"] for no in range(nos)]
-        oracle_tx, _ = oracle_report(cl_diff=ETH(523), exclude_vaults_balances=True)
+        oracle_tx, _ = oracle_report(cl_diff=ETH(523), exclude_vaults_balances=False)
 
         token_rebased_event = _first_event(oracle_tx, TokenRebased)
 
@@ -262,7 +263,7 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
     tvl_before_report = contracts.lido.totalSupply()
     total_shares_before_report = contracts.lido.getTotalShares()
 
-    oracle_tx, _ = oracle_report(cl_diff=ETH(523), exclude_vaults_balances=True)
+    oracle_tx, _ = oracle_report(cl_diff=ETH(523), exclude_vaults_balances=False)
 
     token_rebased_event = _first_event(oracle_tx, TokenRebased)
 
