@@ -22,7 +22,7 @@ from utils.test.event_validators.permission import (
     validate_grant_role_event,
     validate_revoke_role_event,
     validate_permission_create_event,
-    validate_permission_revoke_event
+    validate_permission_revoke_event,
 )
 from utils.test.event_validators.node_operators_registry import (
     validate_node_operator_name_set_event,
@@ -51,7 +51,10 @@ from utils.test.easy_track_helpers import (
 # CONSTANTS
 #####
 
-STETH_ERROR_MARGIN_WEI = 2
+STETH_ERROR_MARGIN_WEI: int = 2
+COVER_INDEX: int = 0
+NONCOVER_INDEX: int = 1
+
 
 def test_vote(
     helpers,
@@ -62,7 +65,6 @@ def test_vote(
     ldo_holder,
     stranger,
 ):
-
     finance = contracts.finance
     voting = contracts.voting
     easy_track = contracts.easy_track
@@ -93,28 +95,42 @@ def test_vote(
     gas_supply_stETH_registry = interface.AllowedRecipientRegistry("0x49d1363016aA899bba09ae972a1BF200dDf8C55F")
     gas_supply_stETH_topup_factory = interface.TopUpAllowedRecipients("0x200dA0b6a9905A377CF8D469664C65dB267009d1")
     gas_supply_stETH_add_recipient_factory = interface.AddAllowedRecipient("0x48c135Ff690C2Aa7F5B11C539104B5855A4f9252")
-    gas_supply_stETH_remove_recipient_factory = interface.RemoveAllowedRecipient("0x7E8eFfAb3083fB26aCE6832bFcA4C377905F97d7")
+    gas_supply_stETH_remove_recipient_factory = interface.RemoveAllowedRecipient(
+        "0x7E8eFfAb3083fB26aCE6832bFcA4C377905F97d7"
+    )
     gas_supply_stETH_multisig = accounts.at("0x5181d5D56Af4f823b96FE05f062D7a09761a5a53", {"force": True})
 
     # III. Add reWARDS stETH setup to Easy Track
     reWARDS_stETH_registry = interface.AllowedRecipientRegistry("0x48c4929630099b217136b64089E8543dB0E5163a")
     reWARDS_stETH_topup_factory = interface.TopUpAllowedRecipients("0x1F2b79FE297B7098875930bBA6dd17068103897E")
     reWARDS_stETH_add_recipient_factory = interface.AddAllowedRecipient("0x935cb3366Faf2cFC415B2099d1F974Fd27202b77")
-    reWARDS_stETH_remove_recipient_factory = interface.RemoveAllowedRecipient("0x22010d1747CaFc370b1f1FBBa61022A313c5693b")
+    reWARDS_stETH_remove_recipient_factory = interface.RemoveAllowedRecipient(
+        "0x22010d1747CaFc370b1f1FBBa61022A313c5693b"
+    )
     reWARDS_stETH_multisig = accounts.at("0x87D93d9B2C672bf9c9642d853a8682546a5012B5", {"force": True})
 
     # IV. Remove reWARDS LDO setup from Easy Track
     reWARDS_LDO_topup_factory = interface.TopUpAllowedRecipients("0x85d703B2A4BaD713b596c647badac9A1e95bB03d")
     reWARDS_LDO_add_recipient_factory = interface.AddAllowedRecipient("0x1dCFc37719A99d73a0ce25CeEcbeFbF39938cF2C")
-    reWARDS_LDO_remove_recipient_factory = interface.RemoveAllowedRecipient("0x00BB68a12180a8f7E20D8422ba9F81c07A19A79E")
+    reWARDS_LDO_remove_recipient_factory = interface.RemoveAllowedRecipient(
+        "0x00BB68a12180a8f7E20D8422ba9F81c07A19A79E"
+    )
 
     # V. Remove LDO and DAI referral program from Easy Track
     referral_program_LDO_topup_factory = interface.TopUpAllowedRecipients("0x54058ee0E0c87Ad813C002262cD75B98A7F59218")
-    referral_program_LDO_add_recipient_factory = interface.AddAllowedRecipient("0x929547490Ceb6AeEdD7d72F1Ab8957c0210b6E51")
-    referral_program_LDO_remove_recipient_factory = interface.RemoveAllowedRecipient("0xE9eb838fb3A288bF59E9275Ccd7e124fDff88a9C")
+    referral_program_LDO_add_recipient_factory = interface.AddAllowedRecipient(
+        "0x929547490Ceb6AeEdD7d72F1Ab8957c0210b6E51"
+    )
+    referral_program_LDO_remove_recipient_factory = interface.RemoveAllowedRecipient(
+        "0xE9eb838fb3A288bF59E9275Ccd7e124fDff88a9C"
+    )
     referral_program_DAI_topup_factory = interface.TopUpAllowedRecipients("0x009ffa22ce4388d2F5De128Ca8E6fD229A312450")
-    referral_program_DAI_add_recipient_factory = interface.AddAllowedRecipient("0x8F06a7f244F6Bb4B68Cd6dB05213042bFc0d7151")
-    referral_program_DAI_remove_recipient_factory = interface.RemoveAllowedRecipient("0xd8f9B72Cd97388f23814ECF429cd18815F6352c1")
+    referral_program_DAI_add_recipient_factory = interface.AddAllowedRecipient(
+        "0x8F06a7f244F6Bb4B68Cd6dB05213042bFc0d7151"
+    )
+    referral_program_DAI_remove_recipient_factory = interface.RemoveAllowedRecipient(
+        "0xd8f9B72Cd97388f23814ECF429cd18815F6352c1"
+    )
 
     # VI. Polygon team incentives
     polygon_team_address = "0x9cd7477521B7d7E7F9e2F091D2eA0084e8AaA290"
@@ -161,7 +177,6 @@ def test_vote(
     RockLogic_address_before = "0x49Df3CCa2670eB0D591146B16359fe336e476F29"
     RockLogic_address_after = "0x765c6a8f20c842E8C826B0D9425015784F982aFc"
 
-
     ## checks before the vote
     # I.
     insurance_fund_steth_balance_before: int = contracts.lido.balanceOf(contracts.insurance_fund.address)
@@ -187,10 +202,10 @@ def test_vote(
     # retrieved 2023-06-16 at 08:20 UTC
     assert burner_total_burnt_for_noncover_before >= 506385577569080968748810
 
-    burner_assigned_for_cover_burn_before: int = contracts.burner.getSharesRequestedToBurn()[0]
+    burner_assigned_for_cover_burn_before: int = contracts.burner.getSharesRequestedToBurn()[COVER_INDEX]
     assert burner_assigned_for_cover_burn_before == 0
 
-    burner_assigned_for_noncover_burn_before: int = contracts.burner.getSharesRequestedToBurn()[1]
+    burner_assigned_for_noncover_burn_before: int = contracts.burner.getSharesRequestedToBurn()[NONCOVER_INDEX]
     assert burner_assigned_for_noncover_burn_before == 0
 
     # II.
@@ -235,14 +250,17 @@ def test_vote(
     RockLogic_data_before = no_registry.getNodeOperator(RockLogic_id, True)
 
     # check names before
-    assert CertusOne_Jumpcrypto_data_before['name'] == CertusOne_Jumpcrypto_name_before, "Incorrect NO#1 name before"
-    assert ConsenSysCodefi_Consensys_data_before['name'] == ConsenSysCodefi_Consensys_name_before, "Incorrect NO#21 name before"
-    assert SkillZ_Kiln_data_before['name'] == SkillZ_Kiln_name_before, "Incorrect NO#8 name before"
+    assert CertusOne_Jumpcrypto_data_before["name"] == CertusOne_Jumpcrypto_name_before, "Incorrect NO#1 name before"
+    assert (
+        ConsenSysCodefi_Consensys_data_before["name"] == ConsenSysCodefi_Consensys_name_before
+    ), "Incorrect NO#21 name before"
+    assert SkillZ_Kiln_data_before["name"] == SkillZ_Kiln_name_before, "Incorrect NO#8 name before"
 
     # check reward addresses before
-    assert SkillZ_Kiln_data_before['rewardAddress'] == SkillZ_Kiln_address_before, "Incorrect NO#8 reward address before"
-    assert RockLogic_data_before['rewardAddress'] == RockLogic_address_before, "Incorrect NO#22 reward address before"
-
+    assert (
+        SkillZ_Kiln_data_before["rewardAddress"] == SkillZ_Kiln_address_before
+    ), "Incorrect NO#8 reward address before"
+    assert RockLogic_data_before["rewardAddress"] == RockLogic_address_before, "Incorrect NO#22 reward address before"
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -280,11 +298,11 @@ def test_vote(
     burner_total_burnt_for_noncover_after: int = contracts.burner.getNonCoverSharesBurnt()
     assert burner_total_burnt_for_noncover_after == burner_total_burnt_for_noncover_before
 
-    burner_assigned_for_cover_burn_after: int = contracts.burner.getSharesRequestedToBurn()[0]
+    burner_assigned_for_cover_burn_after: int = contracts.burner.getSharesRequestedToBurn()[COVER_INDEX]
     assert insurance_fund_shares_before - insurance_fund_shares_after == burner_assigned_for_cover_burn_after
-    assert almostEqWithDiff(burner_assigned_for_cover_burn_after, burn_request.amountOfShares, STETH_ERROR_MARGIN_WEI)
+    assert burner_assigned_for_cover_burn_after == burn_request.amountOfShares
 
-    burner_assigned_for_noncover_burn_after: int = contracts.burner.getSharesRequestedToBurn()[1]
+    burner_assigned_for_noncover_burn_after: int = contracts.burner.getSharesRequestedToBurn()[NONCOVER_INDEX]
     assert burner_assigned_for_noncover_burn_after == burner_assigned_for_noncover_burn_before
 
     # II.
@@ -371,18 +389,9 @@ def test_vote(
     assert referral_program_DAI_remove_recipient_factory not in updated_factories_list
 
     # VI-VII
-    assert (
-        agent_ldo_before
-        == ldo_token.balanceOf(agent) + polygon_team_incentives_amount + PML_topup_amount
-    )
-    assert (
-        ldo_token.balanceOf(polygon_team_address)
-        == polygon_team_ldo_before + polygon_team_incentives_amount
-    )
-    assert (
-        ldo_token.balanceOf(PML_multisig)
-        == PML_ldo_before + PML_topup_amount
-    )
+    assert agent_ldo_before == ldo_token.balanceOf(agent) + polygon_team_incentives_amount + PML_topup_amount
+    assert ldo_token.balanceOf(polygon_team_address) == polygon_team_ldo_before + polygon_team_incentives_amount
+    assert ldo_token.balanceOf(PML_multisig) == PML_ldo_before + PML_topup_amount
 
     # VIII.
     assert not contracts.acl.hasPermission(*permission_manage_no)
@@ -393,29 +402,30 @@ def test_vote(
     RockLogic_data_after = no_registry.getNodeOperator(RockLogic_id, True)
 
     # compare NO#1 (CertusOne -> Jump Crypto) data before and after
-    assert CertusOne_Jumpcrypto_data_before['active'] == CertusOne_Jumpcrypto_data_after['active']
-    assert CertusOne_Jumpcrypto_name_after == CertusOne_Jumpcrypto_data_after['name']
-    assert CertusOne_Jumpcrypto_data_before['rewardAddress'] == CertusOne_Jumpcrypto_data_after['rewardAddress']
+    assert CertusOne_Jumpcrypto_data_before["active"] == CertusOne_Jumpcrypto_data_after["active"]
+    assert CertusOne_Jumpcrypto_name_after == CertusOne_Jumpcrypto_data_after["name"]
+    assert CertusOne_Jumpcrypto_data_before["rewardAddress"] == CertusOne_Jumpcrypto_data_after["rewardAddress"]
     compare_NO_validators_data(CertusOne_Jumpcrypto_data_before, CertusOne_Jumpcrypto_data_after)
 
     # compare NO#21 (ConsenSysCodefi -> Consensys) data before and after
-    assert ConsenSysCodefi_Consensys_data_before['active'] == ConsenSysCodefi_Consensys_data_after['active']
-    assert ConsenSysCodefi_Consensys_name_after == ConsenSysCodefi_Consensys_data_after['name']
-    assert ConsenSysCodefi_Consensys_data_before['rewardAddress'] == ConsenSysCodefi_Consensys_data_after['rewardAddress']
+    assert ConsenSysCodefi_Consensys_data_before["active"] == ConsenSysCodefi_Consensys_data_after["active"]
+    assert ConsenSysCodefi_Consensys_name_after == ConsenSysCodefi_Consensys_data_after["name"]
+    assert (
+        ConsenSysCodefi_Consensys_data_before["rewardAddress"] == ConsenSysCodefi_Consensys_data_after["rewardAddress"]
+    )
     compare_NO_validators_data(ConsenSysCodefi_Consensys_data_before, ConsenSysCodefi_Consensys_data_after)
 
     # compare NO#8 (SkillZ -> Kiln) data before and after
-    assert SkillZ_Kiln_data_before['active'] == SkillZ_Kiln_data_after['active']
-    assert SkillZ_Kiln_name_after == SkillZ_Kiln_data_after['name']
-    assert SkillZ_Kiln_address_after == SkillZ_Kiln_data_after['rewardAddress']
+    assert SkillZ_Kiln_data_before["active"] == SkillZ_Kiln_data_after["active"]
+    assert SkillZ_Kiln_name_after == SkillZ_Kiln_data_after["name"]
+    assert SkillZ_Kiln_address_after == SkillZ_Kiln_data_after["rewardAddress"]
     compare_NO_validators_data(SkillZ_Kiln_data_before, SkillZ_Kiln_data_after)
 
     # compare NO#22 (RockLogic) data before and after
-    assert RockLogic_data_before['active'] == RockLogic_data_after['active']
-    assert RockLogic_data_before['name'] == RockLogic_data_after['name']
-    assert RockLogic_address_after == RockLogic_data_after['rewardAddress']
+    assert RockLogic_data_before["active"] == RockLogic_data_after["active"]
+    assert RockLogic_data_before["name"] == RockLogic_data_after["name"]
+    assert RockLogic_address_after == RockLogic_data_after["rewardAddress"]
     compare_NO_validators_data(RockLogic_data_before, RockLogic_data_after)
-
 
     # validate vote events
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 29, "Incorrect voting items count"
@@ -493,45 +503,27 @@ def test_vote(
     validate_token_payout_event(evs[21], PML_ldo_payout, False)
     validate_permission_create_event(evs[22], permission_manage_no, manager=voting)
     validate_node_operator_name_set_event(
-        evs[23],
-        NodeOperatorNameSetItem(
-            nodeOperatorId=CertusOne_Jumpcrypto_id,
-            name=CertusOne_Jumpcrypto_name_after
-        )
+        evs[23], NodeOperatorNameSetItem(nodeOperatorId=CertusOne_Jumpcrypto_id, name=CertusOne_Jumpcrypto_name_after)
     )
     validate_node_operator_name_set_event(
         evs[24],
-        NodeOperatorNameSetItem(
-            nodeOperatorId=ConsenSysCodefi_Consensys_id,
-            name=ConsenSysCodefi_Consensys_name_after
-        )
+        NodeOperatorNameSetItem(nodeOperatorId=ConsenSysCodefi_Consensys_id, name=ConsenSysCodefi_Consensys_name_after),
     )
     validate_node_operator_name_set_event(
-        evs[25],
-        NodeOperatorNameSetItem(
-            nodeOperatorId=SkillZ_Kiln_id,
-            name=SkillZ_Kiln_name_after
-        )
+        evs[25], NodeOperatorNameSetItem(nodeOperatorId=SkillZ_Kiln_id, name=SkillZ_Kiln_name_after)
     )
     validate_node_operator_reward_address_set_event(
         evs[26],
-        NodeOperatorRewardAddressSetItem(
-            nodeOperatorId=SkillZ_Kiln_id,
-            reward_address=SkillZ_Kiln_address_after
-        )
+        NodeOperatorRewardAddressSetItem(nodeOperatorId=SkillZ_Kiln_id, reward_address=SkillZ_Kiln_address_after),
     )
     validate_node_operator_reward_address_set_event(
-        evs[27],
-        NodeOperatorRewardAddressSetItem(
-            nodeOperatorId=RockLogic_id,
-            reward_address=RockLogic_address_after
-        )
+        evs[27], NodeOperatorRewardAddressSetItem(nodeOperatorId=RockLogic_id, reward_address=RockLogic_address_after)
     )
     validate_permission_revoke_event(evs[28], permission_manage_no)
 
 
 def compare_NO_validators_data(data_before, data_after):
-    assert data_before['totalVettedValidators'] == data_after['totalVettedValidators']
-    assert data_before['totalExitedValidators'] == data_after['totalExitedValidators']
-    assert data_before['totalAddedValidators'] == data_after['totalAddedValidators']
-    assert data_before['totalDepositedValidators'] == data_after['totalDepositedValidators']
+    assert data_before["totalVettedValidators"] == data_after["totalVettedValidators"]
+    assert data_before["totalExitedValidators"] == data_after["totalExitedValidators"]
+    assert data_before["totalAddedValidators"] == data_after["totalAddedValidators"]
+    assert data_before["totalDepositedValidators"] == data_after["totalDepositedValidators"]
