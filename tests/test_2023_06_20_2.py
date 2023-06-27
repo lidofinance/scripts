@@ -32,6 +32,7 @@ def test_vote(
     agent = contracts.agent
     stETH_token = contracts.lido
 
+    agent_eth_balance_before = agent.balance()
     agent_steth_balance_before = stETH_token.balanceOf(agent.address)
     agent_steth_shares_before = stETH_token.sharesOf(agent.address)
 
@@ -61,7 +62,7 @@ def test_vote(
         agent_steth_balance_after, agent_steth_balance_before + agent_eth_balance_to_stake, STETH_ERROR_MARGIN
     )
     assert agent_steth_shares_after == agent_steth_shares_before + stETH_token.getSharesByPooledEth(agent_eth_balance_to_stake)
-    assert agent_eth_balance_after == agent_steth_balance_before - agent_eth_balance_to_stake
+    assert agent_eth_balance_after == agent_eth_balance_before - agent_eth_balance_to_stake
 
     if bypass_events_decoding or network_name() in ("goerli", "goerli-fork"):
         return
