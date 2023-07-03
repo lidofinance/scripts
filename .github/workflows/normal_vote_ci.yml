@@ -15,3 +15,5 @@ jobs:
         uses: ./.github/actions/brownie_fork_tests
         with:
           vote: "normal"
+          infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
+          etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
