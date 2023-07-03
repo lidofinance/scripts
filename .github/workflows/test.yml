@@ -6,7 +6,7 @@ on:
 jobs:
   run-tests:
     name: Brownie tests
-    runs-on: [protocol-heavy-runners]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
