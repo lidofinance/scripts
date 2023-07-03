@@ -141,6 +141,7 @@ on the Görli Testnet).
 - To re-use the already created `vote_id` you can pass the `OMNIBUS_VOTE_IDS`
 environment variable (e.g. `OMNIBUS_VOTE_IDS=104`).
 - To re-use multiple created votes list the ids comma-separated (e.g. `OMNIBUS_VOTE_IDS=104,105`)
+- To force the large CI runner usage, please name your branch with the `large-vote_` prefix.
 
 ## Code style
 
