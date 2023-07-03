@@ -10,9 +10,6 @@ inputs:
 runs:
   using: "composite":
   steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
-
     - name: Install poetry
       run: |
         curl -sSL https://install.python-poetry.org | python3 -
