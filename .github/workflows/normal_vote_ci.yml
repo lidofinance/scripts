@@ -2,9 +2,8 @@ name: Normal vote CI
 
 on:
   push:
-    branches:
-      - '!large-vote_**'
-  workflow_dispatch:
+    branches-ignore:
+      - "large-vote_**"
 
 jobs:
   run-tests-normal:
