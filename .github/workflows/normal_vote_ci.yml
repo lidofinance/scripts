@@ -7,8 +7,10 @@ on:
 
 jobs:
   run-tests-normal:
-    runs-on: "ubuntu-latest"
     name: Brownie fork NORMAL tests
-    uses: ./.github/actions/brownie_fork_tests.yaml
-    with:
-      vote: "normal"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Main action
+        uses: ./.github/actions/brownie_fork_tests.yaml
+        with:
+          vote: "normal"

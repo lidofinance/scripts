@@ -7,8 +7,10 @@ on:
 
 jobs:
   run-tests-large:
-    runs-on: "ubuntu-latest"
     name: Brownie fork LARGE tests
-    uses: ./.github/actions/brownie_fork_tests.yaml
-    with:
-      vote: "large"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Main action
+        uses: ./.github/actions/brownie_fork_tests.yaml
+        with:
+          vote: "large"
