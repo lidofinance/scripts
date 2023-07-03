@@ -8,7 +8,7 @@ on:
 jobs:
   run-tests-large:
     name: Brownie fork LARGE tests
-    runs-on: "protocol-heavy-runners"
+    runs-on: [protocol-heavy-runners]
     steps:
       - uses: actions/checkout@v3
       - name: Main action
