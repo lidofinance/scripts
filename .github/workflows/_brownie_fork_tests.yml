@@ -1,12 +1,23 @@
 name: Tests
 
 on:
-  push:
+  workflow_call:
+    inputs:
+      runner:
+        description: "runner to use"
+        default: "ubuntu-latest"
+        required: false
+        type: string
+      vote:
+        description: "type of vote"
+        default: ""
+        required: false
+        type: string
 
 jobs:
   run-tests:
-    name: Brownie tests
-    runs-on: ubuntu-latest
+    name: Brownie fork tests
+    runs-on: [$RUNNER]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -16,7 +27,7 @@ jobs:
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
         env:
-          POETRY_VERSION: "1.2.2"
+          POETRY_VERSION: "1.5.1"
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
@@ -27,7 +38,7 @@ jobs:
       - name: Setup node.js version
         uses: actions/setup-node@v3
         with:
-          node-version: 16.x
+          node-version: 18.x
           cache: 'yarn'
 
       - name: Install poetry requirements
@@ -38,6 +49,21 @@ jobs:
 
       - name: Import network config to connect brownie with local Ganache
         run: poetry run brownie networks import network-config.yaml True
+
+      - name: Show system info
+        shell: bash
+        run: |
+          echo "Memory and swap:"
+          free -h
+          echo
+          swapon --show
+          echo
+          df -h
+          echo
+          echo "CPU units"
+          nproc --all
+          echo "Vote type"
+          echo $VOTE
 
       - name: Run tests
         run: >

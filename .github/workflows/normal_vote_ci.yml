@@ -1,0 +1,14 @@
+name: Normal vote CI
+
+on:
+  push:
+    branches:
+      - '!large-vote_**'
+
+jobs:
+  run-tests:
+    name: Brownie fork tests
+    uses: ./.github/workflows/_brownie_fork_tests.yaml
+    with:
+      runner: "ubuntu-latest"
+      vote: "normal"
