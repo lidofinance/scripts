@@ -6,9 +6,9 @@ on:
       - '!large-vote_**'
 
 jobs:
-  run-tests:
-    name: Brownie fork tests
-    uses: ./.github/workflows/_brownie_fork_tests.yaml
+  run-tests-normal:
+    runs-on: "ubuntu-latest"
+    name: Brownie fork NORMAL tests
+    uses: ./.github/actions/brownie_fork_tests.yaml
     with:
-      runner: "ubuntu-latest"
       vote: "normal"

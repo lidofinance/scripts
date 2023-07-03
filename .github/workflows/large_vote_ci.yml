@@ -1,4 +1,4 @@
-name: Normal vote CI
+name: Large vote CI
 
 on:
   push:
@@ -6,9 +6,9 @@ on:
       - 'large-vote_**'
 
 jobs:
-  run-tests:
-    name: Brownie fork tests
-    uses: ./.github/workflows/_brownie_fork_tests.yaml
+  run-tests-large:
+    runs-on: "ubuntu-latest"
+    name: Brownie fork LARGE tests
+    uses: ./.github/actions/brownie_fork_tests.yaml
     with:
-      runner: "ubuntu-latest"
       vote: "large"
