@@ -12,7 +12,8 @@ from utils.evm_script import (
     EMPTY_CALLSCRIPT,
 )
 
-from utils.config import prompt_bool, CHAIN_NETWORK_NAME, contracts, get_config_params
+from utils.config import prompt_bool, CHAIN_NETWORK_NAME, contracts
+from utils.ipfs import upload_str_to_ipfs
 
 
 def bake_vote_items(vote_desc_items: List[str], call_script_items: List[Tuple[str, str]]) -> Dict[str, Tuple[str, str]]:
@@ -35,12 +36,19 @@ def create_vote(
     verbose: bool = False,
     cast_vote: bool = False,
     executes_if_decided: bool = False,
+    description: str = "",
 ) -> Tuple[int, Optional[TransactionReceipt]]:
     vote_desc_str = ""
     for v in vote_items.keys():
         vote_desc_str += f"{v};\n "
     if len(vote_desc_str) > 0:
         vote_desc_str = f"Omnibus vote: {vote_desc_str[:-3]}."
+
+    cid = ""
+    if description:
+        cid = upload_str_to_ipfs(description.strip())
+
+    vote_desc_str = f"{vote_desc_str}\n{cid}"
 
     voting = contracts.voting
     token_manager = contracts.token_manager
