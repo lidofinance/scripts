@@ -2,7 +2,7 @@ import warnings
 from dataclasses import astuple, dataclass
 from typing import Literal, overload
 
-from brownie import chain, web3  # type: ignore
+from brownie import chain, web3, accounts  # type: ignore
 from brownie.exceptions import VirtualMachineError
 from brownie.typing import TransactionReceipt  # type: ignore
 from eth_abi.abi import encode
@@ -198,6 +198,7 @@ def push_oracle_report(
         extraDataItemsCount=extraDataItemsCount,
     )
     submitter = reach_consensus(refSlot, hash, consensusVersion, contracts.hash_consensus_for_accounting_oracle, silent)
+    accounts[0].transfer(submitter, 10**19)
     # print(contracts.oracle_report_sanity_checker.getOracleReportLimits())
     report_tx = contracts.accounting_oracle.submitReportData(items, oracleVersion, {"from": submitter})
     if not silent:

@@ -17,17 +17,16 @@ SIGNATURE_LENGTH = 96
 DEPOSIT_SIZE = Wei("32 ether")
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def grant_roles(voting_eoa, agent_eoa):
     contracts.staking_router.grantRole(
         contracts.staking_router.MANAGE_WITHDRAWAL_CREDENTIALS_ROLE(), voting_eoa, {"from": agent_eoa}
     )
 
-    contracts.acl.createPermission(
+    contracts.acl.grantPermission(
         contracts.voting,
         contracts.node_operators_registry,
         convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-        contracts.voting,
         {"from": contracts.voting},
     )
 

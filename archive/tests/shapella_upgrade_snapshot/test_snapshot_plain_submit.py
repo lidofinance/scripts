@@ -72,7 +72,6 @@ def snapshot() -> Dict[str, any]:
     }
 
 
-@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
 def test_submit_snapshot(helpers, staker, vote_ids_from_env):
     def steps() -> Dict[str, Dict[str, any]]:
         track = {"init": snapshot()}

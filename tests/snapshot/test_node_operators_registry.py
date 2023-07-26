@@ -48,7 +48,6 @@ def voting_eoa(accounts):
     return accounts.at(contracts.voting.address, force=True)
 
 
-@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
 def test_node_operator_basic_flow(
     accounts,
     helpers,

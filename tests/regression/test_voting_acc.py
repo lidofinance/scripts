@@ -18,7 +18,7 @@ def call_target():
     return MockCallTarget.deploy({"from": accounts[0]})
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def test_vote(ldo_holder, call_target) -> Tuple[int, Optional[TransactionReceipt]]:
     vote_items = [(call_target.address, call_target.perform_call.encode_input())]
     return create_vote(bake_vote_items(["Test voting"], vote_items), {"from": ldo_holder})

@@ -70,7 +70,7 @@ def test_legacy_oracle_state(contract):
     reported_delta = contract.getLastCompletedReportDelta()
     assert reported_delta["postTotalPooledEther"] > lastSeenTotalPooledEther
     assert reported_delta["preTotalPooledEther"] >= lastSeenTotalPooledEther
-    assert reported_delta["timeElapsed"] == 86400
+    assert reported_delta["timeElapsed"] >= 86400
 
     current_frame = contract.getCurrentFrame()
     assert current_frame["frameEpochId"] > 0

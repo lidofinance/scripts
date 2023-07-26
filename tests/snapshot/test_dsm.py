@@ -36,7 +36,6 @@ class SandwichFn(Protocol):
         ...
 
 
-@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
 def test_dsm_no_changes_in_views(sandwich_upgrade: SandwichFn):
     """Test that no views change during the upgrade process"""
 
@@ -50,7 +49,6 @@ def guardian(dsm: Contract, accounts) -> Account:
     return accounts.at(contracts.deposit_security_module.getGuardians()[1], force=True)
 
 
-@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
 def test_dsm_no_changes_in_views_with_ops(
     sandwich_upgrade: SandwichFn,
     new_owner: Account,

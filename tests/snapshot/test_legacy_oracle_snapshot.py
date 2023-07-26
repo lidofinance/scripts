@@ -37,7 +37,7 @@ class SandwichFn(Protocol):
     ) -> tuple[Stack, Stack]:
         ...
 
-@pytest.mark.skipif(condition=not is_there_any_vote_scripts(), reason="No votes")
+
 def test_legacy_oracle_no_changes_in_views(sandwich_upgrade: SandwichFn):
     """Test that no views change during the upgrade process"""
 

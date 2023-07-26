@@ -267,7 +267,7 @@ def test_accounting_no_el_rewards(accounting_oracle: Contract, lido: Contract, h
 
 def test_accounting_normal_el_rewards(accounting_oracle: Contract, lido: Contract, el_vault: Contract):
     """Test rebase with normal EL rewards"""
-
+    accounts[0].transfer(el_vault.address, 10**18)
     block_before_report = chain.height
 
     el_rewards = eth_balance(el_vault.address, block_before_report)

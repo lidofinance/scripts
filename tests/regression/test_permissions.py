@@ -43,7 +43,7 @@ from utils.config import (
 )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def protocol_permissions():
     return {
         LIDO_LOCATOR: {
@@ -399,7 +399,7 @@ def active_aragon_roles(protocol_permissions):
         {"address": contracts.acl.address, "fromBlock": ACL_DEPLOY_BLOCK_NUMBER, "topics": [event_signature_hash]}
     ).get_all_entries()
 
-    permission_events = _decode_logs(events_before_voting)["SetPermission"]
+    permission_events = _decode_logs(events_before_voting)["SetPermission"]._ordered
 
     history = TxHistory()
     if len(history) > 0:
@@ -410,11 +410,10 @@ def active_aragon_roles(protocol_permissions):
         ).get_all_entries()
 
         try:
-            permission_events_after_voting = _decode_logs(events_after_voting)["SetPermission"]
+            permission_events_after_voting = _decode_logs(events_after_voting)["SetPermission"]._ordered
             permission_events.extend(permission_events_after_voting)
         except EventLookupError as e:
             print(e)
-
     events_by_app = collect_permissions_from_events(permission_events)
 
     active_permissions = {}
