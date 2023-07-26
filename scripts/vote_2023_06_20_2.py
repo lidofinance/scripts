@@ -2,6 +2,8 @@
 Voting 20/06/2023 part 2
 
 1) Stake all Treasury ETH in Lido
+
+Vote passed & executed on Jun-30-2023 06:47:35 PM +UTC, block 17593968
 """
 
 import time

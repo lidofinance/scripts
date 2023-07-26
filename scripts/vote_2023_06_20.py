@@ -44,6 +44,7 @@ VIII. Change NO names and addresses
 28. Change the reward address of node operator with id 22 from 0x49Df3CCa2670eB0D591146B16359fe336e476F29 to 0x765c6a8f20c842E8C826B0D9425015784F982aFc
 29. Revoke MANAGE_NODE_OPERATOR_ROLE from Voting
 
+Vote passed & executed on Jun-30-2023 06:46:23 PM +UTC, block 17593962
 """
 
 import time
