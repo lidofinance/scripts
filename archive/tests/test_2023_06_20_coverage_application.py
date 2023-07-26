@@ -1,7 +1,7 @@
 """
 Coverage application scenario tests for voting 20/06/2023.
 """
-from scripts.vote_2023_06_20 import start_vote
+from archive.scripts.vote_2023_06_20 import start_vote
 
 from typing import TypedDict, TypeVar, Any, Dict
 
