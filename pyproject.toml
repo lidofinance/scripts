@@ -11,7 +11,7 @@ homepage = "https://mainnet.lido.fi"
 python = ">=3.10,<3.11"
 eth-brownie = "~1.19.3"
 avotes-parser-core = "~0.5.4"
-setuptools = "~68.0.0"
+setuptools = "~65.5.1"
 hexbytes = "0.2.3"
 
 [tool.poetry.dev-dependencies]
