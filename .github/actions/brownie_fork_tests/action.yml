@@ -40,7 +40,7 @@ runs:
 
     - name: Install poetry requirements
       shell: bash
-      run: poetry install
+      run: poetry install || poetry install
 
     - name: Install ganache
       shell: bash
