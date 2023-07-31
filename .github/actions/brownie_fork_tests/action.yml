@@ -40,11 +40,11 @@ runs:
 
     - name: Install poetry requirements
       shell: bash
-      run: pip wheel "pyyaml (==5.4.1)"
+      run: pip install "pyyaml (==5.4.1)"
 
     - name: Install poetry requirements
       shell: bash
-      run: poetry install || poetry install
+      run: poetry install
 
     - name: Install ganache
       shell: bash
