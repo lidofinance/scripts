@@ -26,10 +26,10 @@ runs:
       env:
         POETRY_VERSION: "1.5.1"
 
-    - name: Set up Python 3.10
+    - name: Set up Python 3.11
       uses: actions/setup-python@v4
       with:
-        python-version: "3.9"
+        python-version: "3.11"
         cache: poetry
 
     - name: Setup node.js version
