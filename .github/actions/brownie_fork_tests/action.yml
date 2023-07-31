@@ -91,5 +91,5 @@ runs:
         poetry run
         brownie test -s --network mainnet-fork
       env:
-        WEB3_INFURA_PROJECT_ID: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
-        ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
+        WEB3_INFURA_PROJECT_ID: ${{ inputs.WEB3_INFURA_PROJECT_ID }}
+        ETHERSCAN_TOKEN: ${{ inputs.ETHERSCAN_TOKEN }}
