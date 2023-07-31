@@ -22,6 +22,7 @@ runs:
       uses: actions/checkout@v3
 
     - name: Install poetry
+      shell: bash
       run: |
         curl -sSL https://install.python-poetry.org | python3 -
         echo "$HOME/.local/bin" >> $GITHUB_PATH
@@ -41,12 +42,15 @@ runs:
         cache: 'yarn'
 
     - name: Install poetry requirements
+      shell: bash
       run: poetry install
 
     - name: Install ganache
+      shell: bash
       run: yarn install --frozen-lockfile
 
     - name: Import network config to connect brownie with local Ganache
+      shell: bash
       run: poetry run brownie networks import network-config.yaml True
 
     - name: Swap space report before modification
