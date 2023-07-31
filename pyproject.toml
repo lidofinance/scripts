@@ -8,12 +8,11 @@ readme = "README.md"
 homepage = "https://mainnet.lido.fi"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.11"
+python = ">=3.9,<3.10"
 eth-brownie = "~1.19.3"
 avotes-parser-core = "~0.5.4"
 setuptools = "~68.0.0"
 hexbytes = "0.2.3"
-pyyaml = "~5.4.1"
 
 [tool.poetry.dev-dependencies]
 black = "~22.10.0"
