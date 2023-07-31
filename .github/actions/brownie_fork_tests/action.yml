@@ -87,6 +87,7 @@ runs:
         echo
 
     - name: Run tests
+      shell: bash
       run: >
         poetry run
         brownie test -s --network mainnet-fork
