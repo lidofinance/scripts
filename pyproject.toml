@@ -13,6 +13,7 @@ eth-brownie = "~1.19.3"
 avotes-parser-core = "~0.5.4"
 setuptools = "~65.5.1"
 hexbytes = "0.2.3"
+PyYAML = 6.0.1
 
 [tool.poetry.dev-dependencies]
 black = "~22.10.0"

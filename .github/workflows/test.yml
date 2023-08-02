@@ -24,9 +24,6 @@ jobs:
         with:
           python-version: "3.10.8"
 
-      - name: Downgrade pip
-        run:  pip install "cython<3.0.0" && pip install --no-build-isolation "pyyaml==5.4.1"
-
       - name: Setup node.js version
         uses: actions/setup-node@v3
         with:
