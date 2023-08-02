@@ -1,96 +1,48 @@
-name: "Tests"
-description: "Run brownie fork tests"
+name: Tests
 
-inputs:
-  vote:
-    description: "vote type: normal or large"
-    required: false
-    default: "normal"
-  infura:
-    description: "infura JSON-RPC provider"
-    required: true
-    default: ""
-  etherscan:
-    description: "etherscan api key"
-    required: true
-    default: ""
+on:
+  push:
 
-runs:
-  using: "composite"
-  steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+jobs:
+  run-tests:
+    name: Brownie tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Install poetry
-      shell: bash
-      run: |
-        curl -sSL https://install.python-poetry.org | python3 -
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-      env:
-        POETRY_VERSION: "1.2.2"
+      - name: Install poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        env:
+          POETRY_VERSION: "1.2.2"
 
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.10"
-        cache: poetry
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+          cache: poetry
 
-    - name: Setup node.js version
-      uses: actions/setup-node@v3
-      with:
-        node-version: 16.x
-        cache: 'yarn'
+      - name: Setup node.js version
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+          cache: 'yarn'
 
-    - name: Install poetry requirements
-      shell: bash
-      run: poetry install
+      - name: Install poetry requirements
+        run: poetry install
 
-    - name: Install ganache
-      shell: bash
-      run: yarn install --frozen-lockfile
+      - name: Install ganache
+        run: yarn install --frozen-lockfile
 
-    - name: Import network config to connect brownie with local Ganache
-      shell: bash
-      run: poetry run brownie networks import network-config.yaml True
+      - name: Import network config to connect brownie with local Ganache
+        run: poetry run brownie networks import network-config.yaml True
 
-    - name: Swap space report before modification
-      shell: bash
-      run: |
-        echo "Memory and swap:"
-        free -h
-        echo
-        swapon --show
-        echo
-        df -h
-        echo
-
-    - name: Set Swap
-      shell: bash
-      run: |
-          export SWAP_FILE=$(swapon --show=NAME | tail -n 1)
-          sudo swapoff $SWAP_FILE
-          sudo rm $SWAP_FILE
-          sudo fallocate -l 12G $SWAP_FILE
-          sudo chmod 600 $SWAP_FILE
-          sudo mkswap $SWAP_FILE
-          sudo swapon $SWAP_FILE
-
-    - name: Swap space report after modification
-      shell: bash
-      run: |
-        echo "Memory and swap:"
-        free -h
-        echo
-        swapon --show
-        echo
-        df -h
-        echo
-
-    - name: Run tests
-      shell: bash
-      run: >
-        poetry run
-        brownie test -s --network mainnet-fork
-      env:
-        WEB3_INFURA_PROJECT_ID: ${{ inputs.WEB3_INFURA_PROJECT_ID }}
-        ETHERSCAN_TOKEN: ${{ inputs.ETHERSCAN_TOKEN }}
+      - name: Run tests
+        run: >
+          poetry run
+          brownie test -s --network mainnet-fork
+        env:
+          WEB3_INFURA_PROJECT_ID: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
+          ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
