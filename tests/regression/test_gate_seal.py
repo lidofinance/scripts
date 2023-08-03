@@ -4,6 +4,7 @@ from brownie import reverts, accounts, chain  # type: ignore
 from utils.test.oracle_report_helpers import oracle_report, ZERO_BYTES32
 from brownie.network.account import Account
 
+from utils.finance import ZERO_ADDRESS
 from utils.test.helpers import almostEqEth, ETH
 from utils.config import (
     GATE_SEAL_COMMITTEE,
@@ -34,11 +35,15 @@ def test_gate_seal_expiration(gate_seal_committee):
         contracts.gate_seal.seal([WITHDRAWAL_QUEUE, VALIDATORS_EXIT_BUS_ORACLE], {"from": gate_seal_committee})
 
 
-def test_gate_seal_scenario(steth_holder, gate_seal_committee):
+def test_gate_seal_scenario(steth_holder, gate_seal_committee, eth_whale):
     account = accounts.at(steth_holder, force=True)
     REQUESTS_COUNT = 2
     REQUEST_AMOUNT = ETH(1)
     REQUESTS_SUM = REQUESTS_COUNT * REQUEST_AMOUNT
+
+    """ finalize all requests """
+    contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale, "amount": ETH(50000)}),
+    report_tx = oracle_report(silent=True)[0]
 
     """ requests to be finalized """
     contracts.lido.approve(contracts.withdrawal_queue.address, REQUESTS_SUM, {"from": steth_holder})

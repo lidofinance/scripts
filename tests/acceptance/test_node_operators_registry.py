@@ -104,11 +104,12 @@ def test_nor_state(contract):
         assert node_operator["rewardAddress"] != ZERO_ADDRESS
         assert node_operator["totalVettedValidators"] > 0
         assert node_operator["totalVettedValidators"] <= node_operator["totalAddedValidators"]
-
         if id == 22:
             assert node_operator["totalExitedValidators"] == 11
         elif id == 12:
             assert node_operator["totalExitedValidators"] >= 134
+        elif id == 21:
+            assert node_operator["totalExitedValidators"] >= 125
         else:
             assert node_operator["totalExitedValidators"] == 0
 
@@ -130,6 +131,8 @@ def test_nor_state(contract):
             assert node_operator_summary["totalExitedValidators"] == 11
         elif id == 12:
             assert node_operator_summary["totalExitedValidators"] >= 134
+        elif id == 21:
+            assert node_operator_summary["totalExitedValidators"] >= 125
         else:
             assert node_operator_summary["totalExitedValidators"] == 0
 
