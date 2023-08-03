@@ -1,11 +1,9 @@
-
-
 """
 Tests for voting 08/08/2023.
 
 !! goerli only
 """
-from scripts.vote_2023_08_08_goerli import start_vote
+from archive.scripts.vote_2023_08_08_goerli import start_vote
 
 from brownie import ZERO_ADDRESS, chain, accounts
 from brownie.network.transaction import TransactionReceipt
@@ -73,34 +71,23 @@ def test_vote(
     assert rewards_share_remove_recipient_factory not in old_factories_list
 
     # START VOTE
-    vote_ids = []
     if len(vote_ids_from_env) > 0:
-        vote_ids = vote_ids_from_env
+        (vote_id,) = vote_ids_from_env
     else:
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
         vote_id, _ = start_vote(tx_params, silent=True)
-        vote_ids = [vote_id]
 
-    (vote_tx, _) = helpers.execute_votes(accounts, vote_ids, contracts.voting)
+    vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
 
-    print(f"voteId = {vote_ids}, gasUsed = {vote_tx.gas_used}")
+    print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
     updated_factories_list = easy_track.getEVMScriptFactories()
-    assert len(updated_factories_list) == 13
+    assert len(updated_factories_list) == 21
 
     assert rewards_share_topup_factory in updated_factories_list
     assert rewards_share_add_recipient_factory in updated_factories_list
     assert rewards_share_remove_recipient_factory in updated_factories_list
 
-    '''create_and_enact_payment_motion(
-        easy_track,
-        rewards_share_multisig,
-        rewards_share_topup_factory,
-        stETH_token,
-        [rewards_share_multisig],
-        [10 * 10**18],
-        stranger,
-    )
     check_add_and_remove_recipient_with_voting(rewards_share_registry, helpers, ldo_holder, voting)
     create_and_enact_add_recipient_motion(
         easy_track,
@@ -111,6 +98,15 @@ def test_vote(
         "New recipient",
         ldo_holder,
     )
+    create_and_enact_payment_motion(
+        easy_track,
+        rewards_share_multisig,
+        rewards_share_topup_factory,
+        stETH_token,
+        [stranger],
+        [10 * 10**18],
+        stranger,
+    )
     create_and_enact_remove_recipient_motion(
         easy_track,
         rewards_share_multisig,
@@ -119,7 +115,7 @@ def test_vote(
         stranger,
         ldo_holder,
     )
-    '''
+
     # validate vote events
     assert count_vote_items_by_events(vote_tx, voting) == 3, "Incorrect voting items count"
 
