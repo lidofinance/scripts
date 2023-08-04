@@ -35,7 +35,7 @@ def validate_node_operator_added_event(
 
     assert event.count("NodeOperatorAdded") == 1
 
-    assert event["NodeOperatorAdded"]["id"] == node_operator_item.id
+    assert event["NodeOperatorAdded"]["nodeOperatorId"] == node_operator_item.id
     assert event["NodeOperatorAdded"]["name"] == node_operator_item.name
     assert (
         event["NodeOperatorAdded"]["rewardAddress"] == node_operator_item.reward_address

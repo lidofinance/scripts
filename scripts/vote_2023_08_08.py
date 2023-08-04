@@ -4,16 +4,17 @@ Voting 08/08/2023.
 1. Add Rewards Share Program top up EVM script factory 0xbD08f9D6BF1D25Cc7407E4855dF1d46C2043B3Ea
 2. Add Rewards Share Program add recipient EVM script factory 0x1F809D2cb72a5Ab13778811742050eDa876129b6
 3. Add Rewards Share Program remove recipient EVM script factory 0xd30Dc38EdEfc21875257e8A3123503075226E14B
-4. Add Launchnodes Limited node operator with reward address 0x................
-5. Add SenseiNode Inc node operator with reward address 0x................
-6. Set 3.1531 stETH as the allowance of Burner over the Agent's tokens
-7. Grant REQUEST_BURN_MY_STETH_ROLE to Agent
-8. Request to burn 3.1531 stETH for cover
+4. Grant MANAGE_NODE_OPERATOR_ROLE to Voting
+5. Add Launchnodes Limited node operator with reward address 0x................
+6. Add SenseiNode Inc node operator with reward address 0x................
+7. Set 3.1531 stETH as the allowance of Burner over the Agent's tokens
+8. Grant REQUEST_BURN_MY_STETH_ROLE to Agent
+9. Request to burn 3.1531 stETH for cover
 """
 
 import time
 
-from typing import Dict, Tuple, Optional, List
+from typing import Dict, Tuple, Optional
 
 from brownie import interface
 from brownie.network.transaction import TransactionReceipt
@@ -21,6 +22,8 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.easy_track import add_evmscript_factory, create_permissions
 from utils.agent import agent_forward
 from utils.node_operators import encode_add_operator_lido
+from utils.test.helpers import ETH
+from utils.permissions import encode_permission_grant
 
 from utils.config import (
     get_deployer_account,
@@ -41,12 +44,12 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
 
     """ Wave 5 NOs """
     launchnodes_limited_node_operator = {
-        "name": "New op #1",
-        "address": "0x0000000000000000000000000000000000000000",
+        "name": "Launchnodes Limited",
+        "address": "0x0000000000000000000000000000000000000003",
     }
     senseinode_node_operator = {
-        "name": "New op #2",
-        "address": "0x0000000000000000000000000000000000000000",
+        "name": "SenseiNode Inc",
+        "address": "0x0000000000000000000000000000000000000004",
     }
 
     """ Burning 3,1531 stETH """
@@ -70,11 +73,13 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
             factory=rewards_share_remove_recipient_factory,
             permissions=create_permissions(rewards_share_registry, "removeRecipient"),
         ),
-        # 4. Add Launchnodes Limited node operator with reward address 0x................
+        # 4. Grant MANAGE_NODE_OPERATOR_ROLE to Voting
+        encode_permission_grant(grant_to=contracts.voting, target_app=contracts.node_operators_registry, permission_name="MANAGE_NODE_OPERATOR_ROLE"),
+        # 5. Add Launchnodes Limited node operator with reward address 0x................
         encode_add_operator_lido(**launchnodes_limited_node_operator),
-        # 5. Add SenseiNode Inc node operator with reward address 0x................
+        # 6. Add SenseiNode Inc node operator with reward address 0x................
         encode_add_operator_lido(**senseinode_node_operator),
-        # 6. Set 3.1531 stETH as the allowance of Burner over the Agent's tokens
+        # 7. Set 3.1531 stETH as the allowance of Burner over the Agent's tokens
         agent_forward(
             [
                 (
@@ -83,7 +88,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
                 )
             ]
         ),
-        # 7. Grant REQUEST_BURN_MY_STETH_ROLE to Agent
+        # 8. Grant REQUEST_BURN_MY_STETH_ROLE to Agent
         agent_forward(
             [
                 (
@@ -92,7 +97,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
                 )
             ]
         ),
-        # 8. Request to burn 3.1531 stETH for cover
+        # 9. Request to burn 3.1531 stETH for cover
         agent_forward(
             [
                 (
@@ -107,11 +112,12 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
         "1) Add Rewards Share Program top up EVM script factory 0xbD08f9D6BF1D25Cc7407E4855dF1d46C2043B3Ea",
         "2) Add Rewards Share Program add recipient EVM script factory 0x1F809D2cb72a5Ab13778811742050eDa876129b6",
         "3) Add Rewards Share Program remove recipient EVM script factory 0xd30Dc38EdEfc21875257e8A3123503075226E14B",
-        "4) Add Launchnodes Limited node operator with reward address 0x................",
-        "5) Add SenseiNode Inc node operator with reward address 0x................",
-        "6) Set 3.1531 stETH as the allowance of Burner over the Agent's tokens",
-        "7) Grant REQUEST_BURN_MY_STETH_ROLE to Agent",
-        "8) Request to burn 3.1531 stETH for cover",
+        "4) Grant MANAGE_NODE_OPERATOR_ROLE to Voting",
+        "5) Add Launchnodes Limited node operator with reward address 0x................",
+        "6) Add SenseiNode Inc node operator with reward address 0x................",
+        "7) Set 3.1531 stETH as the allowance of Burner over the Agent's tokens",
+        "8) Grant REQUEST_BURN_MY_STETH_ROLE to Agent",
+        "9) Request to burn 3.1531 stETH for cover",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
