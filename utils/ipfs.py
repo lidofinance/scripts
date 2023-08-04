@@ -27,16 +27,14 @@ from utils.config import (
 #
 
 REG_CID_0_58_BTC = r"Qm[1-9A-HJ-NP-Za-km-z]{44,128}"
-REG_CID_1_16 = r"f[0-9a-zA-F]{50,128}"
-REG_CID_1_16_UPPER = r"F[0-9A-F]{50,128}"
-REG_CID_1_32 = r"b[A-Za-z2-7]{58,128}"
-REG_CID_1_32_UPPER = r"B[A-Z2-7]{58,128}"
+REG_CID_1_16 = r"[fF][0-9a-zA-F]{50,128}"  # case-insensitive
+REG_CID_1_32 = r"[bB][a-zA-Z2-7]{58,128}"  # case-insensitive
 REG_CID_1_58_BTC = r"z[1-9A-HJ-NP-Za-km-z]{48,128}"
-REG_CID_1_64 = r"m[+A-Za-z0-9/]{44,128}"
-REG_CID_1_64_URL = r"u[-A-Za-z0-9_]{44,128}={0,3}"
-REG_CID_1_64_URLPAD = r"U[-A-Za-z0-9_]{44,128}={0,3}"
+REG_CID_1_64 = r"m[+A-Za-z0-9/]{40,128}"
+REG_CID_1_64_URL = r"u[-A-Za-z0-9_]{40,128}"
+REG_CID_1_64_URLPAD = r"U[-A-Za-z0-9_]{40,128}={0,3}"
 
-REG_CID_DEFAULT = rf"\b({REG_CID_0_58_BTC}|{REG_CID_1_16}|{REG_CID_1_16_UPPER}|{REG_CID_1_32}|{REG_CID_1_32_UPPER}|{REG_CID_1_58_BTC}|{REG_CID_1_64}|{REG_CID_1_64_URL}|{REG_CID_1_64_URLPAD})\b"
+REG_CID_DEFAULT = rf"\b({REG_CID_0_58_BTC}|{REG_CID_1_16}|{REG_CID_1_32}|{REG_CID_1_58_BTC}|{REG_CID_1_64}|{REG_CID_1_64_URL}|{REG_CID_1_64_URLPAD})\b"
 ETH_ADDRESS_REG = r"\b(0x[a-fA-F0-9]{40})\b"
 
 REG_VOTE_CID = rf"\b{REG_CID_1_32}\b"
