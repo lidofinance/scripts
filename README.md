@@ -117,12 +117,14 @@ provide the etherscan API token:
 export ETHERSCAN_TOKEN=<etherscan_api_key>
 ```
 
-To upload long description for a new vote to IPFS you should
-provide the web3.storage API token:
+To upload Markdown vote description for a new vote to IPFS you should
+provide the `web3.storage` API token:
 
 ```bash
 export WEB3_STORAGE_TOKEN=<web3_storage_api_key>
 ```
+See [here](utils/README.md) to learn more Markdown description
+
 
 ### Test run
 

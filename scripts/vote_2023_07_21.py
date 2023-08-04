@@ -7,7 +7,7 @@ Voting 21/07/2023 IPFS test
 
 import time
 
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, List
 
 from brownie.network.transaction import TransactionReceipt
 from brownie import web3  # type: ignore
@@ -21,57 +21,41 @@ from utils.config import (
 )
 
 from utils.easy_track import set_motions_count_limit
+from utils.ipfs import upload_vote_description_to_ipfs
+
 
 description = """
-This vote was created for testing purposes only.
-This vote will load long description from IPFS storage.
+**Motion 1:** RockLogic Slashing Incident Staker Compensation for smth, [snapshot passed](https://www.notion.so/Bug-Bounty-github-docs-link-to-compromised-github-account-719b3f2b628346db86ce9b23c36b02ee?pvs=21) data.
 
-Links and eth addresses will be show like this:
-0xD6B7d52E15678B9195F12F3a6D6cb79dcDcCb690 and https://vote.lido.fi/vote/161
+Specification
 
-IPFS hashes also will be show as links:
-bafkreidrecpiv3tacoi6kmerfrrwopyfbr4ekhacdzyxhe75bfflnlhh5m
-QmefSCAWVhJq4Ya7149gPBdXUjr1UeymPzyBRHFpnQW9ih
+1. Transfer 13.45978634 `stETH` from Insurance fund to Agent
+2. Set 13.45978634 `stETH` as the allowance of Burner over the Agent's tokens
+3. Grant `REQUEST_BURN_MY_STETH_ROLE` to Agent
+4. Request to burn 13.45978634 `stETH` for cover
+5. Renounce `REQUEST_BURN_MY_STETH_ROLE` from Agent
 
-Since now there is no limit on the length of the file, you can add some documentation
+ **Motion 2:** Add `stETH` Gas Supply factories
 
-What is Lido?
-Lido is the name of a family of open-source peer-to-system software tools deployed and functioning on the Ethereum, Solana, and Polygon blockchain networks. The software enables users to mint transferable utility tokens, which receive rewards linked to the related validation activities of writing data to the blockchain, while the tokens can be used in other on-chain activities.
+Specification
 
-How does Lido work?
-While each network works differently, generally, the Lido protocols batch user tokens to stake with validators and route the staking packages to network staking contracts. Users mint amounts of stTokens which correspond to the amount of tokens sent as stake and they receive staking rewards. When they unstake, they burn the stToken to initiate the network-specific withdrawal process to withdraw the balance of stake and rewards.
+6. Add Gas Supply top up EVM script factory for `stETH` `0x200dA0b6a9905A377CF8D469664C65dB267009d1`
+7. Add Gas Supply add recipient EVM script factory for `stETH` `0x48c135Ff690C2Aa7F5B11C539104B5855A4f9252`
+8. Add Gas Supply remove recipient EVM script factory for `stETH` `0x7E8eFfAb3083fB26aCE6832bFcA4C377905F97d7`
 
-Why Lido?
-Lido protocols give the user liquidity - the stTokens are on the execution layer, so they can be transferred. Users receive staking rewards from validation activities but can sell stTokens anytime they want to exit their staking position.
-Participate in DeFi - users can use stTokens as building blocks in DeFi protocols at the same time as getting staking rewards from validating activities.
-Lido protocols are governed by the Lido DAO - this means there is no central point for making decisions, and there is no one person who has access, control, or decision power to define what to do with users’ tokens. All decisions with respect to the protocol are voted up by the DAO, and all LDO holders may vote.
-Uses time-proven node operators. Lido DAO works with experienced node operators, which decreases the likelihood of technical mistakes that could lead to slashing or penalties. Users supply the stake, and the node operators supply the know-how.
+format examples:
+CID with MD - bafkreif6kvb3yxbhqrlgwf6jp2hegt6qg3f5a4m2njgiro7ynn5n4ynlza
+CID without MD - `bafkreif6kvb3yxbhqrlgwf6jp2hegt6qg3f5a4m2njgiro7ynn5n4ynlza`
 
-What is liquid staking?
-Liquid staking protocols allow users to get staking rewards without locking tokens or maintaining staking infrastructure. Users can deposit tokens and receive tradable liquid tokens in return. The DAO-controlled smart contract stakes these tokens using elected staking providers.
-As users' funds are controlled by the DAO, staking providers never have direct access to the users' tokens.
-
-Is it safe to work with Lido?
-Lido is a liquid staking solution and fits the next points:
-Open-sourcing & continuous review of all code.
-Committee of elected, best-in-class validators to minimise staking risk.
-Use of non-custodial staking service to eliminate counter-party risk.
-Use of DAO for governance decisions & to manage risk factors.
-Usually when staking ETH you choose only one validator. In the case of Lido you stake across many validators, minimising your staking risk.
-
-Audits
-Lido has been audited by Quantstamp, Sigma Prime and MixBytes. Lido audits can be found in more detail https://github.com/lidofinance/audits.
-
-Do Ethereum staking rewards with Lido compound?
-Your Ethereum staking rewards with Lido compound automatically.
-After the Shapella upgrade, which enabled ETH withdrawals, earned staking rewards are no longer locked on the beacon chain and periodically flow into the Lido withdrawal vault. After fulfilling withdrawal requests, the rest of rewards are restaked on a daily basis. Therefore, you don't need to do anything to for your ETH staking rewards to compound.
-To see the compounding effect, check out Lido dune dashboard https://dune.com/LidoAnalytical/lido-execution-layer-rewards.
+address with MD - `0x200dA0b6a9905A377CF8D469664C65dB267009d1`
+address without MD - 0x200dA0b6a9905A377CF8D469664C65dB267009d1
 
 """
 
 
-def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
+def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""
+
     motions_count_limit = 21
     call_script_items = [
         # Set max EasyTrack motions limit to 21
@@ -84,7 +68,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
 
-    return confirm_vote_script(vote_items, silent) and list(create_vote(vote_items, tx_params, description=description))
+    desc_ipfs = upload_vote_description_to_ipfs(description)
+
+    return confirm_vote_script(vote_items, silent, desc_ipfs) and list(
+        create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
+    )
 
 
 def main():

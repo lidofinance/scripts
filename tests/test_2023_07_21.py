@@ -14,7 +14,7 @@ from utils.config import (
     contracts,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
 )
-from utils.ipfs import get_cid_form_from_str
+from utils.ipfs import get_lido_vote_cid_from_str
 from utils.test.tx_tracing_helpers import *
 
 from utils.test.event_validators.easy_track import (
@@ -71,7 +71,7 @@ def test_vote(
     events_after_voting = _decode_logs(events_after_voting)
     metadata = str(events_after_voting["StartVote"]["metadata"])
 
-    assert get_cid_form_from_str(metadata) == "bafkreibiqnnlyrfmhyjlhfkwzsaqudra64ic36howinr3blhry6pnh6d64"
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreibyeuz3dihvjy5bk2b2btze7elghglvjngthoef3xdepyoepyrbk4"
 
     assert easy_track.motionsCountLimit() == motions_count_limit_expected, "Incorrect motions count limit after"
     print(f"motionsCountLimit_expected = {easy_track.motionsCountLimit()}")
