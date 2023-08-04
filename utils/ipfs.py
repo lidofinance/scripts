@@ -37,7 +37,7 @@ REG_CID_1_64url = r"u[-A-Za-z0-9_]{44,128}={0,3}"
 REG_CID_1_64urlpad = r"U[-A-Za-z0-9_]{44,128}={0,3}"
 
 REG_CID_DEFAULT = rf"\b({REG_CID_0_58btc}|{REG_CID_1_16}|{REG_CID_1_16upper}|{REG_CID_1_32}|{REG_CID_1_32upper}|{REG_CID_1_58btc}|{REG_CID_1_64}|{REG_CID_1_64url}|{REG_CID_1_64urlpad})\b"
-ETH_ADDRESS_REG = r"\b0x[a-fA-F0-9]{40}\b"
+ETH_ADDRESS_REG = r"\b(0x[a-fA-F0-9]{40})\b"
 
 REG_VOTE_CID = rf"\b{REG_CID_1_32}\b"
 VOTE_CID_PREFIX = "lidovoteipfs://"
