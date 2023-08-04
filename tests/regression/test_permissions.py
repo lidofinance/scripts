@@ -59,7 +59,7 @@ def protocol_permissions():
             "type": "CustomApp",
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "REQUEST_BURN_MY_STETH_ROLE": [],
+                "REQUEST_BURN_MY_STETH_ROLE": [contracts.agent],
                 "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry],
             },
         },
@@ -275,7 +275,7 @@ def protocol_permissions():
             "type": "AragonApp",
             "roles": {
                 "MANAGE_SIGNING_KEYS": [VOTING],
-                "MANAGE_NODE_OPERATOR_ROLE": [],
+                "MANAGE_NODE_OPERATOR_ROLE": [VOTING],
                 "SET_NODE_OPERATOR_LIMIT_ROLE": [VOTING, EASYTRACK_EVMSCRIPT_EXECUTOR],
                 "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
             },

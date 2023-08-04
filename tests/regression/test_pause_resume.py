@@ -283,24 +283,24 @@ def test_paused_staking_can_report():
 
 # Staking module tests
 
-def test_paused_staking_module_cant_stake(stranger, helpers):
+def test_paused_staking_module_cant_stake():
     contracts.staking_router.pauseStakingModule(1, {"from": contracts.deposit_security_module})
     with brownie.reverts(encode_error('StakingModuleNotActive()')):
         contracts.lido.deposit(1, 1, "0x", {"from": contracts.deposit_security_module}),
 
 
-def test_paused_staking_module_can_reward(stranger, helpers):
+def test_paused_staking_module_can_reward():
     _, module_address, *_ = contracts.staking_router.getStakingModule(1)
     contracts.staking_router.pauseStakingModule(1, {"from": contracts.deposit_security_module})
     shares_before = contracts.lido.sharesOf(module_address)
     (report_tx, _) = oracle_report()
-
-    assert report_tx.events["Transfer"][1]["to"] == module_address
+    print(report_tx.events["Transfer"])
+    assert report_tx.events["Transfer"][0]["to"] == module_address
+    assert report_tx.events["Transfer"][0]["from"] == ZERO_ADDRESS
+    assert report_tx.events["Transfer"][1]["to"] == contracts.agent
     assert report_tx.events["Transfer"][1]["from"] == ZERO_ADDRESS
-    assert report_tx.events["Transfer"][2]["to"] == contracts.agent
-    assert report_tx.events["Transfer"][2]["from"] == ZERO_ADDRESS
-    assert almostEqEth(report_tx.events["Transfer"][1]["value"], report_tx.events["Transfer"][2]["value"])
-    assert report_tx.events["Transfer"][1]["value"] > 0
+    assert almostEqEth(report_tx.events["Transfer"][0]["value"], report_tx.events["Transfer"][1]["value"])
+    assert report_tx.events["Transfer"][0]["value"] > 0
 
 
 def test_stopped_staking_module_cant_stake(stranger):

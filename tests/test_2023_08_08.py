@@ -90,7 +90,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, interface, ldo_holder, stran
 
     [vote_tx] = helpers.execute_votes(accounts, vote_ids, contracts.voting)
 
-    print(f"voteId = {vote_ids}, gasUsed = {vote_tx}")
+    print(f"voteId = {vote_ids}, gasUsed = {vote_tx.gas_used}")
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 9, "Incorrect voting items count"
 
     assert contracts.acl.hasPermission(contracts.voting, contracts.node_operators_registry, MANAGE_NODE_OPERATOR_ROLE)

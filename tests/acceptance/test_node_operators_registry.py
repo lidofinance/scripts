@@ -95,14 +95,26 @@ def test_nor_state(contract):
     assert summary["depositableValidatorsCount"] > 0
 
     for id in range(node_operators_count):
-        assert contract.getTotalSigningKeyCount(id) > 0
+        if id == 30:
+            assert contract.getTotalSigningKeyCount(id) == 0
+        elif id == 31:
+            assert contract.getTotalSigningKeyCount(id) == 0
+        else:
+            assert contract.getTotalSigningKeyCount(id) > 0
         node_operator = contract.getNodeOperator(id, True)
 
         assert node_operator["active"] == True
         assert node_operator["name"] is not None
         assert node_operator["name"] != ""
         assert node_operator["rewardAddress"] != ZERO_ADDRESS
-        assert node_operator["totalVettedValidators"] > 0
+
+        if id == 30:
+            assert node_operator["totalVettedValidators"] == 0
+        elif id == 31:
+            assert node_operator["totalVettedValidators"] == 0
+        else:
+            assert node_operator["totalVettedValidators"] > 0
+
         assert node_operator["totalVettedValidators"] <= node_operator["totalAddedValidators"]
         if id == 22:
             assert node_operator["totalExitedValidators"] == 11
@@ -113,8 +125,20 @@ def test_nor_state(contract):
         else:
             assert node_operator["totalExitedValidators"] == 0
 
-        assert node_operator["totalAddedValidators"] > 0
-        assert node_operator["totalDepositedValidators"] > 0
+        if id == 30:
+            assert node_operator["totalAddedValidators"] == 0
+        elif id == 31:
+            assert node_operator["totalAddedValidators"] == 0
+        else:
+            assert node_operator["totalAddedValidators"] > 0
+
+        if id == 30:
+            assert node_operator["totalDepositedValidators"] == 0
+        elif id == 31:
+            assert node_operator["totalDepositedValidators"] == 0
+        else:
+            assert node_operator["totalDepositedValidators"] > 0
+
         assert node_operator["totalDepositedValidators"] <= node_operator["totalAddedValidators"]
 
         node_operator_summary = contract.getNodeOperatorSummary(id)
@@ -136,7 +160,12 @@ def test_nor_state(contract):
         else:
             assert node_operator_summary["totalExitedValidators"] == 0
 
-        assert node_operator_summary["totalDepositedValidators"] > 0
+        if id == 30:
+            assert node_operator_summary["totalDepositedValidators"] == 0
+        elif id == 31:
+            assert node_operator_summary["totalDepositedValidators"] == 0
+        else:
+            assert node_operator_summary["totalDepositedValidators"] > 0
         assert node_operator_summary["depositableValidatorsCount"] is not None
 
 
