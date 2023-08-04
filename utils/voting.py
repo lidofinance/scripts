@@ -128,8 +128,9 @@ def _print_points(human_readable_script, vote_descriptions, cid: str) -> bool:
         print(f'Description: {color("green")}{vote_descriptions[ind]}.{color}')
         print(calls_info_pretty_print(call))
         print("---------------------------")
+    if cid:
+        print(f"Description cid: {color('green')}{make_lido_vote_cid(cid)}{color}")
 
-    print(f"Description cid: {make_lido_vote_cid(cid)}")
     print("Does it look good? [yes/no]")
     resume = prompt_bool()
     while resume is None:
@@ -146,7 +147,7 @@ def _print_messages(messages: list[Tuple[str, str]], type: str) -> bool:
     if not messages:
         return True
 
-    filtered = list(filter(lambda message: message[0] == type, messages))
+    filtered = list(filter(lambda item: item[0] == type, messages))
     if not filtered or not len(filtered):
         return True
 

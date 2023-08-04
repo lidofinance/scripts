@@ -35,14 +35,15 @@ REG_CID_1_64_URL = r"u[-A-Za-z0-9_]{40,128}"
 REG_CID_1_64_URLPAD = r"U[-A-Za-z0-9_]{40,128}={0,3}"
 
 REG_CID_DEFAULT = rf"\b({REG_CID_0_58_BTC}|{REG_CID_1_16}|{REG_CID_1_32}|{REG_CID_1_58_BTC}|{REG_CID_1_64}|{REG_CID_1_64_URL}|{REG_CID_1_64_URLPAD})\b"
-ETH_ADDRESS_REG = r"\b(0x[a-fA-F0-9]{40})\b"
+REG_ETH_ADDRESS = r"\b(0x[a-fA-F0-9]{40})\b"
 
-REG_VOTE_CID = rf"\b{REG_CID_1_32}\b"
+REG_VOTE_CID = rf"\b({REG_CID_1_32})\b"
 VOTE_CID_PREFIX = "lidovoteipfs://"
+REG_VOTE_CID_WITH_PREFIX_LAST = rf"\b{VOTE_CID_PREFIX}{REG_VOTE_CID}\s*$"
 
 
 # alternative for upload_str_to_web3_storage
-def _upload_str_to_infura_io(text) -> str:
+def _upload_str_to_infura_io(text: str) -> str:
     text_bytes = text.encode("utf-8")
     text_file = io.BytesIO(text_bytes)
     files = {"file": text_file}
@@ -58,7 +59,7 @@ def _upload_str_to_infura_io(text) -> str:
 
 
 # upload text to web3.storage ipfs
-def _upload_str_to_web3_storage(text) -> str:
+def _upload_str_to_web3_storage(text: str) -> str:
     text_bytes = text.encode("utf-8")
     text_file = io.BytesIO(text_bytes)
     web3_storage_token = get_web3_storage_token()
@@ -74,7 +75,7 @@ def _upload_str_to_web3_storage(text) -> str:
 
 
 # uploading text to ipfs
-def _upload_str_to_ipfs(text, service="web3.storage") -> str:
+def _upload_str_to_ipfs(text: str, service: str = "web3.storage") -> str:
     if service == "web3.storage":
         return _upload_str_to_web3_storage(text)
     else:
@@ -82,19 +83,19 @@ def _upload_str_to_ipfs(text, service="web3.storage") -> str:
 
 
 # calculate cid hash from utf8 str
-def calculate_cid_hash(text) -> str:
+def calculate_cid_hash(text: str) -> str:
     data = bytes(text, "utf-8")
     return cid_sha256_hash(data)
 
 
 # fetching url status
-async def _fetch_status(session, url) -> int:
+async def _fetch_status(session, url: str) -> int:
     async with session.get(url) as response:
         return response.status
 
 
 # fetch cid from different api concurrency
-async def _fetch_cid_status_from_ipfs(cid: str) -> int:
+async def _fetch_cid_status_from_ipfs_async(cid: str) -> int:
     if not cid:
         return 404
 
@@ -124,7 +125,7 @@ def verify_ipfs_description(text: str) -> list[Tuple[str, str]]:
             )
         )
 
-    address_raw_groups = re.findall(rf"([^`]{ETH_ADDRESS_REG}|{ETH_ADDRESS_REG}[^`])", f" {text} ")
+    address_raw_groups = re.findall(rf"([^`]{REG_ETH_ADDRESS}|{REG_ETH_ADDRESS}[^`])", f" {text} ")
     if address_raw_groups:
         address_raw = list(map(lambda x: x[1] or x[2], address_raw_groups))
         messages.append(
@@ -146,6 +147,10 @@ def verify_ipfs_description(text: str) -> list[Tuple[str, str]]:
     return messages
 
 
+def fetch_cid_status_from_ipfs(cid: str):
+    return asyncio.run(_fetch_cid_status_from_ipfs_async(cid))
+
+
 def upload_vote_description_to_ipfs(text: str, service="web3.storage") -> Tuple[str, str, list[Tuple[str, str]]]:
     messages = verify_ipfs_description(text)
     calculated_cid = ""
@@ -154,7 +159,7 @@ def upload_vote_description_to_ipfs(text: str, service="web3.storage") -> Tuple[
         return calculated_cid, text, messages
     try:
         calculated_cid = calculate_cid_hash(text)
-        status = asyncio.run(_fetch_cid_status_from_ipfs(calculated_cid))
+        status = fetch_cid_status_from_ipfs(calculated_cid)
         if status < 400:
             # have found file so CID is good
             return calculated_cid, text, messages
@@ -203,15 +208,13 @@ def upload_vote_description_to_ipfs(text: str, service="web3.storage") -> Tuple[
 
 
 def get_lido_vote_cid_from_str(text: str) -> str:
-    vote_cid = re.search(rf"{VOTE_CID_PREFIX}{REG_VOTE_CID}\s*$", text)
-    if vote_cid is None:
-        return ""
-    cid = re.search(REG_VOTE_CID, vote_cid.group())
-    if not cid:
-        return ""
-    else:
-        return cid.group()
+    result = re.findall(REG_VOTE_CID_WITH_PREFIX_LAST, text)
+    if len(result):
+        return result[0]
+    return ""
 
 
 def make_lido_vote_cid(cid: str) -> str:
-    return f"{VOTE_CID_PREFIX}{cid}"
+    if cid and re.search(rf"^{REG_VOTE_CID}$", cid):
+        return f"{VOTE_CID_PREFIX}{cid}"
+    return ""
