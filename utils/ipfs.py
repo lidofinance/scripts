@@ -26,17 +26,17 @@ from utils.config import (
 #    base64urlpad            U ✓ UAXASICxfaIJi4OzoVpqm-U1gqtVcqNnYNzTkp0MNDP9liOwr
 #
 
-REG_CID_0_58btc = r"Qm[1-9A-HJ-NP-Za-km-z]{44,128}"
+REG_CID_0_58_BTC = r"Qm[1-9A-HJ-NP-Za-km-z]{44,128}"
 REG_CID_1_16 = r"f[0-9a-zA-F]{50,128}"
-REG_CID_1_16upper = r"F[0-9A-F]{50,128}"
+REG_CID_1_16_UPPER = r"F[0-9A-F]{50,128}"
 REG_CID_1_32 = r"b[A-Za-z2-7]{58,128}"
-REG_CID_1_32upper = r"B[A-Z2-7]{58,128}"
-REG_CID_1_58btc = r"z[1-9A-HJ-NP-Za-km-z]{48,128}"
+REG_CID_1_32_UPPER = r"B[A-Z2-7]{58,128}"
+REG_CID_1_58_BTC = r"z[1-9A-HJ-NP-Za-km-z]{48,128}"
 REG_CID_1_64 = r"m[+A-Za-z0-9/]{44,128}"
-REG_CID_1_64url = r"u[-A-Za-z0-9_]{44,128}={0,3}"
-REG_CID_1_64urlpad = r"U[-A-Za-z0-9_]{44,128}={0,3}"
+REG_CID_1_64_URL = r"u[-A-Za-z0-9_]{44,128}={0,3}"
+REG_CID_1_64_URLPAD = r"U[-A-Za-z0-9_]{44,128}={0,3}"
 
-REG_CID_DEFAULT = rf"\b({REG_CID_0_58btc}|{REG_CID_1_16}|{REG_CID_1_16upper}|{REG_CID_1_32}|{REG_CID_1_32upper}|{REG_CID_1_58btc}|{REG_CID_1_64}|{REG_CID_1_64url}|{REG_CID_1_64urlpad})\b"
+REG_CID_DEFAULT = rf"\b({REG_CID_0_58_BTC}|{REG_CID_1_16}|{REG_CID_1_16_UPPER}|{REG_CID_1_32}|{REG_CID_1_32_UPPER}|{REG_CID_1_58_BTC}|{REG_CID_1_64}|{REG_CID_1_64_URL}|{REG_CID_1_64_URLPAD})\b"
 ETH_ADDRESS_REG = r"\b(0x[a-fA-F0-9]{40})\b"
 
 REG_VOTE_CID = rf"\b{REG_CID_1_32}\b"
@@ -126,7 +126,7 @@ def verify_ipfs_description(text: str) -> list[Tuple[str, str]]:
             )
         )
 
-    address_raw_groups = re.findall(rf"([^`]{ETH_ADDRESS_REG}|{ETH_ADDRESS_REG}[^`])", text)
+    address_raw_groups = re.findall(rf"([^`]{ETH_ADDRESS_REG}|{ETH_ADDRESS_REG}[^`])", f" {text} ")
     if address_raw_groups:
         address_raw = list(map(lambda x: x[1] or x[2], address_raw_groups))
         messages.append(
@@ -136,7 +136,7 @@ def verify_ipfs_description(text: str) -> list[Tuple[str, str]]:
             )
         )
 
-    cid_raw_groups = re.findall(rf"([^`]{REG_CID_DEFAULT}|{REG_CID_DEFAULT}[^`])", text)
+    cid_raw_groups = re.findall(rf"([^`]{REG_CID_DEFAULT}|{REG_CID_DEFAULT}[^`])", f" {text} ")
     if cid_raw_groups:
         cid_raw = list(map(lambda x: x[1] or x[2], cid_raw_groups))
         messages.append(
