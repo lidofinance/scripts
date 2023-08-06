@@ -12,7 +12,8 @@ from utils.evm_script import (
     EMPTY_CALLSCRIPT,
 )
 
-from utils.config import prompt_bool, CHAIN_NETWORK_NAME, contracts, get_config_params
+from utils.config import prompt_bool, CHAIN_NETWORK_NAME, contracts
+from utils.ipfs import make_lido_vote_cid
 
 
 def bake_vote_items(vote_desc_items: List[str], call_script_items: List[Tuple[str, str]]) -> Dict[str, Tuple[str, str]]:
@@ -35,12 +36,17 @@ def create_vote(
     verbose: bool = False,
     cast_vote: bool = False,
     executes_if_decided: bool = False,
+    desc_ipfs: Tuple[str, str, list[Tuple[str, str]]] = None,
 ) -> Tuple[int, Optional[TransactionReceipt]]:
     vote_desc_str = ""
     for v in vote_items.keys():
         vote_desc_str += f"{v};\n "
     if len(vote_desc_str) > 0:
         vote_desc_str = f"Omnibus vote: {vote_desc_str[:-3]}."
+
+    (cid, _, messages) = desc_ipfs
+    if cid:
+        vote_desc_str = f"{vote_desc_str}\n{make_lido_vote_cid(cid)}"
 
     voting = contracts.voting
     token_manager = contracts.token_manager
@@ -93,6 +99,13 @@ def create_vote(
                 f"Raised exception: {repr(err)}"
             )
 
+    if messages:
+        print(f"\n{color('yellow')}You have some issues:{color}")
+        for ind, call in enumerate(messages):
+            (_, message) = messages[ind]
+            print(f"{color('yellow')}{message}{color}")
+            print("---------------------------")
+
     return vote_id, tx
 
 
@@ -107,7 +120,60 @@ def find_vote_id_in_raw_logs(logs) -> int:
     return convert.to_uint(start_vote_log["topics"][1])
 
 
-def confirm_vote_script(vote_items: Dict[str, Tuple[str, str]], silent: bool) -> bool:
+def _print_points(human_readable_script, vote_descriptions, cid: str) -> bool:
+    print("\nPoints of voting:")
+    total = len(human_readable_script)
+    for ind, call in enumerate(human_readable_script):
+        print(f"Point #{ind + 1}/{total}.")
+        print(f'Description: {color("green")}{vote_descriptions[ind]}.{color}')
+        print(calls_info_pretty_print(call))
+        print("---------------------------")
+    if cid:
+        print(f"Description cid: {color('green')}{make_lido_vote_cid(cid)}{color}")
+
+    print("Does it look good? [yes/no]")
+    resume = prompt_bool()
+    while resume is None:
+        resume = prompt_bool()
+
+    if not resume:
+        print("Exit without running.")
+        return False
+
+    return True
+
+
+def _print_messages(messages: list[Tuple[str, str]], type: str) -> bool:
+    if not messages:
+        return True
+
+    filtered = list(filter(lambda item: item[0] == type, messages))
+    if not filtered or not len(filtered):
+        return True
+
+    color_value = "red" if type == "error" else "yellow"
+    print(f"\n{color(color_value)}You have some {type}{color}:")
+    for ind, call in enumerate(filtered):
+        (_, message) = filtered[ind]
+        print(f"{color(color_value)}- {message}{color}")
+        print("---------------------------")
+    print("Do you want to continue? [yes/no]")
+    resume = prompt_bool()
+    while resume is None:
+        resume = prompt_bool()
+
+    if not resume:
+        print("Exit without running.")
+        return False
+
+    return True
+
+
+def confirm_vote_script(
+    vote_items: Dict[str, Tuple[str, str]],
+    silent: bool,
+    desc_ipfs: Tuple[str, str, list[Tuple[str, str]]] = None,
+) -> bool:
     encoded_call_script = encode_call_script(vote_items.values())
 
     # Show detailed description of prepared voting.
@@ -121,21 +187,34 @@ def confirm_vote_script(vote_items: Dict[str, Tuple[str, str]], silent: bool) ->
 
         vote_descriptions = list(vote_items.keys())
 
-        print("\nPoints of voting:")
-        total = len(human_readable_script)
-        for ind, call in enumerate(human_readable_script):
-            print(f"Point #{ind + 1}/{total}.")
-            print(f'Description: {color("green")}{vote_descriptions[ind]}.{color}')
-            print(calls_info_pretty_print(call))
-            print("---------------------------")
+        (cid, _, messages) = desc_ipfs
 
-        print("Does it look good? [yes/no]")
-        resume = prompt_bool()
-        while resume is None:
-            resume = prompt_bool()
+        if not desc_ipfs:
+            messages = [
+                (
+                    "error",
+                    (
+                        "You didn't provide an extended description. "
+                        "The vote UI allows you to store an extended description in IPFS network. "
+                        "Only hash sum will be added to the vote metadata. "
+                        "The description is supports a Markdown styles in vote UI. "
+                        "You could read more in utils/README.md#ipfs. "
+                        "You could use function 'upload_vote_description_to_ipfs' from 'utils.ipfs' to upload text. "
+                        "Then provide the result to 'create_vote' and 'confirm_vote_script' into desc_ipfs argument."
+                    ),
+                )
+            ]
 
-        if not resume:
-            print("Exit without running.")
+        agree = _print_points(human_readable_script, vote_descriptions, cid)
+        if not agree:
+            return False
+
+        agree = _print_messages(messages, "error")
+        if not agree:
+            return False
+
+        agree = _print_messages(messages, "warning")
+        if not agree:
             return False
 
     print(f'{color("yellow")}Voting confirmed, please wait a few seconds ...{color}')

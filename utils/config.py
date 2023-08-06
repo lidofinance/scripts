@@ -1,7 +1,7 @@
 import os
 import sys
 
-from typing import Any, Union, Optional, Dict
+from typing import Any, Union, Optional, Dict, Tuple
 
 from utils.brownie_prelude import *
 
@@ -59,6 +59,34 @@ def get_deployer_account() -> Union[LocalAccount, Account]:
         raise EnvironmentError("Please set DEPLOYER env variable to the deployer account name")
 
     return accounts.load(os.environ["DEPLOYER"]) if (is_live or "DEPLOYER" in os.environ) else accounts[4]
+
+
+def get_web3_storage_token() -> str:
+    is_live = get_is_live()
+    if is_live and "WEB3_STORAGE_TOKEN" not in os.environ:
+        raise EnvironmentError("Please set WEB3_STORAGE_TOKEN env variable to the web3.storage api token")
+
+    return os.environ["WEB3_STORAGE_TOKEN"] if (is_live or "WEB3_STORAGE_TOKEN" in os.environ) else ""
+
+
+def get_infura_io_keys() -> Tuple[str, str]:
+    is_live = get_is_live()
+    if is_live and (
+        "WEB3_INFURA_IPFS_PROJECT_ID" not in os.environ or "WEB3_INFURA_IPFS_PROJECT_SECRET" not in os.environ
+    ):
+        raise EnvironmentError(
+            "Please set WEB3_INFURA_IPFS_PROJECT_ID and WEB3_INFURA_IPFS_PROJECT_SECRET env variable "
+            "to the web3.storage api token"
+        )
+    project_id = (
+        os.environ["WEB3_INFURA_IPFS_PROJECT_ID"] if (is_live or "WEB3_INFURA_IPFS_PROJECT_ID" in os.environ) else ""
+    )
+    project_secret = (
+        os.environ["WEB3_INFURA_IPFS_PROJECT_SECRET"]
+        if (is_live or "WEB3_INFURA_IPFS_PROJECT_SECRET" in os.environ)
+        else ""
+    )
+    return project_id, project_secret
 
 
 def prompt_bool() -> Optional[bool]:
@@ -231,7 +259,7 @@ class ContractsLazyLoader:
     @property
     def evm_script_registry(self) -> interface.EVMScriptRegistry:
         return interface.EVMScriptRegistry(ARAGON_EVMSCRIPT_REGISTRY)
-    
+
     @property
     def insurance_fund(self) -> interface.InsuranceFund:
         return interface.InsuranceFund(INSURANCE_FUND)

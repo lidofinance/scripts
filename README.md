@@ -116,6 +116,13 @@ provide the etherscan API token:
 ```bash
 export ETHERSCAN_TOKEN=<etherscan_api_key>
 ```
+To upload Markdown vote description for a new vote to IPFS you should
+provide the `web3.storage` API token:
+
+```bash
+export WEB3_STORAGE_TOKEN=<web3_storage_api_key>
+```
+See [here](utils/README.md#ipfs) to learn more Markdown description
 
 To skip events decoding while testing set the following var:
 
