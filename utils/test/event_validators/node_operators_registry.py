@@ -29,7 +29,7 @@ class TargetValidatorsCountChanged(NamedTuple):
 def validate_node_operator_added_event(
     event: EventDict, node_operator_item: NodeOperatorItem
 ):
-    _events_chain = ["LogScriptCall", "NodeOperatorAdded"]
+    _events_chain = ['LogScriptCall', 'LogScriptCall', 'NodeOperatorAdded', 'ScriptResult']
 
     validate_events_chain([e.name for e in event], _events_chain)
 

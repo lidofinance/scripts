@@ -49,10 +49,10 @@ def test_vote(helpers, accounts, vote_ids_from_env, interface, ldo_holder, stran
 
     MANAGE_NODE_OPERATOR_ROLE = web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")
     permission = Permission(
-        entity=contracts.voting, app=contracts.node_operators_registry, role=MANAGE_NODE_OPERATOR_ROLE.hex()
+        entity=contracts.agent, app=contracts.node_operators_registry, role=MANAGE_NODE_OPERATOR_ROLE.hex()
     )
-    new_node_op_1 = NodeOperatorItem("Launchnodes Limited", 30, "0x0000000000000000000000000000000000000003", 0)
-    new_node_op_2 = NodeOperatorItem("SenseiNode Inc", 31, "0x0000000000000000000000000000000000000004", 0)
+    new_node_op_1 = NodeOperatorItem("Launchnodes", 30, "0x5a8B929EDBf3CE44526465DD2087EC7EFB59A561", 0)
+    new_node_op_2 = NodeOperatorItem("SenseiNode", 31, "0xE556Da28015c04F35A52B3111B9F4120E908056e", 0)
 
     stETH_to_burn = ETH(3.1531)
     shares_to_burn = contracts.lido.getSharesByPooledEth(stETH_to_burn)
@@ -93,7 +93,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, interface, ldo_holder, stran
     print(f"voteId = {vote_ids}, gasUsed = {vote_tx.gas_used}")
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 9, "Incorrect voting items count"
 
-    assert contracts.acl.hasPermission(contracts.voting, contracts.node_operators_registry, MANAGE_NODE_OPERATOR_ROLE)
+    assert contracts.acl.hasPermission(contracts.agent, contracts.node_operators_registry, MANAGE_NODE_OPERATOR_ROLE)
 
     no1 = contracts.node_operators_registry.getNodeOperator(new_node_op_1.id, True)
 

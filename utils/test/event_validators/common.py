@@ -14,6 +14,8 @@ from typing import List
 # tx_events: ['A', 'B', 'A', 'B'], reference_events: ['A', 'B'] => invalid // duplicated 'A', 'B' events chain
 # tx_events: ['A', 'C', 'B'], reference_events: ['A', 'B', 'C'] => invalid // wrong order
 def validate_events_chain(tx_events: List[str], reference_events: List[str]):
+    print(tx_events)
+    print(reference_events)
     for ev in tx_events:
         idx = next((reference_events.index(e) for e in reference_events if e == ev), len(reference_events))
         assert idx != len(reference_events), f"{ev} not found in the remaining {reference_events} events chain"

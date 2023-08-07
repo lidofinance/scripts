@@ -5,8 +5,8 @@ Voting 08/08/2023.
 2. Add Rewards Share Program add recipient EVM script factory 0x1F809D2cb72a5Ab13778811742050eDa876129b6
 3. Add Rewards Share Program remove recipient EVM script factory 0xd30Dc38EdEfc21875257e8A3123503075226E14B
 4. Grant MANAGE_NODE_OPERATOR_ROLE to Voting
-5. Add Launchnodes Limited node operator with reward address 0x................
-6. Add SenseiNode Inc node operator with reward address 0x................
+5. Add Launchnodes node operator with reward address 0x5a8B929EDBf3CE44526465DD2087EC7EFB59A561
+6. Add SenseiNode node operator with reward address 0xE556Da28015c04F35A52B3111B9F4120E908056e
 7. Set 3.1531 stETH as the allowance of Burner over the Agent's tokens
 8. Grant REQUEST_BURN_MY_STETH_ROLE to Agent
 9. Request to burn 3.1531 stETH for cover
@@ -36,20 +36,22 @@ from utils.easy_track import add_evmscript_factory, create_permissions
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Optional[TransactionReceipt]]:
-    """ ET factories """
+    """ET factories"""
     rewards_share_topup_factory = interface.TopUpAllowedRecipients("0xbD08f9D6BF1D25Cc7407E4855dF1d46C2043B3Ea")
     rewards_share_add_recipient_factory = interface.AddAllowedRecipient("0x1F809D2cb72a5Ab13778811742050eDa876129b6")
-    rewards_share_remove_recipient_factory = interface.RemoveAllowedRecipient("0xd30Dc38EdEfc21875257e8A3123503075226E14B")
+    rewards_share_remove_recipient_factory = interface.RemoveAllowedRecipient(
+        "0xd30Dc38EdEfc21875257e8A3123503075226E14B"
+    )
     rewards_share_registry = interface.AllowedRecipientRegistry("0xdc7300622948a7AdaF339783F6991F9cdDD79776")
 
     """ Wave 5 NOs """
     launchnodes_limited_node_operator = {
-        "name": "Launchnodes Limited",
-        "address": "0x0000000000000000000000000000000000000003",
+        "name": "Launchnodes",
+        "address": "0x5a8B929EDBf3CE44526465DD2087EC7EFB59A561",
     }
     senseinode_node_operator = {
-        "name": "SenseiNode Inc",
-        "address": "0x0000000000000000000000000000000000000004",
+        "name": "SenseiNode",
+        "address": "0xE556Da28015c04F35A52B3111B9F4120E908056e",
     }
 
     """ Burning 3,1531 stETH """
@@ -73,12 +75,16 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
             factory=rewards_share_remove_recipient_factory,
             permissions=create_permissions(rewards_share_registry, "removeRecipient"),
         ),
-        # 4. Grant MANAGE_NODE_OPERATOR_ROLE to Voting
-        encode_permission_grant(grant_to=contracts.voting, target_app=contracts.node_operators_registry, permission_name="MANAGE_NODE_OPERATOR_ROLE"),
-        # 5. Add Launchnodes Limited node operator with reward address 0x................
-        encode_add_operator_lido(**launchnodes_limited_node_operator),
-        # 6. Add SenseiNode Inc node operator with reward address 0x................
-        encode_add_operator_lido(**senseinode_node_operator),
+        # 4. Grant MANAGE_NODE_OPERATOR_ROLE to Agent
+        encode_permission_grant(
+            grant_to=contracts.agent,
+            target_app=contracts.node_operators_registry,
+            permission_name="MANAGE_NODE_OPERATOR_ROLE",
+        ),
+        # 5. Add Launchnodes Limited node operator with reward address 0x5a8B929EDBf3CE44526465DD2087EC7EFB59A561
+        agent_forward([encode_add_operator_lido(**launchnodes_limited_node_operator)]),
+        # 6. Add SenseiNode Inc node operator with reward address 0xE556Da28015c04F35A52B3111B9F4120E908056e
+        agent_forward([encode_add_operator_lido(**senseinode_node_operator)]),
         # 7. Set 3.1531 stETH as the allowance of Burner over the Agent's tokens
         agent_forward(
             [
@@ -113,8 +119,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
         "2) Add Rewards Share Program add recipient EVM script factory 0x1F809D2cb72a5Ab13778811742050eDa876129b6",
         "3) Add Rewards Share Program remove recipient EVM script factory 0xd30Dc38EdEfc21875257e8A3123503075226E14B",
         "4) Grant MANAGE_NODE_OPERATOR_ROLE to Voting",
-        "5) Add Launchnodes Limited node operator with reward address 0x................",
-        "6) Add SenseiNode Inc node operator with reward address 0x................",
+        "5) Add Launchnodes node operator with reward address 0x5a8B929EDBf3CE44526465DD2087EC7EFB59A561",
+        "6) Add SenseiNode node operator with reward address 0xE556Da28015c04F35A52B3111B9F4120E908056e",
         "7) Set 3.1531 stETH as the allowance of Burner over the Agent's tokens",
         "8) Grant REQUEST_BURN_MY_STETH_ROLE to Agent",
         "9) Request to burn 3.1531 stETH for cover",
