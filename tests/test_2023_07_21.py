@@ -71,7 +71,7 @@ def test_vote(
     events_after_voting = _decode_logs(events_after_voting)
     metadata = str(events_after_voting["StartVote"]["metadata"])
 
-    assert get_lido_vote_cid_from_str(metadata) == "bafkreibyeuz3dihvjy5bk2b2btze7elghglvjngthoef3xdepyoepyrbk4"
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreiepcbctxybqh3kg44jzhm6fdbdpsyvzuqmnglmzn7sc5cklabxbka"
 
     assert easy_track.motionsCountLimit() == motions_count_limit_expected, "Incorrect motions count limit after"
     print(f"motionsCountLimit_expected = {easy_track.motionsCountLimit()}")
