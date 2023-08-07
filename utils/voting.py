@@ -44,7 +44,12 @@ def create_vote(
     if len(vote_desc_str) > 0:
         vote_desc_str = f"Omnibus vote: {vote_desc_str[:-3]}."
 
-    (cid, _, messages) = desc_ipfs
+    cid = ""
+    messages = []
+
+    if desc_ipfs:
+        (cid, _, messages) = desc_ipfs
+
     if cid:
         vote_desc_str = f"{vote_desc_str}\n{make_lido_vote_cid(cid)}"
 
