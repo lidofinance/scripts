@@ -4,7 +4,7 @@ Voting 08/08/2023.
 1. Add Rewards Share Program top up EVM script factory 0xbD08f9D6BF1D25Cc7407E4855dF1d46C2043B3Ea
 2. Add Rewards Share Program add recipient EVM script factory 0x1F809D2cb72a5Ab13778811742050eDa876129b6
 3. Add Rewards Share Program remove recipient EVM script factory 0xd30Dc38EdEfc21875257e8A3123503075226E14B
-4. Grant MANAGE_NODE_OPERATOR_ROLE to Voting
+4. Grant MANAGE_NODE_OPERATOR_ROLE to Agent
 5. Add Launchnodes node operator with reward address 0x5a8B929EDBf3CE44526465DD2087EC7EFB59A561
 6. Add SenseiNode node operator with reward address 0xE556Da28015c04F35A52B3111B9F4120E908056e
 7. Set 3.1531 stETH as the allowance of Burner over the Agent's tokens
@@ -118,7 +118,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
         "1) Add Rewards Share Program top up EVM script factory 0xbD08f9D6BF1D25Cc7407E4855dF1d46C2043B3Ea",
         "2) Add Rewards Share Program add recipient EVM script factory 0x1F809D2cb72a5Ab13778811742050eDa876129b6",
         "3) Add Rewards Share Program remove recipient EVM script factory 0xd30Dc38EdEfc21875257e8A3123503075226E14B",
-        "4) Grant MANAGE_NODE_OPERATOR_ROLE to Voting",
+        "4) Grant MANAGE_NODE_OPERATOR_ROLE to Agent",
         "5) Add Launchnodes node operator with reward address 0x5a8B929EDBf3CE44526465DD2087EC7EFB59A561",
         "6) Add SenseiNode node operator with reward address 0xE556Da28015c04F35A52B3111B9F4120E908056e",
         "7) Set 3.1531 stETH as the allowance of Burner over the Agent's tokens",
