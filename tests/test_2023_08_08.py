@@ -115,10 +115,10 @@ def test_vote(helpers, accounts, vote_ids_from_env, interface, ldo_holder, stran
     assert no2["totalAddedValidators"] == 0
     assert no2["totalDepositedValidators"] == 0
 
-    request_burn_my_steth_role_holders_before = contracts.burner.getRoleMemberCount(
+    request_burn_my_steth_role_holders = contracts.burner.getRoleMemberCount(
         contracts.burner.REQUEST_BURN_MY_STETH_ROLE()
     )
-    assert request_burn_my_steth_role_holders_before == 1
+    assert request_burn_my_steth_role_holders == 1
     assert contracts.burner.getRoleMember(contracts.burner.REQUEST_BURN_MY_STETH_ROLE(), 0) == contracts.agent
 
     agent_shares_after = contracts.lido.sharesOf(contracts.agent)
