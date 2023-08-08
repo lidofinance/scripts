@@ -43,7 +43,8 @@ def test_gate_seal_scenario(steth_holder, gate_seal_committee, eth_whale):
 
     """ finalize all requests """
     unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
-    contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale, "amount": unfinalized_steth * 2})
+    if (unfinalized_steth > 0):
+        contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale, "amount": unfinalized_steth * 2})
     while (contracts.withdrawal_queue.unfinalizedStETH()):
         oracle_report(silent=True)
 

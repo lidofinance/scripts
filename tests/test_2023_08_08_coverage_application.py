@@ -222,12 +222,6 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
     no_coverage_node_operators_balance_after_report: Dict[str, int] = {}
     no_coverage_steth_whale_balance_after_report: int = 0
     with chain_snapshot():
-        # Execute the vote and oracle report both to include coverage application
-        vote_ids = []
-        if len(vote_ids_from_env) > 0:
-            vote_ids = vote_ids_from_env
-            helpers.execute_vote(accounts, vote_ids[1], contracts.voting)
-
         nos = contracts.node_operators_registry.getNodeOperatorsCount()
         no_addrs = [contracts.node_operators_registry.getNodeOperator(no, False)["rewardAddress"] for no in range(nos)]
         oracle_tx, _ = oracle_report(cl_diff=ETH(523), exclude_vaults_balances=False)
