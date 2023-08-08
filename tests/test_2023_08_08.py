@@ -66,6 +66,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, interface, ldo_holder, stran
         owner=contracts.agent.address, spender=contracts.burner.address, amount=stETH_to_burn
     )
 
+    assert contracts.node_operators_registry.getNodeOperatorsCount() == 30
+
     assert contracts.lido.allowance(contracts.agent, contracts.burner) == 0
 
     COVER_INDEX = 0
@@ -80,6 +82,13 @@ def test_vote(helpers, accounts, vote_ids_from_env, interface, ldo_holder, stran
     assert burner_assigned_for_noncover_burn_before == 0
 
     agent_shares_before = contracts.lido.sharesOf(contracts.agent)
+
+    factories_list_before = contracts.easy_track.getEVMScriptFactories()
+    assert len(factories_list_before) == 13
+
+    assert rewards_share_topup_factory not in factories_list_before
+    assert rewards_share_add_recipient_factory not in factories_list_before
+    assert rewards_share_remove_recipient_factory not in factories_list_before
 
     # START VOTE
     vote_ids = []
@@ -97,6 +106,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, interface, ldo_holder, stran
 
     assert contracts.acl.hasPermission(contracts.agent, contracts.node_operators_registry, MANAGE_NODE_OPERATOR_ROLE)
 
+    assert contracts.node_operators_registry.getNodeOperatorsCount() == 32
     no1 = contracts.node_operators_registry.getNodeOperator(new_node_op_1.id, True)
 
     assert no1["active"] is True
@@ -126,7 +136,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, interface, ldo_holder, stran
     agent_shares_after = contracts.lido.sharesOf(contracts.agent)
 
     agent_lido_alowance_after = contracts.lido.allowance(contracts.agent.address, contracts.burner.address)
-    assert almostEqWithDiff(agent_lido_alowance_after, 0, 2)
+    assert agent_lido_alowance_after == 0
 
     burner_total_burnt_for_cover_after = contracts.burner.getCoverSharesBurnt()
     assert burner_total_burnt_for_cover_after == burner_total_burnt_for_cover_before
