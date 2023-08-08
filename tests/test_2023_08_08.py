@@ -66,6 +66,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, interface, ldo_holder, stran
         owner=contracts.agent.address, spender=contracts.burner.address, amount=stETH_to_burn
     )
 
+    assert contracts.lido.allowance(contracts.agent, contracts.burner) == 0
+
     COVER_INDEX = 0
     NONCOVER_INDEX = 1
     burner_total_burnt_for_cover_before = contracts.burner.getCoverSharesBurnt()
