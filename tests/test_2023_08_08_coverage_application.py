@@ -15,6 +15,7 @@ from utils.config import (
 )
 from utils.test.helpers import ETH
 from utils.test.oracle_report_helpers import ONE_DAY, SHARE_RATE_PRECISION, oracle_report
+from utils.finance import ZERO_ADDRESS
 
 
 STETH_ERROR_MARGIN_WEI: int = 2  # https://github.com/lidofinance/lido-dao/issues/442
