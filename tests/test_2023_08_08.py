@@ -1,5 +1,5 @@
 """
-Tests for voting 08/08/202.
+Tests for voting 08/08/2023.
 """
 from brownie import web3
 from scripts.vote_2023_08_08 import start_vote
