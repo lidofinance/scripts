@@ -1,5 +1,5 @@
 """
-Coverage application scenario tests for voting 20/06/2023.
+Coverage application scenario tests for voting 08/08/2023.
 """
 from scripts.vote_2023_08_08 import start_vote
 
