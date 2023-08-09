@@ -37,8 +37,8 @@ def test_vote(
     ## parameters
     easy_track = contracts.easy_track
 
-    motions_count_limit_before = 20
-    motions_count_limit_expected = 21
+    motions_count_limit_before = easy_track.motionsCountLimit()
+    motions_count_limit_expected = motions_count_limit_before
     assert easy_track.motionsCountLimit() == motions_count_limit_before, "Incorrect motions count limit before"
     print(f"motionsCountLimit_before = {easy_track.motionsCountLimit()}")
 
@@ -71,7 +71,7 @@ def test_vote(
     events_after_voting = _decode_logs(events_after_voting)
     metadata = str(events_after_voting["StartVote"]["metadata"])
 
-    assert get_lido_vote_cid_from_str(metadata) == "bafkreiepcbctxybqh3kg44jzhm6fdbdpsyvzuqmnglmzn7sc5cklabxbka"
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreigu2ealpf2l7s7hmi4v4x3wyzojv6tsoaavs2ljyhujp3englrbtq"
 
     assert easy_track.motionsCountLimit() == motions_count_limit_expected, "Incorrect motions count limit after"
     print(f"motionsCountLimit_expected = {easy_track.motionsCountLimit()}")

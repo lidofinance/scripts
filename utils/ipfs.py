@@ -3,7 +3,7 @@ import asyncio
 import io
 import re
 import requests
-from typing import Tuple
+from typing import Tuple, TypedDict
 from os import linesep
 
 from ipfs_cid import cid_sha256_hash
@@ -42,6 +42,12 @@ REG_ETH_ADDRESS = r"\b(0x[a-fA-F0-9]{40})\b"
 REG_VOTE_CID = rf"\b({REG_CID_1_32})\b"
 VOTE_CID_PREFIX = "lidovoteipfs://"
 REG_VOTE_CID_WITH_PREFIX_LAST = rf"\b{VOTE_CID_PREFIX}{REG_VOTE_CID}\s*$"
+
+
+class IPFSUploadResult(TypedDict):
+    cid: str
+    text: str
+    messages: list[Tuple[str, str]]
 
 
 # alternative for upload_str_to_web3_storage
@@ -167,34 +173,26 @@ def fetch_cid_status_from_ipfs(cid: str):
     return asyncio.run(_fetch_cid_status_from_ipfs_async(cid))
 
 
-def upload_vote_description_to_ipfs(text: str, service="web3.storage") -> Tuple[str, str, list[Tuple[str, str]]]:
+def upload_vote_description_to_ipfs(text: str, service="web3.storage") -> IPFSUploadResult:
     messages = verify_ipfs_description(text)
     calculated_cid = ""
     if not text:
         # no text provided
-        return calculated_cid, text, messages
+        return IPFSUploadResult(cid=calculated_cid, messages=messages, text=text)
     try:
         calculated_cid = calculate_cid_hash(text)
+        if not calculated_cid:
+            raise Exception("Sorry, we couldn't calculate the ipfs hash for description.")
+
         status = fetch_cid_status_from_ipfs(calculated_cid)
         if status < 400:
             # have found file so CID is good
-            return calculated_cid, text, messages
+            return IPFSUploadResult(cid=calculated_cid, messages=messages, text=text)
 
         uploaded_cid = _upload_str_to_ipfs(text, service)
         if calculated_cid == uploaded_cid:
-            # uploaded with same CID
-            return calculated_cid, text, messages
-
-        if not calculated_cid:
-            messages.append(
-                (
-                    "error",
-                    "We was unable to calculate the description CID for verification "
-                    f"But we could use CID form thr IPFS server: {uploaded_cid}.",
-                )
-            )
-            # has no calculated CID but has remote CID
-            return calculated_cid, text, messages
+            # uploaded has same CID
+            return IPFSUploadResult(cid=calculated_cid, messages=messages, text=text)
 
         messages.append(
             (
@@ -204,7 +202,8 @@ def upload_vote_description_to_ipfs(text: str, service="web3.storage") -> Tuple[
             )
         )
         # has two different CID
-        return calculated_cid, text, messages
+        return IPFSUploadResult(cid=calculated_cid, messages=messages, text=text)
+
     except Exception as err:
         messages.append(("error", f"Unexpected error during upload description process: '{str(err)}'"))
         if calculated_cid:
@@ -225,8 +224,8 @@ def upload_vote_description_to_ipfs(text: str, service="web3.storage") -> Tuple[
                     ),
                 )
             )
-        # exception during upload
-        return calculated_cid, text, messages
+        # exception during upload or calculation
+        return IPFSUploadResult(cid=calculated_cid, messages=messages, text=text)
 
 
 def get_lido_vote_cid_from_str(text: str) -> str:

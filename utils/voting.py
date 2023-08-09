@@ -13,7 +13,7 @@ from utils.evm_script import (
 )
 
 from utils.config import prompt_bool, CHAIN_NETWORK_NAME, contracts
-from utils.ipfs import make_lido_vote_cid
+from utils.ipfs import make_lido_vote_cid, IPFSUploadResult
 
 
 def bake_vote_items(vote_desc_items: List[str], call_script_items: List[Tuple[str, str]]) -> Dict[str, Tuple[str, str]]:
@@ -36,7 +36,7 @@ def create_vote(
     verbose: bool = False,
     cast_vote: bool = False,
     executes_if_decided: bool = False,
-    desc_ipfs: Tuple[str, str, list[Tuple[str, str]]] = None,
+    desc_ipfs: IPFSUploadResult = None,
 ) -> Tuple[int, Optional[TransactionReceipt]]:
     vote_desc_str = ""
     for v in vote_items.keys():
@@ -44,14 +44,9 @@ def create_vote(
     if len(vote_desc_str) > 0:
         vote_desc_str = f"Omnibus vote: {vote_desc_str[:-3]}."
 
-    cid = ""
-    messages = []
-
     if desc_ipfs:
-        (cid, _, messages) = desc_ipfs
-
-    if cid:
-        vote_desc_str = f"{vote_desc_str}\n{make_lido_vote_cid(cid)}"
+        lido_vote_cid = make_lido_vote_cid(desc_ipfs["cid"])
+        vote_desc_str = f"{vote_desc_str}\n{lido_vote_cid}"
 
     voting = contracts.voting
     token_manager = contracts.token_manager
@@ -104,13 +99,6 @@ def create_vote(
                 f"Raised exception: {repr(err)}"
             )
 
-    if messages:
-        print(f"\n{color('yellow')}You have some issues:{color}")
-        for ind, call in enumerate(messages):
-            (_, message) = messages[ind]
-            print(f"{color('yellow')}{message}{color}")
-            print("---------------------------")
-
     return vote_id, tx
 
 
@@ -148,16 +136,16 @@ def _print_points(human_readable_script, vote_descriptions, cid: str) -> bool:
     return True
 
 
-def _print_messages(messages: list[Tuple[str, str]], type: str) -> bool:
+def _print_messages(messages: list[Tuple[str, str]], level: str) -> bool:
     if not messages:
         return True
 
-    filtered = list(filter(lambda item: item[0] == type, messages))
+    filtered = list(filter(lambda item: item[0] == level, messages))
     if not filtered or not len(filtered):
         return True
 
-    color_value = "red" if type == "error" else "yellow"
-    print(f"\n{color(color_value)}You have some {type}{color}:")
+    color_value = "red" if level == "error" else "yellow"
+    print(f"\n{color(color_value)}You have some {level}{color}:")
     for ind, call in enumerate(filtered):
         (_, message) = filtered[ind]
         print(f"{color(color_value)}- {message}{color}")
@@ -177,7 +165,7 @@ def _print_messages(messages: list[Tuple[str, str]], type: str) -> bool:
 def confirm_vote_script(
     vote_items: Dict[str, Tuple[str, str]],
     silent: bool,
-    desc_ipfs: Tuple[str, str, list[Tuple[str, str]]] = None,
+    desc_ipfs: IPFSUploadResult = None,
 ) -> bool:
     encoded_call_script = encode_call_script(vote_items.values())
 
@@ -192,9 +180,11 @@ def confirm_vote_script(
 
         vote_descriptions = list(vote_items.keys())
 
-        (cid, _, messages) = desc_ipfs
-
-        if not desc_ipfs:
+        if desc_ipfs:
+            cid = desc_ipfs["cid"]
+            messages = desc_ipfs["messages"]
+        else:
+            cid = ""
             messages = [
                 (
                     "error",
