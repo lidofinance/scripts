@@ -47,7 +47,7 @@ def test_vote(
         (vote_id,) = vote_ids_from_env
     else:
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
-        vote_id, _ = start_vote(tx_params, silent=True)
+        vote_id, _ = start_vote(tx_params, silent=True, with_desc=True)
 
     vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
 
@@ -71,7 +71,7 @@ def test_vote(
     events_after_voting = _decode_logs(events_after_voting)
     metadata = str(events_after_voting["StartVote"]["metadata"])
 
-    assert get_lido_vote_cid_from_str(metadata) == "bafkreigu2ealpf2l7s7hmi4v4x3wyzojv6tsoaavs2ljyhujp3englrbtq"
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreih2p5cofnkwcjt3zivyntfqwghs6zxumgcxmv3uswb4cfl3g3tqui"
 
     assert easy_track.motionsCountLimit() == motions_count_limit_expected, "Incorrect motions count limit after"
     print(f"motionsCountLimit_expected = {easy_track.motionsCountLimit()}")
