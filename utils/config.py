@@ -64,29 +64,11 @@ def get_deployer_account() -> Union[LocalAccount, Account]:
 def get_web3_storage_token() -> str:
     is_live = get_is_live()
     if is_live and "WEB3_STORAGE_TOKEN" not in os.environ:
-        raise EnvironmentError("Please set WEB3_STORAGE_TOKEN env variable to the web3.storage api token")
+        raise EnvironmentError(
+            "Please set WEB3_STORAGE_TOKEN env variable to the web3.storage api token to be able upload vote description to IPFS."
+        )
 
     return os.environ["WEB3_STORAGE_TOKEN"] if (is_live or "WEB3_STORAGE_TOKEN" in os.environ) else ""
-
-
-def get_infura_io_keys() -> Tuple[str, str]:
-    is_live = get_is_live()
-    if is_live and (
-        "WEB3_INFURA_IPFS_PROJECT_ID" not in os.environ or "WEB3_INFURA_IPFS_PROJECT_SECRET" not in os.environ
-    ):
-        raise EnvironmentError(
-            "Please set WEB3_INFURA_IPFS_PROJECT_ID and WEB3_INFURA_IPFS_PROJECT_SECRET env variable "
-            "to the web3.storage api token"
-        )
-    project_id = (
-        os.environ["WEB3_INFURA_IPFS_PROJECT_ID"] if (is_live or "WEB3_INFURA_IPFS_PROJECT_ID" in os.environ) else ""
-    )
-    project_secret = (
-        os.environ["WEB3_INFURA_IPFS_PROJECT_SECRET"]
-        if (is_live or "WEB3_INFURA_IPFS_PROJECT_SECRET" in os.environ)
-        else ""
-    )
-    return project_id, project_secret
 
 
 def prompt_bool() -> Optional[bool]:

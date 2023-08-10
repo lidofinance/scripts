@@ -47,7 +47,7 @@ def test_vote(
         (vote_id,) = vote_ids_from_env
     else:
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
-        vote_id, _ = start_vote(tx_params, silent=True, with_desc=True)
+        vote_id, _ = start_vote(tx_params, silent=True, should_upload_desc=True)
 
     vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
 

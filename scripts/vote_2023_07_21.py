@@ -57,7 +57,7 @@ address without MD - 0x200dA0b6a9905A377CF8D469664C65dB267009d1 or 0x200dA0b6a99
 
 
 def start_vote(
-    tx_params: Dict[str, str], silent: bool, with_desc: bool = False
+    tx_params: Dict[str, str], silent: bool, should_upload_desc: bool = False
 ) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""
 
@@ -75,7 +75,7 @@ def start_vote(
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
 
-    desc_ipfs = upload_vote_description_to_ipfs(description) if with_desc else None
+    desc_ipfs = upload_vote_description_to_ipfs(description, calc_only=not should_upload_desc)
 
     return confirm_vote_script(vote_items, silent, desc_ipfs) and list(
         create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
@@ -87,7 +87,7 @@ def main():
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 
-    vote_id, _ = start_vote(tx_params=tx_params, silent=False, with_desc=True)
+    vote_id, _ = start_vote(tx_params=tx_params, silent=False, should_upload_desc=True)
 
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 

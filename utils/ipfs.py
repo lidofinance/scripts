@@ -8,10 +8,7 @@ from os import linesep
 
 from ipfs_cid import cid_sha256_hash
 
-from utils.config import (
-    get_web3_storage_token,
-    get_infura_io_keys,
-)
+from utils.config import get_web3_storage_token
 
 #  https://github.com/multiformats/multibase/blob/master/multibase.csv
 #  IPFS has two CID formats v0 and v1, v1 supports different encodings, defaults are:
@@ -50,22 +47,6 @@ class IPFSUploadResult(TypedDict):
     messages: list[Tuple[str, str]]
 
 
-# alternative for upload_str_to_web3_storage
-def _upload_str_to_infura_io(text: str) -> str:
-    text_bytes = text.encode("utf-8")
-    text_file = io.BytesIO(text_bytes)
-    files = {"file": text_file}
-    (projectId, projectSecret) = get_infura_io_keys()
-
-    endpoint = "https://ipfs.infura.io:5001"
-
-    response = requests.post(endpoint + "/api/v0/add?cid-version=1", files=files, auth=(projectId, projectSecret))
-    response.raise_for_status()
-    response_json = response.json()
-
-    return response_json.get("Hash")
-
-
 # upload text to web3.storage ipfs
 def _upload_str_to_web3_storage(text: str) -> str:
     text_bytes = text.encode("utf-8")
@@ -82,12 +63,8 @@ def _upload_str_to_web3_storage(text: str) -> str:
     return response_json.get("cid")
 
 
-# uploading text to ipfs
-def _upload_str_to_ipfs(text: str, service: str = "web3.storage") -> str:
-    if service == "web3.storage":
-        return _upload_str_to_web3_storage(text)
-    else:
-        return _upload_str_to_infura_io(text)
+def _upload_str_to_ipfs(text: str) -> str:
+    return _upload_str_to_web3_storage(text)
 
 
 # calculate cid hash from utf8 str
@@ -173,7 +150,8 @@ def fetch_cid_status_from_ipfs(cid: str):
     return asyncio.run(_fetch_cid_status_from_ipfs_async(cid))
 
 
-def upload_vote_description_to_ipfs(text: str, service="web3.storage") -> IPFSUploadResult:
+# calc_only could be using for test runs to avoid uploading
+def upload_vote_description_to_ipfs(text: str, calc_only: bool = False) -> IPFSUploadResult:
     messages = verify_ipfs_description(text)
     calculated_cid = ""
     if not text:
@@ -184,12 +162,15 @@ def upload_vote_description_to_ipfs(text: str, service="web3.storage") -> IPFSUp
         if not calculated_cid:
             raise Exception("Sorry, we couldn't calculate the ipfs hash for description.")
 
+        if calc_only:
+            return IPFSUploadResult(cid=calculated_cid, messages=messages, text=text)
+
         status = fetch_cid_status_from_ipfs(calculated_cid)
         if status < 400:
             # have found file so CID is good
             return IPFSUploadResult(cid=calculated_cid, messages=messages, text=text)
 
-        uploaded_cid = _upload_str_to_ipfs(text, service)
+        uploaded_cid = _upload_str_to_ipfs(text)
         if calculated_cid == uploaded_cid:
             # uploaded has same CID
             return IPFSUploadResult(cid=calculated_cid, messages=messages, text=text)
