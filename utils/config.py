@@ -65,7 +65,9 @@ def get_web3_storage_token() -> str:
     is_live = get_is_live()
     if is_live and "WEB3_STORAGE_TOKEN" not in os.environ:
         raise EnvironmentError(
-            "Please set WEB3_STORAGE_TOKEN env variable to the web3.storage api token to be able upload vote description to IPFS."
+            "Please set WEB3_STORAGE_TOKEN env variable to the web3.storage api token "
+            "to be able upload vote description to IPFS. You also could only calculate cid "
+            "use calc_only=True in upload function for that. You could upload it later."
         )
 
     return os.environ["WEB3_STORAGE_TOKEN"] if (is_live or "WEB3_STORAGE_TOKEN" in os.environ) else ""
