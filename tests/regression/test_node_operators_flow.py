@@ -56,7 +56,7 @@ def reward_address(accounts):
     return accounts[7]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def new_node_operator_id(nor):
     return nor.getNodeOperatorsCount()
 

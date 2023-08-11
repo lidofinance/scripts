@@ -38,6 +38,10 @@ runs:
         node-version: 18.x
         cache: "yarn"
 
+    - name: Install pyyaml
+      shell: bash
+      run: poetry run pip install "cython<3.0" pyyaml==5.4.1 --no-build-isolation
+
     - name: Install poetry requirements
       shell: bash
       run: poetry install
@@ -73,3 +77,4 @@ runs:
       env:
         WEB3_INFURA_PROJECT_ID: ${{ inputs.infura }}
         ETHERSCAN_TOKEN: ${{ inputs.etherscan }}
+        REPORT_AFTER_VOTE: 1

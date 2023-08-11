@@ -112,6 +112,10 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     treasury = contracts.lido_locator.treasury()
     nor = contracts.node_operators_registry.address
     nor_operators_count = contracts.node_operators_registry.getNodeOperatorsCount()
+    for i in range(nor_operators_count):
+        no = contracts.node_operators_registry.getNodeOperator(i, True)
+        if (not no["totalDepositedValidators"]):
+            nor_operators_count = nor_operators_count - 1
     treasury_balance_before_rebase = contracts.lido.sharesOf(treasury)
 
     report_tx, extra_tx = oracle_report(cl_diff=ETH(100))
