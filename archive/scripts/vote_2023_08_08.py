@@ -10,6 +10,8 @@ Voting 08/08/2023.
 7. Set 3.1531 stETH as the allowance of Burner over the Agent's tokens
 8. Grant Burner.REQUEST_BURN_MY_STETH_ROLE to Agent
 9. Request to burn 3.1531 stETH for cover
+
+Vote passed & executed on Aug-11-2023 03:24:23 PM +UTC, block 17892519
 """
 
 import time
