@@ -224,7 +224,7 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
     with chain_snapshot():
         nos = contracts.node_operators_registry.getNodeOperatorsCount()
         no_addrs = [contracts.node_operators_registry.getNodeOperator(no, False)["rewardAddress"] for no in range(nos)]
-        oracle_tx, _ = oracle_report(cl_diff=ETH(523), exclude_vaults_balances=False)
+        oracle_tx, _ = oracle_report(cl_diff=ETH(523), exclude_vaults_balances=True)
 
         token_rebased_event = _first_event(oracle_tx, TokenRebased)
 
@@ -249,7 +249,7 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
         no_coverage_steth_whale_balance_after_report = contracts.lido.balanceOf(steth_whale)
 
         # Checks could revert while rebase limits exceeded (eg sum of withdrawal vault and EL rewards vault income)
-        # Could be temporary fixed with excluding vaults balances at line 222
+        # Could be temporary fixed with excluding vaults balances at line 227
         assert contracts.lido.sharesOf(contracts.burner) == 0
         assert contracts.lido.balanceOf(contracts.burner) == 0
 
@@ -271,7 +271,7 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
     tvl_before_report = contracts.lido.totalSupply()
     total_shares_before_report = contracts.lido.getTotalShares()
 
-    oracle_tx, _ = oracle_report(cl_diff=ETH(523), exclude_vaults_balances=False)
+    oracle_tx, _ = oracle_report(cl_diff=ETH(523), exclude_vaults_balances=True)
 
     token_rebased_event = _first_event(oracle_tx, TokenRebased)
 
@@ -282,7 +282,7 @@ def test_coverage_application_on_nonzero_rewards_report(helpers, vote_ids_from_e
     assert total_shares_after_report == no_coverage_total_shares_after_report - coverage_shares_to_burn
 
     # Checks could revert while rebase limits exceeded (eg sum of withdrawal vault and EL rewards vault income)
-    # Could be temporary fixed with excluding vaults balances at line 268
+    # Could be temporary fixed with excluding vaults balances at line 274
     assert contracts.lido.sharesOf(contracts.burner) == 0
     assert contracts.lido.balanceOf(contracts.burner) == 0
 
