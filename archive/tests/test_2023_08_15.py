@@ -2,9 +2,7 @@
 Tests for voting 21/07/2023 — IPFS description upload (test net only)
 
 """
-from scripts.vote_2023_08_15 import start_vote
-
-from brownie import chain, accounts, interface, web3
+from archive.scripts.vote_2023_08_15 import start_vote
 
 from utils.config import (
     network_name,
