@@ -60,4 +60,4 @@ the voting without modification of the common test files
 
 ## Internal tests
 
-Internal tests are using to testing tooling during the development process.
+Internal tests are using to test the tooling itself.

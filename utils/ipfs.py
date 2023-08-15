@@ -9,7 +9,7 @@ from os import linesep
 from ipfs_cid import cid_sha256_hash
 
 from utils.config import get_web3_storage_token
-from utils.evm_script import checksum_verify
+from utils.checksummed_address import checksum_verify
 
 #  https://github.com/multiformats/multibase/blob/master/multibase.csv
 #  IPFS has two CID formats v0 and v1, v1 supports different encodings, defaults are:
