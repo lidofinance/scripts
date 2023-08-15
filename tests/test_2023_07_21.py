@@ -5,15 +5,13 @@ Tests for voting 07/07/2023 — IPFS description upload (test net only)
 from scripts.vote_2023_07_21 import start_vote
 
 from brownie import chain, accounts, interface, web3
-from brownie.network.event import _decode_logs
-
-from utils.config import VOTING
 
 from utils.config import (
     network_name,
     contracts,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
 )
+from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.test.tx_tracing_helpers import *
 
@@ -56,20 +54,7 @@ def test_vote(
     # validate vote events
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 1, "Incorrect voting items count"
 
-    vote = contracts.voting.getVote(vote_id)
-    start_vote_signature = web3.keccak(text="StartVote(uint256,address,string)").hex()
-
-    events_after_voting = web3.eth.filter(
-        {
-            "address": contracts.voting.address,
-            "fromBlock": vote[3],
-            "toBlock": vote[3] + 1,
-            "topics": [start_vote_signature],
-        }
-    ).get_all_entries()
-
-    events_after_voting = _decode_logs(events_after_voting)
-    metadata = str(events_after_voting["StartVote"]["metadata"])
+    metadata = find_metadata_by_vote_id(vote_id)
 
     assert get_lido_vote_cid_from_str(metadata) == "bafkreih2p5cofnkwcjt3zivyntfqwghs6zxumgcxmv3uswb4cfl3g3tqui"
 

@@ -22,7 +22,7 @@ from utils.config import (
 )
 
 from utils.easy_track import set_motions_count_limit
-from utils.ipfs import upload_vote_description_to_ipfs
+from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 
 description = """
 **Motion 1:** RockLogic Slashing Incident Staker Compensation for smth, [snapshot passed](https://www.notion.so/Bug-Bounty-github-docs-link-to-compromised-github-account-719b3f2b628346db86ce9b23c36b02ee?pvs=21) data.
@@ -75,7 +75,10 @@ def start_vote(
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
 
-    desc_ipfs = upload_vote_description_to_ipfs(description, calc_only=not should_upload_desc)
+    if should_upload_desc:
+        desc_ipfs = upload_vote_ipfs_description(description)
+    else:
+        desc_ipfs = calculate_vote_ipfs_description(description)
 
     return confirm_vote_script(vote_items, silent, desc_ipfs) and list(
         create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)

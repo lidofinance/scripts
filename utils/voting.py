@@ -4,6 +4,7 @@ from brownie import exceptions, web3, convert
 from brownie.utils import color
 from brownie.network.transaction import TransactionReceipt
 from brownie.network.contract import Contract
+from brownie.network.event import _decode_logs
 
 from utils.evm_script import (
     encode_call_script,
@@ -111,6 +112,26 @@ def find_vote_id_in_raw_logs(logs) -> int:
     start_vote_log = start_vote_logs[0]
 
     return convert.to_uint(start_vote_log["topics"][1])
+
+
+def find_metadata_by_vote_id(vote_id: int) -> str:
+    vote = contracts.voting.getVote(vote_id)
+    if not vote:
+        return None
+
+    start_vote_signature = web3.keccak(text="StartVote(uint256,address,string)").hex()
+
+    events_after_voting = web3.eth.filter(
+        {
+            "address": contracts.voting.address,
+            "fromBlock": vote[3],
+            "toBlock": vote[3] + 1,
+            "topics": [start_vote_signature],
+        }
+    ).get_all_entries()
+
+    events_after_voting = _decode_logs(events_after_voting)
+    return str(events_after_voting["StartVote"]["metadata"])
 
 
 def _print_points(human_readable_script, vote_descriptions, cid: str) -> bool:

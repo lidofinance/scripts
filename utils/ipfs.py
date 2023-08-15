@@ -9,6 +9,7 @@ from os import linesep
 from ipfs_cid import cid_sha256_hash
 
 from utils.config import get_web3_storage_token
+from utils.evm_script import checksum_verify
 
 #  https://github.com/multiformats/multibase/blob/master/multibase.csv
 #  IPFS has two CID formats v0 and v1, v1 supports different encodings, defaults are:
@@ -107,16 +108,18 @@ def verify_ipfs_description(text: str) -> list[Tuple[str, str]]:
             (
                 "error",
                 (
-                    "You provided an empty string as description. "
-                    "If you provide text as a description, it will help users to make a voting decision. "
-                    "The description is stored on the IPFS network and does not take up much space in the script."
+                    "You provided an empty string as description. If you provide text as a description, "
+                    "it will help users to make a voting decision. The description is stored on the IPFS network"
+                    "and take fixed space in the script regardless of text length."
                 ),
             )
         )
 
-    address_raw_groups = re.findall(rf"([^`]{REG_ETH_ADDRESS}|{REG_ETH_ADDRESS}[^`])", f" {text} ")
-    if address_raw_groups:
-        address_raw = list(map(lambda x: x[1] or x[2], address_raw_groups))
+    ugly_address_raw_groups = re.findall(rf"([^`]{REG_ETH_ADDRESS}|{REG_ETH_ADDRESS}[^`])", f" {text} ")
+    print(ugly_address_raw_groups)
+
+    if ugly_address_raw_groups:
+        address_raw = list(map(lambda x: x[1] or x[2], ugly_address_raw_groups))
         messages.append(
             (
                 "warning",
@@ -128,10 +131,27 @@ def verify_ipfs_description(text: str) -> list[Tuple[str, str]]:
                 ),
             )
         )
+    all_address_raw_groups = re.findall(rf"{REG_ETH_ADDRESS}", f" {text} ")
 
-    cid_raw_groups = re.findall(rf"([^`]{REG_CID_DEFAULT}|{REG_CID_DEFAULT}[^`])", f" {text} ")
-    if cid_raw_groups:
-        cid_raw = list(map(lambda x: x[1] or x[2], cid_raw_groups))
+    if all_address_raw_groups:
+        print("****************")
+        print(all_address_raw_groups)
+
+        wrong_address_raw = list(filter(lambda address: not checksum_verify(address), all_address_raw_groups))
+        print(wrong_address_raw)
+        messages.append(
+            (
+                "error",
+                (
+                    "You have wallet addresses in description which has wrong hash sum. "
+                    "Here is the list of addresses:\n"
+                    f"{linesep.join(wrong_address_raw)}"
+                ),
+            )
+        )
+    ugly_cid_raw_groups = re.findall(rf"([^`]{REG_CID_DEFAULT}|{REG_CID_DEFAULT}[^`])", f" {text} ")
+    if ugly_cid_raw_groups:
+        cid_raw = list(map(lambda x: x[1] or x[2], ugly_cid_raw_groups))
         messages.append(
             (
                 "warning",
@@ -150,8 +170,21 @@ def fetch_cid_status_from_ipfs(cid: str):
     return asyncio.run(_fetch_cid_status_from_ipfs_async(cid))
 
 
-# calc_only could be using for test runs to avoid uploading
-def upload_vote_description_to_ipfs(text: str, calc_only: bool = False) -> IPFSUploadResult:
+def calculate_vote_ipfs_description(text: str) -> IPFSUploadResult:
+    messages = verify_ipfs_description(text)
+    calculated_cid = ""
+    if not text:
+        # no text provided
+        return IPFSUploadResult(cid=calculated_cid, messages=messages, text=text)
+
+    calculated_cid = calculate_cid_hash(text)
+    if not calculated_cid:
+        raise Exception("Couldn't calculate the ipfs hash for description.")
+
+    return IPFSUploadResult(cid=calculated_cid, messages=messages, text=text)
+
+
+def upload_vote_ipfs_description(text: str) -> IPFSUploadResult:
     messages = verify_ipfs_description(text)
     calculated_cid = ""
     if not text:
@@ -160,10 +193,7 @@ def upload_vote_description_to_ipfs(text: str, calc_only: bool = False) -> IPFSU
     try:
         calculated_cid = calculate_cid_hash(text)
         if not calculated_cid:
-            raise Exception("Sorry, we couldn't calculate the ipfs hash for description.")
-
-        if calc_only:
-            return IPFSUploadResult(cid=calculated_cid, messages=messages, text=text)
+            raise Exception("Couldn't calculate the ipfs hash for description.")
 
         status = fetch_cid_status_from_ipfs(calculated_cid)
         if status < 400:
@@ -191,7 +221,7 @@ def upload_vote_description_to_ipfs(text: str, calc_only: bool = False) -> IPFSU
             messages.append(
                 (
                     "error",
-                    "We was unable to upload the description to IPFS. "
+                    "Unable to upload the description to IPFS. "
                     f"But you could use calculated CID: {calculated_cid} and upload description later.",
                 )
             )
@@ -200,7 +230,7 @@ def upload_vote_description_to_ipfs(text: str, calc_only: bool = False) -> IPFSU
                 (
                     "error",
                     (
-                        "We was unable to calculate the description CID or upload the description to IPFS. "
+                        "Unable to calculate the description CID or upload the description to IPFS. "
                         "Your vote will not contain IPFS description."
                     ),
                 )
