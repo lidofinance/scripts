@@ -1,8 +1,8 @@
 """
-Tests for voting 07/07/2023 — IPFS description upload (test net only)
+Tests for voting 21/07/2023 — IPFS description upload (test net only)
 
 """
-from scripts.vote_2023_07_21 import start_vote
+from scripts.vote_2023_08_15 import start_vote
 
 from brownie import chain, accounts, interface, web3
 

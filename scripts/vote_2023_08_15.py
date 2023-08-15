@@ -1,8 +1,6 @@
 """
-Voting 21/07/2023 for IPFS description upload (test net only)
-
-1) Increase Easy Track motions amount limit: set motionsCountLimit to 20
-
+Voting {id} 21/07/2023 for IPFS description upload (test net only)
+Vote {rejected | passed & executed} on ${date+time}, block ${blockNumber}
 """
 
 import time
