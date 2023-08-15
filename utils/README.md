@@ -209,15 +209,15 @@ Right aligned columns
     ![lido](https://vote.lido.fi/favicon-1080x1080.svg "The LIDO VOTE")
 
 
-![lido](https://vote.lido.fi/)
-![lido](https://vote.lido.fi/ "The LIDO VOTE")
+[lido](https://vote.lido.fi/favicon-1080x1080.svg)
+[lido](https://vote.lido.fi/favicon-1080x1080.svg "The LIDO VOTE")
 
 Like links, Images also have a footnote style syntax
 
     ![Alt text][id]
-![Alt text][id]
+[Alt text][id]
 
 With a reference later in the document defining the URL location:
 
     [id]: https://vote.lido.fi/favicon-1080x1080.svg  "The LIOD"
-[id]: https://vote.lido.fi/  "The LIOD"
+[id]: https://vote.lido.fi/favicon-1080x1080.svg  "The LIOD"
