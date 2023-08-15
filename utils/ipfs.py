@@ -116,7 +116,6 @@ def verify_ipfs_description(text: str) -> list[Tuple[str, str]]:
         )
 
     ugly_address_raw_groups = re.findall(rf"([^`]{REG_ETH_ADDRESS}|{REG_ETH_ADDRESS}[^`])", f" {text} ")
-    print(ugly_address_raw_groups)
 
     if ugly_address_raw_groups:
         address_raw = list(map(lambda x: x[1] or x[2], ugly_address_raw_groups))
@@ -134,11 +133,7 @@ def verify_ipfs_description(text: str) -> list[Tuple[str, str]]:
     all_address_raw_groups = re.findall(rf"{REG_ETH_ADDRESS}", f" {text} ")
 
     if all_address_raw_groups:
-        print("****************")
-        print(all_address_raw_groups)
-
         wrong_address_raw = list(filter(lambda address: not checksum_verify(address), all_address_raw_groups))
-        print(wrong_address_raw)
         messages.append(
             (
                 "error",
