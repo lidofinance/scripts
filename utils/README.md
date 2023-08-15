@@ -195,6 +195,10 @@ Right aligned columns
 
 ### External Links
 
+    [link text](https://vote.lido.fi/)
+
+    [link with title](https://vote.lido.fi/ "title text!")
+
 [link text](https://vote.lido.fi/)
 
 [link with title](https://vote.lido.fi/ "title text!")
@@ -205,8 +209,8 @@ Right aligned columns
     ![lido](https://vote.lido.fi/favicon-1080x1080.svg "The LIDO VOTE")
 
 
-![lido](https://vote.lido.fi/favicon-1080x1080.svg)
-![lido](https://vote.lido.fi/favicon-1080x1080.svg "The LIDO VOTE")
+![lido](https://vote.lido.fi/)
+![lido](https://vote.lido.fi/ "The LIDO VOTE")
 
 Like links, Images also have a footnote style syntax
 
@@ -216,4 +220,4 @@ Like links, Images also have a footnote style syntax
 With a reference later in the document defining the URL location:
 
     [id]: https://vote.lido.fi/favicon-1080x1080.svg  "The LIOD"
-[id]: https://vote.lido.fi/favicon-1080x1080.svg  "The LIOD"
+[id]: https://vote.lido.fi/  "The LIOD"
