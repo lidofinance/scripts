@@ -6,8 +6,13 @@ This library helps to upload files to the IPFS network.
 In order to get around the limitation on the length of metadata, you can store a description in IPFS network.
 Since the IPFS hash is calculated cryptographically, it is protected from modify data.
 Vote UI supporting a Markdown in IPFS description text.
-To automatically upload a description to IPFS, you can use a function `upload_vote_description_to_ipfs` from `utils.ipfs`
+To automatically validate and upload a description to IPFS,
+you can use a function `upload_vote_description_to_ipfs` from `utils.ipfs`.
+To calculate without uploading, for example for tests,
+you can use a function `calculate_vote_ipfs_description` from `utils.ipfs`.
 Then you may provide the result to `create_vote` and `confirm_vote_script` into `desc_info` argument.
+Here is example of vote with ipfs description [vote_2023_08_15.py](../archive/scripts/vote_2023_08_15.py).
+
 
 Here are examples of supported syntax:
 
