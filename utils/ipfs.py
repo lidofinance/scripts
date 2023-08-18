@@ -80,13 +80,19 @@ async def _fetch_status(session, url: str) -> int:
         return response.status
 
 
+def get_url_by_cid(cid: str) -> str:
+    if cid and re.search(rf"^{REG_VOTE_CID}$", cid):
+        return f"https://{cid}.ipfs.w3s.link"
+    return ""
+
+
 # fetch cid from different api concurrency
 async def _fetch_cid_status_from_ipfs_async(cid: str) -> int:
     if not cid:
         return 404
 
     request_urls = [
-        f"https://{cid}.ipfs.w3s.link",  # faster for uploaded files
+        get_url_by_cid(cid),  # faster for uploaded files
         f"https://api.web3.storage/status/{cid}",  # much faster for not uploaded files
     ]
 

@@ -14,7 +14,7 @@ from utils.evm_script import (
 )
 
 from utils.config import prompt_bool, CHAIN_NETWORK_NAME, contracts
-from utils.ipfs import make_lido_vote_cid, IPFSUploadResult
+from utils.ipfs import make_lido_vote_cid, get_url_by_cid, IPFSUploadResult
 
 
 def bake_vote_items(vote_desc_items: List[str], call_script_items: List[Tuple[str, str]]) -> Dict[str, Tuple[str, str]]:
@@ -144,6 +144,7 @@ def _print_points(human_readable_script, vote_descriptions, cid: str) -> bool:
         print("---------------------------")
     if cid:
         print(f"Description cid: {color('green')}{make_lido_vote_cid(cid)}{color}")
+        print(f"Description preview url: {color('cyan')}{get_url_by_cid(cid)}{color}")
 
     print("Does it look good? [yes/no]")
     resume = prompt_bool()

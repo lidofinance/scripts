@@ -6,6 +6,7 @@ This library helps to upload files to the IPFS network.
 In order to get around the limitation on the length of metadata, you can store a description in IPFS network.
 Since the IPFS hash is calculated cryptographically, it is protected from modify data.
 Vote UI supporting a Markdown in IPFS description text.
+
 To automatically validate and upload a description to IPFS,
 you can use a function `upload_vote_description_to_ipfs` from `utils.ipfs`.
 To calculate without uploading, for example for tests,
