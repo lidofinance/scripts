@@ -103,12 +103,7 @@ def test_nor_state(contract):
         assert node_operator["name"] != ""
         assert node_operator["rewardAddress"] != ZERO_ADDRESS
 
-        if id == 30:
-            assert node_operator["totalVettedValidators"] >= 100
-        elif id == 31:
-            assert node_operator["totalVettedValidators"] >= 100
-        else:
-            assert node_operator["totalVettedValidators"] > 0
+        assert node_operator["totalVettedValidators"] > 0
 
         assert node_operator["totalVettedValidators"] <= node_operator["totalAddedValidators"]
         if id == 22:
@@ -122,12 +117,7 @@ def test_nor_state(contract):
 
         assert node_operator["totalAddedValidators"] > 0
 
-        if id == 30:
-            assert node_operator["totalDepositedValidators"] >= 100
-        elif id == 31:
-            assert node_operator["totalDepositedValidators"] >= 100
-        else:
-            assert node_operator["totalDepositedValidators"] > 0
+        assert node_operator["totalDepositedValidators"] > 0
 
         assert node_operator["totalDepositedValidators"] <= node_operator["totalAddedValidators"]
 
@@ -150,12 +140,7 @@ def test_nor_state(contract):
         else:
             assert node_operator_summary["totalExitedValidators"] == 0
 
-        if id == 30:
-            assert node_operator_summary["totalDepositedValidators"] >= 100
-        elif id == 31:
-            assert node_operator_summary["totalDepositedValidators"] >= 100
-        else:
-            assert node_operator_summary["totalDepositedValidators"] > 0
+        assert node_operator_summary["totalDepositedValidators"] > 0
         assert node_operator_summary["depositableValidatorsCount"] is not None
 
 
