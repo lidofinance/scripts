@@ -231,10 +231,18 @@ class ContractsLazyLoader:
     @property
     def evm_script_registry(self) -> interface.EVMScriptRegistry:
         return interface.EVMScriptRegistry(ARAGON_EVMSCRIPT_REGISTRY)
-    
+
     @property
     def insurance_fund(self) -> interface.InsuranceFund:
         return interface.InsuranceFund(INSURANCE_FUND)
+
+    @property
+    def anchor_vault(self) -> interface.InsuranceFund:
+        return interface.AnchorVault(ANCHOR_VAULT_PROXY)
+
+    @property
+    def anchor_vault_proxy(self) -> interface.InsuranceFund:
+        return interface.AnchorVaultProxy(ANCHOR_VAULT_PROXY)
 
 
 def __getattr__(name: str) -> Any:
