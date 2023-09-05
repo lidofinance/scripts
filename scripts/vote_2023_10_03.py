@@ -1,7 +1,7 @@
 """
 Voting 03/10/2023.
 
-1. Update Anchor Vault implementation from 0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171 to 0x26f15335BB1C6a4C0B660eDd694a0555A9F1cce3
+1. Update Anchor Vault implementation from 0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171 to #TBA
 2. Finalize Anchor Vault upgrade
 
 Vote passed & executed on #, block #
@@ -22,7 +22,7 @@ from utils.config import (
     get_priority_fee,
 )
 
-ANCHOR_NEW_ADDRESS = "0x26f15335BB1C6a4C0B660eDd694a0555A9F1cce3"
+ANCHOR_NEW_ADDRESS = "#TBA"
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Optional[TransactionReceipt]]:
 
@@ -49,7 +49,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     ]
 
     vote_desc_items = [
-        "1) Update Anchor Vault implementation from 0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171 to 0x26f15335BB1C6a4C0B660eDd694a0555A9F1cce3",
+        "1) Update Anchor Vault implementation from 0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171 to #TBA",
         "2) Finalize Anchor Vault upgrade",
     ]
 
