@@ -47,6 +47,11 @@ pipx install poetry==1.5.0
 Ensure that poetry bin path is added to your `$PATH` env variable.
 Usually it's `$HOME/.local/bin` for most Unix-like systems.
 
+This is a workaround related `brownie` deps `pyyaml` issue https://github.com/eth-brownie/brownie/issues/1701
+```shell
+poetry run pip install "cython<3.0" pyyaml==5.4.1 --no-build-isolation
+```
+
 ```shell
 poetry install
 ```
@@ -116,6 +121,13 @@ provide the etherscan API token:
 ```bash
 export ETHERSCAN_TOKEN=<etherscan_api_key>
 ```
+To upload Markdown vote description for a new vote to IPFS you should
+provide the [web3.storage](https://web3.storage/tokens/) API token:
+
+```bash
+export WEB3_STORAGE_TOKEN=<web3_storage_api_key>
+```
+See [here](utils/README.md#ipfs) to learn more Markdown description
 
 To skip events decoding while testing set the following var:
 

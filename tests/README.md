@@ -1,9 +1,10 @@
 # Tests
 
-There are three groups of common tests in `tests` directory:
+There are four groups of common tests in `tests` directory:
 - acceptance (`tests/acceptance/test_*.py`)
 - regression (`tests/regression/test_*.py`)
 - snapshot (`tests/snapshot/test_*.py`).
+- internal (`tests/internal/test_*.py`).
 
 The acceptance and regression tests check the on-chain protocol state:
 
@@ -16,6 +17,8 @@ The snapshot tests run only if the vote script exists.
 
 If there are multiple vote scripts all the scripts are run and executed
 sequentially in lexicographical order by script name.
+
+The internal tests are using for testing tooling and run only if the env `WITH_INTERNAL_TESTS = 1` exists.
 
 ## Acceptance and regression tests in master branch
 
@@ -34,7 +37,7 @@ Snapshot tests now are run only for and if `upgrade_*.py` vote script
 are present in the `/scripts` directory. NB.
 
 By snapshot here we denote a subset of storage data of a contract (or multiple contracts).
-The ideas is to check that the voting doesn't modify a contract storage other than the
+The idea is to check that the voting doesn't modify a contract storage other than the
 expected changes.
 
 Snapshot tests work as follows:
@@ -54,3 +57,7 @@ be addressed in the future:
 2) allow modification of the storage variables supposed not to be changed after
 the voting without modification of the common test files
 3) extract getters from ABIs automatically
+
+## Internal tests
+
+Internal tests are used to test the tooling itself.
