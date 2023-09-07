@@ -22,7 +22,7 @@ from utils.config import (
     get_priority_fee,
 )
 
-ANCHOR_NEW_ADDRESS = "#TBA"
+ANCHOR_NEW_IMPL_ADDRESS = "#TBA"
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Optional[TransactionReceipt]]:
 
@@ -32,7 +32,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
             [
                 (
                     contracts.anchor_vault_proxy.address,
-                    contracts.anchor_vault_proxy.proxy_upgradeTo.encode_input(ANCHOR_NEW_ADDRESS, b""),
+                    contracts.anchor_vault_proxy.proxy_upgradeTo.encode_input(ANCHOR_NEW_IMPL_ADDRESS, b""),
                 )
             ]
         )
