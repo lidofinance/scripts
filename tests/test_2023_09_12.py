@@ -18,10 +18,6 @@ from utils.test.event_validators.node_operators_registry import (
     TargetValidatorsCountChanged,
 )
 from utils.test.event_validators.permission import validate_grant_role_event
-from utils.test.event_validators.allowed_recipient_registry import (
-    validate_limits_parameters_changed_event,
-    validate_spent_amount_changed_event,
-)
 
 
 def test_vote(
@@ -29,7 +25,6 @@ def test_vote(
     bypass_events_decoding,
     vote_ids_from_env,
     accounts,
-    interface,
 ):
     ## parameters
     agent = contracts.agent
@@ -43,21 +38,10 @@ def test_vote(
     # web3.keccak(text="STAKING_MODULE_MANAGE_ROLE")
     STAKING_MODULE_MANAGE_ROLE = "0x3105bcbf19d4417b73ae0e58d508a65ecf75665e46c2622d8521732de6080c48"
 
-    trp_registry = interface.AllowedRecipientRegistry("0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8")
-
-    # 1
-    trp_registry_limit_before = trp_registry.getLimitParameters()
-    assert trp_registry_limit_before[0] == 22_000_000 * (10**18)
-    assert trp_registry_limit_before[1] == 12
-
-    # 2
-    trp_registry_state_before = trp_registry.getPeriodState()
-    assert trp_registry_state_before[0] == 12_722_460 * (10**18)
-    assert trp_registry_state_before[1] == 9_277_540 * (10**18)
-
-    # 3
+    # 1)
     assert staking_router.hasRole(STAKING_MODULE_MANAGE_ROLE, agent.address) == False
 
+    # 2)
     NO_summary_before = nor.getNodeOperatorSummary(target_NO_id)
     assert NO_summary_before[0] == False
     assert NO_summary_before[1] == 0
@@ -80,14 +64,15 @@ def test_vote(
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
     # validate vote events
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 4, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 2, "Incorrect voting items count"
 
     metadata = find_metadata_by_vote_id(vote_id)
 
-    assert get_lido_vote_cid_from_str(metadata) == "bafkreiedn6r4hakzudovskssnzwijpu4eyesvur33ip5tvf5ajlgnqi5dy"
-
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreicca3ol5lhwcoq5fiaou2ikszspnev6jrfepwpiz5mvgo745ldd7m"
+    # 1)
     assert staking_router.hasRole(STAKING_MODULE_MANAGE_ROLE, agent.address) == True
 
+    # 2)
     NO_summary_after = nor.getNodeOperatorSummary(target_NO_id)
     assert NO_summary_after[0]
     assert NO_summary_after[1] == 0
@@ -98,31 +83,11 @@ def test_vote(
     assert NO_summary_after[6] == 1000
     assert NO_summary_after[7] == 0
 
-    # 1
-    trp_registry_limit_after = trp_registry.getLimitParameters()
-    assert trp_registry_limit_after[0] == 9_277_540 * (10**18)
-    assert trp_registry_limit_after[1] == 12
-
-    # 2
-    trp_registry_state_after = trp_registry.getPeriodState()
-    assert trp_registry_state_after[0] == 0
-    assert trp_registry_state_after[1] == 9_277_540 * (10**18)
-    assert trp_registry_state_after[2] == trp_registry_state_before[2]
-    assert trp_registry_state_after[3] == trp_registry_state_before[3]
-
-    assert trp_registry_state_after[1] == trp_registry_state_before[1]
-
     if bypass_events_decoding or network_name() in ("goerli", "goerli-fork"):
         return
 
     evs = group_voting_events(vote_tx)
 
-    validate_limits_parameters_changed_event(evs[0], 9_277_540 * (10**18), 12)
+    validate_grant_role_event(evs[0], STAKING_MODULE_MANAGE_ROLE, agent.address, agent.address)
 
-    validate_spent_amount_changed_event(evs[1], 0)
-
-    validate_grant_role_event(evs[2], STAKING_MODULE_MANAGE_ROLE, agent.address, agent.address)
-
-    validate_target_validators_count_changed_event(evs[3], target_validators_count_change_request)
-
-    # validate_revoke_role_event(evs[4], STAKING_MODULE_MANAGE_ROLE, agent.address, agent.address)
+    validate_target_validators_count_changed_event(evs[1], target_validators_count_change_request)
