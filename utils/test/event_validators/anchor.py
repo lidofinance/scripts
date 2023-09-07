@@ -8,18 +8,16 @@ class TargetValidatorsCountChanged(NamedTuple):
     nodeOperatorId: int
     targetValidatorsCount: int
 
-def validate_anchor_vault_implementation_upgrade_events(events: EventDict, implementation: str):
-    _events_chain = ["LogScriptCall", "LogScriptCall", "Upgraded", "ScriptResult"]
+def validate_anchor_vault_implementation_upgrade_events(events: EventDict, implementation: str, new_version: str):
+    _events_chain = [
+        "LogScriptCall", "LogScriptCall", "Upgraded", "VersionIncremented", "EmergencyAdminChanged", "BridgeConnectorUpdated",
+        "RewardsLiquidatorUpdated", "InsuranceConnectorUpdated", "AnchorRewardsDistributorUpdated", "LiquidationConfigUpdated",
+        "ScriptResult",
+    ]
     validate_events_chain([e.name for e in events], _events_chain)
     assert events.count("Upgraded") == 1
     assert events["Upgraded"]["implementation"] == implementation, "Wrong anchor vault proxy implementation"
 
-def validate_anchor_vault_version_upgrade_events(events: EventDict, new_version: str):
-    _events_chain = [
-        "LogScriptCall", "LogScriptCall", "VersionIncremented", "EmergencyAdminChanged", "BridgeConnectorUpdated", "RewardsLiquidatorUpdated",
-        "InsuranceConnectorUpdated", "AnchorRewardsDistributorUpdated", "LiquidationConfigUpdated", "ScriptResult",
-    ]
-    validate_events_chain([e.name for e in events], _events_chain)
     assert events.count("VersionIncremented") == 1
     assert events.count("EmergencyAdminChanged") == 1
     assert events["VersionIncremented"]["new_version"] == new_version, "Wrong anchor vault version"
@@ -30,4 +28,3 @@ def validate_anchor_vault_version_upgrade_events(events: EventDict, new_version:
     assert events["LiquidationConfigUpdated"]["liquidations_admin"] == ZERO_ADDRESS, "Wrong anchor vault liquidations admin"
     assert events["LiquidationConfigUpdated"]["no_liquidation_interval"] == 0, "Wrong anchor vault no_liquidation_interval"
     assert events["LiquidationConfigUpdated"]["restricted_liquidation_interval"] == 0, "Wrong anchor vault restricted_liquidation_interval"
-

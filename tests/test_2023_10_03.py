@@ -1,7 +1,7 @@
 """
 Tests for voting 03/10/2023.
 """
-from brownie import ZERO_ADDRESS, convert, reverts
+from brownie import ZERO_ADDRESS, reverts
 from scripts.vote_2023_10_03 import start_vote
 
 from utils.test.tx_tracing_helpers import (
@@ -16,8 +16,7 @@ from utils.config import (
 )
 
 from utils.test.event_validators.anchor import (
-    validate_anchor_vault_implementation_upgrade_events,
-    validate_anchor_vault_version_upgrade_events
+    validate_anchor_vault_implementation_upgrade_events
 )
 
 ANCHOR_OLD_IMPL_ADDRESS = "0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171"
@@ -80,8 +79,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, interface, ldo_holder, stran
     [vote_tx] = helpers.execute_votes(accounts, vote_ids, contracts.voting)
 
     print(f"voteId = {vote_ids}, gasUsed = {vote_tx.gas_used}")
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 2, "Incorrect voting items count"
-
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 1, "Incorrect voting items count"
 
     address_implementation_after = proxy.implementation()
     assert address_implementation_before != address_implementation_after, "Implementation is not changed"
@@ -127,5 +125,4 @@ def test_vote(helpers, accounts, vote_ids_from_env, interface, ldo_holder, stran
 
     evs = group_voting_events(vote_tx)
 
-    validate_anchor_vault_implementation_upgrade_events(evs[0], ANCHOR_NEW_IMPL_ADDRESS)
-    validate_anchor_vault_version_upgrade_events(evs[1], ANCHOR_NEW_IMPL_VERSION)
+    validate_anchor_vault_implementation_upgrade_events(evs[0], ANCHOR_NEW_IMPL_ADDRESS, ANCHOR_NEW_IMPL_VERSION)

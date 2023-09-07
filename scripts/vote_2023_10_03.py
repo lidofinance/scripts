@@ -2,7 +2,6 @@
 Voting 03/10/2023.
 
 1. Update Anchor Vault implementation from 0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171 to #TBA
-2. Finalize Anchor Vault upgrade
 
 Vote passed & executed on #, block #
 """
@@ -26,36 +25,28 @@ ANCHOR_NEW_IMPL_ADDRESS = "#TBA"
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Optional[TransactionReceipt]]:
 
+    # anchor vault finalize
+    setup_calldata = contracts.anchor_vault.finalize_upgrade_v4.encode_input()
+
     call_script_items = [
         # 1. Update Anchor Vault implementation
         agent_forward(
             [
                 (
                     contracts.anchor_vault_proxy.address,
-                    contracts.anchor_vault_proxy.proxy_upgradeTo.encode_input(ANCHOR_NEW_IMPL_ADDRESS, b""),
+                    contracts.anchor_vault_proxy.proxy_upgradeTo.encode_input(ANCHOR_NEW_IMPL_ADDRESS, setup_calldata),
                 )
             ]
         )
         ,
-        # 2. Finalize Anchor Vault upgrade
-        agent_forward(
-            [
-                (
-                    contracts.anchor_vault.address,
-                    contracts.anchor_vault.finalize_upgrade_v4.encode_input(),
-                )
-            ]
-        ),
     ]
 
     vote_desc_items = [
         "1) Update Anchor Vault implementation from 0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171 to #TBA",
-        "2) Finalize Anchor Vault upgrade",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
     return confirm_vote_script(vote_items, silent) and list(create_vote(vote_items, tx_params))
-
 
 def main():
     tx_params = {"from": get_deployer_account()}
