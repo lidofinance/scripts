@@ -23,8 +23,9 @@ from utils.config import (
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 
 description = """
-The **Omnibus vote** contain one motion:
-1. Support **Jump Crypto voluntarily exits from the validator set** by setting `targetValidatorsCount` to 0. Jump Crypto requested it [here](https://research.lido.fi/t/lido-dao-proposal-to-set-targetvalidatorscount-for-jump-crypto-operator-to-0-to-wind-down-the-jump-crypto-legacy-set/5259) (items 1,2).
+The proposal is to support **Jump Crypto voluntarily exits from the validator set** by setting `targetValidatorsCount` to 0.
+Algorithm would prioritise exiting Jump Crypto validators in order to fulfil users' withdrawals requests.
+Jump Crypto request on [forum](https://research.lido.fi/t/lido-dao-proposal-to-set-targetvalidatorscount-for-jump-crypto-operator-to-0-to-wind-down-the-jump-crypto-legacy-set/5259).
 """
 
 

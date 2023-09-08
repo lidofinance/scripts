@@ -13,14 +13,11 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     curated_module_id = 1
 
     """ report """
-    while (
-        contracts.withdrawal_queue.getLastRequestId()
-            != contracts.withdrawal_queue.getLastFinalizedRequestId()
-    ):
+    while contracts.withdrawal_queue.getLastRequestId() != contracts.withdrawal_queue.getLastFinalizedRequestId():
         # finalize all current requests first
         report_tx = oracle_report()[0]
         # stake new ether to increase buffer
-        contracts.lido.submit(ZERO_ADDRESS, { 'from': eth_whale.address, 'value': ETH(10000) })
+        contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale.address, "value": ETH(10000)})
 
     contracts.lido.approve(contracts.withdrawal_queue.address, 1000, {"from": steth_holder})
     contracts.withdrawal_queue.requestWithdrawals([1000], steth_holder, {"from": steth_holder})
@@ -114,7 +111,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     nor_operators_count = contracts.node_operators_registry.getNodeOperatorsCount()
     for i in range(nor_operators_count):
         no = contracts.node_operators_registry.getNodeOperator(i, True)
-        if (not no["totalDepositedValidators"]):
+        if not no["totalDepositedValidators"] or no["totalDepositedValidators"] == no["totalExitedValidators"]:
             nor_operators_count = nor_operators_count - 1
     treasury_balance_before_rebase = contracts.lido.sharesOf(treasury)
 
@@ -126,7 +123,9 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     token_rebased_event = report_tx.events["TokenRebased"]
     transfer_event = report_tx.events["Transfer"]
 
-    assert extra_tx.events.count("Transfer") == nor_operators_count
+    assert (
+        extra_tx.events.count("Transfer") == nor_operators_count
+    ), "extra_tx.events should have Transfer to all active operators, check activity condition above"
     assert report_tx.events.count("TokenRebased") == 1
     assert report_tx.events.count("WithdrawalsFinalized") == 1
     assert report_tx.events.count("StETHBurnt") == 1

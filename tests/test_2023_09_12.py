@@ -68,7 +68,7 @@ def test_vote(
 
     metadata = find_metadata_by_vote_id(vote_id)
 
-    assert get_lido_vote_cid_from_str(metadata) == "bafkreicca3ol5lhwcoq5fiaou2ikszspnev6jrfepwpiz5mvgo745ldd7m"
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreiapvuobyrudww3oqhfopbs2fdmtebi6jnvpeb3plxkajnhafw25im"
     # 1)
     assert staking_router.hasRole(STAKING_MODULE_MANAGE_ROLE, agent.address) == True
 
