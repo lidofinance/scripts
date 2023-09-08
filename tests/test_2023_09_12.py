@@ -19,14 +19,6 @@ from utils.test.event_validators.node_operators_registry import (
 )
 from utils.test.event_validators.permission import validate_grant_role_event
 
-agent = contracts.agent
-nor = contracts.node_operators_registry
-staking_router = contracts.staking_router
-target_NO_id = 1
-target_validators_count_change_request = TargetValidatorsCountChanged(
-    nodeOperatorId=target_NO_id, targetValidatorsCount=0
-)
-
 
 def test_vote(
     helpers,
@@ -34,6 +26,15 @@ def test_vote(
     vote_ids_from_env,
     accounts,
 ):
+    # params
+    agent = contracts.agent
+    nor = contracts.node_operators_registry
+    staking_router = contracts.staking_router
+    target_NO_id = 1
+    target_validators_count_change_request = TargetValidatorsCountChanged(
+        nodeOperatorId=target_NO_id, targetValidatorsCount=0
+    )
+
     # web3.keccak(text="STAKING_MODULE_MANAGE_ROLE")
     STAKING_MODULE_MANAGE_ROLE = "0x3105bcbf19d4417b73ae0e58d508a65ecf75665e46c2622d8521732de6080c48"
 
