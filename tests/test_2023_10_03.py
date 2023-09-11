@@ -45,8 +45,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, interface, ldo_holder, stran
 
     max_uint256 = 2**256 - 1
 
-    stETH_token = interface.ERC20(contracts.lido.address)
-
     proxy = contracts.anchor_vault_proxy
     vault = contracts.anchor_vault
 
@@ -61,11 +59,16 @@ def test_vote(helpers, accounts, vote_ids_from_env, interface, ldo_holder, stran
     assert vault.emergency_admin() == OLD_EMERGENCY_ADMIN
 
     admin_before = vault.admin()
-    beth_token_before = vault.beth_token()
-    steth_token_before = vault.steth_token()
+    steth_token_address_before = vault.steth_token()
+    beth_token_address_before = vault.beth_token()
     operations_allowed_before = vault.operations_allowed()
     total_beth_refunded_before = vault.total_beth_refunded()
-    steth_balance_before = stETH_token.balanceOf(vault.address)
+
+    stETH_token = interface.ERC20(steth_token_address_before)
+    bETH_token = interface.ERC20(beth_token_address_before)
+
+    steth_vault_balance_before = stETH_token.balanceOf(vault.address)
+    beth_total_supply_before = bETH_token.totalSupply()
 
     # START VOTE
     vote_ids = []
@@ -91,11 +94,14 @@ def test_vote(helpers, accounts, vote_ids_from_env, interface, ldo_holder, stran
     admin_after = vault.admin()
     assert admin_before == admin_after == contracts.agent.address
 
-    beth_token_after = vault.beth_token()
-    assert beth_token_before == beth_token_after
+    beth_token_address_after = vault.beth_token()
+    assert beth_token_address_before == beth_token_address_after
 
-    steth_token_after = vault.steth_token()
-    assert steth_token_before == steth_token_after
+    steth_token_address_after = vault.steth_token()
+    assert steth_token_address_before == steth_token_address_after
+
+    beth_total_supply_after = bETH_token.totalSupply()
+    assert beth_total_supply_before == beth_total_supply_after
 
     operations_allowed_after = vault.operations_allowed()
     assert operations_allowed_before == operations_allowed_after == True
@@ -103,8 +109,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, interface, ldo_holder, stran
     total_beth_refunded_after = vault.total_beth_refunded()
     assert total_beth_refunded_before == total_beth_refunded_after == REFUND_BETH_AMOUNT
 
-    steth_balance_after = stETH_token.balanceOf(vault.address)
-    assert steth_balance_before == steth_balance_after
+    steth_vault_balance_after = stETH_token.balanceOf(vault.address)
+    assert steth_vault_balance_before == steth_vault_balance_after
 
     with reverts("Collect rewards stopped"):
         vault.collect_rewards({"from": stranger})
