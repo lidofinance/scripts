@@ -61,3 +61,27 @@ the voting without modification of the common test files
 ## Internal tests
 
 Internal tests are used to test the tooling itself.
+
+## For test debugging
+How to run one test?
+You need to add file name:
+```shell
+poetry run brownie test tests/<dir>/test_<name>.py -s
+```
+
+How not to raise the network every time you launch test?
+You could to run network in separate terminal window, tests will connect to it:
+```shell
+poetry run brownie console --network mainnet-fork
+```
+
+How to decode error messages?
+1) You need to clone `lido-cli` repo.
+```shell
+git clone https://github.com/lidofinance/lido-cli
+```
+2) install
+4) run
+```shell
+./run.sh tx parse-error <error-code>
+```
