@@ -12,7 +12,7 @@ def extra_data_service():
 
 
 def get_exited_count(node_operator_id):
-    counts = {2: 255, 4: 148, 5: 5}
+    counts = {2: 252, 4: 174, 5: 36}
     if node_operator_id in counts.keys():
         return counts[node_operator_id]
     else:

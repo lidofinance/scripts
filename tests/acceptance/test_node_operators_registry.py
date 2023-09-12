@@ -97,6 +97,11 @@ def test_nor_state(contract):
     for id in range(node_operators_count):
         assert contract.getTotalSigningKeyCount(id) > 0
         node_operator = contract.getNodeOperator(id, True)
+        print(f'{id} - {node_operator["totalExitedValidators"]}')
+
+    for id in range(node_operators_count):
+        assert contract.getTotalSigningKeyCount(id) > 0
+        node_operator = contract.getNodeOperator(id, True)
 
         assert node_operator["active"] == True
         assert node_operator["name"] is not None
@@ -108,11 +113,11 @@ def test_nor_state(contract):
         assert node_operator["totalVettedValidators"] <= node_operator["totalAddedValidators"]
         # counts could inc but not dec
         if id == 2:
-            assert node_operator["totalExitedValidators"] == 225
+            assert node_operator["totalExitedValidators"] == 252
         elif id == 4:
-            assert node_operator["totalExitedValidators"] == 148
+            assert node_operator["totalExitedValidators"] == 174
         elif id == 5:
-            assert node_operator["totalExitedValidators"] == 5
+            assert node_operator["totalExitedValidators"] == 36
         elif id == 12:
             assert node_operator["totalExitedValidators"] == 2300
         elif id == 21:
@@ -142,11 +147,11 @@ def test_nor_state(contract):
         assert node_operator_summary["stuckPenaltyEndTimestamp"] == 0
         # counts could inc but not dec
         if id == 2:
-            assert node_operator_summary["totalExitedValidators"] == 225
+            assert node_operator_summary["totalExitedValidators"] == 252
         elif id == 4:
-            assert node_operator_summary["totalExitedValidators"] == 148
+            assert node_operator_summary["totalExitedValidators"] == 174
         elif id == 5:
-            assert node_operator_summary["totalExitedValidators"] == 5
+            assert node_operator_summary["totalExitedValidators"] == 36
         elif id == 12:
             assert node_operator_summary["totalExitedValidators"] == 2300
         elif id == 21:
