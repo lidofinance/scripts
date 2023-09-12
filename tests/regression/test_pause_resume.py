@@ -2,7 +2,7 @@ from enum import IntEnum
 
 import brownie
 import pytest
-from brownie import ZERO_ADDRESS, web3, chain
+from brownie import ZERO_ADDRESS, web3, chain, Contract
 
 from utils.config import contracts
 from utils.evm_script import encode_error
@@ -16,6 +16,11 @@ DEPOSIT_AMOUNT = 100 * 10**18
 @pytest.fixture()
 def stopped_lido():
     contracts.lido.stop({"from": contracts.voting})
+
+
+@pytest.fixture(scope="module")
+def burner() -> Contract:
+    return contracts.burner
 
 
 @pytest.fixture(scope="function", autouse=is_there_any_vote_scripts())
@@ -295,18 +300,25 @@ def test_paused_staking_module_cant_stake():
         contracts.lido.deposit(1, 1, "0x", {"from": contracts.deposit_security_module}),
 
 
-def test_paused_staking_module_can_reward():
+def test_paused_staking_module_can_reward(burner: Contract):
     _, module_address, *_ = contracts.staking_router.getStakingModule(1)
     contracts.staking_router.pauseStakingModule(1, {"from": contracts.deposit_security_module})
     shares_before = contracts.lido.sharesOf(module_address)
     (report_tx, _) = oracle_report()
     print(report_tx.events["Transfer"])
-    assert report_tx.events["Transfer"][0]["to"] == module_address
-    assert report_tx.events["Transfer"][0]["from"] == ZERO_ADDRESS
-    assert report_tx.events["Transfer"][1]["to"] == contracts.agent
-    assert report_tx.events["Transfer"][1]["from"] == ZERO_ADDRESS
-    assert almostEqEth(report_tx.events["Transfer"][0]["value"], report_tx.events["Transfer"][1]["value"])
-    assert report_tx.events["Transfer"][0]["value"] > 0
+    module_index = 0
+    if report_tx.events["Transfer"][module_index]["to"] == burner.address:
+        module_index += 1
+
+    agent_index = module_index + 1
+    assert report_tx.events["Transfer"][module_index]["to"] == module_address
+    assert report_tx.events["Transfer"][module_index]["from"] == ZERO_ADDRESS
+    assert report_tx.events["Transfer"][agent_index]["to"] == contracts.agent
+    assert report_tx.events["Transfer"][agent_index]["from"] == ZERO_ADDRESS
+    assert almostEqEth(
+        report_tx.events["Transfer"][module_index]["value"], report_tx.events["Transfer"][agent_index]["value"]
+    )
+    assert report_tx.events["Transfer"][module_index]["value"] > 0
 
 
 def test_stopped_staking_module_cant_stake(stranger):
