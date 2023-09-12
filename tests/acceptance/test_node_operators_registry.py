@@ -97,11 +97,6 @@ def test_nor_state(contract):
     for id in range(node_operators_count):
         assert contract.getTotalSigningKeyCount(id) > 0
         node_operator = contract.getNodeOperator(id, True)
-        print(f'{id} - {node_operator["totalExitedValidators"]}')
-
-    for id in range(node_operators_count):
-        assert contract.getTotalSigningKeyCount(id) > 0
-        node_operator = contract.getNodeOperator(id, True)
 
         assert node_operator["active"] == True
         assert node_operator["name"] is not None

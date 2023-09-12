@@ -10,7 +10,7 @@ from utils.import_current_votes import is_there_any_vote_scripts, start_and_exec
 from utils.test.oracle_report_helpers import oracle_report, prepare_exit_bus_report
 from utils.test.helpers import almostEqEth
 
-DEPOSIT_AMOUNT = 100 * 10 ** 18
+DEPOSIT_AMOUNT = 100 * 10**18
 
 
 @pytest.fixture()
@@ -63,10 +63,15 @@ class TestEventsEmitted:
 
     def test_pause_resume_deposits_staking_module(self, helpers, stranger):
         tx = contracts.staking_router.pauseStakingModule(1, {"from": contracts.deposit_security_module})
-        helpers.assert_single_event_named("StakingModuleStatusSet", tx,
-                                          {'setBy': contracts.deposit_security_module,
-                                           'stakingModuleId': 1,
-                                           'status': StakingModuleStatus.DepositsPaused})
+        helpers.assert_single_event_named(
+            "StakingModuleStatusSet",
+            tx,
+            {
+                "setBy": contracts.deposit_security_module,
+                "stakingModuleId": 1,
+                "status": StakingModuleStatus.DepositsPaused,
+            },
+        )
         assert contracts.staking_router.getStakingModuleIsDepositsPaused(1)
 
         contracts.staking_router.grantRole(
@@ -75,10 +80,11 @@ class TestEventsEmitted:
             {"from": contracts.agent},
         )
         tx = contracts.staking_router.resumeStakingModule(1, {"from": stranger})
-        helpers.assert_single_event_named("StakingModuleStatusSet", tx,
-                                          {'setBy': stranger,
-                                           'stakingModuleId': 1,
-                                           'status': StakingModuleStatus.Active})
+        helpers.assert_single_event_named(
+            "StakingModuleStatusSet",
+            tx,
+            {"setBy": stranger, "stakingModuleId": 1, "status": StakingModuleStatus.Active},
+        )
         assert contracts.staking_router.getStakingModuleIsActive(1)
 
     def test_stop_staking_module(self, helpers, stranger):
@@ -88,13 +94,12 @@ class TestEventsEmitted:
             {"from": contracts.agent},
         )
 
-        tx = contracts.staking_router.setStakingModuleStatus(1,
-                                                             StakingModuleStatus.Stopped,
-                                                             {"from": stranger})
-        helpers.assert_single_event_named("StakingModuleStatusSet", tx,
-                                          {'setBy': stranger,
-                                           'stakingModuleId': 1,
-                                           'status': StakingModuleStatus.Stopped})
+        tx = contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.Stopped, {"from": stranger})
+        helpers.assert_single_event_named(
+            "StakingModuleStatusSet",
+            tx,
+            {"setBy": stranger, "stakingModuleId": 1, "status": StakingModuleStatus.Stopped},
+        )
 
         assert contracts.staking_router.getStakingModuleIsStopped(1)
 
@@ -151,9 +156,11 @@ class TestRevertedSecondCalls:
         with brownie.reverts("CONTRACT_IS_ACTIVE"):
             contracts.lido.resume({"from": contracts.voting})
 
-    @pytest.mark.skip(reason="Second call of pause/resume staking is not reverted right now."
-                             "It maybe should be fixed in the future to be consistent, "
-                             "there's not a real problem with it.")
+    @pytest.mark.skip(
+        reason="Second call of pause/resume staking is not reverted right now."
+        "It maybe should be fixed in the future to be consistent, "
+        "there's not a real problem with it."
+    )
     def test_revert_second_pause_resume_staking(self):
         contracts.lido.pauseStaking({"from": contracts.voting})
 
@@ -168,7 +175,7 @@ class TestRevertedSecondCalls:
     def test_revert_second_pause_resume_staking_module(self, stranger):
         contracts.staking_router.pauseStakingModule(1, {"from": contracts.deposit_security_module})
 
-        with brownie.reverts(encode_error('StakingModuleNotActive()')):
+        with brownie.reverts(encode_error("StakingModuleNotActive()")):
             contracts.staking_router.pauseStakingModule(1, {"from": contracts.deposit_security_module})
 
         contracts.staking_router.grantRole(
@@ -178,7 +185,7 @@ class TestRevertedSecondCalls:
         )
         contracts.staking_router.resumeStakingModule(1, {"from": stranger})
 
-        with brownie.reverts(encode_error('StakingModuleNotPaused()')):
+        with brownie.reverts(encode_error("StakingModuleNotPaused()")):
             contracts.staking_router.resumeStakingModule(1, {"from": stranger})
 
     def test_revert_second_stop_staking_module(self, helpers, stranger):
@@ -188,13 +195,9 @@ class TestRevertedSecondCalls:
             {"from": contracts.agent},
         )
 
-        contracts.staking_router.setStakingModuleStatus(1,
-                                                        StakingModuleStatus.Stopped,
-                                                        {"from": stranger})
-        with brownie.reverts(encode_error('StakingModuleStatusTheSame()')):
-            contracts.staking_router.setStakingModuleStatus(1,
-                                                            StakingModuleStatus.Stopped,
-                                                            {"from": stranger})
+        contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.Stopped, {"from": stranger})
+        with brownie.reverts(encode_error("StakingModuleStatusTheSame()")):
+            contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.Stopped, {"from": stranger})
 
     def test_revert_second_pause_resume_withdrawal_queue(self, helpers, stranger):
         inf = contracts.withdrawal_queue.PAUSE_INFINITELY()
@@ -204,7 +207,7 @@ class TestRevertedSecondCalls:
             {"from": contracts.agent},
         )
         contracts.withdrawal_queue.pauseFor(inf, {"from": stranger})
-        with brownie.reverts(encode_error('ResumedExpected()')):
+        with brownie.reverts(encode_error("ResumedExpected()")):
             contracts.withdrawal_queue.pauseFor(inf, {"from": stranger})
 
         contracts.withdrawal_queue.grantRole(
@@ -213,7 +216,7 @@ class TestRevertedSecondCalls:
             {"from": contracts.agent},
         )
         contracts.withdrawal_queue.resume({"from": stranger})
-        with brownie.reverts(encode_error('PausedExpected()')):
+        with brownie.reverts(encode_error("PausedExpected()")):
             contracts.withdrawal_queue.resume({"from": stranger})
 
     def test_revert_second_pause_resume_validators_exit_bus(self, helpers, stranger):
@@ -224,7 +227,7 @@ class TestRevertedSecondCalls:
             {"from": contracts.agent},
         )
         contracts.validators_exit_bus_oracle.pauseFor(inf, {"from": stranger})
-        with brownie.reverts(encode_error('ResumedExpected()')):
+        with brownie.reverts(encode_error("ResumedExpected()")):
             contracts.validators_exit_bus_oracle.pauseFor(inf, {"from": stranger})
 
         contracts.validators_exit_bus_oracle.grantRole(
@@ -233,11 +236,12 @@ class TestRevertedSecondCalls:
             {"from": contracts.agent},
         )
         contracts.validators_exit_bus_oracle.resume({"from": stranger})
-        with brownie.reverts(encode_error('PausedExpected()')):
+        with brownie.reverts(encode_error("PausedExpected()")):
             contracts.validators_exit_bus_oracle.resume({"from": stranger})
 
 
 # Lido contract tests
+
 
 @pytest.mark.usefixtures("stopped_lido")
 def test_stopped_lido_cant_stake(stranger):
@@ -281,11 +285,13 @@ def test_paused_staking_can_report():
     contracts.lido.pauseStaking({"from": contracts.voting})
     oracle_report()
 
+
 # Staking module tests
+
 
 def test_paused_staking_module_cant_stake():
     contracts.staking_router.pauseStakingModule(1, {"from": contracts.deposit_security_module})
-    with brownie.reverts(encode_error('StakingModuleNotActive()')):
+    with brownie.reverts(encode_error("StakingModuleNotActive()")):
         contracts.lido.deposit(1, 1, "0x", {"from": contracts.deposit_security_module}),
 
 
@@ -295,12 +301,12 @@ def test_paused_staking_module_can_reward():
     shares_before = contracts.lido.sharesOf(module_address)
     (report_tx, _) = oracle_report()
     print(report_tx.events["Transfer"])
-    assert report_tx.events["Transfer"][1]["to"] == module_address
+    assert report_tx.events["Transfer"][0]["to"] == module_address
+    assert report_tx.events["Transfer"][0]["from"] == ZERO_ADDRESS
+    assert report_tx.events["Transfer"][1]["to"] == contracts.agent
     assert report_tx.events["Transfer"][1]["from"] == ZERO_ADDRESS
-    assert report_tx.events["Transfer"][2]["to"] == contracts.agent
-    assert report_tx.events["Transfer"][2]["from"] == ZERO_ADDRESS
-    assert almostEqEth(report_tx.events["Transfer"][1]["value"], report_tx.events["Transfer"][1]["value"])
-    assert report_tx.events["Transfer"][1]["value"] > 0
+    assert almostEqEth(report_tx.events["Transfer"][0]["value"], report_tx.events["Transfer"][1]["value"])
+    assert report_tx.events["Transfer"][0]["value"] > 0
 
 
 def test_stopped_staking_module_cant_stake(stranger):
@@ -310,9 +316,8 @@ def test_stopped_staking_module_cant_stake(stranger):
         {"from": contracts.agent},
     )
 
-    contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.Stopped,
-                                                    {"from": stranger})
-    with brownie.reverts(encode_error('StakingModuleNotActive()')):
+    contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.Stopped, {"from": stranger})
+    with brownie.reverts(encode_error("StakingModuleNotActive()")):
         contracts.lido.deposit(1, 1, "0x", {"from": contracts.deposit_security_module}),
 
 
@@ -323,11 +328,11 @@ def test_stopped_staking_module_cant_reward(stranger):
         {"from": contracts.agent},
     )
     _, module_address, *_ = contracts.staking_router.getStakingModule(1)
-    contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.Stopped,
-                                                    {"from": stranger})
+    contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.Stopped, {"from": stranger})
     shares_before = contracts.lido.sharesOf(module_address)
     oracle_report()
     assert contracts.lido.sharesOf(module_address) == shares_before
+
 
 def test_stopped_lido_cant_reward(stranger):
     contracts.lido.stop({"from": contracts.voting})
@@ -335,12 +340,15 @@ def test_stopped_lido_cant_reward(stranger):
     with brownie.reverts("CONTRACT_IS_STOPPED"):
         oracle_report()
 
+
 # Withdrawal queue tests
+
 
 def make_withdrawal_request(stranger):
     stranger.transfer(contracts.lido, DEPOSIT_AMOUNT)
     contracts.lido.approve(contracts.withdrawal_queue, DEPOSIT_AMOUNT - 1, {"from": stranger})
     contracts.withdrawal_queue.requestWithdrawals([DEPOSIT_AMOUNT - 1], stranger, {"from": stranger})
+
 
 def pause_withdrawal_queue(stranger):
     contracts.withdrawal_queue.grantRole(
@@ -351,19 +359,23 @@ def pause_withdrawal_queue(stranger):
     inf = contracts.withdrawal_queue.PAUSE_INFINITELY()
     contracts.withdrawal_queue.pauseFor(inf, {"from": stranger})
 
+
 def test_paused_withdrawal_queue_cant_withdraw(stranger):
     pause_withdrawal_queue(stranger)
 
-    with brownie.reverts(encode_error('ResumedExpected()')):
+    with brownie.reverts(encode_error("ResumedExpected()")):
         make_withdrawal_request(stranger)
+
 
 def test_paused_withdrawal_queue_can_stake(stranger):
     pause_withdrawal_queue(stranger)
     stranger.transfer(contracts.lido, DEPOSIT_AMOUNT)
 
+
 def test_paused_withdrawal_queue_can_rebase(stranger):
     pause_withdrawal_queue(stranger)
     oracle_report()
+
 
 def test_stopped_lido_cant_withdraw(stranger):
     stranger.transfer(contracts.lido, DEPOSIT_AMOUNT)
@@ -377,13 +389,16 @@ def test_stopped_lido_cant_withdraw(stranger):
 
 # Validators exit bus tests
 
+
 def prepare_report():
     ref_slot, _ = contracts.hash_consensus_for_validators_exit_bus_oracle.getCurrentFrame()
     consensus_version = contracts.validators_exit_bus_oracle.getConsensusVersion()
     items, hash = prepare_exit_bus_report([], ref_slot)
     fast_lane_members, _ = contracts.hash_consensus_for_validators_exit_bus_oracle.getFastLaneMembers()
     for m in fast_lane_members:
-        contracts.hash_consensus_for_validators_exit_bus_oracle.submitReport(ref_slot, hash, consensus_version, {"from": m})
+        contracts.hash_consensus_for_validators_exit_bus_oracle.submitReport(
+            ref_slot, hash, consensus_version, {"from": m}
+        )
     return items, m
 
 
@@ -396,6 +411,7 @@ def pause_validators_exit_bus(stranger):
     inf = contracts.validators_exit_bus_oracle.PAUSE_INFINITELY()
     contracts.validators_exit_bus_oracle.pauseFor(inf, {"from": stranger})
 
+
 def test_paused_validators_exit_bus_cant_submit_report(stranger):
     chain.sleep(2 * 24 * 3600)
     chain.mine()
@@ -405,8 +421,9 @@ def test_paused_validators_exit_bus_cant_submit_report(stranger):
     pause_validators_exit_bus(stranger)
 
     report, member = prepare_report()
-    with brownie.reverts(encode_error('ResumedExpected()')):
+    with brownie.reverts(encode_error("ResumedExpected()")):
         contracts.validators_exit_bus_oracle.submitReportData(report, contract_version, {"from": member})
+
 
 def test_stopped_lido_can_exit_validators(stranger):
     chain.sleep(2 * 24 * 3600)
