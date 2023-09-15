@@ -73,7 +73,7 @@ def protocol_permissions():
                 "MANAGE_WITHDRAWAL_CREDENTIALS_ROLE": [],
                 "STAKING_MODULE_PAUSE_ROLE": [contracts.deposit_security_module],
                 "STAKING_MODULE_RESUME_ROLE": [contracts.deposit_security_module],
-                "STAKING_MODULE_MANAGE_ROLE": [contracts.agent],
+                "STAKING_MODULE_MANAGE_ROLE": [],
                 "REPORT_EXITED_VALIDATORS_ROLE": [contracts.accounting_oracle],
                 "UNSAFE_SET_EXITED_VALIDATORS_ROLE": [],
                 "REPORT_REWARDS_MINTED_ROLE": [contracts.lido],
