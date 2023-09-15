@@ -5,7 +5,9 @@ from brownie.convert.datatypes import HexString
 from utils.config import contracts
 from utils.test.exit_bus_data import LidoValidator
 from utils.test.oracle_report_helpers import (
-    wait_to_next_available_report_time, reach_consensus, prepare_exit_bus_report
+    wait_to_next_available_report_time,
+    reach_consensus,
+    prepare_exit_bus_report,
 )
 
 
@@ -19,17 +21,20 @@ class ProcessingState:
     requests_count: int
     requests_submitted: int
 
+
 def _wait_for_next_ref_slot():
     wait_to_next_available_report_time(contracts.hash_consensus_for_validators_exit_bus_oracle)
     ref_slot, _ = contracts.hash_consensus_for_validators_exit_bus_oracle.getCurrentFrame()
     return ref_slot
 
+
 def send_report_with_consensus(ref_slot, report, report_hash):
     consensus_version = contracts.validators_exit_bus_oracle.getConsensusVersion()
     contract_version = contracts.validators_exit_bus_oracle.getContractVersion()
 
-    submitter = reach_consensus(ref_slot, report_hash, consensus_version,
-                                contracts.hash_consensus_for_validators_exit_bus_oracle)
+    submitter = reach_consensus(
+        ref_slot, report_hash, consensus_version, contracts.hash_consensus_for_validators_exit_bus_oracle
+    )
 
     return contracts.validators_exit_bus_oracle.submitReportData(report, contract_version, {"from": submitter})
 
@@ -52,8 +57,8 @@ def test_send_zero_validators_to_exit(helpers):
     processing_state_after = ProcessingState(*contracts.validators_exit_bus_oracle.getProcessingState())
 
     # Asserts
-    helpers.assert_single_event_named('ProcessingStarted', tx, {"refSlot": ref_slot, "hash": report_hash_hex})
-    helpers.assert_event_not_emitted('ValidatorExitRequest', tx)
+    helpers.assert_single_event_named("ProcessingStarted", tx, {"refSlot": ref_slot, "hash": report_hash_hex})
+    helpers.assert_event_not_emitted("ValidatorExitRequest", tx)
 
     assert total_requests_after == total_requests_before
 
@@ -83,7 +88,8 @@ def test_send_validator_to_exit(helpers, web3):
     last_processing_ref_slot_before = contracts.validators_exit_bus_oracle.getLastProcessingRefSlot()
     processing_state_before = ProcessingState(*contracts.validators_exit_bus_oracle.getProcessingState())
     last_requested_validator_index_before = contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(
-        module_id, [no_id])
+        module_id, [no_id]
+    )
 
     tx = send_report_with_consensus(ref_slot, report, report_hash)
 
@@ -92,16 +98,22 @@ def test_send_validator_to_exit(helpers, web3):
     last_processing_ref_slot_after = contracts.validators_exit_bus_oracle.getLastProcessingRefSlot()
     processing_state_after = ProcessingState(*contracts.validators_exit_bus_oracle.getProcessingState())
     last_requested_validator_index_after = contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(
-        module_id, [no_id])
+        module_id, [no_id]
+    )
 
     # Asserts
-    helpers.assert_single_event_named('ProcessingStarted', tx, {"refSlot": ref_slot, "hash": report_hash_hex})
-    helpers.assert_single_event_named('ValidatorExitRequest', tx,
-                                      {"stakingModuleId": module_id,
-                                       "nodeOperatorId": no_id,
-                                       "validatorIndex": validator_id,
-                                       "validatorPubkey": validator_key,
-                                       "timestamp": web3.eth.get_block(web3.eth.block_number).timestamp})
+    helpers.assert_single_event_named("ProcessingStarted", tx, {"refSlot": ref_slot, "hash": report_hash_hex})
+    helpers.assert_single_event_named(
+        "ValidatorExitRequest",
+        tx,
+        {
+            "stakingModuleId": module_id,
+            "nodeOperatorId": no_id,
+            "validatorIndex": validator_id,
+            "validatorPubkey": validator_key,
+            "timestamp": web3.eth.get_block(web3.eth.block_number).timestamp,
+        },
+    )
 
     assert total_requests_after == total_requests_before + 1
 
@@ -122,8 +134,8 @@ def test_send_multiple_validators_to_exit(helpers, web3):
     """
     The same as test above but with multiple validators on different node operators
     """
-    first_no_global_index = (first_module_id, first_no_id) = (1, 1)
-    second_no_global_index = (second_module_id, second_no_id) = (1, 2)
+    first_no_global_index = (first_module_id, first_no_id) = (1, 7)
+    second_no_global_index = (second_module_id, second_no_id) = (1, 8)
     first_validator_id = 2
     second_validator_id = 3
     first_validator_key = contracts.node_operators_registry.getSigningKey(first_no_id, first_validator_id)[0]
@@ -133,7 +145,8 @@ def test_send_multiple_validators_to_exit(helpers, web3):
 
     ref_slot = _wait_for_next_ref_slot()
     report, report_hash = prepare_exit_bus_report(
-        [(first_no_global_index, first_validator), (second_no_global_index, second_validator)], ref_slot)
+        [(first_no_global_index, first_validator), (second_no_global_index, second_validator)], ref_slot
+    )
     report_hash_hex = HexString(report_hash, "bytes")
 
     # Collect state before
@@ -141,9 +154,11 @@ def test_send_multiple_validators_to_exit(helpers, web3):
     last_processing_ref_slot_before = contracts.validators_exit_bus_oracle.getLastProcessingRefSlot()
     processing_state_before = ProcessingState(*contracts.validators_exit_bus_oracle.getProcessingState())
     first_last_requested_validator_index_before = contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(
-        first_module_id, [first_no_id])
-    second_last_requested_validator_index_before = contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(
-        second_module_id, [second_no_id])
+        first_module_id, [first_no_id]
+    )
+    second_last_requested_validator_index_before = (
+        contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(second_module_id, [second_no_id])
+    )
 
     tx = send_report_with_consensus(ref_slot, report, report_hash)
 
@@ -152,24 +167,30 @@ def test_send_multiple_validators_to_exit(helpers, web3):
     last_processing_ref_slot_after = contracts.validators_exit_bus_oracle.getLastProcessingRefSlot()
     processing_state_after = ProcessingState(*contracts.validators_exit_bus_oracle.getProcessingState())
     first_last_requested_validator_index_after = contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(
-        first_module_id, [first_no_id])
+        first_module_id, [first_no_id]
+    )
     second_last_requested_validator_index_after = contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(
-        second_module_id, [second_no_id])
+        second_module_id, [second_no_id]
+    )
 
     # Asserts
-    helpers.assert_single_event_named('ProcessingStarted', tx, {"refSlot": ref_slot, "hash": report_hash_hex})
+    helpers.assert_single_event_named("ProcessingStarted", tx, {"refSlot": ref_slot, "hash": report_hash_hex})
     events = helpers.filter_events_from(tx.receiver, tx.events["ValidatorExitRequest"])
     assert len(events) == 2
-    assert dict(events[0]) == {"stakingModuleId": first_module_id,
-                               "nodeOperatorId": first_no_id,
-                               "validatorIndex": first_validator_id,
-                               "validatorPubkey": first_validator_key,
-                               "timestamp": web3.eth.get_block(web3.eth.block_number).timestamp}
-    assert dict(events[1]) == {"stakingModuleId": second_module_id,
-                               "nodeOperatorId": second_no_id,
-                               "validatorIndex": second_validator_id,
-                               "validatorPubkey": second_validator_key,
-                               "timestamp": web3.eth.get_block(web3.eth.block_number).timestamp}
+    assert dict(events[0]) == {
+        "stakingModuleId": first_module_id,
+        "nodeOperatorId": first_no_id,
+        "validatorIndex": first_validator_id,
+        "validatorPubkey": first_validator_key,
+        "timestamp": web3.eth.get_block(web3.eth.block_number).timestamp,
+    }
+    assert dict(events[1]) == {
+        "stakingModuleId": second_module_id,
+        "nodeOperatorId": second_no_id,
+        "validatorIndex": second_validator_id,
+        "validatorPubkey": second_validator_key,
+        "timestamp": web3.eth.get_block(web3.eth.block_number).timestamp,
+    }
 
     assert total_requests_after == total_requests_before + 2
 
