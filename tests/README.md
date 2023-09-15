@@ -42,7 +42,7 @@ expected changes.
 
 Snapshot tests work as follows:
 
-1) Go over some protocol use scenario (e. g. stake by use + oracle report)
+1) Go over some protocol use scenario (e.g. stake by use + oracle report)
 2) Store the snapshot along the steps
 3) Revert the chain changes
 4) Execute the vote
@@ -75,13 +75,13 @@ You could to run network in separate terminal window, tests will connect to it:
 poetry run brownie console --network mainnet-fork
 ```
 
-How to decode error messages?
+How to decode unreadable error messages (like 0xb...)?
 1) You need to clone `lido-cli` repo.
 ```shell
 git clone https://github.com/lidofinance/lido-cli
 ```
-2) install
-4) run
+2) install following docs - https://github.com/lidofinance/lido-cli
+3) run
 ```shell
-./run.sh tx parse-error <error-code>
+./run.sh tx parse-error <error-messages>
 ```
