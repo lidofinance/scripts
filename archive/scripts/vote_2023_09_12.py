@@ -1,6 +1,6 @@
 """
-Voting {id} 12/09/2023
-Vote {rejected | passed & executed} on ${date+time}, block ${blockNumber}
+Voting 164 12/09/2023
+Vote REJECTED
 """
 
 import time

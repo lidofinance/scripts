@@ -2,7 +2,7 @@
 Tests for voting 12/09/2023
 
 """
-from scripts.vote_2023_09_12 import start_vote
+from archive.scripts.vote_2023_09_12 import start_vote
 
 from utils.config import (
     network_name,
