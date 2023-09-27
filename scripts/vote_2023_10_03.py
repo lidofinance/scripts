@@ -82,14 +82,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
         ),
         # III. Anchor sunset
         ## 10. Update Anchor Vault implementation
-        agent_forward(
-            [
-                (
-                    contracts.anchor_vault_proxy.address,
-                    contracts.anchor_vault_proxy.proxy_upgradeTo.encode_input(ANCHOR_NEW_IMPL_ADDRESS, setup_calldata),
-                )
-            ]
-        ),
+        # agent_forward(
+        #     [
+        #         (
+        #             contracts.anchor_vault_proxy.address,
+        #             contracts.anchor_vault_proxy.proxy_upgradeTo.encode_input(ANCHOR_NEW_IMPL_ADDRESS, setup_calldata),
+        #         )
+        #     ]
+        # ),
     ]
 
     vote_desc_items = [
@@ -97,7 +97,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
         # 6 more
         "8) Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent",
         "9) Set Jump Crypto targetValidatorsLimits to 0",
-        "10) Update Anchor Vault implementation from 0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171 to #TBA",
+        # "10) Update Anchor Vault implementation from 0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171 to #TBA",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
