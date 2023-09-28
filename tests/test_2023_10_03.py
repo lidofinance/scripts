@@ -1,5 +1,6 @@
 """
-Tests for voting 03/10/2023.
+Tests for voting 03/10/2023
+
 """
 from brownie import ZERO_ADDRESS, reverts
 from scripts.vote_2023_10_03 import start_vote
@@ -21,14 +22,20 @@ from utils.test.event_validators.node_operators_registry import (
 )
 from utils.test.event_validators.permission import validate_grant_role_event
 
-from utils.test.event_validators.anchor import validate_anchor_vault_implementation_upgrade_events
+# from utils.test.event_validators.anchor import validate_anchor_vault_implementation_upgrade_events
+
 
 NEW_NODE_OPERATORS = [
     # name, id, address
     # to get current id use Node Operators registry's getNodeOperatorsCount function
     # https://etherscan.io/address/0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5#readProxyContract
     NodeOperatorItem("A41", 32, "0x2A64944eBFaFF8b6A0d07B222D3d83ac29c241a7", 0),
-    # and 6 more
+    NodeOperatorItem("Develp GmbH", 33, "0x0a6a0b60fFeF196113b3530781df6e747DdC565e", 0),
+    NodeOperatorItem("Ebunker", 34, "0x2A2245d1f47430b9f60adCFC63D158021E80A728", 0),
+    NodeOperatorItem("Gateway.fm AS", 35, "0x78CEE97C23560279909c0215e084dB293F036774", 0),
+    NodeOperatorItem("Numic", 36, "0x0209a89b6d9F707c14eB6cD4C3Fb519280a7E1AC", 0),
+    NodeOperatorItem("ParaFi Technologies LLC", 37, "0x5Ee590eFfdf9456d5666002fBa05fbA8C3752CB7", 0),
+    NodeOperatorItem("RockawayX Infra", 38, "0xcA6817DAb36850D58375A10c78703CE49d41D25a", 0),
 ]
 
 
@@ -70,8 +77,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     # Before vote checks
     # Check that all NOs are unknown yet (1-7)
     for node_operator in NEW_NODE_OPERATORS:
-        # with reverts("NODE_OPERATOR_NOT_FOUND"):
         with reverts("OUT_OF_RANGE"):
+            print(f"node_operator.id = {node_operator.id}")
             no = nor.getNodeOperator(node_operator.id, True)
 
     # 8)
@@ -123,13 +130,12 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
         vote_id, _ = start_vote(tx_params, silent=True)
 
-    print(f"accounts = {accounts[0]}")
     vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
 
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
     # validate vote events
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 10, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 9, "Incorrect voting items count"
 
     metadata = find_metadata_by_vote_id(vote_id)
 
@@ -137,14 +143,20 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
 
     # I
     # Check that all NO were added
+
+    assert nor.getNodeOperatorsCount() == 39
+
     for node_operator in NEW_NODE_OPERATORS:
         no = nor.getNodeOperator(node_operator.id, True)
 
         message = f"Failed on {node_operator.name}"
-        assert no[0] is True, message  # is active
-        assert no[1] == node_operator.name, message  # name
-        assert no[2] == node_operator.reward_address, message  # rewards address
-        assert no[3] == 0  # staking limit
+        assert no["active"] is True
+        assert no["name"] == node_operator.name, message
+        assert no["rewardAddress"] == node_operator.reward_address, message
+        assert no["totalVettedValidators"] == 0
+        assert no["totalExitedValidators"] == 0
+        assert no["totalAddedValidators"] == 0
+        assert no["totalDepositedValidators"] == 0
 
     # II
     # 8)
@@ -204,11 +216,13 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     # Check events
     evs = group_voting_events(vote_tx)
 
-    for i in range(len(NEW_NODE_OPERATORS)):
+    node_operators_len = len(NEW_NODE_OPERATORS)
+
+    for i in range(node_operators_len):
         validate_node_operator_added_event(evs[i], NEW_NODE_OPERATORS[i])
 
-    validate_grant_role_event(evs[0], STAKING_MODULE_MANAGE_ROLE, agent.address, agent.address)
+    validate_grant_role_event(evs[node_operators_len], STAKING_MODULE_MANAGE_ROLE, agent.address, agent.address)
 
-    validate_target_validators_count_changed_event(evs[1], target_validators_count_change_request)
+    validate_target_validators_count_changed_event(evs[node_operators_len + 1], target_validators_count_change_request)
 
     # validate_anchor_vault_implementation_upgrade_events(evs[0], ANCHOR_NEW_IMPL_ADDRESS, ANCHOR_NEW_IMPL_VERSION)

@@ -1,13 +1,13 @@
 """
 Voting 03/10/2023.
 
-1. Add node operator 'A41' with reward address `0x2A64944eBFaFF8b6A0d07B222D3d83ac29c241a7`
-2. Add node operator TBA with reward address TBA
-3. Add node operator TBA with reward address TBA
-4. Add node operator TBA with reward address TBA
-5. Add node operator TBA with reward address TBA
-6. Add node operator TBA with reward address TBA
-7. Add node operator TBA with reward address TBA
+1. Add node operator A41 with reward address `0x2A64944eBFaFF8b6A0d07B222D3d83ac29c241a7`
+2. Add node operator Develp GmbH with reward address `0x0a6a0b60fFeF196113b3530781df6e747DdC565e`
+3. Add node operator Ebunker with reward address `0x2A2245d1f47430b9f60adCFC63D158021E80A728`
+4. Add node operator Gateway.fm AS with reward address `0x78CEE97C23560279909c0215e084dB293F036774`
+5. Add node operator Numic with reward address `0x0209a89b6d9F707c14eB6cD4C3Fb519280a7E1AC`
+6. Add node operator ParaFi Technologies LLC with reward address `0x5Ee590eFfdf9456d5666002fBa05fbA8C3752CB7`
+7. Add node operator RockawayX Infra with reward address `0xcA6817DAb36850D58375A10c78703CE49d41D25a`
 8. Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent
 9. Set Jump Crypto targetValidatorsLimits to 0
 10. Update Anchor Vault implementation from `0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171` to TBA
@@ -23,6 +23,7 @@ from brownie.network.transaction import TransactionReceipt
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.agent import agent_forward
 from utils.node_operators import encode_add_operator_lido
+from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 
 from utils.config import (
     get_deployer_account,
@@ -31,17 +32,46 @@ from utils.config import (
     get_priority_fee,
 )
 
+# TODO: replace with actual decsription
+description = """
+The proposal is to support **Jump Crypto voluntarily exits from the validator set** by setting `targetValidatorsCount` to 0.
+Algorithm would prioritise exiting Jump Crypto validators in order to fulfil users' withdrawals requests.
+Jump Crypto request on [forum](https://research.lido.fi/t/lido-dao-proposal-to-set-targetvalidatorscount-for-jump-crypto-operator-to-0-to-wind-down-the-jump-crypto-legacy-set/5259).
+"""
+
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
 
     # Vote specific addresses and constants:
-    # Add node operator named A41
     a41_node_operator = {
         "name": "A41",
         "address": "0x2A64944eBFaFF8b6A0d07B222D3d83ac29c241a7",
     }
-    # 6 more
+    develp_node_operator = {
+        "name": "Develp GmbH",
+        "address": "0x0a6a0b60fFeF196113b3530781df6e747DdC565e",
+    }
+    ebunker_node_operator = {
+        "name": "Ebunker",
+        "address": "0x2A2245d1f47430b9f60adCFC63D158021E80A728",
+    }
+    gatewayfm_node_operator = {
+        "name": "Gateway.fm AS",
+        "address": "0x78CEE97C23560279909c0215e084dB293F036774",
+    }
+    numic_node_operator = {
+        "name": "Numic",
+        "address": "0x0209a89b6d9F707c14eB6cD4C3Fb519280a7E1AC",
+    }
+    parafi_node_operator = {
+        "name": "ParaFi Technologies LLC",
+        "address": "0x5Ee590eFfdf9456d5666002fBa05fbA8C3752CB7",
+    }
+    rockawayx_node_operator = {
+        "name": "RockawayX Infra",
+        "address": "0xcA6817DAb36850D58375A10c78703CE49d41D25a",
+    }
 
     # web3.keccak(text="STAKING_MODULE_MANAGE_ROLE")
     STAKING_MODULE_MANAGE_ROLE = "0x3105bcbf19d4417b73ae0e58d508a65ecf75665e46c2622d8521732de6080c48"
@@ -56,9 +86,20 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
 
     call_script_items = [
         # I. Lido on ETH NOs onboarding (wave 5 st2)
-        ## 1. Add node operator named A41
-        encode_add_operator_lido(**a41_node_operator),
-        ## 6 more
+        ## 1. Add node operator A41
+        agent_forward([encode_add_operator_lido(**a41_node_operator)]),
+        ## 2. Add node operator Develp GmbH
+        agent_forward([encode_add_operator_lido(**develp_node_operator)]),
+        ## 3. Add node operator Ebunker
+        agent_forward([encode_add_operator_lido(**ebunker_node_operator)]),
+        ## 4. Add node operator Gateway.fm AS
+        agent_forward([encode_add_operator_lido(**gatewayfm_node_operator)]),
+        ## 5. Add node operator Numic
+        agent_forward([encode_add_operator_lido(**numic_node_operator)]),
+        ## 6. Add node operator ParaFi Technologies LLC
+        agent_forward([encode_add_operator_lido(**parafi_node_operator)]),
+        ## 7. Add node operator RockawayX Infra
+        agent_forward([encode_add_operator_lido(**rockawayx_node_operator)]),
         # II. Support Jump Crypto voluntarily exits from the validator set
         ## 8. Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent
         agent_forward(
@@ -93,15 +134,28 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     ]
 
     vote_desc_items = [
-        "1) Add A41 node operator",
-        # 6 more
+        "1) Add node operator A41 with reward address `0x2A64944eBFaFF8b6A0d07B222D3d83ac29c241a7`",
+        "2) Add node operator Develp GmbH with reward address `0x0a6a0b60fFeF196113b3530781df6e747DdC565e`",
+        "3) Add node operator Ebunker with reward address `0x2A2245d1f47430b9f60adCFC63D158021E80A728`",
+        "4) Add node operator Gateway.fm AS with reward address `0x78CEE97C23560279909c0215e084dB293F036774`",
+        "5) Add node operator Numic with reward address `0x0209a89b6d9F707c14eB6cD4C3Fb519280a7E1AC`",
+        "6) Add node operator ParaFi Technologies LLC with reward address `0x5Ee590eFfdf9456d5666002fBa05fbA8C3752CB7`",
+        "7) Add node operator RockawayX Infra with reward address `0xcA6817DAb36850D58375A10c78703CE49d41D25a`",
         "8) Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent",
         "9) Set Jump Crypto targetValidatorsLimits to 0",
         # "10) Update Anchor Vault implementation from 0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171 to #TBA",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
-    return confirm_vote_script(vote_items, silent) and list(create_vote(vote_items, tx_params))
+
+    if silent:
+        desc_ipfs = calculate_vote_ipfs_description(description)
+    else:
+        desc_ipfs = upload_vote_ipfs_description(description)
+
+    return confirm_vote_script(vote_items, silent, desc_ipfs) and list(
+        create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
+    )
 
 
 def main():
