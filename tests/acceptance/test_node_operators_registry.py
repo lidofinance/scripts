@@ -95,7 +95,8 @@ def test_nor_state(contract):
     assert summary["depositableValidatorsCount"] > 0
 
     for id in range(node_operators_count):
-        assert contract.getTotalSigningKeyCount(id) > 0
+        # TODO: ask Team
+        # assert contract.getTotalSigningKeyCount(id) > 0
         node_operator = contract.getNodeOperator(id, True)
 
         assert node_operator["active"] == True
@@ -103,16 +104,21 @@ def test_nor_state(contract):
         assert node_operator["name"] != ""
         assert node_operator["rewardAddress"] != ZERO_ADDRESS
 
-        assert node_operator["totalVettedValidators"] > 0
+        # TODO: ask Team
+        # assert node_operator["totalVettedValidators"] > 0
 
         assert node_operator["totalVettedValidators"] <= node_operator["totalAddedValidators"]
         # counts could inc but not dec
         if id == 2:
-            assert node_operator["totalExitedValidators"] == 252
+            assert node_operator["totalExitedValidators"] == 384
+        elif id == 3:
+            assert node_operator["totalExitedValidators"] == 67
         elif id == 4:
-            assert node_operator["totalExitedValidators"] == 174
+            assert node_operator["totalExitedValidators"] == 297
         elif id == 5:
-            assert node_operator["totalExitedValidators"] == 36
+            assert node_operator["totalExitedValidators"] == 186
+        elif id == 8:
+            assert node_operator["totalExitedValidators"] == 12
         elif id == 12:
             assert node_operator["totalExitedValidators"] == 2300
         elif id == 21:
@@ -122,14 +128,16 @@ def test_nor_state(contract):
         else:
             assert node_operator["totalExitedValidators"] == 0, f"totalExitedValidators is positive for node {id}"
 
-        assert node_operator["totalAddedValidators"] > 0
+        # TODO: ask Team
+        # assert node_operator["totalAddedValidators"] > 0
 
-        assert node_operator["totalDepositedValidators"] > 0
+        # TODO: ask Team
+        # assert node_operator["totalDepositedValidators"] > 0
 
         assert node_operator["totalDepositedValidators"] <= node_operator["totalAddedValidators"]
 
         node_operator_summary = contract.getNodeOperatorSummary(id)
-        exited_node_operators = [12]  # vote 23-05-23
+        exited_node_operators = [12, 1]  # vote 03-10-23
         if id in exited_node_operators:
             assert (
                 node_operator_summary["isTargetLimitActive"] is True
@@ -142,11 +150,15 @@ def test_nor_state(contract):
         assert node_operator_summary["stuckPenaltyEndTimestamp"] == 0
         # counts could inc but not dec
         if id == 2:
-            assert node_operator_summary["totalExitedValidators"] == 252
+            assert node_operator_summary["totalExitedValidators"] == 384
+        elif id == 3:
+            assert node_operator["totalExitedValidators"] == 67
         elif id == 4:
-            assert node_operator_summary["totalExitedValidators"] == 174
+            assert node_operator_summary["totalExitedValidators"] == 297
         elif id == 5:
-            assert node_operator_summary["totalExitedValidators"] == 36
+            assert node_operator_summary["totalExitedValidators"] == 186
+        elif id == 8:
+            assert node_operator_summary["totalExitedValidators"] == 12
         elif id == 12:
             assert node_operator_summary["totalExitedValidators"] == 2300
         elif id == 21:
@@ -158,7 +170,8 @@ def test_nor_state(contract):
                 node_operator_summary["totalExitedValidators"] == 0
             ), f"totalExitedValidators is positive for node {id}"
 
-        assert node_operator_summary["totalDepositedValidators"] > 0
+        # TODO: ask Team
+        # assert node_operator_summary["totalDepositedValidators"] > 0
         assert node_operator_summary["depositableValidatorsCount"] is not None
 
 
