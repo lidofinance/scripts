@@ -139,7 +139,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
 
     metadata = find_metadata_by_vote_id(vote_id)
 
-    assert get_lido_vote_cid_from_str(metadata) == "bafkreiapvuobyrudww3oqhfopbs2fdmtebi6jnvpeb3plxkajnhafw25im"
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreiafqk57mx7mwieujnkvwukkelfdxijy2tvzr3weaooxgokqljdfv4"
 
     # I
     # Check that all NO were added

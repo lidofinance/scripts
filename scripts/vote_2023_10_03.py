@@ -34,9 +34,13 @@ from utils.config import (
 
 # TODO: replace with actual decsription
 description = """
-The proposal is to support **Jump Crypto voluntarily exits from the validator set** by setting `targetValidatorsCount` to 0.
-Algorithm would prioritise exiting Jump Crypto validators in order to fulfil users' withdrawals requests.
-Jump Crypto request on [forum](https://research.lido.fi/t/lido-dao-proposal-to-set-targetvalidatorscount-for-jump-crypto-operator-to-0-to-wind-down-the-jump-crypto-legacy-set/5259).
+### Omnibus on-chain vote contains 3 motions:
+1. **Onboard seven new Node Operators to the Lido on Ethereum Node Operator Set**. NOs addresses and verifications can be found on the [Research forum](https://research.lido.fi/t/announcement-onboarding-for-ethereum-wave-5/4809/17). The snapshot link is [here](https://snapshot.org/#/lido-snapshot.eth/proposal/0x780d8397c4325757f3506c35274da47c87727fb15dd592e8c4455de92bf2de27). Items 1-7.
+
+2. Support **Jump Crypto voluntarily exit from the Node Operator Set** by setting `targetValidatorsCount` to 0. The algorithm would prioritize exiting Jump Crypto validators to fulfil users' withdrawal requests. Jump Crypto request is [on the forum](https://research.lido.fi/t/lido-dao-proposal-to-set-targetvalidatorscount-for-jump-crypto-operator-to-0-to-wind-down-the-jump-crypto-legacy-set/5259). Items 8,9.
+
+3. **Anchor Sunset**.
+[Snapshot](https://snapshot.org/#/lido-snapshot.eth/proposal/0xe964fb2b0ad887673a0748b025c68a957a4b05b604d306bdc66125e7b758e524) to discontinue the stETH <> bETH Anchor integration passed on Jun 22, 2022. And tech details of the upgrade were provided on the [Research forum](https://research.lido.fi/t/anchor-vault-upgrade-on-chain-voting-announcement/5538) on Sep 23, 2023. The code was [reviewed by statemind.io](https://research.lido.fi/t/anchor-vault-upgrade-on-chain-voting-announcement/5538/2). Item 10.
 """
 
 
