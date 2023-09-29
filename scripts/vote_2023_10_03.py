@@ -32,7 +32,6 @@ from utils.config import (
     get_priority_fee,
 )
 
-# TODO: replace with actual decsription
 description = """
 ### Omnibus on-chain vote contains 3 motions:
 1. **Onboard seven new Node Operators to the Lido on Ethereum Node Operator Set**. NOs addresses and verifications can be found on the [Research forum](https://research.lido.fi/t/announcement-onboarding-for-ethereum-wave-5/4809/17). The snapshot link is [here](https://snapshot.org/#/lido-snapshot.eth/proposal/0x780d8397c4325757f3506c35274da47c87727fb15dd592e8c4455de92bf2de27). Items 1-7.
