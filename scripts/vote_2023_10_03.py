@@ -11,8 +11,6 @@ Voting 03/10/2023.
 8. Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent
 9. Set Jump Crypto targetValidatorsLimits to 0
 10. Update Anchor Vault implementation from `0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171` to TBA
-
-Vote passed & executed on #, block #
 """
 
 import time
