@@ -12,19 +12,13 @@ def extra_data_service():
 
 
 def get_exited_count(node_operator_id):
-    counts = {2: 384, 3: 67, 4: 297, 5: 186, 8: 12}
-    if node_operator_id in counts.keys():
-        return counts[node_operator_id]
-    else:
-        return 0
+    no = contracts.node_operators_registry.getNodeOperator(node_operator_id, True)
+    return no["totalExitedValidators"]
 
 
 def test_accounting_oracle_too_node_ops_per_extra_data_item(extra_data_service):
     nos_per_item_count = 10
     item_count = MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT
-    for i in range(nos_per_item_count):
-        no = contracts.node_operators_registry.getNodeOperator(i, True)
-        print(f'{i}-{no["totalExitedValidators"]}')
 
     extra_data = extra_data_service.collect(
         {(1, i): i for i in range(nos_per_item_count)},

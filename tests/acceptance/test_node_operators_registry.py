@@ -95,8 +95,6 @@ def test_nor_state(contract):
     assert summary["depositableValidatorsCount"] > 0
 
     for id in range(node_operators_count):
-        # TODO: ask Team
-        # assert contract.getTotalSigningKeyCount(id) > 0
         node_operator = contract.getNodeOperator(id, True)
 
         assert node_operator["active"] == True
@@ -104,37 +102,12 @@ def test_nor_state(contract):
         assert node_operator["name"] != ""
         assert node_operator["rewardAddress"] != ZERO_ADDRESS
 
-        # TODO: ask Team
-        # assert node_operator["totalVettedValidators"] > 0
-
+        # Invariant check
+        # https://github.com/lidofinance/lido-dao/blob/cadffa46a2b8ed6cfa1127fca2468bae1a82d6bf/contracts/0.4.24/nos/NodeOperatorsRegistry.sol#L168
+        assert node_operator["totalExitedValidators"] >= 0
+        assert node_operator["totalExitedValidators"] <= node_operator["totalDepositedValidators"]
+        assert node_operator["totalDepositedValidators"] <= node_operator["totalVettedValidators"]
         assert node_operator["totalVettedValidators"] <= node_operator["totalAddedValidators"]
-        # counts could inc but not dec
-        if id == 2:
-            assert node_operator["totalExitedValidators"] == 384
-        elif id == 3:
-            assert node_operator["totalExitedValidators"] == 67
-        elif id == 4:
-            assert node_operator["totalExitedValidators"] == 297
-        elif id == 5:
-            assert node_operator["totalExitedValidators"] == 186
-        elif id == 8:
-            assert node_operator["totalExitedValidators"] == 12
-        elif id == 12:
-            assert node_operator["totalExitedValidators"] == 2300
-        elif id == 21:
-            assert node_operator["totalExitedValidators"] == 125
-        elif id == 22:
-            assert node_operator["totalExitedValidators"] == 11
-        else:
-            assert node_operator["totalExitedValidators"] == 0, f"totalExitedValidators is positive for node {id}"
-
-        # TODO: ask Team
-        # assert node_operator["totalAddedValidators"] > 0
-
-        # TODO: ask Team
-        # assert node_operator["totalDepositedValidators"] > 0
-
-        assert node_operator["totalDepositedValidators"] <= node_operator["totalAddedValidators"]
 
         node_operator_summary = contract.getNodeOperatorSummary(id)
         exited_node_operators = [12, 1]  # vote 03-10-23
@@ -148,30 +121,12 @@ def test_nor_state(contract):
         assert node_operator_summary["stuckValidatorsCount"] == 0
         assert node_operator_summary["refundedValidatorsCount"] == 0
         assert node_operator_summary["stuckPenaltyEndTimestamp"] == 0
-        # counts could inc but not dec
-        if id == 2:
-            assert node_operator_summary["totalExitedValidators"] == 384
-        elif id == 3:
-            assert node_operator["totalExitedValidators"] == 67
-        elif id == 4:
-            assert node_operator_summary["totalExitedValidators"] == 297
-        elif id == 5:
-            assert node_operator_summary["totalExitedValidators"] == 186
-        elif id == 8:
-            assert node_operator_summary["totalExitedValidators"] == 12
-        elif id == 12:
-            assert node_operator_summary["totalExitedValidators"] == 2300
-        elif id == 21:
-            assert node_operator_summary["totalExitedValidators"] == 125
-        elif id == 22:
-            assert node_operator_summary["totalExitedValidators"] == 11
-        else:
-            assert (
-                node_operator_summary["totalExitedValidators"] == 0
-            ), f"totalExitedValidators is positive for node {id}"
 
-        # TODO: ask Team
-        # assert node_operator_summary["totalDepositedValidators"] > 0
+        # Invariant check
+        # https://github.com/lidofinance/lido-dao/blob/cadffa46a2b8ed6cfa1127fca2468bae1a82d6bf/contracts/0.4.24/nos/NodeOperatorsRegistry.sol#L168
+        assert node_operator_summary["totalExitedValidators"] >= 0
+        assert node_operator_summary["totalExitedValidators"] <= node_operator_summary["totalDepositedValidators"]
+
         assert node_operator_summary["depositableValidatorsCount"] is not None
 
 
