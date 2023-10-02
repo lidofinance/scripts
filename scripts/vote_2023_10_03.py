@@ -10,7 +10,7 @@ Voting 03/10/2023.
 7. Add node operator RockawayX Infra with reward address `0xcA6817DAb36850D58375A10c78703CE49d41D25a`
 8. Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent
 9. Set Jump Crypto targetValidatorsLimits to 0
-10. Update Anchor Vault implementation from `0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171` to TBA
+10. Update Anchor Vault implementation from `0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171` to `0x9530708033E7262bD7c005d0e0D47D8A9184277d`
 """
 
 import time
@@ -80,7 +80,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     # contracts.node_operators_registry.getNodeOperator(1, True)
     JUMP_CRYPTO_ID = 1
 
-    ANCHOR_NEW_IMPL_ADDRESS = "#TBA"
+    # tx: https://etherscan.io/tx/0x99caa0eb5c081814135e9d375e7858682516195da084d1ed225b0ee1a4c5cfb1
+    ANCHOR_NEW_IMPL_ADDRESS = "0x9530708033E7262bD7c005d0e0D47D8A9184277d"
 
     # anchor vault finalize
     setup_calldata = contracts.anchor_vault.finalize_upgrade_v4.encode_input()
@@ -124,14 +125,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
         ),
         # III. Anchor sunset
         ## 10. Update Anchor Vault implementation
-        # agent_forward(
-        #     [
-        #         (
-        #             contracts.anchor_vault_proxy.address,
-        #             contracts.anchor_vault_proxy.proxy_upgradeTo.encode_input(ANCHOR_NEW_IMPL_ADDRESS, setup_calldata),
-        #         )
-        #     ]
-        # ),
+        agent_forward(
+            [
+                (
+                    contracts.anchor_vault_proxy.address,
+                    contracts.anchor_vault_proxy.proxy_upgradeTo.encode_input(ANCHOR_NEW_IMPL_ADDRESS, setup_calldata),
+                )
+            ]
+        ),
     ]
 
     vote_desc_items = [
@@ -144,7 +145,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
         "7) Add node operator RockawayX Infra with reward address `0xcA6817DAb36850D58375A10c78703CE49d41D25a`",
         "8) Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent",
         "9) Set Jump Crypto targetValidatorsLimits to 0",
-        # "10) Update Anchor Vault implementation from 0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171 to #TBA",
+        "10) Update Anchor Vault implementation from `0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171` to `0x9530708033E7262bD7c005d0e0D47D8A9184277d`",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)

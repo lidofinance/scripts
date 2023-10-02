@@ -43,7 +43,8 @@ NEW_NODE_OPERATORS = [
 STAKING_MODULE_MANAGE_ROLE = "0x3105bcbf19d4417b73ae0e58d508a65ecf75665e46c2622d8521732de6080c48"
 
 ANCHOR_OLD_IMPL_ADDRESS = "0x07BE9BB2B1789b8F5B2f9345F18378A8B036A171"
-ANCHOR_NEW_IMPL_ADDRESS = "#TBA"
+# tx: https://etherscan.io/tx/0x99caa0eb5c081814135e9d375e7858682516195da084d1ed225b0ee1a4c5cfb1
+ANCHOR_NEW_IMPL_ADDRESS = "0x9530708033E7262bD7c005d0e0D47D8A9184277d"
 OLD_EMERGENCY_ADMIN = "0x3cd9F71F80AB08ea5a7Dca348B5e94BC595f26A0"
 NEW_EMERGENCY_ADMIN = ZERO_ADDRESS
 TERRA_ADDRESS = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd"
@@ -64,7 +65,7 @@ bETH burned: 439111118580000000000
 REFUND_BETH_AMOUNT = 4449999990000000000 + 439111118580000000000
 
 
-def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
+def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, interface, stranger):
     # params
     agent = contracts.agent
     nor = contracts.node_operators_registry
@@ -96,32 +97,32 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     assert NO_summary_before[7] == 0
 
     # 10)
-    # max_uint256 = 2**256 - 1
+    max_uint256 = 2**256 - 1
 
-    # proxy = contracts.anchor_vault_proxy
-    # vault = contracts.anchor_vault
+    proxy = contracts.anchor_vault_proxy
+    vault = contracts.anchor_vault
 
-    # # check that implementation is petrified
-    # anchor_impl = interface.AnchorVault(ANCHOR_NEW_IMPL_ADDRESS)
-    # assert anchor_impl.version() == max_uint256
+    # check that implementation is petrified
+    anchor_impl = interface.AnchorVault(ANCHOR_NEW_IMPL_ADDRESS)
+    assert anchor_impl.version() == max_uint256
 
-    # address_implementation_before = proxy.implementation()
-    # assert address_implementation_before == ANCHOR_OLD_IMPL_ADDRESS, "Old address is incorrect"
+    address_implementation_before = proxy.implementation()
+    assert address_implementation_before == ANCHOR_OLD_IMPL_ADDRESS, "Old address is incorrect"
 
-    # assert vault.version() == 3
-    # assert vault.emergency_admin() == OLD_EMERGENCY_ADMIN
+    assert vault.version() == 3
+    assert vault.emergency_admin() == OLD_EMERGENCY_ADMIN
 
-    # admin_before = vault.admin()
-    # steth_token_address_before = vault.steth_token()
-    # beth_token_address_before = vault.beth_token()
-    # operations_allowed_before = vault.operations_allowed()
-    # total_beth_refunded_before = vault.total_beth_refunded()
+    admin_before = vault.admin()
+    steth_token_address_before = vault.steth_token()
+    beth_token_address_before = vault.beth_token()
+    operations_allowed_before = vault.operations_allowed()
+    total_beth_refunded_before = vault.total_beth_refunded()
 
-    # stETH_token = interface.ERC20(steth_token_address_before)
-    # bETH_token = interface.ERC20(beth_token_address_before)
+    stETH_token = interface.ERC20(steth_token_address_before)
+    bETH_token = interface.ERC20(beth_token_address_before)
 
-    # steth_vault_balance_before = stETH_token.balanceOf(vault.address)
-    # beth_total_supply_before = bETH_token.totalSupply()
+    steth_vault_balance_before = stETH_token.balanceOf(vault.address)
+    beth_total_supply_before = bETH_token.totalSupply()
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -135,7 +136,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
     # validate vote events
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 9, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 10, "Incorrect voting items count"
 
     metadata = find_metadata_by_vote_id(vote_id)
 
@@ -174,39 +175,39 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     assert NO_summary_after[7] == 0
 
     # III
-    # address_implementation_after = proxy.implementation()
-    # assert address_implementation_before != address_implementation_after, "Implementation is not changed"
-    # assert address_implementation_after == ANCHOR_NEW_IMPL_ADDRESS, "New address is incorrect"
+    address_implementation_after = proxy.implementation()
+    assert address_implementation_before != address_implementation_after, "Implementation is not changed"
+    assert address_implementation_after == ANCHOR_NEW_IMPL_ADDRESS, "New address is incorrect"
 
-    # assert vault.version() == ANCHOR_NEW_IMPL_VERSION
-    # assert vault.emergency_admin() == NEW_EMERGENCY_ADMIN
+    assert vault.version() == ANCHOR_NEW_IMPL_VERSION
+    assert vault.emergency_admin() == NEW_EMERGENCY_ADMIN
 
-    # admin_after = vault.admin()
-    # assert admin_before == admin_after == contracts.agent.address
+    admin_after = vault.admin()
+    assert admin_before == admin_after == contracts.agent.address
 
-    # beth_token_address_after = vault.beth_token()
-    # assert beth_token_address_before == beth_token_address_after
+    beth_token_address_after = vault.beth_token()
+    assert beth_token_address_before == beth_token_address_after
 
-    # steth_token_address_after = vault.steth_token()
-    # assert steth_token_address_before == steth_token_address_after
+    steth_token_address_after = vault.steth_token()
+    assert steth_token_address_before == steth_token_address_after
 
-    # beth_total_supply_after = bETH_token.totalSupply()
-    # assert beth_total_supply_before == beth_total_supply_after
+    beth_total_supply_after = bETH_token.totalSupply()
+    assert beth_total_supply_before == beth_total_supply_after
 
-    # operations_allowed_after = vault.operations_allowed()
-    # assert operations_allowed_before == operations_allowed_after == True
+    operations_allowed_after = vault.operations_allowed()
+    assert operations_allowed_before == operations_allowed_after == True
 
-    # total_beth_refunded_after = vault.total_beth_refunded()
-    # assert total_beth_refunded_before == total_beth_refunded_after == REFUND_BETH_AMOUNT
+    total_beth_refunded_after = vault.total_beth_refunded()
+    assert total_beth_refunded_before == total_beth_refunded_after == REFUND_BETH_AMOUNT
 
-    # steth_vault_balance_after = stETH_token.balanceOf(vault.address)
-    # assert steth_vault_balance_before == steth_vault_balance_after
+    steth_vault_balance_after = stETH_token.balanceOf(vault.address)
+    assert steth_vault_balance_before == steth_vault_balance_after
 
-    # with reverts("Collect rewards stopped"):
-    #     vault.collect_rewards({"from": stranger})
+    with reverts("Collect rewards stopped"):
+        vault.collect_rewards({"from": stranger})
 
-    # with reverts("Minting is discontinued"):
-    #     vault.submit(10**18, TERRA_ADDRESS, "0x8bada2e", vault.version(), {"from": stranger})
+    with reverts("Minting is discontinued"):
+        vault.submit(10**18, TERRA_ADDRESS, "0x8bada2e", vault.version(), {"from": stranger})
 
     display_voting_events(vote_tx)
 
