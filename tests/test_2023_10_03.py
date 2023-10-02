@@ -79,7 +79,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, inte
     # Check that all NOs are unknown yet (1-7)
     for node_operator in NEW_NODE_OPERATORS:
         with reverts("OUT_OF_RANGE"):
-            print(f"node_operator.id = {node_operator.id}")
             no = nor.getNodeOperator(node_operator.id, True)
 
     # 8)

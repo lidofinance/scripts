@@ -129,6 +129,15 @@ def test_nor_state(contract):
 
         assert node_operator_summary["depositableValidatorsCount"] is not None
 
+        assert node_operator["totalExitedValidators"] == node_operator_summary["totalExitedValidators"]
+        assert node_operator["totalDepositedValidators"] == node_operator_summary["totalDepositedValidators"]
+
+        no_depositable_validators_count = (
+            node_operator["totalVettedValidators"] - node_operator["totalDepositedValidators"]
+        )
+
+        assert node_operator_summary["depositableValidatorsCount"] == no_depositable_validators_count
+
 
 def _str_to_bytes32(s: str) -> str:
     return "0x{:0<64}".format(s.encode("utf-8").hex())
