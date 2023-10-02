@@ -22,7 +22,7 @@ from utils.test.event_validators.node_operators_registry import (
 )
 from utils.test.event_validators.permission import validate_grant_role_event
 
-# from utils.test.event_validators.anchor import validate_anchor_vault_implementation_upgrade_events
+from utils.test.event_validators.anchor import validate_anchor_vault_implementation_upgrade_events
 
 
 NEW_NODE_OPERATORS = [
@@ -226,4 +226,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, inte
 
     validate_target_validators_count_changed_event(evs[node_operators_len + 1], target_validators_count_change_request)
 
-    # validate_anchor_vault_implementation_upgrade_events(evs[0], ANCHOR_NEW_IMPL_ADDRESS, ANCHOR_NEW_IMPL_VERSION)
+    validate_anchor_vault_implementation_upgrade_events(
+        evs[node_operators_len + 2], ANCHOR_NEW_IMPL_ADDRESS, ANCHOR_NEW_IMPL_VERSION
+    )
