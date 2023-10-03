@@ -110,7 +110,7 @@ def test_nor_state(contract):
         assert node_operator["totalVettedValidators"] <= node_operator["totalAddedValidators"]
 
         node_operator_summary = contract.getNodeOperatorSummary(id)
-        exited_node_operators = [12, 1]  # vote 03-10-23
+        exited_node_operators = [12, 1]  # NO id 12 was added on vote 23-05-23, NO id 1 was added on vote 03-10-23
         if id in exited_node_operators:
             assert (
                 node_operator_summary["isTargetLimitActive"] is True
