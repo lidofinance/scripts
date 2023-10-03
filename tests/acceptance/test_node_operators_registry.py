@@ -118,7 +118,8 @@ def test_nor_state(contract):
         else:
             assert node_operator_summary["isTargetLimitActive"] is False, f"isTargetLimitActive is active for node {id}"
         assert node_operator_summary["targetValidatorsCount"] == 0
-        assert node_operator_summary["stuckValidatorsCount"] == 0
+        # Can be more than 0 in regular protocol operations
+        # assert node_operator_summary["stuckValidatorsCount"] == 0
         assert node_operator_summary["refundedValidatorsCount"] == 0
         assert node_operator_summary["stuckPenaltyEndTimestamp"] == 0
 
