@@ -57,7 +57,6 @@ def increase_limit(nor, first_id, second_id, base_id, keys_count, impersonated_v
 
 
 def deposit_and_check_keys(nor, first_no_id, second_no_id, base_no_id, keys_count, impersonated_voting):
-
     for op_index in (first_no_id, second_no_id, base_no_id):
         no = nor.getNodeOperator(op_index, True)
         nor.setNodeOperatorStakingLimit(op_index, no["totalDepositedValidators"] + 10, {"from": impersonated_voting})
@@ -160,17 +159,17 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
     assert almostEqWithDiff(
         node_operator_first_balance_shares_after - node_operator_first_balance_shares_before,
         node_operator_first_rewards_after_first_report,
-        1
+        1,
     )
     assert almostEqWithDiff(
         node_operator_second_balance_shares_after - node_operator_second_balance_shares_before,
         node_operator_second_rewards_after_first_report,
-        1
+        1,
     )
     assert almostEqWithDiff(
         node_operator_base_balance_shares_after - node_operator_base_balance_shares_before,
         node_operator_base_rewards_after_first_report,
-        1
+        1,
     )
 
     # Case 1
@@ -255,7 +254,6 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
     # TODO: Fix below check when nor contains other penalized node operators
     # assert almostEqWithDiff(extra_report_tx.events["StETHBurnRequested"]["amountOfShares"], penalty_shares, 2)
     assert extra_report_tx.events["StETHBurnRequested"]["amountOfShares"] >= penalty_shares
-
 
     # NO stats
     assert node_operator_first["stuckValidatorsCount"] == 2
@@ -500,8 +498,8 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
     amount_penalty_second_no = node_operator_second_rewards_after__fourth_report // 2
     # diff by 2 share because of rounding
     # TODO: Fix below check when nor contains other penalized node operators
-    # assert almostEqWithDiff(extra_report_tx.events["StETHBurnRequested"]["amountOfShares"], penalty_shares, 2)
-    assert extra_report_tx.events["StETHBurnRequested"]["amountOfShares"] >= penalty_shares
+    # assert almostEqWithDiff(extra_report_tx.events["StETHBurnRequested"]["amountOfShares"], amount_penalty_second_no, 1)
+    assert extra_report_tx.events["StETHBurnRequested"]["amountOfShares"] >= amount_penalty_second_no
 
     assert node_operator_base["stuckPenaltyEndTimestamp"] == 0
 
@@ -597,8 +595,8 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
     amount_penalty_second_no = node_operator_second_rewards_after_fifth_report // 2
     # diff by 2 share because of rounding
     # TODO: Fix below check when nor contains other penalized node operators
-    # assert almostEqWithDiff(extra_report_tx.events["StETHBurnRequested"]["amountOfShares"], penalty_shares, 2)
-    assert extra_report_tx.events["StETHBurnRequested"]["amountOfShares"] >= penalty_shares
+    # assert almostEqWithDiff(extra_report_tx.events["StETHBurnRequested"]["amountOfShares"], amount_penalty_second_no, 1)
+    assert extra_report_tx.events["StETHBurnRequested"]["amountOfShares"] >= amount_penalty_second_no
 
     assert node_operator_base["stuckPenaltyEndTimestamp"] == 0
 
