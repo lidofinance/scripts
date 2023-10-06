@@ -121,7 +121,8 @@ def test_nor_state(contract):
         # Can be more than 0 in regular protocol operations
         # assert node_operator_summary["stuckValidatorsCount"] == 0
         assert node_operator_summary["refundedValidatorsCount"] == 0
-        assert node_operator_summary["stuckPenaltyEndTimestamp"] == 0
+        # Can be more than 0 in regular protocol operations
+        # assert node_operator_summary["stuckPenaltyEndTimestamp"] == 0
 
         # Invariant check
         # https://github.com/lidofinance/lido-dao/blob/cadffa46a2b8ed6cfa1127fca2468bae1a82d6bf/contracts/0.4.24/nos/NodeOperatorsRegistry.sol#L168
