@@ -3,7 +3,7 @@ Tests for voting 03/10/2023
 
 """
 from brownie import ZERO_ADDRESS, reverts
-from scripts.vote_2023_10_03 import start_vote
+from archive.scripts.vote_2023_10_03 import start_vote
 
 from utils.test.tx_tracing_helpers import (
     count_vote_items_by_events,
