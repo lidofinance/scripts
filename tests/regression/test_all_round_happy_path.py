@@ -109,8 +109,14 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     treasury = contracts.lido_locator.treasury()
     nor = contracts.node_operators_registry.address
     nor_operators_count = contracts.node_operators_registry.getNodeOperatorsCount()
+
+    penalized_node_operator_ids = []
+
     for i in range(nor_operators_count):
         no = contracts.node_operators_registry.getNodeOperator(i, True)
+        is_node_operator_penalized = contracts.node_operators_registry.isOperatorPenalized(i)
+        if is_node_operator_penalized:
+            penalized_node_operator_ids.append(i)
         if not no["totalDepositedValidators"] or no["totalDepositedValidators"] == no["totalExitedValidators"]:
             nor_operators_count = nor_operators_count - 1
     treasury_balance_before_rebase = contracts.lido.sharesOf(treasury)
@@ -123,8 +129,18 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     token_rebased_event = report_tx.events["TokenRebased"]
     transfer_event = report_tx.events["Transfer"]
 
+    expected_transfers_count = (
+        nor_operators_count if len(penalized_node_operator_ids) == 0 else nor_operators_count + 1
+    )
+    if len(penalized_node_operator_ids) > 0:
+        burner_transfers = 0
+        for e in extra_tx.events["Transfer"]:
+            if e["to"] == contracts.burner:
+                burner_transfers += 1
+        assert burner_transfers == 1
+
     assert (
-        extra_tx.events.count("Transfer") == nor_operators_count
+        extra_tx.events.count("Transfer") == expected_transfers_count
     ), "extra_tx.events should have Transfer to all active operators, check activity condition above"
     assert report_tx.events.count("TokenRebased") == 1
     assert report_tx.events.count("WithdrawalsFinalized") == 1

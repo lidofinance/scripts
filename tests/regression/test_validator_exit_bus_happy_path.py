@@ -134,8 +134,8 @@ def test_send_multiple_validators_to_exit(helpers, web3):
     """
     The same as test above but with multiple validators on different node operators
     """
-    first_no_global_index = (first_module_id, first_no_id) = (1, 7)
-    second_no_global_index = (second_module_id, second_no_id) = (1, 8)
+    first_no_global_index = (first_module_id, first_no_id) = (1, 9)
+    second_no_global_index = (second_module_id, second_no_id) = (1, 10)
     first_validator_id = 2
     second_validator_id = 3
     first_validator_key = contracts.node_operators_registry.getSigningKey(first_no_id, first_validator_id)[0]
