@@ -402,11 +402,25 @@ class TestSubmitReportExtraDataList:
         ):
             self.report(extra_data, items_count=1)
 
-    def test_invalid_extra_data_sort_order(self):
+    def test_invalid_extra_data_sort_order(self, node_operators_registry):
+        node_operator_id = 1
+        summary = node_operators_registry.getNodeOperatorSummary(node_operator_id)
         extra_data = b"".join(
             (
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1], [1]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1], [1]),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS,
+                    1,
+                    [node_operator_id],
+                    [summary["totalExitedValidators"]],
+                ),
+                build_extra_data_item(
+                    1,
+                    ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS,
+                    1,
+                    [node_operator_id],
+                    [summary["totalExitedValidators"]],
+                ),
             )
         )
 
