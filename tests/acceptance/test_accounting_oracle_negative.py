@@ -263,10 +263,24 @@ class TestSubmitReportExtraDataList:
             self.report(extra_data, items_count=1)
 
     def test_invalid_extra_data_sort_order(self):
+        node_operator_id = 1
+        summary = contracts.node_operators_registry.getNodeOperatorSummary(node_operator_id)
         extra_data = b"".join(
             (
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1], [1]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1], [1]),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS,
+                    1,
+                    [node_operator_id],
+                    [summary["stuckValidatorsCount"]],
+                ),
+                build_extra_data_item(
+                    1,
+                    ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS,
+                    1,
+                    [node_operator_id],
+                    [summary["stuckValidatorsCount"]],
+                ),
             )
         )
 
@@ -280,8 +294,20 @@ class TestSubmitReportExtraDataList:
 
         extra_data = b"".join(
             (
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [1], [1]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [1], [1]),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    1,
+                    [node_operator_id],
+                    [summary["totalExitedValidators"]],
+                ),
+                build_extra_data_item(
+                    1,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    1,
+                    [node_operator_id],
+                    [summary["totalExitedValidators"]],
+                ),
             )
         )
 
@@ -294,9 +320,11 @@ class TestSubmitReportExtraDataList:
             self.report(extra_data)
 
     def test_unexpected_extra_data_item(self, extra_data_service: ExtraDataService) -> None:
+        node_operator_id = 1
+        summary = contracts.node_operators_registry.getNodeOperatorSummary(node_operator_id)
         extra_data = extra_data_service.collect(
-            {(1, 1): 1},
-            {(1, 1): 1},
+            {(1, node_operator_id): summary["stuckValidatorsCount"]},
+            {(1, node_operator_id): summary["totalExitedValidators"]},
             MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
             1,
         )
@@ -321,9 +349,11 @@ class TestSubmitReportExtraDataList:
         consensus_member: Account,
         extra_data_service: ExtraDataService,
     ):
+        node_operator_id = 1
+        summary = contracts.node_operators_registry.getNodeOperatorSummary(node_operator_id)
         extra_data = extra_data_service.collect(
-            {(1, 1): 1},
-            {(1, 1): 1},
+            {(1, node_operator_id): summary["stuckValidatorsCount"]},
+            {(1, node_operator_id): summary["totalExitedValidators"]},
             MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
             1,
         )
