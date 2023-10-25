@@ -59,12 +59,12 @@ dai = {
 }
 
 usdc = {
-    "limit": 2_000_000 * (10**18),
+    "limit": 2_000_000 * (10**6),
     "address": USDC_TOKEN,
 }
 
 usdt = {
-    "limit": 2_000_000 * (10**18),
+    "limit": 2_000_000 * (10**6),
     "address": USDT_TOKEN,
 }
 
