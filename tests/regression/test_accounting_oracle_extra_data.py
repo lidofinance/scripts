@@ -21,8 +21,8 @@ def test_accounting_oracle_too_node_ops_per_extra_data_item(extra_data_service):
     item_count = MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT
 
     extra_data = extra_data_service.collect(
-        {(1, i): i for i in range(nos_per_item_count)},
-        {(1, i): get_exited_count(i) for i in range(nos_per_item_count)},
+        {(1, i): i for i in range(20, 20 + nos_per_item_count)},
+        {(1, i): get_exited_count(i) for i in range(20, 20 + nos_per_item_count)},
         item_count,
         nos_per_item_count,
     )
