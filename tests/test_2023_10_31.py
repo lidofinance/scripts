@@ -232,6 +232,15 @@ def test_vote(
     assert atc_period_start_timestamp == 1696118400
     assert atc_period_end_timestamp == 1704067200
 
+    # Check node operator name before
+    NO_registry = interface.NodeOperatorsRegistry(contracts.node_operators_registry)
+    prysmatic_labs_node_id = 27
+    prysmatic_labs_node_old_name = "Prysmatic Labs"
+    prysmatic_labs_node_new_name = "Prysm Team at Offchain Labs"
+    prysmatic_labs_node_data_before_voting = NO_registry.getNodeOperator(prysmatic_labs_node_id, True)
+
+    assert prysmatic_labs_node_data_before_voting["name"] == prysmatic_labs_node_old_name, "Incorrect NO#27 name before"
+
     # START VOTE
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
@@ -283,7 +292,11 @@ def test_vote(
     assert atc_period_start_timestamp == 1696118400
     assert atc_period_end_timestamp == 1704067200
 
+    # node operator name
+    prysmatic_labs_node_data_after_voting = NO_registry.getNodeOperator(prysmatic_labs_node_id, True)
+    assert prysmatic_labs_node_data_after_voting["name"] == prysmatic_labs_node_new_name, "Incorrect NO#27 name after"
 
+    # permissions
     assert has_payments_permission(acl, finance, permission.entity, eth["address"], ldo_holder.address, eth["limit"])
     assert has_payments_permission(acl, finance, permission.entity, steth["address"], ldo_holder.address, steth["limit"])
     assert has_payments_permission(acl, finance, permission.entity, ldo["address"], ldo_holder.address, ldo["limit"])
@@ -423,7 +436,6 @@ def test_vote(
     assert usdc_token.balanceOf(agent) == agent_usdc_balance_before - 2_000_000 * 10**6
     assert usdc_token.balanceOf(stranger) == usdc_balance_before + 2_000_000 * 10**6
 
-    
     # USDT
     usdt_token = interface.ERC20(USDT_TOKEN)
     USDT_HOLDER =  "0xF977814e90dA44bFA03b6295A0616a897441aceC"
@@ -464,8 +476,6 @@ def test_vote(
             "MATIC transfer",
             {"from": evmscriptexecutor},
         )
-
-
 
     ## todo: uncomment tests
     # 1. Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track
@@ -515,7 +525,7 @@ def test_vote(
     check_add_and_remove_recipient_with_voting(atc_stable_registry, helpers, LDO_HOLDER_ADDRESS_FOR_TESTS, dao_voting)
 
     # validate vote events
-    assert count_vote_items_by_events(vote_tx, dao_voting) == 8, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, dao_voting) == 11, "Incorrect voting items count"
 
     display_voting_events(vote_tx)
 
