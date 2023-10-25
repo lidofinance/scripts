@@ -13,12 +13,12 @@
             },
             {
                 "internalType": "address",
-                "name": "_finance",
+                "name": "_allowedTokensRegistry",
                 "type": "address"
             },
             {
                 "internalType": "address",
-                "name": "_token",
+                "name": "_finance",
                 "type": "address"
             },
             {
@@ -35,7 +35,20 @@
         "name": "allowedRecipientsRegistry",
         "outputs": [
             {
-                "internalType": "contract AllowedRecipientsRegistry",
+                "internalType": "contract IAllowedRecipientsRegistry",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "allowedTokensRegistry",
+        "outputs": [
+            {
+                "internalType": "contract IAllowedTokensRegistry",
                 "name": "",
                 "type": "address"
             }
@@ -78,6 +91,11 @@
         "name": "decodeEVMScriptCallData",
         "outputs": [
             {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
                 "internalType": "address[]",
                 "name": "recipients",
                 "type": "address[]"
@@ -96,7 +114,7 @@
         "name": "easyTrack",
         "outputs": [
             {
-                "internalType": "contract EasyTrack",
+                "internalType": "contract IEasyTrack",
                 "name": "",
                 "type": "address"
             }
@@ -110,19 +128,6 @@
         "outputs": [
             {
                 "internalType": "contract IFinance",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "token",
-        "outputs": [
-            {
-                "internalType": "address",
                 "name": "",
                 "type": "address"
             }
