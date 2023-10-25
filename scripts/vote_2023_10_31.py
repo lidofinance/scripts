@@ -16,6 +16,7 @@ from utils.easy_track import add_evmscript_factory, create_permissions, remove_e
 from utils.permission_parameters import Param, SpecialArgumentID, Op, ArgumentValue, encode_argument_value_if
 from utils.permissions import encode_permission_revoke, encode_permission_grant_p, encode_permission_grant, encode_permission_create
 from utils.node_operators import encode_set_node_operator_name
+from utils.finance import make_steth_payout
 
 from utils.config import (
     get_deployer_account,
@@ -149,11 +150,16 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     pml_stable_registry = interface.AllowedRecipientRegistry("0xDFfCD3BF14796a62a804c1B16F877Cf7120379dB")
     atc_stable_registry = interface.AllowedRecipientRegistry("0xe07305F43B11F230EaA951002F6a55a16419B707")
 
+    rcc_multisig_address = "0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437"
+    pml_multisig_address = "0x17F6b2C738a63a8D3A113a228cfd0b373244633D"
+    atc_multisig_address = "0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956"
+
     NO_registry = interface.NodeOperatorsRegistry(contracts.node_operators_registry)
     prysmatic_labs_node_id = 27
     prysmatic_labs_node_new_name = "Prysm Team at Offchain Labs"
 
     call_script_items = [
+        # I. Add USDT and USDC to EVMScriptExecutor permissions
         # 1. Revoke role CREATE_PAYMENTS_ROLE from EVM script executor
         encode_permission_revoke(
             target_app=contracts.finance,
@@ -168,13 +174,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             grant_to=EASYTRACK_EVMSCRIPT_EXECUTOR,
             params=amount_limits(),
         ),
+
+        # II. Switch ET DAI top-up setups into ET Stables setups for RCC PML ATC
         ## 3. Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track
         remove_evmscript_factory(factory=rcc_dai_topup_factory_old),
         ## 4. Remove PML DAI top up EVM script factory (old ver) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD from Easy Track
         remove_evmscript_factory(factory=pml_dai_topup_factory_old),
         ## 5. Remove ATC DAI top up EVM script factory (old ver) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 from Easy Track
         remove_evmscript_factory(factory=atc_dai_topup_factory_old),
-
         # todo: change addresses
         ## 6. Add RCC stable top up EVM script factory 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e to Easy Track
         add_evmscript_factory(
@@ -194,12 +201,46 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             permissions=create_permissions(contracts.finance, "newImmediatePayment")
             + create_permissions(atc_stable_registry, "updateSpentAmount")[2:],
         ),
-        # 9. Grant NodeOperatorsRegistry.MANAGE_NODE_OPERATOR_ROLE to voting
-        encode_permission_grant(target_app=NO_registry, permission_name="MANAGE_NODE_OPERATOR_ROLE", grant_to=contracts.voting),
-        # 10. Change node operator #27 name from `Prysmatic Labs` to `Prysm Team at Offchain Labs`
-        encode_set_node_operator_name(prysmatic_labs_node_id, prysmatic_labs_node_new_name, NO_registry),
-        # 11. Revoke MANAGE_NODE_OPERATOR_ROLE from Voting
-        encode_permission_revoke(NO_registry, "MANAGE_NODE_OPERATOR_ROLE", revoke_from=contracts.voting),
+
+        # III. stETH transfers to RCC PML ATC
+        # 9. Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+        make_steth_payout(
+            target_address=rcc_multisig_address,
+            steth_in_wei=1 * (10**18),
+            reference="Fund Gas Funder multisig"
+        ),
+        # 10. Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
+        make_steth_payout(
+            target_address=pml_multisig_address,
+            steth_in_wei=1 * (10**18),
+            reference="Fund Gas Funder multisig"
+        ),
+        # 11. Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
+        make_steth_payout(
+            target_address=atc_multisig_address,
+            steth_in_wei=1 * (10**18),
+            reference="Fund Gas Funder multisig"
+        ),
+
+        # IV. Change the on-chain name of node operator with id 27 from 'Prysmatic Labs' to 'Prysm Team at Offchain Labs'
+        # 12. Grant NodeOperatorsRegistry.MANAGE_NODE_OPERATOR_ROLE to voting
+        encode_permission_grant(
+            target_app=NO_registry,
+            permission_name="MANAGE_NODE_OPERATOR_ROLE",
+            grant_to=contracts.voting
+        ),
+        # 13. Change node operator #27 name from `Prysmatic Labs` to `Prysm Team at Offchain Labs`
+        encode_set_node_operator_name(
+            prysmatic_labs_node_id,
+            prysmatic_labs_node_new_name,
+            NO_registry
+        ),
+        # 14. Revoke MANAGE_NODE_OPERATOR_ROLE from Voting
+        encode_permission_revoke(
+            NO_registry,
+            "MANAGE_NODE_OPERATOR_ROLE",
+            revoke_from=contracts.voting
+        ),
     ]
 
     # todo: change addresses in 6,7,8 strings
@@ -212,9 +253,12 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         f"6) Add RCC stable top up EVM script factory 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e to Easy Track",
         f"7) Add PML stable top up EVM script factory 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD to Easy Track",
         f"8) Add ATC stable top up EVM script factory 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 to Easy Track",
-        f"9) Grant NodeOperatorsRegistry.MANAGE_NODE_OPERATOR_ROLE to voting",
-        f"10) Change node operator name from Prysmatic Labs to Prysm Team at Offchain Labs",
-        f"11) Revoke MANAGE_NODE_OPERATOR_ROLE from Voting",
+        f"9) Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437",
+        f"10) Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D",
+        f"11) Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956",
+        f"12) Grant NodeOperatorsRegistry.MANAGE_NODE_OPERATOR_ROLE to voting",
+        f"13) Change node operator name from Prysmatic Labs to Prysm Team at Offchain Labs",
+        f"14) Revoke MANAGE_NODE_OPERATOR_ROLE from Voting",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
