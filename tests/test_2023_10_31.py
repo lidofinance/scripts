@@ -195,8 +195,42 @@ def test_vote(
     assert not has_payments_permission(acl, finance, permission.entity, usdt["address"], ldo_holder.address, usdt["limit"])
     assert not has_payments_permission(acl, finance, permission.entity, usdc["address"], ldo_holder.address, usdc["limit"])
 
-    # какие лимиты в реджистрях
-    rcc_stable_registry.getPeriodState()
+    # check regsitries limits before voting
+    (
+        rcc_already_spent_amount,
+        rcc_spendable_balanceInPeriod,
+        rcc_period_start_timestamp,
+        rcc_period_end_timestamp
+    ) = rcc_stable_registry.getPeriodState()
+
+    assert rcc_already_spent_amount == 800000000000000000000000
+    assert rcc_spendable_balanceInPeriod ==  2200000000000000000000000
+    assert rcc_period_start_timestamp == 1696118400
+    assert rcc_period_end_timestamp == 1704067200
+
+    (
+        pml_already_spent_amount,
+        pml_spendable_balanceInPeriod,
+        pml_period_start_timestamp,
+        pml_period_end_timestamp
+    ) = pml_stable_registry.getPeriodState()
+
+    assert pml_already_spent_amount == 1500000000000000000000000
+    assert pml_spendable_balanceInPeriod ==  4500000000000000000000000
+    assert pml_period_start_timestamp == 1696118400
+    assert pml_period_end_timestamp == 1704067200
+
+    (
+        atc_already_spent_amount,
+        atc_spendable_balanceInPeriod,
+        atc_period_start_timestamp,
+        atc_period_end_timestamp
+    ) = atc_stable_registry.getPeriodState()
+
+    assert atc_already_spent_amount == 800000000000000000000000
+    assert atc_spendable_balanceInPeriod ==  700000000000000000000000
+    assert atc_period_start_timestamp == 1696118400
+    assert atc_period_end_timestamp == 1704067200
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -211,6 +245,43 @@ def test_vote(
 
     updated_factories_list = easy_track.getEVMScriptFactories()
     assert len(updated_factories_list) == 16
+
+    # check regsitries limits after voting
+    (
+        rcc_already_spent_amount,
+        rcc_spendable_balanceInPeriod,
+        rcc_period_start_timestamp,
+        rcc_period_end_timestamp
+    ) = rcc_stable_registry.getPeriodState()
+
+    assert rcc_already_spent_amount == 800000000000000000000000
+    assert rcc_spendable_balanceInPeriod ==  2200000000000000000000000
+    assert rcc_period_start_timestamp == 1696118400
+    assert rcc_period_end_timestamp == 1704067200
+
+    (
+        pml_already_spent_amount,
+        pml_spendable_balanceInPeriod,
+        pml_period_start_timestamp,
+        pml_period_end_timestamp
+    ) = pml_stable_registry.getPeriodState()
+
+    assert pml_already_spent_amount == 1500000000000000000000000
+    assert pml_spendable_balanceInPeriod ==  4500000000000000000000000
+    assert pml_period_start_timestamp == 1696118400
+    assert pml_period_end_timestamp == 1704067200
+
+    (
+        atc_already_spent_amount,
+        atc_spendable_balanceInPeriod,
+        atc_period_start_timestamp,
+        atc_period_end_timestamp
+    ) = atc_stable_registry.getPeriodState()
+
+    assert atc_already_spent_amount == 800000000000000000000000
+    assert atc_spendable_balanceInPeriod ==  700000000000000000000000
+    assert atc_period_start_timestamp == 1696118400
+    assert atc_period_end_timestamp == 1704067200
 
 
     assert has_payments_permission(acl, finance, permission.entity, eth["address"], ldo_holder.address, eth["limit"])
@@ -229,7 +300,6 @@ def test_vote(
 
     assert not has_payments_permission(acl, finance, accounts[0].address, eth["address"], ldo_holder.address, eth["limit"])
     # assert not has_payments_permission(acl, finance, accounts[0].address, usdc_token, ldo_holder.address, 1)
-
 
     # ETH
     deposit = accounts.at(CHAIN_DEPOSIT_CONTRACT, {"force": True})
