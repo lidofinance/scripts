@@ -2,22 +2,11 @@
 Tests for voting 31/10/2023
 
 """
-from scripts.vote_2023_10_31 import start_vote
 
+import math
+from scripts.vote_2023_10_31 import start_vote
 from eth_abi.abi import encode_single
 from brownie import chain, accounts, ZERO_ADDRESS, reverts
-import math
-
-from utils.config import (
-    contracts,
-    LDO_HOLDER_ADDRESS_FOR_TESTS,
-    LIDO,
-    LDO_TOKEN,
-    DAI_TOKEN,
-    USDC_TOKEN,
-    USDT_TOKEN,
-    CHAIN_DEPOSIT_CONTRACT
-)
 from utils.easy_track import create_permissions
 from utils.agent import agent_forward
 from utils.voting import create_vote, bake_vote_items
@@ -32,15 +21,32 @@ from utils.test.event_validators.permission import (
     validate_permission_grantp_event,
     validate_permission_revoke_event,
 )
-from utils.permission_parameters import Param, SpecialArgumentID, Op, ArgumentValue, encode_argument_value_if
+from utils.permission_parameters import (
+    Param,
+    SpecialArgumentID,
+    Op,
+    ArgumentValue,
+    encode_argument_value_if
+)
+from utils.config import (
+    contracts,
+    LDO_HOLDER_ADDRESS_FOR_TESTS,
+    LIDO,
+    LDO_TOKEN,
+    DAI_TOKEN,
+    USDC_TOKEN,
+    USDT_TOKEN,
+    CHAIN_DEPOSIT_CONTRACT,
+    FINANCE,
+    AGENT
+)
 
 eth = "0x0000000000000000000000000000000000000000"
-aragonAgentProxy = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 STETH_ERROR_MARGIN = 2
 
 permission = Permission(
     entity="0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977",  # EVMScriptExecutor
-    app="0xB9E5CBB9CA5b0d659238807E84D0176930753d86",  # Finance Aragon App
+    app=FINANCE,  # Finance Aragon App
     role="0x5de467a460382d13defdc02aacddc9c7d6605d6d4e0b8bd2f70732cae8ea17bc",
 )  # keccak256('CREATE_PAYMENTS_ROLE')
 
@@ -150,12 +156,11 @@ def test_vote(
     stranger,
     ldo_holder
 ):
-    easy_track = interface.EasyTrack("0xF0211b7660680B49De1A7E9f25C65660F0a13Fea")
-    dao_voting = interface.Voting("0x2e59A20f205bB85a89C53f1936454680651E618e")
-    acl = interface.ACL("0x9895f0f17cc1d1891b6f18ee0b483b6f221b37bb")
-    finance = interface.Finance("0xB9E5CBB9CA5b0d659238807E84D0176930753d86")
     agent = accounts.at("0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c", {"force": True})
     evmscriptexecutor = accounts.at("0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977", {"force": True})
+    usdt_holder =  "0xF977814e90dA44bFA03b6295A0616a897441aceC"
+    usdc_holder =  "0xcEe284F754E854890e311e3280b767F80797180d"
+    dai_holder =  "0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8"
 
     rcc_trusted_caller_and_recepient = accounts.at("0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437", {"force": True})
     pml_trusted_caller_and_recepient = accounts.at("0x17F6b2C738a63a8D3A113a228cfd0b373244633D", {"force": True})
@@ -175,8 +180,7 @@ def test_vote(
     pml_stable_registry = interface.AllowedRecipientRegistry("0xDFfCD3BF14796a62a804c1B16F877Cf7120379dB")
     atc_stable_registry = interface.AllowedRecipientRegistry("0xe07305F43B11F230EaA951002F6a55a16419B707")
 
-    old_factories_list = easy_track.getEVMScriptFactories()
-
+    old_factories_list = contracts.easy_track.getEVMScriptFactories()
     assert len(old_factories_list) == 16
 
     # todo: uncomment when u get new factories address
@@ -188,14 +192,14 @@ def test_vote(
     assert pml_dai_topup_factory_old in old_factories_list
     assert atc_dai_topup_factory_old in old_factories_list
 
-    assert has_payments_permission(acl, finance, permission.entity, eth["address"], ldo_holder.address, eth["limit"])
-    assert has_payments_permission(acl, finance, permission.entity, steth["address"], ldo_holder.address, steth["limit"])
-    assert has_payments_permission(acl, finance, permission.entity, ldo["address"], ldo_holder.address, ldo["limit"])
-    assert has_payments_permission(acl, finance, permission.entity, dai["address"], ldo_holder.address, dai["limit"])
-    assert not has_payments_permission(acl, finance, permission.entity, usdt["address"], ldo_holder.address, usdt["limit"])
-    assert not has_payments_permission(acl, finance, permission.entity, usdc["address"], ldo_holder.address, usdc["limit"])
+    assert has_payments_permission(contracts.acl, contracts.finance, permission.entity, eth["address"], ldo_holder.address, eth["limit"])
+    assert has_payments_permission(contracts.acl, contracts.finance, permission.entity, steth["address"], ldo_holder.address, steth["limit"])
+    assert has_payments_permission(contracts.acl, contracts.finance, permission.entity, ldo["address"], ldo_holder.address, ldo["limit"])
+    assert has_payments_permission(contracts.acl, contracts.finance, permission.entity, dai["address"], ldo_holder.address, dai["limit"])
+    assert not has_payments_permission(contracts.acl, contracts.finance, permission.entity, usdt["address"], ldo_holder.address, usdt["limit"])
+    assert not has_payments_permission(contracts.acl, contracts.finance, permission.entity, usdc["address"], ldo_holder.address, usdc["limit"])
 
-    # check regsitries limits before voting
+    # check regsitries parameters before voting
     (
         rcc_already_spent_amount,
         rcc_spendable_balanceInPeriod,
@@ -231,15 +235,6 @@ def test_vote(
     assert atc_spendable_balanceInPeriod ==  700000000000000000000000
     assert atc_period_start_timestamp == 1696118400
     assert atc_period_end_timestamp == 1704067200
-
-    # Check node operator name before
-    NO_registry = interface.NodeOperatorsRegistry(contracts.node_operators_registry)
-    prysmatic_labs_node_id = 27
-    prysmatic_labs_node_old_name = "Prysmatic Labs"
-    prysmatic_labs_node_new_name = "Prysm Team at Offchain Labs"
-    prysmatic_labs_node_data_before_voting = NO_registry.getNodeOperator(prysmatic_labs_node_id, True)
-
-    assert prysmatic_labs_node_data_before_voting["name"] == prysmatic_labs_node_old_name, "Incorrect NO#27 name before"
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -252,10 +247,10 @@ def test_vote(
 
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
-    updated_factories_list = easy_track.getEVMScriptFactories()
+    updated_factories_list = contracts.easy_track.getEVMScriptFactories()
     assert len(updated_factories_list) == 16
 
-    # check regsitries limits after voting
+    # check regsitries parameters after voting
     (
         rcc_already_spent_amount,
         rcc_spendable_balanceInPeriod,
@@ -292,44 +287,39 @@ def test_vote(
     assert atc_period_start_timestamp == 1696118400
     assert atc_period_end_timestamp == 1704067200
 
-    # node operator name
-    prysmatic_labs_node_data_after_voting = NO_registry.getNodeOperator(prysmatic_labs_node_id, True)
-    assert prysmatic_labs_node_data_after_voting["name"] == prysmatic_labs_node_new_name, "Incorrect NO#27 name after"
-
     # permissions
-    assert has_payments_permission(acl, finance, permission.entity, eth["address"], ldo_holder.address, eth["limit"])
-    assert has_payments_permission(acl, finance, permission.entity, steth["address"], ldo_holder.address, steth["limit"])
-    assert has_payments_permission(acl, finance, permission.entity, ldo["address"], ldo_holder.address, ldo["limit"])
-    assert has_payments_permission(acl, finance, permission.entity, dai["address"], ldo_holder.address, dai["limit"])
-    assert has_payments_permission(acl, finance, permission.entity, usdt["address"], ldo_holder.address, usdt["limit"])
-    assert has_payments_permission(acl, finance, permission.entity, usdc["address"], ldo_holder.address, usdc["limit"])
+    assert has_payments_permission(contracts.acl, contracts.finance, permission.entity, eth["address"], ldo_holder.address, eth["limit"])
+    assert has_payments_permission(contracts.acl, contracts.finance, permission.entity, steth["address"], ldo_holder.address, steth["limit"])
+    assert has_payments_permission(contracts.acl, contracts.finance, permission.entity, ldo["address"], ldo_holder.address, ldo["limit"])
+    assert has_payments_permission(contracts.acl, contracts.finance, permission.entity, dai["address"], ldo_holder.address, dai["limit"])
+    assert has_payments_permission(contracts.acl, contracts.finance, permission.entity, usdt["address"], ldo_holder.address, usdt["limit"])
+    assert has_payments_permission(contracts.acl, contracts.finance, permission.entity, usdc["address"], ldo_holder.address, usdc["limit"])
 
-    assert not has_payments_permission(acl, finance, permission.entity, eth["address"], ldo_holder.address, eth["limit"] + 1)
-    assert not has_payments_permission(acl, finance, permission.entity, steth["address"], ldo_holder.address, steth["limit"] + 1)
-    assert not has_payments_permission(acl, finance, permission.entity, ldo["address"], ldo_holder.address, ldo["limit"] + 1)
-    assert not has_payments_permission(acl, finance, permission.entity, dai["address"], ldo_holder.address, dai["limit"] + 1)
-    assert not has_payments_permission(acl, finance, permission.entity, usdt["address"], ldo_holder.address, usdt["limit"] + 1)
-    assert not has_payments_permission(acl, finance, permission.entity, usdc["address"], ldo_holder.address, usdc["limit"] + 1)
+    assert not has_payments_permission(contracts.acl, contracts.finance, permission.entity, eth["address"], ldo_holder.address, eth["limit"] + 1)
+    assert not has_payments_permission(contracts.acl, contracts.finance, permission.entity, steth["address"], ldo_holder.address, steth["limit"] + 1)
+    assert not has_payments_permission(contracts.acl, contracts.finance, permission.entity, ldo["address"], ldo_holder.address, ldo["limit"] + 1)
+    assert not has_payments_permission(contracts.acl, contracts.finance, permission.entity, dai["address"], ldo_holder.address, dai["limit"] + 1)
+    assert not has_payments_permission(contracts.acl, contracts.finance, permission.entity, usdt["address"], ldo_holder.address, usdt["limit"] + 1)
+    assert not has_payments_permission(contracts.acl, contracts.finance, permission.entity, usdc["address"], ldo_holder.address, usdc["limit"] + 1)
 
-    assert not has_payments_permission(acl, finance, accounts[0].address, eth["address"], ldo_holder.address, eth["limit"])
+    assert not has_payments_permission(contracts.acl, contracts.finance, accounts[0].address, eth["address"], ldo_holder.address, eth["limit"])
     # assert not has_payments_permission(acl, finance, accounts[0].address, usdc_token, ldo_holder.address, 1)
 
     # ETH
     deposit = accounts.at(CHAIN_DEPOSIT_CONTRACT, {"force": True})
     deposit.transfer(agent.address, "1000 ether")
-
-    # 1000 ETH
+    # Check ETH limits. 1000 ETH
     agent_balance_before = agent.balance()
     eth_balance_before = stranger.balance()
     with reverts("APP_AUTH_FAILED"):
-        finance.newImmediatePayment(
+        contracts.finance.newImmediatePayment(
             ZERO_ADDRESS,
             stranger,
             1000 * 10**18 + 1,
             "ETH transfer",
             {"from": evmscriptexecutor},
         )
-    finance.newImmediatePayment(
+    contracts.finance.newImmediatePayment(
         ZERO_ADDRESS,
         stranger,
         1000 * 10**18,
@@ -339,20 +329,20 @@ def test_vote(
     assert agent.balance() == agent_balance_before - 1000 * 10**18
     assert stranger.balance() == eth_balance_before + 1000 * 10**18
 
-
-    # 1000 stETH
+    # stETH
+    # Check stETH limits. 1000 stETH.
     steth_token = interface.ERC20(LIDO)
     agent_steth_balance_before = steth_token.balanceOf(agent)
     stETH_balance_before = steth_token.balanceOf(stranger)
     with reverts("APP_AUTH_FAILED"):
-        finance.newImmediatePayment(
+        contracts.finance.newImmediatePayment(
             steth_token,
             stranger,
             1000 * 10**18 + 1,
             "stETH transfer",
             {"from": evmscriptexecutor},
         )
-    finance.newImmediatePayment(
+    contracts.finance.newImmediatePayment(
         steth_token,
         stranger,
         1000 * 10**18,
@@ -362,114 +352,108 @@ def test_vote(
     assert math.isclose(steth_token.balanceOf(agent), agent_steth_balance_before - 1000 * 10**18, abs_tol=STETH_ERROR_MARGIN)
     assert math.isclose(steth_token.balanceOf(stranger), stETH_balance_before + 1000 * 10**18, abs_tol=STETH_ERROR_MARGIN)
 
-    # # 5_000_000 LDO
-    ldo_token = interface.ERC20(LDO_TOKEN)
-    agent_ldo_balance_before = ldo_token.balanceOf(agent)
-    ldo_balance_before = ldo_token.balanceOf(stranger)
+    # LDO
+    # Check LDO limits. 5_000_000 LDO
+    agent_ldo_balance_before = contracts.ldo_token.balanceOf(agent)
+    ldo_balance_before = contracts.ldo_token.balanceOf(stranger)
     with reverts("APP_AUTH_FAILED"):
-        finance.newImmediatePayment(
-            ldo_token,
+        contracts.finance.newImmediatePayment(
+            contracts.ldo_token,
             stranger,
             5_000_000 * 10**18 + 1,
             "LDO transfer",
             {"from": evmscriptexecutor},
         )
-    finance.newImmediatePayment(
-        ldo_token,
+    contracts.finance.newImmediatePayment(
+        contracts.ldo_token,
         stranger,
         5_000_000 * 10**18,
         "LDO transfer",
         {"from": evmscriptexecutor}
     )
-    assert ldo_token.balanceOf(agent) == agent_ldo_balance_before - 5_000_000 * 10**18
-    assert ldo_token.balanceOf(stranger) == ldo_balance_before + 5_000_000 * 10**18
+    assert contracts.ldo_token.balanceOf(agent) == agent_ldo_balance_before - 5_000_000 * 10**18
+    assert contracts.ldo_token.balanceOf(stranger) == ldo_balance_before + 5_000_000 * 10**18
 
     # DAI
-    dai_token = interface.ERC20(DAI_TOKEN)
-    DAI_HOLDER =  "0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8"
-    dai_token.transfer(agent.address, 2_000_000 * 10**18, { 'from': DAI_HOLDER })
-
-    # # 2_000_000 DAI
-    agent_dai_balance_before = dai_token.balanceOf(agent)
-    dai_balance_before = dai_token.balanceOf(stranger)
+    # Top up agent DAI balance.
+    contracts.dai_token.transfer(agent.address, 2_000_000 * 10**18, { 'from': dai_holder })
+    # Check DAI limits. 2_000_000 DAI
+    agent_dai_balance_before = contracts.dai_token.balanceOf(agent)
+    dai_balance_before = contracts.dai_token.balanceOf(stranger)
     with reverts("APP_AUTH_FAILED"):
-        finance.newImmediatePayment(
-            dai_token,
+        contracts.finance.newImmediatePayment(
+            contracts.dai_token,
             stranger,
             2_000_000 * 10**18 + 1,
             "DAI transfer",
             {"from": evmscriptexecutor},
         )
-    finance.newImmediatePayment(
-        dai_token,
+    contracts.finance.newImmediatePayment(
+        contracts.dai_token,
         stranger,
         2_000_000 * 10**18,
         "DAI transfer",
         {"from": evmscriptexecutor}
     )
-    assert dai_token.balanceOf(agent) == agent_dai_balance_before - 2_000_000 * 10**18
-    assert dai_token.balanceOf(stranger) == dai_balance_before + 2_000_000 * 10**18
+    assert contracts.dai_token.balanceOf(agent) == agent_dai_balance_before - 2_000_000 * 10**18
+    assert contracts.dai_token.balanceOf(stranger) == dai_balance_before + 2_000_000 * 10**18
 
     # USDC
-    usdc_token = interface.ERC20(USDC_TOKEN)
-    USDC_HOLDER =  "0xcEe284F754E854890e311e3280b767F80797180d"
-    usdc_token.transfer(agent.address, 2_000_000 * 10**6, { 'from': USDC_HOLDER })
-
-    # # 2_000_000 USDC
-    agent_usdc_balance_before = usdc_token.balanceOf(agent)
-    usdc_balance_before = usdc_token.balanceOf(stranger)
+    # Top up agent USDC balance.
+    contracts.usdc_token.transfer(agent.address, 2_000_000 * 10**6, { 'from': usdc_holder })
+    # Check USDC limits. 2_000_000 USDC
+    agent_usdc_balance_before = contracts.usdc_token.balanceOf(agent)
+    usdc_balance_before = contracts.usdc_token.balanceOf(stranger)
     with reverts("APP_AUTH_FAILED"):
-        finance.newImmediatePayment(
-            usdc_token,
+        contracts.finance.newImmediatePayment(
+            contracts.usdc_token,
             stranger,
             2_000_000 * 10**6 + 1,
             "USDC transfer",
             {"from": evmscriptexecutor},
         )
-    finance.newImmediatePayment(
-        usdc_token,
+    contracts.finance.newImmediatePayment(
+        contracts.usdc_token,
         stranger,
         2_000_000 * 10**6,
         "USDC transfer",
         {"from": evmscriptexecutor}
     )
-    assert usdc_token.balanceOf(agent) == agent_usdc_balance_before - 2_000_000 * 10**6
-    assert usdc_token.balanceOf(stranger) == usdc_balance_before + 2_000_000 * 10**6
+    assert contracts.usdc_token.balanceOf(agent) == agent_usdc_balance_before - 2_000_000 * 10**6
+    assert contracts.usdc_token.balanceOf(stranger) == usdc_balance_before + 2_000_000 * 10**6
 
     # USDT
-    usdt_token = interface.ERC20(USDT_TOKEN)
-    USDT_HOLDER =  "0xF977814e90dA44bFA03b6295A0616a897441aceC"
-    usdt_token.transfer(agent.address, 2_000_000 * 10**6, { 'from': USDT_HOLDER })
-
-    # # 2_000_000 USDT
-    agent_usdt_balance_before = usdt_token.balanceOf(agent)
-    usdt_balance_before = usdt_token.balanceOf(stranger)
+    # Top up agent USDT balance.
+    contracts.usdt_token.transfer(agent.address, 2_000_000 * 10**6, { 'from': usdt_holder })
+    # Check USDT limits. 2_000_000 USDT
+    agent_usdt_balance_before = contracts.usdt_token.balanceOf(agent)
+    usdt_balance_before = contracts.usdt_token.balanceOf(stranger)
     with reverts("APP_AUTH_FAILED"):
-        finance.newImmediatePayment(
-            usdt_token,
+        contracts.finance.newImmediatePayment(
+            contracts.usdt_token,
             stranger,
             2_000_000 * 10**6 + 1,
             "USDT transfer",
             {"from": evmscriptexecutor},
         )
-    finance.newImmediatePayment(
-        usdt_token,
+    contracts.finance.newImmediatePayment(
+        contracts.usdt_token,
         stranger,
         2_000_000 * 10**6,
         "USDT transfer",
         {"from": evmscriptexecutor}
     )
-    assert usdt_token.balanceOf(agent) == agent_usdt_balance_before - 2_000_000 * 10**6
-    assert usdt_token.balanceOf(stranger) == usdt_balance_before + 2_000_000 * 10**6
+    assert contracts.usdt_token.balanceOf(agent) == agent_usdt_balance_before - 2_000_000 * 10**6
+    assert contracts.usdt_token.balanceOf(stranger) == usdt_balance_before + 2_000_000 * 10**6
 
     # MATIC
+    # Check token that is not supported.
     MATIC_TOKEN = "0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0"
     MATIC_HOLDER = "0x5e3Ef299fDDf15eAa0432E6e66473ace8c13D908"
     matic_token = interface.ERC20(MATIC_TOKEN)
     matic_token.transfer(agent.address, 1, { 'from': MATIC_HOLDER })
-
     with reverts("APP_AUTH_FAILED"):
-        finance.newImmediatePayment(
+        contracts.finance.newImmediatePayment(
             matic_token,
             stranger,
             1,
@@ -488,44 +472,45 @@ def test_vote(
     # 4. Add RCC stable top up EVM script factory 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e to Easy Track
     assert rcc_stable_topup_factory in updated_factories_list
     create_and_enact_payment_motion(
-        easy_track,
+        contracts.easy_track,
         rcc_trusted_caller_and_recepient,
         rcc_stable_topup_factory,
-        dai_token,
+        contracts.dai_token,
         [rcc_trusted_caller_and_recepient],
         [10 * 10**18],
         stranger,
     )
-    check_add_and_remove_recipient_with_voting(rcc_stable_registry, helpers, LDO_HOLDER_ADDRESS_FOR_TESTS, dao_voting)
+    check_add_and_remove_recipient_with_voting(rcc_stable_registry, helpers, LDO_HOLDER_ADDRESS_FOR_TESTS, contracts.voting)
 
     # 5. Add PML stable top up EVM script factory 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD to Easy Track
     assert pml_stable_topup_factory in updated_factories_list
     create_and_enact_payment_motion(
-        easy_track,
+        contracts.easy_track,
         pml_trusted_caller_and_recepient,
         pml_stable_topup_factory,
-        dai_token,
+        contracts.dai_token,
         [pml_trusted_caller_and_recepient],
         [10 * 10**18],
         stranger,
     )
-    check_add_and_remove_recipient_with_voting(pml_stable_registry, helpers, LDO_HOLDER_ADDRESS_FOR_TESTS, dao_voting)
+    check_add_and_remove_recipient_with_voting(pml_stable_registry, helpers, LDO_HOLDER_ADDRESS_FOR_TESTS, contracts.voting)
 
     # 6. Add ATC stable top up EVM script factory 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 to Easy Track
     assert atc_stable_topup_factory in updated_factories_list
     create_and_enact_payment_motion(
-        easy_track,
+        contracts.easy_track,
         atc_trusted_caller_and_recepient,
         atc_stable_topup_factory,
-        dai_token,
+        contracts.dai_token,
         [atc_trusted_caller_and_recepient],
         [10 * 10**18],
         stranger,
     )
-    check_add_and_remove_recipient_with_voting(atc_stable_registry, helpers, LDO_HOLDER_ADDRESS_FOR_TESTS, dao_voting)
+    check_add_and_remove_recipient_with_voting(atc_stable_registry, helpers, LDO_HOLDER_ADDRESS_FOR_TESTS, contracts.voting)
 
     # validate vote events
-    assert count_vote_items_by_events(vote_tx, dao_voting) == 11, "Incorrect voting items count"
+    print("count_vote_items_by_events", count_vote_items_by_events(vote_tx, contracts.voting))
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 11, "Incorrect voting items count"
 
     display_voting_events(vote_tx)
 
@@ -572,7 +557,7 @@ def create_and_enact_payment_motion(
     transfer_amounts,
     stranger,
 ):
-    agent = accounts.at(aragonAgentProxy, {"force": True})
+    agent = accounts.at(AGENT, {"force": True})
     agent_balance_before = balance_of(agent, token)
     recievers_balance_before = [balance_of(reciever, token) for reciever in recievers]
     motions_before = easy_track.getMotions()

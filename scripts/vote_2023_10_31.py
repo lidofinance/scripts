@@ -10,12 +10,10 @@ from typing import Dict, List
 from brownie.network.transaction import TransactionReceipt
 from brownie import interface, ZERO_ADDRESS
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
-from utils.agent import agent_forward
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.easy_track import add_evmscript_factory, create_permissions, remove_evmscript_factory
 from utils.permission_parameters import Param, SpecialArgumentID, Op, ArgumentValue, encode_argument_value_if
-from utils.permissions import encode_permission_revoke, encode_permission_grant_p, encode_permission_grant, encode_permission_create
-from utils.node_operators import encode_set_node_operator_name
+from utils.permissions import encode_permission_revoke, encode_permission_grant_p
 from utils.finance import make_steth_payout
 
 from utils.config import (
@@ -33,10 +31,25 @@ from utils.config import (
 
 # todo: change description
 description = """
-### Omnibus on-chain vote contains 3 motions:
 
-1. Switch off TopUp ETs for RCC PML ACT
-2. Switch on TopUpStable ETs for RCC PML ACT
+I. Add USDT and USDC to EVMScriptExecutor permissions
+1. Remove CREATE_PAYMENTS_ROLE from EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
+2. Add CREATE_PAYMENTS_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 with single transfer limits of 1,000 ETH, 1,000 stETH, 5,000,000 LDO, 2,000,000 DAI, 2,000,000 USDC, 2,000,000 USDT
+
+II. Switch ET DAI top-up setups into ET Stables setups for RCC PML ATC
+3. Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track
+4. Remove PML DAI top up EVM script factory (old ver) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD from Easy Track
+5. Remove ATC DAI top up EVM script factory (old ver) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 from Easy Track
+6. Add RCC stable top up EVM script factory TBA 
+7. Add PML stable top up EVM script factory TBA
+8. Add ATC stable top up EVM script factory TBA
+
+III. stETH transfers to  RCC PML ATC
+9. Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+10. Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
+11. Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
+
+IV. Change the on-chain name of node operator with id 27 from 'Prysmatic Labs' to 'Prysm Team at Offchain Labs'
 
 """
 
@@ -154,10 +167,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     pml_multisig_address = "0x17F6b2C738a63a8D3A113a228cfd0b373244633D"
     atc_multisig_address = "0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956"
 
-    NO_registry = interface.NodeOperatorsRegistry(contracts.node_operators_registry)
-    prysmatic_labs_node_id = 27
-    prysmatic_labs_node_new_name = "Prysm Team at Offchain Labs"
-
     call_script_items = [
         # I. Add USDT and USDC to EVMScriptExecutor permissions
         # 1. Revoke role CREATE_PAYMENTS_ROLE from EVM script executor
@@ -220,30 +229,10 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             target_address=atc_multisig_address,
             steth_in_wei=1 * (10**18),
             reference="Fund Gas Funder multisig"
-        ),
-
-        # IV. Change the on-chain name of node operator with id 27 from 'Prysmatic Labs' to 'Prysm Team at Offchain Labs'
-        # 12. Grant NodeOperatorsRegistry.MANAGE_NODE_OPERATOR_ROLE to voting
-        encode_permission_grant(
-            target_app=NO_registry,
-            permission_name="MANAGE_NODE_OPERATOR_ROLE",
-            grant_to=contracts.voting
-        ),
-        # 13. Change node operator #27 name from `Prysmatic Labs` to `Prysm Team at Offchain Labs`
-        encode_set_node_operator_name(
-            prysmatic_labs_node_id,
-            prysmatic_labs_node_new_name,
-            NO_registry
-        ),
-        # 14. Revoke MANAGE_NODE_OPERATOR_ROLE from Voting
-        encode_permission_revoke(
-            NO_registry,
-            "MANAGE_NODE_OPERATOR_ROLE",
-            revoke_from=contracts.voting
-        ),
+        )
     ]
 
-    # todo: change addresses in 6,7,8 strings
+    # todo: change addresses in 6,7,8 strings and stETH amount
     vote_desc_items = [
         f"1) Revoke role CREATE_PAYMENTS_ROLE from EVM script executor",
         f"2) Grant role CREATE_PAYMENTS_ROLE to EasyTrack EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977",
@@ -255,10 +244,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         f"8) Add ATC stable top up EVM script factory 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 to Easy Track",
         f"9) Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437",
         f"10) Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D",
-        f"11) Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956",
-        f"12) Grant NodeOperatorsRegistry.MANAGE_NODE_OPERATOR_ROLE to voting",
-        f"13) Change node operator name from Prysmatic Labs to Prysm Team at Offchain Labs",
-        f"14) Revoke MANAGE_NODE_OPERATOR_ROLE from Voting",
+        f"11) Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956"
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
