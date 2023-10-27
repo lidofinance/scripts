@@ -40,16 +40,14 @@ II. Switch ET DAI top-up setups into ET Stables setups for RCC PML ATC
 3. Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track
 4. Remove PML DAI top up EVM script factory (old ver) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD from Easy Track
 5. Remove ATC DAI top up EVM script factory (old ver) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 from Easy Track
-6. Add RCC stable top up EVM script factory TBA 
-7. Add PML stable top up EVM script factory TBA
-8. Add ATC stable top up EVM script factory TBA
+6. Add RCC stable top up EVM script factory 0x75bDecbb6453a901EBBB945215416561547dfDD4 
+7. Add PML stable top up EVM script factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D
+8. Add ATC stable top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab
 
 III. stETH transfers to  RCC PML ATC
 9. Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
 10. Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
 11. Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
-
-IV. Change the on-chain name of node operator with id 27 from 'Prysmatic Labs' to 'Prysm Team at Offchain Labs'
 
 """
 
@@ -153,12 +151,10 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     pml_dai_topup_factory_old = interface.IEVMScriptFactory("0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD")
     atc_dai_topup_factory_old = interface.IEVMScriptFactory("0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07")
 
-    # todo: change addresses
-    rcc_stable_topup_factory = interface.TopUpAllowedRecipients("0x84f74733ede9bFD53c1B3Ea96338867C94EC313e")
-    pml_stable_topup_factory = interface.TopUpAllowedRecipients("0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD")
-    atc_stable_topup_factory = interface.TopUpAllowedRecipients("0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07")
+    rcc_stable_topup_factory = interface.TopUpAllowedRecipients("0x75bDecbb6453a901EBBB945215416561547dfDD4")
+    pml_stable_topup_factory = interface.TopUpAllowedRecipients("0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D")
+    atc_stable_topup_factory = interface.TopUpAllowedRecipients("0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab")
 
-    # addresses stay same
     rcc_stable_registry = interface.AllowedRecipientRegistry("0xDc1A0C7849150f466F07d48b38eAA6cE99079f80")
     pml_stable_registry = interface.AllowedRecipientRegistry("0xDFfCD3BF14796a62a804c1B16F877Cf7120379dB")
     atc_stable_registry = interface.AllowedRecipientRegistry("0xe07305F43B11F230EaA951002F6a55a16419B707")
@@ -192,19 +188,19 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         ## 5. Remove ATC DAI top up EVM script factory (old ver) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 from Easy Track
         remove_evmscript_factory(factory=atc_dai_topup_factory_old),
         # todo: change addresses
-        ## 6. Add RCC stable top up EVM script factory 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e to Easy Track
+        ## 6. Add RCC stable top up EVM script factory 0x75bDecbb6453a901EBBB945215416561547dfDD4 to Easy Track
         add_evmscript_factory(
             factory=rcc_stable_topup_factory,
             permissions=create_permissions(contracts.finance, "newImmediatePayment")
             + create_permissions(rcc_stable_registry, "updateSpentAmount")[2:],
         ),
-        ## 7. Add PML stable top up EVM script factory 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD to Easy Track
+        ## 7. Add PML stable top up EVM script factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D to Easy Track
         add_evmscript_factory(
             factory=pml_stable_topup_factory,
             permissions=create_permissions(contracts.finance, "newImmediatePayment")
             + create_permissions(pml_stable_registry, "updateSpentAmount")[2:],
         ),
-        ## 8. Add ATC stable top up EVM script factory 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 to Easy Track
+        ## 8. Add ATC stable top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab to Easy Track
         add_evmscript_factory(
             factory=atc_stable_topup_factory,
             permissions=create_permissions(contracts.finance, "newImmediatePayment")
@@ -239,9 +235,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         f"3) Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track",
         f"4) Remove PML DAI top up EVM script factory (old ver) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD from Easy Track",
         f"5) Remove ATC DAI top up EVM script factory (old ver) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 from Easy Track",
-        f"6) Add RCC stable top up EVM script factory 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e to Easy Track",
-        f"7) Add PML stable top up EVM script factory 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD to Easy Track",
-        f"8) Add ATC stable top up EVM script factory 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 to Easy Track",
+        f"6) Add RCC stable top up EVM script factory 0x75bDecbb6453a901EBBB945215416561547dfDD4 to Easy Track",
+        f"7) Add PML stable top up EVM script factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D to Easy Track",
+        f"8) Add ATC stable top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab to Easy Track",
         f"9) Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437",
         f"10) Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D",
         f"11) Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956"

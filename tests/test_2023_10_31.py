@@ -176,10 +176,9 @@ def test_vote(
     pml_dai_topup_factory_old = interface.IEVMScriptFactory("0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD")
     atc_dai_topup_factory_old = interface.IEVMScriptFactory("0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07")
 
-    # todo: change addresses
-    rcc_stable_topup_factory = interface.TopUpAllowedRecipients("0x84f74733ede9bFD53c1B3Ea96338867C94EC313e")
-    pml_stable_topup_factory = interface.TopUpAllowedRecipients("0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD")
-    atc_stable_topup_factory = interface.TopUpAllowedRecipients("0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07")
+    rcc_stable_topup_factory = interface.TopUpAllowedRecipients("0x75bDecbb6453a901EBBB945215416561547dfDD4")
+    pml_stable_topup_factory = interface.TopUpAllowedRecipients("0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D")
+    atc_stable_topup_factory = interface.TopUpAllowedRecipients("0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab")
 
     # todo: change addresses
     rcc_stable_registry = interface.AllowedRecipientRegistry("0xDc1A0C7849150f466F07d48b38eAA6cE99079f80")
@@ -189,10 +188,9 @@ def test_vote(
     old_factories_list = contracts.easy_track.getEVMScriptFactories()
     assert len(old_factories_list) == 16
 
-    # todo: uncomment when u get new factories address
-    # assert rcc_stable_topup_factory not in old_factories_list
-    # assert pml_stable_topup_factory not in old_factories_list
-    # assert atc_stable_topup_factory not in old_factories_list
+    assert rcc_stable_topup_factory not in old_factories_list
+    assert pml_stable_topup_factory not in old_factories_list
+    assert atc_stable_topup_factory not in old_factories_list
 
     assert rcc_dai_topup_factory_old in old_factories_list
     assert pml_dai_topup_factory_old in old_factories_list
@@ -267,14 +265,13 @@ def test_vote(
     dao_balance_after = contracts.lido.balanceOf(AGENT)
 
     rcc_fund_payout = Payout(token_addr=LIDO, from_addr=contracts.agent, to_addr=rcc_multisig_address, amount=1 * (10**18))
-    pml_fund_payout = Payout(token_addr=LIDO, from_addr=contracts.agent, to_addr=rcc_multisig_address, amount=1 * (10**18))
-    atc_fund_payout = Payout(token_addr=LIDO, from_addr=contracts.agent, to_addr=rcc_multisig_address, amount=1 * (10**18))
-    dao_fund_payout = Payout(token_addr=LIDO, from_addr=contracts.agent, to_addr=rcc_multisig_address, amount=1 * (10**18) + 1 * (10**18) + 1 * (10**18))
+    pml_fund_payout = Payout(token_addr=LIDO, from_addr=contracts.agent, to_addr=pml_multisig_address, amount=1 * (10**18))
+    atc_fund_payout = Payout(token_addr=LIDO, from_addr=contracts.agent, to_addr=atc_multisig_address, amount=1 * (10**18))
 
     steth_balance_checker(rcc_multisig_balance_after - rcc_multisig_balance_before, rcc_fund_payout.amount)
     steth_balance_checker(pml_multisig_balance_after - pml_multisig_balance_before, pml_fund_payout.amount)
     steth_balance_checker(atc_multisig_balance_after - atc_multisig_balance_before, atc_fund_payout.amount)
-    steth_balance_checker(dao_balance_before - dao_balance_after, dao_fund_payout.amount)
+    steth_balance_checker(dao_balance_before - dao_balance_after, 1 * (10**18) + 1 * (10**18) + 1 * (10**18))
 
     # check registries parameters after voting
     (
@@ -327,9 +324,6 @@ def test_vote(
     assert not has_payments_permission(contracts.acl, contracts.finance, permission.entity, dai["address"], ldo_holder.address, dai["limit"] + 1)
     assert not has_payments_permission(contracts.acl, contracts.finance, permission.entity, usdt["address"], ldo_holder.address, usdt["limit"] + 1)
     assert not has_payments_permission(contracts.acl, contracts.finance, permission.entity, usdc["address"], ldo_holder.address, usdc["limit"] + 1)
-
-    assert not has_payments_permission(contracts.acl, contracts.finance, accounts[0].address, eth["address"], ldo_holder.address, eth["limit"])
-    # assert not has_payments_permission(acl, finance, accounts[0].address, usdc_token, ldo_holder.address, 1)
 
     # ETH
     deposit = accounts.at(CHAIN_DEPOSIT_CONTRACT, {"force": True})
@@ -489,13 +483,13 @@ def test_vote(
 
     ## todo: uncomment tests
     # 1. Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track
-    # assert rcc_dai_topup_factory_old not in updated_factories_list
+    assert rcc_dai_topup_factory_old not in updated_factories_list
     # 2. Remove PML DAI top up EVM script factory (old ver) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD from Easy Track
-    # assert pml_dai_topup_factory_old not in updated_factories_list
+    assert pml_dai_topup_factory_old not in updated_factories_list
     # 3. Remove ATC DAI top up EVM script factory (old ver) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 from Easy Track
-    # assert atc_dai_topup_factory_old not in updated_factories_list
+    assert atc_dai_topup_factory_old not in updated_factories_list
 
-    # 4. Add RCC stable top up EVM script factory 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e to Easy Track
+    # 4. Add RCC stable top up EVM script factory 0x75bDecbb6453a901EBBB945215416561547dfDD4 to Easy Track
     assert rcc_stable_topup_factory in updated_factories_list
     create_and_enact_payment_motion(
         contracts.easy_track,
@@ -506,9 +500,27 @@ def test_vote(
         [10 * 10**18],
         stranger,
     )
+    create_and_enact_payment_motion(
+        contracts.easy_track,
+        rcc_trusted_caller_and_recepient,
+        rcc_stable_topup_factory,
+        contracts.usdt_token,
+        [rcc_trusted_caller_and_recepient],
+        [10 * 10**6],
+        stranger,
+    )
+    create_and_enact_payment_motion(
+        contracts.easy_track,
+        rcc_trusted_caller_and_recepient,
+        rcc_stable_topup_factory,
+        contracts.usdc_token,
+        [rcc_trusted_caller_and_recepient],
+        [10 * 10**6],
+        stranger,
+    )
     check_add_and_remove_recipient_with_voting(rcc_stable_registry, helpers, LDO_HOLDER_ADDRESS_FOR_TESTS, contracts.voting)
 
-    # 5. Add PML stable top up EVM script factory 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD to Easy Track
+    # 5. Add PML stable top up EVM script factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D to Easy Track
     assert pml_stable_topup_factory in updated_factories_list
     create_and_enact_payment_motion(
         contracts.easy_track,
@@ -519,9 +531,27 @@ def test_vote(
         [10 * 10**18],
         stranger,
     )
+    create_and_enact_payment_motion(
+        contracts.easy_track,
+        pml_trusted_caller_and_recepient,
+        pml_stable_topup_factory,
+        contracts.usdt_token,
+        [pml_trusted_caller_and_recepient],
+        [10 * 10**6],
+        stranger,
+    )
+    create_and_enact_payment_motion(
+        contracts.easy_track,
+        pml_trusted_caller_and_recepient,
+        pml_stable_topup_factory,
+        contracts.usdc_token,
+        [pml_trusted_caller_and_recepient],
+        [10 * 10**6],
+        stranger,
+    )
     check_add_and_remove_recipient_with_voting(pml_stable_registry, helpers, LDO_HOLDER_ADDRESS_FOR_TESTS, contracts.voting)
 
-    # 6. Add ATC stable top up EVM script factory 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 to Easy Track
+    # 6. Add ATC stable top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab to Easy Track
     assert atc_stable_topup_factory in updated_factories_list
     create_and_enact_payment_motion(
         contracts.easy_track,
@@ -532,10 +562,27 @@ def test_vote(
         [10 * 10**18],
         stranger,
     )
+    create_and_enact_payment_motion(
+        contracts.easy_track,
+        atc_trusted_caller_and_recepient,
+        atc_stable_topup_factory,
+        contracts.usdt_token,
+        [atc_trusted_caller_and_recepient],
+        [10 * 10**6],
+        stranger,
+    )
+    create_and_enact_payment_motion(
+        contracts.easy_track,
+        atc_trusted_caller_and_recepient,
+        atc_stable_topup_factory,
+        contracts.usdc_token,
+        [atc_trusted_caller_and_recepient],
+        [10 * 10**6],
+        stranger,
+    )
     check_add_and_remove_recipient_with_voting(atc_stable_registry, helpers, LDO_HOLDER_ADDRESS_FOR_TESTS, contracts.voting)
 
     # validate vote events
-    print("count_vote_items_by_events", count_vote_items_by_events(vote_tx, contracts.voting))
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 11, "Incorrect voting items count"
 
     display_voting_events(vote_tx)
@@ -544,7 +591,6 @@ def test_vote(
 
     validate_permission_revoke_event(evs[0], permission)
     validate_permission_grantp_event(evs[1], permission, amount_limits())
-
     validate_evmscript_factory_removed_event(evs[2], rcc_dai_topup_factory_old)
     validate_evmscript_factory_removed_event(evs[3], pml_dai_topup_factory_old)
     validate_evmscript_factory_removed_event(evs[4], atc_dai_topup_factory_old)
@@ -572,6 +618,10 @@ def test_vote(
             + create_permissions(atc_stable_registry, "updateSpentAmount")[2:],
         ),
     )
+    validate_token_payout_event(evs[8], rcc_fund_payout, True)
+    validate_token_payout_event(evs[9], pml_fund_payout, True)
+    validate_token_payout_event(evs[10], atc_fund_payout, True)
+
 
 def has_payments_permission(acl, finance, sender, token, receiver, amount) -> bool:
     return acl.hasPermission["address,address,bytes32,uint[]"](
