@@ -21,6 +21,14 @@ from utils.test.event_validators.permission import (
     validate_permission_grantp_event,
     validate_permission_revoke_event,
 )
+from utils.test.easy_track_helpers import (
+    create_and_enact_payment_motion,
+    check_add_and_remove_recipient_with_voting
+)
+from utils.test.event_validators.payout import (
+    Payout,
+    validate_token_payout_event
+)
 from utils.permission_parameters import (
     Param,
     SpecialArgumentID,
@@ -143,11 +151,6 @@ def amount_limits() -> List[Param]:
         Param(SpecialArgumentID.PARAM_VALUE_PARAM_ID, Op.RET, ArgumentValue(0)),
     ]
 
-def has_payments_permission(acl, finance, sender, token, receiver, amount) -> bool:
-    return acl.hasPermission["address,address,bytes32,uint[]"](
-        sender, finance, finance.CREATE_PAYMENTS_ROLE(), [token, receiver, amount]
-    )
-
 def test_vote(
     helpers,
     accounts,
@@ -156,15 +159,18 @@ def test_vote(
     stranger,
     ldo_holder
 ):
-    agent = accounts.at("0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c", {"force": True})
+    agent = accounts.at(AGENT, {"force": True})
     evmscriptexecutor = accounts.at("0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977", {"force": True})
     usdt_holder =  "0xF977814e90dA44bFA03b6295A0616a897441aceC"
     usdc_holder =  "0xcEe284F754E854890e311e3280b767F80797180d"
     dai_holder =  "0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8"
+    rcc_multisig_address = "0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437"
+    pml_multisig_address = "0x17F6b2C738a63a8D3A113a228cfd0b373244633D"
+    atc_multisig_address = "0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956"
 
-    rcc_trusted_caller_and_recepient = accounts.at("0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437", {"force": True})
-    pml_trusted_caller_and_recepient = accounts.at("0x17F6b2C738a63a8D3A113a228cfd0b373244633D", {"force": True})
-    atc_trusted_caller_and_recepient = accounts.at("0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956", {"force": True})
+    rcc_trusted_caller_and_recepient = accounts.at(rcc_multisig_address, {"force": True})
+    pml_trusted_caller_and_recepient = accounts.at(pml_multisig_address, {"force": True})
+    atc_trusted_caller_and_recepient = accounts.at(atc_multisig_address, {"force": True})
 
     rcc_dai_topup_factory_old = interface.IEVMScriptFactory("0x84f74733ede9bFD53c1B3Ea96338867C94EC313e")
     pml_dai_topup_factory_old = interface.IEVMScriptFactory("0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD")
@@ -201,40 +207,45 @@ def test_vote(
 
     # check regsitries parameters before voting
     (
-        rcc_already_spent_amount,
-        rcc_spendable_balanceInPeriod,
-        rcc_period_start_timestamp,
-        rcc_period_end_timestamp
+        rcc_already_spent_amount_before,
+        rcc_spendable_balanceInPeriod_before,
+        rcc_period_start_timestamp_before,
+        rcc_period_end_timestamp_before
     ) = rcc_stable_registry.getPeriodState()
 
-    assert rcc_already_spent_amount == 800000000000000000000000
-    assert rcc_spendable_balanceInPeriod ==  2200000000000000000000000
-    assert rcc_period_start_timestamp == 1696118400
-    assert rcc_period_end_timestamp == 1704067200
+    assert rcc_already_spent_amount_before == 800000000000000000000000
+    assert rcc_spendable_balanceInPeriod_before ==  2200000000000000000000000
+    assert rcc_period_start_timestamp_before == 1696118400
+    assert rcc_period_end_timestamp_before == 1704067200
 
     (
-        pml_already_spent_amount,
-        pml_spendable_balanceInPeriod,
-        pml_period_start_timestamp,
-        pml_period_end_timestamp
+        pml_already_spent_amount_before,
+        pml_spendable_balanceInPeriod_before,
+        pml_period_start_timestamp_before,
+        pml_period_end_timestamp_before
     ) = pml_stable_registry.getPeriodState()
 
-    assert pml_already_spent_amount == 1500000000000000000000000
-    assert pml_spendable_balanceInPeriod ==  4500000000000000000000000
-    assert pml_period_start_timestamp == 1696118400
-    assert pml_period_end_timestamp == 1704067200
+    assert pml_already_spent_amount_before == 1500000000000000000000000
+    assert pml_spendable_balanceInPeriod_before ==  4500000000000000000000000
+    assert pml_period_start_timestamp_before == 1696118400
+    assert pml_period_end_timestamp_before == 1704067200
 
     (
-        atc_already_spent_amount,
-        atc_spendable_balanceInPeriod,
-        atc_period_start_timestamp,
-        atc_period_end_timestamp
+        atc_already_spent_amount_before,
+        atc_spendable_balanceInPeriod_before,
+        atc_period_start_timestamp_before,
+        atc_period_end_timestamp_before
     ) = atc_stable_registry.getPeriodState()
 
-    assert atc_already_spent_amount == 800000000000000000000000
-    assert atc_spendable_balanceInPeriod ==  700000000000000000000000
-    assert atc_period_start_timestamp == 1696118400
-    assert atc_period_end_timestamp == 1704067200
+    assert atc_already_spent_amount_before == 800000000000000000000000
+    assert atc_spendable_balanceInPeriod_before ==  700000000000000000000000
+    assert atc_period_start_timestamp_before == 1696118400
+    assert atc_period_end_timestamp_before == 1704067200
+
+    rcc_multisig_balance_before = contracts.lido.balanceOf(rcc_multisig_address)
+    pml_multisig_balance_before = contracts.lido.balanceOf(pml_multisig_address)
+    atc_multisig_balance_before = contracts.lido.balanceOf(atc_multisig_address)
+    dao_balance_before = contracts.lido.balanceOf(AGENT)
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -250,42 +261,57 @@ def test_vote(
     updated_factories_list = contracts.easy_track.getEVMScriptFactories()
     assert len(updated_factories_list) == 16
 
-    # check regsitries parameters after voting
+    rcc_multisig_balance_after = contracts.lido.balanceOf(rcc_multisig_address)
+    pml_multisig_balance_after = contracts.lido.balanceOf(pml_multisig_address)
+    atc_multisig_balance_after = contracts.lido.balanceOf(atc_multisig_address)
+    dao_balance_after = contracts.lido.balanceOf(AGENT)
+
+    rcc_fund_payout = Payout(token_addr=LIDO, from_addr=contracts.agent, to_addr=rcc_multisig_address, amount=1 * (10**18))
+    pml_fund_payout = Payout(token_addr=LIDO, from_addr=contracts.agent, to_addr=rcc_multisig_address, amount=1 * (10**18))
+    atc_fund_payout = Payout(token_addr=LIDO, from_addr=contracts.agent, to_addr=rcc_multisig_address, amount=1 * (10**18))
+    dao_fund_payout = Payout(token_addr=LIDO, from_addr=contracts.agent, to_addr=rcc_multisig_address, amount=1 * (10**18) + 1 * (10**18) + 1 * (10**18))
+
+    steth_balance_checker(rcc_multisig_balance_after - rcc_multisig_balance_before, rcc_fund_payout.amount)
+    steth_balance_checker(pml_multisig_balance_after - pml_multisig_balance_before, pml_fund_payout.amount)
+    steth_balance_checker(atc_multisig_balance_after - atc_multisig_balance_before, atc_fund_payout.amount)
+    steth_balance_checker(dao_balance_before - dao_balance_after, dao_fund_payout.amount)
+
+    # check registries parameters after voting
     (
-        rcc_already_spent_amount,
-        rcc_spendable_balanceInPeriod,
-        rcc_period_start_timestamp,
-        rcc_period_end_timestamp
+        rcc_already_spent_amount_after,
+        rcc_spendable_balanceInPeriod_after,
+        rcc_period_start_timestamp_after,
+        rcc_period_end_timestamp_after
     ) = rcc_stable_registry.getPeriodState()
 
-    assert rcc_already_spent_amount == 800000000000000000000000
-    assert rcc_spendable_balanceInPeriod ==  2200000000000000000000000
-    assert rcc_period_start_timestamp == 1696118400
-    assert rcc_period_end_timestamp == 1704067200
+    assert rcc_already_spent_amount_before == rcc_already_spent_amount_after == 800000000000000000000000
+    assert rcc_spendable_balanceInPeriod_before == rcc_spendable_balanceInPeriod_after == 2200000000000000000000000
+    assert rcc_period_start_timestamp_before == rcc_period_start_timestamp_after == 1696118400
+    assert rcc_period_end_timestamp_before == rcc_period_end_timestamp_after == 1704067200
 
     (
-        pml_already_spent_amount,
-        pml_spendable_balanceInPeriod,
-        pml_period_start_timestamp,
-        pml_period_end_timestamp
+        pml_already_spent_amount_after,
+        pml_spendable_balanceInPeriod_after,
+        pml_period_start_timestamp_after,
+        pml_period_end_timestamp_after
     ) = pml_stable_registry.getPeriodState()
 
-    assert pml_already_spent_amount == 1500000000000000000000000
-    assert pml_spendable_balanceInPeriod ==  4500000000000000000000000
-    assert pml_period_start_timestamp == 1696118400
-    assert pml_period_end_timestamp == 1704067200
+    assert pml_already_spent_amount_before == pml_already_spent_amount_after == 1500000000000000000000000
+    assert pml_spendable_balanceInPeriod_before == pml_spendable_balanceInPeriod_after == 4500000000000000000000000
+    assert pml_period_start_timestamp_before == pml_period_start_timestamp_after == 1696118400
+    assert pml_period_end_timestamp_before == pml_period_end_timestamp_after == 1704067200
 
     (
-        atc_already_spent_amount,
-        atc_spendable_balanceInPeriod,
-        atc_period_start_timestamp,
-        atc_period_end_timestamp
+        atc_already_spent_amount_after,
+        atc_spendable_balanceInPeriod_after,
+        atc_period_start_timestamp_after,
+        atc_period_end_timestamp_after
     ) = atc_stable_registry.getPeriodState()
 
-    assert atc_already_spent_amount == 800000000000000000000000
-    assert atc_spendable_balanceInPeriod ==  700000000000000000000000
-    assert atc_period_start_timestamp == 1696118400
-    assert atc_period_end_timestamp == 1704067200
+    assert atc_already_spent_amount_before == atc_already_spent_amount_after == 800000000000000000000000
+    assert atc_spendable_balanceInPeriod_before == atc_spendable_balanceInPeriod_after == 700000000000000000000000
+    assert atc_period_start_timestamp_before == atc_period_start_timestamp_after == 1696118400
+    assert atc_period_end_timestamp_before == atc_period_end_timestamp_after == 1704067200
 
     # permissions
     assert has_payments_permission(contracts.acl, contracts.finance, permission.entity, eth["address"], ldo_holder.address, eth["limit"])
@@ -547,111 +573,10 @@ def test_vote(
         ),
     )
 
-# todo: move to utils
-def create_and_enact_payment_motion(
-    easy_track,
-    trusted_caller,
-    factory,
-    token,
-    recievers,
-    transfer_amounts,
-    stranger,
-):
-    agent = accounts.at(AGENT, {"force": True})
-    agent_balance_before = balance_of(agent, token)
-    recievers_balance_before = [balance_of(reciever, token) for reciever in recievers]
-    motions_before = easy_track.getMotions()
-
-    recievers_addresses = [reciever.address for reciever in recievers]
-
-    calldata = _encode_calldata("(address[],uint256[])", [recievers_addresses, transfer_amounts])
-
-    tx = easy_track.createMotion(factory, calldata, {"from": trusted_caller})
-
-    motions = easy_track.getMotions()
-    assert len(motions) == len(motions_before) + 1
-
-    chain.sleep(60 * 60 * 24 * 3)
-    chain.mine()
-
-    easy_track.enactMotion(
-        motions[-1][0],
-        tx.events["MotionCreated"]["_evmScriptCallData"],
-        {"from": stranger},
+def has_payments_permission(acl, finance, sender, token, receiver, amount) -> bool:
+    return acl.hasPermission["address,address,bytes32,uint[]"](
+        sender, finance, finance.CREATE_PAYMENTS_ROLE(), [token, receiver, amount]
     )
 
-    recievers_balance_after = [balance_of(reciever, token)for reciever in recievers]
-    for i in range(len(recievers)):
-        assert recievers_balance_after[i] == recievers_balance_before[i] + transfer_amounts[i]
-
-    agent_balance_after = balance_of(agent, token)
-
-    assert agent_balance_after == agent_balance_before - sum(transfer_amounts)
-
-def _encode_calldata(signature, values):
-    return "0x" + encode_single(signature, values).hex()
-
-def balance_of(address, token):
-    if token == eth:
-        return address.balance()
-    else:
-        return token.balanceOf(address)
-    
-def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, dao_voting):
-    recipient_candidate = accounts[0]
-    title = ""
-    recipients_length_before = len(registry.getAllowedRecipients())
-
-    assert not registry.isRecipientAllowed(recipient_candidate)
-
-    call_script_items = [
-        agent_forward(
-            [
-                (
-                    registry.address,
-                    registry.addRecipient.encode_input(recipient_candidate, title),
-                )
-            ]
-        )
-    ]
-    vote_desc_items = ["Add recipient"]
-    vote_items = bake_vote_items(vote_desc_items, call_script_items)
-
-    vote_id = create_vote(vote_items, {"from": ldo_holder})[0]
-
-    helpers.execute_vote(
-        vote_id=vote_id,
-        accounts=accounts,
-        dao_voting=dao_voting,
-        skip_time=3 * 60 * 60 * 24,
-    )
-
-    assert registry.isRecipientAllowed(recipient_candidate)
-    assert len(registry.getAllowedRecipients()) == recipients_length_before + 1, 'Wrong whitelist length'
-
-    call_script_items = [
-        agent_forward(
-            [
-                (
-                    registry.address,
-                    registry.removeRecipient.encode_input(recipient_candidate),
-                )
-            ]
-        )
-    ]
-    vote_desc_items = ["Remove recipient"]
-    vote_items = bake_vote_items(vote_desc_items, call_script_items)
-
-    vote_id = create_vote(vote_items, {"from": ldo_holder})[0]
-
-    helpers.execute_vote(
-        vote_id=vote_id,
-        accounts=accounts,
-        dao_voting=dao_voting,
-        skip_time=3 * 60 * 60 * 24,
-    )
-
-    assert not registry.isRecipientAllowed(recipient_candidate)
-    assert len(registry.getAllowedRecipients()) == recipients_length_before, 'Wrong whitelist length'
-
-
+def steth_balance_checker(lhs_value: int, rhs_value: int):
+    assert (lhs_value + 5) // 10 == (rhs_value + 5) // 10

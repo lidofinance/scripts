@@ -176,7 +176,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             revoke_from=EASYTRACK_EVMSCRIPT_EXECUTOR,
         ),
         # 2. Grant role CREATE_PAYMENTS_ROLE to EasyTrack EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
-        # with limits: 1000 ETH, 1000 stETH, 5M LDO, 2M DAI, 2M USTD, 2M USDC
+        # with limits: 1000 ETH, 1000 stETH, 5M LDO, 2M DAI, 2M USDT, 2M USDC
         encode_permission_grant_p(
             target_app=contracts.finance,
             permission_name="CREATE_PAYMENTS_ROLE",
@@ -216,19 +216,19 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         make_steth_payout(
             target_address=rcc_multisig_address,
             steth_in_wei=1 * (10**18),
-            reference="Fund Gas Funder multisig"
+            reference="Fund RCC multisig"
         ),
         # 10. Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
         make_steth_payout(
             target_address=pml_multisig_address,
             steth_in_wei=1 * (10**18),
-            reference="Fund Gas Funder multisig"
+            reference="Fund PML multisig"
         ),
         # 11. Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
         make_steth_payout(
             target_address=atc_multisig_address,
             steth_in_wei=1 * (10**18),
-            reference="Fund Gas Funder multisig"
+            reference="Fund ATC multisig"
         )
     ]
 
