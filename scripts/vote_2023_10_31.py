@@ -1,6 +1,22 @@
 """
-todo: change title
 Voting 31/10/2023.
+
+I. Add USDT and USDC to EVMScriptExecutor permissions
+1. Remove CREATE_PAYMENTS_ROLE from EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
+2. Add CREATE_PAYMENTS_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 with single transfer limits of 1,000 ETH, 1,000 stETH, 5,000,000 LDO, 2,000,000 DAI, 2,000,000 USDC, 2,000,000 USDT
+
+II. Switch ET DAI top-up setups into ET Stables setups for RCC PML ATC
+3. Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track
+4. Remove PML DAI top up EVM script factory (old ver) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD from Easy Track
+5. Remove ATC DAI top up EVM script factory (old ver) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 from Easy Track
+6. Add RCC stable top up EVM script factory 0x75bDecbb6453a901EBBB945215416561547dfDD4 
+7. Add PML stable top up EVM script factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D
+8. Add ATC stable top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab
+
+III. stETH transfers to  RCC PML ATC
+9. Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+10. Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
+11. Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
 
 """
 
@@ -29,26 +45,19 @@ from utils.config import (
     USDT_TOKEN
 )
 
-# todo: change description
 description = """
+### Omnibus on-chain vote contains:
 
-I. Add USDT and USDC to EVMScriptExecutor permissions
-1. Remove CREATE_PAYMENTS_ROLE from EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
-2. Add CREATE_PAYMENTS_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 with single transfer limits of 1,000 ETH, 1,000 stETH, 5,000,000 LDO, 2,000,000 DAI, 2,000,000 USDC, 2,000,000 USDT
+Two motions to **optimize [Lido Contributors Group's multisigs](https://research.lido.fi/t/ref-introducing-the-lido-contributors-group-including-pool-maintenance-labs-and-argo-technology-consulting/3069) funding operations by [upgrading the Easy Track setup](https://research.lido.fi/t/updating-the-easy-track-setups-to-allow-dai-usdt-usdc-payments-for-lido-contributors-group/5738)**, allowing it to work with DAI, USDT, USDC instead of DAI-only.
 
-II. Switch ET DAI top-up setups into ET Stables setups for RCC PML ATC
-3. Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track
-4. Remove PML DAI top up EVM script factory (old ver) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD from Easy Track
-5. Remove ATC DAI top up EVM script factory (old ver) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 from Easy Track
-6. Add RCC stable top up EVM script factory 0x75bDecbb6453a901EBBB945215416561547dfDD4 
-7. Add PML stable top up EVM script factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D
-8. Add ATC stable top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab
+1. Grant to `EVMScripExecutor` the permissions to transfer USDT and USDC in addition to current ETH, stETH, LDO, and DAI. Items 1,2.
+2. Switch the Easy Track DAI top-up setup to the Easy Track DAI, USDT, and USDC top-up setup for all [Lido Contributors Group multisigs](https://research.lido.fi/t/ref-introducing-the-lido-contributors-group-including-pool-maintenance-labs-and-argo-technology-consulting/3069) ([RCC](https://app.safe.global/settings/setup?safe=eth:0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437), [PML](https://app.safe.global/settings/setup?safe=eth:0x17F6b2C738a63a8D3A113a228cfd0b373244633D), and [ATC](https://app.safe.global/settings/setup?safe=eth:0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956)). Items 3-8.
 
-III. stETH transfers to  RCC PML ATC
-9. Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
-10. Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
-11. Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
+The new version of contracts was [audited by Oxorio](LINK_TO_AUDIT).
 
+And last motion is
+
+3. **stETH transfer to the [Lido Contributor's Group multisigs](https://research.lido.fi/t/ref-introducing-the-lido-contributors-group-including-pool-maintenance-labs-and-argo-technology-consulting/3069)** ([RCC](https://app.safe.global/settings/setup?safe=eth:0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437), [PML](https://app.safe.global/settings/setup?safe=eth:0x17F6b2C738a63a8D3A113a228cfd0b373244633D), and [ATC](https://app.safe.global/settings/setup?safe=eth:0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956)), as previously [requested on the forum](https://research.lido.fi/t/lido-v2-may-1-2023-december-31-2023-lido-ongoing-grant-request/4476/11). Items 9-11.
 """
 
 eth = {
@@ -187,7 +196,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         remove_evmscript_factory(factory=pml_dai_topup_factory_old),
         ## 5. Remove ATC DAI top up EVM script factory (old ver) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 from Easy Track
         remove_evmscript_factory(factory=atc_dai_topup_factory_old),
-        # todo: change addresses
         ## 6. Add RCC stable top up EVM script factory 0x75bDecbb6453a901EBBB945215416561547dfDD4 to Easy Track
         add_evmscript_factory(
             factory=rcc_stable_topup_factory,
@@ -228,7 +236,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         )
     ]
 
-    # todo: change addresses in 6,7,8 strings and stETH amount
     vote_desc_items = [
         f"1) Revoke role CREATE_PAYMENTS_ROLE from EVM script executor",
         f"2) Grant role CREATE_PAYMENTS_ROLE to EasyTrack EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977",
