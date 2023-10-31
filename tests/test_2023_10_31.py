@@ -42,14 +42,7 @@ def test_vote(
     prysmatic_labs_node_new_name = "Prysm Team at Offchain Labs"
     prysmatic_labs_node_data_before_voting = NO_registry.getNodeOperator(prysmatic_labs_node_id, True)
 
-    permission_manage_no = Permission(
-        entity=contracts.voting,
-        app=NO_registry,
-        role=NO_registry.MANAGE_NODE_OPERATOR_ROLE(),
-    )
-
     # Check node operator name before
-    assert not contracts.acl.hasPermission(*permission_manage_no)
     assert prysmatic_labs_node_data_before_voting["name"] == prysmatic_labs_node_old_name, "Incorrect NO#27 name before"
 
     # START VOTE
@@ -78,8 +71,6 @@ def test_vote(
     steth_balance_checker(dao_balance_before - dao_balance_after, rcc_fund_payout.amount + pml_fund_payout.amount + atc_fund_payout.amount)
 
     # node operator name
-    assert not contracts.acl.hasPermission(*permission_manage_no)
-
     prysmatic_labs_node_data_after_voting = NO_registry.getNodeOperator(prysmatic_labs_node_id, True)
 
     assert prysmatic_labs_node_data_before_voting["active"] == prysmatic_labs_node_data_after_voting["active"]

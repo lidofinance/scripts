@@ -19,7 +19,6 @@ from brownie.network.transaction import TransactionReceipt
 from utils.agent import agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
-from utils.permissions import encode_permission_revoke, encode_permission_grant
 from utils.node_operators import encode_set_node_operator_name
 from utils.finance import make_steth_payout
 from utils.config import (
@@ -82,7 +81,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         f"1) Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437",
         f"2) Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D",
         f"3) Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956",
-        f"4) Change node operator name from Prysmatic Labs to Prysm Team at Offchain Labs",
+        f"4) Change the on-chain name of node operator with id 27 from 'Prysmatic Labs' to 'Prysm Team at Offchain Labs'",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
