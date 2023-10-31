@@ -61,9 +61,9 @@ def test_vote(
     atc_multisig_balance_after = contracts.lido.balanceOf(atc_multisig_address)
     dao_balance_after = contracts.lido.balanceOf(AGENT)
 
-    rcc_fund_payout = Payout(token_addr=LIDO, from_addr=contracts.agent, to_addr=rcc_multisig_address, amount=1 * (10**18))
-    pml_fund_payout = Payout(token_addr=LIDO, from_addr=contracts.agent, to_addr=pml_multisig_address, amount=1 * (10**18))
-    atc_fund_payout = Payout(token_addr=LIDO, from_addr=contracts.agent, to_addr=atc_multisig_address, amount=1 * (10**18))
+    rcc_fund_payout = Payout(token_addr=LIDO, from_addr=contracts.agent, to_addr=rcc_multisig_address, amount=279 * (10**18))
+    pml_fund_payout = Payout(token_addr=LIDO, from_addr=contracts.agent, to_addr=pml_multisig_address, amount=447 * (10**18))
+    atc_fund_payout = Payout(token_addr=LIDO, from_addr=contracts.agent, to_addr=atc_multisig_address, amount=391 * (10**18))
 
     steth_balance_checker(rcc_multisig_balance_after - rcc_multisig_balance_before, rcc_fund_payout.amount)
     steth_balance_checker(pml_multisig_balance_after - pml_multisig_balance_before, pml_fund_payout.amount)

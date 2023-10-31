@@ -2,9 +2,9 @@
 Voting 31/10/2023.
 
 I. stETH transfers to  RCC PML ATC
-1. Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
-2. Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
-3. Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
+1. Transfer 279 stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+2. Transfer 447 stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
+3. Transfer 391 stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
 
 II. Change the on-chain name of node operator with id 27 from 'Prysmatic Labs' to 'Prysm Team at Offchain Labs'
 4. Change node operator name from Prysmatic Labs to Prysm Team at Offchain Labs
@@ -48,22 +48,22 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
     call_script_items = [
         # I. stETH transfers to RCC PML ATC
-        # 1. Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+        # 1. Transfer 279 stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
         make_steth_payout(
             target_address=rcc_multisig_address,
-            steth_in_wei=1 * (10**18),
+            steth_in_wei=279 * (10**18),
             reference="Fund RCC multisig"
         ),
-        # 2. Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
+        # 2. Transfer 447 stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
         make_steth_payout(
             target_address=pml_multisig_address,
-            steth_in_wei=1 * (10**18),
+            steth_in_wei=447 * (10**18),
             reference="Fund PML multisig"
         ),
-        # 3. Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
+        # 3. Transfer 391 stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
         make_steth_payout(
             target_address=atc_multisig_address,
-            steth_in_wei=1 * (10**18),
+            steth_in_wei=391 * (10**18),
             reference="Fund ATC multisig"
         ),
         # II. Change the on-chain name of node operator with id 27 from 'Prysmatic Labs' to 'Prysm Team at Offchain Labs'
@@ -78,9 +78,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     ]
 
     vote_desc_items = [
-        f"1) Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437",
-        f"2) Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D",
-        f"3) Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956",
+        f"1) Transfer 279 stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437",
+        f"2) Transfer 447 stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D",
+        f"3) Transfer 391 stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956",
         f"4) Change the on-chain name of node operator with id 27 from 'Prysmatic Labs' to 'Prysm Team at Offchain Labs'",
     ]
 
