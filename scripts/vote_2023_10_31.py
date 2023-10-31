@@ -7,7 +7,9 @@ I. stETH transfers to  RCC PML ATC
 3. Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
 
 II. Change the on-chain name of node operator with id 27 from 'Prysmatic Labs' to 'Prysm Team at Offchain Labs'
-
+4. Grant NodeOperatorsRegistry.MANAGE_NODE_OPERATOR_ROLE to voting
+5. Change node operator name from Prysmatic Labs to Prysm Team at Offchain Labs
+6. Revoke MANAGE_NODE_OPERATOR_ROLE from Voting
 
 """
 
@@ -31,18 +33,9 @@ from utils.config import (
 description = """
 ### Omnibus on-chain vote contains:
 
-Two motions to **optimize [Lido Contributors Group's multisigs](https://research.lido.fi/t/ref-introducing-the-lido-contributors-group-including-pool-maintenance-labs-and-argo-technology-consulting/3069) funding operations by [upgrading the Easy Track setup](https://research.lido.fi/t/updating-the-easy-track-setups-to-allow-dai-usdt-usdc-payments-for-lido-contributors-group/5738)**, allowing it to work with DAI, USDT, USDC instead of DAI-only.
-
-1. Grant to `EVMScripExecutor` the permissions to transfer USDT and USDC in addition to current ETH, stETH, LDO, and DAI. Items 1,2.
-2. Switch the Easy Track DAI top-up setup to the Easy Track DAI, USDT, and USDC top-up setup for all [Lido Contributors Group multisigs](https://research.lido.fi/t/ref-introducing-the-lido-contributors-group-including-pool-maintenance-labs-and-argo-technology-consulting/3069) ([RCC](https://app.safe.global/settings/setup?safe=eth:0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437), [PML](https://app.safe.global/settings/setup?safe=eth:0x17F6b2C738a63a8D3A113a228cfd0b373244633D), and [ATC](https://app.safe.global/settings/setup?safe=eth:0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956)). Items 3-8.
-
-The new version of contracts was [audited by Oxorio](LINK_TO_AUDIT).
-
-And last motion is
-
-3. **stETH transfer to the [Lido Contributor's Group multisigs](https://research.lido.fi/t/ref-introducing-the-lido-contributors-group-including-pool-maintenance-labs-and-argo-technology-consulting/3069)** ([RCC](https://app.safe.global/settings/setup?safe=eth:0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437), [PML](https://app.safe.global/settings/setup?safe=eth:0x17F6b2C738a63a8D3A113a228cfd0b373244633D), and [ATC](https://app.safe.global/settings/setup?safe=eth:0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956)), as previously [requested on the forum](https://research.lido.fi/t/lido-v2-may-1-2023-december-31-2023-lido-ongoing-grant-request/4476/11). Items 9-11.
+1. stETH transfer to the [Lido Contributors Group multisigs](https://research.lido.fi/t/ref-introducing-the-lido-contributors-group-including-pool-maintenance-labs-and-argo-technology-consulting/3069) ([RCC](https://app.safe.global/settings/setup?safe=eth:0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437), [PML](https://app.safe.global/settings/setup?safe=eth:0x17F6b2C738a63a8D3A113a228cfd0b373244633D), and [ATC](https://app.safe.global/settings/setup?safe=eth:0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956)), as previously [requested on the forum](https://research.lido.fi/t/lido-v2-may-1-2023-december-31-2023-lido-ongoing-grant-request/4476/11). Items 1-3.
+2. Changing the Node Operator's (#id - 27) name, as [requested on the forum](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/16). Items 4-6.
 """
-
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""

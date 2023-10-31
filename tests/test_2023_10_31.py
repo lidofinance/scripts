@@ -83,7 +83,7 @@ def test_vote(
     steth_balance_checker(rcc_multisig_balance_after - rcc_multisig_balance_before, rcc_fund_payout.amount)
     steth_balance_checker(pml_multisig_balance_after - pml_multisig_balance_before, pml_fund_payout.amount)
     steth_balance_checker(atc_multisig_balance_after - atc_multisig_balance_before, atc_fund_payout.amount)
-    steth_balance_checker(dao_balance_before - dao_balance_after, 1 * (10**18) + 1 * (10**18) + 1 * (10**18))
+    steth_balance_checker(dao_balance_before - dao_balance_after, rcc_fund_payout.amount + pml_fund_payout.amount + atc_fund_payout.amount)
 
     # node operator name
     assert not contracts.acl.hasPermission(*permission_manage_no)
