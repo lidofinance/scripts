@@ -4,17 +4,13 @@ Tests for voting 31/10/2023
 """
 
 from scripts.vote_2023_10_31 import start_vote
-from brownie import interface, web3
+from brownie import interface
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.payout import (
     Payout,
     validate_token_payout_event
 )
-from utils.test.event_validators.permission import (
-    Permission,
-    validate_permission_revoke_event,
-    validate_permission_grant_event
-)
+from utils.test.event_validators.permission import Permission
 from utils.test.event_validators.node_operators_registry import (
     validate_node_operator_name_set_event,
     NodeOperatorNameSetItem,
@@ -46,10 +42,6 @@ def test_vote(
     prysmatic_labs_node_new_name = "Prysm Team at Offchain Labs"
     prysmatic_labs_node_data_before_voting = NO_registry.getNodeOperator(prysmatic_labs_node_id, True)
 
-    MANAGE_NODE_OPERATOR_ROLE = web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")
-    permission = Permission(
-        entity=contracts.voting, app=contracts.node_operators_registry, role=MANAGE_NODE_OPERATOR_ROLE.hex()
-    )
     permission_manage_no = Permission(
         entity=contracts.voting,
         app=NO_registry,
@@ -96,7 +88,7 @@ def test_vote(
     compare_NO_validators_data(prysmatic_labs_node_data_before_voting, prysmatic_labs_node_data_after_voting)
 
     # validate vote events
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 6, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 4, "Incorrect voting items count"
 
     display_voting_events(vote_tx)
 
@@ -105,9 +97,7 @@ def test_vote(
     validate_token_payout_event(evs[0], rcc_fund_payout, True)
     validate_token_payout_event(evs[1], pml_fund_payout, True)
     validate_token_payout_event(evs[2], atc_fund_payout, True)
-    validate_permission_grant_event(evs[3], permission)
-    validate_node_operator_name_set_event(evs[4], NodeOperatorNameSetItem(nodeOperatorId=prysmatic_labs_node_id, name=prysmatic_labs_node_new_name))
-    validate_permission_revoke_event(evs[5], permission_manage_no)
+    validate_node_operator_name_set_event(evs[3], NodeOperatorNameSetItem(nodeOperatorId=prysmatic_labs_node_id, name=prysmatic_labs_node_new_name))
 
 def steth_balance_checker(lhs_value: int, rhs_value: int):
     assert (lhs_value + 5) // 10 == (rhs_value + 5) // 10

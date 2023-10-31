@@ -7,9 +7,7 @@ I. stETH transfers to  RCC PML ATC
 3. Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
 
 II. Change the on-chain name of node operator with id 27 from 'Prysmatic Labs' to 'Prysm Team at Offchain Labs'
-4. Grant NodeOperatorsRegistry.MANAGE_NODE_OPERATOR_ROLE to voting
-5. Change node operator name from Prysmatic Labs to Prysm Team at Offchain Labs
-6. Revoke MANAGE_NODE_OPERATOR_ROLE from Voting
+4. Change node operator name from Prysmatic Labs to Prysm Team at Offchain Labs
 
 """
 
@@ -18,6 +16,7 @@ import time
 from typing import Dict
 from brownie import interface
 from brownie.network.transaction import TransactionReceipt
+from utils.agent import agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.permissions import encode_permission_revoke, encode_permission_grant
@@ -34,7 +33,7 @@ description = """
 ### Omnibus on-chain vote contains:
 
 1. stETH transfer to the [Lido Contributors Group multisigs](https://research.lido.fi/t/ref-introducing-the-lido-contributors-group-including-pool-maintenance-labs-and-argo-technology-consulting/3069) ([RCC](https://app.safe.global/settings/setup?safe=eth:0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437), [PML](https://app.safe.global/settings/setup?safe=eth:0x17F6b2C738a63a8D3A113a228cfd0b373244633D), and [ATC](https://app.safe.global/settings/setup?safe=eth:0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956)), as previously [requested on the forum](https://research.lido.fi/t/lido-v2-may-1-2023-december-31-2023-lido-ongoing-grant-request/4476/11). Items 1-3.
-2. Changing the Node Operator's (#id - 27) name, as [requested on the forum](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/16). Items 4-6.
+2. Changing the Node Operator's (#id - 27) name, as [requested on the forum](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/16). Item 4.
 """
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
@@ -69,33 +68,21 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             reference="Fund ATC multisig"
         ),
         # II. Change the on-chain name of node operator with id 27 from 'Prysmatic Labs' to 'Prysm Team at Offchain Labs'
-        # 4. Grant NodeOperatorsRegistry.MANAGE_NODE_OPERATOR_ROLE to voting
-        encode_permission_grant(
-            target_app=NO_registry,
-            permission_name="MANAGE_NODE_OPERATOR_ROLE",
-            grant_to=contracts.voting
-        ),
-        # 5. Change node operator #27 name from `Prysmatic Labs` to `Prysm Team at Offchain Labs`
-        encode_set_node_operator_name(
-            prysmatic_labs_node_id,
-            prysmatic_labs_node_new_name,
-            NO_registry
-        ),
-        # 6. Revoke MANAGE_NODE_OPERATOR_ROLE from Voting
-        encode_permission_revoke(
-            NO_registry,
-            "MANAGE_NODE_OPERATOR_ROLE",
-            revoke_from=contracts.voting
-        )
+        # 4. Change node operator #27 name from `Prysmatic Labs` to `Prysm Team at Offchain Labs`
+        agent_forward([
+                encode_set_node_operator_name(
+                    prysmatic_labs_node_id,
+                    prysmatic_labs_node_new_name,
+                    NO_registry
+            )
+        ])
     ]
 
     vote_desc_items = [
         f"1) Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437",
         f"2) Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D",
         f"3) Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956",
-        f"4) Grant NodeOperatorsRegistry.MANAGE_NODE_OPERATOR_ROLE to voting",
-        f"5) Change node operator name from Prysmatic Labs to Prysm Team at Offchain Labs",
-        f"6) Revoke MANAGE_NODE_OPERATOR_ROLE from Voting",
+        f"4) Change node operator name from Prysmatic Labs to Prysm Team at Offchain Labs",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
