@@ -3,13 +3,13 @@ development:
     cmd_settings:
       accounts: 10
       fork: mainnet
-      gas_limit: 12000000
+      gas_limit: 30000000
       mnemonic: brownie
       port: 8545
     host: http://127.0.0.1
     id: mainnet-fork
     name: Ganache-CLI (Mainnet Fork)
-    timeout: 180
+    timeout: 360
     # https://github.com/mds1/multicall#multicall2-contract-addresses
     multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
   - cmd: ./ganache.sh
@@ -17,25 +17,25 @@ development:
       accounts: 10
       chain_id: 5
       fork: goerli
-      gas_limit: 12000000
+      gas_limit: 300000000
       mnemonic: brownie
       port: 8545
     host: http://127.0.0.1
     id: goerli-fork
     name: goerli-fork
-    timeout: 180
+    timeout: 360
   - cmd: ./ganache.sh
     cmd_settings:
       accounts: 10
       chain_id: 1337
       fork: http://127.0.0.1:7777
-      gas_limit: 12000000
+      gas_limit: 300000000
       mnemonic: brownie
       port: 8545
     host: http://127.0.0.1
     id: local-fork
     name: local-fork
     explorer: https://api.etherscan.io/api
-    timeout: 180
+    timeout: 360
     # https://github.com/mds1/multicall#multicall2-contract-addresses
     multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
