@@ -86,6 +86,8 @@ def test_steth(contract):
 
 def test_lido_state(contract):
     stake_limit = contract.getStakeLimitFullInfo()
+    (total_exited_validators, _, _) = contracts.staking_router.getStakingModuleSummary(1)
+
     assert stake_limit["isStakingPaused"] == False
     assert stake_limit["isStakingLimitSet"] == True
     assert stake_limit["maxStakeLimit"] == LIDO_MAX_STAKE_LIMIT_ETH * ONE_ETH
@@ -97,7 +99,7 @@ def test_lido_state(contract):
     assert beacon_stat["beaconValidators"] >= last_seen_beacon_validators
     # might break once enough exited validators registered
     # they are not excluded from the 'beaconValidators' counter even though have zero balance
-    assert beacon_stat["beaconBalance"] >= 31 * 1e18 * beacon_stat["beaconValidators"], "no full withdrawals happened"
+    assert beacon_stat["beaconBalance"] >= 32 * 1e18 * (beacon_stat["beaconValidators"] - total_exited_validators), "no full withdrawals happened"
     assert beacon_stat["depositedValidators"] >= beacon_stat["beaconValidators"]
 
     assert contract.getTotalELRewardsCollected() >= last_seen_total_rewards_collected
