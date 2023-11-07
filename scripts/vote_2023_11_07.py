@@ -9,7 +9,6 @@ I. stETH transfers to  RCC PML ATC
 II. Change the on-chain name of node operator with id 27 from 'Prysmatic Labs' to 'Prysm Team at Offchain Labs'
 4. Change node operator name from Prysmatic Labs to Prysm Team at Offchain Labs
 
-The vote REJECTED.
 """
 
 import time
@@ -34,6 +33,8 @@ description = """
 
 1. stETH transfer to the [Lido Contributors Group multisigs](https://research.lido.fi/t/ref-introducing-the-lido-contributors-group-including-pool-maintenance-labs-and-argo-technology-consulting/3069) ([RCC](https://app.safe.global/settings/setup?safe=eth:0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437), [PML](https://app.safe.global/settings/setup?safe=eth:0x17F6b2C738a63a8D3A113a228cfd0b373244633D), and [ATC](https://app.safe.global/settings/setup?safe=eth:0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956)), as previously [requested on the forum](https://research.lido.fi/t/lido-v2-may-1-2023-december-31-2023-lido-ongoing-grant-request/4476/11). Items 1-3.
 2. Changing the Node Operator's (#id - 27) name, as [requested on the forum](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/16). Item 4.
+
+That's a rerun of [vote #166](https://vote.lido.fi/vote/166).
 """
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
