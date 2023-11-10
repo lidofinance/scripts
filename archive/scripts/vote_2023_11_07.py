@@ -9,6 +9,7 @@ I. stETH transfers to  RCC PML ATC
 II. Change the on-chain name of node operator with id 27 from 'Prysmatic Labs' to 'Prysm Team at Offchain Labs'
 4. Change node operator name from Prysmatic Labs to Prysm Team at Offchain Labs
 
+Vote passed & executed on Nov-10-2023 02:43:23 PM +UTC, block 18542216
 """
 
 import time
