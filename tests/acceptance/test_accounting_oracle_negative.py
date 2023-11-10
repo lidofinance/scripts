@@ -179,8 +179,8 @@ class TestSubmitReportExtraDataList:
     def test_too_short_extra_data_item(self):
         extra_data = b"".join(
             (
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1], [2]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 2, [1], [2])[:36],
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [2]),
+                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 2, [2], [2])[:36],
             )
         )
 
@@ -189,8 +189,8 @@ class TestSubmitReportExtraDataList:
 
         extra_data = b"".join(
             (
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1, 2, 3, 4], [2]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 2, [1], [2]),
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2, 3, 4, 5], [2]),
+                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 2, [2], [2]),
             )
         )
 
@@ -200,7 +200,7 @@ class TestSubmitReportExtraDataList:
     def test_nos_count_zero(self):
         extra_data = b"".join(
             (
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1], [2]),
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [2]),
                 build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 2, [], [1]),
             )
         )
@@ -211,8 +211,8 @@ class TestSubmitReportExtraDataList:
     def test_module_id_zero(self):
         extra_data = b"".join(
             (
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1], [2]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 0, [1], [1]),
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [2]),
+                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 0, [2], [1]),
             )
         )
 
@@ -220,11 +220,10 @@ class TestSubmitReportExtraDataList:
             self.report(extra_data)
 
     def test_unexpected_extra_data_index(self):
-
         extra_data = b"".join(
             (
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1], [1]),
-                build_extra_data_item(2, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 2, [1], [1]),
+                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [1]),
+                build_extra_data_item(2, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 2, [2], [1]),
             )
         )
 
@@ -233,8 +232,8 @@ class TestSubmitReportExtraDataList:
 
         extra_data = b"".join(
             (
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1], [1]),
-                build_extra_data_item(3, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1], [1]),
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [1]),
+                build_extra_data_item(3, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [1]),
             )
         )
 
@@ -243,8 +242,8 @@ class TestSubmitReportExtraDataList:
 
         extra_data = b"".join(
             (
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1], [1]),
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1], [1]),
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [1]),
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [1]),
             )
         )
 
@@ -265,8 +264,8 @@ class TestSubmitReportExtraDataList:
     def test_invalid_extra_data_sort_order(self):
         extra_data = b"".join(
             (
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1], [1]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1], [1]),
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [1]),
+                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [1]),
             )
         )
 
@@ -280,8 +279,8 @@ class TestSubmitReportExtraDataList:
 
         extra_data = b"".join(
             (
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [1], [1]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [1], [1]),
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [38], [1]),
+                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [38], [1]),
             )
         )
 
@@ -295,8 +294,8 @@ class TestSubmitReportExtraDataList:
 
     def test_unexpected_extra_data_item(self, extra_data_service: ExtraDataService) -> None:
         extra_data = extra_data_service.collect(
-            {(1, 1): 1},
-            {(1, 1): 1},
+            {(1, 38): 1},
+            {(1, 38): 1},
             MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
             1,
         )
@@ -322,8 +321,8 @@ class TestSubmitReportExtraDataList:
         extra_data_service: ExtraDataService,
     ):
         extra_data = extra_data_service.collect(
-            {(1, 1): 1},
-            {(1, 1): 1},
+            {(1, 38): 1},
+            {(1, 38): 1},
             MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
             1,
         )

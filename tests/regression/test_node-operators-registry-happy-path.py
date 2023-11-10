@@ -1,6 +1,7 @@
 import pytest
 from web3 import Web3
-from brownie import chain, ZERO_ADDRESS
+import eth_abi
+from brownie import chain, ZERO_ADDRESS, web3
 
 from utils.test.extra_data import (
     ExtraDataService,
@@ -276,17 +277,23 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
     assert nor.isOperatorPenalized(base_no_id) == False
 
     # Events
-    assert extra_report_tx.events["ExitedSigningKeysCountChanged"][0]["nodeOperatorId"] == tested_no_id_first
-    assert extra_report_tx.events["ExitedSigningKeysCountChanged"][0]["exitedValidatorsCount"] == 5
+    exited_signing_keys_count_events = parse_exited_signing_keys_count_changed_logs(
+        filter_transfer_logs(extra_report_tx.logs, web3.keccak(text="ExitedSigningKeysCountChanged(uint256,uint256)"))
+    )
+    assert exited_signing_keys_count_events[0]["nodeOperatorId"] == tested_no_id_first
+    assert exited_signing_keys_count_events[0]["exitedValidatorsCount"] == 5
 
-    assert extra_report_tx.events["ExitedSigningKeysCountChanged"][1]["nodeOperatorId"] == tested_no_id_second
-    assert extra_report_tx.events["ExitedSigningKeysCountChanged"][1]["exitedValidatorsCount"] == 5
+    assert exited_signing_keys_count_events[1]["nodeOperatorId"] == tested_no_id_second
+    assert exited_signing_keys_count_events[1]["exitedValidatorsCount"] == 5
+    
+    stuck_penalty_state_changed_events = parse_stuck_penalty_state_changed_logs(
+        filter_transfer_logs(extra_report_tx.logs, web3.keccak(text="StuckPenaltyStateChanged(uint256,uint256,uint256,uint256)"))
+    )
+    assert stuck_penalty_state_changed_events[0]["nodeOperatorId"] == tested_no_id_first
+    assert stuck_penalty_state_changed_events[0]["stuckValidatorsCount"] == 2
 
-    assert extra_report_tx.events["StuckPenaltyStateChanged"][0]["nodeOperatorId"] == tested_no_id_first
-    assert extra_report_tx.events["StuckPenaltyStateChanged"][0]["stuckValidatorsCount"] == 2
-
-    assert extra_report_tx.events["StuckPenaltyStateChanged"][1]["nodeOperatorId"] == tested_no_id_second
-    assert extra_report_tx.events["StuckPenaltyStateChanged"][1]["stuckValidatorsCount"] == 2
+    assert stuck_penalty_state_changed_events[1]["nodeOperatorId"] == tested_no_id_second
+    assert stuck_penalty_state_changed_events[1]["stuckValidatorsCount"] == 2
 
     # Deposit keys
     (
@@ -406,11 +413,17 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
     assert nor.isOperatorPenalized(base_no_id) == False
 
     # events
-    assert extra_report_tx.events["ExitedSigningKeysCountChanged"][0]["nodeOperatorId"] == tested_no_id_first
-    assert extra_report_tx.events["ExitedSigningKeysCountChanged"][0]["exitedValidatorsCount"] == 7
+    exited_signing_keys_count_events = parse_exited_signing_keys_count_changed_logs(
+        filter_transfer_logs(extra_report_tx.logs, web3.keccak(text="ExitedSigningKeysCountChanged(uint256,uint256)"))
+    )
+    assert exited_signing_keys_count_events[0]["nodeOperatorId"] == tested_no_id_first
+    assert exited_signing_keys_count_events[0]["exitedValidatorsCount"] == 7
 
-    assert extra_report_tx.events["StuckPenaltyStateChanged"][0]["nodeOperatorId"] == tested_no_id_first
-    assert extra_report_tx.events["StuckPenaltyStateChanged"][0]["stuckValidatorsCount"] == 0
+    stuck_penalty_state_changed_events = parse_stuck_penalty_state_changed_logs(
+        filter_transfer_logs(extra_report_tx.logs, web3.keccak(text="StuckPenaltyStateChanged(uint256,uint256,uint256,uint256)"))
+    )
+    assert stuck_penalty_state_changed_events[0]["nodeOperatorId"] == tested_no_id_first
+    assert stuck_penalty_state_changed_events[0]["stuckValidatorsCount"] == 0
 
     # Case 3
     # -- PENALTY_DELAY time passes
@@ -730,8 +743,11 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
 
     target_limit_tx = nor.updateTargetValidatorsLimits(tested_no_id_first, True, 0, {"from": STAKING_ROUTER})
 
-    assert target_limit_tx.events["TargetValidatorsCountChanged"][0]["nodeOperatorId"] == tested_no_id_first
-    assert target_limit_tx.events["TargetValidatorsCountChanged"][0]["targetValidatorsCount"] == 0
+    target_validators_count_changed_events = parse_target_validators_count_changed(
+        filter_transfer_logs(target_limit_tx.logs, web3.keccak(text="TargetValidatorsCountChanged(uint256,uint256)"))
+    )
+    assert target_validators_count_changed_events[0]["nodeOperatorId"] == tested_no_id_first
+    assert target_validators_count_changed_events[0]["targetValidatorsCount"] == 0
 
     first_no_summary_after = nor.getNodeOperatorSummary(tested_no_id_first)
 
@@ -755,8 +771,10 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
 
     # Disable target limit
     target_limit_tx = nor.updateTargetValidatorsLimits(tested_no_id_first, False, 0, {"from": STAKING_ROUTER})
-
-    assert target_limit_tx.events["TargetValidatorsCountChanged"][0]["nodeOperatorId"] == tested_no_id_first
+    target_validators_count_changed_events = parse_target_validators_count_changed(
+        filter_transfer_logs(target_limit_tx.logs, web3.keccak(text="TargetValidatorsCountChanged(uint256,uint256)"))
+    )
+    assert target_validators_count_changed_events[0]["nodeOperatorId"] == tested_no_id_first
 
     first_no_summary_after = nor.getNodeOperatorSummary(tested_no_id_first)
 
@@ -777,3 +795,46 @@ def test_node_operators(nor, extra_data_service, impersonated_voting, eth_whale)
     assert deposited_keys_first_before != deposited_keys_first_after
     assert deposited_keys_second_before != deposited_keys_second_after
     assert deposited_keys_base_before != deposited_keys_base_after
+
+
+def filter_transfer_logs(logs, transfer_topic):
+    return list(filter(lambda l: l["topics"][0] == transfer_topic, logs))
+
+
+def parse_exited_signing_keys_count_changed_logs(logs):
+    res = []
+    for l in logs:
+        res.append(
+            {
+                "nodeOperatorId": eth_abi.decode_abi(["uint256"], l["topics"][1])[0],
+                "exitedValidatorsCount": eth_abi.decode_single("uint256", bytes.fromhex(l["data"][2:])),
+            }
+        )
+    return res
+
+
+def parse_stuck_penalty_state_changed_logs(logs):
+    res = []
+    for l in logs:
+        data = eth_abi.decode(["uint256","uint256","uint256"], bytes.fromhex(l["data"][2:]))
+        res.append(
+            {
+                "nodeOperatorId": eth_abi.decode_abi(["uint256"], l["topics"][1])[0],
+                "stuckValidatorsCount": data[0],
+                "refundedValidatorsCount": data[1],
+                "stuckPenaltyEndTimestamp": data[2],
+            }
+        )
+    return res
+
+def parse_target_validators_count_changed(logs):
+    res = []
+    for l in logs:
+        res.append(
+            {
+                "nodeOperatorId": eth_abi.decode_abi(["uint256"], l["topics"][1])[0],
+                "targetValidatorsCount": eth_abi.decode_single("uint256", bytes.fromhex(l["data"][2:])),
+            }
+        )
+    return res
+

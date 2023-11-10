@@ -60,7 +60,7 @@ def validate_node_operator_staking_limit_set_event(
 def validate_node_operator_name_set_event(
     event: EventDict, node_operator_name_item: NodeOperatorNameSetItem
 ):
-    _events_chain = ["LogScriptCall", "KeysOpIndexSet", "NodeOperatorNameSet"]
+    _events_chain = ["LogScriptCall", "LogScriptCall", "NodeOperatorNameSet", "ScriptResult"]
 
     validate_events_chain([e.name for e in event], _events_chain)
 

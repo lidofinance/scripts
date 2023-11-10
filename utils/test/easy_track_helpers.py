@@ -29,7 +29,7 @@ def create_and_enact_payment_motion(
 
     recievers_addresses = [reciever.address for reciever in recievers]
 
-    calldata = _encode_calldata("(address[],uint256[])", [recievers_addresses, transfer_amounts])
+    calldata = _encode_calldata("(address,address[],uint256[])", [token.address, recievers_addresses, transfer_amounts])
 
     tx = easy_track.createMotion(factory, calldata, {"from": trusted_caller})
 

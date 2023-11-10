@@ -1,4 +1,4 @@
-# @version 0.2.15
+# @version 0.3.7
 
 called: public(bool)
 
