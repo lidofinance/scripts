@@ -179,13 +179,13 @@ tests-no-zope = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy 
 
 [[package]]
 name = "avotes-parser-core"
-version = "0.5.4"
+version = "0.5.5"
 description = "Aragon votings parser library"
 optional = false
 python-versions = ">=3.8,<3.11"
 files = [
-    {file = "avotes_parser_core-0.5.4-py3-none-any.whl", hash = "sha256:4e6e7f5fa892170b56bfca4f994d521b8e78c11966562faddbf16e1d3aa0b2cd"},
-    {file = "avotes_parser_core-0.5.4.tar.gz", hash = "sha256:cf48b48caf8f66253f45baf52dc6b03102f5c555488db5cce1621b17e84db59a"},
+    {file = "avotes_parser_core-0.5.5-py3-none-any.whl", hash = "sha256:513f684d1ea8393a02fc1bac28e8e5797764d8014df9dfb5f48992a0f2c53866"},
+    {file = "avotes_parser_core-0.5.5.tar.gz", hash = "sha256:1678ab0f5b817273536637d99d2f69d1c6a4a3c88bd6cbc78f7d8d6b3014f6a9"},
 ]
 
 [package.dependencies]
