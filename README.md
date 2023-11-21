@@ -85,21 +85,29 @@ poetry shell
 ### Network setup
 
 By default, you should start composing new scripts and test using forked networks.
-You have two forked networks to work with:
+You have three forked networks to work with:
 
 - `mainnet-fork`
 - `goerli-fork`
+- `holesky-fork`
 
 To start new voting on the live networks you could proceed with:
 
 - `mainnet`
 - `goerli`
+- `holesky`
 
 >Note: you can't run tests on the live networks.
 
 In a typical weekly omnibus workflow, you need only `mainnet-fork` and
 `mainnet` networks. In case of large test campaign on Lido upgrades,
 it also could be useful to go with `goerli` and `goerli-fork` testnets first.
+
+> **Holesky specifics.**
+> Due to Holesky not being supported by Infura yet, setting RPC URL for Holesky is different. Instead of setting `WEB3_INFURA_PROJECT_ID` env variable set `HOLESKY_RPC_URL`.
+
+> **Holesky is partially supported.**
+> At the moment not all parameters are set in `configs/config_holesky.py` and acceptance/regression/snapshot tests are not operational.
 
 ### Environment variables setup
 
