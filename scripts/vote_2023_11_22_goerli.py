@@ -7,22 +7,18 @@ Linea upgrade test.
 import time
 
 import eth_abi
-from typing import Dict, Tuple, Optional, List
+from typing import Dict, Tuple, Optional
 
 from brownie import interface
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.agent import agent_forward
-from utils.easy_track import add_evmscript_factory, create_permissions
 
 from utils.config import (
     get_deployer_account,
-    contracts,
     get_is_live,
     get_priority_fee,
 )
-
-from utils.easy_track import add_evmscript_factory, create_permissions, remove_evmscript_factory
 
 #
 # Calls chain:
@@ -40,8 +36,10 @@ PROXY_TO_UPGRADE_ADDR: str = "0x9ceed01e39279a529f44deb9d35e09a04b1e67c8"
 PROXY_NEW_IMPL_ADDR: str = "0x1c92Ff898f7c34fc6eD884aEC3859Fd6C655c1F0"  # USDC
 
 
-def encode_upgade_call(proxy_admin: str, proxy: str, new_impl: str):
-    linea_executor = interface.LineaBridgeExecutor("0x70BaD09280FD342D02fe64119779BC1f0791BAC2")
+def encode_upgrade_call(proxy_admin: str, proxy: str, new_impl: str):
+    linea_executor = interface.LineaBridgeExecutor(
+        "0x70BaD09280FD342D02fe64119779BC1f0791BAC2"
+    )  # any address to bypass
 
     params = eth_abi.encode(["address", "address"], [proxy, new_impl])
 
@@ -61,7 +59,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
                 encode_l1_l2_sendMessage(
                     LINEA_BRIDGE_EXECUTOR,
                     0,
-                    encode_upgade_call(PROXY_ADMIN_ADDR, PROXY_TO_UPGRADE_ADDR, PROXY_NEW_IMPL_ADDR),
+                    encode_upgrade_call(PROXY_ADMIN_ADDR, PROXY_TO_UPGRADE_ADDR, PROXY_NEW_IMPL_ADDR),
                 )
             ]
         )
