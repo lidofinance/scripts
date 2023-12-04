@@ -4,7 +4,7 @@ from utils.config import contracts
 from brownie import Contract
 
 
-def add_evmscript_factory(factory: Contract, permissions: str) -> Tuple[str, str]:
+def add_evmscript_factory(factory: Contract | str, permissions: str) -> Tuple[str, str]:
     easy_track = contracts.easy_track
 
     return (
@@ -16,7 +16,7 @@ def add_evmscript_factory(factory: Contract, permissions: str) -> Tuple[str, str
     )
 
 
-def remove_evmscript_factory(factory: Contract) -> Tuple[str, str]:
+def remove_evmscript_factory(factory: Contract | str) -> Tuple[str, str]:
     easy_track = contracts.easy_track
 
     return (
