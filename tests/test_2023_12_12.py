@@ -77,10 +77,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
         MANAGE_MEMBERS_AND_QUORUM_ROLE, agent.address
     )
 
-    rcc_steth_transfer = 10**18
-    pml_steth_transfer = 10**18
-    atc_steth_transfer = 10**18
-
     jump_crypto_node_operator_id = 1
     anyblock_analytics_node_operator_id = 12
 
