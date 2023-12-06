@@ -10,8 +10,8 @@ I. Replacing Jump Crypto with ChainLayer in Lido on Ethereum Oracle set
 6. Add oracle member named 'ChainLayer' with address 0xc79F702202E3A6B0B6310B537E786B9ACAA19BAf to HashConsensus for ValidatorsExitBusOracle on Lido on Ethereum Oracle set
 
 II. Deactivation of Jump Crypto and Anyblock Analytics node operators
-7. deactivate the node operator named 'Jump Crypto' with id 1 in Curated Node Operator Registry
-8. deactivate the node operator named ‘Anyblock Analytics' with id 12 in Curated Node Operator Registry
+7. Deactivate the node operator named 'Jump Crypto' with id 1 in Curated Node Operator Registry
+8. Deactivate the node operator named ‘Anyblock Analytics' with id 12 in Curated Node Operator Registry
 
 III. Replenishment of Lido Contributors Group multisigs with stETH
 9. Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
@@ -20,7 +20,8 @@ III. Replenishment of Lido Contributors Group multisigs with stETH
 
 IV. Updating the Easy Track setups to allow DAI USDT USDC payments for Lido Contributors Group
 12. Remove CREATE_PAYMENTS_ROLE from EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
-13. Add CREATE_PAYMENTS_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 with single transfer limits of 1,000 ETH, 1,000 stETH, 5,000,000 LDO, 2,000,000 DAI, 2,000,000 USDC, 2,000,000 USDT
+13. Add CREATE_PAYMENTS_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 with single transfer limits of
+    1,000 ETH, 1,000 stETH, 5,000,000 LDO, 2,000,000 DAI, 2,000,000 USDC, 2,000,000 USDT
 14. Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track
 15. Remove PML DAI top up EVM script factory (old ver) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD from Easy Track
 16. Remove ATC DAI top up EVM script factory (old ver) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 from Easy Track
@@ -33,7 +34,8 @@ V. ET top up setups for stonks
 
 import time
 
-from typing import Dict, Tuple, List
+from collections import namedtuple
+from typing import Dict, Tuple, List, NamedTuple
 from brownie import interface, ZERO_ADDRESS
 from brownie.network.transaction import TransactionReceipt
 from utils.agent import agent_forward
@@ -49,30 +51,36 @@ from utils.config import (
 from utils.permissions import encode_permission_revoke, encode_permission_grant_p
 from utils.permission_parameters import Param, SpecialArgumentID, encode_argument_value_if, ArgumentValue, Op
 from utils.easy_track import add_evmscript_factory, create_permissions, remove_evmscript_factory
-from configs.config_mainnet import DAI_TOKEN, LDO_TOKEN, LIDO
+from configs.config_mainnet import DAI_TOKEN, LDO_TOKEN, LIDO, USDC_TOKEN, USDT_TOKEN
 
 
+class TokenLimit(NamedTuple):
+    address: str
+    limit: int
+
+
+class TokenLimits(NamedTuple):
+    ldo: TokenLimit = TokenLimit(LDO_TOKEN, 5_000_000 * (10**18))
+    eth: TokenLimit = TokenLimit(ZERO_ADDRESS, 1_000 * 10**18)
+    steth: TokenLimit = TokenLimit(LIDO, 1_000 * (10**18))
+    dai: TokenLimit = TokenLimit(DAI_TOKEN, 2_000_000 * (10**18))
+    usdc: TokenLimit = TokenLimit(USDC_TOKEN, 2_000_000 * (10**6))
+    usdt: TokenLimit = TokenLimit(USDT_TOKEN, 2_000_000 * (10**6))
+
+
+token_limits = TokenLimits()
+
+
+# The upper token in the list, the less gas will be used for logic evaluation by ACL.evalParam()
+# The optimal strategy there: tokens which are transferred often that other must be upper in the list.
+# The current order is following:
+# 1. stETH
+# 2. DAI
+# 3. LDO
+# 4. USDC
+# 5. USDT
+# 6. ETH
 def amount_limits() -> List[Param]:
-    eth = {
-        "limit": 1_000 * (10**18),
-        "address": ZERO_ADDRESS,
-    }
-
-    steth = {
-        "limit": 1_000 * (10**18),
-        "address": LIDO,
-    }
-
-    ldo = {
-        "limit": 5_000_000 * (10**18),
-        "address": LDO_TOKEN,
-    }
-
-    dai = {
-        "limit": 2_000_000 * (10**18),
-        "address": DAI_TOKEN,
-    }
-
     token_arg_index = 0
     amount_arg_index = 2
 
@@ -81,37 +89,63 @@ def amount_limits() -> List[Param]:
         Param(
             SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=1, success=2, failure=3)
         ),
-        # 1: (_token == LDO)
-        Param(token_arg_index, Op.EQ, ArgumentValue(ldo["address"])),
-        # 2: { return _amount <= 5_000_000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(ldo["limit"])),
+        # 1: (_token == stETH)
+        Param(token_arg_index, Op.EQ, ArgumentValue(token_limits.steth.address)),
+        # 2: { return _amount <= 1_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(token_limits.steth.limit)),
+        #
         # 3: else if (4) then (5) else (6)
         Param(
             SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=4, success=5, failure=6)
         ),
-        # 4: (_token == ETH)
-        Param(token_arg_index, Op.EQ, ArgumentValue(eth["address"])),
-        # 5: { return _amount <= 1000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(eth["limit"])),
+        # 4: (_token == DAI)
+        Param(token_arg_index, Op.EQ, ArgumentValue(token_limits.dai.address)),
+        # 5: { return _amount <= 2_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(token_limits.dai.limit)),
+        #
         # 6: else if (7) then (8) else (9)
         Param(
             SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=7, success=8, failure=9)
         ),
-        # 7: (_token == DAI)
-        Param(token_arg_index, Op.EQ, ArgumentValue(dai["address"])),
-        # 8: { return _amount <= 2_000_000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(dai["limit"])),
+        # 7: (_token == LDO)
+        Param(token_arg_index, Op.EQ, ArgumentValue(token_limits.ldo.address)),
+        # 8: { return _amount <= 5_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(token_limits.ldo.limit)),
+        #
         # 9: else if (10) then (11) else (12)
         Param(
             SpecialArgumentID.LOGIC_OP_PARAM_ID,
             Op.IF_ELSE,
             encode_argument_value_if(condition=10, success=11, failure=12),
         ),
-        # 10: (_token == stETH)
-        Param(token_arg_index, Op.EQ, ArgumentValue(steth["address"])),
-        # 11: { return _amount <= 1000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(steth["limit"])),
-        # 12: else { return false }
+        # 10: (_token == USDC)
+        Param(token_arg_index, Op.EQ, ArgumentValue(token_limits.usdc.address)),
+        # 11: { return _amount <= 2_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(token_limits.usdc.limit)),
+        #
+        # 12: else if (13) then (14) else (15)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID,
+            Op.IF_ELSE,
+            encode_argument_value_if(condition=13, success=14, failure=15),
+        ),
+        # 13: (_token == USDT)
+        Param(token_arg_index, Op.EQ, ArgumentValue(token_limits.usdt.address)),
+        # 14: { return _amount <= 2_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(token_limits.usdt.limit)),
+        #
+        # 15: else if (16) then (17) else (18)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID,
+            Op.IF_ELSE,
+            encode_argument_value_if(condition=16, success=17, failure=18),
+        ),
+        # 16: (_token == ETH)
+        Param(token_arg_index, Op.EQ, ArgumentValue(token_limits.eth.address)),
+        # 17: { return _amount <= 1000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(token_limits.eth.limit)),
+        #
+        # 18: else { return false }
         Param(SpecialArgumentID.PARAM_VALUE_PARAM_ID, Op.RET, ArgumentValue(0)),
     ]
 
