@@ -30,6 +30,9 @@ IV. Updating the Easy Track setups to allow DAI USDT USDC payments for Lido Cont
 19. Add ATC stable top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab
 
 V. ET top up setups for stonks
+-
+-
+-
 """
 
 import time
@@ -59,21 +62,18 @@ class TokenLimit(NamedTuple):
     limit: int
 
 
-class TokenLimits(NamedTuple):
-    ldo: TokenLimit = TokenLimit(LDO_TOKEN, 5_000_000 * (10**18))
-    eth: TokenLimit = TokenLimit(ZERO_ADDRESS, 1_000 * 10**18)
-    steth: TokenLimit = TokenLimit(LIDO, 1_000 * (10**18))
-    dai: TokenLimit = TokenLimit(DAI_TOKEN, 2_000_000 * (10**18))
-    usdc: TokenLimit = TokenLimit(USDC_TOKEN, 2_000_000 * (10**6))
-    usdt: TokenLimit = TokenLimit(USDT_TOKEN, 2_000_000 * (10**6))
+ldo_limit = TokenLimit(LDO_TOKEN, 5_000_000 * (10**18))
+eth_limit = TokenLimit(ZERO_ADDRESS, 1_000 * 10**18)
+steth_limit = TokenLimit(LIDO, 1_000 * (10**18))
+dai_limit = TokenLimit(DAI_TOKEN, 2_000_000 * (10**18))
+usdc_limit = TokenLimit(USDC_TOKEN, 2_000_000 * (10**6))
+usdt_limit = TokenLimit(USDT_TOKEN, 2_000_000 * (10**6))
 
 
-token_limits = TokenLimits()
-
-
-# The upper token in the list, the less gas will be used for logic evaluation by ACL.evalParam()
-# The optimal strategy there: tokens which are transferred often that other must be upper in the list.
-# The current order is following:
+# The higher the token in the list, the less gas will be used to evaluate the parameter logic
+# by the ACL.evalParam() method, and the cheaper the transfer from the Finance contract will be.
+# The optimal gas strategy is:  tokens that are transferred often, then others must be at the top of the list.
+# The current order is the following:
 # 1. stETH
 # 2. DAI
 # 3. LDO
@@ -90,27 +90,27 @@ def amount_limits() -> List[Param]:
             SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=1, success=2, failure=3)
         ),
         # 1: (_token == stETH)
-        Param(token_arg_index, Op.EQ, ArgumentValue(token_limits.steth.address)),
+        Param(token_arg_index, Op.EQ, ArgumentValue(steth_limit.address)),
         # 2: { return _amount <= 1_000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(token_limits.steth.limit)),
+        Param(amount_arg_index, Op.LTE, ArgumentValue(steth_limit.limit)),
         #
         # 3: else if (4) then (5) else (6)
         Param(
             SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=4, success=5, failure=6)
         ),
         # 4: (_token == DAI)
-        Param(token_arg_index, Op.EQ, ArgumentValue(token_limits.dai.address)),
+        Param(token_arg_index, Op.EQ, ArgumentValue(dai_limit.address)),
         # 5: { return _amount <= 2_000_000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(token_limits.dai.limit)),
+        Param(amount_arg_index, Op.LTE, ArgumentValue(dai_limit.limit)),
         #
         # 6: else if (7) then (8) else (9)
         Param(
             SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=7, success=8, failure=9)
         ),
         # 7: (_token == LDO)
-        Param(token_arg_index, Op.EQ, ArgumentValue(token_limits.ldo.address)),
+        Param(token_arg_index, Op.EQ, ArgumentValue(ldo_limit.address)),
         # 8: { return _amount <= 5_000_000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(token_limits.ldo.limit)),
+        Param(amount_arg_index, Op.LTE, ArgumentValue(ldo_limit.limit)),
         #
         # 9: else if (10) then (11) else (12)
         Param(
@@ -119,9 +119,9 @@ def amount_limits() -> List[Param]:
             encode_argument_value_if(condition=10, success=11, failure=12),
         ),
         # 10: (_token == USDC)
-        Param(token_arg_index, Op.EQ, ArgumentValue(token_limits.usdc.address)),
+        Param(token_arg_index, Op.EQ, ArgumentValue(usdc_limit.address)),
         # 11: { return _amount <= 2_000_000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(token_limits.usdc.limit)),
+        Param(amount_arg_index, Op.LTE, ArgumentValue(usdc_limit.limit)),
         #
         # 12: else if (13) then (14) else (15)
         Param(
@@ -130,9 +130,9 @@ def amount_limits() -> List[Param]:
             encode_argument_value_if(condition=13, success=14, failure=15),
         ),
         # 13: (_token == USDT)
-        Param(token_arg_index, Op.EQ, ArgumentValue(token_limits.usdt.address)),
+        Param(token_arg_index, Op.EQ, ArgumentValue(usdt_limit.address)),
         # 14: { return _amount <= 2_000_000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(token_limits.usdt.limit)),
+        Param(amount_arg_index, Op.LTE, ArgumentValue(usdt_limit.limit)),
         #
         # 15: else if (16) then (17) else (18)
         Param(
@@ -141,9 +141,9 @@ def amount_limits() -> List[Param]:
             encode_argument_value_if(condition=16, success=17, failure=18),
         ),
         # 16: (_token == ETH)
-        Param(token_arg_index, Op.EQ, ArgumentValue(token_limits.eth.address)),
+        Param(token_arg_index, Op.EQ, ArgumentValue(eth_limit.address)),
         # 17: { return _amount <= 1000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(token_limits.eth.limit)),
+        Param(amount_arg_index, Op.LTE, ArgumentValue(eth_limit.limit)),
         #
         # 18: else { return false }
         Param(SpecialArgumentID.PARAM_VALUE_PARAM_ID, Op.RET, ArgumentValue(0)),
@@ -301,7 +301,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             permission_name="CREATE_PAYMENTS_ROLE",
             revoke_from=EVM_SCRIPT_EXECUTOR,
         ),
-        # 13. Add CREATE_PAYMENTS_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 with single transfer limits of 1,000 ETH, 1,000 stETH, 5,000,000 LDO, 2,000,000 DAI, 2,000,000 USDC, 2,000,000 USDT
+        # 13. Add CREATE_PAYMENTS_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 with single transfer limits of
+        # 1,000 ETH, 1,000 stETH, 5,000,000 LDO, 2,000,000 DAI, 2,000,000 USDC, 2,000,000 USDT
         encode_permission_grant_p(
             target_app=contracts.finance,
             permission_name="CREATE_PAYMENTS_ROLE",

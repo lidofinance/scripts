@@ -70,22 +70,14 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     accounting_hash_consensus = contracts.hash_consensus_for_accounting_oracle
     validators_exit_bus_hash_consensus = contracts.hash_consensus_for_validators_exit_bus_oracle
 
-    print_role_params(entity=EASYTRACK_EVMSCRIPT_EXECUTOR, app=contracts.finance.address, role="CREATE_PAYMENTS_ROLE")
-
-    assert not contracts.hash_consensus_for_accounting_oracle.hasRole(MANAGE_MEMBERS_AND_QUORUM_ROLE, agent.address)
-    assert not contracts.hash_consensus_for_validators_exit_bus_oracle.hasRole(
-        MANAGE_MEMBERS_AND_QUORUM_ROLE, agent.address
-    )
+    assert not contracts.hash_consensus_for_accounting_oracle.hasRole(MANAGE_MEMBERS_AND_QUORUM_ROLE, agent)
+    assert not contracts.hash_consensus_for_validators_exit_bus_oracle.hasRole(MANAGE_MEMBERS_AND_QUORUM_ROLE, agent)
 
     jump_crypto_node_operator_id = 1
     anyblock_analytics_node_operator_id = 12
 
     jump_crypto_oracle_member = "0x1d0813bf088be3047d827d98524fbf779bc25f00"
     chain_layer_oracle_member = "0xc79F702202E3A6B0B6310B537E786B9ACAA19BAf"
-
-    rcc_multisig_address = "0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437"
-    pml_multisig_address = "0x17F6b2C738a63a8D3A113a228cfd0b373244633D"
-    atc_multisig_address = "0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956"
 
     assert accounting_hash_consensus.getIsMember(jump_crypto_oracle_member)
     assert validators_exit_bus_hash_consensus.getIsMember(jump_crypto_oracle_member)
@@ -96,19 +88,23 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     assert accounting_hash_consensus.getQuorum() == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
     assert validators_exit_bus_hash_consensus.getQuorum() == HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM
 
-    rcc_steth_balance_before = steth.balanceOf(rcc_multisig_address)
+    rcc_multisig_acc = accounts.at("0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437", force=True)
+    pml_multisig_acc = accounts.at("0x17F6b2C738a63a8D3A113a228cfd0b373244633D", force=True)
+    atc_multisig_acc = accounts.at("0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956", force=True)
+
+    rcc_steth_balance_before = steth.balanceOf(rcc_multisig_acc)
     rcc_payout = Payout(
-        token_addr=steth.address, from_addr=agent.address, to_addr=rcc_multisig_address, amount=10**18
+        token_addr=steth.address, from_addr=agent.address, to_addr=rcc_multisig_acc.address, amount=10**18
     )
 
-    pml_steth_balance_before = steth.balanceOf(pml_multisig_address)
+    pml_steth_balance_before = steth.balanceOf(pml_multisig_acc)
     pml_payout = Payout(
-        token_addr=steth.address, from_addr=agent.address, to_addr=pml_multisig_address, amount=10**18
+        token_addr=steth.address, from_addr=agent.address, to_addr=pml_multisig_acc.address, amount=10**18
     )
 
-    atc_steth_balance_before = steth.balanceOf(atc_multisig_address)
+    atc_steth_balance_before = steth.balanceOf(atc_multisig_acc)
     atc_payout = Payout(
-        token_addr=steth.address, from_addr=agent.address, to_addr=atc_multisig_address, amount=10**18
+        token_addr=steth.address, from_addr=agent.address, to_addr=atc_multisig_acc.address, amount=10**18
     )
 
     agent_steth_balance_before = steth.balanceOf(agent)
@@ -191,19 +187,19 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     )
 
     # 9. Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
-    rcc_steth_balance_after = steth.balanceOf(rcc_multisig_address)
+    rcc_steth_balance_after = steth.balanceOf(rcc_multisig_acc)
     assert almostEqWithDiff(
         rcc_steth_balance_after, rcc_steth_balance_before + rcc_payout.amount, diff=STETH_TRANSFER_MAX_DELTA
     )
 
     # 10. Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
-    pml_steth_balance_after = steth.balanceOf(pml_multisig_address)
+    pml_steth_balance_after = steth.balanceOf(pml_multisig_acc)
     assert almostEqWithDiff(
         pml_steth_balance_after, pml_steth_balance_before + pml_payout.amount, diff=STETH_TRANSFER_MAX_DELTA
     )
 
     # 11. Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
-    atc_steth_balance_after = steth.balanceOf(atc_multisig_address)
+    atc_steth_balance_after = steth.balanceOf(atc_multisig_acc)
     assert almostEqWithDiff(
         atc_steth_balance_after, atc_steth_balance_before + atc_payout.amount, diff=STETH_TRANSFER_MAX_DELTA
     )
@@ -240,6 +236,18 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     prepare_agent_for_usdt_payment(usdt_limit.limit)
     validate_evm_script_executor_token_limit(usdt_limit)
 
+    # other tokens transfer is not allowed
+    stmatic = "0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0"
+    assert not has_permission(permission, [convert.to_uint(stmatic), convert.to_uint(stranger.address), 1])
+    with reverts("APP_AUTH_FAILED"):
+        contracts.finance.newImmediatePayment(
+            stmatic,
+            stranger,
+            1,
+            "Transfer of not allowed token should fail",
+            {"from": accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)},
+        )
+
     # 14. Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track
     assert rcc_dai_top_up_evm_script_factory_old not in evm_script_factories_after
 
@@ -261,33 +269,32 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     usdt_transfer_amount = 1_000 * 10**6
     prepare_agent_for_usdt_payment(3 * usdt_transfer_amount)
 
-    rcc_multisig = accounts.at("0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437", force=True)
     create_and_enact_payment_motion(
         easy_track,
-        trusted_caller=rcc_multisig,
+        trusted_caller=rcc_multisig_acc,
         factory=rcc_stables_top_up_evm_script_factory_new,
         token=interface.Dai(DAI_TOKEN),
-        recievers=[rcc_multisig],
+        recievers=[rcc_multisig_acc],
         transfer_amounts=[dai_transfer_amount],
         stranger=stranger,
     )
 
     create_and_enact_payment_motion(
         easy_track,
-        trusted_caller=rcc_multisig,
+        trusted_caller=rcc_multisig_acc,
         factory=rcc_stables_top_up_evm_script_factory_new,
         token=interface.Usdc(USDC_TOKEN),
-        recievers=[rcc_multisig],
+        recievers=[rcc_multisig_acc],
         transfer_amounts=[usdc_transfer_amount],
         stranger=stranger,
     )
 
     create_and_enact_payment_motion(
         easy_track,
-        trusted_caller=rcc_multisig,
+        trusted_caller=rcc_multisig_acc,
         factory=rcc_stables_top_up_evm_script_factory_new,
         token=interface.Usdt(USDT_TOKEN),
-        recievers=[rcc_multisig],
+        recievers=[rcc_multisig_acc],
         transfer_amounts=[usdt_transfer_amount],
         stranger=stranger,
     )
@@ -295,33 +302,32 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     # 18. Add PML stable top up EVM script factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D
     assert pml_stables_top_up_evm_script_factory_new in evm_script_factories_after
 
-    pml_multisig = accounts.at("0x17F6b2C738a63a8D3A113a228cfd0b373244633D", force=True)
     create_and_enact_payment_motion(
         easy_track,
-        trusted_caller=pml_multisig,
+        trusted_caller=pml_multisig_acc,
         factory=pml_stables_top_up_evm_script_factory_new,
         token=interface.Dai(DAI_TOKEN),
-        recievers=[pml_multisig],
+        recievers=[pml_multisig_acc],
         transfer_amounts=[dai_transfer_amount],
         stranger=stranger,
     )
 
     create_and_enact_payment_motion(
         easy_track,
-        trusted_caller=pml_multisig,
+        trusted_caller=pml_multisig_acc,
         factory=pml_stables_top_up_evm_script_factory_new,
         token=interface.Usdc(USDC_TOKEN),
-        recievers=[pml_multisig],
+        recievers=[pml_multisig_acc],
         transfer_amounts=[usdc_transfer_amount],
         stranger=stranger,
     )
 
     create_and_enact_payment_motion(
         easy_track,
-        trusted_caller=pml_multisig,
+        trusted_caller=pml_multisig_acc,
         factory=pml_stables_top_up_evm_script_factory_new,
         token=interface.Usdt(USDT_TOKEN),
-        recievers=[pml_multisig],
+        recievers=[pml_multisig_acc],
         transfer_amounts=[usdt_transfer_amount],
         stranger=stranger,
     )
@@ -329,33 +335,32 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     # 19. Add ATC stable top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab
     assert atc_stables_top_up_evm_script_factory_new in evm_script_factories_after
 
-    atc_multisig = accounts.at("0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956", force=True)
     create_and_enact_payment_motion(
         easy_track,
-        trusted_caller=atc_multisig,
+        trusted_caller=atc_multisig_acc,
         factory=atc_stables_top_up_evm_script_factory_new,
         token=interface.Dai(DAI_TOKEN),
-        recievers=[atc_multisig],
+        recievers=[atc_multisig_acc],
         transfer_amounts=[dai_transfer_amount],
         stranger=stranger,
     )
 
     create_and_enact_payment_motion(
         easy_track,
-        trusted_caller=atc_multisig,
+        trusted_caller=atc_multisig_acc,
         factory=atc_stables_top_up_evm_script_factory_new,
         token=interface.Usdc(USDC_TOKEN),
-        recievers=[atc_multisig],
+        recievers=[atc_multisig_acc],
         transfer_amounts=[usdc_transfer_amount],
         stranger=stranger,
     )
 
     create_and_enact_payment_motion(
         easy_track,
-        trusted_caller=atc_multisig,
+        trusted_caller=atc_multisig_acc,
         factory=atc_stables_top_up_evm_script_factory_new,
         token=interface.Usdt(USDT_TOKEN),
-        recievers=[atc_multisig],
+        recievers=[atc_multisig_acc],
         transfer_amounts=[usdt_transfer_amount],
         stranger=stranger,
     )
@@ -438,22 +443,6 @@ def has_permission(permission: Permission, how: List[int]) -> bool:
     )
 
 
-def print_role_params(entity: str, app: str, role: str):
-    acl = contracts.acl
-    role_id = Web3.keccak(text=role)
-
-    params = []
-    params_length = acl.getPermissionParamsLength(entity, app, role_id)
-
-    for index in range(params_length):
-        (id, op, value) = acl.getPermissionParam(entity, app, role_id, index)
-        params.append(Param(id, op, value))
-
-    print(f'Current "{role}" params:')
-    for param in params:
-        print("  " + str(param))
-
-
 def prepare_agent_for_ldo_payment(amount: int):
     agent, ldo = contracts.agent, contracts.ldo_token
     assert ldo.balanceOf(agent) >= amount, "Insufficient LDO balance 🫡"
@@ -507,7 +496,7 @@ def prepare_agent_for_usdt_payment(amount: int):
 
 def validate_evm_script_executor_token_limit(token_limit: TokenLimit):
     agent, finance, stranger = contracts.agent, contracts.finance, accounts[0]
-    evm_script_executor_impersonated = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
+    evm_script_executor_acc = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
 
     token_uint, recipient_uint = convert.to_uint(token_limit.address), convert.to_uint(stranger.address)
     assert has_permission(permission, [token_uint, recipient_uint, token_limit.limit])
@@ -519,19 +508,19 @@ def validate_evm_script_executor_token_limit(token_limit: TokenLimit):
             stranger,
             token_limit.limit + 1,
             "Transfer to stranger should fail",
-            {"from": evm_script_executor_impersonated},
+            {"from": evm_script_executor_acc},
         )
 
     token = None if token_limit.address == ZERO_ADDRESS else interface.ERC20(token_limit.address)
     agent_balance_before = agent.balance() if token is None else token.balanceOf(agent)
     stranger_balance_before = stranger.balance() if token is None else token.balanceOf(stranger)
 
-    finance.newImmediatePayment(
+    tx = finance.newImmediatePayment(
         token_limit.address,
         stranger,
         token_limit.limit,
         "Successful transfer",
-        {"from": evm_script_executor_impersonated},
+        {"from": evm_script_executor_acc},
     )
 
     agent_balance_after = agent.balance() if token is None else token.balanceOf(agent)
