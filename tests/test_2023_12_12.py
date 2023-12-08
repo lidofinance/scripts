@@ -299,6 +299,17 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
         stranger=stranger,
     )
 
+    with reverts("TOKEN_NOT_ALLOWED"):
+        create_and_enact_payment_motion(
+            easy_track,
+            trusted_caller=rcc_multisig_acc,
+            factory=rcc_stables_top_up_evm_script_factory_new,
+            token=steth,
+            recievers=[rcc_multisig_acc],
+            transfer_amounts=[1],
+            stranger=stranger,
+        )
+
     # 18. Add PML stable top up EVM script factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D
     assert pml_stables_top_up_evm_script_factory_new in evm_script_factories_after
 
@@ -332,6 +343,17 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
         stranger=stranger,
     )
 
+    with reverts("TOKEN_NOT_ALLOWED"):
+        create_and_enact_payment_motion(
+            easy_track,
+            trusted_caller=pml_multisig_acc,
+            factory=pml_stables_top_up_evm_script_factory_new,
+            token=steth,
+            recievers=[pml_multisig_acc],
+            transfer_amounts=[1],
+            stranger=stranger,
+        )
+
     # 19. Add ATC stable top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab
     assert atc_stables_top_up_evm_script_factory_new in evm_script_factories_after
 
@@ -364,6 +386,17 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
         transfer_amounts=[usdt_transfer_amount],
         stranger=stranger,
     )
+
+    with reverts("TOKEN_NOT_ALLOWED"):
+        create_and_enact_payment_motion(
+            easy_track,
+            trusted_caller=atc_multisig_acc,
+            factory=atc_stables_top_up_evm_script_factory_new,
+            token=steth,
+            recievers=[atc_multisig_acc],
+            transfer_amounts=[1],
+            stranger=stranger,
+        )
 
     # validate vote events
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 19, "Incorrect voting items count"

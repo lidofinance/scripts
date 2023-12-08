@@ -5,7 +5,6 @@ from .common import validate_events_chain
 def validate_hash_consensus_member_removed(event: EventDict, member: str, new_quorum: int, new_total_members: int):
     _events_chain = ["LogScriptCall", "LogScriptCall", "MemberRemoved", "ScriptResult"]
 
-    print([e.name for e in event], _events_chain)
     validate_events_chain([e.name for e in event], _events_chain)
 
     assert event.count("MemberRemoved") == 1
