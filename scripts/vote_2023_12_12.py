@@ -28,16 +28,10 @@ IV. Updating the Easy Track setups to allow DAI USDT USDC payments for Lido Cont
 17. Add RCC stable top up EVM script factory 0x75bDecbb6453a901EBBB945215416561547dfDD4
 18. Add PML stable top up EVM script factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D
 19. Add ATC stable top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab
-
-V. ET top up setups for stonks
--
--
--
 """
 
 import time
 
-from collections import namedtuple
 from typing import Dict, Tuple, List, NamedTuple
 from brownie import interface, ZERO_ADDRESS
 from brownie.network.transaction import TransactionReceipt
@@ -180,9 +174,15 @@ def encode_deactivate_node_operator(id: int) -> Tuple[str, str]:
 
 
 description = """
-### Omnibus on-chain vote contains:
+1. **Replacement of Jump Crypto with ChainLayer in Lido on Ethereum Oracle set**. [Snapshot vote](https://snapshot.org/#/lido-snapshot.eth/proposal/0x29a1106ab03bfc146f324cf194f13119ae172d92a031ceb35ea37bd928c10577). Items 1-6.
 
-TBA
+2. **Deactivation of node operators** Jump Crypto (id 1) and Anyblock Analytics (id 12) in Curated Node Operators Registry. Proposed [on the forum](https://research.lido.fi/t/disable-inactive-node-operators-anyblock-analytics-jump-crypto-in-curated-node-operator-registry/6077). Items 7,8.
+
+3. **stETH transfer** to the [Lido Contributors Group](https://research.lido.fi/t/ref-introducing-the-lido-contributors-group-including-pool-maintenance-labs-and-argo-technology-consulting/3069) multisigs ([RCC](https://app.safe.global/settings/setup?safe=eth:0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437), [PML](https://app.safe.global/settings/setup?safe=eth:0x17F6b2C738a63a8D3A113a228cfd0b373244633D), and [ATC](https://app.safe.global/settings/setup?safe=eth:0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956)), as [requested on the forum](https://research.lido.fi/t/lido-v2-may-1-2023-december-31-2023-lido-ongoing-grant-request/4476/16). Items 9-11.
+
+4. **Upgrading the Easy Track setups** to allow [Lido Contributors Group](https://research.lido.fi/t/ref-introducing-the-lido-contributors-group-including-pool-maintenance-labs-and-argo-technology-consulting/3069) multisigs funding not only in DAI, but also in USDT and USDC. Proposed [on the forum](https://research.lido.fi/t/updating-the-easy-track-setups-to-allow-dai-usdt-usdc-payments-for-lido-contributors-group/5738). The new version of contracts was [audited by Oxorio](https://github.com/lidofinance/audits/blob/main/Oxorio%20Lido%20Easy%20Track%20Smart%20Contracts%20Security%20Audit%20Report%2010-2023.pdf). This part consists of 2 motions:
+    - Add `EVMScripExecutor` the permissions to transfer USDT and USDC with single transfer limit of 2M in addition to current permissions. Items 12,13.
+    - Switch the DAI top-up setup to the DAI, USDT, and USDC top-up setup for all [Lido Contributors Group multisigs](https://research.lido.fi/t/ref-introducing-the-lido-contributors-group-including-pool-maintenance-labs-and-argo-technology-consulting/3069) ([RCC](https://app.safe.global/settings/setup?safe=eth:0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437), [PML](https://app.safe.global/settings/setup?safe=eth:0x17F6b2C738a63a8D3A113a228cfd0b373244633D), and [ATC](https://app.safe.global/settings/setup?safe=eth:0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956)). Items 14-19.
 """
 
 EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"

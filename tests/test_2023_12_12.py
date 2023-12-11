@@ -10,9 +10,7 @@ from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.payout import Payout, validate_token_payout_event
 from utils.test.event_validators.permission import Permission
 from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS, LIDO, network_name
-from utils.permission_parameters import Param
 from utils.test.helpers import almostEqWithDiff
-from web3 import Web3
 from configs.config_mainnet import (
     LIDO,
     FINANCE,
@@ -40,6 +38,8 @@ from utils.test.event_validators.easy_track import (
     validate_evmscript_factory_removed_event,
 )
 from utils.easy_track import create_permissions
+from utils.voting import find_metadata_by_vote_id
+from utils.ipfs import get_lido_vote_cid_from_str
 
 eth_limit = TokenLimit(address=ZERO_ADDRESS, limit=1_000 * 10**18)
 steth_limit = TokenLimit(address=LIDO, limit=1_000 * 10**18)
@@ -401,6 +401,10 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     # validate vote events
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 19, "Incorrect voting items count"
 
+    metadata = find_metadata_by_vote_id(vote_id)
+
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreibxxfz3stpvlgap23qkrmlqx4qjr6ax4v6h2gdstal6c4fqfwvhji"
+
     display_voting_events(vote_tx)
 
     if bypass_events_decoding or network_name() in ("goerli", "goerli-fork"):
@@ -548,7 +552,7 @@ def validate_evm_script_executor_token_limit(token_limit: TokenLimit):
     agent_balance_before = agent.balance() if token is None else token.balanceOf(agent)
     stranger_balance_before = stranger.balance() if token is None else token.balanceOf(stranger)
 
-    tx = finance.newImmediatePayment(
+    finance.newImmediatePayment(
         token_limit.address,
         stranger,
         token_limit.limit,
