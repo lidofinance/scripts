@@ -11,7 +11,7 @@ I. Replacing Jump Crypto with ChainLayer in Lido on Ethereum Oracle set
 
 II. Deactivation of Jump Crypto and Anyblock Analytics node operators
 7. Deactivate the node operator named 'Jump Crypto' with id 1 in Curated Node Operator Registry
-8. Deactivate the node operator named ‘Anyblock Analytics' with id 12 in Curated Node Operator Registry
+8. Deactivate the node operator named 'Anyblock Analytics' with id 12 in Curated Node Operator Registry
 
 III. Replenishment of Lido Contributors Group multisigs with stETH
 9. Transfer 218 stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
