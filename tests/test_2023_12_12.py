@@ -175,7 +175,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     # 7. Deactivate the node operator named 'Jump Crypto' with id 1 in Curated Node Operator Registry
     assert not node_operators_registry.getNodeOperatorIsActive(jump_crypto_node_operator_id)
 
-    # 8. Deactivate the node operator named ‘Anyblock Analytics' with id 12 in Curated Node Operator Registry
+    # 8. Deactivate the node operator named 'Anyblock Analytics' with id 12 in Curated Node Operator Registry
     assert not node_operators_registry.getNodeOperatorIsActive(anyblock_analytics_node_operator_id)
 
     # III. Replenishment of Lido Contributors Group multisigs with stETH

@@ -269,7 +269,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         #
         # 7. deactivate the node operator named 'Jump Crypto' with id 1 in Curated Node Operator Registry
         agent_forward([encode_deactivate_node_operator(1)]),
-        # 8. deactivate the node operator named ‘Anyblock Analytics' with id 12 in Curated Node Operator Registry
+        # 8. deactivate the node operator named 'Anyblock Analytics' with id 12 in Curated Node Operator Registry
         agent_forward([encode_deactivate_node_operator(12)]),
         #
         # III. Replenishment of Lido Contributors Group multisigs with stETH
@@ -343,7 +343,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         "5) Add oracle member named 'ChainLayer' with address 0xc79F702202E3A6B0B6310B537E786B9ACAA19BAf to HashConsensus for AccountingOracle on Lido on Ethereum Oracle set",
         "6) Add oracle member named 'ChainLayer' with address 0xc79F702202E3A6B0B6310B537E786B9ACAA19BAf to HashConsensus for ValidatorsExitBusOracle on Lido on Ethereum Oracle set",
         "7) Deactivate the node operator named 'Jump Crypto' with id 1 in Curated Node Operator Registry",
-        "8) Deactivate the node operator named ‘Anyblock Analytics' with id 12 in Curated Node Operator Registry",
+        "8) Deactivate the node operator named 'Anyblock Analytics' with id 12 in Curated Node Operator Registry",
         "9) Transfer 218 stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437",
         "10) Transfer 348 stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D",
         "11) Transfer 305 stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956",
