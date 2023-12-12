@@ -14,9 +14,9 @@ II. Deactivation of Jump Crypto and Anyblock Analytics node operators
 8. Deactivate the node operator named ‘Anyblock Analytics' with id 12 in Curated Node Operator Registry
 
 III. Replenishment of Lido Contributors Group multisigs with stETH
-9. Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
-10. Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
-11. Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
+9. Transfer 218 stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+10. Transfer 348 stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
+11. Transfer 305 stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
 
 IV. Updating the Easy Track setups to allow DAI USDT USDC payments for Lido Contributors Group
 12. Remove CREATE_PAYMENTS_ROLE from EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
@@ -274,22 +274,22 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         #
         # III. Replenishment of Lido Contributors Group multisigs with stETH
         #
-        # 9. Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+        # 9. Transfer 218 stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
         make_steth_payout(
             target_address=rcc_multisig_address,
-            steth_in_wei=10**18,
+            steth_in_wei=218 * 10**18,
             reference="Fund RCC multisig",
         ),
-        # 10. Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
+        # 10. Transfer 348 stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
         make_steth_payout(
             target_address=pml_multisig_address,
-            steth_in_wei=10**18,
+            steth_in_wei=348 * 10**18,
             reference="Fund PML multisig",
         ),
-        # 11. Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
+        # 11. Transfer 305 stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
         make_steth_payout(
             target_address=atc_multisig_address,
-            steth_in_wei=10**18,
+            steth_in_wei=305 * 10**18,
             reference="Fund ATC multisig",
         ),
         #
@@ -344,9 +344,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         "6) Add oracle member named 'ChainLayer' with address 0xc79F702202E3A6B0B6310B537E786B9ACAA19BAf to HashConsensus for ValidatorsExitBusOracle on Lido on Ethereum Oracle set",
         "7) Deactivate the node operator named 'Jump Crypto' with id 1 in Curated Node Operator Registry",
         "8) Deactivate the node operator named ‘Anyblock Analytics' with id 12 in Curated Node Operator Registry",
-        "9) Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437",
-        "10) Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D",
-        "11) Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956",
+        "9) Transfer 218 stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437",
+        "10) Transfer 348 stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D",
+        "11) Transfer 305 stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956",
         "12) Remove CREATE_PAYMENTS_ROLE from EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977",
         "13) Add CREATE_PAYMENTS_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 with single transfer limits of 1,000 ETH, 1,000 stETH, 5,000,000 LDO, 2,000,000 DAI, 2,000,000 USDC, 2,000,000 USDT",
         "14) Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track",

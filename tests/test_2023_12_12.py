@@ -94,17 +94,17 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
 
     rcc_steth_balance_before = steth.balanceOf(rcc_multisig_acc)
     rcc_payout = Payout(
-        token_addr=steth.address, from_addr=agent.address, to_addr=rcc_multisig_acc.address, amount=10**18
+        token_addr=steth.address, from_addr=agent.address, to_addr=rcc_multisig_acc.address, amount=218 * 10**18
     )
 
     pml_steth_balance_before = steth.balanceOf(pml_multisig_acc)
     pml_payout = Payout(
-        token_addr=steth.address, from_addr=agent.address, to_addr=pml_multisig_acc.address, amount=10**18
+        token_addr=steth.address, from_addr=agent.address, to_addr=pml_multisig_acc.address, amount=348 * 10**18
     )
 
     atc_steth_balance_before = steth.balanceOf(atc_multisig_acc)
     atc_payout = Payout(
-        token_addr=steth.address, from_addr=agent.address, to_addr=atc_multisig_acc.address, amount=10**18
+        token_addr=steth.address, from_addr=agent.address, to_addr=atc_multisig_acc.address, amount=305 * 10**18
     )
 
     agent_steth_balance_before = steth.balanceOf(agent)
@@ -186,19 +186,19 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
         diff=3 * STETH_TRANSFER_MAX_DELTA,  # happens 3 transfers, so max possible error is three times larger
     )
 
-    # 9. Transfer TBA stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
+    # 9. Transfer 218 stETH to RCC 0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437
     rcc_steth_balance_after = steth.balanceOf(rcc_multisig_acc)
     assert almostEqWithDiff(
         rcc_steth_balance_after, rcc_steth_balance_before + rcc_payout.amount, diff=STETH_TRANSFER_MAX_DELTA
     )
 
-    # 10. Transfer TBA stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
+    # 10. Transfer 348 stETH to PML 0x17F6b2C738a63a8D3A113a228cfd0b373244633D
     pml_steth_balance_after = steth.balanceOf(pml_multisig_acc)
     assert almostEqWithDiff(
         pml_steth_balance_after, pml_steth_balance_before + pml_payout.amount, diff=STETH_TRANSFER_MAX_DELTA
     )
 
-    # 11. Transfer TBA stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
+    # 11. Transfer 305 stETH to ATC 0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956
     atc_steth_balance_after = steth.balanceOf(atc_multisig_acc)
     assert almostEqWithDiff(
         atc_steth_balance_after, atc_steth_balance_before + atc_payout.amount, diff=STETH_TRANSFER_MAX_DELTA
