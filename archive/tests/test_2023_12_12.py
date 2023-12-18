@@ -4,7 +4,7 @@ Tests for voting 12/12/2023
 """
 
 from typing import List
-from scripts.vote_2023_12_12 import start_vote, TokenLimit, amount_limits
+from archive.scripts.vote_2023_12_12 import start_vote, TokenLimit, amount_limits
 from brownie import interface, ZERO_ADDRESS, reverts, web3, accounts, convert
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.payout import Payout, validate_token_payout_event
