@@ -225,6 +225,14 @@ class ContractsLazyLoader:
         return interface.ERC20(DAI_TOKEN)
 
     @property
+    def usdt_token(self) -> interface.ERC20:
+        return interface.ERC20(USDT_TOKEN)
+    
+    @property
+    def usdc_token(self) -> interface.ERC20:
+        return interface.ERC20(USDC_TOKEN)
+
+    @property
     def weth_token(self) -> interface.WethToken:
         return interface.WethToken(WETH_TOKEN)
 

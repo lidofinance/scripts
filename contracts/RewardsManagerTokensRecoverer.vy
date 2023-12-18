@@ -1,4 +1,4 @@
-# @version 0.3.1
+# @version 0.3.7
 # @notice A contract to recover tokens from RewardsManager contract
 # @license MIT
 

@@ -74,7 +74,7 @@ def test_send_zero_validators_to_exit(helpers):
 
 
 def test_send_validator_to_exit(helpers, web3):
-    no_global_index = (module_id, no_id) = (1, 1)
+    no_global_index = (module_id, no_id) = (1, 38)
     validator_id = 1
     validator_key = contracts.node_operators_registry.getSigningKey(no_id, validator_id)[0]
     validator = LidoValidator(validator_id, validator_key)
@@ -134,8 +134,8 @@ def test_send_multiple_validators_to_exit(helpers, web3):
     """
     The same as test above but with multiple validators on different node operators
     """
-    first_no_global_index = (first_module_id, first_no_id) = (1, 9)
-    second_no_global_index = (second_module_id, second_no_id) = (1, 10)
+    first_no_global_index = (first_module_id, first_no_id) = (1, 37)
+    second_no_global_index = (second_module_id, second_no_id) = (1, 38)
     first_validator_id = 2
     second_validator_id = 3
     first_validator_key = contracts.node_operators_registry.getSigningKey(first_no_id, first_validator_id)[0]
