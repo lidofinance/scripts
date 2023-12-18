@@ -22,6 +22,12 @@ def test_verify_ipfs_description_empty():
         "and take fixed space in the script regardless of text length."
     )
 
+def test_verify_ipfs_description_good_address():
+    result = verify_ipfs_description(
+        f" `0xDfe76d11b365f5e0023343A367f0b311701B3bc1` "
+    )
+    assert len(result) == 0
+
 
 def test_verify_ipfs_description_ugly_addresses():
     tail = "1234567890abcdefABCDEF00000000000000000"
