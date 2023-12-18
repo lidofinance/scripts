@@ -140,16 +140,17 @@ def verify_ipfs_description(text: str) -> list[Tuple[str, str]]:
 
     if all_address_raw_groups:
         wrong_address_raw = list(filter(lambda address: not checksum_verify(address), all_address_raw_groups))
-        messages.append(
-            (
-                "error",
+        if wrong_address_raw:
+            messages.append(
                 (
-                    "You have wallet addresses in description which has wrong hash sum. "
-                    "Here is the list of addresses:\n"
-                    f"{linesep.join(wrong_address_raw)}"
-                ),
+                    "error",
+                    (
+                        "You have wallet addresses in description which has wrong hash sum. "
+                        "Here is the list of addresses:\n"
+                        f"{linesep.join(wrong_address_raw)}"
+                    ),
+                )
             )
-        )
     ugly_cid_raw_groups = re.findall(rf"([^`]{REG_CID_DEFAULT}|{REG_CID_DEFAULT}[^`])", f" {text} ")
     if ugly_cid_raw_groups:
         cid_raw = list(map(lambda x: x[1] or x[2], ugly_cid_raw_groups))
