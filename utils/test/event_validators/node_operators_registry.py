@@ -90,3 +90,20 @@ def validate_target_validators_count_changed_event(event: EventDict, t: TargetVa
 
     assert event["TargetValidatorsCountChanged"]["nodeOperatorId"] == t.nodeOperatorId
     assert event["TargetValidatorsCountChanged"]["targetValidatorsCount"] == t.targetValidatorsCount
+
+def validate_node_operator_deactivated(event: EventDict, node_operator_id: int):
+    _events_chain = [
+        "LogScriptCall",
+        "LogScriptCall",
+        "NodeOperatorActiveSet",
+        "KeysOpIndexSet",
+        "NonceChanged",
+        "ScriptResult",
+    ]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("NodeOperatorActiveSet") == 1
+
+    assert event["NodeOperatorActiveSet"]["nodeOperatorId"] == node_operator_id
+    assert not event["NodeOperatorActiveSet"]["active"]
