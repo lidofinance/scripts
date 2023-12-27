@@ -28,6 +28,8 @@ IV. Updating the Easy Track setups to allow DAI USDT USDC payments for Lido Cont
 17. Add RCC stable top up EVM script factory 0x75bDecbb6453a901EBBB945215416561547dfDD4
 18. Add PML stable top up EVM script factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D
 19. Add ATC stable top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab
+
+The vote REJECTED.
 """
 
 import time
