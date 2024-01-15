@@ -391,7 +391,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         # VII. Decrease the limit for Easy Track TRP setup to TBA right before the vote ~9M
         #
         (
-            "23) Set spend amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0",
+            "23) Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0",
             agent_forward(
                 [update_spent_amount(spent_amount=0, registry_address="0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8")]
             ),
