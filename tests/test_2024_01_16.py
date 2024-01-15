@@ -147,7 +147,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
 
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
-    # I. Replacing Jump Crypto with ChainLayer in Lido on Ethereum Oracle set
+    # I. Replace Jump Crypto with ChainLayer in Lido on Ethereum Oracle set
 
     # 1. Grant MANAGE_MEMBERS_AND_QUORUM_ROLE on HashConsensus for AccountingOracle on Lido on Ethereum to Agent
     assert contracts.hash_consensus_for_accounting_oracle.hasRole(MANAGE_MEMBERS_AND_QUORUM_ROLE, agent.address)
@@ -176,7 +176,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     assert accounting_hash_consensus.getQuorum() == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
     assert validators_exit_bus_hash_consensus.getQuorum() == HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM
 
-    # II. Deactivation of Jump Crypto and Anyblock Analytics node operators
+    # II. Deactivate Jump Crypto and Anyblock Analytics node operators
     assert node_operators_registry.getActiveNodeOperatorsCount() == active_node_operators_before - 2
 
     # 7. Deactivate the node operator named 'Jump Crypto' with id 1 in Curated Node Operators Registry
@@ -191,14 +191,85 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     # 9. Change the on-chain name of node operator with id 20 from 'HashQuark' to 'HashKey Cloud'
     assert node_operators_registry.getNodeOperator(20, True)["name"] == "HashKey Cloud"
 
-    # IV. Updating the Easy Track setups to allow DAI USDT USDC payments for Lido Contributors Group
+    #
+    # IV. Add stETH factories for PML, ATC, RCC
+    #
+
     evm_script_factories_after = easy_track.getEVMScriptFactories()
+
+    # 10. Add RCC stETH top up EVM script factory 0xcD42Eb8a5db5a80Dc8f643745528DD77cf4C7D35
+    assert rcc_steth_top_up_evm_script_factory_new in evm_script_factories_after
+    create_and_enact_payment_motion(
+        easy_track,
+        trusted_caller=rcc_multisig_acc,
+        factory=rcc_steth_top_up_evm_script_factory_new,
+        token=steth,
+        recievers=[rcc_multisig_acc],
+        transfer_amounts=[10 * 10**18],
+        stranger=stranger,
+    )
+
+    rcc_steth_allowed_recipients_registry = interface.AllowedRecipientRegistry(
+        "0xAAC4FcE2c5d55D1152512fe5FAA94DB267EE4863"
+    )
+    check_add_and_remove_recipient_with_voting(
+        registry=rcc_steth_allowed_recipients_registry,
+        helpers=helpers,
+        ldo_holder=ldo_holder,
+        dao_voting=contracts.voting,
+    )
+
+    # 11. Add PML stETH top up EVM script factory 0xc5527396DDC353BD05bBA578aDAa1f5b6c721136
+    assert pml_steth_top_up_evm_script_factory_new in evm_script_factories_after
+    create_and_enact_payment_motion(
+        easy_track,
+        trusted_caller=pml_multisig_acc,
+        factory=pml_steth_top_up_evm_script_factory_new,
+        token=steth,
+        recievers=[pml_multisig_acc],
+        transfer_amounts=[10 * 10**18],
+        stranger=stranger,
+    )
+
+    pml_steth_allowed_recipients_registry = interface.AllowedRecipientRegistry(
+        "0x7b9B8d00f807663d46Fb07F87d61B79884BC335B"
+    )
+    check_add_and_remove_recipient_with_voting(
+        registry=pml_steth_allowed_recipients_registry,
+        helpers=helpers,
+        ldo_holder=ldo_holder,
+        dao_voting=contracts.voting,
+    )
+
+    # 12. Add ATC stETH top up EVM script factory 0x87b02dF27cd6ec128532Add7C8BC19f62E6f1fB9
+    assert atc_steth_top_up_evm_script_factory_new in evm_script_factories_after
+    create_and_enact_payment_motion(
+        easy_track,
+        trusted_caller=atc_multisig_acc,
+        factory=atc_steth_top_up_evm_script_factory_new,
+        token=steth,
+        recievers=[atc_multisig_acc],
+        transfer_amounts=[10 * 10**18],
+        stranger=stranger,
+    )
+
+    atc_steth_allowed_recipients_registry = interface.AllowedRecipientRegistry(
+        "0xd3950eB3d7A9B0aBf8515922c0d35D13e85a2c91"
+    )
+    check_add_and_remove_recipient_with_voting(
+        registry=atc_steth_allowed_recipients_registry,
+        helpers=helpers,
+        ldo_holder=ldo_holder,
+        dao_voting=contracts.voting,
+    )
+
+    # V. Upgrade the Easy Track setups to allow DAI USDT USDC payments for Lido Contributors Group
 
     assert len(evm_script_factories_after) == len(evm_script_factories_before) + 3
 
-    # 10. Remove CREATE_PAYMENTS_ROLE from EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
+    # 13. Remove CREATE_PAYMENTS_ROLE from EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
 
-    # 11. Add CREATE_PAYMENTS_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 with single transfer limits of
+    # 14. Add CREATE_PAYMENTS_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 with single transfer limits of
 
     #  1000 ETH
     prepare_agent_for_eth_payment(eth_limit.limit)
@@ -236,13 +307,13 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
             {"from": accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)},
         )
 
-    # 12. Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track
+    # 15. Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track
     assert rcc_dai_top_up_evm_script_factory_old not in evm_script_factories_after
 
-    # 13. Remove PML DAI top up EVM script factory (old ver) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD from Easy Track
+    # 16. Remove PML DAI top up EVM script factory (old ver) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD from Easy Track
     assert pml_dai_top_up_evm_script_factory_old not in evm_script_factories_after
 
-    # 14. Remove ATC DAI top up EVM script factory (old ver) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 from Easy Track
+    # 17. Remove ATC DAI top up EVM script factory (old ver) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 from Easy Track
     assert atc_dai_top_up_evm_script_factory_old not in evm_script_factories_after
 
     dai_transfer_amount = 1_000 * 10**18
@@ -254,7 +325,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     usdt_transfer_amount = 1_000 * 10**6
     prepare_agent_for_usdt_payment(4 * usdt_transfer_amount)
 
-    # 15. Add RCC stables top up EVM script factory 0x75bDecbb6453a901EBBB945215416561547dfDD4
+    # 18. Add RCC stables top up EVM script factory 0x75bDecbb6453a901EBBB945215416561547dfDD4
     assert rcc_stables_top_up_evm_script_factory_new in evm_script_factories_after
 
     create_and_enact_payment_motion(
@@ -308,7 +379,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
         dao_voting=contracts.voting,
     )
 
-    # 16. Add PML stables top up EVM script factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D
+    # 19. Add PML stables top up EVM script factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D
     assert pml_stables_top_up_evm_script_factory_new in evm_script_factories_after
 
     create_and_enact_payment_motion(
@@ -359,7 +430,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
         dao_voting=contracts.voting,
     )
 
-    # 17. Add ATC stables top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab
+    # 20. Add ATC stables top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab
     assert atc_stables_top_up_evm_script_factory_new in evm_script_factories_after
 
     create_and_enact_payment_motion(
@@ -412,76 +483,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     )
 
     #
-    # V. Addition stETH factories for PML, ATC, RCC
-    #
-    # 18. Add RCC stETH top up EVM script factory 0xcD42Eb8a5db5a80Dc8f643745528DD77cf4C7D35
-    assert rcc_steth_top_up_evm_script_factory_new in evm_script_factories_after
-    create_and_enact_payment_motion(
-        easy_track,
-        trusted_caller=rcc_multisig_acc,
-        factory=rcc_steth_top_up_evm_script_factory_new,
-        token=steth,
-        recievers=[rcc_multisig_acc],
-        transfer_amounts=[10 * 10**18],
-        stranger=stranger,
-    )
-
-    rcc_steth_allowed_recipients_registry = interface.AllowedRecipientRegistry(
-        "0xAAC4FcE2c5d55D1152512fe5FAA94DB267EE4863"
-    )
-    check_add_and_remove_recipient_with_voting(
-        registry=rcc_steth_allowed_recipients_registry,
-        helpers=helpers,
-        ldo_holder=ldo_holder,
-        dao_voting=contracts.voting,
-    )
-
-    # 19. Add PML stETH top up EVM script factory 0xc5527396DDC353BD05bBA578aDAa1f5b6c721136
-    assert pml_steth_top_up_evm_script_factory_new in evm_script_factories_after
-    create_and_enact_payment_motion(
-        easy_track,
-        trusted_caller=pml_multisig_acc,
-        factory=pml_steth_top_up_evm_script_factory_new,
-        token=steth,
-        recievers=[pml_multisig_acc],
-        transfer_amounts=[10 * 10**18],
-        stranger=stranger,
-    )
-
-    pml_steth_allowed_recipients_registry = interface.AllowedRecipientRegistry(
-        "0x7b9B8d00f807663d46Fb07F87d61B79884BC335B"
-    )
-    check_add_and_remove_recipient_with_voting(
-        registry=pml_steth_allowed_recipients_registry,
-        helpers=helpers,
-        ldo_holder=ldo_holder,
-        dao_voting=contracts.voting,
-    )
-
-    # 20. Add ATC stETH top up EVM script factory 0x87b02dF27cd6ec128532Add7C8BC19f62E6f1fB9
-    assert atc_steth_top_up_evm_script_factory_new in evm_script_factories_after
-    create_and_enact_payment_motion(
-        easy_track,
-        trusted_caller=atc_multisig_acc,
-        factory=atc_steth_top_up_evm_script_factory_new,
-        token=steth,
-        recievers=[atc_multisig_acc],
-        transfer_amounts=[10 * 10**18],
-        stranger=stranger,
-    )
-
-    atc_steth_allowed_recipients_registry = interface.AllowedRecipientRegistry(
-        "0xd3950eB3d7A9B0aBf8515922c0d35D13e85a2c91"
-    )
-    check_add_and_remove_recipient_with_voting(
-        registry=atc_steth_allowed_recipients_registry,
-        helpers=helpers,
-        ldo_holder=ldo_holder,
-        dao_voting=contracts.voting,
-    )
-
-    #
-    # VI. Updating the Easy Track setups to allow DAI USDT USDC payments for LEGO
+    # VI. Upgrade the Easy Track setups to allow DAI USDT USDC payments for LEGO
     #
 
     # 21. Remove LEGO DAI top up EVM script factory (old ver) 0x0535a67ea2D6d46f85fE568B7EaA91Ca16824FEC from Easy Track
@@ -542,10 +544,10 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     )
 
     #
-    # VII. Decrease the limit for Easy Track TRP setup to TBA right before the vote ~9M
+    # VII.  Decrease the limit for Easy Track TRP setup to 9,178,284.42 LDO
     #
 
-    spent_limit = 9_000_000 * 10**18
+    spent_limit = 9178284_42 * 10**16
     trp_allowed_recipients_registry = interface.AllowedRecipientRegistry("0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8")
 
     # 23. Set spend amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0
@@ -600,7 +602,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
 
     metadata = find_metadata_by_vote_id(vote_id)
 
-    # TODO: Set correct metadata cid
     assert get_lido_vote_cid_from_str(metadata) == "bafkreibugpzhp7nexxg7c6jpmmszikvaj2vscxw426zewa6uyv3z5y6ak4"
 
     display_voting_events(vote_tx)
@@ -611,7 +612,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     evs = group_voting_events(vote_tx)
 
     #
-    # I. Replacing Jump Crypto with ChainLayer in Lido on Ethereum Oracle set
+    # I. Replace Jump Crypto with ChainLayer in Lido on Ethereum Oracle set
     #
 
     validate_grant_role_event(evs[0], MANAGE_MEMBERS_AND_QUORUM_ROLE, agent.address, agent.address)
@@ -632,7 +633,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     )
 
     #
-    # II. Deactivation of Jump Crypto and Anyblock Analytics node operators
+    # II. Deactivate Jump Crypto and Anyblock Analytics node operators
     #
     validate_node_operator_deactivated(evs[6], jump_crypto_node_operator_id)
     validate_node_operator_deactivated(evs[7], anyblock_analytics_node_operator_id)
@@ -643,17 +644,47 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     validate_node_operator_name_set_event(evs[8], node_operator_name_item=node_operator_name_set)
 
     #
-    # IV. Updating the Easy Track setups to allow DAI USDT USDC payments for Lido Contributors Group
+    # IV. Add stETH factories for PML, ATC, RCC
     #
-    validate_permission_revoke_event(evs[9], permission)
-    validate_permission_grantp_event(evs[10], permission, amount_limits())
-
-    validate_evmscript_factory_removed_event(evs[11], rcc_dai_top_up_evm_script_factory_old)
-    validate_evmscript_factory_removed_event(evs[12], pml_dai_top_up_evm_script_factory_old)
-    validate_evmscript_factory_removed_event(evs[13], atc_dai_top_up_evm_script_factory_old)
+    validate_evmscript_factory_added_event(
+        evs[9],
+        EVMScriptFactoryAdded(
+            factory_addr=rcc_steth_top_up_evm_script_factory_new,
+            permissions=create_permissions(contracts.finance, "newImmediatePayment")
+            + create_permissions(rcc_steth_allowed_recipients_registry, "updateSpentAmount")[2:],
+        ),
+    )
 
     validate_evmscript_factory_added_event(
-        evs[14],
+        evs[10],
+        EVMScriptFactoryAdded(
+            factory_addr=pml_steth_top_up_evm_script_factory_new,
+            permissions=create_permissions(contracts.finance, "newImmediatePayment")
+            + create_permissions(pml_steth_allowed_recipients_registry, "updateSpentAmount")[2:],
+        ),
+    )
+
+    validate_evmscript_factory_added_event(
+        evs[11],
+        EVMScriptFactoryAdded(
+            factory_addr=atc_steth_top_up_evm_script_factory_new,
+            permissions=create_permissions(contracts.finance, "newImmediatePayment")
+            + create_permissions(atc_steth_allowed_recipients_registry, "updateSpentAmount")[2:],
+        ),
+    )
+
+    #
+    # V. Upgrade the Easy Track setups to allow DAI USDT USDC payments for Lido Contributors Group
+    #
+    validate_permission_revoke_event(evs[12], permission)
+    validate_permission_grantp_event(evs[13], permission, amount_limits())
+
+    validate_evmscript_factory_removed_event(evs[14], rcc_dai_top_up_evm_script_factory_old)
+    validate_evmscript_factory_removed_event(evs[15], pml_dai_top_up_evm_script_factory_old)
+    validate_evmscript_factory_removed_event(evs[16], atc_dai_top_up_evm_script_factory_old)
+
+    validate_evmscript_factory_added_event(
+        evs[17],
         EVMScriptFactoryAdded(
             factory_addr=rcc_stables_top_up_evm_script_factory_new,
             permissions=create_permissions(contracts.finance, "newImmediatePayment")
@@ -663,7 +694,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
 
     pml_allowed_recipients_registry = interface.AllowedRecipientRegistry("0xDFfCD3BF14796a62a804c1B16F877Cf7120379dB")
     validate_evmscript_factory_added_event(
-        evs[15],
+        evs[18],
         EVMScriptFactoryAdded(
             factory_addr=pml_stables_top_up_evm_script_factory_new,
             permissions=create_permissions(contracts.finance, "newImmediatePayment")
@@ -671,11 +702,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
         ),
     )
 
-    #
-    # V. Addition stETH factories for PML, ATC, RCC
-    #
     validate_evmscript_factory_added_event(
-        evs[16],
+        evs[19],
         EVMScriptFactoryAdded(
             factory_addr=atc_stables_top_up_evm_script_factory_new,
             permissions=create_permissions(contracts.finance, "newImmediatePayment")
@@ -684,37 +712,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     )
 
     #
-    # V. Addition stETH factories for PML, ATC, RCC
-    #
-    validate_evmscript_factory_added_event(
-        evs[17],
-        EVMScriptFactoryAdded(
-            factory_addr=rcc_steth_top_up_evm_script_factory_new,
-            permissions=create_permissions(contracts.finance, "newImmediatePayment")
-            + create_permissions(rcc_steth_allowed_recipients_registry, "updateSpentAmount")[2:],
-        ),
-    )
-
-    validate_evmscript_factory_added_event(
-        evs[18],
-        EVMScriptFactoryAdded(
-            factory_addr=pml_steth_top_up_evm_script_factory_new,
-            permissions=create_permissions(contracts.finance, "newImmediatePayment")
-            + create_permissions(pml_steth_allowed_recipients_registry, "updateSpentAmount")[2:],
-        ),
-    )
-
-    validate_evmscript_factory_added_event(
-        evs[19],
-        EVMScriptFactoryAdded(
-            factory_addr=atc_steth_top_up_evm_script_factory_new,
-            permissions=create_permissions(contracts.finance, "newImmediatePayment")
-            + create_permissions(atc_steth_allowed_recipients_registry, "updateSpentAmount")[2:],
-        ),
-    )
-
-    #
-    # VI. Updating the Easy Track setups to allow DAI USDT USDC payments for LEGO
+    # VI. Upgrade the Easy Track setups to allow DAI USDT USDC payments for LEGO
     #
     validate_evmscript_factory_removed_event(evs[20], lego_dai_top_up_evm_script_factory_old)
 
@@ -728,7 +726,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     )
 
     #
-    # VII. Decrease the limit for Easy Track TRP setup to TBA right before the vote ~9M
+    # VII.Decrease the limit for Easy Track TRP setup to 9,178,284.42 LDO
     #
     old_spent_limit = 22_000_000 * 10**18
     validate_update_spent_amount_event(

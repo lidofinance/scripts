@@ -1,7 +1,7 @@
 """
 Voting 16/01/2024.
 
-I. Replacing Jump Crypto with ChainLayer in Lido on Ethereum Oracle set
+I. Replace Jump Crypto with ChainLayer in Lido on Ethereum Oracle set
 1. Grant MANAGE_MEMBERS_AND_QUORUM_ROLE on HashConsensus for AccountingOracle on Lido on Ethereum to Agent
 2. Grant MANAGE_MEMBERS_AND_QUORUM_ROLE on HashConsensus for ValidatorsExitBusOracle on Lido on Ethereum to Agent
 3. Remove the oracle member named 'Jump Crypto' with address 0x1d0813bf088be3047d827d98524fbf779bc25f00 from
@@ -13,42 +13,42 @@ I. Replacing Jump Crypto with ChainLayer in Lido on Ethereum Oracle set
 6. Add oracle member named 'ChainLayer' with address 0xc79F702202E3A6B0B6310B537E786B9ACAA19BAf to
     HashConsensus for ValidatorsExitBusOracle on Lido on Ethereum Oracle set
 
-II. Deactivation of Jump Crypto and Anyblock Analytics node operators
+II. Deactivate Jump Crypto and Anyblock Analytics node operators
 7. Deactivate the node operator named 'Jump Crypto' with id 1 in Curated Node Operators Registry
 8. Deactivate the node operator named 'Anyblock Analytics' with id 12 in Curated Node Operators Registry
 
 III. Change the on-chain name of node operator with id 20 from 'HashQuark' to 'HashKey Cloud'
 9. Change the on-chain name of node operator with id 20 from 'HashQuark' to 'HashKey Cloud'
 
-IV. Updating the Easy Track setups to allow DAI USDT USDC payments for Lido Contributors Group
-10. Remove CREATE_PAYMENTS_ROLE from EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
-11. Add CREATE_PAYMENTS_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 with single
+IV. Add stETH factories for PML, ATC, RCC
+10. Add RCC stETH top up EVM script factory 0xcD42Eb8a5db5a80Dc8f643745528DD77cf4C7D35
+11. Add PML stETH top up EVM script factory 0xc5527396DDC353BD05bBA578aDAa1f5b6c721136
+12. Add ATC stETH top up EVM script factory 0x87b02dF27cd6ec128532Add7C8BC19f62E6f1fB9
+
+V. Upgrade the Easy Track setups to allow DAI USDT USDC payments for Lido Contributors Group
+13. Remove CREATE_PAYMENTS_ROLE from EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
+14. Add CREATE_PAYMENTS_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 with single
     transfer limits of 1,000 ETH, 1,000 stETH, 5,000,000 LDO, 2,000,000 DAI, 2,000,000 USDC, 2,000,000 USDT
-12. Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track
-13. Remove PML DAI top up EVM script factory (old ver) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD from Easy Track
-14. Remove ATC DAI top up EVM script factory (old ver) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 from Easy Track
-15. Add RCC stables top up EVM script factory 0x75bDecbb6453a901EBBB945215416561547dfDD4
-16. Add PML stables top up EVM script factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D
-17. Add ATC stables top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab
+15. Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track
+16. Remove PML DAI top up EVM script factory (old ver) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD from Easy Track
+17. Remove ATC DAI top up EVM script factory (old ver) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 from Easy Track
+18. Add RCC stables top up EVM script factory 0x75bDecbb6453a901EBBB945215416561547dfDD4
+19. Add PML stables top up EVM script factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D
+20. Add ATC stables top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab
 
-V. Addition stETH factories for PML, ATC, RCC
-18. Add RCC stETH top up EVM script factory 0xcD42Eb8a5db5a80Dc8f643745528DD77cf4C7D35
-19. Add PML stETH top up EVM script factory 0xc5527396DDC353BD05bBA578aDAa1f5b6c721136
-20. Add ATC stETH top up EVM script factory 0x87b02dF27cd6ec128532Add7C8BC19f62E6f1fB9
-
-VI. Updating the Easy Track setups to allow DAI USDT USDC payments for LEGO
+VI. Upgrade the Easy Track setups to allow DAI USDT USDC payments for LEGO
 21. Remove LEGO DAI top up EVM script factory (old ver) 0x0535a67ea2D6d46f85fE568B7EaA91Ca16824FEC from Easy Track
 22. Add LEGO stables top up EVM script factory 0x6AB39a8Be67D9305799c3F8FdFc95Caf3150d17c
 
-VII. Decrease the limit for Easy Track TRP setup to TBA right before the vote ~9M
+VII. Decrease the limit for Easy Track TRP setup to 9,178,284.42 LDO
 23. Set spend amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0
-24. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TBA
+24. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 9178284.42 * 10 ** 18
 """
 
 import time
 
 from typing import Dict, List, NamedTuple
-from brownie import ZERO_ADDRESS
+from brownie import ZERO_ADDRESS, Wei
 from brownie.network.transaction import TransactionReceipt
 from utils.agent import agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
@@ -201,7 +201,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
     vote_desc_items, call_script_items = zip(
         #
-        # I. Replacing Jump Crypto with ChainLayer in Lido on Ethereum Oracle set
+        # I. Replace Jump Crypto with ChainLayer in Lido on Ethereum Oracle set
         #
         (
             "1) Grant MANAGE_MEMBERS_AND_QUORUM_ROLE on HashConsensus for AccountingOracle on Lido on Ethereum to Agent",
@@ -274,7 +274,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         #
-        # II. Deactivation of Jump Crypto and Anyblock Analytics node operators
+        # II. Deactivate Jump Crypto and Anyblock Analytics node operators
         #
         (
             "7) Deactivate the node operator named 'Jump Crypto' with id 1 in Curated Node Operators Registry",
@@ -298,10 +298,40 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         #
-        # IV. Updating the Easy Track setups to allow DAI USDT USDC payments for Lido Contributors Group
+        # IV. Add stETH factories for PML, ATC, RCC
         #
         (
-            "10) Remove CREATE_PAYMENTS_ROLE from EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977",
+            "10) Add RCC stETH top up EVM script factory 0xcD42Eb8a5db5a80Dc8f643745528DD77cf4C7D35",
+            add_evmscript_factory(
+                factory="0xcD42Eb8a5db5a80Dc8f643745528DD77cf4C7D35",
+                permissions=create_top_up_allowed_recipient_permission(
+                    registry_address="0xAAC4FcE2c5d55D1152512fe5FAA94DB267EE4863"
+                ),
+            ),
+        ),
+        (
+            "11) Add PML stETH top up EVM script factory 0xc5527396DDC353BD05bBA578aDAa1f5b6c721136",
+            add_evmscript_factory(
+                factory="0xc5527396DDC353BD05bBA578aDAa1f5b6c721136",
+                permissions=create_top_up_allowed_recipient_permission(
+                    registry_address="0x7b9B8d00f807663d46Fb07F87d61B79884BC335B"
+                ),
+            ),
+        ),
+        (
+            "12) Add ATC stETH top up EVM script factory 0x87b02dF27cd6ec128532Add7C8BC19f62E6f1fB9",
+            add_evmscript_factory(
+                factory="0x87b02dF27cd6ec128532Add7C8BC19f62E6f1fB9",
+                permissions=create_top_up_allowed_recipient_permission(
+                    registry_address="0xd3950eB3d7A9B0aBf8515922c0d35D13e85a2c91"
+                ),
+            ),
+        ),
+        #
+        # V. Upgrade the Easy Track setups to allow DAI USDT USDC payments for Lido Contributors Group
+        #
+        (
+            "13) Remove CREATE_PAYMENTS_ROLE from EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977",
             encode_permission_revoke(
                 target_app=contracts.finance,
                 permission_name="CREATE_PAYMENTS_ROLE",
@@ -309,7 +339,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "11) Add CREATE_PAYMENTS_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 with single \
+            "14) Add CREATE_PAYMENTS_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 with single \
                  transfer limits of 1,000 ETH, 1,000 stETH, 5,000,000 LDO, 2,000,000 DAI, 2,000,000 USDC, 2,000,000 USDT",
             encode_permission_grant_p(
                 target_app=contracts.finance,
@@ -319,19 +349,19 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "12) Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track",
+            "15) Remove RCC DAI top up EVM script factory (old ver) 0x84f74733ede9bFD53c1B3Ea96338867C94EC313e from Easy Track",
             remove_evmscript_factory("0x84f74733ede9bFD53c1B3Ea96338867C94EC313e"),
         ),
         (
-            "13) Remove PML DAI top up EVM script factory (old ver) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD from Easy Track",
+            "16) Remove PML DAI top up EVM script factory (old ver) 0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD from Easy Track",
             remove_evmscript_factory("0x4E6D3A5023A38cE2C4c5456d3760357fD93A22cD"),
         ),
         (
-            "14) Remove ATC DAI top up EVM script factory (old ver) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 from Easy Track",
+            "17) Remove ATC DAI top up EVM script factory (old ver) 0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07 from Easy Track",
             remove_evmscript_factory("0x67Fb97ABB9035E2e93A7e3761a0d0571c5d7CD07"),
         ),
         (
-            "15) Add RCC stables top up EVM script factory 0x75bDecbb6453a901EBBB945215416561547dfDD4",
+            "18) Add RCC stables top up EVM script factory 0x75bDecbb6453a901EBBB945215416561547dfDD4",
             add_evmscript_factory(
                 factory="0x75bDecbb6453a901EBBB945215416561547dfDD4",
                 permissions=create_top_up_allowed_recipient_permission(
@@ -340,7 +370,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "16) Add PML stables top up EVM script factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D",
+            "19) Add PML stables top up EVM script factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D",
             add_evmscript_factory(
                 factory="0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D",
                 permissions=create_top_up_allowed_recipient_permission(
@@ -349,7 +379,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "17) Add ATC stables top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab",
+            "20) Add ATC stables top up EVM script factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab",
             add_evmscript_factory(
                 factory="0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab",
                 permissions=create_top_up_allowed_recipient_permission(
@@ -358,37 +388,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         #
-        # V. Addition stETH factories for PML, ATC, RCC
-        #
-        (
-            "18) Add RCC stETH top up EVM script factory 0xcD42Eb8a5db5a80Dc8f643745528DD77cf4C7D35",
-            add_evmscript_factory(
-                factory="0xcD42Eb8a5db5a80Dc8f643745528DD77cf4C7D35",
-                permissions=create_top_up_allowed_recipient_permission(
-                    registry_address="0xAAC4FcE2c5d55D1152512fe5FAA94DB267EE4863"
-                ),
-            ),
-        ),
-        (
-            "19) Add PML stETH top up EVM script factory 0xc5527396DDC353BD05bBA578aDAa1f5b6c721136",
-            add_evmscript_factory(
-                factory="0xc5527396DDC353BD05bBA578aDAa1f5b6c721136",
-                permissions=create_top_up_allowed_recipient_permission(
-                    registry_address="0x7b9B8d00f807663d46Fb07F87d61B79884BC335B"
-                ),
-            ),
-        ),
-        (
-            "20) Add ATC stETH top up EVM script factory 0x87b02dF27cd6ec128532Add7C8BC19f62E6f1fB9",
-            add_evmscript_factory(
-                factory="0x87b02dF27cd6ec128532Add7C8BC19f62E6f1fB9",
-                permissions=create_top_up_allowed_recipient_permission(
-                    registry_address="0xd3950eB3d7A9B0aBf8515922c0d35D13e85a2c91"
-                ),
-            ),
-        ),
-        #
-        # VI. Updating the Easy Track setups to allow DAI USDT USDC payments for LEGO
+        # VI. Upgrade the Easy Track setups to allow DAI USDT USDC payments for LEGO
         #
         (
             "21) Remove LEGO DAI top up EVM script factory (old ver) 0x0535a67ea2D6d46f85fE568B7EaA91Ca16824FEC from Easy Track",
@@ -404,7 +404,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         #
-        # VII. Decrease the limit for Easy Track TRP setup to TBA right before the vote ~9M
+        # VII.Decrease the limit for Easy Track TRP setup to 9,178,284.42 LDO
         #
         (
             "23) Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0",
@@ -413,11 +413,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "24) Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TBA",
+            "24) Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 9178284.42 * 10 ** 18",
             agent_forward(
                 [
                     set_limit_parameters(
-                        limit=9_000_000 * 10**18,
+                        limit=Wei("9178284.42 ether"),
                         period_duration_months=12,
                         registry_address="0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8",
                     ),
