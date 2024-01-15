@@ -601,7 +601,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     metadata = find_metadata_by_vote_id(vote_id)
 
     # TODO: Set correct metadata cid
-    # assert get_lido_vote_cid_from_str(metadata) == "TBD"
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreibugpzhp7nexxg7c6jpmmszikvaj2vscxw426zewa6uyv3z5y6ak4"
 
     display_voting_events(vote_tx)
 

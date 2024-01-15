@@ -173,7 +173,23 @@ def amount_limits() -> List[Param]:
     ]
 
 
-description = """TBD"""
+description = """
+1. **Replace Jump Crypto with ChainLayer in Lido on Ethereum Oracle set**. [Snapshot vote](https://snapshot.org/#/lido-snapshot.eth/proposal/0x29a1106ab03bfc146f324cf194f13119ae172d92a031ceb35ea37bd928c10577). Items 1-6.
+
+2. **Deactivate node operators** Jump Crypto (id 1) and Anyblock Analytics (id 12) in Curated Node Operators Registry. Proposed [on the forum](https://research.lido.fi/t/disable-inactive-node-operators-anyblock-analytics-jump-crypto-in-curated-node-operator-registry/6077). Items 7,8.
+
+3. **Rename node operator** HashQuark (id 20) to HashKey Cloud. Requested [on the forum](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/20). Item 9.
+
+4. **Add the stETH factories** to enable [Lido Contributors Group multisigs](https://research.lido.fi/t/ref-introducing-the-lido-contributors-group-including-pool-maintenance-labs-and-argo-technology-consulting/3069) ([RCC](https://app.safe.global/settings/setup?safe=eth:0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437), [PML](https://app.safe.global/settings/setup?safe=eth:0x17F6b2C738a63a8D3A113a228cfd0b373244633D), and [ATC](https://app.safe.global/settings/setup?safe=eth:0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956)) funding in stETH via Easy Track as proposed [on the forum](https://research.lido.fi/t/egg-st2024-v1-lido-contributors-group-request-for-grant-funding-to-advance-goose-goals/6054/13). Items 10-12.
+
+5. **Upgrade the Easy Track setups to allow funding not only in DAI but also in USDT and USDC**. The new version of contracts was [audited by Oxorio](https://github.com/lidofinance/audits/blob/main/Oxorio%20Lido%20Easy%20Track%20Smart%20Contracts%20Security%20Audit%20Report%2010-2023.pdf)
+The upgrade includes:
+    - Add `EVMScripExecutor` the permissions to transfer USDT and USDC with a single transfer limit of 2M in addition to current permissions. Items 13,14.
+    - Switch the DAI top-up setup to the DAI, USDT, and USDC top-up setup for all [Lido Contributors Group multisigs](https://research.lido.fi/t/ref-introducing-the-lido-contributors-group-including-pool-maintenance-labs-and-argo-technology-consulting/3069) ([RCC](https://app.safe.global/settings/setup?safe=eth:0xDE06d17Db9295Fa8c4082D4f73Ff81592A3aC437), [PML](https://app.safe.global/settings/setup?safe=eth:0x17F6b2C738a63a8D3A113a228cfd0b373244633D), and [ATC](https://app.safe.global/settings/setup?safe=eth:0x9B1cebF7616f2BC73b47D226f90b01a7c9F86956)). Proposed [on the forum](https://research.lido.fi/t/updating-the-easy-track-setups-to-allow-dai-usdt-usdc-payments-for-lido-contributors-group/5738). Items 15-20.
+    - Switch the DAI top-up setup to the DAI, USDT, and USDC top-up setup for [LEGO multisig](https://app.safe.global/settings/setup?safe=eth:0x12a43b049A7D330cB8aEAB5113032D18AE9a9030). Proposed [on the forum](https://research.lido.fi/t/updating-the-easy-track-setup-for-lego/6344). Items 21,22.
+
+6. **Decrease the Easy Track limit for** [TRP multisig](https://app.safe.global/settings/setup?safe=eth:0x834560F580764Bc2e0B16925F8bF229bb00cB759) as recommended by the TRP committee [here](https://research.lido.fi/t/request-to-authorise-a-22m-ldo-ceiling-for-a-four-year-contributor-token-reward-plan-trp/3833/23). Items 23,24.
+"""
 
 
 HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM = 5
