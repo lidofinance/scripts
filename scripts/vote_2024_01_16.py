@@ -272,7 +272,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         # III. Change the on-chain name of node operator with id 20 from 'HashQuark' to 'HashKey Cloud'
         #
         (
-            "9) Change the on-chain name of node operator with id 20 from 'HashQuark' to 'HashKey Cloud",
+            "9) Change the on-chain name of node operator with id 20 from 'HashQuark' to 'HashKey Cloud'",
             agent_forward(
                 [
                     encode_set_node_operator_name(
