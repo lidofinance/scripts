@@ -228,8 +228,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "3) Remove the oracle member named 'Jump Crypto' with address 0x1d0813bf088be3047d827d98524fbf779bc25f00 from \
-                HashConsensus for AccountingOracle on Lido on Ethereum",
+            "3) Remove the oracle member named 'Jump Crypto' with address 0x1d0813bf088be3047d827d98524fbf779bc25f00 from "
+            + "HashConsensus for AccountingOracle on Lido on Ethereum",
             agent_forward(
                 [
                     remove_accounting_oracle_member(
@@ -239,8 +239,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "4) Remove the oracle member named 'Jump Crypto' with address 0x1d0813bf088be3047d827d98524fbf779bc25f00 from \
-                HashConsensus for ValidatorsExitBusOracle on Lido on Ethereum",
+            "4) Remove the oracle member named 'Jump Crypto' with address 0x1d0813bf088be3047d827d98524fbf779bc25f00 from "
+            + "HashConsensus for ValidatorsExitBusOracle on Lido on Ethereum",
             agent_forward(
                 [
                     remove_validators_exit_bus_oracle_member(
@@ -251,8 +251,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "5) Add oracle member named 'ChainLayer' with address 0xc79F702202E3A6B0B6310B537E786B9ACAA19BAf to \
-                HashConsensus for AccountingOracle on Lido on Ethereum Oracle set",
+            "5) Add oracle member named 'ChainLayer' with address 0xc79F702202E3A6B0B6310B537E786B9ACAA19BAf to "
+            + "HashConsensus for AccountingOracle on Lido on Ethereum Oracle set",
             agent_forward(
                 [
                     add_accounting_oracle_member(
@@ -262,8 +262,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "6) Add oracle member named 'ChainLayer' with address 0xc79F702202E3A6B0B6310B537E786B9ACAA19BAf to \
-                HashConsensus for ValidatorsExitBusOracle on Lido on Ethereum Oracle set",
+            "6) Add oracle member named 'ChainLayer' with address 0xc79F702202E3A6B0B6310B537E786B9ACAA19BAf to "
+            + "HashConsensus for ValidatorsExitBusOracle on Lido on Ethereum Oracle set",
             agent_forward(
                 [
                     add_validators_exit_bus_oracle_member(
@@ -339,8 +339,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "14) Add CREATE_PAYMENTS_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 with single \
-                 transfer limits of 1,000 ETH, 1,000 stETH, 5,000,000 LDO, 2,000,000 DAI, 2,000,000 USDC, 2,000,000 USDT",
+            "14) Add CREATE_PAYMENTS_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 with single "
+            + "transfer limits of 1,000 ETH, 1,000 stETH, 5,000,000 LDO, 2,000,000 DAI, 2,000,000 USDC, 2,000,000 USDT",
             encode_permission_grant_p(
                 target_app=contracts.finance,
                 permission_name="CREATE_PAYMENTS_ROLE",
