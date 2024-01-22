@@ -1,10 +1,10 @@
 """
-Tests for voting 18/12/2023
+Tests for voting 16/01/2023
 
 """
 
 from typing import List
-from scripts.vote_2024_01_16 import start_vote, TokenLimit, amount_limits
+from archive.scripts.vote_2024_01_16 import start_vote, TokenLimit, amount_limits
 from brownie import interface, ZERO_ADDRESS, reverts, web3, accounts, convert
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.permission import Permission
