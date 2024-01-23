@@ -61,7 +61,7 @@ def get_deployer_account() -> Union[LocalAccount, Account]:
     return accounts.load(os.environ["DEPLOYER"]) if (is_live or "DEPLOYER" in os.environ) else accounts[4]
 
 
-def get_web3_storage_token(silent = False) -> str:
+def get_web3_storage_token(silent=False) -> str:
     is_live = get_is_live()
     if is_live and not silent and "WEB3_STORAGE_TOKEN" not in os.environ:
         raise EnvironmentError(
@@ -72,7 +72,8 @@ def get_web3_storage_token(silent = False) -> str:
 
     return os.environ["WEB3_STORAGE_TOKEN"] if (is_live or "WEB3_STORAGE_TOKEN" in os.environ) else ""
 
-def get_pinata_cloud_token(silent = False) -> str:
+
+def get_pinata_cloud_token(silent=False) -> str:
     is_live = get_is_live()
     if is_live and not silent and "PINATA_CLOUD_TOKEN" not in os.environ:
         raise EnvironmentError(
@@ -83,7 +84,8 @@ def get_pinata_cloud_token(silent = False) -> str:
 
     return os.environ["PINATA_CLOUD_TOKEN"] if (is_live or "PINATA_CLOUD_TOKEN" in os.environ) else ""
 
-def get_infura_io_keys(silent = False) -> Tuple[str, str]:
+
+def get_infura_io_keys(silent=False) -> Tuple[str, str]:
     is_live = get_is_live()
     if is_live and not silent and (
         "WEB3_INFURA_IPFS_PROJECT_ID" not in os.environ or "WEB3_INFURA_IPFS_PROJECT_SECRET" not in os.environ
@@ -101,6 +103,7 @@ def get_infura_io_keys(silent = False) -> Tuple[str, str]:
         else ""
     )
     return project_id, project_secret
+
 
 def prompt_bool() -> Optional[bool]:
     choice = input().lower()

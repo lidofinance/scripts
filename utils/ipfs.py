@@ -70,7 +70,7 @@ def _upload_str_to_pinata_cloud(text: str) -> str:
     text_bytes = text.encode("utf-8")
     text_file = io.BytesIO(text_bytes)
     files = {"file": text_file}
-    pinata_cloud_token = get_pinata_cloud_keys()
+    pinata_cloud_token = get_pinata_cloud_token()
 
     endpoint = "https://api.pinata.cloud"
 
@@ -101,9 +101,9 @@ def _upload_str_to_web3_storage(text: str) -> str:
 
 
 def _upload_str_to_ipfs(text: str) -> str:
-    if get_pinata_cloud_keys(silent = True):
+    if get_pinata_cloud_token(silent=True):
         return _upload_str_to_web3_storage(text)
-    if get_infura_io_keys(silent =True):
+    if get_infura_io_keys(silent=True):
         return _upload_str_to_infura_io(text)
     return _upload_str_to_web3_storage(text)
 

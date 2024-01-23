@@ -114,7 +114,7 @@ def test_fetch_cid_status_from_ipfs():
     status = fetch_cid_status_from_ipfs("bafkreigvk6oenx6mp4mca4at4znujzgljywcfghuvrcxxkhye5b7ghutbm")
     assert status == 200
     status = fetch_cid_status_from_ipfs("bafkreigdsodbw6dlajnk7xyudw52cutzioovt7r7mrdf3t3cx7xfzz3eou")
-    assert status == 404
+    assert status == 404 or status == 504 # depends on service
 
 
 def test_upload_vote_ipfs_description():
