@@ -118,6 +118,12 @@ def test_fetch_cid_status_from_ipfs():
 
 
 def test_upload_vote_ipfs_description():
+    result = upload_vote_ipfs_description("test string", True)
+
+    assert result["cid"] == "bafkreigvk6oenx6mp4mca4at4znujzgljywcfghuvrcxxkhye5b7ghutbm"
+    assert result["text"] == "test string"
+    assert len(result["messages"]) == 0
+
     result = upload_vote_ipfs_description("test string")
 
     assert result["cid"] == "bafkreigvk6oenx6mp4mca4at4znujzgljywcfghuvrcxxkhye5b7ghutbm"

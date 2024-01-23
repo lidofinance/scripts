@@ -77,7 +77,12 @@ def _upload_str_to_pinata_cloud(text: str) -> str:
     pinata_options = {"cidVersion": 1, "wrapWithDirectory": False}
     payload = {"pinataOptions": json.dumps(pinata_options, separators=(",", ":"))}
 
-    response = requests.post(endpoint + "/pinning/pinFileToIPFS", data=payload, files=files, auth=pinata_cloud_token)
+    headers = {
+        "accept": "application/json",
+        "authorization": f"Bearer {pinata_cloud_token}"
+    }
+
+    response = requests.post(endpoint + "/pinning/pinFileToIPFS", data=payload, files=files, headers=headers)
     response.raise_for_status()
     response_json = response.json()
 
@@ -102,9 +107,14 @@ def _upload_str_to_web3_storage(text: str) -> str:
 
 def _upload_str_to_ipfs(text: str) -> str:
     if get_pinata_cloud_token(silent=True):
-        return _upload_str_to_web3_storage(text)
+        print(f"Uploading to pinata.cloud IPFS")
+        return _upload_str_to_pinata_cloud(text)
+
     if get_infura_io_keys(silent=True):
+        print(f"Uploading to infura.io IPFS")
         return _upload_str_to_infura_io(text)
+
+    print(f"Uploading to web3.storage IPFS")
     return _upload_str_to_web3_storage(text)
 
 
@@ -225,7 +235,7 @@ def calculate_vote_ipfs_description(text: str) -> IPFSUploadResult:
     return IPFSUploadResult(cid=calculated_cid, messages=messages, text=text)
 
 
-def upload_vote_ipfs_description(text: str) -> IPFSUploadResult:
+def upload_vote_ipfs_description(text: str, force_upload = False) -> IPFSUploadResult:
     messages = verify_ipfs_description(text)
     calculated_cid = ""
     if not text:
@@ -237,7 +247,8 @@ def upload_vote_ipfs_description(text: str) -> IPFSUploadResult:
             raise Exception("Couldn't calculate the ipfs hash for description.")
 
         status = fetch_cid_status_from_ipfs(calculated_cid)
-        if status < 400:
+
+        if status < 400 and not force_upload:
             # have found file so CID is good
             return IPFSUploadResult(cid=calculated_cid, messages=messages, text=text)
 
