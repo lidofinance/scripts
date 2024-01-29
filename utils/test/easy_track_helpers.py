@@ -1,4 +1,4 @@
-from brownie import chain, accounts
+from brownie import chain, accounts, interface
 from eth_abi.abi import encode_single
 from utils.config import (
     contracts,
@@ -29,7 +29,19 @@ def create_and_enact_payment_motion(
 
     recievers_addresses = [reciever.address for reciever in recievers]
 
-    calldata = _encode_calldata("(address,address[],uint256[])", [token.address, recievers_addresses, transfer_amounts])
+    is_stables_factory = True
+    try:
+        # New TopUpFactories has a getter to return the tokens registry in contrast to the old version.
+        # If the request fails, work with it as with an old factory version.
+        interface.TopUpAllowedRecipients(factory).allowedTokensRegistry()
+    except:
+        is_stables_factory = False
+
+    calldata = (
+        _encode_calldata("(address,address[],uint256[])", [token.address, recievers_addresses, transfer_amounts])
+        if is_stables_factory
+        else _encode_calldata("(address[],uint256[])", [recievers_addresses, transfer_amounts])
+    )
 
     tx = easy_track.createMotion(factory, calldata, {"from": trusted_caller})
 

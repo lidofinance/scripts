@@ -1,3 +1,4 @@
+from typing import Tuple
 from utils.evm_script import encode_call_script
 
 from utils.config import contracts
@@ -43,3 +44,9 @@ def _encode_add_operator(address, name, registry):
 
 def encode_add_operator_lido(address, name):
     return _encode_add_operator(address, name, contracts.node_operators_registry)
+
+
+def deactivate_node_operator(id: int) -> Tuple[str, str]:
+    curated_sm = contracts.node_operators_registry
+    return (curated_sm.address, curated_sm.deactivateNodeOperator.encode_input(id))
+
