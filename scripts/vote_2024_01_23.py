@@ -43,6 +43,8 @@ VI. Upgrade the Easy Track setups to allow DAI USDT USDC payments for LEGO
 VII. Decrease the limit for Easy Track TRP setup to 9,178,284.42 LDO
 23. Set spend amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0
 24. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 9178284.42 * 10 ** 18
+
+Vote passed & executed on Jan-26-2024 02:27:35 PM +UTC, block 19091371.
 """
 
 import time
