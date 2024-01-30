@@ -18,6 +18,11 @@ from utils.config import (
     CURATED_STAKING_MODULE_MODULE_FEE_BP,
     CURATED_STAKING_MODULE_TREASURY_FEE_BP,
     WITHDRAWAL_CREDENTIALS,
+    SIMPLE_DVT_MODULE_ID,
+    SIMPLE_DVT_MODULE_MODULE_FEE_BP,
+    SIMPLE_DVT_MODULE_NAME,
+    SIMPLE_DVT_MODULE_TARGET_SHARE_BP,
+    SIMPLE_DVT_MODULE_TREASURY_FEE_BP,
 )
 from utils.evm_script import encode_error
 
@@ -71,14 +76,20 @@ def test_constants(contract):
 
 
 def test_staking_modules(contract):
-    assert contract.getStakingModulesCount() == 1
+    assert contract.getStakingModulesCount() == 2
 
-    assert contract.getStakingModuleIds() == [CURATED_STAKING_MODULE_ID]
+    assert contract.getStakingModuleIds() == [CURATED_STAKING_MODULE_ID, SIMPLE_DVT_MODULE_ID]
     assert contract.getStakingModuleIsActive(1) == True
     assert contract.getStakingModuleIsStopped(1) == False
     assert contract.getStakingModuleIsDepositsPaused(1) == False
     assert contract.getStakingModuleNonce(1) >= 7260
     assert contract.getStakingModuleStatus(1) == 0
+
+    assert contract.getStakingModuleIsActive(2) == True
+    assert contract.getStakingModuleIsStopped(2) == False
+    assert contract.getStakingModuleIsDepositsPaused(2) == False
+    assert contract.getStakingModuleNonce(2) >= 0
+    assert contract.getStakingModuleStatus(2) == 0
 
     curated_module = contract.getStakingModule(1)
     assert curated_module["id"] == CURATED_STAKING_MODULE_ID
@@ -91,6 +102,19 @@ def test_staking_modules(contract):
     assert curated_module["lastDepositAt"] >= 1679672628
     assert curated_module["lastDepositBlock"] >= 8705383
     assert curated_module["exitedValidatorsCount"] >= 145
+
+    simple_dvt_module = contract.getStakingModule(2)
+    assert simple_dvt_module["id"] == SIMPLE_DVT_MODULE_ID
+    assert simple_dvt_module["stakingModuleAddress"] == contracts.simple_dvt
+    assert simple_dvt_module["stakingModuleFee"] == SIMPLE_DVT_MODULE_MODULE_FEE_BP
+    assert simple_dvt_module["treasuryFee"] == SIMPLE_DVT_MODULE_TREASURY_FEE_BP
+    assert simple_dvt_module["targetShare"] == SIMPLE_DVT_MODULE_TARGET_SHARE_BP
+    assert simple_dvt_module["status"] == 0
+    assert simple_dvt_module["name"] == SIMPLE_DVT_MODULE_NAME
+    # TODO: fix values after adding new keys
+    # assert simple_dvt_module["lastDepositAt"] >= 0
+    # assert simple_dvt_module["lastDepositBlock"] >= 0
+    # assert simple_dvt_module["exitedValidatorsCount"] >= 0
 
     fee_aggregate_distribution = contract.getStakingFeeAggregateDistribution()
     assert fee_aggregate_distribution["modulesFee"] == SR_MODULES_FEE_E20

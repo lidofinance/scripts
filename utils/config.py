@@ -133,6 +133,10 @@ class ContractsLazyLoader:
         return interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
 
     @property
+    def simple_dvt(self) -> interface.NodeOperatorsRegistry:
+        return interface.NodeOperatorsRegistry(SIMPLE_DVT)
+
+    @property
     def legacy_oracle(self) -> interface.LegacyOracle:
         return interface.LegacyOracle(LEGACY_ORACLE)
 
@@ -227,7 +231,7 @@ class ContractsLazyLoader:
     @property
     def usdt_token(self) -> interface.ERC20:
         return interface.ERC20(USDT_TOKEN)
-    
+
     @property
     def usdc_token(self) -> interface.ERC20:
         return interface.ERC20(USDC_TOKEN)

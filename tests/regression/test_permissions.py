@@ -40,6 +40,7 @@ from utils.config import (
     BURNER,
     LIDO_LOCATOR,
     LEGACY_ORACLE,
+    SIMPLE_DVT,
 )
 
 
@@ -60,7 +61,7 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "REQUEST_BURN_MY_STETH_ROLE": [contracts.agent],
-                "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry],
+                "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry, contracts.simple_dvt],
             },
         },
         STAKING_ROUTER: {
@@ -280,6 +281,17 @@ def protocol_permissions():
                 "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
             },
         },
+        SIMPLE_DVT: {
+            "contract_name": "NodeOperatorsRegistry",
+            "contract": contracts.simple_dvt,
+            "type": "AragonApp",
+            "roles": {
+                "MANAGE_NODE_OPERATOR_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "MANAGE_SIGNING_KEYS": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "SET_NODE_OPERATOR_LIMIT_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "STAKING_ROUTER_ROLE": [STAKING_ROUTER, EASYTRACK_EVMSCRIPT_EXECUTOR],
+            },
+        },
         LEGACY_ORACLE: {
             "contract_name": "LegacyOracle",
             "contract": contracts.legacy_oracle,
@@ -299,7 +311,7 @@ def test_protocol_permissions(protocol_permissions):
             method for method in permissions_config["contract"].signatures.keys() if method.endswith("_ROLE")
         ]
 
-        if contract_address == NODE_OPERATORS_REGISTRY:
+        if contract_address in [NODE_OPERATORS_REGISTRY, SIMPLE_DVT]:
             abi_roles_list.append("MANAGE_SIGNING_KEYS")
 
         roles = permissions_config["roles"]
