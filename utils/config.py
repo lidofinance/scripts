@@ -268,6 +268,14 @@ class ContractsLazyLoader:
     def anchor_vault_proxy(self) -> interface.InsuranceFund:
         return interface.AnchorVaultProxy(ANCHOR_VAULT_PROXY)
 
+    @property
+    def obol_lido_split_factory(self) -> interface.ObolLidoSplitFactory:
+        return interface.ObolLidoSplitFactory(OBOL_LIDO_SPLIT_FACTORY)
+
+    @property
+    def split_main(self) -> interface.SplitMain:
+        return interface.SplitMain(SPLIT_MAIN)
+
 
 def __getattr__(name: str) -> Any:
     if name == "contracts":
