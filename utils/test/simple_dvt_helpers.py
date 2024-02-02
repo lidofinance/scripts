@@ -94,6 +94,38 @@ def fill_simple_dvt_ops_vetted_keys(stranger, min_ops_cnt=MIN_OPS_CNT, min_keys_
         assert no["totalVettedValidators"] == no["totalAddedValidators"]
 
 
+def simple_dvt_vet_keys(operator_id, stranger):
+    factory = interface.SetVettedValidatorsLimits(EASYTRACK_SIMPLE_DVT_SET_VETTED_VALIDATORS_LIMITS_FACTORY)
+    trusted_caller = accounts.at(EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER, force=True)
+
+    simple_dvt, easy_track = contracts.simple_dvt, contracts.easy_track
+
+    operator = simple_dvt.getNodeOperator(operator_id, False)
+
+    if operator["totalVettedValidators"] == operator["totalAddedValidators"]:
+        return
+
+    calldata = _encode_calldata("((uint256,uint256)[])", [[(operator_id, operator["totalAddedValidators"])]])
+    motions_before = easy_track.getMotions()
+
+    tx = easy_track.createMotion(factory, calldata, {"from": trusted_caller})
+    motions = easy_track.getMotions()
+
+    assert len(motions) == len(motions_before) + 1
+
+    chain.sleep(60 * 60 * 24 * 3)
+    chain.mine()
+
+    easy_track.enactMotion(
+        motions[-1][0],
+        tx.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+
+    operator = simple_dvt.getNodeOperator(operator_id, False)
+    assert operator["totalVettedValidators"] == operator["totalAddedValidators"]
+
+
 def simple_dvt_add_node_operators(simple_dvt, stranger, input_params=[]):
     factory = interface.AddNodeOperators(EASYTRACK_SIMPLE_DVT_ADD_NODE_OPERATORS_FACTORY)
     trusted_caller = accounts.at(EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER, force=True)
