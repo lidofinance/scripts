@@ -107,13 +107,14 @@ def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participa
     buffered_ether_before_submit = lido.getBufferedEther()
     withdrawal_unfinalized_steth = withdrawal_queue.unfinalizedStETH()
 
-    required_buffer = max(0, withdrawal_unfinalized_steth - buffered_ether_before_submit)
-    required_buffer += deposits_count * deposit_size + WEI_TOLERANCE
+    eth_to_deposit = deposits_count * deposit_size
+    eth_debt = max(0, withdrawal_unfinalized_steth - buffered_ether_before_submit)
+    eth_to_submit = eth_to_deposit + eth_debt + WEI_TOLERANCE
 
     eth_whale = accounts.at(staking_router.DEPOSIT_CONTRACT(), force=True)
-    lido.submit(ZERO_ADDRESS, {"from": eth_whale, "value": required_buffer})
+    lido.submit(ZERO_ADDRESS, {"from": eth_whale, "value": eth_to_submit})
 
-    assert lido.getDepositableEther() >= required_buffer
+    assert lido.getDepositableEther() >= eth_to_deposit
 
     # deposit to simple dvt
     module_summary_before = staking_router.getStakingModuleSummary(simple_dvt_module_id)
