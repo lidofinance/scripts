@@ -133,8 +133,8 @@ class ContractsLazyLoader:
         return interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
 
     @property
-    def simple_dvt(self) -> interface.NodeOperatorsRegistry:
-        return interface.NodeOperatorsRegistry(SIMPLE_DVT)
+    def simple_dvt(self) -> interface.SimpleDVT:
+        return interface.SimpleDVT(SIMPLE_DVT)
 
     @property
     def legacy_oracle(self) -> interface.LegacyOracle:
@@ -199,6 +199,10 @@ class ContractsLazyLoader:
     @property
     def kernel(self) -> interface.Kernel:
         return interface.Kernel(ARAGON_KERNEL)
+
+    @property
+    def apm_registry(self) -> interface.APMRegistry:
+        return interface.APMRegistry(APM_REGISTRY)
 
     @property
     def lido_app_repo(self) -> interface.Repo:
