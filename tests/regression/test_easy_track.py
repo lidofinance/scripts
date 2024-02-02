@@ -1,16 +1,38 @@
 from eth_abi.abi import encode_single
-from brownie import accounts, chain, interface
+from brownie import accounts, chain, interface, convert
 from utils.config import (
     contracts,
     EASYTRACK_INCREASE_NOP_STAKING_LIMIT_FACTORY,
     EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER,
     EASYTRACK_SIMPLE_DVT_ADD_NODE_OPERATORS_FACTORY,
     EASYTRACK_SIMPLE_DVT_SET_VETTED_VALIDATORS_LIMITS_FACTORY,
+    EASYTRACK_SIMPLE_DVT_ACTIVATE_NODE_OPERATORS_FACTORY,
+    EASYTRACK_SIMPLE_DVT_DEACTIVATE_NODE_OPERATORS_FACTORY,
+    EASYTRACK_SIMPLE_DVT_SET_NODE_OPERATOR_NAMES_FACTORY,
+    EASYTRACK_SIMPLE_DVT_SET_NODE_OPERATOR_REWARD_ADDRESSES_FACTORY,
+    EASYTRACK_SIMPLE_DVT_UPDATE_TARGET_VALIDATOR_LIMITS_FACTORY,
+    EASYTRACK_SIMPLE_DVT_CHANGE_NODE_OPERATOR_MANAGERS_FACTORY,
 )
 from utils.test.simple_dvt_helpers import simple_dvt_add_keys, simple_dvt_add_node_operators
 from utils.test.easy_track_helpers import _encode_calldata
 
 NODE_OPERATOR_ID = 0
+NEW_OPERATOR_NAMES = [
+    "New Name 1",
+    "New Name 2",
+]
+
+NEW_REWARD_ADDRESSES = [
+    "0x1110000000000000000000000000000000001111",
+    "0x1110000000000000000000000000000000002222",
+]
+
+NEW_MANAGERS = [
+    "0x1110000000000000000000000000000011111111",
+    "0x1110000000000000000000000000000022222222",
+]
+
+MANAGE_SIGNING_KEYS = "0x75abc64490e17b40ea1e66691c3eb493647b24430b358bd87ec3e5127f1621ee"
 
 
 def test_increase_nop_staking_limit(
@@ -36,12 +58,11 @@ def test_increase_nop_staking_limit(
 
     tx = contracts.easy_track.createMotion(factory, calldata, {"from": trusted_caller})
 
-    assert len(contracts.easy_track.getMotions()) == len(motions_before) + 1
+    motions = contracts.easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 1
 
     chain.sleep(60 * 60 * 24 * 3)
     chain.mine()
-
-    motions = contracts.easy_track.getMotions()
 
     contracts.easy_track.enactMotion(
         motions[-1][0],
@@ -57,25 +78,11 @@ def test_increase_nop_staking_limit(
 def test_simple_dvt_add_node_operators(
     stranger,
 ):
-    NEW_OPERATOR_NAMES = [
-        "New Name 1",
-        "New Name 2",
-    ]
-
-    NEW_REWARD_ADDRESSES = [
-        "0x1110000000000000000000000000000000001111",
-        "0x1110000000000000000000000000000000002222",
-    ]
-
-    NEW_MANAGERS = [
-        "0x1110000000000000000000000000000011111111",
-        "0x1110000000000000000000000000000022222222",
-    ]
-
     input_params = [
         (NEW_OPERATOR_NAMES[0], NEW_REWARD_ADDRESSES[0], NEW_MANAGERS[0]),
         (NEW_OPERATOR_NAMES[1], NEW_REWARD_ADDRESSES[1], NEW_MANAGERS[1]),
     ]
+
     (node_operators_count_before, node_operator_count_after) = simple_dvt_add_node_operators(
         contracts.simple_dvt, stranger, input_params
     )
@@ -86,18 +93,6 @@ def test_simple_dvt_add_node_operators(
 def test_simple_dvt_set_vetted_validators_limits(
     stranger,
 ):
-    NEW_OPERATOR_NAMES = [
-        "New Name 1",
-    ]
-
-    NEW_REWARD_ADDRESSES = [
-        "0x1110000000000000000000000000000000001111",
-    ]
-
-    NEW_MANAGERS = [
-        "0x1110000000000000000000000000000011111111",
-    ]
-
     input_params = [
         (NEW_OPERATOR_NAMES[0], NEW_REWARD_ADDRESSES[0], NEW_MANAGERS[0]),
     ]
@@ -121,12 +116,11 @@ def test_simple_dvt_set_vetted_validators_limits(
 
     tx = contracts.easy_track.createMotion(factory, calldata, {"from": trusted_caller})
 
-    assert len(contracts.easy_track.getMotions()) == len(motions_before) + 1
+    motions = contracts.easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 1
 
     chain.sleep(60 * 60 * 24 * 3)
     chain.mine()
-
-    motions = contracts.easy_track.getMotions()
 
     contracts.easy_track.enactMotion(
         motions[-1][0],
@@ -137,3 +131,261 @@ def test_simple_dvt_set_vetted_validators_limits(
     updated_node_operator = contracts.simple_dvt.getNodeOperator(no_id, False)
 
     assert updated_node_operator["totalVettedValidators"] == new_staking_limit
+
+
+def test_simple_dvt_activate_deactivate_operators(
+    stranger,
+):
+    op_name = NEW_OPERATOR_NAMES[0]
+    op_addr = NEW_REWARD_ADDRESSES[0]
+    op_manager = NEW_MANAGERS[0]
+
+    (_, node_operator_count_after) = simple_dvt_add_node_operators(
+        contracts.simple_dvt,
+        stranger,
+        [
+            (op_name, op_addr, op_manager),
+        ],
+    )
+
+    no_id = node_operator_count_after - 1
+
+    factory_activate = interface.ActivateNodeOperators(EASYTRACK_SIMPLE_DVT_ACTIVATE_NODE_OPERATORS_FACTORY)
+    factory_deactivate = interface.DeactivateNodeOperators(EASYTRACK_SIMPLE_DVT_DEACTIVATE_NODE_OPERATORS_FACTORY)
+    trusted_caller = accounts.at(EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER, force=True)
+
+    is_active = contracts.simple_dvt.getNodeOperatorIsActive(no_id)
+    is_manager = contracts.simple_dvt.canPerform(
+        op_manager,
+        MANAGE_SIGNING_KEYS,
+        [convert.to_uint((0 << 248) + (1 << 240) + no_id, "uint256")],
+    )
+    assert is_active == True
+    assert is_manager == True
+
+    # deactivating
+    calldata = _encode_calldata("((uint256,address)[])", [[(no_id, op_manager)]])
+
+    motions_before = contracts.easy_track.getMotions()
+
+    tx = contracts.easy_track.createMotion(factory_deactivate, calldata, {"from": trusted_caller})
+
+    motions = contracts.easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 1
+
+    chain.sleep(60 * 60 * 24 * 3)
+    chain.mine()
+
+    contracts.easy_track.enactMotion(
+        motions[-1][0],
+        tx.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+
+    is_active = contracts.simple_dvt.getNodeOperatorIsActive(no_id)
+    is_manager = contracts.simple_dvt.canPerform(
+        op_manager,
+        MANAGE_SIGNING_KEYS,
+        [convert.to_uint((0 << 248) + (1 << 240) + no_id, "uint256")],
+    )
+    assert is_active == False
+    assert is_manager == False
+
+    # activating
+    # calldata = _encode_calldata("((uint256,address)[])", [[(no_id, op_manager)]])
+
+    motions_before = contracts.easy_track.getMotions()
+
+    tx = contracts.easy_track.createMotion(factory_activate, calldata, {"from": trusted_caller})
+
+    motions = contracts.easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 1
+
+    chain.sleep(60 * 60 * 24 * 3)
+    chain.mine()
+
+    contracts.easy_track.enactMotion(
+        motions[-1][0],
+        tx.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+
+    is_active = contracts.simple_dvt.getNodeOperatorIsActive(no_id)
+    is_manager = contracts.simple_dvt.canPerform(
+        op_manager,
+        MANAGE_SIGNING_KEYS,
+        [convert.to_uint((0 << 248) + (1 << 240) + no_id, "uint256")],
+    )
+    assert is_active == True
+    assert is_manager == True
+
+
+def test_simple_dvt_set_operator_name_reward_address(
+    stranger,
+):
+    op_name = NEW_OPERATOR_NAMES[0]
+    op_addr = NEW_REWARD_ADDRESSES[0]
+    op_manager = NEW_MANAGERS[0]
+    op_name_upd = NEW_OPERATOR_NAMES[1]
+    op_addr_upd = NEW_REWARD_ADDRESSES[1]
+
+    (_, node_operator_count_after) = simple_dvt_add_node_operators(
+        contracts.simple_dvt,
+        stranger,
+        [
+            (op_name, op_addr, op_manager),
+        ],
+    )
+
+    no_id = node_operator_count_after - 1
+
+    factory_name = interface.SetNodeOperatorNames(EASYTRACK_SIMPLE_DVT_SET_NODE_OPERATOR_NAMES_FACTORY)
+    factory_addr = interface.SetNodeOperatorRewardAddresses(
+        EASYTRACK_SIMPLE_DVT_SET_NODE_OPERATOR_REWARD_ADDRESSES_FACTORY
+    )
+    trusted_caller = accounts.at(EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER, force=True)
+
+    node_operator = contracts.simple_dvt.getNodeOperator(no_id, True)
+
+    assert node_operator["name"] == op_name and node_operator["name"] != op_name_upd
+    assert node_operator["rewardAddress"] == op_addr and node_operator["rewardAddress"] != op_addr_upd
+
+    calldata_name = _encode_calldata("((uint256,string)[])", [[(no_id, op_name_upd)]])
+    calldata_addr = _encode_calldata("((uint256,address)[])", [[(no_id, op_addr_upd)]])
+
+    motions_before = contracts.easy_track.getMotions()
+
+    tx1 = contracts.easy_track.createMotion(factory_name, calldata_name, {"from": trusted_caller})
+    tx2 = contracts.easy_track.createMotion(factory_addr, calldata_addr, {"from": trusted_caller})
+
+    motions = contracts.easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 2
+
+    chain.sleep(60 * 60 * 24 * 3)
+    chain.mine()
+
+    contracts.easy_track.enactMotion(
+        motions[-2][0],
+        tx1.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+    contracts.easy_track.enactMotion(
+        motions[-1][0],
+        tx2.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+
+    node_operator = contracts.simple_dvt.getNodeOperator(no_id, True)
+
+    assert node_operator["name"] == op_name_upd and node_operator["name"] != op_name
+    assert node_operator["rewardAddress"] == op_addr_upd and node_operator["rewardAddress"] != op_addr
+
+
+def test_simple_dvt_set_operator_target_limit(
+    stranger,
+):
+    op_name = NEW_OPERATOR_NAMES[0]
+    op_addr = NEW_REWARD_ADDRESSES[0]
+    op_manager = NEW_MANAGERS[0]
+
+    target_limit = 2
+
+    (_, node_operator_count_after) = simple_dvt_add_node_operators(
+        contracts.simple_dvt,
+        stranger,
+        [
+            (op_name, op_addr, op_manager),
+        ],
+    )
+
+    no_id = node_operator_count_after - 1
+
+    factory = interface.UpdateTargetValidatorLimits(EASYTRACK_SIMPLE_DVT_UPDATE_TARGET_VALIDATOR_LIMITS_FACTORY)
+    trusted_caller = accounts.at(EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER, force=True)
+
+    no_summary = contracts.simple_dvt.getNodeOperatorSummary(no_id)
+
+    assert no_summary["isTargetLimitActive"] == False
+    assert no_summary["targetValidatorsCount"] == 0
+
+    calldata = _encode_calldata("((uint256,bool,uint256)[])", [[(no_id, True, target_limit)]])
+
+    motions_before = contracts.easy_track.getMotions()
+
+    tx = contracts.easy_track.createMotion(factory, calldata, {"from": trusted_caller})
+
+    motions = contracts.easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 1
+
+    chain.sleep(60 * 60 * 24 * 3)
+    chain.mine()
+
+    contracts.easy_track.enactMotion(
+        motions[-1][0],
+        tx.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+
+    no_summary = contracts.simple_dvt.getNodeOperatorSummary(no_id)
+
+    assert no_summary["isTargetLimitActive"] == True
+    assert no_summary["targetValidatorsCount"] == target_limit
+
+
+def test_simple_dvt_change_operator_manager(
+    stranger,
+):
+    op_name = NEW_OPERATOR_NAMES[0]
+    op_addr = NEW_REWARD_ADDRESSES[0]
+    op_manager = NEW_MANAGERS[0]
+    op_manager_upd = NEW_MANAGERS[1]
+
+    (_, node_operator_count_after) = simple_dvt_add_node_operators(
+        contracts.simple_dvt,
+        stranger,
+        [
+            (op_name, op_addr, op_manager),
+        ],
+    )
+
+    no_id = node_operator_count_after - 1
+
+    factory = interface.ChangeNodeOperatorManagers(EASYTRACK_SIMPLE_DVT_CHANGE_NODE_OPERATOR_MANAGERS_FACTORY)
+    trusted_caller = accounts.at(EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER, force=True)
+
+    perm_param = [convert.to_uint((0 << 248) + (1 << 240) + no_id, "uint256")]
+    is_manager = contracts.simple_dvt.canPerform(
+        op_manager,
+        MANAGE_SIGNING_KEYS,
+        perm_param,
+    )
+    is_manager_upd = contracts.simple_dvt.canPerform(op_manager_upd, MANAGE_SIGNING_KEYS, perm_param)
+
+    assert is_manager == True and is_manager_upd == False
+
+    calldata = _encode_calldata("((uint256,address,address)[])", [[(no_id, op_manager, op_manager_upd)]])
+
+    motions_before = contracts.easy_track.getMotions()
+
+    tx = contracts.easy_track.createMotion(factory, calldata, {"from": trusted_caller})
+
+    motions = contracts.easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 1
+
+    chain.sleep(60 * 60 * 24 * 3)
+    chain.mine()
+
+    contracts.easy_track.enactMotion(
+        motions[-1][0],
+        tx.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+
+    is_manager = contracts.simple_dvt.canPerform(
+        op_manager,
+        MANAGE_SIGNING_KEYS,
+        perm_param,
+    )
+    is_manager_upd = contracts.simple_dvt.canPerform(op_manager_upd, MANAGE_SIGNING_KEYS, perm_param)
+
+    assert is_manager == False and is_manager_upd == True
