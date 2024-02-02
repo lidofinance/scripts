@@ -20,6 +20,9 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
         # stake new ether to increase buffer
         contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale.address, "value": ETH(10000)})
 
+    # get accidentally unaccounted stETH shares on WQ contract
+    uncounted_steth_shares = contracts.lido.sharesOf(contracts.withdrawal_queue)
+
     contracts.lido.approve(contracts.withdrawal_queue.address, 1000, {"from": steth_holder})
     contracts.withdrawal_queue.requestWithdrawals([1000], steth_holder, {"from": steth_holder})
 
@@ -98,9 +101,11 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     buffered_ether_after_deposit = contracts.lido.getBufferedEther()
 
     unbuffered_event_nor = deposit_tx_nor.events["Unbuffered"]
-    deposit_validators_changed_event_nor = deposit_tx_nor.events["DepositedValidatorsChanged"]
+    # deposit_validators_changed_event_nor = deposit_tx_nor.events["DepositedValidatorsChanged"]
 
     unbuffered_event_sdvt = deposit_tx_sdvt.events["Unbuffered"]
+
+    # we need just last one event
     deposit_validators_changed_event_sdvt = deposit_tx_sdvt.events["DepositedValidatorsChanged"]
 
     deposits_count = math.floor(unbuffered_event_nor["amount"] / ETH(32)) + math.floor(
@@ -227,9 +232,6 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     assert approve_event["spender"] == contracts.withdrawal_queue.address
 
     last_request_id_before = contracts.withdrawal_queue.getLastRequestId()
-
-    # get accidentally unaccounted stETH shares on WQ contract
-    uncounted_steth_shares = contracts.lido.sharesOf(contracts.withdrawal_queue)
 
     withdrawal_request_tx = contracts.withdrawal_queue.requestWithdrawals(
         [amount_with_rewards], stranger, {"from": stranger}
