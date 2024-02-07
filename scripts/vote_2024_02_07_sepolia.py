@@ -22,7 +22,7 @@ from utils.config import (
 
 #
 # Calls chain:
-# 1) Agent -> agent_forward
+# 1) Agent -> agent_execute
 # 2) -> Scroll message service -> sendMessage
 # 3) -> ScrollBridgeExecutor -> queue
 # 4) -> ProxyAdmin -> upgrade
