@@ -1,9 +1,9 @@
 import pytest
 
-from brownie import accounts, ZERO_ADDRESS
 from utils.test.helpers import ETH
 from utils.config import contracts
 
+from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.reward_wrapper_helpers import deploy_reward_wrapper, wrap_and_split_rewards
 from utils.test.split_helpers import (
     deploy_split_wallet,
@@ -14,9 +14,6 @@ from utils.test.split_helpers import (
 from utils.test.simple_dvt_helpers import simple_dvt_add_keys, simple_dvt_vet_keys, simple_dvt_add_node_operators
 from utils.test.staking_router_helpers import pause_staking_module
 from utils.test.oracle_report_helpers import oracle_report
-
-
-WEI_TOLERANCE = 5  # wei tolerance to avoid rounding issue
 
 
 # fixtures
@@ -71,7 +68,6 @@ def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participa
     """
     simple_dvt, staking_router = contracts.simple_dvt, contracts.staking_router
     lido, deposit_security_module = contracts.lido, contracts.deposit_security_module
-    withdrawal_queue = contracts.withdrawal_queue
 
     stranger = cluster_participants[0]
 
@@ -102,19 +98,7 @@ def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participa
 
     # fill the deposit buffer
     deposits_count = 10
-    deposit_size = ETH(32)
-
-    buffered_ether_before_submit = lido.getBufferedEther()
-    withdrawal_unfinalized_steth = withdrawal_queue.unfinalizedStETH()
-
-    eth_to_deposit = deposits_count * deposit_size
-    eth_debt = max(0, withdrawal_unfinalized_steth - buffered_ether_before_submit)
-    eth_to_submit = eth_to_deposit + eth_debt + WEI_TOLERANCE
-
-    eth_whale = accounts.at(staking_router.DEPOSIT_CONTRACT(), force=True)
-    lido.submit(ZERO_ADDRESS, {"from": eth_whale, "value": eth_to_submit})
-
-    assert lido.getDepositableEther() >= eth_to_deposit
+    fill_deposit_buffer(deposits_count)
 
     # deposit to simple dvt
     module_summary_before = staking_router.getStakingModuleSummary(simple_dvt_module_id)
