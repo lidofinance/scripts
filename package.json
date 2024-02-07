@@ -6,7 +6,10 @@
   "license": "MIT",
   "readme": "README.md",
   "homepage": "https://mainnet.lido.fi",
+  "scripts": {
+    "preinstall": "git submodule update -i -r && cd ./_ganache && npm install && INFURA_KEY=00112233445566778899aabbccddeeff npm run build"
+  },
   "dependencies": {
-    "ganache": "=7.6.0"
+    "ganache": "file:./_ganache/packages/ganache"
   }
 }
