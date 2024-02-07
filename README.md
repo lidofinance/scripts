@@ -6,7 +6,7 @@
 ![python ~3.10](https://img.shields.io/badge/python->=3.10,<3.11-blue)
 ![poetry 1.5.0](https://img.shields.io/badge/poetry-1.5.0-blue)
 ![eth_brownie 1.19.3](https://img.shields.io/badge/eth__brownie-1.19.3-brown)
-![AVotesParser 0.5.4](https://img.shields.io/badge/AVotesParser-0.5.4-brown)
+![AVotesParser 0.5.5](https://img.shields.io/badge/AVotesParser-0.5.5-brown)
 ![Ganache ~7.6.0](https://img.shields.io/badge/ganache-7.6.0-orange)
 ![license MIT](https://img.shields.io/badge/license-MIT-brightgreen)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
@@ -85,21 +85,29 @@ poetry shell
 ### Network setup
 
 By default, you should start composing new scripts and test using forked networks.
-You have two forked networks to work with:
+You have three forked networks to work with:
 
 - `mainnet-fork`
 - `goerli-fork`
+- `holesky-fork`
 
 To start new voting on the live networks you could proceed with:
 
 - `mainnet`
 - `goerli`
+- `holesky`
 
 >Note: you can't run tests on the live networks.
 
 In a typical weekly omnibus workflow, you need only `mainnet-fork` and
 `mainnet` networks. In case of large test campaign on Lido upgrades,
 it also could be useful to go with `goerli` and `goerli-fork` testnets first.
+
+> **Holesky specifics.**
+> Due to Holesky not being supported by Infura yet, setting RPC URL for Holesky is different. Instead of setting `WEB3_INFURA_PROJECT_ID` env variable set `HOLESKY_RPC_URL`.
+
+> **Holesky is partially supported.**
+> At the moment not all parameters are set in `configs/config_holesky.py` and acceptance/regression/snapshot tests are not operational.
 
 ### Environment variables setup
 
