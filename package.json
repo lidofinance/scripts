@@ -7,9 +7,10 @@
   "readme": "README.md",
   "homepage": "https://mainnet.lido.fi",
   "scripts": {
-    "preinstall": "git submodule update -i -r && cd ./_ganache && npm install && INFURA_KEY=00112233445566778899aabbccddeeff npm run build"
+    "postinstall": "yarn patch:ganache",
+    "patch:ganache": "node patch-ganache-7.9.2.js"
   },
   "dependencies": {
-    "ganache": "file:./_ganache/packages/ganache"
+     "ganache": "=7.9.2"
   }
 }

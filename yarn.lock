@@ -142,8 +142,10 @@ emittery@0.10.0:
   resolved "https://registry.yarnpkg.com/emittery/-/emittery-0.10.0.tgz#bb373c660a9d421bb44706ec4967ed50c02a8026"
   integrity sha512-AGvFfs+d0JKCJQ4o01ASQLGPmSCxgfU9RFXvzPvZdjKK8oscynksuJhWrSTSw7j7Ep/sZct5b5ZhYCi8S/t0HQ==
 
-"ganache@file:./_ganache/packages/ganache":
-  version "7.9.2-lido"
+ganache@=7.9.2:
+  version "7.9.2"
+  resolved "https://registry.yarnpkg.com/ganache/-/ganache-7.9.2.tgz#77f506ad2735dd9109696ffa1834a9dd2f806449"
+  integrity sha512-7gsVVDpO9AhrFyDMWWl7SpMsPpqGcnAzjxz3k32LheIPNd64p2XsY9GYRdhWmKuryb60W1iaWPZWDkFKlbRWHA==
   dependencies:
     "@trufflesuite/bigint-buffer" "1.1.10"
     "@trufflesuite/uws-js-unofficial" "20.30.0-unofficial.0"
