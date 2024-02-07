@@ -20,6 +20,7 @@ from configs.config_mainnet import (
     SIMPLE_DVT_MODULE_ID,
     SIMPLE_DVT_MODULE_NAME,
     SIMPLE_DVT_MODULE_TYPE,
+    EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER,
     EASYTRACK_EVMSCRIPT_EXECUTOR,
     EASYTRACK_SIMPLE_DVT_ADD_NODE_OPERATORS_FACTORY,
     EASYTRACK_SIMPLE_DVT_ACTIVATE_NODE_OPERATORS_FACTORY,
@@ -66,9 +67,6 @@ STAKING_ROUTER_ROLE = "0xbb75b874360e0bfd87f964eadd8276d8efb7c942134fc329b513032
 MANAGE_NODE_OPERATOR_ROLE = "0x78523850fdd761612f46e844cf5a16bda6b3151d6ae961fd7e8e7b92bfbca7f8"
 SET_NODE_OPERATOR_LIMIT_ROLE = "0x07b39e0faf2521001ae4e58cb9ffd3840a63e205d288dc9c93c3774f0d794754"
 MANAGE_SIGNING_KEYS = "0x75abc64490e17b40ea1e66691c3eb493647b24430b358bd87ec3e5127f1621ee"
-
-# TODO: check trusted caller address
-TRUSTED_CALLER = "0x08637515E85A4633E23dfc7861e2A9f53af640f7"
 
 simple_dvt_repo_ens = "simple-dvt.lidopm.eth"
 simple_dvt_content_uri = (
@@ -193,10 +191,81 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     assert activate_node_operators_evm_script_factory in evm_script_factories
     assert deactivate_node_operators_evm_script_factory in evm_script_factories
     assert set_vetted_validators_limits_evm_script_factory in evm_script_factories
+    assert update_target_validator_limits_evm_script_factory in evm_script_factories
     assert set_node_operator_names_evm_script_factory in evm_script_factories
     assert set_node_operator_reward_addresses_evm_script_factory in evm_script_factories
-    assert update_target_validator_limits_evm_script_factory in evm_script_factories
     assert change_node_operator_managers_evm_script_factory in evm_script_factories
+
+    assert interface.AddNodeOperators(add_node_operators_evm_script_factory).nodeOperatorsRegistry() == simple_dvt
+    assert (
+        interface.AddNodeOperators(add_node_operators_evm_script_factory).trustedCaller()
+        == EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER
+    )
+    assert (
+        interface.ActivateNodeOperators(activate_node_operators_evm_script_factory).nodeOperatorsRegistry()
+        == simple_dvt
+    )
+    assert (
+        interface.ActivateNodeOperators(activate_node_operators_evm_script_factory).trustedCaller()
+        == EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER
+    )
+    assert (
+        interface.DeactivateNodeOperators(deactivate_node_operators_evm_script_factory).nodeOperatorsRegistry()
+        == simple_dvt
+    )
+    assert (
+        interface.DeactivateNodeOperators(deactivate_node_operators_evm_script_factory).trustedCaller()
+        == EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER
+    )
+    assert (
+        interface.SetVettedValidatorsLimits(set_vetted_validators_limits_evm_script_factory).nodeOperatorsRegistry()
+        == simple_dvt
+    )
+    assert (
+        interface.SetVettedValidatorsLimits(set_vetted_validators_limits_evm_script_factory).trustedCaller()
+        == EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER
+    )
+    assert (
+        interface.SetNodeOperatorNames(set_node_operator_names_evm_script_factory).nodeOperatorsRegistry() == simple_dvt
+    )
+    assert (
+        interface.SetNodeOperatorNames(set_node_operator_names_evm_script_factory).trustedCaller()
+        == EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER
+    )
+    assert (
+        interface.SetNodeOperatorRewardAddresses(
+            set_node_operator_reward_addresses_evm_script_factory
+        ).nodeOperatorsRegistry()
+        == simple_dvt
+    )
+    assert (
+        interface.SetNodeOperatorRewardAddresses(set_node_operator_reward_addresses_evm_script_factory).trustedCaller()
+        == EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER
+    )
+    assert (
+        interface.UpdateTargetValidatorLimits(update_target_validator_limits_evm_script_factory).nodeOperatorsRegistry()
+        == simple_dvt
+    )
+    assert (
+        interface.UpdateTargetValidatorLimits(update_target_validator_limits_evm_script_factory).trustedCaller()
+        == EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER
+    )
+    assert (
+        interface.ChangeNodeOperatorManagers(change_node_operator_managers_evm_script_factory).nodeOperatorsRegistry()
+        == simple_dvt
+    )
+    assert (
+        interface.ChangeNodeOperatorManagers(change_node_operator_managers_evm_script_factory).trustedCaller()
+        == EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER
+    )
+
+    if bypass_events_decoding or network_name() in ("goerli", "goerli-fork"):
+        return
+
+    # validate vote events
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 18, "Incorrect voting items count"
+
+    display_voting_events(vote_tx)
 
     evs = group_voting_events(vote_tx)
 
@@ -205,89 +274,61 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
         EVMScriptFactoryAdded(
             factory_addr=add_node_operators_evm_script_factory,
             permissions=create_permissions(simple_dvt, "addNodeOperator")
-            + create_permissions(contracts.acl, "grantPermissionP")[2:]
-        )
+            + create_permissions(contracts.acl, "grantPermissionP")[2:],
+        ),
     )
     validate_evmscript_factory_added_event(
         evs[9],
         EVMScriptFactoryAdded(
             factory_addr=activate_node_operators_evm_script_factory,
             permissions=create_permissions(simple_dvt, "activateNodeOperator")
-            + create_permissions(contracts.acl, "grantPermissionP")[2:]
-        )
+            + create_permissions(contracts.acl, "grantPermissionP")[2:],
+        ),
     )
     validate_evmscript_factory_added_event(
         evs[10],
         EVMScriptFactoryAdded(
             factory_addr=deactivate_node_operators_evm_script_factory,
             permissions=create_permissions(simple_dvt, "deactivateNodeOperator")
-            + create_permissions(contracts.acl, "revokePermission")[2:]
-        )
+            + create_permissions(contracts.acl, "revokePermission")[2:],
+        ),
     )
     validate_evmscript_factory_added_event(
         evs[11],
         EVMScriptFactoryAdded(
             factory_addr=set_vetted_validators_limits_evm_script_factory,
-            permissions=create_permissions(simple_dvt, "setNodeOperatorStakingLimit")
-        )
+            permissions=create_permissions(simple_dvt, "setNodeOperatorStakingLimit"),
+        ),
     )
     validate_evmscript_factory_added_event(
         evs[12],
         EVMScriptFactoryAdded(
             factory_addr=update_target_validator_limits_evm_script_factory,
-            permissions=create_permissions(simple_dvt, "updateTargetValidatorsLimits")
-        )
+            permissions=create_permissions(simple_dvt, "updateTargetValidatorsLimits"),
+        ),
     )
     validate_evmscript_factory_added_event(
         evs[13],
         EVMScriptFactoryAdded(
             factory_addr=set_node_operator_names_evm_script_factory,
-            permissions=create_permissions(simple_dvt, "setNodeOperatorName")
-        )
+            permissions=create_permissions(simple_dvt, "setNodeOperatorName"),
+        ),
     )
     validate_evmscript_factory_added_event(
         evs[14],
         EVMScriptFactoryAdded(
             factory_addr=set_node_operator_reward_addresses_evm_script_factory,
-            permissions=create_permissions(simple_dvt, "setNodeOperatorRewardAddress")
-        )
+            permissions=create_permissions(simple_dvt, "setNodeOperatorRewardAddress"),
+        ),
     )
     validate_evmscript_factory_added_event(
         evs[15],
         EVMScriptFactoryAdded(
             factory_addr=change_node_operator_managers_evm_script_factory,
             permissions=create_permissions(contracts.acl, "revokePermission")
-                + create_permissions(contracts.acl, "grantPermissionP")[2:]
-        )
+            + create_permissions(contracts.acl, "grantPermissionP")[2:],
+        ),
     )
-
-    assert interface.AddNodeOperators(add_node_operators_evm_script_factory).nodeOperatorsRegistry() == simple_dvt
-    assert interface.AddNodeOperators(add_node_operators_evm_script_factory).trustedCaller() == TRUSTED_CALLER
-    assert interface.ActivateNodeOperators(activate_node_operators_evm_script_factory).nodeOperatorsRegistry() == simple_dvt
-    assert interface.ActivateNodeOperators(activate_node_operators_evm_script_factory).trustedCaller() == TRUSTED_CALLER
-    assert interface.DeactivateNodeOperators(deactivate_node_operators_evm_script_factory).nodeOperatorsRegistry() == simple_dvt
-    assert interface.DeactivateNodeOperators(deactivate_node_operators_evm_script_factory).trustedCaller() == TRUSTED_CALLER
-    assert interface.SetVettedValidatorsLimits(set_vetted_validators_limits_evm_script_factory).nodeOperatorsRegistry() == simple_dvt
-    assert interface.SetVettedValidatorsLimits(set_vetted_validators_limits_evm_script_factory).trustedCaller() == TRUSTED_CALLER
-    assert interface.SetNodeOperatorNames(set_node_operator_names_evm_script_factory).nodeOperatorsRegistry() == simple_dvt
-    assert interface.SetNodeOperatorNames(set_node_operator_names_evm_script_factory).trustedCaller() == TRUSTED_CALLER
-    assert interface.SetNodeOperatorRewardAddresses(set_node_operator_reward_addresses_evm_script_factory).nodeOperatorsRegistry() == simple_dvt
-    assert interface.SetNodeOperatorRewardAddresses(set_node_operator_reward_addresses_evm_script_factory).trustedCaller() == TRUSTED_CALLER
-    assert interface.UpdateTargetValidatorLimits(update_target_validator_limits_evm_script_factory).nodeOperatorsRegistry() == simple_dvt
-    assert interface.UpdateTargetValidatorLimits(update_target_validator_limits_evm_script_factory).trustedCaller() == TRUSTED_CALLER
-    assert interface.ChangeNodeOperatorManagers(change_node_operator_managers_evm_script_factory).nodeOperatorsRegistry() == simple_dvt
-    assert interface.ChangeNodeOperatorManagers(change_node_operator_managers_evm_script_factory).trustedCaller() == TRUSTED_CALLER
-
-
-
-    # validate vote events
-    # assert count_vote_items_by_events(vote_tx, contracts.voting) == 65, "Incorrect voting items count"
-
-    # display_voting_events(vote_tx)
-
-    # if bypass_events_decoding or network_name() in ("goerli", "goerli-fork"):
-    #     return
-
 
 
 def has_permission(permission: Permission, how: List[int]) -> bool:
