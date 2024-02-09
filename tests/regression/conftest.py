@@ -17,12 +17,12 @@ ENV_FILL_SIMPLE_DVT = "FILL_SIMPLE_DVT"
 def autoexecute_vote(helpers, vote_ids_from_env, accounts, stranger):
     if vote_ids_from_env:
         helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
-    else:
-        start_and_execute_votes(contracts.voting, helpers)
+    # else:
+    #     start_and_execute_votes(contracts.voting, helpers)
 
-    if os.getenv(ENV_FILL_SIMPLE_DVT):
-        print(f"Prefilling SimpleDVT...")
-        fill_simple_dvt_ops_vetted_keys(stranger)
+    # if os.getenv(ENV_FILL_SIMPLE_DVT):
+    #     print(f"Prefilling SimpleDVT...")
+    #     fill_simple_dvt_ops_vetted_keys(stranger)
 
     if os.getenv(ENV_REPORT_AFTER_VOTE):
         oracle_report(cl_diff=ETH(523), exclude_vaults_balances=False)

@@ -16,9 +16,6 @@ from utils.test.staking_router_helpers import pause_staking_module
 from utils.test.oracle_report_helpers import oracle_report
 
 
-# fixtures
-
-
 @pytest.fixture(scope="module")
 def cluster_participants(accounts):
     CLUSTER_PARTICIPANTS = 5
@@ -59,8 +56,6 @@ def test_sdvt_module_connected_to_router():
 
 
 # full happy path test
-
-
 def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participants, reward_wrapper):
     """
     Test happy path of rewards distribution
