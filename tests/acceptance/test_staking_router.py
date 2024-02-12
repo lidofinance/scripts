@@ -111,10 +111,9 @@ def test_staking_modules(contract):
     assert simple_dvt_module["targetShare"] == SIMPLE_DVT_MODULE_TARGET_SHARE_BP
     assert simple_dvt_module["status"] == 0
     assert simple_dvt_module["name"] == SIMPLE_DVT_MODULE_NAME
-    # TODO: fix values after adding new keys
-    # assert simple_dvt_module["lastDepositAt"] >= 0
-    # assert simple_dvt_module["lastDepositBlock"] >= 0
-    # assert simple_dvt_module["exitedValidatorsCount"] >= 0
+    assert simple_dvt_module["lastDepositAt"] > 0
+    assert simple_dvt_module["lastDepositBlock"] > 0
+    assert simple_dvt_module["exitedValidatorsCount"] >= 0
 
     fee_aggregate_distribution = contract.getStakingFeeAggregateDistribution()
     assert fee_aggregate_distribution["modulesFee"] == SR_MODULES_FEE_E20

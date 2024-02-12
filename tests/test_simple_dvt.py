@@ -6,12 +6,15 @@ Tests for voting 23/01/2023
 from typing import List
 from scripts.vote_simple_dvt import start_vote
 from brownie import interface, ZERO_ADDRESS, reverts, web3, accounts, convert, network
+from utils.test.event_validators.aragon import validate_app_update_event, validate_push_to_repo_event
+from utils.test.event_validators.common import validate_events_chain
+from utils.test.event_validators.staking_router import StakingModuleItem, validate_staking_module_added_event
 from utils.test.tx_tracing_helpers import *
-from utils.test.event_validators.permission import Permission
 from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS, network_name
-from utils.test.helpers import almostEqWithDiff
+
 from configs.config_mainnet import (
     SIMPLE_DVT_IMPL,
+    SIMPLE_DVT_ARAGON_APP_NAME,
     SIMPLE_DVT_ARAGON_APP_ID,
     SIMPLE_DVT_MODULE_STUCK_PENALTY_DELAY,
     SIMPLE_DVT_MODULE_TARGET_SHARE_BP,
@@ -30,31 +33,24 @@ from configs.config_mainnet import (
     EASYTRACK_SIMPLE_DVT_SET_NODE_OPERATOR_REWARD_ADDRESSES_FACTORY,
     EASYTRACK_SIMPLE_DVT_UPDATE_TARGET_VALIDATOR_LIMITS_FACTORY,
     EASYTRACK_SIMPLE_DVT_CHANGE_NODE_OPERATOR_MANAGERS_FACTORY,
+    REPO_APP_ID,
 )
-from utils.test.easy_track_helpers import create_and_enact_payment_motion, check_add_and_remove_recipient_with_voting
+from utils.test.event_validators.repo_upgrade import (
+    CREATE_VERSION_ROLE,
+    NewRepoItem,
+    validate_new_repo_with_version_event,
+)
 from utils.test.event_validators.permission import (
     Permission,
     validate_grant_role_event,
     validate_permission_revoke_event,
     validate_permission_grantp_event,
-)
-from utils.test.event_validators.hash_consensus import (
-    validate_hash_consensus_member_removed,
-    validate_hash_consensus_member_added,
-)
-from utils.test.event_validators.node_operators_registry import (
-    validate_node_operator_deactivated,
-    validate_node_operator_name_set_event,
-    NodeOperatorNameSetItem,
+    validate_permission_grant_event,
+    validate_permission_create_event,
 )
 from utils.test.event_validators.easy_track import (
     validate_evmscript_factory_added_event,
     EVMScriptFactoryAdded,
-    validate_evmscript_factory_removed_event,
-)
-from utils.test.event_validators.allowed_recipients_registry import (
-    validate_set_limit_parameter_event,
-    validate_update_spent_amount_event,
 )
 from utils.easy_track import create_permissions
 from utils.voting import find_metadata_by_vote_id
@@ -62,7 +58,6 @@ from utils.ipfs import get_lido_vote_cid_from_str
 
 
 REQUEST_BURN_SHARES_ROLE = "0x4be29e0e4eb91f98f709d98803cba271592782e293b84a625e025cbb40197ba8"
-CREATE_VERSION_ROLE = "0x1f56cfecd3595a2e6cc1a7e6cb0b20df84cdbd92eff2fee554e70e4e45a9a7d8"
 STAKING_ROUTER_ROLE = "0xbb75b874360e0bfd87f964eadd8276d8efb7c942134fc329b513032d0803e0c6"
 MANAGE_NODE_OPERATOR_ROLE = "0x78523850fdd761612f46e844cf5a16bda6b3151d6ae961fd7e8e7b92bfbca7f8"
 SET_NODE_OPERATOR_LIMIT_ROLE = "0x07b39e0faf2521001ae4e58cb9ffd3840a63e205d288dc9c93c3774f0d794754"
@@ -72,6 +67,7 @@ simple_dvt_repo_ens = "simple-dvt.lidopm.eth"
 simple_dvt_content_uri = (
     "0x697066733a516d615353756a484347636e4675657441504777565735426567614d42766e355343736769334c5366767261536f"
 )
+simple_dvt_semantic_version = (1, 0, 0)
 
 
 def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_decoding, ldo_holder):
@@ -80,6 +76,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     burner = contracts.burner
     voting = contracts.voting
     acl = contracts.acl
+    agent = contracts.agent
     easy_track = contracts.easy_track
     staking_router = contracts.staking_router
 
@@ -135,7 +132,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
 
     # Latest version in repo is 1st and only one
     latest_ver = simple_dvt_repo.getLatest()
-    assert latest_ver["semanticVersion"] == (1, 0, 0)
+    assert latest_ver["semanticVersion"] == simple_dvt_semantic_version
     assert latest_ver["contractAddress"] == SIMPLE_DVT_IMPL
     assert latest_ver["contentURI"] == simple_dvt_content_uri
 
@@ -149,9 +146,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     assert module["stakingModuleFee"] == SIMPLE_DVT_MODULE_MODULE_FEE_BP
     assert module["treasuryFee"] == SIMPLE_DVT_MODULE_TREASURY_FEE_BP
     assert module["targetShare"] == SIMPLE_DVT_MODULE_TARGET_SHARE_BP
-    # assert simple_dvt_module["status"] == simple_dvt.address
+    assert module["status"] == 0  # StakingModuleStatus.Active
     assert module["name"] == SIMPLE_DVT_MODULE_NAME
-    # assert simple_dvt_module["lastDepositBlock"] == vote_tx.block_number
+    assert module["lastDepositBlock"] == vote_tx.block_number
     assert module["exitedValidatorsCount"] == 0
 
     # SimpleDVT app papams
@@ -259,15 +256,72 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
         == EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER
     )
 
-    if bypass_events_decoding or network_name() in ("goerli", "goerli-fork"):
-        return
-
     # validate vote events
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 18, "Incorrect voting items count"
 
+    metadata = find_metadata_by_vote_id(vote_id)
+    print("metadata", metadata)
+
+    # TODO fix description
+    # assert get_lido_vote_cid_from_str(metadata) == "bafkreibugpzhp7nexxg7c6jpmmszikvaj2vscxw426zewa6uyv3z5y6ak4"
+
     display_voting_events(vote_tx)
 
+    if bypass_events_decoding or network_name() in ("goerli", "goerli-fork"):
+        return
+
     evs = group_voting_events(vote_tx)
+
+    repo_params = NewRepoItem(
+        name=SIMPLE_DVT_ARAGON_APP_NAME,
+        app=simple_dvt.address,
+        app_id=SIMPLE_DVT_ARAGON_APP_ID,
+        repo_app_id=REPO_APP_ID,
+        semantic_version=simple_dvt_semantic_version,
+        apm=contracts.apm_registry.address,
+        manager=voting.address,
+    )
+    validate_new_repo_with_version_event(evs[0], repo_params)
+
+    validate_app_update_event(evs[1], SIMPLE_DVT_ARAGON_APP_ID, SIMPLE_DVT_IMPL)
+
+    validate_simple_dvt_intialize_event(evs[2])
+
+    # Create and grant permission STAKING_ROUTER_ROLE on SimpleDVT module for StakingRouter
+    permission = Permission(
+        entity=staking_router,
+        app=simple_dvt,
+        role=STAKING_ROUTER_ROLE,  # simple_dvt.STAKING_ROUTER_ROLE(),
+    )
+    validate_permission_create_event(evs[3], permission, manager=voting)
+
+    # Grant STAKING_ROUTER_ROLE on SimpleDVT module for EasyTrackEVMScriptExecutor
+    permission = Permission(entity=EASYTRACK_EVMSCRIPT_EXECUTOR, app=simple_dvt, role=STAKING_ROUTER_ROLE)
+    validate_permission_grant_event(evs[4], permission)
+
+    # Create and grant permission MANAGE_NODE_OPERATOR_ROLE on SimpleDVT module for EasyTrackEVMScriptExecutor
+    permission = Permission(
+        entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
+        app=simple_dvt,
+        role=MANAGE_NODE_OPERATOR_ROLE,  # simple_dvt.MANAGE_NODE_OPERATOR_ROLE(),
+    )
+    validate_permission_create_event(evs[5], permission, manager=voting)
+
+    # Create and grant permission SET_NODE_OPERATOR_LIMIT_ROLE on SimpleDVT module for EasyTrackEVMScriptExecutor
+    permission = Permission(
+        entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
+        app=simple_dvt,
+        role=SET_NODE_OPERATOR_LIMIT_ROLE,  # simple_dvt.SET_NODE_OPERATOR_LIMIT_ROLE(),
+    )
+    validate_permission_create_event(evs[6], permission, manager=voting)
+
+    # Create and grant permission MANAGE_SIGNING_KEYS on SimpleDVT module for EasyTrackEVMScriptExecutor
+    permission = Permission(
+        entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
+        app=simple_dvt,
+        role=MANAGE_SIGNING_KEYS,  # simple_dvt.MANAGE_SIGNING_KEYS(),
+    )
+    validate_permission_create_event(evs[7], permission, manager=EASYTRACK_EVMSCRIPT_EXECUTOR)
 
     validate_evmscript_factory_added_event(
         evs[8],
@@ -330,8 +384,48 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
         ),
     )
 
+    validate_grant_role_event(evs[16], REQUEST_BURN_SHARES_ROLE, simple_dvt, agent)
+
+    module_item = StakingModuleItem(
+        SIMPLE_DVT_MODULE_ID,
+        simple_dvt.address,
+        SIMPLE_DVT_MODULE_NAME,
+        SIMPLE_DVT_MODULE_TARGET_SHARE_BP,
+        SIMPLE_DVT_MODULE_MODULE_FEE_BP,
+        SIMPLE_DVT_MODULE_TREASURY_FEE_BP,
+    )
+    validate_staking_module_added_event(evs[17], module_item)
+
 
 def has_permission(permission: Permission, how: List[int]) -> bool:
     return contracts.acl.hasPermission["address,address,bytes32,uint[]"](
         permission.entity, permission.app, permission.role, how
     )
+
+
+def validate_simple_dvt_intialize_event(event: EventDict):
+    _repo_upgrade_events_chain = [
+        "LogScriptCall",
+        "ContractVersionSet",
+        "StuckPenaltyDelayChanged",
+        "Approval",
+        "LocatorContractSet",
+        "StakingModuleTypeSet",
+    ]
+
+    validate_events_chain([e.name for e in event], _repo_upgrade_events_chain)
+
+    assert event.count("ContractVersionSet") == 1
+    assert event.count("StuckPenaltyDelayChanged") == 1
+    assert event.count("Approval") == 1
+    assert event.count("LocatorContractSet") == 1
+    assert event.count("StakingModuleTypeSet") == 1
+
+    assert event["Approval"]["owner"] == contracts.simple_dvt.address
+    assert event["Approval"]["spender"] == contracts.burner.address
+    assert event["Approval"]["value"] == 2**256 - 1  # uint256 max
+
+    assert event["ContractVersionSet"]["version"] == 2
+    assert event["StuckPenaltyDelayChanged"]["stuckPenaltyDelay"] == SIMPLE_DVT_MODULE_STUCK_PENALTY_DELAY
+    assert event["LocatorContractSet"]["locatorAddress"] == contracts.lido_locator.address
+    assert event["StakingModuleTypeSet"]["moduleType"] == SIMPLE_DVT_MODULE_TYPE
