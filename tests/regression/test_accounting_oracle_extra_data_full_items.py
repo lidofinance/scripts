@@ -1,6 +1,3 @@
-import random
-import textwrap
-
 import pytest
 from brownie import convert
 from brownie.network.account import Account
@@ -9,14 +6,12 @@ from brownie.network.web3 import Web3
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.extra_data import ExtraDataService
 from utils.test.helpers import shares_balance, almostEqWithDiff
+from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
 from utils.test.oracle_report_helpers import oracle_report
 
 from utils.config import MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT, MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT
 from utils.config import contracts
 from utils.test.simple_dvt_helpers import simple_dvt_add_node_operators, simple_dvt_add_keys, simple_dvt_vet_keys
-
-PUBKEY_LENGTH = 48
-SIGNATURE_LENGTH = 96
 
 
 @pytest.fixture()
@@ -145,38 +140,40 @@ def test_extra_data_full_items(
     # Check NOR
     for i in range(0, len(nor_exited)):
         assert nor.getNodeOperatorSummary(i)["totalExitedValidators"] == nor_exited[(1, i)]
-    nor_rewards = [e for e in report_tx.events["TransferShares"] if e['to'] == nor.address][0]['sharesValue']
-    for i in range(0, len(nor_stuck)):
-        assert nor.getNodeOperatorSummary(i)["stuckValidatorsCount"] == nor_stuck[(1, i)]
-        assert nor.isOperatorPenalized(i) == True
-        shares_after = shares_balance(nor.getNodeOperator(i, False)["rewardAddress"])
-        rewards_after = calc_no_rewards(
-            nor, no_id=i, shares_minted_as_fees=nor_rewards
-        )
-        assert almostEqWithDiff(
-            shares_after - nor_balance_shares_before[i],
-            rewards_after // 2,
-            1,
-        )
-        penalty_shares += rewards_after // 2
+    if len(nor_stuck) > 0:
+        nor_rewards = [e for e in report_tx.events["TransferShares"] if e['to'] == nor.address][0]['sharesValue']
+        for i in range(0, len(nor_stuck)):
+            assert nor.getNodeOperatorSummary(i)["stuckValidatorsCount"] == nor_stuck[(1, i)]
+            assert nor.isOperatorPenalized(i) == True
+            shares_after = shares_balance(nor.getNodeOperator(i, False)["rewardAddress"])
+            rewards_after = calc_no_rewards(
+                nor, no_id=i, shares_minted_as_fees=nor_rewards
+            )
+            assert almostEqWithDiff(
+                shares_after - nor_balance_shares_before[i],
+                rewards_after // 2,
+                1,
+            )
+            penalty_shares += rewards_after // 2
 
     # Check SDVT
     for i in range(0, len(sdvt_exited)):
         assert sdvt.getNodeOperatorSummary(i)["totalExitedValidators"] == sdvt_exited[(2, i)]
-    sdvt_rewards = [e for e in report_tx.events["TransferShares"] if e['to'] == sdvt.address][0]['sharesValue']
-    for i in range(0, len(sdvt_stuck)):
-        assert sdvt.getNodeOperatorSummary(i)["stuckValidatorsCount"] == sdvt_stuck[(2, i)]
-        assert sdvt.isOperatorPenalized(i) == True
-        shares_after = shares_balance(sdvt.getNodeOperator(i, False)["rewardAddress"])
-        rewards_after = calc_no_rewards(
-            sdvt, no_id=i, shares_minted_as_fees=sdvt_rewards
-        )
-        assert almostEqWithDiff(
-            shares_after - sdvt_balance_shares_before[i],
-            rewards_after // 2,
-            1,
-        )
-        penalty_shares += rewards_after // 2
+    if len(sdvt_stuck) > 0:
+        sdvt_rewards = [e for e in report_tx.events["TransferShares"] if e['to'] == sdvt.address][0]['sharesValue']
+        for i in range(0, len(sdvt_stuck)):
+            assert sdvt.getNodeOperatorSummary(i)["stuckValidatorsCount"] == sdvt_stuck[(2, i)]
+            assert sdvt.isOperatorPenalized(i) == True
+            shares_after = shares_balance(sdvt.getNodeOperator(i, False)["rewardAddress"])
+            rewards_after = calc_no_rewards(
+                sdvt, no_id=i, shares_minted_as_fees=sdvt_rewards
+            )
+            assert almostEqWithDiff(
+                shares_after - sdvt_balance_shares_before[i],
+                rewards_after // 2,
+                1,
+            )
+            penalty_shares += rewards_after // 2
 
     if penalty_shares > 0:
         # TODO: Fix below check when contains other penalized node operators
@@ -187,102 +184,48 @@ def test_extra_data_full_items(
 ############################################
 
 
-def calc_no_rewards(module, no_id, shares_minted_as_fees):
-    operator_summary = module.getNodeOperatorSummary(no_id)
-    module_summary = module.getStakingModuleSummary()
-
-    operator_total_active_keys = (
-        operator_summary["totalDepositedValidators"] - operator_summary["totalExitedValidators"]
-    )
-    module_total_active_keys = module_summary["totalDepositedValidators"] - module_summary["totalExitedValidators"]
-
-    return shares_minted_as_fees * operator_total_active_keys // module_total_active_keys
-
-
-def random_pubkeys_batch(pubkeys_count: int):
-    return random_hexstr(pubkeys_count * PUBKEY_LENGTH)
-
-
-def random_signatures_batch(signautes_count: int):
-    return random_hexstr(signautes_count * SIGNATURE_LENGTH)
-
-
-def parse_pubkeys_batch(pubkeys_batch: str):
-    return hex_chunks(pubkeys_batch, PUBKEY_LENGTH)
-
-
-def parse_signatures_batch(signatures_batch: str):
-    return hex_chunks(signatures_batch, SIGNATURE_LENGTH)
-
-
-def hex_chunks(hexstr: str, chunk_length: int):
-    stripped_hexstr = strip_0x(hexstr)
-    assert len(stripped_hexstr) % chunk_length == 0, "invalid hexstr length"
-    return [prefix_0x(chunk) for chunk in textwrap.wrap(stripped_hexstr, 2 * chunk_length)]
-
-
-def random_hexstr(length: int):
-    return prefix_0x(random.randbytes(length).hex())
-
-
-def prefix_0x(hexstr: str):
-    return hexstr if hexstr.startswith("0x") else "0x" + hexstr
-
-
-def strip_0x(hexstr: str):
-    return hexstr[2:] if hexstr.startswith("0x") else hexstr
-
-
 def add_sdvt_operators_with_keys(enactor: Account, count: int, keys_per_operator: int):
     names = [f"Name {i}" for i in range(0, count)]
     reward_addresses = [f"0xab{str(i).zfill(38)}" for i in range(0, count)]
     managers = [f"0xcd{str(i).zfill(38)}" for i in range(0, count)]
 
-    # 30 at a time
-    for i in range(0, count, 30):
-        (operators_count_before, _) = simple_dvt_add_node_operators(
+    node_operators_per_tx = 20
+    for i in range(0, count, node_operators_per_tx):
+        simple_dvt_add_node_operators(
             contracts.simple_dvt,
             enactor,
             [
                 (names[j], reward_addresses[j], managers[j])
-                for j in range(i, i + 30) if j < count
+                for j in range(i, i + node_operators_per_tx) if j < count
             ]
         )
-        for j in range(i, i + 30):
-            if j >= count:
-                break
-            simple_dvt_add_keys(contracts.simple_dvt, j, keys_per_operator)
-            simple_dvt_vet_keys(j, enactor)
+    for i in range(0, count):
+        simple_dvt_add_keys(contracts.simple_dvt, i, keys_per_operator)
+        simple_dvt_vet_keys(i, enactor)
 
 
 def add_new_nor_operators_with_keys(nor, voting_eoa: Account, evm_script_executor_eoa: Account, count: int,
                                     keys_per_operator: int):
     names = [f"Name {i}" for i in range(0, count)]
     reward_addresses = [f"0xbb{str(i).zfill(38)}" for i in range(0, count)]
-    # managers = [f"0xdd{str(i).zfill(38)}" for i in range(0, count)]
 
-    # 30 at a time
-    for i in range(0, count, 30):
-        # should be more than count
-        for j in range(i, i + 30):
-            if j >= count:
-                break
-            nor.addNodeOperator(
-                names[j],
-                reward_addresses[j],
-                {"from": voting_eoa}
-            )
-            no_id = nor.getNodeOperatorsCount() - 1
-            pubkeys_batch = random_pubkeys_batch(keys_per_operator)
-            signatures_batch = random_signatures_batch(keys_per_operator)
-            nor.addSigningKeysOperatorBH(
-                no_id,
-                keys_per_operator,
-                pubkeys_batch,
-                signatures_batch,
-                {"from": reward_addresses[j]},
-            )
-            nor.setNodeOperatorStakingLimit(no_id, keys_per_operator, {"from": evm_script_executor_eoa})
+    for i in range(0, count):
+        nor.addNodeOperator(
+            names[i],
+            reward_addresses[i],
+            {"from": voting_eoa}
+        )
+        no_id = nor.getNodeOperatorsCount() - 1
+        pubkeys_batch = random_pubkeys_batch(keys_per_operator)
+        signatures_batch = random_signatures_batch(keys_per_operator)
+        nor.addSigningKeysOperatorBH(
+            no_id,
+            keys_per_operator,
+            pubkeys_batch,
+            signatures_batch,
+            {"from": reward_addresses[i]},
+        )
+        nor.setNodeOperatorStakingLimit(no_id, keys_per_operator, {"from": evm_script_executor_eoa})
 
 
 def add_nor_operators_with_keys(
@@ -347,3 +290,15 @@ def deposit_buffer_for_keys(staking_router, sdvt_keys_to_deposit, nor_keys_to_de
     times = nor_keys_to_deposit // keys_per_deposit;
     for _ in range(0, times):
         contracts.lido.deposit(keys_per_deposit, 1, "0x", {"from": contracts.deposit_security_module})
+
+
+def calc_no_rewards(module, no_id, shares_minted_as_fees):
+    operator_summary = module.getNodeOperatorSummary(no_id)
+    module_summary = module.getStakingModuleSummary()
+
+    operator_total_active_keys = (
+        operator_summary["totalDepositedValidators"] - operator_summary["totalExitedValidators"]
+    )
+    module_total_active_keys = module_summary["totalDepositedValidators"] - module_summary["totalExitedValidators"]
+
+    return shares_minted_as_fees * operator_total_active_keys // module_total_active_keys
