@@ -8,6 +8,7 @@ from brownie.network.web3 import Web3
 
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.extra_data import ExtraDataService
+from utils.test.helpers import shares_balance, almostEqWithDiff
 from utils.test.oracle_report_helpers import oracle_report
 
 from utils.config import MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT, MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT
@@ -89,14 +90,18 @@ def test_extra_data_full_items(
     )
 
     # Fill SimpleDVT with new operators and keys
-    sdvt_operators_count = (sdvt_stuck_items + sdvt_exited_items) * max_node_operators_per_item
+    sdvt_operators_count = max(sdvt_stuck_items, sdvt_exited_items) * max_node_operators_per_item
     add_sdvt_operators_with_keys(stranger, sdvt_operators_count, new_keys_per_operator)
 
     # Deposit for new added keys from buffer
+    keys_for_sdvt = sdvt_operators_count * new_keys_per_operator
+    keys_for_nor = 0
+    if added_nor_operators_count > 0:
+        keys_for_nor = (added_nor_operators_count * new_keys_per_operator) + (nor_count_before * new_keys_per_operator)
     deposit_buffer_for_keys(
         contracts.staking_router,
-        sdvt_operators_count * new_keys_per_operator,
-        (added_nor_operators_count * new_keys_per_operator) + (nor_count_before * new_keys_per_operator)
+        keys_for_sdvt,
+        keys_for_nor
     )
 
     # Prepare report extra data
@@ -120,7 +125,14 @@ def test_extra_data_full_items(
         modules_with_exited.append(2)
         num_exited_validators_by_staking_module.append(sdvt_exited_items * max_node_operators_per_item)
 
-    oracle_report(
+    nor_balance_shares_before = []
+    for i in range(0, len(nor_stuck)):
+        nor_balance_shares_before.append(shares_balance(nor.getNodeOperator(i, False)["rewardAddress"]))
+    sdvt_balance_shares_before = []
+    for i in range(0, len(sdvt_stuck)):
+        sdvt_balance_shares_before.append(shares_balance(sdvt.getNodeOperator(i, False)["rewardAddress"]))
+
+    (report_tx, extra_report_tx) = oracle_report(
         extraDataFormat=1,
         extraDataHash=extra_data.data_hash,
         extraDataItemsCount=(nor_exited_items + nor_stuck_items + sdvt_exited_items + sdvt_stuck_items),
@@ -129,23 +141,62 @@ def test_extra_data_full_items(
         numExitedValidatorsByStakingModule=num_exited_validators_by_staking_module,
     )
 
-    # TODO: Rewards are distributed correctly (1/2 of rewards for operators with staked keys are burned)
-
-    # Exited and stuck keys are reported correctly
+    penalty_shares = 0
+    # Check NOR
     for i in range(0, len(nor_exited)):
         assert nor.getNodeOperatorSummary(i)["totalExitedValidators"] == nor_exited[(1, i)]
+    nor_rewards = [e for e in report_tx.events["TransferShares"] if e['to'] == nor.address][0]['sharesValue']
     for i in range(0, len(nor_stuck)):
         assert nor.getNodeOperatorSummary(i)["stuckValidatorsCount"] == nor_stuck[(1, i)]
         assert nor.isOperatorPenalized(i) == True
+        shares_after = shares_balance(nor.getNodeOperator(i, False)["rewardAddress"])
+        rewards_after = calc_no_rewards(
+            nor, no_id=i, shares_minted_as_fees=nor_rewards
+        )
+        assert almostEqWithDiff(
+            shares_after - nor_balance_shares_before[i],
+            rewards_after // 2,
+            1,
+        )
+        penalty_shares += rewards_after // 2
+
+    # Check SDVT
     for i in range(0, len(sdvt_exited)):
         assert sdvt.getNodeOperatorSummary(i)["totalExitedValidators"] == sdvt_exited[(2, i)]
+    sdvt_rewards = [e for e in report_tx.events["TransferShares"] if e['to'] == sdvt.address][0]['sharesValue']
     for i in range(0, len(sdvt_stuck)):
         assert sdvt.getNodeOperatorSummary(i)["stuckValidatorsCount"] == sdvt_stuck[(2, i)]
         assert sdvt.isOperatorPenalized(i) == True
+        shares_after = shares_balance(sdvt.getNodeOperator(i, False)["rewardAddress"])
+        rewards_after = calc_no_rewards(
+            sdvt, no_id=i, shares_minted_as_fees=sdvt_rewards
+        )
+        assert almostEqWithDiff(
+            shares_after - sdvt_balance_shares_before[i],
+            rewards_after // 2,
+            1,
+        )
+        penalty_shares += rewards_after // 2
+
+    if penalty_shares > 0:
+        # TODO: Fix below check when contains other penalized node operators
+        assert almostEqWithDiff(sum(e['amountOfShares'] for e in extra_report_tx.events["StETHBurnRequested"]), penalty_shares, 100)
 
 ############################################
 # HELPER FUNCTIONS
 ############################################
+
+
+def calc_no_rewards(module, no_id, shares_minted_as_fees):
+    operator_summary = module.getNodeOperatorSummary(no_id)
+    module_summary = module.getStakingModuleSummary()
+
+    operator_total_active_keys = (
+        operator_summary["totalDepositedValidators"] - operator_summary["totalExitedValidators"]
+    )
+    module_total_active_keys = module_summary["totalDepositedValidators"] - module_summary["totalExitedValidators"]
+
+    return shares_minted_as_fees * operator_total_active_keys // module_total_active_keys
 
 
 def random_pubkeys_batch(pubkeys_count: int):
@@ -248,7 +299,9 @@ def add_nor_operators_with_keys(
         {"from": contracts.voting},
     )
     nor_count_before = nor.getNodeOperatorsCount()
-    added_nor_operators_count = ((nor_stuck_items + nor_exited_items) * max_node_operators_per_item) - nor_count_before
+    added_nor_operators_count = (max(nor_stuck_items, nor_exited_items) * max_node_operators_per_item) - nor_count_before
+    if added_nor_operators_count <= 0:
+        return nor_count_before, added_nor_operators_count
     add_new_nor_operators_with_keys(nor, voting_eoa, evm_script_executor_eoa, added_nor_operators_count,
                                     new_keys_per_operator)
     # Activate old deactivated node operators
