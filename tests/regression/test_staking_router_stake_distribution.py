@@ -25,8 +25,8 @@ def test_stake_distribution():
     staking_router = contracts.staking_router
     module_digests = staking_router.getAllStakingModuleDigests()
 
-    stake_to_allocate = 100  # keys to allocate to the modules
-    allocation_from_contract = staking_router.getDepositsAllocation(stake_to_allocate)
+    keys_to_allocate = 100  # keys to allocate to the modules
+    allocation_from_contract = staking_router.getDepositsAllocation(keys_to_allocate)
 
     # collect the modules information
 
@@ -52,7 +52,7 @@ def test_stake_distribution():
     # simulate target share distribution
     # https://github.com/lidofinance/lido-dao/blob/331ecec7fe3c8d57841fd73ccca7fb1cc9bc174e/contracts/0.8.9/StakingRouter.sol#L1266-L1268
 
-    target_total_active_keys = total_active_keys + stake_to_allocate
+    target_total_active_keys = total_active_keys + keys_to_allocate
     total_basis_points = staking_router.TOTAL_BASIS_POINTS()
 
     for module in modules.values():
@@ -62,7 +62,7 @@ def test_stake_distribution():
     # simulate min first strategy
     # https://github.com/lidofinance/lido-dao/blob/331ecec7fe3c8d57841fd73ccca7fb1cc9bc174e/contracts/0.8.9/StakingRouter.sol#L1274
 
-    for _ in range(stake_to_allocate):
+    for _ in range(keys_to_allocate):
         # find the module with the lowest active_keys
         min_active_keys = modules[1].active_keys
         min_active_keys_module = modules[1]

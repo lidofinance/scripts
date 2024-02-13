@@ -68,7 +68,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
     vote_desc_items, call_script_items = zip(
         #
-        # I. Setup SimpleDVT module as new Aragon app
+        # I. Create new Aragon DAO Application Repo for SimpleDVT
         #
         (
             "1) Create new Repo for SimpleDVT app",
@@ -80,8 +80,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 content_uri=create_simple_dvt_app["content_uri"],
             ),
         ),
+        #
+        # II. Setup and initialize SimpleDVT module as new Aragon app
+        #
         (
-            "2) Link SimpleDVT app to 0x8538930c385C0438A357d2c25CB3eAD95Ab6D8ed implementation",
+            "2) Setup SimpleDVT as Aragon DAO app",
             update_app_implementation(create_simple_dvt_app["id"], create_simple_dvt_app["new_address"]),
         ),
         (
@@ -96,7 +99,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         #
-        # II. Set permissions
+        # III. Add SimpleDVT module to Staking Router
         #
         (
             "4) Create and grant permission STAKING_ROUTER_ROLE on SimpleDVT module for StakingRouter",
@@ -108,118 +111,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "5) Grant STAKING_ROUTER_ROLE on SimpleDVT module for EasyTrackEVMScriptExecutor",
-            # 9. Grant permission for STAKING_ROUTER_ROLE of SimpleDVT app
-            #    assigning it to StakingRouter
-            encode_permission_grant(
-                target_app=contracts.simple_dvt,
-                permission_name="STAKING_ROUTER_ROLE",
-                grant_to=EASYTRACK_EVMSCRIPT_EXECUTOR,
-            ),
-        ),
-        (
-            "6) Create and grant permission MANAGE_NODE_OPERATOR_ROLE on SimpleDVT module for EasyTrackEVMScriptExecutor",
-            encode_permission_create(
-                entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
-                target_app=contracts.simple_dvt,
-                permission_name="MANAGE_NODE_OPERATOR_ROLE",
-                manager=contracts.voting,
-            ),
-        ),
-        (
-            "7) Create and grant permission SET_NODE_OPERATOR_LIMIT_ROLE on SimpleDVT module for EasyTrackEVMScriptExecutor",
-            encode_permission_create(
-                entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
-                target_app=contracts.simple_dvt,
-                permission_name="SET_NODE_OPERATOR_LIMIT_ROLE",
-                manager=contracts.voting,
-            ),
-        ),
-        (
-            "8) Create and grant permission MANAGE_SIGNING_KEYS on SimpleDVT module for EasyTrackEVMScriptExecutor",
-            encode_permission_create(
-                entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
-                target_app=contracts.simple_dvt,
-                permission_name="MANAGE_SIGNING_KEYS",
-                manager=EASYTRACK_EVMSCRIPT_EXECUTOR,
-            ),
-        ),
-        #
-        # III. Add EasyTrack factories for SimpleDVT module
-        #
-        (
-            "9) Add AddNodeOperators EVM script factory",
-            add_evmscript_factory(
-                factory=EASYTRACK_SIMPLE_DVT_ADD_NODE_OPERATORS_FACTORY,
-                permissions=(
-                    create_permissions(contracts.simple_dvt, "addNodeOperator")
-                    + create_permissions(contracts.acl, "grantPermissionP")[2:]
-                ),
-            ),
-        ),
-        (
-            "10) Add ActivateNodeOperators EVM script factory",
-            add_evmscript_factory(
-                factory=EASYTRACK_SIMPLE_DVT_ACTIVATE_NODE_OPERATORS_FACTORY,
-                permissions=(
-                    create_permissions(contracts.simple_dvt, "activateNodeOperator")
-                    + create_permissions(contracts.acl, "grantPermissionP")[2:]
-                ),
-            ),
-        ),
-        (
-            "11) Add DeactivateNodeOperators EVM script factory",
-            add_evmscript_factory(
-                factory=EASYTRACK_SIMPLE_DVT_DEACTIVATE_NODE_OPERATORS_FACTORY,
-                permissions=(
-                    create_permissions(contracts.simple_dvt, "deactivateNodeOperator")
-                    + create_permissions(contracts.acl, "revokePermission")[2:]
-                ),
-            ),
-        ),
-        (
-            "12) Add SetVettedValidatorsLimits EVM script factory",
-            add_evmscript_factory(
-                factory=EASYTRACK_SIMPLE_DVT_SET_VETTED_VALIDATORS_LIMITS_FACTORY,
-                permissions=(create_permissions(contracts.simple_dvt, "setNodeOperatorStakingLimit")),
-            ),
-        ),
-        (
-            "13) Add UpdateTargetValidatorLimits EVM script factory",
-            add_evmscript_factory(
-                factory=EASYTRACK_SIMPLE_DVT_UPDATE_TARGET_VALIDATOR_LIMITS_FACTORY,
-                permissions=(create_permissions(contracts.simple_dvt, "updateTargetValidatorsLimits")),
-            ),
-        ),
-        (
-            "14) Add SetNodeOperatorNames EVM script factory",
-            add_evmscript_factory(
-                factory=EASYTRACK_SIMPLE_DVT_SET_NODE_OPERATOR_NAMES_FACTORY,
-                permissions=(create_permissions(contracts.simple_dvt, "setNodeOperatorName")),
-            ),
-        ),
-        (
-            "15) Add SetNodeOperatorRewardAddresses EVM script factory",
-            add_evmscript_factory(
-                factory=EASYTRACK_SIMPLE_DVT_SET_NODE_OPERATOR_REWARD_ADDRESSES_FACTORY,
-                permissions=(create_permissions(contracts.simple_dvt, "setNodeOperatorRewardAddress")),
-            ),
-        ),
-        (
-            "16) Add ChangeNodeOperatorManagers EVM script factory",
-            add_evmscript_factory(
-                factory=EASYTRACK_SIMPLE_DVT_CHANGE_NODE_OPERATOR_MANAGERS_FACTORY,
-                permissions=(
-                    create_permissions(contracts.acl, "revokePermission")
-                    + create_permissions(contracts.acl, "grantPermissionP")[2:]
-                ),
-            ),
-        ),
-        #
-        # IV. Finish SimpleDVT module setup
-        #
-        (
-            "17) Grant REQUEST_BURN_SHARES_ROLE on Burner for SimpleDVT module",
+            "5) Grant REQUEST_BURN_SHARES_ROLE on Burner for SimpleDVT module",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -231,7 +123,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "18) Add SimpleDVT module to StakingRouter",
+            "6) Add SimpleDVT module to StakingRouter",
             agent_forward(
                 [
                     (
@@ -242,6 +134,166 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                             SIMPLE_DVT_MODULE_TARGET_SHARE_BP,
                             SIMPLE_DVT_MODULE_MODULE_FEE_BP,
                             SIMPLE_DVT_MODULE_TREASURY_FEE_BP,
+                        ),
+                    ),
+                ]
+            ),
+        ),
+        #
+        # IV. Grant permissions to EasyTrackEVMScriptExecutor to make operational changes to SimpleDVT module
+        #
+        (
+            "7) Create and grant permission MANAGE_NODE_OPERATOR_ROLE on SimpleDVT module for EasyTrackEVMScriptExecutor",
+            encode_permission_create(
+                entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
+                target_app=contracts.simple_dvt,
+                permission_name="MANAGE_NODE_OPERATOR_ROLE",
+                manager=contracts.voting,
+            ),
+        ),
+        (
+            "8) Create and grant permission SET_NODE_OPERATOR_LIMIT_ROLE on SimpleDVT module for EasyTrackEVMScriptExecutor",
+            encode_permission_create(
+                entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
+                target_app=contracts.simple_dvt,
+                permission_name="SET_NODE_OPERATOR_LIMIT_ROLE",
+                manager=contracts.voting,
+            ),
+        ),
+        (
+            "9) Create and grant permission MANAGE_SIGNING_KEYS on SimpleDVT module for EasyTrackEVMScriptExecutor",
+            encode_permission_create(
+                entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
+                target_app=contracts.simple_dvt,
+                permission_name="MANAGE_SIGNING_KEYS",
+                manager=EASYTRACK_EVMSCRIPT_EXECUTOR,
+            ),
+        ),
+        (
+            "10) Grant STAKING_ROUTER_ROLE on SimpleDVT module for EasyTrackEVMScriptExecutor",
+            encode_permission_grant(
+                target_app=contracts.simple_dvt,
+                permission_name="STAKING_ROUTER_ROLE",
+                grant_to=EASYTRACK_EVMSCRIPT_EXECUTOR,
+            ),
+        ),
+        #
+        # V. Add EasyTrack EVM script factories for SimpleDVT module to EasyTrack registry
+        #
+        (
+            "11) Add AddNodeOperators EVM script factory",
+            add_evmscript_factory(
+                factory=EASYTRACK_SIMPLE_DVT_ADD_NODE_OPERATORS_FACTORY,
+                permissions=(
+                    create_permissions(contracts.simple_dvt, "addNodeOperator")
+                    + create_permissions(contracts.acl, "grantPermissionP")[2:]
+                ),
+            ),
+        ),
+        (
+            "12) Add ActivateNodeOperators EVM script factory",
+            add_evmscript_factory(
+                factory=EASYTRACK_SIMPLE_DVT_ACTIVATE_NODE_OPERATORS_FACTORY,
+                permissions=(
+                    create_permissions(contracts.simple_dvt, "activateNodeOperator")
+                    + create_permissions(contracts.acl, "grantPermissionP")[2:]
+                ),
+            ),
+        ),
+        (
+            "13) Add DeactivateNodeOperators EVM script factory",
+            add_evmscript_factory(
+                factory=EASYTRACK_SIMPLE_DVT_DEACTIVATE_NODE_OPERATORS_FACTORY,
+                permissions=(
+                    create_permissions(contracts.simple_dvt, "deactivateNodeOperator")
+                    + create_permissions(contracts.acl, "revokePermission")[2:]
+                ),
+            ),
+        ),
+        (
+            "14) Add SetVettedValidatorsLimits EVM script factory",
+            add_evmscript_factory(
+                factory=EASYTRACK_SIMPLE_DVT_SET_VETTED_VALIDATORS_LIMITS_FACTORY,
+                permissions=(create_permissions(contracts.simple_dvt, "setNodeOperatorStakingLimit")),
+            ),
+        ),
+        (
+            "15) Add UpdateTargetValidatorLimits EVM script factory",
+            add_evmscript_factory(
+                factory=EASYTRACK_SIMPLE_DVT_UPDATE_TARGET_VALIDATOR_LIMITS_FACTORY,
+                permissions=(create_permissions(contracts.simple_dvt, "updateTargetValidatorsLimits")),
+            ),
+        ),
+        (
+            "16) Add SetNodeOperatorNames EVM script factory",
+            add_evmscript_factory(
+                factory=EASYTRACK_SIMPLE_DVT_SET_NODE_OPERATOR_NAMES_FACTORY,
+                permissions=(create_permissions(contracts.simple_dvt, "setNodeOperatorName")),
+            ),
+        ),
+        (
+            "17) Add SetNodeOperatorRewardAddresses EVM script factory",
+            add_evmscript_factory(
+                factory=EASYTRACK_SIMPLE_DVT_SET_NODE_OPERATOR_REWARD_ADDRESSES_FACTORY,
+                permissions=(create_permissions(contracts.simple_dvt, "setNodeOperatorRewardAddress")),
+            ),
+        ),
+        (
+            "18) Add ChangeNodeOperatorManagers EVM script factory",
+            add_evmscript_factory(
+                factory=EASYTRACK_SIMPLE_DVT_CHANGE_NODE_OPERATOR_MANAGERS_FACTORY,
+                permissions=(
+                    create_permissions(contracts.acl, "revokePermission")
+                    + create_permissions(contracts.acl, "grantPermissionP")[2:]
+                ),
+            ),
+        ),
+        #
+        # VI. Update Oracle Report Sanity Checker parameters
+        #
+        (
+            "19)  Grant MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE to the Lido DAO Agent on OracleReportSanityChecker contract",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.oracle_report_sanity_checker,
+                        role_name="MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE",
+                        grant_to=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+        (
+            "20)  Grant MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE to the Lido DAO Agent on OracleReportSanityChecker contract",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.oracle_report_sanity_checker,
+                        role_name="MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE",
+                        grant_to=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+        (
+            "21) Set maxAccountingExtraDataListItemsCount sanity checker parameter to 4",
+            agent_forward(
+                [
+                    (
+                        contracts.oracle_report_sanity_checker.address,
+                        contracts.oracle_report_sanity_checker.setMaxAccountingExtraDataListItemsCount.encode_input(4),
+                    ),
+                ]
+            ),
+        ),
+        (
+            "22) Set maxNodeOperatorsPerExtraDataItemCount sanity checker parameter to 50",
+            agent_forward(
+                [
+                    (
+                        contracts.oracle_report_sanity_checker.address,
+                        contracts.oracle_report_sanity_checker.setMaxNodeOperatorsPerExtraDataItemCount.encode_input(
+                            50
                         ),
                     ),
                 ]

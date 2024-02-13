@@ -157,15 +157,24 @@ def test_simple_dvt_state(contract):
         assert node_operator_summary["depositableValidatorsCount"] == no_depositable_validators_count
 
 
+def test_simple_dvt_permissions(contract):
+    assert contracts.acl.getPermissionManager(contract.address, STAKING_ROUTER_ROLE) == contract.voting.address
+    assert contract.canPerform(contract.address, STAKING_ROUTER_ROLE, [])
+    assert contract.canPerform(EASYTRACK_EVMSCRIPT_EXECUTOR, STAKING_ROUTER_ROLE, [])
+
+    assert contracts.acl.getPermissionManager(contract.address, MANAGE_NODE_OPERATOR_ROLE) == contract.voting.address
+    assert contract.canPerform(EASYTRACK_EVMSCRIPT_EXECUTOR, MANAGE_NODE_OPERATOR_ROLE, [])
+
+    assert contracts.acl.getPermissionManager(contract.address, SET_NODE_OPERATOR_LIMIT_ROLE) == contract.voting.address
+    assert contract.canPerform(EASYTRACK_EVMSCRIPT_EXECUTOR, SET_NODE_OPERATOR_LIMIT_ROLE, [])
+
+    assert contracts.acl.getPermissionManager(contract.address, MANAGE_SIGNING_KEYS) == EASYTRACK_EVMSCRIPT_EXECUTOR
+    assert contract.canPerform(EASYTRACK_EVMSCRIPT_EXECUTOR, MANAGE_SIGNING_KEYS, [])
+
+
 def test_simple_dvt_easytrack(contract):
 
     easy_track = contracts.easy_track
-
-    assert contract.canPerform(EASYTRACK_EVMSCRIPT_EXECUTOR, STAKING_ROUTER_ROLE, [])
-    assert contract.canPerform(EASYTRACK_EVMSCRIPT_EXECUTOR, MANAGE_NODE_OPERATOR_ROLE, [])
-    assert contract.canPerform(EASYTRACK_EVMSCRIPT_EXECUTOR, SET_NODE_OPERATOR_LIMIT_ROLE, [])
-    assert contracts.acl.getPermissionManager(contract.address, MANAGE_SIGNING_KEYS) == EASYTRACK_EVMSCRIPT_EXECUTOR
-    assert contract.canPerform(EASYTRACK_EVMSCRIPT_EXECUTOR, MANAGE_SIGNING_KEYS, [])
 
     add_node_operators_evm_script_factory = EASYTRACK_SIMPLE_DVT_ADD_NODE_OPERATORS_FACTORY
     activate_node_operators_evm_script_factory = EASYTRACK_SIMPLE_DVT_ACTIVATE_NODE_OPERATORS_FACTORY
