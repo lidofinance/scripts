@@ -73,15 +73,15 @@ def test_extra_data_full_items(
     new_keys_per_operator = 2
 
     # Fill NOR with new operators and keys
-    (nor_count_before, added_nor_operators_count) = add_nor_operators_with_keys(
+    (nor_count_before, added_nor_operators_count) = fill_nor_with_old_and_new_operators(
         nor,
+        voting_eoa,
+        agent_eoa,
+        evm_script_executor_eoa,
         new_keys_per_operator,
         nor_stuck_items,
         nor_exited_items,
         max_node_operators_per_item,
-        voting_eoa,
-        agent_eoa,
-        evm_script_executor_eoa
     )
 
     # Fill SimpleDVT with new operators and keys
@@ -127,6 +127,7 @@ def test_extra_data_full_items(
     for i in range(0, len(sdvt_stuck)):
         sdvt_balance_shares_before.append(shares_balance(sdvt.getNodeOperator(i, False)["rewardAddress"]))
 
+    # Perform report
     (report_tx, extra_report_tx) = oracle_report(
         extraDataFormat=1,
         extraDataHash=extra_data.data_hash,
@@ -137,9 +138,10 @@ def test_extra_data_full_items(
     )
 
     penalty_shares = 0
-    # Check NOR
+    # Check NOR exited
     for i in range(0, len(nor_exited)):
         assert nor.getNodeOperatorSummary(i)["totalExitedValidators"] == nor_exited[(1, i)]
+    # Check NOR stuck. Check penalties and rewards
     if len(nor_stuck) > 0:
         nor_rewards = [e for e in report_tx.events["TransferShares"] if e['to'] == nor.address][0]['sharesValue']
         for i in range(0, len(nor_stuck)):
@@ -156,9 +158,10 @@ def test_extra_data_full_items(
             )
             penalty_shares += rewards_after // 2
 
-    # Check SDVT
+    # Check SDVT exited
     for i in range(0, len(sdvt_exited)):
         assert sdvt.getNodeOperatorSummary(i)["totalExitedValidators"] == sdvt_exited[(2, i)]
+    # Check SDVT stuck. Check penalties and rewards
     if len(sdvt_stuck) > 0:
         sdvt_rewards = [e for e in report_tx.events["TransferShares"] if e['to'] == sdvt.address][0]['sharesValue']
         for i in range(0, len(sdvt_stuck)):
@@ -204,8 +207,7 @@ def add_sdvt_operators_with_keys(enactor: Account, count: int, keys_per_operator
         simple_dvt_vet_keys(i, enactor)
 
 
-def add_new_nor_operators_with_keys(nor, voting_eoa: Account, evm_script_executor_eoa: Account, count: int,
-                                    keys_per_operator: int):
+def add_nor_operators_with_keys(nor, voting_eoa: Account, evm_script_executor_eoa: Account, count: int, keys_per_operator: int):
     names = [f"Name {i}" for i in range(0, count)]
     reward_addresses = [f"0xbb{str(i).zfill(38)}" for i in range(0, count)]
 
@@ -228,8 +230,8 @@ def add_new_nor_operators_with_keys(nor, voting_eoa: Account, evm_script_executo
         nor.setNodeOperatorStakingLimit(no_id, keys_per_operator, {"from": evm_script_executor_eoa})
 
 
-def add_nor_operators_with_keys(
-    nor, new_keys_per_operator, nor_stuck_items, nor_exited_items, max_node_operators_per_item, voting_eoa, agent_eoa, evm_script_executor_eoa
+def fill_nor_with_old_and_new_operators(
+    nor, voting_eoa, agent_eoa, evm_script_executor_eoa, new_keys_per_operator, nor_stuck_items, nor_exited_items, max_node_operators_per_item,
 ) -> tuple[int, int]:
     # Curated: Add new operators and keys
     contracts.staking_router.grantRole(
@@ -245,8 +247,8 @@ def add_nor_operators_with_keys(
     added_nor_operators_count = (max(nor_stuck_items, nor_exited_items) * max_node_operators_per_item) - nor_count_before
     if added_nor_operators_count <= 0:
         return nor_count_before, added_nor_operators_count
-    add_new_nor_operators_with_keys(nor, voting_eoa, evm_script_executor_eoa, added_nor_operators_count,
-                                    new_keys_per_operator)
+    # Add new node operators and keys
+    add_nor_operators_with_keys(nor, voting_eoa, evm_script_executor_eoa, added_nor_operators_count, new_keys_per_operator)
     # Activate old deactivated node operators
     nor.activateNodeOperator(1, {"from": voting_eoa})
     nor.activateNodeOperator(12, {"from": voting_eoa})
