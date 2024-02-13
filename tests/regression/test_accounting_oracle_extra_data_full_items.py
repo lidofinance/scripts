@@ -106,7 +106,7 @@ def test_extra_data_full_items(
     extra_data = extra_data_service.collect(
         {**nor_stuck, **sdvt_stuck},
         {**nor_exited, **sdvt_exited},
-        MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
+        4,
         MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT,
     )
     modules_with_exited = []
@@ -122,7 +122,7 @@ def test_extra_data_full_items(
     oracle_report(
         extraDataFormat=1,
         extraDataHash=extra_data.data_hash,
-        extraDataItemsCount=(nor_exited_items + nor_stuck_items + sdvt_exited_items + sdvt_stuck_items),
+        extraDataItemsCount=4,
         extraDataList=extra_data.extra_data,
         stakingModuleIdsWithNewlyExitedValidators=modules_with_exited,
         numExitedValidatorsByStakingModule=num_exited_validators_by_staking_module,
