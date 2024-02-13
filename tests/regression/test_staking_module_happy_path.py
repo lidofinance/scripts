@@ -164,6 +164,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, i
         staking_module.setNodeOperatorStakingLimit(op_index, no["totalDepositedValidators"], {"from": impersonated_executor})
 
     increase_limit(staking_module, tested_no_id_first, tested_no_id_second, base_no_id, 3, impersonated_executor)
+    deposit_and_check_keys(staking_module, tested_no_id_first, tested_no_id_second, base_no_id, 9, impersonated_executor)
 
     penalty_delay = staking_module.getStuckPenaltyDelay()
 
