@@ -12,6 +12,7 @@ from utils.test.oracle_report_helpers import (
 )
 from utils.config import contracts, STAKING_ROUTER, EASYTRACK_EVMSCRIPT_EXECUTOR
 from utils.test.node_operators_helpers import node_operator_gindex
+from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
 
 
 @pytest.fixture(scope="function")
@@ -844,8 +845,11 @@ def test_node_operator_registry(impersonated_voting, eth_whale):
     module_happy_path(nor, ExtraDataService(), impersonated_voting, impersonated_voting, eth_whale)
 
 
-def test_sdvt(impersonated_voting, impersonate_es_executor, eth_whale):
+def test_sdvt(impersonated_voting, impersonate_es_executor, stranger, eth_whale):
     sdvt = contracts.simple_dvt
     sdvt.module_id = 2
     sdvt.testing_node_operator_ids = [0, 1, 2]
+    fill_simple_dvt_ops_vetted_keys(stranger, 3, 100)
+    fill_simple_dvt_ops_vetted_keys(stranger, 3, 200)
+    fill_simple_dvt_ops_vetted_keys(stranger, 3, 300)
     module_happy_path(sdvt, ExtraDataService(), impersonated_voting, impersonate_es_executor, eth_whale)

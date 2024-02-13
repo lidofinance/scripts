@@ -9,7 +9,7 @@ from utils.config import (
 from utils.test.easy_track_helpers import _encode_calldata
 
 
-MIN_OP_KEYS_CNT = 300
+MIN_OP_KEYS_CNT = 10
 MIN_OPS_CNT = 3
 
 OPERATOR_NAMES = [
