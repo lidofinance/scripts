@@ -840,7 +840,9 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, i
 
 
 def test_node_operator_registry(impersonated_voting, impersonate_es_executor, eth_whale):
-    deposit_and_check_keys(contracts.simple_dvt, 0, 1, 2, 9, impersonate_es_executor)
+    sdvt = contracts.simple_dvt
+    sdvt.module_id = 2
+    deposit_and_check_keys(sdvt, 0, 1, 2, 9, impersonate_es_executor)
 
     nor = contracts.node_operators_registry
     nor.module_id = 1
