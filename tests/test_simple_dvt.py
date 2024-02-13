@@ -62,6 +62,7 @@ STAKING_ROUTER_ROLE = "0xbb75b874360e0bfd87f964eadd8276d8efb7c942134fc329b513032
 MANAGE_NODE_OPERATOR_ROLE = "0x78523850fdd761612f46e844cf5a16bda6b3151d6ae961fd7e8e7b92bfbca7f8"
 SET_NODE_OPERATOR_LIMIT_ROLE = "0x07b39e0faf2521001ae4e58cb9ffd3840a63e205d288dc9c93c3774f0d794754"
 MANAGE_SIGNING_KEYS = "0x75abc64490e17b40ea1e66691c3eb493647b24430b358bd87ec3e5127f1621ee"
+MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE = "0x0cf253eb71298c92e2814969a122f66b781f9b217f8ecde5401e702beb9345f6"
 
 simple_dvt_repo_ens = "simple-dvt.lidopm.eth"
 simple_dvt_content_uri = (
@@ -109,6 +110,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     assert set_node_operator_reward_addresses_evm_script_factory not in evm_script_factories_before
     assert update_target_validator_limits_evm_script_factory not in evm_script_factories_before
     assert change_node_operator_managers_evm_script_factory not in evm_script_factories_before
+
+    sanity_checker_limits = contracts.oracle_report_sanity_checker.getOracleReportLimits()
+    assert sanity_checker_limits["maxAccountingExtraDataListItemsCount"] == 2
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -256,8 +260,11 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
         == EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER
     )
 
+    sanity_checker_limits = contracts.oracle_report_sanity_checker.getOracleReportLimits()
+    assert sanity_checker_limits["maxAccountingExtraDataListItemsCount"] == 4
+
     # validate vote events
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 18, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 20, "Incorrect voting items count"
 
     metadata = find_metadata_by_vote_id(vote_id)
     print("metadata", metadata)
@@ -396,6 +403,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     )
     validate_staking_module_added_event(evs[17], module_item)
 
+    validate_grant_role_event(evs[18], MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE, agent, agent)
+    validate_max_extra_data_list_items_count_event(evs[19], 4)
+
 
 def has_permission(permission: Permission, how: List[int]) -> bool:
     return contracts.acl.hasPermission["address,address,bytes32,uint[]"](
@@ -403,8 +413,22 @@ def has_permission(permission: Permission, how: List[int]) -> bool:
     )
 
 
+def validate_max_extra_data_list_items_count_event(event: EventDict, value: int):
+    _events_chain = [
+        "LogScriptCall",
+        "LogScriptCall",
+        "MaxAccountingExtraDataListItemsCountSet",
+        "ScriptResult",
+    ]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("MaxAccountingExtraDataListItemsCountSet") == 1
+    assert event["MaxAccountingExtraDataListItemsCountSet"]["maxAccountingExtraDataListItemsCount"] == value
+
+
 def validate_simple_dvt_intialize_event(event: EventDict):
-    _repo_upgrade_events_chain = [
+    _events_chain = [
         "LogScriptCall",
         "ContractVersionSet",
         "StuckPenaltyDelayChanged",
@@ -413,7 +437,7 @@ def validate_simple_dvt_intialize_event(event: EventDict):
         "StakingModuleTypeSet",
     ]
 
-    validate_events_chain([e.name for e in event], _repo_upgrade_events_chain)
+    validate_events_chain([e.name for e in event], _events_chain)
 
     assert event.count("ContractVersionSet") == 1
     assert event.count("StuckPenaltyDelayChanged") == 1

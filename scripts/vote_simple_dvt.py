@@ -247,6 +247,32 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 ]
             ),
         ),
+        #
+        # V. Update Sanity Checker parameters
+        #
+        (
+            "19) Grant REQUEST_BURN_SHARES_ROLE on Burner for SimpleDVT module",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.oracle_report_sanity_checker,
+                        role_name="MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE",
+                        grant_to=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+        (
+            "20) Increase maxAccountingExtraDataListItemsCount sanity checker parameter from 2 to 4",
+            agent_forward(
+                [
+                    (
+                        contracts.oracle_report_sanity_checker.address,
+                        contracts.oracle_report_sanity_checker.setMaxAccountingExtraDataListItemsCount.encode_input(4),
+                    ),
+                ]
+            ),
+        ),
     )
 
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
