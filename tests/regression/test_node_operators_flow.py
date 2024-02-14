@@ -103,7 +103,6 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
     )
     assert_node_operator_added_event(tx, new_node_operator_id, new_node_operator_name, reward_address, staking_limit=0)
 
-
     keys_count = 13
     pubkeys_batch = random_pubkeys_batch(keys_count)
     signatures_batch = random_signatures_batch(keys_count)
@@ -149,7 +148,6 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
 
     # TODO: validate events
 
-
     nonce_before = nor.getNonce()
     node_operator_before = nor.getNodeOperator(new_node_operator_id, True)
     node_operator_summary_before = nor.getNodeOperatorSummary(new_node_operator_id)
@@ -172,7 +170,6 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
     assert node_operator_summary_after["depositableValidatorsCount"] == new_staking_limit
 
     # TODO: validate events
-
 
     node_operators_count_before = nor.getNodeOperatorsCount()
     active_node_operators_count_before = nor.getActiveNodeOperatorsCount()
@@ -203,7 +200,6 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
 
     # TODO: validate events
 
-
     node_operator_before = nor.getNodeOperator(new_node_operator_id, True)
     assert node_operator_before["active"] == False
 
@@ -227,7 +223,6 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
     assert_node_operator_summaries(node_operator_summary_before, node_operator_summary_after)
 
     # TODO: validate events
-
 
     nonce_before = nor.getNonce()
     node_operator_before = nor.getNodeOperator(new_node_operator_id, True)
@@ -253,12 +248,12 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
     # TODO: validate events
 
 
-def random_pubkeys_batch(pubkeys_count: int):
-    return random_hexstr(pubkeys_count * PUBKEY_LENGTH)
+def random_pubkeys_batch(pubkeys_count: int, seed=None):
+    return random_hexstr(pubkeys_count * PUBKEY_LENGTH, seed)
 
 
-def random_signatures_batch(signautes_count: int):
-    return random_hexstr(signautes_count * SIGNATURE_LENGTH)
+def random_signatures_batch(signautes_count: int, seed=None):
+    return random_hexstr(signautes_count * SIGNATURE_LENGTH, seed)
 
 
 def parse_pubkeys_batch(pubkeys_batch: str):
@@ -275,7 +270,9 @@ def hex_chunks(hexstr: str, chunk_length: int):
     return [prefix_0x(chunk) for chunk in textwrap.wrap(stripped_hexstr, 2 * chunk_length)]
 
 
-def random_hexstr(length: int):
+def random_hexstr(length: int, seed=None):
+    if seed:
+        random.seed(seed)
     return prefix_0x(random.randbytes(length).hex())
 
 

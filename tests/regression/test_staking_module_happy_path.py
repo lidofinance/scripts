@@ -1,5 +1,4 @@
 import pytest
-from utils.test.tx_tracing_helpers import display_voting_events
 from web3 import Web3
 import eth_abi
 from brownie import chain, ZERO_ADDRESS, web3, interface
@@ -13,7 +12,7 @@ from utils.test.oracle_report_helpers import (
 )
 from utils.config import contracts, STAKING_ROUTER, EASYTRACK_EVMSCRIPT_EXECUTOR
 from utils.test.node_operators_helpers import node_operator_gindex
-from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_keys, fill_simple_dvt_ops_vetted_keys
+from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_keys
 
 
 STAKING_ROUTER_ROLE = Web3.keccak(text="STAKING_ROUTER_ROLE")
@@ -31,7 +30,13 @@ def impersonated_voting(accounts):
     return accounts.at(contracts.voting.address, force=True)
 
 
-def calc_no_rewards(nor, no_id, shares_minted_as_fees):
+def calc_module_reward_shares(module_id, shares_minted_as_fees):
+    distribution = contracts.staking_router.getStakingRewardsDistribution()
+    module_idx = distribution[1].index(module_id)
+    return distribution[2][module_idx] * shares_minted_as_fees // distribution[3]
+
+
+def calc_no_rewards(nor, no_id, minted_shares):
     operator_summary = nor.getNodeOperatorSummary(no_id)
     module_summary = nor.getStakingModuleSummary()
 
@@ -40,9 +45,7 @@ def calc_no_rewards(nor, no_id, shares_minted_as_fees):
     )
     module_total_active_keys = module_summary["totalDepositedValidators"] - module_summary["totalExitedValidators"]
 
-    nor_shares = shares_minted_as_fees // 2
-
-    return nor_shares * operator_total_active_keys // module_total_active_keys
+    return minted_shares * operator_total_active_keys // module_total_active_keys
 
 
 def set_staking_limit(nor, ops_ids, keys_count, impersonated_voting):
@@ -58,20 +61,11 @@ def set_staking_limit(nor, ops_ids, keys_count, impersonated_voting):
         )
         nor.setNodeOperatorStakingLimit(op_index, new_vetted_keys, {"from": impersonated_voting})
 
-    # first_no = nor.getNodeOperator(first_id, True)
-    # second_no = nor.getNodeOperator(second_id, True)
-    # base_no = nor.getNodeOperator(third_id, True)
 
-    # current_first_keys = first_no["totalVettedValidators"] - first_no["totalExitedValidators"]
-    # current_second_keys = second_no["totalVettedValidators"] - second_no["totalExitedValidators"]
-    # current_base_keys = base_no["totalVettedValidators"] - base_no["totalExitedValidators"]
+def deposit_and_check_keys(nor, first_id, second_id, third_id, keys_count, impersonated_voting):
+    # increase limit by 10 keys
+    set_staking_limit(nor, (first_id, second_id, third_id), 10, impersonated_voting)
 
-    # nor.setNodeOperatorStakingLimit(first_id, current_first_keys + keys_count, {"from": impersonated_voting})
-    # nor.setNodeOperatorStakingLimit(second_id, current_second_keys + keys_count, {"from": impersonated_voting})
-    # nor.setNodeOperatorStakingLimit(third_id, current_base_keys + keys_count, {"from": impersonated_voting})
-
-
-def deposit_and_check_keys(nor, first_id, second_id, third_id, keys_count):
     deposited_keys_first_before = nor.getNodeOperatorSummary(first_id)["totalDepositedValidators"]
     deposited_keys_second_before = nor.getNodeOperatorSummary(second_id)["totalDepositedValidators"]
     deposited_keys_base_before = nor.getNodeOperatorSummary(third_id)["totalDepositedValidators"]
@@ -80,17 +74,13 @@ def deposit_and_check_keys(nor, first_id, second_id, third_id, keys_count):
     module_total_deposited_keys_before = nor.getStakingModuleSummary()["totalDepositedValidators"]
 
     print(f"Deposit {keys_count} keys for module {nor.module_id}")
-    print(f"validators_before {validators_before}")
     tx = contracts.lido.deposit(keys_count, nor.module_id, "0x", {"from": contracts.deposit_security_module.address})
 
-    display_voting_events(tx)
     validators_after = contracts.lido.getBeaconStat().dict()["depositedValidators"]
     module_total_deposited_keys_after = nor.getStakingModuleSummary()["totalDepositedValidators"]
 
-    print(f"validators_before {validators_after}")
-
     just_deposited = validators_after - validators_before
-    print("---------", just_deposited)
+    print("Deposited:", just_deposited)
     if just_deposited:
         assert tx.events["DepositedValidatorsChanged"]["depositedValidators"] == validators_after
         assert tx.events["Unbuffered"]["amount"] == just_deposited * ETH(32)
@@ -180,31 +170,13 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
 
     contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale, "amount": ETH(75000)})
 
-    # # disable deposit for all operators in all modules
-    # for module_id, module_address, _, _, _, _, _, _, _, _ in all_modules:
-    #     print("!!!", module_id, module_address)
-    #     module = interface.IStakingModule(module_address)
-    #     contracts.acl.grantPermission(
-    #         impersonated_voting,
-    #         module,
-    #         STAKING_ROUTER_ROLE,
-    #         {"from": impersonated_voting},
-    #     )
-    #     no_amount = module.getNodeOperatorsCount()
-    #     for op_index in range(no_amount):
-    #         no = module.getNodeOperator(op_index, True)
-    #         if not no["active"]:
-    #             continue
-    #         module.setNodeOperatorStakingLimit(op_index, no["totalDepositedValidators"], {"from": impersonated_voting})
-
     print("Reset staking limit for all OPs...")
     no_amount = staking_module.getNodeOperatorsCount()
     set_staking_limit(staking_module, range(no_amount), 0, impersonated_voting)
 
     no3_id, no1_id, no2_id = staking_module.testing_node_operator_ids
 
-    set_staking_limit(staking_module, [no1_id, no2_id, no3_id], 3, impersonated_voting)
-    deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 9)
+    deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 30, impersonated_voting)
 
     penalty_delay = staking_module.getStuckPenaltyDelay()
 
@@ -223,27 +195,16 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     # First report - base empty report
     (report_tx, extra_report_tx) = oracle_report(exclude_vaults_balances=True)
 
-    display_voting_events(report_tx)
-    display_voting_events(extra_report_tx)
-
     no1_balance_shares_after = shares_balance(no1_reward_address)
     no2_balance_shares_after = shares_balance(no2_reward_address)
     no3_balance_shares_after = shares_balance(no3_reward_address)
 
-    # expected shares
-    no1_rewards_after_first_report = calc_no_rewards(
-        staking_module,
-        no_id=no1_id,
-        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
+    minted_share = calc_module_reward_shares(
+        staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"]
     )
-    no2_rewards_after_first_report = calc_no_rewards(
-        staking_module,
-        no_id=no2_id,
-        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
-    )
-    no3_rewards_after_first_report = calc_no_rewards(
-        staking_module, no_id=no3_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
-    )
+    no1_rewards_after_first_report = calc_no_rewards(staking_module, no_id=no1_id, minted_shares=minted_share)
+    no2_rewards_after_first_report = calc_no_rewards(staking_module, no_id=no2_id, minted_shares=minted_share)
+    no3_rewards_after_first_report = calc_no_rewards(staking_module, no_id=no3_id, minted_shares=minted_share)
 
     # check shares by empty report
     assert almostEqWithDiff(
@@ -288,8 +249,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no2_balance_shares_before = shares_balance(no2_reward_address)
     no3_balance_shares_before = shares_balance(no3_reward_address)
 
-    set_staking_limit(staking_module, [no1_id, no2_id, no3_id], 10, impersonated_voting)
-    deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 30)
+    deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 30, impersonated_voting)
 
     # Second report - first NO and second NO has stuck/exited
     (report_tx, extra_report_tx) = oracle_report(
@@ -308,19 +268,12 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no3_summary = staking_module.getNodeOperatorSummary(no3_id)
 
     # expected shares
-    no1_rewards_after_second_report = calc_no_rewards(
-        staking_module,
-        no_id=no1_id,
-        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
+    minted_share = calc_module_reward_shares(
+        staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"]
     )
-    no2_rewards_after_second_report = calc_no_rewards(
-        staking_module,
-        no_id=no2_id,
-        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
-    )
-    no3_rewards_after_second_report = calc_no_rewards(
-        staking_module, no_id=no3_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
-    )
+    no1_rewards_after_second_report = calc_no_rewards(staking_module, no_id=no1_id, minted_shares=minted_share)
+    no2_rewards_after_second_report = calc_no_rewards(staking_module, no_id=no2_id, minted_shares=minted_share)
+    no3_rewards_after_second_report = calc_no_rewards(staking_module, no_id=no3_id, minted_shares=minted_share)
 
     no1_balance_shares_after = shares_balance(no1_reward_address)
     no2_balance_shares_after = shares_balance(no2_reward_address)
@@ -391,8 +344,6 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert stuck_penalty_state_changed_events[1]["nodeOperatorId"] == no2_id
     assert stuck_penalty_state_changed_events[1]["stuckValidatorsCount"] == 2
 
-    set_staking_limit(staking_module, [no1_id, no2_id, no3_id], 10, impersonated_voting)
-
     # Deposit keys
     (
         no1_deposited_keys_before,
@@ -401,7 +352,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         no1_deposited_keys_after,
         no2_deposited_keys_after,
         no3_deposited_keys_after,
-    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50)
+    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_voting)
 
     # check don't change deposited keys for penalized NO
     assert no1_deposited_keys_before == no1_deposited_keys_after
@@ -454,19 +405,12 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no3_balance_shares_after = shares_balance(no3_reward_address)
 
     # expected shares
-    no1_rewards_after_third_report = calc_no_rewards(
-        staking_module,
-        no_id=no1_id,
-        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
+    minted_share = calc_module_reward_shares(
+        staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"]
     )
-    no2_rewards_after__third_report = calc_no_rewards(
-        staking_module,
-        no_id=no2_id,
-        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
-    )
-    no3_rewards_after__third_report = calc_no_rewards(
-        staking_module, no_id=no3_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
-    )
+    no1_rewards_after_third_report = calc_no_rewards(staking_module, no_id=no1_id, minted_shares=minted_share)
+    no2_rewards_after_third_report = calc_no_rewards(staking_module, no_id=no2_id, minted_shares=minted_share)
+    no3_rewards_after_third_report = calc_no_rewards(staking_module, no_id=no3_id, minted_shares=minted_share)
 
     # first NO has penalty has a penalty until stuckPenaltyEndTimestamp
     # check shares by report with penalty
@@ -478,18 +422,18 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     )
     assert almostEqWithDiff(
         no2_balance_shares_after - no2_balance_shares_before,
-        no2_rewards_after__third_report // 2,
+        no2_rewards_after_third_report // 2,
         1,
     )
     assert almostEqWithDiff(
         no3_balance_shares_after - no3_balance_shares_before,
-        no3_rewards_after__third_report,
+        no3_rewards_after_third_report,
         1,
     )
 
     # Check burn shares
     no1_amount_penalty = no1_rewards_after_third_report // 2
-    no2_amount_penalty = no2_rewards_after__third_report // 2
+    no2_amount_penalty = no2_rewards_after_third_report // 2
     penalty_shares = no1_amount_penalty + no2_amount_penalty
     # diff by 2 share because of rounding
     # TODO: Fix below check when nor contains other penalized node operators
@@ -582,19 +526,12 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no3_balance_shares_after = shares_balance(no3_reward_address)
 
     # expected shares
-    no1_rewards_after_fourth_report = calc_no_rewards(
-        staking_module,
-        no_id=no1_id,
-        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
+    minted_share = calc_module_reward_shares(
+        staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"]
     )
-    no2_rewards_after__fourth_report = calc_no_rewards(
-        staking_module,
-        no_id=no2_id,
-        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
-    )
-    no3_rewards_after__fourth_report = calc_no_rewards(
-        staking_module, no_id=no3_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
-    )
+    no1_rewards_after_fourth_report = calc_no_rewards(staking_module, no_id=no1_id, minted_shares=minted_share)
+    no2_rewards_after_fourth_report = calc_no_rewards(staking_module, no_id=no2_id, minted_shares=minted_share)
+    no3_rewards_after_fourth_report = calc_no_rewards(staking_module, no_id=no3_id, minted_shares=minted_share)
 
     # Penalty ended for first operator
     # check shares by report with penalty for second NO
@@ -606,17 +543,17 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     )
     assert almostEqWithDiff(
         no2_balance_shares_after - no2_balance_shares_before,
-        no2_rewards_after__fourth_report // 2,
+        no2_rewards_after_fourth_report // 2,
         1,
     )
     assert almostEqWithDiff(
         no3_balance_shares_after - no3_balance_shares_before,
-        no3_rewards_after__fourth_report,
+        no3_rewards_after_fourth_report,
         1,
     )
 
     # Check burn shares
-    no2_amount_penalty = no2_rewards_after__fourth_report // 2
+    no2_amount_penalty = no2_rewards_after_fourth_report // 2
     # diff by 2 share because of rounding
     # TODO: Fix below check when nor contains other penalized node operators
     # assert almostEqWithDiff(extra_report_tx.events["StETHBurnRequested"]["amountOfShares"], amount_penalty_second_no, 1)
@@ -640,7 +577,6 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert not staking_module.isOperatorPenalized(no3_id)
 
     # Deposit
-    set_staking_limit(staking_module, [no1_id, no2_id, no3_id], 10, impersonated_voting)
     (
         no1_deposited_keys_before,
         no2_deposited_keys_before,
@@ -648,7 +584,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         no1_deposited_keys_after,
         no2_deposited_keys_after,
         no3_deposited_keys_after,
-    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50)
+    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_voting)
 
     # check don't change deposited keys for penalized NO (only second NO)
     assert no1_deposited_keys_before != no1_deposited_keys_after
@@ -687,19 +623,12 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no3_summary = staking_module.getNodeOperatorSummary(no3_id)
 
     # expected shares
-    no1_rewards_after_fifth_report = calc_no_rewards(
-        staking_module,
-        no_id=no1_id,
-        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
+    minted_share = calc_module_reward_shares(
+        staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"]
     )
-    no2_rewards_after_fifth_report = calc_no_rewards(
-        staking_module,
-        no_id=no2_id,
-        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
-    )
-    no3_rewards_after_fifth_report = calc_no_rewards(
-        staking_module, no_id=no3_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
-    )
+    no1_rewards_after_fifth_report = calc_no_rewards(staking_module, no_id=no1_id, minted_shares=minted_share)
+    no2_rewards_after_fifth_report = calc_no_rewards(staking_module, no_id=no2_id, minted_shares=minted_share)
+    no3_rewards_after_fifth_report = calc_no_rewards(staking_module, no_id=no3_id, minted_shares=minted_share)
 
     # Penalty only for second operator
     # diff by 1 share because of rounding
@@ -781,35 +710,28 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no2_summary = staking_module.getNodeOperatorSummary(no2_id)
 
     # expected shares
-    no1_rewards_after_seventh_report = calc_no_rewards(
-        staking_module,
-        no_id=no1_id,
-        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
+    minted_share = calc_module_reward_shares(
+        staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"]
     )
-    no2_rewards_after_seventh_report = calc_no_rewards(
-        staking_module,
-        no_id=no2_id,
-        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
-    )
-    no3_rewards_after_seventh_report = calc_no_rewards(
-        staking_module, no_id=no3_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
-    )
+    no1_rewards_after_sixth_report = calc_no_rewards(staking_module, no_id=no1_id, minted_shares=minted_share)
+    no2_rewards_after_sixth_report = calc_no_rewards(staking_module, no_id=no2_id, minted_shares=minted_share)
+    no3_rewards_after_sixth_report = calc_no_rewards(staking_module, no_id=no3_id, minted_shares=minted_share)
 
     # No penalty
     # diff by 1 share because of rounding
     assert almostEqWithDiff(
         no1_balance_shares_after - no1_balance_shares_before,
-        no1_rewards_after_seventh_report,
+        no1_rewards_after_sixth_report,
         1,
     )
     assert almostEqWithDiff(
         no2_balance_shares_after - no2_balance_shares_before,
-        no2_rewards_after_seventh_report,
+        no2_rewards_after_sixth_report,
         1,
     )
     assert almostEqWithDiff(
         no3_balance_shares_after - no3_balance_shares_before,
-        no3_rewards_after_seventh_report,
+        no3_rewards_after_sixth_report,
         1,
     )
 
@@ -824,7 +746,6 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert no2_summary["stuckPenaltyEndTimestamp"] < chain.time()
 
     # Deposit
-    set_staking_limit(staking_module, [no1_id, no2_id, no3_id], 10, impersonated_voting)
     (
         no1_deposited_keys_before,
         no2_deposited_keys_before,
@@ -832,7 +753,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         no1_deposited_keys_after,
         no2_deposited_keys_after,
         no3_deposited_keys_after,
-    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50)
+    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_voting)
 
     # check deposit is applied for all NOs
     assert no1_deposited_keys_before != no1_deposited_keys_after
@@ -877,7 +798,6 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert first_no_summary_after["isTargetLimitActive"]
 
     # Deposit
-    set_staking_limit(staking_module, [no1_id, no2_id, no3_id], 10, impersonated_voting)
     (
         no1_deposited_keys_before,
         no2_deposited_keys_before,
@@ -885,7 +805,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         no1_deposited_keys_after,
         no2_deposited_keys_after,
         no3_deposited_keys_after,
-    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50)
+    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_voting)
 
     # check deposit is not applied for first NO
     assert no1_deposited_keys_before == no1_deposited_keys_after
@@ -905,7 +825,6 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert not first_no_summary_after["isTargetLimitActive"]
 
     # Deposit
-    set_staking_limit(staking_module, [no1_id, no2_id, no3_id], 10, impersonated_voting)
     (
         no1_deposited_keys_before,
         no2_deposited_keys_before,
@@ -913,7 +832,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         no1_deposited_keys_after,
         no2_deposited_keys_after,
         no3_deposited_keys_after,
-    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50)
+    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_voting)
 
     # check - deposit not applied to NOs.
     assert no1_deposited_keys_before != no1_deposited_keys_after
@@ -921,21 +840,17 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert no3_deposited_keys_before != no3_deposited_keys_after
 
 
-# def test_node_operator_registry(impersonated_voting, eth_whale):
-#     nor = contracts.node_operators_registry
-#     nor.module_id = 1
-#     nor.testing_node_operator_ids = [23, 20, 28]
-#     module_happy_path(nor, ExtraDataService(), impersonated_voting, eth_whale)
+def test_node_operator_registry(impersonated_voting, eth_whale):
+    nor = contracts.node_operators_registry
+    nor.module_id = 1
+    nor.testing_node_operator_ids = [23, 20, 28]
+    module_happy_path(nor, ExtraDataService(), impersonated_voting, eth_whale)
 
 
 def test_sdvt(impersonated_voting, stranger, eth_whale):
     sdvt = contracts.simple_dvt
     sdvt.module_id = 2
     sdvt.testing_node_operator_ids = [0, 1, 2]
-    fill_simple_dvt_ops_vetted_keys(stranger, 3, 100)
-
-    # simulate already deposited keys
-    deposit_and_check_keys(sdvt, 0, 1, 2, 30)
-    oracle_report(exclude_vaults_balances=True, cl_diff=ETH(3))
+    fill_simple_dvt_ops_keys(stranger, 3, 100)
 
     module_happy_path(sdvt, ExtraDataService(), impersonated_voting, eth_whale)

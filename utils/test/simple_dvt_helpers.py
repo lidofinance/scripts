@@ -164,8 +164,8 @@ def simple_dvt_add_node_operators(simple_dvt, stranger, input_params=[]):
 
 
 def simple_dvt_add_keys(simple_dvt, node_operator_id, keys_count=1):
-    pubkeys_batch = random_pubkeys_batch(keys_count)
-    signatures_batch = random_signatures_batch(keys_count)
+    pubkeys_batch = random_pubkeys_batch(keys_count, "keys_" + str(node_operator_id))
+    signatures_batch = random_signatures_batch(keys_count, "signatures_" + str(node_operator_id))
 
     total_signing_keys_count_before = simple_dvt.getTotalSigningKeyCount(node_operator_id)
     unused_signing_keys_count_before = simple_dvt.getUnusedSigningKeyCount(node_operator_id)
