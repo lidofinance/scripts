@@ -248,12 +248,12 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
     # TODO: validate events
 
 
-def random_pubkeys_batch(pubkeys_count: int, seed=None):
-    return random_hexstr(pubkeys_count * PUBKEY_LENGTH, seed)
+def random_pubkeys_batch(pubkeys_count: int):
+    return random_hexstr(pubkeys_count * PUBKEY_LENGTH)
 
 
-def random_signatures_batch(signautes_count: int, seed=None):
-    return random_hexstr(signautes_count * SIGNATURE_LENGTH, seed)
+def random_signatures_batch(signautes_count: int):
+    return random_hexstr(signautes_count * SIGNATURE_LENGTH)
 
 
 def parse_pubkeys_batch(pubkeys_batch: str):
@@ -270,9 +270,7 @@ def hex_chunks(hexstr: str, chunk_length: int):
     return [prefix_0x(chunk) for chunk in textwrap.wrap(stripped_hexstr, 2 * chunk_length)]
 
 
-def random_hexstr(length: int, seed=None):
-    if seed:
-        random.seed(seed)
+def random_hexstr(length: int):
     return prefix_0x(random.randbytes(length).hex())
 
 
