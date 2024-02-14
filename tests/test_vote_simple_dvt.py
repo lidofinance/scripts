@@ -63,6 +63,7 @@ MANAGE_NODE_OPERATOR_ROLE = "0x78523850fdd761612f46e844cf5a16bda6b3151d6ae961fd7
 SET_NODE_OPERATOR_LIMIT_ROLE = "0x07b39e0faf2521001ae4e58cb9ffd3840a63e205d288dc9c93c3774f0d794754"
 MANAGE_SIGNING_KEYS = "0x75abc64490e17b40ea1e66691c3eb493647b24430b358bd87ec3e5127f1621ee"
 MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE = "0x0cf253eb71298c92e2814969a122f66b781f9b217f8ecde5401e702beb9345f6"
+MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE = "0xf6ac39904c42f8e23056f1b678e4892fc92caa68ae836dc474e137f0e67f5716"
 
 simple_dvt_repo_ens = "simple-dvt.lidopm.eth"
 simple_dvt_content_uri = (
@@ -113,6 +114,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
 
     sanity_checker_limits = contracts.oracle_report_sanity_checker.getOracleReportLimits()
     assert sanity_checker_limits["maxAccountingExtraDataListItemsCount"] == 2
+    assert sanity_checker_limits["maxNodeOperatorsPerExtraDataItemCount"] == 100
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -262,9 +264,10 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
 
     sanity_checker_limits = contracts.oracle_report_sanity_checker.getOracleReportLimits()
     assert sanity_checker_limits["maxAccountingExtraDataListItemsCount"] == 4
+    assert sanity_checker_limits["maxNodeOperatorsPerExtraDataItemCount"] == 50
 
     # validate vote events
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 20, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 22, "Incorrect voting items count"
 
     metadata = find_metadata_by_vote_id(vote_id)
     print("metadata", metadata)
@@ -279,6 +282,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
 
     evs = group_voting_events(vote_tx)
 
+    # I. Create new Aragon DAO Application Repo for SimpleDVT
     repo_params = NewRepoItem(
         name=SIMPLE_DVT_ARAGON_APP_NAME,
         app=simple_dvt.address,
@@ -290,10 +294,11 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     )
     validate_new_repo_with_version_event(evs[0], repo_params)
 
+    # II. Setup and initialize SimpleDVT module as new Aragon app
     validate_app_update_event(evs[1], SIMPLE_DVT_ARAGON_APP_ID, SIMPLE_DVT_IMPL)
-
     validate_simple_dvt_intialize_event(evs[2])
 
+    # III. Add SimpleDVT module to Staking Router
     # Create and grant permission STAKING_ROUTER_ROLE on SimpleDVT module for StakingRouter
     permission = Permission(
         entity=staking_router,
@@ -302,97 +307,10 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     )
     validate_permission_create_event(evs[3], permission, manager=voting)
 
-    # Grant STAKING_ROUTER_ROLE on SimpleDVT module for EasyTrackEVMScriptExecutor
-    permission = Permission(entity=EASYTRACK_EVMSCRIPT_EXECUTOR, app=simple_dvt, role=STAKING_ROUTER_ROLE)
-    validate_permission_grant_event(evs[4], permission)
+    # Grant REQUEST_BURN_SHARES_ROLE on Burner for SimpleDVT module
+    validate_grant_role_event(evs[4], REQUEST_BURN_SHARES_ROLE, simple_dvt, agent)
 
-    # Create and grant permission MANAGE_NODE_OPERATOR_ROLE on SimpleDVT module for EasyTrackEVMScriptExecutor
-    permission = Permission(
-        entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
-        app=simple_dvt,
-        role=MANAGE_NODE_OPERATOR_ROLE,  # simple_dvt.MANAGE_NODE_OPERATOR_ROLE(),
-    )
-    validate_permission_create_event(evs[5], permission, manager=voting)
-
-    # Create and grant permission SET_NODE_OPERATOR_LIMIT_ROLE on SimpleDVT module for EasyTrackEVMScriptExecutor
-    permission = Permission(
-        entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
-        app=simple_dvt,
-        role=SET_NODE_OPERATOR_LIMIT_ROLE,  # simple_dvt.SET_NODE_OPERATOR_LIMIT_ROLE(),
-    )
-    validate_permission_create_event(evs[6], permission, manager=voting)
-
-    # Create and grant permission MANAGE_SIGNING_KEYS on SimpleDVT module for EasyTrackEVMScriptExecutor
-    permission = Permission(
-        entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
-        app=simple_dvt,
-        role=MANAGE_SIGNING_KEYS,  # simple_dvt.MANAGE_SIGNING_KEYS(),
-    )
-    validate_permission_create_event(evs[7], permission, manager=EASYTRACK_EVMSCRIPT_EXECUTOR)
-
-    validate_evmscript_factory_added_event(
-        evs[8],
-        EVMScriptFactoryAdded(
-            factory_addr=add_node_operators_evm_script_factory,
-            permissions=create_permissions(simple_dvt, "addNodeOperator")
-            + create_permissions(contracts.acl, "grantPermissionP")[2:],
-        ),
-    )
-    validate_evmscript_factory_added_event(
-        evs[9],
-        EVMScriptFactoryAdded(
-            factory_addr=activate_node_operators_evm_script_factory,
-            permissions=create_permissions(simple_dvt, "activateNodeOperator")
-            + create_permissions(contracts.acl, "grantPermissionP")[2:],
-        ),
-    )
-    validate_evmscript_factory_added_event(
-        evs[10],
-        EVMScriptFactoryAdded(
-            factory_addr=deactivate_node_operators_evm_script_factory,
-            permissions=create_permissions(simple_dvt, "deactivateNodeOperator")
-            + create_permissions(contracts.acl, "revokePermission")[2:],
-        ),
-    )
-    validate_evmscript_factory_added_event(
-        evs[11],
-        EVMScriptFactoryAdded(
-            factory_addr=set_vetted_validators_limits_evm_script_factory,
-            permissions=create_permissions(simple_dvt, "setNodeOperatorStakingLimit"),
-        ),
-    )
-    validate_evmscript_factory_added_event(
-        evs[12],
-        EVMScriptFactoryAdded(
-            factory_addr=update_target_validator_limits_evm_script_factory,
-            permissions=create_permissions(simple_dvt, "updateTargetValidatorsLimits"),
-        ),
-    )
-    validate_evmscript_factory_added_event(
-        evs[13],
-        EVMScriptFactoryAdded(
-            factory_addr=set_node_operator_names_evm_script_factory,
-            permissions=create_permissions(simple_dvt, "setNodeOperatorName"),
-        ),
-    )
-    validate_evmscript_factory_added_event(
-        evs[14],
-        EVMScriptFactoryAdded(
-            factory_addr=set_node_operator_reward_addresses_evm_script_factory,
-            permissions=create_permissions(simple_dvt, "setNodeOperatorRewardAddress"),
-        ),
-    )
-    validate_evmscript_factory_added_event(
-        evs[15],
-        EVMScriptFactoryAdded(
-            factory_addr=change_node_operator_managers_evm_script_factory,
-            permissions=create_permissions(contracts.acl, "revokePermission")
-            + create_permissions(contracts.acl, "grantPermissionP")[2:],
-        ),
-    )
-
-    validate_grant_role_event(evs[16], REQUEST_BURN_SHARES_ROLE, simple_dvt, agent)
-
+    # Add SimpleDVT module to StakingRouter
     module_item = StakingModuleItem(
         SIMPLE_DVT_MODULE_ID,
         simple_dvt.address,
@@ -401,10 +319,100 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
         SIMPLE_DVT_MODULE_MODULE_FEE_BP,
         SIMPLE_DVT_MODULE_TREASURY_FEE_BP,
     )
-    validate_staking_module_added_event(evs[17], module_item)
+    validate_staking_module_added_event(evs[5], module_item)
 
+    # IV. Grant permissions to make operational changes to SimpleDVT module
+    permission = Permission(
+        entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
+        app=simple_dvt,
+        role=MANAGE_NODE_OPERATOR_ROLE,  # simple_dvt.MANAGE_NODE_OPERATOR_ROLE(),
+    )
+    validate_permission_create_event(evs[6], permission, manager=voting)
+
+    permission = Permission(
+        entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
+        app=simple_dvt,
+        role=SET_NODE_OPERATOR_LIMIT_ROLE,  # simple_dvt.SET_NODE_OPERATOR_LIMIT_ROLE(),
+    )
+    validate_permission_create_event(evs[7], permission, manager=voting)
+
+    permission = Permission(
+        entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
+        app=simple_dvt,
+        role=MANAGE_SIGNING_KEYS,  # simple_dvt.MANAGE_SIGNING_KEYS(),
+    )
+    validate_permission_create_event(evs[8], permission, manager=EASYTRACK_EVMSCRIPT_EXECUTOR)
+
+    permission = Permission(entity=EASYTRACK_EVMSCRIPT_EXECUTOR, app=simple_dvt, role=STAKING_ROUTER_ROLE)
+    validate_permission_grant_event(evs[9], permission)
+
+    # IV. Add EasyTrack EVM script factories for SimpleDVT module
+    validate_evmscript_factory_added_event(
+        evs[10],
+        EVMScriptFactoryAdded(
+            factory_addr=add_node_operators_evm_script_factory,
+            permissions=create_permissions(simple_dvt, "addNodeOperator")
+            + create_permissions(contracts.acl, "grantPermissionP")[2:],
+        ),
+    )
+    validate_evmscript_factory_added_event(
+        evs[11],
+        EVMScriptFactoryAdded(
+            factory_addr=activate_node_operators_evm_script_factory,
+            permissions=create_permissions(simple_dvt, "activateNodeOperator")
+            + create_permissions(contracts.acl, "grantPermissionP")[2:],
+        ),
+    )
+    validate_evmscript_factory_added_event(
+        evs[12],
+        EVMScriptFactoryAdded(
+            factory_addr=deactivate_node_operators_evm_script_factory,
+            permissions=create_permissions(simple_dvt, "deactivateNodeOperator")
+            + create_permissions(contracts.acl, "revokePermission")[2:],
+        ),
+    )
+    validate_evmscript_factory_added_event(
+        evs[13],
+        EVMScriptFactoryAdded(
+            factory_addr=set_vetted_validators_limits_evm_script_factory,
+            permissions=create_permissions(simple_dvt, "setNodeOperatorStakingLimit"),
+        ),
+    )
+    validate_evmscript_factory_added_event(
+        evs[14],
+        EVMScriptFactoryAdded(
+            factory_addr=update_target_validator_limits_evm_script_factory,
+            permissions=create_permissions(simple_dvt, "updateTargetValidatorsLimits"),
+        ),
+    )
+    validate_evmscript_factory_added_event(
+        evs[15],
+        EVMScriptFactoryAdded(
+            factory_addr=set_node_operator_names_evm_script_factory,
+            permissions=create_permissions(simple_dvt, "setNodeOperatorName"),
+        ),
+    )
+    validate_evmscript_factory_added_event(
+        evs[16],
+        EVMScriptFactoryAdded(
+            factory_addr=set_node_operator_reward_addresses_evm_script_factory,
+            permissions=create_permissions(simple_dvt, "setNodeOperatorRewardAddress"),
+        ),
+    )
+    validate_evmscript_factory_added_event(
+        evs[17],
+        EVMScriptFactoryAdded(
+            factory_addr=change_node_operator_managers_evm_script_factory,
+            permissions=create_permissions(contracts.acl, "revokePermission")
+            + create_permissions(contracts.acl, "grantPermissionP")[2:],
+        ),
+    )
+
+    # VI. Update Oracle Report Sanity Checker parameters
     validate_grant_role_event(evs[18], MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE, agent, agent)
-    validate_max_extra_data_list_items_count_event(evs[19], 4)
+    validate_grant_role_event(evs[19], MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE, agent, agent)
+    validate_max_extra_data_list_items_count_event(evs[20], 4)
+    validate_max_operators_per_extra_data_item_count_event(evs[21], 50)
 
 
 def has_permission(permission: Permission, how: List[int]) -> bool:
@@ -425,6 +433,20 @@ def validate_max_extra_data_list_items_count_event(event: EventDict, value: int)
 
     assert event.count("MaxAccountingExtraDataListItemsCountSet") == 1
     assert event["MaxAccountingExtraDataListItemsCountSet"]["maxAccountingExtraDataListItemsCount"] == value
+
+
+def validate_max_operators_per_extra_data_item_count_event(event: EventDict, value: int):
+    _events_chain = [
+        "LogScriptCall",
+        "LogScriptCall",
+        "MaxNodeOperatorsPerExtraDataItemCountSet",
+        "ScriptResult",
+    ]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("MaxNodeOperatorsPerExtraDataItemCountSet") == 1
+    assert event["MaxNodeOperatorsPerExtraDataItemCountSet"]["maxNodeOperatorsPerExtraDataItemCount"] == value
 
 
 def validate_simple_dvt_intialize_event(event: EventDict):
