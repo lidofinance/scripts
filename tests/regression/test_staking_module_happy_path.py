@@ -1,7 +1,7 @@
 import pytest
 from web3 import Web3
 import eth_abi
-from brownie import chain, ZERO_ADDRESS, web3, interface
+from brownie import chain, ZERO_ADDRESS, web3
 
 from utils.test.extra_data import (
     ExtraDataService,
@@ -18,11 +18,6 @@ from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_keys
 STAKING_ROUTER_ROLE = Web3.keccak(text="STAKING_ROUTER_ROLE")
 STAKING_MODULE_MANAGE_ROLE = Web3.keccak(text="STAKING_MODULE_MANAGE_ROLE")
 SET_NODE_OPERATOR_LIMIT_ROLE = Web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")
-
-
-@pytest.fixture(scope="function")
-def impersonate_es_executor(accounts):
-    return accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
 
 
 @pytest.fixture(scope="function")
