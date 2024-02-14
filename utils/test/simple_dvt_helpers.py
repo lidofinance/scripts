@@ -1,5 +1,4 @@
 from brownie import chain, accounts, interface
-from tests.regression.test_node_operators_flow import random_pubkeys_batch, random_signatures_batch  # type: ignore
 from utils.config import (
     contracts,
     EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER,
@@ -7,7 +6,7 @@ from utils.config import (
     EASYTRACK_SIMPLE_DVT_SET_VETTED_VALIDATORS_LIMITS_FACTORY,
 )
 from utils.test.easy_track_helpers import _encode_calldata
-
+from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
 
 MIN_OP_KEYS_CNT = 10
 MIN_OPS_CNT = 3
