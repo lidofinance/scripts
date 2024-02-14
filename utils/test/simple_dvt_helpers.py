@@ -12,23 +12,17 @@ from utils.test.easy_track_helpers import _encode_calldata
 MIN_OP_KEYS_CNT = 10
 MIN_OPS_CNT = 3
 
-OPERATOR_NAMES = [
-    "Name 1",
-    "Name 2",
-    "Name 3",
-]
 
-REWARD_ADDRESSES = [
-    "0x0000000000000000000000000000000000001111",
-    "0x0000000000000000000000000000000000002222",
-    "0x0000000000000000000000000000000000003333",
-]
+def get_operator_name(n: int):
+    return f"Name {n}"
 
-MANAGERS = [
-    "0x0000000000000000000000000000000011111111",
-    "0x0000000000000000000000000000000022222222",
-    "0x0000000000000000000000000000000033333333",
-]
+
+def get_operator_address(id: int):
+    return f"0x111{id:037x}"
+
+
+def get_managers_address(id: int):
+    return f"0x222{id:037x}"
 
 
 def fill_simple_dvt_ops(stranger, min_ops_cnt=MIN_OPS_CNT):
@@ -36,7 +30,8 @@ def fill_simple_dvt_ops(stranger, min_ops_cnt=MIN_OPS_CNT):
     cnt = 0
     input_params = []
     while node_operators_count_before + cnt < min_ops_cnt:
-        input_params.append((OPERATOR_NAMES[cnt], REWARD_ADDRESSES[cnt], MANAGERS[cnt]))
+        op_id = node_operators_count_before + cnt
+        input_params.append((get_operator_name(op_id), get_operator_address(op_id), get_managers_address(op_id)))
         cnt += 1
 
     (node_operators_count_before, node_operator_count_after) = simple_dvt_add_node_operators(

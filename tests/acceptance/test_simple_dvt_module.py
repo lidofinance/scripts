@@ -158,14 +158,16 @@ def test_simple_dvt_state(contract):
 
 
 def test_simple_dvt_permissions(contract):
-    assert contracts.acl.getPermissionManager(contract.address, STAKING_ROUTER_ROLE) == contract.voting.address
-    assert contract.canPerform(contract.address, STAKING_ROUTER_ROLE, [])
+    assert contracts.acl.getPermissionManager(contract.address, STAKING_ROUTER_ROLE) == contracts.voting.address
+    assert contract.canPerform(contracts.staking_router.address, STAKING_ROUTER_ROLE, [])
     assert contract.canPerform(EASYTRACK_EVMSCRIPT_EXECUTOR, STAKING_ROUTER_ROLE, [])
 
-    assert contracts.acl.getPermissionManager(contract.address, MANAGE_NODE_OPERATOR_ROLE) == contract.voting.address
+    assert contracts.acl.getPermissionManager(contract.address, MANAGE_NODE_OPERATOR_ROLE) == contracts.voting.address
     assert contract.canPerform(EASYTRACK_EVMSCRIPT_EXECUTOR, MANAGE_NODE_OPERATOR_ROLE, [])
 
-    assert contracts.acl.getPermissionManager(contract.address, SET_NODE_OPERATOR_LIMIT_ROLE) == contract.voting.address
+    assert (
+        contracts.acl.getPermissionManager(contract.address, SET_NODE_OPERATOR_LIMIT_ROLE) == contracts.voting.address
+    )
     assert contract.canPerform(EASYTRACK_EVMSCRIPT_EXECUTOR, SET_NODE_OPERATOR_LIMIT_ROLE, [])
 
     assert contracts.acl.getPermissionManager(contract.address, MANAGE_SIGNING_KEYS) == EASYTRACK_EVMSCRIPT_EXECUTOR
