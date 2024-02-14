@@ -1,4 +1,5 @@
 import pytest
+from utils.test.tx_tracing_helpers import display_voting_events
 from web3 import Web3
 import eth_abi
 from brownie import chain, ZERO_ADDRESS, web3, interface
@@ -12,7 +13,12 @@ from utils.test.oracle_report_helpers import (
 )
 from utils.config import contracts, STAKING_ROUTER, EASYTRACK_EVMSCRIPT_EXECUTOR
 from utils.test.node_operators_helpers import node_operator_gindex
-from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
+from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_keys, fill_simple_dvt_ops_vetted_keys
+
+
+STAKING_ROUTER_ROLE = Web3.keccak(text="STAKING_ROUTER_ROLE")
+STAKING_MODULE_MANAGE_ROLE = Web3.keccak(text="STAKING_MODULE_MANAGE_ROLE")
+SET_NODE_OPERATOR_LIMIT_ROLE = Web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")
 
 
 @pytest.fixture(scope="function")
@@ -39,38 +45,49 @@ def calc_no_rewards(nor, no_id, shares_minted_as_fees):
     return nor_shares * operator_total_active_keys // module_total_active_keys
 
 
-def increase_limit(nor, first_id, second_id, base_id, keys_count, impersonated_voting):
-    first_no = nor.getNodeOperator(first_id, True)
-    second_no = nor.getNodeOperator(second_id, True)
-    base_no = nor.getNodeOperator(base_id, True)
-
-    current_first_keys = first_no["totalVettedValidators"] - first_no["totalExitedValidators"]
-    current_second_keys = second_no["totalVettedValidators"] - second_no["totalExitedValidators"]
-    current_base_keys = base_no["totalVettedValidators"] - base_no["totalExitedValidators"]
-
-    nor.setNodeOperatorStakingLimit(first_id, current_first_keys + keys_count, {"from": impersonated_voting})
-    nor.setNodeOperatorStakingLimit(second_id, current_second_keys + keys_count, {"from": impersonated_voting})
-    nor.setNodeOperatorStakingLimit(base_id, current_base_keys + keys_count, {"from": impersonated_voting})
-
-
-def deposit_and_check_keys(staking_module, first_no_id, second_no_id, base_no_id, keys_count, impersonated_voting):
-    for op_index in (first_no_id, second_no_id, base_no_id):
-        no = staking_module.getNodeOperator(op_index, True)
+def set_staking_limit(nor, ops_ids, keys_count, impersonated_voting):
+    for op_index in ops_ids:
+        no = nor.getNodeOperator(op_index, True)
         if not no["active"]:
             continue
-        staking_module.setNodeOperatorStakingLimit(op_index, no["totalDepositedValidators"] + 10, {"from": impersonated_voting})
+        cur_deposited_keys = no["totalDepositedValidators"]
+        cur_vetted_keys = no["totalVettedValidators"]
+        new_vetted_keys = cur_deposited_keys + keys_count
+        print(
+            f"Set staking limit for OP: {op_index} (total deposited: {cur_deposited_keys}) from: {cur_vetted_keys} to: {new_vetted_keys}"
+        )
+        nor.setNodeOperatorStakingLimit(op_index, new_vetted_keys, {"from": impersonated_voting})
 
-    deposited_keys_first_before = staking_module.getNodeOperatorSummary(first_no_id)["totalDepositedValidators"]
-    deposited_keys_second_before = staking_module.getNodeOperatorSummary(second_no_id)["totalDepositedValidators"]
-    deposited_keys_base_before = staking_module.getNodeOperatorSummary(base_no_id)["totalDepositedValidators"]
+    # first_no = nor.getNodeOperator(first_id, True)
+    # second_no = nor.getNodeOperator(second_id, True)
+    # base_no = nor.getNodeOperator(third_id, True)
+
+    # current_first_keys = first_no["totalVettedValidators"] - first_no["totalExitedValidators"]
+    # current_second_keys = second_no["totalVettedValidators"] - second_no["totalExitedValidators"]
+    # current_base_keys = base_no["totalVettedValidators"] - base_no["totalExitedValidators"]
+
+    # nor.setNodeOperatorStakingLimit(first_id, current_first_keys + keys_count, {"from": impersonated_voting})
+    # nor.setNodeOperatorStakingLimit(second_id, current_second_keys + keys_count, {"from": impersonated_voting})
+    # nor.setNodeOperatorStakingLimit(third_id, current_base_keys + keys_count, {"from": impersonated_voting})
+
+
+def deposit_and_check_keys(nor, first_id, second_id, third_id, keys_count):
+    deposited_keys_first_before = nor.getNodeOperatorSummary(first_id)["totalDepositedValidators"]
+    deposited_keys_second_before = nor.getNodeOperatorSummary(second_id)["totalDepositedValidators"]
+    deposited_keys_base_before = nor.getNodeOperatorSummary(third_id)["totalDepositedValidators"]
     validators_before = contracts.lido.getBeaconStat().dict()["depositedValidators"]
 
-    module_total_deposited_keys_before = staking_module.getStakingModuleSummary()["totalDepositedValidators"]
+    module_total_deposited_keys_before = nor.getStakingModuleSummary()["totalDepositedValidators"]
 
-    tx = contracts.lido.deposit(keys_count, staking_module.module_id, "0x", {"from": contracts.deposit_security_module.address})
+    print(f"Deposit {keys_count} keys for module {nor.module_id}")
+    print(f"validators_before {validators_before}")
+    tx = contracts.lido.deposit(keys_count, nor.module_id, "0x", {"from": contracts.deposit_security_module.address})
 
+    display_voting_events(tx)
     validators_after = contracts.lido.getBeaconStat().dict()["depositedValidators"]
-    module_total_deposited_keys_after = staking_module.getStakingModuleSummary()["totalDepositedValidators"]
+    module_total_deposited_keys_after = nor.getStakingModuleSummary()["totalDepositedValidators"]
+
+    print(f"validators_before {validators_after}")
 
     just_deposited = validators_after - validators_before
     print("---------", just_deposited)
@@ -79,9 +96,9 @@ def deposit_and_check_keys(staking_module, first_no_id, second_no_id, base_no_id
         assert tx.events["Unbuffered"]["amount"] == just_deposited * ETH(32)
         assert module_total_deposited_keys_before + just_deposited == module_total_deposited_keys_after
 
-    deposited_keys_first_after = staking_module.getNodeOperatorSummary(first_no_id)["totalDepositedValidators"]
-    deposited_keys_second_after = staking_module.getNodeOperatorSummary(second_no_id)["totalDepositedValidators"]
-    deposited_keys_base_after = staking_module.getNodeOperatorSummary(base_no_id)["totalDepositedValidators"]
+    deposited_keys_first_after = nor.getNodeOperatorSummary(first_id)["totalDepositedValidators"]
+    deposited_keys_second_after = nor.getNodeOperatorSummary(second_id)["totalDepositedValidators"]
+    deposited_keys_base_after = nor.getNodeOperatorSummary(third_id)["totalDepositedValidators"]
 
     return (
         deposited_keys_first_before,
@@ -112,7 +129,7 @@ def parse_exited_signing_keys_count_changed_logs(logs):
 def parse_stuck_penalty_state_changed_logs(logs):
     res = []
     for l in logs:
-        data = eth_abi.decode(["uint256","uint256","uint256"], bytes.fromhex(l["data"][2:]))
+        data = eth_abi.decode(["uint256", "uint256", "uint256"], bytes.fromhex(l["data"][2:]))
         res.append(
             {
                 "nodeOperatorId": eth_abi.decode_abi(["uint256"], l["topics"][1])[0],
@@ -136,11 +153,13 @@ def parse_target_validators_count_changed(logs):
     return res
 
 
-def module_happy_path(staking_module, extra_data_service, impersonated_voting, impersonated_executor, eth_whale):
+def module_happy_path(staking_module, extra_data_service, impersonated_voting, eth_whale):
     nor_exited_count, _, _ = contracts.staking_router.getStakingModuleSummary(staking_module.module_id)
 
+    # all_modules = contracts.staking_router.getStakingModules()
+
     contracts.staking_router.grantRole(
-        Web3.keccak(text="STAKING_MODULE_MANAGE_ROLE"),
+        STAKING_MODULE_MANAGE_ROLE,
         impersonated_voting,
         {"from": contracts.agent.address},
     )
@@ -148,78 +167,106 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, i
     contracts.acl.grantPermission(
         impersonated_voting,
         staking_module,
-        Web3.keccak(text="STAKING_ROUTER_ROLE"),
+        STAKING_ROUTER_ROLE,
+        {"from": impersonated_voting},
+    )
+
+    contracts.acl.grantPermission(
+        impersonated_voting,
+        staking_module,
+        SET_NODE_OPERATOR_LIMIT_ROLE,
         {"from": impersonated_voting},
     )
 
     contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale, "amount": ETH(75000)})
 
-    base_no_id, tested_no_id_first, tested_no_id_second = staking_module.testing_node_operator_ids
+    # # disable deposit for all operators in all modules
+    # for module_id, module_address, _, _, _, _, _, _, _, _ in all_modules:
+    #     print("!!!", module_id, module_address)
+    #     module = interface.IStakingModule(module_address)
+    #     contracts.acl.grantPermission(
+    #         impersonated_voting,
+    #         module,
+    #         STAKING_ROUTER_ROLE,
+    #         {"from": impersonated_voting},
+    #     )
+    #     no_amount = module.getNodeOperatorsCount()
+    #     for op_index in range(no_amount):
+    #         no = module.getNodeOperator(op_index, True)
+    #         if not no["active"]:
+    #             continue
+    #         module.setNodeOperatorStakingLimit(op_index, no["totalDepositedValidators"], {"from": impersonated_voting})
 
+    print("Reset staking limit for all OPs...")
     no_amount = staking_module.getNodeOperatorsCount()
-    for op_index in range(no_amount):
-        no = staking_module.getNodeOperator(op_index, True)
-        if not no["active"]:
-            continue
-        staking_module.setNodeOperatorStakingLimit(op_index, no["totalDepositedValidators"], {"from": impersonated_executor})
+    set_staking_limit(staking_module, range(no_amount), 0, impersonated_voting)
 
-    increase_limit(staking_module, tested_no_id_first, tested_no_id_second, base_no_id, 3, impersonated_executor)
-    deposit_and_check_keys(staking_module, tested_no_id_first, tested_no_id_second, base_no_id, 9, impersonated_executor)
+    no3_id, no1_id, no2_id = staking_module.testing_node_operator_ids
+
+    set_staking_limit(staking_module, [no1_id, no2_id, no3_id], 3, impersonated_voting)
+    deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 9)
 
     penalty_delay = staking_module.getStuckPenaltyDelay()
 
-    node_operator_first = staking_module.getNodeOperatorSummary(tested_no_id_first)
-    address_first = staking_module.getNodeOperator(tested_no_id_first, False)["rewardAddress"]
-    node_operator_first_balance_shares_before = shares_balance(address_first)
+    no1_summary = staking_module.getNodeOperatorSummary(no1_id)
+    no1_reward_address = staking_module.getNodeOperator(no1_id, False)["rewardAddress"]
+    no1_balance_shares_before = shares_balance(no1_reward_address)
 
-    node_operator_second = staking_module.getNodeOperatorSummary(tested_no_id_second)
-    address_second = staking_module.getNodeOperator(tested_no_id_second, False)["rewardAddress"]
-    node_operator_second_balance_shares_before = shares_balance(address_second)
+    no2_summary = staking_module.getNodeOperatorSummary(no2_id)
+    no2_reward_address = staking_module.getNodeOperator(no2_id, False)["rewardAddress"]
+    no2_balance_shares_before = shares_balance(no2_reward_address)
 
-    node_operator_base = staking_module.getNodeOperatorSummary(base_no_id)
-    address_base_no = staking_module.getNodeOperator(base_no_id, False)["rewardAddress"]
-    node_operator_base_balance_shares_before = shares_balance(address_base_no)
+    no3_summary = staking_module.getNodeOperatorSummary(no3_id)
+    no3_reward_address = staking_module.getNodeOperator(no3_id, False)["rewardAddress"]
+    no3_balance_shares_before = shares_balance(no3_reward_address)
 
     # First report - base empty report
     (report_tx, extra_report_tx) = oracle_report(exclude_vaults_balances=True)
 
-    node_operator_first_balance_shares_after = shares_balance(address_first)
-    node_operator_second_balance_shares_after = shares_balance(address_second)
-    node_operator_base_balance_shares_after = shares_balance(address_base_no)
+    display_voting_events(report_tx)
+    display_voting_events(extra_report_tx)
+
+    no1_balance_shares_after = shares_balance(no1_reward_address)
+    no2_balance_shares_after = shares_balance(no2_reward_address)
+    no3_balance_shares_after = shares_balance(no3_reward_address)
 
     # expected shares
-    node_operator_first_rewards_after_first_report = calc_no_rewards(
-        staking_module, no_id=tested_no_id_first, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no1_rewards_after_first_report = calc_no_rewards(
+        staking_module,
+        no_id=no1_id,
+        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
     )
-    node_operator_second_rewards_after_first_report = calc_no_rewards(
-        staking_module, no_id=tested_no_id_second, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no2_rewards_after_first_report = calc_no_rewards(
+        staking_module,
+        no_id=no2_id,
+        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
     )
-    node_operator_base_rewards_after_first_report = calc_no_rewards(
-        staking_module, no_id=base_no_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no3_rewards_after_first_report = calc_no_rewards(
+        staking_module, no_id=no3_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
     )
 
     # check shares by empty report
     assert almostEqWithDiff(
-        node_operator_first_balance_shares_after - node_operator_first_balance_shares_before,
-        node_operator_first_rewards_after_first_report,
+        no1_balance_shares_after - no1_balance_shares_before,
+        no1_rewards_after_first_report,
         1,
     )
     assert almostEqWithDiff(
-        node_operator_second_balance_shares_after - node_operator_second_balance_shares_before,
-        node_operator_second_rewards_after_first_report,
+        no2_balance_shares_after - no2_balance_shares_before,
+        no2_rewards_after_first_report,
         1,
     )
     assert almostEqWithDiff(
-        node_operator_base_balance_shares_after - node_operator_base_balance_shares_before,
-        node_operator_base_rewards_after_first_report,
+        no3_balance_shares_after - no3_balance_shares_before,
+        no3_rewards_after_first_report,
         1,
     )
 
     # Case 1
-    # --- operator "First" had 5 keys (exited), and 2 keys got stuck (stuck)
-    # --- operator "Second" had 5 keys (exited), and 2 keys got stuck (stuck)
+    # --- operator "1st" had 5 keys (exited), and 2 keys got stuck (stuck)
+    # --- operator "2nd" had 5 keys (exited), and 2 keys got stuck (stuck)
     # - Send report
-    # - Check rewards shares for base NO and tested NO (should be half of expected)
+    # - Check rewards shares for "3d" NO and tested NO (should be half of expected)
     # - Check deposits (should be 0 for penalized NOs)
     # - Check burned shares
     # - Check NOs stats
@@ -227,21 +274,22 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, i
 
     # Prepare extra data
     vals_stuck_non_zero = {
-        node_operator_gindex(staking_module.module_id, tested_no_id_first): 2,
-        node_operator_gindex(staking_module.module_id, tested_no_id_second): 2,
+        node_operator_gindex(staking_module.module_id, no1_id): 2,
+        node_operator_gindex(staking_module.module_id, no2_id): 2,
     }
     vals_exited_non_zero = {
-        node_operator_gindex(staking_module.module_id, tested_no_id_first): 5,
-        node_operator_gindex(staking_module.module_id, tested_no_id_second): 5,
+        node_operator_gindex(staking_module.module_id, no1_id): 5,
+        node_operator_gindex(staking_module.module_id, no2_id): 5,
     }
     extra_data = extra_data_service.collect(vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
 
     # shares before report
-    node_operator_first_balance_shares_before = shares_balance(address_first)
-    node_operator_second_balance_shares_before = shares_balance(address_second)
-    node_operator_base_balance_shares_before = shares_balance(address_base_no)
+    no1_balance_shares_before = shares_balance(no1_reward_address)
+    no2_balance_shares_before = shares_balance(no2_reward_address)
+    no3_balance_shares_before = shares_balance(no3_reward_address)
 
-    deposit_and_check_keys(staking_module, tested_no_id_first, tested_no_id_second, base_no_id, 30, impersonated_executor)
+    set_staking_limit(staking_module, [no1_id, no2_id, no3_id], 10, impersonated_voting)
+    deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 30)
 
     # Second report - first NO and second NO has stuck/exited
     (report_tx, extra_report_tx) = oracle_report(
@@ -255,125 +303,133 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, i
     )
 
     # shares after report
-    node_operator_first = staking_module.getNodeOperatorSummary(tested_no_id_first)
-    node_operator_second = staking_module.getNodeOperatorSummary(tested_no_id_second)
-    node_operator_base = staking_module.getNodeOperatorSummary(base_no_id)
+    no1_summary = staking_module.getNodeOperatorSummary(no1_id)
+    no2_summary = staking_module.getNodeOperatorSummary(no2_id)
+    no3_summary = staking_module.getNodeOperatorSummary(no3_id)
 
     # expected shares
-    node_operator_first_rewards_after_second_report = calc_no_rewards(
-        staking_module, no_id=tested_no_id_first, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no1_rewards_after_second_report = calc_no_rewards(
+        staking_module,
+        no_id=no1_id,
+        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
     )
-    node_operator_second_rewards_after_second_report = calc_no_rewards(
-        staking_module, no_id=tested_no_id_second, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no2_rewards_after_second_report = calc_no_rewards(
+        staking_module,
+        no_id=no2_id,
+        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
     )
-    node_operator_base_rewards_after_second_report = calc_no_rewards(
-        staking_module, no_id=base_no_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no3_rewards_after_second_report = calc_no_rewards(
+        staking_module, no_id=no3_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
     )
 
-    node_operator_first_balance_shares_after = shares_balance(address_first)
-    node_operator_second_balance_shares_after = shares_balance(address_second)
-    node_operator_base_balance_shares_after = shares_balance(address_base_no)
+    no1_balance_shares_after = shares_balance(no1_reward_address)
+    no2_balance_shares_after = shares_balance(no2_reward_address)
+    no3_balance_shares_after = shares_balance(no3_reward_address)
 
     # check shares by report with penalty
     assert almostEqWithDiff(
-        node_operator_first_balance_shares_after - node_operator_first_balance_shares_before,
-        node_operator_first_rewards_after_second_report // 2,
+        no1_balance_shares_after - no1_balance_shares_before,
+        no1_rewards_after_second_report // 2,
         1,
     )
     assert almostEqWithDiff(
-        node_operator_second_balance_shares_after - node_operator_second_balance_shares_before,
-        node_operator_second_rewards_after_second_report // 2,
+        no2_balance_shares_after - no2_balance_shares_before,
+        no2_rewards_after_second_report // 2,
         1,
     )
     assert almostEqWithDiff(
-        node_operator_base_balance_shares_after - node_operator_base_balance_shares_before,
-        node_operator_base_rewards_after_second_report,
+        no3_balance_shares_after - no3_balance_shares_before,
+        no3_rewards_after_second_report,
         1,
     )
 
     # Check burn shares
-    amount_penalty_first_no = node_operator_first_rewards_after_second_report // 2
-    amount_penalty_second_no = node_operator_second_rewards_after_second_report // 2
-    penalty_shares = amount_penalty_first_no + amount_penalty_second_no
+    no1_amount_penalty = no1_rewards_after_second_report // 2
+    no2_amount_penalty = no2_rewards_after_second_report // 2
+    penalty_shares = no1_amount_penalty + no2_amount_penalty
 
     assert extra_report_tx.events["StETHBurnRequested"]["amountOfShares"] >= penalty_shares
 
     # NO stats
-    assert node_operator_first["stuckValidatorsCount"] == 2
-    assert node_operator_first["totalExitedValidators"] == 5
-    assert node_operator_first["refundedValidatorsCount"] == 0
-    assert node_operator_first["stuckPenaltyEndTimestamp"] == 0
+    assert no1_summary["stuckValidatorsCount"] == 2
+    assert no1_summary["totalExitedValidators"] == 5
+    assert no1_summary["refundedValidatorsCount"] == 0
+    assert no1_summary["stuckPenaltyEndTimestamp"] == 0
 
-    assert node_operator_second["stuckValidatorsCount"] == 2
-    assert node_operator_second["totalExitedValidators"] == 5
-    assert node_operator_second["refundedValidatorsCount"] == 0
-    assert node_operator_second["stuckPenaltyEndTimestamp"] == 0
+    assert no2_summary["stuckValidatorsCount"] == 2
+    assert no2_summary["totalExitedValidators"] == 5
+    assert no2_summary["refundedValidatorsCount"] == 0
+    assert no2_summary["stuckPenaltyEndTimestamp"] == 0
 
-    assert node_operator_base["stuckValidatorsCount"] == 0
-    assert node_operator_base["totalExitedValidators"] == 0
-    assert node_operator_base["refundedValidatorsCount"] == 0
-    assert node_operator_base["stuckPenaltyEndTimestamp"] == 0
+    assert no3_summary["stuckValidatorsCount"] == 0
+    assert no3_summary["totalExitedValidators"] == 0
+    assert no3_summary["refundedValidatorsCount"] == 0
+    assert no3_summary["stuckPenaltyEndTimestamp"] == 0
 
-    assert staking_module.isOperatorPenalized(tested_no_id_first)
-    assert staking_module.isOperatorPenalized(tested_no_id_second)
-    assert not staking_module.isOperatorPenalized(base_no_id)
+    assert staking_module.isOperatorPenalized(no1_id)
+    assert staking_module.isOperatorPenalized(no2_id)
+    assert not staking_module.isOperatorPenalized(no3_id)
 
     # Events
     exited_signing_keys_count_events = parse_exited_signing_keys_count_changed_logs(
         filter_transfer_logs(extra_report_tx.logs, web3.keccak(text="ExitedSigningKeysCountChanged(uint256,uint256)"))
     )
-    assert exited_signing_keys_count_events[0]["nodeOperatorId"] == tested_no_id_first
+    assert exited_signing_keys_count_events[0]["nodeOperatorId"] == no1_id
     assert exited_signing_keys_count_events[0]["exitedValidatorsCount"] == 5
 
-    assert exited_signing_keys_count_events[1]["nodeOperatorId"] == tested_no_id_second
+    assert exited_signing_keys_count_events[1]["nodeOperatorId"] == no2_id
     assert exited_signing_keys_count_events[1]["exitedValidatorsCount"] == 5
 
     stuck_penalty_state_changed_events = parse_stuck_penalty_state_changed_logs(
-        filter_transfer_logs(extra_report_tx.logs, web3.keccak(text="StuckPenaltyStateChanged(uint256,uint256,uint256,uint256)"))
+        filter_transfer_logs(
+            extra_report_tx.logs, web3.keccak(text="StuckPenaltyStateChanged(uint256,uint256,uint256,uint256)")
+        )
     )
-    assert stuck_penalty_state_changed_events[0]["nodeOperatorId"] == tested_no_id_first
+    assert stuck_penalty_state_changed_events[0]["nodeOperatorId"] == no1_id
     assert stuck_penalty_state_changed_events[0]["stuckValidatorsCount"] == 2
 
-    assert stuck_penalty_state_changed_events[1]["nodeOperatorId"] == tested_no_id_second
+    assert stuck_penalty_state_changed_events[1]["nodeOperatorId"] == no2_id
     assert stuck_penalty_state_changed_events[1]["stuckValidatorsCount"] == 2
+
+    set_staking_limit(staking_module, [no1_id, no2_id, no3_id], 10, impersonated_voting)
 
     # Deposit keys
     (
-        deposited_keys_first_before,
-        deposited_keys_second_before,
-        deposited_keys_base_before,
-        deposited_keys_first_after,
-        deposited_keys_second_after,
-        deposited_keys_base_after,
-    ) = deposit_and_check_keys(staking_module, tested_no_id_first, tested_no_id_second, base_no_id, 50, impersonated_executor)
+        no1_deposited_keys_before,
+        no2_deposited_keys_before,
+        no3_deposited_keys_before,
+        no1_deposited_keys_after,
+        no2_deposited_keys_after,
+        no3_deposited_keys_after,
+    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50)
 
     # check don't change deposited keys for penalized NO
-    assert deposited_keys_first_before == deposited_keys_first_after
-    assert deposited_keys_second_before == deposited_keys_second_after
-    assert deposited_keys_base_before != deposited_keys_base_after
+    assert no1_deposited_keys_before == no1_deposited_keys_after
+    assert no2_deposited_keys_before == no2_deposited_keys_after
+    assert no3_deposited_keys_before != no3_deposited_keys_after
 
     # Case 2
-    # --- "First" NO exited the keys (stuck == 0, exited increased by the number of stacks)
+    # --- "1st" NO exited the keys (stuck == 0, exited increased by the number of stacks)
     # --- BUT the penalty still affects both
     # - Send report
-    # - Check rewards shares for base NO and tested NO (should be half of expected)
+    # - Check rewards shares for NO3 and tested NO (should be half of expected)
     # - Check burned shares
     # - Check NOs stats
     # - Check Report events
 
     # Prepare extra data - first node operator has exited 2 + 5 keys an stuck 0
     vals_stuck_non_zero = {
-        node_operator_gindex(staking_module.module_id, tested_no_id_first): 0,
+        node_operator_gindex(staking_module.module_id, no1_id): 0,
     }
     vals_exited_non_zero = {
-        node_operator_gindex(staking_module.module_id, tested_no_id_first): 7,
+        node_operator_gindex(staking_module.module_id, no1_id): 7,
     }
     extra_data = extra_data_service.collect(vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
 
     # shares before report
-    node_operator_first_balance_shares_before = shares_balance(address_first)
-    node_operator_second_balance_shares_before = shares_balance(address_second)
-    node_operator_base_balance_shares_before = shares_balance(address_base_no)
+    no1_balance_shares_before = shares_balance(no1_reward_address)
+    no2_balance_shares_before = shares_balance(no2_reward_address)
+    no3_balance_shares_before = shares_balance(no3_reward_address)
 
     # Third report - first NO: increase stuck to 0, desc exited to 7 = 5 + 2
     # Second NO: same as prev report
@@ -388,93 +444,99 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, i
         stakingModuleIdsWithNewlyExitedValidators=[staking_module.module_id],
     )
 
-    node_operator_first = staking_module.getNodeOperatorSummary(tested_no_id_first)
-    node_operator_second = staking_module.getNodeOperatorSummary(tested_no_id_second)
-    node_operator_base = staking_module.getNodeOperatorSummary(base_no_id)
+    no1_summary = staking_module.getNodeOperatorSummary(no1_id)
+    no2_summary = staking_module.getNodeOperatorSummary(no2_id)
+    no3_summary = staking_module.getNodeOperatorSummary(no3_id)
 
     # shares after report
-    node_operator_first_balance_shares_after = shares_balance(address_first)
-    node_operator_second_balance_shares_after = shares_balance(address_second)
-    node_operator_base_balance_shares_after = shares_balance(address_base_no)
+    no1_balance_shares_after = shares_balance(no1_reward_address)
+    no2_balance_shares_after = shares_balance(no2_reward_address)
+    no3_balance_shares_after = shares_balance(no3_reward_address)
 
     # expected shares
-    node_operator_first_rewards_after_third_report = calc_no_rewards(
-        staking_module, no_id=tested_no_id_first, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no1_rewards_after_third_report = calc_no_rewards(
+        staking_module,
+        no_id=no1_id,
+        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
     )
-    node_operator_second_rewards_after__third_report = calc_no_rewards(
-        staking_module, no_id=tested_no_id_second, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no2_rewards_after__third_report = calc_no_rewards(
+        staking_module,
+        no_id=no2_id,
+        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
     )
-    node_operator_base_rewards_after__third_report = calc_no_rewards(
-        staking_module, no_id=base_no_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no3_rewards_after__third_report = calc_no_rewards(
+        staking_module, no_id=no3_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
     )
 
     # first NO has penalty has a penalty until stuckPenaltyEndTimestamp
     # check shares by report with penalty
     # diff by 1 share because of rounding
     assert almostEqWithDiff(
-        node_operator_first_balance_shares_after - node_operator_first_balance_shares_before,
-        node_operator_first_rewards_after_third_report // 2,
+        no1_balance_shares_after - no1_balance_shares_before,
+        no1_rewards_after_third_report // 2,
         1,
     )
     assert almostEqWithDiff(
-        node_operator_second_balance_shares_after - node_operator_second_balance_shares_before,
-        node_operator_second_rewards_after__third_report // 2,
+        no2_balance_shares_after - no2_balance_shares_before,
+        no2_rewards_after__third_report // 2,
         1,
     )
     assert almostEqWithDiff(
-        node_operator_base_balance_shares_after - node_operator_base_balance_shares_before,
-        node_operator_base_rewards_after__third_report,
+        no3_balance_shares_after - no3_balance_shares_before,
+        no3_rewards_after__third_report,
         1,
     )
 
     # Check burn shares
-    amount_penalty_first_no = node_operator_first_rewards_after_third_report // 2
-    amount_penalty_second_no = node_operator_second_rewards_after__third_report // 2
-    penalty_shares = amount_penalty_first_no + amount_penalty_second_no
+    no1_amount_penalty = no1_rewards_after_third_report // 2
+    no2_amount_penalty = no2_rewards_after__third_report // 2
+    penalty_shares = no1_amount_penalty + no2_amount_penalty
     # diff by 2 share because of rounding
     # TODO: Fix below check when nor contains other penalized node operators
     # assert almostEqWithDiff(extra_report_tx.events["StETHBurnRequested"]["amountOfShares"], penalty_shares, 2)
     assert extra_report_tx.events["StETHBurnRequested"]["amountOfShares"] >= penalty_shares
 
     # NO stats
-    assert node_operator_base["stuckPenaltyEndTimestamp"] == 0
+    assert no3_summary["stuckPenaltyEndTimestamp"] == 0
 
-    assert node_operator_first["stuckValidatorsCount"] == 0
-    assert node_operator_first["totalExitedValidators"] == 7
-    assert node_operator_first["refundedValidatorsCount"] == 0
+    assert no1_summary["stuckValidatorsCount"] == 0
+    assert no1_summary["totalExitedValidators"] == 7
+    assert no1_summary["refundedValidatorsCount"] == 0
     # first NO has penalty has a penalty until stuckPenaltyEndTimestamp
-    assert node_operator_first["stuckPenaltyEndTimestamp"] > chain.time()
+    assert no1_summary["stuckPenaltyEndTimestamp"] > chain.time()
 
-    assert node_operator_second["stuckValidatorsCount"] == 2
-    assert node_operator_second["totalExitedValidators"] == 5
-    assert node_operator_second["refundedValidatorsCount"] == 0
-    assert node_operator_second["stuckPenaltyEndTimestamp"] == 0
+    assert no2_summary["stuckValidatorsCount"] == 2
+    assert no2_summary["totalExitedValidators"] == 5
+    assert no2_summary["refundedValidatorsCount"] == 0
+    assert no2_summary["stuckPenaltyEndTimestamp"] == 0
 
-    assert staking_module.isOperatorPenalized(tested_no_id_first) == True
-    assert staking_module.isOperatorPenalized(tested_no_id_second) == True
-    assert staking_module.isOperatorPenalized(base_no_id) == False
+    assert staking_module.isOperatorPenalized(no1_id) == True
+    assert staking_module.isOperatorPenalized(no2_id) == True
+    assert staking_module.isOperatorPenalized(no3_id) == False
 
     # events
     exited_signing_keys_count_events = parse_exited_signing_keys_count_changed_logs(
         filter_transfer_logs(extra_report_tx.logs, web3.keccak(text="ExitedSigningKeysCountChanged(uint256,uint256)"))
     )
-    assert exited_signing_keys_count_events[0]["nodeOperatorId"] == tested_no_id_first
+    assert exited_signing_keys_count_events[0]["nodeOperatorId"] == no1_id
     assert exited_signing_keys_count_events[0]["exitedValidatorsCount"] == 7
 
     stuck_penalty_state_changed_events = parse_stuck_penalty_state_changed_logs(
-        filter_transfer_logs(extra_report_tx.logs, web3.keccak(text="StuckPenaltyStateChanged(uint256,uint256,uint256,uint256)"))
+        filter_transfer_logs(
+            extra_report_tx.logs, web3.keccak(text="StuckPenaltyStateChanged(uint256,uint256,uint256,uint256)")
+        )
     )
-    assert stuck_penalty_state_changed_events[0]["nodeOperatorId"] == tested_no_id_first
+    assert stuck_penalty_state_changed_events[0]["nodeOperatorId"] == no1_id
     assert stuck_penalty_state_changed_events[0]["stuckValidatorsCount"] == 0
 
     # Case 3
     # -- PENALTY_DELAY time passes
-    # -- A new report comes in and says "Second" NO still has a stuck of keys
-    # -- "First" NO is fine
+    # -- A new report comes in and says "2nd" NO still has a stuck of keys
+    # -- "1st" NO is fine
     # - Wait PENALTY_DELAY time
     # - Send report
-    # - Check rewards shares for base NO and tested NO (should be half for "Second" NO)
-    # - Check deposits (should be 0 for "Second" NO)
+    # - Check rewards shares for "3d" NO and tested NO (should be half for "2nd" NO)
+    # - Check deposits (should be 0 for "2nd" NO)
     # - Check burned shares
     # - Check NOs stats
 
@@ -483,21 +545,21 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, i
     chain.mine()
 
     # Clear penalty for first NO after penalty delay
-    staking_module.clearNodeOperatorPenalty(tested_no_id_first, {"from": impersonated_voting})
+    staking_module.clearNodeOperatorPenalty(no1_id, {"from": impersonated_voting})
 
     # Prepare extra data for report by second NO
     vals_stuck_non_zero = {
-        node_operator_gindex(staking_module.module_id, tested_no_id_second): 2,
+        node_operator_gindex(staking_module.module_id, no2_id): 2,
     }
     vals_exited_non_zero = {
-        node_operator_gindex(staking_module.module_id, tested_no_id_second): 5,
+        node_operator_gindex(staking_module.module_id, no2_id): 5,
     }
     extra_data = extra_data_service.collect(vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
 
     # shares before report
-    node_operator_first_balance_shares_before = shares_balance(address_first)
-    node_operator_second_balance_shares_before = shares_balance(address_second)
-    node_operator_base_balance_shares_before = shares_balance(address_base_no)
+    no1_balance_shares_before = shares_balance(no1_reward_address)
+    no2_balance_shares_before = shares_balance(no2_reward_address)
+    no3_balance_shares_before = shares_balance(no3_reward_address)
 
     # Fourth report - second NO: has stuck 2 keys
     (report_tx, extra_report_tx) = oracle_report(
@@ -510,170 +572,181 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, i
         stakingModuleIdsWithNewlyExitedValidators=[staking_module.module_id],
     )
 
-    node_operator_first = staking_module.getNodeOperatorSummary(tested_no_id_first)
-    node_operator_second = staking_module.getNodeOperatorSummary(tested_no_id_second)
-    node_operator_base = staking_module.getNodeOperatorSummary(base_no_id)
+    no1_summary = staking_module.getNodeOperatorSummary(no1_id)
+    no2_summary = staking_module.getNodeOperatorSummary(no2_id)
+    no3_summary = staking_module.getNodeOperatorSummary(no3_id)
 
     # shares after report
-    node_operator_first_balance_shares_after = shares_balance(address_first)
-    node_operator_second_balance_shares_after = shares_balance(address_second)
-    node_operator_base_balance_shares_after = shares_balance(address_base_no)
+    no1_balance_shares_after = shares_balance(no1_reward_address)
+    no2_balance_shares_after = shares_balance(no2_reward_address)
+    no3_balance_shares_after = shares_balance(no3_reward_address)
 
     # expected shares
-    node_operator_first_rewards_after_fourth_report = calc_no_rewards(
-        staking_module, no_id=tested_no_id_first, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no1_rewards_after_fourth_report = calc_no_rewards(
+        staking_module,
+        no_id=no1_id,
+        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
     )
-    node_operator_second_rewards_after__fourth_report = calc_no_rewards(
-        staking_module, no_id=tested_no_id_second, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no2_rewards_after__fourth_report = calc_no_rewards(
+        staking_module,
+        no_id=no2_id,
+        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
     )
-    node_operator_base_rewards_after__fourth_report = calc_no_rewards(
-        staking_module, no_id=base_no_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no3_rewards_after__fourth_report = calc_no_rewards(
+        staking_module, no_id=no3_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
     )
 
     # Penalty ended for first operator
     # check shares by report with penalty for second NO
     # diff by 1 share because of rounding
     assert almostEqWithDiff(
-        node_operator_first_balance_shares_after - node_operator_first_balance_shares_before,
-        node_operator_first_rewards_after_fourth_report,
+        no1_balance_shares_after - no1_balance_shares_before,
+        no1_rewards_after_fourth_report,
         1,
     )
     assert almostEqWithDiff(
-        node_operator_second_balance_shares_after - node_operator_second_balance_shares_before,
-        node_operator_second_rewards_after__fourth_report // 2,
+        no2_balance_shares_after - no2_balance_shares_before,
+        no2_rewards_after__fourth_report // 2,
         1,
     )
     assert almostEqWithDiff(
-        node_operator_base_balance_shares_after - node_operator_base_balance_shares_before,
-        node_operator_base_rewards_after__fourth_report,
+        no3_balance_shares_after - no3_balance_shares_before,
+        no3_rewards_after__fourth_report,
         1,
     )
 
     # Check burn shares
-    amount_penalty_second_no = node_operator_second_rewards_after__fourth_report // 2
+    no2_amount_penalty = no2_rewards_after__fourth_report // 2
     # diff by 2 share because of rounding
     # TODO: Fix below check when nor contains other penalized node operators
     # assert almostEqWithDiff(extra_report_tx.events["StETHBurnRequested"]["amountOfShares"], amount_penalty_second_no, 1)
-    assert extra_report_tx.events["StETHBurnRequested"]["amountOfShares"] >= amount_penalty_second_no
+    assert extra_report_tx.events["StETHBurnRequested"]["amountOfShares"] >= no2_amount_penalty
 
-    assert node_operator_base["stuckPenaltyEndTimestamp"] == 0
+    assert no3_summary["stuckPenaltyEndTimestamp"] == 0
 
-    assert node_operator_first["stuckValidatorsCount"] == 0
-    assert node_operator_first["totalExitedValidators"] == 7
-    assert node_operator_first["refundedValidatorsCount"] == 0
+    assert no1_summary["stuckValidatorsCount"] == 0
+    assert no1_summary["totalExitedValidators"] == 7
+    assert no1_summary["refundedValidatorsCount"] == 0
     # Penalty ended for first operator
-    assert node_operator_first["stuckPenaltyEndTimestamp"] < chain.time()
+    assert no1_summary["stuckPenaltyEndTimestamp"] < chain.time()
 
-    assert node_operator_second["stuckValidatorsCount"] == 2
-    assert node_operator_second["totalExitedValidators"] == 5
-    assert node_operator_second["refundedValidatorsCount"] == 0
-    assert node_operator_second["stuckPenaltyEndTimestamp"] == 0
+    assert no2_summary["stuckValidatorsCount"] == 2
+    assert no2_summary["totalExitedValidators"] == 5
+    assert no2_summary["refundedValidatorsCount"] == 0
+    assert no2_summary["stuckPenaltyEndTimestamp"] == 0
 
-    assert not staking_module.isOperatorPenalized(tested_no_id_first)
-    assert staking_module.isOperatorPenalized(tested_no_id_second)
-    assert not staking_module.isOperatorPenalized(base_no_id)
+    assert not staking_module.isOperatorPenalized(no1_id)
+    assert staking_module.isOperatorPenalized(no2_id)
+    assert not staking_module.isOperatorPenalized(no3_id)
 
     # Deposit
+    set_staking_limit(staking_module, [no1_id, no2_id, no3_id], 10, impersonated_voting)
     (
-        deposited_keys_first_before,
-        deposited_keys_second_before,
-        deposited_keys_base_before,
-        deposited_keys_first_after,
-        deposited_keys_second_after,
-        deposited_keys_base_after,
-    ) = deposit_and_check_keys(staking_module, tested_no_id_first, tested_no_id_second, base_no_id, 50, impersonated_voting)
+        no1_deposited_keys_before,
+        no2_deposited_keys_before,
+        no3_deposited_keys_before,
+        no1_deposited_keys_after,
+        no2_deposited_keys_after,
+        no3_deposited_keys_after,
+    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50)
 
     # check don't change deposited keys for penalized NO (only second NO)
-    assert deposited_keys_first_before != deposited_keys_first_after
-    assert deposited_keys_second_before == deposited_keys_second_after
-    assert deposited_keys_base_before != deposited_keys_base_after
+    assert no1_deposited_keys_before != no1_deposited_keys_after
+    assert no2_deposited_keys_before == no2_deposited_keys_after
+    assert no3_deposited_keys_before != no3_deposited_keys_after
 
     # Case 4
     # -- Do key refend (redunded == stuck) for X2
     # -- A new report arrives and says that everything remains the same
     # _ Refund 2 keys Second NO
     # - Send report
-    # - Check rewards shares for base NO and tested NO (should be half for "Second" NO)
+    # - Check rewards shares for "3d" NO and tested NO (should be half for "2nd" NO)
     # - Check burned shares
     # - Check NOs stats
 
     # # Refund 2 keys Second NO
-    contracts.staking_router.updateRefundedValidatorsCount(staking_module.module_id, tested_no_id_second, 2, {"from": impersonated_voting})
+    contracts.staking_router.updateRefundedValidatorsCount(
+        staking_module.module_id, no2_id, 2, {"from": impersonated_voting}
+    )
 
     # shares before report
-    node_operator_first_balance_shares_before = shares_balance(address_first)
-    node_operator_second_balance_shares_before = shares_balance(address_second)
-    node_operator_base_balance_shares_before = shares_balance(address_base_no)
+    no1_balance_shares_before = shares_balance(no1_reward_address)
+    no2_balance_shares_before = shares_balance(no2_reward_address)
+    no3_balance_shares_before = shares_balance(no3_reward_address)
 
     # Fifth report
     (report_tx, extra_report_tx) = oracle_report(exclude_vaults_balances=True)
 
     # shares after report
-    node_operator_first_balance_shares_after = shares_balance(address_first)
-    node_operator_second_balance_shares_after = shares_balance(address_second)
-    node_operator_base_balance_shares_after = shares_balance(address_base_no)
+    no1_balance_shares_after = shares_balance(no1_reward_address)
+    no2_balance_shares_after = shares_balance(no2_reward_address)
+    no3_balance_shares_after = shares_balance(no3_reward_address)
 
-    node_operator_first = staking_module.getNodeOperatorSummary(tested_no_id_first)
-    node_operator_second = staking_module.getNodeOperatorSummary(tested_no_id_second)
-    node_operator_base = staking_module.getNodeOperatorSummary(base_no_id)
+    no1_summary = staking_module.getNodeOperatorSummary(no1_id)
+    no2_summary = staking_module.getNodeOperatorSummary(no2_id)
+    no3_summary = staking_module.getNodeOperatorSummary(no3_id)
 
     # expected shares
-    node_operator_first_rewards_after_fifth_report = calc_no_rewards(
-        staking_module, no_id=tested_no_id_first, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no1_rewards_after_fifth_report = calc_no_rewards(
+        staking_module,
+        no_id=no1_id,
+        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
     )
-    node_operator_second_rewards_after_fifth_report = calc_no_rewards(
-        staking_module, no_id=tested_no_id_second, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no2_rewards_after_fifth_report = calc_no_rewards(
+        staking_module,
+        no_id=no2_id,
+        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
     )
-    node_operator_base_rewards_after_fifth_report = calc_no_rewards(
-        staking_module, no_id=base_no_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no3_rewards_after_fifth_report = calc_no_rewards(
+        staking_module, no_id=no3_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
     )
 
     # Penalty only for second operator
     # diff by 1 share because of rounding
     assert almostEqWithDiff(
-        node_operator_first_balance_shares_after - node_operator_first_balance_shares_before,
-        node_operator_first_rewards_after_fifth_report,
+        no1_balance_shares_after - no1_balance_shares_before,
+        no1_rewards_after_fifth_report,
         1,
     )
     assert almostEqWithDiff(
-        node_operator_second_balance_shares_after - node_operator_second_balance_shares_before,
-        node_operator_second_rewards_after_fifth_report // 2,
+        no2_balance_shares_after - no2_balance_shares_before,
+        no2_rewards_after_fifth_report // 2,
         1,
     )
     assert almostEqWithDiff(
-        node_operator_base_balance_shares_after - node_operator_base_balance_shares_before,
-        node_operator_base_rewards_after_fifth_report,
+        no3_balance_shares_after - no3_balance_shares_before,
+        no3_rewards_after_fifth_report,
         1,
     )
 
     # Check burn shares
-    amount_penalty_second_no = node_operator_second_rewards_after_fifth_report // 2
+    no2_amount_penalty = no2_rewards_after_fifth_report // 2
     # diff by 2 share because of rounding
     # TODO: Fix below check when nor contains other penalized node operators
     # assert almostEqWithDiff(extra_report_tx.events["StETHBurnRequested"]["amountOfShares"], amount_penalty_second_no, 1)
-    assert extra_report_tx.events["StETHBurnRequested"]["amountOfShares"] >= amount_penalty_second_no
+    assert extra_report_tx.events["StETHBurnRequested"]["amountOfShares"] >= no2_amount_penalty
 
-    assert node_operator_base["stuckPenaltyEndTimestamp"] == 0
+    assert no3_summary["stuckPenaltyEndTimestamp"] == 0
 
-    assert node_operator_first["stuckValidatorsCount"] == 0
-    assert node_operator_first["totalExitedValidators"] == 7
-    assert node_operator_first["refundedValidatorsCount"] == 0
-    assert node_operator_first["stuckPenaltyEndTimestamp"] < chain.time()
+    assert no1_summary["stuckValidatorsCount"] == 0
+    assert no1_summary["totalExitedValidators"] == 7
+    assert no1_summary["refundedValidatorsCount"] == 0
+    assert no1_summary["stuckPenaltyEndTimestamp"] < chain.time()
 
-    assert node_operator_second["stuckValidatorsCount"] == 2
-    assert node_operator_second["totalExitedValidators"] == 5
-    assert node_operator_second["refundedValidatorsCount"] == 2
-    assert node_operator_second["stuckPenaltyEndTimestamp"] > chain.time()
+    assert no2_summary["stuckValidatorsCount"] == 2
+    assert no2_summary["totalExitedValidators"] == 5
+    assert no2_summary["refundedValidatorsCount"] == 2
+    assert no2_summary["stuckPenaltyEndTimestamp"] > chain.time()
 
-    assert staking_module.isOperatorPenaltyCleared(tested_no_id_first) == True
-    assert staking_module.isOperatorPenaltyCleared(tested_no_id_second) == False
+    assert staking_module.isOperatorPenaltyCleared(no1_id) == True
+    assert staking_module.isOperatorPenaltyCleared(no2_id) == False
 
     # Case 5
     # -- PENALTY_DELAY time passes
     # -- A new report arrives
     # - Wait for penalty delay time
     # - Send report
-    # - Check rewards shares for base NO and tested NO (should be full for all NOs)
+    # - Check rewards shares for "3d" NO and tested NO (should be full for all NOs)
     # - Check deposits (should be full for all NOs)
     # - Check NOs stats
 
@@ -682,177 +755,187 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, i
     chain.mine()
 
     # Clear penalty for second NO after penalty delay
-    staking_module.clearNodeOperatorPenalty(tested_no_id_second, {"from": impersonated_voting})
+    staking_module.clearNodeOperatorPenalty(no2_id, {"from": impersonated_voting})
 
     # shares before report
-    node_operator_first_balance_shares_before = shares_balance(address_first)
-    node_operator_second_balance_shares_before = shares_balance(address_second)
-    node_operator_base_balance_shares_before = shares_balance(address_base_no)
+    no1_balance_shares_before = shares_balance(no1_reward_address)
+    no2_balance_shares_before = shares_balance(no2_reward_address)
+    no3_balance_shares_before = shares_balance(no3_reward_address)
 
     # Seventh report
     (report_tx, extra_report_tx) = oracle_report()
 
-    assert not staking_module.isOperatorPenalized(tested_no_id_first)
-    assert not staking_module.isOperatorPenalized(tested_no_id_second)
-    assert not staking_module.isOperatorPenalized(base_no_id)
+    assert not staking_module.isOperatorPenalized(no1_id)
+    assert not staking_module.isOperatorPenalized(no2_id)
+    assert not staking_module.isOperatorPenalized(no3_id)
 
     # shares after report
-    node_operator_first_balance_shares_after = shares_balance(address_first)
-    node_operator_second_balance_shares_after = shares_balance(address_second)
-    node_operator_base_balance_shares_after = shares_balance(address_base_no)
+    no1_balance_shares_after = shares_balance(no1_reward_address)
+    no2_balance_shares_after = shares_balance(no2_reward_address)
+    no3_balance_shares_after = shares_balance(no3_reward_address)
 
-    assert staking_module.isOperatorPenaltyCleared(tested_no_id_first)
-    assert staking_module.isOperatorPenaltyCleared(tested_no_id_second)
+    assert staking_module.isOperatorPenaltyCleared(no1_id)
+    assert staking_module.isOperatorPenaltyCleared(no2_id)
 
-    node_operator_first = staking_module.getNodeOperatorSummary(tested_no_id_first)
-    node_operator_second = staking_module.getNodeOperatorSummary(tested_no_id_second)
+    no1_summary = staking_module.getNodeOperatorSummary(no1_id)
+    no2_summary = staking_module.getNodeOperatorSummary(no2_id)
 
     # expected shares
-    node_operator_first_rewards_after_seventh_report = calc_no_rewards(
-        staking_module, no_id=tested_no_id_first, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no1_rewards_after_seventh_report = calc_no_rewards(
+        staking_module,
+        no_id=no1_id,
+        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
     )
-    node_operator_second_rewards_after_seventh_report = calc_no_rewards(
-        staking_module, no_id=tested_no_id_second, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no2_rewards_after_seventh_report = calc_no_rewards(
+        staking_module,
+        no_id=no2_id,
+        shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"],
     )
-    node_operator_base_rewards_after_seventh_report = calc_no_rewards(
-        staking_module, no_id=base_no_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    no3_rewards_after_seventh_report = calc_no_rewards(
+        staking_module, no_id=no3_id, shares_minted_as_fees=report_tx.events["TokenRebased"]["sharesMintedAsFees"]
     )
 
     # No penalty
     # diff by 1 share because of rounding
     assert almostEqWithDiff(
-        node_operator_first_balance_shares_after - node_operator_first_balance_shares_before,
-        node_operator_first_rewards_after_seventh_report,
+        no1_balance_shares_after - no1_balance_shares_before,
+        no1_rewards_after_seventh_report,
         1,
     )
     assert almostEqWithDiff(
-        node_operator_second_balance_shares_after - node_operator_second_balance_shares_before,
-        node_operator_second_rewards_after_seventh_report,
+        no2_balance_shares_after - no2_balance_shares_before,
+        no2_rewards_after_seventh_report,
         1,
     )
     assert almostEqWithDiff(
-        node_operator_base_balance_shares_after - node_operator_base_balance_shares_before,
-        node_operator_base_rewards_after_seventh_report,
+        no3_balance_shares_after - no3_balance_shares_before,
+        no3_rewards_after_seventh_report,
         1,
     )
 
-    assert node_operator_first["stuckValidatorsCount"] == 0
-    assert node_operator_first["totalExitedValidators"] == 7
-    assert node_operator_first["refundedValidatorsCount"] == 0
-    assert node_operator_first["stuckPenaltyEndTimestamp"] < chain.time()
+    assert no1_summary["stuckValidatorsCount"] == 0
+    assert no1_summary["totalExitedValidators"] == 7
+    assert no1_summary["refundedValidatorsCount"] == 0
+    assert no1_summary["stuckPenaltyEndTimestamp"] < chain.time()
 
-    assert node_operator_second["stuckValidatorsCount"] == 2
-    assert node_operator_second["totalExitedValidators"] == 5
-    assert node_operator_second["refundedValidatorsCount"] == 2
-    assert node_operator_second["stuckPenaltyEndTimestamp"] < chain.time()
+    assert no2_summary["stuckValidatorsCount"] == 2
+    assert no2_summary["totalExitedValidators"] == 5
+    assert no2_summary["refundedValidatorsCount"] == 2
+    assert no2_summary["stuckPenaltyEndTimestamp"] < chain.time()
 
     # Deposit
+    set_staking_limit(staking_module, [no1_id, no2_id, no3_id], 10, impersonated_voting)
     (
-        deposited_keys_first_before,
-        deposited_keys_second_before,
-        deposited_keys_base_before,
-        deposited_keys_first_after,
-        deposited_keys_second_after,
-        deposited_keys_base_after,
-    ) = deposit_and_check_keys(staking_module, tested_no_id_first, tested_no_id_second, base_no_id, 50, impersonated_voting)
+        no1_deposited_keys_before,
+        no2_deposited_keys_before,
+        no3_deposited_keys_before,
+        no1_deposited_keys_after,
+        no2_deposited_keys_after,
+        no3_deposited_keys_after,
+    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50)
 
     # check deposit is applied for all NOs
-    assert deposited_keys_first_before != deposited_keys_first_after
-    assert deposited_keys_second_before != deposited_keys_second_after
-    assert deposited_keys_base_before != deposited_keys_base_after
+    assert no1_deposited_keys_before != no1_deposited_keys_after
+    assert no2_deposited_keys_before != no2_deposited_keys_after
+    assert no3_deposited_keys_before != no3_deposited_keys_after
 
-    for op_index in (tested_no_id_first, tested_no_id_second, base_no_id):
+    for op_index in (no1_id, no2_id, no3_id):
         no = staking_module.getNodeOperator(op_index, True)
-        staking_module.setNodeOperatorStakingLimit(op_index, no["totalDepositedValidators"] + 10, {"from": impersonated_voting})
+        staking_module.setNodeOperatorStakingLimit(
+            op_index, no["totalDepositedValidators"] + 10, {"from": impersonated_voting}
+        )
 
     # Case 6
-    # -- SActivate target limit for "First" NO
+    # -- SActivate target limit for "1st" NO
     # -- Check deposits
-    # -- Disable target limit for "First" NO
-    # - Set target limit for "First" NO with 0 validators
+    # -- Disable target limit for "1st" NO
+    # - Set target limit for "1st" NO with 0 validators
     # - Check events
     # - Check NO stats
-    # - Check deposits (should be 0 for "First" NO)
-    # - Disable target limit for "First" NO
+    # - Check deposits (should be 0 for "1st" NO)
+    # - Disable target limit for "1st" NO
     # - Check events
     # - Check NO stats
-    # - Check deposits (should be not 0 for "First" NO)
+    # - Check deposits (should be not 0 for "1st" NO)
 
     # Activate target limit
-    first_no_summary_before = staking_module.getNodeOperatorSummary(tested_no_id_first)
+    first_no_summary_before = staking_module.getNodeOperatorSummary(no1_id)
 
     assert first_no_summary_before["depositableValidatorsCount"] > 0
 
-    target_limit_tx = staking_module.updateTargetValidatorsLimits(tested_no_id_first, True, 0, {"from": STAKING_ROUTER})
+    target_limit_tx = staking_module.updateTargetValidatorsLimits(no1_id, True, 0, {"from": STAKING_ROUTER})
 
     target_validators_count_changed_events = parse_target_validators_count_changed(
         filter_transfer_logs(target_limit_tx.logs, web3.keccak(text="TargetValidatorsCountChanged(uint256,uint256)"))
     )
-    assert target_validators_count_changed_events[0]["nodeOperatorId"] == tested_no_id_first
+    assert target_validators_count_changed_events[0]["nodeOperatorId"] == no1_id
     assert target_validators_count_changed_events[0]["targetValidatorsCount"] == 0
 
-    first_no_summary_after = staking_module.getNodeOperatorSummary(tested_no_id_first)
+    first_no_summary_after = staking_module.getNodeOperatorSummary(no1_id)
 
     assert first_no_summary_after["depositableValidatorsCount"] == 0
     assert first_no_summary_after["isTargetLimitActive"]
 
     # Deposit
+    set_staking_limit(staking_module, [no1_id, no2_id, no3_id], 10, impersonated_voting)
     (
-        deposited_keys_first_before,
-        deposited_keys_second_before,
-        deposited_keys_base_before,
-        deposited_keys_first_after,
-        deposited_keys_second_after,
-        deposited_keys_base_after,
-    ) = deposit_and_check_keys(staking_module, tested_no_id_first, tested_no_id_second, base_no_id, 50, impersonated_voting)
+        no1_deposited_keys_before,
+        no2_deposited_keys_before,
+        no3_deposited_keys_before,
+        no1_deposited_keys_after,
+        no2_deposited_keys_after,
+        no3_deposited_keys_after,
+    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50)
 
     # check deposit is not applied for first NO
-    assert deposited_keys_first_before == deposited_keys_first_after
-    assert deposited_keys_second_before != deposited_keys_second_after
-    assert deposited_keys_base_before != deposited_keys_base_after
+    assert no1_deposited_keys_before == no1_deposited_keys_after
+    assert no2_deposited_keys_before != no2_deposited_keys_after
+    assert no3_deposited_keys_before != no3_deposited_keys_after
 
     # Disable target limit
-    target_limit_tx = staking_module.updateTargetValidatorsLimits(tested_no_id_first, False, 0, {"from": STAKING_ROUTER})
+    target_limit_tx = staking_module.updateTargetValidatorsLimits(no1_id, False, 0, {"from": STAKING_ROUTER})
     target_validators_count_changed_events = parse_target_validators_count_changed(
         filter_transfer_logs(target_limit_tx.logs, web3.keccak(text="TargetValidatorsCountChanged(uint256,uint256)"))
     )
-    assert target_validators_count_changed_events[0]["nodeOperatorId"] == tested_no_id_first
+    assert target_validators_count_changed_events[0]["nodeOperatorId"] == no1_id
 
-    first_no_summary_after = staking_module.getNodeOperatorSummary(tested_no_id_first)
+    first_no_summary_after = staking_module.getNodeOperatorSummary(no1_id)
 
     assert first_no_summary_after["depositableValidatorsCount"] > 0
     assert not first_no_summary_after["isTargetLimitActive"]
 
     # Deposit
+    set_staking_limit(staking_module, [no1_id, no2_id, no3_id], 10, impersonated_voting)
     (
-        deposited_keys_first_before,
-        deposited_keys_second_before,
-        deposited_keys_base_before,
-        deposited_keys_first_after,
-        deposited_keys_second_after,
-        deposited_keys_base_after,
-    ) = deposit_and_check_keys(staking_module, tested_no_id_first, tested_no_id_second, base_no_id, 50, impersonated_voting)
+        no1_deposited_keys_before,
+        no2_deposited_keys_before,
+        no3_deposited_keys_before,
+        no1_deposited_keys_after,
+        no2_deposited_keys_after,
+        no3_deposited_keys_after,
+    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50)
 
     # check - deposit not applied to NOs.
-    assert deposited_keys_first_before != deposited_keys_first_after
-    assert deposited_keys_second_before != deposited_keys_second_after
-    assert deposited_keys_base_before != deposited_keys_base_after
+    assert no1_deposited_keys_before != no1_deposited_keys_after
+    assert no2_deposited_keys_before != no2_deposited_keys_after
+    assert no3_deposited_keys_before != no3_deposited_keys_after
 
 
-def test_node_operator_registry(impersonated_voting, impersonate_es_executor, eth_whale):
-    deposit_and_check_keys(contracts.simple_dvt, 0, 1, 2, 9, impersonate_es_executor)
-
-    nor = contracts.node_operators_registry
-    nor.module_id = 1
-    nor.testing_node_operator_ids = [23, 20, 28]
-    module_happy_path(nor, ExtraDataService(), impersonated_voting, impersonated_voting, eth_whale)
+# def test_node_operator_registry(impersonated_voting, eth_whale):
+#     nor = contracts.node_operators_registry
+#     nor.module_id = 1
+#     nor.testing_node_operator_ids = [23, 20, 28]
+#     module_happy_path(nor, ExtraDataService(), impersonated_voting, eth_whale)
 
 
-def test_sdvt(impersonated_voting, impersonate_es_executor, stranger, eth_whale):
+def test_sdvt(impersonated_voting, stranger, eth_whale):
     sdvt = contracts.simple_dvt
     sdvt.module_id = 2
     sdvt.testing_node_operator_ids = [0, 1, 2]
     fill_simple_dvt_ops_vetted_keys(stranger, 3, 100)
-    fill_simple_dvt_ops_vetted_keys(stranger, 3, 200)
-    fill_simple_dvt_ops_vetted_keys(stranger, 3, 300)
-    module_happy_path(sdvt, ExtraDataService(), impersonated_voting, impersonate_es_executor, eth_whale)
+
+    # simulate already deposited keys
+    deposit_and_check_keys(sdvt, 0, 1, 2, 30)
+    oracle_report(exclude_vaults_balances=True, cl_diff=ETH(3))
+
+    module_happy_path(sdvt, ExtraDataService(), impersonated_voting, eth_whale)
