@@ -12,16 +12,16 @@ MIN_OP_KEYS_CNT = 10
 MIN_OPS_CNT = 3
 
 
-def get_operator_name(n: int):
-    return f"Name {n}"
+def get_operator_name(id: int, group: int = 0):
+    return f"OP-{group}-{id}"
 
 
-def get_operator_address(id: int):
-    return f"0x111{id:037x}"
+def get_operator_address(id: int, group: int = 0):
+    return f"0x11{group:05x}{id:033x}"
 
 
-def get_managers_address(id: int):
-    return f"0x222{id:037x}"
+def get_managers_address(id: int, group: int = 0):
+    return f"0x22{group:05x}{id:033x}"
 
 
 def fill_simple_dvt_ops(stranger, min_ops_cnt=MIN_OPS_CNT):
@@ -127,8 +127,8 @@ def simple_dvt_add_node_operators(simple_dvt, stranger, input_params=[]):
     node_operators_count_before = simple_dvt.getNodeOperatorsCount()
 
     # input_params = [
-    #     (OPERATOR_NAMES[0], REWARD_ADDRESSES[0], MANAGERS[0]),
-    #     (OPERATOR_NAMES[1], REWARD_ADDRESSES[1], MANAGERS[1]),
+    #     (get_operator_address(0), get_operator_address(0), get_managers_address(0)),
+    #     (get_operator_address(1), get_operator_address(1), get_managers_address(1)),
     # ]
     if len(input_params) > 0:
         calldata = _encode_calldata(

@@ -13,24 +13,15 @@ from utils.config import (
     EASYTRACK_SIMPLE_DVT_UPDATE_TARGET_VALIDATOR_LIMITS_FACTORY,
     EASYTRACK_SIMPLE_DVT_CHANGE_NODE_OPERATOR_MANAGERS_FACTORY,
 )
-from utils.test.simple_dvt_helpers import simple_dvt_add_keys, simple_dvt_add_node_operators
+from utils.test.simple_dvt_helpers import (
+    get_managers_address,
+    get_operator_address,
+    get_operator_name,
+    simple_dvt_add_keys,
+    simple_dvt_add_node_operators,
+)
 from utils.test.easy_track_helpers import _encode_calldata
 
-NODE_OPERATOR_ID = 0
-NEW_OPERATOR_NAMES = [
-    "New Name 1",
-    "New Name 2",
-]
-
-NEW_REWARD_ADDRESSES = [
-    "0x1110000000000000000000000000000000001111",
-    "0x1110000000000000000000000000000000002222",
-]
-
-NEW_MANAGERS = [
-    "0x1110000000000000000000000000000011111111",
-    "0x1110000000000000000000000000000022222222",
-]
 
 MANAGE_SIGNING_KEYS = "0x75abc64490e17b40ea1e66691c3eb493647b24430b358bd87ec3e5127f1621ee"
 
@@ -38,8 +29,9 @@ MANAGE_SIGNING_KEYS = "0x75abc64490e17b40ea1e66691c3eb493647b24430b358bd87ec3e51
 def test_increase_nop_staking_limit(
     stranger,
 ):
+    no_id = 0
     factory = interface.IncreaseNodeOperatorStakingLimit(EASYTRACK_INCREASE_NOP_STAKING_LIMIT_FACTORY)
-    node_operator = contracts.node_operators_registry.getNodeOperator(NODE_OPERATOR_ID, False)
+    node_operator = contracts.node_operators_registry.getNodeOperator(no_id, False)
     trusted_caller = accounts.at(node_operator["rewardAddress"], force=True)
     new_staking_limit = node_operator["totalVettedValidators"] + 1
 
@@ -47,14 +39,14 @@ def test_increase_nop_staking_limit(
 
     if node_operator["totalAddedValidators"] < new_staking_limit:
         contracts.node_operators_registry.addSigningKeys(
-            NODE_OPERATOR_ID,
+            no_id,
             1,
             "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aa0101",
             "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a1",
             {"from": contracts.voting},
         )
 
-    calldata = _encode_calldata("(uint256,uint256)", [NODE_OPERATOR_ID, new_staking_limit])
+    calldata = _encode_calldata("(uint256,uint256)", [no_id, new_staking_limit])
 
     tx = contracts.easy_track.createMotion(factory, calldata, {"from": trusted_caller})
 
@@ -70,7 +62,7 @@ def test_increase_nop_staking_limit(
         {"from": stranger},
     )
 
-    updated_node_operator = contracts.node_operators_registry.getNodeOperator(NODE_OPERATOR_ID, False)
+    updated_node_operator = contracts.node_operators_registry.getNodeOperator(no_id, False)
 
     assert updated_node_operator["totalVettedValidators"] == new_staking_limit
 
@@ -79,8 +71,8 @@ def test_simple_dvt_add_node_operators(
     stranger,
 ):
     input_params = [
-        (NEW_OPERATOR_NAMES[0], NEW_REWARD_ADDRESSES[0], NEW_MANAGERS[0]),
-        (NEW_OPERATOR_NAMES[1], NEW_REWARD_ADDRESSES[1], NEW_MANAGERS[1]),
+        (get_operator_name(0, 1), get_operator_address(0, 1), get_managers_address(0, 1)),
+        (get_operator_name(1, 1), get_operator_address(1, 1), get_managers_address(1, 1)),
     ]
 
     (node_operators_count_before, node_operator_count_after) = simple_dvt_add_node_operators(
@@ -94,7 +86,7 @@ def test_simple_dvt_set_vetted_validators_limits(
     stranger,
 ):
     input_params = [
-        (NEW_OPERATOR_NAMES[0], NEW_REWARD_ADDRESSES[0], NEW_MANAGERS[0]),
+        (get_operator_name(0, 1), get_operator_address(0, 1), get_managers_address(0, 1)),
     ]
 
     (_, node_operator_count_after) = simple_dvt_add_node_operators(contracts.simple_dvt, stranger, input_params)
@@ -136,9 +128,9 @@ def test_simple_dvt_set_vetted_validators_limits(
 def test_simple_dvt_activate_deactivate_operators(
     stranger,
 ):
-    op_name = NEW_OPERATOR_NAMES[0]
-    op_addr = NEW_REWARD_ADDRESSES[0]
-    op_manager = NEW_MANAGERS[0]
+    op_name = get_operator_name(0, 1)
+    op_addr = get_operator_address(0, 1)
+    op_manager = get_managers_address(0, 1)
 
     (_, node_operator_count_after) = simple_dvt_add_node_operators(
         contracts.simple_dvt,
@@ -223,11 +215,11 @@ def test_simple_dvt_activate_deactivate_operators(
 def test_simple_dvt_set_operator_name_reward_address(
     stranger,
 ):
-    op_name = NEW_OPERATOR_NAMES[0]
-    op_addr = NEW_REWARD_ADDRESSES[0]
-    op_manager = NEW_MANAGERS[0]
-    op_name_upd = NEW_OPERATOR_NAMES[1]
-    op_addr_upd = NEW_REWARD_ADDRESSES[1]
+    op_name = get_operator_name(0, 1)
+    op_addr = get_operator_address(0, 1)
+    op_manager = get_managers_address(0, 1)
+    op_name_upd = get_operator_name(1, 1)
+    op_addr_upd = get_operator_address(1, 1)
 
     (_, node_operator_count_after) = simple_dvt_add_node_operators(
         contracts.simple_dvt,
@@ -284,9 +276,9 @@ def test_simple_dvt_set_operator_name_reward_address(
 def test_simple_dvt_set_operator_target_limit(
     stranger,
 ):
-    op_name = NEW_OPERATOR_NAMES[0]
-    op_addr = NEW_REWARD_ADDRESSES[0]
-    op_manager = NEW_MANAGERS[0]
+    op_name = get_operator_name(0, 1)
+    op_addr = get_operator_address(0, 1)
+    op_manager = get_managers_address(0, 1)
 
     target_limit = 2
 
@@ -335,10 +327,10 @@ def test_simple_dvt_set_operator_target_limit(
 def test_simple_dvt_change_operator_manager(
     stranger,
 ):
-    op_name = NEW_OPERATOR_NAMES[0]
-    op_addr = NEW_REWARD_ADDRESSES[0]
-    op_manager = NEW_MANAGERS[0]
-    op_manager_upd = NEW_MANAGERS[1]
+    op_name = get_operator_name(0, 1)
+    op_addr = get_operator_address(0, 1)
+    op_manager = get_managers_address(0, 1)
+    op_manager_upd = get_managers_address(1, 1)
 
     (_, node_operator_count_after) = simple_dvt_add_node_operators(
         contracts.simple_dvt,
