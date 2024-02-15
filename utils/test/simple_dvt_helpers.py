@@ -163,7 +163,7 @@ def simple_dvt_add_keys(simple_dvt, node_operator_id, keys_count=1):
 
     total_signing_keys_count_before = simple_dvt.getTotalSigningKeyCount(node_operator_id)
     unused_signing_keys_count_before = simple_dvt.getUnusedSigningKeyCount(node_operator_id)
-    node_operator_before = simple_dvt.getNodeOperator(node_operator_id, True)
+    node_operator_before = simple_dvt.getNodeOperator(node_operator_id, False)
 
     tx = simple_dvt.addSigningKeys(
         node_operator_id,

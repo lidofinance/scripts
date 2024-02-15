@@ -252,7 +252,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         # VI. Update Oracle Report Sanity Checker parameters
         #
         (
-            "19)  Grant MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE to the Lido DAO Agent on OracleReportSanityChecker contract",
+            "19) Grant MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE to the Lido DAO Agent on OracleReportSanityChecker contract",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -264,7 +264,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "20)  Grant MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE to the Lido DAO Agent on OracleReportSanityChecker contract",
+            "20) Grant MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE to the Lido DAO Agent on OracleReportSanityChecker contract",
             agent_forward(
                 [
                     encode_oz_grant_role(

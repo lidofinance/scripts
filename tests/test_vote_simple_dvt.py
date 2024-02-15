@@ -6,13 +6,17 @@ Tests for voting 23/01/2023
 from typing import List
 from scripts.vote_simple_dvt import start_vote
 from brownie import interface, ZERO_ADDRESS, reverts, web3, accounts, convert, network
+from tests.regression.test_permissions import active_aragon_roles, protocol_permissions
 from utils.test.event_validators.aragon import validate_app_update_event, validate_push_to_repo_event
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.staking_router import StakingModuleItem, validate_staking_module_added_event
+from utils.test.simple_dvt_helpers import fill_simple_dvt_ops, get_managers_address
 from utils.test.tx_tracing_helpers import *
-from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS, network_name
-
-from configs.config_mainnet import (
+from utils.config import (
+    contracts,
+    LDO_HOLDER_ADDRESS_FOR_TESTS,
+    network_name,
+    SIMPLE_DVT,
     SIMPLE_DVT_IMPL,
     SIMPLE_DVT_ARAGON_APP_NAME,
     SIMPLE_DVT_ARAGON_APP_ID,
@@ -72,7 +76,7 @@ simple_dvt_content_uri = (
 simple_dvt_semantic_version = (1, 0, 0)
 
 
-def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_decoding, ldo_holder):
+def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_decoding, ldo_holder, protocol_permissions):
     simple_dvt = contracts.simple_dvt
     kernel = contracts.kernel
     burner = contracts.burner
@@ -414,6 +418,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     validate_max_extra_data_list_items_count_event(evs[20], 4)
     validate_max_operators_per_extra_data_item_count_event(evs[21], 50)
 
+    validate_manage_keys_role_members(stranger, protocol_permissions)
+
 
 def has_permission(permission: Permission, how: List[int]) -> bool:
     return contracts.acl.hasPermission["address,address,bytes32,uint[]"](
@@ -475,3 +481,60 @@ def validate_simple_dvt_intialize_event(event: EventDict):
     assert event["StuckPenaltyDelayChanged"]["stuckPenaltyDelay"] == SIMPLE_DVT_MODULE_STUCK_PENALTY_DELAY
     assert event["LocatorContractSet"]["locatorAddress"] == contracts.lido_locator.address
     assert event["StakingModuleTypeSet"]["moduleType"] == SIMPLE_DVT_MODULE_TYPE
+
+
+def validate_manage_keys_role_members(stranger, protocol_permissions):
+    # add 5 NOs
+    fill_simple_dvt_ops(stranger, 5)
+    # collect managers
+    sdvt_managers = [get_managers_address(i) for i in range(5)]
+    aragon_acl_active_permissions = active_aragon_roles(protocol_permissions)
+
+    for contract_address, permissions_config in protocol_permissions.items():
+        if contract_address != SIMPLE_DVT:
+            continue
+
+        print("Contract: {0} {1}".format(contract_address, permissions_config["contract_name"]))
+
+        abi_roles_list = [
+            method for method in permissions_config["contract"].signatures.keys() if method.endswith("_ROLE")
+        ]
+
+        # add MANAGE_SIGNING_KEYS to the list of roles
+        abi_roles_list.append("MANAGE_SIGNING_KEYS")
+        # add new managers to expected list of role members
+        permissions_config["roles"]["MANAGE_SIGNING_KEYS"].extend(sdvt_managers)
+
+        roles = permissions_config["roles"]
+
+        assert len(abi_roles_list) == len(
+            roles.keys()
+        ), "Contract {} . number of roles doesn't match. expected {} actual {}".format(
+            permissions_config["contract_name"], abi_roles_list, roles.keys()
+        )
+        for role in set(permissions_config["roles"].keys()):
+            assert role in abi_roles_list, "no {} described for contract {}".format(
+                role, permissions_config["contract_name"]
+            )
+
+        for role, holders in permissions_config["roles"].items():
+            current_holders = (
+                aragon_acl_active_permissions[contract_address][role]
+                if role in aragon_acl_active_permissions[contract_address]
+                else []
+            )
+            assert len(current_holders) == len(
+                holders
+            ), "number of {} role holders in contract {} mismatched expected {} , actual {} ".format(
+                role, permissions_config["contract_name"], holders, current_holders
+            )
+
+            for holder in holders:
+                assert holder in current_holders, "Entity {} has no role {} at {}".format(
+                    holder, role, permissions_config["contract_name"]
+                )
+
+            for holder in current_holders:
+                assert holder in holders, "Unexpected entity {} has role {} at {}".format(
+                    holder, role, permissions_config["contract_name"]
+                )

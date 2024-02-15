@@ -1,6 +1,7 @@
 """
 Tests for permissions setup
 """
+
 import pytest
 import os
 
@@ -165,8 +166,8 @@ def protocol_permissions():
                 "ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE": [],
                 "SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE": [],
                 "MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_ROLE": [],
-                "MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE": [],
-                "MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE": [],
+                "MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE": [contracts.agent],
+                "MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE": [contracts.agent],
                 "REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE": [],
                 "MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE": [],
             },
@@ -333,6 +334,11 @@ def test_protocol_permissions(protocol_permissions):
                     if role in aragon_acl_active_permissions[contract_address]
                     else []
                 )
+
+                # temp ugly hack to exclude parametrized role members (OP managers) for SIMPLE_DVT
+                if contract_address == SIMPLE_DVT and role == "MANAGE_SIGNING_KEYS":
+                    current_holders = [h for h in current_holders if h == EASYTRACK_EVMSCRIPT_EXECUTOR]
+
                 assert len(current_holders) == len(
                     holders
                 ), "number of {} role holders in contract {} mismatched expected {} , actual {} ".format(
