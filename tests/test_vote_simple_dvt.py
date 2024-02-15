@@ -114,9 +114,8 @@ def test_vote(
     assert kernel.getApp(kernel.APP_BASES_NAMESPACE(), SIMPLE_DVT_ARAGON_APP_ID) == ZERO_ADDRESS
     assert not burner.hasRole(kernel.APP_BASES_NAMESPACE(), simple_dvt.address)
 
+    # check resolve failure
     assert not network.web3.ens.resolve(simple_dvt_repo_ens)
-
-    # TODO: check absence of repo ?
 
     evm_script_factories_before = easy_track.getEVMScriptFactories()
 
@@ -300,8 +299,7 @@ def test_vote(
     metadata = find_metadata_by_vote_id(vote_id)
     print("metadata", metadata)
 
-    # TODO fix description
-    # assert get_lido_vote_cid_from_str(metadata) == "bafkreibugpzhp7nexxg7c6jpmmszikvaj2vscxw426zewa6uyv3z5y6ak4"
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreietqdaevzjnhog4ui4a23iswak2haom4zfobeueefy3lmwkxnr2hq"
 
     display_voting_events(vote_tx)
 
