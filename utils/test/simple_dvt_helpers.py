@@ -5,7 +5,7 @@ from utils.config import (
     EASYTRACK_SIMPLE_DVT_ADD_NODE_OPERATORS_FACTORY,
     EASYTRACK_SIMPLE_DVT_SET_VETTED_VALIDATORS_LIMITS_FACTORY,
 )
-from utils.test.easy_track_helpers import _encode_calldata
+from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
 from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
 
 MIN_OP_KEYS_CNT = 10
@@ -66,21 +66,7 @@ def fill_simple_dvt_ops_vetted_keys(stranger, min_ops_cnt=MIN_OPS_CNT, min_keys_
     if len(input_params) > 0:
         calldata = _encode_calldata("((uint256,uint256)[])", [input_params])
 
-        motions_before = contracts.easy_track.getMotions()
-
-        tx = contracts.easy_track.createMotion(factory, calldata, {"from": trusted_caller})
-        motions = contracts.easy_track.getMotions()
-
-        assert len(motions) == len(motions_before) + 1
-
-        chain.sleep(60 * 60 * 24 * 3)
-        chain.mine()
-
-        contracts.easy_track.enactMotion(
-            motions[-1][0],
-            tx.events["MotionCreated"]["_evmScriptCallData"],
-            {"from": stranger},
-        )
+        create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
 
     for no_id in range(0, min_ops_cnt):
         no = contracts.simple_dvt.getNodeOperator(no_id, False)
@@ -92,31 +78,16 @@ def simple_dvt_vet_keys(operator_id, stranger):
     factory = interface.SetVettedValidatorsLimits(EASYTRACK_SIMPLE_DVT_SET_VETTED_VALIDATORS_LIMITS_FACTORY)
     trusted_caller = accounts.at(EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER, force=True)
 
-    simple_dvt, easy_track = contracts.simple_dvt, contracts.easy_track
-
-    operator = simple_dvt.getNodeOperator(operator_id, False)
+    operator = contracts.simple_dvt.getNodeOperator(operator_id, False)
 
     if operator["totalVettedValidators"] == operator["totalAddedValidators"]:
         return
 
     calldata = _encode_calldata("((uint256,uint256)[])", [[(operator_id, operator["totalAddedValidators"])]])
-    motions_before = easy_track.getMotions()
 
-    tx = easy_track.createMotion(factory, calldata, {"from": trusted_caller})
-    motions = easy_track.getMotions()
+    create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
 
-    assert len(motions) == len(motions_before) + 1
-
-    chain.sleep(60 * 60 * 24 * 3)
-    chain.mine()
-
-    easy_track.enactMotion(
-        motions[-1][0],
-        tx.events["MotionCreated"]["_evmScriptCallData"],
-        {"from": stranger},
-    )
-
-    operator = simple_dvt.getNodeOperator(operator_id, False)
+    operator = contracts.simple_dvt.getNodeOperator(operator_id, False)
     assert operator["totalVettedValidators"] == operator["totalAddedValidators"]
 
 
@@ -125,6 +96,7 @@ def simple_dvt_add_node_operators(simple_dvt, stranger, input_params=[]):
     trusted_caller = accounts.at(EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER, force=True)
 
     node_operators_count_before = simple_dvt.getNodeOperatorsCount()
+    node_operators_count_after = node_operators_count_before
 
     # input_params = [
     #     (get_operator_address(0), get_operator_address(0), get_managers_address(0)),
@@ -138,23 +110,10 @@ def simple_dvt_add_node_operators(simple_dvt, stranger, input_params=[]):
                 input_params,
             ],
         )
-        motions_before = contracts.easy_track.getMotions()
+        create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
+        node_operators_count_after = simple_dvt.getNodeOperatorsCount()
 
-        tx = contracts.easy_track.createMotion(factory, calldata, {"from": trusted_caller})
-
-        motions = contracts.easy_track.getMotions()
-        assert len(motions) == len(motions_before) + 1
-
-        chain.sleep(60 * 60 * 24 * 3)
-        chain.mine()
-
-        contracts.easy_track.enactMotion(
-            motions[-1][0],
-            tx.events["MotionCreated"]["_evmScriptCallData"],
-            {"from": stranger},
-        )
-
-    return (node_operators_count_before, simple_dvt.getNodeOperatorsCount())
+    return (node_operators_count_before, node_operators_count_after)
 
 
 def simple_dvt_add_keys(simple_dvt, node_operator_id, keys_count=1):

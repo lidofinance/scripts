@@ -20,7 +20,7 @@ from utils.test.simple_dvt_helpers import (
     simple_dvt_add_keys,
     simple_dvt_add_node_operators,
 )
-from utils.test.easy_track_helpers import _encode_calldata
+from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
 
 
 MANAGE_SIGNING_KEYS = "0x75abc64490e17b40ea1e66691c3eb493647b24430b358bd87ec3e5127f1621ee"
@@ -35,8 +35,6 @@ def test_increase_nop_staking_limit(
     trusted_caller = accounts.at(node_operator["rewardAddress"], force=True)
     new_staking_limit = node_operator["totalVettedValidators"] + 1
 
-    motions_before = contracts.easy_track.getMotions()
-
     if node_operator["totalAddedValidators"] < new_staking_limit:
         contracts.node_operators_registry.addSigningKeys(
             no_id,
@@ -48,19 +46,7 @@ def test_increase_nop_staking_limit(
 
     calldata = _encode_calldata("(uint256,uint256)", [no_id, new_staking_limit])
 
-    tx = contracts.easy_track.createMotion(factory, calldata, {"from": trusted_caller})
-
-    motions = contracts.easy_track.getMotions()
-    assert len(motions) == len(motions_before) + 1
-
-    chain.sleep(60 * 60 * 24 * 3)
-    chain.mine()
-
-    contracts.easy_track.enactMotion(
-        motions[-1][0],
-        tx.events["MotionCreated"]["_evmScriptCallData"],
-        {"from": stranger},
-    )
+    create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
 
     updated_node_operator = contracts.node_operators_registry.getNodeOperator(no_id, False)
 
@@ -104,21 +90,7 @@ def test_simple_dvt_set_vetted_validators_limits(
 
     calldata = _encode_calldata("((uint256,uint256)[])", [[(no_id, new_staking_limit)]])
 
-    motions_before = contracts.easy_track.getMotions()
-
-    tx = contracts.easy_track.createMotion(factory, calldata, {"from": trusted_caller})
-
-    motions = contracts.easy_track.getMotions()
-    assert len(motions) == len(motions_before) + 1
-
-    chain.sleep(60 * 60 * 24 * 3)
-    chain.mine()
-
-    contracts.easy_track.enactMotion(
-        motions[-1][0],
-        tx.events["MotionCreated"]["_evmScriptCallData"],
-        {"from": stranger},
-    )
+    create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
 
     updated_node_operator = contracts.simple_dvt.getNodeOperator(no_id, False)
 
@@ -158,21 +130,7 @@ def test_simple_dvt_activate_deactivate_operators(
     # deactivating
     calldata = _encode_calldata("((uint256,address)[])", [[(no_id, op_manager)]])
 
-    motions_before = contracts.easy_track.getMotions()
-
-    tx = contracts.easy_track.createMotion(factory_deactivate, calldata, {"from": trusted_caller})
-
-    motions = contracts.easy_track.getMotions()
-    assert len(motions) == len(motions_before) + 1
-
-    chain.sleep(60 * 60 * 24 * 3)
-    chain.mine()
-
-    contracts.easy_track.enactMotion(
-        motions[-1][0],
-        tx.events["MotionCreated"]["_evmScriptCallData"],
-        {"from": stranger},
-    )
+    create_and_enact_motion(contracts.easy_track, trusted_caller, factory_deactivate, calldata, stranger)
 
     is_active = contracts.simple_dvt.getNodeOperatorIsActive(no_id)
     is_manager = contracts.simple_dvt.canPerform(
@@ -186,21 +144,7 @@ def test_simple_dvt_activate_deactivate_operators(
     # activating
     # calldata = _encode_calldata("((uint256,address)[])", [[(no_id, op_manager)]])
 
-    motions_before = contracts.easy_track.getMotions()
-
-    tx = contracts.easy_track.createMotion(factory_activate, calldata, {"from": trusted_caller})
-
-    motions = contracts.easy_track.getMotions()
-    assert len(motions) == len(motions_before) + 1
-
-    chain.sleep(60 * 60 * 24 * 3)
-    chain.mine()
-
-    contracts.easy_track.enactMotion(
-        motions[-1][0],
-        tx.events["MotionCreated"]["_evmScriptCallData"],
-        {"from": stranger},
-    )
+    create_and_enact_motion(contracts.easy_track, trusted_caller, factory_activate, calldata, stranger)
 
     is_active = contracts.simple_dvt.getNodeOperatorIsActive(no_id)
     is_manager = contracts.simple_dvt.canPerform(
@@ -245,27 +189,8 @@ def test_simple_dvt_set_operator_name_reward_address(
     calldata_name = _encode_calldata("((uint256,string)[])", [[(no_id, op_name_upd)]])
     calldata_addr = _encode_calldata("((uint256,address)[])", [[(no_id, op_addr_upd)]])
 
-    motions_before = contracts.easy_track.getMotions()
-
-    tx1 = contracts.easy_track.createMotion(factory_name, calldata_name, {"from": trusted_caller})
-    tx2 = contracts.easy_track.createMotion(factory_addr, calldata_addr, {"from": trusted_caller})
-
-    motions = contracts.easy_track.getMotions()
-    assert len(motions) == len(motions_before) + 2
-
-    chain.sleep(60 * 60 * 24 * 3)
-    chain.mine()
-
-    contracts.easy_track.enactMotion(
-        motions[-2][0],
-        tx1.events["MotionCreated"]["_evmScriptCallData"],
-        {"from": stranger},
-    )
-    contracts.easy_track.enactMotion(
-        motions[-1][0],
-        tx2.events["MotionCreated"]["_evmScriptCallData"],
-        {"from": stranger},
-    )
+    create_and_enact_motion(contracts.easy_track, trusted_caller, factory_name, calldata_name, stranger)
+    create_and_enact_motion(contracts.easy_track, trusted_caller, factory_addr, calldata_addr, stranger)
 
     node_operator = contracts.simple_dvt.getNodeOperator(no_id, True)
 
@@ -302,21 +227,7 @@ def test_simple_dvt_set_operator_target_limit(
 
     calldata = _encode_calldata("((uint256,bool,uint256)[])", [[(no_id, True, target_limit)]])
 
-    motions_before = contracts.easy_track.getMotions()
-
-    tx = contracts.easy_track.createMotion(factory, calldata, {"from": trusted_caller})
-
-    motions = contracts.easy_track.getMotions()
-    assert len(motions) == len(motions_before) + 1
-
-    chain.sleep(60 * 60 * 24 * 3)
-    chain.mine()
-
-    contracts.easy_track.enactMotion(
-        motions[-1][0],
-        tx.events["MotionCreated"]["_evmScriptCallData"],
-        {"from": stranger},
-    )
+    create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
 
     no_summary = contracts.simple_dvt.getNodeOperatorSummary(no_id)
 
@@ -357,21 +268,7 @@ def test_simple_dvt_change_operator_manager(
 
     calldata = _encode_calldata("((uint256,address,address)[])", [[(no_id, op_manager, op_manager_upd)]])
 
-    motions_before = contracts.easy_track.getMotions()
-
-    tx = contracts.easy_track.createMotion(factory, calldata, {"from": trusted_caller})
-
-    motions = contracts.easy_track.getMotions()
-    assert len(motions) == len(motions_before) + 1
-
-    chain.sleep(60 * 60 * 24 * 3)
-    chain.mine()
-
-    contracts.easy_track.enactMotion(
-        motions[-1][0],
-        tx.events["MotionCreated"]["_evmScriptCallData"],
-        {"from": stranger},
-    )
+    create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
 
     is_manager = contracts.simple_dvt.canPerform(
         op_manager,
