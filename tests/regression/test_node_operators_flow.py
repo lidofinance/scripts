@@ -7,7 +7,7 @@ from utils.test.keys_helpers import (
     parse_pubkeys_batch,
     parse_signatures_batch,
     random_pubkeys_batch,
-    random_signatures_batch
+    random_signatures_batch,
 )
 from utils.test.node_operators_helpers import (
     assert_signing_key,

@@ -134,7 +134,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     penalized_node_operator_ids_nor = []
 
     for i in range(nor_operators_count):
-        no = contracts.node_operators_registry.getNodeOperator(i, True)
+        no = contracts.node_operators_registry.getNodeOperator(i, False)
         is_node_operator_penalized = contracts.node_operators_registry.isOperatorPenalized(i)
         if is_node_operator_penalized:
             penalized_node_operator_ids_nor.append(i)
@@ -143,7 +143,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     penalized_node_operator_ids_sdvt = []
     for i in range(sdvt_operators_count):
-        no = contracts.simple_dvt.getNodeOperator(i, True)
+        no = contracts.simple_dvt.getNodeOperator(i, False)
         is_node_operator_penalized = contracts.simple_dvt.isOperatorPenalized(i)
         if is_node_operator_penalized:
             penalized_node_operator_ids_sdvt.append(i)

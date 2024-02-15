@@ -45,7 +45,7 @@ def calc_no_rewards(nor, no_id, minted_shares):
 
 def set_staking_limit(nor, ops_ids, keys_count, impersonated_voting):
     for op_index in ops_ids:
-        no = nor.getNodeOperator(op_index, True)
+        no = nor.getNodeOperator(op_index, False)
         if not no["active"]:
             continue
         cur_deposited_keys = no["totalDepositedValidators"]
@@ -756,7 +756,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert no3_deposited_keys_before != no3_deposited_keys_after
 
     for op_index in (no1_id, no2_id, no3_id):
-        no = staking_module.getNodeOperator(op_index, True)
+        no = staking_module.getNodeOperator(op_index, False)
         staking_module.setNodeOperatorStakingLimit(
             op_index, no["totalDepositedValidators"] + 10, {"from": impersonated_voting}
         )

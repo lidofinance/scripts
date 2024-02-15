@@ -11,7 +11,7 @@ def extra_data_service():
 
 
 def get_exited_count(node_operator_id):
-    no = contracts.node_operators_registry.getNodeOperator(node_operator_id, True)
+    no = contracts.node_operators_registry.getNodeOperator(node_operator_id, False)
     return no["totalExitedValidators"]
 
 

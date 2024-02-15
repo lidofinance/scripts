@@ -177,8 +177,8 @@ def test_add_node_operators():
 
 
 def test_node_operators_activations():
-    assert contracts.simple_dvt.getNodeOperator(1, True)[0]
-    assert contracts.simple_dvt.getNodeOperator(2, True)[0]
+    assert contracts.simple_dvt.getNodeOperator(1, False)[0]
+    assert contracts.simple_dvt.getNodeOperator(2, False)[0]
 
     deactivate_node_operator(
         [
@@ -193,8 +193,8 @@ def test_node_operators_activations():
         ]
     )
 
-    assert not contracts.simple_dvt.getNodeOperator(1, True)[0]
-    assert not contracts.simple_dvt.getNodeOperator(2, True)[0]
+    assert not contracts.simple_dvt.getNodeOperator(1, False)[0]
+    assert not contracts.simple_dvt.getNodeOperator(2, False)[0]
 
     # ActivateNodeOperators
     activate_node_operators(
@@ -210,13 +210,13 @@ def test_node_operators_activations():
         ]
     )
 
-    assert contracts.simple_dvt.getNodeOperator(1, True)[0]
-    assert contracts.simple_dvt.getNodeOperator(2, True)[0]
+    assert contracts.simple_dvt.getNodeOperator(1, False)[0]
+    assert contracts.simple_dvt.getNodeOperator(2, False)[0]
 
 
 def test_set_vetted_validators_limits():
-    op_1 = contracts.simple_dvt.getNodeOperator(1, True)
-    op_2 = contracts.simple_dvt.getNodeOperator(2, True)
+    op_1 = contracts.simple_dvt.getNodeOperator(1, False)
+    op_2 = contracts.simple_dvt.getNodeOperator(2, False)
 
     new_vetted_keys_1 = random.randint(0, op_1[5])
     new_vetted_keys_2 = random.randint(0, op_2[5])
@@ -234,8 +234,8 @@ def test_set_vetted_validators_limits():
         ]
     )
 
-    assert contracts.simple_dvt.getNodeOperator(1, True)[3] == new_vetted_keys_1
-    assert contracts.simple_dvt.getNodeOperator(2, True)[3] == new_vetted_keys_2
+    assert contracts.simple_dvt.getNodeOperator(1, False)[3] == new_vetted_keys_1
+    assert contracts.simple_dvt.getNodeOperator(2, False)[3] == new_vetted_keys_2
 
 
 def test_set_node_operator_names():
@@ -281,8 +281,8 @@ def test_set_node_operator_reward_addresses():
         ]
     )
 
-    assert contracts.simple_dvt.getNodeOperator(1, True)[2] == address_1
-    assert contracts.simple_dvt.getNodeOperator(2, True)[2] == address_2
+    assert contracts.simple_dvt.getNodeOperator(1, False)[2] == address_1
+    assert contracts.simple_dvt.getNodeOperator(2, False)[2] == address_2
 
 
 def test_update_target_validator_limits():
@@ -302,8 +302,8 @@ def test_update_target_validator_limits():
         ]
     )
 
-    # assert contracts.simple_dvt.getNodeOperator(1, True)[1] == address_1
-    # assert contracts.simple_dvt.getNodeOperator(2, True)[2] == address_2
+    # assert contracts.simple_dvt.getNodeOperator(1, False)[1] == address_1
+    # assert contracts.simple_dvt.getNodeOperator(2, False)[2] == address_2
 
 
 def test_transfer_node_operator_manager():
