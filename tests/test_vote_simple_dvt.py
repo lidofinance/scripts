@@ -3,14 +3,24 @@ Tests for voting 23/01/2023
 
 """
 
+import pytest
 from typing import List
 from scripts.vote_simple_dvt import start_vote
 from brownie import interface, ZERO_ADDRESS, reverts, web3, accounts, convert, network
 from tests.regression.test_permissions import active_aragon_roles, protocol_permissions
+from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.event_validators.aragon import validate_app_update_event, validate_push_to_repo_event
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.staking_router import StakingModuleItem, validate_staking_module_added_event
-from utils.test.simple_dvt_helpers import fill_simple_dvt_ops, get_managers_address
+from utils.test.oracle_report_helpers import oracle_report
+from utils.test.extra_data import ExtraDataService
+from utils.test.oracle_report_helpers import oracle_report
+from utils.test.simple_dvt_helpers import (
+    fill_simple_dvt_ops,
+    fill_simple_dvt_ops_vetted_keys,
+    get_managers_address,
+    get_operator_address,
+)
 from utils.test.tx_tracing_helpers import *
 from utils.config import (
     contracts,
@@ -76,7 +86,21 @@ simple_dvt_content_uri = (
 simple_dvt_semantic_version = (1, 0, 0)
 
 
-def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_decoding, ldo_holder, protocol_permissions):
+@pytest.fixture()
+def extra_data_service():
+    return ExtraDataService()
+
+
+def test_vote(
+    helpers,
+    accounts,
+    vote_ids_from_env,
+    stranger,
+    bypass_events_decoding,
+    ldo_holder,
+    protocol_permissions,
+    extra_data_service,
+):
     simple_dvt = contracts.simple_dvt
     kernel = contracts.kernel
     burner = contracts.burner
@@ -418,6 +442,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, bypass_events_deco
     validate_max_extra_data_list_items_count_event(evs[20], 4)
     validate_max_operators_per_extra_data_item_count_event(evs[21], 50)
 
+    # scenario tests
+    validate_accounting_oracle_reports(simple_dvt, extra_data_service, stranger)
     validate_manage_keys_role_members(stranger, protocol_permissions)
 
 
@@ -483,10 +509,77 @@ def validate_simple_dvt_intialize_event(event: EventDict):
     assert event["StakingModuleTypeSet"]["moduleType"] == SIMPLE_DVT_MODULE_TYPE
 
 
+def get_exited_stuck_count(module, node_operator_id):
+    no = module.getNodeOperator(node_operator_id, False)
+
+    new_exited = no["totalExitedValidators"]
+    if new_exited < no["totalDepositedValidators"]:
+        new_exited += 1
+
+    new_stuck = 1
+    if new_exited + new_stuck > no["totalDepositedValidators"]:
+        new_stuck = 0
+    return (new_exited, new_stuck)
+
+
+def validate_accounting_oracle_reports(sdvt, extra_data_service, stranger):
+    module_id_sdvt = 2
+
+    # report when SimpleDVT has no node operators
+    oracle_report()
+
+    # add 1 NO and 5 keys
+    fill_simple_dvt_ops_vetted_keys(stranger, 1, 5)
+    no_id = 0
+    no_reward_address = get_operator_address(no_id)
+
+    # report when SimpleDVT has just added, but not deposited keys
+    oracle_report()
+
+    # fill the deposit buffer for 5 keys
+    fill_deposit_buffer(5)
+    contracts.lido.deposit(5, module_id_sdvt, "0x", {"from": contracts.deposit_security_module.address})
+    summary = sdvt.getNodeOperatorSummary(no_id)
+    assert summary["totalDepositedValidators"] == 5
+    assert summary["totalExitedValidators"] == 0
+    assert summary["stuckValidatorsCount"] == 0
+
+    # report when SimpleDVT has some deposited keys
+    no_balance_before = contracts.lido.balanceOf(no_reward_address)
+    oracle_report()
+    reward1 = contracts.lido.balanceOf(no_reward_address) - no_balance_before
+    assert reward1 > 0
+
+    # report 1 exited and 1 stuck keys
+    item_count = 2
+    extra_data = extra_data_service.collect(
+        {(module_id_sdvt, 0): 1},  # stuck
+        {(module_id_sdvt, 0): 1},  # exited
+        item_count,
+        1,  # 1 item
+    )
+
+    no_balance_before = contracts.lido.balanceOf(no_reward_address)
+    oracle_report(
+        extraDataFormat=1,
+        extraDataHash=extra_data.data_hash,
+        extraDataItemsCount=item_count,
+        extraDataList=extra_data.extra_data,
+    )
+    summary = sdvt.getNodeOperatorSummary(no_id)
+    assert summary["totalDepositedValidators"] == 5
+    assert summary["totalExitedValidators"] == 1
+    assert summary["stuckValidatorsCount"] == 1
+
+    reward2 = contracts.lido.balanceOf(no_reward_address) - no_balance_before
+    # expected reward is less than 1/2 of the previous reward (because of 1 exited and 1 stuck)
+    assert reward2 > 0 and reward2 < reward1 // 2
+
+
 def validate_manage_keys_role_members(stranger, protocol_permissions):
     # add 5 NOs
     fill_simple_dvt_ops(stranger, 5)
-    # collect managers
+    # collect 5 expected managers
     sdvt_managers = [get_managers_address(i) for i in range(5)]
     aragon_acl_active_permissions = active_aragon_roles(protocol_permissions)
 
