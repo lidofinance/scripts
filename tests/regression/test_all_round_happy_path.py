@@ -4,6 +4,7 @@ from brownie import ZERO_ADDRESS, chain
 from utils.test.oracle_report_helpers import oracle_report
 from utils.test.helpers import ETH, almostEqEth
 from utils.config import contracts
+from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
 
 
 def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
@@ -32,8 +33,10 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     assert steth_balance_before_submit == 0
 
-    # Submitting ETH
+    # ensure SimpleDVT has some keys to deposit
+    fill_simple_dvt_ops_vetted_keys(stranger, 3, 5)
 
+    # Submitting ETH
     stakeLimitInfo = contracts.lido.getStakeLimitFullInfo()
     growthPerBlock = stakeLimitInfo["maxStakeLimit"] // stakeLimitInfo["maxStakeLimitGrowthBlocks"]
 

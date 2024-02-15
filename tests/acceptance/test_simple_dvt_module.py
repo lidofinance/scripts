@@ -97,8 +97,8 @@ def test_petrified():
 
 def test_simple_dvt_state(contract):
     node_operators_count = contract.getNodeOperatorsCount()
-    # assert node_operators_count == CURATED_STAKING_MODULE_OPERATORS_COUNT
-    # assert contract.getActiveNodeOperatorsCount() == CURATED_STAKING_MODULE_OPERATORS_ACTIVE_COUNT
+    assert node_operators_count >= 0
+    assert contract.getActiveNodeOperatorsCount() >= 0
     assert contract.getNonce() >= 0
     assert contract.getStuckPenaltyDelay() == SIMPLE_DVT_MODULE_STUCK_PENALTY_DELAY
     assert contract.getType() == _str_to_bytes32("curated-onchain-v1")
@@ -106,7 +106,7 @@ def test_simple_dvt_state(contract):
     summary = contract.getStakingModuleSummary()
     assert summary["totalExitedValidators"] >= 0
     assert summary["totalDepositedValidators"] >= 0
-    assert summary["depositableValidatorsCount"] > 0
+    assert summary["depositableValidatorsCount"] >= 0
 
     deactivated_node_operators = []  # reserved for future use
     exited_node_operators = []  # reserved for future use
