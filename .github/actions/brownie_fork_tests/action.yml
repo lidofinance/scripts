@@ -46,10 +46,6 @@ runs:
       shell: bash
       run: poetry install
 
-    - name: Update brownie
-      shell: bash
-      run: poetry update eth-brownie
-
     - name: Install ganache
       shell: bash
       run: yarn install --frozen-lockfile
