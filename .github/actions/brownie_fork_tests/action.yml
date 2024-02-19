@@ -46,6 +46,10 @@ runs:
       shell: bash
       run: poetry install
 
+    - name: Install py-solc-ast
+      shell: bash
+      run: poetry run pip install py-solc-ast==1.2.10
+
     - name: Install ganache
       shell: bash
       run: yarn install --frozen-lockfile
