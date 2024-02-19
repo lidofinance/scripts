@@ -9,7 +9,7 @@ homepage = "https://mainnet.lido.fi"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.11"
-eth-brownie = "~1.19.3"
+eth-brownie = "1.19.4"
 avotes-parser-core = "~0.5.4"
 setuptools = "~65.5.1"
 hexbytes = "0.2.3"
