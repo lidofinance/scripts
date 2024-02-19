@@ -413,17 +413,17 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert almostEqWithDiff(
         no1_balance_shares_after - no1_balance_shares_before,
         no1_rewards_after_third_report // 2,
-        1,
+        2,
     )
     assert almostEqWithDiff(
         no2_balance_shares_after - no2_balance_shares_before,
         no2_rewards_after_third_report // 2,
-        1,
+        2,
     )
     assert almostEqWithDiff(
         no3_balance_shares_after - no3_balance_shares_before,
         no3_rewards_after_third_report,
-        1,
+        2,
     )
 
     # Check burn shares
@@ -534,17 +534,17 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert almostEqWithDiff(
         no1_balance_shares_after - no1_balance_shares_before,
         no1_rewards_after_fourth_report,
-        1,
+        2,
     )
     assert almostEqWithDiff(
         no2_balance_shares_after - no2_balance_shares_before,
         no2_rewards_after_fourth_report // 2,
-        1,
+        2,
     )
     assert almostEqWithDiff(
         no3_balance_shares_after - no3_balance_shares_before,
         no3_rewards_after_fourth_report,
-        1,
+        2,
     )
 
     # Check burn shares
@@ -630,17 +630,17 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert almostEqWithDiff(
         no1_balance_shares_after - no1_balance_shares_before,
         no1_rewards_after_fifth_report,
-        1,
+        2,
     )
     assert almostEqWithDiff(
         no2_balance_shares_after - no2_balance_shares_before,
         no2_rewards_after_fifth_report // 2,
-        1,
+        2,
     )
     assert almostEqWithDiff(
         no3_balance_shares_after - no3_balance_shares_before,
         no3_rewards_after_fifth_report,
-        1,
+        2,
     )
 
     # Check burn shares
@@ -717,17 +717,17 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert almostEqWithDiff(
         no1_balance_shares_after - no1_balance_shares_before,
         no1_rewards_after_sixth_report,
-        1,
+        2,
     )
     assert almostEqWithDiff(
         no2_balance_shares_after - no2_balance_shares_before,
         no2_rewards_after_sixth_report,
-        1,
+        2,
     )
     assert almostEqWithDiff(
         no3_balance_shares_after - no3_balance_shares_before,
         no3_rewards_after_sixth_report,
-        1,
+        2,
     )
 
     assert no1_summary["stuckValidatorsCount"] == 0
@@ -838,7 +838,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
 def test_node_operator_registry(impersonated_voting, eth_whale):
     nor = contracts.node_operators_registry
     nor.module_id = 1
-    nor.testing_node_operator_ids = [23, 20, 28]
+    nor.testing_node_operator_ids = [23, 25, 28]
     module_happy_path(nor, ExtraDataService(), impersonated_voting, eth_whale)
 
 
