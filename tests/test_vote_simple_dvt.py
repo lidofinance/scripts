@@ -299,7 +299,7 @@ def test_vote(
     metadata = find_metadata_by_vote_id(vote_id)
     print("metadata", metadata)
 
-    assert get_lido_vote_cid_from_str(metadata) == "bafkreid4xlf2dawv3wrm62n44uckq6k6bxt332wz2hi65qbq6qirczv2ey"
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreihibltsumjlg3zog4nzuq4rw5jfbwnbxtsgtixbsod3kmk7r5bd6u"
 
     display_voting_events(vote_tx)
 

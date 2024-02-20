@@ -84,12 +84,12 @@ All audit reports can be found here: [Simple DVT app](https://github.com/lidofin
 
 The proposed actions include:
 
-1. **Create new Aragon repo for Simple DVT app:** Establish a dedicated repository with the implementation address 0x8538930c385C0438A357d2c25CB3eAD95Ab6D8ed. View the content at the URI: ipfs:[QmaSSujHCGcnFuetAPGwVW5BegaMBvn5SCsgi3LSfvraSo](https://ipfs.io/ipfs/QmaSSujHCGcnFuetAPGwVW5BegaMBvn5SCsgi3LSfvraSo/).  Item 1.
-2. **Setup and Initialize Simple DVT as a new Aragon App:** Model after the [NodeOperatorsRegistry's contract](https://etherscan.io/address/0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5) implementation for the Simple DVT app. Items 2, 3.
-3. **Integrate Simple DVT Module with StakingRouter:** Add the Simple DVT module to [the StakingRouter](https://etherscan.io/address/0xFdDf38947aFB03C621C71b06C9C70bce73f12999). Items 4-6.
-4. **Grant permissions to** [EasyTrackEVMScriptExecutor](https://etherscan.io/address/0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977): Enabling operational adjustments within the Simple DVT module via Easy Track. Items 7-10.
-5. **Attach new Easy Track EVM Script Factories for the Simple DVT Module to Easy Track registry:** Equip the [Simple DVT Module Committee Multisig](https://app.safe.global/settings/setup?safe=eth:0x08637515E85A4633E23dfc7861e2A9f53af640f7) ([forum proposal](https://research.lido.fi/t/simple-dvt-module-committee-multisig/6520)) with the ability to manage Node Operators: adding, activating, deactivating, and adjusting validator limits and details. All factories addresses could be found on the [forum proposal](https://research.lido.fi/t/simple-dvt-release/6613). Items 11-18.
-6. **Adjust Oracle Report Sanity Checker Parameters:** Modify parameters to support several-module reporting, enhancing the system's reporting capabilities. Items 19-22.
+1. Create new Aragon repo for Simple DVT app: Establish a dedicated repository with the implementation address 0x8538930c385C0438A357d2c25CB3eAD95Ab6D8ed. View the content at the URI: ipfs:[QmaSSujHCGcnFuetAPGwVW5BegaMBvn5SCsgi3LSfvraSo](https://ipfs.io/ipfs/QmaSSujHCGcnFuetAPGwVW5BegaMBvn5SCsgi3LSfvraSo/).  Item 1.
+2. Setup and Initialize Simple DVT as a new Aragon App: Model after the [NodeOperatorsRegistry's contract](https://etherscan.io/address/0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5) implementation for the Simple DVT app. Items 2, 3.
+3. Integrate Simple DVT Module with StakingRouter: Add the Simple DVT module to [the StakingRouter](https://etherscan.io/address/0xFdDf38947aFB03C621C71b06C9C70bce73f12999) capped at 0.5% of total Lido stake, with 10% fee split as 2% to DAO Treasury / 8% to the Simple DVT module. Items 4-6.
+4. Grant permissions to [EasyTrackEVMScriptExecutor](https://etherscan.io/address/0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977): Enabling operational adjustments within the Simple DVT module via Easy Track. Items 7-10.
+5. Attach new Easy Track EVM Script Factories for the Simple DVT Module to Easy Track registry: Equip the [Simple DVT Module Committee Multisig](https://app.safe.global/settings/setup?safe=eth:0x08637515E85A4633E23dfc7861e2A9f53af640f7) ([forum proposal](https://research.lido.fi/t/simple-dvt-module-committee-multisig/6520)) with the ability to manage Node Operators: adding, activating, deactivating, and adjusting validator limits and details. All factories addresses could be found on the [forum proposal](https://research.lido.fi/t/simple-dvt-release/6613). Items 11-18.
+6. Adjust Oracle Report Sanity Checker Parameters: Modify parameters to support several-module reporting, enhancing the system's reporting capabilities. Items 19-22.
 """
 
 
