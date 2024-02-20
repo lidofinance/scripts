@@ -592,13 +592,13 @@ test = ["hypothesis (>=4.18.0,<5)", "pytest (>=6.2.5,<7)", "pytest-xdist", "tox 
 
 [[package]]
 name = "eth-brownie"
-version = "1.19.5"
+version = "1.19.4"
 description = "A Python framework for Ethereum smart contract deployment, testing and interaction."
 optional = false
 python-versions = ">=3.7,<4"
 files = [
-    {file = "eth-brownie-1.19.5.tar.gz", hash = "sha256:9ab89df37d5f3b14a63da4c61f84ef71b96792741953149549598bfa69811f7d"},
-    {file = "eth_brownie-1.19.5-py3-none-any.whl", hash = "sha256:bc5c281df50de9a7a04ba0f3b72430150d29b2c38eec8a82f34cc96ad0b6e67f"},
+    {file = "eth-brownie-1.19.4.tar.gz", hash = "sha256:3e47fbd28f8cf239a108b7fd13bbce35d98b71ef90ad102b8348b6d55cb174f4"},
+    {file = "eth_brownie-1.19.4-py3-none-any.whl", hash = "sha256:81a9549351213a83f0807c370d8c4f6ac3c269cf694340c6cf2a0fef5375e9cd"},
 ]
 
 [package.dependencies]
@@ -2380,4 +2380,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "f47bbdb22efd2f6439ba59ce9f79fc1169ca2544e56b84d4ee17e2c6dfbd45a6"
+content-hash = "f92f81e7e2e1c7d336cc3e96fa1f47b46c57431fcaa5f899314fe075c8b69bfd"

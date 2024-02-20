@@ -85,7 +85,7 @@ def test_request_withdrawals_wsteth(wq: Contract, wsteth_whale: Account):
 
 def test_wq_prefinalize(wq: Contract, steth_whale: Account):
     with reverts(encode_error("EmptyBatches()")):
-        wq.prefinalize.transact([], 1, {"from": wq.address})
+        wq.prefinalize.transact(False, [], 1, {"from": wq.address})
 
     last_finalized_id = wq.getLastFinalizedRequestId()  # 0 after enacment
     fill_wq(wq, steth_whale, count=3)
