@@ -23,6 +23,8 @@ Voting 20/02/2024.
 20. Grant `MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE` to the Lido DAO Agent on `OracleReportSanityChecker` contract
 22. Set `maxAccountingExtraDataListItemsCount` sanity checker parameter to 4
 22. Set `maxNodeOperatorsPerExtraDataItemCount` sanity checker parameter to 50
+
+Vote passed & executed on Feb-23-2024 03:02:35 PM +UTC, block 19291056.
 """
 
 import time
