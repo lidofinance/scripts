@@ -5,7 +5,7 @@ Tests for voting 23/01/2023
 
 import pytest
 from typing import List
-from scripts.vote_simple_dvt import start_vote
+from archive.scripts.vote_2024_02_23 import start_vote
 from brownie import interface, ZERO_ADDRESS, reverts, web3, accounts, convert, network
 from tests.regression.test_permissions import active_aragon_roles, protocol_permissions
 from utils.test.deposits_helpers import fill_deposit_buffer
