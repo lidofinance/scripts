@@ -133,6 +133,10 @@ class ContractsLazyLoader:
         return interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
 
     @property
+    def simple_dvt(self) -> interface.SimpleDVT:
+        return interface.SimpleDVT(SIMPLE_DVT)
+
+    @property
     def legacy_oracle(self) -> interface.LegacyOracle:
         return interface.LegacyOracle(LEGACY_ORACLE)
 
@@ -197,6 +201,10 @@ class ContractsLazyLoader:
         return interface.Kernel(ARAGON_KERNEL)
 
     @property
+    def apm_registry(self) -> interface.APMRegistry:
+        return interface.APMRegistry(APM_REGISTRY)
+
+    @property
     def lido_app_repo(self) -> interface.Repo:
         return interface.Repo(LIDO_REPO)
 
@@ -227,7 +235,7 @@ class ContractsLazyLoader:
     @property
     def usdt_token(self) -> interface.ERC20:
         return interface.ERC20(USDT_TOKEN)
-    
+
     @property
     def usdc_token(self) -> interface.ERC20:
         return interface.ERC20(USDC_TOKEN)
@@ -263,6 +271,14 @@ class ContractsLazyLoader:
     @property
     def anchor_vault_proxy(self) -> interface.InsuranceFund:
         return interface.AnchorVaultProxy(ANCHOR_VAULT_PROXY)
+
+    @property
+    def obol_lido_split_factory(self) -> interface.ObolLidoSplitFactory:
+        return interface.ObolLidoSplitFactory(OBOL_LIDO_SPLIT_FACTORY)
+
+    @property
+    def split_main(self) -> interface.SplitMain:
+        return interface.SplitMain(SPLIT_MAIN)
 
 
 def __getattr__(name: str) -> Any:

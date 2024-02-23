@@ -9,6 +9,7 @@ from utils.test.oracle_report_helpers import (
     reach_consensus,
     prepare_exit_bus_report,
 )
+from utils.test.simple_dvt_helpers import simple_dvt_add_node_operators, simple_dvt_add_keys, simple_dvt_vet_keys
 
 
 @dataclasses.dataclass
@@ -130,22 +131,33 @@ def test_send_validator_to_exit(helpers, web3):
     assert processing_state_after.requests_submitted == processing_state_before.requests_submitted + 1
 
 
-def test_send_multiple_validators_to_exit(helpers, web3):
+def test_send_multiple_validators_to_exit(helpers, web3, stranger):
     """
-    The same as test above but with multiple validators on different node operators
+    The same as test above but with multiple validators on different node operators and modules
     """
+    # Fill SDVT
+    simple_dvt_add_node_operators(
+        contracts.simple_dvt, stranger, [("SDVT Operator", f"0xab{'1' * 38}", f"0xcd{'1' * 38}")]
+    )
+    simple_dvt_add_keys(contracts.simple_dvt, 0, 2)
+    simple_dvt_vet_keys(0, stranger)
+
     first_no_global_index = (first_module_id, first_no_id) = (1, 37)
     second_no_global_index = (second_module_id, second_no_id) = (1, 38)
+    third_no_global_index = (third_module_id, third_no_id) = (2, 0)
     first_validator_id = 2
     second_validator_id = 3
+    third_validator_id = 0
     first_validator_key = contracts.node_operators_registry.getSigningKey(first_no_id, first_validator_id)[0]
     second_validator_key = contracts.node_operators_registry.getSigningKey(second_no_id, second_validator_id)[0]
+    third_validator_key = contracts.simple_dvt.getSigningKey(third_no_id, third_validator_id)[0]
     first_validator = LidoValidator(first_validator_id, first_validator_key)
     second_validator = LidoValidator(second_validator_id, second_validator_key)
+    third_validator = LidoValidator(third_validator_id, third_validator_key)
 
     ref_slot = _wait_for_next_ref_slot()
     report, report_hash = prepare_exit_bus_report(
-        [(first_no_global_index, first_validator), (second_no_global_index, second_validator)], ref_slot
+        [(first_no_global_index, first_validator), (second_no_global_index, second_validator), (third_no_global_index, third_validator)], ref_slot
     )
     report_hash_hex = HexString(report_hash, "bytes")
 
@@ -158,6 +170,9 @@ def test_send_multiple_validators_to_exit(helpers, web3):
     )
     second_last_requested_validator_index_before = (
         contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(second_module_id, [second_no_id])
+    )
+    third_last_requested_validator_index_before = (
+        contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(third_module_id, [third_no_id])
     )
 
     tx = send_report_with_consensus(ref_slot, report, report_hash)
@@ -172,11 +187,14 @@ def test_send_multiple_validators_to_exit(helpers, web3):
     second_last_requested_validator_index_after = contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(
         second_module_id, [second_no_id]
     )
+    third_last_requested_validator_index_after = contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(
+        third_module_id, [third_no_id]
+    )
 
     # Asserts
     helpers.assert_single_event_named("ProcessingStarted", tx, {"refSlot": ref_slot, "hash": report_hash_hex})
     events = helpers.filter_events_from(tx.receiver, tx.events["ValidatorExitRequest"])
-    assert len(events) == 2
+    assert len(events) == 3
     assert dict(events[0]) == {
         "stakingModuleId": first_module_id,
         "nodeOperatorId": first_no_id,
@@ -191,13 +209,22 @@ def test_send_multiple_validators_to_exit(helpers, web3):
         "validatorPubkey": second_validator_key,
         "timestamp": web3.eth.get_block(web3.eth.block_number).timestamp,
     }
+    assert dict(events[2]) == {
+        "stakingModuleId": third_module_id,
+        "nodeOperatorId": third_no_id,
+        "validatorIndex": third_validator_id,
+        "validatorPubkey": third_validator_key,
+        "timestamp": web3.eth.get_block(web3.eth.block_number).timestamp,
+    }
 
-    assert total_requests_after == total_requests_before + 2
+    assert total_requests_after == total_requests_before + 3
 
     assert first_last_requested_validator_index_before == (-1,)
     assert second_last_requested_validator_index_before == (-1,)
+    assert third_last_requested_validator_index_before == (-1,)
     assert first_last_requested_validator_index_after == (first_validator_id,)
     assert second_last_requested_validator_index_after == (second_validator_id,)
+    assert third_last_requested_validator_index_after == (third_validator_id,)
     assert last_processing_ref_slot_after != last_processing_ref_slot_before
     assert last_processing_ref_slot_after == ref_slot
 
@@ -205,5 +232,5 @@ def test_send_multiple_validators_to_exit(helpers, web3):
     assert processing_state_after.data_hash == report_hash_hex
     assert processing_state_after.data_submitted
     assert processing_state_after.data_format == contracts.validators_exit_bus_oracle.DATA_FORMAT_LIST()
-    assert processing_state_after.requests_count == processing_state_before.requests_count + 2
-    assert processing_state_after.requests_submitted == processing_state_before.requests_submitted + 2
+    assert processing_state_after.requests_count == processing_state_before.requests_count + 3
+    assert processing_state_after.requests_submitted == processing_state_before.requests_submitted + 3

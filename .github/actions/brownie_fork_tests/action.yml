@@ -77,4 +77,3 @@ runs:
       env:
         WEB3_INFURA_PROJECT_ID: ${{ inputs.infura }}
         ETHERSCAN_TOKEN: ${{ inputs.etherscan }}
-        REPORT_AFTER_VOTE: 1

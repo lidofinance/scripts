@@ -6,6 +6,8 @@ __pycache__
 build/
 reports/
 dist/
+.env
+_ganache
 
 # PyCharm
 .idea

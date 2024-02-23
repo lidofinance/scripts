@@ -7,6 +7,6 @@
   "readme": "README.md",
   "homepage": "https://mainnet.lido.fi",
   "dependencies": {
-    "ganache": "=7.6.0"
+    "@lido-js/ganache": "=7.9.2-lido"
   }
 }

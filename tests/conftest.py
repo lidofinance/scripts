@@ -213,6 +213,7 @@ def parse_events_from_local_abi():
         "LidoExecutionLayerRewardsVault": [EXECUTION_LAYER_REWARDS_VAULT],
         "Kernel": [ARAGON_KERNEL_IMPL],
         "NodeOperatorsRegistry": [NODE_OPERATORS_REGISTRY, NODE_OPERATORS_REGISTRY_IMPL],
+        "SimpleDVT": [SIMPLE_DVT, SIMPLE_DVT_IMPL],
         "OracleDaemonConfig": [ORACLE_DAEMON_CONFIG],
         "OracleReportSanityChecker": [ORACLE_REPORT_SANITY_CHECKER],
         "Repo": [ARAGON_COMMON_REPO_IMPL],

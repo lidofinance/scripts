@@ -1,10 +1,14 @@
 import pytest
-import random
-import textwrap
 from web3 import Web3
 from brownie import Wei, convert
 
 from utils.config import contracts
+from utils.test.keys_helpers import (
+    parse_pubkeys_batch,
+    parse_signatures_batch,
+    random_pubkeys_batch,
+    random_signatures_batch,
+)
 from utils.test.node_operators_helpers import (
     assert_signing_key,
     assert_node_operators,
@@ -12,8 +16,6 @@ from utils.test.node_operators_helpers import (
     assert_node_operator_added_event,
 )
 
-PUBKEY_LENGTH = 48
-SIGNATURE_LENGTH = 96
 DEPOSIT_SIZE = Wei("32 ether")
 
 
@@ -103,7 +105,6 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
     )
     assert_node_operator_added_event(tx, new_node_operator_id, new_node_operator_name, reward_address, staking_limit=0)
 
-
     keys_count = 13
     pubkeys_batch = random_pubkeys_batch(keys_count)
     signatures_batch = random_signatures_batch(keys_count)
@@ -149,7 +150,6 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
 
     # TODO: validate events
 
-
     nonce_before = nor.getNonce()
     node_operator_before = nor.getNodeOperator(new_node_operator_id, True)
     node_operator_summary_before = nor.getNodeOperatorSummary(new_node_operator_id)
@@ -172,7 +172,6 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
     assert node_operator_summary_after["depositableValidatorsCount"] == new_staking_limit
 
     # TODO: validate events
-
 
     node_operators_count_before = nor.getNodeOperatorsCount()
     active_node_operators_count_before = nor.getActiveNodeOperatorsCount()
@@ -203,7 +202,6 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
 
     # TODO: validate events
 
-
     node_operator_before = nor.getNodeOperator(new_node_operator_id, True)
     assert node_operator_before["active"] == False
 
@@ -228,7 +226,6 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
 
     # TODO: validate events
 
-
     nonce_before = nor.getNonce()
     node_operator_before = nor.getNodeOperator(new_node_operator_id, True)
     node_operator_summary_before = nor.getNodeOperatorSummary(new_node_operator_id)
@@ -251,37 +248,3 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
     assert node_operator_summary_after["depositableValidatorsCount"] == new_staking_limit
 
     # TODO: validate events
-
-
-def random_pubkeys_batch(pubkeys_count: int):
-    return random_hexstr(pubkeys_count * PUBKEY_LENGTH)
-
-
-def random_signatures_batch(signautes_count: int):
-    return random_hexstr(signautes_count * SIGNATURE_LENGTH)
-
-
-def parse_pubkeys_batch(pubkeys_batch: str):
-    return hex_chunks(pubkeys_batch, PUBKEY_LENGTH)
-
-
-def parse_signatures_batch(signatures_batch: str):
-    return hex_chunks(signatures_batch, SIGNATURE_LENGTH)
-
-
-def hex_chunks(hexstr: str, chunk_length: int):
-    stripped_hexstr = strip_0x(hexstr)
-    assert len(stripped_hexstr) % chunk_length == 0, "invalid hexstr length"
-    return [prefix_0x(chunk) for chunk in textwrap.wrap(stripped_hexstr, 2 * chunk_length)]
-
-
-def random_hexstr(length: int):
-    return prefix_0x(random.randbytes(length).hex())
-
-
-def prefix_0x(hexstr: str):
-    return hexstr if hexstr.startswith("0x") else "0x" + hexstr
-
-
-def strip_0x(hexstr: str):
-    return hexstr[2:] if hexstr.startswith("0x") else hexstr
