@@ -27,9 +27,9 @@ Voting 20/02/2024.
 
 import time
 
-from typing import Dict, List, NamedTuple
+from typing import Dict
 from brownie.network.transaction import TransactionReceipt
-from utils.agent import agent_execute, agent_forward
+from utils.agent import agent_forward
 from utils.kernel import update_app_implementation
 from utils.repo import create_new_app_repo
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote

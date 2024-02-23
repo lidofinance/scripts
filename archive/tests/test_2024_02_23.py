@@ -6,10 +6,10 @@ Tests for voting 23/01/2023
 import pytest
 from typing import List
 from archive.scripts.vote_2024_02_23 import start_vote
-from brownie import interface, ZERO_ADDRESS, reverts, web3, accounts, convert, network
-from tests.regression.test_permissions import active_aragon_roles, protocol_permissions
+from brownie import interface, ZERO_ADDRESS, network
+from tests.regression.test_permissions import active_aragon_roles
 from utils.test.deposits_helpers import fill_deposit_buffer
-from utils.test.event_validators.aragon import validate_app_update_event, validate_push_to_repo_event
+from utils.test.event_validators.aragon import validate_app_update_event
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.staking_router import StakingModuleItem, validate_staking_module_added_event
 from utils.test.oracle_report_helpers import oracle_report
