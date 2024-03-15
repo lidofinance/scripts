@@ -5,10 +5,11 @@ import re
 import requests
 from typing import Tuple, TypedDict
 from os import linesep
+import json
 
 from ipfs_cid import cid_sha256_hash
 
-from utils.config import get_web3_storage_token
+from utils.config import get_pinata_cloud_token, get_infura_io_keys, get_web3_storage_token
 from utils.checksummed_address import checksum_verify
 
 #  https://github.com/multiformats/multibase/blob/master/multibase.csv
@@ -48,6 +49,46 @@ class IPFSUploadResult(TypedDict):
     messages: list[Tuple[str, str]]
 
 
+# alternative for upload_str_to_web3_storage
+def _upload_str_to_infura_io(text: str) -> str:
+    text_bytes = text.encode("utf-8")
+    text_file = io.BytesIO(text_bytes)
+    files = {"file": text_file}
+    (projectId, projectSecret) = get_infura_io_keys()
+
+    endpoint = "https://ipfs.infura.io:5001"
+
+    response = requests.post(endpoint + "/api/v0/add?cid-version=1", files=files, auth=(projectId, projectSecret))
+    response.raise_for_status()
+    response_json = response.json()
+
+    return response_json.get("Hash")
+
+
+# alternative for upload_str_to_web3_storage
+def _upload_str_to_pinata_cloud(text: str) -> str:
+    text_bytes = text.encode("utf-8")
+    text_file = io.BytesIO(text_bytes)
+    files = {"file": text_file}
+    pinata_cloud_token = get_pinata_cloud_token()
+
+    endpoint = "https://api.pinata.cloud"
+
+    pinata_options = {"cidVersion": 1, "wrapWithDirectory": False}
+    payload = {"pinataOptions": json.dumps(pinata_options, separators=(",", ":"))}
+
+    headers = {
+        "accept": "application/json",
+        "authorization": f"Bearer {pinata_cloud_token}"
+    }
+
+    response = requests.post(endpoint + "/pinning/pinFileToIPFS", data=payload, files=files, headers=headers)
+    response.raise_for_status()
+    response_json = response.json()
+
+    return response_json.get("IpfsHash")
+
+
 # upload text to web3.storage ipfs
 def _upload_str_to_web3_storage(text: str) -> str:
     text_bytes = text.encode("utf-8")
@@ -65,6 +106,15 @@ def _upload_str_to_web3_storage(text: str) -> str:
 
 
 def _upload_str_to_ipfs(text: str) -> str:
+    if get_pinata_cloud_token(silent=True):
+        print(f"Uploading to pinata.cloud IPFS")
+        return _upload_str_to_pinata_cloud(text)
+
+    if get_infura_io_keys(silent=True):
+        print(f"Uploading to infura.io IPFS")
+        return _upload_str_to_infura_io(text)
+
+    print(f"Uploading to web3.storage IPFS")
     return _upload_str_to_web3_storage(text)
 
 
@@ -93,7 +143,6 @@ async def _fetch_cid_status_from_ipfs_async(cid: str) -> int:
 
     request_urls = [
         get_url_by_cid(cid),  # faster for uploaded files
-        f"https://api.web3.storage/status/{cid}",  # much faster for not uploaded files
     ]
 
     async with aiohttp.ClientSession() as session:
@@ -186,7 +235,7 @@ def calculate_vote_ipfs_description(text: str) -> IPFSUploadResult:
     return IPFSUploadResult(cid=calculated_cid, messages=messages, text=text)
 
 
-def upload_vote_ipfs_description(text: str) -> IPFSUploadResult:
+def upload_vote_ipfs_description(text: str, force_upload = False) -> IPFSUploadResult:
     messages = verify_ipfs_description(text)
     calculated_cid = ""
     if not text:
@@ -198,7 +247,8 @@ def upload_vote_ipfs_description(text: str) -> IPFSUploadResult:
             raise Exception("Couldn't calculate the ipfs hash for description.")
 
         status = fetch_cid_status_from_ipfs(calculated_cid)
-        if status < 400:
+
+        if status < 400 and not force_upload:
             # have found file so CID is good
             return IPFSUploadResult(cid=calculated_cid, messages=messages, text=text)
 
