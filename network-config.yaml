@@ -1,4 +1,6 @@
 development:
+
+  # Mainnet Fork
   - cmd: ./ganache.sh
     cmd_settings:
       accounts: 10
@@ -12,6 +14,8 @@ development:
     timeout: 360
     # https://github.com/mds1/multicall#multicall2-contract-addresses
     multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+
+  # Goerli Fork
   - cmd: ./ganache.sh
     cmd_settings:
       accounts: 10
@@ -24,6 +28,22 @@ development:
     id: goerli-fork
     name: goerli-fork
     timeout: 360
+
+  # Sepolia Fork
+  - cmd: ./ganache.sh
+    cmd_settings:
+      accounts: 10
+      chain_id: 11155111
+      fork: sepolia
+      gas_limit: 30000000
+      mnemonic: brownie
+      port: 8545
+    host: http://127.0.0.1
+    id: sepolia-fork
+    name: sepolia-fork
+    timeout: 360
+
+  # Local Fork
   - cmd: ./ganache.sh
     cmd_settings:
       accounts: 10
