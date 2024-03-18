@@ -47,7 +47,8 @@ pipx install poetry==1.5.0
 Ensure that poetry bin path is added to your `$PATH` env variable.
 Usually it's `$HOME/.local/bin` for most Unix-like systems.
 
-This is a workaround related `brownie` deps `pyyaml` issue https://github.com/eth-brownie/brownie/issues/1701
+This is a workaround related `brownie` deps `pyyaml` issue <https://github.com/eth-brownie/brownie/issues/1701>
+
 ```shell
 poetry run pip install "cython<3.0" pyyaml==5.4.1 --no-build-isolation
 ```
@@ -85,21 +86,23 @@ poetry shell
 ### Network setup
 
 By default, you should start composing new scripts and test using forked networks.
-You have two forked networks to work with:
+You have three forked networks to work with:
 
 - `mainnet-fork`
 - `goerli-fork`
+- `sepolia-fork`
 
 To start new voting on the live networks you could proceed with:
 
 - `mainnet`
 - `goerli`
+- `sepolia`
 
 >Note: you can't run tests on the live networks.
 
 In a typical weekly omnibus workflow, you need only `mainnet-fork` and
 `mainnet` networks. In case of large test campaign on Lido upgrades,
-it also could be useful to go with `goerli` and `goerli-fork` testnets first.
+it also could be useful to go with `goerli`/`sepolia` and `goerli-fork`/`sepolia-fork` testnets first.
 
 ### Environment variables setup
 
@@ -121,12 +124,14 @@ provide the etherscan API token:
 ```bash
 export ETHERSCAN_TOKEN=<etherscan_api_key>
 ```
+
 To upload Markdown vote description for a new vote to IPFS you should
 provide the [web3.storage](https://web3.storage/tokens/) API token:
 
 ```bash
 export WEB3_STORAGE_TOKEN=<web3_storage_api_key>
 ```
+
 See [here](utils/README.md#ipfs) to learn more Markdown description
 
 To skip events decoding while testing set the following var:
