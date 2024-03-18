@@ -28,29 +28,11 @@ from utils.allowed_recipients_registry import (
     create_top_up_allowed_recipient_permission,
 )
 
-
-class TokenLimit(NamedTuple):
-    address: str
-    limit: int
-
-
-ldo_limit = TokenLimit(LDO_TOKEN, 5_000_000 * (10**18))
-eth_limit = TokenLimit(ZERO_ADDRESS, 1_000 * 10**18)
-steth_limit = TokenLimit(LIDO, 1_000 * (10**18))
-dai_limit = TokenLimit(DAI_TOKEN, 2_000_000 * (10**18))
-usdc_limit = TokenLimit(USDC_TOKEN, 2_000_000 * (10**6))
-usdt_limit = TokenLimit(USDT_TOKEN, 2_000_000 * (10**6))
-
 description = """
 Easy Track stETH and stables top up setups for [Lido stonks](https://research.lido.fi/t/lido-stonks-treasury-swaps-via-optimistic-governance/6860)
 1. **Add TMC stETH top up EVM script factory** <address TBA> (AllowedRecipientsRegistry <address TBA>)
 2. **Add TMC stables top up EVM script factory** <address TBA> (AllowedRecipientsRegistry <address TBA>, AllowedTokensRegistry <address TBA>)
 """
-
-
-HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM = 5
-HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM = 5
-
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""
