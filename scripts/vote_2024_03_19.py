@@ -1,9 +1,16 @@
 """
 Voting 19/03/2024.
 
-Easy Track stETH and stables top up setups for Lido stonks
-1. Add TMC stETH top up EVM script factory address TBA (AllowedRecipientsRegistry address TBA)
-2. Add TMC stables top up EVM script factory address TBA (AllowedRecipientsRegistry address TBA, AllowedTokensRegistry address TBA)
+Incorporate Easy Track Factories to transfer tokens from Treasury for swaps, enhancing treasury management operations as proposed by the [Treasury Management Committee (TMC)](https://snapshot.org/#/lido-snapshot.eth/proposal/0xac31f800288c68e32d1eb3cea7a525022faae3eb3bf805d1b3d248cda5375a13) in [TMC-1](https://research.lido.fi/t/tmc-1-pipeline-to-sell-steth-at-regular-intervals-for-dai/5059):
+
+1. Add Factory for stETH  to stablecoins swaps. Item 1.
+2. Add Factory for stablecoins swaps (DAI / USDC / USDT). Item 2.
+
+These factories are able to transfer  funds to [Stonks Contracts](https://docs.lido.fi/deployed-contracts/#lido-stonks-contracts) ([audited by Ackee](https://github.com/lidofinance/audits?tab=readme-ov-file#03-2024-ackee-blockchain-lido-stonks-audit)), with the `trustedcaller` role granted to the [TMC multisig](https://app.safe.global/home?safe=eth:0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647).
+
+The [Stonks Contracts](https://docs.lido.fi/deployed-contracts/#lido-stonks-contracts) receive tokens and сonfigure the setup for initiating CoW swaps order. After this, CoW Order can be created via [Easy Track UI](https://easytrack.lido.fi), ensuring the Treasury's minimum expected return.
+
+Further details can be found [on the research forum](https://research.lido.fi/t/lido-stonks-treasury-swaps-via-optimistic-governance/6860).
 
 Vote passed & executed on XXXX-XX-XX.
 """
@@ -27,9 +34,17 @@ from utils.allowed_recipients_registry import (
 )
 
 description = """
-Easy Track stETH and stables top up setups for [Lido stonks](https://research.lido.fi/t/lido-stonks-treasury-swaps-via-optimistic-governance/6860)
-1. Add TMC stETH top up EVM script factory 0x6e04aED774B7c89BB43721AcDD7D03C872a51B69 (AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0)
-2. Add TMC stables top up EVM script factory 0x0d2aefA542aFa8d9D1Ec35376068B88042FEF5f6 (AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368)
+**Proposed actions:**
+Incorporate Easy Track Factories to transfer tokens from Treasury for swaps, enhancing treasury management operations as proposed by the [Treasury Management Committee (TMC)](https://snapshot.org/#/lido-snapshot.eth/proposal/0xac31f800288c68e32d1eb3cea7a525022faae3eb3bf805d1b3d248cda5375a13) in [TMC-1](https://research.lido.fi/t/tmc-1-pipeline-to-sell-steth-at-regular-intervals-for-dai/5059):
+
+1. Add Factory for stETH  to stablecoins swaps. Item 1.
+2. Add Factory for stablecoins swaps (DAI / USDC / USDT). Item 2.
+
+These factories are able to transfer  funds to [Stonks Contracts](https://docs.lido.fi/deployed-contracts/#lido-stonks-contracts) ([audited by Ackee](https://github.com/lidofinance/audits?tab=readme-ov-file#03-2024-ackee-blockchain-lido-stonks-audit)), with the `trustedcaller` role granted to the [TMC multisig](https://app.safe.global/home?safe=eth:0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647).
+
+The [Stonks Contracts](https://docs.lido.fi/deployed-contracts/#lido-stonks-contracts) receive tokens and сonfigure the setup for initiating CoW swaps order. After this, CoW Order can be created via [Easy Track UI](https://easytrack.lido.fi), ensuring the Treasury's minimum expected return.
+
+Further details can be found [on the research forum](https://research.lido.fi/t/lido-stonks-treasury-swaps-via-optimistic-governance/6860).
 """
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
