@@ -23,13 +23,13 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder):
 
     evm_script_factories_before = easy_track.getEVMScriptFactories()
 
-    tmc_steth_top_up_evm_script_factory_new = "<ADDRESS TBA>"
+    tmc_steth_top_up_evm_script_factory_new = "0x6e04aED774B7c89BB43721AcDD7D03C872a51B69"
     assert tmc_steth_top_up_evm_script_factory_new not in evm_script_factories_before
 
-    tmc_stables_top_up_evm_script_factory_new = "<ADDRESS TBA>"
+    tmc_stables_top_up_evm_script_factory_new = "0x0d2aefA542aFa8d9D1Ec35376068B88042FEF5f6"
     assert tmc_stables_top_up_evm_script_factory_new not in evm_script_factories_before
 
-    tmc_multisig_acc = accounts.at("<ADDRESS TBA>", force=True)
+    # tmc_multisig_acc = accounts.at("<ADDRESS TBA>", force=True)
 
 
     # START VOTE
@@ -52,18 +52,18 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder):
 
     # 1. Add TMC stETH top up EVM script factory address TBA (AllowedRecipientsRegistry address TBA)
     assert tmc_steth_top_up_evm_script_factory_new in evm_script_factories_after
-    create_and_enact_payment_motion(
-        easy_track,
-        trusted_caller=tmc_multisig_acc,
-        factory=tmc_steth_top_up_evm_script_factory_new,
-        token=steth,
-        recievers=[tmc_multisig_acc],
-        transfer_amounts=[10 * 10**18],
-        stranger=stranger,
-    )
+    # create_and_enact_payment_motion(
+    #     easy_track,
+    #     trusted_caller=tmc_multisig_acc,
+    #     factory=tmc_steth_top_up_evm_script_factory_new,
+    #     token=steth,
+    #     recievers=[tmc_multisig_acc],
+    #     transfer_amounts=[10 * 10**18],
+    #     stranger=stranger,
+    # )
 
     tmc_steth_allowed_recipients_registry = interface.AllowedRecipientRegistry(
-        "0xAAC4FcE2c5d55D1152512fe5FAA94DB267EE4863"
+        "0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0"
     )
     check_add_and_remove_recipient_with_voting(
         registry=tmc_steth_allowed_recipients_registry,
@@ -84,49 +84,49 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder):
     # 2. Add TMC stables top up EVM script factory address TBA (AllowedRecipientsRegistry address TBA, AllowedTokensRegistry address TBA)
     assert tmc_stables_top_up_evm_script_factory_new in evm_script_factories_after
 
-    create_and_enact_payment_motion(
-        easy_track,
-        trusted_caller=tmc_multisig_acc,
-        factory=tmc_stables_top_up_evm_script_factory_new,
-        token=interface.Dai(DAI_TOKEN),
-        recievers=[tmc_multisig_acc],
-        transfer_amounts=[dai_transfer_amount],
-        stranger=stranger,
-    )
+    # create_and_enact_payment_motion(
+    #     easy_track,
+    #     trusted_caller=tmc_multisig_acc,
+    #     factory=tmc_stables_top_up_evm_script_factory_new,
+    #     token=interface.Dai(DAI_TOKEN),
+    #     recievers=[tmc_multisig_acc],
+    #     transfer_amounts=[dai_transfer_amount],
+    #     stranger=stranger,
+    # )
 
-    create_and_enact_payment_motion(
-        easy_track,
-        trusted_caller=tmc_multisig_acc,
-        factory=tmc_stables_top_up_evm_script_factory_new,
-        token=interface.Usdc(USDC_TOKEN),
-        recievers=[tmc_multisig_acc],
-        transfer_amounts=[usdc_transfer_amount],
-        stranger=stranger,
-    )
+    # create_and_enact_payment_motion(
+    #     easy_track,
+    #     trusted_caller=tmc_multisig_acc,
+    #     factory=tmc_stables_top_up_evm_script_factory_new,
+    #     token=interface.Usdc(USDC_TOKEN),
+    #     recievers=[tmc_multisig_acc],
+    #     transfer_amounts=[usdc_transfer_amount],
+    #     stranger=stranger,
+    # )
 
-    create_and_enact_payment_motion(
-        easy_track,
-        trusted_caller=tmc_multisig_acc,
-        factory=tmc_stables_top_up_evm_script_factory_new,
-        token=interface.Usdt(USDT_TOKEN),
-        recievers=[tmc_multisig_acc],
-        transfer_amounts=[usdt_transfer_amount],
-        stranger=stranger,
-    )
+    # create_and_enact_payment_motion(
+    #     easy_track,
+    #     trusted_caller=tmc_multisig_acc,
+    #     factory=tmc_stables_top_up_evm_script_factory_new,
+    #     token=interface.Usdt(USDT_TOKEN),
+    #     recievers=[tmc_multisig_acc],
+    #     transfer_amounts=[usdt_transfer_amount],
+    #     stranger=stranger,
+    # )
 
-    with reverts("TOKEN_NOT_ALLOWED"):
-        create_and_enact_payment_motion(
-            easy_track,
-            trusted_caller=tmc_multisig_acc,
-            factory=tmc_stables_top_up_evm_script_factory_new,
-            token=steth,
-            recievers=[tmc_multisig_acc],
-            transfer_amounts=[1],
-            stranger=stranger,
-        )
+    # with reverts("TOKEN_NOT_ALLOWED"):
+    #     create_and_enact_payment_motion(
+    #         easy_track,
+    #         trusted_caller=tmc_multisig_acc,
+    #         factory=tmc_stables_top_up_evm_script_factory_new,
+    #         token=steth,
+    #         recievers=[tmc_multisig_acc],
+    #         transfer_amounts=[1],
+    #         stranger=stranger,
+    #     )
 
     rcc_stables_allowed_recipients_registry = interface.AllowedRecipientRegistry(
-        "0xDc1A0C7849150f466F07d48b38eAA6cE99079f80"
+        "0x3f0534CCcFb952470775C516DC2eff8396B8A368"
     )
     check_add_and_remove_recipient_with_voting(
         registry=rcc_stables_allowed_recipients_registry,
