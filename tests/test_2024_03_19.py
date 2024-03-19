@@ -6,18 +6,26 @@ Tests for voting 19/03/2024
 from scripts.vote_2024_03_19 import start_vote
 from brownie import interface, ZERO_ADDRESS, reverts, web3, accounts, convert
 from utils.test.tx_tracing_helpers import *
-from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS
+from utils.voting import find_metadata_by_vote_id
+from utils.ipfs import get_lido_vote_cid_from_str
+from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS, network_name
+from utils.easy_track import create_permissions
 from configs.config_mainnet import (
     DAI_TOKEN,
     USDC_TOKEN,
     USDT_TOKEN,
 )
 from utils.test.easy_track_helpers import create_and_enact_payment_motion, check_add_and_remove_recipient_with_voting
+from utils.test.event_validators.easy_track import (
+    validate_evmscript_factory_added_event,
+    EVMScriptFactoryAdded,
+    validate_evmscript_factory_removed_event,
+)
 
 STETH_TRANSFER_MAX_DELTA = 2
 
 
-def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder):
+def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass_events_decoding):
     steth = contracts.lido
     easy_track = contracts.easy_track
 
@@ -46,7 +54,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder):
     vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
 
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
-
 
     #
     # Easy Track stETH and stables top up setups for Lido stonks
@@ -129,14 +136,46 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder):
             stranger=stranger,
         )
 
-    rcc_stables_allowed_recipients_registry = interface.AllowedRecipientRegistry(
+    tmc_stables_allowed_recipients_registry = interface.AllowedRecipientRegistry(
         "0x3f0534CCcFb952470775C516DC2eff8396B8A368"
     )
     check_add_and_remove_recipient_with_voting(
-        registry=rcc_stables_allowed_recipients_registry,
+        registry=tmc_stables_allowed_recipients_registry,
         helpers=helpers,
         ldo_holder=ldo_holder,
         dao_voting=contracts.voting,
+    )
+
+    # validate vote events
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 2, "Incorrect voting items count"
+
+    metadata = find_metadata_by_vote_id(vote_id)
+
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreifveq533gfzd4gxv2pqgh47dzyosgupjccn6fhumisnulrihk2zjy"
+
+    display_voting_events(vote_tx)
+
+    if bypass_events_decoding or network_name() in ("goerli", "goerli-fork"):
+        return
+
+    evs = group_voting_events(vote_tx)
+
+    validate_evmscript_factory_added_event(
+        evs[0],
+        EVMScriptFactoryAdded(
+            factory_addr=tmc_steth_top_up_evm_script_factory_new,
+            permissions=create_permissions(contracts.finance, "newImmediatePayment")
+            + create_permissions(tmc_steth_allowed_recipients_registry, "updateSpentAmount")[2:],
+        ),
+    )
+
+    validate_evmscript_factory_added_event(
+        evs[1],
+        EVMScriptFactoryAdded(
+            factory_addr=tmc_stables_top_up_evm_script_factory_new,
+            permissions=create_permissions(contracts.finance, "newImmediatePayment")
+            + create_permissions(tmc_stables_allowed_recipients_registry, "updateSpentAmount")[2:],
+        ),
     )
 
 
