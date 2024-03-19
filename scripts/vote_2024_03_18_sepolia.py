@@ -84,11 +84,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> bool | Tuple[
     call_script_items = [
         agent_execute(
             SEPOLIA_CCC,
-            10**17,
+            0,
             encode_cross_chain_controller_forward_call(
                 BINANCE_CHAIN_ID,
                 BINANCE_CHAIN_EXECUTOR,
-                300_000,
+                1_000_000,
                 encode_cross_chain_executor_queue_call(
                     [
                         CrossChainExecutorQueuePayload(
