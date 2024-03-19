@@ -104,6 +104,12 @@ In a typical weekly omnibus workflow, you need only `mainnet-fork` and
 `mainnet` networks. In case of large test campaign on Lido upgrades,
 it also could be useful to go with `goerli`/`sepolia` and `goerli-fork`/`sepolia-fork` testnets first.
 
+To connect to Sepolia testnet set the following var:
+
+```bash
+export SEPOLIA_RPC_URL=<sepolia_rpc_url>
+```
+
 ### Environment variables setup
 
 Despite the chosen network you always need to set the following var:
