@@ -64,7 +64,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "2) Add TMC stables top up EVM script factory 0x0d2aefA542aFa8d9D1Ec35376068B88042FEF5f6 (AllowedRecipientsRegistry <address TBA>, AllowedTokensRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368)",
+            "2) Add TMC stables top up EVM script factory 0x0d2aefA542aFa8d9D1Ec35376068B88042FEF5f6 (AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368, AllowedTokensRegistry 0x4AC40c34f8992bb1e5E856A448792158022551ca)",
             add_evmscript_factory(
                 factory="0x0d2aefA542aFa8d9D1Ec35376068B88042FEF5f6",
                 permissions=create_top_up_allowed_recipient_permission(
