@@ -30,6 +30,10 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder):
     assert tmc_stables_top_up_evm_script_factory_new not in evm_script_factories_before
 
     stonks_multisig_acc = accounts.at("0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647", force=True)
+    stonks_steth_contract = accounts.at("0x3e2D251275A92a8169A3B17A2C49016e2de492a7", force=True)
+    stonks_dai_usdc_contract = accounts.at("0x79f5E20996abE9f6a48AF6f9b13f1E55AED6f06D", force=True)
+    stonks_usdc_dai_contract = accounts.at("0x2B5a3944A654439379B206DE999639508bA2e850", force=True)
+    stonks_usdt_dai_contract = accounts.at("0x64B6aF9A108dCdF470E48e4c0147127F26221A7C", force=True)
 
 
     # START VOTE
@@ -57,7 +61,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder):
         trusted_caller=stonks_multisig_acc,
         factory=tmc_steth_top_up_evm_script_factory_new,
         token=steth,
-        recievers=[stonks_multisig_acc],
+        recievers=[stonks_steth_contract],
         transfer_amounts=[10 * 10**18],
         stranger=stranger,
     )
@@ -89,7 +93,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder):
         trusted_caller=stonks_multisig_acc,
         factory=tmc_stables_top_up_evm_script_factory_new,
         token=interface.Dai(DAI_TOKEN),
-        recievers=[stonks_multisig_acc],
+        recievers=[stonks_dai_usdc_contract],
         transfer_amounts=[dai_transfer_amount],
         stranger=stranger,
     )
@@ -99,7 +103,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder):
         trusted_caller=stonks_multisig_acc,
         factory=tmc_stables_top_up_evm_script_factory_new,
         token=interface.Usdc(USDC_TOKEN),
-        recievers=[stonks_multisig_acc],
+        recievers=[stonks_usdc_dai_contract],
         transfer_amounts=[usdc_transfer_amount],
         stranger=stranger,
     )
@@ -109,7 +113,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder):
         trusted_caller=stonks_multisig_acc,
         factory=tmc_stables_top_up_evm_script_factory_new,
         token=interface.Usdt(USDT_TOKEN),
-        recievers=[stonks_multisig_acc],
+        recievers=[stonks_usdt_dai_contract],
         transfer_amounts=[usdt_transfer_amount],
         stranger=stranger,
     )
@@ -120,7 +124,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder):
             trusted_caller=stonks_multisig_acc,
             factory=tmc_stables_top_up_evm_script_factory_new,
             token=steth,
-            recievers=[stonks_multisig_acc],
+            recievers=[stonks_dai_usdc_contract],
             transfer_amounts=[1],
             stranger=stranger,
         )
