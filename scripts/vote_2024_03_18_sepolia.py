@@ -3,6 +3,7 @@ Voting 18/03/2024.
 Sepolia => Binance a.DI test voting.
 !! Sepolia only
 """
+
 import time
 
 import eth_abi
@@ -37,7 +38,7 @@ from utils.config import (
 
 SEPOLIA_CCC: str = "0xb5896839eD2e5c56345335bd4bD3b1507398e262"
 
-BINANCE_CHAIN_ID: int = 97 # BNB Testnet
+BINANCE_CHAIN_ID: int = 97  # BNB Testnet
 BINANCE_CHAIN_EXECUTOR: str = "0xEB43648C6e4F75Dd3397017Db3206b2bf1196bD0"
 BINANCE_MOCK_DEST: str = "0x068c8DbA83E71E9146F9894399c2F3a560288889"
 
@@ -45,16 +46,13 @@ TEST_MESSAGE: str = "Voting 18/03/2024. Sepolia => Binance a.DI test voting."
 
 
 def encode_cross_chain_executor_payload() -> str:
-    scroll_executor = interface.CrossChainExecutor(BINANCE_CHAIN_EXECUTOR)
+    cc_executor = interface.CrossChainExecutor(SEPOLIA_CCC)
 
-    params = eth_abi.encode(["string"], TEST_MESSAGE)
+    params = eth_abi.encode(["string"], [TEST_MESSAGE])
 
-    return scroll_executor.receiveCrossChainMessage.encode_input(
-        [BINANCE_MOCK_DEST],
-        [0],
-        ["test(string)"]
-        [params],
-        [False],
+    return eth_abi.encode(
+        ["address[]", "uint256[]", "string[]", "bytes[]", "bool[]"],
+        [[BINANCE_MOCK_DEST], [0], ["test(string)"], [params], [False]],
     )
 
 
@@ -73,11 +71,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> bool | Tuple[
             SEPOLIA_CCC,
             10**17,
             encode_cross_chain_controller_forward(
-                BINANCE_CHAIN_ID,
-                BINANCE_CHAIN_EXECUTOR,
-                300_000,
-                encode_cross_chain_executor_payload()
-            )
+                BINANCE_CHAIN_ID, BINANCE_CHAIN_EXECUTOR, 300_000, encode_cross_chain_executor_payload()
+            ),
         )
     ]
 
