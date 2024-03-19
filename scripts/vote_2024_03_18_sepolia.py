@@ -8,7 +8,7 @@ import time
 
 import eth_abi
 
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, Any
 
 from brownie import interface
 from brownie.network.transaction import TransactionReceipt
@@ -45,18 +45,33 @@ BINANCE_MOCK_DEST: str = "0x068c8DbA83E71E9146F9894399c2F3a560288889"
 TEST_MESSAGE: str = "Voting 18/03/2024. Sepolia => Binance a.DI test voting."
 
 
-def encode_cross_chain_executor_payload() -> str:
-    cc_executor = interface.CrossChainExecutor(SEPOLIA_CCC)
+class CrossChainExecutorQueuePayload:
+    def __init__(self, to: str, value: int, signature: str, data: Tuple[list[str], list[Any]], with_delegates: bool):
+        self.to = to
+        self.value = value
+        self.signature = signature
+        self.data_types = data[0]
+        self.data_values = data[1]
+        self.with_delegates = with_delegates
 
-    params = eth_abi.encode(["string"], [TEST_MESSAGE])
+    def data(self) -> str:
+        return eth_abi.encode(self.data_types, self.data_values)
 
+
+def encode_cross_chain_executor_queue_call(payloads: list[CrossChainExecutorQueuePayload]) -> str:
     return eth_abi.encode(
         ["address[]", "uint256[]", "string[]", "bytes[]", "bool[]"],
-        [[BINANCE_MOCK_DEST], [0], ["test(string)"], [params], [False]],
+        [
+            [payload.to for payload in payloads],
+            [payload.value for payload in payloads],
+            [payload.signature for payload in payloads],
+            [payload.data() for payload in payloads],
+            [payload.with_delegates for payload in payloads],
+        ],
     )
 
 
-def encode_cross_chain_controller_forward(chain_id: int, to: str, gas_limit: int, calldata: str) -> str:
+def encode_cross_chain_controller_forward_call(chain_id: int, to: str, gas_limit: int, calldata: str) -> str:
     return interface.CrossChainController(SEPOLIA_CCC).forwardMessage.encode_input(
         chain_id,
         to,
@@ -70,8 +85,21 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> bool | Tuple[
         agent_execute(
             SEPOLIA_CCC,
             10**17,
-            encode_cross_chain_controller_forward(
-                BINANCE_CHAIN_ID, BINANCE_CHAIN_EXECUTOR, 300_000, encode_cross_chain_executor_payload()
+            encode_cross_chain_controller_forward_call(
+                BINANCE_CHAIN_ID,
+                BINANCE_CHAIN_EXECUTOR,
+                300_000,
+                encode_cross_chain_executor_queue_call(
+                    [
+                        CrossChainExecutorQueuePayload(
+                            BINANCE_MOCK_DEST,
+                            0,
+                            "test(string)",
+                            (["string"], [TEST_MESSAGE]),
+                            False,
+                        )
+                    ]
+                ),
             ),
         )
     ]
