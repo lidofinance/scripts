@@ -10,8 +10,7 @@ Vote passed & executed on XXXX-XX-XX.
 
 import time
 
-from typing import Dict, NamedTuple
-from brownie import ZERO_ADDRESS
+from typing import Dict
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
@@ -23,15 +22,14 @@ from utils.config import (
 from utils.easy_track import (
     add_evmscript_factory,
 )
-from configs.config_mainnet import DAI_TOKEN, LDO_TOKEN, LIDO, USDC_TOKEN, USDT_TOKEN
 from utils.allowed_recipients_registry import (
     create_top_up_allowed_recipient_permission,
 )
 
 description = """
 Easy Track stETH and stables top up setups for [Lido stonks](https://research.lido.fi/t/lido-stonks-treasury-swaps-via-optimistic-governance/6860)
-1. **Add TMC stETH top up EVM script factory** <address TBA> (AllowedRecipientsRegistry <address TBA>)
-2. **Add TMC stables top up EVM script factory** <address TBA> (AllowedRecipientsRegistry <address TBA>, AllowedTokensRegistry <address TBA>)
+1. Add TMC stETH top up EVM script factory 0x6e04aED774B7c89BB43721AcDD7D03C872a51B69 (AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0)
+2. Add TMC stables top up EVM script factory 0x0d2aefA542aFa8d9D1Ec35376068B88042FEF5f6 (AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368)
 """
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
@@ -42,20 +40,20 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         # I. Easy Track stETH and stables top up setups for Lido stonks
         #
         (
-            "1) Add TMC stETH top up EVM script factory <address TBA> (AllowedRecipientsRegistry <address TBA>)",
+            "1) Add TMC stETH top up EVM script factory 0x6e04aED774B7c89BB43721AcDD7D03C872a51B69 (AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0)",
             add_evmscript_factory(
-                factory="<address TBA>",
+                factory="0x6e04aED774B7c89BB43721AcDD7D03C872a51B69",
                 permissions=create_top_up_allowed_recipient_permission(
-                    registry_address="<address TBA>"
+                    registry_address="0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0"
                 ),
             ),
         ),
         (
-            "2) Add TMC stables top up EVM script factory <address TBA> (AllowedRecipientsRegistry <address TBA>, AllowedTokensRegistry <address TBA>)",
+            "2) Add TMC stables top up EVM script factory 0x0d2aefA542aFa8d9D1Ec35376068B88042FEF5f6 (AllowedRecipientsRegistry <address TBA>, AllowedTokensRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368)",
             add_evmscript_factory(
-                factory="<address TBA>",
+                factory="0x0d2aefA542aFa8d9D1Ec35376068B88042FEF5f6",
                 permissions=create_top_up_allowed_recipient_permission(
-                    registry_address="<address TBA>"
+                    registry_address="0x3f0534CCcFb952470775C516DC2eff8396B8A368"
                 ),
             ),
         ),
