@@ -1,14 +1,15 @@
 live:
+
   - name: Ethereum
     networks:
       - chainid: 11155111
         explorer: https://api-sepolia.etherscan.io/api
         host: $SEPOLIA_RPC_URL
         id: sepolia
-        # New backward-compatible multicall contract. multicall2 is missing on Holesky. See https://github.com/mds1/multicall
         multicall2: "0xeAA373D1973e5af44e91840ee097bf7AD64693c2"
         name: Sepolia (Infura)
         provider: infura
+
 development:
 
   # Mainnet Fork
