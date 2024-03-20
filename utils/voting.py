@@ -193,12 +193,13 @@ def confirm_vote_script(
 
     # Show detailed description of prepared voting.
     if not silent:
-        human_readable_script = decode_evm_script(
-            encoded_call_script,
-            verbose=False,
-            specific_net=CHAIN_NETWORK_NAME,
-            repeat_is_error=True,
-        )
+        # human_readable_script = decode_evm_script(
+        #     encoded_call_script,
+        #     verbose=False,
+        #     specific_net=CHAIN_NETWORK_NAME,
+        #     repeat_is_error=True,
+        # )
+        human_readable_script = []
 
         vote_descriptions = list(vote_items.keys())
 

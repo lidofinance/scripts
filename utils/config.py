@@ -29,13 +29,24 @@ def network_name() -> Optional[str]:
 if network_name() in ("goerli", "goerli-fork"):
     print(f'Using {color("cyan")}config_goerli.py{color} addresses')
     from configs.config_goerli import *
+elif network_name() in ("sepolia", "sepolia-fork"):
+    print(f'Using {color("yellow")}config_sepolia.py{color} addresses')
+    from configs.config_sepolia import *
 else:
     print(f'Using {color("magenta")}config_mainnet.py{color} addresses')
     from configs.config_mainnet import *
 
 
 def get_is_live() -> bool:
-    dev_networks = ["development", "hardhat", "hardhat-fork", "goerli-fork", "local-fork", "mainnet-fork"]
+    dev_networks = [
+        "development",
+        "hardhat",
+        "hardhat-fork",
+        "goerli-fork",
+        "local-fork",
+        "mainnet-fork",
+        "sepolia-fork",
+    ]
     return network.show_active() not in dev_networks
 
 
@@ -87,8 +98,10 @@ def get_pinata_cloud_token(silent=False) -> str:
 
 def get_infura_io_keys(silent=False) -> Tuple[str, str]:
     is_live = get_is_live()
-    if is_live and not silent and (
-        "WEB3_INFURA_IPFS_PROJECT_ID" not in os.environ or "WEB3_INFURA_IPFS_PROJECT_SECRET" not in os.environ
+    if (
+        is_live
+        and not silent
+        and ("WEB3_INFURA_IPFS_PROJECT_ID" not in os.environ or "WEB3_INFURA_IPFS_PROJECT_SECRET" not in os.environ)
     ):
         raise EnvironmentError(
             "Please set WEB3_INFURA_IPFS_PROJECT_ID and WEB3_INFURA_IPFS_PROJECT_SECRET env variable "
@@ -120,6 +133,10 @@ def get_config_params() -> Dict[str, str]:
         import configs.config_goerli
 
         ret = {x: globals()[x] for x in dir(configs.config_goerli) if not x.startswith("__")}
+    elif network_name() in ("sepolia", "sepolia-fork"):
+        import configs.config_sepolia
+
+        ret = {x: globals()[x] for x in dir(configs.config_sepolia) if not x.startswith("__")}
     else:
         import configs.config_mainnet
 
