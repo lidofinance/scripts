@@ -12,7 +12,7 @@ The [Stonks Contracts](https://docs.lido.fi/deployed-contracts/#lido-stonks-cont
 
 Further details can be found [on the research forum](https://research.lido.fi/t/lido-stonks-treasury-swaps-via-optimistic-governance/6860).
 
-Vote passed & executed on XXXX-XX-XX.
+Vote passed & executed on Mar-22-2024 05:56:11 PM +UTC, block 19491793.
 """
 
 import time
