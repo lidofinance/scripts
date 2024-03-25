@@ -40,7 +40,7 @@ def test_bunker_multiple_batches(stranger, eth_whale):
 
     steth_initial_balance = contracts.lido.balanceOf(stranger)
 
-    oracle_report(cl_diff=-ETH(100), exclude_vaults_balances=True)
+    oracle_report(cl_diff=-ETH(10000), exclude_vaults_balances=True)
 
     steth_first_negative_report_balance = contracts.lido.balanceOf(stranger)
 
