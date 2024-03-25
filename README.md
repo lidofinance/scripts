@@ -88,20 +88,18 @@ By default, you should start composing new scripts and test using forked network
 You have two forked networks to work with:
 
 - `mainnet-fork`
-- `goerli-fork` (deprecated)
-- `holesky-fork` (WIP)
+- `goerli-fork`
 
 To start new voting on the live networks you could proceed with:
 
 - `mainnet`
-- `goerli` (deprecated)
-- `holesky` (WIP)
+- `goerli`
 
 >Note: you can't run tests on the live networks.
 
 In a typical weekly omnibus workflow, you need only `mainnet-fork` and
 `mainnet` networks. In case of large test campaign on Lido upgrades,
-it also could be useful to go with `holesky` and `holesky-fork` testnets first.
+it also could be useful to go with `goerli` and `goerli-fork` testnets first.
 
 ### Environment variables setup
 
