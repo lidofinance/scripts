@@ -163,7 +163,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         {"from": impersonated_voting},
     )
 
-    contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale, "amount": ETH(150_000)})
+    contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale, "amount": ETH(200_000)})
 
     print("Reset staking limit for all OPs...")
     no_amount = staking_module.getNodeOperatorsCount()
