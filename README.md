@@ -130,11 +130,18 @@ provide the etherscan API token:
 ```bash
 export ETHERSCAN_TOKEN=<etherscan_api_key>
 ```
-
-To upload Markdown vote description for a new vote to IPFS you should
-provide the [web3.storage](https://web3.storage/tokens/) API token:
+To upload Markdown vote description for a new vote to IPFS you can use one of those:
+1. [Pinata Cloud](https://www.pinata.cloud/) API key.
+1. [Infura](https://www.infura.io/) API key for IPFS.
+1. Web3 API token [web3.storage](https://web3.storage/):
 
 ```bash
+# Pinata Cloud
+export PINATA_CLOUD_TOKEN=<pinata_api_key>
+# For Infura Web3
+export WEB3_INFURA_IPFS_PROJECT_ID=<infura_project_id>
+export WEB3_INFURA_IPFS_PROJECT_SECRET=<infura_project_secret>
+# For WEB3
 export WEB3_STORAGE_TOKEN=<web3_storage_api_key>
 ```
 
