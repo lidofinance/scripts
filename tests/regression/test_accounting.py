@@ -1,11 +1,12 @@
 from typing import TypedDict, TypeVar, Any
 
 import pytest
-from brownie import Contract, accounts, chain, web3
+from brownie import Contract, accounts, chain, web3, reverts
 from brownie.exceptions import brownie
 from brownie.network.account import Account
 from web3 import Web3
 
+from utils.evm_script import encode_error
 from tests.conftest import Helpers
 from utils.config import contracts
 from utils.test.helpers import ETH, GWEI, ZERO_ADDRESS, almostEqWithDiff, eth_balance
@@ -225,7 +226,7 @@ def test_accounting_cl_rebase_above_limits():
     assert max_cl_rebase_via_limiter > rebase_amount, "Expected annual limit to shot first"
 
     error_hash = Web3.keccak(text="IncorrectCLBalanceIncrease(uint256)")[:4]
-    with brownie.reverts(revert_pattern=f"typed error: {error_hash.hex()}[0-9a-f]+"):  # type: ignore
+    with reverts(encode_error("IncorrectCLBalanceIncrease(uint256)", [rebase_amount])):  # type: ignore
         oracle_report(cl_diff=rebase_amount, exclude_vaults_balances=True)
 
 

@@ -45,7 +45,7 @@ def test_prefixes(dsm):
     """Test that prefixes are calculated correctly. Fails if chainId of the fork was not =1 during dsm deploy"""
     assert (
         dsm.PAUSE_MESSAGE_PREFIX()
-        == web3.solidityKeccak(
+        == web3.solidity_keccak(
             ["bytes32", "uint256", "address"],
             [
                 web3.keccak(text="lido.DepositSecurityModule.PAUSE_MESSAGE").hex(),
@@ -56,7 +56,7 @@ def test_prefixes(dsm):
     )
     assert (
         dsm.ATTEST_MESSAGE_PREFIX()
-        == web3.solidityKeccak(
+        == web3.solidity_keccak(
             ["bytes32", "uint256", "address"],
             [
                 web3.keccak(text="lido.DepositSecurityModule.ATTEST_MESSAGE").hex(),

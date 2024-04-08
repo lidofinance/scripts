@@ -135,20 +135,11 @@ def calls_info_pretty_print(call: Union[str, Call, EncodedCall]) -> str:
     """Format printing for Call instance."""
     return color.highlight(repr(call))
 
-
+# DEPRECATED
 def encode_error(error: str, values=None) -> str:
-    def hex_encode(value):
-        if isinstance(value, HexBytes):
-            return value.hex()[2:]
-        padding = 66
-        return f"{value:#0{padding}x}"[2:]
-
-    def get_error_msg(hash, values):
-        s = f"typed error: {hash}"
-        for v in values:
-            s += hex_encode(v)
-        return s
-
-    hash = f"0x{keccak(text=error)[:4].hex()}"
-    values = values if values else []
-    return get_error_msg(hash, values)
+    encoded_error = error.split('(')[0] + ': '
+    args = ''
+    if values is not None:
+        args = ', '.join(str(x) for x in values)
+        return f"{encoded_error}{args}"
+    return encoded_error
