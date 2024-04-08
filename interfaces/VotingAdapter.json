@@ -1,0 +1,131 @@
+[
+  {
+    "name": "ERC20Recovered",
+    "inputs": [
+      { "name": "token", "type": "address", "indexed": false },
+      { "name": "amount", "type": "uint256", "indexed": false }
+    ],
+    "anonymous": false,
+    "type": "event"
+  },
+  {
+    "name": "ETHRecovered",
+    "inputs": [{ "name": "amount", "type": "uint256", "indexed": false }],
+    "anonymous": false,
+    "type": "event"
+  },
+  {
+    "name": "OwnerChanged",
+    "inputs": [{ "name": "owner", "type": "address", "indexed": false }],
+    "anonymous": false,
+    "type": "event"
+  },
+  {
+    "stateMutability": "nonpayable",
+    "type": "constructor",
+    "inputs": [
+      { "name": "voting_addr", "type": "address" },
+      { "name": "snapshot_delegate_addr", "type": "address" },
+      { "name": "delegation_addr", "type": "address" },
+      { "name": "owner", "type": "address" }
+    ],
+    "outputs": []
+  },
+  {
+    "stateMutability": "view",
+    "type": "function",
+    "name": "encode_aragon_vote_calldata",
+    "inputs": [
+      { "name": "voteId", "type": "uint256" },
+      { "name": "supports", "type": "bool" }
+    ],
+    "outputs": [{ "name": "", "type": "bytes" }]
+  },
+  {
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "aragon_vote",
+    "inputs": [{ "name": "abi_encoded_params", "type": "bytes" }],
+    "outputs": []
+  },
+  {
+    "stateMutability": "view",
+    "type": "function",
+    "name": "encode_snapshot_set_delegate_calldata",
+    "inputs": [{ "name": "delegate", "type": "address" }],
+    "outputs": [{ "name": "", "type": "bytes" }]
+  },
+  {
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "snapshot_set_delegate",
+    "inputs": [{ "name": "abi_encoded_params", "type": "bytes" }],
+    "outputs": []
+  },
+  {
+    "stateMutability": "view",
+    "type": "function",
+    "name": "encode_delegate_calldata",
+    "inputs": [{ "name": "delegate", "type": "address" }],
+    "outputs": [{ "name": "", "type": "bytes" }]
+  },
+  {
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "delegate",
+    "inputs": [{ "name": "abi_encoded_params", "type": "bytes" }],
+    "outputs": []
+  },
+  {
+    "stateMutability": "view",
+    "type": "function",
+    "name": "voting_contract_addr",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }]
+  },
+  {
+    "stateMutability": "view",
+    "type": "function",
+    "name": "snapshot_delegate_contract_addr",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }]
+  },
+  {
+    "stateMutability": "view",
+    "type": "function",
+    "name": "delegation_contract_addr",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }]
+  },
+  {
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "change_owner",
+    "inputs": [{ "name": "owner", "type": "address" }],
+    "outputs": []
+  },
+  {
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "recover_erc20",
+    "inputs": [
+      { "name": "token", "type": "address" },
+      { "name": "amount", "type": "uint256" }
+    ],
+    "outputs": []
+  },
+  {
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "recover_ether",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "stateMutability": "view",
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }]
+  }
+]
