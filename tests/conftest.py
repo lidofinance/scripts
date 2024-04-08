@@ -53,6 +53,14 @@ def stranger(accounts):
     return stranger
 
 
+@pytest.fixture(scope="function")
+def delegate(accounts):
+    delegate = accounts.at("0xa70B0AfdF44cEccCF02E76486a6DE4F4B7fd1e52", force=True)
+    web3.provider.make_request("evm_setAccountBalance", [delegate.address, "0x152D02C7E14AF6800000"])
+    assert delegate.balance() == ETH(100000)
+    return delegate
+
+
 @pytest.fixture(scope="module")
 def eth_whale(accounts):
     if network_name() in ("goerli", "goerli-fork"):
