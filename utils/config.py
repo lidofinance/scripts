@@ -87,8 +87,10 @@ def get_pinata_cloud_token(silent=False) -> str:
 
 def get_infura_io_keys(silent=False) -> Tuple[str, str]:
     is_live = get_is_live()
-    if is_live and not silent and (
-        "WEB3_INFURA_IPFS_PROJECT_ID" not in os.environ or "WEB3_INFURA_IPFS_PROJECT_SECRET" not in os.environ
+    if (
+        is_live
+        and not silent
+        and ("WEB3_INFURA_IPFS_PROJECT_ID" not in os.environ or "WEB3_INFURA_IPFS_PROJECT_SECRET" not in os.environ)
     ):
         raise EnvironmentError(
             "Please set WEB3_INFURA_IPFS_PROJECT_ID and WEB3_INFURA_IPFS_PROJECT_SECRET env variable "
@@ -311,6 +313,10 @@ class ContractsLazyLoader:
     @property
     def split_main(self) -> interface.SplitMain:
         return interface.SplitMain(SPLIT_MAIN)
+
+    @property
+    def trp_escrow_factory(self) -> interface.VestingEscrowFactory:
+        return interface.VestingEscrowFactory(TRP_VESTING_ESCROW_FACTORY)
 
 
 def __getattr__(name: str) -> Any:
