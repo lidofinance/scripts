@@ -490,7 +490,7 @@ def test_accounting_withdrawals_at_limits(
         "evm_setAccountBalance",  # type: ignore
         [
             withdrawal_vault.address,
-            Web3.toHex(withdrawals),
+            Web3.to_hex(withdrawals),
         ],
     )
 
@@ -574,7 +574,7 @@ def test_accounting_withdrawals_above_limits(
         "evm_setAccountBalance",  # type: ignore
         [
             withdrawal_vault.address,
-            Web3.toHex(withdrawals),
+            Web3.to_hex(withdrawals),
         ],
     )
 
@@ -794,14 +794,14 @@ def test_accounting_overfill_both_vaults(
         "evm_setAccountBalance",  # type: ignore
         [
             withdrawal_vault.address,
-            Web3.toHex(limit + excess),
+            Web3.to_hex(limit + excess),
         ],
     )
     web3.manager.request_blocking(
         "evm_setAccountBalance",  # type: ignore
         [
             el_vault.address,
-            Web3.toHex(limit + excess),
+            Web3.to_hex(limit + excess),
         ],
     )
 

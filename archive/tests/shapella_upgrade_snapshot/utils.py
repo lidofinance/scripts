@@ -74,7 +74,7 @@ def get_slot(
 
     res = []
 
-    buf = Web3.toBytes(idx)
+    buf = Web3.to_bytes(idx)
     while len(buf) < 32:
         buf = b"\x00" + buf
 
