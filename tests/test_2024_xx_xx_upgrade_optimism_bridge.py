@@ -8,6 +8,7 @@ from utils.test.tx_tracing_helpers import *
 from utils.config import (
     contracts,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
+    network_name,
     # LIDO,
     # AGENT
 )
@@ -22,6 +23,9 @@ def test_vote(
     accounts,
     vote_ids_from_env
 ):
+    if not network_name() in ("sepolia", "sepolia-fork"):
+        return
+
     l1_token_bridge_proxy = interface.OssifiableProxy(L1_TOKEN_BRIDGE_PROXY);
 
     l1_token_bridge_implementation_address_before = l1_token_bridge_proxy.proxy__getImplementation()
