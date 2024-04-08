@@ -342,9 +342,9 @@ def parse_transfer_logs(transfer_logs):
     for l in transfer_logs:
         res.append(
             {
-                "from": eth_abi.decode_abi(["address"], l["topics"][1])[0],
-                "to": eth_abi.decode_abi(["address"], l["topics"][2])[0],
-                "value": eth_abi.decode_single("uint256", bytes.fromhex(l["data"][2:])),
+                "from": eth_abi.decode(["address"], l["topics"][1])[0],
+                "to": eth_abi.decode(["address"], l["topics"][2])[0],
+                "value": eth_abi.decode(["uint256"], bytes.fromhex(l["data"][2:])),
             }
         )
     return res

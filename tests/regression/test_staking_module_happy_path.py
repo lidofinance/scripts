@@ -104,8 +104,8 @@ def parse_exited_signing_keys_count_changed_logs(logs):
     for l in logs:
         res.append(
             {
-                "nodeOperatorId": eth_abi.decode_abi(["uint256"], l["topics"][1])[0],
-                "exitedValidatorsCount": eth_abi.decode_single("uint256", bytes.fromhex(l["data"][2:])),
+                "nodeOperatorId": eth_abi.decode(["uint256"], l["topics"][1])[0],
+                "exitedValidatorsCount": eth_abi.decode(["uint256"], bytes.fromhex(l["data"][2:])),
             }
         )
     return res
@@ -131,8 +131,8 @@ def parse_target_validators_count_changed(logs):
     for l in logs:
         res.append(
             {
-                "nodeOperatorId": eth_abi.decode_abi(["uint256"], l["topics"][1])[0],
-                "targetValidatorsCount": eth_abi.decode_single("uint256", bytes.fromhex(l["data"][2:])),
+                "nodeOperatorId": eth_abi.decode(["uint256"], l["topics"][1])[0],
+                "targetValidatorsCount": eth_abi.decode(["uint256"], bytes.fromhex(l["data"][2:])),
             }
         )
     return res

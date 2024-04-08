@@ -50,7 +50,7 @@ def assert_node_operator_added_event(tx, node_operator_id, name, reward_address,
     # and adi_encode will revert because of invalid data length
     data = log["data"][2:]
     full_data_len = int(64 * math.ceil(len(data) / 64))
-    data = data.ljust(full_data_len, "0")
+    data = data.ljust(full_data_len, b"0")
 
     assert data == encode_event_arguments(event_signature, node_operator_id, name, reward_address, staking_limit)
 

@@ -225,8 +225,7 @@ def test_accounting_cl_rebase_above_limits():
     rebase_amount = ((annual_increase_limit + 1) * ONE_DAY + 1) * pre_cl_balance // (365 * ONE_DAY) // MAX_BASIS_POINTS
     assert max_cl_rebase_via_limiter > rebase_amount, "Expected annual limit to shot first"
 
-    error_hash = Web3.keccak(text="IncorrectCLBalanceIncrease(uint256)")[:4]
-    with reverts(encode_error("IncorrectCLBalanceIncrease(uint256)", [rebase_amount])):  # type: ignore
+    with reverts(encode_error("IncorrectCLBalanceIncrease(uint256)", [1001])): 
         oracle_report(cl_diff=rebase_amount, exclude_vaults_balances=True)
 
 

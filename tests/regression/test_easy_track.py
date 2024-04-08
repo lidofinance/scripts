@@ -187,7 +187,7 @@ def test_simple_dvt_set_operator_name_reward_address(
     assert node_operator["rewardAddress"] == op_addr and node_operator["rewardAddress"] != op_addr_upd
 
     calldata_name = _encode_calldata(["(uint256,string)[]"], [[(no_id, op_name_upd)]])
-    calldata_addr = _encode_calldata(["((uint256,address)[]"], [[(no_id, op_addr_upd)]])
+    calldata_addr = _encode_calldata(["(uint256,address)[]"], [[(no_id, op_addr_upd)]])
 
     create_and_enact_motion(contracts.easy_track, trusted_caller, factory_name, calldata_name, stranger)
     create_and_enact_motion(contracts.easy_track, trusted_caller, factory_addr, calldata_addr, stranger)

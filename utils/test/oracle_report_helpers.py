@@ -105,10 +105,6 @@ def prepare_exit_bus_report(validators_to_exit, ref_slot):
     report_data = encode_data_from_abi(report, contracts.validators_exit_bus_oracle.abi, "submitReportData")
     if not validators_to_exit:
         report_data = report_data[:-32]
-        assert len(report_data) == 224, (
-            "We cut off the last 32 bytes because there is a problem with the encoding of empty bytes array in the"
-            "eth_abi package. Remove this condition when eth_abi is bumped to the latest version."
-        )
     report_hash = web3.keccak(report_data)
     return report, report_hash
 
