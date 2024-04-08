@@ -3,8 +3,11 @@ name: Normal vote CI
 on:
   push:
     branches-ignore:
-      - "large-vote_**"
-
+      - "feat/tests"
+      - "feat/rc3"
+      - "feat/rc2"
+      - "feat/rc1"
+      - "feat/next-vote"
 jobs:
   run-tests-normal:
     name: Brownie fork NORMAL tests
