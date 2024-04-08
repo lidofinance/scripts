@@ -329,7 +329,7 @@ def assert_el_rewards_received_log(log, amount):
 def assert_eth_received_log(log, value):
     topic = web3.keccak(text="ETHReceived(uint256)")
     assert log["topics"][0] == topic
-    assert log["data"] == "0x" + eth_abi.encode_single("uint256", value).hex()
+    assert log["data"] == "0x" + eth_abi.encode("uint256", value).hex()
 
 
 def filter_transfer_logs(logs):

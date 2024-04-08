@@ -8,7 +8,7 @@ from archive.scripts.vote_2023_06_20_goerli import start_vote
 from brownie import ZERO_ADDRESS, chain, accounts
 from brownie.network.transaction import TransactionReceipt
 
-from eth_abi.abi import encode_single
+from eth_abi.abi import encode
 
 from utils.config import (
     network_name,
@@ -218,7 +218,7 @@ def test_vote(
 
 
 def _encode_calldata(signature, values):
-    return "0x" + encode_single(signature, values).hex()
+    return "0x" + encode(signature, values).hex()
 
 
 def create_and_enact_payment_motion(

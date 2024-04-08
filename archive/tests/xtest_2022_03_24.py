@@ -4,7 +4,7 @@ Tests for voting 24/03/2022.
 
 from brownie import Contract, interface
 from brownie.network import chain
-from eth_abi import encode_single
+from eth_abi import encode
 
 from event_validators.payout import Payout, validate_payout_event
 from event_validators.easy_track import EVMScriptFactoryAdded, validate_evmscript_factory_added_event
@@ -175,7 +175,7 @@ def _make_recover_event(recovered: int) -> Recover:
 
 
 def _encode_calldata(signature, values):
-    return "0x" + encode_single(signature, values).hex()
+    return "0x" + encode(signature, values).hex()
 
 
 def _check_factories_sanity(
@@ -228,7 +228,7 @@ def _check_factories_sanity(
     # create new motion to top up reward program
     tx = easy_track.createMotion(
         top_up_reward_programs,
-        encode_single("(address[],uint256[])", [[reward_program.address], [int(5e18)]]),
+        encode("(address[],uint256[])", [[reward_program.address], [int(5e18)]]),
         {"from": trusted_address},
     )
     motions = easy_track.getMotions()
@@ -250,7 +250,7 @@ def _check_factories_sanity(
     # create new motion to remove a reward program
     tx = easy_track.createMotion(
         remove_reward_program,
-        encode_single("(address)", [reward_program.address]),
+        encode("(address)", [reward_program.address]),
         {"from": trusted_address},
     )
 

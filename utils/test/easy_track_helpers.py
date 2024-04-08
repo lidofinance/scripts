@@ -1,5 +1,5 @@
 from brownie import chain, accounts, interface
-from eth_abi.abi import encode_single
+from eth_abi.abi import encode
 from utils.config import (
     contracts,
 )
@@ -11,7 +11,7 @@ STETH_ERROR_MARGIN_WEI: int = 2
 
 
 def _encode_calldata(signature, values):
-    return "0x" + encode_single(signature, values).hex()
+    return "0x" + encode(signature, values).hex()
 
 
 def create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger):

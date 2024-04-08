@@ -1,4 +1,4 @@
-from eth_abi.abi import encode_single
+from eth_abi.abi import encode
 from brownie import accounts, chain, interface, convert
 from utils.config import (
     contracts,
