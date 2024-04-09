@@ -76,8 +76,10 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
     assert voting_proxy.implementation() == updated_voting_app["address"]
 
     # TRP Voting Adapter after
-    assert contracts.trp_escrow_factory.voting_adapter() == updated_trp_voting_adapter_address
+    trp_voting_adapter_address = contracts.trp_escrow_factory.voting_adapter()
+    assert trp_voting_adapter_address == updated_trp_voting_adapter_address
 
+    trp_voting_adapter = interface.VotingAdapter(trp_voting_adapter_address)
     assert trp_voting_adapter.delegation_contract_addr() == VOTING
     assert trp_voting_adapter.voting_contract_addr() == VOTING
 

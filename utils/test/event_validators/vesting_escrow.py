@@ -3,8 +3,7 @@ from brownie.network.event import EventDict
 
 
 def validate_voting_adapter_upgraded_event(event: EventDict, voting_adapter_address: str):
-    _events_chain = ["LogScriptCall", "VotingAdapterUpgraded"]
-
+    _events_chain = ["LogScriptCall", "LogScriptCall", "VotingAdapterUpgraded", "ScriptResult"]
     validate_events_chain([e.name for e in event], _events_chain)
 
     assert event.count("VotingAdapterUpgraded") == 1
