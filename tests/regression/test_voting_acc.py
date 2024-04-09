@@ -5,13 +5,12 @@ from typing import Tuple, Optional
 
 import pytest
 
-from brownie import MockCallTarget, accounts, chain, reverts
+from brownie import MockCallTarget, accounts, chain, reverts, interface
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import create_vote, bake_vote_items
 from utils.config import LDO_VOTE_EXECUTORS_FOR_TESTS
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.config import contracts
-
 
 @pytest.fixture(scope="module")
 def call_target():
@@ -324,3 +323,44 @@ def test_simple_delegation_multi(call_target, delegate, test_vote):
     # [objc] delegate revote NO (reject)
     with reverts("VOTING_CAN_NOT_VOTE"):
         contracts.voting.attemptVoteForMultiple(vote_id, True, [holder1, holder2, holder3], {"from": delegate})
+
+def test_trp_delegation(ldo_holder, delegate, trp_recipient, call_target):
+    assert contracts.trp_escrow_factory.voting_adapter() == contracts.voting_TRP_adapter.address
+
+    contracts.ldo_token.approve(
+        contracts.trp_escrow_factory.address,
+        1_000_000_000_000_000_000,
+        {"from": accounts.at(ldo_holder, force=True)}
+    )
+
+    tx = contracts.trp_escrow_factory.deploy_vesting_contract(
+        1_000_000_000_000_000_000,
+        trp_recipient.address,
+        360,
+        chain.time(),  # bc of tests can be in future
+        24,
+        1,
+        {"from": accounts.at(ldo_holder, force=True)},
+    )
+
+    print(f"{tx.events['VestingEscrowCreated'][0][0]}")
+    escrow_address = tx.events["VestingEscrowCreated"][0][0]['escrow']
+    chain.mine()
+
+    vote_items = [(call_target.address, call_target.perform_call.encode_input())]
+    vote = create_vote(bake_vote_items(["Test voting"], vote_items), {"from": ldo_holder})
+    vote_id = vote[0]
+    assert contracts.voting.getVotePhase(vote_id) == 0  # Main phase
+
+    encoded_delegate_address = contracts.voting_TRP_adapter.encode_delegate_calldata(delegate.address)
+
+    interface.Escrow(escrow_address).delegate(encoded_delegate_address, {"from": trp_recipient})
+
+    contracts.voting.getDelegatedVoters(delegate.address, 0, 5, {"from": delegate})
+
+    vote_before = contracts.voting.getVote(vote_id, {"from": delegate})
+    assert vote_before['yea'] == 0
+
+    contracts.voting.attemptVoteFor(vote_id, True, escrow_address, {"from": delegate})
+    vote_after = contracts.voting.getVote(vote_id, {"from": delegate})
+    assert vote_after['yea'] == 1_000_000_000_000_000_000

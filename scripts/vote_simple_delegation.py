@@ -18,10 +18,12 @@ from utils.config import (
     get_deployer_account,
     get_is_live,
     get_priority_fee,
+    contracts,
 )
+from utils.agent import agent_forward
+
 from utils.repo import (
     add_implementation_to_voting_app_repo,
-    # add_implementation_to_lido_app_repo,
 )
 from utils.kernel import update_app_implementation
 
@@ -46,6 +48,8 @@ description = """
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""
 
+    voting_adapter_with_delegation = contracts.voting_TRP_adapter.address
+
     vote_desc_items, call_script_items = zip(
         #
         # I. Simple Delegation
@@ -62,14 +66,16 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             "2) Upgrade the DAO Voting contract implementation",
             update_app_implementation(update_voting_app["id"], update_voting_app["new_address"]),
         ),
-        # (
-        #     "3) Push new Lido app version to Lido Repo",
-        #     add_implementation_to_lido_app_repo(
-        #         update_lido_app["version"],
-        #         update_lido_app["address"],
-        #         update_lido_app["content_uri"],
-        #     ),
-        # ),
+        #
+        # II. TRP adapter update
+        #
+        (
+            "3) Change voting adapter to 0x5Ea73d6AE9B2E57eF865A3059bdC5C06b8e46072",
+            agent_forward([(
+                contracts.trp_escrow_factory.address,
+                contracts.trp_escrow_factory.update_voting_adapter.encode_input(voting_adapter_with_delegation),
+            )])
+        ),
     )
 
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))

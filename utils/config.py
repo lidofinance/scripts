@@ -309,6 +309,14 @@ class ContractsLazyLoader:
         return interface.ObolLidoSplitFactory(OBOL_LIDO_SPLIT_FACTORY)
 
     @property
+    def trp_escrow_factory(self) -> interface.VestingEscrowFactory:
+        return interface.VestingEscrowFactory(TRP_ESCROW_FACTORY)
+
+    @property
+    def voting_TRP_adapter(self) -> interface.VotingTRPAdapter:
+        return interface.VotingTRPAdapter(VOTING_TRP_ADAPTER)
+
+    @property
     def split_main(self) -> interface.SplitMain:
         return interface.SplitMain(SPLIT_MAIN)
 
