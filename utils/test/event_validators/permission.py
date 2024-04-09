@@ -77,7 +77,7 @@ def validate_permission_grantp_event(event: EventDict, p: Permission, params: Li
     assert event["SetPermission"]["role"] == p.role, "Wrong role"
     assert event["SetPermission"]["allowed"] is True, "Wrong allowed flag"
 
-    params_hash = Web3.solidityKeccak(["uint256[]"], [encode_permission_params(params)]).hex()
+    params_hash = Web3.solidity_keccak(["uint256[]"], [encode_permission_params(params)]).hex()
 
     assert event["SetPermissionParams"]["entity"] == p.entity, "Wrong entity"
     assert event["SetPermissionParams"]["app"] == p.app, "Wrong app address"

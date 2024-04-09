@@ -4,6 +4,7 @@ from brownie import reverts, accounts, chain  # type: ignore
 from utils.test.oracle_report_helpers import oracle_report, ZERO_BYTES32
 from brownie.network.account import Account
 
+from utils.evm_script import encode_error
 from utils.finance import ZERO_ADDRESS
 from utils.test.helpers import almostEqEth, ETH
 from utils.config import (
@@ -112,17 +113,17 @@ def test_gate_seal_scenario(steth_holder, gate_seal_committee, eth_whale):
 
     # reverts on requestWithdrawals
     contracts.lido.approve(contracts.withdrawal_queue.address, REQUESTS_SUM, {"from": steth_holder})
-    with reverts("typed error: 0x14378398"):  # signature for ResumedExpected()
+    with reverts(encode_error("ResumedExpected()")):
         contracts.withdrawal_queue.requestWithdrawals(
             [REQUEST_AMOUNT for _ in range(REQUESTS_COUNT)], steth_holder, {"from": steth_holder}
         )
 
     # reverts on VEBO report
-    with reverts("typed error: 0x14378398"):  # signature for ResumedExpected()
+    with reverts(encode_error("ResumedExpected()")):
         contracts.validators_exit_bus_oracle.submitReportData((1, 1, 1, 1, ZERO_BYTES32), 1, {"from": steth_holder})
 
     # reverts on finalization attempt
-    with reverts("typed error: 0x14378398"):  # signature for ResumedExpected()
+    with reverts(encode_error("ResumedExpected()")):
         contracts.withdrawal_queue.finalize(1, 1, {"from": steth_holder})
 
     """ claim """

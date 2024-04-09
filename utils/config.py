@@ -29,13 +29,24 @@ def network_name() -> Optional[str]:
 if network_name() in ("goerli", "goerli-fork"):
     print(f'Using {color("cyan")}config_goerli.py{color} addresses')
     from configs.config_goerli import *
+elif network_name() in ("holesky", "holesky-fork"):
+    print(f'Using {color("cyan")}config_holesky.py{color} addresses')
+    from configs.config_holesky import *
 else:
     print(f'Using {color("magenta")}config_mainnet.py{color} addresses')
     from configs.config_mainnet import *
 
 
 def get_is_live() -> bool:
-    dev_networks = ["development", "hardhat", "hardhat-fork", "goerli-fork", "local-fork", "mainnet-fork"]
+    dev_networks = [
+        "development",
+        "hardhat",
+        "hardhat-fork",
+        "goerli-fork",
+        "local-fork",
+        "mainnet-fork",
+        "holesky-fork",
+    ]
     return network.show_active() not in dev_networks
 
 

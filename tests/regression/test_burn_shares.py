@@ -1,10 +1,10 @@
 """
 Tests for lido burnShares method
 """
-import eth_abi
 import pytest
 from utils.config import contracts
-from brownie import reverts, ZERO_ADDRESS, web3, accounts, chain
+from brownie import reverts, ZERO_ADDRESS, accounts, chain
+from utils.evm_script import encode_error
 
 def test_burn_shares_by_stranger(stranger):
     lido = accounts.at(contracts.lido, force=True)
@@ -20,7 +20,7 @@ def test_burn_shares_by_stranger(stranger):
     total_shares = contracts.lido.getTotalShares()
 
     # Test that stranger can't burnShares
-    with reverts("typed error: 0x7e717823"): # keccak256("AppAuthLidoFailed()")
+    with reverts(encode_error("AppAuthLidoFailed()")):
         contracts.burner.commitSharesToBurn(shares_to_burn, {"from": stranger})
 
     contracts.lido.approve(contracts.burner, 10**24, {"from": stranger})

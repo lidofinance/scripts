@@ -8,7 +8,7 @@ from archive.scripts.vote_2023_08_08_goerli import start_vote
 from brownie import ZERO_ADDRESS, chain, accounts
 from brownie.network.transaction import TransactionReceipt
 
-from eth_abi.abi import encode_single
+from eth_abi.abi import encode
 
 from utils.config import (
     network_name,

@@ -2,7 +2,7 @@ import re
 import math
 from brownie import web3, network
 from typing import Dict, List
-from eth_abi import encode_abi, decode_abi
+from eth_abi import encode
 from typing import  NewType, Tuple
 
 SIGNING_KEY_KEYS = ["key", "depositSignature", "used"]
@@ -48,10 +48,9 @@ def assert_node_operator_added_event(tx, node_operator_id, name, reward_address,
 
     # as the event contains string, the trailing zeroes might be trimmed in the data
     # and adi_encode will revert because of invalid data length
-    data = log["data"][2:]
+    data = log["data"].hex()[2:]
     full_data_len = int(64 * math.ceil(len(data) / 64))
     data = data.ljust(full_data_len, "0")
-
     assert data == encode_event_arguments(event_signature, node_operator_id, name, reward_address, staking_limit)
 
 
@@ -71,11 +70,11 @@ def assert_dict_values(first, second, keys, skip):
 
 
 def encode_event_arguments(event_signature: str, *event_args):
-    # to work with encode_abi brownie's Account instances must be mapped to str
+    # to work with encode brownie's Account instances must be mapped to str
     args_with_processed_accounts = [
         event_arg.address if hasattr(event_arg, "address") else event_arg for event_arg in event_args
     ]
-    return encode_abi(get_event_arg_types(event_signature), args_with_processed_accounts).hex()
+    return encode(get_event_arg_types(event_signature), args_with_processed_accounts).hex()
 
 
 def get_event_arg_types(event_signature: str):

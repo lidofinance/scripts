@@ -1,5 +1,5 @@
 from brownie import chain, accounts, interface
-from eth_abi.abi import encode_single
+from eth_abi.abi import encode
 from utils.config import (
     contracts,
 )
@@ -11,7 +11,7 @@ STETH_ERROR_MARGIN_WEI: int = 2
 
 
 def _encode_calldata(signature, values):
-    return "0x" + encode_single(signature, values).hex()
+    return "0x" + encode(signature, values).hex()
 
 
 def create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger):
@@ -56,9 +56,9 @@ def create_and_enact_payment_motion(
         is_stables_factory = False
 
     calldata = (
-        _encode_calldata("(address,address[],uint256[])", [token.address, recievers_addresses, transfer_amounts])
+        _encode_calldata(["address","address[]","uint256[]"], [token.address, recievers_addresses, transfer_amounts])
         if is_stables_factory
-        else _encode_calldata("(address[],uint256[])", [recievers_addresses, transfer_amounts])
+        else _encode_calldata(["address[]","uint256[]"], [recievers_addresses, transfer_amounts])
     )
 
     create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger)
@@ -93,7 +93,7 @@ def create_and_enact_add_recipient_motion(
     recipients_count = len(registry.getAllowedRecipients())
     assert not registry.isRecipientAllowed(recipient)
 
-    calldata = _encode_calldata("(address,string)", [recipient.address, title])
+    calldata = _encode_calldata(["address", "string"], [recipient.address, title])
 
     create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger)
 
@@ -112,7 +112,7 @@ def create_and_enact_remove_recipient_motion(
     recipients_count = len(registry.getAllowedRecipients())
     assert registry.isRecipientAllowed(recipient)
 
-    calldata = _encode_calldata("(address)", [recipient.address])
+    calldata = _encode_calldata(["address"], [recipient.address])
 
     create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger)
 

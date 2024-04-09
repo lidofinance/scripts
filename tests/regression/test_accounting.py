@@ -1,11 +1,12 @@
 from typing import TypedDict, TypeVar, Any
 
 import pytest
-from brownie import Contract, accounts, chain, web3
+from brownie import Contract, accounts, chain, web3, reverts
 from brownie.exceptions import brownie
 from brownie.network.account import Account
 from web3 import Web3
 
+from utils.evm_script import encode_error
 from tests.conftest import Helpers
 from utils.config import contracts
 from utils.test.helpers import ETH, GWEI, ZERO_ADDRESS, almostEqWithDiff, eth_balance
@@ -224,8 +225,7 @@ def test_accounting_cl_rebase_above_limits():
     rebase_amount = ((annual_increase_limit + 1) * ONE_DAY + 1) * pre_cl_balance // (365 * ONE_DAY) // MAX_BASIS_POINTS
     assert max_cl_rebase_via_limiter > rebase_amount, "Expected annual limit to shot first"
 
-    error_hash = Web3.keccak(text="IncorrectCLBalanceIncrease(uint256)")[:4]
-    with brownie.reverts(revert_pattern=f"typed error: {error_hash.hex()}[0-9a-f]+"):  # type: ignore
+    with reverts(encode_error("IncorrectCLBalanceIncrease(uint256)", [1001])): 
         oracle_report(cl_diff=rebase_amount, exclude_vaults_balances=True)
 
 
@@ -489,7 +489,7 @@ def test_accounting_withdrawals_at_limits(
         "evm_setAccountBalance",  # type: ignore
         [
             withdrawal_vault.address,
-            Web3.toHex(withdrawals),
+            Web3.to_hex(withdrawals),
         ],
     )
 
@@ -573,7 +573,7 @@ def test_accounting_withdrawals_above_limits(
         "evm_setAccountBalance",  # type: ignore
         [
             withdrawal_vault.address,
-            Web3.toHex(withdrawals),
+            Web3.to_hex(withdrawals),
         ],
     )
 
@@ -793,14 +793,14 @@ def test_accounting_overfill_both_vaults(
         "evm_setAccountBalance",  # type: ignore
         [
             withdrawal_vault.address,
-            Web3.toHex(limit + excess),
+            Web3.to_hex(limit + excess),
         ],
     )
     web3.manager.request_blocking(
         "evm_setAccountBalance",  # type: ignore
         [
             el_vault.address,
-            Web3.toHex(limit + excess),
+            Web3.to_hex(limit + excess),
         ],
     )
 

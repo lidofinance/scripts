@@ -7,7 +7,7 @@ from scripts.vote_2023_02_21 import start_vote
 from brownie import ZERO_ADDRESS, chain, accounts
 from brownie.network.transaction import TransactionReceipt
 
-from eth_abi.abi import encode_single
+from eth_abi.abi import encode
 
 from utils.config import network_name
 from utils.test.tx_tracing_helpers import *
@@ -235,4 +235,4 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
     assert len(registry.getAllowedRecipients()) == recipients_length_before, 'Wrong whitelist length'
 
 def _encode_calldata(signature, values):
-    return "0x" + encode_single(signature, values).hex()
+    return "0x" + encode(signature, values).hex()

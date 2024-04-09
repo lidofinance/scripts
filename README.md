@@ -4,10 +4,10 @@
 </div>
 
 ![python ~3.10](https://img.shields.io/badge/python->=3.10,<3.11-blue)
-![poetry 1.5.0](https://img.shields.io/badge/poetry-1.5.0-blue)
-![eth_brownie 1.19.3](https://img.shields.io/badge/eth__brownie-1.19.3-brown)
-![AVotesParser 0.5.4](https://img.shields.io/badge/AVotesParser-0.5.4-brown)
-![Ganache ~7.6.0](https://img.shields.io/badge/ganache-7.6.0-orange)
+![poetry 1.8.2](https://img.shields.io/badge/poetry-1.8.2-blue)
+![eth_brownie 1.20.2](https://img.shields.io/badge/eth__brownie-1.20.2-brown)
+![AVotesParser 0.5.6](https://img.shields.io/badge/AVotesParser-0.5.6-brown)
+![Ganache ~7.9.2-lido](https://img.shields.io/badge/ganache-7.9.2--lido-orange)
 ![license MIT](https://img.shields.io/badge/license-MIT-brightgreen)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -17,9 +17,9 @@ Lido DAO Aragon omnibus voting scripts.
 ## 🏁 Getting started
 
 - This project uses Brownie development framework. Learn more about
-[Brownie](https://eth-brownie.readthedocs.io/en/stable/index.html).
+  [Brownie](https://eth-brownie.readthedocs.io/en/stable/index.html).
 - [Poetry](https://python-poetry.org/) dependency and packaging manager is used
-to bootstrap environment and keep the repo sane.
+  to bootstrap environment and keep the repo sane.
 
 ### Prerequisites
 
@@ -33,24 +33,19 @@ to bootstrap environment and keep the repo sane.
 Use the following command to install poetry:
 
 ```shell
-pip install --user poetry==1.5.0
+pip install --user poetry==1.8.2
 ```
 
 alternatively, you could proceed with `pipx`:
 
 ```shell
-pipx install poetry==1.5.0
+pipx install poetry==1.8.2
 ```
 
 #### Step 2. Setup dependencies with poetry
 
 Ensure that poetry bin path is added to your `$PATH` env variable.
 Usually it's `$HOME/.local/bin` for most Unix-like systems.
-
-This is a workaround related `brownie` deps `pyyaml` issue https://github.com/eth-brownie/brownie/issues/1701
-```shell
-poetry run pip install "cython<3.0" pyyaml==5.4.1 --no-build-isolation
-```
 
 ```shell
 poetry install
@@ -85,21 +80,29 @@ poetry shell
 ### Network setup
 
 By default, you should start composing new scripts and test using forked networks.
-You have two forked networks to work with:
+You have three forked networks to work with:
 
 - `mainnet-fork`
 - `goerli-fork`
+- `holesky-fork`
 
 To start new voting on the live networks you could proceed with:
 
 - `mainnet`
 - `goerli`
+- `holesky`
 
->Note: you can't run tests on the live networks.
+> Note: you can't run tests on the live networks.
 
 In a typical weekly omnibus workflow, you need only `mainnet-fork` and
 `mainnet` networks. In case of large test campaign on Lido upgrades,
 it also could be useful to go with `goerli` and `goerli-fork` testnets first.
+
+> **Holesky specifics.**
+> Due to Holesky not being supported by Infura yet, setting RPC URL for Holesky is different. Instead of setting `WEB3_INFURA_PROJECT_ID` env variable set `HOLESKY_RPC_URL`.
+
+> **Holesky is partially supported.**
+> At the moment not all parameters are set in `configs/config_holesky.py` and acceptance/regression/snapshot tests are not operational.
 
 ### Environment variables setup
 
@@ -121,7 +124,9 @@ provide the etherscan API token:
 ```bash
 export ETHERSCAN_TOKEN=<etherscan_api_key>
 ```
+
 To upload Markdown vote description for a new vote to IPFS you can use one of those:
+
 1. [Pinata Cloud](https://www.pinata.cloud/) API key.
 1. [Infura](https://www.infura.io/) API key for IPFS.
 1. Web3 API token [web3.storage](https://web3.storage/):
@@ -135,6 +140,7 @@ export WEB3_INFURA_IPFS_PROJECT_SECRET=<infura_project_secret>
 # For WEB3
 export WEB3_STORAGE_TOKEN=<web3_storage_api_key>
 ```
+
 See [here](utils/README.md#ipfs) to learn more Markdown description
 
 To skip events decoding while testing set the following var:
@@ -197,11 +203,11 @@ See [here](tests/README.md) to learn more about tests
 #### Notes on running tests in a forked mode
 
 - To forcibly bypass etherscan contract and event names decoding set the
-`OMNIBUS_BYPASS_EVENTS_DECODING` environment variable to `1`. It could be useful
-in case of etherscan downtimes or usage of some unverified contracts (especially,
-on the Görli Testnet).
+  `OMNIBUS_BYPASS_EVENTS_DECODING` environment variable to `1`. It could be useful
+  in case of etherscan downtimes or usage of some unverified contracts (especially,
+  on the Görli Testnet).
 - To re-use the already created `vote_id` you can pass the `OMNIBUS_VOTE_IDS`
-environment variable (e.g. `OMNIBUS_VOTE_IDS=104`).
+  environment variable (e.g. `OMNIBUS_VOTE_IDS=104`).
 - To re-use multiple created votes list the ids comma-separated (e.g. `OMNIBUS_VOTE_IDS=104,105`)
 - To force the large CI runner usage, please name your branch with the `large-vote_` prefix.
 

@@ -64,7 +64,7 @@ def fill_simple_dvt_ops_vetted_keys(stranger, min_ops_cnt=MIN_OPS_CNT, min_keys_
             input_params.append((no_id, no["totalAddedValidators"]))
 
     if len(input_params) > 0:
-        calldata = _encode_calldata("((uint256,uint256)[])", [input_params])
+        calldata = _encode_calldata(["(uint256,uint256)[]"], [input_params])
 
         create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
 
@@ -83,7 +83,7 @@ def simple_dvt_vet_keys(operator_id, stranger):
     if operator["totalVettedValidators"] == operator["totalAddedValidators"]:
         return
 
-    calldata = _encode_calldata("((uint256,uint256)[])", [[(operator_id, operator["totalAddedValidators"])]])
+    calldata = _encode_calldata(["(uint256,uint256)[]"], [[(operator_id, operator["totalAddedValidators"])]])
 
     create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
 
@@ -104,7 +104,7 @@ def simple_dvt_add_node_operators(simple_dvt, stranger, input_params=[]):
     # ]
     if len(input_params) > 0:
         calldata = _encode_calldata(
-            "(uint256,(string,address,address)[])",
+            ["uint256","(string,address,address)[]"],
             [
                 node_operators_count_before,
                 input_params,
