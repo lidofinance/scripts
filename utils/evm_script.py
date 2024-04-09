@@ -135,7 +135,6 @@ def calls_info_pretty_print(call: Union[str, Call, EncodedCall]) -> str:
     """Format printing for Call instance."""
     return color.highlight(repr(call))
 
-# DEPRECATED
 def encode_error(error: str, values=None) -> str:
     encoded_error = error.split('(')[0] + ': '
     args = ''

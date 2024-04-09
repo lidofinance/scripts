@@ -231,7 +231,7 @@ def assert_set_staking_limit(log, limit_max, limit_per_block):
     topic = web3.keccak(text="StakingLimitSet(uint256,uint256)")
 
     assert log["topics"][0] == topic
-    assert log["data"] == "0x" + eth_abi.encode_abi(["uint256", "uint256"], [limit_max, limit_per_block]).hex()
+    assert log["data"] == "0x" + eth_abi.encode(["uint256", "uint256"], [limit_max, limit_per_block]).hex()
 
 
 def is_staking_limit_set(contracts):
