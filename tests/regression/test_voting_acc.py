@@ -5,7 +5,7 @@ from typing import Tuple, Optional
 
 import pytest
 
-from brownie import MockCallTarget, accounts, chain, reverts
+from brownie import MockCallTarget, accounts, chain, reverts, interface
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import create_vote, bake_vote_items
 from utils.config import LDO_VOTE_EXECUTORS_FOR_TESTS
@@ -29,9 +29,9 @@ def test_stranger_cant_do_anything(test_vote, stranger):
         contracts.voting.newVote(EMPTY_CALLSCRIPT, "Test", {"from": stranger})
 
     vote_id = test_vote[0]
-    with reverts("VOTING_CAN_NOT_VOTE"):
+    with reverts("VOTING_NO_VOTING_POWER"):
         contracts.voting.vote(vote_id, True, False, {"from": stranger})
-    with reverts("VOTING_CAN_NOT_VOTE"):
+    with reverts("VOTING_NO_VOTING_POWER"):
         contracts.voting.vote(vote_id, False, False, {"from": stranger})
 
     chain.sleep(contracts.voting.voteTime() - contracts.voting.objectionPhaseTime() + 1)
@@ -39,7 +39,7 @@ def test_stranger_cant_do_anything(test_vote, stranger):
 
     with reverts("VOTING_CAN_NOT_VOTE"):
         contracts.voting.vote(vote_id, True, False, {"from": stranger})
-    with reverts("VOTING_CAN_NOT_VOTE"):
+    with reverts("VOTING_NO_VOTING_POWER"):
         contracts.voting.vote(vote_id, False, False, {"from": stranger})
 
     chain.sleep(contracts.voting.objectionPhaseTime())
@@ -121,3 +121,290 @@ def test_can_object(stranger, test_vote):
     # rejected vote cannot be executed
     with reverts("VOTING_CAN_NOT_EXECUTE"):
         contracts.voting.executeVote(vote_id, {"from": stranger})
+
+
+"""
+# [main] delegate vote for YES holders 1,2 (reject no delegation)
+# [main] holders 0,1 delegate to delegate
+# [main] delegate vote for YES holder 3 (reject not a delegation for holder 3)
+# [main] delegate vote for YES holders 1,2,3 (vote for 1 and 2 not 3)
+# [main] delegate revote for NO holders 1,2
+# [main] holder 3 delegate to delegate
+# [main] delegate vote for YES holders 3
+# [main] holder 3 vote for NO
+# [main] holder 2 delegate to holder 3
+# [main] holder 1 reset delegate
+# [main] delegate revote for YES holders 1 (reject not a delegate)
+# [main] delegate revote for YES holders 2 (reject not a delegate)
+# [main] delegate revote for YES holders 3 (reject cant overpower holder)
+# [main] holders 1,2,3 can revote main phase YES
+# [objc] holders 1,2,3 can revote NO
+# [objc] delegate revote NO (reject)
+"""
+
+
+def test_simple_delegation(call_target, delegate, test_vote):
+    vote_id = test_vote[0]
+
+    holder1 = LDO_VOTE_EXECUTORS_FOR_TESTS[0]
+    holder2 = LDO_VOTE_EXECUTORS_FOR_TESTS[1]
+    holder3 = LDO_VOTE_EXECUTORS_FOR_TESTS[2]
+
+    assert contracts.voting.getVotePhase(vote_id) == 0  # Main phase
+    # [main] delegate vote for YES holders 1 (reject no delegation)
+    with reverts("VOTING_CAN_NOT_VOTE_FOR"):
+        # if you don't have this func in object update abi
+        contracts.voting.attemptVoteFor(vote_id, True, holder1, {"from": delegate})
+
+    # [main] holders 0,1 delegate to delegate
+    for holder in [holder1, holder2]:
+        contracts.voting.setDelegate(delegate, {"from": accounts.at(holder, force=True)})
+
+    # [main] delegate vote for YES holder 3 (reject not a delegation for holder 3)
+    with reverts("VOTING_CAN_NOT_VOTE_FOR"):
+        contracts.voting.attemptVoteFor(vote_id, True, holder3, {"from": delegate})
+
+    # [main] delegate vote for YES holders 1,2 (vote for 1 and 2)
+    contracts.voting.attemptVoteFor(vote_id, True, holder1, {"from": delegate})
+    contracts.voting.attemptVoteFor(vote_id, True, holder2, {"from": delegate})
+
+    # [main] delegate revote for NO holders 1,2
+    contracts.voting.attemptVoteFor(vote_id, True, holder1, {"from": delegate})
+    contracts.voting.attemptVoteFor(vote_id, True, holder2, {"from": delegate})
+
+    # [main] holder 3 delegate to delegate
+    contracts.voting.setDelegate(delegate, {"from": accounts.at(holder3, force=True)})
+
+    holders = contracts.voting.getDelegatedVoters(delegate, 0, 5)
+    assert holders[0] == [holder1, holder2, holder3]
+
+    # [main] delegate vote for YES holders 3
+    contracts.voting.attemptVoteFor(vote_id, True, holder3, {"from": delegate})
+
+    # [main] holder 3 vote for NO
+    contracts.voting.vote(vote_id, False, False, {"from": accounts.at(holder3, force=True)})
+
+    # [main] holder 2 delegate to holder 3
+    contracts.voting.setDelegate(holder3, {"from": accounts.at(holder2, force=True)})
+
+    # [main] holder 1 reset delegate
+    contracts.voting.resetDelegate({"from": accounts.at(holder1, force=True)})
+
+    # [main] delegate revote for YES holders 1-3 (reject)
+    with reverts("VOTING_CAN_NOT_VOTE_FOR"):
+        contracts.voting.attemptVoteFor(vote_id, True, holder1, {"from": delegate})
+
+    with reverts("VOTING_CAN_NOT_VOTE_FOR"):
+        contracts.voting.attemptVoteFor(vote_id, True, holder2, {"from": delegate})
+
+    with reverts("VOTING_CAN_NOT_VOTE_FOR"):
+        contracts.voting.attemptVoteFor(vote_id, True, holder3, {"from": delegate})
+
+    holders = contracts.voting.getDelegatedVoters(delegate, 0, 5)
+    assert holders[0] == [holder3]
+
+    # [main] holders 1,2,3 can revote main phase YES
+    for holder in [holder1, holder2, holder3]:
+        contracts.voting.vote(vote_id, True, False, {"from": accounts.at(holder, force=True)})
+
+    chain.sleep(contracts.voting.voteTime() - contracts.voting.objectionPhaseTime())
+    chain.mine()
+
+    assert contracts.voting.getVotePhase(vote_id) == 1  # Objection phase
+
+    # [objc] holders 1,2,3 can revote NO
+    for holder in [holder1, holder2, holder3]:
+        contracts.voting.vote(vote_id, False, False, {"from": accounts.at(holder, force=True)})
+
+    # [objc] delegate revote NO (reject)
+    with reverts("VOTING_CAN_NOT_VOTE"):
+        contracts.voting.attemptVoteFor(vote_id, True, holder1, {"from": delegate})
+
+    with reverts("VOTING_CAN_NOT_VOTE"):
+        contracts.voting.attemptVoteFor(vote_id, True, holder2, {"from": delegate})
+
+    with reverts("VOTING_CAN_NOT_VOTE"):
+        contracts.voting.attemptVoteFor(vote_id, True, holder3, {"from": delegate})
+
+
+"""
+# [main] delegate vote for YES holders 1,2 (reject no delegation)
+# [main] holders 0,1 delegate to delegate
+# [main] delegate vote for YES holder 3 (reject not a delegation for holder 3)
+# [main] delegate vote for YES holders 1,2,3 (vote for 1 and 2 not 3)
+# [main] delegate revote for NO holders 1,2
+# [main] holder 3 delegate to delegate
+# [main] delegate vote for YES holders 3
+# [main] holder 3 vote for NO
+# [main] holder 2 delegate to holder 3
+# [main] holder 1 reset delegate
+# [main] delegate revote for YES holders 1-3 (reject)
+# [main] delegate revote for YES holders 1 (reject not a delegate)
+# [main] delegate revote for YES holders 2 (reject not a delegate)
+# [main] delegate revote for YES holders 3 (reject cant overpower holder)
+# [main] holders 1,2,3 can revote main phase YES
+# [objc] holders 1,2,3 can revote NO
+# [objc] delegate revote NO (reject)
+"""
+
+
+def test_simple_delegation_multi(call_target, delegate, test_vote):
+    vote_id = test_vote[0]
+
+    holder1 = LDO_VOTE_EXECUTORS_FOR_TESTS[0]
+    holder2 = LDO_VOTE_EXECUTORS_FOR_TESTS[1]
+    holder3 = LDO_VOTE_EXECUTORS_FOR_TESTS[2]
+
+    assert contracts.voting.getVotePhase(vote_id) == 0  # Main phase
+    # [main] delegate vote for YES holders 1,2 (reject no delegation)
+    with reverts("VOTING_CAN_NOT_VOTE_FOR"):
+        # if you don't have this func in object update abi
+        contracts.voting.attemptVoteForMultiple(vote_id, True, [holder1, holder2], {"from": delegate})
+
+    # [main] holders 0,1 delegate to delegate
+    for holder in [holder1, holder2]:
+        contracts.voting.setDelegate(delegate, {"from": accounts.at(holder, force=True)})
+
+    # [main] delegate vote for YES holder 3 (reject not a delegation for holder 3)
+    with reverts("VOTING_CAN_NOT_VOTE_FOR"):
+        contracts.voting.attemptVoteForMultiple(vote_id, True, [holder3], {"from": delegate})
+
+    # [main] delegate vote for YES holders 1,2,3 (vote for 1 and 2 not 3)
+    contracts.voting.attemptVoteForMultiple(vote_id, True, [holder1, holder2, holder3], {"from": delegate})
+
+    # [main] delegate revote for NO holders 1,2
+    contracts.voting.attemptVoteForMultiple(vote_id, True, [holder1, holder2], {"from": delegate})
+
+    # [main] holder 3 delegate to delegate
+    contracts.voting.setDelegate(delegate, {"from": accounts.at(holder3, force=True)})
+
+    holders = contracts.voting.getDelegatedVoters(delegate, 0, 5)
+    assert holders[0] == [holder1, holder2, holder3]
+
+    # [main] delegate vote for YES holders 3
+    contracts.voting.attemptVoteForMultiple(vote_id, True, [holder3], {"from": delegate})
+
+    # [main] holder 3 vote for NO
+    contracts.voting.vote(vote_id, False, False, {"from": accounts.at(holder3, force=True)})
+
+    # [main] holder 2 delegate to holder 3
+    contracts.voting.setDelegate(holder3, {"from": accounts.at(holder2, force=True)})
+
+    # [main] holder 1 reset delegate
+    contracts.voting.resetDelegate({"from": accounts.at(holder1, force=True)})
+
+    # [main] delegate revote for YES holders 1-3 (reject)
+    with reverts("VOTING_CAN_NOT_VOTE_FOR"):
+        contracts.voting.attemptVoteForMultiple(vote_id, True, [holder1, holder2, holder3], {"from": delegate})
+
+    holders = contracts.voting.getDelegatedVoters(delegate, 0, 5)
+    assert holders[0] == [holder3]
+
+    # [main] delegate revote for YES holders 1 (reject not a delegate)
+    with reverts("VOTING_CAN_NOT_VOTE_FOR"):
+        contracts.voting.attemptVoteForMultiple(vote_id, True, [holder1], {"from": delegate})
+
+    # [main] delegate revote for YES holders 2 (reject not a delegate)
+    with reverts("VOTING_CAN_NOT_VOTE_FOR"):
+        contracts.voting.attemptVoteForMultiple(vote_id, True, [holder2], {"from": delegate})
+
+    # [main] delegate revote for YES holders 3 (reject cant overpower holder)
+    with reverts("VOTING_CAN_NOT_VOTE_FOR"):
+        contracts.voting.attemptVoteForMultiple(vote_id, True, [holder3], {"from": delegate})
+
+    # [main] holders 1,2,3 can revote main phase YES
+    for holder in [holder1, holder2, holder3]:
+        contracts.voting.vote(vote_id, True, False, {"from": accounts.at(holder, force=True)})
+
+    chain.sleep(contracts.voting.voteTime() - contracts.voting.objectionPhaseTime())
+    chain.mine()
+
+    assert contracts.voting.getVotePhase(vote_id) == 1  # Objection phase
+
+    # [objc] holders 1,2,3 can revote NO
+    for holder in [holder1, holder2, holder3]:
+        contracts.voting.vote(vote_id, False, False, {"from": accounts.at(holder, force=True)})
+
+    # [objc] delegate revote NO (reject)
+    with reverts("VOTING_CAN_NOT_VOTE"):
+        contracts.voting.attemptVoteForMultiple(vote_id, True, [holder1, holder2, holder3], {"from": delegate})
+
+
+def test_trp_delegation(ldo_holder, delegate, trp_recipient, call_target):
+    contracts.ldo_token.approve(
+        contracts.trp_escrow_factory.address, 1_000_000_000_000_000_000, {"from": accounts.at(ldo_holder, force=True)}
+    )
+
+    tx = contracts.trp_escrow_factory.deploy_vesting_contract(
+        1_000_000_000_000_000_000,
+        trp_recipient.address,
+        360,
+        chain.time(),  # bc of tests can be in future
+        24,
+        1,
+        {"from": accounts.at(ldo_holder, force=True)},
+    )
+
+    print(f"{tx.events['VestingEscrowCreated'][0][0]}")
+    escrow_address = tx.events["VestingEscrowCreated"][0][0]["escrow"]
+    chain.mine()
+
+    vote_items = [(call_target.address, call_target.perform_call.encode_input())]
+    vote = create_vote(bake_vote_items(["Test voting"], vote_items), {"from": ldo_holder})
+    vote_id = vote[0]
+    assert contracts.voting.getVotePhase(vote_id) == 0  # Main phase
+
+    trp_voting_adapter_address = contracts.trp_escrow_factory.voting_adapter()
+    trp_voting_adapter = interface.VotingAdapter(trp_voting_adapter_address)
+    encoded_delegate_address = trp_voting_adapter.encode_delegate_calldata(delegate.address)
+
+    interface.Escrow(escrow_address).delegate(encoded_delegate_address, {"from": trp_recipient})
+
+    contracts.voting.getDelegatedVoters(delegate.address, 0, 5, {"from": delegate})
+
+    vote_before = contracts.voting.getVote(vote_id, {"from": delegate})
+    assert vote_before["yea"] == 0
+
+    contracts.voting.attemptVoteFor(vote_id, True, escrow_address, {"from": delegate})
+    vote_after = contracts.voting.getVote(vote_id, {"from": delegate})
+    assert vote_after["yea"] == 1_000_000_000_000_000_000
+
+
+def test_trp_delegation_multi(ldo_holder, delegate, trp_recipient, call_target):
+    contracts.ldo_token.approve(
+        contracts.trp_escrow_factory.address, 1_000_000_000_000_000_000, {"from": accounts.at(ldo_holder, force=True)}
+    )
+
+    tx = contracts.trp_escrow_factory.deploy_vesting_contract(
+        1_000_000_000_000_000_000,
+        trp_recipient.address,
+        360,
+        chain.time(),  # bc of tests can be in future
+        24,
+        1,
+        {"from": accounts.at(ldo_holder, force=True)},
+    )
+
+    print(f"{tx.events['VestingEscrowCreated'][0][0]}")
+    escrow_address = tx.events["VestingEscrowCreated"][0][0]["escrow"]
+    chain.mine()
+
+    vote_items = [(call_target.address, call_target.perform_call.encode_input())]
+    vote = create_vote(bake_vote_items(["Test voting"], vote_items), {"from": ldo_holder})
+    vote_id = vote[0]
+    assert contracts.voting.getVotePhase(vote_id) == 0  # Main phase
+
+    trp_voting_adapter_address = contracts.trp_escrow_factory.voting_adapter()
+    trp_voting_adapter = interface.VotingAdapter(trp_voting_adapter_address)
+    encoded_delegate_address = trp_voting_adapter.encode_delegate_calldata(delegate.address)
+
+    interface.Escrow(escrow_address).delegate(encoded_delegate_address, {"from": trp_recipient})
+
+    contracts.voting.getDelegatedVoters(delegate.address, 0, 5, {"from": delegate})
+
+    vote_before = contracts.voting.getVote(vote_id, {"from": delegate})
+    assert vote_before["yea"] == 0
+
+    contracts.voting.attemptVoteForMultiple(vote_id, True, [escrow_address], {"from": delegate})
+    vote_after = contracts.voting.getVote(vote_id, {"from": delegate})
+    assert vote_after["yea"] == 1_000_000_000_000_000_000
