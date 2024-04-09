@@ -12,6 +12,7 @@ from utils.config import LDO_VOTE_EXECUTORS_FOR_TESTS
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.config import contracts
 
+
 @pytest.fixture(scope="module")
 def call_target():
     return MockCallTarget.deploy({"from": accounts[0]})
@@ -140,6 +141,8 @@ def test_can_object(stranger, test_vote):
 # [objc] holders 1,2,3 can revote NO
 # [objc] delegate revote NO (reject)
 """
+
+
 def test_simple_delegation(call_target, delegate, test_vote):
     vote_id = test_vote[0]
 
@@ -172,7 +175,7 @@ def test_simple_delegation(call_target, delegate, test_vote):
     # [main] holder 3 delegate to delegate
     contracts.voting.setDelegate(delegate, {"from": accounts.at(holder3, force=True)})
 
-    holders = contracts.voting.getDelegatedVoters(delegate, 0 , 5)
+    holders = contracts.voting.getDelegatedVoters(delegate, 0, 5)
     assert holders[0] == [holder1, holder2, holder3]
 
     # [main] delegate vote for YES holders 3
@@ -243,6 +246,8 @@ def test_simple_delegation(call_target, delegate, test_vote):
 # [objc] holders 1,2,3 can revote NO
 # [objc] delegate revote NO (reject)
 """
+
+
 def test_simple_delegation_multi(call_target, delegate, test_vote):
     vote_id = test_vote[0]
 
@@ -273,7 +278,7 @@ def test_simple_delegation_multi(call_target, delegate, test_vote):
     # [main] holder 3 delegate to delegate
     contracts.voting.setDelegate(delegate, {"from": accounts.at(holder3, force=True)})
 
-    holders = contracts.voting.getDelegatedVoters(delegate, 0 , 5)
+    holders = contracts.voting.getDelegatedVoters(delegate, 0, 5)
     assert holders[0] == [holder1, holder2, holder3]
 
     # [main] delegate vote for YES holders 3
@@ -301,7 +306,7 @@ def test_simple_delegation_multi(call_target, delegate, test_vote):
 
     # [main] delegate revote for YES holders 2 (reject not a delegate)
     with reverts("VOTING_CAN_NOT_VOTE_FOR"):
-       contracts.voting.attemptVoteForMultiple(vote_id, True, [holder2], {"from": delegate})
+        contracts.voting.attemptVoteForMultiple(vote_id, True, [holder2], {"from": delegate})
 
     # [main] delegate revote for YES holders 3 (reject cant overpower holder)
     with reverts("VOTING_CAN_NOT_VOTE_FOR"):
@@ -324,13 +329,10 @@ def test_simple_delegation_multi(call_target, delegate, test_vote):
     with reverts("VOTING_CAN_NOT_VOTE"):
         contracts.voting.attemptVoteForMultiple(vote_id, True, [holder1, holder2, holder3], {"from": delegate})
 
-def test_trp_delegation(ldo_holder, delegate, trp_recipient, call_target):
-    assert contracts.trp_escrow_factory.voting_adapter() == contracts.voting_TRP_adapter.address
 
+def test_trp_delegation(ldo_holder, delegate, trp_recipient, call_target):
     contracts.ldo_token.approve(
-        contracts.trp_escrow_factory.address,
-        1_000_000_000_000_000_000,
-        {"from": accounts.at(ldo_holder, force=True)}
+        contracts.trp_escrow_factory.address, 1_000_000_000_000_000_000, {"from": accounts.at(ldo_holder, force=True)}
     )
 
     tx = contracts.trp_escrow_factory.deploy_vesting_contract(
@@ -344,7 +346,7 @@ def test_trp_delegation(ldo_holder, delegate, trp_recipient, call_target):
     )
 
     print(f"{tx.events['VestingEscrowCreated'][0][0]}")
-    escrow_address = tx.events["VestingEscrowCreated"][0][0]['escrow']
+    escrow_address = tx.events["VestingEscrowCreated"][0][0]["escrow"]
     chain.mine()
 
     vote_items = [(call_target.address, call_target.perform_call.encode_input())]
@@ -352,26 +354,25 @@ def test_trp_delegation(ldo_holder, delegate, trp_recipient, call_target):
     vote_id = vote[0]
     assert contracts.voting.getVotePhase(vote_id) == 0  # Main phase
 
-    encoded_delegate_address = contracts.voting_TRP_adapter.encode_delegate_calldata(delegate.address)
+    trp_voting_adapter_address = contracts.trp_escrow_factory.voting_adapter()
+    trp_voting_adapter = interface.VotingAdapter(trp_voting_adapter_address)
+    encoded_delegate_address = trp_voting_adapter.encode_delegate_calldata(delegate.address)
 
     interface.Escrow(escrow_address).delegate(encoded_delegate_address, {"from": trp_recipient})
 
     contracts.voting.getDelegatedVoters(delegate.address, 0, 5, {"from": delegate})
 
     vote_before = contracts.voting.getVote(vote_id, {"from": delegate})
-    assert vote_before['yea'] == 0
+    assert vote_before["yea"] == 0
 
     contracts.voting.attemptVoteFor(vote_id, True, escrow_address, {"from": delegate})
     vote_after = contracts.voting.getVote(vote_id, {"from": delegate})
-    assert vote_after['yea'] == 1_000_000_000_000_000_000
+    assert vote_after["yea"] == 1_000_000_000_000_000_000
+
 
 def test_trp_delegation_multi(ldo_holder, delegate, trp_recipient, call_target):
-    assert contracts.trp_escrow_factory.voting_adapter() == contracts.voting_TRP_adapter.address
-
     contracts.ldo_token.approve(
-        contracts.trp_escrow_factory.address,
-        1_000_000_000_000_000_000,
-        {"from": accounts.at(ldo_holder, force=True)}
+        contracts.trp_escrow_factory.address, 1_000_000_000_000_000_000, {"from": accounts.at(ldo_holder, force=True)}
     )
 
     tx = contracts.trp_escrow_factory.deploy_vesting_contract(
@@ -385,7 +386,7 @@ def test_trp_delegation_multi(ldo_holder, delegate, trp_recipient, call_target):
     )
 
     print(f"{tx.events['VestingEscrowCreated'][0][0]}")
-    escrow_address = tx.events["VestingEscrowCreated"][0][0]['escrow']
+    escrow_address = tx.events["VestingEscrowCreated"][0][0]["escrow"]
     chain.mine()
 
     vote_items = [(call_target.address, call_target.perform_call.encode_input())]
@@ -393,15 +394,17 @@ def test_trp_delegation_multi(ldo_holder, delegate, trp_recipient, call_target):
     vote_id = vote[0]
     assert contracts.voting.getVotePhase(vote_id) == 0  # Main phase
 
-    encoded_delegate_address = contracts.voting_TRP_adapter.encode_delegate_calldata(delegate.address)
+    trp_voting_adapter_address = contracts.trp_escrow_factory.voting_adapter()
+    trp_voting_adapter = interface.VotingAdapter(trp_voting_adapter_address)
+    encoded_delegate_address = trp_voting_adapter.encode_delegate_calldata(delegate.address)
 
     interface.Escrow(escrow_address).delegate(encoded_delegate_address, {"from": trp_recipient})
 
     contracts.voting.getDelegatedVoters(delegate.address, 0, 5, {"from": delegate})
 
     vote_before = contracts.voting.getVote(vote_id, {"from": delegate})
-    assert vote_before['yea'] == 0
+    assert vote_before["yea"] == 0
 
     contracts.voting.attemptVoteForMultiple(vote_id, True, [escrow_address], {"from": delegate})
     vote_after = contracts.voting.getVote(vote_id, {"from": delegate})
-    assert vote_after['yea'] == 1_000_000_000_000_000_000
+    assert vote_after["yea"] == 1_000_000_000_000_000_000

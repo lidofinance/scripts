@@ -45,10 +45,11 @@ description = """
 
 """
 
+
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""
 
-    voting_adapter_with_delegation = contracts.voting_TRP_adapter.address
+    voting_adapter_with_delegation = contracts.trp_escrow_factory.voting_adapter()
 
     vote_desc_items, call_script_items = zip(
         #
@@ -71,10 +72,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         #
         (
             "3) Change voting adapter to 0x5Ea73d6AE9B2E57eF865A3059bdC5C06b8e46072",
-            agent_forward([(
-                contracts.trp_escrow_factory.address,
-                contracts.trp_escrow_factory.update_voting_adapter.encode_input(voting_adapter_with_delegation),
-            )])
+            agent_forward(
+                [
+                    (
+                        contracts.trp_escrow_factory.address,
+                        contracts.trp_escrow_factory.update_voting_adapter.encode_input(voting_adapter_with_delegation),
+                    )
+                ]
+            ),
         ),
     )
 
