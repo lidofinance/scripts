@@ -310,7 +310,7 @@ class ContractsLazyLoader:
 
     @property
     def trp_escrow_factory(self) -> interface.VestingEscrowFactory:
-        return interface.VestingEscrowFactory(TRP_ESCROW_FACTORY)
+        return interface.VestingEscrowFactory(TRP_VESTING_ESCROW_FACTORY)
 
     @property
     def voting_TRP_adapter(self) -> interface.VotingTRPAdapter:
