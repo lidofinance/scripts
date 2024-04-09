@@ -67,13 +67,13 @@ def assert_el_rewards_received_log(log, amount):
     assert log["topics"][0] == topic
 
     # validate params
-    assert log["data"] == "0x" + eth_abi.encode_abi(["uint256"], [amount]).hex()
+    assert log["data"].hex() == "0x" + eth_abi.encode(["uint256"], [amount]).hex()
 
 
 def assert_eth_received_log(log, value):
     topic = web3.keccak(text="ETHReceived(uint256)")
     assert log["topics"][0] == topic
-    assert log["data"] == "0x" + eth_abi.encode_single("uint256", value).hex()
+    assert log["data"].hex() == "0x" + eth_abi.encode(["uint256"], [value]).hex()
 
 
 def filter_transfer_logs(logs):
@@ -86,9 +86,9 @@ def parse_transfer_logs(transfer_logs):
     for l in transfer_logs:
         res.append(
             {
-                "from": eth_abi.decode_abi(["address"], l["topics"][1])[0],
-                "to": eth_abi.decode_abi(["address"], l["topics"][2])[0],
-                "value": eth_abi.decode_single("uint256", bytes.fromhex(l["data"][2:])),
+                "from": eth_abi.decode(["address"], l["topics"][1])[0],
+                "to": eth_abi.decode(["address"], l["topics"][2])[0],
+                "value": eth_abi.decode(["uint256"], bytes.fromhex(l["data"][2:])),
             }
         )
     return res
