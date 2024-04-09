@@ -7,7 +7,7 @@ from scripts.vote_2022_12_06_1 import start_vote
 from brownie import ZERO_ADDRESS, chain, reverts, web3, accounts
 from brownie.network.transaction import TransactionReceipt
 
-from eth_abi.abi import encode_single
+from eth_abi.abi import encode
 
 from utils.config import network_name
 from utils.test.tx_tracing_helpers import *
@@ -403,7 +403,7 @@ def test_vote(
 
 
 def _encode_calldata(signature, values):
-    return "0x" + encode_single(signature, values).hex()
+    return "0x" + encode(signature, values).hex()
 
 
 def create_and_enact_payment_motion(

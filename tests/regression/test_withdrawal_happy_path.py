@@ -24,6 +24,9 @@ def test_withdraw(steth_holder, eth_whale):
         # stake new ether to increase buffer
         contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale.address, "value": ETH(10000)})
 
+    # get accidentally unaccounted stETH shares on WQ contract
+    uncounted_steth_shares = contracts.lido.sharesOf(contracts.withdrawal_queue)
+
     """ pre request """
     no_requests = contracts.withdrawal_queue.getWithdrawalRequests(steth_holder, {"from": steth_holder})
     assert len(no_requests) == 0
@@ -43,7 +46,7 @@ def test_withdraw(steth_holder, eth_whale):
     )
     steth_balance_after = steth_balance(steth_holder)
 
-    shares_to_burn = contracts.lido.sharesOf(contracts.withdrawal_queue)
+    shares_to_burn = contracts.lido.sharesOf(contracts.withdrawal_queue) - uncounted_steth_shares
     # post request checks
 
     assert almostEqWithDiff(steth_balance_before - steth_balance_after, REQUESTS_SUM, 2 * REQUESTS_COUNT)

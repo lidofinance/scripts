@@ -49,4 +49,4 @@ def assert_keys_op_index_set_log(log, value):
     topic = web3.keccak(text="KeysOpIndexSet(uint256)")
 
     assert log["topics"][0] == topic
-    assert log["data"] == "0x" + eth_abi.encode_single("uint256", value).hex()
+    assert log["data"] == "0x" + eth_abi.encode("uint256", value).hex()

@@ -1,6 +1,7 @@
 """
 Tests for permissions setup
 """
+
 import pytest
 import os
 
@@ -40,6 +41,7 @@ from utils.config import (
     BURNER,
     LIDO_LOCATOR,
     LEGACY_ORACLE,
+    SIMPLE_DVT,
 )
 
 
@@ -60,7 +62,7 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "REQUEST_BURN_MY_STETH_ROLE": [contracts.agent],
-                "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry],
+                "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry, contracts.simple_dvt],
             },
         },
         STAKING_ROUTER: {
@@ -126,7 +128,7 @@ def protocol_permissions():
             "state": {"getMembers": (ORACLE_COMMITTEE, contracts.hash_consensus_for_accounting_oracle.getMembers()[1])},
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "MANAGE_MEMBERS_AND_QUORUM_ROLE": [],
+                "MANAGE_MEMBERS_AND_QUORUM_ROLE": [contracts.agent],
                 "DISABLE_CONSENSUS_ROLE": [],
                 "MANAGE_FRAME_CONFIG_ROLE": [],
                 "MANAGE_FAST_LANE_CONFIG_ROLE": [],
@@ -145,7 +147,7 @@ def protocol_permissions():
             },
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "MANAGE_MEMBERS_AND_QUORUM_ROLE": [],
+                "MANAGE_MEMBERS_AND_QUORUM_ROLE": [contracts.agent],
                 "DISABLE_CONSENSUS_ROLE": [],
                 "MANAGE_FRAME_CONFIG_ROLE": [],
                 "MANAGE_FAST_LANE_CONFIG_ROLE": [],
@@ -164,8 +166,8 @@ def protocol_permissions():
                 "ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE": [],
                 "SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE": [],
                 "MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_ROLE": [],
-                "MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE": [],
-                "MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE": [],
+                "MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE": [contracts.agent],
+                "MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE": [contracts.agent],
                 "REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE": [],
                 "MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE": [],
             },
@@ -280,6 +282,17 @@ def protocol_permissions():
                 "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
             },
         },
+        SIMPLE_DVT: {
+            "contract_name": "NodeOperatorsRegistry",
+            "contract": contracts.simple_dvt,
+            "type": "AragonApp",
+            "roles": {
+                "MANAGE_NODE_OPERATOR_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "MANAGE_SIGNING_KEYS": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "SET_NODE_OPERATOR_LIMIT_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "STAKING_ROUTER_ROLE": [STAKING_ROUTER, EASYTRACK_EVMSCRIPT_EXECUTOR],
+            },
+        },
         LEGACY_ORACLE: {
             "contract_name": "LegacyOracle",
             "contract": contracts.legacy_oracle,
@@ -299,7 +312,7 @@ def test_protocol_permissions(protocol_permissions):
             method for method in permissions_config["contract"].signatures.keys() if method.endswith("_ROLE")
         ]
 
-        if contract_address == NODE_OPERATORS_REGISTRY:
+        if contract_address in [NODE_OPERATORS_REGISTRY, SIMPLE_DVT]:
             abi_roles_list.append("MANAGE_SIGNING_KEYS")
 
         roles = permissions_config["roles"]
@@ -321,6 +334,11 @@ def test_protocol_permissions(protocol_permissions):
                     if role in aragon_acl_active_permissions[contract_address]
                     else []
                 )
+
+                # temp ugly hack to exclude parametrized role members (OP managers) for SIMPLE_DVT
+                if contract_address == SIMPLE_DVT and role == "MANAGE_SIGNING_KEYS":
+                    current_holders = [h for h in current_holders if h == EASYTRACK_EVMSCRIPT_EXECUTOR]
+
                 assert len(current_holders) == len(
                     holders
                 ), "number of {} role holders in contract {} mismatched expected {} , actual {} ".format(

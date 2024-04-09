@@ -97,7 +97,9 @@ def test_nor_state(contract):
     for id in range(node_operators_count):
         node_operator = contract.getNodeOperator(id, True)
 
-        assert node_operator["active"] == True
+        deactivated_node_operators = [12, 1] # on vote 24-01-16
+
+        assert node_operator["active"] == (id not in deactivated_node_operators)
         assert node_operator["name"] is not None
         assert node_operator["name"] != ""
         assert node_operator["rewardAddress"] != ZERO_ADDRESS

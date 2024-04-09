@@ -609,7 +609,7 @@ def aragon_agent() -> Account:
     return contracts.agent
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def consensus_member():
     return accounts.at(
         contracts.hash_consensus_for_accounting_oracle.getFastLaneMembers()[0][0],

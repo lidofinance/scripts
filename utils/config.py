@@ -38,7 +38,15 @@ else:
 
 
 def get_is_live() -> bool:
-    dev_networks = ["development", "hardhat", "hardhat-fork", "goerli-fork", "local-fork", "mainnet-fork", "holesky-fork"]
+    dev_networks = [
+        "development",
+        "hardhat",
+        "hardhat-fork",
+        "goerli-fork",
+        "local-fork",
+        "mainnet-fork",
+        "holesky-fork",
+    ]
     return network.show_active() not in dev_networks
 
 
@@ -64,9 +72,9 @@ def get_deployer_account() -> Union[LocalAccount, Account]:
     return accounts.load(os.environ["DEPLOYER"]) if (is_live or "DEPLOYER" in os.environ) else accounts[4]
 
 
-def get_web3_storage_token() -> str:
+def get_web3_storage_token(silent=False) -> str:
     is_live = get_is_live()
-    if is_live and "WEB3_STORAGE_TOKEN" not in os.environ:
+    if is_live and not silent and "WEB3_STORAGE_TOKEN" not in os.environ:
         raise EnvironmentError(
             "Please set WEB3_STORAGE_TOKEN env variable to the web3.storage API token to be able to "
             "upload the vote description to IPFS by calling upload_vote_ipfs_description. Alternatively, "
@@ -74,6 +82,40 @@ def get_web3_storage_token() -> str:
         )
 
     return os.environ["WEB3_STORAGE_TOKEN"] if (is_live or "WEB3_STORAGE_TOKEN" in os.environ) else ""
+
+
+def get_pinata_cloud_token(silent=False) -> str:
+    is_live = get_is_live()
+    if is_live and not silent and "PINATA_CLOUD_TOKEN" not in os.environ:
+        raise EnvironmentError(
+            "Please set PINATA_CLOUD_TOKEN env variable to the pinata.cloud API token to be able to "
+            "upload the vote description to IPFS by calling upload_vote_ipfs_description. Alternatively, "
+            "you can only calculate cid without uploading to IPFS by calling calculate_vote_ipfs_description"
+        )
+
+    return os.environ["PINATA_CLOUD_TOKEN"] if (is_live or "PINATA_CLOUD_TOKEN" in os.environ) else ""
+
+
+def get_infura_io_keys(silent=False) -> Tuple[str, str]:
+    is_live = get_is_live()
+    if (
+        is_live
+        and not silent
+        and ("WEB3_INFURA_IPFS_PROJECT_ID" not in os.environ or "WEB3_INFURA_IPFS_PROJECT_SECRET" not in os.environ)
+    ):
+        raise EnvironmentError(
+            "Please set WEB3_INFURA_IPFS_PROJECT_ID and WEB3_INFURA_IPFS_PROJECT_SECRET env variable "
+            "to the web3.storage api token"
+        )
+    project_id = (
+        os.environ["WEB3_INFURA_IPFS_PROJECT_ID"] if (is_live or "WEB3_INFURA_IPFS_PROJECT_ID" in os.environ) else ""
+    )
+    project_secret = (
+        os.environ["WEB3_INFURA_IPFS_PROJECT_SECRET"]
+        if (is_live or "WEB3_INFURA_IPFS_PROJECT_SECRET" in os.environ)
+        else ""
+    )
+    return project_id, project_secret
 
 
 def prompt_bool() -> Optional[bool]:
@@ -134,6 +176,10 @@ class ContractsLazyLoader:
     @property
     def node_operators_registry(self) -> interface.NodeOperatorsRegistry:
         return interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
+
+    @property
+    def simple_dvt(self) -> interface.SimpleDVT:
+        return interface.SimpleDVT(SIMPLE_DVT)
 
     @property
     def legacy_oracle(self) -> interface.LegacyOracle:
@@ -198,6 +244,10 @@ class ContractsLazyLoader:
     @property
     def kernel(self) -> interface.Kernel:
         return interface.Kernel(ARAGON_KERNEL)
+
+    @property
+    def apm_registry(self) -> interface.APMRegistry:
+        return interface.APMRegistry(APM_REGISTRY)
 
     @property
     def lido_app_repo(self) -> interface.Repo:
@@ -266,6 +316,14 @@ class ContractsLazyLoader:
     @property
     def anchor_vault_proxy(self) -> interface.InsuranceFund:
         return interface.AnchorVaultProxy(ANCHOR_VAULT_PROXY)
+
+    @property
+    def obol_lido_split_factory(self) -> interface.ObolLidoSplitFactory:
+        return interface.ObolLidoSplitFactory(OBOL_LIDO_SPLIT_FACTORY)
+
+    @property
+    def split_main(self) -> interface.SplitMain:
+        return interface.SplitMain(SPLIT_MAIN)
 
 
 def __getattr__(name: str) -> Any:

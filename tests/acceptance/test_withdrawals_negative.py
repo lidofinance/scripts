@@ -4,7 +4,7 @@ from brownie import Contract, interface, reverts, Wei, chain  # type: ignore
 
 from utils.config import WITHDRAWAL_QUEUE, contracts
 from utils.evm_script import encode_error
-from utils.test.oracle_report_helpers import oracle_report
+from utils.test.oracle_report_helpers import oracle_report, wait_to_next_available_report_time
 
 MIN_STETH_WITHDRAWAL_AMOUNT = Wei(100)
 MAX_STETH_WITHDRAWAL_AMOUNT = Wei(1000 * 10**18)
@@ -85,7 +85,7 @@ def test_request_withdrawals_wsteth(wq: Contract, wsteth_whale: Account):
 
 def test_wq_prefinalize(wq: Contract, steth_whale: Account):
     with reverts(encode_error("EmptyBatches()")):
-        wq.prefinalize.transact([], 1, {"from": wq.address})
+        wq.prefinalize.transact(False, [], 1, {"from": wq.address})
 
     last_finalized_id = wq.getLastFinalizedRequestId()  # 0 after enacment
     fill_wq(wq, steth_whale, count=3)
@@ -100,11 +100,13 @@ def test_wq_prefinalize(wq: Contract, steth_whale: Account):
         oracle_report(withdrawalFinalizationBatches=[last_finalized_id + 1, last_finalized_id + 1])
 
     with reverts(encode_error("ZeroShareRate()")):
-        oracle_report(withdrawalFinalizationBatches=[last_finalized_id + 1, last_finalized_id + 2], simulatedShareRate=0)
+        oracle_report(
+            withdrawalFinalizationBatches=[last_finalized_id + 1, last_finalized_id + 2], simulatedShareRate=0
+        )
 
 
-@pytest.mark.skip()
 def test_request_to_finalize_to_close(wq: Contract, steth_whale: Account):
+    wait_to_next_available_report_time(contracts.hash_consensus_for_accounting_oracle)
     fill_wq(wq, steth_whale, count=1)
     with reverts(encode_error("IncorrectRequestFinalization(uint256)", [chain.time()])):
         oracle_report(
@@ -131,6 +133,7 @@ def test_wq_finalize(wq: Contract, steth_whale: Account):
 
     with reverts(encode_error("InvalidRequestId(uint256)", [4])):
         wq.finalize(4, 1, {"from": contracts.lido})
+
 
 # === Fixtures ===
 @pytest.fixture(scope="module")

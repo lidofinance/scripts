@@ -4,6 +4,7 @@ from brownie import ZERO_ADDRESS, chain
 from utils.test.oracle_report_helpers import oracle_report
 from utils.test.helpers import ETH, almostEqEth
 from utils.config import contracts
+from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
 
 
 def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
@@ -11,6 +12,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     amount = ETH(100)
     max_deposit = 150
     curated_module_id = 1
+    simple_dvt_module_id = 2
 
     """ report """
     while contracts.withdrawal_queue.getLastRequestId() != contracts.withdrawal_queue.getLastFinalizedRequestId():
@@ -18,6 +20,9 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
         report_tx = oracle_report()[0]
         # stake new ether to increase buffer
         contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale.address, "value": ETH(10000)})
+
+    # get accidentally unaccounted stETH shares on WQ contract
+    uncounted_steth_shares = contracts.lido.sharesOf(contracts.withdrawal_queue)
 
     contracts.lido.approve(contracts.withdrawal_queue.address, 1000, {"from": steth_holder})
     contracts.withdrawal_queue.requestWithdrawals([1000], steth_holder, {"from": steth_holder})
@@ -28,8 +33,10 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     assert steth_balance_before_submit == 0
 
-    # Submitting ETH
+    # ensure SimpleDVT has some keys to deposit
+    fill_simple_dvt_ops_vetted_keys(stranger, 3, 5)
 
+    # Submitting ETH
     stakeLimitInfo = contracts.lido.getStakeLimitFullInfo()
     growthPerBlock = stakeLimitInfo["maxStakeLimit"] // stakeLimitInfo["maxStakeLimitGrowthBlocks"]
 
@@ -91,34 +98,61 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     assert contracts.lido.getDepositableEther() == buffered_ether_after_submit - withdrawal_unfinalized_steth
 
-    deposit_tx = contracts.lido.deposit(max_deposit, curated_module_id, "0x0", {"from": dsm})
+    deposit_tx_nor = contracts.lido.deposit(max_deposit, curated_module_id, "0x0", {"from": dsm})
+    deposit_tx_sdvt = contracts.lido.deposit(max_deposit, simple_dvt_module_id, "0x0", {"from": dsm})
+
     buffered_ether_after_deposit = contracts.lido.getBufferedEther()
 
-    unbuffered_event = deposit_tx.events["Unbuffered"]
-    deposit_validators_changed_event = deposit_tx.events["DepositedValidatorsChanged"]
+    unbuffered_event_nor = deposit_tx_nor.events["Unbuffered"]
+    # deposit_validators_changed_event_nor = deposit_tx_nor.events["DepositedValidatorsChanged"]
 
-    deposits_count = math.floor(unbuffered_event["amount"] / ETH(32))
+    unbuffered_event_sdvt = deposit_tx_sdvt.events["Unbuffered"]
 
-    assert buffered_ether_after_deposit == buffered_ether_after_submit - unbuffered_event["amount"]
+    # we need just last one event
+    deposit_validators_changed_event_sdvt = deposit_tx_sdvt.events["DepositedValidatorsChanged"]
+
+    deposits_count = math.floor(unbuffered_event_nor["amount"] / ETH(32)) + math.floor(
+        unbuffered_event_sdvt["amount"] / ETH(32)
+    )
+
     assert (
-        deposit_validators_changed_event["depositedValidators"] == deposited_validators_before_deposit + deposits_count
+        buffered_ether_after_deposit
+        == buffered_ether_after_submit - unbuffered_event_nor["amount"] - unbuffered_event_sdvt["amount"]
+    )
+
+    # get total deposited validators count from the last deposit even
+    assert (
+        deposit_validators_changed_event_sdvt["depositedValidators"]
+        == deposited_validators_before_deposit + deposits_count
     )
 
     # Rebasing (Increasing balance)
 
     treasury = contracts.lido_locator.treasury()
     nor = contracts.node_operators_registry.address
+    sdvt = contracts.simple_dvt.address
     nor_operators_count = contracts.node_operators_registry.getNodeOperatorsCount()
+    sdvt_operators_count = contracts.simple_dvt.getNodeOperatorsCount()
 
-    penalized_node_operator_ids = []
+    penalized_node_operator_ids_nor = []
 
     for i in range(nor_operators_count):
-        no = contracts.node_operators_registry.getNodeOperator(i, True)
+        no = contracts.node_operators_registry.getNodeOperator(i, False)
         is_node_operator_penalized = contracts.node_operators_registry.isOperatorPenalized(i)
         if is_node_operator_penalized:
-            penalized_node_operator_ids.append(i)
+            penalized_node_operator_ids_nor.append(i)
         if not no["totalDepositedValidators"] or no["totalDepositedValidators"] == no["totalExitedValidators"]:
             nor_operators_count = nor_operators_count - 1
+
+    penalized_node_operator_ids_sdvt = []
+    for i in range(sdvt_operators_count):
+        no = contracts.simple_dvt.getNodeOperator(i, False)
+        is_node_operator_penalized = contracts.simple_dvt.isOperatorPenalized(i)
+        if is_node_operator_penalized:
+            penalized_node_operator_ids_sdvt.append(i)
+        if not no["totalDepositedValidators"] or no["totalDepositedValidators"] == no["totalExitedValidators"]:
+            sdvt_operators_count = sdvt_operators_count - 1
+
     treasury_balance_before_rebase = contracts.lido.sharesOf(treasury)
 
     report_tx, extra_tx = oracle_report(cl_diff=ETH(100))
@@ -129,19 +163,30 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     token_rebased_event = report_tx.events["TokenRebased"]
     transfer_event = report_tx.events["Transfer"]
 
-    expected_transfers_count = (
-        nor_operators_count if len(penalized_node_operator_ids) == 0 else nor_operators_count + 1
+    # if no penalized ops: transfers count = number of active validators
+    # otherwise: transfers count = number of active validators + 1 transfer to burner
+    expected_transfers_count_nor = (
+        nor_operators_count if len(penalized_node_operator_ids_nor) == 0 else nor_operators_count + 1
     )
-    if len(penalized_node_operator_ids) > 0:
-        burner_transfers = 0
-        for e in extra_tx.events["Transfer"]:
-            if e["to"] == contracts.burner:
-                burner_transfers += 1
-        assert burner_transfers == 1
+    expected_transfers_count_sdvt = (
+        sdvt_operators_count if len(penalized_node_operator_ids_sdvt) == 0 else sdvt_operators_count + 1
+    )
+
+    burner_transfers = 0
+    expected_burner_transfers = 0
+    if len(penalized_node_operator_ids_nor) > 0:
+        expected_burner_transfers += 1
+    if len(penalized_node_operator_ids_sdvt) > 0:
+        expected_burner_transfers += 1
+
+    for e in extra_tx.events["Transfer"]:
+        if e["to"] == contracts.burner:
+            burner_transfers += 1
+    assert burner_transfers == expected_burner_transfers
 
     assert (
-        extra_tx.events.count("Transfer") == expected_transfers_count
-    ), "extra_tx.events should have Transfer to all active operators, check activity condition above"
+        extra_tx.events.count("Transfer") == expected_transfers_count_nor + expected_transfers_count_sdvt
+    ), "extra_tx.events should have Transfer to all active operators (+1 optional to Burner), check activity condition above"
     assert report_tx.events.count("TokenRebased") == 1
     assert report_tx.events.count("WithdrawalsFinalized") == 1
     assert report_tx.events.count("StETHBurnt") == 1
@@ -152,19 +197,23 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
         + token_rebased_event["sharesMintedAsFees"]
         - report_tx.events["StETHBurnt"]["amountOfShares"]
     )
-
     assert transfer_event[0]["from"] == contracts.withdrawal_queue
     assert transfer_event[0]["to"] == contracts.burner
 
+    # curated module
     assert transfer_event[1]["from"] == ZERO_ADDRESS
     assert transfer_event[1]["to"] == nor
 
+    # simple dvt module
     assert transfer_event[2]["from"] == ZERO_ADDRESS
-    assert transfer_event[2]["to"] == treasury
+    assert transfer_event[2]["to"] == sdvt
+
+    assert transfer_event[3]["from"] == ZERO_ADDRESS
+    assert transfer_event[3]["to"] == treasury
 
     assert almostEqEth(
         treasury_balance_after_rebase,
-        treasury_balance_before_rebase + contracts.lido.getSharesByPooledEth(transfer_event[2]["value"]),
+        treasury_balance_before_rebase + contracts.lido.getSharesByPooledEth(transfer_event[3]["value"]),
     )
 
     assert treasury_balance_after_rebase > treasury_balance_before_rebase
@@ -209,6 +258,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     assert withdrawal_request_event["amountOfStETH"] == amount_with_rewards
 
     steth_balance_after_withdrawal_request = contracts.lido.balanceOf(stranger)
+
     [(_, _, _, _, finalized, _)] = contracts.withdrawal_queue.getWithdrawalStatus(request_ids)
 
     assert almostEqEth(steth_balance_after_withdrawal_request, steth_balance_after_rebase - amount_with_rewards)
@@ -218,7 +268,11 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     # Rebasing (Withdrawal finalization)
 
-    assert almostEqEth(contracts.lido.balanceOf(contracts.withdrawal_queue), amount_with_rewards)
+    # calc uncounted steth balance value
+    uncounted_steth_balance = contracts.lido.getPooledEthByShares(uncounted_steth_shares)
+    assert almostEqEth(
+        contracts.lido.balanceOf(contracts.withdrawal_queue), amount_with_rewards + uncounted_steth_balance
+    )
 
     locked_ether_amount_before_finalization = contracts.withdrawal_queue.getLockedEtherAmount()
     report_tx, _ = oracle_report(cl_diff=ETH(100))
@@ -226,7 +280,10 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     locked_ether_amount_after_finalization = contracts.withdrawal_queue.getLockedEtherAmount()
     withdrawal_finalized_event = report_tx.events["WithdrawalsFinalized"]
 
-    assert contracts.lido.balanceOf(contracts.withdrawal_queue) == 0
+    # recalc uncounted steth balance new value
+    uncounted_steth_balance = contracts.lido.getPooledEthByShares(uncounted_steth_shares)
+    assert contracts.lido.balanceOf(contracts.withdrawal_queue) == uncounted_steth_balance
+
     assert withdrawal_finalized_event["amountOfETHLocked"] == amount_with_rewards
     assert withdrawal_finalized_event["from"] == request_ids[0]
     assert withdrawal_finalized_event["to"] == request_ids[0]

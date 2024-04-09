@@ -133,4 +133,4 @@ def test_accounting_hash_consensus(contract):
     assert consensus.getQuorum() == ORACLE_QUORUM
 
     members = consensus.getMembers()
-    assert members["addresses"] == ORACLE_COMMITTEE
+    assert sorted(members["addresses"]) == sorted(ORACLE_COMMITTEE)
