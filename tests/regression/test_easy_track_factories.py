@@ -26,7 +26,7 @@ NODE_OPERATORS = [
 
 def add_node_operators(operators, stranger):
     calldata = _encode_calldata(
-        "(uint256,(string,address,address)[])",
+        ["uint256","(string,address,address)[]"],
         [
             contracts.simple_dvt.getNodeOperatorsCount(),
             [(no["name"], no["address"], no["manager"]) for no in operators],
@@ -40,7 +40,7 @@ def add_node_operators(operators, stranger):
 
 def activate_node_operators(operators, stranger):
     calldata = _encode_calldata(
-        "((uint256,address)[])",
+        ["(uint256,address)[]"],
         [[(no["id"], no["manager"]) for no in operators]],
     )
 
@@ -51,7 +51,7 @@ def activate_node_operators(operators, stranger):
 
 def deactivate_node_operator(operators, stranger):
     calldata = _encode_calldata(
-        "((uint256,address)[])",
+        ["(uint256,address)[]"],
         [[(no["id"], no["manager"]) for no in operators]],
     )
 
@@ -61,7 +61,7 @@ def deactivate_node_operator(operators, stranger):
 
 
 def set_vetted_validators_limits(operators, stranger):
-    calldata = _encode_calldata("((uint256,uint256)[])", [[(no["id"], no["staking_limit"]) for no in operators]])
+    calldata = _encode_calldata(["(uint256,uint256)[]"], [[(no["id"], no["staking_limit"]) for no in operators]])
 
     factory = interface.SetVettedValidatorsLimits(EASYTRACK_SIMPLE_DVT_SET_VETTED_VALIDATORS_LIMITS_FACTORY)
 
@@ -70,7 +70,7 @@ def set_vetted_validators_limits(operators, stranger):
 
 def set_node_operators_names(operators, stranger):
     calldata = _encode_calldata(
-        "((uint256,string)[])",
+        ["(uint256,string)[]"],
         [[(no["id"], no["name"]) for no in operators]],
     )
 
@@ -81,7 +81,7 @@ def set_node_operators_names(operators, stranger):
 
 def set_node_operator_reward_addresses(operators, stranger):
     calldata = _encode_calldata(
-        "((uint256,address)[])",
+        ["(uint256,address)[]"],
         [[(no["id"], no["address"]) for no in operators]],
     )
 
@@ -92,7 +92,7 @@ def set_node_operator_reward_addresses(operators, stranger):
 
 def update_target_validators_limits(operators, stranger):
     calldata = _encode_calldata(
-        "((uint256,bool,uint256)[])",
+        ["(uint256,bool,uint256)[]"],
         [[(no["id"], no["is_target_limit_active"], no["target_limit"]) for no in operators]],
     )
 
@@ -103,7 +103,7 @@ def update_target_validators_limits(operators, stranger):
 
 def change_node_operator_managers(operators, stranger):
     calldata = _encode_calldata(
-        "((uint256,address,address)[])",
+        ["(uint256,address,address)[]"],
         [[(no["id"], no["old_manager"], no["manager"]) for no in operators]],
     )
 

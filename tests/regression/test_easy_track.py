@@ -1,4 +1,4 @@
-from eth_abi.abi import encode_single
+from eth_abi.abi import encode
 from brownie import accounts, chain, interface, convert
 from utils.config import (
     contracts,
@@ -44,7 +44,7 @@ def test_increase_nop_staking_limit(
             {"from": contracts.voting},
         )
 
-    calldata = _encode_calldata("(uint256,uint256)", [no_id, new_staking_limit])
+    calldata = _encode_calldata(("uint256","uint256"), [no_id, new_staking_limit])
 
     create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
 
@@ -88,7 +88,7 @@ def test_simple_dvt_set_vetted_validators_limits(
     if node_operator["totalAddedValidators"] < new_staking_limit:
         simple_dvt_add_keys(contracts.simple_dvt, no_id, 1)
 
-    calldata = _encode_calldata("((uint256,uint256)[])", [[(no_id, new_staking_limit)]])
+    calldata = _encode_calldata(["(uint256,uint256)[]"], [[(no_id, new_staking_limit)]])
 
     create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
 
@@ -128,7 +128,7 @@ def test_simple_dvt_activate_deactivate_operators(
     assert is_manager == True
 
     # deactivating
-    calldata = _encode_calldata("((uint256,address)[])", [[(no_id, op_manager)]])
+    calldata = _encode_calldata(["(uint256,address)[]"], [[(no_id, op_manager)]])
 
     create_and_enact_motion(contracts.easy_track, trusted_caller, factory_deactivate, calldata, stranger)
 
@@ -142,7 +142,7 @@ def test_simple_dvt_activate_deactivate_operators(
     assert is_manager == False
 
     # activating
-    # calldata = _encode_calldata("((uint256,address)[])", [[(no_id, op_manager)]])
+    # calldata = _encode_calldata(["(uint256,address)[]"], [[(no_id, op_manager)]])
 
     create_and_enact_motion(contracts.easy_track, trusted_caller, factory_activate, calldata, stranger)
 
@@ -186,8 +186,8 @@ def test_simple_dvt_set_operator_name_reward_address(
     assert node_operator["name"] == op_name and node_operator["name"] != op_name_upd
     assert node_operator["rewardAddress"] == op_addr and node_operator["rewardAddress"] != op_addr_upd
 
-    calldata_name = _encode_calldata("((uint256,string)[])", [[(no_id, op_name_upd)]])
-    calldata_addr = _encode_calldata("((uint256,address)[])", [[(no_id, op_addr_upd)]])
+    calldata_name = _encode_calldata(["(uint256,string)[]"], [[(no_id, op_name_upd)]])
+    calldata_addr = _encode_calldata(["(uint256,address)[]"], [[(no_id, op_addr_upd)]])
 
     create_and_enact_motion(contracts.easy_track, trusted_caller, factory_name, calldata_name, stranger)
     create_and_enact_motion(contracts.easy_track, trusted_caller, factory_addr, calldata_addr, stranger)
@@ -225,7 +225,7 @@ def test_simple_dvt_set_operator_target_limit(
     assert no_summary["isTargetLimitActive"] == False
     assert no_summary["targetValidatorsCount"] == 0
 
-    calldata = _encode_calldata("((uint256,bool,uint256)[])", [[(no_id, True, target_limit)]])
+    calldata = _encode_calldata(["(uint256,bool,uint256)[]"], [[(no_id, True, target_limit)]])
 
     create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
 
@@ -266,7 +266,7 @@ def test_simple_dvt_change_operator_manager(
 
     assert is_manager == True and is_manager_upd == False
 
-    calldata = _encode_calldata("((uint256,address,address)[])", [[(no_id, op_manager, op_manager_upd)]])
+    calldata = _encode_calldata(["(uint256,address,address)[]"], [[(no_id, op_manager, op_manager_upd)]])
 
     create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
 
