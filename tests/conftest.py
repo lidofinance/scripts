@@ -62,7 +62,7 @@ def delegate(accounts):
     return delegate
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="module")
 def trp_recipient(accounts):
     trp_recipient = accounts.at("0x228cCaFeA1fa21B74257Af975A9D84d87188c61B", force=True)
     web3.provider.make_request("evm_setAccountBalance", [trp_recipient.address, "0x152D02C7E14AF6800000"])
