@@ -58,8 +58,8 @@ def skip_slots() -> Sequence[tuple[str, int]]:
         (
             # finance slot changing due to deposit bot funding
             contracts.finance,
-            0x07
-        )
+            0x07,
+        ),
     ]
 
 
@@ -75,17 +75,17 @@ def do_snapshot(skip_slots: Sequence[tuple[str, int]]) -> SnapshotFn:
             slot_in_hex = HexBytes(slot).hex()
             # try plain 32 bits value first
             slot_value = get_slot(
-                Web3.toChecksumAddress(contract.address),
+                Web3.to_checksum_address(contract.address),
                 pos=slot,
                 block=block,
             )
             res[f"{contract.address}_slot_{slot_in_hex}"] = slot_value
 
             # if the slot stores relativelly small integer, try to read as an array
-            int_value = Web3.toInt(slot_value)
+            int_value = Web3.to_int(slot_value)
             if 0 < int_value < MAX_ARRAY_SIZE:
                 slot_value_as_list = get_slot(
-                    Web3.toChecksumAddress(contract.address),
+                    Web3.to_checksum_address(contract.address),
                     pos=slot,
                     as_list=True,
                     block=block,
