@@ -4,7 +4,7 @@ Tests for voting 23/04/2024
 """
 
 from brownie import accounts, interface, ZERO_ADDRESS
-from scripts.vote_2024_04_23 import start_vote
+from scripts.upgrade_vote_2024_04_23 import start_vote
 from utils.test.event_validators.vesting_escrow import validate_voting_adapter_upgraded_event
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
