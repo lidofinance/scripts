@@ -5,12 +5,58 @@ from typing import Tuple, Optional
 
 import pytest
 
-from brownie import MockCallTarget, accounts, chain, reverts, interface, ZERO_ADDRESS
+from brownie import MockCallTarget, accounts, chain, reverts, interface, ZERO_ADDRESS, web3
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import create_vote, bake_vote_items
 from utils.config import LDO_VOTE_EXECUTORS_FOR_TESTS
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.config import contracts
+import eth_abi
+
+
+def filter_logs(logs, topic):
+    return list(filter(lambda l: l["topics"][0] == topic, logs))
+
+
+def parse_set_delegate_logs(logs):
+    filtered_logs = filter_logs(logs, web3.keccak(text="SetDelegate(address,address)"))
+    res = []
+    for l in filtered_logs:
+        res.append(
+            {
+                "voter": eth_abi.decode(["address"], l["topics"][1])[0],
+                "delegate": eth_abi.decode(["address"], l["topics"][2])[0],
+            }
+        )
+    return res
+
+
+def parse_reset_delegate_logs(logs):
+    filtered_logs = filter_logs(logs, web3.keccak(text="ResetDelegate(address,address)"))
+    res = []
+    for l in filtered_logs:
+        res.append(
+            {
+                "voter": eth_abi.decode(["address"], l["topics"][1])[0],
+                "delegate": eth_abi.decode(["address"], l["topics"][2])[0],
+            }
+        )
+    return res
+
+
+def parse_cast_vote_as_delegate_logs(logs):
+    filtered_logs = filter_logs(logs, web3.keccak(text="CastVoteAsDelegate(uint256,address,address,bool,uint256)"))
+    print(f"filtered_logs: {filtered_logs}")
+    res = []
+    for l in filtered_logs:
+        res.append(
+            {
+                "voteId": eth_abi.decode(["uint256"], l["topics"][1])[0],
+                "delegate": eth_abi.decode(["address"], l["topics"][2])[0],
+                "voter": eth_abi.decode(["address"], l["topics"][3])[0],
+            }
+        )
+    return res
 
 
 @pytest.fixture(scope="module")
@@ -98,7 +144,12 @@ def test_phases(call_target, stranger, test_vote):
     assert contracts.voting.getVotePhase(vote_id) == 1  # Objection phase
 
     # change the previous vote to object
-    contracts.voting.vote(vote_id, False, False, {"from": accounts.at(LDO_VOTE_EXECUTORS_FOR_TESTS[2], force=True)})
+    vote_tx = contracts.voting.vote(
+        vote_id, False, False, {"from": accounts.at(LDO_VOTE_EXECUTORS_FOR_TESTS[2], force=True)}
+    )
+    assert vote_tx.events["CastVote"]["voteId"] == vote_id
+    assert vote_tx.events["CastVote"]["voter"] == LDO_VOTE_EXECUTORS_FOR_TESTS[2]
+    assert vote_tx.events["CastVote"]["supports"] == False
 
     with reverts("VOTING_CAN_NOT_EXECUTE"):
         contracts.voting.executeVote(vote_id, {"from": stranger})
@@ -112,7 +163,8 @@ def test_phases(call_target, stranger, test_vote):
         contracts.voting.vote(vote_id, False, False, {"from": accounts.at(LDO_VOTE_EXECUTORS_FOR_TESTS[2], force=True)})
 
     assert not call_target.called()
-    contracts.voting.executeVote(vote_id, {"from": stranger})
+    execute_tx = contracts.voting.executeVote(vote_id, {"from": stranger})
+    assert execute_tx.events["ExecuteVote"]["voteId"] == vote_id
     assert call_target.called()
 
 
@@ -133,7 +185,14 @@ def test_can_object(stranger, test_vote):
         contracts.voting.vote(vote_id, True, False, {"from": accounts.at(LDO_VOTE_EXECUTORS_FOR_TESTS[2], force=True)})
 
     # fresh objection
-    contracts.voting.vote(vote_id, False, False, {"from": accounts.at(LDO_VOTE_EXECUTORS_FOR_TESTS[0], force=True)})
+    vote_tx = contracts.voting.vote(
+        vote_id, False, False, {"from": accounts.at(LDO_VOTE_EXECUTORS_FOR_TESTS[0], force=True)}
+    )
+    assert vote_tx.events["CastVote"]["voteId"] == vote_id
+    assert vote_tx.events["CastVote"]["voter"] == LDO_VOTE_EXECUTORS_FOR_TESTS[0]
+    assert vote_tx.events["CastVote"]["supports"] == False
+    assert vote_tx.events["CastObjection"]["voteId"] == vote_id
+    assert vote_tx.events["CastObjection"]["voter"] == LDO_VOTE_EXECUTORS_FOR_TESTS[0]
 
     chain.sleep(contracts.voting.objectionPhaseTime())
     chain.mine()
@@ -181,7 +240,10 @@ def test_simple_delegation(delegate, test_vote):
 
     # [main] holders 0,1 delegate to 'delegate'
     for holder in [holder1, holder2]:
-        contracts.voting.setDelegate(delegate, {"from": accounts.at(holder, force=True)})
+        delegate_tx = contracts.voting.setDelegate(delegate, {"from": accounts.at(holder, force=True)})
+        parsed_events = parse_set_delegate_logs(delegate_tx.logs)
+        assert parsed_events[0]["voter"] == holder
+        assert parsed_events[0]["delegate"] == delegate
 
     # [main] delegate vote for YEA holder 3 (reject not a delegation for holder 3)
     with reverts("VOTING_CAN_NOT_VOTE_FOR"):
@@ -189,11 +251,29 @@ def test_simple_delegation(delegate, test_vote):
 
     # [main] delegate vote for YEA holders 1,2 (vote for 1 and 2)
     contracts.voting.attemptVoteFor(vote_id, True, holder1, {"from": delegate})
-    contracts.voting.attemptVoteFor(vote_id, True, holder2, {"from": delegate})
+    vote_for_tx = contracts.voting.attemptVoteFor(vote_id, True, holder2, {"from": delegate})
+    assert vote_for_tx.events["CastVote"]["voteId"] == vote_id
+    assert vote_for_tx.events["CastVote"]["voter"] == holder2
+    assert vote_for_tx.events["CastVote"]["supports"] == True
+
+    parsed_cast_events = parse_cast_vote_as_delegate_logs(vote_for_tx.logs)
+
+    assert parsed_cast_events[0]["voteId"] == vote_id
+    assert parsed_cast_events[0]["delegate"] == delegate
+    assert parsed_cast_events[0]["voter"] == holder2
 
     # [main] delegate re-vote for NAY holders 1,2
     contracts.voting.attemptVoteFor(vote_id, False, holder1, {"from": delegate})
-    contracts.voting.attemptVoteFor(vote_id, False, holder2, {"from": delegate})
+    vote_for_tx = contracts.voting.attemptVoteFor(vote_id, False, holder2, {"from": delegate})
+    assert vote_for_tx.events["CastVote"]["voteId"] == vote_id
+    assert vote_for_tx.events["CastVote"]["voter"] == holder2
+    assert vote_for_tx.events["CastVote"]["supports"] == False
+
+    parsed_cast_events = parse_cast_vote_as_delegate_logs(vote_for_tx.logs)
+
+    assert parsed_cast_events[0]["voteId"] == vote_id
+    assert parsed_cast_events[0]["delegate"] == delegate
+    assert parsed_cast_events[0]["voter"] == holder2
 
     # [main] holder 3 delegate to 'delegate'
     contracts.voting.setDelegate(delegate, {"from": accounts.at(holder3, force=True)})
@@ -215,7 +295,10 @@ def test_simple_delegation(delegate, test_vote):
     assert contracts.voting.getDelegate(holder2) == holder3
 
     # [main] holder 1 reset delegate
-    contracts.voting.resetDelegate({"from": accounts.at(holder1, force=True)})
+    reset_tx = contracts.voting.resetDelegate({"from": accounts.at(holder1, force=True)})
+    parsed_events = parse_reset_delegate_logs(reset_tx.logs)
+    assert parsed_events[0]["voter"] == holder1
+    assert parsed_events[0]["delegate"] == delegate
 
     assert contracts.voting.getDelegate(holder1) == ZERO_ADDRESS
 
@@ -373,7 +456,10 @@ def test_trp_delegation(test_trp_escrow, test_vote, delegate, trp_recipient):
 
     trp_escrow_contract = interface.Escrow(test_trp_escrow)
 
-    trp_escrow_contract.delegate(encoded_delegate_address, {"from": trp_recipient})
+    delegate_tx = trp_escrow_contract.delegate(encoded_delegate_address, {"from": trp_recipient})
+    parsed_events = parse_set_delegate_logs(delegate_tx.logs)
+    assert parsed_events[0]["voter"] == test_trp_escrow
+    assert parsed_events[0]["delegate"] == delegate
 
     delegated_voters = contracts.voting.getDelegatedVoters(delegate.address, 0, 5, {"from": delegate})
     assert delegated_voters[0] == [test_trp_escrow]
@@ -388,8 +474,11 @@ def test_trp_delegation(test_trp_escrow, test_vote, delegate, trp_recipient):
 
     encoded_zero_address = trp_voting_adapter.encode_delegate_calldata(ZERO_ADDRESS)
 
-    trp_escrow_contract.delegate(encoded_zero_address, {"from": trp_recipient})
+    reset_tx = trp_escrow_contract.delegate(encoded_zero_address, {"from": trp_recipient})
     assert contracts.voting.getDelegate(trp_recipient) == ZERO_ADDRESS
+    parsed_events = parse_reset_delegate_logs(reset_tx.logs)
+    assert parsed_events[0]["voter"] == test_trp_escrow
+    assert parsed_events[0]["delegate"] == delegate
 
 
 def test_trp_delegation_multiple(test_trp_escrow, test_vote, delegate, trp_recipient):
