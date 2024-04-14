@@ -58,8 +58,8 @@ def skip_slots() -> Sequence[tuple[str, int]]:
         (
             # finance slot changing due to deposit bot funding
             contracts.finance,
-            0x07
-        )
+            0x07,
+        ),
     ]
 
 
