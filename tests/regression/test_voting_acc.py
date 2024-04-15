@@ -238,9 +238,9 @@ def test_can_object(stranger, test_vote):
 def test_simple_delegation(delegate, test_vote):
     vote_id = test_vote[0]
 
-    holder1 = LDO_VOTE_EXECUTORS_FOR_TESTS[0]
-    holder2 = LDO_VOTE_EXECUTORS_FOR_TESTS[1]
-    holder3 = LDO_VOTE_EXECUTORS_FOR_TESTS[2]
+    holder1 = LDO_VOTE_EXECUTORS_FOR_TESTS[0].lower()
+    holder2 = LDO_VOTE_EXECUTORS_FOR_TESTS[1].lower()
+    holder3 = LDO_VOTE_EXECUTORS_FOR_TESTS[2].lower()
 
     assert contracts.voting.getVotePhase(vote_id) == 0  # Main phase
     # [main] delegate vote for YES holders 1 (reject no delegation)
@@ -374,9 +374,9 @@ def test_simple_delegation(delegate, test_vote):
 def test_simple_delegation_multiple(delegate, test_vote):
     vote_id = test_vote[0]
 
-    holder1 = LDO_VOTE_EXECUTORS_FOR_TESTS[0]
-    holder2 = LDO_VOTE_EXECUTORS_FOR_TESTS[1]
-    holder3 = LDO_VOTE_EXECUTORS_FOR_TESTS[2]
+    holder1 = LDO_VOTE_EXECUTORS_FOR_TESTS[0].lower()
+    holder2 = LDO_VOTE_EXECUTORS_FOR_TESTS[1].lower()
+    holder3 = LDO_VOTE_EXECUTORS_FOR_TESTS[2].lower()
 
     assert contracts.voting.getVotePhase(vote_id) == 0  # Main phase
     # [main] delegate vote for YEA holders 1,2 (reject no delegation)
