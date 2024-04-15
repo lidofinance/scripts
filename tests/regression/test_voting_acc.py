@@ -5,12 +5,16 @@ from typing import Tuple, Optional
 
 import pytest
 
+# import os
+
+# from web3 import Web3
 from brownie import MockCallTarget, accounts, chain, reverts, interface, ZERO_ADDRESS, web3
 from brownie.network.transaction import TransactionReceipt
+from brownie.network.event import _decode_logs
 from utils.voting import create_vote, bake_vote_items
 from utils.config import LDO_VOTE_EXECUTORS_FOR_TESTS
 from utils.evm_script import EMPTY_CALLSCRIPT
-from utils.config import contracts
+from utils.config import contracts, TRP_FACTORY_DEPLOY_BLOCK_NUMBER
 import eth_abi
 
 
@@ -85,6 +89,12 @@ def test_trp_escrow(trp_recipient, ldo_holder):
     chain.mine()
 
     return escrow_address
+
+
+@pytest.fixture(scope="module")
+def trp_voting_adapter():
+    trp_voting_adapter_address = contracts.trp_escrow_factory.voting_adapter()
+    return interface.VotingAdapter(trp_voting_adapter_address)
 
 
 @pytest.fixture(scope="function")
@@ -446,12 +456,10 @@ def test_simple_delegation_multiple(delegate, test_vote):
         contracts.voting.attemptVoteForMultiple(vote_id, True, [holder1, holder2, holder3], {"from": delegate})
 
 
-def test_trp_delegation(test_trp_escrow, test_vote, delegate, trp_recipient):
+def test_trp_delegation(test_trp_escrow, test_vote, delegate, trp_recipient, trp_voting_adapter):
     vote_id = test_vote[0]
     assert contracts.voting.getVotePhase(vote_id) == 0  # Main phase
 
-    trp_voting_adapter_address = contracts.trp_escrow_factory.voting_adapter()
-    trp_voting_adapter = interface.VotingAdapter(trp_voting_adapter_address)
     encoded_delegate_address = trp_voting_adapter.encode_delegate_calldata(delegate.address)
 
     trp_escrow_contract = interface.Escrow(test_trp_escrow)
@@ -481,17 +489,17 @@ def test_trp_delegation(test_trp_escrow, test_vote, delegate, trp_recipient):
     assert parsed_events[0]["delegate"] == delegate
 
 
-def test_trp_delegation_multiple(test_trp_escrow, test_vote, delegate, trp_recipient):
+def test_trp_delegation_multiple(test_trp_escrow, test_vote, delegate, trp_recipient, trp_voting_adapter):
     vote_id = test_vote[0]
     assert contracts.voting.getVotePhase(vote_id) == 0  # Main phase
 
-    trp_voting_adapter_address = contracts.trp_escrow_factory.voting_adapter()
-    trp_voting_adapter = interface.VotingAdapter(trp_voting_adapter_address)
     encoded_delegate_address = trp_voting_adapter.encode_delegate_calldata(delegate.address)
 
     interface.Escrow(test_trp_escrow).delegate(encoded_delegate_address, {"from": trp_recipient})
 
-    contracts.voting.getDelegatedVoters(delegate.address, 0, 5, {"from": delegate})
+    delegated_voters = contracts.voting.getDelegatedVoters(delegate.address, 0, 5, {"from": delegate})
+    assert delegated_voters[0] == [test_trp_escrow]
+    assert contracts.voting.getDelegate(test_trp_escrow) == delegate
 
     vote_before = contracts.voting.getVote(vote_id, {"from": delegate})
     assert vote_before["yea"] == 0
@@ -499,3 +507,47 @@ def test_trp_delegation_multiple(test_trp_escrow, test_vote, delegate, trp_recip
     contracts.voting.attemptVoteForMultiple(vote_id, True, [test_trp_escrow], {"from": delegate})
     vote_after = contracts.voting.getVote(vote_id, {"from": delegate})
     assert vote_after["yea"] == 1_000_000_000_000_000_000
+
+
+# TODO: finalize the test
+# def test_deployed_trp_for_delegation(delegate, trp_voting_adapter, test_vote):
+#     w3 = Web3(Web3.HTTPProvider(f'https://mainnet.infura.io/v3/{os.getenv("WEB3_INFURA_PROJECT_ID")}'))
+
+#     event_signature_hash = w3.keccak(text="VestingEscrowCreated(address,address,address)").hex()
+#     deployed_trp_events = w3.eth.filter(
+#         {"address": contracts.trp_escrow_factory.address, "fromBlock": TRP_FACTORY_DEPLOY_BLOCK_NUMBER, "topics": [event_signature_hash]}
+#     ).get_all_entries()
+
+#     decoded_events = _decode_logs(deployed_trp_events)["VestingEscrowCreated"]
+
+#     vote_id = test_vote[0]
+#     assert contracts.voting.getVotePhase(vote_id) == 0  # Main phase
+
+#     trp_escrow = decoded_events[0]
+#     for trp_escrow in decoded_events:
+#         recipient = trp_escrow["recipient"]
+#         escrow = trp_escrow["escrow"]
+#         escrow_contract = interface.Escrow(escrow)
+#         encoded_delegate_address = trp_voting_adapter.encode_delegate_calldata(delegate.address)
+
+#         delegate_tx = escrow_contract.delegate(encoded_delegate_address, {"from": recipient})
+#         parsed_events = parse_set_delegate_logs(delegate_tx.logs)
+#         assert parsed_events[0]["voter"] == escrow
+#         assert parsed_events[0]["delegate"] == delegate
+
+#         # vote_before = contracts.voting.getVote(vote_id, {"from": delegate})
+#         # assert vote_before["yea"] == 0
+#         # if contracts.ldo_token.balanceOf(escrow) > 0:
+#         #     contracts.voting.attemptVoteFor(vote_id, True, escrow, {"from": delegate})
+#         #     vote_after = contracts.voting.getVote(vote_id, {"from": delegate})
+#         #     assert vote_after["yea"] == contracts.ldo_token.balanceOf(escrow)
+#         # else:
+#         #     print(f"Escrow {escrow} has no LDO balance")
+
+#         # encoded_zero_address = trp_voting_adapter.encode_delegate_calldata(ZERO_ADDRESS)
+
+#         # reset_tx = escrow_contract.delegate(encoded_zero_address, {"from": recipient})
+#         # assert contracts.voting.getDelegate(recipient) == ZERO_ADDRESS
+#         # parsed_events = parse_reset_delegate_logs(reset_tx.logs)
+#         # assert parsed_events[0]["voter"] == escrow
+#         # assert parsed_events[0]["delegate"] == delegate
