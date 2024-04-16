@@ -33,7 +33,7 @@ updated_voting_app = {
 }
 
 description = """
-aboba
+Simple delegation test voting
 """
 
 
