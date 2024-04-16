@@ -4,7 +4,7 @@ Tests for voting 23/04/2024
 """
 
 from brownie import accounts, interface, ZERO_ADDRESS
-from scripts.vote_2024_04_23_holesky import start_vote
+from scripts.upgrade_simple_delegation_holesky import start_vote
 from utils.test.event_validators.vesting_escrow import validate_voting_adapter_upgraded_event
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
@@ -43,7 +43,6 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
     # Voting App before
     voting_proxy = interface.AppProxyUpgradeable(contracts.voting.address)
     voting_app_from_repo = contracts.voting_app_repo.getLatest()
-    print("from repo", voting_app_from_repo)
     voting_appId = voting_proxy.appId()
 
     assert voting_app_from_repo[0] == old_voting_app["version"]
