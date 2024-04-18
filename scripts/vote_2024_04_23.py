@@ -1,12 +1,7 @@
 """
 Voting 23/04/2024.
 
-I. Simple Delegation
-1. Push new Voting app version to the Voting Repo 0x4ee3118e3858e8d7164a634825bfe0f73d99c792
-2. Upgrade the Aragon Voting contract implementation 0x63C7F17210f6a7061e887D05BBF5412085e9DF43
-3. Upgrade TRP voting adapter 0x5Ea73d6AE9B2E57eF865A3059bdC5C06b8e46072
-
-II. Gate Seal
+I. Gate Seal
 1. Grant PAUSE_ROLE on WithdrawalQueue for the new GateSeal
 2. Grant PAUSE_ROLE on ValidatorsExitBus for the new GateSeal
 3. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
@@ -25,24 +20,26 @@ from utils.config import (
     get_priority_fee,
     contracts,
 )
-from utils.repo import add_implementation_to_voting_app_repo
-from utils.kernel import update_app_implementation
 from utils.agent import agent_forward
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
-
-updated_trp_voting_adapter = "0x5Ea73d6AE9B2E57eF865A3059bdC5C06b8e46072"
-
-updated_voting_app = {
-    "address": "0x63C7F17210f6a7061e887D05BBF5412085e9DF43",
-    "content_uri": "0x697066733a516d506f7478377a484743674265394445684d6f4238336572564a75764d74335971436e6454657a575652706441",
-    "id": "0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e",
-    "version": (4, 0, 0),
-}
 
 proposed_gate_seal_address = "0x79243345eDbe01A7E42EDfF5900156700d22611c"
 
 description = """
-aboba
+One of the parts of Lido V2 is GateSeal. It’s been set up with an expiration date of 1 May 2024. The proposal seeks to prolong the functioning of the GateSeal mechanics for the following year.
+
+**Proposed actions:**
+
+1. Grant role "PAUSE_ROLE" for proposed Gate Seal contract on Withdrawal Queue ERC721 contract
+2. Grant role "PAUSE_ROLE" for proposed Gate Seal contract on Validators Exit Bus Oracle contract 
+3. Revoke role "PAUSE_ROLE" from expiring Gate Seal contract on Withdrawal Queue ERC721 contract
+4. Revoke role "PAUSE_ROLE" from expiring Gate Seal contract on Validators Exit Bus Oracle contract
+
+Gate Seal (proposed): https://etherscan.io/address/0x79243345eDbe01A7E42EDfF5900156700d22611c#readContract
+Gate Seal (proposed to remove): https://etherscan.io/address/0x1ad5cb2955940f998081c1ef5f5f00875431aa90#readContract
+Withdrawal Queue ERC721 contract: https://etherscan.io/address/0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1#readContract
+Validators Exit Bus Oracle contract: https://etherscan.io/address/0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e#readContract
+
 """
 
 
@@ -51,33 +48,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
     vote_desc_items, call_script_items = zip(
         #
-        # I. Simple Delegation
-        #
-        (
-            "1) Push new Voting app version to the Voting Repo",
-            add_implementation_to_voting_app_repo(
-                updated_voting_app["version"],
-                updated_voting_app["address"],
-                updated_voting_app["content_uri"],
-            ),
-        ),
-        (
-            "2) Upgrade the Aragon Voting contract implementation",
-            update_app_implementation(updated_voting_app["id"], updated_voting_app["address"]),
-        ),
-        (
-            "3) Upgrade TRP voting adapter",
-            agent_forward(
-                [
-                    (
-                        contracts.trp_escrow_factory.address,
-                        contracts.trp_escrow_factory.update_voting_adapter.encode_input(updated_trp_voting_adapter),
-                    )
-                ]
-            ),
-        ),
-        #
-        # II. Gate Seal
+        # I. Gate Seal
         #
         (
             "1) Grant PAUSE_ROLE on WithdrawalQueue for the new GateSeal",
