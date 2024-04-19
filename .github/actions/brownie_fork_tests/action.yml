@@ -24,7 +24,7 @@ runs:
         curl -sSL https://install.python-poetry.org | python3 -
         echo "$HOME/.local/bin" >> $GITHUB_PATH
       env:
-        POETRY_VERSION: "1.5.1"
+        POETRY_VERSION: "1.8.2"
 
     - name: Set up Python 3.10
       uses: actions/setup-python@v4
@@ -37,10 +37,6 @@ runs:
       with:
         node-version: 18.x
         cache: "yarn"
-
-    - name: Install pyyaml
-      shell: bash
-      run: poetry run pip install "cython<3.0" pyyaml==5.4.1 --no-build-isolation
 
     - name: Install poetry requirements
       shell: bash
