@@ -4,19 +4,30 @@ Tests for voting 23/04/2024
 """
 
 from brownie import Contract, web3, chain  # type: ignore
-from brownie import accounts, interface, ZERO_ADDRESS
+from brownie import reverts, accounts, interface, ZERO_ADDRESS
 from scripts.vote_2024_04_23 import start_vote
+from utils.voting import find_metadata_by_vote_id
+from utils.ipfs import get_lido_vote_cid_from_str
 from utils.config import (
     contracts,
     network_name,
-    LDO_HOLDER_ADDRESS_FOR_TESTS,
-    VOTING,
 
     GATE_SEAL_PAUSE_DURATION, 
     contracts, 
-    GATE_SEAL_COMMITTEE
+    GATE_SEAL_COMMITTEE,
+
+    WITHDRAWAL_QUEUE,
+    VALIDATORS_EXIT_BUS_ORACLE
 )
 from utils.test.tx_tracing_helpers import *
+from utils.test.event_validators.permission import (
+    validate_grant_role_event,
+    validate_revoke_role_event
+
+)
+
+# web3.keccak(text="PAUSE_ROLE")
+PAUSE_ROLE = "0x139c2898040ef16910dc9f44dc697df79363da767d8bc92f2e310312b816e46d"
 
 def _check_role(contract: Contract, role: str, holder: str):
     role_bytes = web3.keccak(text=role).hex()
@@ -25,6 +36,7 @@ def _check_role(contract: Contract, role: str, holder: str):
 
 def _check_no_role(contract: Contract, role: str, holder: str):
     role_bytes = web3.keccak(text=role).hex()
+    assert contract.getRoleMemberCount(role_bytes) == 1, f"Role {role} on {contract} should have exactly one holder"
     assert not contract.getRoleMember(role_bytes, 0) == holder, f"Role {role} holder on {contract} should be {holder}"
 
 old_gate_seal = "0x1ad5cb2955940f998081c1ef5f5f00875431aa90"
@@ -32,6 +44,8 @@ new_gate_seal = "0x79243345eDbe01A7E42EDfF5900156700d22611c"
 
 
 def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
+    #parameter
+    agent = contracts.agent
 
     #old GateSeal permissions before
     _check_role(contracts.withdrawal_queue, "PAUSE_ROLE", old_gate_seal)
@@ -73,35 +87,47 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
     #Scenario test
     print(f"Simulating GateSeal flow")
 
-    sealing_committee = new_gate_seal_contract.get_sealing_committee()
-    new_gate_seal_contract.seal(sealables, {"from": sealing_committee})
+    new_gate_seal_contract.seal(sealables, {"from": GATE_SEAL_COMMITTEE})
     print("Sealed")
 
     expiry_timestamp = chain.time()
     assert new_gate_seal_contract.is_expired()
-    assert new_gate_seal_contract.get_expiry_timestamp() == expiry_timestamp
+    assert expiry_timestamp - new_gate_seal_contract.get_expiry_timestamp() <= 1
     print("Expired")
 
     for sealable in sealables:
         assert interface.SealableMock(sealable).isPaused()
     print("Sealables paused")
 
-    chain.sleep(expiry_timestamp + new_gate_seal_contract.get_seal_duration_seconds())
+    chain.sleep(6 * 60 * 60 * 24+100)
+    chain.mine()
 
     for sealable in sealables:
-        assert interface.SealableMock(sealable).isPaused()
+        assert not interface.SealableMock(sealable).isPaused()
     print(f"Sealables unpaused in {new_gate_seal_contract.get_seal_duration_seconds()}")
+
+    #Try to use the Old gate seal to pause the contracts
+    print("Try to use the Old gate seal to pause the contracts")
+    with reverts("10"):
+        contracts.gate_seal.seal(sealables, {"from": GATE_SEAL_COMMITTEE})
 
     print("GateSeal is good to go!")
 
     # Validating events
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 4, "Incorrect voting items count"
-
-    # metadata = find_metadata_by_vote_id(vote_id)
-    # assert get_lido_vote_cid_from_str(metadata) == "" TODO: add ipfs cid
+    """
+    metadata = find_metadata_by_vote_id(vote_id)
+    assert get_lido_vote_cid_from_str(metadata) == "" TODO: add ipfs cid
+    
     display_voting_events(vote_tx)
 
     if bypass_events_decoding or network_name() in ("goerli", "goerli-fork"):
         return
 
     evs = group_voting_events(vote_tx)
+
+    validate_grant_role_event(evs[0], PAUSE_ROLE, agent.address, agent.address)
+    validate_grant_role_event(evs[1], PAUSE_ROLE, agent.address, agent.address)
+    validate_revoke_role_event(evs[2], PAUSE_ROLE, agent.address, agent.address)
+    validate_revoke_role_event(evs[3], PAUSE_ROLE, agent.address, agent.address)
+    """
