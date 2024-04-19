@@ -23,11 +23,10 @@ def grant_roles(voting_eoa, agent_eoa):
         contracts.staking_router.MANAGE_WITHDRAWAL_CREDENTIALS_ROLE(), voting_eoa, {"from": agent_eoa}
     )
 
-    contracts.acl.createPermission(
+    contracts.acl.grantPermission(
         contracts.voting,
         contracts.node_operators_registry,
         convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-        contracts.voting,
         {"from": contracts.voting},
     )
 
@@ -196,7 +195,9 @@ def make_snapshot(node_operators_registry) -> Dict[str, Any]:
             ]
             snapshot["signing_keys"][id] = [key.dict() for key in snapshot["signing_keys"][id]]
 
-        snapshot["node_operators"] = dict(zip(node_operators_indexes, [nop.dict() for nop in snapshot["node_operators"]]))
+        snapshot["node_operators"] = dict(
+            zip(node_operators_indexes, [nop.dict() for nop in snapshot["node_operators"]])
+        )
     return snapshot
 
 

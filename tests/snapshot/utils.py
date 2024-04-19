@@ -53,7 +53,7 @@ def get_slot(
     if pos is not None:
         idx = pos
     else:
-        idx = Web3.toInt(Web3.keccak(text=name))
+        idx = Web3.to_int(Web3.keccak(text=name))
 
     if not as_list:
         return web3.eth.get_storage_at(
@@ -62,7 +62,7 @@ def get_slot(
             block_identifier=block,
         )
 
-    length = Web3.toInt(
+    length = Web3.to_int(
         web3.eth.get_storage_at(
             address,
             idx,
@@ -78,7 +78,7 @@ def get_slot(
     while len(buf) < 32:
         buf = b"\x00" + buf
 
-    p = Web3.toInt(Web3.keccak(buf))
+    p = Web3.to_int(Web3.keccak(buf))
     for i in range(length):
         res.append(
             web3.eth.get_storage_at(
