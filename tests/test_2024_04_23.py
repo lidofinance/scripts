@@ -108,7 +108,7 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
 
     #Try to use the Old gate seal to pause the contracts
     print("Try to use the Old gate seal to pause the contracts")
-    with reverts("10"):
+    with reverts("10"): #notice converts a list of indexes into an error message, in the descending order
         contracts.gate_seal.seal(sealables, {"from": GATE_SEAL_COMMITTEE})
 
     print("GateSeal is good to go!")

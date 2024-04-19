@@ -26,20 +26,7 @@ from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 proposed_gate_seal_address = "0x79243345eDbe01A7E42EDfF5900156700d22611c"
 
 description = """
-One of the parts of Lido V2 is GateSeal. It’s been set up with an expiration date of 1 May 2024. The proposal seeks to prolong the functioning of the GateSeal mechanics for the following year.
-
-**Proposed actions:**
-
-1. Grant role "PAUSE_ROLE" for proposed Gate Seal contract on Withdrawal Queue ERC721 contract
-2. Grant role "PAUSE_ROLE" for proposed Gate Seal contract on Validators Exit Bus Oracle contract 
-3. Revoke role "PAUSE_ROLE" from expiring Gate Seal contract on Withdrawal Queue ERC721 contract
-4. Revoke role "PAUSE_ROLE" from expiring Gate Seal contract on Validators Exit Bus Oracle contract
-
-Gate Seal (proposed): https://etherscan.io/address/0x79243345eDbe01A7E42EDfF5900156700d22611c#readContract
-Gate Seal (proposed to remove): https://etherscan.io/address/0x1ad5cb2955940f998081c1ef5f5f00875431aa90#readContract
-Withdrawal Queue ERC721 contract: https://etherscan.io/address/0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1#readContract
-Validators Exit Bus Oracle contract: https://etherscan.io/address/0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e#readContract
-
+--
 """
 
 
@@ -63,7 +50,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
 
-                (
+        (
             "2) Grant PAUSE_ROLE on ValidatorsExitBus for the new GateSeal",
             agent_forward(
                 [
@@ -75,7 +62,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 ]
             ),
         ),
-                (
+        (
             "3) Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal",
             agent_forward(
                 [
@@ -87,7 +74,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 ]
             ),
         ),
-                (
+        (
             "4) Revoke PAUSE_ROLE on ValidatorsExitBus from the old GateSeal",
             agent_forward(
                 [
