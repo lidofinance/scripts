@@ -26,9 +26,9 @@ from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 proposed_gate_seal_address = "0x79243345eDbe01A7E42EDfF5900156700d22611c"
 
 description = """
-The vote is intended to change the current GateSeal for the WithdrawalQueue and ValidatorExitBusOracle contracts, which expires on May 1, 2024, with a new one that will expire on April 1, 2025. The GateSeal enables a one-time, immediate emergency pause of these contracts for 6 days.
+The vote is intended to change the current **GateSeal for the WithdrawalQueue and ValidatorExitBusOracle** contracts, which expires on May 1, 2024, with a new one that will **expire on April 1, 2025**. The GateSeal enables a one-time, immediate emergency pause of these contracts for 6 days.
 
-The new GateSeal contract was deployed using the GateSeal Factory from the GateSeal Blueprint. statemind.io (https://statemind.io/) audited the initial Factory and Blueprint (report https://github.com/lidofinance/audits/?tab=readme-ov-file#04-2023-statemind-gateseals-audit) and verified (https://github.com/lidofinance/audits/blob/main/Statemind%20GateSeal%20Deployment%20Validation%2004-2024.pdf) that the new GateSeal is identical to the Blueprint and has the correct parameters.
+The new GateSeal contract was deployed using the GateSeal Factory from the GateSeal Blueprint. [statemind.io](https://statemind.io/) audited the initial Factory and Blueprint ([report](https://github.com/lidofinance/audits/?tab=readme-ov-file#04-2023-statemind-gateseals-audit)) and [verified](https://github.com/lidofinance/audits/blob/main/Statemind%20GateSeal%20Deployment%20Validation%2004-2024.pdf) that the new GateSeal is identical to the Blueprint and has the correct parameters.
 
 See Reseach forum post for more information (https://research.lido.fi/t/renew-gateseal-for-the-withdrawal-queue-and-validator-exit-bus-oracle/7081).
 """
@@ -52,7 +52,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 ]
             ),
         ),
-
         (
             "2) Grant PAUSE_ROLE on ValidatorsExitBus for the new GateSeal",
             agent_forward(
