@@ -92,14 +92,14 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
     print("Expired")
 
     for sealable in sealables:
-        assert interface.SealableMock(sealable).isPaused()
+        assert interface.IPausable(sealable).isPaused()
     print("Sealables paused")
 
     chain.sleep(6 * 60 * 60 * 24+100)
     chain.mine()
 
     for sealable in sealables:
-        assert not interface.SealableMock(sealable).isPaused()
+        assert not interface.IPausable(sealable).isPaused()
     print(f"Sealables unpaused in {new_gate_seal_contract.get_seal_duration_seconds()}")
 
     #Try to use the Old gate seal to pause the contracts
