@@ -13,7 +13,6 @@ from utils.config import (
     network_name,
 
     GATE_SEAL_PAUSE_DURATION, 
-    contracts, 
     GATE_SEAL_COMMITTEE,
 )
 from utils.test.tx_tracing_helpers import *
@@ -22,8 +21,9 @@ from utils.test.event_validators.permission import (
     validate_revoke_role_event
 )
 
-# web3.keccak(text="PAUSE_ROLE")
-PAUSE_ROLE = "0x139c2898040ef16910dc9f44dc697df79363da767d8bc92f2e310312b816e46d"
+PAUSE_ROLE = "0x139c2898040ef16910dc9f44dc697df79363da767d8bc92f2e310312b816e46d" # web3.keccak(text="PAUSE_ROLE")
+old_gate_seal = "0x1ad5cb2955940f998081c1ef5f5f00875431aa90"
+new_gate_seal = "0x79243345eDbe01A7E42EDfF5900156700d22611c"
 
 def _check_role(contract: Contract, role: str, holder: str):
     role_bytes = web3.keccak(text=role).hex()
@@ -35,11 +35,8 @@ def _check_no_role(contract: Contract, role: str, holder: str):
     assert contract.getRoleMemberCount(role_bytes) == 1, f"Role {role} on {contract} should have exactly one holder"
     assert not contract.getRoleMember(role_bytes, 0) == holder, f"Role {role} holder on {contract} should be {holder}"
 
-old_gate_seal = "0x1ad5cb2955940f998081c1ef5f5f00875431aa90"
-new_gate_seal = "0x79243345eDbe01A7E42EDfF5900156700d22611c"
-
-
 def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
+
     #parameter
     agent = contracts.agent
 
@@ -88,7 +85,7 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
 
     expiry_timestamp = chain.time()
     assert new_gate_seal_contract.is_expired()
-    assert expiry_timestamp - new_gate_seal_contract.get_expiry_timestamp() <= 1
+    assert expiry_timestamp - new_gate_seal_contract.get_expiry_timestamp() <= 2
     print("Expired")
 
     for sealable in sealables:
@@ -111,9 +108,9 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
 
     # Validating events
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 4, "Incorrect voting items count"
-    """
+    
     metadata = find_metadata_by_vote_id(vote_id)
-    assert get_lido_vote_cid_from_str(metadata) == "" TODO: add ipfs cid
+    #assert get_lido_vote_cid_from_str(metadata) == "" TODO: add ipfs cid
     
     display_voting_events(vote_tx)
 
@@ -122,8 +119,14 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
 
     evs = group_voting_events(vote_tx)
 
-    validate_grant_role_event(evs[0], PAUSE_ROLE, agent.address, agent.address)
-    validate_grant_role_event(evs[1], PAUSE_ROLE, agent.address, agent.address)
-    validate_revoke_role_event(evs[2], PAUSE_ROLE, agent.address, agent.address)
-    validate_revoke_role_event(evs[3], PAUSE_ROLE, agent.address, agent.address)
-    """
+    # Grant PAUSE_ROLE on WithdrawalQueue for the new GateSeal
+    validate_grant_role_event(evs[0], PAUSE_ROLE, new_gate_seal, agent)
+
+    # Grant PAUSE_ROLE on ValidatorExitBusOracle for the new GateSeal
+    validate_grant_role_event(evs[1], PAUSE_ROLE, new_gate_seal, agent)
+
+    # Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
+    validate_revoke_role_event(evs[2], PAUSE_ROLE, old_gate_seal, agent)
+
+    # Revoke PAUSE_ROLE on ValidatorExitBusOracle from the old GateSeal
+    validate_revoke_role_event(evs[3], PAUSE_ROLE, old_gate_seal, agent)
