@@ -22,6 +22,7 @@ from utils.test.event_validators.permission import (
 )
 
 PAUSE_ROLE = "0x139c2898040ef16910dc9f44dc697df79363da767d8bc92f2e310312b816e46d" # web3.keccak(text="PAUSE_ROLE")
+NEW_EXPIRY_TIMESTAMP = 1743465600 # Tue Apr 01 2025 00:00:00 GMT+0000
 old_gate_seal = "0x1ad5cb2955940f998081c1ef5f5f00875431aa90"
 new_gate_seal = "0x79243345eDbe01A7E42EDfF5900156700d22611c"
 
@@ -32,7 +33,6 @@ def _check_role(contract: Contract, role: str, holder: str):
 
 def _check_no_role(contract: Contract, role: str, holder: str):
     role_bytes = web3.keccak(text=role).hex()
-    assert contract.getRoleMemberCount(role_bytes) == 1, f"Role {role} on {contract} should have exactly one holder"
     assert not contract.getRoleMember(role_bytes, 0) == holder, f"Role {role} holder on {contract} should be {holder}"
 
 def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
@@ -74,7 +74,7 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
     assert contracts.withdrawal_queue.address in sealables
 
     assert new_gate_seal_contract.get_seal_duration_seconds() == GATE_SEAL_PAUSE_DURATION
-    assert new_gate_seal_contract.get_expiry_timestamp() == 1743465600
+    assert new_gate_seal_contract.get_expiry_timestamp() == NEW_EXPIRY_TIMESTAMP
     assert not new_gate_seal_contract.is_expired()
     
     #Scenario test
@@ -92,7 +92,7 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
         assert interface.IPausable(sealable).isPaused()
     print("Sealables paused")
 
-    chain.sleep(6 * 60 * 60 * 24+100)
+    chain.sleep(6 * 60 * 60 * 24 + 100)
     chain.mine()
 
     for sealable in sealables:

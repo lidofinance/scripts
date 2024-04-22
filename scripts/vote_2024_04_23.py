@@ -30,7 +30,7 @@ The vote is intended to change the current **GateSeal for the WithdrawalQueue an
 
 The new GateSeal contract was deployed using the GateSeal Factory from the GateSeal Blueprint. [statemind.io](https://statemind.io/) audited the initial Factory and Blueprint ([report](https://github.com/lidofinance/audits/?tab=readme-ov-file#04-2023-statemind-gateseals-audit)) and [verified](https://github.com/lidofinance/audits/blob/main/Statemind%20GateSeal%20Deployment%20Validation%2004-2024.pdf) that the new GateSeal is identical to the Blueprint and has the correct parameters.
 
-More information on the [Reseach forum](https://research.lido.fi/t/renew-gateseal-for-the-withdrawal-queue-and-validator-exit-bus-oracle/7081)
+More information on the [Research forum](https://research.lido.fi/t/renew-gateseal-for-the-withdrawal-queue-and-validator-exit-bus-oracle/7081)
 """
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
