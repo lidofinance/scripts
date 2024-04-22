@@ -15,34 +15,37 @@ from utils.config import (
     GATE_SEAL_COMMITTEE,
 )
 from utils.test.tx_tracing_helpers import *
-from utils.test.event_validators.permission import (
-    validate_grant_role_event,
-    validate_revoke_role_event
-)
+from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 
-PAUSE_ROLE = "0x139c2898040ef16910dc9f44dc697df79363da767d8bc92f2e310312b816e46d" # web3.keccak(text="PAUSE_ROLE")
-NEW_EXPIRY_TIMESTAMP = 1743465600 # Tue Apr 01 2025 00:00:00 GMT+0000
+PAUSE_ROLE = "0x139c2898040ef16910dc9f44dc697df79363da767d8bc92f2e310312b816e46d"  # web3.keccak(text="PAUSE_ROLE")
+NEW_EXPIRY_TIMESTAMP = 1743465600  # Tue Apr 01 2025 00:00:00 GMT+0000
 old_gate_seal = "0x1ad5cb2955940f998081c1ef5f5f00875431aa90"
 new_gate_seal = "0x79243345eDbe01A7E42EDfF5900156700d22611c"
+
 
 def _check_role(contract: Contract, role: str, holder: str):
     role_bytes = web3.keccak(text=role).hex()
     assert contract.getRoleMemberCount(role_bytes) == 1, f"Role {role} on {contract} should have exactly one holder"
     assert contract.getRoleMember(role_bytes, 0) == holder, f"Role {role} holder on {contract} should be {holder}"
 
+
 def _check_no_role(contract: Contract, role: str, holder: str):
     role_bytes = web3.keccak(text=role).hex()
-    assert not contract.getRoleMember(role_bytes, 0) == holder, f"Role {role} holder on {contract} should be {holder}"
+    assert contract.getRoleMemberCount(role_bytes) == 1, f"Role {role} on {contract} should have exactly one holder"
+    assert (
+        not contract.getRoleMember(role_bytes, 0).lower() == holder.lower()
+    ), f"Role {role} holder on {contract} should be {holder}"
+
 
 def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
 
-    #parameter
+    # parameter
     agent = contracts.agent
 
-    #old GateSeal permissions before
+    # old GateSeal permissions before
     _check_role(contracts.withdrawal_queue, "PAUSE_ROLE", old_gate_seal)
     _check_role(contracts.validators_exit_bus_oracle, "PAUSE_ROLE", old_gate_seal)
-    #new GateSeal permissions before
+    # new GateSeal permissions before
     _check_no_role(contracts.withdrawal_queue, "PAUSE_ROLE", new_gate_seal)
     _check_no_role(contracts.validators_exit_bus_oracle, "PAUSE_ROLE", new_gate_seal)
 
@@ -50,21 +53,21 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
     else:
-        tx_params = {"from": "0x109b9744397acf987a1abb5bb4eef7362ab9ff66"} #LDO_HOLDER_ADDRESS_FOR_TESTS
+        tx_params = {"from": "0x109b9744397acf987a1abb5bb4eef7362ab9ff66"}  # LDO_HOLDER_ADDRESS_FOR_TESTS
         vote_id, _ = start_vote(tx_params, silent=True)
 
     vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
 
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
-    #old GateSeal permissions after
+    # old GateSeal permissions after
     _check_no_role(contracts.withdrawal_queue, "PAUSE_ROLE", old_gate_seal)
     _check_no_role(contracts.validators_exit_bus_oracle, "PAUSE_ROLE", old_gate_seal)
-    #new GateSeal permissions after
+    # new GateSeal permissions after
     _check_role(contracts.withdrawal_queue, "PAUSE_ROLE", new_gate_seal)
     _check_role(contracts.validators_exit_bus_oracle, "PAUSE_ROLE", new_gate_seal)
 
-    #Асceptance test
+    # Асceptance test
     new_gate_seal_contract = interface.GateSeal(new_gate_seal)
     assert new_gate_seal_contract.get_sealing_committee() == GATE_SEAL_COMMITTEE
     sealables = new_gate_seal_contract.get_sealables()
@@ -76,14 +79,16 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
     assert new_gate_seal_contract.get_expiry_timestamp() == NEW_EXPIRY_TIMESTAMP
     assert not new_gate_seal_contract.is_expired()
 
-    #Scenario test
+    # Scenario test
     print(f"Simulating GateSeal flow")
 
-    #Try to use the Old gate seal to pause the contracts
+    # Try to use the Old gate seal to pause the contracts
     print("Try to use the Old gate seal to pause the contracts")
     print(chain.time())
-    with reverts("10"): # converted into string list of sealed indexes (in sealables) in which the error occurred, in the descending order
-        contracts.gate_seal.seal(sealables, {"from": GATE_SEAL_COMMITTEE})
+    with reverts(
+        "10"
+    ):  # converted into string list of sealed indexes (in sealables) in which the error occurred, in the descending order
+        interface.GateSeal(old_gate_seal).seal(sealables, {"from": GATE_SEAL_COMMITTEE})
 
     print("Seal the contracts with the New gate seal")
     new_gate_seal_contract.seal(sealables, {"from": GATE_SEAL_COMMITTEE})
