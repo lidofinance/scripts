@@ -279,7 +279,7 @@ class TestSubmitReportExtraDataList:
 
         extra_data = b"".join(
             (
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [38], [1]),
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [38], [250]),
                 build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [38], [1]),
             )
         )
@@ -295,7 +295,7 @@ class TestSubmitReportExtraDataList:
     def test_unexpected_extra_data_item(self, extra_data_service: ExtraDataService) -> None:
         extra_data = extra_data_service.collect(
             {(1, 38): 1},
-            {(1, 38): 1},
+            {(1, 38): 250},
             MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
             1,
         )
@@ -322,7 +322,7 @@ class TestSubmitReportExtraDataList:
     ):
         extra_data = extra_data_service.collect(
             {(1, 38): 1},
-            {(1, 38): 1},
+            {(1, 38): 250},
             MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
             1,
         )
