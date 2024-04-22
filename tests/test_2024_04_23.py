@@ -11,8 +11,7 @@ from utils.ipfs import get_lido_vote_cid_from_str
 from utils.config import (
     contracts,
     network_name,
-
-    GATE_SEAL_PAUSE_DURATION, 
+    GATE_SEAL_PAUSE_DURATION,
     GATE_SEAL_COMMITTEE,
 )
 from utils.test.tx_tracing_helpers import *
@@ -76,10 +75,17 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
     assert new_gate_seal_contract.get_seal_duration_seconds() == GATE_SEAL_PAUSE_DURATION
     assert new_gate_seal_contract.get_expiry_timestamp() == NEW_EXPIRY_TIMESTAMP
     assert not new_gate_seal_contract.is_expired()
-    
+
     #Scenario test
     print(f"Simulating GateSeal flow")
 
+    #Try to use the Old gate seal to pause the contracts
+    print("Try to use the Old gate seal to pause the contracts")
+    print(chain.time())
+    with reverts("10"): # converted into string list of sealed indexes (in sealables) in which the error occurred, in the descending order
+        contracts.gate_seal.seal(sealables, {"from": GATE_SEAL_COMMITTEE})
+
+    print("Seal the contracts with the New gate seal")
     new_gate_seal_contract.seal(sealables, {"from": GATE_SEAL_COMMITTEE})
     print("Sealed")
 
@@ -91,27 +97,21 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
     for sealable in sealables:
         assert interface.IPausable(sealable).isPaused()
     print("Sealables paused")
-
-    chain.sleep(6 * 60 * 60 * 24 + 100)
+    chain.sleep(6 * 60 * 60 * 24)
     chain.mine()
 
     for sealable in sealables:
         assert not interface.IPausable(sealable).isPaused()
     print(f"Sealables unpaused in {new_gate_seal_contract.get_seal_duration_seconds()}")
 
-    #Try to use the Old gate seal to pause the contracts
-    print("Try to use the Old gate seal to pause the contracts")
-    with reverts("10"): # converted into string list of sealed indexes (in sealables) in which the error occurred, in the descending order
-        contracts.gate_seal.seal(sealables, {"from": GATE_SEAL_COMMITTEE})
-
     print("GateSeal is good to go!")
 
     # Validating events
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 4, "Incorrect voting items count"
-    
+
     metadata = find_metadata_by_vote_id(vote_id)
-    #assert get_lido_vote_cid_from_str(metadata) == "" TODO: add ipfs cid
-    
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreihn3cl5nzzgnng3bhcwpu7lk6iykniykdjfcr5hexdydjt3lqt5k4"
+
     display_voting_events(vote_tx)
 
     if bypass_events_decoding or network_name() in ("goerli", "goerli-fork"):
