@@ -221,7 +221,7 @@ def test_handle_consensus_report_data_wrong_module_id(contract, ref_slot):
 
 
 def test_handle_consensus_report_data_second_exit(contract, ref_slot):
-    no_global_index = (module_id, no_id) = (1, 38)
+    no_global_index = (module_id, no_id) = (1, 33)
     validator_id = 1
     validator_key = contracts.node_operators_registry.getSigningKey(no_id, validator_id)[0]
     validator = LidoValidator(validator_id, validator_key)
