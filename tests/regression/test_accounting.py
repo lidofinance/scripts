@@ -183,14 +183,29 @@ def test_accounting_cl_rebase_at_limits(accounting_oracle: Contract, lido: Contr
 
         minted_shares_sum = shares_as_fees_list[0] + shares_as_fees_list[1]
     else:
-        assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+        staking_modules_count = contracts.staking_router.getStakingModulesCount()
+        # transfer to Burner, Treasury and each staking module
+        assert len(shares_as_fees_list) == 2 + staking_modules_count, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+
+        # transfer recipients:
+        # 0 - burner
+        # 1 - staking_modules[0] : node operators registry
+        # 2 - staking_modules[1] : simple DVT
+        # 3 - treasury
+
+        # the staking modules ids starts from 1, so SDVT has id = 2
+        simple_dvt_stats = contracts.staking_router.getStakingModule(2)
+        # simple_dvt_treasury_fee = sdvt_share / share_pct * treasury_pct
+        simple_dvt_treasury_fee = (
+            shares_as_fees_list[2] * 100_00 // simple_dvt_stats["stakingModuleFee"] * simple_dvt_stats["treasuryFee"] // 100_00
+        )
         assert almostEqWithDiff(
-            shares_as_fees_list[1],
-            shares_as_fees_list[2],
-            1,
+            shares_as_fees_list[1] + simple_dvt_treasury_fee,
+            shares_as_fees_list[-1],
+            100, # the precision may degrade after the division
         ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
 
-        minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2]
+        minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2] + shares_as_fees_list[3]
 
     token_rebased_event = _first_event(tx, TokenRebased)
     assert token_rebased_event["sharesMintedAsFees"] == minted_shares_sum, "TokenRebased: sharesMintedAsFee mismatch"
@@ -225,7 +240,7 @@ def test_accounting_cl_rebase_above_limits():
     rebase_amount = ((annual_increase_limit + 1) * ONE_DAY + 1) * pre_cl_balance // (365 * ONE_DAY) // MAX_BASIS_POINTS
     assert max_cl_rebase_via_limiter > rebase_amount, "Expected annual limit to shot first"
 
-    with reverts(encode_error("IncorrectCLBalanceIncrease(uint256)", [1001])): 
+    with reverts(encode_error("IncorrectCLBalanceIncrease(uint256)", [1001])):
         oracle_report(cl_diff=rebase_amount, exclude_vaults_balances=True)
 
 
@@ -532,14 +547,29 @@ def test_accounting_withdrawals_at_limits(
 
         minted_shares_sum = shares_as_fees_list[0] + shares_as_fees_list[1]
     else:
-        assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+        staking_modules_count = contracts.staking_router.getStakingModulesCount()
+        # transfer to Burner, Treasury and each staking module
+        assert len(shares_as_fees_list) == 2 + staking_modules_count, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+
+        # transfer recipients:
+        # 0 - burner
+        # 1 - staking_modules[0] : node operators registry
+        # 2 - staking_modules[1] : simple DVT
+        # 3 - treasury
+
+        # the staking modules ids starts from 1, so SDVT has id = 2
+        simple_dvt_stats = contracts.staking_router.getStakingModule(2)
+        # simple_dvt_treasury_fee = sdvt_share / share_pct * treasury_pct
+        simple_dvt_treasury_fee = (
+            shares_as_fees_list[2] * 100_00 // simple_dvt_stats["stakingModuleFee"] * simple_dvt_stats["treasuryFee"] // 100_00
+        )
         assert almostEqWithDiff(
-            shares_as_fees_list[1],
-            shares_as_fees_list[2],
-            1,
+            shares_as_fees_list[1] + simple_dvt_treasury_fee,
+            shares_as_fees_list[-1],
+            100, # the precision may degrade after the division
         ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
 
-        minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2]
+        minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2] + shares_as_fees_list[3]
 
     token_rebased_event = _first_event(tx, TokenRebased)
     assert token_rebased_event["sharesMintedAsFees"] == minted_shares_sum, "TokenRebased: sharesMintedAsFee mismatch"
@@ -618,14 +648,29 @@ def test_accounting_withdrawals_above_limits(
 
         minted_shares_sum = shares_as_fees_list[0] + shares_as_fees_list[1]
     else:
-        assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+        staking_modules_count = contracts.staking_router.getStakingModulesCount()
+        # transfer to Burner, Treasury and each staking module
+        assert len(shares_as_fees_list) == 2 + staking_modules_count, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+
+        # transfer recipients:
+        # 0 - burner
+        # 1 - staking_modules[0] : node operators registry
+        # 2 - staking_modules[1] : simple DVT
+        # 3 - treasury
+
+        # the staking modules ids starts from 1, so SDVT has id = 2
+        simple_dvt_stats = contracts.staking_router.getStakingModule(2)
+        # simple_dvt_treasury_fee = sdvt_share / share_pct * treasury_pct
+        simple_dvt_treasury_fee = (
+            shares_as_fees_list[2] * 100_00 // simple_dvt_stats["stakingModuleFee"] * simple_dvt_stats["treasuryFee"] // 100_00
+        )
         assert almostEqWithDiff(
-            shares_as_fees_list[1],
-            shares_as_fees_list[2],
-            1,
+            shares_as_fees_list[1] + simple_dvt_treasury_fee,
+            shares_as_fees_list[-1],
+            100, # the precision may degrade after the division
         ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
 
-        minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2]
+        minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2] + shares_as_fees_list[3]
 
     token_rebased_event = _first_event(tx, TokenRebased)
     assert token_rebased_event["sharesMintedAsFees"] == minted_shares_sum, "TokenRebased: sharesMintedAsFee mismatch"
