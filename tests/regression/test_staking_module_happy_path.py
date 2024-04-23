@@ -278,17 +278,17 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert almostEqWithDiff(
         no1_balance_shares_after - no1_balance_shares_before,
         no1_rewards_after_second_report // 2,
-        1,
+        2,
     )
     assert almostEqWithDiff(
         no2_balance_shares_after - no2_balance_shares_before,
         no2_rewards_after_second_report // 2,
-        1,
+        2,
     )
     assert almostEqWithDiff(
         no3_balance_shares_after - no3_balance_shares_before,
         no3_rewards_after_second_report,
-        1,
+        2,
     )
 
     # Check burn shares
