@@ -24,6 +24,7 @@ from utils.agent import agent_forward
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 
 proposed_gate_seal_address = "0x79243345eDbe01A7E42EDfF5900156700d22611c"
+old_gate_seal = "0x1aD5cb2955940F998081c1eF5f5F00875431aA90"
 
 description = """
 The vote is intended to change the current **GateSeal for the WithdrawalQueue and ValidatorExitBusOracle** contracts, which expires on May 1, 2024, with a new one that will **expire on April 1, 2025**. The GateSeal enables a one-time, immediate emergency pause of these contracts for 6 days.
@@ -32,6 +33,7 @@ The new GateSeal contract was deployed using the GateSeal Factory from the GateS
 
 More information on the [Research forum](https://research.lido.fi/t/renew-gateseal-for-the-withdrawal-queue-and-validator-exit-bus-oracle/7081)
 """
+
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""
@@ -71,7 +73,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                     encode_oz_revoke_role(
                         contract=contracts.withdrawal_queue,
                         role_name="PAUSE_ROLE",
-                        revoke_from=contracts.gate_seal,
+                        revoke_from=old_gate_seal,
                     )
                 ]
             ),
@@ -83,7 +85,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                     encode_oz_revoke_role(
                         contract=contracts.validators_exit_bus_oracle,
                         role_name="PAUSE_ROLE",
-                        revoke_from=contracts.gate_seal,
+                        revoke_from=old_gate_seal,
                     )
                 ]
             ),
