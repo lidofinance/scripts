@@ -1,11 +1,10 @@
 """
 Voting 23/04/2024.
 
-I. Gate Seal
-1. Grant PAUSE_ROLE on WithdrawalQueue for the new GateSeal
-2. Grant PAUSE_ROLE on ValidatorExitBusOracle for the new GateSeal
-3. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
-4. Revoke PAUSE_ROLE on ValidatorExitBusOracle from the old GateSeal
+1. Grant PAUSE_ROLE on WithdrawalQueue 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1 for the new GateSeal 0x79243345eDbe01A7E42EDfF5900156700d22611c
+2. Grant PAUSE_ROLE on ValidatorsExitBusOracle 0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e for the new GateSeal 0x79243345eDbe01A7E42EDfF5900156700d22611c
+3. Revoke PAUSE_ROLE on WithdrawalQueue 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1 from the old GateSeal 0x1ad5cb2955940f998081c1ef5f5f00875431aa90
+4. Revoke PAUSE_ROLE on ValidatorsExitBusOracle 0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e from the old GateSeal 0x1ad5cb2955940f998081c1ef5f5f00875431aa90
 """
 
 import time
@@ -39,11 +38,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     """Prepare and run voting."""
 
     vote_desc_items, call_script_items = zip(
-        #
-        # I. Gate Seal
-        #
         (
-            "1) Grant PAUSE_ROLE on WithdrawalQueue for the new GateSeal",
+            "1) Grant PAUSE_ROLE on WithdrawalQueue 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1 for the new GateSeal 0x79243345eDbe01A7E42EDfF5900156700d22611c",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -55,7 +51,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "2) Grant PAUSE_ROLE on ValidatorsExitBus for the new GateSeal",
+            "2) Grant PAUSE_ROLE on ValidatorsExitBusOracle 0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e for the new GateSeal 0x79243345eDbe01A7E42EDfF5900156700d22611c",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -67,7 +63,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "3) Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal",
+            "3) Revoke PAUSE_ROLE on WithdrawalQueue 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1 from the old GateSeal 0x1ad5cb2955940f998081c1ef5f5f00875431aa90",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -79,7 +75,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "4) Revoke PAUSE_ROLE on ValidatorsExitBus from the old GateSeal",
+            "4) Revoke PAUSE_ROLE on ValidatorsExitBusOracle 0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e from the old GateSeal 0x1ad5cb2955940f998081c1ef5f5f00875431aa90",
             agent_forward(
                 [
                     encode_oz_revoke_role(
