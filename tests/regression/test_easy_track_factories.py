@@ -191,10 +191,26 @@ def test_node_operators_activations(stranger):
 
 
 def test_set_vetted_validators_limits(stranger):
-    fill_simple_dvt_ops_keys(stranger, 3, 5)
+    node_operators_count = contracts.simple_dvt.getNodeOperatorsCount()
+    simple_dvt_add_node_operators(
+        contracts.simple_dvt,
+        stranger,
+        [
+            (
+                get_operator_name(node_operators_count),
+                get_operator_address(node_operators_count),
+                get_managers_address(node_operators_count),
+            ),
+            (
+                get_operator_name(node_operators_count + 1),
+                get_operator_address(node_operators_count + 1),
+                get_managers_address(node_operators_count + 1),
+            ),
+        ],
+    )
 
-    op_1 = contracts.simple_dvt.getNodeOperator(1, False)
-    op_2 = contracts.simple_dvt.getNodeOperator(2, False)
+    op_1 = contracts.simple_dvt.getNodeOperator(node_operators_count, False)
+    op_2 = contracts.simple_dvt.getNodeOperator(node_operators_count + 1, False)
 
     new_vetted_keys_1 = random.randint(0, op_1[5])
     new_vetted_keys_2 = random.randint(0, op_2[5])
@@ -202,19 +218,19 @@ def test_set_vetted_validators_limits(stranger):
     set_vetted_validators_limits(
         [
             {
-                "id": 1,
+                "id": node_operators_count,
                 "staking_limit": new_vetted_keys_1,
             },
             {
-                "id": 2,
+                "id": node_operators_count + 1,
                 "staking_limit": new_vetted_keys_2,
             },
         ],
         stranger,
     )
 
-    assert contracts.simple_dvt.getNodeOperator(1, False)[3] == new_vetted_keys_1
-    assert contracts.simple_dvt.getNodeOperator(2, False)[3] == new_vetted_keys_2
+    assert contracts.simple_dvt.getNodeOperator(node_operators_count, False)[3] == new_vetted_keys_1
+    assert contracts.simple_dvt.getNodeOperator(node_operators_count + 1, False)[3] == new_vetted_keys_2
 
 
 def test_set_node_operator_names(stranger):

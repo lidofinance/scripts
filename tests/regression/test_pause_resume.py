@@ -8,7 +8,7 @@ from utils.config import contracts
 from utils.evm_script import encode_error
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 from utils.test.oracle_report_helpers import oracle_report, prepare_exit_bus_report
-from utils.test.helpers import almostEqEth
+from utils.test.helpers import almostEqEth, almostEqWithDiff
 
 DEPOSIT_AMOUNT = 100 * 10**18
 
@@ -303,20 +303,35 @@ def test_paused_staking_module_cant_stake():
 def test_paused_staking_module_can_reward(burner: Contract):
     _, module_address, *_ = contracts.staking_router.getStakingModule(1)
     contracts.staking_router.pauseStakingModule(1, {"from": contracts.deposit_security_module})
-    shares_before = contracts.lido.sharesOf(module_address)
     (report_tx, _) = oracle_report()
     print(report_tx.events["Transfer"])
     module_index = 0
+    simple_dvt_index = 1
+
     if report_tx.events["Transfer"][module_index]["to"] == burner.address:
         module_index += 1
+        simple_dvt_index += 1
 
-    agent_index = module_index + 1
+    agent_index = module_index + 2
     assert report_tx.events["Transfer"][module_index]["to"] == module_address
     assert report_tx.events["Transfer"][module_index]["from"] == ZERO_ADDRESS
     assert report_tx.events["Transfer"][agent_index]["to"] == contracts.agent
     assert report_tx.events["Transfer"][agent_index]["from"] == ZERO_ADDRESS
-    assert almostEqEth(
-        report_tx.events["Transfer"][module_index]["value"], report_tx.events["Transfer"][agent_index]["value"]
+
+    # the staking modules ids starts from 1, so SDVT has id = 2
+    simple_dvt_stats = contracts.staking_router.getStakingModule(2)
+    # simple_dvt_treasury_fee = sdvt_share / share_pct * treasury_pct
+    simple_dvt_treasury_fee = (
+        report_tx.events["Transfer"][simple_dvt_index]["value"]
+        * 100_00
+        // simple_dvt_stats["stakingModuleFee"]
+        * simple_dvt_stats["treasuryFee"]
+        // 100_00
+    )
+    assert almostEqWithDiff(
+        report_tx.events["Transfer"][module_index]["value"] + simple_dvt_treasury_fee,
+        report_tx.events["Transfer"][agent_index]["value"],
+        100,
     )
     assert report_tx.events["Transfer"][module_index]["value"] > 0
 

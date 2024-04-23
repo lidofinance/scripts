@@ -103,8 +103,7 @@ def prepare_exit_bus_report(validators_to_exit, ref_slot):
     data, data_format = encode_data(validators_to_exit)
     report = (consensus_version, ref_slot, len(validators_to_exit), data_format, data)
     report_data = encode_data_from_abi(report, contracts.validators_exit_bus_oracle.abi, "submitReportData")
-    if not validators_to_exit:
-        report_data = report_data[:-32]
+
     report_hash = web3.keccak(report_data)
     return report, report_hash
 
