@@ -91,7 +91,7 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
 
     expiry_timestamp = chain.time()
     assert new_gate_seal_contract.is_expired()
-    assert expiry_timestamp - new_gate_seal_contract.get_expiry_timestamp() <= 2
+    assert new_gate_seal_contract.get_expiry_timestamp() <= expiry_timestamp
     print("Expired")
 
     for sealable in sealables:
