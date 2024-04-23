@@ -40,14 +40,17 @@ def _check_no_role(contract: Contract, role: str, holder: str):
 def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
 
     # parameter
-    agent = contracts.agent
+    agent = interface.Agent("0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c")
+
+    withdrawal_queue = interface.WithdrawalQueueERC721("0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1")
+    validators_exit_bus_oracle = interface.ValidatorsExitBusOracle("0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e")
 
     # old GateSeal permissions before
-    _check_role(contracts.withdrawal_queue, "PAUSE_ROLE", old_gate_seal)
-    _check_role(contracts.validators_exit_bus_oracle, "PAUSE_ROLE", old_gate_seal)
+    _check_role(withdrawal_queue, "PAUSE_ROLE", old_gate_seal)
+    _check_role(validators_exit_bus_oracle, "PAUSE_ROLE", old_gate_seal)
     # new GateSeal permissions before
-    _check_no_role(contracts.withdrawal_queue, "PAUSE_ROLE", new_gate_seal)
-    _check_no_role(contracts.validators_exit_bus_oracle, "PAUSE_ROLE", new_gate_seal)
+    _check_no_role(withdrawal_queue, "PAUSE_ROLE", new_gate_seal)
+    _check_no_role(validators_exit_bus_oracle, "PAUSE_ROLE", new_gate_seal)
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -61,19 +64,19 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding, accounts):
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
     # old GateSeal permissions after
-    _check_no_role(contracts.withdrawal_queue, "PAUSE_ROLE", old_gate_seal)
-    _check_no_role(contracts.validators_exit_bus_oracle, "PAUSE_ROLE", old_gate_seal)
+    _check_no_role(withdrawal_queue, "PAUSE_ROLE", old_gate_seal)
+    _check_no_role(validators_exit_bus_oracle, "PAUSE_ROLE", old_gate_seal)
     # new GateSeal permissions after
-    _check_role(contracts.withdrawal_queue, "PAUSE_ROLE", new_gate_seal)
-    _check_role(contracts.validators_exit_bus_oracle, "PAUSE_ROLE", new_gate_seal)
+    _check_role(withdrawal_queue, "PAUSE_ROLE", new_gate_seal)
+    _check_role(validators_exit_bus_oracle, "PAUSE_ROLE", new_gate_seal)
 
     # Асceptance test
     new_gate_seal_contract = interface.GateSeal(new_gate_seal)
     assert new_gate_seal_contract.get_sealing_committee() == GATE_SEAL_COMMITTEE
     sealables = new_gate_seal_contract.get_sealables()
     assert len(sealables) == 2
-    assert contracts.validators_exit_bus_oracle.address in sealables
-    assert contracts.withdrawal_queue.address in sealables
+    assert validators_exit_bus_oracle.address in sealables
+    assert withdrawal_queue.address in sealables
 
     assert new_gate_seal_contract.get_seal_duration_seconds() == GATE_SEAL_PAUSE_DURATION
     assert new_gate_seal_contract.get_expiry_timestamp() == NEW_EXPIRY_TIMESTAMP
