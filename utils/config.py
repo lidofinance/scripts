@@ -132,22 +132,6 @@ def prompt_bool() -> Optional[bool]:
         sys.stdout.write("Please respond with 'yes' or 'no'")
 
 
-def get_config_params() -> Dict[str, str]:
-    if network_name() in ("goerli", "goerli-fork"):
-        import configs.config_goerli
-
-        ret = {x: globals()[x] for x in dir(configs.config_goerli) if not x.startswith("__")}
-    elif network_name() in ("sepolia", "sepolia-fork"):
-        import configs.config_sepolia
-
-        ret = {x: globals()[x] for x in dir(configs.config_sepolia) if not x.startswith("__")}
-    else:
-        import configs.config_mainnet
-
-        ret = {x: globals()[x] for x in dir(configs.config_mainnet) if not x.startswith("__")}
-    return ret
-
-
 class ContractsLazyLoader:
     @property
     def lido_v1(self) -> interface.LidoV1:
