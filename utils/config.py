@@ -32,6 +32,9 @@ if network_name() in ("goerli", "goerli-fork"):
 elif network_name() in ("holesky", "holesky-fork"):
     print(f'Using {color("cyan")}config_holesky.py{color} addresses')
     from configs.config_holesky import *
+elif network_name() in ("sepolia", "sepolia-fork"):
+    print(f'Using {color("yellow")}config_sepolia.py{color} addresses')
+    from configs.config_sepolia import *
 else:
     print(f'Using {color("magenta")}config_mainnet.py{color} addresses')
     from configs.config_mainnet import *
@@ -46,6 +49,7 @@ def get_is_live() -> bool:
         "local-fork",
         "mainnet-fork",
         "holesky-fork",
+        "sepolia-fork",
     ]
     return network.show_active() not in dev_networks
 
@@ -126,18 +130,6 @@ def prompt_bool() -> Optional[bool]:
         return False
     else:
         sys.stdout.write("Please respond with 'yes' or 'no'")
-
-
-def get_config_params() -> Dict[str, str]:
-    if network_name() in ("goerli", "goerli-fork"):
-        import configs.config_goerli
-
-        ret = {x: globals()[x] for x in dir(configs.config_goerli) if not x.startswith("__")}
-    else:
-        import configs.config_mainnet
-
-        ret = {x: globals()[x] for x in dir(configs.config_mainnet) if not x.startswith("__")}
-    return ret
 
 
 class ContractsLazyLoader:
