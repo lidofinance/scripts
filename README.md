@@ -99,13 +99,6 @@ In a typical weekly omnibus workflow, you need only `mainnet-fork` and
 `mainnet` networks. In case of large test campaign on Lido upgrades,
 it also could be useful to go with `holesky` and `holesky-fork` testnets first.
 
-> [!IMPORTANT]
-> **Holesky specifics.**
-> Due to Holesky not being supported by Infura yet, setting RPC URL for Holesky is different. Instead of setting `WEB3_INFURA_PROJECT_ID` env variable set `HOLESKY_RPC_URL`.
->
-> **Sepolia specifics.**
-> Due to Sepolia not being supported by Infura yet, setting RPC URL for Holesky is different. Instead of setting `WEB3_INFURA_PROJECT_ID` env variable set `SEPOLIA_RPC_URL`.
-
 > [!WARNING]
 > **Holesky is partially supported.**
 > At the moment not all parameters are set in `configs/config_holesky.py` and acceptance/regression/snapshot tests are not operational.
