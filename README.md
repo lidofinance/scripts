@@ -83,14 +83,12 @@ By default, you should start composing new scripts and test using forked network
 You have three forked networks to work with:
 
 - `mainnet-fork`
-- `goerli-fork`
 - `holesky-fork`
 - `sepolia-fork`
 
 To start new voting on the live networks you could proceed with:
 
 - `mainnet`
-- `goerli`
 - `holesky`
 - `sepolia`
 
@@ -99,7 +97,7 @@ To start new voting on the live networks you could proceed with:
 
 In a typical weekly omnibus workflow, you need only `mainnet-fork` and
 `mainnet` networks. In case of large test campaign on Lido upgrades,
-it also could be useful to go with `goerli`/`sepolia` and `goerli-fork`/`sepolia-fork` testnets first.
+it also could be useful to go with `holesky` and `holesky-fork` testnets first.
 
 > [!IMPORTANT]
 > **Holesky specifics.**
@@ -111,6 +109,10 @@ it also could be useful to go with `goerli`/`sepolia` and `goerli-fork`/`sepolia
 > [!WARNING]
 > **Holesky is partially supported.**
 > At the moment not all parameters are set in `configs/config_holesky.py` and acceptance/regression/snapshot tests are not operational.
+>
+> **Sepolia is partially supported.**
+> At the moment not all parameters are set in `configs/config_sepolia.py` and acceptance/regression/snapshot tests are not operational.
+
 
 ### Environment variables setup
 
