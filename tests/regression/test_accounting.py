@@ -623,14 +623,24 @@ def test_accounting_withdrawals_at_limits(
     minted_shares_sum = 0
 
     if withdrawals_finalized["amountOfETHLocked"] == 0:  # no withdrawals processed
-        assert len(shares_as_fees_list) == 2, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+        assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry, sDVT and DAO"
+        # the staking modules ids starts from 1, so SDVT has id = 2
+        simple_dvt_stats = contracts.staking_router.getStakingModule(2)
+        # simple_dvt_treasury_fee = sdvt_share / share_pct * treasury_pct
+        simple_dvt_treasury_fee = (
+            shares_as_fees_list[1]
+            * 100_00
+            // simple_dvt_stats["stakingModuleFee"]
+            * simple_dvt_stats["treasuryFee"]
+            // 100_00
+        )
         assert almostEqWithDiff(
-            shares_as_fees_list[0],
-            shares_as_fees_list[1],
-            1,
+            shares_as_fees_list[0] + simple_dvt_treasury_fee,
+            shares_as_fees_list[2],
+            100,  # the precision may degrade after the division
         ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
 
-        minted_shares_sum = shares_as_fees_list[0] + shares_as_fees_list[1]
+        minted_shares_sum = shares_as_fees_list[0] + shares_as_fees_list[1] + shares_as_fees_list[2]
     else:
         staking_modules_count = contracts.staking_router.getStakingModulesCount()
         # transfer to Burner, Treasury and each staking module
@@ -736,14 +746,24 @@ def test_accounting_withdrawals_above_limits(
     minted_shares_sum = 0
 
     if withdrawals_finalized["amountOfETHLocked"] == 0:  # no withdrawals processed
-        assert len(shares_as_fees_list) == 2, "Expected transfer of shares to NodeOperatorsRegistry and DAO"
+        assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry, sDVT and DAO"
+        # the staking modules ids starts from 1, so SDVT has id = 2
+        simple_dvt_stats = contracts.staking_router.getStakingModule(2)
+        # simple_dvt_treasury_fee = sdvt_share / share_pct * treasury_pct
+        simple_dvt_treasury_fee = (
+            shares_as_fees_list[1]
+            * 100_00
+            // simple_dvt_stats["stakingModuleFee"]
+            * simple_dvt_stats["treasuryFee"]
+            // 100_00
+        )
         assert almostEqWithDiff(
-            shares_as_fees_list[0],
-            shares_as_fees_list[1],
-            1,
+            shares_as_fees_list[0] + simple_dvt_treasury_fee,
+            shares_as_fees_list[2],
+            100,  # the precision may degrade after the division
         ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
 
-        minted_shares_sum = shares_as_fees_list[0] + shares_as_fees_list[1]
+        minted_shares_sum = shares_as_fees_list[0] + shares_as_fees_list[1] + shares_as_fees_list[2]
     else:
         staking_modules_count = contracts.staking_router.getStakingModulesCount()
         # transfer to Burner, Treasury and each staking module
