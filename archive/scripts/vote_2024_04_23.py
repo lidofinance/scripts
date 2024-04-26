@@ -5,6 +5,8 @@ Voting 23/04/2024.
 2. Grant PAUSE_ROLE on ValidatorsExitBusOracle 0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e for the new GateSeal 0x79243345eDbe01A7E42EDfF5900156700d22611c
 3. Revoke PAUSE_ROLE on WithdrawalQueue 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1 from the old GateSeal 0x1ad5cb2955940f998081c1ef5f5f00875431aa90
 4. Revoke PAUSE_ROLE on ValidatorsExitBusOracle 0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e from the old GateSeal 0x1ad5cb2955940f998081c1ef5f5f00875431aa90
+
+Vote passed & executed on Apr-26-2024 02:59:11 PM +UTC, block 19740274.
 """
 
 import time
