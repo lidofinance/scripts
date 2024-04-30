@@ -11,6 +11,7 @@ from utils.test.simple_dvt_helpers import (
     get_managers_address,
     get_operator_address,
     get_operator_name,
+    simple_dvt_add_node_operators,
 )
 
 
@@ -26,7 +27,7 @@ NODE_OPERATORS = [
 
 def add_node_operators(operators, stranger):
     calldata = _encode_calldata(
-        ["uint256","(string,address,address)[]"],
+        ["uint256", "(string,address,address)[]"],
         [
             contracts.simple_dvt.getNodeOperatorsCount(),
             [(no["name"], no["address"], no["manager"]) for no in operators],
@@ -132,52 +133,84 @@ def test_add_node_operators(stranger):
 
 
 def test_node_operators_activations(stranger):
-    fill_simple_dvt_ops_keys(stranger, 3, 5)
+    node_operators_count = contracts.simple_dvt.getNodeOperatorsCount()
+    simple_dvt_add_node_operators(
+        contracts.simple_dvt,
+        stranger,
+        [
+            (
+                get_operator_name(node_operators_count),
+                get_operator_address(node_operators_count),
+                get_managers_address(node_operators_count),
+            ),
+            (
+                get_operator_name(node_operators_count + 1),
+                get_operator_address(node_operators_count + 1),
+                get_managers_address(node_operators_count + 1),
+            ),
+        ],
+    )
 
-    assert contracts.simple_dvt.getNodeOperator(1, False)[0]
-    assert contracts.simple_dvt.getNodeOperator(2, False)[0]
+    assert contracts.simple_dvt.getNodeOperator(node_operators_count, False)[0]
+    assert contracts.simple_dvt.getNodeOperator(node_operators_count + 1, False)[0]
 
     deactivate_node_operator(
         [
             {
-                "id": 1,
-                "manager": get_managers_address(1),
+                "id": node_operators_count,
+                "manager": get_managers_address(node_operators_count),
             },
             {
-                "id": 2,
-                "manager": get_managers_address(2),
+                "id": node_operators_count + 1,
+                "manager": get_managers_address(node_operators_count + 1),
             },
         ],
         stranger,
     )
 
-    assert not contracts.simple_dvt.getNodeOperator(1, False)[0]
-    assert not contracts.simple_dvt.getNodeOperator(2, False)[0]
+    assert not contracts.simple_dvt.getNodeOperator(node_operators_count, False)[0]
+    assert not contracts.simple_dvt.getNodeOperator(node_operators_count + 1, False)[0]
 
     # ActivateNodeOperators
     activate_node_operators(
         [
             {
-                "id": 1,
-                "manager": get_managers_address(1),
+                "id": node_operators_count,
+                "manager": get_managers_address(node_operators_count),
             },
             {
-                "id": 2,
-                "manager": get_managers_address(2),
+                "id": node_operators_count + 1,
+                "manager": get_managers_address(node_operators_count + 1),
             },
         ],
         stranger,
     )
 
-    assert contracts.simple_dvt.getNodeOperator(1, False)[0]
-    assert contracts.simple_dvt.getNodeOperator(2, False)[0]
+    assert contracts.simple_dvt.getNodeOperator(node_operators_count, False)[0]
+    assert contracts.simple_dvt.getNodeOperator(node_operators_count + 1, False)[0]
 
 
 def test_set_vetted_validators_limits(stranger):
-    fill_simple_dvt_ops_keys(stranger, 3, 5)
+    node_operators_count = contracts.simple_dvt.getNodeOperatorsCount()
+    simple_dvt_add_node_operators(
+        contracts.simple_dvt,
+        stranger,
+        [
+            (
+                get_operator_name(node_operators_count),
+                get_operator_address(node_operators_count),
+                get_managers_address(node_operators_count),
+            ),
+            (
+                get_operator_name(node_operators_count + 1),
+                get_operator_address(node_operators_count + 1),
+                get_managers_address(node_operators_count + 1),
+            ),
+        ],
+    )
 
-    op_1 = contracts.simple_dvt.getNodeOperator(1, False)
-    op_2 = contracts.simple_dvt.getNodeOperator(2, False)
+    op_1 = contracts.simple_dvt.getNodeOperator(node_operators_count, False)
+    op_2 = contracts.simple_dvt.getNodeOperator(node_operators_count + 1, False)
 
     new_vetted_keys_1 = random.randint(0, op_1[5])
     new_vetted_keys_2 = random.randint(0, op_2[5])
@@ -185,19 +218,19 @@ def test_set_vetted_validators_limits(stranger):
     set_vetted_validators_limits(
         [
             {
-                "id": 1,
+                "id": node_operators_count,
                 "staking_limit": new_vetted_keys_1,
             },
             {
-                "id": 2,
+                "id": node_operators_count + 1,
                 "staking_limit": new_vetted_keys_2,
             },
         ],
         stranger,
     )
 
-    assert contracts.simple_dvt.getNodeOperator(1, False)[3] == new_vetted_keys_1
-    assert contracts.simple_dvt.getNodeOperator(2, False)[3] == new_vetted_keys_2
+    assert contracts.simple_dvt.getNodeOperator(node_operators_count, False)[3] == new_vetted_keys_1
+    assert contracts.simple_dvt.getNodeOperator(node_operators_count + 1, False)[3] == new_vetted_keys_2
 
 
 def test_set_node_operator_names(stranger):
@@ -282,20 +315,53 @@ def test_update_target_validator_limits(stranger):
 
 
 def test_transfer_node_operator_manager(stranger):
-    fill_simple_dvt_ops_keys(stranger, 3, 5)
+    node_operators_count = contracts.simple_dvt.getNodeOperatorsCount()
+    simple_dvt_add_node_operators(
+        contracts.simple_dvt,
+        stranger,
+        [
+            (
+                get_operator_name(node_operators_count),
+                get_operator_address(node_operators_count),
+                get_managers_address(node_operators_count),
+            ),
+            (
+                get_operator_name(node_operators_count + 1),
+                get_operator_address(node_operators_count + 1),
+                get_managers_address(node_operators_count + 1),
+            ),
+        ],
+    )
+
     # TransferNodeOperatorManager
     change_node_operator_managers(
         [
-            {"id": 1, "old_manager": get_managers_address(1), "manager": "0x0000000000000000000000000000000000000222"},
-            {"id": 2, "old_manager": get_managers_address(2), "manager": "0x0000000000000000000000000000000000000888"},
+            {
+                "id": node_operators_count,
+                "old_manager": get_managers_address(node_operators_count),
+                "manager": "0x0000000000000000000000000000000000000222",
+            },
+            {
+                "id": node_operators_count + 1,
+                "old_manager": get_managers_address(node_operators_count + 1),
+                "manager": "0x0000000000000000000000000000000000000888",
+            },
         ],
         stranger,
     )
 
     change_node_operator_managers(
         [
-            {"id": 1, "old_manager": "0x0000000000000000000000000000000000000222", "manager": get_managers_address(1)},
-            {"id": 2, "old_manager": "0x0000000000000000000000000000000000000888", "manager": get_managers_address(2)},
+            {
+                "id": node_operators_count,
+                "old_manager": "0x0000000000000000000000000000000000000222",
+                "manager": get_managers_address(node_operators_count),
+            },
+            {
+                "id": node_operators_count + 1,
+                "old_manager": "0x0000000000000000000000000000000000000888",
+                "manager": get_managers_address(node_operators_count + 1),
+            },
         ],
         stranger,
     )
@@ -304,14 +370,14 @@ def test_transfer_node_operator_manager(stranger):
         change_node_operator_managers(
             [
                 {
-                    "id": 1,
+                    "id": node_operators_count,
                     "old_manager": "0x0000000000000000000000000000000000000222",
-                    "manager": get_managers_address(1),
+                    "manager": get_managers_address(node_operators_count),
                 },
                 {
-                    "id": 2,
+                    "id": node_operators_count + 1,
                     "old_manager": "0x0000000000000000000000000000000000000888",
-                    "manager": get_managers_address(2),
+                    "manager": get_managers_address(node_operators_count + 1),
                 },
             ],
             stranger,
