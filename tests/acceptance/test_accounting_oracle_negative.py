@@ -14,7 +14,6 @@ from utils.test.oracle_report_helpers import (
     ZERO_HASH,
     AccountingReport,
     oracle_report,
-    EXTRA_DATA_FORMAT_EMPTY,
     EXTRA_DATA_FORMAT_LIST,
 )
 
@@ -82,7 +81,7 @@ def test_submitConsensusReport(accounting_oracle: Contract, hash_consensus: Cont
         accounting_oracle.submitConsensusReport(
             ZERO_HASH,
             last_processing_ref_slot + 1,
-            chain.time(),
+            chain.time() + 1,
             {"from": hash_consensus},
         )
 

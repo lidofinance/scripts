@@ -487,7 +487,7 @@ def prepare_agent_for_ldo_payment(amount: int):
 
 def prepare_agent_for_eth_payment(amount: int):
     agent = contracts.agent
-    web3.provider.make_request("evm_setAccountBalance", [agent.address, hex(amount)])
+    web3.provider.make_request("hardhat_setBalance", [agent.address, hex(amount)])
     assert agent.balance() >= eth_limit.limit
 
 
