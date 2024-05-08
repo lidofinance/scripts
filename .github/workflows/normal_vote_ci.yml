@@ -3,6 +3,7 @@ name: Normal vote CI
 on:
   push:
     branches-ignore:
+      - "master"
       - "feat/tests"
       - "feat/rc3"
       - "feat/rc2"

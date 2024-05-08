@@ -75,7 +75,7 @@ def test_send_zero_validators_to_exit(helpers):
 
 
 def test_send_validator_to_exit(helpers, web3):
-    no_global_index = (module_id, no_id) = (1, 38)
+    no_global_index = (module_id, no_id) = (1, 33)
     validator_id = 1
     validator_key = contracts.node_operators_registry.getSigningKey(no_id, validator_id)[0]
     validator = LidoValidator(validator_id, validator_key)
@@ -142,8 +142,8 @@ def test_send_multiple_validators_to_exit(helpers, web3, stranger):
     simple_dvt_add_keys(contracts.simple_dvt, 0, 2)
     simple_dvt_vet_keys(0, stranger)
 
-    first_no_global_index = (first_module_id, first_no_id) = (1, 37)
-    second_no_global_index = (second_module_id, second_no_id) = (1, 38)
+    first_no_global_index = (first_module_id, first_no_id) = (1, 31)
+    second_no_global_index = (second_module_id, second_no_id) = (1, 33)
     third_no_global_index = (third_module_id, third_no_id) = (2, 0)
     first_validator_id = 2
     second_validator_id = 3
@@ -157,7 +157,12 @@ def test_send_multiple_validators_to_exit(helpers, web3, stranger):
 
     ref_slot = _wait_for_next_ref_slot()
     report, report_hash = prepare_exit_bus_report(
-        [(first_no_global_index, first_validator), (second_no_global_index, second_validator), (third_no_global_index, third_validator)], ref_slot
+        [
+            (first_no_global_index, first_validator),
+            (second_no_global_index, second_validator),
+            (third_no_global_index, third_validator),
+        ],
+        ref_slot,
     )
     report_hash_hex = HexString(report_hash, "bytes")
 
@@ -171,8 +176,8 @@ def test_send_multiple_validators_to_exit(helpers, web3, stranger):
     second_last_requested_validator_index_before = (
         contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(second_module_id, [second_no_id])
     )
-    third_last_requested_validator_index_before = (
-        contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(third_module_id, [third_no_id])
+    third_last_requested_validator_index_before = contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(
+        third_module_id, [third_no_id]
     )
 
     tx = send_report_with_consensus(ref_slot, report, report_hash)

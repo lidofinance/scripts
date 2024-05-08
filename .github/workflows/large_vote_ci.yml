@@ -3,6 +3,7 @@ name: Large vote CI
 on:
   push:
     branches:
+      - "master"
       - "feat/tests"
       - "feat/rc3"
       - "feat/rc2"

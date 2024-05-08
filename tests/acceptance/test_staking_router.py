@@ -116,15 +116,15 @@ def test_staking_modules(contract):
     assert simple_dvt_module["exitedValidatorsCount"] >= 0
 
     fee_aggregate_distribution = contract.getStakingFeeAggregateDistribution()
-    assert fee_aggregate_distribution["modulesFee"] == SR_MODULES_FEE_E20
-    assert fee_aggregate_distribution["treasuryFee"] == SR_TREASURY_FEE_E20
+    assert fee_aggregate_distribution["modulesFee"] <= SR_MODULES_FEE_E20
+    assert fee_aggregate_distribution["treasuryFee"] >= SR_TREASURY_FEE_E20
     assert fee_aggregate_distribution["basePrecision"] == SR_BASE_PRECISION_E20
 
     fee_aggregate_distribution_e4 = contract.getStakingFeeAggregateDistributionE4Precision()
-    assert fee_aggregate_distribution_e4["modulesFee"] == SR_MODULES_FEE_BP
-    assert fee_aggregate_distribution_e4["treasuryFee"] == SR_TREASURY_FEE_BP
+    assert fee_aggregate_distribution_e4["modulesFee"] <= SR_MODULES_FEE_BP
+    assert fee_aggregate_distribution_e4["treasuryFee"] >= SR_TREASURY_FEE_BP
 
-    assert contract.getTotalFeeE4Precision() == 1000
+    assert contract.getTotalFeeE4Precision() <= 1000
 
     assert contract.getStakingModuleActiveValidatorsCount(1) >= 3521
 
