@@ -25,3 +25,7 @@ def autoexecute_vote(helpers, vote_ids_from_env, accounts, stranger):
 
     if os.getenv(ENV_REPORT_AFTER_VOTE):
         oracle_report(cl_diff=ETH(523), exclude_vaults_balances=False)
+
+
+def pytest_ignore_collect(path, config):
+    return True
