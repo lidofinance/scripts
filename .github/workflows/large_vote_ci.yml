@@ -9,6 +9,8 @@ on:
       - "feat/rc2"
       - "feat/rc1"
       - "feat/next-vote"
+  schedule:
+    - cron: "0 0 * * TUE"
 jobs:
   run-tests-large:
     name: Brownie fork LARGE tests
