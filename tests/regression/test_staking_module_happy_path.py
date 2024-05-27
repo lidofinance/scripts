@@ -187,6 +187,10 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no3_reward_address = staking_module.getNodeOperator(no3_id, False)["rewardAddress"]
     no3_balance_shares_before = shares_balance(no3_reward_address)
 
+    # Some stETH "dust" (small units of shares) may settle on the registry contract, so it has to be considered in the calculations:
+    # https://github.com/lidofinance/core/blob/297b530793de3b162beaba8c8e1812c9f2441391/contracts/0.4.24/nos/NodeOperatorsRegistry.sol#L1329
+    module_shares_dust = shares_balance(staking_module)
+
     # First report - base empty report
     (report_tx, extra_report_tx) = oracle_report(exclude_vaults_balances=True)
 
@@ -194,29 +198,18 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no2_balance_shares_after = shares_balance(no2_reward_address)
     no3_balance_shares_after = shares_balance(no3_reward_address)
 
-    minted_share = calc_module_reward_shares(
-        staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    minted_share = (
+        calc_module_reward_shares(staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"])
+        + module_shares_dust
     )
     no1_rewards_after_first_report = calc_no_rewards(staking_module, no_id=no1_id, minted_shares=minted_share)
     no2_rewards_after_first_report = calc_no_rewards(staking_module, no_id=no2_id, minted_shares=minted_share)
     no3_rewards_after_first_report = calc_no_rewards(staking_module, no_id=no3_id, minted_shares=minted_share)
 
     # check shares by empty report
-    assert almostEqWithDiff(
-        no1_balance_shares_after - no1_balance_shares_before,
-        no1_rewards_after_first_report,
-        1,
-    )
-    assert almostEqWithDiff(
-        no2_balance_shares_after - no2_balance_shares_before,
-        no2_rewards_after_first_report,
-        1,
-    )
-    assert almostEqWithDiff(
-        no3_balance_shares_after - no3_balance_shares_before,
-        no3_rewards_after_first_report,
-        1,
-    )
+    assert no1_balance_shares_after - no1_balance_shares_before == no1_rewards_after_first_report
+    assert no2_balance_shares_after - no2_balance_shares_before == no2_rewards_after_first_report
+    assert no3_balance_shares_after - no3_balance_shares_before == no3_rewards_after_first_report
 
     # Case 1
     # --- operator "1st" had 5 keys (exited), and 2 keys got stuck (stuck)
@@ -246,6 +239,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
 
     deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 30, impersonated_voting)
 
+    module_shares_dust = shares_balance(staking_module)
     # Second report - first NO and second NO has stuck/exited
     (report_tx, extra_report_tx) = oracle_report(
         exclude_vaults_balances=True,
@@ -263,8 +257,9 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no3_summary = staking_module.getNodeOperatorSummary(no3_id)
 
     # expected shares
-    minted_share = calc_module_reward_shares(
-        staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    minted_share = (
+        calc_module_reward_shares(staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"])
+        + module_shares_dust
     )
     no1_rewards_after_second_report = calc_no_rewards(staking_module, no_id=no1_id, minted_shares=minted_share)
     no2_rewards_after_second_report = calc_no_rewards(staking_module, no_id=no2_id, minted_shares=minted_share)
@@ -275,21 +270,10 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no3_balance_shares_after = shares_balance(no3_reward_address)
 
     # check shares by report with penalty
-    assert almostEqWithDiff(
-        no1_balance_shares_after - no1_balance_shares_before,
-        no1_rewards_after_second_report // 2,
-        2,
-    )
-    assert almostEqWithDiff(
-        no2_balance_shares_after - no2_balance_shares_before,
-        no2_rewards_after_second_report // 2,
-        2,
-    )
-    assert almostEqWithDiff(
-        no3_balance_shares_after - no3_balance_shares_before,
-        no3_rewards_after_second_report,
-        2,
-    )
+    assert no1_balance_shares_after - no1_balance_shares_before == no1_rewards_after_second_report // 2
+    assert no2_balance_shares_after - no2_balance_shares_before == no2_rewards_after_second_report // 2
+    assert no3_balance_shares_after - no3_balance_shares_before == no3_rewards_after_second_report
+
 
     # Check burn shares
     no1_amount_penalty = no1_rewards_after_second_report // 2
@@ -379,6 +363,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
 
     # Third report - first NO: increase stuck to 0, desc exited to 7 = 5 + 2
     # Second NO: same as prev report
+    module_shares_dust = shares_balance(staking_module)
     (report_tx, extra_report_tx) = oracle_report(
         cl_diff=ETH(10),
         exclude_vaults_balances=True,
@@ -400,8 +385,9 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no3_balance_shares_after = shares_balance(no3_reward_address)
 
     # expected shares
-    minted_share = calc_module_reward_shares(
-        staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    minted_share = (
+        calc_module_reward_shares(staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"])
+        + module_shares_dust
     )
     no1_rewards_after_third_report = calc_no_rewards(staking_module, no_id=no1_id, minted_shares=minted_share)
     no2_rewards_after_third_report = calc_no_rewards(staking_module, no_id=no2_id, minted_shares=minted_share)
@@ -410,21 +396,9 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     # first NO has penalty has a penalty until stuckPenaltyEndTimestamp
     # check shares by report with penalty
     # diff by 1 share because of rounding
-    assert almostEqWithDiff(
-        no1_balance_shares_after - no1_balance_shares_before,
-        no1_rewards_after_third_report // 2,
-        2,
-    )
-    assert almostEqWithDiff(
-        no2_balance_shares_after - no2_balance_shares_before,
-        no2_rewards_after_third_report // 2,
-        2,
-    )
-    assert almostEqWithDiff(
-        no3_balance_shares_after - no3_balance_shares_before,
-        no3_rewards_after_third_report,
-        4,
-    )
+    assert no1_balance_shares_after - no1_balance_shares_before == no1_rewards_after_third_report // 2
+    assert no2_balance_shares_after - no2_balance_shares_before == no2_rewards_after_third_report // 2
+    assert no3_balance_shares_after - no3_balance_shares_before == no3_rewards_after_third_report
 
     # Check burn shares
     no1_amount_penalty = no1_rewards_after_third_report // 2
@@ -501,6 +475,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no3_balance_shares_before = shares_balance(no3_reward_address)
 
     # Fourth report - second NO: has stuck 2 keys
+    module_shares_dust = shares_balance(staking_module)
     (report_tx, extra_report_tx) = oracle_report(
         exclude_vaults_balances=True,
         extraDataFormat=1,
@@ -521,8 +496,9 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no3_balance_shares_after = shares_balance(no3_reward_address)
 
     # expected shares
-    minted_share = calc_module_reward_shares(
-        staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    minted_share = (
+        calc_module_reward_shares(staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"])
+        + module_shares_dust
     )
     no1_rewards_after_fourth_report = calc_no_rewards(staking_module, no_id=no1_id, minted_shares=minted_share)
     no2_rewards_after_fourth_report = calc_no_rewards(staking_module, no_id=no2_id, minted_shares=minted_share)
@@ -531,21 +507,9 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     # Penalty ended for first operator
     # check shares by report with penalty for second NO
     # diff by 1 share because of rounding
-    assert almostEqWithDiff(
-        no1_balance_shares_after - no1_balance_shares_before,
-        no1_rewards_after_fourth_report,
-        2,
-    )
-    assert almostEqWithDiff(
-        no2_balance_shares_after - no2_balance_shares_before,
-        no2_rewards_after_fourth_report // 2,
-        2,
-    )
-    assert almostEqWithDiff(
-        no3_balance_shares_after - no3_balance_shares_before,
-        no3_rewards_after_fourth_report,
-        4,
-    )
+    assert no1_balance_shares_after - no1_balance_shares_before == no1_rewards_after_fourth_report
+    assert no2_balance_shares_after - no2_balance_shares_before == no2_rewards_after_fourth_report // 2
+    assert no3_balance_shares_after - no3_balance_shares_before == no3_rewards_after_fourth_report
 
     # Check burn shares
     no2_amount_penalty = no2_rewards_after_fourth_report // 2
@@ -606,6 +570,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no3_balance_shares_before = shares_balance(no3_reward_address)
 
     # Fifth report
+    module_shares_dust = shares_balance(staking_module)
     (report_tx, extra_report_tx) = oracle_report(exclude_vaults_balances=True)
 
     # shares after report
@@ -618,8 +583,9 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no3_summary = staking_module.getNodeOperatorSummary(no3_id)
 
     # expected shares
-    minted_share = calc_module_reward_shares(
-        staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    minted_share = (
+        calc_module_reward_shares(staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"])
+        + module_shares_dust
     )
     no1_rewards_after_fifth_report = calc_no_rewards(staking_module, no_id=no1_id, minted_shares=minted_share)
     no2_rewards_after_fifth_report = calc_no_rewards(staking_module, no_id=no2_id, minted_shares=minted_share)
@@ -627,21 +593,9 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
 
     # Penalty only for second operator
     # diff by 1 share because of rounding
-    assert almostEqWithDiff(
-        no1_balance_shares_after - no1_balance_shares_before,
-        no1_rewards_after_fifth_report,
-        2,
-    )
-    assert almostEqWithDiff(
-        no2_balance_shares_after - no2_balance_shares_before,
-        no2_rewards_after_fifth_report // 2,
-        2,
-    )
-    assert almostEqWithDiff(
-        no3_balance_shares_after - no3_balance_shares_before,
-        no3_rewards_after_fifth_report,
-        4,
-    )
+    assert no1_balance_shares_after - no1_balance_shares_before == no1_rewards_after_fifth_report
+    assert no2_balance_shares_after - no2_balance_shares_before == no2_rewards_after_fifth_report // 2
+    assert no3_balance_shares_after - no3_balance_shares_before == no3_rewards_after_fifth_report
 
     # Check burn shares
     no2_amount_penalty = no2_rewards_after_fifth_report // 2
@@ -687,6 +641,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no3_balance_shares_before = shares_balance(no3_reward_address)
 
     # Seventh report
+    module_shares_dust = shares_balance(staking_module)
     (report_tx, extra_report_tx) = oracle_report()
 
     assert not staking_module.isOperatorPenalized(no1_id)
@@ -705,8 +660,9 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no2_summary = staking_module.getNodeOperatorSummary(no2_id)
 
     # expected shares
-    minted_share = calc_module_reward_shares(
-        staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    minted_share = (
+        calc_module_reward_shares(staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"])
+        + module_shares_dust
     )
     no1_rewards_after_sixth_report = calc_no_rewards(staking_module, no_id=no1_id, minted_shares=minted_share)
     no2_rewards_after_sixth_report = calc_no_rewards(staking_module, no_id=no2_id, minted_shares=minted_share)
@@ -714,21 +670,9 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
 
     # No penalty
     # diff by 1 share because of rounding
-    assert almostEqWithDiff(
-        no1_balance_shares_after - no1_balance_shares_before,
-        no1_rewards_after_sixth_report,
-        2,
-    )
-    assert almostEqWithDiff(
-        no2_balance_shares_after - no2_balance_shares_before,
-        no2_rewards_after_sixth_report,
-        2,
-    )
-    assert almostEqWithDiff(
-        no3_balance_shares_after - no3_balance_shares_before,
-        no3_rewards_after_sixth_report,
-        4,
-    )
+    assert no1_balance_shares_after - no1_balance_shares_before == no1_rewards_after_sixth_report
+    assert no2_balance_shares_after - no2_balance_shares_before == no2_rewards_after_sixth_report
+    assert no3_balance_shares_after - no3_balance_shares_before == no3_rewards_after_sixth_report
 
     assert no1_summary["stuckValidatorsCount"] == 0
     assert no1_summary["totalExitedValidators"] == 7
