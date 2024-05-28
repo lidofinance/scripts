@@ -317,6 +317,10 @@ class ContractsLazyLoader:
     def split_main(self) -> interface.SplitMain:
         return interface.SplitMain(SPLIT_MAIN)
 
+    @property
+    def cs_module(self) -> interface.CSModule:
+        return interface.CSModule(CS_MODULE_PROXY)
+
 
 def __getattr__(name: str) -> Any:
     if name == "contracts":
