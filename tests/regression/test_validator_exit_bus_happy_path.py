@@ -142,8 +142,8 @@ def test_send_multiple_validators_to_exit(helpers, web3, stranger):
     simple_dvt_add_keys(contracts.simple_dvt, 0, 2)
     simple_dvt_vet_keys(0, stranger)
 
-    first_no_global_index = (first_module_id, first_no_id) = (1, 31)
-    second_no_global_index = (second_module_id, second_no_id) = (1, 33)
+    first_no_global_index = (first_module_id, first_no_id) = (1, 33)
+    second_no_global_index = (second_module_id, second_no_id) = (1, 35)
     third_no_global_index = (third_module_id, third_no_id) = (2, 0)
     first_validator_id = 2
     second_validator_id = 3
