@@ -1,0 +1,18 @@
+{
+  "folders": [
+	{
+		"path": ".."
+	},
+	{
+		"path": "../../core"
+	},
+	{
+		"path": "../../lido-cli"
+	}
+],
+  "settings": {
+    "[json]": {
+      "editor.formatOnSave": false
+    }
+  }
+}

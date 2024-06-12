@@ -182,6 +182,10 @@ class ContractsLazyLoader:
         return interface.DepositSecurityModuleV1(DEPOSIT_SECURITY_MODULE_V1)
 
     @property
+    def deposit_security_module_v3(self) -> interface.DepositSecurityModule:
+        return interface.DepositSecurityModuleV3(DEPOSIT_SECURITY_MODULE_V3)
+
+    @property
     def deposit_security_module(self) -> interface.DepositSecurityModule:
         return interface.DepositSecurityModule(DEPOSIT_SECURITY_MODULE)
 
