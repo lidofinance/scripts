@@ -14,6 +14,7 @@ from utils.config import (
     CHAIN_GENESIS_TIME,
     ORACLE_QUORUM,
     AO_CONSENSUS_VERSION,
+    MIN_ORACLE_REPORT_REF_SLOT,
 )
 from utils.evm_script import encode_error
 
@@ -89,7 +90,7 @@ def test_consensus(contract):
 
 def test_processing_state(contract):
     state = contract.getProcessingState()
-    assert state["currentFrameRefSlot"] > 5254400
+    assert state["currentFrameRefSlot"] > MIN_ORACLE_REPORT_REF_SLOT
     #assert state["processingDeadlineTime"] == 0
     #assert state["mainDataHash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
     #assert state["mainDataSubmitted"] is False
@@ -99,13 +100,13 @@ def test_processing_state(contract):
     #assert state["extraDataItemsCount"] == 0
     #assert state["extraDataItemsSubmitted"] == 0
 
-    assert contract.getLastProcessingRefSlot() > 5254400
+    assert contract.getLastProcessingRefSlot() > MIN_ORACLE_REPORT_REF_SLOT
 
 
 def test_report(contract):
     report = contract.getConsensusReport()
     #assert report["hash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
-    assert report["refSlot"] > 5254400
+    assert report["refSlot"] > MIN_ORACLE_REPORT_REF_SLOT
     #assert report["processingDeadlineTime"] == 0
     #assert report["processingStarted"] is False
 
@@ -115,8 +116,8 @@ def test_accounting_hash_consensus(contract):
     consensus = interface.HashConsensus(contract.getConsensusContract())
 
     current_frame = consensus.getCurrentFrame()
-    assert current_frame["refSlot"] > 5254400
-    assert current_frame["reportProcessingDeadlineSlot"] > 5254400
+    assert current_frame["refSlot"] > MIN_ORACLE_REPORT_REF_SLOT
+    assert current_frame["reportProcessingDeadlineSlot"] > MIN_ORACLE_REPORT_REF_SLOT
 
     chain_config = consensus.getChainConfig()
     assert chain_config["slotsPerEpoch"] == CHAIN_SLOTS_PER_EPOCH
@@ -124,11 +125,11 @@ def test_accounting_hash_consensus(contract):
     assert chain_config["genesisTime"] == CHAIN_GENESIS_TIME
 
     frame_config = consensus.getFrameConfig()
-    assert frame_config["initialEpoch"] > 5254400 / CHAIN_SLOTS_PER_EPOCH
+    assert frame_config["initialEpoch"] > MIN_ORACLE_REPORT_REF_SLOT / CHAIN_SLOTS_PER_EPOCH
     assert frame_config["epochsPerFrame"] == AO_EPOCHS_PER_FRAME
     assert frame_config["fastLaneLengthSlots"] == AO_FAST_LANE_LENGTH_SLOTS
 
-    assert consensus.getInitialRefSlot() > 5254400
+    assert consensus.getInitialRefSlot() > MIN_ORACLE_REPORT_REF_SLOT
 
     assert consensus.getQuorum() == ORACLE_QUORUM
 
