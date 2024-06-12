@@ -32,7 +32,7 @@ if network_name() in ("goerli", "goerli-fork"):
 elif network_name() in ("holesky", "holesky-fork"):
     print(f'Using {color("cyan")}config_holesky.py{color} addresses')
     from configs.config_holesky import *
-elif network_name() in ("sepolia", "sepolia-fork"):
+elif network_name() in ("sepolia", "sepolia-fork", "local-sepolia-fork"):
     print(f'Using {color("yellow")}config_sepolia.py{color} addresses')
     from configs.config_sepolia import *
 else:

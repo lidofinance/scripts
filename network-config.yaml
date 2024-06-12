@@ -81,6 +81,19 @@ development:
   - cmd: ./ganache.sh
     cmd_settings:
       accounts: 10
+      chain_id: 11155111
+      fork: http://127.0.0.1:7777
+      gas_limit: 30000000
+      mnemonic: brownie
+      port: 8545
+    host: http://127.0.0.1
+    id: local-sepolia-fork
+    name: Ganache-CLI (Local Sepolia Fork)
+    timeout: 360
+
+  - cmd: ./ganache.sh
+    cmd_settings:
+      accounts: 10
       chain_id: 1337
       fork: http://127.0.0.1:7777
       gas_limit: 30000000
