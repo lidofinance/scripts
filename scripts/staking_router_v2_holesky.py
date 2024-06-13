@@ -17,9 +17,17 @@ SR V2
 
 import time
 
+try:
+    from brownie import interface, accounts
+except ImportError:
+    print("You're probably running inside Brownie console. Please call:")
+    print("set_console_globals(interface=interface)")
+
+
 from typing import Dict, Tuple, Optional
 from utils.config import (
     get_deployer_account,
+    get_is_live,
     contracts,
     LIDO_LOCATOR,
     LIDO_LOCATOR_IMPL,
@@ -46,47 +54,47 @@ from brownie.network.transaction import TransactionReceipt
 PRIORITY_EXIT_SHARE_THRESHOLDS_BP = [10_000]
 MAX_DEPOSITS_PER_BLOCK = [50]
 MIN_DEPOSIT_BLOCK_DISTANCES = [25]
-NOR_CONTENT_URI = "0x" + "00".repeat(51)  # ?
+NOR_CONTENT_URI = "0x" + "00" * 51  # ?
 NOR_VERSION = ["2", "0", "0"]
 NOR_APP_ID = "0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d"
 AO_CONSENSUS_VERSION = 2
 VEBO_CONSENSUS_VERSION = 2
 
 
-def encode_locator_proxy_update(locator_proxy_address: str, implementation: str) -> Tuple[str, str]:
-    proxy = interface.LidoLocator(locator_proxy_address)
-    return proxy.address, proxy.proxy_upgradeTo.encode_input(implementation, b"")
+def encode_locator_proxy_update(implementation: str) -> Tuple[str, str]:
+    proxy = interface.OssifiableProxy(contracts.lido_locator)
+    return proxy.address, proxy.proxy__upgradeTo.encode_input(implementation)
 
 
-def encode_staking_router_proxy_update(sr_proxy_address: str, implementation: str) -> Tuple[str, str]:
-    proxy = interface.StakingRouter(sr_proxy_address)
-    return proxy.address, proxy.proxy_upgradeTo.encode_input(implementation, b"")
+def encode_staking_router_proxy_update(implementation: str) -> Tuple[str, str]:
+    proxy = interface.OssifiableProxy(contracts.staking_router)
+    return proxy.address, proxy.proxy__upgradeTo.encode_input(implementation)
 
 
-def encode_staking_router_finalize(sr_proxy_address: str) -> Tuple[str, str]:
-    proxy = interface.StakingRouter(sr_proxy_address)
+def encode_staking_router_finalize() -> Tuple[str, str]:
+    proxy = interface.StakingRouter(contracts.staking_router)
     return proxy.address, proxy.finalizeUpgrade_v2.encode_input(
         PRIORITY_EXIT_SHARE_THRESHOLDS_BP, MAX_DEPOSITS_PER_BLOCK, MIN_DEPOSIT_BLOCK_DISTANCES
     )
 
 
-def encode_nor_finalize(nor_address: str) -> Tuple[str, str]:
-    proxy = interface.NodeOperatorsRegistry(nor_address)
+def encode_nor_finalize() -> Tuple[str, str]:
+    proxy = interface.NodeOperatorsRegistry(contracts.node_operators_registry)
     return proxy.address, proxy.finalizeUpgrade_v3.encode_input()
 
 
-def encode_ao_proxy_update(ao_proxy: str, implementation: str) -> Tuple[str, str]:
-    proxy = interface.AccountingOracle(ao_proxy)
-    return proxy.address, proxy.proxy__upgradeTo.encode_input(implementation, b"")
+def encode_ao_proxy_update(implementation: str) -> Tuple[str, str]:
+    proxy = interface.OssifiableProxy(contracts.accounting_oracle)
+    return proxy.address, proxy.proxy__upgradeTo.encode_input(implementation)
 
 
-def encode_ao_finalize(ao: str) -> Tuple[str, str]:
-    proxy = interface.AccountingOracle(ao)
+def encode_ao_finalize() -> Tuple[str, str]:
+    proxy = interface.AccountingOracle(contracts.accounting_oracle)
     return proxy.address, proxy.finalizeUpgrade_v2.encode_input(AO_CONSENSUS_VERSION)
 
 
 def encode_set_consensus_version(vebo: str) -> Tuple[str, str]:
-    proxy = interface.ValidatorExitBusOracle(vebo)
+    proxy = interface.ValidatorsExitBusOracle(vebo)
     return proxy.address, proxy.setConsensusVersion(vebo)
 
 
@@ -95,7 +103,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
 
     call_script_items = [
         # 1)
-        encode_locator_proxy_update(LIDO_LOCATOR, LIDO_LOCATOR_IMPL),
+        encode_locator_proxy_update(LIDO_LOCATOR_IMPL),
         # 2)
         encode_permission_revoke(
             contracts.staking_router, "STAKING_MODULE_PAUSE_ROLE", revoke_from=contracts.deposit_security_module
@@ -111,19 +119,19 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             permission_name="STAKING_MODULE_UNVETTING_ROLE",
         ),
         # 5)
-        encode_staking_router_proxy_update(STAKING_ROUTER, STAKING_ROUTER_IMPL),
+        encode_staking_router_proxy_update(STAKING_ROUTER_IMPL),
         # 6)
-        encode_staking_router_finalize(STAKING_ROUTER),
+        encode_staking_router_finalize(),
         # 7)
         add_implementation_to_nor_app_repo(NOR_VERSION, NOR_IMPL, NOR_CONTENT_URI),
         # 8)
         update_app_implementation(NOR_APP_ID, NOR_IMPL),
         # 9)
-        encode_nor_finalize(NODE_OPERATORS_REGISTRY),
+        encode_nor_finalize(),
         # 10)
-        encode_ao_proxy_update(ACCOUNTING_ORACLE, ACCOUNTING_ORACLE_IMPL),
+        encode_ao_proxy_update(ACCOUNTING_ORACLE_IMPL),
         # 11)
-        encode_ao_finalize(ACCOUNTING_ORACLE),
+        encode_ao_finalize(),
         # 12)
         encode_permission_grant(
             grant_to=VALIDATORS_EXIT_BUS_ORACLE,
