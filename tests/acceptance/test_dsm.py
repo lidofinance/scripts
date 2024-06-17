@@ -3,6 +3,7 @@ from brownie import interface, web3  # type: ignore
 
 from utils.config import (
     contracts,
+    CHAIN_ID,
     DEPOSIT_SECURITY_MODULE,
     DSM_GUARDIANS,
     CHAIN_DEPOSIT_CONTRACT,
@@ -49,7 +50,7 @@ def test_prefixes(dsm):
             ["bytes32", "uint256", "address"],
             [
                 web3.keccak(text="lido.DepositSecurityModule.PAUSE_MESSAGE").hex(),
-                1,
+                CHAIN_ID,
                 DEPOSIT_SECURITY_MODULE,
             ],
         ).hex()
@@ -60,7 +61,7 @@ def test_prefixes(dsm):
             ["bytes32", "uint256", "address"],
             [
                 web3.keccak(text="lido.DepositSecurityModule.ATTEST_MESSAGE").hex(),
-                1,
+                CHAIN_ID,
                 DEPOSIT_SECURITY_MODULE,
             ],
         ).hex()
