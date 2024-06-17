@@ -29,15 +29,10 @@ from utils.config import (
     get_deployer_account,
     get_is_live,
     contracts,
-    LIDO_LOCATOR,
     LIDO_LOCATOR_IMPL,
-    STAKING_ROUTER,
     STAKING_ROUTER_IMPL,
-    NODE_OPERATORS_REGISTRY,
     NOR_IMPL,
-    ACCOUNTING_ORACLE,
     ACCOUNTING_ORACLE_IMPL,
-    VALIDATORS_EXIT_BUS_ORACLE,
     AGENT,
 )
 from utils.permissions import encode_permission_revoke, encode_permission_grant
@@ -148,11 +143,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         agent_forward([encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)]),
         # 6)
         encode_staking_router_finalize(),
-        # # 7)
+        # 7)
         add_implementation_to_nor_app_repo(NOR_VERSION, NOR_IMPL, NOR_CONTENT_URI),
-        # # 8)
+        # 8)
         update_app_implementation(NOR_APP_ID, NOR_IMPL),
-        # # 9)
+        # 9)
         encode_nor_finalize(),
         # 10)
         agent_forward([encode_ao_proxy_update(ACCOUNTING_ORACLE_IMPL)]),
