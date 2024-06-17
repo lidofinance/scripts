@@ -9,9 +9,9 @@ SR V2
 7. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
 8. Update `NodeOperatorsRegistry` implementation
 9. Finalize NOR upgrade
-10. Update AO implementation to ${AO_IMPLEMENTATION}`,
+10. Update AO implementation to ${ACCOUNTING_ORACLE_IMPL}`,
 11. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}`,
-12. Grant manage consensus role to agent ${aragonAgentAddress}`
+12. Grant manage consensus role to agent ${AGENT}`
 13. Update VEBO consensus version to ${VEBO_CONSENSUS_VERSION}`
 """
 
@@ -180,9 +180,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         "7. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo",
         "8. Update `NodeOperatorsRegistry` implementation",
         "9. Finalize NOR upgrade",
-        "10. Update AO implementation to ${AO_IMPLEMENTATION}",
+        "10. Update AO implementation to ${ACCOUNTING_ORACLE_IMPL}",
         "11. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}",
-        "12. Grant manage consensus role to agent ${aragonAgentAddress}",
+        "12. Grant manage consensus role to agent ${AGENT}",
         "13. Update VEBO consensus version to ${VEBO_CONSENSUS_VERSION}",
     ]
 
