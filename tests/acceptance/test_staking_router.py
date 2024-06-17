@@ -23,6 +23,8 @@ from utils.config import (
     SIMPLE_DVT_MODULE_NAME,
     SIMPLE_DVT_MODULE_TARGET_SHARE_BP,
     SIMPLE_DVT_MODULE_TREASURY_FEE_BP,
+    STAKING_MODULE_COUNT,
+    STAKING_MODULES_IDS,
 )
 from utils.evm_script import encode_error
 
@@ -76,9 +78,9 @@ def test_constants(contract):
 
 
 def test_staking_modules(contract):
-    assert contract.getStakingModulesCount() == 2
+    assert contract.getStakingModulesCount() == STAKING_MODULE_COUNT
 
-    assert contract.getStakingModuleIds() == [CURATED_STAKING_MODULE_ID, SIMPLE_DVT_MODULE_ID]
+    assert contract.getStakingModuleIds() == STAKING_MODULES_IDS
     assert contract.getStakingModuleIsActive(1) == True
     assert contract.getStakingModuleIsStopped(1) == False
     assert contract.getStakingModuleIsDepositsPaused(1) == False
