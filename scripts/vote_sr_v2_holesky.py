@@ -15,11 +15,11 @@ SR V2
 13. Publish new `Sandbox` implementation in Sandbox app APM repo
 14. Update `Sandbox` implementation
 15. Finalize Sandbox upgrade
-13. Update AO implementation to ${ACCOUNTING_ORACLE_IMPL}`,
-14. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}`,
-15. Grant manage consensus role to agent ${AGENT}`
-16. Update VEBO consensus version to ${VEBO_CONSENSUS_VERSION}`
-17. Revoke manage consensus role from agent ${AGENT}"
+16. Update AO implementation to ${ACCOUNTING_ORACLE_IMPL}`,
+17. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}`,
+18. Grant manage consensus role to agent ${AGENT}`
+19. Update VEBO consensus version to ${VEBO_CONSENSUS_VERSION}`
+20. Revoke manage consensus role from agent ${AGENT}"
 """
 
 import time
