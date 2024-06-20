@@ -38,7 +38,6 @@ The proposed actions include:
 
 # Values
 new_SDVT_share = 400  # 4%
-
 payout = Payout(
     token_addr=LDO_TOKEN,
     from_addr=AGENT,

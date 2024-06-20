@@ -4,7 +4,6 @@ import sys
 from typing import Any, Union, Optional, Dict, Tuple
 
 from utils.brownie_prelude import *
-
 from brownie import network, accounts
 from brownie.utils import color
 from brownie.network.account import Account, LocalAccount
@@ -68,12 +67,26 @@ def get_max_fee() -> str:
         return "300 gwei"
 
 
+def local_deployer() -> LocalAccount:
+    """
+    Local deployer can ONLY be used for the local run.
+    """
+    deployer = accounts[4]
+    agent = accounts.at(AGENT, force=True)
+    interface.MiniMeToken(LDO_TOKEN).transfer(deployer, 10**18, {"from": agent})
+    return deployer
+
+
 def get_deployer_account() -> Union[LocalAccount, Account]:
     is_live = get_is_live()
-    if is_live and "DEPLOYER" not in os.environ:
-        raise EnvironmentError("Please set DEPLOYER env variable to the deployer account name")
+    deployer = os.environ.get("DEPLOYER")
 
-    return accounts.load(os.environ["DEPLOYER"]) if (is_live or "DEPLOYER" in os.environ) else accounts[4]
+    if is_live:
+        if deployer is None:
+            raise EnvironmentError("For live deployment please set DEPLOYER env variable to the deployer account name")
+        return accounts.load(deployer)
+
+    return local_deployer()
 
 
 def get_web3_storage_token(silent=False) -> str:
