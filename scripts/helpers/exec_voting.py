@@ -28,22 +28,22 @@ def main():
         },
     ]
     # mainnet
-    # account1 = accounts.at("0xb8d83908aab38a159f3da47a59d84db8e1838712", force=True)
-    # account2 = accounts.at("0xa2dfc431297aee387c05beef507e5335e684fbcd", force=True)
-    # vote_executor = "0x3e40d73eb977dc6a537af587d48316fee66e9c8c"
+    account1 = accounts.at("0xb8d83908aab38a159f3da47a59d84db8e1838712", force=True)
+    account2 = accounts.at("0xa2dfc431297aee387c05beef507e5335e684fbcd", force=True)
+    vote_executor = "0x3e40d73eb977dc6a537af587d48316fee66e9c8c"
 
-    # сontract_address = "0x2e59A20f205bB85a89C53f1936454680651E618e"
+    сontract_address = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 
     # holesky
-    account1 = accounts.at("0xBA59A84C6440E8cccfdb5448877E26F1A431Fc8B", force=True)
-    account2 = accounts.at("0x1D835790d93a28fb30d998C0CB27426E5D2D7C8c", force=True)
-    vote_executor = "0xaa6bfBCD634EE744CB8FE522b29ADD23124593D3"
+    # account1 = accounts.at("0xBA59A84C6440E8cccfdb5448877E26F1A431Fc8B", force=True)
+    # account2 = accounts.at("0x1D835790d93a28fb30d998C0CB27426E5D2D7C8c", force=True)
+    # vote_executor = "0xaa6bfBCD634EE744CB8FE522b29ADD23124593D3"
 
-    сontract_address = "0xdA7d2573Df555002503F29aA4003e398d28cc00f"
+    # сontract_address = "0xdA7d2573Df555002503F29aA4003e398d28cc00f"
 
     contract = Contract.from_abi("Vote", сontract_address, abi)
 
-    vote_id = 84  # Replace with the actual vote ID
+    vote_id = 175  # Replace with the actual vote ID
     supports = True  # Set to True or False based on your requirement
     executes_if_decided = False  # Set to True or False based on your requirement
 
