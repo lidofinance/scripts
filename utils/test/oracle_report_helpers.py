@@ -1,6 +1,6 @@
 import warnings
 from dataclasses import astuple, dataclass
-from typing import Literal, overload
+from typing import List, Literal, overload
 
 from brownie import chain, web3, accounts  # type: ignore
 from brownie.exceptions import VirtualMachineError
@@ -169,7 +169,7 @@ def push_oracle_report(
     extraDataHash=ZERO_BYTES32,
     extraDataItemsCount=0,
     silent=False,
-    extraDataList=b"",
+    extraDataList:List[bytes]=[],
 ):
     if not silent:
         print(f"Preparing oracle report for refSlot: {refSlot}")
@@ -200,11 +200,11 @@ def push_oracle_report(
         print("Submitted report data")
         print(f"extraDataList {extraDataList}")
     if extraDataFormat == 0:
-        extra_report_tx = contracts.accounting_oracle.submitReportExtraDataEmpty({"from": submitter})
+        extra_report_tx_list = [contracts.accounting_oracle.submitReportExtraDataEmpty({"from": submitter})]
         if not silent:
             print("Submitted empty extra data report")
     else:
-        extra_report_tx = contracts.accounting_oracle.submitReportExtraDataList(extraDataList, {"from": submitter})
+        extra_report_tx_list = [contracts.accounting_oracle.submitReportExtraDataList(data, {"from": submitter}) for data in extraDataList]
         if not silent:
             print("Submitted NOT empty extra data report")
 
@@ -228,7 +228,7 @@ def push_oracle_report(
     assert extraDataSubmitted
     assert state_extraDataItemsCount == extraDataItemsCount
     assert extraDataItemsSubmitted == extraDataItemsCount
-    return (report_tx, extra_report_tx)
+    return (report_tx, extra_report_tx_list)
 
 
 def simulate_report(
@@ -295,7 +295,7 @@ def oracle_report(
     extraDataFormat=0,
     extraDataHash=ZERO_BYTES32,
     extraDataItemsCount=0,
-    extraDataList=b"",
+    extraDataList:List[bytes]=[],
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,
@@ -323,7 +323,7 @@ def oracle_report(
     extraDataFormat=0,
     extraDataHash=ZERO_BYTES32,
     extraDataItemsCount=0,
-    extraDataList=b"",
+    extraDataList:List[bytes]=[],
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,
@@ -351,7 +351,7 @@ def oracle_report(
     extraDataFormat=0,
     extraDataHash=ZERO_BYTES32,
     extraDataItemsCount=0,
-    extraDataList=b"",
+    extraDataList:List[bytes]=[],
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,
