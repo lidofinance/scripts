@@ -60,7 +60,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
 
         # Check LDO payment
         assert (
-            agent_ldo_before == ldo_token.balanceOf(agent_addr) + expected_payout.amount
+            ldo_token.balanceOf(agent_addr) == agent_ldo_before - expected_payout.amount
         ), "DAO Agent LDO balance must decrease by the correct amount"
         assert (
             ldo_token.balanceOf(expected_payout.to_addr) == pml_balance_before + expected_payout.amount
