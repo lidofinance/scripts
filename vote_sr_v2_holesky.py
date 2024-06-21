@@ -37,7 +37,7 @@ from utils.config import (
     get_is_live,
     contracts,
     NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
-    SDVT_APP_ID,
+    SIMPLE_DVT_ARAGON_APP_ID,
     SANDBOX_APP_ID,
     LIDO_LOCATOR_IMPL,
     STAKING_ROUTER_IMPL,
@@ -60,14 +60,14 @@ from brownie.network.transaction import TransactionReceipt
 from utils.agent import agent_forward
 
 
-PRIORITY_EXIT_SHARE_THRESHOLDS_BP= 
-MAX_DEPOSITS_PER_BLOCK =
-MIN_DEPOSIT_BLOCK_DISTANCES =
-NOR_VERSION =
-SDVT_VERSION =
-SANDBOX_VERSION =
-AO_CONSENSUS_VERSION =
-VEBO_CONSENSUS_VERSION =
+PRIORITY_EXIT_SHARE_THRESHOLDS_BP = [10_000, 10_000, 10_000]
+MAX_DEPOSITS_PER_BLOCK = [50, 50, 50]
+MIN_DEPOSIT_BLOCK_DISTANCES = [25, 25, 25]
+NOR_VERSION = ["2", "0", "0"]
+SDVT_VERSION = ["2", "0", "0"]
+SANDBOX_VERSION = ["2", "0", "0"]
+AO_CONSENSUS_VERSION = 2
+VEBO_CONSENSUS_VERSION = 2
 
 
 def encode_locator_proxy_update(implementation: str) -> Tuple[str, str]:
@@ -193,7 +193,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         # 10)
         add_implementation_to_sdvt_app_repo(SDVT_VERSION, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
         # 11)
-        update_app_implementation(SDVT_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
+        update_app_implementation(SIMPLE_DVT_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
         # 12)
         encode_sdvt_finalize(),
         # 13)

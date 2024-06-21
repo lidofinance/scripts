@@ -12,9 +12,6 @@ SR V2
 10. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
 11. Update `SimpleDVT` implementation
 12. Finalize SimpleDVT upgrade
-13. Publish new `Sandbox` implementation in Sandbox app APM repo
-14. Update `Sandbox` implementation
-15. Finalize Sandbox upgrade
 16. Update AO implementation to ${ACCOUNTING_ORACLE_IMPL}`,
 17. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}`,
 18. Grant manage consensus role to agent ${AGENT}`
@@ -37,8 +34,7 @@ from utils.config import (
     get_is_live,
     contracts,
     NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
-    SDVT_APP_ID,
-    SANDBOX_APP_ID,
+    SIMPLE_DVT_ARAGON_APP_ID,
     LIDO_LOCATOR_IMPL,
     STAKING_ROUTER_IMPL,
     ACCOUNTING_ORACLE_IMPL,
@@ -49,7 +45,6 @@ from utils.config import (
 from utils.repo import (
     add_implementation_to_nor_app_repo,
     add_implementation_to_sdvt_app_repo,
-    add_implementation_to_sandbox_app_repo,
 )
 
 from utils.kernel import update_app_implementation
@@ -65,7 +60,6 @@ MAX_DEPOSITS_PER_BLOCK = [50, 50, 50]
 MIN_DEPOSIT_BLOCK_DISTANCES = [25, 25, 25]
 NOR_VERSION = ["2", "0", "0"]
 SDVT_VERSION = ["2", "0", "0"]
-SANDBOX_VERSION = ["2", "0", "0"]
 AO_CONSENSUS_VERSION = 2
 VEBO_CONSENSUS_VERSION = 2
 
@@ -94,11 +88,6 @@ def encode_nor_finalize() -> Tuple[str, str]:
 
 def encode_sdvt_finalize() -> Tuple[str, str]:
     proxy = interface.NodeOperatorsRegistry(contracts.simple_dvt)
-    return proxy.address, proxy.finalizeUpgrade_v3.encode_input()
-
-
-def encode_sandbox_finalize() -> Tuple[str, str]:
-    proxy = interface.NodeOperatorsRegistry(contracts.sandbox)
     return proxy.address, proxy.finalizeUpgrade_v3.encode_input()
 
 
@@ -132,11 +121,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
 
     nor_repo = contracts.nor_app_repo.address
     simple_dvt_repo = contracts.simple_dvt_app_repo.address
-    sandbox_repo = contracts.sandbox_repo.address
 
     nor_uri = get_repo_uri(nor_repo)
     simple_dvt_uri = get_repo_uri(simple_dvt_repo)
-    sandbox_uri = get_repo_uri(sandbox_repo)
 
     call_script_items = [
         # 1)
@@ -193,20 +180,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         # 10)
         add_implementation_to_sdvt_app_repo(SDVT_VERSION, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
         # 11)
-        update_app_implementation(SDVT_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
+        update_app_implementation(SIMPLE_DVT_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
         # 12)
         encode_sdvt_finalize(),
         # 13)
-        add_implementation_to_sandbox_app_repo(SANDBOX_VERSION, NODE_OPERATORS_REGISTRY_IMPL, sandbox_uri),
-        # 14)
-        update_app_implementation(SANDBOX_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
-        # 15)
-        encode_sandbox_finalize(),
-        # 16)
         agent_forward([encode_ao_proxy_update(ACCOUNTING_ORACLE_IMPL)]),
-        # 17)
+        # 14)
         encode_ao_finalize(),
-        # 18)
+        # 15)
         agent_forward(
             [
                 (
@@ -219,9 +200,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                 )
             ]
         ),
-        # 19)
+        # 16)
         agent_forward([encode_set_consensus_version()]),
-        # 20)
+        # 17)
         agent_forward(
             [
                 (
@@ -249,14 +230,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         "10. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo",
         "11. Update `SimpleDVT` implementation",
         "12. Finalize SimpleDVT upgrade",
-        "13. Publish new `Sandbox` implementation in Sandbox app APM repo",
-        "14. Update `Sandbox` implementation",
-        "15. Finalize Sandbox upgrade",
-        "16. Update AO implementation to ${ACCOUNTING_ORACLE_IMPL}",
-        "17. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}",
-        "18. Grant manage consensus role to agent ${AGENT}",
-        "19. Update VEBO consensus version to ${VEBO_CONSENSUS_VERSION}",
-        "20. Revoke manage consensus role from agent ${AGENT}",
+        "13. Update AO implementation to ${ACCOUNTING_ORACLE_IMPL}",
+        "14. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}",
+        "15. Grant manage consensus role to agent ${AGENT}",
+        "16. Update VEBO consensus version to ${VEBO_CONSENSUS_VERSION}",
+        "17. Revoke manage consensus role from agent ${AGENT}",
     ]
 
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
