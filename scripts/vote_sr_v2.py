@@ -187,7 +187,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         # 7)
         add_implementation_to_nor_app_repo(NOR_VERSION, NODE_OPERATORS_REGISTRY_IMPL, nor_uri),
         # 8)
-        update_app_implementation(NOR_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
+        update_app_implementation(NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
         # 9)
         encode_nor_finalize(),
         # 10)
