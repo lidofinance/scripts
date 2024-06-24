@@ -8,11 +8,11 @@ from utils.test.extra_data import ExtraDataService
 from utils.test.helpers import shares_balance, almostEqWithDiff
 from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
 from utils.test.oracle_report_helpers import oracle_report
+from utils.test.node_operators_helpers import distribute_reward
 
 from utils.config import MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT, MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT
 from utils.config import contracts
 from utils.test.simple_dvt_helpers import simple_dvt_add_node_operators, simple_dvt_add_keys, simple_dvt_vet_keys
-
 
 @pytest.fixture()
 def extra_data_service():
@@ -127,17 +127,20 @@ def test_extra_data_full_items(
         sdvt_balance_shares_before.append(shares_balance(sdvt.getNodeOperator(i, False)["rewardAddress"]))
 
     # Perform report
-    (report_tx, extra_report_tx) = oracle_report(
+    (report_tx, _) = oracle_report(
         extraDataFormat=1,
         extraDataHash=extra_data.data_hash,
         extraDataItemsCount=(nor_exited_items + nor_stuck_items + sdvt_exited_items + sdvt_stuck_items),
-        extraDataList=extra_data.extra_data,
+        extraDataList=extra_data.extra_data_list,
         stakingModuleIdsWithNewlyExitedValidators=modules_with_exited,
         numExitedValidatorsByStakingModule=num_exited_validators_by_staking_module,
     )
 
-    penalty_shares = 0
+    nor_distribute_reward_tx = distribute_reward(nor)
+    sdvt_distribute_reward_tx = distribute_reward(sdvt)
+
     # Check NOR exited
+    nor_penalty_shares = 0
     for i in range(0, len(nor_exited)):
         assert nor.getNodeOperatorSummary(i)["totalExitedValidators"] == nor_exited[(1, i)]
     # Check NOR stuck. Check penalties and rewards
@@ -155,9 +158,13 @@ def test_extra_data_full_items(
                 rewards_after // 2,
                 1,
             )
-            penalty_shares += rewards_after // 2
+            nor_penalty_shares += rewards_after // 2
+
+    if nor_penalty_shares > 0:
+        assert almostEqWithDiff(sum(e['amountOfShares'] for e in nor_distribute_reward_tx.events["StETHBurnRequested"]), nor_penalty_shares, 50)
 
     # Check SDVT exited
+    sdvt_penalty_shares = 0
     for i in range(0, len(sdvt_exited)):
         assert sdvt.getNodeOperatorSummary(i)["totalExitedValidators"] == sdvt_exited[(2, i)]
     # Check SDVT stuck. Check penalties and rewards
@@ -175,11 +182,12 @@ def test_extra_data_full_items(
                 rewards_after // 2,
                 1,
             )
-            penalty_shares += rewards_after // 2
+            sdvt_penalty_shares += rewards_after // 2
 
-    if penalty_shares > 0:
+
+    if sdvt_penalty_shares > 0:
         # TODO: Fix below check when contains other penalized node operators
-        assert almostEqWithDiff(sum(e['amountOfShares'] for e in extra_report_tx.events["StETHBurnRequested"]), penalty_shares, 100)
+        assert almostEqWithDiff(sum(e['amountOfShares'] for e in sdvt_distribute_reward_tx.events["StETHBurnRequested"]), sdvt_penalty_shares, 50)
 
 ############################################
 # HELPER FUNCTIONS
@@ -274,8 +282,7 @@ def deposit_buffer_for_keys(staking_router, sdvt_keys_to_deposit, nor_keys_to_de
     total_depositable_keys = 0
     module_digests = staking_router.getAllStakingModuleDigests()
     for digest in module_digests:
-        (_, _, state, summary) = digest
-        (id, _, _, _, target_share, status, _, _, _, _) = state
+        (_, _, _, summary) = digest
         (exited_keys, deposited_keys, depositable_keys) = summary
         total_depositable_keys += depositable_keys
 

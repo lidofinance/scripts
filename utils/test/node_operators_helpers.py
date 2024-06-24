@@ -4,6 +4,8 @@ from brownie import web3, network
 from typing import Dict, List
 from eth_abi import encode
 from typing import  NewType, Tuple
+from utils.config import contracts
+from enum import Enum
 
 SIGNING_KEY_KEYS = ["key", "depositSignature", "used"]
 
@@ -33,6 +35,11 @@ EVENT_SIGNATURES = {"NodeOperatorAdded": "NodeOperatorAdded(uint256,string,addre
 StakingModuleId = NewType("StakingModuleId", int)
 NodeOperatorId = NewType("NodeOperatorId", int)
 NodeOperatorGlobalIndex = Tuple[StakingModuleId, NodeOperatorId]
+
+class RewardDistributionState(Enum):
+    TransferredToModule = 0     # New reward portion minted and transferred to the module
+    ReadyForDistribution = 1    # Operators' statistics updated, reward ready for distribution
+    Distributed = 2             # Reward distributed among operators
 
 
 def node_operator_gindex(module_id, node_operator_id) -> NodeOperatorGlobalIndex:
@@ -92,3 +99,14 @@ def get_event_log(tx: network.transaction.TransactionReceipt, event_signature: s
 
     assert log is not None, f'Topic for event "{event_signature}" not found'
     return log
+
+def distribute_reward(nor):
+    rewardDistributionState = nor.getRewardDistributionState()
+    assert rewardDistributionState == RewardDistributionState.ReadyForDistribution.value, "Reward is not ready for distribution"
+
+    tx = nor.distributeReward({"from": contracts.voting})
+
+    rewardDistributionState = nor.getRewardDistributionState()
+    assert rewardDistributionState == RewardDistributionState.Distributed.value, "Reward distribution failed"
+
+    return tx
