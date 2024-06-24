@@ -136,8 +136,8 @@ def test_extra_data_full_items(
         numExitedValidatorsByStakingModule=num_exited_validators_by_staking_module,
     )
 
-    nor_distribute_reward_tx = distribute_reward(nor)
-    sdvt_distribute_reward_tx = distribute_reward(sdvt)
+    nor_distribute_reward_tx = distribute_reward(nor, stranger)
+    sdvt_distribute_reward_tx = distribute_reward(sdvt, stranger)
 
     # Check NOR exited
     nor_penalty_shares = 0

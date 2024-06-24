@@ -4,7 +4,6 @@ from brownie import web3, network
 from typing import Dict, List
 from eth_abi import encode
 from typing import  NewType, Tuple
-from utils.config import contracts
 from enum import Enum
 
 SIGNING_KEY_KEYS = ["key", "depositSignature", "used"]
@@ -100,11 +99,11 @@ def get_event_log(tx: network.transaction.TransactionReceipt, event_signature: s
     assert log is not None, f'Topic for event "{event_signature}" not found'
     return log
 
-def distribute_reward(nor):
+def distribute_reward(nor, from_address):
     rewardDistributionState = nor.getRewardDistributionState()
     assert rewardDistributionState == RewardDistributionState.ReadyForDistribution.value, "Reward is not ready for distribution"
 
-    tx = nor.distributeReward({"from": contracts.voting})
+    tx = nor.distributeReward({"from": from_address})
 
     rewardDistributionState = nor.getRewardDistributionState()
     assert rewardDistributionState == RewardDistributionState.Distributed.value, "Reward distribution failed"
