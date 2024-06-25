@@ -12,11 +12,11 @@ SR V2
 10. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
 11. Update `SimpleDVT` implementation
 12. Finalize SimpleDVT upgrade
-13. Update AO implementation to ${ACCOUNTING_ORACLE_IMPL}`,
-14. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}`,
-15. Grant manage consensus role to agent ${AGENT}`
-16. Update VEBO consensus version to ${VEBO_CONSENSUS_VERSION}`
-17. Revoke manage consensus role from agent ${AGENT}
+16. Update AO implementation to ${ACCOUNTING_ORACLE_IMPL}`,
+17. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}`,
+18. Grant manage consensus role to agent ${AGENT}`
+19. Update VEBO consensus version to ${VEBO_CONSENSUS_VERSION}`
+20. Revoke manage consensus role from agent ${AGENT}"
 """
 
 import time
@@ -33,14 +33,19 @@ from utils.config import (
     get_deployer_account,
     get_is_live,
     contracts,
+    NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
+    SIMPLE_DVT_ARAGON_APP_ID,
     LIDO_LOCATOR_IMPL,
     STAKING_ROUTER_IMPL,
-    NODE_OPERATORS_REGISTRY_IMPL,
     ACCOUNTING_ORACLE_IMPL,
+    NODE_OPERATORS_REGISTRY_IMPL,
     AGENT,
 )
 
-from utils.repo import add_implementation_to_nor_app_repo, add_implementation_to_sdvt_app_repo
+from utils.repo import (
+    add_implementation_to_nor_app_repo,
+    add_implementation_to_sdvt_app_repo,
+)
 
 from utils.kernel import update_app_implementation
 
@@ -55,8 +60,6 @@ MAX_DEPOSITS_PER_BLOCK = [50, 50]
 MIN_DEPOSIT_BLOCK_DISTANCES = [25, 25]
 NOR_VERSION = ["5", "0", "0"]
 SDVT_VERSION = ["2", "0", "0"]
-NOR_APP_ID = "0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d"
-SDVT_APP_ID = "0xe1635b63b5f7b5e545f2a637558a4029dea7905361a2f0fc28c66e9136cf86a4"
 AO_CONSENSUS_VERSION = 2
 VEBO_CONSENSUS_VERSION = 2
 
@@ -171,13 +174,13 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         # 7)
         add_implementation_to_nor_app_repo(NOR_VERSION, NODE_OPERATORS_REGISTRY_IMPL, nor_uri),
         # 8)
-        update_app_implementation(NOR_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
+        update_app_implementation(NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
         # 9)
         encode_nor_finalize(),
         # 10)
         add_implementation_to_sdvt_app_repo(SDVT_VERSION, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
         # 11)
-        update_app_implementation(SDVT_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
+        update_app_implementation(SIMPLE_DVT_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
         # 12)
         encode_sdvt_finalize(),
         # 13)
@@ -246,7 +249,7 @@ def main():
         tx_params["max_fee"] = "300 gwei"
         tx_params["priority_fee"] = "2 gwei"
 
-    print(f"tx = {tx_params}")
+    print(tx_params)
 
     vote_id, _ = start_vote(tx_params=tx_params, silent=False)
 

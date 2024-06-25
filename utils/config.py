@@ -9,6 +9,8 @@ from brownie import network, accounts
 from brownie.utils import color
 from brownie.network.account import Account, LocalAccount
 
+from brownie import Contract, web3
+
 
 MAINNET_VOTE_DURATION = 3 * 24 * 60 * 60
 
@@ -172,6 +174,14 @@ class ContractsLazyLoader:
     @property
     def simple_dvt(self) -> interface.SimpleDVT:
         return interface.SimpleDVT(SIMPLE_DVT)
+
+    @property
+    def csm(self) -> interface.CSModule:
+        return interface.CSModule(CSM)
+
+    @property
+    def csmHashConsensus(self) -> interface.CSHashConsensus:
+        return interface.CSHashConsensus(CS_ORACLE_HASH_CONSENSUS_ADDRESS)
 
     @property
     def sandbox(self) -> interface.SimpleDVT:
