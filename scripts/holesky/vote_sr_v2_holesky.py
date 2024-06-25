@@ -178,147 +178,147 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
     call_script_items = [
         # SR 2
         # 1)
-        # agent_forward([encode_locator_proxy_update(LIDO_LOCATOR_IMPL)]),
-        # # 2)
-        # agent_forward(
-        #     [
-        #         (
-        #             contracts.staking_router.address,
-        #             contracts.staking_router.revokeRole.encode_input(
-        #                 # keccak256 STAKING_MODULE_PAUSE_ROLE
-        #                 "0x00b1e70095ba5bacc3202c3db9faf1f7873186f0ed7b6c84e80c0018dcc6e38e",
-        #                 contracts.deposit_security_module_v2,
-        #             ),
-        #         )
-        #     ]
-        # ),
+        agent_forward([encode_locator_proxy_update(LIDO_LOCATOR_IMPL)]),
+        # 2)
+        agent_forward(
+            [
+                (
+                    contracts.staking_router.address,
+                    contracts.staking_router.revokeRole.encode_input(
+                        # keccak256 STAKING_MODULE_PAUSE_ROLE
+                        "0x00b1e70095ba5bacc3202c3db9faf1f7873186f0ed7b6c84e80c0018dcc6e38e",
+                        contracts.deposit_security_module_v2,
+                    ),
+                )
+            ]
+        ),
         # 3)
-        # agent_forward(
-        #     [
-        #         (
-        #             contracts.staking_router.address,
-        #             contracts.staking_router.revokeRole.encode_input(
-        #                 # keccak256 STAKING_MODULE_RESUME_ROLE
-        #                 "0x9a2f67efb89489040f2c48c3b2c38f719fba1276678d2ced3bd9049fb5edc6b2",
-        #                 contracts.deposit_security_module_v2,
-        #             ),
-        #         )
-        #     ]
-        # ),
-        # # 4)
-        # agent_forward(
-        #     [
-        #         (
-        #             contracts.staking_router.address,
-        #             contracts.staking_router.grantRole.encode_input(
-        #                 # keccak256 STAKING_MODULE_UNVETTING_ROLE
-        #                 "0x240525496a9dc32284b17ce03b43e539e4bd81414634ee54395030d793463b57",
-        #                 contracts.deposit_security_module,
-        #             ),
-        #         )
-        #     ]
-        # ),
+        agent_forward(
+            [
+                (
+                    contracts.staking_router.address,
+                    contracts.staking_router.revokeRole.encode_input(
+                        # keccak256 STAKING_MODULE_RESUME_ROLE
+                        "0x9a2f67efb89489040f2c48c3b2c38f719fba1276678d2ced3bd9049fb5edc6b2",
+                        contracts.deposit_security_module_v2,
+                    ),
+                )
+            ]
+        ),
+        # 4)
+        agent_forward(
+            [
+                (
+                    contracts.staking_router.address,
+                    contracts.staking_router.grantRole.encode_input(
+                        # keccak256 STAKING_MODULE_UNVETTING_ROLE
+                        "0x240525496a9dc32284b17ce03b43e539e4bd81414634ee54395030d793463b57",
+                        contracts.deposit_security_module,
+                    ),
+                )
+            ]
+        ),
         # 5)
-        # agent_forward([encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)]),
-        # # 6)
-        # encode_staking_router_finalize(),
-        # # 7)
-        # add_implementation_to_nor_app_repo(NOR_VERSION, NODE_OPERATORS_REGISTRY_IMPL, nor_uri),
-        # # 8)
-        # update_app_implementation(NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
-        # # 9)
-        # encode_nor_finalize(),
-        # # 10)
-        # add_implementation_to_sdvt_app_repo(SDVT_VERSION, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
-        # # 11)
-        # update_app_implementation(SIMPLE_DVT_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
-        # # 12)
-        # encode_sdvt_finalize(),
-        # # 13)
-        # add_implementation_to_sandbox_app_repo(SANDBOX_VERSION, NODE_OPERATORS_REGISTRY_IMPL, sandbox_uri),
-        # # 14)
-        # update_app_implementation(SANDBOX_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
-        # # 15)
-        # encode_sandbox_finalize(),
-        # # 16)
-        # agent_forward([encode_ao_proxy_update(ACCOUNTING_ORACLE_IMPL)]),
-        # # 17)
-        # encode_ao_finalize(),
+        agent_forward([encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)]),
+        # 6)
+        encode_staking_router_finalize(),
+        # 7)
+        add_implementation_to_nor_app_repo(NOR_VERSION, NODE_OPERATORS_REGISTRY_IMPL, nor_uri),
+        # 8)
+        update_app_implementation(NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
+        # 9)
+        encode_nor_finalize(),
+        # 10)
+        add_implementation_to_sdvt_app_repo(SDVT_VERSION, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
+        # 11)
+        update_app_implementation(SIMPLE_DVT_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
+        # 12)
+        encode_sdvt_finalize(),
+        # 13)
+        add_implementation_to_sandbox_app_repo(SANDBOX_VERSION, NODE_OPERATORS_REGISTRY_IMPL, sandbox_uri),
+        # 14)
+        update_app_implementation(SANDBOX_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
+        # 15)
+        encode_sandbox_finalize(),
+        # 16)
+        agent_forward([encode_ao_proxy_update(ACCOUNTING_ORACLE_IMPL)]),
+        # 17)
+        encode_ao_finalize(),
         # 18)
-        # agent_forward(
-        #     [
-        #         (
-        #             contracts.validators_exit_bus_oracle.address,
-        #             contracts.validators_exit_bus_oracle.grantRole.encode_input(
-        #                 # keccak256 MANAGE_CONSENSUS_VERSION_ROLE
-        #                 "0xc31b1e4b732c5173dc51d519dfa432bad95550ecc4b0f9a61c2a558a2a8e4341",
-        #                 contracts.agent.address,
-        #             ),
-        #         )
-        #     ]
-        # ),
-        # # 19)
-        # agent_forward([encode_set_consensus_version()]),
-        # # 20)
-        # agent_forward(
-        #     [
-        #         (
-        #             contracts.validators_exit_bus_oracle.address,
-        #             contracts.validators_exit_bus_oracle.revokeRole.encode_input(
-        #                 # keccak256 MANAGE_CONSENSUS_VERSION_ROLE
-        #                 "0xc31b1e4b732c5173dc51d519dfa432bad95550ecc4b0f9a61c2a558a2a8e4341",
-        #                 contracts.agent.address,
-        #             ),
-        #         )
-        #     ]
-        # ),
+        agent_forward(
+            [
+                (
+                    contracts.validators_exit_bus_oracle.address,
+                    contracts.validators_exit_bus_oracle.grantRole.encode_input(
+                        # keccak256 MANAGE_CONSENSUS_VERSION_ROLE
+                        "0xc31b1e4b732c5173dc51d519dfa432bad95550ecc4b0f9a61c2a558a2a8e4341",
+                        contracts.agent.address,
+                    ),
+                )
+            ]
+        ),
+        # 19)
+        agent_forward([encode_set_consensus_version()]),
+        # 20)
+        agent_forward(
+            [
+                (
+                    contracts.validators_exit_bus_oracle.address,
+                    contracts.validators_exit_bus_oracle.revokeRole.encode_input(
+                        # keccak256 MANAGE_CONSENSUS_VERSION_ROLE
+                        "0xc31b1e4b732c5173dc51d519dfa432bad95550ecc4b0f9a61c2a558a2a8e4341",
+                        contracts.agent.address,
+                    ),
+                )
+            ]
+        ),
         # CSM
         # 21)
-        # agent_forward(
-        #     [
-        #         (
-        #             contracts.staking_router.address,
-        #             contracts.staking_router.grantRole.encode_input(
-        #                 # STAKING_MODULE_MANAGE_ROLE
-        #                 "0x3105bcbf19d4417b73ae0e58d508a65ecf75665e46c2622d8521732de6080c48",
-        #                 contracts.agent.address,
-        #             ),
-        #         )
-        #     ]
-        # ),
+        agent_forward(
+            [
+                (
+                    contracts.staking_router.address,
+                    contracts.staking_router.grantRole.encode_input(
+                        # STAKING_MODULE_MANAGE_ROLE
+                        "0x3105bcbf19d4417b73ae0e58d508a65ecf75665e46c2622d8521732de6080c48",
+                        contracts.agent.address,
+                    ),
+                )
+            ]
+        ),
         # 22)
-        # agent_forward(
-        #     [
-        #         (
-        #             contracts.staking_router.address,
-        #             contracts.staking_router.addStakingModule.encode_input(
-        #                 CS_MODULE_NAME,
-        #                 contracts.csm.address,
-        #                 CS_STAKE_SHARE_LIMIT,
-        #                 CS_PRIORITY_EXIT_SHARE_THRESHOLD,
-        #                 CS_STAKING_MODULE_FEE,
-        #                 CS_TREASURY_FEE,
-        #                 CS_MAX_DEPOSITS_PER_BLOCK,
-        #                 CS_MIN_DEPOSIT_BLOCK_DISTANCE,
-        #             ),
-        #         ),
-        #     ]
-        # ),
+        agent_forward(
+            [
+                (
+                    contracts.staking_router.address,
+                    contracts.staking_router.addStakingModule.encode_input(
+                        CS_MODULE_NAME,
+                        contracts.csm.address,
+                        CS_STAKE_SHARE_LIMIT,
+                        CS_PRIORITY_EXIT_SHARE_THRESHOLD,
+                        CS_STAKING_MODULE_FEE,
+                        CS_TREASURY_FEE,
+                        CS_MAX_DEPOSITS_PER_BLOCK,
+                        CS_MIN_DEPOSIT_BLOCK_DISTANCE,
+                    ),
+                ),
+            ]
+        ),
         # 23)
-        # agent_forward(
-        #     [
-        #         (
-        #             contracts.burner.address,
-        #             contracts.burner.grantRole.encode_input(
-        #                 # keccak256 'REQUEST_BURN_SHARES_ROLE'
-        #                 "0x4be29e0e4eb91f98f709d98803cba271592782e293b84a625e025cbb40197ba8",
-        #                 CS_ACCOUNTING_ADDRESS,
-        #             ),
-        #         )
-        #     ]
-        # ),
+        agent_forward(
+            [
+                (
+                    contracts.burner.address,
+                    contracts.burner.grantRole.encode_input(
+                        # keccak256 'REQUEST_BURN_SHARES_ROLE'
+                        "0x4be29e0e4eb91f98f709d98803cba271592782e293b84a625e025cbb40197ba8",
+                        CS_ACCOUNTING_ADDRESS,
+                    ),
+                )
+            ]
+        ),
         # 24)
-        agent_forward([grantCsmResumeRoleToAgent()]),
+        # agent_forward([grantCsmResumeRoleToAgent()]),
         # # 25)
         # agent_forward([(contracts.csm.address, contracts.csm.resume.encode_input())]),
         # # 26)
@@ -334,30 +334,30 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
     ]
 
     vote_desc_items = [
-        # "1. Update locator implementation",
-        # "2. Revoke pause role from old DSM",
-        # "3. Revoke resume role from old DSM",
-        # "4. Grant unvetting role to new DSM",
-        # "5. Update SR implementation",
-        # "6. Call finalize upgrade on SR",
-        # "7. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo",
-        # "8. Update `NodeOperatorsRegistry` implementation",
-        # "9. Finalize NOR upgrade",
-        # "10. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo",
-        # "11. Update `SimpleDVT` implementation",
-        # "12. Finalize SimpleDVT upgrade",
-        # "13. Publish new `Sandbox` implementation in Sandbox app APM repo",
-        # "14. Update `Sandbox` implementation",
-        # "15. Finalize Sandbox upgrade",
-        # "16. Update AO implementation to ${ACCOUNTING_ORACLE_IMPL}",
-        # "17. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}",
-        # "18. Grant manage consensus role to agent ${AGENT}",
-        # "19. Update VEBO consensus version to ${VEBO_CONSENSUS_VERSION}",
-        # "20. Revoke manage consensus role from agent ${AGENT}",
-        # "21. Grant staking module manage role to agent STAKING_MODULE_MANAGE_ROLE",
-        # "22. Add staking module",
-        # "23. Grant request burn role to CSAccounting contract",
-        "24. Grant resume role to agent",
+        "1. Update locator implementation",
+        "2. Revoke pause role from old DSM",
+        "3. Revoke resume role from old DSM",
+        "4. Grant unvetting role to new DSM",
+        "5. Update SR implementation",
+        "6. Call finalize upgrade on SR",
+        "7. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo",
+        "8. Update `NodeOperatorsRegistry` implementation",
+        "9. Finalize NOR upgrade",
+        "10. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo",
+        "11. Update `SimpleDVT` implementation",
+        "12. Finalize SimpleDVT upgrade",
+        "13. Publish new `Sandbox` implementation in Sandbox app APM repo",
+        "14. Update `Sandbox` implementation",
+        "15. Finalize Sandbox upgrade",
+        "16. Update AO implementation to ${ACCOUNTING_ORACLE_IMPL}",
+        "17. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}",
+        "18. Grant manage consensus role to agent ${AGENT}",
+        "19. Update VEBO consensus version to ${VEBO_CONSENSUS_VERSION}",
+        "20. Revoke manage consensus role from agent ${AGENT}",
+        "21. Grant staking module manage role to agent STAKING_MODULE_MANAGE_ROLE",
+        "22. Add staking module",
+        "23. Grant request burn role to CSAccounting contract",
+        # "24. Grant resume role to agent",
         # "25. Resume staking module",
         # "26. Revoke resume role from agent",
         # "27. Update initial epoch",
