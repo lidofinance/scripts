@@ -73,8 +73,7 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_WITHDRAWAL_CREDENTIALS_ROLE": [],
-                "STAKING_MODULE_PAUSE_ROLE": [contracts.deposit_security_module],
-                "STAKING_MODULE_RESUME_ROLE": [contracts.deposit_security_module],
+                "STAKING_MODULE_UNVETTING_ROLE": [contracts.deposit_security_module],
                 "STAKING_MODULE_MANAGE_ROLE": [contracts.agent],
                 "REPORT_EXITED_VALIDATORS_ROLE": [contracts.accounting_oracle],
                 "UNSAFE_SET_EXITED_VALIDATORS_ROLE": [],
@@ -161,7 +160,8 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "ALL_LIMITS_MANAGER_ROLE": [],
-                "CHURN_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE": [],
+                "EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE": [],
+                "APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE": [],
                 "ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE": [],
                 "ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE": [],
                 "SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE": [],
