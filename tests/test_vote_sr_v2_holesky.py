@@ -11,7 +11,7 @@ from utils.config import (
     SIMPLE_DVT_IMPL,
     ACCOUNTING_ORACLE_IMPL,
 )
-from scripts.vote_sr_v2_holesky import start_vote
+from scripts.holesky.vote_sr_v2_holesky import start_vote
 from utils.config import (
     contracts,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
