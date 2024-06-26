@@ -1,6 +1,7 @@
 import math
 from brownie import ZERO_ADDRESS, chain
 
+from utils.test.node_operators_helpers import distribute_reward
 from utils.test.oracle_report_helpers import oracle_report
 from utils.test.helpers import ETH, almostEqEth
 from utils.config import contracts
@@ -157,7 +158,10 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     treasury_balance_before_rebase = contracts.lido.sharesOf(treasury)
 
-    report_tx, extra_tx = oracle_report(cl_diff=ETH(100))
+    report_tx = oracle_report(cl_diff=ETH(100))[0]
+
+    nor_distribute_reward_tx = distribute_reward(contracts.node_operators_registry, stranger)
+    sdvt_distribute_reward_tx = distribute_reward(contracts.simple_dvt, stranger)
 
     steth_balance_after_rebase = contracts.lido.balanceOf(stranger)
     treasury_balance_after_rebase = contracts.lido.sharesOf(treasury)
@@ -181,14 +185,23 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     if len(penalized_node_operator_ids_sdvt) > 0:
         expected_burner_transfers += 1
 
-    for e in extra_tx.events["Transfer"]:
+    for e in nor_distribute_reward_tx.events["Transfer"]:
         if e["to"] == contracts.burner:
             burner_transfers += 1
+    for e in sdvt_distribute_reward_tx.events["Transfer"]:
+        if e["to"] == contracts.burner:
+            burner_transfers += 1
+
     assert burner_transfers == expected_burner_transfers
 
     assert (
-        extra_tx.events.count("Transfer") == expected_transfers_count_nor + expected_transfers_count_sdvt
-    ), "extra_tx.events should have Transfer to all active operators (+1 optional to Burner), check activity condition above"
+        nor_distribute_reward_tx.events.count("Transfer") == expected_transfers_count_nor
+    ), "nor_distribute_reward_tx.events should have Transfer to all active operators (+1 optional to Burner), check activity condition above"
+
+    assert (
+        sdvt_distribute_reward_tx.events.count("Transfer") == expected_transfers_count_sdvt
+    ), "sdvt_distribute_reward_tx.events should have Transfer to all active operators (+1 optional to Burner), check activity condition above"
+
     assert report_tx.events.count("TokenRebased") == 1
     assert report_tx.events.count("WithdrawalsFinalized") == 1
     assert report_tx.events.count("StETHBurnt") == 1
@@ -277,7 +290,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     )
 
     locked_ether_amount_before_finalization = contracts.withdrawal_queue.getLockedEtherAmount()
-    report_tx, _ = oracle_report(cl_diff=ETH(100))
+    report_tx = oracle_report(cl_diff=ETH(100))[0]
 
     locked_ether_amount_after_finalization = contracts.withdrawal_queue.getLockedEtherAmount()
     withdrawal_finalized_event = report_tx.events["WithdrawalsFinalized"]
