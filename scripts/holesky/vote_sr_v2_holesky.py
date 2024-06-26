@@ -93,8 +93,11 @@ CS_MAX_DEPOSITS_PER_BLOCK = 30
 CS_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 CS_ORACLE_INITIAL_EPOCH = 58050
 
+EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY = "0x07696EA8A5b53C3E35d9cce10cc62c6c79C4691D"
+
+
 description = """
-_REPLACE_ME_
+Proposal to support DSM 2.0 and CSM Module
 """
 
 
@@ -157,7 +160,6 @@ def get_repo_version(repo_address: str) -> tuple[int, int, int]:
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
-
     nor_repo = contracts.nor_app_repo.address
     simple_dvt_repo = contracts.simple_dvt_app_repo.address
     sandbox_repo = contracts.sandbox_repo.address
@@ -376,13 +378,13 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                 ]
             ),
         ),
-        # (
-        #     "28. Add CS settle EL stealing factory to ET",
-        #      add_evmscript_factory(
-        #         factory=EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY,
-        #         permissions=(create_permissions(contracts.csm, "settleELRewardsStealingPenalty")),
-        #     ),
-        # ),
+        (
+            "28. Add CS settle EL stealing factory to ET",
+            add_evmscript_factory(
+                factory=EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY,
+                permissions=(create_permissions(contracts.csm, "settleELRewardsStealingPenalty")),
+            ),
+        ),
         (
             "29. Revoke STAKING_MODULE_MANAGE_ROLE from agent ${AGENT}",
             agent_forward(
@@ -415,7 +417,7 @@ def main():
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 
-    vote_id, _ = start_vote(tx_params=tx_params, silent=True) # disable IPFS description for Holesky
+    vote_id, _ = start_vote(tx_params=tx_params, silent=True)  # disable IPFS description for Holesky
 
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 

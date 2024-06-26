@@ -24,6 +24,7 @@ from utils.test.event_validators.repo_upgrade import validate_repo_upgrade_event
 from utils.test.event_validators.aragon import validate_app_update_event
 from typing import NamedTuple
 
+
 class StakingModuleItem(NamedTuple):
     id: int
     staking_module_fee: int
@@ -64,7 +65,9 @@ SDVT_MIN_DEPOSIT_BLOCK_DISTANCES = 25
 
 old_nor_uri = "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 nor_uri = "0x697066733a516d54346a64693146684d454b5576575351316877786e33365748394b6a656743755a7441684a6b6368526b7a70"
-old_sdvt_uri = "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+old_sdvt_uri = (
+    "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+)
 sdvt_uri = "0x697066733a516d615353756a484347636e4675657441504777565735426567614d42766e355343736769334c5366767261536f"
 
 CURATED_MODULE_BEFORE_VOTE = {
@@ -139,7 +142,6 @@ OLD_SR_ABI = bi = [
 
 def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     staking_router = contracts.staking_router
-
     sr_proxy = interface.OssifiableProxy(contracts.staking_router)
     locator_proxy = interface.OssifiableProxy(contracts.lido_locator)
     nor_proxy = interface.AppProxyUpgradeable(contracts.node_operators_registry)
@@ -147,7 +149,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     ao_proxy = interface.OssifiableProxy(contracts.accounting_oracle)
     vebo_proxy = interface.ValidatorsExitBusOracle(contracts.validators_exit_bus_oracle)
 
-    assert staking_router.getStakingModulesCount() == 3 # curated + simpledvt + sandbox
+    assert staking_router.getStakingModulesCount() == 3  # curated + simpledvt + sandbox
 
     # Before voting tests
     # locator
@@ -178,12 +180,14 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
     else:
-        tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS, "priority_fee":  get_priority_fee()}
+        tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS, "priority_fee": get_priority_fee()}
         vote_id, _ = start_vote(tx_params, silent=True)
 
     vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
 
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
+
+    assert staking_router.getStakingModulesCount() == 4
 
     # locator
     check_ossifiable_proxy_impl(locator_proxy, LIDO_LOCATOR_IMPL)
@@ -279,13 +283,13 @@ def check_dsm_roles_before_vote():
 
     assert old_dsm_has_pause_role
 
-    # print(contracts.staking_router)
-    # print(contracts.deposit_security_module_v2)
-    # old_dsm_has_resume_role = contracts.staking_router.hasRole(
-    #     STAKING_MODULE_RESUME_ROLE, contracts.deposit_security_module_v2
-    # )
+    print(contracts.staking_router)
+    print(contracts.deposit_security_module_v2)
+    old_dsm_has_resume_role = contracts.staking_router.hasRole(
+        STAKING_MODULE_RESUME_ROLE, contracts.deposit_security_module_v2
+    )
 
-    # assert old_dsm_has_resume_role
+    assert old_dsm_has_resume_role
 
 
 def check_dsm_roles_after_vote():
