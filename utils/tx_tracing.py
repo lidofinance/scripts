@@ -3,7 +3,7 @@
 from typing import Callable, Dict, Optional, List, Annotated, Tuple
 from dataclasses import dataclass
 
-from eth_event import StructLogError, decode_traceTransaction
+from eth_event import StructLogError, decode_traceTransaction, decode_logs
 
 from brownie.network.transaction import TransactionReceipt
 from brownie.network.transaction import _step_internal, _step_external, _step_compare
@@ -17,7 +17,7 @@ from brownie.utils.output import build_tree
 
 @dataclass(eq=True, frozen=True)
 class GroupBy:
-    contract_name: str
+    contract_addresses: List[str]
     event_name: str
     group_title: str
     show_counter: bool
@@ -67,6 +67,21 @@ def _find_fist_index_of_event_with_different_from_first_event_address(events):
         if e.address != first_event_address:
             return idx
     return len(events)
+
+
+def tx_events(tx: TransactionReceipt) -> Optional[List]:
+    try:
+        return tx_events_from_receipt(tx)
+    except:
+        return tx_events_from_trace(tx)
+
+
+def tx_events_from_receipt(tx: TransactionReceipt) -> Optional[List]:
+    if not tx.status:
+        raise "Tx has reverted status (set to 0)"
+
+    events = decode_logs(tx.logs, _topics, allow_undecoded=True)
+    return [format_event(i) for i in events]
 
 
 def tx_events_from_trace(tx: TransactionReceipt) -> Optional[List]:
@@ -122,9 +137,9 @@ def resolve_contract(addr: str) -> str:
         return contract._name
 
 
-def get_event_group(event, contract_name, groups: List[GroupBy]) -> Optional[GroupBy]:
+def get_event_group(event, address, groups: List[GroupBy]) -> Optional[GroupBy]:
     for g in groups:
-        if g.contract_name == contract_name and g.event_name == event.name:
+        if address in g.contract_addresses and g.event_name == event.name:
             return g
     return None
 
@@ -162,7 +177,7 @@ def group_tx_events(
         for event in evs[:idx]:
             event_names.append(event.name)
 
-        current_grp = get_event_group(first_event, contract_name, groups)
+        current_grp = get_event_group(first_event, event.address, groups)
         if current_grp is not None:
             if group_stop_index >= group_start_index:
                 ret.append((prev_grp, EventDict(all_evs[group_start_index : group_stop_index + 1])))

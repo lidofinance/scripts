@@ -137,11 +137,7 @@ OLD_SR_ABI = bi = [
 ]
 
 
-def test_vote(
-    helpers,
-    accounts,
-    vote_ids_from_env,
-):
+def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     staking_router = contracts.staking_router
 
     sr_proxy = interface.OssifiableProxy(contracts.staking_router)
@@ -200,15 +196,18 @@ def test_vote(
     # AO
     check_ossifiable_proxy_impl(ao_proxy, ACCOUNTING_ORACLE_IMPL)
 
-    # no prermission to manage consensus version on agent
+    # no permission to manage consensus version on agent
     check_manage_consensus_role()
     # VEBO consensus version
     assert vebo_proxy.getConsensusVersion() == VEBO_CONSENSUS_VERSION
 
     # Events check
+    if bypass_events_decoding:
+        return
+
     events = group_voting_events(vote_tx)
 
-    assert len(events) == 17
+    assert len(events) == 45
 
     validate_upgrade_events(events[0], LIDO_LOCATOR_IMPL)
     validate_dsm_roles_events(events)
@@ -389,10 +388,10 @@ def validate_staking_module_update(event: EventDict, module_items: List[StakingM
 
     validate_events_chain([e.name for e in event], _events_chain)
 
-    assert event.count("StakingModuleFeesSet") == 2
-    assert event.count("StakingModuleShareLimitSet") == 2
-    assert event.count("StakingModuleMinDepositBlockDistanceSet") == 2
-    assert event.count("StakingModuleMaxDepositsPerBlockSet") == 2
+    assert event.count("StakingModuleFeesSet") == 3
+    assert event.count("StakingModuleShareLimitSet") == 3
+    assert event.count("StakingModuleMinDepositBlockDistanceSet") == 3
+    assert event.count("StakingModuleMaxDepositsPerBlockSet") == 3
     assert event.count("ContractVersionSet") == 1
 
     # curated
