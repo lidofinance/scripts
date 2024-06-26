@@ -1,7 +1,8 @@
 from utils.tx_tracing import *
+from utils.config import VOTING, AGENT, ARAGON_CALLS_SCRIPT
 
 _vote_item_group = GroupBy(
-    contract_name="CallsScript",
+    contract_addresses=[VOTING, AGENT, ARAGON_CALLS_SCRIPT],
     event_name="LogScriptCall",
     group_title="Vote item #",
     show_counter=True,
@@ -9,7 +10,7 @@ _vote_item_group = GroupBy(
 )
 
 _service_item_group = GroupBy(
-    contract_name="Voting",
+    contract_addresses=[VOTING, AGENT],
     event_name="ScriptResult",
     group_title="Service events",
     show_counter=False,
@@ -36,7 +37,7 @@ def display_voting_call_trace(tx: TransactionReceipt) -> None:
 
 
 def count_vote_items_by_events(tx: TransactionReceipt, voting_addr: str) -> int:
-    events = tx_events_from_trace(tx)
+    events = tx_events(tx)
     ev_dict = EventDict(events)
 
     calls_slice = ev_dict["LogScriptCall"]
@@ -44,14 +45,14 @@ def count_vote_items_by_events(tx: TransactionReceipt, voting_addr: str) -> int:
 
 
 def display_voting_events(tx: TransactionReceipt) -> None:
-    dict_events = EventDict(tx_events_from_trace(tx))
+    dict_events = EventDict(tx_events(tx))
     groups = [_vote_item_group, _service_item_group]
 
     display_tx_events(dict_events, "Events registered during the vote execution", groups)
 
 
 def group_voting_events(tx: TransactionReceipt) -> List[EventDict]:
-    events = tx_events_from_trace(tx)
+    events = tx_events(tx)
     groups = [_vote_item_group, _service_item_group]
 
     grouped_events = group_tx_events(events, EventDict(events), groups)
