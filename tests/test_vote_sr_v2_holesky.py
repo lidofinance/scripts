@@ -115,6 +115,26 @@ SDVT_MODULE_AFTER_VOTE.update(
     }
 )
 
+CS_MODULE_NAME = "CommunityStaking"
+CS_STAKE_SHARE_LIMIT = 2000
+CS_PRIORITY_EXIT_SHARE_THRESHOLD = 2500
+CS_STAKING_MODULE_FEE = 800
+CS_TREASURY_FEE = 200
+CS_MAX_DEPOSITS_PER_BLOCK = 30
+CS_MIN_DEPOSIT_BLOCK_DISTANCE = 25
+CS_ORACLE_INITIAL_EPOCH = 58050
+
+CSM_AFTER_VOTE = {
+    "id": 4,
+    "name": CS_MODULE_NAME,
+    "stakingModuleFee": CS_STAKING_MODULE_FEE,
+    "treasuryFee": CS_TREASURY_FEE,
+    "targetShare": CS_STAKE_SHARE_LIMIT,
+    "priorityExitShareThreshold": CS_PRIORITY_EXIT_SHARE_THRESHOLD,
+    "maxDepositsPerBlock": CS_MAX_DEPOSITS_PER_BLOCK,
+    "minDepositBlockDistance": CS_MIN_DEPOSIT_BLOCK_DISTANCE,
+}
+
 OLD_SR_ABI = bi = [
     {
         "inputs": [{"internalType": "uint256", "name": "_stakingModuleId", "type": "uint256"}],
@@ -409,27 +429,12 @@ def validate_staking_module_update(event: EventDict, module_items: List[StakingM
         "StakingModuleFeesSet",
         "StakingModuleMaxDepositsPerBlockSet",
         "StakingModuleMinDepositBlockDistanceSet",
-        "ContractVersionSet",
-    ]
-
-    evs = [
-        "LogScriptCall",
-        "StakingModuleShareLimitSet",
-        "StakingModuleFeesSet",
-        "StakingModuleMaxDepositsPerBlockSet",
-        "StakingModuleMinDepositBlockDistanceSet",
-        "StakingModuleShareLimitSet",
-        "StakingModuleFeesSet",
-        "StakingModuleMaxDepositsPerBlockSet",
-        "StakingModuleMinDepositBlockDistanceSet",
         "StakingModuleShareLimitSet",
         "StakingModuleFeesSet",
         "StakingModuleMaxDepositsPerBlockSet",
         "StakingModuleMinDepositBlockDistanceSet",
         "ContractVersionSet",
     ]
-
-    # print(f"events {[e.name for e in event]}")
 
     validate_events_chain([e.name for e in event], _events_chain)
 
