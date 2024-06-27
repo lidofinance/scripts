@@ -127,12 +127,7 @@ def test_simple_dvt_state(contract):
         assert node_operator["totalVettedValidators"] <= node_operator["totalAddedValidators"]
 
         node_operator_summary = contract.getNodeOperatorSummary(id)
-        if id in exited_node_operators:
-            assert (
-                node_operator_summary["isTargetLimitActive"] is True
-            ), f"isTargetLimitActive is inactive for node {id}"
-        else:
-            assert node_operator_summary["isTargetLimitActive"] is False, f"isTargetLimitActive is active for node {id}"
+        assert node_operator_summary["targetLimitMode"] == (1 if id in exited_node_operators else 0)
         assert node_operator_summary["targetValidatorsCount"] == 0
         # Can be more than 0 in regular protocol operations
         # assert node_operator_summary["stuckValidatorsCount"] == 0
