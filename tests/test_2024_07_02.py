@@ -155,17 +155,21 @@ def fill_sdvt_module_with_keys(evm_script_executor: LocalAccount, keys_total_cou
 
 
 def get_staking_module_remaining_cap(staking_module_id: int) -> int:
-    summary = contracts.staking_router.getStakingModuleSummary(staking_module_id)
-    active_keys = summary["totalDepositedValidators"] - summary["totalExitedValidators"]
+    module_summary = contracts.staking_router.getStakingModuleSummary(staking_module_id)
+    module_active_keys = module_summary["totalDepositedValidators"] - module_summary["totalExitedValidators"]
+
+    all_modules_summary = [
+        contracts.staking_router.getStakingModuleSummary(module_id)
+        for module_id in [NODE_OPERATORS_REGISTRY_ID, SIMPLE_DVT_ID]
+    ]
     total_active_keys = sum(
-        [
-            contracts.staking_router.getStakingModuleSummary(module_id)["totalDepositedValidators"]
-            - contracts.staking_router.getStakingModuleSummary(module_id)["totalExitedValidators"]
-            for module_id in [NODE_OPERATORS_REGISTRY_ID, SIMPLE_DVT_ID]
-        ]
+        module_summary["totalDepositedValidators"] - module_summary["totalExitedValidators"]
+        for module_summary in all_modules_summary
     )
+
     target_share = contracts.staking_router.getStakingModule(staking_module_id)["targetShare"]
-    return math.ceil((target_share * total_active_keys) / TOTAL_BASIS_POINTS) - active_keys
+
+    return math.ceil((target_share * total_active_keys) / TOTAL_BASIS_POINTS) - module_active_keys
 
 
 def get_allocation_percentage(keys_to_allocate: int) -> (float, float):
