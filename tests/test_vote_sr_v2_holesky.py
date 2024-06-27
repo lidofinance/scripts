@@ -11,6 +11,7 @@ from utils.config import (
     SIMPLE_DVT_IMPL,
     ACCOUNTING_ORACLE_IMPL,
     SANDBOX_IMPL,
+    CS_ACCOUNTING_ADDRESS,
 )
 from scripts.holesky.vote_sr_v2_holesky import start_vote
 from utils.config import (
@@ -40,6 +41,9 @@ STAKING_MODULE_UNVETTING_ROLE = "0x240525496a9dc32284b17ce03b43e539e4bd81414634e
 PAUSE_ROLE = "0x00b1e70095ba5bacc3202c3db9faf1f7873186f0ed7b6c84e80c0018dcc6e38e"
 STAKING_MODULE_RESUME_ROLE = "0x9a2f67efb89489040f2c48c3b2c38f719fba1276678d2ced3bd9049fb5edc6b2"
 MANAGE_CONSENSUS_VERSION_ROLE = "0xc31b1e4b732c5173dc51d519dfa432bad95550ecc4b0f9a61c2a558a2a8e4341"
+STAKING_MODULE_MANAGE_ROLE = "0x3105bcbf19d4417b73ae0e58d508a65ecf75665e46c2622d8521732de6080c48"
+REQUEST_BURN_SHARES_ROLE = "0x4be29e0e4eb91f98f709d98803cba271592782e293b84a625e025cbb40197ba8"
+RESUME_ROLE = "0x2fc10cc8ae19568712f7a176fb4978616a610650813c9d05326c34abb62749c7"
 OLD_LOCATOR_IMPL_ADDRESS = "0xDba5Ad530425bb1b14EECD76F1b4a517780de537"
 OLD_SR_IMPL_ADDRESS = "0x32f236423928c2c138f46351d9e5fd26331b1aa4"
 OLD_NOR_IMPL = "0xe0270cf2564d81e02284e16539f59c1b5a4718fe"
@@ -206,6 +210,12 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     # VEBO consensus version
     assert vebo_proxy.getConsensusVersion() == VEBO_CONSENSUS_VERSION - 1
 
+    assert not contracts.burner.hasRole(REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS)
+    assert not contracts.csm.hasRole(RESUME_ROLE, contracts.agent.address)
+
+    # had a role
+    # assert contracts.staking_router.hasRole(STAKING_MODULE_MANAGE_ROLE, contracts.agent.address)
+
     # START VOTE
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
@@ -235,13 +245,18 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     # VEBO consensus version
     assert vebo_proxy.getConsensusVersion() == VEBO_CONSENSUS_VERSION
 
+    assert contracts.burner.hasRole(REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS)
+    assert not contracts.csm.hasRole(RESUME_ROLE, contracts.agent.address)
+
+    assert contracts.csmHashConsensus.getFrameConfig()[0] == CS_ORACLE_INITIAL_EPOCH
+
     # Events check
     if bypass_events_decoding:
         return
 
     events = group_voting_events_from_receipt(vote_tx)
 
-    assert len(events) == 29
+    assert len(events) == 27
 
     validate_upgrade_events(events[0], LIDO_LOCATOR_IMPL)
     validate_dsm_roles_events(events)
@@ -273,7 +288,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
 
     nor_new_app = contracts.nor_app_repo.getLatest()
     assert_repo_update(nor_new_app, nor_old_app, NODE_OPERATORS_REGISTRY_IMPL, nor_uri)
-    print(f"event {events[6]}")
     validate_repo_upgrade_event(events[6], RepoUpgrade(2, nor_new_app[0]))
     validate_app_update_event(events[7], NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL)
     validate_nor_update(events[8], NOR_VERSION)
@@ -304,6 +318,18 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
         events[19], MANAGE_CONSENSUS_VERSION_ROLE, contracts.agent.address, contracts.agent.address
     )
 
+    # 20 - add of staking module
+
+    # validate_module_add(events[20], CSM_AFTER_VOTE)
+    validate_grant_role_event(events[21], REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS, contracts.agent.address)
+    validate_grant_role_event(events[22], RESUME_ROLE, contracts.agent.address, contracts.agent.address)
+
+    validate_resume_event(events[23])
+    validate_revoke_role_event(events[24], RESUME_ROLE, contracts.agent.address, contracts.agent.address)
+    validate_updateInitial_epoch(events[25])
+
+    check_csm()
+
 
 def check_ossifiable_proxy_impl(proxy, expected_impl):
     current_impl_address = proxy.proxy__getImplementation()
@@ -319,9 +345,6 @@ def check_dsm_roles_before_vote():
     old_dsm_has_pause_role = contracts.staking_router.hasRole(PAUSE_ROLE, contracts.deposit_security_module_v2)
 
     assert old_dsm_has_pause_role
-
-    print(contracts.staking_router)
-    print(contracts.deposit_security_module_v2)
     old_dsm_has_resume_role = contracts.staking_router.hasRole(
         STAKING_MODULE_RESUME_ROLE, contracts.deposit_security_module_v2
     )
@@ -386,6 +409,18 @@ def assert_repo_update(new_app, old_app, contract_address, old_content_uri):
     assert new_app[0][0] == old_app[0][0] + 1, "Major version should increment"
     assert old_app[2] == new_app[2], "Content uri should not be changed"
     assert new_app[2] == old_content_uri, "Content uri should match"
+
+
+def check_csm():
+    cs = contracts.staking_router.getStakingModule(4)
+
+    assert cs["name"] == CSM_AFTER_VOTE["name"]
+    assert cs["stakingModuleFee"] == CSM_AFTER_VOTE["stakingModuleFee"]
+    assert cs["treasuryFee"] == CSM_AFTER_VOTE["treasuryFee"]
+    assert cs["stakeShareLimit"] == CSM_AFTER_VOTE["targetShare"]
+    assert cs["priorityExitShareThreshold"] == CSM_AFTER_VOTE["priorityExitShareThreshold"]
+    assert cs["maxDepositsPerBlock"] == CSM_AFTER_VOTE["maxDepositsPerBlock"]
+    assert cs["minDepositBlockDistance"] == CSM_AFTER_VOTE["minDepositBlockDistance"]
 
 
 # Events check
@@ -515,3 +550,28 @@ def validate_vebo_consensus_version_set(event: EventDict):
     _events_chain = ["LogScriptCall", "LogScriptCall", "ConsensusVersionSet", "ScriptResult"]
     validate_events_chain([e.name for e in event], _events_chain)
     assert event["ConsensusVersionSet"]["version"] == VEBO_CONSENSUS_VERSION
+
+
+def validate_resume_event(event: EventDict):
+    _events_chain = ["LogScriptCall", "LogScriptCall", "Resumed", "ScriptResult"]
+    validate_events_chain([e.name for e in event], _events_chain)
+    assert event.count("Resumed") == 1
+
+
+def validate_updateInitial_epoch(event: EventDict):
+    _events_chain = ["LogScriptCall", "LogScriptCall", "FrameConfigSet", "ScriptResult"]
+    validate_events_chain([e.name for e in event], _events_chain)
+    assert event["FrameConfigSet"]["newInitialEpoch"] == CS_ORACLE_INITIAL_EPOCH
+
+
+def validate_module_add(event, csm):
+    _events_chain = [
+        "LogScriptCall",
+        "StakingRouterETHDeposited",
+        "StakingModuleAdded",
+        "StakingModuleFeesSet",
+        "StakingModuleMaxDepositsPerBlockSet",
+        "StakingModuleMinDepositBlockDistanceSet",
+        "ScriptResult",
+    ]
+    validate_events_chain([e.name for e in event], _events_chain)
