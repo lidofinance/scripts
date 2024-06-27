@@ -6,8 +6,7 @@ from utils.config import (
     DEPOSIT_SECURITY_MODULE,
     DSM_GUARDIANS,
     CHAIN_DEPOSIT_CONTRACT,
-    DSM_MAX_DEPOSITS_PER_BLOCK,
-    DSM_MIN_DEPOSIT_BLOCK_DISTANCE,
+    DSM_MAX_OPERATORS_PER_UNVETTING,
     DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS,
     DSM_GUARDIAN_QUORUM,
 )
@@ -29,8 +28,7 @@ def test_links(dsm):
 
 
 def test_deposit_security_module(dsm):
-    assert dsm.getMaxDeposits() == DSM_MAX_DEPOSITS_PER_BLOCK
-    assert dsm.getMinDepositBlockDistance() == DSM_MIN_DEPOSIT_BLOCK_DISTANCE
+    assert dsm.getMaxOperatorsPerUnvetting() == DSM_MAX_OPERATORS_PER_UNVETTING
     assert dsm.getPauseIntentValidityPeriodBlocks() == DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS
 
     assert dsm.getGuardians() == DSM_GUARDIANS
