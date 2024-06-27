@@ -6,6 +6,7 @@ from utils.config import (
     NODE_OPERATORS_REGISTRY,
     NODE_OPERATORS_REGISTRY_IMPL,
     NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
+    NODE_OPERATORS_REGISTRY_VERSION,
     CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
     CURATED_STAKING_MODULE_OPERATORS_COUNT,
     CURATED_STAKING_MODULE_OPERATORS_ACTIVE_COUNT,
@@ -39,7 +40,7 @@ def test_role_keccaks(contract):
 
 
 def test_versioned(contract):
-    assert contract.getContractVersion() == 2
+    assert contract.getContractVersion() == NODE_OPERATORS_REGISTRY_VERSION
 
 
 def test_initialize(contract):
