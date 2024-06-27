@@ -211,7 +211,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
 
     events = group_voting_events_from_receipt(vote_tx)
 
-    assert len(events) == 17
+    assert len(events) == 29
 
     validate_upgrade_events(events[0], LIDO_LOCATOR_IMPL)
     validate_dsm_roles_events(events)
