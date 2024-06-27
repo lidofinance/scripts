@@ -174,7 +174,7 @@ def get_staking_module_remaining_cap(staking_module_id: int) -> int:
 
 def get_allocation_percentage(keys_to_allocate: int) -> (float, float):
     allocation = contracts.staking_router.getDepositsAllocation(keys_to_allocate)
-    total_allocated_after_vote = sum(allocation["allocations"])
-    return (round((allocation["allocations"][0] / total_allocated_after_vote) * TOTAL_BASIS_POINTS) / 100), (
-        round((allocation["allocations"][1] / total_allocated_after_vote) * TOTAL_BASIS_POINTS) / 100
+    total_allocated = sum(allocation["allocations"])
+    return (round((allocation["allocations"][0] / total_allocated) * TOTAL_BASIS_POINTS) / 100), (
+        round((allocation["allocations"][1] / total_allocated) * TOTAL_BASIS_POINTS) / 100
     )
