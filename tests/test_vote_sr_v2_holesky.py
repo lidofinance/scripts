@@ -10,6 +10,7 @@ from utils.config import (
     SIMPLE_DVT_ARAGON_APP_ID,
     SIMPLE_DVT_IMPL,
     ACCOUNTING_ORACLE_IMPL,
+    SANDBOX_IMPL,
 )
 from scripts.holesky.vote_sr_v2_holesky import start_vote
 from utils.config import (
@@ -43,6 +44,7 @@ OLD_LOCATOR_IMPL_ADDRESS = "0xDba5Ad530425bb1b14EECD76F1b4a517780de537"
 OLD_SR_IMPL_ADDRESS = "0x32f236423928c2c138f46351d9e5fd26331b1aa4"
 OLD_NOR_IMPL = "0xe0270cf2564d81e02284e16539f59c1b5a4718fe"
 OLD_SDVT_IMPL = "0xe0270cf2564d81e02284e16539f59c1b5a4718fe"
+OLD_SANDBOX_IMPL = "0xe0270cf2564d81e02284e16539f59c1b5a4718fe"
 OLD_ACCOUNTING_ORACLE_IMPL = "0x6aca050709469f1f98d8f40f68b1c83b533cd2b2"
 CURATED_MODULE_ID = 1
 SIMPLE_DVT_MODULE_ID = 2
@@ -70,6 +72,7 @@ old_sdvt_uri = (
     "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 )
 sdvt_uri = "0x697066733a516d615353756a484347636e4675657441504777565735426567614d42766e355343736769334c5366767261536f"
+sandbox_uri = "0x697066733a516d5839414675394e456d76704b634336747a4a79684543316b7276344a5a72695767473951634d6e6e657a5165"
 
 CURATED_MODULE_BEFORE_VOTE = {
     "id": 1,
@@ -147,6 +150,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     locator_proxy = interface.OssifiableProxy(contracts.lido_locator)
     nor_proxy = interface.AppProxyUpgradeable(contracts.node_operators_registry)
     sdvt_proxy = interface.AppProxyUpgradeable(contracts.simple_dvt)
+    sandbox_proxy = interface.AppProxyUpgradeable(contracts.sandbox)
     ao_proxy = interface.OssifiableProxy(contracts.accounting_oracle)
     vebo_proxy = interface.ValidatorsExitBusOracle(contracts.validators_exit_bus_oracle)
 
@@ -169,6 +173,11 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     sdvt_old_app = contracts.simple_dvt_app_repo.getLatest()
     assert sdvt_proxy.implementation() == OLD_SDVT_IMPL
     assert_repo_before_vote(sdvt_old_app, 1, OLD_SDVT_IMPL, sdvt_uri)
+    # Sanbox
+
+    sandbox_old_app = contracts.sandbox_repo.getLatest()
+    assert sandbox_proxy.implementation() == OLD_SANDBOX_IMPL
+    assert_repo_before_vote(sandbox_old_app, 1, OLD_SDVT_IMPL, sandbox_uri)
     # AO
     check_ossifiable_proxy_impl(ao_proxy, OLD_ACCOUNTING_ORACLE_IMPL)
     # no prermission to manage consensus version on agent
@@ -255,22 +264,25 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     validate_app_update_event(events[10], SIMPLE_DVT_ARAGON_APP_ID, SIMPLE_DVT_IMPL)
     validate_nor_update(events[11], SDVT_VERSION)
 
-    # print(f"events {events[12]}")
+    sandbox_new_app = contracts.sandbox_repo.getLatest()
+    assert_repo_update(sandbox_new_app, sandbox_old_app, SANDBOX_IMPL, sandbox_uri)
+    validate_repo_upgrade_event(events[12], RepoUpgrade(2, sandbox_new_app[0]))
+    # validate_app_update_event(events[13], SANDBOX_DVT_ARAGON_APP_ID, SANDBOX_DVT_IMPL)
+    # validate_nor_update(events[14], SANDBOX_VERSION)
 
-    # assert False
     # AO
-    # validate_upgrade_events(events[12], ACCOUNTING_ORACLE_IMPL)
-    # validate_ao_update(events[13], AO_VERSION, AO_CONSENSUS_VERSION)
+    validate_upgrade_events(events[15], ACCOUNTING_ORACLE_IMPL)
+    validate_ao_update(events[16], AO_VERSION, AO_CONSENSUS_VERSION)
 
-    # validate_grant_role_event(
-    #     events[14], MANAGE_CONSENSUS_VERSION_ROLE, contracts.agent.address, contracts.agent.address
-    # )
+    validate_grant_role_event(
+        events[17], MANAGE_CONSENSUS_VERSION_ROLE, contracts.agent.address, contracts.agent.address
+    )
 
-    # validate_vebo_consensus_version_set(events[15])
+    validate_vebo_consensus_version_set(events[18])
 
-    # validate_revoke_role_event(
-    #     events[16], MANAGE_CONSENSUS_VERSION_ROLE, contracts.agent.address, contracts.agent.address
-    # )
+    validate_revoke_role_event(
+        events[19], MANAGE_CONSENSUS_VERSION_ROLE, contracts.agent.address, contracts.agent.address
+    )
 
 
 def check_ossifiable_proxy_impl(proxy, expected_impl):
