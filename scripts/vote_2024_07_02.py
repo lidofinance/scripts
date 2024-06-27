@@ -32,8 +32,8 @@ This vote follows a decisions made on snapshots:
 
 The proposed actions include:
 
-1. Expand SimpleDVT share from 0.5% to 4%.  Item 1.
-2. Transfer 180K LDO to PML multisig to do payments for Hasu. Items 2.
+1. Expand SimpleDVT share from 0.5% to 4%. Item 1.
+2. Transfer 180K LDO to PML multisig to do payments for Hasu. Item 2.
 """
 
 # Values

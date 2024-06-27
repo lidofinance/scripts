@@ -26,12 +26,13 @@ SIMPLE_DVT_ID = 2
 agent_addr = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 expected_sdvt_module = StakingModuleItem(
     id=SIMPLE_DVT_ID,
-    address="0x7c40c393DC0f283F318791d746d894DdD3693572",
     name="Simple DVT Module",
+    address=None,
     target_share=400,
     module_fee=800,
     treasury_fee=200,
 )
+
 expected_payout = Payout(
     token_addr="0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32",
     from_addr=agent_addr,
@@ -47,8 +48,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
 
     agent_ldo_before = ldo_token.balanceOf(agent_addr)
     pml_balance_before = ldo_token.balanceOf(expected_payout.to_addr)
-    sdvtModuleShareBefore = contracts.staking_router.getStakingModule(expected_sdvt_module.id)["targetShare"]
-    assert sdvtModuleShareBefore == 50, "Simple DVT Module target share must be 0.5% before vote"
+    sdvt_module_before = contracts.staking_router.getStakingModule(SIMPLE_DVT_ID)
+    assert sdvt_module_before["targetShare"] == 50, "Simple DVT Module target share must be 0.5% before vote"
 
     with chain_snapshot():
         # START VOTE
@@ -62,11 +63,15 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
         if not bypass_events_decoding:
             assert count_vote_items_by_events(tx, dao_voting) == 2, "Incorrect voting items count"
 
-        # Check Simple DVT Module target share
-        sdvtModule = contracts.staking_router.getStakingModule(expected_sdvt_module.id)
+        # Check that Simple DVT Module target share changed correctly
+        sdvt_module_after = contracts.staking_router.getStakingModule(SIMPLE_DVT_ID)
         assert (
-            sdvtModule["targetShare"] == expected_sdvt_module.target_share
+            sdvt_module_after["targetShare"] == expected_sdvt_module.target_share
         ), "Simple DVT Module target share must be updated correctly"
+
+        # Check that other values left unchanged
+        assert sdvt_module_after["stakingModuleFee"] == sdvt_module_before["stakingModuleFee"]
+        assert sdvt_module_after["treasuryFee"] == sdvt_module_before["treasuryFee"]
 
         # Check LDO payment
         assert (
@@ -94,7 +99,7 @@ def test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_f
     check_alloc_keys = sdvt_remaining_cap_before
 
     with chain_snapshot():
-        # Fill the module with keys. Keep last nop_id to add more keys to oter node operators later
+        # Fill the module with keys. Keep last nop_id to add more keys to other node operators later
         last_nop_id = fill_sdvt_module_with_keys(
             evm_script_executor=evm_script_executor, keys_total_count=sdvt_remaining_cap_before
         )
@@ -164,12 +169,8 @@ def get_staking_module_remaining_cap(staking_module_id: int) -> int:
 
 
 def get_allocation_percentage(keys_to_allocate: int) -> (float, float):
-    allocation_from_contract_after_vote = contracts.staking_router.getDepositsAllocation(keys_to_allocate)
-    total_allocated_after_vote = sum(allocation_from_contract_after_vote["allocations"])
-    return (
-        round((allocation_from_contract_after_vote["allocations"][0] / total_allocated_after_vote) * TOTAL_BASIS_POINTS)
-        / 100
-    ), (
-        round((allocation_from_contract_after_vote["allocations"][1] / total_allocated_after_vote) * TOTAL_BASIS_POINTS)
-        / 100
+    allocation = contracts.staking_router.getDepositsAllocation(keys_to_allocate)
+    total_allocated_after_vote = sum(allocation["allocations"])
+    return (round((allocation["allocations"][0] / total_allocated_after_vote) * TOTAL_BASIS_POINTS) / 100), (
+        round((allocation["allocations"][1] / total_allocated_after_vote) * TOTAL_BASIS_POINTS) / 100
     )

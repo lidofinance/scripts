@@ -9,7 +9,7 @@ from .common import validate_events_chain
 
 class StakingModuleItem(NamedTuple):
     id: int
-    address: str
+    address: str | None
     name: str
     target_share: int
     module_fee: int
