@@ -17,7 +17,7 @@ from utils.config import (
 )
 
 # Source of truth: https://hackmd.io/pdix1r4yR46fXUqiHaNKyw?view
-report_limits = {
+expected_report_limits = {
     "exitedValidatorsPerDayLimit": EXITED_VALIDATORS_PER_DAY_LIMIT,
     "oneOffCLBalanceDecreaseBPLimit": ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT,
     "annualBalanceIncreaseBPLimit": ANNUAL_BALANCE_INCREASE_BP_LIMIT,
@@ -41,6 +41,7 @@ def test_links(contract):
 
 
 def test_limits(contract):
-    assert contract.getMaxPositiveTokenRebase() == report_limits["maxPositiveTokenRebase"]
+    assert contract.getMaxPositiveTokenRebase() == expected_report_limits["maxPositiveTokenRebase"]
+    limits =  contract.getOracleReportLimits()
 
-    assert dict(zip(report_limits.keys(), contract.getOracleReportLimits())) == report_limits
+    assert dict(zip(expected_report_limits.keys(), limits)) == expected_report_limits
