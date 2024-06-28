@@ -1,6 +1,7 @@
 import pytest
 from brownie import ZERO_ADDRESS, interface, web3, reverts  # type: ignore
 
+from configs.config_mainnet import SIMPLE_DVT_VERSION
 from utils.config import (
     contracts,
     SIMPLE_DVT,
@@ -53,7 +54,7 @@ def test_role_keccaks(contract):
 
 
 def test_versioned(contract):
-    assert contract.getContractVersion() == 2
+    assert contract.getContractVersion() == SIMPLE_DVT_VERSION
 
 
 def test_initialize(contract):
