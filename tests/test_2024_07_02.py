@@ -38,7 +38,7 @@ expected_payout = Payout(
     from_addr=agent_addr,
     to_addr="0x17F6b2C738a63a8D3A113a228cfd0b373244633D",
     # https://docs.lido.fi/multisigs/lido-contributors-group#41-pool-maintenance-labs-ltd-pml
-    amount=96_666.62 * (10**18),  # 180K LDO in wei,
+    amount=96_666.62 * (10**18),  # 96666.62 LDO in wei,
 )
 
 
@@ -113,7 +113,7 @@ def test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_f
             evm_script_executor=evm_script_executor, keys_total_count=200, start_nop_id=last_nop_id - 1
         )
 
-        _, sdvt_allocation_percentage_after = get_allocation_percentage(check_alloc_keys)
+        _, sdvt_allocation_percentage_after = get_allocation_percentage(check_alloc_keys + 200)
 
         assert (
             sdvt_allocation_percentage_after == sdvt_allocation_percentage_after_filling

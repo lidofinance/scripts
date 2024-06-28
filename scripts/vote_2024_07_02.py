@@ -37,7 +37,7 @@ payout = Payout(
     token_addr=LDO_TOKEN,
     from_addr=AGENT,
     to_addr="0x17F6b2C738a63a8D3A113a228cfd0b373244633D",  # https://docs.lido.fi/multisigs/lido-contributors-group#41-pool-maintenance-labs-ltd-pml
-    amount=96_666.62 * (10**18),  # 96666.62 LDO in wei,
+    amount=96_66662 * (10**16),  # 96666.62 LDO in wei,
 )
 
 
