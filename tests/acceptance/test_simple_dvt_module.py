@@ -1,11 +1,11 @@
 import pytest
 from brownie import ZERO_ADDRESS, interface, web3, reverts  # type: ignore
 
-from configs.config_mainnet import SIMPLE_DVT_VERSION
 from utils.config import (
     contracts,
     SIMPLE_DVT,
     SIMPLE_DVT_IMPL,
+    SIMPLE_DVT_VERSION,
     SIMPLE_DVT_ARAGON_APP_ID,
     SIMPLE_DVT_MODULE_STUCK_PENALTY_DELAY,
     SIMPLE_DVT_MODULE_TYPE,

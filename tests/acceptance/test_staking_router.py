@@ -5,6 +5,7 @@ from utils.config import (
     contracts,
     STAKING_ROUTER,
     STAKING_ROUTER_IMPL,
+    STAKING_ROUTER_VERSION,
     CHAIN_DEPOSIT_CONTRACT,
     WITHDRAWAL_VAULT,
     SR_MODULES_FEE_BP,
@@ -44,7 +45,7 @@ def test_links(contract):
 
 
 def test_versioned(contract):
-    assert contract.getContractVersion() == 1
+    assert contract.getContractVersion() == STAKING_ROUTER_VERSION
 
 
 def test_initialize(contract):

@@ -256,6 +256,7 @@ EIP712_STETH = "0x8F73e4C2A6D852bb4ab2A45E6a9CF5715b3228B7"
 # StakingRouter
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
 STAKING_ROUTER_IMPL = "0xD8784e748f59Ba711fB5643191Ec3fAdD50Fb6df"  # set address here after SR V2 deploy
+STAKING_ROUTER_VERSION = 2
 
 # Not a precise but still some estimation of the fees. Assume here that both modules are filled
 # SR_MODULES_FEE = curated_module_fee * (100% - sdvt_module_share) + sdvt_module_fee * sdvt_module_share
