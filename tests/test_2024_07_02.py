@@ -38,7 +38,7 @@ expected_payout = Payout(
     from_addr=agent_addr,
     to_addr="0x17F6b2C738a63a8D3A113a228cfd0b373244633D",
     # https://docs.lido.fi/multisigs/lido-contributors-group#41-pool-maintenance-labs-ltd-pml
-    amount=180_000 * (10**18),  # 180K LDO in wei,
+    amount=96_666.62 * (10**18),  # 180K LDO in wei,
 )
 
 

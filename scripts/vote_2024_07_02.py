@@ -2,7 +2,7 @@
 Voting 02/07/2024.
 
 1. Set targetShare = 400 (4%) for Simple DVT Module
-2. Transfer 180,000 LDO from Treasury to PML multisig (0x17F6b2C738a63a8D3A113a228cfd0b373244633D)
+2. Transfer 96,666.62 LDO from Treasury to PML multisig (0x17F6b2C738a63a8D3A113a228cfd0b373244633D)
 """
 
 import time
@@ -26,14 +26,9 @@ from utils.config import (
 )
 
 description = """
-This vote follows a decisions made on snapshots:
- 1. [Expanding the Simple DVT Module](https://snapshot.org/#/lido-snapshot.eth/proposal/0xaca2da3c932542e030db8bf5b6e4420bf4aa98bd57bd62b9b8008a4b7398abb2).
- 2. [Vote for Hasu to join Lido as Strategic Advisor](https://snapshot.org/#/lido-snapshot.eth/proposal/0x84fe09312756471dd040e3cdaba112e822a2ae3dcf58ab8993e389e1b75e0831).
+1. **Expanding the Simple DVT Module:** Increase the Simple DVT module's staking share limit from 0.5% to 4%, as decided in the [Snapshot vote](https://snapshot.org/#/lido-snapshot.eth/proposal/0xaca2da3c932542e030db8bf5b6e4420bf4aa98bd57bd62b9b8008a4b7398abb2).
 
-The proposed actions include:
-
-1. Expand SimpleDVT share from 0.5% to 4%. Item 1.
-2. Transfer 180K LDO to PML multisig to do payments for Hasu. Item 2.
+2. **Lido Contributors Group Funding:** Transfer 96,666.62 LDO within the [[EGG] st2024 v1 Grant Funding](https://snapshot.org/#/lido-snapshot.eth/proposal/0x41a47f0735b7aca8c1e7f93fae86a82f5c3fac8796657d2e95e63b1aa6d09c52) to the [PML multisig](https://app.safe.global/settings/setup?safe=eth:0x17F6b2C738a63a8D3A113a228cfd0b373244633D), as requested [on the forum](https://research.lido.fi/t/egg-st2024-v1-lido-contributors-group-request-for-grant-funding-to-advance-goose-goals/6054/19).
 """
 
 # Values
@@ -42,7 +37,7 @@ payout = Payout(
     token_addr=LDO_TOKEN,
     from_addr=AGENT,
     to_addr="0x17F6b2C738a63a8D3A113a228cfd0b373244633D",  # https://docs.lido.fi/multisigs/lido-contributors-group#41-pool-maintenance-labs-ltd-pml
-    amount=180_000 * (10**18),  # 180K LDO in wei,
+    amount=96_666.62 * (10**18),  # 96666.62 LDO in wei,
 )
 
 
@@ -70,14 +65,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         #
-        # II. Transfer 180,000 LDO from Treasury to PML multisig
+        # II. Transfer 96,666.62 LDO from Treasury to PML multisig
         #
         (
-            "2) Transfer 180,000 LDO from Treasury to PML multisig",
+            "2) Transfer 96,666.62 LDO from Treasury to PML multisig",
             make_ldo_payout(
                 target_address=payout.to_addr,
                 ldo_in_wei=payout.amount,
-                reference="Transfer 180,000 LDO from Treasury to PML multisig",
+                reference="Transfer 96,666.62 LDO from Treasury to PML multisig",
             ),
         ),
     )
