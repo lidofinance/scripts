@@ -163,6 +163,9 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         {"from": impersonated_voting},
     )
 
+    # remove staking limit to avoid STAKE_LIMIT error
+    contracts.lido.removeStakingLimit({"from": impersonated_voting})
+
     contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale, "amount": ETH(150_000)})
 
     print("Reset staking limit for all OPs...")
