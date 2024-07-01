@@ -8,7 +8,6 @@ from brownie.network.account import LocalAccount
 
 from scripts.vote_2024_07_02 import start_vote
 from utils.config import contracts
-from utils.mainnet_fork import chain_snapshot
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
 from utils.test.simple_dvt_helpers import simple_dvt_add_keys
@@ -38,7 +37,7 @@ expected_payout = Payout(
     from_addr=agent_addr,
     to_addr="0x17F6b2C738a63a8D3A113a228cfd0b373244633D",
     # https://docs.lido.fi/multisigs/lido-contributors-group#41-pool-maintenance-labs-ltd-pml
-    amount=96_666.62 * (10**18),  # 96666.62 LDO in wei,
+    amount=96_666_62 * (10**16),  # 96,666.62 LDO in wei,
 )
 
 
@@ -51,45 +50,44 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
     sdvt_module_before = contracts.staking_router.getStakingModule(SIMPLE_DVT_ID)
     assert sdvt_module_before["targetShare"] == 50, "Simple DVT Module target share must be 0.5% before vote"
 
-    with chain_snapshot():
-        # START VOTE
-        vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
+    # START VOTE
+    vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
 
-        tx: TransactionReceipt = helpers.execute_vote(
-            vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24
-        )
+    tx: TransactionReceipt = helpers.execute_vote(
+        vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24
+    )
 
-        # Validate vote events
-        if not bypass_events_decoding:
-            assert count_vote_items_by_events(tx, dao_voting) == 2, "Incorrect voting items count"
+    # Validate vote events
+    if not bypass_events_decoding:
+        assert count_vote_items_by_events(tx, dao_voting) == 2, "Incorrect voting items count"
 
-        # Check that Simple DVT Module target share changed correctly
-        sdvt_module_after = contracts.staking_router.getStakingModule(SIMPLE_DVT_ID)
-        assert (
-            sdvt_module_after["targetShare"] == expected_sdvt_module.target_share
-        ), "Simple DVT Module target share must be updated correctly"
+    # Check that Simple DVT Module target share changed correctly
+    sdvt_module_after = contracts.staking_router.getStakingModule(SIMPLE_DVT_ID)
+    assert (
+        sdvt_module_after["targetShare"] == expected_sdvt_module.target_share
+    ), "Simple DVT Module target share must be updated correctly"
 
-        # Check that other values left unchanged
-        assert sdvt_module_after["stakingModuleFee"] == sdvt_module_before["stakingModuleFee"]
-        assert sdvt_module_after["treasuryFee"] == sdvt_module_before["treasuryFee"]
+    # Check that other values left unchanged
+    assert sdvt_module_after["stakingModuleFee"] == sdvt_module_before["stakingModuleFee"]
+    assert sdvt_module_after["treasuryFee"] == sdvt_module_before["treasuryFee"]
 
-        # Check LDO payment
-        assert (
-            ldo_token.balanceOf(agent_addr) == agent_ldo_before - expected_payout.amount
-        ), "DAO Agent LDO balance must decrease by the correct amount"
-        assert (
-            ldo_token.balanceOf(expected_payout.to_addr) == pml_balance_before + expected_payout.amount
-        ), "Destination address LDO balance must increase by the correct amount"
+    # Check LDO payment
+    assert (
+        ldo_token.balanceOf(agent_addr) == agent_ldo_before - expected_payout.amount
+    ), "DAO Agent LDO balance must decrease by the correct amount"
+    assert (
+        ldo_token.balanceOf(expected_payout.to_addr) == pml_balance_before + expected_payout.amount
+    ), "Destination address LDO balance must increase by the correct amount"
 
-        # Check events if their decoding is available
-        if bypass_events_decoding:
-            return
+    # Check events if their decoding is available
+    if bypass_events_decoding:
+        return
 
-        display_voting_events(tx)
+    display_voting_events(tx)
 
-        evs = group_voting_events(tx)
-        validate_staking_module_update_event(evs[0], expected_sdvt_module)
-        validate_token_payout_event(evs[1], expected_payout)
+    evs = group_voting_events(tx)
+    validate_staking_module_update_event(evs[0], expected_sdvt_module)
+    validate_token_payout_event(evs[1], expected_payout)
 
 
 def test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_from_env):
@@ -97,47 +95,42 @@ def test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_f
     sdvt_remaining_cap_before: int = get_staking_module_remaining_cap(SIMPLE_DVT_ID)
     check_alloc_keys = sdvt_remaining_cap_before
 
-    with chain_snapshot():
-        # Fill the module with keys. Keep last nop_id to add more keys to other node operators later
-        last_nop_id = fill_sdvt_module_with_keys(
-            evm_script_executor=evm_script_executor, total_keys=sdvt_remaining_cap_before
-        )
+    # Fill the module with keys. Keep last nop_id to add more keys to other node operators later
+    last_nop_id = fill_sdvt_module_with_keys(
+        evm_script_executor=evm_script_executor, total_keys=sdvt_remaining_cap_before
+    )
 
-        _, sdvt_allocation_percentage_after_filling = get_allocation_percentage(check_alloc_keys)
+    _, sdvt_allocation_percentage_after_filling = get_allocation_percentage(check_alloc_keys)
 
-        assert sdvt_allocation_percentage_after_filling == 0.5  # 0.5% of total allocated keys — current target share
+    assert sdvt_allocation_percentage_after_filling == 0.5  # 0.5% of total allocated keys — current target share
 
-        # add more keys to the module to check that percentage wasn't changed
-        last_nop_id = fill_sdvt_module_with_keys(
-            evm_script_executor=evm_script_executor, total_keys=200, start_nop_id=last_nop_id - 1
-        )
+    # add more keys to the module to check that percentage wasn't changed
+    last_nop_id = fill_sdvt_module_with_keys(
+        evm_script_executor=evm_script_executor, total_keys=200, start_nop_id=last_nop_id - 1
+    )
 
-        _, sdvt_allocation_percentage_after = get_allocation_percentage(check_alloc_keys + 200)
+    _, sdvt_allocation_percentage_after = get_allocation_percentage(check_alloc_keys + 200)
 
-        assert (
-            sdvt_allocation_percentage_after == sdvt_allocation_percentage_after_filling
-        )  # share percentage should not change after second filling
+    assert (
+        sdvt_allocation_percentage_after == sdvt_allocation_percentage_after_filling
+    )  # share percentage should not change after second filling
 
-        # VOTE!
-        vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
-        helpers.execute_vote(
-            vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting, skip_time=3 * 60 * 60 * 24
-        )
+    # VOTE!
+    vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
+    helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting, skip_time=3 * 60 * 60 * 24)
 
-        # add more keys to the module
-        fill_sdvt_module_with_keys(
-            evm_script_executor=evm_script_executor, total_keys=300, start_nop_id=last_nop_id - 1
-        )
+    # add more keys to the module
+    fill_sdvt_module_with_keys(evm_script_executor=evm_script_executor, total_keys=300, start_nop_id=last_nop_id - 1)
 
-        sdvt_remaining_cap_after_vote = get_staking_module_remaining_cap(SIMPLE_DVT_ID)
+    sdvt_remaining_cap_after_vote = get_staking_module_remaining_cap(SIMPLE_DVT_ID)
 
-        assert sdvt_remaining_cap_after_vote > sdvt_remaining_cap_before  # remaining cap should increase after the vote
+    assert sdvt_remaining_cap_after_vote > sdvt_remaining_cap_before  # remaining cap should increase after the vote
 
-        _, sdvt_allocation_percentage_after_vote = get_allocation_percentage(sdvt_remaining_cap_after_vote)
+    _, sdvt_allocation_percentage_after_vote = get_allocation_percentage(sdvt_remaining_cap_after_vote)
 
-        assert (
-            sdvt_allocation_percentage_after_vote > sdvt_allocation_percentage_after_filling
-        )  # allocation percentage should increase after the vote
+    assert (
+        sdvt_allocation_percentage_after_vote > sdvt_allocation_percentage_after_filling
+    )  # allocation percentage should increase after the vote
 
 
 def test_sdvt_stake_allocation(accounts, helpers, ldo_holder, vote_ids_from_env):
@@ -147,44 +140,40 @@ def test_sdvt_stake_allocation(accounts, helpers, ldo_holder, vote_ids_from_env)
     fill_deposit_buffer(200)
     new_sdvt_keys_amount = 60
 
-    with chain_snapshot():
-        # VOTE!
-        vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
-        helpers.execute_vote(
-            vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting, skip_time=3 * 60 * 60 * 24
-        )
+    # VOTE!
+    vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
+    helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting, skip_time=3 * 60 * 60 * 24)
 
-        # No new keys in the SDVT module
-        contracts.lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": contracts.deposit_security_module})
-        contracts.lido.deposit(100, SIMPLE_DVT_ID, "0x0", {"from": contracts.deposit_security_module})
-        nor_module_stats_after_vote = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
-        sdvt_module_stats_after_vote = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
+    # No new keys in the SDVT module
+    contracts.lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": contracts.deposit_security_module})
+    contracts.lido.deposit(100, SIMPLE_DVT_ID, "0x0", {"from": contracts.deposit_security_module})
+    nor_module_stats_after_vote = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
+    sdvt_module_stats_after_vote = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
 
-        assert (
-            sdvt_module_stats_after_vote["totalDepositedValidators"]
-            == sdvt_module_stats_before["totalDepositedValidators"]
-        ), "No new keys should go to the SDVT module"
-        assert (
-            nor_module_stats_after_vote["totalDepositedValidators"]
-            == nor_module_stats_before["totalDepositedValidators"] + 100
-        ), "All keys should go to the NOR module"
+    assert (
+        sdvt_module_stats_after_vote["totalDepositedValidators"] == sdvt_module_stats_before["totalDepositedValidators"]
+    ), "No new keys should go to the SDVT module"
+    assert (
+        nor_module_stats_after_vote["totalDepositedValidators"]
+        == nor_module_stats_before["totalDepositedValidators"] + 100
+    ), "All keys should go to the NOR module"
 
-        # Add new keys to the SDVT module
-        fill_sdvt_module_with_keys(evm_script_executor=evm_script_executor, total_keys=new_sdvt_keys_amount)
+    # Add new keys to the SDVT module
+    fill_sdvt_module_with_keys(evm_script_executor=evm_script_executor, total_keys=new_sdvt_keys_amount)
 
-        contracts.lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": contracts.deposit_security_module})
-        contracts.lido.deposit(100, SIMPLE_DVT_ID, "0x0", {"from": contracts.deposit_security_module})
-        nor_module_stats_after = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
-        sdvt_module_stats_after = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
+    contracts.lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": contracts.deposit_security_module})
+    contracts.lido.deposit(100, SIMPLE_DVT_ID, "0x0", {"from": contracts.deposit_security_module})
+    nor_module_stats_after = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
+    sdvt_module_stats_after = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
 
-        assert sdvt_module_stats_after["depositableValidatorsCount"] == 0, "All accessible keys should be deposited"
-        assert (
-            sdvt_module_stats_after["totalDepositedValidators"]
-            == sdvt_module_stats_after_vote["totalDepositedValidators"] + new_sdvt_keys_amount
-        ), f"{new_sdvt_keys_amount} keys should go to the SDVT module"
-        assert nor_module_stats_after["totalDepositedValidators"] == nor_module_stats_after_vote[
-            "totalDepositedValidators"
-        ] + (100 - new_sdvt_keys_amount), "All other keys should go to the NOR module"
+    assert sdvt_module_stats_after["depositableValidatorsCount"] == 0, "All accessible keys should be deposited"
+    assert (
+        sdvt_module_stats_after["totalDepositedValidators"]
+        == sdvt_module_stats_after_vote["totalDepositedValidators"] + new_sdvt_keys_amount
+    ), f"{new_sdvt_keys_amount} keys should go to the SDVT module"
+    assert nor_module_stats_after["totalDepositedValidators"] == nor_module_stats_after_vote[
+        "totalDepositedValidators"
+    ] + (100 - new_sdvt_keys_amount), "All other keys should go to the NOR module"
 
 
 def fill_sdvt_module_with_keys(evm_script_executor: LocalAccount, total_keys: int, start_nop_id: int = 0) -> int:
