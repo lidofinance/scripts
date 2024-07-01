@@ -9,6 +9,7 @@ from brownie import chain, interface, web3
 from brownie.network import state
 from brownie.network.contract import Contract
 
+from utils.balance import set_balance
 from utils.evm_script import EMPTY_CALLSCRIPT
 
 from utils.config import contracts, network_name, MAINNET_VOTE_DURATION
@@ -46,22 +47,8 @@ def ldo_holder(accounts):
 
 
 @pytest.fixture(scope="function")
-def stranger(accounts):
-    stranger = accounts.at("0x98eC059dC3aDFbdd63429454aeB0C990fbA4a124", force=True)
-    if(stranger.balance() != ETH(100000)):
-        # try Ganache
-        try:
-            web3.provider.make_request("evm_setAccountBalance", [stranger.address, "0x152D02C7E14AF6800000"])
-        except:
-            pass
-    if(stranger.balance() != ETH(100000)):
-        # try Anvil
-        try:
-            web3.provider.make_request("anvil_setBalance", [stranger.address, "0x152D02C7E14AF6800000"])
-        except:
-            pass
-    assert stranger.balance() == ETH(100000)
-    return stranger
+def stranger():
+    return set_balance("0x98eC059dC3aDFbdd63429454aeB0C990fbA4a124", 100000)
 
 
 @pytest.fixture(scope="module")
