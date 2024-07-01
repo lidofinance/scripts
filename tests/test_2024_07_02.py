@@ -153,9 +153,10 @@ def test_sdvt_stake_allocation(accounts, helpers, ldo_holder, vote_ids_from_env)
         helpers.execute_vote(
             vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting, skip_time=3 * 60 * 60 * 24
         )
+
+        # No new keys in the SDVT module
         contracts.lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": contracts.deposit_security_module})
         contracts.lido.deposit(100, SIMPLE_DVT_ID, "0x0", {"from": contracts.deposit_security_module})
-
         nor_module_stats_after_vote = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
         sdvt_module_stats_after_vote = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
 
@@ -167,12 +168,12 @@ def test_sdvt_stake_allocation(accounts, helpers, ldo_holder, vote_ids_from_env)
             nor_module_stats_after_vote["totalDepositedValidators"]
             == nor_module_stats_before["totalDepositedValidators"] + 100
         ), "All keys should go to the NOR module"
-        # Deposit without new keys in the SDVT module
 
+        # Add new keys to the SDVT module
         fill_sdvt_module_with_keys(evm_script_executor=evm_script_executor, total_keys=new_sdvt_keys_amount)
+
         contracts.lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": contracts.deposit_security_module})
         contracts.lido.deposit(100, SIMPLE_DVT_ID, "0x0", {"from": contracts.deposit_security_module})
-
         nor_module_stats_after = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
         sdvt_module_stats_after = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
 
@@ -180,7 +181,7 @@ def test_sdvt_stake_allocation(accounts, helpers, ldo_holder, vote_ids_from_env)
         assert (
             sdvt_module_stats_after["totalDepositedValidators"]
             == sdvt_module_stats_after_vote["totalDepositedValidators"] + new_sdvt_keys_amount
-        ), "60 keys should go to the SDVT module"
+        ), f"{new_sdvt_keys_amount} keys should go to the SDVT module"
         assert nor_module_stats_after["totalDepositedValidators"] == nor_module_stats_after_vote[
             "totalDepositedValidators"
         ] + (100 - new_sdvt_keys_amount), "All other keys should go to the NOR module"
