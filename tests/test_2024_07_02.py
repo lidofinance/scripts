@@ -4,7 +4,6 @@ Tests for voting 24/01/2023.
 
 import math
 
-from brownie import Contract
 from brownie.network.account import LocalAccount
 
 from scripts.vote_2024_07_02 import start_vote
@@ -12,7 +11,6 @@ from utils.config import contracts
 from utils.mainnet_fork import chain_snapshot
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
-from utils.test.helpers import ETH
 from utils.test.simple_dvt_helpers import simple_dvt_add_keys
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.payout import (
@@ -94,8 +92,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
         validate_token_payout_event(evs[1], expected_payout)
 
 
-def test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_from_env, eth_whale, stranger):
-    dao_voting: Contract = contracts.voting
+def test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_from_env):
     evm_script_executor: LocalAccount = accounts.at(contracts.easy_track.evmScriptExecutor(), force=True)
     sdvt_remaining_cap_before: int = get_staking_module_remaining_cap(SIMPLE_DVT_ID)
     check_alloc_keys = sdvt_remaining_cap_before
@@ -123,7 +120,9 @@ def test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_f
 
         # VOTE!
         vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
-        helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=dao_voting, skip_time=3 * 60 * 60 * 24)
+        helpers.execute_vote(
+            vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting, skip_time=3 * 60 * 60 * 24
+        )
 
         # add more keys to the module
         fill_sdvt_module_with_keys(
@@ -141,7 +140,7 @@ def test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_f
         )  # allocation percentage should increase after the vote
 
 
-def test_sdvt_stake_allocation(accounts, helpers, ldo_holder, vote_ids_from_env, eth_whale, stranger):
+def test_sdvt_stake_allocation(accounts, helpers, ldo_holder, vote_ids_from_env):
     evm_script_executor: LocalAccount = accounts.at(contracts.easy_track.evmScriptExecutor(), force=True)
     nor_module_stats_before = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
     sdvt_module_stats_before = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
