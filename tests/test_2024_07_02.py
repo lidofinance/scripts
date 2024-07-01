@@ -10,7 +10,9 @@ from brownie.network.account import LocalAccount
 from scripts.vote_2024_07_02 import start_vote
 from utils.config import contracts
 from utils.mainnet_fork import chain_snapshot
+from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
+from utils.test.helpers import ETH
 from utils.test.simple_dvt_helpers import simple_dvt_add_keys
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.payout import (
@@ -101,7 +103,7 @@ def test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_f
     with chain_snapshot():
         # Fill the module with keys. Keep last nop_id to add more keys to other node operators later
         last_nop_id = fill_sdvt_module_with_keys(
-            evm_script_executor=evm_script_executor, keys_total_count=sdvt_remaining_cap_before
+            evm_script_executor=evm_script_executor, total_keys=sdvt_remaining_cap_before
         )
 
         _, sdvt_allocation_percentage_after_filling = get_allocation_percentage(check_alloc_keys)
@@ -110,7 +112,7 @@ def test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_f
 
         # add more keys to the module to check that percentage wasn't changed
         last_nop_id = fill_sdvt_module_with_keys(
-            evm_script_executor=evm_script_executor, keys_total_count=200, start_nop_id=last_nop_id - 1
+            evm_script_executor=evm_script_executor, total_keys=200, start_nop_id=last_nop_id - 1
         )
 
         _, sdvt_allocation_percentage_after = get_allocation_percentage(check_alloc_keys + 200)
@@ -125,7 +127,7 @@ def test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_f
 
         # add more keys to the module
         fill_sdvt_module_with_keys(
-            evm_script_executor=evm_script_executor, keys_total_count=300, start_nop_id=last_nop_id - 1
+            evm_script_executor=evm_script_executor, total_keys=300, start_nop_id=last_nop_id - 1
         )
 
         sdvt_remaining_cap_after_vote = get_staking_module_remaining_cap(SIMPLE_DVT_ID)
@@ -139,13 +141,61 @@ def test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_f
         )  # allocation percentage should increase after the vote
 
 
-def fill_sdvt_module_with_keys(evm_script_executor: LocalAccount, keys_total_count: int, start_nop_id: int = 0) -> int:
-    keys_to_allocate = 100  # keys to allocate to each node operator
+def test_sdvt_stake_allocation(accounts, helpers, ldo_holder, vote_ids_from_env, eth_whale, stranger):
+    evm_script_executor: LocalAccount = accounts.at(contracts.easy_track.evmScriptExecutor(), force=True)
+    nor_module_stats_before = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
+    sdvt_module_stats_before = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
+    fill_deposit_buffer(200)
+    new_sdvt_keys_amount = 60
+
+    with chain_snapshot():
+        # VOTE!
+        vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
+        helpers.execute_vote(
+            vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting, skip_time=3 * 60 * 60 * 24
+        )
+        contracts.lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": contracts.deposit_security_module})
+        contracts.lido.deposit(100, SIMPLE_DVT_ID, "0x0", {"from": contracts.deposit_security_module})
+
+        nor_module_stats_after_vote = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
+        sdvt_module_stats_after_vote = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
+
+        assert (
+            sdvt_module_stats_after_vote["totalDepositedValidators"]
+            == sdvt_module_stats_before["totalDepositedValidators"]
+        ), "No new keys should go to the SDVT module"
+        assert (
+            nor_module_stats_after_vote["totalDepositedValidators"]
+            == nor_module_stats_before["totalDepositedValidators"] + 100
+        ), "All keys should go to the NOR module"
+        # Deposit without new keys in the SDVT module
+
+        fill_sdvt_module_with_keys(evm_script_executor=evm_script_executor, total_keys=new_sdvt_keys_amount)
+        contracts.lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": contracts.deposit_security_module})
+        contracts.lido.deposit(100, SIMPLE_DVT_ID, "0x0", {"from": contracts.deposit_security_module})
+
+        nor_module_stats_after = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
+        sdvt_module_stats_after = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
+
+        assert sdvt_module_stats_after["depositableValidatorsCount"] == 0, "All accessible keys should be deposited"
+        assert (
+            sdvt_module_stats_after["totalDepositedValidators"]
+            == sdvt_module_stats_after_vote["totalDepositedValidators"] + new_sdvt_keys_amount
+        ), "60 keys should go to the SDVT module"
+        assert nor_module_stats_after["totalDepositedValidators"] == nor_module_stats_after_vote[
+            "totalDepositedValidators"
+        ] + (100 - new_sdvt_keys_amount), "All other keys should go to the NOR module"
+
+
+def fill_sdvt_module_with_keys(evm_script_executor: LocalAccount, total_keys: int, start_nop_id: int = 0) -> int:
     if start_nop_id == 0:
         start_nop_id = contracts.simple_dvt.getNodeOperatorsCount() - 1
     nop_id = start_nop_id
 
-    steps = (keys_total_count // keys_to_allocate) + 1
+    keys_to_allocate = (
+        total_keys if total_keys < 100 else 100
+    )  # keys to allocate to each node operator, base batch is 100 keys per operator
+    steps = 1 if keys_to_allocate == total_keys else (total_keys // keys_to_allocate) + 1
     for idx in range(steps):
         nop_id = start_nop_id - idx
         simple_dvt_add_keys(contracts.simple_dvt, nop_id, keys_to_allocate)
