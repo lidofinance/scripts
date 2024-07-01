@@ -18,6 +18,8 @@ from utils.config import *
 from utils.txs.deploy import deploy_from_prepared_tx
 from utils.test.helpers import ETH
 
+from functools import wraps
+
 ENV_OMNIBUS_BYPASS_EVENTS_DECODING = "OMNIBUS_BYPASS_EVENTS_DECODING"
 ENV_PARSE_EVENTS_FROM_LOCAL_ABI = "PARSE_EVENTS_FROM_LOCAL_ABI"
 ENV_OMNIBUS_VOTE_IDS = "OMNIBUS_VOTE_IDS"
@@ -234,3 +236,24 @@ def parse_events_from_local_abi():
             # See https://eth-brownie.readthedocs.io/en/stable/api-network.html?highlight=_add_contract#brownie.network.state._add_contract
             # Added contract will resolve from address during state._find_contract without a request to Etherscan
             state._add_contract(contract)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def add_balance_check_middleware():
+    web3.middleware_onion.add(balance_check_middleware, name='balance_check')
+
+def ensure_balance(address):
+    if web3.eth.get_balance(address) < ETH(1):
+        set_balance(address, 1000000)
+
+def balance_check_middleware(make_request, web3):
+    @wraps(make_request)
+    def middleware(method, params):
+        if method in ["eth_sendTransaction", "eth_sendRawTransaction"]:
+            transaction = params[0]
+            from_address = transaction.get('from')
+            if from_address:
+                ensure_balance(from_address)
+
+        return make_request(method, params)
+    return middleware
