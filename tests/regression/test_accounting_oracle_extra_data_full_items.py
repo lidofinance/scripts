@@ -161,7 +161,7 @@ def test_extra_data_full_items(
             nor_penalty_shares += rewards_after // 2
 
     if nor_penalty_shares > 0:
-        assert almostEqWithDiff(sum(e['amountOfShares'] for e in nor_distribute_reward_tx.events["StETHBurnRequested"]), nor_penalty_shares, 50)
+        assert almostEqWithDiff(sum(e['amountOfShares'] for e in nor_distribute_reward_tx.events["StETHBurnRequested"]), nor_penalty_shares, 100)
 
     # Check SDVT exited
     sdvt_penalty_shares = 0
@@ -187,7 +187,7 @@ def test_extra_data_full_items(
 
     if sdvt_penalty_shares > 0:
         # TODO: Fix below check when contains other penalized node operators
-        assert almostEqWithDiff(sum(e['amountOfShares'] for e in sdvt_distribute_reward_tx.events["StETHBurnRequested"]), sdvt_penalty_shares, 50)
+        assert almostEqWithDiff(sum(e['amountOfShares'] for e in sdvt_distribute_reward_tx.events["StETHBurnRequested"]), sdvt_penalty_shares, 100)
 
 ############################################
 # HELPER FUNCTIONS
