@@ -8,6 +8,11 @@ from utils.config import contracts
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
 
 
+def transaction_cost(tx):
+    gas_used = tx.gas_used
+    gas_price = tx.gas_price
+    return gas_used * gas_price
+
 def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     print(stranger, stranger.balance())
     amount = ETH(100)
@@ -30,14 +35,15 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     contracts.lido.approve(contracts.withdrawal_queue.address, 1000, {"from": steth_holder})
     contracts.withdrawal_queue.requestWithdrawals([1000], steth_holder, {"from": steth_holder})
 
+    # ensure SimpleDVT has some keys to deposit
+    fill_simple_dvt_ops_vetted_keys(stranger, 3, 5)
+
     print(stranger, stranger.balance())
     steth_balance_before_submit = contracts.lido.balanceOf(stranger)
     eth_balance_before_submit = stranger.balance()
 
     assert steth_balance_before_submit == 0
 
-    # ensure SimpleDVT has some keys to deposit
-    fill_simple_dvt_ops_vetted_keys(stranger, 3, 5)
 
     # Submitting ETH
     stakeLimitInfo = contracts.lido.getStakeLimitFullInfo()
@@ -57,6 +63,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     submit_tx = contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": amount})
 
+
     print("block after submit: ", chain.height)
 
     steth_balance_after_submit = contracts.lido.balanceOf(stranger)
@@ -66,7 +73,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     print("block after view: ", chain.height)
     assert almostEqEth(steth_balance_after_submit, steth_balance_before_submit + amount)
-    assert eth_balance_before_submit == stranger.balance() + amount
+    assert almostEqEth(eth_balance_before_submit, stranger.balance() + amount + transaction_cost(submit_tx))
 
     shares_to_be_minted = contracts.lido.getSharesByPooledEth(amount)
 
@@ -329,7 +336,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     assert transfer_event["to"] == ZERO_ADDRESS
     assert transfer_event["tokenId"] == request_ids[0]
 
-    assert eth_balance_before_withdrawal == stranger.balance() - amount_with_rewards
+    assert almostEqEth(eth_balance_before_withdrawal, stranger.balance() - amount_with_rewards + transaction_cost(claim_tx))
     assert (
         locked_ether_amount_after_finalization
         == contracts.withdrawal_queue.getLockedEtherAmount() + amount_with_rewards
