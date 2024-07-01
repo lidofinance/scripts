@@ -6,12 +6,7 @@ from utils.test.oracle_report_helpers import oracle_report
 from utils.test.helpers import ETH, almostEqEth
 from utils.config import contracts
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
-
-
-def transaction_cost(tx):
-    gas_used = tx.gas_used
-    gas_price = tx.gas_price
-    return gas_used * gas_price
+from utils.test.tx_cost_helper import transaction_cost
 
 def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     print(stranger, stranger.balance())
