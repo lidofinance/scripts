@@ -3,7 +3,7 @@ from typing import Dict
 from utils.config import contracts
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
-from utils.test.staking_router_helpers import ModuleStatus
+from utils.test.staking_router_helpers import StakingModuleStatus
 
 TOTAL_BASIS_POINTS = 10000
 
@@ -34,7 +34,7 @@ def get_modules_info(staking_router):
         (_, _, state, summary) = digest
         (id, _, module_fee, treasury_fee, target_share, status, _, _, _, _) = state
         (exited_keys, deposited_keys, depositable_keys) = summary
-        if status != ModuleStatus.ACTIVE.value:
+        if status != StakingModuleStatus.Active.value:
             # reset depositable keys in case of module is inactivated
             # https://github.com/lidofinance/lido-dao/blob/331ecec7fe3c8d57841fd73ccca7fb1cc9bc174e/contracts/0.8.9/StakingRouter.sol#L1230-L1232
             depositable_keys = 0
