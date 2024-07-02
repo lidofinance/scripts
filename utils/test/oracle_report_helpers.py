@@ -8,7 +8,7 @@ from brownie.typing import TransactionReceipt  # type: ignore
 from eth_abi.abi import encode
 from hexbytes import HexBytes
 
-from utils.config import contracts
+from utils.config import (contracts, AO_CONSENSUS_VERSION)
 from utils.test.exit_bus_data import encode_data
 from utils.test.helpers import ETH, GWEI, eth_balance
 
@@ -18,7 +18,6 @@ ONE_DAY = 1 * 24 * 60 * 60
 SHARE_RATE_PRECISION = 10**27
 EXTRA_DATA_FORMAT_EMPTY = 0
 EXTRA_DATA_FORMAT_LIST = 1
-
 
 @dataclass
 class AccountingReport:
@@ -70,7 +69,7 @@ def prepare_accounting_report(
     simulatedShareRate,
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
-    consensusVersion=1,
+    consensusVersion=AO_CONSENSUS_VERSION,
     withdrawalFinalizationBatches=[],
     isBunkerMode=False,
     extraDataFormat=EXTRA_DATA_FORMAT_EMPTY,
