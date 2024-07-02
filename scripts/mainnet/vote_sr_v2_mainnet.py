@@ -20,15 +20,13 @@ SR V2
 
 CSM
 
-18. Grant staking module manage role to agent STAKING_MODULE_MANAGE_ROLE
-19. Add staking module
-20. Grant request burn role to CSAccounting contract
-21. Grant resume role to agent
-22. Resume staking module
-23. Revoke resume role from agent
-24. Update initial epoch
-25. Add CS settle EL stealing factory to ET
-26. Revoke STAKING_MODULE_MANAGE_ROLE from agent ${AGENT}
+18. Add staking module
+19. Grant request burn role to CSAccounting contract
+20. Grant resume role to agent
+21. Resume staking module
+22. Revoke resume role from agent
+23. Update initial epoch
+24. Add CS settle EL stealing factory to ET
 """
 
 import time
@@ -150,11 +148,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
 
     nor_repo = contracts.nor_app_repo.address
     simple_dvt_repo = contracts.simple_dvt_app_repo.address
-    sandbox_repo = contracts.sandbox_repo.address
-
     nor_uri = get_repo_uri(nor_repo)
     simple_dvt_uri = get_repo_uri(simple_dvt_repo)
-    sandbox_uri = get_repo_uri(sandbox_repo)
 
     vote_desc_items, call_script_items = zip(
         #
@@ -272,19 +267,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         # CSM
         #
         (
-            "18. Grant staking module manage role to agent STAKING_MODULE_MANAGE_ROLE",
-            agent_forward(
-                [
-                    encode_oz_grant_role(
-                        contract=contracts.staking_router,
-                        role_name="STAKING_MODULE_MANAGE_ROLE",
-                        grant_to=contracts.agent,
-                    )
-                ]
-            ),
-        ),
-        (
-            "19. Add staking module",
+            "18. Add staking module",
             agent_forward(
                 [
                     (
@@ -304,7 +287,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "20. Grant request burn role to CSAccounting contract",
+            "19. Grant request burn role to CSAccounting contract",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -316,7 +299,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "21. Grant resume role to agent",
+            "20. Grant resume role to agent",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -328,11 +311,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "22. Resume staking module",
+            "21. Resume staking module",
             agent_forward([(contracts.csm.address, contracts.csm.resume.encode_input())]),
         ),
         (
-            "23. Revoke resume role from agent",
+            "22. Revoke resume role from agent",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -344,7 +327,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "24. Update initial epoch",
+            "23. Update initial epoch",
             agent_forward(
                 [
                     (
@@ -355,24 +338,12 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         # (
-        #     "25. Add CS settle EL stealing factory to ET",
+        #     "24. Add CS settle EL stealing factory to ET",
         #      add_evmscript_factory(
         #         factory=EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY,
         #         permissions=(create_permissions(contracts.csm, "settleELRewardsStealingPenalty")),
         #     ),
         # ),
-        (
-            "26. Revoke STAKING_MODULE_MANAGE_ROLE from agent ${AGENT}",
-            agent_forward(
-                [
-                    encode_oz_revoke_role(
-                        contract=contracts.staking_router,
-                        role_name="STAKING_MODULE_MANAGE_ROLE",
-                        revoke_from=contracts.agent,
-                    )
-                ]
-            ),
-        ),
     )
 
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
