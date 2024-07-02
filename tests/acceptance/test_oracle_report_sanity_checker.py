@@ -4,7 +4,8 @@ from brownie import interface  # type: ignore
 from utils.config import (
     contracts,
     ORACLE_REPORT_SANITY_CHECKER,
-    CHURN_VALIDATORS_PER_DAY_LIMIT,
+    EXITED_VALIDATORS_PER_DAY_LIMIT,
+    APPEARED_VALIDATORS_PER_DAY_LIMIT,
     ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT,
     ANNUAL_BALANCE_INCREASE_BP_LIMIT,
     SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT,
@@ -16,8 +17,8 @@ from utils.config import (
 )
 
 # Source of truth: https://hackmd.io/pdix1r4yR46fXUqiHaNKyw?view
-report_limits = {
-    "churnValidatorsPerDayLimit": CHURN_VALIDATORS_PER_DAY_LIMIT,
+expected_report_limits = {
+    "exitedValidatorsPerDayLimit": EXITED_VALIDATORS_PER_DAY_LIMIT,
     "oneOffCLBalanceDecreaseBPLimit": ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT,
     "annualBalanceIncreaseBPLimit": ANNUAL_BALANCE_INCREASE_BP_LIMIT,
     "simulatedShareRateDeviationBPLimit": SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT,
@@ -26,6 +27,7 @@ report_limits = {
     "maxNodeOperatorsPerExtraDataItemCount": MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT,
     "requestTimestampMargin": REQUEST_TIMESTAMP_MARGIN,
     "maxPositiveTokenRebase": MAX_POSITIVE_TOKEN_REBASE,
+    "appearedValidatorsPerDayLimit": APPEARED_VALIDATORS_PER_DAY_LIMIT,
 }
 
 
@@ -39,6 +41,7 @@ def test_links(contract):
 
 
 def test_limits(contract):
-    assert contract.getMaxPositiveTokenRebase() == report_limits["maxPositiveTokenRebase"]
+    assert contract.getMaxPositiveTokenRebase() == expected_report_limits["maxPositiveTokenRebase"]
+    limits =  contract.getOracleReportLimits()
 
-    assert dict(zip(report_limits.keys(), contract.getOracleReportLimits())) == report_limits
+    assert dict(zip(expected_report_limits.keys(), limits)) == expected_report_limits

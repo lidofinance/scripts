@@ -30,5 +30,5 @@ def test_accounting_oracle_too_node_ops_per_extra_data_item(extra_data_service):
         extraDataFormat=1,
         extraDataHash=extra_data.data_hash,
         extraDataItemsCount=item_count,
-        extraDataList=extra_data.extra_data,
+        extraDataList=extra_data.extra_data_list,
     )

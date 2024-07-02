@@ -66,32 +66,6 @@ class TestEventsEmitted:
         assert not contracts.lido.isStakingPaused()
         assert not contracts.lido.isStopped()
 
-    def test_pause_resume_deposits_staking_module(self, helpers, stranger):
-        tx = contracts.staking_router.pauseStakingModule(1, {"from": contracts.deposit_security_module})
-        helpers.assert_single_event_named(
-            "StakingModuleStatusSet",
-            tx,
-            {
-                "setBy": contracts.deposit_security_module,
-                "stakingModuleId": 1,
-                "status": StakingModuleStatus.DepositsPaused,
-            },
-        )
-        assert contracts.staking_router.getStakingModuleIsDepositsPaused(1)
-
-        contracts.staking_router.grantRole(
-            web3.keccak(text="STAKING_MODULE_RESUME_ROLE"),
-            stranger,
-            {"from": contracts.agent},
-        )
-        tx = contracts.staking_router.resumeStakingModule(1, {"from": stranger})
-        helpers.assert_single_event_named(
-            "StakingModuleStatusSet",
-            tx,
-            {"setBy": stranger, "stakingModuleId": 1, "status": StakingModuleStatus.Active},
-        )
-        assert contracts.staking_router.getStakingModuleIsActive(1)
-
     def test_stop_staking_module(self, helpers, stranger):
         contracts.staking_router.grantRole(
             web3.keccak(text="STAKING_MODULE_MANAGE_ROLE"),
@@ -160,38 +134,6 @@ class TestRevertedSecondCalls:
 
         with brownie.reverts("CONTRACT_IS_ACTIVE"):
             contracts.lido.resume({"from": contracts.voting})
-
-    @pytest.mark.skip(
-        reason="Second call of pause/resume staking is not reverted right now."
-        "It maybe should be fixed in the future to be consistent, "
-        "there's not a real problem with it."
-    )
-    def test_revert_second_pause_resume_staking(self):
-        contracts.lido.pauseStaking({"from": contracts.voting})
-
-        with brownie.reverts(""):
-            contracts.lido.pauseStaking({"from": contracts.voting})
-
-        contracts.lido.resumeStaking({"from": contracts.voting})
-
-        with brownie.reverts(""):
-            contracts.lido.resumeStaking({"from": contracts.voting})
-
-    def test_revert_second_pause_resume_staking_module(self, stranger):
-        contracts.staking_router.pauseStakingModule(1, {"from": contracts.deposit_security_module})
-
-        with brownie.reverts(encode_error("StakingModuleNotActive()")):
-            contracts.staking_router.pauseStakingModule(1, {"from": contracts.deposit_security_module})
-
-        contracts.staking_router.grantRole(
-            web3.keccak(text="STAKING_MODULE_RESUME_ROLE"),
-            stranger,
-            {"from": contracts.agent},
-        )
-        contracts.staking_router.resumeStakingModule(1, {"from": stranger})
-
-        with brownie.reverts(encode_error("StakingModuleNotPaused()")):
-            contracts.staking_router.resumeStakingModule(1, {"from": stranger})
 
     def test_revert_second_stop_staking_module(self, helpers, stranger):
         contracts.staking_router.grantRole(
@@ -294,15 +236,28 @@ def test_paused_staking_can_report():
 # Staking module tests
 
 
-def test_paused_staking_module_cant_stake():
-    contracts.staking_router.pauseStakingModule(1, {"from": contracts.deposit_security_module})
+def test_paused_staking_module_cant_stake(stranger):
+    contracts.staking_router.grantRole(
+            web3.keccak(text="STAKING_MODULE_MANAGE_ROLE"),
+            stranger,
+            {"from": contracts.agent},
+        )
+    contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.DepositsPaused, {"from": stranger})
+
     with brownie.reverts(encode_error("StakingModuleNotActive()")):
         contracts.lido.deposit(1, 1, "0x", {"from": contracts.deposit_security_module}),
 
 
-def test_paused_staking_module_can_reward(burner: Contract):
+def test_paused_staking_module_can_reward(burner: Contract, stranger):
     _, module_address, *_ = contracts.staking_router.getStakingModule(1)
-    contracts.staking_router.pauseStakingModule(1, {"from": contracts.deposit_security_module})
+
+    contracts.staking_router.grantRole(
+            web3.keccak(text="STAKING_MODULE_MANAGE_ROLE"),
+            stranger,
+            {"from": contracts.agent},
+        )
+    contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.DepositsPaused, {"from": stranger})
+
     (report_tx, _) = oracle_report()
     print(report_tx.events["Transfer"])
     module_index = 0

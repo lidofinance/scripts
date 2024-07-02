@@ -5,6 +5,7 @@ from utils.config import (
     contracts,
     STAKING_ROUTER,
     STAKING_ROUTER_IMPL,
+    STAKING_ROUTER_VERSION,
     CHAIN_DEPOSIT_CONTRACT,
     WITHDRAWAL_VAULT,
     SR_MODULES_FEE_BP,
@@ -44,7 +45,7 @@ def test_links(contract):
 
 
 def test_versioned(contract):
-    assert contract.getContractVersion() == 1
+    assert contract.getContractVersion() == STAKING_ROUTER_VERSION
 
 
 def test_initialize(contract):
@@ -96,7 +97,7 @@ def test_staking_modules(contract):
     assert curated_module["stakingModuleAddress"] == contracts.node_operators_registry
     assert curated_module["stakingModuleFee"] == CURATED_STAKING_MODULE_MODULE_FEE_BP
     assert curated_module["treasuryFee"] == CURATED_STAKING_MODULE_TREASURY_FEE_BP
-    assert curated_module["targetShare"] == CURATED_STAKING_MODULE_TARGET_SHARE_BP
+    assert curated_module["stakeShareLimit"] == CURATED_STAKING_MODULE_TARGET_SHARE_BP
     assert curated_module["status"] == 0
     assert curated_module["name"] == CURATED_STAKING_MODULE_NAME
     assert curated_module["lastDepositAt"] >= 1679672628
@@ -108,7 +109,7 @@ def test_staking_modules(contract):
     assert simple_dvt_module["stakingModuleAddress"] == contracts.simple_dvt
     assert simple_dvt_module["stakingModuleFee"] == SIMPLE_DVT_MODULE_MODULE_FEE_BP
     assert simple_dvt_module["treasuryFee"] == SIMPLE_DVT_MODULE_TREASURY_FEE_BP
-    assert simple_dvt_module["targetShare"] == SIMPLE_DVT_MODULE_TARGET_SHARE_BP
+    assert simple_dvt_module["stakeShareLimit"] == SIMPLE_DVT_MODULE_TARGET_SHARE_BP
     assert simple_dvt_module["status"] == 0
     assert simple_dvt_module["name"] == SIMPLE_DVT_MODULE_NAME
     assert simple_dvt_module["lastDepositAt"] > 0

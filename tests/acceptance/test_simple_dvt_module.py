@@ -5,6 +5,7 @@ from utils.config import (
     contracts,
     SIMPLE_DVT,
     SIMPLE_DVT_IMPL,
+    SIMPLE_DVT_VERSION,
     SIMPLE_DVT_ARAGON_APP_ID,
     SIMPLE_DVT_MODULE_STUCK_PENALTY_DELAY,
     SIMPLE_DVT_MODULE_TYPE,
@@ -53,7 +54,7 @@ def test_role_keccaks(contract):
 
 
 def test_versioned(contract):
-    assert contract.getContractVersion() == 2
+    assert contract.getContractVersion() == SIMPLE_DVT_VERSION
 
 
 def test_initialize(contract):
@@ -127,12 +128,7 @@ def test_simple_dvt_state(contract):
         assert node_operator["totalVettedValidators"] <= node_operator["totalAddedValidators"]
 
         node_operator_summary = contract.getNodeOperatorSummary(id)
-        if id in exited_node_operators:
-            assert (
-                node_operator_summary["isTargetLimitActive"] is True
-            ), f"isTargetLimitActive is inactive for node {id}"
-        else:
-            assert node_operator_summary["isTargetLimitActive"] is False, f"isTargetLimitActive is active for node {id}"
+        assert node_operator_summary["targetLimitMode"] == (1 if id in exited_node_operators else 0)
         assert node_operator_summary["targetValidatorsCount"] == 0
         # Can be more than 0 in regular protocol operations
         # assert node_operator_summary["stuckValidatorsCount"] == 0

@@ -14,7 +14,8 @@ from utils.evm_script import encode_error
 from utils.test.helpers import ETH, eth_balance
 from utils.config import (
     contracts,
-    CHURN_VALIDATORS_PER_DAY_LIMIT,
+    APPEARED_VALIDATORS_PER_DAY_LIMIT,
+    EXITED_VALIDATORS_PER_DAY_LIMIT,
     ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT,
     ANNUAL_BALANCE_INCREASE_BP_LIMIT,
     MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT,
@@ -80,7 +81,7 @@ def test_too_large_cl_increase_with_appeared_validator(pre_cl_balance):
 
 
 def test_too_much_validators_appeared():
-    deposited_validators = CHURN_VALIDATORS_PER_DAY_LIMIT + 1
+    deposited_validators = APPEARED_VALIDATORS_PER_DAY_LIMIT + 1
     fake_deposited_validators_increase(deposited_validators)
 
     with reverts(encode_error("IncorrectAppearedValidators(uint256)", [deposited_validators])):
@@ -98,11 +99,11 @@ def test_too_much_validators_exited():
     with reverts(
         encode_error(
             "ExitedValidatorsLimitExceeded(uint256,uint256)",
-            [CHURN_VALIDATORS_PER_DAY_LIMIT, CHURN_VALIDATORS_PER_DAY_LIMIT + 1],
+            [EXITED_VALIDATORS_PER_DAY_LIMIT, EXITED_VALIDATORS_PER_DAY_LIMIT + 1],
         )
     ):
         oracle_report(
-            numExitedValidatorsByStakingModule=[CHURN_VALIDATORS_PER_DAY_LIMIT + previously_exited + 1],
+            numExitedValidatorsByStakingModule=[EXITED_VALIDATORS_PER_DAY_LIMIT + previously_exited + 1],
             stakingModuleIdsWithNewlyExitedValidators=[1],
             skip_withdrawals=True,
             silent=True,
@@ -211,7 +212,19 @@ def test_report_deviated_simulated_share_rate(steth_holder):
 
 def test_accounting_oracle_too_much_extra_data(extra_data_service):
     item_count = MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT + 1
-    extra_data = extra_data_service.collect({(1, 1): 1}, {}, 1, 1)
+
+    operators = {}
+    nor_module_id = 1
+    nor_operators_count = contracts.node_operators_registry.getNodeOperatorsCount()
+    i = 0
+    while len(operators) < item_count and i < nor_operators_count:
+        (active, _, _, _, total_exited_validators_count, _, _) = contracts.node_operators_registry.getNodeOperator(i, True)
+        if(active):
+            operators[(nor_module_id, i)] = total_exited_validators_count + 1
+        i = i + 1
+
+    extra_data = extra_data_service.collect({}, operators, item_count, 1)
+
     with reverts(
         encode_error(
             "MaxAccountingExtraDataItemsCountExceeded(uint256,uint256)",
@@ -222,7 +235,7 @@ def test_accounting_oracle_too_much_extra_data(extra_data_service):
             extraDataFormat=1,
             extraDataHash=extra_data.data_hash,
             extraDataItemsCount=item_count,
-            extraDataList=extra_data.extra_data,
+            extraDataList=extra_data.extra_data_list,
         )
 
 
@@ -240,7 +253,7 @@ def test_accounting_oracle_too_node_ops_per_extra_data_item(extra_data_service):
             extraDataFormat=1,
             extraDataHash=extra_data.data_hash,
             extraDataItemsCount=1,
-            extraDataList=extra_data.extra_data,
+            extraDataList=extra_data.extra_data_list,
         )
 
 

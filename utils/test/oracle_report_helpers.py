@@ -1,6 +1,6 @@
 import warnings
 from dataclasses import astuple, dataclass
-from typing import Literal, overload
+from typing import List, Literal, overload
 
 from brownie import chain, web3, accounts  # type: ignore
 from brownie.exceptions import VirtualMachineError
@@ -8,7 +8,7 @@ from brownie.typing import TransactionReceipt  # type: ignore
 from eth_abi.abi import encode
 from hexbytes import HexBytes
 
-from utils.config import contracts
+from utils.config import (contracts, AO_CONSENSUS_VERSION)
 from utils.test.exit_bus_data import encode_data
 from utils.test.helpers import ETH, GWEI, eth_balance
 
@@ -18,7 +18,6 @@ ONE_DAY = 1 * 24 * 60 * 60
 SHARE_RATE_PRECISION = 10**27
 EXTRA_DATA_FORMAT_EMPTY = 0
 EXTRA_DATA_FORMAT_LIST = 1
-
 
 @dataclass
 class AccountingReport:
@@ -70,7 +69,7 @@ def prepare_accounting_report(
     simulatedShareRate,
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
-    consensusVersion=1,
+    consensusVersion=AO_CONSENSUS_VERSION,
     withdrawalFinalizationBatches=[],
     isBunkerMode=False,
     extraDataFormat=EXTRA_DATA_FORMAT_EMPTY,
@@ -118,7 +117,7 @@ def encode_data_from_abi(data, abi, func_name):
 def get_finalization_batches(
     share_rate: int, limited_withdrawal_vault_balance, limited_el_rewards_vault_balance
 ) -> list[int]:
-    (_, _, _, _, _, _, _, requestTimestampMargin, _) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
+    (_, _, _, _, _, _, _, requestTimestampMargin, _, _) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
     buffered_ether = contracts.lido.getBufferedEther()
     unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
     reserved_buffer = min(buffered_ether, unfinalized_steth)
@@ -169,7 +168,7 @@ def push_oracle_report(
     extraDataHash=ZERO_BYTES32,
     extraDataItemsCount=0,
     silent=False,
-    extraDataList=b"",
+    extraDataList:List[bytes]=[],
 ):
     if not silent:
         print(f"Preparing oracle report for refSlot: {refSlot}")
@@ -200,11 +199,11 @@ def push_oracle_report(
         print("Submitted report data")
         print(f"extraDataList {extraDataList}")
     if extraDataFormat == 0:
-        extra_report_tx = contracts.accounting_oracle.submitReportExtraDataEmpty({"from": submitter})
+        extra_report_tx_list = [contracts.accounting_oracle.submitReportExtraDataEmpty({"from": submitter})]
         if not silent:
             print("Submitted empty extra data report")
     else:
-        extra_report_tx = contracts.accounting_oracle.submitReportExtraDataList(extraDataList, {"from": submitter})
+        extra_report_tx_list = [contracts.accounting_oracle.submitReportExtraDataList(data, {"from": submitter}) for data in extraDataList]
         if not silent:
             print("Submitted NOT empty extra data report")
 
@@ -228,7 +227,7 @@ def push_oracle_report(
     assert extraDataSubmitted
     assert state_extraDataItemsCount == extraDataItemsCount
     assert extraDataItemsSubmitted == extraDataItemsCount
-    return (report_tx, extra_report_tx)
+    return (report_tx, extra_report_tx_list)
 
 
 def simulate_report(
@@ -295,7 +294,7 @@ def oracle_report(
     extraDataFormat=0,
     extraDataHash=ZERO_BYTES32,
     extraDataItemsCount=0,
-    extraDataList=b"",
+    extraDataList:List[bytes]=[],
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,
@@ -323,7 +322,7 @@ def oracle_report(
     extraDataFormat=0,
     extraDataHash=ZERO_BYTES32,
     extraDataItemsCount=0,
-    extraDataList=b"",
+    extraDataList:List[bytes]=[],
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,
@@ -351,7 +350,7 @@ def oracle_report(
     extraDataFormat=0,
     extraDataHash=ZERO_BYTES32,
     extraDataItemsCount=0,
-    extraDataList=b"",
+    extraDataList:List[bytes]=[],
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,

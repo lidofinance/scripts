@@ -9,6 +9,7 @@ from brownie import chain, interface, web3
 from brownie.network import state
 from brownie.network.contract import Contract
 
+from utils.balance import set_balance
 from utils.evm_script import EMPTY_CALLSCRIPT
 
 from utils.config import contracts, network_name, MAINNET_VOTE_DURATION
@@ -16,6 +17,8 @@ from utils.config import contracts, network_name, MAINNET_VOTE_DURATION
 from utils.config import *
 from utils.txs.deploy import deploy_from_prepared_tx
 from utils.test.helpers import ETH
+
+from functools import wraps
 
 ENV_OMNIBUS_BYPASS_EVENTS_DECODING = "OMNIBUS_BYPASS_EVENTS_DECODING"
 ENV_PARSE_EVENTS_FROM_LOCAL_ABI = "PARSE_EVENTS_FROM_LOCAL_ABI"
@@ -46,11 +49,8 @@ def ldo_holder(accounts):
 
 
 @pytest.fixture(scope="function")
-def stranger(accounts):
-    stranger = accounts.at("0x98eC059dC3aDFbdd63429454aeB0C990fbA4a124", force=True)
-    web3.provider.make_request("evm_setAccountBalance", [stranger.address, "0x152D02C7E14AF6800000"])
-    assert stranger.balance() == ETH(100000)
-    return stranger
+def stranger():
+    return set_balance("0x98eC059dC3aDFbdd63429454aeB0C990fbA4a124", 100000)
 
 
 @pytest.fixture(scope="module")
@@ -236,3 +236,24 @@ def parse_events_from_local_abi():
             # See https://eth-brownie.readthedocs.io/en/stable/api-network.html?highlight=_add_contract#brownie.network.state._add_contract
             # Added contract will resolve from address during state._find_contract without a request to Etherscan
             state._add_contract(contract)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def add_balance_check_middleware():
+    web3.middleware_onion.add(balance_check_middleware, name='balance_check')
+
+def ensure_balance(address):
+    if web3.eth.get_balance(address) < ETH(1):
+        set_balance(address, 1000000)
+
+def balance_check_middleware(make_request, web3):
+    @wraps(make_request)
+    def middleware(method, params):
+        if method in ["eth_sendTransaction", "eth_sendRawTransaction"]:
+            transaction = params[0]
+            from_address = transaction.get('from')
+            if from_address:
+                ensure_balance(from_address)
+
+        return make_request(method, params)
+    return middleware

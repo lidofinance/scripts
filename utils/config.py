@@ -9,6 +9,8 @@ from brownie import network, accounts
 from brownie.utils import color
 from brownie.network.account import Account, LocalAccount
 
+from brownie import Contract, web3
+
 
 MAINNET_VOTE_DURATION = 3 * 24 * 60 * 60
 
@@ -174,12 +176,28 @@ class ContractsLazyLoader:
         return interface.SimpleDVT(SIMPLE_DVT)
 
     @property
+    def csm(self) -> interface.CSModule:
+        return interface.CSModule(CSM)
+
+    @property
+    def csmHashConsensus(self) -> interface.CSHashConsensus:
+        return interface.CSHashConsensus(CS_ORACLE_HASH_CONSENSUS_ADDRESS)
+
+    @property
+    def sandbox(self) -> interface.SimpleDVT:
+        return interface.Sandbox(SANDBOX)
+
+    @property
     def legacy_oracle(self) -> interface.LegacyOracle:
         return interface.LegacyOracle(LEGACY_ORACLE)
 
     @property
     def deposit_security_module_v1(self) -> interface.DepositSecurityModule:
         return interface.DepositSecurityModuleV1(DEPOSIT_SECURITY_MODULE_V1)
+
+    @property
+    def deposit_security_module_v2(self) -> interface.DepositSecurityModule:
+        return interface.DepositSecurityModule(DEPOSIT_SECURITY_MODULE_V2)
 
     @property
     def deposit_security_module(self) -> interface.DepositSecurityModule:
@@ -248,6 +266,14 @@ class ContractsLazyLoader:
     @property
     def nor_app_repo(self) -> interface.Repo:
         return interface.Repo(NODE_OPERATORS_REGISTRY_REPO)
+
+    @property
+    def simple_dvt_app_repo(self) -> interface.Repo:
+        return interface.Repo(SIMPLE_DVT_REPO)
+
+    @property
+    def sandbox_repo(self) -> interface.Repo:
+        return interface.Repo(SANDBOX_REPO)
 
     @property
     def voting_app_repo(self) -> interface.Repo:

@@ -6,6 +6,7 @@ from brownie.exceptions import brownie
 from brownie.network.account import Account
 from web3 import Web3
 
+from utils.balance import set_balance
 from utils.evm_script import encode_error
 from tests.conftest import Helpers
 from utils.config import contracts
@@ -1132,11 +1133,7 @@ def _round_to_gwei(amount: int) -> int:
 def _drain_eth(address: str):
     """Drain ETH from address"""
 
-    accounts.at(address, force=True).transfer(
-        Account(ZERO_ADDRESS),
-        eth_balance(address),
-        silent=True,
-    )
+    set_balance(address, 0)
     assert eth_balance(address) == 0, f"Expected account {address} to be empty"
 
 
