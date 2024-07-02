@@ -19,7 +19,7 @@ NODE_OPERATOR_KEYS = [
 ]
 
 NODE_OPERATOR_SUMMARY_KEYS = [
-    "isTargetLimitActive",
+    "targetLimitMode",
     "targetValidatorsCount",
     "stuckValidatorsCount",
     "refundedValidatorsCount",

@@ -93,7 +93,7 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
     assert_node_operator_summaries(
         nor.getNodeOperatorSummary(new_node_operator_id),
         {
-            "isTargetLimitActive": False,
+            "targetLimitMode": 0,
             "targetValidatorsCount": 0,
             "stuckValidatorsCount": 0,
             "refundedValidatorsCount": 0,
