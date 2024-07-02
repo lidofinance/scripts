@@ -46,10 +46,10 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
     vote_desc_items, call_script_items = zip(
         #
-        # I. Update Simple DVT module share to 4%
+        # I. Update Simple DVT module target share to 4%
         #
         (
-            "1) Expand SimpleDVT share from 0.5% to 4%",
+            "1) Set Simple DVT Module targetShare to 400 (4%)",
             agent_forward(
                 [
                     (
