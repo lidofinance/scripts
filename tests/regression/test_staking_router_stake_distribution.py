@@ -10,10 +10,11 @@ TOTAL_BASIS_POINTS = 10000
 
 class Module:
     def __init__(
-        self, id, target_share, module_fee, treasury_fee, deposited_keys, exited_keys, depositable_keys, status
+        self, id, stake_share_limit, module_fee, treasury_fee, deposited_keys, exited_keys, depositable_keys, status,
+        priorityExitShareThreshold, maxDepositsPerBlock, minDepositBlockDistance
     ):
         self.id = id
-        self.target_share = target_share
+        self.target_share = stake_share_limit
         self.status = status
         self.active_keys = 0
         self.depositable_keys = depositable_keys
@@ -23,7 +24,9 @@ class Module:
         self.treasury_fee = treasury_fee
         self.deposited_keys = deposited_keys
         self.exited_keys = exited_keys
-
+        self.priorityExitShareThreshold = priorityExitShareThreshold
+        self.maxDepositsPerBlock = maxDepositsPerBlock
+        self.minDepositBlockDistance = minDepositBlockDistance
 
 def get_modules_info(staking_router):
     # collect the modules information
@@ -32,7 +35,7 @@ def get_modules_info(staking_router):
 
     for digest in module_digests:
         (_, _, state, summary) = digest
-        (id, _, module_fee, treasury_fee, target_share, status, _, _, _, _) = state
+        (id, _, module_fee, treasury_fee, stake_share_limit, status, _, _, _, _, priorityExitShareThreshold, maxDepositsPerBlock, minDepositBlockDistance) = state
         (exited_keys, deposited_keys, depositable_keys) = summary
         if status != StakingModuleStatus.Active.value:
             # reset depositable keys in case of module is inactivated
@@ -40,7 +43,8 @@ def get_modules_info(staking_router):
             depositable_keys = 0
 
         modules[id] = Module(
-            id, target_share, module_fee, treasury_fee, deposited_keys, exited_keys, depositable_keys, status
+            id, stake_share_limit, module_fee, treasury_fee, deposited_keys, exited_keys, depositable_keys, status,
+            priorityExitShareThreshold, maxDepositsPerBlock, minDepositBlockDistance
         )
 
     # total_active_keys = sum([module.active_keys for module in modules.values()])
@@ -128,7 +132,7 @@ def test_stake_distribution():
 
     for digest in module_digests_after_deposit:
         (_, _, state, summary) = digest
-        (id, _, _, _, _, _, _, _, _, _) = state
+        (id, _, _, _, _, _, _, _, _, _, _, _, _) = state
         (exited_keys, deposited_keys, _) = summary
 
         active_keys_after_deposit = deposited_keys - exited_keys
@@ -183,8 +187,11 @@ def test_target_share_distribution(stranger):
     contracts.staking_router.updateStakingModule(
         sdvt_m_id,
         expected_target_share_1,
+        sdvt_m.priorityExitShareThreshold,
         sdvt_m.module_fee,
         sdvt_m.treasury_fee,
+        sdvt_m.maxDepositsPerBlock,
+        sdvt_m.minDepositBlockDistance,
         {"from": contracts.agent},
     )
     # add enough depositable keys to the target module to overcome the target share
@@ -221,7 +228,7 @@ def test_target_share_distribution(stranger):
 
     for digest in module_digests_after_deposit:
         (_, _, state, summary) = digest
-        (id, _, _, _, _, _, _, _, _, _) = state
+        (id, _, _, _, _, _, _, _, _, _, _, _, _) = state
         (exited_keys, deposited_keys, _) = summary
 
         active_keys_after_deposit = deposited_keys - exited_keys
