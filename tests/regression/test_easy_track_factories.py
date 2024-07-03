@@ -306,12 +306,12 @@ def test_update_target_validator_limits(stranger):
     )
 
     summary_1 = contracts.simple_dvt.getNodeOperatorSummary(1)
-    assert summary_1["isTargetLimitActive"] == True
+    assert summary_1["targetLimitMode"] == 1
     assert summary_1["targetValidatorsCount"] == 800
 
     summary_2 = contracts.simple_dvt.getNodeOperatorSummary(2)
-    assert summary_2["isTargetLimitActive"] == False
-    assert summary_2["targetValidatorsCount"] == 0  # should be 0 because isTargetLimitActive is False
+    assert summary_2["targetLimitMode"] == 0
+    assert summary_2["targetValidatorsCount"] == 0  # should be 0 because targetLimitMode is 0
 
 
 def test_transfer_node_operator_manager(stranger):

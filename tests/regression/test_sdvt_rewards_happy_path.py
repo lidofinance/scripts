@@ -57,7 +57,7 @@ def test_sdvt_module_connected_to_router():
 
 
 # full happy path test
-def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participants, reward_wrapper, sdvt, stranger):
+def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participants, reward_wrapper, stranger):
     """
     Test happy path of rewards distribution
     Test adding new cluster to simple dvt module, depositing to simple dvt module, distributing and claiming rewards
