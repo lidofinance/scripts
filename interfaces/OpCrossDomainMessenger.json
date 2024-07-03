@@ -10,7 +10,7 @@
             {
                 "indexed": true,
                 "internalType": "bytes32",
-                "name": "messageHash",
+                "name": "msgHash",
                 "type": "bytes32"
             }
         ],
@@ -35,40 +35,8 @@
         "inputs": [
             {
                 "indexed": true,
-                "internalType": "address",
-                "name": "previousOwner",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "newOwner",
-                "type": "address"
-            }
-        ],
-        "name": "OwnershipTransferred",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "account",
-                "type": "address"
-            }
-        ],
-        "name": "Paused",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
                 "internalType": "bytes32",
-                "name": "messageHash",
+                "name": "msgHash",
                 "type": "bytes32"
             }
         ],
@@ -81,20 +49,20 @@
             {
                 "indexed": true,
                 "internalType": "address",
-                "name": "sender",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
                 "name": "target",
                 "type": "address"
             },
             {
                 "indexed": false,
-                "internalType": "uint256",
-                "name": "value",
-                "type": "uint256"
+                "internalType": "address",
+                "name": "sender",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes",
+                "name": "message",
+                "type": "bytes"
             },
             {
                 "indexed": false,
@@ -107,12 +75,6 @@
                 "internalType": "uint256",
                 "name": "gasLimit",
                 "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "bytes",
-                "name": "message",
-                "type": "bytes"
             }
         ],
         "name": "SentMessage",
@@ -122,59 +84,79 @@
         "anonymous": false,
         "inputs": [
             {
-                "indexed": false,
+                "indexed": true,
                 "internalType": "address",
-                "name": "account",
-                "type": "address"
-            }
-        ],
-        "name": "Unpaused",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "_oldFeeVault",
+                "name": "sender",
                 "type": "address"
             },
             {
                 "indexed": false,
-                "internalType": "address",
-                "name": "_newFeeVault",
-                "type": "address"
-            }
-        ],
-        "name": "UpdateFeeVault",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
                 "internalType": "uint256",
-                "name": "oldMaxReplayTimes",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "newMaxReplayTimes",
+                "name": "value",
                 "type": "uint256"
             }
         ],
-        "name": "UpdateMaxReplayTimes",
+        "name": "SentMessageExtension1",
         "type": "event"
     },
     {
         "inputs": [],
-        "name": "counterpart",
+        "name": "MESSAGE_VERSION",
         "outputs": [
             {
-                "internalType": "address",
+                "internalType": "uint16",
+                "name": "",
+                "type": "uint16"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MIN_GAS_CALLDATA_OVERHEAD",
+        "outputs": [
+            {
+                "internalType": "uint64",
+                "name": "",
+                "type": "uint64"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MIN_GAS_DYNAMIC_OVERHEAD_DENOMINATOR",
+        "outputs": [
+            {
+                "internalType": "uint64",
+                "name": "",
+                "type": "uint64"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MIN_GAS_DYNAMIC_OVERHEAD_NUMERATOR",
+        "outputs": [
+            {
+                "internalType": "uint64",
+                "name": "",
+                "type": "uint64"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "OTHER_MESSENGER",
+        "outputs": [
+            {
+                "internalType": "contract CrossDomainMessenger",
                 "name": "",
                 "type": "address"
             }
@@ -183,46 +165,108 @@
         "type": "function"
     },
     {
+        "inputs": [],
+        "name": "PORTAL",
+        "outputs": [
+            {
+                "internalType": "contract OptimismPortal",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "RELAY_CALL_OVERHEAD",
+        "outputs": [
+            {
+                "internalType": "uint64",
+                "name": "",
+                "type": "uint64"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "RELAY_CONSTANT_OVERHEAD",
+        "outputs": [
+            {
+                "internalType": "uint64",
+                "name": "",
+                "type": "uint64"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "RELAY_GAS_CHECK_BUFFER",
+        "outputs": [
+            {
+                "internalType": "uint64",
+                "name": "",
+                "type": "uint64"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "RELAY_RESERVED_GAS",
+        "outputs": [
+            {
+                "internalType": "uint64",
+                "name": "",
+                "type": "uint64"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
-            {
-                "internalType": "address",
-                "name": "_from",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "_to",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_value",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_messageNonce",
-                "type": "uint256"
-            },
             {
                 "internalType": "bytes",
                 "name": "_message",
                 "type": "bytes"
+            },
+            {
+                "internalType": "uint32",
+                "name": "_minGasLimit",
+                "type": "uint32"
             }
         ],
-        "name": "dropMessage",
-        "outputs": [],
-        "stateMutability": "nonpayable",
+        "name": "baseGas",
+        "outputs": [
+            {
+                "internalType": "uint64",
+                "name": "",
+                "type": "uint64"
+            }
+        ],
+        "stateMutability": "pure",
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "feeVault",
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "name": "failedMessages",
         "outputs": [
             {
-                "internalType": "address",
+                "internalType": "bool",
                 "name": "",
-                "type": "address"
+                "type": "bool"
             }
         ],
         "stateMutability": "view",
@@ -231,23 +275,13 @@
     {
         "inputs": [
             {
-                "internalType": "address",
-                "name": "_counterpart",
+                "internalType": "contract SuperchainConfig",
+                "name": "_superchainConfig",
                 "type": "address"
             },
             {
-                "internalType": "address",
-                "name": "_feeVault",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "_rollup",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "_messageQueue",
+                "internalType": "contract OptimismPortal",
+                "name": "_portal",
                 "type": "address"
             }
         ],
@@ -257,46 +291,8 @@
         "type": "function"
     },
     {
-        "inputs": [
-            {
-                "internalType": "bytes32",
-                "name": "",
-                "type": "bytes32"
-            }
-        ],
-        "name": "isL1MessageDropped",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "bytes32",
-                "name": "",
-                "type": "bytes32"
-            }
-        ],
-        "name": "isL2MessageExecuted",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
         "inputs": [],
-        "name": "maxReplayTimes",
+        "name": "messageNonce",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -309,42 +305,10 @@
     },
     {
         "inputs": [],
-        "name": "messageQueue",
+        "name": "otherMessenger",
         "outputs": [
             {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "bytes32",
-                "name": "",
-                "type": "bytes32"
-            }
-        ],
-        "name": "messageSendTimestamp",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "owner",
-        "outputs": [
-            {
-                "internalType": "address",
+                "internalType": "contract CrossDomainMessenger",
                 "name": "",
                 "type": "address"
             }
@@ -366,19 +330,13 @@
         "type": "function"
     },
     {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "name": "prevReplayIndex",
+        "inputs": [],
+        "name": "portal",
         "outputs": [
             {
-                "internalType": "uint256",
+                "internalType": "contract OptimismPortal",
                 "name": "",
-                "type": "uint256"
+                "type": "address"
             }
         ],
         "stateMutability": "view",
@@ -387,13 +345,18 @@
     {
         "inputs": [
             {
+                "internalType": "uint256",
+                "name": "_nonce",
+                "type": "uint256"
+            },
+            {
                 "internalType": "address",
-                "name": "_from",
+                "name": "_sender",
                 "type": "address"
             },
             {
                 "internalType": "address",
-                "name": "_to",
+                "name": "_target",
                 "type": "address"
             },
             {
@@ -403,65 +366,26 @@
             },
             {
                 "internalType": "uint256",
-                "name": "_nonce",
+                "name": "_minGasLimit",
                 "type": "uint256"
             },
             {
                 "internalType": "bytes",
                 "name": "_message",
                 "type": "bytes"
-            },
-            {
-                "components": [
-                    {
-                        "internalType": "uint256",
-                        "name": "batchIndex",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "bytes",
-                        "name": "merkleProof",
-                        "type": "bytes"
-                    }
-                ],
-                "internalType": "struct IL1ScrollMessenger.L2MessageProof",
-                "name": "_proof",
-                "type": "tuple"
             }
         ],
-        "name": "relayMessageWithProof",
+        "name": "relayMessage",
         "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "renounceOwnership",
-        "outputs": [],
-        "stateMutability": "nonpayable",
+        "stateMutability": "payable",
         "type": "function"
     },
     {
         "inputs": [
             {
                 "internalType": "address",
-                "name": "_from",
+                "name": "_target",
                 "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "_to",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_value",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_messageNonce",
-                "type": "uint256"
             },
             {
                 "internalType": "bytes",
@@ -470,16 +394,11 @@
             },
             {
                 "internalType": "uint32",
-                "name": "_newGasLimit",
+                "name": "_minGasLimit",
                 "type": "uint32"
-            },
-            {
-                "internalType": "address",
-                "name": "_refundAddress",
-                "type": "address"
             }
         ],
-        "name": "replayMessage",
+        "name": "sendMessage",
         "outputs": [],
         "stateMutability": "payable",
         "type": "function"
@@ -492,17 +411,12 @@
                 "type": "bytes32"
             }
         ],
-        "name": "replayStates",
+        "name": "successfulMessages",
         "outputs": [
             {
-                "internalType": "uint128",
-                "name": "times",
-                "type": "uint128"
-            },
-            {
-                "internalType": "uint128",
-                "name": "lastIndex",
-                "type": "uint128"
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
             }
         ],
         "stateMutability": "view",
@@ -510,10 +424,10 @@
     },
     {
         "inputs": [],
-        "name": "rollup",
+        "name": "superchainConfig",
         "outputs": [
             {
-                "internalType": "address",
+                "internalType": "contract SuperchainConfig",
                 "name": "",
                 "type": "address"
             }
@@ -522,116 +436,16 @@
         "type": "function"
     },
     {
-        "inputs": [
+        "inputs": [],
+        "name": "version",
+        "outputs": [
             {
-                "internalType": "address",
-                "name": "_to",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_value",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bytes",
-                "name": "_message",
-                "type": "bytes"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_gasLimit",
-                "type": "uint256"
-            },
-            {
-                "internalType": "address",
-                "name": "_refundAddress",
-                "type": "address"
+                "internalType": "string",
+                "name": "",
+                "type": "string"
             }
         ],
-        "name": "sendMessage",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_to",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_value",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bytes",
-                "name": "_message",
-                "type": "bytes"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_gasLimit",
-                "type": "uint256"
-            }
-        ],
-        "name": "sendMessage",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "bool",
-                "name": "_status",
-                "type": "bool"
-            }
-        ],
-        "name": "setPause",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "newOwner",
-                "type": "address"
-            }
-        ],
-        "name": "transferOwnership",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_newFeeVault",
-                "type": "address"
-            }
-        ],
-        "name": "updateFeeVault",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "_newMaxReplayTimes",
-                "type": "uint256"
-            }
-        ],
-        "name": "updateMaxReplayTimes",
-        "outputs": [],
-        "stateMutability": "nonpayable",
+        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -646,9 +460,5 @@
         ],
         "stateMutability": "view",
         "type": "function"
-    },
-    {
-        "stateMutability": "payable",
-        "type": "receive"
     }
 ]
