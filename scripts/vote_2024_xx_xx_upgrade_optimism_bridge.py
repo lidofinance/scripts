@@ -16,6 +16,18 @@ from utils.config import (
     get_is_live,
     get_priority_fee,
     network_name,
+    L1_TOKENS_BRIDGE_PROXY,
+    L1_TOKENS_BRIDGE_NEW_IMPL,
+    LIDO_LOCATOR,
+    LIDO_LOCATOR_IMPL_UPGRADE,
+    L1_EMERGENCY_BRAKES_MULTISIG,
+    L2_TOKENS_BRIDGE_PROXY,
+    L2_TOKENS_BRIDGE_NEW_IMPL,
+    L2_OPTIMISM_BRIDGE_EXECUTOR,
+    L2_OPTIMISM_PROXY_ADMIN_CONTRACT,
+    L2_OPTIMISM_WSTETH_TOKEN,
+    L2_OPTIMISM_WSTETH_TOKEN_NEW_IMPL,
+    L1_OPTIMISM_CROSS_DOMAIN_MESSENGER,
 )
 from utils.agent import agent_forward, agent_execute
 import eth_abi
@@ -23,47 +35,35 @@ import eth_abi
 
 description = """
 
-Upgrade L1Bridge, L2Bridge, L2 wstETH, L2 stETH, TokenRateOracle
+Upgrade L1Bridge, L2Bridge, L2 wstETH
 
 """
 
-OPTIMISM_BRIDGE_EXECUTOR: str = "0x6b314986E3737Ce23c2a13036e77b3f5A846F8AF"
-OPTIMISM_L1_L2_MESSAGE_SERVICE: str = "0x50c7d3e7f7c656493D1D76aaa1a836CedfCBB16A"
-PROXY_ADMIN_ADDR: str = "0xc6cdc2839378d50e03c9737723d96d117b09bda5"
 
-# 1. L1TokenBridge
-L1_TOKEN_BRIDGE_PROXY: str = "0x76943C0D61395d8F2edF9060e1533529cAe05dE6"
-L1_TOKEN_BRIDGE_NEW_IMPL: str = "0xc4E3ff0b5B106f88Fc64c43031BE8b076ee9F21C"
+DEPOSITS_ENABLER_ROLE = "0x4b43b36766bde12c5e9cbbc37d15f8d1f769f08f54720ab370faeb4ce893753a"
 
-# 2. L2TokenBridge
-L2_TOKEN_BRIDGE_PROXY: str = "0x6b314986E3737Ce23c2a13036e77b3f5A846F8AF"
-L2_TOKEN_BRIDGE_NEW_IMPL: str = "0x6b314986E3737Ce23c2a13036e77b3f5A846F8AF"
 
-# 3. wstETH on L2
-L2_NON_REBASABLE_TOKEN_PROXY: str = "0x6b314986E3737Ce23c2a13036e77b3f5A846F8AF"
-L2_NON_REBASABLE_TOKEN_NEW_IMPL: str = "0x6b314986E3737Ce23c2a13036e77b3f5A846F8AF"
+def encode_l2_upgrade_call(proxy_admin: str, proxy1: str, new_impl1: str, proxy2: str, new_impl2: str):
+    scroll_executor = interface.OpBridgeExecutor(L2_OPTIMISM_BRIDGE_EXECUTOR)  # any address to bypass
 
-# 4. stETH on L2
-L2_REBASABLE_TOKEN_PROXY: str = "0x6b314986E3737Ce23c2a13036e77b3f5A846F8AF"
-L2_REBASABLE_TOKEN_NEW_IMPL: str = "0x6b314986E3737Ce23c2a13036e77b3f5A846F8AF"
+    return scroll_executor.queue.encode_input(
+        [proxy_admin, proxy_admin],
+        [0, 0],
+        ["upgrade(address,address)", "upgrade(address,address)"],
+        [
+            eth_abi.encode(["address", "address"], [proxy1, new_impl1]),
+            eth_abi.encode(["address", "address"], [proxy2, new_impl2]),
+        ],
+        [False, False],
+    )
 
-# 5. TokenRateOracle on L2
-L2_TOKEN_RATE_ORACLE_PROXY: str = "0x6b314986E3737Ce23c2a13036e77b3f5A846F8AF"
-L2_TOKEN_RATE_ORACLE_NEW_IMPL: str = "0x6b314986E3737Ce23c2a13036e77b3f5A846F8AF"
 
-def encode_upgrade_call(proxy_admin: str, proxy: str, new_impl: str):
-    scroll_executor = interface.OpBridgeExecutor(
-        "0x6625c6332c9f91f2d27c304e729b86db87a3f504"
-    )  # any address to bypass
+def encode_l1_l2_sendMessage(to: str, calldata: str):
+    print(calldata)
+    l1_l2_msg_service = interface.OpCrossDomainMessenger(L1_OPTIMISM_CROSS_DOMAIN_MESSENGER)
+    min_gas_limit = 1_000_000
+    return l1_l2_msg_service.sendMessage.encode_input(to, calldata, min_gas_limit)
 
-    params = eth_abi.encode(["address", "address"], [proxy, new_impl])
-
-    return scroll_executor.queue.encode_input([proxy_admin], [0], ["upgrade(address,address)"], [params], [False])
-
-def encode_l1_l2_sendMessage(to: str, fee: int, calldata: str):
-    l1_l2_msg_service = interface.OpCrossDomainMessenger(OPTIMISM_L1_L2_MESSAGE_SERVICE)
-
-    return l1_l2_msg_service.sendMessage.encode_input(to, fee, calldata, 1_000_000)
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""
@@ -71,65 +71,63 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     if not network_name() in ("sepolia", "sepolia-fork"):
         return
 
-    l1_token_bridge_proxy = interface.OssifiableProxy(L1_TOKEN_BRIDGE_PROXY);
+    lido_locator_as_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
+    l1_token_bridge_as_proxy = interface.OssifiableProxy(L1_TOKENS_BRIDGE_PROXY)
+    l1_token_bridge = interface.AccessControl(L1_TOKENS_BRIDGE_PROXY)
 
     call_script_items = [
-            # 1. L1 Bridge
-            agent_forward(
+        # 1. L1 Bridge
+        agent_forward(
             [
                 (
-                    l1_token_bridge_proxy.address,
-                    l1_token_bridge_proxy.proxy__upgradeTo.encode_input(L1_TOKEN_BRIDGE_NEW_IMPL),
+                    l1_token_bridge_as_proxy.address,
+                    l1_token_bridge_as_proxy.proxy__upgradeTo.encode_input(L1_TOKENS_BRIDGE_NEW_IMPL),
                 )
-            ]),
-            # 2. L2 Bridge
-            agent_execute(
-                OPTIMISM_L1_L2_MESSAGE_SERVICE,
-                10**17,
-                encode_l1_l2_sendMessage(
-                    OPTIMISM_BRIDGE_EXECUTOR,
-                    0,
-                    encode_upgrade_call(PROXY_ADMIN_ADDR, L2_TOKEN_BRIDGE_PROXY, L2_TOKEN_BRIDGE_NEW_IMPL),
+            ]
+        ),
+        # 1. L1 Bridge
+        agent_forward(
+            [
+                (
+                    lido_locator_as_proxy.address,
+                    lido_locator_as_proxy.proxy__upgradeTo.encode_input(LIDO_LOCATOR_IMPL_UPGRADE),
                 )
-            ),
-            # 3. wstETH on L2
-            agent_execute(
-                OPTIMISM_L1_L2_MESSAGE_SERVICE,
-                10**17,
-                encode_l1_l2_sendMessage(
-                    OPTIMISM_BRIDGE_EXECUTOR,
-                    0,
-                    encode_upgrade_call(PROXY_ADMIN_ADDR, L2_NON_REBASABLE_TOKEN_PROXY, L2_NON_REBASABLE_TOKEN_NEW_IMPL),
+            ]
+        ),
+        # Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent
+        agent_forward(
+            [
+                (
+                    l1_token_bridge.address,
+                    l1_token_bridge.grantRole.encode_input(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG),
                 )
-            ),
-            # 4. stETH on L2
-            agent_execute(
-                OPTIMISM_L1_L2_MESSAGE_SERVICE,
-                10**17,
-                encode_l1_l2_sendMessage(
-                    OPTIMISM_BRIDGE_EXECUTOR,
-                    0,
-                    encode_upgrade_call(PROXY_ADMIN_ADDR, L2_REBASABLE_TOKEN_PROXY, L2_REBASABLE_TOKEN_NEW_IMPL),
+            ]
+        ),
+        # 2. L2 Bridge
+        agent_forward(
+            [
+                (
+                    L1_OPTIMISM_CROSS_DOMAIN_MESSENGER,
+                    encode_l1_l2_sendMessage(
+                        L2_OPTIMISM_BRIDGE_EXECUTOR,
+                        encode_l2_upgrade_call(
+                            L2_OPTIMISM_PROXY_ADMIN_CONTRACT,
+                            L2_TOKENS_BRIDGE_PROXY,
+                            L2_TOKENS_BRIDGE_NEW_IMPL,
+                            L2_OPTIMISM_WSTETH_TOKEN,
+                            L2_OPTIMISM_WSTETH_TOKEN_NEW_IMPL,
+                        ),
+                    ),
                 )
-            ),
-            # 5. TokenRateOracle
-            agent_execute(
-                OPTIMISM_L1_L2_MESSAGE_SERVICE,
-                10**17,
-                encode_l1_l2_sendMessage(
-                    OPTIMISM_BRIDGE_EXECUTOR,
-                    0,
-                    encode_upgrade_call(PROXY_ADMIN_ADDR, L2_TOKEN_RATE_ORACLE_PROXY, L2_TOKEN_RATE_ORACLE_NEW_IMPL),
-                )
-            )
+            ]
+        ),
     ]
 
     vote_desc_items = [
         "1) Upgrade L1 Bridge implementation",
-        "2) Upgrade L2 Bridge implementation",
-        "3) Upgrade L2 wstETH implementation",
-        "4) Upgrade L2 stETH implementation",
-        "5) Upgrade L2 TokenRateOracle implementation",
+        "2) Upgrade L1 LidoLocator implementation",
+        "3) Grant DEPOSITS_ENABLER_ROLE to Emergency Brakes Committee multisig",
+        "4) Send L2 upgrade call: (a) upgrade L2TokenBridge; (b) upgrade wstETH on L2",
     ]
 
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
