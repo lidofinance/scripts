@@ -126,19 +126,7 @@ def parse_stuck_penalty_state_changed_logs(logs):
     return res
 
 
-def parse_target_validators_count_changed(logs):
-    res = []
-    for l in logs:
-        res.append(
-            {
-                "nodeOperatorId": eth_abi.decode(["uint256"], l["topics"][1])[0],
-                "targetValidatorsCount": eth_abi.decode(["uint256"], l["data"]),
-            }
-        )
-    return res
-
-
-def module_happy_path(staking_module, extra_data_service, impersonated_voting, eth_whale, stranger):
+def module_happy_path(staking_module, extra_data_service, impersonated_voting, eth_whale, stranger, helpers):
     nor_exited_count, _, _ = contracts.staking_router.getStakingModuleSummary(staking_module.module_id)
 
     # all_modules = contracts.staking_router.getStakingModules()
@@ -787,12 +775,11 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
 
     target_limit_tx = staking_module.updateTargetValidatorsLimits(no1_id, 1, 0, {"from": STAKING_ROUTER})
 
-    target_validators_count_changed_events = parse_target_validators_count_changed(
-        filter_transfer_logs(target_limit_tx.logs, web3.keccak(text="TargetValidatorsCountChanged(uint256,uint256,uint256)"))
-    )
-    assert target_validators_count_changed_events[0]["nodeOperatorId"] == no1_id
-    assert target_validators_count_changed_events[0]["targetValidatorsCount"][0] == 0
-    # assert target_validators_count_changed_events[0]["targetLimitMode"] == 1
+    helpers.assert_single_event_named(
+            "TargetValidatorsCountChanged",
+            target_limit_tx,
+            {"nodeOperatorId": no1_id, "targetValidatorsCount": 0, "targetLimitMode": 1},
+        )
 
     first_no_summary_after = staking_module.getNodeOperatorSummary(no1_id)
 
@@ -816,11 +803,12 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
 
     # Disable target limit
     target_limit_tx = staking_module.updateTargetValidatorsLimits(no1_id, 0, 0, {"from": STAKING_ROUTER})
-    target_validators_count_changed_events = parse_target_validators_count_changed(
-        filter_transfer_logs(target_limit_tx.logs, web3.keccak(text="TargetValidatorsCountChanged(uint256,uint256,uint256)"))
+
+    helpers.assert_single_event_named(
+        "TargetValidatorsCountChanged",
+        target_limit_tx,
+        {"nodeOperatorId": no1_id, "targetValidatorsCount": 0, "targetLimitMode": 0},
     )
-    assert target_validators_count_changed_events[0]["nodeOperatorId"] == no1_id
-    # assert target_validators_count_changed_events[0]["targetLimitMode"][0] == 0
 
     first_no_summary_after = staking_module.getNodeOperatorSummary(no1_id)
 
@@ -846,17 +834,17 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
 @pytest.mark.skip(
     "TODO: fix the test assumptions about the state of the chain (no exited validators, depositable ETH amount)"
 )
-def test_node_operator_registry(impersonated_voting, eth_whale):
+def test_node_operator_registry(impersonated_voting, stranger, eth_whale, helpers):
     nor = contracts.node_operators_registry
     nor.module_id = 1
     nor.testing_node_operator_ids = [35, 36, 37]
-    module_happy_path(nor, ExtraDataService(), impersonated_voting, eth_whale)
+    module_happy_path(nor, ExtraDataService(), impersonated_voting, eth_whale, stranger, helpers)
 
 
-def test_sdvt(impersonated_voting, stranger, eth_whale):
+def test_sdvt(impersonated_voting, stranger, eth_whale, helpers):
     sdvt = contracts.simple_dvt
     sdvt.module_id = 2
     sdvt.testing_node_operator_ids = [0, 1, 2]
     fill_simple_dvt_ops_keys(stranger, 3, 100)
 
-    module_happy_path(sdvt, ExtraDataService(), impersonated_voting, eth_whale, stranger)
+    module_happy_path(sdvt, ExtraDataService(), impersonated_voting, eth_whale, stranger, helpers)
