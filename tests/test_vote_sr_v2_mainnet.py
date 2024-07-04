@@ -6,10 +6,13 @@ from utils.config import (
     LIDO_LOCATOR_IMPL,
     NODE_OPERATORS_REGISTRY_IMPL,
     NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
+    NODE_OPERATORS_REGISTRY,
+    SIMPLE_DVT,
     SIMPLE_DVT_ARAGON_APP_ID,
     SIMPLE_DVT_IMPL,
     ACCOUNTING_ORACLE_IMPL,
     CS_ACCOUNTING_ADDRESS,
+    CSM,
 )
 from scripts.mainnet.vote_sr_v2_mainnet import start_vote
 from utils.config import (
@@ -33,6 +36,8 @@ from utils.easy_track import create_permissions
 
 class StakingModuleItem(NamedTuple):
     id: int
+    staking_module_address: str
+    name: str
     staking_module_fee: int
     stake_share_limit: int
     treasury_fee: int
@@ -80,6 +85,7 @@ sdvt_uri = "0x697066733a516d615353756a484347636e4675657441504777565735426567614d
 CURATED_MODULE_BEFORE_VOTE = {
     "id": 1,
     "name": "curated-onchain-v1",
+    "stakingModuleAddress": NODE_OPERATORS_REGISTRY,
     "stakingModuleFee": 500,
     "treasuryFee": 500,
     "targetShare": 10000,
@@ -91,7 +97,7 @@ CURATED_MODULE_BEFORE_VOTE = {
 SDVT_MODULE_BEFORE_VOTE = {
     "id": 2,
     "name": "SimpleDVT",
-    "stakingModuleAddress": "0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433",
+    "stakingModuleAddress": SIMPLE_DVT,
     "stakingModuleFee": 800,
     "treasuryFee": 200,
     "targetShare": 50,
@@ -128,8 +134,9 @@ CS_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 CS_ORACLE_INITIAL_EPOCH = 58050
 
 CSM_AFTER_VOTE = {
-    "id": 4,
+    "id": 3,
     "name": CS_MODULE_NAME,
+    "stakingModuleAddress": CSM,
     "stakingModuleFee": CS_STAKING_MODULE_FEE,
     "treasuryFee": CS_TREASURY_FEE,
     "targetShare": CS_STAKE_SHARE_LIMIT,
@@ -246,6 +253,8 @@ def test_vote(
 
     assert contracts.csmHashConsensus.getFrameConfig()[0] == CS_ORACLE_INITIAL_EPOCH
 
+    check_csm()
+
     # Events check
     # events = group_voting_events(vote_tx)
     events = group_voting_events_from_receipt(vote_tx)
@@ -261,6 +270,8 @@ def test_vote(
         [
             StakingModuleItem(
                 CURATED_MODULE_AFTER_VOTE["id"],
+                CURATED_MODULE_AFTER_VOTE["stakingModuleAddress"],
+                CURATED_MODULE_AFTER_VOTE["name"],
                 CURATED_MODULE_AFTER_VOTE["stakingModuleFee"],
                 CURATED_MODULE_AFTER_VOTE["targetShare"],
                 CURATED_MODULE_AFTER_VOTE["treasuryFee"],
@@ -270,6 +281,8 @@ def test_vote(
             ),
             StakingModuleItem(
                 SDVT_MODULE_AFTER_VOTE["id"],
+                SDVT_MODULE_AFTER_VOTE["stakingModuleAddress"],
+                SDVT_MODULE_AFTER_VOTE["name"],
                 SDVT_MODULE_AFTER_VOTE["stakingModuleFee"],
                 SDVT_MODULE_AFTER_VOTE["targetShare"],
                 SDVT_MODULE_AFTER_VOTE["treasuryFee"],
@@ -316,17 +329,26 @@ def test_vote(
         ),
     )
 
-    # 20 - add of staking module
-
-    # validate_module_add(events[19], CSM_AFTER_VOTE)
+    validate_module_add(
+        events[19],
+        StakingModuleItem(
+            CSM_AFTER_VOTE["id"],
+            CSM_AFTER_VOTE["stakingModuleAddress"],
+            CSM_AFTER_VOTE["name"],
+            CSM_AFTER_VOTE["stakingModuleFee"],
+            CSM_AFTER_VOTE["targetShare"],
+            CSM_AFTER_VOTE["treasuryFee"],
+            CSM_AFTER_VOTE["priorityExitShareThreshold"],
+            CSM_AFTER_VOTE["maxDepositsPerBlock"],
+            CSM_AFTER_VOTE["minDepositBlockDistance"],
+        ),
+    )
     validate_grant_role_event(events[20], REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS, contracts.agent.address)
     validate_grant_role_event(events[21], RESUME_ROLE, contracts.agent.address, contracts.agent.address)
 
     validate_resume_event(events[22])
     validate_revoke_role_event(events[23], RESUME_ROLE, contracts.agent.address, contracts.agent.address)
-    # validate_updateInitial_epoch(events[24])
-
-    # check_csm()
+    validate_updateInitial_epoch(events[24])
 
 
 def check_ossifiable_proxy_impl(proxy, expected_impl):
@@ -542,17 +564,37 @@ def validate_updateInitial_epoch(event: EventDict):
     assert event["FrameConfigSet"]["newInitialEpoch"] == CS_ORACLE_INITIAL_EPOCH
 
 
-def validate_module_add(event, csm):
+def validate_module_add(event, csm: StakingModuleItem):
     _events_chain = [
+        "LogScriptCall",
         "LogScriptCall",
         "StakingRouterETHDeposited",
         "StakingModuleAdded",
+        "StakingModuleShareLimitSet",
         "StakingModuleFeesSet",
         "StakingModuleMaxDepositsPerBlockSet",
         "StakingModuleMinDepositBlockDistanceSet",
         "ScriptResult",
     ]
     validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event["StakingRouterETHDeposited"]["stakingModuleId"] == csm.id
+    assert event["StakingRouterETHDeposited"]["amount"] == 0
+    assert event["StakingModuleAdded"]["stakingModuleId"] == csm.id
+    assert event["StakingModuleAdded"]["stakingModule"] == csm.staking_module_address
+    assert event["StakingModuleAdded"]["name"] == csm.name
+
+    assert event["StakingModuleShareLimitSet"]["stakingModuleId"] == csm.id
+    assert event["StakingModuleShareLimitSet"]["stakeShareLimit"] == csm.stake_share_limit
+    assert event["StakingModuleShareLimitSet"]["priorityExitShareThreshold"] == csm.priority_exit_share_threshold
+
+    assert event["StakingModuleFeesSet"]["stakingModuleId"] == csm.id
+    assert event["StakingModuleFeesSet"]["stakingModuleFee"] == csm.staking_module_fee
+    assert event["StakingModuleFeesSet"]["treasuryFee"] == csm.treasury_fee
+
+    assert event["StakingModuleMaxDepositsPerBlockSet"]["maxDepositsPerBlock"] == csm.max_deposits_per_block
+
+    assert event["StakingModuleMinDepositBlockDistanceSet"]["minDepositBlockDistance"] == csm.min_deposit_block_distance
 
 
 def check_csm():
