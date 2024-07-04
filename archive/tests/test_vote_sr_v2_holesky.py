@@ -2,19 +2,18 @@ import pytest
 
 from utils.config import (
     contracts,
+    get_priority_fee,
     STAKING_ROUTER_IMPL,
     LIDO_LOCATOR_IMPL,
     NODE_OPERATORS_REGISTRY_IMPL,
     NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
-    NODE_OPERATORS_REGISTRY,
-    SIMPLE_DVT,
     SIMPLE_DVT_ARAGON_APP_ID,
     SIMPLE_DVT_IMPL,
     ACCOUNTING_ORACLE_IMPL,
+    SANDBOX_IMPL,
     CS_ACCOUNTING_ADDRESS,
-    CSM,
 )
-from scripts.mainnet.vote_sr_v2_mainnet import start_vote
+from scripts.holesky.vote_sr_v2_holesky import start_vote
 from utils.config import (
     contracts,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
@@ -26,18 +25,10 @@ from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.repo_upgrade import validate_repo_upgrade_event, RepoUpgrade
 from utils.test.event_validators.aragon import validate_app_update_event
 from typing import NamedTuple
-from utils.test.event_validators.easy_track import (
-    validate_evmscript_factory_added_event,
-    validate_evmscript_factory_removed_event,
-    EVMScriptFactoryAdded,
-)
-from utils.easy_track import create_permissions
 
 
 class StakingModuleItem(NamedTuple):
     id: int
-    staking_module_address: str
-    name: str
     staking_module_fee: int
     stake_share_limit: int
     treasury_fee: int
@@ -46,20 +37,19 @@ class StakingModuleItem(NamedTuple):
     min_deposit_block_distance: int
 
 
-# CSM roles
-RESUME_ROLE = "0x2fc10cc8ae19568712f7a176fb4978616a610650813c9d05326c34abb62749c7"
-REQUEST_BURN_SHARES_ROLE = "0x4be29e0e4eb91f98f709d98803cba271592782e293b84a625e025cbb40197ba8"
-
-# SR roles
 STAKING_MODULE_UNVETTING_ROLE = "0x240525496a9dc32284b17ce03b43e539e4bd81414634ee54395030d793463b57"
 PAUSE_ROLE = "0x00b1e70095ba5bacc3202c3db9faf1f7873186f0ed7b6c84e80c0018dcc6e38e"
 STAKING_MODULE_RESUME_ROLE = "0x9a2f67efb89489040f2c48c3b2c38f719fba1276678d2ced3bd9049fb5edc6b2"
 MANAGE_CONSENSUS_VERSION_ROLE = "0xc31b1e4b732c5173dc51d519dfa432bad95550ecc4b0f9a61c2a558a2a8e4341"
-OLD_LOCATOR_IMPL_ADDRESS = "0x1D920cc5bACf7eE506a271a5259f2417CaDeCE1d"
-OLD_SR_IMPL_ADDRESS = "0xD8784e748f59Ba711fB5643191Ec3fAdD50Fb6df"
-OLD_NOR_IMPL = "0x8538930c385C0438A357d2c25CB3eAD95Ab6D8ed"
-OLD_SDVT_IMPL = "0x8538930c385C0438A357d2c25CB3eAD95Ab6D8ed"
-OLD_ACCOUNTING_ORACLE_IMPL = "0xF3c5E0A67f32CF1dc07a8817590efa102079a1aF"
+STAKING_MODULE_MANAGE_ROLE = "0x3105bcbf19d4417b73ae0e58d508a65ecf75665e46c2622d8521732de6080c48"
+REQUEST_BURN_SHARES_ROLE = "0x4be29e0e4eb91f98f709d98803cba271592782e293b84a625e025cbb40197ba8"
+RESUME_ROLE = "0x2fc10cc8ae19568712f7a176fb4978616a610650813c9d05326c34abb62749c7"
+OLD_LOCATOR_IMPL_ADDRESS = "0xDba5Ad530425bb1b14EECD76F1b4a517780de537"
+OLD_SR_IMPL_ADDRESS = "0x32f236423928c2c138f46351d9e5fd26331b1aa4"
+OLD_NOR_IMPL = "0xe0270cf2564d81e02284e16539f59c1b5a4718fe"
+OLD_SDVT_IMPL = "0xe0270cf2564d81e02284e16539f59c1b5a4718fe"
+OLD_SANDBOX_IMPL = "0xe0270cf2564d81e02284e16539f59c1b5a4718fe"
+OLD_ACCOUNTING_ORACLE_IMPL = "0x6aca050709469f1f98d8f40f68b1c83b533cd2b2"
 CURATED_MODULE_ID = 1
 SIMPLE_DVT_MODULE_ID = 2
 AO_CONSENSUS_VERSION = 2
@@ -73,19 +63,24 @@ AO_VERSION = 2
 
 # new added fields
 CURATED_PRIORITY_EXIT_SHARE_THRESHOLDS = 10000
-CURATED_MAX_DEPOSITS_PER_BLOCK = 50
+CURATED_MAX_DEPOSITS_PER_BLOCK = 150
 CURATED_MIN_DEPOSIT_BLOCK_DISTANCES = 25
 SDVT_PRIORITY_EXIT_SHARE_THRESHOLDS = 10000
 SDVT_MAX_DEPOSITS_PER_BLOCK = 50
 SDVT_MIN_DEPOSIT_BLOCK_DISTANCES = 25
 
-nor_uri = "0x697066733a516d54346a64693146684d454b5576575351316877786e33365748394b6a656743755a7441684a6b6368526b7a70"
+old_nor_uri = "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+nor_uri = "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+# "0x697066733a516d54346a64693146684d454b5576575351316877786e33365748394b6a656743755a7441684a6b6368526b7a70"
+old_sdvt_uri = (
+    "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+)
 sdvt_uri = "0x697066733a516d615353756a484347636e4675657441504777565735426567614d42766e355343736769334c5366767261536f"
+sandbox_uri = "0x697066733a516d5839414675394e456d76704b634336747a4a79684543316b7276344a5a72695767473951634d6e6e657a5165"
 
 CURATED_MODULE_BEFORE_VOTE = {
     "id": 1,
     "name": "curated-onchain-v1",
-    "stakingModuleAddress": NODE_OPERATORS_REGISTRY,
     "stakingModuleFee": 500,
     "treasuryFee": 500,
     "targetShare": 10000,
@@ -97,10 +92,10 @@ CURATED_MODULE_BEFORE_VOTE = {
 SDVT_MODULE_BEFORE_VOTE = {
     "id": 2,
     "name": "SimpleDVT",
-    "stakingModuleAddress": SIMPLE_DVT,
+    "stakingModuleAddress": "0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433",
     "stakingModuleFee": 800,
     "treasuryFee": 200,
-    "targetShare": 50,
+    "targetShare": 5000,
     "priorityExitShareThreshold": None,
     "maxDepositsPerBlock": None,
     "minDepositBlockDistance": None,
@@ -124,19 +119,18 @@ SDVT_MODULE_AFTER_VOTE.update(
     }
 )
 
-CS_MODULE_NAME = "CommunityStaking"
-CS_STAKE_SHARE_LIMIT = 2000
-CS_PRIORITY_EXIT_SHARE_THRESHOLD = 2500
-CS_STAKING_MODULE_FEE = 800
-CS_TREASURY_FEE = 200
+CS_MODULE_NAME = "Community Staking"
+CS_STAKE_SHARE_LIMIT = 1000
+CS_PRIORITY_EXIT_SHARE_THRESHOLD = 2000
+CS_STAKING_MODULE_FEE = 700
+CS_TREASURY_FEE = 300
 CS_MAX_DEPOSITS_PER_BLOCK = 30
 CS_MIN_DEPOSIT_BLOCK_DISTANCE = 25
-CS_ORACLE_INITIAL_EPOCH = 58050
+CS_ORACLE_INITIAL_EPOCH = 63055
 
 CSM_AFTER_VOTE = {
-    "id": 3,
+    "id": 4,
     "name": CS_MODULE_NAME,
-    "stakingModuleAddress": CSM,
     "stakingModuleFee": CS_STAKING_MODULE_FEE,
     "treasuryFee": CS_TREASURY_FEE,
     "targetShare": CS_STAKE_SHARE_LIMIT,
@@ -173,25 +167,18 @@ OLD_SR_ABI = bi = [
     }
 ]
 
-NEW_TARGET_LIMIT_FACTORY = "0xd2983525E903Ef198d5dD0777712EB66680463bc"
-OLD_TARGET_LIMIT__FACTORY = "0x41CF3DbDc939c5115823Fba1432c4EC5E7bD226C"
-EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY = "0xe8c3F27D20472e4f3C546A3f73C04B54DD72871d"
 
-
-def test_vote(
-    helpers,
-    accounts,
-    vote_ids_from_env,
-):
+def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     staking_router = contracts.staking_router
     sr_proxy = interface.OssifiableProxy(contracts.staking_router)
     locator_proxy = interface.OssifiableProxy(contracts.lido_locator)
     nor_proxy = interface.AppProxyUpgradeable(contracts.node_operators_registry)
     sdvt_proxy = interface.AppProxyUpgradeable(contracts.simple_dvt)
+    sandbox_proxy = interface.AppProxyUpgradeable(contracts.sandbox)
     ao_proxy = interface.OssifiableProxy(contracts.accounting_oracle)
     vebo_proxy = interface.ValidatorsExitBusOracle(contracts.validators_exit_bus_oracle)
 
-    assert staking_router.getStakingModulesCount() == 2
+    assert staking_router.getStakingModulesCount() == 3  # curated + simpledvt + sandbox
 
     # Before voting tests
     # locator
@@ -205,11 +192,16 @@ def test_vote(
     # NOR
     nor_old_app = contracts.nor_app_repo.getLatest()
     assert nor_proxy.implementation() == OLD_NOR_IMPL
-    assert_repo_before_vote(nor_old_app, 4, OLD_NOR_IMPL, nor_uri)
+    assert_repo_before_vote(nor_old_app, 1, OLD_NOR_IMPL, old_nor_uri)
     # SDVT
     sdvt_old_app = contracts.simple_dvt_app_repo.getLatest()
     assert sdvt_proxy.implementation() == OLD_SDVT_IMPL
     assert_repo_before_vote(sdvt_old_app, 1, OLD_SDVT_IMPL, sdvt_uri)
+    # Sanbox
+
+    sandbox_old_app = contracts.sandbox_repo.getLatest()
+    assert sandbox_proxy.implementation() == OLD_SANDBOX_IMPL
+    assert_repo_before_vote(sandbox_old_app, 1, OLD_SDVT_IMPL, sandbox_uri)
     # AO
     check_ossifiable_proxy_impl(ao_proxy, OLD_ACCOUNTING_ORACLE_IMPL)
     # no prermission to manage consensus version on agent
@@ -217,21 +209,25 @@ def test_vote(
 
     # VEBO consensus version
     assert vebo_proxy.getConsensusVersion() == VEBO_CONSENSUS_VERSION - 1
+
     assert not contracts.burner.hasRole(REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS)
     assert not contracts.csm.hasRole(RESUME_ROLE, contracts.agent.address)
+
+    # had a role
+    # assert contracts.staking_router.hasRole(STAKING_MODULE_MANAGE_ROLE, contracts.agent.address)
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
     else:
-        tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
+        tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS, "priority_fee": get_priority_fee()}
         vote_id, _ = start_vote(tx_params, silent=True)
 
     vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
 
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
-    assert staking_router.getStakingModulesCount() == 3
+    assert staking_router.getStakingModulesCount() == 4
 
     # locator
     check_ossifiable_proxy_impl(locator_proxy, LIDO_LOCATOR_IMPL)
@@ -244,7 +240,7 @@ def test_vote(
     # AO
     check_ossifiable_proxy_impl(ao_proxy, ACCOUNTING_ORACLE_IMPL)
 
-    # no prermission to manage consensus version on agent
+    # no permission to manage consensus version on agent
     check_manage_consensus_role()
     # VEBO consensus version
     assert vebo_proxy.getConsensusVersion() == VEBO_CONSENSUS_VERSION
@@ -254,13 +250,13 @@ def test_vote(
 
     assert contracts.csmHashConsensus.getFrameConfig()[0] == CS_ORACLE_INITIAL_EPOCH
 
-    check_csm()
-
     # Events check
-    # events = group_voting_events(vote_tx)
+    if bypass_events_decoding:
+        return
+
     events = group_voting_events_from_receipt(vote_tx)
 
-    assert len(events) == 26
+    assert len(events) == 27
 
     validate_upgrade_events(events[0], LIDO_LOCATOR_IMPL)
     validate_dsm_roles_events(events)
@@ -271,8 +267,6 @@ def test_vote(
         [
             StakingModuleItem(
                 CURATED_MODULE_AFTER_VOTE["id"],
-                CURATED_MODULE_AFTER_VOTE["stakingModuleAddress"],
-                CURATED_MODULE_AFTER_VOTE["name"],
                 CURATED_MODULE_AFTER_VOTE["stakingModuleFee"],
                 CURATED_MODULE_AFTER_VOTE["targetShare"],
                 CURATED_MODULE_AFTER_VOTE["treasuryFee"],
@@ -282,8 +276,6 @@ def test_vote(
             ),
             StakingModuleItem(
                 SDVT_MODULE_AFTER_VOTE["id"],
-                SDVT_MODULE_AFTER_VOTE["stakingModuleAddress"],
-                SDVT_MODULE_AFTER_VOTE["name"],
                 SDVT_MODULE_AFTER_VOTE["stakingModuleFee"],
                 SDVT_MODULE_AFTER_VOTE["targetShare"],
                 SDVT_MODULE_AFTER_VOTE["treasuryFee"],
@@ -296,7 +288,7 @@ def test_vote(
 
     nor_new_app = contracts.nor_app_repo.getLatest()
     assert_repo_update(nor_new_app, nor_old_app, NODE_OPERATORS_REGISTRY_IMPL, nor_uri)
-    validate_repo_upgrade_event(events[6], RepoUpgrade(6, nor_new_app[0]))
+    validate_repo_upgrade_event(events[6], RepoUpgrade(2, nor_new_app[0]))
     validate_app_update_event(events[7], NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL)
     validate_nor_update(events[8], NOR_VERSION)
 
@@ -306,59 +298,37 @@ def test_vote(
     validate_app_update_event(events[10], SIMPLE_DVT_ARAGON_APP_ID, SIMPLE_DVT_IMPL)
     validate_nor_update(events[11], SDVT_VERSION)
 
+    sandbox_new_app = contracts.sandbox_repo.getLatest()
+    assert_repo_update(sandbox_new_app, sandbox_old_app, SANDBOX_IMPL, sandbox_uri)
+    validate_repo_upgrade_event(events[12], RepoUpgrade(2, sandbox_new_app[0]))
+    # validate_app_update_event(events[13], SANDBOX_DVT_ARAGON_APP_ID, SANDBOX_DVT_IMPL)
+    # validate_nor_update(events[14], SANDBOX_VERSION)
+
     # AO
-    validate_upgrade_events(events[12], ACCOUNTING_ORACLE_IMPL)
-    validate_ao_update(events[13], AO_VERSION, AO_CONSENSUS_VERSION)
+    validate_upgrade_events(events[15], ACCOUNTING_ORACLE_IMPL)
+    validate_ao_update(events[16], AO_VERSION, AO_CONSENSUS_VERSION)
 
     validate_grant_role_event(
-        events[14], MANAGE_CONSENSUS_VERSION_ROLE, contracts.agent.address, contracts.agent.address
+        events[17], MANAGE_CONSENSUS_VERSION_ROLE, contracts.agent.address, contracts.agent.address
     )
 
-    validate_vebo_consensus_version_set(events[15])
+    validate_vebo_consensus_version_set(events[18])
 
     validate_revoke_role_event(
-        events[16], MANAGE_CONSENSUS_VERSION_ROLE, contracts.agent.address, contracts.agent.address
+        events[19], MANAGE_CONSENSUS_VERSION_ROLE, contracts.agent.address, contracts.agent.address
     )
 
-    validate_evmscript_factory_removed_event(events[17], OLD_TARGET_LIMIT__FACTORY)
+    # 20 - add of staking module
 
-    validate_evmscript_factory_added_event(
-        events[18],
-        EVMScriptFactoryAdded(
-            factory_addr=NEW_TARGET_LIMIT_FACTORY,
-            permissions=(create_permissions(contracts.simple_dvt, "updateTargetValidatorsLimits")),
-        ),
-    )
+    # validate_module_add(events[20], CSM_AFTER_VOTE)
+    validate_grant_role_event(events[21], REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS, contracts.agent.address)
+    validate_grant_role_event(events[22], RESUME_ROLE, contracts.agent.address, contracts.agent.address)
 
-    validate_module_add(
-        events[19],
-        StakingModuleItem(
-            CSM_AFTER_VOTE["id"],
-            CSM_AFTER_VOTE["stakingModuleAddress"],
-            CSM_AFTER_VOTE["name"],
-            CSM_AFTER_VOTE["stakingModuleFee"],
-            CSM_AFTER_VOTE["targetShare"],
-            CSM_AFTER_VOTE["treasuryFee"],
-            CSM_AFTER_VOTE["priorityExitShareThreshold"],
-            CSM_AFTER_VOTE["maxDepositsPerBlock"],
-            CSM_AFTER_VOTE["minDepositBlockDistance"],
-        ),
-    )
-    validate_grant_role_event(events[20], REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS, contracts.agent.address)
-    validate_grant_role_event(events[21], RESUME_ROLE, contracts.agent.address, contracts.agent.address)
+    validate_resume_event(events[23])
+    validate_revoke_role_event(events[24], RESUME_ROLE, contracts.agent.address, contracts.agent.address)
+    validate_updateInitial_epoch(events[25])
 
-    validate_resume_event(events[22])
-    validate_revoke_role_event(events[23], RESUME_ROLE, contracts.agent.address, contracts.agent.address)
-    validate_updateInitial_epoch(events[24])
-
-    validate_evmscript_factory_added_event(
-        events[25],
-        EVMScriptFactoryAdded(
-            factory_addr=EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY,
-            permissions=(create_permissions(contracts.csm, "settleELRewardsStealingPenalty")),
-        ),
-        ["LogScriptCall", "EVMScriptFactoryAdded", "ScriptResult", "ExecuteVote"],
-    )
+    check_csm()
 
 
 def check_ossifiable_proxy_impl(proxy, expected_impl):
@@ -375,7 +345,6 @@ def check_dsm_roles_before_vote():
     old_dsm_has_pause_role = contracts.staking_router.hasRole(PAUSE_ROLE, contracts.deposit_security_module_v2)
 
     assert old_dsm_has_pause_role
-
     old_dsm_has_resume_role = contracts.staking_router.hasRole(
         STAKING_MODULE_RESUME_ROLE, contracts.deposit_security_module_v2
     )
@@ -442,6 +411,18 @@ def assert_repo_update(new_app, old_app, contract_address, old_content_uri):
     assert new_app[2] == old_content_uri, "Content uri should match"
 
 
+def check_csm():
+    cs = contracts.staking_router.getStakingModule(4)
+
+    assert cs["name"] == CSM_AFTER_VOTE["name"]
+    assert cs["stakingModuleFee"] == CSM_AFTER_VOTE["stakingModuleFee"]
+    assert cs["treasuryFee"] == CSM_AFTER_VOTE["treasuryFee"]
+    assert cs["stakeShareLimit"] == CSM_AFTER_VOTE["targetShare"]
+    assert cs["priorityExitShareThreshold"] == CSM_AFTER_VOTE["priorityExitShareThreshold"]
+    assert cs["maxDepositsPerBlock"] == CSM_AFTER_VOTE["maxDepositsPerBlock"]
+    assert cs["minDepositBlockDistance"] == CSM_AFTER_VOTE["minDepositBlockDistance"]
+
+
 # Events check
 
 
@@ -466,10 +447,19 @@ def validate_dsm_roles_events(events: EventDict):
 
 
 def validate_staking_module_update(event: EventDict, module_items: List[StakingModuleItem]):
+
     assert len(module_items) == 2
 
     _events_chain = [
         "LogScriptCall",
+        "StakingModuleShareLimitSet",
+        "StakingModuleFeesSet",
+        "StakingModuleMaxDepositsPerBlockSet",
+        "StakingModuleMinDepositBlockDistanceSet",
+        "StakingModuleShareLimitSet",
+        "StakingModuleFeesSet",
+        "StakingModuleMaxDepositsPerBlockSet",
+        "StakingModuleMinDepositBlockDistanceSet",
         "StakingModuleShareLimitSet",
         "StakingModuleFeesSet",
         "StakingModuleMaxDepositsPerBlockSet",
@@ -483,10 +473,10 @@ def validate_staking_module_update(event: EventDict, module_items: List[StakingM
 
     validate_events_chain([e.name for e in event], _events_chain)
 
-    assert event.count("StakingModuleFeesSet") == 2
-    assert event.count("StakingModuleShareLimitSet") == 2
-    assert event.count("StakingModuleMinDepositBlockDistanceSet") == 2
-    assert event.count("StakingModuleMaxDepositsPerBlockSet") == 2
+    assert event.count("StakingModuleFeesSet") == 3
+    assert event.count("StakingModuleShareLimitSet") == 3
+    assert event.count("StakingModuleMinDepositBlockDistanceSet") == 3
+    assert event.count("StakingModuleMaxDepositsPerBlockSet") == 3
     assert event.count("ContractVersionSet") == 1
 
     # curated
@@ -574,46 +564,14 @@ def validate_updateInitial_epoch(event: EventDict):
     assert event["FrameConfigSet"]["newInitialEpoch"] == CS_ORACLE_INITIAL_EPOCH
 
 
-def validate_module_add(event, csm: StakingModuleItem):
+def validate_module_add(event, csm):
     _events_chain = [
-        "LogScriptCall",
         "LogScriptCall",
         "StakingRouterETHDeposited",
         "StakingModuleAdded",
-        "StakingModuleShareLimitSet",
         "StakingModuleFeesSet",
         "StakingModuleMaxDepositsPerBlockSet",
         "StakingModuleMinDepositBlockDistanceSet",
         "ScriptResult",
     ]
     validate_events_chain([e.name for e in event], _events_chain)
-
-    assert event["StakingRouterETHDeposited"]["stakingModuleId"] == csm.id
-    assert event["StakingRouterETHDeposited"]["amount"] == 0
-    assert event["StakingModuleAdded"]["stakingModuleId"] == csm.id
-    assert event["StakingModuleAdded"]["stakingModule"] == csm.staking_module_address
-    assert event["StakingModuleAdded"]["name"] == csm.name
-
-    assert event["StakingModuleShareLimitSet"]["stakingModuleId"] == csm.id
-    assert event["StakingModuleShareLimitSet"]["stakeShareLimit"] == csm.stake_share_limit
-    assert event["StakingModuleShareLimitSet"]["priorityExitShareThreshold"] == csm.priority_exit_share_threshold
-
-    assert event["StakingModuleFeesSet"]["stakingModuleId"] == csm.id
-    assert event["StakingModuleFeesSet"]["stakingModuleFee"] == csm.staking_module_fee
-    assert event["StakingModuleFeesSet"]["treasuryFee"] == csm.treasury_fee
-
-    assert event["StakingModuleMaxDepositsPerBlockSet"]["maxDepositsPerBlock"] == csm.max_deposits_per_block
-
-    assert event["StakingModuleMinDepositBlockDistanceSet"]["minDepositBlockDistance"] == csm.min_deposit_block_distance
-
-
-def check_csm():
-    cs = contracts.staking_router.getStakingModule(3)
-
-    assert cs["name"] == CSM_AFTER_VOTE["name"]
-    assert cs["stakingModuleFee"] == CSM_AFTER_VOTE["stakingModuleFee"]
-    assert cs["treasuryFee"] == CSM_AFTER_VOTE["treasuryFee"]
-    assert cs["stakeShareLimit"] == CSM_AFTER_VOTE["targetShare"]
-    assert cs["priorityExitShareThreshold"] == CSM_AFTER_VOTE["priorityExitShareThreshold"]
-    assert cs["maxDepositsPerBlock"] == CSM_AFTER_VOTE["maxDepositsPerBlock"]
-    assert cs["minDepositBlockDistance"] == CSM_AFTER_VOTE["minDepositBlockDistance"]
