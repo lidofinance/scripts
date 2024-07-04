@@ -16,7 +16,9 @@ SR V2
 14. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}`,
 15. Grant manage consensus role to agent ${AGENT}`
 16. Update VEBO consensus version to ${VEBO_CONSENSUS_VERSION}`
-17. Revoke manage consensus role from agent ${AGENT}"
+17. Revoke manage consensus role from agent ${AGENT}
+18. Remove old target limit factory
+19. Add Target limit for SDVT factory to ET
 
 CSM
 
@@ -50,7 +52,8 @@ from utils.config import (
     STAKING_ROUTER_IMPL,
     ACCOUNTING_ORACLE_IMPL,
     NODE_OPERATORS_REGISTRY_IMPL,
-    CS_ACCOUNTING_ADDRESS,
+    # CS_ACCOUNTING_ADDRESS,
+    EASYTRACK,
 )
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.repo import (
@@ -58,7 +61,7 @@ from utils.repo import (
     add_implementation_to_sdvt_app_repo,
 )
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
-from utils.easy_track import add_evmscript_factory, create_permissions
+from utils.easy_track import add_evmscript_factory, create_permissions, remove_evmscript_factory
 from utils.kernel import update_app_implementation
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
@@ -86,8 +89,13 @@ CS_MAX_DEPOSITS_PER_BLOCK = 30
 CS_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 CS_ORACLE_INITIAL_EPOCH = 58050
 
+# !!!! that is locally deployed factory address, before run set you value
+NEW_TARGET_LIMIT_FACTORY = "0xA3b48c7b901fede641B596A4C10a4630052449A6"
+OLD_TARGET_LIMIT__FACTORY = "0x41CF3DbDc939c5115823Fba1432c4EC5E7bD226C"
+EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY = ""
+
 description = """
-_REPLACE_ME_
+Proposal to support DSM 2.0 and CSM Module
 """
 
 
@@ -263,83 +271,96 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                 ]
             ),
         ),
+        (
+            "18. Remove old target limit factory",
+            remove_evmscript_factory(
+                factory=OLD_TARGET_LIMIT__FACTORY,
+            ),
+        ),
+        (
+            "19. Add Target limit for SDVT factory to ET",
+            add_evmscript_factory(
+                factory=NEW_TARGET_LIMIT_FACTORY,
+                permissions=(create_permissions(contracts.simple_dvt, "updateTargetValidatorsLimits")),
+            ),
+        ),
         #
         # CSM
         #
-        (
-            "18. Add staking module",
-            agent_forward(
-                [
-                    (
-                        contracts.staking_router.address,
-                        contracts.staking_router.addStakingModule.encode_input(
-                            CS_MODULE_NAME,
-                            contracts.csm.address,
-                            CS_STAKE_SHARE_LIMIT,
-                            CS_PRIORITY_EXIT_SHARE_THRESHOLD,
-                            CS_STAKING_MODULE_FEE,
-                            CS_TREASURY_FEE,
-                            CS_MAX_DEPOSITS_PER_BLOCK,
-                            CS_MIN_DEPOSIT_BLOCK_DISTANCE,
-                        ),
-                    ),
-                ]
-            ),
-        ),
-        (
-            "19. Grant request burn role to CSAccounting contract",
-            agent_forward(
-                [
-                    encode_oz_grant_role(
-                        contract=contracts.burner,
-                        role_name="REQUEST_BURN_SHARES_ROLE",
-                        grant_to=CS_ACCOUNTING_ADDRESS,
-                    )
-                ]
-            ),
-        ),
-        (
-            "20. Grant resume role to agent",
-            agent_forward(
-                [
-                    encode_oz_grant_role(
-                        contract=contracts.csm,
-                        role_name="RESUME_ROLE",
-                        grant_to=contracts.agent,
-                    )
-                ]
-            ),
-        ),
-        (
-            "21. Resume staking module",
-            agent_forward([(contracts.csm.address, contracts.csm.resume.encode_input())]),
-        ),
-        (
-            "22. Revoke resume role from agent",
-            agent_forward(
-                [
-                    encode_oz_revoke_role(
-                        contract=contracts.csm,
-                        role_name="RESUME_ROLE",
-                        revoke_from=contracts.agent,
-                    )
-                ]
-            ),
-        ),
-        (
-            "23. Update initial epoch",
-            agent_forward(
-                [
-                    (
-                        contracts.csmHashConsensus.address,
-                        contracts.csmHashConsensus.updateInitialEpoch.encode_input(CS_ORACLE_INITIAL_EPOCH),
-                    )
-                ]
-            ),
-        ),
+        # (
+        #     "18. Add staking module",
+        #     agent_forward(
+        #         [
+        #             (
+        #                 contracts.staking_router.address,
+        #                 contracts.staking_router.addStakingModule.encode_input(
+        #                     CS_MODULE_NAME,
+        #                     contracts.csm.address,
+        #                     CS_STAKE_SHARE_LIMIT,
+        #                     CS_PRIORITY_EXIT_SHARE_THRESHOLD,
+        #                     CS_STAKING_MODULE_FEE,
+        #                     CS_TREASURY_FEE,
+        #                     CS_MAX_DEPOSITS_PER_BLOCK,
+        #                     CS_MIN_DEPOSIT_BLOCK_DISTANCE,
+        #                 ),
+        #             ),
+        #         ]
+        #     ),
+        # ),
+        # (
+        #     "19. Grant request burn role to CSAccounting contract",
+        #     agent_forward(
+        #         [
+        #             encode_oz_grant_role(
+        #                 contract=contracts.burner,
+        #                 role_name="REQUEST_BURN_SHARES_ROLE",
+        #                 grant_to=CS_ACCOUNTING_ADDRESS,
+        #             )
+        #         ]
+        #     ),
+        # ),
+        # (
+        #     "20. Grant resume role to agent",
+        #     agent_forward(
+        #         [
+        #             encode_oz_grant_role(
+        #                 contract=contracts.csm,
+        #                 role_name="RESUME_ROLE",
+        #                 grant_to=contracts.agent,
+        #             )
+        #         ]
+        #     ),
+        # ),
+        # (
+        #     "21. Resume staking module",
+        #     agent_forward([(contracts.csm.address, contracts.csm.resume.encode_input())]),
+        # ),
+        # (
+        #     "22. Revoke resume role from agent",
+        #     agent_forward(
+        #         [
+        #             encode_oz_revoke_role(
+        #                 contract=contracts.csm,
+        #                 role_name="RESUME_ROLE",
+        #                 revoke_from=contracts.agent,
+        #             )
+        #         ]
+        #     ),
+        # ),
+        # (
+        #     "23. Update initial epoch",
+        #     agent_forward(
+        #         [
+        #             (
+        #                 contracts.csmHashConsensus.address,
+        #                 contracts.csmHashConsensus.updateInitialEpoch.encode_input(CS_ORACLE_INITIAL_EPOCH),
+        #             )
+        #         ]
+        #     ),
+        # ),
         # (
         #     "24. Add CS settle EL stealing factory to ET",
-        #      add_evmscript_factory(
+        #     add_evmscript_factory(
         #         factory=EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY,
         #         permissions=(create_permissions(contracts.csm, "settleELRewardsStealingPenalty")),
         #     ),
@@ -364,7 +385,7 @@ def main():
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 
-    vote_id, _ = start_vote(tx_params=tx_params, silent=False)
+    vote_id, _ = start_vote(tx_params=tx_params, silent=True)  # disable temporary
 
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 

@@ -22,6 +22,12 @@ from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.repo_upgrade import validate_repo_upgrade_event, RepoUpgrade
 from utils.test.event_validators.aragon import validate_app_update_event
 from typing import NamedTuple
+from utils.test.event_validators.easy_track import (
+    validate_evmscript_factory_added_event,
+    validate_evmscript_factory_removed_event,
+    EVMScriptFactoryAdded,
+)
+from utils.easy_track import create_permissions
 
 
 class StakingModuleItem(NamedTuple):
@@ -134,6 +140,9 @@ OLD_SR_ABI = bi = [
     }
 ]
 
+OLD_TARGET_LIMIT__FACTORY = "0x41CF3DbDc939c5115823Fba1432c4EC5E7bD226C"
+NEW_TARGET_LIMIT_FACTORY = "0xA3b48c7b901fede641B596A4C10a4630052449A6"
+
 
 def test_vote(
     helpers,
@@ -206,7 +215,7 @@ def test_vote(
     # Events check
     events = group_voting_events(vote_tx)
 
-    assert len(events) == 17
+    assert len(events) == 19
 
     validate_upgrade_events(events[0], LIDO_LOCATOR_IMPL)
     validate_dsm_roles_events(events)
@@ -260,6 +269,16 @@ def test_vote(
 
     validate_revoke_role_event(
         events[16], MANAGE_CONSENSUS_VERSION_ROLE, contracts.agent.address, contracts.agent.address
+    )
+
+    validate_evmscript_factory_removed_event(events[17], OLD_TARGET_LIMIT__FACTORY)
+
+    validate_evmscript_factory_added_event(
+        events[18],
+        EVMScriptFactoryAdded(
+            factory_addr=NEW_TARGET_LIMIT_FACTORY,
+            permissions=(create_permissions(contracts.simple_dvt, "updateTargetValidatorsLimits")),
+        ),
     )
 
 
