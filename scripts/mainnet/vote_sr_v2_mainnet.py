@@ -52,7 +52,7 @@ from utils.config import (
     STAKING_ROUTER_IMPL,
     ACCOUNTING_ORACLE_IMPL,
     NODE_OPERATORS_REGISTRY_IMPL,
-    # CS_ACCOUNTING_ADDRESS,
+    CS_ACCOUNTING_ADDRESS,
     EASYTRACK,
 )
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
@@ -286,78 +286,77 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         ),
         #
         # CSM
-        #
-        # (
-        #     "18. Add staking module",
-        #     agent_forward(
-        #         [
-        #             (
-        #                 contracts.staking_router.address,
-        #                 contracts.staking_router.addStakingModule.encode_input(
-        #                     CS_MODULE_NAME,
-        #                     contracts.csm.address,
-        #                     CS_STAKE_SHARE_LIMIT,
-        #                     CS_PRIORITY_EXIT_SHARE_THRESHOLD,
-        #                     CS_STAKING_MODULE_FEE,
-        #                     CS_TREASURY_FEE,
-        #                     CS_MAX_DEPOSITS_PER_BLOCK,
-        #                     CS_MIN_DEPOSIT_BLOCK_DISTANCE,
-        #                 ),
-        #             ),
-        #         ]
-        #     ),
-        # ),
-        # (
-        #     "19. Grant request burn role to CSAccounting contract",
-        #     agent_forward(
-        #         [
-        #             encode_oz_grant_role(
-        #                 contract=contracts.burner,
-        #                 role_name="REQUEST_BURN_SHARES_ROLE",
-        #                 grant_to=CS_ACCOUNTING_ADDRESS,
-        #             )
-        #         ]
-        #     ),
-        # ),
-        # (
-        #     "20. Grant resume role to agent",
-        #     agent_forward(
-        #         [
-        #             encode_oz_grant_role(
-        #                 contract=contracts.csm,
-        #                 role_name="RESUME_ROLE",
-        #                 grant_to=contracts.agent,
-        #             )
-        #         ]
-        #     ),
-        # ),
-        # (
-        #     "21. Resume staking module",
-        #     agent_forward([(contracts.csm.address, contracts.csm.resume.encode_input())]),
-        # ),
-        # (
-        #     "22. Revoke resume role from agent",
-        #     agent_forward(
-        #         [
-        #             encode_oz_revoke_role(
-        #                 contract=contracts.csm,
-        #                 role_name="RESUME_ROLE",
-        #                 revoke_from=contracts.agent,
-        #             )
-        #         ]
-        #     ),
-        # ),
-        # (
-        #     "23. Update initial epoch",
-        #     agent_forward(
-        #         [
-        #             (
-        #                 contracts.csmHashConsensus.address,
-        #                 contracts.csmHashConsensus.updateInitialEpoch.encode_input(CS_ORACLE_INITIAL_EPOCH),
-        #             )
-        #         ]
-        #     ),
-        # ),
+        (
+            "20. Add staking module",
+            agent_forward(
+                [
+                    (
+                        contracts.staking_router.address,
+                        contracts.staking_router.addStakingModule.encode_input(
+                            CS_MODULE_NAME,
+                            contracts.csm.address,
+                            CS_STAKE_SHARE_LIMIT,
+                            CS_PRIORITY_EXIT_SHARE_THRESHOLD,
+                            CS_STAKING_MODULE_FEE,
+                            CS_TREASURY_FEE,
+                            CS_MAX_DEPOSITS_PER_BLOCK,
+                            CS_MIN_DEPOSIT_BLOCK_DISTANCE,
+                        ),
+                    ),
+                ]
+            ),
+        ),
+        (
+            "21. Grant request burn role to CSAccounting contract",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.burner,
+                        role_name="REQUEST_BURN_SHARES_ROLE",
+                        grant_to=CS_ACCOUNTING_ADDRESS,
+                    )
+                ]
+            ),
+        ),
+        (
+            "22. Grant resume role to agent",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.csm,
+                        role_name="RESUME_ROLE",
+                        grant_to=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+        (
+            "23. Resume staking module",
+            agent_forward([(contracts.csm.address, contracts.csm.resume.encode_input())]),
+        ),
+        (
+            "24. Revoke resume role from agent",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.csm,
+                        role_name="RESUME_ROLE",
+                        revoke_from=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+        (
+            "25. Update initial epoch",
+            agent_forward(
+                [
+                    (
+                        contracts.csmHashConsensus.address,
+                        contracts.csmHashConsensus.updateInitialEpoch.encode_input(CS_ORACLE_INITIAL_EPOCH),
+                    )
+                ]
+            ),
+        ),
         # (
         #     "24. Add CS settle EL stealing factory to ET",
         #     add_evmscript_factory(

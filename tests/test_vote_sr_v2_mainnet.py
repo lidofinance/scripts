@@ -9,6 +9,7 @@ from utils.config import (
     SIMPLE_DVT_ARAGON_APP_ID,
     SIMPLE_DVT_IMPL,
     ACCOUNTING_ORACLE_IMPL,
+    CS_ACCOUNTING_ADDRESS,
 )
 from scripts.mainnet.vote_sr_v2_mainnet import start_vote
 from utils.config import (
@@ -40,6 +41,11 @@ class StakingModuleItem(NamedTuple):
     min_deposit_block_distance: int
 
 
+# CSM roles
+RESUME_ROLE = "0x2fc10cc8ae19568712f7a176fb4978616a610650813c9d05326c34abb62749c7"
+REQUEST_BURN_SHARES_ROLE = "0x4be29e0e4eb91f98f709d98803cba271592782e293b84a625e025cbb40197ba8"
+
+# SR roles
 STAKING_MODULE_UNVETTING_ROLE = "0x240525496a9dc32284b17ce03b43e539e4bd81414634ee54395030d793463b57"
 PAUSE_ROLE = "0x00b1e70095ba5bacc3202c3db9faf1f7873186f0ed7b6c84e80c0018dcc6e38e"
 STAKING_MODULE_RESUME_ROLE = "0x9a2f67efb89489040f2c48c3b2c38f719fba1276678d2ced3bd9049fb5edc6b2"
@@ -112,6 +118,26 @@ SDVT_MODULE_AFTER_VOTE.update(
     }
 )
 
+CS_MODULE_NAME = "CommunityStaking"
+CS_STAKE_SHARE_LIMIT = 2000
+CS_PRIORITY_EXIT_SHARE_THRESHOLD = 2500
+CS_STAKING_MODULE_FEE = 800
+CS_TREASURY_FEE = 200
+CS_MAX_DEPOSITS_PER_BLOCK = 30
+CS_MIN_DEPOSIT_BLOCK_DISTANCE = 25
+CS_ORACLE_INITIAL_EPOCH = 58050
+
+CSM_AFTER_VOTE = {
+    "id": 4,
+    "name": CS_MODULE_NAME,
+    "stakingModuleFee": CS_STAKING_MODULE_FEE,
+    "treasuryFee": CS_TREASURY_FEE,
+    "targetShare": CS_STAKE_SHARE_LIMIT,
+    "priorityExitShareThreshold": CS_PRIORITY_EXIT_SHARE_THRESHOLD,
+    "maxDepositsPerBlock": CS_MAX_DEPOSITS_PER_BLOCK,
+    "minDepositBlockDistance": CS_MIN_DEPOSIT_BLOCK_DISTANCE,
+}
+
 OLD_SR_ABI = bi = [
     {
         "inputs": [{"internalType": "uint256", "name": "_stakingModuleId", "type": "uint256"}],
@@ -150,7 +176,6 @@ def test_vote(
     vote_ids_from_env,
 ):
     staking_router = contracts.staking_router
-
     sr_proxy = interface.OssifiableProxy(contracts.staking_router)
     locator_proxy = interface.OssifiableProxy(contracts.lido_locator)
     nor_proxy = interface.AppProxyUpgradeable(contracts.node_operators_registry)
@@ -184,6 +209,8 @@ def test_vote(
 
     # VEBO consensus version
     assert vebo_proxy.getConsensusVersion() == VEBO_CONSENSUS_VERSION - 1
+    assert not contracts.burner.hasRole(REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS)
+    assert not contracts.csm.hasRole(RESUME_ROLE, contracts.agent.address)
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -195,6 +222,8 @@ def test_vote(
     vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
 
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
+
+    assert staking_router.getStakingModulesCount() == 3
 
     # locator
     check_ossifiable_proxy_impl(locator_proxy, LIDO_LOCATOR_IMPL)
@@ -212,10 +241,16 @@ def test_vote(
     # VEBO consensus version
     assert vebo_proxy.getConsensusVersion() == VEBO_CONSENSUS_VERSION
 
-    # Events check
-    events = group_voting_events(vote_tx)
+    assert contracts.burner.hasRole(REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS)
+    assert not contracts.csm.hasRole(RESUME_ROLE, contracts.agent.address)
 
-    assert len(events) == 19
+    assert contracts.csmHashConsensus.getFrameConfig()[0] == CS_ORACLE_INITIAL_EPOCH
+
+    # Events check
+    # events = group_voting_events(vote_tx)
+    events = group_voting_events_from_receipt(vote_tx)
+
+    assert len(events) == 25
 
     validate_upgrade_events(events[0], LIDO_LOCATOR_IMPL)
     validate_dsm_roles_events(events)
@@ -280,6 +315,18 @@ def test_vote(
             permissions=(create_permissions(contracts.simple_dvt, "updateTargetValidatorsLimits")),
         ),
     )
+
+    # 20 - add of staking module
+
+    # validate_module_add(events[19], CSM_AFTER_VOTE)
+    validate_grant_role_event(events[20], REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS, contracts.agent.address)
+    validate_grant_role_event(events[21], RESUME_ROLE, contracts.agent.address, contracts.agent.address)
+
+    validate_resume_event(events[22])
+    validate_revoke_role_event(events[23], RESUME_ROLE, contracts.agent.address, contracts.agent.address)
+    # validate_updateInitial_epoch(events[24])
+
+    # check_csm()
 
 
 def check_ossifiable_proxy_impl(proxy, expected_impl):
@@ -481,3 +528,40 @@ def validate_vebo_consensus_version_set(event: EventDict):
     _events_chain = ["LogScriptCall", "LogScriptCall", "ConsensusVersionSet", "ScriptResult"]
     validate_events_chain([e.name for e in event], _events_chain)
     assert event["ConsensusVersionSet"]["version"] == VEBO_CONSENSUS_VERSION
+
+
+def validate_resume_event(event: EventDict):
+    _events_chain = ["LogScriptCall", "LogScriptCall", "Resumed", "ScriptResult"]
+    validate_events_chain([e.name for e in event], _events_chain)
+    assert event.count("Resumed") == 1
+
+
+def validate_updateInitial_epoch(event: EventDict):
+    _events_chain = ["LogScriptCall", "LogScriptCall", "FrameConfigSet", "ScriptResult"]
+    validate_events_chain([e.name for e in event], _events_chain)
+    assert event["FrameConfigSet"]["newInitialEpoch"] == CS_ORACLE_INITIAL_EPOCH
+
+
+def validate_module_add(event, csm):
+    _events_chain = [
+        "LogScriptCall",
+        "StakingRouterETHDeposited",
+        "StakingModuleAdded",
+        "StakingModuleFeesSet",
+        "StakingModuleMaxDepositsPerBlockSet",
+        "StakingModuleMinDepositBlockDistanceSet",
+        "ScriptResult",
+    ]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+
+def check_csm():
+    cs = contracts.staking_router.getStakingModule(3)
+
+    assert cs["name"] == CSM_AFTER_VOTE["name"]
+    assert cs["stakingModuleFee"] == CSM_AFTER_VOTE["stakingModuleFee"]
+    assert cs["treasuryFee"] == CSM_AFTER_VOTE["treasuryFee"]
+    assert cs["stakeShareLimit"] == CSM_AFTER_VOTE["targetShare"]
+    assert cs["priorityExitShareThreshold"] == CSM_AFTER_VOTE["priorityExitShareThreshold"]
+    assert cs["maxDepositsPerBlock"] == CSM_AFTER_VOTE["maxDepositsPerBlock"]
+    assert cs["minDepositBlockDistance"] == CSM_AFTER_VOTE["minDepositBlockDistance"]
