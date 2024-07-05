@@ -16,7 +16,9 @@ SR V2
 14. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}`,
 15. Grant manage consensus role to agent ${AGENT}`
 16. Update VEBO consensus version to ${VEBO_CONSENSUS_VERSION}`
-17. Revoke manage consensus role from agent ${AGENT}"
+17. Revoke manage consensus role from agent ${AGENT}
+18. Remove old target limit factory
+19. Add Target limit for SDVT factory to ET
 
 CSM
 
@@ -51,6 +53,7 @@ from utils.config import (
     ACCOUNTING_ORACLE_IMPL,
     NODE_OPERATORS_REGISTRY_IMPL,
     CS_ACCOUNTING_ADDRESS,
+    EASYTRACK,
 )
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.repo import (
@@ -58,7 +61,7 @@ from utils.repo import (
     add_implementation_to_sdvt_app_repo,
 )
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
-from utils.easy_track import add_evmscript_factory, create_permissions
+from utils.easy_track import add_evmscript_factory, create_permissions, remove_evmscript_factory
 from utils.kernel import update_app_implementation
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
@@ -86,8 +89,13 @@ CS_MAX_DEPOSITS_PER_BLOCK = 30
 CS_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 CS_ORACLE_INITIAL_EPOCH = 58050
 
+# !!!! that is locally deployed factory address, before run set you value
+NEW_TARGET_LIMIT_FACTORY = "0xd2983525E903Ef198d5dD0777712EB66680463bc"
+OLD_TARGET_LIMIT__FACTORY = "0x41CF3DbDc939c5115823Fba1432c4EC5E7bD226C"
+EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY = "0xe8c3F27D20472e4f3C546A3f73C04B54DD72871d"
+
 description = """
-_REPLACE_ME_
+Proposal to support DSM 2.0 and CSM Module
 """
 
 
@@ -263,11 +271,23 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                 ]
             ),
         ),
+        (
+            "18. Remove old target limit factory",
+            remove_evmscript_factory(
+                factory=OLD_TARGET_LIMIT__FACTORY,
+            ),
+        ),
+        (
+            "19. Add Target limit for SDVT factory to ET",
+            add_evmscript_factory(
+                factory=NEW_TARGET_LIMIT_FACTORY,
+                permissions=(create_permissions(contracts.simple_dvt, "updateTargetValidatorsLimits")),
+            ),
+        ),
         #
         # CSM
-        #
         (
-            "18. Add staking module",
+            "20. Add staking module",
             agent_forward(
                 [
                     (
@@ -287,7 +307,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "19. Grant request burn role to CSAccounting contract",
+            "21. Grant request burn role to CSAccounting contract",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -299,7 +319,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "20. Grant resume role to agent",
+            "22. Grant resume role to agent",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -311,11 +331,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "21. Resume staking module",
+            "23. Resume staking module",
             agent_forward([(contracts.csm.address, contracts.csm.resume.encode_input())]),
         ),
         (
-            "22. Revoke resume role from agent",
+            "24. Revoke resume role from agent",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -327,7 +347,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "23. Update initial epoch",
+            "25. Update initial epoch",
             agent_forward(
                 [
                     (
@@ -337,13 +357,13 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                 ]
             ),
         ),
-        # (
-        #     "24. Add CS settle EL stealing factory to ET",
-        #      add_evmscript_factory(
-        #         factory=EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY,
-        #         permissions=(create_permissions(contracts.csm, "settleELRewardsStealingPenalty")),
-        #     ),
-        # ),
+        (
+            "26. Add CS settle EL stealing factory to ET",
+            add_evmscript_factory(
+                factory=EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY,
+                permissions=(create_permissions(contracts.csm, "settleELRewardsStealingPenalty")),
+            ),
+        ),
     )
 
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
@@ -364,7 +384,7 @@ def main():
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 
-    vote_id, _ = start_vote(tx_params=tx_params, silent=False)
+    vote_id, _ = start_vote(tx_params=tx_params, silent=True)  # disable temporary
 
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 
