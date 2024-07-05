@@ -22,13 +22,13 @@ SR V2
 
 CSM
 
-18. Add staking module
-19. Grant request burn role to CSAccounting contract
-20. Grant resume role to agent
-21. Resume staking module
-22. Revoke resume role from agent
-23. Update initial epoch
-24. Add CS settle EL stealing factory to ET
+20. Add staking module
+21. Grant request burn role to CSAccounting contract
+22. Grant resume role to agent
+23. Resume staking module
+24. Revoke resume role from agent
+25. Update initial epoch
+26. Add CS settle EL stealing factory to ET
 """
 
 import time
@@ -53,7 +53,6 @@ from utils.config import (
     ACCOUNTING_ORACLE_IMPL,
     NODE_OPERATORS_REGISTRY_IMPL,
     CS_ACCOUNTING_ADDRESS,
-    EASYTRACK,
 )
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.repo import (
@@ -68,19 +67,47 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from brownie.network.transaction import TransactionReceipt
 from utils.agent import agent_forward
 
-
 # SR
 
+## Easy track
+OLD_TARGET_LIMIT__FACTORY = "0x41CF3DbDc939c5115823Fba1432c4EC5E7bD226C"
+# !!!! that is locally deployed factory address, before run set contract address here
+NEW_TARGET_LIMIT_FACTORY = "0x00B0517de6b2b09aBD3a7B69d66D85eFdb2c7d94"
+
+## SR
 PRIORITY_EXIT_SHARE_THRESHOLDS_BP = [10_000, 10_000]
 MAX_DEPOSITS_PER_BLOCK = [50, 50]
 MIN_DEPOSIT_BLOCK_DISTANCES = [25, 25]
-NOR_VERSION = ["5", "0", "0"]
-SDVT_VERSION = ["2", "0", "0"]
+
+## Curated module
+nor_uri = "0x697066733a516d54346a64693146684d454b5576575351316877786e33365748394b6a656743755a7441684a6b6368526b7a70"
+CURATED_PRIORITY_EXIT_SHARE_THRESHOLDS = 10000
+CURATED_MAX_DEPOSITS_PER_BLOCK = 50
+CURATED_MIN_DEPOSIT_BLOCK_DISTANCES = 25
+NOR_VERSION_REPO = ["5", "0", "0"]
+
+### RewardDistributionState
+DISTRIBUTED = 2
+
+## SDVT module
+sdvt_uri = "0x697066733a516d615353756a484347636e4675657441504777565735426567614d42766e355343736769334c5366767261536f"
+SDVT_PRIORITY_EXIT_SHARE_THRESHOLDS = 10000
+SDVT_MAX_DEPOSITS_PER_BLOCK = 50
+SDVT_MIN_DEPOSIT_BLOCK_DISTANCES = 25
+SDVT_VERSION_REPO = ["2", "0", "0"]
+
+## Accounting oracle
 AO_CONSENSUS_VERSION = 2
+## Vebo
 VEBO_CONSENSUS_VERSION = 2
 
 # CSM
-CS_MODULE_NAME = "CommunityStaking"
+## Easy track
+# !!!! that is locally deployed factory address, before run set contract address here
+EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY = "0xd2983525E903Ef198d5dD0777712EB66680463bc"
+
+## Parameters
+CS_MODULE_NAME = "Community Staking"
 CS_STAKE_SHARE_LIMIT = 2000
 CS_PRIORITY_EXIT_SHARE_THRESHOLD = 2500
 CS_STAKING_MODULE_FEE = 800
@@ -88,11 +115,6 @@ CS_TREASURY_FEE = 200
 CS_MAX_DEPOSITS_PER_BLOCK = 30
 CS_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 CS_ORACLE_INITIAL_EPOCH = 58050
-
-# !!!! that is locally deployed factory address, before run set you value
-NEW_TARGET_LIMIT_FACTORY = "0xd2983525E903Ef198d5dD0777712EB66680463bc"
-OLD_TARGET_LIMIT__FACTORY = "0x41CF3DbDc939c5115823Fba1432c4EC5E7bD226C"
-EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY = "0xe8c3F27D20472e4f3C546A3f73C04B54DD72871d"
 
 description = """
 Proposal to support DSM 2.0 and CSM Module
@@ -213,7 +235,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         ),
         (
             "7. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo",
-            add_implementation_to_nor_app_repo(NOR_VERSION, NODE_OPERATORS_REGISTRY_IMPL, nor_uri),
+            add_implementation_to_nor_app_repo(NOR_VERSION_REPO, NODE_OPERATORS_REGISTRY_IMPL, nor_uri),
         ),
         (
             "8. Update `NodeOperatorsRegistry` implementation",
@@ -225,7 +247,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         ),
         (
             "10. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo",
-            add_implementation_to_sdvt_app_repo(SDVT_VERSION, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
+            add_implementation_to_sdvt_app_repo(SDVT_VERSION_REPO, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
         ),
         (
             "11. Update `SimpleDVT` implementation",

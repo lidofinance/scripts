@@ -14,7 +14,35 @@ from utils.config import (
     CS_ACCOUNTING_ADDRESS,
     CSM,
 )
-from scripts.mainnet.vote_sr_v2_mainnet import start_vote
+from scripts.mainnet.vote_sr_v2_mainnet import (
+    start_vote,
+    # oracles
+    AO_CONSENSUS_VERSION,
+    VEBO_CONSENSUS_VERSION,
+    # nor
+    nor_uri,
+    CURATED_PRIORITY_EXIT_SHARE_THRESHOLDS,
+    CURATED_MAX_DEPOSITS_PER_BLOCK,
+    CURATED_MIN_DEPOSIT_BLOCK_DISTANCES,
+    # sdvt
+    sdvt_uri,
+    SDVT_PRIORITY_EXIT_SHARE_THRESHOLDS,
+    SDVT_MAX_DEPOSITS_PER_BLOCK,
+    SDVT_MIN_DEPOSIT_BLOCK_DISTANCES,
+    ## easy track
+    OLD_TARGET_LIMIT__FACTORY,
+    NEW_TARGET_LIMIT_FACTORY,
+    # CSM
+    CS_MODULE_NAME,
+    CS_STAKE_SHARE_LIMIT,
+    CS_PRIORITY_EXIT_SHARE_THRESHOLD,
+    CS_STAKING_MODULE_FEE,
+    CS_TREASURY_FEE,
+    CS_MAX_DEPOSITS_PER_BLOCK,
+    CS_MIN_DEPOSIT_BLOCK_DISTANCE,
+    CS_ORACLE_INITIAL_EPOCH,
+    EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY,
+)
 from utils.config import (
     contracts,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
@@ -33,6 +61,34 @@ from utils.test.event_validators.easy_track import (
 )
 from utils.easy_track import create_permissions
 
+# Impl addresses before vote
+OLD_LOCATOR_IMPL_ADDRESS = "0x1D920cc5bACf7eE506a271a5259f2417CaDeCE1d"
+OLD_SR_IMPL_ADDRESS = "0xD8784e748f59Ba711fB5643191Ec3fAdD50Fb6df"
+OLD_NOR_IMPL = "0x8538930c385C0438A357d2c25CB3eAD95Ab6D8ed"
+OLD_SDVT_IMPL = "0x8538930c385C0438A357d2c25CB3eAD95Ab6D8ed"
+OLD_ACCOUNTING_ORACLE_IMPL = "0xF3c5E0A67f32CF1dc07a8817590efa102079a1aF"
+
+# NOR
+### RewardDistributionState
+DISTRIBUTED = 2
+
+## Contract versions
+SR_VERSION = 2
+NOR_VERSION = 3
+SDVT_VERSION = 3
+AO_VERSION = 2
+
+# Roles
+## SR
+STAKING_MODULE_UNVETTING_ROLE = "0x240525496a9dc32284b17ce03b43e539e4bd81414634ee54395030d793463b57"
+PAUSE_ROLE = "0x00b1e70095ba5bacc3202c3db9faf1f7873186f0ed7b6c84e80c0018dcc6e38e"
+STAKING_MODULE_RESUME_ROLE = "0x9a2f67efb89489040f2c48c3b2c38f719fba1276678d2ced3bd9049fb5edc6b2"
+MANAGE_CONSENSUS_VERSION_ROLE = "0xc31b1e4b732c5173dc51d519dfa432bad95550ecc4b0f9a61c2a558a2a8e4341"
+
+## CSM
+RESUME_ROLE = "0x2fc10cc8ae19568712f7a176fb4978616a610650813c9d05326c34abb62749c7"
+REQUEST_BURN_SHARES_ROLE = "0x4be29e0e4eb91f98f709d98803cba271592782e293b84a625e025cbb40197ba8"
+
 
 class StakingModuleItem(NamedTuple):
     id: int
@@ -45,42 +101,6 @@ class StakingModuleItem(NamedTuple):
     max_deposits_per_block: int
     min_deposit_block_distance: int
 
-
-# CSM roles
-RESUME_ROLE = "0x2fc10cc8ae19568712f7a176fb4978616a610650813c9d05326c34abb62749c7"
-REQUEST_BURN_SHARES_ROLE = "0x4be29e0e4eb91f98f709d98803cba271592782e293b84a625e025cbb40197ba8"
-
-# SR roles
-STAKING_MODULE_UNVETTING_ROLE = "0x240525496a9dc32284b17ce03b43e539e4bd81414634ee54395030d793463b57"
-PAUSE_ROLE = "0x00b1e70095ba5bacc3202c3db9faf1f7873186f0ed7b6c84e80c0018dcc6e38e"
-STAKING_MODULE_RESUME_ROLE = "0x9a2f67efb89489040f2c48c3b2c38f719fba1276678d2ced3bd9049fb5edc6b2"
-MANAGE_CONSENSUS_VERSION_ROLE = "0xc31b1e4b732c5173dc51d519dfa432bad95550ecc4b0f9a61c2a558a2a8e4341"
-OLD_LOCATOR_IMPL_ADDRESS = "0x1D920cc5bACf7eE506a271a5259f2417CaDeCE1d"
-OLD_SR_IMPL_ADDRESS = "0xD8784e748f59Ba711fB5643191Ec3fAdD50Fb6df"
-OLD_NOR_IMPL = "0x8538930c385C0438A357d2c25CB3eAD95Ab6D8ed"
-OLD_SDVT_IMPL = "0x8538930c385C0438A357d2c25CB3eAD95Ab6D8ed"
-OLD_ACCOUNTING_ORACLE_IMPL = "0xF3c5E0A67f32CF1dc07a8817590efa102079a1aF"
-CURATED_MODULE_ID = 1
-SIMPLE_DVT_MODULE_ID = 2
-AO_CONSENSUS_VERSION = 2
-VEBO_CONSENSUS_VERSION = 2
-
-SR_VERSION = 2
-NOR_VERSION = 3
-DISTRIBUTED = 2
-SDVT_VERSION = 3
-AO_VERSION = 2
-
-# new added fields
-CURATED_PRIORITY_EXIT_SHARE_THRESHOLDS = 10000
-CURATED_MAX_DEPOSITS_PER_BLOCK = 50
-CURATED_MIN_DEPOSIT_BLOCK_DISTANCES = 25
-SDVT_PRIORITY_EXIT_SHARE_THRESHOLDS = 10000
-SDVT_MAX_DEPOSITS_PER_BLOCK = 50
-SDVT_MIN_DEPOSIT_BLOCK_DISTANCES = 25
-
-nor_uri = "0x697066733a516d54346a64693146684d454b5576575351316877786e33365748394b6a656743755a7441684a6b6368526b7a70"
-sdvt_uri = "0x697066733a516d615353756a484347636e4675657441504777565735426567614d42766e355343736769334c5366767261536f"
 
 CURATED_MODULE_BEFORE_VOTE = {
     "id": 1,
@@ -124,15 +144,6 @@ SDVT_MODULE_AFTER_VOTE.update(
     }
 )
 
-CS_MODULE_NAME = "CommunityStaking"
-CS_STAKE_SHARE_LIMIT = 2000
-CS_PRIORITY_EXIT_SHARE_THRESHOLD = 2500
-CS_STAKING_MODULE_FEE = 800
-CS_TREASURY_FEE = 200
-CS_MAX_DEPOSITS_PER_BLOCK = 30
-CS_MIN_DEPOSIT_BLOCK_DISTANCE = 25
-CS_ORACLE_INITIAL_EPOCH = 58050
-
 CSM_AFTER_VOTE = {
     "id": 3,
     "name": CS_MODULE_NAME,
@@ -145,7 +156,7 @@ CSM_AFTER_VOTE = {
     "minDepositBlockDistance": CS_MIN_DEPOSIT_BLOCK_DISTANCE,
 }
 
-OLD_SR_ABI = bi = [
+OLD_SR_ABI = [
     {
         "inputs": [{"internalType": "uint256", "name": "_stakingModuleId", "type": "uint256"}],
         "name": "getStakingModule",
@@ -172,10 +183,6 @@ OLD_SR_ABI = bi = [
         "type": "function",
     }
 ]
-
-NEW_TARGET_LIMIT_FACTORY = "0xd2983525E903Ef198d5dD0777712EB66680463bc"
-OLD_TARGET_LIMIT__FACTORY = "0x41CF3DbDc939c5115823Fba1432c4EC5E7bD226C"
-EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY = "0xe8c3F27D20472e4f3C546A3f73C04B54DD72871d"
 
 
 def test_vote(
@@ -212,7 +219,7 @@ def test_vote(
     assert_repo_before_vote(sdvt_old_app, 1, OLD_SDVT_IMPL, sdvt_uri)
     # AO
     check_ossifiable_proxy_impl(ao_proxy, OLD_ACCOUNTING_ORACLE_IMPL)
-    # no prermission to manage consensus version on agent
+    # no permission to manage consensus version on agent
     check_manage_consensus_role()
 
     # VEBO consensus version
@@ -457,11 +464,17 @@ def validate_dsm_roles_events(events: EventDict):
         events[1], PAUSE_ROLE, contracts.deposit_security_module_v2.address, contracts.agent.address
     )
     validate_revoke_role_event(
-        events[2], STAKING_MODULE_RESUME_ROLE, contracts.deposit_security_module_v2.address, contracts.agent.address
+        events[2],
+        STAKING_MODULE_RESUME_ROLE,
+        contracts.deposit_security_module_v2.address,
+        contracts.agent.address,
     )
 
     validate_grant_role_event(
-        events[3], STAKING_MODULE_UNVETTING_ROLE, contracts.deposit_security_module.address, contracts.agent.address
+        events[3],
+        STAKING_MODULE_UNVETTING_ROLE,
+        contracts.deposit_security_module.address,
+        contracts.agent.address,
     )
 
 
