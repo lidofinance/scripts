@@ -1,6 +1,6 @@
 from brownie import accounts, interface, chain, reverts
 from scripts.upgrade_voting_delegation_holesky import start_vote as start_vote_upgrade, updated_voting_app
-from scripts.revert_upgrade_voting_delegation_holesky import start_vote as start_vote_downgrade
+from scripts.revert_upgrade_voting_delegation_holesky import start_vote as start_vote_downgrade, downgraded_voting_app
 from tests.test_upgrade_voting_delegation_holesky import old_voting_app
 from utils.config import (
     contracts,
@@ -9,15 +9,7 @@ from utils.config import (
 )
 from utils.test.tx_tracing_helpers import *
 from utils.voting import create_vote, bake_vote_items
-from enum import Enum
-
-
-class VoterState(Enum):
-    Absent = 0
-    Yea = 1
-    Nay = 2
-    DelegateYea = 3
-    DelegateNay = 4
+from utils.test.extra_data import VoterState
 
 
 def create_dummy_vote(ldo_holder: str) -> int:
@@ -54,6 +46,9 @@ def test_voting_delegation_reverse_upgrade(helpers, delegate1, delegate2, ldo_ho
 
     # Start dummy vote and vote for it during main phase
     dummy_vote_id = create_dummy_vote(ldo_holder)
+    vote = contracts.voting.getVote(dummy_vote_id)
+    assert vote["yea"] == 0
+    assert vote["nay"] == 0
     assert contracts.voting.getVotePhase(dummy_vote_id) == 0  # Main phase
     contracts.voting.attemptVoteFor(dummy_vote_id, True, voters[0], {"from": delegate1})
     contracts.voting.vote(dummy_vote_id, True, False, {"from": accounts.at(voters[1], force=True)})
@@ -72,7 +67,9 @@ def test_voting_delegation_reverse_upgrade(helpers, delegate1, delegate2, ldo_ho
     assert contracts.voting.getVoterState(dummy_vote_id, voters[0]) == VoterState.DelegateNay.value
     assert contracts.voting.getVoterState(dummy_vote_id, voters[1]) == VoterState.Yea.value
     assert contracts.voting.getVoterState(dummy_vote_id, voters[2]) == VoterState.DelegateYea.value
-    assert contracts.voting.getVote(dummy_vote_id)["yea"] == sum([contracts.ldo_token.balanceOf(v) for v in voters[1:]])
+    vote = contracts.voting.getVote(dummy_vote_id)
+    assert vote["yea"] == sum([contracts.ldo_token.balanceOf(v) for v in voters[1:]])
+    assert vote["nay"] == contracts.ldo_token.balanceOf(voters[0])
 
     # Execute the vote
     chain.sleep(contracts.voting.objectionPhaseTime())
@@ -86,6 +83,13 @@ def test_voting_delegation_reverse_upgrade(helpers, delegate1, delegate2, ldo_ho
     vote_id, _ = start_vote_downgrade(tx_params, silent=True)
     helpers.execute_vote(accounts, vote_id, contracts.voting)
 
+    # Voting App after downgrade
+    voting_proxy = interface.AppProxyUpgradeable(contracts.voting.address)
+    voting_app_from_repo = contracts.voting_app_repo.getLatest()
+    assert voting_app_from_repo[0] == downgraded_voting_app["version"]
+    assert voting_app_from_repo[1] == old_voting_app["address"]
+    assert voting_proxy.implementation() == old_voting_app["address"]
+
     # Check that assignDelegate call is not possible now
     with reverts():
         contracts.voting.assignDelegate(delegate1, {"from": accounts.at(voters[2], force=True)})
@@ -94,9 +98,12 @@ def test_voting_delegation_reverse_upgrade(helpers, delegate1, delegate2, ldo_ho
     assert contracts.voting.getVoterState(dummy_vote_id, voters[0]) == VoterState.DelegateNay.value
     assert contracts.voting.getVoterState(dummy_vote_id, voters[1]) == VoterState.Yea.value
     assert contracts.voting.getVoterState(dummy_vote_id, voters[2]) == VoterState.DelegateYea.value
+    vote = contracts.voting.getVote(dummy_vote_id)
+    assert vote["yea"] == sum([contracts.ldo_token.balanceOf(v) for v in voters[1:]])
+    assert vote["nay"] == contracts.ldo_token.balanceOf(voters[0])
 
     # Check that dummy vote is closed and can not be executed
-    assert contracts.voting.getVotePhase(dummy_vote_id) == 2  # Closed phaseQ
+    assert contracts.voting.getVotePhase(dummy_vote_id) == 2  # Closed phase
     with reverts("VOTING_CAN_NOT_EXECUTE"):
         contracts.voting.executeVote(dummy_vote_id, {"from": ldo_holder})
 

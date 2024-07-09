@@ -1,32 +1,18 @@
 """
 Tests for lido aragon voting app
 """
-import os
 
 from typing import Tuple, Optional
 from enum import Enum
-from web3 import Web3
+from brownie import MockCallTarget, accounts, chain, reverts, interface, ZERO_ADDRESS
+from brownie.network.transaction import TransactionReceipt
+from utils.voting import create_vote, bake_vote_items
+from utils.config import LDO_VOTE_EXECUTORS_FOR_TESTS
+from utils.evm_script import EMPTY_CALLSCRIPT
+from utils.config import contracts
+from utils.test.extra_data import VoterState
 
 import pytest
-
-# import os
-
-# from web3 import Web3
-from brownie import MockCallTarget, accounts, chain, reverts, interface, ZERO_ADDRESS, web3
-from brownie.network.transaction import TransactionReceipt
-from brownie.network.event import _decode_logs
-from utils.voting import create_vote, bake_vote_items
-from utils.config import LDO_VOTE_EXECUTORS_FOR_TESTS, CHAIN_NETWORK_NAME
-from utils.evm_script import EMPTY_CALLSCRIPT
-from utils.config import contracts, TRP_FACTORY_DEPLOY_BLOCK_NUMBER
-
-
-class VoterState(Enum):
-    Absent = 0
-    Yea = 1
-    Nay = 2
-    DelegateYea = 3
-    DelegateNay = 4
 
 
 def filter_logs(logs, topic):
@@ -327,47 +313,3 @@ def test_delegation_trp(test_trp_escrow, test_vote, delegate1, trp_recipient, tr
     assert contracts.voting.getVoterState(vote_id, voters[0]) == VoterState.DelegateYea.value
     assert contracts.voting.getVoterState(vote_id, voters[1]) == VoterState.DelegateYea.value
     assert contracts.voting.getVote(vote_id)["yea"] == sum([contracts.ldo_token.balanceOf(v) for v in voters])
-
-
-# TODO: finalize this test
-# def test_delegation_deployed_trp_recipients(delegate1, trp_voting_adapter, test_vote):
-#     w3 = Web3(Web3.HTTPProvider(f'https://{CHAIN_NETWORK_NAME}.infura.io/v3/{os.getenv("WEB3_INFURA_PROJECT_ID")}'))
-#     factory_contract = w3.eth.contract(address=contracts.trp_escrow_factory.address, abi=contracts.trp_escrow_factory.abi)
-
-#     logs = contracts.trp_escrow_factory.events.VestingEscrowCreated().get_logs(fromBlock=TRP_FACTORY_DEPLOY_BLOCK_NUMBER)
-# event_signature_hash = w3.keccak(text="VestingEscrowCreated(address,address,address)").hex()
-# deployed_trp_events = w3.eth.filter(
-#     {"address": contracts.trp_escrow_factory.address, "fromBlock": TRP_FACTORY_DEPLOY_BLOCK_NUMBER, "topics": [event_signature_hash]}
-# ).get_all_entries()
-# decoded_events = _decode_logs(deployed_trp_events)["VestingEscrowCreated"]
-# vote_id = test_vote[0]
-# assert contracts.voting.getVotePhase(vote_id) == 0  # Main phase
-
-# for trp_escrow in decoded_events:
-#     recipient = trp_escrow["recipient"]
-#     escrow = trp_escrow["escrow"]
-#     escrow_contract = interface.Escrow(escrow)
-#     encoded_delegate_address = trp_voting_adapter.encode_delegate_calldata(delegate1.address)
-#     assign_tx = escrow_contract.delegate(encoded_delegate_address, {"from": recipient})
-#     assert assign_tx.events["AssignDelegate"]["voter"] == escrow
-#     assert assign_tx.events["AssignDelegate"]["assignedDelegate"] == delegate1
-#     assert contracts.voting.getDelegate(escrow_contract) == delegate1
-
-# delegated_voters = contracts.voting.getDelegatedVoters(delegate1, 0, decoded_events.)
-
-# vote_before = contracts.voting.getVote(vote_id, {"from": delegate})
-# assert vote_before["yea"] == 0
-# if contracts.ldo_token.balanceOf(escrow) > 0:
-#     contracts.voting.attemptVoteFor(vote_id, True, escrow, {"from": delegate})
-#     vote_after = contracts.voting.getVote(vote_id, {"from": delegate})
-#     assert vote_after["yea"] == contracts.ldo_token.balanceOf(escrow)
-# else:
-#     print(f"Escrow {escrow} has no LDO balance")
-
-# encoded_zero_address = trp_voting_adapter.encode_delegate_calldata(ZERO_ADDRESS)
-
-# reset_tx = escrow_contract.delegate(encoded_zero_address, {"from": recipient})
-# assert contracts.voting.getDelegate(recipient) == ZERO_ADDRESS
-# parsed_events = parse_reset_delegate_logs(reset_tx.logs)
-# assert parsed_events[0]["voter"] == escrow
-# assert parsed_events[0]["delegate"] == delegate

@@ -6,11 +6,11 @@ from typing import NewType, Tuple
 from hexbytes import HexBytes
 from brownie import web3
 
-StakingModuleId = NewType('StakingModuleId', int)
-NodeOperatorId = NewType('NodeOperatorId', int)
+StakingModuleId = NewType("StakingModuleId", int)
+NodeOperatorId = NewType("NodeOperatorId", int)
 NodeOperatorGlobalIndex = Tuple[StakingModuleId, NodeOperatorId]
 
-ZERO_HASH = bytes([0]*32)
+ZERO_HASH = bytes([0] * 32)
 
 
 class ItemType(Enum):
@@ -22,6 +22,14 @@ class ItemType(Enum):
 class FormatList(Enum):
     EXTRA_DATA_FORMAT_LIST_EMPTY = 0
     EXTRA_DATA_FORMAT_LIST_NON_EMPTY = 1
+
+
+class VoterState(Enum):
+    Absent = 0
+    Yea = 1
+    Nay = 2
+    DelegateYea = 3
+    DelegateNay = 4
 
 
 @dataclass
@@ -76,13 +84,10 @@ class ExtraDataService:
         max_no_in_payload_count: int,
     ) -> ExtraData:
 
-        stuck_payloads = self.build_validators_payloads(
-            stuck_validators, max_no_in_payload_count)
-        exited_payloads = self.build_validators_payloads(
-            exited_validators, max_no_in_payload_count)
+        stuck_payloads = self.build_validators_payloads(stuck_validators, max_no_in_payload_count)
+        exited_payloads = self.build_validators_payloads(exited_validators, max_no_in_payload_count)
 
-        extra_data = self.build_extra_data(
-            stuck_payloads, exited_payloads, max_items_count)
+        extra_data = self.build_extra_data(stuck_payloads, exited_payloads, max_items_count)
         extra_data_bytes = self.to_bytes(extra_data)
 
         if extra_data:
@@ -114,17 +119,15 @@ class ExtraDataService:
             vals_count = []
 
             for ((_, no_id), validators_count) in list(operators_by_module)[:max_no_in_payload_count]:
-                operator_ids.append(no_id.to_bytes(
-                    ExtraDataService.Lengths.NODE_OPERATOR_IDS, byteorder='big'))
-                vals_count.append(validators_count.to_bytes(
-                    ExtraDataService.Lengths.STUCK_OR_EXITED_VALS_COUNT, byteorder='big'))
+                operator_ids.append(no_id.to_bytes(ExtraDataService.Lengths.NODE_OPERATOR_IDS, byteorder="big"))
+                vals_count.append(
+                    validators_count.to_bytes(ExtraDataService.Lengths.STUCK_OR_EXITED_VALS_COUNT, byteorder="big")
+                )
 
             payloads.append(
                 ItemPayload(
-                    module_id=module_id.to_bytes(
-                        ExtraDataService.Lengths.MODULE_ID, byteorder='big'),
-                    node_ops_count=len(operator_ids).to_bytes(
-                        ExtraDataService.Lengths.NODE_OPS_COUNT, byteorder='big'),
+                    module_id=module_id.to_bytes(ExtraDataService.Lengths.MODULE_ID, byteorder="big"),
+                    node_ops_count=len(operator_ids).to_bytes(ExtraDataService.Lengths.NODE_OPS_COUNT, byteorder="big"),
                     node_operator_ids=b"".join(operator_ids),
                     vals_counts=b"".join(vals_count),
                 )
@@ -142,12 +145,13 @@ class ExtraDataService:
             (ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, exited_payloads),
         ]:
             for payload in payloads:
-                extra_data.append(ExtraDataItem(
-                    item_index=index.to_bytes(
-                        ExtraDataService.Lengths.ITEM_INDEX, byteorder='big'),
-                    item_type=item_type,
-                    item_payload=payload
-                ))
+                extra_data.append(
+                    ExtraDataItem(
+                        item_index=index.to_bytes(ExtraDataService.Lengths.ITEM_INDEX, byteorder="big"),
+                        item_type=item_type,
+                        item_payload=payload,
+                    )
+                )
 
                 index += 1
                 if index == max_items_count:
@@ -157,11 +161,10 @@ class ExtraDataService:
 
     @staticmethod
     def to_bytes(extra_data: list[ExtraDataItem]) -> bytes:
-        extra_data_bytes = b''
+        extra_data_bytes = b""
         for item in extra_data:
             extra_data_bytes += item.item_index
-            extra_data_bytes += item.item_type.value.to_bytes(
-                ExtraDataService.Lengths.ITEM_TYPE, byteorder='big')
+            extra_data_bytes += item.item_type.value.to_bytes(ExtraDataService.Lengths.ITEM_TYPE, byteorder="big")
             extra_data_bytes += item.item_payload.module_id
             extra_data_bytes += item.item_payload.node_ops_count
             extra_data_bytes += item.item_payload.node_operator_ids
