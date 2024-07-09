@@ -1,12 +1,11 @@
 """
-Voting 23/04/2024.
+Revert Voting Delegation Upgrade
 
 1. Push new Voting app version to the Voting Repo 0x2997EA0D07D79038D83Cb04b3BB9A2Bc512E3fDA
-2. Upgrade the Aragon Voting contract implementation 0xcB738a79baeA44C93Ee46c02EF0FA975Bc4d058f
-3. Upgrade TRP voting adapter 0x1dF997832b44b7ED00597f103165920537c980D4
+2. Downgrade the Aragon Voting contract implementation to 0xcB738a79baeA44C93Ee46c02EF0FA975Bc4d058f
+3. Downgrade TRP voting adapter to 0x1dF997832b44b7ED00597f103165920537c980D4
 
 """
-
 import time
 
 from typing import Dict
@@ -23,17 +22,17 @@ from utils.repo import add_implementation_to_voting_app_repo
 from utils.kernel import update_app_implementation
 from utils.agent import agent_forward
 
-updated_trp_voting_adapter = "0x1dF997832b44b7ED00597f103165920537c980D4"
+downgraded_trp_voting_adapter = "0x1dF997832b44b7ED00597f103165920537c980D4"
 
-updated_voting_app = {
+downgraded_voting_app = {
     "address": "0xcB738a79baeA44C93Ee46c02EF0FA975Bc4d058f",
     "content_uri": "0x",
     "id": "0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e",
-    "version": (2, 0, 0),
+    "version": (4, 0, 0),
 }
 
 description = """
-Simple delegation test voting
+Voting Delegation downgrade Holesky
 """
 
 
@@ -47,14 +46,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         (
             "1) Push new Voting app version to the Voting Repo",
             add_implementation_to_voting_app_repo(
-                updated_voting_app["version"],
-                updated_voting_app["address"],
-                updated_voting_app["content_uri"],
+                downgraded_voting_app["version"],
+                downgraded_voting_app["address"],
+                downgraded_voting_app["content_uri"],
             ),
         ),
         (
             "2) Upgrade the Aragon Voting contract implementation",
-            update_app_implementation(updated_voting_app["id"], updated_voting_app["address"]),
+            update_app_implementation(downgraded_voting_app["id"], downgraded_voting_app["address"]),
         ),
         (
             "3) Upgrade TRP voting adapter",
@@ -62,7 +61,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 [
                     (
                         contracts.trp_escrow_factory.address,
-                        contracts.trp_escrow_factory.update_voting_adapter.encode_input(updated_trp_voting_adapter),
+                        contracts.trp_escrow_factory.update_voting_adapter.encode_input(downgraded_trp_voting_adapter),
                     )
                 ]
             ),

@@ -1,9 +1,9 @@
 """
-Voting 23/04/2024.
+Voting XX/XX/2024.
 
 1. Push new Voting app version to the Voting Repo 0x4ee3118e3858e8d7164a634825bfe0f73d99c792
-2. Upgrade the Aragon Voting contract implementation 0x63C7F17210f6a7061e887D05BBF5412085e9DF43
-3. Upgrade TRP voting adapter 0x5Ea73d6AE9B2E57eF865A3059bdC5C06b8e46072
+2. Upgrade the Aragon Voting contract implementation 0x
+3. Upgrade TRP voting adapter 0x
 
 """
 
@@ -23,17 +23,17 @@ from utils.repo import add_implementation_to_voting_app_repo
 from utils.kernel import update_app_implementation
 from utils.agent import agent_forward
 
-updated_trp_voting_adapter = "0x5Ea73d6AE9B2E57eF865A3059bdC5C06b8e46072"
+updated_trp_voting_adapter = "0x"
 
 updated_voting_app = {
-    "address": "0x63C7F17210f6a7061e887D05BBF5412085e9DF43",
+    "address": "0x",
     "content_uri": "0x697066733a516d506f7478377a484743674265394445684d6f4238336572564a75764d74335971436e6454657a575652706441",
     "id": "0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e",
     "version": (4, 0, 0),
 }
 
 description = """
-aboba
+Delegation Voting Upgrade
 """
 
 
