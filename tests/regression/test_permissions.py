@@ -162,7 +162,6 @@ def protocol_permissions():
                 "ALL_LIMITS_MANAGER_ROLE": [],
                 "EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE": [],
                 "APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE": [],
-                "ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE": [],
                 "ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE": [],
                 "SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE": [],
                 "MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_ROLE": [],
@@ -170,6 +169,8 @@ def protocol_permissions():
                 "MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE": [],
                 "REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE": [],
                 "MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE": [],
+                "SECOND_OPINION_MANAGER_ROLE": [],
+                "INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE": [],
             },
         },
         DEPOSIT_SECURITY_MODULE: {

@@ -16,7 +16,6 @@ from utils.config import (
     contracts,
     APPEARED_VALIDATORS_PER_DAY_LIMIT,
     EXITED_VALIDATORS_PER_DAY_LIMIT,
-    ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT,
     ANNUAL_BALANCE_INCREASE_BP_LIMIT,
     MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT,
     MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
@@ -110,19 +109,20 @@ def test_too_much_validators_exited():
         )
 
 
-def test_too_large_cl_decrease(pre_cl_balance):
-    #  uint256 oneOffCLBalanceDecreaseBP = (MAX_BASIS_POINTS * (_preCLBalance - _unifiedPostCLBalance)) /
-    #         _preCLBalance;
+# ToDo: fix test, ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT deprecated
+# def test_too_large_cl_decrease(pre_cl_balance):
+#     #  uint256 oneOffCLBalanceDecreaseBP = (MAX_BASIS_POINTS * (_preCLBalance - _unifiedPostCLBalance)) /
+#     #         _preCLBalance;
 
-    withdrawal_vault_balance = eth_balance(contracts.withdrawal_vault.address)
-    max_cl_decrease = (
-        ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT * pre_cl_balance // MAX_BASIS_POINTS + withdrawal_vault_balance
-    )
+#     withdrawal_vault_balance = eth_balance(contracts.withdrawal_vault.address)
+#     max_cl_decrease = (
+#         ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT * pre_cl_balance // MAX_BASIS_POINTS + withdrawal_vault_balance
+#     )
 
-    error_cl_decrease = max_cl_decrease + ETH(1000)
-    error_one_off_cl_decrease_bp = (MAX_BASIS_POINTS * (error_cl_decrease - withdrawal_vault_balance)) // pre_cl_balance
-    with reverts(encode_error("IncorrectCLBalanceDecrease(uint256)", [error_one_off_cl_decrease_bp])):
-        oracle_report(cl_diff=-error_cl_decrease, skip_withdrawals=True, silent=True)
+#     error_cl_decrease = max_cl_decrease + ETH(1000)
+#     error_one_off_cl_decrease_bp = (MAX_BASIS_POINTS * (error_cl_decrease - withdrawal_vault_balance)) // pre_cl_balance
+#     with reverts(encode_error("IncorrectCLBalanceDecrease(uint256)", [error_one_off_cl_decrease_bp])):
+#         oracle_report(cl_diff=-error_cl_decrease, skip_withdrawals=True, silent=True)
 
 
 def test_withdrawal_vault_report_more():

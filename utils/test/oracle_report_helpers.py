@@ -117,7 +117,7 @@ def encode_data_from_abi(data, abi, func_name):
 def get_finalization_batches(
     share_rate: int, limited_withdrawal_vault_balance, limited_el_rewards_vault_balance
 ) -> list[int]:
-    (_, _, _, _, _, _, _, requestTimestampMargin, _, _) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
+    (_, _, _, _, _, _, _, requestTimestampMargin, _, _, _, _) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
     buffered_ether = contracts.lido.getBufferedEther()
     unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
     reserved_buffer = min(buffered_ether, unfinalized_steth)

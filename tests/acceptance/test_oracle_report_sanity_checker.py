@@ -6,7 +6,6 @@ from utils.config import (
     ORACLE_REPORT_SANITY_CHECKER,
     EXITED_VALIDATORS_PER_DAY_LIMIT,
     APPEARED_VALIDATORS_PER_DAY_LIMIT,
-    ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT,
     ANNUAL_BALANCE_INCREASE_BP_LIMIT,
     SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT,
     MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT,
@@ -14,12 +13,15 @@ from utils.config import (
     MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT,
     REQUEST_TIMESTAMP_MARGIN,
     MAX_POSITIVE_TOKEN_REBASE,
+    INITIAL_SLASHING_AMOUNT_PWEI,
+    INACTIVITY_PENALTIES_AMOUNT_PWEI,
+    CL_BALANCE_ORACLES_ERROR_UPPER_BP_LIMIT
 )
 
 # Source of truth: https://hackmd.io/pdix1r4yR46fXUqiHaNKyw?view
 expected_report_limits = {
     "exitedValidatorsPerDayLimit": EXITED_VALIDATORS_PER_DAY_LIMIT,
-    "oneOffCLBalanceDecreaseBPLimit": ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT,
+    "appearedValidatorsPerDayLimit": APPEARED_VALIDATORS_PER_DAY_LIMIT,
     "annualBalanceIncreaseBPLimit": ANNUAL_BALANCE_INCREASE_BP_LIMIT,
     "simulatedShareRateDeviationBPLimit": SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT,
     "maxValidatorExitRequestsPerReport": MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT,
@@ -27,7 +29,9 @@ expected_report_limits = {
     "maxNodeOperatorsPerExtraDataItemCount": MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT,
     "requestTimestampMargin": REQUEST_TIMESTAMP_MARGIN,
     "maxPositiveTokenRebase": MAX_POSITIVE_TOKEN_REBASE,
-    "appearedValidatorsPerDayLimit": APPEARED_VALIDATORS_PER_DAY_LIMIT,
+    "initialSlashingAmountPWei": INITIAL_SLASHING_AMOUNT_PWEI,
+    "inactivityPenaltiesAmountPWei": INACTIVITY_PENALTIES_AMOUNT_PWEI,
+    "clBalanceOraclesErrorUpperBPLimit": CL_BALANCE_ORACLES_ERROR_UPPER_BP_LIMIT,
 }
 
 

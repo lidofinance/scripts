@@ -20,7 +20,7 @@
           },
           {
             "internalType": "uint256",
-            "name": "oneOffCLBalanceDecreaseBPLimit",
+            "name": "appearedValidatorsPerDayLimit",
             "type": "uint256"
           },
           {
@@ -60,74 +60,22 @@
           },
           {
             "internalType": "uint256",
-            "name": "appearedValidatorsPerDayLimit",
+            "name": "initialSlashingAmountPWei",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "inactivityPenaltiesAmountPWei",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "clBalanceOraclesErrorUpperBPLimit",
             "type": "uint256"
           }
         ],
         "internalType": "struct LimitsList",
         "name": "_limitsList",
-        "type": "tuple"
-      },
-      {
-        "components": [
-          {
-            "internalType": "address[]",
-            "name": "allLimitsManagers",
-            "type": "address[]"
-          },
-          {
-            "internalType": "address[]",
-            "name": "exitedValidatorsPerDayLimitManagers",
-            "type": "address[]"
-          },
-          {
-            "internalType": "address[]",
-            "name": "appearedValidatorsPerDayLimitManagers",
-            "type": "address[]"
-          },
-          {
-            "internalType": "address[]",
-            "name": "oneOffCLBalanceDecreaseLimitManagers",
-            "type": "address[]"
-          },
-          {
-            "internalType": "address[]",
-            "name": "annualBalanceIncreaseLimitManagers",
-            "type": "address[]"
-          },
-          {
-            "internalType": "address[]",
-            "name": "shareRateDeviationLimitManagers",
-            "type": "address[]"
-          },
-          {
-            "internalType": "address[]",
-            "name": "maxValidatorExitRequestsPerReportManagers",
-            "type": "address[]"
-          },
-          {
-            "internalType": "address[]",
-            "name": "maxAccountingExtraDataListItemsCountManagers",
-            "type": "address[]"
-          },
-          {
-            "internalType": "address[]",
-            "name": "maxNodeOperatorsPerExtraDataItemCountManagers",
-            "type": "address[]"
-          },
-          {
-            "internalType": "address[]",
-            "name": "requestTimestampMarginManagers",
-            "type": "address[]"
-          },
-          {
-            "internalType": "address[]",
-            "name": "maxPositiveTokenRebaseManagers",
-            "type": "address[]"
-          }
-        ],
-        "internalType": "struct OracleReportSanityChecker.ManagersRoster",
-        "name": "_managersRoster",
         "type": "tuple"
       }
     ],
@@ -142,6 +90,11 @@
   {
     "inputs": [],
     "name": "AdminCannotBeZero",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CalledNotFromLido",
     "type": "error"
   },
   {
@@ -175,7 +128,12 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "oneOffCLBalanceDecreaseBP",
+        "name": "negativeCLRebaseSum",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxNegativeCLRebaseSum",
         "type": "uint256"
       }
     ],
@@ -208,7 +166,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "exitedValudatorsLimit",
+        "name": "exitedValidatorsLimit",
         "type": "uint256"
       }
     ],
@@ -313,6 +271,48 @@
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "reportedValue",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "provedValue",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "limitBP",
+        "type": "uint256"
+      }
+    ],
+    "name": "NegativeRebaseFailedCLBalanceMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NegativeRebaseFailedSecondOpinionReportIsNotReady",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "reportedValue",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "provedValue",
+        "type": "uint256"
+      }
+    ],
+    "name": "NegativeRebaseFailedWithdrawalVaultBalanceMismatch",
+    "type": "error"
+  },
+  {
     "inputs": [],
     "name": "NegativeTotalPooledEther",
     "type": "error"
@@ -375,11 +375,50 @@
       {
         "indexed": false,
         "internalType": "uint256",
+        "name": "clBalanceOraclesErrorUpperBPLimit",
+        "type": "uint256"
+      }
+    ],
+    "name": "CLBalanceOraclesErrorUpperBPLimitSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
         "name": "exitedValidatorsPerDayLimit",
         "type": "uint256"
       }
     ],
     "name": "ExitedValidatorsPerDayLimitSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "inactivityPenaltiesAmountPWei",
+        "type": "uint256"
+      }
+    ],
+    "name": "InactivityPenaltiesAmountSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "initialSlashingAmountPWei",
+        "type": "uint256"
+      }
+    ],
+    "name": "InitialSlashingAmountSet",
     "type": "event"
   },
   {
@@ -440,11 +479,54 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "oneOffCLBalanceDecreaseBPLimit",
+        "name": "refSlot",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "clBalance",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "clBalanceDecrease",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "clBalanceMaxDecrease",
         "type": "uint256"
       }
     ],
-    "name": "OneOffCLBalanceDecreaseBPLimitSet",
+    "name": "NegativeCLRebaseAccepted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "refSlot",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "clBalanceWei",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "withdrawalVaultBalance",
+        "type": "uint256"
+      }
+    ],
+    "name": "NegativeCLRebaseConfirmed",
     "type": "event"
   },
   {
@@ -539,6 +621,19 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
+        "internalType": "contract ISecondOpinionOracle",
+        "name": "secondOpinionOracle",
+        "type": "address"
+      }
+    ],
+    "name": "SecondOpinionOracleChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": false,
         "internalType": "uint256",
         "name": "simulatedShareRateDeviationBPLimit",
@@ -615,6 +710,19 @@
   },
   {
     "inputs": [],
+    "name": "INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE",
     "outputs": [
       {
@@ -667,7 +775,7 @@
   },
   {
     "inputs": [],
-    "name": "ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE",
+    "name": "REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE",
     "outputs": [
       {
         "internalType": "bytes32",
@@ -680,7 +788,7 @@
   },
   {
     "inputs": [],
-    "name": "REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE",
+    "name": "SECOND_OPINION_MANAGER_ROLE",
     "outputs": [
       {
         "internalType": "bytes32",
@@ -749,7 +857,7 @@
     ],
     "name": "checkAccountingOracleReport",
     "outputs": [],
-    "stateMutability": "view",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -899,7 +1007,7 @@
           },
           {
             "internalType": "uint256",
-            "name": "oneOffCLBalanceDecreaseBPLimit",
+            "name": "appearedValidatorsPerDayLimit",
             "type": "uint256"
           },
           {
@@ -939,13 +1047,36 @@
           },
           {
             "internalType": "uint256",
-            "name": "appearedValidatorsPerDayLimit",
+            "name": "initialSlashingAmountPWei",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "inactivityPenaltiesAmountPWei",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "clBalanceOraclesErrorUpperBPLimit",
             "type": "uint256"
           }
         ],
         "internalType": "struct LimitsList",
         "name": "",
         "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getReportDataCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -1076,6 +1207,35 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "reportData",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "timestamp",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "totalExitedValidators",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint128",
+        "name": "negativeCLRebaseWei",
+        "type": "uint128"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes32",
         "name": "role",
         "type": "bytes32"
@@ -1089,6 +1249,19 @@
     "name": "revokeRole",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "secondOpinionOracle",
+    "outputs": [
+      {
+        "internalType": "contract ISecondOpinionOracle",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -1126,6 +1299,24 @@
       }
     ],
     "name": "setExitedValidatorsPerDayLimit",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_initialSlashingAmountPWei",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_inactivityPenaltiesAmountPWei",
+        "type": "uint256"
+      }
+    ],
+    "name": "setInitialSlashingAndPenaltiesAmount",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1185,19 +1376,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_oneOffCLBalanceDecreaseBPLimit",
-        "type": "uint256"
-      }
-    ],
-    "name": "setOneOffCLBalanceDecreaseBPLimit",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "components": [
           {
             "internalType": "uint256",
@@ -1206,7 +1384,7 @@
           },
           {
             "internalType": "uint256",
-            "name": "oneOffCLBalanceDecreaseBPLimit",
+            "name": "appearedValidatorsPerDayLimit",
             "type": "uint256"
           },
           {
@@ -1246,13 +1424,28 @@
           },
           {
             "internalType": "uint256",
-            "name": "appearedValidatorsPerDayLimit",
+            "name": "initialSlashingAmountPWei",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "inactivityPenaltiesAmountPWei",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "clBalanceOraclesErrorUpperBPLimit",
             "type": "uint256"
           }
         ],
         "internalType": "struct LimitsList",
         "name": "_limitsList",
         "type": "tuple"
+      },
+      {
+        "internalType": "contract ISecondOpinionOracle",
+        "name": "_secondOpinionOracle",
+        "type": "address"
       }
     ],
     "name": "setOracleReportLimits",
@@ -1269,6 +1462,24 @@
       }
     ],
     "name": "setRequestTimestampMargin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract ISecondOpinionOracle",
+        "name": "_secondOpinionOracle",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_clBalanceOraclesErrorUpperBPLimit",
+        "type": "uint256"
+      }
+    ],
+    "name": "setSecondOpinionOracleAndCLBalanceUpperMargin",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
