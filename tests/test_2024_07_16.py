@@ -3,6 +3,7 @@ Tests for voting 24/01/2023.
 """
 
 import math
+import time
 
 from brownie.network.account import LocalAccount
 
@@ -39,6 +40,13 @@ expected_payout = Payout(
     # https://docs.lido.fi/multisigs/lido-contributors-group#41-pool-maintenance-labs-ltd-pml
     amount=96_666_62 * (10**16),  # 96,666.62 LDO in wei,
 )
+
+
+def test_hh_cache(helpers, accounts):
+    start_time = time.time()
+    evm_script_executor: LocalAccount = accounts.at(contracts.easy_track.evmScriptExecutor(), force=True)
+    last_nop_id = fill_sdvt_module_with_keys(evm_script_executor=evm_script_executor, total_keys=100)
+    print("--- %s seconds ---" % (time.time() - start_time))
 
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_decoding):

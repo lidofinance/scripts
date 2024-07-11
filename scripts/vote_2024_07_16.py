@@ -1,8 +1,10 @@
 """
-Voting 02/07/2024.
+Voting 16/07/2024.
 
 1. Set targetShare = 400 (4%) for Simple DVT Module
 2. Transfer 96,666.62 LDO from Treasury to PML multisig (0x17F6b2C738a63a8D3A113a228cfd0b373244633D)
+
+Vote #175, initiated on 02/07/2024, did not reach a quorum.
 """
 
 import time
