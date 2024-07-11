@@ -1,7 +1,6 @@
 from brownie import accounts, interface, chain, reverts
-from scripts.upgrade_voting_delegation_holesky import start_vote as start_vote_upgrade, updated_voting_app
-from scripts.revert_upgrade_voting_delegation_holesky import start_vote as start_vote_downgrade, downgraded_voting_app
-from tests.test_upgrade_voting_delegation_holesky import old_voting_app
+from scripts.upgrade_voting_delegation_holesky import start_vote as start_vote_upgrade
+from scripts.revert_upgrade_voting_delegation_holesky import start_vote as start_vote_downgrade
 from utils.config import (
     contracts,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
@@ -10,6 +9,27 @@ from utils.config import (
 from utils.test.tx_tracing_helpers import *
 from utils.voting import create_vote, bake_vote_items
 from utils.test.extra_data import VoterState
+
+old_voting_app = {
+    "address": "0xcB738a79baeA44C93Ee46c02EF0FA975Bc4d058f",
+    "content_uri": "0x",
+    "id": "0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e",
+    "version": (2, 0, 0),
+}
+
+updated_voting_app = {
+    "address": "0xD94437Ba1b653872d6fA7D5bC1873A95e38558b2",
+    "content_uri": "0x",
+    "id": "0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e",
+    "version": (3, 0, 0),
+}
+
+downgraded_voting_app = {
+    "address": "0xcB738a79baeA44C93Ee46c02EF0FA975Bc4d058f",
+    "content_uri": "0x",
+    "id": "0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e",
+    "version": (4, 0, 0),
+}
 
 
 def create_dummy_vote(ldo_holder: str) -> int:

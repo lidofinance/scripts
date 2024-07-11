@@ -1,5 +1,5 @@
 """
-Revert Voting Delegation Upgrade
+Revert Voting Delegation Upgrade [in case of emergency]
 
 1. Push new Voting app version to the Voting Repo 0x2997EA0D07D79038D83Cb04b3BB9A2Bc512E3fDA
 2. Downgrade the Aragon Voting contract implementation to 0xcB738a79baeA44C93Ee46c02EF0FA975Bc4d058f
@@ -44,7 +44,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         # I. Simple Delegation
         #
         (
-            "1) Push new Voting app version to the Voting Repo",
+            "1) Push previous Voting app version to the Voting Repo with incremented version",
             add_implementation_to_voting_app_repo(
                 downgraded_voting_app["version"],
                 downgraded_voting_app["address"],
@@ -52,11 +52,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "2) Upgrade the Aragon Voting contract implementation",
+            "2) Update the Aragon Voting contract implementation to the previous one",
             update_app_implementation(downgraded_voting_app["id"], downgraded_voting_app["address"]),
         ),
         (
-            "3) Upgrade TRP voting adapter",
+            "3) Downgrapde TRP voting adapter",
             agent_forward(
                 [
                     (

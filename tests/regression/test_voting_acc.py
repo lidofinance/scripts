@@ -27,11 +27,11 @@ def call_target():
 @pytest.fixture(scope="module")
 def test_trp_escrow(trp_recipient, ldo_holder):
     contracts.ldo_token.approve(
-        contracts.trp_escrow_factory.address, 1_000_000_000_000_000_000, {"from": accounts.at(ldo_holder, force=True)}
+        contracts.trp_escrow_factory.address, 10**18, {"from": accounts.at(ldo_holder, force=True)}
     )
 
     tx = contracts.trp_escrow_factory.deploy_vesting_contract(
-        1_000_000_000_000_000_000,
+        10**18,
         trp_recipient.address,
         360,
         chain.time(),  # bc of tests can be in future
@@ -128,6 +128,8 @@ def test_phases(call_target, stranger, test_vote):
     with reverts("VOTING_CAN_NOT_VOTE"):
         contracts.voting.vote(vote_id, False, False, {"from": accounts.at(LDO_VOTE_EXECUTORS_FOR_TESTS[2], force=True)})
 
+    # Check that quorum is reached
+    assert contracts.voting.canExecute(vote_id)
     assert not call_target.called()
     execute_tx = contracts.voting.executeVote(vote_id, {"from": stranger})
     assert execute_tx.events["ExecuteVote"]["voteId"] == vote_id
@@ -266,6 +268,7 @@ def test_delegation_happy_path(delegate1, delegate2, test_vote, stranger):
     chain.sleep(contracts.voting.voteTime())
     chain.mine()
     assert contracts.voting.getVotePhase(vote_id) == 2  # Closed phase
+    assert contracts.voting.canExecute(vote_id)
     # Execute the vote
     execute_tx = contracts.voting.executeVote(vote_id, {"from": stranger})
     assert execute_tx.events["ExecuteVote"]["voteId"] == vote_id
