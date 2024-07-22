@@ -44,6 +44,7 @@ def test_sender_not_allowed(accounting_oracle: Contract, oracle_version: int, st
 
 def test_submitConsensusReport(accounting_oracle: Contract, hash_consensus: Contract) -> None:
     last_processing_ref_slot = accounting_oracle.getLastProcessingRefSlot()
+    far_future = 172191406800
 
     with reverts(
         encode_error(
@@ -67,7 +68,7 @@ def test_submitConsensusReport(accounting_oracle: Contract, hash_consensus: Cont
         accounting_oracle.submitConsensusReport(
             NON_ZERO_HASH,
             last_processing_ref_slot,
-            chain.time(),
+            far_future,
             {"from": hash_consensus},
         )
 
@@ -79,11 +80,12 @@ def test_submitConsensusReport(accounting_oracle: Contract, hash_consensus: Cont
             {"from": hash_consensus},
         )
 
+
     with reverts(encode_error("HashCannotBeZero()")):
         accounting_oracle.submitConsensusReport(
             ZERO_HASH,
             last_processing_ref_slot + 1,
-            chain.time(),
+            far_future,
             {"from": hash_consensus},
         )
 
