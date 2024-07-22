@@ -30,7 +30,7 @@ from utils.config import (
 description = """
 1. **Expanding the Simple DVT Module:** Increase the Simple DVT module's staking share limit from 0.5% to 4%, as decided in the [Snapshot vote](https://snapshot.org/#/lido-snapshot.eth/proposal/0xaca2da3c932542e030db8bf5b6e4420bf4aa98bd57bd62b9b8008a4b7398abb2).
 
-2. **Lido Contributors Group Funding:** Transfer 96,666.62 LDO within the [[EGG] st2024 v1 Grant Funding](https://snapshot.org/#/lido-snapshot.eth/proposal/0x41a47f0735b7aca8c1e7f93fae86a82f5c3fac8796657d2e95e63b1aa6d09c52) to the [PML multisig](https://app.safe.global/settings/setup?safe=eth:0x17F6b2C738a63a8D3A113a228cfd0b373244633D), as requested [on the forum](https://research.lido.fi/t/egg-st2024-v1-lido-contributors-group-request-for-grant-funding-to-advance-goose-goals/6054/19).
+2. **Lido Contributors Group Funding:** Transfer 180,000 LDO within the [EGG st2024 v2 Grant Funding](https://snapshot.org/#/lido-snapshot.eth/proposal/0x2baf3275d15a8494ff94fef58d93bedd2fc28bfea8519f7e86474fc72dc25076) to the [PML multisig](https://app.safe.global/settings/setup?safe=eth:0x17F6b2C738a63a8D3A113a228cfd0b373244633D).
 """
 
 # Values
@@ -39,7 +39,7 @@ payout = Payout(
     token_addr=LDO_TOKEN,
     from_addr=AGENT,
     to_addr="0x17F6b2C738a63a8D3A113a228cfd0b373244633D",  # https://docs.lido.fi/multisigs/lido-contributors-group#41-pool-maintenance-labs-ltd-pml
-    amount=96_666_62 * (10**16),  # 96,666.62 LDO in wei,
+    amount=180_000 * (10**18),  # 180000 LDO in wei
 )
 
 
