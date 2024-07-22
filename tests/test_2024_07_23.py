@@ -149,8 +149,8 @@ def test_sdvt_stake_allocation(accounts, helpers, ldo_holder, vote_ids_from_env)
     helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting, skip_time=3 * 60 * 60 * 24)
 
     # No new keys in the SDVT module
-    contracts.lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": contracts.deposit_security_module})
     contracts.lido.deposit(100, SIMPLE_DVT_ID, "0x0", {"from": contracts.deposit_security_module})
+    contracts.lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": contracts.deposit_security_module})
     nor_module_stats_after_vote = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
     sdvt_module_stats_after_vote = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
 
@@ -165,8 +165,8 @@ def test_sdvt_stake_allocation(accounts, helpers, ldo_holder, vote_ids_from_env)
     # Add new keys to the SDVT module
     fill_sdvt_module_with_keys(evm_script_executor=evm_script_executor, total_keys=new_sdvt_keys_amount)
 
-    contracts.lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": contracts.deposit_security_module})
     contracts.lido.deposit(100, SIMPLE_DVT_ID, "0x0", {"from": contracts.deposit_security_module})
+    contracts.lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": contracts.deposit_security_module})
     nor_module_stats_after = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
     sdvt_module_stats_after = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
 
