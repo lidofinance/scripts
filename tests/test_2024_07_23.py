@@ -7,7 +7,7 @@ import time
 
 from brownie.network.account import LocalAccount
 
-from scripts.vote_2024_07_02 import start_vote
+from scripts.vote_2024_07_23 import start_vote
 from utils.config import contracts
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
