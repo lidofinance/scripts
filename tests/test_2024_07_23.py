@@ -9,7 +9,7 @@ from brownie.network.account import LocalAccount
 
 from scripts.vote_2024_07_23 import start_vote
 from utils.config import contracts
-from utils.test.deposits_helpers import fill_deposit_buffer
+from utils.test.deposits_helpers import fill_deposit_buffer, drain_buffered_ether
 from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
 from utils.test.simple_dvt_helpers import simple_dvt_add_keys
 from utils.test.tx_tracing_helpers import *
@@ -92,7 +92,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
         return
 
     display_voting_events(tx)
-
     evs = group_voting_events(tx)
     validate_staking_module_update_event(evs[0], expected_sdvt_module)
     validate_token_payout_event(evs[1], expected_payout)
@@ -145,8 +144,12 @@ def test_sdvt_stake_allocation(accounts, helpers, ldo_holder, vote_ids_from_env)
     evm_script_executor: LocalAccount = accounts.at(contracts.easy_track.evmScriptExecutor(), force=True)
     nor_module_stats_before = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
     sdvt_module_stats_before = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
-    fill_deposit_buffer(200)
+
     new_sdvt_keys_amount = 60
+
+    # prepare buffer to accept 200 keys
+    drain_buffered_ether()
+    fill_deposit_buffer(200)
 
     # VOTE!
     vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
