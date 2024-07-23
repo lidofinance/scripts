@@ -24,4 +24,4 @@ def set_balance_in_wei(address, balance):
 def set_balance(address, balanceInEth):
     balance = ETH(balanceInEth)
 
-    set_balance_in_wei(address, balance)
+    return set_balance_in_wei(address, balance)
