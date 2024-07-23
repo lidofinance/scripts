@@ -38,7 +38,7 @@ def deployer():
 @pytest.fixture()
 def steth_holder(accounts):
     steth_holder = accounts.at("0x176F3DAb24a159341c0509bB36B833E7fdd0a131", force=True)
-    web3.provider.make_request("evm_setAccountBalance", [steth_holder.address, "0x152D02C7E14AF6800000"])
+    set_balance(steth_holder.address, 100000)
     steth_holder.transfer(contracts.lido, ETH(10000))
     return steth_holder
 

@@ -1,9 +1,9 @@
 from brownie import accounts, web3
 from utils.test.helpers import ETH
 
-def set_balance(address, balanceInEth):
+
+def set_balance_in_wei(address, balance):
     account = accounts.at(address, force=True)
-    balance = ETH(balanceInEth)
 
     if account.balance() != balance:
         # try Ganache
@@ -18,5 +18,10 @@ def set_balance(address, balanceInEth):
         except:
             pass
 
-    assert account.balance() == ETH(balanceInEth)
+    assert account.balance() == balance
     return account
+
+def set_balance(address, balanceInEth):
+    balance = ETH(balanceInEth)
+
+    set_balance_in_wei(address, balance)

@@ -6,7 +6,7 @@ from brownie.exceptions import brownie
 from brownie.network.account import Account
 from web3 import Web3
 
-from utils.balance import set_balance
+from utils.balance import set_balance, set_balance_in_wei
 from utils.evm_script import encode_error
 from tests.conftest import Helpers
 from utils.config import contracts
@@ -582,13 +582,7 @@ def test_accounting_withdrawals_at_limits(
 
     withdrawals = _rebase_limit_wei(block_identifier=block_before_report)
 
-    web3.manager.request_blocking(
-        "evm_setAccountBalance",  # type: ignore
-        [
-            withdrawal_vault.address,
-            Web3.to_hex(withdrawals),
-        ],
-    )
+    set_balance_in_wei(withdrawal_vault.address, withdrawals)
 
     tx, _ = oracle_report(
         cl_diff=0,
@@ -705,13 +699,7 @@ def test_accounting_withdrawals_above_limits(
     withdrawals_excess = ETH(10)
     withdrawals = expected_withdrawals + withdrawals_excess
 
-    web3.manager.request_blocking(
-        "evm_setAccountBalance",  # type: ignore
-        [
-            withdrawal_vault.address,
-            Web3.to_hex(withdrawals),
-        ],
-    )
+    set_balance_in_wei(withdrawal_vault.address, withdrawals)
 
     tx, _ = oracle_report(
         cl_diff=0,
@@ -955,20 +943,8 @@ def test_accounting_overfill_both_vaults(
     limit = _rebase_limit_wei(block_identifier=chain.height)
     excess = ETH(10)
 
-    web3.manager.request_blocking(
-        "evm_setAccountBalance",  # type: ignore
-        [
-            withdrawal_vault.address,
-            Web3.to_hex(limit + excess),
-        ],
-    )
-    web3.manager.request_blocking(
-        "evm_setAccountBalance",  # type: ignore
-        [
-            el_vault.address,
-            Web3.to_hex(limit + excess),
-        ],
-    )
+    set_balance_in_wei(withdrawal_vault.address, limit + excess)
+    set_balance_in_wei(el_vault.address, limit + excess)
 
     initial_block = chain.height
 
