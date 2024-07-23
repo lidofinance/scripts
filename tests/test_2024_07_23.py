@@ -1,9 +1,8 @@
 """
-Tests for voting 24/01/2023.
+Tests for voting 23/07/2024.
 """
 
 import math
-import time
 
 from brownie.network.account import LocalAccount
 
@@ -135,31 +134,32 @@ def test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_f
 
 def test_sdvt_stake_allocation(accounts, helpers, ldo_holder, vote_ids_from_env):
     evm_script_executor: LocalAccount = accounts.at(contracts.easy_track.evmScriptExecutor(), force=True)
-    nor_module_stats_before = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
-    sdvt_module_stats_before = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
-
     new_sdvt_keys_amount = 60
 
-    # prepare buffer to accept 200 keys
+    # prepare initial state
     drain_buffered_ether()
     fill_deposit_buffer(200)
+
+    nor_module_stats_before = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
+    sdvt_module_stats_before = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
 
     # VOTE!
     vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
     helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting, skip_time=3 * 60 * 60 * 24)
 
     # No new keys in the SDVT module
-    contracts.lido.deposit(100, SIMPLE_DVT_ID, "0x0", {"from": contracts.deposit_security_module})
     contracts.lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": contracts.deposit_security_module})
+    contracts.lido.deposit(100, SIMPLE_DVT_ID, "0x0", {"from": contracts.deposit_security_module})
     nor_module_stats_after_vote = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
     sdvt_module_stats_after_vote = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
 
     assert (
-        sdvt_module_stats_after_vote["totalDepositedValidators"] == sdvt_module_stats_before["totalDepositedValidators"]
+        sdvt_module_stats_after_vote["totalDepositedValidators"] - sdvt_module_stats_before["totalDepositedValidators"]
+        == 0
     ), "No new keys should go to the SDVT module"
     assert (
-        nor_module_stats_after_vote["totalDepositedValidators"]
-        == nor_module_stats_before["totalDepositedValidators"] + 100
+        nor_module_stats_after_vote["totalDepositedValidators"] - nor_module_stats_before["totalDepositedValidators"]
+        == 100
     ), "All keys should go to the NOR module"
 
     # Add new keys to the SDVT module

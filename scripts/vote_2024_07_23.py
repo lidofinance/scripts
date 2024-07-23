@@ -2,7 +2,7 @@
 Voting 23/07/2024.
 
 1. Set targetShare = 400 (4%) for Simple DVT Module
-2. Transfer 96,666.62 LDO from Treasury to PML multisig (0x17F6b2C738a63a8D3A113a228cfd0b373244633D)
+2. Transfer 180000 LDO from Treasury to PML multisig (0x17F6b2C738a63a8D3A113a228cfd0b373244633D)
 
 Vote #175, initiated on 02/07/2024, did not reach a quorum.
 """
@@ -67,14 +67,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         #
-        # II. Transfer 96,666.62 LDO from Treasury to PML multisig
+        # II. Transfer 180000 LDO from Treasury to PML multisig
         #
         (
-            "2) Transfer 96,666.62 LDO from Treasury to PML multisig",
+            "2) Transfer 180000 LDO from Treasury to PML multisig",
             make_ldo_payout(
                 target_address=payout.to_addr,
                 ldo_in_wei=payout.amount,
-                reference="Transfer 96,666.62 LDO from Treasury to PML multisig",
+                reference="Transfer 180000 LDO from Treasury to PML multisig",
             ),
         ),
     )
