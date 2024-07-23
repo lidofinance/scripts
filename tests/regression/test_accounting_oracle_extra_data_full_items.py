@@ -274,7 +274,7 @@ def fill_nor_with_old_and_new_operators(
         )
         # Change staking limits for old node operators (change to new total added keys count)
         nor.setNodeOperatorStakingLimit(i, new_deposit_limit, {"from": evm_script_executor_eoa})
-        nor.updateTargetValidatorsLimits(i, 1, new_deposit_limit, {"from": contracts.staking_router})
+        nor.updateTargetValidatorsLimits['uint256,uint256,uint256'](i, 1, new_deposit_limit, {"from": contracts.staking_router})
     return nor_count_before, added_nor_operators_count
 
 

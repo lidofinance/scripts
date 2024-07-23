@@ -773,7 +773,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
 
     assert first_no_summary_before["depositableValidatorsCount"] > 0
 
-    target_limit_tx = staking_module.updateTargetValidatorsLimits(no1_id, 1, 0, {"from": STAKING_ROUTER})
+    target_limit_tx = staking_module.updateTargetValidatorsLimits['uint256,uint256,uint256'](no1_id, 1, 0, {"from": STAKING_ROUTER})
 
     helpers.assert_single_event_named(
             "TargetValidatorsCountChanged",
@@ -802,7 +802,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert no3_deposited_keys_before != no3_deposited_keys_after
 
     # Disable target limit
-    target_limit_tx = staking_module.updateTargetValidatorsLimits(no1_id, 0, 0, {"from": STAKING_ROUTER})
+    target_limit_tx = staking_module.updateTargetValidatorsLimits['uint256,uint256,uint256'](no1_id, 0, 0, {"from": STAKING_ROUTER})
 
     helpers.assert_single_event_named(
         "TargetValidatorsCountChanged",
