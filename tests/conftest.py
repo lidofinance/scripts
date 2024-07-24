@@ -107,7 +107,7 @@ class Helpers:
                     if accounts.at(holder_addr, force=True).balance() < topup:
                         accounts[0].transfer(holder_addr, topup)
                     account = accounts.at(holder_addr, force=True)
-                    dao_voting.vote(vote_id, True, False, {"from": account})
+                    dao_voting.vote(vote_id, True, False, {"from": account, "gas_price": get_gas_price()})
 
         # wait for the vote to end
         chain.sleep(skip_time)
@@ -128,7 +128,7 @@ class Helpers:
 
         execution_transactions = []
         for vote_id in vote_ids:
-            tx = dao_voting.executeVote(vote_id, {"from": accounts[0]})
+            tx = dao_voting.executeVote(vote_id, {"from": accounts[0], "gas_price": get_gas_price()})
             print(f"vote #{vote_id} executed")
             execution_transactions.append(tx)
 

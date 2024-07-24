@@ -9,6 +9,7 @@ from utils.config import (
     contracts,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
     network_name,
+    get_gas_price
     # LIDO,
     # AGENT
 )
@@ -32,7 +33,7 @@ def test_vote(helpers, accounts, vote_ids_from_env):
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
     else:
-        tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
+        tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS, "gas_price": get_gas_price()}
         vote_id, _ = start_vote(tx_params, silent=True)
 
     vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
