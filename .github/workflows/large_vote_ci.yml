@@ -3,12 +3,19 @@ name: Large vote CI
 on:
   push:
     branches:
-      - "large-vote_**"
-
+      - "master"
+      - "feat/tests"
+      - "feat/rc3"
+      - "feat/rc2"
+      - "feat/rc1"
+      - "feat/next-vote"
+  schedule:
+    - cron: "0 0 * * TUE"
 jobs:
   run-tests-large:
     name: Brownie fork LARGE tests
     runs-on: [protocol-heavy-runners]
+    timeout-minutes: 100
     steps:
       - uses: actions/checkout@v3
       - name: Main action

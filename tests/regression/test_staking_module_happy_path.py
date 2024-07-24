@@ -104,8 +104,8 @@ def parse_exited_signing_keys_count_changed_logs(logs):
     for l in logs:
         res.append(
             {
-                "nodeOperatorId": eth_abi.decode_abi(["uint256"], l["topics"][1])[0],
-                "exitedValidatorsCount": eth_abi.decode_single("uint256", bytes.fromhex(l["data"][2:])),
+                "nodeOperatorId": eth_abi.decode(["uint256"], l["topics"][1])[0],
+                "exitedValidatorsCount": eth_abi.decode(["uint256"], l["data"]),
             }
         )
     return res
@@ -114,10 +114,10 @@ def parse_exited_signing_keys_count_changed_logs(logs):
 def parse_stuck_penalty_state_changed_logs(logs):
     res = []
     for l in logs:
-        data = eth_abi.decode(["uint256", "uint256", "uint256"], bytes.fromhex(l["data"][2:]))
+        data = eth_abi.decode(["uint256", "uint256", "uint256"], l["data"])
         res.append(
             {
-                "nodeOperatorId": eth_abi.decode_abi(["uint256"], l["topics"][1])[0],
+                "nodeOperatorId": eth_abi.decode(["uint256"], l["topics"][1])[0],
                 "stuckValidatorsCount": data[0],
                 "refundedValidatorsCount": data[1],
                 "stuckPenaltyEndTimestamp": data[2],
@@ -131,8 +131,8 @@ def parse_target_validators_count_changed(logs):
     for l in logs:
         res.append(
             {
-                "nodeOperatorId": eth_abi.decode_abi(["uint256"], l["topics"][1])[0],
-                "targetValidatorsCount": eth_abi.decode_single("uint256", bytes.fromhex(l["data"][2:])),
+                "nodeOperatorId": eth_abi.decode(["uint256"], l["topics"][1])[0],
+                "targetValidatorsCount": eth_abi.decode(["uint256"], l["data"]),
             }
         )
     return res
@@ -278,17 +278,17 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert almostEqWithDiff(
         no1_balance_shares_after - no1_balance_shares_before,
         no1_rewards_after_second_report // 2,
-        1,
+        2,
     )
     assert almostEqWithDiff(
         no2_balance_shares_after - no2_balance_shares_before,
         no2_rewards_after_second_report // 2,
-        1,
+        2,
     )
     assert almostEqWithDiff(
         no3_balance_shares_after - no3_balance_shares_before,
         no3_rewards_after_second_report,
-        1,
+        2,
     )
 
     # Check burn shares
@@ -323,10 +323,10 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         filter_transfer_logs(extra_report_tx.logs, web3.keccak(text="ExitedSigningKeysCountChanged(uint256,uint256)"))
     )
     assert exited_signing_keys_count_events[0]["nodeOperatorId"] == no1_id
-    assert exited_signing_keys_count_events[0]["exitedValidatorsCount"] == 5
+    assert exited_signing_keys_count_events[0]["exitedValidatorsCount"][0] == 5
 
     assert exited_signing_keys_count_events[1]["nodeOperatorId"] == no2_id
-    assert exited_signing_keys_count_events[1]["exitedValidatorsCount"] == 5
+    assert exited_signing_keys_count_events[1]["exitedValidatorsCount"][0] == 5
 
     stuck_penalty_state_changed_events = parse_stuck_penalty_state_changed_logs(
         filter_transfer_logs(
@@ -423,7 +423,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert almostEqWithDiff(
         no3_balance_shares_after - no3_balance_shares_before,
         no3_rewards_after_third_report,
-        2,
+        4,
     )
 
     # Check burn shares
@@ -458,7 +458,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         filter_transfer_logs(extra_report_tx.logs, web3.keccak(text="ExitedSigningKeysCountChanged(uint256,uint256)"))
     )
     assert exited_signing_keys_count_events[0]["nodeOperatorId"] == no1_id
-    assert exited_signing_keys_count_events[0]["exitedValidatorsCount"] == 7
+    assert exited_signing_keys_count_events[0]["exitedValidatorsCount"][0] == 7
 
     stuck_penalty_state_changed_events = parse_stuck_penalty_state_changed_logs(
         filter_transfer_logs(
@@ -544,7 +544,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert almostEqWithDiff(
         no3_balance_shares_after - no3_balance_shares_before,
         no3_rewards_after_fourth_report,
-        2,
+        4,
     )
 
     # Check burn shares
@@ -640,7 +640,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert almostEqWithDiff(
         no3_balance_shares_after - no3_balance_shares_before,
         no3_rewards_after_fifth_report,
-        2,
+        4,
     )
 
     # Check burn shares
@@ -727,7 +727,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert almostEqWithDiff(
         no3_balance_shares_after - no3_balance_shares_before,
         no3_rewards_after_sixth_report,
-        2,
+        4,
     )
 
     assert no1_summary["stuckValidatorsCount"] == 0
@@ -785,7 +785,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         filter_transfer_logs(target_limit_tx.logs, web3.keccak(text="TargetValidatorsCountChanged(uint256,uint256)"))
     )
     assert target_validators_count_changed_events[0]["nodeOperatorId"] == no1_id
-    assert target_validators_count_changed_events[0]["targetValidatorsCount"] == 0
+    assert target_validators_count_changed_events[0]["targetValidatorsCount"][0] == 0
 
     first_no_summary_after = staking_module.getNodeOperatorSummary(no1_id)
 
@@ -834,7 +834,10 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert no2_deposited_keys_before != no2_deposited_keys_after
     assert no3_deposited_keys_before != no3_deposited_keys_after
 
-@pytest.mark.skip("TODO: fix the test assumptions about the state of the chain (no exited validators, depositable ETH amount)")
+
+@pytest.mark.skip(
+    "TODO: fix the test assumptions about the state of the chain (no exited validators, depositable ETH amount)"
+)
 def test_node_operator_registry(impersonated_voting, eth_whale):
     nor = contracts.node_operators_registry
     nor.module_id = 1

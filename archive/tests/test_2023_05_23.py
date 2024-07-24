@@ -6,7 +6,7 @@ from archive.scripts.vote_2023_05_23 import start_vote
 
 from brownie import chain, accounts, web3
 from brownie.network.transaction import TransactionReceipt
-from eth_abi.abi import encode_single
+from eth_abi.abi import encode
 
 
 from utils.config import (

@@ -3,12 +3,17 @@ name: Normal vote CI
 on:
   push:
     branches-ignore:
-      - "large-vote_**"
-
+      - "master"
+      - "feat/tests"
+      - "feat/rc3"
+      - "feat/rc2"
+      - "feat/rc1"
+      - "feat/next-vote"
 jobs:
   run-tests-normal:
     name: Brownie fork NORMAL tests
     runs-on: "ubuntu-latest"
+    timeout-minutes: 100
     steps:
       - uses: actions/checkout@v3
       - name: Main action

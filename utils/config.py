@@ -29,6 +29,9 @@ def network_name() -> Optional[str]:
 if network_name() in ("goerli", "goerli-fork"):
     print(f'Using {color("cyan")}config_goerli.py{color} addresses')
     from configs.config_goerli import *
+elif network_name() in ("holesky", "holesky-fork"):
+    print(f'Using {color("cyan")}config_holesky.py{color} addresses')
+    from configs.config_holesky import *
 elif network_name() in ("sepolia", "sepolia-fork"):
     print(f'Using {color("yellow")}config_sepolia.py{color} addresses')
     from configs.config_sepolia import *
@@ -43,9 +46,10 @@ def get_is_live() -> bool:
         "hardhat",
         "hardhat-fork",
         "goerli-fork",
-        "sepolia-fork",
         "local-fork",
         "mainnet-fork",
+        "holesky-fork",
+        "sepolia-fork",
     ]
     return network.show_active() not in dev_networks
 
@@ -98,8 +102,10 @@ def get_pinata_cloud_token(silent=False) -> str:
 
 def get_infura_io_keys(silent=False) -> Tuple[str, str]:
     is_live = get_is_live()
-    if is_live and not silent and (
-        "WEB3_INFURA_IPFS_PROJECT_ID" not in os.environ or "WEB3_INFURA_IPFS_PROJECT_SECRET" not in os.environ
+    if (
+        is_live
+        and not silent
+        and ("WEB3_INFURA_IPFS_PROJECT_ID" not in os.environ or "WEB3_INFURA_IPFS_PROJECT_SECRET" not in os.environ)
     ):
         raise EnvironmentError(
             "Please set WEB3_INFURA_IPFS_PROJECT_ID and WEB3_INFURA_IPFS_PROJECT_SECRET env variable "
@@ -124,18 +130,6 @@ def prompt_bool() -> Optional[bool]:
         return False
     else:
         sys.stdout.write("Please respond with 'yes' or 'no'")
-
-
-def get_config_params() -> Dict[str, str]:
-    if network_name() in ("goerli", "goerli-fork"):
-        import configs.config_goerli
-
-        ret = {x: globals()[x] for x in dir(configs.config_goerli) if not x.startswith("__")}
-    else:
-        import configs.config_mainnet
-
-        ret = {x: globals()[x] for x in dir(configs.config_mainnet) if not x.startswith("__")}
-    return ret
 
 
 class ContractsLazyLoader:

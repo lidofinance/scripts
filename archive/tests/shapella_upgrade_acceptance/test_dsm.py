@@ -58,7 +58,7 @@ def test_prefixes(contract):
     """Test that prefixes are calculated correctly. Fails if chainId of the fork was not =1 during dsm deploy"""
     assert (
         contract.PAUSE_MESSAGE_PREFIX()
-        == web3.solidityKeccak(
+        == web3.solidity_keccak(
             ["bytes32", "uint256", "address"],
             [
                 web3.keccak(text="lido.DepositSecurityModule.PAUSE_MESSAGE").hex(),
@@ -69,7 +69,7 @@ def test_prefixes(contract):
     )
     assert (
         contract.ATTEST_MESSAGE_PREFIX()
-        == web3.solidityKeccak(
+        == web3.solidity_keccak(
             ["bytes32", "uint256", "address"],
             [
                 web3.keccak(text="lido.DepositSecurityModule.ATTEST_MESSAGE").hex(),
