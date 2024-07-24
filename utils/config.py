@@ -59,12 +59,17 @@ def get_priority_fee() -> str:
     else:
         return "2 gwei"
 
-
 def get_max_fee() -> str:
     if "OMNIBUS_MAX_FEE" in os.environ:
         return os.environ["OMNIBUS_MAX_FEE"]
     else:
         return "300 gwei"
+
+def get_gas_price() -> str:
+    if "OMNIBUS_GAS_PRICE" in os.environ:
+        return os.environ["OMNIBUS_GAS_PRICE"]
+    else:
+        return "40 gwei"
 
 
 def local_deployer() -> LocalAccount:

@@ -6,16 +6,24 @@ Upgrade L1Bridge, L2Bridge, L2 wstETH, L2 stETH, TokenRateOracle
 """
 
 import time
-from brownie import interface
+import eth_abi
+from brownie import interface, accounts
 from typing import Dict
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
+from utils.agent import agent_forward
+from tests.conftest import Helpers
 from utils.config import (
+    contracts,
     get_deployer_account,
     get_is_live,
     get_priority_fee,
+    get_gas_price,
     network_name,
+    AGENT
+)
+from configs.config_sepolia import (
     L1_TOKENS_BRIDGE_PROXY,
     L1_TOKENS_BRIDGE_NEW_IMPL,
     LIDO_LOCATOR,
@@ -24,14 +32,10 @@ from utils.config import (
     L2_TOKENS_BRIDGE_PROXY,
     L2_TOKENS_BRIDGE_NEW_IMPL,
     L2_OPTIMISM_BRIDGE_EXECUTOR,
-    L2_OPTIMISM_PROXY_ADMIN_CONTRACT,
     L2_OPTIMISM_WSTETH_TOKEN,
     L2_OPTIMISM_WSTETH_TOKEN_NEW_IMPL,
     L1_OPTIMISM_CROSS_DOMAIN_MESSENGER,
 )
-from utils.agent import agent_forward, agent_execute
-import eth_abi
-
 
 description = """
 
@@ -43,16 +47,16 @@ Upgrade L1Bridge, L2Bridge, L2 wstETH
 DEPOSITS_ENABLER_ROLE = "0x4b43b36766bde12c5e9cbbc37d15f8d1f769f08f54720ab370faeb4ce893753a"
 
 
-def encode_l2_upgrade_call(proxy_admin: str, proxy1: str, new_impl1: str, proxy2: str, new_impl2: str):
-    scroll_executor = interface.OpBridgeExecutor(L2_OPTIMISM_BRIDGE_EXECUTOR)  # any address to bypass
+def encode_l2_upgrade_call(proxy1: str, new_impl1: str, proxy2: str, new_impl2: str):
+    govBridgeExecutor = interface.OpBridgeExecutor(L2_OPTIMISM_BRIDGE_EXECUTOR)
 
-    return scroll_executor.queue.encode_input(
-        [proxy_admin, proxy_admin],
+    return govBridgeExecutor.queue.encode_input(
+        [proxy1, proxy2],
         [0, 0],
-        ["upgrade(address,address)", "upgrade(address,address)"],
+        ["proxy__upgradeTo(address)", "proxy__upgradeTo(address)"],
         [
-            eth_abi.encode(["address", "address"], [proxy1, new_impl1]),
-            eth_abi.encode(["address", "address"], [proxy2, new_impl2]),
+            eth_abi.encode(["address"], [new_impl1]),
+            eth_abi.encode(["address"], [new_impl2]),
         ],
         [False, False],
     )
@@ -111,7 +115,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                     encode_l1_l2_sendMessage(
                         L2_OPTIMISM_BRIDGE_EXECUTOR,
                         encode_l2_upgrade_call(
-                            L2_OPTIMISM_PROXY_ADMIN_CONTRACT,
                             L2_TOKENS_BRIDGE_PROXY,
                             L2_TOKENS_BRIDGE_NEW_IMPL,
                             L2_OPTIMISM_WSTETH_TOKEN,
@@ -148,6 +151,27 @@ def main():
         tx_params["priority_fee"] = get_priority_fee()
 
     vote_id, _ = start_vote(tx_params=tx_params, silent=False)
+
+    vote_id >= 0 and print(f"Vote created: {vote_id}.")
+
+    time.sleep(5)  # hack for waiting thread #2.
+
+def startAndExecuteForForkUpgrade():
+    depoyerAccount = get_deployer_account()
+
+    # Top up accounts
+    accountWithEth = accounts.at('0x4200000000000000000000000000000000000023', force=True)
+    accountWithEth.transfer(depoyerAccount.address, "1 ethers", gas_price=get_gas_price())
+    accountWithEth.transfer(AGENT, "1 ethers", gas_price=get_gas_price())
+
+    tx_params = {"from": depoyerAccount, "gas_price": get_gas_price()}
+    if get_is_live():
+        tx_params["priority_fee"] = get_priority_fee()
+
+    vote_id, _ = start_vote(tx_params=tx_params, silent=True)
+    vote_tx = Helpers.execute_vote(accounts, vote_id, contracts.voting)
+
+    print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 
