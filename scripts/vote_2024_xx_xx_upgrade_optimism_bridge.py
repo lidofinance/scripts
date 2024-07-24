@@ -51,14 +51,21 @@ def encode_l2_upgrade_call(proxy1: str, new_impl1: str, proxy2: str, new_impl2: 
     govBridgeExecutor = interface.OpBridgeExecutor(L2_OPTIMISM_BRIDGE_EXECUTOR)
 
     return govBridgeExecutor.queue.encode_input(
-        [proxy1, proxy2],
-        [0, 0],
-        ["proxy__upgradeTo(address)", "proxy__upgradeTo(address)"],
+        [proxy1, proxy1, proxy2, proxy2],
+        [0, 0, 0, 0],
+        [
+            "proxy__upgradeTo(address)",
+            "finalizeUpgrade_v2()",
+            "proxy__upgradeTo(address)",
+            "finalizeUpgrade_v2(string,string)"
+        ],
         [
             eth_abi.encode(["address"], [new_impl1]),
+            eth_abi.encode([],[]),
             eth_abi.encode(["address"], [new_impl2]),
+            eth_abi.encode(["string", "string"], ["Wrapped liquid staked Ether 2.0","wstETH"]),
         ],
-        [False, False],
+        [False, False, False, False],
     )
 
 
@@ -77,10 +84,10 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
     lido_locator_as_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
     l1_token_bridge_as_proxy = interface.OssifiableProxy(L1_TOKENS_BRIDGE_PROXY)
-    l1_token_bridge = interface.AccessControl(L1_TOKENS_BRIDGE_PROXY)
+    l1_token_bridge = interface.L1LidoTokensBridge(L1_TOKENS_BRIDGE_PROXY)
 
     call_script_items = [
-        # 1. L1 Bridge
+        # 1. L1 TokenBridge upgrade proxy
         agent_forward(
             [
                 (
@@ -89,7 +96,16 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 )
             ]
         ),
-        # 1. L1 Bridge
+        # 2. L1 TokenBridge finalize upgrade
+        agent_forward(
+            [
+                (
+                    l1_token_bridge.address,
+                    l1_token_bridge.finalizeUpgrade_v2.encode_input()
+                )
+            ]
+        ),
+        # 3. Upgrade L1 LidoLocator implementation
         agent_forward(
             [
                 (
@@ -98,7 +114,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 )
             ]
         ),
-        # Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent
+        # 4. Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent
         agent_forward(
             [
                 (
@@ -107,7 +123,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 )
             ]
         ),
-        # 2. L2 Bridge
+        # 5. L2 TokenBridge
         agent_forward(
             [
                 (
@@ -128,9 +144,10 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
     vote_desc_items = [
         "1) Upgrade L1 Bridge implementation",
-        "2) Upgrade L1 LidoLocator implementation",
-        "3) Grant DEPOSITS_ENABLER_ROLE to Emergency Brakes Committee multisig",
-        "4) Send L2 upgrade call: (a) upgrade L2TokenBridge; (b) upgrade wstETH on L2",
+        "2) Finalize L1 Bridge upgrade",
+        "3) Upgrade L1 LidoLocator implementation",
+        "4) Grant DEPOSITS_ENABLER_ROLE to Emergency Brakes Committee multisig",
+        "5) Send L2 upgrade call: (a) upgrade L2TokenBridge; (b) finalize L2TokenBridge upgrade; (c) upgrade wstETH on L2; (d) finalize wstETH upgrade",
     ]
 
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
@@ -161,8 +178,8 @@ def startAndExecuteForForkUpgrade():
 
     # Top up accounts
     accountWithEth = accounts.at('0x4200000000000000000000000000000000000023', force=True)
-    accountWithEth.transfer(depoyerAccount.address, "1 ethers", gas_price=get_gas_price())
-    accountWithEth.transfer(AGENT, "1 ethers", gas_price=get_gas_price())
+    accountWithEth.transfer(depoyerAccount.address, "2 ethers", gas_price=get_gas_price())
+    accountWithEth.transfer(AGENT, "2 ethers", gas_price=get_gas_price())
 
     tx_params = {"from": depoyerAccount, "gas_price": get_gas_price()}
     if get_is_live():
