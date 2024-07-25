@@ -892,6 +892,28 @@
         "type": "uint256"
       },
       {
+        "name": "_isTargetLimitActive",
+        "type": "bool"
+      },
+      {
+        "name": "_targetLimit",
+        "type": "uint256"
+      }
+    ],
+    "name": "updateTargetValidatorsLimits",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_nodeOperatorId",
+        "type": "uint256"
+      },
+      {
         "name": "_vettedSigningKeysCount",
         "type": "uint64"
       }
