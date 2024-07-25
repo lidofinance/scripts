@@ -7,7 +7,7 @@ from enum import Enum
 from brownie import MockCallTarget, accounts, chain, reverts, interface, ZERO_ADDRESS
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import create_vote, bake_vote_items
-from utils.config import LDO_VOTE_EXECUTORS_FOR_TESTS
+from utils.config import LDO_VOTE_EXECUTORS_FOR_TESTS, LDO_HOLDER_ADDRESS_FOR_TESTS
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.config import contracts
 from utils.test.extra_data import VoterState
@@ -241,29 +241,9 @@ def test_delegation_happy_path(delegate1, delegate2, test_vote, stranger):
     with reverts("VOTING_CAN_NOT_VOTE_FOR"):
         contracts.voting.attemptVoteFor(vote_id, True, voters[2], {"from": delegate1})
 
-    # Prepare state for the next test
-    chain.snapshot()
-    contracts.voting.attemptVoteFor(vote_id, True, voters[1], {"from": delegate2})
-    contracts.voting.assignDelegate(delegate1, {"from": accounts.at(voters[0], force=True)})
-    contracts.voting.attemptVoteFor(vote_id, True, voters[0], {"from": delegate1})
-    # Fast-forward to the objection phase
-    chain.sleep(contracts.voting.voteTime() - contracts.voting.objectionPhaseTime())
-    chain.mine()
-    assert contracts.voting.getVotePhase(vote_id) == 1  # Objection phase
-
-    # A delegate can not vote for a voter that overwrote their vote during the objection phase
-    with reverts("VOTING_CAN_NOT_VOTE_FOR"):
-        contracts.voting.attemptVoteFor(vote_id, False, voters[2], {"from": delegate1})
-    # A voter can overwrite the delegate vote during the objection phase
-    contracts.voting.vote(vote_id, False, False, {"from": accounts.at(voters[1], force=True)})
-    assert contracts.voting.getVoterState(vote_id, voters[1]) == VoterState.Nay.value
-    # A delegate can vote for a voter during the objection phase
-    contracts.voting.attemptVoteFor(vote_id, False, voters[0], {"from": delegate1})
-
     # A vote can be safely executed
-    chain.revert()
-    # Add some more VP to be able to execute the vote
-    contracts.voting.attemptVoteFor(vote_id, True, voters[1], {"from": delegate2})
+    # # Add some more VP to be able to execute the vote
+    contracts.voting.vote(vote_id, True, False, {"from": accounts.at(LDO_HOLDER_ADDRESS_FOR_TESTS, force=True)})
     # Fast-forward to the closed phase
     chain.sleep(contracts.voting.voteTime())
     chain.mine()
@@ -272,6 +252,39 @@ def test_delegation_happy_path(delegate1, delegate2, test_vote, stranger):
     # Execute the vote
     execute_tx = contracts.voting.executeVote(vote_id, {"from": stranger})
     assert execute_tx.events["ExecuteVote"]["voteId"] == vote_id
+
+
+def test_delegation_objection_phase(delegate1, delegate2, test_vote, stranger):
+    vote_id = test_vote[0]
+    assert contracts.voting.getVotePhase(vote_id) == 0  # Main phase
+
+    voters = LDO_VOTE_EXECUTORS_FOR_TESTS
+
+    contracts.voting.assignDelegate(delegate1, {"from": accounts.at(voters[0], force=True)})
+    contracts.voting.assignDelegate(delegate2, {"from": accounts.at(voters[1], force=True)})
+    contracts.voting.assignDelegate(delegate2, {"from": accounts.at(voters[2], force=True)})
+
+    contracts.voting.attemptVoteFor(vote_id, True, voters[0], {"from": delegate1})
+    contracts.voting.attemptVoteFor(vote_id, True, voters[1], {"from": delegate2})
+    contracts.voting.vote(vote_id, True, False, {"from": accounts.at(voters[2], force=True)})
+    assert contracts.voting.getVoterState(vote_id, voters[0]) == VoterState.DelegateYea.value
+    assert contracts.voting.getVoterState(vote_id, voters[1]) == VoterState.DelegateYea.value
+    assert contracts.voting.getVoterState(vote_id, voters[2]) == VoterState.Yea.value
+    # Fast-forward to the objection phase
+    chain.sleep(contracts.voting.voteTime() - contracts.voting.objectionPhaseTime())
+    chain.mine()
+    assert contracts.voting.getVotePhase(vote_id) == 1  # Objection phase
+
+    # A delegate can not vote for a voter that overwrote their vote earlier
+    assert contracts.voting.getDelegate(voters[2]) == delegate2
+    with reverts("VOTING_CAN_NOT_VOTE_FOR"):
+        contracts.voting.attemptVoteFor(vote_id, False, voters[2], {"from": delegate2})
+    # A voter can overwrite the delegate vote during the objection phase
+    contracts.voting.vote(vote_id, False, False, {"from": accounts.at(voters[1], force=True)})
+    assert contracts.voting.getVoterState(vote_id, voters[1]) == VoterState.Nay.value
+    # A delegate can vote for a voter during the objection phase
+    contracts.voting.attemptVoteFor(vote_id, False, voters[0], {"from": delegate1})
+    assert contracts.voting.getVoterState(vote_id, voters[0]) == VoterState.DelegateNay.value
 
 
 def test_delegation_trp(test_trp_escrow, test_vote, delegate1, trp_recipient, trp_voting_adapter):

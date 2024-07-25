@@ -2,7 +2,7 @@
 Voting XX/XX/2024.
 
 1. Push new Voting app version to the Voting Repo 0x2997EA0D07D79038D83Cb04b3BB9A2Bc512E3fDA
-2. Upgrade the Aragon Voting contract implementation 0xD94437Ba1b653872d6fA7D5bC1873A95e38558b2
+2. Upgrade the Aragon Voting contract implementation 0x53A61226DF1785B877BA775cE206c23876e2aa8c
 3. Upgrade TRP voting adapter 0x7c94b2A7CF101548B7F28396e789528F4DBD25CE
 
 """
@@ -25,14 +25,17 @@ from utils.agent import agent_forward
 updated_trp_voting_adapter = "0x7c94b2A7CF101548B7F28396e789528F4DBD25CE"
 
 updated_voting_app = {
-    "address": "0xD94437Ba1b653872d6fA7D5bC1873A95e38558b2",
+    "address": "0x53A61226DF1785B877BA775cE206c23876e2aa8c",
     "content_uri": "0x",
     "id": "0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e",
     "version": (3, 0, 0),  # Current version is 2.0.0
 }
 
 description = """
-Simple delegation test voting
+### Simple Delegation release (Holesky)
+1. Push new Voting app version to the Voting Repo
+2. Upgrade the Aragon Voting contract implementation
+3. Upgrade TRP voting adapter
 """
 
 

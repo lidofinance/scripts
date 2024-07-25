@@ -4,7 +4,7 @@ Tests for voting XX/XX/2024
 """
 
 from brownie import accounts, interface
-from scripts.upgrade_voting_delegation_holesky import start_vote
+from archive.scripts.upgrade_voting_delegation_holesky import start_vote
 from utils.test.event_validators.vesting_escrow import validate_voting_adapter_upgraded_event
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
@@ -29,7 +29,7 @@ old_voting_app = {
 updated_trp_voting_adapter_address = "0x7c94b2A7CF101548B7F28396e789528F4DBD25CE"
 
 updated_voting_app = {
-    "address": "0xD94437Ba1b653872d6fA7D5bC1873A95e38558b2",
+    "address": "0x53A61226DF1785B877BA775cE206c23876e2aa8c",
     "content_uri": "0x",
     "id": "0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e",
     "version": (3, 0, 0),  # Current version is 2.0.0
@@ -43,6 +43,7 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
     voting_app_from_repo = contracts.voting_app_repo.getLatest()
     voting_appId = voting_proxy.appId()
 
+    assert voting_appId == old_voting_app["id"]
     assert voting_app_from_repo[0] == old_voting_app["version"]
     assert voting_app_from_repo[1] == old_voting_app["address"]
     assert voting_proxy.implementation() == old_voting_app["address"]
@@ -71,6 +72,7 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
     assert voting_app_from_repo[0] == updated_voting_app["version"]
     assert voting_app_from_repo[1] == updated_voting_app["address"]
     assert voting_proxy.implementation() == updated_voting_app["address"]
+    assert voting_proxy.appId() == updated_voting_app["id"]
 
     # TRP Voting Adapter after
     trp_voting_adapter_address = contracts.trp_escrow_factory.voting_adapter()

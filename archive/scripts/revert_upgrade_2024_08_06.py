@@ -1,9 +1,9 @@
 """
 Revert Voting Delegation Upgrade [in case of emergency]
 
-1. Push new Voting app version to the Voting Repo 0x2997EA0D07D79038D83Cb04b3BB9A2Bc512E3fDA
-2. Downgrade the Aragon Voting contract implementation to 0xcB738a79baeA44C93Ee46c02EF0FA975Bc4d058f
-3. Downgrade TRP voting adapter to 0x1dF997832b44b7ED00597f103165920537c980D4
+1. Push new Voting app version to the Voting Repo 0x4ee3118e3858e8d7164a634825bfe0f73d99c792
+2. Downgrade the Aragon Voting contract implementation to 0x72fb5253ad16307b9e773d2a78cac58e309d5ba4
+3. Downgrade TRP voting adapter to 0xCFda8aB0AE5F4Fa33506F9C51650B890E4871Cc1
 
 """
 import time
@@ -22,17 +22,17 @@ from utils.repo import add_implementation_to_voting_app_repo
 from utils.kernel import update_app_implementation
 from utils.agent import agent_forward
 
-downgraded_trp_voting_adapter = "0x1dF997832b44b7ED00597f103165920537c980D4"
+downgraded_trp_voting_adapter = "0xCFda8aB0AE5F4Fa33506F9C51650B890E4871Cc1"
 
 downgraded_voting_app = {
-    "address": "0xcB738a79baeA44C93Ee46c02EF0FA975Bc4d058f",
-    "content_uri": "0x",
+    "address": "0x72fb5253ad16307b9e773d2a78cac58e309d5ba4",
+    "content_uri": "0x697066733a516d506f7478377a484743674265394445684d6f4238336572564a75764d74335971436e6454657a575652706441",
     "id": "0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e",
-    "version": (4, 0, 0),
+    "version": (5, 0, 0),
 }
 
 description = """
-Voting Delegation downgrade Holesky
+Revert Voting Delegation Upgrade
 """
 
 
@@ -44,7 +44,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         # I. Simple Delegation
         #
         (
-            "1) Push previous Voting app version to the Voting Repo with incremented version",
+            "1) Push previous Voting app version to the Voting Repo with incremented version number",
             add_implementation_to_voting_app_repo(
                 downgraded_voting_app["version"],
                 downgraded_voting_app["address"],
@@ -52,7 +52,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "2) Update the Aragon Voting contract implementation to the previous one",
+            "2) Set the Aragon Voting contract implementation to the previous one",
             update_app_implementation(downgraded_voting_app["id"], downgraded_voting_app["address"]),
         ),
         (
