@@ -40,12 +40,12 @@
           },
           {
             "internalType": "uint256",
-            "name": "maxAccountingExtraDataListItemsCount",
+            "name": "maxItemsPerExtraDataTransaction",
             "type": "uint256"
           },
           {
             "internalType": "uint256",
-            "name": "maxNodeOperatorsPerExtraDataItemCount",
+            "name": "maxNodeOperatorsPerExtraDataItem",
             "type": "uint256"
           },
           {
@@ -258,22 +258,6 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "maxItemsCount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "receivedItemsCount",
-        "type": "uint256"
-      }
-    ],
-    "name": "MaxAccountingExtraDataItemsCountExceeded",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
         "name": "reportedValue",
         "type": "uint256"
       },
@@ -325,6 +309,22 @@
   {
     "inputs": [],
     "name": "TooLowTokenRebaseLimit",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "maxItemsCount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "receivedItemsCount",
+        "type": "uint256"
+      }
+    ],
+    "name": "TooManyItemsPerExtraDataTransaction",
     "type": "error"
   },
   {
@@ -427,11 +427,11 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "maxAccountingExtraDataListItemsCount",
+        "name": "maxItemsPerExtraDataTransaction",
         "type": "uint256"
       }
     ],
-    "name": "MaxAccountingExtraDataListItemsCountSet",
+    "name": "MaxItemsPerExtraDataTransactionSet",
     "type": "event"
   },
   {
@@ -440,11 +440,11 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "maxNodeOperatorsPerExtraDataItemCount",
+        "name": "maxNodeOperatorsPerExtraDataItem",
         "type": "uint256"
       }
     ],
-    "name": "MaxNodeOperatorsPerExtraDataItemCountSet",
+    "name": "MaxNodeOperatorsPerExtraDataItemSet",
     "type": "event"
   },
   {
@@ -485,7 +485,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "clBalance",
+        "name": "clTotalBalance",
         "type": "uint256"
       },
       {
@@ -497,7 +497,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "clBalanceMaxDecrease",
+        "name": "maxAllowedCLRebaseNegativeSum",
         "type": "uint256"
       }
     ],
@@ -723,7 +723,7 @@
   },
   {
     "inputs": [],
-    "name": "MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE",
+    "name": "MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION_ROLE",
     "outputs": [
       {
         "internalType": "bytes32",
@@ -736,7 +736,7 @@
   },
   {
     "inputs": [],
-    "name": "MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE",
+    "name": "MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_ROLE",
     "outputs": [
       {
         "internalType": "bytes32",
@@ -1027,12 +1027,12 @@
           },
           {
             "internalType": "uint256",
-            "name": "maxAccountingExtraDataListItemsCount",
+            "name": "maxItemsPerExtraDataTransaction",
             "type": "uint256"
           },
           {
             "internalType": "uint256",
-            "name": "maxNodeOperatorsPerExtraDataItemCount",
+            "name": "maxNodeOperatorsPerExtraDataItem",
             "type": "uint256"
           },
           {
@@ -1325,19 +1325,6 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_maxAccountingExtraDataListItemsCount",
-        "type": "uint256"
-      }
-    ],
-    "name": "setMaxAccountingExtraDataListItemsCount",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
         "name": "_maxValidatorExitRequestsPerReport",
         "type": "uint256"
       }
@@ -1351,11 +1338,24 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_maxNodeOperatorsPerExtraDataItemCount",
+        "name": "_maxItemsPerExtraDataTransaction",
         "type": "uint256"
       }
     ],
-    "name": "setMaxNodeOperatorsPerExtraDataItemCount",
+    "name": "setMaxItemsPerExtraDataTransaction",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_maxNodeOperatorsPerExtraDataItem",
+        "type": "uint256"
+      }
+    ],
+    "name": "setMaxNodeOperatorsPerExtraDataItem",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1404,12 +1404,12 @@
           },
           {
             "internalType": "uint256",
-            "name": "maxAccountingExtraDataListItemsCount",
+            "name": "maxItemsPerExtraDataTransaction",
             "type": "uint256"
           },
           {
             "internalType": "uint256",
-            "name": "maxNodeOperatorsPerExtraDataItemCount",
+            "name": "maxNodeOperatorsPerExtraDataItem",
             "type": "uint256"
           },
           {
