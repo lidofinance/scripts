@@ -5,7 +5,7 @@ from web3 import Web3
 import pytest
 from brownie import ZERO_ADDRESS, Contract, MockHashConsensus, accounts, chain, interface, reverts, chain  # type: ignore
 from brownie.network.account import Account
-from configs.config_mainnet import MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT
+from configs.config_mainnet import MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION
 
 from utils.config import contracts, ACCOUNTING_ORACLE
 from utils.evm_script import encode_error
@@ -303,7 +303,7 @@ class TestSubmitReportExtraDataList:
         extra_data = extra_data_service.collect(
             {(1, 38): 1},
             {(1, 33): 250},
-            MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
+            MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
             1,
         )
 
@@ -330,7 +330,7 @@ class TestSubmitReportExtraDataList:
         extra_data = extra_data_service.collect(
             {(1, 38): 1},
             {(1, 33): 250},
-            MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
+            MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
             1,
         )
 

@@ -18,8 +18,8 @@ from utils.config import (
     EXITED_VALIDATORS_PER_DAY_LIMIT,
     ANNUAL_BALANCE_INCREASE_BP_LIMIT,
     MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT,
-    MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
-    MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT,
+    MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
+    MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
     REQUEST_TIMESTAMP_MARGIN,
     SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT,
 )
@@ -211,7 +211,7 @@ def test_report_deviated_simulated_share_rate(steth_holder):
 
 
 def test_accounting_oracle_too_much_extra_data(extra_data_service):
-    item_count = MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT + 1
+    item_count = MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION + 1
 
     operators = {}
     nor_module_id = 1
@@ -227,8 +227,8 @@ def test_accounting_oracle_too_much_extra_data(extra_data_service):
 
     with reverts(
         encode_error(
-            "MaxAccountingExtraDataItemsCountExceeded(uint256,uint256)",
-            [MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT, item_count],
+            "TooManyItemsPerExtraDataTransaction(uint256,uint256)",
+            [MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION, item_count],
         )
     ):
         oracle_report(
@@ -241,12 +241,12 @@ def test_accounting_oracle_too_much_extra_data(extra_data_service):
 
 @pytest.mark.skip("ganache throws 'RPCRequestError: Invalid string length' on such long extra data")
 def test_accounting_oracle_too_node_ops_per_extra_data_item(extra_data_service):
-    item_count = MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT * 10
+    item_count = MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM * 10
     extra_data = extra_data_service.collect({(1, i): i for i in range(item_count)}, {}, 1, item_count)
     with reverts(
         encode_error(
             "TooManyNodeOpsPerExtraDataItem(uint256,uint256)",
-            [MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT, item_count],
+            [MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM, item_count],
         )
     ):
         oracle_report(

@@ -10,7 +10,7 @@ from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batc
 from utils.test.oracle_report_helpers import oracle_report
 from utils.test.node_operators_helpers import distribute_reward
 
-from utils.config import MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT, MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT
+from utils.config import MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION, MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM
 from utils.config import contracts
 from utils.test.simple_dvt_helpers import simple_dvt_add_node_operators, simple_dvt_add_keys, simple_dvt_vet_keys
 
@@ -68,7 +68,7 @@ def test_extra_data_full_items(
     stranger, voting_eoa, agent_eoa, evm_script_executor_eoa, nor, sdvt, extra_data_service,
     nor_stuck_items, nor_exited_items, sdvt_stuck_items, sdvt_exited_items
 ):
-    max_node_operators_per_item = MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT
+    max_node_operators_per_item = MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM
     new_keys_per_operator = 2
 
     # Fill NOR with new operators and keys
@@ -106,8 +106,8 @@ def test_extra_data_full_items(
     extra_data = extra_data_service.collect(
         {**nor_stuck, **sdvt_stuck},
         {**nor_exited, **sdvt_exited},
-        MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
-        MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT,
+        MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
+        MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
     )
     modules_with_exited = []
     num_exited_validators_by_staking_module = []
