@@ -70,7 +70,6 @@ def encode_l2_upgrade_call(proxy1: str, new_impl1: str, proxy2: str, new_impl2: 
 
 
 def encode_l1_l2_sendMessage(to: str, calldata: str):
-    print(calldata)
     l1_l2_msg_service = interface.OpCrossDomainMessenger(L1_OPTIMISM_CROSS_DOMAIN_MESSENGER)
     min_gas_limit = 1_000_000
     return l1_l2_msg_service.sendMessage.encode_input(to, calldata, min_gas_limit)
