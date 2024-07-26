@@ -8,7 +8,7 @@ from brownie.network.account import LocalAccount
 
 from scripts.vote_2024_07_23 import start_vote
 from utils.config import contracts
-from utils.test.deposits_helpers import fill_deposit_buffer, drain_buffered_ether
+from utils.test.deposits_helpers import fill_deposit_buffer, drain_remained_buffered_ether
 from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
 from utils.test.simple_dvt_helpers import simple_dvt_add_keys
 from utils.test.tx_tracing_helpers import *
@@ -132,12 +132,20 @@ def test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_f
     )  # allocation percentage should increase after the vote
 
 
+def fill_sdvt_module():
+    sdvt_module_stats = contracts.staking_router.getStakingModuleSummary(SIMPLE_DVT_ID)
+    keys_to_allocate = sdvt_module_stats["depositableValidatorsCount"]
+    fill_deposit_buffer(keys_to_allocate)
+    contracts.lido.deposit(keys_to_allocate, SIMPLE_DVT_ID, "0x0", {"from": contracts.deposit_security_module})
+
+
 def test_sdvt_stake_allocation(accounts, helpers, ldo_holder, vote_ids_from_env):
     evm_script_executor: LocalAccount = accounts.at(contracts.easy_track.evmScriptExecutor(), force=True)
     new_sdvt_keys_amount = 60
 
     # prepare initial state
-    drain_buffered_ether()
+    fill_sdvt_module()
+    drain_remained_buffered_ether()
     fill_deposit_buffer(200)
 
     nor_module_stats_before = contracts.staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)

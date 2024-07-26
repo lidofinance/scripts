@@ -26,7 +26,7 @@ def fill_deposit_buffer(deposits_count):
     assert lido.getDepositableEther() >= eth_to_deposit
 
 
-def drain_buffered_ether():
+def drain_remained_buffered_ether():
     depositable_ether = math.floor(contracts.lido.getDepositableEther() / 10**18)
 
     while depositable_ether > 32:

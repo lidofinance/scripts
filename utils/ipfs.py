@@ -77,10 +77,7 @@ def _upload_str_to_pinata_cloud(text: str) -> str:
     pinata_options = {"cidVersion": 1, "wrapWithDirectory": False}
     payload = {"pinataOptions": json.dumps(pinata_options, separators=(",", ":"))}
 
-    headers = {
-        "accept": "application/json",
-        "authorization": f"Bearer {pinata_cloud_token}"
-    }
+    headers = {"accept": "application/json", "authorization": f"Bearer {pinata_cloud_token}"}
 
     response = requests.post(endpoint + "/pinning/pinFileToIPFS", data=payload, files=files, headers=headers)
     response.raise_for_status()
@@ -235,7 +232,7 @@ def calculate_vote_ipfs_description(text: str) -> IPFSUploadResult:
     return IPFSUploadResult(cid=calculated_cid, messages=messages, text=text)
 
 
-def upload_vote_ipfs_description(text: str, force_upload = False) -> IPFSUploadResult:
+def upload_vote_ipfs_description(text: str, force_upload=False) -> IPFSUploadResult:
     messages = verify_ipfs_description(text)
     calculated_cid = ""
     if not text:
