@@ -5,6 +5,8 @@ Voting 23/07/2024.
 2. Transfer 180000 LDO from Treasury to PML multisig (0x17F6b2C738a63a8D3A113a228cfd0b373244633D)
 
 Vote #175, initiated on 02/07/2024, did not reach a quorum.
+
+Vote passed & executed on Jul-26-2024 03:21:11 PM UTC, block #20391583.
 """
 
 import time
