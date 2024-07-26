@@ -30,7 +30,7 @@ def create_permissions_for_overloaded_method(contract: Contract, method: str, pa
     method_description = getattr(contract, method)
 
     if len(method_description.methods) > 0:
-        return method_description.methods[paramethers].signature[2:]
+        return contract.address + method_description.methods[paramethers].signature[2:]
 
     return create_permissions(contract, method)
 
