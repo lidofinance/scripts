@@ -26,6 +26,13 @@ def remove_evmscript_factory(factory: Contract | str) -> Tuple[str, str]:
         )
     )
 
+def create_permissions_for_overloaded_method(contract: Contract, method: str, paramethers: Tuple[str, ...] = None) -> str:
+    method_description = getattr(contract, method)
+
+    if len(method_description.methods) > 0:
+        return method_description.methods[paramethers].signature[2:]
+
+    return create_permissions(contract, method)
 
 def create_permissions(contract: Contract, method: str) -> str:
     return contract.address + getattr(contract, method).signature[2:]

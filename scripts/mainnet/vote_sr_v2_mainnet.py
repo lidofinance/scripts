@@ -60,7 +60,7 @@ from utils.repo import (
     add_implementation_to_sdvt_app_repo,
 )
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
-from utils.easy_track import add_evmscript_factory, create_permissions, remove_evmscript_factory
+from utils.easy_track import add_evmscript_factory, create_permissions, create_permissions_for_overloaded_method, remove_evmscript_factory
 from utils.kernel import update_app_implementation
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
@@ -303,7 +303,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             "19. Add Target limit for SDVT factory to ET",
             add_evmscript_factory(
                 factory=NEW_TARGET_LIMIT_FACTORY,
-                permissions=(create_permissions(contracts.simple_dvt, "updateTargetValidatorsLimits")),
+                permissions=(create_permissions_for_overloaded_method(contracts.simple_dvt, "updateTargetValidatorsLimits", ('uint', 'uint', 'uint'))),
             ),
         ),
         #
