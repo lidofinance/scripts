@@ -15,6 +15,8 @@ from utils.test.split_helpers import (
 from utils.test.simple_dvt_helpers import simple_dvt_add_keys, simple_dvt_vet_keys, simple_dvt_add_node_operators
 from utils.test.staking_router_helpers import StakingModuleStatus, set_staking_module_status
 from utils.test.oracle_report_helpers import oracle_report
+from brownie import convert
+from web3 import Web3
 
 
 @pytest.fixture(scope="module")
@@ -64,6 +66,18 @@ def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participa
     """
     simple_dvt, staking_router = contracts.simple_dvt, contracts.staking_router
     lido, deposit_security_module = contracts.lido, contracts.deposit_security_module
+    voting = contracts.voting
+
+    contracts.acl.grantPermission(
+        voting,
+        simple_dvt,
+        convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
+        {"from": contracts.voting},
+    )
+
+    # deactivate all node operators in "Simple DVT" module for more precise testing
+    for x in range(simple_dvt.getNodeOperatorsCount()):
+        simple_dvt.deactivateNodeOperator(x, {"from": voting})
 
     new_dvt_operator = cluster_participants[0]
 
