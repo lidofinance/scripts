@@ -10,8 +10,8 @@ on:
       - "feat/rc1"
       - "feat/next-vote"
 jobs:
-  core-integration-testing:
-    name: Integration tests [core repo]
+  run-tests:
+    name: Run all tests on NORMAL runner
     runs-on: "ubuntu-latest"
     timeout-minutes: 120
     services:
@@ -20,8 +20,18 @@ jobs:
         ports:
           - 8545:8545
         env:
-          INFURA_TOKEN: ${{ secrets.INFURA_TOKEN }}
+          ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
     steps:
+      # All tests from scripts repo
+#      - uses: actions/checkout@v3
+#      - name: Main action
+#        uses: ./.github/actions/brownie_fork_tests
+#        with:
+#          vote: "normal"
+#          infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
+#          etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
+
+      # Tests from core repo
       - uses: actions/checkout@v4
         with:
           repository: lidofinance/core
@@ -53,22 +63,3 @@ jobs:
         run: yarn test:integration:fork
         env:
           DEBUG: true
-  run-remaining-tests:
-    name: Brownie fork NORMAL tests
-    runs-on: "ubuntu-latest"
-    timeout-minutes: 100
-    services:
-      hardhat-node:
-        image: feofanov/hardhat-node
-        ports:
-          - 8545:8545
-        env:
-          INFURA_TOKEN: ${{ secrets.INFURA_TOKEN }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Main action
-        uses: ./.github/actions/brownie_fork_tests
-        with:
-          vote: "normal"
-          infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
-          etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
