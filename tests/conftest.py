@@ -1,4 +1,3 @@
-import os
 import json
 from typing import List
 
@@ -36,6 +35,7 @@ def deployer():
 def steth_holder(accounts):
     steth_holder = accounts.at("0x176F3DAb24a159341c0509bB36B833E7fdd0a131", force=True)
     web3.provider.make_request("evm_setAccountBalance", [steth_holder.address, "0x152D02C7E14AF6800000"])
+    web3.provider.make_request("hardhat_setBalance", [steth_holder.address, "0x152D02C7E14AF6800000"])
     steth_holder.transfer(contracts.lido, ETH(10000))
     return steth_holder
 
@@ -49,6 +49,7 @@ def ldo_holder(accounts):
 def stranger(accounts):
     stranger = accounts.at("0x98eC059dC3aDFbdd63429454aeB0C990fbA4a124", force=True)
     web3.provider.make_request("evm_setAccountBalance", [stranger.address, "0x152D02C7E14AF6800000"])
+    web3.provider.make_request("hardhat_setBalance", [stranger.address, "0x152D02C7E14AF6800000"])
     assert stranger.balance() == ETH(100000)
     return stranger
 
@@ -159,7 +160,7 @@ def helpers():
 
 
 @pytest.fixture(scope="session")
-def vote_ids_from_env() -> List[int]:
+def vote_ids_from_env() -> [int]:
     if os.getenv(ENV_OMNIBUS_VOTE_IDS):
         try:
             vote_ids_str = os.getenv(ENV_OMNIBUS_VOTE_IDS)
