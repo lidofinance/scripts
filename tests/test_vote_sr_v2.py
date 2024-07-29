@@ -12,7 +12,7 @@ from utils.config import (
     SIMPLE_DVT_IMPL,
     ACCOUNTING_ORACLE_IMPL,
     CS_ACCOUNTING_ADDRESS,
-    CSM,
+    CSM_ADDRESS,
 )
 from scripts.mainnet.vote_sr_v2_mainnet import (
     start_vote,
@@ -147,7 +147,7 @@ SDVT_MODULE_AFTER_VOTE.update(
 CSM_AFTER_VOTE = {
     "id": 3,
     "name": CS_MODULE_NAME,
-    "stakingModuleAddress": CSM,
+    "stakingModuleAddress": CSM_ADDRESS,
     "stakingModuleFee": CS_STAKING_MODULE_FEE,
     "treasuryFee": CS_TREASURY_FEE,
     "targetShare": CS_STAKE_SHARE_LIMIT,
@@ -251,7 +251,7 @@ def test_vote(
     # AO
     check_ossifiable_proxy_impl(ao_proxy, ACCOUNTING_ORACLE_IMPL)
 
-    # no prermission to manage consensus version on agent
+    # no permission to manage consensus version on agent
     check_manage_consensus_role()
     # VEBO consensus version
     assert vebo_proxy.getConsensusVersion() == VEBO_CONSENSUS_VERSION
@@ -259,7 +259,7 @@ def test_vote(
     assert contracts.burner.hasRole(REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS)
     assert not contracts.csm.hasRole(RESUME_ROLE, contracts.agent.address)
 
-    assert contracts.csmHashConsensus.getFrameConfig()[0] == CS_ORACLE_INITIAL_EPOCH
+    assert contracts.csm_hash_consensus.getFrameConfig()[0] == CS_ORACLE_INITIAL_EPOCH
 
     check_csm()
 
@@ -459,7 +459,7 @@ def validate_upgrade_events(events: EventDict, implementation: str):
     assert events["Upgraded"]["implementation"] == implementation, "Wrong withdrawal vault proxy implementation"
 
 
-def validate_dsm_roles_events(events: EventDict):
+def validate_dsm_roles_events(events: list[EventDict]):
     validate_revoke_role_event(
         events[1], PAUSE_ROLE, contracts.deposit_security_module_v2.address, contracts.agent.address
     )

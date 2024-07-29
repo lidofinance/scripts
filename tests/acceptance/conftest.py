@@ -12,9 +12,17 @@ from brownie import chain
 ENV_REPORT_AFTER_VOTE = "REPORT_AFTER_VOTE"
 ENV_FILL_SIMPLE_DVT = "FILL_SIMPLE_DVT"
 
+snapshot_id = None
+
 
 @pytest.fixture(scope="function", autouse=is_there_any_vote_scripts() or is_there_any_upgrade_scripts())
 def autoexecute_vote(helpers, vote_ids_from_env, accounts, stranger):
+    global snapshot_id
+
+    if snapshot_id:
+        print(f"Using snapshot {snapshot_id}")
+        chain._revert(snapshot_id)
+        return
     if vote_ids_from_env:
         helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
     else:
@@ -25,3 +33,5 @@ def autoexecute_vote(helpers, vote_ids_from_env, accounts, stranger):
 
     if os.getenv(ENV_REPORT_AFTER_VOTE):
         oracle_report(cl_diff=ETH(523), exclude_vaults_balances=False)
+    chain.snapshot()
+    snapshot_id = chain._snapshot_id

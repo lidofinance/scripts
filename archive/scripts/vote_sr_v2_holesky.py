@@ -358,8 +358,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             agent_forward(
                 [
                     (
-                        contracts.csmHashConsensus.address,
-                        contracts.csmHashConsensus.updateInitialEpoch.encode_input(CS_ORACLE_INITIAL_EPOCH),
+                        contracts.csm_hash_consensus.address,
+                        contracts.csm_hash_consensus.updateInitialEpoch.encode_input(CS_ORACLE_INITIAL_EPOCH),
                     )
                 ]
             ),

@@ -248,7 +248,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     assert contracts.burner.hasRole(REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS)
     assert not contracts.csm.hasRole(RESUME_ROLE, contracts.agent.address)
 
-    assert contracts.csmHashConsensus.getFrameConfig()[0] == CS_ORACLE_INITIAL_EPOCH
+    assert contracts.csm_hash_consensus.getFrameConfig()[0] == CS_ORACLE_INITIAL_EPOCH
 
     # Events check
     if bypass_events_decoding:
