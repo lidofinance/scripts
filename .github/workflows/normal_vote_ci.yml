@@ -10,10 +10,60 @@ on:
       - "feat/rc1"
       - "feat/next-vote"
 jobs:
-  run-tests-normal:
+  core-integration-testing:
+    name: Integration tests [core repo]
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 120
+    services:
+      hardhat-node:
+        image: feofanov/hardhat-node
+        ports:
+          - 8545:8545
+        env:
+          INFURA_TOKEN: ${{ secrets.INFURA_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: lidofinance/core
+          ref: feat/integration
+
+      - name: Enable corepack
+        shell: bash
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+
+      - name: Install dependencies
+        shell: bash
+        run: yarn install
+
+      - name: Check that the fork is ready
+        shell: bash
+        run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8545
+
+      - name: Set env
+        shell: bash
+        run: cp .env.example .env
+
+      - name: Run integration tests
+        shell: bash
+        run: yarn test:integration:fork
+        env:
+          DEBUG: true
+  run-remaining-tests:
     name: Brownie fork NORMAL tests
     runs-on: "ubuntu-latest"
     timeout-minutes: 100
+    services:
+      hardhat-node:
+        image: feofanov/hardhat-node
+        ports:
+          - 8545:8545
+        env:
+          INFURA_TOKEN: ${{ secrets.INFURA_TOKEN }}
     steps:
       - uses: actions/checkout@v3
       - name: Main action
