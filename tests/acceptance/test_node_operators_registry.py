@@ -61,6 +61,10 @@ def test_finalize_upgrade(contract):
             CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
             {"from": contracts.voting},
         )
+    with reverts("UNEXPECTED_CONTRACT_VERSION"):
+        contract.finalizeUpgrade_v3(
+            {"from": contracts.voting},
+        )
 
 
 def test_petrified():
@@ -78,6 +82,10 @@ def test_petrified():
             contracts.lido_locator,
             CURATED_STAKING_MODULE_TYPE,
             CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
+            {"from": contracts.voting},
+        )
+    with reverts("CONTRACT_NOT_INITIALIZED"):
+        contract.finalizeUpgrade_v3(
             {"from": contracts.voting},
         )
 
