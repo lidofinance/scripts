@@ -23,6 +23,9 @@ def test_owner(dsm):
 def test_versioned(dsm):
     assert dsm.VERSION() == 3
 
+def test_deposit_paused(dsm):
+    assert dsm.isDepositsPaused() == False
+
 def test_links(dsm):
     assert dsm.LIDO() == contracts.lido
     assert dsm.STAKING_ROUTER() == contracts.staking_router
