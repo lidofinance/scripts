@@ -20,6 +20,8 @@ def dsm() -> interface.DepositSecurityModule:
 def test_owner(dsm):
     assert dsm.getOwner() == contracts.agent
 
+def test_versioned(dsm):
+    assert dsm.VERSION() == 3
 
 def test_links(dsm):
     assert dsm.LIDO() == contracts.lido
