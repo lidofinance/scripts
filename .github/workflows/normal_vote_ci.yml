@@ -23,13 +23,13 @@ jobs:
           ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
     steps:
       # All tests from scripts repo
-#      - uses: actions/checkout@v3
-#      - name: Main action
-#        uses: ./.github/actions/brownie_fork_tests
-#        with:
-#          vote: "normal"
-#          infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
-#          etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
+      - uses: actions/checkout@v3
+      - name: Main action
+        uses: ./.github/actions/brownie_fork_tests
+        with:
+          vote: "normal"
+          infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
+          etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
 
       # Tests from core repo
       - uses: actions/checkout@v4
