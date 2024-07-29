@@ -177,6 +177,17 @@ def test_setConsensusContract(accounting_oracle: Contract, aragon_agent: Account
             {"from": aragon_agent},
         )
 
+def test_finalize_upgrade(accounting_oracle: Contract, stranger: Account):
+    with reverts(encode_error("InvalidContractVersionIncrement()")):
+        accounting_oracle.finalizeUpgrade_v2(
+            1,
+            {"from": stranger},
+        )
+    with reverts(encode_error("InvalidContractVersionIncrement()")):
+        accounting_oracle.finalizeUpgrade_v2(
+            2,
+            {"from": stranger},
+        )
 
 class TestSubmitReportExtraDataList:
     def build_extra_data(self, extra_data_items: List[bytes]) -> bytes:
