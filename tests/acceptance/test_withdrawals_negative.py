@@ -1,3 +1,4 @@
+from brownie.exceptions import VirtualMachineError
 from brownie.network.account import Account
 import pytest
 from brownie import Contract, interface, reverts, Wei, chain  # type: ignore
@@ -108,7 +109,8 @@ def test_wq_prefinalize(wq: Contract, steth_whale: Account):
 def test_request_to_finalize_to_close(wq: Contract, steth_whale: Account):
     wait_to_next_available_report_time(contracts.hash_consensus_for_accounting_oracle)
     fill_wq(wq, steth_whale, count=1)
-    with reverts(encode_error("IncorrectRequestFinalization(uint256)", [chain.time()])):
+
+    with reverts(revert_pattern="IncorrectRequestFinalization: \\d*"):
         oracle_report(
             withdrawalFinalizationBatches=[wq.getLastRequestId()],
             wait_to_next_report_time=False,

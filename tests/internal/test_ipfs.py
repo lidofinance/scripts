@@ -22,10 +22,9 @@ def test_verify_ipfs_description_empty():
         "and take fixed space in the script regardless of text length."
     )
 
+
 def test_verify_ipfs_description_good_address():
-    result = verify_ipfs_description(
-        f" `0xDfe76d11b365f5e0023343A367f0b311701B3bc1` "
-    )
+    result = verify_ipfs_description(f" `0xDfe76d11b365f5e0023343A367f0b311701B3bc1` ")
     assert len(result) == 0
 
 
@@ -114,7 +113,7 @@ def test_fetch_cid_status_from_ipfs():
     status = fetch_cid_status_from_ipfs("bafkreigvk6oenx6mp4mca4at4znujzgljywcfghuvrcxxkhye5b7ghutbm")
     assert status == 200
     status = fetch_cid_status_from_ipfs("bafkreigdsodbw6dlajnk7xyudw52cutzioovt7r7mrdf3t3cx7xfzz3eou")
-    assert status == 404 or status == 504 # depends on service
+    assert status == 404 or status == 504  # depends on service
 
 
 def test_upload_vote_ipfs_description():
