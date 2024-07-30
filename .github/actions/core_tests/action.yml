@@ -6,14 +6,6 @@ inputs:
     description: "vote type: normal or large"
     required: false
     default: "normal"
-  infura:
-    description: "infura JSON-RPC provider"
-    required: true
-    default: ""
-  etherscan:
-    description: "etherscan api key"
-    required: true
-    default: ""
 
 runs:
   using: "composite"
@@ -38,10 +30,6 @@ runs:
       working-directory: core
       shell: bash
       run: yarn install
-
-    - name: Check that the fork is ready
-      shell: bash
-      run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8545
 
     - name: Set env
       working-directory: core
