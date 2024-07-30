@@ -23,6 +23,7 @@ jobs:
           ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
 
     steps:
+      - uses: actions/checkout@v4
       - name: Core tests
         uses: ./.github/actions/core_tests
         with:
