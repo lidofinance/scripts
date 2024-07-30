@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Core tests
-        uses: ./.github/actions/brownie_fork_tests
+        uses: ./.github/actions/core_tests
         with:
           vote: "normal"
           infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
