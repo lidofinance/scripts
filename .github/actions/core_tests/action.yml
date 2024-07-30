@@ -31,8 +31,7 @@ runs:
 
     - uses: actions/setup-node@v4
       with:
-        working-directory: core
-        node-version-file: .nvmrc
+        node-version-file: ./core/.nvmrc
         cache: yarn
 
     - name: Install dependencies
