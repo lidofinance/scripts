@@ -41,5 +41,4 @@ runs:
       shell: bash
       run: yarn test:integration:fork
       env:
-        DEBUG: true
-
+        LOG_LEVEL: debug
