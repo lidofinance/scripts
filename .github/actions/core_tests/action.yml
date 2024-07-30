@@ -30,8 +30,8 @@ runs:
       run: corepack enable
 
     - uses: actions/setup-node@v4
-      working-directory: core
       with:
+        working-directory: core
         node-version-file: .nvmrc
         cache: yarn
 
