@@ -1,5 +1,8 @@
 from typing import Dict
 
+from brownie import web3
+from web3 import Web3
+
 from utils.config import contracts
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
@@ -210,10 +213,20 @@ def test_target_share_distribution(stranger):
     # fill the deposit buffer
     fill_deposit_buffer(keys_to_allocate_double)
 
+    web3.manager.request_blocking(
+        "hardhat_setBalance",  # type: ignore
+        [
+            contracts.deposit_security_module.address,
+            Web3.to_hex(90_000_000_000),
+        ],
+    )
+
     # perform deposits to the modules
     for module in modules.values():
         if module.allocated_keys > 0:
-            contracts.lido.deposit(module.allocated_keys, module.id, "0x", {"from": contracts.deposit_security_module})
+            contracts.lido.deposit(
+                module.allocated_keys, module.id, "0x", {"from": contracts.deposit_security_module, "gas_price": 4}
+            )
 
     # check that the new active keys in the modules match the expected values
     module_digests_after_deposit = contracts.staking_router.getAllStakingModuleDigests()

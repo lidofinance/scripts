@@ -1,4 +1,6 @@
-from brownie import chain, accounts, interface
+from brownie import chain, accounts, interface, web3
+from web3 import Web3
+
 from utils.config import (
     contracts,
     EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER,
@@ -104,7 +106,7 @@ def simple_dvt_add_node_operators(simple_dvt, stranger, input_params=[]):
     # ]
     if len(input_params) > 0:
         calldata = _encode_calldata(
-            ["uint256","(string,address,address)[]"],
+            ["uint256", "(string,address,address)[]"],
             [
                 node_operators_count_before,
                 input_params,
@@ -124,12 +126,20 @@ def simple_dvt_add_keys(simple_dvt, node_operator_id, keys_count=1):
     unused_signing_keys_count_before = simple_dvt.getUnusedSigningKeyCount(node_operator_id)
     node_operator_before = simple_dvt.getNodeOperator(node_operator_id, False)
 
+    web3.manager.request_blocking(
+        "hardhat_setBalance",  # type: ignore
+        [
+            node_operator_before["rewardAddress"],
+            Web3.to_hex(90_000_000_000),
+        ],
+    )
+
     tx = simple_dvt.addSigningKeys(
         node_operator_id,
         keys_count,
         pubkeys_batch,
         signatures_batch,
-        {"from": node_operator_before["rewardAddress"]},
+        {"from": node_operator_before["rewardAddress"], "gas_price": 4},
     )
 
     total_signing_keys_count_after = simple_dvt.getTotalSigningKeyCount(node_operator_id)

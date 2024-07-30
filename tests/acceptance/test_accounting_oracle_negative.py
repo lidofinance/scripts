@@ -82,7 +82,7 @@ def test_submitConsensusReport(accounting_oracle: Contract, hash_consensus: Cont
         accounting_oracle.submitConsensusReport(
             ZERO_HASH,
             last_processing_ref_slot + 1,
-            chain.time(),
+            chain.time() + 10,  # increase deadline value to avoid "ProcessingDeadlineMissed" error
             {"from": hash_consensus},
         )
 

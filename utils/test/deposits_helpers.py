@@ -21,7 +21,7 @@ def fill_deposit_buffer(deposits_count):
     eth_to_submit = eth_to_deposit + eth_debt + WEI_TOLERANCE
 
     eth_whale = accounts.at(staking_router.DEPOSIT_CONTRACT(), force=True)
-    lido.submit(ZERO_ADDRESS, {"from": eth_whale, "value": eth_to_submit})
+    lido.submit(ZERO_ADDRESS, {"from": eth_whale, "value": eth_to_submit, "gas_price": 4})
 
     assert lido.getDepositableEther() >= eth_to_deposit
 

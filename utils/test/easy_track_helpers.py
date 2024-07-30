@@ -17,7 +17,7 @@ def _encode_calldata(signature, values):
 def create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger):
     motions_before = easy_track.getMotions()
 
-    tx = easy_track.createMotion(factory, calldata, {"from": trusted_caller})
+    tx = easy_track.createMotion(factory, calldata, {"from": trusted_caller, "gas_price": 4})
 
     motions = easy_track.getMotions()
     assert len(motions) == len(motions_before) + 1
@@ -28,7 +28,7 @@ def create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stran
     easy_track.enactMotion(
         motions[-1][0],
         tx.events["MotionCreated"]["_evmScriptCallData"],
-        {"from": stranger},
+        {"from": stranger, "gas_price": 4},
     )
 
 
@@ -56,9 +56,9 @@ def create_and_enact_payment_motion(
         is_stables_factory = False
 
     calldata = (
-        _encode_calldata(["address","address[]","uint256[]"], [token.address, recievers_addresses, transfer_amounts])
+        _encode_calldata(["address", "address[]", "uint256[]"], [token.address, recievers_addresses, transfer_amounts])
         if is_stables_factory
-        else _encode_calldata(["address[]","uint256[]"], [recievers_addresses, transfer_amounts])
+        else _encode_calldata(["address[]", "uint256[]"], [recievers_addresses, transfer_amounts])
     )
 
     create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger)
