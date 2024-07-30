@@ -21,45 +21,19 @@ jobs:
           - 8545:8545
         env:
           ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
+
     steps:
-      # All tests from scripts repo
-      - uses: actions/checkout@v3
-      - name: Main action
+      - name: Core tests
         uses: ./.github/actions/brownie_fork_tests
         with:
           vote: "normal"
           infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
           etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
 
-      # Tests from core repo
-      - uses: actions/checkout@v4
+      - name: Scripts tests
+        uses: ./.github/actions/scripts_tests
         with:
-          repository: lidofinance/core
-          ref: feat/integration
+          vote: "normal"
+          infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
+          etherscan: ${{ secrets.ETHERSCAN_TOKEN }}      # All tests from scripts repo
 
-      - name: Enable corepack
-        shell: bash
-        run: corepack enable
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: yarn
-
-      - name: Install dependencies
-        shell: bash
-        run: yarn install
-
-      - name: Check that the fork is ready
-        shell: bash
-        run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8545
-
-      - name: Set env
-        shell: bash
-        run: cp .env.example .env
-
-      - name: Run integration tests
-        shell: bash
-        run: yarn test:integration:fork
-        env:
-          DEBUG: true

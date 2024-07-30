@@ -1,0 +1,58 @@
+name: "Tests"
+description: "Run brownie fork tests"
+
+inputs:
+  vote:
+    description: "vote type: normal or large"
+    required: false
+    default: "normal"
+  infura:
+    description: "infura JSON-RPC provider"
+    required: true
+    default: ""
+  etherscan:
+    description: "etherscan api key"
+    required: true
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    # Tests from core repo
+    - uses: actions/checkout@v4
+      with:
+        repository: lidofinance/core
+        ref: feat/integration
+        path: core
+
+    - name: Enable corepack
+      shell: bash
+      run: corepack enable
+
+    - uses: actions/setup-node@v4
+      working-directory: core
+      with:
+        node-version-file: .nvmrc
+        cache: yarn
+
+    - name: Install dependencies
+      working-directory: core
+      shell: bash
+      run: yarn install
+
+    - name: Check that the fork is ready
+      shell: bash
+      run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8545
+
+    - name: Set env
+      working-directory: core
+      shell: bash
+      run: cp .env.example .env
+
+    - name: Run integration tests
+      working-directory: core
+      shell: bash
+      run: yarn test:integration:fork
+      env:
+        DEBUG: true
+
