@@ -64,6 +64,17 @@ def test_initialize(contract):
             {"from": contracts.voting},
         )
 
+def test_finalize_upgrade(contract):
+    with reverts(encode_error(
+                "UnexpectedContractVersion(uint256,uint256)",
+                [2, 1],
+            )):
+        contract.finalizeUpgrade_v2(
+            [10_000, 10_000],
+            [50, 50],
+            [25, 25],
+            {"from": contracts.voting},
+        )
 
 def test_petrified(contract):
     impl = interface.StakingRouter(STAKING_ROUTER_IMPL)
