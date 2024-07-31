@@ -18,12 +18,19 @@ from utils.config import (
     CURATED_STAKING_MODULE_TARGET_SHARE_BP,
     CURATED_STAKING_MODULE_MODULE_FEE_BP,
     CURATED_STAKING_MODULE_TREASURY_FEE_BP,
+    CURATED_STAKING_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD,
+    CURATED_STAKING_MODULE_MAX_DEPOSITS_PER_BLOCK,
+    CURATED_STAKING_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE,
     WITHDRAWAL_CREDENTIALS,
     SIMPLE_DVT_MODULE_ID,
     SIMPLE_DVT_MODULE_MODULE_FEE_BP,
     SIMPLE_DVT_MODULE_NAME,
     SIMPLE_DVT_MODULE_TARGET_SHARE_BP,
     SIMPLE_DVT_MODULE_TREASURY_FEE_BP,
+    SIMPLE_DVT_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD,
+    SIMPLE_DVT_MODULE_MAX_DEPOSITS_PER_BLOCK,
+    SIMPLE_DVT_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE
+
 )
 from utils.evm_script import encode_error
 
@@ -103,6 +110,9 @@ def test_staking_modules(contract):
     assert curated_module["lastDepositAt"] >= 1679672628
     assert curated_module["lastDepositBlock"] >= 8705383
     assert curated_module["exitedValidatorsCount"] >= 145
+    assert curated_module["priorityExitShareThreshold"] == CURATED_STAKING_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD
+    assert curated_module["maxDepositsPerBlock"] == CURATED_STAKING_MODULE_MAX_DEPOSITS_PER_BLOCK
+    assert curated_module["minDepositBlockDistance"] == CURATED_STAKING_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE
 
     simple_dvt_module = contract.getStakingModule(2)
     assert simple_dvt_module["id"] == SIMPLE_DVT_MODULE_ID
@@ -115,6 +125,9 @@ def test_staking_modules(contract):
     assert simple_dvt_module["lastDepositAt"] > 0
     assert simple_dvt_module["lastDepositBlock"] > 0
     assert simple_dvt_module["exitedValidatorsCount"] >= 0
+    assert simple_dvt_module["priorityExitShareThreshold"] == SIMPLE_DVT_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD
+    assert simple_dvt_module["maxDepositsPerBlock"] == SIMPLE_DVT_MODULE_MAX_DEPOSITS_PER_BLOCK
+    assert curated_module["minDepositBlockDistance"] == SIMPLE_DVT_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE
 
     fee_aggregate_distribution = contract.getStakingFeeAggregateDistribution()
     assert fee_aggregate_distribution["modulesFee"] <= SR_MODULES_FEE_E20
