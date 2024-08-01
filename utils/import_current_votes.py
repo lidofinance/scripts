@@ -5,7 +5,7 @@ import glob
 from brownie import accounts
 from brownie.network.transaction import TransactionReceipt
 from utils.test.helpers import ETH
-from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS, get_is_live, contracts, network_name
+from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS, contracts
 
 
 def get_vote_scripts_dir() -> str:
