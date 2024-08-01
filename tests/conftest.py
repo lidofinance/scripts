@@ -91,7 +91,7 @@ class Helpers:
             raise AssertionError(f"Event {evt_name} was fired")
 
     @staticmethod
-    def execute_vote(accounts, vote_id, dao_voting, topup="0.1 ether", skip_time=MAINNET_VOTE_DURATION):
+    def execute_vote(accounts, vote_id, dao_voting, topup="10.1 ether", skip_time=MAINNET_VOTE_DURATION):
         (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup, skip_time)
         return tx
 
@@ -108,7 +108,7 @@ class Helpers:
                     if accounts.at(holder_addr, force=True).balance() < topup:
                         accounts[0].transfer(holder_addr, topup)
                     account = accounts.at(holder_addr, force=True)
-                    dao_voting.vote(vote_id, True, False, {"from": account, "gas_price": get_gas_price()})
+                    dao_voting.vote(vote_id, True, False, {"from": account})
 
         # wait for the vote to end
         chain.sleep(skip_time)
@@ -129,7 +129,7 @@ class Helpers:
 
         execution_transactions = []
         for vote_id in vote_ids:
-            tx = dao_voting.executeVote(vote_id, {"from": accounts[0], "gas_price": get_gas_price()})
+            tx = dao_voting.executeVote(vote_id, {"from": accounts[0]})
             print(f"vote #{vote_id} executed")
             execution_transactions.append(tx)
 

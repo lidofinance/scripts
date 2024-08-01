@@ -19,7 +19,6 @@ from utils.config import (
     get_deployer_account,
     get_is_live,
     get_priority_fee,
-    get_gas_price,
     network_name,
     AGENT
 )
@@ -177,10 +176,10 @@ def startAndExecuteForForkUpgrade():
 
     # Top up accounts
     accountWithEth = accounts.at('0x4200000000000000000000000000000000000023', force=True)
-    accountWithEth.transfer(depoyerAccount.address, "2 ethers", gas_price=get_gas_price())
-    accountWithEth.transfer(AGENT, "2 ethers", gas_price=get_gas_price())
+    accountWithEth.transfer(depoyerAccount.address, "2 ethers")
+    accountWithEth.transfer(AGENT, "2 ethers")
 
-    tx_params = {"from": depoyerAccount, "gas_price": get_gas_price()}
+    tx_params = {"from": depoyerAccount}
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 

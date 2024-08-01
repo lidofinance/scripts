@@ -65,13 +65,6 @@ def get_max_fee() -> str:
     else:
         return "300 gwei"
 
-def get_gas_price() -> str:
-    if "OMNIBUS_GAS_PRICE" in os.environ:
-        return os.environ["OMNIBUS_GAS_PRICE"]
-    else:
-        return "40 gwei"
-
-
 def local_deployer() -> LocalAccount:
     """
     Local deployer can ONLY be used for the local run.

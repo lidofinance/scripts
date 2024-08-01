@@ -59,7 +59,7 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
         start_vote = locals()[start_vote_name]
 
         vote_id, _ = start_vote({"from": LDO_HOLDER_ADDRESS_FOR_TESTS}, silent=True)
-        (tx,) = helpers.execute_votes(accounts, [vote_id], dao_voting, topup="0.5 ether")
+        (tx,) = helpers.execute_votes(accounts, [vote_id], dao_voting, topup="10 ether")
         vote_ids.append(vote_id)
         vote_transactions.append(tx)
     return vote_ids, vote_transactions
