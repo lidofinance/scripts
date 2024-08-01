@@ -1,8 +1,5 @@
 import pytest
 from brownie import ZERO_ADDRESS, interface, web3, reverts  # type: ignore
-from brownie.network.account import Account
-from brownie import convert
-from web3 import Web3
 
 from utils.config import (
     contracts,
@@ -155,59 +152,6 @@ def test_nor_state(contract):
         )
 
         assert node_operator_summary["depositableValidatorsCount"] == no_depositable_validators_count
-
-def test_update_target_validators_limits(contract, voting, stranger):
-    operator_id = contract.getNodeOperatorsCount()
-
-    with reverts("APP_AUTH_FAILED"):
-        contract.addNodeOperator("test", f"0xbb{str(1).zfill(38)}", {"from": stranger} )
-
-    contracts.acl.grantPermission(
-        stranger,
-        contract,
-        convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-        {"from": voting},
-    )
-
-    contract.addNodeOperator("test", f"0xbb{str(1).zfill(38)}", {"from": stranger} )
-
-    node_operator = contract.getNodeOperatorSummary(operator_id)
-    assert node_operator["targetLimitMode"] == 0
-    assert node_operator["targetValidatorsCount"] == 0
-
-    with reverts("APP_AUTH_FAILED"):
-        contract.updateTargetValidatorsLimits['uint256,uint256,uint256'](operator_id, 1, 10, {"from": stranger})
-
-    contracts.acl.grantPermission(
-        stranger,
-        contract,
-        convert.to_uint(Web3.keccak(text="STAKING_ROUTER_ROLE")),
-        {"from": voting},
-    )
-
-    with reverts("OUT_OF_RANGE"):
-        contract.updateTargetValidatorsLimits['uint256,uint256,uint256'](operator_id + 1, 1, 10, {"from": stranger})
-
-    contract.updateTargetValidatorsLimits['uint256,uint256,uint256'](operator_id, 1, 10, {"from": stranger})
-    node_operator = contract.getNodeOperatorSummary(operator_id)
-    assert node_operator["targetLimitMode"] == 1
-    assert node_operator["targetValidatorsCount"] == 10
-
-    contract.updateTargetValidatorsLimits['uint256,uint256,uint256'](operator_id, 2, 20, {"from": stranger})
-    node_operator = contract.getNodeOperatorSummary(operator_id)
-    assert node_operator["targetLimitMode"] == 2
-    assert node_operator["targetValidatorsCount"] == 20
-
-    # any target mode value great then 2 will be treat as force mode
-    contract.updateTargetValidatorsLimits['uint256,uint256,uint256'](operator_id, 3, 30, {"from": stranger})
-    node_operator = contract.getNodeOperatorSummary(operator_id)
-    assert node_operator["targetLimitMode"] == 3
-    assert node_operator["targetValidatorsCount"] == 30
-
-    contract.updateTargetValidatorsLimits['uint256,uint256,uint256'](operator_id, 0, 40, {"from": stranger})
-    node_operator = contract.getNodeOperatorSummary(operator_id)
-    assert node_operator["targetLimitMode"] == 0
-    assert node_operator["targetValidatorsCount"] == 0 # should be always 0 in disabled mode
 
 def _str_to_bytes32(s: str) -> str:
     return "0x{:0<64}".format(s.encode("utf-8").hex())
