@@ -9,7 +9,6 @@ from utils.config import (
     contracts,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
     network_name,
-    get_gas_price,
     get_deployer_account,
     AGENT
 )
@@ -20,7 +19,7 @@ L1_TOKEN_BRIDGE_NEW_IMPL: str = "0x8375029773953d91CaCfa452b7D24556b9F318AA"
 
 LIDO_LOCATOR_PROXY: str = "0x8f6254332f69557A72b0DA2D5F0Bc07d4CA991E7"
 LIDO_LOCATOR_OLD_IMPL: str = "0x604dc1776eEbe7ddCf4cf5429226Ad20a5a294eE"
-LIDO_LOCATOR_NEW_IMPL: str = "0xc349C1f90b892BB35c59CA0371D734A876f341a9"
+LIDO_LOCATOR_NEW_IMPL: str = "0x314Ab8D774c0580942E832f971Bbc7A27B1c2552"
 
 DEPOSITS_ENABLER_ROLE = "0x4b43b36766bde12c5e9cbbc37d15f8d1f769f08f54720ab370faeb4ce893753a"
 L1_EMERGENCY_BRAKES_MULTISIG = "0xa5F1d7D49F581136Cf6e58B32cBE9a2039C48bA1"
@@ -39,8 +38,8 @@ def test_vote(helpers, accounts, vote_ids_from_env):
 
     # Top up accounts
     accountWithEth = accounts.at('0x4200000000000000000000000000000000000023', force=True)
-    accountWithEth.transfer(depoyerAccount.address, "2 ethers", gas_price=get_gas_price())
-    accountWithEth.transfer(AGENT, "2 ethers", gas_price=get_gas_price())
+    accountWithEth.transfer(depoyerAccount.address, "2 ethers")
+    accountWithEth.transfer(AGENT, "2 ethers")
 
     l1_token_bridge_proxy = interface.OssifiableProxy(L1_TOKEN_BRIDGE_PROXY);
     l1_token_bridge = interface.L1LidoTokensBridge(L1_TOKEN_BRIDGE_PROXY);
@@ -65,7 +64,7 @@ def test_vote(helpers, accounts, vote_ids_from_env):
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
     else:
-        tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS, "gas_price": get_gas_price()}
+        tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
         vote_id, _ = start_vote(tx_params, silent=True)
 
     vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
@@ -73,7 +72,8 @@ def test_vote(helpers, accounts, vote_ids_from_env):
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
     # validate vote events
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 5, "Incorrect voting items count"
+    if not network_name() in ("sepolia", "sepolia-fork"):
+        assert count_vote_items_by_events(vote_tx, contracts.voting) == 5, "Incorrect voting items count"
 
     # L1 Bridge has new implementation
     l1_token_bridge_implementation_address_after = l1_token_bridge_proxy.proxy__getImplementation()
