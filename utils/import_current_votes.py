@@ -8,16 +8,9 @@ from utils.test.helpers import ETH
 from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS, get_is_live, contracts, network_name
 
 
-def _get_network():
-    network = network_name().replace("-fork", "")
-    if network not in ("mainnet", "holesky", "sepolia", "goerli"):
-        network = "mainnet"
-    return network
-
-
 def get_vote_scripts_dir() -> str:
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    dir_path = os.path.join(os.path.split(dir_path)[0], "scripts", _get_network())
+    dir_path = os.path.join(os.path.split(dir_path)[0], "scripts")
     return dir_path
 
 
@@ -55,13 +48,12 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
     vote_files.extend(upgrade_files)
     assert len(vote_files) > 0
 
-    network = _get_network()
     vote_ids = []
     vote_transactions = []
     for vote_file in sorted(vote_files):
         script_name = os.path.splitext(os.path.basename(vote_file))[0]
         print(f"Starting voting from script '{script_name}'...")
-        name_for_import = "scripts." + network + "." + script_name
+        name_for_import = "scripts." + script_name
         start_vote_name = f"start_vote_{script_name}"
         exec(f"from {name_for_import} import start_vote as {start_vote_name}")
         start_vote = locals()[start_vote_name]
