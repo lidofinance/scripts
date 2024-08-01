@@ -177,11 +177,31 @@ class ContractsLazyLoader:
 
     @property
     def csm(self) -> interface.CSModule:
-        return interface.CSModule(CSM)
+        return interface.CSModule(CSM_ADDRESS)
 
     @property
-    def csmHashConsensus(self) -> interface.CSHashConsensus:
+    def cs_early_adoption(self) -> interface.CSEarlyAdoption:
+        return interface.CSEarlyAdoption(CS_EARLY_ADOPTION_ADDRESS)
+
+    @property
+    def cs_accounting(self) -> interface.CSAccounting:
+        return interface.CSAccounting(CS_ACCOUNTING_ADDRESS)
+
+    @property
+    def cs_fee_distributor(self) -> interface.CSFeeDistributor:
+        return interface.CSFeeDistributor(CS_FEE_DISTRIBUTOR_ADDRESS)
+
+    @property
+    def cs_fee_oracle(self) -> interface.CSFeeOracle:
+        return interface.CSFeeOracle(CS_FEE_ORACLE_ADDRESS)
+
+    @property
+    def csm_hash_consensus(self) -> interface.CSHashConsensus:
         return interface.CSHashConsensus(CS_ORACLE_HASH_CONSENSUS_ADDRESS)
+
+    @property
+    def cs_verifier(self) -> interface.CSVerifier:
+        return interface.CSVerifier(CS_VERIFIER_ADDRESS)
 
     @property
     def sandbox(self) -> interface.SimpleDVT:
