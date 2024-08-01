@@ -30,15 +30,18 @@ L2_TOKENS_BRIDGE_NEW_IMPL = "0xD48c69358193a34aC035ea7dfB70daDea1600112"
 L2_OPTIMISM_WSTETH_TOKEN = "0x24B47cd3A74f1799b32B2de11073764Cb1bb318B"
 L2_OPTIMISM_WSTETH_TOKEN_NEW_IMPL = "0x298953B9426eba4F35a137a4754278a16d97A063"
 
+WST_ETH = "0xB82381A3fBD3FaFA77B3a7bE693342618240067b"
+
+
 def test_vote(helpers, accounts, vote_ids_from_env):
     if not network_name() in ("sepolia", "sepolia-fork"):
         return
 
-    depoyerAccount = get_deployer_account()
+    deployerAccount = get_deployer_account()
 
     # Top up accounts
     accountWithEth = accounts.at('0x4200000000000000000000000000000000000023', force=True)
-    accountWithEth.transfer(depoyerAccount.address, "2 ethers")
+    accountWithEth.transfer(deployerAccount.address, "2 ethers")
     accountWithEth.transfer(AGENT, "2 ethers")
 
     l1_token_bridge_proxy = interface.OssifiableProxy(L1_TOKEN_BRIDGE_PROXY);
@@ -59,6 +62,9 @@ def test_vote(helpers, accounts, vote_ids_from_env):
 
     # Multisig hasn't been assigned as deposit enabler
     assert l1_token_bridge.hasRole(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG) is False
+
+    wst_eth = interface.WstETH(WST_ETH)
+    wst_eth_bridge_balance_before = wst_eth.balanceOf(L1_TOKEN_BRIDGE_PROXY)
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -100,6 +106,10 @@ def test_vote(helpers, accounts, vote_ids_from_env):
         L2_OPTIMISM_WSTETH_TOKEN_NEW_IMPL,
     )
     assert sentMessage == encoded_l2_upgrade_call
+
+    wst_eth_bridge_balance_after = wst_eth.balanceOf(L1_TOKEN_BRIDGE_PROXY)
+    assert wst_eth_bridge_balance_before == wst_eth_bridge_balance_after
+
 
 def encode_l2_upgrade_call(proxy1: str, new_impl1: str, proxy2: str, new_impl2: str):
     govBridgeExecutor = interface.OpBridgeExecutor(L2_OPTIMISM_BRIDGE_EXECUTOR)

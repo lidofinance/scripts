@@ -64,10 +64,7 @@ def test_oracle_report_pushes_rate():
 def test_oracle_report_success_when_observer_reverts(accounting_oracle: Contract, lido: Contract, el_vault: Contract):
     """Test oracle report works when token rate observer reverts"""
 
-    depoyerAccount = get_deployer_account()
-    opStackTokenRatePusher = OpStackTokenRatePusherWithSomeErrorStub.deploy({
-        "from": depoyerAccount
-    })
+    opStackTokenRatePusher = OpStackTokenRatePusherWithSomeErrorStub.deploy({"from": get_deployer_account()})
 
     tokenRateNotifier = interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)
     tokenRateNotifierOwner = tokenRateNotifier.owner()
