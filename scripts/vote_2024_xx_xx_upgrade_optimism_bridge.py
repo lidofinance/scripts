@@ -1,7 +1,15 @@
 """
 Voting xx/xx/2024.
 
-Upgrade L1Bridge, L2Bridge, L2 wstETH, L2 stETH, TokenRateOracle
+1. Upgrade L1 Bridge implementation
+2. Finalize L1 Bridge upgrade
+3. Upgrade L1 LidoLocator implementation
+4. Grant DEPOSITS_ENABLER_ROLE to Emergency Brakes Committee multisig
+5. Send L2 upgrade call:
+    (a) upgrade L2TokenBridge;
+    (b) finalize L2TokenBridge upgrade;
+    (c) upgrade wstETH on L2;
+    (d) finalize wstETH upgrade";
 
 """
 
@@ -20,7 +28,6 @@ from utils.config import (
     get_is_live,
     get_priority_fee,
     network_name,
-    AGENT
 )
 from configs.config_sepolia import (
     L1_TOKENS_BRIDGE_PROXY,
@@ -34,17 +41,17 @@ from configs.config_sepolia import (
     L2_OPTIMISM_WSTETH_TOKEN,
     L2_OPTIMISM_WSTETH_TOKEN_NEW_IMPL,
     L1_OPTIMISM_CROSS_DOMAIN_MESSENGER,
+    AGENT
 )
 
 description = """
+Voting xx/xx/2024.
 
 Upgrade L1Bridge, L2Bridge, L2 wstETH
 
 """
 
-
 DEPOSITS_ENABLER_ROLE = "0x4b43b36766bde12c5e9cbbc37d15f8d1f769f08f54720ab370faeb4ce893753a"
-
 
 def encode_l2_upgrade_call(proxy1: str, new_impl1: str, proxy2: str, new_impl2: str):
     govBridgeExecutor = interface.OpBridgeExecutor(L2_OPTIMISM_BRIDGE_EXECUTOR)
@@ -112,7 +119,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 )
             ]
         ),
-        # 4. Grant STAKING_MODULE_MANAGE_ROLE to Lido Agent
+        # 4. Grant DEPOSITS_ENABLER_ROLE to Emergency Brakes Committee multisig
         agent_forward(
             [
                 (
@@ -172,14 +179,15 @@ def main():
     time.sleep(5)  # hack for waiting thread #2.
 
 def startAndExecuteForForkUpgrade():
-    depoyerAccount = get_deployer_account()
+    ACCOUNT_WITH_MONEY = "0x4200000000000000000000000000000000000023"
+    deployerAccount = get_deployer_account()
 
     # Top up accounts
-    accountWithEth = accounts.at('0x4200000000000000000000000000000000000023', force=True)
-    accountWithEth.transfer(depoyerAccount.address, "2 ethers")
+    accountWithEth = accounts.at(ACCOUNT_WITH_MONEY, force=True)
+    accountWithEth.transfer(deployerAccount.address, "2 ethers")
     accountWithEth.transfer(AGENT, "2 ethers")
 
-    tx_params = {"from": depoyerAccount}
+    tx_params = {"from": deployerAccount}
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 
