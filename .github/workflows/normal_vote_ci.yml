@@ -29,14 +29,14 @@ jobs:
         shell: bash
         run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8545
 
+      - name: Core tests
+        uses: ./.github/actions/core_tests
+        with:
+          vote: "normal"
+
       - name: Scripts tests
         uses: ./.github/actions/scripts_tests
         with:
           vote: "normal"
           infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
           etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
-
-      - name: Core tests
-        uses: ./.github/actions/core_tests
-        with:
-          vote: "normal"
