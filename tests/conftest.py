@@ -160,7 +160,7 @@ class Helpers:
             print(f"vote #{vote_id} executed")
             execution_transactions.append(tx)
 
-        # Helpers._prefetch_contracts_from_etherscan()
+        Helpers._prefetch_contracts_from_etherscan()
 
         return execution_transactions
 
@@ -177,6 +177,7 @@ class Helpers:
             Contract.from_explorer(VALIDATORS_EXIT_BUS_ORACLE)
             Contract.from_explorer(WITHDRAWAL_QUEUE)
             Contract.from_explorer(STAKING_ROUTER)
+            Contract.from_explorer(VOTING)
 
             Helpers._etherscan_is_fetched = True
 
