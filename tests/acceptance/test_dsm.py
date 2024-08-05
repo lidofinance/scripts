@@ -68,3 +68,14 @@ def test_prefixes(dsm):
             ],
         ).hex()
     )
+    assert (
+        dsm.UNVET_MESSAGE_PREFIX()
+        == web3.solidity_keccak(
+            ["bytes32", "uint256", "address"],
+            [
+                web3.keccak(text="lido.DepositSecurityModule.UNVET_MESSAGE").hex(),
+                1,
+                DEPOSIT_SECURITY_MODULE,
+            ],
+        ).hex()
+    )
