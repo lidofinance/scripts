@@ -58,6 +58,7 @@ def stranger(accounts):
 def delegate1(accounts):
     delegate = accounts.at("0xa70B0AfdF44cEccCF02E76486a6DE4F4B7fd1e52", force=True)
     web3.provider.make_request("evm_setAccountBalance", [delegate.address, "0x152D02C7E14AF6800000"])
+    web3.provider.make_request("hardhat_setBalance", [delegate.address, "0x152D02C7E14AF6800000"])
     assert delegate.balance() == ETH(100000)
     return delegate
 
@@ -66,6 +67,7 @@ def delegate1(accounts):
 def delegate2(accounts):
     delegate = accounts.at("0x100b896F2Dd8c4Ca619db86BCDDb7E085143C1C5", force=True)
     web3.provider.make_request("evm_setAccountBalance", [delegate.address, "0x152D02C7E14AF6800000"])
+    web3.provider.make_request("hardhat_setBalance", [delegate.address, "0x152D02C7E14AF6800000"])
     assert delegate.balance() == ETH(100000)
     return delegate
 
@@ -74,6 +76,7 @@ def delegate2(accounts):
 def trp_recipient(accounts):
     trp_recipient = accounts.at("0x228cCaFeA1fa21B74257Af975A9D84d87188c61B", force=True)
     web3.provider.make_request("evm_setAccountBalance", [trp_recipient.address, "0x152D02C7E14AF6800000"])
+    web3.provider.make_request("hardhat_setBalance", [trp_recipient.address, "0x152D02C7E14AF6800000"])
     assert trp_recipient.balance() == ETH(100000)
     return trp_recipient
 
