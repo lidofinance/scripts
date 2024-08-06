@@ -1,8 +1,7 @@
 import pytest
-from brownie import interface, reverts  # type: ignore
-from brownie.network.account import Account
-from brownie import convert
+from brownie import convert, interface, reverts  # type: ignore
 from web3 import Web3
+from utils.staking_module import add_node_operator
 from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
 
 from utils.config import (
@@ -24,24 +23,6 @@ def prep_ids_counts_payload(ids, counts):
 def number_to_hex(n, byte_len=None):
     s = hex(n)[2:]  # Convert to hex and remove the '0x' prefix
     return s if byte_len is None else s.zfill(byte_len * 2)
-
-
-def add_node_operator(staking_module, voting, stranger):
-    operator_id = staking_module.getNodeOperatorsCount()
-
-    with reverts("APP_AUTH_FAILED"):
-        staking_module.addNodeOperator("test", f"0xbb{str(1).zfill(38)}", {"from": stranger} )
-
-    contracts.acl.grantPermission(
-        stranger,
-        staking_module,
-        convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-        {"from": voting},
-    )
-
-    staking_module.addNodeOperator("test", f"0xbb{str(1).zfill(38)}", {"from": stranger} )
-
-    return operator_id
 
 def update_target_validators_limits(staking_module, voting, stranger):
     operator_id = add_node_operator(staking_module, voting, stranger)
