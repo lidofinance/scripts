@@ -73,7 +73,7 @@ def prepare_accounting_report(
     withdrawalFinalizationBatches=[],
     isBunkerMode=False,
     extraDataFormat=EXTRA_DATA_FORMAT_EMPTY,
-    extraDataHash=ZERO_BYTES32,
+    extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
 ):
     report = AccountingReport(
@@ -90,7 +90,7 @@ def prepare_accounting_report(
         int(simulatedShareRate),
         bool(isBunkerMode),
         int(extraDataFormat),
-        extraDataHash,
+        extraDataHashList[0],
         int(extraDataItemsCount),
     )
 
@@ -165,7 +165,7 @@ def push_oracle_report(
     withdrawalFinalizationBatches=[],
     isBunkerMode=False,
     extraDataFormat=0,
-    extraDataHash=ZERO_BYTES32,
+    extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
     silent=False,
     extraDataList:List[bytes]=[],
@@ -188,7 +188,7 @@ def push_oracle_report(
         withdrawalFinalizationBatches=withdrawalFinalizationBatches,
         isBunkerMode=isBunkerMode,
         extraDataFormat=extraDataFormat,
-        extraDataHash=extraDataHash,
+        extraDataHashList=extraDataHashList,
         extraDataItemsCount=extraDataItemsCount,
     )
     submitter = reach_consensus(refSlot, hash, consensusVersion, contracts.hash_consensus_for_accounting_oracle, silent)
@@ -222,7 +222,7 @@ def push_oracle_report(
     assert refSlot == currentFrameRefSlot
     assert mainDataHash == hash.hex()
     assert mainDataSubmitted
-    assert state_extraDataHash == extraDataHash.hex()
+    assert state_extraDataHash == extraDataHashList[-1].hex()
     assert state_extraDataFormat == extraDataFormat
     assert extraDataSubmitted
     assert state_extraDataItemsCount == extraDataItemsCount
@@ -292,7 +292,7 @@ def oracle_report(
     skip_withdrawals=False,
     wait_to_next_report_time=True,
     extraDataFormat=0,
-    extraDataHash=ZERO_BYTES32,
+    extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
     extraDataList:List[bytes]=[],
     stakingModuleIdsWithNewlyExitedValidators=[],
@@ -320,7 +320,7 @@ def oracle_report(
     skip_withdrawals=False,
     wait_to_next_report_time=True,
     extraDataFormat=0,
-    extraDataHash=ZERO_BYTES32,
+    extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
     extraDataList:List[bytes]=[],
     stakingModuleIdsWithNewlyExitedValidators=[],
@@ -348,7 +348,7 @@ def oracle_report(
     skip_withdrawals=False,
     wait_to_next_report_time=True,
     extraDataFormat=0,
-    extraDataHash=ZERO_BYTES32,
+    extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
     extraDataList:List[bytes]=[],
     stakingModuleIdsWithNewlyExitedValidators=[],
@@ -438,7 +438,7 @@ def oracle_report(
             simulatedShareRate=simulatedShareRate,
             isBunkerMode=is_bunker,
             extraDataFormat=extraDataFormat,
-            extraDataHash=extraDataHash,
+            extraDataHash=extraDataHashList[0],
             extraDataItemsCount=extraDataItemsCount,
         )
 
@@ -452,7 +452,7 @@ def oracle_report(
         elRewardsVaultBalance=elRewardsVaultBalance,
         simulatedShareRate=simulatedShareRate,
         extraDataFormat=extraDataFormat,
-        extraDataHash=extraDataHash,
+        extraDataHashList=extraDataHashList,
         extraDataItemsCount=extraDataItemsCount,
         extraDataList=extraDataList,
         stakingModuleIdsWithNewlyExitedValidators=stakingModuleIdsWithNewlyExitedValidators,

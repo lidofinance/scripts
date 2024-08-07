@@ -233,7 +233,7 @@ def test_accounting_oracle_too_much_extra_data(extra_data_service):
     ):
         oracle_report(
             extraDataFormat=1,
-            extraDataHash=extra_data.data_hash,
+            extraDataHashList=extra_data.extra_data_hash_list,
             extraDataItemsCount=item_count,
             extraDataList=extra_data.extra_data_list,
         )
@@ -251,7 +251,7 @@ def test_accounting_oracle_too_node_ops_per_extra_data_item(extra_data_service):
     ):
         oracle_report(
             extraDataFormat=1,
-            extraDataHash=extra_data.data_hash,
+            extraDataHashList=extra_data.extra_data_hash_list,
             extraDataItemsCount=1,
             extraDataList=extra_data.extra_data_list,
         )

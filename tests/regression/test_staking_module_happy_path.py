@@ -239,7 +239,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     (report_tx, extra_report_tx_list) = oracle_report(
         exclude_vaults_balances=True,
         extraDataFormat=1,
-        extraDataHash=extra_data.data_hash,
+        extraDataHashList=extra_data.extra_data_hash_list,
         extraDataItemsCount=2,
         extraDataList=extra_data.extra_data_list,
         numExitedValidatorsByStakingModule=[nor_exited_count + 10],
@@ -373,7 +373,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         cl_diff=ETH(10),
         exclude_vaults_balances=True,
         extraDataFormat=1,
-        extraDataHash=extra_data.data_hash,
+        extraDataHashList=extra_data.extra_data_hash_list,
         extraDataItemsCount=2,
         extraDataList=extra_data.extra_data_list,
         numExitedValidatorsByStakingModule=[nor_exited_count + 12],
@@ -495,7 +495,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     (report_tx, extra_report_tx_list) = oracle_report(
         exclude_vaults_balances=True,
         extraDataFormat=1,
-        extraDataHash=extra_data.data_hash,
+        extraDataHashList=extra_data.extra_data_hash_list,
         extraDataItemsCount=2,
         extraDataList=extra_data.extra_data_list,
         numExitedValidatorsByStakingModule=[nor_exited_count + 12],

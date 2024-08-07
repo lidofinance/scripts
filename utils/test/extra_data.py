@@ -41,7 +41,7 @@ class ExtraDataItem:
 @dataclass
 class ExtraData:
     extra_data_list: List[bytes]
-    data_hash: HexBytes
+    extra_data_hash_list: HexBytes
     format: int
     items_count: int
 
@@ -87,7 +87,7 @@ class ExtraDataService:
         stuck_payloads = cls.build_validators_payloads(stuck_validators, max_no_in_payload_count)
         exited_payloads = cls.build_validators_payloads(exited_validators, max_no_in_payload_count)
         items_count, txs = cls.build_extra_transactions_data(stuck_payloads, exited_payloads, max_items_count)
-        first_hash, hashed_txs = cls.add_hashes_to_transactions(txs)
+        extra_data_hash_list, hashed_txs = cls.add_hashes_to_transactions(txs)
 
         if items_count:
             extra_data_format = FormatList.EXTRA_DATA_FORMAT_LIST_NON_EMPTY
@@ -97,7 +97,7 @@ class ExtraDataService:
         return ExtraData(
             items_count=items_count,
             extra_data_list=hashed_txs,
-            data_hash=first_hash,
+            extra_data_hash_list=extra_data_hash_list,
             format=extra_data_format.value,
         )
 
@@ -172,16 +172,19 @@ class ExtraDataService:
         txs_data.reverse()
 
         txs_with_hashes = []
+        txs_hashes = []
         next_hash = ZERO_HASH
 
         for tx in txs_data:
             full_tx_data = next_hash + tx
             txs_with_hashes.append(full_tx_data)
             next_hash = web3.keccak(full_tx_data)
+            txs_hashes.append(next_hash)
 
         txs_with_hashes.reverse()
+        txs_hashes.reverse()
 
-        return next_hash, txs_with_hashes
+        return txs_hashes, txs_with_hashes
 
     @staticmethod
     def batch(iterable, n):

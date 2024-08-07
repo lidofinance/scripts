@@ -129,7 +129,7 @@ def test_extra_data_full_items(
     # Perform report
     (report_tx, _) = oracle_report(
         extraDataFormat=1,
-        extraDataHash=extra_data.data_hash,
+        extraDataHashList=extra_data.extra_data_hash_list,
         extraDataItemsCount=(nor_exited_items + nor_stuck_items + sdvt_exited_items + sdvt_stuck_items),
         extraDataList=extra_data.extra_data_list,
         stakingModuleIdsWithNewlyExitedValidators=modules_with_exited,

@@ -355,7 +355,7 @@ class TestSubmitReportExtraDataList:
 
     def report(self, extra_data: bytes, items_count: int = 2):
         oracle_report(
-            extraDataHash=Web3.keccak(extra_data),
+            extraDataHashList=[Web3.keccak(extra_data)],
             extraDataItemsCount=items_count,
             extraDataFormat=EXTRA_DATA_FORMAT_LIST,
             extraDataList=[extra_data],
@@ -481,7 +481,7 @@ class TestSubmitReportData:
         push_report: Callable,
     ):
         report = oracle_report(
-            extraDataHash=HexBytes(NON_ZERO_HASH),
+            extraDataHashList=[HexBytes(NON_ZERO_HASH)],
             dry_run=True,
         )
         push_report(report)
@@ -549,7 +549,7 @@ class TestSubmitReportData:
 
         report = oracle_report(
             extraDataFormat=EXTRA_DATA_FORMAT_LIST,
-            extraDataHash=HexBytes(ZERO_HASH),
+            extraDataHashList=[HexBytes(ZERO_HASH)],
             extraDataItemsCount=42,
             dry_run=True,
         )
