@@ -310,6 +310,34 @@ class TestSubmitReportExtraDataList:
         ):
             self.report(extra_data)
 
+        extra_data = self.build_extra_data(
+            [
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1, 3, 2, 4], [1, 1, 1, 1]),
+            ]
+        )
+
+        with reverts(
+            encode_error(
+                "InvalidExtraDataSortOrder(uint256)",
+                [0],
+            )
+        ):
+            self.report(extra_data)
+
+        extra_data = self.build_extra_data(
+            [
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [33, 35, 34, 36], [5000, 5000, 5000, 5000]),
+            ]
+        )
+
+        with reverts(
+            encode_error(
+                "InvalidExtraDataSortOrder(uint256)",
+                [0],
+            )
+        ):
+            self.report(extra_data)
+
     def test_unexpected_extra_data_item(self, extra_data_service: ExtraDataService) -> None:
         extra_data = extra_data_service.collect(
             {(1, 38): 1},
