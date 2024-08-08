@@ -1,5 +1,5 @@
 """
-Voting xx/xx/2024.
+Voting 02/08/2024.
 
 1. Upgrade L1 Bridge implementation
 2. Finalize L1 Bridge upgrade
@@ -45,7 +45,7 @@ from configs.config_sepolia import (
 )
 
 description = """
-Voting xx/xx/2024.
+Voting 02/08/2024.
 
 Upgrade L1Bridge, L2Bridge, L2 wstETH
 
