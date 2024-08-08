@@ -93,7 +93,9 @@ def test_accounting_oracle_too_node_ops_per_extra_data_item(extra_data_service):
 
 
 def test_accounting_oracle_extra_data_splitted_on_multiple_chunks(extra_data_service, accounting_oracle, nor):
-    (submitter, extra_data) =  submit_main_report(accounting_oracle, extra_data_service)
+    (submitter, extra_data) = submit_main_report(accounting_oracle, extra_data_service)
+
+    assert_modules_reward_distribution_state(RewardDistributionState.TransferredToModule)
 
     accounting_oracle.submitReportExtraDataList(extra_data.extra_data_list[0], {"from": submitter})
 
