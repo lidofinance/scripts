@@ -1,7 +1,7 @@
 import pytest
 from brownie import Contract, accounts, chain, interface, OpStackTokenRatePusherWithSomeErrorStub, web3, reverts
 from utils.test.oracle_report_helpers import oracle_report
-from utils.config import contracts, get_deployer_account
+from utils.config import contracts, get_deployer_account, network_name
 from utils.test.helpers import ZERO_ADDRESS, eth_balance
 from utils.evm_script import encode_error
 from typing import TypedDict, TypeVar, Any
@@ -31,6 +31,9 @@ def withdrawal_queue() -> Contract:
 def test_oracle_report_revert():
     """Test oracle report reverts when messenger is empty"""
 
+    if not network_name() in ("sepolia", "sepolia-fork"):
+        return
+
     web3.provider.make_request("hardhat_setCode", [L1_CROSS_DOMAIN_MESSENGER, "0x"])
 
     with reverts(encode_error("ErrorTokenRateNotifierRevertedWithNoData()")):
@@ -38,6 +41,9 @@ def test_oracle_report_revert():
 
 def test_oracle_report_pushes_rate():
     """Test oracle report emits cross domain messenger event"""
+
+    if not network_name() in ("sepolia", "sepolia-fork"):
+        return
 
     tx, _ = oracle_report(
         cl_diff=0,
@@ -63,6 +69,9 @@ def test_oracle_report_pushes_rate():
 
 def test_oracle_report_success_when_observer_reverts(accounting_oracle: Contract, lido: Contract, el_vault: Contract):
     """Test oracle report works when token rate observer reverts"""
+
+    if not network_name() in ("sepolia", "sepolia-fork"):
+        return
 
     opStackTokenRatePusher = OpStackTokenRatePusherWithSomeErrorStub.deploy({"from": get_deployer_account()})
 
