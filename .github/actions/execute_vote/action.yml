@@ -1,0 +1,57 @@
+name: "Tests"
+description: "Run brownie fork tests"
+
+inputs:
+  vote:
+    description: "vote type: normal or large"
+    required: false
+    default: "normal"
+  infura:
+    description: "infura JSON-RPC provider"
+    required: true
+    default: ""
+  etherscan:
+    description: "etherscan api key"
+    required: true
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        path: execute_vote
+
+    - name: Install poetry
+      shell: bash
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+      env:
+        POETRY_VERSION: "1.8.2"
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+        cache: poetry
+
+    - name: Install poetry requirements
+      working-directory: execute_vote
+      shell: bash
+      run: poetry install
+
+    - name: Import network config to connect brownie with local Ganache
+      working-directory: execute_vote
+      shell: bash
+      run: poetry run brownie networks import network-config.yaml True
+
+    - name: Execute vote
+      working-directory: execute_vote
+      shell: bash
+      run: >
+        poetry run
+        brownie run execute_vote --network mainnet-fork
+      env:
+        WEB3_INFURA_PROJECT_ID: ${{ inputs.infura }}
+        ETHERSCAN_TOKEN: ${{ inputs.etherscan }}
