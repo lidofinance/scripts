@@ -8,9 +8,9 @@ I. Replace Rated Labs with MatrixedLink in Lido on Ethereum Oracle set
 4. Add oracle member named 'MatrixedLink' with address 0xe57B3792aDCc5da47EF4fF588883F0ee0c9835C9 to HashConsensus for ValidatorsExitBusOracle on Lido on Ethereum Oracle set
 
 II. Change NO’s name and reward address
-5. Create permission for MANAGE_NODE_OPERATOR_ROLE on NO_registry, assigning it to Voting
+5. Grant permission MANAGE_NODE_OPERATOR_ROLE on NO_registry to Voting
 6. Change the on-chain name of node operator with id 23 from 'CryptoManufaktur' to 'Galaxy'
-7. Change the reward address of node operator with id 23 from  0x59eCf48345A221E0731E785ED79eD40d0A94E2A5 to 0x3C3F243263d3106Fdb31eCf2248f9bC82F723c4B
+7. Change the reward address of node operator with id 23 from 0x59eCf48345A221E0731E785ED79eD40d0A94E2A5 to 0x3C3F243263d3106Fdb31eCf2248f9bC82F723c4B
 
 III. Simple Delegation
 8. Push new Voting app version to the Lido Aragon Voting Repo 0x4ee3118e3858e8d7164a634825bfe0f73d99c792
@@ -35,7 +35,7 @@ from utils.config import (
 from utils.repo import add_implementation_to_voting_app_repo
 from utils.kernel import update_app_implementation
 from utils.agent import agent_forward
-from utils.permissions import encode_permission_create
+from utils.permissions import encode_permission_grant
 from utils.node_operators import encode_set_node_operator_name, encode_set_node_operator_reward_address
 
 
@@ -98,6 +98,9 @@ description = """
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""
 
+    voting = contracts.voting
+    NO_registry = contracts.node_operators_registry
+
     vote_desc_items, call_script_items = zip(
         #
         # I. Replace Rated Labs with MatrixedLink in Lido on Ethereum Oracle set
@@ -145,24 +148,30 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         #
         # II. Change NO’s name and reward address
         #
-        encode_permission_create(
-            entity=contracts.voting,
-            target_app=contracts.node_operators_registry,
-            permission_name="MANAGE_NODE_OPERATOR_ROLE",
-            manager=contracts.voting,
+        (
+            "5) Create permission for MANAGE_NODE_OPERATOR_ROLE on NO_registry, assigning it to Voting",
+            encode_permission_grant(
+                target_app=NO_registry,
+                permission_name="MANAGE_NODE_OPERATOR_ROLE",
+                grant_to=voting,
+            ),
         ),
-        encode_set_node_operator_name(
-            CryptoManufaktur_id, CryptoManufaktur_new_name, contracts.node_operators_registry
+        (
+            "6) Change the on-chain name of node operator with id 23 from 'CryptoManufaktur' to 'Galaxy'",
+            encode_set_node_operator_name(CryptoManufaktur_id, CryptoManufaktur_new_name, NO_registry),
         ),
-        encode_set_node_operator_reward_address(
-            CryptoManufaktur_id, CryptoManufaktur_new_reward_address, contracts.node_operators_registry
+        (
+            "7) Change the reward address of node operator with id 23 from 0x59eCf48345A221E0731E785ED79eD40d0A94E2A5 to 0x3C3F243263d3106Fdb31eCf2248f9bC82F723c4B",
+            encode_set_node_operator_reward_address(
+                CryptoManufaktur_id, CryptoManufaktur_new_reward_address, NO_registry
+            ),
         ),
         # MANAGE_NODE_OPERATOR_ROLE was previously granted once on vote #160 (vote_2023_06_20), no need to revoke as it’s the second granting
         #
         # III. Simple Delegation
         #
         (
-            "1) Push new Voting app version to the Voting Repo",
+            "8) Push new Voting app version to the Voting Repo",
             add_implementation_to_voting_app_repo(
                 updated_voting_app["version"],
                 updated_voting_app["address"],
@@ -170,11 +179,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "2) Upgrade the Aragon Voting contract implementation",
+            "9) Upgrade the Aragon Voting contract implementation",
             update_app_implementation(updated_voting_app["id"], updated_voting_app["address"]),
         ),
         (
-            "3) Upgrade TRP voting adapter",
+            "10) Upgrade TRP voting adapter",
             agent_forward(
                 [
                     (

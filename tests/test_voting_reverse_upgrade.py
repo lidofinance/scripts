@@ -41,7 +41,7 @@ def create_dummy_vote(ldo_holder: str) -> int:
 def test_voting_delegation_reverse_upgrade(helpers, delegate1, delegate2, ldo_holder):
     with chain_snapshot():
         # Voting App before
-        voting_proxy = interface.AppProxyUpgradeable(contracts.voting.address)
+        voting_proxy = interface.AppProxyUpgradeable(VOTING)
         voting_app_from_repo = contracts.voting_app_repo.getLatest()
         assert voting_app_from_repo[0] == old_voting_app["version"]
         assert voting_app_from_repo[1] == old_voting_app["address"]
@@ -53,7 +53,6 @@ def test_voting_delegation_reverse_upgrade(helpers, delegate1, delegate2, ldo_ho
         helpers.execute_vote(accounts, vote_id, contracts.voting)
 
         # Voting App after upgrade, before downgrade
-        voting_proxy = interface.AppProxyUpgradeable(contracts.voting.address)
         voting_app_from_repo = contracts.voting_app_repo.getLatest()
         assert voting_app_from_repo[0] == updated_voting_app["version"]
         assert voting_app_from_repo[1] == updated_voting_app["address"]
@@ -113,7 +112,6 @@ def test_voting_delegation_reverse_upgrade(helpers, delegate1, delegate2, ldo_ho
         helpers.execute_vote(accounts, vote_id, contracts.voting)
 
         # Voting App after downgrade
-        voting_proxy = interface.AppProxyUpgradeable(contracts.voting.address)
         voting_app_from_repo = contracts.voting_app_repo.getLatest()
         assert voting_app_from_repo[0] == downgraded_voting_app["version"]
         assert voting_app_from_repo[1] == old_voting_app["address"]

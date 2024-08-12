@@ -6,7 +6,7 @@ Tests for voting 13/08/2024
 from brownie import accounts, interface, ZERO_ADDRESS, reverts
 from scripts.upgrade_2024_08_06 import start_vote
 from utils.test.event_validators.vesting_escrow import validate_voting_adapter_upgraded_event
-from utils.test.event_validators.permission import Permission, validate_permission_create_event
+from utils.test.event_validators.permission import Permission, validate_permission_grant_event
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.config import (
@@ -95,7 +95,7 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
 
     # III.
     # Voting App before
-    voting_proxy = interface.AppProxyUpgradeable(contracts.voting.address)
+    voting_proxy = interface.AppProxyUpgradeable(VOTING)
     voting_app_from_repo = contracts.voting_app_repo.getLatest()
     voting_appId = voting_proxy.appId()
 
@@ -123,19 +123,19 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
     # I.
-    # 1) Remove the oracle member named 'Rated Labs' with address
+    # Remove the oracle member named 'Rated Labs' with address
     #    0xec4bfbaf681eb505b94e4a7849877dc6c600ca3a from HashConsensus for AccountingOracle on Lido on Ethereum
     assert not accounting_hash_consensus.getIsMember(rated_labs_oracle_member)
 
-    # 2) Remove the oracle member named 'Rated Labs' with address
+    # Remove the oracle member named 'Rated Labs' with address
     #    0xec4bfbaf681eb505b94e4a7849877dc6c600ca3a from HashConsensus for ValidatorsExitBusOracle on Lido on Ethereum
     assert not validators_exit_bus_hash_consensus.getIsMember(rated_labs_oracle_member)
 
-    # 3) Add oracle member named 'MatrixedLink' with address
+    # Add oracle member named 'MatrixedLink' with address
     #    0xe57B3792aDCc5da47EF4fF588883F0ee0c9835C9 to HashConsensus for AccountingOracle on Lido on Ethereum Oracle set
     assert accounting_hash_consensus.getIsMember(matrixed_link_oracle_member)
 
-    # 4) Add oracle member named 'MatrixedLink' with address
+    # Add oracle member named 'MatrixedLink' with address
     #    0xe57B3792aDCc5da47EF4fF588883F0ee0c9835C9 to HashConsensus for ValidatorsExitBusOracle on Lido on Ethereum Oracle set
     assert validators_exit_bus_hash_consensus.getIsMember(matrixed_link_oracle_member)
 
@@ -152,7 +152,7 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
     # compare NO#23 (CryptoManufaktur -> Galaxy) data before and after
     assert CryptoManufaktur_data_before["active"] == CryptoManufaktur_data_after["active"]
     assert CryptoManufaktur_name_after == CryptoManufaktur_data_after["name"]
-    assert CryptoManufaktur_data_before["rewardAddress"] == CryptoManufaktur_data_after["rewardAddress"]
+    assert CryptoManufaktur_data_after["rewardAddress"] == CryptoManufaktur_reward_address_after
     compare_NO_validators_data(CryptoManufaktur_data_before, CryptoManufaktur_data_after)
 
     # III.
@@ -196,7 +196,7 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
     validate_hash_consensus_member_added(
         evs[3], matrixed_link_oracle_member, HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM, new_total_members=9
     )
-    validate_permission_create_event(evs[4], permission_manage_no, manager=contracts.voting)
+    validate_permission_grant_event(evs[4], permission_manage_no)
     validate_node_operator_name_set_event(
         evs[5], NodeOperatorNameSetItem(nodeOperatorId=CryptoManufaktur_id, name=CryptoManufaktur_name_after)
     )
