@@ -3,7 +3,7 @@
       "type": "constructor",
       "inputs": [
         {
-          "name": "locator",
+          "name": "withdrawalAddress",
           "type": "address",
           "internalType": "address"
         },
@@ -166,19 +166,6 @@
     },
     {
       "type": "function",
-      "name": "LOCATOR",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "address",
-          "internalType": "contract ILidoLocator"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
       "name": "MODULE",
       "inputs": [],
       "outputs": [
@@ -212,6 +199,19 @@
           "name": "",
           "type": "uint64",
           "internalType": "uint64"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "WITHDRAWAL_ADDRESS",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
         }
       ],
       "stateMutability": "view"
@@ -700,12 +700,12 @@
     },
     {
       "type": "error",
-      "name": "ZeroLocatorAddress",
+      "name": "ZeroModuleAddress",
       "inputs": []
     },
     {
       "type": "error",
-      "name": "ZeroModuleAddress",
+      "name": "ZeroWithdrawalAddress",
       "inputs": []
     }
   ]
