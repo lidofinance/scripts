@@ -1,16 +1,21 @@
 """
-Voting 06/08/2024.
+Voting 13/08/2024.
 
-I. Replacing Rated Labs with MatrixedLink in Lido on Ethereum Oracle set
+I. Replace Rated Labs with MatrixedLink in Lido on Ethereum Oracle set
 1. Remove the oracle member named 'Rated Labs' with address 0xec4bfbaf681eb505b94e4a7849877dc6c600ca3a from HashConsensus for AccountingOracle on Lido on Ethereum
 2. Remove the oracle member named 'Rated Labs' with address 0xec4bfbaf681eb505b94e4a7849877dc6c600ca3a from HashConsensus for ValidatorsExitBusOracle on Lido on Ethereum
 3. Add oracle member named 'MatrixedLink' with address 0xe57B3792aDCc5da47EF4fF588883F0ee0c9835C9 to HashConsensus for AccountingOracle on Lido on Ethereum Oracle set
 4. Add oracle member named 'MatrixedLink' with address 0xe57B3792aDCc5da47EF4fF588883F0ee0c9835C9 to HashConsensus for ValidatorsExitBusOracle on Lido on Ethereum Oracle set
 
-II. Simple Delegation
-1. Push new Voting app version to the Voting Repo 0x4ee3118e3858e8d7164a634825bfe0f73d99c792
-2. Upgrade the Aragon Voting contract implementation 0xf165148978Fa3cE74d76043f833463c340CFB704
-3. Upgrade TRP voting adapter 0x4b2AB543FA389Ca8528656282bF0011257071BED
+II. Change NO’s name and reward address
+5. Create permission for MANAGE_NODE_OPERATOR_ROLE on NO_registry, assigning it to Voting
+6. Change the on-chain name of node operator with id 23 from 'CryptoManufaktur' to 'Galaxy'
+7. Change the reward address of node operator with id 23 from  0x59eCf48345A221E0731E785ED79eD40d0A94E2A5 to 0x3C3F243263d3106Fdb31eCf2248f9bC82F723c4B
+
+III. Simple Delegation
+8. Push new Voting app version to the Lido Aragon Voting Repo 0x4ee3118e3858e8d7164a634825bfe0f73d99c792
+9. Upgrade the Aragon Voting contract implementation 0xf165148978Fa3cE74d76043f833463c340CFB704
+10. Upgrade TRP voting adapter 0x4b2AB543FA389Ca8528656282bF0011257071BED
 
 """
 
@@ -30,11 +35,15 @@ from utils.config import (
 from utils.repo import add_implementation_to_voting_app_repo
 from utils.kernel import update_app_implementation
 from utils.agent import agent_forward
+from utils.permissions import encode_permission_create
+from utils.node_operators import encode_set_node_operator_name, encode_set_node_operator_reward_address
+
 
 def encode_remove_accounting_oracle_member(member: str, quorum: int) -> Tuple[str, str]:
     hash_consensus: interface.LidoOracle = contracts.hash_consensus_for_accounting_oracle
 
     return (hash_consensus.address, hash_consensus.removeMember.encode_input(member, quorum))
+
 
 def encode_remove_validators_exit_bus_oracle_member(member: str, quorum: int) -> Tuple[str, str]:
     hash_consensus: interface.LidoOracle = contracts.hash_consensus_for_validators_exit_bus_oracle
@@ -54,6 +63,16 @@ def encode_add_validators_exit_bus_oracle_member(member: str, quorum: int) -> Tu
     return (hash_consensus.address, hash_consensus.addMember.encode_input(member, quorum))
 
 
+HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM = 5
+HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM = 5
+
+rated_labs_oracle_member = "0xec4bfbaf681eb505b94e4a7849877dc6c600ca3a"
+
+matrixed_link_oracle_member = "0xe57B3792aDCc5da47EF4fF588883F0ee0c9835C9"
+
+CryptoManufaktur_id = 23
+CryptoManufaktur_new_name = "Galaxy"
+CryptoManufaktur_new_reward_address = "0x3C3F243263d3106Fdb31eCf2248f9bC82F723c4B"
 
 updated_trp_voting_adapter = "0x4b2AB543FA389Ca8528656282bF0011257071BED"
 
@@ -64,28 +83,28 @@ updated_voting_app = {
     "version": (4, 0, 0),  # Current version is 3.0.0
 }
 
-description = """
-1. Replacement of Rated Labs with MatrixedLink in Lido on Ethereum Oracle set. [Snapshot vote](https://snapshot.org/#/lido-snapshot.eth/proposal/0x5667528b50af1668ea246bde5bbf136f202629dee50747bbcc0839f48bf396b1).
-2. Simple delegation Voting Upgrade
-"""
 
-HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM = 5
-HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM = 5
+description = """
+1. **Replace Rated Labs with MatrixedLink in Lido on Ethereum Oracle set**, following the [Snapshot decision](https://snapshot.org/#/lido-snapshot.eth/proposal/0x5667528b50af1668ea246bde5bbf136f202629dee50747bbcc0839f48bf396b1). (Items 1-4)
+
+2. **Rename Node Operator** with ID 23 from "CryptoManufaktur" to "Galaxy" **and update the reward address**, as [requested on the forum](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/26). (Items 5-7)
+
+3. **On-Chain Delegation** (Items 8-10). [Approved on Snapshot](https://snapshot.org/#/lido-snapshot.eth/proposal/0x8ad1089720d2fd68cc49b74e138915af7fec35a06b04c2af2fcf4828d5bbd220), this proposal enhances Lido DAO's governance by updating two contracts:
+    - [Aragon Voting:](https://etherscan.io/address/0xf165148978Fa3cE74d76043f833463c340CFB704) allows LDO holders to delegate voting power while retaining override rights and enabling delegates to participate in on-chain voting on behalf of their delegators. Includes a Lido Aragon Voting Repo upgrade. Audited by [Ackee](https://github.com/lidofinance/audits/blob/main/Ackee%20Blockchain%20Lido%20Simple%20Delegation%20audit%20report%2007-24.pdf) and [Statemind](https://github.com/lidofinance/audits/blob/main/Statemind%20Lido%20Simple%20Delegation%20audit%20report%2007-24.pdf).
+    - [TRP Voting Adapter:](https://etherscan.io/address/0x4b2AB543FA389Ca8528656282bF0011257071BED) allows [TRP participants](https://research.lido.fi/t/lidodao-token-rewards-plan-trp/3364) to delegate their voting power. [Checked by MixBytes](https://research.lido.fi/t/lip-21-simple-on-chain-delegation/6840/21).
+"""
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""
 
-    rated_labs_oracle_member = "0xec4bfbaf681eb505b94e4a7849877dc6c600ca3a"
-    matrixed_link_oracle_member = "0xe57B3792aDCc5da47EF4fF588883F0ee0c9835C9"
-
     vote_desc_items, call_script_items = zip(
         #
-        # I. Replacement in the Lido Oracle set
+        # I. Replace Rated Labs with MatrixedLink in Lido on Ethereum Oracle set
         #
         (
             "1) Remove the oracle member named 'Rated Labs' with address 0xec4bfbaf681eb505b94e4a7849877dc6c600ca3a from HashConsensus for AccountingOracle on Lido on Ethereum",
-             agent_forward(
+            agent_forward(
                 [
                     encode_remove_accounting_oracle_member(
                         rated_labs_oracle_member, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
@@ -95,7 +114,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         ),
         (
             "2) Remove the oracle member named 'Rated Labs' with address 0xec4bfbaf681eb505b94e4a7849877dc6c600ca3a from HashConsensus for ValidatorsExitBusOracle on Lido on Ethereum",
-             agent_forward(
+            agent_forward(
                 [
                     encode_remove_validators_exit_bus_oracle_member(
                         rated_labs_oracle_member, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
@@ -124,7 +143,23 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         #
-        # II. Simple Delegation
+        # II. Change NO’s name and reward address
+        #
+        encode_permission_create(
+            entity=contracts.voting,
+            target_app=contracts.node_operators_registry,
+            permission_name="MANAGE_NODE_OPERATOR_ROLE",
+            manager=contracts.voting,
+        ),
+        encode_set_node_operator_name(
+            CryptoManufaktur_id, CryptoManufaktur_new_name, contracts.node_operators_registry
+        ),
+        encode_set_node_operator_reward_address(
+            CryptoManufaktur_id, CryptoManufaktur_new_reward_address, contracts.node_operators_registry
+        ),
+        # MANAGE_NODE_OPERATOR_ROLE was previously granted once on vote #160 (vote_2023_06_20), no need to revoke as it’s the second granting
+        #
+        # III. Simple Delegation
         #
         (
             "1) Push new Voting app version to the Voting Repo",
