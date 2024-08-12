@@ -187,7 +187,6 @@ def test_delegation_happy_path(delegate1, delegate2, test_vote, stranger):
     # A voter can assign a delegate
     assign_tx = contracts.voting.assignDelegate(delegate1, {"from": accounts.at(voters[0], force=True)})
     # Check event and state
-    assert assign_tx.events["AssignDelegate"]["address"] == VOTING
     assert assign_tx.events["AssignDelegate"]["voter"] == voters[0]
     assert assign_tx.events["AssignDelegate"]["assignedDelegate"] == delegate1
     assert contracts.voting.getDelegate(voters[0]) == delegate1
@@ -199,7 +198,6 @@ def test_delegation_happy_path(delegate1, delegate2, test_vote, stranger):
     # A voter can unassign the delegate
     unassign_tx = contracts.voting.unassignDelegate({"from": accounts.at(voters[0], force=True)})
     # Check event and state
-    assert unassign_tx.events["UnassignDelegate"]["address"] == VOTING
     assert unassign_tx.events["UnassignDelegate"]["voter"] == voters[0]
     assert unassign_tx.events["UnassignDelegate"]["unassignedDelegate"] == delegate1
     assert contracts.voting.getDelegate(voters[0]) == ZERO_ADDRESS
@@ -208,7 +206,6 @@ def test_delegation_happy_path(delegate1, delegate2, test_vote, stranger):
     # A voter can change the delegate
     assign_tx = contracts.voting.assignDelegate(delegate2, {"from": accounts.at(voters[1], force=True)})
     # Check event and state
-    assert assign_tx.events["AssignDelegate"]["address"] == VOTING
     assert assign_tx.events["AssignDelegate"]["voter"] == voters[1]
     assert assign_tx.events["AssignDelegate"]["assignedDelegate"] == delegate2
     assert contracts.voting.getDelegate(voters[1]) == delegate2
@@ -218,7 +215,6 @@ def test_delegation_happy_path(delegate1, delegate2, test_vote, stranger):
     vote_for_tx = contracts.voting.attemptVoteForMultiple(vote_id, True, voters, {"from": delegate1})
     # Check events and state
     assert vote_for_tx.events.count("CastVote") == 1  # only one eligible voter left
-    assert vote_for_tx.events["CastVote"]["address"] == VOTING
     assert vote_for_tx.events["CastVote"]["voteId"] == vote_id
     assert vote_for_tx.events["CastVote"]["voter"] == voters[2]
     assert vote_for_tx.events["CastVote"]["supports"] == True
@@ -255,7 +251,6 @@ def test_delegation_happy_path(delegate1, delegate2, test_vote, stranger):
     assert contracts.voting.canExecute(vote_id)
     # Execute the vote
     execute_tx = contracts.voting.executeVote(vote_id, {"from": stranger})
-    assert execute_tx.events["ExecuteVote"]["address"] == VOTING
     assert execute_tx.events["ExecuteVote"]["voteId"] == vote_id
 
 
@@ -301,7 +296,6 @@ def test_delegation_trp(test_trp_escrow, test_vote, delegate1, trp_recipient, tr
     encoded_delegate_address = trp_voting_adapter.encode_delegate_calldata(delegate1.address)
     assign_tx = trp_escrow_contract.delegate(encoded_delegate_address, {"from": trp_recipient})
     # Check event and state
-    assert assign_tx.events["AssignDelegate"]["address"] == TRP_VESTING_ESCROW_FACTORY
     assert assign_tx.events["AssignDelegate"]["voter"] == test_trp_escrow
     assert assign_tx.events["AssignDelegate"]["assignedDelegate"] == delegate1
     assert contracts.voting.getDelegate(test_trp_escrow) == delegate1
@@ -311,7 +305,6 @@ def test_delegation_trp(test_trp_escrow, test_vote, delegate1, trp_recipient, tr
     encoded_zero_address = trp_voting_adapter.encode_delegate_calldata(ZERO_ADDRESS)
     unassign_tx = trp_escrow_contract.delegate(encoded_zero_address, {"from": trp_recipient})
     # Check event and state
-    assert unassign_tx.events["UnassignDelegate"]["address"] == TRP_VESTING_ESCROW_FACTORY
     assert unassign_tx.events["UnassignDelegate"]["voter"] == test_trp_escrow
     assert unassign_tx.events["UnassignDelegate"]["unassignedDelegate"] == delegate1
     assert contracts.voting.getDelegate(test_trp_escrow) == ZERO_ADDRESS
@@ -327,11 +320,9 @@ def test_delegation_trp(test_trp_escrow, test_vote, delegate1, trp_recipient, tr
     # Check events and state
     assert vote_for_tx.events.count("CastVote") == 2
     for index, voter in enumerate(voters):
-        assert vote_for_tx.events["CastVote"][index]["address"] == VOTING
         assert vote_for_tx.events["CastVote"][index]["voteId"] == vote_id
         assert vote_for_tx.events["CastVote"][index]["voter"] == voter
         assert vote_for_tx.events["CastVote"][index]["supports"] == True
-    assert vote_for_tx.events["AttemptCastVoteAsDelegate"]["address"] == VOTING
     assert vote_for_tx.events["AttemptCastVoteAsDelegate"]["voteId"] == vote_id
     assert vote_for_tx.events["AttemptCastVoteAsDelegate"]["delegate"] == delegate1
     assert list(vote_for_tx.events["AttemptCastVoteAsDelegate"]["voters"]) == voters

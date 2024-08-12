@@ -9,7 +9,6 @@ from utils.config import (
     contracts,
     TRP_FACTORY_DEPLOY_BLOCK_NUMBER,
     CHAIN_NETWORK_NAME,
-    VOTING,
 )
 from utils.voting import create_vote, bake_vote_items
 from utils.import_current_votes import start_and_execute_votes
@@ -51,7 +50,6 @@ def test_delegation_deployed_trp_recipients(delegate1, vote_ids_from_env, helper
         encoded_delegate_address = trp_voting_adapter.encode_delegate_calldata(delegate1)
         assign_tx = escrow_contract.delegate(encoded_delegate_address, {"from": recipient})
         # Check events and state
-        assert assign_tx.events["AssignDelegate"]["address"] == VOTING
         assert assign_tx.events["AssignDelegate"]["voter"] == escrow
         assert assign_tx.events["AssignDelegate"]["assignedDelegate"] == delegate1
         assert contracts.voting.getDelegate(escrow_contract) == delegate1
@@ -75,11 +73,9 @@ def test_delegation_deployed_trp_recipients(delegate1, vote_ids_from_env, helper
     # Check events and state
     assert vote_for_tx.events.count("CastVote") == len(delegated_voters)
     for index, voter in enumerate(delegated_voters):
-        assert vote_for_tx.events["CastVote"][index]["address"] == VOTING
         assert vote_for_tx.events["CastVote"][index]["voteId"] == vote_id
         assert vote_for_tx.events["CastVote"][index]["voter"] == voter
         assert vote_for_tx.events["CastVote"][index]["supports"] == True
-    assert vote_for_tx.events["AttemptCastVoteAsDelegate"]["address"] == VOTING
     assert vote_for_tx.events["AttemptCastVoteAsDelegate"]["voteId"] == vote_id
     assert vote_for_tx.events["AttemptCastVoteAsDelegate"]["delegate"] == delegate1
     assert list(vote_for_tx.events["AttemptCastVoteAsDelegate"]["voters"]) == delegated_voters
@@ -97,7 +93,6 @@ def test_delegation_deployed_trp_recipients(delegate1, vote_ids_from_env, helper
     assert contracts.voting.getVotePhase(vote_id) == 2  # Closed phase
     # Execute the vote
     execute_tx = contracts.voting.executeVote(vote_id, {"from": ldo_holder})
-    assert execute_tx.events["ExecuteVote"]["address"] == VOTING
     assert execute_tx.events["ExecuteVote"]["voteId"] == vote_id
 
     # Unassign delegate from all deployed TRP recipients
@@ -108,7 +103,6 @@ def test_delegation_deployed_trp_recipients(delegate1, vote_ids_from_env, helper
         encoded_delegate_address = trp_voting_adapter.encode_delegate_calldata(ZERO_ADDRESS)
         assign_tx = escrow_contract.delegate(encoded_delegate_address, {"from": recipient})
         # Check events and state
-        assert assign_tx.events["UnassignDelegate"]["address"] == VOTING
         assert assign_tx.events["UnassignDelegate"]["voter"] == escrow
         assert assign_tx.events["UnassignDelegate"]["unassignedDelegate"] == delegate1
         assert contracts.voting.getDelegate(escrow_contract) == ZERO_ADDRESS

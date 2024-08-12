@@ -21,7 +21,9 @@ current_trp_voting_adapter_address = "0x7c94b2A7CF101548B7F28396e789528F4DBD25CE
 
 current_voting_app = {
     "address": "0xf165148978Fa3cE74d76043f833463c340CFB704",
+    "content_uri": "0x697066733a516d506f7478377a484743674265394445684d6f4238336572564a75764d74335971436e6454657a575652706441",
     "id": "0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e",
+    "version": (4, 0, 0),
 }
 
 
@@ -29,17 +31,20 @@ downgraded_trp_voting_adapter_address = "0xCFda8aB0AE5F4Fa33506F9C51650B890E4871
 
 downgraded_voting_app = {
     "address": "0x72fb5253ad16307b9e773d2a78cac58e309d5ba4",
+    "content_uri": "0x697066733a516d506f7478377a484743674265394445684d6f4238336572564a75764d74335971436e6454657a575652706441",
     "id": "0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e",
+    "version": (5, 0, 0),
 }
 
 
 def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
 
     # Voting App before
-    voting_proxy = interface.AppProxyUpgradeable(VOTING)
+    voting_proxy = interface.AppProxyUpgradeable(contracts.voting.address)
     voting_app_from_repo = contracts.voting_app_repo.getLatest()
     voting_appId = voting_proxy.appId()
 
+    assert voting_app_from_repo[0] == current_voting_app["version"]
     assert voting_app_from_repo[1] == current_voting_app["address"]
     assert voting_proxy.implementation() == current_voting_app["address"]
 
@@ -64,6 +69,7 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
     # Voting App after
     voting_app_from_repo = contracts.voting_app_repo.getLatest()
 
+    assert voting_app_from_repo[0] == downgraded_voting_app["version"]
     assert voting_app_from_repo[1] == downgraded_voting_app["address"]
     assert voting_proxy.implementation() == downgraded_voting_app["address"]
 
@@ -83,5 +89,6 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
 
     evs = group_voting_events(vote_tx)
 
-    validate_app_update_event(evs[0], voting_appId, downgraded_voting_app["address"])
-    validate_voting_adapter_upgraded_event(evs[1], downgraded_trp_voting_adapter_address)
+    validate_push_to_repo_event(evs[0], downgraded_voting_app["version"])
+    validate_app_update_event(evs[1], voting_appId, downgraded_voting_app["address"])
+    validate_voting_adapter_upgraded_event(evs[2], downgraded_trp_voting_adapter_address)

@@ -9,6 +9,7 @@ from utils.test.extra_data import VoterState
 
 old_trp_voting_adapter_address = "0xCFda8aB0AE5F4Fa33506F9C51650B890E4871Cc1"
 
+# Before simple delegation upgrade
 old_voting_app = {
     "address": "0x72fb5253ad16307b9e773d2a78cac58e309d5ba4",
     "content_uri": "0x697066733a516d506f7478377a484743674265394445684d6f4238336572564a75764d74335971436e6454657a575652706441",
@@ -16,6 +17,7 @@ old_voting_app = {
     "version": (3, 0, 0),
 }
 
+# After simple delegation upgrade
 updated_voting_app = {
     "address": "0xf165148978Fa3cE74d76043f833463c340CFB704",
     "content_uri": "0x697066733a516d506f7478377a484743674265394445684d6f4238336572564a75764d74335971436e6454657a575652706441",
@@ -25,8 +27,9 @@ updated_voting_app = {
 
 updated_trp_voting_adapter_address = "0x4b2AB543FA389Ca8528656282bF0011257071BED"
 
+# After simple delegation downgrade
 downgraded_voting_app = {
-    "address": "0xcB738a79baeA44C93Ee46c02EF0FA975Bc4d058f",
+    "address": "0x72fb5253ad16307b9e773d2a78cac58e309d5ba4",
     "content_uri": "0x697066733a516d506f7478377a484743674265394445684d6f4238336572564a75764d74335971436e6454657a575652706441",
     "id": "0x0abcd104777321a82b010357f20887d61247493d89d2e987ff57bcecbde00e1e",
     "version": (5, 0, 0),
@@ -114,8 +117,8 @@ def test_voting_delegation_reverse_upgrade(helpers, delegate1, delegate2, ldo_ho
         # Voting App after downgrade
         voting_app_from_repo = contracts.voting_app_repo.getLatest()
         assert voting_app_from_repo[0] == downgraded_voting_app["version"]
-        assert voting_app_from_repo[1] == old_voting_app["address"]
-        assert voting_proxy.implementation() == old_voting_app["address"]
+        assert voting_app_from_repo[1] == downgraded_voting_app["address"]
+        assert voting_proxy.implementation() == downgraded_voting_app["address"]
 
         # TRP Voting Adapter after downgrade
         trp_voting_adapter_address = contracts.trp_escrow_factory.voting_adapter()
