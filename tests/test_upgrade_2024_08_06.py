@@ -13,7 +13,6 @@ from utils.config import (
     contracts,
     network_name,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
-    VOTING,
 )
 from utils.test.event_validators.hash_consensus import (
     validate_hash_consensus_member_removed,
@@ -31,6 +30,7 @@ from utils.test.tx_tracing_helpers import *
 HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM = 5
 HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM = 5
 
+voting_address = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 
 rated_labs_oracle_member = "0xec4bfbaf681eb505b94e4a7849877dc6c600ca3a"
 
@@ -95,7 +95,7 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
 
     # III.
     # Voting App before
-    voting_proxy = interface.AppProxyUpgradeable(VOTING)
+    voting_proxy = interface.AppProxyUpgradeable(voting_address)
     voting_app_from_repo = contracts.voting_app_repo.getLatest()
     voting_appId = voting_proxy.appId()
 
@@ -109,7 +109,7 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
 
     trp_voting_adapter = interface.VotingAdapter(trp_voting_adapter_address)
     assert trp_voting_adapter.delegation_contract_addr() == ZERO_ADDRESS
-    assert trp_voting_adapter.voting_contract_addr() == VOTING
+    assert trp_voting_adapter.voting_contract_addr() == voting_address
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -170,7 +170,7 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
     trp_voting_adapter = interface.VotingAdapter(trp_voting_adapter_address)
     with reverts():
         trp_voting_adapter.delegation_contract_addr()
-    assert trp_voting_adapter.voting_contract_addr() == VOTING
+    assert trp_voting_adapter.voting_contract_addr() == voting_address
 
     # Validating events
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 10, "Incorrect voting items count"

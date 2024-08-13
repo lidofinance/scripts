@@ -50,6 +50,7 @@ def test_delegation_deployed_trp_recipients(delegate1, vote_ids_from_env, helper
         encoded_delegate_address = trp_voting_adapter.encode_delegate_calldata(delegate1)
         assign_tx = escrow_contract.delegate(encoded_delegate_address, {"from": recipient})
         # Check events and state
+        assert assign_tx.events[0].address == contracts.voting.address
         assert assign_tx.events["AssignDelegate"]["voter"] == escrow
         assert assign_tx.events["AssignDelegate"]["assignedDelegate"] == delegate1
         assert contracts.voting.getDelegate(escrow_contract) == delegate1
@@ -72,6 +73,7 @@ def test_delegation_deployed_trp_recipients(delegate1, vote_ids_from_env, helper
     vote_for_tx = contracts.voting.attemptVoteForMultiple(vote_id, True, delegated_voters, {"from": delegate1})
     # Check events and state
     assert vote_for_tx.events.count("CastVote") == len(delegated_voters)
+    assert vote_for_tx.events[0].address == contracts.voting.address
     for index, voter in enumerate(delegated_voters):
         assert vote_for_tx.events["CastVote"][index]["voteId"] == vote_id
         assert vote_for_tx.events["CastVote"][index]["voter"] == voter
@@ -103,6 +105,7 @@ def test_delegation_deployed_trp_recipients(delegate1, vote_ids_from_env, helper
         encoded_delegate_address = trp_voting_adapter.encode_delegate_calldata(ZERO_ADDRESS)
         assign_tx = escrow_contract.delegate(encoded_delegate_address, {"from": recipient})
         # Check events and state
+        assert assign_tx.events[0].address == contracts.voting.address
         assert assign_tx.events["UnassignDelegate"]["voter"] == escrow
         assert assign_tx.events["UnassignDelegate"]["unassignedDelegate"] == delegate1
         assert contracts.voting.getDelegate(escrow_contract) == ZERO_ADDRESS

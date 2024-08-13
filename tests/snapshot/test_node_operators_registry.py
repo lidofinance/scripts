@@ -237,6 +237,9 @@ def assert_rewards_distribution(before, after):
 
 def assert_node_operators(before: Dict[str, ReturnValue], after: Dict[str, ReturnValue]):
     for id, node_operators_pair in dict_zip(before["node_operators"], after["node_operators"]).items():
+        # Omni 13/08/2024: Skip because the node operator data is being updated
+        if id == 23:
+            continue
         node_operator_before = node_operators_pair[0]
         node_operator_after = node_operators_pair[1]
         assert node_operator_before["active"] == node_operator_after["active"]
