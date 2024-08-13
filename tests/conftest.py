@@ -54,6 +54,33 @@ def stranger(accounts):
     return stranger
 
 
+@pytest.fixture(scope="function")
+def delegate1(accounts):
+    delegate = accounts.at("0xa70B0AfdF44cEccCF02E76486a6DE4F4B7fd1e52", force=True)
+    web3.provider.make_request("evm_setAccountBalance", [delegate.address, "0x152D02C7E14AF6800000"])
+    web3.provider.make_request("hardhat_setBalance", [delegate.address, "0x152D02C7E14AF6800000"])
+    assert delegate.balance() == ETH(100000)
+    return delegate
+
+
+@pytest.fixture(scope="function")
+def delegate2(accounts):
+    delegate = accounts.at("0x100b896F2Dd8c4Ca619db86BCDDb7E085143C1C5", force=True)
+    web3.provider.make_request("evm_setAccountBalance", [delegate.address, "0x152D02C7E14AF6800000"])
+    web3.provider.make_request("hardhat_setBalance", [delegate.address, "0x152D02C7E14AF6800000"])
+    assert delegate.balance() == ETH(100000)
+    return delegate
+
+
+@pytest.fixture(scope="module")
+def trp_recipient(accounts):
+    trp_recipient = accounts.at("0x228cCaFeA1fa21B74257Af975A9D84d87188c61B", force=True)
+    web3.provider.make_request("evm_setAccountBalance", [trp_recipient.address, "0x152D02C7E14AF6800000"])
+    web3.provider.make_request("hardhat_setBalance", [trp_recipient.address, "0x152D02C7E14AF6800000"])
+    assert trp_recipient.balance() == ETH(100000)
+    return trp_recipient
+
+
 @pytest.fixture(scope="module")
 def eth_whale(accounts):
     if network_name() in ("goerli", "goerli-fork"):
@@ -133,7 +160,7 @@ class Helpers:
             print(f"vote #{vote_id} executed")
             execution_transactions.append(tx)
 
-        # Helpers._prefetch_contracts_from_etherscan()
+        Helpers._prefetch_contracts_from_etherscan()
 
         return execution_transactions
 
@@ -150,6 +177,7 @@ class Helpers:
             Contract.from_explorer(VALIDATORS_EXIT_BUS_ORACLE)
             Contract.from_explorer(WITHDRAWAL_QUEUE)
             Contract.from_explorer(STAKING_ROUTER)
+            Contract.from_explorer(VOTING)
 
             Helpers._etherscan_is_fetched = True
 

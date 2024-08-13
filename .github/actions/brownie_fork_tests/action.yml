@@ -69,7 +69,7 @@ runs:
       shell: bash
       run: >
         poetry run
-        brownie test -s --network mainnet-fork
+        brownie test -ra --network mainnet-fork
       env:
         WEB3_INFURA_PROJECT_ID: ${{ inputs.infura }}
         ETHERSCAN_TOKEN: ${{ inputs.etherscan }}
