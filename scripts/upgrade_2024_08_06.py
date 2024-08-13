@@ -149,7 +149,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         # II. Change NO’s name and reward address
         #
         (
-            "5) Create permission for MANAGE_NODE_OPERATOR_ROLE on NO_registry, assigning it to Voting",
+            "5) Grant permission MANAGE_NODE_OPERATOR_ROLE on NO_registry to Voting",
             encode_permission_grant(
                 target_app=NO_registry,
                 permission_name="MANAGE_NODE_OPERATOR_ROLE",
