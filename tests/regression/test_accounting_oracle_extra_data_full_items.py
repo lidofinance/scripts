@@ -4,7 +4,6 @@ from brownie.network.account import Account
 from brownie.network.web3 import Web3
 
 from utils.test.deposits_helpers import fill_deposit_buffer
-from utils.test.extra_data import ExtraDataService
 from utils.test.helpers import shares_balance, almostEqWithDiff
 from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
 from utils.test.oracle_report_helpers import oracle_report
@@ -13,10 +12,6 @@ from utils.test.node_operators_helpers import distribute_reward
 from utils.config import MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION, MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM
 from utils.config import contracts
 from utils.test.simple_dvt_helpers import simple_dvt_add_node_operators, simple_dvt_add_keys, simple_dvt_vet_keys
-
-@pytest.fixture()
-def extra_data_service():
-    return ExtraDataService()
 
 
 @pytest.fixture

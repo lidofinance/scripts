@@ -15,6 +15,16 @@ class UnvetArgs:
     node_operator_ids: bytes = None
     vetted_signing_keys_counts: bytes = None
 
+    def to_tuple(self):
+        return (
+            self.block_number,
+            self.block_hash,
+            self.staking_module_id,
+            self.nonce,
+            self.node_operator_ids,
+            self.vetted_signing_keys_counts
+        )
+
 class DSMMessage:
     MESSAGE_PREFIX: str = ""
 
@@ -82,3 +92,22 @@ def to_eip2098(signedMessage: SignedMessage) -> Dict[str, Any]:
         raise ValueError("invalid signature 's' value")
     vs[0] |= (v % 27) << 7  # set the first bit of vs to the v parity bit
     return (r_bytes, bytes(vs))
+
+
+def to_bytes(number: int, final_length: int) -> str:
+    hex_string = format(number, 'x')
+    num_of_leading_zeroes_needed = final_length - len(hex_string)
+
+    return bytes.fromhex(
+        '0' * num_of_leading_zeroes_needed + hex_string if num_of_leading_zeroes_needed > 0 else hex_string
+    )
+
+def set_single_guardian(dsm, agent, new_guardian):
+    guardians = dsm.getGuardians()
+    dsm.addGuardian(new_guardian.address, 1, {"from": agent})
+
+    for guardian in guardians:
+        dsm.removeGuardian(guardian, 1, {"from": agent})
+
+    assert len(dsm.getGuardians()) == 1
+    assert dsm.isGuardian(new_guardian.address)

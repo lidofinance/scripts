@@ -1,14 +1,10 @@
 import pytest
 from brownie import reverts
-from utils.test.extra_data import ExtraDataService
 from utils.test.node_operators_helpers import RewardDistributionState
 from utils.test.oracle_report_helpers import oracle_report, reach_consensus, wait_to_next_available_report_time
 from utils.config import contracts
 from utils.evm_script import encode_error
 
-@pytest.fixture()
-def extra_data_service():
-    return ExtraDataService()
 
 @pytest.fixture(scope="module")
 def accounting_oracle(interface):
