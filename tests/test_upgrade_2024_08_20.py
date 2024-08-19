@@ -1,12 +1,16 @@
 """
-Tests for voting 13/08/2024
+Tests for voting 20/08/2024
 
 """
 
 from brownie import accounts, interface, ZERO_ADDRESS, reverts
-from scripts.upgrade_2024_08_06 import start_vote
+from scripts.upgrade_2024_08_20 import start_vote
 from utils.test.event_validators.vesting_escrow import validate_voting_adapter_upgraded_event
-from utils.test.event_validators.permission import Permission, validate_permission_grant_event
+from utils.test.event_validators.permission import (
+    Permission,
+    validate_permission_grant_event,
+    validate_permission_revoke_event,
+)
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.config import (
@@ -41,6 +45,12 @@ CryptoManufaktur_name_before = "CryptoManufaktur"
 CryptoManufaktur_name_after = "Galaxy"
 CryptoManufaktur_reward_address_before = "0x59eCf48345A221E0731E785ED79eD40d0A94E2A5"
 CryptoManufaktur_reward_address_after = "0x3C3F243263d3106Fdb31eCf2248f9bC82F723c4B"
+
+Numic_id = 36
+Numic_name_before = "Numic"
+Numic_name_after = "Pier Two"
+Numic_reward_address_before = "0x0209a89b6d9F707c14eB6cD4C3Fb519280a7E1AC"
+Numic_reward_address_after = "0x35921FB43cB92F5Bfef7cBA1e97Eb5A21Fc2d353"
 
 old_trp_voting_adapter_address = "0xCFda8aB0AE5F4Fa33506F9C51650B890E4871Cc1"
 
@@ -84,14 +94,17 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
     )
     assert not contracts.acl.hasPermission(*permission_manage_no)
 
-    # get NO's data before
+    # get NOs' data before
     CryptoManufaktur_data_before = contracts.node_operators_registry.getNodeOperator(CryptoManufaktur_id, True)
-    # check name before
+    Numic_data_before = contracts.node_operators_registry.getNodeOperator(Numic_id, True)
+    # check names before
     assert CryptoManufaktur_data_before["name"] == CryptoManufaktur_name_before, "Incorrect NO#23 name before"
-    # check reward address before
+    assert Numic_data_before["name"] == Numic_name_before, "Incorrect NO#36 name before"
+    # check reward addresses before
     assert (
         CryptoManufaktur_data_before["rewardAddress"] == CryptoManufaktur_reward_address_before
     ), "Incorrect NO#23 reward address before"
+    assert Numic_data_before["rewardAddress"] == Numic_reward_address_before, "Incorrect NO#36 reward address before"
 
     # III.
     # Voting App before
@@ -143,17 +156,23 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
     assert validators_exit_bus_hash_consensus.getQuorum() == HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM
 
     # II.
-    # MANAGE_NODE_OPERATOR_ROLE was previously granted once on vote #160 (vote_2023_06_20), no need to revoke as it’s the second granting
-    assert contracts.acl.hasPermission(*permission_manage_no)
+    assert not contracts.acl.hasPermission(*permission_manage_no)
 
-    # get NO's data after
+    # get NOs' data after
     CryptoManufaktur_data_after = contracts.node_operators_registry.getNodeOperator(CryptoManufaktur_id, True)
+    Numic_data_after = contracts.node_operators_registry.getNodeOperator(Numic_id, True)
 
     # compare NO#23 (CryptoManufaktur -> Galaxy) data before and after
     assert CryptoManufaktur_data_before["active"] == CryptoManufaktur_data_after["active"]
     assert CryptoManufaktur_name_after == CryptoManufaktur_data_after["name"]
     assert CryptoManufaktur_data_after["rewardAddress"] == CryptoManufaktur_reward_address_after
     compare_NO_validators_data(CryptoManufaktur_data_before, CryptoManufaktur_data_after)
+
+    # compare NO#36 (Numic -> Pier Two) data before and after
+    assert Numic_data_before["active"] == Numic_data_after["active"]
+    assert Numic_name_after == Numic_data_after["name"]
+    assert Numic_data_after["rewardAddress"] == Numic_reward_address_after
+    compare_NO_validators_data(Numic_data_before, Numic_data_after)
 
     # III.
     # Voting App after
@@ -173,7 +192,7 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
     assert trp_voting_adapter.voting_contract_addr() == voting_address
 
     # Validating events
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 10, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 13, "Incorrect voting items count"
 
     metadata = find_metadata_by_vote_id(vote_id)
     assert get_lido_vote_cid_from_str(metadata) == "bafkreig5duv72i3ttfhxf2qru7ky62uof4z36udlo3g3knlz2a7h4uhvaa"
@@ -206,9 +225,17 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
             nodeOperatorId=CryptoManufaktur_id, reward_address=CryptoManufaktur_reward_address_after
         ),
     )
-    validate_push_to_repo_event(evs[7], updated_voting_app["version"])
-    validate_app_update_event(evs[8], voting_appId, updated_voting_app["address"])
-    validate_voting_adapter_upgraded_event(evs[9], updated_trp_voting_adapter_address)
+    validate_node_operator_name_set_event(
+        evs[7], NodeOperatorNameSetItem(nodeOperatorId=Numic_id, name=Numic_name_after)
+    )
+    validate_node_operator_reward_address_set_event(
+        evs[8],
+        NodeOperatorRewardAddressSetItem(nodeOperatorId=Numic_id, reward_address=Numic_reward_address_after),
+    )
+    validate_permission_revoke_event(evs[9], permission_manage_no)
+    validate_push_to_repo_event(evs[10], updated_voting_app["version"])
+    validate_app_update_event(evs[11], voting_appId, updated_voting_app["address"])
+    validate_voting_adapter_upgraded_event(evs[12], updated_trp_voting_adapter_address)
 
 
 def compare_NO_validators_data(data_before, data_after):

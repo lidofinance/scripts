@@ -277,7 +277,7 @@ def protocol_permissions():
             "type": "AragonApp",
             "roles": {
                 "MANAGE_SIGNING_KEYS": [VOTING],
-                "MANAGE_NODE_OPERATOR_ROLE": [AGENT, VOTING],
+                "MANAGE_NODE_OPERATOR_ROLE": [AGENT],
                 "SET_NODE_OPERATOR_LIMIT_ROLE": [VOTING, EASYTRACK_EVMSCRIPT_EXECUTOR],
                 "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
             },

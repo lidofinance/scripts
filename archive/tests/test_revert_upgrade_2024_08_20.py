@@ -4,7 +4,7 @@ Tests for revert Voting Delegation upgrade [in case of emergency]
 """
 
 from brownie import accounts, interface
-from archive.scripts.revert_upgrade_2024_08_06 import start_vote
+from archive.scripts.revert_upgrade_2024_08_20 import start_vote
 from utils.test.event_validators.vesting_escrow import validate_voting_adapter_upgraded_event
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
