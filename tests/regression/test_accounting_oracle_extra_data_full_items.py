@@ -102,7 +102,7 @@ def test_extra_data_full_items(
     nor_stuck = {(1, i): 1 for i in range(0, nor_stuck_items * max_node_operators_per_item)}
     nor_exited = {(1, i): nor.getNodeOperatorSummary(i)['totalExitedValidators'] + 1 for i in range(0, nor_exited_items * max_node_operators_per_item)}
     sdvt_stuck = {(2, i): 1 for i in range(0, sdvt_stuck_items * max_node_operators_per_item)}
-    sdvt_exited = {(2, i): 1 for i in range(0, sdvt_exited_items * max_node_operators_per_item)}
+    sdvt_exited = {(2, i): sdvt.getNodeOperatorSummary(i)['totalExitedValidators'] + 1 for i in range(0, sdvt_exited_items * max_node_operators_per_item)}
     extra_data = extra_data_service.collect(
         {**nor_stuck, **sdvt_stuck},
         {**nor_exited, **sdvt_exited},
@@ -133,7 +133,7 @@ def test_extra_data_full_items(
         extraDataItemsCount=(nor_exited_items + nor_stuck_items + sdvt_exited_items + sdvt_stuck_items),
         extraDataList=extra_data.extra_data,
         stakingModuleIdsWithNewlyExitedValidators=modules_with_exited,
-        numExitedValidatorsByStakingModule=num_exited_validators_by_staking_module,
+        numExitedValidatorsByStakingModule=nums_exited_validators_by_staking_module,
     )
 
     penalty_shares = 0
