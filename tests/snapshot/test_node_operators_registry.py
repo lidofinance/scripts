@@ -55,7 +55,7 @@ def test_node_operator_basic_flow(
     agent_eoa,
     vote_ids_from_env,
 ):
-    # Omni 13/08/2024: Skip because the node operator #23 data is being updated
+    # Omni 20/08/2024: Skip because the node operator #23 data is being updated
     return
     # deposits_count = 8
     # submit_amount = deposits_count * DEPOSIT_SIZE

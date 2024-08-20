@@ -1,5 +1,5 @@
 """
-Voting 13/08/2024.
+Voting 20/08/2024.
 
 I. Replace Rated Labs with MatrixedLink in Lido on Ethereum Oracle set
 1. Remove the oracle member named 'Rated Labs' with address 0xec4bfbaf681eb505b94e4a7849877dc6c600ca3a from HashConsensus for AccountingOracle on Lido on Ethereum
@@ -12,7 +12,7 @@ II. Change NOs’ names and reward addresses
 6. Change the on-chain name of node operator with id 23 from 'CryptoManufaktur' to 'Galaxy'
 7. Change the reward address of node operator with id 23 from 0x59eCf48345A221E0731E785ED79eD40d0A94E2A5 to 0x3C3F243263d3106Fdb31eCf2248f9bC82F723c4B
 8. Change the on-chain name of node operator with id 36 from 'Numic' to 'Pier Two'
-9. Change the reward address of node operator with id 36 from  0x0209a89b6d9F707c14eB6cD4C3Fb519280a7E1AC to 0x35921FB43cB92F5Bfef7cBA1e97Eb5A21Fc2d353
+9. Change the reward address of node operator with id 36 from 0x0209a89b6d9F707c14eB6cD4C3Fb519280a7E1AC to 0x35921FB43cB92F5Bfef7cBA1e97Eb5A21Fc2d353
 10. Revoke permission MANAGE_NODE_OPERATOR_ROLE on NO_registry from Voting
 
 III. Simple Delegation
@@ -94,12 +94,12 @@ updated_voting_app = {
 
 
 description = """
-1. **Replace Rated Labs with MatrixedLink in Lido on Ethereum Oracle set**, following the [Snapshot decision](https://snapshot.org/#/lido-snapshot.eth/proposal/0x5667528b50af1668ea246bde5bbf136f202629dee50747bbcc0839f48bf396b1). (Items 1-4)
+1. **Replace Rated Labs with MatrixedLink in Lido on Ethereum Oracle set**, following the [Snapshot decision](https://snapshot.org/#/lido-snapshot.eth/proposal/0x5667528b50af1668ea246bde5bbf136f202629dee50747bbcc0839f48bf396b1) (items 1-4).
 
-2. **Rename Node Operator** with ID 23 from "CryptoManufaktur" to "Galaxy" **and update the reward address**, as [requested on the forum](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/26). (Items 5-7)
+2. **Rename Node Operators** with IDs 23 (CryptoManufaktur) and 36 (Numic) **and update the reward addresses** as requested on the forum: [CryptoManufaktur](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/26), [Numic](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/33) (items 5-10).
 
-3. **On-Chain Delegation** (Items 8-10). [Approved on Snapshot](https://snapshot.org/#/lido-snapshot.eth/proposal/0x8ad1089720d2fd68cc49b74e138915af7fec35a06b04c2af2fcf4828d5bbd220), this proposal enhances Lido DAO's governance by updating two contracts:
-    - [Aragon Voting:](https://etherscan.io/address/0xf165148978Fa3cE74d76043f833463c340CFB704) allows LDO holders to delegate voting power while retaining override rights and enabling delegates to participate in on-chain voting on behalf of their delegators. Includes a Lido Aragon Voting Repo upgrade. Audited by [Ackee](https://github.com/lidofinance/audits/blob/main/Ackee%20Blockchain%20Lido%20Simple%20Delegation%20audit%20report%2007-24.pdf) and [Statemind](https://github.com/lidofinance/audits/blob/main/Statemind%20Lido%20Simple%20Delegation%20audit%20report%2007-24.pdf).
+3. **On-chain Delegation** (items 11-13). [Approved on Snapshot](https://snapshot.org/#/lido-snapshot.eth/proposal/0x8ad1089720d2fd68cc49b74e138915af7fec35a06b04c2af2fcf4828d5bbd220), this proposal enhances Lido DAO's governance by updating two contracts:
+    - [Aragon Voting:](https://etherscan.io/address/0xf165148978Fa3cE74d76043f833463c340CFB704) allows LDO holders to delegate voting power while retaining override rights and enabling delegates to participate in on-chain voting on behalf of their delegators. Includes Lido Aragon Voting Repo upgrade. Audited by [Ackee](https://github.com/lidofinance/audits/blob/main/Ackee%20Blockchain%20Lido%20Simple%20Delegation%20audit%20report%2007-24.pdf) and [Statemind](https://github.com/lidofinance/audits/blob/main/Statemind%20Lido%20Simple%20Delegation%20audit%20report%2007-24.pdf).
     - [TRP Voting Adapter:](https://etherscan.io/address/0x4b2AB543FA389Ca8528656282bF0011257071BED) allows [TRP participants](https://research.lido.fi/t/lidodao-token-rewards-plan-trp/3364) to delegate their voting power. [Checked by MixBytes](https://research.lido.fi/t/lip-21-simple-on-chain-delegation/6840/21).
 """
 
@@ -180,7 +180,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             encode_set_node_operator_name(Numic_id, Numic_new_name, NO_registry),
         ),
         (
-            "9) Change the reward address of node operator with id 36 from  0x0209a89b6d9F707c14eB6cD4C3Fb519280a7E1AC to 0x35921FB43cB92F5Bfef7cBA1e97Eb5A21Fc2d353",
+            "9) Change the reward address of node operator with id 36 from 0x0209a89b6d9F707c14eB6cD4C3Fb519280a7E1AC to 0x35921FB43cB92F5Bfef7cBA1e97Eb5A21Fc2d353",
             encode_set_node_operator_reward_address(Numic_id, Numic_new_reward_address, NO_registry),
         ),
         (
@@ -191,7 +191,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 revoke_from=voting,
             ),
         ),
-        # MANAGE_NODE_OPERATOR_ROLE was previously granted once on vote #160 (vote_2023_06_20), no need to revoke as it’s the second granting
         #
         # III. Simple Delegation
         #

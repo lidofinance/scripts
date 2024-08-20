@@ -195,7 +195,7 @@ def test_vote(helpers, vote_ids_from_env, bypass_events_decoding):
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 13, "Incorrect voting items count"
 
     metadata = find_metadata_by_vote_id(vote_id)
-    assert get_lido_vote_cid_from_str(metadata) == "bafkreig5duv72i3ttfhxf2qru7ky62uof4z36udlo3g3knlz2a7h4uhvaa"
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreiftusrjjp2kvbhs7s4raex56dlt3inxbdo5cwxghekd6psqhvn52y"
     display_voting_events(vote_tx)
 
     if bypass_events_decoding or network_name() in ("goerli", "goerli-fork"):
