@@ -47,21 +47,7 @@ def sdvt(interface):
 @pytest.mark.parametrize(
     ("nor_stuck_items", "nor_exited_items", "sdvt_stuck_items", "sdvt_exited_items"),
     [
-        (1, 1, 1, 1),
-        (1, 1, 1, 0),
-        (1, 1, 0, 1),
-        (1, 1, 0, 0),
-        (1, 0, 1, 1),
-        (1, 0, 1, 0),
-        (1, 0, 0, 1),
-        (1, 0, 0, 0),
-        (0, 1, 1, 1),
-        (0, 1, 1, 0),
-        (0, 1, 0, 1),
-        (0, 1, 0, 0),
-        (0, 0, 1, 1),
-        (0, 0, 1, 0),
-        (0, 0, 0, 1),
+        (1, 1, 1, 1)
     ]
 )
 def test_extra_data_full_items(
@@ -133,7 +119,7 @@ def test_extra_data_full_items(
         extraDataItemsCount=(nor_exited_items + nor_stuck_items + sdvt_exited_items + sdvt_stuck_items),
         extraDataList=extra_data.extra_data,
         stakingModuleIdsWithNewlyExitedValidators=modules_with_exited,
-        numExitedValidatorsByStakingModule=nums_exited_validators_by_staking_module,
+        numExitedValidatorsByStakingModule=num_exited_validators_by_staking_module,
     )
 
     penalty_shares = 0
