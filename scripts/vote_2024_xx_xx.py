@@ -1,5 +1,5 @@
 """
-Voting 02/08/2024.
+Voting xx/xx/2024.
 
 1. Upgrade L1 Bridge implementation
 2. Finalize L1 Bridge upgrade
@@ -15,7 +15,7 @@ Voting 02/08/2024.
 
 import time
 import eth_abi
-from brownie import interface, web3
+from brownie import interface, web3, reverts
 from typing import Dict
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
@@ -25,15 +25,17 @@ from utils.config import (
     get_deployer_account,
     get_is_live,
     get_priority_fee,
-    LIDO_LOCATOR,
     L1_EMERGENCY_BRAKES_MULTISIG,
+    LIDO_LOCATOR,
+    LIDO_LOCATOR_IMPL,
+    LIDO_LOCATOR_IMPL_NEW,
     L1_OPTIMISM_TOKENS_BRIDGE,
+    L1_OPTIMISM_TOKENS_BRIDGE_IMPL,
+    L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
     L1_OPTIMISM_CROSS_DOMAIN_MESSENGER,
     L2_OPTIMISM_TOKENS_BRIDGE,
     L2_OPTIMISM_GOVERNANCE_EXECUTOR,
     L2_OPTIMISM_WSTETH_TOKEN,
-    LIDO_LOCATOR_IMPL_NEW,
-    L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
     L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
     L2_OPTIMISM_WSTETH_IMPL_NEW,
 )
@@ -88,6 +90,7 @@ def encode_l1_l2_sendMessage(to: str, calldata: str):
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""
+    check_pre_upgrade_state()
 
     lido_locator_as_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
     l1_token_bridge_as_proxy = interface.OssifiableProxy(L1_OPTIMISM_TOKENS_BRIDGE)
@@ -195,3 +198,60 @@ def main():
 #     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 
 #     time.sleep(5)  # hack for waiting thread #2.
+
+
+def check_pre_upgrade_state():
+    l1_token_bridge_proxy = interface.OssifiableProxy(L1_OPTIMISM_TOKENS_BRIDGE)
+    l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
+    lido_locator_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
+
+    # Disabled deposits is the starting condition for the vote
+    assert not l1_token_bridge.isDepositsEnabled()
+
+    # L1 Bridge has old implementation
+    l1_token_bridge_implementation_address_before = l1_token_bridge_proxy.proxy__getImplementation()
+    assert l1_token_bridge_implementation_address_before == L1_OPTIMISM_TOKENS_BRIDGE_IMPL, "Old address is incorrect"
+
+    # L1 Bridge doesn't have version before update
+    with reverts():
+        l1_token_bridge.getContractVersion()
+
+    # Upgrade LidoLocator implementation
+    lido_locator_impl_before = lido_locator_proxy.proxy__getImplementation()
+    assert lido_locator_impl_before == LIDO_LOCATOR_IMPL, "Old address is incorrect"
+
+    # Multisig hasn't been assigned as deposit enabler
+    assert not l1_token_bridge.hasRole(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG)
+
+
+def check_post_upgrade_state(vote_tx):
+    l1_token_bridge_proxy = interface.OssifiableProxy(L1_OPTIMISM_TOKENS_BRIDGE)
+    l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
+    lido_locator_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
+
+    # L1 Bridge has new implementation
+    l1_token_bridge_implementation_address_after = l1_token_bridge_proxy.proxy__getImplementation()
+    assert (
+        l1_token_bridge_implementation_address_after == L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW
+    ), "New address is incorrect"
+
+    # update L1 Bridge to 2 version
+    assert l1_token_bridge.getContractVersion() == 2
+
+    # LidoLocator has new implementation
+    lido_locator_impl_after = lido_locator_proxy.proxy__getImplementation()
+    assert lido_locator_impl_after == LIDO_LOCATOR_IMPL_NEW, "New LidoLocator address is incorrect"
+
+    # Multisig has been assigned as deposit enabler
+    assert l1_token_bridge.hasRole(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG)
+    # TODO: check multisig can renounce the role
+
+    # Check bytecode that was send to messenger to update L2 bridge and wstETH token
+    sentMessage = vote_tx.events["SentMessage"]["message"]
+    encoded_l2_upgrade_call = encode_l2_upgrade_call(
+        L2_OPTIMISM_TOKENS_BRIDGE,
+        L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
+        L2_OPTIMISM_WSTETH_TOKEN,
+        L2_OPTIMISM_WSTETH_IMPL_NEW,
+    )
+    assert sentMessage == encoded_l2_upgrade_call

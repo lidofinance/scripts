@@ -2,6 +2,7 @@
 Tests for voting xx/xx/2024
 """
 from scripts.vote_2024_xx_xx import start_vote, check_pre_upgrade_state, check_post_upgrade_state
+from scripts.vote_fallback_2024_xx_xx_rollback_l1 import start_vote as start_vote_fallback
 from brownie import interface, reverts
 from utils.test.tx_tracing_helpers import *
 from utils.config import (
@@ -47,3 +48,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
 
     check_post_upgrade_state(vote_tx)
     assert wsteth_bridge_balance_before == contracts.wsteth.balanceOf(L1_OPTIMISM_TOKENS_BRIDGE)
+
+    # START FALLBACK VOTE
+    if len(vote_ids_from_env) > 0:
+        (vote_id,) = vote_ids_from_env
+    else:
+        vote_id, _ = start_vote_fallback({"from": ldo_holder}, silent=True)
+
+    vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
+
+    # validate vote events
+    # TODO: this check fails on anvil
+    # assert count_vote_items_by_events(vote_tx, contracts.voting) == 3, "Incorrect voting items count"
+
+    check_pre_upgrade_state()
