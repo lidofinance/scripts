@@ -22,6 +22,8 @@ III. Simple Delegation
 
 Vote #177, initiated on 13/08/2024, did not reach a quorum.
 
+Vote passed & executed on Aug-24-2024 09:09:47 AM UTC, block #20597472.
+
 """
 
 import time
