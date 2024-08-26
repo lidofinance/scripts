@@ -4,7 +4,7 @@ Tests for voting 20/08/2024
 """
 
 from brownie import accounts, interface, ZERO_ADDRESS, reverts
-from scripts.upgrade_2024_08_20 import start_vote
+from archive.scripts.upgrade_2024_08_20 import start_vote
 from utils.test.event_validators.vesting_escrow import validate_voting_adapter_upgraded_event
 from utils.test.event_validators.permission import (
     Permission,

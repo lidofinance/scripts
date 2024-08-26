@@ -1,5 +1,5 @@
 from brownie import accounts, interface, chain, reverts
-from scripts.upgrade_2024_08_20 import start_vote as start_vote_upgrade
+from archive.scripts.upgrade_2024_08_20 import start_vote as start_vote_upgrade
 from archive.scripts.revert_upgrade_2024_08_20 import start_vote as start_vote_downgrade
 from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS, LDO_VOTE_EXECUTORS_FOR_TESTS, VOTING
 from utils.mainnet_fork import chain_snapshot
