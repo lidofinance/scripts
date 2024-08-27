@@ -3,6 +3,7 @@ import os
 
 from utils.config import contracts
 from utils.import_current_votes import is_there_any_vote_scripts, is_there_any_upgrade_scripts, start_and_execute_votes
+from utils.test.extra_data import ExtraDataService
 
 from utils.test.helpers import ETH
 from utils.test.oracle_report_helpers import oracle_report
@@ -25,3 +26,7 @@ def autoexecute_vote(helpers, vote_ids_from_env, accounts, stranger):
 
     if os.getenv(ENV_REPORT_AFTER_VOTE):
         oracle_report(cl_diff=ETH(523), exclude_vaults_balances=False)
+
+@pytest.fixture()
+def extra_data_service() -> ExtraDataService:
+    return ExtraDataService()

@@ -8,6 +8,7 @@ from utils.config import (
     LIDO_LOCATOR,
     LIDO,
     WITHDRAWAL_QUEUE,
+    WITHDRAWAL_VAULT,
     WSTETH_TOKEN,
     STAKING_ROUTER,
     AGENT,
@@ -192,7 +193,7 @@ def test_early_adoption_state(early_adoption):
     assert early_adoption.CURVE_ID() == 1
 
 def test_verifier_state(verifier):
-    assert verifier.LOCATOR() == LIDO_LOCATOR
+    assert verifier.WITHDRAWAL_ADDRESS() == WITHDRAWAL_VAULT
     assert verifier.MODULE() == CSM_ADDRESS
     assert verifier.SLOTS_PER_EPOCH() == CHAIN_SLOTS_PER_EPOCH
     # TODO uncomment this when values are known

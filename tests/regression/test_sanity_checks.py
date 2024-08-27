@@ -1,7 +1,6 @@
 import pytest
 from brownie import web3, reverts, accounts, chain  # type: ignore
 from utils.test.exit_bus_data import LidoValidator
-from utils.test.extra_data import ExtraDataService
 from utils.test.oracle_report_helpers import (
     oracle_report,
     prepare_exit_bus_report,
@@ -37,11 +36,6 @@ def pre_cl_balance():
 @pytest.fixture(scope="function", autouse=True)
 def first_report():
     oracle_report(silent=True)
-
-
-@pytest.fixture()
-def extra_data_service():
-    return ExtraDataService()
 
 
 def test_cant_report_more_validators_than_deposited():

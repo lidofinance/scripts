@@ -1,6 +1,7 @@
 from typing import Dict
 
 from utils.config import contracts
+from utils.test.csm_helpers import csm_add_node_operator, get_ea_member
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
 from utils.test.staking_router_helpers import StakingModuleStatus
@@ -102,12 +103,24 @@ def calc_allocation(modules: Dict[int, Module], keys_to_allocate: int, ignore_de
     return total_allocated_keys, target_total_active_keys
 
 
-def test_stake_distribution():
+def assure_depositable_keys(stranger):
+    modules = get_modules_info(contracts.staking_router)
+    if not modules[1].depositable_keys:
+        pass
+    if not modules[2].depositable_keys:
+        fill_simple_dvt_ops_vetted_keys(stranger, 3, 5)
+    if not modules[3].depositable_keys:
+        address, proof = get_ea_member()
+        csm_add_node_operator(contracts.csm, contracts.cs_accounting, address, proof)
+
+def test_stake_distribution(stranger):
     """
     Test stake distribution among the staking modules
     1. checks that result of `getDepositsAllocation` matches the local allocation calculations
     2. checks that deposits to modules can be made according to the calculated allocation
     """
+    assure_depositable_keys(stranger)
+
     keys_to_allocate = 100  # keys to allocate to the modules
     allocation_from_contract = contracts.staking_router.getDepositsAllocation(keys_to_allocate)
 
@@ -123,8 +136,8 @@ def test_stake_distribution():
 
     # perform deposits to the modules
     for module in modules.values():
-        if module.allocated_keys > 0:
-            contracts.lido.deposit(module.allocated_keys, module.id, "0x", {"from": contracts.deposit_security_module})
+        assert module.allocated_keys > 0
+        contracts.lido.deposit(module.allocated_keys, module.id, "0x", {"from": contracts.deposit_security_module})
 
     # check that the new active keys in the modules match the expected values
     module_digests_after_deposit = contracts.staking_router.getAllStakingModuleDigests()
@@ -147,14 +160,14 @@ def test_target_share_distribution(stranger):
     min_target_share = 1  # 0.01% = 1 / 10000
     nor_m_id = 1
     nor_m = modules[nor_m_id]
-    sdvt_m_id = 2
-    sdvt_m = modules[sdvt_m_id]
 
     cur_total_active_keys = prep_modules_info(modules)
 
+    module = sorted(modules.values(), key=lambda m: m.active_keys / cur_total_active_keys * TOTAL_BASIS_POINTS)[0]
+
     # calc some hypothetical module allocation share for testing
-    expected_active_keys_1 = sdvt_m.active_keys + keys_to_allocate
-    expected_active_keys_2 = sdvt_m.active_keys + keys_to_allocate_double
+    expected_active_keys_1 = module.active_keys + keys_to_allocate
+    expected_active_keys_2 = module.active_keys + keys_to_allocate_double
 
     expected_total_active_keys = cur_total_active_keys + keys_to_allocate
     expected_total_active_keys_2 = cur_total_active_keys + keys_to_allocate_double
@@ -169,42 +182,42 @@ def test_target_share_distribution(stranger):
     assert expected_target_share_2 > expected_target_share_1
 
     # force update module `targetShare` value to simulate new allocation
-    sdvt_m.target_share = expected_target_share_1
+    module.target_share = expected_target_share_1
 
     expected_total_allocated_keys, expected_total_active_keys = calc_allocation(modules, keys_to_allocate, True)
     assert expected_total_allocated_keys == keys_to_allocate
-    assert sdvt_m.active_keys >= expected_active_keys_1
-    assert sdvt_m.allocated_keys == keys_to_allocate
+    assert module.active_keys >= expected_active_keys_1
+    assert module.allocated_keys == keys_to_allocate
     assert nor_m.allocated_keys == 0
 
     expected_total_allocated_keys, expected_total_active_keys = calc_allocation(modules, keys_to_allocate_double, True)
     assert expected_total_allocated_keys == keys_to_allocate_double
-    assert sdvt_m.active_keys < expected_active_keys_2
-    assert sdvt_m.allocated_keys < keys_to_allocate_double
+    assert module.active_keys < expected_active_keys_2
+    assert module.allocated_keys < keys_to_allocate_double
     assert nor_m.allocated_keys <= keys_to_allocate_double
 
     # aet the new target share value, which will be reached after 1s deposit of `keys_to_allocate`` batch
     contracts.staking_router.updateStakingModule(
-        sdvt_m_id,
+        module.id,
         expected_target_share_1,
-        sdvt_m.priorityExitShareThreshold,
-        sdvt_m.module_fee,
-        sdvt_m.treasury_fee,
-        sdvt_m.maxDepositsPerBlock,
-        sdvt_m.minDepositBlockDistance,
+        module.priorityExitShareThreshold,
+        module.module_fee,
+        module.treasury_fee,
+        module.maxDepositsPerBlock,
+        module.minDepositBlockDistance,
         {"from": contracts.agent},
     )
     # add enough depositable keys to the target module to overcome the target share
     # at least first 3 NOs, each with 1/3 of the `keys_to_allocate_double` available keys
-    fill_simple_dvt_ops_vetted_keys(stranger, 3, (sdvt_m.deposited_keys + keys_to_allocate_double + 3) // 3)
+    fill_simple_dvt_ops_vetted_keys(stranger, 3, (module.deposited_keys + keys_to_allocate_double + 3) // 3)
 
     # update the modules info and recalc the allocation according to the module limits
     modules = get_modules_info(contracts.staking_router)
     expected_total_allocated_keys, expected_total_active_keys = calc_allocation(modules, keys_to_allocate_double, False)
 
     assert expected_total_allocated_keys == keys_to_allocate_double
-    assert sdvt_m.active_keys < expected_active_keys_2
-    assert sdvt_m.allocated_keys < keys_to_allocate_double
+    assert module.active_keys < expected_active_keys_2
+    assert module.allocated_keys < keys_to_allocate_double
     assert nor_m.allocated_keys <= keys_to_allocate_double
 
     allocation_from_contract = contracts.staking_router.getDepositsAllocation(keys_to_allocate_double)
