@@ -25,11 +25,6 @@ def voting_eoa(accounts):
 
 
 @pytest.fixture
-def agent_eoa(accounts):
-    return accounts.at(contracts.agent.address, force=True)
-
-
-@pytest.fixture
 def evm_script_executor_eoa(accounts):
     return accounts.at(contracts.easy_track.evmScriptExecutor(), force=True)
 
@@ -65,7 +60,7 @@ def sdvt(interface):
     ]
 )
 def test_extra_data_full_items(
-    stranger, voting_eoa, agent_eoa, evm_script_executor_eoa, nor, sdvt, extra_data_service,
+    voting_eoa, evm_script_executor_eoa, nor, sdvt, extra_data_service,
     nor_stuck_items, nor_exited_items, sdvt_stuck_items, sdvt_exited_items
 ):
     max_node_operators_per_item = MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT
@@ -75,7 +70,6 @@ def test_extra_data_full_items(
     (nor_count_before, added_nor_operators_count) = fill_nor_with_old_and_new_operators(
         nor,
         voting_eoa,
-        agent_eoa,
         evm_script_executor_eoa,
         new_keys_per_operator,
         nor_stuck_items,
@@ -84,14 +78,19 @@ def test_extra_data_full_items(
     )
 
     # Fill SimpleDVT with new operators and keys
-    sdvt_operators_count = max(sdvt_stuck_items, sdvt_exited_items) * max_node_operators_per_item
-    add_sdvt_operators_with_keys(stranger, sdvt_operators_count, new_keys_per_operator)
+    (sdvt_count_before, added_sdvt_operators_count) = fill_nor_with_old_and_new_operators(
+        sdvt,
+        voting_eoa,
+        evm_script_executor_eoa,
+        new_keys_per_operator,
+        sdvt_stuck_items,
+        sdvt_exited_items,
+        max_node_operators_per_item,
+    )
 
     # Deposit for new added keys from buffer
-    keys_for_sdvt = sdvt_operators_count * new_keys_per_operator
-    keys_for_nor = 0
-    if added_nor_operators_count > 0:
-        keys_for_nor = (added_nor_operators_count * new_keys_per_operator) + (nor_count_before * new_keys_per_operator)
+    keys_for_sdvt = (added_sdvt_operators_count * new_keys_per_operator) + (sdvt_count_before * new_keys_per_operator)
+    keys_for_nor = (added_nor_operators_count * new_keys_per_operator) + (nor_count_before * new_keys_per_operator)
     deposit_buffer_for_keys(
         contracts.staking_router,
         keys_for_sdvt,
@@ -102,7 +101,7 @@ def test_extra_data_full_items(
     nor_stuck = {(1, i): 1 for i in range(0, nor_stuck_items * max_node_operators_per_item)}
     nor_exited = {(1, i): nor.getNodeOperatorSummary(i)['totalExitedValidators'] + 1 for i in range(0, nor_exited_items * max_node_operators_per_item)}
     sdvt_stuck = {(2, i): 1 for i in range(0, sdvt_stuck_items * max_node_operators_per_item)}
-    sdvt_exited = {(2, i): 1 for i in range(0, sdvt_exited_items * max_node_operators_per_item)}
+    sdvt_exited = {(2, i): sdvt.getNodeOperatorSummary(i)['totalExitedValidators'] + 1 for i in range(0, sdvt_exited_items * max_node_operators_per_item)}
     extra_data = extra_data_service.collect(
         {**nor_stuck, **sdvt_stuck},
         {**nor_exited, **sdvt_exited},
@@ -117,7 +116,8 @@ def test_extra_data_full_items(
         num_exited_validators_by_staking_module.append(nor_exited_before + (nor_exited_items * max_node_operators_per_item))
     if sdvt_exited_items > 0:
         modules_with_exited.append(2)
-        num_exited_validators_by_staking_module.append(sdvt_exited_items * max_node_operators_per_item)
+        sdvt_exited_before = sdvt.getStakingModuleSummary()["totalExitedValidators"]
+        num_exited_validators_by_staking_module.append(sdvt_exited_before + (sdvt_exited_items * max_node_operators_per_item))
 
     nor_balance_shares_before = []
     for i in range(0, len(nor_stuck)):
@@ -186,29 +186,10 @@ def test_extra_data_full_items(
 ############################################
 
 
-def add_sdvt_operators_with_keys(enactor: Account, count: int, keys_per_operator: int):
-    names = [f"Name {i}" for i in range(0, count)]
-    reward_addresses = [f"0xab{str(i).zfill(38)}" for i in range(0, count)]
-    managers = [f"0xcd{str(i).zfill(38)}" for i in range(0, count)]
-
-    node_operators_per_tx = 20
-    for i in range(0, count, node_operators_per_tx):
-        simple_dvt_add_node_operators(
-            contracts.simple_dvt,
-            enactor,
-            [
-                (names[j], reward_addresses[j], managers[j])
-                for j in range(i, i + node_operators_per_tx) if j < count
-            ]
-        )
-    for i in range(0, count):
-        simple_dvt_add_keys(contracts.simple_dvt, i, keys_per_operator)
-        simple_dvt_vet_keys(i, enactor)
-
-
 def add_nor_operators_with_keys(nor, voting_eoa: Account, evm_script_executor_eoa: Account, count: int, keys_per_operator: int):
     names = [f"Name {i}" for i in range(0, count)]
-    reward_addresses = [f"0xbb{str(i).zfill(38)}" for i in range(0, count)]
+    base_address = int(nor.address, base=16) + 10_000
+    reward_addresses = [hex(i + base_address) for i in range(0, count)]
 
     for i in range(0, count):
         nor.addNodeOperator(
@@ -219,7 +200,7 @@ def add_nor_operators_with_keys(nor, voting_eoa: Account, evm_script_executor_eo
         no_id = nor.getNodeOperatorsCount() - 1
         pubkeys_batch = random_pubkeys_batch(keys_per_operator)
         signatures_batch = random_signatures_batch(keys_per_operator)
-        nor.addSigningKeysOperatorBH(
+        nor.addSigningKeys(
             no_id,
             keys_per_operator,
             pubkeys_batch,
@@ -230,44 +211,59 @@ def add_nor_operators_with_keys(nor, voting_eoa: Account, evm_script_executor_eo
 
 
 def fill_nor_with_old_and_new_operators(
-    nor, voting_eoa, agent_eoa, evm_script_executor_eoa, new_keys_per_operator, nor_stuck_items, nor_exited_items, max_node_operators_per_item,
+    nor, voting_eoa, evm_script_executor_eoa, new_keys_per_operator, nor_stuck_items, nor_exited_items, max_node_operators_per_item,
 ) -> tuple[int, int]:
-    # Curated: Add new operators and keys
-    contracts.staking_router.grantRole(
-        contracts.staking_router.MANAGE_WITHDRAWAL_CREDENTIALS_ROLE(), voting_eoa, {"from": agent_eoa}
-    )
     contracts.acl.grantPermission(
         contracts.voting,
-        contracts.node_operators_registry,
+        nor.address,
         convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
         {"from": contracts.voting},
     )
-    nor_count_before = nor.getNodeOperatorsCount()
-    added_nor_operators_count = (max(nor_stuck_items, nor_exited_items) * max_node_operators_per_item) - nor_count_before
-    if added_nor_operators_count <= 0:
-        return nor_count_before, added_nor_operators_count
+
+    # Calculate new operators count
+    operators_count_before = nor.getNodeOperatorsCount()
+    operators_count_wanted = max(nor_stuck_items, nor_exited_items) * max_node_operators_per_item
+    operators_count_after = max(operators_count_wanted, operators_count_before)
+    operators_count_added = max(operators_count_after - operators_count_before, 0)
+
     # Add new node operators and keys
-    add_nor_operators_with_keys(nor, voting_eoa, evm_script_executor_eoa, added_nor_operators_count, new_keys_per_operator)
+    if operators_count_added > 0:
+        add_nor_operators_with_keys(
+            nor,
+            voting_eoa,
+            evm_script_executor_eoa,
+            operators_count_added,
+            new_keys_per_operator
+        )
+
     # Activate old deactivated node operators
-    nor.activateNodeOperator(1, {"from": voting_eoa})
-    nor.activateNodeOperator(12, {"from": voting_eoa})
+    for i in range(0, operators_count_after):
+        if not nor.getNodeOperatorIsActive(i):
+            nor.activateNodeOperator(i, {"from": voting_eoa})
+
     # Add keys to old node operators
-    for i in range(0, nor_count_before):
+    for i in range(0, operators_count_before):
         pubkeys_batch = random_pubkeys_batch(new_keys_per_operator)
         signatures_batch = random_signatures_batch(new_keys_per_operator)
         operator = nor.getNodeOperator(i, False)
+        operator_summary = nor.getNodeOperatorSummary(i)
         new_deposit_limit = operator["totalDepositedValidators"] + new_keys_per_operator
-        nor.addSigningKeysOperatorBH(
+        nor.addSigningKeys(
             i,
             new_keys_per_operator,
             pubkeys_batch,
             signatures_batch,
             {"from": operator["rewardAddress"]},
         )
+
         # Change staking limits for old node operators (change to new total added keys count)
         nor.setNodeOperatorStakingLimit(i, new_deposit_limit, {"from": evm_script_executor_eoa})
-        nor.updateTargetValidatorsLimits(i, True, new_deposit_limit, {"from": contracts.staking_router})
-    return nor_count_before, added_nor_operators_count
+
+        # Remove target validators limits if active
+        if operator_summary["isTargetLimitActive"]:
+            nor.updateTargetValidatorsLimits(i, False, 0, {"from": contracts.staking_router})
+
+    return operators_count_before, operators_count_added
 
 
 def deposit_buffer_for_keys(staking_router, sdvt_keys_to_deposit, nor_keys_to_deposit):

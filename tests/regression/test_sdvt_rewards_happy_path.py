@@ -92,7 +92,7 @@ def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participa
             pause_staking_module(module[0])
 
     # fill the deposit buffer
-    deposits_count = 12
+    deposits_count = 10
     fill_deposit_buffer(deposits_count)
 
     # deposit to simple dvt
