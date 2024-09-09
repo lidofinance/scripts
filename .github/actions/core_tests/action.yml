@@ -39,6 +39,6 @@ runs:
     - name: Run integration tests
       working-directory: core
       shell: bash
-      run: yarn test:integration:fork
+      run: yarn test:integration:fork:mainnet
       env:
         LOG_LEVEL: debug
