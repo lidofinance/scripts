@@ -1,5 +1,5 @@
 """
-Voting xx/xx/2024.
+Voting 01/10/2024.
 
 1. Upgrade L1 Bridge implementation
 2. Finalize L1 Bridge upgrade
@@ -17,13 +17,15 @@ import time
 import eth_abi
 import brownie
 
-from brownie import interface, web3
+from brownie import interface, web3, accounts
 from typing import Dict
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.agent import agent_forward
+from tests.conftest import Helpers
 from utils.config import (
+    contracts,
     get_deployer_account,
     get_is_live,
     get_priority_fee,
@@ -40,12 +42,13 @@ from utils.config import (
     L2_OPTIMISM_WSTETH_TOKEN,
     L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
     L2_OPTIMISM_WSTETH_IMPL_NEW,
+    AGENT
 )
 
 # from utils.test.easy_track_helpers import encode_function_call
 
 DESCRIPTION = """
-Voting xx/xx/2024.
+Voting 01/10/2024.
 
 Upgrade L1Bridge, L2Bridge, L2 wstETH
 
@@ -92,7 +95,7 @@ def encode_l1_l2_sendMessage(to: str, calldata: str):
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""
-    check_pre_upgrade_state()
+    # check_pre_upgrade_state()
 
     lido_locator_as_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
     l1_token_bridge_as_proxy = interface.OssifiableProxy(L1_OPTIMISM_TOKENS_BRIDGE)
@@ -179,27 +182,27 @@ def main():
     time.sleep(5)  # hack for waiting thread #2.
 
 
-# def startAndExecuteForForkUpgrade():
-#     ACCOUNT_WITH_MONEY = "0x4200000000000000000000000000000000000023"
-#     deployerAccount = get_deployer_account()
+def start_and_execute_for_fork_upgrade():
+    account_wht_eth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    deployerAccount = get_deployer_account()
 
-#     # Top up accounts
-#     accountWithEth = accounts.at(ACCOUNT_WITH_MONEY, force=True)
-#     accountWithEth.transfer(deployerAccount.address, "2 ethers")
-#     accountWithEth.transfer(AGENT, "2 ethers")
+    # Top up accounts
+    accountWithEth = accounts.at(account_wht_eth, force=True)
+    accountWithEth.transfer(deployerAccount.address, "2 ethers")
+    accountWithEth.transfer(AGENT, "2 ethers")
 
-#     tx_params = {"from": deployerAccount}
-#     if get_is_live():
-#         tx_params["priority_fee"] = get_priority_fee()
+    tx_params = {"from": deployerAccount}
+    if get_is_live():
+        tx_params["priority_fee"] = get_priority_fee()
 
-#     vote_id, _ = start_vote(tx_params=tx_params, silent=True)
-#     vote_tx = Helpers.execute_vote(accounts, vote_id, contracts.voting)
+    vote_id, _ = start_vote(tx_params=tx_params, silent=True)
+    vote_tx = Helpers.execute_vote(accounts, vote_id, contracts.voting)
 
-#     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
+    print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
-#     vote_id >= 0 and print(f"Vote created: {vote_id}.")
+    vote_id >= 0 and print(f"Vote created: {vote_id}.")
 
-#     time.sleep(5)  # hack for waiting thread #2.
+    time.sleep(5)  # hack for waiting thread #2.
 
 
 def check_pre_upgrade_state():
