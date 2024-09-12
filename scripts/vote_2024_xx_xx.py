@@ -15,7 +15,9 @@ Voting xx/xx/2024.
 
 import time
 import eth_abi
-from brownie import interface, web3, reverts
+import brownie
+
+from brownie import interface, web3
 from typing import Dict
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
@@ -208,12 +210,12 @@ def check_pre_upgrade_state():
     # Disabled deposits is the starting condition for the vote
     assert not l1_token_bridge.isDepositsEnabled()
 
-    # L1 Bridge has old implementation
+    # L1 Bridge has old imbrownieplementation
     l1_token_bridge_implementation_address_before = l1_token_bridge_proxy.proxy__getImplementation()
     assert l1_token_bridge_implementation_address_before == L1_OPTIMISM_TOKENS_BRIDGE_IMPL, "Old address is incorrect"
 
     # L1 Bridge doesn't have version before update
-    with reverts():
+    with brownie.reverts():
         l1_token_bridge.getContractVersion()
 
     # Upgrade LidoLocator implementation

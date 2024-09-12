@@ -1,9 +1,10 @@
 """
 Tests for voting xx/xx/2024
 """
+
 from scripts.vote_2024_xx_xx import start_vote, check_pre_upgrade_state, check_post_upgrade_state
 from scripts.vote_fallback_2024_xx_xx_rollback_l1 import start_vote as start_vote_fallback
-from brownie import interface, reverts
+from brownie import interface
 from utils.test.tx_tracing_helpers import *
 from utils.config import (
     contracts,
