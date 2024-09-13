@@ -136,7 +136,7 @@ To upload Markdown vote description for a new vote to IPFS you can use one of th
 
 ```bash
 # Pinata Cloud
-export PINATA_CLOUD_TOKEN=<pinata_api_key>
+export PINATA_CLOUD_TOKEN=<pinata_JVT>
 # For Infura Web3
 export WEB3_INFURA_IPFS_PROJECT_ID=<infura_project_id>
 export WEB3_INFURA_IPFS_PROJECT_SECRET=<infura_project_secret>
