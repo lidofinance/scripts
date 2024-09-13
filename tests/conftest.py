@@ -4,7 +4,7 @@ from typing import List
 import brownie.exceptions
 import pytest
 
-from brownie import chain, interface, web3
+from brownie import chain, interface, web3, network
 from brownie.network import state
 from brownie.network.contract import Contract
 
@@ -23,6 +23,7 @@ ENV_OMNIBUS_VOTE_IDS = "OMNIBUS_VOTE_IDS"
 
 @pytest.fixture(scope="function", autouse=True)
 def shared_setup(fn_isolation):
+    network.gas_price("2 gwei")
     pass
 
 
@@ -79,7 +80,6 @@ def trp_recipient(accounts):
     web3.provider.make_request("hardhat_setBalance", [trp_recipient.address, "0x152D02C7E14AF6800000"])
     assert trp_recipient.balance() == ETH(100000)
     return trp_recipient
-
 
 @pytest.fixture(scope="module")
 def eth_whale(accounts):

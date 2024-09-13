@@ -5,6 +5,7 @@ from brownie import Contract, interface, reverts, Wei, chain  # type: ignore
 from utils.config import WITHDRAWAL_QUEUE, contracts
 from utils.evm_script import encode_error
 from utils.test.oracle_report_helpers import oracle_report, wait_to_next_available_report_time
+from utils.test.helpers import topped_up_contract
 
 MIN_STETH_WITHDRAWAL_AMOUNT = Wei(100)
 MAX_STETH_WITHDRAWAL_AMOUNT = Wei(1000 * 10**18)
@@ -28,7 +29,7 @@ def test_request_withdrawals_steth(wq: Contract, steth_whale: Account):
                 too_small_amount,
             ],
             steth_whale,
-            {"from": steth_whale},
+            {"from": topped_up_contract(steth_whale)},
         )
 
     with reverts(
@@ -43,7 +44,7 @@ def test_request_withdrawals_steth(wq: Contract, steth_whale: Account):
                 too_large_amount,
             ],
             steth_whale,
-            {"from": steth_whale},
+            {"from": topped_up_contract(steth_whale)},
         )
 
 
@@ -146,15 +147,15 @@ def wq() -> Contract:
 
 @pytest.fixture(scope="function", autouse=True)
 def max_approval_to_wq(steth_whale: Account, wq: Contract) -> None:
-    contracts.wsteth.approve(wq.address, UINT256_MAX, {"from": steth_whale})
-    contracts.lido.approve(wq.address, UINT256_MAX, {"from": steth_whale})
+    contracts.wsteth.approve(wq.address, UINT256_MAX, {"from": topped_up_contract(steth_whale)})
+    contracts.lido.approve(wq.address, UINT256_MAX, {"from": topped_up_contract(steth_whale)})
 
 
 @pytest.fixture(scope="function")
 def wsteth_whale(steth_whale: Account) -> Account:
-    contracts.lido.approve(contracts.wsteth.address, UINT256_MAX, {"from": steth_whale})
+    contracts.lido.approve(contracts.wsteth.address, UINT256_MAX, {"from": topped_up_contract(steth_whale)})
     steth_to_wrap = contracts.lido.balanceOf(steth_whale) // 2
-    contracts.wsteth.wrap(steth_to_wrap, {"from": steth_whale})
+    contracts.wsteth.wrap(steth_to_wrap, {"from": topped_up_contract(steth_whale)})
     return steth_whale
 
 

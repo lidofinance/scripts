@@ -6,7 +6,7 @@ from brownie.network.account import Account
 
 from utils.evm_script import encode_error
 from utils.finance import ZERO_ADDRESS
-from utils.test.helpers import almostEqEth, ETH
+from utils.test.helpers import almostEqEth, topped_up_contract, ETH
 from utils.config import (
     GATE_SEAL_COMMITTEE,
     contracts,
@@ -33,7 +33,7 @@ def test_gate_seal_expiration(gate_seal_committee):
     chain.mine(1)
     assert contracts.gate_seal.is_expired()
     with reverts("gate seal: expired"):
-        contracts.gate_seal.seal([WITHDRAWAL_QUEUE, VALIDATORS_EXIT_BUS_ORACLE], {"from": gate_seal_committee})
+        contracts.gate_seal.seal([WITHDRAWAL_QUEUE, VALIDATORS_EXIT_BUS_ORACLE], {"from": topped_up_contract(gate_seal_committee)})
 
 
 def test_gate_seal_scenario(steth_holder, gate_seal_committee, eth_whale):
@@ -84,7 +84,7 @@ def test_gate_seal_scenario(steth_holder, gate_seal_committee, eth_whale):
 
     """ sealing """
     sealables = [WITHDRAWAL_QUEUE, VALIDATORS_EXIT_BUS_ORACLE]
-    seal_tx = contracts.gate_seal.seal(sealables, {"from": gate_seal_committee})
+    seal_tx = contracts.gate_seal.seal(sealables, {"from": topped_up_contract(gate_seal_committee)})
 
     assert seal_tx.events.count("Sealed") == 2
     for i, seal_event in enumerate(seal_tx.events["Sealed"]):

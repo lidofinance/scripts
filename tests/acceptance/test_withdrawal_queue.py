@@ -10,7 +10,7 @@ from utils.config import (
     WQ_ERC721_TOKEN_BASE_URI,
 )
 from utils.evm_script import encode_error
-
+from utils.test.helpers import topped_up_contract
 
 @pytest.fixture(scope="module")
 def contract() -> interface.WithdrawalQueueERC721:
@@ -29,13 +29,13 @@ def test_versioned(contract):
 
 def test_initialize(contract):
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
-        contract.initialize(contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0), {"from": contracts.voting})
+        contract.initialize(contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0), {"from": topped_up_contract(contracts.voting)})
 
 
 def test_petrified(contract):
     impl = interface.WithdrawalQueueERC721(WITHDRAWAL_QUEUE_IMPL)
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
-        impl.initialize(contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0), {"from": contracts.voting})
+        impl.initialize(contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0), {"from": topped_up_contract(contracts.voting)})
 
 
 def test_pausable_until(contract):

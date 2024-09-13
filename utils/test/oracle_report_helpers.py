@@ -8,9 +8,9 @@ from brownie.typing import TransactionReceipt  # type: ignore
 from eth_abi.abi import encode
 from hexbytes import HexBytes
 
-from utils.config import contracts
+from utils.config import contracts, ACCOUNTING_ORACLE
 from utils.test.exit_bus_data import encode_data
-from utils.test.helpers import ETH, GWEI, eth_balance
+from utils.test.helpers import ETH, GWEI, eth_balance, topped_up_contract
 
 ZERO_HASH = bytes([0] * 32)
 ZERO_BYTES32 = HexBytes(ZERO_HASH)
@@ -247,7 +247,7 @@ def simulate_report(
             0,
             [],
             0,
-            {"from": contracts.accounting_oracle.address},
+            {"from": topped_up_contract(contracts.accounting_oracle.address)},
             block_identifier=block_identifier,
         )
     except VirtualMachineError:
@@ -262,7 +262,7 @@ def simulate_report(
             0,
             [],
             0,
-            {"from": contracts.accounting_oracle.address},
+            {"from": topped_up_contract(contracts.accounting_oracle.address)},
         )
         raise  # unreachable, for static analysis only
 

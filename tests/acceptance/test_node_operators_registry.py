@@ -11,6 +11,7 @@ from utils.config import (
     CURATED_STAKING_MODULE_OPERATORS_ACTIVE_COUNT,
     CURATED_STAKING_MODULE_TYPE,
 )
+from utils.test.helpers import topped_up_contract
 
 
 @pytest.fixture(scope="module")
@@ -48,7 +49,7 @@ def test_initialize(contract):
             contracts.lido_locator,
             CURATED_STAKING_MODULE_TYPE,
             CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
-            {"from": contracts.voting},
+            {"from": topped_up_contract(contracts.voting)},
         )
 
 
@@ -58,7 +59,7 @@ def test_finalize_upgrade(contract):
             contracts.lido_locator,
             CURATED_STAKING_MODULE_TYPE,
             CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
-            {"from": contracts.voting},
+            {"from": topped_up_contract(contracts.voting)},
         )
 
 
@@ -69,7 +70,7 @@ def test_petrified():
             contracts.lido_locator,
             CURATED_STAKING_MODULE_TYPE,
             CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
-            {"from": contracts.voting},
+            {"from": topped_up_contract(contracts.voting)},
         )
 
     with reverts("CONTRACT_NOT_INITIALIZED"):
@@ -77,7 +78,7 @@ def test_petrified():
             contracts.lido_locator,
             CURATED_STAKING_MODULE_TYPE,
             CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
-            {"from": contracts.voting},
+            {"from": topped_up_contract(contracts.voting)},
         )
 
 

@@ -5,6 +5,7 @@ import pytest
 from utils.config import contracts
 from brownie import reverts, ZERO_ADDRESS, accounts, chain
 from utils.evm_script import encode_error
+from utils.test.helpers import topped_up_contract
 
 def test_burn_shares_by_stranger(stranger):
     lido = accounts.at(contracts.lido, force=True)
@@ -40,7 +41,7 @@ def test_burn_shares_by_stranger(stranger):
         shares_to_burn,
         [],
         0,
-        {"from": contracts.accounting_oracle},
+        {"from": topped_up_contract(contracts.accounting_oracle)},
     )
 
     assert contracts.lido.sharesOf(stranger) == 0

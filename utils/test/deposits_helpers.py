@@ -1,6 +1,6 @@
 import math
 
-from utils.test.helpers import ETH
+from utils.test.helpers import ETH, topped_up_contract
 from utils.config import contracts
 from brownie import ZERO_ADDRESS, accounts
 
@@ -30,5 +30,5 @@ def drain_remained_buffered_ether():
     depositable_ether = math.floor(contracts.lido.getDepositableEther() / 10**18)
 
     while depositable_ether > 32:
-        contracts.lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": contracts.deposit_security_module})
+        contracts.lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": topped_up_contract(contracts.deposit_security_module)})
         depositable_ether = math.floor(contracts.lido.getDepositableEther() / 10**18)

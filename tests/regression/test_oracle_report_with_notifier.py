@@ -6,11 +6,11 @@ from utils.test.helpers import ZERO_ADDRESS, eth_balance
 from utils.evm_script import encode_error
 from typing import TypedDict, TypeVar, Any
 
-WST_ETH = "0xB82381A3fBD3FaFA77B3a7bE693342618240067b"
-ACCOUNTING_ORACLE = "0xd497Be005638efCf09F6BFC8DAFBBB0BB72cD991"
-L1_TOKEN_RATE_NOTIFIER = "0x10cA9008D7dcea1Bed4d5394F8c58F3113A2814D"
-L1_CROSS_DOMAIN_MESSENGER = "0x58Cc85b8D04EA49cC6DBd3CbFFd00B4B8D6cb3ef"
-L2_TOKEN_RATE_ORACLE = "0xB82381A3fBD3FaFA77B3a7bE693342618240067b"
+WST_ETH = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
+ACCOUNTING_ORACLE = "0x852deD011285fe67063a08005c71a85690503Cee"
+L1_TOKEN_RATE_NOTIFIER = "0xe6793B9e4FbA7DE0ee833F9D02bba7DB5EB27823"
+L1_CROSS_DOMAIN_MESSENGER = "0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1"
+L2_TOKEN_RATE_ORACLE = "0x294ED1f214F4e0ecAE31C3Eae4F04EBB3b36C9d0"
 
 @pytest.fixture(scope="module")
 def accounting_oracle() -> Contract:
@@ -31,9 +31,6 @@ def withdrawal_queue() -> Contract:
 def test_oracle_report_revert():
     """Test oracle report reverts when messenger is empty"""
 
-    if not network_name() in ("sepolia", "sepolia-fork"):
-        return
-
     web3.provider.make_request("hardhat_setCode", [L1_CROSS_DOMAIN_MESSENGER, "0x"])
 
     with reverts(encode_error("ErrorTokenRateNotifierRevertedWithNoData()")):
@@ -41,9 +38,6 @@ def test_oracle_report_revert():
 
 def test_oracle_report_pushes_rate():
     """Test oracle report emits cross domain messenger event"""
-
-    if not network_name() in ("sepolia", "sepolia-fork"):
-        return
 
     tx, _ = oracle_report(
         cl_diff=0,
@@ -69,9 +63,6 @@ def test_oracle_report_pushes_rate():
 
 def test_oracle_report_success_when_observer_reverts(accounting_oracle: Contract, lido: Contract, el_vault: Contract):
     """Test oracle report works when token rate observer reverts"""
-
-    if not network_name() in ("sepolia", "sepolia-fork"):
-        return
 
     opStackTokenRatePusher = OpStackTokenRatePusherWithSomeErrorStub.deploy({"from": get_deployer_account()})
 

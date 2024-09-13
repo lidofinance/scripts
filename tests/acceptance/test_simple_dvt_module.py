@@ -19,6 +19,8 @@ from utils.config import (
     EASYTRACK_SIMPLE_DVT_UPDATE_TARGET_VALIDATOR_LIMITS_FACTORY,
     EASYTRACK_SIMPLE_DVT_CHANGE_NODE_OPERATOR_MANAGERS_FACTORY,
 )
+from utils.test.helpers import topped_up_contract
+
 
 REQUEST_BURN_SHARES_ROLE = "0x4be29e0e4eb91f98f709d98803cba271592782e293b84a625e025cbb40197ba8"
 STAKING_ROUTER_ROLE = "0xbb75b874360e0bfd87f964eadd8276d8efb7c942134fc329b513032d0803e0c6"
@@ -62,7 +64,7 @@ def test_initialize(contract):
             contracts.lido_locator,
             SIMPLE_DVT_MODULE_TYPE,
             SIMPLE_DVT_MODULE_STUCK_PENALTY_DELAY,
-            {"from": contracts.voting},
+            {"from": topped_up_contract(contracts.voting)},
         )
 
 
@@ -72,7 +74,7 @@ def test_finalize_upgrade(contract):
             contracts.lido_locator,
             SIMPLE_DVT_MODULE_TYPE,
             SIMPLE_DVT_MODULE_STUCK_PENALTY_DELAY,
-            {"from": contracts.voting},
+            {"from": topped_up_contract(contracts.voting)},
         )
 
 
@@ -83,7 +85,7 @@ def test_petrified():
             contracts.lido_locator,
             SIMPLE_DVT_MODULE_TYPE,
             SIMPLE_DVT_MODULE_STUCK_PENALTY_DELAY,
-            {"from": contracts.voting},
+            {"from": topped_up_contract(contracts.voting)},
         )
 
     with reverts("CONTRACT_NOT_INITIALIZED"):
@@ -91,7 +93,7 @@ def test_petrified():
             contracts.lido_locator,
             SIMPLE_DVT_MODULE_TYPE,
             SIMPLE_DVT_MODULE_STUCK_PENALTY_DELAY,
-            {"from": contracts.voting},
+            {"from": topped_up_contract(contracts.voting)},
         )
 
 

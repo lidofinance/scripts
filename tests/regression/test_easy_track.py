@@ -21,6 +21,7 @@ from utils.test.simple_dvt_helpers import (
     simple_dvt_add_node_operators,
 )
 from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
+from utils.test.helpers import topped_up_contract
 
 
 MANAGE_SIGNING_KEYS = "0x75abc64490e17b40ea1e66691c3eb493647b24430b358bd87ec3e5127f1621ee"
@@ -41,7 +42,7 @@ def test_increase_nop_staking_limit(
             1,
             "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aa0101",
             "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a1",
-            {"from": contracts.voting},
+            {"from": topped_up_contract(contracts.voting)},
         )
 
     calldata = _encode_calldata(("uint256","uint256"), [no_id, new_staking_limit])

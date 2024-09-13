@@ -1,6 +1,7 @@
 import pytest
 from brownie import interface, chain, reverts  # type: ignore
 
+from utils.test.helpers import topped_up_contract
 from utils.config import (
     contracts,
     LEGACY_ORACLE,
@@ -44,21 +45,21 @@ def test_versioned(contract):
 
 def test_initialize(contract):
     with reverts("INIT_ALREADY_INITIALIZED"):
-        contract.initialize(contracts.lido_locator, HASH_CONSENSUS_FOR_AO, {"from": contracts.voting})
+        contract.initialize(contracts.lido_locator, HASH_CONSENSUS_FOR_AO, {"from": topped_up_contract(contracts.voting)})
 
 
 def test_finalize_upgrade(contract):
     with reverts("WRONG_BASE_VERSION"):
-        contract.finalizeUpgrade_v4(ACCOUNTING_ORACLE, {"from": contracts.voting})
+        contract.finalizeUpgrade_v4(ACCOUNTING_ORACLE, {"from": topped_up_contract(contracts.voting)})
 
 
 def test_petrified():
     impl = interface.LegacyOracle(LEGACY_ORACLE_IMPL)
     with reverts("INIT_ALREADY_INITIALIZED"):
-        impl.initialize(contracts.lido_locator, HASH_CONSENSUS_FOR_AO, {"from": contracts.voting})
+        impl.initialize(contracts.lido_locator, HASH_CONSENSUS_FOR_AO, {"from": topped_up_contract(contracts.voting)})
 
     with reverts("WRONG_BASE_VERSION"):
-        impl.finalizeUpgrade_v4(ACCOUNTING_ORACLE, {"from": contracts.voting})
+        impl.finalizeUpgrade_v4(ACCOUNTING_ORACLE, {"from": topped_up_contract(contracts.voting)})
 
 
 def test_recoverability(contract):

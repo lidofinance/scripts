@@ -25,6 +25,7 @@ from utils.config import (
     SIMPLE_DVT_MODULE_TREASURY_FEE_BP,
 )
 from utils.evm_script import encode_error
+from utils.test.helpers import topped_up_contract
 
 
 @pytest.fixture(scope="module")
@@ -53,7 +54,7 @@ def test_initialize(contract):
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
             contracts.lido,
             WITHDRAWAL_CREDENTIALS,
-            {"from": contracts.voting},
+            {"from": topped_up_contract(contracts.voting)},
         )
 
 
@@ -64,7 +65,7 @@ def test_petrified(contract):
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
             contracts.lido,
             WITHDRAWAL_CREDENTIALS,
-            {"from": contracts.voting},
+            {"from": topped_up_contract(contracts.voting)},
         )
 
 

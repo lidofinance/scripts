@@ -29,19 +29,20 @@ from utils.config import (
     get_deployer_account,
     get_is_live,
     get_priority_fee,
+    network_name,
     L1_EMERGENCY_BRAKES_MULTISIG,
     LIDO_LOCATOR,
     LIDO_LOCATOR_IMPL,
-    LIDO_LOCATOR_IMPL_NEW,
+    LIDO_LOCATOR_IMPL_OLD,
     L1_OPTIMISM_TOKENS_BRIDGE,
+    L1_OPTIMISM_TOKENS_BRIDGE_IMPL_OLD,
     L1_OPTIMISM_TOKENS_BRIDGE_IMPL,
-    L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
     L1_OPTIMISM_CROSS_DOMAIN_MESSENGER,
     L2_OPTIMISM_TOKENS_BRIDGE,
     L2_OPTIMISM_GOVERNANCE_EXECUTOR,
     L2_OPTIMISM_WSTETH_TOKEN,
-    L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
-    L2_OPTIMISM_WSTETH_IMPL_NEW,
+    L2_OPTIMISM_TOKENS_BRIDGE_IMPL,
+    L2_OPTIMISM_WSTETH_TOKEN_IMPL,
     AGENT
 )
 
@@ -95,7 +96,8 @@ def encode_l1_l2_sendMessage(to: str, calldata: str):
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""
-    # check_pre_upgrade_state()
+
+    check_pre_upgrade_state()
 
     lido_locator_as_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
     l1_token_bridge_as_proxy = interface.OssifiableProxy(L1_OPTIMISM_TOKENS_BRIDGE)
@@ -107,7 +109,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             [
                 (
                     l1_token_bridge_as_proxy.address,
-                    l1_token_bridge_as_proxy.proxy__upgradeTo.encode_input(L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW),
+                    l1_token_bridge_as_proxy.proxy__upgradeTo.encode_input(L1_OPTIMISM_TOKENS_BRIDGE_IMPL),
                 )
             ]
         ),
@@ -118,7 +120,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             [
                 (
                     lido_locator_as_proxy.address,
-                    lido_locator_as_proxy.proxy__upgradeTo.encode_input(LIDO_LOCATOR_IMPL_NEW),
+                    lido_locator_as_proxy.proxy__upgradeTo.encode_input(LIDO_LOCATOR_IMPL),
                 )
             ]
         ),
@@ -140,9 +142,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                         L2_OPTIMISM_GOVERNANCE_EXECUTOR,
                         encode_l2_upgrade_call(
                             L2_OPTIMISM_TOKENS_BRIDGE,
-                            L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
+                            L2_OPTIMISM_TOKENS_BRIDGE_IMPL,
                             L2_OPTIMISM_WSTETH_TOKEN,
-                            L2_OPTIMISM_WSTETH_IMPL_NEW,
+                            L2_OPTIMISM_WSTETH_TOKEN_IMPL,
                         ),
                     ),
                 )
@@ -183,6 +185,9 @@ def main():
 
 
 def start_and_execute_for_fork_upgrade():
+    if not network_name() in ("mainnet-fork"):
+        return
+
     account_wht_eth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
     deployerAccount = get_deployer_account()
 
@@ -211,11 +216,12 @@ def check_pre_upgrade_state():
     lido_locator_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
 
     # Disabled deposits is the starting condition for the vote
-    assert not l1_token_bridge.isDepositsEnabled()
+    if network_name() in ("mainnet"):
+        assert not l1_token_bridge.isDepositsEnabled()
 
     # L1 Bridge has old imbrownieplementation
     l1_token_bridge_implementation_address_before = l1_token_bridge_proxy.proxy__getImplementation()
-    assert l1_token_bridge_implementation_address_before == L1_OPTIMISM_TOKENS_BRIDGE_IMPL, "Old address is incorrect"
+    assert l1_token_bridge_implementation_address_before == L1_OPTIMISM_TOKENS_BRIDGE_IMPL_OLD, "Old address is incorrect"
 
     # L1 Bridge doesn't have version before update
     with brownie.reverts():
@@ -223,7 +229,7 @@ def check_pre_upgrade_state():
 
     # Upgrade LidoLocator implementation
     lido_locator_impl_before = lido_locator_proxy.proxy__getImplementation()
-    assert lido_locator_impl_before == LIDO_LOCATOR_IMPL, "Old address is incorrect"
+    assert lido_locator_impl_before == LIDO_LOCATOR_IMPL_OLD, "Old address is incorrect"
 
     # Multisig hasn't been assigned as deposit enabler
     assert not l1_token_bridge.hasRole(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG)
@@ -237,7 +243,7 @@ def check_post_upgrade_state(vote_tx):
     # L1 Bridge has new implementation
     l1_token_bridge_implementation_address_after = l1_token_bridge_proxy.proxy__getImplementation()
     assert (
-        l1_token_bridge_implementation_address_after == L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW
+        l1_token_bridge_implementation_address_after == L1_OPTIMISM_TOKENS_BRIDGE_IMPL
     ), "New address is incorrect"
 
     # update L1 Bridge to 2 version
@@ -245,7 +251,7 @@ def check_post_upgrade_state(vote_tx):
 
     # LidoLocator has new implementation
     lido_locator_impl_after = lido_locator_proxy.proxy__getImplementation()
-    assert lido_locator_impl_after == LIDO_LOCATOR_IMPL_NEW, "New LidoLocator address is incorrect"
+    assert lido_locator_impl_after == LIDO_LOCATOR_IMPL, "New LidoLocator address is incorrect"
 
     # Multisig has been assigned as deposit enabler
     assert l1_token_bridge.hasRole(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG)
@@ -255,8 +261,8 @@ def check_post_upgrade_state(vote_tx):
     sentMessage = vote_tx.events["SentMessage"]["message"]
     encoded_l2_upgrade_call = encode_l2_upgrade_call(
         L2_OPTIMISM_TOKENS_BRIDGE,
-        L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
+        L2_OPTIMISM_TOKENS_BRIDGE_IMPL,
         L2_OPTIMISM_WSTETH_TOKEN,
-        L2_OPTIMISM_WSTETH_IMPL_NEW,
+        L2_OPTIMISM_WSTETH_TOKEN_IMPL,
     )
     assert sentMessage == encoded_l2_upgrade_call
