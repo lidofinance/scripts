@@ -16,6 +16,7 @@ from utils.config import *
 from utils.txs.deploy import deploy_from_prepared_tx
 from utils.test.helpers import ETH
 from utils.balance import set_balance
+from functools import wraps
 
 ENV_OMNIBUS_BYPASS_EVENTS_DECODING = "OMNIBUS_BYPASS_EVENTS_DECODING"
 ENV_PARSE_EVENTS_FROM_LOCAL_ABI = "PARSE_EVENTS_FROM_LOCAL_ABI"
@@ -25,10 +26,6 @@ ENV_OMNIBUS_VOTE_IDS = "OMNIBUS_VOTE_IDS"
 @pytest.fixture(scope="function", autouse=True)
 def shared_setup(fn_isolation):
     network.gas_price("2 gwei")
-    set_balance(contracts.voting.address, 100000)
-    set_balance(contracts.accounting_oracle.address, 100000)
-    set_balance(contracts.deposit_security_module.address, 100000)
-    set_balance(contracts.agent.address, 100000)
     pass
 
 @pytest.fixture(scope="function")
@@ -88,10 +85,8 @@ def trp_recipient(accounts):
 @pytest.fixture(scope="module")
 def eth_whale(accounts):
     if network_name() in ("goerli", "goerli-fork"):
-        set_balance("0xC48E23C5F6e1eA0BaEf6530734edC3968f79Af2e", 100000)
         return accounts.at("0xC48E23C5F6e1eA0BaEf6530734edC3968f79Af2e", force=True)
     else:
-        set_balance("0x00000000219ab540356cBB839Cbe05303d7705Fa", 100000)
         return accounts.at("0x00000000219ab540356cBB839Cbe05303d7705Fa", force=True)
 
 
@@ -271,3 +266,23 @@ def parse_events_from_local_abi():
             # See https://eth-brownie.readthedocs.io/en/stable/api-network.html?highlight=_add_contract#brownie.network.state._add_contract
             # Added contract will resolve from address during state._find_contract without a request to Etherscan
             state._add_contract(contract)
+
+@pytest.fixture(scope="session", autouse=True)
+def add_balance_check_middleware():
+    web3.middleware_onion.add(balance_check_middleware, name='balance_check')
+
+def ensure_balance(address):
+    if web3.eth.get_balance(address) < ETH(1):
+        set_balance(address, 1000000)
+
+def balance_check_middleware(make_request, web3):
+    @wraps(make_request)
+    def middleware(method, params):
+        if method in ["eth_sendTransaction", "eth_sendRawTransaction"]:
+            transaction = params[0]
+            from_address = transaction.get('from')
+            if from_address:
+                ensure_balance(from_address)
+
+        return make_request(method, params)
+    return middleware

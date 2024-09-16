@@ -14,7 +14,6 @@ from utils.config import contracts, LDO_TOKEN, VOTING
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.import_current_votes import start_and_execute_votes, is_there_any_vote_scripts
 from utils.test.snapshot_helpers import _chain_snapshot
-from utils.balance import set_balance
 
 from .utils import get_slot
 
@@ -366,7 +365,6 @@ def far_block() -> int:
 @pytest.fixture(scope="module")
 def some_contract(accounts) -> Account:
     some_contract_addr = "0xcA11bde05977b3631167028862bE2a173976CA11"
-    set_balance(some_contract_addr, 10000)
     # Multicall3 contract deployed almost on the every network on the same address
     return accounts.at(some_contract_addr, force=True)
 

@@ -7,7 +7,6 @@ from utils.config import (
 )
 from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
 from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
-from utils.balance import set_balance
 
 MIN_OP_KEYS_CNT = 10
 MIN_OPS_CNT = 3
@@ -136,7 +135,7 @@ def simple_dvt_add_keys(simple_dvt, node_operator_id, keys_count=1):
             batch_size,
             pubkeys_batch,
             signatures_batch,
-            {"from": set_balance(node_operator_before["rewardAddress"], 10000)},
+            {"from": node_operator_before["rewardAddress"]},
         )
 
         total_signing_keys_count_after = simple_dvt.getTotalSigningKeyCount(node_operator_id)

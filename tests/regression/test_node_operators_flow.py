@@ -15,7 +15,6 @@ from utils.test.node_operators_helpers import (
     assert_node_operator_summaries,
     assert_node_operator_added_event,
 )
-from utils.balance import set_balance
 
 DEPOSIT_SIZE = Wei("32 ether")
 
@@ -52,7 +51,6 @@ def voting_eoa(accounts):
 @pytest.fixture(scope="module")
 def evm_script_executor_eoa(accounts):
     evmScriptExecutor = contracts.easy_track.evmScriptExecutor()
-    set_balance(evmScriptExecutor, 10000)
     return accounts.at(evmScriptExecutor, force=True)
 
 

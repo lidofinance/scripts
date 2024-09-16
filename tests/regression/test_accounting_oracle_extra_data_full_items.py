@@ -12,13 +12,6 @@ from utils.test.oracle_report_helpers import oracle_report
 from utils.config import MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT, MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT
 from utils.config import contracts
 from utils.test.simple_dvt_helpers import simple_dvt_add_node_operators, simple_dvt_add_keys, simple_dvt_vet_keys
-from utils.balance import set_balance
-
-@pytest.fixture(scope="function", autouse=True)
-def top_up_contracts(evm_script_executor_eoa):
-    set_balance(contracts.deposit_security_module.address, 100000)
-    set_balance(contracts.staking_router.address, 100000)
-    set_balance(evm_script_executor_eoa.address, 100000)
 
 
 @pytest.fixture()
@@ -207,7 +200,6 @@ def add_nor_operators_with_keys(nor, voting_eoa: Account, evm_script_executor_eo
         no_id = nor.getNodeOperatorsCount() - 1
         pubkeys_batch = random_pubkeys_batch(keys_per_operator)
         signatures_batch = random_signatures_batch(keys_per_operator)
-        set_balance(reward_addresses[i], 100000)
         nor.addSigningKeys(
             no_id,
             keys_per_operator,
@@ -256,7 +248,6 @@ def fill_nor_with_old_and_new_operators(
         operator = nor.getNodeOperator(i, False)
         operator_summary = nor.getNodeOperatorSummary(i)
         new_deposit_limit = operator["totalDepositedValidators"] + new_keys_per_operator
-        set_balance(operator["rewardAddress"], 100000)
         nor.addSigningKeys(
             i,
             new_keys_per_operator,

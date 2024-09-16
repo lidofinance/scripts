@@ -5,6 +5,7 @@ from utils.test.oracle_report_helpers import oracle_report
 from utils.test.helpers import ETH, almostEqEth
 from utils.config import contracts
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
+from utils.balance import set_balance
 
 
 def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
@@ -55,6 +56,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     print(stranger, stranger.balance())
 
     submit_tx = contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": amount})
+    set_balance(stranger, stranger.balance() - 1000000)
 
     print("block after submit: ", chain.height)
 

@@ -13,17 +13,11 @@ from utils.test.oracle_report_helpers import (
 from utils.config import contracts, STAKING_ROUTER, EASYTRACK_EVMSCRIPT_EXECUTOR
 from utils.test.node_operators_helpers import node_operator_gindex
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_keys
-from utils.balance import set_balance
 
 
 STAKING_ROUTER_ROLE = Web3.keccak(text="STAKING_ROUTER_ROLE")
 STAKING_MODULE_MANAGE_ROLE = Web3.keccak(text="STAKING_MODULE_MANAGE_ROLE")
 SET_NODE_OPERATOR_LIMIT_ROLE = Web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")
-
-
-@pytest.fixture(scope="module", autouse=True)
-def top_up_contracts():
-    return set_balance(STAKING_ROUTER, 100000)
 
 @pytest.fixture(scope="function")
 def impersonated_voting(accounts):

@@ -8,7 +8,6 @@ from brownie.network.account import Account
 from configs.config_mainnet import MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT
 
 from utils.test.helpers import ETH
-from utils.balance import set_balance
 from utils.config import contracts, ACCOUNTING_ORACLE
 from utils.evm_script import encode_error
 from utils.test.extra_data import ExtraDataService, ItemType
@@ -23,9 +22,6 @@ from utils.test.oracle_report_helpers import (
 NON_ZERO_HASH = ZERO_HASH[:-1] + b"\x01"
 FIELDS_WIDTH = ExtraDataService.Lengths
 
-@pytest.fixture(scope="module", autouse=True)
-def top_up_contracts(hash_consensus):
-    return set_balance(hash_consensus.address, 100000)
 
 def test_sender_not_allowed(accounting_oracle: Contract, oracle_version: int, stranger: Account) -> None:
     report = oracle_report(dry_run=True)

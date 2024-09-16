@@ -10,7 +10,6 @@ from utils.config import (
     AGENT,
 )
 from utils.test.helpers import ETH
-from utils.balance import set_balance
 
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
@@ -19,7 +18,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
 
     # Prepare required state for the voting
     if l1_token_bridge.isDepositsEnabled():
-        set_balance(AGENT, 10000)
         agent = accounts.at(AGENT, force=True)
         l1_token_bridge.disableDeposits({"from": agent})
 

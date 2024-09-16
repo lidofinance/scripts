@@ -5,15 +5,10 @@ from brownie import Contract, interface, reverts, Wei, chain  # type: ignore
 from utils.config import WITHDRAWAL_QUEUE, contracts
 from utils.evm_script import encode_error
 from utils.test.oracle_report_helpers import oracle_report, wait_to_next_available_report_time
-from utils.balance import set_balance
 
 MIN_STETH_WITHDRAWAL_AMOUNT = Wei(100)
 MAX_STETH_WITHDRAWAL_AMOUNT = Wei(1000 * 10**18)
 UINT256_MAX = 2**256 - 1
-
-@pytest.fixture(scope="module", autouse=True)
-def top_up_contracts(steth_whale):
-    return set_balance(steth_whale.address, 100000)
 
 def test_request_withdrawals_steth(wq: Contract, steth_whale: Account):
     too_small_amount = MIN_STETH_WITHDRAWAL_AMOUNT - 10

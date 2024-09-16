@@ -7,7 +7,6 @@ from brownie.network.account import Account
 from utils.evm_script import encode_error
 from utils.finance import ZERO_ADDRESS
 from utils.test.helpers import almostEqEth, ETH
-from utils.balance import set_balance
 from utils.config import (
     GATE_SEAL_COMMITTEE,
     contracts,
@@ -24,7 +23,6 @@ from utils.config import (
 
 @pytest.fixture(scope="module")
 def gate_seal_committee(accounts) -> Account:
-    set_balance(GATE_SEAL_COMMITTEE, 10000)
     return accounts.at(GATE_SEAL_COMMITTEE, force=True)
 
 
