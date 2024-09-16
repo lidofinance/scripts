@@ -10,7 +10,7 @@ WST_ETH = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
 ACCOUNTING_ORACLE = "0x852deD011285fe67063a08005c71a85690503Cee"
 L1_TOKEN_RATE_NOTIFIER = "0xe6793B9e4FbA7DE0ee833F9D02bba7DB5EB27823"
 L1_CROSS_DOMAIN_MESSENGER = "0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1"
-L2_TOKEN_RATE_ORACLE = "0x294ED1f214F4e0ecAE31C3Eae4F04EBB3b36C9d0"
+L2_TOKEN_RATE_ORACLE = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
 
 @pytest.fixture(scope="module")
 def accounting_oracle() -> Contract:
@@ -32,6 +32,7 @@ def test_oracle_report_revert():
     """Test oracle report reverts when messenger is empty"""
 
     web3.provider.make_request("hardhat_setCode", [L1_CROSS_DOMAIN_MESSENGER, "0x"])
+    web3.provider.make_request("evm_setAccountCode", [L1_CROSS_DOMAIN_MESSENGER, "0x"])
 
     with reverts(encode_error("ErrorTokenRateNotifierRevertedWithNoData()")):
         oracle_report(cl_diff=0, report_el_vault=True, report_withdrawals_vault=False)

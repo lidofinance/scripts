@@ -15,7 +15,7 @@ from utils.test.node_operators_helpers import (
     assert_node_operator_summaries,
     assert_node_operator_added_event,
 )
-from utils.test.helpers import topped_up_contract
+from utils.balance import set_balance
 
 DEPOSIT_SIZE = Wei("32 ether")
 
@@ -30,7 +30,7 @@ def grant_roles(voting_eoa, agent_eoa):
         contracts.voting,
         contracts.node_operators_registry,
         convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-        {"from": topped_up_contract(contracts.voting)},
+        {"from": contracts.voting},
     )
 
 
@@ -51,7 +51,9 @@ def voting_eoa(accounts):
 
 @pytest.fixture(scope="module")
 def evm_script_executor_eoa(accounts):
-    return accounts.at(contracts.easy_track.evmScriptExecutor(), force=True)
+    evmScriptExecutor = contracts.easy_track.evmScriptExecutor()
+    set_balance(evmScriptExecutor, 10000)
+    return accounts.at(evmScriptExecutor, force=True)
 
 
 @pytest.fixture(scope="module")
@@ -234,7 +236,7 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
     new_staking_limit = nor.getTotalSigningKeyCount(new_node_operator_id)
     assert new_staking_limit != node_operator_before["totalVettedValidators"], "invalid new staking limit"
 
-    tx = nor.setNodeOperatorStakingLimit(new_node_operator_id, new_staking_limit, {"from": topped_up_contract(evm_script_executor_eoa)})
+    tx = nor.setNodeOperatorStakingLimit(new_node_operator_id, new_staking_limit, {"from": evm_script_executor_eoa})
 
     nonce_after = nor.getNonce()
     node_operator_after = nor.getNodeOperator(new_node_operator_id, True)

@@ -17,7 +17,6 @@ from utils.config import (
     VEBO_CONSENSUS_VERSION,
 )
 from utils.evm_script import encode_error
-from utils.test.helpers import topped_up_contract
 
 last_seen_ref_slot = 6189855
 
@@ -49,7 +48,7 @@ def test_initialize(contract):
             HASH_CONSENSUS_FOR_AO,
             1,
             1,
-            {"from": topped_up_contract(contracts.voting)},
+            {"from": contracts.voting},
         )
 
 
@@ -61,7 +60,7 @@ def test_petrified(contract):
             HASH_CONSENSUS_FOR_AO,
             1,
             1,
-            {"from": topped_up_contract(contracts.voting)},
+            {"from": contracts.voting},
         )
 
 

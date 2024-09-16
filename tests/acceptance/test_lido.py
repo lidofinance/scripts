@@ -10,12 +10,10 @@ from utils.config import (
     LIDO_ARAGON_APP_ID,
     LIDO_MAX_STAKE_LIMIT_ETH,
 )
-from utils.test.helpers import topped_up_contract
 
 last_seen_deposited_validators = 176018
 last_seen_total_rewards_collected = 50327973200740183385860
 last_seen_beacon_validators = 175906
-
 
 @pytest.fixture(scope="module")
 def contract() -> interface.Lido:
@@ -52,21 +50,21 @@ def test_versioned(contract):
 
 def test_initialize(contract):
     with reverts("INIT_ALREADY_INITIALIZED"):
-        contract.initialize(contracts.lido_locator, contracts.eip712_steth, {"from": topped_up_contract(contracts.voting)})
+        contract.initialize(contracts.lido_locator, contracts.eip712_steth, {"from": contracts.voting})
 
 
 def test_finalize_upgrade(contract):
     with reverts("UNEXPECTED_CONTRACT_VERSION"):
-        contract.finalizeUpgrade_v2(contracts.lido_locator, contracts.eip712_steth, {"from": topped_up_contract(contracts.voting)})
+        contract.finalizeUpgrade_v2(contracts.lido_locator, contracts.eip712_steth, {"from": contracts.voting})
 
 
 def test_petrified():
     impl = interface.Lido(LIDO_IMPL)
     with reverts("INIT_ALREADY_INITIALIZED"):
-        impl.initialize(contracts.lido_locator, contracts.eip712_steth, {"from": topped_up_contract(contracts.voting)})
+        impl.initialize(contracts.lido_locator, contracts.eip712_steth, {"from": contracts.voting})
 
     with reverts("UNEXPECTED_CONTRACT_VERSION"):
-        impl.finalizeUpgrade_v2(contracts.lido_locator, contracts.eip712_steth, {"from": topped_up_contract(contracts.voting)})
+        impl.finalizeUpgrade_v2(contracts.lido_locator, contracts.eip712_steth, {"from": contracts.voting})
 
 
 def test_links(contract):

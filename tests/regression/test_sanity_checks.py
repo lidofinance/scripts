@@ -11,7 +11,7 @@ from utils.test.oracle_report_helpers import (
 )
 from utils.evm_script import encode_error
 
-from utils.test.helpers import ETH, eth_balance, topped_up_contract
+from utils.test.helpers import ETH, eth_balance
 
 from utils.config import (
     contracts,
@@ -265,16 +265,15 @@ def test_veb_oracle_too_much_extra_data():
 def fake_deposited_validators_increase(cl_validators_diff):
     (deposited, _, _) = contracts.lido.getBeaconStat()
 
-    voting = accounts.at(contracts.voting.address, force=True)
     contracts.acl.createPermission(
-        voting,
+        contracts.voting,
         contracts.lido,
         web3.keccak(text="UNSAFE_CHANGE_DEPOSITED_VALIDATORS_ROLE"),
-        voting,
-        {"from": topped_up_contract(voting)},
+        contracts.voting,
+        {"from": contracts.voting},
     )
 
-    contracts.lido.unsafeChangeDepositedValidators(deposited + cl_validators_diff, {"from": topped_up_contract(voting)})
+    contracts.lido.unsafeChangeDepositedValidators(deposited + cl_validators_diff, {"from": contracts.voting})
 
 
 def create_withdrawal_request(steth_holder):

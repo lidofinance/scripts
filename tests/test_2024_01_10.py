@@ -1,24 +1,16 @@
 """
 Tests for voting 01/10/2024
 """
-from scripts.vote_2024_01_10 import start_vote, check_pre_upgrade_state, check_post_upgrade_state
+from scripts.upgrade_2024_01_10 import start_vote, check_pre_upgrade_state, check_post_upgrade_state
 from brownie import interface, reverts, network, accounts
 from utils.test.tx_tracing_helpers import *
 from utils.config import (
     contracts,
-    LIDO_LOCATOR,
-    LIDO_LOCATOR_IMPL,
-    LIDO_LOCATOR_IMPL_OLD,
     L1_OPTIMISM_TOKENS_BRIDGE,
-    L1_OPTIMISM_TOKENS_BRIDGE_IMPL,
-    L1_EMERGENCY_BRAKES_MULTISIG,
-    L2_OPTIMISM_TOKENS_BRIDGE,
-    L2_OPTIMISM_TOKENS_BRIDGE_IMPL,
-    L2_OPTIMISM_WSTETH_TOKEN,
-    L2_OPTIMISM_WSTETH_TOKEN_IMPL,
     AGENT,
 )
-from utils.test.helpers import ETH, topped_up_contract
+from utils.test.helpers import ETH
+from utils.balance import set_balance
 
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
@@ -27,8 +19,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
 
     # Prepare required state for the voting
     if l1_token_bridge.isDepositsEnabled():
+        set_balance(AGENT, 10000)
         agent = accounts.at(AGENT, force=True)
-        l1_token_bridge.disableDeposits({"from": topped_up_contract(agent)})
+        l1_token_bridge.disableDeposits({"from": agent})
 
     check_pre_upgrade_state()
     wsteth_bridge_balance_before = contracts.wsteth.balanceOf(L1_OPTIMISM_TOKENS_BRIDGE)

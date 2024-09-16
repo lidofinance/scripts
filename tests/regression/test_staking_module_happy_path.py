@@ -6,19 +6,24 @@ from brownie import chain, ZERO_ADDRESS, web3
 from utils.test.extra_data import (
     ExtraDataService,
 )
-from utils.test.helpers import shares_balance, ETH, almostEqWithDiff, topped_up_contract
+from utils.test.helpers import shares_balance, ETH, almostEqWithDiff
 from utils.test.oracle_report_helpers import (
     oracle_report,
 )
 from utils.config import contracts, STAKING_ROUTER, EASYTRACK_EVMSCRIPT_EXECUTOR
 from utils.test.node_operators_helpers import node_operator_gindex
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_keys
+from utils.balance import set_balance
 
 
 STAKING_ROUTER_ROLE = Web3.keccak(text="STAKING_ROUTER_ROLE")
 STAKING_MODULE_MANAGE_ROLE = Web3.keccak(text="STAKING_MODULE_MANAGE_ROLE")
 SET_NODE_OPERATOR_LIMIT_ROLE = Web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")
 
+
+@pytest.fixture(scope="module", autouse=True)
+def top_up_contracts():
+    return set_balance(STAKING_ROUTER, 100000)
 
 @pytest.fixture(scope="function")
 def impersonated_voting(accounts):
@@ -69,7 +74,7 @@ def deposit_and_check_keys(nor, first_id, second_id, third_id, keys_count, imper
     module_total_deposited_keys_before = nor.getStakingModuleSummary()["totalDepositedValidators"]
 
     print(f"Deposit {keys_count} keys for module {nor.module_id}")
-    tx = contracts.lido.deposit(keys_count, nor.module_id, "0x", {"from": topped_up_contract(contracts.deposit_security_module.address)})
+    tx = contracts.lido.deposit(keys_count, nor.module_id, "0x", {"from": contracts.deposit_security_module.address})
 
     validators_after = contracts.lido.getBeaconStat().dict()["depositedValidators"]
     module_total_deposited_keys_after = nor.getStakingModuleSummary()["totalDepositedValidators"]
@@ -153,14 +158,14 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         impersonated_voting,
         staking_module,
         STAKING_ROUTER_ROLE,
-        {"from": topped_up_contract(impersonated_voting)},
+        {"from": impersonated_voting},
     )
 
     contracts.acl.grantPermission(
         impersonated_voting,
         staking_module,
         SET_NODE_OPERATOR_LIMIT_ROLE,
-        {"from": topped_up_contract(impersonated_voting)},
+        {"from": impersonated_voting},
     )
 
     # remove staking limit to avoid STAKE_LIMIT error
@@ -726,7 +731,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
 
     assert first_no_summary_before["depositableValidatorsCount"] > 0
 
-    target_limit_tx = staking_module.updateTargetValidatorsLimits(no1_id, True, 0, {"from": topped_up_contract(STAKING_ROUTER)})
+    target_limit_tx = staking_module.updateTargetValidatorsLimits(no1_id, True, 0, {"from": STAKING_ROUTER})
 
     target_validators_count_changed_events = parse_target_validators_count_changed(
         filter_transfer_logs(target_limit_tx.logs, web3.keccak(text="TargetValidatorsCountChanged(uint256,uint256)"))
@@ -755,7 +760,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     assert no3_deposited_keys_before != no3_deposited_keys_after
 
     # Disable target limit
-    target_limit_tx = staking_module.updateTargetValidatorsLimits(no1_id, False, 0, {"from": topped_up_contract(STAKING_ROUTER)})
+    target_limit_tx = staking_module.updateTargetValidatorsLimits(no1_id, False, 0, {"from": STAKING_ROUTER})
     target_validators_count_changed_events = parse_target_validators_count_changed(
         filter_transfer_logs(target_limit_tx.logs, web3.keccak(text="TargetValidatorsCountChanged(uint256,uint256)"))
     )

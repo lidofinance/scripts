@@ -12,7 +12,13 @@ from utils.test.oracle_report_helpers import oracle_report
 from utils.config import MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT, MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT
 from utils.config import contracts
 from utils.test.simple_dvt_helpers import simple_dvt_add_node_operators, simple_dvt_add_keys, simple_dvt_vet_keys
-from utils.test.helpers import topped_up_contract
+from utils.balance import set_balance
+
+@pytest.fixture(scope="function", autouse=True)
+def top_up_contracts(evm_script_executor_eoa):
+    set_balance(contracts.deposit_security_module.address, 100000)
+    set_balance(contracts.staking_router.address, 100000)
+    set_balance(evm_script_executor_eoa.address, 100000)
 
 
 @pytest.fixture()
@@ -201,14 +207,15 @@ def add_nor_operators_with_keys(nor, voting_eoa: Account, evm_script_executor_eo
         no_id = nor.getNodeOperatorsCount() - 1
         pubkeys_batch = random_pubkeys_batch(keys_per_operator)
         signatures_batch = random_signatures_batch(keys_per_operator)
+        set_balance(reward_addresses[i], 100000)
         nor.addSigningKeys(
             no_id,
             keys_per_operator,
             pubkeys_batch,
             signatures_batch,
-            {"from": topped_up_contract(reward_addresses[i])},
+            {"from": reward_addresses[i]},
         )
-        nor.setNodeOperatorStakingLimit(no_id, keys_per_operator, {"from": topped_up_contract(evm_script_executor_eoa)})
+        nor.setNodeOperatorStakingLimit(no_id, keys_per_operator, {"from": evm_script_executor_eoa})
 
 
 def fill_nor_with_old_and_new_operators(
@@ -218,7 +225,7 @@ def fill_nor_with_old_and_new_operators(
         contracts.voting,
         nor.address,
         convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-        {"from": topped_up_contract(contracts.voting)}
+        {"from": contracts.voting}
     )
 
     # Calculate new operators count
@@ -249,20 +256,21 @@ def fill_nor_with_old_and_new_operators(
         operator = nor.getNodeOperator(i, False)
         operator_summary = nor.getNodeOperatorSummary(i)
         new_deposit_limit = operator["totalDepositedValidators"] + new_keys_per_operator
+        set_balance(operator["rewardAddress"], 100000)
         nor.addSigningKeys(
             i,
             new_keys_per_operator,
             pubkeys_batch,
             signatures_batch,
-            {"from": topped_up_contract(operator["rewardAddress"])},
+            {"from": operator["rewardAddress"]},
         )
 
         # Change staking limits for old node operators (change to new total added keys count)
-        nor.setNodeOperatorStakingLimit(i, new_deposit_limit, {"from": topped_up_contract(evm_script_executor_eoa)})
+        nor.setNodeOperatorStakingLimit(i, new_deposit_limit, {"from": evm_script_executor_eoa})
 
         # Remove target validators limits if active
         if operator_summary["isTargetLimitActive"]:
-            nor.updateTargetValidatorsLimits(i, False, 0, {"from": topped_up_contract(contracts.staking_router)})
+            nor.updateTargetValidatorsLimits(i, False, 0, {"from": contracts.staking_router})
 
     return operators_count_before, operators_count_added
 
@@ -276,18 +284,18 @@ def deposit_buffer_for_keys(staking_router, sdvt_keys_to_deposit, nor_keys_to_de
         (exited_keys, deposited_keys, depositable_keys) = summary
         total_depositable_keys += depositable_keys
 
-    contracts.lido.removeStakingLimit({"from": topped_up_contract(contracts.voting)})
+    contracts.lido.removeStakingLimit({"from": contracts.voting})
     fill_deposit_buffer(total_depositable_keys)
     keys_per_deposit = 50
     # Deposits for SDVT
     times = sdvt_keys_to_deposit // keys_per_deposit
     for _ in range(0, times):
-        contracts.lido.deposit(keys_per_deposit, 2, "0x", {"from": topped_up_contract(contracts.deposit_security_module)})
+        contracts.lido.deposit(keys_per_deposit, 2, "0x", {"from": contracts.deposit_security_module})
 
     # Deposits for NOR
     times = nor_keys_to_deposit // keys_per_deposit;
     for _ in range(0, times):
-        contracts.lido.deposit(keys_per_deposit, 1, "0x", {"from": topped_up_contract(contracts.deposit_security_module)})
+        contracts.lido.deposit(keys_per_deposit, 1, "0x", {"from": contracts.deposit_security_module})
 
 
 def calc_no_rewards(module, no_id, shares_minted_as_fees):

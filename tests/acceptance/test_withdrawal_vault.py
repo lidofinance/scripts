@@ -3,7 +3,6 @@ from brownie import interface, reverts  # type: ignore
 
 from utils.config import contracts, WITHDRAWAL_VAULT, WITHDRAWAL_VAULT_IMPL
 from utils.evm_script import encode_error
-from utils.test.helpers import topped_up_contract
 
 
 @pytest.fixture(scope="module")
@@ -23,13 +22,13 @@ def test_versioned(contract):
 
 def test_initialize(contract):
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
-        contract.initialize({"from": topped_up_contract(contracts.voting)})
+        contract.initialize({"from": contracts.voting})
 
 
 def test_petrified():
     impl = interface.WithdrawalVault(WITHDRAWAL_VAULT_IMPL)
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
-        impl.initialize({"from": topped_up_contract(contracts.voting)})
+        impl.initialize({"from": contracts.voting})
 
 
 def test_withdrawals_vault(contract):

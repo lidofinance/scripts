@@ -1,5 +1,5 @@
 """
-Rollback voting xx/xx/2024 if L2 part of the upgrade failed.
+Rollback voting if L2 part of the upgrade failed.
 
 TODO
 
@@ -17,28 +17,18 @@ from utils.config import (
     get_deployer_account,
     get_is_live,
     get_priority_fee,
+    L1_OPTIMISM_CROSS_DOMAIN_MESSENGER,
     L1_EMERGENCY_BRAKES_MULTISIG,
     LIDO_LOCATOR,
     LIDO_LOCATOR_IMPL,
-    LIDO_LOCATOR_IMPL_NEW,
     L1_OPTIMISM_TOKENS_BRIDGE,
     L1_OPTIMISM_TOKENS_BRIDGE_IMPL,
-    L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
-    L1_OPTIMISM_CROSS_DOMAIN_MESSENGER,
-    L2_OPTIMISM_TOKENS_BRIDGE,
-    L2_OPTIMISM_GOVERNANCE_EXECUTOR,
-    L2_OPTIMISM_WSTETH_TOKEN,
-    L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
-    L2_OPTIMISM_WSTETH_IMPL_NEW,
 )
-
-# from utils.test.easy_track_helpers import encode_function_call
 
 
 DESCRIPTION = """
-Voting xx/xx/2024.
 
-Upgrade L1Bridge, L2Bridge, L2 wstETH
+Upgrade back L1Bridge, LidoLocator and revokeRole for deposit pause on L1Bridge
 
 """
 

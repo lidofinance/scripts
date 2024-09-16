@@ -16,7 +16,6 @@ from utils.config import (
     AO_CONSENSUS_VERSION,
 )
 from utils.evm_script import encode_error
-from utils.test.helpers import topped_up_contract
 
 @pytest.fixture(scope="module")
 def contract() -> interface.AccountingOracle:
@@ -51,7 +50,7 @@ def test_initialize(contract):
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
             HASH_CONSENSUS_FOR_AO,
             1,
-            {"from": topped_up_contract(contracts.voting)},
+            {"from": contracts.voting},
         )
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         contract.initializeWithoutMigration(
@@ -59,7 +58,7 @@ def test_initialize(contract):
             HASH_CONSENSUS_FOR_AO,
             1,
             1,
-            {"from": topped_up_contract(contracts.voting)},
+            {"from": contracts.voting},
         )
 
 
@@ -70,7 +69,7 @@ def test_petrified(contract):
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
             HASH_CONSENSUS_FOR_AO,
             1,
-            {"from": topped_up_contract(contracts.voting)},
+            {"from": contracts.voting},
         )
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
         impl.initializeWithoutMigration(
@@ -78,7 +77,7 @@ def test_petrified(contract):
             HASH_CONSENSUS_FOR_AO,
             1,
             1,
-            {"from": topped_up_contract(contracts.voting)},
+            {"from": contracts.voting},
         )
 
 

@@ -15,6 +15,7 @@ from utils.config import contracts, network_name, MAINNET_VOTE_DURATION
 from utils.config import *
 from utils.txs.deploy import deploy_from_prepared_tx
 from utils.test.helpers import ETH
+from utils.balance import set_balance
 
 ENV_OMNIBUS_BYPASS_EVENTS_DECODING = "OMNIBUS_BYPASS_EVENTS_DECODING"
 ENV_PARSE_EVENTS_FROM_LOCAL_ABI = "PARSE_EVENTS_FROM_LOCAL_ABI"
@@ -24,8 +25,11 @@ ENV_OMNIBUS_VOTE_IDS = "OMNIBUS_VOTE_IDS"
 @pytest.fixture(scope="function", autouse=True)
 def shared_setup(fn_isolation):
     network.gas_price("2 gwei")
+    set_balance(contracts.voting.address, 100000)
+    set_balance(contracts.accounting_oracle.address, 100000)
+    set_balance(contracts.deposit_security_module.address, 100000)
+    set_balance(contracts.agent.address, 100000)
     pass
-
 
 @pytest.fixture(scope="function")
 def deployer():
@@ -84,8 +88,10 @@ def trp_recipient(accounts):
 @pytest.fixture(scope="module")
 def eth_whale(accounts):
     if network_name() in ("goerli", "goerli-fork"):
+        set_balance("0xC48E23C5F6e1eA0BaEf6530734edC3968f79Af2e", 100000)
         return accounts.at("0xC48E23C5F6e1eA0BaEf6530734edC3968f79Af2e", force=True)
     else:
+        set_balance("0x00000000219ab540356cBB839Cbe05303d7705Fa", 100000)
         return accounts.at("0x00000000219ab540356cBB839Cbe05303d7705Fa", force=True)
 
 

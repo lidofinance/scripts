@@ -9,8 +9,9 @@ from web3 import Web3
 from utils.evm_script import encode_error
 from tests.conftest import Helpers
 from utils.config import contracts
-from utils.test.helpers import ETH, GWEI, ZERO_ADDRESS, almostEqWithDiff, eth_balance, topped_up_contract
+from utils.test.helpers import ETH, GWEI, ZERO_ADDRESS, almostEqWithDiff, eth_balance
 from utils.test.oracle_report_helpers import ONE_DAY, SHARE_RATE_PRECISION, oracle_report
+from utils.balance import set_balance
 
 LIMITER_PRECISION_BASE = 10**9
 MAX_BASIS_POINTS = 10_000
@@ -1112,9 +1113,7 @@ def _round_to_gwei(amount: int) -> int:
 def _drain_eth(address: str):
     """Drain ETH from address"""
 
-    web3.provider.make_request("evm_setAccountBalance", [address, hex(0)])
-    web3.provider.make_request("hardhat_setBalance", [address, hex(0)])
-
+    set_balance(address, 0)
     assert eth_balance(address) == 0, f"Expected account {address} to be empty"
 
 

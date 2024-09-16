@@ -12,6 +12,7 @@ from tests.conftest import Helpers
 from utils.config import contracts
 from utils.import_current_votes import start_and_execute_votes, is_there_any_vote_scripts
 from utils.test.snapshot_helpers import _chain_snapshot
+from utils.balance import set_balance
 
 
 class Frame(TypedDict):
@@ -61,7 +62,7 @@ def test_dsm_no_changes_in_views_with_ops(
     stacks = sandwich_upgrade(
         {
             "pauseDeposits": pause_deposits,
-            "setOwner": lambda dsm: dsm.setOwner(new_owner.address, {"from": dsm.getOwner()}),
+            "setOwner": lambda dsm: dsm.setOwner(new_owner.address, {"from": set_balance(dsm.getOwner(),10000)}),
             "setMaxDeposits(42)": lambda dsm: dsm.setMaxDeposits(42, {"from": new_owner.address}),
             "setMinDepositBlockDistance(17)": lambda dsm: dsm.setMinDepositBlockDistance(
                 17,
@@ -166,18 +167,21 @@ def do_snapshot(guardian: Account, some_eoa: Account):
 @pytest.fixture(scope="module")
 def new_owner(accounts) -> Account:
     """New owner account"""
+    set_balance(accounts[7].address, 10000)
     return accounts[7]
 
 
 @pytest.fixture(scope="module")
 def some_eoa(accounts) -> Account:
     """Some EOA account"""
+    set_balance(accounts[8].address, 10000)
     return accounts[8]
 
 
 @pytest.fixture(scope="module")
 def some_contract(accounts) -> Account:
     # Multicall3 contract deployed almost on the every network on the same address
+    set_balance("0xcA11bde05977b3631167028862bE2a173976CA11", 10000)
     return accounts.at("0xcA11bde05977b3631167028862bE2a173976CA11", force=True)
 
 

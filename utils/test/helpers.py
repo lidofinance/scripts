@@ -39,11 +39,3 @@ def shares_balance(account):
 
 def almostEqWithDiff(b1, b2, diff):
     return abs(b1 - b2) <= diff
-
-# Required to top up contracts to be able to make transactions on london hardfork.
-def topped_up_contract(address):
-    contract = accounts.at(address, force=True)
-    web3.provider.make_request("evm_setAccountBalance", [contract.address, "0x152D02C7E14AF6800000"])
-    web3.provider.make_request("hardhat_setBalance", [contract.address, "0x152D02C7E14AF6800000"])
-    assert contract.balance() == ETH(100000)
-    return contract
