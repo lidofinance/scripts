@@ -9,8 +9,8 @@ from utils.test.tx_tracing_helpers import *
 from utils.config import (
     contracts,
     AGENT,
+    L1_OPTIMISM_TOKENS_BRIDGE
 )
-
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
     l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)

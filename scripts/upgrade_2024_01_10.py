@@ -41,8 +41,10 @@ from utils.config import (
     L2_OPTIMISM_GOVERNANCE_EXECUTOR,
     L2_OPTIMISM_TOKENS_BRIDGE,
     L2_OPTIMISM_WSTETH_TOKEN,
-    L2_OPTIMISM_TOKENS_BRIDGE_IMPL,
     L2_OPTIMISM_WSTETH_TOKEN_IMPL,
+    L2_OPTIMISM_WSTETH_TOKEN_IMPL_NEW,
+    L2_OPTIMISM_TOKENS_BRIDGE_IMPL,
+    L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
     AGENT
 )
 
@@ -140,9 +142,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                         L2_OPTIMISM_GOVERNANCE_EXECUTOR,
                         encode_l2_upgrade_call(
                             L2_OPTIMISM_TOKENS_BRIDGE,
-                            L2_OPTIMISM_TOKENS_BRIDGE_IMPL,
+                            L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
                             L2_OPTIMISM_WSTETH_TOKEN,
-                            L2_OPTIMISM_WSTETH_TOKEN_IMPL,
+                            L2_OPTIMISM_WSTETH_TOKEN_IMPL_NEW,
                         ),
                     ),
                 )
@@ -259,8 +261,8 @@ def check_post_upgrade_state(vote_tx):
     sentMessage = vote_tx.events["SentMessage"]["message"]
     encoded_l2_upgrade_call = encode_l2_upgrade_call(
         L2_OPTIMISM_TOKENS_BRIDGE,
-        L2_OPTIMISM_TOKENS_BRIDGE_IMPL,
+        L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
         L2_OPTIMISM_WSTETH_TOKEN,
-        L2_OPTIMISM_WSTETH_TOKEN_IMPL,
+        L2_OPTIMISM_WSTETH_TOKEN_IMPL_NEW,
     )
     assert sentMessage == encoded_l2_upgrade_call

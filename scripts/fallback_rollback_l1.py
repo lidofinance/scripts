@@ -34,43 +34,6 @@ Upgrade back L1Bridge, LidoLocator and revokeRole for deposit pause on L1Bridge
 
 DEPOSITS_ENABLER_ROLE = "0x4b43b36766bde12c5e9cbbc37d15f8d1f769f08f54720ab370faeb4ce893753a"
 
-
-def encode_l2_upgrade_call(proxy1: str, new_impl1: str, proxy2: str, new_impl2: str):
-    # TODO: reuse the args string
-    queue_definition = f"queue(address[],uint256[],string[],bytes[],bool[])"
-    queue_selector = web3.keccak(text=queue_definition).hex()[:10]
-
-    args_bytes = eth_abi.encode(
-        ["address[]", "uint256[]", "string[]", "bytes[]", "bool[]"],
-        [
-            [proxy1, proxy1, proxy2, proxy2],
-            [0, 0, 0, 0],
-            [
-                "proxy__upgradeTo(address)",
-                "finalizeUpgrade_v2()",
-                "proxy__upgradeTo(address)",
-                "finalizeUpgrade_v2(string,string)",
-            ],
-            [
-                eth_abi.encode(["address"], [new_impl1]),
-                eth_abi.encode([], []),
-                eth_abi.encode(["address"], [new_impl2]),
-                eth_abi.encode(["string", "string"], ["Wrapped liquid staked Ether 2.0", "wstETH"]),
-            ],
-            [False, False, False, False],
-        ],
-    ).hex()
-    assert args_bytes[1] != "x"  # just convenient debug check
-    calldata = f"{queue_selector}{args_bytes}"
-    return calldata
-
-
-def encode_l1_l2_sendMessage(to: str, calldata: str):
-    l1_l2_msg_service = interface.OpCrossDomainMessenger(L1_OPTIMISM_CROSS_DOMAIN_MESSENGER)
-    min_gas_limit = 1_000_000
-    return l1_l2_msg_service.sendMessage.encode_input(to, calldata, min_gas_limit)
-
-
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""
 
