@@ -61,7 +61,7 @@ def test_dsm_no_changes_in_views_with_ops(
     stacks = sandwich_upgrade(
         {
             "pauseDeposits": pause_deposits,
-            "setOwner": lambda dsm: dsm.setOwner(new_owner.address, {"from": dsm.getOwner(),10000}),
+            "setOwner": lambda dsm: dsm.setOwner(new_owner.address, {"from": dsm.getOwner()}),
             "setMaxDeposits(42)": lambda dsm: dsm.setMaxDeposits(42, {"from": new_owner.address}),
             "setMinDepositBlockDistance(17)": lambda dsm: dsm.setMinDepositBlockDistance(
                 17,
