@@ -1,15 +1,18 @@
 """
 Voting 01/10/2024.
 
-1. Upgrade L1 Bridge implementation
-2. Finalize L1 Bridge upgrade
-3. Upgrade L1 LidoLocator implementation
-4. Grant DEPOSITS_ENABLER_ROLE to Emergency Brakes Committee multisig
-5. Send L2 upgrade call:
-    (a) upgrade L2TokenBridge;
-    (b) finalize L2TokenBridge upgrade;
-    (c) upgrade wstETH on L2;
-    (d) finalize wstETH upgrade";
+I. Upgrade Ethereum Contracts
+1. Upgrade L1ERC20TokenBridge contract implementation 0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4
+2. Call L1ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter
+3. Upgrade Lido Locator contract implementation 0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463
+4. Grant permission DEPOSITS_ENABLER_ROLE to Ethereum Emergency Brakes Multisig
+
+II. Upgrade Optimism Contracts
+1. Send Optimism upgrade call:
+    (a) Upgrade L2ERC20TokenBridge contract implementation 0x2734602C0CEbbA68662552CacD5553370B283E2E
+    (b) Call L2ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter
+    (c) Upgrade WstETH ERC20Bridged contract implementation 0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334
+    (d) Call WstETH ERC20Bridged's finalizeUpgrade_v2() to update internal version counter
 
 """
 
@@ -17,6 +20,7 @@ import time
 import eth_abi
 import brownie
 
+from brownie.exceptions import VirtualMachineError
 from brownie import interface, web3, accounts
 from typing import Dict
 from brownie.network.transaction import TransactionReceipt
@@ -49,9 +53,17 @@ from utils.config import (
 )
 
 DESCRIPTION = """
-Voting 01/10/2024.
 
-Upgrade L1Bridge, L2Bridge, L2 wstETH
+This vote follows a [Lido DAO decision on Snapshot](https://snapshot.org/#/lido-snapshot.eth/proposal/0xb1a3c33a4911712770c351504bac0499611ceb0faff248eacb1e96354f8e21e8) and [proposes to upgrade](https://research.lido.fi/t/lip-22-steth-on-l2/6855) the Lido bridge on the mainnet, introducing rebaseable stETH token on Optimism.
+All audit reports can be found here: [MixBytes Audit Report](https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf), [Ackee Audit Report](https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf)
+
+**Upgrade L1ERC20TokenBridge and L2ERC20TokenBridge** contracts
+
+**Upgrade Lido Locator** contract implementation
+
+**Grant permission** DEPOSITS_ENABLER_ROLE to Ethereum Emergency Brakes Multisig
+
+**Upgrade WstETH ERC20Bridged** contract on Optimism implementation
 
 """
 
@@ -104,7 +116,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
 
     call_script_items = [
-        # 1. L1 TokenBridge upgrade proxy
+        # I. Upgrade Ethereum Contracts
+
+        # 1. Upgrade L1ERC20TokenBridge contract implementation 0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4
         agent_forward(
             [
                 (
@@ -113,9 +127,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 )
             ]
         ),
-        # 2. L1 TokenBridge finalize upgrade
+
+        # 2. Call L1ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter
         agent_forward([(l1_token_bridge.address, l1_token_bridge.finalizeUpgrade_v2.encode_input())]),
-        # 3. Upgrade L1 LidoLocator implementation
+
+        # 3. Upgrade Lido Locator contract implementation 0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463"
         agent_forward(
             [
                 (
@@ -124,7 +140,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 )
             ]
         ),
-        # 4. Grant DEPOSITS_ENABLER_ROLE to Emergency Brakes Committee multisig
+
+        # 4. Grant permission DEPOSITS_ENABLER_ROLE to Ethereum Emergency Brakes Multisig
         agent_forward(
             [
                 (
@@ -133,7 +150,13 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 )
             ]
         ),
-        # 5. L2 TokenBridge
+
+        # II. Upgrade Optimism Contracts
+        # 1. Send Optimism upgrade call:
+        #     (a) Upgrade L2ERC20TokenBridge contract implementation 0x2734602C0CEbbA68662552CacD5553370B283E2E
+        #     (b) Call L2ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter
+        #     (c) Upgrade WstETH ERC20Bridged contract implementation 0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334
+        #     (d) Call WstETH ERC20Bridged's finalizeUpgrade_v2() to update internal version counter
         agent_forward(
             [
                 (
@@ -153,11 +176,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     ]
 
     vote_desc_items = [
-        "1) Upgrade Optimism L1 Bridge implementation",
-        "2) Finalize Optimism L1 Bridge upgrade",
-        "3) Upgrade LidoLocator implementation",
-        "4) Grant DEPOSITS_ENABLER_ROLE to Emergency Brakes Committee multisig",
-        "5) Send Optimism L2 upgrade call: (a) upgrade L2TokenBridge; (b) finalize L2TokenBridge upgrade; (c) upgrade wstETH; (d) finalize wstETH upgrade",
+        "1) Upgrade L1ERC20TokenBridge contract implementation 0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4",
+        "2) Call L1ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter",
+        "3) Upgrade Lido Locator contract implementation 0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463",
+        "4) Grant permission DEPOSITS_ENABLER_ROLE to Ethereum Emergency Brakes Multisig",
+        "5) Send Optimism upgrade call: (a) Upgrade L2ERC20TokenBridge contract implementation 0x2734602C0CEbbA68662552CacD5553370B283E2E; (b) Call L2ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter; (c) Upgrade WstETH ERC20Bridged contract implementation 0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334; (d) Call WstETH ERC20Bridged's finalizeUpgrade_v2() to update internal version counter;",
     ]
 
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
@@ -224,8 +247,10 @@ def check_pre_upgrade_state():
     assert l1_token_bridge_implementation_address_before == L1_OPTIMISM_TOKENS_BRIDGE_IMPL, "Old address is incorrect"
 
     # L1 Bridge doesn't have version before update
-    with brownie.reverts():
+    try:
         l1_token_bridge.getContractVersion()
+    except VirtualMachineError:
+        pass
 
     # Upgrade LidoLocator implementation
     lido_locator_impl_before = lido_locator_proxy.proxy__getImplementation()
