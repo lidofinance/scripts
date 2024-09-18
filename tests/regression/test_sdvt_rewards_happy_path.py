@@ -92,7 +92,7 @@ def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participa
             pause_staking_module(module[0])
 
     # fill the deposit buffer
-    deposits_count = 10
+    deposits_count = 50
     fill_deposit_buffer(deposits_count)
 
     # deposit to simple dvt
@@ -110,7 +110,7 @@ def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participa
     assert cluster_rewards_before_report == 0
 
     # oracle report
-    oracle_report(cl_diff=ETH(100))
+    oracle_report(cl_diff=ETH(500))
     cluster_rewards_after_report = lido.balanceOf(new_reward_address)
 
     # check that cluster reward address balance increased
