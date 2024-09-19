@@ -104,7 +104,7 @@ def simple_dvt_add_node_operators(simple_dvt, stranger, input_params=[]):
     # ]
     if len(input_params) > 0:
         calldata = _encode_calldata(
-            ["uint256","(string,address,address)[]"],
+            ["uint256", "(string,address,address)[]"],
             [
                 node_operators_count_before,
                 input_params,
@@ -117,20 +117,24 @@ def simple_dvt_add_node_operators(simple_dvt, stranger, input_params=[]):
 
 
 def simple_dvt_add_keys(simple_dvt, node_operator_id, keys_count=1):
-    pubkeys_batch = random_pubkeys_batch(keys_count)
-    signatures_batch = random_signatures_batch(keys_count)
-
     total_signing_keys_count_before = simple_dvt.getTotalSigningKeyCount(node_operator_id)
     unused_signing_keys_count_before = simple_dvt.getUnusedSigningKeyCount(node_operator_id)
     node_operator_before = simple_dvt.getNodeOperator(node_operator_id, False)
 
-    tx = simple_dvt.addSigningKeys(
-        node_operator_id,
-        keys_count,
-        pubkeys_batch,
-        signatures_batch,
-        {"from": node_operator_before["rewardAddress"]},
-    )
+    all_keys_count = keys_count
+    while all_keys_count > 0:
+        batch_keys_count = 10 if all_keys_count > 10 else all_keys_count
+        pubkeys_batch = random_pubkeys_batch(batch_keys_count)
+        signatures_batch = random_signatures_batch(batch_keys_count)
+
+        simple_dvt.addSigningKeys(
+            node_operator_id,
+            batch_keys_count,
+            pubkeys_batch,
+            signatures_batch,
+            {"from": node_operator_before["rewardAddress"]},
+        )
+        all_keys_count -= batch_keys_count
 
     total_signing_keys_count_after = simple_dvt.getTotalSigningKeyCount(node_operator_id)
     unused_signing_keys_count_after = simple_dvt.getUnusedSigningKeyCount(node_operator_id)
