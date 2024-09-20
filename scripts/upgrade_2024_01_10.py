@@ -21,7 +21,7 @@ import eth_abi
 import brownie
 
 from brownie.exceptions import VirtualMachineError
-from brownie import interface, web3, accounts
+from brownie import interface, web3, accounts, network
 from typing import Dict
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
@@ -258,6 +258,36 @@ def check_pre_upgrade_state():
 
     # Multisig hasn't been assigned as deposit enabler
     assert not l1_token_bridge.hasRole(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG)
+
+def pause_deposits():
+    if not network_name() in ("mainnet-fork"):
+        return
+
+    network.gas_price("2 gwei")
+
+    account_wht_eth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    accountWithEth = accounts.at(account_wht_eth, force=True)
+    accountWithEth.transfer(AGENT, "2 ethers")
+
+    l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
+    agent = accounts.at(AGENT, force=True)
+    l1_token_bridge.disableDeposits({"from": agent})
+    assert not l1_token_bridge.isDepositsEnabled()
+
+def resume_deposits():
+    if not network_name() in ("mainnet-fork"):
+        return
+
+    network.gas_price("2 gwei")
+
+    account_wht_eth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    accountWithEth = accounts.at(account_wht_eth, force=True)
+    accountWithEth.transfer(AGENT, "2 ethers")
+
+    l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
+    agent = accounts.at(AGENT, force=True)
+    l1_token_bridge.enableDeposits({"from": agent})
+    assert l1_token_bridge.isDepositsEnabled()
 
 
 def check_post_upgrade_state(vote_tx):
