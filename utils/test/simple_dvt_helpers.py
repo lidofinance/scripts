@@ -10,6 +10,7 @@ from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batc
 
 MIN_OP_KEYS_CNT = 10
 MIN_OPS_CNT = 3
+MAX_KEYS_BATCH_SIZE = 100
 
 
 def get_operator_name(id: int, group: int = 0):
@@ -104,7 +105,7 @@ def simple_dvt_add_node_operators(simple_dvt, stranger, input_params=[]):
     # ]
     if len(input_params) > 0:
         calldata = _encode_calldata(
-            ["uint256","(string,address,address)[]"],
+            ["uint256", "(string,address,address)[]"],
             [
                 node_operators_count_before,
                 input_params,
@@ -113,27 +114,34 @@ def simple_dvt_add_node_operators(simple_dvt, stranger, input_params=[]):
         create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
         node_operators_count_after = simple_dvt.getNodeOperatorsCount()
 
-    return (node_operators_count_before, node_operators_count_after)
+    return node_operators_count_before, node_operators_count_after
 
 
 def simple_dvt_add_keys(simple_dvt, node_operator_id, keys_count=1):
-    pubkeys_batch = random_pubkeys_batch(keys_count)
-    signatures_batch = random_signatures_batch(keys_count)
+    remained_keys_count = keys_count
 
-    total_signing_keys_count_before = simple_dvt.getTotalSigningKeyCount(node_operator_id)
-    unused_signing_keys_count_before = simple_dvt.getUnusedSigningKeyCount(node_operator_id)
-    node_operator_before = simple_dvt.getNodeOperator(node_operator_id, False)
+    while remained_keys_count > 0:
+        batch_size = min(remained_keys_count, MAX_KEYS_BATCH_SIZE)
 
-    tx = simple_dvt.addSigningKeys(
-        node_operator_id,
-        keys_count,
-        pubkeys_batch,
-        signatures_batch,
-        {"from": node_operator_before["rewardAddress"]},
-    )
+        pubkeys_batch = random_pubkeys_batch(batch_size)
+        signatures_batch = random_signatures_batch(batch_size)
 
-    total_signing_keys_count_after = simple_dvt.getTotalSigningKeyCount(node_operator_id)
-    unused_signing_keys_count_after = simple_dvt.getUnusedSigningKeyCount(node_operator_id)
+        total_signing_keys_count_before = simple_dvt.getTotalSigningKeyCount(node_operator_id)
+        unused_signing_keys_count_before = simple_dvt.getUnusedSigningKeyCount(node_operator_id)
+        node_operator_before = simple_dvt.getNodeOperator(node_operator_id, False)
 
-    assert total_signing_keys_count_after == total_signing_keys_count_before + keys_count
-    assert unused_signing_keys_count_after == unused_signing_keys_count_before + keys_count
+        tx = simple_dvt.addSigningKeys(
+            node_operator_id,
+            batch_size,
+            pubkeys_batch,
+            signatures_batch,
+            {"from": node_operator_before["rewardAddress"]},
+        )
+
+        total_signing_keys_count_after = simple_dvt.getTotalSigningKeyCount(node_operator_id)
+        unused_signing_keys_count_after = simple_dvt.getUnusedSigningKeyCount(node_operator_id)
+
+        assert total_signing_keys_count_after == total_signing_keys_count_before + batch_size
+        assert unused_signing_keys_count_after == unused_signing_keys_count_before + batch_size
+
+        remained_keys_count -= batch_size
