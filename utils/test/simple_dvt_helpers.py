@@ -10,6 +10,7 @@ from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batc
 
 MIN_OP_KEYS_CNT = 10
 MIN_OPS_CNT = 3
+MAX_KEYS_BATCH_SIZE = 100
 
 
 def get_operator_name(id: int, group: int = 0):
@@ -104,7 +105,7 @@ def simple_dvt_add_node_operators(simple_dvt, stranger, input_params=[]):
     # ]
     if len(input_params) > 0:
         calldata = _encode_calldata(
-            ["uint256","(string,address,address)[]"],
+            ["uint256", "(string,address,address)[]"],
             [
                 node_operators_count_before,
                 input_params,
@@ -113,17 +114,14 @@ def simple_dvt_add_node_operators(simple_dvt, stranger, input_params=[]):
         create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
         node_operators_count_after = simple_dvt.getNodeOperatorsCount()
 
-    return (node_operators_count_before, node_operators_count_after)
+    return node_operators_count_before, node_operators_count_after
 
-
-def max_keys_batchsize():
-    return 100
 
 def simple_dvt_add_keys(simple_dvt, node_operator_id, keys_count=1):
     remained_keys_count = keys_count
 
     while remained_keys_count > 0:
-        batch_size = min(remained_keys_count, max_keys_batchsize())
+        batch_size = min(remained_keys_count, MAX_KEYS_BATCH_SIZE)
 
         pubkeys_batch = random_pubkeys_batch(batch_size)
         signatures_batch = random_signatures_batch(batch_size)
