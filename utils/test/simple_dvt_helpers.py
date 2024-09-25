@@ -1,4 +1,6 @@
-from brownie import chain, accounts, interface
+from brownie import chain, accounts, interface, web3
+from web3 import Web3
+
 from utils.config import (
     contracts,
     EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER,
