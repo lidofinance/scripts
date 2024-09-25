@@ -46,6 +46,27 @@ def withdrawal_vault() -> Contract:
     return contracts.withdrawal_vault
 
 
+def set_account_balance(address: str, amount: int):
+    try:
+        web3.manager.request_blocking(
+            "evm_setAccountBalance",  # type: ignore
+            [
+                address,
+                Web3.to_hex(amount),
+            ],
+        )
+    except ValueError as e:
+        if e.args[0].get("message") != "Method evm_setAccountBalance is not supported":
+            raise e
+        web3.manager.request_blocking(
+            "hardhat_setBalance",  # type: ignore
+            [
+                address,
+                Web3.to_hex(amount),
+            ],
+        )
+
+
 def test_accounting_no_cl_rebase(accounting_oracle: Contract, lido: Contract, helpers: Helpers):
     """Check Lido rebase after accounting report with no CL rebase"""
 
@@ -581,13 +602,7 @@ def test_accounting_withdrawals_at_limits(
 
     withdrawals = _rebase_limit_wei(block_identifier=block_before_report)
 
-    web3.manager.request_blocking(
-        "evm_setAccountBalance",  # type: ignore
-        [
-            withdrawal_vault.address,
-            Web3.to_hex(withdrawals),
-        ],
-    )
+    set_account_balance(withdrawal_vault.address, withdrawals)
 
     tx, _ = oracle_report(
         cl_diff=0,
@@ -704,13 +719,7 @@ def test_accounting_withdrawals_above_limits(
     withdrawals_excess = ETH(10)
     withdrawals = expected_withdrawals + withdrawals_excess
 
-    web3.manager.request_blocking(
-        "evm_setAccountBalance",  # type: ignore
-        [
-            withdrawal_vault.address,
-            Web3.to_hex(withdrawals),
-        ],
-    )
+    set_account_balance(withdrawal_vault.address, withdrawals)
 
     tx, _ = oracle_report(
         cl_diff=0,
@@ -954,20 +963,8 @@ def test_accounting_overfill_both_vaults(
     limit = _rebase_limit_wei(block_identifier=chain.height)
     excess = ETH(10)
 
-    web3.manager.request_blocking(
-        "evm_setAccountBalance",  # type: ignore
-        [
-            withdrawal_vault.address,
-            Web3.to_hex(limit + excess),
-        ],
-    )
-    web3.manager.request_blocking(
-        "evm_setAccountBalance",  # type: ignore
-        [
-            el_vault.address,
-            Web3.to_hex(limit + excess),
-        ],
-    )
+    set_account_balance(withdrawal_vault.address, limit + excess)
+    set_account_balance(el_vault.address, limit + excess)
 
     initial_block = chain.height
 

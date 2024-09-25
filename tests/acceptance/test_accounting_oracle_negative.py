@@ -82,7 +82,7 @@ def test_submitConsensusReport(accounting_oracle: Contract, hash_consensus: Cont
         accounting_oracle.submitConsensusReport(
             ZERO_HASH,
             last_processing_ref_slot + 1,
-            chain.time(),
+            chain.time() + 12,
             {"from": hash_consensus},
         )
 
