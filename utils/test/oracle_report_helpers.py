@@ -11,13 +11,15 @@ from hexbytes import HexBytes
 from utils.config import (contracts, AO_CONSENSUS_VERSION)
 from utils.test.exit_bus_data import encode_data
 from utils.test.helpers import ETH, GWEI, eth_balance
+from utils.test.merkle_tree import Tree
 
 ZERO_HASH = bytes([0] * 32)
 ZERO_BYTES32 = HexBytes(ZERO_HASH)
 ONE_DAY = 1 * 24 * 60 * 60
-SHARE_RATE_PRECISION = 10**27
+SHARE_RATE_PRECISION = 10 ** 27
 EXTRA_DATA_FORMAT_EMPTY = 0
 EXTRA_DATA_FORMAT_LIST = 1
+
 
 @dataclass
 class AccountingReport:
@@ -55,7 +57,6 @@ class AccountingReport:
 
     def copy(self) -> "AccountingReport":
         return AccountingReport(*self.items)
-
 
 
 def prepare_accounting_report(
@@ -107,6 +108,31 @@ def prepare_exit_bus_report(validators_to_exit, ref_slot):
     return report, report_hash
 
 
+def prepare_csm_report(node_operators_rewards: dict, ref_slot):
+    consensus_version = contracts.cs_fee_oracle.getConsensusVersion()
+    shares = node_operators_rewards.copy()
+    if len(shares) < 2:
+        # put a stone
+        shares[2 ** 64 - 1] = 0
+
+    tree = Tree.new(tuple((no_id, amount) for (no_id, amount) in shares.items()))
+    # semi-random values
+    log_cid = web3.keccak(tree.root)
+    tree_cid = web3.keccak(log_cid)
+
+    report = (
+        consensus_version,
+        ref_slot,
+        tree.root,
+        str(tree_cid),
+        str(log_cid),
+        sum(shares.values()),
+    )
+    report_data = encode_data_from_abi(report, contracts.cs_fee_oracle.abi, "submitReportData")
+    report_hash = web3.keccak(report_data)
+    return report, report_hash, tree
+
+
 def encode_data_from_abi(data, abi, func_name):
     report_function_abi = next(x for x in abi if x.get("name") == func_name)
     report_data_abi = report_function_abi["inputs"][0]["components"]  # type: ignore
@@ -117,7 +143,8 @@ def encode_data_from_abi(data, abi, func_name):
 def get_finalization_batches(
     share_rate: int, limited_withdrawal_vault_balance, limited_el_rewards_vault_balance
 ) -> list[int]:
-    (_, _, _, _, _, _, _, requestTimestampMargin, _, _, _, _) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
+    (_, _, _, _, _, _, _, requestTimestampMargin, _, _, _,
+     _) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
     buffered_ether = contracts.lido.getBufferedEther()
     unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
     reserved_buffer = min(buffered_ether, unfinalized_steth)
@@ -168,7 +195,7 @@ def push_oracle_report(
     extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
     silent=False,
-    extraDataList:List[bytes]=[],
+    extraDataList: List[bytes] = [],
 ):
     if not silent:
         print(f"Preparing oracle report for refSlot: {refSlot}")
@@ -192,7 +219,7 @@ def push_oracle_report(
         extraDataItemsCount=extraDataItemsCount,
     )
     submitter = reach_consensus(refSlot, hash, consensusVersion, contracts.hash_consensus_for_accounting_oracle, silent)
-    accounts[0].transfer(submitter, 10**19)
+    accounts[0].transfer(submitter, 10 ** 19)
     # print(contracts.oracle_report_sanity_checker.getOracleReportLimits())
     report_tx = contracts.accounting_oracle.submitReportData(items, oracleVersion, {"from": submitter})
     if not silent:
@@ -203,7 +230,8 @@ def push_oracle_report(
         if not silent:
             print("Submitted empty extra data report")
     else:
-        extra_report_tx_list = [contracts.accounting_oracle.submitReportExtraDataList(data, {"from": submitter}) for data in extraDataList]
+        extra_report_tx_list = [contracts.accounting_oracle.submitReportExtraDataList(data, {"from": submitter}) for
+                                data in extraDataList]
         if not silent:
             print("Submitted NOT empty extra data report")
 
@@ -294,7 +322,7 @@ def oracle_report(
     extraDataFormat=0,
     extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
-    extraDataList:List[bytes]=[],
+    extraDataList: List[bytes] = [],
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,
@@ -322,7 +350,7 @@ def oracle_report(
     extraDataFormat=0,
     extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
-    extraDataList:List[bytes]=[],
+    extraDataList: List[bytes] = [],
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,
@@ -350,7 +378,7 @@ def oracle_report(
     extraDataFormat=0,
     extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
-    extraDataList:List[bytes]=[],
+    extraDataList: List[bytes] = [],
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,
