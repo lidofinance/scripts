@@ -131,6 +131,8 @@ def test_simple_dvt_state(contract):
             assert (
                 node_operator_summary["isTargetLimitActive"] is True
             ), f"isTargetLimitActive is inactive for node {id}"
+
+            assert node_operator_summary["depositableValidatorsCount"] == 0
         else:
             assert node_operator_summary["isTargetLimitActive"] is False, f"isTargetLimitActive is active for node {id}"
         assert node_operator_summary["targetValidatorsCount"] == 0
@@ -150,11 +152,12 @@ def test_simple_dvt_state(contract):
         assert node_operator["totalExitedValidators"] == node_operator_summary["totalExitedValidators"]
         assert node_operator["totalDepositedValidators"] == node_operator_summary["totalDepositedValidators"]
 
-        no_depositable_validators_count = (
-            node_operator["totalVettedValidators"] - node_operator["totalDepositedValidators"]
-        )
 
-        assert node_operator_summary["depositableValidatorsCount"] == no_depositable_validators_count
+        if node_operator_summary["isTargetLimitActive"] == False:
+            no_depositable_validators_count = (
+                node_operator["totalVettedValidators"] - node_operator["totalDepositedValidators"]
+            )
+            assert node_operator_summary["depositableValidatorsCount"] == no_depositable_validators_count
 
 
 def test_simple_dvt_permissions(contract):
