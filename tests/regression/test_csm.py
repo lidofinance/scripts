@@ -213,6 +213,7 @@ def test_csm_get_staking_module_summary(csm, accounting, node_operator, extra_da
 
 @pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_get_node_operator_summary(csm, node_operator, extra_data_service):
+    no = csm.getNodeOperator(node_operator)
     exited_keys = 1
     stuck_keys = 1
     extra_data = extra_data_service.collect({(CSM_MODULE_ID, node_operator): stuck_keys}, {(CSM_MODULE_ID, node_operator): exited_keys}, 2, 2)
@@ -232,7 +233,7 @@ def test_csm_get_node_operator_summary(csm, node_operator, extra_data_service):
     assert summary["refundedValidatorsCount"] == 0
     assert summary["stuckPenaltyEndTimestamp"] == 0
     assert summary["totalExitedValidators"] == exited_keys
-    assert summary["totalDepositedValidators"] == 5
+    assert summary["totalDepositedValidators"] == no["totalDepositedKeys"]
     assert summary["depositableValidatorsCount"] == 0
 
 

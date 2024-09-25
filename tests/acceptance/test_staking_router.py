@@ -149,7 +149,7 @@ def test_staking_modules(contract):
     assert simple_dvt_module["exitedValidatorsCount"] >= 0
     assert simple_dvt_module["priorityExitShareThreshold"] == SIMPLE_DVT_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD
     assert simple_dvt_module["maxDepositsPerBlock"] == SIMPLE_DVT_MODULE_MAX_DEPOSITS_PER_BLOCK
-    assert curated_module["minDepositBlockDistance"] == SIMPLE_DVT_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE
+    assert simple_dvt_module["minDepositBlockDistance"] == SIMPLE_DVT_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE
 
     community_staking_module = contract.getStakingModule(CS_MODULE_ID)
     assert community_staking_module["id"] == CS_MODULE_ID
@@ -164,7 +164,7 @@ def test_staking_modules(contract):
     assert community_staking_module["exitedValidatorsCount"] >= 0
     assert community_staking_module["priorityExitShareThreshold"] == CS_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD
     assert community_staking_module["maxDepositsPerBlock"] == CS_MODULE_MAX_DEPOSITS_PER_BLOCK
-    assert curated_module["minDepositBlockDistance"] == CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE
+    assert community_staking_module["minDepositBlockDistance"] == CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE
 
     fee_aggregate_distribution = contract.getStakingFeeAggregateDistribution()
     assert fee_aggregate_distribution["modulesFee"] <= SR_MODULES_FEE_E20
