@@ -111,7 +111,7 @@ def assure_depositable_keys(stranger):
         fill_simple_dvt_ops_vetted_keys(stranger, 3, 5)
     if not modules[3].depositable_keys:
         address, proof = get_ea_member()
-        csm_add_node_operator(contracts.csm, contracts.cs_accounting, address, proof)
+        csm_add_node_operator(contracts.csm, contracts.cs_accounting, address, proof, curve_id=contracts.cs_early_adoption.CURVE_ID())
 
 def test_stake_distribution(stranger):
     """

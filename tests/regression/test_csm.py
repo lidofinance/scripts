@@ -21,6 +21,7 @@ contracts: ContractsLazyLoader = contracts
 
 CSM_MODULE_ID = 3
 
+pytestmark = pytest.mark.usefixtures("autoexecute_vote_ms")
 
 @pytest.fixture(scope="module")
 def csm():
@@ -199,8 +200,7 @@ def test_csm_get_staking_module_summary(csm, accounting, node_operator, extra_da
     deposits_count = 3
     new_keys = 5
     new_depositable = new_keys - deposits_count
-    address, _ = get_ea_member()
-    csm_upload_keys(csm, accounting, node_operator, address, new_keys)
+    csm_upload_keys(csm, accounting, node_operator, new_keys)
     fill_deposit_buffer(deposits_count)
     contracts.lido.deposit(deposits_count, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
 

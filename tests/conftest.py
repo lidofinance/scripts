@@ -47,7 +47,7 @@ def ldo_holder(accounts):
     return accounts.at(LDO_HOLDER_ADDRESS_FOR_TESTS, force=True)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def stranger():
     return set_balance("0x98eC059dC3aDFbdd63429454aeB0C990fbA4a124", 100000)
 

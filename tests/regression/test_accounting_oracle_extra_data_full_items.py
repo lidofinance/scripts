@@ -3,6 +3,7 @@ from brownie import convert
 from brownie.network.account import Account
 from brownie.network.web3 import Web3
 
+from utils.test.csm_helpers import csm_add_node_operator, csm_upload_keys
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.helpers import shares_balance, almostEqWithDiff
 from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
@@ -11,95 +12,113 @@ from utils.test.node_operators_helpers import distribute_reward
 
 from utils.config import MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION, MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM
 from utils.config import contracts
-from utils.test.simple_dvt_helpers import simple_dvt_add_node_operators, simple_dvt_add_keys, simple_dvt_vet_keys
 
+NEW_KEYS_PER_OPERATOR = 2
 
-@pytest.fixture
+pytestmark = pytest.mark.usefixtures("autoexecute_vote_ms")
+
+@pytest.fixture(scope="module")
 def voting_eoa(accounts):
     return accounts.at(contracts.voting.address, force=True)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
+def agent_eoa(accounts):
+    return accounts.at(contracts.agent.address, force=True)
+
+
+@pytest.fixture(scope="module")
 def evm_script_executor_eoa(accounts):
     return accounts.at(contracts.easy_track.evmScriptExecutor(), force=True)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def nor(interface):
     return interface.NodeOperatorsRegistry(contracts.node_operators_registry.address)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def sdvt(interface):
     return interface.SimpleDVT(contracts.simple_dvt.address)
 
 
-@pytest.mark.parametrize(
-    ("nor_stuck_items", "nor_exited_items", "sdvt_stuck_items", "sdvt_exited_items"),
-    [
-        (1, 1, 1, 1),
-        (1, 1, 1, 0),
-        (1, 1, 0, 1),
-        (1, 1, 0, 0),
-        (1, 0, 1, 1),
-        (1, 0, 1, 0),
-        (1, 0, 0, 1),
-        (1, 0, 0, 0),
-        (0, 1, 1, 1),
-        (0, 1, 1, 0),
-        (0, 1, 0, 1),
-        (0, 1, 0, 0),
-        (0, 0, 1, 1),
-        (0, 0, 1, 0),
-        (0, 0, 0, 1),
-    ]
-)
-def test_extra_data_full_items(
-    voting_eoa, evm_script_executor_eoa, nor, sdvt, extra_data_service,
-    nor_stuck_items, nor_exited_items, sdvt_stuck_items, sdvt_exited_items, stranger
-):
-    max_node_operators_per_item = MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM
-    new_keys_per_operator = 2
-
+@pytest.fixture(scope="module")
+def prepare_modules(nor, sdvt, voting_eoa, agent_eoa, evm_script_executor_eoa):
     # Fill NOR with new operators and keys
     (nor_count_before, added_nor_operators_count) = fill_nor_with_old_and_new_operators(
         nor,
         voting_eoa,
         evm_script_executor_eoa,
-        new_keys_per_operator,
-        nor_stuck_items,
-        nor_exited_items,
-        max_node_operators_per_item,
+        NEW_KEYS_PER_OPERATOR,
+        MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
     )
 
-    # Fill SimpleDVT with new operators and keys
     (sdvt_count_before, added_sdvt_operators_count) = fill_nor_with_old_and_new_operators(
         sdvt,
         voting_eoa,
+        agent_eoa,
         evm_script_executor_eoa,
-        new_keys_per_operator,
-        sdvt_stuck_items,
-        sdvt_exited_items,
-        max_node_operators_per_item,
+        NEW_KEYS_PER_OPERATOR,
+        MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
     )
+
+    # Fill CSM with new operators and keys
+    csm_operators_count = MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM
+    csm_count_before, added_csm_operators_count = fill_csm_operators_with_keys(csm_operators_count,
+                                                                               NEW_KEYS_PER_OPERATOR)
 
     # Deposit for new added keys from buffer
     keys_for_sdvt = (added_sdvt_operators_count * new_keys_per_operator) + (sdvt_count_before * new_keys_per_operator)
     keys_for_nor = (added_nor_operators_count * new_keys_per_operator) + (nor_count_before * new_keys_per_operator)
+    keys_for_csm = (added_csm_operators_count * new_keys_per_operator) + (csm_count_before * new_keys_per_operator)
     deposit_buffer_for_keys(
         contracts.staking_router,
+        keys_for_nor,
         keys_for_sdvt,
-        keys_for_nor
+        keys_for_csm,
     )
 
+
+@pytest.mark.parametrize("nor_stuck_items", [1, 0])
+@pytest.mark.parametrize("nor_exited_items", [1, 0])
+@pytest.mark.parametrize("sdvt_stuck_items", [1, 0])
+@pytest.mark.parametrize("sdvt_exited_items", [1, 0])
+@pytest.mark.parametrize("csm_stuck_items", [1, 0])
+@pytest.mark.parametrize("csm_exited_items", [1, 0])
+@pytest.mark.usefixtures("prepare_modules")
+def test_extra_data_full_items(
+    stranger, nor, sdvt, extra_data_service,
+    nor_stuck_items, nor_exited_items, sdvt_stuck_items, sdvt_exited_items, csm_stuck_items, csm_exited_items
+):
+    if (nor_stuck_items + nor_exited_items + sdvt_stuck_items + sdvt_exited_items + csm_exited_items + csm_stuck_items) == 0:
+        pytest.skip("No items to report in this test case")
+
+    nor_ids = []
+    for i in range(0, nor.getNodeOperatorsCount()):
+        if nor.getNodeOperatorIsActive(i):
+            nor_ids.append(i)
+    sdvt_ids = []
+    for i in range(0, sdvt.getNodeOperatorsCount()):
+        if sdvt.getNodeOperatorIsActive(i):
+            sdvt_ids.append(i)
+    csm_ids = range(0, MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM)
+    nor_ids_exited = nor_ids[:nor_exited_items * MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM]
+    nor_ids_stuck = nor_ids[:nor_stuck_items * MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM]
+    sdvt_ids_exited = sdvt_ids[:sdvt_exited_items * MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM]
+    sdvt_ids_stuck = sdvt_ids[:sdvt_stuck_items * MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM]
+    csm_ids_exited = csm_ids[:csm_exited_items * MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM]
+    csm_ids_stuck = csm_ids[:csm_stuck_items * MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM]
+
     # Prepare report extra data
-    nor_stuck = {(1, i): 1 for i in range(0, nor_stuck_items * max_node_operators_per_item)}
-    nor_exited = {(1, i): nor.getNodeOperatorSummary(i)['totalExitedValidators'] + 1 for i in range(0, nor_exited_items * max_node_operators_per_item)}
-    sdvt_stuck = {(2, i): 1 for i in range(0, sdvt_stuck_items * max_node_operators_per_item)}
-    sdvt_exited = {(2, i): sdvt.getNodeOperatorSummary(i)['totalExitedValidators'] + 1 for i in range(0, sdvt_exited_items * max_node_operators_per_item)}
+    nor_stuck = {(1, i): nor.getNodeOperatorSummary(i)['stuckValidatorsCount'] + 1 for i in nor_ids_stuck}
+    nor_exited = {(1, i): nor.getNodeOperatorSummary(i)['totalExitedValidators'] + 1 for i in nor_ids_exited}
+    sdvt_stuck = {(2, i): sdvt.getNodeOperatorSummary(i)['stuckValidatorsCount'] +1 for i in sdvt_ids_stuck}
+    sdvt_exited = {(2, i): sdvt.getNodeOperatorSummary(i)['totalExitedValidators'] + 1 for i in sdvt_ids_exited}
+    csm_stuck = {(3, i): contracts.csm.getNodeOperatorSummary(i)['stuckValidatorsCount'] + 1 for i in csm_ids_stuck}
+    csm_exited = {(3, i): contracts.csm.getNodeOperatorSummary(i)['totalExitedValidators'] + 1 for i in csm_ids_exited}
     extra_data = extra_data_service.collect(
-        {**nor_stuck, **sdvt_stuck},
-        {**nor_exited, **sdvt_exited},
+        {**nor_stuck, **sdvt_stuck, **csm_stuck},
+        {**nor_exited, **sdvt_exited, **csm_exited},
         MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
         MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
     )
@@ -108,24 +127,31 @@ def test_extra_data_full_items(
     if nor_exited_items > 0:
         modules_with_exited.append(1)
         nor_exited_before = nor.getStakingModuleSummary()["totalExitedValidators"]
-        num_exited_validators_by_staking_module.append(nor_exited_before + (nor_exited_items * max_node_operators_per_item))
+        num_exited_validators_by_staking_module.append(nor_exited_before + (nor_exited_items * MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM))
     if sdvt_exited_items > 0:
         modules_with_exited.append(2)
         sdvt_exited_before = sdvt.getStakingModuleSummary()["totalExitedValidators"]
-        num_exited_validators_by_staking_module.append(sdvt_exited_before + (sdvt_exited_items * max_node_operators_per_item))
+        num_exited_validators_by_staking_module.append(sdvt_exited_before + (sdvt_exited_items * MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM))
+    if csm_exited_items > 0:
+        modules_with_exited.append(3)
+        csm_exited_before = contracts.csm.getStakingModuleSummary()["totalExitedValidators"]
+        num_exited_validators_by_staking_module.append(csm_exited_before + (csm_exited_items * MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM))
 
-    nor_balance_shares_before = []
-    for i in range(0, len(nor_stuck)):
-        nor_balance_shares_before.append(shares_balance(nor.getNodeOperator(i, False)["rewardAddress"]))
-    sdvt_balance_shares_before = []
-    for i in range(0, len(sdvt_stuck)):
-        sdvt_balance_shares_before.append(shares_balance(sdvt.getNodeOperator(i, False)["rewardAddress"]))
+    nor_balance_shares_before = {}
+    for i in nor_ids_stuck:
+        nor_balance_shares_before[i] = shares_balance(nor.getNodeOperator(i, False)["rewardAddress"])
+    sdvt_balance_shares_before = {}
+    for i in sdvt_ids_stuck:
+        sdvt_balance_shares_before[i] = shares_balance(sdvt.getNodeOperator(i, False)["rewardAddress"])
+    csm_balance_shares_before = {}
+    for i in csm_ids_stuck:
+        csm_balance_shares_before[i] = shares_balance(contracts.csm.getNodeOperator(i)["rewardAddress"])
 
     # Perform report
-    (report_tx, _) = oracle_report(
+    (report_tx, extra_report_tx_list) = oracle_report(
         extraDataFormat=1,
         extraDataHashList=extra_data.extra_data_hash_list,
-        extraDataItemsCount=(nor_exited_items + nor_stuck_items + sdvt_exited_items + sdvt_stuck_items),
+        extraDataItemsCount=(nor_exited_items + nor_stuck_items + sdvt_exited_items + sdvt_stuck_items + csm_exited_items + csm_stuck_items),
         extraDataList=extra_data.extra_data_list,
         stakingModuleIdsWithNewlyExitedValidators=modules_with_exited,
         numExitedValidatorsByStakingModule=num_exited_validators_by_staking_module,
@@ -136,12 +162,12 @@ def test_extra_data_full_items(
 
     # Check NOR exited
     nor_penalty_shares = 0
-    for i in range(0, len(nor_exited)):
+    for i in nor_ids_exited:
         assert nor.getNodeOperatorSummary(i)["totalExitedValidators"] == nor_exited[(1, i)]
     # Check NOR stuck. Check penalties and rewards
     if len(nor_stuck) > 0:
         nor_rewards = [e for e in report_tx.events["TransferShares"] if e['to'] == nor.address][0]['sharesValue']
-        for i in range(0, len(nor_stuck)):
+        for i in nor_ids_stuck:
             assert nor.getNodeOperatorSummary(i)["stuckValidatorsCount"] == nor_stuck[(1, i)]
             assert nor.isOperatorPenalized(i) == True
             shares_after = shares_balance(nor.getNodeOperator(i, False)["rewardAddress"])
@@ -160,12 +186,12 @@ def test_extra_data_full_items(
 
     # Check SDVT exited
     sdvt_penalty_shares = 0
-    for i in range(0, len(sdvt_exited)):
+    for i in sdvt_ids_exited:
         assert sdvt.getNodeOperatorSummary(i)["totalExitedValidators"] == sdvt_exited[(2, i)]
     # Check SDVT stuck. Check penalties and rewards
     if len(sdvt_stuck) > 0:
         sdvt_rewards = [e for e in report_tx.events["TransferShares"] if e['to'] == sdvt.address][0]['sharesValue']
-        for i in range(0, len(sdvt_stuck)):
+        for i in sdvt_ids_stuck:
             assert sdvt.getNodeOperatorSummary(i)["stuckValidatorsCount"] == sdvt_stuck[(2, i)]
             assert sdvt.isOperatorPenalized(i) == True
             shares_after = shares_balance(sdvt.getNodeOperator(i, False)["rewardAddress"])
@@ -179,10 +205,16 @@ def test_extra_data_full_items(
             )
             sdvt_penalty_shares += rewards_after // 2
 
-
     if sdvt_penalty_shares > 0:
         # TODO: Fix below check when contains other penalized node operators
         assert almostEqWithDiff(sum(e['amountOfShares'] for e in sdvt_distribute_reward_tx.events["StETHBurnRequested"]), sdvt_penalty_shares, 100)
+
+    # Check CSM exited
+    for i in csm_ids_exited:
+        assert contracts.csm.getNodeOperatorSummary(i)["totalExitedValidators"] == csm_exited[(3, i)]
+    # Check CSM stuck
+    for i in csm_ids_stuck:
+        assert contracts.csm.getNodeOperatorSummary(i)["stuckValidatorsCount"] == csm_stuck[(3, i)]
 
 ############################################
 # HELPER FUNCTIONS
@@ -213,8 +245,27 @@ def add_nor_operators_with_keys(nor, voting_eoa: Account, evm_script_executor_eo
         nor.setNodeOperatorStakingLimit(no_id, keys_per_operator, {"from": evm_script_executor_eoa})
 
 
+def fill_csm_operators_with_keys(target_operators_count, keys_count):
+    if not contracts.csm.publicRelease():
+        contracts.csm.grantRole(contracts.csm.MODULE_MANAGER_ROLE(), contracts.agent, {"from": contracts.agent})
+        contracts.csm.activatePublicRelease({"from": contracts.agent})
+
+    csm_node_operators_before = contracts.csm.getNodeOperatorsCount()
+    added_operators_count = 0
+    for no_id in range(0, csm_node_operators_before):
+        depositable_keys = contracts.csm.getNodeOperator(no_id)["depositableValidatorsCount"]
+        if depositable_keys < keys_count:
+            csm_upload_keys(contracts.csm, contracts.cs_accounting, no_id, depositable_keys - keys_count)
+    while csm_node_operators_before + added_operators_count < target_operators_count:
+        node_operator = f"0xbb{str(added_operators_count).zfill(38)}"
+        csm_add_node_operator(contracts.csm, contracts.cs_accounting, node_operator, [], keys_count=keys_count)
+        added_operators_count += 1
+    return csm_node_operators_before, added_operators_count
+
+
+
 def fill_nor_with_old_and_new_operators(
-    nor, voting_eoa, evm_script_executor_eoa, new_keys_per_operator, nor_stuck_items, nor_exited_items, max_node_operators_per_item,
+    nor, voting_eoa, evm_script_executor_eoa, new_keys_per_operator, max_node_operators_per_item,
 ) -> tuple[int, int]:
     contracts.acl.grantPermission(
         contracts.voting,
@@ -269,7 +320,7 @@ def fill_nor_with_old_and_new_operators(
     return operators_count_before, operators_count_added
 
 
-def deposit_buffer_for_keys(staking_router, sdvt_keys_to_deposit, nor_keys_to_deposit):
+def deposit_buffer_for_keys(staking_router, nor_keys_to_deposit, sdvt_keys_to_deposit, csm_keys_to_deposit):
     total_depositable_keys = 0
     module_digests = staking_router.getAllStakingModuleDigests()
     for digest in module_digests:
@@ -280,16 +331,18 @@ def deposit_buffer_for_keys(staking_router, sdvt_keys_to_deposit, nor_keys_to_de
     contracts.lido.removeStakingLimit({"from": contracts.voting})
     fill_deposit_buffer(total_depositable_keys)
     keys_per_deposit = 50
-    # Deposits for SDVT
-    times = sdvt_keys_to_deposit // keys_per_deposit
-    for _ in range(0, times):
-        contracts.lido.deposit(keys_per_deposit, 2, "0x", {"from": contracts.deposit_security_module})
-
     # Deposits for NOR
-    times = nor_keys_to_deposit // keys_per_deposit;
+    times = round(nor_keys_to_deposit / keys_per_deposit)
     for _ in range(0, times):
         contracts.lido.deposit(keys_per_deposit, 1, "0x", {"from": contracts.deposit_security_module})
-
+    # Deposits for SDVT
+    times = round(sdvt_keys_to_deposit / keys_per_deposit)
+    for _ in range(0, times):
+        contracts.lido.deposit(keys_per_deposit, 2, "0x", {"from": contracts.deposit_security_module})
+    # Deposits for CSM
+    times = round(csm_keys_to_deposit / keys_per_deposit)
+    for _ in range(0, times):
+        contracts.lido.deposit(keys_per_deposit, 3, "0x", {"from": contracts.deposit_security_module})
 
 def calc_no_rewards(module, no_id, shares_minted_as_fees):
     operator_summary = module.getNodeOperatorSummary(no_id)

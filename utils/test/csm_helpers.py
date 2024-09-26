@@ -1,6 +1,7 @@
 from brownie import ZERO_ADDRESS
 
-from utils.balance import set_balance
+from utils.balance import set_balance_in_wei
+from utils.test.helpers import ETH
 from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
 
 
@@ -8,7 +9,7 @@ def get_ea_member():
     """
     Random address and proof for EA member
     """
-    address = set_balance("0x00200f4e638e81ebe172daa18c9193a33a50bbbd", 100000)
+    address = "0x00200f4e638e81ebe172daa18c9193a33a50bbbd"
     proof = ["0x6afc021ded39a008e9e7c646cd70b0e0425b8c0cc2decc102d45a09a9cadc3b4",
              "0x9fb8ad314dcef15562b7a930e037068f77bb860156199862df2957017d68b59b",
              "0xa70999dbf9fb0843abbcfbc67498e195527ac129b43994dfaccdde3479893bed",
@@ -26,10 +27,13 @@ def get_ea_member():
     return address, proof
 
 
-def csm_add_node_operator(csm, accounting, node_operator, proof, keys_count=5):
+def csm_add_node_operator(csm, accounting, node_operator, proof, keys_count=5, curve_id=0):
     pubkeys_batch = random_pubkeys_batch(keys_count)
     signatures_batch = random_signatures_batch(keys_count)
-    curve_id = 1  # EA curve
+
+    value = accounting.getBondAmountByKeysCount['uint256,uint256'](keys_count, curve_id)
+    set_balance_in_wei(node_operator, value + ETH(1))
+
     csm.addNodeOperatorETH(
         keys_count,
         pubkeys_batch,
@@ -37,15 +41,16 @@ def csm_add_node_operator(csm, accounting, node_operator, proof, keys_count=5):
         (ZERO_ADDRESS, ZERO_ADDRESS, False),
         proof,
         ZERO_ADDRESS,
-        {"from": node_operator, "value": accounting.getBondAmountByKeysCount['uint256,uint256'](keys_count, curve_id)}
+        {"from": node_operator, "value": value}
     )
 
     return csm.getNodeOperatorsCount() - 1
 
 
-def csm_upload_keys(csm, accounting, no_id, node_operator, keys_count=5):
+def csm_upload_keys(csm, accounting, no_id, keys_count=5):
+    manager_address = csm.getNodeOperator(no_id)["managerAddress"]
     pubkeys_batch = random_pubkeys_batch(keys_count)
     signatures_batch = random_signatures_batch(keys_count)
     csm.addValidatorKeysETH(no_id, keys_count, pubkeys_batch, signatures_batch,
-                            {"from": node_operator, "value": accounting.getRequiredBondForNextKeys(no_id, keys_count)}
+                            {"from": manager_address, "value": accounting.getRequiredBondForNextKeys(no_id, keys_count)}
                             )
