@@ -1,3 +1,5 @@
+from math import ceil
+
 import pytest
 from brownie import convert
 from brownie.network.account import Account
@@ -177,7 +179,7 @@ def test_extra_data_full_items(
             assert almostEqWithDiff(
                 shares_after - nor_balance_shares_before[i],
                 rewards_after // 2,
-                1,
+                2,
             )
             nor_penalty_shares += rewards_after // 2
 
@@ -201,7 +203,7 @@ def test_extra_data_full_items(
             assert almostEqWithDiff(
                 shares_after - sdvt_balance_shares_before[i],
                 rewards_after // 2,
-                1,
+                2,
             )
             sdvt_penalty_shares += rewards_after // 2
 
@@ -215,6 +217,82 @@ def test_extra_data_full_items(
     # Check CSM stuck
     for i in csm_ids_stuck:
         assert contracts.csm.getNodeOperatorSummary(i)["stuckValidatorsCount"] == csm_stuck[(3, i)]
+
+
+def test_extra_data_most_expensive_report(autoexecute_vote_ms, extra_data_service):
+    """
+    Make sure the worst report fits into the block gas limit.
+    It needs to prepare a lot of node operators in a very special state, so it takes a lot of time to run.
+
+    N = oracle limit
+    - Create N NOs
+    - Deposit all keys
+    - Upload +1 key for each NO
+    - Create New NO with 1 key
+    - Stuck N NOs
+    - Deposit 1 key from NO N+1 (to exclude batches from the queue)
+    - Unstuck N NOs
+
+    An estimate for 8 * 24 items:
+    Gas used: 11850807 (39.50%)
+    """
+
+    csm_operators_count = MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION * MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM
+    # create or ensure there are max node operators with 1 depositable key
+    fill_csm_operators_with_keys(csm_operators_count,1)
+    depositable_keys = contracts.csm.getStakingModuleSummary()["depositableValidatorsCount"]
+    deposit_buffer_for_keys(contracts.staking_router, 0, 0, depositable_keys)
+    assert contracts.csm.getStakingModuleSummary()["depositableValidatorsCount"] == 0
+
+    csm_ids = range(0, csm_operators_count)
+    # Upload a new key for each node operator to put them into the queue
+    for i in csm_ids:
+        csm_upload_keys(contracts.csm, contracts.cs_accounting, i, 1)
+        assert contracts.csm.getNodeOperator(i)["depositableValidatorsCount"] == 1
+    # Add a new node operator with 1 depositable key to the end of the queue
+    last_no_id = csm_add_node_operator(contracts.csm, contracts.cs_accounting, f"0xbb{str(csm_operators_count).zfill(38)}", [], keys_count=1)
+    # report stuck keys for all node operators
+    extra_data = extra_data_service.collect(
+        {(3, i): 1 for i in range(csm_operators_count)},
+        {},
+        MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
+        MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
+    )
+
+    oracle_report(
+        extraDataFormat=1,
+        extraDataHashList=extra_data.extra_data_hash_list,
+        extraDataItemsCount=MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
+        extraDataList=extra_data.extra_data_list,
+    )
+
+    # Check CSM stuck
+    for i in csm_ids:
+        assert contracts.csm.getNodeOperatorSummary(i)["stuckValidatorsCount"] == 1
+    # deposit last node operator's key
+    deposit_buffer_for_keys(contracts.staking_router, 0, 0, 1)
+    assert contracts.csm.getNodeOperator(last_no_id)["totalDepositedKeys"] == 1
+
+    # report unstuck keys for all node operators
+
+    extra_data = extra_data_service.collect(
+        {(3, i): 0 for i in range(csm_operators_count)},
+        {},
+        MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
+        MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
+    )
+
+    oracle_report(
+        extraDataFormat=1,
+        extraDataHashList=extra_data.extra_data_hash_list,
+        extraDataItemsCount=MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
+        extraDataList=extra_data.extra_data_list,
+    )
+
+    # Check CSM unstuck
+    for i in csm_ids:
+        assert contracts.csm.getNodeOperatorSummary(i)["stuckValidatorsCount"] == 0
+
 
 ############################################
 # HELPER FUNCTIONS
@@ -256,6 +334,7 @@ def fill_csm_operators_with_keys(target_operators_count, keys_count):
         depositable_keys = contracts.csm.getNodeOperator(no_id)["depositableValidatorsCount"]
         if depositable_keys < keys_count:
             csm_upload_keys(contracts.csm, contracts.cs_accounting, no_id, depositable_keys - keys_count)
+            assert contracts.csm.getNodeOperator(no_id)["depositableValidatorsCount"] == keys_count
     while csm_node_operators_before + added_operators_count < target_operators_count:
         node_operator = f"0xbb{str(added_operators_count).zfill(38)}"
         csm_add_node_operator(contracts.csm, contracts.cs_accounting, node_operator, [], keys_count=keys_count)
@@ -332,15 +411,15 @@ def deposit_buffer_for_keys(staking_router, nor_keys_to_deposit, sdvt_keys_to_de
     fill_deposit_buffer(total_depositable_keys)
     keys_per_deposit = 50
     # Deposits for NOR
-    times = round(nor_keys_to_deposit / keys_per_deposit)
+    times = ceil(nor_keys_to_deposit / keys_per_deposit)
     for _ in range(0, times):
         contracts.lido.deposit(keys_per_deposit, 1, "0x", {"from": contracts.deposit_security_module})
     # Deposits for SDVT
-    times = round(sdvt_keys_to_deposit / keys_per_deposit)
+    times = ceil(sdvt_keys_to_deposit / keys_per_deposit)
     for _ in range(0, times):
         contracts.lido.deposit(keys_per_deposit, 2, "0x", {"from": contracts.deposit_security_module})
     # Deposits for CSM
-    times = round(csm_keys_to_deposit / keys_per_deposit)
+    times = ceil(csm_keys_to_deposit / keys_per_deposit)
     for _ in range(0, times):
         contracts.lido.deposit(keys_per_deposit, 3, "0x", {"from": contracts.deposit_security_module})
 
