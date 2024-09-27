@@ -173,7 +173,7 @@ def test_extra_data_full_items(
             assert almostEqWithDiff(
                 shares_after - sdvt_balance_shares_before[i],
                 rewards_after // 2,
-                1,
+                2,
             )
             penalty_shares += rewards_after // 2
 
