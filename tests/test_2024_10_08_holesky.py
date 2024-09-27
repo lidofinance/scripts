@@ -11,7 +11,7 @@ from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS, network_name
 from utils.easy_track import create_permissions
-from configs.config_mainnet import (
+from configs.config_holesky import (
     DAI_TOKEN,
     USDC_TOKEN,
     USDT_TOKEN,
@@ -20,24 +20,18 @@ from utils.test.easy_track_helpers import create_and_enact_payment_motion, check
 from utils.test.event_validators.easy_track import (
     validate_evmscript_factory_added_event,
     EVMScriptFactoryAdded,
-    validate_evmscript_factory_removed_event,
 )
-_
-# STETH_TRANSFER_MAX_DELTA = 2
 
 def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass_events_decoding):
-    steth = "0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034"
-    easy_track = "0x1763b9ED3586B08AE796c7787811a2E1bc16163a"
+
+    steth = interface.StETH("0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034")
+    easy_track = interface.EasyTrack("0x1763b9ED3586B08AE796c7787811a2E1bc16163a")
 
     evm_script_factories_before = easy_track.getEVMScriptFactories()
 
-    alliance_ops_allowed_recipients_registry = interface.AllowedRecipientRegistry(
-        "0xe1ba8dee84a4df8e99e495419365d979cdb19991"
-    )
-
-    alliance_ops_top_up_evm_script_factory_new = "0x343fa5f0c79277e2d27e440f40420d619f962a23" # TopUpAllowedRecipients
-
-    alliance_multisig_acc = accounts.at("0x96d2Ff1C4D30f592B91fd731E218247689a76915", force=True) # Testnet DAO Multisigs
+    alliance_ops_allowed_recipients_registry = interface.AllowedRecipientRegistry("0xe1ba8dee84a4df8e99e495419365d979cdb19991")
+    alliance_ops_top_up_evm_script_factory_new = interface.TopUpAllowedRecipients("0x343fa5f0c79277e2d27e440f40420d619f962a23")
+    alliance_multisig_acc = accounts.at("0x96d2Ff1C4D30f592B91fd731E218247689a76915", force=True) # Testnet DAO-Ops&QA Multisig
 
     assert alliance_ops_top_up_evm_script_factory_new not in evm_script_factories_before
 
@@ -53,8 +47,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
     evm_script_factories_after = easy_track.getEVMScriptFactories()
-
-    # 1. Add Alliance top up EVM script factory address 0x9d156F7F5ed1fEbDc4996CAA835CD964A10bd650 (AllowedRecipientsRegistry address 0xe1ba8dee84a4df8e99e495419365d979cdb19991, AllowedTokensRegistry address 0x091c0ec8b4d54a9fcb36269b5d5e5af43309e666)
 
     assert alliance_ops_top_up_evm_script_factory_new in evm_script_factories_after
 
@@ -118,6 +110,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass
     assert get_lido_vote_cid_from_str(metadata) == "bafkreibbrlprupitulahcrl57uda4nkzrbfajtrhhsaa3cbx5of4t2huoa" # todo: поменять адрес после тестовой публикации голоосвания на форке
 
     display_voting_events(vote_tx)
+
+    if bypass_events_decoding or network_name() in ("holesky", "holesky-fork"):
+        return
 
     evs = group_voting_events(vote_tx)
 
