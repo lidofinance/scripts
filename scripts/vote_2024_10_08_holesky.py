@@ -1,7 +1,6 @@
 """
-Voting 01/10/2024!
-Add ET setup for Alliance in stETH
-!! Holesky only
+Voting 08/10/2024
+
 """
 
 import time
