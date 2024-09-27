@@ -36,15 +36,15 @@ description = """
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""
 
-    alliance_ops_topup_factory = interface.TopUpAllowedRecipients("0x79e0286a8f60276293a7D29f53979642CcBD4Fff")
-    alliance_ops_registry = interface.AllowedRecipientRegistry("0x94499410c47FF7572560Ef8CBAf68bCdd0F38D08")
-     
+    alliance_ops_topup_factory = interface.TopUpAllowedRecipients("0x343fa5f0c79277e2d27e440f40420d619f962a23")
+    alliance_ops_registry = interface.AllowedRecipientRegistry("0xe1ba8dee84a4df8e99e495419365d979cdb19991")
+
     vote_desc_items, call_script_items = zip(
         #
         # I. Add Alliance Ops stablecoins top up EVM script factory
         #
         (
-            "1) Add Alliance Ops stablecoins top up EVM script factory 0x79e0286a8f60276293a7D29f53979642CcBD4Fff", 
+            "1) Add Alliance Ops stablecoins top up EVM script factory 0x343fa5f0c79277e2d27e440f40420d619f962a23",
             add_evmscript_factory(
                 factory=alliance_ops_topup_factory,
                 permissions=create_permissions(contracts.finance, "newImmediatePayment")
@@ -54,7 +54,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     )
 
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
-    
+
     if silent:
         desc_ipfs = calculate_vote_ipfs_description(description)
     else:
