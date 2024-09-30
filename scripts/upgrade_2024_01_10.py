@@ -71,7 +71,6 @@ DEPOSITS_ENABLER_ROLE = "0x4b43b36766bde12c5e9cbbc37d15f8d1f769f08f54720ab370fae
 
 
 def encode_l2_upgrade_call(proxy1: str, new_impl1: str, proxy2: str, new_impl2: str):
-    # TODO: reuse the args string
     queue_definition = f"queue(address[],uint256[],string[],bytes[],bool[])"
     queue_selector = web3.keccak(text=queue_definition).hex()[:10]
 
