@@ -12,8 +12,8 @@ SR V2
 10. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
 11. Update `SimpleDVT` implementation
 12. Finalize SimpleDVT upgrade
-13. Update AO implementation to ${ACCOUNTING_ORACLE_IMPL}`,
-14. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}`,
+13. Update AO implementation to ${ACCOUNTING_ORACLE_IMPL}`
+14. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}`
 15. Grant manage consensus role to agent ${AGENT}`
 16. Update VEBO consensus version to ${VEBO_CONSENSUS_VERSION}`
 17. Revoke manage consensus role from agent ${AGENT}
@@ -60,7 +60,12 @@ from utils.repo import (
     add_implementation_to_sdvt_app_repo,
 )
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
-from utils.easy_track import add_evmscript_factory, create_permissions, create_permissions_for_overloaded_method, remove_evmscript_factory
+from utils.easy_track import (
+    add_evmscript_factory,
+    create_permissions,
+    create_permissions_for_overloaded_method,
+    remove_evmscript_factory,
+)
 from utils.kernel import update_app_implementation
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
@@ -72,17 +77,12 @@ from utils.agent import agent_forward
 ## Easy track
 OLD_TARGET_LIMIT__FACTORY = "0x41CF3DbDc939c5115823Fba1432c4EC5E7bD226C"
 # !!!! that is locally deployed factory address, before run set contract address here
-NEW_TARGET_LIMIT_FACTORY = "0x00B0517de6b2b09aBD3a7B69d66D85eFdb2c7d94"
-
-## SR
-PRIORITY_EXIT_SHARE_THRESHOLDS_BP = [10_000, 10_000]
-MAX_DEPOSITS_PER_BLOCK = [50, 50]
-MIN_DEPOSIT_BLOCK_DISTANCES = [25, 25]
+NEW_TARGET_LIMIT_FACTORY = "0x8a6E9a8E0bB561f8cdAb1619ECc4585aaF126D73"
 
 ## Curated module
 nor_uri = "0x697066733a516d54346a64693146684d454b5576575351316877786e33365748394b6a656743755a7441684a6b6368526b7a70"
-CURATED_PRIORITY_EXIT_SHARE_THRESHOLDS = 10000
-CURATED_MAX_DEPOSITS_PER_BLOCK = 50
+CURATED_PRIORITY_EXIT_SHARE_THRESHOLDS = 10_000
+CURATED_MAX_DEPOSITS_PER_BLOCK = 150
 CURATED_MIN_DEPOSIT_BLOCK_DISTANCES = 25
 NOR_VERSION_REPO = ["5", "0", "0"]
 
@@ -91,10 +91,15 @@ DISTRIBUTED = 2
 
 ## SDVT module
 sdvt_uri = "0x697066733a516d615353756a484347636e4675657441504777565735426567614d42766e355343736769334c5366767261536f"
-SDVT_PRIORITY_EXIT_SHARE_THRESHOLDS = 10000
-SDVT_MAX_DEPOSITS_PER_BLOCK = 50
+SDVT_PRIORITY_EXIT_SHARE_THRESHOLDS = 400
+SDVT_MAX_DEPOSITS_PER_BLOCK = 150
 SDVT_MIN_DEPOSIT_BLOCK_DISTANCES = 25
 SDVT_VERSION_REPO = ["2", "0", "0"]
+
+## SR
+PRIORITY_EXIT_SHARE_THRESHOLDS_BP = [CURATED_PRIORITY_EXIT_SHARE_THRESHOLDS, SDVT_PRIORITY_EXIT_SHARE_THRESHOLDS]
+MAX_DEPOSITS_PER_BLOCK = [CURATED_MAX_DEPOSITS_PER_BLOCK, SDVT_MAX_DEPOSITS_PER_BLOCK]
+MIN_DEPOSIT_BLOCK_DISTANCES = [CURATED_MIN_DEPOSIT_BLOCK_DISTANCES, SDVT_MIN_DEPOSIT_BLOCK_DISTANCES]
 
 ## Accounting oracle
 AO_CONSENSUS_VERSION = 2
@@ -104,14 +109,14 @@ VEBO_CONSENSUS_VERSION = 2
 # CSM
 ## Easy track
 # !!!! that is locally deployed factory address, before run set contract address here
-EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY = "0xd2983525E903Ef198d5dD0777712EB66680463bc"
+EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY = "0x2963ff0196a901ec3F56d7531e7C4Ce8F226462B"
 
 ## Parameters
 CS_MODULE_NAME = "Community Staking"
-CS_STAKE_SHARE_LIMIT = 2000
-CS_PRIORITY_EXIT_SHARE_THRESHOLD = 2500
-CS_STAKING_MODULE_FEE = 800
-CS_TREASURY_FEE = 200
+CS_STAKE_SHARE_LIMIT = 100
+CS_PRIORITY_EXIT_SHARE_THRESHOLD = 100
+CS_STAKING_MODULE_FEE = 600
+CS_TREASURY_FEE = 400
 CS_MAX_DEPOSITS_PER_BLOCK = 30
 CS_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 CS_ORACLE_INITIAL_EPOCH = 58050
@@ -303,7 +308,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             "19. Add Target limit for SDVT factory to ET",
             add_evmscript_factory(
                 factory=NEW_TARGET_LIMIT_FACTORY,
-                permissions=(create_permissions_for_overloaded_method(contracts.simple_dvt, "updateTargetValidatorsLimits", ('uint', 'uint', 'uint'))),
+                permissions=(
+                    create_permissions_for_overloaded_method(
+                        contracts.simple_dvt, "updateTargetValidatorsLimits", ("uint", "uint", "uint")
+                    )
+                ),
             ),
         ),
         #

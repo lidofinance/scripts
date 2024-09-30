@@ -14,7 +14,7 @@ from utils.config import (
     CS_ACCOUNTING_ADDRESS,
     CSM_ADDRESS,
 )
-from scripts.mainnet.vote_sr_v2_mainnet import (
+from scripts.vote_sr_v2 import (
     start_vote,
     # oracles
     AO_CONSENSUS_VERSION,
@@ -59,7 +59,7 @@ from utils.test.event_validators.easy_track import (
     validate_evmscript_factory_removed_event,
     EVMScriptFactoryAdded,
 )
-from utils.easy_track import create_permissions
+from utils.easy_track import create_permissions, create_permissions_overloaded
 
 # Impl addresses before vote
 OLD_LOCATOR_IMPL_ADDRESS = "0x1D920cc5bACf7eE506a271a5259f2417CaDeCE1d"
@@ -120,7 +120,7 @@ SDVT_MODULE_BEFORE_VOTE = {
     "stakingModuleAddress": SIMPLE_DVT,
     "stakingModuleFee": 800,
     "treasuryFee": 200,
-    "targetShare": 50,
+    "targetShare": 400,
     "priorityExitShareThreshold": None,
     "maxDepositsPerBlock": None,
     "minDepositBlockDistance": None,
@@ -333,7 +333,11 @@ def test_vote(
         events[18],
         EVMScriptFactoryAdded(
             factory_addr=NEW_TARGET_LIMIT_FACTORY,
-            permissions=(create_permissions(contracts.simple_dvt, "updateTargetValidatorsLimits")),
+            permissions=(
+                create_permissions_overloaded(
+                    contracts.simple_dvt, "updateTargetValidatorsLimits", "uint256,uint256,uint256"
+                )
+            ),
         ),
     )
 
