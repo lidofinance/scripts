@@ -1,7 +1,7 @@
 import math
 
 from hexbytes import HexBytes
-from brownie import web3
+from brownie import web3, accounts
 from web3.types import BlockIdentifier  # type: ignore
 
 from utils.config import contracts

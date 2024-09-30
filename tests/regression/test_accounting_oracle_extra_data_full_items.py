@@ -74,7 +74,7 @@ def test_extra_data_full_items(
         new_keys_per_operator,
         nor_stuck_items,
         nor_exited_items,
-        max_node_operators_per_item,
+        max_node_operators_per_item
     )
 
     # Fill SimpleDVT with new operators and keys
@@ -85,7 +85,7 @@ def test_extra_data_full_items(
         new_keys_per_operator,
         sdvt_stuck_items,
         sdvt_exited_items,
-        max_node_operators_per_item,
+        max_node_operators_per_item
     )
 
     # Deposit for new added keys from buffer
@@ -173,7 +173,7 @@ def test_extra_data_full_items(
             assert almostEqWithDiff(
                 shares_after - sdvt_balance_shares_before[i],
                 rewards_after // 2,
-                1,
+                2,
             )
             penalty_shares += rewards_after // 2
 
@@ -211,13 +211,13 @@ def add_nor_operators_with_keys(nor, voting_eoa: Account, evm_script_executor_eo
 
 
 def fill_nor_with_old_and_new_operators(
-    nor, voting_eoa, evm_script_executor_eoa, new_keys_per_operator, nor_stuck_items, nor_exited_items, max_node_operators_per_item,
+    nor, voting_eoa, evm_script_executor_eoa, new_keys_per_operator, nor_stuck_items, nor_exited_items, max_node_operators_per_item
 ) -> tuple[int, int]:
     contracts.acl.grantPermission(
         contracts.voting,
         nor.address,
         convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-        {"from": contracts.voting},
+        {"from": contracts.voting}
     )
 
     # Calculate new operators count

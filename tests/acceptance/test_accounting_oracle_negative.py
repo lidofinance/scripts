@@ -7,6 +7,7 @@ from brownie import ZERO_ADDRESS, Contract, MockHashConsensus, accounts, chain, 
 from brownie.network.account import Account
 from configs.config_mainnet import MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT
 
+from utils.test.helpers import ETH
 from utils.config import contracts, ACCOUNTING_ORACLE
 from utils.evm_script import encode_error
 from utils.test.extra_data import ExtraDataService, ItemType
