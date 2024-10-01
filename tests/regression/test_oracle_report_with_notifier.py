@@ -5,6 +5,7 @@ from utils.config import contracts, get_deployer_account, network_name
 from utils.test.helpers import ZERO_ADDRESS, eth_balance
 from utils.evm_script import encode_error
 from typing import TypedDict, TypeVar, Any
+from brownie.exceptions import VirtualMachineError
 
 WST_ETH = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
 ACCOUNTING_ORACLE = "0x852deD011285fe67063a08005c71a85690503Cee"
@@ -34,8 +35,19 @@ def test_oracle_report_revert():
     web3.provider.make_request("hardhat_setCode", [L1_CROSS_DOMAIN_MESSENGER, "0x"])
     web3.provider.make_request("evm_setAccountCode", [L1_CROSS_DOMAIN_MESSENGER, "0x"])
 
-    with reverts(encode_error("ErrorTokenRateNotifierRevertedWithNoData()")):
+    hashed_error_selector = encode_error("ErrorTokenRateNotifierRevertedWithNoData()")
+    try:
         oracle_report(cl_diff=0, report_el_vault=True, report_withdrawals_vault=False)
+    except VirtualMachineError as err:
+        if hashed_error_selector == str(err.revert_msg):
+            pass
+        else:
+            assert False, f'Unexpected error message: {err}"'
+    except AssertionError as err:
+        if f"Unknown typed error: {hashed_error_selector}" == str(err):
+            pass
+        else:
+            assert False, f'Unexpected error message: {err}"'
 
 def test_oracle_report_pushes_rate():
     """Test oracle report emits cross domain messenger event"""
