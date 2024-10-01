@@ -109,7 +109,7 @@ def test_simple_dvt_state(contract):
     assert summary["depositableValidatorsCount"] >= 0
 
     deactivated_node_operators = []  # reserved for future use
-    exited_node_operators = [33]  # reserved for future use
+    exited_node_operators = []  # reserved for future use
 
     for id in range(node_operators_count):
         node_operator = contract.getNodeOperator(id, True)
