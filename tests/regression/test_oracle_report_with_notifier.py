@@ -12,30 +12,37 @@ L1_TOKEN_RATE_NOTIFIER = "0xe6793B9e4FbA7DE0ee833F9D02bba7DB5EB27823"
 L1_CROSS_DOMAIN_MESSENGER = "0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1"
 L2_TOKEN_RATE_ORACLE = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
 
+
 @pytest.fixture(scope="module")
 def accounting_oracle() -> Contract:
     return contracts.accounting_oracle
+
 
 @pytest.fixture(scope="module")
 def lido() -> Contract:
     return contracts.lido
 
+
 @pytest.fixture(scope="module")
 def el_vault() -> Contract:
     return contracts.execution_layer_rewards_vault
+
 
 @pytest.fixture(scope="module")
 def withdrawal_queue() -> Contract:
     return contracts.withdrawal_queue
 
+
 def test_oracle_report_revert():
     """Test oracle report reverts when messenger is empty"""
+    interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)  # load TokenRateNotifier contract ABI to catch correct error
 
     web3.provider.make_request("hardhat_setCode", [L1_CROSS_DOMAIN_MESSENGER, "0x"])
     web3.provider.make_request("evm_setAccountCode", [L1_CROSS_DOMAIN_MESSENGER, "0x"])
 
     with reverts(encode_error("ErrorTokenRateNotifierRevertedWithNoData()")):
         oracle_report(cl_diff=0, report_el_vault=True, report_withdrawals_vault=False)
+
 
 def test_oracle_report_pushes_rate():
     """Test oracle report emits cross domain messenger event"""
@@ -51,7 +58,7 @@ def test_oracle_report_pushes_rate():
     wstETH = interface.WstETH(WST_ETH)
     accountingOracle = interface.AccountingOracle(ACCOUNTING_ORACLE)
 
-    tokenRate = wstETH.getStETHByWstETH(10 ** 27)
+    tokenRate = wstETH.getStETHByWstETH(10**27)
 
     genesisTime = accountingOracle.GENESIS_TIME()
     secondsPerSlot = accountingOracle.SECONDS_PER_SLOT()
@@ -61,6 +68,7 @@ def test_oracle_report_pushes_rate():
     updateRateCalldata = tokenRateOracle.updateRate.encode_input(tokenRate, updateTimestamp)
 
     assert updateRateCalldata == tx.events["SentMessage"]["message"]
+
 
 def test_oracle_report_success_when_observer_reverts(accounting_oracle: Contract, lido: Contract, el_vault: Contract):
     """Test oracle report works when token rate observer reverts"""
@@ -134,10 +142,12 @@ WithdrawalsFinalized = TypedDict(
     {"from": str, "to": str, "amountOfETHLocked": int, "sharesToBurn": int, "timestamp": int},
 )
 
+
 class ELRewardsReceived(TypedDict):
     """ELRewardsReceived event definition"""
 
     amount: int
+
 
 class SharesBurnt(TypedDict):
     """SharesBurnt event definition"""
@@ -147,11 +157,13 @@ class SharesBurnt(TypedDict):
     postRebaseTokenAmount: int
     sharesAmount: int
 
+
 def _get_events(tx, event: type[T]) -> list[T]:
     """Get event of type T from transaction"""
 
     assert event.__name__ in tx.events, f"Event {event.__name__} was not found in the transaction"
     return tx.events[event.__name__]
+
 
 def _first_event(tx, event: type[T]) -> T:
     """Get first event of type T from transaction"""
@@ -159,6 +171,7 @@ def _first_event(tx, event: type[T]) -> T:
     events = _get_events(tx, event)
     assert len(events) == 1, f"Event {event.__name__} was found more than once in the transaction"
     return events[0]
+
 
 def _try_get_withdrawals_finalized(tx: Any) -> WithdrawalsFinalized:
     if WithdrawalsFinalized.__name__ in tx.events:
