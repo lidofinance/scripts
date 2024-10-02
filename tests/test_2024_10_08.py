@@ -1,16 +1,14 @@
 """
-Tests for voting 01/10/2024
+Tests for voting 08/10/2024
 """
-from scripts.upgrade_2024_01_10 import start_vote, check_pre_upgrade_state, check_post_upgrade_state
-from brownie import interface, reverts, network, accounts
+from scripts.upgrade_2024_10_08 import start_vote, check_pre_upgrade_state, check_post_upgrade_state
+from brownie import interface
 from utils.test.tx_tracing_helpers import *
 from utils.config import (
     contracts,
     L1_OPTIMISM_TOKENS_BRIDGE,
     AGENT,
 )
-from utils.test.helpers import ETH
-
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
 
@@ -35,7 +33,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
     # validate vote events
-    # TODO: this check fails on anvil
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 5, "Incorrect voting items count"
 
     check_post_upgrade_state(vote_tx)
