@@ -20,7 +20,6 @@ import time
 import eth_abi
 
 from brownie import interface, web3, accounts
-from brownie.exceptions import VirtualMachineError
 from typing import Dict
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
@@ -35,10 +34,8 @@ from utils.config import (
     L1_EMERGENCY_BRAKES_MULTISIG,
     L1_OPTIMISM_CROSS_DOMAIN_MESSENGER,
     LIDO_LOCATOR,
-    LIDO_LOCATOR_IMPL,
     LIDO_LOCATOR_IMPL_NEW,
     L1_OPTIMISM_TOKENS_BRIDGE,
-    L1_OPTIMISM_TOKENS_BRIDGE_IMPL,
     L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
     L2_OPTIMISM_GOVERNANCE_EXECUTOR,
     L2_OPTIMISM_TOKENS_BRIDGE,
@@ -100,11 +97,13 @@ def encode_l1_l2_sendMessage(to: str, calldata: str):
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""
 
-    check_pre_upgrade_state()
-
+    l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
     lido_locator_as_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
     l1_token_bridge_as_proxy = interface.OssifiableProxy(L1_OPTIMISM_TOKENS_BRIDGE)
-    l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
+
+    if network_name() in ("mainnet-fork") and l1_token_bridge.isDepositsEnabled():
+        agent = accounts.at(AGENT, force=True)
+        l1_token_bridge.disableDeposits({"from": agent})
 
     call_script_items = [
         # I. Upgrade Ethereum Contracts
@@ -196,64 +195,6 @@ def main():
 
     time.sleep(5)  # hack for waiting thread #2.
 
-def check_pre_upgrade_state():
-    l1_token_bridge_proxy = interface.OssifiableProxy(L1_OPTIMISM_TOKENS_BRIDGE)
-    l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
-    lido_locator_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
-
-    if network_name() in ("mainnet-fork") and l1_token_bridge.isDepositsEnabled():
-        agent = accounts.at(AGENT, force=True)
-        l1_token_bridge.disableDeposits({"from": agent})
-
-    # Disabled deposits is the starting condition for the vote
-    assert not l1_token_bridge.isDepositsEnabled()
-
-    # L1 Bridge has old implementation
-    assert l1_token_bridge_proxy.proxy__getImplementation() == L1_OPTIMISM_TOKENS_BRIDGE_IMPL, "Old address is incorrect"
-
-    # L1 Bridge doesn't have version before update
-    try:
-        l1_token_bridge.getContractVersion()
-    except VirtualMachineError:
-        pass
-
-    # Upgrade LidoLocator implementation
-    assert lido_locator_proxy.proxy__getImplementation() == LIDO_LOCATOR_IMPL, "Old address is incorrect"
-
-    # Multisig hasn't been assigned as deposit enabler
-    assert not l1_token_bridge.hasRole(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG)
-
-def check_post_upgrade_state(vote_tx):
-    l1_token_bridge_proxy = interface.OssifiableProxy(L1_OPTIMISM_TOKENS_BRIDGE)
-    l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
-    lido_locator_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
-
-    # L1 Bridge has new implementation
-    assert (
-        l1_token_bridge_proxy.proxy__getImplementation() == L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW
-    ), "New address is incorrect"
-
-    # update L1 Bridge to 2 version
-    assert l1_token_bridge.getContractVersion() == 2
-
-    # check deposits are still paused
-    assert not l1_token_bridge.isDepositsEnabled()
-
-    # LidoLocator has new implementation
-    assert lido_locator_proxy.proxy__getImplementation() == LIDO_LOCATOR_IMPL_NEW, "New LidoLocator address is incorrect"
-
-    # Multisig has been assigned as deposit enabler
-    assert l1_token_bridge.hasRole(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG)
-
-    # Check bytecode that was sent to messenger to update L2 bridge and wstETH token
-    sentMessage = vote_tx.events["SentMessage"]["message"]
-    encoded_l2_upgrade_call = encode_l2_upgrade_call(
-        L2_OPTIMISM_TOKENS_BRIDGE,
-        L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
-        L2_OPTIMISM_WSTETH_TOKEN,
-        L2_OPTIMISM_WSTETH_TOKEN_IMPL_NEW,
-    )
-    assert sentMessage == encoded_l2_upgrade_call
 
 
 
