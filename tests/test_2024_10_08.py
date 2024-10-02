@@ -29,11 +29,11 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass
     steth = interface.StETH("0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
     easy_track = interface.EasyTrack("0xF0211b7660680B49De1A7E9f25C65660F0a13Fea")
 
-    alliance_ops_allowed_recipients_registry = interface.AllowedRecipientRegistry("0x914F4441e3cc03B5468E9A450076FeDDa41bBf2d")
-    alliance_ops_top_up_evm_script_factory_new = interface.TopUpAllowedRecipients("0x3cC3CC9B6D1A4C999B75e91E10847c05fF4fc36a") # TopUpAllowedRecipients
+    alliance_ops_allowed_recipients_registry = interface.AllowedRecipientRegistry("0x3B525F4c059F246Ca4aa995D21087204F30c9E2F")
+    alliance_ops_top_up_evm_script_factory_new = interface.TopUpAllowedRecipients("0xe5656eEe7eeD02bdE009d77C88247BC8271e26Eb")
 
     alliance_multisig_acc = accounts.at("0x606f77BF3dd6Ed9790D9771C7003f269a385D942", force=True)
-    alliance_trusted_caller_acc = accounts.at("0x92ABC000698374B44206148596AcD8a934687E66", force=True)
+    alliance_trusted_caller_acc = accounts.at("0x606f77BF3dd6Ed9790D9771C7003f269a385D942", force=True)
 
     evm_script_factories_before = easy_track.getEVMScriptFactories()
     assert alliance_ops_top_up_evm_script_factory_new not in evm_script_factories_before
@@ -51,7 +51,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass
 
     evm_script_factories_after = easy_track.getEVMScriptFactories()
 
-    # 1. Add Alliance top up EVM script factory address 0xEe60C6ebC91237d334230b12263E26EE3b480ec4 (AllowedRecipientsRegistry address 0x914F4441e3cc03B5468E9A450076FeDDa41bBf2d, AllowedTokensRegistry address 0x4AC40c34f8992bb1e5E856A448792158022551ca)
+    # 1. Add Alliance top up EVM script factory address 0xe5656eEe7eeD02bdE009d77C88247BC8271e26Eb (AllowedRecipientsRegistry address 0x3B525F4c059F246Ca4aa995D21087204F30c9E2F, AllowedTokensRegistry address 0x4AC40c34f8992bb1e5E856A448792158022551ca)
 
     assert alliance_ops_top_up_evm_script_factory_new in evm_script_factories_after
 
