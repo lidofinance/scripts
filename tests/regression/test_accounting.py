@@ -1,11 +1,7 @@
 from typing import TypedDict, TypeVar, Any
-
 import pytest
-from brownie import Contract, accounts, chain, web3, reverts
-from brownie.exceptions import brownie
+from brownie import Contract, accounts, chain, reverts
 from brownie.network.account import Account
-from web3 import Web3
-
 from utils.balance import set_balance, set_balance_in_wei
 from utils.evm_script import encode_error
 from tests.conftest import Helpers
@@ -45,7 +41,6 @@ def burner() -> Contract:
 @pytest.fixture(scope="module")
 def withdrawal_vault() -> Contract:
     return contracts.withdrawal_vault
-
 
 def test_accounting_no_cl_rebase(accounting_oracle: Contract, lido: Contract, helpers: Helpers):
     """Check Lido rebase after accounting report with no CL rebase"""

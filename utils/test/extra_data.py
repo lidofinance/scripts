@@ -6,11 +6,12 @@ from typing import List, NewType, Sequence, Tuple
 from hexbytes import HexBytes
 from brownie import web3
 
-StakingModuleId = NewType('StakingModuleId', int)
-NodeOperatorId = NewType('NodeOperatorId', int)
+StakingModuleId = NewType("StakingModuleId", int)
+NodeOperatorId = NewType("NodeOperatorId", int)
 NodeOperatorGlobalIndex = Tuple[StakingModuleId, NodeOperatorId]
 
-ZERO_HASH = bytes([0]*32)
+ZERO_HASH = bytes([0] * 32)
+
 
 class ItemType(Enum):
     EXTRA_DATA_TYPE_STUCK_VALIDATORS = 1
@@ -21,6 +22,14 @@ class ItemType(Enum):
 class FormatList(Enum):
     EXTRA_DATA_FORMAT_LIST_EMPTY = 0
     EXTRA_DATA_FORMAT_LIST_NON_EMPTY = 1
+
+
+class VoterState(Enum):
+    Absent = 0
+    Yea = 1
+    Nay = 2
+    DelegateYea = 3
+    DelegateNay = 4
 
 
 @dataclass

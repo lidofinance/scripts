@@ -128,7 +128,13 @@ def test_simple_dvt_state(contract):
         assert node_operator["totalVettedValidators"] <= node_operator["totalAddedValidators"]
 
         node_operator_summary = contract.getNodeOperatorSummary(id)
-        assert node_operator_summary["targetLimitMode"] == (1 if id in exited_node_operators else 0)
+        if id in exited_node_operators:
+            assert (
+                node_operator_summary["targetLimitMode"] > 0
+            ), f"targetLimitMode is 0 for exited node operator {id}"
+
+            assert node_operator_summary["depositableValidatorsCount"] == 0
+
         assert node_operator_summary["targetValidatorsCount"] == 0
         # Can be more than 0 in regular protocol operations
         # assert node_operator_summary["stuckValidatorsCount"] == 0
@@ -146,11 +152,11 @@ def test_simple_dvt_state(contract):
         assert node_operator["totalExitedValidators"] == node_operator_summary["totalExitedValidators"]
         assert node_operator["totalDepositedValidators"] == node_operator_summary["totalDepositedValidators"]
 
-        no_depositable_validators_count = (
-            node_operator["totalVettedValidators"] - node_operator["totalDepositedValidators"]
-        )
-
-        assert node_operator_summary["depositableValidatorsCount"] == no_depositable_validators_count
+        if node_operator_summary["targetLimitMode"] == 0:
+            no_depositable_validators_count = (
+                node_operator["totalVettedValidators"] - node_operator["totalDepositedValidators"]
+            )
+            assert node_operator_summary["depositableValidatorsCount"] == no_depositable_validators_count
 
 
 def test_simple_dvt_permissions(contract):

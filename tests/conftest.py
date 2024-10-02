@@ -1,4 +1,3 @@
-import os
 import json
 from typing import List
 
@@ -51,6 +50,20 @@ def ldo_holder(accounts):
 @pytest.fixture(scope="function")
 def stranger():
     return set_balance("0x98eC059dC3aDFbdd63429454aeB0C990fbA4a124", 100000)
+
+
+@pytest.fixture(scope="function")
+def delegate1():
+    return set_balance("0xa70B0AfdF44cEccCF02E76486a6DE4F4B7fd1e52", 100000)
+
+
+@pytest.fixture(scope="function")
+def delegate2():
+    return set_balance("0x100b896F2Dd8c4Ca619db86BCDDb7E085143C1C5", 100000)
+
+@pytest.fixture(scope="module")
+def trp_recipient(accounts):
+    return set_balance("0x228cCaFeA1fa21B74257Af975A9D84d87188c61B", 100000)
 
 
 @pytest.fixture(scope="module")
@@ -132,7 +145,7 @@ class Helpers:
             print(f"vote #{vote_id} executed")
             execution_transactions.append(tx)
 
-        # Helpers._prefetch_contracts_from_etherscan()
+        Helpers._prefetch_contracts_from_etherscan()
 
         return execution_transactions
 
@@ -149,6 +162,7 @@ class Helpers:
             Contract.from_explorer(VALIDATORS_EXIT_BUS_ORACLE)
             Contract.from_explorer(WITHDRAWAL_QUEUE)
             Contract.from_explorer(STAKING_ROUTER)
+            Contract.from_explorer(VOTING)
 
             Helpers._etherscan_is_fetched = True
 
@@ -159,7 +173,7 @@ def helpers():
 
 
 @pytest.fixture(scope="session")
-def vote_ids_from_env() -> List[int]:
+def vote_ids_from_env() -> [int]:
     if os.getenv(ENV_OMNIBUS_VOTE_IDS):
         try:
             vote_ids_str = os.getenv(ENV_OMNIBUS_VOTE_IDS)

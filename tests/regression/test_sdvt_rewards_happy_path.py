@@ -126,7 +126,7 @@ def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participa
     assert cluster_rewards_before_report == 0
 
     # oracle report
-    oracle_report(cl_diff=ETH(100))
+    oracle_report(cl_diff=ETH(500))
     distribute_reward(contracts.simple_dvt, stranger.address)
     cluster_rewards_after_report = lido.balanceOf(new_reward_address)
 
