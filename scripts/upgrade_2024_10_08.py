@@ -101,7 +101,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     lido_locator_as_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
     l1_token_bridge_as_proxy = interface.OssifiableProxy(L1_OPTIMISM_TOKENS_BRIDGE)
 
-    if network_name() in ("mainnet-fork") and l1_token_bridge.isDepositsEnabled():
+    if network_name() in ("mainnet-fork",) and l1_token_bridge.isDepositsEnabled():
         agent = accounts.at(AGENT, force=True)
         l1_token_bridge.disableDeposits({"from": agent})
 
