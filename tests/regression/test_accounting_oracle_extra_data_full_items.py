@@ -56,7 +56,7 @@ def sdvt(interface):
 )
 def test_extra_data_full_items(
     voting_eoa, evm_script_executor_eoa, nor, sdvt, extra_data_service,
-    nor_stuck_items, nor_exited_items, sdvt_stuck_items, sdvt_exited_items
+    nor_stuck_items, nor_exited_items, sdvt_stuck_items, sdvt_exited_items, stranger
 ):
     max_node_operators_per_item = MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM
     new_keys_per_operator = 2
