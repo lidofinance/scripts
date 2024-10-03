@@ -2,7 +2,7 @@
 Tests for fallback enable deposits voting xx/xx/2024
 """
 from scripts.fallback_enable_deposits import start_vote
-from brownie import interface, reverts
+from brownie import interface
 from utils.test.tx_tracing_helpers import *
 from utils.config import (
     contracts,

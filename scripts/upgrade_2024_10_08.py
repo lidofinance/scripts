@@ -1,55 +1,47 @@
 """
-Voting 01/10/2024.
+Voting 08/10/2024.
 
 I. Upgrade Ethereum Contracts
-1. Upgrade L1ERC20TokenBridge contract implementation 0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4
+1. Upgrade L1ERC20TokenBridge contract to implementation 0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4
 2. Call L1ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter
-3. Upgrade Lido Locator contract implementation 0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463
+3. Upgrade Lido Locator contract to implementation 0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463
 4. Grant permission DEPOSITS_ENABLER_ROLE to Ethereum Emergency Brakes Multisig
 
 II. Upgrade Optimism Contracts
 1. Send Optimism upgrade call:
-    (a) Upgrade L2ERC20TokenBridge contract implementation 0x2734602C0CEbbA68662552CacD5553370B283E2E
+    (a) Upgrade L2ERC20TokenBridge contract to implementation 0x2734602C0CEbbA68662552CacD5553370B283E2E
     (b) Call L2ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter
-    (c) Upgrade WstETH ERC20Bridged contract implementation 0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334
+    (c) Upgrade WstETH ERC20Bridged contract to implementation 0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334
     (d) Call WstETH ERC20Bridged's finalizeUpgrade_v2() to update internal version counter
 
 """
 
 import time
 import eth_abi
-import brownie
 
-from brownie.exceptions import VirtualMachineError
-from brownie import interface, web3, accounts, network
+from brownie import interface, web3, accounts
 from typing import Dict
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.agent import agent_forward
-from tests.conftest import Helpers
 from utils.config import (
-    contracts,
+    AGENT,
+    network_name,
     get_deployer_account,
     get_is_live,
     get_priority_fee,
-    network_name,
     L1_EMERGENCY_BRAKES_MULTISIG,
     L1_OPTIMISM_CROSS_DOMAIN_MESSENGER,
     LIDO_LOCATOR,
-    LIDO_LOCATOR_IMPL,
     LIDO_LOCATOR_IMPL_NEW,
     L1_OPTIMISM_TOKENS_BRIDGE,
-    L1_OPTIMISM_TOKENS_BRIDGE_IMPL,
     L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
     L2_OPTIMISM_GOVERNANCE_EXECUTOR,
     L2_OPTIMISM_TOKENS_BRIDGE,
     L2_OPTIMISM_WSTETH_TOKEN,
-    L2_OPTIMISM_WSTETH_TOKEN_IMPL,
     L2_OPTIMISM_WSTETH_TOKEN_IMPL_NEW,
-    L2_OPTIMISM_TOKENS_BRIDGE_IMPL,
     L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
-    AGENT
 )
 
 DESCRIPTION = """
@@ -68,7 +60,6 @@ All audit reports can be found here: [MixBytes Audit Report](https://github.com/
 """
 
 DEPOSITS_ENABLER_ROLE = "0x4b43b36766bde12c5e9cbbc37d15f8d1f769f08f54720ab370faeb4ce893753a"
-
 
 def encode_l2_upgrade_call(proxy1: str, new_impl1: str, proxy2: str, new_impl2: str):
     queue_definition = f"queue(address[],uint256[],string[],bytes[],bool[])"
@@ -98,26 +89,26 @@ def encode_l2_upgrade_call(proxy1: str, new_impl1: str, proxy2: str, new_impl2: 
     calldata = f"{queue_selector}{args_bytes}"
     return calldata
 
-
 def encode_l1_l2_sendMessage(to: str, calldata: str):
     l1_l2_msg_service = interface.OpCrossDomainMessenger(L1_OPTIMISM_CROSS_DOMAIN_MESSENGER)
     min_gas_limit = 1_000_000
     return l1_l2_msg_service.sendMessage.encode_input(to, calldata, min_gas_limit)
 
-
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting."""
 
-    check_pre_upgrade_state()
-
+    l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
     lido_locator_as_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
     l1_token_bridge_as_proxy = interface.OssifiableProxy(L1_OPTIMISM_TOKENS_BRIDGE)
-    l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
+
+    if network_name() in ("mainnet-fork") and l1_token_bridge.isDepositsEnabled():
+        agent = accounts.at(AGENT, force=True)
+        l1_token_bridge.disableDeposits({"from": agent})
 
     call_script_items = [
         # I. Upgrade Ethereum Contracts
 
-        # 1. Upgrade L1ERC20TokenBridge contract implementation 0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4
+        # 1. Upgrade L1ERC20TokenBridge contract to implementation 0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4
         agent_forward(
             [
                 (
@@ -130,7 +121,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         # 2. Call L1ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter
         agent_forward([(l1_token_bridge.address, l1_token_bridge.finalizeUpgrade_v2.encode_input())]),
 
-        # 3. Upgrade Lido Locator contract implementation 0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463"
+        # 3. Upgrade Lido Locator contract to implementation 0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463"
         agent_forward(
             [
                 (
@@ -152,9 +143,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
         # II. Upgrade Optimism Contracts
         # 1. Send Optimism upgrade call:
-        #     (a) Upgrade L2ERC20TokenBridge contract implementation 0x2734602C0CEbbA68662552CacD5553370B283E2E
+        #     (a) Upgrade L2ERC20TokenBridge contract to implementation 0x2734602C0CEbbA68662552CacD5553370B283E2E
         #     (b) Call L2ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter
-        #     (c) Upgrade WstETH ERC20Bridged contract implementation 0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334
+        #     (c) Upgrade WstETH ERC20Bridged contract to implementation 0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334
         #     (d) Call WstETH ERC20Bridged's finalizeUpgrade_v2() to update internal version counter
         agent_forward(
             [
@@ -175,11 +166,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     ]
 
     vote_desc_items = [
-        "1) Upgrade L1ERC20TokenBridge contract implementation 0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4",
+        "1) Upgrade L1ERC20TokenBridge contract to implementation 0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4",
         "2) Call L1ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter",
-        "3) Upgrade Lido Locator contract implementation 0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463",
+        "3) Upgrade Lido Locator contract to implementation 0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463",
         "4) Grant permission DEPOSITS_ENABLER_ROLE to Ethereum Emergency Brakes Multisig",
-        "5) Send Optimism upgrade call: (a) Upgrade L2ERC20TokenBridge contract implementation 0x2734602C0CEbbA68662552CacD5553370B283E2E; (b) Call L2ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter; (c) Upgrade WstETH ERC20Bridged contract implementation 0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334; (d) Call WstETH ERC20Bridged's finalizeUpgrade_v2() to update internal version counter;",
+        "5) Send Optimism upgrade call: (a) Upgrade L2ERC20TokenBridge contract to implementation 0x2734602C0CEbbA68662552CacD5553370B283E2E; (b) Call L2ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter; (c) Upgrade WstETH ERC20Bridged contract to implementation 0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334; (d) Call WstETH ERC20Bridged's finalizeUpgrade_v2() to update internal version counter;",
     ]
 
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
@@ -193,7 +184,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
     )
 
-
 def main():
     tx_params = {"from": get_deployer_account()}
     if get_is_live():
@@ -206,117 +196,5 @@ def main():
     time.sleep(5)  # hack for waiting thread #2.
 
 
-def start_and_execute_for_fork_upgrade():
-    if not network_name() in ("mainnet-fork"):
-        return
-
-    account_wht_eth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-    deployerAccount = get_deployer_account()
-
-    # Top up accounts
-    accountWithEth = accounts.at(account_wht_eth, force=True)
-    accountWithEth.transfer(deployerAccount.address, "2 ethers")
-    accountWithEth.transfer(AGENT, "2 ethers")
-
-    tx_params = {"from": deployerAccount}
-    if get_is_live():
-        tx_params["priority_fee"] = get_priority_fee()
-
-    vote_id, _ = start_vote(tx_params=tx_params, silent=True)
-    vote_tx = Helpers.execute_vote(accounts, vote_id, contracts.voting)
-
-    print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
-
-    vote_id >= 0 and print(f"Vote created: {vote_id}.")
-
-    time.sleep(5)  # hack for waiting thread #2.
 
 
-def check_pre_upgrade_state():
-    l1_token_bridge_proxy = interface.OssifiableProxy(L1_OPTIMISM_TOKENS_BRIDGE)
-    l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
-    lido_locator_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
-
-    # Disabled deposits is the starting condition for the vote
-    if network_name() in ("mainnet"):
-        assert not l1_token_bridge.isDepositsEnabled()
-
-    # L1 Bridge has old implementation
-    l1_token_bridge_implementation_address_before = l1_token_bridge_proxy.proxy__getImplementation()
-    assert l1_token_bridge_implementation_address_before == L1_OPTIMISM_TOKENS_BRIDGE_IMPL, "Old address is incorrect"
-
-    # L1 Bridge doesn't have version before update
-    try:
-        l1_token_bridge.getContractVersion()
-    except VirtualMachineError:
-        pass
-
-    # Upgrade LidoLocator implementation
-    lido_locator_impl_before = lido_locator_proxy.proxy__getImplementation()
-    assert lido_locator_impl_before == LIDO_LOCATOR_IMPL, "Old address is incorrect"
-
-    # Multisig hasn't been assigned as deposit enabler
-    assert not l1_token_bridge.hasRole(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG)
-
-def pause_deposits():
-    if not network_name() in ("mainnet-fork"):
-        return
-
-    network.gas_price("2 gwei")
-
-    account_wht_eth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-    accountWithEth = accounts.at(account_wht_eth, force=True)
-    accountWithEth.transfer(AGENT, "2 ethers")
-
-    l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
-    agent = accounts.at(AGENT, force=True)
-    l1_token_bridge.disableDeposits({"from": agent})
-    assert not l1_token_bridge.isDepositsEnabled()
-
-def resume_deposits():
-    if not network_name() in ("mainnet-fork"):
-        return
-
-    network.gas_price("2 gwei")
-
-    account_wht_eth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-    accountWithEth = accounts.at(account_wht_eth, force=True)
-    accountWithEth.transfer(AGENT, "2 ethers")
-
-    l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
-    agent = accounts.at(AGENT, force=True)
-    l1_token_bridge.enableDeposits({"from": agent})
-    assert l1_token_bridge.isDepositsEnabled()
-
-
-def check_post_upgrade_state(vote_tx):
-    l1_token_bridge_proxy = interface.OssifiableProxy(L1_OPTIMISM_TOKENS_BRIDGE)
-    l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
-    lido_locator_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
-
-    # L1 Bridge has new implementation
-    l1_token_bridge_implementation_address_after = l1_token_bridge_proxy.proxy__getImplementation()
-    assert (
-        l1_token_bridge_implementation_address_after == L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW
-    ), "New address is incorrect"
-
-    # update L1 Bridge to 2 version
-    assert l1_token_bridge.getContractVersion() == 2
-
-    # LidoLocator has new implementation
-    lido_locator_impl_after = lido_locator_proxy.proxy__getImplementation()
-    assert lido_locator_impl_after == LIDO_LOCATOR_IMPL_NEW, "New LidoLocator address is incorrect"
-
-    # Multisig has been assigned as deposit enabler
-    assert l1_token_bridge.hasRole(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG)
-    # TODO: check multisig can renounce the role
-
-    # Check bytecode that was send to messenger to update L2 bridge and wstETH token
-    sentMessage = vote_tx.events["SentMessage"]["message"]
-    encoded_l2_upgrade_call = encode_l2_upgrade_call(
-        L2_OPTIMISM_TOKENS_BRIDGE,
-        L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
-        L2_OPTIMISM_WSTETH_TOKEN,
-        L2_OPTIMISM_WSTETH_TOKEN_IMPL_NEW,
-    )
-    assert sentMessage == encoded_l2_upgrade_call

@@ -1,8 +1,8 @@
 """
 Tests for voting xx/xx/2024
 """
-
-from scripts.upgrade_2024_01_10 import start_vote, check_pre_upgrade_state, check_post_upgrade_state
+from scripts.upgrade_2024_10_08 import start_vote
+from test_2024_10_08 import check_pre_upgrade_state, check_post_upgrade_state
 from scripts.fallback_rollback_l1 import start_vote as start_vote_fallback
 from brownie import interface
 from utils.test.tx_tracing_helpers import *
@@ -34,7 +34,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
     # validate vote events
-    # TODO: this check fails on anvil
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 5, "Incorrect voting items count"
 
     check_post_upgrade_state(vote_tx)
@@ -49,7 +48,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
     vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
 
     # validate vote events
-    # TODO: this check fails on anvil
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 3, "Incorrect voting items count"
 
     check_pre_upgrade_state()
