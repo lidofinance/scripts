@@ -11,13 +11,17 @@ from utils.evm_script import encode_error
 from utils.test.csm_helpers import csm_add_node_operator, get_ea_member, csm_upload_keys
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.helpers import ETH
-from utils.test.oracle_report_helpers import oracle_report
+from utils.test.oracle_report_helpers import (
+    oracle_report, wait_to_next_available_report_time, prepare_csm_report,
+    reach_consensus,
+)
 from utils.test.staking_router_helpers import set_staking_module_status, StakingModuleStatus
 
 contracts: ContractsLazyLoader = contracts
 
 CSM_MODULE_ID = 3
 
+pytestmark = pytest.mark.usefixtures("autoexecute_vote_ms")
 
 @pytest.fixture(scope="module")
 def csm():
@@ -34,27 +38,62 @@ def fee_distributor():
     return contracts.cs_fee_distributor
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
+def fee_oracle():
+    return contracts.cs_fee_oracle
+
+
+@pytest.fixture
 def node_operator(csm, accounting) -> int:
     address, proof = get_ea_member()
     return csm_add_node_operator(csm, accounting, address, proof)
 
 
-@pytest.fixture()
+@pytest.fixture
 def pause_modules():
     # pause deposit to all modules except csm
-    # to be sure that all deposits go to csm
+    # to be sure that all deposits goes to csm
     modules = contracts.staking_router.getStakingModules()
     for module in modules:
         if module[0] != CSM_MODULE_ID:
             set_staking_module_status(module[0], StakingModuleStatus.Stopped)
 
 
-@pytest.fixture()
+@pytest.fixture
 def deposits_to_csm(csm, pause_modules, node_operator):
     (_, _, depositable) = csm.getStakingModuleSummary()
     fill_deposit_buffer(depositable)
     contracts.lido.deposit(depositable, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
+
+
+@pytest.fixture
+def ref_slot():
+    wait_to_next_available_report_time(contracts.csm_hash_consensus)
+    ref_slot, _ = contracts.csm_hash_consensus.getCurrentFrame()
+    return ref_slot
+
+
+@pytest.fixture
+def distribute_reward_tree(deposits_to_csm, fee_oracle, fee_distributor, node_operator, ref_slot):
+    consensus_version = fee_oracle.getConsensusVersion()
+    oracle_version = fee_oracle.getContractVersion()
+
+    rewards = ETH(0.05)
+    oracle_report(cl_diff=rewards)
+    distributed_shares = contracts.lido.sharesOf(fee_distributor)
+    assert distributed_shares > 0
+
+    report, report_hash, tree = prepare_csm_report({node_operator: distributed_shares}, ref_slot)
+
+    submitter = reach_consensus(
+        ref_slot,
+        report_hash,
+        consensus_version,
+        contracts.csm_hash_consensus,
+    )
+
+    fee_oracle.submitReportData(report, oracle_version, {"from": submitter})
+    return tree
 
 
 @pytest.mark.usefixtures("pause_modules")
@@ -161,8 +200,7 @@ def test_csm_get_staking_module_summary(csm, accounting, node_operator, extra_da
     deposits_count = 3
     new_keys = 5
     new_depositable = new_keys - deposits_count
-    address, _ = get_ea_member()
-    csm_upload_keys(csm, accounting, node_operator, address, new_keys)
+    csm_upload_keys(csm, accounting, node_operator, new_keys)
     fill_deposit_buffer(deposits_count)
     contracts.lido.deposit(deposits_count, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
 
@@ -175,6 +213,7 @@ def test_csm_get_staking_module_summary(csm, accounting, node_operator, extra_da
 
 @pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_get_node_operator_summary(csm, node_operator, extra_data_service):
+    no = csm.getNodeOperator(node_operator)
     exited_keys = 1
     stuck_keys = 1
     extra_data = extra_data_service.collect({(CSM_MODULE_ID, node_operator): stuck_keys}, {(CSM_MODULE_ID, node_operator): exited_keys}, 2, 2)
@@ -194,7 +233,7 @@ def test_csm_get_node_operator_summary(csm, node_operator, extra_data_service):
     assert summary["refundedValidatorsCount"] == 0
     assert summary["stuckPenaltyEndTimestamp"] == 0
     assert summary["totalExitedValidators"] == exited_keys
-    assert summary["totalDepositedValidators"] == 5
+    assert summary["totalDepositedValidators"] == no["totalDepositedKeys"]
     assert summary["depositableValidatorsCount"] == 0
 
 
@@ -218,3 +257,38 @@ def test_csm_decrease_vetted_keys(csm, node_operator, stranger):
     no = csm.getNodeOperator(node_operator)
     assert no["totalVettedKeys"] == 1
 
+
+@pytest.mark.usefixtures("deposits_to_csm")
+def test_csm_claim_rewards_steth(csm, distribute_reward_tree, node_operator, fee_distributor):
+    tree = distribute_reward_tree.tree
+    shares = tree.values[0]["value"][1]
+    proof = list(tree.get_proof(tree.find(tree.leaf((node_operator, shares)))))
+    reward_address = csm.getNodeOperator(node_operator)["rewardAddress"]
+    shares_before = contracts.lido.sharesOf(reward_address)
+
+    csm.claimRewardsStETH(node_operator, ETH(1), shares, proof, {"from": reward_address})
+    # subtract 10 to avoid rounding errors
+    assert contracts.lido.sharesOf(reward_address) > shares_before + shares - 10
+
+@pytest.mark.usefixtures("deposits_to_csm")
+def test_csm_claim_rewards_wsteth(csm, distribute_reward_tree, node_operator, fee_distributor):
+    tree = distribute_reward_tree.tree
+    shares = tree.values[0]["value"][1]
+    proof = list(tree.get_proof(tree.find(tree.leaf((node_operator, shares)))))
+    reward_address = csm.getNodeOperator(node_operator)["rewardAddress"]
+    wsteth_before = contracts.wsteth.balanceOf(reward_address)
+
+    csm.claimRewardsWstETH(node_operator, ETH(1), shares, proof, {"from": reward_address})
+    assert contracts.wsteth.balanceOf(reward_address) > wsteth_before
+
+@pytest.mark.usefixtures("deposits_to_csm")
+def test_csm_claim_rewards_eth(csm, distribute_reward_tree, node_operator, fee_distributor):
+    tree = distribute_reward_tree.tree
+    shares = tree.values[0]["value"][1]
+    proof = list(tree.get_proof(tree.find(tree.leaf((node_operator, shares)))))
+    reward_address = csm.getNodeOperator(node_operator)["rewardAddress"]
+    withdrawal_requests = contracts.withdrawal_queue.getWithdrawalRequests(reward_address)
+
+    csm.claimRewardsUnstETH(node_operator, ETH(1), shares, proof, {"from": reward_address})
+
+    assert len(contracts.withdrawal_queue.getWithdrawalRequests(reward_address)) == len(withdrawal_requests) + 1

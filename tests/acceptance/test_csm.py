@@ -173,7 +173,7 @@ class TestHashConsensus:
         # TODO uncomment this when initial ref slot is known
         #  assert frame_config["initialEpoch"] > 5254400 / CHAIN_SLOTS_PER_EPOCH
         assert frame_config["epochsPerFrame"] == CS_ORACLE_EPOCHS_PER_FRAME
-        assert frame_config["fastLaneLengthSlots"] == 0
+        assert frame_config["fastLaneLengthSlots"] == 1800
 
         assert hash_consensus.getQuorum() == ORACLE_QUORUM
 
@@ -181,7 +181,7 @@ class TestHashConsensus:
         #  assert hash_consensus.getInitialRefSlot() > 5254400
 
         members = hash_consensus.getMembers()
-        assert members["addresses"] == ORACLE_COMMITTEE
+        assert sorted(members["addresses"]) == sorted(ORACLE_COMMITTEE)
 
         assert hash_consensus.getReportProcessor() == CS_FEE_ORACLE_ADDRESS
 
