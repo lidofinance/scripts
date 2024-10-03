@@ -17,8 +17,6 @@ from utils.config import contracts
 
 NEW_KEYS_PER_OPERATOR = 2
 
-pytestmark = pytest.mark.usefixtures("autoexecute_vote_ms")
-
 @pytest.fixture(scope="module")
 def voting_eoa(accounts):
     return accounts.at(contracts.voting.address, force=True)
@@ -45,7 +43,7 @@ def sdvt(interface):
 
 
 @pytest.fixture(scope="module")
-def prepare_modules(nor, sdvt, voting_eoa, agent_eoa, evm_script_executor_eoa):
+def prepare_modules(nor, sdvt, voting_eoa, agent_eoa, evm_script_executor_eoa, autoexecute_vote_ms):
     # Fill NOR with new operators and keys
     (nor_count_before, added_nor_operators_count) = fill_nor_with_old_and_new_operators(
         nor,
@@ -58,7 +56,6 @@ def prepare_modules(nor, sdvt, voting_eoa, agent_eoa, evm_script_executor_eoa):
     (sdvt_count_before, added_sdvt_operators_count) = fill_nor_with_old_and_new_operators(
         sdvt,
         voting_eoa,
-        agent_eoa,
         evm_script_executor_eoa,
         NEW_KEYS_PER_OPERATOR,
         MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
@@ -70,9 +67,9 @@ def prepare_modules(nor, sdvt, voting_eoa, agent_eoa, evm_script_executor_eoa):
                                                                                NEW_KEYS_PER_OPERATOR)
 
     # Deposit for new added keys from buffer
-    keys_for_sdvt = (added_sdvt_operators_count * new_keys_per_operator) + (sdvt_count_before * new_keys_per_operator)
-    keys_for_nor = (added_nor_operators_count * new_keys_per_operator) + (nor_count_before * new_keys_per_operator)
-    keys_for_csm = (added_csm_operators_count * new_keys_per_operator) + (csm_count_before * new_keys_per_operator)
+    keys_for_sdvt = (added_sdvt_operators_count * NEW_KEYS_PER_OPERATOR) + (sdvt_count_before * NEW_KEYS_PER_OPERATOR)
+    keys_for_nor = (added_nor_operators_count * NEW_KEYS_PER_OPERATOR) + (nor_count_before * NEW_KEYS_PER_OPERATOR)
+    keys_for_csm = (added_csm_operators_count * NEW_KEYS_PER_OPERATOR) + (csm_count_before * NEW_KEYS_PER_OPERATOR)
     deposit_buffer_for_keys(
         contracts.staking_router,
         keys_for_nor,
@@ -355,8 +352,7 @@ def fill_nor_with_old_and_new_operators(
 
     # Calculate new operators count
     operators_count_before = nor.getNodeOperatorsCount()
-    operators_count_wanted = max(nor_stuck_items, nor_exited_items) * max_node_operators_per_item
-    operators_count_after = max(operators_count_wanted, operators_count_before)
+    operators_count_after = max(max_node_operators_per_item, operators_count_before)
     operators_count_added = max(operators_count_after - operators_count_before, 0)
 
     # Add new node operators and keys

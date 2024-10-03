@@ -181,7 +181,7 @@ class TestHashConsensus:
         #  assert hash_consensus.getInitialRefSlot() > 5254400
 
         members = hash_consensus.getMembers()
-        assert members["addresses"] == ORACLE_COMMITTEE
+        assert sorted(members["addresses"]) == sorted(ORACLE_COMMITTEE)
 
         assert hash_consensus.getReportProcessor() == CS_FEE_ORACLE_ADDRESS
 
