@@ -39,7 +39,7 @@ def resume_deposits():
     assert l1_token_bridge.isDepositsEnabled()
 
 def start_and_execute_for_fork_upgrade():
-    if not network_name() in ("mainnet-fork"):
+    if not network_name() in ("mainnet-fork",):
         return
 
     l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
