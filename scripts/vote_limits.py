@@ -26,10 +26,14 @@ from utils.easy_track import (
     create_permissions,
     remove_evmscript_factory
 )
+from utils.allowed_recipients_registry import (
+    set_limit_parameters
+)
+
+from utils.agent import agent_forward
 
 description = """
-1. **Add Alliance Ops stablecoins top up EVM script factory, as decided in the [Snapshot vote](https://snapshot.org/#/lido-snapshot.eth/proposal/0xa478fa5518769096eda2b7403a1d4104ca47de3102e8a9abab8640ef1b50650c).
-
+1. **Change limits
 """
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
@@ -40,14 +44,18 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
     vote_desc_items, call_script_items = zip(
         #
-        # I. Add Alliance Ops stablecoins top up EVM script factory
+        # I. Change limits
         #
         (
-            "1) Add Alliance Ops stablecoins top up EVM script factory 0x343fa5f0c79277e2d27e440f40420d619f962a23",
-            add_evmscript_factory(
-                factory=alliance_ops_topup_factory,
-                permissions=create_permissions(contracts.finance, "newImmediatePayment")
-                + create_permissions(alliance_ops_registry, "updateSpentAmount")[2:],
+            "1) Change limits 0xe1ba8dee84a4df8e99e495419365d979cdb19991",
+            agent_forward(
+                [
+                set_limit_parameters(
+                    registry_address=alliance_ops_registry,
+                    limit=250000,
+                    period_duration_months=3
+                ),
+                ]
             ),
         ),
     )
