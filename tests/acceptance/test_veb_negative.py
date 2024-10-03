@@ -224,7 +224,10 @@ def test_handle_consensus_report_data_second_exit(contract, ref_slot):
     no_global_index = (module_id, no_id) = (1, 33)
     validator_id = 1
     validator_key = contracts.node_operators_registry.getSigningKey(no_id, validator_id)[0]
-    validator = LidoValidator(validator_id, validator_key)
+
+    # set validator index to the next one to avoid NodeOpValidatorIndexMustIncrease error
+    last_requested_validator_index = contract.getLastRequestedValidatorIndices(module_id, [no_id])[0]
+    validator = LidoValidator(index=last_requested_validator_index + 1, pubkey=validator_key)
 
     contract_version = contract.getContractVersion()
     consensus_version = contract.getConsensusVersion()
@@ -287,11 +290,16 @@ def test_handle_consensus_report_data_second_exit(contract, ref_slot):
 
 
 def test_handle_consensus_report_data_invalid_request_order(contract, ref_slot):
-    no_global_index = (_, no_id) = (1, 33)
+    module_id = 1  # CuratedModule
+    no_global_index = (_, no_id) = (module_id, 33)
     validator_id = 1
     validator_key = contracts.node_operators_registry.getSigningKey(no_id, validator_id)[0]
-    validator = LidoValidator(validator_id, validator_key)
-    validator_2 = LidoValidator(2, contracts.node_operators_registry.getSigningKey(no_id, validator_id + 1)[0])
+    validator_2_key = contracts.node_operators_registry.getSigningKey(no_id, validator_id + 1)[0]
+
+    # set validator index to the next one to avoid NodeOpValidatorIndexMustIncrease error
+    last_requested_validator_index = contract.getLastRequestedValidatorIndices(module_id, [no_id])[0]
+    validator = LidoValidator(index=last_requested_validator_index + 1, pubkey=validator_key)
+    validator_2 = LidoValidator(index=last_requested_validator_index + 1, pubkey=validator_2_key)
 
     contract_version = contract.getContractVersion()
     consensus_version = contract.getConsensusVersion()
