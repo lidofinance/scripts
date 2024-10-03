@@ -17,6 +17,7 @@ from utils.config import (
     INACTIVITY_PENALTIES_AMOUNT_PWEI,
     CL_BALANCE_ORACLES_ERROR_UPPER_BP_LIMIT
 )
+from utils.test.helpers import ZERO_ADDRESS
 
 # Source of truth: https://hackmd.io/pdix1r4yR46fXUqiHaNKyw?view
 expected_report_limits = {
@@ -46,6 +47,7 @@ def test_links(contract):
 
 def test_limits(contract):
     assert contract.getMaxPositiveTokenRebase() == expected_report_limits["maxPositiveTokenRebase"]
-    limits =  contract.getOracleReportLimits()
+    assert contract.secondOpinionOracle() == ZERO_ADDRESS
+    limits = contract.getOracleReportLimits()
 
     assert dict(zip(expected_report_limits.keys(), limits)) == expected_report_limits
