@@ -1,34 +1,33 @@
 """
-SR V2
-1. Update locator implementation
-2. Revoke pause role from old DSM
-3. Revoke resume role from old DSM
-4. Grant unvetting role to new DSM
-5. Update SR implementation
-6. Call finalize upgrade on SR
-7. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
-8. Update `NodeOperatorsRegistry` implementation
-9. Finalize NOR upgrade
-10. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
-11. Update `SimpleDVT` implementation
+Staking Router V2
+1. Update Locator implementation
+2. Revoke pause role from old Deposit Security Module
+3. Revoke resume role from old Deposit Security Module
+4. Grant unvetting role to new Deposit Security Module
+5. Update Staking Router implementation
+6. Call finalize upgrade on Staking Router
+7. Publish new Node Operators Registry implementation in Node Operators Registry app APM repo
+8. Update Node Operators Registry implementation
+9. Finalize Node Operators Registry upgrade
+10. Publish new SimpleDVT implementation in SimpleDVT app APM repo
+11. Update SimpleDVT implementation
 12. Finalize SimpleDVT upgrade
-13. Update AO implementation to ${ACCOUNTING_ORACLE_IMPL}`
-14. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}`
-15. Grant manage consensus role to agent ${AGENT}`
-16. Update VEBO consensus version to ${VEBO_CONSENSUS_VERSION}`
-17. Revoke manage consensus role from agent ${AGENT}
-18. Remove old target limit factory
-19. Add Target limit for SDVT factory to ET
+13. Update Accounting Oracle implementation
+14. Finalize Accounting Oracle upgrade and update consensus version
+15. Grant manage consensus role to Aragon Agent
+16. Update Validator Exit Bus Oracle consensus version
+17. Revoke manage consensus role from Aragon Agent
+18. Remove old UpdateTargetValidatorLimits for SimpleDVT factory from EasyTrack
+19. Add new UpdateTargetValidatorLimits for SimpleDVT factory to EasyTrack
 
-CSM
-
-20. Add staking module
-21. Grant request burn role to CSAccounting contract
-22. Grant resume role to agent
-23. Resume staking module
-24. Revoke resume role from agent
-25. Update initial epoch
-26. Add CS settle EL stealing factory to ET
+Community Staking Module
+20. Add Community Staking Module to Staking Router
+21. Grant request burn role to CSAccounting
+22. Grant resume role to Aragon Agent
+23. Resume Community Staking Module
+24. Revoke resume role from Aragon Agent
+25. Update initial epoch on CSHashConsensus
+26. Add CSMSettleElStealingPenalty factory to EasyTrack
 """
 
 import time
@@ -191,11 +190,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         # SR 2
         #
         (
-            "1. Update locator implementation",
+            "1. Update Locator implementation",
             agent_forward([encode_locator_proxy_update(LIDO_LOCATOR_IMPL)]),
         ),
         (
-            "2. Revoke pause role from old DSM",
+            "2. Revoke pause role from old Deposit Security Module",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -207,7 +206,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "3. Revoke resume role from old DSM",
+            "3. Revoke resume role from old Deposit Security Module",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -219,7 +218,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "4. Grant unvetting role to new DSM",
+            "4. Grant unvetting role to new Deposit Security Module",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -231,31 +230,31 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "5. Update SR implementation",
+            "5. Update Staking Router implementation",
             agent_forward([encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)]),
         ),
         (
-            "6. Call finalize upgrade on SR",
+            "6. Call finalize upgrade on Staking Router",
             encode_staking_router_finalize(),
         ),
         (
-            "7. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo",
+            "7. Publish new Node Operators Registry implementation in Node Operators Registry app APM repo",
             add_implementation_to_nor_app_repo(NOR_VERSION_REPO, NODE_OPERATORS_REGISTRY_IMPL, nor_uri),
         ),
         (
-            "8. Update `NodeOperatorsRegistry` implementation",
+            "8. Update Node Operators Registry implementation",
             update_app_implementation(NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
         ),
         (
-            "9. Finalize NOR upgrade",
+            "9. Finalize Node Operators Registry upgrade",
             encode_nor_finalize(),
         ),
         (
-            "10. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo",
+            "10. Publish new SimpleDVT implementation in SimpleDVT app APM repo",
             add_implementation_to_sdvt_app_repo(SDVT_VERSION_REPO, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
         ),
         (
-            "11. Update `SimpleDVT` implementation",
+            "11. Update SimpleDVT implementation",
             update_app_implementation(SIMPLE_DVT_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
         ),
         (
@@ -263,15 +262,15 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             encode_sdvt_finalize(),
         ),
         (
-            "13. Update AO implementation to ${ACCOUNTING_ORACLE_IMPL}",
+            "13. Update Accounting Oracle implementation",
             agent_forward([encode_ao_proxy_update(ACCOUNTING_ORACLE_IMPL)]),
         ),
         (
-            "14. Finalize AO upgrade and set consensus version to ${AO_CONSENSUS_VERSION}",
+            "14. Finalize Accounting Oracle upgrade and update consensus version",
             encode_ao_finalize(),
         ),
         (
-            "15. Grant manage consensus role to agent ${AGENT}",
+            "15. Grant manage consensus role to Aragon Agent",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -283,11 +282,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "16. Update VEBO consensus version to ${VEBO_CONSENSUS_VERSION}",
+            "16. Update Validator Exit Bus Oracle consensus version",
             agent_forward([encode_set_consensus_version()]),
         ),
         (
-            "17. Revoke manage consensus role from agent ${AGENT}",
+            "17. Revoke manage consensus role from Aragon Agent",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -299,13 +298,13 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "18. Remove old target limit factory",
+            "18. Remove old UpdateTargetValidatorLimits for SimpleDVT factory from EasyTrack",
             remove_evmscript_factory(
                 factory=OLD_TARGET_LIMIT__FACTORY,
             ),
         ),
         (
-            "19. Add Target limit for SDVT factory to ET",
+            "19. Add new UpdateTargetValidatorLimits for SimpleDVT factory to EasyTrack",
             add_evmscript_factory(
                 factory=NEW_TARGET_LIMIT_FACTORY,
                 permissions=(
@@ -318,7 +317,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         #
         # CSM
         (
-            "20. Add staking module",
+            "20. Add Community Staking Module to Staking Router",
             agent_forward(
                 [
                     (
@@ -338,7 +337,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "21. Grant request burn role to CSAccounting contract",
+            "21. Grant request burn role to CSAccounting",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -350,7 +349,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "22. Grant resume role to agent",
+            "22. Grant resume role to Aragon Agent",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -362,11 +361,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "23. Resume staking module",
+            "23. Resume Community Staking Module",
             agent_forward([(contracts.csm.address, contracts.csm.resume.encode_input())]),
         ),
         (
-            "24. Revoke resume role from agent",
+            "24. Revoke resume role from Aragon Agent",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -378,7 +377,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "25. Update initial epoch",
+            "25. Update initial epoch on CSHashConsensus",
             agent_forward(
                 [
                     (
@@ -389,7 +388,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "26. Add CS settle EL stealing factory to ET",
+            "26. Add CSMSettleElStealingPenalty factory to EasyTrack",
             add_evmscript_factory(
                 factory=EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY,
                 permissions=(create_permissions(contracts.csm, "settleELRewardsStealingPenalty")),
