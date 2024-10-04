@@ -1,19 +1,16 @@
 """
 Tests for voting 08/10/2024
 """
+
 from scripts.upgrade_2024_10_08 import start_vote, encode_l2_upgrade_call
-from brownie import interface, ZERO_ADDRESS, reverts, web3, accounts, convert
+from brownie import interface, reverts
 from brownie.exceptions import VirtualMachineError
-from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.common import validate_events_chain
-from utils.config import (
-    contracts,
-    AGENT,
-)
+from utils.config import AGENT
 from utils.test.tx_tracing_helpers import *
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
-from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS, network_name
+from utils.config import contracts
 from utils.easy_track import create_permissions
 from configs.config_mainnet import (
     DAI_TOKEN,
@@ -24,7 +21,6 @@ from utils.test.easy_track_helpers import create_and_enact_payment_motion, check
 from utils.test.event_validators.easy_track import (
     validate_evmscript_factory_added_event,
     EVMScriptFactoryAdded,
-    validate_evmscript_factory_removed_event,
 )
 
 LIDO_LOCATOR = "0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb"
@@ -44,9 +40,15 @@ L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW = "0x2734602C0CEbbA68662552CacD5553370B283E2E
 L2_OPTIMISM_WSTETH_TOKEN = "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb"
 L2_OPTIMISM_WSTETH_TOKEN_IMPL_NEW = "0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334"
 
-def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass_events_decoding):
 
+def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass_events_decoding):
     l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
+    alliance_ops_top_up_evm_script_factory_new = interface.TopUpAllowedRecipients(
+        "0xe5656eEe7eeD02bdE009d77C88247BC8271e26Eb"
+    )
+    alliance_ops_allowed_recipients_registry = interface.AllowedRecipientRegistry(
+        "0x3B525F4c059F246Ca4aa995D21087204F30c9E2F"
+    )
 
     # 1-5. Prepare required state for the voting
     if l1_token_bridge.isDepositsEnabled():
@@ -57,16 +59,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass
     wsteth_bridge_balance_before = contracts.wsteth.balanceOf(L1_OPTIMISM_TOKENS_BRIDGE)
 
     # 6. Prepare data before the voting
-    steth = interface.StETH("0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
-    easy_track = interface.EasyTrack("0xF0211b7660680B49De1A7E9f25C65660F0a13Fea")
-
-    alliance_ops_allowed_recipients_registry = interface.AllowedRecipientRegistry("0x3B525F4c059F246Ca4aa995D21087204F30c9E2F")
-    alliance_ops_top_up_evm_script_factory_new = interface.TopUpAllowedRecipients("0xe5656eEe7eeD02bdE009d77C88247BC8271e26Eb")
-
-    alliance_multisig_acc = accounts.at("0x606f77BF3dd6Ed9790D9771C7003f269a385D942", force=True)
-    alliance_trusted_caller_acc = accounts.at("0x606f77BF3dd6Ed9790D9771C7003f269a385D942", force=True)
-
-    evm_script_factories_before = easy_track.getEVMScriptFactories()
+    evm_script_factories_before = contracts.easy_track.getEVMScriptFactories()
     assert alliance_ops_top_up_evm_script_factory_new not in evm_script_factories_before
 
     # START VOTE
@@ -79,6 +72,10 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass
 
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
+    # validate vote metadata
+    metadata = find_metadata_by_vote_id(vote_id)
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreihj5oy577lonjrzwcjmopknydtdytdysvxalehjtx26nf2hhyogyq"
+
     # validate vote events
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 6, "Incorrect voting items count"
 
@@ -87,53 +84,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass
     assert wsteth_bridge_balance_before == contracts.wsteth.balanceOf(L1_OPTIMISM_TOKENS_BRIDGE)
 
     # 6 validation
-    evm_script_factories_after = easy_track.getEVMScriptFactories()
+    evm_script_factories_after = contracts.easy_track.getEVMScriptFactories()
     assert alliance_ops_top_up_evm_script_factory_new in evm_script_factories_after
-
-    dai_transfer_amount = 1_000 * 10 ** 18
-    usdc_transfer_amount = 1_000 * 10 ** 6
-    usdt_transfer_amount = 1_000 * 10 ** 6
-
-    create_and_enact_payment_motion(
-        easy_track,
-        trusted_caller=alliance_trusted_caller_acc,
-        factory=alliance_ops_top_up_evm_script_factory_new,
-        token=interface.Dai(DAI_TOKEN),
-        recievers=[alliance_multisig_acc],
-        transfer_amounts=[dai_transfer_amount],
-        stranger=stranger,
-    )
-
-    create_and_enact_payment_motion(
-        easy_track,
-        trusted_caller=alliance_trusted_caller_acc,
-        factory=alliance_ops_top_up_evm_script_factory_new,
-        token=interface.Usdc(USDC_TOKEN),
-        recievers=[alliance_multisig_acc],
-        transfer_amounts=[usdc_transfer_amount],
-        stranger=stranger,
-    )
-
-    create_and_enact_payment_motion(
-        easy_track,
-        trusted_caller=alliance_trusted_caller_acc,
-        factory=alliance_ops_top_up_evm_script_factory_new,
-        token=interface.Usdt(USDT_TOKEN),
-        recievers=[alliance_multisig_acc],
-        transfer_amounts=[usdt_transfer_amount],
-        stranger=stranger,
-    )
-
-    with reverts("TOKEN_NOT_ALLOWED"):
-        create_and_enact_payment_motion(
-            easy_track,
-            trusted_caller=alliance_trusted_caller_acc,
-            factory=alliance_ops_top_up_evm_script_factory_new,
-            token=steth,
-            recievers=[alliance_multisig_acc],
-            transfer_amounts=[1],
-            stranger=stranger,
-        )
 
     check_add_and_remove_recipient_with_voting(
         registry=alliance_ops_allowed_recipients_registry,
@@ -141,9 +93,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass
         ldo_holder=ldo_holder,
         dao_voting=contracts.voting,
     )
-
-    metadata = find_metadata_by_vote_id(vote_id)
-    assert get_lido_vote_cid_from_str(metadata) == "bafkreibbrlprupitulahcrl57uda4nkzrbfajtrhhsaa3cbx5of4t2huoa"
 
     display_voting_events(vote_tx)
     evs = group_voting_events(vote_tx)
@@ -153,9 +102,87 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass
         EVMScriptFactoryAdded(
             factory_addr=alliance_ops_top_up_evm_script_factory_new,
             permissions=create_permissions(contracts.finance, "newImmediatePayment")
-                        + create_permissions(alliance_ops_allowed_recipients_registry, "updateSpentAmount")[2:],
+            + create_permissions(alliance_ops_allowed_recipients_registry, "updateSpentAmount")[2:],
         ),
     )
+
+
+def test_new_alliance_ops_top_up_evm_script_factory(helpers, accounts, stranger, vote_ids_from_env, ldo_holder):
+    steth = interface.StETH("0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
+
+    alliance_multisig_acc = accounts.at("0x606f77BF3dd6Ed9790D9771C7003f269a385D942", force=True)
+    alliance_trusted_caller_acc = accounts.at("0x606f77BF3dd6Ed9790D9771C7003f269a385D942", force=True)
+
+    alliance_ops_top_up_evm_script_factory_new = interface.TopUpAllowedRecipients(
+        "0xe5656eEe7eeD02bdE009d77C88247BC8271e26Eb"
+    )
+
+    dai_token = interface.Dai(DAI_TOKEN)
+    dai_balance_before = dai_token.balanceOf(alliance_multisig_acc)
+    dai_transfer_amount = 1_000 * 10**18
+    usdc_token = interface.Usdc(USDC_TOKEN)
+    usdc_balance_before = usdc_token.balanceOf(alliance_multisig_acc)
+    usdc_transfer_amount = 1_000 * 10**6
+    usdt_token = interface.Usdt(USDT_TOKEN)
+    usdt_balance_before = usdt_token.balanceOf(alliance_multisig_acc)
+    usdt_transfer_amount = 1_000 * 10**6
+
+    # START VOTE
+    if len(vote_ids_from_env) > 0:
+        (vote_id,) = vote_ids_from_env
+    else:
+        vote_id, _ = start_vote({"from": ldo_holder}, silent=True)
+    helpers.execute_vote(accounts, vote_id, contracts.voting)
+
+    # transfer dai, usdc, usdt to alliance multisig and check that it was successful
+    create_and_enact_payment_motion(
+        contracts.easy_track,
+        trusted_caller=alliance_trusted_caller_acc,
+        factory=alliance_ops_top_up_evm_script_factory_new,
+        token=dai_token,
+        recievers=[alliance_multisig_acc],
+        transfer_amounts=[dai_transfer_amount],
+        stranger=stranger,
+    )
+
+    assert dai_token.balanceOf(alliance_multisig_acc) == dai_balance_before + dai_transfer_amount
+
+    create_and_enact_payment_motion(
+        contracts.easy_track,
+        trusted_caller=alliance_trusted_caller_acc,
+        factory=alliance_ops_top_up_evm_script_factory_new,
+        token=usdc_token,
+        recievers=[alliance_multisig_acc],
+        transfer_amounts=[usdc_transfer_amount],
+        stranger=stranger,
+    )
+
+    assert usdc_token.balanceOf(alliance_multisig_acc) == usdc_balance_before + usdc_transfer_amount
+
+    create_and_enact_payment_motion(
+        contracts.easy_track,
+        trusted_caller=alliance_trusted_caller_acc,
+        factory=alliance_ops_top_up_evm_script_factory_new,
+        token=usdt_token,
+        recievers=[alliance_multisig_acc],
+        transfer_amounts=[usdt_transfer_amount],
+        stranger=stranger,
+    )
+
+    assert usdt_token.balanceOf(alliance_multisig_acc) == usdt_balance_before + usdt_transfer_amount
+
+    # check that transfer of steth is not allowed
+    with reverts("TOKEN_NOT_ALLOWED"):
+        create_and_enact_payment_motion(
+            contracts.easy_track,
+            trusted_caller=alliance_trusted_caller_acc,
+            factory=alliance_ops_top_up_evm_script_factory_new,
+            token=steth,
+            recievers=[alliance_multisig_acc],
+            transfer_amounts=[1],
+            stranger=stranger,
+        )
+
 
 def check_pre_upgrade_state():
     l1_token_bridge_proxy = interface.OssifiableProxy(L1_OPTIMISM_TOKENS_BRIDGE)
@@ -166,7 +193,9 @@ def check_pre_upgrade_state():
     assert not l1_token_bridge.isDepositsEnabled()
 
     # L1 Bridge has old implementation
-    assert l1_token_bridge_proxy.proxy__getImplementation() == L1_OPTIMISM_TOKENS_BRIDGE_IMPL, "Old address is incorrect"
+    assert (
+        l1_token_bridge_proxy.proxy__getImplementation() == L1_OPTIMISM_TOKENS_BRIDGE_IMPL
+    ), "Old address is incorrect"
 
     # L1 Bridge doesn't have version before update
     try:
@@ -179,6 +208,7 @@ def check_pre_upgrade_state():
 
     # Multisig hasn't been assigned as deposit enabler
     assert not l1_token_bridge.hasRole(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG)
+
 
 def check_post_upgrade_state(vote_tx):
     l1_token_bridge_proxy = interface.OssifiableProxy(L1_OPTIMISM_TOKENS_BRIDGE)
@@ -197,7 +227,9 @@ def check_post_upgrade_state(vote_tx):
     assert not l1_token_bridge.isDepositsEnabled()
 
     # LidoLocator has new implementation
-    assert lido_locator_proxy.proxy__getImplementation() == LIDO_LOCATOR_IMPL_NEW, "New LidoLocator address is incorrect"
+    assert (
+        lido_locator_proxy.proxy__getImplementation() == LIDO_LOCATOR_IMPL_NEW
+    ), "New LidoLocator address is incorrect"
 
     # Multisig has been assigned as deposit enabler
     assert l1_token_bridge.hasRole(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG)
@@ -216,8 +248,9 @@ def check_post_upgrade_state(vote_tx):
         L2_OPTIMISM_TOKENS_BRIDGE,
         L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
         L2_OPTIMISM_WSTETH_TOKEN,
-        L2_OPTIMISM_WSTETH_TOKEN_IMPL_NEW
+        L2_OPTIMISM_WSTETH_TOKEN_IMPL_NEW,
     )
+
 
 def validate_contract_upgrade(events: EventDict, implementation: str):
     _events_chain = ["LogScriptCall", "LogScriptCall", "Upgraded", "ScriptResult"]
@@ -225,11 +258,13 @@ def validate_contract_upgrade(events: EventDict, implementation: str):
     assert events.count("Upgraded") == 1
     assert events["Upgraded"]["implementation"] == implementation, "Wrong implementation"
 
+
 def validate_contract_finalization(events: EventDict, version: int):
     _events_chain = ["LogScriptCall", "LogScriptCall", "ContractVersionSet", "ScriptResult"]
     validate_events_chain([e.name for e in events], _events_chain)
     assert events.count("ContractVersionSet") == 1
     assert events["ContractVersionSet"]["version"] == version
+
 
 def validate_contract_role_granting(events: EventDict, role: str, account: str, sender: str):
     _events_chain = ["LogScriptCall", "LogScriptCall", "RoleGranted", "ScriptResult"]
@@ -239,15 +274,24 @@ def validate_contract_role_granting(events: EventDict, role: str, account: str, 
     assert events["RoleGranted"]["account"] == account
     assert events["RoleGranted"]["sender"] == sender
 
+
 def validate_optimism_upgrade_call(
-        events: EventDict,
-        target: str,
-        sender: str,
-        l2_bridge_proxy: str,
-        l2_bridge_impl: str,
-        l2_wst_proxy: str,
-        l2_wst_impl: str):
-    _events_chain = ["LogScriptCall", "LogScriptCall", "TransactionDeposited", "SentMessage", "SentMessageExtension1", "ScriptResult"]
+    events: EventDict,
+    target: str,
+    sender: str,
+    l2_bridge_proxy: str,
+    l2_bridge_impl: str,
+    l2_wst_proxy: str,
+    l2_wst_impl: str,
+):
+    _events_chain = [
+        "LogScriptCall",
+        "LogScriptCall",
+        "TransactionDeposited",
+        "SentMessage",
+        "SentMessageExtension1",
+        "ScriptResult",
+    ]
     validate_events_chain([e.name for e in events], _events_chain)
     assert events.count("SentMessage") == 1
     # Check bytecode that was sent to messenger to update L2 bridge and wstETH token
@@ -255,5 +299,3 @@ def validate_optimism_upgrade_call(
     assert events["SentMessage"]["message"] == encoded_l2_upgrade_call
     assert events["SentMessage"]["target"] == target
     assert events["SentMessage"]["sender"] == sender
-
-
