@@ -47,7 +47,9 @@ def test_links(contract):
 
 def test_limits(contract):
     assert contract.getMaxPositiveTokenRebase() == expected_report_limits["maxPositiveTokenRebase"]
-    assert contract.secondOpinionOracle() == ZERO_ADDRESS
     limits = contract.getOracleReportLimits()
 
     assert dict(zip(expected_report_limits.keys(), limits)) == expected_report_limits
+
+def test_second_opinion_is_empty(contract):
+    assert contract.secondOpinionOracle() == ZERO_ADDRESS
