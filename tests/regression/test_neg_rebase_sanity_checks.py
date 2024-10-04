@@ -33,9 +33,9 @@ def test_negative_rebase_correct_exited_validators_count_pos_rebase(oracle_repor
 
     count = oracle_report_sanity_checker.getReportDataCount()
     assert count > 0
-    (_, storedExitedValidators, _) = oracle_report_sanity_checker.reportData(count - 1)
+    (_, stored_exited_validators, _) = oracle_report_sanity_checker.reportData(count - 1)
 
-    assert storedExitedValidators == sum(reported_validators_values)
+    assert stored_exited_validators == sum(reported_validators_values)
 
 def test_negative_rebase_correct_exited_validators_count_neg_rebase(oracle_report_sanity_checker):
     locator = contracts.lido_locator
@@ -77,9 +77,9 @@ def test_negative_rebase_more_than_54_reports(oracle_report_sanity_checker):
 
     count = oracle_report_sanity_checker.getReportDataCount()
     assert count > 0
-    (_, storedExitedValidators, _) = oracle_report_sanity_checker.reportData(count - 1)
+    (_, stored_exited_validators, _) = oracle_report_sanity_checker.reportData(count - 1)
 
-    assert storedExitedValidators == sum(reported_validators_values)
+    assert stored_exited_validators == sum(reported_validators_values)
 
 
 def exited_validators_count():
