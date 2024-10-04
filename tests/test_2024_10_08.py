@@ -6,22 +6,18 @@ from scripts.upgrade_2024_10_08 import start_vote, encode_l2_upgrade_call
 from brownie import interface, reverts
 from brownie.exceptions import VirtualMachineError
 from utils.test.event_validators.common import validate_events_chain
-from utils.config import AGENT
 from utils.test.tx_tracing_helpers import *
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.config import contracts
 from utils.easy_track import create_permissions
-from configs.config_mainnet import (
-    DAI_TOKEN,
-    USDC_TOKEN,
-    USDT_TOKEN,
-)
 from utils.test.easy_track_helpers import create_and_enact_payment_motion, check_add_and_remove_recipient_with_voting
 from utils.test.event_validators.easy_track import (
     validate_evmscript_factory_added_event,
     EVMScriptFactoryAdded,
 )
+
+AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 
 LIDO_LOCATOR = "0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb"
 LIDO_LOCATOR_IMPL = "0x1D920cc5bACf7eE506a271a5259f2417CaDeCE1d"
@@ -40,6 +36,9 @@ L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW = "0x2734602C0CEbbA68662552CacD5553370B283E2E
 L2_OPTIMISM_WSTETH_TOKEN = "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb"
 L2_OPTIMISM_WSTETH_TOKEN_IMPL_NEW = "0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334"
 
+DAI_TOKEN = "0x6b175474e89094c44da98b954eedeac495271d0f"
+USDT_TOKEN = "0xdac17f958d2ee523a2206206994597c13d831ec7"
+USDC_TOKEN = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 
 def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass_events_decoding):
     l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
@@ -234,7 +233,6 @@ def check_post_upgrade_state(vote_tx):
     # Multisig has been assigned as deposit enabler
     assert l1_token_bridge.hasRole(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG)
 
-    display_voting_events(vote_tx)
     evs = group_voting_events(vote_tx)
 
     validate_contract_upgrade(evs[0], L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW)

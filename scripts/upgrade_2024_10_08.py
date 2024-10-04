@@ -52,23 +52,10 @@ from utils.permission_parameters import Param, SpecialArgumentID, ArgumentValue,
 
 
 DESCRIPTION = """
+1. Upgrade **wstETH on Optimism bridge endpoints** to enable **rebasable stETH** on Optimism alongside wstETH. Following [Snapshot vote](https://snapshot.org/#/lido-snapshot.eth/proposal/0xb1a3c33a4911712770c351504bac0499611ceb0faff248eacb1e96354f8e21e8) and proposed [action plan](https://research.lido.fi/t/steth-on-optimism-upgrade-announcement-and-action-plan/8474).
+Solution audited by [MixBytes](https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf) and [Ackee Blockchain](https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf). Items 1-5.
 
-First part of vote follows a [Lido DAO decision on Snapshot](https://snapshot.org/#/lido-snapshot.eth/proposal/0xb1a3c33a4911712770c351504bac0499611ceb0faff248eacb1e96354f8e21e8) and [proposes to upgrade](https://research.lido.fi/t/lip-22-steth-on-l2/6855) the Lido bridge on the mainnet, introducing rebaseable stETH token on Optimism.
-All audit reports can be found here: [MixBytes Audit Report](https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf), [Ackee Audit Report](https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf)
-
-**Upgrade L1ERC20TokenBridge and L2ERC20TokenBridge** contracts
-
-**Upgrade Lido Locator** contract implementation
-
-**Grant permission** DEPOSITS_ENABLER_ROLE to Ethereum Emergency Brakes Multisig
-
-**Upgrade WstETH ERC20Bridged** contract on Optimism implementation
-
-
-Second part of vote follows a [Lido DAO decision on Snapshot](https://snapshot.org/#/lido-snapshot.eth/proposal/0xa478fa5518769096eda2b7403a1d4104ca47de3102e8a9abab8640ef1b50650c).
-
-**Add Alliance Ops stablecoins top up EVM script factory
-
+2. Add **Easy Track setup** for funding the [Lido Alliance Operational Multisig](https://app.safe.global/transactions/queue?safe=eth:0x606f77BF3dd6Ed9790D9771C7003f269a385D942) following the [Lido DAO Snapshot decision](https://snapshot.org/#/lido-snapshot.eth/proposal/0xa478fa5518769096eda2b7403a1d4104ca47de3102e8a9abab8640ef1b50650c). Item 6.
 """
 
 DEPOSITS_ENABLER_ROLE = "0x4b43b36766bde12c5e9cbbc37d15f8d1f769f08f54720ab370faeb4ce893753a"
