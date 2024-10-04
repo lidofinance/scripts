@@ -116,7 +116,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     alliance_ops_registry = interface.AllowedRecipientRegistry("0x3B525F4c059F246Ca4aa995D21087204F30c9E2F")
     alliance_ops_topup_factory = interface.TopUpAllowedRecipients("0xe5656eEe7eeD02bdE009d77C88247BC8271e26Eb")
 
-    if network_name() in ("mainnet-fork") and l1_token_bridge.isDepositsEnabled():
+    if network_name() in ("mainnet-fork",) and l1_token_bridge.isDepositsEnabled():
         agent = accounts.at(AGENT, force=True)
         l1_token_bridge.disableDeposits({"from": agent})
 
