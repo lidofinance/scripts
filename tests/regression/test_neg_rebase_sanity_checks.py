@@ -49,9 +49,30 @@ def test_negative_rebase_correct_exited_validators_count_neg_rebase(oracle_repor
 
     count = oracle_report_sanity_checker.getReportDataCount()
     assert count > 0
-    (_, storedExitedValidators, _) = oracle_report_sanity_checker.reportData(count - 1)
+    (_, stored_exited_validators, _) = oracle_report_sanity_checker.reportData(count - 1)
 
-    assert storedExitedValidators == sum(reported_validators_values)
+    assert stored_exited_validators == sum(reported_validators_values)
+
+def test_negative_rebase_correct_balance_neg_rebase(oracle_report_sanity_checker):
+    locator = contracts.lido_locator
+    assert oracle_report_sanity_checker.address == locator.oracleReportSanityChecker()
+
+    cl_decrease = ETH(40000)
+    oracle_report(cl_diff=-cl_decrease, exclude_vaults_balances=True)
+
+    count = oracle_report_sanity_checker.getReportDataCount()
+    assert count > 0
+    (_, _, cl_balance) = oracle_report_sanity_checker.reportData(count - 1)
+    assert cl_balance == cl_decrease
+
+    cl_decrease2 = ETH(30000)
+    oracle_report(cl_diff=-cl_decrease2, exclude_vaults_balances=True)
+    count = oracle_report_sanity_checker.getReportDataCount()
+    assert count > 0
+    (_, _, cl_balance) = oracle_report_sanity_checker.reportData(count - 1)
+
+    assert cl_balance == cl_decrease2
+
 
 def test_blocked_huge_negative_rebase(oracle_report_sanity_checker):
     locator = contracts.lido_locator
