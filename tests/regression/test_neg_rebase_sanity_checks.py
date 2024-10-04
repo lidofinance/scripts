@@ -1,5 +1,6 @@
 import pytest
 from brownie import Contract, web3, reverts, accounts, chain  # type: ignore
+from utils.evm_script import encode_error
 from utils.test.exit_bus_data import LidoValidator
 from utils.test.extra_data import ExtraDataService
 from utils.test.oracle_report_helpers import (
@@ -10,6 +11,10 @@ from utils.test.helpers import ETH
 from utils.config import (
     contracts,
 )
+
+INITIAL_SLASHING_AMOUNT_PWEI = 1000
+INACTIVITY_PENALTIES_AMOUNT_PWEI = 101
+ONE_PWEI = ETH(0.001)
 
 @pytest.fixture(scope="module")
 def oracle_report_sanity_checker() -> Contract:
@@ -48,6 +53,18 @@ def test_negative_rebase_correct_exited_validators_count_neg_rebase(oracle_repor
 
     assert storedExitedValidators == sum(reported_validators_values)
 
+def test_blocked_huge_negative_rebase(oracle_report_sanity_checker):
+    locator = contracts.lido_locator
+    assert oracle_report_sanity_checker.address == locator.oracleReportSanityChecker()
+
+    (_, cl_validators, cl_balance) = contracts.lido.getBeaconStat()
+
+    max_cl_balance = (INITIAL_SLASHING_AMOUNT_PWEI + INACTIVITY_PENALTIES_AMOUNT_PWEI) * ONE_PWEI * cl_validators
+    error_cl_decrease = cl_balance // 10    # 10% of current balance will lead to error
+    print("max_cl_balance", max_cl_balance)
+    with reverts(encode_error("IncorrectCLBalanceDecrease(uint256, uint256)", [error_cl_decrease, max_cl_balance])):
+        oracle_report(cl_diff=-error_cl_decrease, exclude_vaults_balances=True, silent=True)
+
 def test_negative_rebase_more_than_54_reports(oracle_report_sanity_checker):
     locator = contracts.lido_locator
     assert oracle_report_sanity_checker.address == locator.oracleReportSanityChecker()
@@ -68,7 +85,6 @@ def test_negative_rebase_more_than_54_reports(oracle_report_sanity_checker):
 def exited_validators_count():
     assert contracts.lido_locator.stakingRouter() == contracts.staking_router
     ids = contracts.staking_router.getStakingModuleIds()
-    print(f'ids: {ids}')
     exited = {}
     for id in ids:
         exited[id] = contracts.staking_router.getStakingModule(id)["exitedValidatorsCount"]
