@@ -1,18 +1,21 @@
 """
 Voting 08/10/2024.
 
-I. Upgrade Ethereum Contracts
+Ia. Upgrade Ethereum Contracts
 1. Upgrade L1ERC20TokenBridge contract to implementation 0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4
 2. Call L1ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter
 3. Upgrade Lido Locator contract to implementation 0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463
 4. Grant permission DEPOSITS_ENABLER_ROLE to Ethereum Emergency Brakes Multisig
 
-II. Upgrade Optimism Contracts
-1. Send Optimism upgrade call:
+Ib. Upgrade Optimism Contracts
+5. Send Optimism upgrade call:
     (a) Upgrade L2ERC20TokenBridge contract to implementation 0x2734602C0CEbbA68662552CacD5553370B283E2E
     (b) Call L2ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter
     (c) Upgrade WstETH ERC20Bridged contract to implementation 0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334
     (d) Call WstETH ERC20Bridged's finalizeUpgrade_v2() to update internal version counter
+
+II. Add Easy Track setup for funding Lido Alliance Operational Multisig
+6. Add Alliance Ops stablecoins top up EVM script factory 0xe5656eEe7eeD02bdE009d77C88247BC8271e26Eb (AllowedRecipientsRegistry 0x3B525F4c059F246Ca4aa995D21087204F30c9E2F)
 
 """
 
@@ -20,7 +23,7 @@ import time
 import eth_abi
 
 from brownie import interface, web3, accounts
-from typing import Dict
+from typing import Dict, Tuple, Optional, List
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
@@ -31,6 +34,7 @@ from utils.config import (
     get_deployer_account,
     get_is_live,
     get_priority_fee,
+    contracts,
     L1_EMERGENCY_BRAKES_MULTISIG,
     L1_OPTIMISM_CROSS_DOMAIN_MESSENGER,
     LIDO_LOCATOR,
@@ -43,10 +47,13 @@ from utils.config import (
     L2_OPTIMISM_WSTETH_TOKEN_IMPL_NEW,
     L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
 )
+from utils.easy_track import add_evmscript_factory, create_permissions,remove_evmscript_factory
+from utils.permission_parameters import Param, SpecialArgumentID, ArgumentValue, Op
+
 
 DESCRIPTION = """
 
-This vote follows a [Lido DAO decision on Snapshot](https://snapshot.org/#/lido-snapshot.eth/proposal/0xb1a3c33a4911712770c351504bac0499611ceb0faff248eacb1e96354f8e21e8) and [proposes to upgrade](https://research.lido.fi/t/lip-22-steth-on-l2/6855) the Lido bridge on the mainnet, introducing rebaseable stETH token on Optimism.
+First part of vote follows a [Lido DAO decision on Snapshot](https://snapshot.org/#/lido-snapshot.eth/proposal/0xb1a3c33a4911712770c351504bac0499611ceb0faff248eacb1e96354f8e21e8) and [proposes to upgrade](https://research.lido.fi/t/lip-22-steth-on-l2/6855) the Lido bridge on the mainnet, introducing rebaseable stETH token on Optimism.
 All audit reports can be found here: [MixBytes Audit Report](https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf), [Ackee Audit Report](https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf)
 
 **Upgrade L1ERC20TokenBridge and L2ERC20TokenBridge** contracts
@@ -56,6 +63,11 @@ All audit reports can be found here: [MixBytes Audit Report](https://github.com/
 **Grant permission** DEPOSITS_ENABLER_ROLE to Ethereum Emergency Brakes Multisig
 
 **Upgrade WstETH ERC20Bridged** contract on Optimism implementation
+
+
+Second part of vote follows a [Lido DAO decision on Snapshot](https://snapshot.org/#/lido-snapshot.eth/proposal/0xa478fa5518769096eda2b7403a1d4104ca47de3102e8a9abab8640ef1b50650c).
+
+**Add Alliance Ops stablecoins top up EVM script factory
 
 """
 
@@ -101,77 +113,84 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     lido_locator_as_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
     l1_token_bridge_as_proxy = interface.OssifiableProxy(L1_OPTIMISM_TOKENS_BRIDGE)
 
+    alliance_ops_registry = interface.AllowedRecipientRegistry("0x3B525F4c059F246Ca4aa995D21087204F30c9E2F")
+    alliance_ops_topup_factory = interface.TopUpAllowedRecipients("0xe5656eEe7eeD02bdE009d77C88247BC8271e26Eb")
+
     if network_name() in ("mainnet-fork",) and l1_token_bridge.isDepositsEnabled():
         agent = accounts.at(AGENT, force=True)
         l1_token_bridge.disableDeposits({"from": agent})
 
-    call_script_items = [
-        # I. Upgrade Ethereum Contracts
-
-        # 1. Upgrade L1ERC20TokenBridge contract to implementation 0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4
-        agent_forward(
-            [
-                (
-                    l1_token_bridge_as_proxy.address,
-                    l1_token_bridge_as_proxy.proxy__upgradeTo.encode_input(L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW),
-                )
-            ]
+    vote_desc_items, call_script_items = zip(
+        # Ia. Upgrade Ethereum Contracts
+        (
+            "1) Upgrade L1ERC20TokenBridge contract to implementation 0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4",
+            agent_forward(
+                [
+                    (
+                        l1_token_bridge_as_proxy.address,
+                        l1_token_bridge_as_proxy.proxy__upgradeTo.encode_input(L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW),
+                    )
+                ]
+            ),
         ),
-
-        # 2. Call L1ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter
-        agent_forward([(l1_token_bridge.address, l1_token_bridge.finalizeUpgrade_v2.encode_input())]),
-
-        # 3. Upgrade Lido Locator contract to implementation 0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463"
-        agent_forward(
-            [
-                (
-                    lido_locator_as_proxy.address,
-                    lido_locator_as_proxy.proxy__upgradeTo.encode_input(LIDO_LOCATOR_IMPL_NEW),
-                )
-            ]
+        (
+            "# 2. Call L1ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter",
+            agent_forward([(l1_token_bridge.address, l1_token_bridge.finalizeUpgrade_v2.encode_input())]),
         ),
-
-        # 4. Grant permission DEPOSITS_ENABLER_ROLE to Ethereum Emergency Brakes Multisig
-        agent_forward(
-            [
-                (
-                    l1_token_bridge.address,
-                    l1_token_bridge.grantRole.encode_input(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG),
-                )
-            ]
+        (
+            "# 3. Upgrade Lido Locator contract to implementation 0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463",
+            agent_forward(
+                [
+                    (
+                        lido_locator_as_proxy.address,
+                        lido_locator_as_proxy.proxy__upgradeTo.encode_input(LIDO_LOCATOR_IMPL_NEW),
+                    )
+                ]
+            ),
         ),
-
-        # II. Upgrade Optimism Contracts
-        # 1. Send Optimism upgrade call:
-        #     (a) Upgrade L2ERC20TokenBridge contract to implementation 0x2734602C0CEbbA68662552CacD5553370B283E2E
-        #     (b) Call L2ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter
-        #     (c) Upgrade WstETH ERC20Bridged contract to implementation 0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334
-        #     (d) Call WstETH ERC20Bridged's finalizeUpgrade_v2() to update internal version counter
-        agent_forward(
-            [
-                (
-                    L1_OPTIMISM_CROSS_DOMAIN_MESSENGER,
-                    encode_l1_l2_sendMessage(
-                        L2_OPTIMISM_GOVERNANCE_EXECUTOR,
-                        encode_l2_upgrade_call(
-                            L2_OPTIMISM_TOKENS_BRIDGE,
-                            L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
-                            L2_OPTIMISM_WSTETH_TOKEN,
-                            L2_OPTIMISM_WSTETH_TOKEN_IMPL_NEW,
+        (
+            "# 4. Grant permission DEPOSITS_ENABLER_ROLE to Ethereum Emergency Brakes Multisig",
+            agent_forward(
+                [
+                    (
+                        l1_token_bridge.address,
+                        l1_token_bridge.grantRole.encode_input(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG),
+                    )
+                ]
+            ),
+        ),
+        # Ib. Upgrade Optimism Contracts
+        (
+            "5) Send Optimism upgrade call: (a) Upgrade L2ERC20TokenBridge contract to implementation 0x2734602C0CEbbA68662552CacD5553370B283E2E; (b) Call L2ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter; (c) Upgrade WstETH ERC20Bridged contract to implementation 0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334; (d) Call WstETH ERC20Bridged's finalizeUpgrade_v2() to update internal version counter;",
+            agent_forward(
+                [
+                    (
+                        L1_OPTIMISM_CROSS_DOMAIN_MESSENGER,
+                        encode_l1_l2_sendMessage(
+                            L2_OPTIMISM_GOVERNANCE_EXECUTOR,
+                            encode_l2_upgrade_call(
+                                L2_OPTIMISM_TOKENS_BRIDGE,
+                                L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
+                                L2_OPTIMISM_WSTETH_TOKEN,
+                                L2_OPTIMISM_WSTETH_TOKEN_IMPL_NEW,
+                            ),
                         ),
-                    ),
-                )
-            ]
+                    )
+                ]
+            ),
         ),
-    ]
-
-    vote_desc_items = [
-        "1) Upgrade L1ERC20TokenBridge contract to implementation 0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4",
-        "2) Call L1ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter",
-        "3) Upgrade Lido Locator contract to implementation 0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463",
-        "4) Grant permission DEPOSITS_ENABLER_ROLE to Ethereum Emergency Brakes Multisig",
-        "5) Send Optimism upgrade call: (a) Upgrade L2ERC20TokenBridge contract to implementation 0x2734602C0CEbbA68662552CacD5553370B283E2E; (b) Call L2ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter; (c) Upgrade WstETH ERC20Bridged contract to implementation 0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334; (d) Call WstETH ERC20Bridged's finalizeUpgrade_v2() to update internal version counter;",
-    ]
+        #
+        # II. Add Easy Track setup for funding Lido Alliance Operational Multisig
+        #
+        (
+            "6) Add Alliance Ops stablecoins top up EVM script factory 0xe5656eEe7eeD02bdE009d77C88247BC8271e26Eb (AllowedRecipientsRegistry 0x3B525F4c059F246Ca4aa995D21087204F30c9E2F)",
+            add_evmscript_factory(
+                factory=alliance_ops_topup_factory,
+                permissions=create_permissions(contracts.finance, "newImmediatePayment")
+                            + create_permissions(alliance_ops_registry, "updateSpentAmount")[2:],
+            )
+        )
+    )
 
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
 
