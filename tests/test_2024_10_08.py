@@ -40,6 +40,7 @@ DAI_TOKEN = "0x6b175474e89094c44da98b954eedeac495271d0f"
 USDT_TOKEN = "0xdac17f958d2ee523a2206206994597c13d831ec7"
 USDC_TOKEN = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 
+
 def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass_events_decoding):
     l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
     alliance_ops_top_up_evm_script_factory_new = interface.TopUpAllowedRecipients(
@@ -73,7 +74,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass
 
     # validate vote metadata
     metadata = find_metadata_by_vote_id(vote_id)
-    assert get_lido_vote_cid_from_str(metadata) == "bafkreihj5oy577lonjrzwcjmopknydtdytdysvxalehjtx26nf2hhyogyq"
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreiacfthtkgooaeqvfwrlh5rz4betlgvwie7mp6besbhtsev75vyy2y"
 
     # validate vote events
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 6, "Incorrect voting items count"
