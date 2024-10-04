@@ -23,7 +23,7 @@ import time
 import eth_abi
 
 from brownie import interface, web3, accounts
-from typing import Dict, Tuple, Optional, List
+from typing import Dict
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
@@ -43,12 +43,11 @@ from utils.config import (
     L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
     L2_OPTIMISM_GOVERNANCE_EXECUTOR,
     L2_OPTIMISM_TOKENS_BRIDGE,
+    L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
     L2_OPTIMISM_WSTETH_TOKEN,
     L2_OPTIMISM_WSTETH_TOKEN_IMPL_NEW,
-    L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW,
 )
-from utils.easy_track import add_evmscript_factory, create_permissions,remove_evmscript_factory
-from utils.permission_parameters import Param, SpecialArgumentID, ArgumentValue, Op
+from utils.easy_track import add_evmscript_factory, create_permissions
 
 
 DESCRIPTION = """
@@ -60,14 +59,14 @@ Solution audited by [MixBytes](https://github.com/lidofinance/audits/blob/main/L
 
 DEPOSITS_ENABLER_ROLE = "0x4b43b36766bde12c5e9cbbc37d15f8d1f769f08f54720ab370faeb4ce893753a"
 
-def encode_l2_upgrade_call(proxy1: str, new_impl1: str, proxy2: str, new_impl2: str):
+def encode_l2_upgrade_call(l2_token_bridge_proxy: str, l2_token_bridge_new_impl: str, l2_wst_token_proxy: str, l2_wst_token_new_impl: str):
     queue_definition = f"queue(address[],uint256[],string[],bytes[],bool[])"
     queue_selector = web3.keccak(text=queue_definition).hex()[:10]
 
     args_bytes = eth_abi.encode(
         ["address[]", "uint256[]", "string[]", "bytes[]", "bool[]"],
         [
-            [proxy1, proxy1, proxy2, proxy2],
+            [l2_token_bridge_proxy, l2_token_bridge_proxy, l2_wst_token_proxy, l2_wst_token_proxy],
             [0, 0, 0, 0],
             [
                 "proxy__upgradeTo(address)",
@@ -76,10 +75,10 @@ def encode_l2_upgrade_call(proxy1: str, new_impl1: str, proxy2: str, new_impl2: 
                 "finalizeUpgrade_v2(string,string)",
             ],
             [
-                eth_abi.encode(["address"], [new_impl1]),
+                eth_abi.encode(["address"], [l2_token_bridge_new_impl]),
                 eth_abi.encode([], []),
-                eth_abi.encode(["address"], [new_impl2]),
-                eth_abi.encode(["string", "string"], ["Wrapped liquid staked Ether 2.0", "wstETH"]),
+                eth_abi.encode(["address"], [l2_wst_token_new_impl]),
+                eth_abi.encode(["string", "string"], ["Wrapped liquid staked Ether 2.0", "2"]),
             ],
             [False, False, False, False],
         ],
@@ -200,7 +199,3 @@ def main():
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 
     time.sleep(5)  # hack for waiting thread #2.
-
-
-
-
