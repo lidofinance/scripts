@@ -6,12 +6,25 @@ from utils.balance import set_balance, set_balance_in_wei
 from utils.evm_script import encode_error
 from tests.conftest import Helpers
 from utils.config import contracts
+from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.helpers import ETH, GWEI, ZERO_ADDRESS, almostEqWithDiff, eth_balance
 from utils.test.oracle_report_helpers import ONE_DAY, SHARE_RATE_PRECISION, oracle_report
+from utils.test.csm_helpers import csm_add_node_operator, get_ea_member
+from utils.config import (
+    AGENT,
+    BURNER,
+    CSM_ADDRESS,
+    CS_FEE_DISTRIBUTOR_ADDRESS,
+    SIMPLE_DVT,
+    NODE_OPERATORS_REGISTRY
+)
+
+from typing import TypedDict
 
 LIMITER_PRECISION_BASE = 10**9
 MAX_BASIS_POINTS = 10_000
 
+pytestmark = pytest.mark.usefixtures("autoexecute_vote_ms")
 
 @pytest.fixture(scope="module")
 def accounting_oracle() -> Contract:
@@ -148,8 +161,10 @@ def test_accounting_negative_cl_rebase(accounting_oracle: Contract, lido: Contra
     ), "PostTotalShares: TotalPooledEther differs from expected"
 
 
-def test_accounting_cl_rebase_at_limits(accounting_oracle: Contract, lido: Contract):
+def test_accounting_cl_rebase_at_limits(accounting_oracle: Contract, lido: Contract, stranger):
     """Check Lido rebase after accounting report with positive CL rebase close to the limits"""
+
+    _fill_csm_module_if_empty()
 
     block_before_report = chain.height
 
@@ -183,59 +198,11 @@ def test_accounting_cl_rebase_at_limits(accounting_oracle: Contract, lido: Contr
         + withdrawals_finalized["amountOfETHLocked"]
     ), "TotalPooledEther change mismatch"
 
-    shares_as_fees_list = [e["sharesValue"] for e in _get_events(tx, TransferShares)]
+    transfer_shares = _parse_transfer_shares_events(tx)
 
-    minted_shares_sum = 0
+    minted_shares_sum = _sum_minted_shares(transfer_shares)
 
-    if withdrawals_finalized["amountOfETHLocked"] == 0:  # no withdrawals processed
-        assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry, sDVT and DAO"
-        # the staking modules ids starts from 1, so SDVT has id = 2
-        simple_dvt_stats = contracts.staking_router.getStakingModule(2)
-        # simple_dvt_treasury_fee = sdvt_share / share_pct * treasury_pct
-        simple_dvt_treasury_fee = (
-            shares_as_fees_list[1]
-            * 100_00
-            // simple_dvt_stats["stakingModuleFee"]
-            * simple_dvt_stats["treasuryFee"]
-            // 100_00
-        )
-        assert almostEqWithDiff(
-            shares_as_fees_list[0] + simple_dvt_treasury_fee,
-            shares_as_fees_list[2],
-            100,  # the precision may degrade after the division
-        ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
-
-        minted_shares_sum = shares_as_fees_list[0] + shares_as_fees_list[1] + shares_as_fees_list[2]
-    else:
-        staking_modules_count = contracts.staking_router.getStakingModulesCount()
-        # transfer to Burner, Treasury and each staking module
-        assert (
-            len(shares_as_fees_list) == 2 + staking_modules_count
-        ), "Expected transfer of shares to NodeOperatorsRegistry and DAO"
-
-        # transfer recipients:
-        # 0 - burner
-        # 1 - staking_modules[0] : node operators registry
-        # 2 - staking_modules[1] : simple DVT
-        # 3 - treasury
-
-        # the staking modules ids starts from 1, so SDVT has id = 2
-        simple_dvt_stats = contracts.staking_router.getStakingModule(2)
-        # simple_dvt_treasury_fee = sdvt_share / share_pct * treasury_pct
-        simple_dvt_treasury_fee = (
-            shares_as_fees_list[2]
-            * 100_00
-            // simple_dvt_stats["stakingModuleFee"]
-            * simple_dvt_stats["treasuryFee"]
-            // 100_00
-        )
-        assert almostEqWithDiff(
-            shares_as_fees_list[1] + simple_dvt_treasury_fee,
-            shares_as_fees_list[-1],
-            100,  # the precision may degrade after the division
-        ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
-
-        minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2] + shares_as_fees_list[3]
+    _assert_minted_shares_total_sum(transfer_shares)
 
     token_rebased_event = _first_event(tx, TokenRebased)
     assert token_rebased_event["sharesMintedAsFees"] == minted_shares_sum, "TokenRebased: sharesMintedAsFee mismatch"
@@ -573,6 +540,8 @@ def test_accounting_withdrawals_at_limits(
 ):
     """Test rebase with normal withdrawals amount"""
 
+    _fill_csm_module_if_empty()
+
     block_before_report = chain.height
 
     withdrawals = _rebase_limit_wei(block_identifier=block_before_report)
@@ -608,59 +577,9 @@ def test_accounting_withdrawals_at_limits(
         + withdrawals_finalized["amountOfETHLocked"]
     ), "TotalPooledEther change mismatch"
 
-    shares_as_fees_list = [e["sharesValue"] for e in _get_events(tx, TransferShares)]
-
-    minted_shares_sum = 0
-
-    if withdrawals_finalized["amountOfETHLocked"] == 0:  # no withdrawals processed
-        assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry, sDVT and DAO"
-        # the staking modules ids starts from 1, so SDVT has id = 2
-        simple_dvt_stats = contracts.staking_router.getStakingModule(2)
-        # simple_dvt_treasury_fee = sdvt_share / share_pct * treasury_pct
-        simple_dvt_treasury_fee = (
-            shares_as_fees_list[1]
-            * 100_00
-            // simple_dvt_stats["stakingModuleFee"]
-            * simple_dvt_stats["treasuryFee"]
-            // 100_00
-        )
-        assert almostEqWithDiff(
-            shares_as_fees_list[0] + simple_dvt_treasury_fee,
-            shares_as_fees_list[2],
-            100,  # the precision may degrade after the division
-        ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
-
-        minted_shares_sum = shares_as_fees_list[0] + shares_as_fees_list[1] + shares_as_fees_list[2]
-    else:
-        staking_modules_count = contracts.staking_router.getStakingModulesCount()
-        # transfer to Burner, Treasury and each staking module
-        assert (
-            len(shares_as_fees_list) == 2 + staking_modules_count
-        ), "Expected transfer of shares to NodeOperatorsRegistry and DAO"
-
-        # transfer recipients:
-        # 0 - burner
-        # 1 - staking_modules[0] : node operators registry
-        # 2 - staking_modules[1] : simple DVT
-        # 3 - treasury
-
-        # the staking modules ids starts from 1, so SDVT has id = 2
-        simple_dvt_stats = contracts.staking_router.getStakingModule(2)
-        # simple_dvt_treasury_fee = sdvt_share / share_pct * treasury_pct
-        simple_dvt_treasury_fee = (
-            shares_as_fees_list[2]
-            * 100_00
-            // simple_dvt_stats["stakingModuleFee"]
-            * simple_dvt_stats["treasuryFee"]
-            // 100_00
-        )
-        assert almostEqWithDiff(
-            shares_as_fees_list[1] + simple_dvt_treasury_fee,
-            shares_as_fees_list[-1],
-            100,  # the precision may degrade after the division
-        ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
-
-        minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2] + shares_as_fees_list[3]
+    transfer_shares = _parse_transfer_shares_events(tx)
+    minted_shares_sum = _sum_minted_shares(transfer_shares)
+    _assert_minted_shares_total_sum(transfer_shares)
 
     token_rebased_event = _first_event(tx, TokenRebased)
     assert token_rebased_event["sharesMintedAsFees"] == minted_shares_sum, "TokenRebased: sharesMintedAsFee mismatch"
@@ -687,6 +606,8 @@ def test_accounting_withdrawals_above_limits(
     withdrawal_vault: Contract,
 ):
     """Test rebase with excess withdrawals amount"""
+
+    _fill_csm_module_if_empty()
 
     block_before_report = chain.height
 
@@ -725,59 +646,9 @@ def test_accounting_withdrawals_above_limits(
         + withdrawals_finalized["amountOfETHLocked"]
     ), "TotalPooledEther change mismatch"
 
-    shares_as_fees_list = [e["sharesValue"] for e in _get_events(tx, TransferShares)]
-
-    minted_shares_sum = 0
-
-    if withdrawals_finalized["amountOfETHLocked"] == 0:  # no withdrawals processed
-        assert len(shares_as_fees_list) == 3, "Expected transfer of shares to NodeOperatorsRegistry, sDVT and DAO"
-        # the staking modules ids starts from 1, so SDVT has id = 2
-        simple_dvt_stats = contracts.staking_router.getStakingModule(2)
-        # simple_dvt_treasury_fee = sdvt_share / share_pct * treasury_pct
-        simple_dvt_treasury_fee = (
-            shares_as_fees_list[1]
-            * 100_00
-            // simple_dvt_stats["stakingModuleFee"]
-            * simple_dvt_stats["treasuryFee"]
-            // 100_00
-        )
-        assert almostEqWithDiff(
-            shares_as_fees_list[0] + simple_dvt_treasury_fee,
-            shares_as_fees_list[2],
-            100,  # the precision may degrade after the division
-        ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
-
-        minted_shares_sum = shares_as_fees_list[0] + shares_as_fees_list[1] + shares_as_fees_list[2]
-    else:
-        staking_modules_count = contracts.staking_router.getStakingModulesCount()
-        # transfer to Burner, Treasury and each staking module
-        assert (
-            len(shares_as_fees_list) == 2 + staking_modules_count
-        ), "Expected transfer of shares to NodeOperatorsRegistry and DAO"
-
-        # transfer recipients:
-        # 0 - burner
-        # 1 - staking_modules[0] : node operators registry
-        # 2 - staking_modules[1] : simple DVT
-        # 3 - treasury
-
-        # the staking modules ids starts from 1, so SDVT has id = 2
-        simple_dvt_stats = contracts.staking_router.getStakingModule(2)
-        # simple_dvt_treasury_fee = sdvt_share / share_pct * treasury_pct
-        simple_dvt_treasury_fee = (
-            shares_as_fees_list[2]
-            * 100_00
-            // simple_dvt_stats["stakingModuleFee"]
-            * simple_dvt_stats["treasuryFee"]
-            // 100_00
-        )
-        assert almostEqWithDiff(
-            shares_as_fees_list[1] + simple_dvt_treasury_fee,
-            shares_as_fees_list[-1],
-            100,  # the precision may degrade after the division
-        ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
-
-        minted_shares_sum = shares_as_fees_list[1] + shares_as_fees_list[2] + shares_as_fees_list[3]
+    transfer_shares = _parse_transfer_shares_events(tx)
+    minted_shares_sum = _sum_minted_shares(transfer_shares)
+    _assert_minted_shares_total_sum(transfer_shares)
 
     token_rebased_event = _first_event(tx, TokenRebased)
     assert token_rebased_event["sharesMintedAsFees"] == minted_shares_sum, "TokenRebased: sharesMintedAsFee mismatch"
@@ -1139,3 +1010,111 @@ def _try_get_shares_burnt(tx: Any) -> SharesBurnt:
         return _first_event(tx, SharesBurnt)
     else:
         return SharesBurnt(account=ZERO_ADDRESS, preRebaseTokenAmount=0, postRebaseTokenAmount=0, sharesAmount=0)
+
+class TransferSharesResult(TypedDict):
+    burner: int
+    node_operators_registry: int
+    simple_dvt: int
+    csm: int
+    treasury: int
+
+
+def _assert_minted_shares_total_sum (transfer_shares: TransferSharesResult):
+    # the staking modules ids starts from 1, so SDVT has id = 2
+    simple_dvt_stats = contracts.staking_router.getStakingModule(2)
+    # simple_dvt_treasury_fee = sdvt_share / share_pct * treasury_pct
+    simple_dvt_treasury_fee = (
+        transfer_shares["simple_dvt"]
+        * 100_00
+        // simple_dvt_stats["stakingModuleFee"]
+        * simple_dvt_stats["treasuryFee"]
+        // 100_00
+    )
+
+    csm_stats = contracts.staking_router.getStakingModule(3)
+
+    csm_treasury_fee = (
+        transfer_shares["csm"]
+        * 100_00
+        // csm_stats["stakingModuleFee"]
+        * csm_stats["treasuryFee"]
+        // 100_00
+    )
+
+    assert almostEqWithDiff(
+        transfer_shares["node_operators_registry"] + simple_dvt_treasury_fee + csm_treasury_fee,
+        transfer_shares["treasury"],
+        100,  # the precision may degrade after the division
+    ), "Shares minted to DAO and NodeOperatorsRegistry mismatch"
+
+
+def _sum_minted_shares(transfer_shares: TransferSharesResult):
+    return transfer_shares["node_operators_registry"] + transfer_shares["simple_dvt"] + transfer_shares["csm"] + transfer_shares["treasury"]
+
+
+def _parse_single_transfer_shares_event(transferShares: TransferShares, event_to: str):
+    print("_parse_single_transfer_shares_event")
+    assert transferShares["to"] == event_to, "Unexpected recipient"
+    return transferShares["sharesValue"]
+
+def _parse_transfer_shares_events(tx: Any):
+    has_withdrawals = _try_get_withdrawals_finalized(tx)["amountOfETHLocked"] > 0
+
+    staking_modules_count = contracts.staking_router.getStakingModulesCount()
+    assert staking_modules_count == 3, "Unexpected modules count"
+
+    # transfer recipients:
+        # 0 - burner (if withdrawals > 0)
+        # 1 - staking_modules[0] : node operators registry
+        # 2 - staking_modules[1] : simple DVT
+        # 3 - staking_modules[2] : CSM
+        # 4 - treasury
+        # 5 - CSM module internal transfer to fee distributor contract
+    transfer_shares_events = _get_events(tx, TransferShares)
+
+    assert (len(transfer_shares_events) == 6 if has_withdrawals else 5), "Invalid shares events count"
+
+    result: TransferSharesResult = {
+        "burner": 0,
+        "node_operators_registry": 0,
+        "simple_dvt": 0,
+        "csm": 0,
+        "treasury": 0,
+    }
+
+    assert (transfer_shares_events[-1]["from"] == CSM_ADDRESS and transfer_shares_events[-1]["to"] == CS_FEE_DISTRIBUTOR_ADDRESS),"Not a CSM internal transfer"
+
+    result["treasury"] = _parse_single_transfer_shares_event(transfer_shares_events[-2], AGENT)
+    result["csm"] = _parse_single_transfer_shares_event(transfer_shares_events[-3], CSM_ADDRESS)
+    result["simple_dvt"] = _parse_single_transfer_shares_event(transfer_shares_events[-4], SIMPLE_DVT)
+    result["node_operators_registry"] = _parse_single_transfer_shares_event(transfer_shares_events[-5], NODE_OPERATORS_REGISTRY)
+
+    if has_withdrawals:
+        assert transfer_shares_events[0]["to"] == BURNER, "First transfer event should be to burner"
+        result["burner"] = _parse_single_transfer_shares_event(transfer_shares_events[0], BURNER)
+
+    return result
+
+
+def _fill_csm_module_if_empty():
+    # The tests which require this check were originally designed for running only with
+    # pre-defined modules configuration in mainnet
+
+    # 1 - staking_modules[0] : node operators registry
+    # 2 - staking_modules[1] : simple DVT
+    # 3 - staking_modules[2] : csm
+    staking_modules = contracts.staking_router.getAllStakingModuleDigests()
+    assert len(staking_modules) == 3, "Modules count mismatch"
+
+    def operators_count(digest):
+        return digest[0]
+
+    assert operators_count(staking_modules[0]) > 0, "NOR module empty"
+    assert operators_count(staking_modules[1]) > 0, "Simple DVT module empty"
+
+    if operators_count(staking_modules[2]) == 0:
+        keys_count = 5
+        address, proof = get_ea_member()
+        csm_add_node_operator(contracts.csm, contracts.cs_accounting, address, proof, keys_count)
+        fill_deposit_buffer(keys_count)
+        contracts.lido.deposit(keys_count, 3, "0x", {"from": contracts.deposit_security_module})
