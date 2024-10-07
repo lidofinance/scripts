@@ -16,6 +16,7 @@ from utils.test.event_validators.easy_track import (
     validate_evmscript_factory_added_event,
     EVMScriptFactoryAdded,
 )
+from utils.test.event_validators.permission import validate_grant_role_event
 
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 
@@ -42,81 +43,32 @@ USDT_TOKEN = "0xdac17f958d2ee523a2206206994597c13d831ec7"
 USDC_TOKEN = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 
 
-def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder, bypass_events_decoding):
+def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder):
+    # 1-5. Prepare required state for the voting
     l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
+    if l1_token_bridge.isDepositsEnabled():
+        agent = accounts.at(AGENT, force=True)
+        l1_token_bridge.disableDeposits({"from": agent})
+
+    # 6. Prepare data before the voting
+    steth = interface.StETH("0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
     alliance_ops_top_up_evm_script_factory_new = interface.TopUpAllowedRecipients(
         "0xe5656eEe7eeD02bdE009d77C88247BC8271e26Eb"
     )
     alliance_ops_allowed_recipients_registry = interface.AllowedRecipientRegistry(
         "0x3B525F4c059F246Ca4aa995D21087204F30c9E2F"
     )
-
-    # 1-5. Prepare required state for the voting
-    if l1_token_bridge.isDepositsEnabled():
-        agent = accounts.at(AGENT, force=True)
-        l1_token_bridge.disableDeposits({"from": agent})
+    alliance_ops_top_up_evm_script_factory_new = interface.TopUpAllowedRecipients(
+        "0xe5656eEe7eeD02bdE009d77C88247BC8271e26Eb"
+    )
+    alliance_multisig_acc = accounts.at("0x606f77BF3dd6Ed9790D9771C7003f269a385D942", force=True)
+    alliance_trusted_caller_acc = alliance_multisig_acc
 
     check_pre_upgrade_state()
     wsteth_bridge_balance_before = contracts.wsteth.balanceOf(L1_OPTIMISM_TOKENS_BRIDGE)
 
-    # 6. Prepare data before the voting
     evm_script_factories_before = contracts.easy_track.getEVMScriptFactories()
     assert alliance_ops_top_up_evm_script_factory_new not in evm_script_factories_before
-
-    # START VOTE
-    if len(vote_ids_from_env) > 0:
-        (vote_id,) = vote_ids_from_env
-    else:
-        vote_id, _ = start_vote({"from": ldo_holder}, silent=True)
-
-    vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
-
-    print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
-
-    # validate vote metadata
-    metadata = find_metadata_by_vote_id(vote_id)
-    assert get_lido_vote_cid_from_str(metadata) == "bafkreiacfthtkgooaeqvfwrlh5rz4betlgvwie7mp6besbhtsev75vyy2y"
-
-    # validate vote events
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 6, "Incorrect voting items count"
-
-    # 1-5 validation
-    check_post_upgrade_state(vote_tx)
-    assert wsteth_bridge_balance_before == contracts.wsteth.balanceOf(L1_OPTIMISM_TOKENS_BRIDGE)
-
-    # 6 validation
-    evm_script_factories_after = contracts.easy_track.getEVMScriptFactories()
-    assert alliance_ops_top_up_evm_script_factory_new in evm_script_factories_after
-
-    check_add_and_remove_recipient_with_voting(
-        registry=alliance_ops_allowed_recipients_registry,
-        helpers=helpers,
-        ldo_holder=ldo_holder,
-        dao_voting=contracts.voting,
-    )
-
-    display_voting_events(vote_tx)
-    evs = group_voting_events(vote_tx)
-
-    validate_evmscript_factory_added_event(
-        evs[5],
-        EVMScriptFactoryAdded(
-            factory_addr=alliance_ops_top_up_evm_script_factory_new,
-            permissions=create_permissions(contracts.finance, "newImmediatePayment")
-            + create_permissions(alliance_ops_allowed_recipients_registry, "updateSpentAmount")[2:],
-        ),
-    )
-
-
-def test_new_alliance_ops_top_up_evm_script_factory(helpers, accounts, stranger, vote_ids_from_env, ldo_holder):
-    steth = interface.StETH("0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
-
-    alliance_multisig_acc = accounts.at("0x606f77BF3dd6Ed9790D9771C7003f269a385D942", force=True)
-    alliance_trusted_caller_acc = accounts.at("0x606f77BF3dd6Ed9790D9771C7003f269a385D942", force=True)
-
-    alliance_ops_top_up_evm_script_factory_new = interface.TopUpAllowedRecipients(
-        "0xe5656eEe7eeD02bdE009d77C88247BC8271e26Eb"
-    )
 
     dai_token = interface.Dai(DAI_TOKEN)
     dai_balance_before = dai_token.balanceOf(alliance_multisig_acc)
@@ -133,7 +85,43 @@ def test_new_alliance_ops_top_up_evm_script_factory(helpers, accounts, stranger,
         (vote_id,) = vote_ids_from_env
     else:
         vote_id, _ = start_vote({"from": ldo_holder}, silent=True)
-    helpers.execute_vote(accounts, vote_id, contracts.voting)
+
+    vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
+
+    print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
+    display_voting_events(vote_tx)
+    evs = group_voting_events(vote_tx)
+
+    # validate vote metadata
+    metadata = find_metadata_by_vote_id(vote_id)
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreiacfthtkgooaeqvfwrlh5rz4betlgvwie7mp6besbhtsev75vyy2y"
+
+    # validate vote events
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 6, "Incorrect voting items count"
+
+    # 1-5 validation
+    check_post_upgrade_state(evs)
+    assert wsteth_bridge_balance_before == contracts.wsteth.balanceOf(L1_OPTIMISM_TOKENS_BRIDGE)
+
+    # 6 validation
+    evm_script_factories_after = contracts.easy_track.getEVMScriptFactories()
+    assert alliance_ops_top_up_evm_script_factory_new in evm_script_factories_after
+
+    check_add_and_remove_recipient_with_voting(
+        registry=alliance_ops_allowed_recipients_registry,
+        helpers=helpers,
+        ldo_holder=ldo_holder,
+        dao_voting=contracts.voting,
+    )
+
+    validate_evmscript_factory_added_event(
+        evs[5],
+        EVMScriptFactoryAdded(
+            factory_addr=alliance_ops_top_up_evm_script_factory_new,
+            permissions=create_permissions(contracts.finance, "newImmediatePayment")
+            + create_permissions(alliance_ops_allowed_recipients_registry, "updateSpentAmount")[2:],
+        ),
+    )
 
     # transfer dai, usdc, usdt to alliance multisig and check that it was successful
     create_and_enact_payment_motion(
@@ -196,7 +184,7 @@ def check_pre_upgrade_state():
     # L1 Bridge has old implementation
     assert (
         l1_token_bridge_proxy.proxy__getImplementation() == L1_OPTIMISM_TOKENS_BRIDGE_IMPL
-    ), "Old address is incorrect"
+    ), "Old L1ERC20TokenBridge's implementation address is incorrect"
 
     # L1 Bridge doesn't have version before update
     try:
@@ -205,13 +193,15 @@ def check_pre_upgrade_state():
         pass
 
     # Upgrade LidoLocator implementation
-    assert lido_locator_proxy.proxy__getImplementation() == LIDO_LOCATOR_IMPL, "Old address is incorrect"
+    assert (
+        lido_locator_proxy.proxy__getImplementation() == LIDO_LOCATOR_IMPL
+    ), "Old LidoLocator's implementation address is incorrect"
 
     # Multisig hasn't been assigned as deposit enabler
     assert not l1_token_bridge.hasRole(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG)
 
 
-def check_post_upgrade_state(vote_tx):
+def check_post_upgrade_state(evs: List[EventDict]):
     l1_token_bridge_proxy = interface.OssifiableProxy(L1_OPTIMISM_TOKENS_BRIDGE)
     l1_token_bridge = interface.L1LidoTokensBridge(L1_OPTIMISM_TOKENS_BRIDGE)
     lido_locator_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
@@ -219,7 +209,7 @@ def check_post_upgrade_state(vote_tx):
     # L1 Bridge has new implementation
     assert (
         l1_token_bridge_proxy.proxy__getImplementation() == L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW
-    ), "New address is incorrect"
+    ), "New L1ERC20TokenBridge's implementation address is incorrect"
 
     # update L1 Bridge to 2 version
     assert l1_token_bridge.getContractVersion() == 2
@@ -230,19 +220,17 @@ def check_post_upgrade_state(vote_tx):
     # LidoLocator has new implementation
     assert (
         lido_locator_proxy.proxy__getImplementation() == LIDO_LOCATOR_IMPL_NEW
-    ), "New LidoLocator address is incorrect"
+    ), "New LidoLocator's implementation address is incorrect"
 
     # Multisig has been assigned as deposit enabler
     assert l1_token_bridge.hasRole(DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG)
 
     interface.OptimismPortal2(L1_OPTIMISM_PORTAL_2)  # load OptimismPortal2 contract ABI to see events
 
-    evs = group_voting_events(vote_tx)
-
     validate_contract_upgrade(evs[0], L1_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW)
     validate_contract_finalization(evs[1], 2)
     validate_contract_upgrade(evs[2], LIDO_LOCATOR_IMPL_NEW)
-    validate_contract_role_granting(evs[3], DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG, AGENT)
+    validate_grant_role_event(evs[3], DEPOSITS_ENABLER_ROLE, L1_EMERGENCY_BRAKES_MULTISIG, AGENT)
     validate_optimism_upgrade_call(
         evs[4],
         L2_OPTIMISM_GOVERNANCE_EXECUTOR,
@@ -266,15 +254,6 @@ def validate_contract_finalization(events: EventDict, version: int):
     validate_events_chain([e.name for e in events], _events_chain)
     assert events.count("ContractVersionSet") == 1
     assert events["ContractVersionSet"]["version"] == version
-
-
-def validate_contract_role_granting(events: EventDict, role: str, account: str, sender: str):
-    _events_chain = ["LogScriptCall", "LogScriptCall", "RoleGranted", "ScriptResult"]
-    validate_events_chain([e.name for e in events], _events_chain)
-    assert events.count("RoleGranted") == 1
-    assert events["RoleGranted"]["role"] == role
-    assert events["RoleGranted"]["account"] == account
-    assert events["RoleGranted"]["sender"] == sender
 
 
 def validate_optimism_upgrade_call(

@@ -5,14 +5,14 @@ Ia. Upgrade Ethereum Contracts
 1. Upgrade L1ERC20TokenBridge contract to implementation 0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4
 2. Call L1ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter
 3. Upgrade Lido Locator contract to implementation 0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463
-4. Grant permission DEPOSITS_ENABLER_ROLE to Ethereum Emergency Brakes Multisig
+4. Grant permission DEPOSITS_ENABLER_ROLE to Ethereum Emergency Brakes Multisig 0x73b047fe6337183A454c5217241D780a932777bD
 
 Ib. Upgrade Optimism Contracts
 5. Send Optimism upgrade call:
     (a) Upgrade L2ERC20TokenBridge contract to implementation 0x2734602C0CEbbA68662552CacD5553370B283E2E
     (b) Call L2ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter
     (c) Upgrade WstETH ERC20Bridged contract to implementation 0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334
-    (d) Call WstETH ERC20Bridged's finalizeUpgrade_v2() to update internal version counter
+    (d) Call WstETH ERC20Bridged's finalizeUpgrade_v2() to update internal version counter and set the name and version for EIP5267
 
 II. Add Easy Track setup for funding Lido Alliance Operational Multisig
 6. Add Alliance Ops stablecoins top up EVM script factory 0xe5656eEe7eeD02bdE009d77C88247BC8271e26Eb (AllowedRecipientsRegistry 0x3B525F4c059F246Ca4aa995D21087204F30c9E2F)
@@ -120,11 +120,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "# 2. Call L1ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter",
+            "2) Call L1ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter",
             agent_forward([(l1_token_bridge.address, l1_token_bridge.finalizeUpgrade_v2.encode_input())]),
         ),
         (
-            "# 3. Upgrade Lido Locator contract to implementation 0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463",
+            "3) Upgrade Lido Locator contract to implementation 0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463",
             agent_forward(
                 [
                     (
@@ -135,7 +135,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "# 4. Grant permission DEPOSITS_ENABLER_ROLE to Ethereum Emergency Brakes Multisig",
+            "4) Grant permission DEPOSITS_ENABLER_ROLE to Ethereum Emergency Brakes Multisig 0x73b047fe6337183A454c5217241D780a932777bD",
             agent_forward(
                 [
                     (
@@ -147,7 +147,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         ),
         # Ib. Upgrade Optimism Contracts
         (
-            "5) Send Optimism upgrade call: (a) Upgrade L2ERC20TokenBridge contract to implementation 0x2734602C0CEbbA68662552CacD5553370B283E2E; (b) Call L2ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter; (c) Upgrade WstETH ERC20Bridged contract to implementation 0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334; (d) Call WstETH ERC20Bridged's finalizeUpgrade_v2() to update internal version counter;",
+            "5) Send Optimism upgrade call:"
+            + " (a) Upgrade L2ERC20TokenBridge contract to implementation 0x2734602C0CEbbA68662552CacD5553370B283E2E;"
+            + " (b) Call L2ERC20TokenBridge's finalizeUpgrade_v2() to update internal version counter;"
+            + " (c) Upgrade WstETH ERC20Bridged contract to implementation 0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334;"
+            + " (d) Call WstETH ERC20Bridged's finalizeUpgrade_v2() to update internal version counter and set the name and version for EIP5267;",
             agent_forward(
                 [
                     (

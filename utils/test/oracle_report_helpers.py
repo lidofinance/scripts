@@ -8,7 +8,7 @@ from brownie.typing import TransactionReceipt  # type: ignore
 from eth_abi.abi import encode
 from hexbytes import HexBytes
 
-from utils.config import contracts, ACCOUNTING_ORACLE
+from utils.config import contracts
 from utils.test.exit_bus_data import encode_data
 from utils.test.helpers import ETH, GWEI, eth_balance
 

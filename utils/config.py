@@ -336,6 +336,9 @@ class ContractsLazyLoader:
     def trp_escrow_factory(self) -> interface.VestingEscrowFactory:
         return interface.VestingEscrowFactory(TRP_VESTING_ESCROW_FACTORY)
 
+    @property
+    def token_rate_notifier(self) -> interface.TokenRateNotifier:
+        return interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)
 
 def __getattr__(name: str) -> Any:
     if name == "contracts":
