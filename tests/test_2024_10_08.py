@@ -2,8 +2,9 @@
 Tests for voting 08/10/2024
 """
 
+import eth_abi
 from scripts.upgrade_2024_10_08 import start_vote, encode_l2_upgrade_call
-from brownie import interface, reverts
+from brownie import interface, reverts, web3
 from brownie.exceptions import VirtualMachineError
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.tx_tracing_helpers import *
@@ -16,6 +17,7 @@ from utils.test.event_validators.easy_track import (
     validate_evmscript_factory_added_event,
     EVMScriptFactoryAdded,
 )
+
 from utils.test.event_validators.permission import validate_grant_role_event
 
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
@@ -275,8 +277,47 @@ def validate_optimism_upgrade_call(
     ]
     validate_events_chain([e.name for e in events], _events_chain)
     assert events.count("SentMessage") == 1
+
+    assert events["SentMessage"]["target"] == target
+    assert events["SentMessage"]["sender"] == sender
+
     # Check bytecode that was sent to messenger to update L2 bridge and wstETH token
     encoded_l2_upgrade_call = encode_l2_upgrade_call(l2_bridge_proxy, l2_bridge_impl, l2_wst_proxy, l2_wst_impl)
     assert events["SentMessage"]["message"] == encoded_l2_upgrade_call
-    assert events["SentMessage"]["target"] == target
-    assert events["SentMessage"]["sender"] == sender
+
+    # Unparse and check l2 params
+    encoded_msg = encode_l2_message(events["SentMessage"]["message"])
+
+    addresses = encoded_msg[0]
+    assert addresses[0] == L2_OPTIMISM_TOKENS_BRIDGE.lower()
+    assert addresses[1] == L2_OPTIMISM_TOKENS_BRIDGE.lower()
+    assert addresses[2] == L2_OPTIMISM_WSTETH_TOKEN.lower()
+    assert addresses[3] == L2_OPTIMISM_WSTETH_TOKEN.lower()
+
+    values = encoded_msg[1]
+    assert values[0] == values[1] == values[2] == values[3] == 0
+
+    signatures = encoded_msg[2]
+    assert signatures[0] == "proxy__upgradeTo(address)"
+    assert signatures[1] == "finalizeUpgrade_v2()"
+    assert signatures[2] == "proxy__upgradeTo(address)"
+    assert signatures[3] == "finalizeUpgrade_v2(string,string)"
+
+    calldatas = encoded_msg[3]
+    assert eth_abi.decode(["address"], calldatas[0])[0] == L2_OPTIMISM_TOKENS_BRIDGE_IMPL_NEW.lower()
+    assert len(eth_abi.decode([], calldatas[1])) == 0
+    assert eth_abi.decode(["address"], calldatas[2])[0] == L2_OPTIMISM_WSTETH_TOKEN_IMPL_NEW.lower()
+    assert eth_abi.decode(["string", "string"], calldatas[3])[0] == "Wrapped liquid staked Ether 2.0"
+    assert eth_abi.decode(["string", "string"], calldatas[3])[1] == "2"
+
+    with_delegatecalls = encoded_msg[4]
+    assert with_delegatecalls[0] == with_delegatecalls[1] == with_delegatecalls[2] == with_delegatecalls[3] == False
+
+
+def encode_l2_message(message: str):
+    queue_definition = f"queue(address[],uint256[],string[],bytes[],bool[])"
+    queue_selector = web3.keccak(text=queue_definition).hex()[:10]
+    assert message.startswith(queue_selector) == True
+    message_without_queue_selector = message.removeprefix(queue_selector)
+    encoded_msg = eth_abi.decode(["address[]", "uint256[]", "string[]", "bytes[]", "bool[]"], bytes.fromhex(message_without_queue_selector))
+    return encoded_msg

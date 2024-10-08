@@ -60,7 +60,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 )
             ]
         ),
-        # 3. Grant DEPOSITS_ENABLER_ROLE to Emergency Brakes Committee multisig
+        # 3. Revoke DEPOSITS_ENABLER_ROLE for Emergency Brakes Committee multisig
         agent_forward(
             [
                 (
