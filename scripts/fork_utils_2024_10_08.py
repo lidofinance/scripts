@@ -1,4 +1,5 @@
 import time
+import os
 from scripts.upgrade_2024_10_08 import start_vote
 from brownie import interface, accounts, network
 from tests.conftest import Helpers
@@ -11,6 +12,8 @@ from utils.config import (
     L1_OPTIMISM_TOKENS_BRIDGE,
     AGENT
 )
+
+ENV_OMNIBUS_VOTE_IDS = "OMNIBUS_VOTE_IDS"
 
 def pause_deposits():
     if not network_name() in ("mainnet-fork",):
@@ -56,7 +59,11 @@ def start_and_execute_for_fork_upgrade():
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 
-    vote_id, _ = start_vote(tx_params=tx_params, silent=True)
+    if len(vote_ids_from_env()) > 0:
+        (vote_id,) = vote_ids_from_env()
+    else:
+        vote_id, _ = start_vote(tx_params=tx_params, silent=True)
+
     vote_tx = Helpers.execute_vote(accounts, vote_id, contracts.voting)
 
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
@@ -65,3 +72,14 @@ def start_and_execute_for_fork_upgrade():
 
     time.sleep(5)  # hack for waiting thread #2.
 
+def vote_ids_from_env() -> [int]:
+    if os.getenv(ENV_OMNIBUS_VOTE_IDS):
+        try:
+            vote_ids_str = os.getenv(ENV_OMNIBUS_VOTE_IDS)
+            vote_ids = [int(s) for s in vote_ids_str.split(",")]
+            print(f"OMNIBUS_VOTE_IDS env var is set, using existing votes {vote_ids}")
+            return vote_ids
+        except:
+            pass
+
+    return []
