@@ -36,7 +36,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
     # validate vote events
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 5, "Incorrect voting items count"
 
-    check_post_upgrade_state(vote_tx)
+    evs = group_voting_events(vote_tx)
+    check_post_upgrade_state(evs)
     assert wsteth_bridge_balance_before == contracts.wsteth.balanceOf(L1_OPTIMISM_TOKENS_BRIDGE)
 
     # START FALLBACK VOTE

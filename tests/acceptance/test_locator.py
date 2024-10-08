@@ -1,7 +1,7 @@
 import pytest
 from brownie import interface  # type: ignore
 
-from utils.config import contracts, LIDO_LOCATOR, LIDO_LOCATOR_IMPL_NEW, L1_TOKEN_RATE_NOTIFIER
+from utils.config import contracts, LIDO_LOCATOR, LIDO_LOCATOR_IMPL_NEW
 
 
 @pytest.fixture(scope="module")
@@ -22,7 +22,7 @@ def test_addresses(contract):
     assert contract.legacyOracle() == contracts.legacy_oracle
     assert contract.lido() == contracts.lido
     assert contract.oracleReportSanityChecker() == contracts.oracle_report_sanity_checker
-    assert contract.postTokenRebaseReceiver() == L1_TOKEN_RATE_NOTIFIER
+    assert contract.postTokenRebaseReceiver() == contracts.token_rate_notifier
     assert contract.burner() == contracts.burner
     assert contract.stakingRouter() == contracts.staking_router
     assert contract.treasury() == contracts.agent
