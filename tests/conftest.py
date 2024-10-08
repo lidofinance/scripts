@@ -25,8 +25,11 @@ ENV_OMNIBUS_VOTE_IDS = "OMNIBUS_VOTE_IDS"
 
 @pytest.fixture(scope="function", autouse=True)
 def shared_setup(fn_isolation):
-    network.gas_price("2 gwei")
     pass
+
+@pytest.fixture(scope="session", autouse=True)
+def network_gas_price():
+    network.gas_price("2 gwei")
 
 @pytest.fixture(scope="function")
 def deployer():
@@ -119,7 +122,7 @@ class Helpers:
             raise AssertionError(f"Event {evt_name} was fired")
 
     @staticmethod
-    def execute_vote(accounts, vote_id, dao_voting, topup="10.1 ether", skip_time=MAINNET_VOTE_DURATION):
+    def execute_vote(accounts, vote_id, dao_voting, topup="1 ether", skip_time=MAINNET_VOTE_DURATION):
         (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup, skip_time)
         return tx
 
@@ -271,6 +274,8 @@ def parse_events_from_local_abi():
 def add_balance_check_middleware():
     web3.middleware_onion.add(balance_check_middleware, name='balance_check')
 
+# TODO: Such implicit manipulation of the balances may lead to hard-debugging errors in the future.
+# Better to return back balance after request is done.
 def ensure_balance(address):
     if web3.eth.get_balance(address) < ETH(1):
         set_balance(address, 1000000)
