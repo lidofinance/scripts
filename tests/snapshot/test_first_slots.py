@@ -35,8 +35,7 @@ class SandwichFn(Protocol):
     def __call__(
         snapshot_fn: SnapshotFn = ...,
         snapshot_block: int = ...,
-    ) -> tuple[Stack, Stack]:
-        ...
+    ) -> tuple[Stack, Stack]: ...
 
 
 def test_first_slots(sandwich_upgrade: SandwichFn):
@@ -114,7 +113,7 @@ def do_snapshot(skip_slots: Sequence[tuple[str, int]]) -> SnapshotFn:
             contracts.acl,
             contracts.agent,
             contracts.kernel,
-            contracts.easy_track,
+            # contracts.easy_track, # TODO: uncomment when upgrade is enacted
             contracts.wsteth,
         ):
             res |= _get_slots(contract, block)

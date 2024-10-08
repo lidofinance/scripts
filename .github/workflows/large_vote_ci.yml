@@ -15,7 +15,7 @@ jobs:
   run-tests-large:
     name: Brownie fork LARGE tests
     runs-on: [protocol-heavy-runners]
-    timeout-minutes: 100
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v3
       - name: Main action

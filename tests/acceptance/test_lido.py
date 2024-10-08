@@ -15,7 +15,6 @@ last_seen_deposited_validators = 176018
 last_seen_total_rewards_collected = 50327973200740183385860
 last_seen_beacon_validators = 175906
 
-
 @pytest.fixture(scope="module")
 def contract() -> interface.Lido:
     return interface.Lido(LIDO)

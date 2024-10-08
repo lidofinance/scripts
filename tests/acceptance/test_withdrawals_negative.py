@@ -10,7 +10,6 @@ MIN_STETH_WITHDRAWAL_AMOUNT = Wei(100)
 MAX_STETH_WITHDRAWAL_AMOUNT = Wei(1000 * 10**18)
 UINT256_MAX = 2**256 - 1
 
-
 def test_request_withdrawals_steth(wq: Contract, steth_whale: Account):
     too_small_amount = MIN_STETH_WITHDRAWAL_AMOUNT - 10
     too_large_amount = MAX_STETH_WITHDRAWAL_AMOUNT + 10

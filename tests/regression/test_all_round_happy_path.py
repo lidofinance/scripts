@@ -5,6 +5,7 @@ from utils.test.oracle_report_helpers import oracle_report
 from utils.test.helpers import ETH, almostEqEth
 from utils.config import contracts
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
+from utils.balance import set_balance
 
 
 def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
@@ -29,14 +30,16 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     contracts.lido.approve(contracts.withdrawal_queue.address, 1000, {"from": steth_holder})
     contracts.withdrawal_queue.requestWithdrawals([1000], steth_holder, {"from": steth_holder})
 
+    # ensure SimpleDVT has some keys to deposit
+    fill_simple_dvt_ops_vetted_keys(stranger, 3, 5)
+    set_balance(stranger.address, 1000000)
+
     print(stranger, stranger.balance())
     steth_balance_before_submit = contracts.lido.balanceOf(stranger)
     eth_balance_before_submit = stranger.balance()
 
     assert steth_balance_before_submit == 0
 
-    # ensure SimpleDVT has some keys to deposit
-    fill_simple_dvt_ops_vetted_keys(stranger, 3, 5)
 
     # Submitting ETH
     stakeLimitInfo = contracts.lido.getStakeLimitFullInfo()
@@ -65,7 +68,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     print("block after view: ", chain.height)
     assert almostEqEth(steth_balance_after_submit, steth_balance_before_submit + amount)
-    assert eth_balance_before_submit == stranger.balance() + amount
+    assert eth_balance_before_submit == stranger.balance() + amount + submit_tx.gas_used * submit_tx.gas_price
 
     shares_to_be_minted = contracts.lido.getSharesByPooledEth(amount)
 
@@ -316,7 +319,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     assert transfer_event["to"] == ZERO_ADDRESS
     assert transfer_event["tokenId"] == request_ids[0]
 
-    assert eth_balance_before_withdrawal == stranger.balance() - amount_with_rewards
+    assert eth_balance_before_withdrawal == stranger.balance() - amount_with_rewards + claim_tx.gas_used * claim_tx.gas_price
     assert (
         locked_ether_amount_after_finalization
         == contracts.withdrawal_queue.getLockedEtherAmount() + amount_with_rewards

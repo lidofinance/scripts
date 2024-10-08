@@ -19,7 +19,6 @@ STAKING_ROUTER_ROLE = Web3.keccak(text="STAKING_ROUTER_ROLE")
 STAKING_MODULE_MANAGE_ROLE = Web3.keccak(text="STAKING_MODULE_MANAGE_ROLE")
 SET_NODE_OPERATOR_LIMIT_ROLE = Web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")
 
-
 @pytest.fixture(scope="function")
 def impersonated_voting(accounts):
     return accounts.at(contracts.voting.address, force=True)

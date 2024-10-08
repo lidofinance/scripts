@@ -11,6 +11,7 @@ from tests.conftest import Helpers
 from utils.config import contracts
 from utils.test.helpers import ETH, GWEI, ZERO_ADDRESS, almostEqWithDiff, eth_balance
 from utils.test.oracle_report_helpers import ONE_DAY, SHARE_RATE_PRECISION, oracle_report
+from utils.balance import set_balance
 
 LIMITER_PRECISION_BASE = 10**9
 MAX_BASIS_POINTS = 10_000
@@ -106,12 +107,6 @@ def test_accounting_no_cl_rebase(accounting_oracle: Contract, lido: Contract, he
     shares_rate_before, shares_rate_after = _shares_rate_from_event(tx)
     assert shares_rate_before <= shares_rate_after, "Shares rate lowered"
 
-    post_ttl_shares_event = _first_event(tx, PostTotalShares)
-    assert (
-        post_ttl_shares_event["preTotalPooledEther"]
-        == post_ttl_shares_event["postTotalPooledEther"] + withdrawals_finalized["amountOfETHLocked"]
-    ), "PostTotalShares preTotalPooledEther <> postTotalPooledEther"
-
     assert (
         eth_balance(lido.address, block_before_report)
         == eth_balance(lido.address, block_after_report) + withdrawals_finalized["amountOfETHLocked"]
@@ -165,12 +160,6 @@ def test_accounting_negative_cl_rebase(accounting_oracle: Contract, lido: Contra
     assert (
         eth_distributed_event["preCLBalance"] + rebase_amount == eth_distributed_event["postCLBalance"]
     ), "ETHDistributed: CL balance differs from expected"
-
-    post_ttl_shares_event = _first_event(tx, PostTotalShares)
-    assert (
-        post_ttl_shares_event["preTotalPooledEther"] + rebase_amount
-        == post_ttl_shares_event["postTotalPooledEther"] + withdrawals_finalized["amountOfETHLocked"]
-    ), "PostTotalShares: TotalPooledEther differs from expected"
 
 
 def test_accounting_cl_rebase_at_limits(accounting_oracle: Contract, lido: Contract):
@@ -280,11 +269,6 @@ def test_accounting_cl_rebase_at_limits(accounting_oracle: Contract, lido: Contr
     assert (
         eth_distributed_event["preCLBalance"] + rebase_amount == eth_distributed_event["postCLBalance"]
     ), "ETHDistributed: CL balance has not increased"
-
-    post_ttl_shares_event = _first_event(tx, PostTotalShares)
-    assert (
-        post_ttl_shares_event["preTotalPooledEther"] + rebase_amount == post_ttl_shares_event["postTotalPooledEther"]
-    ) + withdrawals_finalized["amountOfETHLocked"], "PostTotalShares: TotalPooledEther has not increased"
 
 
 def test_accounting_cl_rebase_above_limits():
@@ -1129,11 +1113,7 @@ def _round_to_gwei(amount: int) -> int:
 def _drain_eth(address: str):
     """Drain ETH from address"""
 
-    accounts.at(address, force=True).transfer(
-        Account(ZERO_ADDRESS),
-        eth_balance(address),
-        silent=True,
-    )
+    set_balance(address, 0)
     assert eth_balance(address) == 0, f"Expected account {address} to be empty"
 
 

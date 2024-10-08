@@ -11,7 +11,6 @@ from utils.config import (
 )
 from utils.evm_script import encode_error
 
-
 @pytest.fixture(scope="module")
 def contract() -> interface.WithdrawalQueueERC721:
     return interface.WithdrawalQueueERC721(WITHDRAWAL_QUEUE)

@@ -17,7 +17,6 @@ from utils.config import (
 
 lastSeenTotalPooledEther = 5879742251110033487920093
 
-
 @pytest.fixture(scope="module")
 def contract() -> interface.LegacyOracle:
     return interface.LegacyOracle(LEGACY_ORACLE)

@@ -53,7 +53,7 @@ def test_receive_el_rewards_permissions(stranger):
     assert_el_rewards_received_log(log=tx.logs[0], amount=reward_amount)
 
     assert contracts.lido.getTotalELRewardsCollected() - lido_el_rewards_collected_before == reward_amount
-    assert contracts.execution_layer_rewards_vault.balance() == (el_balance_after - reward_amount)
+    assert contracts.execution_layer_rewards_vault.balance() == (el_balance_after - reward_amount) - tx.gas_used * tx.gas_price
     assert contracts.lido.balance() == lido_eth_balance_before + reward_amount
 
 

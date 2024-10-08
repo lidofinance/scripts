@@ -136,7 +136,6 @@ def do_snapshot(guardian: Account, some_eoa: Account):
         block = chain.height
         with brownie.multicall(block_identifier=block):
             return {
-                "block_number": chain.height,
                 "chain_time": web3.eth.get_block(chain.height)["timestamp"],
                 "DEPOSIT_CONTRACT": dsm.DEPOSIT_CONTRACT(),
                 "LIDO": dsm.LIDO(),

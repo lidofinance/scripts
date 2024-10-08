@@ -50,7 +50,8 @@ def voting_eoa(accounts):
 
 @pytest.fixture(scope="module")
 def evm_script_executor_eoa(accounts):
-    return accounts.at(contracts.easy_track.evmScriptExecutor(), force=True)
+    evmScriptExecutor = contracts.easy_track.evmScriptExecutor()
+    return accounts.at(evmScriptExecutor, force=True)
 
 
 @pytest.fixture(scope="module")
