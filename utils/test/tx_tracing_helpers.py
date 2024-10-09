@@ -1,4 +1,5 @@
 from utils.tx_tracing import *
+from utils.config import VOTING
 
 _vote_item_group = GroupBy(
     contract_name="CallsScript",
@@ -63,3 +64,26 @@ def group_voting_events(tx: TransactionReceipt) -> List[EventDict]:
     )
 
     return ret
+
+
+def group_voting_events_from_receipt(tx: TransactionReceipt) -> List[EventDict]:
+    events = tx_events_from_receipt(tx)
+
+    groups = []
+    current_group = None
+
+    for event in events:
+        is_start_of_new_group = event["name"] == "LogScriptCall" and event["address"] == VOTING
+
+        if is_start_of_new_group:
+            current_group = []
+            groups.append(current_group)
+
+        current_group.append(event)
+
+    event_dict_groups = []
+    for group in groups:
+        events = EventDict(group)
+        event_dict_groups.append(events)
+
+    return event_dict_groups

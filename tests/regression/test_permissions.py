@@ -62,7 +62,7 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "REQUEST_BURN_MY_STETH_ROLE": [contracts.agent],
-                "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry, contracts.simple_dvt],
+                "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry, contracts.simple_dvt, contracts.csm.accounting()],
             },
         },
         STAKING_ROUTER: {
@@ -73,8 +73,7 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_WITHDRAWAL_CREDENTIALS_ROLE": [],
-                "STAKING_MODULE_PAUSE_ROLE": [contracts.deposit_security_module],
-                "STAKING_MODULE_RESUME_ROLE": [contracts.deposit_security_module],
+                "STAKING_MODULE_UNVETTING_ROLE": [contracts.deposit_security_module],
                 "STAKING_MODULE_MANAGE_ROLE": [contracts.agent],
                 "REPORT_EXITED_VALIDATORS_ROLE": [contracts.accounting_oracle],
                 "UNSAFE_SET_EXITED_VALIDATORS_ROLE": [],
@@ -161,15 +160,17 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "ALL_LIMITS_MANAGER_ROLE": [],
-                "CHURN_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE": [],
-                "ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE": [],
+                "EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE": [],
+                "APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE": [],
                 "ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE": [],
                 "SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE": [],
                 "MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_ROLE": [],
-                "MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE": [contracts.agent],
-                "MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE": [contracts.agent],
+                "MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION_ROLE": [],
+                "MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_ROLE": [],
                 "REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE": [],
                 "MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE": [],
+                "SECOND_OPINION_MANAGER_ROLE": [],
+                "INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE": [],
             },
         },
         DEPOSIT_SECURITY_MODULE: {

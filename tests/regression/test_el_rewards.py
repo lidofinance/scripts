@@ -7,7 +7,7 @@ from brownie import interface, reverts, web3
 from brownie.network import chain
 
 from utils.config import contracts
-
+from utils.test.tx_cost_helper import transaction_cost
 
 TOTAL_BASIS_POINTS = 10000
 EL_REWARDS_FEE_WITHDRAWAL_LIMIT = 2
@@ -53,7 +53,7 @@ def test_receive_el_rewards_permissions(stranger):
     assert_el_rewards_received_log(log=tx.logs[0], amount=reward_amount)
 
     assert contracts.lido.getTotalELRewardsCollected() - lido_el_rewards_collected_before == reward_amount
-    assert contracts.execution_layer_rewards_vault.balance() == (el_balance_after - reward_amount)
+    assert contracts.execution_layer_rewards_vault.balance() == (el_balance_after - reward_amount - transaction_cost(tx))
     assert contracts.lido.balance() == lido_eth_balance_before + reward_amount
 
 

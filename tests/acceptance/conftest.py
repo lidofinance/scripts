@@ -7,7 +7,6 @@ from utils.import_current_votes import is_there_any_vote_scripts, is_there_any_u
 from utils.test.helpers import ETH
 from utils.test.oracle_report_helpers import oracle_report
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
-from brownie import chain
 
 ENV_REPORT_AFTER_VOTE = "REPORT_AFTER_VOTE"
 ENV_FILL_SIMPLE_DVT = "FILL_SIMPLE_DVT"
