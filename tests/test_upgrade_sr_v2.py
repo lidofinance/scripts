@@ -14,7 +14,7 @@ from utils.config import (
     CS_ACCOUNTING_ADDRESS,
     CSM_ADDRESS,
 )
-from scripts.vote_sr_v2 import (
+from scripts.upgrade_sr_v2 import (
     start_vote,
     # oracles
     AO_CONSENSUS_VERSION,
