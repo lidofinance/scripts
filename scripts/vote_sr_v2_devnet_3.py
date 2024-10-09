@@ -88,7 +88,7 @@ DISTRIBUTED = 2
 
 ## SDVT module
 sdvt_uri = "0x697066733a516d615353756a484347636e4675657441504777565735426567614d42766e355343736769334c5366767261536f"
-SDVT_PRIORITY_EXIT_SHARE_THRESHOLDS = 400
+SDVT_PRIORITY_EXIT_SHARE_THRESHOLDS = 10_000
 SDVT_MAX_DEPOSITS_PER_BLOCK = 150
 SDVT_MIN_DEPOSIT_BLOCK_DISTANCES = 25
 SDVT_VERSION_REPO = ["2", "0", "0"]
@@ -315,7 +315,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         #
         # CSM
         (
-            "20. Add staking module",
+            "18. Add staking module",
             agent_forward(
                 [
                     (
@@ -335,7 +335,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "21. Grant request burn role to CSAccounting contract",
+            "19. Grant request burn role to CSAccounting contract",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -347,7 +347,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "22. Grant resume role to agent",
+            "20. Grant resume role to agent",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -359,11 +359,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "23. Resume staking module",
+            "21. Resume staking module",
             agent_forward([(contracts.csm.address, contracts.csm.resume.encode_input())]),
         ),
         (
-            "24. Revoke resume role from agent",
+            "22. Revoke resume role from agent",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -375,7 +375,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "25. Update initial epoch",
+            "23. Update initial epoch",
             agent_forward(
                 [
                     (
