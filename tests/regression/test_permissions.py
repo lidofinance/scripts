@@ -62,7 +62,7 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "REQUEST_BURN_MY_STETH_ROLE": [contracts.agent],
-                "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry, contracts.simple_dvt],
+                "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry, contracts.simple_dvt, contracts.csm.accounting()],
             },
         },
         STAKING_ROUTER: {
