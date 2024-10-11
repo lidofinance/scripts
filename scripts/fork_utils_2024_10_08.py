@@ -60,7 +60,7 @@ def start_and_execute_for_fork_upgrade():
         tx_params["priority_fee"] = get_priority_fee()
 
     if len(vote_ids_from_env()) > 0:
-        (vote_id,) = vote_ids_from_env()
+        vote_id = vote_ids_from_env()[0]
     else:
         vote_id, _ = start_vote(tx_params=tx_params, silent=True)
 
