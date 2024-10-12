@@ -75,6 +75,11 @@ def local_deployer() -> LocalAccount:
     """
     deployer = accounts[4]
     agent = accounts.at(AGENT, force=True)
+
+    if web3.eth.get_balance(agent.address) < 10 ** 18:
+        from utils.balance import set_balance
+        set_balance(agent.address, 1)
+
     interface.MiniMeToken(LDO_TOKEN).transfer(deployer, 10**18, {"from": agent})
     return deployer
 
