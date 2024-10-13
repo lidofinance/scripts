@@ -26,7 +26,8 @@ from utils.config import (
     CHAIN_SLOTS_PER_EPOCH,
     CS_ORACLE_EPOCHS_PER_FRAME,
     ORACLE_QUORUM,
-    ORACLE_COMMITTEE
+    ORACLE_COMMITTEE,
+    CSM_COMMITTEE_MS
 )
 
 contracts: ContractsLazyLoader = contracts
@@ -89,10 +90,27 @@ class TestCSM:
 
     def test_roles(self, csm):
         assert csm.hasRole(csm.STAKING_ROUTER_ROLE(), STAKING_ROUTER)
+        assert csm.getRoleMemberCount(csm.STAKING_ROUTER_ROLE()) == 1
+
         assert csm.hasRole(csm.DEFAULT_ADMIN_ROLE(), AGENT)
+        assert csm.getRoleMemberCount(csm.DEFAULT_ADMIN_ROLE()) == 1
+
         assert csm.hasRole(csm.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS)
+        assert csm.getRoleMemberCount(csm.PAUSE_ROLE()) == 1
+
+        assert csm.hasRole(csm.REPORT_EL_REWARDS_STEALING_PENALTY_ROLE(), CSM_COMMITTEE_MS)
+        assert csm.getRoleMemberCount(csm.REPORT_EL_REWARDS_STEALING_PENALTY_ROLE()) == 1
+
         assert csm.hasRole(csm.SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE(), EASYTRACK_EVMSCRIPT_EXECUTOR)
+        assert csm.getRoleMemberCount(csm.SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE()) == 1
+
         assert csm.hasRole(csm.VERIFIER_ROLE(), CS_VERIFIER_ADDRESS)
+        assert csm.getRoleMemberCount(csm.VERIFIER_ROLE()) == 1
+
+        assert csm.getRoleMemberCount(csm.RESUME_ROLE()) == 0
+        assert csm.getRoleMemberCount(csm.MODULE_MANAGER_ROLE()) == 0
+        assert csm.getRoleMemberCount(csm.RECOVERER_ROLE()) == 0
+
 
 class TestAccounting:
     def test_initial_state(self, accounting):
@@ -107,9 +125,24 @@ class TestAccounting:
 
     def test_roles(self, accounting):
         assert accounting.hasRole(accounting.SET_BOND_CURVE_ROLE(), CSM_ADDRESS)
+        assert accounting.hasRole(accounting.SET_BOND_CURVE_ROLE(), CSM_COMMITTEE_MS)
+        assert accounting.getRoleMemberCount(accounting.SET_BOND_CURVE_ROLE()) == 2
+
         assert accounting.hasRole(accounting.RESET_BOND_CURVE_ROLE(), CSM_ADDRESS)
+        assert accounting.hasRole(accounting.RESET_BOND_CURVE_ROLE(), CSM_COMMITTEE_MS)
+        assert accounting.getRoleMemberCount(accounting.RESET_BOND_CURVE_ROLE()) == 2
+
         assert accounting.hasRole(accounting.DEFAULT_ADMIN_ROLE(), AGENT)
+        assert accounting.getRoleMemberCount(accounting.DEFAULT_ADMIN_ROLE()) == 1
+
         assert accounting.hasRole(accounting.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS)
+        assert accounting.getRoleMemberCount(accounting.PAUSE_ROLE()) == 1
+
+        assert accounting.getRoleMemberCount(accounting.RESUME_ROLE()) == 0
+        assert accounting.getRoleMemberCount(accounting.ACCOUNTING_MANAGER_ROLE()) == 0
+        assert accounting.getRoleMemberCount(accounting.MANAGE_BOND_CURVES_ROLE()) == 0
+        assert accounting.getRoleMemberCount(accounting.RECOVERER_ROLE()) == 0
+
 
     def test_allowances(self, lido):
         uin256_max = 2 ** 256 - 1
@@ -130,6 +163,9 @@ class TestFeeDistributor:
 
     def test_roles(self, fee_distributor):
         assert fee_distributor.hasRole(fee_distributor.DEFAULT_ADMIN_ROLE(), AGENT)
+        assert fee_distributor.getRoleMemberCount(fee_distributor.DEFAULT_ADMIN_ROLE()) == 1
+
+        assert fee_distributor.getRoleMemberCount(fee_distributor.RECOVERER_ROLE()) == 0
 
 
 class TestFeeOracle:
@@ -154,7 +190,15 @@ class TestFeeOracle:
 
     def test_roles(self, fee_oracle):
         assert fee_oracle.hasRole(fee_oracle.DEFAULT_ADMIN_ROLE(), AGENT)
+        assert fee_oracle.getRoleMemberCount(fee_oracle.DEFAULT_ADMIN_ROLE()) == 1
+
         assert fee_oracle.hasRole(fee_oracle.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS)
+        assert fee_oracle.getRoleMemberCount(fee_oracle.PAUSE_ROLE()) == 1
+
+        assert fee_oracle.getRoleMemberCount(fee_oracle.CONTRACT_MANAGER_ROLE()) == 0
+        assert fee_oracle.getRoleMemberCount(fee_oracle.SUBMIT_DATA_ROLE()) == 0
+        assert fee_oracle.getRoleMemberCount(fee_oracle.RESUME_ROLE()) == 0
+        assert fee_oracle.getRoleMemberCount(fee_oracle.RECOVERER_ROLE()) == 0
 
 class TestHashConsensus:
 
@@ -187,6 +231,13 @@ class TestHashConsensus:
 
     def test_roles(self, hash_consensus):
         assert hash_consensus.hasRole(hash_consensus.DEFAULT_ADMIN_ROLE(), AGENT)
+        assert hash_consensus.getRoleMemberCount(hash_consensus.DEFAULT_ADMIN_ROLE()) == 1
+
+        assert hash_consensus.getRoleMemberCount(hash_consensus.MANAGE_MEMBERS_AND_QUORUM_ROLE()) == 0
+        assert hash_consensus.getRoleMemberCount(hash_consensus.DISABLE_CONSENSUS_ROLE()) == 0
+        assert hash_consensus.getRoleMemberCount(hash_consensus.MANAGE_FRAME_CONFIG_ROLE()) == 0
+        assert hash_consensus.getRoleMemberCount(hash_consensus.MANAGE_FAST_LANE_CONFIG_ROLE()) == 0
+        assert hash_consensus.getRoleMemberCount(hash_consensus.MANAGE_REPORT_PROCESSOR_ROLE()) == 0
 
 def test_early_adoption_state(early_adoption):
     assert early_adoption.MODULE() == CSM_ADDRESS
