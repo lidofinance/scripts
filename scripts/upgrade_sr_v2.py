@@ -70,6 +70,7 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
 from brownie.network.transaction import TransactionReceipt
 from utils.agent import agent_forward
+from utils.mainnet_fork import pass_and_exec_dao_vote
 
 # SR
 
@@ -419,3 +420,16 @@ def main():
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 
     time.sleep(5)  # hack for waiting thread #2.
+
+
+def start_and_execute_vote_on_fork():
+    if get_is_live():
+        raise Exception("This script is for local testing only.")
+
+    tx_params = {"from": get_deployer_account()}
+    vote_id, _ = start_vote(tx_params=tx_params, silent=True)
+
+    time.sleep(5)  # hack for waiting thread #2.
+
+    print(f"Vote created: {vote_id}.")
+    pass_and_exec_dao_vote(int(vote_id))
