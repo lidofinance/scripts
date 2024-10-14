@@ -296,10 +296,19 @@ def simulate_report(
 
 def wait_to_next_available_report_time(consensus_contract):
     (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME) = consensus_contract.getChainConfig()
-    (refSlot, _) = consensus_contract.getCurrentFrame()
+    try:
+        (refSlot, _) = consensus_contract.getCurrentFrame()
+    except VirtualMachineError as e:
+        if "InitialEpochIsYetToArrive" in str(e):
+            frame_config = consensus_contract.getFrameConfig()
+            chain.sleep(GENESIS_TIME + 1 + (frame_config["initialEpoch"] * SLOTS_PER_EPOCH * SECONDS_PER_SLOT) - chain.time())
+            chain.mine(1)
+            (refSlot, _) = consensus_contract.getCurrentFrame()
+        else:
+            raise
     time = chain.time()
     (_, EPOCHS_PER_FRAME, _) = consensus_contract.getFrameConfig()
-    frame_start_with_offset = GENESIS_TIME + (refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME + 1) * SECONDS_PER_SLOT
+    frame_start_with_offset = GENESIS_TIME + (refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME + 1) * SECONDS_PER_SLOT + 1
     chain.sleep(frame_start_with_offset - time)
     chain.mine(1)
     (nextRefSlot, _) = consensus_contract.getCurrentFrame()

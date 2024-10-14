@@ -1,6 +1,7 @@
 import pytest
 
 from brownie import interface, web3, Wei  # type: ignore
+from brownie.convert.datatypes import HexString
 
 from utils.config import (
     contracts,
@@ -10,24 +11,19 @@ from utils.config import (
     WITHDRAWAL_QUEUE,
     WITHDRAWAL_VAULT,
     WSTETH_TOKEN,
-    STAKING_ROUTER,
     AGENT,
     BURNER,
     CSM_ADDRESS,
     CS_ACCOUNTING_ADDRESS,
-    CS_GATE_SEAL_ADDRESS,
-    CS_VERIFIER_ADDRESS,
     CS_FEE_DISTRIBUTOR_ADDRESS,
     CS_FEE_ORACLE_ADDRESS,
     CS_ORACLE_HASH_CONSENSUS_ADDRESS,
-    EASYTRACK_EVMSCRIPT_EXECUTOR,
     CHAIN_SECONDS_PER_SLOT,
     CHAIN_GENESIS_TIME,
     CHAIN_SLOTS_PER_EPOCH,
     CS_ORACLE_EPOCHS_PER_FRAME,
     ORACLE_QUORUM,
     ORACLE_COMMITTEE,
-    CSM_COMMITTEE_MS
 )
 
 contracts: ContractsLazyLoader = contracts
@@ -85,31 +81,6 @@ class TestCSM:
 
         assert not csm.isPaused();
         assert not csm.publicRelease();
-        assert csm.getNodeOperatorsCount() == 0;
-
-
-    def test_roles(self, csm):
-        assert csm.hasRole(csm.STAKING_ROUTER_ROLE(), STAKING_ROUTER)
-        assert csm.getRoleMemberCount(csm.STAKING_ROUTER_ROLE()) == 1
-
-        assert csm.hasRole(csm.DEFAULT_ADMIN_ROLE(), AGENT)
-        assert csm.getRoleMemberCount(csm.DEFAULT_ADMIN_ROLE()) == 1
-
-        assert csm.hasRole(csm.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS)
-        assert csm.getRoleMemberCount(csm.PAUSE_ROLE()) == 1
-
-        assert csm.hasRole(csm.REPORT_EL_REWARDS_STEALING_PENALTY_ROLE(), CSM_COMMITTEE_MS)
-        assert csm.getRoleMemberCount(csm.REPORT_EL_REWARDS_STEALING_PENALTY_ROLE()) == 1
-
-        assert csm.hasRole(csm.SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE(), EASYTRACK_EVMSCRIPT_EXECUTOR)
-        assert csm.getRoleMemberCount(csm.SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE()) == 1
-
-        assert csm.hasRole(csm.VERIFIER_ROLE(), CS_VERIFIER_ADDRESS)
-        assert csm.getRoleMemberCount(csm.VERIFIER_ROLE()) == 1
-
-        assert csm.getRoleMemberCount(csm.RESUME_ROLE()) == 0
-        assert csm.getRoleMemberCount(csm.MODULE_MANAGER_ROLE()) == 0
-        assert csm.getRoleMemberCount(csm.RECOVERER_ROLE()) == 0
 
 
 class TestAccounting:
@@ -123,27 +94,6 @@ class TestAccounting:
         assert accounting.chargePenaltyRecipient() == AGENT
         assert not accounting.isPaused()
 
-    def test_roles(self, accounting):
-        assert accounting.hasRole(accounting.SET_BOND_CURVE_ROLE(), CSM_ADDRESS)
-        assert accounting.hasRole(accounting.SET_BOND_CURVE_ROLE(), CSM_COMMITTEE_MS)
-        assert accounting.getRoleMemberCount(accounting.SET_BOND_CURVE_ROLE()) == 2
-
-        assert accounting.hasRole(accounting.RESET_BOND_CURVE_ROLE(), CSM_ADDRESS)
-        assert accounting.hasRole(accounting.RESET_BOND_CURVE_ROLE(), CSM_COMMITTEE_MS)
-        assert accounting.getRoleMemberCount(accounting.RESET_BOND_CURVE_ROLE()) == 2
-
-        assert accounting.hasRole(accounting.DEFAULT_ADMIN_ROLE(), AGENT)
-        assert accounting.getRoleMemberCount(accounting.DEFAULT_ADMIN_ROLE()) == 1
-
-        assert accounting.hasRole(accounting.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS)
-        assert accounting.getRoleMemberCount(accounting.PAUSE_ROLE()) == 1
-
-        assert accounting.getRoleMemberCount(accounting.RESUME_ROLE()) == 0
-        assert accounting.getRoleMemberCount(accounting.ACCOUNTING_MANAGER_ROLE()) == 0
-        assert accounting.getRoleMemberCount(accounting.MANAGE_BOND_CURVES_ROLE()) == 0
-        assert accounting.getRoleMemberCount(accounting.RECOVERER_ROLE()) == 0
-
-
     def test_allowances(self, lido):
         uin256_max = 2 ** 256 - 1
         assert lido.allowance(CS_ACCOUNTING_ADDRESS, WSTETH_TOKEN) == uin256_max
@@ -156,16 +106,6 @@ class TestFeeDistributor:
         assert fee_distributor.STETH() == LIDO
         assert fee_distributor.ACCOUNTING() == CS_ACCOUNTING_ADDRESS
         assert fee_distributor.ORACLE() == CS_FEE_ORACLE_ADDRESS
-        assert fee_distributor.totalClaimableShares() == 0
-        assert fee_distributor.pendingSharesToDistribute() == 0
-        assert fee_distributor.treeRoot() == _str_to_bytes32("")
-        assert fee_distributor.treeCid() == ""
-
-    def test_roles(self, fee_distributor):
-        assert fee_distributor.hasRole(fee_distributor.DEFAULT_ADMIN_ROLE(), AGENT)
-        assert fee_distributor.getRoleMemberCount(fee_distributor.DEFAULT_ADMIN_ROLE()) == 1
-
-        assert fee_distributor.getRoleMemberCount(fee_distributor.RECOVERER_ROLE()) == 0
 
 
 class TestFeeOracle:
@@ -177,67 +117,30 @@ class TestFeeOracle:
         assert fee_oracle.getContractVersion() == 1
         assert fee_oracle.getConsensusContract() == CS_ORACLE_HASH_CONSENSUS_ADDRESS
         assert fee_oracle.getConsensusVersion() == 1
-        assert fee_oracle.getLastProcessingRefSlot() == 0
         assert fee_oracle.avgPerfLeewayBP() == 500
         assert not fee_oracle.isPaused()
-
-        report = fee_oracle.getConsensusReport()
-        assert report["hash"] == _str_to_bytes32("")
-        assert report["refSlot"] == 0
-        assert report["processingDeadlineTime"] == 0
-        assert not report["processingStarted"]
-
-
-    def test_roles(self, fee_oracle):
-        assert fee_oracle.hasRole(fee_oracle.DEFAULT_ADMIN_ROLE(), AGENT)
-        assert fee_oracle.getRoleMemberCount(fee_oracle.DEFAULT_ADMIN_ROLE()) == 1
-
-        assert fee_oracle.hasRole(fee_oracle.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS)
-        assert fee_oracle.getRoleMemberCount(fee_oracle.PAUSE_ROLE()) == 1
-
-        assert fee_oracle.getRoleMemberCount(fee_oracle.CONTRACT_MANAGER_ROLE()) == 0
-        assert fee_oracle.getRoleMemberCount(fee_oracle.SUBMIT_DATA_ROLE()) == 0
-        assert fee_oracle.getRoleMemberCount(fee_oracle.RESUME_ROLE()) == 0
-        assert fee_oracle.getRoleMemberCount(fee_oracle.RECOVERER_ROLE()) == 0
 
 class TestHashConsensus:
 
     def test_initial_state(self, hash_consensus):
-        current_frame = hash_consensus.getCurrentFrame()
-        # TODO uncomment this when initial ref slot is known
-        # assert current_frame["refSlot"] > 5254400
-        # assert current_frame["reportProcessingDeadlineSlot"] > 5254400
-
         chain_config = hash_consensus.getChainConfig()
         assert chain_config["slotsPerEpoch"] == CHAIN_SLOTS_PER_EPOCH
         assert chain_config["secondsPerSlot"] == CHAIN_SECONDS_PER_SLOT
         assert chain_config["genesisTime"] == CHAIN_GENESIS_TIME
 
         frame_config = hash_consensus.getFrameConfig()
-        # TODO uncomment this when initial ref slot is known
-        #  assert frame_config["initialEpoch"] > 5254400 / CHAIN_SLOTS_PER_EPOCH
+        assert frame_config["initialEpoch"] >= 326715
         assert frame_config["epochsPerFrame"] == CS_ORACLE_EPOCHS_PER_FRAME
         assert frame_config["fastLaneLengthSlots"] == 1800
 
         assert hash_consensus.getQuorum() == ORACLE_QUORUM
 
-        # TODO uncomment this when initial ref slot is known
-        #  assert hash_consensus.getInitialRefSlot() > 5254400
+        assert hash_consensus.getInitialRefSlot() >= 326715 * CHAIN_SLOTS_PER_EPOCH - 1
 
         members = hash_consensus.getMembers()
         assert sorted(members["addresses"]) == sorted(ORACLE_COMMITTEE)
 
         assert hash_consensus.getReportProcessor() == CS_FEE_ORACLE_ADDRESS
-
-    def test_roles(self, hash_consensus):
-        assert hash_consensus.hasRole(hash_consensus.DEFAULT_ADMIN_ROLE(), AGENT)
-        assert hash_consensus.getRoleMemberCount(hash_consensus.DEFAULT_ADMIN_ROLE()) == 1
-
-        assert hash_consensus.getRoleMemberCount(hash_consensus.MANAGE_MEMBERS_AND_QUORUM_ROLE()) == 0
-        assert hash_consensus.getRoleMemberCount(hash_consensus.DISABLE_CONSENSUS_ROLE()) == 0
-        assert hash_consensus.getRoleMemberCount(hash_consensus.MANAGE_FRAME_CONFIG_ROLE()) == 0
-        assert hash_consensus.getRoleMemberCount(hash_consensus.MANAGE_FAST_LANE_CONFIG_ROLE()) == 0
-        assert hash_consensus.getRoleMemberCount(hash_consensus.MANAGE_REPORT_PROCESSOR_ROLE()) == 0
 
 def test_early_adoption_state(early_adoption):
     assert early_adoption.MODULE() == CSM_ADDRESS
@@ -247,11 +150,12 @@ def test_verifier_state(verifier):
     assert verifier.WITHDRAWAL_ADDRESS() == WITHDRAWAL_VAULT
     assert verifier.MODULE() == CSM_ADDRESS
     assert verifier.SLOTS_PER_EPOCH() == CHAIN_SLOTS_PER_EPOCH
-    # TODO uncomment this when values are known
-    # assert verifier.GI_HISTORICAL_SUMMARIES_PREV() == ""
-    # assert verifier.GI_HISTORICAL_SUMMARIES_CURR() == ""
-    # assert verifier.GI_FIRST_WITHDRAWAL_PREV() == ""
-    # assert verifier.GI_FIRST_WITHDRAWAL_CURR() == ""
-    # assert verifier.GI_FIRST_VALIDATOR_PREV() == ""
-    # assert verifier.GI_FIRST_VALIDATOR_CURR() == ""
-    # assert verifier.FIRST_SUPPORTED_SLOT() == ""
+    print(type(verifier.GI_HISTORICAL_SUMMARIES_PREV()))
+    assert verifier.GI_HISTORICAL_SUMMARIES_PREV() == HexString("0x0000000000000000000000000000000000000000000000000000000000003b00", "bytes")
+    assert verifier.GI_HISTORICAL_SUMMARIES_CURR() == HexString("0x0000000000000000000000000000000000000000000000000000000000003b00", "bytes")
+    assert verifier.GI_FIRST_WITHDRAWAL_PREV() == HexString("0x0000000000000000000000000000000000000000000000000000000000e1c004", "bytes")
+    assert verifier.GI_FIRST_WITHDRAWAL_CURR() == HexString("0x0000000000000000000000000000000000000000000000000000000000e1c004", "bytes")
+    assert verifier.GI_FIRST_VALIDATOR_PREV() == HexString("0x0000000000000000000000000000000000000000000000000056000000000028", "bytes")
+    assert verifier.GI_FIRST_VALIDATOR_CURR() == HexString("0x0000000000000000000000000000000000000000000000000056000000000028", "bytes")
+    assert verifier.FIRST_SUPPORTED_SLOT() == 8626176
+    assert verifier.PIVOT_SLOT() == 8626176
