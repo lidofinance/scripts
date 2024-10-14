@@ -76,7 +76,6 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 
 ## Easy track
 OLD_TARGET_LIMIT__FACTORY = "0x41CF3DbDc939c5115823Fba1432c4EC5E7bD226C"
-# !!!! that is locally deployed factory address, before run set contract address here
 NEW_TARGET_LIMIT_FACTORY = "0x161a4552A625844c822954C5AcBac928ee0f399B"
 
 ## Curated module
@@ -108,8 +107,7 @@ VEBO_CONSENSUS_VERSION = 2
 
 # CSM
 ## Easy track
-# !!!! that is locally deployed factory address, before run set contract address here
-EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY = "0x2963ff0196a901ec3F56d7531e7C4Ce8F226462B"
+EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY = "0xF6B6E7997338C48Ea3a8BCfa4BB64a315fDa76f4"
 
 ## Parameters
 CS_MODULE_NAME = "Community Staking"
@@ -119,10 +117,10 @@ CS_STAKING_MODULE_FEE = 600
 CS_TREASURY_FEE = 400
 CS_MAX_DEPOSITS_PER_BLOCK = 30
 CS_MIN_DEPOSIT_BLOCK_DISTANCE = 25
-CS_ORACLE_INITIAL_EPOCH = 58050
+CS_ORACLE_INITIAL_EPOCH = 58050  # TODO: need to check
 
 description = """
-Proposal to support DSM 2.0 and CSM Module
+Proposal to support SR 2.0 and CSM Module
 """
 
 
