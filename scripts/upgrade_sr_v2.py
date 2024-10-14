@@ -121,6 +121,35 @@ CS_ORACLE_INITIAL_EPOCH = 58050  # TODO: need to check
 
 description = """
 Proposal to support SR 2.0 and CSM Module
+
+1. Update Locator implementation
+2. Revoke pause role from old Deposit Security Module
+3. Revoke resume role from old Deposit Security Module
+4. Grant unvetting role to new Deposit Security Module
+5. Update Staking Router implementation
+6. Call finalize upgrade on Staking Router
+7. Publish new Node Operators Registry implementation in Node Operators Registry app APM repo
+8. Update Node Operators Registry implementation
+9. Finalize Node Operators Registry upgrade
+10. Publish new SimpleDVT implementation in SimpleDVT app APM repo
+11. Update SimpleDVT implementation
+12. Finalize SimpleDVT upgrade
+13. Update Accounting Oracle implementation
+14. Finalize Accounting Oracle upgrade and update consensus version
+15. Grant manage consensus role to Aragon Agent
+16. Update Validator Exit Bus Oracle consensus version
+17. Revoke manage consensus role from Aragon Agent
+18. Remove old UpdateTargetValidatorLimits for SimpleDVT factory from EasyTrack
+19. Add new UpdateTargetValidatorLimits for SimpleDVT factory to EasyTrack
+
+Community Staking Module
+20. Add Community Staking Module to Staking Router
+21. Grant request burn role to CSAccounting
+22. Grant resume role to Aragon Agent
+23. Resume Community Staking Module
+24. Revoke resume role from Aragon Agent
+25. Update initial epoch on CSHashConsensus
+26. Add CSMSettleElStealingPenalty factory to EasyTrack
 """
 
 
