@@ -113,7 +113,7 @@ def do_snapshot(skip_slots: Sequence[tuple[str, int]]) -> SnapshotFn:
             contracts.acl,
             contracts.agent,
             contracts.kernel,
-            # contracts.easy_track, # TODO: uncomment when upgrade is enacted
+            contracts.easy_track,
             contracts.wsteth,
         ):
             res |= _get_slots(contract, block)
