@@ -17,6 +17,7 @@ Ib. Upgrade Optimism Contracts
 II. Add Easy Track setup for funding Lido Alliance Operational Multisig
 6. Add Alliance Ops stablecoins top up EVM script factory 0xe5656eEe7eeD02bdE009d77C88247BC8271e26Eb (AllowedRecipientsRegistry 0x3B525F4c059F246Ca4aa995D21087204F30c9E2F)
 
+Vote passed & executed on Oct-11-2024 04:21:11 PM +UTC, block #20943533.
 """
 
 import time
