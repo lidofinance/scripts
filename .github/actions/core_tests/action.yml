@@ -13,8 +13,8 @@ runs:
     # Tests from core repo
     - uses: actions/checkout@v4
       with:
-        repository: lidofinance/core
-        ref: repovation
+        repository: lidofinance/lido-dao
+        ref: master
         path: core
 
     - name: Enable corepack
