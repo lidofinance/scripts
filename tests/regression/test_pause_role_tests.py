@@ -7,7 +7,6 @@ from brownie import reverts, web3
 
 from utils.config import contracts
 
-
 @pytest.fixture(scope="function")
 def stop_lido():
     if not contracts.lido.isStopped():
