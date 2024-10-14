@@ -7,7 +7,11 @@ from brownie import ZERO_ADDRESS, Wei, convert, chain, multicall
 from brownie.convert.datatypes import ReturnValue
 from tests.snapshot.utils import get_slot
 
-from utils.config import contracts
+from utils.config import (
+    contracts,
+    DEPOSIT_SECURITY_MODULE,
+    DEPOSIT_SECURITY_MODULE_V2
+)
 from utils.mainnet_fork import chain_snapshot
 from utils.test.snapshot_helpers import dict_zip
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
@@ -43,6 +47,18 @@ def deposit_security_module_eoa(accounts, EtherFunder):
 
 
 @pytest.fixture(scope="module")
+def old_deposit_security_module_eoa(accounts, EtherFunder):
+    EtherFunder.deploy(DEPOSIT_SECURITY_MODULE_V2, {"from": accounts[0], "amount": "10 ether"})
+    return accounts.at(DEPOSIT_SECURITY_MODULE_V2, force=True)
+
+
+@pytest.fixture(scope="module")
+def new_deposit_security_module_eoa(accounts, EtherFunder):
+    EtherFunder.deploy(DEPOSIT_SECURITY_MODULE, {"from": accounts[0], "amount": "10 ether"})
+    return accounts.at(DEPOSIT_SECURITY_MODULE, force=True)
+
+
+@pytest.fixture(scope="module")
 def voting_eoa(accounts):
     return accounts.at(contracts.voting.address, force=True)
 
@@ -50,7 +66,8 @@ def voting_eoa(accounts):
 def test_node_operator_basic_flow(
     accounts,
     helpers,
-    deposit_security_module_eoa,
+    old_deposit_security_module_eoa,
+    new_deposit_security_module_eoa,
     voting_eoa,
     agent_eoa,
     vote_ids_from_env,
@@ -70,38 +87,42 @@ def test_node_operator_basic_flow(
         "signature_batch": random_hexstr(10 * SIGNATURE_LENGTH),
     }
 
-    actions = {
-        "add_node_operator": lambda: contracts.node_operators_registry.addNodeOperator(
-            "new_node_operator", new_node_operator["reward_address"], {"from": voting_eoa}
-        ),
-        "add_signing_keys_operator_bh": lambda: contracts.node_operators_registry.addSigningKeysOperatorBH(
-            new_node_operator["id"],
-            new_node_operator["validators_count"],
-            new_node_operator["public_keys_batch"],
-            new_node_operator["signature_batch"],
-            {"from": new_node_operator["reward_address"]},
-        ),
-        "set_staking_limit": lambda: contracts.node_operators_registry.setNodeOperatorStakingLimit(
-            new_node_operator["id"], new_node_operator["staking_limit"], {"from": voting_eoa}
-        ),
-        "submit": lambda: contracts.lido.submit(ZERO_ADDRESS, {"from": staker, "amount": submit_amount}),
-        "deposit": lambda: contracts.lido.deposit(deposits_count, 1, "0x", {"from": deposit_security_module_eoa}),
-        "remove_signing_keys": lambda: contracts.node_operators_registry.removeSigningKeys(
-            new_node_operator["id"],
-            new_node_operator["staking_limit"],
-            1,
-            {"from": voting_eoa},
-        ),
-        "deactivate_node_operator": lambda: contracts.node_operators_registry.deactivateNodeOperator(
-            new_node_operator["id"], {"from": voting_eoa}
-        ),
-        "withdrawal_credentials_change": lambda: contracts.staking_router.setWithdrawalCredentials(
-            "0xdeadbeef", {"from": voting_eoa}
-        ),
-        "activate_node_operator": lambda: contracts.node_operators_registry.activateNodeOperator(
-            new_node_operator["id"], {"from": voting_eoa}
-        ),
-    }
+    def create_actions(dsm_eoa):
+        actions = {
+            "add_node_operator": lambda: contracts.node_operators_registry.addNodeOperator(
+                "new_node_operator", new_node_operator["reward_address"], {"from": voting_eoa}
+            ),
+            "add_signing_keys_operator_bh": lambda: contracts.node_operators_registry.addSigningKeysOperatorBH(
+                new_node_operator["id"],
+                new_node_operator["validators_count"],
+                new_node_operator["public_keys_batch"],
+                new_node_operator["signature_batch"],
+                {"from": new_node_operator["reward_address"]},
+            ),
+            "set_staking_limit": lambda: contracts.node_operators_registry.setNodeOperatorStakingLimit(
+                new_node_operator["id"], new_node_operator["staking_limit"], {"from": voting_eoa}
+            ),
+            "submit": lambda: contracts.lido.submit(ZERO_ADDRESS, {"from": staker, "amount": submit_amount}),
+            "deposit": lambda: contracts.lido.deposit(deposits_count, 1, "0x", {"from": dsm_eoa}),
+            "remove_signing_keys": lambda: contracts.node_operators_registry.removeSigningKeys(
+                new_node_operator["id"],
+                new_node_operator["staking_limit"],
+                1,
+                {"from": voting_eoa},
+            ),
+            "deactivate_node_operator": lambda: contracts.node_operators_registry.deactivateNodeOperator(
+                new_node_operator["id"], {"from": voting_eoa}
+            ),
+            "withdrawal_credentials_change": lambda: contracts.staking_router.setWithdrawalCredentials(
+                "0xdeadbeef", {"from": voting_eoa}
+            ),
+            "activate_node_operator": lambda: contracts.node_operators_registry.activateNodeOperator(
+                new_node_operator["id"], {"from": voting_eoa}
+            ),
+        }
+
+        return actions
+
     snapshot_before_update = {}
     snapshot_after_update = {}
 
@@ -110,7 +131,7 @@ def test_node_operator_basic_flow(
     make_snapshot(contracts.node_operators_registry)
 
     with chain_snapshot():
-        snapshot_before_update = run_scenario(actions=actions, snapshooter=make_snapshot)
+        snapshot_before_update = run_scenario(actions=create_actions(old_deposit_security_module_eoa), snapshooter=make_snapshot)
 
     with chain_snapshot():
 
@@ -118,7 +139,7 @@ def test_node_operator_basic_flow(
             helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
         else:
             start_and_execute_votes(contracts.voting, helpers)
-        snapshot_after_update = run_scenario(actions=actions, snapshooter=make_snapshot)
+        snapshot_after_update = run_scenario(actions=create_actions(new_deposit_security_module_eoa), snapshooter=make_snapshot)
 
     assert snapshot_before_update.keys() == snapshot_after_update.keys()
 
