@@ -62,7 +62,7 @@ from utils.test.event_validators.easy_track import (
 from utils.easy_track import create_permissions, create_permissions_overloaded
 
 # Impl addresses before vote
-OLD_LOCATOR_IMPL_ADDRESS = "0x1D920cc5bACf7eE506a271a5259f2417CaDeCE1d"
+OLD_LOCATOR_IMPL_ADDRESS = "0x39aFE23cE59e8Ef196b81F0DCb165E9aD38b9463"
 OLD_SR_IMPL_ADDRESS = "0xD8784e748f59Ba711fB5643191Ec3fAdD50Fb6df"
 OLD_NOR_IMPL = "0x8538930c385C0438A357d2c25CB3eAD95Ab6D8ed"
 OLD_SDVT_IMPL = "0x8538930c385C0438A357d2c25CB3eAD95Ab6D8ed"
