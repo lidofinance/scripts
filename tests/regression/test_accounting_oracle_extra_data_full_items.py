@@ -43,7 +43,7 @@ def sdvt(interface):
 
 
 @pytest.fixture(scope="module")
-def prepare_modules(nor, sdvt, voting_eoa, agent_eoa, evm_script_executor_eoa, autoexecute_vote_ms):
+def prepare_modules(nor, sdvt, voting_eoa, agent_eoa, evm_script_executor_eoa):
     # Fill NOR with new operators and keys
     (nor_count_before, added_nor_operators_count) = fill_nor_with_old_and_new_operators(
         nor,
@@ -216,7 +216,7 @@ def test_extra_data_full_items(
         assert contracts.csm.getNodeOperatorSummary(i)["stuckValidatorsCount"] == csm_stuck[(3, i)]
 
 
-def test_extra_data_most_expensive_report(autoexecute_vote_ms, extra_data_service):
+def test_extra_data_most_expensive_report(extra_data_service):
     """
     Make sure the worst report fits into the block gas limit.
     It needs to prepare a lot of node operators in a very special state, so it takes a lot of time to run.
