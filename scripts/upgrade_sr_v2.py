@@ -52,6 +52,22 @@ from utils.config import (
     ACCOUNTING_ORACLE_IMPL,
     NODE_OPERATORS_REGISTRY_IMPL,
     CS_ACCOUNTING_ADDRESS,
+    EASYTRACK_SIMPLE_DVT_UPDATE_TARGET_VALIDATOR_LIMITS_FACTORY,
+    CURATED_STAKING_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD,
+    SIMPLE_DVT_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD,
+    CS_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD,
+    CURATED_STAKING_MODULE_MAX_DEPOSITS_PER_BLOCK,
+    SIMPLE_DVT_MODULE_MAX_DEPOSITS_PER_BLOCK,
+    CS_MODULE_MAX_DEPOSITS_PER_BLOCK,
+    CURATED_STAKING_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE,
+    SIMPLE_DVT_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE,
+    CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
+    AO_CONSENSUS_VERSION,
+    VEBO_CONSENSUS_VERSION,
+    CS_MODULE_NAME,
+    CS_MODULE_TARGET_SHARE_BP,
+    CS_MODULE_MODULE_FEE_BP,
+    CS_MODULE_TREASURY_FEE_BP,
 )
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.repo import (
@@ -75,49 +91,31 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 # SR
 
 ## Easy track
-OLD_TARGET_LIMIT__FACTORY = "0x41CF3DbDc939c5115823Fba1432c4EC5E7bD226C"
-NEW_TARGET_LIMIT_FACTORY = "0x161a4552A625844c822954C5AcBac928ee0f399B"
+OLD_TARGET_LIMIT_FACTORY = "0x41CF3DbDc939c5115823Fba1432c4EC5E7bD226C"
 
 ## Curated module
-nor_uri = "0x697066733a516d54346a64693146684d454b5576575351316877786e33365748394b6a656743755a7441684a6b6368526b7a70"
-CURATED_PRIORITY_EXIT_SHARE_THRESHOLDS = 10_000
-CURATED_MAX_DEPOSITS_PER_BLOCK = 150
-CURATED_MIN_DEPOSIT_BLOCK_DISTANCES = 25
 NOR_VERSION_REPO = ["5", "0", "0"]
 
-### RewardDistributionState
-DISTRIBUTED = 2
-
 ## SDVT module
-sdvt_uri = "0x697066733a516d615353756a484347636e4675657441504777565735426567614d42766e355343736769334c5366767261536f"
-SDVT_PRIORITY_EXIT_SHARE_THRESHOLDS = 444
-SDVT_MAX_DEPOSITS_PER_BLOCK = 150
-SDVT_MIN_DEPOSIT_BLOCK_DISTANCES = 25
 SDVT_VERSION_REPO = ["2", "0", "0"]
 
 ## SR
-PRIORITY_EXIT_SHARE_THRESHOLDS_BP = [CURATED_PRIORITY_EXIT_SHARE_THRESHOLDS, SDVT_PRIORITY_EXIT_SHARE_THRESHOLDS]
-MAX_DEPOSITS_PER_BLOCK = [CURATED_MAX_DEPOSITS_PER_BLOCK, SDVT_MAX_DEPOSITS_PER_BLOCK]
-MIN_DEPOSIT_BLOCK_DISTANCES = [CURATED_MIN_DEPOSIT_BLOCK_DISTANCES, SDVT_MIN_DEPOSIT_BLOCK_DISTANCES]
-
-## Accounting oracle
-AO_CONSENSUS_VERSION = 2
-## Vebo
-VEBO_CONSENSUS_VERSION = 2
+PRIORITY_EXIT_SHARE_THRESHOLDS_BP = [
+    CURATED_STAKING_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD,
+    SIMPLE_DVT_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD,
+]
+MAX_DEPOSITS_PER_BLOCK = [CURATED_STAKING_MODULE_MAX_DEPOSITS_PER_BLOCK, SIMPLE_DVT_MODULE_MAX_DEPOSITS_PER_BLOCK]
+MIN_DEPOSIT_BLOCK_DISTANCES = [
+    CURATED_STAKING_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE,
+    SIMPLE_DVT_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE,
+]
 
 # CSM
 ## Easy track
 EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY = "0xF6B6E7997338C48Ea3a8BCfa4BB64a315fDa76f4"
 
 ## Parameters
-CS_MODULE_NAME = "Community Staking"
-CS_STAKE_SHARE_LIMIT = 100
-CS_PRIORITY_EXIT_SHARE_THRESHOLD = 125
-CS_STAKING_MODULE_FEE = 600
-CS_TREASURY_FEE = 400
-CS_MAX_DEPOSITS_PER_BLOCK = 30
-CS_MIN_DEPOSIT_BLOCK_DISTANCE = 25
-CS_ORACLE_INITIAL_EPOCH = 326715  # TODO: need to check
+CS_ORACLE_INITIAL_EPOCH = 326715
 
 description = """
 Proposal to support SR 2.0 and CSM Module
@@ -328,13 +326,13 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         (
             "18. Remove old UpdateTargetValidatorLimits for SimpleDVT factory from EasyTrack",
             remove_evmscript_factory(
-                factory=OLD_TARGET_LIMIT__FACTORY,
+                factory=OLD_TARGET_LIMIT_FACTORY,
             ),
         ),
         (
             "19. Add new UpdateTargetValidatorLimits for SimpleDVT factory to EasyTrack",
             add_evmscript_factory(
-                factory=NEW_TARGET_LIMIT_FACTORY,
+                factory=EASYTRACK_SIMPLE_DVT_UPDATE_TARGET_VALIDATOR_LIMITS_FACTORY,
                 permissions=(
                     create_permissions_for_overloaded_method(
                         contracts.simple_dvt, "updateTargetValidatorsLimits", ("uint", "uint", "uint")
@@ -353,12 +351,12 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                         contracts.staking_router.addStakingModule.encode_input(
                             CS_MODULE_NAME,
                             contracts.csm.address,
-                            CS_STAKE_SHARE_LIMIT,
-                            CS_PRIORITY_EXIT_SHARE_THRESHOLD,
-                            CS_STAKING_MODULE_FEE,
-                            CS_TREASURY_FEE,
-                            CS_MAX_DEPOSITS_PER_BLOCK,
-                            CS_MIN_DEPOSIT_BLOCK_DISTANCE,
+                            CS_MODULE_TARGET_SHARE_BP,
+                            CS_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD,
+                            CS_MODULE_MODULE_FEE_BP,
+                            CS_MODULE_TREASURY_FEE_BP,
+                            CS_MODULE_MAX_DEPOSITS_PER_BLOCK,
+                            CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
                         ),
                     ),
                 ]
