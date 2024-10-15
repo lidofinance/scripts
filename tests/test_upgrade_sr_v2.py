@@ -58,17 +58,17 @@ CS_ACCOUNTING_ADDRESS = "0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da"
 CS_ORACLE_HASH_CONSENSUS_ADDRESS = "0x71093efF8D8599b5fA340D665Ad60fA7C80688e4"
 
 # Staking Router parameters
-nor_uri = "0x697066733a516d54346a64693146684d454b5576575351316877786e33365748394b6a656743755a7441684a6b6368526b7a70"
+NOR_URI = "0x697066733a516d54346a64693146684d454b5576575351316877786e33365748394b6a656743755a7441684a6b6368526b7a70"
 CURATED_PRIORITY_EXIT_SHARE_THRESHOLDS = 10_000
 CURATED_MAX_DEPOSITS_PER_BLOCK = 150
 CURATED_MIN_DEPOSIT_BLOCK_DISTANCES = 25
 
-sdvt_uri = "0x697066733a516d615353756a484347636e4675657441504777565735426567614d42766e355343736769334c5366767261536f"
+SDVT_URI = "0x697066733a516d615353756a484347636e4675657441504777565735426567614d42766e355343736769334c5366767261536f"
 SDVT_PRIORITY_EXIT_SHARE_THRESHOLDS = 444
 SDVT_MAX_DEPOSITS_PER_BLOCK = 150
 SDVT_MIN_DEPOSIT_BLOCK_DISTANCES = 25
 
-# aragor id
+# Aragon app ids
 NODE_OPERATORS_REGISTRY_ARAGON_APP_ID = "0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d"
 SIMPLE_DVT_ARAGON_APP_ID = "0xe1635b63b5f7b5e545f2a637558a4029dea7905361a2f0fc28c66e9136cf86a4"
 
@@ -105,7 +105,7 @@ EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY = "0xF6B6E7997338C48Ea3
 # Roles
 ## SR
 STAKING_MODULE_UNVETTING_ROLE = "0x240525496a9dc32284b17ce03b43e539e4bd81414634ee54395030d793463b57"
-PAUSE_ROLE = "0x00b1e70095ba5bacc3202c3db9faf1f7873186f0ed7b6c84e80c0018dcc6e38e"
+STAKING_MODULE_PAUSE_ROLE = "0x00b1e70095ba5bacc3202c3db9faf1f7873186f0ed7b6c84e80c0018dcc6e38e"
 STAKING_MODULE_RESUME_ROLE = "0x9a2f67efb89489040f2c48c3b2c38f719fba1276678d2ced3bd9049fb5edc6b2"
 MANAGE_CONSENSUS_VERSION_ROLE = "0xc31b1e4b732c5173dc51d519dfa432bad95550ecc4b0f9a61c2a558a2a8e4341"
 
@@ -224,7 +224,6 @@ def test_vote(
     csm = get_csm()
     csm_hash_consensus = get_csm_hash_consensus()
 
-    # TODO: staking router change
     staking_router = get_staking_router()
     assert staking_router.getStakingModulesCount() == 2
 
@@ -241,12 +240,12 @@ def test_vote(
     nor_app_repo = interface.Repo(NODE_OPERATORS_REGISTRY_REPO)
     nor_old_app = nor_app_repo.getLatest()
     assert nor_proxy.implementation() == OLD_NOR_IMPL
-    assert_repo_before_vote(nor_old_app, 4, OLD_NOR_IMPL, nor_uri)
+    assert_repo_before_vote(nor_old_app, 4, OLD_NOR_IMPL, NOR_URI)
     # SDVT
     sdvt_app_repo = interface.Repo(SIMPLE_DVT_REPO)
     sdvt_old_app = sdvt_app_repo.getLatest()
     assert sdvt_proxy.implementation() == OLD_SDVT_IMPL
-    assert_repo_before_vote(sdvt_old_app, 1, OLD_SDVT_IMPL, sdvt_uri)
+    assert_repo_before_vote(sdvt_old_app, 1, OLD_SDVT_IMPL, SDVT_URI)
     # AO
     check_ossifiable_proxy_impl(ao_proxy, OLD_ACCOUNTING_ORACLE_IMPL)
     # no permission to manage consensus version on agent
@@ -335,13 +334,13 @@ def test_vote(
     )
 
     nor_new_app = nor_app_repo.getLatest()
-    assert_repo_update(nor_new_app, nor_old_app, NEW_NODE_OPERATORS_REGISTRY_IMPL, nor_uri)
+    assert_repo_update(nor_new_app, nor_old_app, NEW_NODE_OPERATORS_REGISTRY_IMPL, NOR_URI)
     validate_repo_upgrade_event(events[6], RepoUpgrade(6, nor_new_app[0]))
     validate_app_update_event(events[7], NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NEW_NODE_OPERATORS_REGISTRY_IMPL)
     validate_nor_update(events[8], NOR_VERSION)
 
     sdvt_new_app = sdvt_app_repo.getLatest()
-    assert_repo_update(sdvt_new_app, sdvt_old_app, NEW_SIMPLE_DVT_IMPL, sdvt_uri)
+    assert_repo_update(sdvt_new_app, sdvt_old_app, NEW_SIMPLE_DVT_IMPL, SDVT_URI)
     validate_repo_upgrade_event(events[9], RepoUpgrade(2, sdvt_new_app[0]))
     validate_app_update_event(events[10], SIMPLE_DVT_ARAGON_APP_ID, NEW_SIMPLE_DVT_IMPL)
     validate_nor_update(events[11], SDVT_VERSION)
@@ -446,10 +445,10 @@ def check_dsm_roles_before_vote():
     staking_router = get_staking_router()
     deposit_security_module_v2 = get_deposit_security_module_v2()
     deposit_security_module_v3 = get_deposit_security_module_v3()
-    new_dsm_doesnt_have_unvet_role = staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, deposit_security_module_v3)
-    assert not new_dsm_doesnt_have_unvet_role
+    new_dsm_has_unvet_role = staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, deposit_security_module_v3)
+    assert not new_dsm_has_unvet_role
 
-    old_dsm_has_pause_role = staking_router.hasRole(PAUSE_ROLE, deposit_security_module_v2)
+    old_dsm_has_pause_role = staking_router.hasRole(STAKING_MODULE_PAUSE_ROLE, deposit_security_module_v2)
 
     assert old_dsm_has_pause_role
 
@@ -465,11 +464,11 @@ def check_dsm_roles_after_vote():
     new_dsm_has_unvet_role = staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, deposit_security_module_v3)
     assert new_dsm_has_unvet_role
 
-    old_dsm_doesnt_have_pause_role = staking_router.hasRole(PAUSE_ROLE, deposit_security_module_v2)
-    assert not old_dsm_doesnt_have_pause_role
+    old_dsm_has_pause_role = staking_router.hasRole(STAKING_MODULE_PAUSE_ROLE, deposit_security_module_v2)
+    assert not old_dsm_has_pause_role
 
-    old_dsm_doesnt_have_resume_role = staking_router.hasRole(STAKING_MODULE_RESUME_ROLE, deposit_security_module_v2)
-    assert not old_dsm_doesnt_have_resume_role
+    old_dsm_has_resume_role = staking_router.hasRole(STAKING_MODULE_RESUME_ROLE, deposit_security_module_v2)
+    assert not old_dsm_has_resume_role
 
 
 def check_manage_consensus_role():
@@ -529,7 +528,7 @@ def validate_upgrade_events(events: EventDict, implementation: str):
 def validate_dsm_roles_events(events: list[EventDict]):
     validate_revoke_role_event(
         events[1],
-        PAUSE_ROLE,
+        STAKING_MODULE_PAUSE_ROLE,
         DEPOSIT_SECURITY_MODULE_V2,
         AGENT,
     )

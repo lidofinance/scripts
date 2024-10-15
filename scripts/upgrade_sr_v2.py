@@ -91,14 +91,12 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 # SR
 
 ## Easy track
-OLD_TARGET_LIMIT__FACTORY = "0x41CF3DbDc939c5115823Fba1432c4EC5E7bD226C"
+OLD_TARGET_LIMIT_FACTORY = "0x41CF3DbDc939c5115823Fba1432c4EC5E7bD226C"
 
 ## Curated module
-nor_uri = "0x697066733a516d54346a64693146684d454b5576575351316877786e33365748394b6a656743755a7441684a6b6368526b7a70"
 NOR_VERSION_REPO = ["5", "0", "0"]
 
 ## SDVT module
-sdvt_uri = "0x697066733a516d615353756a484347636e4675657441504777565735426567614d42766e355343736769334c5366767261536f"
 SDVT_VERSION_REPO = ["2", "0", "0"]
 
 ## SR
@@ -328,7 +326,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         (
             "18. Remove old UpdateTargetValidatorLimits for SimpleDVT factory from EasyTrack",
             remove_evmscript_factory(
-                factory=OLD_TARGET_LIMIT__FACTORY,
+                factory=OLD_TARGET_LIMIT_FACTORY,
             ),
         ),
         (
