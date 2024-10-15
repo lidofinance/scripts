@@ -21,7 +21,6 @@ contracts: ContractsLazyLoader = contracts
 
 CSM_MODULE_ID = 3
 
-pytestmark = pytest.mark.usefixtures("autoexecute_vote_ms")
 
 @pytest.fixture(scope="module")
 def csm():

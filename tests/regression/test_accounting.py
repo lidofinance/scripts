@@ -1,4 +1,4 @@
-from typing import TypedDict, TypeVar, Any
+from typing import TypeVar, Any
 import pytest
 from brownie import Contract, accounts, chain, reverts
 from brownie.network.account import Account
@@ -23,8 +23,6 @@ from typing import TypedDict
 
 LIMITER_PRECISION_BASE = 10**9
 MAX_BASIS_POINTS = 10_000
-
-pytestmark = pytest.mark.usefixtures("autoexecute_vote_ms")
 
 @pytest.fixture(scope="module")
 def accounting_oracle() -> Contract:

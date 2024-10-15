@@ -60,6 +60,9 @@ def skip_slots() -> Sequence[tuple[str, int]]:
             contracts.finance,
             0x07,
         ),
+        # new EasyTrack factory for CSM (EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY)
+        # evmScriptFactories array
+        (contracts.easy_track.address, 5),
     ]
 
 
@@ -81,7 +84,7 @@ def do_snapshot(skip_slots: Sequence[tuple[str, int]]) -> SnapshotFn:
             )
             res[f"{contract.address}_slot_{slot_in_hex}"] = slot_value
 
-            # if the slot stores relativelly small integer, try to read as an array
+            # if the slot stores relatively small integer, try to read as an array
             int_value = Web3.to_int(slot_value)
             if 0 < int_value < MAX_ARRAY_SIZE:
                 slot_value_as_list = get_slot(
