@@ -308,7 +308,7 @@ def wait_to_next_available_report_time(consensus_contract):
             raise
     time = chain.time()
     (_, EPOCHS_PER_FRAME, _) = consensus_contract.getFrameConfig()
-    frame_start_with_offset = GENESIS_TIME + (refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME + 1) * SECONDS_PER_SLOT + 1
+    frame_start_with_offset = GENESIS_TIME + (refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME + 1) * SECONDS_PER_SLOT
     chain.sleep(frame_start_with_offset - time)
     chain.mine(1)
     (nextRefSlot, _) = consensus_contract.getCurrentFrame()
