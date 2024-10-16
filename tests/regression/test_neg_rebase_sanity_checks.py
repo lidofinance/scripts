@@ -82,7 +82,6 @@ def test_blocked_huge_negative_rebase(oracle_report_sanity_checker):
 
     max_cl_balance = (INITIAL_SLASHING_AMOUNT_PWEI + INACTIVITY_PENALTIES_AMOUNT_PWEI) * ONE_PWEI * cl_validators
     error_cl_decrease = cl_balance // 10    # 10% of current balance will lead to error
-    print("max_cl_balance", max_cl_balance)
     with reverts(encode_error("IncorrectCLBalanceDecrease(uint256, uint256)", [error_cl_decrease, max_cl_balance])):
         oracle_report(cl_diff=-error_cl_decrease, exclude_vaults_balances=True, silent=True)
 
@@ -108,6 +107,9 @@ def exited_validators_count():
     ids = contracts.staking_router.getStakingModuleIds()
     exited = {}
     for id in ids:
-        exited[id] = contracts.staking_router.getStakingModule(id)["exitedValidatorsCount"]
+        exited_validators = contracts.staking_router.getStakingModule(id)["exitedValidatorsCount"]
+        # It's possible to report only non-zero values for exited validators
+        if exited_validators > 0:
+            exited[id] = exited_validators
 
     return exited
