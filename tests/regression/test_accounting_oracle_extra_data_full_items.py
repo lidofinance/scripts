@@ -330,7 +330,7 @@ def fill_csm_operators_with_keys(target_operators_count, keys_count):
     for no_id in range(0, csm_node_operators_before):
         depositable_keys = contracts.csm.getNodeOperator(no_id)["depositableValidatorsCount"]
         if depositable_keys < keys_count:
-            csm_upload_keys(contracts.csm, contracts.cs_accounting, no_id, depositable_keys - keys_count)
+            csm_upload_keys(contracts.csm, contracts.cs_accounting, no_id, keys_count - depositable_keys)
             assert contracts.csm.getNodeOperator(no_id)["depositableValidatorsCount"] == keys_count
     while csm_node_operators_before + added_operators_count < target_operators_count:
         node_operator = f"0xbb{str(added_operators_count).zfill(38)}"
