@@ -1,7 +1,8 @@
 import pytest
 
-from brownie import reverts, web3
+from brownie import reverts, web3, ZERO_ADDRESS
 
+from utils.balance import set_balance_in_wei
 from utils.config import (
     contracts,
     ContractsLazyLoader,
@@ -166,6 +167,7 @@ def test_csm_report_exited(csm, node_operator, extra_data_service):
     no = csm.getNodeOperator(node_operator)
     assert no["totalExitedKeys"] == exited_keys
 
+
 @pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_report_stuck(csm, node_operator, extra_data_service):
     stuck_keys = 5
@@ -260,6 +262,51 @@ def test_csm_decrease_vetted_keys(csm, node_operator, stranger):
 
     no = csm.getNodeOperator(node_operator)
     assert no["totalVettedKeys"] == 1
+
+
+@pytest.mark.usefixtures("deposits_to_csm")
+def test_csm_penalize_node_operator(csm, accounting, node_operator, helpers):
+    bond_before = accounting.getBond(node_operator)
+    tx = csm.submitInitialSlashing(node_operator, 0, {"from": contracts.cs_verifier})
+    assert "StETHBurnRequested" in tx.events
+    assert accounting.getBond(node_operator) < bond_before
+
+
+@pytest.mark.usefixtures("deposits_to_csm")
+def test_csm_deposit_eth(csm, accounting, node_operator):
+    manager_address = csm.getNodeOperator(node_operator)["managerAddress"]
+    set_balance_in_wei(manager_address, ETH(2))
+
+    bond_before = accounting.getBond(node_operator)
+    csm.depositETH(node_operator, {"from": manager_address, "value": ETH(1)})
+    assert accounting.getBond(node_operator) > bond_before
+
+
+@pytest.mark.usefixtures("deposits_to_csm")
+def test_csm_deposit_steth(csm, accounting, node_operator):
+    manager_address = csm.getNodeOperator(node_operator)["managerAddress"]
+    set_balance_in_wei(manager_address, ETH(2))
+
+    bond_before = accounting.getBond(node_operator)
+    contracts.lido.submit(ZERO_ADDRESS, {"from": manager_address, "value": ETH(1.5)})
+    contracts.lido.approve(accounting, ETH(2), {"from": manager_address})
+
+    csm.depositStETH(node_operator, ETH(1), (0, 0, 0, 0, 0), {"from": manager_address})
+    assert accounting.getBond(node_operator) > bond_before
+
+
+@pytest.mark.usefixtures("deposits_to_csm")
+def test_csm_deposit_wsteth(csm, accounting, node_operator):
+    manager_address = csm.getNodeOperator(node_operator)["managerAddress"]
+    set_balance_in_wei(manager_address, ETH(2))
+    contracts.lido.submit(ZERO_ADDRESS, {"from": manager_address, "value": ETH(1.5)})
+    contracts.lido.approve(contracts.wsteth, ETH(1.5), {"from": manager_address})
+    contracts.wsteth.wrap(ETH(1.5), {"from": manager_address})
+    contracts.wsteth.approve(accounting, contracts.wsteth.balanceOf(manager_address), {"from": manager_address})
+
+    bond_before = accounting.getBond(node_operator)
+    csm.depositWstETH(node_operator, contracts.wsteth.balanceOf(manager_address), (0, 0, 0, 0, 0), {"from": manager_address})
+    assert accounting.getBond(node_operator) > bond_before
 
 
 @pytest.mark.usefixtures("deposits_to_csm")

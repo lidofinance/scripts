@@ -79,8 +79,8 @@ class TestCSM:
         assert csm.LIDO_LOCATOR() == LIDO_LOCATOR
         assert csm.accounting() == CS_ACCOUNTING_ADDRESS
 
-        assert not csm.isPaused();
-        assert not csm.publicRelease();
+        assert not csm.isPaused()
+        assert not csm.publicRelease()
 
 
 class TestAccounting:
