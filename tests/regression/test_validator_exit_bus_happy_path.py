@@ -75,15 +75,11 @@ def test_send_zero_validators_to_exit(helpers):
 
 
 def test_send_validator_to_exit(helpers, web3):
+    unreachable_cl_validator_index = 100_000_000
     no_global_index = (module_id, no_id) = (1, 33)
-    validator_id = 1
-    validator_key = contracts.node_operators_registry.getSigningKey(no_id, validator_id)[0]
+    validator_key = contracts.node_operators_registry.getSigningKey(no_id, 1)[0]
 
-    # set validator index to the next one to avoid NodeOpValidatorIndexMustIncrease error
-    last_requested_validator_index = contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(
-        module_id, [no_id]
-    )[0]
-    validator = LidoValidator(index=last_requested_validator_index + 1, pubkey=validator_key)
+    validator = LidoValidator(index=unreachable_cl_validator_index, pubkey=validator_key)
 
     ref_slot = _wait_for_next_ref_slot()
     report, report_hash = prepare_exit_bus_report([(no_global_index, validator)], ref_slot)
@@ -112,7 +108,7 @@ def test_send_validator_to_exit(helpers, web3):
         {
             "stakingModuleId": module_id,
             "nodeOperatorId": no_id,
-            "validatorIndex": last_requested_validator_index + 1,
+            "validatorIndex": unreachable_cl_validator_index,
             "validatorPubkey": validator_key,
             "timestamp": web3.eth.get_block(web3.eth.block_number).timestamp,
         },
@@ -120,7 +116,7 @@ def test_send_validator_to_exit(helpers, web3):
 
     assert total_requests_after == total_requests_before + 1
 
-    assert last_requested_validator_index_after == (last_requested_validator_index + 1,)
+    assert last_requested_validator_index_after == (unreachable_cl_validator_index,)
     assert last_processing_ref_slot_after != last_processing_ref_slot_before
     assert last_processing_ref_slot_after == ref_slot
 
@@ -136,6 +132,7 @@ def test_send_multiple_validators_to_exit(helpers, web3, stranger):
     """
     The same as test above but with multiple validators on different node operators and modules
     """
+    unreachable_cl_validator_index = 100_000_000
     # Fill SDVT
     simple_dvt_add_node_operators(
         contracts.simple_dvt, stranger, [("SDVT Operator", f"0xab{'1' * 38}", f"0xcd{'1' * 38}")]
@@ -149,15 +146,9 @@ def test_send_multiple_validators_to_exit(helpers, web3, stranger):
     first_validator_id = 2
     second_validator_id = 3
     third_validator_id = 0
-    first_validator_index = (
-        contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(first_module_id, [first_no_id])[0] + 1
-    )
-    second_validator_index = (
-        contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(second_module_id, [second_no_id])[0] + 1
-    )
-    third_validator_index = (
-        contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(third_module_id, [third_no_id])[0] + 1
-    )
+    first_validator_index = unreachable_cl_validator_index
+    second_validator_index = unreachable_cl_validator_index + 1
+    third_validator_index = unreachable_cl_validator_index + 2
 
     first_validator_key = contracts.node_operators_registry.getSigningKey(first_no_id, first_validator_id)[0]
     second_validator_key = contracts.node_operators_registry.getSigningKey(second_no_id, second_validator_id)[0]
