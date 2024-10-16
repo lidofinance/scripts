@@ -35,8 +35,7 @@ class SandwichFn(Protocol):
     def __call__(
         snapshot_fn: SnapshotFn = ...,
         snapshot_block: int = ...,
-    ) -> tuple[Stack, Stack]:
-        ...
+    ) -> tuple[Stack, Stack]: ...
 
 
 def test_first_slots(sandwich_upgrade: SandwichFn):

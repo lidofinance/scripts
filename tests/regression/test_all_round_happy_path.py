@@ -6,6 +6,7 @@ from utils.test.oracle_report_helpers import oracle_report
 from utils.test.helpers import ETH, almostEqEth
 from utils.config import contracts
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
+from utils.balance import set_balance
 from utils.test.tx_cost_helper import transaction_cost
 
 def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
@@ -32,6 +33,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     # ensure SimpleDVT has some keys to deposit
     fill_simple_dvt_ops_vetted_keys(stranger, 3, 5)
+    set_balance(stranger.address, 1000000)
 
     print(stranger, stranger.balance())
     steth_balance_before_submit = contracts.lido.balanceOf(stranger)

@@ -364,8 +364,9 @@ def far_block() -> int:
 
 @pytest.fixture(scope="module")
 def some_contract(accounts) -> Account:
+    some_contract_addr = "0xcA11bde05977b3631167028862bE2a173976CA11"
     # Multicall3 contract deployed almost on the every network on the same address
-    return accounts.at("0xcA11bde05977b3631167028862bE2a173976CA11", force=True)
+    return accounts.at(some_contract_addr, force=True)
 
 
 @pytest.fixture(scope="function")

@@ -22,7 +22,7 @@ def test_addresses(contract):
     assert contract.legacyOracle() == contracts.legacy_oracle
     assert contract.lido() == contracts.lido
     assert contract.oracleReportSanityChecker() == contracts.oracle_report_sanity_checker
-    assert contract.postTokenRebaseReceiver() == contracts.legacy_oracle
+    assert contract.postTokenRebaseReceiver() == contracts.token_rate_notifier
     assert contract.burner() == contracts.burner
     assert contract.stakingRouter() == contracts.staking_router
     assert contract.treasury() == contracts.agent
@@ -47,5 +47,5 @@ def test_addresses(contract):
         contracts.burner,
         contracts.withdrawal_queue,
         contracts.withdrawal_vault,
-        contracts.legacy_oracle,
+        contracts.token_rate_notifier,
     )

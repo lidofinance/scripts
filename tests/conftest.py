@@ -4,11 +4,10 @@ from typing import List
 import brownie.exceptions
 import pytest
 
-from brownie import chain, interface, web3
+from brownie import chain, interface, web3, network
 from brownie.network import state
 from brownie.network.contract import Contract
 
-from utils.balance import set_balance
 from utils.evm_script import EMPTY_CALLSCRIPT
 
 from utils.config import contracts, network_name, MAINNET_VOTE_DURATION
@@ -16,7 +15,7 @@ from utils.config import contracts, network_name, MAINNET_VOTE_DURATION
 from utils.config import *
 from utils.txs.deploy import deploy_from_prepared_tx
 from utils.test.helpers import ETH
-
+from utils.balance import set_balance
 from functools import wraps
 
 ENV_OMNIBUS_BYPASS_EVENTS_DECODING = "OMNIBUS_BYPASS_EVENTS_DECODING"
@@ -28,6 +27,9 @@ ENV_OMNIBUS_VOTE_IDS = "OMNIBUS_VOTE_IDS"
 def shared_setup(fn_isolation):
     pass
 
+@pytest.fixture(scope="session", autouse=True)
+def network_gas_price():
+    network.gas_price("2 gwei")
 
 @pytest.fixture(scope="function")
 def deployer():
@@ -64,7 +66,6 @@ def delegate2():
 @pytest.fixture(scope="module")
 def trp_recipient(accounts):
     return set_balance("0x228cCaFeA1fa21B74257Af975A9D84d87188c61B", 100000)
-
 
 @pytest.fixture(scope="module")
 def eth_whale(accounts):
@@ -103,7 +104,7 @@ class Helpers:
             raise AssertionError(f"Event {evt_name} was fired")
 
     @staticmethod
-    def execute_vote(accounts, vote_id, dao_voting, topup="0.1 ether", skip_time=MAINNET_VOTE_DURATION):
+    def execute_vote(accounts, vote_id, dao_voting, topup="1 ether", skip_time=MAINNET_VOTE_DURATION):
         (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup, skip_time)
         return tx
 
@@ -251,11 +252,12 @@ def parse_events_from_local_abi():
             # Added contract will resolve from address during state._find_contract without a request to Etherscan
             state._add_contract(contract)
 
-
 @pytest.fixture(scope="session", autouse=True)
 def add_balance_check_middleware():
     web3.middleware_onion.add(balance_check_middleware, name='balance_check')
 
+# TODO: Such implicit manipulation of the balances may lead to hard-debugging errors in the future.
+# Better to return back balance after request is done.
 def ensure_balance(address):
     if web3.eth.get_balance(address) < ETH(1):
         set_balance(address, 1000000)

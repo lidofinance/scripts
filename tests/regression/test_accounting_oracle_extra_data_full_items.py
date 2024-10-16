@@ -341,13 +341,13 @@ def fill_csm_operators_with_keys(target_operators_count, keys_count):
 
 
 def fill_nor_with_old_and_new_operators(
-    nor, voting_eoa, evm_script_executor_eoa, new_keys_per_operator, max_node_operators_per_item,
+    nor, voting_eoa, evm_script_executor_eoa, new_keys_per_operator, nor_stuck_items, nor_exited_items, max_node_operators_per_item
 ) -> tuple[int, int]:
     contracts.acl.grantPermission(
         contracts.voting,
         nor.address,
         convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-        {"from": contracts.voting},
+        {"from": contracts.voting}
     )
 
     # Calculate new operators count

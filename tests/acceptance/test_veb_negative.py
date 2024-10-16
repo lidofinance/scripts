@@ -221,10 +221,12 @@ def test_handle_consensus_report_data_wrong_module_id(contract, ref_slot):
 
 
 def test_handle_consensus_report_data_second_exit(contract, ref_slot):
+    unreachable_cl_validator_index = 100_000_000
     no_global_index = (module_id, no_id) = (1, 33)
-    validator_id = 1
-    validator_key = contracts.node_operators_registry.getSigningKey(no_id, validator_id)[0]
-    validator = LidoValidator(validator_id, validator_key)
+    validator_key = contracts.node_operators_registry.getSigningKey(no_id, 1)[0]
+
+    # set validator index to the next one to avoid NodeOpValidatorIndexMustIncrease error
+    validator = LidoValidator(index=unreachable_cl_validator_index, pubkey=validator_key)
 
     contract_version = contract.getContractVersion()
     consensus_version = contract.getConsensusVersion()
@@ -247,10 +249,6 @@ def test_handle_consensus_report_data_second_exit(contract, ref_slot):
     )
 
     contract.submitReportData(report, contract_version, {"from": submitter})
-
-    last_requested_validator_index_before = contracts.validators_exit_bus_oracle.getLastRequestedValidatorIndices(
-        module_id, [no_id]
-    )
 
     wait_to_next_available_report_time(contracts.hash_consensus_for_validators_exit_bus_oracle)
     ref_slot, _ = contracts.hash_consensus_for_validators_exit_bus_oracle.getCurrentFrame()
@@ -278,8 +276,8 @@ def test_handle_consensus_report_data_second_exit(contract, ref_slot):
             (
                 module_id,
                 no_id,
-                last_requested_validator_index_before[0],
-                last_requested_validator_index_before[0],
+                unreachable_cl_validator_index,
+                unreachable_cl_validator_index,
             ),
         )
     ):
@@ -287,11 +285,14 @@ def test_handle_consensus_report_data_second_exit(contract, ref_slot):
 
 
 def test_handle_consensus_report_data_invalid_request_order(contract, ref_slot):
-    no_global_index = (_, no_id) = (1, 33)
-    validator_id = 1
-    validator_key = contracts.node_operators_registry.getSigningKey(no_id, validator_id)[0]
-    validator = LidoValidator(validator_id, validator_key)
-    validator_2 = LidoValidator(2, contracts.node_operators_registry.getSigningKey(no_id, validator_id + 1)[0])
+    unreachable_cl_validator_index = 100_000_000
+    no_global_index = (module_id, no_id) = (1, 33)  # Curated module
+    validator_key = contracts.node_operators_registry.getSigningKey(no_id, 1)[0]
+    validator_2_key = contracts.node_operators_registry.getSigningKey(no_id, 2)[0]
+
+    # set validator index to the next one to avoid NodeOpValidatorIndexMustIncrease error
+    validator = LidoValidator(index=unreachable_cl_validator_index, pubkey=validator_key)
+    validator_2 = LidoValidator(index=unreachable_cl_validator_index + 1, pubkey=validator_2_key)
 
     contract_version = contract.getContractVersion()
     consensus_version = contract.getConsensusVersion()

@@ -61,13 +61,11 @@ def get_priority_fee() -> str:
     else:
         return "2 gwei"
 
-
 def get_max_fee() -> str:
     if "OMNIBUS_MAX_FEE" in os.environ:
         return os.environ["OMNIBUS_MAX_FEE"]
     else:
         return "300 gwei"
-
 
 def local_deployer() -> LocalAccount:
     """
@@ -230,6 +228,10 @@ class ContractsLazyLoader:
         return interface.LegacyOracle(LEGACY_ORACLE)
 
     @property
+    def token_rate_notifier(self) -> interface.TokenRateNotifier:
+        return interface.LegacyOracle(L1_TOKEN_RATE_NOTIFIER)
+
+    @property
     def deposit_security_module_v1(self) -> interface.DepositSecurityModule:
         return interface.DepositSecurityModuleV1(DEPOSIT_SECURITY_MODULE_V1)
 
@@ -385,6 +387,9 @@ class ContractsLazyLoader:
     def trp_escrow_factory(self) -> interface.VestingEscrowFactory:
         return interface.VestingEscrowFactory(TRP_VESTING_ESCROW_FACTORY)
 
+    @property
+    def token_rate_notifier(self) -> interface.TokenRateNotifier:
+        return interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)
 
 def __getattr__(name: str) -> Any:
     if name == "contracts":
