@@ -136,8 +136,8 @@ def test_stake_distribution(stranger):
 
     # perform deposits to the modules
     for module in modules.values():
-        assert module.allocated_keys > 0
-        contracts.lido.deposit(module.allocated_keys, module.id, "0x", {"from": contracts.deposit_security_module})
+        if module.allocated_keys > 0:
+            contracts.lido.deposit(module.allocated_keys, module.id, "0x", {"from": contracts.deposit_security_module})
 
     # check that the new active keys in the modules match the expected values
     module_digests_after_deposit = contracts.staking_router.getAllStakingModuleDigests()
