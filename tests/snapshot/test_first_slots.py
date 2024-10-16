@@ -62,6 +62,8 @@ def skip_slots() -> Sequence[tuple[str, int]]:
         # new EasyTrack factory for CSM (EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY)
         # evmScriptFactories array
         (contracts.easy_track.address, 5),
+        # Set initial epoch for CSM hash consensus
+        (contracts.csm_hash_consensus.address, 0)
     ]
 
 
@@ -118,6 +120,13 @@ def do_snapshot(skip_slots: Sequence[tuple[str, int]]) -> SnapshotFn:
             contracts.kernel,
             contracts.easy_track,
             contracts.wsteth,
+            contracts.csm,
+            contracts.cs_early_adoption,
+            contracts.cs_accounting,
+            contracts.cs_fee_distributor,
+            contracts.cs_fee_oracle,
+            contracts.csm_hash_consensus,
+            contracts.cs_verifier,
         ):
             res |= _get_slots(contract, block)
 

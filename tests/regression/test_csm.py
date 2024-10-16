@@ -8,7 +8,7 @@ from utils.config import (
 )
 from utils.dsm import UnvetArgs, to_bytes, set_single_guardian
 from utils.evm_script import encode_error
-from utils.test.csm_helpers import csm_add_node_operator, get_ea_member, csm_upload_keys
+from utils.test.csm_helpers import csm_add_node_operator, get_ea_member, csm_upload_keys, get_ea_members
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.helpers import ETH
 from utils.test.oracle_report_helpers import (
@@ -93,6 +93,11 @@ def distribute_reward_tree(deposits_to_csm, fee_oracle, fee_distributor, node_op
 
     fee_oracle.submitReportData(report, oracle_version, {"from": submitter})
     return tree
+
+
+@pytest.mark.parametrize("address, proof", get_ea_members())
+def test_add_ea_node_operator(csm, accounting, address, proof):
+    csm_add_node_operator(csm, accounting, address, proof)
 
 
 @pytest.mark.usefixtures("pause_modules")
