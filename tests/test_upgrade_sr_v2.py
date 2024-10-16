@@ -255,6 +255,7 @@ def test_vote(
     assert vebo.getConsensusVersion() == VEBO_CONSENSUS_VERSION - 1
     assert not burner.hasRole(REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS)
     assert not csm.hasRole(RESUME_ROLE, AGENT)
+    assert csm.isPaused()
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -290,6 +291,7 @@ def test_vote(
 
     assert burner.hasRole(REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS)
     assert not csm.hasRole(RESUME_ROLE, AGENT)
+    assert not csm.isPaused()
 
     assert csm_hash_consensus.getFrameConfig()[0] == CS_ORACLE_INITIAL_EPOCH
 
