@@ -1,7 +1,7 @@
 import pytest
 from brownie import interface  # type: ignore
 
-from utils.config import contracts, LIDO_LOCATOR, LIDO_LOCATOR_IMPL_NEW
+from utils.config import contracts, LIDO_LOCATOR, LIDO_LOCATOR_IMPL
 
 
 @pytest.fixture(scope="module")
@@ -11,7 +11,7 @@ def contract() -> interface.LidoLocator:
 
 def test_proxy(contract):
     proxy = interface.OssifiableProxy(contract)
-    assert proxy.proxy__getImplementation() == LIDO_LOCATOR_IMPL_NEW
+    assert proxy.proxy__getImplementation() == LIDO_LOCATOR_IMPL
     assert proxy.proxy__getAdmin() == contracts.agent.address
 
 

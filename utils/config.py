@@ -8,6 +8,8 @@ from brownie import network, accounts
 from brownie.utils import color
 from brownie.network.account import Account, LocalAccount
 
+from brownie import Contract, web3
+
 
 MAINNET_VOTE_DURATION = 3 * 24 * 60 * 60
 
@@ -71,6 +73,11 @@ def local_deployer() -> LocalAccount:
     """
     deployer = accounts[4]
     agent = accounts.at(AGENT, force=True)
+
+    if web3.eth.get_balance(agent.address) < 10 ** 18:
+        from utils.balance import set_balance
+        set_balance(agent.address, 1)
+
     interface.MiniMeToken(LDO_TOKEN).transfer(deployer, 10**18, {"from": agent})
     return deployer
 
@@ -185,6 +192,38 @@ class ContractsLazyLoader:
         return interface.SimpleDVT(SIMPLE_DVT)
 
     @property
+    def csm(self) -> interface.CSModule:
+        return interface.CSModule(CSM_ADDRESS)
+
+    @property
+    def cs_early_adoption(self) -> interface.CSEarlyAdoption:
+        return interface.CSEarlyAdoption(CS_EARLY_ADOPTION_ADDRESS)
+
+    @property
+    def cs_accounting(self) -> interface.CSAccounting:
+        return interface.CSAccounting(CS_ACCOUNTING_ADDRESS)
+
+    @property
+    def cs_fee_distributor(self) -> interface.CSFeeDistributor:
+        return interface.CSFeeDistributor(CS_FEE_DISTRIBUTOR_ADDRESS)
+
+    @property
+    def cs_fee_oracle(self) -> interface.CSFeeOracle:
+        return interface.CSFeeOracle(CS_FEE_ORACLE_ADDRESS)
+
+    @property
+    def csm_hash_consensus(self) -> interface.CSHashConsensus:
+        return interface.CSHashConsensus(CS_ORACLE_HASH_CONSENSUS_ADDRESS)
+
+    @property
+    def cs_verifier(self) -> interface.CSVerifier:
+        return interface.CSVerifier(CS_VERIFIER_ADDRESS)
+
+    @property
+    def sandbox(self) -> interface.SimpleDVT:
+        return interface.Sandbox(SANDBOX)
+
+    @property
     def legacy_oracle(self) -> interface.LegacyOracle:
         return interface.LegacyOracle(LEGACY_ORACLE)
 
@@ -195,6 +234,10 @@ class ContractsLazyLoader:
     @property
     def deposit_security_module_v1(self) -> interface.DepositSecurityModule:
         return interface.DepositSecurityModuleV1(DEPOSIT_SECURITY_MODULE_V1)
+
+    @property
+    def deposit_security_module_v2(self) -> interface.DepositSecurityModule:
+        return interface.DepositSecurityModule(DEPOSIT_SECURITY_MODULE_V2)
 
     @property
     def deposit_security_module(self) -> interface.DepositSecurityModule:
@@ -263,6 +306,14 @@ class ContractsLazyLoader:
     @property
     def nor_app_repo(self) -> interface.Repo:
         return interface.Repo(NODE_OPERATORS_REGISTRY_REPO)
+
+    @property
+    def simple_dvt_app_repo(self) -> interface.Repo:
+        return interface.Repo(SIMPLE_DVT_REPO)
+
+    @property
+    def sandbox_repo(self) -> interface.Repo:
+        return interface.Repo(SANDBOX_REPO)
 
     @property
     def voting_app_repo(self) -> interface.Repo:

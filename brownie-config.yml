@@ -4,6 +4,10 @@ dependencies:
 
 networks:
   default: mainnet-fork
+  development:
+    priority_fee: auto
+  live:
+    priority_fee: auto
 
 autofetch_sources: true
 

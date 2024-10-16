@@ -4,28 +4,35 @@ from brownie import interface  # type: ignore
 from utils.config import (
     contracts,
     ORACLE_REPORT_SANITY_CHECKER,
-    CHURN_VALIDATORS_PER_DAY_LIMIT,
-    ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT,
+    EXITED_VALIDATORS_PER_DAY_LIMIT,
+    APPEARED_VALIDATORS_PER_DAY_LIMIT,
     ANNUAL_BALANCE_INCREASE_BP_LIMIT,
     SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT,
     MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT,
-    MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
-    MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT,
+    MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
+    MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
     REQUEST_TIMESTAMP_MARGIN,
     MAX_POSITIVE_TOKEN_REBASE,
+    INITIAL_SLASHING_AMOUNT_PWEI,
+    INACTIVITY_PENALTIES_AMOUNT_PWEI,
+    CL_BALANCE_ORACLES_ERROR_UPPER_BP_LIMIT
 )
+from utils.test.helpers import ZERO_ADDRESS
 
 # Source of truth: https://hackmd.io/pdix1r4yR46fXUqiHaNKyw?view
-report_limits = {
-    "churnValidatorsPerDayLimit": CHURN_VALIDATORS_PER_DAY_LIMIT,
-    "oneOffCLBalanceDecreaseBPLimit": ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT,
+expected_report_limits = {
+    "exitedValidatorsPerDayLimit": EXITED_VALIDATORS_PER_DAY_LIMIT,
+    "appearedValidatorsPerDayLimit": APPEARED_VALIDATORS_PER_DAY_LIMIT,
     "annualBalanceIncreaseBPLimit": ANNUAL_BALANCE_INCREASE_BP_LIMIT,
     "simulatedShareRateDeviationBPLimit": SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT,
     "maxValidatorExitRequestsPerReport": MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT,
-    "maxAccountingExtraDataListItemsCount": MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
-    "maxNodeOperatorsPerExtraDataItemCount": MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT,
+    "maxAccountingExtraDataListItemsCount": MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
+    "maxNodeOperatorsPerExtraDataItemCount": MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
     "requestTimestampMargin": REQUEST_TIMESTAMP_MARGIN,
     "maxPositiveTokenRebase": MAX_POSITIVE_TOKEN_REBASE,
+    "initialSlashingAmountPWei": INITIAL_SLASHING_AMOUNT_PWEI,
+    "inactivityPenaltiesAmountPWei": INACTIVITY_PENALTIES_AMOUNT_PWEI,
+    "clBalanceOraclesErrorUpperBPLimit": CL_BALANCE_ORACLES_ERROR_UPPER_BP_LIMIT,
 }
 
 
@@ -39,6 +46,10 @@ def test_links(contract):
 
 
 def test_limits(contract):
-    assert contract.getMaxPositiveTokenRebase() == report_limits["maxPositiveTokenRebase"]
+    assert contract.getMaxPositiveTokenRebase() == expected_report_limits["maxPositiveTokenRebase"]
+    limits = contract.getOracleReportLimits()
 
-    assert dict(zip(report_limits.keys(), contract.getOracleReportLimits())) == report_limits
+    assert dict(zip(expected_report_limits.keys(), limits)) == expected_report_limits
+
+def test_second_opinion_is_empty(contract):
+    assert contract.secondOpinionOracle() == ZERO_ADDRESS

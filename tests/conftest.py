@@ -39,8 +39,7 @@ def deployer():
 @pytest.fixture()
 def steth_holder(accounts):
     steth_holder = accounts.at("0x176F3DAb24a159341c0509bB36B833E7fdd0a131", force=True)
-    web3.provider.make_request("evm_setAccountBalance", [steth_holder.address, "0x152D02C7E14AF6800000"])
-    web3.provider.make_request("hardhat_setBalance", [steth_holder.address, "0x152D02C7E14AF6800000"])
+    set_balance(steth_holder.address, 100000)
     steth_holder.transfer(contracts.lido, ETH(10000))
     return steth_holder
 
@@ -50,40 +49,23 @@ def ldo_holder(accounts):
     return accounts.at(LDO_HOLDER_ADDRESS_FOR_TESTS, force=True)
 
 
-@pytest.fixture(scope="function")
-def stranger(accounts):
-    stranger = accounts.at("0x98eC059dC3aDFbdd63429454aeB0C990fbA4a124", force=True)
-    web3.provider.make_request("evm_setAccountBalance", [stranger.address, "0x152D02C7E14AF6800000"])
-    web3.provider.make_request("hardhat_setBalance", [stranger.address, "0x152D02C7E14AF6800000"])
-    assert stranger.balance() == ETH(100000)
-    return stranger
+@pytest.fixture(scope="session")
+def stranger():
+    return set_balance("0x98eC059dC3aDFbdd63429454aeB0C990fbA4a124", 100000)
 
 
 @pytest.fixture(scope="function")
-def delegate1(accounts):
-    delegate = accounts.at("0xa70B0AfdF44cEccCF02E76486a6DE4F4B7fd1e52", force=True)
-    web3.provider.make_request("evm_setAccountBalance", [delegate.address, "0x152D02C7E14AF6800000"])
-    web3.provider.make_request("hardhat_setBalance", [delegate.address, "0x152D02C7E14AF6800000"])
-    assert delegate.balance() == ETH(100000)
-    return delegate
+def delegate1():
+    return set_balance("0xa70B0AfdF44cEccCF02E76486a6DE4F4B7fd1e52", 100000)
 
 
 @pytest.fixture(scope="function")
-def delegate2(accounts):
-    delegate = accounts.at("0x100b896F2Dd8c4Ca619db86BCDDb7E085143C1C5", force=True)
-    web3.provider.make_request("evm_setAccountBalance", [delegate.address, "0x152D02C7E14AF6800000"])
-    web3.provider.make_request("hardhat_setBalance", [delegate.address, "0x152D02C7E14AF6800000"])
-    assert delegate.balance() == ETH(100000)
-    return delegate
-
+def delegate2():
+    return set_balance("0x100b896F2Dd8c4Ca619db86BCDDb7E085143C1C5", 100000)
 
 @pytest.fixture(scope="module")
 def trp_recipient(accounts):
-    trp_recipient = accounts.at("0x228cCaFeA1fa21B74257Af975A9D84d87188c61B", force=True)
-    web3.provider.make_request("evm_setAccountBalance", [trp_recipient.address, "0x152D02C7E14AF6800000"])
-    web3.provider.make_request("hardhat_setBalance", [trp_recipient.address, "0x152D02C7E14AF6800000"])
-    assert trp_recipient.balance() == ETH(100000)
-    return trp_recipient
+    return set_balance("0x228cCaFeA1fa21B74257Af975A9D84d87188c61B", 100000)
 
 @pytest.fixture(scope="module")
 def eth_whale(accounts):

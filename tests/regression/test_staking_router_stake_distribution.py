@@ -1,19 +1,21 @@
 from typing import Dict
 
 from utils.config import contracts
+from utils.test.csm_helpers import csm_add_node_operator, get_ea_member
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
-from utils.test.staking_router_helpers import ModuleStatus
+from utils.test.staking_router_helpers import StakingModuleStatus
 
 TOTAL_BASIS_POINTS = 10000
 
 
 class Module:
     def __init__(
-        self, id, target_share, module_fee, treasury_fee, deposited_keys, exited_keys, depositable_keys, status
+        self, id, stake_share_limit, module_fee, treasury_fee, deposited_keys, exited_keys, depositable_keys, status,
+        priorityExitShareThreshold, maxDepositsPerBlock, minDepositBlockDistance
     ):
         self.id = id
-        self.target_share = target_share
+        self.target_share = stake_share_limit
         self.status = status
         self.active_keys = 0
         self.depositable_keys = depositable_keys
@@ -23,7 +25,9 @@ class Module:
         self.treasury_fee = treasury_fee
         self.deposited_keys = deposited_keys
         self.exited_keys = exited_keys
-
+        self.priorityExitShareThreshold = priorityExitShareThreshold
+        self.maxDepositsPerBlock = maxDepositsPerBlock
+        self.minDepositBlockDistance = minDepositBlockDistance
 
 def get_modules_info(staking_router):
     # collect the modules information
@@ -32,15 +36,16 @@ def get_modules_info(staking_router):
 
     for digest in module_digests:
         (_, _, state, summary) = digest
-        (id, _, module_fee, treasury_fee, target_share, status, _, _, _, _) = state
+        (id, _, module_fee, treasury_fee, stake_share_limit, status, _, _, _, _, priorityExitShareThreshold, maxDepositsPerBlock, minDepositBlockDistance) = state
         (exited_keys, deposited_keys, depositable_keys) = summary
-        if status != ModuleStatus.ACTIVE.value:
+        if status != StakingModuleStatus.Active.value:
             # reset depositable keys in case of module is inactivated
             # https://github.com/lidofinance/lido-dao/blob/331ecec7fe3c8d57841fd73ccca7fb1cc9bc174e/contracts/0.8.9/StakingRouter.sol#L1230-L1232
             depositable_keys = 0
 
         modules[id] = Module(
-            id, target_share, module_fee, treasury_fee, deposited_keys, exited_keys, depositable_keys, status
+            id, stake_share_limit, module_fee, treasury_fee, deposited_keys, exited_keys, depositable_keys, status,
+            priorityExitShareThreshold, maxDepositsPerBlock, minDepositBlockDistance
         )
 
     # total_active_keys = sum([module.active_keys for module in modules.values()])
@@ -98,12 +103,24 @@ def calc_allocation(modules: Dict[int, Module], keys_to_allocate: int, ignore_de
     return total_allocated_keys, target_total_active_keys
 
 
-def test_stake_distribution():
+def assure_depositable_keys(stranger):
+    modules = get_modules_info(contracts.staking_router)
+    if not modules[1].depositable_keys:
+        pass
+    if not modules[2].depositable_keys:
+        fill_simple_dvt_ops_vetted_keys(stranger, 3, 5)
+    if not modules[3].depositable_keys:
+        address, proof = get_ea_member()
+        csm_add_node_operator(contracts.csm, contracts.cs_accounting, address, proof, curve_id=contracts.cs_early_adoption.CURVE_ID())
+
+def test_stake_distribution(stranger):
     """
     Test stake distribution among the staking modules
     1. checks that result of `getDepositsAllocation` matches the local allocation calculations
     2. checks that deposits to modules can be made according to the calculated allocation
     """
+    assure_depositable_keys(stranger)
+
     keys_to_allocate = 100  # keys to allocate to the modules
     allocation_from_contract = contracts.staking_router.getDepositsAllocation(keys_to_allocate)
 
@@ -128,7 +145,7 @@ def test_stake_distribution():
 
     for digest in module_digests_after_deposit:
         (_, _, state, summary) = digest
-        (id, _, _, _, _, _, _, _, _, _) = state
+        (id, _, _, _, _, _, _, _, _, _, _, _, _) = state
         (exited_keys, deposited_keys, _) = summary
 
         active_keys_after_deposit = deposited_keys - exited_keys
@@ -143,14 +160,14 @@ def test_target_share_distribution(stranger):
     min_target_share = 1  # 0.01% = 1 / 10000
     nor_m_id = 1
     nor_m = modules[nor_m_id]
-    sdvt_m_id = 2
-    sdvt_m = modules[sdvt_m_id]
 
     cur_total_active_keys = prep_modules_info(modules)
 
+    module = sorted(modules.values(), key=lambda m: m.active_keys / cur_total_active_keys * TOTAL_BASIS_POINTS)[0]
+
     # calc some hypothetical module allocation share for testing
-    expected_active_keys_1 = sdvt_m.active_keys + keys_to_allocate
-    expected_active_keys_2 = sdvt_m.active_keys + keys_to_allocate_double
+    expected_active_keys_1 = module.active_keys + keys_to_allocate
+    expected_active_keys_2 = module.active_keys + keys_to_allocate_double
 
     expected_total_active_keys = cur_total_active_keys + keys_to_allocate
     expected_total_active_keys_2 = cur_total_active_keys + keys_to_allocate_double
@@ -165,39 +182,42 @@ def test_target_share_distribution(stranger):
     assert expected_target_share_2 > expected_target_share_1
 
     # force update module `targetShare` value to simulate new allocation
-    sdvt_m.target_share = expected_target_share_1
+    module.target_share = expected_target_share_1
 
     expected_total_allocated_keys, expected_total_active_keys = calc_allocation(modules, keys_to_allocate, True)
     assert expected_total_allocated_keys == keys_to_allocate
-    assert sdvt_m.active_keys >= expected_active_keys_1
-    assert sdvt_m.allocated_keys == keys_to_allocate
+    assert module.active_keys >= expected_active_keys_1
+    assert module.allocated_keys == keys_to_allocate
     assert nor_m.allocated_keys == 0
 
     expected_total_allocated_keys, expected_total_active_keys = calc_allocation(modules, keys_to_allocate_double, True)
     assert expected_total_allocated_keys == keys_to_allocate_double
-    assert sdvt_m.active_keys < expected_active_keys_2
-    assert sdvt_m.allocated_keys < keys_to_allocate_double
+    assert module.active_keys < expected_active_keys_2
+    assert module.allocated_keys < keys_to_allocate_double
     assert nor_m.allocated_keys <= keys_to_allocate_double
 
     # aet the new target share value, which will be reached after 1s deposit of `keys_to_allocate`` batch
     contracts.staking_router.updateStakingModule(
-        sdvt_m_id,
+        module.id,
         expected_target_share_1,
-        sdvt_m.module_fee,
-        sdvt_m.treasury_fee,
+        module.priorityExitShareThreshold,
+        module.module_fee,
+        module.treasury_fee,
+        module.maxDepositsPerBlock,
+        module.minDepositBlockDistance,
         {"from": contracts.agent},
     )
     # add enough depositable keys to the target module to overcome the target share
     # at least first 3 NOs, each with 1/3 of the `keys_to_allocate_double` available keys
-    fill_simple_dvt_ops_vetted_keys(stranger, 3, (sdvt_m.deposited_keys + keys_to_allocate_double + 3) // 3)
+    fill_simple_dvt_ops_vetted_keys(stranger, 3, (module.deposited_keys + keys_to_allocate_double + 3) // 3)
 
     # update the modules info and recalc the allocation according to the module limits
     modules = get_modules_info(contracts.staking_router)
     expected_total_allocated_keys, expected_total_active_keys = calc_allocation(modules, keys_to_allocate_double, False)
 
     assert expected_total_allocated_keys == keys_to_allocate_double
-    assert sdvt_m.active_keys < expected_active_keys_2
-    assert sdvt_m.allocated_keys < keys_to_allocate_double
+    assert module.active_keys < expected_active_keys_2
+    assert module.allocated_keys < keys_to_allocate_double
     assert nor_m.allocated_keys <= keys_to_allocate_double
 
     allocation_from_contract = contracts.staking_router.getDepositsAllocation(keys_to_allocate_double)
@@ -221,7 +241,7 @@ def test_target_share_distribution(stranger):
 
     for digest in module_digests_after_deposit:
         (_, _, state, summary) = digest
-        (id, _, _, _, _, _, _, _, _, _) = state
+        (id, _, _, _, _, _, _, _, _, _, _, _, _) = state
         (exited_keys, deposited_keys, _) = summary
 
         active_keys_after_deposit = deposited_keys - exited_keys
