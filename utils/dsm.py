@@ -46,6 +46,21 @@ class DSMMessage:
         signedMessage = Account.signHash(self.hash, signer_private_key)
         return to_eip2098(signedMessage)
 
+class DSMPauseDepositsMessage(DSMMessage):
+    def __init__(self, block_number: int):
+        super().__init__()
+        self.block_number = block_number
+
+    @property
+    def hash(self) -> str:
+        return Web3.solidity_keccak(
+            ["bytes32", "uint256"],
+            [
+                self.message_prefix,
+                self.block_number
+            ]
+        ).hex()
+
 
 class DSMUnvetMessage(DSMMessage):
     def __init__(self, block_number: int, block_hash: str, staking_module: int, nonce: int,
