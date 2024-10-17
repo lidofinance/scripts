@@ -49,4 +49,3 @@ def encode_add_operator_lido(address, name):
 def deactivate_node_operator(id: int) -> Tuple[str, str]:
     curated_sm = contracts.node_operators_registry
     return (curated_sm.address, curated_sm.deactivateNodeOperator.encode_input(id))
-

@@ -62,11 +62,6 @@ def test_dsm_no_changes_in_views_with_ops(
         {
             "pauseDeposits": pause_deposits,
             "setOwner": lambda dsm: dsm.setOwner(new_owner.address, {"from": dsm.getOwner()}),
-            "setMaxDeposits(42)": lambda dsm: dsm.setMaxDeposits(42, {"from": new_owner.address}),
-            "setMinDepositBlockDistance(17)": lambda dsm: dsm.setMinDepositBlockDistance(
-                17,
-                {"from": new_owner.address},
-            ),
             "removeGuardian(existing)": lambda dsm: dsm.removeGuardian(
                 guardian.address,
                 3,
@@ -102,6 +97,8 @@ def test_dsm_no_changes_in_views_with_ops(
             "setGuardianQuorum(0)": lambda dsm: dsm.setGuardianQuorum(0, {"from": new_owner.address}),
             "setGuardianQuorum(3)": lambda dsm: dsm.setGuardianQuorum(3, {"from": new_owner.address}),
             "unpauseDeposits": resume_deposits,
+            "setMaxOperatorsPerUnvetting(42)": lambda dsm: dsm.setMaxOperatorsPerUnvetting(42, {"from": new_owner.address}),
+
         }
     )
     _stacks_equal(stacks)
@@ -110,7 +107,6 @@ def test_dsm_no_changes_in_views_with_ops(
 def pause_deposits(dsm: Contract):
     dsm.pauseDeposits(
         chain.height,
-        1,  # NOR
         [0, 0],  # skip signature
         {"from": dsm.getGuardians()[0]},
     )
@@ -118,7 +114,6 @@ def pause_deposits(dsm: Contract):
 
 def resume_deposits(dsm: Contract):
     dsm.unpauseDeposits(
-        1,  # NOR
         {"from": dsm.getOwner()},
     )
 
@@ -148,9 +143,10 @@ def do_snapshot(guardian: Account, some_eoa: Account):
                 "isGuardian(positive)": dsm.isGuardian(guardian.address),
                 "isGuardian(negative)": dsm.isGuardian(accounts[0].address),
                 "isGuardian(changes)": dsm.isGuardian(some_eoa.address),
-                "getMaxDeposits": dsm.getMaxDeposits(),
-                "getMinDepositBlockDistance": dsm.getMinDepositBlockDistance(),
                 "getPauseIntentValidityPeriodBlocks": dsm.getPauseIntentValidityPeriodBlocks(),
+                "getMaxOperatorsPerUnvetting": dsm.getMaxOperatorsPerUnvetting(),
+                "getLastDepositBlock": dsm.getLastDepositBlock(),
+                "isDepositsPaused": dsm.isDepositsPaused(),
                 # NOTE: unchecked views
                 # Implementation address changes
                 # "address": dsm.address,
