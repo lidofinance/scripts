@@ -118,36 +118,16 @@ EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY = "0xF6B6E7997338C48Ea3
 CS_ORACLE_INITIAL_EPOCH = 326715
 
 description = """
-Proposal to support SR 2.0 and CSM Module
+Release the Community Staking Module (CSM) for permissionless staking and upgrade the Staking Router to ensure compatibility with CSM and future modules, improving system efficiency. A detailed action plan can be found [on the research forum](https://research.lido.fi/t/staking-router-community-staking-module-upgrade-announcement/8612/6).
 
-1. Update Locator implementation
-2. Revoke pause role from old Deposit Security Module
-3. Revoke resume role from old Deposit Security Module
-4. Grant unvetting role to new Deposit Security Module
-5. Update Staking Router implementation
-6. Call finalize upgrade on Staking Router
-7. Publish new Node Operators Registry implementation in Node Operators Registry app APM repo
-8. Update Node Operators Registry implementation
-9. Finalize Node Operators Registry upgrade
-10. Publish new SimpleDVT implementation in SimpleDVT app APM repo
-11. Update SimpleDVT implementation
-12. Finalize SimpleDVT upgrade
-13. Update Accounting Oracle implementation
-14. Finalize Accounting Oracle upgrade and update consensus version
-15. Grant manage consensus role to Aragon Agent
-16. Update Validator Exit Bus Oracle consensus version
-17. Revoke manage consensus role from Aragon Agent
-18. Remove old UpdateTargetValidatorLimits for SimpleDVT factory from EasyTrack
-19. Add new UpdateTargetValidatorLimits for SimpleDVT factory to EasyTrack
+1. **Staking Router and related contracts upgrade** following the DAO-approved [LIP-25: Staking Router 2.0](https://snapshot.org/#/lido-snapshot.eth/proposal/0xffb4042d3bfceef33c66f78c092a76fa8e1db198559d93798cc9db3fb4d722e7) and [LIP-23: Negative rebase sanity check with a pluggable second opinion](https://snapshot.org/#/lido-snapshot.eth/proposal/0xa44f6a4dba07d7e24b0e4180025f7a9db6251046daa74d2a8fae84de0d9ce21e) designs. 
+   
+2. **Add Community Staking Module** to the Staking Router. CSM follows the [approved LIP-26 design and Mainnet Release Setup](https://snapshot.org/#/lido-snapshot.eth/proposal/0xd0d7bfd68f2241524dbb14ae6fe0e8414b9fe3e0dcfc50641a8d28f0067d6693). 
 
-Community Staking Module
-20. Add Community Staking Module to Staking Router
-21. Grant request burn role to CSAccounting
-22. Grant resume role to Aragon Agent
-23. Resume Community Staking Module
-24. Revoke resume role from Aragon Agent
-25. Update initial epoch on CSHashConsensus
-26. Add CSMSettleElStealingPenalty factory to EasyTrack
+**Audits:**  
+[Staking Router 2.0 upgrade](https://github.com/lidofinance/audits/blob/main/Ackee%20Blockchain%20Lido%20Staking%20Router%20v2%20Report%2010-24.pdf), [CSM](https://github.com/lidofinance/audits/blob/main/Ackee%20Blockchain%20Lido%20Community%20Staking%20Module%20Report%2010-24.pdf) both with deployment verification by Ackee Blockchain; [Staking Router 2.0 & CSM](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20CSM%20Security%20Audit%20Report%2010-24.pdf), [Lido Oracle](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Oracle%20Security%20Audit%20Report%2010-24.pdf) (incl. CSM Oracle) by Mixbytes; 
+
+The AccountingOracle (negative rebase parameters, pluggable second opinion) was part of Staking Router 2.0 upgrade audits and also audited separately: [Mixbytes report](https://github.com/lidofinance/audits/blob/main/Lido%20Sanity%20Checker%20Security%20Audit%20Report.pdf) and [ChainSecurity report](https://github.com/lidofinance/audits/blob/main/ChainSecurity%20Code%20Assessment%20of%20LIP-23%20Negative%20Rebase%20Checks%20Smart%20Contracts%2006-24.pdf).
 """
 
 
