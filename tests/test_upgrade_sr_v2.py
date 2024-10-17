@@ -264,7 +264,6 @@ def test_vote(
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
         vote_id, _ = start_vote(tx_params, silent=True)
 
-    # TODO: do we need instead use contracts.voting that read address from config?
     voting = get_voting()
 
     vote_tx = helpers.execute_vote(accounts, vote_id, voting)
@@ -281,6 +280,7 @@ def test_vote(
     check_ossifiable_proxy_impl(sr_proxy, NEW_STAKING_ROUTER_IMPL)
     check_module_after_vote(CURATED_MODULE_AFTER_VOTE)
     check_module_after_vote(SDVT_MODULE_AFTER_VOTE)
+    assert staking_router.getContractVersion() == 2
     # AO
     check_ossifiable_proxy_impl(ao_proxy, NEW_ACCOUNTING_ORACLE_IMPL)
 
