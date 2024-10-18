@@ -104,12 +104,12 @@ class Helpers:
             raise AssertionError(f"Event {evt_name} was fired")
 
     @staticmethod
-    def execute_vote(accounts, vote_id, dao_voting, topup="1 ether", skip_time=MAINNET_VOTE_DURATION):
+    def execute_vote(accounts, vote_id, dao_voting, topup="10 ether", skip_time=MAINNET_VOTE_DURATION):
         (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup, skip_time)
         return tx
 
     @staticmethod
-    def execute_votes(accounts, vote_ids, dao_voting, topup="0.1 ether", skip_time=MAINNET_VOTE_DURATION):
+    def execute_votes(accounts, vote_ids, dao_voting, topup="10 ether", skip_time=MAINNET_VOTE_DURATION):
         OBJECTION_PHASE_ID = 1
         for vote_id in vote_ids:
             print(f"Vote #{vote_id}")

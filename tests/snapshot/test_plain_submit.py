@@ -81,7 +81,7 @@ def test_submit_snapshot(helpers, staker, vote_ids_from_env):
     before: Dict[str, Dict[str, any]] = steps()
     chain.revert()
     if vote_ids_from_env:
-        helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
+        helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
     else:
         start_and_execute_votes(contracts.voting, helpers)
     after: Dict[str, Dict[str, any]] = steps()

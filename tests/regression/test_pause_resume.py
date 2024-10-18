@@ -26,7 +26,7 @@ def burner() -> Contract:
 @pytest.fixture(scope="function", autouse=is_there_any_vote_scripts())
 def autoexecute_vote(helpers, vote_ids_from_env, accounts):
     if vote_ids_from_env:
-        helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
+        helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
     else:
         start_and_execute_votes(contracts.voting, helpers)
 

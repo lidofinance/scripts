@@ -136,7 +136,7 @@ def test_node_operator_basic_flow(
     with chain_snapshot():
 
         if vote_ids_from_env:
-            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
+            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
         else:
             start_and_execute_votes(contracts.voting, helpers)
         snapshot_after_update = run_scenario(actions=create_actions(new_deposit_security_module_eoa), snapshooter=make_snapshot)
