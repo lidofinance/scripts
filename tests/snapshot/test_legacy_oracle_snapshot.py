@@ -156,7 +156,7 @@ def sandwich_upgrade(
             before = tuple(_actions_snaps())
 
         if vote_ids_from_env:
-            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
+            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
         else:
             start_and_execute_votes(contracts.voting, helpers)
 

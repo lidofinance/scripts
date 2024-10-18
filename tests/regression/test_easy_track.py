@@ -222,7 +222,7 @@ def test_simple_dvt_set_operator_target_limit(
 
     no_summary = contracts.simple_dvt.getNodeOperatorSummary(no_id)
 
-    assert no_summary["isTargetLimitActive"] == False
+    assert no_summary["targetLimitMode"] == 0
     assert no_summary["targetValidatorsCount"] == 0
 
     calldata = _encode_calldata(["(uint256,bool,uint256)[]"], [[(no_id, True, target_limit)]])
@@ -231,7 +231,7 @@ def test_simple_dvt_set_operator_target_limit(
 
     no_summary = contracts.simple_dvt.getNodeOperatorSummary(no_id)
 
-    assert no_summary["isTargetLimitActive"] == True
+    assert no_summary["targetLimitMode"] == 1
     assert no_summary["targetValidatorsCount"] == target_limit
 
 
