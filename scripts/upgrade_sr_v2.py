@@ -17,8 +17,8 @@ Staking Router V2
 15. Grant manage consensus role to Aragon Agent
 16. Update Validator Exit Bus Oracle consensus version
 17. Revoke manage consensus role from Aragon Agent
-18. Remove old UpdateTargetValidatorLimits for SimpleDVT factory from EasyTrack
-19. Add new UpdateTargetValidatorLimits for SimpleDVT factory to EasyTrack
+18. Remove old UpdateTargetValidatorLimits factory for SimpleDVT from EasyTrack
+19. Add new UpdateTargetValidatorLimits factory for SimpleDVT to EasyTrack
 
 Community Staking Module
 20. Add Community Staking Module to Staking Router
@@ -304,13 +304,13 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "18. Remove old UpdateTargetValidatorLimits for SimpleDVT factory from EasyTrack",
+            "18. Remove old UpdateTargetValidatorLimits factory for SimpleDVT from EasyTrack",
             remove_evmscript_factory(
                 factory=OLD_TARGET_LIMIT_FACTORY,
             ),
         ),
         (
-            "19. Add new UpdateTargetValidatorLimits for SimpleDVT factory to EasyTrack",
+            "19. Add new UpdateTargetValidatorLimits factory for SimpleDVT to EasyTrack",
             add_evmscript_factory(
                 factory=EASYTRACK_SIMPLE_DVT_UPDATE_TARGET_VALIDATOR_LIMITS_FACTORY,
                 permissions=(
