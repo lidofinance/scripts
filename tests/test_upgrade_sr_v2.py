@@ -72,6 +72,9 @@ SDVT_MIN_DEPOSIT_BLOCK_DISTANCES = 25
 NODE_OPERATORS_REGISTRY_ARAGON_APP_ID = "0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d"
 SIMPLE_DVT_ARAGON_APP_ID = "0xe1635b63b5f7b5e545f2a637558a4029dea7905361a2f0fc28c66e9136cf86a4"
 
+# Easytrack
+EASYTRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
+
 
 # Accounting oracle
 AO_CONSENSUS_VERSION = 2
@@ -223,39 +226,74 @@ def test_vote(
     burner = get_burner()
     csm = get_csm()
     csm_hash_consensus = get_csm_hash_consensus()
-
+    ao = get_ao()
+    simple_dvt = get_simple_dvt()
     staking_router = get_staking_router()
-    assert staking_router.getStakingModulesCount() == 2
+    easy_track = get_easy_track()
 
     # Before voting tests
-    # locator
+    # 1) Locator
+    # Check implementation address before vote
     check_ossifiable_proxy_impl(locator_proxy, OLD_LOCATOR_IMPL_ADDRESS)
     # DSM
+    # 2)-3) Check old DSM has STAKING_MODULE_PAUSE_ROLE, STAKING_MODULE_RESUME_ROLE
+    # 4) Check new DSM doesn't have STAKING_MODULE_UNVETTING_ROLE
     check_dsm_roles_before_vote()
     # SR
+    # 5) Check implementation address before vote
     check_ossifiable_proxy_impl(sr_proxy, OLD_SR_IMPL_ADDRESS)
+    # 6) Check Curated, SDVT modules before vote
+    # id, name, stakingModuleAddress, stakingModuleFee, treasuryFee, targetShare - match corresponding values in CURATED_MODULE_BEFORE_VOTE, SDVT_MODULE_BEFORE_VOTE
+    # priorityExitShareThreshold, maxDepositsPerBlock, minDepositBlockDistance - no values in SR yet
     check_module_before_vote(CURATED_MODULE_BEFORE_VOTE)
     check_module_before_vote(SDVT_MODULE_BEFORE_VOTE)
+    # Version
+    assert staking_router.getContractVersion() == 1
     # NOR
+    # 7)-9)
     nor_app_repo = interface.Repo(NODE_OPERATORS_REGISTRY_REPO)
-    nor_old_app = nor_app_repo.getLatest()
+    # Check implementation address before vote
     assert nor_proxy.implementation() == OLD_NOR_IMPL
+    nor_old_app = nor_app_repo.getLatest()
+    # Check APM Node Operators Registry app repo has OLD_NOR_IMPL before vote
+    # version set to 4, Content URI without changes
     assert_repo_before_vote(nor_old_app, 4, OLD_NOR_IMPL, NOR_URI)
     # SDVT
+    # 10)-12)
     sdvt_app_repo = interface.Repo(SIMPLE_DVT_REPO)
-    sdvt_old_app = sdvt_app_repo.getLatest()
+    # Check implementation address before vote
     assert sdvt_proxy.implementation() == OLD_SDVT_IMPL
+    sdvt_old_app = sdvt_app_repo.getLatest()
+    # Check SimpleDVT app Repo repo has OLD_SDVT_IMPL before vote
+    # version set to 1, Content URI without changes
     assert_repo_before_vote(sdvt_old_app, 1, OLD_SDVT_IMPL, SDVT_URI)
     # AO
+    # 13) Check implementation
     check_ossifiable_proxy_impl(ao_proxy, OLD_ACCOUNTING_ORACLE_IMPL)
-    # no permission to manage consensus version on agent
-    check_manage_consensus_role()
+    # 14) Check AO contract version
+    assert ao.getContractVersion() == 1
+    assert ao.getConsensusVersion() == 1
 
-    # VEBO consensus version
+    # VEBO
+    # 15), 17) Aragon Agent does not have MANAGE_CONSENSUS_VERSION_ROLE role
+    check_vebo_doesnt_have_manage_consensus_role()
+    # 16) Check consensus version
     assert vebo.getConsensusVersion() == VEBO_CONSENSUS_VERSION - 1
+    # 18)-19) simple dvt has old factory
+    evm_script_factories_before = easy_track.getEVMScriptFactories()
+    assert OLD_TARGET_LIMIT_FACTORY in evm_script_factories_before
+    assert NEW_TARGET_LIMIT_FACTORY not in evm_script_factories_before
+    # 20) Two modules in SR
+    assert staking_router.getStakingModulesCount() == 2
+    # 21) CSAccounting doesnt have burn role
     assert not burner.hasRole(REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS)
+    # 22), 24) Aragon Agent doesnt have resume role
     assert not csm.hasRole(RESUME_ROLE, AGENT)
+    # 23) CSM is on pause
     assert csm.isPaused()
+    # 25) epoch is not set yet
+    # 26) no factory for csm yet
+    assert EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY not in evm_script_factories_before
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -270,32 +308,69 @@ def test_vote(
 
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
-    assert staking_router.getStakingModulesCount() == 3
-
-    # locator
+    # 1) Locator
+    # Check implementation address after vote
     check_ossifiable_proxy_impl(locator_proxy, NEW_LIDO_LOCATOR_IMPL)
-    # DSM
+    # 2)-4) DSM
+    # Check old dsm doesnt have STAKING_MODULE_PAUSE_ROLE, STAKING_MODULE_RESUME_ROLE
+    # Check new dsm has STAKING_MODULE_UNVETTING_ROLE
     check_dsm_roles_after_vote()
     # SR
+    # 5) implementation update
     check_ossifiable_proxy_impl(sr_proxy, NEW_STAKING_ROUTER_IMPL)
+    # 6)
+    # finalizeUpgrade_v2
+    # Store the maxDepositsPerBlock, minDepositBlockDistance, priorityExitShareThreshold for Curated, Simple DVT modules in the Staking Router's state
     check_module_after_vote(CURATED_MODULE_AFTER_VOTE)
     check_module_after_vote(SDVT_MODULE_AFTER_VOTE)
+    # This also updates the contract version to 2
     assert staking_router.getContractVersion() == 2
+    # NOR
+    # 7)-9)
+    # Check implementation address after vote
+    assert nor_proxy.implementation() == NEW_NODE_OPERATORS_REGISTRY_IMPL
+    # Check APM Node Operators Registry app repo has NEW_NOR_IMPL after vote
+    # version set to 5, Content URI without changes
+    nor_new_app = nor_app_repo.getLatest()
+    assert_repo_update(nor_new_app, nor_old_app, NEW_NODE_OPERATORS_REGISTRY_IMPL, NOR_URI)
+    # SDVT
+    # 10)-12)
+    # Check implementation address after vote
+    assert sdvt_proxy.implementation() == NEW_SIMPLE_DVT_IMPL
+    # Check SimpleDVT app Repo repo has NEW_SDVT_IMPL before vote
+    # version set to 2, Content URI without changes
+    sdvt_new_app = sdvt_app_repo.getLatest()
+    assert_repo_update(sdvt_new_app, sdvt_old_app, NEW_SIMPLE_DVT_IMPL, SDVT_URI)
     # AO
+    # 13)
     check_ossifiable_proxy_impl(ao_proxy, NEW_ACCOUNTING_ORACLE_IMPL)
-
+    # 14) Check AO contract version
+    assert ao.getContractVersion() == 2
+    assert ao.getConsensusVersion() == 2
+    # 15), 17)
     # no permission to manage consensus version on agent
-    check_manage_consensus_role()
+    check_vebo_doesnt_have_manage_consensus_role()
+    # 16)
     # VEBO consensus version
     assert vebo.getConsensusVersion() == VEBO_CONSENSUS_VERSION
 
-    assert burner.hasRole(REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS)
-    assert not csm.hasRole(RESUME_ROLE, AGENT)
-    assert not csm.isPaused()
-
-    assert csm_hash_consensus.getFrameConfig()[0] == CS_ORACLE_INITIAL_EPOCH
-
+    # 18)-19) simple dvt has old factory
+    evm_script_factories_after = easy_track.getEVMScriptFactories()
+    assert OLD_TARGET_LIMIT_FACTORY not in evm_script_factories_after
+    assert NEW_TARGET_LIMIT_FACTORY in evm_script_factories_after
+    # 20) Two modules in SR
+    assert staking_router.getStakingModulesCount() == 3
     check_csm()
+    # 21) CSAccounting has request burn role
+    assert burner.hasRole(REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING_ADDRESS)
+    # 22), 24) Aragon Agent doesn't have resume_role
+    assert not csm.hasRole(RESUME_ROLE, AGENT)
+    # 23) CSM is not on pause
+    assert not csm.isPaused()
+    # 25) Check epoch
+    assert csm_hash_consensus.getFrameConfig()[0] == CS_ORACLE_INITIAL_EPOCH
+    # 26) Factory check
+    assert EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY in evm_script_factories_after
 
     # Events check
     display_voting_events(vote_tx)
@@ -335,14 +410,10 @@ def test_vote(
         ],
     )
 
-    nor_new_app = nor_app_repo.getLatest()
-    assert_repo_update(nor_new_app, nor_old_app, NEW_NODE_OPERATORS_REGISTRY_IMPL, NOR_URI)
     validate_repo_upgrade_event(events[6], RepoUpgrade(6, nor_new_app[0]))
     validate_app_update_event(events[7], NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NEW_NODE_OPERATORS_REGISTRY_IMPL)
     validate_nor_update(events[8], NOR_VERSION)
 
-    sdvt_new_app = sdvt_app_repo.getLatest()
-    assert_repo_update(sdvt_new_app, sdvt_old_app, NEW_SIMPLE_DVT_IMPL, SDVT_URI)
     validate_repo_upgrade_event(events[9], RepoUpgrade(2, sdvt_new_app[0]))
     validate_app_update_event(events[10], SIMPLE_DVT_ARAGON_APP_ID, NEW_SIMPLE_DVT_IMPL)
     validate_nor_update(events[11], SDVT_VERSION)
@@ -438,6 +509,14 @@ def get_csm_hash_consensus():
     return interface.CSHashConsensus(CS_ORACLE_HASH_CONSENSUS_ADDRESS)
 
 
+def get_ao():
+    return interface.AccountingOracle(ACCOUNTING_ORACLE)
+
+
+def get_easy_track():
+    return interface.EasyTrack(EASYTRACK)
+
+
 def check_ossifiable_proxy_impl(proxy, expected_impl):
     current_impl_address = proxy.proxy__getImplementation()
     assert current_impl_address == expected_impl, f"Expected {expected_impl} impl but got {current_impl_address}"
@@ -473,7 +552,7 @@ def check_dsm_roles_after_vote():
     assert not old_dsm_has_resume_role
 
 
-def check_manage_consensus_role():
+def check_vebo_doesnt_have_manage_consensus_role():
     vebo = get_vebo()
     agent_has_manage_consensus_role = vebo.hasRole(MANAGE_CONSENSUS_VERSION_ROLE, AGENT)
     assert not agent_has_manage_consensus_role
