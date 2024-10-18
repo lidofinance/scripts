@@ -1,7 +1,7 @@
 from typing import Dict
 
 from utils.config import contracts
-from utils.test.csm_helpers import csm_add_node_operator, get_ea_member
+from utils.test.csm_helpers import csm_add_node_operator, get_ea_member, fill_csm_operators_with_keys
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
 from utils.test.staking_router_helpers import StakingModuleStatus
@@ -196,7 +196,7 @@ def test_target_share_distribution(stranger):
     assert module.allocated_keys < keys_to_allocate_double
     assert nor_m.allocated_keys <= keys_to_allocate_double
 
-    # aet the new target share value, which will be reached after 1s deposit of `keys_to_allocate`` batch
+    # set the new target share value, which will be reached after 1s deposit of `keys_to_allocate`` batch
     contracts.staking_router.updateStakingModule(
         module.id,
         expected_target_share_1,
@@ -209,7 +209,10 @@ def test_target_share_distribution(stranger):
     )
     # add enough depositable keys to the target module to overcome the target share
     # at least first 3 NOs, each with 1/3 of the `keys_to_allocate_double` available keys
-    fill_simple_dvt_ops_vetted_keys(stranger, 3, (module.deposited_keys + keys_to_allocate_double + 3) // 3)
+    if module.id == 2:
+        fill_simple_dvt_ops_vetted_keys(stranger, 3, (module.deposited_keys + keys_to_allocate_double + 3) // 3)
+    elif module.id == 3:
+        fill_csm_operators_with_keys(3, (module.deposited_keys + keys_to_allocate_double + 3) // 3)
 
     # update the modules info and recalc the allocation according to the module limits
     modules = get_modules_info(contracts.staking_router)
