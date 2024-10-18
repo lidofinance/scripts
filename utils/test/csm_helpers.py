@@ -3,7 +3,7 @@ from brownie import ZERO_ADDRESS
 from utils.balance import set_balance_in_wei
 from utils.test.helpers import ETH
 from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
-
+from utils.config import contracts
 
 def get_ea_member():
     """
@@ -157,3 +157,23 @@ def csm_upload_keys(csm, accounting, no_id, keys_count=5):
                             {"from": manager_address,
                              "value": accounting.getRequiredBondForNextKeys(no_id, keys_count)}
                             )
+
+
+def fill_csm_operators_with_keys(target_operators_count, keys_count):
+    if not contracts.csm.publicRelease():
+        contracts.csm.grantRole(contracts.csm.MODULE_MANAGER_ROLE(), contracts.agent, {"from": contracts.agent})
+        contracts.csm.activatePublicRelease({"from": contracts.agent})
+
+    csm_node_operators_before = contracts.csm.getNodeOperatorsCount()
+    added_operators_count = 0
+    for no_id in range(0, csm_node_operators_before):
+        depositable_keys = contracts.csm.getNodeOperator(no_id)["depositableValidatorsCount"]
+        if depositable_keys < keys_count:
+            csm_upload_keys(contracts.csm, contracts.cs_accounting, no_id, keys_count - depositable_keys)
+            assert contracts.csm.getNodeOperator(no_id)["depositableValidatorsCount"] == keys_count
+    while csm_node_operators_before + added_operators_count < target_operators_count:
+        node_operator = f"0xbb{str(added_operators_count).zfill(38)}"
+        csm_add_node_operator(contracts.csm, contracts.cs_accounting, node_operator, [], keys_count=keys_count)
+        added_operators_count += 1
+    return csm_node_operators_before, added_operators_count
+
