@@ -1,31 +1,31 @@
 """
 Staking Router V2
-1. Update Locator implementation
-2. Revoke pause role from old Deposit Security Module
-3. Revoke resume role from old Deposit Security Module
-4. Grant unvetting role to new Deposit Security Module
-5. Update Staking Router implementation
+1. Update Lido locator implementation to 0x3ABc4764f0237923d52056CFba7E9AEBf87113D3
+2. Revoke STAKING_MODULE_PAUSE_ROLE role on Staking Router from old Deposit Security Module
+3. Revoke STAKING_MODULE_RESUME_ROLE role on Staking Router from old Deposit Security Module
+4. Grant STAKING_MODULE_UNVETTING_ROLE role on Staking Router to new Deposit Security Module
+5. Update Staking Router implementation to 0x89eDa99C0551d4320b56F82DDE8dF2f8D2eF81aA
 6. Call finalize upgrade on Staking Router
-7. Publish new Node Operators Registry implementation in Node Operators Registry app APM repo
-8. Update Node Operators Registry implementation
+7. Add new NodeOperatorsRegistry implementation to APM Node Operators Registry app repo
+8. Update NodeOperatorsRegistry app. SetApp on Lido DAO (Kernel)
 9. Finalize Node Operators Registry upgrade
-10. Publish new SimpleDVT implementation in SimpleDVT app APM repo
-11. Update SimpleDVT implementation
+10. Add new SimpleDVT implementation to SimpleDVT app Repo
+11. Update SimpleDVT app. SetApp on Lido DAO (Kernel)
 12. Finalize SimpleDVT upgrade
-13. Update Accounting Oracle implementation
-14. Finalize Accounting Oracle upgrade and update consensus version
-15. Grant manage consensus role to Aragon Agent
-16. Update Validator Exit Bus Oracle consensus version
-17. Revoke manage consensus role from Aragon Agent
-18. Remove old UpdateTargetValidatorLimits for SimpleDVT factory from EasyTrack
-19. Add new UpdateTargetValidatorLimits for SimpleDVT factory to EasyTrack
+13. Update Accounting Oracle implementation to 0x0e65898527E77210fB0133D00dd4C0E86Dc29bC7
+14. Finalize Accounting Oracle upgrade and set consensus version to 2
+15. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle to Aragon Agent
+16. Update Validator Exit Bus Oracle consensus version to 2
+17. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle from Aragon Agent
+18. Remove old UpdateTargetValidatorLimits factory for SimpleDVT from EasyTrack
+19. Add new UpdateTargetValidatorLimits factory for SimpleDVT to EasyTrack
 
 Community Staking Module
-20. Add Community Staking Module to Staking Router
-21. Grant request burn role to CSAccounting
-22. Grant resume role to Aragon Agent
+20. Add Community Staking Module 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F to Staking Router
+21. Grant REQUEST_BURN_SHARES_ROLE role on Burner to CSAccounting
+22. Grant RESUME_ROLE role on CSM to Aragon Agent
 23. Resume Community Staking Module
-24. Revoke resume role from Aragon Agent
+24. Revoke RESUME_ROLE role on CSM from Aragon Agent
 25. Update initial epoch on CSHashConsensus
 26. Add CSMSettleElStealingPenalty factory to EasyTrack
 
@@ -143,12 +143,12 @@ new_oracle_member_to_add = "0x4015CC4020730515C78D12170A8e9697E009D5E7"
 description = """
 Release the Community Staking Module (CSM) for permissionless staking and upgrade the Staking Router to ensure compatibility with CSM and future modules, improving system efficiency. A detailed action plan can be found [on the research forum](https://research.lido.fi/t/staking-router-community-staking-module-upgrade-announcement/8612/6).
 
-1. **Staking Router and related contracts upgrade** following the DAO-approved [LIP-25: Staking Router 2.0](https://snapshot.org/#/lido-snapshot.eth/proposal/0xffb4042d3bfceef33c66f78c092a76fa8e1db198559d93798cc9db3fb4d722e7) and [LIP-23: Negative rebase sanity check with a pluggable second opinion](https://snapshot.org/#/lido-snapshot.eth/proposal/0xa44f6a4dba07d7e24b0e4180025f7a9db6251046daa74d2a8fae84de0d9ce21e) designs. 
-   
-2. **Add Community Staking Module** to the Staking Router. CSM follows the [approved LIP-26 design and Mainnet Release Setup](https://snapshot.org/#/lido-snapshot.eth/proposal/0xd0d7bfd68f2241524dbb14ae6fe0e8414b9fe3e0dcfc50641a8d28f0067d6693). 
+1. **Staking Router and related contracts upgrade** following the DAO-approved [LIP-25: Staking Router 2.0](https://snapshot.org/#/lido-snapshot.eth/proposal/0xffb4042d3bfceef33c66f78c092a76fa8e1db198559d93798cc9db3fb4d722e7) and [LIP-23: Negative rebase sanity check with a pluggable second opinion](https://snapshot.org/#/lido-snapshot.eth/proposal/0xa44f6a4dba07d7e24b0e4180025f7a9db6251046daa74d2a8fae84de0d9ce21e) designs.
 
-**Audits:**  
-[Staking Router 2.0 upgrade](https://github.com/lidofinance/audits/blob/main/Ackee%20Blockchain%20Lido%20Staking%20Router%20v2%20Report%2010-24.pdf), [CSM](https://github.com/lidofinance/audits/blob/main/Ackee%20Blockchain%20Lido%20Community%20Staking%20Module%20Report%2010-24.pdf) both with deployment verification by Ackee Blockchain; [Staking Router 2.0 & CSM](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20CSM%20Security%20Audit%20Report%2010-24.pdf), [Lido Oracle](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Oracle%20Security%20Audit%20Report%2010-24.pdf) (incl. CSM Oracle) by Mixbytes; 
+2. **Add Community Staking Module** to the Staking Router. CSM follows the [approved LIP-26 design and Mainnet Release Setup](https://snapshot.org/#/lido-snapshot.eth/proposal/0xd0d7bfd68f2241524dbb14ae6fe0e8414b9fe3e0dcfc50641a8d28f0067d6693).
+
+**Audits:**
+[Staking Router 2.0 upgrade](https://github.com/lidofinance/audits/blob/main/Ackee%20Blockchain%20Lido%20Staking%20Router%20v2%20Report%2010-24.pdf), [CSM](https://github.com/lidofinance/audits/blob/main/Ackee%20Blockchain%20Lido%20Community%20Staking%20Module%20Report%2010-24.pdf) both with deployment verification by Ackee Blockchain; [Staking Router 2.0 & CSM](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20CSM%20Security%20Audit%20Report%2010-24.pdf), [Lido Oracle](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Oracle%20Security%20Audit%20Report%2010-24.pdf) (incl. CSM Oracle) by Mixbytes;
 
 The AccountingOracle (negative rebase parameters, pluggable second opinion) was part of Staking Router 2.0 upgrade audits and also audited separately: [Mixbytes report](https://github.com/lidofinance/audits/blob/main/Lido%20Sanity%20Checker%20Security%20Audit%20Report.pdf) and [ChainSecurity report](https://github.com/lidofinance/audits/blob/main/ChainSecurity%20Code%20Assessment%20of%20LIP-23%20Negative%20Rebase%20Checks%20Smart%20Contracts%2006-24.pdf).
 """
@@ -255,11 +255,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         # SR 2
         #
         (
-            "1. Update Locator implementation",
+            "1. Update Lido locator implementation to 0x3ABc4764f0237923d52056CFba7E9AEBf87113D3",
             agent_forward([encode_locator_proxy_update(LIDO_LOCATOR_IMPL)]),
         ),
         (
-            "2. Revoke pause role from old Deposit Security Module",
+            "2. Revoke STAKING_MODULE_PAUSE_ROLE role on Staking Router from old Deposit Security Module",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -271,7 +271,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "3. Revoke resume role from old Deposit Security Module",
+            "3. Revoke STAKING_MODULE_RESUME_ROLE role on Staking Router from old Deposit Security Module",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -283,7 +283,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "4. Grant unvetting role to new Deposit Security Module",
+            "4. Grant STAKING_MODULE_UNVETTING_ROLE role on Staking Router to new Deposit Security Module",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -295,7 +295,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "5. Update Staking Router implementation",
+            "5. Update Staking Router implementation to 0x89eDa99C0551d4320b56F82DDE8dF2f8D2eF81aA",
             agent_forward([encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)]),
         ),
         (
@@ -303,11 +303,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             encode_staking_router_finalize(),
         ),
         (
-            "7. Publish new Node Operators Registry implementation in Node Operators Registry app APM repo",
+            "7. Add new NodeOperatorsRegistry implementation to APM Node Operators Registry app repo",
             add_implementation_to_nor_app_repo(NOR_VERSION_REPO, NODE_OPERATORS_REGISTRY_IMPL, nor_uri),
         ),
         (
-            "8. Update Node Operators Registry implementation",
+            "8. Update NodeOperatorsRegistry app. SetApp on Lido DAO (Kernel)",
             update_app_implementation(NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
         ),
         (
@@ -315,11 +315,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             encode_nor_finalize(),
         ),
         (
-            "10. Publish new SimpleDVT implementation in SimpleDVT app APM repo",
+            "10. Add new SimpleDVT implementation to SimpleDVT app Repo",
             add_implementation_to_sdvt_app_repo(SDVT_VERSION_REPO, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
         ),
         (
-            "11. Update SimpleDVT implementation",
+            "11. Update SimpleDVT app. SetApp on Lido DAO (Kernel)",
             update_app_implementation(SIMPLE_DVT_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
         ),
         (
@@ -327,15 +327,15 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             encode_sdvt_finalize(),
         ),
         (
-            "13. Update Accounting Oracle implementation",
+            "13. Update Accounting Oracle implementation to 0x0e65898527E77210fB0133D00dd4C0E86Dc29bC7",
             agent_forward([encode_ao_proxy_update(ACCOUNTING_ORACLE_IMPL)]),
         ),
         (
-            "14. Finalize Accounting Oracle upgrade and update consensus version",
+            "14. Finalize Accounting Oracle upgrade and set consensus version to 2",
             encode_ao_finalize(),
         ),
         (
-            "15. Grant manage consensus role to Aragon Agent",
+            "15. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle to Aragon Agent",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -347,11 +347,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "16. Update Validator Exit Bus Oracle consensus version",
+            "16. Update Validator Exit Bus Oracle consensus version to 2",
             agent_forward([encode_set_consensus_version()]),
         ),
         (
-            "17. Revoke manage consensus role from Aragon Agent",
+            "17. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle from Aragon Agent",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -363,13 +363,13 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "18. Remove old UpdateTargetValidatorLimits for SimpleDVT factory from EasyTrack",
+            "18. Remove old UpdateTargetValidatorLimits factory for SimpleDVT from EasyTrack",
             remove_evmscript_factory(
                 factory=OLD_TARGET_LIMIT_FACTORY,
             ),
         ),
         (
-            "19. Add new UpdateTargetValidatorLimits for SimpleDVT factory to EasyTrack",
+            "19. Add new UpdateTargetValidatorLimits factory for SimpleDVT to EasyTrack",
             add_evmscript_factory(
                 factory=EASYTRACK_SIMPLE_DVT_UPDATE_TARGET_VALIDATOR_LIMITS_FACTORY,
                 permissions=(
@@ -382,7 +382,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         #
         # CSM
         (
-            "20. Add Community Staking Module to Staking Router",
+            "20. Add Community Staking Module 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F to Staking Router",
             agent_forward(
                 [
                     (
@@ -402,7 +402,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "21. Grant request burn role to CSAccounting",
+            "21. Grant REQUEST_BURN_SHARES_ROLE role on Burner to CSAccounting",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -414,7 +414,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "22. Grant resume role to Aragon Agent",
+            "22. Grant RESUME_ROLE role on CSM to Aragon Agent",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -430,7 +430,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             agent_forward([(contracts.csm.address, contracts.csm.resume.encode_input())]),
         ),
         (
-            "24. Revoke resume role from Aragon Agent",
+            "24. Revoke RESUME_ROLE role on CSM from Aragon Agent",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -563,7 +563,7 @@ def main():
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 
-    vote_id, _ = start_vote(tx_params=tx_params, silent=True)  # disable temporary
+    vote_id, _ = start_vote(tx_params=tx_params, silent=False)
 
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 

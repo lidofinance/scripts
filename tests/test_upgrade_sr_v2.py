@@ -658,7 +658,7 @@ def validate_upgrade_events(events: EventDict, implementation: str):
     _events_chain = ["LogScriptCall", "LogScriptCall", "Upgraded", "ScriptResult"]
     validate_events_chain([e.name for e in events], _events_chain)
     assert events.count("Upgraded") == 1
-    assert events["Upgraded"]["implementation"] == implementation, "Wrong withdrawal vault proxy implementation"
+    assert events["Upgraded"]["implementation"] == implementation, "Wrong proxy implementation address"
 
 
 def validate_dsm_roles_events(events: list[EventDict]):

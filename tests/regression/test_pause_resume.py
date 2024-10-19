@@ -26,7 +26,7 @@ def burner() -> Contract:
 @pytest.fixture(scope="function", autouse=is_there_any_vote_scripts())
 def autoexecute_vote(helpers, vote_ids_from_env, accounts):
     if vote_ids_from_env:
-        helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
+        helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
     else:
         start_and_execute_votes(contracts.voting, helpers)
 
@@ -134,6 +134,22 @@ class TestRevertedSecondCalls:
 
         with brownie.reverts("CONTRACT_IS_ACTIVE"):
             contracts.lido.resume({"from": contracts.voting})
+
+    @pytest.mark.skip(
+        reason="Second call of pause/resume staking is not reverted right now."
+        "It maybe should be fixed in the future to be consistent, "
+        "there's not a real problem with it."
+    )
+    def test_revert_second_pause_resume_staking(self):
+        contracts.lido.pauseStaking({"from": contracts.voting})
+
+        with brownie.reverts(""):
+            contracts.lido.pauseStaking({"from": contracts.voting})
+
+        contracts.lido.resumeStaking({"from": contracts.voting})
+
+        with brownie.reverts(""):
+            contracts.lido.resumeStaking({"from": contracts.voting})
 
     def test_revert_second_stop_staking_module(self, helpers, stranger):
         contracts.staking_router.grantRole(
