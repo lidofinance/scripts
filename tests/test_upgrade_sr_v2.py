@@ -122,8 +122,7 @@ MANAGE_MEMBERS_AND_QUORUM_ROLE = "0x66a484cf1a3c6ef8dfd59d24824943d2853a29d96f34
 
 # Oracles members
 old_oracle_member_to_remove = "0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d"
-# RANDOM GENERATED ADDRESS, replace with actual oracle address
-new_oracle_member_to_add = "0x4015CC4020730515C78D12170A8e9697E009D5E7"
+new_oracle_member_to_add = "0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12"
 
 
 class StakingModuleItem(NamedTuple):
@@ -412,7 +411,7 @@ def test_vote(
     assert vebo_hash_consensus.getQuorum() == 5
 
     # 29), 34) agent doesnt have role
-    assert not csm_hash_consensus.hasRole(MANAGE_MEMBERS_AND_QUORUM_ROLE, AGENT)
+    assert csm_hash_consensus.hasRole(MANAGE_MEMBERS_AND_QUORUM_ROLE, AGENT)
 
     # 30), 33) after vote old member is not in the quorum of cs hash consensus, new member is in the quorum
     assert not csm_hash_consensus.getIsMember(old_oracle_member_to_remove)
@@ -423,7 +422,7 @@ def test_vote(
     display_voting_events(vote_tx)
     events = group_voting_events(vote_tx)
 
-    assert len(events) == 34
+    assert len(events) == 33
 
     validate_upgrade_events(events[0], NEW_LIDO_LOCATOR_IMPL)
     validate_dsm_roles_events(events)

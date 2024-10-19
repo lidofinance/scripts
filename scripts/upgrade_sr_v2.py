@@ -35,10 +35,9 @@ Instadapp oracle rotation
 28) Remove the oracle member with address 0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d from HashConsensus for ValidatorsExitBusOracle
 29) Grant MANAGE_MEMBERS_AND_QUORUM_ROLE role on CSHashConsensus to Aragon Agent
 30) Remove the oracle member with address 0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d from CSHashConsensus for CSFeeOracle
-31) Add oracle member with address X to CSHashConsensus for AccountingOracle
-32) Add oracle member with address X to CSHashConsensus for ValidatorsExitBusOracle
-33) Add oracle member with address X to HashConsensus for ValidatorsExitBusOracle
-34) Revoke MANAGE_MEMBERS_AND_QUORUM_ROLE role on CSHashConsensus from Aragon Agent
+31) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to CSHashConsensus for AccountingOracle
+32) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to CSHashConsensus for ValidatorsExitBusOracle
+33) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to HashConsensus for ValidatorsExitBusOracle
 """
 
 import time
@@ -136,8 +135,7 @@ HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM = 5
 
 # Oracles members
 old_oracle_member_to_remove = "0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d"
-# RANDOM GENERATED ADDRESS, replace with actual oracle address
-new_oracle_member_to_add = "0x4015CC4020730515C78D12170A8e9697E009D5E7"
+new_oracle_member_to_add = "0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12"
 
 
 description = """
@@ -504,7 +502,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "31) Add oracle member with address X to CSHashConsensus for AccountingOracle",
+            "31) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to CSHashConsensus for AccountingOracle",
             agent_forward(
                 [
                     encode_add_accounting_oracle_member(
@@ -514,7 +512,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "32) Add oracle member with address X to CSHashConsensus for ValidatorsExitBusOracle",
+            "32) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to CSHashConsensus for ValidatorsExitBusOracle",
             agent_forward(
                 [
                     encode_add_validators_exit_bus_oracle_member(
@@ -524,25 +522,25 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "33) Add oracle member with address X to HashConsensus for ValidatorsExitBusOracle",
+            "33) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to HashConsensus for ValidatorsExitBusOracle",
             agent_forward(
                 [
                     encode_add_cs_fee_oracle_member(new_oracle_member_to_add, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM),
                 ]
             ),
         ),
-        (
-            "34. Revoke MANAGE_MEMBERS_AND_QUORUM_ROLE role on CSHashConsensus from Aragon Agent",
-            agent_forward(
-                [
-                    encode_oz_revoke_role(
-                        contract=contracts.csm_hash_consensus,
-                        role_name="MANAGE_MEMBERS_AND_QUORUM_ROLE",
-                        revoke_from=contracts.agent,
-                    )
-                ]
-            ),
-        ),
+        # (
+        #     "34. Revoke MANAGE_MEMBERS_AND_QUORUM_ROLE role on CSHashConsensus from Aragon Agent",
+        #     agent_forward(
+        #         [
+        #             encode_oz_revoke_role(
+        #                 contract=contracts.csm_hash_consensus,
+        #                 role_name="MANAGE_MEMBERS_AND_QUORUM_ROLE",
+        #                 revoke_from=contracts.agent,
+        #             )
+        #         ]
+        #     ),
+        # ),
     )
 
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
