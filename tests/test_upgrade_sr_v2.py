@@ -291,7 +291,8 @@ def test_vote(
     assert not csm.hasRole(RESUME_ROLE, AGENT)
     # 23) CSM is on pause
     assert csm.isPaused()
-    # 25) epoch is not set yet
+    # 25) epoch is set to far future epoch
+    assert csm_hash_consensus.getFrameConfig()[0] == 48038396021100853
     # 26) no factory for csm yet
     assert EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY not in evm_script_factories_before
 
@@ -354,11 +355,11 @@ def test_vote(
     # VEBO consensus version
     assert vebo.getConsensusVersion() == VEBO_CONSENSUS_VERSION
 
-    # 18)-19) simple dvt has old factory
+    # 18)-19) simple dvt has new factory
     evm_script_factories_after = easy_track.getEVMScriptFactories()
     assert OLD_TARGET_LIMIT_FACTORY not in evm_script_factories_after
     assert NEW_TARGET_LIMIT_FACTORY in evm_script_factories_after
-    # 20) Two modules in SR
+    # 20) Three modules in SR
     assert staking_router.getStakingModulesCount() == 3
     check_csm()
     # 21) CSAccounting has request burn role
