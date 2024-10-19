@@ -368,7 +368,7 @@ def protocol_permissions():
             "type": "CustomApp",
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "MANAGE_MEMBERS_AND_QUORUM_ROLE": [],
+                "MANAGE_MEMBERS_AND_QUORUM_ROLE": [contracts.agent],
                 "DISABLE_CONSENSUS_ROLE": [],
                 "MANAGE_FRAME_CONFIG_ROLE": [],
                 "MANAGE_FAST_LANE_CONFIG_ROLE": [],
