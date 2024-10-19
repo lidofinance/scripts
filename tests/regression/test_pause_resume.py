@@ -135,6 +135,22 @@ class TestRevertedSecondCalls:
         with brownie.reverts("CONTRACT_IS_ACTIVE"):
             contracts.lido.resume({"from": contracts.voting})
 
+    @pytest.mark.skip(
+        reason="Second call of pause/resume staking is not reverted right now."
+        "It maybe should be fixed in the future to be consistent, "
+        "there's not a real problem with it."
+    )
+    def test_revert_second_pause_resume_staking(self):
+        contracts.lido.pauseStaking({"from": contracts.voting})
+
+        with brownie.reverts(""):
+            contracts.lido.pauseStaking({"from": contracts.voting})
+
+        contracts.lido.resumeStaking({"from": contracts.voting})
+
+        with brownie.reverts(""):
+            contracts.lido.resumeStaking({"from": contracts.voting})
+
     def test_revert_second_stop_staking_module(self, helpers, stranger):
         contracts.staking_router.grantRole(
             web3.keccak(text="STAKING_MODULE_MANAGE_ROLE"),
