@@ -479,7 +479,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "29. Grant MANAGE_MEMBERS_AND_QUORUM_ROLE role  on CSHashConsensus to Aragon Agent",
+            "29. Grant MANAGE_MEMBERS_AND_QUORUM_ROLE role on CSHashConsensus to Aragon Agent",
             agent_forward(
                 [
                     encode_oz_grant_role(
