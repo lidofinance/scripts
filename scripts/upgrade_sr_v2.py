@@ -35,9 +35,9 @@ Instadapp oracle rotation
 28) Remove the oracle member with address 0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d from HashConsensus for ValidatorsExitBusOracle
 29) Grant MANAGE_MEMBERS_AND_QUORUM_ROLE role on CSHashConsensus to Aragon Agent
 30) Remove the oracle member with address 0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d from CSHashConsensus for CSFeeOracle
-31) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to CSHashConsensus for AccountingOracle
-32) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to CSHashConsensus for ValidatorsExitBusOracle
-33) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to HashConsensus for ValidatorsExitBusOracle
+31) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to HashConsensus for AccountingOracle
+32) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to HashConsensus for ValidatorsExitBusOracle
+33) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to CSHashConsensus for CSFeeOracle
 """
 
 import time
