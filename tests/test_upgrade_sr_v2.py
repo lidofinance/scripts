@@ -304,21 +304,21 @@ def test_vote(
     # 26) no factory for csm yet
     assert EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY not in evm_script_factories_before
 
-    # 27), 31) before vote old member still in the quorum of ao hash consensus, new member is not in the quorum
+    # 27), 31) before vote old member is still in the quorum of ao hash consensus, new member is not in the quorum
     ao_hash_consensus = get_ao_hash_consensus()
     assert ao_hash_consensus.getIsMember(old_oracle_member_to_remove)
     assert not ao_hash_consensus.getIsMember(new_oracle_member_to_add)
     assert ao_hash_consensus.getQuorum() == 5
-    # 28), 32) before vote old member still in the quorum of vebo hash consensus, new member is not in the quorum
+    # 28), 32) before vote old member is still in the quorum of vebo hash consensus, new member is not in the quorum
     vebo_hash_consensus = get_vebo_hash_consensus()
     assert vebo_hash_consensus.getIsMember(old_oracle_member_to_remove)
     assert not vebo_hash_consensus.getIsMember(new_oracle_member_to_add)
     assert vebo_hash_consensus.getQuorum() == 5
 
-    # 29), 34) agent doesnt have role
+    # 29) agent doesnt have role
     assert not csm_hash_consensus.hasRole(MANAGE_MEMBERS_AND_QUORUM_ROLE, AGENT)
 
-    # 30), 33) after vote old member is in the quorum of cs hash consensus, new member is not in the quorum
+    # 30), 33) before vote old member is still in the quorum of cs hash consensus, new member is not in the quorum
     assert csm_hash_consensus.getIsMember(old_oracle_member_to_remove)
     assert not csm_hash_consensus.getIsMember(new_oracle_member_to_add)
     assert csm_hash_consensus.getQuorum() == 5
@@ -410,7 +410,7 @@ def test_vote(
     assert vebo_hash_consensus.getIsMember(new_oracle_member_to_add)
     assert vebo_hash_consensus.getQuorum() == 5
 
-    # 29), 34) agent doesnt have role
+    # 29) agent doesnt have role
     assert csm_hash_consensus.hasRole(MANAGE_MEMBERS_AND_QUORUM_ROLE, AGENT)
 
     # 30), 33) after vote old member is not in the quorum of cs hash consensus, new member is in the quorum

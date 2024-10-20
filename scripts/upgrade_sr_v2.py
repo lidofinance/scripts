@@ -529,18 +529,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                 ]
             ),
         ),
-        # (
-        #     "34. Revoke MANAGE_MEMBERS_AND_QUORUM_ROLE role on CSHashConsensus from Aragon Agent",
-        #     agent_forward(
-        #         [
-        #             encode_oz_revoke_role(
-        #                 contract=contracts.csm_hash_consensus,
-        #                 role_name="MANAGE_MEMBERS_AND_QUORUM_ROLE",
-        #                 revoke_from=contracts.agent,
-        #             )
-        #         ]
-        #     ),
-        # ),
     )
 
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
