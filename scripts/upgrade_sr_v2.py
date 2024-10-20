@@ -522,7 +522,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "33) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to HashConsensus for ValidatorsExitBusOracle",
+            "33) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to CSHashConsensus for CSFeeOracle",
             agent_forward(
                 [
                     encode_add_cs_fee_oracle_member(new_oracle_member_to_add, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM),
