@@ -246,8 +246,9 @@ ORACLE_COMMITTEE = (
     "0xc79F702202E3A6B0B6310B537E786B9ACAA19BAf",  # Added into members in vote 2024/01/16
     # "0xEC4BfbAF681eb505B94E4a7849877DC6c600Ca3A", Excluded from members in vote 2024/08/06
     "0x61c91ECd902EB56e314bB2D5c5C07785444Ea1c8",
-    "0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d",
+    # "0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d",  Excluded from members in vote 2024/10/22
     "0xe57B3792aDCc5da47EF4fF588883F0ee0c9835C9",  # Added into members in vote 2024/08/06
+    "0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12"   # Added into members in vote 2024/10/22
 )
 
 # WithdrawalQueueERC721

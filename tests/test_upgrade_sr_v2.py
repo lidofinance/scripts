@@ -15,6 +15,10 @@ from utils.test.event_validators.easy_track import (
     EVMScriptFactoryAdded,
 )
 from utils.easy_track import create_permissions, create_permissions_overloaded
+from utils.test.event_validators.hash_consensus import (
+    validate_hash_consensus_member_removed,
+    validate_hash_consensus_member_added,
+)
 
 # Addresses that will not be changed
 
@@ -27,6 +31,9 @@ VALIDATORS_EXIT_BUS_ORACLE = "0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e"
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 BURNER = "0xD15a672319Cf0352560eE76d9e89eAB0889046D3"
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
+
+HASH_CONSENSUS_FOR_AO = "0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288"
+HASH_CONSENSUS_FOR_VEBO = "0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a"
 
 # aragon repo
 NODE_OPERATORS_REGISTRY_REPO = "0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1831"
@@ -115,6 +122,11 @@ MANAGE_CONSENSUS_VERSION_ROLE = "0xc31b1e4b732c5173dc51d519dfa432bad95550ecc4b0f
 ## CSM
 RESUME_ROLE = "0x2fc10cc8ae19568712f7a176fb4978616a610650813c9d05326c34abb62749c7"
 REQUEST_BURN_SHARES_ROLE = "0x4be29e0e4eb91f98f709d98803cba271592782e293b84a625e025cbb40197ba8"
+MANAGE_MEMBERS_AND_QUORUM_ROLE = "0x66a484cf1a3c6ef8dfd59d24824943d2853a29d96f34a01271efc55774452a51"
+
+# Oracles members
+old_oracle_member_to_remove = "0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d"
+new_oracle_member_to_add = "0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12"
 
 
 class StakingModuleItem(NamedTuple):
@@ -296,6 +308,25 @@ def test_vote(
     # 26) no factory for csm yet
     assert EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY not in evm_script_factories_before
 
+    # 27), 31) before vote old member is still in the quorum of ao hash consensus, new member is not in the quorum
+    ao_hash_consensus = get_ao_hash_consensus()
+    assert ao_hash_consensus.getIsMember(old_oracle_member_to_remove)
+    assert not ao_hash_consensus.getIsMember(new_oracle_member_to_add)
+    assert ao_hash_consensus.getQuorum() == 5
+    # 28), 32) before vote old member is still in the quorum of vebo hash consensus, new member is not in the quorum
+    vebo_hash_consensus = get_vebo_hash_consensus()
+    assert vebo_hash_consensus.getIsMember(old_oracle_member_to_remove)
+    assert not vebo_hash_consensus.getIsMember(new_oracle_member_to_add)
+    assert vebo_hash_consensus.getQuorum() == 5
+
+    # 29) agent doesnt have role
+    assert not csm_hash_consensus.hasRole(MANAGE_MEMBERS_AND_QUORUM_ROLE, AGENT)
+
+    # 30), 33) before vote old member is still in the quorum of cs hash consensus, new member is not in the quorum
+    assert csm_hash_consensus.getIsMember(old_oracle_member_to_remove)
+    assert not csm_hash_consensus.getIsMember(new_oracle_member_to_add)
+    assert csm_hash_consensus.getQuorum() == 5
+
     # START VOTE
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
@@ -373,11 +404,29 @@ def test_vote(
     # 26) Factory check
     assert EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY in evm_script_factories_after
 
+    # 27), 31) after vote old member is not in the quorum of ao hash consensus, new member is in the quorum
+    assert not ao_hash_consensus.getIsMember(old_oracle_member_to_remove)
+    assert ao_hash_consensus.getIsMember(new_oracle_member_to_add)
+    assert ao_hash_consensus.getQuorum() == 5
+    # 28), 32) after vote old member is not in the quorum of vebo hash consensus, new member is in the quorum
+    vebo_hash_consensus = get_vebo_hash_consensus()
+    assert not vebo_hash_consensus.getIsMember(old_oracle_member_to_remove)
+    assert vebo_hash_consensus.getIsMember(new_oracle_member_to_add)
+    assert vebo_hash_consensus.getQuorum() == 5
+
+    # 29) agent doesnt have role
+    assert csm_hash_consensus.hasRole(MANAGE_MEMBERS_AND_QUORUM_ROLE, AGENT)
+
+    # 30), 33) after vote old member is not in the quorum of cs hash consensus, new member is in the quorum
+    assert not csm_hash_consensus.getIsMember(old_oracle_member_to_remove)
+    assert csm_hash_consensus.getIsMember(new_oracle_member_to_add)
+    assert csm_hash_consensus.getQuorum() == 5
+
     # Events check
     display_voting_events(vote_tx)
     events = group_voting_events(vote_tx)
 
-    assert len(events) == 26
+    assert len(events) == 33
 
     validate_upgrade_events(events[0], NEW_LIDO_LOCATOR_IMPL)
     validate_dsm_roles_events(events)
@@ -473,6 +522,29 @@ def test_vote(
         ["LogScriptCall", "EVMScriptFactoryAdded", "ScriptResult", "ExecuteVote"],
     )
 
+    validate_hash_consensus_member_removed(events[26], old_oracle_member_to_remove, 5, new_total_members=8)
+    validate_hash_consensus_member_removed(events[27], old_oracle_member_to_remove, 5, new_total_members=8)
+    validate_grant_role_event(events[28], MANAGE_MEMBERS_AND_QUORUM_ROLE, AGENT, AGENT)
+    validate_hash_consensus_member_removed(
+        events[29],
+        old_oracle_member_to_remove,
+        5,
+        new_total_members=8,
+    )
+    validate_hash_consensus_member_added(events[30], new_oracle_member_to_add, 5, new_total_members=9)
+    validate_hash_consensus_member_added(
+        events[31],
+        new_oracle_member_to_add,
+        5,
+        new_total_members=9,
+    )
+    validate_hash_consensus_member_added(
+        events[32],
+        new_oracle_member_to_add,
+        5,
+        new_total_members=9,
+    )
+
 
 def get_staking_router():
     return interface.StakingRouter(STAKING_ROUTER)
@@ -516,6 +588,14 @@ def get_ao():
 
 def get_easy_track():
     return interface.EasyTrack(EASYTRACK)
+
+
+def get_ao_hash_consensus():
+    return interface.HashConsensus(HASH_CONSENSUS_FOR_AO)
+
+
+def get_vebo_hash_consensus():
+    return interface.HashConsensus(HASH_CONSENSUS_FOR_VEBO)
 
 
 def check_ossifiable_proxy_impl(proxy, expected_impl):

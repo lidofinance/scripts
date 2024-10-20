@@ -28,6 +28,16 @@ Community Staking Module
 24. Revoke RESUME_ROLE role on CSM from Aragon Agent
 25. Update initial epoch on CSHashConsensus
 26. Add CSMSettleElStealingPenalty factory to EasyTrack
+
+Instadapp oracle rotation
+
+27) Remove the oracle member with address 0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d from HashConsensus for AccountingOracle
+28) Remove the oracle member with address 0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d from HashConsensus for ValidatorsExitBusOracle
+29) Grant MANAGE_MEMBERS_AND_QUORUM_ROLE role on CSHashConsensus to Aragon Agent
+30) Remove the oracle member with address 0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d from CSHashConsensus for CSFeeOracle
+31) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to HashConsensus for AccountingOracle
+32) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to HashConsensus for ValidatorsExitBusOracle
+33) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to CSHashConsensus for CSFeeOracle
 """
 
 import time
@@ -110,12 +120,23 @@ MIN_DEPOSIT_BLOCK_DISTANCES = [
     SIMPLE_DVT_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE,
 ]
 
+# Oracle quorum
+
+HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM = 5
+HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM = 5
+
 # CSM
 ## Easy track
 EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY = "0xF6B6E7997338C48Ea3a8BCfa4BB64a315fDa76f4"
 
 ## Parameters
 CS_ORACLE_INITIAL_EPOCH = 326715
+HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM = 5
+
+# Oracles members
+old_oracle_member_to_remove = "0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d"
+new_oracle_member_to_add = "0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12"
+
 
 description = """
 Release the Community Staking Module (CSM) for permissionless staking and upgrade the Staking Router to ensure compatibility with CSM and future modules, improving system efficiency. A detailed action plan can be found [on the research forum](https://research.lido.fi/t/staking-router-community-staking-module-upgrade-announcement/8612/6).
@@ -181,6 +202,42 @@ def get_repo_uri(repo_address: str) -> str:
 def get_repo_version(repo_address: str) -> tuple[int, int, int]:
     contract = interface.Repo(repo_address).getLatest()
     return contract["semanticVersion"]
+
+
+def encode_remove_accounting_oracle_member(member: str, quorum: int) -> Tuple[str, str]:
+    hash_consensus = contracts.hash_consensus_for_accounting_oracle
+
+    return (hash_consensus.address, hash_consensus.removeMember.encode_input(member, quorum))
+
+
+def encode_remove_validators_exit_bus_oracle_member(member: str, quorum: int) -> Tuple[str, str]:
+    hash_consensus = contracts.hash_consensus_for_validators_exit_bus_oracle
+
+    return (hash_consensus.address, hash_consensus.removeMember.encode_input(member, quorum))
+
+
+def encode_remove_validators_cs_fee_oracle_member(member: str, quorum: int) -> Tuple[str, str]:
+    hash_consensus = contracts.csm_hash_consensus
+
+    return (hash_consensus.address, hash_consensus.removeMember.encode_input(member, quorum))
+
+
+def encode_add_accounting_oracle_member(member: str, quorum: int) -> Tuple[str, str]:
+    hash_consensus = contracts.hash_consensus_for_accounting_oracle
+
+    return (hash_consensus.address, hash_consensus.addMember.encode_input(member, quorum))
+
+
+def encode_add_validators_exit_bus_oracle_member(member: str, quorum: int) -> Tuple[str, str]:
+    hash_consensus = contracts.hash_consensus_for_validators_exit_bus_oracle
+
+    return (hash_consensus.address, hash_consensus.addMember.encode_input(member, quorum))
+
+
+def encode_add_cs_fee_oracle_member(member: str, quorum: int) -> Tuple[str, str]:
+    hash_consensus = contracts.csm_hash_consensus
+
+    return (hash_consensus.address, hash_consensus.addMember.encode_input(member, quorum))
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:
@@ -398,6 +455,78 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             add_evmscript_factory(
                 factory=EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY,
                 permissions=(create_permissions(contracts.csm, "settleELRewardsStealingPenalty")),
+            ),
+        ),
+        # Instadapp oracle rotation
+        (
+            "27) Remove the oracle member with address 0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d from HashConsensus for AccountingOracle",
+            agent_forward(
+                [
+                    encode_remove_accounting_oracle_member(
+                        old_oracle_member_to_remove, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
+                    )
+                ],
+            ),
+        ),
+        (
+            "28) Remove the oracle member with address 0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d from HashConsensus for ValidatorsExitBusOracle",
+            agent_forward(
+                [
+                    encode_remove_validators_exit_bus_oracle_member(
+                        old_oracle_member_to_remove, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
+                    )
+                ],
+            ),
+        ),
+        (
+            "29. Grant MANAGE_MEMBERS_AND_QUORUM_ROLE role on CSHashConsensus to Aragon Agent",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.csm_hash_consensus,
+                        role_name="MANAGE_MEMBERS_AND_QUORUM_ROLE",
+                        grant_to=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+        (
+            "30) Remove the oracle member with address 0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d from CSHashConsensus for CSFeeOracle",
+            agent_forward(
+                [
+                    encode_remove_validators_cs_fee_oracle_member(
+                        old_oracle_member_to_remove,
+                        HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM,
+                    )
+                ],
+            ),
+        ),
+        (
+            "31) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to HashConsensus for AccountingOracle",
+            agent_forward(
+                [
+                    encode_add_accounting_oracle_member(
+                        new_oracle_member_to_add, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
+                    ),
+                ]
+            ),
+        ),
+        (
+            "32) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to HashConsensus for ValidatorsExitBusOracle",
+            agent_forward(
+                [
+                    encode_add_validators_exit_bus_oracle_member(
+                        new_oracle_member_to_add, HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM
+                    ),
+                ]
+            ),
+        ),
+        (
+            "33) Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to CSHashConsensus for CSFeeOracle",
+            agent_forward(
+                [
+                    encode_add_cs_fee_oracle_member(new_oracle_member_to_add, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM),
+                ]
             ),
         ),
     )
