@@ -15,6 +15,10 @@ from utils.test.event_validators.easy_track import (
     EVMScriptFactoryAdded,
 )
 from utils.easy_track import create_permissions, create_permissions_overloaded
+from utils.test.event_validators.hash_consensus import (
+    validate_hash_consensus_member_removed,
+    validate_hash_consensus_member_added,
+)
 
 # Addresses that will not be changed
 
@@ -516,6 +520,29 @@ def test_vote(
             permissions=(create_permissions(csm, "settleELRewardsStealingPenalty")),
         ),
         ["LogScriptCall", "EVMScriptFactoryAdded", "ScriptResult", "ExecuteVote"],
+    )
+
+    validate_hash_consensus_member_removed(events[26], old_oracle_member_to_remove, 5, new_total_members=8)
+    validate_hash_consensus_member_removed(events[27], old_oracle_member_to_remove, 5, new_total_members=8)
+    validate_grant_role_event(events[28], MANAGE_MEMBERS_AND_QUORUM_ROLE, AGENT, AGENT)
+    validate_hash_consensus_member_removed(
+        events[29],
+        old_oracle_member_to_remove,
+        5,
+        new_total_members=8,
+    )
+    validate_hash_consensus_member_added(events[30], new_oracle_member_to_add, 5, new_total_members=9)
+    validate_hash_consensus_member_added(
+        events[31],
+        new_oracle_member_to_add,
+        5,
+        new_total_members=9,
+    )
+    validate_hash_consensus_member_added(
+        events[32],
+        new_oracle_member_to_add,
+        5,
+        new_total_members=9,
     )
 
 
