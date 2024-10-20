@@ -423,7 +423,7 @@ def test_vote(
     assert csm_hash_consensus.getQuorum() == 5
 
     # Events check
-    display_voting_events(vote_tx)
+    # display_voting_events(vote_tx)
     events = group_voting_events(vote_tx)
 
     assert len(events) == 33
