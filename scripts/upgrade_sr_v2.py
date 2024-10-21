@@ -30,7 +30,6 @@ Community Staking Module
 26. Add CSMSettleElStealingPenalty factory to EasyTrack
 
 Instadapp oracle rotation
-
 27. Remove the oracle member with address 0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d from HashConsensus for AccountingOracle
 28. Remove the oracle member with address 0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d from HashConsensus for ValidatorsExitBusOracle
 29. Grant MANAGE_MEMBERS_AND_QUORUM_ROLE role on CSHashConsensus to Aragon Agent
