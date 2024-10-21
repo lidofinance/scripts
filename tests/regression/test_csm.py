@@ -9,6 +9,7 @@ from utils.config import (
 )
 from utils.dsm import UnvetArgs, to_bytes, set_single_guardian
 from utils.evm_script import encode_error
+from utils.staking_module import calc_module_reward_shares
 from utils.test.csm_helpers import csm_add_node_operator, get_ea_member, csm_upload_keys, get_ea_members
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.helpers import ETH
@@ -117,11 +118,12 @@ def test_deposit(node_operator, csm):
 def test_mint_rewards_happy_path(csm, fee_distributor):
     csm_shares_before = contracts.lido.sharesOf(csm)
     fee_distributor_shares_before = contracts.lido.sharesOf(fee_distributor)
-
-    oracle_report(cl_diff=ETH(1))
+    (report_tx, _) = oracle_report()
+    minted_shares = report_tx.events["TokenRebased"]["sharesMintedAsFees"]
+    csm_distributed_rewards = calc_module_reward_shares(CSM_MODULE_ID, minted_shares)
 
     assert csm_shares_before == contracts.lido.sharesOf(csm)
-    assert contracts.lido.sharesOf(fee_distributor) > fee_distributor_shares_before
+    assert contracts.lido.sharesOf(fee_distributor) == fee_distributor_shares_before + csm_distributed_rewards
 
 
 def test_csm_target_limits(csm, node_operator):
@@ -266,37 +268,40 @@ def test_csm_decrease_vetted_keys(csm, node_operator, stranger):
 
 @pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_penalize_node_operator(csm, accounting, node_operator, helpers):
-    bond_before = accounting.getBond(node_operator)
+    bond_shares_before = accounting.getBondShares(node_operator)
     tx = csm.submitInitialSlashing(node_operator, 0, {"from": contracts.cs_verifier})
     assert "StETHBurnRequested" in tx.events
-    assert accounting.getBond(node_operator) < bond_before
+    burnt_shares = tx.events["StETHBurnRequested"]["amountOfShares"]
+    assert accounting.getBondShares(node_operator) == bond_shares_before - burnt_shares
 
 
 @pytest.mark.usefixtures("deposits_to_csm")
-def test_csm_deposit_eth(csm, accounting, node_operator):
+def test_csm_eth_bond(csm, accounting, node_operator):
     manager_address = csm.getNodeOperator(node_operator)["managerAddress"]
     set_balance_in_wei(manager_address, ETH(2))
 
-    bond_before = accounting.getBond(node_operator)
+    bond_shares_before = accounting.getBondShares(node_operator)
+    shares = contracts.lido.getSharesByPooledEth(ETH(1))
     csm.depositETH(node_operator, {"from": manager_address, "value": ETH(1)})
-    assert accounting.getBond(node_operator) > bond_before
+    assert accounting.getBondShares(node_operator) == bond_shares_before + shares
 
 
 @pytest.mark.usefixtures("deposits_to_csm")
-def test_csm_deposit_steth(csm, accounting, node_operator):
+def test_csm_steth_bond(csm, accounting, node_operator):
     manager_address = csm.getNodeOperator(node_operator)["managerAddress"]
     set_balance_in_wei(manager_address, ETH(2))
 
-    bond_before = accounting.getBond(node_operator)
+    bond_shares_before = accounting.getBondShares(node_operator)
     contracts.lido.submit(ZERO_ADDRESS, {"from": manager_address, "value": ETH(1.5)})
     contracts.lido.approve(accounting, ETH(2), {"from": manager_address})
 
+    shares = contracts.lido.getSharesByPooledEth(ETH(1))
     csm.depositStETH(node_operator, ETH(1), (0, 0, 0, 0, 0), {"from": manager_address})
-    assert accounting.getBond(node_operator) > bond_before
+    assert accounting.getBondShares(node_operator) == bond_shares_before + shares
 
 
 @pytest.mark.usefixtures("deposits_to_csm")
-def test_csm_deposit_wsteth(csm, accounting, node_operator):
+def test_csm_wsteth_bond(csm, accounting, node_operator):
     manager_address = csm.getNodeOperator(node_operator)["managerAddress"]
     set_balance_in_wei(manager_address, ETH(2))
     contracts.lido.submit(ZERO_ADDRESS, {"from": manager_address, "value": ETH(1.5)})
@@ -304,9 +309,10 @@ def test_csm_deposit_wsteth(csm, accounting, node_operator):
     contracts.wsteth.wrap(ETH(1.5), {"from": manager_address})
     contracts.wsteth.approve(accounting, contracts.wsteth.balanceOf(manager_address), {"from": manager_address})
 
-    bond_before = accounting.getBond(node_operator)
+    shares = contracts.lido.getSharesByPooledEth(contracts.wsteth.getStETHByWstETH(contracts.wsteth.balanceOf(manager_address)))
+    bond_shares_before = accounting.getBondShares(node_operator)
     csm.depositWstETH(node_operator, contracts.wsteth.balanceOf(manager_address), (0, 0, 0, 0, 0), {"from": manager_address})
-    assert accounting.getBond(node_operator) > bond_before
+    assert accounting.getBondShares(node_operator) == bond_shares_before + shares
 
 
 @pytest.mark.usefixtures("deposits_to_csm")
