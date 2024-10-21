@@ -3,6 +3,7 @@ from web3 import Web3
 import eth_abi
 from brownie import chain, ZERO_ADDRESS, web3
 
+from utils.staking_module import calc_module_reward_shares
 from utils.test.extra_data import (
     ExtraDataService,
 )
@@ -22,12 +23,6 @@ SET_NODE_OPERATOR_LIMIT_ROLE = Web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")
 @pytest.fixture(scope="function")
 def impersonated_voting(accounts):
     return accounts.at(contracts.voting.address, force=True)
-
-
-def calc_module_reward_shares(module_id, shares_minted_as_fees):
-    distribution = contracts.staking_router.getStakingRewardsDistribution()
-    module_idx = distribution[1].index(module_id)
-    return distribution[2][module_idx] * shares_minted_as_fees // distribution[3]
 
 
 def calc_no_rewards(nor, no_id, minted_shares):
