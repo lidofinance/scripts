@@ -22,7 +22,6 @@ jobs:
           sudo df -h
           sudo swapon --show
           sudo swapoff -a
-          sudo rm /swapfile
           sudo touch /swapfile
           sudo fallocate -l 32G /swapfile
           sudo chmod 600 /swapfile
