@@ -16,7 +16,7 @@ from utils.test.snapshot_helpers import _chain_snapshot
 from .utils import get_slot
 
 SLOTS_COUNT_TO_CHECK = 16
-MAX_ARRAY_SIZE = 2**5
+MAX_ARRAY_SIZE = 2 ** 5
 
 
 class Frame(TypedDict):
@@ -63,7 +63,10 @@ def skip_slots() -> Sequence[tuple[str, int]]:
         # evmScriptFactories array
         (contracts.easy_track.address, 5),
         # Set initial epoch for CSM hash consensus
-        (contracts.csm_hash_consensus.address, 0)
+        (contracts.csm_hash_consensus.address, 0),
+        # change hash consensus members
+        (contracts.csm_hash_consensus.address, 2)
+
     ]
 
 
