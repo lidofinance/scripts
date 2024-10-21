@@ -148,6 +148,10 @@ Release the Community Staking Module (CSM) for permissionless staking and upgrad
 [Staking Router 2.0 upgrade](https://github.com/lidofinance/audits/blob/main/Ackee%20Blockchain%20Lido%20Staking%20Router%20v2%20Report%2010-24.pdf), [CSM](https://github.com/lidofinance/audits/blob/main/Ackee%20Blockchain%20Lido%20Community%20Staking%20Module%20Report%2010-24.pdf) both with deployment verification by Ackee Blockchain; [Staking Router 2.0 & CSM](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20CSM%20Security%20Audit%20Report%2010-24.pdf), [Lido Oracle](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Oracle%20Security%20Audit%20Report%2010-24.pdf) (incl. CSM Oracle) by Mixbytes;
 
 The AccountingOracle (negative rebase parameters, pluggable second opinion) was part of Staking Router 2.0 upgrade audits and also audited separately: [Mixbytes report](https://github.com/lidofinance/audits/blob/main/Lido%20Sanity%20Checker%20Security%20Audit%20Report.pdf) and [ChainSecurity report](https://github.com/lidofinance/audits/blob/main/ChainSecurity%20Code%20Assessment%20of%20LIP-23%20Negative%20Rebase%20Checks%20Smart%20Contracts%2006-24.pdf).
+
+Additionally, separate from the Staking Router 2.0 and CSM Release:
+
+3. **Rotate the Instadapp Oracle address**, [as requested on the forum](https://research.lido.fi/t/expansion-of-lidos-ethereum-oracle-set/2836/71). Items 27-33.
 """
 
 
