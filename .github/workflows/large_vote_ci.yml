@@ -17,6 +17,17 @@ jobs:
     runs-on: [protocol-heavy-runners]
     timeout-minutes: 150
     steps:
+      - name: Enabling swap
+        run: |
+          sudo df -h
+          sudo swapon --show
+          sudo swapoff -a
+          sudo touch /swapfile
+          sudo fallocate -l 32G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          sudo swapon --show
       - uses: actions/checkout@v3
       - name: Main action
         uses: ./.github/actions/brownie_fork_tests

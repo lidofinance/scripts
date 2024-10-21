@@ -19,7 +19,7 @@ development:
       gas_limit: 30000000
       mnemonic: brownie
       port: 8545
-      evm_version: london
+      evm_version: shanghai
     host: http://127.0.0.1
     id: mainnet-fork
     name: Ganache-CLI (Mainnet Fork)
@@ -48,6 +48,7 @@ development:
       gas_limit: 30000000
       mnemonic: brownie
       port: 8545
+      evm_version: shanghai
     host: http://127.0.0.1
     id: holesky-fork
     name: Ganache-CLI (Holesky Fork)

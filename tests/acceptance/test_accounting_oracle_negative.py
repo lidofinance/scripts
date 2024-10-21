@@ -1,17 +1,18 @@
-from typing import Callable
+from typing import Callable, List
 from hexbytes import HexBytes
 from web3 import Web3
 
 import pytest
 from brownie import ZERO_ADDRESS, Contract, MockHashConsensus, accounts, chain, interface, reverts, chain  # type: ignore
 from brownie.network.account import Account
-from configs.config_mainnet import MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT
+from configs.config_mainnet import MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION
 
 from utils.config import contracts, ACCOUNTING_ORACLE
 from utils.evm_script import encode_error
-from utils.test.extra_data import ExtraDataService, ItemType
+from utils.test.extra_data import ExtraDataService, ItemType, ExtraDataLengths
 from utils.test.oracle_report_helpers import (
     ZERO_HASH,
+    ZERO_BYTES32,
     AccountingReport,
     oracle_report,
     EXTRA_DATA_FORMAT_EMPTY,
@@ -19,7 +20,7 @@ from utils.test.oracle_report_helpers import (
 )
 
 NON_ZERO_HASH = ZERO_HASH[:-1] + b"\x01"
-FIELDS_WIDTH = ExtraDataService.Lengths
+FIELDS_WIDTH = ExtraDataLengths
 
 
 def test_sender_not_allowed(accounting_oracle: Contract, oracle_version: int, stranger: Account) -> None:
@@ -43,6 +44,7 @@ def test_sender_not_allowed(accounting_oracle: Contract, oracle_version: int, st
 
 def test_submitConsensusReport(accounting_oracle: Contract, hash_consensus: Contract) -> None:
     last_processing_ref_slot = accounting_oracle.getLastProcessingRefSlot()
+    far_future = 172191406800
 
     with reverts(
         encode_error(
@@ -66,7 +68,7 @@ def test_submitConsensusReport(accounting_oracle: Contract, hash_consensus: Cont
         accounting_oracle.submitConsensusReport(
             NON_ZERO_HASH,
             last_processing_ref_slot,
-            chain.time(),
+            far_future,
             {"from": hash_consensus},
         )
 
@@ -78,11 +80,12 @@ def test_submitConsensusReport(accounting_oracle: Contract, hash_consensus: Cont
             {"from": hash_consensus},
         )
 
+
     with reverts(encode_error("HashCannotBeZero()")):
         accounting_oracle.submitConsensusReport(
             ZERO_HASH,
             last_processing_ref_slot + 1,
-            chain.time() + 12,
+            far_future,
             {"from": hash_consensus},
         )
 
@@ -174,84 +177,99 @@ def test_setConsensusContract(accounting_oracle: Contract, aragon_agent: Account
             {"from": aragon_agent},
         )
 
+def test_finalize_upgrade(accounting_oracle: Contract, stranger: Account):
+    with reverts(encode_error("InvalidContractVersionIncrement()")):
+        accounting_oracle.finalizeUpgrade_v2(
+            1,
+            {"from": stranger},
+        )
+    with reverts(encode_error("InvalidContractVersionIncrement()")):
+        accounting_oracle.finalizeUpgrade_v2(
+            2,
+            {"from": stranger},
+        )
 
 class TestSubmitReportExtraDataList:
+    def build_extra_data(self, extra_data_items: List[bytes]) -> bytes:
+        return ZERO_BYTES32 + b"".join(extra_data_items)
+
+
     def test_too_short_extra_data_item(self):
-        extra_data = b"".join(
-            (
+        extra_data = self.build_extra_data(
+            [
                 build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [2]),
                 build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 2, [2], [2])[:36],
-            )
+            ]
         )
 
         with reverts(encode_error("InvalidExtraDataItem(uint256)", [1])):
             self.report(extra_data)
 
-        extra_data = b"".join(
-            (
+        extra_data = self.build_extra_data(
+            [
                 build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2, 3, 4, 5], [2]),
                 build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 2, [2], [2]),
-            )
+            ]
         )
 
         with reverts(encode_error("InvalidExtraDataItem(uint256)", [0])):
             self.report(extra_data)
 
     def test_nos_count_zero(self):
-        extra_data = b"".join(
-            (
+        extra_data = self.build_extra_data(
+            [
                 build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [2]),
                 build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 2, [], [1]),
-            )
+            ]
         )
 
         with reverts(encode_error("InvalidExtraDataItem(uint256)", [1])):
             self.report(extra_data)
 
     def test_module_id_zero(self):
-        extra_data = b"".join(
-            (
+        extra_data =  self.build_extra_data(
+            [
                 build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [2]),
                 build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 0, [2], [1]),
-            )
+            ]
         )
 
         with reverts(encode_error("InvalidExtraDataItem(uint256)", [1])):
             self.report(extra_data)
 
     def test_unexpected_extra_data_index(self):
-        extra_data = b"".join(
-            (
+        extra_data = self.build_extra_data(
+            [
                 build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [1]),
                 build_extra_data_item(2, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 2, [2], [1]),
-            )
+            ]
         )
 
         with reverts(encode_error("UnexpectedExtraDataIndex(uint256,uint256)", [0, 1])):
             self.report(extra_data)
 
-        extra_data = b"".join(
-            (
+        extra_data = self.build_extra_data(
+            [
                 build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [1]),
                 build_extra_data_item(3, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [1]),
-            )
+            ]
         )
 
         with reverts(encode_error("UnexpectedExtraDataIndex(uint256,uint256)", [1, 3])):
             self.report(extra_data)
 
-        extra_data = b"".join(
-            (
+        extra_data =  self.build_extra_data(
+            [
                 build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [1]),
                 build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [1]),
-            )
+            ]
         )
 
         with reverts(encode_error("UnexpectedExtraDataIndex(uint256,uint256)", [1, 0])):
             self.report(extra_data)
 
     def test_unsupported_extra_data_type(self):
-        extra_data = build_extra_data_item(0, ItemType.UNSUPPORTED, 1, [1], [1])
+        extra_data = self.build_extra_data([build_extra_data_item(0, ItemType.UNSUPPORTED, 1, [1], [1])])
 
         with reverts(
             encode_error(
@@ -262,11 +280,11 @@ class TestSubmitReportExtraDataList:
             self.report(extra_data, items_count=1)
 
     def test_invalid_extra_data_sort_order(self):
-        extra_data = b"".join(
-            (
+        extra_data = self.build_extra_data(
+            [
                 build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [1]),
                 build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [1]),
-            )
+            ]
         )
 
         with reverts(
@@ -277,17 +295,45 @@ class TestSubmitReportExtraDataList:
         ):
             self.report(extra_data)
 
-        extra_data = b"".join(
-            (
+        extra_data = self.build_extra_data(
+            [
                 build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [33], [250]),
                 build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [33], [1]),
-            )
+            ]
         )
 
         with reverts(
             encode_error(
                 "InvalidExtraDataSortOrder(uint256)",
                 [1],
+            )
+        ):
+            self.report(extra_data)
+
+        extra_data = self.build_extra_data(
+            [
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1, 3, 2, 4], [1, 1, 1, 1]),
+            ]
+        )
+
+        with reverts(
+            encode_error(
+                "InvalidExtraDataSortOrder(uint256)",
+                [0],
+            )
+        ):
+            self.report(extra_data)
+
+        extra_data = self.build_extra_data(
+            [
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [33, 35, 34, 36], [5000, 5000, 5000, 5000]),
+            ]
+        )
+
+        with reverts(
+            encode_error(
+                "InvalidExtraDataSortOrder(uint256)",
+                [0],
             )
         ):
             self.report(extra_data)
@@ -296,7 +342,7 @@ class TestSubmitReportExtraDataList:
         extra_data = extra_data_service.collect(
             {(1, 38): 1},
             {(1, 33): 250},
-            MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
+            MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
             1,
         )
 
@@ -310,7 +356,7 @@ class TestSubmitReportExtraDataList:
             )
         ):
             self.report(
-                extra_data.extra_data,
+                extra_data.extra_data_list[0],
                 items_count=extra_data.items_count - 1,
             )
 
@@ -323,11 +369,11 @@ class TestSubmitReportExtraDataList:
         extra_data = extra_data_service.collect(
             {(1, 38): 1},
             {(1, 33): 250},
-            MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
+            MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
             1,
         )
 
-        self.report(extra_data.extra_data, extra_data.items_count)
+        self.report(extra_data.extra_data_list[0], extra_data.items_count)
         with reverts(encode_error("ExtraDataAlreadyProcessed()")):
             accounting_oracle.submitReportExtraDataList(b"", {"from": consensus_member})
 
@@ -337,10 +383,10 @@ class TestSubmitReportExtraDataList:
 
     def report(self, extra_data: bytes, items_count: int = 2):
         oracle_report(
-            extraDataHash=Web3.keccak(extra_data),
+            extraDataHashList=[Web3.keccak(extra_data)],
             extraDataItemsCount=items_count,
             extraDataFormat=EXTRA_DATA_FORMAT_LIST,
-            extraDataList=extra_data,
+            extraDataList=[extra_data],
         )
 
 
@@ -463,7 +509,7 @@ class TestSubmitReportData:
         push_report: Callable,
     ):
         report = oracle_report(
-            extraDataHash=HexBytes(NON_ZERO_HASH),
+            extraDataHashList=[HexBytes(NON_ZERO_HASH)],
             dry_run=True,
         )
         push_report(report)
@@ -531,7 +577,7 @@ class TestSubmitReportData:
 
         report = oracle_report(
             extraDataFormat=EXTRA_DATA_FORMAT_LIST,
-            extraDataHash=HexBytes(ZERO_HASH),
+            extraDataHashList=[HexBytes(ZERO_HASH)],
             extraDataItemsCount=42,
             dry_run=True,
         )

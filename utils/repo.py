@@ -13,6 +13,14 @@ def add_implementation_to_nor_app_repo(version, address, content_uri):
     return _add_implementation_to_repo(contracts.nor_app_repo, version, address, content_uri)
 
 
+def add_implementation_to_sdvt_app_repo(version, address, content_uri):
+    return _add_implementation_to_repo(contracts.simple_dvt_app_repo, version, address, content_uri)
+
+
+def add_implementation_to_sandbox_app_repo(version, address, content_uri):
+    return _add_implementation_to_repo(contracts.sandbox_repo, version, address, content_uri)
+
+
 def add_implementation_to_voting_app_repo(version, address, content_uri):
     return _add_implementation_to_repo(contracts.voting_app_repo, version, address, content_uri)
 
