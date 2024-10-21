@@ -98,6 +98,9 @@ NOR_VERSION = 3
 SDVT_VERSION = 3
 AO_VERSION = 2
 
+OLD_NOR_VERSION = 2
+OLD_SDVT_VERSION = 2
+
 # CSM parameters
 
 CS_MODULE_NAME = "Community Staking"
@@ -242,6 +245,7 @@ def test_vote(
     simple_dvt = get_simple_dvt()
     staking_router = get_staking_router()
     easy_track = get_easy_track()
+    nor = get_nor()
 
     # Before voting tests
     # 1) Locator
@@ -270,6 +274,7 @@ def test_vote(
     # Check APM Node Operators Registry app repo has OLD_NOR_IMPL before vote
     # version set to 4, Content URI without changes
     assert_repo_before_vote(nor_old_app, 4, OLD_NOR_IMPL, NOR_URI)
+    assert nor.getContractVersion() == OLD_NOR_VERSION
     # SDVT
     # 10)-12)
     sdvt_app_repo = interface.Repo(SIMPLE_DVT_REPO)
@@ -279,6 +284,7 @@ def test_vote(
     # Check SimpleDVT app Repo repo has OLD_SDVT_IMPL before vote
     # version set to 1, Content URI without changes
     assert_repo_before_vote(sdvt_old_app, 1, OLD_SDVT_IMPL, SDVT_URI)
+    assert simple_dvt.getContractVersion() == OLD_SDVT_VERSION
     # AO
     # 13) Check implementation
     check_ossifiable_proxy_impl(ao_proxy, OLD_ACCOUNTING_ORACLE_IMPL)
@@ -365,6 +371,7 @@ def test_vote(
     # version set to 5, Content URI without changes
     nor_new_app = nor_app_repo.getLatest()
     assert_repo_update(nor_new_app, nor_old_app, NEW_NODE_OPERATORS_REGISTRY_IMPL, NOR_URI)
+    assert nor.getContractVersion() == NOR_VERSION
     # SDVT
     # 10)-12)
     # Check implementation address after vote
@@ -373,6 +380,7 @@ def test_vote(
     # version set to 2, Content URI without changes
     sdvt_new_app = sdvt_app_repo.getLatest()
     assert_repo_update(sdvt_new_app, sdvt_old_app, NEW_SIMPLE_DVT_IMPL, SDVT_URI)
+    assert simple_dvt.getContractVersion() == SDVT_VERSION
     # AO
     # 13)
     check_ossifiable_proxy_impl(ao_proxy, NEW_ACCOUNTING_ORACLE_IMPL)
@@ -564,6 +572,10 @@ def get_vebo():
 
 def get_simple_dvt():
     return interface.SimpleDVT(SIMPLE_DVT)
+
+
+def get_nor():
+    return interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
 
 
 def get_burner():
