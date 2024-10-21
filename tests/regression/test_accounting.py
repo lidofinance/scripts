@@ -1086,13 +1086,14 @@ def _fill_csm_module_if_empty():
     staking_modules = contracts.staking_router.getAllStakingModuleDigests()
     assert len(staking_modules) == 3, "Modules count mismatch"
 
-    def operators_count(digest):
-        return digest[0]
+    def active_keys_count(digest):
+        # total deposited - total exited
+        return digest[3][1] - digest[3][0]
 
-    assert operators_count(staking_modules[0]) > 0, "NOR module empty"
-    assert operators_count(staking_modules[1]) > 0, "Simple DVT module empty"
+    assert active_keys_count(staking_modules[0]) > 0, "NOR module empty"
+    assert active_keys_count(staking_modules[1]) > 0, "Simple DVT module empty"
 
-    if operators_count(staking_modules[2]) == 0:
+    if active_keys_count(staking_modules[2]) == 0:
         keys_count = 5
         address, proof = get_ea_member()
         csm_add_node_operator(contracts.csm, contracts.cs_accounting, address, proof, keys_count)
