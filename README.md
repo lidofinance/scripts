@@ -78,33 +78,33 @@ poetry shell
 ## ⚗️ Workflow
 ### 🐳 Docker
 #### The no-brainer workflow to run tests on any machine with **only Docker** installed
-Clone repo and build a fresh image:
+Clone the repo and build a fresh image:
 ```shell
-user@local:~# git clone git@github.com:lidofinance/scripts.git
-user@local:~# cd scripts
-user@local:~/scripts# docker build -t scripts-env .
+git clone git@github.com:lidofinance/scripts.git
+cd scripts
+docker build -t scripts-env .
 ```
-Run the container filling all ENV VARs:
-```shell
-user@local:~/scripts# docker run \
-    -e PINATA_CLOUD_TOKEN="<FILL>" \
-    -e WEB3_INFURA_PROJECT_ID="<FILL>" \
-    -e DEPLOYER="<FILL>" \
-    -it scripts-env bash
-```
-You are now inside the docker container, ready to run tests:
-```shell
-root@container:~/scripts# poetry run brownie test
-```
-If new tests have been added/branches switched/etc. outside the container - update files inside the running container:
-```shell
-# find the container id:
-user@local:~/scripts# docker ps -a
+Make sure you have set up all the ENV VARs you are using:
+- `PINATA_CLOUD_TOKEN`, `WEB3_INFURA_PROJECT_ID`, `DEPLOYER`, etc.
+- `ROOT_PASSWORD` for the ssh password
 
-# update files:
-user@local:~/scripts# docker exec <CONTAINER_ID> rm -rf /home/root/scripts/*
-user@local:~/scripts# docker cp . <CONTAINER_ID>:/home/root/scripts
+Run the container passing all ENV VARs you are using:
+```shell
+docker run -e ROOT_PASSWORD -e PINATA_CLOUD_TOKEN -e WEB3_INFURA_PROJECT_ID -e DEPLOYER -d -p 2222:22 scripts-env
 ```
+Now connect to the running container using SSH:
+```shell
+#ssh-keygen -R [localhost]:2222 # use this if you get a 'REMOTE HOST IDENTIFICATION HAS CHANGED' error
+ssh root@localhost -p 2222
+# type 'yes' and then <ENTER> if you are asked 'Are you sure you want to continue connecting'
+# use password from $ROOT_PASSWORD ENV VAR
+```
+You now have a fully functional environment to run tests in, which already contains the repo from which the image was built:
+```shell
+poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
+```
+You can use VS Code/PyCharm to connect via SSH and make code changes.
+For future maintenance, see [Dockerfile](Dockerfile).
 
 ### Network setup
 
