@@ -46,5 +46,5 @@ RUN poetry run brownie --version | grep 'Brownie v1.20.2' || (echo "Incorrect br
 EXPOSE 22
 
 
-# start sshd and pass all ENV VARs from the container
+# start sshd, set root password for incoming connections and pass all ENV VARs from the container
 CMD ["/bin/bash", "-c", "env | grep -v 'no_proxy' >> /etc/environment && echo root:${ROOT_PASSWORD} | chpasswd && exec /usr/sbin/sshd -D"]
