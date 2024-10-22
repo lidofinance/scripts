@@ -76,6 +76,35 @@ poetry shell
 ```
 
 ## ⚗️ Workflow
+### 🐳 Docker
+#### The no-brainer workflow to run tests on any machine with **only Docker** installed
+Clone repo and build a fresh image:
+```shell
+user@local:~# git clone git@github.com:lidofinance/scripts.git
+user@local:~# cd scripts
+user@local:~/scripts# docker build -t scripts-env .
+```
+Run the container filling all ENV VARs:
+```shell
+user@local:~/scripts# docker run \
+    -e PINATA_CLOUD_TOKEN="<FILL>" \
+    -e WEB3_INFURA_PROJECT_ID="<FILL>" \
+    -e DEPLOYER="<FILL>" \
+    -it scripts-env bash
+```
+You are now inside the docker container, ready to run tests:
+```shell
+root@container:~/scripts# poetry run brownie test
+```
+If new tests have been added/branches switched/etc. outside the container - update files inside the running container:
+```shell
+# find the container id:
+user@local:~/scripts# docker ps -a
+
+# update files:
+user@local:~/scripts# docker exec <CONTAINER_ID> rm -rf /home/root/scripts/*
+user@local:~/scripts# docker cp . <CONTAINER_ID>:/home/root/scripts
+```
 
 ### Network setup
 
