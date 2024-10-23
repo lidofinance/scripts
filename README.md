@@ -84,20 +84,23 @@ git clone git@github.com:lidofinance/scripts.git
 cd scripts
 docker build -t scripts-env .
 ```
-Make sure you have set up all the ENV VARs you are using:
-- `PINATA_CLOUD_TOKEN`, `WEB3_INFURA_PROJECT_ID`, `DEPLOYER`, etc.
-- `ROOT_PASSWORD` for the ssh password
+Set up all the ENV VARs you are using:
+- `WEB3_INFURA_PROJECT_ID` required to run tests
+- `ROOT_PASSWORD` arbitrary password used to connect to the container ssh
 
-Run the container passing all ENV VARs you are using:
+Run the container (you can specify any ENV VARs you are using):
 ```shell
-docker run -e ROOT_PASSWORD -e PINATA_CLOUD_TOKEN -e WEB3_INFURA_PROJECT_ID -e DEPLOYER -d -p 2222:22 scripts-env
+docker run -e ROOT_PASSWORD -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 scripts-env
 ```
 Now connect to the running container using SSH:
 ```shell
 #ssh-keygen -R [localhost]:2222 # use this if you get a 'REMOTE HOST IDENTIFICATION HAS CHANGED' error
+
 ssh root@localhost -p 2222
+
 # type 'yes' and then <ENTER> if you are asked 'Are you sure you want to continue connecting'
-# use password from $ROOT_PASSWORD ENV VAR
+
+# use password specified in $ROOT_PASSWORD
 ```
 You now have a fully functional environment to run tests in, which already contains the repo from which the image was built:
 ```shell

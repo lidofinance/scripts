@@ -7,11 +7,15 @@ RUN corepack prepare yarn@1.22 --activate
 RUN poetry self update 1.8.2
 
 
-# install project-defined prerequisites
+# copy repo file
 WORKDIR /home/root/scripts
-
 COPY . .
 
+# remove all temporary files to ensure correct compilation
+RUN rm -rf ./build/contracts/*.json
+
+
+# install project-defined prerequisites
 RUN poetry install
 RUN yarn
 RUN poetry run brownie networks import network-config.yaml True
