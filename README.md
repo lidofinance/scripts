@@ -14,12 +14,49 @@
 
 Lido DAO Aragon omnibus voting scripts.
 
-## 🏁 Getting started
-
 - This project uses Brownie development framework. Learn more about
   [Brownie](https://eth-brownie.readthedocs.io/en/stable/index.html).
 - [Poetry](https://python-poetry.org/) dependency and packaging manager is used
   to bootstrap environment and keep the repo sane.
+
+## 🐳 Docker: quick and easy environment setup
+**The no-brainer workflow for setting up a Docker container to run scripts & tests**
+Clone the repo and build a fresh image:
+```shell
+git clone git@github.com:lidofinance/scripts.git
+cd scripts
+docker build -t scripts-env .
+```
+Set up all the ENV VARs you are using:
+- `WEB3_INFURA_PROJECT_ID` - **mandatory** for the execution of tests
+- `ROOT_PASSWORD` - **mandatory** arbitrary password used to connect to the container SSH
+
+Run the container (you can specify any ENV VARs you are using, but **ROOT_PASSWORD** is always mandatory):
+```shell
+docker run -e ROOT_PASSWORD -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 scripts-env
+```
+Now connect to the running container using SSH:
+```shell
+ssh root@localhost -p 2222
+```
+> [!NOTE]
+> If you see a 'REMOTE HOST IDENTIFICATION HAS CHANGED' error - `ssh-keygen -R [localhost]:2222`
+> 
+> If you are asked 'Are you sure you want to continue connecting' - type `yes` and hit `<ENTER>`
+> 
+> Use the password specified in $ROOT_PASSWORD when prompted
+
+You now have a fully functional environment to run scripts & tests in, which already contains the repo from which the image was built:
+```shell
+poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
+```
+**To use the container as a full-featured development environment:**
+- Download VS Code/PyCharm locally and connect via SSH to make code changes inside the container
+- Use `git` directly in the container to pull/push code changes
+
+For future maintenance, see [Dockerfile](Dockerfile).
+
+## 🏁 Manual installation
 
 ### Prerequisites
 
@@ -76,41 +113,6 @@ poetry shell
 ```
 
 ## ⚗️ Workflow
-### 🐳 Docker
-#### The no-brainer workflow to run tests on any machine with **only Docker** installed
-Clone the repo and build a fresh image:
-```shell
-git clone git@github.com:lidofinance/scripts.git
-cd scripts
-docker build -t scripts-env .
-```
-Set up all the ENV VARs you are using:
-- `WEB3_INFURA_PROJECT_ID` required to run tests
-- `ROOT_PASSWORD` arbitrary password used to connect to the container SSH
-
-Run the container (you can specify any ENV VARs you are using):
-```shell
-docker run -e ROOT_PASSWORD -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 scripts-env
-```
-Now connect to the running container using SSH:
-```shell
-#ssh-keygen -R [localhost]:2222 # use this if you get a 'REMOTE HOST IDENTIFICATION HAS CHANGED' error
-
-ssh root@localhost -p 2222
-
-# type 'yes' and then <ENTER> if you are asked 'Are you sure you want to continue connecting'
-
-# use password specified in $ROOT_PASSWORD
-```
-You now have a fully functional environment to run tests in, which already contains the repo from which the image was built:
-```shell
-poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
-```
-**To use the container as a full-featured development environment:**
-- Download VS Code/PyCharm locally and connect via SSH to make code changes inside the container
-- Use `git` directly in the container to pull/push code changes
-
-For future maintenance, see [Dockerfile](Dockerfile).
 
 ### Network setup
 
