@@ -107,6 +107,7 @@ You now have a fully functional environment to run tests in, which already conta
 poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
 ```
 You can use VS Code/PyCharm to connect via SSH and make code changes.
+You can use `git` inside the container to pull/push code changes.
 For future maintenance, see [Dockerfile](Dockerfile).
 
 ### Network setup
