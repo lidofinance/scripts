@@ -86,7 +86,7 @@ docker build -t scripts-env .
 ```
 Set up all the ENV VARs you are using:
 - `WEB3_INFURA_PROJECT_ID` required to run tests
-- `ROOT_PASSWORD` arbitrary password used to connect to the container ssh
+- `ROOT_PASSWORD` arbitrary password used to connect to the container SSH
 
 Run the container (you can specify any ENV VARs you are using):
 ```shell
@@ -106,8 +106,10 @@ You now have a fully functional environment to run tests in, which already conta
 ```shell
 poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
 ```
-You can use VS Code/PyCharm to connect via SSH and make code changes.
-You can use `git` inside the container to pull/push code changes.
+**To use the container as a full-featured development environment:**
+- Download VS Code/PyCharm locally and connect via SSH to make code changes inside the container
+- Use `git` directly in the container to pull/push code changes
+
 For future maintenance, see [Dockerfile](Dockerfile).
 
 ### Network setup
