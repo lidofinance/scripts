@@ -11,10 +11,9 @@ RUN poetry self update 1.8.2
 # copy repo files
 WORKDIR /home/root/scripts
 COPY . .
-# copy precompiled arm64 compilers if runngin on arm64
+# copy precompiled arm64 compilers if running on arm64
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
       echo "Building for ARM64 architecture"; \
-      # ARM64-specific actions
       cp ./linux_arm64_compilers/solc* /home/root/.solcx/; \
       cp ./linux_arm64_compilers/vyper* /home/root/.vvm/; \
     fi
