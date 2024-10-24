@@ -1,5 +1,6 @@
 FROM nikolaik/python-nodejs:python3.10-nodejs18-bullseye
 USER root
+ARG TARGETARCH
 
 
 # install common prerequisites
@@ -7,9 +8,17 @@ RUN corepack prepare yarn@1.22 --activate
 RUN poetry self update 1.8.2
 
 
-# copy repo file
+# copy repo files
 WORKDIR /home/root/scripts
 COPY . .
+# copy precompiled arm64 compilers if runngin on arm64
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+      echo "Building for ARM64 architecture"; \
+      # ARM64-specific actions
+      cp ./linux_arm64_compilers/solc* /home/root/.solcx/; \
+      cp ./linux_arm64_compilers/vyper* /home/root/.vvm/; \
+    fi
+# compilers for ammd64 will be downloadede by brownie
 
 
 # remove all temporary files to ensure correct compilation
