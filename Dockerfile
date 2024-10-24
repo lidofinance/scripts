@@ -1,4 +1,4 @@
-FROM nikolaik/python-nodejs:python3.10-nodejs18-bullseye
+FROM nikolaik/python-nodejs:python3.10-nodejs18
 USER root
 ARG TARGETARCH
 
@@ -9,15 +9,18 @@ RUN poetry self update 1.8.2
 
 
 # copy repo files
-WORKDIR /home/root/scripts
+WORKDIR /root/scripts
 COPY . .
 # copy precompiled arm64 compilers if running on arm64
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
       echo "Building for ARM64 architecture"; \
-      cp ./linux_arm64_compilers/solc* /home/root/.solcx/; \
-      cp ./linux_arm64_compilers/vyper* /home/root/.vvm/; \
+      mkdir /root/.solcx; \
+      mkdir /root/.vvm; \
+      cp ./linux_arm64_compilers/solc* /root/.solcx/; \
+      pip install vyper==0.3.7; \
+      ln -s /usr/local/bin/vyper /root/.vvm/vyper-0.3.7; \
     fi
-# compilers for ammd64 will be downloadede by brownie
+# compilers for ammd64 will be downloaded by brownie later in this Dockerfile
 
 
 # remove all temporary files to ensure correct compilation
@@ -28,6 +31,7 @@ RUN rm -f ./build/contracts/*.json
 RUN poetry install
 RUN yarn
 RUN poetry run brownie networks import network-config.yaml True
+# download compilers for amd64 and compile contracts
 RUN poetry run brownie compile
 
 # install & configure sshd
@@ -42,7 +46,7 @@ RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/
 RUN echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config
 
 # set default working dir for ssh clients
-RUN echo "cd /home/root/scripts" >> /root/.bashrc
+RUN echo "cd /root/scripts" >> /root/.bashrc
 
 
 # verify prerequisites versions
