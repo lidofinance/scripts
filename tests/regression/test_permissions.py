@@ -54,6 +54,10 @@ from utils.config import (
 
 @pytest.fixture(scope="function")
 def protocol_permissions():
+    return protocol_permissions_list()
+
+
+def protocol_permissions_list():
     return {
         LIDO_LOCATOR: {
             "contract_name": "LidoLocator",
