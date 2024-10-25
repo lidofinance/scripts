@@ -1,6 +1,5 @@
 FROM nikolaik/python-nodejs:python3.10-nodejs18
 USER root
-ARG TARGETARCH
 
 
 # install common prerequisites
@@ -11,16 +10,6 @@ RUN poetry self update 1.8.2
 # copy repo files
 WORKDIR /root/scripts
 COPY . .
-# copy precompiled arm64 compilers if running on arm64
-RUN if [ "$TARGETARCH" = "arm64" ]; then \
-      echo "Building for ARM64 architecture"; \
-      mkdir /root/.solcx; \
-      mkdir /root/.vvm; \
-      cp ./linux_arm64_compilers/solc* /root/.solcx/; \
-      pip install vyper==0.3.7; \
-      ln -s /usr/local/bin/vyper /root/.vvm/vyper-0.3.7; \
-    fi
-# compilers for ammd64 will be downloaded by brownie later in this Dockerfile
 
 
 # remove all temporary files to ensure correct compilation
