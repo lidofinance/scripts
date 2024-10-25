@@ -25,7 +25,8 @@ Clone the repo and build a fresh image:
 ```shell
 git clone git@github.com:lidofinance/scripts.git
 cd scripts
-docker build -t scripts-env .
+git checkout "feat/docker-amd64"
+docker build --platform linux/amd64 -t scripts-env .
 ```
 Set up all the ENV VARs you are using:
 - `WEB3_INFURA_PROJECT_ID` - **mandatory** for the execution of tests
