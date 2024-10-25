@@ -25,6 +25,7 @@ Clone the repo and build a fresh image:
 ```shell
 git clone git@github.com:lidofinance/scripts.git
 cd scripts
+git checkout "feat/docker"
 docker build -t scripts-env .
 ```
 Set up all the ENV VARs you are using:
