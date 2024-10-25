@@ -21,11 +21,11 @@ Lido DAO Aragon omnibus voting scripts.
 
 ## 🐳 Docker: quick and easy environment setup
 **The no-brainer workflow for setting up a Docker container to run scripts & tests**
+
 Clone the repo and build a fresh image:
 ```shell
 git clone git@github.com:lidofinance/scripts.git
 cd scripts
-git checkout "feat/docker"
 docker build -t scripts-env .
 ```
 Set up all the ENV VARs you are using:
@@ -47,7 +47,7 @@ ssh root@localhost -p 2222
 > 
 > Use the password specified in $ROOT_PASSWORD when prompted
 
-You now have a fully functional environment to run scripts & tests in, which already contains the repo from which the image was built:
+You now have a fully functional environment to run scripts & tests in, which already contains the repo from which the image was built, for example:
 ```shell
 poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
 ```
