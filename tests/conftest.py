@@ -164,6 +164,7 @@ class Helpers:
             Contract.from_explorer(WITHDRAWAL_QUEUE)
             Contract.from_explorer(STAKING_ROUTER)
             Contract.from_explorer(VOTING)
+            Contract.from_explorer(SIMPLE_DVT)
 
             Helpers._etherscan_is_fetched = True
 
