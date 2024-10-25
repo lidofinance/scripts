@@ -37,6 +37,9 @@ Instadapp oracle rotation
 31. Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to HashConsensus for AccountingOracle
 32. Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to HashConsensus for ValidatorsExitBusOracle
 33. Add oracle member with address 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 to CSHashConsensus for CSFeeOracle
+
+
+Vote #180 passed & executed on Oct-25-2024 04:03:23 PM UTC, block #21043699.
 """
 
 import time
