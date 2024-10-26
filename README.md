@@ -28,6 +28,8 @@ git clone git@github.com:lidofinance/scripts.git
 cd scripts
 docker build -t scripts-env .
 ```
+If you are running on an arm64 processor (including Apple Silicon) - you will have to wait up to 2 hours while the Solidity compilers compile.
+
 Set up all the ENV VARs you are using:
 - `WEB3_INFURA_PROJECT_ID` - **mandatory** for the execution of tests
 - `ROOT_PASSWORD` - **mandatory** arbitrary password used to connect to the container SSH
