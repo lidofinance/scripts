@@ -8,21 +8,80 @@ RUN corepack prepare yarn@1.22 --activate
 RUN poetry self update 1.8.2
 
 
-# copy repo files
-WORKDIR /root/scripts
-COPY . .
-
 # if running on arm64
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
-      # copy precompiled arm64 compilers
+      # Build solc
+      # install cmake
+      apt update; \
+      apt install cmake -y; \
+      # install boost
+      apt install libboost-all-dev -y; \
+    fi
+
+WORKDIR /root/
+
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+      # Download solc repo
+      git clone --recursive https://github.com/ethereum/solidity.git; \
       mkdir /root/.solcx; \
-      cp ./linux_arm64_compilers/solc* /root/.solcx/; \
+    fi
+
+WORKDIR /root/solidity/
+
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+      # build solc-v0.8.28
+      git checkout v0.8.28; \
+      grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
+      ./scripts/build.sh; \
+      mv /usr/local/bin/solc /root/.solcx/solc-v0.8.28; \
+      /root/.solcx/solc-v0.8.28 --version | grep 'Version: 0.8.28+' || (echo "Incorrect solc-v0.8.28 version" && exit 1); \
+      git checkout .; \
+      git checkout develop; \
+      # build solc-v0.8.10
+      git checkout v0.8.10; \
+      grep -rl '\-Werror' ./cmake/EthCompilerSettings.cmake | xargs sed -i 's/\-Werror/\-Wno\-error/g'; \
+      grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
+      ./scripts/build.sh; \
+      mv /usr/local/bin/solc /root/.solcx/solc-v0.8.10; \
+      /root/.solcx/solc-v0.8.10 --version | grep 'Version: 0.8.10+' || (echo "Incorrect solc-v0.8.10 version" && exit 1); \
+      git checkout .; \
+      git checkout develop; \
+      # build solc-v0.8.9
+      git checkout v0.8.9; \
+      grep -rl '\-Werror' ./cmake/EthCompilerSettings.cmake | xargs sed -i 's/\-Werror/\-Wno\-error/g'; \
+      grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
+      ./scripts/build.sh; \
+      mv /usr/local/bin/solc /root/.solcx/solc-v0.8.9; \
+      /root/.solcx/solc-v0.8.9 --version | grep 'Version: 0.8.9+' || (echo "Incorrect solc-v0.8.9 version" && exit 1); \
+      git checkout .; \
+      git checkout develop; \
+      # build solc-v0.8.4
+      git checkout v0.8.4; \
+      grep -rl '\-Werror' ./cmake/EthCompilerSettings.cmake | xargs sed -i 's/\-Werror/\-Wno\-error/g'; \
+      grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
+      grep -rl '#include <string>' ./liblangutil/SourceLocation.h | xargs sed -i 's/#include <string>/#include <string>\n#include <limits>/g'; \
+      grep -rl 'size_t' ./tools/yulPhaser/PairSelections.h | xargs sed -i 's/size_t/std::size_t/g'; \
+      grep -rl 'size_t' ./tools/yulPhaser/Selections.h | xargs sed -i 's/size_t/std::size_t/g'; \
+      ./scripts/build.sh; \
+      mv /usr/local/bin/solc /root/.solcx/solc-v0.8.4; \
+      /root/.solcx/solc-v0.8.4 --version | grep 'Version: 0.8.4+' || (echo "Incorrect solc-v0.8.4 version" && exit 1); \
+      git checkout .; \
+      git checkout develop; \
+    fi
+
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
       # manually install vyper
       mkdir /root/.vvm; \
       pip install vyper==0.3.7; \
       ln -s /usr/local/bin/vyper /root/.vvm/vyper-0.3.7; \
+      /root/.vvm/vyper-0.3.7 --version | grep '0.3.7+' || (echo "Incorrect vyper-0.3.7 version" && exit 1); \
     fi
 # compilers for amd64 will be downloaded by brownie later in this Dockerfile
+
+
+# copy repo files
+WORKDIR /root/scripts
+COPY . .
 
 
 # remove all temporary files to ensure correct compilation
