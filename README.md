@@ -57,8 +57,6 @@ poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
 - Download VS Code/PyCharm locally and connect via SSH to make code changes inside the container
 - Use `git` directly in the container to pull/push code changes
 
-For future maintenance, see [Dockerfile](Dockerfile).
-
 ## 🏁 Manual installation
 
 ### Prerequisites
