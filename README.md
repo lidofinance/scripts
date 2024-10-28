@@ -18,27 +18,30 @@ Lido DAO Aragon omnibus voting scripts.
   [Brownie](https://eth-brownie.readthedocs.io/en/stable/index.html).
 - [Poetry](https://python-poetry.org/) dependency and packaging manager is used
   to bootstrap environment and keep the repo sane.
+</br>
 
 ## 🐳 Docker: quick and easy environment setup
 **The no-brainer workflow for setting up a Docker container to run scripts & tests**
 
-Clone the repo and build a fresh image:
+#### Step 1. Clone the repo and build a fresh image:
 ```shell
 git clone git@github.com:lidofinance/scripts.git
 cd scripts
 docker build -t scripts-env .
 ```
-If you are running on an arm64 processor (including Apple Silicon) - you will have to wait up to 2 hours while the Solidity compilers compile.
+Note: *If you are running on an arm64 processor (including Apple Silicon) - you will have to wait up to 2 hours while the Solidity compilers compile.*
 
-Set up all the ENV VARs you are using:
+#### Step 2. Set up all the ENV VARs you are using:
 - `WEB3_INFURA_PROJECT_ID` - **mandatory** for the execution of tests
 - `ROOT_PASSWORD` - **mandatory** arbitrary password used to connect to the container SSH
 
-Run the container (you can specify any ENV VARs you are using, but **ROOT_PASSWORD** is always mandatory):
+#### Step 3. Run the container
+You can specify any ENV VARs you are using, but **ROOT_PASSWORD is always mandatory**:
 ```shell
 docker run -e ROOT_PASSWORD -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 scripts-env
 ```
-Now connect to the running container using SSH:
+
+#### Step 4. Now connect to the running container using SSH:
 ```shell
 ssh root@localhost -p 2222
 ```
@@ -49,13 +52,19 @@ ssh root@localhost -p 2222
 > 
 > Use the password specified in $ROOT_PASSWORD when prompted
 
-You now have a fully functional environment to run scripts & tests in, which already contains the repo from which the image was built, for example:
+</br>
+
+You now have a fully functional environment to run scripts & tests in, which already **contains the repo** from which the image was built, for example:
 ```shell
 poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
 ```
+
+</br>
+
 **To use the container as a full-featured development environment:**
 - Download VS Code/PyCharm locally and connect via SSH to make code changes inside the container
-- Use `git` directly in the container to pull/push code changes
+- Use `git` directly in the container to pull/push code changes  
+</br>
 
 ## 🏁 Manual installation
 
@@ -65,6 +74,8 @@ poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
 - Pip >= 20.0
 - Node >= 16.0
 - yarn >= 1.22
+
+</br>
 
 #### Step 1. Install Poetry
 
@@ -113,6 +124,8 @@ need it.
 poetry shell
 ```
 
+</br>
+
 ## ⚗️ Workflow
 
 ### Network setup
@@ -144,6 +157,7 @@ it also could be useful to go with `holesky` and `holesky-fork` testnets first.
 > **Sepolia is partially supported.**
 > At the moment not all parameters are set in `configs/config_sepolia.py` and acceptance/regression/snapshot tests are not operational.
 
+</br>
 
 ### Environment variables setup
 
@@ -208,6 +222,8 @@ To make default report for acceptance and regression tests after voting executio
 export REPORT_AFTER_VOTE=1
 ```
 
+</br>
+
 ## Tests structure
 
 ### `tests/acceptance`
@@ -225,6 +241,8 @@ Directory contains snapshot-scenario tests. This tests run only if there are any
 ### `test/vote_*.py`
 
 Tests for current voting
+
+</br>
 
 ### Test run
 
@@ -252,6 +270,8 @@ See [here](tests/README.md) to learn more about tests
 - To re-use multiple created votes list the ids comma-separated (e.g. `OMNIBUS_VOTE_IDS=104,105`)
 - To force the large CI runner usage, please name your branch with the `large-vote_` prefix.
 
+</br>
+
 ## Code style
 
 Please, use the shared pre-commit hooks to maintain code style:
@@ -260,15 +280,21 @@ Please, use the shared pre-commit hooks to maintain code style:
 poetry run pre-commit install
 ```
 
+</br>
+
 ## Repository housekeeping
 
 Please move your outdated scripts into `archive/scripts` and outdated tests into
 `archive/tests` directories.
 
+</br>
+
 ## Use cases and scripts examples
 
 - [Node operators management](usecase/node_operators_management.md)
 - [Reward manager tokens recovery](usecase/reward_manager_tokens_recovery.md)
+
+</br>
 
 ## Troubleshooting
 
