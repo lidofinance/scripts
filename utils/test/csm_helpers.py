@@ -130,6 +130,7 @@ def get_ea_members():
                 "0xf99292f2fccc3f4fa8cef73512bd5f21a46214d922dfed8e8a65f763c13dfb72"])
     )
 
+
 def csm_add_node_operator(csm, accounting, node_operator, proof, keys_count=5, curve_id=0):
     pubkeys_batch = random_pubkeys_batch(keys_count)
     signatures_batch = random_signatures_batch(keys_count)
@@ -149,14 +150,23 @@ def csm_add_node_operator(csm, accounting, node_operator, proof, keys_count=5, c
 
     return csm.getNodeOperatorsCount() - 1
 
+
 def csm_upload_keys(csm, accounting, no_id, keys_count=5):
     manager_address = csm.getNodeOperator(no_id)["managerAddress"]
-    pubkeys_batch = random_pubkeys_batch(keys_count)
-    signatures_batch = random_signatures_batch(keys_count)
-    csm.addValidatorKeysETH(no_id, keys_count, pubkeys_batch, signatures_batch,
-                            {"from": manager_address,
-                             "value": accounting.getRequiredBondForNextKeys(no_id, keys_count)}
-                            )
+    set_balance_in_wei(manager_address, accounting.getRequiredBondForNextKeys(no_id, keys_count) + ETH(1))
+
+    keys_batch = 100
+    remaining_keys = keys_count
+    while remaining_keys > 0:
+        keys_batch = min(keys_batch, remaining_keys)
+        pubkeys_batch = random_pubkeys_batch(keys_batch)
+        signatures_batch = random_signatures_batch(keys_batch)
+        value = accounting.getRequiredBondForNextKeys(no_id, keys_count)
+        csm.addValidatorKeysETH(no_id, keys_batch, pubkeys_batch, signatures_batch, {
+            "from": csm.getNodeOperator(no_id)["managerAddress"],
+            "value": value
+        })
+        remaining_keys -= keys_batch
 
 
 def fill_csm_operators_with_keys(target_operators_count, keys_count):
@@ -166,7 +176,7 @@ def fill_csm_operators_with_keys(target_operators_count, keys_count):
 
     csm_node_operators_before = contracts.csm.getNodeOperatorsCount()
     added_operators_count = 0
-    for no_id in range(0, csm_node_operators_before):
+    for no_id in range(0, min(csm_node_operators_before, target_operators_count)):
         depositable_keys = contracts.csm.getNodeOperator(no_id)["depositableValidatorsCount"]
         if depositable_keys < keys_count:
             csm_upload_keys(contracts.csm, contracts.cs_accounting, no_id, keys_count - depositable_keys)

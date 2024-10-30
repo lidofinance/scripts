@@ -138,6 +138,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     treasury = contracts.lido_locator.treasury()
     nor = contracts.node_operators_registry.address
     sdvt = contracts.simple_dvt.address
+    csm = contracts.csm.address
     nor_operators_count = contracts.node_operators_registry.getNodeOperatorsCount()
     sdvt_operators_count = contracts.simple_dvt.getNodeOperatorsCount()
 
@@ -227,12 +228,16 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     assert transfer_event[2]["from"] == ZERO_ADDRESS
     assert transfer_event[2]["to"] == sdvt
 
+    # csm
     assert transfer_event[3]["from"] == ZERO_ADDRESS
-    assert transfer_event[3]["to"] == treasury
+    assert transfer_event[3]["to"] == csm
+
+    assert transfer_event[4]["from"] == ZERO_ADDRESS
+    assert transfer_event[4]["to"] == treasury
 
     assert almostEqEth(
         treasury_balance_after_rebase,
-        treasury_balance_before_rebase + contracts.lido.getSharesByPooledEth(transfer_event[3]["value"]),
+        treasury_balance_before_rebase + contracts.lido.getSharesByPooledEth(transfer_event[4]["value"]),
     )
 
     assert treasury_balance_after_rebase > treasury_balance_before_rebase
