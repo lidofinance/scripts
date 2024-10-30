@@ -39,7 +39,7 @@ Run the container and specify any ENV VARs:
 ```shell
 docker run -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 scripts-env
 ```
-
+Note: *It may take up to 1 minute for the container to start properly the first time.*
 #### Step 4. Now connect to the running container using SSH:
 ```shell
 ssh root@localhost -p 2222 # password: 1234
