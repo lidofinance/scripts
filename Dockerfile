@@ -94,12 +94,8 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 # init
 WORKDIR /root/scripts
 RUN touch /root/init.sh
-RUN echo "if [ ! -e /root/inited ]; then \
-    touch /root/inited \
-    poetry install \
-    yarn \
-    poetry run brownie networks import network-config.yaml True \
-fi" > /root/init.sh
+RUN echo "if [ ! -e /root/inited ]; then \n touch /root/inited \n poetry install \n yarn \n poetry run brownie networks import network-config.yaml True \n fi" > /root/init.sh
+RUN chmod +x /root/init.sh
 
 
 # install & configure sshd
@@ -131,4 +127,4 @@ EXPOSE 22
 
 
 # start sshd, set root password for incoming connections and pass all ENV VARs from the container
-CMD ["/bin/bash", "-c", "env | grep -v 'no_proxy' >> /etc/environment && /root/init.sh  && echo root:1234 | chpasswd && exec /usr/sbin/sshd -D"]
+CMD ["/bin/bash", "-c", "env | grep -v 'no_proxy' >> /etc/environment && /root/init.sh && echo root:1234 | chpasswd && exec /usr/sbin/sshd -D"]
