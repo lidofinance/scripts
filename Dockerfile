@@ -91,21 +91,20 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 # compilers for amd64 will be downloaded by brownie later in this Dockerfile
 
 
-# copy repo files
+# init repo
 WORKDIR /root/scripts
 COPY . .
-
-
 # remove all temporary files to ensure correct compilation
 RUN rm -f ./build/contracts/*.json
-
-
 # install project-defined prerequisites
 RUN poetry install
 RUN yarn
 RUN poetry run brownie networks import network-config.yaml True
 # download compilers for amd64 and compile contracts
 RUN poetry run brownie compile
+# delete the repo files to link with host scripts repo later
+RUN rm -rf /root/scripts
+
 
 # install & configure sshd
 ENV DEBIAN_FRONTEND=noninteractive
@@ -129,7 +128,6 @@ RUN node --version | grep 'v18.20.4' || (echo "Incorrect node version" && exit 1
 RUN npm --version | grep '10.7.0' || (echo "Incorrect npm version" && exit 1)
 RUN poetry --version | grep 'Poetry (version 1.8.2)' || (echo "Incorrect poetry version" && exit 1)
 RUN yarn --version | grep '1.22.22' || (echo "Incorrect yarn version" && exit 1)
-RUN poetry run brownie --version | grep 'Brownie v1.20.2' || (echo "Incorrect brownie version" && exit 1)
 
 
 # open sshd port
