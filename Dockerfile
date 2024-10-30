@@ -91,7 +91,8 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 # compilers for amd64 will be downloaded by brownie later in this Dockerfile
 
 
-# init
+# init script that runs when the container is started for the very first time
+# it will install poetry, yarn libs and init brownie networks
 WORKDIR /root/scripts
 RUN touch /root/init.sh
 RUN echo "if [ ! -e /root/inited ]; then \n touch /root/inited \n poetry install \n yarn \n poetry run brownie networks import network-config.yaml True \n fi" > /root/init.sh
@@ -126,5 +127,5 @@ RUN yarn --version | grep '1.22.22' || (echo "Incorrect yarn version" && exit 1)
 EXPOSE 22
 
 
-# start sshd, set root password for incoming connections and pass all ENV VARs from the container
+# start sshd, run init script, set root password for incoming connections and pass all ENV VARs from the container
 CMD ["/bin/bash", "-c", "env | grep -v 'no_proxy' >> /etc/environment && /root/init.sh && echo root:1234 | chpasswd && exec /usr/sbin/sshd -D"]
