@@ -35,9 +35,13 @@ Note: *If you are running on an arm64 processor (including Apple Silicon) - you 
 - `WEB3_INFURA_PROJECT_ID` - **mandatory** for the execution of tests
 
 #### Step 3. Run the container
-You can specify any ENV VARs you are using:
+Remove built contracts before the first run:
 ```shell
-docker run -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 scripts-env
+rm -f ./build/contracts/*.json
+```
+Run the container and specify any ENV VARs you are using:
+```shell
+docker run -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 scripts-env
 ```
 
 #### Step 4. Now connect to the running container using SSH:
@@ -51,16 +55,11 @@ ssh root@localhost -p 2222 # password: 1234
 
 </br>
 
-You now have a fully functional environment to run scripts & tests in, which already **contains the repo** from which the image was built, for example:
+You now have a fully functional environment to run scripts & tests in, which is linked to your local scripts repo, for example:
 ```shell
 poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
 ```
 
-</br>
-
-**To use the container as a full-featured development environment:**
-- Download VS Code/PyCharm locally and connect via SSH to make code changes inside the container
-- Use `git` directly in the container to pull/push code changes  
 </br>
 
 ## 🏁 Manual installation
