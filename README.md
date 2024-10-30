@@ -33,24 +33,21 @@ Note: *If you are running on an arm64 processor (including Apple Silicon) - you 
 
 #### Step 2. Set up all the ENV VARs you are using:
 - `WEB3_INFURA_PROJECT_ID` - **mandatory** for the execution of tests
-- `ROOT_PASSWORD` - **mandatory** arbitrary password used to connect to the container SSH
 
 #### Step 3. Run the container
-You can specify any ENV VARs you are using, but **ROOT_PASSWORD is always mandatory**:
+You can specify any ENV VARs you are using:
 ```shell
-docker run -e ROOT_PASSWORD -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 scripts-env
+docker run -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 scripts-env
 ```
 
 #### Step 4. Now connect to the running container using SSH:
 ```shell
-ssh root@localhost -p 2222
+ssh root@localhost -p 2222 # password: 1234
 ```
 > [!NOTE]
 > If you see a 'REMOTE HOST IDENTIFICATION HAS CHANGED' error - `ssh-keygen -R [localhost]:2222`
 > 
 > If you are asked 'Are you sure you want to continue connecting' - type `yes` and hit `<ENTER>`
-> 
-> Use the password specified in $ROOT_PASSWORD when prompted
 
 </br>
 
