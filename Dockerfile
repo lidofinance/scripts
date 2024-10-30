@@ -128,4 +128,4 @@ EXPOSE 22
 
 
 # start sshd, run init script, set root password for incoming connections and pass all ENV VARs from the container
-CMD ["/bin/bash", "-c", "env | grep -v 'no_proxy' >> /etc/environment && echo root:1234 | chpasswd && exec /usr/sbin/sshd -D && /root/init.sh"]
+CMD ["/bin/bash", "-c", "env | grep -v 'no_proxy' >> /etc/environment && /root/init.sh && echo root:1234 | chpasswd && exec /usr/sbin/sshd -D"]
