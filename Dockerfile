@@ -34,7 +34,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.8.28; \
-      /root/.solcx/solc-v0.8.28 --version | grep 'Version: 0.8.28+' || (echo "Incorrect solc-v0.8.28 version" && exit 1); \
+      /root/.solcx/solc-v0.8.28 --version | grep 'Version: 0.8.28+commit.7893614a' || (echo "Incorrect solc-v0.8.28 version" && exit 1); \
       git checkout .; \
       git checkout develop; \
       # build solc-v0.8.10
@@ -46,7 +46,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.8.10; \
-      /root/.solcx/solc-v0.8.10 --version | grep 'Version: 0.8.10+' || (echo "Incorrect solc-v0.8.10 version" && exit 1); \
+      /root/.solcx/solc-v0.8.10 --version | grep 'Version: 0.8.10+commit.fc410830' || (echo "Incorrect solc-v0.8.10 version" && exit 1); \
       git checkout .; \
       git checkout develop; \
       # build solc-v0.8.9
@@ -58,7 +58,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.8.9; \
-      /root/.solcx/solc-v0.8.9 --version | grep 'Version: 0.8.9+' || (echo "Incorrect solc-v0.8.9 version" && exit 1); \
+      /root/.solcx/solc-v0.8.9 --version | grep 'Version: 0.8.9+commit.e5eed63a' || (echo "Incorrect solc-v0.8.9 version" && exit 1); \
       git checkout .; \
       git checkout develop; \
       # build solc-v0.8.4
@@ -76,7 +76,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       grep -rl 'size_t' ./tools/yulPhaser/Selections.h | xargs sed -i 's/size_t/std::size_t/g'; \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.8.4; \
-      /root/.solcx/solc-v0.8.4 --version | grep 'Version: 0.8.4+' || (echo "Incorrect solc-v0.8.4 version" && exit 1); \
+      /root/.solcx/solc-v0.8.4 --version | grep 'Version: 0.8.4+commit.c7e474f2' || (echo "Incorrect solc-v0.8.4 version" && exit 1); \
       git checkout .; \
       git checkout develop; \
     fi
