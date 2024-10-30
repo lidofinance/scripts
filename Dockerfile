@@ -95,7 +95,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 WORKDIR /root/scripts
 COPY . .
 # remove all temporary files to ensure correct compilation
-RUN rm -f ./build/contracts/*.json
+RUN rm -f ./build/contracts/*.json || true
 # install project-defined prerequisites
 RUN poetry install
 RUN yarn
