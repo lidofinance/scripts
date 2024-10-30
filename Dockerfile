@@ -91,19 +91,15 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 # compilers for amd64 will be downloaded by brownie later in this Dockerfile
 
 
-# init repo
+# init
 WORKDIR /root/scripts
-COPY . .
-# remove all temporary files to ensure correct compilation
-RUN rm -f ./build/contracts/*.json || true
-# install project-defined prerequisites
-RUN poetry install
-RUN yarn
-RUN poetry run brownie networks import network-config.yaml True
-# download compilers for amd64 and compile contracts
-RUN poetry run brownie compile
-# delete the repo files to link with host scripts repo later
-RUN rm -rf /root/scripts
+RUN touch /root/init.sh
+RUN echo "if [ ! -e /root/inited ]; then \
+    touch /root/inited \
+    poetry install \
+    yarn \
+    poetry run brownie networks import network-config.yaml True \
+fi" > /root/init.sh
 
 
 # install & configure sshd
@@ -135,4 +131,4 @@ EXPOSE 22
 
 
 # start sshd, set root password for incoming connections and pass all ENV VARs from the container
-CMD ["/bin/bash", "-c", "env | grep -v 'no_proxy' >> /etc/environment && echo root:1234 | chpasswd && exec /usr/sbin/sshd -D"]
+CMD ["/bin/bash", "-c", "env | grep -v 'no_proxy' >> /etc/environment && /root/init.sh  && echo root:1234 | chpasswd && exec /usr/sbin/sshd -D"]
