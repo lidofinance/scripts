@@ -35,7 +35,7 @@ Note: *If you are running on an arm64 processor (including Apple Silicon) - you 
 - `WEB3_INFURA_PROJECT_ID` - **mandatory** for the execution of tests
 
 #### Step 3. Run the container
-Remove built contracts before the first run:
+Remove built contracts before the first run (if your repo is not fresh):
 ```shell
 rm -f ./build/contracts/*.json
 ```
