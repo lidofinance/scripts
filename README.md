@@ -55,6 +55,10 @@ You now have a fully functional environment to run scripts & tests in, which is 
 ```shell
 poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
 ```
+If your container has been stopped (for example, by a system reboot), start it:
+```shell
+docker start scripts
+```
 
 </br>
 
