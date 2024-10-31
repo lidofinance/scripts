@@ -35,7 +35,7 @@ Note: *If you are running on an arm64 processor (including Apple Silicon) - you 
 - `WEB3_INFURA_PROJECT_ID` - **mandatory** for the execution of tests
 
 #### Step 3. Run the container
-Run the container and specify any ENV VARs:
+Run the container in the `scripts` directory and specify any ENV VARs:
 ```shell
 docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 scenv
 ```
