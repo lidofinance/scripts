@@ -3,13 +3,14 @@
 from typing import Callable, Dict, Optional, List, Annotated, Tuple
 from dataclasses import dataclass
 
-from eth_event import StructLogError, decode_traceTransaction
+from eth_event import StructLogError, decode_traceTransaction, decode_logs
 
 from brownie.network.transaction import TransactionReceipt
 from brownie.network.transaction import _step_internal, _step_external, _step_compare
 from brownie.network.event import EventDict, _topics
 from brownie.network import state
 from brownie.convert.normalize import format_event
+from brownie import web3
 
 from brownie.utils import color
 from brownie.utils.output import build_tree
@@ -67,6 +68,15 @@ def _find_fist_index_of_event_with_different_from_first_event_address(events):
         if e.address != first_event_address:
             return idx
     return len(events)
+
+
+def tx_events_from_receipt(tx: TransactionReceipt) -> Optional[List]:
+    if not tx.status:
+        raise "Tx has reverted status (set to 0)"
+
+    result = web3.provider.make_request("eth_getTransactionReceipt", [tx.txid])
+    events = decode_logs(result["result"]["logs"], _topics, allow_undecoded=True)
+    return [format_event(i) for i in events]
 
 
 def tx_events_from_trace(tx: TransactionReceipt) -> Optional[List]:

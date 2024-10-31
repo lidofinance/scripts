@@ -4,6 +4,7 @@ from utils.test.helpers import ETH
 from utils.config import contracts
 
 from utils.test.deposits_helpers import fill_deposit_buffer
+from utils.test.node_operators_helpers import distribute_reward
 from utils.test.reward_wrapper_helpers import deploy_reward_wrapper, wrap_and_split_rewards
 from utils.test.split_helpers import (
     deploy_split_wallet,
@@ -12,8 +13,10 @@ from utils.test.split_helpers import (
     split_and_withdraw_wsteth_rewards,
 )
 from utils.test.simple_dvt_helpers import simple_dvt_add_keys, simple_dvt_vet_keys, simple_dvt_add_node_operators
-from utils.test.staking_router_helpers import pause_staking_module
+from utils.test.staking_router_helpers import StakingModuleStatus, set_staking_module_status
 from utils.test.oracle_report_helpers import oracle_report
+from brownie import convert
+from web3 import Web3
 
 
 @pytest.fixture(scope="module")
@@ -56,15 +59,27 @@ def test_sdvt_module_connected_to_router():
 
 
 # full happy path test
-def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participants, reward_wrapper):
+def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participants, reward_wrapper, stranger):
     """
     Test happy path of rewards distribution
     Test adding new cluster to simple dvt module, depositing to simple dvt module, distributing and claiming rewards
     """
     simple_dvt, staking_router = contracts.simple_dvt, contracts.staking_router
     lido, deposit_security_module = contracts.lido, contracts.deposit_security_module
+    voting = contracts.voting
 
-    stranger = cluster_participants[0]
+    contracts.acl.grantPermission(
+        voting,
+        simple_dvt,
+        convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
+        {"from": contracts.voting},
+    )
+
+    # deactivate all node operators in "Simple DVT" module for more precise testing
+    for x in range(simple_dvt.getNodeOperatorsCount()):
+        simple_dvt.deactivateNodeOperator(x, {"from": voting})
+
+    new_dvt_operator = cluster_participants[0]
 
     new_cluster_name = "new cluster"
     new_manager_address = "0x1110000000000000000000000000000011111111"
@@ -73,7 +88,7 @@ def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participa
     # add operator to simple dvt module
     input_params = [(new_cluster_name, new_reward_address, new_manager_address)]
     (node_operators_count_before, node_operator_count_after) = simple_dvt_add_node_operators(
-        simple_dvt, stranger, input_params
+        simple_dvt, new_dvt_operator, input_params
     )
     operator_id = node_operator_count_after - 1
     assert node_operator_count_after == node_operators_count_before + len(input_params)
@@ -82,14 +97,15 @@ def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participa
     simple_dvt_add_keys(simple_dvt, operator_id, 10)
 
     # vet operator keys
-    simple_dvt_vet_keys(operator_id, stranger)
+    simple_dvt_vet_keys(operator_id, new_dvt_operator)
+
 
     # pause deposit to all modules except simple dvt
     # to be sure that all deposits go to simple dvt
     modules = staking_router.getStakingModules()
     for module in modules:
         if module[0] != simple_dvt_module_id:
-            pause_staking_module(module[0])
+            set_staking_module_status(module[0], StakingModuleStatus.Stopped)
 
     # fill the deposit buffer
     deposits_count = 10
@@ -111,13 +127,14 @@ def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participa
 
     # oracle report
     oracle_report(cl_diff=ETH(500))
+    distribute_reward(contracts.simple_dvt, stranger.address)
     cluster_rewards_after_report = lido.balanceOf(new_reward_address)
 
     # check that cluster reward address balance increased
     assert cluster_rewards_after_report > 0
 
     # wrap rewards and split between dvt provider and split wallet
-    wrap_and_split_rewards(reward_wrapper, stranger)
+    wrap_and_split_rewards(reward_wrapper, new_dvt_operator)
 
     # split wsteth rewards between participants and withdraw
     split_and_withdraw_wsteth_rewards(
@@ -125,5 +142,5 @@ def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participa
         cluster_participants,
         get_split_percent_allocation(len(cluster_participants), get_split_percentage_scale()),
         get_split_percentage_scale(),
-        stranger,
+        new_dvt_operator,
     )

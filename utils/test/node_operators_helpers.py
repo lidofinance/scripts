@@ -4,6 +4,7 @@ from brownie import web3, network
 from typing import Dict, List
 from eth_abi import encode
 from typing import  NewType, Tuple
+from enum import Enum
 
 SIGNING_KEY_KEYS = ["key", "depositSignature", "used"]
 
@@ -18,7 +19,7 @@ NODE_OPERATOR_KEYS = [
 ]
 
 NODE_OPERATOR_SUMMARY_KEYS = [
-    "isTargetLimitActive",
+    "targetLimitMode",
     "targetValidatorsCount",
     "stuckValidatorsCount",
     "refundedValidatorsCount",
@@ -33,6 +34,11 @@ EVENT_SIGNATURES = {"NodeOperatorAdded": "NodeOperatorAdded(uint256,string,addre
 StakingModuleId = NewType("StakingModuleId", int)
 NodeOperatorId = NewType("NodeOperatorId", int)
 NodeOperatorGlobalIndex = Tuple[StakingModuleId, NodeOperatorId]
+
+class RewardDistributionState(Enum):
+    TransferredToModule = 0     # New reward portion minted and transferred to the module
+    ReadyForDistribution = 1    # Operators' statistics updated, reward ready for distribution
+    Distributed = 2             # Reward distributed among operators
 
 
 def node_operator_gindex(module_id, node_operator_id) -> NodeOperatorGlobalIndex:
@@ -79,10 +85,10 @@ def encode_event_arguments(event_signature: str, *event_args):
 
 def get_event_arg_types(event_signature: str):
     # extract args clause with brackets, i.e. (uin256,address)
-    event_args = next(iter(re.findall("\(.*\)", event_signature)), None)
+    event_args = next(iter(re.findall(r"\(([^)]+)\)", event_signature)), None)
     assert event_args is not None, f'Cant extract arguments from event signature "{event_signature}"'
 
-    return event_args.strip("()").split(",")
+    return event_args.split(",")
 
 
 def get_event_log(tx: network.transaction.TransactionReceipt, event_signature: str):
@@ -92,3 +98,14 @@ def get_event_log(tx: network.transaction.TransactionReceipt, event_signature: s
 
     assert log is not None, f'Topic for event "{event_signature}" not found'
     return log
+
+def distribute_reward(nor, from_address):
+    rewardDistributionState = nor.getRewardDistributionState()
+    assert rewardDistributionState == RewardDistributionState.ReadyForDistribution.value, "Reward is not ready for distribution"
+
+    tx = nor.distributeReward({"from": from_address})
+
+    rewardDistributionState = nor.getRewardDistributionState()
+    assert rewardDistributionState == RewardDistributionState.Distributed.value, "Reward distribution failed"
+
+    return tx

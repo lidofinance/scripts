@@ -6,8 +6,7 @@ from utils.config import (
     DEPOSIT_SECURITY_MODULE,
     DSM_GUARDIANS,
     CHAIN_DEPOSIT_CONTRACT,
-    DSM_MAX_DEPOSITS_PER_BLOCK,
-    DSM_MIN_DEPOSIT_BLOCK_DISTANCE,
+    DSM_MAX_OPERATORS_PER_UNVETTING,
     DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS,
     DSM_GUARDIAN_QUORUM,
 )
@@ -21,6 +20,11 @@ def dsm() -> interface.DepositSecurityModule:
 def test_owner(dsm):
     assert dsm.getOwner() == contracts.agent
 
+def test_versioned(dsm):
+    assert dsm.VERSION() == 3
+
+def test_deposit_paused(dsm):
+    assert dsm.isDepositsPaused() == False
 
 def test_links(dsm):
     assert dsm.LIDO() == contracts.lido
@@ -29,8 +33,7 @@ def test_links(dsm):
 
 
 def test_deposit_security_module(dsm):
-    assert dsm.getMaxDeposits() == DSM_MAX_DEPOSITS_PER_BLOCK
-    assert dsm.getMinDepositBlockDistance() == DSM_MIN_DEPOSIT_BLOCK_DISTANCE
+    assert dsm.getMaxOperatorsPerUnvetting() == DSM_MAX_OPERATORS_PER_UNVETTING
     assert dsm.getPauseIntentValidityPeriodBlocks() == DSM_PAUSE_INTENT_VALIDITY_PERIOD_BLOCKS
 
     assert dsm.getGuardians() == DSM_GUARDIANS
@@ -60,6 +63,17 @@ def test_prefixes(dsm):
             ["bytes32", "uint256", "address"],
             [
                 web3.keccak(text="lido.DepositSecurityModule.ATTEST_MESSAGE").hex(),
+                1,
+                DEPOSIT_SECURITY_MODULE,
+            ],
+        ).hex()
+    )
+    assert (
+        dsm.UNVET_MESSAGE_PREFIX()
+        == web3.solidity_keccak(
+            ["bytes32", "uint256", "address"],
+            [
+                web3.keccak(text="lido.DepositSecurityModule.UNVET_MESSAGE").hex(),
                 1,
                 DEPOSIT_SECURITY_MODULE,
             ],
