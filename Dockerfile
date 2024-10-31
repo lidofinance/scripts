@@ -99,6 +99,21 @@ RUN echo "if [ ! -e /root/inited ]; then \n touch /root/inited \n poetry install
 RUN chmod +x /root/init.sh
 
 
+# install & configure sshd
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y openssh-server && \
+    mkdir /var/run/sshd
+
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+RUN echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config
+
+# set default working dir for ssh clients
+RUN echo "cd /root/scripts" >> /root/.bashrc
+
+
 # verify prerequisites versions
 RUN python --version | grep 'Python 3.10.15' || (echo "Incorrect python version" && exit 1)
 RUN pip --version | grep 'pip 24.2' || (echo "Incorrect pip version" && exit 1)
@@ -108,5 +123,9 @@ RUN poetry --version | grep 'Poetry (version 1.8.2)' || (echo "Incorrect poetry 
 RUN yarn --version | grep '1.22.22' || (echo "Incorrect yarn version" && exit 1)
 
 
-# run init script
-CMD ["/bin/bash", "-c", "/root/init.sh"]
+# open sshd port
+EXPOSE 22
+
+
+# start sshd, run init script, set root password for incoming connections and pass all ENV VARs from the container
+CMD ["/bin/bash", "-c", "env | grep -v 'no_proxy' >> /etc/environment && /root/init.sh && echo root:1234 | chpasswd && exec /usr/sbin/sshd -D"]
