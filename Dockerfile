@@ -13,19 +13,43 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       # install cmake
       apt update; \
       apt install cmake -y; \
-      # install boost
-      apt install libboost-all-dev -y; \
     fi
 
 WORKDIR /root/
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
+      # install boost
+      wget http://downloads.sourceforge.net/project/boost/boost/1.73.0/boost_1_73_0.tar.gz; \
+      tar -zxvf boost_1_73_0.tar.gz; \
+      cd boost_1_73_0; \
+      ./bootstrap.sh; \
+      ./b2 --with=all -j 4 install; \
       # Download solc repo
+      cd /root/; \
       git clone --recursive https://github.com/ethereum/solidity.git; \
       mkdir /root/.solcx; \
     fi
 
 WORKDIR /root/solidity/
+
+
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+      # build solc-v0.4.24
+      git checkout v0.4.24; \
+      grep -rl 'createJsonValue("tag", i.location().start, i.location().end, string(i.data())));' ./libevmasm/Assembly.cpp | xargs sed -i 's/createJsonValue("tag", i.location().start, i.location().end, string(i.data())));/createJsonValue("tag", i.location().start, i.location().end, dev::toString(h256(i.data()))));/g'; \
+      grep -rl 'createJsonValue("PUSH \[tag\]", i.location().start, i.location().end, string(i.data())));' ./libevmasm/Assembly.cpp | xargs sed -i 's/createJsonValue("PUSH \[tag\]", i.location().start, i.location().end, string(i.data())));/createJsonValue("PUSH \[tag\]", i.location().start, i.location().end, dev::toString(h256(i.data()))));/g'; \
+      grep -F -rl 'case sp::utree_type::string_type: _out << "\"" << _this.get<sp::basic_string<boost::iterator_range<char const*>, sp::utree_type::string_type>>() << "\""; break;' ./liblll/Parser.cpp | xargs sed -i 's/case sp::utree_type::string_type: _out << "\\"" << _this.get<sp::basic_string<boost::iterator_range<char const\*>, sp::utree_type::string_type>>() << "\\""; break;/case sp::utree_type::string_type: { auto sr = _this.get<sp::basic_string<boost::iterator_range<char const\*>, sp::utree_type::string_type>>(); _out << "\\"" << string(sr.begin(), sr.end()) << "\\""; } break;/g'; \
+      grep -F -rl 'case sp::utree_type::symbol_type: _out << _this.get<sp::basic_string<boost::iterator_range<char const*>, sp::utree_type::symbol_type>>(); break;' ./liblll/Parser.cpp | xargs sed -i 's/case sp::utree_type::symbol_type: _out << _this.get<sp::basic_string<boost::iterator_range<char const\*>, sp::utree_type::symbol_type>>(); break;/case sp::utree_type::symbol_type: { auto sr = _this.get<sp::basic_string<boost::iterator_range<char const\*>, sp::utree_type::symbol_type>>(); _out << string(sr.begin(), sr.end()); } break;/g'; \
+      grep -rl '\-Werror' ./cmake/EthCompilerSettings.cmake | xargs sed -i 's/\-Werror/\-Wno\-error/g'; \
+      grep -rl '#include <boost\/version.hpp>' ./test/Options.h | xargs sed -i 's/#include <boost\/version.hpp>/#include <boost\/version.hpp>\n#include <boost\/core\/noncopyable.hpp>/g'; \
+      ./scripts/build.sh; \
+      mv /usr/local/bin/solc /root/.solcx/solc-v0.4.24; \
+     /root/.solcx/solc-v0.4.24 --version | grep 'Version: 0.4.24+commit.e67f0147' || (echo "Incorrect solc-v0.4.24 version" && exit 1); \
+     git checkout .; \
+     git checkout develop; \
+     git clean -d -x -f; \
+    fi
+
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
       # build solc-v0.8.28
@@ -35,8 +59,9 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.8.28; \
       /root/.solcx/solc-v0.8.28 --version | grep 'Version: 0.8.28+commit.7893614a' || (echo "Incorrect solc-v0.8.28 version" && exit 1); \
-      git checkout .; \
+      git checkout .; \git checkout .; \
       git checkout develop; \
+      git clean -d -x -f; \
       # build solc-v0.8.10
       git checkout v0.8.10; \
       # the compiler throws warnings when compiling this version, and the warnings are treated as errors.
@@ -49,6 +74,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       /root/.solcx/solc-v0.8.10 --version | grep 'Version: 0.8.10+commit.fc410830' || (echo "Incorrect solc-v0.8.10 version" && exit 1); \
       git checkout .; \
       git checkout develop; \
+      git clean -d -x -f; \
       # build solc-v0.8.9
       git checkout v0.8.9; \
       # the compiler throws warnings when compiling this version, and the warnings are treated as errors.
@@ -61,6 +87,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       /root/.solcx/solc-v0.8.9 --version | grep 'Version: 0.8.9+commit.e5eed63a' || (echo "Incorrect solc-v0.8.9 version" && exit 1); \
       git checkout .; \
       git checkout develop; \
+      git clean -d -x -f; \
       # build solc-v0.8.4
       git checkout v0.8.4; \
       # the compiler throws warnings when compiling this version, and the warnings are treated as errors.
@@ -79,6 +106,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       /root/.solcx/solc-v0.8.4 --version | grep 'Version: 0.8.4+commit.c7e474f2' || (echo "Incorrect solc-v0.8.4 version" && exit 1); \
       git checkout .; \
       git checkout develop; \
+      git clean -d -x -f; \
     fi
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
