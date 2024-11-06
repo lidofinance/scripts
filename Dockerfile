@@ -42,6 +42,8 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       grep -F -rl 'case sp::utree_type::symbol_type: _out << _this.get<sp::basic_string<boost::iterator_range<char const*>, sp::utree_type::symbol_type>>(); break;' ./liblll/Parser.cpp | xargs sed -i 's/case sp::utree_type::symbol_type: _out << _this.get<sp::basic_string<boost::iterator_range<char const\*>, sp::utree_type::symbol_type>>(); break;/case sp::utree_type::symbol_type: { auto sr = _this.get<sp::basic_string<boost::iterator_range<char const\*>, sp::utree_type::symbol_type>>(); _out << string(sr.begin(), sr.end()); } break;/g'; \
       grep -rl '\-Werror' ./cmake/EthCompilerSettings.cmake | xargs sed -i 's/\-Werror/\-Wno\-error/g'; \
       grep -rl '#include <boost\/version.hpp>' ./test/Options.h | xargs sed -i 's/#include <boost\/version.hpp>/#include <boost\/version.hpp>\n#include <boost\/core\/noncopyable.hpp>/g'; \
+      # build solc faster
+      grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.4.24; \
      /root/.solcx/solc-v0.4.24 --version | grep 'Version: 0.4.24+commit.e67f0147' || (echo "Incorrect solc-v0.4.24 version" && exit 1); \
@@ -56,6 +58,8 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       git checkout v0.8.28; \
       # there is no sudo in the container, but we are under root so we do not need it
       grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
+      # build solc faster
+      grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.8.28; \
       /root/.solcx/solc-v0.8.28 --version | grep 'Version: 0.8.28+commit.7893614a' || (echo "Incorrect solc-v0.8.28 version" && exit 1); \
@@ -69,6 +73,8 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       grep -rl '\-Werror' ./cmake/EthCompilerSettings.cmake | xargs sed -i 's/\-Werror/\-Wno\-error/g'; \
       # there is no sudo in the container, but we are under root so we do not need it
       grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
+      # build solc faster
+      grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.8.10; \
       /root/.solcx/solc-v0.8.10 --version | grep 'Version: 0.8.10+commit.fc410830' || (echo "Incorrect solc-v0.8.10 version" && exit 1); \
@@ -82,6 +88,8 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       grep -rl '\-Werror' ./cmake/EthCompilerSettings.cmake | xargs sed -i 's/\-Werror/\-Wno\-error/g'; \
       # there is no sudo in the container, but we are under root so we do not need it
       grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
+      # build solc faster
+      grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.8.9; \
       /root/.solcx/solc-v0.8.9 --version | grep 'Version: 0.8.9+commit.e5eed63a' || (echo "Incorrect solc-v0.8.9 version" && exit 1); \
@@ -101,6 +109,8 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       grep -rl 'size_t' ./tools/yulPhaser/PairSelections.h | xargs sed -i 's/size_t/std::size_t/g'; \
       # there is a missed namespace in this version - we add it so that the code compiles
       grep -rl 'size_t' ./tools/yulPhaser/Selections.h | xargs sed -i 's/size_t/std::size_t/g'; \
+      # build solc faster
+      grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.8.4; \
       /root/.solcx/solc-v0.8.4 --version | grep 'Version: 0.8.4+commit.c7e474f2' || (echo "Incorrect solc-v0.8.4 version" && exit 1); \
