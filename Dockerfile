@@ -62,6 +62,18 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
      git checkout .; \
      git checkout develop; \
      git clean -d -x -f; \
+     # build solc-v0.5.12
+     git checkout v0.5.12; \
+     grep -rl '\-Werror' ./cmake/EthCompilerSettings.cmake | xargs sed -i 's/\-Werror/\-Wno\-error/g'; \
+     # build solc faster
+     grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
+     grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
+     ./scripts/build.sh; \
+     mv /usr/local/bin/solc /root/.solcx/solc-v0.5.12; \
+     /root/.solcx/solc-v0.5.12 --version | grep 'Version: 0.5.12+commit.7709ece9' || (echo "Incorrect solc-v0.5.12 version" && exit 1); \
+     git checkout .; \
+     git checkout develop; \
+     git clean -d -x -f; \
     fi
 
 
