@@ -129,6 +129,27 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       git checkout .; \
       git checkout develop; \
       git clean -d -x -f; \
+      # build solc-v0.8.6
+      git checkout v0.8.6; \
+      # the compiler throws warnings when compiling this version, and the warnings are treated as errors.
+      # we disable treating the warnings as errors, unless the build doesn't succeed
+      grep -rl '\-Werror' ./cmake/EthCompilerSettings.cmake | xargs sed -i 's/\-Werror/\-Wno\-error/g'; \
+      # there is no sudo in the container, but we are under root so we do not need it
+      grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
+      # there is a missed header in this version - we add it so that the code compiles
+      grep -rl '#include <string>' ./liblangutil/SourceLocation.h | xargs sed -i 's/#include <string>/#include <string>\n#include <limits>/g'; \
+      # there is a missed namespace in this version - we add it so that the code compiles
+      grep -rl 'size_t' ./tools/yulPhaser/PairSelections.h | xargs sed -i 's/size_t/std::size_t/g'; \
+      # there is a missed namespace in this version - we add it so that the code compiles
+      grep -rl 'size_t' ./tools/yulPhaser/Selections.h | xargs sed -i 's/size_t/std::size_t/g'; \
+      # build solc faster
+      grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
+      ./scripts/build.sh; \
+      mv /usr/local/bin/solc /root/.solcx/solc-v0.8.6; \
+      /root/.solcx/solc-v0.8.6 --version | grep 'Version: 0.8.6+commit.11564f7e' || (echo "Incorrect solc-v0.8.6 version" && exit 1); \
+      git checkout .; \
+      git checkout develop; \
+      git clean -d -x -f; \
     fi
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
