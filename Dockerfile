@@ -84,6 +84,8 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
      grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
      grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
      grep -rl '#include <string>' ./liblangutil/SourceLocation.h | xargs sed -i 's/#include <string>/#include <string>\n#include <limits>/g'; \
+     grep -rl 'size_t' ./tools/yulPhaser/PairSelections.h | xargs sed -i 's/size_t/std::size_t/g'; \
+     grep -rl 'size_t' ./tools/yulPhaser/Selections.h | xargs sed -i 's/size_t/std::size_t/g'; \
      ./scripts/build.sh; \
      mv /usr/local/bin/solc /root/.solcx/solc-v0.6.12; \
      /root/.solcx/solc-v0.6.12 --version | grep 'Version: 0.6.12+commit.27d51765' || (echo "Incorrect solc-v0.6.12 version" && exit 1); \
