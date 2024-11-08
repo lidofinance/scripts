@@ -68,6 +68,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
      # build solc faster
      grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
      grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
+     grep -rl '#include <boost\/variant.hpp>' ./libyul/backends/wasm/EWasmAST.h | xargs sed -i 's/#include <boost\/variant.hpp>/#include <boost\/variant.hpp>\n#include <memory>/g'; \
      ./scripts/build.sh; \
      mv /usr/local/bin/solc /root/.solcx/solc-v0.5.12; \
      /root/.solcx/solc-v0.5.12 --version | grep 'Version: 0.5.12+commit.7709ece9' || (echo "Incorrect solc-v0.5.12 version" && exit 1); \
