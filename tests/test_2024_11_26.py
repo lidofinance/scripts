@@ -16,7 +16,7 @@ from utils.test.event_validators.node_operators_registry import (
     validate_node_operator_reward_address_set_event,
     NodeOperatorRewardAddressSetItem
 )
-from configs.config_mainnet import ( USDC_TOKEN )
+from configs.config_mainnet import ( USDC_TOKEN, USDT_TOKEN )
 
 
 def test_vote(helpers, accounts, vote_ids_from_env, stranger):
@@ -111,7 +111,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert atc_spend_limit_after == atcSpendLimitAfterExpected
     assert interface.AllowedRecipientRegistry(atc_allowed_recipients_registry).isUnderSpendableBalance(atcSpendableBalanceAfter, 3)
     assert atcSpendableBalanceAfter == atcSpendLimitAfterExpected
-    limit_test(easy_track, int(atcSpendableBalanceAfter / (10**18)), atc_trusted_caller_acc, atc_top_up_evm_script_factory, atc_multisig_acc, stranger)
+    limit_test(easy_track, int(atcSpendableBalanceAfter / (10**18)), atc_trusted_caller_acc, atc_top_up_evm_script_factory, atc_multisig_acc, stranger, interface.Usdc(USDC_TOKEN))
 
     # Item 2
     pmlBudgetLimitAfter, pmlPeriodDurationMonthsAfter = interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).getLimitParameters()
@@ -122,8 +122,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert pml_spend_limit_after == pmlSpendLimitAfterExpected
     assert interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).isUnderSpendableBalance(pmlSpendableBalanceAfter, 3)
     assert pmlSpendableBalanceAfter == pmlSpendLimitAfterExpected
-    # TODO
-    #limit_test(easy_track, int(pmlSpendableBalanceAfter / (10**18)), pml_trusted_caller_acc, pml_top_up_evm_script_factory, pml_multisig_acc, stranger)
+    #limit_test(easy_track, int(pmlSpendableBalanceAfter / (10**18)), pml_trusted_caller_acc, pml_top_up_evm_script_factory, pml_multisig_acc, stranger, interface.Usdt(USDT_TOKEN))
 
     # Item 3
     tmcBudgetLimitAfter, tmcPeriodDurationMonthsAfter = interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).getLimitParameters()
@@ -211,7 +210,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
         )
     )
 
-def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_factory, multisig_acc, stranger):
+def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_factory, multisig_acc, stranger, token):
 
     # can't spend more than 2M USDC at once
     max_usdc_spend_at_once = 2_000_000 * 10**6
@@ -224,7 +223,7 @@ def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_facto
             easy_track,
             trusted_caller_acc,
             top_up_evm_script_factory,
-            interface.Usdc(USDC_TOKEN),
+            token,
             [multisig_acc],
             [to_spend_usdc + 1],
             stranger,
@@ -236,18 +235,12 @@ def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_facto
             easy_track,
             trusted_caller_acc,
             top_up_evm_script_factory,
-            interface.Usdc(USDC_TOKEN),
+            token,
             [multisig_acc],
             [min(max_usdc_spend_at_once, to_spend_usdc)],
             stranger,
         )
-        print("HERE1")
-        print (max_usdc_spend_at_once)
-        print (to_spend_usdc)
         to_spend_usdc -= min(max_usdc_spend_at_once, to_spend_usdc)
-
-
-    print ('NEXT')
 
     # make sure there is nothing left so that you can't spend anymore
     with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
@@ -255,7 +248,7 @@ def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_facto
             easy_track,
             trusted_caller_acc,
             top_up_evm_script_factory,
-            interface.Usdc(USDC_TOKEN),
+            token,
             [multisig_acc],
             [1],
             stranger,
