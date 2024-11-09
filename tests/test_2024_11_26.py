@@ -48,6 +48,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     tmc_top_up_evm_script_factory = interface.TopUpAllowedRecipients("0x6e04aED774B7c89BB43721AcDD7D03C872a51B69")
     stETH_token = interface.ERC20("0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
     stonks_steth_contract = accounts.at("0x3e2D251275A92a8169A3B17A2C49016e2de492a7", force=True)
+    tmcBudgetAfterExpected = 12_000 * 10**18
+    tmcNewSpentAmountExpected = 0
 
     # Item 5
     # NO's data indexes
@@ -125,14 +127,14 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # Item 3
     tmcBudgetLimitAfter, tmcPeriodDurationMonthsAfter = interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).getLimitParameters()
-    assert tmcBudgetLimitAfter == 12_000 * 10 ** 18
+    assert tmcBudgetLimitAfter == tmcBudgetAfterExpected
     assert tmcPeriodDurationMonthsAfter == 6
 
     # Item 4
-    alreadySpentAmountAfter, spendableBalanceInPeriodAfter, periodStartTimestampAfter, periodEndTimestampAfter = tmc_allowed_recipients_registry.getPeriodState()
-    assert alreadySpentAmountAfter == 0
+    alreadySpentAmountAfter = tmc_allowed_recipients_registry.getPeriodState()[0]
+    assert alreadySpentAmountAfter == tmcNewSpentAmountExpected
     tmcSpendableBalanceAfter = interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).spendableBalance()
-    assert tmcSpendableBalanceAfter == 12_000 * 10 ** 18
+    assert tmcSpendableBalanceAfter == tmcBudgetAfterExpected
     with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
         create_and_enact_payment_motion(
             easy_track,
@@ -140,7 +142,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
             tmc_top_up_evm_script_factory,
             stETH_token,
             [stonks_steth_contract],
-            [12_000 * 10 ** 18 + 1],
+            [tmcBudgetAfterExpected + 1],
             stranger,
         )
 
@@ -193,13 +195,13 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     )
     validate_set_limit_parameter_event(
         evs[2],
-        limit=12_000 * 10 ** 18,
+        limit=tmcBudgetAfterExpected,
         period_duration_month=6,
         period_start_timestamp=1719792000,
     )
     validate_set_spent_amount_event(
         evs[3],
-        new_spent_amount=0,
+        new_spent_amount=tmcNewSpentAmountExpected,
     )
     validate_node_operator_reward_address_set_event(
         evs[4],
