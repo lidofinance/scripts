@@ -3,7 +3,7 @@ Tests for voting 26/11/2024.
 """
 
 from scripts.vote_2024_11_26 import start_vote
-from brownie import interface, reverts
+from brownie import interface, reverts, accounts, ZERO_ADDRESS
 from utils.test.tx_tracing_helpers import *
 from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS
 from utils.config import contracts
@@ -16,14 +16,16 @@ from utils.test.event_validators.node_operators_registry import (
     validate_node_operator_reward_address_set_event,
     NodeOperatorRewardAddressSetItem
 )
-from configs.config_mainnet import ( USDC_TOKEN, USDT_TOKEN )
+from configs.config_mainnet import ( USDC_TOKEN )
 
 
 def test_vote(helpers, accounts, vote_ids_from_env, stranger):
 
+    # misc
     easy_track = interface.EasyTrack("0xF0211b7660680B49De1A7E9f25C65660F0a13Fea")
-
     nor = contracts.node_operators_registry
+    prepare_agent_for_usdc_payment(2_000_000_000 * (10**6))
+    prepare_agent_for_steth_payment(100_000 * 10**18)
 
     # Item 1
     atc_allowed_recipients_registry = interface.AllowedRecipientRegistry("0xe07305F43B11F230EaA951002F6a55a16419B707")
@@ -111,7 +113,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert atc_spend_limit_after == atcSpendLimitAfterExpected
     assert interface.AllowedRecipientRegistry(atc_allowed_recipients_registry).isUnderSpendableBalance(atcSpendableBalanceAfter, 3)
     assert atcSpendableBalanceAfter == atcSpendLimitAfterExpected
-    limit_test(easy_track, int(atcSpendableBalanceAfter / (10**18)), atc_trusted_caller_acc, atc_top_up_evm_script_factory, atc_multisig_acc, stranger, interface.Usdc(USDC_TOKEN))
+    limit_test(easy_track, int(atcSpendableBalanceAfter / (10**18)), atc_trusted_caller_acc, atc_top_up_evm_script_factory, atc_multisig_acc, stranger)
 
     # Item 2
     pmlBudgetLimitAfter, pmlPeriodDurationMonthsAfter = interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).getLimitParameters()
@@ -122,7 +124,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert pml_spend_limit_after == pmlSpendLimitAfterExpected
     assert interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).isUnderSpendableBalance(pmlSpendableBalanceAfter, 3)
     assert pmlSpendableBalanceAfter == pmlSpendLimitAfterExpected
-    #limit_test(easy_track, int(pmlSpendableBalanceAfter / (10**18)), pml_trusted_caller_acc, pml_top_up_evm_script_factory, pml_multisig_acc, stranger, interface.Usdt(USDT_TOKEN))
+    #limit_test(easy_track, int(pmlSpendableBalanceAfter / (10**18)), pml_trusted_caller_acc, pml_top_up_evm_script_factory, pml_multisig_acc, stranger)
 
     # Item 3
     tmcBudgetLimitAfter, tmcPeriodDurationMonthsAfter = interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).getLimitParameters()
@@ -145,7 +147,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
             stranger,
         )
 
-    for i in range (0, 12):
+    print ('Spendable balance before 12 * 1000 stETH transfer ', interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).spendableBalance())
+    for i in range (12):
         create_and_enact_payment_motion(
             easy_track,
             tmc_trusted_caller,
@@ -155,7 +158,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
             [1_000 * 10 ** 18],
             stranger,
         )
+        print ('Spendable balance on 12 * 1000 stETH transfer ', interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).spendableBalance())
 
+    print ('Spendable balance after 12 * 1000 stETH transfer ', interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).spendableBalance())
     with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
         create_and_enact_payment_motion(
             easy_track,
@@ -166,6 +171,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
             [1],
             stranger,
         )
+        print ('Spendable balance after-after 12 * 1000 stETH transfer ', interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).spendableBalance())
 
     # Item 5
     SimplyStakingDataAfter = nor.getNodeOperator(SimplyStakingId, True)
@@ -210,7 +216,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
         )
     )
 
-def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_factory, multisig_acc, stranger, token):
+def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_factory, multisig_acc, stranger):
 
     # can't spend more than 2M USDC at once
     max_usdc_spend_at_once = 2_000_000 * 10**6
@@ -223,7 +229,7 @@ def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_facto
             easy_track,
             trusted_caller_acc,
             top_up_evm_script_factory,
-            token,
+            interface.Usdc(USDC_TOKEN),
             [multisig_acc],
             [to_spend_usdc + 1],
             stranger,
@@ -235,7 +241,7 @@ def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_facto
             easy_track,
             trusted_caller_acc,
             top_up_evm_script_factory,
-            token,
+            interface.Usdc(USDC_TOKEN),
             [multisig_acc],
             [min(max_usdc_spend_at_once, to_spend_usdc)],
             stranger,
@@ -248,8 +254,29 @@ def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_facto
             easy_track,
             trusted_caller_acc,
             top_up_evm_script_factory,
-            token,
+            interface.Usdc(USDC_TOKEN),
             [multisig_acc],
             [1],
             stranger,
         )
+
+STETH_TRANSFER_MAX_DELTA = 2
+
+def prepare_agent_for_steth_payment(amount: int):
+    agent, steth = contracts.agent, contracts.lido
+    eth_whale = accounts.at("0x00000000219ab540356cBB839Cbe05303d7705Fa", force=True)
+    if steth.balanceOf(agent) < amount:
+        steth.submit(ZERO_ADDRESS, {"from": eth_whale, "value": amount + 2 * STETH_TRANSFER_MAX_DELTA})
+        steth.transfer(agent, amount + STETH_TRANSFER_MAX_DELTA, {"from": eth_whale})
+    assert steth.balanceOf(agent) >= amount, "Insufficient stETH balance"
+
+def prepare_agent_for_usdc_payment(amount: int):
+    agent, usdc = contracts.agent, interface.Usdc(USDC_TOKEN)
+    if usdc.balanceOf(agent) < amount:
+        usdc_minter = accounts.at("0x5B6122C109B78C6755486966148C1D70a50A47D7", force=True)
+        usdc_controller = accounts.at("0x79E0946e1C186E745f1352d7C21AB04700C99F71", force=True)
+        usdc_master_minter = interface.UsdcMasterMinter("0xE982615d461DD5cD06575BbeA87624fda4e3de17")
+        usdc_master_minter.incrementMinterAllowance(amount, {"from": usdc_controller})
+        usdc.mint(agent, amount, {"from": usdc_minter})
+
+    assert usdc.balanceOf(agent) >= amount, "Insufficient USDC balance"
