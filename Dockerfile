@@ -223,6 +223,22 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     fi
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
+     # build solc-v0.6.11
+     git checkout v0.6.11; \
+     grep -rl '\-Werror' ./cmake/EthCompilerSettings.cmake | xargs sed -i 's/\-Werror/\-Wno\-error/g'; \
+     grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
+     grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
+     grep -rl '#include <string>' ./liblangutil/SourceLocation.h | xargs sed -i 's/#include <string>/#include <string>\n#include <limits>/g'; \
+     grep -rl 'size_t' ./tools/yulPhaser/PairSelections.h | xargs sed -i 's/size_t/std::size_t/g'; \
+     grep -rl 'size_t' ./tools/yulPhaser/Selections.h | xargs sed -i 's/size_t/std::size_t/g'; \
+     ./scripts/build.sh; \
+     mv /usr/local/bin/solc /root/.solcx/solc-v0.6.11; \
+     git checkout .; \
+     git checkout develop; \
+     git clean -d -x -f; \
+    fi
+
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
       # manually install vyper
       mkdir /root/.vvm; \
       pip install vyper==0.3.7; \
@@ -273,8 +289,8 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.6 --version | gr
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.7.6 --version | grep 'Version: 0.7.6+commit.7338295f' || (echo "Incorrect solc-v0.7.6 version" && exit 1) fi
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.15 --version | grep 'Version: 0.8.15+commit.e14f2714' || (echo "Incorrect solc-v0.8.15 version" && exit 1) fi
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.24 --version | grep 'Version: 0.8.24+commit.e11b9ed9' || (echo "Incorrect solc-v0.8.24 version" && exit 1) fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.6.11 --version | grep 'Version: 0.6.11+commit.5ef660b1' || (echo "Incorrect solc-v0.6.11 version" && exit 1) fi
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.vvm/vyper-0.3.7 --version | grep '0.3.7+' || (echo "Incorrect vyper-0.3.7 version" && exit 1) fi
-
 
 # open sshd port
 EXPOSE 22
