@@ -46,7 +46,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.4.24; \
-     /root/.solcx/solc-v0.4.24 --version | grep 'Version: 0.4.24+commit.e67f0147' || (echo "Incorrect solc-v0.4.24 version" && exit 1); \
      git checkout .; \
      git checkout develop; \
      git clean -d -x -f; \
@@ -58,7 +57,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
      grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
      ./scripts/build.sh; \
      mv /usr/local/bin/solc /root/.solcx/solc-v0.5.14; \
-     /root/.solcx/solc-v0.5.14 --version | grep 'Version: 0.5.14+commit.01f1aaa4' || (echo "Incorrect solc-v0.5.14 version" && exit 1); \
      git checkout .; \
      git checkout develop; \
      git clean -d -x -f; \
@@ -71,7 +69,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
      grep -rl '#include <boost\/variant.hpp>' ./libyul/backends/wasm/EWasmAST.h | xargs sed -i 's/#include <boost\/variant.hpp>/#include <boost\/variant.hpp>\n#include <memory>/g'; \
      ./scripts/build.sh; \
      mv /usr/local/bin/solc /root/.solcx/solc-v0.5.12; \
-     /root/.solcx/solc-v0.5.12 --version | grep 'Version: 0.5.12+commit.7709ece9' || (echo "Incorrect solc-v0.5.12 version" && exit 1); \
      git checkout .; \
      git checkout develop; \
      git clean -d -x -f; \
@@ -88,7 +85,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
      grep -rl 'size_t' ./tools/yulPhaser/Selections.h | xargs sed -i 's/size_t/std::size_t/g'; \
      ./scripts/build.sh; \
      mv /usr/local/bin/solc /root/.solcx/solc-v0.6.12; \
-     /root/.solcx/solc-v0.6.12 --version | grep 'Version: 0.6.12+commit.27d51765' || (echo "Incorrect solc-v0.6.12 version" && exit 1); \
      git checkout .; \
      git checkout develop; \
      git clean -d -x -f; \
@@ -103,7 +99,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.8.28; \
-      /root/.solcx/solc-v0.8.28 --version | grep 'Version: 0.8.28+commit.7893614a' || (echo "Incorrect solc-v0.8.28 version" && exit 1); \
       git checkout .; \git checkout .; \
       git checkout develop; \
       git clean -d -x -f; \
@@ -118,7 +113,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.8.10; \
-      /root/.solcx/solc-v0.8.10 --version | grep 'Version: 0.8.10+commit.fc410830' || (echo "Incorrect solc-v0.8.10 version" && exit 1); \
       git checkout .; \
       git checkout develop; \
       git clean -d -x -f; \
@@ -133,7 +127,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.8.9; \
-      /root/.solcx/solc-v0.8.9 --version | grep 'Version: 0.8.9+commit.e5eed63a' || (echo "Incorrect solc-v0.8.9 version" && exit 1); \
       git checkout .; \
       git checkout develop; \
       git clean -d -x -f; \
@@ -154,7 +147,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.8.4; \
-      /root/.solcx/solc-v0.8.4 --version | grep 'Version: 0.8.4+commit.c7e474f2' || (echo "Incorrect solc-v0.8.4 version" && exit 1); \
       git checkout .; \
       git checkout develop; \
       git clean -d -x -f; \
@@ -175,7 +167,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.8.6; \
-      /root/.solcx/solc-v0.8.6 --version | grep 'Version: 0.8.6+commit.11564f7e' || (echo "Incorrect solc-v0.8.6 version" && exit 1); \
       git checkout .; \
       git checkout develop; \
       git clean -d -x -f; \
@@ -193,7 +184,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
       ./scripts/build.sh; \
       mv /usr/local/bin/solc /root/.solcx/solc-v0.8.15; \
-      /root/.solcx/solc-v0.8.15 --version | grep 'Version: 0.8.15+commit.e14f2714' || (echo "Incorrect solc-v0.8.15 version" && exit 1); \
       git checkout .; \
       git checkout develop; \
       git clean -d -x -f; \
@@ -210,7 +200,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
      grep -rl 'size_t' ./tools/yulPhaser/Selections.h | xargs sed -i 's/size_t/std::size_t/g'; \
      ./scripts/build.sh; \
      mv /usr/local/bin/solc /root/.solcx/solc-v0.7.6; \
-     /root/.solcx/solc-v0.7.6 --version | grep 'Version: 0.7.6+commit.7338295f' || (echo "Incorrect solc-v0.7.6 version" && exit 1); \
      git checkout .; \
      git checkout develop; \
      git clean -d -x -f; \
@@ -221,7 +210,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       mkdir /root/.vvm; \
       pip install vyper==0.3.7; \
       ln -s /usr/local/bin/vyper /root/.vvm/vyper-0.3.7; \
-      /root/.vvm/vyper-0.3.7 --version | grep '0.3.7+' || (echo "Incorrect vyper-0.3.7 version" && exit 1); \
     fi
 # compilers for amd64 will be downloaded by brownie later in this Dockerfile
 
@@ -256,6 +244,18 @@ RUN node --version | grep 'v18.20.4' || (echo "Incorrect node version" && exit 1
 RUN npm --version | grep '10.7.0' || (echo "Incorrect npm version" && exit 1)
 RUN poetry --version | grep 'Poetry (version 1.8.2)' || (echo "Incorrect poetry version" && exit 1)
 RUN yarn --version | grep '1.22.22' || (echo "Incorrect yarn version" && exit 1)
+RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.4.24 --version | grep 'Version: 0.4.24+commit.e67f0147' || (echo "Incorrect solc-v0.4.24 version" && exit 1) fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.5.14 --version | grep 'Version: 0.5.14+commit.01f1aaa4' || (echo "Incorrect solc-v0.5.14 version" && exit 1) fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.5.12 --version | grep 'Version: 0.5.12+commit.7709ece9' || (echo "Incorrect solc-v0.5.12 version" && exit 1) fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.6.12 --version | grep 'Version: 0.6.12+commit.27d51765' || (echo "Incorrect solc-v0.6.12 version" && exit 1) fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.28 --version | grep 'Version: 0.8.28+commit.7893614a' || (echo "Incorrect solc-v0.8.28 version" && exit 1) fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.10 --version | grep 'Version: 0.8.10+commit.fc410830' || (echo "Incorrect solc-v0.8.10 version" && exit 1) fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.9 --version | grep 'Version: 0.8.9+commit.e5eed63a' || (echo "Incorrect solc-v0.8.9 version" && exit 1) fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.4 --version | grep 'Version: 0.8.4+commit.c7e474f2' || (echo "Incorrect solc-v0.8.4 version" && exit 1) fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.6 --version | grep 'Version: 0.8.6+commit.11564f7e' || (echo "Incorrect solc-v0.8.6 version" && exit 1) fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.7.6 --version | grep 'Version: 0.7.6+commit.7338295f' || (echo "Incorrect solc-v0.7.6 version" && exit 1) fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.15 --version | grep 'Version: 0.8.15+commit.e14f2714' || (echo "Incorrect solc-v0.8.15 version" && exit 1) fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.vvm/vyper-0.3.7 --version | grep '0.3.7+' || (echo "Incorrect vyper-0.3.7 version" && exit 1) fi
 
 
 # open sshd port
