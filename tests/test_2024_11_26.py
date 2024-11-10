@@ -3,7 +3,7 @@ Tests for voting 26/11/2024.
 """
 
 from scripts.vote_2024_11_26 import start_vote
-from brownie import interface, reverts, accounts, ZERO_ADDRESS
+from brownie import interface, reverts, accounts, ZERO_ADDRESS, chain, web3
 from utils.test.tx_tracing_helpers import *
 from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS
 from utils.config import contracts
@@ -18,14 +18,15 @@ from utils.test.event_validators.node_operators_registry import (
 )
 from configs.config_mainnet import ( USDC_TOKEN )
 
+STETH_TRANSFER_MAX_DELTA = 2
 
 def test_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # misc
     easy_track = interface.EasyTrack("0xF0211b7660680B49De1A7E9f25C65660F0a13Fea")
     nor = contracts.node_operators_registry
-    prepare_agent_for_usdc_payment(2_000_000_000 * (10**6))
-    prepare_agent_for_steth_payment(100_000 * 10**18)
+    prepare_agent_for_usdc_payment(15_000_000 * (10**6))
+    prepare_agent_for_steth_payment(20_000 * 10**18)
 
     # Item 1
     atc_allowed_recipients_registry = interface.AllowedRecipientRegistry("0xe07305F43B11F230EaA951002F6a55a16419B707")
@@ -113,7 +114,15 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert atc_spend_limit_after == atcSpendLimitAfterExpected
     assert interface.AllowedRecipientRegistry(atc_allowed_recipients_registry).isUnderSpendableBalance(atcSpendableBalanceAfter, 3)
     assert atcSpendableBalanceAfter == atcSpendLimitAfterExpected
-    limit_test(easy_track, int(atcSpendableBalanceAfter / (10**18)), atc_trusted_caller_acc, atc_top_up_evm_script_factory, atc_multisig_acc, stranger)
+    limit_test(easy_track,
+               int(atcSpendableBalanceAfter / (10**18)) * 10**6,
+               atc_trusted_caller_acc,
+               atc_top_up_evm_script_factory,
+               atc_multisig_acc,
+               stranger,
+               interface.Usdc(USDC_TOKEN),
+               2_000_000 * 10**6
+    )
 
     # Item 2
     pmlBudgetLimitAfter, pmlPeriodDurationMonthsAfter = interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).getLimitParameters()
@@ -124,7 +133,15 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert pml_spend_limit_after == pmlSpendLimitAfterExpected
     assert interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).isUnderSpendableBalance(pmlSpendableBalanceAfter, 3)
     assert pmlSpendableBalanceAfter == pmlSpendLimitAfterExpected
-    #limit_test(easy_track, int(pmlSpendableBalanceAfter / (10**18)), pml_trusted_caller_acc, pml_top_up_evm_script_factory, pml_multisig_acc, stranger)
+    limit_test(easy_track,
+               int(pmlSpendableBalanceAfter / (10**18)) * 10**6,
+               pml_trusted_caller_acc,
+               pml_top_up_evm_script_factory,
+               pml_multisig_acc,
+               stranger,
+               interface.Usdc(USDC_TOKEN),
+               2_000_000 * 10**6
+    )
 
     # Item 3
     tmcBudgetLimitAfter, tmcPeriodDurationMonthsAfter = interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).getLimitParameters()
@@ -136,42 +153,15 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert alreadySpentAmountAfter == tmcNewSpentAmountExpected
     tmcSpendableBalanceAfter = interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).spendableBalance()
     assert tmcSpendableBalanceAfter == tmcBudgetAfterExpected
-    with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
-        create_and_enact_payment_motion(
-            easy_track,
-            tmc_trusted_caller,
-            tmc_top_up_evm_script_factory,
-            stETH_token,
-            [stonks_steth_contract],
-            [tmcBudgetAfterExpected + 1],
-            stranger,
-        )
-
-    print ('Spendable balance before 12 * 1000 stETH transfer ', interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).spendableBalance())
-    for i in range (12):
-        create_and_enact_payment_motion(
-            easy_track,
-            tmc_trusted_caller,
-            tmc_top_up_evm_script_factory,
-            stETH_token,
-            [stonks_steth_contract],
-            [1_000 * 10 ** 18],
-            stranger,
-        )
-        print ('Spendable balance on 12 * 1000 stETH transfer ', interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).spendableBalance())
-
-    print ('Spendable balance after 12 * 1000 stETH transfer ', interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).spendableBalance())
-    with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
-        create_and_enact_payment_motion(
-            easy_track,
-            tmc_trusted_caller,
-            tmc_top_up_evm_script_factory,
-            stETH_token,
-            [stonks_steth_contract],
-            [1],
-            stranger,
-        )
-        print ('Spendable balance after-after 12 * 1000 stETH transfer ', interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).spendableBalance())
+    limit_test(easy_track,
+               tmcSpendableBalanceAfter,
+               tmc_trusted_caller,
+               tmc_top_up_evm_script_factory,
+               stonks_steth_contract,
+               stranger,
+               stETH_token,
+               1_000 * 10 ** 18
+    )
 
     # Item 5
     SimplyStakingDataAfter = nor.getNodeOperator(SimplyStakingId, True)
@@ -216,37 +206,34 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
         )
     )
 
-def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_factory, multisig_acc, stranger):
+def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_factory, multisig_acc, stranger, token, max_spend_at_once):
 
-    # can't spend more than 2M USDC at once
-    max_usdc_spend_at_once = 2_000_000 * 10**6
+    chain.snapshot()
 
-    to_spend_usdc = to_spend * 10**6
-
-    # check that there is no way to spend more USDC
+    # check that there is no way to spend more then expected
     with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
         create_and_enact_payment_motion(
             easy_track,
             trusted_caller_acc,
             top_up_evm_script_factory,
-            interface.Usdc(USDC_TOKEN),
+            token,
             [multisig_acc],
-            [to_spend_usdc + 1],
+            [to_spend + 1],
             stranger,
         )
     
-    # spend all USDC step by step (at most 2M each time)
-    while to_spend_usdc > 0:
+    # spend all step by step
+    while to_spend > 0:
         create_and_enact_payment_motion(
             easy_track,
             trusted_caller_acc,
             top_up_evm_script_factory,
-            interface.Usdc(USDC_TOKEN),
+            token,
             [multisig_acc],
-            [min(max_usdc_spend_at_once, to_spend_usdc)],
+            [min(max_spend_at_once, to_spend)],
             stranger,
         )
-        to_spend_usdc -= min(max_usdc_spend_at_once, to_spend_usdc)
+        to_spend -= min(max_spend_at_once, to_spend)
 
     # make sure there is nothing left so that you can't spend anymore
     with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
@@ -254,13 +241,13 @@ def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_facto
             easy_track,
             trusted_caller_acc,
             top_up_evm_script_factory,
-            interface.Usdc(USDC_TOKEN),
+            token,
             [multisig_acc],
             [1],
             stranger,
         )
 
-STETH_TRANSFER_MAX_DELTA = 2
+    chain.revert()
 
 def prepare_agent_for_steth_payment(amount: int):
     agent, steth = contracts.agent, contracts.lido
@@ -276,6 +263,10 @@ def prepare_agent_for_usdc_payment(amount: int):
         usdc_minter = accounts.at("0x5B6122C109B78C6755486966148C1D70a50A47D7", force=True)
         usdc_controller = accounts.at("0x79E0946e1C186E745f1352d7C21AB04700C99F71", force=True)
         usdc_master_minter = interface.UsdcMasterMinter("0xE982615d461DD5cD06575BbeA87624fda4e3de17")
+
+        web3.provider.make_request("evm_setAccountBalance", [usdc_controller.address, hex(100_000 * 10**18)])
+        assert usdc_controller.balance() >= 100_000 * 10**18
+
         usdc_master_minter.incrementMinterAllowance(amount, {"from": usdc_controller})
         usdc.mint(agent, amount, {"from": usdc_minter})
 
