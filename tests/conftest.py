@@ -29,7 +29,7 @@ def shared_setup(fn_isolation):
 
 @pytest.fixture(scope="session", autouse=True)
 def network_gas_price():
-    network.gas_price("99999999 gwei")
+    network.gas_price("2 gwei")
 
 @pytest.fixture(scope="function")
 def deployer():
