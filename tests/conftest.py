@@ -29,7 +29,7 @@ def shared_setup(fn_isolation):
 
 @pytest.fixture(scope="session", autouse=True)
 def network_gas_price():
-    network.gas_price("2 gwei")
+    network.gas_price("99999999 gwei")
 
 @pytest.fixture(scope="function")
 def deployer():
@@ -260,7 +260,7 @@ def add_balance_check_middleware():
 # TODO: Such implicit manipulation of the balances may lead to hard-debugging errors in the future.
 # Better to return back balance after request is done.
 def ensure_balance(address):
-    if web3.eth.get_balance(address) < ETH(1):
+    if web3.eth.get_balance(address) < ETH(1000000):
         set_balance(address, 1000000)
 
 def balance_check_middleware(make_request, web3):
