@@ -74,14 +74,13 @@ def ref_slot():
     return ref_slot
 
 
-@pytest.fixture
-def distribute_reward_tree(deposits_to_csm, fee_oracle, fee_distributor, node_operator, ref_slot):
-    consensus_version = fee_oracle.getConsensusVersion()
-    oracle_version = fee_oracle.getContractVersion()
+def distribute_reward_tree(node_operator, ref_slot):
+    consensus_version = contracts.cs_fee_oracle.getConsensusVersion()
+    oracle_version = contracts.cs_fee_oracle.getContractVersion()
 
     rewards = ETH(0.05)
     oracle_report(cl_diff=rewards)
-    distributed_shares = contracts.lido.sharesOf(fee_distributor)
+    distributed_shares = contracts.lido.sharesOf(contracts.cs_fee_distributor)
     assert distributed_shares > 0
 
     report, report_hash, tree = prepare_csm_report({node_operator: distributed_shares}, ref_slot)
@@ -93,7 +92,7 @@ def distribute_reward_tree(deposits_to_csm, fee_oracle, fee_distributor, node_op
         contracts.csm_hash_consensus,
     )
 
-    fee_oracle.submitReportData(report, oracle_version, {"from": submitter})
+    contracts.cs_fee_oracle.submitReportData(report, oracle_version, {"from": submitter})
     return tree
 
 
@@ -316,20 +315,23 @@ def test_csm_wsteth_bond(csm, accounting, node_operator):
 
 
 @pytest.mark.usefixtures("deposits_to_csm")
-def test_csm_claim_rewards_steth(csm, distribute_reward_tree, node_operator, fee_distributor):
-    tree = distribute_reward_tree.tree
-    shares = tree.values[0]["value"][1]
-    proof = list(tree.get_proof(tree.find(tree.leaf((node_operator, shares)))))
+def test_csm_claim_rewards_steth(csm, node_operator, ref_slot):
     reward_address = csm.getNodeOperator(node_operator)["rewardAddress"]
     shares_before = contracts.lido.sharesOf(reward_address)
+    accounting_shares_before = contracts.lido.sharesOf(contracts.cs_accounting)
+
+    tree = distribute_reward_tree(node_operator, ref_slot).tree
+    shares = tree.values[0]["value"][1]
+    proof = list(tree.get_proof(tree.find(tree.leaf((node_operator, shares)))))
 
     csm.claimRewardsStETH(node_operator, ETH(1), shares, proof, {"from": reward_address})
-    # subtract 10 to avoid rounding errors
-    assert contracts.lido.sharesOf(reward_address) > shares_before + shares - 10
+    shares_after = contracts.lido.sharesOf(reward_address)
+    accounting_shares_after = contracts.lido.sharesOf(contracts.cs_accounting)
+    assert shares_after == shares_before + (accounting_shares_before + shares - accounting_shares_after)
 
 @pytest.mark.usefixtures("deposits_to_csm")
-def test_csm_claim_rewards_wsteth(csm, distribute_reward_tree, node_operator, fee_distributor):
-    tree = distribute_reward_tree.tree
+def test_csm_claim_rewards_wsteth(csm, node_operator, ref_slot):
+    tree = distribute_reward_tree(node_operator, ref_slot).tree
     shares = tree.values[0]["value"][1]
     proof = list(tree.get_proof(tree.find(tree.leaf((node_operator, shares)))))
     reward_address = csm.getNodeOperator(node_operator)["rewardAddress"]
@@ -339,8 +341,8 @@ def test_csm_claim_rewards_wsteth(csm, distribute_reward_tree, node_operator, fe
     assert contracts.wsteth.balanceOf(reward_address) > wsteth_before
 
 @pytest.mark.usefixtures("deposits_to_csm")
-def test_csm_claim_rewards_eth(csm, distribute_reward_tree, node_operator, fee_distributor):
-    tree = distribute_reward_tree.tree
+def test_csm_claim_rewards_eth(csm, node_operator, ref_slot):
+    tree = distribute_reward_tree(node_operator, ref_slot).tree
     shares = tree.values[0]["value"][1]
     proof = list(tree.get_proof(tree.find(tree.leaf((node_operator, shares)))))
     reward_address = csm.getNodeOperator(node_operator)["rewardAddress"]
