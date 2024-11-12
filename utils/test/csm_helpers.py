@@ -136,7 +136,7 @@ def csm_add_node_operator(csm, accounting, node_operator, proof, keys_count=5, c
     signatures_batch = random_signatures_batch(keys_count)
 
     value = accounting.getBondAmountByKeysCount['uint256,uint256'](keys_count, curve_id)
-    set_balance_in_wei(node_operator, value + ETH(1))
+    set_balance_in_wei(node_operator, value + ETH(10))
 
     csm.addNodeOperatorETH(
         keys_count,
