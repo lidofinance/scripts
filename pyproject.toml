@@ -10,10 +10,12 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.11"
-eth-brownie = "1.20.2"
+eth-brownie = "1.20.6"
 avotes-parser-core = "~0.5.6"
 hexbytes = "0.3.1"
 ipfs-cid = "^1.0.0"
+brownie-safe = "^0.9.0"
+safe-eth-py = "6.0.0b36"
 
 [tool.poetry.dev-dependencies]
 black = "~24.2.0"
