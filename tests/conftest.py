@@ -260,7 +260,7 @@ def add_balance_check_middleware():
 # TODO: Such implicit manipulation of the balances may lead to hard-debugging errors in the future.
 # Better to return back balance after request is done.
 def ensure_balance(address):
-    if web3.eth.get_balance(address) < ETH(10):
+    if web3.eth.get_balance(address) < ETH(999):
         set_balance(address, 1000000)
 
 def balance_check_middleware(make_request, web3):
