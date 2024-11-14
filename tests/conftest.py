@@ -275,17 +275,21 @@ def balance_check_middleware(make_request, web3):
     @wraps(make_request)
     def middleware(method, params):
         from_address = None
+        result = None
         balance_diff = 0
+
         if method in ["eth_sendTransaction", "eth_sendRawTransaction"]:
             transaction = params[0]
             from_address = transaction.get("from")
             if from_address:
                 balance_diff = ensure_balance(from_address)
 
-        result = make_request(method, params)
-        if balance_diff > 0:
-            new_balance = max(0, web3.eth.get_balance(from_address) - balance_diff)
-            set_balance_in_wei(from_address, new_balance)
+        try:
+            result = make_request(method, params)
+        finally:
+            if balance_diff > 0:
+                new_balance = max(0, web3.eth.get_balance(from_address) - balance_diff)
+                set_balance_in_wei(from_address, new_balance)
 
         return result
 
