@@ -8,7 +8,7 @@ from brownie.typing import TransactionReceipt  # type: ignore
 from eth_abi.abi import encode
 from hexbytes import HexBytes
 
-from utils.config import (contracts, AO_CONSENSUS_VERSION)
+from utils.config import contracts, AO_CONSENSUS_VERSION
 from utils.test.exit_bus_data import encode_data
 from utils.test.helpers import ETH, GWEI, eth_balance
 from utils.test.merkle_tree import Tree
@@ -16,7 +16,7 @@ from utils.test.merkle_tree import Tree
 ZERO_HASH = bytes([0] * 32)
 ZERO_BYTES32 = HexBytes(ZERO_HASH)
 ONE_DAY = 1 * 24 * 60 * 60
-SHARE_RATE_PRECISION = 10 ** 27
+SHARE_RATE_PRECISION = 10**27
 EXTRA_DATA_FORMAT_EMPTY = 0
 EXTRA_DATA_FORMAT_LIST = 1
 
@@ -113,7 +113,7 @@ def prepare_csm_report(node_operators_rewards: dict, ref_slot):
     shares = node_operators_rewards.copy()
     if len(shares) < 2:
         # put a stone
-        shares[2 ** 64 - 1] = 0
+        shares[2**64 - 1] = 0
 
     tree = Tree.new(tuple((no_id, amount) for (no_id, amount) in shares.items()))
     # semi-random values
@@ -143,8 +143,20 @@ def encode_data_from_abi(data, abi, func_name):
 def get_finalization_batches(
     share_rate: int, limited_withdrawal_vault_balance, limited_el_rewards_vault_balance
 ) -> list[int]:
-    (_, _, _, _, _, _, _, requestTimestampMargin, _, _, _,
-     _) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
+    (
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        requestTimestampMargin,
+        _,
+        _,
+        _,
+        _,
+    ) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
     buffered_ether = contracts.lido.getBufferedEther()
     unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
     reserved_buffer = min(buffered_ether, unfinalized_steth)
@@ -219,7 +231,7 @@ def push_oracle_report(
         extraDataItemsCount=extraDataItemsCount,
     )
     submitter = reach_consensus(refSlot, hash, consensusVersion, contracts.hash_consensus_for_accounting_oracle, silent)
-    accounts[0].transfer(submitter, 10 ** 19)
+    accounts[0].transfer(submitter, 10**19)
     # print(contracts.oracle_report_sanity_checker.getOracleReportLimits())
     report_tx = contracts.accounting_oracle.submitReportData(items, oracleVersion, {"from": submitter})
     if not silent:
@@ -230,8 +242,9 @@ def push_oracle_report(
         if not silent:
             print("Submitted empty extra data report")
     else:
-        extra_report_tx_list = [contracts.accounting_oracle.submitReportExtraDataList(data, {"from": submitter}) for
-                                data in extraDataList]
+        extra_report_tx_list = [
+            contracts.accounting_oracle.submitReportExtraDataList(data, {"from": submitter}) for data in extraDataList
+        ]
         if not silent:
             print("Submitted NOT empty extra data report")
 
@@ -263,6 +276,22 @@ def simulate_report(
 ):
     (_, SECONDS_PER_SLOT, GENESIS_TIME) = contracts.hash_consensus_for_accounting_oracle.getChainConfig()
     reportTime = GENESIS_TIME + refSlot * SECONDS_PER_SLOT
+
+    override_slot = web3.keccak(text="lido.BaseOracle.lastProcessingRefSlot").hex()
+    state_override = {
+        contracts.accounting_oracle.address: {
+            # Fix: Sanity checker uses `lastProcessingRefSlot` from AccountingOracle to
+            # properly process negative rebase sanity checks. Since current simulation skips call to AO,
+            # setting up `lastProcessingRefSlot` directly.
+            #
+            # The code is taken from the current production `lido-oracle` implementation
+            # source: https://github.com/lidofinance/lido-oracle/blob/da393bf06250344a4d06dce6d1ac6a3ddcb9c7a3/src/providers/execution/contracts/lido.py#L93-L95
+            "stateDiff": {
+                override_slot: refSlot,
+            },
+        },
+    }
+
     try:
         return contracts.lido.handleOracleReport.call(
             reportTime,
@@ -276,9 +305,19 @@ def simulate_report(
             0,
             {"from": contracts.accounting_oracle.address},
             block_identifier=block_identifier,
+            override=state_override,
         )
     except VirtualMachineError:
         # workaround for empty revert message from ganache on eth_call
+
+        # override storage value of the processing reference slot to make the simulation sound
+        # Since it's not possible to pass an override as a part of the state-changing transaction
+        web3.provider.make_request(
+            # can assume ganache only here
+            "evm_setAccountStorageAt",
+            [contracts.accounting_oracle.address, override_slot, refSlot],
+        )
+
         contracts.lido.handleOracleReport(
             reportTime,
             ONE_DAY,
@@ -301,7 +340,9 @@ def wait_to_next_available_report_time(consensus_contract):
     except VirtualMachineError as e:
         if "InitialEpochIsYetToArrive" in str(e):
             frame_config = consensus_contract.getFrameConfig()
-            chain.sleep(GENESIS_TIME + 1 + (frame_config["initialEpoch"] * SLOTS_PER_EPOCH * SECONDS_PER_SLOT) - chain.time())
+            chain.sleep(
+                GENESIS_TIME + 1 + (frame_config["initialEpoch"] * SLOTS_PER_EPOCH * SECONDS_PER_SLOT) - chain.time()
+            )
             chain.mine(1)
             (refSlot, _) = consensus_contract.getCurrentFrame()
         else:
