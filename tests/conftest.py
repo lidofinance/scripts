@@ -15,7 +15,7 @@ from utils.config import contracts, network_name, MAINNET_VOTE_DURATION
 from utils.config import *
 from utils.txs.deploy import deploy_from_prepared_tx
 from utils.test.helpers import ETH
-from utils.balance import set_balance
+from utils.balance import set_balance, set_balance_in_wei
 from functools import wraps
 
 ENV_OMNIBUS_BYPASS_EVENTS_DECODING = "OMNIBUS_BYPASS_EVENTS_DECODING"
@@ -27,9 +27,11 @@ ENV_OMNIBUS_VOTE_IDS = "OMNIBUS_VOTE_IDS"
 def shared_setup(fn_isolation):
     pass
 
+
 @pytest.fixture(scope="session", autouse=True)
 def network_gas_price():
     network.gas_price("2 gwei")
+
 
 @pytest.fixture(scope="function")
 def deployer():
@@ -63,9 +65,11 @@ def delegate1():
 def delegate2():
     return set_balance("0x100b896F2Dd8c4Ca619db86BCDDb7E085143C1C5", 100000)
 
+
 @pytest.fixture(scope="module")
 def trp_recipient(accounts):
     return set_balance("0x228cCaFeA1fa21B74257Af975A9D84d87188c61B", 100000)
+
 
 @pytest.fixture(scope="module")
 def eth_whale(accounts):
@@ -253,24 +257,40 @@ def parse_events_from_local_abi():
             # Added contract will resolve from address during state._find_contract without a request to Etherscan
             state._add_contract(contract)
 
+
 @pytest.fixture(scope="session", autouse=True)
 def add_balance_check_middleware():
-    web3.middleware_onion.add(balance_check_middleware, name='balance_check')
+    web3.middleware_onion.add(balance_check_middleware, name="balance_check")
+
 
 # TODO: Such implicit manipulation of the balances may lead to hard-debugging errors in the future.
-# Better to return back balance after request is done.
-def ensure_balance(address):
-    if web3.eth.get_balance(address) < ETH(999):
-        set_balance(address, 1000000)
+def ensure_balance(address) -> int:
+    old_balance = web3.eth.get_balance(address)
+    if old_balance < ETH(999):
+        set_balance_in_wei(address, ETH(1000000))
+    return web3.eth.get_balance(address) - old_balance
+
 
 def balance_check_middleware(make_request, web3):
     @wraps(make_request)
     def middleware(method, params):
+        from_address = None
+        result = None
+        balance_diff = 0
+
         if method in ["eth_sendTransaction", "eth_sendRawTransaction"]:
             transaction = params[0]
-            from_address = transaction.get('from')
+            from_address = transaction.get("from")
             if from_address:
-                ensure_balance(from_address)
+                balance_diff = ensure_balance(from_address)
 
-        return make_request(method, params)
+        try:
+            result = make_request(method, params)
+        finally:
+            if balance_diff > 0:
+                new_balance = max(0, web3.eth.get_balance(from_address) - balance_diff)
+                set_balance_in_wei(from_address, new_balance)
+
+        return result
+
     return middleware
