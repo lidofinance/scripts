@@ -1,6 +1,7 @@
 from brownie import accounts, web3
 from utils.test.helpers import ETH
 
+
 def set_balance_in_wei(address, balance):
     account = accounts.at(address, force=True)
     providers = ["evm_setAccountBalance", "hardhat_setBalance", "anvil_setBalance"]
@@ -15,8 +16,9 @@ def set_balance_in_wei(address, balance):
             if e.args[0].get("message") != f"Method {provider} is not supported":
                 raise e
 
-    assert account.balance() == balance, f"Failed to set balance for account: {address}"
+    assert account.balance() == balance, f"Failed to set balance {balance} for account: {address}"
     return account
+
 
 def set_balance(address, balanceInEth):
     balance = ETH(balanceInEth)
