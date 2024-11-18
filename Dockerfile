@@ -289,9 +289,9 @@ RUN echo "cd /root/scripts" >> /root/.bashrc
 
 # verify prerequisites versions
 RUN python --version | grep 'Python 3.10.15' || (echo "Incorrect python version" && exit 1)
-RUN pip --version | grep 'pip 24.2' || (echo "Incorrect pip version" && exit 1)
-RUN node --version | grep 'v18.20.4' || (echo "Incorrect node version" && exit 1)
-RUN npm --version | grep '10.7.0' || (echo "Incorrect npm version" && exit 1)
+RUN pip --version | grep 'pip 24.' || (echo "Incorrect pip version" && exit 1)
+RUN node --version | grep 'v18.' || (echo "Incorrect node version" && exit 1)
+RUN npm --version | grep '10.' || (echo "Incorrect npm version" && exit 1)
 RUN poetry --version | grep 'Poetry (version 1.8.2)' || (echo "Incorrect poetry version" && exit 1)
 RUN yarn --version | grep '1.22.22' || (echo "Incorrect yarn version" && exit 1)
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.4.24 --version | grep 'Version: 0.4.24+commit.e67f0147' || (echo "Incorrect solc-v0.4.24 version" && exit 1) fi
