@@ -69,8 +69,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     tmc_registry = interface.AllowedRecipientRegistry("0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0")
 
     NO_registry = contracts.node_operators_registry
-    SimplyStaking_id = 16
-    SimplyStaking_new_reward_address = "0x1EC3Cbe8fb1D8019092500CcA2111C158a35bC82"
+    simply_staking_id = 16
+    simply_staking_new_reward_address = "0x1EC3Cbe8fb1D8019092500CcA2111C158a35bC82"
 
     vote_desc_items, call_script_items = zip(
         #
@@ -134,8 +134,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             agent_forward(
                 [
                 encode_set_node_operator_reward_address(
-                    SimplyStaking_id,
-                    SimplyStaking_new_reward_address,
+                    simply_staking_id,
+                    simply_staking_new_reward_address,
                     NO_registry
                 ),
                 ]
