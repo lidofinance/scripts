@@ -9,14 +9,14 @@ from web3 import Web3
 from brownie import interface, convert, web3
 from brownie.network.event import _decode_logs
 from brownie.network.state import TxHistory
-from utils.test.event_validators.permission import Permission
+
+from configs.config_mainnet import CSM_COMMITTEE_MS
 from utils.test.helpers import ZERO_BYTES32
 from brownie.exceptions import EventLookupError
 from utils.config import (
     contracts,
     GATE_SEAL,
     DSM_GUARDIANS,
-    EASYTRACK_EVMSCRIPT_EXECUTOR,
     ORACLE_COMMITTEE,
     AGENT,
     EASYTRACK_EVMSCRIPT_EXECUTOR,
@@ -42,6 +42,13 @@ from utils.config import (
     LIDO_LOCATOR,
     LEGACY_ORACLE,
     SIMPLE_DVT,
+    CSM_ADDRESS,
+    CS_ACCOUNTING_ADDRESS,
+    CS_GATE_SEAL_ADDRESS,
+    CS_VERIFIER_ADDRESS,
+    CS_FEE_DISTRIBUTOR_ADDRESS,
+    CS_FEE_ORACLE_ADDRESS,
+    CS_ORACLE_HASH_CONSENSUS_ADDRESS,
 )
 
 
@@ -62,7 +69,7 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "REQUEST_BURN_MY_STETH_ROLE": [contracts.agent],
-                "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry, contracts.simple_dvt],
+                "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry, contracts.simple_dvt, contracts.csm.accounting()],
             },
         },
         STAKING_ROUTER: {
@@ -73,8 +80,7 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_WITHDRAWAL_CREDENTIALS_ROLE": [],
-                "STAKING_MODULE_PAUSE_ROLE": [contracts.deposit_security_module],
-                "STAKING_MODULE_RESUME_ROLE": [contracts.deposit_security_module],
+                "STAKING_MODULE_UNVETTING_ROLE": [contracts.deposit_security_module],
                 "STAKING_MODULE_MANAGE_ROLE": [contracts.agent],
                 "REPORT_EXITED_VALIDATORS_ROLE": [contracts.accounting_oracle],
                 "UNSAFE_SET_EXITED_VALIDATORS_ROLE": [],
@@ -161,15 +167,17 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "ALL_LIMITS_MANAGER_ROLE": [],
-                "CHURN_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE": [],
-                "ONE_OFF_CL_BALANCE_DECREASE_LIMIT_MANAGER_ROLE": [],
+                "EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE": [],
+                "APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE": [],
                 "ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE": [],
                 "SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE": [],
                 "MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_ROLE": [],
-                "MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE": [contracts.agent],
-                "MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE": [contracts.agent],
+                "MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION_ROLE": [],
+                "MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_ROLE": [],
                 "REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE": [],
                 "MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE": [],
+                "SECOND_OPINION_MANAGER_ROLE": [],
+                "INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE": [],
             },
         },
         DEPOSIT_SECURITY_MODULE: {
@@ -299,6 +307,74 @@ def protocol_permissions():
             "type": "AragonApp",
             "roles": {},
         },
+        CSM_ADDRESS: {
+            "contract_name": "CSModule",
+            "contract": contracts.csm,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
+                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS],
+                "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE": [CSM_COMMITTEE_MS],
+                "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "VERIFIER_ROLE": [CS_VERIFIER_ADDRESS],
+                "RESUME_ROLE": [],
+                "MODULE_MANAGER_ROLE": [],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CS_ACCOUNTING_ADDRESS: {
+            "contract_name": "CSAccounting",
+            "contract": contracts.cs_accounting,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "SET_BOND_CURVE_ROLE": [CSM_ADDRESS, CSM_COMMITTEE_MS],
+                "RESET_BOND_CURVE_ROLE": [CSM_ADDRESS, CSM_COMMITTEE_MS],
+                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS],
+                "RESUME_ROLE": [],
+                "ACCOUNTING_MANAGER_ROLE": [],
+                "MANAGE_BOND_CURVES_ROLE": [],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CS_FEE_DISTRIBUTOR_ADDRESS: {
+            "contract_name": "CSFeeDistributor",
+            "contract": contracts.cs_fee_distributor,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CS_FEE_ORACLE_ADDRESS: {
+            "contract_name": "CSFeeOracle",
+            "contract": contracts.cs_fee_oracle,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
+                "MANAGE_CONSENSUS_VERSION_ROLE": [],
+                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS],
+                "CONTRACT_MANAGER_ROLE": [],
+                "SUBMIT_DATA_ROLE": [],
+                "RESUME_ROLE": [],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CS_ORACLE_HASH_CONSENSUS_ADDRESS: {
+            "contract_name": "HashConsensus",
+            "contract": contracts.csm_hash_consensus,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "MANAGE_MEMBERS_AND_QUORUM_ROLE": [contracts.agent],
+                "DISABLE_CONSENSUS_ROLE": [],
+                "MANAGE_FRAME_CONFIG_ROLE": [],
+                "MANAGE_FAST_LANE_CONFIG_ROLE": [],
+                "MANAGE_REPORT_PROCESSOR_ROLE": [],
+            },
+        }
     }
 
 

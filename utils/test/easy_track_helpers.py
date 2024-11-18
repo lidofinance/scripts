@@ -22,11 +22,12 @@ def create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stran
     motions = easy_track.getMotions()
     assert len(motions) == len(motions_before) + 1
 
-    chain.sleep(60 * 60 * 24 * 3)
-    chain.mine()
+    (motion_id, _, _, motion_duration, motion_start_date, _, _, _, _,)= motions[-1]
+
+    chain.mine(1, motion_start_date + motion_duration + 1)
 
     easy_track.enactMotion(
-        motions[-1][0],
+        motion_id,
         tx.events["MotionCreated"]["_evmScriptCallData"],
         {"from": stranger},
     )

@@ -1,12 +1,14 @@
 """
 Tests for lido staking limits
 """
+
 import pytest
 import eth_abi
 
 from brownie import web3, convert, reverts, ZERO_ADDRESS, chain
 from utils.config import contracts
 from utils.test.helpers import ONE_ETH
+from utils.balance import set_balance
 
 
 @pytest.fixture(scope="module")
@@ -88,6 +90,8 @@ def test_staking_limit_initial_not_zero():
     [(10**6, 10**4), (10**12, 10**10), (10**18, 10**16)],
 )
 def test_staking_limit_updates_per_block_correctly(voting, stranger, limit_max, limit_per_block):
+    set_balance(stranger.address, 1000000)
+
     # Should update staking limits after submit
     contracts.lido.setStakingLimit(limit_max, limit_per_block, {"from": voting})
     staking_limit_before = contracts.lido.getCurrentStakeLimit()

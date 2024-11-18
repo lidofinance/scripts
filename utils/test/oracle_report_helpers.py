@@ -1,6 +1,6 @@
 import warnings
 from dataclasses import astuple, dataclass
-from typing import Literal, overload
+from typing import List, Literal, overload
 
 from brownie import chain, web3, accounts  # type: ignore
 from brownie.exceptions import VirtualMachineError
@@ -8,9 +8,10 @@ from brownie.typing import TransactionReceipt  # type: ignore
 from eth_abi.abi import encode
 from hexbytes import HexBytes
 
-from utils.config import contracts
+from utils.config import contracts, AO_CONSENSUS_VERSION
 from utils.test.exit_bus_data import encode_data
 from utils.test.helpers import ETH, GWEI, eth_balance
+from utils.test.merkle_tree import Tree
 
 ZERO_HASH = bytes([0] * 32)
 ZERO_BYTES32 = HexBytes(ZERO_HASH)
@@ -58,7 +59,6 @@ class AccountingReport:
         return AccountingReport(*self.items)
 
 
-
 def prepare_accounting_report(
     *,
     refSlot,
@@ -70,11 +70,11 @@ def prepare_accounting_report(
     simulatedShareRate,
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
-    consensusVersion=1,
+    consensusVersion=AO_CONSENSUS_VERSION,
     withdrawalFinalizationBatches=[],
     isBunkerMode=False,
     extraDataFormat=EXTRA_DATA_FORMAT_EMPTY,
-    extraDataHash=ZERO_BYTES32,
+    extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
 ):
     report = AccountingReport(
@@ -91,7 +91,7 @@ def prepare_accounting_report(
         int(simulatedShareRate),
         bool(isBunkerMode),
         int(extraDataFormat),
-        extraDataHash,
+        extraDataHashList[0],
         int(extraDataItemsCount),
     )
 
@@ -108,6 +108,31 @@ def prepare_exit_bus_report(validators_to_exit, ref_slot):
     return report, report_hash
 
 
+def prepare_csm_report(node_operators_rewards: dict, ref_slot):
+    consensus_version = contracts.cs_fee_oracle.getConsensusVersion()
+    shares = node_operators_rewards.copy()
+    if len(shares) < 2:
+        # put a stone
+        shares[2**64 - 1] = 0
+
+    tree = Tree.new(tuple((no_id, amount) for (no_id, amount) in shares.items()))
+    # semi-random values
+    log_cid = web3.keccak(tree.root)
+    tree_cid = web3.keccak(log_cid)
+
+    report = (
+        consensus_version,
+        ref_slot,
+        tree.root,
+        str(tree_cid),
+        str(log_cid),
+        sum(shares.values()),
+    )
+    report_data = encode_data_from_abi(report, contracts.cs_fee_oracle.abi, "submitReportData")
+    report_hash = web3.keccak(report_data)
+    return report, report_hash, tree
+
+
 def encode_data_from_abi(data, abi, func_name):
     report_function_abi = next(x for x in abi if x.get("name") == func_name)
     report_data_abi = report_function_abi["inputs"][0]["components"]  # type: ignore
@@ -118,7 +143,20 @@ def encode_data_from_abi(data, abi, func_name):
 def get_finalization_batches(
     share_rate: int, limited_withdrawal_vault_balance, limited_el_rewards_vault_balance
 ) -> list[int]:
-    (_, _, _, _, _, _, _, requestTimestampMargin, _) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
+    (
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        requestTimestampMargin,
+        _,
+        _,
+        _,
+        _,
+    ) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
     buffered_ether = contracts.lido.getBufferedEther()
     unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
     reserved_buffer = min(buffered_ether, unfinalized_steth)
@@ -166,10 +204,10 @@ def push_oracle_report(
     withdrawalFinalizationBatches=[],
     isBunkerMode=False,
     extraDataFormat=0,
-    extraDataHash=ZERO_BYTES32,
+    extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
     silent=False,
-    extraDataList=b"",
+    extraDataList: List[bytes] = [],
 ):
     if not silent:
         print(f"Preparing oracle report for refSlot: {refSlot}")
@@ -189,7 +227,7 @@ def push_oracle_report(
         withdrawalFinalizationBatches=withdrawalFinalizationBatches,
         isBunkerMode=isBunkerMode,
         extraDataFormat=extraDataFormat,
-        extraDataHash=extraDataHash,
+        extraDataHashList=extraDataHashList,
         extraDataItemsCount=extraDataItemsCount,
     )
     submitter = reach_consensus(refSlot, hash, consensusVersion, contracts.hash_consensus_for_accounting_oracle, silent)
@@ -200,11 +238,13 @@ def push_oracle_report(
         print("Submitted report data")
         print(f"extraDataList {extraDataList}")
     if extraDataFormat == 0:
-        extra_report_tx = contracts.accounting_oracle.submitReportExtraDataEmpty({"from": submitter})
+        extra_report_tx_list = [contracts.accounting_oracle.submitReportExtraDataEmpty({"from": submitter})]
         if not silent:
             print("Submitted empty extra data report")
     else:
-        extra_report_tx = contracts.accounting_oracle.submitReportExtraDataList(extraDataList, {"from": submitter})
+        extra_report_tx_list = [
+            contracts.accounting_oracle.submitReportExtraDataList(data, {"from": submitter}) for data in extraDataList
+        ]
         if not silent:
             print("Submitted NOT empty extra data report")
 
@@ -223,12 +263,12 @@ def push_oracle_report(
     assert refSlot == currentFrameRefSlot
     assert mainDataHash == hash.hex()
     assert mainDataSubmitted
-    assert state_extraDataHash == extraDataHash.hex()
+    assert state_extraDataHash == extraDataHashList[-1].hex()
     assert state_extraDataFormat == extraDataFormat
     assert extraDataSubmitted
     assert state_extraDataItemsCount == extraDataItemsCount
     assert extraDataItemsSubmitted == extraDataItemsCount
-    return (report_tx, extra_report_tx)
+    return (report_tx, extra_report_tx_list)
 
 
 def simulate_report(
@@ -236,6 +276,22 @@ def simulate_report(
 ):
     (_, SECONDS_PER_SLOT, GENESIS_TIME) = contracts.hash_consensus_for_accounting_oracle.getChainConfig()
     reportTime = GENESIS_TIME + refSlot * SECONDS_PER_SLOT
+
+    override_slot = web3.keccak(text="lido.BaseOracle.lastProcessingRefSlot").hex()
+    state_override = {
+        contracts.accounting_oracle.address: {
+            # Fix: Sanity checker uses `lastProcessingRefSlot` from AccountingOracle to
+            # properly process negative rebase sanity checks. Since current simulation skips call to AO,
+            # setting up `lastProcessingRefSlot` directly.
+            #
+            # The code is taken from the current production `lido-oracle` implementation
+            # source: https://github.com/lidofinance/lido-oracle/blob/da393bf06250344a4d06dce6d1ac6a3ddcb9c7a3/src/providers/execution/contracts/lido.py#L93-L95
+            "stateDiff": {
+                override_slot: refSlot,
+            },
+        },
+    }
+
     try:
         return contracts.lido.handleOracleReport.call(
             reportTime,
@@ -249,9 +305,19 @@ def simulate_report(
             0,
             {"from": contracts.accounting_oracle.address},
             block_identifier=block_identifier,
+            override=state_override,
         )
     except VirtualMachineError:
         # workaround for empty revert message from ganache on eth_call
+
+        # override storage value of the processing reference slot to make the simulation sound
+        # Since it's not possible to pass an override as a part of the state-changing transaction
+        web3.provider.make_request(
+            # can assume ganache only here
+            "evm_setAccountStorageAt",
+            [contracts.accounting_oracle.address, override_slot, refSlot],
+        )
+
         contracts.lido.handleOracleReport(
             reportTime,
             ONE_DAY,
@@ -269,7 +335,18 @@ def simulate_report(
 
 def wait_to_next_available_report_time(consensus_contract):
     (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME) = consensus_contract.getChainConfig()
-    (refSlot, _) = consensus_contract.getCurrentFrame()
+    try:
+        (refSlot, _) = consensus_contract.getCurrentFrame()
+    except VirtualMachineError as e:
+        if "InitialEpochIsYetToArrive" in str(e):
+            frame_config = consensus_contract.getFrameConfig()
+            chain.sleep(
+                GENESIS_TIME + 1 + (frame_config["initialEpoch"] * SLOTS_PER_EPOCH * SECONDS_PER_SLOT) - chain.time()
+            )
+            chain.mine(1)
+            (refSlot, _) = consensus_contract.getCurrentFrame()
+        else:
+            raise
     time = chain.time()
     (_, EPOCHS_PER_FRAME, _) = consensus_contract.getFrameConfig()
     frame_start_with_offset = GENESIS_TIME + (refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME + 1) * SECONDS_PER_SLOT
@@ -293,9 +370,9 @@ def oracle_report(
     skip_withdrawals=False,
     wait_to_next_report_time=True,
     extraDataFormat=0,
-    extraDataHash=ZERO_BYTES32,
+    extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
-    extraDataList=b"",
+    extraDataList: List[bytes] = [],
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,
@@ -321,9 +398,9 @@ def oracle_report(
     skip_withdrawals=False,
     wait_to_next_report_time=True,
     extraDataFormat=0,
-    extraDataHash=ZERO_BYTES32,
+    extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
-    extraDataList=b"",
+    extraDataList: List[bytes] = [],
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,
@@ -349,9 +426,9 @@ def oracle_report(
     skip_withdrawals=False,
     wait_to_next_report_time=True,
     extraDataFormat=0,
-    extraDataHash=ZERO_BYTES32,
+    extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
-    extraDataList=b"",
+    extraDataList: List[bytes] = [],
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,
@@ -439,7 +516,7 @@ def oracle_report(
             simulatedShareRate=simulatedShareRate,
             isBunkerMode=is_bunker,
             extraDataFormat=extraDataFormat,
-            extraDataHash=extraDataHash,
+            extraDataHash=extraDataHashList[0],
             extraDataItemsCount=extraDataItemsCount,
         )
 
@@ -453,7 +530,7 @@ def oracle_report(
         elRewardsVaultBalance=elRewardsVaultBalance,
         simulatedShareRate=simulatedShareRate,
         extraDataFormat=extraDataFormat,
-        extraDataHash=extraDataHash,
+        extraDataHashList=extraDataHashList,
         extraDataItemsCount=extraDataItemsCount,
         extraDataList=extraDataList,
         stakingModuleIdsWithNewlyExitedValidators=stakingModuleIdsWithNewlyExitedValidators,

@@ -1,12 +1,13 @@
 import math
 from brownie import ZERO_ADDRESS, chain
 
+from utils.test.node_operators_helpers import distribute_reward
 from utils.test.oracle_report_helpers import oracle_report
 from utils.test.helpers import ETH, almostEqEth
 from utils.config import contracts
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
 from utils.balance import set_balance
-
+from utils.test.tx_cost_helper import transaction_cost
 
 def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     print(stranger, stranger.balance())
@@ -59,6 +60,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     submit_tx = contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": amount})
 
+
     print("block after submit: ", chain.height)
 
     steth_balance_after_submit = contracts.lido.balanceOf(stranger)
@@ -68,7 +70,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     print("block after view: ", chain.height)
     assert almostEqEth(steth_balance_after_submit, steth_balance_before_submit + amount)
-    assert eth_balance_before_submit == stranger.balance() + amount + submit_tx.gas_used * submit_tx.gas_price
+    assert almostEqEth(eth_balance_before_submit, stranger.balance() + amount + transaction_cost(submit_tx))
 
     shares_to_be_minted = contracts.lido.getSharesByPooledEth(amount)
 
@@ -136,6 +138,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     treasury = contracts.lido_locator.treasury()
     nor = contracts.node_operators_registry.address
     sdvt = contracts.simple_dvt.address
+    csm = contracts.csm.address
     nor_operators_count = contracts.node_operators_registry.getNodeOperatorsCount()
     sdvt_operators_count = contracts.simple_dvt.getNodeOperatorsCount()
 
@@ -160,7 +163,10 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     treasury_balance_before_rebase = contracts.lido.sharesOf(treasury)
 
-    report_tx, extra_tx = oracle_report(cl_diff=ETH(100))
+    report_tx = oracle_report(cl_diff=ETH(100))[0]
+
+    nor_distribute_reward_tx = distribute_reward(contracts.node_operators_registry, stranger)
+    sdvt_distribute_reward_tx = distribute_reward(contracts.simple_dvt, stranger)
 
     steth_balance_after_rebase = contracts.lido.balanceOf(stranger)
     treasury_balance_after_rebase = contracts.lido.sharesOf(treasury)
@@ -184,14 +190,23 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     if len(penalized_node_operator_ids_sdvt) > 0:
         expected_burner_transfers += 1
 
-    for e in extra_tx.events["Transfer"]:
+    for e in nor_distribute_reward_tx.events["Transfer"]:
         if e["to"] == contracts.burner:
             burner_transfers += 1
+    for e in sdvt_distribute_reward_tx.events["Transfer"]:
+        if e["to"] == contracts.burner:
+            burner_transfers += 1
+
     assert burner_transfers == expected_burner_transfers
 
     assert (
-        extra_tx.events.count("Transfer") == expected_transfers_count_nor + expected_transfers_count_sdvt
-    ), "extra_tx.events should have Transfer to all active operators (+1 optional to Burner), check activity condition above"
+        nor_distribute_reward_tx.events.count("Transfer") == expected_transfers_count_nor
+    ), "nor_distribute_reward_tx.events should have Transfer to all active operators (+1 optional to Burner), check activity condition above"
+
+    assert (
+        sdvt_distribute_reward_tx.events.count("Transfer") == expected_transfers_count_sdvt
+    ), "sdvt_distribute_reward_tx.events should have Transfer to all active operators (+1 optional to Burner), check activity condition above"
+
     assert report_tx.events.count("TokenRebased") == 1
     assert report_tx.events.count("WithdrawalsFinalized") == 1
     assert report_tx.events.count("StETHBurnt") == 1
@@ -213,12 +228,16 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     assert transfer_event[2]["from"] == ZERO_ADDRESS
     assert transfer_event[2]["to"] == sdvt
 
+    # csm
     assert transfer_event[3]["from"] == ZERO_ADDRESS
-    assert transfer_event[3]["to"] == treasury
+    assert transfer_event[3]["to"] == csm
+
+    assert transfer_event[4]["from"] == ZERO_ADDRESS
+    assert transfer_event[4]["to"] == treasury
 
     assert almostEqEth(
         treasury_balance_after_rebase,
-        treasury_balance_before_rebase + contracts.lido.getSharesByPooledEth(transfer_event[3]["value"]),
+        treasury_balance_before_rebase + contracts.lido.getSharesByPooledEth(transfer_event[4]["value"]),
     )
 
     assert treasury_balance_after_rebase > treasury_balance_before_rebase
@@ -280,7 +299,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     )
 
     locked_ether_amount_before_finalization = contracts.withdrawal_queue.getLockedEtherAmount()
-    report_tx, _ = oracle_report(cl_diff=ETH(100))
+    report_tx = oracle_report(cl_diff=ETH(100))[0]
 
     locked_ether_amount_after_finalization = contracts.withdrawal_queue.getLockedEtherAmount()
     withdrawal_finalized_event = report_tx.events["WithdrawalsFinalized"]
@@ -319,7 +338,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     assert transfer_event["to"] == ZERO_ADDRESS
     assert transfer_event["tokenId"] == request_ids[0]
 
-    assert eth_balance_before_withdrawal == stranger.balance() - amount_with_rewards + claim_tx.gas_used * claim_tx.gas_price
+    assert almostEqEth(eth_balance_before_withdrawal, stranger.balance() - amount_with_rewards + transaction_cost(claim_tx))
     assert (
         locked_ether_amount_after_finalization
         == contracts.withdrawal_queue.getLockedEtherAmount() + amount_with_rewards

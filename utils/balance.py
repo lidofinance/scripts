@@ -4,14 +4,19 @@ from utils.test.helpers import ETH
 
 def set_balance_in_wei(address, balance):
     account = accounts.at(address, force=True)
+    providers = ["evm_setAccountBalance", "hardhat_setBalance", "anvil_setBalance"]
 
-    if account.balance() != balance:
-        # set balance for Ganache node
-        web3.provider.make_request("evm_setAccountBalance", [address, hex(balance)])
-        # set balance for Anvil and Hardhat nodes (https://book.getfoundry.sh/reference/anvil/#custom-methods)
-        web3.provider.make_request("hardhat_setBalance", [address, hex(balance)])
+    for provider in providers:
+        if account.balance() == balance:
+            break
 
-    assert account.balance() == balance
+        try:
+            web3.provider.make_request(provider, [address, hex(balance)])
+        except ValueError as e:
+            if e.args[0].get("message") != f"Method {provider} is not supported":
+                raise e
+
+    assert account.balance() == balance, f"Failed to set balance {balance} for account: {address}"
     return account
 
 
