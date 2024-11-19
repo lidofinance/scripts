@@ -53,6 +53,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     stonks_steth_contract = accounts.at("0x3e2D251275A92a8169A3B17A2C49016e2de492a7", force=True)
     tmc_budget_after_expected = 12_000 * 10**18
     tmc_new_spent_amount_expected = 0
+    tmc_period_start_exptected = 1719792000
+    tmc_period_end_exptected = 1735689600
 
     # Item 5
     # NO's data indexes
@@ -86,8 +88,10 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert tmc_period_duration_months_before == 6
 
     # Item 4
-    already_spent_amount_before, _, _, _ = tmc_allowed_recipients_registry.getPeriodState()
-    assert already_spent_amount_before > 0
+    tmc_already_spent_amount_before, _, tmc_period_start_before, tmc_period_end_before = tmc_allowed_recipients_registry.getPeriodState()
+    assert tmc_already_spent_amount_before > 0
+    assert tmc_period_start_before == tmc_period_start_exptected
+    assert tmc_period_end_before == tmc_period_end_exptected
 
     # Item 5
     simply_staking_data_before = nor.getNodeOperator(simply_staking_id, True)
@@ -149,7 +153,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert tmc_period_duration_months_after == 6
 
     # Item 4
-    already_spent_amount_after = tmc_allowed_recipients_registry.getPeriodState()[0]
+    already_spent_amount_after, _, tmc_period_start_after, tmc_period_end_after = tmc_allowed_recipients_registry.getPeriodState()
+    assert tmc_period_start_after == tmc_period_start_exptected
+    assert tmc_period_end_after == tmc_period_end_exptected
     assert already_spent_amount_after == tmc_new_spent_amount_expected
     tmc_spendable_balance_after = interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).spendableBalance()
     assert tmc_spendable_balance_after == tmc_budget_after_expected
