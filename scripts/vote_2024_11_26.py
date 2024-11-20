@@ -48,16 +48,11 @@ from utils.allowed_recipients_registry import (
 from utils.agent import agent_forward
 
 description = """
-I. Change the limits for ET on ATC & PML
-1. ATC: increase from 1,5m per quarter to 7m USDC/USDT/DAI per quarter - set 7'000'000 limit on ATC registry `0xe07305F43B11F230EaA951002F6a55a16419B707` for 3 mos
-2. PML: decrease from 6m per quarter to 4m USDC/USDT/DAI per quarter - set 4'000'000 limit on PML registry `0xDFfCD3BF14796a62a804c1B16F877Cf7120379dB` for 3 mos
+1. **Change Easy Track limits for PML and ATC** following the [Snapshot decision](https://snapshot.org/#/lido-snapshot.eth/proposal/0x44bc7db53129ab4048c7f6f5cdc03407ec73444cbb5976c9579cb19bd3b57f7e) (items 1 & 2). **Reduce the PML limit** from **6M** to **4M**, and **increase the ATC limit** from **1.5M** to **7M** in USDC/USDT/DAI per quarter to reflect operational changes.
 
-II. TMC limits update
-3. Update TMC limit to 12,000 stETH on TMC registry `0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0` for 6 mos
-4. Reset the TMC amount spent on TMC registry `0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0`
+2. **Increase the Lido Stonks stETH limit to 12,000 stETH and reset spent amount**, as per the [Treasury Management Committee's decision](https://research.lido.fi/t/tmc-4-increase-stonks-execution-limits/8616) to achieve [TMC-1](https://research.lido.fi/t/tmc-1-pipeline-to-sell-steth-at-regular-intervals-for-dai/5059) (items 3 & 4). Resetting spent amount will allow swapping up to 12,000 stETH in 2024, and the limit will be reset again on January 1, 2025, as originally scheduled.
 
-III. Simply staking reward address change
-5. Change staking reward address to `0x1EC3Cbe8fb1D8019092500CcA2111C158a35bC82` for node operator with id = 16
+3. **Update the reward address** for Node Operator `ID 16` (Simply Staking), as [requested on the forum](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/36) (item 5).
 """
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
