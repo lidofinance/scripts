@@ -171,10 +171,8 @@ def main():
 
     filename = 'accrual_data.csv'
 
-    # network.connect('mainnet')  # Убедитесь, что подключены к нужной сети
-    '''
-    safe = BrownieSafe('ychad.eth')  # Укажите ваш ENS адрес или адрес Safe
-    '''
+    # network.connect('mainnet')
+    # safe = BrownieSafe('ychad.eth')  # ENS or Safe address
 
     members_list = get_members_list(oracle)
     print_members_list(members_list)
@@ -203,7 +201,7 @@ def main():
     total_accrual_wei, total_accrual_eth = get_total_accrual(members_info_filtered)
     print_total_accrual(total_accrual_wei, total_accrual_eth)
 
-    total_accrual_wei = 28910251107265401 # для тестирования, чтобы не срабатывала ошибка
+    total_accrual_wei = 28910251107265401 # for tests
 
     try:
         if total_accrual_wei > wallet_info['wallet_balance_wei']:
