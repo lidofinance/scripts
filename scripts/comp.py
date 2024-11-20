@@ -99,8 +99,8 @@ def create_transactions(members_info):
         tx = {
             'to': item['address'],
             'value': item['accrual_wei'],
-            'data': b'',  # пустые данные для простой отправки эфира
-            'gas': 21000  # стандартный лимит газа для перевода эфира
+            'data': b'',
+            'gas': 21000
         }
         txns.append(tx)
     return txns
@@ -118,11 +118,11 @@ def print_txns(txns):
 
 def send_transactions(txns):
     '''
-    safe_tx = safe.multicall(txns)  # отправляем multisend транзакцию
-    safe.preview(safe_tx)  # просмотр предварительного результата и оценка газа
+    safe_tx = safe.multicall(txns)  # send multisend transaction
+    safe.preview(safe_tx)  # preview and gas esteem
     estimated_gas = safe.estimate_gas(safe_tx)
     print(f"Estimated Gas: {estimated_gas}")
-    safe.post_transaction(safe_tx)  # Подписание и отправка транзакции
+    safe.post_transaction(safe_tx)  # signing and sending transaction
     '''
     pass
 
