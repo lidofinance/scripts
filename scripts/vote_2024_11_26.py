@@ -1,16 +1,16 @@
 """
 Voting 26/11/2024.
 
-I. Change the limits for ET on ATC & PML
-1. ATC: increase from 1,5m per quarter to 7m USDC/USDT/DAI per quarter - set 7'000'000 limit on ATC registry `0xe07305F43B11F230EaA951002F6a55a16419B707` for 3 mos
-2. PML: decrease from 6m per quarter to 4m USDC/USDT/DAI per quarter - set 4'000'000 limit on PML registry `0xDFfCD3BF14796a62a804c1B16F877Cf7120379dB` for 3 mos
+I. Change Easy Track limits for PML and ATC
+1. ATC: increase limit from 1,5m to 7m USDC/USDT/DAI per quarter - set 7'000'000 limit on ATC registry 0xe07305F43B11F230EaA951002F6a55a16419B707 for 3 mos
+2. PML: decrease limit from 6m to 4m USDC/USDT/DAI per quarter - set 4'000'000 limit on PML registry 0xDFfCD3BF14796a62a804c1B16F877Cf7120379dB for 3 mos
 
-II. TMC limits update
-3. Update TMC limit to 12,000 stETH on TMC registry `0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0` for 6 mos
-4. Reset the TMC amount spent on TMC registry `0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0`
+II. Stonks stETH limits update
+3. Update limit from 9,000 to 12,000 stETH on Stonks stETH registry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0 for 6 mos
+4. Reset amount spent on Stonks stETH registry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0
 
-III. Simply staking reward address change
-5. Change staking reward address to `0x1EC3Cbe8fb1D8019092500CcA2111C158a35bC82` for node operator with id = 16
+III. Simply Staking reward address change
+5. Change staking reward address to 0x1EC3Cbe8fb1D8019092500CcA2111C158a35bC82 for node operator with id = 16 (Simply Staking)
 
 Vote passed & executed on XXX-XX-XXXX XX:XX:XX PM UTC, block #XXXXXXXX.
 """
