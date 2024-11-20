@@ -2,8 +2,10 @@
 Tests for voting 26/11/2024.
 """
 
+from typing import Dict, Tuple, List, NamedTuple
+from web3 import Web3
 from scripts.vote_2024_11_26 import start_vote
-from brownie import interface, reverts, accounts, ZERO_ADDRESS, chain, web3
+from brownie import interface, reverts, accounts, ZERO_ADDRESS, chain, web3, convert
 from utils.test.tx_tracing_helpers import *
 from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS
 from utils.config import contracts
@@ -16,9 +18,91 @@ from utils.test.event_validators.node_operators_registry import (
     validate_node_operator_reward_address_set_event,
     NodeOperatorRewardAddressSetItem
 )
-from configs.config_mainnet import ( USDC_TOKEN )
+from configs.config_mainnet import DAI_TOKEN, LDO_TOKEN, LIDO, USDC_TOKEN, USDT_TOKEN
+from utils.permission_parameters import Param, SpecialArgumentID, encode_argument_value_if, ArgumentValue, Op, encode_permission_params
 
 STETH_TRANSFER_MAX_DELTA = 2
+
+class TokenLimit(NamedTuple):
+    address: str
+    limit: int
+
+
+ldo_limit = TokenLimit(LDO_TOKEN, 5_000_000 * (10**18))
+eth_limit = TokenLimit(ZERO_ADDRESS, 1_000 * 10**18)
+steth_limit = TokenLimit(LIDO, 5_000 * (10**18))
+dai_limit = TokenLimit(DAI_TOKEN, 2_000_000 * (10**18))
+usdc_limit = TokenLimit(USDC_TOKEN, 2_000_000 * (10**6))
+usdt_limit = TokenLimit(USDT_TOKEN, 2_000_000 * (10**6))
+
+def amount_limits() -> List[Param]:
+    token_arg_index = 0
+    amount_arg_index = 2
+
+    return [
+        # 0: if (1) then (2) else (3)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=1, success=2, failure=3)
+        ),
+        # 1: (_token == stETH)
+        Param(token_arg_index, Op.EQ, ArgumentValue(steth_limit.address)),
+        # 2: { return _amount <= 1_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(steth_limit.limit)),
+        #
+        # 3: else if (4) then (5) else (6)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=4, success=5, failure=6)
+        ),
+        # 4: (_token == DAI)
+        Param(token_arg_index, Op.EQ, ArgumentValue(dai_limit.address)),
+        # 5: { return _amount <= 2_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(dai_limit.limit)),
+        #
+        # 6: else if (7) then (8) else (9)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=7, success=8, failure=9)
+        ),
+        # 7: (_token == LDO)
+        Param(token_arg_index, Op.EQ, ArgumentValue(ldo_limit.address)),
+        # 8: { return _amount <= 5_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(ldo_limit.limit)),
+        #
+        # 9: else if (10) then (11) else (12)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID,
+            Op.IF_ELSE,
+            encode_argument_value_if(condition=10, success=11, failure=12),
+        ),
+        # 10: (_token == USDC)
+        Param(token_arg_index, Op.EQ, ArgumentValue(usdc_limit.address)),
+        # 11: { return _amount <= 2_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(usdc_limit.limit)),
+        #
+        # 12: else if (13) then (14) else (15)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID,
+            Op.IF_ELSE,
+            encode_argument_value_if(condition=13, success=14, failure=15),
+        ),
+        # 13: (_token == USDT)
+        Param(token_arg_index, Op.EQ, ArgumentValue(usdt_limit.address)),
+        # 14: { return _amount <= 2_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(usdt_limit.limit)),
+        #
+        # 15: else if (16) then (17) else (18)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID,
+            Op.IF_ELSE,
+            encode_argument_value_if(condition=16, success=17, failure=18),
+        ),
+        # 16: (_token == ETH)
+        Param(token_arg_index, Op.EQ, ArgumentValue(eth_limit.address)),
+        # 17: { return _amount <= 1000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(eth_limit.limit)),
+        #
+        # 18: else { return false }
+        Param(SpecialArgumentID.PARAM_VALUE_PARAM_ID, Op.RET, ArgumentValue(0)),
+    ]
 
 def test_vote(helpers, accounts, vote_ids_from_env, stranger):
 
@@ -27,6 +111,15 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     nor = contracts.node_operators_registry
     prepare_agent_for_usdc_payment(15_000_000 * (10**6))
     prepare_agent_for_steth_payment(20_000 * 10**18)
+    EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
+    perm_manager = contracts.acl.getPermissionManager(contracts.finance, convert.to_uint(Web3.keccak(text="CREATE_PAYMENTS_ROLE")))
+    contracts.acl.grantPermissionP(
+        EVM_SCRIPT_EXECUTOR,
+        contracts.finance,
+        convert.to_uint(Web3.keccak(text="CREATE_PAYMENTS_ROLE")),
+        encode_permission_params(amount_limits()),
+        {"from": perm_manager}
+    )
 
     # Item 1
     atc_allowed_recipients_registry = interface.AllowedRecipientRegistry("0xe07305F43B11F230EaA951002F6a55a16419B707")
@@ -166,7 +259,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
                stonks_steth_contract,
                stranger,
                stETH_token,
-               1_000 * 10 ** 18
+               5_000 * 10 ** 18
     )
 
     # Item 5
