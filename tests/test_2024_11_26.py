@@ -9,6 +9,8 @@ from brownie import interface, reverts, accounts, ZERO_ADDRESS, chain, web3, con
 from utils.test.tx_tracing_helpers import *
 from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS
 from utils.config import contracts
+from utils.ipfs import get_lido_vote_cid_from_str
+from utils.voting import find_metadata_by_vote_id
 from utils.test.easy_track_helpers import create_and_enact_payment_motion
 from utils.test.event_validators.allowed_recipients_registry import (
     validate_set_limit_parameter_event,
@@ -274,6 +276,11 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     # events
     display_voting_events(vote_tx)
     evs = group_voting_events(vote_tx)
+
+    metadata = find_metadata_by_vote_id(vote_id)
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreia2qh6xvoowgwukqfyyer2zz266e2jifxovnddgqawruhe2g5asgi"
+
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 5, "Incorrect voting items count"
 
     validate_set_limit_parameter_event(
         evs[0],
