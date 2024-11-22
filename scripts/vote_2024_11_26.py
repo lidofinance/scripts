@@ -61,7 +61,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     atc_registry = interface.AllowedRecipientRegistry("0xe07305F43B11F230EaA951002F6a55a16419B707")
     pml_registry = interface.AllowedRecipientRegistry("0xDFfCD3BF14796a62a804c1B16F877Cf7120379dB")
 
-    tmc_registry = interface.AllowedRecipientRegistry("0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0")
+    stonks_steth_registry = interface.AllowedRecipientRegistry("0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0")
 
     NO_registry = contracts.node_operators_registry
     simply_staking_id = 16
@@ -96,14 +96,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         #
-        # II. TMC limits update
+        # II. Stonks stETH limits update
         #
         (
-            "3. Update TMC limit to 12,000 stETH on TMC registry `0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0` for 6 mos",
+            "3. Update limit to 12,000 stETH on Stonks stETH registry `0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0` for 6 mos",
             agent_forward(
                 [
                 set_limit_parameters(
-                    registry_address=tmc_registry,
+                    registry_address=stonks_steth_registry,
                     limit=12_000 * 10 ** 18,
                     period_duration_months=6
                 ),
@@ -111,12 +111,12 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "4. Reset the TMC amount spent on TMC registry `0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0`",
+            "4. Reset the amount spent on Stonks stETH registry `0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0`",
             agent_forward(
                 [
                 unsafe_set_spent_amount(
                     spent_amount=0,
-                    registry_address=tmc_registry
+                    registry_address=stonks_steth_registry
                 ),
                 ]
             ),
