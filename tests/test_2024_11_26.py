@@ -138,16 +138,16 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     pml_spend_limit_after_expected = 3_000_000 * 10**18
 
     # Item 3, 4
-    tmc_allowed_recipients_registry = interface.AllowedRecipientRegistry("0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0")
-    tmc_multisig = accounts.at("0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647", force=True)
-    tmc_trusted_caller = tmc_multisig
-    tmc_top_up_evm_script_factory = interface.TopUpAllowedRecipients("0x6e04aED774B7c89BB43721AcDD7D03C872a51B69")
+    stonks_steth_allowed_recipients_registry = interface.AllowedRecipientRegistry("0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0")
+    stonks_steth_multisig = accounts.at("0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647", force=True)
+    stonks_steth_trusted_caller = stonks_steth_multisig
+    stonks_steth_top_up_evm_script_factory = interface.TopUpAllowedRecipients("0x6e04aED774B7c89BB43721AcDD7D03C872a51B69")
     stETH_token = interface.ERC20("0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
     stonks_steth_contract = accounts.at("0x3e2D251275A92a8169A3B17A2C49016e2de492a7", force=True)
-    tmc_budget_after_expected = 12_000 * 10**18
-    tmc_new_spent_amount_expected = 0
-    tmc_period_start_exptected = 1719792000
-    tmc_period_end_exptected = 1735689600
+    stonks_steth_budget_after_expected = 12_000 * 10**18
+    stonks_steth_new_spent_amount_expected = 0
+    stonks_steth_period_start_exptected = 1719792000
+    stonks_steth_period_end_exptected = 1735689600
 
     # Item 5
     # NO's data indexes
@@ -176,15 +176,15 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert 5_000_000 * 10**18 == interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).spendableBalance()
 
     # Item 3
-    tmc_budget_limit_before, tmc_period_duration_months_before = interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).getLimitParameters()
-    assert tmc_budget_limit_before == 9_000 * 10 ** 18
-    assert tmc_period_duration_months_before == 6
+    stonks_steth_budget_limit_before, stonks_steth_period_duration_months_before = interface.AllowedRecipientRegistry(stonks_steth_allowed_recipients_registry).getLimitParameters()
+    assert stonks_steth_budget_limit_before == 9_000 * 10 ** 18
+    assert stonks_steth_period_duration_months_before == 6
 
     # Item 4
-    tmc_already_spent_amount_before, _, tmc_period_start_before, tmc_period_end_before = tmc_allowed_recipients_registry.getPeriodState()
-    assert tmc_already_spent_amount_before > 0
-    assert tmc_period_start_before == tmc_period_start_exptected
-    assert tmc_period_end_before == tmc_period_end_exptected
+    stonks_steth_already_spent_amount_before, _, stonks_steth_period_start_before, stonks_steth_period_end_before = stonks_steth_allowed_recipients_registry.getPeriodState()
+    assert stonks_steth_already_spent_amount_before > 0
+    assert stonks_steth_period_start_before == stonks_steth_period_start_exptected
+    assert stonks_steth_period_end_before == stonks_steth_period_end_exptected
 
     # Item 5
     simply_staking_data_before = nor.getNodeOperator(simply_staking_id, True)
@@ -241,21 +241,21 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     )
 
     # Item 3
-    tmc_budget_limit_after, tmc_period_duration_months_after = interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).getLimitParameters()
-    assert tmc_budget_limit_after == tmc_budget_after_expected
-    assert tmc_period_duration_months_after == 6
+    stonks_steth_budget_limit_after, stonks_steth_period_duration_months_after = interface.AllowedRecipientRegistry(stonks_steth_allowed_recipients_registry).getLimitParameters()
+    assert stonks_steth_budget_limit_after == stonks_steth_budget_after_expected
+    assert stonks_steth_period_duration_months_after == 6
 
     # Item 4
-    already_spent_amount_after, _, tmc_period_start_after, tmc_period_end_after = tmc_allowed_recipients_registry.getPeriodState()
-    assert tmc_period_start_after == tmc_period_start_exptected
-    assert tmc_period_end_after == tmc_period_end_exptected
-    assert already_spent_amount_after == tmc_new_spent_amount_expected
-    tmc_spendable_balance_after = interface.AllowedRecipientRegistry(tmc_allowed_recipients_registry).spendableBalance()
-    assert tmc_spendable_balance_after == tmc_budget_after_expected
+    already_spent_amount_after, _, stonks_steth_period_start_after, stonks_steth_period_end_after = stonks_steth_allowed_recipients_registry.getPeriodState()
+    assert stonks_steth_period_start_after == stonks_steth_period_start_exptected
+    assert stonks_steth_period_end_after == stonks_steth_period_end_exptected
+    assert already_spent_amount_after == stonks_steth_new_spent_amount_expected
+    stonks_steth_spendable_balance_after = interface.AllowedRecipientRegistry(stonks_steth_allowed_recipients_registry).spendableBalance()
+    assert stonks_steth_spendable_balance_after == stonks_steth_budget_after_expected
     limit_test(easy_track,
-               tmc_spendable_balance_after,
-               tmc_trusted_caller,
-               tmc_top_up_evm_script_factory,
+               stonks_steth_spendable_balance_after,
+               stonks_steth_trusted_caller,
+               stonks_steth_top_up_evm_script_factory,
                stonks_steth_contract,
                stranger,
                stETH_token,
@@ -289,13 +289,13 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     )
     validate_set_limit_parameter_event(
         evs[2],
-        limit=tmc_budget_after_expected,
+        limit=stonks_steth_budget_after_expected,
         period_duration_month=6,
         period_start_timestamp=1719792000,
     )
     validate_set_spent_amount_event(
         evs[3],
-        new_spent_amount=tmc_new_spent_amount_expected,
+        new_spent_amount=stonks_steth_new_spent_amount_expected,
     )
     validate_node_operator_reward_address_set_event(
         evs[4],
