@@ -110,7 +110,7 @@ def test_send_validator_to_exit(helpers, web3):
             "nodeOperatorId": no_id,
             "validatorIndex": unreachable_cl_validator_index,
             "validatorPubkey": validator_key,
-            "timestamp": web3.eth.get_block(web3.eth.block_number).timestamp,
+            "timestamp": web3.eth.get_block(tx.block_number).timestamp,
         },
     )
 
@@ -192,27 +192,28 @@ def test_send_multiple_validators_to_exit(helpers, web3, stranger):
     # Asserts
     helpers.assert_single_event_named("ProcessingStarted", tx, {"refSlot": ref_slot, "hash": report_hash_hex})
     events = helpers.filter_events_from(tx.receiver, tx.events["ValidatorExitRequest"])
+    timestamp = web3.eth.get_block(tx.block_number).timestamp
     assert len(events) == 3
     assert dict(events[0]) == {
         "stakingModuleId": first_module_id,
         "nodeOperatorId": first_no_id,
         "validatorIndex": first_validator_index,
         "validatorPubkey": first_validator_key,
-        "timestamp": web3.eth.get_block(web3.eth.block_number).timestamp,
+        "timestamp": timestamp,
     }
     assert dict(events[1]) == {
         "stakingModuleId": second_module_id,
         "nodeOperatorId": second_no_id,
         "validatorIndex": second_validator_index,
         "validatorPubkey": second_validator_key,
-        "timestamp": web3.eth.get_block(web3.eth.block_number).timestamp,
+        "timestamp": timestamp,
     }
     assert dict(events[2]) == {
         "stakingModuleId": third_module_id,
         "nodeOperatorId": third_no_id,
         "validatorIndex": third_validator_index,
         "validatorPubkey": third_validator_key,
-        "timestamp": web3.eth.get_block(web3.eth.block_number).timestamp,
+        "timestamp": timestamp,
     }
 
     assert total_requests_after == total_requests_before + 3
