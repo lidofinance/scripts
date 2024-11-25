@@ -93,8 +93,8 @@ def to_eip2098(signedMessage: SignedMessage) -> Dict[str, Any]:
     s = signedMessage.s
     v = signedMessage.v
 
-    assert (r.bit_length() + 7) // 8 == 32
-    assert (s.bit_length() + 7) // 8 == 32
+    assert r.bit_length() // 8 <= 32
+    assert s.bit_length() // 8 <= 32
 
     if v not in (27, 28):
         raise ValueError("Invalid v value. Must be 27 or 28.")
