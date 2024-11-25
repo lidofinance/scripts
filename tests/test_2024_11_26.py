@@ -111,20 +111,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     # misc
     easy_track = interface.EasyTrack("0xF0211b7660680B49De1A7E9f25C65660F0a13Fea")
     nor = interface.NodeOperatorsRegistry("0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5")
-    prepare_agent_for_usdc_payment(15_000_000 * (10**6))
-    prepare_agent_for_steth_payment(20_000 * 10**18)
-
-    # elevate permissions for the amount of max stETH transfer at once
-    # this is required in order to create and enact fewer motions to transfer a huge amount stETH
-    EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
-    perm_manager = contracts.acl.getPermissionManager(contracts.finance, convert.to_uint(Web3.keccak(text="CREATE_PAYMENTS_ROLE")))
-    contracts.acl.grantPermissionP(
-        EVM_SCRIPT_EXECUTOR,
-        contracts.finance,
-        convert.to_uint(Web3.keccak(text="CREATE_PAYMENTS_ROLE")),
-        encode_permission_params(amount_limits()),
-        {"from": perm_manager}
-    )
 
     # Item 1
     atc_allowed_recipients_registry = interface.AllowedRecipientRegistry("0xe07305F43B11F230EaA951002F6a55a16419B707")
@@ -215,6 +201,23 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
         vote_id, _ = start_vote(tx_params, silent=True)
     vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
+
+
+    # ensure agent balance
+    prepare_agent_for_usdc_payment(15_000_000 * (10**6))
+    prepare_agent_for_steth_payment(20_000 * 10**18)
+
+    # elevate permissions for the amount of max stETH transfer at once
+    # this is required in order to create and enact fewer motions to transfer a huge amount stETH
+    EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
+    perm_manager = contracts.acl.getPermissionManager(contracts.finance, convert.to_uint(Web3.keccak(text="CREATE_PAYMENTS_ROLE")))
+    contracts.acl.grantPermissionP(
+        EVM_SCRIPT_EXECUTOR,
+        contracts.finance,
+        convert.to_uint(Web3.keccak(text="CREATE_PAYMENTS_ROLE")),
+        encode_permission_params(amount_limits()),
+        {"from": perm_manager}
+    )
 
 
     # Item 1
