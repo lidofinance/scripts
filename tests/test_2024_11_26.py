@@ -30,12 +30,9 @@ class TokenLimit(NamedTuple):
     limit: int
 
 
-ldo_limit = TokenLimit(LDO_TOKEN, 1_000 * (10**18))
-eth_limit = TokenLimit(ZERO_ADDRESS, 1_000 * 10**18)
 steth_limit = TokenLimit(LIDO, 5_000 * (10**18))
-dai_limit = TokenLimit(DAI_TOKEN, 1_000 * (10**18))
 usdc_limit = TokenLimit(USDC_TOKEN, 2_000_000 * (10**6))
-usdt_limit = TokenLimit(USDT_TOKEN, 1_000 * (10**6))
+other_limit = TokenLimit("", 1_000 * (10**18))
 
 def amount_limits() -> List[Param]:
     token_arg_index = 0
@@ -48,62 +45,19 @@ def amount_limits() -> List[Param]:
         ),
         # 1: (_token == stETH)
         Param(token_arg_index, Op.EQ, ArgumentValue(steth_limit.address)),
-        # 2: { return _amount <= 1_000 }
+        # 2: { return _amount <= 5_000 }
         Param(amount_arg_index, Op.LTE, ArgumentValue(steth_limit.limit)),
         #
         # 3: else if (4) then (5) else (6)
         Param(
             SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=4, success=5, failure=6)
         ),
-        # 4: (_token == DAI)
-        Param(token_arg_index, Op.EQ, ArgumentValue(dai_limit.address)),
-        # 5: { return _amount <= 2_000_000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(dai_limit.limit)),
-        #
-        # 6: else if (7) then (8) else (9)
-        Param(
-            SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=7, success=8, failure=9)
-        ),
-        # 7: (_token == LDO)
-        Param(token_arg_index, Op.EQ, ArgumentValue(ldo_limit.address)),
-        # 8: { return _amount <= 5_000_000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(ldo_limit.limit)),
-        #
-        # 9: else if (10) then (11) else (12)
-        Param(
-            SpecialArgumentID.LOGIC_OP_PARAM_ID,
-            Op.IF_ELSE,
-            encode_argument_value_if(condition=10, success=11, failure=12),
-        ),
-        # 10: (_token == USDC)
+        # 4: (_token == USDC)
         Param(token_arg_index, Op.EQ, ArgumentValue(usdc_limit.address)),
-        # 11: { return _amount <= 2_000_000 }
+        # 5: { return _amount <= 2_000_000 }
         Param(amount_arg_index, Op.LTE, ArgumentValue(usdc_limit.limit)),
-        #
-        # 12: else if (13) then (14) else (15)
-        Param(
-            SpecialArgumentID.LOGIC_OP_PARAM_ID,
-            Op.IF_ELSE,
-            encode_argument_value_if(condition=13, success=14, failure=15),
-        ),
-        # 13: (_token == USDT)
-        Param(token_arg_index, Op.EQ, ArgumentValue(usdt_limit.address)),
-        # 14: { return _amount <= 2_000_000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(usdt_limit.limit)),
-        #
-        # 15: else if (16) then (17) else (18)
-        Param(
-            SpecialArgumentID.LOGIC_OP_PARAM_ID,
-            Op.IF_ELSE,
-            encode_argument_value_if(condition=16, success=17, failure=18),
-        ),
-        # 16: (_token == ETH)
-        Param(token_arg_index, Op.EQ, ArgumentValue(eth_limit.address)),
-        # 17: { return _amount <= 1000 }
-        Param(amount_arg_index, Op.LTE, ArgumentValue(eth_limit.limit)),
-        #
-        # 18: else { return false }
-        Param(SpecialArgumentID.PARAM_VALUE_PARAM_ID, Op.RET, ArgumentValue(0)),
+        # 6: all other
+        Param(amount_arg_index, Op.LTE, ArgumentValue(other_limit.limit)),
     ]
 
 def test_vote(helpers, accounts, vote_ids_from_env, stranger):
