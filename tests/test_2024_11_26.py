@@ -30,12 +30,12 @@ class TokenLimit(NamedTuple):
     limit: int
 
 
-ldo_limit = TokenLimit(LDO_TOKEN, 5_000_000 * (10**18))
+ldo_limit = TokenLimit(LDO_TOKEN, 1_000 * (10**18))
 eth_limit = TokenLimit(ZERO_ADDRESS, 1_000 * 10**18)
 steth_limit = TokenLimit(LIDO, 5_000 * (10**18))
-dai_limit = TokenLimit(DAI_TOKEN, 2_000_000 * (10**18))
+dai_limit = TokenLimit(DAI_TOKEN, 1_000 * (10**18))
 usdc_limit = TokenLimit(USDC_TOKEN, 2_000_000 * (10**6))
-usdt_limit = TokenLimit(USDT_TOKEN, 2_000_000 * (10**6))
+usdt_limit = TokenLimit(USDT_TOKEN, 1_000 * (10**6))
 
 def amount_limits() -> List[Param]:
     token_arg_index = 0
@@ -203,23 +203,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
 
-    # ensure agent balance
-    prepare_agent_for_usdc_payment(15_000_000 * (10**6))
-    prepare_agent_for_steth_payment(20_000 * 10**18)
-
-    # elevate permissions for the amount of max stETH transfer at once
-    # this is required in order to create and enact fewer motions to transfer a huge amount stETH
-    EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
-    perm_manager = contracts.acl.getPermissionManager(contracts.finance, convert.to_uint(Web3.keccak(text="CREATE_PAYMENTS_ROLE")))
-    contracts.acl.grantPermissionP(
-        EVM_SCRIPT_EXECUTOR,
-        contracts.finance,
-        convert.to_uint(Web3.keccak(text="CREATE_PAYMENTS_ROLE")),
-        encode_permission_params(amount_limits()),
-        {"from": perm_manager}
-    )
-
-
     # Item 1
     atc_budget_limit_after, atc_period_duration_months_after = interface.AllowedRecipientRegistry(atc_allowed_recipients_registry).getLimitParameters()
     _, atc_spend_limit_after, atc_period_start_after, atc_period_end_after = interface.AllowedRecipientRegistry(atc_allowed_recipients_registry).getPeriodState()
@@ -231,15 +214,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert atc_spend_limit_after == atc_spent_amount_after_expected
     assert interface.AllowedRecipientRegistry(atc_allowed_recipients_registry).isUnderSpendableBalance(atc_spendable_balance_after, 3)
     assert atc_spendable_balance_after == atc_spent_amount_after_expected
-    limit_test(easy_track,
-               int(atc_spendable_balance_after / (10**18)) * 10**6,
-               atc_trusted_caller_acc,
-               atc_top_up_evm_script_factory,
-               atc_multisig_acc,
-               stranger,
-               interface.Usdc(USDC_TOKEN),
-               2_000_000 * 10**6
-    )
 
     # Item 2
     pml_budget_limit_after, pml_period_duration_months_after = interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).getLimitParameters()
@@ -252,15 +226,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert pml_spend_limit_after == pml_spent_amount_after_expected
     assert interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).isUnderSpendableBalance(pmlSpendableBalanceAfter, 3)
     assert pmlSpendableBalanceAfter == pml_spent_amount_after_expected
-    limit_test(easy_track,
-               int(pmlSpendableBalanceAfter / (10**18)) * 10**6,
-               pml_trusted_caller_acc,
-               pml_top_up_evm_script_factory,
-               pml_multisig_acc,
-               stranger,
-               interface.Usdc(USDC_TOKEN),
-               2_000_000 * 10**6
-    )
 
     # Item 3
     stonks_steth_budget_limit_after, stonks_steth_period_duration_months_after = interface.AllowedRecipientRegistry(stonks_steth_allowed_recipients_registry).getLimitParameters()
@@ -274,15 +239,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert already_spent_amount_after == stonks_steth_new_spent_amount_expected
     stonks_steth_spendable_balance_after = interface.AllowedRecipientRegistry(stonks_steth_allowed_recipients_registry).spendableBalance()
     assert stonks_steth_spendable_balance_after == stonks_steth_budget_after_expected
-    limit_test(easy_track,
-               stonks_steth_spendable_balance_after,
-               stonks_steth_trusted_caller,
-               stonks_steth_top_up_evm_script_factory,
-               stonks_steth_contract,
-               stranger,
-               stETH_token,
-               5_000 * 10 ** 18
-    )
 
     # Item 5
     simply_staking_data_after = nor.getNodeOperator(simply_staking_id, True)
@@ -330,6 +286,54 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
             nodeOperatorId=simply_staking_id,
             reward_address=simply_staking_new_reward_address
         )
+    )
+
+    # check withdrawals
+
+    # ensure agent balance
+    prepare_agent_for_usdc_payment(15_000_000 * (10**6))
+    prepare_agent_for_steth_payment(20_000 * 10**18)
+
+    # elevate permissions for the amount of max stETH transfer at once
+    # this is required in order to create and enact fewer motions to transfer a huge amount stETH
+    EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
+    perm_manager = contracts.acl.getPermissionManager(contracts.finance, convert.to_uint(Web3.keccak(text="CREATE_PAYMENTS_ROLE")))
+    contracts.acl.grantPermissionP(
+        EVM_SCRIPT_EXECUTOR,
+        contracts.finance,
+        convert.to_uint(Web3.keccak(text="CREATE_PAYMENTS_ROLE")),
+        encode_permission_params(amount_limits()),
+        {"from": perm_manager}
+    )
+
+    limit_test(easy_track,
+               int(atc_spendable_balance_after / (10**18)) * 10**6,
+               atc_trusted_caller_acc,
+               atc_top_up_evm_script_factory,
+               atc_multisig_acc,
+               stranger,
+               interface.Usdc(USDC_TOKEN),
+               2_000_000 * 10**6
+    )
+
+    limit_test(easy_track,
+               int(pmlSpendableBalanceAfter / (10**18)) * 10**6,
+               pml_trusted_caller_acc,
+               pml_top_up_evm_script_factory,
+               pml_multisig_acc,
+               stranger,
+               interface.Usdc(USDC_TOKEN),
+               2_000_000 * 10**6
+    )
+
+    limit_test(easy_track,
+               stonks_steth_spendable_balance_after,
+               stonks_steth_trusted_caller,
+               stonks_steth_top_up_evm_script_factory,
+               stonks_steth_contract,
+               stranger,
+               stETH_token,
+               5_000 * 10 ** 18
     )
 
 def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_factory, multisig_acc, stranger, token, max_spend_at_once):
