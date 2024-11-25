@@ -110,9 +110,12 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # misc
     easy_track = interface.EasyTrack("0xF0211b7660680B49De1A7E9f25C65660F0a13Fea")
-    nor = contracts.node_operators_registry
+    nor = interface.NodeOperatorsRegistry("0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5")
     prepare_agent_for_usdc_payment(15_000_000 * (10**6))
     prepare_agent_for_steth_payment(20_000 * 10**18)
+
+    # elevate permissions for the amount of max stETH transfer at once
+    # this is required in order to create and enact fewer motions to transfer a huge amount stETH
     EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
     perm_manager = contracts.acl.getPermissionManager(contracts.finance, convert.to_uint(Web3.keccak(text="CREATE_PAYMENTS_ROLE")))
     contracts.acl.grantPermissionP(
@@ -129,7 +132,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     atc_trusted_caller_acc = atc_multisig_acc
     atc_top_up_evm_script_factory = interface.TopUpAllowedRecipients("0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab")
     atc_budget_limit_after_expected = 7_000_000 * 10**18
-    atc_spend_limit_after_expected = 5_500_000 * 10**18
+    atc_spent_amount_after_expected = 5_500_000 * 10**18
+    atc_period_start_exptected = 1727740800
+    atc_period_end_exptected = 1735689600
 
     # Item 2
     pml_allowed_recipients_registry = interface.AllowedRecipientRegistry("0xDFfCD3BF14796a62a804c1B16F877Cf7120379dB")
@@ -137,7 +142,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     pml_trusted_caller_acc = pml_multisig_acc
     pml_top_up_evm_script_factory = interface.TopUpAllowedRecipients("0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D")
     pml_budget_limit_after_expected = 4_000_000 * 10**18
-    pml_spend_limit_after_expected = 3_000_000 * 10**18
+    pml_spent_amount_after_expected = 3_000_000 * 10**18
+    pml_period_start_exptected = 1727740800
+    pml_period_end_exptected = 1735689600
 
     # Item 3, 4
     stonks_steth_allowed_recipients_registry = interface.AllowedRecipientRegistry("0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0")
@@ -170,12 +177,18 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert atc_budget_limit_before == 1_500_000 * 10 ** 18
     assert atc_period_duration_months_before == 3
     assert 0 == interface.AllowedRecipientRegistry(atc_allowed_recipients_registry).spendableBalance()
+    _, _, atc_period_start_before, atc_period_end_before = atc_allowed_recipients_registry.getPeriodState()
+    assert atc_period_start_before == atc_period_start_exptected
+    assert atc_period_end_before == atc_period_end_exptected
 
     # Item 2
     pml_budget_limit_before, pml_period_duration_months_before = interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).getLimitParameters()
     assert pml_budget_limit_before == 6_000_000 * 10 ** 18
     assert pml_period_duration_months_before == 3
     assert 5_000_000 * 10**18 == interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).spendableBalance()
+    _, _, pml_period_start_before, pml_period_end_before = pml_allowed_recipients_registry.getPeriodState()
+    assert pml_period_start_before == pml_period_start_exptected
+    assert pml_period_end_before == pml_period_end_exptected
 
     # Item 3
     stonks_steth_budget_limit_before, stonks_steth_period_duration_months_before = interface.AllowedRecipientRegistry(stonks_steth_allowed_recipients_registry).getLimitParameters()
@@ -206,13 +219,15 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # Item 1
     atc_budget_limit_after, atc_period_duration_months_after = interface.AllowedRecipientRegistry(atc_allowed_recipients_registry).getLimitParameters()
-    atc_spend_limit_after = interface.AllowedRecipientRegistry(atc_allowed_recipients_registry).getPeriodState()[1]
+    _, atc_spend_limit_after, atc_period_start_after, atc_period_end_after = interface.AllowedRecipientRegistry(atc_allowed_recipients_registry).getPeriodState()
     atc_spendable_balance_after = interface.AllowedRecipientRegistry(atc_allowed_recipients_registry).spendableBalance()
+    assert atc_period_start_after == atc_period_start_exptected
+    assert atc_period_end_after == atc_period_end_exptected
     assert atc_budget_limit_after == atc_budget_limit_after_expected
     assert atc_period_duration_months_after == 3
-    assert atc_spend_limit_after == atc_spend_limit_after_expected
+    assert atc_spend_limit_after == atc_spent_amount_after_expected
     assert interface.AllowedRecipientRegistry(atc_allowed_recipients_registry).isUnderSpendableBalance(atc_spendable_balance_after, 3)
-    assert atc_spendable_balance_after == atc_spend_limit_after_expected
+    assert atc_spendable_balance_after == atc_spent_amount_after_expected
     limit_test(easy_track,
                int(atc_spendable_balance_after / (10**18)) * 10**6,
                atc_trusted_caller_acc,
@@ -225,13 +240,15 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # Item 2
     pml_budget_limit_after, pml_period_duration_months_after = interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).getLimitParameters()
-    pml_spend_limit_after = interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).getPeriodState()[1]
+    _, pml_spend_limit_after, pml_period_start_after, pml_period_end_after = interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).getPeriodState()
     pmlSpendableBalanceAfter = interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).spendableBalance()
+    assert pml_period_start_after == pml_period_start_exptected
+    assert pml_period_end_after == pml_period_end_exptected
     assert pml_budget_limit_after == pml_budget_limit_after_expected
     assert pml_period_duration_months_after == 3
-    assert pml_spend_limit_after == pml_spend_limit_after_expected
+    assert pml_spend_limit_after == pml_spent_amount_after_expected
     assert interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).isUnderSpendableBalance(pmlSpendableBalanceAfter, 3)
-    assert pmlSpendableBalanceAfter == pml_spend_limit_after_expected
+    assert pmlSpendableBalanceAfter == pml_spent_amount_after_expected
     limit_test(easy_track,
                int(pmlSpendableBalanceAfter / (10**18)) * 10**6,
                pml_trusted_caller_acc,
@@ -286,19 +303,19 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
         evs[0],
         limit=atc_budget_limit_after_expected,
         period_duration_month=3,
-        period_start_timestamp=1727740800,
+        period_start_timestamp=atc_period_start_exptected,
     )
     validate_set_limit_parameter_event(
         evs[1],
         limit=pml_budget_limit_after_expected,
         period_duration_month=3,
-        period_start_timestamp=1727740800,
+        period_start_timestamp=pml_period_start_exptected,
     )
     validate_set_limit_parameter_event(
         evs[2],
         limit=stonks_steth_budget_after_expected,
         period_duration_month=6,
-        period_start_timestamp=1719792000,
+        period_start_timestamp=stonks_steth_period_start_exptected,
     )
     validate_set_spent_amount_event(
         evs[3],
