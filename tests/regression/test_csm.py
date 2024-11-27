@@ -77,10 +77,11 @@ def ref_slot():
 def distribute_reward_tree(node_operator, ref_slot):
     consensus_version = contracts.cs_fee_oracle.getConsensusVersion()
     oracle_version = contracts.cs_fee_oracle.getContractVersion()
+    claimable_shares = contracts.cs_fee_distributor.totalClaimableShares()
 
     rewards = ETH(0.05)
     oracle_report(cl_diff=rewards)
-    distributed_shares = contracts.lido.sharesOf(contracts.cs_fee_distributor)
+    distributed_shares = contracts.lido.sharesOf(contracts.cs_fee_distributor) - claimable_shares
     assert distributed_shares > 0
 
     report, report_hash, tree = prepare_csm_report({node_operator: distributed_shares}, ref_slot)
