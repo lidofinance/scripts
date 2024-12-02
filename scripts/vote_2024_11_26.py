@@ -12,7 +12,7 @@ II. Stonks stETH limits update
 III. Simply Staking reward address change
 5. Change staking reward address to 0x1EC3Cbe8fb1D8019092500CcA2111C158a35bC82 for node operator with id = 16 (Simply Staking)
 
-Vote passed & executed on XXX-XX-XXXX XX:XX:XX PM UTC, block #XXXXXXXX.
+Vote #181, initiated on 26/11/2024, did not reach a quorum.
 """
 
 import time
