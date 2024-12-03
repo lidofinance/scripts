@@ -155,6 +155,7 @@ def test_csm_update_refunded(node_operator):
 
 @pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_report_exited(csm, node_operator, extra_data_service):
+    total_exited = csm.getStakingModuleSummary()["totalExitedValidators"]
     exited_keys = 5
     extra_data = extra_data_service.collect({}, {(CSM_MODULE_ID, node_operator): exited_keys}, exited_keys, exited_keys)
     oracle_report(
@@ -163,7 +164,8 @@ def test_csm_report_exited(csm, node_operator, extra_data_service):
         extraDataItemsCount=1,
         extraDataList=extra_data.extra_data_list,
         stakingModuleIdsWithNewlyExitedValidators=[CSM_MODULE_ID],
-        numExitedValidatorsByStakingModule=[1],
+        numExitedValidatorsByStakingModule=[total_exited + exited_keys],
+
     )
 
     no = csm.getNodeOperator(node_operator)
@@ -172,6 +174,7 @@ def test_csm_report_exited(csm, node_operator, extra_data_service):
 
 @pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_report_stuck(csm, node_operator, extra_data_service):
+    total_exited = csm.getStakingModuleSummary()["totalExitedValidators"]
     stuck_keys = 5
     extra_data = extra_data_service.collect( {(CSM_MODULE_ID, node_operator): stuck_keys}, {}, stuck_keys, stuck_keys)
     oracle_report(
@@ -180,7 +183,7 @@ def test_csm_report_stuck(csm, node_operator, extra_data_service):
         extraDataItemsCount=1,
         extraDataList=extra_data.extra_data_list,
         stakingModuleIdsWithNewlyExitedValidators=[CSM_MODULE_ID],
-        numExitedValidatorsByStakingModule=[1],
+        numExitedValidatorsByStakingModule=[total_exited],
     )
 
     no = csm.getNodeOperator(node_operator)
@@ -200,7 +203,7 @@ def test_csm_get_staking_module_summary(csm, accounting, node_operator, extra_da
         extraDataItemsCount=1,
         extraDataList=extra_data.extra_data_list,
         stakingModuleIdsWithNewlyExitedValidators=[CSM_MODULE_ID],
-        numExitedValidatorsByStakingModule=[1],
+        numExitedValidatorsByStakingModule=[exited_before + exited_keys],
     )
 
     # Assure there are new deposited keys
@@ -221,6 +224,7 @@ def test_csm_get_staking_module_summary(csm, accounting, node_operator, extra_da
 
 @pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_get_node_operator_summary(csm, node_operator, extra_data_service):
+    total_exited = csm.getStakingModuleSummary()["totalExitedValidators"]
     no = csm.getNodeOperator(node_operator)
     exited_keys = 1
     stuck_keys = 1
@@ -231,7 +235,7 @@ def test_csm_get_node_operator_summary(csm, node_operator, extra_data_service):
         extraDataItemsCount=2,
         extraDataList=extra_data.extra_data_list,
         stakingModuleIdsWithNewlyExitedValidators=[CSM_MODULE_ID],
-        numExitedValidatorsByStakingModule=[1],
+        numExitedValidatorsByStakingModule=[total_exited],
     )
 
     summary = contracts.staking_router.getNodeOperatorSummary(CSM_MODULE_ID, node_operator)
