@@ -82,7 +82,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     pml_trusted_caller_acc = pml_multisig_acc
     pml_top_up_evm_script_factory = interface.TopUpAllowedRecipients("0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D")
     pml_budget_limit_after_expected = 4_000_000 * 10**18
-    pml_spent_amount_after_expected = 3_000_000 * 10**18
+    pml_spent_amount_after_expected = 2_000_000 * 10**18
     pml_period_start_exptected = 1727740800
     pml_period_end_exptected = 1735689600
 
@@ -125,7 +125,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     pml_budget_limit_before, pml_period_duration_months_before = interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).getLimitParameters()
     assert pml_budget_limit_before == 6_000_000 * 10 ** 18
     assert pml_period_duration_months_before == 3
-    assert 5_000_000 * 10**18 == interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).spendableBalance()
+    assert 4_000_000 * 10**18 == interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).spendableBalance()
     _, _, pml_period_start_before, pml_period_end_before = pml_allowed_recipients_registry.getPeriodState()
     assert pml_period_start_before == pml_period_start_exptected
     assert pml_period_end_before == pml_period_end_exptected
