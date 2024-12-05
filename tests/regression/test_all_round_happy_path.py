@@ -110,21 +110,21 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     buffered_ether_after_deposit = contracts.lido.getBufferedEther()
 
-    unbuffered_event_nor = deposit_tx_nor.events["Unbuffered"]
+    deposited_event_nor = deposit_tx_nor.events["StakingRouterETHDeposited"]
     # deposit_validators_changed_event_nor = deposit_tx_nor.events["DepositedValidatorsChanged"]
 
-    unbuffered_event_sdvt = deposit_tx_sdvt.events["Unbuffered"]
+    deposited_event_sdvt = deposit_tx_sdvt.events["StakingRouterETHDeposited"]
 
     # we need just last one event
     deposit_validators_changed_event_sdvt = deposit_tx_sdvt.events["DepositedValidatorsChanged"]
 
-    deposits_count = math.floor(unbuffered_event_nor["amount"] / ETH(32)) + math.floor(
-        unbuffered_event_sdvt["amount"] / ETH(32)
+    deposits_count = math.floor(deposited_event_nor["amount"] / ETH(32)) + math.floor(
+        deposited_event_sdvt["amount"] / ETH(32)
     )
 
     assert (
         buffered_ether_after_deposit
-        == buffered_ether_after_submit - unbuffered_event_nor["amount"] - unbuffered_event_sdvt["amount"]
+        == buffered_ether_after_submit - deposited_event_nor["amount"] - deposited_event_sdvt["amount"]
     )
 
     # get total deposited validators count from the last deposit even
