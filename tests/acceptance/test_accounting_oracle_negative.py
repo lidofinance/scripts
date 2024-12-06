@@ -43,8 +43,8 @@ def test_sender_not_allowed(accounting_oracle: Contract, oracle_version: int, st
 
 
 def test_submitConsensusReport(accounting_oracle: Contract, hash_consensus: Contract) -> None:
+    report_if_processing_not_started(accounting_oracle)
     last_processing_ref_slot = accounting_oracle.getLastProcessingRefSlot()
-    far_future = 172191406800
 
     with reverts(
         encode_error(
@@ -68,7 +68,7 @@ def test_submitConsensusReport(accounting_oracle: Contract, hash_consensus: Cont
         accounting_oracle.submitConsensusReport(
             NON_ZERO_HASH,
             last_processing_ref_slot,
-            far_future,
+            chain.time(),
             {"from": hash_consensus},
         )
 
@@ -85,12 +85,13 @@ def test_submitConsensusReport(accounting_oracle: Contract, hash_consensus: Cont
         accounting_oracle.submitConsensusReport(
             ZERO_HASH,
             last_processing_ref_slot + 1,
-            far_future,
+            chain.time(),
             {"from": hash_consensus},
         )
 
 
 def test_discardConsensusReport(accounting_oracle: Contract, hash_consensus: Contract) -> None:
+    report_if_processing_not_started(accounting_oracle)
     last_processing_ref_slot = accounting_oracle.getLastProcessingRefSlot()
 
     with reverts(
@@ -696,6 +697,12 @@ def submit_main_data(accounting_oracle: Contract, consensus_member: Account) -> 
 
 
 # === Helpers ===
+
+
+def report_if_processing_not_started(accounting_oracle: Contract) -> None:
+    (_, _, _, is_processing_started) = accounting_oracle.getConsensusReport()
+    if not is_processing_started:
+        oracle_report()
 
 
 def build_extra_data_item(
