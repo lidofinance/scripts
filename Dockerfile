@@ -288,7 +288,7 @@ RUN echo "cd /root/scripts" >> /root/.bashrc
 
 
 # verify prerequisites versions
-RUN python --version | grep 'Python 3.10.15' || (echo "Incorrect python version" && exit 1)
+RUN python --version | grep 'Python 3.10.' || (echo "Incorrect python version" && exit 1)
 RUN pip --version | grep 'pip 24.' || (echo "Incorrect pip version" && exit 1)
 RUN node --version | grep 'v18.' || (echo "Incorrect node version" && exit 1)
 RUN npm --version | grep '10.' || (echo "Incorrect npm version" && exit 1)
