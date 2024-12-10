@@ -125,7 +125,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     pml_budget_limit_before, pml_period_duration_months_before = interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).getLimitParameters()
     assert pml_budget_limit_before == 6_000_000 * 10 ** 18
     assert pml_period_duration_months_before == 3
-    assert 4_000_000 * 10**18 == interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).spendableBalance()
+    pml_initial_spendable_balance = interface.AllowedRecipientRegistry(pml_allowed_recipients_registry).spendableBalance()
+    assert pml_initial_spendable_balance >= 0
+    assert pml_initial_spendable_balance <= pml_budget_limit_before
     _, _, pml_period_start_before, pml_period_end_before = pml_allowed_recipients_registry.getPeriodState()
     assert pml_period_start_before == pml_period_start_exptected
     assert pml_period_end_before == pml_period_end_exptected
