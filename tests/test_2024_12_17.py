@@ -1,10 +1,10 @@
 """
-Tests for voting 26/11/2024.
+Tests for voting 17/12/2024.
 """
 
 from typing import Dict, Tuple, List, NamedTuple
 from web3 import Web3
-from scripts.vote_2024_11_26 import start_vote
+from scripts.vote_2024_12_17 import start_vote
 from brownie import interface, reverts, accounts, ZERO_ADDRESS, chain, web3, convert
 from utils.test.tx_tracing_helpers import *
 from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS

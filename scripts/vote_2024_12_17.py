@@ -1,5 +1,5 @@
 """
-Voting 26/11/2024.
+Voting 17/12/2024.
 
 I. Change Easy Track limits for PML and ATC
 1. ATC: increase limit from 1,5m to 7m USDC/USDT/DAI per quarter - set 7'000'000 limit on ATC registry 0xe07305F43B11F230EaA951002F6a55a16419B707 for 3 mos
