@@ -45,7 +45,7 @@ Note: *It may take up to 1 minute for the container to initialize properly the f
 ssh root@localhost -p 2222 # password: 1234
 ```
 > [!NOTE]
-> If you see a 'REMOTE HOST IDENTIFICATION HAS CHANGED' error - `ssh-keygen -R [localhost]:2222`
+> If you see a 'REMOTE HOST IDENTIFICATION HAS CHANGED' error - `ssh-keygen -R "[localhost]:2222"`
 > 
 > If you are asked 'Are you sure you want to continue connecting' - type `yes` and hit `<ENTER>`
 
