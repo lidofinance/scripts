@@ -191,9 +191,22 @@ def test_finalize_upgrade(accounting_oracle: Contract, stranger: Account):
         )
 
 class TestSubmitReportExtraDataList:
+    # TODO: Refactor the test to avoid relying on current operators state assumptions
+    # The test works on the assumption that there are active keys on the hardcoded 
+    # operators and will be broken if one of the operators has no active keys
+
     def build_extra_data(self, extra_data_items: List[bytes]) -> bytes:
         return ZERO_BYTES32 + b"".join(extra_data_items)
+    
+    def get_nor_operator_exited_keys(self, operator_id: int) -> int:
+        nor = contracts.node_operators_registry
+        (_,_,_,_,_,exited_keys,_,_) = nor.getNodeOperatorSummary(operator_id)
+        return exited_keys
 
+    def get_nor_operator_stuck_keys(self, operator_id: int) -> int:
+        nor = contracts.node_operators_registry
+        (_,_,stuck_keys,_,_,_,_,_) = nor.getNodeOperatorSummary(operator_id)
+        return stuck_keys
 
     def test_too_short_extra_data_item(self):
         extra_data = self.build_extra_data(
@@ -280,69 +293,78 @@ class TestSubmitReportExtraDataList:
         ):
             self.report(extra_data, items_count=1)
 
-    def test_invalid_extra_data_sort_order(self):
+    def test_invalid_extra_data_sort_order_on_same_items(self):
+        module_id = 1
+        operator_id = 2
+        current_stuck_keys = self.get_nor_operator_stuck_keys(operator_id)
+        new_stuck_keys = current_stuck_keys + 1
+
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [1]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [2], [1]),
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, module_id, [operator_id], [new_stuck_keys]),
+                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, module_id, [operator_id], [new_stuck_keys]),
             ]
         )
 
-        with reverts(
-            encode_error(
-                "InvalidExtraDataSortOrder(uint256)",
-                [1],
-            )
-        ):
+        with reverts(encode_error("InvalidExtraDataSortOrder(uint256)", [1])):
             self.report(extra_data)
 
+    def test_invalid_extra_data_sort_order_on_same_operator(self):
+        module_id = 1
+        operator_id = 33
+        current_exited_keys = self.get_nor_operator_exited_keys(operator_id)
+
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [33], [250]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [33], [1]),
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, module_id, [operator_id], [current_exited_keys + 2]),
+                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, module_id, [operator_id], [current_exited_keys + 1]),
             ]
         )
 
-        with reverts(
-            encode_error(
-                "InvalidExtraDataSortOrder(uint256)",
-                [1],
-            )
-        ):
+        with reverts(encode_error("InvalidExtraDataSortOrder(uint256)", [1])):
             self.report(extra_data)
 
+    def test_invalid_extra_data_sort_order_on_stuck(self):
+        module_id = 1
+        unsorted_operator_ids = [1, 3, 2]
+        current_stuck_keys = [self.get_nor_operator_stuck_keys(operator_id) for operator_id in unsorted_operator_ids]
+        new_stuck_keys = [keys + 1 for keys in current_stuck_keys]
+
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, 1, [1, 3, 2, 4], [1, 1, 1, 1]),
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, module_id, unsorted_operator_ids, new_stuck_keys),
             ]
         )
 
-        with reverts(
-            encode_error(
-                "InvalidExtraDataSortOrder(uint256)",
-                [0],
-            )
-        ):
+        with reverts(encode_error("InvalidExtraDataSortOrder(uint256)", [0])):
             self.report(extra_data)
 
+    def test_invalid_extra_data_sort_order_on_exited(self):
+        module_id = 1
+        unsorted_operator_ids = [33, 35, 34]
+        current_exited_keys = [self.get_nor_operator_exited_keys(operator_id) for operator_id in unsorted_operator_ids]
+        new_exited_keys = [keys + 1 for keys in current_exited_keys]
+
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [33, 35, 34, 36], [5000, 5000, 5000, 5000]),
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, module_id, unsorted_operator_ids, new_exited_keys),
             ]
         )
 
-        with reverts(
-            encode_error(
-                "InvalidExtraDataSortOrder(uint256)",
-                [0],
-            )
-        ):
+        with reverts(encode_error("InvalidExtraDataSortOrder(uint256)", [0])):
             self.report(extra_data)
 
     def test_unexpected_extra_data_item(self, extra_data_service: ExtraDataService) -> None:
+        module_id = 1
+        stuck_keys_operator_id = 38
+        exited_keys_operator_id = 33
+
+        current_stuck_keys = self.get_nor_operator_stuck_keys(stuck_keys_operator_id)
+        current_exited_keys = self.get_nor_operator_exited_keys(exited_keys_operator_id)
+
         extra_data = extra_data_service.collect(
-            {(1, 38): 1},
-            {(1, 33): 250},
+            {(module_id, stuck_keys_operator_id): current_stuck_keys + 1},
+            {(module_id, exited_keys_operator_id): current_exited_keys + 1},
             MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
             1,
         )
@@ -367,9 +389,16 @@ class TestSubmitReportExtraDataList:
         consensus_member: Account,
         extra_data_service: ExtraDataService,
     ):
+        module_id = 1
+        stuck_keys_operator_id = 38
+        exited_keys_operator_id = 33
+
+        current_stuck_keys = self.get_nor_operator_stuck_keys(stuck_keys_operator_id)
+        current_exited_keys = self.get_nor_operator_exited_keys(exited_keys_operator_id)
+
         extra_data = extra_data_service.collect(
-            {(1, 38): 1},
-            {(1, 33): 250},
+            {(module_id, stuck_keys_operator_id): current_stuck_keys + 1},
+            {(module_id, exited_keys_operator_id): current_exited_keys + 1},
             MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
             1,
         )
