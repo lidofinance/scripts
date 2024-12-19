@@ -82,3 +82,15 @@ development:
     timeout: 360
     # https://github.com/mds1/multicall#multicall2-contract-addresses
     multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+
+  - cmd: ./ganache.sh
+    cmd_settings:
+      accounts: 10
+      chain_id: 32382
+      gas_limit: 30000000
+      mnemonic: brownie
+      port: 56136
+    host: http://127.0.0.1
+    id: devnet4
+    name: Devnet4
+    timeout: 360
