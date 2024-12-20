@@ -30,8 +30,8 @@ class TokenLimit(NamedTuple):
     limit: int
 
 
-steth_limit = TokenLimit(LIDO, 8_000 * (10**18))
-usdc_limit = TokenLimit(USDC_TOKEN, 3_000_000 * (10**6))
+steth_limit = TokenLimit(LIDO, 16_000 * (10**18))
+usdc_limit = TokenLimit(USDC_TOKEN, 6_000_000 * (10**6))
 other_limit = TokenLimit("", 1_000 * (10**18))
 
 def amount_limits() -> List[Param]:
@@ -269,7 +269,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
                atc_multisig_acc,
                stranger,
                interface.Usdc(USDC_TOKEN),
-               3_000_000 * 10**6
+               6_000_000 * 10**6
     )
 
     limit_test(easy_track,
@@ -279,7 +279,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
                pml_multisig_acc,
                stranger,
                interface.Usdc(USDC_TOKEN),
-               3_000_000 * 10**6
+               6_000_000 * 10**6
     )
 
     limit_test(easy_track,
@@ -289,7 +289,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
                stonks_steth_contract,
                stranger,
                stETH_token,
-               8_000 * 10 ** 18
+               16_000 * 10 ** 18
     )
 
 def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_factory, multisig_acc, stranger, token, max_spend_at_once):
