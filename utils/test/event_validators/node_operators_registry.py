@@ -72,7 +72,7 @@ def validate_node_operator_name_set_event(
 def validate_node_operator_reward_address_set_event(
     event: EventDict, node_operator_reward_address_item: NodeOperatorRewardAddressSetItem
 ):
-    _events_chain = ["LogScriptCall", "KeysOpIndexSet", "NodeOperatorRewardAddressSet"]
+    _events_chain = ["LogScriptCall", "LogScriptCall", "NodeOperatorRewardAddressSet", "ScriptResult"]
 
     validate_events_chain([e.name for e in event], _events_chain)
 
