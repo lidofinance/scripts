@@ -13,6 +13,8 @@ III. Simply Staking reward address change
 5. Change staking reward address to 0x1EC3Cbe8fb1D8019092500CcA2111C158a35bC82 for node operator with id = 16 (Simply Staking)
 
 Vote #181, initiated on 26/11/2024, did not reach a quorum.
+
+Vote passed & executed on Dec-20-2024 02:47:59 PM UTC, block #21444425.
 """
 
 import time
