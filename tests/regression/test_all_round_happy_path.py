@@ -16,6 +16,8 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     curated_module_id = 1
     simple_dvt_module_id = 2
 
+    initial_stake_limit = contracts.lido.getCurrentStakeLimit()
+    contracts.lido.removeStakingLimit({"from": accounts.at(contracts.voting, force=True)})
     """ report """
     while contracts.withdrawal_queue.getLastRequestId() != contracts.withdrawal_queue.getLastFinalizedRequestId():
         # finalize all current requests first
@@ -24,6 +26,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
         contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale.address, "value": ETH(10000)})
 
     contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale.address, "value": ETH(10000)})
+    contracts.lido.setStakingLimit(initial_stake_limit, initial_stake_limit, {"from": accounts.at(contracts.voting, force=True)})
 
     # get accidentally unaccounted stETH shares on WQ contract
     uncounted_steth_shares = contracts.lido.sharesOf(contracts.withdrawal_queue)
