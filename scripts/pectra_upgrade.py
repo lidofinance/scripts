@@ -61,7 +61,7 @@ CS_FEE_ORACLE_CONSENSUS_VERSION = 2
 
 # CSM
 
-CS_VERIFIER_OLD = ""
+CS_VERIFIER_OLD = "0x6313e8B68C7C3617255C60C28F5384A43a6b1d07"
 
 description = """
 Release Pectra updates
@@ -247,30 +247,30 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                 ]
             ),
         ),
-        # (
-        #     "16. Revoke VERIFIER_ROLE role on CSM from Aragon Agent",
-        #     agent_forward(
-        #         [
-        #             encode_oz_revoke_role(
-        #                 contract=contracts.csm,
-        #                 role_name="VERIFIER_ROLE",
-        #                 revoke_from=CS_VERIFIER_OLD,
-        #             )
-        #         ]
-        #     ),
-        # ),
-        #  (
-        #     "17. Grant VERIFIER_ROLE role on CSM to Aragon Agent",
-        #     agent_forward(
-        #         [
-        #             encode_oz_grant_role(
-        #                 contract=contracts.csm,
-        #                 role_name="VERIFIER_ROLE",
-        #                 grant_to=contracts.cs_verifier,
-        #             )
-        #         ]
-        #     ),
-        # ),
+        (
+            "16. Revoke VERIFIER_ROLE role on CSM from Aragon Agent",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.csm,
+                        role_name="VERIFIER_ROLE",
+                        revoke_from=CS_VERIFIER_OLD,
+                    )
+                ]
+            ),
+        ),
+        (
+            "17. Grant VERIFIER_ROLE role on CSM to Aragon Agent",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.csm,
+                        role_name="VERIFIER_ROLE",
+                        grant_to=contracts.cs_verifier,
+                    )
+                ]
+            ),
+        ),
     )
 
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))

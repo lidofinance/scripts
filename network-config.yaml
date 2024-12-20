@@ -89,7 +89,7 @@ development:
       chain_id: 32382
       gas_limit: 30000000
       mnemonic: brownie
-      port: 56136
+      port: 49697
     host: http://127.0.0.1
     id: devnet4
     name: Devnet4
