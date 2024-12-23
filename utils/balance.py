@@ -16,7 +16,7 @@ def set_balance_in_wei(address, balance):
             if e.args[0].get("message") != f"Method {provider} is not supported":
                 raise e
 
-    assert account.balance() == balance, f"Failed to set balance {balance} for account: {address}"
+    assert account.balance() == balance, f"FSB: EXP: {balance} ACT: {account.balance()} ADDR: {address}"
     return account
 
 
