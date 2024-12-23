@@ -6,17 +6,20 @@ def set_balance_in_wei(address, balance):
     account = accounts.at(address, force=True)
     providers = ["evm_setAccountBalance", "hardhat_setBalance", "anvil_setBalance"]
 
+    log_string = ""
+
     for provider in providers:
         if account.balance() == balance:
             break
 
         try:
-            web3.provider.make_request(provider, [address, hex(balance)])
+            resp = web3.provider.make_request(provider, [address, hex(balance)])
         except ValueError as e:
+            log_string += f"ERR1: {provider}: {e.args[0].get('message')}, RESP: {resp}"
             if e.args[0].get("message") != f"Method {provider} is not supported":
                 raise e
 
-    assert account.balance() == balance, f"FSB: EXP: {balance} ACT: {account.balance()} ADDR: {address}"
+    assert account.balance() == balance, f"FSB: EXP: {balance} ACT: {account.balance()} ADDR: {address}, ERR: {log_string}"
     return account
 
 
