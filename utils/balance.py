@@ -14,8 +14,9 @@ def set_balance_in_wei(address, balance):
 
         try:
             resp = web3.provider.make_request(provider, [address, hex(balance)])
+            log_string += f"ERR1: {provider}: {resp}; "
         except ValueError as e:
-            log_string += f"ERR1: {provider}: {e.args[0].get('message')}, RESP: {resp}"
+            log_string += f"ERR12 {provider}: {e.args[0].get('message')}; "
             if e.args[0].get("message") != f"Method {provider} is not supported":
                 raise e
 
