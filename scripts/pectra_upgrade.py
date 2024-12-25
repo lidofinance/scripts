@@ -35,8 +35,7 @@ from utils.config import (
     get_is_live,
     get_priority_fee,
     contracts,
-    AO_CONSENSUS_VERSION,
-    VEBO_CONSENSUS_VERSION,
+    CS_VERIFIER_ADDRESS_OLD,
 )
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
@@ -59,12 +58,8 @@ AO_CONSENSUS_VERSION = 3
 VEBO_CONSENSUS_VERSION = 3
 CS_FEE_ORACLE_CONSENSUS_VERSION = 2
 
-# CSM
-
-CS_VERIFIER_OLD = "0x6313e8B68C7C3617255C60C28F5384A43a6b1d07"
-
 description = """
-Release Pectra updates
+Release Pectra update
 """
 
 
@@ -254,7 +249,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                     encode_oz_revoke_role(
                         contract=contracts.csm,
                         role_name="VERIFIER_ROLE",
-                        revoke_from=CS_VERIFIER_OLD,
+                        revoke_from=CS_VERIFIER_ADDRESS_OLD,
                     )
                 ]
             ),
