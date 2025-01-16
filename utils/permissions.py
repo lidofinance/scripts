@@ -24,6 +24,18 @@ def encode_permission_revoke(target_app, permission_name, revoke_from) -> Tuple[
     return acl.address, acl.revokePermission.encode_input(revoke_from, target_app, permission_id)
 
 
+def encode_permission_set_manager(target_app, permission_name: str, grant_to: str) -> Tuple[str, str]:
+    acl = contracts.acl
+    permission_id = convert.to_uint(Web3.keccak(text=permission_name))
+    return acl.address, acl.setPermissionManager.encode_input(grant_to, target_app, permission_id)
+
+
+def encode_permission_create(target_app, permission_name: str, grant_to, manager) -> Tuple[str, str]:
+    acl = contracts.acl
+    permission_id = convert.to_uint(Web3.keccak(text=permission_name))
+    return acl.address, acl.createPermission.encode_input(grant_to, target_app, permission_id, manager)
+
+
 def encode_permission_grant_p(
     target_app,
     permission_name: str,
