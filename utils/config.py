@@ -395,6 +395,18 @@ class ContractsLazyLoader:
     def allowed_tokens_registry(self) -> interface.AllowedTokensRegistry:
         return interface.AllowedTokensRegistry(EASYTRACK_ALLOWED_TOKENS_REGISTRY)
 
+    @property
+    def dual_governance(self) -> interface.DualGovernance:
+        return interface.DualGovernance(DUAL_GOVERNANCE)
+
+    @property
+    def dual_governance_admin_executor(self) -> interface.DualGovernanceAdminExecutor:
+        return interface.DualGovernanceAdminExecutor(DUAL_GOVERNANCE_ADMIN_EXECUTOR)
+
+    @property
+    def dual_governance_verifier(self) -> interface.DualGovernanceVerifier:
+        return interface.DualGovernanceVerifier(DUAL_GOVERNANCE_VERIFIER)
+
 def __getattr__(name: str) -> Any:
     if name == "contracts":
         return ContractsLazyLoader()
