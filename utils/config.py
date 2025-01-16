@@ -390,6 +390,10 @@ class ContractsLazyLoader:
     @property
     def token_rate_notifier(self) -> interface.TokenRateNotifier:
         return interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)
+    
+    @property
+    def allowed_tokens_registry(self) -> interface.AllowedTokensRegistry:
+        return interface.AllowedTokensRegistry(EASYTRACK_ALLOWED_TOKENS_REGISTRY)
 
 def __getattr__(name: str) -> Any:
     if name == "contracts":
