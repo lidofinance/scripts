@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 from brownie import chain, accounts, interface
 
-from utils.config import VOTING
+from utils.config import VOTING, network_name
 
 
 @contextmanager
@@ -27,12 +27,16 @@ def pass_and_exec_dao_vote(vote_id):
     if not dao_voting.canExecute(vote_id):
         print(f"Passing vote {vote_id}")
 
-        # together these accounts hold 15% of LDO total supply
-        ldo_holders = [
-            "0x3e40d73eb977dc6a537af587d48316fee66e9c8c",
-            "0xb8d83908aab38a159f3da47a59d84db8e1838712",
-            "0xa2dfc431297aee387c05beef507e5335e684fbcd",
-        ]
+
+        if network_name() in ("holesky", "holesky-fork"):
+            ldo_holders = ["0xc807d4036B400dE8f6cD2aDbd8d9cf9a3a01CC30"]
+        else:
+            # together these accounts hold 15% of LDO total supply
+            ldo_holders = [
+                "0x3e40d73eb977dc6a537af587d48316fee66e9c8c",
+                "0xb8d83908aab38a159f3da47a59d84db8e1838712",
+                "0xa2dfc431297aee387c05beef507e5335e684fbcd",
+            ]
 
         for holder_addr in ldo_holders:
             print(f"  voting from {holder_addr}")
