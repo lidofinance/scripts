@@ -1,5 +1,5 @@
 """
-Pectra upgrade
+Release part of the update following the Pectra upgrade
 
 1. Grant role `EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` role to Aragon Agent on `OracleReportSanityChecker` contract
 2. Set `exitedValidatorsPerDayLimit` sanity checker parameter to 1800
@@ -7,17 +7,6 @@ Pectra upgrade
 4. Set `appearedValidatorsPerDayLimit` sanity checker parameter to 1800
 5. Grant role `INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE` role to Aragon Agent on `OracleReportSanityChecker` contract
 6. Set `initialSlashingAmountPWei` sanity checker parameter to 8
-7. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Accounting Oracle to Aragon Agent
-8. Update Accounting Oracle consensus version to 3
-9. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Accounting Oracle from Aragon Agent
-10. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle to Aragon Agent
-11. Update Validator Exit Bus Oracle consensus version to 3
-12. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle from Aragon Agent
-13. Grant MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle to Aragon Agent
-14. Update CSFeeOracle consensus version to 2
-15. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on  CSFeeOracle from Aragon Agent
-16. Revoke VERIFIER_ROLE role on CSM from old CS Verifier
-17. Grant VERIFIER_ROLE role on CSM to new CS Verifier
 """
 
 import time
@@ -35,8 +24,6 @@ from utils.config import (
     get_is_live,
     get_priority_fee,
     contracts,
-    AO_CONSENSUS_VERSION,
-    VEBO_CONSENSUS_VERSION,
 )
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
@@ -61,10 +48,7 @@ CS_FEE_ORACLE_CONSENSUS_VERSION = 2
 
 # CSM
 
-CS_VERIFIER_OLD = "0x6313e8B68C7C3617255C60C28F5384A43a6b1d07"
-
 description = """
-Release Pectra updates
 """
 
 
@@ -160,114 +144,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                             UNCHANGED_INACTIVITY_PENATIES_AMOUNT_PWEI,
                         ),
                     ),
-                ]
-            ),
-        ),
-        (
-            "7. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Accounting Oracle to Aragon Agent",
-            agent_forward(
-                [
-                    encode_oz_grant_role(
-                        contract=contracts.accounting_oracle,
-                        role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-                        grant_to=contracts.agent,
-                    )
-                ]
-            ),
-        ),
-        (
-            "8. Update Accounting Oracle consensus version to 3",
-            agent_forward([encode_ao_set_consensus_version()]),
-        ),
-        (
-            "9. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Accounting Oracle from Aragon Agent",
-            agent_forward(
-                [
-                    encode_oz_revoke_role(
-                        contract=contracts.accounting_oracle,
-                        role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-                        revoke_from=contracts.agent,
-                    )
-                ]
-            ),
-        ),
-        (
-            "10. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle to Aragon Agent",
-            agent_forward(
-                [
-                    encode_oz_grant_role(
-                        contract=contracts.validators_exit_bus_oracle,
-                        role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-                        grant_to=contracts.agent,
-                    )
-                ]
-            ),
-        ),
-        (
-            "11. Update Validator Exit Bus Oracle consensus version to 3",
-            agent_forward([encode_vebo_set_consensus_version()]),
-        ),
-        (
-            "12. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle from Aragon Agent",
-            agent_forward(
-                [
-                    encode_oz_revoke_role(
-                        contract=contracts.validators_exit_bus_oracle,
-                        role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-                        revoke_from=contracts.agent,
-                    )
-                ]
-            ),
-        ),
-        (
-            "13. Grant MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle to Aragon Agent",
-            agent_forward(
-                [
-                    encode_oz_grant_role(
-                        contract=contracts.cs_fee_oracle,
-                        role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-                        grant_to=contracts.agent,
-                    )
-                ]
-            ),
-        ),
-        (
-            "14. Update CSFeeOracle consensus version to 3",
-            agent_forward([encode_cs_fee_oracle_set_consensus_version()]),
-        ),
-        (
-            "15. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle from Aragon Agent",
-            agent_forward(
-                [
-                    encode_oz_revoke_role(
-                        contract=contracts.cs_fee_oracle,
-                        role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-                        revoke_from=contracts.agent,
-                    )
-                ]
-            ),
-        ),
-        (
-            "16. Revoke VERIFIER_ROLE role on CSM from Aragon Agent",
-            agent_forward(
-                [
-                    encode_oz_revoke_role(
-                        contract=contracts.csm,
-                        role_name="VERIFIER_ROLE",
-                        revoke_from=CS_VERIFIER_OLD,
-                    )
-                ]
-            ),
-        ),
-        (
-            "17. Grant VERIFIER_ROLE role on CSM to Aragon Agent",
-            agent_forward(
-                [
-                    encode_oz_grant_role(
-                        contract=contracts.csm,
-                        role_name="VERIFIER_ROLE",
-                        grant_to=contracts.cs_verifier,
-                    )
                 ]
             ),
         ),
