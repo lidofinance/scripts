@@ -59,7 +59,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     csm: interface.CSModule = contracts.csm
     staking_router: interface.StakingRouter = contracts.staking_router
     csm_module_id = 3
-    new_stake_share_limit = 200
+    new_stake_share_limit = 200 #2%
+    new_priority_exit_share_threshold = 250 #2.5%
 
     vote_desc_items, call_script_items = zip(
         #
@@ -67,7 +68,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         #
         (
             "1. Grant MODULE_MANAGER_ROLE",
-            encode_oz_grant_role(csm, "MODULE_MANAGER_ROLE", voting)
+            agent_forward(
+                [
+                    encode_oz_grant_role(csm, "MODULE_MANAGER_ROLE", contracts.agent)
+                ]
+            ),
         ),
         (
             "2. Activate public release mode",
@@ -79,23 +84,35 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         ),
         (
             "3. Grant STAKING_MODULE_MANAGE_ROLE",
-            encode_oz_grant_role(staking_router, "STAKING_MODULE_MANAGE_ROLE", voting)
+            agent_forward(
+                [
+                    encode_oz_grant_role(staking_router, "STAKING_MODULE_MANAGE_ROLE", contracts.agent)
+                ]
+            ),
         ),
         (
             "4. Increase share from 1% to 2%",
             agent_forward(
                 [
-                    update_staking_module(csm_module_id, new_stake_share_limit, 125, 600, 400, 30, 25)
+                    update_staking_module(csm_module_id, new_stake_share_limit, new_priority_exit_share_threshold, 600, 400, 30, 25)
                 ]
             ),
         ),
         (
             "5. Revoke MODULE_MANAGER_ROLE",
-            encode_oz_revoke_role(csm, "MODULE_MANAGER_ROLE", revoke_from=voting)
+            agent_forward(
+                [
+                    encode_oz_revoke_role(csm, "MODULE_MANAGER_ROLE", revoke_from=contracts.agent)
+                ]
+            ),
         ),
         (
             "6. Revoke STAKING_MODULE_MANAGE_ROLE",
-            encode_oz_revoke_role(staking_router, "STAKING_MODULE_MANAGE_ROLE", voting)
+            agent_forward(
+                [
+                    encode_oz_revoke_role(staking_router, "STAKING_MODULE_MANAGE_ROLE", contracts.agent)
+                ]
+            ),
         ),
         #
         # II. NO Acquisitions - Bridgetower is now part of Solstice Staking
