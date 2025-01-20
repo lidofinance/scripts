@@ -10,7 +10,7 @@ I. Community staking module: limit increase + turn off EA mode
 6. Revoke STAKING_MODULE_MANAGE_ROLE
 
 II. NO Acquisitions - Bridgetower is now part of Solstice Staking
-1. Change name of Bridgetower to Solstice
+7. Change name of Bridgetower to Solstice
 
 """
 
@@ -43,9 +43,14 @@ from utils.csm import activate_public_release
 from utils.agent import agent_forward
 
 description = """
-1. **Community staking module**: limit increase + turn off EA mode
+1. **Transition Community Staking Module to Permissionless Phase** by activating public release
+and **increasing the share limit** from 1% to 2%,
+as [approved on Snapshot](https://snapshot.org/#/s:lido-snapshot.eth/proposal/0x7cbd5e9cb95bda9581831daf8b0e72d1ad0b068d2cbd3bda2a2f6ae378464f26).
+Items 1-6.
 
-2. **NO Acquisitions** - Bridgetower is now part of Solstice Staking
+2. **Rename Node Operator ID 17 from BridgeTower to Solstice**
+as [requested on the forum](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/41).
+Item 7.
 """
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
@@ -96,7 +101,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         # II. NO Acquisitions - Bridgetower is now part of Solstice Staking
         #
         (
-            "1. Change name of Bridgetower to Solstice",
+            "7. Change name of Bridgetower to Solstice",
             agent_forward(
                 [
                     encode_set_node_operator_name(
