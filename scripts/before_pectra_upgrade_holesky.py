@@ -162,7 +162,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "10. Revoke VERIFIER_ROLE role on CSM from Aragon Agent",
+            "10. Revoke VERIFIER_ROLE role on CSM from old CS Verifier",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -174,7 +174,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "11. Grant VERIFIER_ROLE role on CSM to Aragon Agent",
+            "11. Grant VERIFIER_ROLE role on CSM to new CS Verifier",
             agent_forward(
                 [
                     encode_oz_grant_role(
