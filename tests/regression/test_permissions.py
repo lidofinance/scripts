@@ -5,6 +5,7 @@ Tests for permissions setup
 import pytest
 import os
 
+from tqdm import tqdm
 from web3 import Web3
 from brownie import interface, convert, web3
 from brownie.network.event import _decode_logs
@@ -489,9 +490,22 @@ def active_aragon_roles(protocol_permissions):
     w3 = Web3(Web3.HTTPProvider(f'https://mainnet.infura.io/v3/{os.getenv("WEB3_INFURA_PROJECT_ID")}'))
 
     event_signature_hash = w3.keccak(text="SetPermission(address,address,bytes32,bool)").hex()
-    events_before_voting = w3.eth.filter(
-        {"address": contracts.acl.address, "fromBlock": ACL_DEPLOY_BLOCK_NUMBER, "topics": [event_signature_hash]}
-    ).get_all_entries()
+
+    def fetch_events_in_batches(start_block, end_block, step=100000):
+        """Fetch events in batches of `step` blocks with a progress bar."""
+        events = []
+        total_batches = (end_block - start_block) // step + 1
+        with tqdm(total=total_batches, desc="Fetching Events") as pbar:
+            for batch_start in range(start_block, end_block, step):
+                batch_end = min(batch_start + step - 1, end_block)
+                batch_events = w3.eth.filter(
+                        {"address": contracts.acl.address, "fromBlock": batch_start, "toBlock": batch_end, "topics": [event_signature_hash]}
+                ).get_all_entries()
+                events.extend(batch_events)
+                pbar.update(1)
+        return events
+
+    events_before_voting = fetch_events_in_batches(ACL_DEPLOY_BLOCK_NUMBER, w3.eth.block_number)
 
     permission_events = _decode_logs(events_before_voting)["SetPermission"]._ordered
 
@@ -499,9 +513,7 @@ def active_aragon_roles(protocol_permissions):
     if len(history) > 0:
         vote_block = history[0].block_number
 
-        events_after_voting = web3.eth.filter(
-            {"address": contracts.acl.address, "fromBlock": vote_block, "topics": [event_signature_hash]}
-        ).get_all_entries()
+        events_after_voting = fetch_events_in_batches(vote_block, w3.eth.block_number)
 
         try:
             permission_events_after_voting = _decode_logs(events_after_voting)["SetPermission"]._ordered
