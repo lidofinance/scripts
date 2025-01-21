@@ -47,6 +47,7 @@ dual_governance_contracts = {
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False):
     foo_contract = interface.Foo("0xC3fc22C7e0d20247B797fb6dc743BD3879217c81")
+    roles_verifier = interface.RolesVerifier("0xe0144de0e89390dc469425f471527d9d6bc98b05")
 
     vote_desc_items, call_script_items = zip(
         (
@@ -133,6 +134,13 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
                 contracts.dual_governance_verifier.address,
                 contracts.dual_governance_verifier.verify.encode_input(tuple(dual_governance_contracts.values()), True),
             ),
+        ),
+        (
+            "Verifiy transferred roles",
+            (
+                roles_verifier.address,
+                roles_verifier.verify.encode_input()
+            )
         ),
         (
             "Submit first dual governance proposal",
