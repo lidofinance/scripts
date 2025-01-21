@@ -1,0 +1,69 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "Duration",
+        "name": "currentDayTime",
+        "type": "uint32"
+      },
+      { "internalType": "Duration", "name": "startDayTime", "type": "uint32" },
+      { "internalType": "Duration", "name": "endDayTime", "type": "uint32" }
+    ],
+    "name": "DayTimeOutOfRange",
+    "type": "error"
+  },
+  { "inputs": [], "name": "DayTimeOverflow", "type": "error" },
+  { "inputs": [], "name": "DurationOverflow", "type": "error" },
+  {
+    "inputs": [
+      { "internalType": "Duration", "name": "startDayTime", "type": "uint32" },
+      { "internalType": "Duration", "name": "endDayTime", "type": "uint32" }
+    ],
+    "name": "InvalidDayTimeRange",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "Timestamp",
+        "name": "requiredTimestamp",
+        "type": "uint40"
+      }
+    ],
+    "name": "TimestampNotReached",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DAY_DURATION",
+    "outputs": [{ "internalType": "Duration", "name": "", "type": "uint32" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "Timestamp", "name": "timestamp", "type": "uint40" }
+    ],
+    "name": "checkExecuteAfterTimestamp",
+    "outputs": [],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "Duration", "name": "startDayTime", "type": "uint32" },
+      { "internalType": "Duration", "name": "endDayTime", "type": "uint32" }
+    ],
+    "name": "checkExecuteWithinDayTime",
+    "outputs": [],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getCurrentDayTime",
+    "outputs": [{ "internalType": "Duration", "name": "", "type": "uint32" }],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
