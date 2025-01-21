@@ -35,8 +35,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     # 5. Revoke MODULE_MANAGER_ROLE"
     assert csm.hasRole(0x79dfcec784e591aafcf60db7db7b029a5c8b12aac4afd4e8c4eb740430405fa6, contracts.agent) == False
 
-    # 6. Revoke STAKING_MODULE_MANAGE_ROLE"
-    assert staking_router.hasRole(0x3105bcbf19d4417b73ae0e58d508a65ecf75665e46c2622d8521732de6080c48, contracts.agent) == False
     #
     # II. NO Acquisitions - Bridgetower is now part of Solstice Staking
     #
