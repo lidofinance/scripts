@@ -119,13 +119,13 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     assert len(events) == 11
 
     # Validate ao consensus version set
-    validate_consensus_version_update(events[:3], ACCOUNTING_ORACLE, AO_CONSENSUS_VERSION)
+    validate_consensus_version_update(events[:3], AO_CONSENSUS_VERSION)
 
     # Validate vebo consensus version set
-    validate_consensus_version_update(events[3:6], VALIDATORS_EXIT_BUS_ORACLE, VEBO_CONSENSUS_VERSION)
+    validate_consensus_version_update(events[3:6], VEBO_CONSENSUS_VERSION)
 
     # Validate CS Fee Oracle consensus version set
-    validate_consensus_version_update(events[6:9], CS_FEE_ORACLE, CS_FEE_ORACLE_CONSENSUS_VERSION)
+    validate_consensus_version_update(events[6:9], CS_FEE_ORACLE_CONSENSUS_VERSION)
 
     # Validate VERIFIER_ROLE role revoke from CS_VERIFIER_ADDRESS_OLD
     validate_revoke_role_event(
@@ -147,8 +147,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
 # Events check
 
 
-def validate_consensus_version_update(events: list[EventDict], oracle_address, version):
-    print(f"events: {events}")
+def validate_consensus_version_update(events: list[EventDict], version):
     validate_grant_role_event(
         events[0],
         MANAGE_CONSENSUS_VERSION_ROLE,

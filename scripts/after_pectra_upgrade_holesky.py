@@ -1,12 +1,15 @@
 """
 Release part of the update following the Pectra upgrade
 
-1. Grant role `EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` role to Aragon Agent on `OracleReportSanityChecker` contract
-2. Set `exitedValidatorsPerDayLimit` sanity checker parameter to 1800
-3. Grant role `APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` role to Aragon Agent on `OracleReportSanityChecker` contract
-4. Set `appearedValidatorsPerDayLimit` sanity checker parameter to 1800
-5. Grant role `INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE` role to Aragon Agent on `OracleReportSanityChecker` contract
-6. Set `initialSlashingAmountPWei` sanity checker parameter to 8
+1. Grant role `EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` to Aragon Agent on `OracleReportSanityChecker` contract
+2. Set `exitedValidatorsPerDayLimit` sanity checker parameter to 3600
+3. Revoke role `EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` on `OracleReportSanityChecker` from Aragon Agent
+4. Grant role `APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` to Aragon Agent on `OracleReportSanityChecker` contract
+5. Set `appearedValidatorsPerDayLimit` sanity checker parameter to 1800
+6. Revoke role `APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` on `OracleReportSanityChecker` from Aragon Agent
+7. Grant role `INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE` to Aragon Agent on `OracleReportSanityChecker` contract
+8. Set `initialSlashingAmountPWei` sanity checker parameter to 8
+9. Revoke role `INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE` on `OracleReportSanityChecker` from Aragon Agent
 """
 
 import time
@@ -37,7 +40,7 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 
 NEW_INITIAL_SLASHING_AMOUNT_PWEI = 8
 UNCHANGED_INACTIVITY_PENATIES_AMOUNT_PWEI = 101
-NEW_EXITED_VALIDATORS_PER_DAY_LIMIT = 1800
+NEW_EXITED_VALIDATORS_PER_DAY_LIMIT = 3600
 NEW_APPEARED_VALIDATORS_PER_DAY_LIMIT = 1800
 
 # Consensus version
@@ -84,7 +87,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "2) Set `exitedValidatorsPerDayLimit` sanity checker parameter to 1800",
+            "2) Set `exitedValidatorsPerDayLimit` sanity checker parameter to 3600",
             agent_forward(
                 [
                     (
@@ -97,7 +100,19 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "3) Grant role `APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` role to Aragon Agent on `OracleReportSanityChecker` contract",
+            "3. Revoke role `EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` on `OracleReportSanityChecker` from Aragon Agent",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.oracle_report_sanity_checker,
+                        role_name="EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE",
+                        revoke_from=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+        (
+            "4) Grant role `APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` role to Aragon Agent on `OracleReportSanityChecker` contract",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -109,7 +124,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "4) Set `appearedValidatorsPerDayLimit` sanity checker parameter to 1800",
+            "5) Set `appearedValidatorsPerDayLimit` sanity checker parameter to 1800",
             agent_forward(
                 [
                     (
@@ -122,7 +137,19 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "5) Grant role `INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE` role to Aragon Agent on `OracleReportSanityChecker` contract",
+            "6) Revoke role `APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` on `OracleReportSanityChecker` from Aragon Agent",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.oracle_report_sanity_checker,
+                        role_name="APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE",
+                        revoke_from=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+        (
+            "7) Grant role `INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE` role to Aragon Agent on `OracleReportSanityChecker` contract",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -134,7 +161,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "6) Set `initialSlashingAmountPWei` sanity checker parameter to 8",
+            "8) Set `initialSlashingAmountPWei` sanity checker parameter to 8",
             agent_forward(
                 [
                     (
@@ -144,6 +171,18 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                             UNCHANGED_INACTIVITY_PENATIES_AMOUNT_PWEI,
                         ),
                     ),
+                ]
+            ),
+        ),
+        (
+            "9) Revoke role `INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE` on `OracleReportSanityChecker` from Aragon Agent",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.oracle_report_sanity_checker,
+                        role_name="INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE",
+                        revoke_from=contracts.agent,
+                    )
                 ]
             ),
         ),
