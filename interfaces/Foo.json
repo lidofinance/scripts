@@ -1,5 +1,18 @@
 [
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      }
+    ],
+    "name": "BarCall",
+    "type": "event"
+  },
+  {
     "inputs": [],
     "name": "bar",
     "outputs": [],
