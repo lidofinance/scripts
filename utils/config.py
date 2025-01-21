@@ -407,6 +407,10 @@ class ContractsLazyLoader:
     def dual_governance_verifier(self) -> interface.DualGovernanceVerifier:
         return interface.DualGovernanceVerifier(DUAL_GOVERNANCE_VERIFIER)
 
+    @property
+    def time_constraints(self) -> interface.TimeConstraints:
+        return interface.TimeConstraints(TIME_CONSTRAINTS)
+
 def __getattr__(name: str) -> Any:
     if name == "contracts":
         return ContractsLazyLoader()
