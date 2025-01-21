@@ -2,7 +2,7 @@ import time
 
 from typing import Dict
 
-from utils.agent import agent_forward
+from utils.agent import agent_forward, dual_governance_agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.config import (
@@ -46,7 +46,7 @@ dual_governance_contracts = {
 }
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False):
-    foo_contract = interface.Foo("0x258C151254bB8C6673dEF05fB965D0dD8cB7eA89")
+    foo_contract = interface.Foo("0xC3fc22C7e0d20247B797fb6dc743BD3879217c81")
 
     vote_desc_items, call_script_items = zip(
         (
@@ -96,7 +96,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
             ),
         ),
         (
-            "Grant DEFAULT_ADMIN_ROLE to Voting.",
+            "Grant AllowedTokensRegistry DEFAULT_ADMIN_ROLE to Voting.",
             (
                 agent_forward(
                     [
@@ -111,7 +111,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
             ),
         ),
         (
-            "Revoke DEFAULT_ADMIN_ROLE from Agent.",
+            "Revoke AllowedTokensRegistry DEFAULT_ADMIN_ROLE from Agent.",
             (
                 contracts.allowed_tokens_registry.address,
                 contracts.allowed_tokens_registry.revokeRole.encode_input(
@@ -120,10 +120,10 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
             ),
         ),
         (
-            "Grant permission for EXECUTE_ROLE to DG Executor contract.",
+            "Grant permission for RUN_SCRIPT_ROLE to DG Executor contract.",
             encode_permission_grant(
                 target_app=contracts.agent,
-                permission_name="EXECUTE_ROLE",
+                permission_name="RUN_SCRIPT_ROLE",
                 grant_to=contracts.dual_governance_admin_executor,
             ),
         ),
@@ -137,9 +137,15 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
         (
             "Submit first dual governance proposal",
             (
-                contracts.dual_governance.address,
-                contracts.dual_governance.submitProposal.encode_input(
-                    [(foo_contract.address, 0, foo_contract.bar.encode_input())], "Test proposal"
+                dual_governance_agent_forward(
+                    [(
+                        foo_contract.address,
+                        foo_contract.bar.encode_input()
+                    ),
+                    (
+                        contracts.time_constraints.address,
+                        contracts.time_constraints.checkExecuteWithinDayTime.encode_input(28800, 72000)
+                    )]
                 )
             )
         )
