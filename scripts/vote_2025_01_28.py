@@ -82,14 +82,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 ]
             ),
         ),
-        (
-            "3. Grant STAKING_MODULE_MANAGE_ROLE",
-            agent_forward(
-                [
-                    encode_oz_grant_role(staking_router, "STAKING_MODULE_MANAGE_ROLE", contracts.agent)
-                ]
-            ),
-        ),
+        # (
+            # "3. Grant STAKING_MODULE_MANAGE_ROLE",
+            # agent_forward(
+                # [
+                    # encode_oz_grant_role(staking_router, "STAKING_MODULE_MANAGE_ROLE", contracts.agent)
+                # ]
+            # ),
+        # ),
         (
             "4. Increase share from 1% to 2%",
             agent_forward(
@@ -106,14 +106,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 ]
             ),
         ),
-        (
-            "6. Revoke STAKING_MODULE_MANAGE_ROLE",
-            agent_forward(
-                [
-                    encode_oz_revoke_role(staking_router, "STAKING_MODULE_MANAGE_ROLE", contracts.agent)
-                ]
-            ),
-        ),
+        # (
+            # "6. Revoke STAKING_MODULE_MANAGE_ROLE",
+            # agent_forward(
+                # [
+                    # encode_oz_revoke_role(staking_router, "STAKING_MODULE_MANAGE_ROLE", contracts.agent)
+                # ]
+            # ),
+        # ),
         #
         # II. NO Acquisitions - Bridgetower is now part of Solstice Staking
         #
