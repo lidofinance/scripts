@@ -1,5 +1,5 @@
+from brownie import  reverts # type: ignore
 from typing import Dict, Tuple, List, NamedTuple
-from brownie import  reverts  # type: ignore
 from brownie import convert
 from web3 import Web3
 
@@ -30,11 +30,3 @@ def calc_module_reward_shares(module_id, shares_minted_as_fees):
     module_idx = distribution[1].index(module_id)
     return distribution[2][module_idx] * shares_minted_as_fees // distribution[3]
 
-def update_staking_module(staking_module_id, stake_share_limit,
-                          priority_exit_share_threshold, staking_module_fee,
-                          treasury_fee, max_deposits_per_block,
-                          min_deposit_block_distance) -> Tuple[str, str]:
-    return (contracts.staking_router.address,  contracts.staking_router.updateStakingModule.encode_input(
-        staking_module_id, stake_share_limit, priority_exit_share_threshold, staking_module_fee,
-        treasury_fee, max_deposits_per_block, min_deposit_block_distance
-    ))

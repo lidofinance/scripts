@@ -1,16 +1,14 @@
 """
 Voting 28/01/2025.
 
-I. Community staking module: limit increase + turn off EA mode
-1. Grant MODULE_MANAGER_ROLE
-2. Activate public release mode
-3. Grant STAKING_MODULE_MANAGE_ROLE
-4. Increase share from 1% to 2%
-5. Revoke MODULE_MANAGER_ROLE
-6. Revoke STAKING_MODULE_MANAGE_ROLE
+I. CSM: Enable Permissionless Phase and Increase the Share Limit
+1. Grant MODULE_MANAGER_ROLE on CS Module to Aragon Agent
+2. Activate public release mode on CS Module
+3. Increase stake share limit from 1% to 2% on CS Module
+4. Revoke MODULE_MANAGER_ROLE on CS Module from Aragon Agent
 
-II. NO Acquisitions - Bridgetower is now part of Solstice Staking
-7. Change name of Bridgetower to Solstice
+II. NO Acquisitions: Bridgetower is now part of Solstice Staking
+5. Rename Node Operator ID 17 from BridgeTower to Solstice
 
 """
 
@@ -36,8 +34,6 @@ from utils.config import (
     get_priority_fee,
 )
 
-from utils.staking_module import update_staking_module
-
 from utils.csm import activate_public_release
 
 from utils.agent import agent_forward
@@ -46,11 +42,11 @@ description = """
 1. **Transition Community Staking Module to Permissionless Phase** by activating public release
 and **increasing the share limit** from 1% to 2%,
 as [approved on Snapshot](https://snapshot.org/#/s:lido-snapshot.eth/proposal/0x7cbd5e9cb95bda9581831daf8b0e72d1ad0b068d2cbd3bda2a2f6ae378464f26).
-Items 1-6.
+Items 1-4.
 
 2. **Rename Node Operator ID 17 from BridgeTower to Solstice**
 as [requested on the forum](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/41).
-Item 7.
+Item 5.
 """
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
@@ -61,13 +57,17 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     csm_module_id = 3
     new_stake_share_limit = 200 #2%
     new_priority_exit_share_threshold = 250 #2.5%
+    old_staking_module_fee = 600
+    old_treasury_fee = 400
+    old_max_deposits_per_block = 30
+    old_min_deposit_block_distance = 25
 
     vote_desc_items, call_script_items = zip(
         #
-        # I. Community staking module: limit increase + turn off EA mode
+        # I. CSM: Enable Permissionless Phase and Increase the Share Limit
         #
         (
-            "1. Grant MODULE_MANAGER_ROLE",
+            "1. Grant MODULE_MANAGER_ROLE on CS Module to Aragon Agent",
             agent_forward(
                 [
                     encode_oz_grant_role(csm, "MODULE_MANAGER_ROLE", contracts.agent)
@@ -75,50 +75,36 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "2. Activate public release mode",
+            "2. Activate public release mode on CS Module",
             agent_forward(
                 [
                     activate_public_release(csm.address)
                 ]
             ),
         ),
-        # (
-            # "3. Grant STAKING_MODULE_MANAGE_ROLE",
-            # agent_forward(
-                # [
-                    # encode_oz_grant_role(staking_router, "STAKING_MODULE_MANAGE_ROLE", contracts.agent)
-                # ]
-            # ),
-        # ),
         (
-            "4. Increase share from 1% to 2%",
+            "3. Increase stake share limit from 1% to 2% on CS Module",
             agent_forward(
                 [
-                    update_staking_module(csm_module_id, new_stake_share_limit, new_priority_exit_share_threshold, 600, 400, 30, 25)
+                    update_staking_module(csm_module_id, new_stake_share_limit, new_priority_exit_share_threshold,
+                                          old_staking_module_fee, old_treasury_fee, old_max_deposits_per_block,
+                                          old_min_deposit_block_distance)
                 ]
             ),
         ),
         (
-            "5. Revoke MODULE_MANAGER_ROLE",
+            "4. Revoke MODULE_MANAGER_ROLE on CS Module from Aragon Agent",
             agent_forward(
                 [
                     encode_oz_revoke_role(csm, "MODULE_MANAGER_ROLE", revoke_from=contracts.agent)
                 ]
             ),
         ),
-        # (
-            # "6. Revoke STAKING_MODULE_MANAGE_ROLE",
-            # agent_forward(
-                # [
-                    # encode_oz_revoke_role(staking_router, "STAKING_MODULE_MANAGE_ROLE", contracts.agent)
-                # ]
-            # ),
-        # ),
         #
-        # II. NO Acquisitions - Bridgetower is now part of Solstice Staking
+        # II. NO Acquisitions:  Bridgetower is now part of Solstice Staking
         #
         (
-            "7. Change name of Bridgetower to Solstice",
+            "5. Rename Node Operator ID 17 from BridgeTower to Solstice",
             agent_forward(
                 [
                     encode_set_node_operator_name(
@@ -152,3 +138,12 @@ def main():
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 
     time.sleep(5)  # hack for waiting thread #2.
+
+def update_staking_module(staking_module_id, stake_share_limit,
+                          priority_exit_share_threshold, staking_module_fee,
+                          treasury_fee, max_deposits_per_block,
+                          min_deposit_block_distance) -> Tuple[str, str]:
+    return (contracts.staking_router.address,  contracts.staking_router.updateStakingModule.encode_input(
+        staking_module_id, stake_share_limit, priority_exit_share_threshold, staking_module_fee,
+        treasury_fee, max_deposits_per_block, min_deposit_block_distance
+    ))
