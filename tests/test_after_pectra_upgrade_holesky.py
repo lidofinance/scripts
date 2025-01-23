@@ -1,4 +1,4 @@
-from scripts.after_pectra_upgrade_holesky import start_vote
+from scripts.after_pectra_upgrade import start_vote
 from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS
 from brownie import interface
 from utils.test.tx_tracing_helpers import *

@@ -43,31 +43,8 @@ UNCHANGED_INACTIVITY_PENATIES_AMOUNT_PWEI = 101
 NEW_EXITED_VALIDATORS_PER_DAY_LIMIT = 3600
 NEW_APPEARED_VALIDATORS_PER_DAY_LIMIT = 1800
 
-# Consensus version
-
-AO_CONSENSUS_VERSION = 3
-VEBO_CONSENSUS_VERSION = 3
-CS_FEE_ORACLE_CONSENSUS_VERSION = 2
-
-# CSM
-
 description = """
 """
-
-
-def encode_ao_set_consensus_version() -> Tuple[str, str]:
-    proxy = contracts.accounting_oracle
-    return proxy.address, proxy.setConsensusVersion.encode_input(AO_CONSENSUS_VERSION)
-
-
-def encode_vebo_set_consensus_version() -> Tuple[str, str]:
-    proxy = contracts.validators_exit_bus_oracle
-    return proxy.address, proxy.setConsensusVersion.encode_input(VEBO_CONSENSUS_VERSION)
-
-
-def encode_cs_fee_oracle_set_consensus_version() -> Tuple[str, str]:
-    proxy = contracts.cs_fee_oracle
-    return proxy.address, proxy.setConsensusVersion.encode_input(CS_FEE_ORACLE_CONSENSUS_VERSION)
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[TransactionReceipt]]:

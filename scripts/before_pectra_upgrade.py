@@ -39,20 +39,12 @@ from brownie.network.transaction import TransactionReceipt
 from utils.agent import agent_forward
 from utils.mainnet_fork import pass_and_exec_dao_vote
 
-# Oracle sanity checker params
-
-NEW_INITIAL_SLASHING_AMOUNT_PWEI = 8
-UNCHANGED_INACTIVITY_PENATIES_AMOUNT_PWEI = 101
-NEW_EXITED_VALIDATORS_PER_DAY_LIMIT = 1800
-NEW_APPEARED_VALIDATORS_PER_DAY_LIMIT = 1800
 
 # Consensus version
 
 AO_CONSENSUS_VERSION = 3
 VEBO_CONSENSUS_VERSION = 3
 CS_FEE_ORACLE_CONSENSUS_VERSION = 2
-
-# CSM
 
 description = """
 """
