@@ -43,6 +43,10 @@ def fee_distributor():
 def fee_oracle():
     return contracts.cs_fee_oracle
 
+@pytest.fixture(scope="module")
+def early_adoption():
+    return contracts.cs_early_adoption
+
 
 @pytest.fixture
 def node_operator(csm, accounting) -> int:
@@ -98,8 +102,23 @@ def distribute_reward_tree(node_operator, ref_slot):
 
 
 @pytest.mark.parametrize("address, proof", get_ea_members())
-def test_add_ea_node_operator(csm, accounting, address, proof):
-    csm_add_node_operator(csm, accounting, address, proof)
+def test_add_ea_node_operator(csm, accounting, early_adoption, address, proof):
+    no_id = csm_add_node_operator(csm, accounting, address, proof)
+    no = csm.getNodeOperator(no_id)
+
+    assert no['managerAddress'] == address
+    assert no['rewardAddress'] == address
+    assert accounting.getBondCurveId(no_id) == early_adoption.CURVE_ID()
+
+
+def test_add_node_operator_permissionless(csm, accounting, accounts):
+    address = accounts[8].address
+    no_id = csm_add_node_operator(csm, accounting, address, proof=[])
+    no = csm.getNodeOperator(no_id)
+
+    assert no['managerAddress'] == address
+    assert no['rewardAddress'] == address
+    assert accounting.getBondCurveId(no_id) == accounting.DEFAULT_BOND_CURVE_ID()
 
 
 @pytest.mark.usefixtures("pause_modules")

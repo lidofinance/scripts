@@ -17,6 +17,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     node_operators_registry = interface.NodeOperatorsRegistry("0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5")
     agent = interface.Agent("0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c")
     module_manager_role = "0x79dfcec784e591aafcf60db7db7b029a5c8b12aac4afd4e8c4eb740430405fa6"
+    csm_module_id = 3
     new_stake_share_limit = 200 #2%
     new_priority_exit_share_threshold = 250
     new_name = "Solstice"
@@ -29,18 +30,18 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     old_min_deposit_block_distance = 25
 
     # Agent doesn't have MODULE_MANAGER_ROLE
-    assert csm.hasRole(module_manager_role, agent) == False
+    assert csm.hasRole(module_manager_role, agent) is False
 
     # Public release mode is not active
-    assert csm.publicRelease() == False
+    assert csm.publicRelease() is False
 
     # Check old data
-    assert staking_router.getStakingModule(3)["stakeShareLimit"] == old_stake_share_limit
-    assert staking_router.getStakingModule(3)["priorityExitShareThreshold"] == old_priority_exit_share_threshold
-    assert staking_router.getStakingModule(3)["stakingModuleFee"] == old_staking_module_fee
-    assert staking_router.getStakingModule(3)["treasuryFee"] == old_treasury_fee
-    assert staking_router.getStakingModule(3)["maxDepositsPerBlock"] == old_max_deposits_per_block
-    assert staking_router.getStakingModule(3)["minDepositBlockDistance"] == old_min_deposit_block_distance
+    assert staking_router.getStakingModule(csm_module_id)["stakeShareLimit"] == old_stake_share_limit
+    assert staking_router.getStakingModule(csm_module_id)["priorityExitShareThreshold"] == old_priority_exit_share_threshold
+    assert staking_router.getStakingModule(csm_module_id)["stakingModuleFee"] == old_staking_module_fee
+    assert staking_router.getStakingModule(csm_module_id)["treasuryFee"] == old_treasury_fee
+    assert staking_router.getStakingModule(csm_module_id)["maxDepositsPerBlock"] == old_max_deposits_per_block
+    assert staking_router.getStakingModule(csm_module_id)["minDepositBlockDistance"] == old_min_deposit_block_distance
 
     # Check old name
     assert node_operators_registry.getNodeOperator(17, True)["name"] == old_name
@@ -58,18 +59,18 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     # I. CSM: Enable Permissionless Phase and Increase the Share Limit
     #
     # 2. Activate public release mode on CS Module
-    assert csm.publicRelease() == True
+    assert csm.publicRelease() is True
 
     # 3. Increase stake share limit from 1% to 2% on CS Module
-    assert staking_router.getStakingModule(3)["stakeShareLimit"] == new_stake_share_limit
-    assert staking_router.getStakingModule(3)["priorityExitShareThreshold"] == new_priority_exit_share_threshold
-    assert staking_router.getStakingModule(3)["stakingModuleFee"] == old_staking_module_fee
-    assert staking_router.getStakingModule(3)["treasuryFee"] == old_treasury_fee
-    assert staking_router.getStakingModule(3)["maxDepositsPerBlock"] == old_max_deposits_per_block
-    assert staking_router.getStakingModule(3)["minDepositBlockDistance"] == old_min_deposit_block_distance
+    assert staking_router.getStakingModule(csm_module_id)["stakeShareLimit"] == new_stake_share_limit
+    assert staking_router.getStakingModule(csm_module_id)["priorityExitShareThreshold"] == new_priority_exit_share_threshold
+    assert staking_router.getStakingModule(csm_module_id)["stakingModuleFee"] == old_staking_module_fee
+    assert staking_router.getStakingModule(csm_module_id)["treasuryFee"] == old_treasury_fee
+    assert staking_router.getStakingModule(csm_module_id)["maxDepositsPerBlock"] == old_max_deposits_per_block
+    assert staking_router.getStakingModule(csm_module_id)["minDepositBlockDistance"] == old_min_deposit_block_distance
 
     # 4. Revoke MODULE_MANAGER_ROLE on CS Module from Aragon Agent
-    assert csm.hasRole(module_manager_role, agent) == False
+    assert csm.hasRole(module_manager_role, agent) is False
 
     #
     # II. NO Acquisitions:  Bridgetower is now part of Solstice Staking
