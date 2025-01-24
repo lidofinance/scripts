@@ -83,6 +83,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     evs = group_voting_events(vote_tx)
 
     metadata = find_metadata_by_vote_id(vote_id)
-    assert get_lido_vote_cid_from_str(metadata) == "bafkreigbpza6idonsbsbaj2c75hfopkijcjwiz6yomk3cseqki3fj4ctha"
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreiath3pynqu7vmfb7bsfq2vp6jpqxz54mvfmjp7a6tq3thg6lqvvam"
 
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 5, "Incorrect voting items count"
