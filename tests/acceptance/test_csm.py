@@ -116,7 +116,7 @@ class TestFeeOracle:
         assert fee_oracle.feeDistributor() == CS_FEE_DISTRIBUTOR_ADDRESS
         assert fee_oracle.getContractVersion() == 1
         assert fee_oracle.getConsensusContract() == CS_ORACLE_HASH_CONSENSUS_ADDRESS
-        assert fee_oracle.getConsensusVersion() == 1
+        assert fee_oracle.getConsensusVersion() == 2
         assert fee_oracle.avgPerfLeewayBP() == 500
         assert not fee_oracle.isPaused()
 
@@ -152,10 +152,10 @@ def test_verifier_state(verifier):
     assert verifier.SLOTS_PER_EPOCH() == CHAIN_SLOTS_PER_EPOCH
     print(type(verifier.GI_HISTORICAL_SUMMARIES_PREV()))
     assert verifier.GI_HISTORICAL_SUMMARIES_PREV() == HexString("0x0000000000000000000000000000000000000000000000000000000000003b00", "bytes")
-    assert verifier.GI_HISTORICAL_SUMMARIES_CURR() == HexString("0x0000000000000000000000000000000000000000000000000000000000003b00", "bytes")
+    assert verifier.GI_HISTORICAL_SUMMARIES_CURR() == HexString("0x0000000000000000000000000000000000000000000000000000000000005b00", "bytes")
     assert verifier.GI_FIRST_WITHDRAWAL_PREV() == HexString("0x0000000000000000000000000000000000000000000000000000000000e1c004", "bytes")
-    assert verifier.GI_FIRST_WITHDRAWAL_CURR() == HexString("0x0000000000000000000000000000000000000000000000000000000000e1c004", "bytes")
+    assert verifier.GI_FIRST_WITHDRAWAL_CURR() == HexString("0x000000000000000000000000000000000000000000000000000000000161c004", "bytes")
     assert verifier.GI_FIRST_VALIDATOR_PREV() == HexString("0x0000000000000000000000000000000000000000000000000056000000000028", "bytes")
-    assert verifier.GI_FIRST_VALIDATOR_CURR() == HexString("0x0000000000000000000000000000000000000000000000000056000000000028", "bytes")
+    assert verifier.GI_FIRST_VALIDATOR_CURR() == HexString("0x0000000000000000000000000000000000000000000000000096000000000028", "bytes")
     assert verifier.FIRST_SUPPORTED_SLOT() == 8626176
-    assert verifier.PIVOT_SLOT() == 8626176
+    assert verifier.PIVOT_SLOT() == 18446744073709551615 # TODO: Update with Electra slot.

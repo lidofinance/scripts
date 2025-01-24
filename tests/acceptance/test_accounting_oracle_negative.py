@@ -121,7 +121,7 @@ def test_setConsensusVersion(accounting_oracle: Contract, aragon_agent: Account)
 
     with reverts(encode_error("VersionCannotBeSame()")):
         accounting_oracle.setConsensusVersion(
-            accounting_oracle.getContractVersion(),
+            accounting_oracle.getConsensusVersion(),
             {"from": aragon_agent},
         )
 
