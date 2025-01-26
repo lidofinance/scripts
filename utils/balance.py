@@ -21,7 +21,7 @@ def set_balance_in_wei(address, balance):
         time.sleep(2)
 
     if account.balance() != balance:
-        web3.provider.make_request("evm_mine", [{"blocks": 5}])
+        web3.provider.make_request("evm_mine", [{blocks: 5}])
 
     if account.balance() != balance:
         time.sleep(2)
