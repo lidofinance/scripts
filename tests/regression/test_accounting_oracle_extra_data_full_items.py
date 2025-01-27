@@ -154,6 +154,7 @@ def test_extra_data_full_items(
         extraDataList=extra_data.extra_data_list,
         stakingModuleIdsWithNewlyExitedValidators=modules_with_exited,
         numExitedValidatorsByStakingModule=num_exited_validators_by_staking_module,
+        skip_withdrawals=True,
     )
 
     nor_distribute_reward_tx = distribute_reward(nor, stranger)
