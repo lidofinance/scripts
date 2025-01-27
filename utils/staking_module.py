@@ -1,5 +1,4 @@
 from brownie import  reverts  # type: ignore
-from typing import Dict, Tuple, List, NamedTuple
 from brownie import convert
 from web3 import Web3
 
