@@ -9,6 +9,10 @@ from utils.test.tx_tracing_helpers import *
 from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
+from utils.test.event_validators.csm import validate_public_release_event
+from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
+from utils.test.event_validators.node_operators_registry import validate_node_operator_name_set_event, NodeOperatorNameSetItem
+from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 
 def test_vote(helpers, accounts, vote_ids_from_env, stranger):
 
@@ -83,6 +87,30 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     evs = group_voting_events(vote_tx)
 
     metadata = find_metadata_by_vote_id(vote_id)
-    assert get_lido_vote_cid_from_str(metadata) == "bafkreiath3pynqu7vmfb7bsfq2vp6jpqxz54mvfmjp7a6tq3thg6lqvvam"
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreierrixpk7pszth7pkgau7iyhb4mxolskst62oyfat3ltfrnh355ty"
 
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 5, "Incorrect voting items count"
+
+    # validate events
+    validate_grant_role_event(evs[0], module_manager_role, agent.address, agent.address)
+
+    validate_public_release_event(evs[1])
+
+    expected_staking_module_item = StakingModuleItem(
+        id=csm_module_id,
+        name="Community Staking",
+        address=None,
+        target_share=new_stake_share_limit,
+        module_fee=old_staking_module_fee,
+        treasury_fee=old_treasury_fee,
+    )
+
+    validate_staking_module_update_event(evs[2], expected_staking_module_item)
+
+    validate_revoke_role_event(evs[3], module_manager_role, agent.address, agent.address)
+
+    expected_node_operator_item = NodeOperatorNameSetItem(
+        nodeOperatorId=17,
+        name="Solstice",
+    )
+    validate_node_operator_name_set_event(evs[4], expected_node_operator_item)
