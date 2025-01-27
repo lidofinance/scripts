@@ -121,6 +121,34 @@ def test_add_node_operator_permissionless(csm, accounting, accounts):
     assert accounting.getBondCurveId(no_id) == accounting.DEFAULT_BOND_CURVE_ID()
 
 
+def test_add_node_operator_keys_more_than_limit(csm, accounting):
+    address, proof = get_ea_member()
+    keys_count = csm.MAX_SIGNING_KEYS_PER_OPERATOR_BEFORE_PUBLIC_RELEASE() + 1
+    no_id = csm_add_node_operator(csm, accounting, address, proof, keys_count=keys_count)
+    no = csm.getNodeOperator(no_id)
+
+    assert no["totalAddedKeys"] == keys_count
+
+
+def test_add_node_operator_permissionless_keys_more_than_limit(csm, accounting, accounts):
+    keys_count = csm.MAX_SIGNING_KEYS_PER_OPERATOR_BEFORE_PUBLIC_RELEASE() + 1
+    address = accounts[8].address
+    no_id = csm_add_node_operator(csm, accounting, address, proof=[], keys_count=keys_count)
+    no = csm.getNodeOperator(no_id)
+
+    assert no["totalAddedKeys"] == keys_count
+
+
+def test_upload_keys_more_than_limit(csm, accounting, node_operator):
+    no = csm.getNodeOperator(node_operator)
+    keys_before = no["totalAddedKeys"]
+    keys_count = csm.MAX_SIGNING_KEYS_PER_OPERATOR_BEFORE_PUBLIC_RELEASE() - keys_before + 1
+    csm_upload_keys(csm, accounting, node_operator, keys_count)
+
+    no = csm.getNodeOperator(node_operator)
+    assert no["totalAddedKeys"] == keys_count + keys_before
+
+
 @pytest.mark.usefixtures("pause_modules")
 def test_deposit(node_operator, csm):
     (_, _, depositable_validators_count) = csm.getStakingModuleSummary()
