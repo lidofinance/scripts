@@ -7,7 +7,7 @@ from utils.evm_script import encode_error
 from tests.conftest import Helpers
 from utils.config import contracts
 from utils.test.deposits_helpers import fill_deposit_buffer
-from utils.test.helpers import ETH, GWEI, ZERO_ADDRESS, almostEqWithDiff, eth_balance
+from utils.test.helpers import ETH, GWEI, ZERO_ADDRESS, almostEqWithDiff, eth_balance, round_to_gwei
 from utils.test.oracle_report_helpers import ONE_DAY, SHARE_RATE_PRECISION, oracle_report
 from utils.test.csm_helpers import csm_add_node_operator, get_ea_member
 from utils.config import (
