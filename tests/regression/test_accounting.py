@@ -7,7 +7,7 @@ from utils.evm_script import encode_error
 from tests.conftest import Helpers
 from utils.config import contracts
 from utils.test.deposits_helpers import fill_deposit_buffer
-from utils.test.helpers import ETH, GWEI, ZERO_ADDRESS, almostEqWithDiff, eth_balance
+from utils.test.helpers import ETH, GWEI, ZERO_ADDRESS, almostEqWithDiff, eth_balance, round_to_gwei
 from utils.test.oracle_report_helpers import ONE_DAY, SHARE_RATE_PRECISION, oracle_report
 from utils.test.csm_helpers import csm_add_node_operator, get_ea_member
 from utils.config import (
@@ -157,7 +157,7 @@ def test_accounting_cl_rebase_at_limits(accounting_oracle: Contract, lido: Contr
     pre_cl_balance = contracts.lido.getBeaconStat()[-1]
 
     rebase_amount = (annual_increase_limit * ONE_DAY + 1) * pre_cl_balance // (365 * ONE_DAY) // MAX_BASIS_POINTS
-    rebase_amount = _round_to_gwei(rebase_amount)
+    rebase_amount = round_to_gwei(rebase_amount)
 
     tx, _ = oracle_report(cl_diff=rebase_amount, exclude_vaults_balances=True)
     block_after_report = chain.height
@@ -944,12 +944,6 @@ def _shares_rate_from_event(tx) -> tuple[int, int]:
         token_rebased_event["preTotalEther"] * SHARE_RATE_PRECISION // token_rebased_event["preTotalShares"],
         token_rebased_event["postTotalEther"] * SHARE_RATE_PRECISION // token_rebased_event["postTotalShares"],
     )
-
-
-def _round_to_gwei(amount: int) -> int:
-    """Round amount to gwei"""
-
-    return amount // GWEI * GWEI
 
 
 def _drain_eth(address: str):

@@ -7,7 +7,7 @@ from utils.test.oracle_report_helpers import (
     oracle_report,
 )
 
-from utils.test.helpers import ETH
+from utils.test.helpers import ETH, round_to_gwei
 from utils.config import (
     contracts,
 )
@@ -102,13 +102,14 @@ def test_blocked_huge_negative_rebase(oracle_report_sanity_checker):
         * ONE_PWEI
         * (cl_validators - stored_exited_validators)
     )
-    error_cl_decrease = cl_balance // 10  # 10% of current balance will lead to error
+    error_cl_decrease = round_to_gwei(cl_balance // 10)  # 10% of current balance will lead to error
 
     print(encode_error("IncorrectCLBalanceDecrease(uint256, uint256)", [error_cl_decrease, max_cl_balance]))
     with reverts(encode_error("IncorrectCLBalanceDecrease(uint256, uint256)", [error_cl_decrease, max_cl_balance])):
         oracle_report(
             cl_diff=-error_cl_decrease,
             exclude_vaults_balances=True,
+            skip_withdrawals=True,
             simulation_block_identifier=chain.height,
             silent=True,
         )
