@@ -43,6 +43,10 @@ def fee_distributor():
 def fee_oracle():
     return contracts.cs_fee_oracle
 
+@pytest.fixture(scope="module")
+def early_adoption():
+    return contracts.cs_early_adoption
+
 
 @pytest.fixture
 def node_operator(csm, accounting) -> int:
@@ -98,8 +102,51 @@ def distribute_reward_tree(node_operator, ref_slot):
 
 
 @pytest.mark.parametrize("address, proof", get_ea_members())
-def test_add_ea_node_operator(csm, accounting, address, proof):
-    csm_add_node_operator(csm, accounting, address, proof)
+def test_add_ea_node_operator(csm, accounting, early_adoption, address, proof):
+    no_id = csm_add_node_operator(csm, accounting, address, proof)
+    no = csm.getNodeOperator(no_id)
+
+    assert no['managerAddress'] == address
+    assert no['rewardAddress'] == address
+    assert accounting.getBondCurveId(no_id) == early_adoption.CURVE_ID()
+
+
+def test_add_node_operator_permissionless(csm, accounting, accounts):
+    address = accounts[8].address
+    no_id = csm_add_node_operator(csm, accounting, address, proof=[])
+    no = csm.getNodeOperator(no_id)
+
+    assert no['managerAddress'] == address
+    assert no['rewardAddress'] == address
+    assert accounting.getBondCurveId(no_id) == accounting.DEFAULT_BOND_CURVE_ID()
+
+
+def test_add_node_operator_keys_more_than_limit(csm, accounting):
+    address, proof = get_ea_member()
+    keys_count = csm.MAX_SIGNING_KEYS_PER_OPERATOR_BEFORE_PUBLIC_RELEASE() + 1
+    no_id = csm_add_node_operator(csm, accounting, address, proof, keys_count=keys_count)
+    no = csm.getNodeOperator(no_id)
+
+    assert no["totalAddedKeys"] == keys_count
+
+
+def test_add_node_operator_permissionless_keys_more_than_limit(csm, accounting, accounts):
+    keys_count = csm.MAX_SIGNING_KEYS_PER_OPERATOR_BEFORE_PUBLIC_RELEASE() + 1
+    address = accounts[8].address
+    no_id = csm_add_node_operator(csm, accounting, address, proof=[], keys_count=keys_count)
+    no = csm.getNodeOperator(no_id)
+
+    assert no["totalAddedKeys"] == keys_count
+
+
+def test_upload_keys_more_than_limit(csm, accounting, node_operator):
+    no = csm.getNodeOperator(node_operator)
+    keys_before = no["totalAddedKeys"]
+    keys_count = csm.MAX_SIGNING_KEYS_PER_OPERATOR_BEFORE_PUBLIC_RELEASE() - keys_before + 1
+    csm_upload_keys(csm, accounting, node_operator, keys_count)
+
+    no = csm.getNodeOperator(node_operator)
+    assert no["totalAddedKeys"] == keys_count + keys_before
 
 
 @pytest.mark.usefixtures("pause_modules")
