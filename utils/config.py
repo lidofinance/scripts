@@ -390,7 +390,7 @@ class ContractsLazyLoader:
     @property
     def token_rate_notifier(self) -> interface.TokenRateNotifier:
         return interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)
-    
+
     @property
     def allowed_tokens_registry(self) -> interface.AllowedTokensRegistry:
         return interface.AllowedTokensRegistry(EASYTRACK_ALLOWED_TOKENS_REGISTRY)
@@ -402,10 +402,6 @@ class ContractsLazyLoader:
     @property
     def dual_governance_admin_executor(self) -> interface.DualGovernanceAdminExecutor:
         return interface.DualGovernanceAdminExecutor(DUAL_GOVERNANCE_ADMIN_EXECUTOR)
-
-    @property
-    def dual_governance_verifier(self) -> interface.DualGovernanceVerifier:
-        return interface.DualGovernanceVerifier(DUAL_GOVERNANCE_VERIFIER)
 
     @property
     def time_constraints(self) -> interface.TimeConstraints:
