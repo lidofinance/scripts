@@ -129,13 +129,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
             ),
         ),
         (
-            "Verify dual governance deployment",
-            (
-                contracts.dual_governance_verifier.address,
-                contracts.dual_governance_verifier.verify.encode_input(tuple(dual_governance_contracts.values()), True),
-            ),
-        ),
-        (
             "Verifiy transferred roles",
             (
                 roles_verifier.address,
