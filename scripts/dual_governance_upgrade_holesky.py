@@ -32,22 +32,13 @@ description = "Holesky dual governance upgrade dry-run"
 
 dual_governance_contracts = {
     "adminExecutor": "0x936C1dC7d5fAD05E5aD9aBc48b4ab09B88850f04",
-    "timelock": "0x388AB7b65605e21a75Bb50E24a1eA43DD0091fa5",
-    "emergencyGovernance": "0xd67d96C6C4DF1eF12c2fb4C908a9484333cEfE60",
-    "resealManager": "0x632c29848A379a7B30Ee6461ea5e7e1e92d264d0",
     "dualGovernance": "0x9F14118Fc548658660a40B351C782a22e9937b42",
-    "tiebreakerCoreCommittee": "0x6093B9b951C72498EE799639D74dC701Ead3f07B",
-    "tiebreakerSubCommitteeInfluencers": "0x8F4b730099BFcA35fa4bbFD84f790eD34CAa246f",
-    "tiebreakerSubCommitteeNodeOperators": "0xBB259276147Af98c0e9186e783D4dbC26e82652F",
-    "tiebreakerSubCommitteeProtocols": "0x485349eBc3241e0bE8eDf7149C535c0b42Fa9504",
-    "temporaryEmergencyGovernance": "0xc7467FeFF717C18db08BAEF252f11A84F48e8fF7",
-    # "EMERGENCY_ACTIVATION_COMMITTEE": "0x526d46eCa1d7969924e981ecDbcAa74e9f0EE566",
-    # "EMERGENCY_EXECUTION_COMMITTEE": "0x526d46eCa1d7969924e981ecDbcAa74e9f0EE566",
+    "resealManager": "0x632c29848A379a7B30Ee6461ea5e7e1e92d264d0",
 }
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False):
     foo_contract = interface.Foo("0xC3fc22C7e0d20247B797fb6dc743BD3879217c81")
-    roles_verifier = interface.RolesVerifier("0xe0144de0e89390dc469425f471527d9d6bc98b05")
+    roles_validator = interface.RolesValidator("0x0F8826a574BCFDC4997939076f6D82877971feB3")
 
     vote_desc_items, call_script_items = zip(
         (
@@ -125,14 +116,16 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
             encode_permission_grant(
                 target_app=contracts.agent,
                 permission_name="RUN_SCRIPT_ROLE",
-                grant_to=contracts.dual_governance_admin_executor,
+                grant_to=dual_governance_contracts["adminExecutor"],
             ),
         ),
         (
-            "Verifiy transferred roles",
+            "Validate transferred roles",
             (
-                roles_verifier.address,
-                roles_verifier.verify.encode_input()
+                roles_validator.address,
+                roles_validator.validate.encode_input(
+                    dual_governance_contracts['adminExecutor'], dual_governance_contracts['resealManager']
+                ),
             )
         ),
         (

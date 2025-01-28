@@ -18,7 +18,7 @@ from utils.permissions import (
     encode_permission_grant,
 )
 from utils.mainnet_fork import pass_and_exec_dao_vote
-from dual_governance_upgrade_holesky import dual_governance_contracts
+from scripts.dual_governance_upgrade_holesky import dual_governance_contracts
 
 
 try:
