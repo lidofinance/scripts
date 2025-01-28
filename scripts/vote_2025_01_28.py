@@ -39,7 +39,7 @@ from utils.csm import activate_public_release
 from utils.agent import agent_forward
 
 description = """
-1. **Transition Community Staking Module to Permissionless Phase** by activating public release and **increasing the share limit** from 1% to 2%, as [approved on Snapshot](https://snapshot.org/#/s:lido-snapshot.eth/proposal/0x7cbd5e9cb95bda9581831daf8b0e72d1ad0b068d2cbd3bda2a2f6ae378464f26). Alongside the share limit, [it is proposed](https://research.lido.fi/t/community-staking-module/5917/86) to **raise the priority exit share threshold **from 1.25% to 2.5% to maintain parameter ratios. Items 1-4.
+1. **Transition Community Staking Module to Permissionless Phase** by activating public release and **increasing the share limit** from 1% to 2%, as [approved on Snapshot](https://snapshot.org/#/s:lido-snapshot.eth/proposal/0x7cbd5e9cb95bda9581831daf8b0e72d1ad0b068d2cbd3bda2a2f6ae378464f26). Alongside the share limit, [it is proposed](https://research.lido.fi/t/community-staking-module/5917/86) to **raise the priority exit share threshold** from 1.25% to 2.5% to maintain parameter ratios. Items 1-4.
 
 2. **Rename Node Operator ID 17 from BridgeTower to Solstice** as [requested on the forum](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/41). Item 5.
 """

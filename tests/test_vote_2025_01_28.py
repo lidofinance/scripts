@@ -87,7 +87,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     evs = group_voting_events(vote_tx)
 
     metadata = find_metadata_by_vote_id(vote_id)
-    assert get_lido_vote_cid_from_str(metadata) == "bafkreierrixpk7pszth7pkgau7iyhb4mxolskst62oyfat3ltfrnh355ty"
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreibwdmoq2ofckfsg3kgvwthyvyj3ey6zgoag4nzb2evf6djg75se6y"
 
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 5, "Incorrect voting items count"
 
@@ -103,6 +103,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
         target_share=new_stake_share_limit,
         module_fee=old_staking_module_fee,
         treasury_fee=old_treasury_fee,
+        priority_exit_share=new_priority_exit_share_threshold,
     )
 
     validate_staking_module_update_event(evs[2], expected_staking_module_item)
