@@ -31,9 +31,9 @@ except ImportError:
 description = "Holesky dual governance upgrade dry-run"
 
 dual_governance_contracts = {
-    "adminExecutor": "0x936C1dC7d5fAD05E5aD9aBc48b4ab09B88850f04",
-    "dualGovernance": "0x9F14118Fc548658660a40B351C782a22e9937b42",
-    "resealManager": "0x632c29848A379a7B30Ee6461ea5e7e1e92d264d0",
+    "dualGovernance": "0xb291a7f092D5cCE0A3C93eA21Bda3431129dB202",
+    "adminExecutor": "0xD5EE9991f44b36E186A658dc2A0357EcCf11b69B",
+    "resealManager": "0xc2764655e3fe0bd2D3C710D74Fa5a89162099FD8",
 }
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False):
