@@ -138,7 +138,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "8. Update CSFeeOracle consensus version to 3",
+            "8. Update CSFeeOracle consensus version to 2",
             agent_forward([encode_cs_fee_oracle_set_consensus_version()]),
         ),
         (
