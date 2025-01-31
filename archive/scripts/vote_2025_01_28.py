@@ -10,6 +10,8 @@ I. CSM: Enable Permissionless Phase and Increase the Share Limit
 II. NO Acquisitions: Bridgetower is now part of Solstice Staking
 5. Rename Node Operator ID 17 from BridgeTower to Solstice
 
+Vote# 183 passed & executed on 31/01/2024 at 14:57 UTC, block #21745254.
+
 """
 
 import time
