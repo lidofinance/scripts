@@ -1,7 +1,3 @@
-"""
-Tests for voting 23/07/2024.
-"""
-
 from scripts.dual_governance_upgrade_holesky import start_vote, dual_governance_contracts
 from utils.config import contracts
 from utils.test.tx_tracing_helpers import *
