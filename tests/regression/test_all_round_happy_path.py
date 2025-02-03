@@ -7,6 +7,7 @@ from utils.test.helpers import ETH, almostEqEth
 from utils.config import contracts
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
 from utils.balance import set_balance
+from utils.test.staking_router_helpers import set_staking_module_status, StakingModuleStatus
 from utils.test.tx_cost_helper import transaction_cost
 
 def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
@@ -108,8 +109,14 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     assert contracts.lido.getDepositableEther() == buffered_ether_after_submit - withdrawal_unfinalized_steth
 
+    # pausing csm due to very high amount of keys in the queue
+    csm_module_id = 3
+    set_staking_module_status(csm_module_id, StakingModuleStatus.Stopped)
+
     deposit_tx_nor = contracts.lido.deposit(max_deposit, curated_module_id, "0x0", {"from": dsm})
     deposit_tx_sdvt = contracts.lido.deposit(max_deposit, simple_dvt_module_id, "0x0", {"from": dsm})
+
+    set_staking_module_status(csm_module_id, StakingModuleStatus.Active)
 
     buffered_ether_after_deposit = contracts.lido.getBufferedEther()
 

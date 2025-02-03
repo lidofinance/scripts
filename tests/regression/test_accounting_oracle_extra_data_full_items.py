@@ -14,6 +14,7 @@ from utils.test.node_operators_helpers import distribute_reward
 
 from utils.config import MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION, MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM
 from utils.config import contracts
+from utils.test.staking_router_helpers import increase_staking_module_share
 
 NEW_KEYS_PER_OPERATOR = 2
 
@@ -234,6 +235,7 @@ def test_extra_data_most_expensive_report(extra_data_service):
     An estimate for 8 * 24 items:
     Gas used: 11850807 (39.50%)
     """
+    increase_staking_module_share(module_id=3, share_multiplier=2)
 
     csm_operators_count = MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION * MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM
     # create or ensure there are max node operators with 1 depositable key
