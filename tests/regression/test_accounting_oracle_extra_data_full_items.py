@@ -218,6 +218,7 @@ def test_extra_data_full_items(
         assert contracts.csm.getNodeOperatorSummary(i)["stuckValidatorsCount"] == csm_stuck[(3, i)]
 
 
+@pytest.mark.skip("This is a heavy test. Make sure to run it only if there are changes in the Staking Router or CSM contracts")
 def test_extra_data_most_expensive_report(extra_data_service):
     """
     Make sure the worst report fits into the block gas limit.
