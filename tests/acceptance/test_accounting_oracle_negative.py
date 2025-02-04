@@ -80,6 +80,8 @@ def test_submitConsensusReport(accounting_oracle: Contract, hash_consensus: Cont
             {"from": hash_consensus},
         )
 
+    # ensure the brownie time offset is correct, and time synced with the chain
+    chain.sleep(1)
 
     with reverts(encode_error("HashCannotBeZero()")):
         accounting_oracle.submitConsensusReport(
