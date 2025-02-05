@@ -1,8 +1,21 @@
-from scripts.before_pectra_upgrade import start_vote
-from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS
-from brownie import interface
+from scripts.before_pectra_upgrade_holesky import (
+    start_vote,
+    OLD_GATE_SEAL,
+    NEW_GATE_SEAL,
+    NEW_VOTE_DURATION,
+    NEW_OBJECTION_PHASE_DURATION
+)
+from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS
+from brownie import interface, Contract
 from utils.test.tx_tracing_helpers import *
-from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
+from utils.test.event_validators.permission import (
+    Permission,
+    validate_permission_grant_event,
+    validate_permission_revoke_event,
+    validate_grant_role_event,
+    validate_revoke_role_event,
+)
+from utils.test.event_validators.voting import validate_change_vote_time_event, validate_change_objection_time_event
 from utils.test.event_validators.common import validate_events_chain
 
 # Contracts
@@ -18,7 +31,7 @@ CSM_ADDRESS = "0x4562c3e63c2e586cD1651B958C22F88135aCAd4f"
 # Roles
 MANAGE_CONSENSUS_VERSION_ROLE = "0xc31b1e4b732c5173dc51d519dfa432bad95550ecc4b0f9a61c2a558a2a8e4341"
 VERIFIER_ROLE = "0x0ce23c3e399818cfee81a7ab0880f714e53d7672b08df0fa62f2843416e1ea09"
-
+PAUSE_ROLE = "0x139c2898040ef16910dc9f44dc697df79363da767d8bc92f2e310312b816e46d"
 
 # New values
 
@@ -28,7 +41,6 @@ AO_CONSENSUS_VERSION = 3
 VEBO_CONSENSUS_VERSION = 3
 # CS Fee oracle
 CS_FEE_ORACLE_CONSENSUS_VERSION = 2
-
 
 def get_vebo():
     return interface.ValidatorsExitBusOracle(VALIDATORS_EXIT_BUS_ORACLE)
@@ -48,6 +60,20 @@ def get_voting():
 
 def get_csm():
     return interface.CSModule(CSM_ADDRESS)
+
+
+def _check_role(contract: Contract, role: str, holder: str):
+    role_bytes = web3.keccak(text=role).hex()
+    assert contract.getRoleMemberCount(role_bytes) == 1, f"Role {role} on {contract} should have exactly one holder"
+    assert contract.getRoleMember(role_bytes, 0) == holder, f"Role {role} holder on {contract} should be {holder}"
+
+
+def _check_no_role(contract: Contract, role: str, holder: str):
+    role_bytes = web3.keccak(text=role).hex()
+    assert contract.getRoleMemberCount(role_bytes) == 1, f"Role {role} on {contract} should have exactly one holder"
+    assert (
+        not contract.getRoleMember(role_bytes, 0).lower() == holder.lower()
+    ), f"Role {role} holder on {contract} should be {holder}"
 
 
 def check_aragon_doesnt_have_manage_consensus_role_on_oracle(oracle):
@@ -78,6 +104,16 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     assert csm.hasRole(VERIFIER_ROLE, CS_VERIFIER_ADDRESS_OLD)
     # 11) New CS Verifier doesnt have VERIFIER_ROLE role on CSM before voting
     assert not csm.hasRole(VERIFIER_ROLE, CS_VERIFIER_ADDRESS)
+
+    # On-chain voting duration state before voting
+    assert contracts.voting.voteTime() == 900
+    assert contracts.voting.objectionPhaseTime() == 300
+
+    # Check GateSeal state before voting
+    _check_role(contracts.withdrawal_queue, "PAUSE_ROLE", OLD_GATE_SEAL)
+    _check_role(vebo, "PAUSE_ROLE", OLD_GATE_SEAL)
+    _check_no_role(contracts.withdrawal_queue, "PAUSE_ROLE", NEW_GATE_SEAL)
+    _check_no_role(vebo, "PAUSE_ROLE", NEW_GATE_SEAL)
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -112,11 +148,21 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
 
     # check verifier epoch
 
+    # Check voting duration changed properly
+    assert contracts.voting.voteTime() == NEW_VOTE_DURATION
+    assert contracts.voting.objectionPhaseTime() == NEW_OBJECTION_PHASE_DURATION
+
+    # Check GateSeal updated properly
+    _check_no_role(contracts.withdrawal_queue, "PAUSE_ROLE", OLD_GATE_SEAL)
+    _check_no_role(vebo, "PAUSE_ROLE", OLD_GATE_SEAL)
+    _check_role(contracts.withdrawal_queue, "PAUSE_ROLE", NEW_GATE_SEAL)
+    _check_role(vebo, "PAUSE_ROLE", NEW_GATE_SEAL)
+
     # Events check
     display_voting_events(vote_tx)
     events = group_voting_events(vote_tx)
 
-    assert len(events) == 11
+    assert len(events) == 20
 
     # Validate ao consensus version set
     validate_consensus_version_update(events[:3], AO_CONSENSUS_VERSION)
@@ -142,6 +188,28 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
         CS_VERIFIER_ADDRESS,
         AGENT,
     )
+
+    permission = Permission(
+        entity=contracts.voting.address,
+        app=contracts.voting.address,
+        role=contracts.voting.UNSAFELY_MODIFY_VOTE_TIME_ROLE(),
+    )
+    validate_permission_grant_event(events[12], permission)
+    validate_change_vote_time_event(events[13], NEW_VOTE_DURATION)
+    validate_change_objection_time_event(events[14], NEW_OBJECTION_PHASE_DURATION)
+    validate_permission_revoke_event(events[15], permission)
+
+    # Grant PAUSE_ROLE on WithdrawalQueue for the new GateSeal
+    validate_grant_role_event(events[16], PAUSE_ROLE, NEW_GATE_SEAL, contracts.agent)
+
+    # Grant PAUSE_ROLE on ValidatorExitBusOracle for the new GateSeal
+    validate_grant_role_event(events[17], PAUSE_ROLE, NEW_GATE_SEAL, contracts.agent)
+
+    # Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
+    validate_revoke_role_event(events[18], PAUSE_ROLE, OLD_GATE_SEAL, contracts.agent)
+
+    # Revoke PAUSE_ROLE on ValidatorExitBusOracle from the old GateSeal
+    validate_revoke_role_event(events[19], PAUSE_ROLE, OLD_GATE_SEAL, contracts.agent)
 
 
 # Events check
