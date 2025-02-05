@@ -275,8 +275,7 @@ def test_csm_get_staking_module_summary(csm, accounting, node_operator, extra_da
     increase_staking_module_share(module_id=CSM_MODULE_ID, share_multiplier=2)
 
     fill_deposit_buffer(deposits_count)
-    for i in range(0, deposits_count, MAX_DEPOSITS):
-        contracts.lido.deposit(MAX_DEPOSITS, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
+    contracts.lido.deposit(deposits_count, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
 
     (exited_after, deposited_after, depositable_after) = contracts.staking_router.getStakingModuleSummary(CSM_MODULE_ID)
 
