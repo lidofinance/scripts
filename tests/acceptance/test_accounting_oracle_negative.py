@@ -22,6 +22,8 @@ from utils.test.oracle_report_helpers import (
 NON_ZERO_HASH = ZERO_HASH[:-1] + b"\x01"
 FIELDS_WIDTH = ExtraDataLengths
 
+def chain_time_with_offset(offset: int) -> int:
+    return chain.time() + offset
 
 def test_sender_not_allowed(accounting_oracle: Contract, oracle_version: int, stranger: Account) -> None:
     report = oracle_report(dry_run=True)
@@ -80,14 +82,12 @@ def test_submitConsensusReport(accounting_oracle: Contract, hash_consensus: Cont
             {"from": hash_consensus},
         )
 
-    # ensure the brownie time offset is correct, and time synced with the chain
-    chain.sleep(1)
-
     with reverts(encode_error("HashCannotBeZero()")):
         accounting_oracle.submitConsensusReport(
             ZERO_HASH,
             last_processing_ref_slot + 1,
-            chain.time(),
+            # Add a few seconds of offset to account for slow block mining.
+            chain_time_with_offset(3),
             {"from": hash_consensus},
         )
 
