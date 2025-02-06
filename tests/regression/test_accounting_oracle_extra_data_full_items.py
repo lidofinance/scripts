@@ -14,6 +14,7 @@ from utils.test.node_operators_helpers import distribute_reward
 
 from utils.config import MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION, MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM
 from utils.config import contracts
+from utils.test.staking_router_helpers import increase_staking_module_share
 
 NEW_KEYS_PER_OPERATOR = 2
 
@@ -154,6 +155,7 @@ def test_extra_data_full_items(
         extraDataList=extra_data.extra_data_list,
         stakingModuleIdsWithNewlyExitedValidators=modules_with_exited,
         numExitedValidatorsByStakingModule=num_exited_validators_by_staking_module,
+        skip_withdrawals=True,
     )
 
     nor_distribute_reward_tx = distribute_reward(nor, stranger)
@@ -216,6 +218,7 @@ def test_extra_data_full_items(
         assert contracts.csm.getNodeOperatorSummary(i)["stuckValidatorsCount"] == csm_stuck[(3, i)]
 
 
+@pytest.mark.skip("This is a heavy test. Make sure to run it only if there are changes in the Staking Router or CSM contracts")
 def test_extra_data_most_expensive_report(extra_data_service):
     """
     Make sure the worst report fits into the block gas limit.
@@ -233,6 +236,7 @@ def test_extra_data_most_expensive_report(extra_data_service):
     An estimate for 8 * 24 items:
     Gas used: 11850807 (39.50%)
     """
+    increase_staking_module_share(module_id=3, share_multiplier=2)
 
     csm_operators_count = MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION * MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM
     # create or ensure there are max node operators with 1 depositable key

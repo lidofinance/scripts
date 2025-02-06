@@ -486,8 +486,17 @@ def collect_permissions_from_events(permission_events):
     return apps
 
 
+def get_http_w3_provider_url():
+    if os.getenv("WEB3_INFURA_PROJECT_ID") is not None:
+        return f'https://mainnet.infura.io/v3/{os.getenv("WEB3_INFURA_PROJECT_ID")}'
+
+    if os.getenv("WEB3_ALCHEMY_PROJECT_ID") is not None:
+        return f'https://eth-mainnet.g.alchemy.com/v2/{os.getenv("WEB3_ALCHEMY_PROJECT_ID")}'
+
+    assert False, 'Web3 HTTP Provider token env var not found'
+
 def active_aragon_roles(protocol_permissions):
-    w3 = Web3(Web3.HTTPProvider(f'https://mainnet.infura.io/v3/{os.getenv("WEB3_INFURA_PROJECT_ID")}'))
+    w3 = Web3(Web3.HTTPProvider(get_http_w3_provider_url()))
 
     event_signature_hash = w3.keccak(text="SetPermission(address,address,bytes32,bool)").hex()
 

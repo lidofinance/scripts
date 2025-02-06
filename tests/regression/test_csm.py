@@ -1,6 +1,6 @@
 import pytest
 
-from brownie import reverts, web3, ZERO_ADDRESS
+from brownie import reverts, web3, ZERO_ADDRESS, accounts
 
 from utils.balance import set_balance_in_wei
 from utils.config import (
@@ -17,11 +17,15 @@ from utils.test.oracle_report_helpers import (
     oracle_report, wait_to_next_available_report_time, prepare_csm_report,
     reach_consensus,
 )
-from utils.test.staking_router_helpers import set_staking_module_status, StakingModuleStatus
+from utils.test.staking_router_helpers import (
+    set_staking_module_status, StakingModuleStatus,
+    increase_staking_module_share,
+)
 
 contracts: ContractsLazyLoader = contracts
 
 CSM_MODULE_ID = 3
+MAX_DEPOSITS = 50
 
 
 @pytest.fixture(scope="module")
@@ -44,6 +48,11 @@ def fee_oracle():
     return contracts.cs_fee_oracle
 
 
+@pytest.fixture(scope="module")
+def early_adoption():
+    return contracts.cs_early_adoption
+
+
 @pytest.fixture
 def node_operator(csm, accounting) -> int:
     address, proof = get_ea_member()
@@ -59,12 +68,18 @@ def pause_modules():
         if module[0] != CSM_MODULE_ID:
             set_staking_module_status(module[0], StakingModuleStatus.Stopped)
 
+@pytest.fixture
+def remove_stake_limit():
+    contracts.lido.removeStakingLimit({"from": accounts.at(contracts.voting, force=True)})
+
 
 @pytest.fixture
-def deposits_to_csm(csm, pause_modules, node_operator):
+def deposits_to_csm(csm, pause_modules, node_operator, remove_stake_limit):
     (_, _, depositable) = csm.getStakingModuleSummary()
     fill_deposit_buffer(depositable)
-    contracts.lido.deposit(depositable, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
+    increase_staking_module_share(module_id=CSM_MODULE_ID, share_multiplier=2)
+    for i in range(0, depositable, MAX_DEPOSITS):
+        contracts.lido.deposit(MAX_DEPOSITS, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
 
 
 @pytest.fixture
@@ -98,17 +113,62 @@ def distribute_reward_tree(node_operator, ref_slot):
 
 
 @pytest.mark.parametrize("address, proof", get_ea_members())
-def test_add_ea_node_operator(csm, accounting, address, proof):
-    csm_add_node_operator(csm, accounting, address, proof)
+def test_add_ea_node_operator(csm, accounting, early_adoption, address, proof):
+    no_id = csm_add_node_operator(csm, accounting, address, proof)
+    no = csm.getNodeOperator(no_id)
+
+    assert no['managerAddress'] == address
+    assert no['rewardAddress'] == address
+    assert accounting.getBondCurveId(no_id) == early_adoption.CURVE_ID()
+
+
+def test_add_node_operator_permissionless(csm, accounting, accounts):
+    address = accounts[8].address
+    no_id = csm_add_node_operator(csm, accounting, address, proof=[])
+    no = csm.getNodeOperator(no_id)
+
+    assert no['managerAddress'] == address
+    assert no['rewardAddress'] == address
+    assert accounting.getBondCurveId(no_id) == accounting.DEFAULT_BOND_CURVE_ID()
+
+
+def test_add_node_operator_keys_more_than_limit(csm, accounting):
+    address, proof = get_ea_member()
+    keys_count = csm.MAX_SIGNING_KEYS_PER_OPERATOR_BEFORE_PUBLIC_RELEASE() + 1
+    no_id = csm_add_node_operator(csm, accounting, address, proof, keys_count=keys_count)
+    no = csm.getNodeOperator(no_id)
+
+    assert no["totalAddedKeys"] == keys_count
+
+
+def test_add_node_operator_permissionless_keys_more_than_limit(csm, accounting, accounts):
+    keys_count = csm.MAX_SIGNING_KEYS_PER_OPERATOR_BEFORE_PUBLIC_RELEASE() + 1
+    address = accounts[8].address
+    no_id = csm_add_node_operator(csm, accounting, address, proof=[], keys_count=keys_count)
+    no = csm.getNodeOperator(no_id)
+
+    assert no["totalAddedKeys"] == keys_count
+
+
+def test_upload_keys_more_than_limit(csm, accounting, node_operator):
+    no = csm.getNodeOperator(node_operator)
+    keys_before = no["totalAddedKeys"]
+    keys_count = csm.MAX_SIGNING_KEYS_PER_OPERATOR_BEFORE_PUBLIC_RELEASE() - keys_before + 1
+    csm_upload_keys(csm, accounting, node_operator, keys_count)
+
+    no = csm.getNodeOperator(node_operator)
+    assert no["totalAddedKeys"] == keys_count + keys_before
 
 
 @pytest.mark.usefixtures("pause_modules")
-def test_deposit(node_operator, csm):
+def test_deposit(node_operator, csm, remove_stake_limit):
     (_, _, depositable_validators_count) = csm.getStakingModuleSummary()
     deposits_count = depositable_validators_count
     fill_deposit_buffer(deposits_count)
+    increase_staking_module_share(module_id=CSM_MODULE_ID, share_multiplier=2)
 
-    contracts.lido.deposit(deposits_count, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
+    for i in range(0, deposits_count, MAX_DEPOSITS):
+        contracts.lido.deposit(MAX_DEPOSITS, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
 
     no = csm.getNodeOperator(node_operator)
     assert no["totalDepositedKeys"] == no["totalAddedKeys"]
@@ -191,7 +251,7 @@ def test_csm_report_stuck(csm, node_operator, extra_data_service):
 
 
 @pytest.mark.usefixtures("deposits_to_csm")
-def test_csm_get_staking_module_summary(csm, accounting, node_operator, extra_data_service):
+def test_csm_get_staking_module_summary(csm, accounting, node_operator, extra_data_service, remove_stake_limit):
     (exited_before, deposited_before, depositable_before) = contracts.staking_router.getStakingModuleSummary(CSM_MODULE_ID)
 
     # Assure there are new exited keys
@@ -212,6 +272,8 @@ def test_csm_get_staking_module_summary(csm, accounting, node_operator, extra_da
     new_keys = 5
     new_depositable = new_keys - deposits_count
     csm_upload_keys(csm, accounting, node_operator, new_keys)
+    increase_staking_module_share(module_id=CSM_MODULE_ID, share_multiplier=2)
+
     fill_deposit_buffer(deposits_count)
     contracts.lido.deposit(deposits_count, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
 
