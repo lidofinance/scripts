@@ -80,7 +80,7 @@ class TestCSM:
         assert csm.accounting() == CS_ACCOUNTING_ADDRESS
 
         assert not csm.isPaused()
-        assert not csm.publicRelease()
+        assert csm.publicRelease()
 
 
 class TestAccounting:

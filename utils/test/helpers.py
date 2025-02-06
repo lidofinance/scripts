@@ -39,3 +39,8 @@ def shares_balance(account):
 
 def almostEqWithDiff(b1, b2, diff):
     return abs(b1 - b2) <= diff
+
+def round_to_gwei(amount: int) -> int:
+    """Round amount to gwei"""
+    return amount // GWEI * GWEI
+

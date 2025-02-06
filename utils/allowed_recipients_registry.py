@@ -14,6 +14,9 @@ def update_spent_amount(registry_address: str, spent_amount: int) -> Tuple[str, 
     registry = interface.AllowedRecipientRegistry(registry_address)
     return (registry.address, registry.updateSpentAmount.encode_input(spent_amount))
 
+def unsafe_set_spent_amount(registry_address: str, spent_amount: int) -> Tuple[str, str]:
+    registry = interface.AllowedRecipientRegistry(registry_address)
+    return (registry.address, registry.unsafeSetSpentAmount.encode_input(spent_amount))
 
 def create_top_up_allowed_recipient_permission(registry_address: str) -> str:
     return (
