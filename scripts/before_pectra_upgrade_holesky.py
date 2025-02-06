@@ -21,6 +21,10 @@ Release part of the update before the Pectra upgrade
 18. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new GateSeal (0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778)
 19. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal (0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d)
 20. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal (0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d)
+21. Add a top-up EVM script factory for stablecoins 0x167caEDde0F3230eB18763270B11c970409F389e to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x0214CEBDEc06dc2729382860603d01113F068388)
+22. Add a top-up EVM script factory for stETH 0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x193d0bA65cf3a2726e12c5568c068D1B3ea51740)
+23. Add a top-up EVM script factory for stablecoins 0xf7304738E9d4F572b909FaEd32504F558E234cdB to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x303F5b60e3cf6Ea11d8509A1546401e311A13B92)
+24. Add a top-up EVM script factory for stETH 0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9 to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x02CD05c1cBa16113680648a8B3496A5aE312a935)
 """
 
 import time
@@ -47,6 +51,12 @@ from utils.permissions import (
     encode_permission_grant,
     encode_permission_revoke,
     encode_permission_create
+)
+from utils.easy_track import (
+    add_evmscript_factory,
+)
+from utils.allowed_recipients_registry import (
+    create_top_up_allowed_recipient_permission,
 )
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
@@ -290,6 +300,44 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                         revoke_from="0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d",
                     )
                 ]
+            ),
+        ),
+
+        # EasyTrack factories
+        (
+            "21. Add a top-up EVM script factory for stablecoins 0x167caEDde0F3230eB18763270B11c970409F389e to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x0214CEBDEc06dc2729382860603d01113F068388)",
+            add_evmscript_factory(
+                factory="0x167caEDde0F3230eB18763270B11c970409F389e",
+                permissions=create_top_up_allowed_recipient_permission(
+                    registry_address="0x0214CEBDEc06dc2729382860603d01113F068388"
+                ),
+            ),
+        ),
+        (
+            "22. Add a top-up EVM script factory for stETH 0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x193d0bA65cf3a2726e12c5568c068D1B3ea51740)",
+            add_evmscript_factory(
+                factory="0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac",
+                permissions=create_top_up_allowed_recipient_permission(
+                    registry_address="0x193d0bA65cf3a2726e12c5568c068D1B3ea51740"
+                ),
+            ),
+        ),
+        (
+            "23. Add a top-up EVM script factory for stablecoins 0xf7304738E9d4F572b909FaEd32504F558E234cdB to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x303F5b60e3cf6Ea11d8509A1546401e311A13B92)",
+            add_evmscript_factory(
+                factory="0xf7304738E9d4F572b909FaEd32504F558E234cdB",
+                permissions=create_top_up_allowed_recipient_permission(
+                    registry_address="0x303F5b60e3cf6Ea11d8509A1546401e311A13B92"
+                ),
+            ),
+        ),
+        (
+            "24. Add a top-up EVM script factory for stETH 0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9 to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x02CD05c1cBa16113680648a8B3496A5aE312a935)",
+            add_evmscript_factory(
+                factory="0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9",
+                permissions=create_top_up_allowed_recipient_permission(
+                    registry_address="0x02CD05c1cBa16113680648a8B3496A5aE312a935"
+                ),
             ),
         ),
     )
