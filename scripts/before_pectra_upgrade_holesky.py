@@ -12,25 +12,33 @@ Release part of the update before the Pectra upgrade
 9. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on  CSFeeOracle from Aragon Agent
 10. Revoke VERIFIER_ROLE role on CSM from old CS Verifier
 11. Grant VERIFIER_ROLE role on CSM to new CS Verifier
-12. Create permission UNSAFELY_MODIFY_VOTE_TIME_ROLE for Aragon Voting
-13. Grant UNSAFELY_MODIFY_VOTE_TIME_ROLE to Aragon Voting
-14. Change vote time from 900 to 1080 on Aragon Voting
-15. Change objection phase time from 300 to 360 on Aragon Voting
-16. Revoke UNSAFELY_MODIFY_VOTE_TIME_ROLE from Aragon Voting
-17. Grant PAUSE_ROLE on WithdrawalQueue to the new GateSeal (0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778)
-18. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new GateSeal (0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778)
-19. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal (0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d)
-20. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal (0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d)
-21. Add a top-up EVM script factory for stablecoins 0x167caEDde0F3230eB18763270B11c970409F389e to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x0214CEBDEc06dc2729382860603d01113F068388)
-22. Add a top-up EVM script factory for stETH 0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x193d0bA65cf3a2726e12c5568c068D1B3ea51740)
-23. Add a top-up EVM script factory for stablecoins 0xf7304738E9d4F572b909FaEd32504F558E234cdB to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x303F5b60e3cf6Ea11d8509A1546401e311A13B92)
-24. Add a top-up EVM script factory for stETH 0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9 to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x02CD05c1cBa16113680648a8B3496A5aE312a935)
+12. Grant UNSAFELY_MODIFY_VOTE_TIME_ROLE to Aragon Voting
+13. Change vote time from 900 to 1080 on Aragon Voting
+14. Change objection phase time from 300 to 360 on Aragon Voting
+15. Revoke UNSAFELY_MODIFY_VOTE_TIME_ROLE from Aragon Voting
+16. Grant CONFIG_MANAGER_ROLE on OracleDaemonConfig 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 to Aragon Agent
+17. Update the FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT parameter in the OracleDaemonConfig contract  0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 to 0x08CA (2250)
+18. Revoke CONFIG_MANAGER_ROLE on OracleDaemonConfig 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 from Aragon Agent
+19. Grant PAUSE_ROLE on WithdrawalQueue 0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50 for the new GateSeal 0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778
+20. Grant PAUSE_ROLE on ValidatorsExitBusOracle 0xffDDF7025410412deaa05E3E1cE68FE53208afcb for the new GateSeal 0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778
+21. Revoke PAUSE_ROLE on WithdrawalQueue 0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50 from the old GateSeal 0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d
+22. Revoke PAUSE_ROLE on ValidatorsExitBusOracle 0xffDDF7025410412deaa05E3E1cE68FE53208afcb from the old GateSeal 0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d
+23. Grant PAUSE_ROLE on CSModule 0x4562c3e63c2e586cD1651B958C22F88135aCAd4f for the new CSM GateSeal 0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a
+24. Grant PAUSE_ROLE on CSAccounting 0xc093e53e8F4b55A223c18A2Da6fA00e60DD5EFE1 for the new CSM GateSeal 0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a
+25. Grant PAUSE_ROLE on CSFeeOracle 0xaF57326C7d513085051b50912D51809ECC5d98Ee for the new CSM GateSeal 0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a
+26. Revoke PAUSE_ROLE on CSModule 0x4562c3e63c2e586cD1651B958C22F88135aCAd4f from the old CSM GateSeal 0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce
+27. Revoke PAUSE_ROLE on CSAccounting 0xc093e53e8F4b55A223c18A2Da6fA00e60DD5EFE1 from the old CSM GateSeal 0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce
+28. Revoke PAUSE_ROLE on CSFeeOracle 0xaF57326C7d513085051b50912D51809ECC5d98Ee from the old CSM GateSeal 0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce
+29. Add a top-up EVM script factory for stablecoins 0x167caEDde0F3230eB18763270B11c970409F389e to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x0214CEBDEc06dc2729382860603d01113F068388)
+30. Add a top-up EVM script factory for stETH 0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x193d0bA65cf3a2726e12c5568c068D1B3ea51740)
+31. Add a top-up EVM script factory for stablecoins 0xf7304738E9d4F572b909FaEd32504F558E234cdB to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x303F5b60e3cf6Ea11d8509A1546401e311A13B92)
+32. Add a top-up EVM script factory for stETH 0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9 to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x02CD05c1cBa16113680648a8B3496A5aE312a935)
 """
 
 import time
 
 try:
-    from brownie import interface, accounts
+    from brownie import interface, accounts, convert
 except ImportError:
     print("You're probably running inside Brownie console. Please call:")
     print("set_console_globals(interface=interface)")
@@ -75,9 +83,16 @@ CS_FEE_ORACLE_CONSENSUS_VERSION = 2
 NEW_VOTE_DURATION = 1080
 NEW_OBJECTION_PHASE_DURATION = 360
 
+#
+FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE = 2250
+
 # GateSeals
 OLD_GATE_SEAL = "0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d"
 NEW_GATE_SEAL = "0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778"
+
+# CSM GateSeals
+OLD_CSM_GATE_SEAL = "0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce"
+NEW_CSM_GATE_SEAL = "0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a"
 
 description = """
 """
@@ -214,16 +229,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
 
         # Extend On-Chain Voting Duration
         (
-            "12. Create permission UNSAFELY_MODIFY_VOTE_TIME_ROLE for Aragon Voting",
-            encode_permission_create(
-                entity=contracts.voting,
-                target_app=contracts.voting,
-                permission_name="UNSAFELY_MODIFY_VOTE_TIME_ROLE",
-                manager=contracts.voting,
-            )
-        ),
-        (
-            "13. Grant UNSAFELY_MODIFY_VOTE_TIME_ROLE on Aragon Voting to Aragon Voting",
+            "12. Grant UNSAFELY_MODIFY_VOTE_TIME_ROLE on Aragon Voting to Aragon Voting",
             encode_permission_grant(
                 target_app=contracts.voting,
                 permission_name="UNSAFELY_MODIFY_VOTE_TIME_ROLE",
@@ -231,31 +237,69 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             )
         ),
         (
-            "14. Change vote time from 900 to 1080 on Aragon Voting",
+            "13. Change vote time from 900 to 1080 on Aragon Voting",
             (
                 contracts.voting.address,
                 contracts.voting.unsafelyChangeVoteTime.encode_input(NEW_VOTE_DURATION),
             )
         ),
         (
-            "15. Change objection phase time from 300 to 360 on Aragon Voting",
+            "14. Change objection phase time from 300 to 360 on Aragon Voting",
             (
                 contracts.voting.address,
                 contracts.voting.unsafelyChangeObjectionPhaseTime.encode_input(NEW_OBJECTION_PHASE_DURATION),
             )
         ),
         (
-            "16. Revoke UNSAFELY_MODIFY_VOTE_TIME_ROLE on Aragon Voting from Aragon Voting",
+            "15. Revoke UNSAFELY_MODIFY_VOTE_TIME_ROLE on Aragon Voting from Aragon Voting",
             encode_permission_revoke(
                 target_app=contracts.voting,
                 permission_name="UNSAFELY_MODIFY_VOTE_TIME_ROLE",
                 revoke_from=contracts.voting,
             )
         ),
+        (
+            "16. Grant CONFIG_MANAGER_ROLE on OracleDaemonConfig to Aragon Agent",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.oracle_daemon_config,
+                        role_name="CONFIG_MANAGER_ROLE",
+                        grant_to=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+        (
+            "17. Update the FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT parameter in the OracleDaemonConfig (0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7) to 0x08CA (2250)",
+            agent_forward(
+                [
+                    (
+                        contracts.oracle_daemon_config.address,
+                        contracts.oracle_daemon_config.update.encode_input(
+                            "FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT",
+                            convert.to_bytes(FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE),
+                        ),
+                    )
+                ]
+            ),
+        ),
+        (
+            "18. Revoke CONFIG_MANAGER_ROLE on OracleDaemonConfig from Aragon Agent",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.oracle_daemon_config,
+                        role_name="CONFIG_MANAGER_ROLE",
+                        revoke_from=contracts.agent,
+                    )
+                ]
+            ),
+        ),
 
         # Change GateSeal on WithdrawalQueue and ValidatorsExitBusOracle
         (
-            "17. Grant PAUSE_ROLE on WithdrawalQueue to the new GateSeal (0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778)",
+            "19. Grant PAUSE_ROLE on WithdrawalQueue to the new GateSeal (0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778)",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -267,7 +311,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "18. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new GateSeal (0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778)",
+            "20. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new GateSeal (0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778)",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -279,7 +323,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "19. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal (0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d)",
+            "21. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal (0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d)",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -291,13 +335,88 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "20. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal (0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d)",
+            "22. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal (0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d)",
             agent_forward(
                 [
                     encode_oz_revoke_role(
                         contract=contracts.validators_exit_bus_oracle,
                         role_name="PAUSE_ROLE",
                         revoke_from="0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d",
+                    )
+                ]
+            ),
+        ),
+
+        # Change CSM GateSeals
+        (
+            "23. Grant PAUSE_ROLE on CSModule for the new CSM GateSeal (0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a)",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.csm,
+                        role_name="PAUSE_ROLE",
+                        grant_to=NEW_CSM_GATE_SEAL,
+                    )
+                ]
+            ),
+        ),
+        (
+            "24. Grant PAUSE_ROLE on CSAccounting for the new CSM GateSeal (0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a)",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.cs_accounting,
+                        role_name="PAUSE_ROLE",
+                        grant_to=NEW_CSM_GATE_SEAL,
+                    )
+                ]
+            ),
+        ),
+        (
+            "25. Grant PAUSE_ROLE on CSFeeOracle for the new CSM GateSeal (0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a)",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.cs_fee_oracle,
+                        role_name="PAUSE_ROLE",
+                        grant_to=NEW_CSM_GATE_SEAL,
+                    )
+                ]
+            ),
+        ),
+        (
+            "26. Revoke PAUSE_ROLE on CSModule from the old CSM GateSeal (0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce)",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.csm,
+                        role_name="PAUSE_ROLE",
+                        revoke_from=OLD_CSM_GATE_SEAL,
+                    )
+                ]
+            ),
+        ),
+        (
+            "27. Revoke PAUSE_ROLE on CSAccounting from the old CSM GateSeal (0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce)",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.cs_accounting,
+                        role_name="PAUSE_ROLE",
+                        revoke_from=OLD_CSM_GATE_SEAL,
+                    )
+                ]
+            ),
+        ),
+
+        (
+            "28. Revoke PAUSE_ROLE on CSFeeOracle from the old CSM GateSeal (0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce)",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.cs_fee_oracle,
+                        role_name="PAUSE_ROLE",
+                        revoke_from=OLD_CSM_GATE_SEAL,
                     )
                 ]
             ),
@@ -305,7 +424,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
 
         # EasyTrack factories
         (
-            "21. Add a top-up EVM script factory for stablecoins 0x167caEDde0F3230eB18763270B11c970409F389e to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x0214CEBDEc06dc2729382860603d01113F068388)",
+            "29. Add a top-up EVM script factory for stablecoins 0x167caEDde0F3230eB18763270B11c970409F389e to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x0214CEBDEc06dc2729382860603d01113F068388)",
             add_evmscript_factory(
                 factory="0x167caEDde0F3230eB18763270B11c970409F389e",
                 permissions=create_top_up_allowed_recipient_permission(
@@ -314,7 +433,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "22. Add a top-up EVM script factory for stETH 0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x193d0bA65cf3a2726e12c5568c068D1B3ea51740)",
+            "30. Add a top-up EVM script factory for stETH 0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x193d0bA65cf3a2726e12c5568c068D1B3ea51740)",
             add_evmscript_factory(
                 factory="0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac",
                 permissions=create_top_up_allowed_recipient_permission(
@@ -323,7 +442,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "23. Add a top-up EVM script factory for stablecoins 0xf7304738E9d4F572b909FaEd32504F558E234cdB to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x303F5b60e3cf6Ea11d8509A1546401e311A13B92)",
+            "31. Add a top-up EVM script factory for stablecoins 0xf7304738E9d4F572b909FaEd32504F558E234cdB to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x303F5b60e3cf6Ea11d8509A1546401e311A13B92)",
             add_evmscript_factory(
                 factory="0xf7304738E9d4F572b909FaEd32504F558E234cdB",
                 permissions=create_top_up_allowed_recipient_permission(
@@ -332,7 +451,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "24. Add a top-up EVM script factory for stETH 0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9 to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x02CD05c1cBa16113680648a8B3496A5aE312a935)",
+            "32. Add a top-up EVM script factory for stETH 0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9 to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x02CD05c1cBa16113680648a8B3496A5aE312a935)",
             add_evmscript_factory(
                 factory="0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9",
                 permissions=create_top_up_allowed_recipient_permission(

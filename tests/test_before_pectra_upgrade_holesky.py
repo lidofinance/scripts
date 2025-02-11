@@ -2,11 +2,14 @@ from scripts.before_pectra_upgrade_holesky import (
     start_vote,
     OLD_GATE_SEAL,
     NEW_GATE_SEAL,
+    NEW_CSM_GATE_SEAL,
+    OLD_CSM_GATE_SEAL,
     NEW_VOTE_DURATION,
-    NEW_OBJECTION_PHASE_DURATION
+    NEW_OBJECTION_PHASE_DURATION,
+    FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
 )
 from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS
-from brownie import interface, Contract, reverts
+from brownie import interface, Contract, reverts, convert
 from utils.easy_track import create_permissions
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.permission import (
@@ -49,6 +52,8 @@ ECOSYSTEM_BORG_STABLE_FACTORY = "0x167caEDde0F3230eB18763270B11c970409F389e"
 ECOSYSTEM_BORG_STABLE_REGISTRY = "0x0214CEBDEc06dc2729382860603d01113F068388"
 ECOSYSTEM_BORG_STETH_FACTORY = "0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac"
 ECOSYSTEM_BORG_STETH_REGISTRY = "0x193d0bA65cf3a2726e12c5568c068D1B3ea51740"
+
+EASY_TRACK_RECEIVER = "0x96d2Ff1C4D30f592B91fd731E218247689a76915"
 
 LABS_BORG_STABLE_FACTORY = "0xf7304738E9d4F572b909FaEd32504F558E234cdB"
 LABS_BORG_STABLE_REGISTRY = "0x303F5b60e3cf6Ea11d8509A1546401e311A13B92"
@@ -131,11 +136,21 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     assert contracts.voting.voteTime() == 900
     assert contracts.voting.objectionPhaseTime() == 300
 
+    # Check Oracle Config state before voting
+    new_value_uint = convert.to_uint(contracts.oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT"))
+    assert new_value_uint != FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
+
     # Check GateSeal state before voting
     _check_role(contracts.withdrawal_queue, "PAUSE_ROLE", OLD_GATE_SEAL)
     _check_role(vebo, "PAUSE_ROLE", OLD_GATE_SEAL)
     _check_no_role(contracts.withdrawal_queue, "PAUSE_ROLE", NEW_GATE_SEAL)
     _check_no_role(vebo, "PAUSE_ROLE", NEW_GATE_SEAL)
+    _check_role(contracts.csm, "PAUSE_ROLE", OLD_CSM_GATE_SEAL)
+    _check_no_role(contracts.csm, "PAUSE_ROLE", NEW_CSM_GATE_SEAL)
+    _check_role(contracts.cs_accounting, "PAUSE_ROLE", OLD_CSM_GATE_SEAL)
+    _check_no_role(contracts.cs_accounting, "PAUSE_ROLE", NEW_CSM_GATE_SEAL)
+    _check_role(contracts.cs_fee_oracle, "PAUSE_ROLE", OLD_CSM_GATE_SEAL)
+    _check_no_role(contracts.cs_fee_oracle, "PAUSE_ROLE", NEW_CSM_GATE_SEAL)
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -174,11 +189,21 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     assert contracts.voting.voteTime() == NEW_VOTE_DURATION
     assert contracts.voting.objectionPhaseTime() == NEW_OBJECTION_PHASE_DURATION
 
+    # Check Oracle Config updated properly
+    updated_value_uint = convert.to_uint(contracts.oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT"))
+    assert updated_value_uint == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
+
     # Check GateSeal updated properly
     _check_no_role(contracts.withdrawal_queue, "PAUSE_ROLE", OLD_GATE_SEAL)
     _check_no_role(vebo, "PAUSE_ROLE", OLD_GATE_SEAL)
     _check_role(contracts.withdrawal_queue, "PAUSE_ROLE", NEW_GATE_SEAL)
     _check_role(vebo, "PAUSE_ROLE", NEW_GATE_SEAL)
+    _check_no_role(contracts.csm, "PAUSE_ROLE", OLD_CSM_GATE_SEAL)
+    _check_role(contracts.csm, "PAUSE_ROLE", NEW_CSM_GATE_SEAL)
+    _check_no_role(contracts.cs_accounting, "PAUSE_ROLE", OLD_CSM_GATE_SEAL)
+    _check_role(contracts.cs_accounting, "PAUSE_ROLE", NEW_CSM_GATE_SEAL)
+    _check_no_role(contracts.cs_fee_oracle, "PAUSE_ROLE", OLD_CSM_GATE_SEAL)
+    _check_role(contracts.cs_fee_oracle, "PAUSE_ROLE", NEW_CSM_GATE_SEAL)
 
     # EasyTrack checks
     evm_script_factories_after = contracts.easy_track.getEVMScriptFactories()
@@ -199,7 +224,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
             trusted_caller=ecosystem_borg_stable_factory.trustedCaller(),
             factory=ecosystem_borg_stable_factory,
             token=interface.ERC20(stablecoin),
-            recievers=[Contract("0x96d2Ff1C4D30f592B91fd731E218247689a76915")],
+            recievers=[Contract(EASY_TRACK_RECEIVER)],
             transfer_amounts=[1 * 10**6],
             stranger=stranger,
         )
@@ -208,7 +233,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
             trusted_caller=labs_borg_stable_factory.trustedCaller(),
             factory=labs_borg_stable_factory,
             token=interface.ERC20(stablecoin),
-            recievers=[Contract("0x96d2Ff1C4D30f592B91fd731E218247689a76915")],
+            recievers=[Contract(EASY_TRACK_RECEIVER)],
             transfer_amounts=[1 * 10**6],
             stranger=stranger,
         )
@@ -219,7 +244,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
             trusted_caller=ecosystem_borg_stable_factory.trustedCaller(),
             factory=ecosystem_borg_stable_factory,
             token=contracts.lido,
-            recievers=[Contract("0x96d2Ff1C4D30f592B91fd731E218247689a76915")],
+            recievers=[Contract(EASY_TRACK_RECEIVER)],
             transfer_amounts=[1 * 10**6],
             stranger=stranger,
         )
@@ -229,7 +254,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
             trusted_caller=labs_borg_stable_factory.trustedCaller(),
             factory=labs_borg_stable_factory,
             token=contracts.lido,
-            recievers=[Contract("0x96d2Ff1C4D30f592B91fd731E218247689a76915")],
+            recievers=[Contract(EASY_TRACK_RECEIVER)],
             transfer_amounts=[1 * 10**6],
             stranger=stranger,
         )
@@ -239,7 +264,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
         trusted_caller=ecosystem_borg_steth_factory.trustedCaller(),
         factory=ecosystem_borg_steth_factory,
         token=contracts.lido,
-        recievers=[Contract("0x96d2Ff1C4D30f592B91fd731E218247689a76915")],
+        recievers=[Contract(EASY_TRACK_RECEIVER)],
         transfer_amounts=[1 * 10**18],
         stranger=stranger,
     )
@@ -248,7 +273,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
         trusted_caller=labs_borg_steth_factory.trustedCaller(),
         factory=labs_borg_steth_factory,
         token=contracts.lido,
-        recievers=[Contract("0x96d2Ff1C4D30f592B91fd731E218247689a76915")],
+        recievers=[Contract(EASY_TRACK_RECEIVER)],
         transfer_amounts=[1 * 10**18],
         stranger=stranger,
     )
@@ -270,7 +295,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     display_voting_events(vote_tx)
     events = group_voting_events(vote_tx)
 
-    assert len(events) == 24
+    assert len(events) == 32
 
     # Validate ao consensus version set
     validate_consensus_version_update(events[:3], AO_CONSENSUS_VERSION)
@@ -302,26 +327,53 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
         app=contracts.voting.address,
         role=contracts.voting.UNSAFELY_MODIFY_VOTE_TIME_ROLE(),
     )
-    validate_permission_grant_event(events[12], permission)
-    validate_change_vote_time_event(events[13], NEW_VOTE_DURATION)
-    validate_change_objection_time_event(events[14], NEW_OBJECTION_PHASE_DURATION)
-    validate_permission_revoke_event(events[15], permission)
+    validate_permission_grant_event(events[11], permission)
+    validate_change_vote_time_event(events[12], NEW_VOTE_DURATION)
+    validate_change_objection_time_event(events[13], NEW_OBJECTION_PHASE_DURATION)
+    validate_permission_revoke_event(events[14], permission)
+
+    validate_grant_role_event(
+        events[15],
+        contracts.oracle_daemon_config.CONFIG_MANAGER_ROLE(),
+        contracts.agent.address,
+        contracts.agent.address
+    )
+    validate_config_value_updated(
+        events[16],
+        "FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT",
+        FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
+    )
+    validate_revoke_role_event(
+        events[17],
+        contracts.oracle_daemon_config.CONFIG_MANAGER_ROLE(),
+        contracts.agent.address,
+        contracts.agent.address
+    )
 
     # Grant PAUSE_ROLE on WithdrawalQueue for the new GateSeal
-    validate_grant_role_event(events[16], PAUSE_ROLE, NEW_GATE_SEAL, contracts.agent)
-
+    validate_grant_role_event(events[18], PAUSE_ROLE, NEW_GATE_SEAL, contracts.agent)
     # Grant PAUSE_ROLE on ValidatorExitBusOracle for the new GateSeal
-    validate_grant_role_event(events[17], PAUSE_ROLE, NEW_GATE_SEAL, contracts.agent)
-
+    validate_grant_role_event(events[19], PAUSE_ROLE, NEW_GATE_SEAL, contracts.agent)
     # Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
-    validate_revoke_role_event(events[18], PAUSE_ROLE, OLD_GATE_SEAL, contracts.agent)
-
+    validate_revoke_role_event(events[20], PAUSE_ROLE, OLD_GATE_SEAL, contracts.agent)
     # Revoke PAUSE_ROLE on ValidatorExitBusOracle from the old GateSeal
-    validate_revoke_role_event(events[19], PAUSE_ROLE, OLD_GATE_SEAL, contracts.agent)
+    validate_revoke_role_event(events[21], PAUSE_ROLE, OLD_GATE_SEAL, contracts.agent)
+    # Grant PAUSE_ROLE on CSModule for the new CSMGateSeal
+    validate_grant_role_event(events[22], PAUSE_ROLE, NEW_CSM_GATE_SEAL, contracts.agent)
+    # Grant PAUSE_ROLE on CSAccounting for the new CSMGateSeal
+    validate_grant_role_event(events[23], PAUSE_ROLE, NEW_CSM_GATE_SEAL, contracts.agent)
+    # Grant PAUSE_ROLE on CSFeeOracle from the old CSMGateSeal
+    validate_grant_role_event(events[24], PAUSE_ROLE, NEW_CSM_GATE_SEAL, contracts.agent)
+    # Revoke PAUSE_ROLE on CSModule from the old CSMGateSeal
+    validate_revoke_role_event(events[25], PAUSE_ROLE, OLD_CSM_GATE_SEAL, contracts.agent)
+    # Revoke PAUSE_ROLE on CSAccounting from the old CSMGateSeal
+    validate_revoke_role_event(events[26], PAUSE_ROLE, OLD_CSM_GATE_SEAL, contracts.agent)
+    # Revoke PAUSE_ROLE on CSFeeOracle from the old CSMGateSeal
+    validate_revoke_role_event(events[27], PAUSE_ROLE, OLD_CSM_GATE_SEAL, contracts.agent)
 
     # Validate EasyTrack events
     validate_evmscript_factory_added_event(
-        events[20],
+        events[28],
         EVMScriptFactoryAdded(
             factory_addr=ecosystem_borg_stable_factory,
             permissions=create_permissions(contracts.finance, "newImmediatePayment")
@@ -329,7 +381,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
         ),
     )
     validate_evmscript_factory_added_event(
-        events[21],
+        events[29],
         EVMScriptFactoryAdded(
             factory_addr=ecosystem_borg_steth_factory,
             permissions=create_permissions(contracts.finance, "newImmediatePayment")
@@ -337,7 +389,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
         ),
     )
     validate_evmscript_factory_added_event(
-        events[22],
+        events[30],
         EVMScriptFactoryAdded(
             factory_addr=labs_borg_stable_factory,
             permissions=create_permissions(contracts.finance, "newImmediatePayment")
@@ -345,7 +397,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
         ),
     )
     validate_evmscript_factory_added_event(
-        events[23],
+        events[31],
         EVMScriptFactoryAdded(
             factory_addr=labs_borg_steth_factory,
             permissions=create_permissions(contracts.finance, "newImmediatePayment")
@@ -356,6 +408,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
 
 # Events check
 
+def validate_config_value_updated(event: EventDict, key, value):
+    assert event["ConfigValueUpdated"]["key"] == key
+    assert convert.to_uint(event["ConfigValueUpdated"]["value"]) == value
 
 def validate_consensus_version_update(events: list[EventDict], version):
     validate_grant_role_event(
