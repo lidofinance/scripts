@@ -51,6 +51,12 @@ ssh root@localhost -p 2222 # password: 1234
 
 </br>
 
+To run a Hardhat node inside a deployed Docker container:
+```shell
+cd /root/hardhat
+npx hardhat node --fork $ETH_RPC_URL
+```
+
 You now have a fully functional environment to run scripts & tests in, which is linked to your local scripts repo, for example:
 ```shell
 poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
