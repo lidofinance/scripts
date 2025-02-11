@@ -32,18 +32,19 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
 
         Contains next steps:
             1. Update VEBO implementation
-            2. Update VEBO consensu version to `4`
+            2. Update VEBO consensus version to `4`
             # 3. Call finalize upgrade on VEBO  # TODO
             4. Update WithdrawalVault implementation
             5. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEBO in WithdrawalVault
-            6. Update AO consensus version to `4`
+            # 6. Call finalize upgrade on WV  # TODO
+            7. Update AO consensus version to `4`
     """
 
     vote_descriptions, call_script_items = zip(
         (
             "1. Update VEBO implementation",
             agent_forward([
-                encode_proxy_upgrade_to(contracts.validator_exit_bus_oracle, variables.VALIDATORS_EXIT_BUS_ORACLE_IMPL)
+                encode_proxy_upgrade_to(contracts.validator_exit_bus_oracle, contracts.VALIDATORS_EXIT_BUS_ORACLE_IMPL)
             ])
         ),
         (
@@ -61,7 +62,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         (
             "4. Update WithdrawalVault implementation",
             agent_forward([
-                encode_proxy_upgrade_to(contracts.withdrawal_vault, variables.WITHDRAWAL_VAULT_IMPL)
+                encode_proxy_upgrade_to(contracts.withdrawal_vault, contracts.WITHDRAWAL_VAULT_IMPL)
             ])
         ),
         (
