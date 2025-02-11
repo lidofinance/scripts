@@ -67,7 +67,6 @@ def create_vote(
             )
         ]
     )
-    print(new_vote_script)
     tx = token_manager.forward(new_vote_script, tx_params)
     if tx.revert_msg is not None:
         print(tx.traceback)
