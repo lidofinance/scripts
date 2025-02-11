@@ -49,3 +49,16 @@ def validate_update_spent_amount_event(
     assert event["SpendableAmountChanged"]["_spendableBalance"] == spendable_balance_in_period
     assert event["SpendableAmountChanged"]["_periodStartTimestamp"] == period_start_timestamp
     assert event["SpendableAmountChanged"]["_periodEndTimestamp"] == period_end_timestamp
+
+def validate_set_spent_amount_event(
+    event: EventDict,
+    new_spent_amount: int,
+):
+    _events_chain = (
+        ["LogScriptCall", "LogScriptCall", "SpentAmountChanged", "ScriptResult"]
+    )
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("SpentAmountChanged") == 1
+    assert event["SpentAmountChanged"]["_newSpentAmount"] == new_spent_amount

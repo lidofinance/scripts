@@ -170,10 +170,6 @@ def csm_upload_keys(csm, accounting, no_id, keys_count=5):
 
 
 def fill_csm_operators_with_keys(target_operators_count, keys_count):
-    if not contracts.csm.publicRelease():
-        contracts.csm.grantRole(contracts.csm.MODULE_MANAGER_ROLE(), contracts.agent, {"from": contracts.agent})
-        contracts.csm.activatePublicRelease({"from": contracts.agent})
-
     csm_node_operators_before = contracts.csm.getNodeOperatorsCount()
     added_operators_count = 0
     for no_id in range(0, min(csm_node_operators_before, target_operators_count)):
