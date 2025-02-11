@@ -31,3 +31,8 @@ yarn-error.log
 
 # local env
 .envrc
+
+# Hardhat
+cache/
+hardhat.config.js
+package-lock.json
