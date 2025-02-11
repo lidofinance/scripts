@@ -2,7 +2,7 @@ import time
 
 from typing import Dict
 
-from utils.agent import agent_forward, dual_governance_agent_forward
+from utils.agent import agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.config import (
@@ -13,20 +13,11 @@ from utils.config import (
 )
 from utils.permissions import (
     encode_permission_set_manager,
-    encode_permission_create,
     encode_permission_revoke,
     encode_permission_grant,
 )
 from utils.mainnet_fork import pass_and_exec_dao_vote
 from scripts.dual_governance_upgrade_holesky import dual_governance_contracts
-
-
-try:
-    from brownie import interface
-except ImportError:
-    print(
-        "You're probably running inside Brownie console. " "Please call:\n" "set_console_globals(interface=interface)"
-    )
 
 description = "Holesky dual governance downgrade dry-run"
 

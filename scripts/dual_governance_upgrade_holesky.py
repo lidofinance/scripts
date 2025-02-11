@@ -1,7 +1,7 @@
 import time
 
 from typing import Dict
-
+from brownie import interface
 from utils.agent import agent_forward, dual_governance_agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
@@ -13,20 +13,11 @@ from utils.config import (
 )
 from utils.permissions import (
     encode_permission_set_manager,
-    encode_permission_create,
     encode_permission_revoke,
     encode_permission_grant,
 )
 from utils.mainnet_fork import pass_and_exec_dao_vote
-
-
-try:
-    from brownie import interface
-except ImportError:
-    print(
-        "You're probably running inside Brownie console. " "Please call:\n" "set_console_globals(interface=interface)"
-    )
-
+from utils.evm_script import encode_call_script
 
 description = "Holesky dual governance upgrade dry-run"
 
@@ -36,11 +27,11 @@ dual_governance_contracts = {
     "resealManager": "0xc2764655e3fe0bd2D3C710D74Fa5a89162099FD8",
 }
 
-def start_vote(tx_params: Dict[str, str], silent: bool = False):
+def get_vote_items():
     foo_contract = interface.Foo("0xC3fc22C7e0d20247B797fb6dc743BD3879217c81")
     roles_validator = interface.RolesValidator("0x0F8826a574BCFDC4997939076f6D82877971feB3")
-
-    vote_desc_items, call_script_items = zip(
+    
+    return zip(
         (
             "Revoke permission for STAKING_CONTROL_ROLE from Voting contract.",
             encode_permission_revoke(
@@ -145,6 +136,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
         )
     )
 
+def start_vote(tx_params: Dict[str, str], silent: bool = False):
+
+    vote_desc_items, call_script_items = get_vote_items()
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
 
     if silent:
@@ -180,3 +174,23 @@ def start_and_execute_vote_on_fork():
 
     print(f"Vote created: {vote_id}.")
     pass_and_exec_dao_vote(int(vote_id))
+
+
+def get_voting_calldata():
+    vote_desc_items, call_script_items = get_vote_items()
+    vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
+    evm_script = encode_call_script(vote_items.values())
+
+    new_vote_script = encode_call_script(
+        [
+            (
+                contracts.voting.address,
+                contracts.voting.newVote.encode_input(
+                    evm_script,
+                    "description_placeholder"
+                ),
+            )
+        ]
+    )
+
+    print(new_vote_script)
