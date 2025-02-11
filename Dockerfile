@@ -264,6 +264,15 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 # compilers for amd64 will be downloaded by brownie later in this Dockerfile
 
 
+# install & configure hardhat
+RUN mkdir /root/hardhat
+WORKDIR /root/hardhat
+RUN npm install -d hardhat
+RUN npm install --save-dev @nomiclabs/hardhat-ethers ethers @nomiclabs/hardhat-waffle ethereum-waffle chai
+RUN touch hardhat.config.js
+RUN echo "/** @type import('hardhat/config').HardhatUserConfig */\nmodule.exports = {\n  solidity: \"0.8.28\",\n};" | tee -a hardhat.config.js
+
+
 # init script that runs when the container is started for the very first time
 # it will install poetry, yarn libs and init brownie networks
 WORKDIR /root/scripts
