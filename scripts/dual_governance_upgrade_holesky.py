@@ -187,7 +187,9 @@ def get_voting_calldata():
                 contracts.voting.address,
                 contracts.voting.newVote.encode_input(
                     evm_script,
-                    "description_placeholder"
+                    description,
+                    False,
+                    False
                 ),
             )
         ]
