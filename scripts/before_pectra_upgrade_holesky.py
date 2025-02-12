@@ -9,7 +9,7 @@ Release part of the update before the Pectra upgrade
 6. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle from Aragon Agent
 7. Grant MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle to Aragon Agent
 8. Update CSFeeOracle consensus version to 2
-9. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on  CSFeeOracle from Aragon Agent
+9. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle from Aragon Agent
 10. Revoke VERIFIER_ROLE role on CSM from old CS Verifier
 11. Grant VERIFIER_ROLE role on CSM to new CS Verifier
 12. Grant UNSAFELY_MODIFY_VOTE_TIME_ROLE to Aragon Voting
@@ -58,7 +58,7 @@ from utils.permissions import (
     encode_oz_revoke_role,
     encode_permission_grant,
     encode_permission_revoke,
-    encode_permission_create
+    encode_permission_create,
 )
 from utils.easy_track import (
     add_evmscript_factory,
@@ -226,7 +226,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                 ]
             ),
         ),
-
         # Extend On-Chain Voting Duration
         (
             "12. Grant UNSAFELY_MODIFY_VOTE_TIME_ROLE on Aragon Voting to Aragon Voting",
@@ -234,21 +233,21 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                 target_app=contracts.voting,
                 permission_name="UNSAFELY_MODIFY_VOTE_TIME_ROLE",
                 grant_to=contracts.voting,
-            )
+            ),
         ),
         (
             "13. Change vote time from 900 to 1080 on Aragon Voting",
             (
                 contracts.voting.address,
                 contracts.voting.unsafelyChangeVoteTime.encode_input(NEW_VOTE_DURATION),
-            )
+            ),
         ),
         (
             "14. Change objection phase time from 300 to 360 on Aragon Voting",
             (
                 contracts.voting.address,
                 contracts.voting.unsafelyChangeObjectionPhaseTime.encode_input(NEW_OBJECTION_PHASE_DURATION),
-            )
+            ),
         ),
         (
             "15. Revoke UNSAFELY_MODIFY_VOTE_TIME_ROLE on Aragon Voting from Aragon Voting",
@@ -256,7 +255,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                 target_app=contracts.voting,
                 permission_name="UNSAFELY_MODIFY_VOTE_TIME_ROLE",
                 revoke_from=contracts.voting,
-            )
+            ),
         ),
         (
             "16. Grant CONFIG_MANAGER_ROLE on OracleDaemonConfig to Aragon Agent",
@@ -296,7 +295,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                 ]
             ),
         ),
-
         # Change GateSeal on WithdrawalQueue and ValidatorsExitBusOracle
         (
             "19. Grant PAUSE_ROLE on WithdrawalQueue to the new GateSeal (0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778)",
@@ -346,7 +344,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                 ]
             ),
         ),
-
         # Change CSM GateSeals
         (
             "23. Grant PAUSE_ROLE on CSModule for the new CSM GateSeal (0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a)",
@@ -408,7 +405,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                 ]
             ),
         ),
-
         (
             "28. Revoke PAUSE_ROLE on CSFeeOracle from the old CSM GateSeal (0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce)",
             agent_forward(
@@ -421,7 +417,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                 ]
             ),
         ),
-
         # EasyTrack factories
         (
             "29. Add a top-up EVM script factory for stablecoins 0x167caEDde0F3230eB18763270B11c970409F389e to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x0214CEBDEc06dc2729382860603d01113F068388)",

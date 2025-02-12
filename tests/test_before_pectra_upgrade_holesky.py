@@ -6,7 +6,7 @@ from scripts.before_pectra_upgrade_holesky import (
     OLD_CSM_GATE_SEAL,
     NEW_VOTE_DURATION,
     NEW_OBJECTION_PHASE_DURATION,
-    FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
+    FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE,
 )
 from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS
 from brownie import interface, Contract, reverts, convert
@@ -34,7 +34,7 @@ VALIDATORS_EXIT_BUS_ORACLE = "0xffDDF7025410412deaa05E3E1cE68FE53208afcb"
 ACCOUNTING_ORACLE = "0x4E97A3972ce8511D87F334dA17a2C332542a5246"
 CS_FEE_ORACLE = "0xaF57326C7d513085051b50912D51809ECC5d98Ee"
 VOTING = "0xdA7d2573Df555002503F29aA4003e398d28cc00f"
-CS_VERIFIER_ADDRESS = "0xE044427930C166670f5dd84E9154A874c4759310"
+CS_VERIFIER_ADDRESS = "0xc099dfd61f6e5420e0ca7e84d820daad17fc1d44"
 CS_VERIFIER_ADDRESS_OLD = "0x6FDAA094227CF8E1593f9fB9C1b867C1f846F916"
 CSM_ADDRESS = "0x4562c3e63c2e586cD1651B958C22F88135aCAd4f"
 
@@ -68,6 +68,7 @@ AO_CONSENSUS_VERSION = 3
 VEBO_CONSENSUS_VERSION = 3
 # CS Fee oracle
 CS_FEE_ORACLE_CONSENSUS_VERSION = 2
+
 
 def get_vebo():
     return interface.ValidatorsExitBusOracle(VALIDATORS_EXIT_BUS_ORACLE)
@@ -178,19 +179,19 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     check_aragon_doesnt_have_manage_consensus_role_on_oracle(cs_fee_oracle)
     # 8) Update vebo consensus version equals to 2 after voting
     assert cs_fee_oracle.getConsensusVersion() == 2
-    # 10) Old CS Verifier has VERIFIER_ROLE role on CSM after voting
+    # 10) Old CS Verifier doesn't have VERIFIER_ROLE role on CSM after voting
     assert not csm.hasRole(VERIFIER_ROLE, CS_VERIFIER_ADDRESS_OLD)
-    # 11) New CS Verifier doesn't have VERIFIER_ROLE role on CSM after voting
+    # 11) New CS Verifier has VERIFIER_ROLE role on CSM after voting
     assert csm.hasRole(VERIFIER_ROLE, CS_VERIFIER_ADDRESS)
-
-    # check verifier epoch
 
     # Check voting duration changed properly
     assert contracts.voting.voteTime() == NEW_VOTE_DURATION
     assert contracts.voting.objectionPhaseTime() == NEW_OBJECTION_PHASE_DURATION
 
     # Check Oracle Config updated properly
-    updated_value_uint = convert.to_uint(contracts.oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT"))
+    updated_value_uint = convert.to_uint(
+        contracts.oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT")
+    )
     assert updated_value_uint == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
 
     # Check GateSeal updated properly
@@ -282,7 +283,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
         ECOSYSTEM_BORG_STABLE_REGISTRY,
         ECOSYSTEM_BORG_STETH_REGISTRY,
         LABS_BORG_STABLE_REGISTRY,
-        LABS_BORG_STETH_REGISTRY
+        LABS_BORG_STETH_REGISTRY,
     ]:
         check_add_and_remove_recipient_with_voting(
             registry=interface.AllowedRecipientRegistry(registry),
@@ -336,18 +337,18 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
         events[15],
         contracts.oracle_daemon_config.CONFIG_MANAGER_ROLE(),
         contracts.agent.address,
-        contracts.agent.address
+        contracts.agent.address,
     )
     validate_config_value_updated(
         events[16],
         "FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT",
-        FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
+        FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE,
     )
     validate_revoke_role_event(
         events[17],
         contracts.oracle_daemon_config.CONFIG_MANAGER_ROLE(),
         contracts.agent.address,
-        contracts.agent.address
+        contracts.agent.address,
     )
 
     # Grant PAUSE_ROLE on WithdrawalQueue for the new GateSeal
@@ -377,7 +378,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
         EVMScriptFactoryAdded(
             factory_addr=ecosystem_borg_stable_factory,
             permissions=create_permissions(contracts.finance, "newImmediatePayment")
-            + create_permissions(interface.AllowedRecipientRegistry(ECOSYSTEM_BORG_STABLE_REGISTRY), "updateSpentAmount")[2:],
+            + create_permissions(
+                interface.AllowedRecipientRegistry(ECOSYSTEM_BORG_STABLE_REGISTRY), "updateSpentAmount"
+            )[2:],
         ),
     )
     validate_evmscript_factory_added_event(
@@ -385,7 +388,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
         EVMScriptFactoryAdded(
             factory_addr=ecosystem_borg_steth_factory,
             permissions=create_permissions(contracts.finance, "newImmediatePayment")
-            + create_permissions(interface.AllowedRecipientRegistry(ECOSYSTEM_BORG_STETH_REGISTRY), "updateSpentAmount")[2:],
+            + create_permissions(
+                interface.AllowedRecipientRegistry(ECOSYSTEM_BORG_STETH_REGISTRY), "updateSpentAmount"
+            )[2:],
         ),
     )
     validate_evmscript_factory_added_event(
@@ -393,7 +398,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
         EVMScriptFactoryAdded(
             factory_addr=labs_borg_stable_factory,
             permissions=create_permissions(contracts.finance, "newImmediatePayment")
-            + create_permissions(interface.AllowedRecipientRegistry(LABS_BORG_STABLE_REGISTRY), "updateSpentAmount")[2:],
+            + create_permissions(interface.AllowedRecipientRegistry(LABS_BORG_STABLE_REGISTRY), "updateSpentAmount")[
+                2:
+            ],
         ),
     )
     validate_evmscript_factory_added_event(
@@ -408,9 +415,11 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
 
 # Events check
 
+
 def validate_config_value_updated(event: EventDict, key, value):
     assert event["ConfigValueUpdated"]["key"] == key
     assert convert.to_uint(event["ConfigValueUpdated"]["value"]) == value
+
 
 def validate_consensus_version_update(events: list[EventDict], version):
     validate_grant_role_event(

@@ -110,8 +110,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     # 11) New CS Verifier doesn't have VERIFIER_ROLE role on CSM after voting
     assert csm.hasRole(VERIFIER_ROLE, CS_VERIFIER_ADDRESS)
 
-    # check verifier epoch
-
     # Events check
     display_voting_events(vote_tx)
     events = group_voting_events(vote_tx)

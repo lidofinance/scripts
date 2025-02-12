@@ -36,9 +36,6 @@ elif network_name() in ("holesky", "holesky-fork"):
 elif network_name() in ("sepolia", "sepolia-fork"):
     print(f'Using {color("yellow")}config_sepolia.py{color} addresses')
     from configs.config_sepolia import *
-elif network_name() in ("devnet4"):
-    print(f'Using {color("yellow")}config_devnet4.py{color} addresses')
-    from configs.config_devnet4 import *
 else:
     print(f'Using {color("magenta")}config_mainnet.py{color} addresses')
     from configs.config_mainnet import *

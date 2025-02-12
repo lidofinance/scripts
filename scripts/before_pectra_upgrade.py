@@ -9,7 +9,7 @@ Release part of the update before the Pectra upgrade
 6. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle from Aragon Agent
 7. Grant MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle to Aragon Agent
 8. Update CSFeeOracle consensus version to 2
-9. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on  CSFeeOracle from Aragon Agent
+9. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle from Aragon Agent
 10. Revoke VERIFIER_ROLE role on CSM from old CS Verifier
 11. Grant VERIFIER_ROLE role on CSM to new CS Verifier
 """
