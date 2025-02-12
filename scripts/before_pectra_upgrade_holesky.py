@@ -19,13 +19,13 @@ Release part of the update before the Pectra upgrade
 16. Grant CONFIG_MANAGER_ROLE on OracleDaemonConfig 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 to Aragon Agent
 17. Update the FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT parameter in the OracleDaemonConfig contract  0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 to 0x08CA (2250)
 18. Revoke CONFIG_MANAGER_ROLE on OracleDaemonConfig 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 from Aragon Agent
-19. Grant PAUSE_ROLE on WithdrawalQueue 0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50 for the new GateSeal 0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778
-20. Grant PAUSE_ROLE on ValidatorsExitBusOracle 0xffDDF7025410412deaa05E3E1cE68FE53208afcb for the new GateSeal 0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778
+19. Grant PAUSE_ROLE on WithdrawalQueue 0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50 to the new GateSeal 0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778
+20. Grant PAUSE_ROLE on ValidatorsExitBusOracle 0xffDDF7025410412deaa05E3E1cE68FE53208afcb to the new GateSeal 0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778
 21. Revoke PAUSE_ROLE on WithdrawalQueue 0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50 from the old GateSeal 0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d
 22. Revoke PAUSE_ROLE on ValidatorsExitBusOracle 0xffDDF7025410412deaa05E3E1cE68FE53208afcb from the old GateSeal 0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d
-23. Grant PAUSE_ROLE on CSModule 0x4562c3e63c2e586cD1651B958C22F88135aCAd4f for the new CSM GateSeal 0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a
-24. Grant PAUSE_ROLE on CSAccounting 0xc093e53e8F4b55A223c18A2Da6fA00e60DD5EFE1 for the new CSM GateSeal 0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a
-25. Grant PAUSE_ROLE on CSFeeOracle 0xaF57326C7d513085051b50912D51809ECC5d98Ee for the new CSM GateSeal 0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a
+23. Grant PAUSE_ROLE on CSModule 0x4562c3e63c2e586cD1651B958C22F88135aCAd4f to the new CSM GateSeal 0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a
+24. Grant PAUSE_ROLE on CSAccounting 0xc093e53e8F4b55A223c18A2Da6fA00e60DD5EFE1 to the new CSM GateSeal 0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a
+25. Grant PAUSE_ROLE on CSFeeOracle 0xaF57326C7d513085051b50912D51809ECC5d98Ee to the new CSM GateSeal 0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a
 26. Revoke PAUSE_ROLE on CSModule 0x4562c3e63c2e586cD1651B958C22F88135aCAd4f from the old CSM GateSeal 0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce
 27. Revoke PAUSE_ROLE on CSAccounting 0xc093e53e8F4b55A223c18A2Da6fA00e60DD5EFE1 from the old CSM GateSeal 0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce
 28. Revoke PAUSE_ROLE on CSFeeOracle 0xaF57326C7d513085051b50912D51809ECC5d98Ee from the old CSM GateSeal 0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce
@@ -93,6 +93,15 @@ NEW_GATE_SEAL = "0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778"
 # CSM GateSeals
 OLD_CSM_GATE_SEAL = "0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce"
 NEW_CSM_GATE_SEAL = "0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a"
+
+ECOSYSTEM_BORG_STABLE_FACTORY = "0x167caEDde0F3230eB18763270B11c970409F389e"
+ECOSYSTEM_BORG_STABLE_REGISTRY = "0x0214CEBDEc06dc2729382860603d01113F068388"
+ECOSYSTEM_BORG_STETH_FACTORY = "0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac"
+ECOSYSTEM_BORG_STETH_REGISTRY = "0x193d0bA65cf3a2726e12c5568c068D1B3ea51740"
+LABS_BORG_STABLE_FACTORY = "0xf7304738E9d4F572b909FaEd32504F558E234cdB"
+LABS_BORG_STABLE_REGISTRY = "0x303F5b60e3cf6Ea11d8509A1546401e311A13B92"
+LABS_BORG_STETH_FACTORY = "0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9"
+LABS_BORG_STETH_REGISTRY = "0x02CD05c1cBa16113680648a8B3496A5aE312a935"
 
 description = """
 """
@@ -303,7 +312,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                     encode_oz_grant_role(
                         contract=contracts.withdrawal_queue,
                         role_name="PAUSE_ROLE",
-                        grant_to="0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778",
+                        grant_to=NEW_GATE_SEAL,
                     )
                 ]
             ),
@@ -315,7 +324,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                     encode_oz_grant_role(
                         contract=contracts.validators_exit_bus_oracle,
                         role_name="PAUSE_ROLE",
-                        grant_to="0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778",
+                        grant_to=NEW_GATE_SEAL,
                     )
                 ]
             ),
@@ -327,7 +336,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                     encode_oz_revoke_role(
                         contract=contracts.withdrawal_queue,
                         role_name="PAUSE_ROLE",
-                        revoke_from="0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d",
+                        revoke_from=OLD_GATE_SEAL,
                     )
                 ]
             ),
@@ -339,7 +348,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                     encode_oz_revoke_role(
                         contract=contracts.validators_exit_bus_oracle,
                         role_name="PAUSE_ROLE",
-                        revoke_from="0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d",
+                        revoke_from=OLD_GATE_SEAL,
                     )
                 ]
             ),
@@ -421,37 +430,29 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         (
             "29. Add a top-up EVM script factory for stablecoins 0x167caEDde0F3230eB18763270B11c970409F389e to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x0214CEBDEc06dc2729382860603d01113F068388)",
             add_evmscript_factory(
-                factory="0x167caEDde0F3230eB18763270B11c970409F389e",
-                permissions=create_top_up_allowed_recipient_permission(
-                    registry_address="0x0214CEBDEc06dc2729382860603d01113F068388"
-                ),
+                factory=ECOSYSTEM_BORG_STABLE_FACTORY,
+                permissions=create_top_up_allowed_recipient_permission(registry_address=ECOSYSTEM_BORG_STABLE_REGISTRY),
             ),
         ),
         (
             "30. Add a top-up EVM script factory for stETH 0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x193d0bA65cf3a2726e12c5568c068D1B3ea51740)",
             add_evmscript_factory(
-                factory="0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac",
-                permissions=create_top_up_allowed_recipient_permission(
-                    registry_address="0x193d0bA65cf3a2726e12c5568c068D1B3ea51740"
-                ),
+                factory=ECOSYSTEM_BORG_STETH_FACTORY,
+                permissions=create_top_up_allowed_recipient_permission(registry_address=ECOSYSTEM_BORG_STETH_REGISTRY),
             ),
         ),
         (
             "31. Add a top-up EVM script factory for stablecoins 0xf7304738E9d4F572b909FaEd32504F558E234cdB to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x303F5b60e3cf6Ea11d8509A1546401e311A13B92)",
             add_evmscript_factory(
-                factory="0xf7304738E9d4F572b909FaEd32504F558E234cdB",
-                permissions=create_top_up_allowed_recipient_permission(
-                    registry_address="0x303F5b60e3cf6Ea11d8509A1546401e311A13B92"
-                ),
+                factory=LABS_BORG_STABLE_FACTORY,
+                permissions=create_top_up_allowed_recipient_permission(registry_address=LABS_BORG_STABLE_REGISTRY),
             ),
         ),
         (
             "32. Add a top-up EVM script factory for stETH 0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9 to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x02CD05c1cBa16113680648a8B3496A5aE312a935)",
             add_evmscript_factory(
-                factory="0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9",
-                permissions=create_top_up_allowed_recipient_permission(
-                    registry_address="0x02CD05c1cBa16113680648a8B3496A5aE312a935"
-                ),
+                factory=LABS_BORG_STETH_FACTORY,
+                permissions=create_top_up_allowed_recipient_permission(registry_address=LABS_BORG_STETH_REGISTRY),
             ),
         ),
     )
