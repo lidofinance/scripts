@@ -41,12 +41,15 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
 
         Contains next steps:
             1. Update VEBO implementation
-            2. Update VEBO consensus version to `4`
-            # 3. Call finalize upgrade on VEBO  # TODO
-            4. Update WithdrawalVault implementation
-            5. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEBO in WithdrawalVault
-            # 6. Call finalize upgrade on WV  # TODO
-            7. Update AO consensus version to `4`
+            2. Grant VEBO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+            3. Update VEBO consensus version to `4`
+            4. Revoke VEBO MANAGE_CONSENSUS_VERSION_ROLE from AGENT
+            5. Update WithdrawalVault implementation
+            6. Finalize WV upgrade
+            7. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEBO in WithdrawalVault
+            8. Grant MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+            9. Update AO consensus version to `4`
+            10. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT
     """
 
     vote_descriptions, call_script_items = zip(
@@ -85,13 +88,12 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         (
             "5. Update WithdrawalVault implementation",
             encode_wv_proxy_upgrade_to(contracts.withdrawal_vault, WITHDRAWAL_VAULT_IMPL)
-
         ),
         (
-            "6. Initialize new WV implementation",
+            "6. Finalize WV upgrade",
             (
                 contracts.withdrawal_vault.address,
-                contracts.withdrawal_vault.initialize.encode_input(
+                contracts.withdrawal_vault.finalizeUpgrade_v2.encode_input(
                     contracts.agent,
                 ),
             )
