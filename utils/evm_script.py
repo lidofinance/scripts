@@ -5,7 +5,7 @@ from functools import lru_cache
 from typing import List, Union, Optional, Callable, Any
 
 import eth_abi
-from brownie import Contract
+from brownie import Contract, convert
 from brownie.utils import color
 from eth_typing.evm import HexAddress
 from web3 import Web3
@@ -169,11 +169,19 @@ def decode_encoded_call(encoded_call: EncodedCall) -> Optional[Call]:
     """
     contract = Contract(encoded_call.address)
 
-    # If the method selector is not found in the locally stored contract, try fetching the full ABI from Etherscan.
+    # If the method selector is not found in the locally stored contracts, fetch the full ABI from Etherscan.
     if encoded_call.method_id not in contract.selectors:
+        # For proxy contracts, Brownie automatically retrieves the implementation ABI.
         contract = Contract.from_explorer(encoded_call.address)
 
-    # If the method is still not found, the contract may not be verified.
+    # If the method selector is still not found, the call may target the proxy contract directly rather than its implementation.
+    if encoded_call.method_id not in contract.selectors:
+        # Explicitly fetch the ABI for the proxy contract itself by setting `as_proxy_for` to the proxy's address.
+        # NOTE: Normalization via `convert.to_address()` is required; without it, the internal check in `from_explorer()` may fail,
+        #   resulting in the implementation's ABI being downloaded instead.
+        contract = Contract.from_explorer(encoded_call.address, as_proxy_for=convert.to_address(encoded_call.address))
+
+    # If the method selector is still not found, the contract is likely not verified.
     if encoded_call.method_id not in contract.selectors:
         return None
 
