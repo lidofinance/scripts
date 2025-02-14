@@ -72,7 +72,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     assert vebo.getConsensusVersion() == 2
     # 7),9) Aragon agent doesnt have MANAGE_CONSENSUS_VERSION_ROLE on CS Fee oracle
     check_aragon_doesnt_have_manage_consensus_role_on_oracle(cs_fee_oracle)
-    # 8) Update vebo consensus version equals to 1
+    # 8) CS fee oracle consensus version equals to 1 before voting
     assert cs_fee_oracle.getConsensusVersion() == 1
     # 10) Old CS Verifier has VERIFIER_ROLE role on CSM before voting
     assert csm.hasRole(VERIFIER_ROLE, CS_VERIFIER_ADDRESS_OLD)
@@ -103,7 +103,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding):
     assert vebo.getConsensusVersion() == 3
     # 7),9) Aragon agent doesnt have MANAGE_CONSENSUS_VERSION_ROLE on CS Fee oracle
     check_aragon_doesnt_have_manage_consensus_role_on_oracle(cs_fee_oracle)
-    # 8) Update vebo consensus version equals to 2 after voting
+    # 8) CS fee oracle consensus version equals to 2 after voting
     assert cs_fee_oracle.getConsensusVersion() == 2
     # 10) Old CS Verifier has VERIFIER_ROLE role on CSM after voting
     assert not csm.hasRole(VERIFIER_ROLE, CS_VERIFIER_ADDRESS_OLD)
