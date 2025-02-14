@@ -30,18 +30,19 @@ dual_governance_contracts = {
 def get_vote_items():
     foo_contract = interface.Foo("0xC3fc22C7e0d20247B797fb6dc743BD3879217c81")
     roles_validator = interface.RolesValidator("0x0F8826a574BCFDC4997939076f6D82877971feB3")
+    launch_verifier = interface.DualGovernanceLaunchVerifier("0xfEcF4634f6571da23C8F21bEEeA8D12788df529e")
     
     return zip(
-        (
-            "Revoke permission for STAKING_CONTROL_ROLE from Voting contract.",
-            encode_permission_revoke(
-                target_app=contracts.lido, permission_name="STAKING_CONTROL_ROLE", revoke_from=contracts.voting
-            ),
-        ),
         (
             "Grant permission for STAKING_CONTROL_ROLE to Agent contract.",
             encode_permission_grant(
                 target_app=contracts.lido, permission_name="STAKING_CONTROL_ROLE", grant_to=contracts.agent
+            ),
+        ),
+        (
+            "Revoke permission for STAKING_CONTROL_ROLE from Voting contract.",
+            encode_permission_revoke(
+                target_app=contracts.lido, permission_name="STAKING_CONTROL_ROLE", revoke_from=contracts.voting
             ),
         ),
         (
@@ -117,6 +118,13 @@ def get_vote_items():
                 roles_validator.validate.encode_input(
                     dual_governance_contracts['adminExecutor'], dual_governance_contracts['resealManager']
                 ),
+            )
+        ),
+        (
+            "Verify dual governance",
+            (
+                launch_verifier.address,
+                launch_verifier.verify.encode_input(),
             )
         ),
         (
