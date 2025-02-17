@@ -2,7 +2,7 @@ import time
 
 from typing import Dict
 from brownie import interface
-from utils.agent import agent_forward, dual_governance_agent_forward
+from utils.agent import agent_forward, dual_governance_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.config import (
@@ -22,9 +22,9 @@ from utils.evm_script import encode_call_script
 description = "Holesky dual governance upgrade dry-run"
 
 dual_governance_contracts = {
-    "dualGovernance": "0xb291a7f092D5cCE0A3C93eA21Bda3431129dB202",
-    "adminExecutor": "0xD5EE9991f44b36E186A658dc2A0357EcCf11b69B",
-    "resealManager": "0xc2764655e3fe0bd2D3C710D74Fa5a89162099FD8",
+    "dualGovernance": "0xE29D4d0CAD66D87a054b5A93867C708000DaE1E6",
+    "adminExecutor": "0x3Cc908B004422fd66FdB40Be062Bf9B0bd5BDbed",
+    "resealManager": "0x517C93bb27aD463FE3AD8f15DaFDAD56EC0bEeC3",
 }
 
 def get_vote_items():
@@ -121,27 +121,31 @@ def get_vote_items():
             )
         ),
         (
+            "Submit dual governance proposal",
+            (
+                dual_governance_forward(
+                    [
+                        agent_forward(
+                            [(
+                                foo_contract.address,
+                                foo_contract.bar.encode_input()
+                            )]
+                        ),
+                        (
+                            contracts.time_constraints.address,
+                            contracts.time_constraints.checkExecuteWithinDayTime.encode_input(28800, 72000)
+                        )
+                    ]
+                )
+            )
+        ),
+        (
             "Verify dual governance",
             (
                 launch_verifier.address,
                 launch_verifier.verify.encode_input(),
             )
         ),
-        (
-            "Submit first dual governance proposal",
-            (
-                dual_governance_agent_forward(
-                    [(
-                        foo_contract.address,
-                        foo_contract.bar.encode_input()
-                    ),
-                    (
-                        contracts.time_constraints.address,
-                        contracts.time_constraints.checkExecuteWithinDayTime.encode_input(28800, 72000)
-                    )]
-                )
-            )
-        )
     )
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False):
