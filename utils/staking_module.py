@@ -22,3 +22,10 @@ def add_node_operator(staking_module, voting, stranger):
     staking_module.addNodeOperator("test", f"0xbb{str(1).zfill(38)}", {"from": stranger} )
 
     return operator_id
+
+
+def calc_module_reward_shares(module_id, shares_minted_as_fees):
+    distribution = contracts.staking_router.getStakingRewardsDistribution()
+    module_idx = distribution[1].index(module_id)
+    return distribution[2][module_idx] * shares_minted_as_fees // distribution[3]
+

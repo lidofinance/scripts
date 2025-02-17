@@ -1,15 +1,13 @@
-import os
 import json
 from typing import List
 
 import brownie.exceptions
 import pytest
 
-from brownie import chain, interface, web3
+from brownie import chain, interface, web3, network
 from brownie.network import state
 from brownie.network.contract import Contract
 
-from utils.balance import set_balance
 from utils.evm_script import EMPTY_CALLSCRIPT
 
 from utils.config import contracts, network_name, MAINNET_VOTE_DURATION
@@ -17,7 +15,7 @@ from utils.config import contracts, network_name, MAINNET_VOTE_DURATION
 from utils.config import *
 from utils.txs.deploy import deploy_from_prepared_tx
 from utils.test.helpers import ETH
-
+from utils.balance import set_balance, set_balance_in_wei
 from functools import wraps
 
 ENV_OMNIBUS_BYPASS_EVENTS_DECODING = "OMNIBUS_BYPASS_EVENTS_DECODING"
@@ -28,6 +26,11 @@ ENV_OMNIBUS_VOTE_IDS = "OMNIBUS_VOTE_IDS"
 @pytest.fixture(scope="function", autouse=True)
 def shared_setup(fn_isolation):
     pass
+
+
+@pytest.fixture(scope="session", autouse=True)
+def network_gas_price():
+    network.gas_price("2 gwei")
 
 
 @pytest.fixture(scope="function")
@@ -48,9 +51,24 @@ def ldo_holder(accounts):
     return accounts.at(LDO_HOLDER_ADDRESS_FOR_TESTS, force=True)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def stranger():
     return set_balance("0x98eC059dC3aDFbdd63429454aeB0C990fbA4a124", 100000)
+
+
+@pytest.fixture(scope="function")
+def delegate1():
+    return set_balance("0xa70B0AfdF44cEccCF02E76486a6DE4F4B7fd1e52", 100000)
+
+
+@pytest.fixture(scope="function")
+def delegate2():
+    return set_balance("0x100b896F2Dd8c4Ca619db86BCDDb7E085143C1C5", 100000)
+
+
+@pytest.fixture(scope="module")
+def trp_recipient(accounts):
+    return set_balance("0x228cCaFeA1fa21B74257Af975A9D84d87188c61B", 100000)
 
 
 @pytest.fixture(scope="module")
@@ -90,12 +108,12 @@ class Helpers:
             raise AssertionError(f"Event {evt_name} was fired")
 
     @staticmethod
-    def execute_vote(accounts, vote_id, dao_voting, topup="0.1 ether", skip_time=MAINNET_VOTE_DURATION):
+    def execute_vote(accounts, vote_id, dao_voting, topup="10 ether", skip_time=MAINNET_VOTE_DURATION):
         (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup, skip_time)
         return tx
 
     @staticmethod
-    def execute_votes(accounts, vote_ids, dao_voting, topup="0.1 ether", skip_time=MAINNET_VOTE_DURATION):
+    def execute_votes(accounts, vote_ids, dao_voting, topup="10 ether", skip_time=MAINNET_VOTE_DURATION):
         OBJECTION_PHASE_ID = 1
         for vote_id in vote_ids:
             print(f"Vote #{vote_id}")
@@ -132,7 +150,7 @@ class Helpers:
             print(f"vote #{vote_id} executed")
             execution_transactions.append(tx)
 
-        # Helpers._prefetch_contracts_from_etherscan()
+        Helpers._prefetch_contracts_from_etherscan()
 
         return execution_transactions
 
@@ -149,6 +167,8 @@ class Helpers:
             Contract.from_explorer(VALIDATORS_EXIT_BUS_ORACLE)
             Contract.from_explorer(WITHDRAWAL_QUEUE)
             Contract.from_explorer(STAKING_ROUTER)
+            Contract.from_explorer(VOTING)
+            Contract.from_explorer(SIMPLE_DVT)
 
             Helpers._etherscan_is_fetched = True
 
@@ -159,7 +179,7 @@ def helpers():
 
 
 @pytest.fixture(scope="session")
-def vote_ids_from_env() -> List[int]:
+def vote_ids_from_env() -> [int]:
     if os.getenv(ENV_OMNIBUS_VOTE_IDS):
         try:
             vote_ids_str = os.getenv(ENV_OMNIBUS_VOTE_IDS)
@@ -240,20 +260,37 @@ def parse_events_from_local_abi():
 
 @pytest.fixture(scope="session", autouse=True)
 def add_balance_check_middleware():
-    web3.middleware_onion.add(balance_check_middleware, name='balance_check')
+    web3.middleware_onion.add(balance_check_middleware, name="balance_check")
 
-def ensure_balance(address):
-    if web3.eth.get_balance(address) < ETH(1):
-        set_balance(address, 1000000)
+
+# TODO: Such implicit manipulation of the balances may lead to hard-debugging errors in the future.
+def ensure_balance(address) -> int:
+    old_balance = web3.eth.get_balance(address)
+    if old_balance < ETH(999):
+        set_balance_in_wei(address, ETH(1000000))
+    return web3.eth.get_balance(address) - old_balance
+
 
 def balance_check_middleware(make_request, web3):
     @wraps(make_request)
     def middleware(method, params):
+        from_address = None
+        result = None
+        balance_diff = 0
+
         if method in ["eth_sendTransaction", "eth_sendRawTransaction"]:
             transaction = params[0]
-            from_address = transaction.get('from')
+            from_address = transaction.get("from")
             if from_address:
-                ensure_balance(from_address)
+                balance_diff = ensure_balance(from_address)
 
-        return make_request(method, params)
+        try:
+            result = make_request(method, params)
+        finally:
+            if balance_diff > 0:
+                new_balance = max(0, web3.eth.get_balance(from_address) - balance_diff)
+                set_balance_in_wei(from_address, new_balance)
+
+        return result
+
     return middleware

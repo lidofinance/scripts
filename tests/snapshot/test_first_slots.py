@@ -16,7 +16,7 @@ from utils.test.snapshot_helpers import _chain_snapshot
 from .utils import get_slot
 
 SLOTS_COUNT_TO_CHECK = 16
-MAX_ARRAY_SIZE = 2**5
+MAX_ARRAY_SIZE = 2 ** 5
 
 
 class Frame(TypedDict):
@@ -35,8 +35,7 @@ class SandwichFn(Protocol):
     def __call__(
         snapshot_fn: SnapshotFn = ...,
         snapshot_block: int = ...,
-    ) -> tuple[Stack, Stack]:
-        ...
+    ) -> tuple[Stack, Stack]: ...
 
 
 def test_first_slots(sandwich_upgrade: SandwichFn):
@@ -58,8 +57,16 @@ def skip_slots() -> Sequence[tuple[str, int]]:
         (
             # finance slot changing due to deposit bot funding
             contracts.finance,
-            0x07
-        )
+            0x07,
+        ),
+        # new EasyTrack factory for CSM (EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY)
+        # evmScriptFactories array
+        (contracts.easy_track.address, 5),
+        # Set initial epoch for CSM hash consensus
+        (contracts.csm_hash_consensus.address, 0),
+        # change hash consensus members
+        (contracts.csm_hash_consensus.address, 2)
+
     ]
 
 
@@ -75,17 +82,17 @@ def do_snapshot(skip_slots: Sequence[tuple[str, int]]) -> SnapshotFn:
             slot_in_hex = HexBytes(slot).hex()
             # try plain 32 bits value first
             slot_value = get_slot(
-                Web3.toChecksumAddress(contract.address),
+                Web3.to_checksum_address(contract.address),
                 pos=slot,
                 block=block,
             )
             res[f"{contract.address}_slot_{slot_in_hex}"] = slot_value
 
-            # if the slot stores relativelly small integer, try to read as an array
-            int_value = Web3.toInt(slot_value)
+            # if the slot stores relatively small integer, try to read as an array
+            int_value = Web3.to_int(slot_value)
             if 0 < int_value < MAX_ARRAY_SIZE:
                 slot_value_as_list = get_slot(
-                    Web3.toChecksumAddress(contract.address),
+                    Web3.to_checksum_address(contract.address),
                     pos=slot,
                     as_list=True,
                     block=block,
@@ -116,6 +123,13 @@ def do_snapshot(skip_slots: Sequence[tuple[str, int]]) -> SnapshotFn:
             contracts.kernel,
             contracts.easy_track,
             contracts.wsteth,
+            contracts.csm,
+            contracts.cs_early_adoption,
+            contracts.cs_accounting,
+            contracts.cs_fee_distributor,
+            contracts.cs_fee_oracle,
+            contracts.csm_hash_consensus,
+            contracts.cs_verifier,
         ):
             res |= _get_slots(contract, block)
 
@@ -143,7 +157,7 @@ def sandwich_upgrade(
             v1_frames = tuple(_actions_snaps())
 
         if vote_ids_from_env:
-            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
+            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
         else:
             start_and_execute_votes(contracts.voting, helpers)
 

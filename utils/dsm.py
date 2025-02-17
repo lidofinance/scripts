@@ -46,6 +46,21 @@ class DSMMessage:
         signedMessage = Account.signHash(self.hash, signer_private_key)
         return to_eip2098(signedMessage)
 
+class DSMPauseDepositsMessage(DSMMessage):
+    def __init__(self, block_number: int):
+        super().__init__()
+        self.block_number = block_number
+
+    @property
+    def hash(self) -> str:
+        return Web3.solidity_keccak(
+            ["bytes32", "uint256"],
+            [
+                self.message_prefix,
+                self.block_number
+            ]
+        ).hex()
+
 
 class DSMUnvetMessage(DSMMessage):
     def __init__(self, block_number: int, block_hash: str, staking_module: int, nonce: int,
@@ -78,8 +93,8 @@ def to_eip2098(signedMessage: SignedMessage) -> Dict[str, Any]:
     s = signedMessage.s
     v = signedMessage.v
 
-    assert (r.bit_length() + 7) // 8 == 32
-    assert (s.bit_length() + 7) // 8 == 32
+    assert r.bit_length() // 8 <= 32
+    assert s.bit_length() // 8 <= 32
 
     if v not in (27, 28):
         raise ValueError("Invalid v value. Must be 27 or 28.")

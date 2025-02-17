@@ -6,6 +6,8 @@ from utils.test.oracle_report_helpers import oracle_report
 from utils.test.helpers import ETH, almostEqEth
 from utils.config import contracts
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
+from utils.balance import set_balance
+from utils.test.staking_router_helpers import set_staking_module_status, StakingModuleStatus
 from utils.test.tx_cost_helper import transaction_cost
 
 def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
@@ -15,6 +17,8 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     curated_module_id = 1
     simple_dvt_module_id = 2
 
+    initial_stake_limit = contracts.lido.getCurrentStakeLimit()
+    contracts.lido.removeStakingLimit({"from": accounts.at(contracts.voting, force=True)})
     """ report """
     while contracts.withdrawal_queue.getLastRequestId() != contracts.withdrawal_queue.getLastFinalizedRequestId():
         # finalize all current requests first
@@ -23,6 +27,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
         contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale.address, "value": ETH(10000)})
 
     contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale.address, "value": ETH(10000)})
+    contracts.lido.setStakingLimit(initial_stake_limit, initial_stake_limit, {"from": accounts.at(contracts.voting, force=True)})
 
     # get accidentally unaccounted stETH shares on WQ contract
     uncounted_steth_shares = contracts.lido.sharesOf(contracts.withdrawal_queue)
@@ -32,6 +37,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     # ensure SimpleDVT has some keys to deposit
     fill_simple_dvt_ops_vetted_keys(stranger, 3, 5)
+    set_balance(stranger.address, 1000000)
 
     print(stranger, stranger.balance())
     steth_balance_before_submit = contracts.lido.balanceOf(stranger)
@@ -103,26 +109,32 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
 
     assert contracts.lido.getDepositableEther() == buffered_ether_after_submit - withdrawal_unfinalized_steth
 
+    # pausing csm due to very high amount of keys in the queue
+    csm_module_id = 3
+    set_staking_module_status(csm_module_id, StakingModuleStatus.Stopped)
+
     deposit_tx_nor = contracts.lido.deposit(max_deposit, curated_module_id, "0x0", {"from": dsm})
     deposit_tx_sdvt = contracts.lido.deposit(max_deposit, simple_dvt_module_id, "0x0", {"from": dsm})
 
+    set_staking_module_status(csm_module_id, StakingModuleStatus.Active)
+
     buffered_ether_after_deposit = contracts.lido.getBufferedEther()
 
-    unbuffered_event_nor = deposit_tx_nor.events["Unbuffered"]
+    deposited_event_nor = deposit_tx_nor.events["StakingRouterETHDeposited"]
     # deposit_validators_changed_event_nor = deposit_tx_nor.events["DepositedValidatorsChanged"]
 
-    unbuffered_event_sdvt = deposit_tx_sdvt.events["Unbuffered"]
+    deposited_event_sdvt = deposit_tx_sdvt.events["StakingRouterETHDeposited"]
 
     # we need just last one event
     deposit_validators_changed_event_sdvt = deposit_tx_sdvt.events["DepositedValidatorsChanged"]
 
-    deposits_count = math.floor(unbuffered_event_nor["amount"] / ETH(32)) + math.floor(
-        unbuffered_event_sdvt["amount"] / ETH(32)
+    deposits_count = math.floor(deposited_event_nor["amount"] / ETH(32)) + math.floor(
+        deposited_event_sdvt["amount"] / ETH(32)
     )
 
     assert (
         buffered_ether_after_deposit
-        == buffered_ether_after_submit - unbuffered_event_nor["amount"] - unbuffered_event_sdvt["amount"]
+        == buffered_ether_after_submit - deposited_event_nor["amount"] - deposited_event_sdvt["amount"]
     )
 
     # get total deposited validators count from the last deposit even
@@ -136,6 +148,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     treasury = contracts.lido_locator.treasury()
     nor = contracts.node_operators_registry.address
     sdvt = contracts.simple_dvt.address
+    csm = contracts.csm.address
     nor_operators_count = contracts.node_operators_registry.getNodeOperatorsCount()
     sdvt_operators_count = contracts.simple_dvt.getNodeOperatorsCount()
 
@@ -225,12 +238,16 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     assert transfer_event[2]["from"] == ZERO_ADDRESS
     assert transfer_event[2]["to"] == sdvt
 
+    # csm
     assert transfer_event[3]["from"] == ZERO_ADDRESS
-    assert transfer_event[3]["to"] == treasury
+    assert transfer_event[3]["to"] == csm
+
+    assert transfer_event[4]["from"] == ZERO_ADDRESS
+    assert transfer_event[4]["to"] == treasury
 
     assert almostEqEth(
         treasury_balance_after_rebase,
-        treasury_balance_before_rebase + contracts.lido.getSharesByPooledEth(transfer_event[3]["value"]),
+        treasury_balance_before_rebase + contracts.lido.getSharesByPooledEth(transfer_event[4]["value"]),
     )
 
     assert treasury_balance_after_rebase > treasury_balance_before_rebase

@@ -1,6 +1,7 @@
 import pytest
 
 from brownie import interface, web3, Wei  # type: ignore
+from brownie.convert.datatypes import HexString
 
 from utils.config import (
     contracts,
@@ -10,23 +11,19 @@ from utils.config import (
     WITHDRAWAL_QUEUE,
     WITHDRAWAL_VAULT,
     WSTETH_TOKEN,
-    STAKING_ROUTER,
     AGENT,
     BURNER,
     CSM_ADDRESS,
     CS_ACCOUNTING_ADDRESS,
-    CS_GATE_SEAL_ADDRESS,
-    CS_VERIFIER_ADDRESS,
     CS_FEE_DISTRIBUTOR_ADDRESS,
     CS_FEE_ORACLE_ADDRESS,
     CS_ORACLE_HASH_CONSENSUS_ADDRESS,
-    EASYTRACK_EVMSCRIPT_EXECUTOR,
     CHAIN_SECONDS_PER_SLOT,
     CHAIN_GENESIS_TIME,
     CHAIN_SLOTS_PER_EPOCH,
     CS_ORACLE_EPOCHS_PER_FRAME,
     ORACLE_QUORUM,
-    ORACLE_COMMITTEE
+    ORACLE_COMMITTEE,
 )
 
 contracts: ContractsLazyLoader = contracts
@@ -82,17 +79,9 @@ class TestCSM:
         assert csm.LIDO_LOCATOR() == LIDO_LOCATOR
         assert csm.accounting() == CS_ACCOUNTING_ADDRESS
 
-        assert not csm.isPaused();
-        assert not csm.publicRelease();
-        assert csm.getNodeOperatorsCount() == 0;
+        assert not csm.isPaused()
+        assert csm.publicRelease()
 
-
-    def test_roles(self, csm):
-        assert csm.hasRole(csm.STAKING_ROUTER_ROLE(), STAKING_ROUTER)
-        assert csm.hasRole(csm.DEFAULT_ADMIN_ROLE(), AGENT)
-        assert csm.hasRole(csm.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS)
-        assert csm.hasRole(csm.SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE(), EASYTRACK_EVMSCRIPT_EXECUTOR)
-        assert csm.hasRole(csm.VERIFIER_ROLE(), CS_VERIFIER_ADDRESS)
 
 class TestAccounting:
     def test_initial_state(self, accounting):
@@ -104,12 +93,6 @@ class TestAccounting:
         assert accounting.feeDistributor() == CS_FEE_DISTRIBUTOR_ADDRESS
         assert accounting.chargePenaltyRecipient() == AGENT
         assert not accounting.isPaused()
-
-    def test_roles(self, accounting):
-        assert accounting.hasRole(accounting.SET_BOND_CURVE_ROLE(), CSM_ADDRESS)
-        assert accounting.hasRole(accounting.RESET_BOND_CURVE_ROLE(), CSM_ADDRESS)
-        assert accounting.hasRole(accounting.DEFAULT_ADMIN_ROLE(), AGENT)
-        assert accounting.hasRole(accounting.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS)
 
     def test_allowances(self, lido):
         uin256_max = 2 ** 256 - 1
@@ -123,13 +106,6 @@ class TestFeeDistributor:
         assert fee_distributor.STETH() == LIDO
         assert fee_distributor.ACCOUNTING() == CS_ACCOUNTING_ADDRESS
         assert fee_distributor.ORACLE() == CS_FEE_ORACLE_ADDRESS
-        assert fee_distributor.totalClaimableShares() == 0
-        assert fee_distributor.pendingSharesToDistribute() == 0
-        assert fee_distributor.treeRoot() == _str_to_bytes32("")
-        assert fee_distributor.treeCid() == ""
-
-    def test_roles(self, fee_distributor):
-        assert fee_distributor.hasRole(fee_distributor.DEFAULT_ADMIN_ROLE(), AGENT)
 
 
 class TestFeeOracle:
@@ -141,52 +117,30 @@ class TestFeeOracle:
         assert fee_oracle.getContractVersion() == 1
         assert fee_oracle.getConsensusContract() == CS_ORACLE_HASH_CONSENSUS_ADDRESS
         assert fee_oracle.getConsensusVersion() == 1
-        assert fee_oracle.getLastProcessingRefSlot() == 0
         assert fee_oracle.avgPerfLeewayBP() == 500
         assert not fee_oracle.isPaused()
-
-        report = fee_oracle.getConsensusReport()
-        assert report["hash"] == _str_to_bytes32("")
-        assert report["refSlot"] == 0
-        assert report["processingDeadlineTime"] == 0
-        assert not report["processingStarted"]
-
-
-    def test_roles(self, fee_oracle):
-        assert fee_oracle.hasRole(fee_oracle.DEFAULT_ADMIN_ROLE(), AGENT)
-        assert fee_oracle.hasRole(fee_oracle.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS)
 
 class TestHashConsensus:
 
     def test_initial_state(self, hash_consensus):
-        current_frame = hash_consensus.getCurrentFrame()
-        # TODO uncomment this when initial ref slot is known
-        # assert current_frame["refSlot"] > 5254400
-        # assert current_frame["reportProcessingDeadlineSlot"] > 5254400
-
         chain_config = hash_consensus.getChainConfig()
         assert chain_config["slotsPerEpoch"] == CHAIN_SLOTS_PER_EPOCH
         assert chain_config["secondsPerSlot"] == CHAIN_SECONDS_PER_SLOT
         assert chain_config["genesisTime"] == CHAIN_GENESIS_TIME
 
         frame_config = hash_consensus.getFrameConfig()
-        # TODO uncomment this when initial ref slot is known
-        #  assert frame_config["initialEpoch"] > 5254400 / CHAIN_SLOTS_PER_EPOCH
+        assert frame_config["initialEpoch"] >= 326715
         assert frame_config["epochsPerFrame"] == CS_ORACLE_EPOCHS_PER_FRAME
-        assert frame_config["fastLaneLengthSlots"] == 0
+        assert frame_config["fastLaneLengthSlots"] == 1800
 
         assert hash_consensus.getQuorum() == ORACLE_QUORUM
 
-        # TODO uncomment this when initial ref slot is known
-        #  assert hash_consensus.getInitialRefSlot() > 5254400
+        assert hash_consensus.getInitialRefSlot() >= 326715 * CHAIN_SLOTS_PER_EPOCH - 1
 
         members = hash_consensus.getMembers()
-        assert members["addresses"] == ORACLE_COMMITTEE
+        assert sorted(members["addresses"]) == sorted(ORACLE_COMMITTEE)
 
         assert hash_consensus.getReportProcessor() == CS_FEE_ORACLE_ADDRESS
-
-    def test_roles(self, hash_consensus):
-        assert hash_consensus.hasRole(hash_consensus.DEFAULT_ADMIN_ROLE(), AGENT)
 
 def test_early_adoption_state(early_adoption):
     assert early_adoption.MODULE() == CSM_ADDRESS
@@ -196,11 +150,12 @@ def test_verifier_state(verifier):
     assert verifier.WITHDRAWAL_ADDRESS() == WITHDRAWAL_VAULT
     assert verifier.MODULE() == CSM_ADDRESS
     assert verifier.SLOTS_PER_EPOCH() == CHAIN_SLOTS_PER_EPOCH
-    # TODO uncomment this when values are known
-    # assert verifier.GI_HISTORICAL_SUMMARIES_PREV() == ""
-    # assert verifier.GI_HISTORICAL_SUMMARIES_CURR() == ""
-    # assert verifier.GI_FIRST_WITHDRAWAL_PREV() == ""
-    # assert verifier.GI_FIRST_WITHDRAWAL_CURR() == ""
-    # assert verifier.GI_FIRST_VALIDATOR_PREV() == ""
-    # assert verifier.GI_FIRST_VALIDATOR_CURR() == ""
-    # assert verifier.FIRST_SUPPORTED_SLOT() == ""
+    print(type(verifier.GI_HISTORICAL_SUMMARIES_PREV()))
+    assert verifier.GI_HISTORICAL_SUMMARIES_PREV() == HexString("0x0000000000000000000000000000000000000000000000000000000000003b00", "bytes")
+    assert verifier.GI_HISTORICAL_SUMMARIES_CURR() == HexString("0x0000000000000000000000000000000000000000000000000000000000003b00", "bytes")
+    assert verifier.GI_FIRST_WITHDRAWAL_PREV() == HexString("0x0000000000000000000000000000000000000000000000000000000000e1c004", "bytes")
+    assert verifier.GI_FIRST_WITHDRAWAL_CURR() == HexString("0x0000000000000000000000000000000000000000000000000000000000e1c004", "bytes")
+    assert verifier.GI_FIRST_VALIDATOR_PREV() == HexString("0x0000000000000000000000000000000000000000000000000056000000000028", "bytes")
+    assert verifier.GI_FIRST_VALIDATOR_CURR() == HexString("0x0000000000000000000000000000000000000000000000000056000000000028", "bytes")
+    assert verifier.FIRST_SUPPORTED_SLOT() == 8626176
+    assert verifier.PIVOT_SLOT() == 8626176

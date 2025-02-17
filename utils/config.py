@@ -4,7 +4,6 @@ import sys
 from typing import Any, Union, Optional, Dict, Tuple
 
 from utils.brownie_prelude import *
-
 from brownie import network, accounts
 from brownie.utils import color
 from brownie.network.account import Account, LocalAccount
@@ -62,20 +61,37 @@ def get_priority_fee() -> str:
     else:
         return "2 gwei"
 
-
 def get_max_fee() -> str:
     if "OMNIBUS_MAX_FEE" in os.environ:
         return os.environ["OMNIBUS_MAX_FEE"]
     else:
         return "300 gwei"
 
+def local_deployer() -> LocalAccount:
+    """
+    Local deployer can ONLY be used for the local run.
+    """
+    deployer = accounts[4]
+    agent = accounts.at(AGENT, force=True)
+
+    if web3.eth.get_balance(agent.address) < 10 * 10 ** 18:
+        from utils.balance import set_balance
+        set_balance(agent.address, 10)
+
+    interface.MiniMeToken(LDO_TOKEN).transfer(deployer, 10**18, {"from": agent})
+    return deployer
+
 
 def get_deployer_account() -> Union[LocalAccount, Account]:
     is_live = get_is_live()
-    if is_live and "DEPLOYER" not in os.environ:
-        raise EnvironmentError("Please set DEPLOYER env variable to the deployer account name")
+    deployer = os.environ.get("DEPLOYER")
 
-    return accounts.load(os.environ["DEPLOYER"]) if (is_live or "DEPLOYER" in os.environ) else accounts[4]
+    if is_live:
+        if deployer is None:
+            raise EnvironmentError("For live deployment please set DEPLOYER env variable to the deployer account name")
+        return accounts.load(deployer)
+
+    return local_deployer()
 
 
 def get_web3_storage_token(silent=False) -> str:
@@ -210,6 +226,10 @@ class ContractsLazyLoader:
     @property
     def legacy_oracle(self) -> interface.LegacyOracle:
         return interface.LegacyOracle(LEGACY_ORACLE)
+
+    @property
+    def token_rate_notifier(self) -> interface.TokenRateNotifier:
+        return interface.LegacyOracle(L1_TOKEN_RATE_NOTIFIER)
 
     @property
     def deposit_security_module_v1(self) -> interface.DepositSecurityModule:
@@ -363,6 +383,13 @@ class ContractsLazyLoader:
     def split_main(self) -> interface.SplitMain:
         return interface.SplitMain(SPLIT_MAIN)
 
+    @property
+    def trp_escrow_factory(self) -> interface.VestingEscrowFactory:
+        return interface.VestingEscrowFactory(TRP_VESTING_ESCROW_FACTORY)
+
+    @property
+    def token_rate_notifier(self) -> interface.TokenRateNotifier:
+        return interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)
 
 def __getattr__(name: str) -> Any:
     if name == "contracts":

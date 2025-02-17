@@ -3,12 +3,17 @@ from typing import Dict
 import pytest
 
 from brownie import accounts, chain, MockCallTarget, multicall
+from web3 import Web3
 
 from utils.test.snapshot_helpers import ValueChanged, dict_zip, dict_diff, assert_no_diffs, assert_expected_diffs
 
 from utils.voting import create_vote, bake_vote_items
-from utils.config import LDO_VOTE_EXECUTORS_FOR_TESTS, LDO_HOLDER_ADDRESS_FOR_TESTS, contracts
-from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
+from utils.config import (
+    LDO_VOTE_EXECUTORS_FOR_TESTS,
+    LDO_HOLDER_ADDRESS_FOR_TESTS,
+    contracts,
+)
+from utils.import_current_votes import start_and_execute_votes
 
 
 @pytest.fixture(scope="module")
@@ -34,9 +39,13 @@ def snapshot(voting, vote_id):
             "CREATE_VOTES_ROLE": voting.CREATE_VOTES_ROLE(),
             "MODIFY_SUPPORT_ROLE": voting.MODIFY_SUPPORT_ROLE(),
             "MODIFY_QUORUM_ROLE": voting.MODIFY_QUORUM_ROLE(),
+            "UNSAFELY_MODIFY_VOTE_TIME_ROLE": voting.UNSAFELY_MODIFY_VOTE_TIME_ROLE(),
+            "PCT_BASE": voting.PCT_BASE(),
             "minAcceptQuorumPct": voting.minAcceptQuorumPct(),
             "supportRequiredPct": voting.supportRequiredPct(),
             "votesLength": length,
+            "objectionPhaseTime": voting.objectionPhaseTime(),
+            "token": voting.token(),
             "vote_open": vote[0],
             "vote_executed": vote[1],
             "vote_supportRequired": vote[4],
@@ -90,7 +99,7 @@ def test_create_wait_enact(helpers, vote_time, call_target, vote_ids_from_env):
     chain.revert()
 
     if vote_ids_from_env:
-        helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
+        helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
     else:
         start_and_execute_votes(contracts.voting, helpers)
     after: Dict[str, Dict[str, any]] = steps(contracts.voting, call_target, vote_time)
@@ -107,3 +116,8 @@ def test_create_wait_enact(helpers, vote_time, call_target, vote_ids_from_env):
                 step_name, diff, {"votesLength": ValueChanged(from_val=votesLength + 1, to_val=votesLength + 2)}
             )
         assert_no_diffs(step_name, diff)
+
+
+def create_dummy_vote(ldo_holder: str) -> int:
+    vote_items = bake_vote_items(vote_desc_items=[], call_script_items=[])
+    return create_vote(vote_items, {"from": ldo_holder}, cast_vote=False, executes_if_decided=False)[0]

@@ -62,11 +62,11 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
         # otherwise start_vote will fail with ValueError: Insufficient funds for gas * price + value
         # check voting.py: tx = token_manager.forward(new_vote_script, tx_params)
         ldo_holder_for_test = accounts.at(LDO_HOLDER_ADDRESS_FOR_TESTS, True)
-        if ldo_holder_for_test.balance() < ETH(1):
-            accounts[0].transfer(LDO_HOLDER_ADDRESS_FOR_TESTS, "1 ether")
+        if ldo_holder_for_test.balance() < ETH(10):
+            accounts[0].transfer(LDO_HOLDER_ADDRESS_FOR_TESTS, "10 ether")
 
         vote_id, _ = start_vote({"from": LDO_HOLDER_ADDRESS_FOR_TESTS}, silent=True)
-        (tx,) = helpers.execute_votes(accounts, [vote_id], dao_voting, topup="0.5 ether")
+        (tx,) = helpers.execute_votes(accounts, [vote_id], dao_voting, topup="10 ether")
         vote_ids.append(vote_id)
         vote_transactions.append(tx)
     return vote_ids, vote_transactions

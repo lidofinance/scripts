@@ -8,9 +8,10 @@ from brownie.typing import TransactionReceipt  # type: ignore
 from eth_abi.abi import encode
 from hexbytes import HexBytes
 
-from utils.config import (contracts, AO_CONSENSUS_VERSION)
+from utils.config import contracts, AO_CONSENSUS_VERSION
 from utils.test.exit_bus_data import encode_data
 from utils.test.helpers import ETH, GWEI, eth_balance
+from utils.test.merkle_tree import Tree
 
 ZERO_HASH = bytes([0] * 32)
 ZERO_BYTES32 = HexBytes(ZERO_HASH)
@@ -18,6 +19,7 @@ ONE_DAY = 1 * 24 * 60 * 60
 SHARE_RATE_PRECISION = 10**27
 EXTRA_DATA_FORMAT_EMPTY = 0
 EXTRA_DATA_FORMAT_LIST = 1
+
 
 @dataclass
 class AccountingReport:
@@ -55,7 +57,6 @@ class AccountingReport:
 
     def copy(self) -> "AccountingReport":
         return AccountingReport(*self.items)
-
 
 
 def prepare_accounting_report(
@@ -107,6 +108,31 @@ def prepare_exit_bus_report(validators_to_exit, ref_slot):
     return report, report_hash
 
 
+def prepare_csm_report(node_operators_rewards: dict, ref_slot):
+    consensus_version = contracts.cs_fee_oracle.getConsensusVersion()
+    shares = node_operators_rewards.copy()
+    if len(shares) < 2:
+        # put a stone
+        shares[2**64 - 1] = 0
+
+    tree = Tree.new(tuple((no_id, amount) for (no_id, amount) in shares.items()))
+    # semi-random values
+    log_cid = web3.keccak(tree.root)
+    tree_cid = web3.keccak(log_cid)
+
+    report = (
+        consensus_version,
+        ref_slot,
+        tree.root,
+        str(tree_cid),
+        str(log_cid),
+        sum(shares.values()),
+    )
+    report_data = encode_data_from_abi(report, contracts.cs_fee_oracle.abi, "submitReportData")
+    report_hash = web3.keccak(report_data)
+    return report, report_hash, tree
+
+
 def encode_data_from_abi(data, abi, func_name):
     report_function_abi = next(x for x in abi if x.get("name") == func_name)
     report_data_abi = report_function_abi["inputs"][0]["components"]  # type: ignore
@@ -117,7 +143,20 @@ def encode_data_from_abi(data, abi, func_name):
 def get_finalization_batches(
     share_rate: int, limited_withdrawal_vault_balance, limited_el_rewards_vault_balance
 ) -> list[int]:
-    (_, _, _, _, _, _, _, requestTimestampMargin, _, _, _, _) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
+    (
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        requestTimestampMargin,
+        _,
+        _,
+        _,
+        _,
+    ) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
     buffered_ether = contracts.lido.getBufferedEther()
     unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
     reserved_buffer = min(buffered_ether, unfinalized_steth)
@@ -168,7 +207,7 @@ def push_oracle_report(
     extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
     silent=False,
-    extraDataList:List[bytes]=[],
+    extraDataList: List[bytes] = [],
 ):
     if not silent:
         print(f"Preparing oracle report for refSlot: {refSlot}")
@@ -203,7 +242,9 @@ def push_oracle_report(
         if not silent:
             print("Submitted empty extra data report")
     else:
-        extra_report_tx_list = [contracts.accounting_oracle.submitReportExtraDataList(data, {"from": submitter}) for data in extraDataList]
+        extra_report_tx_list = [
+            contracts.accounting_oracle.submitReportExtraDataList(data, {"from": submitter}) for data in extraDataList
+        ]
         if not silent:
             print("Submitted NOT empty extra data report")
 
@@ -235,6 +276,22 @@ def simulate_report(
 ):
     (_, SECONDS_PER_SLOT, GENESIS_TIME) = contracts.hash_consensus_for_accounting_oracle.getChainConfig()
     reportTime = GENESIS_TIME + refSlot * SECONDS_PER_SLOT
+
+    override_slot = web3.keccak(text="lido.BaseOracle.lastProcessingRefSlot").hex()
+    state_override = {
+        contracts.accounting_oracle.address: {
+            # Fix: Sanity checker uses `lastProcessingRefSlot` from AccountingOracle to
+            # properly process negative rebase sanity checks. Since current simulation skips call to AO,
+            # setting up `lastProcessingRefSlot` directly.
+            #
+            # The code is taken from the current production `lido-oracle` implementation
+            # source: https://github.com/lidofinance/lido-oracle/blob/da393bf06250344a4d06dce6d1ac6a3ddcb9c7a3/src/providers/execution/contracts/lido.py#L93-L95
+            "stateDiff": {
+                override_slot: refSlot,
+            },
+        },
+    }
+
     try:
         return contracts.lido.handleOracleReport.call(
             reportTime,
@@ -248,9 +305,19 @@ def simulate_report(
             0,
             {"from": contracts.accounting_oracle.address},
             block_identifier=block_identifier,
+            override=state_override,
         )
     except VirtualMachineError:
         # workaround for empty revert message from ganache on eth_call
+
+        # override storage value of the processing reference slot to make the simulation sound
+        # Since it's not possible to pass an override as a part of the state-changing transaction
+        web3.provider.make_request(
+            # can assume ganache only here
+            "evm_setAccountStorageAt",
+            [contracts.accounting_oracle.address, override_slot, refSlot],
+        )
+
         contracts.lido.handleOracleReport(
             reportTime,
             ONE_DAY,
@@ -268,8 +335,19 @@ def simulate_report(
 
 def wait_to_next_available_report_time(consensus_contract):
     (SLOTS_PER_EPOCH, SECONDS_PER_SLOT, GENESIS_TIME) = consensus_contract.getChainConfig()
-    (refSlot, _) = consensus_contract.getCurrentFrame()
-    time = chain.time()
+    try:
+        (refSlot, _) = consensus_contract.getCurrentFrame()
+    except VirtualMachineError as e:
+        if "InitialEpochIsYetToArrive" in str(e):
+            frame_config = consensus_contract.getFrameConfig()
+            chain.sleep(
+                GENESIS_TIME + 1 + (frame_config["initialEpoch"] * SLOTS_PER_EPOCH * SECONDS_PER_SLOT) - chain.time()
+            )
+            chain.mine(1)
+            (refSlot, _) = consensus_contract.getCurrentFrame()
+        else:
+            raise
+    time = web3.eth.get_block("latest").timestamp
     (_, EPOCHS_PER_FRAME, _) = consensus_contract.getFrameConfig()
     frame_start_with_offset = GENESIS_TIME + (refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME + 1) * SECONDS_PER_SLOT
     chain.sleep(frame_start_with_offset - time)
@@ -294,7 +372,7 @@ def oracle_report(
     extraDataFormat=0,
     extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
-    extraDataList:List[bytes]=[],
+    extraDataList: List[bytes] = [],
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,
@@ -322,7 +400,7 @@ def oracle_report(
     extraDataFormat=0,
     extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
-    extraDataList:List[bytes]=[],
+    extraDataList: List[bytes] = [],
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,
@@ -350,7 +428,7 @@ def oracle_report(
     extraDataFormat=0,
     extraDataHashList=[ZERO_BYTES32],
     extraDataItemsCount=0,
-    extraDataList:List[bytes]=[],
+    extraDataList: List[bytes] = [],
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
     silent=False,

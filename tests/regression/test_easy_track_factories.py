@@ -93,8 +93,8 @@ def set_node_operator_reward_addresses(operators, stranger):
 
 def update_target_validators_limits(operators, stranger):
     calldata = _encode_calldata(
-        ["(uint256,bool,uint256)[]"],
-        [[(no["id"], no["is_target_limit_active"], no["target_limit"]) for no in operators]],
+        ["(uint256,uint256,uint256)[]"],
+        [[(no["id"], no["target_limit_mode"], no["target_limit"]) for no in operators]],
     )
 
     factory = interface.UpdateTargetValidatorLimits(EASYTRACK_SIMPLE_DVT_UPDATE_TARGET_VALIDATOR_LIMITS_FACTORY)
@@ -293,25 +293,34 @@ def test_update_target_validator_limits(stranger):
         [
             {
                 "id": 1,
-                "is_target_limit_active": True,
+                "target_limit_mode": 0,
                 "target_limit": 800,
             },
             {
                 "id": 2,
-                "is_target_limit_active": False,
+                "target_limit_mode": 1,
                 "target_limit": 900,
+            },
+            {
+                "id": 3,
+                "target_limit_mode": 2,
+                "target_limit": 1000,
             },
         ],
         stranger,
     )
 
     summary_1 = contracts.simple_dvt.getNodeOperatorSummary(1)
-    assert summary_1["targetLimitMode"] == 1
-    assert summary_1["targetValidatorsCount"] == 800
+    assert summary_1["targetLimitMode"] == 0
+    assert summary_1["targetValidatorsCount"] == 0  # should be 0 because targetLimitMode is 0
 
     summary_2 = contracts.simple_dvt.getNodeOperatorSummary(2)
-    assert summary_2["targetLimitMode"] == 0
-    assert summary_2["targetValidatorsCount"] == 0  # should be 0 because targetLimitMode is 0
+    assert summary_2["targetLimitMode"] == 1
+    assert summary_2["targetValidatorsCount"] == 900
+
+    summary_3 = contracts.simple_dvt.getNodeOperatorSummary(3)
+    assert summary_3["targetLimitMode"] == 2
+    assert summary_3["targetValidatorsCount"] == 1000
 
 
 def test_transfer_node_operator_manager(stranger):

@@ -5,18 +5,19 @@ Tests for permissions setup
 import pytest
 import os
 
+from tqdm import tqdm
 from web3 import Web3
 from brownie import interface, convert, web3
 from brownie.network.event import _decode_logs
 from brownie.network.state import TxHistory
-from utils.test.event_validators.permission import Permission
+
+from configs.config_mainnet import CSM_COMMITTEE_MS
 from utils.test.helpers import ZERO_BYTES32
 from brownie.exceptions import EventLookupError
 from utils.config import (
     contracts,
     GATE_SEAL,
     DSM_GUARDIANS,
-    EASYTRACK_EVMSCRIPT_EXECUTOR,
     ORACLE_COMMITTEE,
     AGENT,
     EASYTRACK_EVMSCRIPT_EXECUTOR,
@@ -42,6 +43,13 @@ from utils.config import (
     LIDO_LOCATOR,
     LEGACY_ORACLE,
     SIMPLE_DVT,
+    CSM_ADDRESS,
+    CS_ACCOUNTING_ADDRESS,
+    CS_GATE_SEAL_ADDRESS,
+    CS_VERIFIER_ADDRESS,
+    CS_FEE_DISTRIBUTOR_ADDRESS,
+    CS_FEE_ORACLE_ADDRESS,
+    CS_ORACLE_HASH_CONSENSUS_ADDRESS,
 )
 
 
@@ -62,7 +70,7 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "REQUEST_BURN_MY_STETH_ROLE": [contracts.agent],
-                "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry, contracts.simple_dvt],
+                "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry, contracts.simple_dvt, contracts.csm.accounting()],
             },
         },
         STAKING_ROUTER: {
@@ -300,6 +308,74 @@ def protocol_permissions():
             "type": "AragonApp",
             "roles": {},
         },
+        CSM_ADDRESS: {
+            "contract_name": "CSModule",
+            "contract": contracts.csm,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
+                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS],
+                "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE": [CSM_COMMITTEE_MS],
+                "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "VERIFIER_ROLE": [CS_VERIFIER_ADDRESS],
+                "RESUME_ROLE": [],
+                "MODULE_MANAGER_ROLE": [],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CS_ACCOUNTING_ADDRESS: {
+            "contract_name": "CSAccounting",
+            "contract": contracts.cs_accounting,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "SET_BOND_CURVE_ROLE": [CSM_ADDRESS, CSM_COMMITTEE_MS],
+                "RESET_BOND_CURVE_ROLE": [CSM_ADDRESS, CSM_COMMITTEE_MS],
+                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS],
+                "RESUME_ROLE": [],
+                "ACCOUNTING_MANAGER_ROLE": [],
+                "MANAGE_BOND_CURVES_ROLE": [],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CS_FEE_DISTRIBUTOR_ADDRESS: {
+            "contract_name": "CSFeeDistributor",
+            "contract": contracts.cs_fee_distributor,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CS_FEE_ORACLE_ADDRESS: {
+            "contract_name": "CSFeeOracle",
+            "contract": contracts.cs_fee_oracle,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
+                "MANAGE_CONSENSUS_VERSION_ROLE": [],
+                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS],
+                "CONTRACT_MANAGER_ROLE": [],
+                "SUBMIT_DATA_ROLE": [],
+                "RESUME_ROLE": [],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CS_ORACLE_HASH_CONSENSUS_ADDRESS: {
+            "contract_name": "HashConsensus",
+            "contract": contracts.csm_hash_consensus,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "MANAGE_MEMBERS_AND_QUORUM_ROLE": [contracts.agent],
+                "DISABLE_CONSENSUS_ROLE": [],
+                "MANAGE_FRAME_CONFIG_ROLE": [],
+                "MANAGE_FAST_LANE_CONFIG_ROLE": [],
+                "MANAGE_REPORT_PROCESSOR_ROLE": [],
+            },
+        }
     }
 
 
@@ -410,13 +486,35 @@ def collect_permissions_from_events(permission_events):
     return apps
 
 
+def get_http_w3_provider_url():
+    if os.getenv("WEB3_INFURA_PROJECT_ID") is not None:
+        return f'https://mainnet.infura.io/v3/{os.getenv("WEB3_INFURA_PROJECT_ID")}'
+
+    if os.getenv("WEB3_ALCHEMY_PROJECT_ID") is not None:
+        return f'https://eth-mainnet.g.alchemy.com/v2/{os.getenv("WEB3_ALCHEMY_PROJECT_ID")}'
+
+    assert False, 'Web3 HTTP Provider token env var not found'
+
 def active_aragon_roles(protocol_permissions):
-    w3 = Web3(Web3.HTTPProvider(f'https://mainnet.infura.io/v3/{os.getenv("WEB3_INFURA_PROJECT_ID")}'))
+    w3 = Web3(Web3.HTTPProvider(get_http_w3_provider_url()))
 
     event_signature_hash = w3.keccak(text="SetPermission(address,address,bytes32,bool)").hex()
-    events_before_voting = w3.eth.filter(
-        {"address": contracts.acl.address, "fromBlock": ACL_DEPLOY_BLOCK_NUMBER, "topics": [event_signature_hash]}
-    ).get_all_entries()
+
+    def fetch_events_in_batches(start_block, end_block, step=100000):
+        """Fetch events in batches of `step` blocks with a progress bar."""
+        events = []
+        total_batches = (end_block - start_block) // step + 1
+        with tqdm(total=total_batches, desc="Fetching Events") as pbar:
+            for batch_start in range(start_block, end_block, step):
+                batch_end = min(batch_start + step - 1, end_block)
+                batch_events = w3.eth.filter(
+                        {"address": contracts.acl.address, "fromBlock": batch_start, "toBlock": batch_end, "topics": [event_signature_hash]}
+                ).get_all_entries()
+                events.extend(batch_events)
+                pbar.update(1)
+        return events
+
+    events_before_voting = fetch_events_in_batches(ACL_DEPLOY_BLOCK_NUMBER, w3.eth.block_number)
 
     permission_events = _decode_logs(events_before_voting)["SetPermission"]._ordered
 
@@ -424,9 +522,7 @@ def active_aragon_roles(protocol_permissions):
     if len(history) > 0:
         vote_block = history[0].block_number
 
-        events_after_voting = web3.eth.filter(
-            {"address": contracts.acl.address, "fromBlock": vote_block, "topics": [event_signature_hash]}
-        ).get_all_entries()
+        events_after_voting = fetch_events_in_batches(vote_block, w3.eth.block_number)
 
         try:
             permission_events_after_voting = _decode_logs(events_after_voting)["SetPermission"]._ordered

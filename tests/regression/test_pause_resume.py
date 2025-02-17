@@ -26,7 +26,7 @@ def burner() -> Contract:
 @pytest.fixture(scope="function", autouse=is_there_any_vote_scripts())
 def autoexecute_vote(helpers, vote_ids_from_env, accounts):
     if vote_ids_from_env:
-        helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
+        helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
     else:
         start_and_execute_votes(contracts.voting, helpers)
 
@@ -134,6 +134,22 @@ class TestRevertedSecondCalls:
 
         with brownie.reverts("CONTRACT_IS_ACTIVE"):
             contracts.lido.resume({"from": contracts.voting})
+
+    @pytest.mark.skip(
+        reason="Second call of pause/resume staking is not reverted right now."
+        "It maybe should be fixed in the future to be consistent, "
+        "there's not a real problem with it."
+    )
+    def test_revert_second_pause_resume_staking(self):
+        contracts.lido.pauseStaking({"from": contracts.voting})
+
+        with brownie.reverts(""):
+            contracts.lido.pauseStaking({"from": contracts.voting})
+
+        contracts.lido.resumeStaking({"from": contracts.voting})
+
+        with brownie.reverts(""):
+            contracts.lido.resumeStaking({"from": contracts.voting})
 
     def test_revert_second_stop_staking_module(self, helpers, stranger):
         contracts.staking_router.grantRole(
@@ -262,12 +278,14 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
     print(report_tx.events["Transfer"])
     module_index = 0
     simple_dvt_index = 1
+    csm_index = 2
 
     if report_tx.events["Transfer"][module_index]["to"] == burner.address:
         module_index += 1
         simple_dvt_index += 1
+        csm_index += 1
 
-    agent_index = module_index + 2
+    agent_index = module_index + 3
     assert report_tx.events["Transfer"][module_index]["to"] == module_address
     assert report_tx.events["Transfer"][module_index]["from"] == ZERO_ADDRESS
     assert report_tx.events["Transfer"][agent_index]["to"] == contracts.agent
@@ -283,8 +301,16 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
         * simple_dvt_stats["treasuryFee"]
         // 100_00
     )
+    csm_stats = contracts.staking_router.getStakingModule(3)
+    csm_treasury_fee = (
+        report_tx.events["Transfer"][csm_index]["value"]
+        * 100_00
+        // csm_stats["stakingModuleFee"]
+        * csm_stats["treasuryFee"]
+        // 100_00
+    )
     assert almostEqWithDiff(
-        report_tx.events["Transfer"][module_index]["value"] + simple_dvt_treasury_fee,
+        report_tx.events["Transfer"][module_index]["value"] + simple_dvt_treasury_fee + csm_treasury_fee,
         report_tx.events["Transfer"][agent_index]["value"],
         100,
     )

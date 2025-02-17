@@ -2,17 +2,19 @@
 
 from typing import NamedTuple, Tuple
 
+from brownie.convert.datatypes import ReturnValue
 from brownie.network.event import EventDict
 from .common import validate_events_chain
 
 
 class StakingModuleItem(NamedTuple):
     id: int
-    address: str
+    address: str | None
     name: str
     target_share: int
     module_fee: int
     treasury_fee: int
+    priority_exit_share: int
 
 
 def validate_staking_module_added_event(event: EventDict, module_item: StakingModuleItem):
@@ -42,6 +44,31 @@ def validate_staking_module_added_event(event: EventDict, module_item: StakingMo
 
     assert event["StakingModuleTargetShareSet"]["stakingModuleId"] == module_item.id
     assert event["StakingModuleTargetShareSet"]["targetShare"] == module_item.target_share
+
+    assert event["StakingModuleFeesSet"]["stakingModuleId"] == module_item.id
+    assert event["StakingModuleFeesSet"]["stakingModuleFee"] == module_item.module_fee
+    assert event["StakingModuleFeesSet"]["treasuryFee"] == module_item.treasury_fee
+
+
+def validate_staking_module_update_event(event: EventDict, module_item: StakingModuleItem):
+    _events_chain = [
+        "LogScriptCall",
+        "LogScriptCall",
+        "StakingModuleShareLimitSet",
+        "StakingModuleFeesSet",
+        "StakingModuleMaxDepositsPerBlockSet",
+        "StakingModuleMinDepositBlockDistanceSet",
+        "ScriptResult",
+    ]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("StakingModuleShareLimitSet") == 1
+    assert event.count("StakingModuleFeesSet") == 1
+
+    assert event["StakingModuleShareLimitSet"]["stakingModuleId"] == module_item.id
+    assert event["StakingModuleShareLimitSet"]["stakeShareLimit"] == module_item.target_share
+    assert event["StakingModuleShareLimitSet"]["priorityExitShareThreshold"] == module_item.priority_exit_share
 
     assert event["StakingModuleFeesSet"]["stakingModuleId"] == module_item.id
     assert event["StakingModuleFeesSet"]["stakingModuleFee"] == module_item.module_fee

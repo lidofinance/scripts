@@ -10,7 +10,6 @@ MIN_STETH_WITHDRAWAL_AMOUNT = Wei(100)
 MAX_STETH_WITHDRAWAL_AMOUNT = Wei(1000 * 10**18)
 UINT256_MAX = 2**256 - 1
 
-
 def test_request_withdrawals_steth(wq: Contract, steth_whale: Account):
     too_small_amount = MIN_STETH_WITHDRAWAL_AMOUNT - 10
     too_large_amount = MAX_STETH_WITHDRAWAL_AMOUNT + 10
@@ -108,7 +107,10 @@ def test_wq_prefinalize(wq: Contract, steth_whale: Account):
 def test_request_to_finalize_to_close(wq: Contract, steth_whale: Account):
     wait_to_next_available_report_time(contracts.hash_consensus_for_accounting_oracle)
     fill_wq(wq, steth_whale, count=1)
-    with reverts(encode_error("IncorrectRequestFinalization(uint256)", [chain.time()])):
+    wd_status = wq.getWithdrawalStatus([wq.getLastRequestId()])
+    wd_time = wd_status["statuses"][3]
+
+    with reverts(encode_error("IncorrectRequestFinalization(uint256)", [wd_time])):
         oracle_report(
             withdrawalFinalizationBatches=[wq.getLastRequestId()],
             wait_to_next_report_time=False,

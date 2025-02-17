@@ -364,8 +364,9 @@ def far_block() -> int:
 
 @pytest.fixture(scope="module")
 def some_contract(accounts) -> Account:
+    some_contract_addr = "0xcA11bde05977b3631167028862bE2a173976CA11"
     # Multicall3 contract deployed almost on the every network on the same address
-    return accounts.at("0xcA11bde05977b3631167028862bE2a173976CA11", force=True)
+    return accounts.at(some_contract_addr, force=True)
 
 
 @pytest.fixture(scope="function")
@@ -398,7 +399,7 @@ def sandwich_upgrade(
             v1_frames = tuple(_actions_snaps())
 
         if vote_ids_from_env:
-            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting, topup="0.5 ether")
+            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
         else:
             start_and_execute_votes(contracts.voting, helpers)
 
