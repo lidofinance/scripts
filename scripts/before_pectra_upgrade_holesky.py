@@ -1,17 +1,17 @@
 """
 Release part of the update before the Pectra upgrade
 
-1. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Accounting Oracle to Aragon Agent
-2. Update Accounting Oracle consensus version to 3
-3. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Accounting Oracle from Aragon Agent
-4. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle to Aragon Agent
-5. Update Validator Exit Bus Oracle consensus version to 3
-6. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle from Aragon Agent
-7. Grant MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle to Aragon Agent
-8. Update CSFeeOracle consensus version to 2
-9. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle from Aragon Agent
-10. Revoke VERIFIER_ROLE role on CSM from old CS Verifier
-11. Grant VERIFIER_ROLE role on CSM to new CS Verifier
+1. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Accounting Oracle (proxy) 0x4E97A3972ce8511D87F334dA17a2C332542a5246 to Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d
+2. Update Accounting Oracle (proxy) 0x4E97A3972ce8511D87F334dA17a2C332542a5246 consensus version to 3
+3. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Accounting Oracle (proxy) 0x4E97A3972ce8511D87F334dA17a2C332542a5246 from Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d
+4. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle (proxy) 0xffDDF7025410412deaa05E3E1cE68FE53208afcb to Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d
+5. Update Validator Exit Bus Oracle (proxy) 0xffDDF7025410412deaa05E3E1cE68FE53208afcb consensus version to 3
+6. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle (proxy) 0xffDDF7025410412deaa05E3E1cE68FE53208afcb from Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d
+7. Grant MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle (proxy) 0xaF57326C7d513085051b50912D51809ECC5d98Ee to Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d
+8. Update CSFeeOracle (proxy) 0xaF57326C7d513085051b50912D51809ECC5d98Ee consensus version to 2
+9. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle (proxy) 0xaF57326C7d513085051b50912D51809ECC5d98Ee from Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d
+10. Revoke VERIFIER_ROLE role on CSM (proxy) 0x4562c3e63c2e586cD1651B958C22F88135aCAd4f from old CS Verifier 0x6FDAA094227CF8E1593f9fB9C1b867C1f846F916
+11. Grant VERIFIER_ROLE role on CSM (proxy) 0x4562c3e63c2e586cD1651B958C22F88135aCAd4f to new CS Verifier 0xc099dfd61f6e5420e0ca7e84d820daad17fc1d44
 12. Grant UNSAFELY_MODIFY_VOTE_TIME_ROLE to Aragon Voting
 13. Change vote time from 900 to 1080 on Aragon Voting
 14. Change objection phase time from 300 to 360 on Aragon Voting
@@ -104,6 +104,21 @@ LABS_BORG_STETH_FACTORY = "0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9"
 LABS_BORG_STETH_REGISTRY = "0x02CD05c1cBa16113680648a8B3496A5aE312a935"
 
 description = """
+1. **Pectra Hardfork Compatibility** (Items 1-11)
+Changes include adjustments to oracle algorithms, Oracle Report Sanity Checker limits, and the CS Verifier.
+Approved on [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth).
+
+
+2. **On-Chain Voting Duration Extension** (Items 12-28)
+As approved on [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xa58da73cc4257837ae981d8ad861252f4cbbda7a173a577702f8f93561f57825), the voting periods will be extended:
+- **Main phase**: 48h → 72h
+- **Objection phase**: 24h → 48h
+
+To align with these changes, **GateSeal** (used for pausing the **WithdrawalQueue** and **ValidatorExitBusOracle** contracts) and **CSM GateSeal** will be updated while maintaining the same configuration. The new versions will expire on **March 1, 2026**.
+**Statemind.io** audited the [initial Factory and Blueprint](https://github.com/lidofinance/audits/?tab=readme-ov-file#04-2023-statemind-gateseals-audit) and [verified](https://research.lido.fi/) that the updated GateSeal matches the Blueprint and has the correct parameters.
+
+3. Easy Track Setups for Lido Ecosystem & Lido Labs BORG Foundations (Items 29-32)
+Deploy new **Easy Track factories** for BORGs ([Ecosystem BORG](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x7f72f12d72643c20cd0455c603d344050248e75ed1074c8391fae4c30f09ca15), [Labs BORG](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xdf648307e68415e7b5cf96c6afbabd696c1731839f4b4a7cf5cb7efbc44ee9d6)) to streamline operations. Factories [details here](https://research.lido.fi/).
 """
 
 
@@ -128,7 +143,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
     vote_desc_items, call_script_items = zip(
         # Pre-pectra upgrade
         (
-            "1. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Accounting Oracle to Aragon Agent",
+            "1. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Accounting Oracle (proxy) 0x4E97A3972ce8511D87F334dA17a2C332542a5246 to Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -140,11 +155,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "2. Update Accounting Oracle consensus version to 3",
+            "2. Update Accounting Oracle (proxy) 0x4E97A3972ce8511D87F334dA17a2C332542a5246 consensus version to 3",
             agent_forward([encode_ao_set_consensus_version()]),
         ),
         (
-            "3. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Accounting Oracle from Aragon Agent",
+            "3. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Accounting Oracle (proxy) 0x4E97A3972ce8511D87F334dA17a2C332542a5246 from Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -156,7 +171,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "4. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle to Aragon Agent",
+            "4. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle (proxy) 0xffDDF7025410412deaa05E3E1cE68FE53208afcb to Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -168,11 +183,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "5. Update Validator Exit Bus Oracle consensus version to 3",
+            "5. Update Validator Exit Bus Oracle (proxy) 0xffDDF7025410412deaa05E3E1cE68FE53208afcb consensus version to 3",
             agent_forward([encode_vebo_set_consensus_version()]),
         ),
         (
-            "6. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle from Aragon Agent",
+            "6. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle (proxy) 0xffDDF7025410412deaa05E3E1cE68FE53208afcb from Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -184,7 +199,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "7. Grant MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle to Aragon Agent",
+            "7. Grant MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle (proxy) 0xaF57326C7d513085051b50912D51809ECC5d98Ee to Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -196,11 +211,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "8. Update CSFeeOracle consensus version to 2",
+            "8. Update CSFeeOracle (proxy) 0xaF57326C7d513085051b50912D51809ECC5d98Ee consensus version to 2",
             agent_forward([encode_cs_fee_oracle_set_consensus_version()]),
         ),
         (
-            "9. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle from Aragon Agent",
+            "9. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle (proxy) 0xaF57326C7d513085051b50912D51809ECC5d98Ee from Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -212,7 +227,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "10. Revoke VERIFIER_ROLE role on CSM from old CS Verifier",
+            "10. Revoke VERIFIER_ROLE role on CSM (proxy) 0x4562c3e63c2e586cD1651B958C22F88135aCAd4f from old CS Verifier 0x6FDAA094227CF8E1593f9fB9C1b867C1f846F916",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -224,7 +239,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "11. Grant VERIFIER_ROLE role on CSM to new CS Verifier",
+            "11. Grant VERIFIER_ROLE role on CSM (proxy) 0x4562c3e63c2e586cD1651B958C22F88135aCAd4f to new CS Verifier 0xc099dfd61f6e5420e0ca7e84d820daad17fc1d44",
             agent_forward(
                 [
                     encode_oz_grant_role(
