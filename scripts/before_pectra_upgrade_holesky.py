@@ -12,17 +12,17 @@ Release part of the update before the Pectra upgrade
 9. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle (proxy) 0xaF57326C7d513085051b50912D51809ECC5d98Ee from Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d
 10. Revoke VERIFIER_ROLE role on CSM (proxy) 0x4562c3e63c2e586cD1651B958C22F88135aCAd4f from old CS Verifier 0x6FDAA094227CF8E1593f9fB9C1b867C1f846F916
 11. Grant VERIFIER_ROLE role on CSM (proxy) 0x4562c3e63c2e586cD1651B958C22F88135aCAd4f to new CS Verifier 0xc099dfd61f6e5420e0ca7e84d820daad17fc1d44
-12. Grant UNSAFELY_MODIFY_VOTE_TIME_ROLE to Aragon Voting
-13. Change vote time from 900 to 1080 on Aragon Voting
-14. Change objection phase time from 300 to 360 on Aragon Voting
-15. Revoke UNSAFELY_MODIFY_VOTE_TIME_ROLE from Aragon Voting
-16. Grant CONFIG_MANAGER_ROLE on OracleDaemonConfig 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 to Aragon Agent
-17. Update the FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT parameter in the OracleDaemonConfig contract  0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 to 0x08CA (2250)
-18. Revoke CONFIG_MANAGER_ROLE on OracleDaemonConfig 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 from Aragon Agent
-19. Grant PAUSE_ROLE on WithdrawalQueue 0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50 to the new GateSeal 0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778
-20. Grant PAUSE_ROLE on ValidatorsExitBusOracle 0xffDDF7025410412deaa05E3E1cE68FE53208afcb to the new GateSeal 0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778
-21. Revoke PAUSE_ROLE on WithdrawalQueue 0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50 from the old GateSeal 0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d
-22. Revoke PAUSE_ROLE on ValidatorsExitBusOracle 0xffDDF7025410412deaa05E3E1cE68FE53208afcb from the old GateSeal 0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d
+12. Grant UNSAFELY_MODIFY_VOTE_TIME_ROLE to Aragon Voting (proxy) 0xdA7d2573Df555002503F29aA4003e398d28cc00f
+13. Change Vote time from 900 to 1080 on Aragon Voting 0xdA7d2573Df555002503F29aA4003e398d28cc00f
+14. Change Objection Phase time from 300 to 360 on Aragon Voting 0xdA7d2573Df555002503F29aA4003e398d28cc00f
+15. Revoke UNSAFELY_MODIFY_VOTE_TIME_ROLE from Aragon Voting (proxy) 0xdA7d2573Df555002503F29aA4003e398d28cc00f
+16. Grant CONFIG_MANAGER_ROLE on OracleDaemonConfig 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 to Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d
+17. Update the FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT parameter in the OracleDaemonConfig contract 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 to 0x08CA (2250)
+18. Revoke CONFIG_MANAGER_ROLE on OracleDaemonConfig 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 from Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d
+19. Grant PAUSE_ROLE on WithdrawalQueue 0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50 to the new GateSeal 0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778
+20. Grant PAUSE_ROLE on ValidatorsExitBusOracle 0xffDDF7025410412deaa05E3E1cE68FE53208afcb to the new GateSeal 0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778
+21. Revoke PAUSE_ROLE on WithdrawalQueue 0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50 from the old GateSeal 0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d
+22. Revoke PAUSE_ROLE on ValidatorsExitBusOracle 0xffDDF7025410412deaa05E3E1cE68FE53208afcb from the old GateSeal 0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d
 23. Grant PAUSE_ROLE on CSModule 0x4562c3e63c2e586cD1651B958C22F88135aCAd4f to the new CSM GateSeal 0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a
 24. Grant PAUSE_ROLE on CSAccounting 0xc093e53e8F4b55A223c18A2Da6fA00e60DD5EFE1 to the new CSM GateSeal 0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a
 25. Grant PAUSE_ROLE on CSFeeOracle 0xaF57326C7d513085051b50912D51809ECC5d98Ee to the new CSM GateSeal 0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a
@@ -252,7 +252,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         ),
         # Extend On-Chain Voting Duration
         (
-            "12. Grant UNSAFELY_MODIFY_VOTE_TIME_ROLE on Aragon Voting to Aragon Voting",
+            "12. Grant UNSAFELY_MODIFY_VOTE_TIME_ROLE to Aragon Voting (proxy) 0xdA7d2573Df555002503F29aA4003e398d28cc00f",
             encode_permission_grant(
                 target_app=contracts.voting,
                 permission_name="UNSAFELY_MODIFY_VOTE_TIME_ROLE",
@@ -260,21 +260,21 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "13. Change vote time from 900 to 1080 on Aragon Voting",
+            "13. Change Vote time from 900 to 1080 on Aragon Voting 0xdA7d2573Df555002503F29aA4003e398d28cc00f",
             (
                 contracts.voting.address,
                 contracts.voting.unsafelyChangeVoteTime.encode_input(NEW_VOTE_DURATION),
             ),
         ),
         (
-            "14. Change objection phase time from 300 to 360 on Aragon Voting",
+            "14. Change Objection Phase time from 300 to 360 on Aragon Voting 0xdA7d2573Df555002503F29aA4003e398d28cc00f",
             (
                 contracts.voting.address,
                 contracts.voting.unsafelyChangeObjectionPhaseTime.encode_input(NEW_OBJECTION_PHASE_DURATION),
             ),
         ),
         (
-            "15. Revoke UNSAFELY_MODIFY_VOTE_TIME_ROLE on Aragon Voting from Aragon Voting",
+            "15. Revoke UNSAFELY_MODIFY_VOTE_TIME_ROLE from Aragon Voting (proxy) 0xdA7d2573Df555002503F29aA4003e398d28cc00f",
             encode_permission_revoke(
                 target_app=contracts.voting,
                 permission_name="UNSAFELY_MODIFY_VOTE_TIME_ROLE",
@@ -282,7 +282,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "16. Grant CONFIG_MANAGER_ROLE on OracleDaemonConfig to Aragon Agent",
+            "16. Grant CONFIG_MANAGER_ROLE on OracleDaemonConfig 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 to Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -294,7 +294,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "17. Update the FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT parameter in the OracleDaemonConfig (0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7) to 0x08CA (2250)",
+            "17. Update the FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT parameter in the OracleDaemonConfig contract 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 to 0x08CA (2250)",
             agent_forward(
                 [
                     (
@@ -308,7 +308,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "18. Revoke CONFIG_MANAGER_ROLE on OracleDaemonConfig from Aragon Agent",
+            "18. Revoke CONFIG_MANAGER_ROLE on OracleDaemonConfig 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 from Aragon Agent (proxy) 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -321,7 +321,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         ),
         # Change GateSeal on WithdrawalQueue and ValidatorsExitBusOracle
         (
-            "19. Grant PAUSE_ROLE on WithdrawalQueue to the new GateSeal (0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778)",
+            "19. Grant PAUSE_ROLE on WithdrawalQueue 0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50 to the new GateSeal 0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -333,7 +333,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "20. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new GateSeal (0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778)",
+            "20. Grant PAUSE_ROLE on ValidatorsExitBusOracle 0xffDDF7025410412deaa05E3E1cE68FE53208afcb to the new GateSeal 0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -345,7 +345,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "21. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal (0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d)",
+            "21. Revoke PAUSE_ROLE on WithdrawalQueue 0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50 from the old GateSeal 0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -357,7 +357,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "22. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal (0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d)",
+            "22. Revoke PAUSE_ROLE on ValidatorsExitBusOracle 0xffDDF7025410412deaa05E3E1cE68FE53208afcb from the old GateSeal 0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -370,7 +370,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         ),
         # Change CSM GateSeals
         (
-            "23. Grant PAUSE_ROLE on CSModule for the new CSM GateSeal (0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a)",
+            "23. Grant PAUSE_ROLE on CSModule 0x4562c3e63c2e586cD1651B958C22F88135aCAd4f to the new CSM GateSeal 0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -382,7 +382,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "24. Grant PAUSE_ROLE on CSAccounting for the new CSM GateSeal (0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a)",
+            "24. Grant PAUSE_ROLE on CSAccounting 0xc093e53e8F4b55A223c18A2Da6fA00e60DD5EFE1 to the new CSM GateSeal 0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -394,7 +394,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "25. Grant PAUSE_ROLE on CSFeeOracle for the new CSM GateSeal (0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a)",
+            "25. Grant PAUSE_ROLE on CSFeeOracle 0xaF57326C7d513085051b50912D51809ECC5d98Ee to the new CSM GateSeal 0xf1C03536dbC77B1bD493a2D1C0b1831Ea78B540a",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -406,7 +406,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "26. Revoke PAUSE_ROLE on CSModule from the old CSM GateSeal (0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce)",
+            "26. Revoke PAUSE_ROLE on CSModule 0x4562c3e63c2e586cD1651B958C22F88135aCAd4f from the old CSM GateSeal 0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -418,7 +418,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "27. Revoke PAUSE_ROLE on CSAccounting from the old CSM GateSeal (0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce)",
+            "27. Revoke PAUSE_ROLE on CSAccounting 0xc093e53e8F4b55A223c18A2Da6fA00e60DD5EFE1 from the old CSM GateSeal 0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -430,7 +430,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "28. Revoke PAUSE_ROLE on CSFeeOracle from the old CSM GateSeal (0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce)",
+            "28. Revoke PAUSE_ROLE on CSFeeOracle 0xaF57326C7d513085051b50912D51809ECC5d98Ee from the old CSM GateSeal 0x41F2677fae0222cF1f08Cd1c0AAa607B469654Ce",
             agent_forward(
                 [
                     encode_oz_revoke_role(
