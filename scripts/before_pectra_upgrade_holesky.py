@@ -321,7 +321,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
         ),
         # Change GateSeal on WithdrawalQueue and ValidatorsExitBusOracle
         (
-            "19. Grant PAUSE_ROLE on WithdrawalQueue 0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50 to the new GateSeal 0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778",
+            "19. Grant PAUSE_ROLE on WithdrawalQueue 0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50 to the new GateSeal 0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778",
             agent_forward(
                 [
                     encode_oz_grant_role(
