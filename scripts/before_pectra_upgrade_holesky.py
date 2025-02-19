@@ -115,8 +115,6 @@ LABS_BORG_STETH_REGISTRY = "0x02CD05c1cBa16113680648a8B3496A5aE312a935"
 description = """
 1. **Pectra Hardfork Compatibility** (Items 1-11)
 Changes include adjustments to oracle algorithms, Oracle Report Sanity Checker limits, and the CS Verifier.
-Approved on [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth).
-
 
 2. **On-Chain Voting Duration Extension** (Items 12-28)
 As approved on [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xa58da73cc4257837ae981d8ad861252f4cbbda7a173a577702f8f93561f57825), the voting periods will be extended:
