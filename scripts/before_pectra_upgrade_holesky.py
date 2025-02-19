@@ -333,7 +333,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "20. Grant PAUSE_ROLE on ValidatorsExitBusOracle 0xffDDF7025410412deaa05E3E1cE68FE53208afcb to the new GateSeal 0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778",
+            "20. Grant PAUSE_ROLE on ValidatorsExitBusOracle 0xffDDF7025410412deaa05E3E1cE68FE53208afcb to the new GateSeal 0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -345,7 +345,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "21. Revoke PAUSE_ROLE on WithdrawalQueue 0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50 from the old GateSeal 0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d",
+            "21. Revoke PAUSE_ROLE on WithdrawalQueue 0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50 from the old GateSeal 0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -357,7 +357,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "22. Revoke PAUSE_ROLE on ValidatorsExitBusOracle 0xffDDF7025410412deaa05E3E1cE68FE53208afcb from the old GateSeal 0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d",
+            "22. Revoke PAUSE_ROLE on ValidatorsExitBusOracle 0xffDDF7025410412deaa05E3E1cE68FE53208afcb from the old GateSeal 0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d",
             agent_forward(
                 [
                     encode_oz_revoke_role(
