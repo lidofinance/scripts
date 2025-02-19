@@ -92,7 +92,7 @@ def get_csm():
 def _check_role(contract: Contract, role: str, holder: str):
     role_bytes = web3.keccak(text=role).hex()
     assert contract.getRoleMemberCount(role_bytes) == 1, f"Role {role} on {contract} should have exactly one holder"
-    assert contract.getRoleMember(role_bytes, 0) == holder, f"Role {role} holder on {contract} should be {holder}"
+    assert contract.getRoleMember(role_bytes, 0).lower() == holder.lower(), f"Role {role} holder on {contract} should be {holder}"
 
 
 def _check_no_role(contract: Contract, role: str, holder: str):
@@ -135,10 +135,16 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     # On-chain voting duration state before voting
     assert contracts.voting.voteTime() == 900
     assert contracts.voting.objectionPhaseTime() == 300
+    assert not contracts.acl.hasPermission(
+        contracts.voting.address,
+        contracts.voting.address,
+        contracts.voting.UNSAFELY_MODIFY_VOTE_TIME_ROLE()
+    )
 
     # Check Oracle Config state before voting
     new_value_uint = convert.to_uint(contracts.oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT"))
     assert new_value_uint != FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
+    _check_no_role(contracts.oracle_daemon_config, "CONFIG_MANAGER_ROLE", contracts.voting.address)
 
     # Check GateSeal state before voting
     _check_role(contracts.withdrawal_queue, "PAUSE_ROLE", OLD_GATE_SEAL)
@@ -195,12 +201,19 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     # Check voting duration changed properly
     assert contracts.voting.voteTime() == NEW_VOTE_DURATION
     assert contracts.voting.objectionPhaseTime() == NEW_OBJECTION_PHASE_DURATION
+    assert not contracts.acl.hasPermission(
+        contracts.voting.address,
+        contracts.voting.address,
+        contracts.voting.UNSAFELY_MODIFY_VOTE_TIME_ROLE()
+    )
 
     # Check Oracle Config updated properly
     updated_value_uint = convert.to_uint(
         contracts.oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT")
     )
     assert updated_value_uint == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
+    _check_no_role(contracts.oracle_daemon_config, "CONFIG_MANAGER_ROLE", contracts.voting.address)
+    
 
     # Check GateSeal updated properly
     _check_no_role(contracts.withdrawal_queue, "PAUSE_ROLE", OLD_GATE_SEAL)
@@ -425,6 +438,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
 
 
 def validate_config_value_updated(event: EventDict, key, value):
+    _events_chain = ["LogScriptCall", "LogScriptCall", "ConfigValueUpdated", "ScriptResult"]
+    validate_events_chain([e.name for e in event], _events_chain)
     assert event["ConfigValueUpdated"]["key"] == key
     assert convert.to_uint(event["ConfigValueUpdated"]["value"]) == value
 
