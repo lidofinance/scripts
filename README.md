@@ -125,6 +125,8 @@ poetry shell
 ```
 
 #### To run a Hardhat node (preferred) instead of Ganache:
+Just use the [Dockerised Hardhat Node](https://github.com/lidofinance/hardhat-node) or alternatively run it manually:
+
 Install Hardhat and dependencies into a separate folder:
 ```shell
 mkdir hardhat && cd hardhat && npm install -d hardhat && npm install --save-dev @nomiclabs/hardhat-ethers ethers @nomiclabs/hardhat-waffle ethereum-waffle chai
