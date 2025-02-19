@@ -144,7 +144,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     # Check Oracle Config state before voting
     new_value_uint = convert.to_uint(contracts.oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT"))
     assert new_value_uint != FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
-    _check_no_role(contracts.oracle_daemon_config, "CONFIG_MANAGER_ROLE", contracts.voting.address)
+    _check_no_role(contracts.oracle_daemon_config, "CONFIG_MANAGER_ROLE", contracts.agent.address)
 
     # Check GateSeal state before voting
     _check_role(contracts.withdrawal_queue, "PAUSE_ROLE", OLD_GATE_SEAL)
@@ -212,7 +212,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
         contracts.oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT")
     )
     assert updated_value_uint == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
-    _check_no_role(contracts.oracle_daemon_config, "CONFIG_MANAGER_ROLE", contracts.voting.address)
+    _check_no_role(contracts.oracle_daemon_config, "CONFIG_MANAGER_ROLE", contracts.agent.address)
     
 
     # Check GateSeal updated properly
