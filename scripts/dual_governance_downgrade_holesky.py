@@ -17,9 +17,11 @@ from utils.permissions import (
     encode_permission_grant,
 )
 from utils.mainnet_fork import pass_and_exec_dao_vote
-from scripts.dual_governance_upgrade_holesky import dual_governance_contracts
 
 description = "Holesky dual governance downgrade dry-run"
+
+DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x3Cc908B004422fd66FdB40Be062Bf9B0bd5BDbed"
+RESEAL_MANAGER = "0x517C93bb27aD463FE3AD8f15DaFDAD56EC0bEeC3"
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False):
     vote_desc_items, call_script_items = zip(
@@ -51,7 +53,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
                         (
                             contracts.withdrawal_queue.address,
                             contracts.withdrawal_queue.revokeRole.encode_input(
-                                contracts.withdrawal_queue.PAUSE_ROLE(), dual_governance_contracts["resealManager"]
+                                contracts.withdrawal_queue.PAUSE_ROLE(), RESEAL_MANAGER
                             ),
                         )
                     ]
@@ -66,7 +68,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
                         (
                             contracts.withdrawal_queue.address,
                             contracts.withdrawal_queue.revokeRole.encode_input(
-                                contracts.withdrawal_queue.RESUME_ROLE(), dual_governance_contracts["resealManager"]
+                                contracts.withdrawal_queue.RESUME_ROLE(), RESEAL_MANAGER
                             ),
                         )
                     ]
@@ -96,7 +98,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
             encode_permission_revoke(
                 target_app=contracts.agent,
                 permission_name="RUN_SCRIPT_ROLE",
-                revoke_from=contracts.dual_governance_admin_executor,
+                revoke_from=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
             ),
         ),
     )
