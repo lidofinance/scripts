@@ -43,15 +43,16 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
 
         Contains next steps:
             1. Update VEBO implementation
-            2. Grant VEBO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-            3. Update VEBO consensus version to `4`
-            4. Revoke VEBO MANAGE_CONSENSUS_VERSION_ROLE from AGENT
-            5. Update WithdrawalVault implementation
-            6. Finalize WV upgrade
-            7. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEBO in WithdrawalVault
-            8. Grant MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-            9. Update AO consensus version to `4`
-            10. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT
+            2.  Call finalizeUpgrade_v2 on VEBO
+            3. Grant VEBO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+            4. Update VEBO consensus version to `4`
+            5. Revoke VEBO MANAGE_CONSENSUS_VERSION_ROLE from AGENT
+            6. Update WithdrawalVault implementation
+            7. Finalize WV upgrade
+            8. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEBO in WithdrawalVault
+            9. Grant MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+            10. Update AO consensus version to `4`
+            11. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT
     """
 
     vote_descriptions, call_script_items = zip(
@@ -62,7 +63,14 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            "2. Grant VEBO MANAGE_CONSENSUS_VERSION_ROLE to the ${AGENT}",
+            "2.  Call finalizeUpgrade_v2 on VEBO",
+            (
+                contracts.validators_exit_bus_oracle.address,
+                contracts.validators_exit_bus_oracle.finalizeUpgrade_v2.encode_input(),
+            )
+        ),
+        (
+            "3. Grant VEBO MANAGE_CONSENSUS_VERSION_ROLE to the ${AGENT}",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.validators_exit_bus_oracle,
@@ -72,13 +80,13 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            "3. Update VEBO consensus version to `4`",
+            "4. Update VEBO consensus version to `4`",
             agent_forward([
                 encode_oracle_upgrade_consensus(contracts.validators_exit_bus_oracle, 6)
             ])
         ),
         (
-            "4. Revoke VEBO MANAGE_CONSENSUS_VERSION_ROLE from ${AGENT}",
+            "5. Revoke VEBO MANAGE_CONSENSUS_VERSION_ROLE from ${AGENT}",
             agent_forward([
                 encode_oz_revoke_role(
                     contract=contracts.validators_exit_bus_oracle,
@@ -88,11 +96,11 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            "5. Update WithdrawalVault implementation",
+            "6. Update WithdrawalVault implementation",
             encode_wv_proxy_upgrade_to(contracts.withdrawal_vault, WITHDRAWAL_VAULT_IMPL)
         ),
         (
-            "6. Finalize WV upgrade",
+            "7. Finalize WV upgrade",
             (
                 contracts.withdrawal_vault.address,
                 contracts.withdrawal_vault.finalizeUpgrade_v2.encode_input(
@@ -101,7 +109,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             )
         ),
         (
-            "7. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEBO in WithdrawalVault",
+            "8. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEBO in WithdrawalVault",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.withdrawal_vault,
@@ -111,7 +119,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            "8. Grant MANAGE_CONSENSUS_VERSION_ROLE to the ${AGENT}",
+            "9. Grant MANAGE_CONSENSUS_VERSION_ROLE to the ${AGENT}",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.accounting_oracle,
@@ -121,13 +129,13 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            "9. Update AO consensus version to `4`",
+            "10. Update AO consensus version to `4`",
             agent_forward([
                 encode_oracle_upgrade_consensus(contracts.accounting_oracle, AO_CONSENSUS_VERSION)
             ])
         ),
         (
-            "10. Revoke MANAGE_CONSENSUS_VERSION_ROLE from ${AGENT}",
+            "11. Revoke MANAGE_CONSENSUS_VERSION_ROLE from ${AGENT}",
             agent_forward([
                 encode_oz_revoke_role(
                     contract=contracts.accounting_oracle,
