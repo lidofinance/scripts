@@ -16,6 +16,7 @@ from utils.test.event_validators.easy_track import (
 )
 from utils.test.event_validators.voting import validate_change_vote_time_event, validate_change_objection_time_event
 from utils.test.event_validators.common import validate_events_chain
+from utils.test.easy_track_helpers import create_and_enact_payment_motion
 
 from scripts.before_pectra_upgrade import (
     OLD_GATE_SEAL,
@@ -26,12 +27,9 @@ from scripts.before_pectra_upgrade import (
     NEW_OBJECTION_PHASE_DURATION,
     FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE,
     ECOSYSTEM_BORG_STABLE_FACTORY,
-    ECOSYSTEM_BORG_STETH_FACTORY,
-    ECOSYSTEM_BORG_STETH_REGISTRY,
+    ECOSYSTEM_BORG_STABLE_REGISTRY,
     LABS_BORG_STABLE_FACTORY,
     LABS_BORG_STABLE_REGISTRY,
-    LABS_BORG_STETH_FACTORY,
-    LABS_BORG_STETH_REGISTRY,
 )
 
 from utils.config import contracts
@@ -45,6 +43,10 @@ VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 CS_VERIFIER_ADDRESS = "0xBcb61491F1859f53438918F1A5aFCA542Af9D397"  # TODO: need to set newly deployed contract address
 CS_VERIFIER_ADDRESS_OLD = "0x3Dfc50f22aCA652a0a6F28a0F892ab62074b5583"
 CSM_ADDRESS = "0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F"
+
+DAI_TOKEN = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+USDT_TOKEN = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
+USDC_TOKEN = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 
 # Roles
 MANAGE_CONSENSUS_VERSION_ROLE = "0xc31b1e4b732c5173dc51d519dfa432bad95550ecc4b0f9a61c2a558a2a8e4341"
@@ -166,9 +168,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     # EasyTrack factories not added check
     evm_script_factories_before = contracts.easy_track.getEVMScriptFactories()
     assert not ECOSYSTEM_BORG_STABLE_FACTORY in evm_script_factories_before
-    assert not ECOSYSTEM_BORG_STETH_FACTORY in evm_script_factories_before
     assert not LABS_BORG_STABLE_FACTORY in evm_script_factories_before
-    assert not LABS_BORG_STETH_FACTORY in evm_script_factories_before
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -237,9 +237,31 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     # EasyTrack factories added check
     evm_script_factories_after = contracts.easy_track.getEVMScriptFactories()
     assert ECOSYSTEM_BORG_STABLE_FACTORY in evm_script_factories_after
-    assert ECOSYSTEM_BORG_STETH_FACTORY in evm_script_factories_after
     assert LABS_BORG_STABLE_FACTORY in evm_script_factories_after
-    assert LABS_BORG_STETH_FACTORY in evm_script_factories_after
+
+    ecosystem_borg_stable_factory = interface.TopUpAllowedRecipients(ECOSYSTEM_BORG_STABLE_FACTORY)
+    labs_borg_stable_factory = interface.TopUpAllowedRecipients(LABS_BORG_STABLE_FACTORY)
+
+    for stablecoin in [DAI_TOKEN, USDT_TOKEN, USDC_TOKEN]:
+        create_and_enact_payment_motion(
+            easy_track=contracts.easy_track,
+            trusted_caller=ecosystem_borg_stable_factory.trustedCaller(),
+            factory=ecosystem_borg_stable_factory,
+            token=interface.ERC20(stablecoin),
+            recievers=[Contract(interface.AllowedRecipientRegistry(ECOSYSTEM_BORG_STABLE_REGISTRY).allowedRecipients(0))],
+            transfer_amounts=[1 * 10**6],
+            stranger=stranger,
+        )
+        create_and_enact_payment_motion(
+            easy_track=contracts.easy_track,
+            trusted_caller=labs_borg_stable_factory.trustedCaller(),
+            factory=labs_borg_stable_factory,
+            token=interface.ERC20(stablecoin),
+            recievers=[Contract(interface.AllowedRecipientRegistry(LABS_BORG_STABLE_REGISTRY).allowedRecipients(0))],
+            transfer_amounts=[1 * 10**6],
+            stranger=stranger,
+        )
+
 
     # Events check
     display_voting_events(vote_tx)
@@ -324,45 +346,27 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     # Revoke PAUSE_ROLE on CSFeeOracle from the old CSMGateSeal
     validate_revoke_role_event(events[27], PAUSE_ROLE, OLD_CSM_GATE_SEAL, contracts.agent)
 
-    # # Validate EasyTrack events
-    # validate_evmscript_factory_added_event(
-    #     events[28],
-    #     EVMScriptFactoryAdded(
-    #         factory_addr=ecosystem_borg_stable_factory,
-    #         permissions=create_permissions(contracts.finance, "newImmediatePayment")
-    #         + create_permissions(
-    #             interface.AllowedRecipientRegistry(ECOSYSTEM_BORG_STABLE_REGISTRY), "updateSpentAmount"
-    #         )[2:],
-    #     ),
-    # )
-    # validate_evmscript_factory_added_event(
-    #     events[29],
-    #     EVMScriptFactoryAdded(
-    #         factory_addr=ecosystem_borg_steth_factory,
-    #         permissions=create_permissions(contracts.finance, "newImmediatePayment")
-    #         + create_permissions(
-    #             interface.AllowedRecipientRegistry(ECOSYSTEM_BORG_STETH_REGISTRY), "updateSpentAmount"
-    #         )[2:],
-    #     ),
-    # )
-    # validate_evmscript_factory_added_event(
-    #     events[30],
-    #     EVMScriptFactoryAdded(
-    #         factory_addr=labs_borg_stable_factory,
-    #         permissions=create_permissions(contracts.finance, "newImmediatePayment")
-    #         + create_permissions(interface.AllowedRecipientRegistry(LABS_BORG_STABLE_REGISTRY), "updateSpentAmount")[
-    #             2:
-    #         ],
-    #     ),
-    # )
-    # validate_evmscript_factory_added_event(
-    #     events[31],
-    #     EVMScriptFactoryAdded(
-    #         factory_addr=labs_borg_steth_factory,
-    #         permissions=create_permissions(contracts.finance, "newImmediatePayment")
-    #         + create_permissions(interface.AllowedRecipientRegistry(LABS_BORG_STETH_REGISTRY), "updateSpentAmount")[2:],
-    #     ),
-    # )
+    # Validate EasyTrack events
+    validate_evmscript_factory_added_event(
+        events[28],
+        EVMScriptFactoryAdded(
+            factory_addr=ecosystem_borg_stable_factory,
+            permissions=create_permissions(contracts.finance, "newImmediatePayment")
+            + create_permissions(
+                interface.AllowedRecipientRegistry(ECOSYSTEM_BORG_STABLE_REGISTRY), "updateSpentAmount"
+            )[2:],
+        ),
+    )
+    validate_evmscript_factory_added_event(
+        events[29],
+        EVMScriptFactoryAdded(
+            factory_addr=labs_borg_stable_factory,
+            permissions=create_permissions(contracts.finance, "newImmediatePayment")
+            + create_permissions(interface.AllowedRecipientRegistry(LABS_BORG_STABLE_REGISTRY), "updateSpentAmount")[
+                2:
+            ],
+        ),
+    )
 
 
 # Events check

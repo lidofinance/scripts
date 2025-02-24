@@ -38,10 +38,8 @@ IV. Change CSM GateSeals
 28. Revoke PAUSE_ROLE on CSFeeOracle (0x4D4074628678Bd302921c20573EEa1ed38DdF7FB) from the old CSM GateSeal (0x5cFCa30450B1e5548F140C24A47E36c10CE306F0)
 
 V. EasyTrack factories
-29. Add a top-up EVM script factory for stablecoins TBA to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry TBA)
-30. Add a top-up EVM script factory for stETH TBA to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry TBA)
-31. Add a top-up EVM script factory for stablecoins TBA to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry TBA)
-32. Add a top-up EVM script factory for stETH TBA to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry TBA)
+29. Add a top-up EVM script factory for stablecoins (0xf2476f967C826722F5505eDfc4b2561A34033477) to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0xDAdC4C36cD8F468A398C25d0D8aaf6A928B47Ab4)
+30. Add a top-up EVM script factory for stablecoins (0xE1f6BaBb445F809B97e3505Ea91749461050F780) to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x68267f3D310E9f0FF53a37c141c90B738E1133c2)
 """
 
 import time
@@ -105,14 +103,10 @@ NEW_CSM_GATE_SEAL = "0x63a26b87a935c6c95cF28A0d1b9CF5B34A020008"
 
 # EasyTrack factories
 # TODO: update addresses of factories
-ECOSYSTEM_BORG_STABLE_FACTORY = "0x0000000000000000000000000000000000000015"
-ECOSYSTEM_BORG_STABLE_REGISTRY = "0xe07305F43B11F230EaA951002F6a55a16419B707"
-ECOSYSTEM_BORG_STETH_FACTORY = "0x0000000000000000000000000000000000000016"
-ECOSYSTEM_BORG_STETH_REGISTRY = "0xe07305F43B11F230EaA951002F6a55a16419B707"
-LABS_BORG_STABLE_FACTORY = "0x0000000000000000000000000000000000000017"
-LABS_BORG_STABLE_REGISTRY = "0xe07305F43B11F230EaA951002F6a55a16419B707"
-LABS_BORG_STETH_FACTORY = "0x0000000000000000000000000000000000000018"
-LABS_BORG_STETH_REGISTRY = "0xe07305F43B11F230EaA951002F6a55a16419B707"
+ECOSYSTEM_BORG_STABLE_FACTORY = "0xf2476f967C826722F5505eDfc4b2561A34033477"
+ECOSYSTEM_BORG_STABLE_REGISTRY = "0xDAdC4C36cD8F468A398C25d0D8aaf6A928B47Ab4"
+LABS_BORG_STABLE_FACTORY = "0xE1f6BaBb445F809B97e3505Ea91749461050F780"
+LABS_BORG_STABLE_REGISTRY = "0x68267f3D310E9f0FF53a37c141c90B738E1133c2"
 
 description = """
 """
@@ -446,31 +440,17 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
 
         # EasyTrack factories
         (
-            "29. Add a top-up EVM script factory for stablecoins 0x167caEDde0F3230eB18763270B11c970409F389e to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x0214CEBDEc06dc2729382860603d01113F068388)",
+            "29. Add a top-up EVM script factory for stablecoins (0xf2476f967C826722F5505eDfc4b2561A34033477) to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0xDAdC4C36cD8F468A398C25d0D8aaf6A928B47Ab4)",
             add_evmscript_factory(
                 factory=ECOSYSTEM_BORG_STABLE_FACTORY,
                 permissions=create_top_up_allowed_recipient_permission(registry_address=ECOSYSTEM_BORG_STABLE_REGISTRY),
             ),
         ),
         (
-            "30. Add a top-up EVM script factory for stETH 0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x193d0bA65cf3a2726e12c5568c068D1B3ea51740)",
-            add_evmscript_factory(
-                factory=ECOSYSTEM_BORG_STETH_FACTORY,
-                permissions=create_top_up_allowed_recipient_permission(registry_address=ECOSYSTEM_BORG_STETH_REGISTRY),
-            ),
-        ),
-        (
-            "31. Add a top-up EVM script factory for stablecoins 0xf7304738E9d4F572b909FaEd32504F558E234cdB to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x303F5b60e3cf6Ea11d8509A1546401e311A13B92)",
+            "30. Add a top-up EVM script factory for stablecoins (0xE1f6BaBb445F809B97e3505Ea91749461050F780) to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x68267f3D310E9f0FF53a37c141c90B738E1133c2)",
             add_evmscript_factory(
                 factory=LABS_BORG_STABLE_FACTORY,
                 permissions=create_top_up_allowed_recipient_permission(registry_address=LABS_BORG_STABLE_REGISTRY),
-            ),
-        ),
-        (
-            "32. Add a top-up EVM script factory for stETH 0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9 to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x02CD05c1cBa16113680648a8B3496A5aE312a935)",
-            add_evmscript_factory(
-                factory=LABS_BORG_STETH_FACTORY,
-                permissions=create_top_up_allowed_recipient_permission(registry_address=LABS_BORG_STETH_REGISTRY),
             ),
         ),
     )
