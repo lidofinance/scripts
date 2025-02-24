@@ -44,7 +44,7 @@ def pass_and_exec_dao_vote(vote_id):
             dao_voting.vote(vote_id, True, False, {"from": account, "silent": True})
 
         # wait for the vote to end
-        chain.sleep(3 * 60 * 60 * 24)
+        chain.sleep(dao_voting.voteTime())
         chain.mine()
 
         assert dao_voting.canExecute(vote_id)

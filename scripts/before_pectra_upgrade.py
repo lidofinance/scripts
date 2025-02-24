@@ -1,6 +1,7 @@
 """
 Release part of the update before the Pectra upgrade
 
+I. Pre-pectra upgrade
 1. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Accounting Oracle to Aragon Agent
 2. Update Accounting Oracle consensus version to 3
 3. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on Accounting Oracle from Aragon Agent
@@ -12,12 +13,41 @@ Release part of the update before the Pectra upgrade
 9. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle from Aragon Agent
 10. Revoke VERIFIER_ROLE role on CSM from old CS Verifier
 11. Grant VERIFIER_ROLE role on CSM to new CS Verifier
+
+II. Extend On-Chain Voting Duration
+12. Grant UNSAFELY_MODIFY_VOTE_TIME_ROLE to Aragon Voting (0x2e59A20f205bB85a89C53f1936454680651E618e)
+13. Change Vote time from 259200 seconds (72 hours) to 432000 seconds (120 hours) on Aragon Voting (0x2e59A20f205bB85a89C53f1936454680651E618e)
+14. Change Objection Phase time from 86400 seconds (24 hours) to 172800 seconds (48 hours) on Aragon Voting (0x2e59A20f205bB85a89C53f1936454680651E618e)
+15. Revoke UNSAFELY_MODIFY_VOTE_TIME_ROLE from Aragon Voting (0x2e59A20f205bB85a89C53f1936454680651E618e)
+16. Grant CONFIG_MANAGER_ROLE on OracleDaemonConfig 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 to Aragon Agent 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d
+17. Update the FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT parameter in the OracleDaemonConfig contract 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 to 0x08CA (2250)
+18. Revoke CONFIG_MANAGER_ROLE on OracleDaemonConfig 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 from Aragon Agent 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d
+
+III. Change GateSeal on WithdrawalQueue and ValidatorsExitBusOracle
+19. Grant PAUSE_ROLE on WithdrawalQueue (0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1) to the new GateSeal (0xc515a119a9fAA8B48a8FE2Ee1526A0D55ed201D9)
+20. Grant PAUSE_ROLE on ValidatorsExitBusOracle (0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e) to the new GateSeal (0xc515a119a9fAA8B48a8FE2Ee1526A0D55ed201D9)
+21. Revoke PAUSE_ROLE on WithdrawalQueue (0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1) from the old GateSeal (0x79243345eDbe01A7E42EDfF5900156700d22611c)
+22. Revoke PAUSE_ROLE on ValidatorsExitBusOracle (0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e) from the old GateSeal (0x79243345eDbe01A7E42EDfF5900156700d22611c)
+
+IV. Change CSM GateSeals
+23. Grant PAUSE_ROLE on CSModule (0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F) to the new CSM GateSeal (0x63a26b87a935c6c95cF28A0d1b9CF5B34A020008)
+24. Grant PAUSE_ROLE on CSAccounting (0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da) to the new CSM GateSeal (0x63a26b87a935c6c95cF28A0d1b9CF5B34A020008)
+25. Grant PAUSE_ROLE on CSFeeOracle (0x4D4074628678Bd302921c20573EEa1ed38DdF7FB) to the new CSM GateSeal (0x63a26b87a935c6c95cF28A0d1b9CF5B34A020008)
+26. Revoke PAUSE_ROLE on CSModule (0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F) from the old CSM GateSeal (0x5cFCa30450B1e5548F140C24A47E36c10CE306F0)
+27. Revoke PAUSE_ROLE on CSAccounting (0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da) from the old CSM GateSeal (0x5cFCa30450B1e5548F140C24A47E36c10CE306F0)
+28. Revoke PAUSE_ROLE on CSFeeOracle (0x4D4074628678Bd302921c20573EEa1ed38DdF7FB) from the old CSM GateSeal (0x5cFCa30450B1e5548F140C24A47E36c10CE306F0)
+
+V. EasyTrack factories
+29. Add a top-up EVM script factory for stablecoins TBA to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry TBA)
+30. Add a top-up EVM script factory for stETH TBA to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry TBA)
+31. Add a top-up EVM script factory for stablecoins TBA to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry TBA)
+32. Add a top-up EVM script factory for stETH TBA to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry TBA)
 """
 
 import time
 
 try:
-    from brownie import interface, accounts
+    from brownie import interface, accounts, convert
 except ImportError:
     print("You're probably running inside Brownie console. Please call:")
     print("set_console_globals(interface=interface)")
@@ -31,8 +61,20 @@ from utils.config import (
     contracts,
     CS_VERIFIER_ADDRESS_OLD,
 )
+from utils.permissions import (
+    encode_oz_grant_role,
+    encode_oz_revoke_role,
+    encode_permission_grant,
+    encode_permission_revoke,
+    encode_permission_create,
+)
+from utils.easy_track import (
+    add_evmscript_factory,
+)
+from utils.allowed_recipients_registry import (
+    create_top_up_allowed_recipient_permission,
+)
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
-from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
 from brownie.network.transaction import TransactionReceipt
@@ -45,6 +87,32 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 AO_CONSENSUS_VERSION = 3
 VEBO_CONSENSUS_VERSION = 3
 CS_FEE_ORACLE_CONSENSUS_VERSION = 2
+
+# Vote duration
+NEW_VOTE_DURATION = 432000
+NEW_OBJECTION_PHASE_DURATION = 172800
+
+# Oracle daemon config
+FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE = 2250
+
+# GateSeals
+OLD_GATE_SEAL = "0x79243345eDbe01A7E42EDfF5900156700d22611c"
+NEW_GATE_SEAL = "0xc515a119a9fAA8B48a8FE2Ee1526A0D55ed201D9"
+
+# CSM GateSeals
+OLD_CSM_GATE_SEAL = "0x5cFCa30450B1e5548F140C24A47E36c10CE306F0"
+NEW_CSM_GATE_SEAL = "0x63a26b87a935c6c95cF28A0d1b9CF5B34A020008"
+
+# EasyTrack factories
+# TODO: update addresses of factories
+ECOSYSTEM_BORG_STABLE_FACTORY = "0x0000000000000000000000000000000000000015"
+ECOSYSTEM_BORG_STABLE_REGISTRY = "0xe07305F43B11F230EaA951002F6a55a16419B707"
+ECOSYSTEM_BORG_STETH_FACTORY = "0x0000000000000000000000000000000000000016"
+ECOSYSTEM_BORG_STETH_REGISTRY = "0xe07305F43B11F230EaA951002F6a55a16419B707"
+LABS_BORG_STABLE_FACTORY = "0x0000000000000000000000000000000000000017"
+LABS_BORG_STABLE_REGISTRY = "0xe07305F43B11F230EaA951002F6a55a16419B707"
+LABS_BORG_STETH_FACTORY = "0x0000000000000000000000000000000000000018"
+LABS_BORG_STETH_REGISTRY = "0xe07305F43B11F230EaA951002F6a55a16419B707"
 
 description = """
 """
@@ -175,6 +243,234 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                         grant_to=contracts.cs_verifier,
                     )
                 ]
+            ),
+        ),
+
+
+        # Extend On-Chain Voting Duration
+        (
+            "12. Grant UNSAFELY_MODIFY_VOTE_TIME_ROLE to Aragon Voting (0x2e59A20f205bB85a89C53f1936454680651E618e)",
+            encode_permission_grant(
+                target_app=contracts.voting,
+                permission_name="UNSAFELY_MODIFY_VOTE_TIME_ROLE",
+                grant_to=contracts.voting,
+            ),
+        ),
+        (
+            "13. Change Vote time from 259200 seconds (72 hours) to 432000 seconds (120 hours) on Aragon Voting (0x2e59A20f205bB85a89C53f1936454680651E618e)",
+            (
+                contracts.voting.address,
+                contracts.voting.unsafelyChangeVoteTime.encode_input(NEW_VOTE_DURATION),
+            ),
+        ),
+        (
+            "14. Change Objection Phase time from 86400 seconds (24 hours) to 172800 seconds (48 hours) on Aragon Voting (0x2e59A20f205bB85a89C53f1936454680651E618e)",
+            (
+                contracts.voting.address,
+                contracts.voting.unsafelyChangeObjectionPhaseTime.encode_input(NEW_OBJECTION_PHASE_DURATION),
+            ),
+        ),
+        (
+            "15. Revoke UNSAFELY_MODIFY_VOTE_TIME_ROLE from Aragon Voting (0x2e59A20f205bB85a89C53f1936454680651E618e)",
+            encode_permission_revoke(
+                target_app=contracts.voting,
+                permission_name="UNSAFELY_MODIFY_VOTE_TIME_ROLE",
+                revoke_from=contracts.voting,
+            ),
+        ),
+        (
+            "16. Grant CONFIG_MANAGER_ROLE on OracleDaemonConfig 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 to Aragon Agent 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.oracle_daemon_config,
+                        role_name="CONFIG_MANAGER_ROLE",
+                        grant_to=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+        (
+            "17. Update the FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT parameter in the OracleDaemonConfig contract 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 to 0x08CA (2250)",
+            agent_forward(
+                [
+                    (
+                        contracts.oracle_daemon_config.address,
+                        contracts.oracle_daemon_config.update.encode_input(
+                            "FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT",
+                            convert.to_bytes(FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE),
+                        ),
+                    )
+                ]
+            ),
+        ),
+        (
+            "18. Revoke CONFIG_MANAGER_ROLE on OracleDaemonConfig 0xC01fC1F2787687Bc656EAc0356ba9Db6e6b7afb7 from Aragon Agent 0xE92329EC7ddB11D25e25b3c21eeBf11f15eB325d",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.oracle_daemon_config,
+                        role_name="CONFIG_MANAGER_ROLE",
+                        revoke_from=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+
+
+        # Change GateSeal on WithdrawalQueue and ValidatorsExitBusOracle
+        (
+            "19. Grant PAUSE_ROLE on WithdrawalQueue (0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1) to the new GateSeal (0xc515a119a9fAA8B48a8FE2Ee1526A0D55ed201D9)",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.withdrawal_queue,
+                        role_name="PAUSE_ROLE",
+                        grant_to=NEW_GATE_SEAL,
+                    )
+                ]
+            ),
+        ),
+        (
+            "20. Grant PAUSE_ROLE on ValidatorsExitBusOracle (0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e) to the new GateSeal (0xc515a119a9fAA8B48a8FE2Ee1526A0D55ed201D9)",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.validators_exit_bus_oracle,
+                        role_name="PAUSE_ROLE",
+                        grant_to=NEW_GATE_SEAL,
+                    )
+                ]
+            ),
+        ),
+        (
+            "21. Revoke PAUSE_ROLE on WithdrawalQueue (0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1) from the old GateSeal (0x79243345eDbe01A7E42EDfF5900156700d22611c)",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.withdrawal_queue,
+                        role_name="PAUSE_ROLE",
+                        revoke_from=OLD_GATE_SEAL,
+                    )
+                ]
+            ),
+        ),
+        (
+            "22. Revoke PAUSE_ROLE on ValidatorsExitBusOracle (0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e) from the old GateSeal (0x79243345eDbe01A7E42EDfF5900156700d22611c)",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.validators_exit_bus_oracle,
+                        role_name="PAUSE_ROLE",
+                        revoke_from=OLD_GATE_SEAL,
+                    )
+                ]
+            ),
+        ),
+
+
+        # Change CSM GateSeals
+        (
+            "23. Grant PAUSE_ROLE on CSModule (TBA) to the new CSM GateSeal (TBA)",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.csm,
+                        role_name="PAUSE_ROLE",
+                        grant_to=NEW_CSM_GATE_SEAL,
+                    )
+                ]
+            ),
+        ),
+        (
+            "24. Grant PAUSE_ROLE on CSAccounting (TBA) to the new CSM GateSeal (TBA)",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.cs_accounting,
+                        role_name="PAUSE_ROLE",
+                        grant_to=NEW_CSM_GATE_SEAL,
+                    )
+                ]
+            ),
+        ),
+        (
+            "25. Grant PAUSE_ROLE on CSFeeOracle (TBA) to the new CSM GateSeal (TBA)",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.cs_fee_oracle,
+                        role_name="PAUSE_ROLE",
+                        grant_to=NEW_CSM_GATE_SEAL,
+                    )
+                ]
+            ),
+        ),
+        (
+            "26. Revoke PAUSE_ROLE on CSModule (TBA) from the old CSM GateSeal (TBA)",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.csm,
+                        role_name="PAUSE_ROLE",
+                        revoke_from=OLD_CSM_GATE_SEAL,
+                    )
+                ]
+            ),
+        ),
+        (
+            "27. Revoke PAUSE_ROLE on CSAccounting (TBA) from the old CSM GateSeal (TBA)",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.cs_accounting,
+                        role_name="PAUSE_ROLE",
+                        revoke_from=OLD_CSM_GATE_SEAL,
+                    )
+                ]
+            ),
+        ),
+        (
+            "28. Revoke PAUSE_ROLE on CSFeeOracle (TBA) from the old CSM GateSeal (TBA)",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.cs_fee_oracle,
+                        role_name="PAUSE_ROLE",
+                        revoke_from=OLD_CSM_GATE_SEAL,
+                    )
+                ]
+            ),
+        ),
+
+
+        # EasyTrack factories
+        (
+            "29. Add a top-up EVM script factory for stablecoins 0x167caEDde0F3230eB18763270B11c970409F389e to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x0214CEBDEc06dc2729382860603d01113F068388)",
+            add_evmscript_factory(
+                factory=ECOSYSTEM_BORG_STABLE_FACTORY,
+                permissions=create_top_up_allowed_recipient_permission(registry_address=ECOSYSTEM_BORG_STABLE_REGISTRY),
+            ),
+        ),
+        (
+            "30. Add a top-up EVM script factory for stETH 0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac to Easy Track to fund the Lido Ecosystem BORG's Ops multisig (AllowedRecipientsRegistry 0x193d0bA65cf3a2726e12c5568c068D1B3ea51740)",
+            add_evmscript_factory(
+                factory=ECOSYSTEM_BORG_STETH_FACTORY,
+                permissions=create_top_up_allowed_recipient_permission(registry_address=ECOSYSTEM_BORG_STETH_REGISTRY),
+            ),
+        ),
+        (
+            "31. Add a top-up EVM script factory for stablecoins 0xf7304738E9d4F572b909FaEd32504F558E234cdB to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x303F5b60e3cf6Ea11d8509A1546401e311A13B92)",
+            add_evmscript_factory(
+                factory=LABS_BORG_STABLE_FACTORY,
+                permissions=create_top_up_allowed_recipient_permission(registry_address=LABS_BORG_STABLE_REGISTRY),
+            ),
+        ),
+        (
+            "32. Add a top-up EVM script factory for stETH 0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9 to Easy Track to fund the Lido Labs BORG's Ops multisig (AllowedRecipientsRegistry 0x02CD05c1cBa16113680648a8B3496A5aE312a935)",
+            add_evmscript_factory(
+                factory=LABS_BORG_STETH_FACTORY,
+                permissions=create_top_up_allowed_recipient_permission(registry_address=LABS_BORG_STETH_REGISTRY),
             ),
         ),
     )
