@@ -29,10 +29,10 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push mainnet fork image
+      - name: Build and push image
         uses: docker/build-push-action@v6.1.0
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ghcr.io/lidofinance/scripts:${{ github.ref_name }}
