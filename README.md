@@ -49,7 +49,11 @@ ssh root@localhost -p 2222 # password: 1234
 > 
 > If you are asked 'Are you sure you want to continue connecting' - type `yes` and hit `<ENTER>`
 
-</br>
+To run a Hardhat node inside a deployed Docker container:
+```shell
+cd /root/hardhat
+npx hardhat node --fork $ETH_RPC_URL
+```
 
 You now have a fully functional environment to run scripts & tests in, which is linked to your local scripts repo, for example:
 ```shell
@@ -118,6 +122,22 @@ need it.
 
 ```shell
 poetry shell
+```
+
+#### To run a Hardhat node (preferred) instead of Ganache:
+Just use the [Dockerised Hardhat Node](https://github.com/lidofinance/hardhat-node) or alternatively run it manually:
+
+Install Hardhat and dependencies into a separate folder:
+```shell
+mkdir hardhat && cd hardhat && npm install -d hardhat && npm install --save-dev @nomiclabs/hardhat-ethers ethers @nomiclabs/hardhat-waffle ethereum-waffle chai
+```
+Init empty Hardhat project in this folder:
+```shell
+touch hardhat.config.js && echo $'/** @type import(\'hardhat/config\').HardhatUserConfig */\nmodule.exports = {\n  solidity: "0.8.28",\n};' | tee -a hardhat.config.js
+```
+Start Hardhat node in this folder:
+```shell
+npx hardhat node --fork $ETH_RPC_URL
 ```
 
 </br>
