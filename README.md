@@ -21,23 +21,22 @@ Lido DAO Aragon omnibus voting scripts.
 </br>
 
 ## 🐳 Docker: quick and easy environment setup
-**The no-brainer workflow for setting up a Docker container to run scripts & tests**
+**The no-brainer workflow for running scripts & tests from Docker**
 
-#### Step 1. Clone the fresh repo and build an image:
+#### Step 1. Clone the fresh repo:
 ```shell
 git clone git@github.com:lidofinance/scripts.git
 cd scripts
-docker build -t scenv .
 ```
-Note: *If you are running on an arm64 processor (including Apple Silicon) - you will have to wait up to 4 hours while the Solidity compilers compile.*
 
 #### Step 2. Set up the ENV VARs, for example:
 - `WEB3_INFURA_PROJECT_ID` - **mandatory** for the execution of tests
 
 #### Step 3. Run the container
-Run the container in the `scripts` directory and specify any ENV VARs:
+Run the container in the `scripts` directory and specify the ENV VARs:
 ```shell
-docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 scenv
+docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 --rm ghcr.io/lidofinance/scripts:v9
+
 ```
 Note: *It may take up to 1 minute for the container to initialize properly the first time.*
 #### Step 4. Now connect to the running container using SSH:
