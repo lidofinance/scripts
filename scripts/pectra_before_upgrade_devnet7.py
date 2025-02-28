@@ -25,6 +25,7 @@ except ImportError:
 
 from typing import Dict, Tuple, Optional
 from utils.config import (
+    network_name,
     get_deployer_account,
     get_is_live,
     get_priority_fee,
