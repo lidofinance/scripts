@@ -14,7 +14,7 @@ live:
   - name: Ethereum
     networks:
       - chainid: 7032118028
-        explorer: https://explorer.pectra-devnet-7.ethpandaops.io/api-docs
+        explorer: https://explorer-api.pectra-devnet-7.ethpandaops.io/api
         host: $DEVNET_RPC_URL
         id: devnet7
         name: Devnet7
@@ -97,7 +97,7 @@ development:
       chain_id: 7032118028
       gas_limit: 30000000
       mnemonic: brownie
-      port: 56136
+      port: 8545
     host: http://127.0.0.1
     id: devnet7-fork
     name: Devnet7

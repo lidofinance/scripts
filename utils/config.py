@@ -54,6 +54,7 @@ def get_is_live() -> bool:
         "mainnet-fork",
         "holesky-fork",
         "sepolia-fork",
+        "devnet7-fork",
     ]
     return network.show_active() not in dev_networks
 
