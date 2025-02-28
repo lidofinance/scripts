@@ -15,7 +15,7 @@ live:
     networks:
       - chainid: 7032118028
         explorer: https://explorer.pectra-devnet-7.ethpandaops.io/api-docs
-        host: $DEVNET_RPC
+        host: $DEVNET_RPC_URL
         id: devnet7
         name: Devnet7
 
