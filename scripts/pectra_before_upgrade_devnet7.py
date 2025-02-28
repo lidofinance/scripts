@@ -192,10 +192,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
     else:
         desc_ipfs = upload_vote_ipfs_description(description)
 
-    # return confirm_vote_script(vote_items, silent, desc_ipfs) and list(
-    #     create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
-    # )
-    return list(create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs))
+    return confirm_vote_script(vote_items, silent, desc_ipfs) and list(
+        create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
+    )
 
 
 def main():

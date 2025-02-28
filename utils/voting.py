@@ -196,7 +196,7 @@ def confirm_vote_script(
         human_readable_script = decode_evm_script(
             encoded_call_script,
             verbose=False,
-            specific_net=CHAIN_NETWORK_NAME,
+            specific_net="holesky",
             repeat_is_error=True,
         )
 
