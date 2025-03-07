@@ -63,6 +63,15 @@ If your container has been stopped (for example, by a system reboot), start it:
 docker start scripts
 ```
 
+#### How to publish a new version of Scripts Docker image to GHCR
+1. Push code changes to the repo
+2. Wait for the approvals and merge them into `master`
+3. Add a tag `vX`, where `X` is the next release number, to the commit. You can refer to the [Release](https://github.com/lidofinance/scripts/releases) page
+4. Wait for the workflow **build and push image** to finish successfully on the tagged commit
+5. In this README file, update the image version in section **Step 3. Run the container**
+
+(i.e., that pushing a new tag triggers the build of new Docker images).
+
 </br>
 
 ## 🏁 Manual installation
