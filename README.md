@@ -70,8 +70,6 @@ docker start scripts
 4. Wait for the workflow **build and push image** to finish successfully on the tagged commit
 5. In this README file, update the image version in section **Step 3. Run the container**
 
-(i.e., that pushing a new tag triggers the build of new Docker images).
-
 </br>
 
 ## 🏁 Manual installation
