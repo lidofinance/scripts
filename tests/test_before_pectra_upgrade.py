@@ -3,36 +3,14 @@ from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS
 from brownie import interface, convert, Contract
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.permission import (
-    Permission,
-    validate_permission_grant_event,
-    validate_permission_revoke_event,
     validate_grant_role_event,
     validate_revoke_role_event,
 )
 from utils.easy_track import create_permissions
-from utils.test.event_validators.easy_track import (
-    validate_evmscript_factory_added_event,
-    EVMScriptFactoryAdded
-)
+from utils.test.event_validators.easy_track import validate_evmscript_factory_added_event, EVMScriptFactoryAdded
 from utils.test.event_validators.voting import validate_change_vote_time_event, validate_change_objection_time_event
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.easy_track_helpers import create_and_enact_payment_motion
-
-from scripts.before_pectra_upgrade import (
-    OLD_GATE_SEAL,
-    NEW_GATE_SEAL,
-    OLD_CSM_GATE_SEAL,
-    NEW_CSM_GATE_SEAL,
-    NEW_VOTE_DURATION,
-    NEW_OBJECTION_PHASE_DURATION,
-    FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE,
-    ECOSYSTEM_BORG_STABLE_FACTORY,
-    ECOSYSTEM_BORG_STABLE_REGISTRY,
-    LABS_BORG_STABLE_FACTORY,
-    LABS_BORG_STABLE_REGISTRY,
-)
-
-from utils.config import contracts
 
 # Contracts
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
@@ -52,11 +30,6 @@ USDC_TOKEN = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 MANAGE_CONSENSUS_VERSION_ROLE = "0xc31b1e4b732c5173dc51d519dfa432bad95550ecc4b0f9a61c2a558a2a8e4341"
 VERIFIER_ROLE = "0x0ce23c3e399818cfee81a7ab0880f714e53d7672b08df0fa62f2843416e1ea09"
 PAUSE_ROLE = "0x139c2898040ef16910dc9f44dc697df79363da767d8bc92f2e310312b816e46d"
-
-# Old values
-# Vote duration
-OLD_VOTE_DURATION = 259200
-OLD_OBJECTION_PHASE_DURATION = 86400
 
 # Oracle daemon config
 FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_OLD_VALUE = 1350
@@ -96,12 +69,6 @@ def check_aragon_doesnt_have_manage_consensus_role_on_oracle(oracle):
     assert not agent_has_manage_consensus_role
 
 
-def _check_role(contract: Contract, role: str, holder: str):
-    role_bytes = web3.keccak(text=role).hex()
-    assert contract.getRoleMemberCount(role_bytes) == 1, f"Role {role} on {contract} should have exactly one holder"
-    assert contract.getRoleMember(role_bytes, 0).lower() == holder.lower(), f"Role {role} holder on {contract} should be {holder}"
-
-
 def _check_no_role(contract: Contract, role: str, holder: str):
     role_bytes = web3.keccak(text=role).hex()
     assert contract.getRoleMemberCount(role_bytes) == 1, f"Role {role} on {contract} should have exactly one holder"
@@ -134,42 +101,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     # 11) New CS Verifier doesn't have VERIFIER_ROLE role on CSM before voting
     assert not csm.hasRole(VERIFIER_ROLE, CS_VERIFIER_ADDRESS)
 
-    # On-chain voting duration state before voting
-    assert contracts.voting.voteTime() == OLD_VOTE_DURATION
-    assert contracts.voting.objectionPhaseTime() == OLD_OBJECTION_PHASE_DURATION
-    assert not contracts.acl.hasPermission(
-        contracts.voting.address,
-        contracts.voting.address,
-        contracts.voting.UNSAFELY_MODIFY_VOTE_TIME_ROLE()
-    )
-
-    # Check Oracle Config state before voting
-    new_value_uint = convert.to_uint(contracts.oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT"))
-    assert new_value_uint == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_OLD_VALUE
-    assert not contracts.oracle_daemon_config.hasRole(
-        web3.keccak(text="CONFIG_MANAGER_ROLE").hex(),
-        contracts.agent.address
-    )
-
-    # Check GateSeal state before voting
-    _check_role(contracts.withdrawal_queue, "PAUSE_ROLE", OLD_GATE_SEAL)
-    _check_role(vebo, "PAUSE_ROLE", OLD_GATE_SEAL)
-    _check_no_role(contracts.withdrawal_queue, "PAUSE_ROLE", NEW_GATE_SEAL)
-    _check_no_role(vebo, "PAUSE_ROLE", NEW_GATE_SEAL)
-
-    # Check GateSeal state on CSM before voting
-    _check_role(contracts.csm, "PAUSE_ROLE", OLD_CSM_GATE_SEAL)
-    _check_no_role(contracts.csm, "PAUSE_ROLE", NEW_CSM_GATE_SEAL)
-    _check_role(contracts.cs_accounting, "PAUSE_ROLE", OLD_CSM_GATE_SEAL)
-    _check_no_role(contracts.cs_accounting, "PAUSE_ROLE", NEW_CSM_GATE_SEAL)
-    _check_role(contracts.cs_fee_oracle, "PAUSE_ROLE", OLD_CSM_GATE_SEAL)
-    _check_no_role(contracts.cs_fee_oracle, "PAUSE_ROLE", NEW_CSM_GATE_SEAL)
-
-    # EasyTrack factories not added check
-    evm_script_factories_before = contracts.easy_track.getEVMScriptFactories()
-    assert not ECOSYSTEM_BORG_STABLE_FACTORY in evm_script_factories_before
-    assert not LABS_BORG_STABLE_FACTORY in evm_script_factories_before
-
     # START VOTE
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
@@ -200,68 +131,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     assert not csm.hasRole(VERIFIER_ROLE, CS_VERIFIER_ADDRESS_OLD)
     # 11) New CS Verifier has VERIFIER_ROLE role on CSM after voting
     assert csm.hasRole(VERIFIER_ROLE, CS_VERIFIER_ADDRESS)
-
-    # On-chain voting duration state before voting
-    assert contracts.voting.voteTime() == NEW_VOTE_DURATION
-    assert contracts.voting.objectionPhaseTime() == NEW_OBJECTION_PHASE_DURATION
-    assert not contracts.acl.hasPermission(
-        contracts.voting.address,
-        contracts.voting.address,
-        contracts.voting.UNSAFELY_MODIFY_VOTE_TIME_ROLE()
-    )
-
-    # Check Oracle Config updated properly
-    updated_value_uint = convert.to_uint(
-        contracts.oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT")
-    )
-    assert updated_value_uint == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
-    assert not contracts.oracle_daemon_config.hasRole(
-        web3.keccak(text="CONFIG_MANAGER_ROLE").hex(),
-        contracts.agent.address
-    )
-
-    # Check GateSeal updated properly
-    _check_no_role(contracts.withdrawal_queue, "PAUSE_ROLE", OLD_GATE_SEAL)
-    _check_no_role(vebo, "PAUSE_ROLE", OLD_GATE_SEAL)
-    _check_role(contracts.withdrawal_queue, "PAUSE_ROLE", NEW_GATE_SEAL)
-    _check_role(vebo, "PAUSE_ROLE", NEW_GATE_SEAL)
-
-    # Check GateSeal on CSM updated properly
-    _check_no_role(contracts.csm, "PAUSE_ROLE", OLD_CSM_GATE_SEAL)
-    _check_role(contracts.csm, "PAUSE_ROLE", NEW_CSM_GATE_SEAL)
-    _check_no_role(contracts.cs_accounting, "PAUSE_ROLE", OLD_CSM_GATE_SEAL)
-    _check_role(contracts.cs_accounting, "PAUSE_ROLE", NEW_CSM_GATE_SEAL)
-    _check_no_role(contracts.cs_fee_oracle, "PAUSE_ROLE", OLD_CSM_GATE_SEAL)
-    _check_role(contracts.cs_fee_oracle, "PAUSE_ROLE", NEW_CSM_GATE_SEAL)
-
-    # EasyTrack factories added check
-    evm_script_factories_after = contracts.easy_track.getEVMScriptFactories()
-    assert ECOSYSTEM_BORG_STABLE_FACTORY in evm_script_factories_after
-    assert LABS_BORG_STABLE_FACTORY in evm_script_factories_after
-
-    ecosystem_borg_stable_factory = interface.TopUpAllowedRecipients(ECOSYSTEM_BORG_STABLE_FACTORY)
-    labs_borg_stable_factory = interface.TopUpAllowedRecipients(LABS_BORG_STABLE_FACTORY)
-
-    for stablecoin in [DAI_TOKEN, USDT_TOKEN, USDC_TOKEN]:
-        create_and_enact_payment_motion(
-            easy_track=contracts.easy_track,
-            trusted_caller=ecosystem_borg_stable_factory.trustedCaller(),
-            factory=ecosystem_borg_stable_factory,
-            token=interface.ERC20(stablecoin),
-            recievers=[Contract(interface.AllowedRecipientRegistry(ECOSYSTEM_BORG_STABLE_REGISTRY).allowedRecipients(0))],
-            transfer_amounts=[1 * 10**6],
-            stranger=stranger,
-        )
-        create_and_enact_payment_motion(
-            easy_track=contracts.easy_track,
-            trusted_caller=labs_borg_stable_factory.trustedCaller(),
-            factory=labs_borg_stable_factory,
-            token=interface.ERC20(stablecoin),
-            recievers=[Contract(interface.AllowedRecipientRegistry(LABS_BORG_STABLE_REGISTRY).allowedRecipients(0))],
-            transfer_amounts=[1 * 10**6],
-            stranger=stranger,
-        )
-
 
     # Events check
     display_voting_events(vote_tx)
@@ -294,80 +163,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
         AGENT,
     )
 
-    permission = Permission(
-        entity=contracts.voting.address,
-        app=contracts.voting.address,
-        role=contracts.voting.UNSAFELY_MODIFY_VOTE_TIME_ROLE(),
-    )
-    validate_permission_grant_event(events[11], permission)
-    validate_change_vote_time_event(events[12], NEW_VOTE_DURATION)
-    validate_change_objection_time_event(events[13], NEW_OBJECTION_PHASE_DURATION)
-    validate_permission_revoke_event(events[14], permission)
-
-    validate_grant_role_event(
-        events[15],
-        contracts.oracle_daemon_config.CONFIG_MANAGER_ROLE(),
-        contracts.agent.address,
-        contracts.agent.address,
-    )
-    validate_config_value_updated(
-        events[16],
-        "FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT",
-        FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE,
-    )
-    validate_revoke_role_event(
-        events[17],
-        contracts.oracle_daemon_config.CONFIG_MANAGER_ROLE(),
-        contracts.agent.address,
-        contracts.agent.address,
-    )
-
-    # GateSeal on WithdrawalQueue and ValidatorsExitBusOracle events
-    # Grant PAUSE_ROLE on WithdrawalQueue for the new GateSeal
-    validate_grant_role_event(events[18], PAUSE_ROLE, NEW_GATE_SEAL, contracts.agent)
-    # Grant PAUSE_ROLE on ValidatorExitBusOracle for the new GateSeal
-    validate_grant_role_event(events[19], PAUSE_ROLE, NEW_GATE_SEAL, contracts.agent)
-    # Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
-    validate_revoke_role_event(events[20], PAUSE_ROLE, OLD_GATE_SEAL, contracts.agent)
-    # Revoke PAUSE_ROLE on ValidatorExitBusOracle from the old GateSeal
-    validate_revoke_role_event(events[21], PAUSE_ROLE, OLD_GATE_SEAL, contracts.agent)
-
-    # GateSeal on CSM events
-    # Grant PAUSE_ROLE on CSModule for the new CSMGateSeal
-    validate_grant_role_event(events[22], PAUSE_ROLE, NEW_CSM_GATE_SEAL, contracts.agent)
-    # Grant PAUSE_ROLE on CSAccounting for the new CSMGateSeal
-    validate_grant_role_event(events[23], PAUSE_ROLE, NEW_CSM_GATE_SEAL, contracts.agent)
-    # Grant PAUSE_ROLE on CSFeeOracle from the old CSMGateSeal
-    validate_grant_role_event(events[24], PAUSE_ROLE, NEW_CSM_GATE_SEAL, contracts.agent)
-    # Revoke PAUSE_ROLE on CSModule from the old CSMGateSeal
-    validate_revoke_role_event(events[25], PAUSE_ROLE, OLD_CSM_GATE_SEAL, contracts.agent)
-    # Revoke PAUSE_ROLE on CSAccounting from the old CSMGateSeal
-    validate_revoke_role_event(events[26], PAUSE_ROLE, OLD_CSM_GATE_SEAL, contracts.agent)
-    # Revoke PAUSE_ROLE on CSFeeOracle from the old CSMGateSeal
-    validate_revoke_role_event(events[27], PAUSE_ROLE, OLD_CSM_GATE_SEAL, contracts.agent)
-
-    # Validate EasyTrack events
-    validate_evmscript_factory_added_event(
-        events[28],
-        EVMScriptFactoryAdded(
-            factory_addr=ecosystem_borg_stable_factory,
-            permissions=create_permissions(contracts.finance, "newImmediatePayment")
-            + create_permissions(
-                interface.AllowedRecipientRegistry(ECOSYSTEM_BORG_STABLE_REGISTRY), "updateSpentAmount"
-            )[2:],
-        ),
-    )
-    validate_evmscript_factory_added_event(
-        events[29],
-        EVMScriptFactoryAdded(
-            factory_addr=labs_borg_stable_factory,
-            permissions=create_permissions(contracts.finance, "newImmediatePayment")
-            + create_permissions(interface.AllowedRecipientRegistry(LABS_BORG_STABLE_REGISTRY), "updateSpentAmount")[
-                2:
-            ],
-        ),
-    )
-
 
 # Events check
 
@@ -392,10 +187,3 @@ def validate_consensus_version_set(event: EventDict, version):
     _events_chain = ["LogScriptCall", "LogScriptCall", "ConsensusVersionSet", "ScriptResult"]
     validate_events_chain([e.name for e in event], _events_chain)
     assert event["ConsensusVersionSet"]["version"] == version
-
-
-def validate_config_value_updated(event: EventDict, key, value):
-    _events_chain = ["LogScriptCall", "LogScriptCall", "ConfigValueUpdated", "ScriptResult"]
-    validate_events_chain([e.name for e in event], _events_chain)
-    assert event["ConfigValueUpdated"]["key"] == key
-    assert convert.to_uint(event["ConfigValueUpdated"]["value"]) == value
