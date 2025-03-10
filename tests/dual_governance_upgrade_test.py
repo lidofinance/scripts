@@ -1,13 +1,11 @@
-from brownie import web3, interface, ZERO_ADDRESS
+from brownie import web3, chain, interface, ZERO_ADDRESS
 from hexbytes import HexBytes
 from scripts.dual_governance_upgrade import start_vote
 from utils.config import contracts
-from utils.test.tx_tracing_helpers import *
 from brownie.network.transaction import TransactionReceipt
-from utils.config import contracts
-from brownie.network.account import Account
-from telnetlib import WILL
 
+DUAL_GOVERNANCE = ""
+TIMELOCK = ""
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = ""
 RESEAL_MANAGER = ""
 
@@ -26,8 +24,10 @@ WITHDRAWAL_VAULT = "0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f"
 WITHDRAWAL_QUEUE = "0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1"
 INSURANCE_FUND = "0x8B3f33234ABD88493c0Cd28De33D583B70beDe35"
 
-def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_decoding):
+def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_decoding, stranger):
     acl = interface.ACL(ACL)
+    dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
+    timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
 
     # LIDO
     STAKING_CONTROL_ROLE = web3.keccak(text="STAKING_CONTROL_ROLE")
@@ -227,7 +227,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
 
     # AGENT
     assert acl.getPermissionManager(AGENT, RUN_SCRIPT_ROLE) == AGENT
+    assert acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, RUN_SCRIPT_ROLE)
     assert acl.getPermissionManager(AGENT, EXECUTE_ROLE) == AGENT
+    assert acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, EXECUTE_ROLE)
 
     # ACL
     assert not acl.hasPermission(VOTING, ACL, CREATE_PERMISSIONS_ROLE)
@@ -253,3 +255,15 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
 
     # INSURANCE FUND
     assert insurance_fund.owner() == VOTING
+
+    chain.sleep(7 * 24 * 60)
+
+    dual_governance.scheduleProposal(1, {"from": stranger})
+
+    chain.sleep(7 * 24 * 60)
+
+    timelock.execute(1, {"from": stranger})
+
+    # AGENT
+    assert not acl.hasPermission(AGENT, VOTING, RUN_SCRIPT_ROLE)
+    assert not acl.hasPermission(AGENT, VOTING, EXECUTE_ROLE)
