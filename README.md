@@ -39,14 +39,11 @@ docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d
 
 ```
 Note: *It may take up to 1 minute for the container to initialize properly the first time.*
-#### Step 4. Now connect to the running container using SSH:
+
+#### Step 4. Now connect to the running container using tty:
 ```shell
-ssh root@localhost -p 2222 # password: 1234
+docker exec -it scripts /bin/bash
 ```
-> [!NOTE]
-> If you see a 'REMOTE HOST IDENTIFICATION HAS CHANGED' error - `ssh-keygen -R "[localhost]:2222"`
-> 
-> If you are asked 'Are you sure you want to continue connecting' - type `yes` and hit `<ENTER>`
 
 To run a Hardhat node inside a deployed Docker container:
 ```shell
