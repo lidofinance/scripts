@@ -47,7 +47,6 @@ docker exec -it scripts /bin/bash
 
 To run a Hardhat node inside a deployed Docker container:
 ```shell
-cd /root/hardhat
 npx hardhat node --fork $ETH_RPC_URL
 ```
 
@@ -62,7 +61,7 @@ docker start scripts
 
 #### How to publish a new version of Scripts Docker image to GHCR
 1. Push code changes to the repo
-2. Wait for the approvals and merge them into `master`
+2. Wait for the approvals
 3. Add a tag `vX`, where `X` is the next release number, to the commit. You can refer to the [Release](https://github.com/lidofinance/scripts/releases) page
 4. Wait for the workflow **build and push image** to finish successfully on the tagged commit
 5. In this README file, update the image version in section **Step 3. Run the container**
@@ -129,16 +128,6 @@ poetry shell
 
 #### To run a Hardhat node (preferred) instead of Ganache:
 Just use the [Dockerised Hardhat Node](https://github.com/lidofinance/hardhat-node) or alternatively run it manually:
-
-Install Hardhat and dependencies into a separate folder:
-```shell
-mkdir hardhat && cd hardhat && npm install -d hardhat && npm install --save-dev @nomiclabs/hardhat-ethers ethers @nomiclabs/hardhat-waffle ethereum-waffle chai
-```
-Init empty Hardhat project in this folder:
-```shell
-touch hardhat.config.js && echo $'/** @type import(\'hardhat/config\').HardhatUserConfig */\nmodule.exports = {\n  solidity: "0.8.28",\n};' | tee -a hardhat.config.js
-```
-Start Hardhat node in this folder:
 ```shell
 npx hardhat node --fork $ETH_RPC_URL
 ```
