@@ -281,7 +281,7 @@ RUN echo "if [ ! -e /root/inited ]; then \n touch /root/inited \n poetry install
 RUN chmod +x /root/init.sh
 
 
-# set default working dir
+# set default working dir for tty
 RUN echo "cd /root/scripts" >> /root/.bashrc
 
 
