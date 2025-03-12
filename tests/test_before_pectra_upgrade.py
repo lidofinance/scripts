@@ -1,16 +1,12 @@
 from scripts.before_pectra_upgrade import start_vote
 from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS
-from brownie import interface, convert, Contract
+from brownie import interface, Contract
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.permission import (
     validate_grant_role_event,
     validate_revoke_role_event,
 )
-from utils.easy_track import create_permissions
-from utils.test.event_validators.easy_track import validate_evmscript_factory_added_event, EVMScriptFactoryAdded
-from utils.test.event_validators.voting import validate_change_vote_time_event, validate_change_objection_time_event
 from utils.test.event_validators.common import validate_events_chain
-from utils.test.easy_track_helpers import create_and_enact_payment_motion
 
 # Contracts
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
@@ -18,21 +14,13 @@ VALIDATORS_EXIT_BUS_ORACLE = "0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e"
 ACCOUNTING_ORACLE = "0x852deD011285fe67063a08005c71a85690503Cee"
 CS_FEE_ORACLE = "0x4D4074628678Bd302921c20573EEa1ed38DdF7FB"
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
-CS_VERIFIER_ADDRESS = "0xBcb61491F1859f53438918F1A5aFCA542Af9D397"  # TODO: need to set newly deployed contract address
+CS_VERIFIER_ADDRESS = "0x267fB71b280FB34B278CedE84180a9A9037C941b"  # TODO: need to set newly deployed contract address
 CS_VERIFIER_ADDRESS_OLD = "0x3Dfc50f22aCA652a0a6F28a0F892ab62074b5583"
 CSM_ADDRESS = "0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F"
-
-DAI_TOKEN = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
-USDT_TOKEN = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
-USDC_TOKEN = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 
 # Roles
 MANAGE_CONSENSUS_VERSION_ROLE = "0xc31b1e4b732c5173dc51d519dfa432bad95550ecc4b0f9a61c2a558a2a8e4341"
 VERIFIER_ROLE = "0x0ce23c3e399818cfee81a7ab0880f714e53d7672b08df0fa62f2843416e1ea09"
-PAUSE_ROLE = "0x139c2898040ef16910dc9f44dc697df79363da767d8bc92f2e310312b816e46d"
-
-# Oracle daemon config
-FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_OLD_VALUE = 1350
 
 # New values
 
@@ -67,14 +55,6 @@ def get_csm():
 def check_aragon_doesnt_have_manage_consensus_role_on_oracle(oracle):
     agent_has_manage_consensus_role = oracle.hasRole(MANAGE_CONSENSUS_VERSION_ROLE, AGENT)
     assert not agent_has_manage_consensus_role
-
-
-def _check_no_role(contract: Contract, role: str, holder: str):
-    role_bytes = web3.keccak(text=role).hex()
-    assert contract.getRoleMemberCount(role_bytes) == 1, f"Role {role} on {contract} should have exactly one holder"
-    assert (
-        not contract.getRoleMember(role_bytes, 0).lower() == holder.lower()
-    ), f"Role {role} holder on {contract} should be {holder}"
 
 
 def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stranger):
