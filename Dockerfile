@@ -264,15 +264,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 # compilers for amd64 will be downloaded by brownie later in this Dockerfile
 
 
-# install & configure hardhat
-RUN mkdir /root/hardhat
-WORKDIR /root/hardhat
-RUN npm install -d hardhat
-RUN npm install --save-dev @nomiclabs/hardhat-ethers ethers @nomiclabs/hardhat-waffle ethereum-waffle chai
-RUN touch hardhat.config.js
-RUN echo "/** @type import('hardhat/config').HardhatUserConfig */\nmodule.exports = {\n  solidity: \"0.8.28\",\n};" | tee -a hardhat.config.js
-
-
 # init script that runs when the container is started for the very first time
 # it will install poetry, yarn libs and init brownie networks
 WORKDIR /root/scripts
@@ -281,18 +272,7 @@ RUN echo "if [ ! -e /root/inited ]; then \n touch /root/inited \n poetry install
 RUN chmod +x /root/init.sh
 
 
-# install & configure sshd
-ENV DEBIAN_FRONTEND=noninteractive
-
-RUN apt-get update && \
-    apt-get install -y openssh-server && \
-    mkdir /var/run/sshd
-
-RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
-RUN echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config
-
-# set default working dir for ssh clients
+# set default working dir for tty
 RUN echo "cd /root/scripts" >> /root/.bashrc
 
 
@@ -319,9 +299,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.24 --version | g
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.6.11 --version | grep 'Version: 0.6.11+commit.5ef660b1' || (echo "Incorrect solc-v0.6.11 version" && exit 1) fi
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.vvm/vyper-0.3.7 --version | grep '0.3.7+' || (echo "Incorrect vyper-0.3.7 version" && exit 1) fi
 
-# open sshd port
-EXPOSE 22
 
-
-# start sshd, run init script, set root password for incoming connections and pass all ENV VARs from the container
-CMD ["/bin/bash", "-c", "env | grep -v 'no_proxy' >> /etc/environment && /root/init.sh && echo root:1234 | chpasswd && exec /usr/sbin/sshd -D"]
+# run init script and sleep to keep the container running
+CMD ["/bin/bash", "-c", "/root/init.sh && sleep infinity"]

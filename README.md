@@ -35,22 +35,18 @@ cd scripts
 #### Step 3. Run the container
 Run the container in the `scripts` directory and specify the ENV VARs:
 ```shell
-docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 --rm ghcr.io/lidofinance/scripts:v9
+docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 --rm ghcr.io/lidofinance/scripts:v10
 
 ```
 Note: *It may take up to 1 minute for the container to initialize properly the first time.*
-#### Step 4. Now connect to the running container using SSH:
+
+#### Step 4. Now connect to the running container using tty:
 ```shell
-ssh root@localhost -p 2222 # password: 1234
+docker exec -it scripts /bin/bash
 ```
-> [!NOTE]
-> If you see a 'REMOTE HOST IDENTIFICATION HAS CHANGED' error - `ssh-keygen -R "[localhost]:2222"`
-> 
-> If you are asked 'Are you sure you want to continue connecting' - type `yes` and hit `<ENTER>`
 
 To run a Hardhat node inside a deployed Docker container:
 ```shell
-cd /root/hardhat
 npx hardhat node --fork $ETH_RPC_URL
 ```
 
@@ -65,7 +61,7 @@ docker start scripts
 
 #### How to publish a new version of Scripts Docker image to GHCR
 1. Push code changes to the repo
-2. Wait for the approvals and merge them into `master`
+2. Wait for the approvals
 3. Add a tag `vX`, where `X` is the next release number, to the commit. You can refer to the [Release](https://github.com/lidofinance/scripts/releases) page
 4. Wait for the workflow **build and push image** to finish successfully on the tagged commit
 5. In this README file, update the image version in section **Step 3. Run the container**
@@ -132,16 +128,6 @@ poetry shell
 
 #### To run a Hardhat node (preferred) instead of Ganache:
 Just use the [Dockerised Hardhat Node](https://github.com/lidofinance/hardhat-node) or alternatively run it manually:
-
-Install Hardhat and dependencies into a separate folder:
-```shell
-mkdir hardhat && cd hardhat && npm install -d hardhat && npm install --save-dev @nomiclabs/hardhat-ethers ethers @nomiclabs/hardhat-waffle ethereum-waffle chai
-```
-Init empty Hardhat project in this folder:
-```shell
-touch hardhat.config.js && echo $'/** @type import(\'hardhat/config\').HardhatUserConfig */\nmodule.exports = {\n  solidity: "0.8.28",\n};' | tee -a hardhat.config.js
-```
-Start Hardhat node in this folder:
 ```shell
 npx hardhat node --fork $ETH_RPC_URL
 ```
