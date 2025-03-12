@@ -35,7 +35,7 @@ cd scripts
 #### Step 3. Run the container
 Run the container in the `scripts` directory and specify the ENV VARs:
 ```shell
-docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 --rm ghcr.io/lidofinance/scripts:v9
+docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 --rm ghcr.io/lidofinance/scripts:v10
 
 ```
 Note: *It may take up to 1 minute for the container to initialize properly the first time.*
