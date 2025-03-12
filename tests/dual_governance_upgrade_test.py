@@ -23,6 +23,7 @@ ALLOWED_TOKENS_REGISTRY = "0x4AC40c34f8992bb1e5E856A448792158022551ca"
 WITHDRAWAL_VAULT = "0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f"
 WITHDRAWAL_QUEUE = "0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1"
 INSURANCE_FUND = "0x8B3f33234ABD88493c0Cd28De33D583B70beDe35"
+VEBO = "0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e"
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_decoding, stranger):
     acl = interface.ACL(ACL)
@@ -133,6 +134,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
     assert not withdrawal_queue.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
     assert not withdrawal_queue.hasRole(RESUME_ROLE, RESEAL_MANAGER)
 
+    # VEBO
+    vebo = interface.ValidatorsExitBusOracle(VEBO)
+    assert not vebo.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
+    assert not vebo.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+
     # ALLOWED TOKENS REGISTRY
     allowed_tokens_registry = interface.AllowedTokensRegistry(ALLOWED_TOKENS_REGISTRY)
 
@@ -239,6 +245,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
     # WITHDRAWAL QUEUE
     assert withdrawal_queue.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
     assert withdrawal_queue.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+
+    # VEBO
+    assert vebo.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
+    assert vebo.hasRole(RESUME_ROLE, RESEAL_MANAGER)
 
     # ALLOWED TOKENS REGISTRY
     assert allowed_tokens_registry.hasRole(DEFAULT_ADMIN_ROLE, VOTING)
