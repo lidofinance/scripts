@@ -57,6 +57,12 @@ DAI_TOKEN = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
 USDT_TOKEN = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
 USDC_TOKEN = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 
+WITHDRAWAL_QUEUE_IMPL = "0xE42C659Dc09109566720EA8b2De186c2Be7D94D9"
+VEBO_IMPL = "0xA89Ea51FddE660f67d1850e03C9c9862d33Bc42c"
+CSM_IMPL = "0x8daea53b17a629918cdfab785c5c74077c1d895b"
+CS_ACCOUNTING_IMPL = "0x71FCD2a6F38B644641B0F46c345Ea03Daabf2758"
+CS_FEE_ORACLE_IMPL = "0x919ac5C6c62B6ef7B05cF05070080525a7B0381E"
+
 # Roles
 PAUSE_ROLE = "0x139c2898040ef16910dc9f44dc697df79363da767d8bc92f2e310312b816e46d"
 
@@ -225,6 +231,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
         oracle_daemon_config.CONFIG_MANAGER_ROLE(),
         agent.address,
         agent.address,
+
     )
     validate_config_value_updated(
         events[5],
@@ -240,27 +247,27 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
 
     # GateSeal on WithdrawalQueue and ValidatorsExitBusOracle events
     # Grant PAUSE_ROLE on WithdrawalQueue for the new GateSeal
-    validate_grant_role_event(events[7], PAUSE_ROLE, NEW_GATE_SEAL, agent)
+    validate_grant_role_event(events[7], PAUSE_ROLE, NEW_GATE_SEAL, agent, WITHDRAWAL_QUEUE_IMPL)
     # Grant PAUSE_ROLE on ValidatorExitBusOracle for the new GateSeal
-    validate_grant_role_event(events[8], PAUSE_ROLE, NEW_GATE_SEAL, agent)
+    validate_grant_role_event(events[8], PAUSE_ROLE, NEW_GATE_SEAL, agent, VEBO_IMPL)
     # Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
-    validate_revoke_role_event(events[9], PAUSE_ROLE, OLD_GATE_SEAL, agent)
+    validate_revoke_role_event(events[9], PAUSE_ROLE, OLD_GATE_SEAL, agent, WITHDRAWAL_QUEUE_IMPL)
     # Revoke PAUSE_ROLE on ValidatorExitBusOracle from the old GateSeal
-    validate_revoke_role_event(events[10], PAUSE_ROLE, OLD_GATE_SEAL, agent)
+    validate_revoke_role_event(events[10], PAUSE_ROLE, OLD_GATE_SEAL, agent, VEBO_IMPL)
 
     # GateSeal on CSM events
     # Grant PAUSE_ROLE on CSModule for the new CSMGateSeal
-    validate_grant_role_event(events[11], PAUSE_ROLE, NEW_CSM_GATE_SEAL, agent)
+    validate_grant_role_event(events[11], PAUSE_ROLE, NEW_CSM_GATE_SEAL, agent, CSM_IMPL)
     # Grant PAUSE_ROLE on CSAccounting for the new CSMGateSeal
-    validate_grant_role_event(events[12], PAUSE_ROLE, NEW_CSM_GATE_SEAL, agent)
+    validate_grant_role_event(events[12], PAUSE_ROLE, NEW_CSM_GATE_SEAL, agent, CS_ACCOUNTING_IMPL)
     # Grant PAUSE_ROLE on CSFeeOracle from the old CSMGateSeal
-    validate_grant_role_event(events[13], PAUSE_ROLE, NEW_CSM_GATE_SEAL, agent)
+    validate_grant_role_event(events[13], PAUSE_ROLE, NEW_CSM_GATE_SEAL, agent, CS_FEE_ORACLE_IMPL)
     # Revoke PAUSE_ROLE on CSModule from the old CSMGateSeal
-    validate_revoke_role_event(events[14], PAUSE_ROLE, OLD_CSM_GATE_SEAL, agent)
+    validate_revoke_role_event(events[14], PAUSE_ROLE, OLD_CSM_GATE_SEAL, agent, CSM_IMPL)
     # Revoke PAUSE_ROLE on CSAccounting from the old CSMGateSeal
-    validate_revoke_role_event(events[15], PAUSE_ROLE, OLD_CSM_GATE_SEAL, agent)
+    validate_revoke_role_event(events[15], PAUSE_ROLE, OLD_CSM_GATE_SEAL, agent, CS_ACCOUNTING_IMPL)
     # Revoke PAUSE_ROLE on CSFeeOracle from the old CSMGateSeal
-    validate_revoke_role_event(events[16], PAUSE_ROLE, OLD_CSM_GATE_SEAL, agent)
+    validate_revoke_role_event(events[16], PAUSE_ROLE, OLD_CSM_GATE_SEAL, agent, CS_FEE_ORACLE_IMPL)
 
     # Validate EasyTrack events
     validate_evmscript_factory_added_event(
