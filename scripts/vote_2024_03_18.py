@@ -62,7 +62,19 @@ from utils.agent import agent_forward
 from utils.mainnet_fork import pass_and_exec_dao_vote
 
 
-description = ""
+description = "1. **Extend On-Chain Voting Duration** (Items 1-17)
+As approved on [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xa58da73cc4257837ae981d8ad861252f4cbbda7a173a577702f8f93561f57825):
+- **Main phase**: 48h → 72h
+- **Objection phase**: 24h → 48h
+
+To align with these changes, **GateSeal** (pausing the [WithdrawalQueue](https://etherscan.io/address/0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1) and [ValidatorExitBusOracle](https://etherscan.io/address/0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e)) and **CSM GateSeal** (pausing the [CSModule](https://etherscan.io/address/0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F), [CSAccounting](https://etherscan.io/address/0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da) and [CSFeeOracle](https://etherscan.io/address/0x4D4074628678Bd302921c20573EEa1ed38DdF7FB)) will be updated with the same configuration, except for extending the duration from 6 to 11 days. The new versions will expire on **March 1, 2026**.
+**Statemind.io** audited the [initial Factory and Blueprint](https://github.com/lidofinance/audits/?tab=readme-ov-file#04-2023-statemind-gateseals-audit) and [verified](https://github.com/lidofinance/audits/blob/main/Statemind%20GateSeal%20Deployment%20Validation%2003-2025.pdf) that the updated GateSeal matches the Blueprint and has the correct parameters.
+
+2. **Deploy Easy Track Factories for Lido Ecosystem & Lido Labs BORG Foundations to streamline operational funding** (Items 18,19)
+
+Snapshot proposals & contract details:
+- [Lido Ecosystem Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x7f72f12d72643c20cd0455c603d344050248e75ed1074c8391fae4c30f09ca15) | [Configuration](https://research.lido.fi/t/establishment-of-lido-ecosystem-borg-foundation-as-a-lido-dao-adjacent-foundation/9345/15) | security limit $5M per quarter
+- [Lido Labs Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xdf648307e68415e7b5cf96c6afbabd696c1731839f4b4a7cf5cb7efbc44ee9d6) | [Configuration](https://research.lido.fi/t/establishment-of-lido-labs-borg-foundation-as-a-lido-dao-adjacent-foundation/9344/18) | security limit $18M per quarter"
 
 # Vote duration
 NEW_VOTE_DURATION = 432000
