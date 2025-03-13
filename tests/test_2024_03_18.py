@@ -18,19 +18,26 @@ from utils.test.event_validators.voting import validate_change_vote_time_event, 
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.easy_track_helpers import create_and_enact_payment_motion
 
-from scripts.vote_2024_03_18 import (
-    OLD_GATE_SEAL,
-    NEW_GATE_SEAL,
-    OLD_CSM_GATE_SEAL,
-    NEW_CSM_GATE_SEAL,
-    NEW_VOTE_DURATION,
-    NEW_OBJECTION_PHASE_DURATION,
-    FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE,
-    ECOSYSTEM_BORG_STABLE_FACTORY,
-    ECOSYSTEM_BORG_STABLE_REGISTRY,
-    LABS_BORG_STABLE_FACTORY,
-    LABS_BORG_STABLE_REGISTRY,
-)
+# Vote duration
+NEW_VOTE_DURATION = 432000
+NEW_OBJECTION_PHASE_DURATION = 172800
+
+# Oracle daemon config
+FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE = 2250
+
+# GateSeals
+OLD_GATE_SEAL = "0x79243345eDbe01A7E42EDfF5900156700d22611c"
+NEW_GATE_SEAL = "0xf9C9fDB4A5D2AA1D836D5370AB9b28BC1847e178"
+
+# CSM GateSeals
+OLD_CSM_GATE_SEAL = "0x5cFCa30450B1e5548F140C24A47E36c10CE306F0"
+NEW_CSM_GATE_SEAL = "0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0"
+
+# EasyTrack factories
+ECOSYSTEM_BORG_STABLE_FACTORY = "0xf2476f967C826722F5505eDfc4b2561A34033477"
+ECOSYSTEM_BORG_STABLE_REGISTRY = "0xDAdC4C36cD8F468A398C25d0D8aaf6A928B47Ab4"
+LABS_BORG_STABLE_FACTORY = "0xE1f6BaBb445F809B97e3505Ea91749461050F780"
+LABS_BORG_STABLE_REGISTRY = "0x68267f3D310E9f0FF53a37c141c90B738E1133c2"
 
 # Contracts
 ACL = "0x9895f0f17cc1d1891b6f18ee0b483b6f221b37bb"
@@ -98,8 +105,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     )
 
     # Check Oracle Config state before voting
-    new_value_uint = convert.to_uint(oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT"))
-    assert new_value_uint == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_OLD_VALUE
+    finalization_max_negative_rebase_epoch_shift = convert.to_uint(oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT"))
+    assert finalization_max_negative_rebase_epoch_shift == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_OLD_VALUE
     assert not oracle_daemon_config.hasRole(
         web3.keccak(text="CONFIG_MANAGER_ROLE").hex(),
         agent.address
@@ -135,7 +142,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
 
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
-    # On-chain voting duration state before voting
+    # On-chain voting duration state after voting
     assert voting.voteTime() == NEW_VOTE_DURATION
     assert voting.objectionPhaseTime() == NEW_OBJECTION_PHASE_DURATION
     assert not acl.hasPermission(
@@ -145,10 +152,10 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     )
 
     # Check Oracle Config updated properly
-    updated_value_uint = convert.to_uint(
+    finalization_max_negative_rebase_epoch_shift_updated = convert.to_uint(
         oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT")
     )
-    assert updated_value_uint == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
+    assert finalization_max_negative_rebase_epoch_shift_updated == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
     assert not oracle_daemon_config.hasRole(
         web3.keccak(text="CONFIG_MANAGER_ROLE").hex(),
         agent.address
@@ -203,15 +210,15 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
 
     assert len(events) == 19
 
-    permission = Permission(
+    unsafely_modify_vote_time_role_permission = Permission(
         entity=voting.address,
         app=voting.address,
         role=voting.UNSAFELY_MODIFY_VOTE_TIME_ROLE(),
     )
-    validate_permission_grant_event(events[0], permission)
+    validate_permission_grant_event(events[0], unsafely_modify_vote_time_role_permission)
     validate_change_vote_time_event(events[1], NEW_VOTE_DURATION)
     validate_change_objection_time_event(events[2], NEW_OBJECTION_PHASE_DURATION)
-    validate_permission_revoke_event(events[3], permission)
+    validate_permission_revoke_event(events[3], unsafely_modify_vote_time_role_permission)
 
     validate_grant_role_event(
         events[4],

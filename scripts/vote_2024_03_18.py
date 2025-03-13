@@ -15,7 +15,7 @@ II. Change GateSeal on WithdrawalQueue and ValidatorsExitBusOracle
 11. Revoke PAUSE_ROLE on ValidatorsExitBusOracle 0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e from the old GateSeal 0x79243345eDbe01A7E42EDfF5900156700d22611c
 
 III. Change CSM GateSeal
-12. Grant PAUSE_ROLE on CSModule  0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F for the new CSM GateSeal 0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0
+12. Grant PAUSE_ROLE on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F for the new CSM GateSeal 0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0
 13. Grant PAUSE_ROLE on CSAccounting 0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da for the new CSM GateSeal 0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0
 14. Grant PAUSE_ROLE on CSFeeOracle 0x4D4074628678Bd302921c20573EEa1ed38DdF7FB for the new CSM GateSeal 0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0
 15. Revoke PAUSE_ROLE on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F from the old CSM GateSeal 0x5cFCa30450B1e5548F140C24A47E36c10CE306F0
@@ -23,8 +23,8 @@ III. Change CSM GateSeal
 17. Revoke PAUSE_ROLE on CSFeeOracle 0x4D4074628678Bd302921c20573EEa1ed38DdF7FB from the old CSM GateSeal 0x5cFCa30450B1e5548F140C24A47E36c10CE306F0
 
 IV. Add Easy Track setups for funding Lido Ecosystem & Lido Labs BORGs’ Operational Expenses Multisigs
-18. Add an Easy Track EVM script factory 0xf2476f967C826722F5505eDfc4b2561A34033477 for funding the Lido Ecosystem BORG’s operational multisig  (AllowedRecipientsRegistry 0xDAdC4C36cD8F468A398C25d0D8aaf6A928B47Ab4)
-19. Add an Easy Track EVM script factory 0xE1f6BaBb445F809B97e3505Ea91749461050F780 for funding the Lido Labs BORG’s operational multisig  (AllowedRecipientsRegistry 0x68267f3D310E9f0FF53a37c141c90B738E1133c2)
+18. Add an Easy Track EVM script factory 0xf2476f967C826722F5505eDfc4b2561A34033477 for funding the Lido Ecosystem BORG’s operational multisig (AllowedRecipientsRegistry 0xDAdC4C36cD8F468A398C25d0D8aaf6A928B47Ab4)
+19. Add an Easy Track EVM script factory 0xE1f6BaBb445F809B97e3505Ea91749461050F780 for funding the Lido Labs BORG’s operational multisig (AllowedRecipientsRegistry 0x68267f3D310E9f0FF53a37c141c90B738E1133c2)
 """
 
 import time
@@ -211,7 +211,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
 
         # Change CSM GateSeals
         (
-            "12. Grant PAUSE_ROLE on CSModule  0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F for the new CSM GateSeal 0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0",
+            "12. Grant PAUSE_ROLE on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F for the new CSM GateSeal 0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -286,14 +286,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
 
         # EasyTrack factories
         (
-            "18. Add an Easy Track EVM script factory 0xf2476f967C826722F5505eDfc4b2561A34033477 for funding the Lido Ecosystem BORG’s operational multisig  (AllowedRecipientsRegistry 0xDAdC4C36cD8F468A398C25d0D8aaf6A928B47Ab4)",
+            "18. Add an Easy Track EVM script factory 0xf2476f967C826722F5505eDfc4b2561A34033477 for funding the Lido Ecosystem BORG’s operational multisig (AllowedRecipientsRegistry 0xDAdC4C36cD8F468A398C25d0D8aaf6A928B47Ab4)",
             add_evmscript_factory(
                 factory=ECOSYSTEM_BORG_STABLE_FACTORY,
                 permissions=create_top_up_allowed_recipient_permission(registry_address=ECOSYSTEM_BORG_STABLE_REGISTRY),
             ),
         ),
         (
-            "19. Add an Easy Track EVM script factory 0xE1f6BaBb445F809B97e3505Ea91749461050F780 for funding the Lido Labs BORG’s operational multisig  (AllowedRecipientsRegistry 0x68267f3D310E9f0FF53a37c141c90B738E1133c2)",
+            "19. Add an Easy Track EVM script factory 0xE1f6BaBb445F809B97e3505Ea91749461050F780 for funding the Lido Labs BORG’s operational multisig (AllowedRecipientsRegistry 0x68267f3D310E9f0FF53a37c141c90B738E1133c2)",
             add_evmscript_factory(
                 factory=LABS_BORG_STABLE_FACTORY,
                 permissions=create_top_up_allowed_recipient_permission(registry_address=LABS_BORG_STABLE_REGISTRY),
