@@ -62,7 +62,7 @@ from utils.agent import agent_forward
 from utils.mainnet_fork import pass_and_exec_dao_vote
 
 
-description = "1. **Extend On-Chain Voting Duration** (Items 1-17)
+description = """1. **Extend On-Chain Voting Duration** (Items 1-17)
 As approved on [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xa58da73cc4257837ae981d8ad861252f4cbbda7a173a577702f8f93561f57825):
 - **Main phase**: 48h → 72h
 - **Objection phase**: 24h → 48h
@@ -74,7 +74,7 @@ To align with these changes, **GateSeal** (pausing the [WithdrawalQueue](https:/
 
 Snapshot proposals & contract details:
 - [Lido Ecosystem Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x7f72f12d72643c20cd0455c603d344050248e75ed1074c8391fae4c30f09ca15) | [Configuration](https://research.lido.fi/t/establishment-of-lido-ecosystem-borg-foundation-as-a-lido-dao-adjacent-foundation/9345/15) | security limit $5M per quarter
-- [Lido Labs Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xdf648307e68415e7b5cf96c6afbabd696c1731839f4b4a7cf5cb7efbc44ee9d6) | [Configuration](https://research.lido.fi/t/establishment-of-lido-labs-borg-foundation-as-a-lido-dao-adjacent-foundation/9344/18) | security limit $18M per quarter"
+- [Lido Labs Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xdf648307e68415e7b5cf96c6afbabd696c1731839f4b4a7cf5cb7efbc44ee9d6) | [Configuration](https://research.lido.fi/t/establishment-of-lido-labs-borg-foundation-as-a-lido-dao-adjacent-foundation/9344/18) | security limit $18M per quarter"""
 
 # Vote duration
 NEW_VOTE_DURATION = 432000
