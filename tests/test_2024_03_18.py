@@ -28,7 +28,7 @@ FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE = 2250
 # GateSeals
 OLD_GATE_SEAL = "0x79243345eDbe01A7E42EDfF5900156700d22611c"
 NEW_GATE_SEAL = "0xf9C9fDB4A5D2AA1D836D5370AB9b28BC1847e178"
-GATE_SEAL_COMMITTEE = "0xCD1f9954330AF39a74Fd6e7B25781B4c24ee373f"
+GATE_SEAL_COMMITTEE = "0x8772E3a2D86B9347A2688f9bc1808A6d8917760C"
 GATE_SEAL_PAUSE_DURATION = 950400  # 11 days
 GATE_SEAL_NEW_EXPIRY_TIMESTAMP = 1772323200  # Sun Mar 01 2026 00:00:00 GMT+0000
 
@@ -182,7 +182,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     assert new_gate_seal_contract.get_sealing_committee() == GATE_SEAL_COMMITTEE
     sealables = new_gate_seal_contract.get_sealables()
     assert len(sealables) == 2
-    assert validators_exit_bus_oracle.address in sealables
+    assert vebo.address in sealables
     assert withdrawal_queue.address in sealables
     assert new_gate_seal_contract.get_seal_duration_seconds() == GATE_SEAL_PAUSE_DURATION
     assert new_gate_seal_contract.get_expiry_timestamp() == GATE_SEAL_NEW_EXPIRY_TIMESTAMP
