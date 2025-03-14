@@ -28,10 +28,14 @@ FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE = 2250
 # GateSeals
 OLD_GATE_SEAL = "0x79243345eDbe01A7E42EDfF5900156700d22611c"
 NEW_GATE_SEAL = "0xf9C9fDB4A5D2AA1D836D5370AB9b28BC1847e178"
+GATE_SEAL_COMMITTEE = "0xCD1f9954330AF39a74Fd6e7B25781B4c24ee373f"
+GATE_SEAL_PAUSE_DURATION = 950400  # 11 days
+GATE_SEAL_NEW_EXPIRY_TIMESTAMP = 1772323200  # Sun Mar 01 2026 00:00:00 GMT+0000
 
 # CSM GateSeals
 OLD_CSM_GATE_SEAL = "0x5cFCa30450B1e5548F140C24A47E36c10CE306F0"
 NEW_CSM_GATE_SEAL = "0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0"
+CSM_GATE_SEAL_COMMITTEE = "0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f"
 
 # EasyTrack factories
 ECOSYSTEM_BORG_STABLE_FACTORY = "0xf2476f967C826722F5505eDfc4b2561A34033477"
@@ -173,6 +177,17 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     _check_role(withdrawal_queue, "PAUSE_ROLE", NEW_GATE_SEAL)
     _check_role(vebo, "PAUSE_ROLE", NEW_GATE_SEAL)
 
+    # GateSeal Асceptance test
+    new_gate_seal_contract = interface.GateSeal(NEW_GATE_SEAL)
+    assert new_gate_seal_contract.get_sealing_committee() == GATE_SEAL_COMMITTEE
+    sealables = new_gate_seal_contract.get_sealables()
+    assert len(sealables) == 2
+    assert validators_exit_bus_oracle.address in sealables
+    assert withdrawal_queue.address in sealables
+    assert new_gate_seal_contract.get_seal_duration_seconds() == GATE_SEAL_PAUSE_DURATION
+    assert new_gate_seal_contract.get_expiry_timestamp() == GATE_SEAL_NEW_EXPIRY_TIMESTAMP
+    assert not new_gate_seal_contract.is_expired()
+
     # Check GateSeal on CSM updated properly
     _check_no_role(csm, "PAUSE_ROLE", OLD_CSM_GATE_SEAL)
     _check_role(csm, "PAUSE_ROLE", NEW_CSM_GATE_SEAL)
@@ -180,6 +195,18 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     _check_role(cs_accounting, "PAUSE_ROLE", NEW_CSM_GATE_SEAL)
     _check_no_role(cs_fee_oracle, "PAUSE_ROLE", OLD_CSM_GATE_SEAL)
     _check_role(cs_fee_oracle, "PAUSE_ROLE", NEW_CSM_GATE_SEAL)
+
+    # CSM GateSeal Асceptance test
+    new_csm_gate_seal_contract = interface.GateSeal(NEW_CSM_GATE_SEAL)
+    assert new_csm_gate_seal_contract.get_sealing_committee() == CSM_GATE_SEAL_COMMITTEE
+    csm_sealables = new_csm_gate_seal_contract.get_sealables()
+    assert len(csm_sealables) == 3
+    assert csm.address in csm_sealables
+    assert cs_accounting.address in csm_sealables
+    assert cs_fee_oracle.address in csm_sealables
+    assert new_csm_gate_seal_contract.get_seal_duration_seconds() == GATE_SEAL_PAUSE_DURATION
+    assert new_csm_gate_seal_contract.get_expiry_timestamp() == GATE_SEAL_NEW_EXPIRY_TIMESTAMP
+    assert not new_csm_gate_seal_contract.is_expired()
 
     # EasyTrack factories added check
     evm_script_factories_after = easy_track.getEVMScriptFactories()
