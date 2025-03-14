@@ -181,8 +181,7 @@ To start a new vote please provide the `DEPLOYER` brownie account name (wallet):
 export DEPLOYER=<brownie_wallet_name>
 ```
 
-To run tests with a contract name resolution guided by the Etherscan you should
-provide the etherscan API token:
+To run scripts that require decoding of EVM scripts and tests with contract name resolution via Etherscan you should provide the etherscan API token:
 
 ```bash
 export ETHERSCAN_TOKEN=<etherscan_api_key>
