@@ -153,7 +153,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
                         contracts.oracle_daemon_config.address,
                         contracts.oracle_daemon_config.update.encode_input(
                             "FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT",
-                            convert.to_bytes(FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE),
+                            convert.to_bytes(FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE, 'bytes'),
                         ),
                     )
                 ]
