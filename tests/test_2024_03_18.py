@@ -18,6 +18,9 @@ from utils.test.event_validators.voting import validate_change_vote_time_event, 
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.easy_track_helpers import create_and_enact_payment_motion
 
+from utils.voting import find_metadata_by_vote_id
+from utils.ipfs import get_lido_vote_cid_from_str
+
 # Vote duration
 NEW_VOTE_DURATION = 432000
 NEW_OBJECTION_PHASE_DURATION = 172800
@@ -240,6 +243,10 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     # Events check
     display_voting_events(vote_tx)
     events = group_voting_events(vote_tx)
+
+    metadata = find_metadata_by_vote_id(vote_id)
+    print('ipfs id:', get_lido_vote_cid_from_str(metadata))
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreiae5ge6hszcag4cdxk3wcoqfa2ilre7rbt4f3j3eydmgip6nvvat4"
 
     assert len(events) == 19
 
