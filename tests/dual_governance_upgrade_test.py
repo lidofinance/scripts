@@ -1,4 +1,7 @@
-from brownie import web3, chain, interface, ZERO_ADDRESS
+import pytest
+import os
+
+from brownie import web3, chain, interface, ZERO_ADDRESS, accounts
 from hexbytes import HexBytes
 from scripts.dual_governance_upgrade import start_vote
 from utils.config import contracts
@@ -8,6 +11,7 @@ DUAL_GOVERNANCE = ""
 TIMELOCK = ""
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = ""
 RESEAL_MANAGER = ""
+DAO_EMERGENCY_GOVERNANCE = ""
 
 ACL = "0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb"
 LIDO = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
@@ -24,6 +28,24 @@ WITHDRAWAL_VAULT = "0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f"
 WITHDRAWAL_QUEUE = "0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1"
 INSURANCE_FUND = "0x8B3f33234ABD88493c0Cd28De33D583B70beDe35"
 VEBO = "0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e"
+
+
+@pytest.fixture(scope="function", autouse=True)
+def prepare_activated_dg_state():
+
+    if os.getenv("SKIP_DG_DRY_RUN"):
+        dg_impersonated = accounts.at(DUAL_GOVERNANCE, force=True)
+        timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
+
+        timelock.submit(
+            DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+            [(TIMELOCK, 0, timelock.setEmergencyGovernance.encode_input(DAO_EMERGENCY_GOVERNANCE))],
+            {"from": dg_impersonated},
+        )
+
+        assert timelock.getEmergencyGovernance() == DAO_EMERGENCY_GOVERNANCE
+        assert timelock.getProposalsCount() == 1
+
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_decoding, stranger):
     acl = interface.ACL(ACL)
@@ -165,9 +187,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
     # START VOTE
     vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
 
-    tx: TransactionReceipt = helpers.execute_vote(
-        vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting
-    )
+    tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting)
 
     # LIDO
     assert not acl.hasPermission(AGENT, LIDO, STAKING_CONTROL_ROLE)
