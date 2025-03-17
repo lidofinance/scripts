@@ -23,7 +23,8 @@ NEW_VOTE_DURATION = 432000
 NEW_OBJECTION_PHASE_DURATION = 172800
 
 # Oracle daemon config
-FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE = 2250
+FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE = convert.to_bytes(2250, "bytes").hex()
+FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_OLD_VALUE = convert.to_bytes(1350, "bytes").hex()
 
 # GateSeals
 OLD_GATE_SEAL = "0x79243345eDbe01A7E42EDfF5900156700d22611c"
@@ -75,7 +76,6 @@ OLD_VOTE_DURATION = 259200
 OLD_OBJECTION_PHASE_DURATION = 86400
 
 # Oracle daemon config
-FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_OLD_VALUE = 1350
 
 
 def _check_role(contract: Contract, role: str, holder: str):
@@ -115,8 +115,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     )
 
     # Check Oracle Config state before voting
-    finalization_max_negative_rebase_epoch_shift = convert.to_uint(oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT"))
-    assert finalization_max_negative_rebase_epoch_shift == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_OLD_VALUE
+    finalization_max_negative_rebase_epoch_shift = oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT")
+    assert finalization_max_negative_rebase_epoch_shift.hex() == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_OLD_VALUE
     assert not oracle_daemon_config.hasRole(
         web3.keccak(text="CONFIG_MANAGER_ROLE").hex(),
         agent.address
@@ -162,10 +162,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     )
 
     # Check Oracle Config updated properly
-    finalization_max_negative_rebase_epoch_shift_updated = convert.to_uint(
-        oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT")
-    )
-    assert finalization_max_negative_rebase_epoch_shift_updated == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
+    finalization_max_negative_rebase_epoch_shift_updated = oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT")
+    assert finalization_max_negative_rebase_epoch_shift_updated.hex() == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
     assert not oracle_daemon_config.hasRole(
         web3.keccak(text="CONFIG_MANAGER_ROLE").hex(),
         agent.address
@@ -212,6 +210,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     evm_script_factories_after = easy_track.getEVMScriptFactories()
     assert ECOSYSTEM_BORG_STABLE_FACTORY in evm_script_factories_after
     assert LABS_BORG_STABLE_FACTORY in evm_script_factories_after
+    assert len(evm_script_factories_after) == len(evm_script_factories_before) + 2
 
     ecosystem_borg_stable_factory = interface.TopUpAllowedRecipients(ECOSYSTEM_BORG_STABLE_FACTORY)
     labs_borg_stable_factory = interface.TopUpAllowedRecipients(LABS_BORG_STABLE_FACTORY)
@@ -324,4 +323,4 @@ def validate_config_value_updated(event: EventDict, key, value):
     _events_chain = ["LogScriptCall", "LogScriptCall", "ConfigValueUpdated", "ScriptResult"]
     validate_events_chain([e.name for e in event], _events_chain)
     assert event["ConfigValueUpdated"]["key"] == key
-    assert convert.to_uint(event["ConfigValueUpdated"]["value"]) == value
+    assert convert.to_bytes(event["ConfigValueUpdated"]["value"], 'bytes').hex() == value
