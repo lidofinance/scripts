@@ -240,7 +240,33 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, ldo_
         assert not interface.IPausable(sealable).isPaused()
     print(f"Sealables unpaused in {new_gate_seal_contract.get_seal_duration_seconds()}")
 
+    old_csm_gate_seal = interface.GateSeal(OLD_CSM_GATE_SEAL)
+    with reverts(
+        "210"
+    ):  # converted into string list of sealed indexes (in sealables) in which the error occurred, in the descending order
+        old_csm_gate_seal.seal(csm_sealables, {"from": CSM_GATE_SEAL_COMMITTEE})
+
+    print("Seal the contracts with the New gate seal")
+    new_csm_gate_seal_contract.seal(csm_sealables, {"from": CSM_GATE_SEAL_COMMITTEE})
+    print("Sealed")
+
+    expiry_timestamp = chain.time()
+    assert new_csm_gate_seal_contract.is_expired()
+    assert new_csm_gate_seal_contract.get_expiry_timestamp() <= expiry_timestamp
+    print("Expired")
+
+    for sealable in csm_sealables:
+        assert interface.IPausable(sealable).isPaused()
+    print("Sealables paused")
+    chain.sleep(new_csm_gate_seal_contract.get_seal_duration_seconds())
+    chain.mine()
+
+    for sealable in csm_sealables:
+        assert not interface.IPausable(sealable).isPaused()
+    print(f"Sealables unpaused in {new_csm_gate_seal_contract.get_seal_duration_seconds()}")
+
     print("GateSeal is good to go!")
+
 
     # EasyTrack factories added check
     evm_script_factories_after = easy_track.getEVMScriptFactories()
