@@ -62,7 +62,7 @@ from utils.agent import agent_forward
 from utils.mainnet_fork import pass_and_exec_dao_vote
 
 
-description = """1. **Extend On-Chain Voting Duration** (Items 1-17)
+description = """1. **Extend On-Chain Voting Duration** (Items 1-17)  
 As approved on [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xa58da73cc4257837ae981d8ad861252f4cbbda7a173a577702f8f93561f57825):
 - **Main phase**: 48h → 72h
 - **Objection phase**: 24h → 48h
