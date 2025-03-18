@@ -62,7 +62,7 @@ from utils.agent import agent_forward
 from utils.mainnet_fork import pass_and_exec_dao_vote
 
 
-description = """1. **Extend On-Chain Voting Duration** (Items 1-17)  
+description = """1. **Extend On-Chain Voting Duration** (Items 1-17)
 As approved on [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xa58da73cc4257837ae981d8ad861252f4cbbda7a173a577702f8f93561f57825):
 - **Main phase**: 48h → 72h
 - **Objection phase**: 24h → 48h
@@ -146,7 +146,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "6. Update the FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT parameter in the OracleDaemonConfig contract  0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09 to 0x08CA (2250 epochs)",
+            "6. Update the FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT parameter in the OracleDaemonConfig contract 0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09 to 0x08CA (2250 epochs)",
             agent_forward(
                 [
                     (
@@ -298,14 +298,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
 
         # EasyTrack factories
         (
-            "18. Add an Easy Track EVM script factory 0xf2476f967C826722F5505eDfc4b2561A34033477 for funding the Lido Ecosystem BORG’s operational multisig (AllowedRecipientsRegistry 0xDAdC4C36cD8F468A398C25d0D8aaf6A928B47Ab4)",
+            "18. Add an Easy Track EVM script factory 0xf2476f967C826722F5505eDfc4b2561A34033477 for funding the Lido Ecosystem BORG Foundation’s operational multisig (AllowedRecipientsRegistry 0xDAdC4C36cD8F468A398C25d0D8aaf6A928B47Ab4)",
             add_evmscript_factory(
                 factory=ECOSYSTEM_BORG_STABLE_FACTORY,
                 permissions=create_top_up_allowed_recipient_permission(registry_address=ECOSYSTEM_BORG_STABLE_REGISTRY),
             ),
         ),
         (
-            "19. Add an Easy Track EVM script factory 0xE1f6BaBb445F809B97e3505Ea91749461050F780 for funding the Lido Labs BORG’s operational multisig (AllowedRecipientsRegistry 0x68267f3D310E9f0FF53a37c141c90B738E1133c2)",
+            "19. Add an Easy Track EVM script factory 0xE1f6BaBb445F809B97e3505Ea91749461050F780 for funding the Lido Labs BORG Foundation’s operational multisig (AllowedRecipientsRegistry 0x68267f3D310E9f0FF53a37c141c90B738E1133c2)",
             add_evmscript_factory(
                 factory=LABS_BORG_STABLE_FACTORY,
                 permissions=create_top_up_allowed_recipient_permission(registry_address=LABS_BORG_STABLE_REGISTRY),
