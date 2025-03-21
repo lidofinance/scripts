@@ -31,16 +31,22 @@ VEBO = "0xffDDF7025410412deaa05E3E1cE68FE53208afcb"
 
 @pytest.fixture(scope="function", autouse=True)
 def prepare_activated_dg_state():
-
-    if os.getenv("SKIP_DG_DRY_RUN"):
+    timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
+    if os.getenv("SKIP_DG_DRY_RUN") and timelock.getEmergencyGovernance() != DAO_EMERGENCY_GOVERNANCE:
         dg_impersonated = accounts.at(DUAL_GOVERNANCE, force=True)
-        timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
-
         timelock.submit(
             DUAL_GOVERNANCE_ADMIN_EXECUTOR,
             [(TIMELOCK, 0, timelock.setEmergencyGovernance.encode_input(DAO_EMERGENCY_GOVERNANCE))],
             {"from": dg_impersonated},
         )
+
+        chain.sleep(7 * 24 * 60 * 60)
+
+        timelock.schedule(1, {"from": dg_impersonated})
+
+        chain.sleep(7 * 24 * 60 * 60)
+
+        timelock.execute(1, {"from": dg_impersonated})
 
         assert timelock.getEmergencyGovernance() == DAO_EMERGENCY_GOVERNANCE
         assert timelock.getProposalsCount() == 1
@@ -283,13 +289,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
     # WITHDRAWAL VAULT
     assert withdrawal_vault.proxy_getAdmin() == AGENT
 
-    chain.sleep(7 * 24 * 60)
+    chain.sleep(7 * 24 * 60 * 60)
 
-    dual_governance.scheduleProposal(1, {"from": stranger})
+    dual_governance.scheduleProposal(2, {"from": stranger})
 
-    chain.sleep(7 * 24 * 60)
+    chain.sleep(7 * 24 * 60 * 60)
 
-    timelock.execute(1, {"from": stranger})
+    timelock.execute(2, {"from": stranger})
 
     # AGENT
     assert not acl.hasPermission(AGENT, VOTING, RUN_SCRIPT_ROLE)
