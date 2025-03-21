@@ -1,7 +1,12 @@
-from brownie import interface, convert, Contract, web3
+from brownie import interface, convert, Contract, web3, reverts, chain
 from scripts.vote_2024_03_18 import start_vote
 from utils.test.tx_tracing_helpers import *
-from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS
+from utils.evm_script import encode_call_script, EMPTY_CALLSCRIPT
+from utils.config import (
+    contracts,
+    LDO_VOTE_EXECUTORS_FOR_TESTS,
+    LDO_HOLDER_ADDRESS_FOR_TESTS,
+)
 from utils.test.event_validators.permission import (
     Permission,
     validate_permission_grant_event,
@@ -16,15 +21,18 @@ from utils.test.event_validators.easy_track import (
 )
 from utils.test.event_validators.voting import validate_change_vote_time_event, validate_change_objection_time_event
 from utils.test.event_validators.common import validate_events_chain
-from utils.test.easy_track_helpers import create_and_enact_payment_motion
+from utils.test.easy_track_helpers import create_and_enact_payment_motion, check_add_and_remove_recipient_with_voting
+
+from utils.voting import find_metadata_by_vote_id
+from utils.ipfs import get_lido_vote_cid_from_str
 
 # Vote duration
 NEW_VOTE_DURATION = 432000
 NEW_OBJECTION_PHASE_DURATION = 172800
 
 # Oracle daemon config
-FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE = convert.to_bytes(2250, "bytes").hex()
-FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_OLD_VALUE = convert.to_bytes(1350, "bytes").hex()
+FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE = '0x' + convert.to_bytes(2250, "bytes").hex()
+FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_OLD_VALUE = '0x' + convert.to_bytes(1350, "bytes").hex()
 
 # GateSeals
 OLD_GATE_SEAL = "0x79243345eDbe01A7E42EDfF5900156700d22611c"
@@ -92,7 +100,7 @@ def _check_no_role(contract: Contract, role: str, holder: str):
     ), f"Role {role} holder on {contract} should be {holder}"
 
 
-def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stranger):
+def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, ldo_holder, stranger):
     acl = interface.ACL(ACL)
     csm = interface.CSModule(CSM)
     cs_fee_oracle = interface.CSFeeOracle(CS_FEE_ORACLE)
@@ -116,7 +124,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
 
     # Check Oracle Config state before voting
     finalization_max_negative_rebase_epoch_shift = oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT")
-    assert finalization_max_negative_rebase_epoch_shift.hex() == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_OLD_VALUE
+    assert finalization_max_negative_rebase_epoch_shift == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_OLD_VALUE
     assert not oracle_daemon_config.hasRole(
         web3.keccak(text="CONFIG_MANAGER_ROLE").hex(),
         agent.address
@@ -163,7 +171,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
 
     # Check Oracle Config updated properly
     finalization_max_negative_rebase_epoch_shift_updated = oracle_daemon_config.get("FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT")
-    assert finalization_max_negative_rebase_epoch_shift_updated.hex() == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
+    assert finalization_max_negative_rebase_epoch_shift_updated == FINALIZATION_MAX_NEGATIVE_REBASE_EPOCH_SHIFT_NEW_VALUE
     assert not oracle_daemon_config.hasRole(
         web3.keccak(text="CONFIG_MANAGER_ROLE").hex(),
         agent.address
@@ -206,6 +214,63 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     assert new_csm_gate_seal_contract.get_expiry_timestamp() == GATE_SEAL_NEW_EXPIRY_TIMESTAMP
     assert not new_csm_gate_seal_contract.is_expired()
 
+    # Scenario test
+    print("Simulating GateSeal flow")
+    # Try to use the Old gate seal to pause the contracts
+    print("Try to use the Old gate seal to pause the contracts")
+    old_gate_seal = interface.GateSeal(OLD_GATE_SEAL)
+    with reverts(
+        "10"
+    ):  # converted into string list of sealed indexes (in sealables) in which the error occurred, in the descending order
+        interface.GateSeal(old_gate_seal).seal(sealables, {"from": GATE_SEAL_COMMITTEE})
+
+    print("Seal the contracts with the New gate seal")
+    new_gate_seal_contract.seal(sealables, {"from": GATE_SEAL_COMMITTEE})
+    print("Sealed")
+
+    expiry_timestamp = chain.time()
+    assert new_gate_seal_contract.is_expired()
+    assert new_gate_seal_contract.get_expiry_timestamp() <= expiry_timestamp
+    print("Expired")
+
+    for sealable in sealables:
+        assert interface.IPausable(sealable).isPaused()
+    print("Sealables paused")
+    chain.sleep(new_gate_seal_contract.get_seal_duration_seconds())
+    chain.mine()
+
+    for sealable in sealables:
+        assert not interface.IPausable(sealable).isPaused()
+    print(f"Sealables unpaused in {new_gate_seal_contract.get_seal_duration_seconds()}")
+
+    old_csm_gate_seal = interface.GateSeal(OLD_CSM_GATE_SEAL)
+    with reverts(
+        "210"
+    ):  # converted into string list of sealed indexes (in sealables) in which the error occurred, in the descending order
+        old_csm_gate_seal.seal(csm_sealables, {"from": CSM_GATE_SEAL_COMMITTEE})
+
+    print("Seal the contracts with the New gate seal")
+    new_csm_gate_seal_contract.seal(csm_sealables, {"from": CSM_GATE_SEAL_COMMITTEE})
+    print("Sealed")
+
+    expiry_timestamp = chain.time()
+    assert new_csm_gate_seal_contract.is_expired()
+    assert new_csm_gate_seal_contract.get_expiry_timestamp() <= expiry_timestamp
+    print("Expired")
+
+    for sealable in csm_sealables:
+        assert interface.IPausable(sealable).isPaused()
+    print("Sealables paused")
+    chain.sleep(new_csm_gate_seal_contract.get_seal_duration_seconds())
+    chain.mine()
+
+    for sealable in csm_sealables:
+        assert not interface.IPausable(sealable).isPaused()
+    print(f"Sealables unpaused in {new_csm_gate_seal_contract.get_seal_duration_seconds()}")
+
+    print("GateSeal is good to go!")
+
+
     # EasyTrack factories added check
     evm_script_factories_after = easy_track.getEVMScriptFactories()
     assert ECOSYSTEM_BORG_STABLE_FACTORY in evm_script_factories_after
@@ -214,6 +279,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
 
     ecosystem_borg_stable_factory = interface.TopUpAllowedRecipients(ECOSYSTEM_BORG_STABLE_FACTORY)
     labs_borg_stable_factory = interface.TopUpAllowedRecipients(LABS_BORG_STABLE_FACTORY)
+    ecosystem_borg_stable_registry = interface.AllowedRecipientRegistry(ECOSYSTEM_BORG_STABLE_REGISTRY)
+    labs_borg_stable_registry = interface.AllowedRecipientRegistry(LABS_BORG_STABLE_REGISTRY)
 
     for stablecoin in [DAI_TOKEN, USDT_TOKEN, USDC_TOKEN]:
         create_and_enact_payment_motion(
@@ -221,7 +288,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
             trusted_caller=ecosystem_borg_stable_factory.trustedCaller(),
             factory=ecosystem_borg_stable_factory,
             token=interface.ERC20(stablecoin),
-            recievers=[Contract(interface.AllowedRecipientRegistry(ECOSYSTEM_BORG_STABLE_REGISTRY).allowedRecipients(0))],
+            recievers=[Contract(ecosystem_borg_stable_registry.allowedRecipients(0))],
             transfer_amounts=[1 * 10**6],
             stranger=stranger,
         )
@@ -230,15 +297,48 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
             trusted_caller=labs_borg_stable_factory.trustedCaller(),
             factory=labs_borg_stable_factory,
             token=interface.ERC20(stablecoin),
-            recievers=[Contract(interface.AllowedRecipientRegistry(LABS_BORG_STABLE_REGISTRY).allowedRecipients(0))],
+            recievers=[Contract(labs_borg_stable_registry.allowedRecipients(0))],
             transfer_amounts=[1 * 10**6],
             stranger=stranger,
         )
 
+    check_add_and_remove_recipient_with_voting(
+        ecosystem_borg_stable_registry, helpers, ldo_holder, voting
+    )
+    check_add_and_remove_recipient_with_voting(
+        labs_borg_stable_registry, helpers, ldo_holder, voting
+    )
+
+    # Voting duration check
+    new_vote_script = encode_call_script(
+        [(voting.address, voting.newVote.encode_input(EMPTY_CALLSCRIPT, "", False, False))]
+    )
+    tx = contracts.token_manager.forward(new_vote_script, tx_params)
+    test_vote_id = tx.events["StartVote"]["voteId"]
+
+    chain.sleep((3 * 24 * 60 * 60) - 60) # 1 minute before voting phase ends (end of 3rd day)
+
+    for holder_addr in LDO_VOTE_EXECUTORS_FOR_TESTS:
+        print("voting from acct:", holder_addr)
+        topup = "10 ether"
+        if accounts.at(holder_addr, force=True).balance() < topup:
+            accounts[0].transfer(holder_addr, topup)
+        account = accounts.at(holder_addr, force=True)
+        voting.vote(test_vote_id, True, False, {"from": account})
+
+    chain.sleep(2 * 24 * 60 * 60)  # 1 minute before objection phase ends (end of 5th day)
+    voting.vote(test_vote_id, False, False, {"from": ldo_holder})
+
+    chain.sleep(60) # 1 minutes to be executed
+    voting.executeVote(test_vote_id, {"from": ldo_holder})
 
     # Events check
     display_voting_events(vote_tx)
     events = group_voting_events(vote_tx)
+
+    metadata = find_metadata_by_vote_id(vote_id)
+    print('ipfs id:', get_lido_vote_cid_from_str(metadata))
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreiae5ge6hszcag4cdxk3wcoqfa2ilre7rbt4f3j3eydmgip6nvvat4"
 
     assert len(events) == 19
 
@@ -323,4 +423,4 @@ def validate_config_value_updated(event: EventDict, key, value):
     _events_chain = ["LogScriptCall", "LogScriptCall", "ConfigValueUpdated", "ScriptResult"]
     validate_events_chain([e.name for e in event], _events_chain)
     assert event["ConfigValueUpdated"]["key"] == key
-    assert convert.to_bytes(event["ConfigValueUpdated"]["value"], 'bytes').hex() == value
+    assert event["ConfigValueUpdated"]["value"] == value
