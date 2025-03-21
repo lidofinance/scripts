@@ -25,6 +25,9 @@ III. Change CSM GateSeal
 IV. Add Easy Track setups for funding Lido Ecosystem & Lido Labs BORGs’ Operational Expenses Multisigs
 18. Add an Easy Track EVM script factory 0xf2476f967C826722F5505eDfc4b2561A34033477 for funding the Lido Ecosystem BORG’s operational multisig (AllowedRecipientsRegistry 0xDAdC4C36cD8F468A398C25d0D8aaf6A928B47Ab4)
 19. Add an Easy Track EVM script factory 0xE1f6BaBb445F809B97e3505Ea91749461050F780 for funding the Lido Labs BORG’s operational multisig (AllowedRecipientsRegistry 0x68267f3D310E9f0FF53a37c141c90B738E1133c2)
+
+Vote #184 passed & executed on 21/03/2025 at 14:34 UTC, block #22095872.
+
 """
 
 import time
