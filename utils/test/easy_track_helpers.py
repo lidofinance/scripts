@@ -17,7 +17,11 @@ def _encode_calldata(signature, values):
 def create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger):
     motions_before = easy_track.getMotions()
 
+    #try:
     tx = easy_track.createMotion(factory, calldata, {"from": trusted_caller})
+    #except e:
+        #print(f"[!] Невозможно выполнить перевод: {e}")
+        #return  # или continue, pass, или обработка по ситуации
 
     motions = easy_track.getMotions()
     assert len(motions) == len(motions_before) + 1
