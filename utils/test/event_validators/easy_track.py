@@ -22,14 +22,14 @@ def validate_evmscript_factory_added_event(
     assert event["EVMScriptFactoryAdded"]["_permissions"] == p.permissions
 
 
-def validate_evmscript_factory_removed_event(event: EventDict, factory_addr: EVMScriptFactoryRemoved):
+def validate_evmscript_factory_removed_event(event: EventDict, p: EVMScriptFactoryRemoved):
     _events_chain = ["LogScriptCall", "EVMScriptFactoryRemoved"]
 
     validate_events_chain([e.name for e in event], _events_chain)
 
     assert event.count("EVMScriptFactoryRemoved") == 1
 
-    assert event["EVMScriptFactoryRemoved"]["_evmScriptFactory"] == factory_addr.factory_addr
+    assert event["EVMScriptFactoryRemoved"]["_evmScriptFactory"] == p.factory_addr
 
 
 def validate_motions_count_limit_changed_event(event: EventDict, motions_count_limit: int):

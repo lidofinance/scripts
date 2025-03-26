@@ -1,9 +1,9 @@
 """
-Voting 24/03/2025
+Voting 26/03/2025
 
-I. Remove Easy Track setup for funding ...
-1. Remove ... stablecoins top up EVM script factory ... (AllowedRecipientsRegistry ...)
-2. Remove ... stablecoins top up EVM script factory ... (AllowedRecipientsRegistry ...)
+I. Remove Easy Track setups for funding Lido Ecosystem & Lido Labs BORGs’ Operational Expenses Multisigs on holesky
+1. Remove an Easy Track EVM script factory 0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac for funding the Lido Ecosystem BORG Foundation’s operational multisig (AllowedRecipientsRegistry 0x193d0bA65cf3a2726e12c5568c068D1B3ea51740)
+2. Remove an Easy Track EVM script factory 0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9 for funding the Lido Labs BORG Foundation’s operational multisig (AllowedRecipientsRegistry 0x02CD05c1cBa16113680648a8B3496A5aE312a935)
 """
 
 import time
@@ -14,7 +14,7 @@ from typing import Dict
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
-from utils.agent import agent_forward
+# from utils.agent import agent_forward
 from utils.config import (
     AGENT,
     network_name,
@@ -23,11 +23,12 @@ from utils.config import (
     get_priority_fee,
     contracts,
 )
-from utils.easy_track import add_evmscript_factory, create_permissions, remove_evmscript_factory
+from utils.easy_track import  remove_evmscript_factory
+# add_evmscript_factory, create_permissions,
 
 DESCRIPTION = """
-1. Remove Easy Track setup for the Ecosystem BORG Foundation operational ms on holesky.
-2. Remove Easy Track setup for the Labs BORG Foundation operational ms on holesky.
+1. Remove an Easy Track setup for funding Lido Ecosystem BORG’s Operational Expenses Multisigs on holesky
+2. Remove an Easy Track setup for funding Lido Labs BORG’s Operational Expenses Multisigs on holesky
 """
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
@@ -39,16 +40,15 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     labs_ops_top_up_allowed_recipients = interface.TopUpAllowedRecipients("0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9")
 
     vote_desc_items, call_script_items = zip(
-        # I. Add Easy Track setup for funding Lido Alliance Operational Multisig
-        #
+        # I. Remove Easy Track setups for funding Lido Ecosystem & Lido Labs BORGs’ Operational Expenses Multisigs on holesky
         (
-            "1) Remove Ecosystem Ops stablecoins top up EVM script factory 0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac (AllowedRecipientsRegistry 0x193d0bA65cf3a2726e12c5568c068D1B3ea51740)",
+            "1. Remove an Easy Track EVM script factory 0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac for funding the Lido Ecosystem BORG Foundation’s operational multisig (AllowedRecipientsRegistry 0x193d0bA65cf3a2726e12c5568c068D1B3ea51740)",
             remove_evmscript_factory(
                 factory=ecosystem_ops_top_up_allowed_recipients,
             )
         ),
         (
-            "2) Remove Labs Ops stablecoins top up EVM script factory 0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9 (AllowedRecipientsRegistry 0x02CD05c1cBa16113680648a8B3496A5aE312a935)",
+            "2. Remove an Easy Track EVM script factory 0xef0Df040B76252cC7fa31a5fc2f36e85c1C8c4f9 for funding the Lido Labs BORG Foundation’s operational multisig (AllowedRecipientsRegistry 0x02CD05c1cBa16113680648a8B3496A5aE312a935)",
             remove_evmscript_factory(
                 factory=labs_ops_top_up_allowed_recipients,
             )

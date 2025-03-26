@@ -3,20 +3,20 @@ Tests for voting 08/10/2024
 """
 
 import eth_abi
-from scripts.vote_2025_03_24_holesky import start_vote
+from scripts.vote_2025_03_26_holesky import start_vote
 from brownie import interface, reverts, web3
 from brownie.exceptions import VirtualMachineError
-from utils.test.event_validators.common import validate_events_chain
-from utils.test.event_validators.permission import validate_grant_role_event
+# from utils.test.event_validators.common import validate_events_chain
+# from utils.test.event_validators.permission import validate_grant_role_event
 from utils.test.tx_tracing_helpers import *
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.config import contracts
-from utils.easy_track import create_permissions
+# from utils.easy_track import create_permissions
 from utils.test.event_validators.easy_track import (
-    validate_evmscript_factory_added_event,
+    # validate_evmscript_factory_added_event,
     validate_evmscript_factory_removed_event,
-    EVMScriptFactoryAdded,
+    # EVMScriptFactoryAdded,
     EVMScriptFactoryRemoved,
 )
 
@@ -52,7 +52,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger, ldo_holder):
 
     # validate vote metadata
     metadata = find_metadata_by_vote_id(vote_id)
-    assert get_lido_vote_cid_from_str(metadata) == "bafkreibzrkcvbcycct2ygsddwolduvmegtdrbwauywnuew6ln2cjfugxrq"
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreiconxbneisesoq4qa632lvei2u54h5rpbkdxhqeqtoh5k5xnjsxki"
 
     # validate vote events
     assert count_vote_items_by_events(vote_tx, contracts.voting) == 2, "Incorrect voting items count"
