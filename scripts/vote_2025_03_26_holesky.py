@@ -66,10 +66,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
 def main():
     tx_params = {"from": get_deployer_account()}
-    print('account depl')
-    print(get_deployer_account())
-    print('account brown', accounts[0])
-    print('balance', accounts[0].balance())
+
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 
