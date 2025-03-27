@@ -1,5 +1,5 @@
 """
-Voting 26/03/2025
+Voting 27/03/2025
 
 I. Remove Easy Track setups for funding Lido Ecosystem & Lido Labs BORGs’ Operational Expenses Multisigs on holesky
 1. Remove an Easy Track EVM script factory 0x4F2dA002a7bD5F7C63B62d4C9e4b762c689Dd8Ac for funding the Lido Ecosystem BORG Foundation’s operational multisig (AllowedRecipientsRegistry 0x193d0bA65cf3a2726e12c5568c068D1B3ea51740)
@@ -14,7 +14,6 @@ from typing import Dict
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
-# from utils.agent import agent_forward
 from utils.config import (
     AGENT,
     network_name,
@@ -24,7 +23,6 @@ from utils.config import (
     contracts,
 )
 from utils.easy_track import  remove_evmscript_factory
-# add_evmscript_factory, create_permissions,
 
 DESCRIPTION = """
 1. Remove an Easy Track setup for funding Lido Ecosystem BORG’s Operational Expenses Multisigs on holesky
@@ -68,6 +66,10 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
 def main():
     tx_params = {"from": get_deployer_account()}
+    print('account depl')
+    print(get_deployer_account())
+    print('account brown', accounts[0])
+    print('balance', accounts[0].balance())
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 

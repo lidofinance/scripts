@@ -1,22 +1,17 @@
 """
-Tests for voting 08/10/2024
+Tests for voting 27/03/2025
 """
 
 import eth_abi
 from scripts.vote_2025_03_26_holesky import start_vote
 from brownie import interface, reverts, web3
 from brownie.exceptions import VirtualMachineError
-# from utils.test.event_validators.common import validate_events_chain
-# from utils.test.event_validators.permission import validate_grant_role_event
 from utils.test.tx_tracing_helpers import *
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.config import contracts
-# from utils.easy_track import create_permissions
 from utils.test.event_validators.easy_track import (
-    # validate_evmscript_factory_added_event,
     validate_evmscript_factory_removed_event,
-    # EVMScriptFactoryAdded,
     EVMScriptFactoryRemoved,
 )
 
