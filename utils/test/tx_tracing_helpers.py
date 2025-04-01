@@ -37,7 +37,7 @@ def display_voting_call_trace(tx: TransactionReceipt) -> None:
 
 
 def count_vote_items_by_events(tx: TransactionReceipt, voting_addr: str) -> int:
-    events = tx_events_from_trace(tx)
+    events = tx_events_from_receipt(tx)
     ev_dict = EventDict(events)
 
     calls_slice = ev_dict["LogScriptCall"]
