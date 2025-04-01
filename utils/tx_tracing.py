@@ -70,7 +70,7 @@ def _find_fist_index_of_event_with_different_from_first_event_address(events):
     return len(events)
 
 
-def tx_events_from_receipt(tx: TransactionReceipt) -> Optional[List]:
+def tx_events_from_receipt(tx: TransactionReceipt) -> List:
     if not tx.status:
         raise "Tx has reverted status (set to 0)"
 
