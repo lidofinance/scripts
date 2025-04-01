@@ -2,15 +2,16 @@ import logging
 import os
 from collections import defaultdict
 from functools import lru_cache
-from typing import List, Union, Optional, Callable
+from typing import List, Union, Optional, Callable, Any
 
 import eth_abi
+from brownie import Contract, convert
 from brownie.utils import color
 from eth_typing.evm import HexAddress
-from eth_utils import keccak
-from hexbytes import HexBytes
 from web3 import Web3
 
+# NOTE: The decode_function_call() method is currently unused; it is retained for fallback to the previous decoder version
+# (refer to the NOTEs in the decode_evm_script method).
 from avotes_parser.core import parse_script, EncodedCall, Call, FuncInput, decode_function_call
 from avotes_parser.core.ABI import get_cached_combined
 
@@ -22,7 +23,7 @@ from avotes_parser.core.ABI.utilities.exceptions import (
 )
 
 EMPTY_CALLSCRIPT = "0x00000001"
-ETHERSCAN_API_KEY = os.getenv("ETHERSCAN_API_KEY", "TGXU5WGVTVYRDDV2MY71R5JYB7147M13FC")
+ETHERSCAN_TOKEN = os.getenv("ETHERSCAN_TOKEN", "TGXU5WGVTVYRDDV2MY71R5JYB7147M13FC")
 
 
 def create_executor_id(id) -> str:
@@ -78,13 +79,18 @@ def decode_evm_script(
             logging.basicConfig(level=logging.INFO)
         return [repr(err)]
 
-    abi_storage = get_abi_cache(ETHERSCAN_API_KEY, specific_net)
+    # NOTE: The line below is not used in the current version; it is retained for fallback to the previous decoder version (see NOTE below).
+    abi_storage = get_abi_cache(ETHERSCAN_TOKEN, specific_net)
 
     calls = []
     called_contracts = defaultdict(lambda: defaultdict(dict))
     for ind, call in enumerate(parsed.calls):
         try:
-            call_info = decode_function_call(call.address, call.method_id, call.encoded_call_data, abi_storage)
+            call_info = decode_encoded_call(call)
+
+            # NOTE: If the decode_encoded_call(call) method fails, uncomment the line below to fall back to the previous version:
+            #
+            # call_info = decode_function_call(call.address, call.method_id, call.encoded_call_data, abi_storage)
 
             if call_info is not None:
                 for inp in filter(is_encoded_script, call_info.inputs):
@@ -135,10 +141,76 @@ def calls_info_pretty_print(call: Union[str, Call, EncodedCall]) -> str:
     """Format printing for Call instance."""
     return color.highlight(repr(call))
 
+
 def encode_error(error: str, values=None) -> str:
-    encoded_error = error.split('(')[0] + ': '
-    args = ''
+    encoded_error = error.split("(")[0] + ": "
+    args = ""
     if values is not None:
-        args = ', '.join(str(x) for x in values)
+        args = ", ".join(str(x) for x in values)
         return f"{encoded_error}{args}"
     return encoded_error
+
+
+def decode_encoded_call(encoded_call: EncodedCall) -> Optional[Call]:
+    """
+    Decodes an encoded contract call using Brownie's Contract API.
+
+    This function replaces AVotesParser.decode_function_call() and converts the provided
+    EncodedCall into a Call object or returns None if the decoding wasn't successfull.
+    Unsuccessfull deconding usually happens when the contract is not verified contract on etherscan
+
+    Parameters:
+        encoded_call (EncodedCall): An object containing the target contract address, method id,
+                                    and encoded call data and encoded call data length.
+
+    Returns:
+        Call: A Call object with decoded call details if successful, otherwise None if the method
+              call cannot be decoded.
+    """
+    contract = Contract(encoded_call.address)
+
+    # If the method selector is not found in the locally stored contracts, fetch the full ABI from Etherscan.
+    if encoded_call.method_id not in contract.selectors:
+        # For proxy contracts, Brownie automatically retrieves the implementation ABI.
+        contract = Contract.from_explorer(encoded_call.address)
+
+    # If the method selector is still not found, the call may target the proxy contract directly rather than its implementation.
+    if encoded_call.method_id not in contract.selectors:
+        # Explicitly fetch the ABI for the proxy contract itself by setting `as_proxy_for` to the proxy's address.
+        # NOTE: Normalization via `convert.to_address()` is required; without it, the internal check in `from_explorer()` may fail,
+        #   resulting in the implementation's ABI being downloaded instead.
+        contract = Contract.from_explorer(encoded_call.address, as_proxy_for=convert.to_address(encoded_call.address))
+
+    # If the method selector is still not found, the contract is likely not verified.
+    if encoded_call.method_id not in contract.selectors:
+        return None
+
+    method_name = contract.selectors[encoded_call.method_id]
+    contract_method = getattr(contract, method_name)
+
+    method_abi = contract_method.abi
+
+    calldata_with_selector = encoded_call.method_id + encoded_call.encoded_call_data[2:]
+    decoded_calldata = contract_method.decode_input(calldata_with_selector)
+
+    inputs = [get_func_input(method_abi["inputs"][idx], arg) for idx, arg in enumerate(decoded_calldata)]
+
+    properties = {
+        "constant": "unknown",  # Typically False even for pure methods, but not guaranteed.
+        "payable": method_abi["stateMutability"] == "payable",
+        "stateMutability": method_abi["stateMutability"],
+        "type": "function",
+    }
+
+    return Call(
+        contract.address,
+        encoded_call.method_id,
+        method_name,
+        inputs,
+        properties,
+        method_abi["outputs"],
+    )
+
+
+def get_func_input(input_abi: dict, value: Any) -> FuncInput:
+    return FuncInput(input_abi["name"], input_abi.get("internalType", input_abi.get("type")), value)
