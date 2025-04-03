@@ -17,7 +17,7 @@ def _encode_calldata(signature, values):
 def create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger):
     motions_before = easy_track.getMotions()
 
-    tx = easy_track.createMotion(factory, calldata, {"from": trusted_caller, "gas_price": 4})
+    tx = easy_track.createMotion(factory, calldata, {"from": trusted_caller})
 
     motions = easy_track.getMotions()
     assert len(motions) == len(motions_before) + 1
@@ -29,7 +29,7 @@ def create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stran
     easy_track.enactMotion(
         motion_id,
         tx.events["MotionCreated"]["_evmScriptCallData"],
-        {"from": stranger, "gas_price": 4},
+        {"from": stranger},
     )
 
 

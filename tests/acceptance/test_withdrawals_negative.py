@@ -1,4 +1,3 @@
-from brownie.exceptions import VirtualMachineError
 from brownie.network.account import Account
 import pytest
 from brownie import Contract, interface, reverts, Wei, chain  # type: ignore
