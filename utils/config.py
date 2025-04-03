@@ -10,7 +10,6 @@ from brownie.network.account import Account, LocalAccount
 
 from brownie import Contract, web3
 
-
 MAINNET_VOTE_DURATION = 3 * 24 * 60 * 60
 
 
@@ -61,11 +60,13 @@ def get_priority_fee() -> str:
     else:
         return "2 gwei"
 
+
 def get_max_fee() -> str:
     if "OMNIBUS_MAX_FEE" in os.environ:
         return os.environ["OMNIBUS_MAX_FEE"]
     else:
         return "300 gwei"
+
 
 def local_deployer() -> LocalAccount:
     """
@@ -74,8 +75,9 @@ def local_deployer() -> LocalAccount:
     deployer = accounts[4]
     agent = accounts.at(AGENT, force=True)
 
-    if web3.eth.get_balance(agent.address) < 10 * 10 ** 18:
+    if web3.eth.get_balance(agent.address) < 10 * 10**18:
         from utils.balance import set_balance
+
         set_balance(agent.address, 10)
 
     interface.MiniMeToken(LDO_TOKEN).transfer(deployer, 10**18, {"from": agent})
@@ -390,6 +392,7 @@ class ContractsLazyLoader:
     @property
     def token_rate_notifier(self) -> interface.TokenRateNotifier:
         return interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)
+
 
 def __getattr__(name: str) -> Any:
     if name == "contracts":
