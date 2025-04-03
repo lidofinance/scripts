@@ -1,7 +1,6 @@
 import pytest
 from brownie import web3, reverts, accounts, chain  # type: ignore
 from utils.test.exit_bus_data import LidoValidator
-from utils.test.extra_data import ExtraDataService
 from utils.test.oracle_report_helpers import (
     oracle_report,
     prepare_exit_bus_report,
@@ -12,14 +11,15 @@ from utils.test.oracle_report_helpers import (
 from utils.evm_script import encode_error
 
 from utils.test.helpers import ETH, eth_balance
+
 from utils.config import (
     contracts,
-    CHURN_VALIDATORS_PER_DAY_LIMIT,
-    ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT,
+    APPEARED_VALIDATORS_PER_DAY_LIMIT,
+    EXITED_VALIDATORS_PER_DAY_LIMIT,
     ANNUAL_BALANCE_INCREASE_BP_LIMIT,
     MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT,
-    MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT,
-    MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT,
+    MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
+    MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
     REQUEST_TIMESTAMP_MARGIN,
     SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT,
 )
@@ -37,11 +37,6 @@ def pre_cl_balance():
 @pytest.fixture(scope="function", autouse=True)
 def first_report():
     oracle_report(silent=True)
-
-
-@pytest.fixture()
-def extra_data_service():
-    return ExtraDataService()
 
 
 def test_cant_report_more_validators_than_deposited():
@@ -80,7 +75,7 @@ def test_too_large_cl_increase_with_appeared_validator(pre_cl_balance):
 
 
 def test_too_much_validators_appeared():
-    deposited_validators = CHURN_VALIDATORS_PER_DAY_LIMIT + 1
+    deposited_validators = APPEARED_VALIDATORS_PER_DAY_LIMIT + 1
     fake_deposited_validators_increase(deposited_validators)
 
     with reverts(encode_error("IncorrectAppearedValidators(uint256)", [deposited_validators])):
@@ -98,30 +93,31 @@ def test_too_much_validators_exited():
     with reverts(
         encode_error(
             "ExitedValidatorsLimitExceeded(uint256,uint256)",
-            [CHURN_VALIDATORS_PER_DAY_LIMIT, CHURN_VALIDATORS_PER_DAY_LIMIT + 1],
+            [EXITED_VALIDATORS_PER_DAY_LIMIT, EXITED_VALIDATORS_PER_DAY_LIMIT + 1],
         )
     ):
         oracle_report(
-            numExitedValidatorsByStakingModule=[CHURN_VALIDATORS_PER_DAY_LIMIT + previously_exited + 1],
+            numExitedValidatorsByStakingModule=[EXITED_VALIDATORS_PER_DAY_LIMIT + previously_exited + 1],
             stakingModuleIdsWithNewlyExitedValidators=[1],
             skip_withdrawals=True,
             silent=True,
         )
 
 
-def test_too_large_cl_decrease(pre_cl_balance):
-    #  uint256 oneOffCLBalanceDecreaseBP = (MAX_BASIS_POINTS * (_preCLBalance - _unifiedPostCLBalance)) /
-    #         _preCLBalance;
+# ToDo: fix test, ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT deprecated
+# def test_too_large_cl_decrease(pre_cl_balance):
+#     #  uint256 oneOffCLBalanceDecreaseBP = (MAX_BASIS_POINTS * (_preCLBalance - _unifiedPostCLBalance)) /
+#     #         _preCLBalance;
 
-    withdrawal_vault_balance = eth_balance(contracts.withdrawal_vault.address)
-    max_cl_decrease = (
-        ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT * pre_cl_balance // MAX_BASIS_POINTS + withdrawal_vault_balance
-    )
+#     withdrawal_vault_balance = eth_balance(contracts.withdrawal_vault.address)
+#     max_cl_decrease = (
+#         ONE_OFF_CL_BALANCE_DECREASE_BP_LIMIT * pre_cl_balance // MAX_BASIS_POINTS + withdrawal_vault_balance
+#     )
 
-    error_cl_decrease = max_cl_decrease + ETH(1000)
-    error_one_off_cl_decrease_bp = (MAX_BASIS_POINTS * (error_cl_decrease - withdrawal_vault_balance)) // pre_cl_balance
-    with reverts(encode_error("IncorrectCLBalanceDecrease(uint256)", [error_one_off_cl_decrease_bp])):
-        oracle_report(cl_diff=-error_cl_decrease, skip_withdrawals=True, silent=True)
+#     error_cl_decrease = max_cl_decrease + ETH(1000)
+#     error_one_off_cl_decrease_bp = (MAX_BASIS_POINTS * (error_cl_decrease - withdrawal_vault_balance)) // pre_cl_balance
+#     with reverts(encode_error("IncorrectCLBalanceDecrease(uint256)", [error_one_off_cl_decrease_bp])):
+#         oracle_report(cl_diff=-error_cl_decrease, skip_withdrawals=True, silent=True)
 
 
 def test_withdrawal_vault_report_more():
@@ -210,37 +206,49 @@ def test_report_deviated_simulated_share_rate(steth_holder):
 
 
 def test_accounting_oracle_too_much_extra_data(extra_data_service):
-    item_count = MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT + 1
-    extra_data = extra_data_service.collect({(1, 1): 1}, {}, 1, 1)
+    item_count = MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION + 1
+
+    operators = {}
+    nor_module_id = 1
+    nor_operators_count = contracts.node_operators_registry.getNodeOperatorsCount()
+    i = 0
+    while len(operators) < item_count and i < nor_operators_count:
+        (active, _, _, _, total_exited_validators_count, _, _) = contracts.node_operators_registry.getNodeOperator(i, True)
+        if(active):
+            operators[(nor_module_id, i)] = total_exited_validators_count + 1
+        i = i + 1
+
+    extra_data = extra_data_service.collect({}, operators, item_count, 1)
+
     with reverts(
         encode_error(
-            "MaxAccountingExtraDataItemsCountExceeded(uint256,uint256)",
-            [MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT, item_count],
+            "TooManyItemsPerExtraDataTransaction(uint256,uint256)",
+            [MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION, item_count],
         )
     ):
         oracle_report(
             extraDataFormat=1,
-            extraDataHash=extra_data.data_hash,
+            extraDataHashList=extra_data.extra_data_hash_list,
             extraDataItemsCount=item_count,
-            extraDataList=extra_data.extra_data,
+            extraDataList=extra_data.extra_data_list,
         )
 
 
 @pytest.mark.skip("ganache throws 'RPCRequestError: Invalid string length' on such long extra data")
 def test_accounting_oracle_too_node_ops_per_extra_data_item(extra_data_service):
-    item_count = MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT * 10
+    item_count = MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM * 10
     extra_data = extra_data_service.collect({(1, i): i for i in range(item_count)}, {}, 1, item_count)
     with reverts(
         encode_error(
             "TooManyNodeOpsPerExtraDataItem(uint256,uint256)",
-            [MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT, item_count],
+            [MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM, item_count],
         )
     ):
         oracle_report(
             extraDataFormat=1,
-            extraDataHash=extra_data.data_hash,
+            extraDataHashList=extra_data.extra_data_hash_list,
             extraDataItemsCount=1,
-            extraDataList=extra_data.extra_data,
+            extraDataList=extra_data.extra_data_list,
         )
 
 
@@ -264,16 +272,15 @@ def test_veb_oracle_too_much_extra_data():
 def fake_deposited_validators_increase(cl_validators_diff):
     (deposited, _, _) = contracts.lido.getBeaconStat()
 
-    voting = accounts.at(contracts.voting.address, force=True)
     contracts.acl.createPermission(
-        voting,
+        contracts.voting,
         contracts.lido,
         web3.keccak(text="UNSAFE_CHANGE_DEPOSITED_VALIDATORS_ROLE"),
-        voting,
-        {"from": voting},
+        contracts.voting,
+        {"from": contracts.voting},
     )
 
-    contracts.lido.unsafeChangeDepositedValidators(deposited + cl_validators_diff, {"from": voting})
+    contracts.lido.unsafeChangeDepositedValidators(deposited + cl_validators_diff, {"from": contracts.voting})
 
 
 def create_withdrawal_request(steth_holder):

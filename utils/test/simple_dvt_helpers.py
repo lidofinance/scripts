@@ -1,6 +1,4 @@
-from brownie import chain, accounts, interface, web3
-from web3 import Web3
-
+from brownie import accounts, interface, web3
 from utils.config import (
     contracts,
     EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER,
@@ -131,6 +129,11 @@ def simple_dvt_add_keys(simple_dvt, node_operator_id, keys_count=1):
         total_signing_keys_count_before = simple_dvt.getTotalSigningKeyCount(node_operator_id)
         unused_signing_keys_count_before = simple_dvt.getUnusedSigningKeyCount(node_operator_id)
         node_operator_before = simple_dvt.getNodeOperator(node_operator_id, False)
+
+        reward_address = node_operator_before["rewardAddress"]
+        if accounts.at(reward_address, force=True).balance() == 0:
+            web3.provider.make_request("evm_setAccountBalance", [reward_address, "0x152D02C7E14AF6800000"])
+            web3.provider.make_request("hardhat_setBalance", [reward_address, "0x152D02C7E14AF6800000"])
 
         tx = simple_dvt.addSigningKeys(
             node_operator_id,

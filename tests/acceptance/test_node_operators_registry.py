@@ -6,12 +6,20 @@ from utils.config import (
     NODE_OPERATORS_REGISTRY,
     NODE_OPERATORS_REGISTRY_IMPL,
     NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
+    NODE_OPERATORS_REGISTRY_VERSION,
     CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
     CURATED_STAKING_MODULE_OPERATORS_COUNT,
     CURATED_STAKING_MODULE_OPERATORS_ACTIVE_COUNT,
     CURATED_STAKING_MODULE_TYPE,
 )
 
+@pytest.fixture
+def voting(accounts):
+    return accounts.at(contracts.voting.address, force=True)
+
+@pytest.fixture(scope="module")
+def agent_eoa(accounts):
+    return accounts.at(contracts.agent.address, force=True)
 
 @pytest.fixture(scope="module")
 def contract() -> interface.NodeOperatorsRegistry:
@@ -39,7 +47,7 @@ def test_role_keccaks(contract):
 
 
 def test_versioned(contract):
-    assert contract.getContractVersion() == 2
+    assert contract.getContractVersion() == NODE_OPERATORS_REGISTRY_VERSION
 
 
 def test_initialize(contract):
@@ -60,6 +68,10 @@ def test_finalize_upgrade(contract):
             CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
             {"from": contracts.voting},
         )
+    with reverts("UNEXPECTED_CONTRACT_VERSION"):
+        contract.finalizeUpgrade_v3(
+            {"from": contracts.voting},
+        )
 
 
 def test_petrified():
@@ -77,6 +89,10 @@ def test_petrified():
             contracts.lido_locator,
             CURATED_STAKING_MODULE_TYPE,
             CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
+            {"from": contracts.voting},
+        )
+    with reverts("CONTRACT_NOT_INITIALIZED"):
+        contract.finalizeUpgrade_v3(
             {"from": contracts.voting},
         )
 
@@ -113,12 +129,7 @@ def test_nor_state(contract):
 
         node_operator_summary = contract.getNodeOperatorSummary(id)
         exited_node_operators = [12, 1]  # NO id 12 was added on vote 23-05-23, NO id 1 was added on vote 03-10-23
-        if id in exited_node_operators:
-            assert (
-                node_operator_summary["isTargetLimitActive"] is True
-            ), f"isTargetLimitActive is inactive for node {id}"
-        else:
-            assert node_operator_summary["isTargetLimitActive"] is False, f"isTargetLimitActive is active for node {id}"
+        assert node_operator_summary["targetLimitMode"] == (1 if id in exited_node_operators else 0)
         assert node_operator_summary["targetValidatorsCount"] == 0
         # Can be more than 0 in regular protocol operations
         # assert node_operator_summary["stuckValidatorsCount"] == 0
@@ -141,7 +152,6 @@ def test_nor_state(contract):
         )
 
         assert node_operator_summary["depositableValidatorsCount"] == no_depositable_validators_count
-
 
 def _str_to_bytes32(s: str) -> str:
     return "0x{:0<64}".format(s.encode("utf-8").hex())

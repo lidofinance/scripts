@@ -13,7 +13,7 @@ runs:
     # Tests from core repo
     - uses: actions/checkout@v4
       with:
-        repository: lidofinance/lido-dao
+        repository: lidofinance/core
         ref: master
         path: core
 

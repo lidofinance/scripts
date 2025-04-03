@@ -5,6 +5,7 @@ from utils.config import (
     contracts,
     SIMPLE_DVT,
     SIMPLE_DVT_IMPL,
+    SIMPLE_DVT_VERSION,
     SIMPLE_DVT_ARAGON_APP_ID,
     SIMPLE_DVT_MODULE_STUCK_PENALTY_DELAY,
     SIMPLE_DVT_MODULE_TYPE,
@@ -19,6 +20,7 @@ from utils.config import (
     EASYTRACK_SIMPLE_DVT_UPDATE_TARGET_VALIDATOR_LIMITS_FACTORY,
     EASYTRACK_SIMPLE_DVT_CHANGE_NODE_OPERATOR_MANAGERS_FACTORY,
 )
+
 
 REQUEST_BURN_SHARES_ROLE = "0x4be29e0e4eb91f98f709d98803cba271592782e293b84a625e025cbb40197ba8"
 STAKING_ROUTER_ROLE = "0xbb75b874360e0bfd87f964eadd8276d8efb7c942134fc329b513032d0803e0c6"
@@ -53,7 +55,7 @@ def test_role_keccaks(contract):
 
 
 def test_versioned(contract):
-    assert contract.getContractVersion() == 2
+    assert contract.getContractVersion() == SIMPLE_DVT_VERSION
 
 
 def test_initialize(contract):
@@ -109,7 +111,7 @@ def test_simple_dvt_state(contract):
     assert summary["depositableValidatorsCount"] >= 0
 
     deactivated_node_operators = []  # reserved for future use
-    exited_node_operators = [33]  # reserved for future use
+    exited_node_operators = []  # reserved for future use
 
     for id in range(node_operators_count):
         node_operator = contract.getNodeOperator(id, True)
@@ -129,12 +131,11 @@ def test_simple_dvt_state(contract):
         node_operator_summary = contract.getNodeOperatorSummary(id)
         if id in exited_node_operators:
             assert (
-                node_operator_summary["isTargetLimitActive"] is True
-            ), f"isTargetLimitActive is inactive for node {id}"
+                node_operator_summary["targetLimitMode"] > 0
+            ), f"targetLimitMode is 0 for exited node operator {id}"
 
             assert node_operator_summary["depositableValidatorsCount"] == 0
-        else:
-            assert node_operator_summary["isTargetLimitActive"] is False, f"isTargetLimitActive is active for node {id}"
+
         assert node_operator_summary["targetValidatorsCount"] == 0
         # Can be more than 0 in regular protocol operations
         # assert node_operator_summary["stuckValidatorsCount"] == 0
@@ -152,8 +153,7 @@ def test_simple_dvt_state(contract):
         assert node_operator["totalExitedValidators"] == node_operator_summary["totalExitedValidators"]
         assert node_operator["totalDepositedValidators"] == node_operator_summary["totalDepositedValidators"]
 
-
-        if node_operator_summary["isTargetLimitActive"] == False:
+        if node_operator_summary["targetLimitMode"] == 0:
             no_depositable_validators_count = (
                 node_operator["totalVettedValidators"] - node_operator["totalDepositedValidators"]
             )

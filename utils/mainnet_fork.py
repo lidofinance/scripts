@@ -36,7 +36,7 @@ def pass_and_exec_dao_vote(vote_id):
 
         for holder_addr in ldo_holders:
             print(f"  voting from {holder_addr}")
-            helper_acct.transfer(holder_addr, "0.1 ether", silent=True)
+            helper_acct.transfer(holder_addr, "1 ether", silent=True)
             account = accounts.at(holder_addr, force=True)
             dao_voting.vote(vote_id, True, False, {"from": account, "silent": True})
 

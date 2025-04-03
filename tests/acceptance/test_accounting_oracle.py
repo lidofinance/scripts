@@ -17,7 +17,6 @@ from utils.config import (
 )
 from utils.evm_script import encode_error
 
-
 @pytest.fixture(scope="module")
 def contract() -> interface.AccountingOracle:
     return interface.AccountingOracle(ACCOUNTING_ORACLE)
@@ -42,7 +41,7 @@ def test_constants(contract):
 
 
 def test_versioned(contract):
-    assert contract.getContractVersion() == 1
+    assert contract.getContractVersion() == 2
 
 
 def test_initialize(contract):
