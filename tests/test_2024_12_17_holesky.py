@@ -34,6 +34,11 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     lol_period_start_after_exptected = 1735689600 # Wed Jan 01 2025 00:00:00 GMT+0000
     lol_period_end_after_exptected = 1751328000 # Tue Jul 01 2025 00:00:00 GMT+0000
 
+    #scenario test values
+    h2_motion_time = 1751328001 # Tue Jul 01 2025 00:00:01 GMT+0000
+    h2_period_start = 1751328000 # Tue Jul 01 2025 00:00:00 GMT+0000
+    h2_period_end = 1767225600 # Thu Jan 01 2026 00:00:00 GMT+0000
+
 
     # checks before
     lol_budget_limit_before, lol_period_duration_months_before = interface.AllowedRecipientRegistry(lol_allowed_recipients_registry).getLimitParameters()
@@ -79,7 +84,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
         period_start_timestamp=lol_period_start_after_exptected,
     )
 
-    # scenario test - full withdrawal
+    # scenario tests
+
+    # full withdrawal in H1'2025
     limit_test(easy_track,
                interface.AllowedRecipientRegistry(lol_allowed_recipients_registry).spendableBalance(),
                lol_trusted_caller_acc,
@@ -90,9 +97,53 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
                100 * 10**18
     )
 
-def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_factory, send_to, stranger, token, max_spend_at_once):
+    # partial withdrawal of 300 steth in H2'2025
 
-    chain.snapshot()
+    # wait until H2'2025
+    chain.sleep(h2_motion_time - chain.time())
+    chain.mine()
+    assert chain.time() == h2_motion_time
+
+    # pay 100 steth
+    create_and_enact_payment_motion(
+        easy_track,
+        lol_trusted_caller_acc,
+        lol_top_up_evm_script_factory,
+        STETH,
+        [lol_allowed_recipient],
+        [100 * 10**18],
+        stranger,
+    )
+
+    # pay 100 steth
+    create_and_enact_payment_motion(
+        easy_track,
+        lol_trusted_caller_acc,
+        lol_top_up_evm_script_factory,
+        STETH,
+        [lol_allowed_recipient],
+        [100 * 10**18],
+        stranger,
+    )
+
+    # pay 100 steth
+    create_and_enact_payment_motion(
+        easy_track,
+        lol_trusted_caller_acc,
+        lol_top_up_evm_script_factory,
+        STETH,
+        [lol_allowed_recipient],
+        [100 * 10**18],
+        stranger,
+    )
+
+    lol_already_spent_h2, _, lol_period_start_h2, lol_period_end_h2 = lol_allowed_recipients_registry.getPeriodState()
+    assert lol_already_spent_h2 == 300 * 10**18
+    assert lol_period_start_h2 == h2_period_start
+    assert lol_period_end_h2 == h2_period_end
+    assert interface.AllowedRecipientRegistry(lol_allowed_recipients_registry).spendableBalance() == 200 * 10**18
+
+def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_factory, send_to, stranger, token, max_spend_at_once):
 
     # check that there is no way to spend more then expected
     with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
@@ -130,5 +181,3 @@ def limit_test(easy_track, to_spend, trusted_caller_acc, top_up_evm_script_facto
             [1],
             stranger,
         )
-
-    chain.revert()
