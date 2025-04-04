@@ -41,4 +41,5 @@ runs:
       shell: bash
       run: yarn test:integration:fork:mainnet
       env:
+        MAINNET_RPC_URL: http://localhost:8555
         LOG_LEVEL: debug

@@ -19,11 +19,19 @@ jobs:
 
     services:
       hardhat-node:
-        image: ghcr.io/lidofinance/hardhat-node:2.22.19.2-shanghai
+        image: ghcr.io/lidofinance/hardhat-node:2.22.19.3-shanghai
         ports:
           - 8545:8545
         env:
           ETH_RPC_URL: "https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }}"
+
+      hardhat-node-fork:
+        image: ghcr.io/lidofinance/hardhat-node:2.22.19.3-shanghai
+        ports:
+          - 8555:8545
+        env:
+          ETH_RPC_URL: "http://hardhat-node:8545"
+
     steps:
       - uses: actions/checkout@v4
 
@@ -38,10 +46,10 @@ jobs:
           infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
           etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
 
-      # - name: Core tests
-      #   uses: ./.github/actions/core_tests
-      #   with:
-      #     vote: "normal"
+      - name: Core tests
+        uses: ./.github/actions/core_tests
+        with:
+          vote: "normal"
 
       - name: Scripts tests
         uses: ./.github/actions/scripts_tests
