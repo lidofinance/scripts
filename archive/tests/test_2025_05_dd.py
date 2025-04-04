@@ -1,35 +1,23 @@
 from archive.scripts.vote_2025_05_dd import start_vote
 from utils.config import (
-    contracts,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
+    EASYTRACK_EVMSCRIPT_EXECUTOR,
     EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY,
     EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY,
     EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY,
 )
-from configs.config_mainnet import (
-    EASYTRACK_EVMSCRIPT_EXECUTOR,
+from utils.test.easy_track_helpers import (
+    TEST_RELAY,
+    create_and_enact_add_mev_boost_relay_motion,
+    create_and_enact_remove_mev_boost_relay_motion,
+    create_and_enact_edit_mev_boost_relay_motion,
 )
 from utils.easy_track import create_permissions
 from utils.test.event_validators.easy_track import validate_evmscript_factory_added_event, EVMScriptFactoryAdded
 from utils.test.event_validators.relay_allowed_list import validate_relay_allowed_list_manager_set
 
 
-def add_relay_with_voting(relay, mev_boost_allowed_list, agent):
-    """
-    Add relay to MEV-Boost Relay Allowed List with voting
-    """
-    # Create motion for adding relay
-    motion_id = mev_boost_allowed_list.createMotion(
-        agent,
-        mev_boost_allowed_list.addRelay.encode_input(relay),
-        {"from": agent},
-    )
-
-    # Enact motion
-    mev_boost_allowed_list.enactMotion(motion_id, {"from": agent})
-
-
-def test_vote(helpers, accounts, vote_ids_from_env, agent):
+def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger, trusted_caller, contracts):
     easy_track = contracts.easy_track
     mev_boost_allowed_list = contracts.relay_allowed_list
 
@@ -84,6 +72,18 @@ def test_vote(helpers, accounts, vote_ids_from_env, agent):
         ),
     )
 
+    create_and_enact_add_mev_boost_relay_motion(
+        easy_track,
+        trusted_caller,
+        mev_boost_allowed_list,
+        EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY,
+        TEST_RELAY,
+        stranger,
+        helpers,
+        ldo_holder,
+        contracts.voting,
+    )
+
     # 2. Add `RemoveMEVBoostRelay` EVM script factory
     assert (
         EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY in evm_script_factories_after
@@ -97,6 +97,18 @@ def test_vote(helpers, accounts, vote_ids_from_env, agent):
         ),
     )
 
+    create_and_enact_remove_mev_boost_relay_motion(
+        easy_track,
+        trusted_caller,
+        mev_boost_allowed_list,
+        EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY,
+        TEST_RELAY,
+        stranger,
+        helpers,
+        ldo_holder,
+        contracts.voting,
+    )
+
     # 3. Add `EditMEVBoostRelay` EVM script factory
     assert EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY in evm_script_factories_after, "EditMEVBoostRelay factory not found"
 
@@ -106,6 +118,18 @@ def test_vote(helpers, accounts, vote_ids_from_env, agent):
             factory_addr=EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY,
             permissions=create_permissions(contracts.relay_allowed_list, "edit_relay"),
         ),
+    )
+
+    create_and_enact_edit_mev_boost_relay_motion(
+        easy_track,
+        trusted_caller,
+        mev_boost_allowed_list,
+        EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY,
+        (TEST_RELAY[0], "Dolor Sit Amet Operator", TEST_RELAY[2], TEST_RELAY[3]),
+        stranger,
+        helpers,
+        ldo_holder,
+        contracts.voting,
     )
 
     # 4. Change manager role on MEV-Boost Relay Allowed List
