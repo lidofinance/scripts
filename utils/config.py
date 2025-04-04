@@ -11,7 +11,7 @@ from brownie.network.account import Account, LocalAccount
 from brownie import Contract, web3
 
 
-MAINNET_VOTE_DURATION = 3 * 24 * 60 * 60
+MAINNET_VOTE_DURATION = 5 * 24 * 60 * 60
 
 
 def network_name() -> Optional[str]:
