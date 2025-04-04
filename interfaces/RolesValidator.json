@@ -1,0 +1,132 @@
+[
+  { "inputs": [], "stateMutability": "nonpayable", "type": "constructor" },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "entity", "type": "address" },
+      { "internalType": "string", "name": "roleName", "type": "string" },
+      { "internalType": "address", "name": "app", "type": "address" }
+    ],
+    "name": "AragonPermissionGranted",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "entity", "type": "address" },
+      { "internalType": "string", "name": "roleName", "type": "string" },
+      {
+        "internalType": "address",
+        "name": "expectedManager",
+        "type": "address"
+      },
+      { "internalType": "address", "name": "actualManager", "type": "address" }
+    ],
+    "name": "AragonPermissionInvalidManager",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "entity", "type": "address" },
+      { "internalType": "string", "name": "roleName", "type": "string" },
+      { "internalType": "address", "name": "app", "type": "address" }
+    ],
+    "name": "AragonPermissionNotGranted",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "entity", "type": "address" },
+      { "internalType": "string", "name": "roleName", "type": "string" },
+      { "internalType": "address", "name": "app", "type": "address" }
+    ],
+    "name": "OZRoleNotGranted",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "entity",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "roleName",
+        "type": "string"
+      }
+    ],
+    "name": "RoleValidated",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "ACL",
+    "outputs": [
+      { "internalType": "contract IACL", "name": "", "type": "address" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ACL_ADDRESS",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "AGENT",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EASYTRACK_ALLOWED_TOKENS_REGISTRY",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "LIDO",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "VOTING",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "WITHDRAWAL_QUEUE",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "dgAdminExecutor",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "dgResealManager",
+        "type": "address"
+      }
+    ],
+    "name": "validate",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]
