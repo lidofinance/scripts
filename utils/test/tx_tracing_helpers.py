@@ -77,21 +77,23 @@ def group_voting_events(tx: TransactionReceipt) -> List[EventDict]:
 def group_voting_events_from_receipt(tx: TransactionReceipt) -> List[EventDict]:
     events = tx_events_from_receipt(tx)
 
+    # Validate "service" Voting events are in the log
+    assert len(events) >= 2, "Unexpected events count"
+    assert events[-2]["address"] == VOTING and events[-2]["name"] == "ScriptResult", "Unexpected Voting service event"
+    assert events[-1]["address"] == VOTING and events[-1]["name"] == "ExecuteVote", "Unexpected Voting service event"
+
     groups = []
     current_group = None
 
-    for event in events:
+    for event in events[:-2]:
         is_start_of_new_group = event["name"] == "LogScriptCall" and event["address"] == VOTING
 
         if is_start_of_new_group:
             current_group = []
             groups.append(current_group)
 
+        assert current_group != None, "Unexpected events chain"
+
         current_group.append(event)
 
-    event_dict_groups = []
-    for group in groups:
-        events = EventDict(group)
-        event_dict_groups.append(events)
-
-    return event_dict_groups
+    return [EventDict(group) for group in groups]
