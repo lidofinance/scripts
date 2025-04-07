@@ -2,7 +2,7 @@
 Tests for voting 03/04/2025 [HOLESKY].
 """
 
-from scripts.vote_2024_12_17_holesky import start_vote
+from scripts.vote_2025_04_03_holesky import start_vote
 from brownie import interface, reverts, chain
 from utils.test.tx_tracing_helpers import *
 from utils.config import contracts, LDO_HOLDER_ADDRESS_FOR_TESTS
