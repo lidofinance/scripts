@@ -44,7 +44,7 @@ def test_increase_nop_staking_limit(
             {"from": contracts.voting},
         )
 
-    calldata = _encode_calldata(("uint256","uint256"), [no_id, new_staking_limit])
+    calldata = _encode_calldata(("uint256", "uint256"), [no_id, new_staking_limit])
 
     create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
 
