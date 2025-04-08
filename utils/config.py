@@ -35,9 +35,9 @@ elif network_name() in ("holesky", "holesky-fork"):
 elif network_name() in ("sepolia", "sepolia-fork"):
     print(f'Using {color("yellow")}config_sepolia.py{color} addresses')
     from configs.config_sepolia import *
-elif network_name() in ("hoodie", "hoodie-fork"):
-    print(f'Using {color("cyan")}config_hoodie.py{color} addresses')
-    from configs.config_hoodie import *
+elif network_name() in ("hoodi", "hoodi-fork"):
+    print(f'Using {color("cyan")}config_hoodi.py{color} addresses')
+    from configs.config_hoodi import *
 else:
     print(f'Using {color("magenta")}config_mainnet.py{color} addresses')
     from configs.config_mainnet import *
@@ -53,7 +53,7 @@ def get_is_live() -> bool:
         "mainnet-fork",
         "holesky-fork",
         "sepolia-fork",
-        "hoodie-fork",
+        "hoodi-fork",
     ]
     return network.show_active() not in dev_networks
 

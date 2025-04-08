@@ -14,9 +14,9 @@ live:
     networks:
       - chainid: 7032118028
         explorer: https://hoodi.cloud.blockscout.com/api/v2
-        host: $HOODIE_RPC_URL
-        id: hoodie
-        name: Hoodie
+        host: $HOODI_RPC_URL
+        id: hoodi
+        name: hoodi
 
 development:
   - cmd: ./ganache.sh
@@ -98,6 +98,6 @@ development:
       mnemonic: brownie
       port: 8545
     host: http://127.0.0.1
-    id: hoodie-fork
-    name: Ganache-CLI (Hoodie Fork)
+    id: hoodi-fork
+    name: Ganache-CLI (hoodi Fork)
     timeout: 360
