@@ -57,9 +57,9 @@ def create_and_enact_payment_motion(
         is_stables_factory = False
 
     calldata = (
-        _encode_calldata(["address","address[]","uint256[]"], [token.address, recievers_addresses, transfer_amounts])
+        _encode_calldata(["address", "address[]", "uint256[]"], [token.address, recievers_addresses, transfer_amounts])
         if is_stables_factory
-        else _encode_calldata(["address[]","uint256[]"], [recievers_addresses, transfer_amounts])
+        else _encode_calldata(["address[]", "uint256[]"], [recievers_addresses, transfer_amounts])
     )
 
     create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger)
