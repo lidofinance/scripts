@@ -11,7 +11,7 @@ Release part of the update before the Pectra upgrade
 8. Update CSFeeOracle 0x4D4074628678Bd302921c20573EEa1ed38DdF7FB consensus version to 2
 9. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle 0x4D4074628678Bd302921c20573EEa1ed38DdF7FB from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c
 10. Revoke VERIFIER_ROLE role on CSM 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F from old CS Verifier 0x3Dfc50f22aCA652a0a6F28a0F892ab62074b5583
-11. Grant VERIFIER_ROLE role on CSM 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F to new CS Verifier <TODO: new verifier address>
+11. Grant VERIFIER_ROLE role on CSM 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F to new CS Verifier 0x0c345dFa318f9F4977cdd4f33d80F9D0ffA38e8B
 """
 
 import time
@@ -164,7 +164,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "11. Grant VERIFIER_ROLE role on CSM 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F to new CS Verifier <TODO: new verifier address>",
+            "11. Grant VERIFIER_ROLE role on CSM 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F to new CS Verifier 0x0c345dFa318f9F4977cdd4f33d80F9D0ffA38e8B",
             agent_forward(
                 [
                     encode_oz_grant_role(

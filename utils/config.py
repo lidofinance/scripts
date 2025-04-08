@@ -10,7 +10,6 @@ from brownie.network.account import Account, LocalAccount
 
 from brownie import Contract, web3
 
-
 MAINNET_VOTE_DURATION = 5 * 24 * 60 * 60
 
 
