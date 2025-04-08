@@ -1,4 +1,4 @@
-from scripts.before_pectra_upgrade import start_vote
+from scripts.vote_23_04_2025 import start_vote
 from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS
 from brownie import interface, Contract
 from utils.test.tx_tracing_helpers import *
