@@ -35,7 +35,7 @@ cd scripts
 #### Step 3. Run the container
 Run the container in the `scripts` directory and specify the ENV VARs:
 ```shell
-docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d -p 2222:22 --rm ghcr.io/lidofinance/scripts:v10
+docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d --rm ghcr.io/lidofinance/scripts:v10
 
 ```
 Note: *It may take up to 1 minute for the container to initialize properly the first time.*
@@ -181,8 +181,7 @@ To start a new vote please provide the `DEPLOYER` brownie account name (wallet):
 export DEPLOYER=<brownie_wallet_name>
 ```
 
-To run tests with a contract name resolution guided by the Etherscan you should
-provide the etherscan API token:
+To run scripts that require decoding of EVM scripts and tests with contract name resolution via Etherscan you should provide the etherscan API token:
 
 ```bash
 export ETHERSCAN_TOKEN=<etherscan_api_key>
