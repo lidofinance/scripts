@@ -36,7 +36,7 @@ def pass_and_exec_dao_vote(vote_id):
             ]
         elif network_name() == "holesky-fork":
             ldo_holders = ["0xBA59A84C6440E8cccfdb5448877E26F1A431Fc8B", "0x1D835790d93a28fb30d998C0CB27426E5D2D7C8c"]
-        elif network_name() == "hoodie-fork":
+        elif network_name() == "hoodi-fork":
             ldo_holders = ["0xc3C65cB7aa6D36F051f875708b8E17f9a0B210eD"]
 
         for holder_addr in ldo_holders:
