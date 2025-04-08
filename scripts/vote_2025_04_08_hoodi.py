@@ -1,9 +1,9 @@
 """
 Voting 08/04/2025. Hoodi network.
 
-1. Create and grant permission `MANAGE_NODE_OPERATOR_ROLE` on Simple DVT module for `EasyTrackEVMScriptExecutor`
-2. Create and grant permission `SET_NODE_OPERATOR_LIMIT_ROLE` on Simple DVT module for `EasyTrackEVMScriptExecutor`
-3. Create and grant permission `MANAGE_SIGNING_KEYS` on Simple DVT module for `EasyTrackEVMScriptExecutor`
+1. Grant permission `MANAGE_NODE_OPERATOR_ROLE` on Simple DVT module for `EasyTrackEVMScriptExecutor`
+2. Grant permission `SET_NODE_OPERATOR_LIMIT_ROLE` on Simple DVT module for `EasyTrackEVMScriptExecutor`
+3. Transfer permission manager of `MANAGE_SIGNING_KEYS` on Simple DVT module for `EasyTrackEVMScriptExecutor`
 4. Grant `STAKING_ROUTER_ROLE` on Simple DVT module for `EasyTrackEVMScriptExecutor`
 5. Add `AddNodeOperators` EVM script factory with address 0x42f2532ab3d41dfD6030db1EC2fF3DBC8DCdf89a
 6. Add `ActivateNodeOperators` EVM script factory with address 0xfA3B3EE204E1f0f165379326768667300992530e

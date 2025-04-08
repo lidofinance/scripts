@@ -45,7 +45,7 @@ def count_vote_items_by_events(tx: TransactionReceipt, voting_addr: str) -> int:
 
 
 def display_voting_events(tx: TransactionReceipt) -> None:
-    dict_events = EventDict(tx_events_from_receipt(tx))
+    dict_events = EventDict(tx_events_from_trace(tx))
     groups = [_vote_item_group, _service_item_group]
 
     display_tx_events(dict_events, "Events registered during the vote execution", groups)

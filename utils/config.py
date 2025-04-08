@@ -10,8 +10,6 @@ from brownie.network.account import Account, LocalAccount
 
 from brownie import Contract, web3
 
-MAINNET_VOTE_DURATION = 5 * 24 * 60 * 60
-
 
 def network_name() -> Optional[str]:
     if network.show_active() is not None:
@@ -41,6 +39,14 @@ elif network_name() in ("hoodi", "hoodi-fork"):
 else:
     print(f'Using {color("magenta")}config_mainnet.py{color} addresses')
     from configs.config_mainnet import *
+
+
+def get_vote_duration() -> int:
+    """
+    Get the vote duration in seconds.
+    """
+    voting = interface.Voting(VOTING)
+    return voting.voteTime() + voting.objectionPhaseTime()
 
 
 def get_is_live() -> bool:

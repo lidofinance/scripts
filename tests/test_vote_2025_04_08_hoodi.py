@@ -36,8 +36,6 @@ STAKING_ROUTER_ROLE = "0xbb75b874360e0bfd87f964eadd8276d8efb7c942134fc329b513032
 MANAGE_NODE_OPERATOR_ROLE = "0x78523850fdd761612f46e844cf5a16bda6b3151d6ae961fd7e8e7b92bfbca7f8"
 SET_NODE_OPERATOR_LIMIT_ROLE = "0x07b39e0faf2521001ae4e58cb9ffd3840a63e205d288dc9c93c3774f0d794754"
 MANAGE_SIGNING_KEYS = "0x75abc64490e17b40ea1e66691c3eb493647b24430b358bd87ec3e5127f1621ee"
-MAX_ACCOUNTING_EXTRA_DATA_LIST_ITEMS_COUNT_ROLE = "0x0cf253eb71298c92e2814969a122f66b781f9b217f8ecde5401e702beb9345f6"
-MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_COUNT_ROLE = "0xf6ac39904c42f8e23056f1b678e4892fc92caa68ae836dc474e137f0e67f5716"
 
 
 def test_vote(helpers, accounts, vote_ids_from_env):
@@ -74,7 +72,7 @@ def test_vote(helpers, accounts, vote_ids_from_env):
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
         vote_id, _ = start_vote(tx_params, silent=True)
 
-    vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
+    vote_tx = helpers.execute_vote(accounts, vote_id, voting)
 
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
@@ -154,14 +152,12 @@ def test_vote(helpers, accounts, vote_ids_from_env):
     )
 
     # validate vote events
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 12, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, voting) == 12, "Incorrect voting items count"
 
     metadata = find_metadata_by_vote_id(vote_id)
     print("metadata", metadata)
 
     # assert get_lido_vote_cid_from_str(metadata) == "xxxxx"
-
-    display_voting_events(vote_tx)
 
     evs = group_voting_events_from_receipt(vote_tx)
 
