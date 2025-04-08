@@ -97,7 +97,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         # Attach new Easy Track EVM Script Factories for the Simple DVT Module to Easy Track registry
         #
         (
-            "5) Add `AddNodeOperators` EVM script factory with address 0xcAa3AF7460E83E665EEFeC73a7a542E5005C9639",
+            "5) Add `AddNodeOperators` EVM script factory with address 0x42f2532ab3d41dfD6030db1EC2fF3DBC8DCdf89a",
             add_evmscript_factory(
                 factory=EASYTRACK_SIMPLE_DVT_ADD_NODE_OPERATORS_FACTORY,
                 permissions=(
@@ -107,7 +107,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "6) Add `ActivateNodeOperators` EVM script factory with address 0xCBb418F6f9BFd3525CE6aADe8F74ECFEfe2DB5C8",
+            "6) Add `ActivateNodeOperators` EVM script factory with address 0xfA3B3EE204E1f0f165379326768667300992530e",
             add_evmscript_factory(
                 factory=EASYTRACK_SIMPLE_DVT_ACTIVATE_NODE_OPERATORS_FACTORY,
                 permissions=(
@@ -117,7 +117,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "7) Add `DeactivateNodeOperators` EVM script factory with address 0x8B82C1546D47330335a48406cc3a50Da732672E7",
+            "7) Add `DeactivateNodeOperators` EVM script factory with address 0x3114bEbC222Faec27DF8AB7f9bD8dF2063d7fc77",
             add_evmscript_factory(
                 factory=EASYTRACK_SIMPLE_DVT_DEACTIVATE_NODE_OPERATORS_FACTORY,
                 permissions=(
@@ -127,14 +127,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "8) Add `SetVettedValidatorsLimits` EVM script factory with address 0xD75778b855886Fc5e1eA7D6bFADA9EB68b35C19D",
+            "8) Add `SetVettedValidatorsLimits` EVM script factory with address 0x956c5dC6cfc8603b2293bF8399B718cbf61a9dda",
             add_evmscript_factory(
                 factory=EASYTRACK_SIMPLE_DVT_SET_VETTED_VALIDATORS_LIMITS_FACTORY,
                 permissions=(create_permissions(contracts.simple_dvt, "setNodeOperatorStakingLimit")),
             ),
         ),
         (
-            "9) Add `UpdateTargetValidatorLimits` EVM script factory with address 0x41CF3DbDc939c5115823Fba1432c4EC5E7bD226C",
+            "9) Add `UpdateTargetValidatorLimits` EVM script factory with address 0xc3975Bc4091B585c57357990155B071111d7f4f8",
             add_evmscript_factory(
                 factory=EASYTRACK_SIMPLE_DVT_UPDATE_TARGET_VALIDATOR_LIMITS_FACTORY,
                 permissions=(
@@ -145,21 +145,21 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "10) Add `SetNodeOperatorNames` EVM script factory with address 0x7d509BFF310d9460b1F613e4e40d342201a83Ae4",
+            "10) Add `SetNodeOperatorNames` EVM script factory with address 0x2F98760650922cf65f1b596635bC5835b6E561d4",
             add_evmscript_factory(
                 factory=EASYTRACK_SIMPLE_DVT_SET_NODE_OPERATOR_NAMES_FACTORY,
                 permissions=(create_permissions(contracts.simple_dvt, "setNodeOperatorName")),
             ),
         ),
         (
-            "11) Add `SetNodeOperatorRewardAddresses` EVM script factory with address 0x589e298964b9181D9938B84bB034C3BB9024E2C0",
+            "11) Add `SetNodeOperatorRewardAddresses` EVM script factory with address 0x3d267e4f8d9dCcc83c2DE66729e6A5B2B0856e31",
             add_evmscript_factory(
                 factory=EASYTRACK_SIMPLE_DVT_SET_NODE_OPERATOR_REWARD_ADDRESSES_FACTORY,
                 permissions=(create_permissions(contracts.simple_dvt, "setNodeOperatorRewardAddress")),
             ),
         ),
         (
-            "12) Add `ChangeNodeOperatorManagers` EVM script factory with address 0xE31A0599A6772BCf9b2bFc9e25cf941e793c9a7D",
+            "12) Add `ChangeNodeOperatorManagers` EVM script factory with address 0x8a437cd5685e270cDDb347eeEfEbD22109Fa42a9",
             add_evmscript_factory(
                 factory=EASYTRACK_SIMPLE_DVT_CHANGE_NODE_OPERATOR_MANAGERS_FACTORY,
                 permissions=(
@@ -187,7 +187,7 @@ def main():
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 
-    vote_id, _ = start_vote(tx_params=tx_params, silent=True)
+    vote_id, _ = start_vote(tx_params=tx_params, silent=False)
 
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 
