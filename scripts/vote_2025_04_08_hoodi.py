@@ -36,10 +36,7 @@ from utils.config import (
     EASYTRACK_SIMPLE_DVT_UPDATE_TARGET_VALIDATOR_LIMITS_FACTORY,
     EASYTRACK_SIMPLE_DVT_CHANGE_NODE_OPERATOR_MANAGERS_FACTORY,
 )
-from utils.permissions import (
-    encode_permission_create,
-    encode_permission_grant,
-)
+from utils.permissions import encode_permission_create, encode_permission_grant, encode_set_permission_manager
 from utils.easy_track import add_evmscript_factory, create_permissions, create_permissions_for_overloaded_method
 
 
@@ -59,30 +56,27 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         # Grant permissions to EasyTrackEVMScriptExecutor to make operational changes to Simple DVT module
         #
         (
-            "1) Create and grant permission `MANAGE_NODE_OPERATOR_ROLE` on Simple DVT module for `EasyTrackEVMScriptExecutor`",
-            encode_permission_create(
-                entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
+            "1) Grant permission `MANAGE_NODE_OPERATOR_ROLE` on Simple DVT module for `EasyTrackEVMScriptExecutor`",
+            encode_permission_grant(
                 target_app=contracts.simple_dvt,
                 permission_name="MANAGE_NODE_OPERATOR_ROLE",
-                manager=contracts.agent,
+                grant_to=EASYTRACK_EVMSCRIPT_EXECUTOR,
             ),
         ),
         (
-            "2) Create and grant permission `SET_NODE_OPERATOR_LIMIT_ROLE` on Simple DVT module for `EasyTrackEVMScriptExecutor`",
-            encode_permission_create(
-                entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
+            "2) Grant permission `SET_NODE_OPERATOR_LIMIT_ROLE` on Simple DVT module for `EasyTrackEVMScriptExecutor`",
+            encode_permission_grant(
                 target_app=contracts.simple_dvt,
                 permission_name="SET_NODE_OPERATOR_LIMIT_ROLE",
-                manager=contracts.agent,
+                grant_to=EASYTRACK_EVMSCRIPT_EXECUTOR,
             ),
         ),
         (
-            "3) Create and grant permission `MANAGE_SIGNING_KEYS` on Simple DVT module for `EasyTrackEVMScriptExecutor`",
-            encode_permission_create(
-                entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
+            "3) Transfer permission manager of `MANAGE_SIGNING_KEYS` on Simple DVT module for `EasyTrackEVMScriptExecutor`",
+            encode_set_permission_manager(
+                new_manager=EASYTRACK_EVMSCRIPT_EXECUTOR,
                 target_app=contracts.simple_dvt,
                 permission_name="MANAGE_SIGNING_KEYS",
-                manager=EASYTRACK_EVMSCRIPT_EXECUTOR,
             ),
         ),
         (

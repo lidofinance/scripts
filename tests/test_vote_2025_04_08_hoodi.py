@@ -22,16 +22,16 @@ from utils.test.event_validators.permission import (
     Permission,
     validate_permission_grant_event,
     validate_permission_create_event,
+    validate_set_permission_manager_event,
 )
 from utils.test.event_validators.easy_track import (
     validate_evmscript_factory_added_event,
     EVMScriptFactoryAdded,
 )
-from utils.easy_track import create_permissions
+from utils.easy_track import create_permissions, create_permissions_for_overloaded_method
 from utils.voting import find_metadata_by_vote_id
 
 
-REQUEST_BURN_SHARES_ROLE = "0x4be29e0e4eb91f98f709d98803cba271592782e293b84a625e025cbb40197ba8"
 STAKING_ROUTER_ROLE = "0xbb75b874360e0bfd87f964eadd8276d8efb7c942134fc329b513032d0803e0c6"
 MANAGE_NODE_OPERATOR_ROLE = "0x78523850fdd761612f46e844cf5a16bda6b3151d6ae961fd7e8e7b92bfbca7f8"
 SET_NODE_OPERATOR_LIMIT_ROLE = "0x07b39e0faf2521001ae4e58cb9ffd3840a63e205d288dc9c93c3774f0d794754"
@@ -154,7 +154,7 @@ def test_vote(helpers, accounts, vote_ids_from_env):
     )
 
     # validate vote events
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 22, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 12, "Incorrect voting items count"
 
     metadata = find_metadata_by_vote_id(vote_id)
     print("metadata", metadata)
@@ -163,7 +163,7 @@ def test_vote(helpers, accounts, vote_ids_from_env):
 
     display_voting_events(vote_tx)
 
-    evs = group_voting_events(vote_tx)
+    evs = group_voting_events_from_receipt(vote_tx)
 
     # Grant permissions to make operational changes to SimpleDVT module
     permission = Permission(
@@ -171,28 +171,25 @@ def test_vote(helpers, accounts, vote_ids_from_env):
         app=simple_dvt,
         role=MANAGE_NODE_OPERATOR_ROLE,  # simple_dvt.MANAGE_NODE_OPERATOR_ROLE(),
     )
-    validate_permission_create_event(evs[6], permission, manager=voting)
+    validate_permission_grant_event(evs[0], permission)
 
     permission = Permission(
         entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
         app=simple_dvt,
         role=SET_NODE_OPERATOR_LIMIT_ROLE,  # simple_dvt.SET_NODE_OPERATOR_LIMIT_ROLE(),
     )
-    validate_permission_create_event(evs[7], permission, manager=voting)
+    validate_permission_grant_event(evs[1], permission)
 
-    permission = Permission(
-        entity=EASYTRACK_EVMSCRIPT_EXECUTOR,
-        app=simple_dvt,
-        role=MANAGE_SIGNING_KEYS,  # simple_dvt.MANAGE_SIGNING_KEYS(),
+    validate_set_permission_manager_event(
+        evs[2], app=simple_dvt, role=MANAGE_SIGNING_KEYS, manager=EASYTRACK_EVMSCRIPT_EXECUTOR
     )
-    validate_permission_create_event(evs[8], permission, manager=EASYTRACK_EVMSCRIPT_EXECUTOR)
 
     permission = Permission(entity=EASYTRACK_EVMSCRIPT_EXECUTOR, app=simple_dvt, role=STAKING_ROUTER_ROLE)
-    validate_permission_grant_event(evs[9], permission)
+    validate_permission_grant_event(evs[3], permission)
 
     # Add EasyTrack EVM script factories for SimpleDVT module
     validate_evmscript_factory_added_event(
-        evs[10],
+        evs[4],
         EVMScriptFactoryAdded(
             factory_addr=add_node_operators_evm_script_factory,
             permissions=create_permissions(simple_dvt, "addNodeOperator")
@@ -200,7 +197,7 @@ def test_vote(helpers, accounts, vote_ids_from_env):
         ),
     )
     validate_evmscript_factory_added_event(
-        evs[11],
+        evs[5],
         EVMScriptFactoryAdded(
             factory_addr=activate_node_operators_evm_script_factory,
             permissions=create_permissions(simple_dvt, "activateNodeOperator")
@@ -208,7 +205,7 @@ def test_vote(helpers, accounts, vote_ids_from_env):
         ),
     )
     validate_evmscript_factory_added_event(
-        evs[12],
+        evs[6],
         EVMScriptFactoryAdded(
             factory_addr=deactivate_node_operators_evm_script_factory,
             permissions=create_permissions(simple_dvt, "deactivateNodeOperator")
@@ -216,44 +213,42 @@ def test_vote(helpers, accounts, vote_ids_from_env):
         ),
     )
     validate_evmscript_factory_added_event(
-        evs[13],
+        evs[7],
         EVMScriptFactoryAdded(
             factory_addr=set_vetted_validators_limits_evm_script_factory,
             permissions=create_permissions(simple_dvt, "setNodeOperatorStakingLimit"),
         ),
     )
     validate_evmscript_factory_added_event(
-        evs[14],
+        evs[8],
         EVMScriptFactoryAdded(
             factory_addr=update_target_validator_limits_evm_script_factory,
-            permissions=create_permissions(simple_dvt, "updateTargetValidatorsLimits"),
+            permissions=(
+                create_permissions_for_overloaded_method(
+                    contracts.simple_dvt, "updateTargetValidatorsLimits", ("uint", "uint", "uint")
+                )
+            ),
         ),
     )
     validate_evmscript_factory_added_event(
-        evs[15],
+        evs[9],
         EVMScriptFactoryAdded(
             factory_addr=set_node_operator_names_evm_script_factory,
             permissions=create_permissions(simple_dvt, "setNodeOperatorName"),
         ),
     )
     validate_evmscript_factory_added_event(
-        evs[16],
+        evs[10],
         EVMScriptFactoryAdded(
             factory_addr=set_node_operator_reward_addresses_evm_script_factory,
             permissions=create_permissions(simple_dvt, "setNodeOperatorRewardAddress"),
         ),
     )
     validate_evmscript_factory_added_event(
-        evs[17],
+        evs[11],
         EVMScriptFactoryAdded(
             factory_addr=change_node_operator_managers_evm_script_factory,
             permissions=create_permissions(contracts.acl, "revokePermission")
             + create_permissions(contracts.acl, "grantPermissionP")[2:],
         ),
-    )
-
-
-def has_permission(permission: Permission, how: List[int]) -> bool:
-    return contracts.acl.hasPermission["address,address,bytes32,uint[]"](
-        permission.entity, permission.app, permission.role, how
     )
