@@ -37,7 +37,7 @@ def display_voting_call_trace(tx: TransactionReceipt) -> None:
 
 
 def count_vote_items_by_events(tx: TransactionReceipt, voting_addr: str) -> int:
-    events = tx_events_from_trace(tx)
+    events = tx_events_from_receipt(tx)
     ev_dict = EventDict(events)
 
     calls_slice = ev_dict["LogScriptCall"]
@@ -45,22 +45,22 @@ def count_vote_items_by_events(tx: TransactionReceipt, voting_addr: str) -> int:
 
 
 def display_voting_events(tx: TransactionReceipt) -> None:
-    dict_events = EventDict(tx_events_from_trace(tx))
+    dict_events = EventDict(tx_events_from_receipt(tx))
     groups = [_vote_item_group, _service_item_group]
 
     display_tx_events(dict_events, "Events registered during the vote execution", groups)
 
 
 def group_voting_events(tx: TransactionReceipt) -> List[EventDict]:
-    events = tx_events_from_trace(tx)
+    events = tx_events_from_receipt(tx)
 
     def add_event_emitter(event):
-        event['data'].append({'name': '_emitted_by', 'type': 'address', 'value': event['address'], 'decoded': True})
+        event["data"].append({"name": "_emitted_by", "type": "address", "value": event["address"], "decoded": True})
         return event
-    
+
     # manually add event emitter address because it is dropped by EventDict class
     events = [add_event_emitter(e) for e in events]
-    
+
     groups = [_vote_item_group, _service_item_group]
 
     grouped_events = group_tx_events(events, EventDict(events), groups)
