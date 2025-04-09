@@ -52,7 +52,7 @@ def display_voting_events(tx: TransactionReceipt) -> None:
 
 
 def group_voting_events(tx: TransactionReceipt) -> List[EventDict]:
-    events = tx_events_from_receipt(tx)
+    events = tx_events_from_trace(tx)
 
     def add_event_emitter(event):
         event["data"].append({"name": "_emitted_by", "type": "address", "value": event["address"], "decoded": True})
