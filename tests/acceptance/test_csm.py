@@ -158,4 +158,4 @@ def test_verifier_state(verifier):
     assert verifier.GI_FIRST_VALIDATOR_PREV() == HexString("0x0000000000000000000000000000000000000000000000000056000000000028", "bytes")
     assert verifier.GI_FIRST_VALIDATOR_CURR() == HexString("0x0000000000000000000000000000000000000000000000000096000000000028", "bytes")
     assert verifier.FIRST_SUPPORTED_SLOT() == 8626176
-    assert verifier.PIVOT_SLOT() == 18446744073709551615 # TODO: Update with Electra slot.
+    assert verifier.PIVOT_SLOT() == 11649024
