@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 from brownie import chain, accounts, interface
 
-from utils.config import VOTING, network_name
+from utils.config import VOTING, LDO_VOTE_EXECUTORS_FOR_TESTS, get_vote_duration
 
 
 @contextmanager
@@ -27,26 +27,17 @@ def pass_and_exec_dao_vote(vote_id):
     if not dao_voting.canExecute(vote_id):
         print(f"Passing vote {vote_id}")
 
-        if network_name() == "mainnet-fork":
-            # together these accounts hold 15% of LDO total supply
-            ldo_holders = [
-                "0x3e40d73eb977dc6a537af587d48316fee66e9c8c",
-                "0xb8d83908aab38a159f3da47a59d84db8e1838712",
-                "0xa2dfc431297aee387c05beef507e5335e684fbcd",
-            ]
-        elif network_name() == "holesky-fork":
-            ldo_holders = ["0xBA59A84C6440E8cccfdb5448877E26F1A431Fc8B", "0x1D835790d93a28fb30d998C0CB27426E5D2D7C8c"]
-        elif network_name() == "hoodi-fork":
-            ldo_holders = ["0xc3C65cB7aa6D36F051f875708b8E17f9a0B210eD"]
-
-        for holder_addr in ldo_holders:
+        for holder_addr in LDO_VOTE_EXECUTORS_FOR_TESTS:
             print(f"  voting from {holder_addr}")
             helper_acct.transfer(holder_addr, "1 ether", silent=True)
             account = accounts.at(holder_addr, force=True)
             dao_voting.vote(vote_id, True, False, {"from": account, "silent": True})
 
         # wait for the vote to end
-        chain.sleep(5 * 60 * 60 * 24)
+        time_to_end = dao_voting.getVote(vote_id)["startDate"] + get_vote_duration() - chain.time()
+        if time_to_end > 0:
+            chain.sleep(time_to_end)
+
         chain.mine()
 
         assert dao_voting.canExecute(vote_id)
