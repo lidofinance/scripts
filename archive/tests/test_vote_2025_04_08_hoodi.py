@@ -6,7 +6,7 @@ Tests for voting 08/04/2025. Hoodi network.
 import pytest
 from typing import List
 from brownie import interface
-from scripts.vote_2025_04_08_hoodi import start_vote
+from archive.scripts.vote_2025_04_08_hoodi import start_vote
 
 from utils.test.simple_dvt_helpers import (
     fill_simple_dvt_ops,

@@ -13,6 +13,9 @@ Voting 08/04/2025. Hoodi network.
 10. Add `SetNodeOperatorNames` EVM script factory with address 0x2F98760650922cf65f1b596635bC5835b6E561d4
 11. Add `SetNodeOperatorRewardAddresses` EVM script factory with address 0x3d267e4f8d9dCcc83c2DE66729e6A5B2B0856e31
 12. Add `ChangeNodeOperatorManagers` EVM script factory with address 0x8a437cd5685e270cDDb347eeEfEbD22109Fa42a9
+
+Vote# 20 passed & executed on 09/04/2025, block #149578.
+
 """
 
 import time
