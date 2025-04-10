@@ -1,3 +1,9 @@
+"""
+Dual Governance Launch on Holesky testnet
+
+Vote #568 passed & executed on 04/04/2024 at 01:59 PM UTC, block #3614343.
+"""
+
 import time
 
 from typing import Dict

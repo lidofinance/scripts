@@ -4,7 +4,7 @@ import os
 from typing import NamedTuple, List
 from brownie import web3, chain, interface, ZERO_ADDRESS, accounts
 from hexbytes import HexBytes
-from scripts.dual_governance_upgrade import start_vote
+from scripts.dual_governance_upgrade_holesky import start_vote
 from utils.config import contracts
 from brownie.network.transaction import TransactionReceipt
 from utils.test.tx_tracing_helpers import *
