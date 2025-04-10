@@ -96,7 +96,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "4. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle 0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6 to Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c",
+            "4. Grant MANAGE_CONSENSUS_VERSION_ROLE role on Validator Exit Bus Oracle 0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e to Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c",
             agent_forward(
                 [
                     encode_oz_grant_role(
