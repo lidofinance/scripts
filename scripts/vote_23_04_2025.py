@@ -44,7 +44,20 @@ CS_FEE_ORACLE_CONSENSUS_VERSION = 2
 
 description = """
 **Pectra Hardfork Compatibility**
-Changes include adjustments to oracle algorithms, Oracle Report Sanity Checker limits, and the CS Verifier.
+
+1. Upgrade the Oracle components and replace the CS Verifier contract to ensure compatibility with the upcoming Ethereum Pectra hardfork, as outlined in [LIP-27](https://github.com/lidofinance/lido-improvement-proposals/blob/develop/LIPS/lip-27.md) and discussed [on the forum](https://research.lido.fi/t/lip-27-ensuring-compatibility-with-ethereum-s-pectra-upgrade/9444).
+
+Increment the consensus versions for the following oracle contracts:
+
+    Accounting Oracle: v2 → v3
+    Validator Exit Bus Oracle: v2 → v3
+    CSM Fee Oracle: v1 → v2
+This enables the use of a new algorithm that ensures correct oracle behavior before and after the Pectra hardfork. Items 1–9.
+
+2. Replace the CS Verifier contract with a new implementation compatible with the Pectra hardfork.
+The new contract removes slashing report functionality and reflects the updated gIndex structure. Items 10-11.
+
+Proposal approved on [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xb6559f0cdb1164ae5d63769827c4a275805bd944392a17b60cf51ddc54429dc6).
 """
 
 
