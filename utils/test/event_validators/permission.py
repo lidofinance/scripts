@@ -108,3 +108,32 @@ def validate_revoke_role_event(events: EventDict, role: str, revoke_from: str, s
     assert events["RoleRevoked"]["role"] == role, "Wrong role"
     assert events["RoleRevoked"]["account"] == revoke_from, "Wrong account"
     assert events["RoleRevoked"]["sender"] == sender, "Wrong sender"
+
+
+def validate_change_permission_manager_event(event: EventDict, app: str, role: str, manager: str) -> None:
+    _events_chain = ["LogScriptCall", "ChangePermissionManager"]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("ChangePermissionManager") == 1
+
+    assert event["ChangePermissionManager"]["app"] == app, "Wrong app address"
+    assert event["ChangePermissionManager"]["role"] == role, "Wrong role"
+    assert event["ChangePermissionManager"]["manager"] == manager, "Wrong manager"
+
+
+def validate_dg_permission_revoke_event(event: EventDict, p: Permission) -> None:
+    _events_chain = ["LogScriptCall", "SetPermission", "ScriptResult", "Executed"]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("SetPermission") == 1
+    assert event.count("ScriptResult") == 1
+    assert event.count("Executed") == 1
+
+    assert event["SetPermission"]["entity"] == p.entity, "Wrong entity"
+    assert event["SetPermission"]["app"] == p.app, "Wrong app address"
+    assert event["SetPermission"]["role"] == p.role, "Wrong role"
+    assert event["SetPermission"]["allowed"] is False, "Wrong role"
