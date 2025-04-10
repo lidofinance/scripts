@@ -46,7 +46,7 @@ def get_vote_duration() -> int:
     Get the vote duration in seconds.
     """
     voting = interface.Voting(VOTING)
-    return voting.voteTime() + voting.objectionPhaseTime()
+    return voting.voteTime()
 
 
 def get_is_live() -> bool:
