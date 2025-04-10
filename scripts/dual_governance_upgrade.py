@@ -11,11 +11,11 @@ from utils.config import (
 )
 from utils.mainnet_fork import pass_and_exec_dao_vote
 
-voting_contract = ""
+voting_contract = "0xc76b2c80dc713e99fC616b651F3509238DcD2285"
 description = "Dual governance upgrade"
 
 def get_vote_items():
-    voting_items = interface.OmnibusContract(voting_contract).getVoteItems()
+    voting_items = interface.DGLaunchOmnibus(voting_contract).getVoteItems()
 
     vote_desc_items = []
     call_script_items = []
@@ -46,7 +46,7 @@ def main():
 
     vote_id, _ = start_vote(tx_params=tx_params, silent=False)
 
-    assert interface.VotingContract(voting_contract).validateVote(vote_id)
+    assert interface.DGLaunchOmnibus(voting_contract).isValidVoteScript(vote_id)
 
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 
