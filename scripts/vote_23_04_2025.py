@@ -43,22 +43,19 @@ VEBO_CONSENSUS_VERSION = 3
 CS_FEE_ORACLE_CONSENSUS_VERSION = 2
 
 description = """
-**Pectra Hardfork Compatibility**
+**Ensure Compatibility with Ethereum's Pectra Fork**, as approved [on Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xb6559f0cdb1164ae5d63769827c4a275805bd944392a17b60cf51ddc54429dc6):
 
-Upgrade the Oracle components and replace the CS Verifier contract to ensure compatibility with the upcoming Ethereum Pectra hardfork, as outlined in [LIP-27](https://github.com/lidofinance/lido-improvement-proposals/blob/develop/LIPS/lip-27.md) and discussed [on the forum](https://research.lido.fi/t/lip-27-ensuring-compatibility-with-ethereum-s-pectra-upgrade/9444).
+1. **Update oracle consensus versions** to activate the new algorithm that ensures correct behavior before and after the hardfork.  Items 1–9.
 
-1. **Increment the consensus versions** for the following oracle contracts:
+    - [Accounting Oracle](https://etherscan.io/address/0x852deD011285fe67063a08005c71a85690503Cee): v2 → v3
+    - [Validator Exit Bus Oracle](https://etherscan.io/address/0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e): v2 → v3
+    - [CS Fee Oracle](https://etherscan.io/address/0x4D4074628678Bd302921c20573EEa1ed38DdF7FB): v1 → v2
 
-    - Accounting Oracle: v2 → v3
-    - Validator Exit Bus Oracle: v2 → v3
-    - CSM Fee Oracle: v1 → v2
+**Audits by:** [Composable Security](https://github.com/lidofinance/audits/blob/main/Composable%20Security%20Lido%20Oracle%20v5%2004-25.pdf), [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Oracle%20v5%2004-25.pdf). 
 
-    This enables the use of a new algorithm that ensures correct oracle behavior before and after the Pectra hardfork. Items 1–9.
+2. **Update CS Verifier Contract** [on the Community Staking Module](https://etherscan.io/address/0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F) to remove the slashing report functionality and reflect the updated **`gIndexes`** structure. Items 10–11.
 
-2. **Replace the CS Verifier contract** with a new implementation compatible with the Pectra hardfork.
-   The new contract removes slashing report functionality and reflects the updated gIndex structure. Items 10-11.
-
-Proposal approved on [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xb6559f0cdb1164ae5d63769827c4a275805bd944392a17b60cf51ddc54429dc6).
+**Audits by:** [Ackee Blockchain](https://github.com/lidofinance/audits/blob/main/Ackee%20Blockchain%20Lido%20Community%20Staking%20Module%20Report%2004-25.pdf), [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20CSM%20Security%20Audit%20Report%2004-25.pdf) with deployment verification by both teams.
 """
 
 
