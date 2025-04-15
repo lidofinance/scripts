@@ -7,6 +7,7 @@ from utils.test.event_validators.permission import (
     validate_revoke_role_event,
 )
 from utils.test.event_validators.common import validate_events_chain
+from brownie import convert
 
 # Contracts
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
@@ -143,11 +144,14 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
 
 def validate_consensus_version_update(events: list[EventDict], version, emitted_by):
     validate_grant_role_event(events[0], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, emitted_by)
-    validate_consensus_version_set(events[1], version)
+    validate_consensus_version_set(events[1], version, emitted_by)
     validate_revoke_role_event(events[2], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, emitted_by)
 
 
-def validate_consensus_version_set(event: EventDict, version):
+def validate_consensus_version_set(event: EventDict, version, emitted_by):
     _events_chain = ["LogScriptCall", "LogScriptCall", "ConsensusVersionSet", "ScriptResult"]
     validate_events_chain([e.name for e in event], _events_chain)
     assert event["ConsensusVersionSet"]["version"] == version
+    assert convert.to_address(event["ConsensusVersionSet"]["_emitted_by"]) == convert.to_address(
+            emitted_by
+        ), "Wrong event emitter"
