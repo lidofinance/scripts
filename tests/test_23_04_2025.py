@@ -10,13 +10,17 @@ from utils.test.event_validators.common import validate_events_chain
 
 # Contracts
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
-VALIDATORS_EXIT_BUS_ORACLE = "0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e"
-ACCOUNTING_ORACLE = "0x852deD011285fe67063a08005c71a85690503Cee"
+VEBO = "0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e"
+VEBO_IMPL = "0xA89Ea51FddE660f67d1850e03C9c9862d33Bc42c"
+AO = "0x852deD011285fe67063a08005c71a85690503Cee"
+AO_IMPL = "0x0e65898527E77210fB0133D00dd4C0E86Dc29bC7"
 CS_FEE_ORACLE = "0x4D4074628678Bd302921c20573EEa1ed38DdF7FB"
+CS_FEE_ORACLE_IMPL = "0x919ac5C6c62B6ef7B05cF05070080525a7B0381E"
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 CS_VERIFIER_ADDRESS = "0x0c345dFa318f9F4977cdd4f33d80F9D0ffA38e8B"
 CS_VERIFIER_ADDRESS_OLD = "0x3Dfc50f22aCA652a0a6F28a0F892ab62074b5583"
 CSM_ADDRESS = "0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F"
+CSM_IMPL = "0x8daEa53b17a629918CDFAB785C5c74077c1D895B"
 
 # Roles
 MANAGE_CONSENSUS_VERSION_ROLE = "0xc31b1e4b732c5173dc51d519dfa432bad95550ecc4b0f9a61c2a558a2a8e4341"
@@ -33,11 +37,11 @@ CS_FEE_ORACLE_CONSENSUS_VERSION = 2
 
 
 def get_vebo():
-    return interface.ValidatorsExitBusOracle(VALIDATORS_EXIT_BUS_ORACLE)
+    return interface.ValidatorsExitBusOracle(VEBO)
 
 
 def get_ao():
-    return interface.AccountingOracle(ACCOUNTING_ORACLE)
+    return interface.AccountingOracle(AO)
 
 
 def get_cs_fee_oracle():
@@ -119,48 +123,28 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     assert len(events) == 11
 
     # Validate ao consensus version set
-    validate_consensus_version_update(events[:3], AO_CONSENSUS_VERSION)
+    validate_consensus_version_update(events[:3], AO_CONSENSUS_VERSION, AO_IMPL)
 
     # Validate vebo consensus version set
-    validate_consensus_version_update(events[3:6], VEBO_CONSENSUS_VERSION)
+    validate_consensus_version_update(events[3:6], VEBO_CONSENSUS_VERSION, VEBO_IMPL)
 
     # Validate CS Fee Oracle consensus version set
-    validate_consensus_version_update(events[6:9], CS_FEE_ORACLE_CONSENSUS_VERSION)
+    validate_consensus_version_update(events[6:9], CS_FEE_ORACLE_CONSENSUS_VERSION, CS_FEE_ORACLE_IMPL)
 
     # Validate VERIFIER_ROLE role revoke from CS_VERIFIER_ADDRESS_OLD
-    validate_revoke_role_event(
-        events[9],
-        VERIFIER_ROLE,
-        CS_VERIFIER_ADDRESS_OLD,
-        AGENT,
-    )
+    validate_revoke_role_event(events[9], VERIFIER_ROLE, CS_VERIFIER_ADDRESS_OLD, AGENT, CSM_IMPL)
 
     # Validate VERIFIER_ROLE role grant to CS_VERIFIER_ADDRESS_OLD
-    validate_grant_role_event(
-        events[10],
-        VERIFIER_ROLE,
-        CS_VERIFIER_ADDRESS,
-        AGENT,
-    )
+    validate_grant_role_event(events[10], VERIFIER_ROLE, CS_VERIFIER_ADDRESS, AGENT, CSM_IMPL)
 
 
 # Events check
 
 
-def validate_consensus_version_update(events: list[EventDict], version):
-    validate_grant_role_event(
-        events[0],
-        MANAGE_CONSENSUS_VERSION_ROLE,
-        AGENT,
-        AGENT,
-    )
+def validate_consensus_version_update(events: list[EventDict], version, emitted_by):
+    validate_grant_role_event(events[0], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, emitted_by)
     validate_consensus_version_set(events[1], version)
-    validate_revoke_role_event(
-        events[2],
-        MANAGE_CONSENSUS_VERSION_ROLE,
-        AGENT,
-        AGENT,
-    )
+    validate_revoke_role_event(events[2], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, emitted_by)
 
 
 def validate_consensus_version_set(event: EventDict, version):
