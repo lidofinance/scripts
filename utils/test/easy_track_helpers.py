@@ -22,7 +22,17 @@ def create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stran
     motions = easy_track.getMotions()
     assert len(motions) == len(motions_before) + 1
 
-    (motion_id, _, _, motion_duration, motion_start_date, _, _, _, _,)= motions[-1]
+    (
+        motion_id,
+        _,
+        _,
+        motion_duration,
+        motion_start_date,
+        _,
+        _,
+        _,
+        _,
+    ) = motions[-1]
 
     chain.mine(1, motion_start_date + motion_duration + 1)
 
@@ -57,9 +67,9 @@ def create_and_enact_payment_motion(
         is_stables_factory = False
 
     calldata = (
-        _encode_calldata(["address","address[]","uint256[]"], [token.address, recievers_addresses, transfer_amounts])
+        _encode_calldata(["address", "address[]", "uint256[]"], [token.address, recievers_addresses, transfer_amounts])
         if is_stables_factory
-        else _encode_calldata(["address[]","uint256[]"], [recievers_addresses, transfer_amounts])
+        else _encode_calldata(["address[]", "uint256[]"], [recievers_addresses, transfer_amounts])
     )
 
     create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger)
@@ -147,7 +157,6 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
         vote_id=vote_id,
         accounts=accounts,
         dao_voting=dao_voting,
-        skip_time=5 * 60 * 60 * 24,
     )
 
     assert registry.isRecipientAllowed(recipient_candidate)
@@ -172,7 +181,6 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
         vote_id=vote_id,
         accounts=accounts,
         dao_voting=dao_voting,
-        skip_time=5 * 60 * 60 * 24,
     )
 
     assert not registry.isRecipientAllowed(recipient_candidate)
