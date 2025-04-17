@@ -31,3 +31,7 @@ yarn-error.log
 
 # local env
 .envrc
+
+.wake
+
+cache
