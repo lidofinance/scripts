@@ -10,7 +10,7 @@ from brownie.network.transaction import _step_internal, _step_external, _step_co
 from brownie.network.event import EventDict, _topics
 from brownie.network import state
 from brownie.convert.normalize import format_event
-from brownie import web3
+from brownie import web3, interface
 
 from brownie.utils import color
 from brownie.utils.output import build_tree
@@ -70,11 +70,54 @@ def _find_fist_index_of_event_with_different_from_first_event_address(events):
     return len(events)
 
 
+def collect_events_from_abis() -> Dict:
+    """
+    Collect events from all contracts in the project
+
+    Returns
+    -------
+    events : Dict
+        Dictionary with event hash as key and event name and inputs as value
+    """
+
+    events_signatures = {}
+
+    for interface_name in list(interface.__dict__)[1:]:
+        contract_abi = interface.__dict__[interface_name].abi
+        events_only = [item for item in contract_abi if item.get("type") == "event"]
+        for event in events_only:
+
+            event_name = event["name"]
+            event_inputs = event["inputs"]
+
+            input_types = [inp["type"] for inp in event_inputs]
+            signature_str = event_name + "(" + ",".join(input_types) + ")"
+            event_signature = web3.keccak(text=signature_str).hex()
+
+            events_signatures[event_signature] = {
+                "name": event_name,
+                "inputs": event_inputs,
+            }
+
+    for topic in events_signatures:
+        if topic not in _topics:
+            _topics[topic] = events_signatures[topic]
+        else:
+            # check if the event name is the same
+            if _topics[topic]["name"] != events_signatures[topic]["name"]:
+                raise Exception(f"Event {topic} has different names in ABI")
+            # check if the event inputs are the same
+            for i in range(len(_topics[topic]["inputs"])):
+                if _topics[topic]["inputs"][i]["type"] != events_signatures[topic]["inputs"][i]["type"]:
+                    raise Exception(f"Event {topic} has different inputs in ABI")
+
+
 def tx_events_from_receipt(tx: TransactionReceipt) -> List:
     if not tx.status:
         raise "Tx has reverted status (set to 0)"
 
     result = web3.provider.make_request("eth_getTransactionReceipt", [tx.txid])
+    collect_events_from_abis()
     events = decode_logs(result["result"]["logs"], _topics, allow_undecoded=True)
     return [format_event(i) for i in events]
 
@@ -107,6 +150,8 @@ def tx_events_from_trace(tx: TransactionReceipt) -> Optional[List]:
     trace = _align_logdata_len(trace)
 
     initial_address = str(tx.receiver or tx.contract_address)
+
+    collect_events_from_abis()
 
     events = decode_traceTransaction(trace, _topics, allow_undecoded=True, initial_address=initial_address)
     print(f" Done")
