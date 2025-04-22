@@ -9,6 +9,9 @@ from utils.test.event_validators.permission import (
 from utils.test.event_validators.common import validate_events_chain
 from brownie import convert
 
+from utils.voting import find_metadata_by_vote_id
+from utils.ipfs import get_lido_vote_cid_from_str
+
 # Contracts
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 VEBO = "0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e"
@@ -120,6 +123,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, bypass_events_decoding, stra
     # Events check
     display_voting_events(vote_tx)
     events = group_voting_events(vote_tx)
+
+    metadata = find_metadata_by_vote_id(vote_id)
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreifxv3nmowbp3trdwzb3ybyrlhbjccchesmweaoicmua25lqto2xte"
 
     assert len(events) == 11
 
