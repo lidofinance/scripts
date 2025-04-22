@@ -15,8 +15,8 @@ from utils.config import (
     get_priority_fee,
 )
 
-voting_contract = "0xB26Fd3b50280AbC55c572EE73071778A51088408"
-description = "Dual governance upgrade"
+voting_contract = "" # TODO: add the actual voting contract address
+description = "" # TODO: add the description
 
 
 def get_vote_items():

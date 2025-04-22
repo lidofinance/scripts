@@ -4,14 +4,13 @@ import os
 from typing import NamedTuple, List
 from brownie import web3, chain, interface, ZERO_ADDRESS, accounts, reverts
 from hexbytes import HexBytes
-from scripts.vote_22_04_2025 import start_vote
+from scripts.vote_05_05_2025_hoodi_dg_launch import start_vote
 from utils.config import contracts
 from brownie.network.transaction import TransactionReceipt
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.dual_governance import (
     validate_dual_governance_submit_event,
-    dg_events_from_trace,
 )
 from utils.agent import agent_forward
 from utils.test.event_validators.time_constraints import (
@@ -37,15 +36,16 @@ from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 
 
-DUAL_GOVERNANCE = "0x2b685e6fB288bBb7A82533BAfb679FfDF6E5bb33"
-TIMELOCK = "0x0eCc17597D292271836691358B22340b78F3035B"
-DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0xD9A95422998fEDe097b7C662B4Df361479c34a3B"
-RESEAL_MANAGER = "0x0A5E22782C0Bd4AddF10D771f0bF0406B038282d"
-DAO_EMERGENCY_GOVERNANCE = "0x1eB27b9563c54b1Cc80DA55F8824252fadDAfa07"
-AGENT_MANAGER = "0xD500a8aDB182F55741E267730dfbfb4F1944C205"
-ROLES_VALIDATOR = "0x98FC7b149767302647D8e1dA1463F0051978826B"
-TIME_CONSTRAINTS = "0x9CCe5BfAcDcf80DAd2287106b57197284DacaE3F"
+DUAL_GOVERNANCE = ""
+TIMELOCK = ""
+DUAL_GOVERNANCE_ADMIN_EXECUTOR = ""
+RESEAL_MANAGER = ""
+DAO_EMERGENCY_GOVERNANCE = ""
+ROLES_VALIDATOR = ""
+TIME_CONSTRAINTS = ""
 
+
+# These addresses can be checked on https://docs.lido.fi/deployed-contracts/hoodi
 ACL = "0x78780e70Eae33e2935814a327f7dB6c01136cc62"
 LIDO = "0x3508A952176b3c15387C97BE809eaffB1982176a"
 KERNEL = "0xA48DF029Fd2e5FCECB3886c5c2F60e3625A1E87d"
@@ -60,6 +60,14 @@ ALLOWED_TOKENS_REGISTRY = "0x40Db7E8047C487bD8359289272c717eA3C34D1D3"
 WITHDRAWAL_VAULT = "0x4473dCDDbf77679A643BdB654dbd86D67F8d32f2"
 WITHDRAWAL_QUEUE = "0xfe56573178f1bcdf53F01A6E9977670dcBBD9186"
 VEBO = "0x8664d394C2B3278F26A1B44B967aEf99707eeAB2"
+UNLIMITED_STAKE = "0x064A4D64040bFD52D0d1dC7f42eA799cb0a8AC40"
+STAKING_ROUTER = "0xCc820558B39ee15C7C45B59390B503b83fb499A8"
+EVM_SCRIPT_EXECUTOR = "0x79a20FD0FA36453B2F45eAbab19bfef43575Ba9E"
+GATE_SEAL = "0x2168Ea6D948Ab49c3D34c667A7e02F92369F3A9C"
+AGENT_MANAGER = "0xD500a8aDB182F55741E267730dfbfb4F1944C205"
+
+DEV_EOA_1 = "0xE28f573b732632fdE03BD5507A7d475383e8512E"
+DEV_EOA_2 = "0xF865A1d43D36c713B4DA085f32b7d1e9739B9275"
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -148,6 +156,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
     # Lido Permissions Transition
     STAKING_CONTROL_ROLE = web3.keccak(text="STAKING_CONTROL_ROLE")
     assert acl.hasPermission(VOTING, LIDO, STAKING_CONTROL_ROLE)
+    assert acl.hasPermission(UNLIMITED_STAKE, LIDO, STAKING_CONTROL_ROLE)
     assert not acl.hasPermission(AGENT, LIDO, STAKING_CONTROL_ROLE)
     assert acl.getPermissionManager(LIDO, STAKING_CONTROL_ROLE) == VOTING
 
@@ -231,34 +240,54 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
     assert not acl.hasPermission(VOTING, CURATED_MODULE, STAKING_ROUTER_ROLE)
     assert not acl.hasPermission(AGENT, CURATED_MODULE, STAKING_ROUTER_ROLE)
     assert acl.getPermissionManager(CURATED_MODULE, STAKING_ROUTER_ROLE) == VOTING
+    assert acl.hasPermission(DEV_EOA_1, CURATED_MODULE, STAKING_ROUTER_ROLE)
+    assert acl.hasPermission(DEV_EOA_2, CURATED_MODULE, STAKING_ROUTER_ROLE)
+    assert acl.hasPermission(STAKING_ROUTER, CURATED_MODULE, STAKING_ROUTER_ROLE)
 
     MANAGE_NODE_OPERATOR_ROLE = web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")
     assert not acl.hasPermission(VOTING, CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE)
-    assert acl.hasPermission(AGENT, CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE)
     assert acl.getPermissionManager(CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE) == VOTING
+    assert acl.hasPermission(AGENT, CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE)
+    assert acl.hasPermission(DEV_EOA_1, CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE)
+    assert acl.hasPermission(DEV_EOA_2, CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE)
 
     SET_NODE_OPERATOR_LIMIT_ROLE = web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")
-    assert acl.hasPermission(VOTING, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
     assert not acl.hasPermission(AGENT, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
     assert acl.getPermissionManager(CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE) == VOTING
+    assert acl.hasPermission(VOTING, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
+    assert acl.hasPermission(DEV_EOA_1, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
+    assert acl.hasPermission(DEV_EOA_2, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
+    assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
 
     MANAGE_SIGNING_KEYS = web3.keccak(text="MANAGE_SIGNING_KEYS")
-    assert acl.hasPermission(VOTING, CURATED_MODULE, MANAGE_SIGNING_KEYS)
     assert not acl.hasPermission(AGENT, CURATED_MODULE, MANAGE_SIGNING_KEYS)
     assert acl.getPermissionManager(CURATED_MODULE, MANAGE_SIGNING_KEYS) == VOTING
+    assert acl.hasPermission(VOTING, CURATED_MODULE, MANAGE_SIGNING_KEYS)
+    assert acl.hasPermission(DEV_EOA_1, CURATED_MODULE, MANAGE_SIGNING_KEYS)
+    assert acl.hasPermission(DEV_EOA_2, CURATED_MODULE, MANAGE_SIGNING_KEYS)
 
     # Simple DVT Module Permissions Transition
+    assert acl.getPermissionManager(SDVT_MODULE, STAKING_ROUTER_ROLE) == VOTING
     assert acl.hasPermission(VOTING, SDVT_MODULE, STAKING_ROUTER_ROLE)
     assert acl.hasPermission(AGENT, SDVT_MODULE, STAKING_ROUTER_ROLE)
-    assert acl.getPermissionManager(SDVT_MODULE, STAKING_ROUTER_ROLE) == VOTING
+    assert acl.hasPermission(DEV_EOA_1, SDVT_MODULE, STAKING_ROUTER_ROLE)
+    assert acl.hasPermission(DEV_EOA_2, SDVT_MODULE, STAKING_ROUTER_ROLE)
+    assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, SDVT_MODULE, STAKING_ROUTER_ROLE)
+    assert acl.hasPermission(STAKING_ROUTER, SDVT_MODULE, STAKING_ROUTER_ROLE)
 
-    assert acl.hasPermission(VOTING, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
-    assert not acl.hasPermission(AGENT, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
     assert acl.getPermissionManager(SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE) == VOTING
+    assert not acl.hasPermission(AGENT, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
+    assert acl.hasPermission(VOTING, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
+    assert acl.hasPermission(DEV_EOA_1, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
+    assert acl.hasPermission(DEV_EOA_2, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
+    assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
 
-    assert acl.hasPermission(VOTING, SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
     assert not acl.hasPermission(AGENT, SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
     assert acl.getPermissionManager(SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE) == VOTING
+    assert acl.hasPermission(VOTING, SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
+    assert acl.hasPermission(DEV_EOA_1, SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
+    assert acl.hasPermission(DEV_EOA_2, SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
+    assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
 
     # ACL Permissions Transition
     CREATE_PERMISSIONS_ROLE = web3.keccak(text="CREATE_PERMISSIONS_ROLE")
@@ -266,16 +295,33 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
     assert not acl.hasPermission(AGENT, ACL, CREATE_PERMISSIONS_ROLE)
     assert acl.getPermissionManager(ACL, CREATE_PERMISSIONS_ROLE) == VOTING
 
+    # Agent Permissions Transition
+    RUN_SCRIPT_ROLE = web3.keccak(text="RUN_SCRIPT_ROLE")
+    assert acl.hasPermission(VOTING, AGENT, RUN_SCRIPT_ROLE)
+    assert not acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, RUN_SCRIPT_ROLE)
+    assert acl.getPermissionManager(AGENT, RUN_SCRIPT_ROLE) == VOTING
+
+    EXECUTE_ROLE = web3.keccak(text="EXECUTE_ROLE")
+    assert acl.hasPermission(VOTING, AGENT, EXECUTE_ROLE)
+    assert not acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, EXECUTE_ROLE)
+    assert acl.getPermissionManager(AGENT, EXECUTE_ROLE) == VOTING
+
     # WithdrawalQueue Roles Transition
     PAUSE_ROLE = web3.keccak(text="PAUSE_ROLE")
     withdrawal_queue = interface.WithdrawalQueue(WITHDRAWAL_QUEUE)
     assert not withdrawal_queue.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
+    assert withdrawal_queue.hasRole(PAUSE_ROLE, GATE_SEAL)
+
     assert not withdrawal_queue.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+    assert withdrawal_queue.hasRole(RESUME_ROLE, AGENT)
 
     # VEBO Roles Transition
     vebo = interface.ValidatorsExitBusOracle(VEBO)
     assert not vebo.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
+    assert vebo.hasRole(PAUSE_ROLE, GATE_SEAL)
+
     assert not vebo.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+    assert vebo.hasRole(RESUME_ROLE, AGENT)
 
     # AllowedTokensRegistry Roles Transition
     allowed_tokens_registry = interface.AllowedTokensRegistry(ALLOWED_TOKENS_REGISTRY)
@@ -296,16 +342,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
     withdrawal_vault = interface.WithdrawalContractProxy(WITHDRAWAL_VAULT)
     assert withdrawal_vault.proxy_getAdmin() == VOTING
 
-    # Agent Permissions Transition
-    RUN_SCRIPT_ROLE = web3.keccak(text="RUN_SCRIPT_ROLE")
-    assert acl.hasPermission(VOTING, AGENT, RUN_SCRIPT_ROLE)
-    assert not acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, RUN_SCRIPT_ROLE)
-    assert acl.getPermissionManager(AGENT, RUN_SCRIPT_ROLE) == VOTING
-
-    EXECUTE_ROLE = web3.keccak(text="EXECUTE_ROLE")
-    assert acl.hasPermission(VOTING, AGENT, EXECUTE_ROLE)
-    assert not acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, EXECUTE_ROLE)
-    assert acl.getPermissionManager(AGENT, EXECUTE_ROLE) == VOTING
 
     # START VOTE
     vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
@@ -316,6 +352,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
     assert not acl.hasPermission(AGENT, LIDO, STAKING_CONTROL_ROLE)
     assert not acl.hasPermission(VOTING, LIDO, STAKING_CONTROL_ROLE)
     assert acl.getPermissionManager(LIDO, STAKING_CONTROL_ROLE) == AGENT
+    assert acl.hasPermission(UNLIMITED_STAKE, LIDO, STAKING_CONTROL_ROLE)
 
     assert not acl.hasPermission(AGENT, LIDO, RESUME_ROLE)
     assert not acl.hasPermission(VOTING, LIDO, RESUME_ROLE)
@@ -382,47 +419,82 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
     assert not acl.hasPermission(VOTING, CURATED_MODULE, STAKING_ROUTER_ROLE)
     assert not acl.hasPermission(AGENT, CURATED_MODULE, STAKING_ROUTER_ROLE)
     assert acl.getPermissionManager(CURATED_MODULE, STAKING_ROUTER_ROLE) == AGENT
+    assert acl.hasPermission(DEV_EOA_1, CURATED_MODULE, STAKING_ROUTER_ROLE)
+    assert acl.hasPermission(DEV_EOA_2, CURATED_MODULE, STAKING_ROUTER_ROLE)
+    assert acl.hasPermission(STAKING_ROUTER, CURATED_MODULE, STAKING_ROUTER_ROLE)
 
     assert not acl.hasPermission(VOTING, CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE)
-    assert acl.hasPermission(AGENT, CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE)
     assert acl.getPermissionManager(CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE) == AGENT
+    assert acl.hasPermission(AGENT, CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE)
+    assert acl.hasPermission(DEV_EOA_1, CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE)
+    assert acl.hasPermission(DEV_EOA_2, CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE)
 
     assert not acl.hasPermission(VOTING, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
     assert not acl.hasPermission(AGENT, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
     assert acl.getPermissionManager(CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE) == AGENT
+    assert acl.hasPermission(DEV_EOA_1, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
+    assert acl.hasPermission(DEV_EOA_2, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
+    assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
 
     assert not acl.hasPermission(VOTING, CURATED_MODULE, MANAGE_SIGNING_KEYS)
     assert not acl.hasPermission(AGENT, CURATED_MODULE, MANAGE_SIGNING_KEYS)
     assert acl.getPermissionManager(CURATED_MODULE, MANAGE_SIGNING_KEYS) == AGENT
+    assert acl.hasPermission(DEV_EOA_1, CURATED_MODULE, MANAGE_SIGNING_KEYS)
+    assert acl.hasPermission(DEV_EOA_2, CURATED_MODULE, MANAGE_SIGNING_KEYS)
 
     # Simple DVT Module Permissions Transition
     assert not acl.hasPermission(VOTING, SDVT_MODULE, STAKING_ROUTER_ROLE)
-    assert acl.hasPermission(AGENT, SDVT_MODULE, STAKING_ROUTER_ROLE)
     assert acl.getPermissionManager(SDVT_MODULE, STAKING_ROUTER_ROLE) == AGENT
+    assert acl.hasPermission(AGENT, SDVT_MODULE, STAKING_ROUTER_ROLE)
+    assert acl.hasPermission(DEV_EOA_1, SDVT_MODULE, STAKING_ROUTER_ROLE)
+    assert acl.hasPermission(DEV_EOA_2, SDVT_MODULE, STAKING_ROUTER_ROLE)
+    assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, SDVT_MODULE, STAKING_ROUTER_ROLE)
+    assert acl.hasPermission(STAKING_ROUTER, SDVT_MODULE, STAKING_ROUTER_ROLE)
 
     assert not acl.hasPermission(VOTING, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
     assert not acl.hasPermission(AGENT, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
     assert acl.getPermissionManager(SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE) == AGENT
+    assert acl.hasPermission(DEV_EOA_1, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
+    assert acl.hasPermission(DEV_EOA_2, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
+    assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
 
     assert not acl.hasPermission(VOTING, SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
     assert not acl.hasPermission(AGENT, SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
     assert acl.getPermissionManager(SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE) == AGENT
+    assert acl.hasPermission(DEV_EOA_1, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
+    assert acl.hasPermission(DEV_EOA_2, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
+    assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
 
     # ACL Permissions Transition
     assert not acl.hasPermission(VOTING, ACL, CREATE_PERMISSIONS_ROLE)
     assert acl.hasPermission(AGENT, ACL, CREATE_PERMISSIONS_ROLE)
     assert acl.getPermissionManager(ACL, CREATE_PERMISSIONS_ROLE) == AGENT
 
+    # Agent Permissions Transition
+    assert acl.hasPermission(AGENT_MANAGER, AGENT, RUN_SCRIPT_ROLE)
+    assert acl.hasPermission(VOTING, AGENT, RUN_SCRIPT_ROLE)
+    assert acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, RUN_SCRIPT_ROLE)
+    assert acl.getPermissionManager(AGENT, RUN_SCRIPT_ROLE) == AGENT
+
+    assert acl.hasPermission(VOTING, AGENT, EXECUTE_ROLE)
+    assert acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, EXECUTE_ROLE)
+    assert acl.getPermissionManager(AGENT, EXECUTE_ROLE) == AGENT
+
     # WithdrawalQueue Roles Transition
     withdrawal_queue = interface.WithdrawalQueue(WITHDRAWAL_QUEUE)
     assert withdrawal_queue.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
+    assert withdrawal_queue.hasRole(PAUSE_ROLE, GATE_SEAL)
+
     assert withdrawal_queue.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+    assert withdrawal_queue.hasRole(RESUME_ROLE, AGENT)
 
     # VEBO Roles Transition
     vebo = interface.ValidatorsExitBusOracle(VEBO)
     assert vebo.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
-    assert vebo.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+    assert vebo.hasRole(PAUSE_ROLE, GATE_SEAL)
 
+    assert vebo.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+    
     # AllowedTokensRegistry Roles Transition
     allowed_tokens_registry = interface.AllowedTokensRegistry(ALLOWED_TOKENS_REGISTRY)
 
@@ -439,24 +511,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
     withdrawal_vault = interface.WithdrawalContractProxy(WITHDRAWAL_VAULT)
     assert withdrawal_vault.proxy_getAdmin() == AGENT
 
-    # Agent Permissions Transition
-    RUN_SCRIPT_ROLE = web3.keccak(text="RUN_SCRIPT_ROLE")
-    assert acl.hasPermission(AGENT_MANAGER, AGENT, RUN_SCRIPT_ROLE)
-    assert acl.hasPermission(VOTING, AGENT, RUN_SCRIPT_ROLE)
-    assert acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, RUN_SCRIPT_ROLE)
-    assert acl.getPermissionManager(AGENT, RUN_SCRIPT_ROLE) == AGENT
 
-    EXECUTE_ROLE = web3.keccak(text="EXECUTE_ROLE")
-    assert acl.hasPermission(AGENT_MANAGER, AGENT, EXECUTE_ROLE)
-    assert acl.hasPermission(VOTING, AGENT, EXECUTE_ROLE)
-    assert acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, EXECUTE_ROLE)
-    assert acl.getPermissionManager(AGENT, EXECUTE_ROLE) == AGENT
-
-    chain.sleep(24 * 60 * 60)
+    chain.sleep(timelock.getAfterSubmitDelay() + 1)
 
     dual_governance.scheduleProposal(2, {"from": stranger})
 
-    chain.sleep(32 * 60 * 60)
+    chain.sleep(timelock.getAfterScheduleDelay() + 1)
 
     dg_tx: TransactionReceipt = timelock.execute(2, {"from": stranger})
 
@@ -982,3 +1042,25 @@ def checkCanPerformAragonRoleManagement(entity, app, role, acl, actor):
     assert acl.hasPermission(entity, app, role) == True
     acl.revokePermission(entity, app, role, {"from": actor})
     assert acl.hasPermission(entity, app, role) == False
+
+def dg_events_from_trace(tx: TransactionReceipt, timelock: str, admin_executor: str) -> List[EventDict]:
+    events = tx_events_from_trace(tx)
+
+    assert len(events) >= 1, "Unexpected events count"
+    assert (
+        events[-1]["address"] == timelock and events[-1]["name"] == "ProposalExecuted"
+    ), "Unexpected Dual Governance service event"
+
+    groups = []
+    current_group = []
+
+    for event in events[:-1]:
+        current_group.append(event)
+
+        is_end_of_group = event["name"] == "Executed" and event["address"] == admin_executor
+
+        if is_end_of_group:
+            groups.append(current_group)
+            current_group = []
+
+    return [EventDict(group) for group in groups]
