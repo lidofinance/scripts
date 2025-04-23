@@ -99,48 +99,70 @@ class ValidatedRole(NamedTuple):
     entity: str
     roleName: str
 
+class OZValidatedRole(NamedTuple):
+    entity: str
+    roleName: str
+    grantedTo: List[str]
+    revokedFrom: List[str]
 
-def validate_role_validated_event(event: EventDict, roles: List[ValidatedRole]) -> None:
+class AragonValidatedPermission(NamedTuple):
+    entity: str
+    roleName: str
+    grantedTo: List[str]
+    revokedFrom: List[str]
+    manager: str
+
+
+def _validate_role_events(event: EventDict, roles: list, extra_events: list = None):
     _events_chain = ["LogScriptCall"]
-    _events_chain += ["RoleValidated"] * len(roles)
+    for role in roles:
+        if isinstance(role, OZValidatedRole):
+            _events_chain.append("OZRoleValidated")
+        elif isinstance(role, AragonValidatedPermission):
+            _events_chain.append("AragonPermissionValidated")
+        else:
+            raise TypeError("Unknown role type in roles list")
+    if extra_events:
+        _events_chain += extra_events
 
     validate_events_chain([e.name for e in event], _events_chain)
 
     assert event.count("LogScriptCall") == 1, "Wrong number of LogScriptCall events"
-    assert event.count("RoleValidated") == len(roles), "Wrong number of RoleValidated events"
+    assert event.count("OZRoleValidated") == sum(isinstance(r, OZValidatedRole) for r in roles), "Wrong number of OZRoleValidated events"
+    assert event.count("AragonPermissionValidated") == sum(isinstance(r, AragonValidatedPermission) for r in roles), "Wrong number of AragonPermissionValidated events"
 
-    for i in range(len(roles)):
-        role = roles[i].roleName
-        account = roles[i].entity
+    oz_idx = 0
+    aragon_idx = 0
+    for role in roles:
+        if isinstance(role, OZValidatedRole):
+            ev = event["OZRoleValidated"][oz_idx]
+            oz_idx += 1
+            assert ev["entity"] == role.entity, "Wrong entity for OZRoleValidated"
+            assert ev["roleName"] == role.roleName, "Wrong roleName for OZRoleValidated"
+            assert set(ev["grantedTo"]) == set(role.grantedTo), f"Wrong grantedTo for OZRoleValidated: {ev['grantedTo']} != {role.grantedTo}"
+            assert set(ev["revokedFrom"]) == set(role.revokedFrom), f"Wrong revokedFrom for OZRoleValidated: {ev['revokedFrom']} != {role.revokedFrom}"
+        elif isinstance(role, AragonValidatedPermission):
+            ev = event["AragonPermissionValidated"][aragon_idx]
+            aragon_idx += 1
+            assert ev["entity"] == role.entity, "Wrong entity for AragonPermissionValidated"
+            assert ev["roleName"] == role.roleName, "Wrong roleName for AragonPermissionValidated"
+            assert ev["manager"] == role.manager, "Wrong manager for AragonPermissionValidated"
+            assert set(ev["grantedTo"]) == set(role.grantedTo), f"Wrong grantedTo for AragonPermissionValidated: {ev['grantedTo']} != {role.grantedTo}"
+            assert set(ev["revokedFrom"]) == set(role.revokedFrom), f"Wrong revokedFrom for AragonPermissionValidated: {ev['revokedFrom']} != {role.revokedFrom}"
+        else:
+            raise TypeError("Unknown role type in roles list")
 
-        assert event["RoleValidated"][i]["entity"] == account, "Wrong account"
-        assert event["RoleValidated"][i]["roleName"] == role, "Wrong role"
+def validate_role_validated_event(event: EventDict, roles: list) -> None:
+    _validate_role_events(event, roles)
 
-
-def validate_dg_role_validated_event(event: EventDict, roles: List[ValidatedRole]) -> None:
-    _events_chain = ["LogScriptCall"]
-    _events_chain += ["RoleValidated"] * len(roles)
-    _events_chain += ["ScriptResult", "Executed"]
-
-    validate_events_chain([e.name for e in event], _events_chain)
-
-    assert event.count("LogScriptCall") == 1
-    assert event.count("RoleValidated") == len(roles), "Wrong number of RoleValidated events"
-    assert event.count("ScriptResult") == 1
-    assert event.count("Executed") == 1
-
-    for i in range(len(roles)):
-        role = roles[i].roleName
-        account = roles[i].entity
-
-        assert event["RoleValidated"][i]["entity"] == account, "Wrong account"
-        assert event["RoleValidated"][i]["roleName"] == role, "Wrong role"
-
+def validate_dg_role_validated_event(event: EventDict, roles: list) -> None:
+    _validate_role_events(event, roles, extra_events=["ScriptResult", "Executed"])
 
 def validate_dual_governance_governance_launch_verification_event(event: EventDict):
     _events_chain = ["LogScriptCall", "DGLaunchConfigurationValidated"]
 
     validate_events_chain([e.name for e in event], _events_chain)
+
 
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_decoding, stranger):
@@ -530,7 +552,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
     metadata = find_metadata_by_vote_id(vote_id)
     # assert get_lido_vote_cid_from_str(metadata) == "bafkreia2qh6xvoowgwukqfyyer2zz266e2jifxovnddgqawruhe2g5asgi"
 
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 57, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 56, "Incorrect voting items count"
 
     # Lido Permissions Transition
     validate_permission_revoke_event(evs[0], Permission(entity=VOTING, app=LIDO, role=STAKING_CONTROL_ROLE.hex()))
@@ -630,78 +652,104 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
     validate_permission_revoke_event(evs[36], Permission(entity=VOTING, app=ACL, role=CREATE_PERMISSIONS_ROLE.hex()))
     validate_set_permission_manager_event(evs[37], app=ACL, role=CREATE_PERMISSIONS_ROLE.hex(), manager=AGENT)
 
+    # Agent Permissions Transition
+    validate_permission_grant_event(
+        evs[38], Permission(entity=DUAL_GOVERNANCE_ADMIN_EXECUTOR, app=AGENT, role=RUN_SCRIPT_ROLE.hex())
+    )
+    validate_permission_grant_event(evs[39], Permission(entity=AGENT_MANAGER, app=AGENT, role=RUN_SCRIPT_ROLE.hex()))
+    validate_set_permission_manager_event(evs[40], app=AGENT, role=RUN_SCRIPT_ROLE.hex(), manager=AGENT)
+
+    validate_permission_grant_event(
+        evs[41], Permission(entity=DUAL_GOVERNANCE_ADMIN_EXECUTOR, app=AGENT, role=EXECUTE_ROLE.hex())
+    )
+    validate_set_permission_manager_event(evs[42], app=AGENT, role=EXECUTE_ROLE.hex(), manager=AGENT)
+
     # WithdrawalQueue Roles Transition
-    validate_grant_role_event(evs[38], grant_to=RESEAL_MANAGER, sender=AGENT, role=PAUSE_ROLE.hex())
-    validate_grant_role_event(evs[39], grant_to=RESEAL_MANAGER, sender=AGENT, role=RESUME_ROLE.hex())
+    validate_grant_role_event(evs[43], grant_to=RESEAL_MANAGER, sender=AGENT, role=PAUSE_ROLE.hex())
+    validate_grant_role_event(evs[44], grant_to=RESEAL_MANAGER, sender=AGENT, role=RESUME_ROLE.hex())
 
     # VEBO Roles Transition
-    validate_grant_role_event(evs[40], grant_to=RESEAL_MANAGER, sender=AGENT, role=PAUSE_ROLE.hex())
-    validate_grant_role_event(evs[41], grant_to=RESEAL_MANAGER, sender=AGENT, role=RESUME_ROLE.hex())
+    validate_grant_role_event(evs[45], grant_to=RESEAL_MANAGER, sender=AGENT, role=PAUSE_ROLE.hex())
+    validate_grant_role_event(evs[46], grant_to=RESEAL_MANAGER, sender=AGENT, role=RESUME_ROLE.hex())
 
     # AllowedTokensRegistry Roles Transition
-    validate_grant_role_event(evs[42], grant_to=VOTING, sender=AGENT, role=DEFAULT_ADMIN_ROLE.hex())
-    validate_revoke_role_event(evs[43], revoke_from=AGENT, sender=VOTING, role=DEFAULT_ADMIN_ROLE.hex())
-    validate_revoke_role_event(evs[44], revoke_from=AGENT, sender=VOTING, role=ADD_TOKEN_TO_ALLOWED_LIST_ROLE.hex())
+    validate_grant_role_event(evs[47], grant_to=VOTING, sender=AGENT, role=DEFAULT_ADMIN_ROLE.hex())
+    validate_revoke_role_event(evs[48], revoke_from=AGENT, sender=VOTING, role=DEFAULT_ADMIN_ROLE.hex())
+    validate_revoke_role_event(evs[49], revoke_from=AGENT, sender=VOTING, role=ADD_TOKEN_TO_ALLOWED_LIST_ROLE.hex())
     validate_revoke_role_event(
-        evs[45], revoke_from=AGENT, sender=VOTING, role=REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE.hex()
+        evs[50], revoke_from=AGENT, sender=VOTING, role=REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE.hex()
     )
 
     # WithdrawalVault Roles Transition
-    validate_proxy_admin_changed(evs[46], VOTING, AGENT)
-
-    # Agent Permissions Transition
-    validate_permission_grant_event(
-        evs[47], Permission(entity=DUAL_GOVERNANCE_ADMIN_EXECUTOR, app=AGENT, role=RUN_SCRIPT_ROLE.hex())
-    )
-    validate_permission_grant_event(evs[48], Permission(entity=AGENT_MANAGER, app=AGENT, role=RUN_SCRIPT_ROLE.hex()))
-    validate_set_permission_manager_event(evs[49], app=AGENT, role=RUN_SCRIPT_ROLE.hex(), manager=AGENT)
-
-    validate_permission_grant_event(
-        evs[50], Permission(entity=DUAL_GOVERNANCE_ADMIN_EXECUTOR, app=AGENT, role=EXECUTE_ROLE.hex())
-    )
-    validate_permission_grant_event(evs[51], Permission(entity=AGENT_MANAGER, app=AGENT, role=EXECUTE_ROLE.hex()))
-    validate_set_permission_manager_event(evs[52], app=AGENT, role=EXECUTE_ROLE.hex(), manager=AGENT)
+    validate_proxy_admin_changed(evs[51], VOTING, AGENT)
 
     validate_role_validated_event(
-        evs[53],
+        evs[52],
         [
-            ValidatedRole(entity=LIDO, roleName="STAKING_CONTROL_ROLE"),
-            ValidatedRole(entity=LIDO, roleName="RESUME_ROLE"),
-            ValidatedRole(entity=LIDO, roleName="PAUSE_ROLE"),
-            ValidatedRole(entity=LIDO, roleName="UNSAFE_CHANGE_DEPOSITED_VALIDATORS_ROLE"),
-            ValidatedRole(entity=LIDO, roleName="STAKING_PAUSE_ROLE"),
-            ValidatedRole(entity=KERNEL, roleName="APP_MANAGER_ROLE"),
-            ValidatedRole(entity=VOTING, roleName="UNSAFELY_MODIFY_VOTE_TIME_ROLE"),
-            ValidatedRole(entity=TOKEN_MANAGER, roleName="MINT_ROLE"),
-            ValidatedRole(entity=TOKEN_MANAGER, roleName="REVOKE_VESTINGS_ROLE"),
-            ValidatedRole(entity=TOKEN_MANAGER, roleName="BURN_ROLE"),
-            ValidatedRole(entity=TOKEN_MANAGER, roleName="ISSUE_ROLE"),
-            ValidatedRole(entity=FINANCE, roleName="CHANGE_PERIOD_ROLE"),
-            ValidatedRole(entity=FINANCE, roleName="CHANGE_BUDGETS_ROLE"),
-            ValidatedRole(entity=EVM_SCRIPT_REGISTRY, roleName="REGISTRY_MANAGER_ROLE"),
-            ValidatedRole(entity=EVM_SCRIPT_REGISTRY, roleName="REGISTRY_ADD_EXECUTOR_ROLE"),
-            ValidatedRole(entity=CURATED_MODULE, roleName="STAKING_ROUTER_ROLE"),
-            ValidatedRole(entity=CURATED_MODULE, roleName="MANAGE_NODE_OPERATOR_ROLE"),
-            ValidatedRole(entity=CURATED_MODULE, roleName="SET_NODE_OPERATOR_LIMIT_ROLE"),
-            ValidatedRole(entity=CURATED_MODULE, roleName="MANAGE_SIGNING_KEYS"),
-            ValidatedRole(entity=SDVT_MODULE, roleName="STAKING_ROUTER_ROLE"),
-            ValidatedRole(entity=SDVT_MODULE, roleName="MANAGE_NODE_OPERATOR_ROLE"),
-            ValidatedRole(entity=SDVT_MODULE, roleName="SET_NODE_OPERATOR_LIMIT_ROLE"),
-            ValidatedRole(entity=ACL, roleName="CREATE_PERMISSIONS_ROLE"),
-            ValidatedRole(entity=AGENT, roleName="RUN_SCRIPT_ROLE"),
-            ValidatedRole(entity=AGENT, roleName="EXECUTE_ROLE"),
-            ValidatedRole(entity=WITHDRAWAL_QUEUE, roleName="PAUSE_ROLE"),
-            ValidatedRole(entity=WITHDRAWAL_QUEUE, roleName="RESUME_ROLE"),
-            ValidatedRole(entity=VEBO, roleName="PAUSE_ROLE"),
-            ValidatedRole(entity=VEBO, roleName="RESUME_ROLE"),
-            ValidatedRole(entity=ALLOWED_TOKENS_REGISTRY, roleName="DEFAULT_ADMIN_ROLE"),
-            ValidatedRole(entity=ALLOWED_TOKENS_REGISTRY, roleName="ADD_TOKEN_TO_ALLOWED_LIST_ROLE"),
-            ValidatedRole(entity=ALLOWED_TOKENS_REGISTRY, roleName="REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE"),
+            AragonValidatedPermission(LIDO, "STAKING_CONTROL_ROLE", [UNLIMITED_STAKE], [VOTING], AGENT),
+            AragonValidatedPermission(LIDO, "RESUME_ROLE", [], [VOTING], AGENT),
+            AragonValidatedPermission(LIDO, "PAUSE_ROLE", [], [VOTING], AGENT),
+            AragonValidatedPermission(LIDO, "UNSAFE_CHANGE_DEPOSITED_VALIDATORS_ROLE", [], [VOTING], AGENT),
+            AragonValidatedPermission(LIDO, "STAKING_PAUSE_ROLE", [], [VOTING], AGENT),
+
+            # DAOKernel
+            AragonValidatedPermission(KERNEL, "APP_MANAGER_ROLE", [], [VOTING], AGENT),
+
+            # Voting
+            AragonValidatedPermission(VOTING, "UNSAFELY_MODIFY_VOTE_TIME_ROLE", [VOTING], [], VOTING),
+
+            # TokenManager
+            AragonValidatedPermission(TOKEN_MANAGER, "MINT_ROLE", [VOTING], [], VOTING),
+            AragonValidatedPermission(TOKEN_MANAGER, "REVOKE_VESTINGS_ROLE", [VOTING], [], VOTING),
+            AragonValidatedPermission(TOKEN_MANAGER, "BURN_ROLE", [VOTING], [], VOTING),
+            AragonValidatedPermission(TOKEN_MANAGER, "ISSUE_ROLE", [VOTING], [], VOTING),
+
+            # Finance
+            AragonValidatedPermission(FINANCE, "CHANGE_PERIOD_ROLE", [VOTING], [], VOTING),
+            AragonValidatedPermission(FINANCE, "CHANGE_BUDGETS_ROLE", [VOTING], [], VOTING),
+
+            # Aragon EVMScriptRegistry
+            AragonValidatedPermission(EVM_SCRIPT_REGISTRY, "REGISTRY_MANAGER_ROLE", [], [VOTING], AGENT),
+            AragonValidatedPermission(EVM_SCRIPT_REGISTRY, "REGISTRY_ADD_EXECUTOR_ROLE", [], [VOTING], AGENT),
+
+            # CuratedModule
+            AragonValidatedPermission(CURATED_MODULE, "STAKING_ROUTER_ROLE", [STAKING_ROUTER, DEV_EOA_1, DEV_EOA_2], [], AGENT),
+            AragonValidatedPermission(CURATED_MODULE, "MANAGE_NODE_OPERATOR_ROLE", [AGENT, DEV_EOA_1, DEV_EOA_2], [], AGENT),
+            AragonValidatedPermission(CURATED_MODULE, "SET_NODE_OPERATOR_LIMIT_ROLE", [DEV_EOA_1, DEV_EOA_2, EVM_SCRIPT_EXECUTOR], [VOTING], AGENT),
+            AragonValidatedPermission(CURATED_MODULE, "MANAGE_SIGNING_KEYS", [DEV_EOA_1, DEV_EOA_2], [VOTING], AGENT),
+
+            # SDVTModule
+            AragonValidatedPermission(SDVT_MODULE, "STAKING_ROUTER_ROLE", [STAKING_ROUTER, AGENT, DEV_EOA_2, DEV_EOA_1, EVM_SCRIPT_EXECUTOR], [VOTING], AGENT),
+            AragonValidatedPermission(SDVT_MODULE, "MANAGE_NODE_OPERATOR_ROLE", [DEV_EOA_2, DEV_EOA_1, EVM_SCRIPT_EXECUTOR], [VOTING], AGENT),
+            AragonValidatedPermission(SDVT_MODULE, "SET_NODE_OPERATOR_LIMIT_ROLE", [EVM_SCRIPT_EXECUTOR, DEV_EOA_1, DEV_EOA_2], [VOTING], AGENT),
+
+            # ACL
+            AragonValidatedPermission(ACL, "CREATE_PERMISSIONS_ROLE", [AGENT], [VOTING], AGENT),
+
+            # Agent
+            AragonValidatedPermission(AGENT, "RUN_SCRIPT_ROLE", [VOTING, DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT_MANAGER], [], AGENT),
+            AragonValidatedPermission(AGENT, "EXECUTE_ROLE", [VOTING, DUAL_GOVERNANCE_ADMIN_EXECUTOR], [], AGENT),
+
+            # WithdrawalQueue (OZ)
+            OZValidatedRole(WITHDRAWAL_QUEUE, "PAUSE_ROLE", [RESEAL_MANAGER, GATE_SEAL], []),
+            OZValidatedRole(WITHDRAWAL_QUEUE, "RESUME_ROLE", [RESEAL_MANAGER, AGENT], []),
+
+            # VEBO (OZ)
+            OZValidatedRole(VEBO, "PAUSE_ROLE", [RESEAL_MANAGER, GATE_SEAL], []),
+            OZValidatedRole(VEBO, "RESUME_ROLE", [RESEAL_MANAGER, AGENT], []),
+
+            # AllowedTokensRegistry (OZ)
+            OZValidatedRole(ALLOWED_TOKENS_REGISTRY, "DEFAULT_ADMIN_ROLE", [VOTING], [AGENT]),
+            OZValidatedRole(ALLOWED_TOKENS_REGISTRY, "ADD_TOKEN_TO_ALLOWED_LIST_ROLE", [], [AGENT]),
+            OZValidatedRole(ALLOWED_TOKENS_REGISTRY, "REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE", [], [AGENT]),   
         ],
     )
 
+    to_be_executed_before_timestamp = 1748563200
+    to_be_executed_from_time = 3600 * 4
+    to_be_executed_to_time = 3600 * 22
     validate_dual_governance_submit_event(
-        evs[54],
+        evs[53],    
         proposal_id=2,
         proposer=VOTING,
         executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
@@ -710,15 +758,15 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
             {
                 "target": TIME_CONSTRAINTS,
                 "value": 0,
-                "data": interface.TimeConstraints(TIME_CONSTRAINTS).checkExecuteBeforeTimestamp.encode_input(
-                    1748563200
+                "data": interface.TimeConstraints(TIME_CONSTRAINTS).checkTimeBeforeTimestampAndEmit.encode_input(
+                    to_be_executed_before_timestamp
                 ),
             },
             {
                 "target": TIME_CONSTRAINTS,
                 "value": 0,
-                "data": interface.TimeConstraints(TIME_CONSTRAINTS).checkExecuteWithinDayTime.encode_input(
-                    3600 * 4, 3600 * 22
+                "data": interface.TimeConstraints(TIME_CONSTRAINTS).checkTimeWithinDayTimeAndEmit.encode_input(
+                    to_be_executed_from_time, to_be_executed_to_time
                 ),
             },
             {
@@ -748,15 +796,15 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
         ],
     )
 
-    validate_dual_governance_governance_launch_verification_event(evs[55])
+    validate_dual_governance_governance_launch_verification_event(evs[54])
 
-    validate_time_constraints_executed_before_event(evs[56])
+    validate_time_constraints_executed_before_event(evs[55], to_be_executed_before_timestamp)
 
     dg_evs = dg_events_from_trace(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
 
-    validate_dg_time_constraints_executed_before_event(dg_evs[0])
+    validate_dg_time_constraints_executed_before_event(dg_evs[0], to_be_executed_before_timestamp)
 
-    validate_dg_time_constraints_executed_with_day_time_event(dg_evs[1])
+    validate_dg_time_constraints_executed_with_day_time_event(dg_evs[1], to_be_executed_from_time, to_be_executed_to_time)
 
     validate_dg_permission_revoke_event(dg_evs[2], Permission(entity=VOTING, app=AGENT, role=RUN_SCRIPT_ROLE.hex()))
     validate_dg_permission_revoke_event(dg_evs[3], Permission(entity=VOTING, app=AGENT, role=EXECUTE_ROLE.hex()))
@@ -764,8 +812,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, bypass_events_de
     validate_dg_role_validated_event(
         dg_evs[4],
         [
-            ValidatedRole(entity=AGENT, roleName="RUN_SCRIPT_ROLE"),
-            ValidatedRole(entity=AGENT, roleName="EXECUTE_ROLE"),
+            # Agent
+            AragonValidatedPermission(AGENT, "RUN_SCRIPT_ROLE", [DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT_MANAGER], [VOTING], AGENT),
+            AragonValidatedPermission(AGENT, "EXECUTE_ROLE", [DUAL_GOVERNANCE_ADMIN_EXECUTOR], [VOTING], AGENT),
         ],
     )
 
@@ -1043,8 +1092,8 @@ def checkCanPerformAragonRoleManagement(entity, app, role, acl, actor):
     acl.revokePermission(entity, app, role, {"from": actor})
     assert acl.hasPermission(entity, app, role) == False
 
-def dg_events_from_trace(tx: TransactionReceipt, timelock: str, admin_executor: str) -> List[EventDict]:
-    events = tx_events_from_trace(tx)
+def dg_events_from_trace(receipt: TransactionReceipt, timelock: str, admin_executor: str) -> List[EventDict]:
+    events = tx_events_from_receipt(receipt)
 
     assert len(events) >= 1, "Unexpected events count"
     assert (
