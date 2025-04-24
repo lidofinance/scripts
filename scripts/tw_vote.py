@@ -81,6 +81,21 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             14. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
             15. Update `SimpleDVT` implementation
             16. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT
+            17. Add REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier
+            --- Oracle configs ---
+            30. Grant CONFIG_MANAGER_ROLE role to the AGENT
+            31. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig
+            32. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+            33. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+            34. Add EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS variable to OracleDaemonConfig
+            35. Revoke CONFIG_MANAGER_ROLE from AGENT
+            --- Temp ---
+            40. Add ADD_WITHDRAWAL_REQUEST_ROLE for Consolidation to the TEMP-DEVNET-01
+            41. Add ADD_CONSOLIDATION_REQUEST_ROLE for Triggerable Withdrawal to the TEMP-DEVNET-01
+            42. Add DIRECT_EXIT_ROLE for direct exits to the TEMP-DEVNET-01
+            43. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01
+            44. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01
+            45. Add SUBMIT_REPORT_HASH_ROLE to the TEMP-DEVNET-01
     """
 
     nor_repo = contracts.nor_app_repo.address
