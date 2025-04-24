@@ -15,7 +15,7 @@ from utils.config import (
     get_priority_fee,
 )
 
-voting_contract = "" # TODO: add the actual voting contract address
+voting_contract = "0x54637835765a367389aa849F008BA0F6DBC64ca3" # TODO: add the actual voting contract address
 description = "" # TODO: add the description
 
 
