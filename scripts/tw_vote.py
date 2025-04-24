@@ -65,37 +65,47 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         Triggerable withdrawals voting baking and sending.
 
         Contains next steps:
+            --- VEB
             1. Update VEBO implementation
             2. Call finalizeUpgrade_v2 on VEBO
             3. Grant VEBO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-            4. Update VEBO consensus version to `6`
+            4. Update VEBO consensus version to `4`
             5. Revoke VEBO MANAGE_CONSENSUS_VERSION_ROLE from AGENT
-            6. Update WithdrawalVault implementation
-            7. Finalize WV upgrade
-            8. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEBO in WithdrawalVault
-            9. Grant MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-            10. Update AO consensus version to `4`
-            11. Update SR implementation
-            12. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
-            13. Update `NodeOperatorsRegistry` implementation
-            14. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
-            15. Update `SimpleDVT` implementation
-            16. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT
-            17. Add REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier
+            6. Grant VEBO DIRECT_EXIT_ROLE to CSM (TBD)
+            7. Grant VEBO SUBMIT_REPORT_HASH_ROLE to the AGENT/VOTING (TBD)
+            --- WV
+            8. Update WithdrawalVault implementation
+            9. Call finalizeUpgrade_v2 on WithdrawalVault
+            10. Grant WithdrawalVault ADD_WITHDRAWAL_REQUEST_ROLE to the VEB
+            --- AO
+            11. Grant MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+            12. Update AO consensus version to `4`
+            13. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT
+            --- SR
+            14. Update SR implementation
+            15. Grant REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier
+            --- NOR
+            16. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
+            17. Update `NodeOperatorsRegistry` implementation
+            18. Call finalizeUpgrade_v4 on NOR
+            --- sDVT
+            19. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
+            20. Update `SimpleDVT` implementation
+            21. Call finalizeUpgrade_v4 on sDVT
             --- Oracle configs ---
-            30. Grant CONFIG_MANAGER_ROLE role to the AGENT
-            31. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig
-            32. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-            33. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-            34. Add EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS variable to OracleDaemonConfig
-            35. Revoke CONFIG_MANAGER_ROLE from AGENT
+            22. Grant CONFIG_MANAGER_ROLE role to the AGENT
+            23. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig
+            24. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+            25. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+            26. Add EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS variable to OracleDaemonConfig
+            27. Revoke CONFIG_MANAGER_ROLE from AGENT
             --- Temp ---
-            40. Add ADD_WITHDRAWAL_REQUEST_ROLE for Consolidation to the TEMP-DEVNET-01
-            41. Add ADD_CONSOLIDATION_REQUEST_ROLE for Triggerable Withdrawal to the TEMP-DEVNET-01
-            42. Add DIRECT_EXIT_ROLE for direct exits to the TEMP-DEVNET-01
-            43. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01
-            44. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01
-            45. Add SUBMIT_REPORT_HASH_ROLE to the TEMP-DEVNET-01
+            40. Add ADD_WITHDRAWAL_REQUEST_ROLE WV for Consolidation to the TEMP-DEVNET-01 (write contract)
+            41. Add ADD_CONSOLIDATION_REQUEST_ROLE WV for Triggerable Withdrawal to the TEMP-DEVNET-01 (write contract)
+            42. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01
+            43. Add DIRECT_EXIT_ROLE VEB for direct exits to the TEMP-DEVNET-01
+            44. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01
+            45. Add SUBMIT_REPORT_HASH_ROLE for VEB to the TEMP-DEVNET-01
     """
 
     nor_repo = contracts.nor_app_repo.address
