@@ -21,6 +21,15 @@ TW_DESCRIPTION = "Proposal to use TW in Lido protocol"
 AO_CONSENSUS_VERSION = 4
 VEBO_CONSENSUS_VERSION = 4
 
+EXIT_DAILY_LIMIT = 20
+TW_DAILY_LIMIT = 10
+
+EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS = 7200
+
+NOR_EXIT_DEADLINE_IN_SEC = 30 * 60
+
+DEVNET_01_ADDRESS = '0x308eaCED5a0c5C4e717b29eD49300158ddeE8D54'
+
 NOR_VERSION = ["2", "0", "0"]
 SDVT_VERSION = ["2", "0", "0"]
 
@@ -69,36 +78,39 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             1. Update VEBO implementation
             2. Call finalizeUpgrade_v2 on VEBO
             3. Grant VEBO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-            4. Update VEBO consensus version to `4`
+            4. Bump VEBO consensus version to `4`
             5. Revoke VEBO MANAGE_CONSENSUS_VERSION_ROLE from AGENT
-            6. Grant VEBO DIRECT_EXIT_ROLE to CSM (TBD)
-            7. Grant VEBO SUBMIT_REPORT_HASH_ROLE to the AGENT/VOTING (TBD)
+            6. Grant VEB DIRECT_EXIT_ROLE to CSM (TBD)
+            7. Grant VEB SUBMIT_REPORT_HASH_ROLE to the AGENT/VOTING (TBD)
+            8. Grant VEB EXIT_REPORT_LIMIT_ROLE role to AGENT
+            9. Call setExitRequestLimit on VEB
+            10. Revoke VEB EXIT_REPORT_LIMIT_ROLE from AGENT
             --- WV
-            8. Update WithdrawalVault implementation
-            9. Call finalizeUpgrade_v2 on WithdrawalVault
-            10. Grant WithdrawalVault ADD_WITHDRAWAL_REQUEST_ROLE to the VEB
+            11. Update WithdrawalVault implementation
+            12. Call finalizeUpgrade_v2 on WithdrawalVault
+            13. Grant WithdrawalVault ADD_WITHDRAWAL_REQUEST_ROLE to the VEB
             --- AO
-            11. Grant MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-            12. Update AO consensus version to `4`
-            13. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT
+            14. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+            15. Bump AO consensus version to `4`
+            16. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT
             --- SR
-            14. Update SR implementation
-            15. Grant REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier
+            17. Update SR implementation
+            18. Grant REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier
             --- NOR
-            16. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
-            17. Update `NodeOperatorsRegistry` implementation
-            18. Call finalizeUpgrade_v4 on NOR
+            19. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
+            20. Update `NodeOperatorsRegistry` implementation
+            21. Call finalizeUpgrade_v4 on NOR
             --- sDVT
-            19. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
-            20. Update `SimpleDVT` implementation
-            21. Call finalizeUpgrade_v4 on sDVT
+            22. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
+            23. Update `SimpleDVT` implementation
+            24. Call finalizeUpgrade_v4 on sDVT
             --- Oracle configs ---
-            22. Grant CONFIG_MANAGER_ROLE role to the AGENT
-            23. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig
-            24. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-            25. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-            26. Add EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS variable to OracleDaemonConfig
-            27. Revoke CONFIG_MANAGER_ROLE from AGENT
+            25. Grant CONFIG_MANAGER_ROLE role to the AGENT
+            26. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig
+            27. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+            28. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+            29. Add EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS variable to OracleDaemonConfig
+            30. Revoke CONFIG_MANAGER_ROLE from AGENT
             --- Temp ---
             40. Add ADD_WITHDRAWAL_REQUEST_ROLE WV for Consolidation to the TEMP-DEVNET-01 (write contract)
             41. Add ADD_CONSOLIDATION_REQUEST_ROLE WV for Triggerable Withdrawal to the TEMP-DEVNET-01 (write contract)
@@ -139,9 +151,9 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            "4. Update VEBO consensus version to `6`",
+            f"4. Bump VEBO consensus version to `{VEBO_CONSENSUS_VERSION}`",
             agent_forward([
-                encode_oracle_upgrade_consensus(contracts.validators_exit_bus_oracle, 6)
+                encode_oracle_upgrade_consensus(contracts.validators_exit_bus_oracle, VEBO_CONSENSUS_VERSION)
             ])
         ),
         (
@@ -154,12 +166,61 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
                 )
             ])
         ),
+        # (
+        #     "6. Grant VEB DIRECT_EXIT_ROLE to CSM (TBD)",
+        #     agent_forward([
+        #         encode_oz_revoke_role(
+        #             contract=contracts.validators_exit_bus_oracle,
+        #             role_name="MANAGE_CONSENSUS_VERSION_ROLE",
+        #             revoke_from=contracts.agent,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     "7. Grant VEB SUBMIT_REPORT_HASH_ROLE to the AGENT (TBD",
+        #     agent_forward([
+        #         encode_oz_revoke_role(
+        #             contract=contracts.validators_exit_bus_oracle,
+        #             role_name="MANAGE_CONSENSUS_VERSION_ROLE",
+        #             revoke_from=contracts.agent,
+        #         )
+        #     ])
+        # ),
         (
-            "6. Update WithdrawalVault implementation",
+            "8. Grant VEB EXIT_REPORT_LIMIT_ROLE role to AGENT",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.validators_exit_bus_oracle,
+                    role_name="EXIT_REPORT_LIMIT_ROLE",
+                    grant_to=contracts.agent,
+                )
+            ])
+        ),
+        (
+            "9. Call setExitRequestLimit on VEB",
+            agent_forward([
+                (
+                    contracts.validators_exit_bus_oracle.address,
+                    contracts.validators_exit_bus_oracle.setExitRequestLimit.encode_input(EXIT_DAILY_LIMIT, TW_DAILY_LIMIT),
+                ),
+            ])
+        ),
+        (
+            "10. Revoke VEB EXIT_REPORT_LIMIT_ROLE from AGENT",
+            agent_forward([
+                encode_oz_revoke_role(
+                    contract=contracts.validators_exit_bus_oracle,
+                    role_name="EXIT_REPORT_LIMIT_ROLE",
+                    revoke_from=contracts.agent,
+                )
+            ])
+        ),
+        (
+            "11. Update WithdrawalVault implementation",
             encode_wv_proxy_upgrade_to(contracts.withdrawal_vault, WITHDRAWAL_VAULT_IMPL)
         ),
         (
-            "7. Finalize WV upgrade",
+            "12. Call finalizeUpgrade_v2 on WithdrawalVault",
             (
                 contracts.withdrawal_vault.address,
                 contracts.withdrawal_vault.finalizeUpgrade_v2.encode_input(
@@ -168,17 +229,17 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             )
         ),
         (
-            "8. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEBO in WithdrawalVault",
+            "13. Grant WithdrawalVault ADD_WITHDRAWAL_REQUEST_ROLE to the VEB",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.withdrawal_vault,
-                    role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
+                    role_name="ADD_WITHDRAWAL_REQUEST_ROLE",
                     grant_to=contracts.validators_exit_bus_oracle,
                 )
             ])
         ),
         (
-            "9. Grant MANAGE_CONSENSUS_VERSION_ROLE to the ${AGENT}",
+            "14. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the ${AGENT}",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.accounting_oracle,
@@ -188,39 +249,183 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            "10. Update AO consensus version to `4`",
+            f"15. Bump AO consensus version to `{AO_CONSENSUS_VERSION}`",
             agent_forward([
                 encode_oracle_upgrade_consensus(contracts.accounting_oracle, AO_CONSENSUS_VERSION)
             ])
         ),
         (
-            "11. Update SR implementation",
-            agent_forward([encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)]),
-        ),
-        (
-            "12. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo",
-            add_implementation_to_nor_app_repo(NOR_VERSION, NODE_OPERATORS_REGISTRY_IMPL, nor_uri),
-        ),
-        (
-            "13. Update `NodeOperatorsRegistry` implementation",
-            update_app_implementation(NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
-        ),
-        # TODO: Implement after devnet-01
-        # (
-        #     "14. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo",
-        #     add_implementation_to_sdvt_app_repo(SDVT_VERSION, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
-        # ),
-        # (
-        #     "15. Update `SimpleDVT` implementation",
-        #     update_app_implementation(SIMPLE_DVT_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
-        # ),
-        (
-            "16. Revoke MANAGE_CONSENSUS_VERSION_ROLE from ${AGENT}",
+            "16. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT",
             agent_forward([
                 encode_oz_revoke_role(
                     contract=contracts.accounting_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     revoke_from=contracts.agent,
+                )
+            ])
+        ),
+        (
+            "17. Update SR implementation",
+            agent_forward([encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)]),
+        ),
+        (
+            "18. Grant REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.staking_router,
+                    role_name="REPORT_EXITED_VALIDATORS_STATUS_ROLE",
+                    grant_to=contracts.validator_exit_verifier,
+                )
+            ])
+        ),
+        (
+            "19. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo",
+            add_implementation_to_nor_app_repo(NOR_VERSION, NODE_OPERATORS_REGISTRY_IMPL, nor_uri),
+        ),
+        (
+            "20. Update `NodeOperatorsRegistry` implementation",
+            update_app_implementation(NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
+        ),
+        (
+            "21. Call finalizeUpgrade_v4 on NOR",
+            (
+                interface.NodeOperatorsRegistry(contracts.node_operators_registry).address,
+                interface.NodeOperatorsRegistry(contracts.node_operators_registry).finalizeUpgrade_v4.encode_input(
+                    NOR_EXIT_DEADLINE_IN_SEC
+                )
+            )
+        ),
+        # TODO: Implement after devnet-01
+        # (
+        #     "22. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo",
+        #     add_implementation_to_sdvt_app_repo(SDVT_VERSION, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
+        # ),
+        # (
+        #     "23. Update `SimpleDVT` implementation",
+        #     update_app_implementation(SIMPLE_DVT_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
+        # ),
+        # (
+        #     "24. Call finalizeUpgrade_v4 on sDVT",
+        # (
+        #     contracts.sDVT.address,
+        #     contracts.withdrawal_vault.finalizeUpgrade_v4.encode_input(
+        #         NOR_EXIT_DEADLINE_IN_SEC,
+        #     ),
+        # )
+        # ),
+        (
+            "25. Grant CONFIG_MANAGER_ROLE role to the AGENT",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.oracle_daemon_config,
+                    role_name="CONFIG_MANAGER_ROLE",
+                    grant_to=contracts.agent,
+                )
+            ])
+        ),
+        (
+            "26. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig",
+            agent_forward([
+                (
+                    contracts.oracle_daemon_config.address,
+                    contracts.oracle_daemon_config.unset.encode_input('NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP'),
+                ),
+            ])
+        ),
+        (
+            "27. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
+            agent_forward([
+                (
+                    contracts.oracle_daemon_config.address,
+                    contracts.oracle_daemon_config.unset.encode_input('VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS'),
+                ),
+            ])
+        ),
+        (
+            "28. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
+            agent_forward([
+                (
+                    contracts.oracle_daemon_config.address,
+                    contracts.oracle_daemon_config.unset.encode_input('VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS'),
+                ),
+            ])
+        ),
+        (
+            "29. Add EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS variable to OracleDaemonConfig",
+            agent_forward([
+                (
+                    contracts.oracle_daemon_config.address,
+                    contracts.oracle_daemon_config.set.encode_input('EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS', EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS),
+                ),
+            ])
+        ),
+        (
+            "30. Revoke CONFIG_MANAGER_ROLE from AGENT",
+            agent_forward([
+                encode_oz_revoke_role(
+                    contract=contracts.oracle_daemon_config,
+                    role_name="CONFIG_MANAGER_ROLE",
+                    revoke_from=contracts.agent,
+                )
+            ])
+        ),
+        (
+            "40. Add ADD_WITHDRAWAL_REQUEST_ROLE WV for Consolidation to the TEMP-DEVNET-01",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.withdrawal_vault,
+                    role_name="ADD_WITHDRAWAL_REQUEST_ROLE",
+                    grant_to=DEVNET_01_ADDRESS,
+                )
+            ])
+        ),
+        (
+            "41. Add ADD_WITHDRAWAL_REQUEST_ROLE WV for Consolidation to the TEMP-DEVNET-01",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.withdrawal_vault,
+                    role_name="ADD_CONSOLIDATION_REQUEST_ROLE",
+                    grant_to=DEVNET_01_ADDRESS,
+                )
+            ])
+        ),
+        (
+            "42. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.withdrawal_vault,
+                    role_name="PAUSE_ROLE",
+                    grant_to=DEVNET_01_ADDRESS,
+                )
+            ])
+        ),
+        (
+            "43. Add DIRECT_EXIT_ROLE for WV to the TEMP-DEVNET-01",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.validators_exit_bus_oracle,
+                    role_name="DIRECT_EXIT_ROLE",
+                    grant_to=DEVNET_01_ADDRESS,
+                )
+            ])
+        ),
+        (
+            "44. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.validators_exit_bus_oracle,
+                    role_name="PAUSE_ROLE",
+                    grant_to=DEVNET_01_ADDRESS,
+                )
+            ])
+        ),
+        (
+            "45. Add SUBMIT_REPORT_HASH_ROLE for VEB to the TEMP-DEVNET-01",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.validators_exit_bus_oracle,
+                    role_name="SUBMIT_REPORT_HASH_ROLE",
+                    grant_to=DEVNET_01_ADDRESS,
                 )
             ])
         ),

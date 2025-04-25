@@ -395,6 +395,10 @@ class ContractsLazyLoader:
     def token_rate_notifier(self) -> interface.TokenRateNotifier:
         return interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)
 
+    @property
+    def validator_exit_verifier(self) -> interface.ValidatorsExitBusOracle:
+        return interface.ValidatorExitVerifier(VALIDATOR_EXIT_VERIFIER)
+
 def __getattr__(name: str) -> Any:
     if name == "contracts":
         return ContractsLazyLoader()
