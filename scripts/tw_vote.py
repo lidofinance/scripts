@@ -3,7 +3,9 @@ from typing import Dict, Tuple, Optional
 from utils.config import (
     contracts, VALIDATORS_EXIT_BUS_ORACLE_IMPL, WITHDRAWAL_VAULT_IMPL, STAKING_ROUTER_IMPL,
     NODE_OPERATORS_REGISTRY_IMPL, NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, SIMPLE_DVT_ARAGON_APP_ID,
-    CS_DEFAULT_BOND_CURVE, CS_VETTED_BOND_CURVE, CSM_COMMITTEE_MS, CS_GATE_SEAL_ADDRESS, CS_GATE_SEAL_V2_ADDRESS
+    CS_DEFAULT_BOND_CURVE, CS_VETTED_BOND_CURVE, CSM_COMMITTEE_MS, CS_GATE_SEAL_ADDRESS, CS_GATE_SEAL_V2_ADDRESS,
+    CSM_IMPL_V2_ADDRESS, CS_ACCOUNTING_IMPL_V2_ADDRESS, CS_FEE_ORACLE_IMPL_V2_ADDRESS,
+    CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS
 )
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
@@ -124,6 +126,10 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             44. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01
             45. Add SUBMIT_REPORT_HASH_ROLE for VEB to the TEMP-DEVNET-01
             --- CSM ---
+            46. Upgrade CSM implementation on proxy
+            47. Upgrade CSAccounting implementation on proxy
+            48. Upgrade CSFeeOracle implementation on proxy
+            49. Upgrade CSFeeDistributor implementation on proxy
             50. Call `finalizeUpgradeV2(exitPenalties)` on CSM contract
             51. Call `finalizeUpgradeV2(defaultBondCurve,vettedBondCurve)` on CSAccounting contract
             52. Call `finalizeUpgradeV2(consensusVersion,strikesContract)` on CSFeeOracle contract
@@ -454,6 +460,31 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
                     role_name="SUBMIT_REPORT_HASH_ROLE",
                     grant_to=DEVNET_01_ADDRESS,
                 )
+            ])
+        ),
+        # CSM related calls
+        (
+            "46. Upgrade CSM implementation on proxy",
+            agent_forward([
+                encode_proxy_upgrade_to(contracts.csm, CSM_IMPL_V2_ADDRESS)
+            ])
+        ),
+        (
+            "47. Upgrade CSAccounting implementation on proxy",
+            agent_forward([
+                encode_proxy_upgrade_to(contracts.cs_accounting, CS_ACCOUNTING_IMPL_V2_ADDRESS)
+            ])
+        ),
+        (
+            "48. Upgrade CSFeeOracle implementation on proxy",
+            agent_forward([
+                encode_proxy_upgrade_to(contracts.cs_fee_oracle, CS_FEE_ORACLE_IMPL_V2_ADDRESS)
+            ])
+        ),
+        (
+            "49. Upgrade CSFeeDistributor implementation on proxy",
+            agent_forward([
+                encode_proxy_upgrade_to(contracts.cs_fee_distributor, CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS)
             ])
         ),
         (
