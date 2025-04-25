@@ -94,3 +94,15 @@ development:
     id: hoodi-devnet
     name: Hoodi Devnet
     timeout: 360
+
+  - cmd: ./ganache.sh
+    cmd_settings:
+      accounts: 10
+      chain_id: 560048
+      gas_limit: 30000000
+      mnemonic: brownie
+      port: 33405
+    host: http://localhost
+    id: hoodi-devnet-remote
+    name: Hoodi Devnet Remote
+    timeout: 360

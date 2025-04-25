@@ -708,7 +708,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
 
 def main():
     print('Start baking vote.')
-
+    print("DEPLOYER ACCOUNT:", get_deployer_account())
     tx_params = {
         "from": get_deployer_account(),
         "priority_fee": get_priority_fee(),
