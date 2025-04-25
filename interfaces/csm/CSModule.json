@@ -8,22 +8,12 @@
           "internalType": "bytes32"
         },
         {
-          "name": "minSlashingPenaltyQuotient",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "elRewardsStealingFine",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "maxKeysPerOperatorEA",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
           "name": "lidoLocator",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "parametersRegistry",
           "type": "address",
           "internalType": "address"
         }
@@ -32,7 +22,7 @@
     },
     {
       "type": "function",
-      "name": "DEFAULT_ADMIN_ROLE",
+      "name": "CREATE_NODE_OPERATOR_ROLE",
       "inputs": [],
       "outputs": [
         {
@@ -45,26 +35,13 @@
     },
     {
       "type": "function",
-      "name": "EL_REWARDS_STEALING_FINE",
+      "name": "DEFAULT_ADMIN_ROLE",
       "inputs": [],
       "outputs": [
         {
           "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "INITIAL_SLASHING_PENALTY",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
+          "type": "bytes32",
+          "internalType": "bytes32"
         }
       ],
       "stateMutability": "view"
@@ -84,26 +61,13 @@
     },
     {
       "type": "function",
-      "name": "MAX_SIGNING_KEYS_PER_OPERATOR_BEFORE_PUBLIC_RELEASE",
+      "name": "PARAMETERS_REGISTRY",
       "inputs": [],
       "outputs": [
         {
           "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "MODULE_MANAGER_ROLE",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "bytes32",
-          "internalType": "bytes32"
+          "type": "address",
+          "internalType": "contract ICSParametersRegistry"
         }
       ],
       "stateMutability": "view"
@@ -130,6 +94,32 @@
           "name": "",
           "type": "bytes32",
           "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "QUEUE_LEGACY_PRIORITY",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "QUEUE_LOWEST_PRIORITY",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
         }
       ],
       "stateMutability": "view"
@@ -240,244 +230,13 @@
     },
     {
       "type": "function",
-      "name": "activatePublicRelease",
-      "inputs": [],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "addNodeOperatorETH",
-      "inputs": [
-        {
-          "name": "keysCount",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "publicKeys",
-          "type": "bytes",
-          "internalType": "bytes"
-        },
-        {
-          "name": "signatures",
-          "type": "bytes",
-          "internalType": "bytes"
-        },
-        {
-          "name": "managementProperties",
-          "type": "tuple",
-          "internalType": "struct NodeOperatorManagementProperties",
-          "components": [
-            {
-              "name": "managerAddress",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "rewardAddress",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "extendedManagerPermissions",
-              "type": "bool",
-              "internalType": "bool"
-            }
-          ]
-        },
-        {
-          "name": "eaProof",
-          "type": "bytes32[]",
-          "internalType": "bytes32[]"
-        },
-        {
-          "name": "referrer",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "payable"
-    },
-    {
-      "type": "function",
-      "name": "addNodeOperatorStETH",
-      "inputs": [
-        {
-          "name": "keysCount",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "publicKeys",
-          "type": "bytes",
-          "internalType": "bytes"
-        },
-        {
-          "name": "signatures",
-          "type": "bytes",
-          "internalType": "bytes"
-        },
-        {
-          "name": "managementProperties",
-          "type": "tuple",
-          "internalType": "struct NodeOperatorManagementProperties",
-          "components": [
-            {
-              "name": "managerAddress",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "rewardAddress",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "extendedManagerPermissions",
-              "type": "bool",
-              "internalType": "bool"
-            }
-          ]
-        },
-        {
-          "name": "permit",
-          "type": "tuple",
-          "internalType": "struct ICSAccounting.PermitInput",
-          "components": [
-            {
-              "name": "value",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "deadline",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "v",
-              "type": "uint8",
-              "internalType": "uint8"
-            },
-            {
-              "name": "r",
-              "type": "bytes32",
-              "internalType": "bytes32"
-            },
-            {
-              "name": "s",
-              "type": "bytes32",
-              "internalType": "bytes32"
-            }
-          ]
-        },
-        {
-          "name": "eaProof",
-          "type": "bytes32[]",
-          "internalType": "bytes32[]"
-        },
-        {
-          "name": "referrer",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "addNodeOperatorWstETH",
-      "inputs": [
-        {
-          "name": "keysCount",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "publicKeys",
-          "type": "bytes",
-          "internalType": "bytes"
-        },
-        {
-          "name": "signatures",
-          "type": "bytes",
-          "internalType": "bytes"
-        },
-        {
-          "name": "managementProperties",
-          "type": "tuple",
-          "internalType": "struct NodeOperatorManagementProperties",
-          "components": [
-            {
-              "name": "managerAddress",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "rewardAddress",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "extendedManagerPermissions",
-              "type": "bool",
-              "internalType": "bool"
-            }
-          ]
-        },
-        {
-          "name": "permit",
-          "type": "tuple",
-          "internalType": "struct ICSAccounting.PermitInput",
-          "components": [
-            {
-              "name": "value",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "deadline",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "v",
-              "type": "uint8",
-              "internalType": "uint8"
-            },
-            {
-              "name": "r",
-              "type": "bytes32",
-              "internalType": "bytes32"
-            },
-            {
-              "name": "s",
-              "type": "bytes32",
-              "internalType": "bytes32"
-            }
-          ]
-        },
-        {
-          "name": "eaProof",
-          "type": "bytes32[]",
-          "internalType": "bytes32[]"
-        },
-        {
-          "name": "referrer",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
       "name": "addValidatorKeysETH",
       "inputs": [
+        {
+          "name": "from",
+          "type": "address",
+          "internalType": "address"
+        },
         {
           "name": "nodeOperatorId",
           "type": "uint256",
@@ -506,6 +265,11 @@
       "type": "function",
       "name": "addValidatorKeysStETH",
       "inputs": [
+        {
+          "name": "from",
+          "type": "address",
+          "internalType": "address"
+        },
         {
           "name": "nodeOperatorId",
           "type": "uint256",
@@ -566,6 +330,11 @@
       "type": "function",
       "name": "addValidatorKeysWstETH",
       "inputs": [
+        {
+          "name": "from",
+          "type": "address",
+          "internalType": "address"
+        },
         {
           "name": "nodeOperatorId",
           "type": "uint256",
@@ -660,90 +429,6 @@
     },
     {
       "type": "function",
-      "name": "claimRewardsStETH",
-      "inputs": [
-        {
-          "name": "nodeOperatorId",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "stETHAmount",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "cumulativeFeeShares",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "rewardsProof",
-          "type": "bytes32[]",
-          "internalType": "bytes32[]"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "claimRewardsUnstETH",
-      "inputs": [
-        {
-          "name": "nodeOperatorId",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "stEthAmount",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "cumulativeFeeShares",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "rewardsProof",
-          "type": "bytes32[]",
-          "internalType": "bytes32[]"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "claimRewardsWstETH",
-      "inputs": [
-        {
-          "name": "nodeOperatorId",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "wstETHAmount",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "cumulativeFeeShares",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "rewardsProof",
-          "type": "bytes32[]",
-          "internalType": "bytes32[]"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
       "name": "cleanDepositQueue",
       "inputs": [
         {
@@ -754,7 +439,12 @@
       ],
       "outputs": [
         {
-          "name": "",
+          "name": "removed",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "lastRemovedAtDepth",
           "type": "uint256",
           "internalType": "uint256"
         }
@@ -802,6 +492,52 @@
     },
     {
       "type": "function",
+      "name": "createNodeOperator",
+      "inputs": [
+        {
+          "name": "from",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "managementProperties",
+          "type": "tuple",
+          "internalType": "struct NodeOperatorManagementProperties",
+          "components": [
+            {
+              "name": "managerAddress",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "rewardAddress",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "extendedManagerPermissions",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ]
+        },
+        {
+          "name": "referrer",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "nodeOperatorId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
       "name": "decreaseVettedSigningKeysCount",
       "inputs": [
         {
@@ -820,39 +556,13 @@
     },
     {
       "type": "function",
-      "name": "depositETH",
-      "inputs": [
-        {
-          "name": "nodeOperatorId",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "payable"
-    },
-    {
-      "type": "function",
-      "name": "depositQueue",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "head",
-          "type": "uint128",
-          "internalType": "uint128"
-        },
-        {
-          "name": "tail",
-          "type": "uint128",
-          "internalType": "uint128"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
       "name": "depositQueueItem",
       "inputs": [
+        {
+          "name": "queuePriority",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
         {
           "name": "index",
           "type": "uint128",
@@ -870,116 +580,72 @@
     },
     {
       "type": "function",
-      "name": "depositStETH",
+      "name": "depositQueuePointers",
+      "inputs": [
+        {
+          "name": "queuePriority",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "head",
+          "type": "uint128",
+          "internalType": "uint128"
+        },
+        {
+          "name": "tail",
+          "type": "uint128",
+          "internalType": "uint128"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "exitDeadlineThreshold",
       "inputs": [
         {
           "name": "nodeOperatorId",
           "type": "uint256",
           "internalType": "uint256"
-        },
-        {
-          "name": "stETHAmount",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "permit",
-          "type": "tuple",
-          "internalType": "struct ICSAccounting.PermitInput",
-          "components": [
-            {
-              "name": "value",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "deadline",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "v",
-              "type": "uint8",
-              "internalType": "uint8"
-            },
-            {
-              "name": "r",
-              "type": "bytes32",
-              "internalType": "bytes32"
-            },
-            {
-              "name": "s",
-              "type": "bytes32",
-              "internalType": "bytes32"
-            }
-          ]
         }
       ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
     },
     {
       "type": "function",
-      "name": "depositWstETH",
-      "inputs": [
-        {
-          "name": "nodeOperatorId",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "wstETHAmount",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "permit",
-          "type": "tuple",
-          "internalType": "struct ICSAccounting.PermitInput",
-          "components": [
-            {
-              "name": "value",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "deadline",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "v",
-              "type": "uint8",
-              "internalType": "uint8"
-            },
-            {
-              "name": "r",
-              "type": "bytes32",
-              "internalType": "bytes32"
-            },
-            {
-              "name": "s",
-              "type": "bytes32",
-              "internalType": "bytes32"
-            }
-          ]
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "earlyAdoption",
+      "name": "exitPenalties",
       "inputs": [],
       "outputs": [
         {
           "name": "",
           "type": "address",
-          "internalType": "contract ICSEarlyAdoption"
+          "internalType": "contract ICSExitPenalties"
         }
       ],
       "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "finalizeUpgradeV2",
+      "inputs": [
+        {
+          "name": "_exitPenalties",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
     },
     {
       "type": "function",
@@ -990,6 +656,19 @@
           "name": "",
           "type": "uint256",
           "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getInitializedVersion",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint64",
+          "internalType": "uint64"
         }
       ],
       "stateMutability": "view"
@@ -1084,6 +763,11 @@
               "name": "extendedManagerPermissions",
               "type": "bool",
               "internalType": "bool"
+            },
+            {
+              "name": "usedPriorityQueue",
+              "type": "bool",
+              "internalType": "bool"
             }
           ]
         }
@@ -1129,6 +813,42 @@
           "name": "",
           "type": "bool",
           "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getNodeOperatorManagementProperties",
+      "inputs": [
+        {
+          "name": "nodeOperatorId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct NodeOperatorManagementProperties",
+          "components": [
+            {
+              "name": "managerAddress",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "rewardAddress",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "extendedManagerPermissions",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ]
         }
       ],
       "stateMutability": "view"
@@ -1200,6 +920,25 @@
         },
         {
           "name": "depositableValidatorsCount",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getNodeOperatorTotalDepositedKeys",
+      "inputs": [
+        {
+          "name": "nodeOperatorId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "totalDepositedKeys",
           "type": "uint256",
           "internalType": "uint256"
         }
@@ -1458,14 +1197,9 @@
           "internalType": "address"
         },
         {
-          "name": "_earlyAdoption",
+          "name": "_exitPenalties",
           "type": "address",
           "internalType": "address"
-        },
-        {
-          "name": "_keyRemovalCharge",
-          "type": "uint256",
-          "internalType": "uint256"
         },
         {
           "name": "admin",
@@ -1491,7 +1225,7 @@
     },
     {
       "type": "function",
-      "name": "isValidatorSlashed",
+      "name": "isValidatorExitDelayPenaltyApplicable",
       "inputs": [
         {
           "name": "nodeOperatorId",
@@ -1499,7 +1233,17 @@
           "internalType": "uint256"
         },
         {
-          "name": "keyIndex",
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "publicKey",
+          "type": "bytes",
+          "internalType": "bytes"
+        },
+        {
+          "name": "eligibleToExitInSec",
           "type": "uint256",
           "internalType": "uint256"
         }
@@ -1539,20 +1283,25 @@
     },
     {
       "type": "function",
-      "name": "keyRemovalCharge",
+      "name": "legacyQueue",
       "inputs": [],
       "outputs": [
         {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
+          "name": "head",
+          "type": "uint128",
+          "internalType": "uint128"
+        },
+        {
+          "name": "tail",
+          "type": "uint128",
+          "internalType": "uint128"
         }
       ],
       "stateMutability": "view"
     },
     {
       "type": "function",
-      "name": "normalizeQueue",
+      "name": "migrateToPriorityQueue",
       "inputs": [
         {
           "name": "nodeOperatorId",
@@ -1605,6 +1354,34 @@
       "inputs": [
         {
           "name": "totalShares",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "onValidatorExitTriggered",
+      "inputs": [
+        {
+          "name": "nodeOperatorId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "publicKey",
+          "type": "bytes",
+          "internalType": "bytes"
+        },
+        {
+          "name": "withdrawalRequestPaidFee",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "exitType",
           "type": "uint256",
           "internalType": "uint256"
         }
@@ -1670,19 +1447,6 @@
     },
     {
       "type": "function",
-      "name": "publicRelease",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool",
-          "internalType": "bool"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
       "name": "recoverERC1155",
       "inputs": [
         {
@@ -1738,13 +1502,6 @@
     {
       "type": "function",
       "name": "recoverEther",
-      "inputs": [],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "recoverStETHShares",
       "inputs": [],
       "outputs": [],
       "stateMutability": "nonpayable"
@@ -1815,6 +1572,34 @@
     },
     {
       "type": "function",
+      "name": "reportValidatorExitDelay",
+      "inputs": [
+        {
+          "name": "nodeOperatorId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "publicKey",
+          "type": "bytes",
+          "internalType": "bytes"
+        },
+        {
+          "name": "eligibleToExitInSec",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
       "name": "resetNodeOperatorManagerAddress",
       "inputs": [
         {
@@ -1853,19 +1638,6 @@
     },
     {
       "type": "function",
-      "name": "setKeyRemovalCharge",
-      "inputs": [
-        {
-          "name": "amount",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
       "name": "settleELRewardsStealingPenalty",
       "inputs": [
         {
@@ -1879,45 +1651,34 @@
     },
     {
       "type": "function",
-      "name": "submitInitialSlashing",
+      "name": "submitWithdrawals",
       "inputs": [
         {
-          "name": "nodeOperatorId",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "keyIndex",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "submitWithdrawal",
-      "inputs": [
-        {
-          "name": "nodeOperatorId",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "keyIndex",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "amount",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "isSlashed",
-          "type": "bool",
-          "internalType": "bool"
+          "name": "withdrawalsInfo",
+          "type": "tuple[]",
+          "internalType": "struct ValidatorWithdrawalInfo[]",
+          "components": [
+            {
+              "name": "nodeOperatorId",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "keyIndex",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "isSlashed",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ]
         }
       ],
       "outputs": [],
@@ -1967,6 +1728,19 @@
     },
     {
       "type": "function",
+      "name": "updateDepositableValidatorsCount",
+      "inputs": [
+        {
+          "name": "nodeOperatorId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
       "name": "updateExitedValidatorsCount",
       "inputs": [
         {
@@ -1976,42 +1750,6 @@
         },
         {
           "name": "exitedValidatorsCounts",
-          "type": "bytes",
-          "internalType": "bytes"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "updateRefundedValidatorsCount",
-      "inputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "updateStuckValidatorsCount",
-      "inputs": [
-        {
-          "name": "nodeOperatorIds",
-          "type": "bytes",
-          "internalType": "bytes"
-        },
-        {
-          "name": "stuckValidatorsCounts",
           "type": "bytes",
           "internalType": "bytes"
         }
@@ -2047,6 +1785,12 @@
       "name": "BatchEnqueued",
       "inputs": [
         {
+          "name": "queuePriority",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
           "name": "nodeOperatorId",
           "type": "uint256",
           "indexed": true,
@@ -2054,6 +1798,25 @@
         },
         {
           "name": "count",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "DelayedValidatorExitPenalized",
+      "inputs": [
+        {
+          "name": "nodeOperatorId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "penaltyValue",
           "type": "uint256",
           "indexed": false,
           "internalType": "uint256"
@@ -2102,6 +1865,25 @@
     {
       "type": "event",
       "name": "ELRewardsStealingPenaltyCancelled",
+      "inputs": [
+        {
+          "name": "nodeOperatorId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ELRewardsStealingPenaltyCompensated",
       "inputs": [
         {
           "name": "nodeOperatorId",
@@ -2277,25 +2059,6 @@
     },
     {
       "type": "event",
-      "name": "InitialSlashingSubmitted",
-      "inputs": [
-        {
-          "name": "nodeOperatorId",
-          "type": "uint256",
-          "indexed": true,
-          "internalType": "uint256"
-        },
-        {
-          "name": "keyIndex",
-          "type": "uint256",
-          "indexed": false,
-          "internalType": "uint256"
-        }
-      ],
-      "anonymous": false
-    },
-    {
-      "type": "event",
       "name": "Initialized",
       "inputs": [
         {
@@ -2315,19 +2078,6 @@
           "name": "nodeOperatorId",
           "type": "uint256",
           "indexed": true,
-          "internalType": "uint256"
-        }
-      ],
-      "anonymous": false
-    },
-    {
-      "type": "event",
-      "name": "KeyRemovalChargeSet",
-      "inputs": [
-        {
-          "name": "amount",
-          "type": "uint256",
-          "indexed": false,
           "internalType": "uint256"
         }
       ],
@@ -2482,12 +2232,6 @@
           "internalType": "uint256"
         }
       ],
-      "anonymous": false
-    },
-    {
-      "type": "event",
-      "name": "PublicRelease",
-      "inputs": [],
       "anonymous": false
     },
     {
@@ -2649,25 +2393,6 @@
     },
     {
       "type": "event",
-      "name": "StuckSigningKeysCountChanged",
-      "inputs": [
-        {
-          "name": "nodeOperatorId",
-          "type": "uint256",
-          "indexed": true,
-          "internalType": "uint256"
-        },
-        {
-          "name": "stuckKeysCount",
-          "type": "uint256",
-          "indexed": false,
-          "internalType": "uint256"
-        }
-      ],
-      "anonymous": false
-    },
-    {
-      "type": "event",
       "name": "TargetValidatorsCountChanged",
       "inputs": [
         {
@@ -2763,6 +2488,12 @@
           "type": "uint256",
           "indexed": false,
           "internalType": "uint256"
+        },
+        {
+          "name": "pubkey",
+          "type": "bytes",
+          "indexed": false,
+          "internalType": "bytes"
         }
       ],
       "anonymous": false
@@ -2790,17 +2521,7 @@
     },
     {
       "type": "error",
-      "name": "AlreadyActivated",
-      "inputs": []
-    },
-    {
-      "type": "error",
       "name": "AlreadyProposed",
-      "inputs": []
-    },
-    {
-      "type": "error",
-      "name": "AlreadySubmitted",
       "inputs": []
     },
     {
@@ -2865,7 +2586,7 @@
     },
     {
       "type": "error",
-      "name": "MaxSigningKeysCountExceeded",
+      "name": "KeysLimitExceeded",
       "inputs": []
     },
     {
@@ -2880,7 +2601,7 @@
     },
     {
       "type": "error",
-      "name": "NotAllowedToJoinYet",
+      "name": "NodeOperatorHasKeys",
       "inputs": []
     },
     {
@@ -2900,17 +2621,17 @@
     },
     {
       "type": "error",
-      "name": "NotSupported",
-      "inputs": []
-    },
-    {
-      "type": "error",
       "name": "PauseUntilMustBeInFuture",
       "inputs": []
     },
     {
       "type": "error",
       "name": "PausedExpected",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "PriorityQueueAlreadyUsed",
       "inputs": []
     },
     {
@@ -2960,11 +2681,6 @@
     },
     {
       "type": "error",
-      "name": "StuckKeysHigherThanNonExited",
-      "inputs": []
-    },
-    {
-      "type": "error",
       "name": "ZeroAccountingAddress",
       "inputs": []
     },
@@ -2975,12 +2691,32 @@
     },
     {
       "type": "error",
+      "name": "ZeroExitPenaltiesAddress",
+      "inputs": []
+    },
+    {
+      "type": "error",
       "name": "ZeroLocatorAddress",
       "inputs": []
     },
     {
       "type": "error",
+      "name": "ZeroParametersRegistryAddress",
+      "inputs": []
+    },
+    {
+      "type": "error",
       "name": "ZeroPauseDuration",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "ZeroRewardAddress",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "ZeroSenderAddress",
       "inputs": []
     }
   ]

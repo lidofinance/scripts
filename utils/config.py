@@ -201,7 +201,16 @@ class ContractsLazyLoader:
 
     @property
     def cs_early_adoption(self) -> interface.CSEarlyAdoption:
+        """Deprecated"""
         return interface.CSEarlyAdoption(CS_EARLY_ADOPTION_ADDRESS)
+
+    @property
+    def cs_permissionless_gate(self) -> interface.CSPermissionlessGate:
+        return interface.CSPermissionlessGate(CS_PERMISSIONLESS_GATE_ADDRESS)
+
+    @property
+    def cs_vetted_gate(self) -> interface.CSVettedGate:
+        return interface.CSVettedGate(CS_VETTED_GATE_ADDRESS)
 
     @property
     def cs_accounting(self) -> interface.CSAccounting:
@@ -222,6 +231,22 @@ class ContractsLazyLoader:
     @property
     def cs_verifier(self) -> interface.CSVerifier:
         return interface.CSVerifier(CS_VERIFIER_ADDRESS)
+
+    @property
+    def cs_verifier_v2(self) -> interface.CSVerifierV2:
+        return interface.CSVerifierV2(CS_VERIFIER_V2_ADDRESS)
+
+    @property
+    def cs_exit_penalties(self) -> interface.CSExitPenalties:
+        return interface.CSExitPenalties(CS_EXIT_PENALTIES)
+
+    @property
+    def cs_ejector(self) -> interface.CSEjector:
+        return interface.CSEjector(CS_EJECTOR_ADDRESS)
+
+    @property
+    def cs_strikes(self) -> interface.CSStrikes:
+        return interface.CSStrikes(CS_STRIKES_ADDRESS)
 
     @property
     def sandbox(self) -> interface.SimpleDVT:

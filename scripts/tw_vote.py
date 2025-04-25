@@ -1,5 +1,10 @@
 from typing import Dict, Tuple, Optional
-from utils.config import contracts, VALIDATORS_EXIT_BUS_ORACLE_IMPL, WITHDRAWAL_VAULT_IMPL, STAKING_ROUTER_IMPL, NODE_OPERATORS_REGISTRY_IMPL, NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, SIMPLE_DVT_ARAGON_APP_ID
+
+from utils.config import (
+    contracts, VALIDATORS_EXIT_BUS_ORACLE_IMPL, WITHDRAWAL_VAULT_IMPL, STAKING_ROUTER_IMPL,
+    NODE_OPERATORS_REGISTRY_IMPL, NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, SIMPLE_DVT_ARAGON_APP_ID,
+    CS_DEFAULT_BOND_CURVE, CS_VETTED_BOND_CURVE, CSM_COMMITTEE_MS, CS_GATE_SEAL_ADDRESS, CS_GATE_SEAL_V2_ADDRESS
+)
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
@@ -80,7 +85,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             3. Grant VEBO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
             4. Bump VEBO consensus version to `4`
             5. Revoke VEBO MANAGE_CONSENSUS_VERSION_ROLE from AGENT
-            6. Grant VEB DIRECT_EXIT_ROLE to CSM (TBD)
+            6. Grant VEB DIRECT_EXIT_ROLE to CS Ejector
             7. Grant VEB SUBMIT_REPORT_HASH_ROLE to the AGENT/VOTING (TBD)
             8. Grant VEB EXIT_REPORT_LIMIT_ROLE role to AGENT
             9. Call setExitRequestLimit on VEB
@@ -118,6 +123,28 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             43. Add DIRECT_EXIT_ROLE VEB for direct exits to the TEMP-DEVNET-01
             44. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01
             45. Add SUBMIT_REPORT_HASH_ROLE for VEB to the TEMP-DEVNET-01
+            --- CSM ---
+            50. Call `finalizeUpgradeV2(exitPenalties)` on CSM contract
+            51. Call `finalizeUpgradeV2(defaultBondCurve,vettedBondCurve)` on CSAccounting contract
+            52. Call `finalizeUpgradeV2(consensusVersion,strikesContract)` on CSFeeOracle contract
+            53. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
+            54. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
+            55. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
+            56. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
+            57. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
+            58. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
+            59. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
+            60. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
+            61. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
+            62. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
+            63. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
+            64. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
+            65. Grant CSM role PAUSE_ROLE for the new GateSeal instance
+            66. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
+            67. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
+            68. Revoke Burner role REQUEST_BURN_SHARES_ROLE from the CSAccounting contract
+            69. Grant Burner role REQUEST_BURN_MY_STETH_ROLE to the CSAccounting contract
+
     """
 
     nor_repo = contracts.nor_app_repo.address
@@ -166,16 +193,16 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
                 )
             ])
         ),
-        # (
-        #     "6. Grant VEB DIRECT_EXIT_ROLE to CSM (TBD)",
-        #     agent_forward([
-        #         encode_oz_revoke_role(
-        #             contract=contracts.validators_exit_bus_oracle,
-        #             role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-        #             revoke_from=contracts.agent,
-        #         )
-        #     ])
-        # ),
+        (
+            "6. Grant VEB DIRECT_EXIT_ROLE to CS Ejector",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.validators_exit_bus_oracle,
+                    role_name="DIRECT_EXIT_ROLE",
+                    grant_to=contracts.cs_ejector,
+                )
+            ])
+        ),
         # (
         #     "7. Grant VEB SUBMIT_REPORT_HASH_ROLE to the AGENT (TBD",
         #     agent_forward([
@@ -426,6 +453,204 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
                     contract=contracts.validators_exit_bus_oracle,
                     role_name="SUBMIT_REPORT_HASH_ROLE",
                     grant_to=DEVNET_01_ADDRESS,
+                )
+            ])
+        ),
+        (
+            "50. Call `finalizeUpgradeV2(exitPenalties)` on CSM contract",
+            (
+                contracts.csm.address,
+                contracts.csm.finalizeUpgradeV2.encode_input(
+                    contracts.exit_penalties,
+                ),
+            ),
+        ),
+        (
+            "51. Call `finalizeUpgradeV2(defaultBondCurve,vettedBondCurve)` on CSAccounting contract",
+            (
+                contracts.cs_accounting.address,
+                contracts.cs_accounting.finalizeUpgradeV2.encode_input(
+                    CS_DEFAULT_BOND_CURVE,
+                    CS_VETTED_BOND_CURVE,
+                ),
+            ),
+        ),
+        (
+            "52. Call `finalizeUpgradeV2(consensusVersion,strikesContract)` on CSFeeOracle contract",
+            (
+                contracts.cs_fee_oracle.address,
+                contracts.cs_fee_oracle.finalizeUpgradeV2.encode_input(
+                    3,
+                    contracts.cs_strikes,
+                ),
+            ),
+        ),
+        (
+            "53. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract",
+            (
+                contracts.cs_fee_distributor.address,
+                contracts.cs_fee_distributor.finalizeUpgradeV2.encode_input(
+                    contracts.agent,
+                ),
+            ),
+        ),
+        (
+            "54. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract",
+            agent_forward([
+                encode_oz_revoke_role(
+                    contract=contracts.cs_accounting,
+                    role_name="SET_BOND_CURVE_ROLE",
+                    revoke_from=contracts.csm,
+                )
+            ])
+        ),
+        (
+            "55. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract",
+            agent_forward([
+                encode_oz_revoke_role(
+                    contract=contracts.cs_accounting,
+                    role_name="RESET_BOND_CURVE_ROLE",
+                    revoke_from=contracts.csm,
+                )
+            ])
+        ),
+        (
+            "56. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee",
+            agent_forward([
+                encode_oz_revoke_role(
+                    contract=contracts.cs_accounting,
+                    role_name="RESET_BOND_CURVE_ROLE",
+                    revoke_from=CSM_COMMITTEE_MS,
+                )
+            ])
+        ),
+        (
+            "57. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.csm,
+                    role_name="CREATE_NODE_OPERATOR_ROLE",
+                    grant_to=contracts.cs_permissionless_gate,
+                )
+            ])
+        ),
+        (
+            "58. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.csm,
+                    role_name="CREATE_NODE_OPERATOR_ROLE",
+                    grant_to=contracts.cs_vetted_gate,
+                )
+                ])
+        ),
+        (
+            "59. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.cs_accounting,
+                    role_name="SET_BOND_CURVE_ROLE",
+                    grant_to=contracts.cs_vetted_gate,
+                )
+            ])
+        ),
+        (
+            "60. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract",
+            agent_forward([
+                encode_oz_revoke_role(
+                    contract=contracts.csm,
+                    role_name="VERIFIER_ROLE",
+                    revoke_from=contracts.cs_verifier,
+                )
+            ])
+        ),
+        (
+            "61. Grant role VERIFIER_ROLE to the new instance of the Verifier contract",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.csm,
+                    role_name="VERIFIER_ROLE",
+                    grant_to=contracts.cs_verifier_v2,
+                )
+            ])
+        ),
+        # (
+        #     "62. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance",
+        #     agent_forward([
+        #         encode_oz_revoke_role(
+        #             contract=contracts.csm,
+        #             role_name="PAUSE_ROLE",
+        #             revoke_from=CS_GATE_SEAL_ADDRESS,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     "63. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance",
+        #     agent_forward([
+        #         encode_oz_revoke_role(
+        #             contract=contracts.cs_accounting,
+        #             role_name="PAUSE_ROLE",
+        #             revoke_from=CS_GATE_SEAL_ADDRESS,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     "64. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance",
+        #     agent_forward([
+        #         encode_oz_revoke_role(
+        #             contract=contracts.cs_fee_oracle,
+        #             role_name="PAUSE_ROLE",
+        #             revoke_from=CS_GATE_SEAL_ADDRESS,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     "65. Grant CSM role PAUSE_ROLE for the new GateSeal instance",
+        #     agent_forward([
+        #         encode_oz_grant_role(
+        #             contract=contracts.csm,
+        #             role_name="PAUSE_ROLE",
+        #             grant_to=CS_GATE_SEAL_V2_ADDRESS,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     "66. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance",
+        #     agent_forward([
+        #         encode_oz_grant_role(
+        #             contract=contracts.cs_accounting,
+        #             role_name="PAUSE_ROLE",
+        #             grant_to=CS_GATE_SEAL_V2_ADDRESS,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     "67. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance",
+        #     agent_forward([
+        #         encode_oz_grant_role(
+        #             contract=contracts.cs_fee_oracle,
+        #             role_name="PAUSE_ROLE",
+        #             grant_to=CS_GATE_SEAL_V2_ADDRESS,
+        #         )
+        #     ])
+        # ),
+        (
+            "68. Revoke Burner role REQUEST_BURN_SHARES_ROLE from the CSAccounting contract",
+            agent_forward([
+                encode_oz_revoke_role(
+                    contract=contracts.burner,
+                    role_name="REQUEST_BURN_SHARES_ROLE",
+                    revoke_from=contracts.cs_accounting,
+                )
+            ])
+        ),
+        (
+            "69. Grant Burner role REQUEST_BURN_MY_STETH_ROLE to the CSAccounting contract",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.burner,
+                    role_name="REQUEST_BURN_MY_STETH_ROLE",
+                    grant_to=contracts.cs_accounting,
                 )
             ])
         ),
