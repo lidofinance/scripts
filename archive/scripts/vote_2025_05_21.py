@@ -12,7 +12,7 @@ II. ...
 """
 
 import time
-from typing import Dict
+from typing import Dt
 from brownie.network.transaction import TransactionReceipt
 from utils.agent import agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
