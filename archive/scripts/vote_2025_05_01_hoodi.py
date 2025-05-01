@@ -56,14 +56,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             "1) Add `RemoveAllowedRecipients` EVM script factory with address 0xc84251D2959E976AfE95201E1e2B88dB56Bc0a69",
             add_evmscript_factory(
                 factory=removeAllowed,
-                permissions=(create_permissions(registry, "add_relay"),),
+                permissions=(create_permissions(registry, "removeRecipient"),),
             ),
         ),
         (
             "2) Add `AddAllowedRecipient` EVM script factory with address 0x056561d0F1314CB3932180b3f0B3C03174F2642B",
             add_evmscript_factory(
                 factory=addAllowed,
-                permissions=(create_permissions(registry, "remove_relay"),),
+                permissions=(create_permissions(registry, "addRecipient"),),
             ),
         ),
         (
