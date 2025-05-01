@@ -1,5 +1,5 @@
 """
-Voting may slot '25
+Voting 01/05/2025. Hoodi network.
 
 I. Deploy sandbox EVM script factories for EasyTrack:
 
@@ -31,7 +31,7 @@ from utils.easy_track import (
 )
 
 DESCRIPTION = """
-Voting may slot '25
+Voting 01/05/2025. Hoodi network.
 
 I. Deploy sandbox EVM script factories for EasyTrack:
 
@@ -39,8 +39,6 @@ I. Deploy sandbox EVM script factories for EasyTrack:
 2. Add `AddAllowedRecipient` EVM script factory
 3. Add `TopUpAllowedRecipient` EVM script factory
 4. Add `CREATE_PAYMENTS_ROLE` permission to EasyTrackEVMScriptExecutor
-
-II. ...
 """
 
 
@@ -55,21 +53,21 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
     vote_desc_items, call_script_items = zip(
         (
-            "1) Add `RemoveAllowedRecipients` EVM script factory with address {removeAllowed}",
+            "1) Add `RemoveAllowedRecipients` EVM script factory with address 0xc84251D2959E976AfE95201E1e2B88dB56Bc0a69",
             add_evmscript_factory(
                 factory=removeAllowed,
                 permissions=(create_permissions(registry, "add_relay"),),
             ),
         ),
         (
-            "2) Add `AddAllowedRecipient` EVM script factory with address {addAllowed}",
+            "2) Add `AddAllowedRecipient` EVM script factory with address 0x056561d0F1314CB3932180b3f0B3C03174F2642B",
             add_evmscript_factory(
                 factory=addAllowed,
                 permissions=(create_permissions(registry, "remove_relay"),),
             ),
         ),
         (
-            "3) Add `TopUpAllowedRecipient` EVM script factory with address {topUp}",
+            "3) Add `TopUpAllowedRecipient` EVM script factory with address 0x8D9Fd9cD208f57c6735174B848180B53A0F7F560",
             add_evmscript_factory(
                 factory=topUp,
                 permissions=create_permissions(contracts.finance, "newImmediatePayment")
