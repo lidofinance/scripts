@@ -70,7 +70,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "3) Add `TopUpAllowedRecipient` EVM script factory with address 0x8D9Fd9cD208f57c6735174B848180B53A0F7F560",
+            "3) Add `TopUpAllowedRecipient` EVM script factory with address 0x4A7B898981182c42ecC9444Cd40Cf42CEB6b71Ab",
             add_evmscript_factory(
                 factory=top_up_allowed_recipients,
                 permissions=create_permissions(contracts.finance, "newImmediatePayment")
