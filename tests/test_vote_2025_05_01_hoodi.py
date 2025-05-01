@@ -42,8 +42,8 @@ def test_vote(helpers, accounts, vote_ids_from_env):
     assert add_allowed_recipient_evm_script_factory not in evm_script_factories_before
     assert remove_allowed_recipient_evm_script_factory not in evm_script_factories_before
     assert top_up_allowed_recipient_evm_script_factory not in evm_script_factories_before
-    # START VOTE
 
+    # START VOTE
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
     else:
