@@ -45,33 +45,36 @@ I. Deploy sandbox EVM script factories for EasyTrack:
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting"""
 
-    removeAllowed = "0xc84251D2959E976AfE95201E1e2B88dB56Bc0a69"
-    addAllowed = "0x056561d0F1314CB3932180b3f0B3C03174F2642B"
-    topUp = "0x8D9Fd9cD208f57c6735174B848180B53A0F7F560"
+    # 1. Add `RemoveAllowedRecipients` EVM script factory (sandbox)
+    remove_allowed_recipient = "0xc84251D2959E976AfE95201E1e2B88dB56Bc0a69"
+    # 2. Add `AddAllowedRecipient` EVM script factory (sandbox)
+    add_allowed_recipient = "0x056561d0F1314CB3932180b3f0B3C03174F2642B"
+    # 3. Add `TopUpAllowedRecipient` EVM script factory (sandbox)
+    top_up_allowed_recipients = "0x8D9Fd9cD208f57c6735174B848180B53A0F7F560"
 
-    registry = interface.AllowedRecipientRegistry("0xd57FF1ce54F572F4E8DaF0cB7038F1Bd6049cAa8")
+    allowed_recipient_registry = interface.AllowedRecipientRegistry("0xd57FF1ce54F572F4E8DaF0cB7038F1Bd6049cAa8")
 
     vote_desc_items, call_script_items = zip(
         (
             "1) Add `RemoveAllowedRecipients` EVM script factory with address 0xc84251D2959E976AfE95201E1e2B88dB56Bc0a69",
             add_evmscript_factory(
-                factory=removeAllowed,
-                permissions=create_permissions(registry, "removeRecipient"),
+                factory=remove_allowed_recipient,
+                permissions=create_permissions(allowed_recipient_registry, "removeRecipient"),
             ),
         ),
         (
             "2) Add `AddAllowedRecipient` EVM script factory with address 0x056561d0F1314CB3932180b3f0B3C03174F2642B",
             add_evmscript_factory(
-                factory=addAllowed,
-                permissions=create_permissions(registry, "addRecipient"),
+                factory=add_allowed_recipient,
+                permissions=create_permissions(allowed_recipient_registry, "addRecipient"),
             ),
         ),
         (
             "3) Add `TopUpAllowedRecipient` EVM script factory with address 0x8D9Fd9cD208f57c6735174B848180B53A0F7F560",
             add_evmscript_factory(
-                factory=topUp,
+                factory=top_up_allowed_recipients,
                 permissions=create_permissions(contracts.finance, "newImmediatePayment")
-                + create_permissions(registry, "updateSpentAmount")[2:],
+                + create_permissions(allowed_recipient_registry, "updateSpentAmount")[2:],
             ),
         ),
         (
