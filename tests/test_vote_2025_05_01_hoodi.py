@@ -3,13 +3,16 @@ Tests for voting 01/05/2025. Hoodi network.
 
 """
 
-from brownie import interface
+from brownie import interface, accounts
 from scripts.vote_2025_05_01_hoodi import start_vote
 from utils.test.tx_tracing_helpers import *
 from utils.config import (
     contracts,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
     EASYTRACK_EVMSCRIPT_EXECUTOR,
+)
+from configs.config_hoodi import (
+    USDC_TOKEN,
 )
 from utils.test.event_validators.permission import (
     Permission,
@@ -21,9 +24,10 @@ from utils.test.event_validators.easy_track import (
 )
 from utils.easy_track import create_permissions
 from utils.voting import find_metadata_by_vote_id
+from utils.test.easy_track_helpers import create_and_enact_payment_motion
 
 
-def test_vote(helpers, accounts, vote_ids_from_env):
+def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     # new code
     easy_track = contracts.easy_track
     voting = contracts.voting
@@ -31,11 +35,10 @@ def test_vote(helpers, accounts, vote_ids_from_env):
 
     add_allowed_recipient_evm_script_factory = "0x056561d0F1314CB3932180b3f0B3C03174F2642B"
     remove_allowed_recipient_evm_script_factory = "0xc84251D2959E976AfE95201E1e2B88dB56Bc0a69"
-    top_up_allowed_recipient_evm_script_factory = "0x8D9Fd9cD208f57c6735174B848180B53A0F7F560"
+    top_up_allowed_recipient_evm_script_factory = "0x4A7B898981182c42ecC9444Cd40Cf42CEB6b71Ab"
 
     registry = interface.AllowedRecipientRegistry("0xd57FF1ce54F572F4E8DaF0cB7038F1Bd6049cAa8")
     trusted_caller = "0x418B816A7c3ecA151A31d98e30aa7DAa33aBf83A"
-    token_registry = "0xA51b9ecfa754F619971f3Dc58Def517F267F84dB"
 
     evm_script_factories_before = easy_track.getEVMScriptFactories()
 
@@ -113,3 +116,19 @@ def test_vote(helpers, accounts, vote_ids_from_env):
     )  # keccak256('CREATE_PAYMENTS_ROLE')
 
     validate_permission_grant_event(evs[3], permission)
+
+    usdc_transfer_amount = 100 * 10**6
+
+    agent, usdc = contracts.agent, interface.Usdc(USDC_TOKEN)
+    print(usdc.balanceOf(agent), usdc_transfer_amount)
+
+    if usdc.balanceOf(agent) >= usdc_transfer_amount:
+        create_and_enact_payment_motion(
+            easy_track,
+            trusted_caller=trusted_caller,
+            factory=top_up_allowed_recipient_evm_script_factory,
+            token=interface.Usdc(USDC_TOKEN),
+            recievers=[accounts.at(trusted_caller, force=True)],
+            transfer_amounts=[usdc_transfer_amount],
+            stranger=stranger,
+        )

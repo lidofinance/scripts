@@ -50,7 +50,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     # 2. Add `AddAllowedRecipient` EVM script factory (sandbox)
     add_allowed_recipient = "0x056561d0F1314CB3932180b3f0B3C03174F2642B"
     # 3. Add `TopUpAllowedRecipient` EVM script factory (sandbox)
-    top_up_allowed_recipients = "0x8D9Fd9cD208f57c6735174B848180B53A0F7F560"
+    top_up_allowed_recipients = "0x4A7B898981182c42ecC9444Cd40Cf42CEB6b71Ab"
 
     allowed_recipient_registry = interface.AllowedRecipientRegistry("0xd57FF1ce54F572F4E8DaF0cB7038F1Bd6049cAa8")
 
