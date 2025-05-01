@@ -4,7 +4,7 @@ Tests for voting 01/05/2025. Hoodi network.
 """
 
 from brownie import interface
-from archive.scripts.vote_2025_04_08_hoodi import start_vote
+from scripts.vote_2025_05_01_hoodi import start_vote
 from utils.test.tx_tracing_helpers import *
 from utils.config import (
     contracts,
@@ -60,21 +60,20 @@ def test_vote(helpers, accounts, vote_ids_from_env):
     assert remove_allowed_recipient_evm_script_factory in evm_script_factories
     assert top_up_allowed_recipient_evm_script_factory in evm_script_factories
 
-    removeRecipientsContract = interface.RemoveAllowedRecipients(remove_allowed_recipient_evm_script_factory)
+    removeRecipientsContract = interface.RemoveAllowedRecipient(remove_allowed_recipient_evm_script_factory)
     addRecipientsContract = interface.AddAllowedRecipient(add_allowed_recipient_evm_script_factory)
-    topUpRecipientsContract = interface.TopUpAllowedRecipient(top_up_allowed_recipient_evm_script_factory)
+    topUpRecipientsContract = interface.TopUpAllowedRecipients(top_up_allowed_recipient_evm_script_factory)
 
-    assert removeRecipientsContract.allowedRecipientRegistry() == registry
+    assert removeRecipientsContract.allowedRecipientsRegistry() == registry
     assert removeRecipientsContract.trustedCaller() == trusted_caller
 
-    assert addRecipientsContract.allowedRecipientRegistry() == registry
+    assert addRecipientsContract.allowedRecipientsRegistry() == registry
     assert addRecipientsContract.trustedCaller() == trusted_caller
 
-    assert topUpRecipientsContract.allowedRecipientRegistry() == registry
+    assert topUpRecipientsContract.allowedRecipientsRegistry() == registry
     assert topUpRecipientsContract.trustedCaller() == trusted_caller
     assert topUpRecipientsContract.finance() == contracts.finance
     assert topUpRecipientsContract.easyTrack() == easy_track
-    assert topUpRecipientsContract.allowedTokenRegistry() == token_registry
 
     # validate vote events
     assert count_vote_items_by_events(vote_tx, voting) == 4, "Incorrect voting items count"
@@ -85,22 +84,21 @@ def test_vote(helpers, accounts, vote_ids_from_env):
 
     # Grant permissions to make operational changes to EasyTrack module
     validate_evmscript_factory_added_event(
-        evs[1],
+        evs[0],
         EVMScriptFactoryAdded(
             factory_addr=remove_allowed_recipient_evm_script_factory,
             permissions=create_permissions(registry, "removeRecipient"),
         ),
     )
-
     validate_evmscript_factory_added_event(
-        evs[2],
+        evs[1],
         EVMScriptFactoryAdded(
             factory_addr=add_allowed_recipient_evm_script_factory,
             permissions=create_permissions(registry, "addRecipient"),
         ),
     )
     validate_evmscript_factory_added_event(
-        evs[3],
+        evs[2],
         EVMScriptFactoryAdded(
             factory_addr=top_up_allowed_recipient_evm_script_factory,
             permissions=create_permissions(contracts.finance, "newImmediatePayment")
@@ -114,4 +112,4 @@ def test_vote(helpers, accounts, vote_ids_from_env):
         role="0x5de467a460382d13defdc02aacddc9c7d6605d6d4e0b8bd2f70732cae8ea17bc",
     )  # keccak256('CREATE_PAYMENTS_ROLE')
 
-    validate_permission_grant_event(evs[4], permission)
+    validate_permission_grant_event(evs[3], permission)
