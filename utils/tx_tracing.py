@@ -70,16 +70,7 @@ def _find_fist_index_of_event_with_different_from_first_event_address(events):
     return len(events)
 
 
-def collect_events_from_abis() -> Dict:
-    """
-    Collect events from all contracts in the project
-
-    Returns
-    -------
-    events : Dict
-        Dictionary with event hash as key and event name and inputs as value
-    """
-
+def collect_events_from_abis():
     events_signatures = {}
 
     for interface_name in list(interface.__dict__)[1:]:
