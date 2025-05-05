@@ -70,7 +70,7 @@ def _find_fist_index_of_event_with_different_from_first_event_address(events):
     return len(events)
 
 
-def collect_events_from_abis():
+def validate_events_from_abis():
     events_signatures = {}
 
     for interface_name in list(interface.__dict__)[1:]:
@@ -108,7 +108,7 @@ def tx_events_from_receipt(tx: TransactionReceipt) -> List:
         raise "Tx has reverted status (set to 0)"
 
     result = web3.provider.make_request("eth_getTransactionReceipt", [tx.txid])
-    collect_events_from_abis()
+    validate_events_from_abis()
     events = decode_logs(result["result"]["logs"], _topics, allow_undecoded=True)
     return [format_event(i) for i in events]
 
@@ -142,7 +142,7 @@ def tx_events_from_trace(tx: TransactionReceipt) -> Optional[List]:
 
     initial_address = str(tx.receiver or tx.contract_address)
 
-    collect_events_from_abis()
+    validate_events_from_abis()
 
     events = decode_traceTransaction(trace, _topics, allow_undecoded=True, initial_address=initial_address)
     print(f" Done")
