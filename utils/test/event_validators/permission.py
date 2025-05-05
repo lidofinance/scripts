@@ -86,7 +86,7 @@ def validate_permission_grantp_event(event: EventDict, p: Permission, params: Li
     assert event["SetPermissionParams"]["paramsHash"] == params_hash
 
 
-def validate_grant_role_event(events: EventDict, role: str, grant_to: str, sender: str, emitted_by: str=None) -> None:
+def validate_grant_role_event(events: EventDict, role: str, grant_to: str, sender: str, emitted_by: str = None) -> None:
     # this event chain is actual if grant role is forvarded through
     _events_chain = ["LogScriptCall", "LogScriptCall", "RoleGranted", "ScriptResult"]
 
@@ -98,10 +98,14 @@ def validate_grant_role_event(events: EventDict, role: str, grant_to: str, sende
     assert events["RoleGranted"]["account"] == grant_to, "Wrong account"
     assert events["RoleGranted"]["sender"] == sender, "Wrong sender"
     if emitted_by is not None:
-        assert convert.to_address(events["RoleGranted"]["_emitted_by"]) == convert.to_address(emitted_by), "Wrong event emitter"
+        assert convert.to_address(events["RoleGranted"]["_emitted_by"]) == convert.to_address(
+            emitted_by
+        ), "Wrong event emitter"
 
 
-def validate_revoke_role_event(events: EventDict, role: str, revoke_from: str, sender: str, emitted_by: str=None) -> None:
+def validate_revoke_role_event(
+    events: EventDict, role: str, revoke_from: str, sender: str, emitted_by: str = None
+) -> None:
     _events_chain = ["LogScriptCall", "LogScriptCall", "RoleRevoked", "ScriptResult"]
 
     validate_events_chain([e.name for e in events], _events_chain)

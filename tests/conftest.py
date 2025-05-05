@@ -10,7 +10,7 @@ from brownie.network.contract import Contract
 
 from utils.evm_script import EMPTY_CALLSCRIPT
 
-from utils.config import contracts, network_name, MAINNET_VOTE_DURATION
+from utils.config import contracts, network_name, get_vote_duration
 
 from utils.config import *
 from utils.txs.deploy import deploy_from_prepared_tx
@@ -108,12 +108,12 @@ class Helpers:
             raise AssertionError(f"Event {evt_name} was fired")
 
     @staticmethod
-    def execute_vote(accounts, vote_id, dao_voting, topup="10 ether", skip_time=MAINNET_VOTE_DURATION):
-        (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup, skip_time)
+    def execute_vote(accounts, vote_id, dao_voting, topup="10 ether"):
+        (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup)
         return tx
 
     @staticmethod
-    def execute_votes(accounts, vote_ids, dao_voting, topup="10 ether", skip_time=MAINNET_VOTE_DURATION):
+    def execute_votes(accounts, vote_ids, dao_voting, topup="10 ether"):
         OBJECTION_PHASE_ID = 1
         for vote_id in vote_ids:
             print(f"Vote #{vote_id}")
@@ -128,7 +128,9 @@ class Helpers:
                     dao_voting.vote(vote_id, True, False, {"from": account})
 
         # wait for the vote to end
-        chain.sleep(skip_time)
+        time_to_end = dao_voting.getVote(vote_id)["startDate"] + get_vote_duration() - chain.time()
+        if time_to_end > 0:
+            chain.sleep(time_to_end)
         chain.mine()
 
         for vote_id in vote_ids:
