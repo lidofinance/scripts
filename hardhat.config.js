@@ -1,9 +1,13 @@
-/** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   networks: {
     hardhat: {
-      hardfork: "shanghai",
+      chains: {
+        560048: {
+          hardforkHistory: {
+            cancun: 0,
+          },
+        }
+      }
     },
   },
 };
-
