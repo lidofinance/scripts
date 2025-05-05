@@ -1,157 +1,120 @@
 [
     {
-        "type": "function",
-        "name": "DAY_DURATION",
-        "inputs": [],
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint32",
-                "internalType": "Duration"
-            }
-        ],
-        "stateMutability": "view"
+      "inputs": [
+        { "internalType": "Duration", "name": "startDayTime", "type": "uint32" },
+        { "internalType": "Duration", "name": "endDayTime", "type": "uint32" }
+      ],
+      "name": "checkTimeWithinDayTime",
+      "outputs": [],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-        "type": "function",
-        "name": "checkExecuteAfterTimestamp",
-        "inputs": [
-            {
-                "name": "timestamp",
-                "type": "uint40",
-                "internalType": "Timestamp"
-            }
-        ],
-        "outputs": [],
-        "stateMutability": "view"
+      "inputs": [
+        { "internalType": "Duration", "name": "startDayTime", "type": "uint32" },
+        { "internalType": "Duration", "name": "endDayTime", "type": "uint32" }
+      ],
+      "name": "checkTimeWithinDayTimeAndEmit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
-        "type": "function",
-        "name": "checkExecuteBeforeTimestamp",
-        "inputs": [
-            {
-                "name": "timestamp",
-                "type": "uint40",
-                "internalType": "Timestamp"
-            }
-        ],
-        "outputs": [],
-        "stateMutability": "view"
+      "inputs": [
+        { "internalType": "Timestamp", "name": "timestamp", "type": "uint40" }
+      ],
+      "name": "checkTimeAfterTimestamp",
+      "outputs": [],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-        "type": "function",
-        "name": "checkExecuteWithinDayTime",
-        "inputs": [
-            {
-                "name": "startDayTime",
-                "type": "uint32",
-                "internalType": "Duration"
-            },
-            {
-                "name": "endDayTime",
-                "type": "uint32",
-                "internalType": "Duration"
-            }
-        ],
-        "outputs": [],
-        "stateMutability": "view"
+      "inputs": [
+        { "internalType": "Timestamp", "name": "timestamp", "type": "uint40" }
+      ],
+      "name": "checkTimeAfterTimestampAndEmit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
-        "type": "function",
-        "name": "getCurrentDayTime",
-        "inputs": [],
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint32",
-                "internalType": "Duration"
-            }
-        ],
-        "stateMutability": "view"
+      "inputs": [
+        { "internalType": "Timestamp", "name": "timestamp", "type": "uint40" }
+      ],
+      "name": "checkTimeBeforeTimestamp",
+      "outputs": [],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-        "type": "error",
-        "name": "DayTimeOutOfRange",
-        "inputs": [
-            {
-                "name": "currentDayTime",
-                "type": "uint32",
-                "internalType": "Duration"
-            },
-            {
-                "name": "startDayTime",
-                "type": "uint32",
-                "internalType": "Duration"
-            },
-            {
-                "name": "endDayTime",
-                "type": "uint32",
-                "internalType": "Duration"
-            }
-        ]
+      "inputs": [
+        { "internalType": "Timestamp", "name": "timestamp", "type": "uint40" }
+      ],
+      "name": "checkTimeBeforeTimestampAndEmit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
-        "type": "error",
-        "name": "DayTimeOverflow",
-        "inputs": []
+      "inputs": [],
+      "name": "getCurrentDayTime",
+      "outputs": [
+        { "internalType": "Duration", "name": "", "type": "uint32" }
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-        "type": "error",
-        "name": "DurationOverflow",
-        "inputs": []
+      "anonymous": false,
+      "inputs": [
+        { "indexed": false, "internalType": "Duration", "name": "startDayTime", "type": "uint32" },
+        { "indexed": false, "internalType": "Duration", "name": "endDayTime", "type": "uint32" }
+      ],
+      "name": "TimeWithinDayTimeChecked",
+      "type": "event"
     },
     {
-        "type": "error",
-        "name": "InvalidDayTimeRange",
-        "inputs": [
-            {
-                "name": "startDayTime",
-                "type": "uint32",
-                "internalType": "Duration"
-            },
-            {
-                "name": "endDayTime",
-                "type": "uint32",
-                "internalType": "Duration"
-            }
-        ]
+      "anonymous": false,
+      "inputs": [
+        { "indexed": false, "internalType": "Timestamp", "name": "timestamp", "type": "uint40" }
+      ],
+      "name": "TimeAfterTimestampChecked",
+      "type": "event"
     },
     {
-        "type": "error",
-        "name": "InvalidTimestampRange",
-        "inputs": [
-            {
-                "name": "startTimestamp",
-                "type": "uint40",
-                "internalType": "Timestamp"
-            },
-            {
-                "name": "endTimestamp",
-                "type": "uint40",
-                "internalType": "Timestamp"
-            }
-        ]
+      "anonymous": false,
+      "inputs": [
+        { "indexed": false, "internalType": "Timestamp", "name": "timestamp", "type": "uint40" }
+      ],
+      "name": "TimeBeforeTimestampChecked",
+      "type": "event"
     },
     {
-        "type": "error",
-        "name": "TimestampExceeded",
-        "inputs": [
-            {
-                "name": "deadline",
-                "type": "uint40",
-                "internalType": "Timestamp"
-            }
-        ]
+      "name": "DayTimeOverflow",
+      "type": "error",
+      "inputs": []
     },
     {
-        "type": "error",
-        "name": "TimestampNotReached",
-        "inputs": [
-            {
-                "name": "requiredTimestamp",
-                "type": "uint40",
-                "internalType": "Timestamp"
-            }
-        ]
+      "name": "DayTimeOutOfRange",
+      "type": "error",
+      "inputs": [
+        { "internalType": "Duration", "name": "currentDayTime", "type": "uint32" },
+        { "internalType": "Duration", "name": "startDayTime", "type": "uint32" },
+        { "internalType": "Duration", "name": "endDayTime", "type": "uint32" }
+      ]
+    },
+    {
+      "name": "TimestampNotPassed",
+      "type": "error",
+      "inputs": [
+        { "internalType": "Timestamp", "name": "timestamp", "type": "uint40" }
+      ]
+    },
+    {
+      "name": "TimestampPassed",
+      "type": "error",
+      "inputs": [
+        { "internalType": "Timestamp", "name": "timestamp", "type": "uint40" }
+      ]
     }
 ]

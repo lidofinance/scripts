@@ -30,26 +30,3 @@ def validate_dual_governance_submit_event(
     assert event["ProposalSubmitted"][1]["proposalId"] == proposal_id, "Wrong proposalId"
     assert event["ProposalSubmitted"][1]["proposerAccount"] == proposer, "Wrong proposer"
     assert event["ProposalSubmitted"][1]["metadata"] == metadata, "Wrong metadata"
-
-
-def dg_events_from_trace(tx: TransactionReceipt, timelock: str, admin_executor: str) -> List[EventDict]:
-    events = tx_events_from_trace(tx)
-
-    assert len(events) >= 1, "Unexpected events count"
-    assert (
-        events[-1]["address"] == timelock and events[-1]["name"] == "ProposalExecuted"
-    ), "Unexpected Dual Governance service event"
-
-    groups = []
-    current_group = []
-
-    for event in events[:-1]:
-        current_group.append(event)
-
-        is_end_of_group = event["name"] == "Executed" and event["address"] == admin_executor
-
-        if is_end_of_group:
-            groups.append(current_group)
-            current_group = []
-
-    return [EventDict(group) for group in groups]

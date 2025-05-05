@@ -342,23 +342,72 @@
         "stateMutability": "nonpayable"
     },
     {
-        "type": "event",
-        "name": "RoleValidated",
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "entity",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "string",
+            "name": "roleName",
+            "type": "string"
+          },
+          {
+            "indexed": false,
+            "internalType": "address[]",
+            "name": "grantedTo",
+            "type": "address[]"
+          },
+          {
+            "indexed": false,
+            "internalType": "address[]",
+            "name": "revokedFrom",
+            "type": "address[]"
+          }
+        ],
+        "name": "OZRoleValidated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
         "inputs": [
             {
-                "name": "entity",
-                "type": "address",
-                "indexed": false,
-                "internalType": "address"
+            "indexed": false,
+            "internalType": "address",
+            "name": "entity",
+            "type": "address"
             },
             {
-                "name": "roleName",
-                "type": "string",
-                "indexed": false,
-                "internalType": "string"
+            "indexed": false,
+            "internalType": "string",
+            "name": "roleName",
+            "type": "string"
+            },
+            {
+            "indexed": false,
+            "internalType": "address",
+            "name": "manager",
+            "type": "address"
+            },
+            {
+            "indexed": false,
+            "internalType": "address[]",
+            "name": "grantedTo",
+            "type": "address[]"
+            },
+            {
+            "indexed": false,
+            "internalType": "address[]",
+            "name": "revokedFrom",
+            "type": "address[]"
             }
         ],
-        "anonymous": false
+        "name": "AragonPermissionValidated",
+        "type": "event"
     },
     {
         "type": "error",
