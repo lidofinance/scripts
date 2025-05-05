@@ -12,6 +12,9 @@ Release part of the update before the Pectra upgrade
 9. Revoke MANAGE_CONSENSUS_VERSION_ROLE role on CSFeeOracle 0x4D4074628678Bd302921c20573EEa1ed38DdF7FB from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c
 10. Revoke VERIFIER_ROLE role on CSM 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F from old CS Verifier 0x3Dfc50f22aCA652a0a6F28a0F892ab62074b5583
 11. Grant VERIFIER_ROLE role on CSM 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F to new CS Verifier 0x0c345dFa318f9F4977cdd4f33d80F9D0ffA38e8B
+
+Vote #185 passed & executed on 28/04/2025 at 02:29:35 PM UTC, block #22368161.
+
 """
 
 import time
@@ -45,13 +48,13 @@ CS_FEE_ORACLE_CONSENSUS_VERSION = 2
 description = """
 **Ensure Compatibility with Ethereum's Pectra Fork**, as approved [on Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xb6559f0cdb1164ae5d63769827c4a275805bd944392a17b60cf51ddc54429dc6):
 
-1. **Update oracle consensus versions** to activate the new algorithm that ensures correct behavior before and after the hardfork.  Items 1–9.
+1. **Update oracle consensus versions** to activate the new algorithm that ensures correct behavior before and after the hardfork. Items 1–9.
 
     - [Accounting Oracle](https://etherscan.io/address/0x852deD011285fe67063a08005c71a85690503Cee): v2 → v3
     - [Validator Exit Bus Oracle](https://etherscan.io/address/0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e): v2 → v3
     - [CS Fee Oracle](https://etherscan.io/address/0x4D4074628678Bd302921c20573EEa1ed38DdF7FB): v1 → v2
 
-**Audits by:** [Composable Security](https://github.com/lidofinance/audits/blob/main/Composable%20Security%20Lido%20Oracle%20v5%2004-25.pdf), [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Oracle%20v5%2004-25.pdf). 
+**Audits by:** [Composable Security](https://github.com/lidofinance/audits/blob/main/Composable%20Security%20Lido%20Oracle%20v5%2004-25.pdf), [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Oracle%20v5%2004-25.pdf).
 
 2. **Update CS Verifier Contract** [on the Community Staking Module](https://etherscan.io/address/0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F) to remove the slashing report functionality and reflect the updated **`gIndexes`** structure. Items 10–11.
 

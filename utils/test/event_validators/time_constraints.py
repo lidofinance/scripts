@@ -21,7 +21,6 @@ def validate_dg_time_constraints_executed_before_event(event: EventDict, timesta
     assert event["TimeBeforeTimestampChecked"][0]["timestamp"] == timestamp
 
 
-
 def validate_dg_time_constraints_executed_with_day_time_event(event: EventDict, start_day_time, end_day_time) -> None:
     _events_chain = ["TimeWithinDayTimeChecked", "Executed"]
 
