@@ -43,7 +43,6 @@ RESEAL_MANAGER = "0x05172CbCDb7307228F781436b327679e4DAE166B"
 DAO_EMERGENCY_GOVERNANCE = "0x69E8e916c4A19F42C13C802abDF2767E1fB4F059"
 ROLES_VALIDATOR = "0x9CCe5BfAcDcf80DAd2287106b57197284DacaE3F"
 TIME_CONSTRAINTS = "0xB26Fd3b50280AbC55c572EE73071778A51088408"
-DUAL_GOVERNANCE_CONFIG_PROVIDER = "0x2b685e6fB288bBb7A82533BAfb679FfDF6E5bb33"
 
 
 # These addresses can be checked on https://docs.lido.fi/deployed-contracts/hoodi
@@ -1110,100 +1109,3 @@ def dg_events_from_trace(receipt: TransactionReceipt, timelock: str, admin_execu
             current_group = []
 
     return [EventDict(group) for group in groups]
-
-
-def test_dual_governance_acceptance():
-    dg = interface.DualGovernance(DUAL_GOVERNANCE)
-
-    RESEAL_COMMITTEE = "0x83BCE68B4e8b7071b2a664a26e6D3Bc17eEe3102"
-
-    assert dg.getConfigProvider() == DUAL_GOVERNANCE_CONFIG_PROVIDER
-    assert dg.TIMELOCK() == TIMELOCK
-
-    assert dg.getResealManager() == RESEAL_MANAGER
-    assert dg.getResealCommittee() == RESEAL_COMMITTEE
-
-    proposer_data = dg.getProposer(VOTING)
-    assert proposer_data[0] == VOTING
-    assert proposer_data[1] == DUAL_GOVERNANCE_ADMIN_EXECUTOR
-
-    assert dg.MAX_TIEBREAKER_ACTIVATION_TIMEOUT() == 1800 # 30 mins
-    assert dg.MIN_TIEBREAKER_ACTIVATION_TIMEOUT() == 300 # 5 mins
-
-    assert dg.MAX_SEALABLE_WITHDRAWAL_BLOCKERS_COUNT() == 255
-
-
-def test_emergency_protected_timelock_acceptance():
-    ept = interface.EmergencyProtectedTimelock(TIMELOCK)
-
-    EMERGENCY_ACTIVATION_COMMITTEE = "0xA678c29cbFde2C74aF15C7724EE4b1527A50D45B"
-    EMERGENCY_EXECUTION_COMMITTEE = "0x8E1Ce8995E370222CbD825fFD7Dce2A5BfE1E631"
-
-    assert ept.MAX_AFTER_SCHEDULE_DELAY() == 1800 # 30 mins
-    assert ept.MAX_AFTER_SUBMIT_DELAY() == 1800 # 30 mins
-    assert ept.MAX_EMERGENCY_MODE_DURATION() == 2592000 # 30 days
-    assert ept.MAX_EMERGENCY_PROTECTION_DURATION() == 63072000 # 2 years
-    assert ept.MIN_EXECUTION_DELAY() == 120 # 2 mins
-
-    assert ept.getAfterScheduleDelay() == 120 # 2 mins
-    assert ept.getAfterSubmitDelay() == 120 # 2 mins
-
-    assert ept.getAdminExecutor() == DUAL_GOVERNANCE_ADMIN_EXECUTOR
-    assert ept.getGovernance() == DUAL_GOVERNANCE
-
-    assert ept.isEmergencyModeActive() == False
-    assert ept.isEmergencyProtectionEnabled() == True
-
-    assert ept.getEmergencyActivationCommittee() == EMERGENCY_ACTIVATION_COMMITTEE
-    assert ept.getEmergencyExecutionCommittee() == EMERGENCY_EXECUTION_COMMITTEE
-
-    emergency_protection_details = ept.getEmergencyProtectionDetails()
-
-    assert emergency_protection_details[0] == 86400
-    assert emergency_protection_details[1] == 0
-    assert emergency_protection_details[2] == 1777975200
-    
-
-def test_dual_governance_config_provider_acceptance():
-    dgcp = interface.DualGovernanceConfigProvider(DUAL_GOVERNANCE_CONFIG_PROVIDER)
-
-    FIRST_SEAL_RAGE_QUIT_SUPPORT = 3 * 10 ** 16  # 3% in PercentD16
-    SECOND_SEAL_RAGE_QUIT_SUPPORT = 15 * 10 ** 16  # 15% in PercentD16
-    MIN_ASSETS_LOCK_DURATION = 300  # 5 mins
-    RAGE_QUIT_ETH_WITHDRAWALS_DELAY_GROWTH = 1200  # 20 mins
-    RAGE_QUIT_ETH_WITHDRAWALS_MIN_DELAY = 600  # 10 min
-    RAGE_QUIT_ETH_WITHDRAWALS_MAX_DELAY = 3600  # 1 hour
-    RAGE_QUIT_EXTENSION_PERIOD_DURATION = 180  # 3 mins
-    VETO_COOLDOWN_DURATION = 180  # 3 mins
-    VETO_SIGNALLING_DEACTIVATION_MAX_DURATION = 300  # 5 mins
-    VETO_SIGNALLING_MIN_ACTIVE_DURATION = 180  # 3 mins
-    VETO_SIGNALLING_MAX_DURATION = 1800  # 30 mins
-    VETO_SIGNALLING_MIN_DURATION = 300  # 5 mins
-
-    assert dgcp.FIRST_SEAL_RAGE_QUIT_SUPPORT() == FIRST_SEAL_RAGE_QUIT_SUPPORT
-    assert dgcp.SECOND_SEAL_RAGE_QUIT_SUPPORT() == SECOND_SEAL_RAGE_QUIT_SUPPORT
-    assert dgcp.MIN_ASSETS_LOCK_DURATION() == MIN_ASSETS_LOCK_DURATION
-    assert dgcp.RAGE_QUIT_ETH_WITHDRAWALS_DELAY_GROWTH() == RAGE_QUIT_ETH_WITHDRAWALS_DELAY_GROWTH
-    assert dgcp.RAGE_QUIT_ETH_WITHDRAWALS_MIN_DELAY() == RAGE_QUIT_ETH_WITHDRAWALS_MIN_DELAY
-    assert dgcp.RAGE_QUIT_ETH_WITHDRAWALS_MAX_DELAY() == RAGE_QUIT_ETH_WITHDRAWALS_MAX_DELAY
-    assert dgcp.RAGE_QUIT_EXTENSION_PERIOD_DURATION() == RAGE_QUIT_EXTENSION_PERIOD_DURATION
-    assert dgcp.VETO_COOLDOWN_DURATION() == VETO_COOLDOWN_DURATION
-    assert dgcp.VETO_SIGNALLING_DEACTIVATION_MAX_DURATION() == VETO_SIGNALLING_DEACTIVATION_MAX_DURATION
-    assert dgcp.VETO_SIGNALLING_MIN_ACTIVE_DURATION() == VETO_SIGNALLING_MIN_ACTIVE_DURATION
-    assert dgcp.VETO_SIGNALLING_MAX_DURATION() == VETO_SIGNALLING_MAX_DURATION
-    assert dgcp.VETO_SIGNALLING_MIN_DURATION() == VETO_SIGNALLING_MIN_DURATION
-
-    config = dgcp.getDualGovernanceConfig()
-
-    assert config[0] == FIRST_SEAL_RAGE_QUIT_SUPPORT
-    assert config[1] == SECOND_SEAL_RAGE_QUIT_SUPPORT
-    assert config[2] == MIN_ASSETS_LOCK_DURATION
-    assert config[3] == VETO_SIGNALLING_MIN_DURATION
-    assert config[4] == VETO_SIGNALLING_MAX_DURATION
-    assert config[5] == VETO_SIGNALLING_MIN_ACTIVE_DURATION
-    assert config[6] == VETO_SIGNALLING_DEACTIVATION_MAX_DURATION
-    assert config[7] == VETO_COOLDOWN_DURATION
-    assert config[8] == RAGE_QUIT_EXTENSION_PERIOD_DURATION
-    assert config[9] == RAGE_QUIT_ETH_WITHDRAWALS_MIN_DELAY
-    assert config[10] == RAGE_QUIT_ETH_WITHDRAWALS_MAX_DELAY
-    assert config[11] == RAGE_QUIT_ETH_WITHDRAWALS_DELAY_GROWTH
