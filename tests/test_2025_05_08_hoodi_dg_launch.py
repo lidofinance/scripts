@@ -96,10 +96,6 @@ def prepare_activated_dg_state():
         assert timelock.getProposalsCount() == 1
 
 
-class ValidatedRole(NamedTuple):
-    entity: str
-    roleName: str
-
 class OZValidatedRole(NamedTuple):
     entity: str
     roleName: str
