@@ -1152,7 +1152,7 @@ def test_emergency_protected_timelock_acceptance():
     assert ept.getGovernance() == DUAL_GOVERNANCE
 
     assert ept.isEmergencyModeActive() == False
-    assert ept.isEmergencyProtected() == True
+    assert ept.isEmergencyProtectionEnabled() == True
 
     assert ept.getEmergencyActivationCommittee() == EMERGENCY_ACTIVATION_COMMITTEE
     assert ept.getEmergencyExecutionCommittee() == EMERGENCY_EXECUTION_COMMITTEE
