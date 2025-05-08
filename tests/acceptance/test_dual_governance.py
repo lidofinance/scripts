@@ -1,4 +1,10 @@
+import pytest
 from brownie import interface  # type: ignore
+from utils.config import network_name
+
+if network_name() not in ["hoodi", "hoodi-fork"]:
+    print(f"""\nSkip DG acceptance tests as it's not deployed on network "f{network_name()}" """)
+    pytest.skip(allow_module_level=True)
 
 from utils.config import (
     contracts,
@@ -14,7 +20,6 @@ from utils.config import (
     EMERGENCY_PROTECTED_TIMELOCK_VALUES,
     TIEBREAKER_VALUES
 )
-
 
 def test_dual_governance_acceptance():
     dual_governance = contracts.dual_governance
