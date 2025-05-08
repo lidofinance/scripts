@@ -403,6 +403,22 @@ class ContractsLazyLoader:
     def token_rate_notifier(self) -> interface.TokenRateNotifier:
         return interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)
 
+    @property
+    def dual_governance(self) -> interface.DualGovernance:
+        return interface.DualGovernance(DUAL_GOVERNANCE)
+
+    @property
+    def dual_governance_config_provider(self) -> interface.DualGovernanceConfigProvider:
+        return interface.DualGovernanceConfigProvider(DUAL_GOVERNANCE_CONFIG_PROVIDER)
+
+    @property
+    def emergency_protected_timelock(self) -> interface.EmergencyProtectedTimelock:
+        return interface.EmergencyProtectedTimelock(TIMELOCK)
+
+    @property
+    def emergency_governance(self) -> interface.EmergencyGovernance:
+        return interface.EmergencyGovernance(DAO_EMERGENCY_GOVERNANCE)
+
 
 def __getattr__(name: str) -> Any:
     if name == "contracts":
