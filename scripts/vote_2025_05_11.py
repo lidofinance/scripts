@@ -60,7 +60,7 @@ new_oracle_member_to_add = "0xe050818F12D40b4ac8bf99a9f9F9517b07428D58"
 description = """
 **Emergency rotation of compromised Chorus One oracle.**
 
-Replace in Accounting Oracle, CSFeeOracle, CSFee, and ValidatorsExitBusOracle. Full context on Research forum. Items 1-6.
+Rotate Chorus One's address in the Lido on Ethereum Oracle set. Full context on [Research forum]().
 """
 
 def encode_remove_accounting_oracle_member(member: str, quorum: int) -> Tuple[str, str]:
