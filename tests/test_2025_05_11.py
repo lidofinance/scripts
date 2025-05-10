@@ -1,6 +1,6 @@
 import pytest
 
-from scripts.upgrade_sr_v2 import start_vote
+from scripts.vote_2025_05_11 import start_vote
 from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS
 from brownie import interface
 from utils.test.tx_tracing_helpers import *
