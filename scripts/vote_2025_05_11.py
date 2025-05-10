@@ -3,9 +3,9 @@ Chorus One oracle rotation
 1. Remove the oracle member with address 0x140bd8fbdc884f48da7cb1c09be8a2fadfea776e from HashConsensus for AccountingOracle
 2. Remove the oracle member with address 0x140bd8fbdc884f48da7cb1c09be8a2fadfea776e from HashConsensus for ValidatorsExitBusOracle
 3. Remove the oracle member with address 0x140bd8fbdc884f48da7cb1c09be8a2fadfea776e from CSHashConsensus for CSFeeOracle
-4. Add oracle member with address 0xe050818F12D40b4ac8bf99a9f9F9517b07428D58 to HashConsensus for AccountingOracle
-5. Add oracle member with address 0xe050818F12D40b4ac8bf99a9f9F9517b07428D58 to HashConsensus for ValidatorsExitBusOracle
-6. Add oracle member with address 0xe050818F12D40b4ac8bf99a9f9F9517b07428D58 to CSHashConsensus for CSFeeOracle
+4. Add oracle member with address 0x285f8537e1dAeEdaf617e96C742F2Cf36d63CcfB to HashConsensus for AccountingOracle
+5. Add oracle member with address 0x285f8537e1dAeEdaf617e96C742F2Cf36d63CcfB to HashConsensus for ValidatorsExitBusOracle
+6. Add oracle member with address 0x285f8537e1dAeEdaf617e96C742F2Cf36d63CcfB to CSHashConsensus for CSFeeOracle
 """
 
 import time
@@ -25,18 +25,7 @@ from utils.config import (
     contracts,
 )
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
-from utils.repo import (
-    add_implementation_to_nor_app_repo,
-    add_implementation_to_sdvt_app_repo,
-)
-from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
-from utils.easy_track import (
-    add_evmscript_factory,
-    create_permissions,
-    create_permissions_for_overloaded_method,
-    remove_evmscript_factory,
-)
-from utils.kernel import update_app_implementation
+
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
 from brownie.network.transaction import TransactionReceipt
@@ -51,7 +40,7 @@ HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM = 5
 
 # Oracles members
 old_oracle_member_to_remove = "0x140bd8fbdc884f48da7cb1c09be8a2fadfea776e"
-new_oracle_member_to_add = "0xe050818F12D40b4ac8bf99a9f9F9517b07428D58"
+new_oracle_member_to_add = "0x285f8537e1dAeEdaf617e96C742F2Cf36d63CcfB"
 
 
 description = """
@@ -122,7 +111,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "4. Remove the oracle member with address 0x140bd8fbdc884f48da7cb1c09be8a2fadfea776e from CSHashConsensus for CSFeeOracle",
+            "3. Remove the oracle member with address 0x140bd8fbdc884f48da7cb1c09be8a2fadfea776e from CSHashConsensus for CSFeeOracle",
             agent_forward(
                 [
                     encode_remove_validators_cs_fee_oracle_member(
@@ -133,7 +122,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "5. Add oracle member with address 0xe050818F12D40b4ac8bf99a9f9F9517b07428D58 to HashConsensus for AccountingOracle",
+            "4. Add oracle member with address 0x285f8537e1dAeEdaf617e96C742F2Cf36d63CcfB to HashConsensus for AccountingOracle",
             agent_forward(
                 [
                     encode_add_accounting_oracle_member(
@@ -143,7 +132,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "6. Add oracle member with address 0xe050818F12D40b4ac8bf99a9f9F9517b07428D58 to HashConsensus for ValidatorsExitBusOracle",
+            "5. Add oracle member with address 0x285f8537e1dAeEdaf617e96C742F2Cf36d63CcfB to HashConsensus for ValidatorsExitBusOracle",
             agent_forward(
                 [
                     encode_add_validators_exit_bus_oracle_member(
@@ -153,7 +142,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             ),
         ),
         (
-            "6. Add oracle member with address 0xe050818F12D40b4ac8bf99a9f9F9517b07428D58 to CSHashConsensus for CSFeeOracle",
+            "6. Add oracle member with address 0x285f8537e1dAeEdaf617e96C742F2Cf36d63CcfB to CSHashConsensus for CSFeeOracle",
             agent_forward(
                 [
                     encode_add_cs_fee_oracle_member(new_oracle_member_to_add, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM),
