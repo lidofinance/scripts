@@ -47,9 +47,6 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 
 HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM = 5
 HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM = 5
-
-
-## Parameters
 HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM = 5
 
 # Oracles members
