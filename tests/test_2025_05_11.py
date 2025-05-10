@@ -15,7 +15,6 @@ from utils.test.event_validators.hash_consensus import (
 
 # Addresses that will not be changed
 
-ACCOUNTING_ORACLE = "0x852deD011285fe67063a08005c71a85690503Cee"
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 
 HASH_CONSENSUS_FOR_AO = "0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288"
@@ -24,7 +23,7 @@ CS_ORACLE_HASH_CONSENSUS_ADDRESS = "0x71093efF8D8599b5fA340D665Ad60fA7C80688e4"
 
 # Oracles members
 old_oracle_member_to_remove = "0x140bd8fbdc884f48da7cb1c09be8a2fadfea776e"
-new_oracle_member_to_add = "0xe050818F12D40b4ac8bf99a9f9F9517b07428D58"
+new_oracle_member_to_add = "0x285f8537e1dAeEdaf617e96C742F2Cf36d63CcfB"
 
 
 def test_vote(
@@ -48,7 +47,7 @@ def test_vote(
     assert vebo_hash_consensus.getQuorum() == 5
     assert len(vebo_hash_consensus.getMembers()[0]) == 9
 
-    # 4), 6) before vote old member is still in the quorum of cs hash consensus, new member is not in the quorum
+    # 3), 6) before vote old member is still in the quorum of cs hash consensus, new member is not in the quorum
     assert csm_hash_consensus.getIsMember(old_oracle_member_to_remove)
     assert not csm_hash_consensus.getIsMember(new_oracle_member_to_add)
     assert csm_hash_consensus.getQuorum() == 5
