@@ -105,7 +105,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[T
             agent_forward(
                 [
                     encode_remove_validators_exit_bus_oracle_member(
-                        old_oracle_member_to_remove, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
+                        old_oracle_member_to_remove, HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM
                     )
                 ],
             ),
