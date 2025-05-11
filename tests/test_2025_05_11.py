@@ -68,7 +68,7 @@ def test_vote(
 
     metadata = find_metadata_by_vote_id(vote_id)
     print('ipfs id:', get_lido_vote_cid_from_str(metadata))
-    assert get_lido_vote_cid_from_str(metadata) == "bafkreihy2o5c653ykrqcvsruootiwi7i4el26apnvriocfgxlosejdnt6i"
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreiblqghav4yz2jkavidp2nexjs5li65xjzrqdgoxelnpw7uzwpv3ka"
 
     # 1), 4) after vote old member is not in the quorum of ao hash consensus, new member is in the quorum
     assert not ao_hash_consensus.getIsMember(old_oracle_member_to_remove)
