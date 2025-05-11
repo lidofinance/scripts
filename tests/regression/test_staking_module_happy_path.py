@@ -15,6 +15,7 @@ from utils.config import contracts, STAKING_ROUTER, EASYTRACK_EVMSCRIPT_EXECUTOR
 from utils.test.node_operators_helpers import distribute_reward, node_operator_gindex
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_keys
 from utils.test.staking_router_helpers import set_staking_module_status, StakingModuleStatus
+from utils.test.deposits_helpers import fill_deposit_buffer
 
 STAKING_ROUTER_ROLE = Web3.keccak(text="STAKING_ROUTER_ROLE")
 STAKING_MODULE_MANAGE_ROLE = Web3.keccak(text="STAKING_MODULE_MANAGE_ROLE")
@@ -145,14 +146,12 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         {"from": impersonated_voting},
     )
 
-    # remove staking limit to avoid STAKE_LIMIT error
-    contracts.lido.removeStakingLimit({"from": impersonated_voting})
-
     # pausing csm due to very high amount of keys in the queue
     csm_module_id = 3
     set_staking_module_status(csm_module_id, StakingModuleStatus.Stopped)
 
-    contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale, "amount": ETH(150_000)})
+    # fill buffer enough to deposit 100 keys
+    fill_deposit_buffer(100)
 
     print("Reset staking limit for all OPs...")
     no_amount = staking_module.getNodeOperatorsCount()
