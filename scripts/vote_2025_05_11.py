@@ -46,7 +46,7 @@ new_oracle_member_to_add = "0x285f8537e1dAeEdaf617e96C742F2Cf36d63CcfB"
 description = """
 **Emergency rotation of compromised Chorus One oracle.**
 
-Rotate Chorus One's address in the Lido on Ethereum Oracle set. Full context on [Research forum]().
+Rotate Chorus One's address in the Lido on Ethereum Oracle set. Full context on [Research forum](https://research.lido.fi/t/emergency-rotation-of-compromised-chorus-one-oracle/10037).
 """
 
 def encode_remove_accounting_oracle_member(member: str, quorum: int) -> Tuple[str, str]:
