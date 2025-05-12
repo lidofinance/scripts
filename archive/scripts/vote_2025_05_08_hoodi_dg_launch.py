@@ -57,6 +57,8 @@ Dual Governance Launch on Hoodi testnet
 54. Submit a proposal to the Dual Governance to revoke RUN_SCRIPT_ROLE and EXECUTE_ROLE from Aragon Voting
 55. Verify Dual Governance launch state
 56. Introduce an expiration deadline after which the omnibus can no longer be enacted
+
+Vote passed & executed on May 8, 2025 at 13:40 UTC, block 350291
 """
 
 import time
