@@ -4,7 +4,7 @@ import os
 from typing import NamedTuple, List
 from brownie import web3, chain, interface, ZERO_ADDRESS, accounts, reverts
 from hexbytes import HexBytes
-from scripts.vote_2025_05_07_hoodi_dg_launch import start_vote
+from scripts.vote_2025_05_08_hoodi_dg_launch import start_vote
 from utils.config import contracts
 from brownie.network.transaction import TransactionReceipt
 from utils.test.tx_tracing_helpers import *
@@ -94,10 +94,6 @@ def prepare_activated_dg_state():
         assert timelock.getEmergencyGovernance() == DAO_EMERGENCY_GOVERNANCE
         assert timelock.getProposalsCount() == 1
 
-
-class ValidatedRole(NamedTuple):
-    entity: str
-    roleName: str
 
 class OZValidatedRole(NamedTuple):
     entity: str
