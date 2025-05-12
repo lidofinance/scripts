@@ -115,12 +115,12 @@ def validate_revoke_role_event(
     assert events["RoleRevoked"]["role"] == role, "Wrong role"
     assert events["RoleRevoked"]["account"] == revoke_from, "Wrong account"
     assert events["RoleRevoked"]["sender"] == sender, "Wrong sender"
-    
+
     if emitted_by is not None:
         assert convert.to_address(events["RoleRevoked"]["_emitted_by"]) == convert.to_address(emitted_by), "Wrong event emitter"
 
 
-def validate_change_permission_manager_event(event: EventDict, app: str, role: str, manager: str) -> None:
+def validate_set_permission_manager_event(event: EventDict, app: str, role: str, manager: str) -> None:
     _events_chain = ["LogScriptCall", "ChangePermissionManager"]
 
     validate_events_chain([e.name for e in event], _events_chain)
