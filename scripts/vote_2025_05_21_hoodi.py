@@ -14,7 +14,7 @@ II. ...
 import time
 from typing import Dict
 from brownie.network.transaction import TransactionReceipt
-from utils.agent import agent_forward
+from utils.agent import dual_governance_agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_description
 from utils.config import (
@@ -54,29 +54,30 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             "1) Add `AddMEVBoostRelay` EVM script factory with address 0xF02DbeaA1Bbc90226CaB995db4C190DbE25983af",
             add_evmscript_factory(
                 factory=EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY,
-                permissions=(create_permissions(contracts.relay_allowed_list, "add_relay"),),
+                permissions=create_permissions(contracts.relay_allowed_list, "add_relay"),
             ),
         ),
         (
             "2) Add `RemoveMEVBoostRelay` EVM script factory with address 0x7FCc2901C6C3D62784cB178B14d44445B038f736",
             add_evmscript_factory(
                 factory=EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY,
-                permissions=(create_permissions(contracts.relay_allowed_list, "remove_relay"),),
+                permissions=create_permissions(contracts.relay_allowed_list, "remove_relay"),
             ),
         ),
         (
             "3) Add `EditMEVBoostRelay` EVM script factory with address 0x27A99a7104190DdA297B222104A6C70A4Ca5A17e",
             add_evmscript_factory(
                 factory=EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY,
-                permissions=(create_permissions(contracts.relay_allowed_list, "edit_relay"),),
+                permissions=create_permissions(contracts.relay_allowed_list, "add_relay")
+                + create_permissions(contracts.relay_allowed_list, "remove_relay")[2:],
             ),
         ),
         (
-            "4) Change manager role on MEV-Boost Relay Allowed List from RMC multisig 0x98be4a407Bff0c125e25fBE9Eb1165504349c37d to `EasyTrackEVMScriptExecutor` {EASYTRACK_EVMSCRIPT_EXECUTOR}",
-            agent_forward(
+            "4) Change manager role on MEV-Boost Relay Allowed List from 0xF865A1d43D36c713B4DA085f32b7d1e9739B9275 to `EasyTrackEVMScriptExecutor` 0x79a20FD0FA36453B2F45eAbab19bfef43575Ba9E",
+            dual_governance_agent_forward(
                 [
                     (
-                        contracts.relay_allowed_list,
+                        contracts.relay_allowed_list.address,
                         contracts.relay_allowed_list.set_manager.encode_input(EASYTRACK_EVMSCRIPT_EXECUTOR),
                     )
                 ]

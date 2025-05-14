@@ -54,21 +54,22 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             "1) Add `AddMEVBoostRelay` EVM script factory with address 0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60",
             add_evmscript_factory(
                 factory=EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY,
-                permissions=(create_permissions(contracts.relay_allowed_list, "add_relay"),),
+                permissions=create_permissions(contracts.relay_allowed_list, "add_relay"),
             ),
         ),
         (
             "2) Add `RemoveMEVBoostRelay` EVM script factory with address 0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306",
             add_evmscript_factory(
                 factory=EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY,
-                permissions=(create_permissions(contracts.relay_allowed_list, "remove_relay"),),
+                permissions=create_permissions(contracts.relay_allowed_list, "remove_relay"),
             ),
         ),
         (
             "3) Add `EditMEVBoostRelay` EVM script factory with address 0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535",
             add_evmscript_factory(
                 factory=EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY,
-                permissions=(create_permissions(contracts.relay_allowed_list, "edit_relay"),),
+                permissions=create_permissions(contracts.relay_allowed_list, "add_relay")
+                + create_permissions(contracts.relay_allowed_list, "remove_relay")[2:],
             ),
         ),
         (
@@ -76,7 +77,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             agent_forward(
                 [
                     (
-                        contracts.relay_allowed_list,
+                        contracts.relay_allowed_list.address,
                         contracts.relay_allowed_list.set_manager.encode_input(EASYTRACK_EVMSCRIPT_EXECUTOR),
                     )
                 ]
