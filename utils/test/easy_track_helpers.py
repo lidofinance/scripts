@@ -160,7 +160,6 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
         vote_id=vote_id,
         accounts=accounts,
         dao_voting=dao_voting,
-        skip_time=5 * 60 * 60 * 24,
     )
 
     assert registry.isRecipientAllowed(recipient_candidate)
@@ -185,7 +184,6 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
         vote_id=vote_id,
         accounts=accounts,
         dao_voting=dao_voting,
-        skip_time=5 * 60 * 60 * 24,
     )
 
     assert not registry.isRecipientAllowed(recipient_candidate)
