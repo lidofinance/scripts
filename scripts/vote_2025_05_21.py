@@ -3,16 +3,16 @@ Voting may slot '25
 
 I. EasyTrack Factories for Managing MEV-Boost Relay Allowed List
 
-1. Add `AddMEVBoostRelay` EVM script factory with address <TODO: address>
-2. Add `RemoveMEVBoostRelay` EVM script factory with address <TODO: address>
-3. Add `EditMEVBoostRelay` EVM script factory with address <TODO: address>
+1. Add `AddMEVBoostRelay` EVM script factory with address 0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60
+2. Add `RemoveMEVBoostRelay` EVM script factory with address 0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306
+3. Add `EditMEVBoostRelay` EVM script factory with address 0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535
 4. Change manager role on MEV-Boost Relay Allowed List from RMC multisig 0x98be4a407Bff0c125e25fBE9Eb1165504349c37d to `EasyTrackEVMScriptExecutor` 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977
 
 II. ... 
 """
 
 import time
-from typing import Dt
+from typing import Dict
 from brownie.network.transaction import TransactionReceipt
 from utils.agent import agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
@@ -37,9 +37,9 @@ Voting may slot '25
 
 I. EasyTrack Factories for Managing MEV-Boost Relay Allowed List
 
-1. Add `AddMEVBoostRelay` EVM script factory with address {EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY}
-2. Add `RemoveMEVBoostRelay` EVM script factory with address {EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY}
-3. Add `EditMEVBoostRelay` EVM script factory with address {EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY}
+1. Add `AddMEVBoostRelay` EVM script factory with address 0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60
+2. Add `RemoveMEVBoostRelay` EVM script factory with address 0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306
+3. Add `EditMEVBoostRelay` EVM script factory with address 0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535
 4. Change manager role on MEV-Boost Relay Allowed List from RMC multisig 0x98be4a407Bff0c125e25fBE9Eb1165504349c37d to `EasyTrackEVMScriptExecutor` {EASYTRACK_EVMSCRIPT_EXECUTOR}
 
 II. ...
@@ -51,21 +51,21 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
     vote_desc_items, call_script_items = zip(
         (
-            "1) Add `AddMEVBoostRelay` EVM script factory with address {EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY}",
+            "1) Add `AddMEVBoostRelay` EVM script factory with address 0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60",
             add_evmscript_factory(
                 factory=EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY,
                 permissions=(create_permissions(contracts.relay_allowed_list, "add_relay"),),
             ),
         ),
         (
-            "2) Add `RemoveMEVBoostRelay` EVM script factory with address {EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY}",
+            "2) Add `RemoveMEVBoostRelay` EVM script factory with address 0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306",
             add_evmscript_factory(
                 factory=EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY,
                 permissions=(create_permissions(contracts.relay_allowed_list, "remove_relay"),),
             ),
         ),
         (
-            "3) Add `EditMEVBoostRelay` EVM script factory with address {EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY}",
+            "3) Add `EditMEVBoostRelay` EVM script factory with address 0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535",
             add_evmscript_factory(
                 factory=EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY,
                 permissions=(create_permissions(contracts.relay_allowed_list, "edit_relay"),),
