@@ -1,4 +1,4 @@
-from archive.scripts.vote_2025_05_dd import start_vote
+from scripts.vote_2025_05_21 import start_vote
 from utils.config import (
     LDO_HOLDER_ADDRESS_FOR_TESTS,
     EASYTRACK_EVMSCRIPT_EXECUTOR,
