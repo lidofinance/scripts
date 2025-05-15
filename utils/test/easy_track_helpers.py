@@ -185,7 +185,7 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
         dao_voting=dao_voting,
     )
     if is_hoodi_testnet:
-        # Execute the proposal on the dual governance agent
+        # Execute the proposal
         helpers.execute_dg_proposal(vote_tx.events["ProposalSubmitted"][1]["proposalId"])
 
     assert not registry.isRecipientAllowed(recipient_candidate)
@@ -223,7 +223,7 @@ def check_and_add_mev_boost_relay_with_voting(mev_boost_allowed_list, mev_boost_
     )
 
     if is_hoodi_testnet:
-        # Execute the proposal on the dual governance agent
+        # Execute the proposal
         helpers.execute_dg_proposal(vote_tx.events["ProposalSubmitted"][1]["proposalId"])
 
     relays_after = mev_boost_allowed_list.get_relays()
