@@ -418,3 +418,15 @@ def test_csm_claim_rewards_eth(csm, node_operator, ref_slot):
     csm.claimRewardsUnstETH(node_operator, ETH(1), shares, proof, {"from": reward_address})
 
     assert len(contracts.withdrawal_queue.getWithdrawalRequests(reward_address)) == len(withdrawal_requests) + 1
+
+def test_csm_remove_key(csm, node_operator):
+    no = csm.getNodeOperator(node_operator)
+    keys_before = no["totalAddedKeys"]
+    manager_address = csm.getNodeOperator(node_operator)["managerAddress"]
+    tx = csm.removeKeys(node_operator, 0, 1, {"from": manager_address})
+    assert "KeyRemovalChargeApplied" in tx.events
+    assert "BondCharged" in tx.events
+    expected_charge_amount = contracts.lido.getPooledEthByShares(contracts.lido.getSharesByPooledEth(csm.keyRemovalCharge()))
+    assert tx.events["BondCharged"]["toChargeAmount"] == expected_charge_amount
+    no = csm.getNodeOperator(node_operator)
+    assert no["totalAddedKeys"] == keys_before - 1
