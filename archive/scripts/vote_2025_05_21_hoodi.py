@@ -1,5 +1,5 @@
 """
-Voting may slot '25 [HOODI]
+Vote 14/05/2025 [HOODI]
 
 I. EasyTrack Factories for Managing MEV-Boost Relay Allowed List
 
@@ -7,8 +7,6 @@ I. EasyTrack Factories for Managing MEV-Boost Relay Allowed List
 2. Add `RemoveMEVBoostRelay` EVM script factory with address `0x7FCc2901C6C3D62784cB178B14d44445B038f736`
 3. Add `EditMEVBoostRelay` EVM script factory with address `0x27A99a7104190DdA297B222104A6C70A4Ca5A17e`
 4. Change manager role on MEV-Boost Relay Allowed List from `0xF865A1d43D36c713B4DA085f32b7d1e9739B9275` to `EasyTrackEVMScriptExecutor` `0x79a20FD0FA36453B2F45eAbab19bfef43575Ba9E`
-
-II. ... 
 """
 
 import time
@@ -33,7 +31,7 @@ from utils.easy_track import (
 )
 
 DESCRIPTION = """
-Voting may slot '25
+Vote 14/05/2025 [HOODI]
 
 I. EasyTrack Factories for Managing MEV-Boost Relay Allowed List
 
@@ -41,8 +39,6 @@ I. EasyTrack Factories for Managing MEV-Boost Relay Allowed List
 2. Add `RemoveMEVBoostRelay` EVM script factory with address `0x7FCc2901C6C3D62784cB178B14d44445B038f736`
 3. Add `EditMEVBoostRelay` EVM script factory with address `0x27A99a7104190DdA297B222104A6C70A4Ca5A17e`
 4. Change manager role on MEV-Boost Relay Allowed List from `0xF865A1d43D36c713B4DA085f32b7d1e9739B9275` to `EasyTrackEVMScriptExecutor` `0x79a20FD0FA36453B2F45eAbab19bfef43575Ba9E`
-
-II. ...
 """
 
 
