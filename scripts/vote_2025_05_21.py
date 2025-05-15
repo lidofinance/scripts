@@ -1,14 +1,23 @@
 """
-Voting may slot '25
+Voting 21/05/2025
 
-I. EasyTrack Factories for Managing MEV-Boost Relay Allowed List
+I. Post-pectra upgrade
 
-1. Add `AddMEVBoostRelay` EVM script factory with address `0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60`
-2. Add `RemoveMEVBoostRelay` EVM script factory with address `0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306`
-3. Add `EditMEVBoostRelay` EVM script factory with address `0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535`
-4. Change manager role on MEV-Boost Relay Allowed List from RMC multisig 0x98be4a407Bff0c125e25fBE9Eb1165504349c37d to `EasyTrackEVMScriptExecutor` `0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977`
+1. Grant EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+2. Change exitedValidatorsPerDayLimit from 9000 to 3600 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75`
+3. Revoke EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+4. Grant APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+5. Change appearedValidatorsPerDayLimit from 43200 to 1800 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` 
+6. Revoke APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+7. Grant INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+8. Change initialSlashingAmountPWei from 1000 to 8 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` 
+9. Revoke INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
 
-II. ... 
+II. Add Easy Track setup for Managing MEV-Boost Relay Allowed List 
+10. Add `AddMEVBoostRelays` EVM script factory `0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60` to Easy Track
+11. Add `RemoveMEVBoostRelays` EVM script factory `0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306` to Easy Track 
+12. Add `EditMEVBoostRelays` EVM script factory `0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535` to Easy Track
+13. Grant manager role on MEV-Boost Relay Allowed List `0xF95f069F9AD107938F6ba802a3da87892298610E` to Easy Track's EVM Script Executor `0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977`
 """
 
 import time
@@ -32,17 +41,34 @@ from utils.easy_track import (
     create_permissions,
 )
 
+from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
+
+# Oracle sanity checker params
+NEW_INITIAL_SLASHING_AMOUNT_PWEI = 8
+UNCHANGED_INACTIVITY_PENATIES_AMOUNT_PWEI = 101
+NEW_EXITED_VALIDATORS_PER_DAY_LIMIT = 3600
+NEW_APPEARED_VALIDATORS_PER_DAY_LIMIT = 1800
+
 DESCRIPTION = """
-Voting may slot '25
+Voting 21/05/2025
 
-I. EasyTrack Factories for Managing MEV-Boost Relay Allowed List
+I. Post-pectra upgrade
 
-1. Add `AddMEVBoostRelay` EVM script factory with address `0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60`
-2. Add `RemoveMEVBoostRelay` EVM script factory with address `0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306`
-3. Add `EditMEVBoostRelay` EVM script factory with address `0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535`
-4. Change manager role on MEV-Boost Relay Allowed List from RMC multisig 0x98be4a407Bff0c125e25fBE9Eb1165504349c37d to `EasyTrackEVMScriptExecutor` `0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977`
+1. Grant EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+2. Change exitedValidatorsPerDayLimit from 9000 to 3600 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75`
+3. Revoke EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+4. Grant APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+5. Change appearedValidatorsPerDayLimit from 43200 to 1800 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` 
+6. Revoke APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+7. Grant INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+8. Change initialSlashingAmountPWei from 1000 to 8 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` 
+9. Revoke INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
 
-II. ...
+II. Add Easy Track setup for Managing MEV-Boost Relay Allowed List 
+10. Add `AddMEVBoostRelays` EVM script factory `0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60` to Easy Track
+11. Add `RemoveMEVBoostRelays` EVM script factory `0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306` to Easy Track 
+12. Add `EditMEVBoostRelays` EVM script factory `0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535` to Easy Track
+13. Grant manager role on MEV-Boost Relay Allowed List `0xF95f069F9AD107938F6ba802a3da87892298610E` to Easy Track's EVM Script Executor `0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977`
 """
 
 
@@ -51,21 +77,133 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
     vote_desc_items, call_script_items = zip(
         (
-            "1) Add `AddMEVBoostRelay` EVM script factory with address `0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60`",
+            "1) Grant role `EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` role to Aragon Agent on `OracleReportSanityChecker` contract",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.oracle_report_sanity_checker,
+                        role_name="EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE",
+                        grant_to=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+        (
+            "2) Set `exitedValidatorsPerDayLimit` sanity checker parameter to 3600",
+            agent_forward(
+                [
+                    (
+                        contracts.oracle_report_sanity_checker.address,
+                        contracts.oracle_report_sanity_checker.setExitedValidatorsPerDayLimit.encode_input(
+                            NEW_EXITED_VALIDATORS_PER_DAY_LIMIT
+                        ),
+                    ),
+                ]
+            ),
+        ),
+        (
+            "3. Revoke role `EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` on `OracleReportSanityChecker` from Aragon Agent",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.oracle_report_sanity_checker,
+                        role_name="EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE",
+                        revoke_from=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+        (
+            "4) Grant role `APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` role to Aragon Agent on `OracleReportSanityChecker` contract",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.oracle_report_sanity_checker,
+                        role_name="APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE",
+                        grant_to=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+        (
+            "5) Set `appearedValidatorsPerDayLimit` sanity checker parameter to 1800",
+            agent_forward(
+                [
+                    (
+                        contracts.oracle_report_sanity_checker.address,
+                        contracts.oracle_report_sanity_checker.setAppearedValidatorsPerDayLimit.encode_input(
+                            NEW_APPEARED_VALIDATORS_PER_DAY_LIMIT
+                        ),
+                    ),
+                ]
+            ),
+        ),
+        (
+            "6) Revoke role `APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` on `OracleReportSanityChecker` from Aragon Agent",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.oracle_report_sanity_checker,
+                        role_name="APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE",
+                        revoke_from=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+        (
+            "7) Grant role `INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE` role to Aragon Agent on `OracleReportSanityChecker` contract",
+            agent_forward(
+                [
+                    encode_oz_grant_role(
+                        contract=contracts.oracle_report_sanity_checker,
+                        role_name="INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE",
+                        grant_to=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+        (
+            "8) Set `initialSlashingAmountPWei` sanity checker parameter to 8",
+            agent_forward(
+                [
+                    (
+                        contracts.oracle_report_sanity_checker.address,
+                        contracts.oracle_report_sanity_checker.setInitialSlashingAndPenaltiesAmount.encode_input(
+                            NEW_INITIAL_SLASHING_AMOUNT_PWEI,
+                            UNCHANGED_INACTIVITY_PENATIES_AMOUNT_PWEI,
+                        ),
+                    ),
+                ]
+            ),
+        ),
+        (
+            "9) Revoke role `INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE` on `OracleReportSanityChecker` from Aragon Agent",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.oracle_report_sanity_checker,
+                        role_name="INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE",
+                        revoke_from=contracts.agent,
+                    )
+                ]
+            ),
+        ),
+        (
+            "10) Add `AddMEVBoostRelay` EVM script factory with address `0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60` to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY,
                 permissions=create_permissions(contracts.relay_allowed_list, "add_relay"),
             ),
         ),
         (
-            "2) Add `RemoveMEVBoostRelay` EVM script factory with address `0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306`",
+            "11) Add `RemoveMEVBoostRelay` EVM script factory with address `0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306` to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY,
                 permissions=create_permissions(contracts.relay_allowed_list, "remove_relay"),
             ),
         ),
         (
-            "3) Add `EditMEVBoostRelay` EVM script factory with address `0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535`",
+            "12) Add `EditMEVBoostRelay` EVM script factory with address `0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535` to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY,
                 permissions=create_permissions(contracts.relay_allowed_list, "add_relay")
@@ -73,7 +211,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "4) Change manager role on MEV-Boost Relay Allowed List from RMC multisig 0x98be4a407Bff0c125e25fBE9Eb1165504349c37d to `EasyTrackEVMScriptExecutor` {EASYTRACK_EVMSCRIPT_EXECUTOR}",
+            "13) Change manager role on MEV-Boost Relay Allowed List from RMC multisig `0x98be4a407Bff0c125e25fBE9Eb1165504349c37d` to `EasyTrackEVMScriptExecutor` {EASYTRACK_EVMSCRIPT_EXECUTOR}",
             agent_forward(
                 [
                     (
