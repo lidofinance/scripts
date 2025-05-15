@@ -3,11 +3,14 @@ from eth_abi.abi import encode
 from utils.config import (
     contracts,
 )
-from utils.agent import agent_forward
+from utils.agent import agent_forward, dual_governance_agent_forward
 from utils.voting import create_vote, bake_vote_items
 from utils.test.helpers import ZERO_ADDRESS, almostEqWithDiff
 
 STETH_ERROR_MARGIN_WEI: int = 2
+MEV_BOOST_ALLOWED_LIST_MAX_RELAY_COUNT: int = 40
+
+TEST_RELAY = ("https://0xaaccee.example.com", "Lorem Ipsum Operator", True, "Description of the relay")
 
 
 def _encode_calldata(signature, values):
@@ -163,7 +166,7 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
     assert len(registry.getAllowedRecipients()) == recipients_length_before + 1, "Wrong whitelist length"
 
     call_script_items = [
-        agent_forward(
+        dual_governance_agent_forward(
             [
                 (
                     registry.address,
@@ -185,3 +188,167 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
 
     assert not registry.isRecipientAllowed(recipient_candidate)
     assert len(registry.getAllowedRecipients()) == recipients_length_before, "Wrong whitelist length"
+
+
+def check_and_add_mev_boost_relay_with_voting(mev_boost_allowed_list, mev_boost_relay, helpers, ldo_holder, dao_voting):
+    relays = mev_boost_allowed_list.get_relays()
+
+    assert type(mev_boost_relay) == tuple
+    assert mev_boost_relay[0] == TEST_RELAY[0]
+
+    assert mev_boost_relay not in relays
+
+    # Add MEV-Boost relay with voting
+    call_script_items = [
+        dual_governance_agent_forward(
+            [
+                (
+                    mev_boost_allowed_list.address,
+                    mev_boost_allowed_list.add_relay.encode_input(*mev_boost_relay),
+                )
+            ]
+        )
+    ]
+    vote_desc_items = ["Add MEV-Boost relay"]
+    vote_items = bake_vote_items(vote_desc_items, call_script_items)
+
+    vote_id = create_vote(vote_items, {"from": ldo_holder})[0]
+
+    vote_tx = helpers.execute_vote(
+        vote_id=vote_id,
+        accounts=accounts,
+        dao_voting=dao_voting,
+    )
+
+    helpers.execute_dg_proposal(vote_tx.events["ProposalSubmitted"][1]["proposalId"])
+
+    relays_after = mev_boost_allowed_list.get_relays()
+
+    assert mev_boost_relay in relays_after
+    assert len(relays_after) == len(relays) + 1, "Wrong allowed list length"
+
+
+def check_and_remove_mev_boost_relay_with_voting(
+    mev_boost_allowed_list, mev_boost_relay, helpers, ldo_holder, dao_voting
+):
+    relays = mev_boost_allowed_list.get_relays()
+
+    assert mev_boost_relay in relays
+
+    # Remove MEV-Boost relay with voting
+    call_script_items = [
+        agent_forward(
+            [
+                (
+                    mev_boost_allowed_list.address,
+                    mev_boost_allowed_list.remove_relay.encode_input(mev_boost_relay),
+                )
+            ]
+        )
+    ]
+    vote_desc_items = ["Remove MEV-Boost relay"]
+    vote_items = bake_vote_items(vote_desc_items, call_script_items)
+
+    vote_id = create_vote(vote_items, {"from": ldo_holder})[0]
+
+    vote_tx = helpers.execute_vote(
+        vote_id=vote_id,
+        accounts=accounts,
+        dao_voting=dao_voting,
+    )
+
+    helpers.execute_dg_proposal(vote_tx.events["ProposalSubmitted"][1]["proposalId"])
+
+    relays_after = mev_boost_allowed_list.get_relays()
+
+    assert mev_boost_relay not in relays_after
+    assert len(relays_after) == len(relays) - 1, "Wrong allowed list length"
+
+
+def create_and_enact_add_mev_boost_relay_motion(
+    easy_track,
+    trusted_caller,
+    mev_boost_allowed_list,
+    factory,
+    relay,
+    stranger,
+    helpers,
+    ldo_holder,
+    dao_voting,
+):
+    relays = mev_boost_allowed_list.get_relays()
+
+    # Check if there is enough space in the list
+    if len(relays) >= MEV_BOOST_ALLOWED_LIST_MAX_RELAY_COUNT:
+        check_and_remove_mev_boost_relay_with_voting(mev_boost_allowed_list, relays[0], helpers, ldo_holder, dao_voting)
+
+    relays_count = len(relays)
+    assert relay not in relays
+
+    calldata = "0x" + encode(["(string,string,bool,string)[]"], [[relay]]).hex()
+
+    create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger)
+
+    assert len(mev_boost_allowed_list.get_relays()) == relays_count + 1
+    assert relay in mev_boost_allowed_list.get_relays()
+
+
+def create_and_enact_remove_mev_boost_relay_motion(
+    easy_track,
+    trusted_caller,
+    mev_boost_allowed_list,
+    factory,
+    relay_uri,
+    stranger,
+    helpers,
+    ldo_holder,
+    dao_voting,
+):
+    relays = mev_boost_allowed_list.get_relays()
+
+    # Check if the relay is already in the list by the URI, but not by the whole tuple because of the edited fields
+    if relay_uri not in [x[0] for x in relays]:
+        new_relay = (relay_uri, "Lorem Ipsum Operator", True, "Description of the relay")
+        check_and_add_mev_boost_relay_with_voting(mev_boost_allowed_list, new_relay, helpers, ldo_holder, dao_voting)
+
+    relays_count = len(relays)
+
+    calldata = "0x" + encode(["string[]"], [[relay_uri]]).hex()
+
+    create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger)
+
+    relays_after = mev_boost_allowed_list.get_relays()
+
+    assert len(relays_after) == relays_count - 1
+    assert relay_uri not in relays_after
+
+
+def create_and_enact_edit_mev_boost_relay_motion(
+    easy_track,
+    trusted_caller,
+    mev_boost_allowed_list,
+    factory,
+    relay,
+    stranger,
+    helpers,
+    ldo_holder,
+    dao_voting,
+):
+    relays = mev_boost_allowed_list.get_relays()
+
+    # Check if the relay is already in the list by the URI, but not by the whole tuple because of the edited fields
+    if relay[0] not in [x[0] for x in relays]:
+        check_and_add_mev_boost_relay_with_voting(mev_boost_allowed_list, relay, helpers, ldo_holder, dao_voting)
+
+    relays_count = len(mev_boost_allowed_list.get_relays())
+
+    assert relay not in relays
+
+    calldata = "0x" + encode(["(string,string,bool,string)[]"], [[relay]]).hex()
+
+    create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger)
+
+    relays_after = mev_boost_allowed_list.get_relays()
+
+    assert len(relays_after) == relays_count
+    assert relay in relays_after
