@@ -1,5 +1,4 @@
-from utils.config import contracts
-from utils.config import AGENT, DUAL_GOVERNANCE
+from utils.config import network_name, contracts, AGENT
 from utils.evm_script import (
     encode_call_script,
 )
@@ -19,9 +18,15 @@ def dual_governance_agent_forward(
     call_script: Sequence[Tuple[str, str]],
     description: Optional[str] = "",
 ) -> Tuple[str, str]:
+
+    if network_name() not in ["hoodi", "hoodi-fork"]:
+        raise ValueError("Invalid network name")
+
+    ## TODO: move up the scope when mainnet configuration for DG is updated
+    from utils.config import DUAL_GOVERNANCE
+
     dual_governance = contracts.dual_governance
     (agent_address, agent_calldata) = agent_forward(call_script)
-
     return (
         DUAL_GOVERNANCE,
         dual_governance.submitProposal.encode_input([(agent_address, 0, agent_calldata)], description),
