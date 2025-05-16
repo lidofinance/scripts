@@ -237,8 +237,9 @@ VEBO_CONSENSUS_VERSION = 3
 ## Migrated from LidoOracle (LegacyOracle)
 ORACLE_QUORUM = 5
 ORACLE_COMMITTEE = (
-    "0x140Bd8FbDc884f48dA7cb1c09bE8A2fAdfea776E",
+    # "0x140Bd8FbDc884f48dA7cb1c09bE8A2fAdfea776E", Excluded from members in vote 2025/05/11
     # "0x1d0813bf088BE3047d827D98524fBf779Bc25F00", Excluded from members in vote 2024/01/16
+    "0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12",  # Added into members in vote 2024/10/22, moved to the beginning in vote 2025/05/11
     "0xA7410857ABbf75043d61ea54e07D57A6EB6EF186",
     "0x404335BcE530400a5814375E7Ec1FB55fAff3eA2",
     "0x946D3b081ed19173dC83Cd974fC69e1e760B7d78",
@@ -248,7 +249,7 @@ ORACLE_COMMITTEE = (
     "0x61c91ECd902EB56e314bB2D5c5C07785444Ea1c8",
     # "0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d",  Excluded from members in vote 2024/10/22
     "0xe57B3792aDCc5da47EF4fF588883F0ee0c9835C9",  # Added into members in vote 2024/08/06
-    "0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12",  # Added into members in vote 2024/10/22
+    "0x285f8537e1dAeEdaf617e96C742F2Cf36d63CcfB",  # Added into members in vote 2025/05/11
 )
 
 # WithdrawalQueueERC721
