@@ -150,8 +150,8 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     csm_module_id = 3
     set_staking_module_status(csm_module_id, StakingModuleStatus.Stopped)
 
-    # fill buffer enough to deposit 100 keys
-    fill_deposit_buffer(100)
+    # fill buffer enough to deposit 310 keys
+    fill_deposit_buffer(310)
 
     print("Reset staking limit for all OPs...")
     no_amount = staking_module.getNodeOperatorsCount()
