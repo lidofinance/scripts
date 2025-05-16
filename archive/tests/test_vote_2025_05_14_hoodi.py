@@ -1,11 +1,5 @@
-from utils.config import (
-    contracts,
-    LDO_HOLDER_ADDRESS_FOR_TESTS,
-    EASYTRACK_EVMSCRIPT_EXECUTOR,
-    EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY,
-    EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY,
-    EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY,
-)
+from brownie import interface
+from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS
 from utils.test.easy_track_helpers import (
     TEST_RELAY,
     create_and_enact_add_mev_boost_relay_motion,
@@ -14,20 +8,31 @@ from utils.test.easy_track_helpers import (
 )
 from utils.easy_track import create_permissions
 from utils.test.event_validators.easy_track import validate_evmscript_factory_added_event, EVMScriptFactoryAdded
-from utils.test.tx_tracing_helpers import (
-    group_voting_events,
-)
-from archive.scripts.vote_2025_05_21_hoodi import start_vote
+from utils.test.tx_tracing_helpers import group_voting_events
+from archive.scripts.vote_2025_05_14_hoodi import start_vote
+
+QA_DAO_OPS_TEST_MS = "0x418B816A7c3ecA151A31d98e30aa7DAa33aBf83A"
+VOTING = "0x49B3512c44891bef83F8967d075121Bd1b07a01B"
+
+EASYTRACK = "0x284D91a7D47850d21A6DEaaC6E538AC7E5E6fc2a"
+EASYTRACK_EVMSCRIPT_EXECUTOR = "0x79a20FD0FA36453B2F45eAbab19bfef43575Ba9E"
+
+MEV_BOOST_RELAY_ALLOWED_LIST = "0x279d3A456212a1294DaEd0faEE98675a52E8A4Bf"
+
+EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY = "0xF02DbeaA1Bbc90226CaB995db4C190DbE25983af"
+EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY = "0x7FCc2901C6C3D62784cB178B14d44445B038f736"
+EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY = "0x27A99a7104190DdA297B222104A6C70A4Ca5A17e"
 
 
 def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
-    easy_track = contracts.easy_track
-    mev_boost_allowed_list = contracts.relay_allowed_list
+    voting = interface.Voting(VOTING)
+    easy_track = interface.EasyTrack(EASYTRACK)
+    mev_boost_allowed_list = interface.MEVBoostRelayAllowedList(MEV_BOOST_RELAY_ALLOWED_LIST)
 
-    trusted_caller = accounts.at("0x418B816A7c3ecA151A31d98e30aa7DAa33aBf83A", force=True)
+    trusted_caller = accounts.at(QA_DAO_OPS_TEST_MS, force=True)
 
     evm_script_factories_before = easy_track.getEVMScriptFactories()
-    old_manager = contracts.relay_allowed_list.get_manager()
+    old_manager = mev_boost_allowed_list.get_manager()
 
     # sanity check that the factories are not already present
     assert EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY not in evm_script_factories_before
@@ -44,7 +49,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
         vote_id, _ = start_vote(tx_params, silent=True)
 
-    vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
+    vote_tx = helpers.execute_vote(accounts, vote_id, voting)
 
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
@@ -77,7 +82,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
         events[0],
         EVMScriptFactoryAdded(
             factory_addr=EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY,
-            permissions=create_permissions(contracts.relay_allowed_list, "add_relay"),
+            permissions=create_permissions(mev_boost_allowed_list, "add_relay"),
         ),
     )
 
@@ -90,7 +95,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
         stranger,
         helpers,
         ldo_holder,
-        contracts.voting,
+        voting,
     )
 
     # 2. Add `RemoveMEVBoostRelay` EVM script factory
@@ -102,7 +107,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
         events[1],
         EVMScriptFactoryAdded(
             factory_addr=EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY,
-            permissions=create_permissions(contracts.relay_allowed_list, "remove_relay"),
+            permissions=create_permissions(mev_boost_allowed_list, "remove_relay"),
         ),
     )
 
@@ -115,7 +120,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
         stranger,
         helpers,
         ldo_holder,
-        contracts.voting,
+        voting,
     )
 
     # 3. Add `EditMEVBoostRelay` EVM script factory
@@ -125,8 +130,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
         events[2],
         EVMScriptFactoryAdded(
             factory_addr=EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY,
-            permissions=create_permissions(contracts.relay_allowed_list, "add_relay")
-            + create_permissions(contracts.relay_allowed_list, "remove_relay")[2:],
+            permissions=create_permissions(mev_boost_allowed_list, "add_relay")
+            + create_permissions(mev_boost_allowed_list, "remove_relay")[2:],
         ),
     )
 
@@ -139,7 +144,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
         stranger,
         helpers,
         ldo_holder,
-        contracts.voting,
+        voting,
     )
 
     # 4. Change manager role on MEV-Boost Relay Allowed List

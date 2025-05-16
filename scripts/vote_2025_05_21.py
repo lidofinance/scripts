@@ -18,10 +18,19 @@ II. Add Easy Track setup for Managing MEV-Boost Relay Allowed List
 11. Add `RemoveMEVBoostRelays` EVM script factory `0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306` to Easy Track 
 12. Add `EditMEVBoostRelays` EVM script factory `0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535` to Easy Track
 13. Grant manager role on MEV-Boost Relay Allowed List `0xF95f069F9AD107938F6ba802a3da87892298610E` to Easy Track's EVM Script Executor `0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977`
+
+III. CSM: Reduce keyRemovalCharge
+14. Grant MODULE_MANAGER_ROLE on CSModule `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+15. Reduce keyRemovalCharge from 0.05 to 0.02 ETH on CS Module `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F`
+16. Revoke MODULE_MANAGER_ROLE on CSModule `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+
+IV. Change Easy Track limits for Liquidity Observation Lab (LOL)
+17. Increase the limit from 2,100 to 6,000 stETH and extend the duration from 3 to 6 months on LOL AllowedRecipientsRegistry `0x48c4929630099b217136b64089E8543dB0E5163a`
 """
 
 import time
 from typing import Dict
+from brownie import interface
 from brownie.network.transaction import TransactionReceipt
 from utils.agent import agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
@@ -49,35 +58,31 @@ UNCHANGED_INACTIVITY_PENATIES_AMOUNT_PWEI = 101
 NEW_EXITED_VALIDATORS_PER_DAY_LIMIT = 3600
 NEW_APPEARED_VALIDATORS_PER_DAY_LIMIT = 1800
 
-DESCRIPTION = """
-Voting 21/05/2025
+NEW_KEY_REMOVAL_CHARGE = 0.02 * 1e18
 
-I. Post-pectra upgrade
+NEW_LOL_LIMIT = 6000 * 1e18  # stETH
+NEW_LOL_PERIOD = 6  # months
 
-1. Grant EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
-2. Change exitedValidatorsPerDayLimit from 9000 to 3600 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75`
-3. Revoke EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
-4. Grant APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
-5. Change appearedValidatorsPerDayLimit from 43200 to 1800 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` 
-6. Revoke APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
-7. Grant INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
-8. Change initialSlashingAmountPWei from 1000 to 8 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` 
-9. Revoke INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+DESCRIPTION = """Contains separate updates approved by Lido DAO via Snapshot voting:
 
-II. Add Easy Track setup for Managing MEV-Boost Relay Allowed List 
-10. Add `AddMEVBoostRelays` EVM script factory `0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60` to Easy Track
-11. Add `RemoveMEVBoostRelays` EVM script factory `0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306` to Easy Track 
-12. Add `EditMEVBoostRelays` EVM script factory `0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535` to Easy Track
-13. Grant manager role on MEV-Boost Relay Allowed List `0xF95f069F9AD107938F6ba802a3da87892298610E` to Easy Track's EVM Script Executor `0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977`
+1. **Post-Pectra update:** adjust Oracle Report Sanity Checker parameters to align with reduced slashing penalty and updated validator churn limits.  Items 1-9.
+[Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/`0xb6559f0cdb1164ae5d63769827c4a275805bd944392a17b60cf51ddc54429dc6`) | Audited by [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Oracle%20v5%2004-25.pdf)
+2. **Add Easy Track Factories** for managing MEV-Boost Relay Allowed List. Items 10-13. 
+[Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/`0xf1074ec134595ba8ba6f802c5e505fda32e6ab93e9763d1e43001f439241b7c9`) | Audit and deploy verification by [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20RMC%20EasyTrack%20Security%20Audit%20Report%2005-2025.pdf) 
+3. **Reduce `keyRemovalCharge`** for the Community Staking Module. Items 14-16. 
+[Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/`0xcd1c1a051888efd495d97458ae9fa4fe5198616eb3d92a71d3352d9f25e79c4e`) 
+4. **Increase Easy Track security limit** for [Liquidity Observation Lab](https://docs.lido.fi/multisigs/committees/#281-liquidity-observation-lab-committee-ethereum) from 2,100&nbsp;stETH per&nbsp;3&nbsp;months to 6,000&nbsp;stETH per&nbsp;6&nbsp;months. Item 17. 
+[Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/`0x3ecd09e4c0f22d25c711ca5777c49c22d144385b85dd7f696ca6cc66cc0ca157`)
 """
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting"""
+    lol_registry = interface.AllowedRecipientRegistry("0x48c4929630099b217136b64089E8543dB0E5163a")
 
     vote_desc_items, call_script_items = zip(
         (
-            "1) Grant role `EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` role to Aragon Agent on `OracleReportSanityChecker` contract",
+            "1) Grant EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -89,7 +94,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "2) Set `exitedValidatorsPerDayLimit` sanity checker parameter to 3600",
+            "2) Change exitedValidatorsPerDayLimit from 9000 to 3600 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75`",
             agent_forward(
                 [
                     (
@@ -102,7 +107,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "3. Revoke role `EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` on `OracleReportSanityChecker` from Aragon Agent",
+            "3) Revoke EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -114,7 +119,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "4) Grant role `APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` role to Aragon Agent on `OracleReportSanityChecker` contract",
+            "4) Grant APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -126,7 +131,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "5) Set `appearedValidatorsPerDayLimit` sanity checker parameter to 1800",
+            "5) Change appearedValidatorsPerDayLimit from 43200 to 1800 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75`",
             agent_forward(
                 [
                     (
@@ -139,7 +144,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "6) Revoke role `APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` on `OracleReportSanityChecker` from Aragon Agent",
+            "6) Revoke APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -151,7 +156,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "7) Grant role `INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE` role to Aragon Agent on `OracleReportSanityChecker` contract",
+            "7) Grant INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -163,7 +168,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "8) Set `initialSlashingAmountPWei` sanity checker parameter to 8",
+            "8) Change initialSlashingAmountPWei from 1000 to 8 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75`",
             agent_forward(
                 [
                     (
@@ -177,7 +182,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "9) Revoke role `INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE` on `OracleReportSanityChecker` from Aragon Agent",
+            "9) Revoke INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -211,13 +216,46 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "13) Change manager role on MEV-Boost Relay Allowed List from RMC multisig `0x98be4a407Bff0c125e25fBE9Eb1165504349c37d` to `EasyTrackEVMScriptExecutor` {EASYTRACK_EVMSCRIPT_EXECUTOR}",
+            "13) Grant manager role on MEV-Boost Relay Allowed List `0xF95f069F9AD107938F6ba802a3da87892298610E` to Easy Track's EVM Script Executor `0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977`",
             agent_forward(
                 [
                     (
                         contracts.relay_allowed_list.address,
                         contracts.relay_allowed_list.set_manager.encode_input(EASYTRACK_EVMSCRIPT_EXECUTOR),
                     )
+                ]
+            ),
+        ),
+        (
+            "14) Grant MODULE_MANAGER_ROLE on CSModule `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`",
+            agent_forward([encode_oz_grant_role(contracts.csm, "MODULE_MANAGER_ROLE", contracts.agent)]),
+        ),
+        (
+            "15) Reduce keyRemovalCharge from 0.05 to 0.02 ETH on CS Module `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F`",
+            agent_forward(
+                [
+                    (
+                        contracts.csm.address,
+                        contracts.csm.setKeyRemovalCharge.encode_input(NEW_KEY_REMOVAL_CHARGE),
+                    ),
+                ]
+            ),
+        ),
+        (
+            "16) Revoke MODULE_MANAGER_ROLE on CSModule `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`",
+            agent_forward([encode_oz_revoke_role(contracts.csm, "MODULE_MANAGER_ROLE", contracts.agent)]),
+        ),
+        (
+            "17) Increase the limit from 2,100 to 6,000 stETH and extend the duration from 3 to 6 months on LOL AllowedRecipientsRegistry `0x48c4929630099b217136b64089E8543dB0E5163a`",
+            agent_forward(
+                [
+                    (
+                        lol_registry.address,
+                        lol_registry.setLimitParameters.encode_input(
+                            NEW_LOL_LIMIT,  # stETH
+                            NEW_LOL_PERIOD,  # months
+                        ),
+                    ),
                 ]
             ),
         ),
