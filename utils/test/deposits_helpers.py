@@ -21,7 +21,29 @@ def fill_deposit_buffer(deposits_count):
     eth_to_submit = eth_to_deposit + eth_debt + WEI_TOLERANCE
 
     eth_whale = accounts.at(staking_router.DEPOSIT_CONTRACT(), force=True)
+
+    (
+        is_staking_paused,
+        is_staking_limit_set,
+        current_stake_limit,
+        max_stake_limit,
+        max_stake_limit_growth_blocks,
+        _,
+        _
+    ) = lido.getStakeLimitFullInfo()
+
+    is_limit_reached = is_staking_limit_set and current_stake_limit < eth_to_submit
+
+    assert not is_staking_paused, "Staking is paused"
+
+    if is_limit_reached:
+        lido.removeStakingLimit({"from": contracts.voting})
+
     lido.submit(ZERO_ADDRESS, {"from": eth_whale, "value": eth_to_submit})
+
+    if is_limit_reached:
+        stake_limit_increase_per_block = max_stake_limit // max_stake_limit_growth_blocks
+        lido.setStakingLimit(max_stake_limit, stake_limit_increase_per_block, {"from": contracts.voting})
 
     assert lido.getDepositableEther() >= eth_to_deposit
 
