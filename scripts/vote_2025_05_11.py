@@ -6,6 +6,8 @@ Chorus One oracle rotation
 4. Add oracle member with address 0x285f8537e1dAeEdaf617e96C742F2Cf36d63CcfB to HashConsensus for AccountingOracle
 5. Add oracle member with address 0x285f8537e1dAeEdaf617e96C742F2Cf36d63CcfB to HashConsensus for ValidatorsExitBusOracle
 6. Add oracle member with address 0x285f8537e1dAeEdaf617e96C742F2Cf36d63CcfB to CSHashConsensus for CSFeeOracle
+
+Vote passed & executed on May-16-2025 12:17:59 PM UTC, block 22495584.
 """
 
 import time
