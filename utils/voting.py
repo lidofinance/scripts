@@ -1,6 +1,6 @@
 from typing import Tuple, Optional, Dict, List
 
-from brownie import exceptions, web3, convert
+from brownie import exceptions, web3, convert, chain
 from brownie.utils import color
 from brownie.network.transaction import TransactionReceipt
 from brownie.network.contract import Contract
@@ -13,7 +13,7 @@ from utils.evm_script import (
     EMPTY_CALLSCRIPT,
 )
 
-from utils.config import prompt_bool, CHAIN_NETWORK_NAME, contracts
+from utils.config import prompt_bool, CHAIN_NETWORK_NAME, contracts, LDO_HOLDER_ADDRESS_FOR_TESTS
 from utils.ipfs import make_lido_vote_cid, get_url_by_cid, IPFSUploadResult
 
 

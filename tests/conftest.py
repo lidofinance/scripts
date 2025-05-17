@@ -112,6 +112,27 @@ class Helpers:
         (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup)
         return tx
 
+    def execute_dg_proposal(proposal_id):
+        """
+        Run proposal through dual governance.
+        """
+        emergency_protected_timelock = contracts.emergency_protected_timelock
+
+        # wait duration and schedule proposal
+        chain.sleep(emergency_protected_timelock.getAfterSubmitDelay() + 1)
+        chain.mine()
+
+        # schedule proposal for execution
+        contracts.dual_governance.scheduleProposal(
+            proposal_id,
+            {"from": LDO_HOLDER_ADDRESS_FOR_TESTS},
+        )
+
+        chain.sleep(emergency_protected_timelock.getAfterScheduleDelay() + 1)
+        chain.mine()
+
+        contracts.emergency_protected_timelock.execute(proposal_id, {"from": LDO_HOLDER_ADDRESS_FOR_TESTS})
+
     @staticmethod
     def execute_votes(accounts, vote_ids, dao_voting, topup="10 ether"):
         OBJECTION_PHASE_ID = 1

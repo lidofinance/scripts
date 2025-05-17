@@ -254,10 +254,10 @@ def test_paused_staking_can_report():
 
 def test_paused_staking_module_cant_stake(stranger):
     contracts.staking_router.grantRole(
-            web3.keccak(text="STAKING_MODULE_MANAGE_ROLE"),
-            stranger,
-            {"from": contracts.agent},
-        )
+        web3.keccak(text="STAKING_MODULE_MANAGE_ROLE"),
+        stranger,
+        {"from": contracts.agent},
+    )
     contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.DepositsPaused, {"from": stranger})
 
     with brownie.reverts(encode_error("StakingModuleNotActive()")):
@@ -268,10 +268,10 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
     _, module_address, *_ = contracts.staking_router.getStakingModule(1)
 
     contracts.staking_router.grantRole(
-            web3.keccak(text="STAKING_MODULE_MANAGE_ROLE"),
-            stranger,
-            {"from": contracts.agent},
-        )
+        web3.keccak(text="STAKING_MODULE_MANAGE_ROLE"),
+        stranger,
+        {"from": contracts.agent},
+    )
     contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.DepositsPaused, {"from": stranger})
 
     (report_tx, _) = oracle_report()
