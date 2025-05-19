@@ -10,12 +10,16 @@ from utils.config import contracts
 @pytest.fixture(scope="function")
 def stop_lido():
     if not contracts.lido.isStopped():
-        contracts.lido.stop({"from": contracts.voting})
+        if not (contracts.acl.hasPermission(contracts.agent, contracts.lido, web3.keccak(text="PAUSE_ROLE"))):
+            contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="PAUSE_ROLE"), {"from": contracts.agent})
+        contracts.lido.stop({"from": contracts.agent})
 
 
 @pytest.fixture(scope="function")
 def resume_lido():
     if contracts.lido.isStopped():
+        if not (contracts.acl.hasPermission(contracts.agent, contracts.lido, web3.keccak(text="RESUME_ROLE"))):
+            contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="RESUME_ROLE"), {"from": contracts.agent})
         contracts.lido.resume({"from": contracts.voting})
 
 @pytest.fixture(scope="function")
@@ -49,7 +53,7 @@ def test_pause_role_cant_resume(stranger):
         stranger,
         contracts.lido,
         web3.keccak(text="PAUSE_ROLE"),
-        {"from": contracts.voting},
+        {"from": contracts.agent},
     )
     assert stranger_has_role(role="PAUSE_ROLE")
 
@@ -67,7 +71,7 @@ def test_resume_role_cant_pause(stranger):
         stranger,
         contracts.lido,
         web3.keccak(text="RESUME_ROLE"),
-        {"from": contracts.voting},
+        {"from": contracts.agent},
     )
     assert stranger_has_role(role="RESUME_ROLE")
 
@@ -85,7 +89,7 @@ def test_resume_role_can_resume(stranger):
         stranger,
         contracts.lido,
         web3.keccak(text="RESUME_ROLE"),
-        {"from": contracts.voting},
+        {"from": contracts.agent},
     )
     assert stranger_has_role(role="RESUME_ROLE")
 
@@ -103,7 +107,7 @@ def test_pause_role_can_pause(stranger):
         stranger,
         contracts.lido,
         web3.keccak(text="PAUSE_ROLE"),
-        {"from": contracts.voting},
+        {"from": contracts.agent},
     )
     assert stranger_has_role(role="PAUSE_ROLE")
 

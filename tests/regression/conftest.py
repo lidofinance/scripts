@@ -1,5 +1,6 @@
 import pytest
 import os
+from brownie import web3
 
 from utils.config import contracts
 from utils.import_current_votes import is_there_any_vote_scripts, is_there_any_upgrade_scripts, start_and_execute_votes
@@ -26,6 +27,7 @@ def autoexecute_vote(request, helpers, vote_ids_from_env, accounts, stranger, mo
 
     if os.getenv(ENV_REPORT_AFTER_VOTE):
         oracle_report(cl_diff=ETH(523), exclude_vaults_balances=False)
+
 
 @pytest.fixture()
 def extra_data_service() -> ExtraDataService:

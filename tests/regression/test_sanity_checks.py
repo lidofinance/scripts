@@ -273,14 +273,14 @@ def fake_deposited_validators_increase(cl_validators_diff):
     (deposited, _, _) = contracts.lido.getBeaconStat()
 
     contracts.acl.createPermission(
-        contracts.voting,
+        contracts.agent,
         contracts.lido,
         web3.keccak(text="UNSAFE_CHANGE_DEPOSITED_VALIDATORS_ROLE"),
-        contracts.voting,
-        {"from": contracts.voting},
+        contracts.agent,
+        {"from": contracts.agent},
     )
 
-    contracts.lido.unsafeChangeDepositedValidators(deposited + cl_validators_diff, {"from": contracts.voting})
+    contracts.lido.unsafeChangeDepositedValidators(deposited + cl_validators_diff, {"from": contracts.agent})
 
 
 def create_withdrawal_request(steth_holder):
