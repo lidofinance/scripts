@@ -116,7 +116,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
         trusted_caller,
         mev_boost_allowed_list,
         EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY,
-        TEST_RELAY[0],
         stranger,
         helpers,
         ldo_holder,

@@ -1,5 +1,5 @@
 from brownie import interface, reverts, chain
-from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS, contracts
+from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS
 from utils.test.easy_track_helpers import (
     TEST_RELAY,
     create_and_enact_add_mev_boost_relay_motion,
@@ -12,10 +12,6 @@ from utils.test.event_validators.easy_track import validate_evmscript_factory_ad
 from utils.test.event_validators.relay_allowed_list import validate_relay_allowed_list_manager_set
 from utils.test.event_validators.csm import validate_set_key_removal_charge_event
 from utils.test.event_validators.after_pectra import (
-    # defined in the utils file to be accessible for checks, not imported from the config
-    EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE,
-    APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE,
-    INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE,
     validate_sc_exited_validators_limit_update,
     validate_appeared_validators_limit_update,
     validate_initial_slashing_and_penalties_update,
@@ -26,6 +22,8 @@ from utils.test.tx_tracing_helpers import group_voting_events
 from scripts.vote_2025_05_21 import start_vote
 from utils.test.tx_tracing_helpers import display_voting_events
 from utils.test.csm_helpers import csm_add_node_operator, get_ea_member
+from utils.voting import find_metadata_by_vote_id
+from utils.ipfs import get_lido_vote_cid_from_str
 
 # Old values (sanity checker)
 INITIAL_SLASHING_AMOUNT_PWEI_BEFORE = 1000
@@ -60,11 +58,12 @@ STETH_LOL_TOP_UP_EVM_SCRIPT_FACTORY = "0x1F2b79FE297B7098875930bBA6dd17068103897
 
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
-CSM_ADDRESS = "0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F"
+CSM_PROXY = "0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F"
+CSM_IMPL = "0x8daEa53b17a629918CDFAB785C5c74077c1D895B"
 MEV_BOOST_ALLOWED_LIST = "0xF95f069F9AD107938F6ba802a3da87892298610E"
 ORACLE_REPORT_SANITY_CHECKER = "0x6232397ebac4f5772e53285B26c47914E9461E75"
 
-STETH_TOKEN = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
+LIDO_AND_STETH = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
 STETH_LOL_REGISTRY = "0x48c4929630099b217136b64089E8543dB0E5163a"
 EASY_TRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 
@@ -77,6 +76,11 @@ CS_ACCOUNTING_ADDRESS = "0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da"
 
 # Roles
 MODULE_MANAGER_ROLE = "0x79dfcec784e591aafcf60db7db7b029a5c8b12aac4afd4e8c4eb740430405fa6"
+EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE = "0x60b9982471bc0620c7b74959f48a86c55c92c11876fddc5b0b54d1ec47153e5d"
+APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE = "0x14ca7b84baa11a976283347b0159b8ddf2dcf5fd5cf613cc567a3423cf510119"
+INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE = "0xebfa317a5d279811b024586b17a50f48924bce86f6293b233927322d7209b507"
+
+IPFS_DESCRIPTION_HASH = "bafkreigzopqg3t6xr7dpm5kstxyqsfxxfmhz3iz2s4gcercj3y6lxlqcr4"
 
 
 def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
@@ -85,7 +89,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
     oracle_report_sanity_checker = interface.OracleReportSanityChecker(ORACLE_REPORT_SANITY_CHECKER)
     voting = interface.Voting(VOTING)
     agent = interface.Agent(AGENT)
-    csm = interface.CSModule(CSM_ADDRESS)
+    csm = interface.CSModule(CSM_PROXY)
 
     trusted_caller = accounts.at(RMC_MULTISIG_ADDRESS, force=True)
 
@@ -96,46 +100,60 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
     stETH_LOL_registry = interface.AllowedRecipientRegistry(STETH_LOL_REGISTRY)
     stETH_LOL_topup_factory = interface.TopUpAllowedRecipients(STETH_LOL_TOP_UP_EVM_SCRIPT_FACTORY)
     stETH_LOL_multisig = accounts.at(STETH_LOL_TRUSTED_CALLER, force=True)
-    stETH_token = interface.StETH(STETH_TOKEN)
+    stETH_token = interface.StETH(LIDO_AND_STETH)
 
     # =======================================================================
     # ========================= Before voting tests =========================
     # =======================================================================
 
-    # 1) Aragon Agent doesn't have `EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` on `OracleReportSanityChecker` contract
+    # 1,3) Aragon Agent should not have EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on OracleReportSanityChecker
     agent_has_role = oracle_report_sanity_checker.hasRole(EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE, AGENT)
     assert not agent_has_role
-    # 2) Check `exitedValidatorsPerDayLimit` sanity checker old value
+
+    # 2) verify exitedValidatorsPerDayLimit is still at the old value
     assert sanity_checker_limits["exitedValidatorsPerDayLimit"] == EXITED_VALIDATORS_PER_DAY_LIMIT_BEFORE
-    # 3) Aragon Agent doesn't have `APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` on `OracleReportSanityChecker` contract
+
+    # 4,6) Aragon Agent should not have APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on OracleReportSanityChecker
     agent_has_role = oracle_report_sanity_checker.hasRole(APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE, AGENT)
     assert not agent_has_role
-    # 4) Check `appearedValidatorsPerDayLimit` sanity checker old value
+
+    # 5) verify appearedValidatorsPerDayLimit is still at the old value
     assert sanity_checker_limits["appearedValidatorsPerDayLimit"] == APPEARED_VALIDATORS_PER_DAY_LIMIT_BEFORE
-    # 5) Aragon Agent doesn't have `INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE` on `OracleReportSanityChecker` contract
+
+    # 7,9) Aragon Agent should not have INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE on OracleReportSanityChecker
     agent_has_role = oracle_report_sanity_checker.hasRole(INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE, AGENT)
     assert not agent_has_role
-    # 6) Check `initialSlashingAmountPWei` sanity checker old value
+
+    # 8) verify initialSlashingAmountPWei is still at the old value
     assert sanity_checker_limits["initialSlashingAmountPWei"] == INITIAL_SLASHING_AMOUNT_PWEI_BEFORE
 
-    # 10) sanity check that the add factory is not already present
+    # ==================== Easy Track MEV-Boost setup ====================
+
+    # 10) ensure AddMEVBoostRelays factory is not already in Easy Track
     assert EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY not in evm_script_factories_before
-    # 11) sanity check that the remove factory is not already present
+
+    # 11) ensure RemoveMEVBoostRelays factory is not already in Easy Track
     assert EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY not in evm_script_factories_before
-    # 12) sanity check that the edit factory is not already present
+
+    # 12) ensure EditMEVBoostRelays factory is not already in Easy Track
     assert EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY not in evm_script_factories_before
-    # 13) sanity check that the manager is not already set to EasyTrackEVMScriptExecutor
+
+    # 13) ensure MEV-Boost Relay Allowed List manager is not set to EasyTrackEVMScriptExecutor
     assert old_manager != EASYTRACK_EVMSCRIPT_EXECUTOR
 
-    # 14) sanity check that the agent doesn't have the MODULE_MANAGER_ROLE on CS Module
+    # ======================== CSM keyRemovalCharge =======================
+
+    # 14,16) agent should not have MODULE_MANAGER_ROLE on CSModule
     assert csm.hasRole(MODULE_MANAGER_ROLE, agent) is False
-    # 15) sanity check that the key removal charge is set to the old value
+
+    # 15) verify keyRemovalCharge is still at the old value
     assert csm.keyRemovalCharge() == KEY_REMOVAL_CHARGE_BEFORE
 
-    # 16) sanity check that the LOL registry is not set to the new values
+    # ================= Liquidity Observation Lab (LOL) limits ==============
+
+    # 17) verify LOL AllowedRecipientsRegistry still holds the old limit parameters and period state
     lol_budget_limit_before, lol_period_duration_months_before = stETH_LOL_registry.getLimitParameters()
     _, _, lol_period_start_before, lol_period_end_before = stETH_LOL_registry.getPeriodState()
-
     lol_spendable_balance_before = stETH_LOL_registry.spendableBalance()
 
     assert lol_budget_limit_before == STETH_LOL_LIMIT_BEFORE
@@ -154,11 +172,13 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
         vote_id, _ = start_vote(tx_params, silent=True)
 
     vote_tx = helpers.execute_vote(accounts, vote_id, voting)
-
     print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
     display_voting_events(vote_tx)
     events = group_voting_events(vote_tx)
+
+    metadata = find_metadata_by_vote_id(vote_id)
+    assert get_lido_vote_cid_from_str(metadata) == IPFS_DESCRIPTION_HASH
 
     # =======================================================================
     # ========================= After voting tests ==========================
@@ -211,21 +231,20 @@ def validate_after_pectra_updates(
 ):
     sanity_checker_limits = oracle_report_sanity_checker.getOracleReportLimits()
 
-    # After voting tests
-    # 1) Aragon Agent doesn't have `EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` on `OracleReportSanityChecker` contract
+    # 1,3) Aragon Agent doesn't have `EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` on `OracleReportSanityChecker` contract
     agent_has_role = oracle_report_sanity_checker.hasRole(EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE, AGENT)
     assert not agent_has_role
     # 2) Check `exitedValidatorsPerDayLimit` sanity checker value after voting equal to 3600
     assert sanity_checker_limits["exitedValidatorsPerDayLimit"] == EXITED_VALIDATORS_PER_DAY_LIMIT_AFTER
-    # 3) Aragon Agent doesn't have `APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` on `OracleReportSanityChecker` contract
+    # 4,6) Aragon Agent doesn't have `APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE` on `OracleReportSanityChecker` contract
     agent_has_role = oracle_report_sanity_checker.hasRole(APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE, AGENT)
     assert not agent_has_role
-    # 4) Check `appearedValidatorsPerDayLimit` sanity checker value after voting equal to 1800
+    # 5) Check `appearedValidatorsPerDayLimit` sanity checker value after voting equal to 1800
     assert sanity_checker_limits["appearedValidatorsPerDayLimit"] == APPEARED_VALIDATORS_PER_DAY_LIMIT_AFTER
-    # 5) Aragon Agent doesn't have `INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE` on `OracleReportSanityChecker` contract
+    # 7,9) Aragon Agent doesn't have `INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE` on `OracleReportSanityChecker` contract
     agent_has_role = oracle_report_sanity_checker.hasRole(INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE, AGENT)
     assert not agent_has_role
-    # 6) Check `initialSlashingAmountPWei` sanity checker value to 8
+    # 8) Check `initialSlashingAmountPWei` sanity checker value to 8
     assert sanity_checker_limits["initialSlashingAmountPWei"] == INITIAL_SLASHING_AMOUNT_PWEI_AFTER
 
     # Validate exitedValidatorsPerDayLimit sanity checker value set to `EXITED_VALIDATORS_PER_DAY_LIMIT_AFTER`
@@ -255,15 +274,16 @@ def validate_mev_boost_relay_management_factories_added(
         len(evm_script_factories_after) == len(evm_script_factories_before) + 3
     ), "Number of EVM script factories is incorrect"
 
-    # 10. Add `AddMEVBoostRelay` EVM script factory
+    # 10) Add `AddMEVBoostRelay` EVM script factory
     assert EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY in evm_script_factories_after, "AddMEVBoostRelay factory not found"
 
     validate_evmscript_factory_added_event(
-        events[0],
-        EVMScriptFactoryAdded(
+        event=events[0],
+        p=EVMScriptFactoryAdded(
             factory_addr=EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY,
             permissions=create_permissions(mev_boost_allowed_list, "add_relay"),
         ),
+        emitted_by=EASY_TRACK,
     )
 
     create_and_enact_add_mev_boost_relay_motion(
@@ -278,17 +298,18 @@ def validate_mev_boost_relay_management_factories_added(
         voting,
     )
 
-    # 11. Add `RemoveMEVBoostRelay` EVM script factory
+    # 11) Add `RemoveMEVBoostRelay` EVM script factory
     assert (
         EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY in evm_script_factories_after
     ), "RemoveMEVBoostRelay factory not found"
 
     validate_evmscript_factory_added_event(
-        events[1],
-        EVMScriptFactoryAdded(
+        event=events[1],
+        p=EVMScriptFactoryAdded(
             factory_addr=EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY,
             permissions=create_permissions(mev_boost_allowed_list, "remove_relay"),
         ),
+        emitted_by=EASY_TRACK,
     )
 
     create_and_enact_remove_mev_boost_relay_motion(
@@ -296,23 +317,23 @@ def validate_mev_boost_relay_management_factories_added(
         trusted_caller,
         mev_boost_allowed_list,
         EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY,
-        TEST_RELAY[0],
         stranger,
         helpers,
         ldo_holder,
         voting,
     )
 
-    # 12. Add `EditMEVBoostRelay` EVM script factory
+    # 12) Add `EditMEVBoostRelay` EVM script factory
     assert EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY in evm_script_factories_after, "EditMEVBoostRelay factory not found"
 
     validate_evmscript_factory_added_event(
-        events[2],
-        EVMScriptFactoryAdded(
+        event=events[2],
+        p=EVMScriptFactoryAdded(
             factory_addr=EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY,
             permissions=create_permissions(mev_boost_allowed_list, "add_relay")
             + create_permissions(mev_boost_allowed_list, "remove_relay")[2:],
         ),
+        emitted_by=EASY_TRACK,
     )
 
     create_and_enact_edit_mev_boost_relay_motion(
@@ -327,11 +348,12 @@ def validate_mev_boost_relay_management_factories_added(
         voting,
     )
 
-    # 13. Change manager role on MEV-Boost Relay Allowed List
+    # 13) Change manager role on MEV-Boost Relay Allowed List
     assert mev_boost_allowed_list.get_manager() == EASYTRACK_EVMSCRIPT_EXECUTOR
     validate_relay_allowed_list_manager_set(
         event=events[3],
         new_manager=EASYTRACK_EVMSCRIPT_EXECUTOR,
+        emitted_by=MEV_BOOST_ALLOWED_LIST,
     )
 
 
@@ -340,15 +362,15 @@ def validate_csm_key_removal_charge_update(
     csm,
     events,
 ):
-    # 14. Grant MODULE_MANAGER_ROLE on CS Module to Aragon Agent
+    # 14) Grant MODULE_MANAGER_ROLE on CS Module to Aragon Agent
     validate_grant_role_event(events[0], MODULE_MANAGER_ROLE, agent.address, agent.address)
 
-    # 15. Reduce keyRemovalCharge from 0.05 to 0.02 ETH on CS Module
+    # 15) Reduce keyRemovalCharge from 0.05 to 0.02 ETH on CS Module
     assert csm.keyRemovalCharge() == KEY_REMOVAL_CHARGE_AFTER, "Key removal charge not updated"
 
-    validate_set_key_removal_charge_event(events[1], KEY_REMOVAL_CHARGE_AFTER)
+    validate_set_key_removal_charge_event(events[1], KEY_REMOVAL_CHARGE_AFTER, emitted_by=CSM_IMPL)
 
-    # 16. Revoke MODULE_MANAGER_ROLE on CS Module from Aragon Agent
+    # 16) Revoke MODULE_MANAGER_ROLE on CS Module from Aragon Agent
     validate_revoke_role_event(events[2], MODULE_MANAGER_ROLE, agent.address, agent.address)
 
     assert csm.hasRole(MODULE_MANAGER_ROLE, agent.address) is False
@@ -367,9 +389,8 @@ def validate_csm_key_removal_charge_update(
     assert "KeyRemovalChargeApplied" in tx.events
     assert "BondCharged" in tx.events
 
-    expected_charge_amount = contracts.lido.getPooledEthByShares(
-        contracts.lido.getSharesByPooledEth(csm.keyRemovalCharge())
-    )
+    lido = interface.Lido(LIDO_AND_STETH)
+    expected_charge_amount = lido.getPooledEthByShares(lido.getSharesByPooledEth(csm.keyRemovalCharge()))
 
     assert tx.events["BondCharged"]["toChargeAmount"] == expected_charge_amount
 
@@ -388,7 +409,7 @@ def validate_stETH_LOL_registry_limit_parameters_update(
     lol_spendable_balance_before,
     stranger,
 ):
-    # 17. Increase the limit from 2,100 to 6,000 stETH and extend the duration from 3 to 6 months on LOL AllowedRecipientsRegistry
+    # 17) Increase the limit from 2,100 to 6,000 stETH and extend the duration from 3 to 6 months on LOL AllowedRecipientsRegistry
     lol_budget_limit_after, lol_period_duration_months_after = stETH_LOL_registry.getLimitParameters()
     _, _, lol_period_start_after, lol_period_end_after = stETH_LOL_registry.getPeriodState()
     lol_spendable_balance_after = stETH_LOL_registry.spendableBalance()
@@ -406,6 +427,7 @@ def validate_stETH_LOL_registry_limit_parameters_update(
         limit=STETH_LOL_LIMIT_AFTER,
         period_duration_month=STETH_LOL_PERIOD_AFTER,
         period_start_timestamp=STETH_LOL_PERIOD_START_AFTER,
+        emitted_by=STETH_LOL_REGISTRY,
     )
 
     limit_test(

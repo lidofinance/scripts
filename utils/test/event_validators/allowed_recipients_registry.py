@@ -1,9 +1,10 @@
 from brownie.network.event import EventDict
 from .common import validate_events_chain
+from brownie import convert
 
 
 def validate_set_limit_parameter_event(
-    event: EventDict, limit: int, period_duration_month: int, period_start_timestamp: int
+    event: EventDict, limit: int, period_duration_month: int, period_start_timestamp: int, emitted_by: str | None = None
 ):
     _events_chain = [
         "LogScriptCall",
@@ -21,6 +22,11 @@ def validate_set_limit_parameter_event(
     assert event.count("LimitsParametersChanged") == 1
     assert event["LimitsParametersChanged"]["_limit"] == limit
     assert event["LimitsParametersChanged"]["_periodDurationMonths"] == period_duration_month
+    if emitted_by is not None:
+        event_emitted_by = convert.to_address(event["LimitsParametersChanged"]["_emitted_by"])
+        assert event_emitted_by == convert.to_address(
+            emitted_by
+        ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
 
 
 def validate_update_spent_amount_event(

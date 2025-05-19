@@ -79,7 +79,7 @@ class TestCSM:
         assert csm.getType() == _str_to_bytes32("community-onchain-v1")
         assert csm.LIDO_LOCATOR() == LIDO_LOCATOR
         assert csm.accounting() == CS_ACCOUNTING_ADDRESS
-        assert csm.keyRemovalCharge() == ETH(0.05)
+        assert csm.keyRemovalCharge() == ETH(0.02)
 
         assert not csm.isPaused()
         assert csm.publicRelease()

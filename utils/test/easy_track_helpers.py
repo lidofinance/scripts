@@ -300,13 +300,13 @@ def create_and_enact_remove_mev_boost_relay_motion(
     trusted_caller,
     mev_boost_allowed_list,
     factory,
-    relay_uri,
     stranger,
     helpers,
     ldo_holder,
     dao_voting,
 ):
     relays = mev_boost_allowed_list.get_relays()
+    relay_uri = TEST_RELAY[0]
 
     # Check if the relay is already in the list by the URI, but not by the whole tuple because of the edited fields
     if relay_uri not in [x[0] for x in relays]:
