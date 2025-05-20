@@ -31,7 +31,7 @@ VEBO_CONSENSUS_VERSION = 4
 EXIT_DAILY_LIMIT = 20
 TW_DAILY_LIMIT = 10
 
-EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS = 7200
+EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 7200
 
 NOR_EXIT_DEADLINE_IN_SEC = 30 * 60
 
@@ -101,22 +101,23 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             16. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT
             --- SR
             17. Update SR implementation
-            18. Grant REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier
+            18. Grant SR REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier
+            19. Grant SR REPORT_EXITED_VALIDATORS_ROLE to VEB
             --- NOR
-            19. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
-            20. Update `NodeOperatorsRegistry` implementation
-            21. Call finalizeUpgrade_v4 on NOR
+            20. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
+            21. Update `NodeOperatorsRegistry` implementation
+            22. Call finalizeUpgrade_v4 on NOR
             --- sDVT
-            22. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
-            23. Update `SimpleDVT` implementation
-            24. Call finalizeUpgrade_v4 on sDVT
+            23. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
+            24. Update `SimpleDVT` implementation
+            25. Call finalizeUpgrade_v4 on sDVT
             --- Oracle configs ---
-            25. Grant CONFIG_MANAGER_ROLE role to the AGENT
-            26. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig
-            27. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-            28. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-            29. Add EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS variable to OracleDaemonConfig
-            30. Revoke CONFIG_MANAGER_ROLE from AGENT
+            30. Grant CONFIG_MANAGER_ROLE role to the AGENT
+            31. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig
+            32. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+            33. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+            34. Add EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS variable to OracleDaemonConfig
+            35. Revoke CONFIG_MANAGER_ROLE from AGENT
             --- Temp ---
             40. Add ADD_WITHDRAWAL_REQUEST_ROLE WV for Consolidation to the TEMP-DEVNET-01 (write contract)
             41. Add ADD_CONSOLIDATION_REQUEST_ROLE WV for Triggerable Withdrawal to the TEMP-DEVNET-01 (write contract)
@@ -301,7 +302,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             agent_forward([encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)]),
         ),
         (
-            "18. Grant REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier",
+            "18. Grant SR REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.staking_router,
@@ -311,15 +312,25 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            "19. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo",
+            "19. Grant SR REPORT_EXITED_VALIDATORS_ROLE to VEB",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.staking_router,
+                    role_name="REPORT_EXITED_VALIDATORS_ROLE",
+                    grant_to=contracts.validators_exit_bus_oracle,
+                )
+            ])
+        ),
+        (
+            "20. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo",
             add_implementation_to_nor_app_repo(NOR_VERSION, NODE_OPERATORS_REGISTRY_IMPL, nor_uri),
         ),
         (
-            "20. Update `NodeOperatorsRegistry` implementation",
+            "21. Update `NodeOperatorsRegistry` implementation",
             update_app_implementation(NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
         ),
         (
-            "21. Call finalizeUpgrade_v4 on NOR",
+            "22. Call finalizeUpgrade_v4 on NOR",
             (
                 interface.NodeOperatorsRegistry(contracts.node_operators_registry).address,
                 interface.NodeOperatorsRegistry(contracts.node_operators_registry).finalizeUpgrade_v4.encode_input(
@@ -329,15 +340,15 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         ),
         # TODO: Implement after devnet-01
         # (
-        #     "22. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo",
+        #     "23. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo",
         #     add_implementation_to_sdvt_app_repo(SDVT_VERSION, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
         # ),
         # (
-        #     "23. Update `SimpleDVT` implementation",
+        #     "24. Update `SimpleDVT` implementation",
         #     update_app_implementation(SIMPLE_DVT_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
         # ),
         # (
-        #     "24. Call finalizeUpgrade_v4 on sDVT",
+        #     "25. Call finalizeUpgrade_v4 on sDVT",
         # (
         #     contracts.sDVT.address,
         #     contracts.withdrawal_vault.finalizeUpgrade_v4.encode_input(
@@ -346,7 +357,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # )
         # ),
         (
-            "25. Grant CONFIG_MANAGER_ROLE role to the AGENT",
+            "30. Grant CONFIG_MANAGER_ROLE role to the AGENT",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.oracle_daemon_config,
@@ -356,7 +367,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            "26. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig",
+            "31. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig",
             agent_forward([
                 (
                     contracts.oracle_daemon_config.address,
@@ -365,7 +376,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            "27. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
+            "32. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
             agent_forward([
                 (
                     contracts.oracle_daemon_config.address,
@@ -374,7 +385,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            "28. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
+            "33. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
             agent_forward([
                 (
                     contracts.oracle_daemon_config.address,
@@ -383,16 +394,16 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            "29. Add EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS variable to OracleDaemonConfig",
+            "34. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig",
             agent_forward([
                 (
                     contracts.oracle_daemon_config.address,
-                    contracts.oracle_daemon_config.set.encode_input('EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS', EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS),
+                    contracts.oracle_daemon_config.set.encode_input('EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS', EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS),
                 ),
             ])
         ),
         (
-            "30. Revoke CONFIG_MANAGER_ROLE from AGENT",
+            "35. Revoke CONFIG_MANAGER_ROLE from AGENT",
             agent_forward([
                 encode_oz_revoke_role(
                     contract=contracts.oracle_daemon_config,
