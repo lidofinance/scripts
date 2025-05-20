@@ -17,7 +17,7 @@ II. Add Easy Track setup for Managing MEV-Boost Relay Allowed List
 10. Add `AddMEVBoostRelays` EVM script factory `0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60` to Easy Track
 11. Add `RemoveMEVBoostRelays` EVM script factory `0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306` to Easy Track 
 12. Add `EditMEVBoostRelays` EVM script factory `0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535` to Easy Track
-13. Grant manager role on MEV-Boost Relay Allowed List `0xF95f069F9AD107938F6ba802a3da87892298610E` to Easy Track's EVM Script Executor `0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977`
+13. Set Easy Track's EVM Script Executor `0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977` as manager on the MEV-Boost Relay Allowed List `0xF95f069F9AD107938F6ba802a3da87892298610E`
 
 III. CSM: Reduce keyRemovalCharge
 14. Grant MODULE_MANAGER_ROLE on CSModule `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
@@ -216,7 +216,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "13) Grant manager role on MEV-Boost Relay Allowed List `0xF95f069F9AD107938F6ba802a3da87892298610E` to Easy Track's EVM Script Executor `0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977`",
+            "13) Set Easy Track's EVM Script Executor `0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977` as manager on the MEV-Boost Relay Allowed List `0xF95f069F9AD107938F6ba802a3da87892298610E`",
             agent_forward(
                 [
                     (
