@@ -1,4 +1,6 @@
 from brownie import interface, reverts, chain
+from brownie.network.event import EventDict
+
 from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS
 from utils.test.easy_track_helpers import (
     TEST_RELAY,
@@ -11,10 +13,10 @@ from utils.test.easy_track_helpers import create_and_enact_payment_motion
 from utils.test.event_validators.easy_track import validate_evmscript_factory_added_event, EVMScriptFactoryAdded
 from utils.test.event_validators.relay_allowed_list import validate_relay_allowed_list_manager_set
 from utils.test.event_validators.csm import validate_set_key_removal_charge_event
-from utils.test.event_validators.after_pectra import (
-    validate_sc_exited_validators_limit_update,
-    validate_appeared_validators_limit_update,
-    validate_initial_slashing_and_penalties_update,
+from utils.test.event_validators.oracle_report_sanity_checker import (
+    validate_exited_validators_per_day_limit_event,
+    validate_appeared_validators_limit_event,
+    validate_initial_slashing_and_penalties_event,
 )
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 from utils.test.event_validators.allowed_recipients_registry import validate_set_limit_parameter_event
@@ -102,6 +104,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
     stETH_LOL_multisig = accounts.at(STETH_LOL_TRUSTED_CALLER, force=True)
     stETH_token = interface.StETH(LIDO_AND_STETH)
 
+    
     # =======================================================================
     # ========================= Before voting tests =========================
     # =======================================================================
@@ -153,7 +156,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
 
     # 17) verify LOL AllowedRecipientsRegistry still holds the old limit parameters and period state
     lol_budget_limit_before, lol_period_duration_months_before = stETH_LOL_registry.getLimitParameters()
-    _, _, lol_period_start_before, lol_period_end_before = stETH_LOL_registry.getPeriodState()
+    lol_amount_spent_before, _, lol_period_start_before, lol_period_end_before = stETH_LOL_registry.getPeriodState()
     lol_spendable_balance_before = stETH_LOL_registry.spendableBalance()
 
     assert lol_budget_limit_before == STETH_LOL_LIMIT_BEFORE
@@ -221,6 +224,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
         stETH_LOL_multisig,
         stETH_token,
         lol_spendable_balance_before,
+        lol_amount_spent_before,
         stranger,
     )
 
@@ -291,7 +295,6 @@ def validate_mev_boost_relay_management_factories_added(
         trusted_caller,
         mev_boost_allowed_list,
         EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY,
-        TEST_RELAY,
         stranger,
         helpers,
         ldo_holder,
@@ -407,11 +410,12 @@ def validate_stETH_LOL_registry_limit_parameters_update(
     stETH_LOL_multisig,
     stETH_token,
     lol_spendable_balance_before,
+    lol_amount_spent_before,
     stranger,
 ):
     # 17) Increase the limit from 2,100 to 6,000 stETH and extend the duration from 3 to 6 months on LOL AllowedRecipientsRegistry
     lol_budget_limit_after, lol_period_duration_months_after = stETH_LOL_registry.getLimitParameters()
-    _, _, lol_period_start_after, lol_period_end_after = stETH_LOL_registry.getPeriodState()
+    lol_amount_spent_after, _, lol_period_start_after, lol_period_end_after = stETH_LOL_registry.getPeriodState()
     lol_spendable_balance_after = stETH_LOL_registry.spendableBalance()
 
     assert lol_period_start_after == STETH_LOL_PERIOD_START_AFTER
@@ -421,7 +425,8 @@ def validate_stETH_LOL_registry_limit_parameters_update(
     assert (
         lol_spendable_balance_before + (STETH_LOL_LIMIT_AFTER - STETH_LOL_LIMIT_BEFORE) == lol_spendable_balance_after
     )
-
+    assert lol_amount_spent_before == lol_amount_spent_after
+    
     validate_set_limit_parameter_event(
         event[0],
         limit=STETH_LOL_LIMIT_AFTER,
@@ -492,7 +497,7 @@ def validate_stETH_LOL_registry_limit_parameters_update(
     assert lol_period_end_h2 == h2_period_end
     assert stETH_LOL_registry.spendableBalance() == 3000 * 10**18
 
-
+# Helpers
 def limit_test(
     easy_track, to_spend, trusted_caller_acc, top_up_evm_script_factory, send_to, stranger, token, max_spend_at_once
 ):
@@ -532,3 +537,51 @@ def limit_test(
             [1],
             stranger,
         )
+
+
+def validate_sc_exited_validators_limit_update(events: list[EventDict], exitedValidatorsPerDayLimit):
+    validate_grant_role_event(
+        events[0],
+        EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE,
+        AGENT,
+        AGENT,
+    )
+    validate_exited_validators_per_day_limit_event(events[1], exitedValidatorsPerDayLimit, ORACLE_REPORT_SANITY_CHECKER)
+    validate_revoke_role_event(
+        events[2],
+        EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE,
+        AGENT,
+        AGENT,
+    )
+
+
+def validate_appeared_validators_limit_update(events: list[EventDict], appearedValidatorsPerDayLimit):
+    validate_grant_role_event(
+        events[0],
+        APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE,
+        AGENT,
+        AGENT,
+    )
+    validate_appeared_validators_limit_event(events[1], appearedValidatorsPerDayLimit, ORACLE_REPORT_SANITY_CHECKER)
+    validate_revoke_role_event(
+        events[2],
+        APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE,
+        AGENT,
+        AGENT,
+    )
+
+
+def validate_initial_slashing_and_penalties_update(events: list[EventDict], initialSlashingAmountPWei):
+    validate_grant_role_event(
+        events[0],
+        INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE,
+        AGENT,
+        AGENT,
+    )
+    validate_initial_slashing_and_penalties_event(events[1], initialSlashingAmountPWei, ORACLE_REPORT_SANITY_CHECKER)
+    validate_revoke_role_event(
+        events[2],
+        INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE,
+        AGENT,
+        AGENT,
+    )

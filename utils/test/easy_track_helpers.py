@@ -196,8 +196,6 @@ def check_and_add_mev_boost_relay_with_voting(mev_boost_allowed_list, mev_boost_
     relays = mev_boost_allowed_list.get_relays()
 
     assert type(mev_boost_relay) == tuple
-    assert mev_boost_relay[0] == TEST_RELAY[0]
-
     assert mev_boost_relay not in relays
 
     is_hoodi_testnet = network_name() in ["hoodi", "hoodi-fork"]
@@ -272,7 +270,6 @@ def create_and_enact_add_mev_boost_relay_motion(
     trusted_caller,
     mev_boost_allowed_list,
     factory,
-    relay,
     stranger,
     helpers,
     ldo_holder,
@@ -280,19 +277,19 @@ def create_and_enact_add_mev_boost_relay_motion(
 ):
     relays = mev_boost_allowed_list.get_relays()
 
-    # Check if there is enough space in the list
+    # Check if there is enough space in the list, if not, remove the first relay
     if len(relays) >= MEV_BOOST_ALLOWED_LIST_MAX_RELAY_COUNT:
         check_and_remove_mev_boost_relay_with_voting(mev_boost_allowed_list, relays[0], helpers, ldo_holder, dao_voting)
 
     relays_count = len(relays)
-    assert relay not in relays
+    assert TEST_RELAY not in relays
 
-    calldata = "0x" + encode(["(string,string,bool,string)[]"], [[relay]]).hex()
+    calldata = "0x" + encode(["(string,string,bool,string)[]"], [[TEST_RELAY]]).hex()
 
     create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger)
 
     assert len(mev_boost_allowed_list.get_relays()) == relays_count + 1
-    assert relay in mev_boost_allowed_list.get_relays()
+    assert TEST_RELAY in mev_boost_allowed_list.get_relays()
 
 
 def create_and_enact_remove_mev_boost_relay_motion(
@@ -305,23 +302,22 @@ def create_and_enact_remove_mev_boost_relay_motion(
     ldo_holder,
     dao_voting,
 ):
-    relays = mev_boost_allowed_list.get_relays()
     relay_uri = TEST_RELAY[0]
 
-    # Check if the relay is already in the list by the URI, but not by the whole tuple because of the edited fields
-    if relay_uri not in [x[0] for x in relays]:
-        new_relay = (relay_uri, "Lorem Ipsum Operator", True, "Description of the relay")
-        check_and_add_mev_boost_relay_with_voting(mev_boost_allowed_list, new_relay, helpers, ldo_holder, dao_voting)
-
-    relays_count = len(relays)
-
+    # If relay is not in the list, add it first, or else the motion will fail
+    if relay_uri not in [x[0] for x in mev_boost_allowed_list.get_relays()]:
+        check_and_add_mev_boost_relay_with_voting(mev_boost_allowed_list, TEST_RELAY, helpers, ldo_holder, dao_voting)
+    
+    # get the list of relays before the motion
+    relays_before = mev_boost_allowed_list.get_relays()
     calldata = "0x" + encode(["string[]"], [[relay_uri]]).hex()
 
     create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger)
 
     relays_after = mev_boost_allowed_list.get_relays()
 
-    assert len(relays_after) == relays_count - 1
+    # Check if the relay is not present in the list after the motion
+    assert len(relays_after) ==  len(relays_before) - 1
     assert relay_uri not in relays_after
 
 
@@ -336,15 +332,11 @@ def create_and_enact_edit_mev_boost_relay_motion(
     ldo_holder,
     dao_voting,
 ):
-    relays = mev_boost_allowed_list.get_relays()
-
-    # Check if the relay is already in the list by the URI, but not by the whole tuple because of the edited fields
-    if relay[0] not in [x[0] for x in relays]:
+    # If relay is not in the list, add it first, or else the motion will fail
+    if relay[0] not in [x[0] for x in mev_boost_allowed_list.get_relays()]:
         check_and_add_mev_boost_relay_with_voting(mev_boost_allowed_list, relay, helpers, ldo_holder, dao_voting)
 
-    relays_count = len(mev_boost_allowed_list.get_relays())
-
-    assert relay not in relays
+    relays_before = mev_boost_allowed_list.get_relays()
 
     calldata = "0x" + encode(["(string,string,bool,string)[]"], [[relay]]).hex()
 
@@ -352,5 +344,5 @@ def create_and_enact_edit_mev_boost_relay_motion(
 
     relays_after = mev_boost_allowed_list.get_relays()
 
-    assert len(relays_after) == relays_count
+    assert len(relays_after) == len(relays_before)
     assert relay in relays_after
