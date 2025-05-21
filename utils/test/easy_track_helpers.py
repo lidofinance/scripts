@@ -326,17 +326,22 @@ def create_and_enact_edit_mev_boost_relay_motion(
     trusted_caller,
     mev_boost_allowed_list,
     factory,
-    relay,
     stranger,
     helpers,
     ldo_holder,
     dao_voting,
 ):
     # If relay is not in the list, add it first, or else the motion will fail
-    if relay[0] not in [x[0] for x in mev_boost_allowed_list.get_relays()]:
-        check_and_add_mev_boost_relay_with_voting(mev_boost_allowed_list, relay, helpers, ldo_holder, dao_voting)
+    if TEST_RELAY[0] not in [x[0] for x in mev_boost_allowed_list.get_relays()]:
+        check_and_add_mev_boost_relay_with_voting(mev_boost_allowed_list, TEST_RELAY, helpers, ldo_holder, dao_voting)
+
+    new_operator = TEST_RELAY[1] + " new value"
 
     relays_before = mev_boost_allowed_list.get_relays()
+    relay = (TEST_RELAY[0], new_operator, TEST_RELAY[2], TEST_RELAY[3])
+
+    assert relay not in relays_before
+    assert relay[1] != TEST_RELAY[1]
 
     calldata = "0x" + encode(["(string,string,bool,string)[]"], [[relay]]).hex()
 
@@ -346,3 +351,8 @@ def create_and_enact_edit_mev_boost_relay_motion(
 
     assert len(relays_after) == len(relays_before)
     assert relay in relays_after
+
+    # Last sanity check that relay is updated 
+    relay_from_list = mev_boost_allowed_list.get_relay_by_uri(relay[0])
+    assert relay_from_list[0] == relay[0]
+    assert relay_from_list[1] == new_operator

@@ -208,7 +208,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
         evm_script_factories_before,
     )
 
-    # Check that all events and parameters for CS Module key removal charge update are correct
+    # Check that all events and parameters for CSModule key removal charge update are correct
     validate_csm_key_removal_charge_update(
         agent,
         csm,
@@ -344,7 +344,6 @@ def validate_mev_boost_relay_management_factories_added(
         trusted_caller,
         mev_boost_allowed_list,
         EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY,
-        (TEST_RELAY[0], "Dolor Sit Amet Operator", TEST_RELAY[2], TEST_RELAY[3]),
         stranger,
         helpers,
         ldo_holder,
@@ -365,15 +364,15 @@ def validate_csm_key_removal_charge_update(
     csm,
     events,
 ):
-    # 14) Grant MODULE_MANAGER_ROLE on CS Module to Aragon Agent
+    # 14) Grant MODULE_MANAGER_ROLE on CSModule to Aragon Agent
     validate_grant_role_event(events[0], MODULE_MANAGER_ROLE, agent.address, agent.address)
 
-    # 15) Reduce keyRemovalCharge from 0.05 to 0.02 ETH on CS Module
+    # 15) Reduce keyRemovalCharge from 0.05 to 0.02 ETH on CSModule
     assert csm.keyRemovalCharge() == KEY_REMOVAL_CHARGE_AFTER, "Key removal charge not updated"
 
     validate_set_key_removal_charge_event(events[1], KEY_REMOVAL_CHARGE_AFTER, emitted_by=CSM_IMPL)
 
-    # 16) Revoke MODULE_MANAGER_ROLE on CS Module from Aragon Agent
+    # 16) Revoke MODULE_MANAGER_ROLE on CSModule from Aragon Agent
     validate_revoke_role_event(events[2], MODULE_MANAGER_ROLE, agent.address, agent.address)
 
     assert csm.hasRole(MODULE_MANAGER_ROLE, agent.address) is False
@@ -426,7 +425,7 @@ def validate_stETH_LOL_registry_limit_parameters_update(
         lol_spendable_balance_before + (STETH_LOL_LIMIT_AFTER - STETH_LOL_LIMIT_BEFORE) == lol_spendable_balance_after
     )
     assert lol_amount_spent_before == lol_amount_spent_after
-    
+
     validate_set_limit_parameter_event(
         event[0],
         limit=STETH_LOL_LIMIT_AFTER,

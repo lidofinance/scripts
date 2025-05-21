@@ -21,7 +21,7 @@ II. Add Easy Track setup for Managing MEV-Boost Relay Allowed List
 
 III. CSM: Reduce keyRemovalCharge
 14. Grant MODULE_MANAGER_ROLE on CSModule `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
-15. Reduce keyRemovalCharge from 0.05 to 0.02 ETH on CS Module `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F`
+15. Reduce keyRemovalCharge from 0.05 to 0.02 ETH on CSModule `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F`
 16. Revoke MODULE_MANAGER_ROLE on CSModule `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
 
 IV. Change Easy Track limits for Liquidity Observation Lab (LOL)
@@ -231,7 +231,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             agent_forward([encode_oz_grant_role(contracts.csm, "MODULE_MANAGER_ROLE", contracts.agent)]),
         ),
         (
-            "15) Reduce keyRemovalCharge from 0.05 to 0.02 ETH on CS Module `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F`",
+            "15) Reduce keyRemovalCharge from 0.05 to 0.02 ETH on CSModule `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F`",
             agent_forward(
                 [
                     (
