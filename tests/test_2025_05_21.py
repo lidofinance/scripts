@@ -82,7 +82,7 @@ EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE = "0x60b9982471bc0620c7b74959f48a86
 APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE = "0x14ca7b84baa11a976283347b0159b8ddf2dcf5fd5cf613cc567a3423cf510119"
 INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE = "0xebfa317a5d279811b024586b17a50f48924bce86f6293b233927322d7209b507"
 
-IPFS_DESCRIPTION_HASH = "bafkreigzopqg3t6xr7dpm5kstxyqsfxxfmhz3iz2s4gcercj3y6lxlqcr4"
+IPFS_DESCRIPTION_HASH = "bafkreianaxww5wtng4nnqpni65vi2dtvvlqntd72y2wdh4xj7ae7qyqk4m"
 
 
 def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):

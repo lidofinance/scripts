@@ -7,16 +7,16 @@ I. Post-pectra upgrade
 2. Change exitedValidatorsPerDayLimit from 9000 to 3600 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75`
 3. Revoke EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
 4. Grant APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
-5. Change appearedValidatorsPerDayLimit from 43200 to 1800 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` 
+5. Change appearedValidatorsPerDayLimit from 43200 to 1800 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75`
 6. Revoke APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
 7. Grant INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
-8. Change initialSlashingAmountPWei from 1000 to 8 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` 
+8. Change initialSlashingAmountPWei from 1000 to 8 on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75`
 9. Revoke INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE on Oracle Report Sanity Checker `0x6232397ebac4f5772e53285b26c47914e9461e75` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
 
-II. Add Easy Track setup for Managing MEV-Boost Relay Allowed List 
-10. Add `AddMEVBoostRelays` EVM script factory `0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60` to Easy Track
-11. Add `RemoveMEVBoostRelays` EVM script factory `0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306` to Easy Track 
-12. Add `EditMEVBoostRelays` EVM script factory `0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535` to Easy Track
+II. Add Easy Track setup for Managing MEV-Boost Relay Allowed List
+10. Add `AddMEVBoostRelays` EVM script factory `0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea`
+11. Add `RemoveMEVBoostRelays` EVM script factory `0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea`
+12. Add `EditMEVBoostRelays` EVM script factory `0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea`
 13. Set Easy Track's EVM Script Executor `0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977` as manager on the MEV-Boost Relay Allowed List `0xF95f069F9AD107938F6ba802a3da87892298610E`
 
 III. CSM: Reduce keyRemovalCharge
@@ -34,7 +34,7 @@ from brownie import interface
 from brownie.network.transaction import TransactionReceipt
 from utils.agent import agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
-from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_description
+from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_description 
 from utils.config import (
     contracts,
     get_deployer_account,
@@ -67,11 +67,11 @@ DESCRIPTION = """Contains separate updates approved by Lido DAO via Snapshot vot
 
 1. **Post-Pectra update:** adjust Oracle Report Sanity Checker parameters to align with reduced slashing penalty and updated validator churn limits. Items 1-9.
 [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xb6559f0cdb1164ae5d63769827c4a275805bd944392a17b60cf51ddc54429dc6) | Audited by [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Oracle%20v5%2004-25.pdf)
-2. **Add Easy Track Factories** for managing MEV-Boost Relay Allowed List. Items 10-13. 
-[Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xf1074ec134595ba8ba6f802c5e505fda32e6ab93e9763d1e43001f439241b7c9) | Audit and deploy verification by [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20RMC%20EasyTrack%20Security%20Audit%20Report%2005-2025.pdf) 
-3. **Reduce `keyRemovalCharge`** for the Community Staking Module. Items 14-16. 
-[Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xcd1c1a051888efd495d97458ae9fa4fe5198616eb3d92a71d3352d9f25e79c4e) 
-4. **Increase Easy Track security limit** for [Liquidity Observation Lab](https://docs.lido.fi/multisigs/committees/#281-liquidity-observation-lab-committee-ethereum) from 2,100&nbsp;stETH per&nbsp;3&nbsp;months to 6,000&nbsp;stETH per&nbsp;6&nbsp;months. Item 17. 
+2. **Add Easy Track Factories** for managing MEV-Boost Relay Allowed List. Items 10-13.
+[Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xf1074ec134595ba8ba6f802c5e505fda32e6ab93e9763d1e43001f439241b7c9) | Audit and deploy verification by [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20RMC%20EasyTrack%20Security%20Audit%20Report%2005-2025.pdf)
+3. **Reduce `keyRemovalCharge`** for the Community Staking Module. Items 14-16.
+[Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xcd1c1a051888efd495d97458ae9fa4fe5198616eb3d92a71d3352d9f25e79c4e)
+4. **Increase Easy Track security limit** for [Liquidity Observation Lab](https://docs.lido.fi/multisigs/committees/#281-liquidity-observation-lab-committee-ethereum) from 2,100&nbsp;stETH per&nbsp;3&nbsp;months to 6,000&nbsp;stETH per&nbsp;6&nbsp;months. Item 17.
 [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x3ecd09e4c0f22d25c711ca5777c49c22d144385b85dd7f696ca6cc66cc0ca157)
 """
 
@@ -194,21 +194,21 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             ),
         ),
         (
-            "10) Add `AddMEVBoostRelay` EVM script factory with address `0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60` to Easy Track",
+            "10) Add `AddMEVBoostRelay` EVM script factory with address `0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea`",
             add_evmscript_factory(
                 factory=EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY,
                 permissions=create_permissions(contracts.relay_allowed_list, "add_relay"),
             ),
         ),
         (
-            "11) Add `RemoveMEVBoostRelay` EVM script factory with address `0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306` to Easy Track",
+            "11) Add `RemoveMEVBoostRelay` EVM script factory with address `0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea`",
             add_evmscript_factory(
                 factory=EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY,
                 permissions=create_permissions(contracts.relay_allowed_list, "remove_relay"),
             ),
         ),
         (
-            "12) Add `EditMEVBoostRelay` EVM script factory with address `0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535` to Easy Track",
+            "12) Add `EditMEVBoostRelay` EVM script factory with address `0x6b7863f2c7dEE99D3b744fDAEDbEB1aeCC025535` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea`",
             add_evmscript_factory(
                 factory=EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY,
                 permissions=create_permissions(contracts.relay_allowed_list, "add_relay")
