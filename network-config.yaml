@@ -1,6 +1,13 @@
 live:
   - name: Ethereum
     networks:
+      - chainid: 1
+        explorer: https://api.etherscan.io/api
+        host: $ETH_RPC_URL
+        id: mainnet
+        multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+        name: Mainnet (Custom RPC)
+        provider: custom
       - chainid: 17000
         explorer: https://api-holesky.etherscan.io/api
         host: https://holesky.infura.io/v3/$WEB3_INFURA_PROJECT_ID

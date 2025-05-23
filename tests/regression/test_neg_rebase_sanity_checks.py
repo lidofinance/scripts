@@ -12,7 +12,7 @@ from utils.config import (
     contracts,
 )
 
-INITIAL_SLASHING_AMOUNT_PWEI = 1000
+INITIAL_SLASHING_AMOUNT_PWEI = 8
 INACTIVITY_PENALTIES_AMOUNT_PWEI = 101
 ONE_PWEI = ETH(0.001)
 
@@ -50,7 +50,7 @@ def test_negative_rebase_correct_exited_validators_count_neg_rebase(oracle_repor
 
     reported_validators_values = [value + 3 for value in reported_validators.values()]
     oracle_report(
-        cl_diff=-ETH(40000),
+        cl_diff=-ETH(40),
         stakingModuleIdsWithNewlyExitedValidators=list(reported_validators.keys()),
         numExitedValidatorsByStakingModule=reported_validators_values,
     )
@@ -66,7 +66,7 @@ def test_negative_rebase_correct_balance_neg_rebase(oracle_report_sanity_checker
     locator = contracts.lido_locator
     assert oracle_report_sanity_checker.address == locator.oracleReportSanityChecker()
 
-    cl_decrease = ETH(40000)
+    cl_decrease = ETH(40)
     oracle_report(cl_diff=-cl_decrease, exclude_vaults_balances=True)
 
     count = oracle_report_sanity_checker.getReportDataCount()
@@ -74,7 +74,7 @@ def test_negative_rebase_correct_balance_neg_rebase(oracle_report_sanity_checker
     (_, _, cl_balance) = oracle_report_sanity_checker.reportData(count - 1)
     assert cl_balance == cl_decrease
 
-    cl_decrease2 = ETH(30000)
+    cl_decrease2 = ETH(30)
     oracle_report(cl_diff=-cl_decrease2, exclude_vaults_balances=True)
     count = oracle_report_sanity_checker.getReportDataCount()
     assert count > 0
