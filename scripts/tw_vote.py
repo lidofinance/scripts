@@ -164,7 +164,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             66. Grant PAUSE_ROLE on CSAccounting to the new GateSeal instance
             67. Grant PAUSE_ROLE on CSAccounting to the new GateSeal instance
             68. Revoke REQUEST_BURN_SHARES_ROLE on Burner from CSAccounting
-            69. Grant REQUEST_BURN_MY_STETH_ROLE on Burnder to CSAccounting
+            69. Grant REQUEST_BURN_MY_STETH_ROLE on Burner to CSAccounting
     """
 
     item_idx = count(1)
@@ -706,7 +706,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            f"{next(item_idx)}. Grant REQUEST_BURN_MY_STETH_ROLE on Burnder to CSAccounting",
+            f"{next(item_idx)}. Grant REQUEST_BURN_MY_STETH_ROLE on Burner to CSAccounting",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.burner,
