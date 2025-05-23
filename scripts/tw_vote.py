@@ -101,7 +101,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             3. Grant VEBO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
             4. Bump VEBO consensus version to `4`
             5. Revoke VEBO MANAGE_CONSENSUS_VERSION_ROLE from AGENT
-            6. Grant VEB DIRECT_EXIT_ROLE to CS Ejector
+            6. Grant TWG ADD_FULL_WITHDRAWAL_REQUEST_ROLE to CSEjector
             7. Grant VEB SUBMIT_REPORT_HASH_ROLE to the AGENT/VOTING (TBD)
             8. Grant VEB EXIT_REPORT_LIMIT_ROLE role to AGENT
             9. Call setExitRequestLimit on VEB
@@ -216,11 +216,11 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            f"{next(item_idx)}. Grant VEB DIRECT_EXIT_ROLE to CS Ejector",
+            f"{next(item_idx)}. Grant TWG ADD_FULL_WITHDRAWAL_REQUEST_ROLE to CSEjector",
             agent_forward([
                 encode_oz_grant_role(
-                    contract=contracts.validators_exit_bus_oracle,
-                    role_name="DIRECT_EXIT_ROLE",
+                    contract=contracts.triggerable_withdrawals_gateway,
+                    role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
                     grant_to=contracts.cs_ejector,
                 )
             ])

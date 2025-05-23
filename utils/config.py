@@ -301,6 +301,10 @@ class ContractsLazyLoader:
         return interface.OracleReportSanityChecker(ORACLE_REPORT_SANITY_CHECKER)
 
     @property
+    def triggerable_withdrawals_gateway(self):
+        raise NotImplementedError()
+
+    @property
     def withdrawal_queue(self) -> interface.WithdrawalQueueERC721:
         return interface.WithdrawalQueueERC721(WITHDRAWAL_QUEUE)
 
