@@ -64,7 +64,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create and push manifest images
-        uses: lidofinance/docker-manifest-action@v0.4.3
+        uses: lidofinance/docker-manifest-action@b33ab348026b120a895167160f5605b0197f0862
         with:
             inputs: ghcr.io/lidofinance/scripts:${{ github.ref_name }}
             images: ghcr.io/lidofinance/scripts:${{ github.ref_name }}-amd64,ghcr.io/lidofinance/scripts:${{ github.ref_name }}-arm64
