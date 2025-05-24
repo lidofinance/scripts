@@ -14,6 +14,10 @@ inputs:
     description: "etherscan api key"
     required: true
     default: ""
+  command:
+    description: "command to execute tests"
+    required: true
+    default: ""
 
 runs:
   using: "composite"
@@ -68,7 +72,7 @@ runs:
     - name: Run tests
       shell: bash
       run: >
-        make -j2 test-2
+        ${{ inputs.command }}
       env:
         WEB3_INFURA_PROJECT_ID: ${{ inputs.infura }}
         ETHERSCAN_TOKEN: ${{ inputs.etherscan }}
