@@ -67,7 +67,7 @@ jobs:
         uses: lidofinance/docker-manifest-action@master
         with:
             inputs: ghcr.io/lidofinance/scripts:${{ github.ref_name }}
-            images: ghcr.io/lidofinance/scripts:${{ github.ref_name }}-amd64,ghcr.io/lidofinance/scripts:${{ github.ref_name }}-arm64
+            tags: ghcr.io/lidofinance/scripts:${{ github.ref_name }}-amd64,ghcr.io/lidofinance/scripts:${{ github.ref_name }}-arm64
             push: true
 
   run-trivy:
