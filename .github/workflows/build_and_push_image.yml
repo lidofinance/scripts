@@ -64,7 +64,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create and push manifest images
-        uses: Noelware/docker-manifest-action@master
+        uses: lidofinance/docker-manifest-action@master
         with:
             inputs: ghcr.io/lidofinance/scripts:${{ github.ref_name }}
             images: ghcr.io/lidofinance/scripts:${{ github.ref_name }}-amd64,ghcr.io/lidofinance/scripts:${{ github.ref_name }}-arm64
@@ -78,7 +78,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: lidofinance/trivy-action@master
         with:
           image-ref: 'ghcr.io/lidofinance/scripts:${{ github.ref_name }}'
           format: 'table'
