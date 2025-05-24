@@ -16,14 +16,6 @@ jobs:
     name: Brownie fork LARGE tests
     runs-on: [protocol-heavy-runners]
     timeout-minutes: 150
-
-    services:
-      hardhat-node:
-        image: ghcr.io/lidofinance/hardhat-node:2.22.19.2-shanghai
-        ports:
-          - 8545:8545
-        env:
-          ETH_RPC_URL: "https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }}"
     
     steps:
       - name: Enabling swap

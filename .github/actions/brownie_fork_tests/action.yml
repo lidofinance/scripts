@@ -68,8 +68,8 @@ runs:
     - name: Run tests
       shell: bash
       run: >
-        poetry run
-        brownie test -ra --network mainnet-fork --durations=20
+        make -j2 test-2
       env:
         WEB3_INFURA_PROJECT_ID: ${{ inputs.infura }}
         ETHERSCAN_TOKEN: ${{ inputs.etherscan }}
+        ETH_RPC_URL: "https://mainnet.infura.io/v3/${{ inputs.infura }}"
