@@ -42,10 +42,9 @@ development:
 
   - cmd: "npx hardhat node"
     cmd_settings:
-      fork: $ETH_RPC_URL
+      fork: mainnet
       port: 8545
     host: http://127.0.0.1:8545
-    explorer: https://api.etherscan.io/api
     id: mfh-1 # mainnet-fork-hardhat-1
     name: Hardhat (Mainnet Fork 1)
     timeout: 360
@@ -54,10 +53,9 @@ development:
 
   - cmd: "npx hardhat node"
     cmd_settings:
-      fork: $ETH_RPC_URL
+      fork: mainnet
       port: 8546
     host: http://127.0.0.1:8546
-    explorer: https://api.etherscan.io/api
     id: mfh-2 # mainnet-fork-hardhat-2
     name: Hardhat (Mainnet Fork 2)
     timeout: 360
@@ -66,10 +64,9 @@ development:
 
   - cmd: "npx hardhat node"
     cmd_settings:
-      fork: $ETH_RPC_URL
+      fork: mainnet
       port: 8547
     host: http://127.0.0.1:8547
-    explorer: https://api.etherscan.io/api
     id: mfh-3 # mainnet-fork-hardhat-3
     name: Hardhat (Mainnet Fork 3)
     timeout: 360
