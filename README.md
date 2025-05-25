@@ -30,12 +30,12 @@ cd scripts
 ```
 
 #### Step 2. Set up the ENV VARs, for example:
-- `WEB3_INFURA_PROJECT_ID` - **mandatory** for the execution of tests
+- `ETH_RPC_URL` - **mandatory** for the execution of tests
 
 #### Step 3. Run the container
 Run the container in the `scripts` directory and specify the ENV VARs:
 ```shell
-docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d ghcr.io/lidofinance/scripts:v10
+docker run --name scripts -v "$(pwd)":/root/scripts -e ETH_RPC_URL -d ghcr.io/lidofinance/scripts:v10
 
 ```
 Note: *It may take up to 1 minute for the container to initialize properly the first time.*
@@ -54,6 +54,13 @@ You now have a fully functional environment to run scripts & tests in, which is 
 ```shell
 poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
 ```
+You can use the following shortcuts:
+- `make test` run all tests on Hardhat node
+- `make test-1/2` run first half of tests
+- `make test-2/2` run second half of tests
+- `make test-1/3` run first third of tests
+- `make test-2/3` run second third of tests
+- `make test-3/3` run third third of tests
 If your container has been stopped (for example, by a system reboot), start it:
 ```shell
 docker start scripts
