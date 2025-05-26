@@ -3,7 +3,6 @@ from brownie.network.event import EventDict
 
 from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS
 from utils.test.easy_track_helpers import (
-    TEST_RELAY,
     create_and_enact_add_mev_boost_relay_motion,
     create_and_enact_remove_mev_boost_relay_motion,
     create_and_enact_edit_mev_boost_relay_motion,
@@ -21,7 +20,7 @@ from utils.test.event_validators.oracle_report_sanity_checker import (
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 from utils.test.event_validators.allowed_recipients_registry import validate_set_limit_parameter_event
 from utils.test.tx_tracing_helpers import group_voting_events
-from scripts.vote_2025_05_21 import start_vote
+from scripts.vote_2025_05_27 import start_vote
 from utils.test.tx_tracing_helpers import display_voting_events
 from utils.test.csm_helpers import csm_add_node_operator, get_ea_member
 from utils.voting import find_metadata_by_vote_id

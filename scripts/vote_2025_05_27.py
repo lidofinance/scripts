@@ -1,5 +1,5 @@
 """
-Voting 21/05/2025
+Voting 27/05/2025
 
 I. Post-pectra upgrade
 
@@ -26,6 +26,8 @@ III. CSM: Reduce keyRemovalCharge
 
 IV. Change Easy Track limits for Liquidity Observation Lab (LOL)
 17. Increase the limit from 2,100 to 6,000 stETH and extend the duration from 3 to 6 months on LOL AllowedRecipientsRegistry `0x48c4929630099b217136b64089E8543dB0E5163a`
+
+Vote #187, initiated on 21/05/2025, did not reach a quorum
 """
 
 import time
