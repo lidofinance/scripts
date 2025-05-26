@@ -46,6 +46,7 @@ from utils.config import (
     EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY,
     EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY,
     EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY,
+    LDO_HOLDER_ADDRESS_FOR_TESTS
 )
 from utils.easy_track import (
     add_evmscript_factory,
@@ -67,13 +68,13 @@ NEW_LOL_PERIOD = 6  # months
 
 DESCRIPTION = """Contains separate updates approved by Lido DAO via Snapshot voting:
 
-1. **Post-Pectra update:** adjust Oracle Report Sanity Checker parameters to align with reduced slashing penalty and updated validator churn limits. Items 1-9.
+1. **Post-Pectra update:** adjust Oracle Report Sanity Checker parameters to align with reduced slashing penalty and updated validator churn limits. Items 1-9.  
 [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xb6559f0cdb1164ae5d63769827c4a275805bd944392a17b60cf51ddc54429dc6) | Audited by [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Oracle%20v5%2004-25.pdf)
-2. **Add Easy Track Factories** for managing MEV-Boost Relay Allowed List. Items 10-13.
-[Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xf1074ec134595ba8ba6f802c5e505fda32e6ab93e9763d1e43001f439241b7c9) | Audit and deploy verification by [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20RMC%20EasyTrack%20Security%20Audit%20Report%2005-2025.pdf)
-3. **Reduce `keyRemovalCharge`** for the Community Staking Module. Items 14-16.
+2. **Add Easy Track Factories** for managing MEV-Boost Relay Allowed List. Items 10-13.  
+[Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xf1074ec134595ba8ba6f802c5e505fda32e6ab93e9763d1e43001f439241b7c9) | Audit and deploy verification by [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20RMC%20EasyTrack%20Security%20Audit%20Report%2005-2025.pdf) 
+3. **Reduce `keyRemovalCharge`** for the Community Staking Module. Items 14-16.  
 [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xcd1c1a051888efd495d97458ae9fa4fe5198616eb3d92a71d3352d9f25e79c4e)
-4. **Increase Easy Track security limit** for [Liquidity Observation Lab](https://docs.lido.fi/multisigs/committees/#281-liquidity-observation-lab-committee-ethereum) from 2,100&nbsp;stETH per&nbsp;3&nbsp;months to 6,000&nbsp;stETH per&nbsp;6&nbsp;months. Item 17.
+4. **Increase Easy Track security limit** for [Liquidity Observation Lab](https://docs.lido.fi/multisigs/committees/#281-liquidity-observation-lab-committee-ethereum) from 2,100 stETH per 3 months to 6,000 stETH per 6 months. Item 17.  
 [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x3ecd09e4c0f22d25c711ca5777c49c22d144385b85dd7f696ca6cc66cc0ca157)
 """
 
@@ -276,7 +277,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
 
 def main():
-    tx_params = {"from": get_deployer_account()}
+    tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 
