@@ -34,13 +34,15 @@ cd scripts
 | ENV VAR       | RUN TESTS     | RUN VOTES     |
 | ------------- | ------------- | ------------- |
 | `ETH_RPC_URL` | **mandatory**     | **mandatory**     |
-| `ETH_RPC_URL2` | for async testing only | -     |
-| `ETH_RPC_URL3` | for async testing only | -     |
+| `ETH_RPC_URL2` | optional* | -     |
+| `ETH_RPC_URL3` | optional* | -     |
 | `PINATA_CLOUD_TOKEN`  | -     | **mandatory**     |
 | `DEPLOYER`            | -     | **mandatory**     |
 | `ETHERSCAN_TOKEN`     | **mandatory**     | **mandatory**     |
-| `ETHERSCAN_TOKEN2`     | for async testing only     | -     |
-| `ETHERSCAN_TOKEN3`     | for async testing only     | -     |
+| `ETHERSCAN_TOKEN2`     | optional*     | -     |
+| `ETHERSCAN_TOKEN3`     | optional*     | -     |
+
+_*may be optionally set when running tests asynchronously to reduce the risk of getting 529 error_
 
 #### Step 3. Run the container
 Run the container in the `scripts` directory and specify the ENV VARs:
