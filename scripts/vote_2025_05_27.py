@@ -46,7 +46,6 @@ from utils.config import (
     EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY,
     EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY,
     EASYTRACK_MEV_BOOST_EDIT_RELAYS_FACTORY,
-    LDO_HOLDER_ADDRESS_FOR_TESTS
 )
 from utils.easy_track import (
     add_evmscript_factory,
@@ -277,7 +276,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
 
 def main():
-    tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
+    tx_params = {"from": get_deployer_account()}
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 
