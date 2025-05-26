@@ -162,7 +162,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             64. Revoke PAUSE_ROLE on CSFeeOracle from the previous GateSeal instance
             65. Grant PAUSE_ROLE on CSM to the new GateSeal instance
             66. Grant PAUSE_ROLE on CSAccounting to the new GateSeal instance
-            67. Grant PAUSE_ROLE on CSAccounting to the new GateSeal instance
+            67. Grant PAUSE_ROLE on CSFeeOracle to the new GateSeal instance
             68. Revoke REQUEST_BURN_SHARES_ROLE on Burner from CSAccounting
             69. Grant REQUEST_BURN_MY_STETH_ROLE on Burner to CSAccounting
     """
