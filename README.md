@@ -29,8 +29,18 @@ git clone git@github.com:lidofinance/scripts.git
 cd scripts
 ```
 
-#### Step 2. Set up the ENV VARs, for example:
-- `ETH_RPC_URL` - **mandatory** for the execution of tests
+#### Step 2. Set up the ENV VARs for Mainnet:
+
+| ENV VAR       | RUN TESTS     | RUN VOTES     |
+| ------------- | ------------- | ------------- |
+| `ETH_RPC_URL` | **mandatory**     | **mandatory**     |
+| `ETH_RPC_URL2` | for async testing only | -     |
+| `ETH_RPC_URL3` | for async testing only | -     |
+| `PINATA_CLOUD_TOKEN`  | -     | **mandatory**     |
+| `DEPLOYER`            | -     | **mandatory**     |
+| `ETHERSCAN_TOKEN`     | **mandatory**     | **mandatory**     |
+| `ETHERSCAN_TOKEN2`     | for async testing only     | -     |
+| `ETHERSCAN_TOKEN3`     | for async testing only     | -     |
 
 #### Step 3. Run the container
 Run the container in the `scripts` directory and specify the ENV VARs:
@@ -56,11 +66,9 @@ poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
 ```
 You can use the following shortcuts:
 - `make test` run all tests on Hardhat node
-- `make test-1/2` run first half of tests
-- `make test-2/2` run second half of tests
-- `make test-1/3` run first third of tests
-- `make test-2/3` run second third of tests
-- `make test-3/3` run third third of tests
+- `make test-1/2`, `make test-2/2` run tests divided into 2 parts (can be run asynchronously)
+- `make test-1/3`, `make test-2/3`, `make test-3/3` run tests divided into 3 parts (can be run asynchronously)
+
 If your container has been stopped (for example, by a system reboot), start it:
 ```shell
 docker start scripts
