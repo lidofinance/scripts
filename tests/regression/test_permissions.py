@@ -493,6 +493,9 @@ def get_http_w3_provider_url():
     if os.getenv("WEB3_ALCHEMY_PROJECT_ID") is not None:
         return f'https://eth-mainnet.g.alchemy.com/v2/{os.getenv("WEB3_ALCHEMY_PROJECT_ID")}'
 
+    if os.getenv("ETH_RPC_URL") is not None:
+        return os.getenv("ETH_RPC_URL")
+
     assert False, 'Web3 HTTP Provider token env var not found'
 
 def active_aragon_roles(protocol_permissions):
