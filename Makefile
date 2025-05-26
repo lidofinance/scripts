@@ -1,20 +1,12 @@
 define run_2nd_test
-	@if [ -n \"$$ETH_RPC_URL2\" ]; then \\
-		ETH_RPC_URL=\"$$ETH_RPC_URL2\"; \\
-	fi; \\
-	if [ -n \"$$ETHERSCAN_TOKEN2\" ]; then \\
-		ETHERSCAN_TOKEN=\"$$ETHERSCAN_TOKEN2\"; \\
-	fi; \\
+	ETH_RPC_URL="$${ETH_RPC_URL2:-$$ETH_RPC_URL}" \
+	ETHERSCAN_TOKEN="$${ETHERSCAN_TOKEN2:-$$ETHERSCAN_TOKEN}" \
 	poetry run $(1)
 endef
 
 define run_3rd_test
-	@if [ -n \"$$ETH_RPC_URL3\" ]; then \\
-		ETH_RPC_URL=\"$$ETH_RPC_URL3\"; \\
-	fi; \\
-	if [ -n \"$$ETHERSCAN_TOKEN3\" ]; then \\
-		ETHERSCAN_TOKEN=\"$$ETHERSCAN_TOKEN3\"; \\
-	fi; \\
+	ETH_RPC_URL="$${ETH_RPC_URL3:-$$ETH_RPC_URL}" \
+	ETHERSCAN_TOKEN="$${ETHERSCAN_TOKEN3:-$$ETHERSCAN_TOKEN}" \
 	poetry run $(1)
 endef
 
