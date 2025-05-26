@@ -56,21 +56,13 @@ Dual Governance Launch on Mainnet
 48. Set an expiration deadline after which the omnibus can no longer be enacted
 """
 
-import time
-
 from typing import Dict
-from brownie import interface, accounts, chain
+from brownie import interface
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
-from utils.config import (
-    get_deployer_account,
-    get_is_live,
-    get_priority_fee,
-)
 
-voting_contract = "" # TODO: add voting contract address
+voting_contract = "0x6FFDa833d2cf6AA76fa199D96dB22C4075c14D71"
 description = "Dual Governance Launch on Mainnet" # TODO: change description
-
 
 def get_vote_items():
     voting_items = interface.DGLaunchOmnibus(voting_contract).getVoteItems()
@@ -89,29 +81,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
     vote_desc_items, call_script_items = get_vote_items()
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
 
-    timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
-
-    if timelock.getEmergencyGovernance() != DAO_EMERGENCY_GOVERNANCE:
-        dg_impersonated = accounts.at(DUAL_GOVERNANCE, force=True)
-        timelock.submit(
-            DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-            [(TIMELOCK, 0, timelock.setEmergencyGovernance.encode_input(DAO_EMERGENCY_GOVERNANCE))],
-            {"from": dg_impersonated},
-        )
-
-        after_submit_delay = timelock.getAfterSubmitDelay()
-        chain.sleep(after_submit_delay + 1)
-
-        timelock.schedule(1, {"from": dg_impersonated})
-
-        after_schedule_delay = timelock.getAfterScheduleDelay()
-        chain.sleep(after_schedule_delay + 1)
-
-        timelock.execute(1, {"from": dg_impersonated})
-
-        assert timelock.getEmergencyGovernance() == DAO_EMERGENCY_GOVERNANCE
-        assert timelock.getProposalsCount() == 1
-
     if silent:
         desc_ipfs = calculate_vote_ipfs_description(description)
     else:
@@ -120,17 +89,3 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
     return confirm_vote_script(vote_items, silent, desc_ipfs) and list(
         create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
     )
-
-
-def main():
-    tx_params: Dict[str, str] = {"from": get_deployer_account().address}
-    if get_is_live():
-        tx_params["priority_fee"] = get_priority_fee()
-
-    vote_id, _ = start_vote(tx_params=tx_params, silent=False)
-
-    assert interface.DGLaunchOmnibus(voting_contract).isValidVoteScript(vote_id)
-
-    vote_id >= 0 and print(f"Vote created: {vote_id}.")
-
-    time.sleep(5)  # hack for waiting thread #2.

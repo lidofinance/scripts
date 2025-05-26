@@ -2,7 +2,7 @@ import pytest
 import os
 
 from typing import NamedTuple, List
-from brownie import web3, chain, interface, ZERO_ADDRESS, reverts
+from brownie import web3, chain, interface, ZERO_ADDRESS, reverts, accounts
 from hexbytes import HexBytes
 from scripts.vote_2025_06_25_mainnet_dg_launch import start_vote
 from utils.config import contracts
@@ -33,13 +33,15 @@ from utils.test.event_validators.permission import (
 from utils.test.event_validators.proxy import validate_proxy_admin_changed
 
 
-DUAL_GOVERNANCE = ""
-TIMELOCK = ""
-DUAL_GOVERNANCE_ADMIN_EXECUTOR = ""
-RESEAL_MANAGER = ""
-DAO_EMERGENCY_GOVERNANCE = ""
-ROLES_VALIDATOR = ""
-TIME_CONSTRAINTS = ""
+DUAL_GOVERNANCE = "0xcdF49b058D606AD34c5789FD8c3BF8B3E54bA2db"
+TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
+DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
+RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
+DAO_EMERGENCY_GOVERNANCE = "0x553337946F2FAb8911774b20025fa776B76a7CcE"
+TIME_CONSTRAINTS = "0x2a30F5aC03187674553024296bed35Aa49749DDa"
+ROLES_VALIDATOR = "0xC90E7CC979f3e931829CdA552B50D82d420B9E8E"
+
+DAO_EMERGENCY_GOVERNANCE_DRY_RUN = "0x75850938C1Aa50B8cC6eb3c00995759dc1425ae6"
 
 
 # These addresses can be checked on https://docs.lido.fi/deployed-contracts
@@ -134,12 +136,10 @@ def validate_dual_governance_governance_launch_verification_event(event: EventDi
 
     validate_events_chain([e.name for e in event], _events_chain)
 
-
-
-def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
+@pytest.fixture(scope="function", autouse=True)
+def prepare_activated_dg_state():
     timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
-
-    if timelock.getEmergencyGovernance() != DAO_EMERGENCY_GOVERNANCE:
+    if timelock.getEmergencyGovernance() == DAO_EMERGENCY_GOVERNANCE_DRY_RUN:
         dg_impersonated = accounts.at(DUAL_GOVERNANCE, force=True)
         timelock.submit(
             DUAL_GOVERNANCE_ADMIN_EXECUTOR,
@@ -160,12 +160,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         assert timelock.getEmergencyGovernance() == DAO_EMERGENCY_GOVERNANCE
         assert timelock.getProposalsCount() == 1
 
-
+def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     acl = interface.ACL(ACL)
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
     agent = interface.Agent(AGENT)
-    voting = interface.Voting(VOTING)
     lido = interface.Lido(LIDO)
     token_manager = interface.TokenManager(TOKEN_MANAGER)
     finance = interface.Finance(FINANCE)
@@ -553,7 +552,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     )
     
     # Submit first dual governance proposal
-    to_be_executed_before_timestamp_proposal = 1752537600  # Tuesday, 15 July 2025 00:00:00
+    to_be_executed_before_timestamp_proposal = 1754092800  # Saturday, 2 August 2025 0:00:00
     to_be_executed_from_time = 3600 * 4  # 04:00 UTC
     to_be_executed_to_time = 3600 * 22  # 22:00 UTC
     
@@ -602,7 +601,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     validate_dual_governance_governance_launch_verification_event(evs[46])
     
     # Verify state of the DG after launch
-    to_be_executed_before_timestamp = 1751328000  # Tuesday, 1 July 2025 00:00:00
+    to_be_executed_before_timestamp = 1753488000  #Saturday, 26 July 2025 0:00:00
     validate_time_constraints_executed_before_event(evs[47], to_be_executed_before_timestamp)
 
     # Check DG execution events
