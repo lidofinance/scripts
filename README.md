@@ -45,8 +45,7 @@ cd scripts
 #### Step 3. Run the container
 Run the container in the `scripts` directory and specify the ENV VARs:
 ```shell
-docker run --name scripts -v "$(pwd)":/root/scripts -e ETH_RPC_URL -d ghcr.io/lidofinance/scripts:v10
-
+docker run --name scripts -v "$(pwd)":/root/scripts -e ETH_RPC_URL -e ETH_RPC_URL2 -e ETH_RPC_URL3 -e PINATA_CLOUD_TOKEN -e DEPLOYER -e ETHERSCAN_TOKEN -e ETHERSCAN_TOKEN2 -e ETHERSCAN_TOKEN3 -d ghcr.io/lidofinance/scripts:v10
 ```
 Note: *It may take up to 1 minute for the container to initialize properly the first time.*
 
