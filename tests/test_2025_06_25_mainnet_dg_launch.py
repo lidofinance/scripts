@@ -39,7 +39,7 @@ DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
 DAO_EMERGENCY_GOVERNANCE = "0x553337946F2FAb8911774b20025fa776B76a7CcE"
 TIME_CONSTRAINTS = "0x2a30F5aC03187674553024296bed35Aa49749DDa"
-ROLES_VALIDATOR = "0xC90E7CC979f3e931829CdA552B50D82d420B9E8E"
+ROLES_VALIDATOR = "0x31534e3aFE219B609da3715a00a1479D2A2d7981"
 
 DAO_EMERGENCY_GOVERNANCE_DRY_RUN = "0x75850938C1Aa50B8cC6eb3c00995759dc1425ae6"
 
@@ -63,6 +63,10 @@ STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
 GATE_SEAL = "0xf9C9fDB4A5D2AA1D836D5370AB9b28BC1847e178"
 EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 INSURANCE_FUND = "0x8B3f33234ABD88493c0Cd28De33D583B70beDe35"
+CS_MODULE = "0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F"
+CS_ACCOUNTING = "0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da"
+CS_FEE_ORACLE = "0x4D4074628678Bd302921c20573EEa1ed38DdF7FB"
+CS_GATE_SEAL = "0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0"
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -221,6 +225,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     # CuratedModule permissions checks
     STAKING_ROUTER_ROLE = web3.keccak(text="STAKING_ROUTER_ROLE")
     assert acl.getPermissionManager(CURATED_MODULE, STAKING_ROUTER_ROLE) == VOTING
+    assert acl.hasPermission(STAKING_ROUTER, CURATED_MODULE, STAKING_ROUTER_ROLE)
     
     MANAGE_NODE_OPERATOR_ROLE = web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")
     assert acl.getPermissionManager(CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE) == VOTING
@@ -228,6 +233,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     SET_NODE_OPERATOR_LIMIT_ROLE = web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")
     assert acl.getPermissionManager(CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE) == VOTING
     assert acl.hasPermission(VOTING, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
+    assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
 
     MANAGE_SIGNING_KEYS = web3.keccak(text="MANAGE_SIGNING_KEYS")
     assert acl.getPermissionManager(CURATED_MODULE, MANAGE_SIGNING_KEYS) == VOTING
@@ -237,6 +243,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     assert acl.getPermissionManager(SDVT_MODULE, STAKING_ROUTER_ROLE) == VOTING
     assert acl.getPermissionManager(SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE) == VOTING
     assert acl.getPermissionManager(SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE) == VOTING
+
+    assert acl.hasPermission(STAKING_ROUTER, SDVT_MODULE, STAKING_ROUTER_ROLE)
+    assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, SDVT_MODULE, STAKING_ROUTER_ROLE)
+    assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
+    assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
 
     # ACL permissions checks
     CREATE_PERMISSIONS_ROLE = web3.keccak(text="CREATE_PERMISSIONS_ROLE")
@@ -257,10 +268,28 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     withdrawal_queue = interface.WithdrawalQueue(WITHDRAWAL_QUEUE)
     assert not withdrawal_queue.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
     assert not withdrawal_queue.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+    assert withdrawal_queue.hasRole(PAUSE_ROLE, GATE_SEAL)
     
     vebo = interface.ValidatorsExitBusOracle(VEBO)
     assert not vebo.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
     assert not vebo.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+    assert vebo.hasRole(PAUSE_ROLE, GATE_SEAL)
+
+    # CSM permissions checks
+    csm = interface.CSModule(CS_MODULE)
+    assert not csm.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
+    assert not csm.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+    assert csm.hasRole(PAUSE_ROLE, CS_GATE_SEAL)
+
+    cs_accounting = interface.CSAccounting(CS_ACCOUNTING)
+    assert not cs_accounting.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
+    assert not cs_accounting.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+    assert cs_accounting.hasRole(PAUSE_ROLE, CS_GATE_SEAL)
+
+    cs_fee_oracle = interface.CSFeeOracle(CS_FEE_ORACLE)
+    assert not cs_fee_oracle.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
+    assert not cs_fee_oracle.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+    assert cs_fee_oracle.hasRole(PAUSE_ROLE, CS_GATE_SEAL)
 
     # AllowedTokensRegistry permissions checks
     allowed_tokens_registry = interface.AllowedTokensRegistry(ALLOWED_TOKENS_REGISTRY)
@@ -334,11 +363,19 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     assert not acl.hasPermission(VOTING, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
     assert not acl.hasPermission(VOTING, CURATED_MODULE, MANAGE_SIGNING_KEYS)
 
+    assert acl.hasPermission(STAKING_ROUTER, CURATED_MODULE, STAKING_ROUTER_ROLE)
+    assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
+
     # Simple DVT Module permissions checks
     assert acl.getPermissionManager(SDVT_MODULE, STAKING_ROUTER_ROLE) == AGENT
     assert acl.getPermissionManager(SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE) == AGENT
     assert acl.getPermissionManager(SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE) == AGENT
 
+    assert acl.hasPermission(STAKING_ROUTER, SDVT_MODULE, STAKING_ROUTER_ROLE)
+    assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, SDVT_MODULE, STAKING_ROUTER_ROLE)
+    assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
+    assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
+    
     # ACL permissions checks
     assert acl.getPermissionManager(ACL, CREATE_PERMISSIONS_ROLE) == AGENT
     assert not acl.hasPermission(VOTING, ACL, CREATE_PERMISSIONS_ROLE)
@@ -351,11 +388,26 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     assert acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, RUN_SCRIPT_ROLE)
     assert acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, EXECUTE_ROLE)
 
+    # CSM permissions checks
+    assert csm.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
+    assert csm.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+    assert csm.hasRole(PAUSE_ROLE, CS_GATE_SEAL)
+
+    assert cs_accounting.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
+    assert cs_accounting.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+    assert cs_accounting.hasRole(PAUSE_ROLE, CS_GATE_SEAL)
+
+    assert cs_fee_oracle.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
+    assert cs_fee_oracle.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+    assert cs_fee_oracle.hasRole(PAUSE_ROLE, CS_GATE_SEAL)
+
     # WithdrawalQueue and VEBO permissions checks
     assert withdrawal_queue.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
     assert withdrawal_queue.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+    assert withdrawal_queue.hasRole(PAUSE_ROLE, GATE_SEAL)
     assert vebo.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
     assert vebo.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+    assert vebo.hasRole(PAUSE_ROLE, GATE_SEAL)
 
     # AllowedTokensRegistry permissions checks
     assert not allowed_tokens_registry.hasRole(DEFAULT_ADMIN_ROLE, AGENT)
@@ -384,13 +436,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
 
     evs = group_voting_events_from_receipt(vote_tx)
 
-    # 48 events
-    assert len(evs) == 48
+    # 54 events
+    assert len(evs) == 54
 
     # metadata = find_metadata_by_vote_id(vote_id)
     # assert get_lido_vote_cid_from_str(metadata) == "bafkreia2qh6xvoowgwukqfyyer2zz266e2jifxovnddgqawruhe2g5asgi"
 
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 48, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, contracts.voting) == 54, "Incorrect voting items count"
 
     # Lido Permissions Transition
     validate_permission_revoke_event(evs[0], Permission(entity=VOTING, app=LIDO, role=STAKING_CONTROL_ROLE.hex()))
@@ -483,19 +535,31 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     validate_grant_role_event(evs[36], grant_to=RESEAL_MANAGER, sender=AGENT, role=PAUSE_ROLE.hex())
     validate_grant_role_event(evs[37], grant_to=RESEAL_MANAGER, sender=AGENT, role=RESUME_ROLE.hex())
 
+    # CS Module Roles Transition
+    validate_grant_role_event(evs[38], grant_to=RESEAL_MANAGER, sender=AGENT, role=PAUSE_ROLE.hex())
+    validate_grant_role_event(evs[39], grant_to=RESEAL_MANAGER, sender=AGENT, role=RESUME_ROLE.hex())
+
+    # CS Accounting Roles Transition
+    validate_grant_role_event(evs[40], grant_to=RESEAL_MANAGER, sender=AGENT, role=PAUSE_ROLE.hex())
+    validate_grant_role_event(evs[41], grant_to=RESEAL_MANAGER, sender=AGENT, role=RESUME_ROLE.hex())
+
+    # CS Fee Oracle Roles Transition
+    validate_grant_role_event(evs[42], grant_to=RESEAL_MANAGER, sender=AGENT, role=PAUSE_ROLE.hex())
+    validate_grant_role_event(evs[43], grant_to=RESEAL_MANAGER, sender=AGENT, role=RESUME_ROLE.hex())
+
     # AllowedTokensRegistry Roles Transition
-    validate_grant_role_event(evs[38], grant_to=VOTING, sender=AGENT, role=DEFAULT_ADMIN_ROLE.hex())
-    validate_revoke_role_event(evs[39], revoke_from=AGENT, sender=VOTING, role=DEFAULT_ADMIN_ROLE.hex())
-    validate_revoke_role_event(evs[40], revoke_from=AGENT, sender=VOTING, role=ADD_TOKEN_TO_ALLOWED_LIST_ROLE.hex())
+    validate_grant_role_event(evs[44], grant_to=VOTING, sender=AGENT, role=DEFAULT_ADMIN_ROLE.hex())
+    validate_revoke_role_event(evs[45], revoke_from=AGENT, sender=VOTING, role=DEFAULT_ADMIN_ROLE.hex())
+    validate_revoke_role_event(evs[46], revoke_from=AGENT, sender=VOTING, role=ADD_TOKEN_TO_ALLOWED_LIST_ROLE.hex())
     validate_revoke_role_event(
-        evs[41], revoke_from=AGENT, sender=VOTING, role=REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE.hex()
+        evs[47], revoke_from=AGENT, sender=VOTING, role=REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE.hex()
     )
 
-    # WithdrawalVault Roles Transition
-    validate_proxy_admin_changed(evs[42], VOTING, AGENT)
+    # WithdrawalVault ownership Transition
+    validate_proxy_admin_changed(evs[48], VOTING, AGENT)
 
     validate_role_validated_event(
-        evs[44],
+        evs[50],
         [
             # Lido
             AragonValidatedPermission(LIDO, "STAKING_CONTROL_ROLE", [], [VOTING], AGENT),
@@ -519,15 +583,15 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
             AragonValidatedPermission(EVM_SCRIPT_REGISTRY, "REGISTRY_MANAGER_ROLE", [], [VOTING], AGENT),
 
             # CuratedModule
-            AragonValidatedPermission(CURATED_MODULE, "STAKING_ROUTER_ROLE", [], [], AGENT),
-            AragonValidatedPermission(CURATED_MODULE, "MANAGE_NODE_OPERATOR_ROLE", [], [], AGENT),
-            AragonValidatedPermission(CURATED_MODULE, "SET_NODE_OPERATOR_LIMIT_ROLE", [], [VOTING], AGENT),
+            AragonValidatedPermission(CURATED_MODULE, "STAKING_ROUTER_ROLE", [STAKING_ROUTER], [], AGENT),
+            AragonValidatedPermission(CURATED_MODULE, "MANAGE_NODE_OPERATOR_ROLE", [AGENT], [], AGENT),
+            AragonValidatedPermission(CURATED_MODULE, "SET_NODE_OPERATOR_LIMIT_ROLE", [EVM_SCRIPT_EXECUTOR], [VOTING], AGENT),
             AragonValidatedPermission(CURATED_MODULE, "MANAGE_SIGNING_KEYS", [], [VOTING], AGENT),
 
             # SDVTModule
-            AragonValidatedPermission(SDVT_MODULE, "STAKING_ROUTER_ROLE", [], [], AGENT),
-            AragonValidatedPermission(SDVT_MODULE, "MANAGE_NODE_OPERATOR_ROLE", [], [], AGENT),
-            AragonValidatedPermission(SDVT_MODULE, "SET_NODE_OPERATOR_LIMIT_ROLE", [], [], AGENT),
+            AragonValidatedPermission(SDVT_MODULE, "STAKING_ROUTER_ROLE", [STAKING_ROUTER, EVM_SCRIPT_EXECUTOR], [], AGENT),
+            AragonValidatedPermission(SDVT_MODULE, "MANAGE_NODE_OPERATOR_ROLE", [EVM_SCRIPT_EXECUTOR], [], AGENT),
+            AragonValidatedPermission(SDVT_MODULE, "SET_NODE_OPERATOR_LIMIT_ROLE", [EVM_SCRIPT_EXECUTOR], [], AGENT),
 
             # ACL
             AragonValidatedPermission(ACL, "CREATE_PERMISSIONS_ROLE", [AGENT], [VOTING], AGENT),
@@ -537,12 +601,24 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
             AragonValidatedPermission(AGENT, "EXECUTE_ROLE", [VOTING, DUAL_GOVERNANCE_ADMIN_EXECUTOR], [], AGENT),
 
             # WithdrawalQueue (OZ)
-            OZValidatedRole(WITHDRAWAL_QUEUE, "PAUSE_ROLE", [RESEAL_MANAGER], []),
+            OZValidatedRole(WITHDRAWAL_QUEUE, "PAUSE_ROLE", [RESEAL_MANAGER, GATE_SEAL], []),
             OZValidatedRole(WITHDRAWAL_QUEUE, "RESUME_ROLE", [RESEAL_MANAGER], []),
 
             # VEBO (OZ)
-            OZValidatedRole(VEBO, "PAUSE_ROLE", [RESEAL_MANAGER], []),
+            OZValidatedRole(VEBO, "PAUSE_ROLE", [RESEAL_MANAGER, GATE_SEAL], []),
             OZValidatedRole(VEBO, "RESUME_ROLE", [RESEAL_MANAGER], []),
+
+            # CS Module (OZ)
+            OZValidatedRole(CS_MODULE, "PAUSE_ROLE", [RESEAL_MANAGER, CS_GATE_SEAL], []),
+            OZValidatedRole(CS_MODULE, "RESUME_ROLE", [RESEAL_MANAGER], []),
+            
+            # CS Accounting (OZ)
+            OZValidatedRole(CS_ACCOUNTING, "PAUSE_ROLE", [RESEAL_MANAGER, CS_GATE_SEAL], []),
+            OZValidatedRole(CS_ACCOUNTING, "RESUME_ROLE", [RESEAL_MANAGER], []),
+            
+            # CS Fee Oracle (OZ)
+            OZValidatedRole(CS_FEE_ORACLE, "PAUSE_ROLE", [RESEAL_MANAGER, CS_GATE_SEAL], []),
+            OZValidatedRole(CS_FEE_ORACLE, "RESUME_ROLE", [RESEAL_MANAGER], []),
 
             # AllowedTokensRegistry (OZ)
             OZValidatedRole(ALLOWED_TOKENS_REGISTRY, "DEFAULT_ADMIN_ROLE", [VOTING], [AGENT]),
@@ -552,12 +628,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     )
     
     # Submit first dual governance proposal
-    to_be_executed_before_timestamp_proposal = 1754092800  # Saturday, 2 August 2025 0:00:00
-    to_be_executed_from_time = 3600 * 4  # 04:00 UTC
-    to_be_executed_to_time = 3600 * 22  # 22:00 UTC
+    to_be_executed_before_timestamp_proposal = 1754071200
+    to_be_executed_from_time = 3600 * 6  # 06:00 UTC
+    to_be_executed_to_time = 3600 * 18 # 18:00 UTC
     
     validate_dual_governance_submit_event(
-        evs[45],    
+        evs[51],    
         proposal_id=2,
         proposer=VOTING,
         executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
@@ -598,11 +674,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     )
 
     # Validate roles were transferred correctly
-    validate_dual_governance_governance_launch_verification_event(evs[46])
+    validate_dual_governance_governance_launch_verification_event(evs[52])
     
     # Verify state of the DG after launch
-    to_be_executed_before_timestamp = 1753488000  #Saturday, 26 July 2025 0:00:00
-    validate_time_constraints_executed_before_event(evs[47], to_be_executed_before_timestamp)
+    to_be_executed_before_timestamp = 1753466400
+    validate_time_constraints_executed_before_event(evs[53], to_be_executed_before_timestamp)
 
     # Check DG execution events
     dg_evs = dg_events_from_trace(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
@@ -799,6 +875,36 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     # ResealManager has permission to call RESUME_ROLE actions
     vebo.resume({"from": RESEAL_MANAGER})
     assert vebo.isPaused() == False
+
+    # CS Module Roles Transition
+    # ResealManager has permission to call PAUSE_ROLE actions
+    assert csm.isPaused() == False
+    csm.pauseFor(100, {"from": RESEAL_MANAGER})
+    assert csm.isPaused() == True
+
+    # ResealManager has permission to call RESUME_ROLE actions
+    csm.resume({"from": RESEAL_MANAGER})
+    assert csm.isPaused() == False
+
+    # CS Accounting Roles Transition
+    # ResealManager has permission to call PAUSE_ROLE actions
+    assert cs_accounting.isPaused() == False
+    cs_accounting.pauseFor(100, {"from": RESEAL_MANAGER})
+    assert cs_accounting.isPaused() == True
+
+    # ResealManager has permission to call RESUME_ROLE actions
+    cs_accounting.resume({"from": RESEAL_MANAGER})
+    assert cs_accounting.isPaused() == False
+
+    # CS Fee Oracle Roles Transition
+    # ResealManager has permission to call PAUSE_ROLE actions
+    assert cs_fee_oracle.isPaused() == False
+    cs_fee_oracle.pauseFor(100, {"from": RESEAL_MANAGER})
+    assert cs_fee_oracle.isPaused() == True
+
+    # ResealManager has permission to call RESUME_ROLE actions
+    cs_fee_oracle.resume({"from": RESEAL_MANAGER})
+    assert cs_fee_oracle.isPaused() == False
 
     # AllowedTokensRegistry Roles Transition
     # Voting has permission to call DEFAULT_ADMIN_ROLE actions

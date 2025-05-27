@@ -61,7 +61,7 @@ from brownie import interface
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 
-voting_contract = "0x6FFDa833d2cf6AA76fa199D96dB22C4075c14D71"
+voting_contract = "0xcD7d0c2f0aEFF8cBD17702bfa9505421253edE54"
 description = "Dual Governance Launch on Mainnet" # TODO: change description
 
 def get_vote_items():
