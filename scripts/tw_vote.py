@@ -113,37 +113,37 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             8. Grant VEB role EXIT_REPORT_LIMIT_ROLE role to AGENT
             9. Call setExitRequestLimit on VEB 1
             10. Revoke VEB role EXIT_REPORT_LIMIT_ROLE from the AGENT
-            --- Triggerable Withdrawals Gateway (TWG) ±
-            11. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector ±
-            12. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB ±
-            13. Grant TWG role TW_EXIT_REPORT_LIMIT_ROLE to the AGENT ±
-            14. Call setExitRequestLimit on TWG ±
-            15. Revoke TWG role TW_EXIT_REPORT_LIMIT_ROLE from the AGENT ±
-            --- WV ±
-            16. Update WithdrawalVault implementation
-            17. Call finalizeUpgrade_v2 on WithdrawalVault
-            18. Grant WithdrawalVault role ADD_WITHDRAWAL_REQUEST_ROLE to the TWG
-            --- AO ±
-            19. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT ±
-            20. Bump AO consensus version to `4` ±
-            21. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT ±
-            --- SR ±
-            22. Update SR implementation ±
-            23. Grant SR REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier ±
-            24. Grant SR REPORT_EXITED_VALIDATORS_ROLE to VEB ±
+            --- Triggerable Withdrawals Gateway (TWG)
+            11. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector
+            12. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB
+            13. Grant TWG role TW_EXIT_REPORT_LIMIT_ROLE to the AGENT
+            14. Call setExitRequestLimit on TWG
+            15. Revoke TWG role TW_EXIT_REPORT_LIMIT_ROLE from the AGENT
+            16. Grant SR REPORT_EXITED_VALIDATORS_ROLE to TWG
+            --- WV
+            17. Update WithdrawalVault implementation
+            18. Call finalizeUpgrade_v2 on WithdrawalVault
+            19. Grant WithdrawalVault role ADD_WITHDRAWAL_REQUEST_ROLE to the TWG
+            --- AO
+            20. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+            21. Bump AO consensus version to `4`
+            22. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT
+            --- SR
+            23. Update SR implementation
+            24. Grant SR REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier
             --- NOR
-            25. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo ±
-            26. Update `NodeOperatorsRegistry` implementation ±
-            27. Call finalizeUpgrade_v4 on NOR ±
+            25. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
+            26. Update `NodeOperatorsRegistry` implementation
+            27. Call finalizeUpgrade_v4 on NOR
             --- sDVT
             28. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
             29. Update `SimpleDVT` implementation
             30. Call finalizeUpgrade_v4 on sDVT
-            --- Oracle configs --- ±
-            31. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig ±
-            32. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig ±
-            33. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig ±
-            34. Revoke CONFIG_MANAGER_ROLE from AGENT ±
+            --- Oracle configs ---
+            31. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+            32. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+            33. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig
+            34. Revoke CONFIG_MANAGER_ROLE from AGENT
             --- Temp ---
             35. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01
             36. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01
@@ -319,6 +319,16 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
                 )
             ])
         ),
+        (
+            f"{next(item_idx)}. Grant SR REPORT_EXITED_VALIDATORS_ROLE to TWG",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.staking_router,
+                    role_name="REPORT_EXITED_VALIDATORS_ROLE",
+                    grant_to=contracts.triggerable_withdrawals_gateway,
+                )
+            ])
+        ),
         # --- WV
         (
             f"{next(item_idx)}. Update WithdrawalVault implementation",
@@ -382,16 +392,6 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
                     contract=contracts.staking_router,
                     role_name="REPORT_EXITED_VALIDATORS_STATUS_ROLE",
                     grant_to=contracts.validator_exit_verifier,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Grant SR REPORT_EXITED_VALIDATORS_ROLE to VEB",
-            agent_forward([
-                encode_oz_grant_role(
-                    contract=contracts.staking_router,
-                    role_name="REPORT_EXITED_VALIDATORS_ROLE",
-                    grant_to=contracts.validators_exit_bus_oracle,
                 )
             ])
         ),
