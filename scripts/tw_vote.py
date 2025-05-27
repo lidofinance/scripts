@@ -39,6 +39,11 @@ except ImportError as e:
 
 TW_DESCRIPTION = "Proposal to use TW in Lido protocol"
 
+# TWG
+TWG_MAX_EXIT_REQUESTS_LIMIT = 13000
+TWG_EXIT_REQUESTS_PER_FRAME = 1
+TWG_FRAME_DURATION = 48  # in hours
+
 ## Oracle consensus versions
 AO_CONSENSUS_VERSION = 4
 VEBO_CONSENSUS_VERSION = 4
@@ -98,399 +103,418 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             --- VEB
             1. Update VEBO implementation
             2. Call finalizeUpgrade_v2 on VEBO
-            3. Grant VEBO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+            3. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
             4. Bump VEBO consensus version to `4`
-            5. Revoke VEBO MANAGE_CONSENSUS_VERSION_ROLE from AGENT
-            6. Grant TWG ADD_FULL_WITHDRAWAL_REQUEST_ROLE to CSEjector
-            7. Grant VEB SUBMIT_REPORT_HASH_ROLE to the AGENT/VOTING (TBD)
-            8. Grant VEB EXIT_REPORT_LIMIT_ROLE role to AGENT
-            9. Call setExitRequestLimit on VEB
-            10. Revoke VEB EXIT_REPORT_LIMIT_ROLE from AGENT
-            --- WV
+            5. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT
+            6. Grant VEB role SUBMIT_REPORT_HASH_ROLE to the AGENT/ET (TBD)
+            7. Grant VEB role EXIT_REPORT_LIMIT_ROLE role to AGENT
+            8. Call setExitRequestLimit on VEB 1
+            10. Revoke VEB role EXIT_REPORT_LIMIT_ROLE from the AGENT
+            --- Triggerable Withdrawals Gateway (TWG) ±
+            12. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector ±
+            13. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB ±
+            14. Grant TWG role TW_EXIT_REPORT_LIMIT_ROLE to the AGENT ±
+            15. Call setExitRequestLimit on TWG ±
+            16. Revoke TWG role TW_EXIT_REPORT_LIMIT_ROLE from the AGENT ±
+            --- WV ±
             11. Update WithdrawalVault implementation
             12. Call finalizeUpgrade_v2 on WithdrawalVault
-            13. Grant WithdrawalVault ADD_WITHDRAWAL_REQUEST_ROLE to the VEB
-            --- AO
-            14. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-            15. Bump AO consensus version to `4`
-            16. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT
-            --- SR
-            17. Update SR implementation
-            18. Grant SR REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier
-            19. Grant SR REPORT_EXITED_VALIDATORS_ROLE to VEB
+            13. Grant WithdrawalVault role ADD_WITHDRAWAL_REQUEST_ROLE to the TWG
+            --- AO ±
+            14. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT ±
+            15. Bump AO consensus version to `4` ±
+            16. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT ±
+            --- SR ±
+            17. Update SR implementation ±
+            18. Grant SR REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier ±
+            19. Grant SR REPORT_EXITED_VALIDATORS_ROLE to VEB ±
             --- NOR
-            20. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
-            21. Update `NodeOperatorsRegistry` implementation
-            22. Call finalizeUpgrade_v4 on NOR
+            20. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo ±
+            21. Update `NodeOperatorsRegistry` implementation ±
+            22. Call finalizeUpgrade_v4 on NOR ±
             --- sDVT
             23. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
             24. Update `SimpleDVT` implementation
             25. Call finalizeUpgrade_v4 on sDVT
-            --- Oracle configs ---
-            30. Grant CONFIG_MANAGER_ROLE role to the AGENT
-            31. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig
-            32. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-            33. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-            34. Add EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS variable to OracleDaemonConfig
-            35. Revoke CONFIG_MANAGER_ROLE from AGENT
+            --- Oracle configs --- ±
+            30. Grant CONFIG_MANAGER_ROLE role to the AGENT ±
+            31. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig ±
+            32. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig ±
+            33. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig ±
+            34. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig ±
+            35. Revoke CONFIG_MANAGER_ROLE from AGENT ±
             --- Temp ---
-            40. Add ADD_WITHDRAWAL_REQUEST_ROLE WV for Consolidation to the TEMP-DEVNET-01 (write contract)
-            41. Add ADD_CONSOLIDATION_REQUEST_ROLE WV for Triggerable Withdrawal to the TEMP-DEVNET-01 (write contract)
-            42. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01
-            43. Add DIRECT_EXIT_ROLE VEB for direct exits to the TEMP-DEVNET-01
-            44. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01
-            45. Add SUBMIT_REPORT_HASH_ROLE for VEB to the TEMP-DEVNET-01
+            40. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01
+            41. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01
+            42. Add SUBMIT_REPORT_HASH_ROLE for VEB to the TEMP-DEVNET-01
             --- CSM ---
             46. Upgrade CSM implementation on proxy
-            47. Call `finalizeUpgradeV2()` on CSM contract
-            48. Upgrade CSAccounting implementation on proxy
-            49. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract
-            50. Upgrade CSFeeOracle implementation on proxy
-            51. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract
-            52. Upgrade CSFeeDistributor implementation on proxy
+            47. Upgrade CSAccounting implementation on proxy
+            48. Upgrade CSFeeOracle implementation on proxy
+            49. Upgrade CSFeeDistributor implementation on proxy
+            50. Call `finalizeUpgradeV2(exitPenalties)` on CSM contract
+            51. Call `finalizeUpgradeV2(defaultBondCurve,vettedBondCurve)` on CSAccounting contract
+            52. Call `finalizeUpgradeV2(consensusVersion,strikesContract)` on CSFeeOracle contract
             53. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
-            54. Revoke SET_BOND_CURVE_ROLE on CSAccounting from CSM
-            55. Revoke RESET_BOND_CURVE_ROLE on CSAccounting from CSM
-            56. Revoke RESET_BOND_CURVE_ROLE on CSAccounting from CSM committee
-            57. Grant CREATE_NODE_OPERATOR_ROLE on CSM to the permissionless gate
-            58. Grant CREATE_NODE_OPERATOR_ROLE on CSM to the vetted gate
-            59. Grant SET_BOND_CURVE_ROLE on CSAccounting to the vetted gate
-            60. Revoke VERIFIER_ROLE on CSM from the previous instance of CSVerifier
-            61. Grant VERIFIER_ROLE on CSM to the new instance of CSVerifier
-            62. Revoke PAUSE_ROLE on CSM from the previous GateSeal instance
-            63. Revoke PAUSE_ROLE on CSAccounting from the previous GateSeal instance
-            64. Revoke PAUSE_ROLE on CSFeeOracle from the previous GateSeal instance
-            65. Grant PAUSE_ROLE on CSM to the new GateSeal instance
-            66. Grant PAUSE_ROLE on CSAccounting to the new GateSeal instance
-            67. Grant PAUSE_ROLE on CSFeeOracle to the new GateSeal instance
-            68. Revoke REQUEST_BURN_SHARES_ROLE on Burner from CSAccounting
-            69. Grant REQUEST_BURN_MY_STETH_ROLE on Burner to CSAccounting
+            54. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
+            55. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
+            56. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
+            57. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
+            58. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
+            59. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
+            60. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
+            61. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
+            62. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
+            63. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
+            64. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
+            65. Grant CSM role PAUSE_ROLE for the new GateSeal instance
+            66. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
+            67. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
+            68. Revoke Burner role REQUEST_BURN_SHARES_ROLE from the CSAccounting contract
+            69. Grant Burner role REQUEST_BURN_MY_STETH_ROLE to the CSAccounting contract
     """
 
     item_idx = count(1)
 
     nor_repo = contracts.nor_app_repo.address
-    simple_dvt_repo = contracts.simple_dvt_app_repo.address
+    # simple_dvt_repo = contracts.simple_dvt_app_repo.address
 
     nor_uri = get_repo_uri(nor_repo)
-    simple_dvt_uri = get_repo_uri(simple_dvt_repo)
+    # simple_dvt_uri = get_repo_uri(simple_dvt_repo)
 
     vote_descriptions, call_script_items = zip(
+        # --- VEB
+        (
+            f"{next(item_idx)}. Update VEBO implementation",
+            agent_forward([
+                encode_proxy_upgrade_to(contracts.validators_exit_bus_oracle, VALIDATORS_EXIT_BUS_ORACLE_IMPL)
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Call finalizeUpgrade_v2 on VEBO",
+            (
+                contracts.validators_exit_bus_oracle.address,
+                contracts.validators_exit_bus_oracle.finalizeUpgrade_v2.encode_input(),
+            )
+        ),
+        (
+            f"{next(item_idx)}. Grant VEBO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.validators_exit_bus_oracle,
+                    role_name="MANAGE_CONSENSUS_VERSION_ROLE",
+                    grant_to=contracts.agent,
+                )
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Bump VEBO consensus version to `{VEBO_CONSENSUS_VERSION}`",
+            agent_forward([
+                encode_oracle_upgrade_consensus(contracts.validators_exit_bus_oracle, VEBO_CONSENSUS_VERSION)
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Revoke VEBO MANAGE_CONSENSUS_VERSION_ROLE from AGENT",
+            agent_forward([
+                encode_oz_revoke_role(
+                    contract=contracts.validators_exit_bus_oracle,
+                    role_name="MANAGE_CONSENSUS_VERSION_ROLE",
+                    revoke_from=contracts.agent,
+                )
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Grant VEB role SUBMIT_REPORT_HASH_ROLE to the AGENT/ET (TBD)",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.validators_exit_bus_oracle,
+                    role_name="SUBMIT_REPORT_HASH_ROLE",
+                    # grant_to=DEVNET_01_ADDRESS,
+                    grant_to=contracts.agent,
+                )
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Grant VEB EXIT_REPORT_LIMIT_ROLE role to AGENT",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.validators_exit_bus_oracle,
+                    role_name="EXIT_REPORT_LIMIT_ROLE",
+                    grant_to=contracts.agent,
+                )
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Call setExitRequestLimit on VEB",
+            agent_forward([
+                (
+                    contracts.validators_exit_bus_oracle.address,
+                    contracts.validators_exit_bus_oracle.setExitRequestLimit.encode_input(EXIT_DAILY_LIMIT, TW_DAILY_LIMIT),
+                ),
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Revoke VEB role EXIT_REPORT_LIMIT_ROLE from the AGENT",
+            agent_forward([
+                encode_oz_revoke_role(
+                    contract=contracts.validators_exit_bus_oracle,
+                    role_name="EXIT_REPORT_LIMIT_ROLE",
+                    revoke_from=contracts.agent,
+                )
+            ])
+        ),
+        # --- Triggerable Withdrawals Gateway (TWG)
+        (
+            f"{next(item_idx)}. Grant TWG ADD_FULL_WITHDRAWAL_REQUEST_ROLE to CSEjector",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.triggerable_withdrawals_gateway,
+                    role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
+                    grant_to=contracts.cs_ejector,
+                )
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Grant TWG ADD_FULL_WITHDRAWAL_REQUEST_ROLE to VEB",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.triggerable_withdrawals_gateway,
+                    role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
+                    grant_to=contracts.validators_exit_bus_oracle,
+                )
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Grant TWG role TW_EXIT_REPORT_LIMIT_ROLE to the AGENT",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.triggerable_withdrawals_gateway,
+                    role_name="TW_EXIT_REPORT_LIMIT_ROLE",
+                    grant_to=contracts.agent,
+                )
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Call setExitRequestLimit on TWG",
+            agent_forward([
+                (
+                    contracts.triggerable_withdrawals_gateway.address,
+                    contracts.triggerable_withdrawals_gateway.setExitRequestLimit.encode_input(TWG_MAX_EXIT_REQUESTS_LIMIT, TWG_EXIT_REQUESTS_PER_FRAME, TWG_FRAME_DURATION),
+                ),
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Revoke TWG role TW_EXIT_REPORT_LIMIT_ROLE from the AGENT",
+            agent_forward([
+                encode_oz_revoke_role(
+                    contract=contracts.triggerable_withdrawals_gateway,
+                    role_name="TW_EXIT_REPORT_LIMIT_ROLE",
+                    revoke_from=contracts.agent,
+                )
+            ])
+        ),
+        # --- WV
+        (
+            f"{next(item_idx)}. Update WithdrawalVault implementation",
+            encode_wv_proxy_upgrade_to(contracts.withdrawal_vault, WITHDRAWAL_VAULT_IMPL)
+        ),
+        (
+            f"{next(item_idx)}. Call finalizeUpgrade_v2 on WithdrawalVault",
+            (
+                contracts.withdrawal_vault.address,
+                contracts.withdrawal_vault.finalizeUpgrade_v2.encode_input(
+                    contracts.agent,
+                ),
+            )
+        ),
+        (
+            f"{next(item_idx)}. Grant WithdrawalVault ADD_WITHDRAWAL_REQUEST_ROLE to the TWG",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.withdrawal_vault,
+                    role_name="ADD_WITHDRAWAL_REQUEST_ROLE",
+                    grant_to=contracts.triggerable_withdrawals_gateway,
+                )
+            ])
+        ),
+        # --- AO
+        (
+            f"{next(item_idx)}. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.accounting_oracle,
+                    role_name="MANAGE_CONSENSUS_VERSION_ROLE",
+                    grant_to=contracts.agent,
+                )
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Bump AO consensus version to `{AO_CONSENSUS_VERSION}`",
+            agent_forward([
+                encode_oracle_upgrade_consensus(contracts.accounting_oracle, AO_CONSENSUS_VERSION)
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT",
+            agent_forward([
+                encode_oz_revoke_role(
+                    contract=contracts.accounting_oracle,
+                    role_name="MANAGE_CONSENSUS_VERSION_ROLE",
+                    revoke_from=contracts.agent,
+                )
+            ])
+        ),
+        # --- SR
+        (
+            f"{next(item_idx)}. Update SR implementation",
+            agent_forward([encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)]),
+        ),
+        (
+            f"{next(item_idx)}. Grant SR REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.staking_router,
+                    role_name="REPORT_EXITED_VALIDATORS_STATUS_ROLE",
+                    grant_to=contracts.validator_exit_verifier,
+                )
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Grant SR REPORT_EXITED_VALIDATORS_ROLE to VEB",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.staking_router,
+                    role_name="REPORT_EXITED_VALIDATORS_ROLE",
+                    grant_to=contracts.validators_exit_bus_oracle,
+                )
+            ])
+        ),
+        # --- NOR
+        (
+            f"{next(item_idx)}. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo",
+            add_implementation_to_nor_app_repo(NOR_VERSION, NODE_OPERATORS_REGISTRY_IMPL, nor_uri),
+        ),
+        (
+            f"{next(item_idx)}. Update `NodeOperatorsRegistry` implementation",
+            update_app_implementation(NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
+        ),
+        (
+            f"{next(item_idx)}. Call finalizeUpgrade_v4 on NOR",
+            (
+                interface.NodeOperatorsRegistry(contracts.node_operators_registry).address,
+                interface.NodeOperatorsRegistry(contracts.node_operators_registry).finalizeUpgrade_v4.encode_input(
+                    NOR_EXIT_DEADLINE_IN_SEC
+                )
+            )
+        ),
+        # --- sDVT
+        # TODO: Implement after devnet-02
         # (
-        #     f"{next(item_idx)}. Update VEBO implementation",
-        #     agent_forward([
-        #         encode_proxy_upgrade_to(contracts.validators_exit_bus_oracle, VALIDATORS_EXIT_BUS_ORACLE_IMPL)
-        #     ])
+        #     f"{next(item_idx)}. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo",
+        #     add_implementation_to_sdvt_app_repo(SDVT_VERSION, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
         # ),
         # (
-        #     f"{next(item_idx)}. Call finalizeUpgrade_v2 on VEBO",
-        #     (
-        #         contracts.validators_exit_bus_oracle.address,
-        #         contracts.validators_exit_bus_oracle.finalizeUpgrade_v2.encode_input(),
-        #     )
+        #     f"{next(item_idx)}. Update `SimpleDVT` implementation",
+        #     update_app_implementation(SIMPLE_DVT_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
         # ),
         # (
-        #     f"{next(item_idx)}. Grant VEBO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
-        #     agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.validators_exit_bus_oracle,
-        #             role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-        #             grant_to=contracts.agent,
-        #         )
-        #     ])
-        # ),
+        #     f"{next(item_idx)}. Call finalizeUpgrade_v4 on sDVT",
         # (
-        #     f"{next(item_idx)}. Bump VEBO consensus version to `{VEBO_CONSENSUS_VERSION}`",
-        #     agent_forward([
-        #         encode_oracle_upgrade_consensus(contracts.validators_exit_bus_oracle, VEBO_CONSENSUS_VERSION)
-        #     ])
+        #     contracts.sDVT.address,
+        #     contracts.withdrawal_vault.finalizeUpgrade_v4.encode_input(
+        #         NOR_EXIT_DEADLINE_IN_SEC,
+        #     ),
+        # )
         # ),
-        # (
-        #     f"{next(item_idx)}. Revoke VEBO MANAGE_CONSENSUS_VERSION_ROLE from AGENT",
-        #     agent_forward([
-        #         encode_oz_revoke_role(
-        #             contract=contracts.validators_exit_bus_oracle,
-        #             role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-        #             revoke_from=contracts.agent,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Grant TWG ADD_FULL_WITHDRAWAL_REQUEST_ROLE to CSEjector",
-        #     agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.triggerable_withdrawals_gateway,
-        #             role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
-        #             grant_to=contracts.cs_ejector,
-        #         )
-        #     ])
-        # ),
-        # # (
-        # #     f"{next(item_idx)}. Grant VEB SUBMIT_REPORT_HASH_ROLE to the AGENT (TBD",
-        # #     agent_forward([
-        # #         encode_oz_revoke_role(
-        # #             contract=contracts.validators_exit_bus_oracle,
-        # #             role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-        # #             revoke_from=contracts.agent,
-        # #         )
-        # #     ])
-        # # ),
-        # (
-        #     f"{next(item_idx)}. Grant VEB EXIT_REPORT_LIMIT_ROLE role to AGENT",
-        #     agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.validators_exit_bus_oracle,
-        #             role_name="EXIT_REPORT_LIMIT_ROLE",
-        #             grant_to=contracts.agent,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Call setExitRequestLimit on VEB",
-        #     agent_forward([
-        #         (
-        #             contracts.validators_exit_bus_oracle.address,
-        #             contracts.validators_exit_bus_oracle.setExitRequestLimit.encode_input(EXIT_DAILY_LIMIT, TW_DAILY_LIMIT),
-        #         ),
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Revoke VEB EXIT_REPORT_LIMIT_ROLE from AGENT",
-        #     agent_forward([
-        #         encode_oz_revoke_role(
-        #             contract=contracts.validators_exit_bus_oracle,
-        #             role_name="EXIT_REPORT_LIMIT_ROLE",
-        #             revoke_from=contracts.agent,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Update WithdrawalVault implementation",
-        #     encode_wv_proxy_upgrade_to(contracts.withdrawal_vault, WITHDRAWAL_VAULT_IMPL)
-        # ),
-        # (
-        #     f"{next(item_idx)}. Call finalizeUpgrade_v2 on WithdrawalVault",
-        #     (
-        #         contracts.withdrawal_vault.address,
-        #         contracts.withdrawal_vault.finalizeUpgrade_v2.encode_input(
-        #             contracts.agent,
-        #         ),
-        #     )
-        # ),
-        # (
-        #     f"{next(item_idx)}. Grant WithdrawalVault ADD_WITHDRAWAL_REQUEST_ROLE to the VEB",
-        #     agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.withdrawal_vault,
-        #             role_name="ADD_WITHDRAWAL_REQUEST_ROLE",
-        #             grant_to=contracts.validators_exit_bus_oracle,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
-        #     agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.accounting_oracle,
-        #             role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-        #             grant_to=contracts.agent,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Bump AO consensus version to `{AO_CONSENSUS_VERSION}`",
-        #     agent_forward([
-        #         encode_oracle_upgrade_consensus(contracts.accounting_oracle, AO_CONSENSUS_VERSION)
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT",
-        #     agent_forward([
-        #         encode_oz_revoke_role(
-        #             contract=contracts.accounting_oracle,
-        #             role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-        #             revoke_from=contracts.agent,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Update SR implementation",
-        #     agent_forward([encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)]),
-        # ),
-        # (
-        #     f"{next(item_idx)}. Grant SR REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier",
-        #     agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.staking_router,
-        #             role_name="REPORT_EXITED_VALIDATORS_STATUS_ROLE",
-        #             grant_to=contracts.validator_exit_verifier,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Grant SR REPORT_EXITED_VALIDATORS_ROLE to VEB",
-        #     agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.staking_router,
-        #             role_name="REPORT_EXITED_VALIDATORS_ROLE",
-        #             grant_to=contracts.validators_exit_bus_oracle,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo",
-        #     add_implementation_to_nor_app_repo(NOR_VERSION, NODE_OPERATORS_REGISTRY_IMPL, nor_uri),
-        # ),
-        # (
-        #     f"{next(item_idx)}. Update `NodeOperatorsRegistry` implementation",
-        #     update_app_implementation(NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
-        # ),
-        # (
-        #     f"{next(item_idx)}. Call finalizeUpgrade_v4 on NOR",
-        #     (
-        #         interface.NodeOperatorsRegistry(contracts.node_operators_registry).address,
-        #         interface.NodeOperatorsRegistry(contracts.node_operators_registry).finalizeUpgrade_v4.encode_input(
-        #             NOR_EXIT_DEADLINE_IN_SEC
-        #         )
-        #     )
-        # ),
-        # # TODO: Implement after devnet-01
-        # # (
-        # #     f"{next(item_idx)}. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo",
-        # #     add_implementation_to_sdvt_app_repo(SDVT_VERSION, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
-        # # ),
-        # # (
-        # #     f"{next(item_idx)}. Update `SimpleDVT` implementation",
-        # #     update_app_implementation(SIMPLE_DVT_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
-        # # ),
-        # # (
-        # #     f"{next(item_idx)}. Call finalizeUpgrade_v4 on sDVT",
-        # # (
-        # #     contracts.sDVT.address,
-        # #     contracts.withdrawal_vault.finalizeUpgrade_v4.encode_input(
-        # #         NOR_EXIT_DEADLINE_IN_SEC,
-        # #     ),
-        # # )
-        # # ),
-        # (
-        #     f"{next(item_idx)}. Grant CONFIG_MANAGER_ROLE role to the AGENT",
-        #     agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.oracle_daemon_config,
-        #             role_name="CONFIG_MANAGER_ROLE",
-        #             grant_to=contracts.agent,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig",
-        #     agent_forward([
-        #         (
-        #             contracts.oracle_daemon_config.address,
-        #             contracts.oracle_daemon_config.unset.encode_input('NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP'),
-        #         ),
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
-        #     agent_forward([
-        #         (
-        #             contracts.oracle_daemon_config.address,
-        #             contracts.oracle_daemon_config.unset.encode_input('VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS'),
-        #         ),
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
-        #     agent_forward([
-        #         (
-        #             contracts.oracle_daemon_config.address,
-        #             contracts.oracle_daemon_config.unset.encode_input('VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS'),
-        #         ),
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig",
-        #     agent_forward([
-        #         (
-        #             contracts.oracle_daemon_config.address,
-        #             contracts.oracle_daemon_config.set.encode_input('EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS', EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS),
-        #         ),
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Revoke CONFIG_MANAGER_ROLE from AGENT",
-        #     agent_forward([
-        #         encode_oz_revoke_role(
-        #             contract=contracts.oracle_daemon_config,
-        #             role_name="CONFIG_MANAGER_ROLE",
-        #             revoke_from=contracts.agent,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Add ADD_WITHDRAWAL_REQUEST_ROLE WV for Consolidation to the TEMP-DEVNET-01",
-        #     agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.withdrawal_vault,
-        #             role_name="ADD_WITHDRAWAL_REQUEST_ROLE",
-        #             grant_to=DEVNET_01_ADDRESS,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Add ADD_WITHDRAWAL_REQUEST_ROLE WV for Consolidation to the TEMP-DEVNET-01",
-        #     agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.withdrawal_vault,
-        #             role_name="ADD_CONSOLIDATION_REQUEST_ROLE",
-        #             grant_to=DEVNET_01_ADDRESS,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01",
-        #     agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.withdrawal_vault,
-        #             role_name="PAUSE_ROLE",
-        #             grant_to=DEVNET_01_ADDRESS,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Add DIRECT_EXIT_ROLE for WV to the TEMP-DEVNET-01",
-        #     agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.validators_exit_bus_oracle,
-        #             role_name="DIRECT_EXIT_ROLE",
-        #             grant_to=DEVNET_01_ADDRESS,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01",
-        #     agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.validators_exit_bus_oracle,
-        #             role_name="PAUSE_ROLE",
-        #             grant_to=DEVNET_01_ADDRESS,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Add SUBMIT_REPORT_HASH_ROLE for VEB to the TEMP-DEVNET-01",
-        #     agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.validators_exit_bus_oracle,
-        #             role_name="SUBMIT_REPORT_HASH_ROLE",
-        #             grant_to=DEVNET_01_ADDRESS,
-        #         )
-        #     ])
-        # ),
-
-        # CSM related calls
-
+        # --- Oracle configs ---
+        (
+            f"{next(item_idx)}. Grant CONFIG_MANAGER_ROLE role to the AGENT",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.oracle_daemon_config,
+                    role_name="CONFIG_MANAGER_ROLE",
+                    grant_to=contracts.agent,
+                )
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig",
+            agent_forward([
+                (
+                    contracts.oracle_daemon_config.address,
+                    contracts.oracle_daemon_config.unset.encode_input('NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP'),
+                ),
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
+            agent_forward([
+                (
+                    contracts.oracle_daemon_config.address,
+                    contracts.oracle_daemon_config.unset.encode_input('VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS'),
+                ),
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
+            agent_forward([
+                (
+                    contracts.oracle_daemon_config.address,
+                    contracts.oracle_daemon_config.unset.encode_input('VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS'),
+                ),
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig",
+            agent_forward([
+                (
+                    contracts.oracle_daemon_config.address,
+                    contracts.oracle_daemon_config.set.encode_input('EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS', EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS),
+                ),
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Revoke CONFIG_MANAGER_ROLE from AGENT",
+            agent_forward([
+                encode_oz_revoke_role(
+                    contract=contracts.oracle_daemon_config,
+                    role_name="CONFIG_MANAGER_ROLE",
+                    revoke_from=contracts.agent,
+                )
+            ])
+        ),
+        # --- Temp ---
+        (
+            f"{next(item_idx)}. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.withdrawal_vault,
+                    role_name="PAUSE_ROLE",
+                    grant_to=DEVNET_01_ADDRESS,
+                )
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.validators_exit_bus_oracle,
+                    role_name="PAUSE_ROLE",
+                    grant_to=DEVNET_01_ADDRESS,
+                )
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Add SUBMIT_REPORT_HASH_ROLE for VEB to the TEMP-DEVNET-01",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.validators_exit_bus_oracle,
+                    role_name="SUBMIT_REPORT_HASH_ROLE",
+                    grant_to=DEVNET_01_ADDRESS,
+                )
+            ])
+        ),
+        # --- CSM
         (
             f"{next(item_idx)}. Upgrade CSM implementation on proxy",
             agent_forward([

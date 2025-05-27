@@ -302,7 +302,7 @@ class ContractsLazyLoader:
 
     @property
     def triggerable_withdrawals_gateway(self):
-        raise NotImplementedError()
+        return interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY)
 
     @property
     def withdrawal_queue(self) -> interface.WithdrawalQueueERC721:
