@@ -16,6 +16,7 @@ from utils.config import (
     STAKING_ROUTER_IMPL,
     VALIDATORS_EXIT_BUS_ORACLE_IMPL,
     WITHDRAWAL_VAULT_IMPL,
+    LIDO_LOCATOR_IMPL,
     contracts,
     get_deployer_account,
     get_priority_fee,
@@ -100,78 +101,78 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         Triggerable withdrawals voting baking and sending.
 
         Contains next steps:
+            --- Locator
+            1. Update locator implementation
             --- VEB
-            1. Update VEBO implementation
-            2. Call finalizeUpgrade_v2 on VEBO
-            3. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-            4. Bump VEBO consensus version to `4`
-            5. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT
-            6. Grant VEB role SUBMIT_REPORT_HASH_ROLE to the AGENT/ET (TBD)
-            7. Grant VEB role EXIT_REPORT_LIMIT_ROLE role to AGENT
-            8. Call setExitRequestLimit on VEB 1
+            2. Update VEBO implementation
+            3. Call finalizeUpgrade_v2 on VEBO
+            4. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+            5. Bump VEBO consensus version to `4`
+            6. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT
+            7. Grant VEB role SUBMIT_REPORT_HASH_ROLE to the AGENT/ET (TBD)
+            8. Grant VEB role EXIT_REPORT_LIMIT_ROLE role to AGENT
+            9. Call setExitRequestLimit on VEB 1
             10. Revoke VEB role EXIT_REPORT_LIMIT_ROLE from the AGENT
             --- Triggerable Withdrawals Gateway (TWG) ±
-            12. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector ±
-            13. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB ±
-            14. Grant TWG role TW_EXIT_REPORT_LIMIT_ROLE to the AGENT ±
-            15. Call setExitRequestLimit on TWG ±
-            16. Revoke TWG role TW_EXIT_REPORT_LIMIT_ROLE from the AGENT ±
+            11. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector ±
+            12. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB ±
+            13. Grant TWG role TW_EXIT_REPORT_LIMIT_ROLE to the AGENT ±
+            14. Call setExitRequestLimit on TWG ±
+            15. Revoke TWG role TW_EXIT_REPORT_LIMIT_ROLE from the AGENT ±
             --- WV ±
-            11. Update WithdrawalVault implementation
-            12. Call finalizeUpgrade_v2 on WithdrawalVault
-            13. Grant WithdrawalVault role ADD_WITHDRAWAL_REQUEST_ROLE to the TWG
+            16. Update WithdrawalVault implementation
+            17. Call finalizeUpgrade_v2 on WithdrawalVault
+            18. Grant WithdrawalVault role ADD_WITHDRAWAL_REQUEST_ROLE to the TWG
             --- AO ±
-            14. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT ±
-            15. Bump AO consensus version to `4` ±
-            16. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT ±
+            19. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT ±
+            20. Bump AO consensus version to `4` ±
+            21. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT ±
             --- SR ±
-            17. Update SR implementation ±
-            18. Grant SR REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier ±
-            19. Grant SR REPORT_EXITED_VALIDATORS_ROLE to VEB ±
+            22. Update SR implementation ±
+            23. Grant SR REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier ±
+            24. Grant SR REPORT_EXITED_VALIDATORS_ROLE to VEB ±
             --- NOR
-            20. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo ±
-            21. Update `NodeOperatorsRegistry` implementation ±
-            22. Call finalizeUpgrade_v4 on NOR ±
+            25. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo ±
+            26. Update `NodeOperatorsRegistry` implementation ±
+            27. Call finalizeUpgrade_v4 on NOR ±
             --- sDVT
-            23. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
-            24. Update `SimpleDVT` implementation
-            25. Call finalizeUpgrade_v4 on sDVT
+            28. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
+            29. Update `SimpleDVT` implementation
+            30. Call finalizeUpgrade_v4 on sDVT
             --- Oracle configs --- ±
-            30. Grant CONFIG_MANAGER_ROLE role to the AGENT ±
-            31. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig ±
-            32. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig ±
-            33. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig ±
-            34. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig ±
-            35. Revoke CONFIG_MANAGER_ROLE from AGENT ±
+            31. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig ±
+            32. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig ±
+            33. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig ±
+            34. Revoke CONFIG_MANAGER_ROLE from AGENT ±
             --- Temp ---
-            40. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01
-            41. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01
-            42. Add SUBMIT_REPORT_HASH_ROLE for VEB to the TEMP-DEVNET-01
+            35. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01
+            36. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01
+            37. Add SUBMIT_REPORT_HASH_ROLE for VEB to the TEMP-DEVNET-01
             --- CSM ---
-            46. Upgrade CSM implementation on proxy
-            47. Upgrade CSAccounting implementation on proxy
-            48. Upgrade CSFeeOracle implementation on proxy
-            49. Upgrade CSFeeDistributor implementation on proxy
-            50. Call `finalizeUpgradeV2(exitPenalties)` on CSM contract
-            51. Call `finalizeUpgradeV2(defaultBondCurve,vettedBondCurve)` on CSAccounting contract
-            52. Call `finalizeUpgradeV2(consensusVersion,strikesContract)` on CSFeeOracle contract
-            53. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
-            54. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
-            55. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
-            56. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
-            57. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
-            58. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
-            59. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
-            60. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
-            61. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
-            62. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
-            63. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
-            64. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
-            65. Grant CSM role PAUSE_ROLE for the new GateSeal instance
-            66. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
-            67. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
-            68. Revoke Burner role REQUEST_BURN_SHARES_ROLE from the CSAccounting contract
-            69. Grant Burner role REQUEST_BURN_MY_STETH_ROLE to the CSAccounting contract
+            38. Upgrade CSM implementation on proxy
+            39. Upgrade CSAccounting implementation on proxy
+            40. Upgrade CSFeeOracle implementation on proxy
+            41. Upgrade CSFeeDistributor implementation on proxy
+            42. Call `finalizeUpgradeV2(exitPenalties)` on CSM contract
+            43. Call `finalizeUpgradeV2(defaultBondCurve,vettedBondCurve)` on CSAccounting contract
+            44. Call `finalizeUpgradeV2(consensusVersion,strikesContract)` on CSFeeOracle contract
+            45. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
+            46. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
+            47. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
+            48. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
+            49. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
+            50. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
+            51. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
+            52. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
+            53. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
+            54. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
+            55. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
+            56. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
+            57. Grant CSM role PAUSE_ROLE for the new GateSeal instance
+            58. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
+            59. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
+            60. Revoke Burner role REQUEST_BURN_SHARES_ROLE from the CSAccounting contract
+            61. Grant Burner role REQUEST_BURN_MY_STETH_ROLE to the CSAccounting contract
     """
 
     item_idx = count(1)
@@ -181,8 +182,13 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
 
     nor_uri = get_repo_uri(nor_repo)
     # simple_dvt_uri = get_repo_uri(simple_dvt_repo)
-
+    print(f"LIDO_LOCATOR_IMPL repo URI: {LIDO_LOCATOR_IMPL}")
     vote_descriptions, call_script_items = zip(
+        # --- locator
+        (
+            f"{next(item_idx)}. Update locator implementation",
+            agent_forward([encode_proxy_upgrade_to(contracts.lido_locator, LIDO_LOCATOR_IMPL)]),
+        ),
         # --- VEB
         (
             f"{next(item_idx)}. Update VEBO implementation",
@@ -194,7 +200,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             f"{next(item_idx)}. Call finalizeUpgrade_v2 on VEBO",
             (
                 contracts.validators_exit_bus_oracle.address,
-                contracts.validators_exit_bus_oracle.finalizeUpgrade_v2.encode_input(),
+                contracts.validators_exit_bus_oracle.finalizeUpgrade_v2.encode_input(600, 13000, 1, 48),
             )
         ),
         (
@@ -249,7 +255,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             agent_forward([
                 (
                     contracts.validators_exit_bus_oracle.address,
-                    contracts.validators_exit_bus_oracle.setExitRequestLimit.encode_input(EXIT_DAILY_LIMIT, TW_DAILY_LIMIT),
+                    contracts.validators_exit_bus_oracle.setExitRequestLimit.encode_input(13000, 1, 48),
                 ),
             ])
         ),
