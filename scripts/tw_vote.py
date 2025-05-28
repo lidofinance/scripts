@@ -12,6 +12,7 @@ from utils.config import (
     CSM_IMPL_V2_ADDRESS,
     NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
     NODE_OPERATORS_REGISTRY_IMPL,
+    ACCOUNTING_ORACLE_IMPL,
     SIMPLE_DVT_ARAGON_APP_ID,
     STAKING_ROUTER_IMPL,
     VALIDATORS_EXIT_BUS_ORACLE_IMPL,
@@ -110,69 +111,70 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             5. Bump VEBO consensus version to `4`
             6. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT
             7. Grant VEB role SUBMIT_REPORT_HASH_ROLE to the AGENT/ET (TBD)
-            8. Grant VEB role EXIT_REPORT_LIMIT_ROLE role to AGENT
+            8. Grant VEB role EXIT_REQUEST_LIMIT_MANAGER_ROLE role to AGENT
             9. Call setExitRequestLimit on VEB 1
-            10. Revoke VEB role EXIT_REPORT_LIMIT_ROLE from the AGENT
+            10. Revoke VEB role EXIT_REQUEST_LIMIT_MANAGER_ROLE from the AGENT
             --- Triggerable Withdrawals Gateway (TWG)
             11. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector
             12. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB
-            13. Grant TWG role TW_EXIT_REPORT_LIMIT_ROLE to the AGENT
+            13. Grant TWG role TW_EXIT_LIMIT_MANAGER_ROLE to the AGENT
             14. Call setExitRequestLimit on TWG
-            15. Revoke TWG role TW_EXIT_REPORT_LIMIT_ROLE from the AGENT
-            16. Grant SR REPORT_EXITED_VALIDATORS_ROLE to TWG
+            15. Revoke TWG role TW_EXIT_LIMIT_MANAGER_ROLE from the AGENT
+            16. Grant SR REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG
             --- WV
             17. Update WithdrawalVault implementation
             18. Call finalizeUpgrade_v2 on WithdrawalVault
             19. Grant WithdrawalVault role ADD_WITHDRAWAL_REQUEST_ROLE to the TWG
             --- AO
-            20. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-            21. Bump AO consensus version to `4`
-            22. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT
+            20. Update Accounting Oracle implementation
+            21. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+            22. Bump AO consensus version to `4`
+            23. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT
             --- SR
-            23. Update SR implementation
-            24. Grant SR REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier
+            24. Update SR implementation
+            25. Grant SR REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitVerifier
             --- NOR
-            25. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
-            26. Update `NodeOperatorsRegistry` implementation
-            27. Call finalizeUpgrade_v4 on NOR
+            26. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
+            27. Update `NodeOperatorsRegistry` implementation
+            28. Call finalizeUpgrade_v4 on NOR
             --- sDVT
-            28. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
-            29. Update `SimpleDVT` implementation
-            30. Call finalizeUpgrade_v4 on sDVT
+            29. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
+            30. Update `SimpleDVT` implementation
+            31. Call finalizeUpgrade_v4 on sDVT
             --- Oracle configs ---
-            31. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-            32. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-            33. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig
-            34. Revoke CONFIG_MANAGER_ROLE from AGENT
+            32. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+            33. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+            34. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig
+            35. Revoke CONFIG_MANAGER_ROLE from AGENT
             --- Temp ---
-            35. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01
-            36. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01
-            37. Add SUBMIT_REPORT_HASH_ROLE for VEB to the TEMP-DEVNET-01
+            36. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01
+            37. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01
+            38. Add SUBMIT_REPORT_HASH_ROLE for VEB to the TEMP-DEVNET-01
             --- CSM ---
-            38. Upgrade CSM implementation on proxy
-            39. Upgrade CSAccounting implementation on proxy
-            40. Upgrade CSFeeOracle implementation on proxy
-            41. Upgrade CSFeeDistributor implementation on proxy
-            42. Call `finalizeUpgradeV2(exitPenalties)` on CSM contract
-            43. Call `finalizeUpgradeV2(defaultBondCurve,vettedBondCurve)` on CSAccounting contract
-            44. Call `finalizeUpgradeV2(consensusVersion,strikesContract)` on CSFeeOracle contract
-            45. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
-            46. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
-            47. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
-            48. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
-            49. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
-            50. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
-            51. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
-            52. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
-            53. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
-            54. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
-            55. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
-            56. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
-            57. Grant CSM role PAUSE_ROLE for the new GateSeal instance
-            58. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
-            59. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
-            60. Revoke Burner role REQUEST_BURN_SHARES_ROLE from the CSAccounting contract
-            61. Grant Burner role REQUEST_BURN_MY_STETH_ROLE to the CSAccounting contract
+            39. Upgrade CSM implementation on proxy
+            40. Upgrade CSAccounting implementation on proxy
+            41. Upgrade CSFeeOracle implementation on proxy
+            42. Upgrade CSFeeDistributor implementation on proxy
+            43. Call `finalizeUpgradeV2(exitPenalties)` on CSM contract
+            44. Call `finalizeUpgradeV2(defaultBondCurve,vettedBondCurve)` on CSAccounting contract
+            45. Call `finalizeUpgradeV2(consensusVersion,strikesContract)` on CSFeeOracle contract
+            46. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
+            47. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
+            48. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
+            49. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
+            50. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
+            51. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
+            52. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
+            53. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
+            54. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
+            55. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
+            56. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
+            57. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
+            58. Grant CSM role PAUSE_ROLE for the new GateSeal instance
+            59. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
+            60. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
+            61. Revoke Burner role REQUEST_BURN_SHARES_ROLE from the CSAccounting contract
+            62. Grant Burner role REQUEST_BURN_MY_STETH_ROLE to the CSAccounting contract
     """
 
     item_idx = count(1)
@@ -241,11 +243,11 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            f"{next(item_idx)}. Grant VEB EXIT_REPORT_LIMIT_ROLE role to AGENT",
+            f"{next(item_idx)}. Grant VEB EXIT_REQUEST_LIMIT_MANAGER_ROLE role to AGENT",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.validators_exit_bus_oracle,
-                    role_name="EXIT_REPORT_LIMIT_ROLE",
+                    role_name="EXIT_REQUEST_LIMIT_MANAGER_ROLE",
                     grant_to=contracts.agent,
                 )
             ])
@@ -260,11 +262,11 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            f"{next(item_idx)}. Revoke VEB role EXIT_REPORT_LIMIT_ROLE from the AGENT",
+            f"{next(item_idx)}. Revoke VEB role EXIT_REQUEST_LIMIT_MANAGER_ROLE from the AGENT",
             agent_forward([
                 encode_oz_revoke_role(
                     contract=contracts.validators_exit_bus_oracle,
-                    role_name="EXIT_REPORT_LIMIT_ROLE",
+                    role_name="EXIT_REQUEST_LIMIT_MANAGER_ROLE",
                     revoke_from=contracts.agent,
                 )
             ])
@@ -291,11 +293,11 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            f"{next(item_idx)}. Grant TWG role TW_EXIT_REPORT_LIMIT_ROLE to the AGENT",
+            f"{next(item_idx)}. Grant TWG role TW_EXIT_LIMIT_MANAGER_ROLE to the AGENT",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.triggerable_withdrawals_gateway,
-                    role_name="TW_EXIT_REPORT_LIMIT_ROLE",
+                    role_name="TW_EXIT_LIMIT_MANAGER_ROLE",
                     grant_to=contracts.agent,
                 )
             ])
@@ -310,21 +312,21 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            f"{next(item_idx)}. Revoke TWG role TW_EXIT_REPORT_LIMIT_ROLE from the AGENT",
+            f"{next(item_idx)}. Revoke TWG role TW_EXIT_LIMIT_MANAGER_ROLE from the AGENT",
             agent_forward([
                 encode_oz_revoke_role(
                     contract=contracts.triggerable_withdrawals_gateway,
-                    role_name="TW_EXIT_REPORT_LIMIT_ROLE",
+                    role_name="TW_EXIT_LIMIT_MANAGER_ROLE",
                     revoke_from=contracts.agent,
                 )
             ])
         ),
         (
-            f"{next(item_idx)}. Grant SR REPORT_EXITED_VALIDATORS_ROLE to TWG",
+            f"{next(item_idx)}. Grant SR REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.staking_router,
-                    role_name="REPORT_EXITED_VALIDATORS_ROLE",
+                    role_name="REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE",
                     grant_to=contracts.triggerable_withdrawals_gateway,
                 )
             ])
@@ -354,6 +356,10 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         # --- AO
+        (
+            f"{next(item_idx)}. Update Accounting Oracle implementation",
+            agent_forward([encode_proxy_upgrade_to(contracts.accounting_oracle, ACCOUNTING_ORACLE_IMPL)]),
+        ),
         (
             f"{next(item_idx)}. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
             agent_forward([
@@ -386,11 +392,11 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             agent_forward([encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)]),
         ),
         (
-            f"{next(item_idx)}. Grant SR REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier",
+            f"{next(item_idx)}. Grant SR REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitVerifier",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.staking_router,
-                    role_name="REPORT_EXITED_VALIDATORS_STATUS_ROLE",
+                    role_name="REPORT_VALIDATOR_EXITING_STATUS_ROLE",
                     grant_to=contracts.validator_exit_verifier,
                 )
             ])
