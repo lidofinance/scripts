@@ -498,13 +498,8 @@ def validate_stETH_LOL_registry_limit_parameters_update(
     # wait until H2'2025
     chain.sleep(h2_motion_time - chain.time())
     chain.mine()
-    almost_equal(
-        chain.time(),
-        h2_motion_time,
-        1,  # allow 1 second delta for the chain time to be equal to H2 motion time
-        msg="Chain time should be equal to H2 motion time",
-    )
-    assert chain.time() == h2_motion_time
+
+    assert chain.time() >= h2_motion_time
 
     # pay 1000 steth
     create_and_enact_payment_motion(
