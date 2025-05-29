@@ -1,7 +1,5 @@
-from typing import List
 from brownie import accounts, interface, reverts, chain, convert, web3, ZERO_ADDRESS
 from brownie.network.event import EventDict
-from pytest_check import almost_equal
 from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS
 from utils.permission_parameters import ArgumentValue, Op, Param, encode_permission_params
 from utils.test.easy_track_helpers import (
