@@ -722,7 +722,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            f"{next(item_idx)}. Grant PAUSE_ROLE on CSAccounting to the new GateSeal instance",
+            f"{next(item_idx)}. Grant PAUSE_ROLE on CSFeeOracle to the new GateSeal instance",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.cs_fee_oracle,
