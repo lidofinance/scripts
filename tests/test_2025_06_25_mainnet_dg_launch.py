@@ -144,7 +144,7 @@ def validate_dual_governance_governance_launch_verification_event(event: EventDi
 def prepare_activated_dg_state():
     timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
     if timelock.getEmergencyGovernance() == DAO_EMERGENCY_GOVERNANCE_DRY_RUN:
-        dg_impersonated = accounts.at(DUAL_GOVERNANCE, force=True)
+        dg_impersonated = accounts.at(timelock.getGovernance(), force=True)
         if timelock.getProposalsCount() == 0:
             timelock.submit(
                 DUAL_GOVERNANCE_ADMIN_EXECUTOR,
