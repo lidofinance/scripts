@@ -145,11 +145,12 @@ def prepare_activated_dg_state():
     timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
     if timelock.getEmergencyGovernance() == DAO_EMERGENCY_GOVERNANCE_DRY_RUN:
         dg_impersonated = accounts.at(DUAL_GOVERNANCE, force=True)
-        timelock.submit(
-            DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-            [(TIMELOCK, 0, timelock.setEmergencyGovernance.encode_input(DAO_EMERGENCY_GOVERNANCE))],
-            {"from": dg_impersonated},
-        )
+        if timelock.getProposalsCount() == 0:
+            timelock.submit(
+                DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+                [(TIMELOCK, 0, timelock.setEmergencyGovernance.encode_input(DAO_EMERGENCY_GOVERNANCE))],
+                {"from": dg_impersonated},
+            )
 
         after_submit_delay = timelock.getAfterSubmitDelay()
         chain.sleep(after_submit_delay + 1)
