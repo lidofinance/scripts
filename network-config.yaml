@@ -101,8 +101,8 @@ development:
       chain_id: 560048
       gas_limit: 30000000
       mnemonic: brownie
-      port: 33405
-    host: http://localhost
+      port: 33529
+    host: http://127.0.0.1
     id: hoodi-devnet-remote
     name: Hoodi Devnet Remote
     timeout: 360
