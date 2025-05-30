@@ -109,68 +109,64 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             3. Call finalizeUpgrade_v2(maxValidatorsPerReport, maxExitRequestsLimit, exitsPerFrame, frameDurationInSec) on VEBO
             4. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
             5. Bump VEBO consensus version to `4`
-            6. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT (remove?)
-            7. Grant VEB role SUBMIT_REPORT_HASH_ROLE to the AGENT (remove?)
-            7.1. Grant VEB role SUBMIT_REPORT_HASH_ROLE to the ET (TBD)
+            6. Grant VEB role SUBMIT_REPORT_HASH_ROLE to the ET (TBD)
             --- Triggerable Withdrawals Gateway (TWG)
-            8. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector
-            9. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB
+            7. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector
+            8. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB
             --- WV
-            10. Update WithdrawalVault implementation
-            11. Call finalizeUpgrade_v2() on WithdrawalVault
+            9. Update WithdrawalVault implementation
+            10. Call finalizeUpgrade_v2() on WithdrawalVault
             --- AO
-            12. Update Accounting Oracle implementation
-            13. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-            14. Bump AO consensus version to `4`
-            15. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT (remove?)
+            11. Update Accounting Oracle implementation
+            12. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+            13. Bump AO consensus version to `4`
             --- SR
-            16. Update SR implementation
-            17. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitVerifier
-            18. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG
+            14. Update SR implementation
+            15. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitVerifier
+            16. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG
             --- NOR
-            19. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
-            20. Update `NodeOperatorsRegistry` implementation
-            21. Call finalizeUpgrade_v4 on NOR
+            17. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
+            18. Update `NodeOperatorsRegistry` implementation
+            19. Call finalizeUpgrade_v4 on NOR
             --- sDVT
-            22. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
-            23. Update `SimpleDVT` implementation
-            24. Call finalizeUpgrade_v4 on sDVT
+            20. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
+            21. Update `SimpleDVT` implementation
+            22. Call finalizeUpgrade_v4 on sDVT
             --- Oracle configs ---
-            25. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig
-            26. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-            27. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-            28. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig
-            29. Revoke CONFIG_MANAGER_ROLE from AGENT (remove?)
+            23. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig
+            24. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+            25. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+            26. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig
             --- Temp ---
-            30. Add PAUSE_ROLE for TWG to the TEMP-DEVNET-01
-            31. Add RESUME_ROLE for TWG to the TEMP-DEVNET-01
-            32. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01
-            33. Add RESUME_ROLE for VEB to the TEMP-DEVNET-01
+            27. Add PAUSE_ROLE for TWG to the TEMP-DEVNET-01
+            28. Add RESUME_ROLE for TWG to the TEMP-DEVNET-01
+            29. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01
+            30. Add RESUME_ROLE for VEB to the TEMP-DEVNET-01
             --- CSM ---
-            34. Upgrade CSM implementation on proxy
-            35. Upgrade CSAccounting implementation on proxy
-            36. Upgrade CSFeeOracle implementation on proxy
-            37. Upgrade CSFeeDistributor implementation on proxy
-            38. Call `finalizeUpgradeV2(exitPenalties)` on CSM contract
-            39. Call `finalizeUpgradeV2(defaultBondCurve,vettedBondCurve)` on CSAccounting contract
-            40. Call `finalizeUpgradeV2(consensusVersion,strikesContract)` on CSFeeOracle contract
-            41. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
-            42. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
-            43. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
-            44. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
-            45. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
-            46. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
-            47. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
-            48. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
-            49. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
-            50. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
-            51. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
-            52. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
-            53. Grant CSM role PAUSE_ROLE for the new GateSeal instance
-            54. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
-            55. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
-            56. Revoke Burner role REQUEST_BURN_SHARES_ROLE from the CSAccounting contract
-            57. Grant Burner role REQUEST_BURN_MY_STETH_ROLE to the CSAccounting contract
+            31. Upgrade CSM implementation on proxy
+            32. Upgrade CSAccounting implementation on proxy
+            33. Upgrade CSFeeOracle implementation on proxy
+            34. Upgrade CSFeeDistributor implementation on proxy
+            35. Call `finalizeUpgradeV2(exitPenalties)` on CSM contract
+            36. Call `finalizeUpgradeV2(defaultBondCurve,vettedBondCurve)` on CSAccounting contract
+            37. Call `finalizeUpgradeV2(consensusVersion,strikesContract)` on CSFeeOracle contract
+            38. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
+            39. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
+            40. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
+            41. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
+            42. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
+            43. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
+            44. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
+            45. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
+            46. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
+            47. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
+            48. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
+            49. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
+            50. Grant CSM role PAUSE_ROLE for the new GateSeal instance
+            51. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
+            52. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
+            53. Revoke Burner role REQUEST_BURN_SHARES_ROLE from the CSAccounting contract
+            54. Grant Burner role REQUEST_BURN_MY_STETH_ROLE to the CSAccounting contract
     """
 
     item_idx = count(1)
@@ -215,27 +211,6 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             f"{next(item_idx)}. Bump VEBO consensus version to `{VEBO_CONSENSUS_VERSION}`",
             agent_forward([
                 encode_oracle_upgrade_consensus(contracts.validators_exit_bus_oracle, VEBO_CONSENSUS_VERSION)
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT",
-            agent_forward([
-                encode_oz_revoke_role(
-                    contract=contracts.validators_exit_bus_oracle,
-                    role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-                    revoke_from=contracts.agent,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Grant VEB role SUBMIT_REPORT_HASH_ROLE to the AGENT/ET (TBD)",
-            agent_forward([
-                encode_oz_grant_role(
-                    contract=contracts.validators_exit_bus_oracle,
-                    role_name="SUBMIT_REPORT_HASH_ROLE",
-                    # grant_to=DEVNET_01_ADDRESS,
-                    grant_to=contracts.agent,
-                )
             ])
         ),
         # (
@@ -302,16 +277,6 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             f"{next(item_idx)}. Bump AO consensus version to `{AO_CONSENSUS_VERSION}`",
             agent_forward([
                 encode_oracle_upgrade_consensus(contracts.accounting_oracle, AO_CONSENSUS_VERSION)
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT",
-            agent_forward([
-                encode_oz_revoke_role(
-                    contract=contracts.accounting_oracle,
-                    role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-                    revoke_from=contracts.agent,
-                )
             ])
         ),
         # --- SR
@@ -423,19 +388,9 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
                 ),
             ])
         ),
-        (
-            f"{next(item_idx)}. Revoke CONFIG_MANAGER_ROLE from AGENT",
-            agent_forward([
-                encode_oz_revoke_role(
-                    contract=contracts.oracle_daemon_config,
-                    role_name="CONFIG_MANAGER_ROLE",
-                    revoke_from=contracts.agent,
-                )
-            ])
-        ),
         # --- Temp ---
         (
-            f"{next(item_idx)}. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01",
+            f"{next(item_idx)}. Add PAUSE_ROLE for TWG to the TEMP-DEVNET-01",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.triggerable_withdrawals_gateway,
@@ -445,7 +400,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            f"{next(item_idx)}. Add RESUME_ROLE for WV to the TEMP-DEVNET-01",
+            f"{next(item_idx)}. Add RESUME_ROLE for TWG to the TEMP-DEVNET-01",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.triggerable_withdrawals_gateway,
