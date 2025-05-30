@@ -391,20 +391,20 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         ),
         # --- Temp ---
         (
-            f"{next(item_idx)}. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01",
+            f"{next(item_idx)}. Add PAUSE_ROLE for TWG to the TEMP-DEVNET-01",
             agent_forward([
                 encode_oz_grant_role(
-                    contract=contracts.withdrawal_vault,
+                    contract=contracts.triggerable_withdrawals_gateway,
                     role_name="PAUSE_ROLE",
                     grant_to=DEVNET_01_ADDRESS,
                 )
             ])
         ),
         (
-            f"{next(item_idx)}. Add RESUME_ROLE for WV to the TEMP-DEVNET-01",
+            f"{next(item_idx)}. Add RESUME_ROLE for TWG to the TEMP-DEVNET-01",
             agent_forward([
                 encode_oz_grant_role(
-                    contract=contracts.withdrawal_vault,
+                    contract=contracts.triggerable_withdrawals_gateway,
                     role_name="RESUME_ROLE",
                     grant_to=DEVNET_01_ADDRESS,
                 )
