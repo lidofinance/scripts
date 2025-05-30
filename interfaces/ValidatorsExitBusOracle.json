@@ -41,16 +41,6 @@
     "type": "error"
   },
   {
-    "inputs": [],
-    "name": "DeliveredIndexOutOfBounds",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "DeliveryWasNotStarted",
-    "type": "error"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -59,27 +49,11 @@
       },
       {
         "internalType": "uint256",
-        "name": "totalItemsCount",
+        "name": "requestsCount",
         "type": "uint256"
       }
     ],
     "name": "ExitDataIndexOutOfRange",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "exitDataIndex",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "lastDeliveredExitDataIndex",
-        "type": "uint256"
-      }
-    ],
-    "name": "ExitDataWasNotDelivered",
     "type": "error"
   },
   {
@@ -105,7 +79,7 @@
         "type": "uint256"
       }
     ],
-    "name": "ExitRequestsLimit",
+    "name": "ExitRequestsLimitExceeded",
     "type": "error"
   },
   {
@@ -141,12 +115,7 @@
   },
   {
     "inputs": [],
-    "name": "InvalidPubkeysArray",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "InvalidRequestsData",
+    "name": "InvalidModuleId",
     "type": "error"
   },
   {
@@ -160,19 +129,8 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "requestsCount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "maxRequestsPerBatch",
-        "type": "uint256"
-      }
-    ],
-    "name": "MaxRequestsBatchSizeExceeded",
+    "inputs": [],
+    "name": "LimitExceeded",
     "type": "error"
   },
   {
@@ -250,6 +208,11 @@
   },
   {
     "inputs": [],
+    "name": "RequestsNotDelivered",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "ResumedExpected",
     "type": "error"
   },
@@ -266,6 +229,37 @@
   {
     "inputs": [],
     "name": "SenderNotAllowed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "requestsCount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxRequestsPerReport",
+        "type": "uint256"
+      }
+    ],
+    "name": "ToManyExitRequestsInReport",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TooLargeExitsPerFrame",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TooLargeFrameDuration",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TooLargeMaxExitRequestsLimit",
     "type": "error"
   },
   {
@@ -371,6 +365,11 @@
   },
   {
     "inputs": [],
+    "name": "ZeroFrameDuration",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "ZeroPauseDuration",
     "type": "error"
   },
@@ -430,6 +429,19 @@
     "inputs": [
       {
         "indexed": false,
+        "internalType": "bytes32",
+        "name": "exitRequestsHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ExitDataProcessing",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
         "internalType": "uint256",
         "name": "maxExitRequestsLimit",
         "type": "uint256"
@@ -443,7 +455,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "frameDuration",
+        "name": "frameDurationInSec",
         "type": "uint256"
       }
     ],
@@ -723,12 +735,25 @@
   },
   {
     "inputs": [],
-    "name": "EXIT_REPORT_LIMIT_ROLE",
+    "name": "EXIT_REQUEST_LIMIT_MANAGER_ROLE",
     "outputs": [
       {
         "internalType": "bytes32",
         "name": "",
         "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXIT_TYPE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -763,19 +788,6 @@
   {
     "inputs": [],
     "name": "MANAGE_CONSENSUS_VERSION_ROLE",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "MAX_VALIDATORS_PER_BATCH_ROLE",
     "outputs": [
       {
         "internalType": "bytes32",
@@ -881,7 +893,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "maxValidatorsPerBatch",
+        "name": "maxValidatorsPerReport",
         "type": "uint256"
       },
       {
@@ -896,7 +908,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "frameDuration",
+        "name": "frameDurationInSec",
         "type": "uint256"
       }
     ],
@@ -973,6 +985,25 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "exitRequestsHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getDeliveryTimestamp",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "deliveryDateTimestamp",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getExitRequestLimitFullInfo",
     "outputs": [
@@ -988,7 +1019,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "frameDuration",
+        "name": "frameDurationInSec",
         "type": "uint256"
       },
       {
@@ -1000,37 +1031,6 @@
         "internalType": "uint256",
         "name": "currentExitRequestsLimit",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "exitRequestsHash",
-        "type": "bytes32"
-      }
-    ],
-    "name": "getExitRequestsDeliveryHistory",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "uint32",
-            "name": "lastDeliveredExitDataIndex",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "timestamp",
-            "type": "uint32"
-          }
-        ],
-        "internalType": "struct IValidatorsExitBus.DeliveryHistory[]",
-        "name": "",
-        "type": "tuple[]"
       }
     ],
     "stateMutability": "view",
@@ -1051,7 +1051,7 @@
   },
   {
     "inputs": [],
-    "name": "getMaxRequestsPerBatch",
+    "name": "getMaxValidatorsPerReport",
     "outputs": [
       {
         "internalType": "uint256",
@@ -1266,7 +1266,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "maxValidatorsPerBatch",
+        "name": "maxValidatorsPerRequest",
         "type": "uint256"
       },
       {
@@ -1281,7 +1281,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "frameDuration",
+        "name": "frameDurationInSec",
         "type": "uint256"
       }
     ],
@@ -1412,7 +1412,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "frameDuration",
+        "name": "frameDurationInSec",
         "type": "uint256"
       }
     ],
@@ -1429,7 +1429,7 @@
         "type": "uint256"
       }
     ],
-    "name": "setMaxRequestsPerBatch",
+    "name": "setMaxValidatorsPerReport",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1472,7 +1472,7 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct IValidatorsExitBus.ExitRequestsData",
+        "internalType": "struct ValidatorsExitBus.ExitRequestsData",
         "name": "request",
         "type": "tuple"
       }
@@ -1574,7 +1574,7 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct IValidatorsExitBus.ExitRequestsData",
+        "internalType": "struct ValidatorsExitBus.ExitRequestsData",
         "name": "exitsData",
         "type": "tuple"
       },

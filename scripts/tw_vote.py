@@ -250,16 +250,17 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         #     ])
         # ),
         # --- Triggerable Withdrawals Gateway (TWG)
-        (
-            f"{next(item_idx)}. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector",
-            agent_forward([
-                encode_oz_grant_role(
-                    contract=contracts.triggerable_withdrawals_gateway,
-                    role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
-                    grant_to=contracts.cs_ejector,
-                )
-            ])
-        ),
+        # TODO: uncomment after CSM deploy
+        # (
+        #     f"{next(item_idx)}. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector",
+        #     agent_forward([
+        #         encode_oz_grant_role(
+        #             contract=contracts.triggerable_withdrawals_gateway,
+        #             role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
+        #             grant_to=contracts.cs_ejector,
+        #         )
+        #     ])
+        # ),
         (
             f"{next(item_idx)}. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB",
             agent_forward([
@@ -279,9 +280,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             f"{next(item_idx)}. Call finalizeUpgrade_v2 on WithdrawalVault",
             (
                 contracts.withdrawal_vault.address,
-                contracts.withdrawal_vault.finalizeUpgrade_v2.encode_input(
-                    contracts.agent,
-                ),
+                contracts.withdrawal_vault.finalizeUpgrade_v2.encode_input(),
             )
         ),
         # --- AO
@@ -439,7 +438,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             f"{next(item_idx)}. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01",
             agent_forward([
                 encode_oz_grant_role(
-                    contract=contracts.withdrawal_vault,
+                    contract=contracts.triggerable_withdrawals_gateway,
                     role_name="PAUSE_ROLE",
                     grant_to=DEVNET_01_ADDRESS,
                 )
@@ -449,7 +448,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             f"{next(item_idx)}. Add RESUME_ROLE for WV to the TEMP-DEVNET-01",
             agent_forward([
                 encode_oz_grant_role(
-                    contract=contracts.withdrawal_vault,
+                    contract=contracts.triggerable_withdrawals_gateway,
                     role_name="RESUME_ROLE",
                     grant_to=DEVNET_01_ADDRESS,
                 )
@@ -475,231 +474,232 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
                 )
             ])
         ),
+         # TODO: uncomment after CSM deploy
         # --- CSM
-        (
-            f"{next(item_idx)}. Upgrade CSM implementation on proxy",
-            agent_forward([
-                encode_proxy_upgrade_to(
-                    contracts.csm,
-                    CSM_IMPL_V2_ADDRESS,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Call `finalizeUpgradeV2()` on CSM contract",
-            (
-                contracts.csm.address,
-                contracts.csm.finalizeUpgradeV2.encode_input(),
-            ),
-        ),
-        (
-            f"{next(item_idx)}. Upgrade CSAccounting implementation on proxy",
-            agent_forward([
-                encode_proxy_upgrade_to(
-                    contracts.cs_accounting,
-                    CS_ACCOUNTING_IMPL_V2_ADDRESS,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract",
-            (
-                contracts.cs_accounting.address,
-                contracts.cs_accounting.finalizeUpgradeV2.encode_input(CS_CURVES),
-            ),
-        ),
-        (
-            f"{next(item_idx)}. Upgrade CSFeeOracle implementation on proxy",
-            agent_forward([
-                encode_proxy_upgrade_to(
-                    contracts.cs_fee_oracle,
-                    CS_FEE_ORACLE_IMPL_V2_ADDRESS,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract",
-            (
-                contracts.cs_fee_oracle.address,
-                contracts.cs_fee_oracle.finalizeUpgradeV2.encode_input(3),
-            ),
-        ),
-        (
-            f"{next(item_idx)}. Upgrade CSFeeDistributor implementation on proxy",
-            agent_forward([
-                encode_proxy_upgrade_to(
-                    contracts.cs_fee_distributor,
-                    CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract",
-            (
-                contracts.cs_fee_distributor.address,
-                contracts.cs_fee_distributor.finalizeUpgradeV2.encode_input(contracts.agent),
-            ),
-        ),
-        (
-            f"{next(item_idx)}. Revoke SET_BOND_CURVE_ROLE on CSAccounting from CSM",
-            agent_forward([
-                encode_oz_revoke_role(
-                    contract=contracts.cs_accounting,
-                    role_name="SET_BOND_CURVE_ROLE",
-                    revoke_from=contracts.csm,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Revoke RESET_BOND_CURVE_ROLE on CSAccounting from CSM",
-            agent_forward([
-                encode_oz_revoke_role(
-                    contract=contracts.cs_accounting,
-                    role_name="RESET_BOND_CURVE_ROLE",
-                    revoke_from=contracts.csm,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Revoke RESET_BOND_CURVE_ROLE on CSAccounting from CSM committee",
-            agent_forward([
-                encode_oz_revoke_role(
-                    contract=contracts.cs_accounting,
-                    role_name="RESET_BOND_CURVE_ROLE",
-                    revoke_from=CSM_COMMITTEE_MS,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Grant CREATE_NODE_OPERATOR_ROLE on CSM to the permissionless gate",
-            agent_forward([
-                encode_oz_grant_role(
-                    contract=contracts.csm,
-                    role_name="CREATE_NODE_OPERATOR_ROLE",
-                    grant_to=contracts.cs_permissionless_gate,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Grant CREATE_NODE_OPERATOR_ROLE on CSM to the vetted gate",
-            agent_forward([
-                encode_oz_grant_role(
-                    contract=contracts.csm,
-                    role_name="CREATE_NODE_OPERATOR_ROLE",
-                    grant_to=contracts.cs_vetted_gate,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Grant SET_BOND_CURVE_ROLE on CSAccounting to the vetted gate",
-            agent_forward([
-                encode_oz_grant_role(
-                    contract=contracts.cs_accounting,
-                    role_name="SET_BOND_CURVE_ROLE",
-                    grant_to=contracts.cs_vetted_gate,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Revoke VERIFIER_ROLE on CSM from the previous instance of CSVerifier",
-            agent_forward([
-                encode_oz_revoke_role(
-                    contract=contracts.csm,
-                    role_name="VERIFIER_ROLE",
-                    revoke_from=contracts.cs_verifier,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Grant VERIFIER_ROLE on CSM to the new instance of CSVerifier",
-            agent_forward([
-                encode_oz_grant_role(
-                    contract=contracts.csm,
-                    role_name="VERIFIER_ROLE",
-                    grant_to=contracts.cs_verifier_v2,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Revoke PAUSE_ROLE on CSM from the previous GateSeal instance",
-            agent_forward([
-                encode_oz_revoke_role(
-                    contract=contracts.csm,
-                    role_name="PAUSE_ROLE",
-                    revoke_from=CS_GATE_SEAL_ADDRESS,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Revoke PAUSE_ROLE on CSAccounting from the previous GateSeal instance",
-            agent_forward([
-                encode_oz_revoke_role(
-                    contract=contracts.cs_accounting,
-                    role_name="PAUSE_ROLE",
-                    revoke_from=CS_GATE_SEAL_ADDRESS,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Revoke PAUSE_ROLE on CSFeeOracle from the previous GateSeal instance",
-            agent_forward([
-                encode_oz_revoke_role(
-                    contract=contracts.cs_fee_oracle,
-                    role_name="PAUSE_ROLE",
-                    revoke_from=CS_GATE_SEAL_ADDRESS,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Grant PAUSE_ROLE on CSM to the new GateSeal instance",
-            agent_forward([
-                encode_oz_grant_role(
-                    contract=contracts.csm,
-                    role_name="PAUSE_ROLE",
-                    grant_to=CS_GATE_SEAL_V2_ADDRESS,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Grant PAUSE_ROLE on CSAccounting to the new GateSeal instance",
-            agent_forward([
-                encode_oz_grant_role(
-                    contract=contracts.cs_accounting,
-                    role_name="PAUSE_ROLE",
-                    grant_to=CS_GATE_SEAL_V2_ADDRESS,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Grant PAUSE_ROLE on CSFeeOracle to the new GateSeal instance",
-            agent_forward([
-                encode_oz_grant_role(
-                    contract=contracts.cs_fee_oracle,
-                    role_name="PAUSE_ROLE",
-                    grant_to=CS_GATE_SEAL_V2_ADDRESS,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Revoke REQUEST_BURN_SHARES_ROLE on Burner from CSAccounting",
-            agent_forward([
-                encode_oz_revoke_role(
-                    contract=contracts.burner,
-                    role_name="REQUEST_BURN_SHARES_ROLE",
-                    revoke_from=contracts.cs_accounting,
-                )
-            ])
-        ),
-        (
-            f"{next(item_idx)}. Grant REQUEST_BURN_MY_STETH_ROLE on Burner to CSAccounting",
-            agent_forward([
-                encode_oz_grant_role(
-                    contract=contracts.burner,
-                    role_name="REQUEST_BURN_MY_STETH_ROLE",
-                    grant_to=contracts.cs_accounting,
-                )
-            ])
-        ),
+        # (
+        #     f"{next(item_idx)}. Upgrade CSM implementation on proxy",
+        #     agent_forward([
+        #         encode_proxy_upgrade_to(
+        #             contracts.csm,
+        #             CSM_IMPL_V2_ADDRESS,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Call `finalizeUpgradeV2()` on CSM contract",
+        #     (
+        #         contracts.csm.address,
+        #         contracts.csm.finalizeUpgradeV2.encode_input(),
+        #     ),
+        # ),
+        # (
+        #     f"{next(item_idx)}. Upgrade CSAccounting implementation on proxy",
+        #     agent_forward([
+        #         encode_proxy_upgrade_to(
+        #             contracts.cs_accounting,
+        #             CS_ACCOUNTING_IMPL_V2_ADDRESS,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract",
+        #     (
+        #         contracts.cs_accounting.address,
+        #         contracts.cs_accounting.finalizeUpgradeV2.encode_input(CS_CURVES),
+        #     ),
+        # ),
+        # (
+        #     f"{next(item_idx)}. Upgrade CSFeeOracle implementation on proxy",
+        #     agent_forward([
+        #         encode_proxy_upgrade_to(
+        #             contracts.cs_fee_oracle,
+        #             CS_FEE_ORACLE_IMPL_V2_ADDRESS,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract",
+        #     (
+        #         contracts.cs_fee_oracle.address,
+        #         contracts.cs_fee_oracle.finalizeUpgradeV2.encode_input(3),
+        #     ),
+        # ),
+        # (
+        #     f"{next(item_idx)}. Upgrade CSFeeDistributor implementation on proxy",
+        #     agent_forward([
+        #         encode_proxy_upgrade_to(
+        #             contracts.cs_fee_distributor,
+        #             CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract",
+        #     (
+        #         contracts.cs_fee_distributor.address,
+        #         contracts.cs_fee_distributor.finalizeUpgradeV2.encode_input(contracts.agent),
+        #     ),
+        # ),
+        # (
+        #     f"{next(item_idx)}. Revoke SET_BOND_CURVE_ROLE on CSAccounting from CSM",
+        #     agent_forward([
+        #         encode_oz_revoke_role(
+        #             contract=contracts.cs_accounting,
+        #             role_name="SET_BOND_CURVE_ROLE",
+        #             revoke_from=contracts.csm,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Revoke RESET_BOND_CURVE_ROLE on CSAccounting from CSM",
+        #     agent_forward([
+        #         encode_oz_revoke_role(
+        #             contract=contracts.cs_accounting,
+        #             role_name="RESET_BOND_CURVE_ROLE",
+        #             revoke_from=contracts.csm,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Revoke RESET_BOND_CURVE_ROLE on CSAccounting from CSM committee",
+        #     agent_forward([
+        #         encode_oz_revoke_role(
+        #             contract=contracts.cs_accounting,
+        #             role_name="RESET_BOND_CURVE_ROLE",
+        #             revoke_from=CSM_COMMITTEE_MS,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Grant CREATE_NODE_OPERATOR_ROLE on CSM to the permissionless gate",
+        #     agent_forward([
+        #         encode_oz_grant_role(
+        #             contract=contracts.csm,
+        #             role_name="CREATE_NODE_OPERATOR_ROLE",
+        #             grant_to=contracts.cs_permissionless_gate,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Grant CREATE_NODE_OPERATOR_ROLE on CSM to the vetted gate",
+        #     agent_forward([
+        #         encode_oz_grant_role(
+        #             contract=contracts.csm,
+        #             role_name="CREATE_NODE_OPERATOR_ROLE",
+        #             grant_to=contracts.cs_vetted_gate,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Grant SET_BOND_CURVE_ROLE on CSAccounting to the vetted gate",
+        #     agent_forward([
+        #         encode_oz_grant_role(
+        #             contract=contracts.cs_accounting,
+        #             role_name="SET_BOND_CURVE_ROLE",
+        #             grant_to=contracts.cs_vetted_gate,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Revoke VERIFIER_ROLE on CSM from the previous instance of CSVerifier",
+        #     agent_forward([
+        #         encode_oz_revoke_role(
+        #             contract=contracts.csm,
+        #             role_name="VERIFIER_ROLE",
+        #             revoke_from=contracts.cs_verifier,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Grant VERIFIER_ROLE on CSM to the new instance of CSVerifier",
+        #     agent_forward([
+        #         encode_oz_grant_role(
+        #             contract=contracts.csm,
+        #             role_name="VERIFIER_ROLE",
+        #             grant_to=contracts.cs_verifier_v2,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Revoke PAUSE_ROLE on CSM from the previous GateSeal instance",
+        #     agent_forward([
+        #         encode_oz_revoke_role(
+        #             contract=contracts.csm,
+        #             role_name="PAUSE_ROLE",
+        #             revoke_from=CS_GATE_SEAL_ADDRESS,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Revoke PAUSE_ROLE on CSAccounting from the previous GateSeal instance",
+        #     agent_forward([
+        #         encode_oz_revoke_role(
+        #             contract=contracts.cs_accounting,
+        #             role_name="PAUSE_ROLE",
+        #             revoke_from=CS_GATE_SEAL_ADDRESS,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Revoke PAUSE_ROLE on CSFeeOracle from the previous GateSeal instance",
+        #     agent_forward([
+        #         encode_oz_revoke_role(
+        #             contract=contracts.cs_fee_oracle,
+        #             role_name="PAUSE_ROLE",
+        #             revoke_from=CS_GATE_SEAL_ADDRESS,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Grant PAUSE_ROLE on CSM to the new GateSeal instance",
+        #     agent_forward([
+        #         encode_oz_grant_role(
+        #             contract=contracts.csm,
+        #             role_name="PAUSE_ROLE",
+        #             grant_to=CS_GATE_SEAL_V2_ADDRESS,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Grant PAUSE_ROLE on CSAccounting to the new GateSeal instance",
+        #     agent_forward([
+        #         encode_oz_grant_role(
+        #             contract=contracts.cs_accounting,
+        #             role_name="PAUSE_ROLE",
+        #             grant_to=CS_GATE_SEAL_V2_ADDRESS,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Grant PAUSE_ROLE on CSFeeOracle to the new GateSeal instance",
+        #     agent_forward([
+        #         encode_oz_grant_role(
+        #             contract=contracts.cs_fee_oracle,
+        #             role_name="PAUSE_ROLE",
+        #             grant_to=CS_GATE_SEAL_V2_ADDRESS,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Revoke REQUEST_BURN_SHARES_ROLE on Burner from CSAccounting",
+        #     agent_forward([
+        #         encode_oz_revoke_role(
+        #             contract=contracts.burner,
+        #             role_name="REQUEST_BURN_SHARES_ROLE",
+        #             revoke_from=contracts.cs_accounting,
+        #         )
+        #     ])
+        # ),
+        # (
+        #     f"{next(item_idx)}. Grant REQUEST_BURN_MY_STETH_ROLE on Burner to CSAccounting",
+        #     agent_forward([
+        #         encode_oz_grant_role(
+        #             contract=contracts.burner,
+        #             role_name="REQUEST_BURN_MY_STETH_ROLE",
+        #             grant_to=contracts.cs_accounting,
+        #         )
+        #     ])
+        # ),
     )
 
     vote_items = bake_vote_items(list(vote_descriptions), list(call_script_items))
