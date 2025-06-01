@@ -67,6 +67,7 @@ poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
 ```
 You can use the following shortcuts:
 - `make test` run all tests on Hardhat node
+- `make test vote=XXX` run all tests on Hardhat node with applied Vote #XXX
 - `make test-1/2`, `make test-2/2` run tests divided into 2 parts (can be run asynchronously)
 - `make test-1/3`, `make test-2/3`, `make test-3/3` run tests divided into 3 parts (can be run asynchronously)
 
