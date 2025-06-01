@@ -11,7 +11,11 @@ define run_3rd_test
 endef
 
 test:
+ifdef vote
+	OMNIBUS_VOTE_IDS=$(vote) poetry run brownie test --network mfh-1
+else
 	poetry run brownie test --network mfh-1
+endif
 
 test-1/2:
 	poetry run brownie test tests/*.py tests/regression/test_staking_router_stake_distribution.py --network mfh-1
