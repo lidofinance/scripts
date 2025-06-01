@@ -207,7 +207,12 @@ def vote_ids_from_env() -> [int]:
         try:
             vote_ids_str = os.getenv(ENV_OMNIBUS_VOTE_IDS)
             vote_ids = [int(s) for s in vote_ids_str.split(",")]
-            print(f"OMNIBUS_VOTE_IDS env var is set, using existing votes {vote_ids}")
+            
+            # print to stdout even if suppressed
+            capmanager = request.config.pluginmanager.getplugin("capturemanager")
+            with capmanager.global_and_fixture_disabled():
+                print(f"OMNIBUS_VOTE_IDS env var is set, using existing votes {vote_ids}")
+            
             return vote_ids
         except:
             pass
