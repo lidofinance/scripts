@@ -85,7 +85,12 @@ def test_steth(contract):
 
 def test_lido_state(contract):
     stake_limit = contract.getStakeLimitFullInfo()
-    (total_exited_validators, _, _) = contracts.staking_router.getStakingModuleSummary(1)
+
+    modules = contracts.staking_router.getStakingModules()
+    total_exited_validators = sum(
+        contracts.staking_router.getStakingModuleSummary(module[0])[0] 
+        for module in modules
+    )
 
     assert stake_limit["isStakingPaused"] == False
     assert stake_limit["isStakingLimitSet"] == True
