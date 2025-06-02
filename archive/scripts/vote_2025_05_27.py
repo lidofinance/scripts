@@ -28,6 +28,8 @@ IV. Change Easy Track limits for Liquidity Observation Lab (LOL)
 17. Increase the limit from 2,100 to 6,000 stETH and extend the duration from 3 to 6 months on LOL AllowedRecipientsRegistry `0x48c4929630099b217136b64089E8543dB0E5163a`
 
 Vote #187, initiated on 21/05/2025, did not reach a quorum
+
+Vote passed & executed on Jun-01-2025 09:56:59 AM UTC, block #22609101.
 """
 
 import time
@@ -36,7 +38,7 @@ from brownie import interface
 from brownie.network.transaction import TransactionReceipt
 from utils.agent import agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
-from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_description 
+from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_description
 from utils.config import (
     contracts,
     get_deployer_account,
