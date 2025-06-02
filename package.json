@@ -4,7 +4,6 @@
   "description": "Repository for Lido DAO Aragon voting scripts.",
   "authors": "Lido devteam",
   "license": "MIT",
-  "type": "module",
   "readme": "README.md",
   "homepage": "https://mainnet.lido.fi",
   "dependencies": {
