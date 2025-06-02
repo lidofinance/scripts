@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: lidofinance/core
-          path: core
+          path: lidofinance-core
           ref: feat/vaults
           sparse-checkout: true
           sparse-checkout-paths: |
@@ -65,6 +65,5 @@ jobs:
             --env RPC_URL=http://host.docker.internal:8555 \
             --env NETWORK_STATE_FILE=deployed-mainnet-upgrade.json \
             --add-host=host.docker.internal:host-gateway \
-            -v $(pwd)/deployed-mainnet-upgrade.json:/app/deployed-mainnet-upgrade.json \
+            -v $(pwd)/lidofinance-core/deployed-mainnet-upgrade.json:/app/deployed-mainnet-upgrade.json \
             ghcr.io/lidofinance/core-integration-tests:latest
-
