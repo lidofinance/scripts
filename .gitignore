@@ -32,5 +32,8 @@ yarn-error.log
 # local env
 .envrc
 
-# Docker 
+# Docker
 /cache
+.wake
+
+cache

@@ -1,6 +1,13 @@
 live:
   - name: Ethereum
     networks:
+      - chainid: 1
+        explorer: https://api.etherscan.io/api
+        host: $ETH_RPC_URL
+        id: mainnet
+        multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+        name: Mainnet (Custom RPC)
+        provider: custom
       - chainid: 17000
         explorer: https://api-holesky.etherscan.io/api
         host: https://holesky.infura.io/v3/$WEB3_INFURA_PROJECT_ID
@@ -10,6 +17,12 @@ live:
         multicall2: "0xcA11bde05977b3631167028862bE2a173976CA11"
         name: Holesky (Infura)
         provider: infura
+      - chainid: 560048
+        explorer: https://api-hoodi.etherscan.io/api
+        host: $HOODI_RPC_URL
+        id: hoodi
+        name: Hoodi
+        multicall2: "0xcA11bde05977b3631167028862bE2a173976CA11"
 
 development:
   - cmd: ./ganache.sh
@@ -82,3 +95,18 @@ development:
     timeout: 360
     # https://github.com/mds1/multicall#multicall2-contract-addresses
     multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+
+  - cmd: ./ganache.sh
+    cmd_settings:
+      accounts: 10
+      chain_id: 560048
+      fork: hoodi
+      gas_limit: 30000000
+      mnemonic: brownie
+      port: 8545
+    host: http://127.0.0.1
+    id: hoodi-fork
+    explorer: https://api-hoodi.etherscan.io/api
+    name: Ganache-CLI (Hoodi Fork)
+    timeout: 360
+    multicall2: "0xcA11bde05977b3631167028862bE2a173976CA11"

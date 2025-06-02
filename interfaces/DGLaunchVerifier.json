@@ -1,0 +1,219 @@
+[
+    {
+        "type": "constructor",
+        "inputs": [
+            {
+                "name": "params",
+                "type": "tuple",
+                "internalType": "struct DGLaunchVerifier.ConstructorParams",
+                "components": [
+                    {
+                        "name": "timelock",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "dualGovernance",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "emergencyGovernance",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "emergencyActivationCommittee",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "emergencyExecutionCommittee",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "emergencyProtectionEndDate",
+                        "type": "uint40",
+                        "internalType": "Timestamp"
+                    },
+                    {
+                        "name": "emergencyModeDuration",
+                        "type": "uint32",
+                        "internalType": "Duration"
+                    },
+                    {
+                        "name": "proposalsCount",
+                        "type": "uint256",
+                        "internalType": "uint256"
+                    }
+                ]
+            }
+        ],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "DUAL_GOVERNANCE",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "EMERGENCY_ACTIVATION_COMMITTEE",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "EMERGENCY_EXECUTION_COMMITTEE",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "EMERGENCY_GOVERNANCE",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "EMERGENCY_MODE_DURATION",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint32",
+                "internalType": "Duration"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "EMERGENCY_PROTECTION_END_DATE",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint40",
+                "internalType": "Timestamp"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "PROPOSALS_COUNT",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "TIMELOCK",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "verify",
+        "inputs": [],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "event",
+        "name": "DGLaunchConfigurationValidated",
+        "inputs": [],
+        "anonymous": false
+    },
+    {
+        "type": "error",
+        "name": "EmergencyModeEnabledAfterLaunch",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "InvalidDGLaunchConfigAddress",
+        "inputs": [
+            {
+                "name": "paramName",
+                "type": "string",
+                "internalType": "string"
+            },
+            {
+                "name": "expectedValue",
+                "type": "address",
+                "internalType": "address"
+            },
+            {
+                "name": "actualValue",
+                "type": "address",
+                "internalType": "address"
+            }
+        ]
+    },
+    {
+        "type": "error",
+        "name": "InvalidDGLaunchConfigParameter",
+        "inputs": [
+            {
+                "name": "paramName",
+                "type": "string",
+                "internalType": "string"
+            },
+            {
+                "name": "expectedValue",
+                "type": "uint256",
+                "internalType": "uint256"
+            },
+            {
+                "name": "actualValue",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ]
+    }
+]
