@@ -1,7 +1,7 @@
 import Web3 from 'web3';
 const web3 = new Web3('http://127.0.0.1:8545');
 
-async function checkContractState(slot: any) {
+async function checkContractState(slot) {
   const slotPosition = slot.slotAddress || web3.utils.keccak256(slot.slotName || '');
 
   let onChainValue;
@@ -16,16 +16,27 @@ async function checkContractState(slot: any) {
       for (const [key, expectedValue] of slot.expectedMap.entries()) {
         onChainValue = await web3.eth.getStorageAt(slot.contractAddress, key);
         if (onChainValue.toLowerCase() !== expectedValue.toLowerCase()) {
-          console.error(`Mismatch at ${slot.contractName} - ${key}`);
+          logStorageSlotChange(slot, onChainValue);
         }
       }
     }
   } else {
     onChainValue = await web3.eth.getStorageAt(slot.contractAddress, slotPosition);
     if (onChainValue.toLowerCase() !== slot.expected.toLowerCase()) {
-      console.error(`Mismatch at ${slot.contractName}`);
+      logStorageSlotChange(slot, onChainValue);
     }
   }
+}
+
+function logStorageSlotChange(slot, newValue) {
+  const description =
+    `🚨 Storage slot value changed\n\n` + 
+    `Value of the storage slot ${slot.id}${slot.slotName !== null ? ': ' + slot.slotName : ''}\n` +
+    `for contract ${slot.contractAddress} (${slot.contractName}) has changed!\n` +
+    `Prev value: ${slot.expected}\n\n` +
+    `New value: ${newValue}`;
+
+  console.error(description);
 }
 
 async function main() {
