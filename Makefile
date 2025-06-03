@@ -1,7 +1,7 @@
 node:
 	npx hardhat node --fork ${ETH_RPC_URL}
 
-check-slots:
+slots:
 	@echo "Input https://github.com/lidofinance/protocol-onchain-mon-bots/blob/main/bots/ethereum-steth-v2/src/utils/constants.ts file content (end with Ctrl+D):"
 	@cat > user_input.ts
 	@echo "Checking storage slots against 127.0.0.1:8545..."
