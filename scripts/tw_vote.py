@@ -143,6 +143,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             29. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01
             30. Add RESUME_ROLE for VEB to the TEMP-DEVNET-01
             --- CSM ---
+            TODO add DG-related steps for CSM. Need to grant Pause/Revoke roles to ResealManager
             31. Upgrade CSM implementation on proxy
             32. Upgrade CSAccounting implementation on proxy
             33. Upgrade CSFeeOracle implementation on proxy
