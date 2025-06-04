@@ -31,3 +31,6 @@ test-2/3:
 
 test-3/3:
 	$(call run_3rd_test,brownie test -k 'not test_sanity_checks.py and not test_accounting_oracle_extra_data_full_items.py and not test_staking_router_stake_distribution.py' --network mfh-3)
+
+docker:
+	docker exec -it scripts /bin/bash
