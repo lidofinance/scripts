@@ -134,7 +134,7 @@ def find_metadata_by_vote_id(vote_id: int) -> str:
     return str(events_after_voting["StartVote"]["metadata"])
 
 
-def _print_points(human_readable_script, vote_descriptions, cid: str) -> bool:
+def _print_points(human_readable_script, encoded_script, vote_descriptions, cid: str) -> bool:
     print("\nPoints of voting:")
     total = len(human_readable_script)
     for ind, call in enumerate(human_readable_script):
@@ -142,6 +142,10 @@ def _print_points(human_readable_script, vote_descriptions, cid: str) -> bool:
         print(f'Description: {color("green")}{vote_descriptions[ind]}.{color}')
         print(calls_info_pretty_print(call))
         print("---------------------------")
+
+    print(f"Encoded script bytes: {color('green')}{encoded_script}{color}")
+    print("---------------------------")
+
     if cid:
         print(f"Description cid: {color('green')}{make_lido_vote_cid(cid)}{color}")
         print(f"Description preview url: {color('cyan')}{get_url_by_cid(cid)}{color}")
@@ -222,7 +226,8 @@ def confirm_vote_script(
                 )
             ]
 
-        agree = _print_points(human_readable_script, vote_descriptions, cid)
+        agree = _print_points(human_readable_script, encoded_call_script, vote_descriptions, cid)
+
         if not agree:
             return False
 

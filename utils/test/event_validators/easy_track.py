@@ -2,6 +2,7 @@ from typing import NamedTuple
 
 from brownie.network.event import EventDict
 from .common import validate_events_chain
+from brownie import convert
 
 
 class EVMScriptFactoryAdded(NamedTuple):
@@ -10,7 +11,10 @@ class EVMScriptFactoryAdded(NamedTuple):
 
 
 def validate_evmscript_factory_added_event(
-    event: EventDict, p: EVMScriptFactoryAdded, _events_chain=["LogScriptCall", "EVMScriptFactoryAdded"]
+    event: EventDict,
+    p: EVMScriptFactoryAdded,
+    _events_chain=["LogScriptCall", "EVMScriptFactoryAdded"],
+    emitted_by: str | None = None,
 ):
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -18,9 +22,14 @@ def validate_evmscript_factory_added_event(
 
     assert event["EVMScriptFactoryAdded"]["_evmScriptFactory"] == p.factory_addr
     assert event["EVMScriptFactoryAdded"]["_permissions"] == p.permissions
+    if emitted_by is not None:
+        event_emitted_by = convert.to_address(event["EVMScriptFactoryAdded"]["_emitted_by"])
+        assert event_emitted_by == convert.to_address(
+            emitted_by
+        ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
 
 
-def validate_evmscript_factory_removed_event(event: EventDict, factory_addr: str):
+def validate_evmscript_factory_removed_event(event: EventDict, factory_addr: str, emitted_by: str | None = None):
     _events_chain = ["LogScriptCall", "EVMScriptFactoryRemoved"]
 
     validate_events_chain([e.name for e in event], _events_chain)
@@ -28,9 +37,16 @@ def validate_evmscript_factory_removed_event(event: EventDict, factory_addr: str
     assert event.count("EVMScriptFactoryRemoved") == 1
 
     assert event["EVMScriptFactoryRemoved"]["_evmScriptFactory"] == factory_addr
+    if emitted_by is not None:
+        event_emitted_by = convert.to_address(event["EVMScriptFactoryRemoved"]["_emitted_by"])
+        assert event_emitted_by == convert.to_address(
+            emitted_by
+        ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
 
 
-def validate_motions_count_limit_changed_event(event: EventDict, motions_count_limit: int):
+def validate_motions_count_limit_changed_event(
+    event: EventDict, motions_count_limit: int, emitted_by: str | None = None
+):
     _events_chain = ["LogScriptCall", "MotionsCountLimitChanged"]
 
     validate_events_chain([e.name for e in event], _events_chain)
@@ -38,3 +54,8 @@ def validate_motions_count_limit_changed_event(event: EventDict, motions_count_l
     assert event.count("MotionsCountLimitChanged") == 1
 
     assert event["MotionsCountLimitChanged"]["_newMotionsCountLimit"] == motions_count_limit
+    if emitted_by is not None:
+        event_emitted_by = convert.to_address(event["MotionsCountLimitChanged"]["_emitted_by"])
+        assert event_emitted_by == convert.to_address(
+            emitted_by
+        ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
