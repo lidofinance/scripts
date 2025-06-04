@@ -1,9 +1,8 @@
-from brownie import interface, reverts, chain
+from brownie import accounts, interface, reverts, chain, convert, web3, ZERO_ADDRESS
 from brownie.network.event import EventDict
-
 from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS
+from utils.permission_parameters import ArgumentValue, Op, Param, encode_permission_params
 from utils.test.easy_track_helpers import (
-    TEST_RELAY,
     create_and_enact_add_mev_boost_relay_motion,
     create_and_enact_remove_mev_boost_relay_motion,
     create_and_enact_edit_mev_boost_relay_motion,
@@ -21,7 +20,7 @@ from utils.test.event_validators.oracle_report_sanity_checker import (
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 from utils.test.event_validators.allowed_recipients_registry import validate_set_limit_parameter_event
 from utils.test.tx_tracing_helpers import group_voting_events
-from scripts.vote_2025_05_21 import start_vote
+from scripts.vote_2025_05_27 import start_vote
 from utils.test.tx_tracing_helpers import display_voting_events
 from utils.test.csm_helpers import csm_add_node_operator, get_ea_member
 from utils.voting import find_metadata_by_vote_id
@@ -53,6 +52,8 @@ STETH_LOL_PERIOD_AFTER = 6
 STETH_LOL_PERIOD_START_AFTER = 1735689600  # Wed Jan 01 2025 00:00:00 GMT+0000
 STETH_LOL_PERIOD_END_AFTER = 1751328000  # Tue Jul 01 2025 00:00:00 GMT+0000
 
+STETH_TRANSFER_MAX_DELTA = 2
+
 # Addresses
 RMC_MULTISIG_ADDRESS = "0x98be4a407Bff0c125e25fBE9Eb1165504349c37d"
 STETH_LOL_TRUSTED_CALLER = "0x87D93d9B2C672bf9c9642d853a8682546a5012B5"
@@ -69,6 +70,9 @@ LIDO_AND_STETH = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
 STETH_LOL_REGISTRY = "0x48c4929630099b217136b64089E8543dB0E5163a"
 EASY_TRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 
+FINANCE = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
+ACL = "0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb"
+
 EASYTRACK_EVMSCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 EASYTRACK_MEV_BOOST_ADD_RELAYS_FACTORY = "0x00A3D6260f70b1660c8646Ef25D0820EFFd7bE60"
 EASYTRACK_MEV_BOOST_REMOVE_RELAYS_FACTORY = "0x9721c0f77E3Ea40eD592B9DCf3032DaF269c0306"
@@ -82,7 +86,7 @@ EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE = "0x60b9982471bc0620c7b74959f48a86
 APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE = "0x14ca7b84baa11a976283347b0159b8ddf2dcf5fd5cf613cc567a3423cf510119"
 INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE = "0xebfa317a5d279811b024586b17a50f48924bce86f6293b233927322d7209b507"
 
-IPFS_DESCRIPTION_HASH = "bafkreianaxww5wtng4nnqpni65vi2dtvvlqntd72y2wdh4xj7ae7qyqk4m"
+IPFS_DESCRIPTION_HASH = "bafkreiaaajffwx5yho4ynfgn47le3jp4jheqaqzviw22fhtizxooz5ffd4"
 
 
 def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
@@ -104,7 +108,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
     stETH_LOL_multisig = accounts.at(STETH_LOL_TRUSTED_CALLER, force=True)
     stETH_token = interface.StETH(LIDO_AND_STETH)
 
-    
     # =======================================================================
     # ========================= Before voting tests =========================
     # =======================================================================
@@ -226,6 +229,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, ldo_holder, stranger):
         lol_spendable_balance_before,
         lol_amount_spent_before,
         stranger,
+        agent,
     )
 
 
@@ -411,6 +415,7 @@ def validate_stETH_LOL_registry_limit_parameters_update(
     lol_spendable_balance_before,
     lol_amount_spent_before,
     stranger,
+    agent,
 ):
     # 17) Increase the limit from 2,100 to 6,000 stETH and extend the duration from 3 to 6 months on LOL AllowedRecipientsRegistry
     lol_budget_limit_after, lol_period_duration_months_after = stETH_LOL_registry.getLimitParameters()
@@ -434,6 +439,42 @@ def validate_stETH_LOL_registry_limit_parameters_update(
         emitted_by=STETH_LOL_REGISTRY,
     )
 
+    finance = interface.Finance(FINANCE)
+    acl = interface.ACL(ACL)
+
+    # top up agent balance with 12k stETH and bump permission limit to create payments for 10k stETH
+    # both are arbitrary values large enough to avoid issues when fork test when run close to the end of the current period
+    top_up_agent_ldo_amount = 12_000 * 10**18
+    new_agent_spend_amount = 10_000 * 10**18
+
+    eth_whale = accounts.at("0x00000000219ab540356cBB839Cbe05303d7705Fa", force=True)
+    if stETH_token.balanceOf(agent) < top_up_agent_ldo_amount:
+        stETH_token.submit(
+            ZERO_ADDRESS, {"from": eth_whale, "value": top_up_agent_ldo_amount + 2 * STETH_TRANSFER_MAX_DELTA}
+        )
+        stETH_token.transfer(agent, top_up_agent_ldo_amount + STETH_TRANSFER_MAX_DELTA, {"from": eth_whale})
+    assert stETH_token.balanceOf(agent) >= top_up_agent_ldo_amount, "Insufficient stETH balance"
+
+    token_arg_index = 0  # assumes the token address is the 1st argument
+    amount_arg_index = 2  # assumes the amount is the 3rd argument
+    # elevate permissions for the amount of max stETH transfer at once
+    # this is required in order to create and enact fewer motions to transfer a huge amount stETH
+    perm_manager = acl.getPermissionManager(finance, convert.to_uint(web3.keccak(text="CREATE_PAYMENTS_ROLE")))
+    acl.grantPermissionP(
+        EASYTRACK_EVMSCRIPT_EXECUTOR,
+        finance,
+        convert.to_uint(web3.keccak(text="CREATE_PAYMENTS_ROLE")),
+        encode_permission_params(
+            [
+                # 1) ensure token == stETH
+                Param(token_arg_index, Op.EQ, ArgumentValue(LIDO_AND_STETH)),
+                # 2) ensure amount <= stETH_limit
+                Param(amount_arg_index, Op.LTE, ArgumentValue(new_agent_spend_amount)),
+            ]
+        ),
+        {"from": perm_manager},
+    )
+
     limit_test(
         easy_track,
         stETH_LOL_registry.spendableBalance(),
@@ -442,7 +483,7 @@ def validate_stETH_LOL_registry_limit_parameters_update(
         stETH_LOL_multisig,
         stranger,
         stETH_token,
-        1000 * 10**18,
+        new_agent_spend_amount,
     )
 
     # partial withdrawal of 3000 steth in H2'2025
@@ -455,7 +496,8 @@ def validate_stETH_LOL_registry_limit_parameters_update(
     # wait until H2'2025
     chain.sleep(h2_motion_time - chain.time())
     chain.mine()
-    assert chain.time() == h2_motion_time
+
+    assert chain.time() >= h2_motion_time
 
     # pay 1000 steth
     create_and_enact_payment_motion(
@@ -495,6 +537,7 @@ def validate_stETH_LOL_registry_limit_parameters_update(
     assert lol_period_start_h2 == h2_period_start
     assert lol_period_end_h2 == h2_period_end
     assert stETH_LOL_registry.spendableBalance() == 3000 * 10**18
+
 
 # Helpers
 def limit_test(

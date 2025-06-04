@@ -1,5 +1,5 @@
 """
-Voting 21/05/2025
+Voting 27/05/2025
 
 I. Post-pectra upgrade
 
@@ -26,6 +26,10 @@ III. CSM: Reduce keyRemovalCharge
 
 IV. Change Easy Track limits for Liquidity Observation Lab (LOL)
 17. Increase the limit from 2,100 to 6,000 stETH and extend the duration from 3 to 6 months on LOL AllowedRecipientsRegistry `0x48c4929630099b217136b64089E8543dB0E5163a`
+
+Vote #187, initiated on 21/05/2025, did not reach a quorum
+
+Vote passed & executed on Jun-01-2025 09:56:59 AM UTC, block #22609101.
 """
 
 import time
@@ -34,7 +38,7 @@ from brownie import interface
 from brownie.network.transaction import TransactionReceipt
 from utils.agent import agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
-from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_description 
+from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_description
 from utils.config import (
     contracts,
     get_deployer_account,
@@ -65,13 +69,13 @@ NEW_LOL_PERIOD = 6  # months
 
 DESCRIPTION = """Contains separate updates approved by Lido DAO via Snapshot voting:
 
-1. **Post-Pectra update:** adjust Oracle Report Sanity Checker parameters to align with reduced slashing penalty and updated validator churn limits. Items 1-9.
+1. **Post-Pectra update:** adjust Oracle Report Sanity Checker parameters to align with reduced slashing penalty and updated validator churn limits. Items 1-9.  
 [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xb6559f0cdb1164ae5d63769827c4a275805bd944392a17b60cf51ddc54429dc6) | Audited by [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Oracle%20v5%2004-25.pdf)
-2. **Add Easy Track Factories** for managing MEV-Boost Relay Allowed List. Items 10-13.
-[Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xf1074ec134595ba8ba6f802c5e505fda32e6ab93e9763d1e43001f439241b7c9) | Audit and deploy verification by [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20RMC%20EasyTrack%20Security%20Audit%20Report%2005-2025.pdf)
-3. **Reduce `keyRemovalCharge`** for the Community Staking Module. Items 14-16.
+2. **Add Easy Track Factories** for managing MEV-Boost Relay Allowed List. Items 10-13.  
+[Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xf1074ec134595ba8ba6f802c5e505fda32e6ab93e9763d1e43001f439241b7c9) | Audit and deploy verification by [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20RMC%20EasyTrack%20Security%20Audit%20Report%2005-2025.pdf) 
+3. **Reduce `keyRemovalCharge`** for the Community Staking Module. Items 14-16.  
 [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xcd1c1a051888efd495d97458ae9fa4fe5198616eb3d92a71d3352d9f25e79c4e)
-4. **Increase Easy Track security limit** for [Liquidity Observation Lab](https://docs.lido.fi/multisigs/committees/#281-liquidity-observation-lab-committee-ethereum) from 2,100&nbsp;stETH per&nbsp;3&nbsp;months to 6,000&nbsp;stETH per&nbsp;6&nbsp;months. Item 17.
+4. **Increase Easy Track security limit** for [Liquidity Observation Lab](https://docs.lido.fi/multisigs/committees/#281-liquidity-observation-lab-committee-ethereum) from 2,100 stETH per 3 months to 6,000 stETH per 6 months. Item 17.  
 [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x3ecd09e4c0f22d25c711ca5777c49c22d144385b85dd7f696ca6cc66cc0ca157)
 """
 
