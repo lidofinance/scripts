@@ -23,7 +23,7 @@ jobs:
           vote: "normal"
           infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
           etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
-          command: "make test-1/2"
+          command: "make test-1/3"
 
   run-tests-normal-2:
     name: Brownie fork NORMAL tests 2
@@ -38,4 +38,19 @@ jobs:
           vote: "normal"
           infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
           etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
-          command: "make test-2/2"
+          command: "make test-2/3"
+
+  run-tests-normal-3:
+    name: Brownie fork NORMAL tests 3
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 100
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Main action
+        uses: ./.github/actions/brownie_fork_tests
+        with:
+          vote: "normal"
+          infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
+          etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
+          command: "make test-3/3"
