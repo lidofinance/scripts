@@ -21,6 +21,7 @@ from functools import wraps
 ENV_OMNIBUS_BYPASS_EVENTS_DECODING = "OMNIBUS_BYPASS_EVENTS_DECODING"
 ENV_PARSE_EVENTS_FROM_LOCAL_ABI = "PARSE_EVENTS_FROM_LOCAL_ABI"
 ENV_OMNIBUS_VOTE_IDS = "OMNIBUS_VOTE_IDS"
+ENV_DUAL_GOVERNANCE_PROPOSAL_IDS = "DUAL_GOVERNANCE_PROPOSAL_IDS"
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -209,6 +210,20 @@ def vote_ids_from_env() -> [int]:
             vote_ids = [int(s) for s in vote_ids_str.split(",")]
             print(f"OMNIBUS_VOTE_IDS env var is set, using existing votes {vote_ids}")
             return vote_ids
+        except:
+            pass
+
+    return []
+
+
+@pytest.fixture(scope="session")
+def proposal_ids_from_env() -> [int]:
+    if os.getenv(ENV_DUAL_GOVERNANCE_PROPOSAL_IDS):
+        try:
+            proposal_ids_str = os.getenv(ENV_DUAL_GOVERNANCE_PROPOSAL_IDS)
+            proposal_ids = [int(s) for s in proposal_ids_str.split(",")]
+            print(f"DUAL_GOVERNANCE_PROPOSAL_IDS env var is set, skipping the vote, using existing proposals {proposal_ids}")
+            return proposal_ids
         except:
             pass
 

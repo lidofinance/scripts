@@ -1,6 +1,6 @@
 import os
 
-from brownie import chain
+from brownie import chain, accounts
 from utils.config import contracts
 from utils.import_current_votes import start_and_execute_votes
 
@@ -31,7 +31,7 @@ DUAL_GOVERNANCE_STATE = {
 }
 
 
-def execute_vote(helpers, vote_ids_from_env, accounts, stranger):
+def execute_vote(helpers, vote_ids_from_env, stranger):
     if vote_ids_from_env:
         helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
     else:
@@ -45,42 +45,56 @@ def execute_vote(helpers, vote_ids_from_env, accounts, stranger):
         oracle_report(cl_diff=ETH(523), exclude_vaults_balances=False)
     
 
-def execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, accounts, stranger):
+def execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, proposal_ids_from_env, stranger):    
+    if proposal_ids_from_env:
+        new_proposal_ids = proposal_ids_from_env
+    else:
+        proposals_count_before = contracts.emergency_protected_timelock.getProposalsCount()
+        execute_vote(helpers, vote_ids_from_env, stranger)
+        proposals_count_after = contracts.emergency_protected_timelock.getProposalsCount()
+        if proposals_count_after == proposals_count_before:
+            return
+        new_proposal_ids = list(range(proposals_count_before + 1, proposals_count_after + 1))
+    process_proposals(new_proposal_ids)
+
+
+def process_proposals(proposal_ids):
     executor = accounts[0]
-    proposals_count_before = contracts.emergency_protected_timelock.getProposalsCount()
-    execute_vote(helpers, vote_ids_from_env, accounts, stranger)
-    proposals_count_after = contracts.emergency_protected_timelock.getProposalsCount()
-
-    if proposals_count_after == proposals_count_before:
-        return
-
-    new_proposal_ids = list(range(proposals_count_before + 1, proposals_count_after + 1))
 
     after_submit_delay = contracts.emergency_protected_timelock.getAfterSubmitDelay()
     after_schedule_delay = contracts.emergency_protected_timelock.getAfterScheduleDelay()
 
-    chain.sleep(after_submit_delay + 1)
-    contracts.dual_governance.activateNextState({"from": executor})
+    submitted_proposals = []
+    scheduled_proposals = []
 
-    first_proposal_id = new_proposal_ids[0]
-
-    while not contracts.dual_governance.canScheduleProposal(first_proposal_id):
-        wait_for_normal_state()
-        contracts.dual_governance.activateNextState({"from": executor})
-
-    for proposal_id in new_proposal_ids:
-        contracts.dual_governance.scheduleProposal(proposal_id, {"from": executor})
-    
-    chain.sleep(after_schedule_delay + 1)
-    for proposal_id in new_proposal_ids:
-        contracts.emergency_protected_timelock.execute(proposal_id, {"from": executor})
-
-    for proposal_id in new_proposal_ids:
+    for proposal_id in proposal_ids:
         (_, _, _, _, proposal_status) = contracts.emergency_protected_timelock.getProposalDetails(proposal_id)
-        assert proposal_status == PROPOSAL_STATUS["executed"], f"Proposal {proposal_id} execution failed"
-    
+        if proposal_status == PROPOSAL_STATUS["submitted"]:
+            submitted_proposals.append(proposal_id)
+        elif proposal_status == PROPOSAL_STATUS["scheduled"]:
+            scheduled_proposals.append(proposal_id)
 
-def wait_for_normal_state():
+    if len(submitted_proposals):
+        chain.sleep(after_submit_delay + 1)
+
+        first_proposal_id = submitted_proposals[0]
+        while not contracts.dual_governance.canScheduleProposal(first_proposal_id):
+            wait_for_normal_state(executor)
+
+        for proposal_id in submitted_proposals:
+            contracts.dual_governance.scheduleProposal(proposal_id, {"from": executor})
+            scheduled_proposals.append(proposal_id)
+
+    if len(scheduled_proposals):
+        chain.sleep(after_schedule_delay + 1)
+
+        for proposal_id in scheduled_proposals:
+            contracts.emergency_protected_timelock.execute(proposal_id, {"from": executor})
+            (_, _, _, _, proposal_status) = contracts.emergency_protected_timelock.getProposalDetails(proposal_id)
+            assert proposal_status == PROPOSAL_STATUS["executed"], f"Proposal {proposal_id} execution failed"
+
+
+def wait_for_normal_state(executor):
     # https://github.com/lidofinance/dual-governance/blob/main/contracts/interfaces/IDualGovernance.sol#L15
     state_details = contracts.dual_governance.getStateDetails()
 
@@ -93,21 +107,15 @@ def wait_for_normal_state():
         remaining_time = veto_signalling_activated_at + veto_signalling_duration - chain.time()
         if remaining_time > 0:
             chain.sleep(remaining_time + 1)
-        return
-
-    # https://github.com/lidofinance/dual-governance/blob/main/contracts/ImmutableDualGovernanceConfigProvider.sol#L98
-    config = contracts.dual_governance_config_provider.getDualGovernanceConfig()
-
-    veto_signalling_deactivation_max_duration = config[4]
-    veto_cooldown_duration = config[5]
-    remaining_time = 0
 
     if effective_state == DUAL_GOVERNANCE_STATE["veto_signalling_deactivation"]:
+        # https://github.com/lidofinance/dual-governance/blob/main/contracts/ImmutableDualGovernanceConfigProvider.sol#L98
+        config = contracts.dual_governance_config_provider.getDualGovernanceConfig()
+        veto_signalling_deactivation_max_duration = config[4]
+
         remaining_time = persisted_state_entered_at + veto_signalling_deactivation_max_duration - chain.time()
 
-    if effective_state == DUAL_GOVERNANCE_STATE["veto_cooldown"]:
-        remaining_time = persisted_state_entered_at + veto_cooldown_duration - chain.time()
-
-    if remaining_time > 0:
-        chain.sleep(remaining_time + 1)
-    return
+        if remaining_time > 0:
+            chain.sleep(remaining_time + 1)
+        
+    contracts.dual_governance.activateNextState({"from": executor})

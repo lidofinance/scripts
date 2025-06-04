@@ -140,31 +140,6 @@ def validate_dual_governance_governance_launch_verification_event(event: EventDi
 
     validate_events_chain([e.name for e in event], _events_chain)
 
-@pytest.fixture(scope="function", autouse=True)
-def prepare_activated_dg_state():
-    timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
-    if timelock.getEmergencyGovernance() == DAO_EMERGENCY_GOVERNANCE_DRY_RUN:
-        dg_impersonated = accounts.at(timelock.getGovernance(), force=True)
-        if timelock.getProposalsCount() == 0:
-            timelock.submit(
-                DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-                [(TIMELOCK, 0, timelock.setEmergencyGovernance.encode_input(DAO_EMERGENCY_GOVERNANCE))],
-                {"from": dg_impersonated},
-            )
-
-        after_submit_delay = timelock.getAfterSubmitDelay()
-        chain.sleep(after_submit_delay + 1)
-
-        timelock.schedule(1, {"from": dg_impersonated})
-
-        after_schedule_delay = timelock.getAfterScheduleDelay()
-        chain.sleep(after_schedule_delay + 1)
-
-        timelock.execute(1, {"from": dg_impersonated})
-
-        assert timelock.getEmergencyGovernance() == DAO_EMERGENCY_GOVERNANCE
-        assert timelock.getProposalsCount() == 1
-
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     acl = interface.ACL(ACL)
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
