@@ -36,3 +36,4 @@ jobs:
           vote: "large"
           infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
           etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
+          command: "poetry run brownie test --network mfh-1"
