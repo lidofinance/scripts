@@ -1,5 +1,5 @@
 import math
-from brownie import ZERO_ADDRESS, chain
+from brownie import ZERO_ADDRESS, chain, web3
 
 from utils.test.node_operators_helpers import distribute_reward
 from utils.test.oracle_report_helpers import oracle_report
@@ -17,8 +17,11 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     curated_module_id = 1
     simple_dvt_module_id = 2
 
+    if not (contracts.acl.hasPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_CONTROL_ROLE"))):
+        contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_CONTROL_ROLE"), {"from": contracts.agent})
+
     initial_stake_limit = contracts.lido.getCurrentStakeLimit()
-    contracts.lido.removeStakingLimit({"from": accounts.at(contracts.voting, force=True)})
+    contracts.lido.removeStakingLimit({"from": accounts.at(contracts.agent, force=True)})
     """ report """
     while contracts.withdrawal_queue.getLastRequestId() != contracts.withdrawal_queue.getLastFinalizedRequestId():
         # finalize all current requests first
@@ -27,7 +30,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
         contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale.address, "value": ETH(10000)})
 
     contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale.address, "value": ETH(10000)})
-    contracts.lido.setStakingLimit(initial_stake_limit, initial_stake_limit, {"from": accounts.at(contracts.voting, force=True)})
+    contracts.lido.setStakingLimit(initial_stake_limit, initial_stake_limit, {"from": accounts.at(contracts.agent, force=True)})
 
     # get accidentally unaccounted stETH shares on WQ contract
     uncounted_steth_shares = contracts.lido.sharesOf(contracts.withdrawal_queue)
