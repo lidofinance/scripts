@@ -254,8 +254,8 @@ def protocol_permissions():
                 "REMOVE_PROTECTED_TOKEN_ROLE": [],
                 "DESIGNATE_SIGNER_ROLE": [],
                 "ADD_PRESIGNED_HASH_ROLE": [],
-                "EXECUTE_ROLE": [VOTING, DUAL_GOVERNANCE_EXECUTORS[0]],
-                "RUN_SCRIPT_ROLE": [VOTING, DUAL_GOVERNANCE_EXECUTORS[0]],
+                "EXECUTE_ROLE": [DUAL_GOVERNANCE_EXECUTORS[0]],
+                "RUN_SCRIPT_ROLE": [DUAL_GOVERNANCE_EXECUTORS[0]],
                 "TRANSFER_ROLE": [FINANCE],
             },
         },
@@ -317,11 +317,11 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
-                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS],
+                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS, RESEAL_MANAGER],
                 "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE": [CSM_COMMITTEE_MS],
                 "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
                 "VERIFIER_ROLE": [CS_VERIFIER_ADDRESS],
-                "RESUME_ROLE": [],
+                "RESUME_ROLE": [RESEAL_MANAGER],
                 "MODULE_MANAGER_ROLE": [],
                 "RECOVERER_ROLE": [],
             },
@@ -334,8 +334,8 @@ def protocol_permissions():
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "SET_BOND_CURVE_ROLE": [CSM_ADDRESS, CSM_COMMITTEE_MS],
                 "RESET_BOND_CURVE_ROLE": [CSM_ADDRESS, CSM_COMMITTEE_MS],
-                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS],
-                "RESUME_ROLE": [],
+                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
                 "ACCOUNTING_MANAGER_ROLE": [],
                 "MANAGE_BOND_CURVES_ROLE": [],
                 "RECOVERER_ROLE": [],
@@ -358,10 +358,10 @@ def protocol_permissions():
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
                 "MANAGE_CONSENSUS_VERSION_ROLE": [],
-                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS],
+                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS, RESEAL_MANAGER],
                 "CONTRACT_MANAGER_ROLE": [],
                 "SUBMIT_DATA_ROLE": [],
-                "RESUME_ROLE": [],
+                "RESUME_ROLE": [RESEAL_MANAGER],
                 "RECOVERER_ROLE": [],
             },
         },
@@ -502,21 +502,21 @@ def active_aragon_roles(protocol_permissions):
 
     event_signature_hash = w3.keccak(text="SetPermission(address,address,bytes32,bool)").hex()
 
-    def fetch_events_in_batches(start_block, end_block, step=100000):
+    def fetch_events_in_batches(start_block, end_block, provider=web3, step=100000):
         """Fetch events in batches of `step` blocks with a progress bar."""
         events = []
         total_batches = (end_block - start_block) // step + 1
         with tqdm(total=total_batches, desc="Fetching Events") as pbar:
             for batch_start in range(start_block, end_block, step):
                 batch_end = min(batch_start + step - 1, end_block)
-                batch_events = w3.eth.filter(
+                batch_events = provider.eth.filter(
                         {"address": contracts.acl.address, "fromBlock": batch_start, "toBlock": batch_end, "topics": [event_signature_hash]}
                 ).get_all_entries()
                 events.extend(batch_events)
                 pbar.update(1)
         return events
 
-    events_before_voting = fetch_events_in_batches(ACL_DEPLOY_BLOCK_NUMBER, w3.eth.block_number)
+    events_before_voting = fetch_events_in_batches(ACL_DEPLOY_BLOCK_NUMBER, w3.eth.block_number, w3)
 
     permission_events = _decode_logs(events_before_voting)["SetPermission"]._ordered
 
@@ -524,7 +524,7 @@ def active_aragon_roles(protocol_permissions):
     if len(history) > 0:
         vote_block = history[0].block_number
 
-        events_after_voting = fetch_events_in_batches(vote_block, w3.eth.block_number)
+        events_after_voting = fetch_events_in_batches(vote_block, w3.eth.block_number, web3)
 
         try:
             permission_events_after_voting = _decode_logs(events_after_voting)["SetPermission"]._ordered
