@@ -50,6 +50,8 @@ from utils.config import (
     CS_FEE_DISTRIBUTOR_ADDRESS,
     CS_FEE_ORACLE_ADDRESS,
     CS_ORACLE_HASH_CONSENSUS_ADDRESS,
+    DUAL_GOVERNANCE_EXECUTORS,
+    RESEAL_MANAGER
 )
 
 
@@ -95,8 +97,8 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "PAUSE_ROLE": [GATE_SEAL],
-                "RESUME_ROLE": [],
+                "PAUSE_ROLE": [GATE_SEAL, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
                 "FINALIZE_ROLE": [contracts.lido],
                 "ORACLE_ROLE": [contracts.accounting_oracle],
                 "MANAGE_TOKEN_URI_ROLE": [],
@@ -122,8 +124,8 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "SUBMIT_DATA_ROLE": [],
-                "PAUSE_ROLE": [GATE_SEAL],
-                "RESUME_ROLE": [],
+                "PAUSE_ROLE": [GATE_SEAL, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
                 "MANAGE_CONSENSUS_VERSION_ROLE": [],
             },
@@ -201,21 +203,21 @@ def protocol_permissions():
             "contract_name": "ACL",
             "contract": contracts.acl,
             "type": "AragonApp",
-            "roles": {"CREATE_PERMISSIONS_ROLE": [VOTING]},
+            "roles": {"CREATE_PERMISSIONS_ROLE": [AGENT]},
         },
         ARAGON_KERNEL: {
             "contract_name": "Kernel",
             "contract": contracts.kernel,
             "type": "AragonApp",
-            "roles": {"APP_MANAGER_ROLE": [VOTING]},
+            "roles": {"APP_MANAGER_ROLE": []},
         },
         ARAGON_EVMSCRIPT_REGISTRY: {
             "contract_name": "EVMScriptExecutor",
             "contract": contracts.evm_script_registry,
             "type": "AragonApp",
             "roles": {
-                "REGISTRY_MANAGER_ROLE": [VOTING],
-                "REGISTRY_ADD_EXECUTOR_ROLE": [VOTING],
+                "REGISTRY_MANAGER_ROLE": [],
+                "REGISTRY_ADD_EXECUTOR_ROLE": [],
             },
         },
         TOKEN_MANAGER: {
@@ -226,8 +228,8 @@ def protocol_permissions():
                 "ISSUE_ROLE": [],
                 "ASSIGN_ROLE": [VOTING],
                 "BURN_ROLE": [],
-                "MINT_ROLE": [],
-                "REVOKE_VESTINGS_ROLE": [],
+                "MINT_ROLE": [VOTING],
+                "REVOKE_VESTINGS_ROLE": [VOTING],
             },
         },
         LIDO: {
@@ -235,10 +237,10 @@ def protocol_permissions():
             "contract": contracts.lido,
             "type": "AragonApp",
             "roles": {
-                "PAUSE_ROLE": [VOTING],
-                "STAKING_CONTROL_ROLE": [VOTING],
-                "RESUME_ROLE": [VOTING],
-                "STAKING_PAUSE_ROLE": [VOTING],
+                "PAUSE_ROLE": [],
+                "STAKING_CONTROL_ROLE": [],
+                "RESUME_ROLE": [],
+                "STAKING_PAUSE_ROLE": [],
                 "UNSAFE_CHANGE_DEPOSITED_VALIDATORS_ROLE": [],
             },
         },
@@ -252,8 +254,8 @@ def protocol_permissions():
                 "REMOVE_PROTECTED_TOKEN_ROLE": [],
                 "DESIGNATE_SIGNER_ROLE": [],
                 "ADD_PRESIGNED_HASH_ROLE": [],
-                "EXECUTE_ROLE": [VOTING],
-                "RUN_SCRIPT_ROLE": [VOTING],
+                "EXECUTE_ROLE": [DUAL_GOVERNANCE_EXECUTORS[0]],
+                "RUN_SCRIPT_ROLE": [DUAL_GOVERNANCE_EXECUTORS[0]],
                 "TRANSFER_ROLE": [FINANCE],
             },
         },
@@ -262,8 +264,8 @@ def protocol_permissions():
             "contract": contracts.finance,
             "type": "AragonApp",
             "roles": {
-                "CHANGE_PERIOD_ROLE": [],
-                "CHANGE_BUDGETS_ROLE": [],
+                "CHANGE_PERIOD_ROLE": [VOTING],
+                "CHANGE_BUDGETS_ROLE": [VOTING],
                 "EXECUTE_PAYMENTS_ROLE": [VOTING],
                 "MANAGE_PAYMENTS_ROLE": [VOTING],
                 "CREATE_PAYMENTS_ROLE": [VOTING, EASYTRACK_EVMSCRIPT_EXECUTOR],
@@ -285,9 +287,9 @@ def protocol_permissions():
             "contract": contracts.node_operators_registry,
             "type": "AragonApp",
             "roles": {
-                "MANAGE_SIGNING_KEYS": [VOTING],
+                "MANAGE_SIGNING_KEYS": [],
                 "MANAGE_NODE_OPERATOR_ROLE": [AGENT],
-                "SET_NODE_OPERATOR_LIMIT_ROLE": [VOTING, EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "SET_NODE_OPERATOR_LIMIT_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
                 "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
             },
         },
@@ -315,11 +317,11 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
-                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS],
+                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS, RESEAL_MANAGER],
                 "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE": [CSM_COMMITTEE_MS],
                 "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
                 "VERIFIER_ROLE": [CS_VERIFIER_ADDRESS],
-                "RESUME_ROLE": [],
+                "RESUME_ROLE": [RESEAL_MANAGER],
                 "MODULE_MANAGER_ROLE": [],
                 "RECOVERER_ROLE": [],
             },
@@ -332,8 +334,8 @@ def protocol_permissions():
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "SET_BOND_CURVE_ROLE": [CSM_ADDRESS, CSM_COMMITTEE_MS],
                 "RESET_BOND_CURVE_ROLE": [CSM_ADDRESS, CSM_COMMITTEE_MS],
-                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS],
-                "RESUME_ROLE": [],
+                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
                 "ACCOUNTING_MANAGER_ROLE": [],
                 "MANAGE_BOND_CURVES_ROLE": [],
                 "RECOVERER_ROLE": [],
@@ -356,10 +358,10 @@ def protocol_permissions():
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
                 "MANAGE_CONSENSUS_VERSION_ROLE": [],
-                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS],
+                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS, RESEAL_MANAGER],
                 "CONTRACT_MANAGER_ROLE": [],
                 "SUBMIT_DATA_ROLE": [],
-                "RESUME_ROLE": [],
+                "RESUME_ROLE": [RESEAL_MANAGER],
                 "RECOVERER_ROLE": [],
             },
         },
@@ -503,21 +505,21 @@ def active_aragon_roles(protocol_permissions):
 
     event_signature_hash = w3.keccak(text="SetPermission(address,address,bytes32,bool)").hex()
 
-    def fetch_events_in_batches(start_block, end_block, step=100000):
+    def fetch_events_in_batches(start_block, end_block, provider=web3, step=100000):
         """Fetch events in batches of `step` blocks with a progress bar."""
         events = []
         total_batches = (end_block - start_block) // step + 1
         with tqdm(total=total_batches, desc="Fetching Events") as pbar:
             for batch_start in range(start_block, end_block, step):
                 batch_end = min(batch_start + step - 1, end_block)
-                batch_events = w3.eth.filter(
+                batch_events = provider.eth.filter(
                         {"address": contracts.acl.address, "fromBlock": batch_start, "toBlock": batch_end, "topics": [event_signature_hash]}
                 ).get_all_entries()
                 events.extend(batch_events)
                 pbar.update(1)
         return events
 
-    events_before_voting = fetch_events_in_batches(ACL_DEPLOY_BLOCK_NUMBER, w3.eth.block_number)
+    events_before_voting = fetch_events_in_batches(ACL_DEPLOY_BLOCK_NUMBER, w3.eth.block_number, w3)
 
     permission_events = _decode_logs(events_before_voting)["SetPermission"]._ordered
 
@@ -525,7 +527,7 @@ def active_aragon_roles(protocol_permissions):
     if len(history) > 0:
         vote_block = history[0].block_number
 
-        events_after_voting = fetch_events_in_batches(vote_block, w3.eth.block_number)
+        events_after_voting = fetch_events_in_batches(vote_block, w3.eth.block_number, web3)
 
         try:
             permission_events_after_voting = _decode_logs(events_after_voting)["SetPermission"]._ordered
