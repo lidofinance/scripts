@@ -59,7 +59,7 @@ NOR_EXIT_DEADLINE_IN_SEC = 30 * 60
 
 DEVNET_01_ADDRESS = '0x308eaCED5a0c5C4e717b29eD49300158ddeE8D54'
 
-NOR_VERSION = ["2", "0", "0"]
+NOR_VERSION = ["3", "0", "0"]
 SDVT_VERSION = ["2", "0", "0"]
 
 def _add_implementation_to_repo(repo, version, address, content_uri):
@@ -178,32 +178,23 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
     # simple_dvt_uri = get_repo_uri(simple_dvt_repo)
     print(f"LIDO_LOCATOR_IMPL repo URI: {LIDO_LOCATOR_IMPL}")
     vote_descriptions, call_script_items = zip(
-        (
+         (
             f"{next(item_idx)}. Update locator implementation",
             agent_forward([encode_proxy_upgrade_to(contracts.lido_locator, LIDO_LOCATOR_IMPL)]),
         ),
-        (
-            f"{next(item_idx)}. Update VEBO implementation",
-            agent_forward([
-                encode_proxy_upgrade_to(contracts.validators_exit_bus_oracle, VALIDATORS_EXIT_BUS_ORACLE_IMPL)
-            ])
-        ),
          (
-            f"{next(item_idx)}. Update WithdrawalVault implementation",
-            encode_wv_proxy_upgrade_to(contracts.withdrawal_vault, WITHDRAWAL_VAULT_IMPL)
+            f"{next(item_idx)}. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo",
+            add_implementation_to_nor_app_repo(NOR_VERSION, NODE_OPERATORS_REGISTRY_IMPL, nor_uri),
+        ),
+        (
+            f"{next(item_idx)}. Update `NodeOperatorsRegistry` implementation",
+            update_app_implementation(NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
         ),
         (
             f"{next(item_idx)}. Update SR implementation",
             agent_forward([encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)]),
         ),
-        (
-            f"{next(item_idx)}. Call finalizeUpgrade_v3 on SR",
-            (
-                contracts.staking_router.address,
-                contracts.staking_router.finalizeUpgrade_v3.encode_input(),
-            )
-        ),
-        # --- Triggerable Withdrawals Gateway (TWG)
+
         (
             f"{next(item_idx)}. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector",
             agent_forward([
@@ -214,18 +205,6 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
                 )
             ])
         ),
-        (
-            f"{next(item_idx)}. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB",
-            agent_forward([
-                encode_oz_grant_role(
-                    contract=contracts.triggerable_withdrawals_gateway,
-                    role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
-                    grant_to=contracts.validators_exit_bus_oracle,
-                )
-            ])
-        ),
-
-        # --- Temp ---
         (
             f"{next(item_idx)}. Add PAUSE_ROLE for TWG to the TEMP-DEVNET-01",
             agent_forward([
@@ -247,22 +226,43 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             ])
         ),
         (
-            f"{next(item_idx)}. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01",
+            f"{next(item_idx)}. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG",
             agent_forward([
                 encode_oz_grant_role(
-                    contract=contracts.validators_exit_bus_oracle,
-                    role_name="PAUSE_ROLE",
-                    grant_to=DEVNET_01_ADDRESS,
+                    contract=contracts.staking_router,
+                    role_name="REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE",
+                    grant_to=contracts.triggerable_withdrawals_gateway,
                 )
             ])
         ),
         (
-            f"{next(item_idx)}. Add RESUME_ROLE for VEB to the TEMP-DEVNET-01",
+            f"{next(item_idx)}. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB",
             agent_forward([
                 encode_oz_grant_role(
-                    contract=contracts.validators_exit_bus_oracle,
-                    role_name="RESUME_ROLE",
-                    grant_to=DEVNET_01_ADDRESS,
+                    contract=contracts.triggerable_withdrawals_gateway,
+                    role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
+                    grant_to=contracts.validators_exit_bus_oracle,
+                )
+            ])
+        ),
+
+        (
+            f"{next(item_idx)}. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitDelayVerifier",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.staking_router,
+                    role_name="REPORT_VALIDATOR_EXITING_STATUS_ROLE",
+                    grant_to=contracts.validator_exit_verifier,
+                )
+            ])
+        ),
+        (
+            f"{next(item_idx)}. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitDelayVerifier",
+            agent_forward([
+                encode_oz_grant_role(
+                    contract=contracts.staking_router,
+                    role_name="REPORT_VALIDATOR_EXITING_STATUS_ROLE",
+                    grant_to=contracts.validator_exit_verifier,
                 )
             ])
         ),
@@ -287,6 +287,7 @@ def main():
         "from": get_deployer_account(),
         "priority_fee": get_priority_fee(),
     }
+
 
     vote_id, _ = create_tw_vote(tx_params=tx_params, silent=True)
 
