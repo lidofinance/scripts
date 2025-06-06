@@ -6,7 +6,7 @@ from utils.config import (
     contracts,
 )
 
-def add_node_operator(staking_module, voting, stranger):
+def add_node_operator(staking_module, agent, stranger):
     operator_id = staking_module.getNodeOperatorsCount()
 
     with reverts("APP_AUTH_FAILED"):
@@ -16,7 +16,7 @@ def add_node_operator(staking_module, voting, stranger):
         stranger,
         staking_module,
         convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-        {"from": voting},
+        {"from": agent},
     )
 
     staking_module.addNodeOperator("test", f"0xbb{str(1).zfill(38)}", {"from": stranger} )

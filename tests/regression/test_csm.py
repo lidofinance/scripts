@@ -74,7 +74,9 @@ def pause_modules():
 
 @pytest.fixture
 def remove_stake_limit():
-    contracts.lido.removeStakingLimit({"from": accounts.at(contracts.voting, force=True)})
+    if not (contracts.acl.hasPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_CONTROL_ROLE"))):
+        contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_CONTROL_ROLE"), {"from": contracts.agent})
+    contracts.lido.removeStakingLimit({"from": accounts.at(contracts.agent, force=True)})
 
 
 @pytest.fixture
