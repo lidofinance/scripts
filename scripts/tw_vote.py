@@ -166,8 +166,6 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             50. Grant CSM role PAUSE_ROLE for the new GateSeal instance
             51. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
             52. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
-            53. Revoke Burner role REQUEST_BURN_SHARES_ROLE from the CSAccounting contract
-            54. Grant Burner role REQUEST_BURN_MY_STETH_ROLE to the CSAccounting contract
     """
 
     item_idx = count(1)
@@ -633,26 +631,6 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         #             contract=contracts.cs_fee_oracle,
         #             role_name="PAUSE_ROLE",
         #             grant_to=CS_GATE_SEAL_V2_ADDRESS,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Revoke REQUEST_BURN_SHARES_ROLE on Burner from CSAccounting",
-        #     agent_forward([
-        #         encode_oz_revoke_role(
-        #             contract=contracts.burner,
-        #             role_name="REQUEST_BURN_SHARES_ROLE",
-        #             revoke_from=contracts.cs_accounting,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"{next(item_idx)}. Grant REQUEST_BURN_MY_STETH_ROLE on Burner to CSAccounting",
-        #     agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.burner,
-        #             role_name="REQUEST_BURN_MY_STETH_ROLE",
-        #             grant_to=contracts.cs_accounting,
         #         )
         #     ])
         # ),
