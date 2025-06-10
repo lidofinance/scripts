@@ -233,7 +233,7 @@ export OMNIBUS_VOTE_IDS=156
 To run tests with already submitted DG proposals provide their ids comma-separated:
 
 ```bash
-export DUAL_GOVERNANCE_PROPOSAL_IDS=1,2,3
+export DG_PROPOSAL_IDS=1,2,3
 ```
 
 To use local ABIs for events decoding use:
@@ -294,8 +294,8 @@ See [here](tests/README.md) to learn more about tests
 - To re-use the already created `vote_id` you can pass the `OMNIBUS_VOTE_IDS`
   environment variable (e.g. `OMNIBUS_VOTE_IDS=104`)
 - To re-use multiple created votes list the ids comma-separated (e.g. `OMNIBUS_VOTE_IDS=104,105`)
-- To re-use the already submitted `proposal_id` you can pass the `DUAL_GOVERNANCE_PROPOSAL_IDS`
-  environment variable comma-separated (e.g. `DUAL_GOVERNANCE_PROPOSAL_IDS=13,14`)
+- To re-use the already submitted `proposal_id` you can pass the `DG_PROPOSAL_IDS`
+  environment variable comma-separated (e.g. `DG_PROPOSAL_IDS=13,14`)
 - To force the large CI runner usage, please name your branch with the `large-vote_` prefix.
 
 </br>
