@@ -4,7 +4,6 @@ from typing import NamedTuple, List
 from brownie import web3, chain, interface, ZERO_ADDRESS, reverts, accounts, convert
 from hexbytes import HexBytes
 from scripts.vote_2025_06_25_mainnet_dg_launch import start_vote
-from utils.config import contracts
 from brownie.network.transaction import TransactionReceipt
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.common import validate_events_chain
@@ -67,11 +66,8 @@ CS_MODULE = "0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F"
 CS_ACCOUNTING = "0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da"
 CS_FEE_ORACLE = "0x4D4074628678Bd302921c20573EEa1ed38DdF7FB"
 CS_GATE_SEAL = "0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0"
-
-
-@pytest.fixture(scope="function", autouse=True)
-def prepare_activated_dg_state():
-    pass
+LDO_TOKEN = "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32"
+VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 
 
 class OZValidatedRole(NamedTuple):
@@ -138,15 +134,19 @@ def validate_dg_role_validated_event(event: EventDict, roles: list, emitted_by: 
 def validate_dual_governance_governance_launch_verification_event(event: EventDict):
     _events_chain = ["LogScriptCall", "DGLaunchConfigurationValidated"]
 
+    print(event)
+
     validate_events_chain([e.name for e in event], _events_chain)
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
+    voting = interface.Voting(VOTING)
     acl = interface.ACL(ACL)
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
     agent = interface.Agent(AGENT)
     lido = interface.Lido(LIDO)
     token_manager = interface.TokenManager(TOKEN_MANAGER)
+    ldo_token = interface.ERC20(LDO_TOKEN)
     finance = interface.Finance(FINANCE)
 
     # Lido Permissions Transition
@@ -292,7 +292,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     # START VOTE
     vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
 
-    vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=contracts.voting)
+    vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
 
     # After aragon voting checks - Lido permissions
     assert acl.getPermissionManager(LIDO, STAKING_CONTROL_ROLE) == AGENT
@@ -418,7 +418,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     # metadata = find_metadata_by_vote_id(vote_id)
     # assert get_lido_vote_cid_from_str(metadata) == "bafkreia2qh6xvoowgwukqfyyer2zz266e2jifxovnddgqawruhe2g5asgi"
 
-    assert count_vote_items_by_events(vote_tx, contracts.voting) == 54, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, voting) == 54, "Incorrect voting items count"
 
     # Lido Permissions Transition
     validate_permission_revoke_event(evs[0], Permission(entity=VOTING, app=LIDO, role=STAKING_CONTROL_ROLE.hex()), emitted_by=ACL)
@@ -664,19 +664,19 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     # Check DG execution events
     dg_evs = group_dg_events_from_receipt(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
 
-    # 1. Execution is allowed before Tuesday, 15 July 2025 00:00:00
+    # Execution is allowed before Tuesday, 15 July 2025 00:00:00
     validate_dg_time_constraints_executed_before_event(dg_evs[0], to_be_executed_before_timestamp_proposal, emitted_by=TIME_CONSTRAINTS)
 
-    # 2. Execution is allowed since 04:00 to 22:00 UTC
+    # Execution is allowed since 04:00 to 22:00 UTC
     validate_dg_time_constraints_executed_with_day_time_event(dg_evs[1], to_be_executed_from_time, to_be_executed_to_time, emitted_by=TIME_CONSTRAINTS)
 
-    # 3. Revoke RUN_SCRIPT_ROLE permission from Voting on Agent
+    # Revoke RUN_SCRIPT_ROLE permission from Voting on Agent
     validate_dg_permission_revoke_event(dg_evs[2], Permission(entity=VOTING, app=AGENT, role=RUN_SCRIPT_ROLE.hex()), emitted_by=ACL)
     
-    # 4. Revoke EXECUTE_ROLE permission from Voting on Agent
+    # Revoke EXECUTE_ROLE permission from Voting on Agent
     validate_dg_permission_revoke_event(dg_evs[3], Permission(entity=VOTING, app=AGENT, role=EXECUTE_ROLE.hex()), emitted_by=ACL)
 
-    # 5. Validate roles were updated correctly
+    # Validate roles were updated correctly
     validate_dg_role_validated_event(
         dg_evs[4],
         [
@@ -730,7 +730,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     checkCanPerformAragonRoleManagement(stranger, KERNEL, APP_MANAGER_ROLE, acl, AGENT)
 
     # TokenManager Permissions Transition
-    # 14. Voting has permission to call MINT_ROLE actions
+    # Voting has permission to call MINT_ROLE actions
     assert interface.ERC20(ldo_token).balanceOf(stranger) == 0
     token_manager.mint(stranger, 100, {"from": VOTING})
     assert interface.ERC20(ldo_token).balanceOf(stranger) == 100
@@ -751,6 +751,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
 
     # Voting has permission to call CHANGE_PERIOD_ROLE actions
     period = finance.getPeriodDuration()
+    assert period != 100000
     finance.setPeriodDuration(100000, {"from": VOTING})
     assert finance.getPeriodDuration() == 100000
 

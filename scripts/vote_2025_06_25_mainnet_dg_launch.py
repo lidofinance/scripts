@@ -55,14 +55,17 @@ Dual Governance Launch on Mainnet
 47. Verify Dual Governance launch state
 48. Set an expiration deadline after which the omnibus can no longer be enacted
 """
-import time
 
 from typing import Dict
 from brownie import interface
-from utils.config import get_is_live, get_deployer_account
-from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
+from utils.config import (
+    get_deployer_account,
+    get_is_live,
+    get_priority_fee,
+)
+
 
 voting_contract = "0xcD7d0c2f0aEFF8cBD17702bfa9505421253edE54"
 description = "Dual Governance Launch on Mainnet" # TODO: change description
@@ -92,3 +95,13 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
     return confirm_vote_script(vote_items, silent, desc_ipfs) and list(
         create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
     )
+
+
+def main():
+    tx_params = {"from": get_deployer_account()}
+    if get_is_live():
+        tx_params["priority_fee"] = get_priority_fee()
+
+    vote_id, _ = start_vote(tx_params=tx_params, silent=False)
+
+    vote_id >= 0 and print(f"Vote created: {vote_id}.")
