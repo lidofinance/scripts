@@ -41,6 +41,7 @@ TIME_CONSTRAINTS = "0x2a30F5aC03187674553024296bed35Aa49749DDa"
 ROLES_VALIDATOR = "0x31534e3aFE219B609da3715a00a1479D2A2d7981"
 
 DAO_EMERGENCY_GOVERNANCE_DRY_RUN = "0x75850938C1Aa50B8cC6eb3c00995759dc1425ae6"
+DUAL_GOVERNANCE_LAUNCH_VERIFIER = "0xd48c2fc419569537Bb069BAD2165dC0cEB160CEC"
 
 
 # These addresses can be checked on https://docs.lido.fi/deployed-contracts
@@ -131,10 +132,11 @@ def validate_role_validated_event(event: EventDict, roles: list, emitted_by: str
 def validate_dg_role_validated_event(event: EventDict, roles: list, emitted_by: str = None) -> None:
     _validate_role_events(event, roles, extra_events=["ScriptResult", "Executed"], log_script_count=0, emitted_by=emitted_by)
 
-def validate_dual_governance_governance_launch_verification_event(event: EventDict):
+def validate_dual_governance_governance_launch_verification_event(event: EventDict, emitted_by: str = None):
     _events_chain = ["LogScriptCall", "DGLaunchConfigurationValidated"]
 
-    print(event)
+    if emitted_by is not None:
+        assert convert.to_address(event["DGLaunchConfigurationValidated"]["_emitted_by"]) == convert.to_address(emitted_by), "Wrong event emitter"
 
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -655,7 +657,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     )
 
     # Validate roles were transferred correctly
-    validate_dual_governance_governance_launch_verification_event(evs[52])
+    validate_dual_governance_governance_launch_verification_event(evs[52], emitted_by=DUAL_GOVERNANCE_LAUNCH_VERIFIER)
     
     # Verify state of the DG after launch
     to_be_executed_before_timestamp = 1753466400
