@@ -1,10 +1,9 @@
-import pytest
-
 from typing import NamedTuple, List
-from brownie import web3, chain, interface, ZERO_ADDRESS, reverts, accounts, convert
+from brownie import web3, chain, interface, ZERO_ADDRESS, reverts, convert
 from hexbytes import HexBytes
 from scripts.vote_2025_06_25_mainnet_dg_launch import start_vote
 from brownie.network.transaction import TransactionReceipt
+from utils.dual_governance import wait_for_noon_utc_to_satisfy_time_constrains
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.dual_governance import (
@@ -405,6 +404,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     dual_governance.scheduleProposal(2, {"from": stranger})
 
     chain.sleep(timelock.getAfterScheduleDelay() + 1)
+    wait_for_noon_utc_to_satisfy_time_constrains()
 
     dg_tx: TransactionReceipt = timelock.execute(2, {"from": stranger})
 

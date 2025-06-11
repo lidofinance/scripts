@@ -66,6 +66,7 @@ def process_proposals(proposal_ids):
 
     if len(scheduled_proposals):
         chain.sleep(after_schedule_delay + 1)
+        wait_for_noon_utc_to_satisfy_time_constrains()
 
         for proposal_id in scheduled_proposals:
             contracts.emergency_protected_timelock.execute(proposal_id, {"from": executor})
@@ -98,3 +99,19 @@ def wait_for_normal_state(executor):
             chain.sleep(remaining_time + 1)
         
     contracts.dual_governance.activateNextState({"from": executor})
+
+
+def wait_for_noon_utc_to_satisfy_time_constrains():
+    current_time = chain.time()
+    noon_offset = 12 * 60 * 60
+    seconds_per_day = noon_offset * 2
+    
+    day_start = current_time - (current_time % seconds_per_day)
+    today_noon = day_start + noon_offset
+    
+    if current_time >= today_noon:
+        target_noon = today_noon + seconds_per_day
+    else:
+        target_noon = today_noon
+    
+    chain.sleep(target_noon - current_time)
