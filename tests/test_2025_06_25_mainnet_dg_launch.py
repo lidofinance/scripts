@@ -895,7 +895,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     allowed_tokens_registry.revokeRole(ADD_TOKEN_TO_ALLOWED_LIST_ROLE, stranger, {"from": VOTING})
     assert not allowed_tokens_registry.hasRole(ADD_TOKEN_TO_ALLOWED_LIST_ROLE, stranger)
 
-    # Agent has permission to call DEFAULT_ADMIN_ROLE actions
+    # Agent has no permission to call DEFAULT_ADMIN_ROLE actions
     with reverts(
         f"AccessControl: account {AGENT.lower()} is missing role 0x0000000000000000000000000000000000000000000000000000000000000000"
     ):
