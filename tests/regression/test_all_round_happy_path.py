@@ -17,8 +17,7 @@ def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
     curated_module_id = 1
     simple_dvt_module_id = 2
 
-    if not (contracts.acl.hasPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_CONTROL_ROLE"))):
-        contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_CONTROL_ROLE"), {"from": contracts.agent})
+    contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_CONTROL_ROLE"), {"from": contracts.agent})
 
     initial_stake_limit = contracts.lido.getCurrentStakeLimit()
     contracts.lido.removeStakingLimit({"from": accounts.at(contracts.agent, force=True)})

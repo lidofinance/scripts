@@ -10,16 +10,14 @@ from utils.config import contracts
 @pytest.fixture(scope="function")
 def stop_lido():
     if not contracts.lido.isStopped():
-        if not (contracts.acl.hasPermission(contracts.agent, contracts.lido, web3.keccak(text="PAUSE_ROLE"))):
-            contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="PAUSE_ROLE"), {"from": contracts.agent})
+        contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="PAUSE_ROLE"), {"from": contracts.agent})
         contracts.lido.stop({"from": contracts.agent})
 
 
 @pytest.fixture(scope="function")
 def resume_lido():
     if contracts.lido.isStopped():
-        if not (contracts.acl.hasPermission(contracts.agent, contracts.lido, web3.keccak(text="RESUME_ROLE"))):
-            contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="RESUME_ROLE"), {"from": contracts.agent})
+        contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="RESUME_ROLE"), {"from": contracts.agent})
         contracts.lido.resume({"from": contracts.voting})
 
 @pytest.fixture(scope="function")

@@ -39,27 +39,39 @@ Dual Governance Launch on Mainnet
 36. Grant RESUME_ROLE to ResealManager on WithdrawalQueueERC721
 37. Grant PAUSE_ROLE to ResealManager on ValidatorsExitBusOracle
 38. Grant RESUME_ROLE to ResealManager on ValidatorsExitBusOracle
-39. Grant DEFAULT_ADMIN_ROLE to Voting on AllowedTokensRegistry
-40. Revoke DEFAULT_ADMIN_ROLE from Agent on AllowedTokensRegistry
-41. Revoke ADD_TOKEN_TO_ALLOWED_LIST_ROLE from Agent on AllowedTokensRegistry
-42. Revoke REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE from Agent on AllowedTokensRegistry
-43. Set admin to Agent on WithdrawalVault
-44. Set owner to Voting on InsuranceFund
-45. Validate transferred roles
-46. Submit a proposal to the Dual Governance to:
-    1. Set an expiration deadline after which the omnibus can no longer be enacted
-    2. Set a boundaries for the execution of the omnibus
+39. Grant PAUSE_ROLE to ResealManager on CSModule
+40. Grant RESUME_ROLE to ResealManager on CSModule
+41. Grant PAUSE_ROLE to ResealManager on CSAccounting
+42. Grant RESUME_ROLE to ResealManager on CSAccounting
+43. Grant PAUSE_ROLE to ResealManager on CSFeeOracle
+44. Grant RESUME_ROLE to ResealManager on CSFeeOracle
+45. Grant DEFAULT_ADMIN_ROLE to Voting on AllowedTokensRegistry
+46. Revoke DEFAULT_ADMIN_ROLE from Agent on AllowedTokensRegistry
+47. Revoke ADD_TOKEN_TO_ALLOWED_LIST_ROLE from Agent on AllowedTokensRegistry
+48. Revoke REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE from Agent on AllowedTokensRegistry
+49. Set admin to Agent on WithdrawalVault
+50. Set owner to Voting on InsuranceFund
+51. Validate transferred roles
+52. Submit a proposal to the Dual Governance to:
+    1. Add the "expiration date" to the Dual Governance proposal
+    2. Add the "execution time window" to the Dual Governance proposal
     3. Revoke RUN_SCRIPT_ROLE from Aragon Voting
-    4. Revoke EXECUTE_ROLE from Aragon Voting   
-    5. Validate transferred roles
-47. Verify Dual Governance launch state
-48. Set an expiration deadline after which the omnibus can no longer be enacted
+    4. Revoke EXECUTE_ROLE from Aragon Voting
+    5. Validate roles were updated correctly
+53. Verify Dual Governance launch state
+54. Set an "expiration deadline" after which the omnibus can no longer be enacted
 """
 
 from typing import Dict
 from brownie import interface
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
+from utils.config import (
+    get_deployer_account,
+    get_is_live,
+    get_priority_fee,
+)
+
 
 voting_contract = "0xcD7d0c2f0aEFF8cBD17702bfa9505421253edE54"
 description = "Dual Governance Launch on Mainnet" # TODO: change description
@@ -89,3 +101,13 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
     return confirm_vote_script(vote_items, silent, desc_ipfs) and list(
         create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
     )
+
+
+def main():
+    tx_params = {"from": get_deployer_account()}
+    if get_is_live():
+        tx_params["priority_fee"] = get_priority_fee()
+
+    vote_id, _ = start_vote(tx_params=tx_params, silent=False)
+
+    vote_id >= 0 and print(f"Vote created: {vote_id}.")
