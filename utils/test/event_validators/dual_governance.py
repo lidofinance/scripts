@@ -1,15 +1,11 @@
-from typing import NamedTuple, List
-from web3 import Web3
-
 from brownie.network.event import EventDict
+from brownie import convert
 
 from .common import validate_events_chain
-from brownie.network.transaction import TransactionReceipt
-from utils.test.tx_tracing_helpers import tx_events_from_trace
 
 
 def validate_dual_governance_submit_event(
-    event: EventDict, proposal_id: int, proposer: str, executor: str, metadata: str, proposal_calls: any
+    event: EventDict, proposal_id: int, proposer: str, executor: str, metadata: str, proposal_calls: any, emitted_by: str = None
 ) -> None:
     _events_chain = ["LogScriptCall", "ProposalSubmitted", "ProposalSubmitted"]
 
@@ -30,3 +26,8 @@ def validate_dual_governance_submit_event(
     assert event["ProposalSubmitted"][1]["proposalId"] == proposal_id, "Wrong proposalId"
     assert event["ProposalSubmitted"][1]["proposerAccount"] == proposer, "Wrong proposer"
     assert event["ProposalSubmitted"][1]["metadata"] == metadata, "Wrong metadata"
+
+    if emitted_by is not None:
+        assert convert.to_address(event["ProposalSubmitted"][0]["_emitted_by"]) == convert.to_address(
+            emitted_by
+        ), "Wrong event emitter"

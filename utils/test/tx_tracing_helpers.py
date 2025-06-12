@@ -51,12 +51,13 @@ def display_voting_events(tx: TransactionReceipt) -> None:
     display_tx_events(dict_events, "Events registered during the vote execution", groups)
 
 
+def add_event_emitter(event):
+    event["data"].append({"name": "_emitted_by", "type": "address", "value": event["address"], "decoded": True})
+    return event
+
+
 def group_voting_events(tx: TransactionReceipt) -> List[EventDict]:
     events = tx_events_from_trace(tx)
-
-    def add_event_emitter(event):
-        event["data"].append({"name": "_emitted_by", "type": "address", "value": event["address"], "decoded": True})
-        return event
 
     # manually add event emitter address because it is dropped by EventDict class
     events = [add_event_emitter(e) for e in events]
@@ -94,6 +95,29 @@ def group_voting_events_from_receipt(tx: TransactionReceipt) -> List[EventDict]:
 
         assert current_group != None, "Unexpected events chain"
 
-        current_group.append(event)
+        current_group.append(add_event_emitter(event))
+
+    return [EventDict(group) for group in groups]
+
+
+def group_dg_events_from_receipt(receipt: TransactionReceipt, timelock: str, admin_executor: str) -> List[EventDict]:
+    events = tx_events_from_receipt(receipt)
+
+    assert len(events) >= 1, "Unexpected events count"
+    assert (
+        events[-1]["address"] == timelock and events[-1]["name"] == "ProposalExecuted"
+    ), "Unexpected Dual Governance service event"
+
+    groups = []
+    current_group = []
+
+    for event in events[:-1]:
+        current_group.append(add_event_emitter(event))
+
+        is_end_of_group = event["name"] == "Executed" and event["address"] == admin_executor
+
+        if is_end_of_group:
+            groups.append(current_group)
+            current_group = []
 
     return [EventDict(group) for group in groups]
