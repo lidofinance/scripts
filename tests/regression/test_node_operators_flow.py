@@ -1,6 +1,6 @@
 import pytest
 from web3 import Web3
-from brownie import Wei, convert
+from brownie import Wei, convert, web3
 
 from utils.config import contracts
 from utils.test.keys_helpers import (
@@ -20,16 +20,16 @@ DEPOSIT_SIZE = Wei("32 ether")
 
 
 @pytest.fixture(scope="function", autouse=True)
-def grant_roles(voting_eoa, agent_eoa):
+def grant_roles(agent_eoa):
     contracts.staking_router.grantRole(
-        contracts.staking_router.MANAGE_WITHDRAWAL_CREDENTIALS_ROLE(), voting_eoa, {"from": agent_eoa}
+        contracts.staking_router.MANAGE_WITHDRAWAL_CREDENTIALS_ROLE(), agent_eoa, {"from": agent_eoa}
     )
 
     contracts.acl.grantPermission(
         contracts.voting,
         contracts.node_operators_registry,
         convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-        {"from": contracts.voting},
+        {"from": contracts.agent},
     )
 
 
@@ -41,11 +41,6 @@ def nor(accounts, interface):
 @pytest.fixture(scope="module")
 def agent_eoa(accounts):
     return accounts.at(contracts.agent.address, force=True)
-
-
-@pytest.fixture(scope="module")
-def voting_eoa(accounts):
-    return accounts.at(contracts.voting.address, force=True)
 
 
 @pytest.fixture(scope="module")
@@ -64,13 +59,13 @@ def new_node_operator_id(nor):
     return nor.getNodeOperatorsCount()
 
 
-def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id, evm_script_executor_eoa):
+def test_add_node_operator(nor, agent_eoa, reward_address, new_node_operator_id, evm_script_executor_eoa):
     new_node_operator_name = "new_node_operator"
 
     node_operators_count_before = nor.getNodeOperatorsCount()
     active_node_operators_count_before = nor.getActiveNodeOperatorsCount()
 
-    tx = nor.addNodeOperator(new_node_operator_name, reward_address, {"from": voting_eoa})
+    tx = nor.addNodeOperator(new_node_operator_name, reward_address, {"from": agent_eoa})
 
     node_operator_count_after = nor.getNodeOperatorsCount()
     active_node_operators_count_after = nor.getActiveNodeOperatorsCount()
@@ -158,7 +153,13 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
     new_staking_limit = nor.getTotalSigningKeyCount(new_node_operator_id)
     assert new_staking_limit != node_operator_before["totalVettedValidators"], "invalid new staking limit"
 
-    tx = nor.setNodeOperatorStakingLimit(new_node_operator_id, new_staking_limit, {"from": voting_eoa})
+    contracts.acl.grantPermission(
+        contracts.agent,
+        contracts.node_operators_registry,
+        web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE"),
+        {"from": contracts.agent}
+    )
+    tx = nor.setNodeOperatorStakingLimit(new_node_operator_id, new_staking_limit, {"from": agent_eoa})
 
     nonce_after = nor.getNonce()
     node_operator_after = nor.getNodeOperator(new_node_operator_id, True)
@@ -181,7 +182,7 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
     node_operator_summary_before = nor.getNodeOperatorSummary(new_node_operator_id)
     assert node_operator_before["active"] == True
 
-    tx = nor.deactivateNodeOperator(new_node_operator_id, {"from": voting_eoa})
+    tx = nor.deactivateNodeOperator(new_node_operator_id, {"from": agent_eoa})
 
     node_operators_count_after = nor.getNodeOperatorsCount()
     active_node_operators_count_after = nor.getActiveNodeOperatorsCount()
@@ -210,7 +211,7 @@ def test_add_node_operator(nor, voting_eoa, reward_address, new_node_operator_id
     node_operator_summary_before = nor.getNodeOperatorSummary(new_node_operator_id)
     active_node_operators_count_before = nor.getActiveNodeOperatorsCount()
 
-    tx = nor.activateNodeOperator(new_node_operator_id, {"from": voting_eoa})
+    tx = nor.activateNodeOperator(new_node_operator_id, {"from": agent_eoa})
 
     node_operators_count_after = nor.getNodeOperatorsCount()
     node_operator_summary_after = nor.getNodeOperatorSummary(new_node_operator_id)
