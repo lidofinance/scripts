@@ -382,8 +382,7 @@ def deposit_buffer_for_keys(staking_router, nor_keys_to_deposit, sdvt_keys_to_de
         (exited_keys, deposited_keys, depositable_keys) = summary
         total_depositable_keys += depositable_keys
 
-    if not (contracts.acl.hasPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_CONTROL_ROLE"))):
-        contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_CONTROL_ROLE"), {"from": contracts.agent})
+    contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_CONTROL_ROLE"), {"from": contracts.agent})
 
     contracts.lido.removeStakingLimit({"from": contracts.agent})
     fill_deposit_buffer(total_depositable_keys)

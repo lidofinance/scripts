@@ -2,7 +2,7 @@ import pytest
 from brownie import interface  # type: ignore
 from utils.config import network_name
 
-if network_name() not in ["mainnet", "mainnet-fork", "hoodi", "hoodi-fork"]:
+if network_name() not in ["mainnet", "mainnet-fork", "hoodi", "hoodi-fork", "mfh-1", "mfh-2", "mfh-3"]:
     print(f"""\nSkip DG acceptance tests as it's not deployed on network "f{network_name()}" """)
     pytest.skip(allow_module_level=True)
 
