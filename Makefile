@@ -45,3 +45,6 @@ slots:
 	@echo "Checking storage slots against 127.0.0.1:8545..."
 	@npx tsx slots.ts
 	@rm -f slots.ts
+
+enact:
+	poetry run brownie run $(vote) start_and_execute_vote_on_fork --network=mainnet-fork
