@@ -57,10 +57,8 @@ EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 7200
 
 NOR_EXIT_DEADLINE_IN_SEC = 30 * 60
 
-DEVNET_01_ADDRESS = '0x308eaCED5a0c5C4e717b29eD49300158ddeE8D54'
-
-NOR_VERSION = ["2", "0", "0"]
-SDVT_VERSION = ["2", "0", "0"]
+NOR_VERSION = ["6", "0", "0"]
+SDVT_VERSION = ["6", "0", "0"]
 
 def _add_implementation_to_repo(repo, version, address, content_uri):
     return (repo.address, repo.newVersion.encode_input(version, address, content_uri))
@@ -171,10 +169,10 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
     item_idx = count(1)
 
     nor_repo = contracts.nor_app_repo.address
-    # simple_dvt_repo = contracts.simple_dvt_app_repo.address
+    simple_dvt_repo = contracts.simple_dvt_app_repo.address
 
     nor_uri = get_repo_uri(nor_repo)
-    # simple_dvt_uri = get_repo_uri(simple_dvt_repo)
+    simple_dvt_uri = get_repo_uri(simple_dvt_repo)
     print(f"LIDO_LOCATOR_IMPL repo URI: {LIDO_LOCATOR_IMPL}")
     vote_descriptions, call_script_items = zip(
         # --- locator
@@ -323,23 +321,23 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         ),
         # --- sDVT
         # TODO: Implement after devnet-02
-        # (
-        #     f"{next(item_idx)}. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo",
-        #     add_implementation_to_sdvt_app_repo(SDVT_VERSION, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
-        # ),
-        # (
-        #     f"{next(item_idx)}. Update `SimpleDVT` implementation",
-        #     update_app_implementation(SIMPLE_DVT_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
-        # ),
-        # (
-        #     f"{next(item_idx)}. Call finalizeUpgrade_v4 on sDVT",
-        # (
-        #     contracts.sDVT.address,
-        #     contracts.withdrawal_vault.finalizeUpgrade_v4.encode_input(
-        #         NOR_EXIT_DEADLINE_IN_SEC,
-        #     ),
-        # )
-        # ),
+        (
+            f"{next(item_idx)}. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo",
+            add_implementation_to_sdvt_app_repo(SDVT_VERSION, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
+        ),
+        (
+            f"{next(item_idx)}. Update `SimpleDVT` implementation",
+            update_app_implementation(SIMPLE_DVT_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
+        ),
+        (
+            f"{next(item_idx)}. Call finalizeUpgrade_v4 on sDVT",
+            (
+                contracts.sDVT.address,
+                contracts.withdrawal_vault.finalizeUpgrade_v4.encode_input(
+                    NOR_EXIT_DEADLINE_IN_SEC,
+                ),
+            )
+        ),
         # --- Oracle configs ---
         (
             f"{next(item_idx)}. Grant CONFIG_MANAGER_ROLE role to the AGENT",
