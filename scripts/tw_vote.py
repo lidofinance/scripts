@@ -147,24 +147,25 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             28. Upgrade CSM implementation on proxy
             29. Call `finalizeUpgradeV2()` on CSM contract
             30. Upgrade CSAccounting implementation on proxy
-            31. Upgrade CSFeeOracle implementation on proxy
-            32. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract
-            33. Upgrade CSFeeDistributor implementation on proxy
-            34. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
-            35. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
-            36. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
-            37. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
-            38. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
-            39. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
-            40. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
-            41. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
-            42. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
-            43. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
-            44. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
-            45. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
-            46. Grant CSM role PAUSE_ROLE for the new GateSeal instance
-            47. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
-            48. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
+            31. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract
+            32. Upgrade CSFeeOracle implementation on proxy
+            33. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract
+            34. Upgrade CSFeeDistributor implementation on proxy
+            35. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
+            36. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
+            37. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
+            38. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
+            39. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
+            40. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
+            41. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
+            42. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
+            43. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
+            44. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
+            45. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
+            46. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
+            47. Grant CSM role PAUSE_ROLE for the new GateSeal instance
+            48. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
+            49. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
     """
 
     print(f"LIDO_LOCATOR_IMPL repo URI: {LIDO_LOCATOR_IMPL}")
@@ -411,7 +412,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
                 CS_ACCOUNTING_IMPL_V2_ADDRESS,
             )
         ),
-        # TODO: fix bond curves length error
+        # TODO: fix InvalidBondCurvesLength error
         # (
         #     f"31. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract",
         #     (
