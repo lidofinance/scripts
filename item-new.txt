@@ -1,0 +1,76 @@
+        Triggerable withdrawals voting baking and sending.
+
+        Contains next steps:
+            --- VEB
+            1. Update VEBO implementation
+            2. Call finalizeUpgrade_v2 on VEBO
+            3. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+            4. Bump VEBO consensus version to `4`
+            5. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT
+            6. Grant VEB role SUBMIT_REPORT_HASH_ROLE to the AGENT/ET (TBD)
+            7. Grant VEB role EXIT_REPORT_LIMIT_ROLE role to AGENT
+            8. Call setExitRequestLimit on VEB
+            10. Revoke VEB role EXIT_REPORT_LIMIT_ROLE from the AGENT
+            --- Triggerable Withdrawals Gateway (TWG)
+            12. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector
+            13. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB
+            14. Grant TWG role TW_EXIT_REPORT_LIMIT_ROLE to the AGENT
+            15. Call setExitRequestLimit on TWG
+            16. Revoke TWG role TW_EXIT_REPORT_LIMIT_ROLE from the AGENT
+            --- WV
+            11. Update WithdrawalVault implementation
+            12. Call finalizeUpgrade_v2 on WithdrawalVault
+            13. Grant WithdrawalVault role ADD_WITHDRAWAL_REQUEST_ROLE to the TWG
+            --- AO
+            14. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+            15. Bump AO consensus version to `4`
+            16. Revoke MANAGE_CONSENSUS_VERSION_ROLE from AGENT
+            --- SR
+            17. Update SR implementation
+            18. Grant SR REPORT_EXITED_VALIDATORS_STATUS_ROLE to ValidatorExitVerifier
+            19. Grant SR REPORT_EXITED_VALIDATORS_ROLE to VEB
+            --- NOR
+            20. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
+            21. Update `NodeOperatorsRegistry` implementation
+            22. Call finalizeUpgrade_v4 on NOR
+            --- sDVT
+            23. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
+            24. Update `SimpleDVT` implementation
+            25. Call finalizeUpgrade_v4 on sDVT
+            --- Oracle configs ---
+            30. Grant CONFIG_MANAGER_ROLE role to the AGENT
+            31. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig
+            32. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+            33. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+            34. Add EXIT_EVENTS_LOOKBACK_WINDOW_SLOTS variable to OracleDaemonConfig
+            35. Revoke CONFIG_MANAGER_ROLE from AGENT
+            --- Temp ---
+            40. Add PAUSE_ROLE for WV to the TEMP-DEVNET-01
+            41. Add PAUSE_ROLE for VEB to the TEMP-DEVNET-01
+            42. Add SUBMIT_REPORT_HASH_ROLE for VEB to the TEMP-DEVNET-01
+            --- CSM ---
+            46. Upgrade CSM implementation on proxy
+            47. Upgrade CSAccounting implementation on proxy
+            48. Upgrade CSFeeOracle implementation on proxy
+            49. Upgrade CSFeeDistributor implementation on proxy
+            50. Call `finalizeUpgradeV2(exitPenalties)` on CSM contract
+            51. Call `finalizeUpgradeV2(defaultBondCurve,vettedBondCurve)` on CSAccounting contract
+            52. Call `finalizeUpgradeV2(consensusVersion,strikesContract)` on CSFeeOracle contract
+            53. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
+            54. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
+            55. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
+            56. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
+            57. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
+            58. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
+            59. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
+            60. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
+            61. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
+            62. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
+            63. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
+            64. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
+            65. Grant CSM role PAUSE_ROLE for the new GateSeal instance
+            66. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
+            67. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
+            68. Revoke Burner role REQUEST_BURN_SHARES_ROLE from the CSAccounting contract
+            69. Grant Burner role REQUEST_BURN_MY_STETH_ROLE to the CSAccounting contract
+

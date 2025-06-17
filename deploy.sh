@@ -1,2 +1,4 @@
+# export DEPLOYER=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 export DEPLOYER=0x8943545177806ED17B9F23F0a21ee5948eCaa776
-poetry run brownie run scripts/tw_vote.py --network=hoodi-devnet-remote
+poetry run brownie run scripts/tw_vote_upgrade.py --network=hoodi-devnet-remote
+# 0xbcdf20249abf0ed6d944c0288fad489e33f66b3960d9e6229c1cd214ed3bbe31
