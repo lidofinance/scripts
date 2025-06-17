@@ -51,15 +51,18 @@ Dual Governance Launch on Mainnet
 48. Revoke REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE from Agent on AllowedTokensRegistry
 49. Set admin to Agent on WithdrawalVault
 50. Set owner to Voting on InsuranceFund
-51. Validate transferred roles
-52. Submit a proposal to the Dual Governance to:
+51. Grant APP_MANAGER_ROLE permission to Agent on DAOKernel
+52. Reset RecoveryVaultAppId on DAOKernel
+53. Revoke APP_MANAGER_ROLE permission from Agent on DAOKernel
+54. Validate transferred roles
+55. Submit a proposal to the Dual Governance to:
     1. Add the "expiration date" to the Dual Governance proposal
     2. Add the "execution time window" to the Dual Governance proposal
     3. Revoke RUN_SCRIPT_ROLE from Aragon Voting
     4. Revoke EXECUTE_ROLE from Aragon Voting
     5. Validate roles were updated correctly
-53. Verify Dual Governance launch state
-54. Set an "expiration deadline" after which the omnibus can no longer be enacted
+56. Verify Dual Governance launch state
+57. Set an "expiration deadline" after which the omnibus can no longer be enacted
 """
 
 from typing import Dict
