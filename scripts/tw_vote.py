@@ -592,15 +592,17 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
 
     assert confirm_vote_script({'Dualgov item': dg_vote}, silent, desc_ipfs), 'Vote not confirmed.'
 
-    vote_id = create_vote({'Dualgov item': dg_vote}, tx_params, desc_ipfs=desc_ipfs)
-
+    vote_id = create_vote({'Dualgov item': dg_vote}, tx_params, desc_ipfs=desc_ipfs)[0]
+    print("Vote ID:", vote_id)
     vote_tx = Helpers.execute_vote(
         vote_id=vote_id,
         accounts=accounts,
         dao_voting=contracts.voting,
     )
-    print("ProposalSubmitted", vote_tx.events["ProposalSubmitted"][0])
-    Helpers.execute_dg_proposal(6)
+
+    proposal_id = vote_tx.events["ProposalSubmitted"][0]["id"]
+    print("ProposalSubmitted", proposal_id)
+    Helpers.execute_dg_proposal(proposal_id)
 
     return vote_id
 
@@ -613,7 +615,7 @@ def main():
         "priority_fee": get_priority_fee(),
     }
 
-    vote_id, _ = create_tw_vote(tx_params=tx_params, silent=True)
+    vote_id = create_tw_vote(tx_params=tx_params, silent=True)
 
     if vote_id:
         print(f'Vote [{vote_id}] created.')
