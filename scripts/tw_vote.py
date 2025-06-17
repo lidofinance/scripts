@@ -207,14 +207,12 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # --- locator
         (
             f"1. Update locator implementation",
-            dual_governance_agent_forward([encode_proxy_upgrade_to(contracts.lido_locator, LIDO_LOCATOR_IMPL)]),
+            encode_proxy_upgrade_to(contracts.lido_locator, LIDO_LOCATOR_IMPL),
         ),
         # --- VEB
         (
             f"2. Update VEBO implementation",
-            dual_governance_agent_forward([
-                encode_proxy_upgrade_to(contracts.validators_exit_bus_oracle, VALIDATORS_EXIT_BUS_ORACLE_IMPL)
-            ])
+            encode_proxy_upgrade_to(contracts.validators_exit_bus_oracle, VALIDATORS_EXIT_BUS_ORACLE_IMPL),
         ),
         # (
         #     f"3. Call finalizeUpgrade_v2 on VEBO",
@@ -618,16 +616,18 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
     )
 
-    vote_items = bake_vote_items(list(vote_descriptions), list(call_script_items))
+    bake_vote_items(list(vote_descriptions), list(call_script_items))
+
+    dg_vote = dual_governance_agent_forward(call_script_items)
 
     if silent:
         desc_ipfs = calculate_vote_ipfs_description(TW_DESCRIPTION)
     else:
         desc_ipfs = upload_vote_ipfs_description(TW_DESCRIPTION)
 
-    assert confirm_vote_script(vote_items, silent, desc_ipfs), 'Vote not confirmed.'
+    assert confirm_vote_script({'Dualgov item': dg_vote}, silent, desc_ipfs), 'Vote not confirmed.'
 
-    vote_id = create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
+    vote_id = create_vote({'Dualgov item': dg_vote}, tx_params, desc_ipfs=desc_ipfs)
 
     vote_tx = Helpers.execute_vote(
         vote_id=vote_id,
@@ -636,9 +636,6 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
     )
     print("ProposalSubmitted", vote_tx.events["ProposalSubmitted"][0])
     Helpers.execute_dg_proposal(6)
-    Helpers.execute_dg_proposal(7)
-    import pdb
-    pdb.set_trace()
 
     return vote_id
 
