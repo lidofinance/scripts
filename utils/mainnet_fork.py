@@ -2,6 +2,8 @@ from contextlib import contextmanager
 from brownie import chain, accounts, interface
 
 from utils.config import VOTING, LDO_VOTE_EXECUTORS_FOR_TESTS, get_vote_duration
+from utils.dual_governance import process_proposals
+from utils.config import contracts
 
 
 @contextmanager
@@ -44,7 +46,13 @@ def pass_and_exec_dao_vote(vote_id):
 
     print(f"Executing vote {vote_id}")
 
+    proposals_count_before = contracts.emergency_protected_timelock.getProposalsCount()
     dao_voting.executeVote(vote_id, {"from": helper_acct, "silent": True})
     assert dao_voting.getVote(vote_id)["executed"]
+    proposals_count_after = contracts.emergency_protected_timelock.getProposalsCount()
+    if proposals_count_after > proposals_count_before:
+        new_proposal_ids = list(range(proposals_count_before + 1, proposals_count_after + 1))
+        process_proposals(new_proposal_ids)
 
     print(f"[ok] Vote {vote_id} executed")
+    print(f"[ok] Proposals {new_proposal_ids} processed")
