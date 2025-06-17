@@ -26,15 +26,12 @@ from utils.config import (
     get_deployer_account,
     get_priority_fee,
 )
-from utils.evm_script import encode_call_script
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 from utils.agent import dual_governance_agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.config import get_deployer_account, get_priority_fee
-from utils.agent import dual_governance_submit_proposal, dual_governance_agent_forward
-from utils.kernel import update_app_implementation
-from utils.agent import agent_forward
+from utils.agent import dual_governance_agent_forward
 from tests.conftest import Helpers
 
 try:
@@ -67,15 +64,6 @@ NOR_EXIT_DEADLINE_IN_SEC = 30 * 60
 
 NOR_VERSION = ["6", "0", "0"]
 SDVT_VERSION = ["6", "0", "0"]
-
-def _add_implementation_to_repo(repo, version, address, content_uri):
-    return (repo.address, repo.newVersion.encode_input(version, address, content_uri))
-
-def add_implementation_to_nor_app_repo(version, address, content_uri):
-    return _add_implementation_to_repo(contracts.nor_app_repo, version, address, content_uri)
-
-def add_implementation_to_sdvt_app_repo(version, address, content_uri):
-    return _add_implementation_to_repo(contracts.simple_dvt_app_repo, version, address, content_uri)
 
 def encode_staking_router_proxy_update(implementation: str) -> Tuple[str, str]:
     proxy = interface.OssifiableProxy(contracts.staking_router)
@@ -142,13 +130,13 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             15. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitVerifier
             16. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG
             --- NOR
-            17. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo
+            17. Grant APP_MANAGER_ROLE role to the AGENT on Kernel
             18. Update `NodeOperatorsRegistry` implementation
             19. Call finalizeUpgrade_v4 on NOR
             --- sDVT
-            20. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo
-            21. Update `SimpleDVT` implementation
-            22. Call finalizeUpgrade_v4 on sDVT
+            20. Update `SimpleDVT` implementation
+            21. Call finalizeUpgrade_v4 on sDVT
+            22. Revoke APP_MANAGER_ROLE role from the AGENT on Kernel
             --- Oracle configs ---
             23. Grant CONFIG_MANAGER_ROLE role to the AGENT
             24. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig
@@ -156,37 +144,29 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             26. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
             27. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig
             --- CSM ---
-            32. Upgrade CSM implementation on proxy
-            33. Call `finalizeUpgradeV2()` on CSM contract
-            34. Upgrade CSAccounting implementation on proxy
-            35. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract
-            36. Upgrade CSFeeOracle implementation on proxy
-            37. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract
-            38. Upgrade CSFeeDistributor implementation on proxy
-            39. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
-            40. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
-            41. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
-            42. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
-            43. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
-            44. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
-            45. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
-            46. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
-            47. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
-            48. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
-            49. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
-            50. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
-            51. Grant CSM role PAUSE_ROLE for the new GateSeal instance
-            52. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
-            53. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
+            28. Upgrade CSM implementation on proxy
+            29. Call `finalizeUpgradeV2()` on CSM contract
+            30. Upgrade CSAccounting implementation on proxy
+            31. Upgrade CSFeeOracle implementation on proxy
+            32. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract
+            33. Upgrade CSFeeDistributor implementation on proxy
+            34. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
+            35. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
+            36. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
+            37. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
+            38. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
+            39. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
+            40. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
+            41. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
+            42. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
+            43. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
+            44. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
+            45. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
+            46. Grant CSM role PAUSE_ROLE for the new GateSeal instance
+            47. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
+            48. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
     """
 
-    item_idx = count(1)
-
-    nor_repo = contracts.nor_app_repo.address
-    simple_dvt_repo = contracts.simple_dvt_app_repo.address
-
-    nor_uri = get_repo_uri(nor_repo)
-    simple_dvt_uri = get_repo_uri(simple_dvt_repo)
     print(f"LIDO_LOCATOR_IMPL repo URI: {LIDO_LOCATOR_IMPL}")
     print(f"VALIDATORS_EXIT_BUS_ORACLE_IMPL: {VALIDATORS_EXIT_BUS_ORACLE_IMPL}")
 
@@ -311,7 +291,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         ),
         # # --- NOR and sDVT
         (
-            f"18. Grant APP_MANAGER_ROLE role to the AGENT",
+            f"17. Grant APP_MANAGER_ROLE role to the AGENT",
             (
                 contracts.acl.address,
                 contracts.acl.grantPermission.encode_input(
@@ -341,8 +321,8 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
                 )
             )
         ),
-         (
-            f"18. Update `SDVT` implementation",
+        (
+            f"20. Update `SDVT` implementation",
             (
                 contracts.kernel.address,
                 contracts.kernel.setApp.encode_input(
@@ -353,7 +333,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             )
         ),
         (
-            f"19. Call finalizeUpgrade_v4 on SDVT",
+            f"21. Call finalizeUpgrade_v4 on SDVT",
             (
                 interface.NodeOperatorsRegistry(contracts.simple_dvt).address,
                 interface.NodeOperatorsRegistry(contracts.simple_dvt).finalizeUpgrade_v4.encode_input(
@@ -361,8 +341,8 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
                 )
             )
         ),
-         (
-            f"18. Revoke APP_MANAGER_ROLE role from the AGENT",
+        (
+            f"22. Revoke APP_MANAGER_ROLE role from the AGENT",
             (
                 contracts.acl.address,
                 contracts.acl.revokePermission.encode_input(
