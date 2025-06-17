@@ -127,17 +127,32 @@ class Helpers:
             proposal_id,
             {"from": LDO_HOLDER_ADDRESS_FOR_TESTS},
         )
-
+        print(f"Proposal {proposal_id} scheduled")
         chain.sleep(emergency_protected_timelock.getAfterScheduleDelay() + 1)
         chain.mine()
+        print(f"Proposal {proposal_id} scheduled, waiting for execution")
+        try:
 
-        contracts.emergency_protected_timelock.execute(proposal_id, {"from": LDO_HOLDER_ADDRESS_FOR_TESTS})
+            contracts.emergency_protected_timelock.execute.call(proposal_id, {"from": LDO_HOLDER_ADDRESS_FOR_TESTS})
+
+            contracts.emergency_protected_timelock.execute(proposal_id, {"from": LDO_HOLDER_ADDRESS_FOR_TESTS})
+            print(f"Proposal {proposal_id} executed successfully")
+        except Exception as e:
+            print(f"ERROR executing proposal {proposal_id}:")
+            print(f"Error type: {type(e).__name__}")
+            print(f"Error message: {str(e)}")
+
+            if hasattr(e, 'revert_msg') and e.revert_msg:
+                print(f"Revert message: {e.revert_msg}")
+            import traceback
+            traceback.print_exc()
 
     @staticmethod
     def execute_votes(accounts, vote_ids, dao_voting, topup="10 ether"):
         OBJECTION_PHASE_ID = 1
         for vote_id in vote_ids:
             print(f"Vote #{vote_id}")
+            print(vote_id, LDO_VOTE_EXECUTORS_FOR_TESTS[0])
             if dao_voting.canVote(vote_id, LDO_VOTE_EXECUTORS_FOR_TESTS[0]) and (
                 dao_voting.getVotePhase(vote_id) != OBJECTION_PHASE_ID
             ):
@@ -173,7 +188,7 @@ class Helpers:
             print(f"vote #{vote_id} executed")
             execution_transactions.append(tx)
 
-        Helpers._prefetch_contracts_from_etherscan()
+        # Helpers._prefetch_contracts_from_etherscan()
 
         return execution_transactions
 
