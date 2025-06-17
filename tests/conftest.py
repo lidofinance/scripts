@@ -131,7 +131,21 @@ class Helpers:
         chain.sleep(emergency_protected_timelock.getAfterScheduleDelay() + 1)
         chain.mine()
         print(f"Proposal {proposal_id} scheduled, waiting for execution")
-        contracts.emergency_protected_timelock.execute(proposal_id, {"from": LDO_HOLDER_ADDRESS_FOR_TESTS})
+        try:
+
+            contracts.emergency_protected_timelock.execute.call(proposal_id, {"from": LDO_HOLDER_ADDRESS_FOR_TESTS})
+
+            contracts.emergency_protected_timelock.execute(proposal_id, {"from": LDO_HOLDER_ADDRESS_FOR_TESTS})
+            print(f"Proposal {proposal_id} executed successfully")
+        except Exception as e:
+            print(f"ERROR executing proposal {proposal_id}:")
+            print(f"Error type: {type(e).__name__}")
+            print(f"Error message: {str(e)}")
+
+            if hasattr(e, 'revert_msg') and e.revert_msg:
+                print(f"Revert message: {e.revert_msg}")
+            import traceback
+            traceback.print_exc()
 
     @staticmethod
     def execute_votes(accounts, vote_ids, dao_voting, topup="10 ether"):

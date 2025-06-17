@@ -1,8 +1,7 @@
 from itertools import count
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from typing import Tuple, Optional, Sequence
-
-from brownie import accounts
+from brownie import accounts, web3, convert,ZERO_ADDRESS
 from utils.config import (
     CS_ACCOUNTING_IMPL_V2_ADDRESS,
     CS_CURVES,
@@ -20,6 +19,9 @@ from utils.config import (
     VALIDATORS_EXIT_BUS_ORACLE_IMPL,
     WITHDRAWAL_VAULT_IMPL,
     LIDO_LOCATOR_IMPL,
+    VOTING,
+    ARAGON_KERNEL,
+    AGENT,
     contracts,
     get_deployer_account,
     get_priority_fee,
@@ -30,9 +32,9 @@ from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 from utils.agent import dual_governance_agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.config import get_deployer_account, get_priority_fee
-from utils.agent import dual_governance_agent_forward
+from utils.agent import dual_governance_submit_proposal, dual_governance_agent_forward
 from utils.kernel import update_app_implementation
-
+from utils.agent import agent_forward
 from tests.conftest import Helpers
 
 try:
@@ -203,216 +205,230 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
     simple_dvt_uri = get_repo_uri(simple_dvt_repo)
     print(f"LIDO_LOCATOR_IMPL repo URI: {LIDO_LOCATOR_IMPL}")
     print(f"VALIDATORS_EXIT_BUS_ORACLE_IMPL: {VALIDATORS_EXIT_BUS_ORACLE_IMPL}")
+
+    # DAOKernel Permissions Transition
+    APP_MANAGER_ROLE = web3.keccak(text="APP_MANAGER_ROLE")
+    print(f"APP_MANAGER_ROLE: {contracts.acl.getPermissionManager(ARAGON_KERNEL, APP_MANAGER_ROLE)}")
+    # assert contracts.acl.hasPermission(AGENT, ARAGON_KERNEL, APP_MANAGER_ROLE)
+    # assert not contracts.acl.hasPermission(AGENT, ARAGON_KERNEL, APP_MANAGER_ROLE)
+    print("Permission manager", contracts.acl.getPermissionManager(ARAGON_KERNEL, APP_MANAGER_ROLE))
+    assert contracts.acl.getPermissionManager(ARAGON_KERNEL, APP_MANAGER_ROLE) == AGENT
+    assert contracts.node_operators_registry.kernel() == ARAGON_KERNEL
+    assert not contracts.acl.hasPermission(VOTING, ARAGON_KERNEL, APP_MANAGER_ROLE)
+    assert not contracts.acl.hasPermission(AGENT, ARAGON_KERNEL, APP_MANAGER_ROLE)
+    # assert contracts.acl.getPermissionManager(ARAGON_KERNEL, APP_MANAGER_ROLE) == VOTING
+
     vote_descriptions, call_script_items = zip(
         # --- locator
         (
             f"1. Update locator implementation",
-            encode_proxy_upgrade_to(contracts.lido_locator, LIDO_LOCATOR_IMPL),
+            encode_proxy_upgrade_to(contracts.lido_locator, LIDO_LOCATOR_IMPL)
         ),
         # --- VEB
         (
             f"2. Update VEBO implementation",
-            encode_proxy_upgrade_to(contracts.validators_exit_bus_oracle, VALIDATORS_EXIT_BUS_ORACLE_IMPL),
+            encode_proxy_upgrade_to(contracts.validators_exit_bus_oracle, VALIDATORS_EXIT_BUS_ORACLE_IMPL)
+        ),
+        (
+            f"3. Call finalizeUpgrade_v2 on VEBO",
+            (
+                contracts.validators_exit_bus_oracle.address,
+                contracts.validators_exit_bus_oracle.finalizeUpgrade_v2.encode_input(600, 13000, 1, 48),
+            )
+        ),
+        (
+            f"4. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
+            encode_oz_grant_role(
+                contract=contracts.validators_exit_bus_oracle,
+                role_name="MANAGE_CONSENSUS_VERSION_ROLE",
+                grant_to=contracts.agent,
+            )
+        ),
+        (
+            f"5. Bump VEBO consensus version to `{VEBO_CONSENSUS_VERSION}`",
+            encode_oracle_upgrade_consensus(contracts.validators_exit_bus_oracle, VEBO_CONSENSUS_VERSION)
         ),
         # (
-        #     f"3. Call finalizeUpgrade_v2 on VEBO",
-        #     (
-        #         contracts.validators_exit_bus_oracle.address,
-        #         contracts.validators_exit_bus_oracle.finalizeUpgrade_v2.encode_input(600, 13000, 1, 48),
-        #     )
-        # ),
-        # (
-        #     f"4. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
-        #     dual_governance_agent_forward([
+        #     f"6. Grant VEB role SUBMIT_REPORT_HASH_ROLE to the ET",
+        #     agent_forward([
         #         encode_oz_grant_role(
         #             contract=contracts.validators_exit_bus_oracle,
-        #             role_name="MANAGE_CONSENSUS_VERSION_ROLE",
+        #             role_name="SUBMIT_REPORT_HASH_ROLE",
         #             grant_to=contracts.agent,
         #         )
         #     ])
         # ),
-        # (
-        #     f"5. Bump VEBO consensus version to `{VEBO_CONSENSUS_VERSION}`",
-        #     dual_governance_agent_forward([
-        #         encode_oracle_upgrade_consensus(contracts.validators_exit_bus_oracle, VEBO_CONSENSUS_VERSION)
-        #     ])
-        # ),
-        # # (
-        # #     f"6. Grant VEB role SUBMIT_REPORT_HASH_ROLE to the ET",
-        # #     dual_governance_agent_forward([
-        # #         encode_oz_grant_role(
-        # #             contract=contracts.validators_exit_bus_oracle,
-        # #             role_name="SUBMIT_REPORT_HASH_ROLE",
-        # #             grant_to=contracts.agent,
-        # #         )
-        # #     ])
-        # # ),
         # # --- Triggerable Withdrawals Gateway (TWG)
-        # (
-        #     f"7. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector",
-        #     dual_governance_agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.triggerable_withdrawals_gateway,
-        #             role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
-        #             grant_to=contracts.cs_ejector,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"8. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB",
-        #     dual_governance_agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.triggerable_withdrawals_gateway,
-        #             role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
-        #             grant_to=contracts.validators_exit_bus_oracle,
-        #         )
-        #     ])
-        # ),
-        # # --- WV
-        # # (
-        # #     f"9. Update WithdrawalVault implementation",
-        # #     encode_wv_proxy_upgrade_to(contracts.withdrawal_vault, WITHDRAWAL_VAULT_IMPL)
-        # # ),
-        # # (
-        # #     f"10. Call finalizeUpgrade_v2 on WithdrawalVault",
-        # #     (
-        # #         contracts.withdrawal_vault.address,
-        # #         contracts.withdrawal_vault.finalizeUpgrade_v2.encode_input(),
-        # #     )
-        # # ),
-        # # --- AO
-        # (
-        #     f"11. Update Accounting Oracle implementation",
-        #     dual_governance_agent_forward([encode_proxy_upgrade_to(contracts.accounting_oracle, ACCOUNTING_ORACLE_IMPL)]),
-        # ),
-        # (
-        #     f"12. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
-        #     dual_governance_agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.accounting_oracle,
-        #             role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-        #             grant_to=contracts.agent,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"13. Bump AO consensus version to `{AO_CONSENSUS_VERSION}`",
-        #     dual_governance_agent_forward([
-        #         encode_oracle_upgrade_consensus(contracts.accounting_oracle, AO_CONSENSUS_VERSION)
-        #     ])
-        # ),
-        # # --- SR
-        # (
-        #     f"14. Update SR implementation",
-        #     dual_governance_agent_forward([encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)]),
-        # ),
-        # (
-        #     f"15. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitDelayVerifier",
-        #     dual_governance_agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.staking_router,
-        #             role_name="REPORT_VALIDATOR_EXITING_STATUS_ROLE",
-        #             grant_to=contracts.validator_exit_verifier,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"16. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG",
-        #     dual_governance_agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.staking_router,
-        #             role_name="REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE",
-        #             grant_to=contracts.triggerable_withdrawals_gateway,
-        #         )
-        #     ])
-        # ),
-        # # --- NOR
-        # (
-        #     f"17. Publish new `NodeOperatorsRegistry` implementation in NodeOperatorsRegistry app APM repo",
-        #     add_implementation_to_nor_app_repo(NOR_VERSION, NODE_OPERATORS_REGISTRY_IMPL, nor_uri),
-        # ),
-        # (
-        #     f"18. Update `NodeOperatorsRegistry` implementation",
-        #     update_app_implementation(NODE_OPERATORS_REGISTRY_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
-        # ),
-        # (
-        #     f"19. Call finalizeUpgrade_v4 on NOR",
-        #     (
-        #         interface.NodeOperatorsRegistry(contracts.node_operators_registry).address,
-        #         interface.NodeOperatorsRegistry(contracts.node_operators_registry).finalizeUpgrade_v4.encode_input(
-        #             NOR_EXIT_DEADLINE_IN_SEC
-        #         )
-        #     )
-        # ),
-        # # --- sDVT
-        # (
-        #     f"20. Publish new `SimpleDVT` implementation in SimpleDVT app APM repo",
-        #     add_implementation_to_sdvt_app_repo(SDVT_VERSION, NODE_OPERATORS_REGISTRY_IMPL, simple_dvt_uri),
-        # ),
-        # (
-        #     f"21. Update `SimpleDVT` implementation",
-        #     update_app_implementation(SIMPLE_DVT_ARAGON_APP_ID, NODE_OPERATORS_REGISTRY_IMPL),
-        # ),
-        # (
-        #     f"22. Call finalizeUpgrade_v4 on sDVT",
-        #     (
-        #         contracts.simple_dvt.address,
-        #         contracts.simple_dvt.finalizeUpgrade_v4.encode_input(
-        #             NOR_EXIT_DEADLINE_IN_SEC,
-        #         ),
-        #     )
-        # ),
-        # # --- Oracle configs ---
-        # (
-        #     f"23. Grant CONFIG_MANAGER_ROLE role to the AGENT",
-        #     dual_governance_agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.oracle_daemon_config,
-        #             role_name="CONFIG_MANAGER_ROLE",
-        #             grant_to=contracts.agent,
-        #         )
-        #     ])
-        # ),
-        # (
-        #     f"24. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig",
-        #     dual_governance_agent_forward([
-        #         (
-        #             contracts.oracle_daemon_config.address,
-        #             contracts.oracle_daemon_config.unset.encode_input('NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP'),
-        #         ),
-        #     ])
-        # ),
-        # (
-        #     f"25. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
-        #     dual_governance_agent_forward([
-        #         (
-        #             contracts.oracle_daemon_config.address,
-        #             contracts.oracle_daemon_config.unset.encode_input('VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS'),
-        #         ),
-        #     ])
-        # ),
-        # (
-        #     f"26. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
-        #     dual_governance_agent_forward([
-        #         (
-        #             contracts.oracle_daemon_config.address,
-        #             contracts.oracle_daemon_config.unset.encode_input('VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS'),
-        #         ),
-        #     ])
-        # ),
-        # (
-        #     f"27. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig",
-        #     dual_governance_agent_forward([
-        #         (
-        #             contracts.oracle_daemon_config.address,
-        #             contracts.oracle_daemon_config.set.encode_input('EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS', EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS),
-        #         ),
-        #     ])
-        # ),
+        (
+            f"7. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector",
+            encode_oz_grant_role(
+                contract=contracts.triggerable_withdrawals_gateway,
+                role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
+                grant_to=contracts.cs_ejector,
+            )
+        ),
+        (
+            f"8. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB",
+            encode_oz_grant_role(
+                contract=contracts.triggerable_withdrawals_gateway,
+                role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
+                grant_to=contracts.validators_exit_bus_oracle,
+            )
+        ),
+        # --- WV
+        (
+            f"9. Update WithdrawalVault implementation",
+            encode_wv_proxy_upgrade_to(contracts.withdrawal_vault, WITHDRAWAL_VAULT_IMPL)
+        ),
+        (
+            f"10. Call finalizeUpgrade_v2 on WithdrawalVault",
+            (
+                contracts.withdrawal_vault.address,
+                contracts.withdrawal_vault.finalizeUpgrade_v2.encode_input(),
+            )
+        ),
+        # --- AO
+        (
+            f"11. Update Accounting Oracle implementation",
+            encode_proxy_upgrade_to(contracts.accounting_oracle, ACCOUNTING_ORACLE_IMPL),
+        ),
+        (
+            f"12. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
+            encode_oz_grant_role(
+                contract=contracts.accounting_oracle,
+                role_name="MANAGE_CONSENSUS_VERSION_ROLE",
+                grant_to=contracts.agent,
+            )
+        ),
+        (
+            f"13. Bump AO consensus version to `{AO_CONSENSUS_VERSION}`",
+            encode_oracle_upgrade_consensus(contracts.accounting_oracle, AO_CONSENSUS_VERSION)
+        ),
+        # --- SR
+        (
+            f"14. Update SR implementation",
+            encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)
+        ),
+        (
+            f"15. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitDelayVerifier",
+            encode_oz_grant_role(
+                contract=contracts.staking_router,
+                role_name="REPORT_VALIDATOR_EXITING_STATUS_ROLE",
+                grant_to=contracts.validator_exit_verifier,
+            )
+        ),
+        (
+            f"16. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG",
+            encode_oz_grant_role(
+                contract=contracts.staking_router,
+                role_name="REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE",
+                grant_to=contracts.triggerable_withdrawals_gateway,
+            )
+        ),
+        # # --- NOR and sDVT
+        (
+            f"18. Grant APP_MANAGER_ROLE role to the AGENT",
+            (
+                contracts.acl.address,
+                contracts.acl.grantPermission.encode_input(
+                    AGENT,
+                    ARAGON_KERNEL,
+                    convert.to_uint(APP_MANAGER_ROLE)
+                )
+            )
+        ),
+        (
+            f"18. Update `NodeOperatorsRegistry` implementation",
+            (
+                contracts.kernel.address,
+                contracts.kernel.setApp.encode_input(
+                    contracts.kernel.APP_BASES_NAMESPACE(),
+                    NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
+                    NODE_OPERATORS_REGISTRY_IMPL
+                )
+            )
+        ),
+        (
+            f"19. Call finalizeUpgrade_v4 on NOR",
+            (
+                interface.NodeOperatorsRegistry(contracts.node_operators_registry).address,
+                interface.NodeOperatorsRegistry(contracts.node_operators_registry).finalizeUpgrade_v4.encode_input(
+                    NOR_EXIT_DEADLINE_IN_SEC
+                )
+            )
+        ),
+         (
+            f"18. Update `SDVT` implementation",
+            (
+                contracts.kernel.address,
+                contracts.kernel.setApp.encode_input(
+                    contracts.kernel.APP_BASES_NAMESPACE(),
+                    SIMPLE_DVT_ARAGON_APP_ID,
+                    NODE_OPERATORS_REGISTRY_IMPL
+                )
+            )
+        ),
+        (
+            f"19. Call finalizeUpgrade_v4 on SDVT",
+            (
+                interface.NodeOperatorsRegistry(contracts.simple_dvt).address,
+                interface.NodeOperatorsRegistry(contracts.simple_dvt).finalizeUpgrade_v4.encode_input(
+                    NOR_EXIT_DEADLINE_IN_SEC
+                )
+            )
+        ),
+         (
+            f"18. Revoke APP_MANAGER_ROLE role from the AGENT",
+            (
+                contracts.acl.address,
+                contracts.acl.revokePermission.encode_input(
+                    AGENT,
+                    ARAGON_KERNEL,
+                    convert.to_uint(APP_MANAGER_ROLE)
+                )
+            )
+        ),
+        # --- Oracle configs ---
+        (
+            f"23. Grant CONFIG_MANAGER_ROLE role to the AGENT",
+            encode_oz_grant_role(
+                contract=contracts.oracle_daemon_config,
+                role_name="CONFIG_MANAGER_ROLE",
+                grant_to=contracts.agent,
+            )
+        ),
+        (
+            f"24. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig",
+            (
+                contracts.oracle_daemon_config.address,
+                contracts.oracle_daemon_config.unset.encode_input('NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP'),
+            ),
+        ),
+        (
+            f"25. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
+            (
+                contracts.oracle_daemon_config.address,
+                contracts.oracle_daemon_config.unset.encode_input('VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS'),
+            ),
+        ),
+        (
+            f"26. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
+            (
+                contracts.oracle_daemon_config.address,
+                contracts.oracle_daemon_config.unset.encode_input('VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS'),
+            ),
+        ),
+        (
+            f"27. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig",
+            (
+                contracts.oracle_daemon_config.address,
+                contracts.oracle_daemon_config.set.encode_input('EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS', EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS),
+            ),
+        ),
         # --- CSM
         # (
         #     f"28. Upgrade CSM implementation on proxy",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_proxy_upgrade_to(
         #             contracts.csm,
         #             CSM_IMPL_V2_ADDRESS,
@@ -428,7 +444,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"30. Upgrade CSAccounting implementation on proxy",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_proxy_upgrade_to(
         #             contracts.cs_accounting,
         #             CS_ACCOUNTING_IMPL_V2_ADDRESS,
@@ -444,7 +460,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"32. Upgrade CSFeeOracle implementation on proxy",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_proxy_upgrade_to(
         #             contracts.cs_fee_oracle,
         #             CS_FEE_ORACLE_IMPL_V2_ADDRESS,
@@ -460,7 +476,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"34. Upgrade CSFeeDistributor implementation on proxy",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_proxy_upgrade_to(
         #             contracts.cs_fee_distributor,
         #             CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS,
@@ -476,7 +492,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"36. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_oz_revoke_role(
         #             contract=contracts.cs_accounting,
         #             role_name="SET_BOND_CURVE_ROLE",
@@ -486,7 +502,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"37. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_oz_revoke_role(
         #             contract=contracts.cs_accounting,
         #             role_name="RESET_BOND_CURVE_ROLE",
@@ -496,7 +512,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"38. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_oz_revoke_role(
         #             contract=contracts.cs_accounting,
         #             role_name="RESET_BOND_CURVE_ROLE",
@@ -506,7 +522,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"39. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_oz_grant_role(
         #             contract=contracts.csm,
         #             role_name="CREATE_NODE_OPERATOR_ROLE",
@@ -516,7 +532,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"40. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_oz_grant_role(
         #             contract=contracts.csm,
         #             role_name="CREATE_NODE_OPERATOR_ROLE",
@@ -526,7 +542,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"41. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_oz_grant_role(
         #             contract=contracts.cs_accounting,
         #             role_name="SET_BOND_CURVE_ROLE",
@@ -536,7 +552,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"42. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_oz_revoke_role(
         #             contract=contracts.csm,
         #             role_name="VERIFIER_ROLE",
@@ -546,7 +562,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"43. Grant role VERIFIER_ROLE to the new instance of the Verifier contract",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_oz_grant_role(
         #             contract=contracts.csm,
         #             role_name="VERIFIER_ROLE",
@@ -556,7 +572,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"44. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_oz_revoke_role(
         #             contract=contracts.csm,
         #             role_name="PAUSE_ROLE",
@@ -566,7 +582,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"45. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_oz_revoke_role(
         #             contract=contracts.cs_accounting,
         #             role_name="PAUSE_ROLE",
@@ -576,7 +592,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"46. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_oz_revoke_role(
         #             contract=contracts.cs_fee_oracle,
         #             role_name="PAUSE_ROLE",
@@ -586,7 +602,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"47. Grant CSM role PAUSE_ROLE for the new GateSeal instance",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_oz_grant_role(
         #             contract=contracts.csm,
         #             role_name="PAUSE_ROLE",
@@ -596,7 +612,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"48. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_oz_grant_role(
         #             contract=contracts.cs_accounting,
         #             role_name="PAUSE_ROLE",
@@ -606,7 +622,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         # ),
         # (
         #     f"49. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance",
-        #     dual_governance_agent_forward([
+        #     agent_forward([
         #         encode_oz_grant_role(
         #             contract=contracts.cs_fee_oracle,
         #             role_name="PAUSE_ROLE",
@@ -636,6 +652,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
     )
     print("ProposalSubmitted", vote_tx.events["ProposalSubmitted"][0])
     Helpers.execute_dg_proposal(6)
+    # Helpers.execute_dg_proposal(7)
 
     return vote_id
 
