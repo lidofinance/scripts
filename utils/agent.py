@@ -19,8 +19,8 @@ def dual_governance_agent_forward(
     description: Optional[str] = "",
 ) -> Tuple[str, str]:
 
-    if network_name() not in ["hoodi", "hoodi-fork"]:
-        raise ValueError("Invalid network name")
+    # if network_name() not in ["hoodi", "hoodi-fork"]:
+    #     raise ValueError("Invalid network name")
 
     ## TODO: move up the scope when mainnet configuration for DG is updated
     from utils.config import DUAL_GOVERNANCE
@@ -28,7 +28,7 @@ def dual_governance_agent_forward(
     dual_governance = contracts.dual_governance
     (agent_address, agent_calldata) = agent_forward(call_script)
     return (
-        DUAL_GOVERNANCE,
+        contracts.dual_governance.address,
         dual_governance.submitProposal.encode_input([(agent_address, 0, agent_calldata)], description),
     )
 

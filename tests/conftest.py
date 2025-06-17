@@ -111,7 +111,7 @@ class Helpers:
     def execute_vote(accounts, vote_id, dao_voting, topup="10 ether"):
         (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup)
         return tx
-
+#!!!
     def execute_dg_proposal(proposal_id):
         """
         Run proposal through dual governance.
@@ -127,17 +127,20 @@ class Helpers:
             proposal_id,
             {"from": LDO_HOLDER_ADDRESS_FOR_TESTS},
         )
-
+        print(f"Proposal {proposal_id} scheduled")
         chain.sleep(emergency_protected_timelock.getAfterScheduleDelay() + 1)
         chain.mine()
-
+        print(f"Proposal {proposal_id} scheduled, waiting for execution")
         contracts.emergency_protected_timelock.execute(proposal_id, {"from": LDO_HOLDER_ADDRESS_FOR_TESTS})
 
     @staticmethod
     def execute_votes(accounts, vote_ids, dao_voting, topup="10 ether"):
+        vote_ids = [597]
         OBJECTION_PHASE_ID = 1
         for vote_id in vote_ids:
             print(f"Vote #{vote_id}")
+            vote_id = 597
+            print(vote_id, LDO_VOTE_EXECUTORS_FOR_TESTS[0])
             if dao_voting.canVote(vote_id, LDO_VOTE_EXECUTORS_FOR_TESTS[0]) and (
                 dao_voting.getVotePhase(vote_id) != OBJECTION_PHASE_ID
             ):
@@ -155,6 +158,7 @@ class Helpers:
         chain.mine()
 
         for vote_id in vote_ids:
+            vote_id = 597
             assert dao_voting.canExecute(vote_id)
 
         # try to instantiate script executor
@@ -169,11 +173,12 @@ class Helpers:
 
         execution_transactions = []
         for vote_id in vote_ids:
+            vote_id = 597
             tx = dao_voting.executeVote(vote_id, {"from": accounts[0]})
             print(f"vote #{vote_id} executed")
             execution_transactions.append(tx)
 
-        Helpers._prefetch_contracts_from_etherscan()
+        # Helpers._prefetch_contracts_from_etherscan()
 
         return execution_transactions
 
