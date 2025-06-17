@@ -44,8 +44,12 @@ def validate_permission_create_event(event: EventDict, p: Permission, manager: s
         ), "Wrong event emitter"
 
 
-def validate_permission_revoke_event(event: EventDict, p: Permission, emitted_by: str = None) -> None:
-    _events_chain = ["LogScriptCall", "SetPermission"]
+def validate_permission_revoke_event(event: EventDict, p: Permission, emitted_by: str = None, granted_from_agent: bool = False) -> None:
+    if (granted_from_agent):
+        _events_chain = ["LogScriptCall", "LogScriptCall", "SetPermission", "ScriptResult"]
+    else:
+        _events_chain = ["LogScriptCall", "SetPermission"]
+        
 
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -61,8 +65,11 @@ def validate_permission_revoke_event(event: EventDict, p: Permission, emitted_by
         ), "Wrong event emitter"
 
 
-def validate_permission_grant_event(event: EventDict, p: Permission, emitted_by: str = None) -> None:
-    _events_chain = ["LogScriptCall", "SetPermission"]
+def validate_permission_grant_event(event: EventDict, p: Permission, emitted_by: str = None, granted_from_agent: bool = False) -> None:
+    if (granted_from_agent):
+        _events_chain = ["LogScriptCall", "LogScriptCall", "SetPermission", "ScriptResult"]
+    else:
+        _events_chain = ["LogScriptCall", "SetPermission"]
 
     validate_events_chain([e.name for e in event], _events_chain)
 

@@ -73,7 +73,7 @@ from utils.config import (
 )
 
 
-voting_contract = "0xcD7d0c2f0aEFF8cBD17702bfa9505421253edE54"
+voting_contract = "0x1DB8a9313785b78f7d0a201C5E0BE007f1eb63b4"
 description = "Dual Governance Launch on Mainnet" # TODO: change description
 
 def get_vote_items():

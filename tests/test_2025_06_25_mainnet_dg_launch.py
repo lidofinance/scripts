@@ -67,8 +67,26 @@ CS_ACCOUNTING = "0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da"
 CS_FEE_ORACLE = "0x4D4074628678Bd302921c20573EEa1ed38DdF7FB"
 CS_GATE_SEAL = "0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0"
 LDO_TOKEN = "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32"
-VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 
+# Recoverable contracts
+RECOVERABLE_CONTRACTS = [
+    KERNEL,
+    VOTING,
+    TOKEN_MANAGER,
+    FINANCE,
+    AGENT,
+    ACL,
+    LIDO,
+    EVM_SCRIPT_REGISTRY,
+    CURATED_MODULE,
+    SDVT_MODULE,
+    "0x0cb113890b04b49455dfe06554e2d784598a29c9", # AragonPM
+    "0x4ee3118e3858e8d7164a634825bfe0f73d99c792", # Voting Repo
+    "0xF5Dc67E54FC96F993CD06073f71ca732C1E654B1", # Lido App Repo
+    "0xF9339DE629973c60c4d2b76749c81E6F40960E3A", # Legacy Oracle Repo
+    "0x0D97E876ad14DB2b183CFeEB8aa1A5C788eB1831", # NOR Repo
+    "0x2325b0a607808dE42D918DB07F925FFcCfBb2968", # SDVT Repo
+]
 
 class OZValidatedRole(NamedTuple):
     entity: str
@@ -136,6 +154,11 @@ def validate_dual_governance_governance_launch_verification_event(event: EventDi
 
     if emitted_by is not None:
         assert convert.to_address(event["DGLaunchConfigurationValidated"]["_emitted_by"]) == convert.to_address(emitted_by), "Wrong event emitter"
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+def validate_recovery_vault_app_id_reset(event: EventDict):
+    _events_chain = ["LogScriptCall", "LogScriptCall", "ScriptResult"]
 
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -415,12 +438,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     evs = group_voting_events_from_receipt(vote_tx)
 
     # 54 events
-    assert len(evs) == 54
+    assert len(evs) == 57
 
     # metadata = find_metadata_by_vote_id(vote_id)
     # assert get_lido_vote_cid_from_str(metadata) == "bafkreia2qh6xvoowgwukqfyyer2zz266e2jifxovnddgqawruhe2g5asgi"
 
-    assert count_vote_items_by_events(vote_tx, voting) == 54, "Incorrect voting items count"
+    assert count_vote_items_by_events(vote_tx, voting) == 57, "Incorrect voting items count"
 
     # Lido Permissions Transition
     validate_permission_revoke_event(evs[0], Permission(entity=VOTING, app=LIDO, role=STAKING_CONTROL_ROLE.hex()), emitted_by=ACL)
@@ -539,8 +562,23 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     # InsuranceFund ownership Transition
     validate_ownership_transferred_event(evs[49], OwnershipTransferred(previous_owner_addr=AGENT, new_owner_addr=VOTING), emitted_by=INSURANCE_FUND)
 
+    # Resetting 
+    validate_permission_grant_event(
+        event=evs[50],
+        emitted_by=ACL,
+        granted_from_agent=True,
+        p=Permission(entity=AGENT, app=KERNEL, role=APP_MANAGER_ROLE.hex()),
+    )
+    validate_recovery_vault_app_id_reset(evs[51])
+    validate_permission_revoke_event(
+        event=evs[52],
+        emitted_by=ACL,
+        granted_from_agent=True,
+        p=Permission(entity=AGENT, app=KERNEL, role=APP_MANAGER_ROLE.hex()),
+    )
+    
     validate_role_validated_event(
-        evs[50],
+        evs[53],
         [
             # Lido
             AragonValidatedPermission(LIDO, "STAKING_CONTROL_ROLE", [], [VOTING], AGENT),
@@ -615,7 +653,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     to_be_executed_to_time = 3600 * 18 # 18:00 UTC
     
     validate_dual_governance_submit_event(
-        evs[51],    
+        evs[54],    
         proposal_id=2,
         proposer=VOTING,
         executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
@@ -657,11 +695,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     )
 
     # Validate roles were transferred correctly
-    validate_dual_governance_governance_launch_verification_event(evs[52], emitted_by=DUAL_GOVERNANCE_LAUNCH_VERIFIER)
+    validate_dual_governance_governance_launch_verification_event(evs[55], emitted_by=DUAL_GOVERNANCE_LAUNCH_VERIFIER)
     
     # Verify state of the DG after launch
     to_be_executed_before_timestamp = 1753466400
-    validate_time_constraints_executed_before_event(evs[53], to_be_executed_before_timestamp, emitted_by=TIME_CONSTRAINTS)
+    validate_time_constraints_executed_before_event(evs[56], to_be_executed_before_timestamp, emitted_by=TIME_CONSTRAINTS)
 
     # Check DG execution events
     dg_evs = group_dg_events_from_receipt(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
@@ -699,28 +737,28 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         lido.resumeStaking({"from": VOTING})
 
     # Agent has permission to manage STAKING_CONTROL_ROLE
-    checkCanPerformAragonRoleManagement(stranger, LIDO, STAKING_CONTROL_ROLE, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, LIDO, STAKING_CONTROL_ROLE, acl, AGENT)
 
     # Voting has no permission to call RESUME_ROLE actions
     with reverts("APP_AUTH_FAILED"):
         lido.resume({"from": VOTING})
 
     # Agent has permission to manage RESUME_ROLE
-    checkCanPerformAragonRoleManagement(stranger, LIDO, RESUME_ROLE, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, LIDO, RESUME_ROLE, acl, AGENT)
 
     # Voting has no permission to call PAUSE_ROLE actions
     with reverts("APP_AUTH_FAILED"):
         lido.stop({"from": VOTING})
 
     # Agent has permission to manage PAUSE_ROLE
-    checkCanPerformAragonRoleManagement(stranger, LIDO, PAUSE_ROLE, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, LIDO, PAUSE_ROLE, acl, AGENT)
 
     # Voting has no permission to call STAKING_PAUSE_ROLE actions
     with reverts("APP_AUTH_FAILED"):
         lido.pauseStaking({"from": VOTING})
 
     # Agent has permission to manage STAKING_PAUSE_ROLE
-    checkCanPerformAragonRoleManagement(stranger, LIDO, STAKING_PAUSE_ROLE, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, LIDO, STAKING_PAUSE_ROLE, acl, AGENT)
 
     # DAOKernel Permissions Transition
     # Voting has no permission to call APP_MANAGER_ROLE actions
@@ -729,7 +767,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         interface.Kernel(KERNEL).newAppInstance(appId, ZERO_ADDRESS, {"from": VOTING})
 
     # Agent has permission to manage APP_MANAGER_ROLE
-    checkCanPerformAragonRoleManagement(stranger, KERNEL, APP_MANAGER_ROLE, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, KERNEL, APP_MANAGER_ROLE, acl, AGENT)
 
     # TokenManager Permissions Transition
     # Voting has permission to call MINT_ROLE actions
@@ -737,7 +775,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     token_manager.mint(stranger, 100, {"from": VOTING})
     assert interface.ERC20(ldo_token).balanceOf(stranger) == 100
 
-    checkCanPerformAragonRoleManagement(stranger, TOKEN_MANAGER, MINT_ROLE, acl, VOTING)
+    check_can_perform_aragon_role_management(stranger, TOKEN_MANAGER, MINT_ROLE, acl, VOTING)
 
     # Voting has permission to call REVOKE_VESTINGS_ROLE actions
     assert token_manager.vestingsLengths(stranger) == 0
@@ -749,7 +787,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     assert token_manager.vestingsLengths(stranger) == 1
     token_manager.revokeVesting(stranger, 0, {"from": VOTING})
 
-    checkCanPerformAragonRoleManagement(stranger, TOKEN_MANAGER, REVOKE_VESTINGS_ROLE, acl, VOTING)
+    check_can_perform_aragon_role_management(stranger, TOKEN_MANAGER, REVOKE_VESTINGS_ROLE, acl, VOTING)
 
     # Voting has permission to call CHANGE_PERIOD_ROLE actions
     period = finance.getPeriodDuration()
@@ -757,7 +795,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     finance.setPeriodDuration(100000, {"from": VOTING})
     assert finance.getPeriodDuration() == 100000
 
-    checkCanPerformAragonRoleManagement(stranger, FINANCE, CHANGE_PERIOD_ROLE, acl, VOTING)
+    check_can_perform_aragon_role_management(stranger, FINANCE, CHANGE_PERIOD_ROLE, acl, VOTING)
 
     # Voting has permission to call CHANGE_BUDGETS_ROLE actions
     (budgets, _) = finance.getBudget(ldo_token)
@@ -766,7 +804,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     (budgets, _) = finance.getBudget(ldo_token)
     assert budgets == 1000
 
-    checkCanPerformAragonRoleManagement(stranger, FINANCE, CHANGE_BUDGETS_ROLE, acl, VOTING)
+    check_can_perform_aragon_role_management(stranger, FINANCE, CHANGE_BUDGETS_ROLE, acl, VOTING)
 
     # EVMScriptRegistry Permissions Transition
     # Voting has no permission to call REGISTRY_MANAGER_ROLE actions
@@ -774,35 +812,35 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         interface.EVMScriptRegistry(EVM_SCRIPT_REGISTRY).disableScriptExecutor(0, {"from": VOTING})
 
     # Agent has permission to manage REGISTRY_MANAGER_ROLE
-    checkCanPerformAragonRoleManagement(stranger, EVM_SCRIPT_REGISTRY, REGISTRY_MANAGER_ROLE, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, EVM_SCRIPT_REGISTRY, REGISTRY_MANAGER_ROLE, acl, AGENT)
 
     # Voting has no permission to call REGISTRY_ADD_EXECUTOR_ROLE actions
     with reverts("APP_AUTH_FAILED"):
         interface.EVMScriptRegistry(EVM_SCRIPT_REGISTRY).addScriptExecutor(AGENT, {"from": VOTING})
 
     # Agent has permission to manage REGISTRY_ADD_EXECUTOR_ROLE
-    checkCanPerformAragonRoleManagement(stranger, EVM_SCRIPT_REGISTRY, REGISTRY_ADD_EXECUTOR_ROLE, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, EVM_SCRIPT_REGISTRY, REGISTRY_ADD_EXECUTOR_ROLE, acl, AGENT)
 
     # CuratedModule Permissions Transition
     # Agent has permission to manage STAKING_ROUTER_ROLE
-    checkCanPerformAragonRoleManagement(stranger, CURATED_MODULE, STAKING_ROUTER_ROLE, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, CURATED_MODULE, STAKING_ROUTER_ROLE, acl, AGENT)
 
     # Agent has permission to manage MANAGE_NODE_OPERATOR_ROLE
-    checkCanPerformAragonRoleManagement(stranger, CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE, acl, AGENT)
 
     # Voting has no permission to call SET_NODE_OPERATOR_LIMIT_ROLE actions
     with reverts("APP_AUTH_FAILED"):
         interface.NodeOperatorsRegistry(CURATED_MODULE).setNodeOperatorStakingLimit(1, 100, {"from": VOTING})
 
     # Agent has permission to manage SET_NODE_OPERATOR_LIMIT_ROLE
-    checkCanPerformAragonRoleManagement(stranger, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE, acl, AGENT)
 
     # Voting has no permission to call MANAGE_SIGNING_KEYS actions
     with reverts("APP_AUTH_FAILED"):
         interface.NodeOperatorsRegistry(CURATED_MODULE).addSigningKeys(1, 0, "0x", "0x", {"from": VOTING})
 
     # Agent has permission to manage MANAGE_SIGNING_KEYS
-    checkCanPerformAragonRoleManagement(stranger, CURATED_MODULE, MANAGE_SIGNING_KEYS, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, CURATED_MODULE, MANAGE_SIGNING_KEYS, acl, AGENT)
 
     # Simple DVT Module Permissions Transition
     # Voting has no permission to call STAKING_ROUTER_ROLE actions
@@ -810,21 +848,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         interface.NodeOperatorsRegistry(SDVT_MODULE).onRewardsMinted(0, {"from": VOTING})
 
     # Agent has permission to manage STAKING_ROUTER_ROLE
-    checkCanPerformAragonRoleManagement(stranger, SDVT_MODULE, STAKING_ROUTER_ROLE, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, SDVT_MODULE, STAKING_ROUTER_ROLE, acl, AGENT)
 
     # Voting has no permission to call MANAGE_NODE_OPERATOR_ROLE actions
     with reverts("APP_AUTH_FAILED"):
         interface.NodeOperatorsRegistry(SDVT_MODULE).setStuckPenaltyDelay(0, {"from": VOTING})
 
     # Agent has permission to manage MANAGE_NODE_OPERATOR_ROLE
-    checkCanPerformAragonRoleManagement(stranger, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE, acl, AGENT)
 
     # Voting has no permission to call SET_NODE_OPERATOR_LIMIT_ROLE actions
     with reverts("APP_AUTH_FAILED"):
         interface.NodeOperatorsRegistry(SDVT_MODULE).setNodeOperatorStakingLimit(1, 100, {"from": VOTING})
 
     # Agent has permission to manage SET_NODE_OPERATOR_LIMIT_ROLE
-    checkCanPerformAragonRoleManagement(stranger, SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE, acl, AGENT)
 
     # ACL Permissions Transition
     # Agent has permission to create permissions
@@ -839,7 +877,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         acl.grantPermission(stranger, stranger, random_permission, {"from": VOTING})
 
     # Agent has permission to manage CREATE_PERMISSIONS_ROLE
-    checkCanPerformAragonRoleManagement(stranger, ACL, CREATE_PERMISSIONS_ROLE, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, ACL, CREATE_PERMISSIONS_ROLE, acl, AGENT)
 
     # WithdrawalQueue Roles Transition
     # ResealManager has permission to call PAUSE_ROLE actions
@@ -929,6 +967,16 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     # Voting has permission to call transferOwnership actions
     insurance_fund.transferOwnership(VOTING, {"from": VOTING})
 
+    # Resetting RecoveryVaultAppId on DAOKernel is not working
+    ldo = interface.ERC20(LDO_TOKEN)
+    
+    for contract in RECOVERABLE_CONTRACTS:
+        ldo.transfer(contract, 1, {"from": VOTING})
+        contract = interface.Kernel(contract)
+
+        with reverts():
+            contract.transferToVault(LDO_TOKEN, {"from": stranger})
+
     # Agent Permissions Transition
     # DualGovernance Executor has permission to call RUN_SCRIPT_ROLE actions
     agent.forward("0x00000001", {"from": DUAL_GOVERNANCE_ADMIN_EXECUTOR})
@@ -938,7 +986,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         agent.forward("0x00000001", {"from": VOTING})
 
     # Agent has permission to manage RUN_SCRIPT_ROLE
-    checkCanPerformAragonRoleManagement(stranger, AGENT, RUN_SCRIPT_ROLE, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, AGENT, RUN_SCRIPT_ROLE, acl, AGENT)
 
     # DualGovernance Executor has permission to call EXECUTE_ROLE actions
     agent.execute(stranger, 0, "0x", {"from": DUAL_GOVERNANCE_ADMIN_EXECUTOR})
@@ -948,7 +996,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         agent.execute(stranger, 0, "0x", {"from": VOTING})
 
     # Agent has permission to manage EXECUTE_ROLE
-    checkCanPerformAragonRoleManagement(stranger, AGENT, EXECUTE_ROLE, acl, AGENT)
+    check_can_perform_aragon_role_management(stranger, AGENT, EXECUTE_ROLE, acl, AGENT)
 
     # DG 3 Voting has no permission to call RUN_SCRIPT_ROLE actions
     with reverts("AGENT_CAN_NOT_FORWARD"):
@@ -959,7 +1007,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         agent.execute(stranger, 0, "0x", {"from": VOTING})
 
 
-def checkCanPerformAragonRoleManagement(entity, app, role, acl, actor):
+def check_can_perform_aragon_role_management(entity, app, role, acl, actor):
     """
     Check if the actor can perform Aragon role management on the app with the given role
     :param entity: The entity to check
