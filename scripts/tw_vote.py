@@ -593,17 +593,15 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         ),
         (
             f"50. Increase CSM share in Staking Router from 2% to 3%",
-            agent_forward([
-                encode_staking_router_update_csm_module_share()
-            ])
+            encode_staking_router_update_csm_module_share()
         ),
-        (
-            f"51. Add CSMSetVettedGateTree factory to EasyTrack with permissions",
-            add_evmscript_factory(
-                factory=CSM_SET_VETTED_GATE_TREE_FACTORY,
-                permissions=(create_permissions(contracts.cs_vetted_gate, "setTreeParams")),
-            ),
-        ),
+        # (
+        #     f"51. Add CSMSetVettedGateTree factory to EasyTrack with permissions",
+        #     add_evmscript_factory(
+        #         factory=CSM_SET_VETTED_GATE_TREE_FACTORY,
+        #         permissions=(create_permissions(contracts.cs_vetted_gate, "setTreeParams")),
+        #     ),
+        # ),
     )
 
     bake_vote_items(list(vote_descriptions), list(call_script_items))
