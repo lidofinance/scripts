@@ -594,16 +594,17 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             f"50. Increase CSM share in Staking Router from 2% to 3%",
             encode_staking_router_update_csm_module_share()
         ),
-        # (
-        #     f"51. Add CSMSetVettedGateTree factory to EasyTrack with permissions",
-        #     add_evmscript_factory(
-        #         factory=CSM_SET_VETTED_GATE_TREE_FACTORY,
-        #         permissions=(create_permissions(contracts.cs_vetted_gate, "setTreeParams")),
-        #     ),
-        # ),
     )
 
-    bake_vote_items(list(vote_descriptions), list(call_script_items))
+    plain_agent_item = bake_vote_items(
+        ["51. Add CSMSetVettedGateTree factory to EasyTrack with permissions"], 
+        [
+            add_evmscript_factory(
+                factory=CSM_SET_VETTED_GATE_TREE_FACTORY,
+                permissions=(create_permissions(contracts.cs_vetted_gate, "setTreeParams")),
+            )
+        ]
+    )
 
     dg_vote = dual_governance_agent_forward(call_script_items)
 
@@ -612,9 +613,9 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
     else:
         desc_ipfs = upload_vote_ipfs_description(TW_DESCRIPTION)
 
-    assert confirm_vote_script({'Dualgov item': dg_vote}, silent, desc_ipfs), 'Vote not confirmed.'
+    assert confirm_vote_script({'Dualgov item': dg_vote, **plain_agent_item}, silent, desc_ipfs), 'Vote not confirmed.'
+    vote_id = create_vote({'Dualgov item': dg_vote, **plain_agent_item}, tx_params, desc_ipfs=desc_ipfs)[0]
 
-    vote_id = create_vote({'Dualgov item': dg_vote}, tx_params, desc_ipfs=desc_ipfs)[0]
     print("Vote ID:", vote_id)
 
     is_testnet = network_name() in ["holesky-fork", "hoodi-fork"]
