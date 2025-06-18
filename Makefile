@@ -47,7 +47,4 @@ slots:
 	@rm -f slots.ts
 
 enact-fork:
-	poetry run brownie run $(vote) start_and_execute_vote_on_fork --network=mfh-1
-
-enact-fork-manual:
 	poetry run brownie run $(vote) start_and_execute_vote_on_fork_manual --network=mfh-1
