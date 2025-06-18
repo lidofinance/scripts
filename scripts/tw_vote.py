@@ -33,10 +33,9 @@ from utils.easy_track import (
     add_evmscript_factory,
     create_permissions,
 )
-from utils.agent import dual_governance_agent_forward
+from utils.agent import dual_governance_agent_forward, agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.config import get_deployer_account, get_priority_fee, network_name
-from utils.agent import dual_governance_agent_forward
 from tests.conftest import Helpers
 
 try:
