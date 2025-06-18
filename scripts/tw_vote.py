@@ -1,7 +1,7 @@
 from itertools import count
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from typing import Tuple, Optional, Sequence
-from brownie import accounts, web3, convert,ZERO_ADDRESS
+from brownie import accounts, web3, convert, ZERO_ADDRESS
 from utils.config import (
     CS_ACCOUNTING_IMPL_V2_ADDRESS,
     CS_CURVES,
@@ -11,6 +11,7 @@ from utils.config import (
     CS_GATE_SEAL_V2_ADDRESS,
     CSM_COMMITTEE_MS,
     CSM_IMPL_V2_ADDRESS,
+    CSM_SET_VETTED_GATE_TREE_FACTORY,
     NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
     NODE_OPERATORS_REGISTRY_IMPL,
     ACCOUNTING_ORACLE_IMPL,
@@ -28,6 +29,10 @@ from utils.config import (
 )
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
+from utils.easy_track import (
+    add_evmscript_factory,
+    create_permissions,
+)
 from utils.agent import dual_governance_agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.config import get_deployer_account, get_priority_fee, network_name
@@ -61,6 +66,15 @@ TW_DAILY_LIMIT = 10
 EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 7200
 
 NOR_EXIT_DEADLINE_IN_SEC = 30 * 60
+
+# CSM Module share and EasyTrack constants
+CSM_MODULE_ID = 3
+CSM_NEW_TARGET_SHARE_BP = 300  # 3%
+CSM_NEW_PRIORITY_EXIT_THRESHOLD_BP = 375  # 3.75%
+CSM_OLD_STAKING_MODULE_FEE_BP = 600
+CSM_OLD_TREASURY_FEE_BP = 400
+CSM_OLD_MAX_DEPOSITS_PER_BLOCK = 30
+CSM_OLD_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 
 NOR_VERSION = ["6", "0", "0"]
 SDVT_VERSION = ["6", "0", "0"]
@@ -101,6 +115,21 @@ def submit_proposal(call_script: Sequence[Tuple[str, str]], description: Optiona
 def encode_oracle_upgrade_consensus(proxy: Any, consensus_version: int) -> Tuple[str, str]:
     oracle = interface.BaseOracle(proxy)
     return oracle.address, oracle.setConsensusVersion.encode_input(consensus_version)
+
+def encode_staking_router_update_csm_module_share() -> Tuple[str, str]:
+    """Encode call to update CSM share limit"""
+    return (
+        contracts.staking_router.address,
+        contracts.staking_router.updateStakingModule.encode_input(
+            CSM_MODULE_ID,
+            CSM_NEW_TARGET_SHARE_BP,
+            CSM_NEW_PRIORITY_EXIT_THRESHOLD_BP,
+            CSM_OLD_STAKING_MODULE_FEE_BP,
+            CSM_OLD_TREASURY_FEE_BP,
+            CSM_OLD_MAX_DEPOSITS_PER_BLOCK,
+            CSM_OLD_MIN_DEPOSIT_BLOCK_DISTANCE,
+        )
+    )
 
 def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[Any]]:
     """
@@ -166,6 +195,8 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             47. Grant CSM role PAUSE_ROLE for the new GateSeal instance
             48. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
             49. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
+            50. Increase CSM share in Staking Router from 2% to 3%
+            51. Add CSMSetVettedGateTree factory to EasyTrack with permissions
     """
 
     print(f"LIDO_LOCATOR_IMPL repo URI: {LIDO_LOCATOR_IMPL}")
@@ -559,6 +590,19 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
                 role_name="PAUSE_ROLE",
                 grant_to=CS_GATE_SEAL_V2_ADDRESS,
             )
+        ),
+        (
+            f"50. Increase CSM share in Staking Router from 2% to 3%",
+            agent_forward([
+                encode_staking_router_update_csm_module_share()
+            ])
+        ),
+        (
+            f"51. Add CSMSetVettedGateTree factory to EasyTrack with permissions",
+            add_evmscript_factory(
+                factory=CSM_SET_VETTED_GATE_TREE_FACTORY,
+                permissions=(create_permissions(contracts.cs_vetted_gate, "setTreeParams")),
+            ),
         ),
     )
 
