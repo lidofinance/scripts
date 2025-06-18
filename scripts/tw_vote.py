@@ -30,7 +30,7 @@ from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_descrip
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 from utils.agent import dual_governance_agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
-from utils.config import get_deployer_account, get_priority_fee
+from utils.config import get_deployer_account, get_priority_fee, network_name
 from utils.agent import dual_governance_agent_forward
 from tests.conftest import Helpers
 
@@ -575,22 +575,27 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
 
     vote_id = create_vote({'Dualgov item': dg_vote}, tx_params, desc_ipfs=desc_ipfs)[0]
     print("Vote ID:", vote_id)
-    vote_tx = Helpers.execute_vote(
-        vote_id=vote_id,
-        accounts=accounts,
-        dao_voting=contracts.voting,
-    )
 
-    proposal_id = vote_tx.events["ProposalSubmitted"][0]["id"]
-    print("ProposalSubmitted", proposal_id)
-    Helpers.execute_dg_proposal(proposal_id)
+    is_testnet = network_name() in ["holesky-fork", "hoodi-fork"]
+
+    if is_testnet:
+        print("Running on testnet, executing vote immediately...")
+        vote_tx = Helpers.execute_vote(
+            vote_id=vote_id,
+            accounts=accounts,
+            dao_voting=contracts.voting,
+        )
+
+        proposal_id = vote_tx.events["ProposalSubmitted"][0]["id"]
+        print("ProposalSubmitted", proposal_id)
+        Helpers.execute_dg_proposal(proposal_id)
 
     return vote_id
 
 
 def main():
     print('Start baking vote.')
-    print("DEPLOYER ACCOUNT:", get_deployer_account())
+
     tx_params = {
         "from": get_deployer_account(),
         "priority_fee": get_priority_fee(),
