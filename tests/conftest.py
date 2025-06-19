@@ -118,7 +118,6 @@ class Helpers:
         OBJECTION_PHASE_ID = 1
         for vote_id in vote_ids:
             print(f"Vote #{vote_id}")
-            print(vote_id, LDO_VOTE_EXECUTORS_FOR_TESTS[0])
             if dao_voting.canVote(vote_id, LDO_VOTE_EXECUTORS_FOR_TESTS[0]) and (
                 dao_voting.getVotePhase(vote_id) != OBJECTION_PHASE_ID
             ):
