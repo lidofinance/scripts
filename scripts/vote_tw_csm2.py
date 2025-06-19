@@ -32,6 +32,10 @@ from utils.config import (
     VOTING,
     ARAGON_KERNEL,
     AGENT,
+    VALIDATORS_EXIT_BUS_ORACLE,
+    EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
+    EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
+    EASYTRACK_EVMSCRIPT_EXECUTOR,
     contracts,
     get_deployer_account,
     get_priority_fee,
@@ -149,7 +153,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             3. Call finalizeUpgrade_v2(maxValidatorsPerReport, maxExitRequestsLimit, exitsPerFrame, frameDurationInSec) on VEBO
             4. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
             5. Bump VEBO consensus version to `4`
-            6. Grant VEB role SUBMIT_REPORT_HASH_ROLE to the ET (TBD)
+            6. Grant SUBMIT_REPORT_HASH_ROLE on Validator Exit Bus Oracle `0xffDDF7025410412deaa05E3E1cE68FE53208afcb` to the EasyTrack EVM Script Executor `0x2819B65021E13CEEB9AC33E77DB32c7e64e7520D`
             --- Triggerable Withdrawals Gateway (TWG)
             7. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector
             8. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB
@@ -203,7 +207,9 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             49. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
             50. Increase CSM share in Staking Router from {to_percent(CS_MODULE_TARGET_SHARE_BP)}% to {to_percent(CS_MODULE_NEW_TARGET_SHARE_BP)}%
             51. Add CSMSetVettedGateTree factory to EasyTrack with permissions
-    """
+            52. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory with address `` to Easy Track `0x1763b9ED3586B08AE796c7787811a2E1bc16163a`
+            53. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory with address `` to Easy Track `0x1763b9ED3586B08AE796c7787811a2E1bc16163a`
+    """ # TODO: fill in after deploy ^
 
     print(f"LIDO_LOCATOR_IMPL repo URI: {LIDO_LOCATOR_IMPL}")
     print(f"VALIDATORS_EXIT_BUS_ORACLE_IMPL: {VALIDATORS_EXIT_BUS_ORACLE_IMPL}")
@@ -250,16 +256,14 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             f"5. Bump VEBO consensus version to `{VEBO_CONSENSUS_VERSION}`",
             encode_oracle_upgrade_consensus(contracts.validators_exit_bus_oracle, VEBO_CONSENSUS_VERSION)
         ),
-        # (
-        #     f"6. Grant VEB role SUBMIT_REPORT_HASH_ROLE to the ET",
-        #     agent_forward([
-        #         encode_oz_grant_role(
-        #             contract=contracts.validators_exit_bus_oracle,
-        #             role_name="SUBMIT_REPORT_HASH_ROLE",
-        #             grant_to=contracts.agent,
-        #         )
-        #     ])
-        # ),
+        (
+            f"6. Grant SUBMIT_REPORT_HASH_ROLE on Validator Exit Bus Oracle `0xffDDF7025410412deaa05E3E1cE68FE53208afcb` to the EasyTrack EVM Script Executor `0x2819B65021E13CEEB9AC33E77DB32c7e64e7520D`",
+            encode_oz_grant_role(
+                contract=contracts.validators_exit_bus_oracle,
+                role_name="SUBMIT_REPORT_HASH_ROLE",
+                grant_to=EASYTRACK_EVMSCRIPT_EXECUTOR,
+            ),
+        ),
         # # --- Triggerable Withdrawals Gateway (TWG)
         (
             f"7. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector",
@@ -626,12 +630,25 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
     )
 
     plain_agent_item = bake_vote_items(
-        ["54. Add CSSetVettedGateTree factory to EasyTrack with permissions"],
+        [
+            "54. Add CSSetVettedGateTree factory to EasyTrack with permissions", 
+            # TODO: fill in after deploy
+            "55. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory with address `` to Easy Track `0x1763b9ED3586B08AE796c7787811a2E1bc16163a`",
+            "56. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory with address `` to Easy Track `0x1763b9ED3586B08AE796c7787811a2E1bc16163a`",
+        ],
         [
             add_evmscript_factory(
                 factory=CS_SET_VETTED_GATE_TREE_FACTORY,
-                permissions=(create_permissions(contracts.cs_vetted_gate, "setTreeParams")),
-            )
+                permissions=(create_permissions(contracts.cs_vetted_gate, "setTreeParams"))
+            ),
+            add_evmscript_factory(
+                factory=EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
+                permissions=(create_permissions(VALIDATORS_EXIT_BUS_ORACLE, "submitExitRequestHashes"))
+            ),
+            add_evmscript_factory(
+                factory=EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
+                permissions=(create_permissions(VALIDATORS_EXIT_BUS_ORACLE, "submitExitRequestHashes"))
+            ),
         ]
     )
 

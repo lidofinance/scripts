@@ -34,6 +34,13 @@ CS_ACCOUNTING_V2_VERSION = 2
 CS_FEE_ORACLE_V2_VERSION = 2
 CS_FEE_DISTRIBUTOR_V2_VERSION = 2
 
+VALIDATORS_EXIT_BUS_ORACLE = "0xffDDF7025410412deaa05E3E1cE68FE53208afcb"
+
+EASYTRACK = "0x1763b9ED3586B08AE796c7787811a2E1bc16163a"
+EASYTRACK_EVMSCRIPT_EXECUTOR = "0x2819B65021E13CEEB9AC33E77DB32c7e64e7520D"
+# TODO: fill in after deploy
+EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0x0"
+EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0x0"
 
 def get_ossifiable_proxy_impl(proxy_address):
     """Get implementation address from an OssifiableProxy"""
@@ -50,6 +57,8 @@ def check_proxy_implementation(proxy_address, expected_impl):
 def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # Define constants and initial states
     app_manager_role = web3.keccak(text="APP_MANAGER_ROLE")
+    submit_exit_hashes_role = web3.keccak(text="SUBMIT_REPORT_HASH_ROLE")
+
     vebo_consensus_version = 4
     ao_consensus_version = 4
     exit_events_lookback_window_in_slots = 7200
@@ -131,6 +140,9 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # Assert APP_MANAGER_ROLE setting
     assert not contracts.acl.hasPermission(contracts.agent, contracts.kernel, app_manager_role)
 
+    # 6. Assert EasyTrackEVMScriptExecutor has no SUBMIT_REPORT_HASH_ROLE permission on the ValidatorsExitBusOracle
+    assert not contracts.acl.hasPermission(EASYTRACK_EVMSCRIPT_EXECUTOR, VALIDATORS_EXIT_BUS_ORACLE, submit_exit_hashes_role)
+
     # Assert Node Operator Registry and sDVT configuration
 
     assert contracts.node_operators_registry.getContractVersion() == 3
@@ -196,6 +208,10 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # CSM Step 51: EasyTrack factories before vote (pre-vote state)
     initial_factories = contracts.easy_track.getEVMScriptFactories()
     assert CS_SET_VETTED_GATE_TREE_FACTORY not in initial_factories, "EasyTrack should not have CSMSetVettedGateTree factory before vote"
+    # 52. SubmitValidatorsExitRequestHashes (SDVT) EVM script factory is not in Easy Track
+    assert EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY not in initial_factories, "EasyTrack should not have SDVT Submit Validator Exit Request Hashes factory before vote"
+    # 53. CuratedSubmitValidatorExitRequestHashes (Curated) EVM script factory is not in Easy Track
+    assert EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY not in initial_factories, "EasyTrack should not have Curated Submit Validator Exit Request Hashes factory before vote"
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -228,6 +244,9 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # # 7-8. Validate TWG roles
     assert contracts.triggerable_withdrawals_gateway.hasRole(add_full_withdrawal_request_role, contracts.cs_ejector)
     assert contracts.triggerable_withdrawals_gateway.hasRole(add_full_withdrawal_request_role, contracts.validators_exit_bus_oracle)
+
+    # 6. Assert EasyTrackEVMScriptExecutor has SUBMIT_REPORT_HASH_ROLE permission on the ValidatorsExitBusOracle
+    assert contracts.acl.hasPermission(EASYTRACK_EVMSCRIPT_EXECUTOR, VALIDATORS_EXIT_BUS_ORACLE, submit_exit_hashes_role)
 
     # # 9-10. Validate Withdrawal Vault upgrade
     assert interface.WithdrawalContractProxy(contracts.withdrawal_vault).implementation() == WITHDRAWAL_VAULT_IMPL
@@ -348,3 +367,8 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # CSM Step 54: Add EasyTrack factory for CSSetVettedGateTree
     new_factories = contracts.easy_track.getEVMScriptFactories()
     assert CS_SET_VETTED_GATE_TREE_FACTORY in new_factories, "EasyTrack should have CSSetVettedGateTree factory after vote"
+
+    # 55. SubmitValidatorsExitRequestHashes (SDVT) EVM script factory is added to Easy Track
+    assert EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY in new_factories, "EasyTrack should have SDVT Submit Validator Exit Request Hashes factory after vote"
+    # 56. CuratedSubmitValidatorExitRequestHashes (Curated) EVM script factory is added to Easy Track
+    assert EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY in new_factories, "EasyTrack should have Curated Submit Validator Exit Request Hashes factory after vote"
