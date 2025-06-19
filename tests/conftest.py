@@ -21,6 +21,7 @@ from functools import wraps
 ENV_OMNIBUS_BYPASS_EVENTS_DECODING = "OMNIBUS_BYPASS_EVENTS_DECODING"
 ENV_PARSE_EVENTS_FROM_LOCAL_ABI = "PARSE_EVENTS_FROM_LOCAL_ABI"
 ENV_OMNIBUS_VOTE_IDS = "OMNIBUS_VOTE_IDS"
+ENV_DG_PROPOSAL_IDS = "DG_PROPOSAL_IDS"
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -112,41 +113,6 @@ class Helpers:
         (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup)
         return tx
 
-    def execute_dg_proposal(proposal_id):
-        """
-        Run proposal through dual governance.
-        """
-        emergency_protected_timelock = contracts.emergency_protected_timelock
-
-        # wait duration and schedule proposal
-        chain.sleep(emergency_protected_timelock.getAfterSubmitDelay() + 1)
-        chain.mine()
-
-        # schedule proposal for execution
-        contracts.dual_governance.scheduleProposal(
-            proposal_id,
-            {"from": LDO_HOLDER_ADDRESS_FOR_TESTS},
-        )
-        print(f"Proposal {proposal_id} scheduled")
-        chain.sleep(emergency_protected_timelock.getAfterScheduleDelay() + 1)
-        chain.mine()
-        print(f"Proposal {proposal_id} scheduled, waiting for execution")
-        try:
-
-            contracts.emergency_protected_timelock.execute.call(proposal_id, {"from": LDO_HOLDER_ADDRESS_FOR_TESTS})
-
-            contracts.emergency_protected_timelock.execute(proposal_id, {"from": LDO_HOLDER_ADDRESS_FOR_TESTS})
-            print(f"Proposal {proposal_id} executed successfully")
-        except Exception as e:
-            print(f"ERROR executing proposal {proposal_id}:")
-            print(f"Error type: {type(e).__name__}")
-            print(f"Error message: {str(e)}")
-
-            if hasattr(e, 'revert_msg') and e.revert_msg:
-                print(f"Revert message: {e.revert_msg}")
-            import traceback
-            traceback.print_exc()
-
     @staticmethod
     def execute_votes(accounts, vote_ids, dao_voting, topup="10 ether"):
         OBJECTION_PHASE_ID = 1
@@ -188,7 +154,7 @@ class Helpers:
             print(f"vote #{vote_id} executed")
             execution_transactions.append(tx)
 
-        # Helpers._prefetch_contracts_from_etherscan()
+        Helpers._prefetch_contracts_from_etherscan()
 
         return execution_transactions
 
@@ -224,6 +190,20 @@ def vote_ids_from_env() -> [int]:
             vote_ids = [int(s) for s in vote_ids_str.split(",")]
             print(f"OMNIBUS_VOTE_IDS env var is set, using existing votes {vote_ids}")
             return vote_ids
+        except:
+            pass
+
+    return []
+
+
+@pytest.fixture(scope="session")
+def proposal_ids_from_env() -> [int]:
+    if os.getenv(ENV_DG_PROPOSAL_IDS):
+        try:
+            proposal_ids_str = os.getenv(ENV_DG_PROPOSAL_IDS)
+            proposal_ids = [int(s) for s in proposal_ids_str.split(",")]
+            print(f"DG_PROPOSAL_IDS env var is set, skipping the vote, using existing proposals {proposal_ids}")
+            return proposal_ids
         except:
             pass
 

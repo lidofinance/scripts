@@ -15,7 +15,7 @@ DEPOSIT_AMOUNT = 100 * 10**18
 
 @pytest.fixture()
 def stopped_lido():
-    contracts.lido.stop({"from": contracts.voting})
+    contracts.lido.stop({"from": contracts.agent})
 
 
 @pytest.fixture(scope="module")
@@ -23,12 +23,12 @@ def burner() -> Contract:
     return contracts.burner
 
 
-@pytest.fixture(scope="function", autouse=is_there_any_vote_scripts())
-def autoexecute_vote(helpers, vote_ids_from_env, accounts):
-    if vote_ids_from_env:
-        helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
-    else:
-        start_and_execute_votes(contracts.voting, helpers)
+@pytest.fixture(scope="function", autouse=True)
+def agent_permission():
+    contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="PAUSE_ROLE"), {"from": contracts.agent})
+    contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="RESUME_ROLE"), {"from": contracts.agent})
+    contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_PAUSE_ROLE"), {"from": contracts.agent})
+    contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_CONTROL_ROLE"), {"from": contracts.agent})
 
 
 class StakingModuleStatus(IntEnum):
@@ -39,27 +39,27 @@ class StakingModuleStatus(IntEnum):
 
 class TestEventsEmitted:
     def test_stop_resume_lido_emit_events(self, helpers):
-        tx = contracts.lido.stop({"from": contracts.voting})
+        tx = contracts.lido.stop({"from": contracts.agent})
         helpers.assert_single_event_named("Stopped", tx, {})
         helpers.assert_single_event_named("StakingPaused", tx, {})
         assert contracts.lido.isStopped()
         assert contracts.lido.isStakingPaused()
 
-        tx = contracts.lido.resume({"from": contracts.voting})
+        tx = contracts.lido.resume({"from": contracts.agent})
         helpers.assert_single_event_named("Resumed", tx, {})
 
         assert not contracts.lido.isStopped()
         assert not contracts.lido.isStakingPaused()
 
     def test_stop_resume_staking_lido_emit_events(self, helpers):
-        tx = contracts.lido.pauseStaking({"from": contracts.voting})
+        tx = contracts.lido.pauseStaking({"from": contracts.agent})
         helpers.assert_single_event_named("StakingPaused", tx, {})
         helpers.assert_event_not_emitted("Stopped", tx)
 
         assert contracts.lido.isStakingPaused()
         assert not contracts.lido.isStopped()
 
-        tx = contracts.lido.resumeStaking({"from": contracts.voting})
+        tx = contracts.lido.resumeStaking({"from": contracts.agent})
         helpers.assert_single_event_named("StakingResumed", tx, {})
         helpers.assert_event_not_emitted("Resumed", tx)
 
@@ -125,15 +125,15 @@ class TestEventsEmitted:
 
 class TestRevertedSecondCalls:
     def test_revert_second_stop_resume(self):
-        contracts.lido.stop({"from": contracts.voting})
+        contracts.lido.stop({"from": contracts.agent})
 
         with brownie.reverts("CONTRACT_IS_STOPPED"):
-            contracts.lido.stop({"from": contracts.voting})
+            contracts.lido.stop({"from": contracts.agent})
 
-        contracts.lido.resume({"from": contracts.voting})
+        contracts.lido.resume({"from": contracts.agent})
 
         with brownie.reverts("CONTRACT_IS_ACTIVE"):
-            contracts.lido.resume({"from": contracts.voting})
+            contracts.lido.resume({"from": contracts.agent})
 
     @pytest.mark.skip(
         reason="Second call of pause/resume staking is not reverted right now."
@@ -141,15 +141,15 @@ class TestRevertedSecondCalls:
         "there's not a real problem with it."
     )
     def test_revert_second_pause_resume_staking(self):
-        contracts.lido.pauseStaking({"from": contracts.voting})
+        contracts.lido.pauseStaking({"from": contracts.agent})
 
         with brownie.reverts(""):
-            contracts.lido.pauseStaking({"from": contracts.voting})
+            contracts.lido.pauseStaking({"from": contracts.agent})
 
-        contracts.lido.resumeStaking({"from": contracts.voting})
+        contracts.lido.resumeStaking({"from": contracts.agent})
 
         with brownie.reverts(""):
-            contracts.lido.resumeStaking({"from": contracts.voting})
+            contracts.lido.resumeStaking({"from": contracts.agent})
 
     def test_revert_second_stop_staking_module(self, helpers, stranger):
         contracts.staking_router.grantRole(
@@ -220,13 +220,13 @@ def test_stopped_lido_cant_deposit():
 
 @pytest.mark.usefixtures("stopped_lido")
 def test_resumed_staking_can_stake(stranger):
-    contracts.lido.resumeStaking({"from": contracts.voting})
+    contracts.lido.resumeStaking({"from": contracts.agent})
     stranger.transfer(contracts.lido, DEPOSIT_AMOUNT)
 
 
 @pytest.mark.usefixtures("stopped_lido")
 def test_resumed_staking_cant_deposit():
-    contracts.lido.resumeStaking({"from": contracts.voting})
+    contracts.lido.resumeStaking({"from": contracts.agent})
 
     with brownie.reverts("CAN_NOT_DEPOSIT"):
         contracts.lido.deposit(1, 1, "0x", {"from": contracts.deposit_security_module}),
@@ -234,18 +234,18 @@ def test_resumed_staking_cant_deposit():
 
 @pytest.mark.usefixtures("stopped_lido")
 def test_resumed_lido_can_stake(stranger):
-    contracts.lido.resume({"from": contracts.voting})
+    contracts.lido.resume({"from": contracts.agent})
     stranger.transfer(contracts.lido, DEPOSIT_AMOUNT)
 
 
 @pytest.mark.usefixtures("stopped_lido")
 def test_resumed_lido_can_deposit(stranger):
-    contracts.lido.resume({"from": contracts.voting})
+    contracts.lido.resume({"from": contracts.agent})
     contracts.lido.deposit(1, 1, "0x", {"from": contracts.deposit_security_module}),
 
 
 def test_paused_staking_can_report():
-    contracts.lido.pauseStaking({"from": contracts.voting})
+    contracts.lido.pauseStaking({"from": contracts.agent})
     oracle_report()
 
 
@@ -343,7 +343,7 @@ def test_stopped_staking_module_cant_reward(stranger):
 
 
 def test_stopped_lido_cant_reward(stranger):
-    contracts.lido.stop({"from": contracts.voting})
+    contracts.lido.stop({"from": contracts.agent})
 
     with brownie.reverts("CONTRACT_IS_STOPPED"):
         oracle_report()
@@ -389,7 +389,7 @@ def test_stopped_lido_cant_withdraw(stranger):
     stranger.transfer(contracts.lido, DEPOSIT_AMOUNT)
     contracts.lido.approve(contracts.withdrawal_queue, DEPOSIT_AMOUNT - 1, {"from": stranger})
 
-    contracts.lido.stop({"from": contracts.voting})
+    contracts.lido.stop({"from": contracts.agent})
 
     with brownie.reverts("CONTRACT_IS_STOPPED"):
         contracts.withdrawal_queue.requestWithdrawals([DEPOSIT_AMOUNT - 1], stranger, {"from": stranger})
@@ -439,7 +439,7 @@ def test_stopped_lido_can_exit_validators(stranger):
 
     contract_version = contracts.validators_exit_bus_oracle.getContractVersion()
 
-    contracts.lido.stop({"from": contracts.voting})
+    contracts.lido.stop({"from": contracts.agent})
 
     report, member = prepare_report()
     contracts.validators_exit_bus_oracle.submitReportData(report, contract_version, {"from": member})
