@@ -629,24 +629,21 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         ),
     )
 
-    plain_agent_item = bake_vote_items(
-        ["54. Add CSSetVettedGateTree factory to EasyTrack with permissions"],
-        [
-            add_evmscript_factory(
+    plain_agent_item = {
+        "54. Add CSSetVettedGateTree factory to EasyTrack with permissions": add_evmscript_factory(
                 factory=CS_SET_VETTED_GATE_TREE_FACTORY,
                 permissions=(create_permissions(contracts.cs_vetted_gate, "setTreeParams")),
             )
-        ]
-    )
-
-    dg_vote = dual_governance_agent_forward(call_script_items)
+    }
 
     if silent:
         desc_ipfs = calculate_vote_ipfs_description(TW_DESCRIPTION)
     else:
         desc_ipfs = upload_vote_ipfs_description(TW_DESCRIPTION)
 
-    vote_items = {'Dualgov item': dg_vote, **plain_agent_item}
+    dg_desc = "\n".join(vote_descriptions)
+    dg_vote = dual_governance_agent_forward(call_script_items)
+    vote_items = {dg_desc: dg_vote, **plain_agent_item}
 
     assert confirm_vote_script(vote_items, silent, desc_ipfs)
 
