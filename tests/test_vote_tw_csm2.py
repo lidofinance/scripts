@@ -2,7 +2,6 @@
 Tests for triggerable withdrawals voting.
 """
 
-from typing import Dict, Tuple, List, NamedTuple
 from scripts.vote_tw_csm2 import create_tw_vote
 from brownie import interface, chain, convert, web3, ZERO_ADDRESS
 from utils.test.tx_tracing_helpers import group_voting_events_from_receipt, group_dg_events_from_receipt
@@ -254,6 +253,9 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     dg_tx = timelock.execute(proposal_id, {"from": stranger})
 
+    voting_events = group_voting_events_from_receipt(vote_tx)
+    dg_events = group_dg_events_from_receipt(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
+
     # --- VALIDATE EXECUTION RESULTS ---
 
     # Step 1: Validate Lido Locator implementation was updated
@@ -394,3 +396,5 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # CSM Step 54: Add EasyTrack factory for CSSetVettedGateTree
     new_factories = contracts.easy_track.getEVMScriptFactories()
     assert CS_SET_VETTED_GATE_TREE_FACTORY in new_factories, "EasyTrack should have CSSetVettedGateTree factory after vote"
+
+
