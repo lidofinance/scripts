@@ -4,9 +4,13 @@ Tests for triggerable withdrawals voting.
 
 from typing import Dict, Tuple, List, NamedTuple
 from scripts.vote_tw_csm2 import create_tw_vote
-from brownie import interface, convert, web3, ZERO_ADDRESS
-from utils.test.tx_tracing_helpers import display_voting_events, group_voting_events
+from brownie import interface, chain, convert, web3, ZERO_ADDRESS
+from utils.test.tx_tracing_helpers import group_voting_events_from_receipt, group_dg_events_from_receipt
+from utils.dual_governance import wait_for_noon_utc_to_satisfy_time_constrains
 from utils.config import (
+    DUAL_GOVERNANCE,
+    TIMELOCK,
+    DUAL_GOVERNANCE_ADMIN_EXECUTOR,
     CS_CURVES,
     VALIDATORS_EXIT_BUS_ORACLE_IMPL,
     WITHDRAWAL_VAULT_IMPL,
@@ -43,6 +47,7 @@ def get_ossifiable_proxy_impl(proxy_address):
     proxy = interface.OssifiableProxy(proxy_address)
     return proxy.proxy__getImplementation()
 
+
 def get_wv_contract_proxy_impl(proxy_address):
     """Get implementation address from an WithdrawalContractProxy"""
     proxy = interface.WithdrawalContractProxy(proxy_address)
@@ -74,6 +79,9 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     cs_accounting_impl_before = get_ossifiable_proxy_impl(contracts.cs_accounting.address)
     cs_fee_oracle_impl_before = get_ossifiable_proxy_impl(contracts.cs_fee_oracle.address)
     cs_fee_distributor_impl_before = get_ossifiable_proxy_impl(contracts.cs_fee_distributor.address)
+
+    timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
+    dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
 
     # --- Initial state checks ---
 
@@ -215,12 +223,23 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
         vote_id, _ = create_tw_vote(tx_params, silent=True)
 
     vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
-    print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
+    print(f"voteId = {vote_id}")
 
-    display_voting_events(vote_tx)
-    events = group_voting_events(vote_tx)
+    proposal_id = vote_tx.events["ProposalSubmitted"][1]["proposalId"]
+    print(f"proposalId = {proposal_id}")
 
-    helpers.execute_dg_proposal(vote_tx.events["ProposalSubmitted"][1]["proposalId"])
+    chain.sleep(timelock.getAfterSubmitDelay() + 1)
+    dual_governance.scheduleProposal(proposal_id, {"from": stranger})
+
+    chain.sleep(timelock.getAfterScheduleDelay() + 1)
+    wait_for_noon_utc_to_satisfy_time_constrains()
+
+    dg_tx = timelock.execute(proposal_id, {"from": stranger})
+
+    # Parse events from vote and dual governance transactions for validation
+
+    voting_events = group_voting_events_from_receipt(vote_tx)
+    dg_events = group_dg_events_from_receipt(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
 
     # --- VALIDATE EXECUTION RESULTS ---
 

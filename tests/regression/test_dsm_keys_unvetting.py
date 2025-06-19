@@ -18,10 +18,6 @@ def dsm() -> interface.DepositSecurityModule:
     return contracts.deposit_security_module
 
 @pytest.fixture
-def voting(accounts):
-    return accounts.at(contracts.voting.address, force=True)
-
-@pytest.fixture
 def agent(accounts):
     return accounts.at(contracts.agent.address, force=True)
 
@@ -127,10 +123,10 @@ def test_dsm_keys_unvetting_by_guardian(dsm, agent, stranger):
     assert node_operator_after_unvetting["totalVettedValidators"] == totalDepositedValidators
 
 
-def test_dsm_decrease_vetted_signing_keys_count(dsm, agent, voting, stranger):
+def test_dsm_decrease_vetted_signing_keys_count(dsm, agent, stranger):
     staking_module_id= 1
     staking_module = interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
-    operator_id = add_node_operator(staking_module, voting, stranger)
+    operator_id = add_node_operator(staking_module, agent, stranger)
     operator = staking_module.getNodeOperator(operator_id, True)
 
     keys_count = 10
@@ -146,7 +142,7 @@ def test_dsm_decrease_vetted_signing_keys_count(dsm, agent, voting, stranger):
         stranger,
         staking_module,
         convert.to_uint(Web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")),
-        {"from": voting},
+        {"from": agent},
     )
 
     staking_module.setNodeOperatorStakingLimit(operator_id, 8, {"from": stranger})

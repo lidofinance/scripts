@@ -40,6 +40,39 @@ development:
     # https://github.com/mds1/multicall#multicall2-contract-addresses
     multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
 
+  - cmd: "npx hardhat node"
+    cmd_settings:
+      fork: mainnet
+      port: 8545
+    host: http://127.0.0.1:8545
+    id: mfh-1 # mainnet-fork-hardhat-1
+    name: Hardhat (Mainnet Fork 1)
+    timeout: 360
+    # https://github.com/mds1/multicall#multicall2-contract-addresses
+    multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+
+  - cmd: "npx hardhat node"
+    cmd_settings:
+      fork: mainnet
+      port: 8546
+    host: http://127.0.0.1:8546
+    id: mfh-2 # mainnet-fork-hardhat-2
+    name: Hardhat (Mainnet Fork 2)
+    timeout: 360
+    # https://github.com/mds1/multicall#multicall2-contract-addresses
+    multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+
+  - cmd: "npx hardhat node"
+    cmd_settings:
+      fork: mainnet
+      port: 8547
+    host: http://127.0.0.1:8547
+    id: mfh-3 # mainnet-fork-hardhat-3
+    name: Hardhat (Mainnet Fork 3)
+    timeout: 360
+    # https://github.com/mds1/multicall#multicall2-contract-addresses
+    multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+
   - cmd: ./ganache.sh
     cmd_settings:
       accounts: 10
@@ -65,6 +98,7 @@ development:
     host: http://127.0.0.1
     id: holesky-fork
     name: Ganache-CLI (Holesky Fork)
+    explorer: https://api-holesky.etherscan.io/api
     timeout: 360
 
   - cmd: ./ganache.sh
