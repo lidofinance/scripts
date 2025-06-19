@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from typing import Tuple, Optional, Sequence
 from brownie import accounts, web3, convert, ZERO_ADDRESS
 from utils.config import (
+    CSM_MODULE_ID,
     CS_ACCOUNTING_IMPL_V2_ADDRESS,
     CS_CURVES,
     CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS,
@@ -67,7 +68,6 @@ EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 7200
 NOR_EXIT_DEADLINE_IN_SEC = 30 * 60
 
 # CSM Module share and EasyTrack constants
-CSM_MODULE_ID = 3
 CSM_NEW_TARGET_SHARE_BP = 300  # 3%
 CSM_NEW_PRIORITY_EXIT_THRESHOLD_BP = 375  # 3.75%
 CSM_OLD_STAKING_MODULE_FEE_BP = 600
@@ -442,14 +442,13 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
                 CS_ACCOUNTING_IMPL_V2_ADDRESS,
             )
         ),
-        # TODO: fix InvalidBondCurvesLength error
-        # (
-        #     f"31. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract",
-        #     (
-        #         contracts.cs_accounting.address,
-        #         contracts.cs_accounting.finalizeUpgradeV2.encode_input(CS_CURVES),
-        #     ),
-        # ),
+        (
+            f"31. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract",
+            (
+                contracts.cs_accounting.address,
+                contracts.cs_accounting.finalizeUpgradeV2.encode_input(CS_CURVES),
+            ),
+        ),
         (
             f"32. Upgrade CSFeeOracle implementation on proxy",
             encode_proxy_upgrade_to(
