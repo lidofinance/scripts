@@ -2,8 +2,10 @@
 Tests for triggerable withdrawals voting.
 """
 
+from typing import Dict, Tuple, List, NamedTuple, Optional, Any, Sequence
 from scripts.vote_tw_csm2 import create_tw_vote
 from brownie import interface, chain, convert, web3, ZERO_ADDRESS
+from brownie.network.event import EventDict
 from utils.test.tx_tracing_helpers import group_voting_events_from_receipt, group_dg_events_from_receipt
 from utils.dual_governance import wait_for_noon_utc_to_satisfy_time_constrains
 from utils.config import (
@@ -33,6 +35,271 @@ from utils.config import (
     VOTING,
     contracts,
 )
+
+def validate_events_chain(actual_events: Sequence[str], expected_events: Sequence[str]):
+    """Validate that a sequence of events matches the expected sequence.
+
+    Args:
+        actual_events: The sequence of actual event names.
+        expected_events: The sequence of expected event names.
+    """
+    assert len(actual_events) == len(expected_events), (
+        f"Expected {len(expected_events)} events, but got {len(actual_events)}.\n"
+        f"Expected: {expected_events}.\nGot: {actual_events}"
+    )
+
+    for i, (actual, expected) in enumerate(zip(actual_events, expected_events)):
+        assert actual == expected, (
+            f"Event at position {i} doesn't match.\n"
+            f"Expected: {expected}.\nGot: {actual}"
+        )
+
+def validate_proxy_upgrade_event(event: EventDict, implementation: str, emitted_by: Optional[str] = None):
+    """Validate that proxy was successfully upgraded
+
+    Args:
+        event: Event dictionary containing Upgraded event
+        implementation: New implementation address
+        emitted_by: Contract address that emitted the event
+    """
+    print(f"Validating proxy upgrade event: {event}")
+    assert "Upgraded" in event, "No Upgraded event found"
+
+    assert event["Upgraded"][0]["implementation"] == implementation, (
+        f"Wrong implementation address: {event['Upgraded'][0]['implementation']} != {implementation}"
+    )
+
+    if emitted_by is not None:
+        assert convert.to_address(event["Upgraded"][0]["_emitted_by"]) == convert.to_address(emitted_by), (
+            f"Wrong event emitter: {event['Upgraded'][0]['_emitted_by']} != {emitted_by}"
+        )
+
+def validate_consensus_version_set_event(event: EventDict, new_version: int, prev_version: int, emitted_by: Optional[str] = None):
+    """Validate that consensus version was set
+
+    Args:
+        event: Event dictionary containing ConsensusVersionSet event
+        new_version: New consensus version
+        prev_version: Previous consensus version
+        emitted_by: Contract address that emitted the event
+    """
+    assert "ConsensusVersionSet" in event, "No ConsensusVersionSet event found"
+
+    assert event["ConsensusVersionSet"][0]["version"] == new_version, (
+        f"Wrong new version: {event['ConsensusVersionSet'][0]['version']} != {new_version}"
+    )
+
+    assert event["ConsensusVersionSet"][0]["prevVersion"] == prev_version, (
+        f"Wrong previous version: {event['ConsensusVersionSet'][0]['prevVersion']} != {prev_version}"
+    )
+
+    if emitted_by is not None:
+        assert convert.to_address(event["ConsensusVersionSet"][0]["_emitted_by"]) == convert.to_address(emitted_by), (
+            f"Wrong event emitter: {event['ConsensusVersionSet'][0]['_emitted_by']} != {emitted_by}"
+        )
+
+def validate_role_grant_event(event: EventDict, role_hash: str, account: str, emitted_by: Optional[str] = None):
+    """Validate that role was granted
+
+    Args:
+        event: Event dictionary containing RoleGranted event
+        role_hash: Hash of the role
+        account: Account that was granted the role
+        emitted_by: Contract address that emitted the event
+    """
+    assert "RoleGranted" in event, "No RoleGranted event found"
+
+    # Strip 0x prefix for consistent comparison
+    expected_role_hash = role_hash.replace('0x', '')
+    actual_role_hash = event["RoleGranted"][0]["role"].hex().replace('0x', '')
+
+    assert actual_role_hash == expected_role_hash, (
+        f"Wrong role hash: {event['RoleGranted'][0]['role'].hex()} != {role_hash}"
+    )
+
+    assert convert.to_address(event["RoleGranted"][0]["account"]) == convert.to_address(account), (
+        f"Wrong account: {event['RoleGranted'][0]['account']} != {account}"
+    )
+
+    if emitted_by is not None:
+        assert convert.to_address(event["RoleGranted"][0]["_emitted_by"]) == convert.to_address(emitted_by), (
+            f"Wrong event emitter: {event['RoleGranted'][0]['_emitted_by']} != {emitted_by}"
+        )
+
+def validate_role_revoke_event(event: EventDict, role_hash: str, account: str, emitted_by: Optional[str] = None):
+    """Validate that role was revoked
+
+    Args:
+        event: Event dictionary containing RoleRevoked event
+        role_hash: Hash of the role
+        account: Account that was revoked the role
+        emitted_by: Contract address that emitted the event
+    """
+    assert "RoleRevoked" in event, "No RoleRevoked event found"
+
+    # Strip 0x prefix for consistent comparison
+    expected_role_hash = role_hash.replace('0x', '')
+    actual_role_hash = event["RoleRevoked"][0]["role"].hex().replace('0x', '')
+
+    assert actual_role_hash == expected_role_hash, (
+        f"Wrong role hash: {event['RoleRevoked'][0]['role'].hex()} != {role_hash}"
+    )
+
+    assert convert.to_address(event["RoleRevoked"][0]["account"]) == convert.to_address(account), (
+        f"Wrong account: {event['RoleRevoked'][0]['account']} != {account}"
+    )
+
+    if emitted_by is not None:
+        assert convert.to_address(event["RoleRevoked"][0]["_emitted_by"]) == convert.to_address(emitted_by), (
+            f"Wrong event emitter: {event['RoleRevoked'][0]['_emitted_by']} != {emitted_by}"
+        )
+
+def validate_contract_version_set_event(event: EventDict, version: int, emitted_by: Optional[str] = None):
+    """Validate that contract version was set
+
+    Args:
+        event: Event dictionary containing ContractVersionSet event
+        version: New contract version
+        emitted_by: Contract address that emitted the event
+    """
+    assert "ContractVersionSet" in event, "No ContractVersionSet event found"
+
+    assert event["ContractVersionSet"][0]["version"] == version, (
+        f"Wrong version: {event['ContractVersionSet'][0]['version']} != {version}"
+    )
+
+    if emitted_by is not None:
+        assert convert.to_address(event["ContractVersionSet"][0]["_emitted_by"]) == convert.to_address(emitted_by), (
+            f"Wrong event emitter: {event['ContractVersionSet'][0]['_emitted_by']} != {emitted_by}"
+        )
+
+def validate_bond_curve_added_event(event: EventDict, curve_id: int, emitted_by: Optional[str] = None):
+    """Validate that bond curve was added
+
+    Args:
+        event: Event dictionary containing BondCurveAdded event
+        curve_id: ID of the added bond curve
+        emitted_by: Contract address that emitted the event
+    """
+    assert "BondCurveAdded" in event, "No BondCurveAdded event found"
+
+    assert event["BondCurveAdded"][0]["curveId"] == curve_id, (
+        f"Wrong curve ID: {event['BondCurveAdded'][0]['curveId']} != {curve_id}"
+    )
+
+    if emitted_by is not None:
+        assert convert.to_address(event["BondCurveAdded"][0]["_emitted_by"]) == convert.to_address(emitted_by), (
+            f"Wrong event emitter: {event['BondCurveAdded'][0]['_emitted_by']} != {emitted_by}"
+        )
+
+def validate_staking_module_share_limit_set_event(
+    event: EventDict, module_id: int, share_limit: int, priority_share_threshold: int, emitted_by: Optional[str] = None
+):
+    """Validate that staking module share limit was set
+
+    Args:
+        event: Event dictionary containing StakingModuleShareLimitSet event
+        module_id: ID of the staking module
+        share_limit: New stake share limit
+        priority_share_threshold: New priority exit threshold
+        emitted_by: Contract address that emitted the event
+    """
+    assert "StakingModuleShareLimitSet" in event, "No StakingModuleShareLimitSet event found"
+
+    assert event["StakingModuleShareLimitSet"][0]["stakingModuleId"] == module_id, (
+        f"Wrong module ID: {event['StakingModuleShareLimitSet'][0]['stakingModuleId']} != {module_id}"
+    )
+
+    assert event["StakingModuleShareLimitSet"][0]["stakeShareLimit"] == share_limit, (
+        f"Wrong share limit: {event['StakingModuleShareLimitSet'][0]['stakeShareLimit']} != {share_limit}"
+    )
+
+    assert event["StakingModuleShareLimitSet"][0]["priorityExitShareThreshold"] == priority_share_threshold, (
+        f"Wrong priority threshold: {event['StakingModuleShareLimitSet'][0]['priorityExitShareThreshold']} != {priority_share_threshold}"
+    )
+
+    if emitted_by is not None:
+        assert convert.to_address(event["StakingModuleShareLimitSet"][0]["_emitted_by"]) == convert.to_address(emitted_by), (
+            f"Wrong event emitter: {event['StakingModuleShareLimitSet'][0]['_emitted_by']} != {emitted_by}"
+        )
+
+def validate_staking_module_fees_set_event(
+    event: EventDict, module_id: int, fee_points_bp: int, emitted_by: Optional[str] = None
+):
+    """Validate that staking module fees were set
+
+    Args:
+        event: Event dictionary containing StakingModuleFeesSet event
+        module_id: ID of the staking module
+        fee_points_bp: New fee points in basis points
+        emitted_by: Contract address that emitted the event
+    """
+    assert "StakingModuleFeesSet" in event, "No StakingModuleFeesSet event found"
+
+    assert event["StakingModuleFeesSet"][0]["stakingModuleId"] == module_id, (
+        f"Wrong module ID: {event['StakingModuleFeesSet'][0]['stakingModuleId']} != {module_id}"
+    )
+
+    assert event["StakingModuleFeesSet"][0]["feePointsBp"] == fee_points_bp, (
+        f"Wrong fee points: {event['StakingModuleFeesSet'][0]['feePointsBp']} != {fee_points_bp}"
+    )
+
+    if emitted_by is not None:
+        assert convert.to_address(event["StakingModuleFeesSet"][0]["_emitted_by"]) == convert.to_address(emitted_by), (
+            f"Wrong event emitter: {event['StakingModuleFeesSet'][0]['_emitted_by']} != {emitted_by}"
+        )
+
+def validate_staking_module_max_deposits_per_block_set_event(
+    event: EventDict, module_id: int, max_deposits_per_block: int, emitted_by: Optional[str] = None
+):
+    """Validate that staking module max deposits per block was set
+
+    Args:
+        event: Event dictionary containing StakingModuleMaxDepositsPerBlockSet event
+        module_id: ID of the staking module
+        max_deposits_per_block: New max deposits per block
+        emitted_by: Contract address that emitted the event
+    """
+    assert "StakingModuleMaxDepositsPerBlockSet" in event, "No StakingModuleMaxDepositsPerBlockSet event found"
+
+    assert event["StakingModuleMaxDepositsPerBlockSet"][0]["stakingModuleId"] == module_id, (
+        f"Wrong module ID: {event['StakingModuleMaxDepositsPerBlockSet'][0]['stakingModuleId']} != {module_id}"
+    )
+
+    assert event["StakingModuleMaxDepositsPerBlockSet"][0]["maxDepositsPerBlock"] == max_deposits_per_block, (
+        f"Wrong max deposits: {event['StakingModuleMaxDepositsPerBlockSet'][0]['maxDepositsPerBlock']} != {max_deposits_per_block}"
+    )
+
+    if emitted_by is not None:
+        assert convert.to_address(event["StakingModuleMaxDepositsPerBlockSet"][0]["_emitted_by"]) == convert.to_address(emitted_by), (
+            f"Wrong event emitter: {event['StakingModuleMaxDepositsPerBlockSet'][0]['_emitted_by']} != {emitted_by}"
+        )
+
+def validate_staking_module_min_deposit_block_distance_set_event(
+    event: EventDict, module_id: int, min_deposit_block_distance: int, emitted_by: Optional[str] = None
+):
+    """Validate that staking module min deposit block distance was set
+
+    Args:
+        event: Event dictionary containing StakingModuleMinDepositBlockDistanceSet event
+        module_id: ID of the staking module
+        min_deposit_block_distance: New min deposit block distance
+        emitted_by: Contract address that emitted the event
+    """
+    assert "StakingModuleMinDepositBlockDistanceSet" in event, "No StakingModuleMinDepositBlockDistanceSet event found"
+
+    assert event["StakingModuleMinDepositBlockDistanceSet"][0]["stakingModuleId"] == module_id, (
+        f"Wrong module ID: {event['StakingModuleMinDepositBlockDistanceSet'][0]['stakingModuleId']} != {module_id}"
+    )
+
+    assert event["StakingModuleMinDepositBlockDistanceSet"][0]["minDepositBlockDistance"] == min_deposit_block_distance, (
+        f"Wrong min distance: {event['StakingModuleMinDepositBlockDistanceSet'][0]['minDepositBlockDistance']} != {min_deposit_block_distance}"
+    )
+
+    if emitted_by is not None:
+        assert convert.to_address(event["StakingModuleMinDepositBlockDistanceSet"][0]["_emitted_by"]) == convert.to_address(emitted_by), (
+            f"Wrong event emitter: {event['StakingModuleMinDepositBlockDistanceSet'][0]['_emitted_by']} != {emitted_by}"
+        )
 
 # Contract versions expected after upgrade
 CSM_V2_VERSION = 2
@@ -396,5 +663,234 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # CSM Step 54: Add EasyTrack factory for CSSetVettedGateTree
     new_factories = contracts.easy_track.getEVMScriptFactories()
     assert CS_SET_VETTED_GATE_TREE_FACTORY in new_factories, "EasyTrack should have CSSetVettedGateTree factory after vote"
+
+    # Validate dual governance events
+    assert len(dg_events) >= 54, f"Expected at least 54 DG events, but got {len(dg_events)}"
+
+    # 1. Lido Locator upgrade events
+    validate_proxy_upgrade_event(dg_events[0], LIDO_LOCATOR_IMPL, emitted_by=contracts.lido_locator)
+
+    # 2. VEBO upgrade events
+    validate_proxy_upgrade_event(dg_events[1], VALIDATORS_EXIT_BUS_ORACLE_IMPL, emitted_by=contracts.validators_exit_bus_oracle)
+
+    # 3. VEBO finalize upgrade events
+    validate_contract_version_set_event(dg_events[2], version=2, emitted_by=contracts.validators_exit_bus_oracle)
+    assert 'ExitRequestsLimitSet' in dg_events[2], "ExitRequestsLimitSet event not found"
+    assert dg_events[2]['ExitRequestsLimitSet'][0]['maxExitRequestsLimit'] == 13000, "Wrong maxExitRequestsLimit"
+    assert dg_events[2]['ExitRequestsLimitSet'][0]['exitsPerFrame'] == 1, "Wrong exitsPerFrame"
+    assert dg_events[2]['ExitRequestsLimitSet'][0]['frameDurationInSec'] == 48, "Wrong frameDurationInSec"
+
+    # 4. Grant VEBO MANAGE_CONSENSUS_VERSION_ROLE to Agent
+    validate_role_grant_event(
+        dg_events[3],
+        role_hash=web3.keccak(text="MANAGE_CONSENSUS_VERSION_ROLE").hex(),
+        account=contracts.agent.address,
+        emitted_by=contracts.validators_exit_bus_oracle
+    )
+
+    # 5. Set VEBO consensus version to 4
+    validate_consensus_version_set_event(
+        dg_events[4],
+        new_version=4,
+        prev_version=3,
+        emitted_by=contracts.validators_exit_bus_oracle
+    )
+
+    # 6. Revoke VEBO MANAGE_CONSENSUS_VERSION_ROLE from Agent
+    validate_role_revoke_event(
+        dg_events[5],
+        role_hash=web3.keccak(text="MANAGE_CONSENSUS_VERSION_ROLE").hex(),
+        account=contracts.agent.address,
+        emitted_by=contracts.validators_exit_bus_oracle
+    )
+
+    # 7. Grant TWG ADD_FULL_WITHDRAWAL_REQUEST_ROLE to CS Ejector
+    validate_role_grant_event(
+        dg_events[6],
+        role_hash=web3.keccak(text="ADD_FULL_WITHDRAWAL_REQUEST_ROLE").hex(),
+        account=contracts.cs_ejector.address,
+        emitted_by=contracts.triggerable_withdrawals_gateway
+    )
+
+    # 8. Grant TWG ADD_FULL_WITHDRAWAL_REQUEST_ROLE to VEBO
+    validate_role_grant_event(
+        dg_events[7],
+        role_hash=web3.keccak(text="ADD_FULL_WITHDRAWAL_REQUEST_ROLE").hex(),
+        account=contracts.validators_exit_bus_oracle.address,
+        emitted_by=contracts.triggerable_withdrawals_gateway
+    )
+
+    # 9. Update WithdrawalVault implementation
+    validate_proxy_upgrade_event(dg_events[8], WITHDRAWAL_VAULT_IMPL, emitted_by=contracts.withdrawal_vault)
+
+    # 10. Call finalizeUpgrade_v2 on WithdrawalVault
+    validate_contract_version_set_event(dg_events[9], version=2, emitted_by=contracts.withdrawal_vault)
+
+    # 11. Update AO implementation
+    validate_proxy_upgrade_event(dg_events[10], ACCOUNTING_ORACLE_IMPL, emitted_by=contracts.accounting_oracle)
+
+    # 12. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+    validate_role_grant_event(
+        dg_events[11],
+        role_hash=web3.keccak(text="MANAGE_CONSENSUS_VERSION_ROLE").hex(),
+        account=contracts.agent.address,
+        emitted_by=contracts.accounting_oracle
+    )
+
+    # 13. Bump AO consensus version to 4
+    validate_consensus_version_set_event(
+        dg_events[12],
+        new_version=4,
+        prev_version=3,
+        emitted_by=contracts.accounting_oracle
+    )
+
+    # 14. Revoke AO MANAGE_CONSENSUS_VERSION_ROLE from the AGENT
+    validate_role_revoke_event(
+        dg_events[13],
+        role_hash=web3.keccak(text="MANAGE_CONSENSUS_VERSION_ROLE").hex(),
+        account=contracts.agent.address,
+        emitted_by=contracts.accounting_oracle
+    )
+
+    # 15. Update SR implementation
+    validate_proxy_upgrade_event(dg_events[14], STAKING_ROUTER_IMPL, emitted_by=contracts.staking_router)
+
+    # 16. Grant SR REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitVerifier
+    validate_role_grant_event(
+        dg_events[15],
+        role_hash=web3.keccak(text="REPORT_VALIDATOR_EXITING_STATUS_ROLE").hex(),
+        account=contracts.validator_exit_verifier.address,
+        emitted_by=contracts.staking_router
+    )
+
+    # 17. Grant SR REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG
+    validate_role_grant_event(
+        dg_events[16],
+        role_hash=web3.keccak(text="REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE").hex(),
+        account=contracts.triggerable_withdrawals_gateway.address,
+        emitted_by=contracts.staking_router
+    )
+
+    # 18-23: NOR and sDVT updates - validation of key events
+    # Both NOR and sDVT finalize upgrade events
+    assert any('ContractVersionSet' in dg_ev and dg_ev['ContractVersionSet'][0]['version'] == 4
+               for dg_ev in dg_events[17:22]), "ContractVersionSet for NOR/sDVT not found"
+    assert any('ExitDeadlineThresholdChanged' in dg_ev and dg_ev['ExitDeadlineThresholdChanged'][0]['threshold'] == 1800
+               for dg_ev in dg_events[17:22]), "ExitDeadlineThresholdChanged event not found"
+
+    # 24-28: Oracle configs validation
+    assert any('ConfigValueUnset' in dg_ev and 'NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP' in dg_ev['ConfigValueUnset'][0]['key']
+               for dg_ev in dg_events[22:27]), "NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP unset event not found"
+
+    assert any('ConfigValueUnset' in dg_ev and 'VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS' in dg_ev['ConfigValueUnset'][0]['key']
+               for dg_ev in dg_events[22:27]), "VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS unset event not found"
+
+    assert any('ConfigValueUnset' in dg_ev and 'VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS' in dg_ev['ConfigValueUnset'][0]['key']
+               for dg_ev in dg_events[22:27]), "VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS unset event not found"
+
+    assert any('ConfigValueSet' in dg_ev and 'EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS' in dg_ev['ConfigValueSet'][0]['key']
+               and convert.to_int(dg_ev['ConfigValueSet'][0]['value']) == 7200
+               for dg_ev in dg_events[22:28]), "EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS set event not found"
+
+    # 29. CSM implementation upgrade
+    validate_proxy_upgrade_event(dg_events[28], CSM_IMPL_V2_ADDRESS, emitted_by=contracts.csm)
+
+    # 30. CSM finalize upgrade validation
+    assert any('Initialized' in dg_ev and dg_ev['Initialized'][0]['version'] == 2
+               for dg_ev in dg_events[28:31]), "CSM Initialized event with version 2 not found"
+
+    # 31. CSAccounting implementation upgrade
+    validate_proxy_upgrade_event(dg_events[30], CS_ACCOUNTING_IMPL_V2_ADDRESS, emitted_by=contracts.cs_accounting)
+
+    # 32. CSAccounting finalize upgrade with bond curves
+    assert any('BondCurveAdded' in dg_ev for dg_ev in dg_events[30:34]), "BondCurveAdded events not found"
+    assert any('Initialized' in dg_ev and dg_ev['Initialized'][0]['version'] == 2
+               for dg_ev in dg_events[30:34]), "CSAccounting Initialized event with version 2 not found"
+
+    # # 33. CSFeeOracle implementation upgrade
+    # validate_proxy_upgrade_event(dg_events[32], CS_FEE_ORACLE_IMPL_V2_ADDRESS, emitted_by=contracts.cs_fee_oracle)
+
+    # # 34. CSFeeOracle finalize upgrade with consensus version
+    # assert any('ConsensusVersionSet' in dg_ev and dg_ev['ConsensusVersionSet'][0]['version'] == 3
+    #            and dg_ev['ConsensusVersionSet'][0]['prevVersion'] == 2 and 'ContractVersionSet' in dg_ev
+    #            for dg_ev in dg_events[33:36]), "CSFeeOracle consensus version and contract version set events not found"
+
+    # # 35. CSFeeDistributor implementation upgrade
+    # validate_proxy_upgrade_event(dg_events[35], CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS, emitted_by=contracts.cs_fee_distributor)
+
+    # # 36. CSFeeDistributor finalize upgrade
+    # assert any('RebateRecipientSet' in dg_ev for dg_ev in dg_events[35:38]), "RebateRecipientSet event not found"
+    # assert any('Initialized' in dg_ev and dg_ev['Initialized'][0]['version'] == 2
+    #            for dg_ev in dg_events[35:38]), "CSFeeDistributor Initialized event with version 2 not found"
+
+    # # 37-53: Role changes - validate a sampling of key role changes
+
+    # # Validate roles were revoked from CSM/CSAccounting
+    # set_bond_curve_role = web3.keccak(text="SET_BOND_CURVE_ROLE").hex()
+    # reset_bond_curve_role = web3.keccak(text="RESET_BOND_CURVE_ROLE").hex()
+
+    # assert any('RoleRevoked' in dg_ev and dg_ev['RoleRevoked'][0]['role'].hex() == set_bond_curve_role
+    #            and dg_ev['RoleRevoked'][0]['account'] == contracts.csm.address
+    #            for dg_ev in dg_events[37:42]), "SET_BOND_CURVE_ROLE not revoked from CSM"
+
+    # assert any('RoleRevoked' in dg_ev and dg_ev['RoleRevoked'][0]['role'].hex() == reset_bond_curve_role
+    #            for dg_ev in dg_events[37:42]), "RESET_BOND_CURVE_ROLE not revoked"
+
+    # # Validate roles were granted correctly
+    # create_node_operator_role = web3.keccak(text="CREATE_NODE_OPERATOR_ROLE").hex()
+
+    # assert any('RoleGranted' in dg_ev and dg_ev['RoleGranted'][0]['role'].hex() == create_node_operator_role
+    #            for dg_ev in dg_events[38:45]), "CREATE_NODE_OPERATOR_ROLE not granted"
+
+    # assert any('RoleGranted' in dg_ev and dg_ev['RoleGranted'][0]['role'].hex() == set_bond_curve_role
+    #            for dg_ev in dg_events[38:45]), "SET_BOND_CURVE_ROLE not granted to vetted gate"
+
+    # # Validate verifier roles change
+    # verifier_role = web3.keccak(text="VERIFIER_ROLE").hex()
+
+    # assert any('RoleRevoked' in dg_ev and dg_ev['RoleRevoked'][0]['role'].hex() == verifier_role
+    #            for dg_ev in dg_events[40:46]), "VERIFIER_ROLE not revoked from old verifier"
+
+    # assert any('RoleGranted' in dg_ev and dg_ev['RoleGranted'][0]['role'].hex() == verifier_role
+    #            for dg_ev in dg_events[40:46]), "VERIFIER_ROLE not granted to new verifier"
+
+    # # Validate gate seal role changes
+    # pause_role = web3.keccak(text="PAUSE_ROLE").hex()
+
+    # assert any('RoleRevoked' in dg_ev and dg_ev['RoleRevoked'][0]['role'].hex() == pause_role
+    #            for dg_ev in dg_events[44:50]), "PAUSE_ROLE not revoked from old gate seal"
+
+    # assert any('RoleGranted' in dg_ev and dg_ev['RoleGranted'][0]['role'].hex() == pause_role
+    #            for dg_ev in dg_events[44:52]), "PAUSE_ROLE not granted to new gate seal"
+
+    # # Validate ICS bond curve added
+    # manage_bond_curves_role = web3.keccak(text="MANAGE_BOND_CURVES_ROLE").hex()
+
+    # assert any('RoleGranted' in dg_ev and dg_ev['RoleGranted'][0]['role'].hex() == manage_bond_curves_role
+    #            for dg_ev in dg_events[50:53]), "MANAGE_BOND_CURVES_ROLE not granted to agent"
+
+    # assert any('BondCurveAdded' in dg_ev and dg_ev['BondCurveAdded'][0]['curveId'] == 4
+    #            for dg_ev in dg_events[50:54]), "ICS Bond curve not added"
+
+    # assert any('RoleRevoked' in dg_ev and dg_ev['RoleRevoked'][0]['role'].hex() == manage_bond_curves_role
+    #            for dg_ev in dg_events[50:54]), "MANAGE_BOND_CURVES_ROLE not revoked from agent"
+
+    # # 54. Validate CSM share increase
+    # assert any('StakingModuleShareLimitSet' in dg_ev and
+    #            dg_ev['StakingModuleShareLimitSet'][0]['stakingModuleId'] == CS_MODULE_ID and
+    #            dg_ev['StakingModuleShareLimitSet'][0]['stakeShareLimit'] == CS_MODULE_NEW_TARGET_SHARE_BP and
+    #            dg_ev['StakingModuleShareLimitSet'][0]['priorityExitShareThreshold'] == CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP
+    #            for dg_ev in dg_events[52:]), "CSM share limit not set correctly"
+
+    # validate_staking_module_share_limit_set_event(
+    #     next(dg_ev for dg_ev in dg_events[52:] if 'StakingModuleShareLimitSet' in dg_ev),
+    #     module_id=CS_MODULE_ID,
+    #     share_limit=CS_MODULE_NEW_TARGET_SHARE_BP,
+    #     priority_share_threshold=CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP,
+    #     emitted_by=contracts.staking_router
+    # )
+
+    # # EasyTrack factory - would need to validate outside of dual governance events
 
 
