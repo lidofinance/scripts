@@ -25,6 +25,8 @@ from utils.config import (
     CS_SET_VETTED_GATE_TREE_FACTORY,
     ACCOUNTING_ORACLE_IMPL,
     STAKING_ROUTER_IMPL,
+    ARAGON_KERNEL,
+    AGENT,
     contracts,
 )
 
@@ -115,6 +117,11 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # Steps 19-24: Check Node Operator Registry, sDVT and APP_MANAGER_ROLE settings
     app_manager_role = web3.keccak(text="APP_MANAGER_ROLE")
+    assert contracts.acl.getPermissionManager(ARAGON_KERNEL, app_manager_role) == AGENT, "AGENT should be the permission manager for APP_MANAGER_ROLE"
+    assert contracts.node_operators_registry.kernel() == ARAGON_KERNEL, "Node Operators Registry must use the correct kernel"
+    assert not contracts.acl.hasPermission(VOTING, ARAGON_KERNEL, app_manager_role), "VOTING should not have APP_MANAGER_ROLE before the upgrade"
+    assert not contracts.acl.hasPermission(AGENT, ARAGON_KERNEL, app_manager_role), "AGENT should not have APP_MANAGER_ROLE before the upgrade"
+
     assert not contracts.acl.hasPermission(contracts.agent, contracts.kernel, app_manager_role), "Agent should not have APP_MANAGER_ROLE before upgrade"
     assert contracts.node_operators_registry.getContractVersion() == 3, "Node Operators Registry version should be 3 before upgrade"
     assert contracts.simple_dvt.getContractVersion() == 3, "Simple DVT version should be 3 before upgrade"
