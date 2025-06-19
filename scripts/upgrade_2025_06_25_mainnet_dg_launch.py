@@ -76,11 +76,11 @@ from utils.config import (
 )
 
 
-voting_contract = "0x1DB8a9313785b78f7d0a201C5E0BE007f1eb63b4"
+dual_governance_launch_omnibus_provider = "0x1DB8a9313785b78f7d0a201C5E0BE007f1eb63b4"
 description = "Dual Governance Launch on Mainnet" # TODO: change description
 
 def get_vote_items():
-    voting_items = interface.DGLaunchOmnibus(voting_contract).getVoteItems()
+    voting_items = interface.DGLaunchOmnibus(dual_governance_launch_omnibus_provider).getVoteItems()
 
     vote_desc_items = []
     call_script_items = []

@@ -1,7 +1,7 @@
 from typing import NamedTuple, List
 from brownie import web3, chain, interface, ZERO_ADDRESS, reverts, convert
 from hexbytes import HexBytes
-from scripts.vote_2025_06_25_mainnet_dg_launch import start_vote
+from scripts.upgrade_2025_06_25_mainnet_dg_launch import start_vote
 from brownie.network.transaction import TransactionReceipt
 from utils.dual_governance import wait_for_noon_utc_to_satisfy_time_constrains
 from utils.test.tx_tracing_helpers import *
@@ -32,14 +32,13 @@ from utils.test.event_validators.rewards_manager import validate_ownership_trans
 
 
 DUAL_GOVERNANCE = "0xcdF49b058D606AD34c5789FD8c3BF8B3E54bA2db"
-TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
+EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
 DAO_EMERGENCY_GOVERNANCE = "0x553337946F2FAb8911774b20025fa776B76a7CcE"
 TIME_CONSTRAINTS = "0x2a30F5aC03187674553024296bed35Aa49749DDa"
 ROLES_VALIDATOR = "0x31534e3aFE219B609da3715a00a1479D2A2d7981"
 
-DAO_EMERGENCY_GOVERNANCE_DRY_RUN = "0x75850938C1Aa50B8cC6eb3c00995759dc1425ae6"
 DUAL_GOVERNANCE_LAUNCH_VERIFIER = "0xd48c2fc419569537Bb069BAD2165dC0cEB160CEC"
 
 
@@ -102,7 +101,7 @@ class AragonValidatedPermission(NamedTuple):
     manager: str
 
 
-def _validate_role_events(event: EventDict, roles: list, extra_events: list = None, log_script_count: int = 1, emitted_by: str = None):
+def _validate_role_events(event: EventDict, roles: list, extra_events: Optional[list] = None, log_script_count: int = 1, emitted_by: str = None):
     _events_chain = ["LogScriptCall"]
     for role in roles:
         if isinstance(role, OZValidatedRole):
@@ -166,7 +165,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     voting = interface.Voting(VOTING)
     acl = interface.ACL(ACL)
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
-    timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
+    timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
     agent = interface.Agent(AGENT)
     lido = interface.Lido(LIDO)
     token_manager = interface.TokenManager(TOKEN_MANAGER)
@@ -691,7 +690,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
                 "data": interface.RolesValidator(ROLES_VALIDATOR).validateDGProposalLaunchPhase.encode_input(),
             },
         ],
-        emitted_by=TIMELOCK,
+        emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
     )
 
     # Validate roles were transferred correctly
@@ -702,7 +701,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     validate_time_constraints_executed_before_event(evs[56], to_be_executed_before_timestamp, emitted_by=TIME_CONSTRAINTS)
 
     # Check DG execution events
-    dg_evs = group_dg_events_from_receipt(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
+    dg_evs = group_dg_events_from_receipt(dg_tx, timelock=EMERGENCY_PROTECTED_TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
 
     # Execution is allowed before Tuesday, 15 July 2025 00:00:00
     validate_dg_time_constraints_executed_before_event(dg_evs[0], to_be_executed_before_timestamp_proposal, emitted_by=TIME_CONSTRAINTS)
@@ -1007,7 +1006,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         agent.execute(stranger, 0, "0x", {"from": VOTING})
 
 
-def check_can_perform_aragon_role_management(entity, app, role, acl, actor):
+def check_can_perform_aragon_role_management(entity: str, app: str, role: str, acl: interface.ACL, actor: str):
     """
     Check if the actor can perform Aragon role management on the app with the given role
     :param entity: The entity to check

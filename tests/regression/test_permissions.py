@@ -498,11 +498,12 @@ def get_http_w3_provider_url():
     assert False, 'Web3 HTTP Provider token env var not found'
 
 def active_aragon_roles(protocol_permissions):
-    w3 = Web3(Web3.HTTPProvider(get_http_w3_provider_url()))
+    local_rpc_provider = web3
+    remote_rpc_provider = Web3(Web3.HTTPProvider(get_http_w3_provider_url()))
 
-    event_signature_hash = w3.keccak(text="SetPermission(address,address,bytes32,bool)").hex()
+    event_signature_hash = remote_rpc_provider.keccak(text="SetPermission(address,address,bytes32,bool)").hex()
 
-    def fetch_events_in_batches(start_block, end_block, provider=web3, step=100000):
+    def fetch_events_in_batches(start_block, end_block, provider=local_rpc_provider, step=100000):
         """Fetch events in batches of `step` blocks with a progress bar."""
         events = []
         total_batches = (end_block - start_block) // step + 1
@@ -516,7 +517,7 @@ def active_aragon_roles(protocol_permissions):
                 pbar.update(1)
         return events
 
-    events_before_voting = fetch_events_in_batches(ACL_DEPLOY_BLOCK_NUMBER, w3.eth.block_number, w3)
+    events_before_voting = fetch_events_in_batches(ACL_DEPLOY_BLOCK_NUMBER, remote_rpc_provider.eth.block_number, remote_rpc_provider)
 
     permission_events = _decode_logs(events_before_voting)["SetPermission"]._ordered
 
@@ -524,7 +525,7 @@ def active_aragon_roles(protocol_permissions):
     if len(history) > 0:
         vote_block = history[0].block_number
 
-        events_after_voting = fetch_events_in_batches(vote_block, w3.eth.block_number, web3)
+        events_after_voting = fetch_events_in_batches(vote_block, remote_rpc_provider.eth.block_number)
 
         try:
             permission_events_after_voting = _decode_logs(events_after_voting)["SetPermission"]._ordered
@@ -538,7 +539,7 @@ def active_aragon_roles(protocol_permissions):
         active_permissions[event_app] = {}
         keccak_roles = dict(
             zip(
-                [w3.keccak(text=role).hex() for role in protocol_permissions[event_app]["roles"]],
+                [remote_rpc_provider.keccak(text=role).hex() for role in protocol_permissions[event_app]["roles"]],
                 protocol_permissions[event_app]["roles"],
             )
         )

@@ -170,7 +170,7 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
         )
     ]
 
-    call_script_items = [submit_proposal(agent_forward(vote_input))]
+    call_script_items = [submit_proposal([agent_forward(vote_input)])]
     vote_desc_items = ["Remove recipient"]
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
 
@@ -202,7 +202,7 @@ def check_and_add_mev_boost_relay_with_voting(mev_boost_allowed_list, mev_boost_
     ]
 
     # Add MEV-Boost relay with voting
-    call_script_items = [submit_proposal(agent_forward(vote_input))]
+    call_script_items = [submit_proposal([agent_forward(vote_input)])]
     vote_desc_items = ["Add MEV-Boost relay"]
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
 

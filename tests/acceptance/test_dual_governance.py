@@ -1,5 +1,5 @@
 import pytest
-from brownie import interface  # type: ignore
+from brownie import ZERO_ADDRESS, interface  # type: ignore
 from utils.config import network_name
 
 if network_name() not in ["mainnet", "mainnet-fork", "hoodi", "hoodi-fork", "mfh-1", "mfh-2", "mfh-3"]:
@@ -10,11 +10,18 @@ from utils.config import (
     contracts,
 
     # addresses
+    DUAL_GOVERNANCE,
     RESEAL_MANAGER,
     RESEAL_COMMITTEE,
     DUAL_GOVERNANCE_EXECUTORS,
+    ESCROW_MASTER_COPY,
+    WSTETH_TOKEN,
+    LIDO,
+    TIMELOCK,
+    WITHDRAWAL_QUEUE,
 
     # contract values
+    MAX_MIN_ASSETS_LOCK_DURATION,
     DUAL_GOVERNANCE_CONFIG_PROVIDER_VALUES,
     DUAL_GOVERNANCE_VALUES,
     EMERGENCY_PROTECTED_TIMELOCK_VALUES,
@@ -43,7 +50,7 @@ def test_dual_governance_acceptance():
     tiebreaker_details = dual_governance.getTiebreakerDetails()
     assert tiebreaker_details[0] == False # is tie
     assert tiebreaker_details[1] == DUAL_GOVERNANCE_VALUES["TIEBREAKER_DETAILS"]["TIEBREAKER_COMMITTEE"]
-    assert tiebreaker_details[2] == DUAL_GOVERNANCE_VALUES["TIEBREAKER_DETAILS"]["TIEBREAKER_DURATION"]
+    assert tiebreaker_details[2] == DUAL_GOVERNANCE_VALUES["TIEBREAKER_DETAILS"]["TIEBREAKER_ACTIVATION_TIMEOUT"]
     assert tiebreaker_details[3] == DUAL_GOVERNANCE_VALUES["TIEBREAKER_DETAILS"]["WITHDRAWAL_BLOCKERS"]
 
     assert len(dual_governance.getProposers()) == DUAL_GOVERNANCE_VALUES["PROPOSERS_COUNT"]
@@ -130,9 +137,39 @@ def test_tiebreaker_sub_committee():
 
     assert tiebreaker_core_committee.owner() == TIEBREAKER_VALUES["CORE_COMMITTEE"]["OWNER"]
     assert tiebreaker_core_committee.getMembers() == TIEBREAKER_VALUES["CORE_COMMITTEE"]["MEMBERS"]
-
-    for sub_committee in TIEBREAKER_VALUES["SUB_COMMITTEES"]:
+    assert tiebreaker_core_committee.getQuorum() == TIEBREAKER_VALUES["CORE_COMMITTEE"]["QUORUM"]
+    assert tiebreaker_core_committee.getTimelockDuration() == TIEBREAKER_VALUES["CORE_COMMITTEE"]["TIMELOCK_DURATION"]
+    assert tiebreaker_core_committee.DUAL_GOVERNANCE() == DUAL_GOVERNANCE
+    
+    for i, sub_committee in enumerate(TIEBREAKER_VALUES["SUB_COMMITTEES"]):
         tiebreaker_sub_committee = interface.TiebreakerCommittee(sub_committee["ADDRESS"])
         
         assert tiebreaker_sub_committee.owner() == sub_committee["OWNER"]
         assert tiebreaker_sub_committee.getMembers() == sub_committee["MEMBERS"]
+        assert tiebreaker_sub_committee.getQuorum() == sub_committee["QUORUM"]
+        assert tiebreaker_sub_committee.TIEBREAKER_CORE_COMMITTEE() == TIEBREAKER_VALUES["CORE_COMMITTEE"]["ADDRESS"]
+        
+        assert sub_committee["ADDRESS"] == TIEBREAKER_VALUES["CORE_COMMITTEE"]["MEMBERS"][i]
+
+
+def test_escrow():
+    escrow_proxy = interface.DualGovernanceEscrow(contracts.dual_governance.getVetoSignallingEscrow())
+    escrow_master_copy = interface.DualGovernanceEscrow(escrow_proxy.ESCROW_MASTER_COPY())
+
+    for escrow in [escrow_master_copy, escrow_proxy]:
+        assert escrow.ESCROW_MASTER_COPY() == ESCROW_MASTER_COPY
+        assert escrow.DUAL_GOVERNANCE() == DUAL_GOVERNANCE
+        assert escrow.ST_ETH() == LIDO
+        assert escrow.WST_ETH() == WSTETH_TOKEN
+        assert escrow.WITHDRAWAL_QUEUE() == WITHDRAWAL_QUEUE
+        assert escrow.MAX_MIN_ASSETS_LOCK_DURATION() == MAX_MIN_ASSETS_LOCK_DURATION
+        assert escrow.MIN_TRANSFERRABLE_ST_ETH_AMOUNT() == 100
+        assert escrow.MIN_WITHDRAWALS_BATCH_SIZE() == 4
+
+    assert contracts.dual_governance.getRageQuitEscrow() == ZERO_ADDRESS
+
+
+def test_reseal_manager():
+    reseal_manager = interface.ResealManager(RESEAL_MANAGER)
+
+    assert reseal_manager.EMERGENCY_PROTECTED_TIMELOCK() == TIMELOCK
