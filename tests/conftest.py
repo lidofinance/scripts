@@ -206,7 +206,12 @@ def proposal_ids_from_env() -> [int]:
         try:
             proposal_ids_str = os.getenv(ENV_DG_PROPOSAL_IDS)
             proposal_ids = [int(s) for s in proposal_ids_str.split(",")]
-            print(f"DG_PROPOSAL_IDS env var is set, skipping the vote, using existing proposals {proposal_ids}")
+
+            # print to stdout even if suppressed
+            capmanager = request.config.pluginmanager.getplugin("capturemanager")
+            with capmanager.global_and_fixture_disabled():
+                print(f"DG_PROPOSAL_IDS env var is set, skipping the vote, using existing proposals {proposal_ids}")
+            
             return proposal_ids
         except:
             pass
