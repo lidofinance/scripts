@@ -3,7 +3,7 @@ Tests for triggerable withdrawals voting.
 """
 
 from typing import Dict, Tuple, List, NamedTuple
-from scripts.tw_vote import create_tw_vote
+from scripts.vote_tw_csm2 import create_tw_vote
 from brownie import interface, convert, web3, ZERO_ADDRESS
 from utils.test.tx_tracing_helpers import *
 from utils.config import (
@@ -11,25 +11,21 @@ from utils.config import (
     WITHDRAWAL_VAULT_IMPL,
     LIDO_LOCATOR_IMPL,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
-    CSM_MODULE_ID,
+    CS_MODULE_ID,
     CS_ACCOUNTING_IMPL_V2_ADDRESS,
-    CS_CURVES,
     CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS,
     CS_FEE_ORACLE_IMPL_V2_ADDRESS,
     CS_GATE_SEAL_ADDRESS,
     CS_GATE_SEAL_V2_ADDRESS,
     CSM_COMMITTEE_MS,
     CSM_IMPL_V2_ADDRESS,
+    CS_MODULE_NEW_TARGET_SHARE_BP,
+    CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP,
     CSM_SET_VETTED_GATE_TREE_FACTORY,
     contracts,
 )
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
-
-
-# CSM share constants
-CSM_NEW_TARGET_SHARE_BP = 300  # 3%
-CSM_NEW_PRIORITY_EXIT_THRESHOLD_BP = 375  # 3.75%
 
 # Contract versions expected after upgrade
 CSM_V2_VERSION = 2
@@ -150,9 +146,11 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert not contracts.cs_fee_oracle.hasRole(contracts.cs_fee_oracle.PAUSE_ROLE(), CS_GATE_SEAL_V2_ADDRESS), "New GateSeal should not have PAUSE_ROLE on CSFeeOracle before vote"
 
     # CSM Step 50: Staking Router CSM module state before vote (pre-vote state)
-    csm_module_before = contracts.staking_router.getStakingModule(CSM_MODULE_ID)
+    csm_module_before = contracts.staking_router.getStakingModule(CS_MODULE_ID)
     csm_share_before = csm_module_before['stakeShareLimit']
-    assert csm_share_before != CSM_NEW_TARGET_SHARE_BP, f"CSM share should not be {CSM_NEW_TARGET_SHARE_BP} before vote, current: {csm_share_before}"
+    csm_priority_exit_threshold_before = csm_module_before['priorityExitShareThreshold']
+    assert csm_share_before != CS_MODULE_NEW_TARGET_SHARE_BP, f"CSM share should not be {CS_MODULE_NEW_TARGET_SHARE_BP} before vote, current: {csm_share_before}"
+    assert csm_priority_exit_threshold_before != CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP, f"CSM priority exit threshold should not be {CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP} before vote, current: {csm_priority_exit_threshold_before}"
 
     # CSM Step 51: EasyTrack factories before vote (pre-vote state)
     initial_factories = contracts.easy_track.getEVMScriptFactories()
@@ -274,12 +272,12 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert contracts.cs_fee_oracle.hasRole(contracts.cs_fee_oracle.PAUSE_ROLE(), CS_GATE_SEAL_V2_ADDRESS), "New GateSeal should have PAUSE_ROLE on CSFeeOracle after vote"
 
     # CSM Step 50: Increase CSM share in Staking Router
-    csm_module_after = contracts.staking_router.getStakingModule(CSM_MODULE_ID)
+    csm_module_after = contracts.staking_router.getStakingModule(CS_MODULE_ID)
     csm_share_after = csm_module_after['stakeShareLimit']
-    assert csm_share_after == CSM_NEW_TARGET_SHARE_BP, f"CSM share should be {CSM_NEW_TARGET_SHARE_BP} after vote, but got {csm_share_after}"
+    assert csm_share_after == CS_MODULE_NEW_TARGET_SHARE_BP, f"CSM share should be {CS_MODULE_NEW_TARGET_SHARE_BP} after vote, but got {csm_share_after}"
 
     csm_priority_exit_threshold_after = csm_module_after['priorityExitShareThreshold']
-    assert csm_priority_exit_threshold_after == CSM_NEW_PRIORITY_EXIT_THRESHOLD_BP, f"CSM priority exit threshold should be {CSM_NEW_PRIORITY_EXIT_THRESHOLD_BP} after vote, but got {csm_priority_exit_threshold_after}"
+    assert csm_priority_exit_threshold_after == CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP, f"CSM priority exit threshold should be {CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP} after vote, but got {csm_priority_exit_threshold_after}"
 
     # CSM Step 51: Add EasyTrack factory for CSMSetVettedGateTree
     new_factories = contracts.easy_track.getEVMScriptFactories()

@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from typing import Tuple, Optional, Sequence
 from brownie import accounts, web3, convert, ZERO_ADDRESS
 from utils.config import (
-    CSM_MODULE_ID,
     CS_ACCOUNTING_IMPL_V2_ADDRESS,
     CS_CURVES,
     CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS,
@@ -12,6 +11,14 @@ from utils.config import (
     CS_GATE_SEAL_V2_ADDRESS,
     CSM_COMMITTEE_MS,
     CSM_IMPL_V2_ADDRESS,
+    CS_MODULE_ID,
+    CS_MODULE_MODULE_FEE_BP,
+    CS_MODULE_TREASURY_FEE_BP,
+    CS_MODULE_MAX_DEPOSITS_PER_BLOCK,
+    CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
+    CS_MODULE_TARGET_SHARE_BP,
+    CS_MODULE_NEW_TARGET_SHARE_BP,
+    CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP,
     CSM_SET_VETTED_GATE_TREE_FACTORY,
     NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
     NODE_OPERATORS_REGISTRY_IMPL,
@@ -68,14 +75,6 @@ EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 7200
 
 NOR_EXIT_DEADLINE_IN_SEC = 30 * 60
 
-# CSM Module share and EasyTrack constants
-CSM_NEW_TARGET_SHARE_BP = 300  # 3%
-CSM_NEW_PRIORITY_EXIT_THRESHOLD_BP = 375  # 3.75%
-CSM_OLD_STAKING_MODULE_FEE_BP = 600
-CSM_OLD_TREASURY_FEE_BP = 400
-CSM_OLD_MAX_DEPOSITS_PER_BLOCK = 30
-CSM_OLD_MIN_DEPOSIT_BLOCK_DISTANCE = 25
-
 NOR_VERSION = ["6", "0", "0"]
 SDVT_VERSION = ["6", "0", "0"]
 
@@ -121,18 +120,24 @@ def encode_staking_router_update_csm_module_share() -> Tuple[str, str]:
     return (
         contracts.staking_router.address,
         contracts.staking_router.updateStakingModule.encode_input(
-            CSM_MODULE_ID,
-            CSM_NEW_TARGET_SHARE_BP,
-            CSM_NEW_PRIORITY_EXIT_THRESHOLD_BP,
-            CSM_OLD_STAKING_MODULE_FEE_BP,
-            CSM_OLD_TREASURY_FEE_BP,
-            CSM_OLD_MAX_DEPOSITS_PER_BLOCK,
-            CSM_OLD_MIN_DEPOSIT_BLOCK_DISTANCE,
+            CS_MODULE_ID,
+            CS_MODULE_NEW_TARGET_SHARE_BP,
+            CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP,
+            CS_MODULE_MODULE_FEE_BP,
+            CS_MODULE_TREASURY_FEE_BP,
+            CS_MODULE_MAX_DEPOSITS_PER_BLOCK,
+            CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
         )
     )
 
-def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[Any]]:
+def to_percent(bp: int) -> float:
     """
+    Convert basis points to percentage.
+    """
+    return bp / 10000 * 100
+
+def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[Any]]:
+    f"""
         Triggerable withdrawals voting baking and sending.
 
         Contains next steps:
@@ -195,7 +200,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             47. Grant CSM role PAUSE_ROLE for the new GateSeal instance
             48. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
             49. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
-            50. Increase CSM share in Staking Router from 2% to 3%
+            50. Increase CSM share in Staking Router from {to_percent(CS_MODULE_TARGET_SHARE_BP)}% to {to_percent(CS_MODULE_NEW_TARGET_SHARE_BP)}%
             51. Add CSMSetVettedGateTree factory to EasyTrack with permissions
     """
 
@@ -591,7 +596,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             )
         ),
         (
-            f"50. Increase CSM share in Staking Router from 2% to 3%",
+            f"50. Increase CSM share in Staking Router from 3% to 5%",
             encode_staking_router_update_csm_module_share()
         ),
     )
