@@ -30,7 +30,6 @@ from utils.config import (
     VALIDATORS_EXIT_BUS_ORACLE_IMPL,
     WITHDRAWAL_VAULT_IMPL,
     LIDO_LOCATOR_IMPL,
-    VOTING,
     ARAGON_KERNEL,
     AGENT,
     contracts,
@@ -340,7 +339,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
                 contracts.acl.grantPermission.encode_input(
                     AGENT,
                     ARAGON_KERNEL,
-                    convert.to_uint(APP_MANAGER_ROLE)
+                    convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE"))
                 )
             )
         ),
@@ -391,7 +390,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
                 contracts.acl.revokePermission.encode_input(
                     AGENT,
                     ARAGON_KERNEL,
-                    convert.to_uint(APP_MANAGER_ROLE)
+                    convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE"))
                 )
             )
         ),

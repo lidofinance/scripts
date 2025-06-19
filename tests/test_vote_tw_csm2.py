@@ -27,6 +27,7 @@ from utils.config import (
     STAKING_ROUTER_IMPL,
     ARAGON_KERNEL,
     AGENT,
+    VOTING,
     contracts,
 )
 
