@@ -58,7 +58,6 @@ def get_is_live() -> bool:
         "local-fork",
         "mainnet-fork",
         "holesky-fork",
-        "hoodi-devnet",
         "sepolia-fork",
         "hoodi-fork",
     ]
