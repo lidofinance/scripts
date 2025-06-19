@@ -99,21 +99,48 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert contracts.node_operators_registry.getContractVersion() == 3
     assert contracts.simple_dvt.getContractVersion() == 3
 
-     # CSAccounting roles
+    # CSM Steps 28: Check CSM implementation (pre-vote state)
+    assert csm_impl_before != CSM_IMPL_V2_ADDRESS, "CSM implementation should be different before vote"
+
+    # CSM Step 29: Check CSM finalizeUpgradeV2 was not called (pre-vote state)
+    # assert contracts.csm.getInitializedVersion() < CSM_V2_VERSION, f"CSM version should be less than {CSM_V2_VERSION} before vote"
+
+    # CSM Step 30: Check CSAccounting implementation (pre-vote state)
+    assert cs_accounting_impl_before != CS_ACCOUNTING_IMPL_V2_ADDRESS, "CSAccounting implementation should be different before vote"
+
+    # CSM Step 31: Check CSAccounting finalizeUpgradeV2 was not called (pre-vote state)
+    # assert contracts.cs_accounting.getInitializedVersion() < CS_ACCOUNTING_V2_VERSION, f"CSAccounting version should be less than {CS_ACCOUNTING_V2_VERSION} before vote"
+    
+    # CSM Step 32: Check CSFeeOracle implementation (pre-vote state)
+    assert cs_fee_oracle_impl_before != CS_FEE_ORACLE_IMPL_V2_ADDRESS, "CSFeeOracle implementation should be different before vote"
+    
+    # CSM Step 33: Check CSFeeOracle finalizeUpgradeV2 was not called (pre-vote state)
+    assert contracts.cs_fee_oracle.getContractVersion() < CS_FEE_ORACLE_V2_VERSION, f"CSFeeOracle version should be less than {CS_FEE_ORACLE_V2_VERSION} before vote"
+    assert contracts.cs_fee_oracle.getConsensusVersion() < 3, "CSFeeOracle consensus version should be less than 3 before vote"
+
+    # CSM Step 34: Check CSFeeDistributor implementation (pre-vote state)
+    assert cs_fee_distributor_impl_before != CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS, "CSFeeDistributor implementation should be different before vote"
+    
+    # CSM Step 35: Check CSFeeDistributor finalizeUpgradeV2 was not called (pre-vote state)
+    # assert contracts.cs_fee_distributor.getInitializedVersion() < CS_FEE_DISTRIBUTOR_V2_VERSION, f"CSFeeDistributor version should be less than {CS_FEE_DISTRIBUTOR_V2_VERSION} before vote"
+
+    # CSM Steps 36-38: CSAccounting roles (pre-vote state)
     assert contracts.cs_accounting.hasRole(contracts.cs_accounting.SET_BOND_CURVE_ROLE(), contracts.csm.address), "CSM should have SET_BOND_CURVE_ROLE on CSAccounting before vote"
     assert contracts.cs_accounting.hasRole(web3.keccak(text="RESET_BOND_CURVE_ROLE"), contracts.csm.address), "CSM should have RESET_BOND_CURVE_ROLE on CSAccounting before vote"
     assert contracts.cs_accounting.hasRole(web3.keccak(text="RESET_BOND_CURVE_ROLE"), CSM_COMMITTEE_MS), "CSM committee should have RESET_BOND_CURVE_ROLE on CSAccounting before vote"
 
-    # CSM roles
+    # CSM Steps 39-40: CSM roles (pre-vote state)
     assert not contracts.csm.hasRole(web3.keccak(text="CREATE_NODE_OPERATOR_ROLE"), contracts.cs_permissionless_gate.address), "Permissionless gate should not have CREATE_NODE_OPERATOR_ROLE on CSM before vote"
     assert not contracts.csm.hasRole(web3.keccak(text="CREATE_NODE_OPERATOR_ROLE"), contracts.cs_vetted_gate.address), "Vetted gate should not have CREATE_NODE_OPERATOR_ROLE on CSM before vote"
-    assert contracts.csm.hasRole(contracts.csm.VERIFIER_ROLE(), contracts.cs_verifier.address), "Old verifier should have VERIFIER_ROLE on CSM before vote"
-    assert not contracts.csm.hasRole(contracts.csm.VERIFIER_ROLE(), contracts.cs_verifier_v2.address), "New verifier should not have VERIFIER_ROLE on CSM before vote"
 
-    # CSAccounting bond curve role for vetted gate
+    # CSM Step 41: CSAccounting bond curve role for vetted gate (pre-vote state)
     assert not contracts.cs_accounting.hasRole(contracts.cs_accounting.SET_BOND_CURVE_ROLE(), contracts.cs_vetted_gate.address), "Vetted gate should not have SET_BOND_CURVE_ROLE on CSAccounting before vote"
     
-    # GateSeal roles
+    # CSM Steps 42-43: Verifier roles (pre-vote state)
+    assert contracts.csm.hasRole(contracts.csm.VERIFIER_ROLE(), contracts.cs_verifier.address), "Old verifier should have VERIFIER_ROLE on CSM before vote"
+    assert not contracts.csm.hasRole(contracts.csm.VERIFIER_ROLE(), contracts.cs_verifier_v2.address), "New verifier should not have VERIFIER_ROLE on CSM before vote"
+    
+    # CSM Steps 44-49: GateSeal roles (pre-vote state)
     assert contracts.csm.hasRole(contracts.csm.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS), "Old GateSeal should have PAUSE_ROLE on CSM before vote"
     assert contracts.cs_accounting.hasRole(contracts.cs_accounting.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS), "Old GateSeal should have PAUSE_ROLE on CSAccounting before vote"
     assert contracts.cs_fee_oracle.hasRole(contracts.cs_fee_oracle.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS), "Old GateSeal should have PAUSE_ROLE on CSFeeOracle before vote"
@@ -122,16 +149,14 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert not contracts.cs_accounting.hasRole(contracts.cs_accounting.PAUSE_ROLE(), CS_GATE_SEAL_V2_ADDRESS), "New GateSeal should not have PAUSE_ROLE on CSAccounting before vote"
     assert not contracts.cs_fee_oracle.hasRole(contracts.cs_fee_oracle.PAUSE_ROLE(), CS_GATE_SEAL_V2_ADDRESS), "New GateSeal should not have PAUSE_ROLE on CSFeeOracle before vote"
 
-    # Staking Router CSM module state before vote
+    # CSM Step 50: Staking Router CSM module state before vote (pre-vote state)
     csm_module_before = contracts.staking_router.getStakingModule(CSM_MODULE_ID)
     csm_share_before = csm_module_before['stakeShareLimit']
     assert csm_share_before != CSM_NEW_TARGET_SHARE_BP, f"CSM share should not be {CSM_NEW_TARGET_SHARE_BP} before vote, current: {csm_share_before}"
-    
-    # Check that implementations are different from target ones
-    assert csm_impl_before != CSM_IMPL_V2_ADDRESS, "CSM implementation should be different before vote"
-    assert cs_accounting_impl_before != CS_ACCOUNTING_IMPL_V2_ADDRESS, "CSAccounting implementation should be different before vote"
-    assert cs_fee_oracle_impl_before != CS_FEE_ORACLE_IMPL_V2_ADDRESS, "CSFeeOracle implementation should be different before vote"
-    assert cs_fee_distributor_impl_before != CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS, "CSFeeDistributor implementation should be different before vote"
+
+    # CSM Step 51: EasyTrack factories before vote (pre-vote state)
+    initial_factories = contracts.easy_track.getEVMScriptFactories()
+    assert CSM_SET_VETTED_GATE_TREE_FACTORY not in initial_factories, "EasyTrack should not have CSMSetVettedGateTree factory before vote"
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -181,52 +206,74 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # 23-27. Validate Oracle Daemon Config changes
     assert convert.to_uint(contracts.oracle_daemon_config.get('EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS')) == exit_events_lookback_window_in_slots
 
-    # Check implementations are upgraded
+    # CSM Step 28: Check CSM implementation upgrade
     check_proxy_implementation(contracts.csm.address, CSM_IMPL_V2_ADDRESS)
-    check_proxy_implementation(contracts.cs_accounting.address, CS_ACCOUNTING_IMPL_V2_ADDRESS)
-    check_proxy_implementation(contracts.cs_fee_oracle.address, CS_FEE_ORACLE_IMPL_V2_ADDRESS)
-    check_proxy_implementation(contracts.cs_fee_distributor.address, CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS)
-
-    # Check contract versions are updated (finalizeUpgradeV2 was called)
+    
+    # CSM Step 29: Check CSM finalizeUpgradeV2 was called
     assert contracts.csm.getInitializedVersion() == CSM_V2_VERSION, f"CSM version should be {CSM_V2_VERSION} after vote"
+    
+    # CSM Step 30: Check CSAccounting implementation upgrade
+    check_proxy_implementation(contracts.cs_accounting.address, CS_ACCOUNTING_IMPL_V2_ADDRESS)
+    
+    # CSM Step 31: Check CSAccounting finalizeUpgradeV2 was called with bond curves
     assert contracts.cs_accounting.getInitializedVersion() == CS_ACCOUNTING_V2_VERSION, f"CSAccounting version should be {CS_ACCOUNTING_V2_VERSION} after vote"
+    
+    # CSM Step 32: Check CSFeeOracle implementation upgrade
+    check_proxy_implementation(contracts.cs_fee_oracle.address, CS_FEE_ORACLE_IMPL_V2_ADDRESS)
+    
+    # CSM Step 33: Check CSFeeOracle finalizeUpgradeV2 was called with consensus version 3
     assert contracts.cs_fee_oracle.getContractVersion() == CS_FEE_ORACLE_V2_VERSION, f"CSFeeOracle version should be {CS_FEE_ORACLE_V2_VERSION} after vote"
+    assert contracts.cs_fee_oracle.getConsensusVersion() == 3, "CSFeeOracle consensus version should be 3 after vote"
+    
+    # CSM Step 34: Check CSFeeDistributor implementation upgrade
+    check_proxy_implementation(contracts.cs_fee_distributor.address, CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS)
+    
+    # CSM Step 35: Check CSFeeDistributor finalizeUpgradeV2 was called
     assert contracts.cs_fee_distributor.getInitializedVersion() == CS_FEE_DISTRIBUTOR_V2_VERSION, f"CSFeeDistributor version should be {CS_FEE_DISTRIBUTOR_V2_VERSION} after vote"
 
-    # Check CSAccounting finalizeUpgradeV2 was called with bond curves
-    # This is verified by checking that the contract version was updated
-    
-    # Check CSFeeOracle finalizeUpgradeV2 was called with consensus version 3
-    assert contracts.cs_fee_oracle.getConsensusVersion() == 3, "CSFeeOracle consensus version should be 3 after vote"
-
-    # Check role changes
-    
-    # CSAccounting roles revoked from CSM
+    # CSM Step 36: Revoke SET_BOND_CURVE_ROLE from CSM on CSAccounting
     assert not contracts.cs_accounting.hasRole(contracts.cs_accounting.SET_BOND_CURVE_ROLE(), contracts.csm.address), "CSM should not have SET_BOND_CURVE_ROLE on CSAccounting after vote"
+    
+    # CSM Step 37: Revoke RESET_BOND_CURVE_ROLE from CSM on CSAccounting
     assert not contracts.cs_accounting.hasRole(web3.keccak(text="RESET_BOND_CURVE_ROLE"), contracts.csm.address), "CSM should not have RESET_BOND_CURVE_ROLE on CSAccounting after vote"
+    
+    # CSM Step 38: Revoke RESET_BOND_CURVE_ROLE from CSM committee on CSAccounting
     assert not contracts.cs_accounting.hasRole(web3.keccak(text="RESET_BOND_CURVE_ROLE"), CSM_COMMITTEE_MS), "CSM committee should not have RESET_BOND_CURVE_ROLE on CSAccounting after vote"
 
-    # CSM roles granted to gates
+    # CSM Step 39: Grant CREATE_NODE_OPERATOR_ROLE to permissionless gate on CSM
     assert contracts.csm.hasRole(contracts.csm.CREATE_NODE_OPERATOR_ROLE(), contracts.cs_permissionless_gate.address), "Permissionless gate should have CREATE_NODE_OPERATOR_ROLE on CSM after vote"
+    
+    # CSM Step 40: Grant CREATE_NODE_OPERATOR_ROLE to vetted gate on CSM
     assert contracts.csm.hasRole(contracts.csm.CREATE_NODE_OPERATOR_ROLE(), contracts.cs_vetted_gate.address), "Vetted gate should have CREATE_NODE_OPERATOR_ROLE on CSM after vote"
 
-    # CSAccounting bond curve role granted to vetted gate
+    # CSM Step 41: Grant SET_BOND_CURVE_ROLE to vetted gate on CSAccounting
     assert contracts.cs_accounting.hasRole(contracts.cs_accounting.SET_BOND_CURVE_ROLE(), contracts.cs_vetted_gate.address), "Vetted gate should have SET_BOND_CURVE_ROLE on CSAccounting after vote"
 
-    # Verifier role changes
+    # CSM Step 42: Revoke VERIFIER_ROLE from old verifier on CSM
     assert not contracts.csm.hasRole(contracts.csm.VERIFIER_ROLE(), contracts.cs_verifier.address), "Old verifier should not have VERIFIER_ROLE on CSM after vote"
+    
+    # CSM Step 43: Grant VERIFIER_ROLE to new verifier on CSM
     assert contracts.csm.hasRole(contracts.csm.VERIFIER_ROLE(), contracts.cs_verifier_v2.address), "New verifier should have VERIFIER_ROLE on CSM after vote"
 
-    # GateSeal role changes
+    # CSM Step 44: Revoke PAUSE_ROLE from old GateSeal on CSM
     assert not contracts.csm.hasRole(contracts.csm.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS), "Old GateSeal should not have PAUSE_ROLE on CSM after vote"
+    
+    # CSM Step 45: Revoke PAUSE_ROLE from old GateSeal on CSAccounting
     assert not contracts.cs_accounting.hasRole(contracts.cs_accounting.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS), "Old GateSeal should not have PAUSE_ROLE on CSAccounting after vote"
+    
+    # CSM Step 46: Revoke PAUSE_ROLE from old GateSeal on CSFeeOracle
     assert not contracts.cs_fee_oracle.hasRole(contracts.cs_fee_oracle.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS), "Old GateSeal should not have PAUSE_ROLE on CSFeeOracle after vote"
 
+    # CSM Step 47: Grant PAUSE_ROLE to new GateSeal on CSM
     assert contracts.csm.hasRole(contracts.csm.PAUSE_ROLE(), CS_GATE_SEAL_V2_ADDRESS), "New GateSeal should have PAUSE_ROLE on CSM after vote"
+    
+    # CSM Step 48: Grant PAUSE_ROLE to new GateSeal on CSAccounting
     assert contracts.cs_accounting.hasRole(contracts.cs_accounting.PAUSE_ROLE(), CS_GATE_SEAL_V2_ADDRESS), "New GateSeal should have PAUSE_ROLE on CSAccounting after vote"
+    
+    # CSM Step 49: Grant PAUSE_ROLE to new GateSeal on CSFeeOracle
     assert contracts.cs_fee_oracle.hasRole(contracts.cs_fee_oracle.PAUSE_ROLE(), CS_GATE_SEAL_V2_ADDRESS), "New GateSeal should have PAUSE_ROLE on CSFeeOracle after vote"
 
-    # Check CSM share increase in Staking Router
+    # CSM Step 50: Increase CSM share in Staking Router
     csm_module_after = contracts.staking_router.getStakingModule(CSM_MODULE_ID)
     csm_share_after = csm_module_after['stakeShareLimit']
     assert csm_share_after == CSM_NEW_TARGET_SHARE_BP, f"CSM share should be {CSM_NEW_TARGET_SHARE_BP} after vote, but got {csm_share_after}"
@@ -234,6 +281,6 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     csm_priority_exit_threshold_after = csm_module_after['priorityExitShareThreshold']
     assert csm_priority_exit_threshold_after == CSM_NEW_PRIORITY_EXIT_THRESHOLD_BP, f"CSM priority exit threshold should be {CSM_NEW_PRIORITY_EXIT_THRESHOLD_BP} after vote, but got {csm_priority_exit_threshold_after}"
 
-    # Check EasyTrack factory addition
+    # CSM Step 51: Add EasyTrack factory for CSMSetVettedGateTree
     new_factories = contracts.easy_track.getEVMScriptFactories()
     assert CSM_SET_VETTED_GATE_TREE_FACTORY in new_factories, "EasyTrack should have CSMSetVettedGateTree factory after vote"

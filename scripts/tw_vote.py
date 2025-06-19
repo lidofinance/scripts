@@ -59,6 +59,7 @@ TWG_FRAME_DURATION = 48  # in hours
 ## Oracle consensus versions
 AO_CONSENSUS_VERSION = 4
 VEBO_CONSENSUS_VERSION = 4
+CSM_CONSENSUS_VERSION = 3
 
 EXIT_DAILY_LIMIT = 20
 TW_DAILY_LIMIT = 10
@@ -460,7 +461,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             f"33. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract",
             (
                 contracts.cs_fee_oracle.address,
-                contracts.cs_fee_oracle.finalizeUpgradeV2.encode_input(3),
+                contracts.cs_fee_oracle.finalizeUpgradeV2.encode_input(CSM_CONSENSUS_VERSION),
             ),
         ),
         (
