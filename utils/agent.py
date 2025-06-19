@@ -18,15 +18,11 @@ def dual_governance_agent_forward(
     call_script: Sequence[Tuple[str, str]],
     description: Optional[str] = "",
 ) -> Tuple[str, str]:
-
-    ## TODO: move up the scope when mainnet configuration for DG is updated
-    from utils.config import DUAL_GOVERNANCE
-
     dual_governance = contracts.dual_governance
-    (agent_address, agent_calldata) = agent_forward(call_script)
+    forwarded = [agent_forward([_call]) for _call in call_script]
     return (
         contracts.dual_governance.address,
-        dual_governance.submitProposal.encode_input([(agent_address, 0, agent_calldata)], description),
+        dual_governance.submitProposal.encode_input([(_call[0], 0, _call[1]) for _call in forwarded], description),
     )
 
 

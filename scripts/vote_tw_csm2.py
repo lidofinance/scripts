@@ -642,7 +642,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         desc_ipfs = upload_vote_ipfs_description(TW_DESCRIPTION)
 
     dg_desc = "\n".join(vote_descriptions)
-    dg_vote = dual_governance_agent_forward(call_script_items)
+    dg_vote = dual_governance_agent_forward(call_script_items, dg_desc)
     vote_items = {dg_desc: dg_vote, **plain_agent_item}
 
     assert confirm_vote_script(vote_items, silent, desc_ipfs)
