@@ -1,3 +1,4 @@
+import time
 from itertools import count
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from typing import Tuple, Optional, Sequence
@@ -44,7 +45,7 @@ from utils.easy_track import (
 )
 from utils.agent import dual_governance_agent_forward, agent_forward
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
-from utils.config import get_deployer_account, get_priority_fee, network_name
+from utils.config import get_deployer_account, get_priority_fee, get_is_live
 from tests.conftest import Helpers
 
 try:
@@ -642,37 +643,20 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
     else:
         desc_ipfs = upload_vote_ipfs_description(TW_DESCRIPTION)
 
-    assert confirm_vote_script({'Dualgov item': dg_vote, **plain_agent_item}, silent, desc_ipfs), 'Vote not confirmed.'
-    vote_id = create_vote({'Dualgov item': dg_vote, **plain_agent_item}, tx_params, desc_ipfs=desc_ipfs)[0]
+    vote_items = {'Dualgov item': dg_vote, **plain_agent_item}
 
-    print("Vote ID:", vote_id)
+    assert confirm_vote_script(vote_items, silent, desc_ipfs)
 
-    is_testnet = network_name() in ["holesky-fork", "hoodi-fork"]
-
-    if is_testnet:
-        print("Running on testnet, executing vote immediately...")
-        vote_tx = Helpers.execute_vote(
-            vote_id=vote_id,
-            accounts=accounts,
-            dao_voting=contracts.voting,
-        )
-
-        proposal_id = vote_tx.events["ProposalSubmitted"][0]["id"]
-        print("ProposalSubmitted", proposal_id)
-        Helpers.execute_dg_proposal(proposal_id)
-
-    return vote_id
+    return create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
 
 
 def main():
-    print('Start baking vote.')
+    tx_params = {"from": get_deployer_account()}
+    if get_is_live():
+        tx_params["priority_fee"] = get_priority_fee()
 
-    tx_params = {
-        "from": get_deployer_account(),
-        "priority_fee": get_priority_fee(),
-    }
+    vote_id, _ = create_tw_vote(tx_params=tx_params, silent=False)
 
-    vote_id = create_tw_vote(tx_params=tx_params, silent=True)
+    vote_id >= 0 and print(f"Vote created: {vote_id}.")
 
-    if vote_id:
-        print(f'Vote [{vote_id}] created.')
+    time.sleep(5)  # hack for waiting thread #2.

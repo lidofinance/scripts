@@ -5,7 +5,7 @@ Tests for triggerable withdrawals voting.
 from typing import Dict, Tuple, List, NamedTuple
 from scripts.vote_tw_csm2 import create_tw_vote
 from brownie import interface, convert, web3, ZERO_ADDRESS
-from utils.test.tx_tracing_helpers import *
+from utils.test.tx_tracing_helpers import display_voting_events, group_voting_events
 from utils.config import (
     CS_CURVES,
     VALIDATORS_EXIT_BUS_ORACLE_IMPL,
@@ -202,9 +202,15 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
         (vote_id,) = vote_ids_from_env
     else:
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
-        vote_id = create_tw_vote(tx_params, silent=True)
+        vote_id, _ = create_tw_vote(tx_params, silent=True)
 
-    print(f"voteId = {vote_id}")
+    vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
+    print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
+
+    display_voting_events(vote_tx)
+    events = group_voting_events(vote_tx)
+
+    helpers.execute_dg_proposal(vote_tx.events["ProposalSubmitted"][1]["proposalId"])
 
     # --- VALIDATE EXECUTION RESULTS ---
 
