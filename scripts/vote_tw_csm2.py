@@ -85,9 +85,7 @@ def encode_staking_router_proxy_update(implementation: str) -> Tuple[str, str]:
     return proxy.address, proxy.proxy__upgradeTo.encode_input(implementation)
 
 def get_repo_uri(repo_address: str) -> str:
-    print("repo_address", repo_address)
     contract = interface.Repo(repo_address).getLatest()
-    print("contract", contract)
     return contract["contentURI"]
 
 def encode_proxy_upgrade_to(proxy: Any, implementation: str) -> Tuple[str, str]:
@@ -210,18 +208,6 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
 
     print(f"LIDO_LOCATOR_IMPL repo URI: {LIDO_LOCATOR_IMPL}")
     print(f"VALIDATORS_EXIT_BUS_ORACLE_IMPL: {VALIDATORS_EXIT_BUS_ORACLE_IMPL}")
-
-    # DAOKernel Permissions Transition
-    APP_MANAGER_ROLE = web3.keccak(text="APP_MANAGER_ROLE")
-    print(f"APP_MANAGER_ROLE: {contracts.acl.getPermissionManager(ARAGON_KERNEL, APP_MANAGER_ROLE)}")
-    # assert contracts.acl.hasPermission(AGENT, ARAGON_KERNEL, APP_MANAGER_ROLE)
-    # assert not contracts.acl.hasPermission(AGENT, ARAGON_KERNEL, APP_MANAGER_ROLE)
-    print("Permission manager", contracts.acl.getPermissionManager(ARAGON_KERNEL, APP_MANAGER_ROLE))
-    assert contracts.acl.getPermissionManager(ARAGON_KERNEL, APP_MANAGER_ROLE) == AGENT
-    assert contracts.node_operators_registry.kernel() == ARAGON_KERNEL
-    assert not contracts.acl.hasPermission(VOTING, ARAGON_KERNEL, APP_MANAGER_ROLE)
-    assert not contracts.acl.hasPermission(AGENT, ARAGON_KERNEL, APP_MANAGER_ROLE)
-    # assert contracts.acl.getPermissionManager(ARAGON_KERNEL, APP_MANAGER_ROLE) == VOTING
 
     vote_descriptions, call_script_items = zip(
         # --- locator
