@@ -7,6 +7,7 @@ from scripts.vote_tw_csm2 import create_tw_vote
 from brownie import interface, convert, web3, ZERO_ADDRESS
 from utils.test.tx_tracing_helpers import *
 from utils.config import (
+    CS_CURVES,
     VALIDATORS_EXIT_BUS_ORACLE_IMPL,
     WITHDRAWAL_VAULT_IMPL,
     LIDO_LOCATOR_IMPL,
@@ -21,7 +22,7 @@ from utils.config import (
     CSM_IMPL_V2_ADDRESS,
     CS_MODULE_NEW_TARGET_SHARE_BP,
     CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP,
-    CSM_SET_VETTED_GATE_TREE_FACTORY,
+    CS_SET_VETTED_GATE_TREE_FACTORY,
     ACCOUNTING_ORACLE_IMPL,
     STAKING_ROUTER_IMPL,
     contracts,
@@ -196,7 +197,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # CSM Step 53: EasyTrack factories before vote (pre-vote state)
     initial_factories = contracts.easy_track.getEVMScriptFactories()
-    assert CSM_SET_VETTED_GATE_TREE_FACTORY not in initial_factories, "EasyTrack should not have CSMSetVettedGateTree factory before vote"
+    assert CS_SET_VETTED_GATE_TREE_FACTORY not in initial_factories, "EasyTrack should not have CSMSetVettedGateTree factory before vote"
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -332,7 +333,11 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # Step 51: Validate PAUSE_ROLE was granted to new GateSeal on CSFeeOracle
     assert contracts.cs_fee_oracle.hasRole(contracts.cs_fee_oracle.PAUSE_ROLE(), CS_GATE_SEAL_V2_ADDRESS), "New GateSeal should have PAUSE_ROLE on CSFeeOracle after vote"
 
-    # Step 52: Validate CSM share was increased in Staking Router
+    # CSM Step 50-52: Check add ICS Bond Curve to CSAccounting
+    assert not contracts.cs_accounting.hasRole(contracts.cs_accounting.MANAGE_BOND_CURVES_ROLE(), contracts.agent), "Agent should not have MANAGE_BOND_CURVES_ROLE on CSAccounting after vote"
+    assert contracts.cs_accounting.getCurvesCount() == len(CS_CURVES) + 1, "CSAccounting should have legacy bond curves and ICS Bond Curve after vote"
+
+    # CSM Step 53: Increase CSM share in Staking Router
     csm_module_after = contracts.staking_router.getStakingModule(CS_MODULE_ID)
     csm_share_after = csm_module_after['stakeShareLimit']
     assert csm_share_after == CS_MODULE_NEW_TARGET_SHARE_BP, f"CSM share should be {CS_MODULE_NEW_TARGET_SHARE_BP} after vote, but got {csm_share_after}"
@@ -340,6 +345,6 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     csm_priority_exit_threshold_after = csm_module_after['priorityExitShareThreshold']
     assert csm_priority_exit_threshold_after == CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP, f"CSM priority exit threshold should be {CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP} after vote, but got {csm_priority_exit_threshold_after}"
 
-    # Step 53: Validate EasyTrack factory was added for CSMSetVettedGateTree
+    # CSM Step 54: Add EasyTrack factory for CSSetVettedGateTree
     new_factories = contracts.easy_track.getEVMScriptFactories()
-    assert CSM_SET_VETTED_GATE_TREE_FACTORY in new_factories, "EasyTrack should have CSMSetVettedGateTree factory after vote"
+    assert CS_SET_VETTED_GATE_TREE_FACTORY in new_factories, "EasyTrack should have CSSetVettedGateTree factory after vote"

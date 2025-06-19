@@ -5,6 +5,7 @@ from brownie import accounts, web3, convert, ZERO_ADDRESS
 from utils.config import (
     CS_ACCOUNTING_IMPL_V2_ADDRESS,
     CS_CURVES,
+    CS_ICS_GATE_BOND_CURVE,
     CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS,
     CS_FEE_ORACLE_IMPL_V2_ADDRESS,
     CS_GATE_SEAL_ADDRESS,
@@ -19,7 +20,7 @@ from utils.config import (
     CS_MODULE_TARGET_SHARE_BP,
     CS_MODULE_NEW_TARGET_SHARE_BP,
     CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP,
-    CSM_SET_VETTED_GATE_TREE_FACTORY,
+    CS_SET_VETTED_GATE_TREE_FACTORY,
     NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
     NODE_OPERATORS_REGISTRY_IMPL,
     ACCOUNTING_ORACLE_IMPL,
@@ -614,16 +615,39 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
             )
         ),
         (
-            f"52. Increase CSM share in Staking Router from {to_percent(CS_MODULE_TARGET_SHARE_BP)}% to {to_percent(CS_MODULE_NEW_TARGET_SHARE_BP)}%",
+            "50. Grant MANAGE_BOND_CURVES_ROLE to the AGENT",
+            encode_oz_grant_role(
+                contract=contracts.cs_accounting,
+                role_name="MANAGE_BOND_CURVES_ROLE",
+                grant_to=contracts.agent,
+            )
+        ),
+        (
+            "51. Add Identified Community Stakers Gate Bond Curve",
+            (
+                contracts.cs_accounting.address,
+                contracts.cs_accounting.addBondCurve.encode_input(CS_ICS_GATE_BOND_CURVE),
+            ),
+        ),
+        (
+            "52. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT",
+            encode_oz_revoke_role(
+                contract=contracts.cs_accounting,
+                role_name="MANAGE_BOND_CURVES_ROLE",
+                revoke_from=contracts.agent,
+            )
+        ),
+        (
+            "53. Increase CSM share in Staking Router from 3% to 5%",
             encode_staking_router_update_csm_module_share()
         ),
     )
 
     plain_agent_item = bake_vote_items(
-        ["53. Add CSMSetVettedGateTree factory to EasyTrack with permissions"],
+        ["54. Add CSSetVettedGateTree factory to EasyTrack with permissions"],
         [
             add_evmscript_factory(
-                factory=CSM_SET_VETTED_GATE_TREE_FACTORY,
+                factory=CS_SET_VETTED_GATE_TREE_FACTORY,
                 permissions=(create_permissions(contracts.cs_vetted_gate, "setTreeParams")),
             )
         ]
