@@ -36,24 +36,6 @@ from utils.config import (
     contracts,
 )
 
-def validate_events_chain(actual_events: Sequence[str], expected_events: Sequence[str]):
-    """Validate that a sequence of events matches the expected sequence.
-
-    Args:
-        actual_events: The sequence of actual event names.
-        expected_events: The sequence of expected event names.
-    """
-    assert len(actual_events) == len(expected_events), (
-        f"Expected {len(expected_events)} events, but got {len(actual_events)}.\n"
-        f"Expected: {expected_events}.\nGot: {actual_events}"
-    )
-
-    for i, (actual, expected) in enumerate(zip(actual_events, expected_events)):
-        assert actual == expected, (
-            f"Event at position {i} doesn't match.\n"
-            f"Expected: {expected}.\nGot: {actual}"
-        )
-
 def validate_proxy_upgrade_event(event: EventDict, implementation: str, emitted_by: Optional[str] = None):
     """Validate that proxy was successfully upgraded
 
