@@ -27,6 +27,8 @@ def validate_dual_governance_submit_event(
     assert event["ProposalSubmitted"][1]["proposerAccount"] == proposer, "Wrong proposer"
     assert event["ProposalSubmitted"][1]["metadata"] == metadata, "Wrong metadata"
 
+    assert len(event["ProposalSubmitted"]) == len(emitted_by), "Wrong emitted_by count"
+
     for i in range(0, len(emitted_by)):
         assert convert.to_address(event["ProposalSubmitted"][i]["_emitted_by"]) == convert.to_address(
             emitted_by[i]

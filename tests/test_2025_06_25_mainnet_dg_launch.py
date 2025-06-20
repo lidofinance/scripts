@@ -9,6 +9,8 @@ from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.dual_governance import (
     validate_dual_governance_submit_event,
 )
+from utils.test.oracle_report_helpers import ZERO_BYTES32
+
 from utils.agent import agent_forward
 from utils.test.event_validators.time_constraints import (
     validate_time_constraints_executed_before_event,
@@ -312,6 +314,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     insurance_fund = interface.InsuranceFund(INSURANCE_FUND)
     assert insurance_fund.owner() == AGENT
 
+    # Check that recovery vault app id reffers to agent before voting
+    assert interface.Kernel(KERNEL).recoveryVaultAppId() == interface.Agent(AGENT).appId()
+
     # START VOTE
     vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
 
@@ -420,6 +425,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     
     # Verify InsuranceFund owner has been changed to VOTING
     assert insurance_fund.owner() == VOTING
+
+    # Check that recovery vault app id is reset
+    assert interface.Kernel(KERNEL).recoveryVaultAppId() == ZERO_BYTES32.hex()
 
     chain.sleep(timelock.getAfterSubmitDelay() + 1)
 
