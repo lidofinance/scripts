@@ -181,9 +181,6 @@ CS_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD = 250
 CS_MODULE_MAX_DEPOSITS_PER_BLOCK = 30
 CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 
-CS_MODULE_NEW_TARGET_SHARE_BP = 500  # 5%
-CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP = 600  # 6%
-
 # OracleDaemonConfig
 ORACLE_DAEMON_CONFIG = "0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09"
 NORMALIZED_CL_REWARD_PER_EPOCH = 64
@@ -291,9 +288,9 @@ STAKING_ROUTER_VERSION = 2
 
 
 # Not a precise but still some estimation of the fees. Assume here that all modules are filled
-# SR_MODULES_FEE =
-#   curated_module_fee * (100% - sdvt_module_share - cs_module_share)
-#   + sdvt_module_fee * sdvt_module_share
+# SR_MODULES_FEE = 
+#   curated_module_fee * (100% - sdvt_module_share - cs_module_share) 
+#   + sdvt_module_fee * sdvt_module_share 
 #   + cs_module_fee * cs_module_share
 
 SR_MODULES_FEE_BP = (
@@ -463,7 +460,7 @@ TIEBREAKER_VALUES = {
                 "0x9A921867EbB579D137184b397E7D087f1ae716fd",
                 "0x81000e270B4f66B8666544E8FEc073e0a23FFf00",
                 "0xD8a9072D82a28307279aC0aD3c97Cb61bEe67952"
-            )
+            )   
         },
         {
             "ADDRESS": "0xb9d82E1A49f6a66E8a07260BA05Cf9Ac8a938B1C",

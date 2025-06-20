@@ -1,42 +1,24 @@
-"""
-Tests for triggerable withdrawals voting.
-"""
-
-from typing import Dict, Tuple, List, NamedTuple, Optional, Any, Sequence
-from scripts.vote_tw_csm2 import create_tw_vote
-from brownie import interface, reverts, chain, convert, web3, ZERO_ADDRESS
+from typing import Optional
+from scripts.vote_tw_csm2_hoodi import start_vote
+from brownie import interface, reverts, chain, convert, web3, ZERO_ADDRESS  # type: ignore
 from brownie.network.event import EventDict
 from utils.easy_track import create_permissions
-from utils.test.tx_tracing_helpers import count_vote_items_by_events, group_voting_events_from_receipt, group_dg_events_from_receipt
+from utils.test.tx_tracing_helpers import group_voting_events_from_receipt, group_dg_events_from_receipt
 from utils.test.event_validators.easy_track import validate_evmscript_factory_added_event, EVMScriptFactoryAdded
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 from utils.dual_governance import wait_for_noon_utc_to_satisfy_time_constrains
 from utils.config import (
     DUAL_GOVERNANCE,
     TIMELOCK,
-    DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-    CS_CURVES,
-    VALIDATORS_EXIT_BUS_ORACLE_IMPL,
-    WITHDRAWAL_VAULT_IMPL,
-    LIDO_LOCATOR_IMPL,
+    DUAL_GOVERNANCE_EXECUTORS,
     LDO_HOLDER_ADDRESS_FOR_TESTS,
     CS_MODULE_ID,
     CS_MODULE_MODULE_FEE_BP,
     CS_MODULE_MAX_DEPOSITS_PER_BLOCK,
     CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
     CS_MODULE_TREASURY_FEE_BP,
-    CS_ACCOUNTING_IMPL_V2_ADDRESS,
-    CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS,
-    CS_FEE_ORACLE_IMPL_V2_ADDRESS,
     CS_GATE_SEAL_ADDRESS,
-    CS_GATE_SEAL_V2_ADDRESS,
     CSM_COMMITTEE_MS,
-    CSM_IMPL_V2_ADDRESS,
-    CS_MODULE_NEW_TARGET_SHARE_BP,
-    CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP,
-    CS_SET_VETTED_GATE_TREE_FACTORY,
-    ACCOUNTING_ORACLE_IMPL,
-    STAKING_ROUTER_IMPL,
     ARAGON_KERNEL,
     AGENT,
     VOTING,
@@ -151,13 +133,6 @@ def validate_staking_module_update_event(
         assert convert.to_address(event["StakingModuleMinDepositBlockDistanceSet"][0]["_emitted_by"]) == convert.to_address(emitted_by), "Wrong event emitter"
 
 
-# Contract versions expected after upgrade
-CSM_V2_VERSION = 2
-CS_ACCOUNTING_V2_VERSION = 2
-CS_FEE_ORACLE_V2_VERSION = 2
-CS_FEE_DISTRIBUTOR_V2_VERSION = 2
-
-
 def get_ossifiable_proxy_impl(proxy_address):
     """Get implementation address from an OssifiableProxy"""
     proxy = interface.OssifiableProxy(proxy_address)
@@ -176,14 +151,58 @@ def check_proxy_implementation(proxy_address, expected_impl):
     assert actual_impl == expected_impl, f"Expected impl {expected_impl}, got {actual_impl}"
 
 
-def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
-    # Define constants and initial states
-    app_manager_role = web3.keccak(text="APP_MANAGER_ROLE")
-    vebo_consensus_version = 4
-    ao_consensus_version = 4
-    exit_events_lookback_window_in_slots = 7200
-    nor_exit_deadline_in_sec = 30 * 60
+# New core contracts implementations
+# TODO: Change to the correct addresses after deployment
+LIDO_LOCATOR_IMPL = "0x5067457698Fd6Fa1C6964e416b3f42713513B3dD"
+ACCOUNTING_ORACLE_IMPL = "0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d"
+VALIDATORS_EXIT_BUS_ORACLE_IMPL = "0x86A2EE8FAf9A840F7a2c64CA3d51209F9A02081D"
+WITHDRAWAL_VAULT_IMPL = "0xf953b3A269d80e3eB0F2947630Da976B896A8C5b"
+STAKING_ROUTER_IMPL = "0xAA292E8611aDF267e563f334Ee42320aC96D0463"
+NODE_OPERATORS_REGISTRY_IMPL = "0x5c74c94173F05dA1720953407cbb920F3DF9f887"
 
+TRIGGERABLE_WITHDRAWALS_GATEWAY = "0xA4899D35897033b927acFCf422bc745916139776"
+VALIDATOR_EXIT_VERIFIER = "0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3"
+
+# Oracle consensus versions
+AO_CONSENSUS_VERSION = 4
+VEBO_CONSENSUS_VERSION = 4
+CSM_CONSENSUS_VERSION = 3
+
+EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 7200
+
+NOR_EXIT_DEADLINE_IN_SEC = 30 * 60
+
+# CSM
+CS_MODULE_NEW_TARGET_SHARE_BP = 2000  # 20%
+CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP = 3000  # 30%
+
+# TODO: Change to the correct addresses after deployment
+CS_ACCOUNTING_IMPL_V2_ADDRESS = "0x84eA74d481Ee0A5332c457a4d796187F6Ba67fEB"
+CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS = "0x1291Be112d480055DaFd8a610b7d1e203891C274"
+CS_FEE_ORACLE_IMPL_V2_ADDRESS = "0x7969c5eD335650692Bc04293B07F5BF2e7A673C0"
+CSM_IMPL_V2_ADDRESS = "0xCD8a1C3ba11CF5ECfa6267617243239504a98d90"
+
+CS_GATE_SEAL_V2_ADDRESS = "0x1568928F73E4F5e2f748dA36bc56eCcc2fb66457"
+CS_SET_VETTED_GATE_TREE_FACTORY = ZERO_ADDRESS
+CS_EJECTOR_ADDRESS = "0xcbEAF3BDe82155F56486Fb5a1072cb8baAf547cc"
+CS_PERMISSIONLESS_GATE_ADDRESS = "0x9E545E3C0baAB3E08CdfD552C960A1050f373042"
+CS_VETTED_GATE_ADDRESS = "0x9467A509DA43CB50EB332187602534991Be1fEa4"
+CS_VERIFIER_V2_ADDRESS = "0xB0D4afd8879eD9F52b28595d31B441D079B2Ca07"
+
+CS_CURVES = [
+    ([1, 2.4 * 10**18], [2, 1.3 * 10**18]),  # Default Curve
+    ([1, 1.5 * 10**18], [2, 1.3 * 10**18]),  # Legacy EA Curve
+]
+CS_ICS_GATE_BOND_CURVE = ([1, 1.5 * 10**18], [2, 1.3 * 10**18])  # Identified Community Stakers Gate Bond Curve
+
+# Contract versions expected after upgrade
+CSM_V2_VERSION = 2
+CS_ACCOUNTING_V2_VERSION = 2
+CS_FEE_ORACLE_V2_VERSION = 2
+CS_FEE_DISTRIBUTOR_V2_VERSION = 2
+
+
+def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # Save original implementations for comparison
     locator_impl_before = get_ossifiable_proxy_impl(contracts.lido_locator)
     accounting_oracle_impl_before = get_ossifiable_proxy_impl(contracts.accounting_oracle)
@@ -198,6 +217,13 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
+
+    # Not yet used by the protocol, but needed for the test
+    triggerable_withdrawals_gateway = interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY)
+    cs_ejector = interface.CSEjector(CS_EJECTOR_ADDRESS)
+    cs_permissionless_gate = interface.CSPermissionlessGate(CS_PERMISSIONLESS_GATE_ADDRESS)
+    cs_vetted_gate = interface.CSVettedGate(CS_VETTED_GATE_ADDRESS)
+    cs_verifier_v2 = interface.CSVerifierV2(CS_VERIFIER_V2_ADDRESS)
 
     # --- Initial state checks ---
 
@@ -215,14 +241,14 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # Steps 4-6: Check VEBO consensus version management
     initial_vebo_consensus_version = contracts.validators_exit_bus_oracle.getConsensusVersion()
-    assert initial_vebo_consensus_version < vebo_consensus_version, f"VEBO consensus version should be less than {vebo_consensus_version}"
+    assert initial_vebo_consensus_version < VEBO_CONSENSUS_VERSION, f"VEBO consensus version should be less than {VEBO_CONSENSUS_VERSION}"
 
     # Step 7: Check TWG role for CS Ejector initial state
-    add_full_withdrawal_request_role = contracts.triggerable_withdrawals_gateway.ADD_FULL_WITHDRAWAL_REQUEST_ROLE()
-    assert not contracts.triggerable_withdrawals_gateway.hasRole(add_full_withdrawal_request_role, contracts.cs_ejector), "CS Ejector should not have ADD_FULL_WITHDRAWAL_REQUEST_ROLE before upgrade"
+    add_full_withdrawal_request_role = triggerable_withdrawals_gateway.ADD_FULL_WITHDRAWAL_REQUEST_ROLE()
+    assert not triggerable_withdrawals_gateway.hasRole(add_full_withdrawal_request_role, cs_ejector), "CS Ejector should not have ADD_FULL_WITHDRAWAL_REQUEST_ROLE before upgrade"
 
     # Step 8: Check TWG role for VEB initial state
-    assert not contracts.triggerable_withdrawals_gateway.hasRole(add_full_withdrawal_request_role, contracts.validators_exit_bus_oracle), "VEBO should not have ADD_FULL_WITHDRAWAL_REQUEST_ROLE before upgrade"
+    assert not triggerable_withdrawals_gateway.hasRole(add_full_withdrawal_request_role, contracts.validators_exit_bus_oracle), "VEBO should not have ADD_FULL_WITHDRAWAL_REQUEST_ROLE before upgrade"
 
     # Step 9: Check Withdrawal Vault implementation initial state
     assert withdrawal_vault_impl_before != WITHDRAWAL_VAULT_IMPL, "Withdrawal Vault implementation should be different before upgrade"
@@ -235,7 +261,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # Steps 12-14: Check AO consensus version management
     initial_ao_consensus_version = contracts.accounting_oracle.getConsensusVersion()
-    assert initial_ao_consensus_version < ao_consensus_version, f"AO consensus version should be less than {ao_consensus_version}"
+    assert initial_ao_consensus_version < AO_CONSENSUS_VERSION, f"AO consensus version should be less than {AO_CONSENSUS_VERSION}"
     assert not contracts.accounting_oracle.hasRole(contracts.accounting_oracle.MANAGE_CONSENSUS_VERSION_ROLE(), contracts.agent), "Agent should not have MANAGE_CONSENSUS_VERSION_ROLE on AO before upgrade"
 
     # Step 15: Check Staking Router implementation initial state
@@ -321,15 +347,15 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert contracts.cs_accounting.hasRole(web3.keccak(text="RESET_BOND_CURVE_ROLE"), CSM_COMMITTEE_MS), "CSM committee should have RESET_BOND_CURVE_ROLE on CSAccounting before vote"
 
     # CSM Steps 41-42: CSM roles (pre-vote state)
-    assert not contracts.csm.hasRole(web3.keccak(text="CREATE_NODE_OPERATOR_ROLE"), contracts.cs_permissionless_gate.address), "Permissionless gate should not have CREATE_NODE_OPERATOR_ROLE on CSM before vote"
-    assert not contracts.csm.hasRole(web3.keccak(text="CREATE_NODE_OPERATOR_ROLE"), contracts.cs_vetted_gate.address), "Vetted gate should not have CREATE_NODE_OPERATOR_ROLE on CSM before vote"
+    assert not contracts.csm.hasRole(web3.keccak(text="CREATE_NODE_OPERATOR_ROLE"), cs_permissionless_gate.address), "Permissionless gate should not have CREATE_NODE_OPERATOR_ROLE on CSM before vote"
+    assert not contracts.csm.hasRole(web3.keccak(text="CREATE_NODE_OPERATOR_ROLE"), cs_vetted_gate.address), "Vetted gate should not have CREATE_NODE_OPERATOR_ROLE on CSM before vote"
 
     # CSM Step 43: CSAccounting bond curve role for vetted gate (pre-vote state)
-    assert not contracts.cs_accounting.hasRole(contracts.cs_accounting.SET_BOND_CURVE_ROLE(), contracts.cs_vetted_gate.address), "Vetted gate should not have SET_BOND_CURVE_ROLE on CSAccounting before vote"
+    assert not contracts.cs_accounting.hasRole(contracts.cs_accounting.SET_BOND_CURVE_ROLE(), cs_vetted_gate.address), "Vetted gate should not have SET_BOND_CURVE_ROLE on CSAccounting before vote"
 
     # CSM Steps 44-45: Verifier roles (pre-vote state)
     assert contracts.csm.hasRole(contracts.csm.VERIFIER_ROLE(), contracts.cs_verifier.address), "Old verifier should have VERIFIER_ROLE on CSM before vote"
-    assert not contracts.csm.hasRole(contracts.csm.VERIFIER_ROLE(), contracts.cs_verifier_v2.address), "New verifier should not have VERIFIER_ROLE on CSM before vote"
+    assert not contracts.csm.hasRole(contracts.csm.VERIFIER_ROLE(), cs_verifier_v2.address), "New verifier should not have VERIFIER_ROLE on CSM before vote"
 
     # CSM Steps 46-51: GateSeal roles (pre-vote state)
     assert contracts.csm.hasRole(contracts.csm.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS), "Old GateSeal should have PAUSE_ROLE on CSM before vote"
@@ -356,7 +382,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
         (vote_id,) = vote_ids_from_env
     else:
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
-        vote_id, _ = create_tw_vote(tx_params, silent=True)
+        vote_id, _ = start_vote(tx_params, silent=True)
 
     vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
     print(f"voteId = {vote_id}")
@@ -389,11 +415,11 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # Steps 4-6: Validate VEBO consensus version management
     assert not contracts.validators_exit_bus_oracle.hasRole(contracts.validators_exit_bus_oracle.MANAGE_CONSENSUS_VERSION_ROLE(), contracts.agent), "Agent should not have MANAGE_CONSENSUS_VERSION_ROLE on VEBO"
-    assert contracts.validators_exit_bus_oracle.getConsensusVersion() == vebo_consensus_version, f"VEBO consensus version should be set to {vebo_consensus_version}"
+    assert contracts.validators_exit_bus_oracle.getConsensusVersion() == VEBO_CONSENSUS_VERSION, f"VEBO consensus version should be set to {VEBO_CONSENSUS_VERSION}"
 
     # Steps 7-8: Validate TWG roles
-    assert contracts.triggerable_withdrawals_gateway.hasRole(add_full_withdrawal_request_role, contracts.cs_ejector), "CS Ejector should have ADD_FULL_WITHDRAWAL_REQUEST_ROLE on TWG"
-    assert contracts.triggerable_withdrawals_gateway.hasRole(add_full_withdrawal_request_role, contracts.validators_exit_bus_oracle), "VEBO should have ADD_FULL_WITHDRAWAL_REQUEST_ROLE on TWG"
+    assert triggerable_withdrawals_gateway.hasRole(add_full_withdrawal_request_role, cs_ejector), "CS Ejector should have ADD_FULL_WITHDRAWAL_REQUEST_ROLE on TWG"
+    assert triggerable_withdrawals_gateway.hasRole(add_full_withdrawal_request_role, contracts.validators_exit_bus_oracle), "VEBO should have ADD_FULL_WITHDRAWAL_REQUEST_ROLE on TWG"
 
     # Steps 9-10: Validate Withdrawal Vault upgrade
     assert get_wv_contract_proxy_impl(contracts.withdrawal_vault) == WITHDRAWAL_VAULT_IMPL, "Withdrawal Vault implementation should be updated"
@@ -402,19 +428,19 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # Steps 11-14: Validate Accounting Oracle upgrade
     assert get_ossifiable_proxy_impl(contracts.accounting_oracle) == ACCOUNTING_ORACLE_IMPL, "Accounting Oracle implementation should be updated"
     assert not contracts.accounting_oracle.hasRole(contracts.accounting_oracle.MANAGE_CONSENSUS_VERSION_ROLE(), contracts.agent), "Agent should not have MANAGE_CONSENSUS_VERSION_ROLE on AO"
-    assert contracts.accounting_oracle.getConsensusVersion() == ao_consensus_version, f"AO consensus version should be set to {ao_consensus_version}"
+    assert contracts.accounting_oracle.getConsensusVersion() == AO_CONSENSUS_VERSION, f"AO consensus version should be set to {AO_CONSENSUS_VERSION}"
 
     # Steps 15-17: Validate Staking Router upgrade
     assert get_ossifiable_proxy_impl(contracts.staking_router) == STAKING_ROUTER_IMPL, "Staking Router implementation should be updated"
-    assert contracts.staking_router.hasRole(contracts.staking_router.REPORT_VALIDATOR_EXITING_STATUS_ROLE(), contracts.validator_exit_verifier), "ValidatorExitVerifier should have REPORT_VALIDATOR_EXITING_STATUS_ROLE on SR"
-    assert contracts.staking_router.hasRole(contracts.staking_router.REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE(), contracts.triggerable_withdrawals_gateway), "TWG should have REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE on SR"
+    assert contracts.staking_router.hasRole(contracts.staking_router.REPORT_VALIDATOR_EXITING_STATUS_ROLE(), VALIDATOR_EXIT_VERIFIER), "ValidatorExitVerifier should have REPORT_VALIDATOR_EXITING_STATUS_ROLE on SR"
+    assert contracts.staking_router.hasRole(contracts.staking_router.REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE(), triggerable_withdrawals_gateway), "TWG should have REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE on SR"
 
     # Steps 18-23: Validate NOR and sDVT updates
     assert not contracts.acl.hasPermission(contracts.agent, contracts.kernel, app_manager_role), "Agent should not have APP_MANAGER_ROLE after vote"
     assert contracts.node_operators_registry.getContractVersion() == 4, "Node Operators Registry version should be updated to 4"
     assert contracts.simple_dvt.getContractVersion() == 4, "Simple DVT version should be updated to 4"
-    assert contracts.node_operators_registry.exitDeadlineThreshold(0) == nor_exit_deadline_in_sec, "NOR exit deadline threshold should be set correctly"
-    assert contracts.simple_dvt.exitDeadlineThreshold(0) == nor_exit_deadline_in_sec, "sDVT exit deadline threshold should be set correctly"
+    assert contracts.node_operators_registry.exitDeadlineThreshold(0) == NOR_EXIT_DEADLINE_IN_SEC, "NOR exit deadline threshold should be set correctly"
+    assert contracts.simple_dvt.exitDeadlineThreshold(0) == NOR_EXIT_DEADLINE_IN_SEC, "sDVT exit deadline threshold should be set correctly"
 
     # Steps 24-28: Validate Oracle Daemon Config changes
     assert contracts.oracle_daemon_config.hasRole(config_manager_role, contracts.agent), "Agent should have CONFIG_MANAGER_ROLE on Oracle Daemon Config"
@@ -424,7 +450,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
             assert False, f"Variable {var_name} should have been removed"
         except Exception:
             pass  # Expected to fail - variable should be removed
-    assert convert.to_uint(contracts.oracle_daemon_config.get('EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS')) == exit_events_lookback_window_in_slots, f"EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS should be set to {exit_events_lookback_window_in_slots}"
+    assert convert.to_uint(contracts.oracle_daemon_config.get('EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS')) == EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS, f"EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS should be set to {EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS}"
 
     # Step 29: Validate CSM implementation upgrade
     check_proxy_implementation(contracts.csm.address, CSM_IMPL_V2_ADDRESS)
@@ -443,7 +469,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # Step 34: Validate CSFeeOracle finalizeUpgradeV2 was called with consensus version 3
     assert contracts.cs_fee_oracle.getContractVersion() == CS_FEE_ORACLE_V2_VERSION, f"CSFeeOracle version should be {CS_FEE_ORACLE_V2_VERSION} after vote"
-    assert contracts.cs_fee_oracle.getConsensusVersion() == 3, "CSFeeOracle consensus version should be 3 after vote"
+    assert contracts.cs_fee_oracle.getConsensusVersion() == CSM_CONSENSUS_VERSION, "CSFeeOracle consensus version should be 3 after vote"
 
     # Step 35: Validate CSFeeDistributor implementation upgrade
     check_proxy_implementation(contracts.cs_fee_distributor.address, CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS)
@@ -461,19 +487,19 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert not contracts.cs_accounting.hasRole(web3.keccak(text="RESET_BOND_CURVE_ROLE"), CSM_COMMITTEE_MS), "CSM committee should not have RESET_BOND_CURVE_ROLE on CSAccounting after vote"
 
     # Step 40: Validate CREATE_NODE_OPERATOR_ROLE was granted to permissionless gate on CSM
-    assert contracts.csm.hasRole(contracts.csm.CREATE_NODE_OPERATOR_ROLE(), contracts.cs_permissionless_gate.address), "Permissionless gate should have CREATE_NODE_OPERATOR_ROLE on CSM after vote"
+    assert contracts.csm.hasRole(contracts.csm.CREATE_NODE_OPERATOR_ROLE(), cs_permissionless_gate.address), "Permissionless gate should have CREATE_NODE_OPERATOR_ROLE on CSM after vote"
 
     # Step 41: Validate CREATE_NODE_OPERATOR_ROLE was granted to vetted gate on CSM
-    assert contracts.csm.hasRole(contracts.csm.CREATE_NODE_OPERATOR_ROLE(), contracts.cs_vetted_gate.address), "Vetted gate should have CREATE_NODE_OPERATOR_ROLE on CSM after vote"
+    assert contracts.csm.hasRole(contracts.csm.CREATE_NODE_OPERATOR_ROLE(), cs_vetted_gate.address), "Vetted gate should have CREATE_NODE_OPERATOR_ROLE on CSM after vote"
 
     # Step 42: Validate SET_BOND_CURVE_ROLE was granted to vetted gate on CSAccounting
-    assert contracts.cs_accounting.hasRole(contracts.cs_accounting.SET_BOND_CURVE_ROLE(), contracts.cs_vetted_gate.address), "Vetted gate should have SET_BOND_CURVE_ROLE on CSAccounting after vote"
+    assert contracts.cs_accounting.hasRole(contracts.cs_accounting.SET_BOND_CURVE_ROLE(), cs_vetted_gate.address), "Vetted gate should have SET_BOND_CURVE_ROLE on CSAccounting after vote"
 
     # Step 43: Validate VERIFIER_ROLE was revoked from old verifier on CSM
     assert not contracts.csm.hasRole(contracts.csm.VERIFIER_ROLE(), contracts.cs_verifier.address), "Old verifier should not have VERIFIER_ROLE on CSM after vote"
 
     # Step 44: Validate VERIFIER_ROLE was granted to new verifier on CSM
-    assert contracts.csm.hasRole(contracts.csm.VERIFIER_ROLE(), contracts.cs_verifier_v2.address), "New verifier should have VERIFIER_ROLE on CSM after vote"
+    assert contracts.csm.hasRole(contracts.csm.VERIFIER_ROLE(), cs_verifier_v2.address), "New verifier should have VERIFIER_ROLE on CSM after vote"
 
     # Step 45: Validate PAUSE_ROLE was revoked from old GateSeal on CSM
     assert not contracts.csm.hasRole(contracts.csm.PAUSE_ROLE(), CS_GATE_SEAL_ADDRESS), "Old GateSeal should not have PAUSE_ROLE on CSM after vote"
@@ -519,9 +545,9 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
         dg_voting_event,
         proposal_id,
         proposer=VOTING,
-        executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+        executor=DUAL_GOVERNANCE_EXECUTORS[0],
     )
-    dg_execution_events = group_dg_events_from_receipt(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
+    dg_execution_events = group_dg_events_from_receipt(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_EXECUTORS[0])
     assert len(dg_execution_events) == 54, "Unexpected number of dual governance events"
 
     # 1. Lido Locator upgrade events
@@ -565,8 +591,8 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     validate_role_grant_event(
         dg_execution_events[6],
         role_hash=web3.keccak(text="ADD_FULL_WITHDRAWAL_REQUEST_ROLE").hex(),
-        account=contracts.cs_ejector.address,
-        emitted_by=contracts.triggerable_withdrawals_gateway
+        account=cs_ejector.address,
+        emitted_by=triggerable_withdrawals_gateway
     )
 
     # 8. Grant TWG ADD_FULL_WITHDRAWAL_REQUEST_ROLE to VEBO
@@ -574,7 +600,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
         dg_execution_events[7],
         role_hash=web3.keccak(text="ADD_FULL_WITHDRAWAL_REQUEST_ROLE").hex(),
         account=contracts.validators_exit_bus_oracle.address,
-        emitted_by=contracts.triggerable_withdrawals_gateway
+        emitted_by=triggerable_withdrawals_gateway
     )
 
     # 9. Update WithdrawalVault implementation
@@ -617,7 +643,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     validate_role_grant_event(
         dg_execution_events[15],
         role_hash=web3.keccak(text="REPORT_VALIDATOR_EXITING_STATUS_ROLE").hex(),
-        account=contracts.validator_exit_verifier.address,
+        account=VALIDATOR_EXIT_VERIFIER,
         emitted_by=contracts.staking_router
     )
 
@@ -625,7 +651,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     validate_role_grant_event(
         dg_execution_events[16],
         role_hash=web3.keccak(text="REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE").hex(),
-        account=contracts.triggerable_withdrawals_gateway.address,
+        account=triggerable_withdrawals_gateway.address,
         emitted_by=contracts.staking_router
     )
 
@@ -676,7 +702,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # 28. Set EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS
     assert 'ConfigValueSet' in dg_execution_events[27]
     assert 'EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS' in dg_execution_events[27]['ConfigValueSet'][0]['key']
-    assert convert.to_int(dg_execution_events[27]['ConfigValueSet'][0]['value']) == exit_events_lookback_window_in_slots
+    assert convert.to_int(dg_execution_events[27]['ConfigValueSet'][0]['value']) == EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS
 
     # 29. CSM implementation upgrade
     validate_proxy_upgrade_event(dg_execution_events[28], CSM_IMPL_V2_ADDRESS, emitted_by=contracts.csm)
@@ -690,7 +716,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # 32. CSAccounting finalize upgrade with bond curves
     assert 'BondCurveAdded' in dg_execution_events[31]
-    assert len(dg_execution_events[31]['BondCurveAdded']) == 4
+    assert len(dg_execution_events[31]['BondCurveAdded']) == len(CS_CURVES)
     assert 'Initialized' in dg_execution_events[31]
     assert dg_execution_events[31]['Initialized'][0]['version'] == 2
 
@@ -707,7 +733,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # 36. CSFeeDistributor finalize upgrade
     assert 'RebateRecipientSet' in dg_execution_events[35]
     assert 'Initialized' in dg_execution_events[35]
-    assert dg_execution_events[35]['Initialized'][0]['version'] == 2
+    assert dg_execution_events[35]['Initialized'][0]['version'] == CS_FEE_DISTRIBUTOR_V2_VERSION
 
     # 37. Revoke SET_BOND_CURVE_ROLE from CSM on CSAccounting
     validate_role_revoke_event(
@@ -737,7 +763,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     validate_role_grant_event(
         dg_execution_events[39],
         role_hash=contracts.csm.CREATE_NODE_OPERATOR_ROLE().hex(),
-        account=contracts.cs_permissionless_gate.address,
+        account=cs_permissionless_gate.address,
         emitted_by=contracts.csm
     )
 
@@ -745,7 +771,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     validate_role_grant_event(
         dg_execution_events[40],
         role_hash=contracts.csm.CREATE_NODE_OPERATOR_ROLE().hex(),
-        account=contracts.cs_vetted_gate.address,
+        account=cs_vetted_gate.address,
         emitted_by=contracts.csm
     )
 
@@ -753,7 +779,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     validate_role_grant_event(
         dg_execution_events[41],
         role_hash=contracts.cs_accounting.SET_BOND_CURVE_ROLE().hex(),
-        account=contracts.cs_vetted_gate.address,
+        account=cs_vetted_gate.address,
         emitted_by=contracts.cs_accounting
     )
 
@@ -769,7 +795,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     validate_role_grant_event(
         dg_execution_events[43],
         role_hash=contracts.csm.VERIFIER_ROLE().hex(),
-        account=contracts.cs_verifier_v2.address,
+        account=cs_verifier_v2.address,
         emitted_by=contracts.csm
     )
 
@@ -830,7 +856,8 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     )
 
     # 52. Add ICS bond curve
-    validate_bond_curve_added_event(dg_execution_events[51], curve_id=4, emitted_by=contracts.cs_accounting)
+    ics_curve_id = len(CS_CURVES)
+    validate_bond_curve_added_event(dg_execution_events[51], curve_id=ics_curve_id, emitted_by=contracts.cs_accounting)
 
     # 53. Revoke MANAGE_BOND_CURVES_ROLE from agent on CSAccounting
     validate_role_revoke_event(
@@ -858,7 +885,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
         event=dg_bypass_voting_event,
         p=EVMScriptFactoryAdded(
             factory_addr=CS_SET_VETTED_GATE_TREE_FACTORY,
-            permissions=create_permissions(contracts.cs_vetted_gate, "setTreeParams")
+            permissions=create_permissions(cs_vetted_gate, "setTreeParams")
         ),
         emitted_by=contracts.easy_track,
     )
