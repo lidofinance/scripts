@@ -77,7 +77,18 @@ from utils.config import (
 
 
 dual_governance_launch_omnibus_provider = "0x1DB8a9313785b78f7d0a201C5E0BE007f1eb63b4"
-description = "Dual Governance Launch on Mainnet" # TODO: change description
+description = """
+**Activate Dual Governance on-chain** — a dynamic timelock that enables stETH holders to delay execution and exit safely in response to contentious proposals. 
+The Dual Governance design and parameters follow the DAO-approved [LIP-28 Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x26a66c9b91ff46aeac74b6f6714467993edc6840a8f292fb5c1366fc44dec2a6).
+
+Deploy verification: [Statemind](https://github.com/lidofinance/audits/blob/main/Statemind%20Dual%20Governance%20Deployment%20and%20Voting%20Script%20Review%20Report%2006-2025.pdf) | Formal verification: [Certora](https://github.com/lidofinance/audits/blob/main/Certora%20Dual%20Governance%20Audit%20Report%2002-2025.pdf), [Runtime Verification](https://github.com/lidofinance/audits/blob/main/Runtime%20Verification%20Dual%20Governance%20Formal%20Verification%20Report%2002-2025.pdf) | Audits: [OpenZeppelin](https://github.com/lidofinance/audits/blob/main/OpenZeppelin%20Dual%20Governance%20Re-Audit%20Report%2002-2025.pdf), [Statemind](https://github.com/lidofinance/audits/blob/main/Statemind%20Dual%20Governance%20Audit%20Report%2010-2024.pdf)
+
+- Role transitions [per Dual Governance specification](https://github.com/lidofinance/dual-governance/blob/48b6c8cab4e6498b29e844ca21ae5f3238440771/docs/permissions-transition/permissions-transition-mainnet.md). Items 1-50.
+- Resetting `RecoveryVaultAppId` on DaoKernel. Items 51-53.
+- On-chain roles setup validation. Item 54.
+- Submitting Dual Governance proposal to revoke [Aragon Agent](https://etherscan.io/address/0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c) roles from [Aragon Voting](https://etherscan.io/address/0x2e59A20f205bB85a89C53f1936454680651E618e). Item 55.
+- Validate Dual Governance activation state and enforce execution timeframe on-chain. Items 56-57.
+""" 
 
 def get_vote_items():
     voting_items = interface.DGLaunchOmnibus(dual_governance_launch_omnibus_provider).getVoteItems()

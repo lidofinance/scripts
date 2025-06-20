@@ -73,7 +73,6 @@ def do_snapshot(
                 "getLastCompletedReportDelta": oracle.getLastCompletedReportDelta(),
                 "getLido": oracle.getLido(),
                 # AragonApp
-                "getRecoveryVault": oracle.getRecoveryVault(),
                 "kernel": oracle.kernel(),
                 "appId": oracle.appId(),
                 "getEVMScriptExecutor(nil)": oracle.getEVMScriptExecutor(EMPTY_CALLSCRIPT),

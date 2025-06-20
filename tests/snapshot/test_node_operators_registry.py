@@ -14,7 +14,7 @@ from utils.config import (
 )
 from utils.mainnet_fork import chain_snapshot
 from utils.test.snapshot_helpers import dict_zip
-from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
+from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
 
 PUBKEY_LENGTH = 48
 SIGNATURE_LENGTH = 96
@@ -71,6 +71,7 @@ def test_node_operator_basic_flow(
     voting_eoa,
     agent_eoa,
     vote_ids_from_env,
+    proposal_ids_from_env,
 ):
     deposits_count = 8
     submit_amount = deposits_count * DEPOSIT_SIZE
@@ -87,10 +88,10 @@ def test_node_operator_basic_flow(
         "signature_batch": random_hexstr(10 * SIGNATURE_LENGTH),
     }
 
-    def create_actions(dsm_eoa):
+    def create_actions(dsm_eoa, manager_eoa):
         actions = {
             "add_node_operator": lambda: contracts.node_operators_registry.addNodeOperator(
-                "new_node_operator", new_node_operator["reward_address"], {"from": voting_eoa}
+                "new_node_operator", new_node_operator["reward_address"], {"from": manager_eoa}
             ),
             "add_signing_keys_operator_bh": lambda: contracts.node_operators_registry.addSigningKeysOperatorBH(
                 new_node_operator["id"],
@@ -100,7 +101,7 @@ def test_node_operator_basic_flow(
                 {"from": new_node_operator["reward_address"]},
             ),
             "set_staking_limit": lambda: contracts.node_operators_registry.setNodeOperatorStakingLimit(
-                new_node_operator["id"], new_node_operator["staking_limit"], {"from": voting_eoa}
+                new_node_operator["id"], new_node_operator["staking_limit"], {"from": manager_eoa}
             ),
             "submit": lambda: contracts.lido.submit(ZERO_ADDRESS, {"from": staker, "amount": submit_amount}),
             "deposit": lambda: contracts.lido.deposit(deposits_count, 1, "0x", {"from": dsm_eoa}),
@@ -108,16 +109,13 @@ def test_node_operator_basic_flow(
                 new_node_operator["id"],
                 new_node_operator["staking_limit"],
                 1,
-                {"from": voting_eoa},
+                {"from": manager_eoa},
             ),
             "deactivate_node_operator": lambda: contracts.node_operators_registry.deactivateNodeOperator(
-                new_node_operator["id"], {"from": voting_eoa}
-            ),
-            "withdrawal_credentials_change": lambda: contracts.staking_router.setWithdrawalCredentials(
-                "0xdeadbeef", {"from": voting_eoa}
+                new_node_operator["id"], {"from": manager_eoa}
             ),
             "activate_node_operator": lambda: contracts.node_operators_registry.activateNodeOperator(
-                new_node_operator["id"], {"from": voting_eoa}
+                new_node_operator["id"], {"from": manager_eoa}
             ),
         }
 
@@ -131,21 +129,36 @@ def test_node_operator_basic_flow(
     make_snapshot(contracts.node_operators_registry)
 
     with chain_snapshot():
-        snapshot_before_update = run_scenario(actions=create_actions(old_deposit_security_module_eoa), snapshooter=make_snapshot)
+        snapshot_before_update = run_scenario(actions=create_actions(new_deposit_security_module_eoa, voting_eoa), snapshooter=make_snapshot)
 
     with chain_snapshot():
+        execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, proposal_ids_from_env)
 
-        if vote_ids_from_env:
-            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
-        else:
-            start_and_execute_votes(contracts.voting, helpers)
-        snapshot_after_update = run_scenario(actions=create_actions(new_deposit_security_module_eoa), snapshooter=make_snapshot)
+        contracts.acl.grantPermission(
+            contracts.agent,
+            contracts.node_operators_registry,
+            convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
+            {"from": contracts.agent}
+        )
+        contracts.acl.grantPermission(
+            contracts.agent,
+            contracts.node_operators_registry,
+            convert.to_uint(Web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")),
+            {"from": contracts.agent}
+        )
+        contracts.acl.grantPermission(
+            contracts.agent,
+            contracts.node_operators_registry,
+            convert.to_uint(Web3.keccak(text="MANAGE_SIGNING_KEYS")),
+            {"from": contracts.agent}
+        )
+
+        snapshot_after_update = run_scenario(actions=create_actions(new_deposit_security_module_eoa, agent_eoa), snapshooter=make_snapshot)
 
     assert snapshot_before_update.keys() == snapshot_after_update.keys()
 
     # update key_op_index for all snapshots after the "withdrawal_credentials_change" step cause the
     # old NOR implementation didn't increase the key op index on withdrawal credentials update
-    snapshot_before_update["after_withdrawal_credentials_change"]["keys_op_index"] += 1
     snapshot_before_update["after_activate_node_operator"]["keys_op_index"] += 1
 
     for key in snapshot_before_update.keys():

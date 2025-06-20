@@ -10,7 +10,7 @@ from typing_extensions import Protocol
 
 from tests.conftest import Helpers
 from utils.config import contracts
-from utils.import_current_votes import start_and_execute_votes, is_there_any_vote_scripts
+from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
 from utils.test.snapshot_helpers import _chain_snapshot
 
 
@@ -184,6 +184,7 @@ def sandwich_upgrade(
     far_ts: int,
     helpers: Helpers,
     vote_ids_from_env: Any,
+    proposal_ids_from_env: Any,
 ) -> SandwichFn:
     """Snapshot the state before and after the upgrade and return the two frames"""
 
@@ -207,17 +208,7 @@ def sandwich_upgrade(
         with _chain_snapshot():
             v1_frames = tuple(_actions_snaps(dsm))
 
-        if vote_ids_from_env:
-            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
-        else:
-            start_and_execute_votes(contracts.voting, helpers)
-
-        # NOTE: grant role to DSM to be able to resume deposits
-        contracts.staking_router.grantRole(
-            Web3.keccak(text="STAKING_MODULE_RESUME_ROLE"),
-            dsm.address,
-            {"from": contracts.agent.address},
-        )
+        execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, proposal_ids_from_env)
 
         # do not call _chain_snapshot here to be able to interact with the environment in the test
         v2_frames = tuple(_actions_snaps(dsm))
@@ -244,7 +235,8 @@ def _sleep_till_block(block: int, ts: int) -> None:
         raise ValueError(f"Current block {curr_block} is greater than the target block {block}")
 
     print(f"Forwarding chain to block {block}, may take a while...")
-    chain.mine(block - curr_block, timestamp=ts)
+    chain.sleep(ts - chain.time())
+    chain.mine(block - curr_block)
 
 
 def _stacks_equal(stacks: tuple[Stack, Stack]) -> None:

@@ -17,8 +17,8 @@ from utils.config import (
     LDO_TOKEN,
     VOTING,
 )
-from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 from utils.test.helpers import ONE_ETH
+from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
 
 
 @pytest.fixture(scope="module")
@@ -71,7 +71,7 @@ def snapshot() -> Dict[str, any]:
     }
 
 
-def test_submit_snapshot(helpers, staker, vote_ids_from_env):
+def test_submit_snapshot(helpers, staker, vote_ids_from_env, proposal_ids_from_env):
     def steps() -> Dict[str, Dict[str, any]]:
         track = {"init": snapshot()}
         contracts.lido.submit(ZERO_ADDRESS, {"from": staker, "amount": ONE_ETH})
@@ -80,16 +80,24 @@ def test_submit_snapshot(helpers, staker, vote_ids_from_env):
 
     before: Dict[str, Dict[str, any]] = steps()
     chain.revert()
-    if vote_ids_from_env:
-        helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
-    else:
-        start_and_execute_votes(contracts.voting, helpers)
+    
+    execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, proposal_ids_from_env)
+
     after: Dict[str, Dict[str, any]] = steps()
     step_diffs: Dict[str, Dict[str, ValueChanged]] = {}
+
+    expected_diffs = {
+        "canPerform()": ValueChanged(from_val=True, to_val=False),
+        "getRecoveryVault()": ValueChanged(from_val=contracts.agent.address, to_val=ZERO_ADDRESS),   
+    }
 
     for step, pair_of_snapshots in dict_zip(before, after).items():
         (before, after) = pair_of_snapshots
         step_diffs[step] = dict_diff(before, after)
+        
+        for key in expected_diffs:
+            if key in step_diffs[step] and step_diffs[step][key] == expected_diffs[key]:
+                del step_diffs[step][key]
 
     for step_name, diff in step_diffs.items():
         assert_no_diffs(step_name, diff)
