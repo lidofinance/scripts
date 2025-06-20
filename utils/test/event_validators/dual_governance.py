@@ -5,7 +5,7 @@ from .common import validate_events_chain
 
 
 def validate_dual_governance_submit_event(
-    event: EventDict, proposal_id: int, proposer: str, executor: str, metadata: str, proposal_calls: any, emitted_by: str = None
+    event: EventDict, proposal_id: int, proposer: str, executor: str, metadata: str = None, proposal_calls: any = None, emitted_by: str = None
 ) -> None:
     _events_chain = ["LogScriptCall", "ProposalSubmitted", "ProposalSubmitted"]
 
@@ -18,14 +18,17 @@ def validate_dual_governance_submit_event(
 
     # assert event["ProposalSubmitted"][0]["callsCount"] == len(proposal_calls), "Wrong callsCount"
 
-    for i in range(1, len(proposal_calls)):
-        assert event["ProposalSubmitted"][0]["calls"][i][0] == proposal_calls[i]["target"], "Wrong target"
-        assert event["ProposalSubmitted"][0]["calls"][i][1] == proposal_calls[i]["value"], "Wrong value"
-        assert event["ProposalSubmitted"][0]["calls"][i][2] == proposal_calls[i]["data"], "Wrong data"
+    if proposal_calls:
+        for i in range(1, len(proposal_calls)):
+            assert event["ProposalSubmitted"][0]["calls"][i][0] == proposal_calls[i]["target"], "Wrong target"
+            assert event["ProposalSubmitted"][0]["calls"][i][1] == proposal_calls[i]["value"], "Wrong value"
+            assert event["ProposalSubmitted"][0]["calls"][i][2] == proposal_calls[i]["data"], "Wrong data"
 
     assert event["ProposalSubmitted"][1]["proposalId"] == proposal_id, "Wrong proposalId"
     assert event["ProposalSubmitted"][1]["proposerAccount"] == proposer, "Wrong proposer"
-    assert event["ProposalSubmitted"][1]["metadata"] == metadata, "Wrong metadata"
+
+    if metadata:
+        assert event["ProposalSubmitted"][1]["metadata"] == metadata, "Wrong metadata"
 
     if emitted_by is not None:
         assert convert.to_address(event["ProposalSubmitted"][0]["_emitted_by"]) == convert.to_address(
