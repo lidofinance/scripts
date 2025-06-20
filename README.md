@@ -78,7 +78,7 @@ You can use the following shortcuts:
 - `make test vote=XXX` run all tests on Hardhat node with applied Vote #XXX
 - `make test-1/2`, `make test-2/2` run tests divided into 2 parts (can be run asynchronously)
 - `make test-1/3`, `make test-2/3`, `make test-3/3` run tests divided into 3 parts (can be run asynchronously)
-- `make enact-fork vote=XXX` deploy vote and enact it on mainnet fork
+- `make enact-fork vote=scripts/vote_01_01_0001.py` deploy vote and enact it on mainnet fork
 - `make docker` connect to the `scripts` docker container
 - `make node` start local mainnet node
 
