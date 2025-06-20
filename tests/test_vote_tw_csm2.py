@@ -992,8 +992,9 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
         emitted_by=contracts.staking_router
     )
 
-    # # 55. Add EasyTrack factory for CSSetVettedGateTree
-    # assert 'EVMScriptFactoryAdded' in dg_events[54]
-    # assert dg_events[54]['EVMScriptFactoryAdded'][0]['factory'] == CS_SET_VETTED_GATE_TREE_FACTORY
+    non_agent_events = voting_events[1]
 
-
+    # 55. Add EasyTrack factory for CSSetVettedGateTree
+    # This event is not emitted by the agent, so we check it separately
+    assert 'EVMScriptFactoryAdded' in non_agent_events
+    assert non_agent_events['EVMScriptFactoryAdded'][0]['_evmScriptFactory'] == CS_SET_VETTED_GATE_TREE_FACTORY
