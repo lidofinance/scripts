@@ -135,7 +135,7 @@ def to_percent(bp: int) -> float:
     """
     return bp / 10000 * 100
 
-def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[Any]]:
+def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[Any]]:
     f"""
         Triggerable withdrawals voting baking and sending.
 
@@ -647,7 +647,7 @@ def main():
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 
-    vote_id, _ = create_tw_vote(tx_params=tx_params, silent=False)
+    vote_id, _ = start_vote(tx_params=tx_params, silent=False)
 
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 

@@ -3,7 +3,7 @@ Tests for triggerable withdrawals voting.
 """
 
 from typing import Dict, Tuple, List, NamedTuple, Optional, Any, Sequence
-from scripts.vote_tw_csm2 import create_tw_vote
+from scripts.vote_tw_csm2 import start_vote
 from brownie import interface, reverts, chain, convert, web3, ZERO_ADDRESS
 from brownie.network.event import EventDict
 from utils.easy_track import create_permissions
@@ -356,7 +356,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
         (vote_id,) = vote_ids_from_env
     else:
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
-        vote_id, _ = create_tw_vote(tx_params, silent=True)
+        vote_id, _ = start_vote(tx_params, silent=True)
 
     vote_tx = helpers.execute_vote(accounts, vote_id, contracts.voting)
     print(f"voteId = {vote_id}")
