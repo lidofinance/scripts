@@ -621,7 +621,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
         ),
     )
 
-    plain_agent_item = {
+    dg_bypass_item = {
         "55. Add CSSetVettedGateTree factory to EasyTrack with permissions": add_evmscript_factory(
                 factory=CS_SET_VETTED_GATE_TREE_FACTORY,
                 permissions=(create_permissions(contracts.cs_vetted_gate, "setTreeParams")),
@@ -635,7 +635,7 @@ def create_tw_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Option
 
     dg_desc = "\n".join(vote_descriptions)
     dg_vote = dual_governance_agent_forward(call_script_items, dg_desc)
-    vote_items = {dg_desc: dg_vote, **plain_agent_item}
+    vote_items = {dg_desc: dg_vote, **dg_bypass_item}
 
     assert confirm_vote_script(vote_items, silent, desc_ipfs)
 
