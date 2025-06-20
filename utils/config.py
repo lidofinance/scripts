@@ -99,9 +99,9 @@ def local_deployer() -> LocalAccount:
 
 def get_deployer_account() -> Union[LocalAccount, Account]:
     is_live = get_is_live()
-    deployer = os.environ.get("DEPLOYER")
 
     if is_live:
+        deployer = os.environ.get("DEPLOYER")
         if deployer is None:
             raise EnvironmentError("For live deployment please set DEPLOYER env variable to the deployer account name")
         return accounts.load(deployer)
