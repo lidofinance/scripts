@@ -98,7 +98,6 @@ development:
     host: http://127.0.0.1
     id: holesky-fork
     name: Ganache-CLI (Holesky Fork)
-    explorer: https://api-holesky.etherscan.io/api
     timeout: 360
 
   - cmd: ./ganache.sh
