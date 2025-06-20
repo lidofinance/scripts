@@ -4,7 +4,7 @@ Tests for triggerable withdrawals voting.
 
 from typing import Dict, Tuple, List, NamedTuple, Optional, Any, Sequence
 from scripts.vote_tw_csm2 import create_tw_vote
-from brownie import interface, chain, convert, web3, ZERO_ADDRESS
+from brownie import interface, reverts, chain, convert, web3, ZERO_ADDRESS
 from brownie.network.event import EventDict
 from utils.easy_track import create_permissions
 from utils.test.tx_tracing_helpers import count_vote_items_by_events, group_voting_events_from_receipt, group_dg_events_from_receipt
@@ -288,17 +288,17 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert csm_impl_before != CSM_IMPL_V2_ADDRESS, "CSM implementation should be different before vote"
 
     # Step 30: Check CSM finalizeUpgradeV2 initial state
-    try:
-        version = contracts.csm.getInitializedVersion()
-        assert version < CSM_V2_VERSION, f"CSM version should be less than {CSM_V2_VERSION} before vote"
-    except Exception:
-        pass  # Function might not exist yet
+    with reverts():
+        # The function should not exist yet
+        contracts.csm.getInitializedVersion()
 
     # CSM Step 32: Check CSAccounting implementation (pre-vote state)
     assert cs_accounting_impl_before != CS_ACCOUNTING_IMPL_V2_ADDRESS, "CSAccounting implementation should be different before vote"
 
     # CSM Step 33: Check CSAccounting finalizeUpgradeV2 was not called (pre-vote state)
-    # assert contracts.cs_accounting.getInitializedVersion() < CS_ACCOUNTING_V2_VERSION, f"CSAccounting version should be less than {CS_ACCOUNTING_V2_VERSION} before vote"
+    with reverts():
+        # The function should not exist yet
+        contracts.cs_accounting.getInitializedVersion()
 
     # CSM Step 34: Check CSFeeOracle implementation (pre-vote state)
     assert cs_fee_oracle_impl_before != CS_FEE_ORACLE_IMPL_V2_ADDRESS, "CSFeeOracle implementation should be different before vote"
@@ -311,7 +311,9 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert cs_fee_distributor_impl_before != CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS, "CSFeeDistributor implementation should be different before vote"
 
     # CSM Step 37: Check CSFeeDistributor finalizeUpgradeV2 was not called (pre-vote state)
-    # assert contracts.cs_fee_distributor.getInitializedVersion() < CS_FEE_DISTRIBUTOR_V2_VERSION, f"CSFeeDistributor version should be less than {CS_FEE_DISTRIBUTOR_V2_VERSION} before vote"
+    with reverts():
+        # The function should not exist yet
+        contracts.cs_fee_distributor.getInitializedVersion()
 
     # CSM Steps 38-40: CSAccounting roles (pre-vote state)
     assert contracts.cs_accounting.hasRole(contracts.cs_accounting.SET_BOND_CURVE_ROLE(), contracts.csm.address), "CSM should have SET_BOND_CURVE_ROLE on CSAccounting before vote"
