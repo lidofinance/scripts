@@ -12,7 +12,7 @@ from web3.types import Wei
 from tests.conftest import Helpers
 from utils.config import contracts, LDO_TOKEN, VOTING
 from utils.evm_script import EMPTY_CALLSCRIPT
-from utils.import_current_votes import start_and_execute_votes, is_there_any_vote_scripts
+from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
 from utils.test.snapshot_helpers import _chain_snapshot
 
 from .utils import get_slot
@@ -308,8 +308,8 @@ def do_snapshot(
                 "STAKING_CONTROL_ROLE": lido.STAKING_CONTROL_ROLE(),
                 "STAKING_PAUSE_ROLE": lido.STAKING_PAUSE_ROLE(),
                 # AragonApp
-                "canPerform()": lido.canPerform(VOTING, lido.PAUSE_ROLE(), []),
-                "getRecoveryVault": lido.getRecoveryVault(),
+                # "canPerform()": lido.canPerform(VOTING, lido.PAUSE_ROLE(), []),
+                # "getRecoveryVault": lido.getRecoveryVault(),
                 "kernel": lido.kernel(),
                 "appId": lido.appId(),
                 "getEVMScriptExecutor(nil)": lido.getEVMScriptExecutor(EMPTY_CALLSCRIPT),
@@ -375,6 +375,7 @@ def sandwich_upgrade(
     far_block: int,
     helpers: Helpers,
     vote_ids_from_env,
+    proposal_ids_from_env
 ) -> Callable[..., tuple[Stack, Stack]]:
     """Snapshot the state before and after the upgrade and return the two frames"""
 
@@ -398,10 +399,7 @@ def sandwich_upgrade(
         with _chain_snapshot():
             v1_frames = tuple(_actions_snaps())
 
-        if vote_ids_from_env:
-            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
-        else:
-            start_and_execute_votes(contracts.voting, helpers)
+        execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, proposal_ids_from_env)
 
         # do not call _chain_snapshot here to be able to interact with the environment in the test
         v2_frames = tuple(_actions_snaps())
