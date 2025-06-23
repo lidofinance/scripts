@@ -40,7 +40,7 @@ cd scripts
 Run the container in the `scripts` directory and specify the ENV VARs:
 
 ```shell
-docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d ghcr.io/lidofinance/scripts:v16
+docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d ghcr.io/lidofinance/scripts:v18
 
 ```
 
