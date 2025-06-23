@@ -14,7 +14,11 @@ test:
 ifdef vote
 	OMNIBUS_VOTE_IDS=$(vote) poetry run brownie test --network mfh-1
 else
+ifdef dg
+	DG_PROPOSAL_IDS=$(dg) poetry run brownie test --network mfh-1
+else
 	poetry run brownie test --network mfh-1
+endif
 endif
 
 test-1/2:
