@@ -196,7 +196,7 @@ def vote_ids_from_env() -> [int]:
 
 
 @pytest.fixture(scope="session")
-def proposal_ids_from_env() -> [int]:
+def dg_proposal_ids_from_env() -> [int]:
     if os.getenv(ENV_DG_PROPOSAL_IDS):
         try:
             proposal_ids_str = os.getenv(ENV_DG_PROPOSAL_IDS)

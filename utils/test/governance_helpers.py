@@ -9,9 +9,9 @@ def execute_vote(helpers, vote_ids_from_env):
     else:
         start_and_execute_votes(contracts.voting, helpers)
 
-def execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, proposal_ids_from_env):    
-    if proposal_ids_from_env:
-        new_proposal_ids = proposal_ids_from_env
+def execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env):    
+    if dg_proposal_ids_from_env:
+        new_proposal_ids = dg_proposal_ids_from_env
     else:
         proposals_count_before = contracts.emergency_protected_timelock.getProposalsCount()
         execute_vote(helpers, vote_ids_from_env)

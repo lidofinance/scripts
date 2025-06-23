@@ -71,7 +71,7 @@ def test_node_operator_basic_flow(
     voting_eoa,
     agent_eoa,
     vote_ids_from_env,
-    proposal_ids_from_env,
+    dg_proposal_ids_from_env,
 ):
     deposits_count = 8
     submit_amount = deposits_count * DEPOSIT_SIZE
@@ -132,7 +132,7 @@ def test_node_operator_basic_flow(
         snapshot_before_update = run_scenario(actions=create_actions(new_deposit_security_module_eoa, voting_eoa), snapshooter=make_snapshot)
 
     with chain_snapshot():
-        execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, proposal_ids_from_env)
+        execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env)
 
         contracts.acl.grantPermission(
             contracts.agent,

@@ -71,7 +71,7 @@ def snapshot() -> Dict[str, any]:
     }
 
 
-def test_submit_snapshot(helpers, staker, vote_ids_from_env, proposal_ids_from_env):
+def test_submit_snapshot(helpers, staker, vote_ids_from_env, dg_proposal_ids_from_env):
     def steps() -> Dict[str, Dict[str, any]]:
         track = {"init": snapshot()}
         contracts.lido.submit(ZERO_ADDRESS, {"from": staker, "amount": ONE_ETH})
@@ -81,7 +81,7 @@ def test_submit_snapshot(helpers, staker, vote_ids_from_env, proposal_ids_from_e
     before: Dict[str, Dict[str, any]] = steps()
     chain.revert()
     
-    execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, proposal_ids_from_env)
+    execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env)
 
     after: Dict[str, Dict[str, any]] = steps()
     step_diffs: Dict[str, Dict[str, ValueChanged]] = {}

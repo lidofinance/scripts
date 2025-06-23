@@ -129,7 +129,7 @@ def sandwich_upgrade(
     far_ts: int,
     helpers: Helpers,
     vote_ids_from_env: int,
-    proposal_ids_from_env: int,
+    dg_proposal_ids_from_env: int,
 ) -> SandwichFn:
     """Snapshot the state before and after the upgrade and return the two frames"""
 
@@ -141,7 +141,7 @@ def sandwich_upgrade(
         with _chain_snapshot():
             v1_frames = tuple(_actions_snaps())
 
-        execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, proposal_ids_from_env)
+        execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env)
 
         # do not call _chain_snapshot here to be able to interact with the environment in the test
         v2_frames = tuple(_actions_snaps())

@@ -90,7 +90,7 @@ def steps(voting, call_target, vote_time) -> Dict[str, Dict[str, ValueChanged]]:
     return result
 
 
-def test_create_wait_enact(helpers, vote_time, call_target, vote_ids_from_env, proposal_ids_from_env):
+def test_create_wait_enact(helpers, vote_time, call_target, vote_ids_from_env, dg_proposal_ids_from_env):
     """
     Run a smoke test before upgrade, then after upgrade, and compare snapshots at each step
     """
@@ -98,7 +98,7 @@ def test_create_wait_enact(helpers, vote_time, call_target, vote_ids_from_env, p
     before: Dict[str, Dict[str, any]] = steps(contracts.voting, call_target, vote_time)
     chain.revert()
 
-    execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, proposal_ids_from_env)
+    execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env)
     after: Dict[str, Dict[str, any]] = steps(contracts.voting, call_target, vote_time)
 
     step_diffs: Dict[str, Dict[str, ValueChanged]] = {}
