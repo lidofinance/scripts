@@ -65,7 +65,16 @@ Vote XX/06/2025 [HOLESKY]
 52. Add Identified Community Stakers Gate Bond Curve
 53. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT
 54. Increase CSM share in Staking Router from 15% to 20%
-55. Add CSMSetVettedGateTree factory to EasyTrack with permissions
+--- Gate Seals ---
+55. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
+56. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal
+57. Grant PAUSE_ROLE on WithdrawalQueue to the new WithdrawalQueue GateSeal
+58. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new Triggerable Withdrawals GateSeal
+59. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to the new Triggerable Withdrawals GateSeal
+--- ResealManager ---
+60. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager
+61. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager
+62. Add CSSetVettedGateTree factory to EasyTrack with permissions
 """
 import time
 
@@ -147,6 +156,13 @@ CS_EXTRA_CURVES = [
 CS_CURVES = [CS_DEFAULT_BOND_CURVE, CS_LEGACY_EA_BOND_CURVE, *CS_EXTRA_CURVES]
 CS_ICS_GATE_BOND_CURVE = ([1, 1.5 * 10**18], [2, 1.3 * 10**18])  # Identified Community Stakers Gate Bond Curve
 
+OLD_GATE_SEAL_ADDRESS = "0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778"
+OLD_GATE_SEAL_COMMITTEE = "0x6165267E76D609465640bffc158aff7905D47B46"
+
+NEW_WQ_GATE_SEAL = "0xE900BC859EB750562E1009e912B63743BC877662"
+NEW_TW_GATE_SEAL = "0xaEEF47C61f2A9CCe4C4D0363911C5d49e2cFb6f1"
+
+RESEAL_MANAGER = "0x9dE2273f9f1e81145171CcA927EFeE7aCC64c9fb"
 
 def encode_staking_router_proxy_update(implementation: str) -> Tuple[str, str]:
     proxy = interface.OssifiableProxy(contracts.staking_router)
@@ -447,7 +463,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             (
                 contracts.cs_fee_oracle.address,
                 contracts.cs_fee_oracle.finalizeUpgradeV2.encode_input(CSM_CONSENSUS_VERSION),
-            ),
+            )
         ),
         (
             f"35. Upgrade CSFeeDistributor implementation on proxy",
@@ -461,7 +477,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             (
                 contracts.cs_fee_distributor.address,
                 contracts.cs_fee_distributor.finalizeUpgradeV2.encode_input(contracts.agent),
-            ),
+            )
         ),
         (
             f"37. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract",
@@ -602,10 +618,74 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             "54. Increase CSM share in Staking Router from 3% to 5%",
             encode_staking_router_update_csm_module_share()
         ),
+        # --- Core Gate seals ---
+        # Revoke old GateSeal
+        (
+            "55. Revoke PAUSE_ROLE on WithdrawalQueue 0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50 from the old GateSeal 0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d",
+            encode_oz_revoke_role(
+                contract=contracts.withdrawal_queue,
+                role_name="PAUSE_ROLE",
+                revoke_from=OLD_GATE_SEAL_ADDRESS,
+            ),
+        ),
+        (
+            "56. Revoke PAUSE_ROLE on ValidatorsExitBusOracle 0xffDDF7025410412deaa05E3E1cE68FE53208afcb from the old GateSeal 0xA34d620EA9F3e86bf8B8a7699B4dE44CD9D3202d",
+            encode_oz_revoke_role(
+                contract=contracts.validators_exit_bus_oracle,
+                role_name="PAUSE_ROLE",
+                revoke_from=OLD_GATE_SEAL_ADDRESS,
+            )
+        ),
+        # Add new GateSeal
+        # Now we have two GateSeals: one for WithdrawalQueue and one for ValidatorsExitBusOracle and TriggerableWithdrawalsGateway.
+        (
+            "57. Grant PAUSE_ROLE on WithdrawalQueue to the new GateSeal",
+            encode_oz_grant_role(
+                contract=contracts.withdrawal_queue,
+                role_name="PAUSE_ROLE",
+                grant_to=NEW_WQ_GATE_SEAL,
+            )
+        ),
+        (
+            "58. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new GateSeal",
+            encode_oz_grant_role(
+                contract=contracts.validators_exit_bus_oracle,
+                role_name="PAUSE_ROLE",
+                grant_to=NEW_TW_GATE_SEAL,
+            )
+        ),
+        (
+            "59. Grant PAUSE_ROLE on TWG to the new GateSeal",
+            encode_oz_grant_role(
+                contract=interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY),
+                role_name="PAUSE_ROLE",
+                grant_to=NEW_TW_GATE_SEAL,
+            )
+        ),
+        # --- ResealManager ---
+        # Grant ResealManager PAUSE_ROLE on WithdrawalQueue, ValidatorsExitBusOracle and TWG
+        (
+            "60. Grant PAUSE_ROLE on TWG to the new GateSeal",
+            encode_oz_grant_role(
+                contract=interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY),
+                role_name="PAUSE_ROLE",
+                grant_to=RESEAL_MANAGER,
+            )
+        ),
+        # Grant ResealManager RESUME_ROLE on WithdrawalQueue, ValidatorsExitBusOracle and TWG
+        (
+            "61. Grant PAUSE_ROLE on TWG to the new GateSeal",
+            encode_oz_grant_role(
+                contract=interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY),
+                role_name="RESUME_ROLE",
+                grant_to=RESEAL_MANAGER,
+            )
+        ),
     )
 
+
     dg_bypass_item = {
-        "55. Add CSSetVettedGateTree factory to EasyTrack with permissions": add_evmscript_factory(
+        "62. Add CSSetVettedGateTree factory to EasyTrack with permissions": add_evmscript_factory(
                 factory=CS_SET_VETTED_GATE_TREE_FACTORY,
                 permissions=(create_permissions(interface.CSVettedGate(CS_VETTED_GATE_ADDRESS), "setTreeParams")),
             )
