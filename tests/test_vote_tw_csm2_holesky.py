@@ -425,10 +425,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     chain.sleep(timelock.getAfterScheduleDelay() + 1)
     wait_for_noon_utc_to_satisfy_time_constrains()
 
-    try:
-        dg_tx = timelock.execute(proposal_id, {"from": stranger})
-    except Exception as e:
-        pass
+    dg_tx = timelock.execute(proposal_id, {"from": stranger})
 
     # --- VALIDATE EXECUTION RESULTS ---
 
