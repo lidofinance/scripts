@@ -65,6 +65,7 @@ Dual Governance Launch on Mainnet
 57. Set an "expiration deadline" after which the omnibus can no longer be enacted
 """
 
+import time
 from typing import Dict
 from brownie import interface
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
@@ -74,6 +75,7 @@ from utils.config import (
     get_is_live,
     get_priority_fee,
 )
+from utils.mainnet_fork import pass_and_exec_dao_vote
 
 
 dual_governance_launch_omnibus_provider = "0x1DB8a9313785b78f7d0a201C5E0BE007f1eb63b4"
@@ -125,3 +127,16 @@ def main():
     vote_id, _ = start_vote(tx_params=tx_params, silent=False)
 
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
+
+
+def start_and_execute_vote_on_fork():
+    if get_is_live():
+        raise Exception("This script is for local testing only.")
+
+    tx_params = {"from": get_deployer_account()}
+    vote_id, _ = start_vote(tx_params=tx_params, silent=True)
+
+    time.sleep(5)  # hack for waiting thread #2.
+
+    print(f"Vote created: {vote_id}.")
+    pass_and_exec_dao_vote(int(vote_id))
