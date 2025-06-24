@@ -117,10 +117,13 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
 
 
 def main():
+    dual_governance_launch_omnibus_provider_contract = interface.DGLaunchOmnibus(dual_governance_launch_omnibus_provider)
     tx_params = {"from": get_deployer_account()}
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 
     vote_id, _ = start_vote(tx_params=tx_params, silent=False)
+
+    assert dual_governance_launch_omnibus_provider_contract.isValidVoteScript(vote_id)
 
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
