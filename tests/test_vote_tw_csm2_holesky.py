@@ -597,7 +597,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
         executor=DUAL_GOVERNANCE_EXECUTORS[0],
     )
     dg_execution_events = group_dg_events_from_receipt(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_EXECUTORS[0])
-    assert len(dg_execution_events) == 65, "Unexpected number of dual governance events"
+    assert len(dg_execution_events) == 61, "Unexpected number of dual governance events"
 
     # 1. Lido Locator upgrade events
     validate_proxy_upgrade_event(dg_execution_events[0], LIDO_LOCATOR_IMPL, emitted_by=contracts.lido_locator)
