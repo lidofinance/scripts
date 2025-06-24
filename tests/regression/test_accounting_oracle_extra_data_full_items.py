@@ -1,7 +1,7 @@
 from math import ceil
 
 import pytest
-from brownie import convert, web3
+from brownie import convert
 from brownie.network.account import Account
 from brownie.network.web3 import Web3
 
@@ -382,9 +382,6 @@ def deposit_buffer_for_keys(staking_router, nor_keys_to_deposit, sdvt_keys_to_de
         (exited_keys, deposited_keys, depositable_keys) = summary
         total_depositable_keys += depositable_keys
 
-    contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_CONTROL_ROLE"), {"from": contracts.agent})
-
-    contracts.lido.removeStakingLimit({"from": contracts.agent})
     fill_deposit_buffer(total_depositable_keys)
     keys_per_deposit = 50
     # Deposits for NOR

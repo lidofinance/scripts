@@ -1,6 +1,6 @@
 import pytest
 from web3 import Web3
-from brownie import Wei, convert, web3
+from brownie import Wei, convert
 
 from utils.config import contracts
 from utils.test.keys_helpers import (
@@ -153,13 +153,7 @@ def test_add_node_operator(nor, agent_eoa, reward_address, new_node_operator_id,
     new_staking_limit = nor.getTotalSigningKeyCount(new_node_operator_id)
     assert new_staking_limit != node_operator_before["totalVettedValidators"], "invalid new staking limit"
 
-    contracts.acl.grantPermission(
-        contracts.agent,
-        contracts.node_operators_registry,
-        web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE"),
-        {"from": contracts.agent}
-    )
-    tx = nor.setNodeOperatorStakingLimit(new_node_operator_id, new_staking_limit, {"from": agent_eoa})
+    tx = nor.setNodeOperatorStakingLimit(new_node_operator_id, new_staking_limit, {"from": evm_script_executor_eoa})
 
     nonce_after = nor.getNonce()
     node_operator_after = nor.getNodeOperator(new_node_operator_id, True)

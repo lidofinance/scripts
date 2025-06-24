@@ -38,14 +38,22 @@ def validate_permission_create_event(event: EventDict, p: Permission, manager: s
     assert event["ChangePermissionManager"]["app"] == p.app, "Wrong app address"
     assert event["ChangePermissionManager"]["role"] == p.role, "Wrong role"
     assert event["ChangePermissionManager"]["manager"] == manager, "Wrong manager"
+
     if emitted_by is not None:
         assert convert.to_address(event["ChangePermissionManager"]["_emitted_by"]) == convert.to_address(
             emitted_by
         ), "Wrong event emitter"
+        assert convert.to_address(event["SetPermission"]["_emitted_by"]) == convert.to_address(
+            emitted_by
+        ), "Wrong event emitter"
 
 
-def validate_permission_revoke_event(event: EventDict, p: Permission, emitted_by: str = None) -> None:
-    _events_chain = ["LogScriptCall", "SetPermission"]
+def validate_permission_revoke_event(event: EventDict, p: Permission, emitted_by: str = None, granted_from_agent: bool = False) -> None:
+    if (granted_from_agent):
+        _events_chain = ["LogScriptCall", "LogScriptCall", "SetPermission", "ScriptResult"]
+    else:
+        _events_chain = ["LogScriptCall", "SetPermission"]
+        
 
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -61,8 +69,11 @@ def validate_permission_revoke_event(event: EventDict, p: Permission, emitted_by
         ), "Wrong event emitter"
 
 
-def validate_permission_grant_event(event: EventDict, p: Permission, emitted_by: str = None) -> None:
-    _events_chain = ["LogScriptCall", "SetPermission"]
+def validate_permission_grant_event(event: EventDict, p: Permission, emitted_by: str = None, granted_from_agent: bool = False) -> None:
+    if (granted_from_agent):
+        _events_chain = ["LogScriptCall", "LogScriptCall", "SetPermission", "ScriptResult"]
+    else:
+        _events_chain = ["LogScriptCall", "SetPermission"]
 
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -96,8 +107,12 @@ def validate_permission_grantp_event(event: EventDict, p: Permission, params: Li
     assert event["SetPermissionParams"]["app"] == p.app, "Wrong app address"
     assert event["SetPermissionParams"]["role"] == p.role, "Wrong role"
     assert event["SetPermissionParams"]["paramsHash"] == params_hash
+
     if emitted_by is not None:
         assert convert.to_address(event["SetPermissionParams"]["_emitted_by"]) == convert.to_address(
+            emitted_by
+        ), "Wrong event emitter"
+        assert convert.to_address(event["SetPermission"]["_emitted_by"]) == convert.to_address(
             emitted_by
         ), "Wrong event emitter"
 

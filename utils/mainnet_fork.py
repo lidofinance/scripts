@@ -1,9 +1,5 @@
 from contextlib import contextmanager
-from brownie import chain, accounts, interface
-
-from utils.config import VOTING, LDO_VOTE_EXECUTORS_FOR_TESTS, get_vote_duration
-from utils.dual_governance import process_proposals
-from utils.config import contracts
+from brownie import chain
 
 
 @contextmanager
