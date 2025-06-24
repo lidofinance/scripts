@@ -1,6 +1,6 @@
 import pytest
 from web3 import Web3
-from brownie import Wei, convert, web3
+from brownie import Wei, convert
 
 from utils.config import contracts
 from utils.test.keys_helpers import (

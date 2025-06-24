@@ -204,7 +204,7 @@ def dg_proposal_ids_from_env() -> [int]:
             print(f"DG_PROPOSAL_IDS env var is set, skipping the vote, using existing proposals {proposal_ids}")
             return proposal_ids
         except:
-            pass
+            raise Exception("DG_PROPOSAL_IDS env var is set, but it is invalid. Valid format: DG_PROPOSAL_IDS=1,2,3")
 
     return []
 

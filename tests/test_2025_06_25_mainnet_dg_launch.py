@@ -9,13 +9,14 @@ from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.dual_governance import (
     validate_dual_governance_submit_event,
 )
+from utils.evm_script import encode_call_script
 from utils.test.oracle_report_helpers import ZERO_BYTES32
 
 from utils.agent import agent_forward
 from utils.test.event_validators.time_constraints import (
     validate_time_constraints_executed_before_event,
     validate_dg_time_constraints_executed_before_event,
-    validate_dg_time_constraints_executed_with_day_time_event,
+    validate_dg_time_constraints_executed_within_day_time_event,
 )
 
 from utils.test.event_validators.permission import (
@@ -68,6 +69,7 @@ CS_ACCOUNTING = "0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da"
 CS_FEE_ORACLE = "0x4D4074628678Bd302921c20573EEa1ed38DdF7FB"
 CS_GATE_SEAL = "0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0"
 LDO_TOKEN = "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32"
+USDC_TOKEN = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 
 # Recoverable contracts
 RECOVERABLE_CONTRACTS = [
@@ -104,7 +106,8 @@ class AragonValidatedPermission(NamedTuple):
 
 
 def _validate_role_events(event: EventDict, roles: list, extra_events: Optional[list] = None, log_script_count: int = 1, emitted_by: str = None):
-    _events_chain = ["LogScriptCall"]
+    _events_chain = ["LogScriptCall"] * log_script_count if log_script_count >= 1 else []
+
     for role in roles:
         if isinstance(role, OZValidatedRole):
             _events_chain.append("OZRoleValidated")
@@ -145,23 +148,31 @@ def _validate_role_events(event: EventDict, roles: list, extra_events: Optional[
             assert convert.to_address(ev["_emitted_by"]) == convert.to_address(emitted_by), "Wrong event emitter"
 
 def validate_role_validated_event(event: EventDict, roles: list, emitted_by: str = None) -> None:
-    _validate_role_events(event, roles, emitted_by=emitted_by)
+    _validate_role_events(event, roles, emitted_by=emitted_by, log_script_count=1)
 
 def validate_dg_role_validated_event(event: EventDict, roles: list, emitted_by: str = None) -> None:
-    _validate_role_events(event, roles, extra_events=["ScriptResult", "Executed"], log_script_count=0, emitted_by=emitted_by)
+    _validate_role_events(event, roles, extra_events=["Executed"], log_script_count=0, emitted_by=emitted_by)
 
 def validate_dual_governance_governance_launch_verification_event(event: EventDict, emitted_by: str = None):
     _events_chain = ["LogScriptCall", "DGLaunchConfigurationValidated"]
 
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("DGLaunchConfigurationValidated") == 1
+
     if emitted_by is not None:
         assert convert.to_address(event["DGLaunchConfigurationValidated"]["_emitted_by"]) == convert.to_address(emitted_by), "Wrong event emitter"
 
-    validate_events_chain([e.name for e in event], _events_chain)
-
 def validate_recovery_vault_app_id_reset(event: EventDict):
+    kernel = interface.Kernel(KERNEL)
     _events_chain = ["LogScriptCall", "LogScriptCall", "ScriptResult"]
 
     validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event["ScriptResult"][0]["script"] == encode_call_script([
+        (kernel.address, kernel.setRecoveryVaultAppId.encode_input(ZERO_BYTES32)),
+    ])
+    assert event.count("ScriptResult") == 1
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     voting = interface.Voting(VOTING)
@@ -715,7 +726,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     validate_dg_time_constraints_executed_before_event(dg_evs[0], to_be_executed_before_timestamp_proposal, emitted_by=TIME_CONSTRAINTS)
 
     # Execution is allowed since 04:00 to 22:00 UTC
-    validate_dg_time_constraints_executed_with_day_time_event(dg_evs[1], to_be_executed_from_time, to_be_executed_to_time, emitted_by=TIME_CONSTRAINTS)
+    validate_dg_time_constraints_executed_within_day_time_event(dg_evs[1], to_be_executed_from_time, to_be_executed_to_time, emitted_by=TIME_CONSTRAINTS)
 
     # Revoke RUN_SCRIPT_ROLE permission from Voting on Agent
     validate_dg_permission_revoke_event(dg_evs[2], Permission(entity=VOTING, app=AGENT, role=RUN_SCRIPT_ROLE.hex()), emitted_by=ACL)
@@ -975,14 +986,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     insurance_fund.transferOwnership(VOTING, {"from": VOTING})
 
     # Resetting RecoveryVaultAppId on DAOKernel is not working
-    ldo = interface.ERC20(LDO_TOKEN)
+    usdc = interface.ERC20(USDC_TOKEN)
     
     for contract in RECOVERABLE_CONTRACTS:
-        ldo.transfer(contract, 1, {"from": VOTING})
+        usdc.transfer(contract, 1, {"from": AGENT})
         contract = interface.Kernel(contract)
 
-        with reverts():
-            contract.transferToVault(LDO_TOKEN, {"from": stranger})
+        expected_error = "RECOVER_VAULT_NOT_CONTRACT"
+
+        if contract in [FINANCE, AGENT]:
+            expected_error = "RECOVER_DISALLOWED"
+        if contract in [LIDO]:
+            expected_error = "NOT_SUPPORTED"
+
+        with reverts(expected_error):
+            contract.transferToVault(USDC_TOKEN, {"from": stranger})
 
     # Agent Permissions Transition
     # DualGovernance Executor has permission to call RUN_SCRIPT_ROLE actions

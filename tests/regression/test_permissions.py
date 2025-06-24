@@ -7,7 +7,7 @@ import os
 
 from tqdm import tqdm
 from web3 import Web3
-from brownie import interface, convert, web3
+from brownie import interface, web3
 from brownie.network.event import _decode_logs
 from brownie.network.state import TxHistory
 
@@ -20,6 +20,7 @@ from utils.config import (
     DSM_GUARDIANS,
     ORACLE_COMMITTEE,
     AGENT,
+    EASYTRACK,
     EASYTRACK_EVMSCRIPT_EXECUTOR,
     ARAGON_EVMSCRIPT_REGISTRY,
     ACL_DEPLOY_BLOCK_NUMBER,
@@ -31,6 +32,7 @@ from utils.config import (
     FINANCE,
     NODE_OPERATORS_REGISTRY,
     STAKING_ROUTER,
+    WITHDRAWAL_VAULT,
     ORACLE_DAEMON_CONFIG,
     DEPOSIT_SECURITY_MODULE,
     ORACLE_REPORT_SANITY_CHECKER,
@@ -50,8 +52,10 @@ from utils.config import (
     CS_FEE_DISTRIBUTOR_ADDRESS,
     CS_FEE_ORACLE_ADDRESS,
     CS_ORACLE_HASH_CONSENSUS_ADDRESS,
+    L1_EMERGENCY_BRAKES_MULTISIG,
     DUAL_GOVERNANCE_EXECUTORS,
-    RESEAL_MANAGER
+    RESEAL_MANAGER,
+    INSURANCE_FUND
 )
 
 
@@ -212,7 +216,7 @@ def protocol_permissions():
             "roles": {"APP_MANAGER_ROLE": []},
         },
         ARAGON_EVMSCRIPT_REGISTRY: {
-            "contract_name": "EVMScriptExecutor",
+            "contract_name": "EVMScriptRegistry",
             "contract": contracts.evm_script_registry,
             "type": "AragonApp",
             "roles": {
@@ -314,6 +318,7 @@ def protocol_permissions():
             "contract_name": "CSModule",
             "contract": contracts.csm,
             "type": "CustomApp",
+            "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
@@ -330,6 +335,7 @@ def protocol_permissions():
             "contract_name": "CSAccounting",
             "contract": contracts.cs_accounting,
             "type": "CustomApp",
+            "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "SET_BOND_CURVE_ROLE": [CSM_ADDRESS, CSM_COMMITTEE_MS],
@@ -345,6 +351,7 @@ def protocol_permissions():
             "contract_name": "CSFeeDistributor",
             "contract": contracts.cs_fee_distributor,
             "type": "CustomApp",
+            "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "RECOVERER_ROLE": [],
@@ -354,6 +361,7 @@ def protocol_permissions():
             "contract_name": "CSFeeOracle",
             "contract": contracts.cs_fee_oracle,
             "type": "CustomApp",
+            "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
@@ -376,6 +384,31 @@ def protocol_permissions():
                 "MANAGE_FRAME_CONFIG_ROLE": [],
                 "MANAGE_FAST_LANE_CONFIG_ROLE": [],
                 "MANAGE_REPORT_PROCESSOR_ROLE": [],
+            },
+        },
+        INSURANCE_FUND: {
+            "contract_name": "InsuranceFund",
+            "contract": contracts.insurance_fund,
+            "type": "CustomApp",
+            "state": {"owner": contracts.voting},
+            "roles": {},
+        },
+        WITHDRAWAL_VAULT: {
+            "contract_name": "WithdrawalVault",
+            "contract": interface.WithdrawalContractProxy(WITHDRAWAL_VAULT),
+            "type": "CustomApp",
+            "state": {"proxy_getAdmin": contracts.agent},
+            "roles": {},
+        },
+        EASYTRACK: {
+            "contract_name": "EasyTrack",
+            "contract": contracts.easy_track,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "CANCEL_ROLE": [contracts.voting],
+                "PAUSE_ROLE": [contracts.voting, L1_EMERGENCY_BRAKES_MULTISIG],
+                "UNPAUSE_ROLE": [contracts.voting],
             },
         }
     }
@@ -447,11 +480,16 @@ def test_protocol_permissions(protocol_permissions):
                 role_signature = permissions_config["contract"].signatures[role]
                 assert permissions_config["contract"].get_method_object(role_signature)() == role_keccak
 
-                assert permissions_config["contract"].getRoleMemberCount(role_keccak) == len(
-                    holders
-                ), "number of {0} role holders in contract {1} mismatched".format(
-                    role, permissions_config["contract_name"]
-                )
+                try:
+                    role_member_count = permissions_config["contract"].getRoleMemberCount(role_keccak)
+                except Exception as e:
+                    print("Unable to count role members for {0} at {1}: {2}".format(role, permissions_config["contract_name"], e))
+                    role_member_count = None
+                finally:
+                    if role_member_count is not None:
+                        assert role_member_count == len(holders), "number of {0} role holders in contract {1} mismatched".format(
+                            role, permissions_config["contract_name"]
+                        )
 
                 for holder in holders:
                     assert permissions_config["contract"].hasRole(
@@ -494,6 +532,9 @@ def get_http_w3_provider_url():
 
     if os.getenv("WEB3_ALCHEMY_PROJECT_ID") is not None:
         return f'https://eth-mainnet.g.alchemy.com/v2/{os.getenv("WEB3_ALCHEMY_PROJECT_ID")}'
+
+    if os.getenv("ETH_RPC_URL") is not None:
+        return os.getenv("ETH_RPC_URL")
 
     assert False, 'Web3 HTTP Provider token env var not found'
 

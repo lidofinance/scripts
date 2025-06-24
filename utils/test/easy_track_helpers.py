@@ -2,7 +2,7 @@ from brownie import chain, accounts, interface
 from eth_abi.abi import encode
 from utils.config import contracts
 from utils.agent import agent_forward
-from utils.dual_governance import submit_proposal, process_proposals
+from utils.dual_governance import submit_proposals, process_proposals
 from utils.voting import create_vote, bake_vote_items
 from utils.test.helpers import ZERO_ADDRESS, almostEqWithDiff
 
@@ -170,7 +170,7 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
         )
     ]
 
-    call_script_items = [submit_proposal([agent_forward(vote_input)])]
+    call_script_items = submit_proposals([([agent_forward(vote_input)], "")])
     vote_desc_items = ["Remove recipient"]
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
 
@@ -202,7 +202,7 @@ def check_and_add_mev_boost_relay_with_voting(mev_boost_allowed_list, mev_boost_
     ]
 
     # Add MEV-Boost relay with voting
-    call_script_items = [submit_proposal([agent_forward(vote_input)])]
+    call_script_items = submit_proposals([([agent_forward(vote_input)], "")])
     vote_desc_items = ["Add MEV-Boost relay"]
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
 

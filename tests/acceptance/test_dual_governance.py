@@ -15,6 +15,7 @@ from utils.config import (
     RESEAL_COMMITTEE,
     DUAL_GOVERNANCE_EXECUTORS,
     ESCROW_MASTER_COPY,
+    ESCROW_VETO_SIGNALLING,
     WSTETH_TOKEN,
     LIDO,
     TIMELOCK,
@@ -27,6 +28,12 @@ from utils.config import (
     EMERGENCY_PROTECTED_TIMELOCK_VALUES,
     TIEBREAKER_VALUES
 )
+
+ESCROW_STATES = {
+    "not_initialized": 0,
+    "veto_signalling": 1,
+    "rage_quit": 2,
+}
 
 def test_dual_governance_acceptance():
     dual_governance = contracts.dual_governance
@@ -55,6 +62,8 @@ def test_dual_governance_acceptance():
 
     assert len(dual_governance.getProposers()) == DUAL_GOVERNANCE_VALUES["PROPOSERS_COUNT"]
 
+    assert dual_governance.getVetoSignallingEscrow() == ESCROW_VETO_SIGNALLING
+
 
 def test_emergency_protected_timelock_acceptance():
     ept = contracts.emergency_protected_timelock
@@ -81,9 +90,10 @@ def test_emergency_protected_timelock_acceptance():
 
     emergency_protection_details = ept.getEmergencyProtectionDetails()
 
-    assert emergency_protection_details[0] == EMERGENCY_PROTECTED_TIMELOCK_VALUES["EMERGENCY_PROTECTION_DETAILS"][0]
-    assert emergency_protection_details[1] == EMERGENCY_PROTECTED_TIMELOCK_VALUES["EMERGENCY_PROTECTION_DETAILS"][1]
-    assert emergency_protection_details[2] == EMERGENCY_PROTECTED_TIMELOCK_VALUES["EMERGENCY_PROTECTION_DETAILS"][2]
+    # https://github.com/lidofinance/dual-governance/blob/main/contracts/interfaces/IEmergencyProtectedTimelock.sol#L10
+    assert emergency_protection_details[0] == EMERGENCY_PROTECTED_TIMELOCK_VALUES["EMERGENCY_PROTECTION_DETAILS"][0] # Emergency mode duration
+    assert emergency_protection_details[1] == EMERGENCY_PROTECTED_TIMELOCK_VALUES["EMERGENCY_PROTECTION_DETAILS"][1] # Emergency mode ends after
+    assert emergency_protection_details[2] == EMERGENCY_PROTECTED_TIMELOCK_VALUES["EMERGENCY_PROTECTION_DETAILS"][2] # Emergency protection ends after
 
 
 def test_emergency_governance():
@@ -132,7 +142,7 @@ def test_dual_governance_config_provider_acceptance():
     assert config[11] == DUAL_GOVERNANCE_CONFIG_PROVIDER_VALUES["RAGE_QUIT_ETH_WITHDRAWALS_DELAY_GROWTH"]
 
 
-def test_tiebreaker_sub_committee():
+def test_tiebreaker_committees():
     tiebreaker_core_committee = interface.TiebreakerCommittee(TIEBREAKER_VALUES["CORE_COMMITTEE"]["ADDRESS"])
 
     assert tiebreaker_core_committee.owner() == TIEBREAKER_VALUES["CORE_COMMITTEE"]["OWNER"]
@@ -166,6 +176,8 @@ def test_escrow():
         assert escrow.MIN_TRANSFERRABLE_ST_ETH_AMOUNT() == 100
         assert escrow.MIN_WITHDRAWALS_BATCH_SIZE() == 4
 
+    assert escrow_proxy.getMinAssetsLockDuration() == DUAL_GOVERNANCE_CONFIG_PROVIDER_VALUES["MIN_ASSETS_LOCK_DURATION"]
+    assert escrow_proxy.getEscrowState() == ESCROW_STATES["veto_signalling"]
     assert contracts.dual_governance.getRageQuitEscrow() == ZERO_ADDRESS
 
 

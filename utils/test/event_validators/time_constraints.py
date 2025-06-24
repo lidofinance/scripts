@@ -32,7 +32,7 @@ def validate_dg_time_constraints_executed_before_event(event: EventDict, timesta
         ), "Wrong event emitter"
 
 
-def validate_dg_time_constraints_executed_with_day_time_event(event: EventDict, start_day_time, end_day_time, emitted_by: str = None) -> None:
+def validate_dg_time_constraints_executed_within_day_time_event(event: EventDict, start_day_time, end_day_time, emitted_by: str = None) -> None:
     _events_chain = ["TimeWithinDayTimeChecked", "Executed"]
 
     validate_events_chain([e.name for e in event], _events_chain)

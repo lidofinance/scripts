@@ -29,8 +29,8 @@ def validate_dual_governance_submit_event(
 
     assert len(event["ProposalSubmitted"]) == len(emitted_by), "Wrong emitted_by count"
 
-    for i in range(0, len(emitted_by)):
-        assert convert.to_address(event["ProposalSubmitted"][i]["_emitted_by"]) == convert.to_address(
-            emitted_by[i]
-        ), "Wrong event emitter"
-       
+    if emitted_by is not None:
+        for i in range(0, len(emitted_by)):
+            assert convert.to_address(event["ProposalSubmitted"][i]["_emitted_by"]) == convert.to_address(
+                emitted_by[i]
+            ), "Wrong event emitter"

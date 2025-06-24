@@ -9,8 +9,7 @@ from tests.snapshot.utils import get_slot
 
 from utils.config import (
     contracts,
-    DEPOSIT_SECURITY_MODULE,
-    DEPOSIT_SECURITY_MODULE_V2
+    DEPOSIT_SECURITY_MODULE
 )
 from utils.mainnet_fork import chain_snapshot
 from utils.test.snapshot_helpers import dict_zip
@@ -47,12 +46,6 @@ def deposit_security_module_eoa(accounts, EtherFunder):
 
 
 @pytest.fixture(scope="module")
-def old_deposit_security_module_eoa(accounts, EtherFunder):
-    EtherFunder.deploy(DEPOSIT_SECURITY_MODULE_V2, {"from": accounts[0], "amount": "10 ether"})
-    return accounts.at(DEPOSIT_SECURITY_MODULE_V2, force=True)
-
-
-@pytest.fixture(scope="module")
 def new_deposit_security_module_eoa(accounts, EtherFunder):
     EtherFunder.deploy(DEPOSIT_SECURITY_MODULE, {"from": accounts[0], "amount": "10 ether"})
     return accounts.at(DEPOSIT_SECURITY_MODULE, force=True)
@@ -66,7 +59,6 @@ def voting_eoa(accounts):
 def test_node_operator_basic_flow(
     accounts,
     helpers,
-    old_deposit_security_module_eoa,
     new_deposit_security_module_eoa,
     voting_eoa,
     agent_eoa,
@@ -156,10 +148,6 @@ def test_node_operator_basic_flow(
         snapshot_after_update = run_scenario(actions=create_actions(new_deposit_security_module_eoa, agent_eoa), snapshooter=make_snapshot)
 
     assert snapshot_before_update.keys() == snapshot_after_update.keys()
-
-    # update key_op_index for all snapshots after the "withdrawal_credentials_change" step cause the
-    # old NOR implementation didn't increase the key op index on withdrawal credentials update
-    snapshot_before_update["after_activate_node_operator"]["keys_op_index"] += 1
 
     for key in snapshot_before_update.keys():
         assert_snapshot(snapshot_before_update[key], snapshot_after_update[key])

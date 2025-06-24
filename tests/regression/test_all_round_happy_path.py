@@ -11,7 +11,7 @@ from utils.balance import set_balance
 from utils.test.staking_router_helpers import set_staking_module_status, StakingModuleStatus
 from utils.test.tx_cost_helper import transaction_cost
 
-def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
+def test_all_round_happy_path(accounts, stranger, steth_holder):
     print(stranger, stranger.balance())
     amount = ETH(100)
     max_deposit = 150

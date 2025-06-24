@@ -11,7 +11,8 @@ def execute_vote(helpers, vote_ids_from_env):
 
 def execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env):    
     if dg_proposal_ids_from_env:
-        new_proposal_ids = dg_proposal_ids_from_env
+        execute_vote(helpers, vote_ids_from_env)
+        process_proposals(dg_proposal_ids_from_env)
     else:
         proposals_count_before = contracts.emergency_protected_timelock.getProposalsCount()
         execute_vote(helpers, vote_ids_from_env)
@@ -19,4 +20,4 @@ def execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposa
         if proposals_count_after == proposals_count_before:
             return
         new_proposal_ids = list(range(proposals_count_before + 1, proposals_count_after + 1))
-    process_proposals(new_proposal_ids)
+        process_proposals(new_proposal_ids)
