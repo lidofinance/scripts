@@ -68,6 +68,12 @@ To run a Hardhat node inside a deployed Docker container:
 npx hardhat node --fork $ETH_RPC_URL
 ```
 
+Do not forget to add a DEPLOYER account:
+
+```shell
+poetry run brownie accounts new <id>
+```
+
 You now have a fully functional environment to run scripts & tests in, which is linked to your local scripts repo, for example:
 
 ```shell
