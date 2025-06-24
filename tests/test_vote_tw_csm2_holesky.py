@@ -153,7 +153,7 @@ def check_proxy_implementation(proxy_address, expected_impl):
 
 # New core contracts implementations
 LIDO_LOCATOR_IMPL = "0xa437ab5614033d071493C88Fd351aFEbc802521f"
-ACCOUNTING_ORACLE_IMPL = "0xCA2689BE9b3Fc8a02F61f7CC3a7d0968119c53b5"
+ACCOUNTING_ORACLE_IMPL = "0xE63267AAaC507A329213593e8A9bCa37e2994F1C"
 VALIDATORS_EXIT_BUS_ORACLE_IMPL = "0xeCE105ABd3F2653398BE75e680dB033A238E2aD6"
 WITHDRAWAL_VAULT_IMPL = "0x6aAA28C515E02ED0fe1B51e74323e14E910eA7d7"
 STAKING_ROUTER_IMPL = "0xE6E775C6AdF8753588237b1De32f61937bC54341"
@@ -167,9 +167,9 @@ AO_CONSENSUS_VERSION = 4
 VEBO_CONSENSUS_VERSION = 4
 CSM_CONSENSUS_VERSION = 3
 
-EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 7200
+EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 7 * 7200
 
-NOR_EXIT_DEADLINE_IN_SEC = 30 * 60
+NOR_EXIT_DEADLINE_IN_SEC = 172800
 
 # CSM
 CS_MODULE_NEW_TARGET_SHARE_BP = 2000  # 20%
@@ -253,6 +253,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # Steps 4-6: Check VEBO consensus version management
     initial_vebo_consensus_version = contracts.validators_exit_bus_oracle.getConsensusVersion()
     assert initial_vebo_consensus_version < VEBO_CONSENSUS_VERSION, f"VEBO consensus version should be less than {VEBO_CONSENSUS_VERSION}"
+    assert not contracts.validators_exit_bus_oracle.hasRole(contracts.validators_exit_bus_oracle.MANAGE_CONSENSUS_VERSION_ROLE(), contracts.validators_exit_bus_oracle), "Agent should not have MANAGE_CONSENSUS_VERSION_ROLE on VEBO before upgrade"
 
     # Step 7: Check TWG role for CS Ejector initial state
     add_full_withdrawal_request_role = triggerable_withdrawals_gateway.ADD_FULL_WITHDRAWAL_REQUEST_ROLE()
@@ -274,7 +275,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     initial_ao_consensus_version = contracts.accounting_oracle.getConsensusVersion()
     assert initial_ao_consensus_version < AO_CONSENSUS_VERSION, f"AO consensus version should be less than {AO_CONSENSUS_VERSION}"
     assert not contracts.accounting_oracle.hasRole(contracts.accounting_oracle.MANAGE_CONSENSUS_VERSION_ROLE(), contracts.agent), "Agent should not have MANAGE_CONSENSUS_VERSION_ROLE on AO before upgrade"
-
+    assert contracts.accounting_oracle.getContractVersion() == 2, "Accounting Oracle version should be 2 before upgrade"
     # Step 15: Check Staking Router implementation initial state
     assert staking_router_impl_before != STAKING_ROUTER_IMPL, "Staking Router implementation should be different before upgrade"
 
@@ -458,7 +459,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert get_ossifiable_proxy_impl(contracts.accounting_oracle) == ACCOUNTING_ORACLE_IMPL, "Accounting Oracle implementation should be updated"
     assert not contracts.accounting_oracle.hasRole(contracts.accounting_oracle.MANAGE_CONSENSUS_VERSION_ROLE(), contracts.agent), "Agent should not have MANAGE_CONSENSUS_VERSION_ROLE on AO"
     assert contracts.accounting_oracle.getConsensusVersion() == AO_CONSENSUS_VERSION, f"AO consensus version should be set to {AO_CONSENSUS_VERSION}"
-
+    assert contracts.accounting_oracle.getContractVersion() == 3, "Accounting Oracle version should be updated to 3"
     # Steps 15-17: Validate Staking Router upgrade
     assert get_ossifiable_proxy_impl(contracts.staking_router) == STAKING_ROUTER_IMPL, "Staking Router implementation should be updated"
     assert contracts.staking_router.hasRole(contracts.staking_router.REPORT_VALIDATOR_EXITING_STATUS_ROLE(), VALIDATOR_EXIT_VERIFIER), "ValidatorExitVerifier should have REPORT_VALIDATOR_EXITING_STATUS_ROLE on SR"
@@ -594,7 +595,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
         executor=DUAL_GOVERNANCE_EXECUTORS[0],
     )
     dg_execution_events = group_dg_events_from_receipt(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_EXECUTORS[0])
-    assert len(dg_execution_events) == 61, "Unexpected number of dual governance events"
+    assert len(dg_execution_events) == 62, "Unexpected number of dual governance events"
 
     # 1. Lido Locator upgrade events
     validate_proxy_upgrade_event(dg_execution_events[0], LIDO_LOCATOR_IMPL, emitted_by=contracts.lido_locator)
@@ -711,7 +712,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # 20. Finalize upgrade for NOR
     validate_contract_version_set_event(dg_execution_events[19], version=4, emitted_by=contracts.node_operators_registry)
     assert 'ExitDeadlineThresholdChanged' in dg_execution_events[19]
-    assert dg_execution_events[19]['ExitDeadlineThresholdChanged'][0]['threshold'] == 1800
+    assert dg_execution_events[19]['ExitDeadlineThresholdChanged'][0]['threshold'] == 172800
 
     # 21. Set new implementation for sDVT
     assert 'SetApp' in dg_execution_events[20]
@@ -719,7 +720,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # 22. Finalize upgrade for sDVT
     validate_contract_version_set_event(dg_execution_events[21], version=4, emitted_by=contracts.simple_dvt)
     assert 'ExitDeadlineThresholdChanged' in dg_execution_events[21]
-    assert dg_execution_events[21]['ExitDeadlineThresholdChanged'][0]['threshold'] == 1800
+    assert dg_execution_events[21]['ExitDeadlineThresholdChanged'][0]['threshold'] == 172800
 
     # 23. Revoke APP_MANAGER_ROLE on Kernel from Voting
     assert 'SetPermission' in dg_execution_events[22]

@@ -74,7 +74,8 @@ Vote XX/06/2025 [HOLESKY]
 --- ResealManager ---
 60. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager
 61. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager
-62. Add CSSetVettedGateTree factory to EasyTrack with permissions
+62. Call finalizeUpgrade_v3 on AO contract (TODO: move to beginning of the vote in Hoodi script)
+63. Add CSSetVettedGateTree factory to EasyTrack with permissions
 """
 import time
 
@@ -109,7 +110,7 @@ DESCRIPTION = "Triggerable withdrawals and CSM v2 upgrade voting (HOLESKY)"
 
 # New core contracts implementations
 LIDO_LOCATOR_IMPL = "0xa437ab5614033d071493C88Fd351aFEbc802521f"
-ACCOUNTING_ORACLE_IMPL = "0xCA2689BE9b3Fc8a02F61f7CC3a7d0968119c53b5"
+ACCOUNTING_ORACLE_IMPL = "0xE63267AAaC507A329213593e8A9bCa37e2994F1C"
 VALIDATORS_EXIT_BUS_ORACLE_IMPL = "0xeCE105ABd3F2653398BE75e680dB033A238E2aD6"
 WITHDRAWAL_VAULT_IMPL = "0x6aAA28C515E02ED0fe1B51e74323e14E910eA7d7"
 STAKING_ROUTER_IMPL = "0xE6E775C6AdF8753588237b1De32f61937bC54341"
@@ -123,9 +124,14 @@ AO_CONSENSUS_VERSION = 4
 VEBO_CONSENSUS_VERSION = 4
 CSM_CONSENSUS_VERSION = 3
 
-EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 7200
+EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 7 * 7200
 
-NOR_EXIT_DEADLINE_IN_SEC = 30 * 60
+NOR_EXIT_DEADLINE_IN_SEC = 172800
+
+MAX_VALIDATORS_PER_REPORT = 600
+MAX_EXIT_REQUESTS_LIMIT = 13000
+EXITS_PER_FRAME = 1
+FRAME_DURATION_IN_SEC = 48
 
 # CSM
 CS_MODULE_NEW_TARGET_SHARE_BP = 2000  # 20%
@@ -157,7 +163,6 @@ CS_CURVES = [CS_DEFAULT_BOND_CURVE, CS_LEGACY_EA_BOND_CURVE, *CS_EXTRA_CURVES]
 CS_ICS_GATE_BOND_CURVE = ([1, 1.5 * 10**18], [2, 1.3 * 10**18])  # Identified Community Stakers Gate Bond Curve
 
 OLD_GATE_SEAL_ADDRESS = "0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778"
-OLD_GATE_SEAL_COMMITTEE = "0x6165267E76D609465640bffc158aff7905D47B46"
 
 NEW_WQ_GATE_SEAL = "0xE900BC859EB750562E1009e912B63743BC877662"
 NEW_TW_GATE_SEAL = "0xaEEF47C61f2A9CCe4C4D0363911C5d49e2cFb6f1"
@@ -201,13 +206,6 @@ def encode_staking_router_update_csm_module_share() -> Tuple[str, str]:
     )
 
 
-def to_percent(bp: int) -> float:
-    """
-    Convert basis points to percentage.
-    """
-    return bp / 10000 * 100
-
-
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[Any]]:
     vote_desc_items, call_script_items = zip(
         # --- locator
@@ -224,7 +222,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             f"3. Call finalizeUpgrade_v2 on VEBO",
             (
                 contracts.validators_exit_bus_oracle.address,
-                contracts.validators_exit_bus_oracle.finalizeUpgrade_v2.encode_input(600, 13000, 1, 48),
+                contracts.validators_exit_bus_oracle.finalizeUpgrade_v2.encode_input(MAX_VALIDATORS_PER_REPORT, MAX_EXIT_REQUESTS_LIMIT, EXITS_PER_FRAME, FRAME_DURATION_IN_SEC),
             )
         ),
         (
@@ -681,11 +679,18 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
                 grant_to=RESEAL_MANAGER,
             )
         ),
+         (
+            "62. Call finalizeUpgrade_v3 on AO contract",
+            (
+                contracts.accounting_oracle.address,
+                contracts.accounting_oracle.finalizeUpgrade_v3.encode_input(),
+            )
+        )
     )
 
 
     dg_bypass_item = {
-        "62. Add CSSetVettedGateTree factory to EasyTrack with permissions": add_evmscript_factory(
+        "63. Add CSSetVettedGateTree factory to EasyTrack with permissions": add_evmscript_factory(
                 factory=CS_SET_VETTED_GATE_TREE_FACTORY,
                 permissions=(create_permissions(interface.CSVettedGate(CS_VETTED_GATE_ADDRESS), "setTreeParams")),
             )

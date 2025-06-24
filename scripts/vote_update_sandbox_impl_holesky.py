@@ -25,7 +25,7 @@ from utils.voting import confirm_vote_script, create_vote
 
 SANDBOX_APP_ID = "0x85d2fceef13a6c14c43527594f79fb91a8ef8f15024a43486efac8df2b11e632"
 NODE_OPERATORS_REGISTRY_IMPL = "0x834aa47DCd21A32845099a78B4aBb17A7f0bD503"
-NOR_EXIT_DEADLINE_IN_SEC = 30 * 60
+NOR_EXIT_DEADLINE_IN_SEC = 172800
 
 DESCRIPTION = "Update Sanbox Module Implementation (HOLESKY)"
 
