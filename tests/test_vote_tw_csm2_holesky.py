@@ -207,6 +207,12 @@ CS_FEE_ORACLE_V2_VERSION = 2
 CS_FEE_DISTRIBUTOR_V2_VERSION = 2
 
 
+# Add imports for Gate Seal and ResealManager constants
+OLD_GATE_SEAL_ADDRESS = "0xAE6eCd77DCC656c5533c4209454Fd56fB46e1778"
+NEW_WQ_GATE_SEAL = "0xE900BC859EB750562E1009e912B63743BC877662"
+NEW_TW_GATE_SEAL = "0xaEEF47C61f2A9CCe4C4D0363911C5d49e2cFb6f1"
+RESEAL_MANAGER = "0x9dE2273f9f1e81145171CcA927EFeE7aCC64c9fb"
+
 def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # Save original implementations for comparison
     locator_impl_before = get_ossifiable_proxy_impl(contracts.lido_locator)
@@ -382,6 +388,24 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     initial_factories = contracts.easy_track.getEVMScriptFactories()
     assert CS_SET_VETTED_GATE_TREE_FACTORY not in initial_factories, "EasyTrack should not have CSMSetVettedGateTree factory before vote"
 
+    # Steps 55-56: Check that old GateSeal has PAUSE_ROLE initially
+    assert contracts.withdrawal_queue.hasRole(contracts.withdrawal_queue.PAUSE_ROLE(), OLD_GATE_SEAL_ADDRESS), "Old GateSeal should have PAUSE_ROLE on WithdrawalQueue before vote"
+    assert contracts.validators_exit_bus_oracle.hasRole(contracts.validators_exit_bus_oracle.PAUSE_ROLE(), OLD_GATE_SEAL_ADDRESS), "Old GateSeal should have PAUSE_ROLE on VEBO before vote"
+
+    # Steps 57-59: Check new Gate Seals don't have roles yet
+    assert not contracts.withdrawal_queue.hasRole(contracts.withdrawal_queue.PAUSE_ROLE(), NEW_WQ_GATE_SEAL), "New WQ GateSeal should not have PAUSE_ROLE on WithdrawalQueue before vote"
+    assert not contracts.validators_exit_bus_oracle.hasRole(contracts.validators_exit_bus_oracle.PAUSE_ROLE(), NEW_TW_GATE_SEAL), "New TW GateSeal should not have PAUSE_ROLE on VEBO before vote"
+    assert not triggerable_withdrawals_gateway.hasRole(triggerable_withdrawals_gateway.PAUSE_ROLE(), NEW_TW_GATE_SEAL), "New TW GateSeal should not have PAUSE_ROLE on TWG before vote"
+
+    # Steps 60-65: Check ResealManager doesn't have roles yet
+    # There should already be a role granted on the network for all contracts except TWG
+    assert contracts.withdrawal_queue.hasRole(contracts.withdrawal_queue.PAUSE_ROLE(), RESEAL_MANAGER), "ResealManager should have PAUSE_ROLE on WithdrawalQueue after vote"
+    assert contracts.validators_exit_bus_oracle.hasRole(contracts.validators_exit_bus_oracle.PAUSE_ROLE(), RESEAL_MANAGER), "ResealManager should have PAUSE_ROLE on VEBO after vote"
+    assert not triggerable_withdrawals_gateway.hasRole(triggerable_withdrawals_gateway.PAUSE_ROLE(), RESEAL_MANAGER), "ResealManager should have PAUSE_ROLE on TWG after vote"
+    assert contracts.withdrawal_queue.hasRole(contracts.withdrawal_queue.RESUME_ROLE(), RESEAL_MANAGER), "ResealManager should have RESUME_ROLE on WithdrawalQueue after vote"
+    assert contracts.validators_exit_bus_oracle.hasRole(contracts.validators_exit_bus_oracle.RESUME_ROLE(), RESEAL_MANAGER), "ResealManager should have RESUME_ROLE on VEBO after vote"
+    assert not triggerable_withdrawals_gateway.hasRole(triggerable_withdrawals_gateway.RESUME_ROLE(), RESEAL_MANAGER), "ResealManager should have RESUME_ROLE on TWG after vote"
+
     # START VOTE
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
@@ -540,6 +564,23 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     new_factories = contracts.easy_track.getEVMScriptFactories()
     assert CS_SET_VETTED_GATE_TREE_FACTORY in new_factories, "EasyTrack should have CSSetVettedGateTree factory after vote"
 
+    # Steps 55-56: Validate old GateSeal no longer has PAUSE_ROLE
+    assert not contracts.withdrawal_queue.hasRole(contracts.withdrawal_queue.PAUSE_ROLE(), OLD_GATE_SEAL_ADDRESS), "Old GateSeal should not have PAUSE_ROLE on WithdrawalQueue after vote"
+    assert not contracts.validators_exit_bus_oracle.hasRole(contracts.validators_exit_bus_oracle.PAUSE_ROLE(), OLD_GATE_SEAL_ADDRESS), "Old GateSeal should not have PAUSE_ROLE on VEBO after vote"
+
+    # Steps 57-59: Validate new Gate Seals have PAUSE_ROLE
+    assert contracts.withdrawal_queue.hasRole(contracts.withdrawal_queue.PAUSE_ROLE(), NEW_WQ_GATE_SEAL), "New WQ GateSeal should have PAUSE_ROLE on WithdrawalQueue after vote"
+    assert contracts.validators_exit_bus_oracle.hasRole(contracts.validators_exit_bus_oracle.PAUSE_ROLE(), NEW_TW_GATE_SEAL), "New TW GateSeal should have PAUSE_ROLE on VEBO after vote"
+    assert triggerable_withdrawals_gateway.hasRole(triggerable_withdrawals_gateway.PAUSE_ROLE(), NEW_TW_GATE_SEAL), "New TW GateSeal should have PAUSE_ROLE on TWG after vote"
+
+    # Steps 60-65: Validate ResealManager has PAUSE_ROLE and RESUME_ROLE
+    assert contracts.withdrawal_queue.hasRole(contracts.withdrawal_queue.PAUSE_ROLE(), RESEAL_MANAGER), "ResealManager should have PAUSE_ROLE on WithdrawalQueue after vote"
+    assert contracts.validators_exit_bus_oracle.hasRole(contracts.validators_exit_bus_oracle.PAUSE_ROLE(), RESEAL_MANAGER), "ResealManager should have PAUSE_ROLE on VEBO after vote"
+    assert triggerable_withdrawals_gateway.hasRole(triggerable_withdrawals_gateway.PAUSE_ROLE(), RESEAL_MANAGER), "ResealManager should have PAUSE_ROLE on TWG after vote"
+    assert contracts.withdrawal_queue.hasRole(contracts.withdrawal_queue.RESUME_ROLE(), RESEAL_MANAGER), "ResealManager should have RESUME_ROLE on WithdrawalQueue after vote"
+    assert contracts.validators_exit_bus_oracle.hasRole(contracts.validators_exit_bus_oracle.RESUME_ROLE(), RESEAL_MANAGER), "ResealManager should have RESUME_ROLE on VEBO after vote"
+    assert triggerable_withdrawals_gateway.hasRole(triggerable_withdrawals_gateway.RESUME_ROLE(), RESEAL_MANAGER), "ResealManager should have RESUME_ROLE on TWG after vote"
+
     # --- VALIDATE EVENTS ---
 
     voting_events = group_voting_events_from_receipt(vote_tx)
@@ -553,7 +594,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
         executor=DUAL_GOVERNANCE_EXECUTORS[0],
     )
     dg_execution_events = group_dg_events_from_receipt(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_EXECUTORS[0])
-    assert len(dg_execution_events) == 54, "Unexpected number of dual governance events"
+    assert len(dg_execution_events) == 65, "Unexpected number of dual governance events"
 
     # 1. Lido Locator upgrade events
     validate_proxy_upgrade_event(dg_execution_events[0], LIDO_LOCATOR_IMPL, emitted_by=contracts.lido_locator)
