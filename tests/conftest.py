@@ -188,10 +188,7 @@ def vote_ids_from_env() -> [int]:
             vote_ids_str = os.getenv(ENV_OMNIBUS_VOTE_IDS)
             vote_ids = [int(s) for s in vote_ids_str.split(",")]
             
-            # print to stdout even if suppressed
-            capmanager = request.config.pluginmanager.getplugin("capturemanager")
-            with capmanager.global_and_fixture_disabled():
-                print(f"OMNIBUS_VOTE_IDS env var is set, using existing votes {vote_ids}")
+            print(f"OMNIBUS_VOTE_IDS env var is set, using existing votes {vote_ids}")
             
             return vote_ids
         except:
@@ -207,10 +204,7 @@ def dg_proposal_ids_from_env() -> [int]:
             proposal_ids_str = os.getenv(ENV_DG_PROPOSAL_IDS)
             proposal_ids = [int(s) for s in proposal_ids_str.split(",")]
 
-            # print to stdout even if suppressed
-            capmanager = request.config.pluginmanager.getplugin("capturemanager")
-            with capmanager.global_and_fixture_disabled():
-                print(f"DG_PROPOSAL_IDS env var is set, skipping the vote, using existing proposals {proposal_ids}")
+            print(f"DG_PROPOSAL_IDS env var is set, skipping the vote, using existing proposals {proposal_ids}")
             
             return proposal_ids
         except:
