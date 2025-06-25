@@ -15,14 +15,16 @@ from utils.config import contracts, STAKING_ROUTER, EASYTRACK_EVMSCRIPT_EXECUTOR
 from utils.test.node_operators_helpers import distribute_reward, node_operator_gindex
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_keys
 from utils.test.staking_router_helpers import set_staking_module_status, StakingModuleStatus
+from utils.test.deposits_helpers import fill_deposit_buffer
 
 STAKING_ROUTER_ROLE = Web3.keccak(text="STAKING_ROUTER_ROLE")
 STAKING_MODULE_MANAGE_ROLE = Web3.keccak(text="STAKING_MODULE_MANAGE_ROLE")
 SET_NODE_OPERATOR_LIMIT_ROLE = Web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")
+STAKING_CONTROL_ROLE = Web3.keccak(text="STAKING_CONTROL_ROLE")
 
 @pytest.fixture(scope="function")
-def impersonated_voting(accounts):
-    return accounts.at(contracts.voting.address, force=True)
+def impersonated_agent(accounts):
+    return accounts.at(contracts.agent.address, force=True)
 
 
 def calc_no_rewards(nor, no_id, minted_shares):
@@ -37,7 +39,7 @@ def calc_no_rewards(nor, no_id, minted_shares):
     return minted_shares * operator_total_active_keys // module_total_active_keys
 
 
-def set_staking_limit(nor, ops_ids, keys_count, impersonated_voting):
+def set_staking_limit(nor, ops_ids, keys_count, impersonated_agent):
     for op_index in ops_ids:
         no = nor.getNodeOperator(op_index, False)
         if not no["active"]:
@@ -48,12 +50,12 @@ def set_staking_limit(nor, ops_ids, keys_count, impersonated_voting):
         print(
             f"Set staking limit for OP: {op_index} (total deposited: {cur_deposited_keys}) from: {cur_vetted_keys} to: {new_vetted_keys}"
         )
-        nor.setNodeOperatorStakingLimit(op_index, new_vetted_keys, {"from": impersonated_voting})
+        nor.setNodeOperatorStakingLimit(op_index, new_vetted_keys, {"from": impersonated_agent})
 
 
-def deposit_and_check_keys(nor, first_id, second_id, third_id, keys_count, impersonated_voting):
+def deposit_and_check_keys(nor, first_id, second_id, third_id, keys_count, impersonated_agent):
     # increase limit by 10 keys
-    set_staking_limit(nor, (first_id, second_id, third_id), 10, impersonated_voting)
+    set_staking_limit(nor, (first_id, second_id, third_id), 10, impersonated_agent)
 
     deposited_keys_first_before = nor.getNodeOperatorSummary(first_id)["totalDepositedValidators"]
     deposited_keys_second_before = nor.getNodeOperatorSummary(second_id)["totalDepositedValidators"]
@@ -120,47 +122,52 @@ def parse_stuck_penalty_state_changed_logs(logs):
     return res
 
 
-def module_happy_path(staking_module, extra_data_service, impersonated_voting, eth_whale, stranger, helpers):
+def module_happy_path(staking_module, extra_data_service, impersonated_agent, eth_whale, stranger, helpers):
     nor_exited_count, _, _ = contracts.staking_router.getStakingModuleSummary(staking_module.module_id)
 
     # all_modules = contracts.staking_router.getStakingModules()
 
     contracts.staking_router.grantRole(
         STAKING_MODULE_MANAGE_ROLE,
-        impersonated_voting,
+        impersonated_agent,
         {"from": contracts.agent.address},
     )
 
     contracts.acl.grantPermission(
-        impersonated_voting,
+        impersonated_agent,
         staking_module,
         STAKING_ROUTER_ROLE,
-        {"from": impersonated_voting},
+        {"from": impersonated_agent},
     )
 
     contracts.acl.grantPermission(
-        impersonated_voting,
+        impersonated_agent,
         staking_module,
         SET_NODE_OPERATOR_LIMIT_ROLE,
-        {"from": impersonated_voting},
+        {"from": impersonated_agent},
     )
 
-    # remove staking limit to avoid STAKE_LIMIT error
-    contracts.lido.removeStakingLimit({"from": impersonated_voting})
+    contracts.acl.grantPermission(
+        impersonated_agent,
+        contracts.lido,
+        STAKING_CONTROL_ROLE,
+        {"from": impersonated_agent}
+    )
 
     # pausing csm due to very high amount of keys in the queue
     csm_module_id = 3
     set_staking_module_status(csm_module_id, StakingModuleStatus.Stopped)
 
-    contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale, "amount": ETH(150_000)})
+    # fill buffer enough to deposit 310 keys
+    fill_deposit_buffer(310)
 
     print("Reset staking limit for all OPs...")
     no_amount = staking_module.getNodeOperatorsCount()
-    set_staking_limit(staking_module, range(no_amount), 0, impersonated_voting)
+    set_staking_limit(staking_module, range(no_amount), 0, impersonated_agent)
 
     no3_id, no1_id, no2_id = staking_module.testing_node_operator_ids
 
-    deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 30, impersonated_voting)
+    deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 30, impersonated_agent)
 
     penalty_delay = staking_module.getStuckPenaltyDelay()
 
@@ -227,7 +234,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     no2_balance_shares_before = shares_balance(no2_reward_address)
     no3_balance_shares_before = shares_balance(no3_reward_address)
 
-    deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 30, impersonated_voting)
+    deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 30, impersonated_agent)
 
     module_shares_dust = shares_balance(staking_module)
     # Second report - first NO and second NO has stuck/exited
@@ -322,7 +329,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         no1_deposited_keys_after,
         no2_deposited_keys_after,
         no3_deposited_keys_after,
-    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_voting)
+    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_agent)
 
     # check don't change deposited keys for penalized NO
     assert no1_deposited_keys_before == no1_deposited_keys_after
@@ -450,7 +457,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     chain.mine()
 
     # Clear penalty for first NO after penalty delay
-    staking_module.clearNodeOperatorPenalty(no1_id, {"from": impersonated_voting})
+    staking_module.clearNodeOperatorPenalty(no1_id, {"from": impersonated_agent})
 
     # Prepare extra data for report by second NO
     vals_stuck_non_zero = {
@@ -536,7 +543,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         no1_deposited_keys_after,
         no2_deposited_keys_after,
         no3_deposited_keys_after,
-    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_voting)
+    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_agent)
 
     # check don't change deposited keys for penalized NO (only second NO)
     assert no1_deposited_keys_before != no1_deposited_keys_after
@@ -554,7 +561,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
 
     # # Refund 2 keys Second NO
     contracts.staking_router.updateRefundedValidatorsCount(
-        staking_module.module_id, no2_id, 2, {"from": impersonated_voting}
+        staking_module.module_id, no2_id, 2, {"from": impersonated_agent}
     )
 
     # shares before report
@@ -627,7 +634,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     chain.mine()
 
     # Clear penalty for second NO after penalty delay
-    staking_module.clearNodeOperatorPenalty(no2_id, {"from": impersonated_voting})
+    staking_module.clearNodeOperatorPenalty(no2_id, {"from": impersonated_agent})
 
     # shares before report
     no1_balance_shares_before = shares_balance(no1_reward_address)
@@ -687,7 +694,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         no1_deposited_keys_after,
         no2_deposited_keys_after,
         no3_deposited_keys_after,
-    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_voting)
+    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_agent)
 
     # check deposit is applied for all NOs
     assert no1_deposited_keys_before != no1_deposited_keys_after
@@ -697,7 +704,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
     for op_index in (no1_id, no2_id, no3_id):
         no = staking_module.getNodeOperator(op_index, False)
         staking_module.setNodeOperatorStakingLimit(
-            op_index, no["totalDepositedValidators"] + 10, {"from": impersonated_voting}
+            op_index, no["totalDepositedValidators"] + 10, {"from": impersonated_agent}
         )
 
     # Case 6
@@ -739,7 +746,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         no1_deposited_keys_after,
         no2_deposited_keys_after,
         no3_deposited_keys_after,
-    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_voting)
+    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_agent)
 
     # check deposit is not applied for first NO
     assert no1_deposited_keys_before == no1_deposited_keys_after
@@ -768,7 +775,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
         no1_deposited_keys_after,
         no2_deposited_keys_after,
         no3_deposited_keys_after,
-    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_voting)
+    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_agent)
 
     # check - deposit not applied to NOs.
     assert no1_deposited_keys_before != no1_deposited_keys_after
@@ -779,17 +786,17 @@ def module_happy_path(staking_module, extra_data_service, impersonated_voting, e
 @pytest.mark.skip(
     "TODO: fix the test assumptions about the state of the chain (no exited validators, depositable ETH amount)"
 )
-def test_node_operator_registry(impersonated_voting, stranger, eth_whale, helpers):
+def test_node_operator_registry(impersonated_agent, stranger, eth_whale, helpers):
     nor = contracts.node_operators_registry
     nor.module_id = 1
     nor.testing_node_operator_ids = [35, 36, 37]
-    module_happy_path(nor, ExtraDataService(), impersonated_voting, eth_whale, stranger, helpers)
+    module_happy_path(nor, ExtraDataService(), impersonated_agent, eth_whale, stranger, helpers)
 
 
-def test_sdvt(impersonated_voting, stranger, eth_whale, helpers):
+def test_sdvt(impersonated_agent, stranger, eth_whale, helpers):
     sdvt = contracts.simple_dvt
     sdvt.module_id = 2
     sdvt.testing_node_operator_ids = [0, 1, 2]
     fill_simple_dvt_ops_keys(stranger, 3, 100)
 
-    module_happy_path(sdvt, ExtraDataService(), impersonated_voting, eth_whale, stranger, helpers)
+    module_happy_path(sdvt, ExtraDataService(), impersonated_agent, eth_whale, stranger, helpers)

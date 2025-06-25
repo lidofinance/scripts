@@ -12,28 +12,36 @@ from utils.balance import set_balance
 
 
 @pytest.fixture(scope="module")
-def voting(accounts):
-    return accounts.at(contracts.voting, force=True)
+def agent(accounts):
+    return accounts.at(contracts.agent, force=True)
 
 
-def test_is_staking_not_paused(voting):
-    contracts.lido.resumeStaking({"from": voting})
+@pytest.fixture(scope="module", autouse=True)
+def agent_permission():
+    contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="PAUSE_ROLE"), {"from": contracts.agent})
+    contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="RESUME_ROLE"), {"from": contracts.agent})
+    contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_PAUSE_ROLE"), {"from": contracts.agent})
+    contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_CONTROL_ROLE"), {"from": contracts.agent})
+
+
+def test_is_staking_not_paused(agent):
+    contracts.lido.resumeStaking({"from": agent})
     # Should be running from the start
     assert contracts.lido.isStakingPaused() is False
 
 
-def test_pause_staking_access(voting, stranger):
-    contracts.lido.resumeStaking({"from": voting})
+def test_pause_staking_access(agent, stranger):
+    contracts.lido.resumeStaking({"from": agent})
     # Should not allow to pause staking from unauthorized account
     with reverts("APP_AUTH_FAILED"):
         contracts.lido.pauseStaking({"from": stranger})
-    contracts.lido.pauseStaking({"from": voting})
+    contracts.lido.pauseStaking({"from": agent})
 
 
-def test_pause_staking_works(voting, stranger):
-    contracts.lido.resumeStaking({"from": voting})
+def test_pause_staking_works(agent, stranger):
+    contracts.lido.resumeStaking({"from": agent})
     # Should not allow to stake until it's paused
-    tx = contracts.lido.pauseStaking({"from": voting})
+    tx = contracts.lido.pauseStaking({"from": agent})
 
     assert len(tx.logs) == 1
     assert_staking_is_paused(tx.logs[0])
@@ -41,21 +49,21 @@ def test_pause_staking_works(voting, stranger):
         contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ONE_ETH})
 
 
-def test_resume_staking_access(voting, stranger):
+def test_resume_staking_access(agent, stranger):
     # Should not allow to resume staking from unauthorized account
     with reverts("APP_AUTH_FAILED"):
         contracts.lido.resumeStaking({"from": stranger})
-    contracts.lido.resumeStaking({"from": voting})
+    contracts.lido.resumeStaking({"from": agent})
 
 
-def test_resume_staking_works(voting, stranger):
+def test_resume_staking_works(agent, stranger):
     # Should emit event with correct params
-    contracts.lido.pauseStaking({"from": voting})
+    contracts.lido.pauseStaking({"from": agent})
 
     with reverts("STAKING_PAUSED"):
         contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ONE_ETH})
 
-    tx = contracts.lido.resumeStaking({"from": voting})
+    tx = contracts.lido.resumeStaking({"from": agent})
 
     assert len(tx.logs) == 1
     assert_staking_is_resumed(tx.logs[0])
@@ -63,18 +71,18 @@ def test_resume_staking_works(voting, stranger):
     contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ONE_ETH})
 
 
-def test_set_staking_limit_access(voting, stranger):
+def test_set_staking_limit_access(agent, stranger):
     # Should not allow to resume staking from unauthorized account
     with reverts("APP_AUTH_FAILED"):
         contracts.lido.setStakingLimit(ONE_ETH, ONE_ETH * 0.01, {"from": stranger})
-    contracts.lido.setStakingLimit(ONE_ETH, ONE_ETH * 0.01, {"from": voting})
+    contracts.lido.setStakingLimit(ONE_ETH, ONE_ETH * 0.01, {"from": agent})
 
 
-def test_staking_limit_getter(voting):
+def test_staking_limit_getter(agent):
     # Should return the same value as it is set because no block has been produced
     assert contracts.lido.getCurrentStakeLimit() != ONE_ETH
 
-    contracts.lido.setStakingLimit(ONE_ETH, ONE_ETH * 0.01, {"from": voting})
+    contracts.lido.setStakingLimit(ONE_ETH, ONE_ETH * 0.01, {"from": agent})
 
     assert contracts.lido.getCurrentStakeLimit() == ONE_ETH
 
@@ -89,11 +97,11 @@ def test_staking_limit_initial_not_zero():
     "limit_max,limit_per_block",
     [(10**6, 10**4), (10**12, 10**10), (10**18, 10**16)],
 )
-def test_staking_limit_updates_per_block_correctly(voting, stranger, limit_max, limit_per_block):
+def test_staking_limit_updates_per_block_correctly(agent, stranger, limit_max, limit_per_block):
     set_balance(stranger.address, 1000000)
 
     # Should update staking limits after submit
-    contracts.lido.setStakingLimit(limit_max, limit_per_block, {"from": voting})
+    contracts.lido.setStakingLimit(limit_max, limit_per_block, {"from": agent})
     staking_limit_before = contracts.lido.getCurrentStakeLimit()
     assert limit_max == staking_limit_before
     contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": limit_per_block})
@@ -105,67 +113,67 @@ def test_staking_limit_updates_per_block_correctly(voting, stranger, limit_max, 
     assert staking_limit_before == contracts.lido.getCurrentStakeLimit()
 
 
-def test_staking_limit_is_zero(voting):
+def test_staking_limit_is_zero(agent):
     # Should be unlimited if 0 is set
     with reverts("ZERO_MAX_STAKE_LIMIT"):
-        contracts.lido.setStakingLimit(0, 0, {"from": voting})
+        contracts.lido.setStakingLimit(0, 0, {"from": agent})
 
 
-def test_staking_limit_is_uint256(voting):
+def test_staking_limit_is_uint256(agent):
     max_uint256 = convert.to_uint("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
 
     with reverts("TOO_LARGE_MAX_STAKE_LIMIT"):
-        contracts.lido.setStakingLimit(max_uint256, max_uint256, {"from": voting})
+        contracts.lido.setStakingLimit(max_uint256, max_uint256, {"from": agent})
 
 
-def test_staking_limit_exceed(voting, stranger):
+def test_staking_limit_exceed(agent, stranger):
     # Should not allow to submit if limit is exceeded
-    contracts.lido.setStakingLimit(ONE_ETH, ONE_ETH * 0.01, {"from": voting})
+    contracts.lido.setStakingLimit(ONE_ETH, ONE_ETH * 0.01, {"from": agent})
 
     with reverts("STAKE_LIMIT"):
         contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ONE_ETH * 10})
 
 
-def test_remove_staking_limit_access(voting, stranger):
+def test_remove_staking_limit_access(agent, stranger):
     # Should not allow to resume staking from unauthorized account
     with reverts("APP_AUTH_FAILED"):
         contracts.lido.removeStakingLimit({"from": stranger})
-    contracts.lido.removeStakingLimit({"from": voting})
+    contracts.lido.removeStakingLimit({"from": agent})
 
 
-def test_remove_staking_limit_works(voting, stranger):
+def test_remove_staking_limit_works(agent, stranger):
     # Should not allow to resume staking from unauthorized account
-    contracts.lido.setStakingLimit(ONE_ETH, ONE_ETH * 0.01, {"from": voting})
+    contracts.lido.setStakingLimit(ONE_ETH, ONE_ETH * 0.01, {"from": agent})
 
     with reverts("STAKE_LIMIT"):
         contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ONE_ETH * 10})
 
-    contracts.lido.removeStakingLimit({"from": voting})
+    contracts.lido.removeStakingLimit({"from": agent})
     contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ONE_ETH * 10})
 
 
-def test_protocol_pause(voting, stranger):
+def test_protocol_pause(agent, stranger):
     # Should revert if contract is paused
 
-    contracts.lido.stop({"from": voting})
+    contracts.lido.stop({"from": agent})
 
     with reverts("STAKING_PAUSED"):
         contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ONE_ETH})
 
-    contracts.lido.resumeStaking({"from": voting})
+    contracts.lido.resumeStaking({"from": agent})
 
     contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ONE_ETH})
 
 
-def test_protocol_resume_after_pause(voting, stranger):
+def test_protocol_resume_after_pause(agent, stranger):
     # Should revert if contract is paused
 
-    contracts.lido.stop({"from": voting})
+    contracts.lido.stop({"from": agent})
 
     with reverts("STAKING_PAUSED"):
         contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ONE_ETH})
 
-    contracts.lido.resume({"from": voting})
+    contracts.lido.resume({"from": agent})
     contracts.lido.submit(ZERO_ADDRESS, {"from": stranger, "amount": ONE_ETH})
 
 
@@ -198,24 +206,24 @@ def test_staking_limit_full_info(stranger):
 
 class TestEventsEmitted:
     def test_staking_limit_emit_events(self, helpers):
-        tx = contracts.lido.setStakingLimit(1000, 100, {"from": contracts.voting})
+        tx = contracts.lido.setStakingLimit(1000, 100, {"from": contracts.agent})
         helpers.assert_single_event_named(
             "StakingLimitSet", tx, {"maxStakeLimit": 1000, "stakeLimitIncreasePerBlock": 100}
         )
         assert is_staking_limit_set(contracts)
 
     def test_staking_limit_change_emit_events(self, helpers):
-        contracts.lido.setStakingLimit(1000, 100, {"from": contracts.voting})
-        tx = contracts.lido.setStakingLimit(2000, 200, {"from": contracts.voting})
+        contracts.lido.setStakingLimit(1000, 100, {"from": contracts.agent})
+        tx = contracts.lido.setStakingLimit(2000, 200, {"from": contracts.agent})
         helpers.assert_single_event_named(
             "StakingLimitSet", tx, {"maxStakeLimit": 2000, "stakeLimitIncreasePerBlock": 200}
         )
         assert is_staking_limit_set(contracts)
 
     def test_staking_limit_remove_emit_events(self, helpers):
-        contracts.lido.setStakingLimit(1000, 100, {"from": contracts.voting})
+        contracts.lido.setStakingLimit(1000, 100, {"from": contracts.agent})
 
-        tx = contracts.lido.removeStakingLimit({"from": contracts.voting})
+        tx = contracts.lido.removeStakingLimit({"from": contracts.agent})
         helpers.assert_single_event_named("StakingLimitRemoved", tx, {})
         helpers.assert_event_not_emitted("StakingLimitSet", tx)
         assert not is_staking_limit_set(contracts)

@@ -1,5 +1,6 @@
 import math
 
+from brownie import web3
 from utils.test.helpers import ETH
 from utils.config import contracts
 from brownie import ZERO_ADDRESS, accounts
@@ -21,7 +22,43 @@ def fill_deposit_buffer(deposits_count):
     eth_to_submit = eth_to_deposit + eth_debt + WEI_TOLERANCE
 
     eth_whale = accounts.at(staking_router.DEPOSIT_CONTRACT(), force=True)
+
+    (
+        is_staking_paused,
+        is_staking_limit_set,
+        current_stake_limit,
+        max_stake_limit,
+        max_stake_limit_growth_blocks,
+        _,
+        _
+    ) = lido.getStakeLimitFullInfo()
+
+    is_limit_reached = is_staking_limit_set and current_stake_limit < eth_to_submit
+
+    assert not is_staking_paused, "Staking is paused"
+
+    contracts.acl.grantPermission(
+        contracts.agent,
+        contracts.lido,
+        web3.keccak(text="STAKING_CONTROL_ROLE"),
+        {"from": contracts.agent}
+    )
+
+    if is_limit_reached:
+        lido.removeStakingLimit({"from": contracts.agent})
+
     lido.submit(ZERO_ADDRESS, {"from": eth_whale, "value": eth_to_submit})
+
+    if is_limit_reached:
+        stake_limit_increase_per_block = max_stake_limit // max_stake_limit_growth_blocks
+        lido.setStakingLimit(max_stake_limit, stake_limit_increase_per_block, {"from": contracts.agent})
+
+    contracts.acl.revokePermission(
+        contracts.agent,
+        contracts.lido,
+        web3.keccak(text="STAKING_CONTROL_ROLE"),
+        {"from": contracts.agent}
+    )
 
     assert lido.getDepositableEther() >= eth_to_deposit
 

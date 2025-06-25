@@ -13,7 +13,7 @@ def contract() -> interface.WithdrawalVault:
 def test_proxy(contract):
     proxy = interface.WithdrawalVaultManager(contract)
     assert proxy.implementation() == WITHDRAWAL_VAULT_IMPL
-    assert proxy.proxy_getAdmin() == contracts.voting.address
+    assert proxy.proxy_getAdmin() == contracts.agent.address
 
 
 def test_versioned(contract):

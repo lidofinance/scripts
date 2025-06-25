@@ -58,3 +58,9 @@ def encode_oz_revoke_role(
     role = convert.to_uint(Web3.keccak(text=role_name))
 
     return acl.address, acl.revokeRole.encode_input(role, revoke_from)
+
+
+def encode_set_permission_manager(new_manager, target_app, permission_name: str) -> Tuple[str, str]:
+    acl = contracts.acl
+    permission_id = convert.to_uint(Web3.keccak(text=permission_name))
+    return acl.address, acl.setPermissionManager.encode_input(new_manager, target_app, permission_id)
