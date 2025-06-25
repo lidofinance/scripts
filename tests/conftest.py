@@ -187,7 +187,9 @@ def vote_ids_from_env() -> [int]:
         try:
             vote_ids_str = os.getenv(ENV_OMNIBUS_VOTE_IDS)
             vote_ids = [int(s) for s in vote_ids_str.split(",")]
+            
             print(f"OMNIBUS_VOTE_IDS env var is set, using existing votes {vote_ids}")
+            
             return vote_ids
         except:
             pass
@@ -201,7 +203,9 @@ def dg_proposal_ids_from_env() -> [int]:
         try:
             proposal_ids_str = os.getenv(ENV_DG_PROPOSAL_IDS)
             proposal_ids = [int(s) for s in proposal_ids_str.split(",")]
+
             print(f"DG_PROPOSAL_IDS env var is set, skipping the vote, using existing proposals {proposal_ids}")
+            
             return proposal_ids
         except:
             raise Exception("DG_PROPOSAL_IDS env var is set, but it is invalid. Valid format: DG_PROPOSAL_IDS=1,2,3")
