@@ -21,6 +21,7 @@ from functools import wraps
 ENV_OMNIBUS_BYPASS_EVENTS_DECODING = "OMNIBUS_BYPASS_EVENTS_DECODING"
 ENV_PARSE_EVENTS_FROM_LOCAL_ABI = "PARSE_EVENTS_FROM_LOCAL_ABI"
 ENV_OMNIBUS_VOTE_IDS = "OMNIBUS_VOTE_IDS"
+ENV_DG_PROPOSAL_IDS = "DG_PROPOSAL_IDS"
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -112,27 +113,6 @@ class Helpers:
         (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup)
         return tx
 
-    def execute_dg_proposal(proposal_id):
-        """
-        Run proposal through dual governance.
-        """
-        emergency_protected_timelock = contracts.emergency_protected_timelock
-
-        # wait duration and schedule proposal
-        chain.sleep(emergency_protected_timelock.getAfterSubmitDelay() + 1)
-        chain.mine()
-
-        # schedule proposal for execution
-        contracts.dual_governance.scheduleProposal(
-            proposal_id,
-            {"from": LDO_HOLDER_ADDRESS_FOR_TESTS},
-        )
-
-        chain.sleep(emergency_protected_timelock.getAfterScheduleDelay() + 1)
-        chain.mine()
-
-        contracts.emergency_protected_timelock.execute(proposal_id, {"from": LDO_HOLDER_ADDRESS_FOR_TESTS})
-
     @staticmethod
     def execute_votes(accounts, vote_ids, dao_voting, topup="10 ether"):
         OBJECTION_PHASE_ID = 1
@@ -211,6 +191,20 @@ def vote_ids_from_env() -> [int]:
             return vote_ids
         except:
             pass
+
+    return []
+
+
+@pytest.fixture(scope="session")
+def dg_proposal_ids_from_env() -> [int]:
+    if os.getenv(ENV_DG_PROPOSAL_IDS):
+        try:
+            proposal_ids_str = os.getenv(ENV_DG_PROPOSAL_IDS)
+            proposal_ids = [int(s) for s in proposal_ids_str.split(",")]
+            print(f"DG_PROPOSAL_IDS env var is set, skipping the vote, using existing proposals {proposal_ids}")
+            return proposal_ids
+        except:
+            raise Exception("DG_PROPOSAL_IDS env var is set, but it is invalid. Valid format: DG_PROPOSAL_IDS=1,2,3")
 
     return []
 

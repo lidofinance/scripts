@@ -1,10 +1,8 @@
 from brownie import chain, accounts, interface
 from eth_abi.abi import encode
-from utils.config import (
-    contracts,
-    network_name,
-)
-from utils.agent import agent_forward, dual_governance_agent_forward
+from utils.config import contracts
+from utils.agent import agent_forward
+from utils.dual_governance import submit_proposals, process_proposals
 from utils.voting import create_vote, bake_vote_items
 from utils.test.helpers import ZERO_ADDRESS, almostEqWithDiff
 
@@ -171,9 +169,8 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
             registry.removeRecipient.encode_input(recipient_candidate),
         )
     ]
-    is_hoodi_testnet = network_name() in ["hoodi", "hoodi-fork"]
 
-    call_script_items = [(dual_governance_agent_forward(vote_input) if is_hoodi_testnet else agent_forward(vote_input))]
+    call_script_items = submit_proposals([([agent_forward(vote_input)], "")])
     vote_desc_items = ["Remove recipient"]
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
 
@@ -184,9 +181,7 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
         accounts=accounts,
         dao_voting=dao_voting,
     )
-    if is_hoodi_testnet:
-        # Execute the proposal
-        helpers.execute_dg_proposal(vote_tx.events["ProposalSubmitted"][1]["proposalId"])
+    process_proposals([vote_tx.events["ProposalSubmitted"][1]["proposalId"]])
 
     assert not registry.isRecipientAllowed(recipient_candidate)
     assert len(registry.getAllowedRecipients()) == recipients_length_before, "Wrong whitelist length"
@@ -198,7 +193,6 @@ def check_and_add_mev_boost_relay_with_voting(mev_boost_allowed_list, mev_boost_
     assert type(mev_boost_relay) == tuple
     assert mev_boost_relay not in relays
 
-    is_hoodi_testnet = network_name() in ["hoodi", "hoodi-fork"]
 
     vote_input = [
         (
@@ -208,7 +202,7 @@ def check_and_add_mev_boost_relay_with_voting(mev_boost_allowed_list, mev_boost_
     ]
 
     # Add MEV-Boost relay with voting
-    call_script_items = [(dual_governance_agent_forward(vote_input) if is_hoodi_testnet else agent_forward(vote_input))]
+    call_script_items = submit_proposals([([agent_forward(vote_input)], "")])
     vote_desc_items = ["Add MEV-Boost relay"]
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
 
@@ -219,10 +213,7 @@ def check_and_add_mev_boost_relay_with_voting(mev_boost_allowed_list, mev_boost_
         accounts=accounts,
         dao_voting=dao_voting,
     )
-
-    if is_hoodi_testnet:
-        # Execute the proposal
-        helpers.execute_dg_proposal(vote_tx.events["ProposalSubmitted"][1]["proposalId"])
+    process_proposals([vote_tx.events["ProposalSubmitted"][1]["proposalId"]])
 
     relays_after = mev_boost_allowed_list.get_relays()
 

@@ -1,5 +1,5 @@
 import pytest
-from brownie import interface, chain, reverts  # type: ignore
+from brownie import ZERO_ADDRESS, interface, chain, reverts  # type: ignore
 
 from utils.config import (
     contracts,
@@ -61,7 +61,7 @@ def test_petrified():
 
 
 def test_recoverability(contract):
-    assert contract.getRecoveryVault() == contracts.agent
+    assert contract.getRecoveryVault() == ZERO_ADDRESS
     assert contract.allowRecoverability(contracts.ldo_token) == True
 
 

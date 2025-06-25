@@ -10,9 +10,9 @@ from pytest_check import check
 from web3.types import Wei
 
 from tests.conftest import Helpers
-from utils.config import contracts, LDO_TOKEN, VOTING
+from utils.config import contracts, LDO_TOKEN, VOTING, AGENT
 from utils.evm_script import EMPTY_CALLSCRIPT
-from utils.import_current_votes import start_and_execute_votes, is_there_any_vote_scripts
+from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
 from utils.test.snapshot_helpers import _chain_snapshot
 
 from .utils import get_slot
@@ -33,6 +33,10 @@ SandwichFn = Callable[..., tuple[Stack, Stack]]
 UINT256_MAX = 2**256 - 1
 _1ETH = Wei(10**18)
 
+EXPECTED_SNAPSHOT_DIFFS: dict[str, Any] = {
+    "canPerform()": (True, False),
+    "getRecoveryVault": (AGENT, ZERO_ADDRESS)
+}
 
 def test_lido_no_changes_in_views(sandwich_upgrade: SandwichFn):
     """Test that no views change during the upgrade process."""
@@ -156,7 +160,8 @@ def test_lido_send_ether_snapshot(
     assert eth_whale.balance() >= _1ETH
     assert el_vault.balance() >= _1ETH
 
-    actions = (
+    def get_actions(from_address: Account | None = None):
+        return (
         # send ether to Lido to mint stETH
         _call(
             lido.submit,
@@ -177,12 +182,12 @@ def test_lido_send_ether_snapshot(
         # toggle contract state to STOPPED
         _call(
             lido.stop,
-            {"from": contracts.voting},
+            {"from": from_address},
         ),
         # toggle contract state to RUNNING
         _call(
             lido.resume,
-            {"from": contracts.voting},
+            {"from": from_address},
         ),
         _call(
             lido.submit,
@@ -210,13 +215,12 @@ def test_lido_send_ether_snapshot(
         ),
     )
 
-    stacks = sandwich_upgrade(actions)
+    stacks = sandwich_upgrade(get_actions)
     _stacks_equal(stacks)
 
 
 def test_lido_dao_ops_snapshot(sandwich_upgrade: SandwichFn):
     el_vault = contracts.execution_layer_rewards_vault
-    voting = contracts.voting
     lido = contracts.lido
 
     assert lido.getCurrentStakeLimit() > 0
@@ -224,13 +228,14 @@ def test_lido_dao_ops_snapshot(sandwich_upgrade: SandwichFn):
     assert el_vault.balance() >= _1ETH
     assert lido.isStopped() is False
 
-    actions = (
-        _call(lido.pauseStaking, {"from": voting}),
-        _call(lido.stop, {"from": voting}),
-        _call(lido.resumeStaking, {"from": voting}),
-        _call(lido.pauseStaking, {"from": voting}),
-        _call(lido.removeStakingLimit, {"from": voting}),
-        _call(lido.resumeStaking, {"from": voting}),
+    def get_actions(from_address: Account | None = None):
+        return (
+        _call(lido.pauseStaking, {"from": from_address}),
+        _call(lido.stop, {"from": from_address}),
+        _call(lido.resumeStaking, {"from": from_address}),
+        _call(lido.pauseStaking, {"from": from_address}),
+        _call(lido.removeStakingLimit, {"from": from_address}),
+        _call(lido.resumeStaking, {"from": from_address}),
         _call(
             lido.receiveELRewards,
             {
@@ -238,13 +243,13 @@ def test_lido_dao_ops_snapshot(sandwich_upgrade: SandwichFn):
                 "value": _1ETH,
             },
         ),
-        _call(lido.pauseStaking, {"from": voting}),
-        _call(lido.setStakingLimit, 17, 3, {"from": voting}),
-        _call(lido.resume, {"from": voting}),
-        _call(lido.stop, {"from": voting}),
-    )
+        _call(lido.pauseStaking, {"from": from_address}),
+        _call(lido.setStakingLimit, 17, 3, {"from": from_address}),
+        _call(lido.resume, {"from": from_address}),
+        _call(lido.stop, {"from": from_address}),
+    ) 
 
-    stacks = sandwich_upgrade(actions)
+    stacks = sandwich_upgrade(get_actions)
     _stacks_equal(stacks)
 
 
@@ -375,18 +380,24 @@ def sandwich_upgrade(
     far_block: int,
     helpers: Helpers,
     vote_ids_from_env,
+    dg_proposal_ids_from_env
 ) -> Callable[..., tuple[Stack, Stack]]:
     """Snapshot the state before and after the upgrade and return the two frames"""
 
     def _do(
-        actions_list: Sequence[Callable],
+        actions_builder: Sequence[Callable] | Callable[[Account | None], Sequence[Callable]],
         snapshot_fn=do_snapshot,
         snapshot_block=far_block,
     ):
-        def _actions_snaps():
+        def _actions_snaps(builder_arg: Account | None):
             _sleep_till_block(snapshot_block)
 
             yield Frame(snap=snapshot_fn(), func="init")
+
+            if callable(actions_builder):
+                actions_list = actions_builder(builder_arg)
+            else:
+                actions_list = actions_builder
 
             for action_fn in actions_list:
                 action_fn()
@@ -396,15 +407,36 @@ def sandwich_upgrade(
                 )
 
         with _chain_snapshot():
-            v1_frames = tuple(_actions_snaps())
+            v1_frames = tuple(_actions_snaps(contracts.voting))
 
-        if vote_ids_from_env:
-            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
-        else:
-            start_and_execute_votes(contracts.voting, helpers)
+        execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env)
 
-        # do not call _chain_snapshot here to be able to interact with the environment in the test
-        v2_frames = tuple(_actions_snaps())
+        contracts.acl.grantPermission(
+            contracts.agent,
+            contracts.lido,
+            contracts.lido.PAUSE_ROLE(),
+            {"from": contracts.agent},
+        )
+        contracts.acl.grantPermission(
+            contracts.agent,
+            contracts.lido,
+            contracts.lido.RESUME_ROLE(),
+            {"from": contracts.agent},
+        )
+        contracts.acl.grantPermission(
+            contracts.agent,
+            contracts.lido,
+            contracts.lido.STAKING_PAUSE_ROLE(),
+            {"from": contracts.agent},
+        )
+        contracts.acl.grantPermission(
+            contracts.agent,
+            contracts.lido,
+            contracts.lido.STAKING_CONTROL_ROLE(),
+            {"from": contracts.agent},
+        )
+        
+        v2_frames = tuple(_actions_snaps(contracts.agent))
 
         return v1_frames, v2_frames
 
@@ -421,9 +453,28 @@ def _sleep_till_block(block: int) -> None:
     chain.mine(block - curr_block)
 
 
-def _stacks_equal(stacks: tuple[Stack, Stack]) -> None:
-    """Compare two stacks, asserting that they are equal"""
+def _acceptable_change(key: str, before: Any, after: Any) -> bool:
+    if key not in EXPECTED_SNAPSHOT_DIFFS:
+        return False
+    exp = EXPECTED_SNAPSHOT_DIFFS[key]
+    if isinstance(exp, tuple) and len(exp) == 2:
+        exp_before, exp_after = exp
+        return before == exp_before and after == exp_after
+    return after == exp
 
+
+def _stacks_equal(stacks: tuple[Stack, Stack]) -> None:
     for v1_frame, v2_frame in zip(*stacks, strict=True):
-        with check:  # soft asserts
-            assert v1_frame["snap"] == v2_frame["snap"], f"Snapshots after {v1_frame['func']} are not equal"
+        with check:
+            unexpected: dict[str, tuple[Any, Any]] = {}
+            for key, before_val in v1_frame["snap"].items():
+                after_val = v2_frame["snap"].get(key)
+                if before_val == after_val:
+                    continue
+                if _acceptable_change(key, before_val, after_val):
+                    continue
+                unexpected[key] = (before_val, after_val)
+
+            assert not unexpected, (
+                f"Snapshots after {v1_frame['func']} differ unexpectedly: {unexpected}"
+            )
