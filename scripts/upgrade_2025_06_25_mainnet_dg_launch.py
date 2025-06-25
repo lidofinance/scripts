@@ -76,6 +76,7 @@ from utils.config import (
     get_is_live,
     get_priority_fee,
 )
+from utils.mainnet_fork import pass_and_exec_dao_vote
 
 dual_governance_launch_omnibus_provider = "0x1DB8a9313785b78f7d0a201C5E0BE007f1eb63b4"
 description = """
