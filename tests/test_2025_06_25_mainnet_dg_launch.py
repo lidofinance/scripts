@@ -18,7 +18,8 @@ from utils.test.event_validators.time_constraints import (
     validate_dg_time_constraints_executed_before_event,
     validate_dg_time_constraints_executed_within_day_time_event,
 )
-
+from utils.voting import find_metadata_by_vote_id
+from utils.ipfs import get_lido_vote_cid_from_str
 from utils.test.event_validators.permission import (
     validate_permission_create_event,
     validate_permission_revoke_event,
@@ -271,10 +272,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     RUN_SCRIPT_ROLE = web3.keccak(text="RUN_SCRIPT_ROLE")
     assert acl.getPermissionManager(AGENT, RUN_SCRIPT_ROLE) == VOTING
     assert acl.hasPermission(VOTING, AGENT, RUN_SCRIPT_ROLE)
+    assert not acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, RUN_SCRIPT_ROLE)
 
     EXECUTE_ROLE = web3.keccak(text="EXECUTE_ROLE")
     assert acl.getPermissionManager(AGENT, EXECUTE_ROLE) == VOTING
     assert acl.hasPermission(VOTING, AGENT, EXECUTE_ROLE)
+    assert not acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, EXECUTE_ROLE)
 
     # WithdrawalQueue and VEBO permissions checks
     withdrawal_queue = interface.WithdrawalQueue(WITHDRAWAL_QUEUE)
@@ -403,6 +406,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     assert acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, RUN_SCRIPT_ROLE)
     assert acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, EXECUTE_ROLE)
 
+    assert acl.hasPermission(VOTING, AGENT, RUN_SCRIPT_ROLE)
+    assert acl.hasPermission(VOTING, AGENT, EXECUTE_ROLE)
+
     # CSM permissions checks
     assert csm.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
     assert csm.hasRole(RESUME_ROLE, RESEAL_MANAGER)
@@ -453,13 +459,16 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     assert not acl.hasPermission(VOTING, AGENT, RUN_SCRIPT_ROLE)
     assert not acl.hasPermission(VOTING, AGENT, EXECUTE_ROLE)
 
+    assert acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, RUN_SCRIPT_ROLE)
+    assert acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, EXECUTE_ROLE)
+
     evs = group_voting_events_from_receipt(vote_tx)
 
     # 54 events
     assert len(evs) == 57
 
-    # metadata = find_metadata_by_vote_id(vote_id)
-    # assert get_lido_vote_cid_from_str(metadata) == "bafkreia2qh6xvoowgwukqfyyer2zz266e2jifxovnddgqawruhe2g5asgi"
+    metadata = find_metadata_by_vote_id(vote_id)
+    assert get_lido_vote_cid_from_str(metadata) == "bafkreidmripaubbsnlf2hl2onlfnrx6ntud64xajdobqdy7xapqh6vcq6i"
 
     assert count_vote_items_by_events(vote_tx, voting) == 57, "Incorrect voting items count"
 
@@ -722,10 +731,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     # Check DG execution events
     dg_evs = group_dg_events_from_receipt(dg_tx, timelock=EMERGENCY_PROTECTED_TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
 
-    # Execution is allowed before Tuesday, 15 July 2025 00:00:00
+    # Execution is allowed before Friday, 1 August 2025, 18:00:00
     validate_dg_time_constraints_executed_before_event(dg_evs[0], to_be_executed_before_timestamp_proposal, emitted_by=TIME_CONSTRAINTS)
 
-    # Execution is allowed since 04:00 to 22:00 UTC
+    # Execution is allowed since 06:00 to 18:00 UTC
     validate_dg_time_constraints_executed_within_day_time_event(dg_evs[1], to_be_executed_from_time, to_be_executed_to_time, emitted_by=TIME_CONSTRAINTS)
 
     # Revoke RUN_SCRIPT_ROLE permission from Voting on Agent
