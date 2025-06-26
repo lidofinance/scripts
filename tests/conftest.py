@@ -197,16 +197,7 @@ def vote_ids_from_env() -> [int]:
 
 @pytest.fixture(scope="session")
 def dg_proposal_ids_from_env() -> [int]:
-    if os.getenv(ENV_DG_PROPOSAL_IDS):
-        try:
-            proposal_ids_str = os.getenv(ENV_DG_PROPOSAL_IDS)
-            proposal_ids = [int(s) for s in proposal_ids_str.split(",")]
-            print(f"DG_PROPOSAL_IDS env var is set, skipping the vote, using existing proposals {proposal_ids}")
-            return proposal_ids
-        except:
-            raise Exception("DG_PROPOSAL_IDS env var is set, but it is invalid. Valid format: DG_PROPOSAL_IDS=1,2,3")
-
-    return []
+    return get_active_proposals_from_env()
 
 
 @pytest.fixture(scope="module")
@@ -311,3 +302,16 @@ def balance_check_middleware(make_request, web3):
         return result
 
     return middleware
+
+
+def get_active_proposals_from_env() -> [int]:
+    if os.getenv(ENV_DG_PROPOSAL_IDS):
+        try:
+            proposal_ids_str = os.getenv(ENV_DG_PROPOSAL_IDS)
+            proposal_ids = [int(s) for s in proposal_ids_str.split(",")]
+            print(f"DG_PROPOSAL_IDS env var is set, skipping the vote, using existing proposals {proposal_ids}")
+            return proposal_ids
+        except:
+            raise Exception("DG_PROPOSAL_IDS env var is set, but it is invalid. Valid format: DG_PROPOSAL_IDS=1,2,3")
+
+    return []
