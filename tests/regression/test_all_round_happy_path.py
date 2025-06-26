@@ -4,32 +4,22 @@ from brownie import ZERO_ADDRESS, chain, web3
 from utils.test.node_operators_helpers import distribute_reward
 from utils.test.oracle_report_helpers import oracle_report
 from utils.test.helpers import ETH, almostEqEth
+from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.config import contracts
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
 from utils.balance import set_balance
 from utils.test.staking_router_helpers import set_staking_module_status, StakingModuleStatus
 from utils.test.tx_cost_helper import transaction_cost
 
-def test_all_round_happy_path(accounts, stranger, steth_holder, eth_whale):
+def test_all_round_happy_path(accounts, stranger, steth_holder):
     print(stranger, stranger.balance())
     amount = ETH(100)
     max_deposit = 150
     curated_module_id = 1
     simple_dvt_module_id = 2
 
-    contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_CONTROL_ROLE"), {"from": contracts.agent})
-
-    initial_stake_limit = contracts.lido.getCurrentStakeLimit()
-    contracts.lido.removeStakingLimit({"from": accounts.at(contracts.agent, force=True)})
-    """ report """
-    while contracts.withdrawal_queue.getLastRequestId() != contracts.withdrawal_queue.getLastFinalizedRequestId():
-        # finalize all current requests first
-        report_tx = oracle_report()[0]
-        # stake new ether to increase buffer
-        contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale.address, "value": ETH(10000)})
-
-    contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale.address, "value": ETH(10000)})
-    contracts.lido.setStakingLimit(initial_stake_limit, initial_stake_limit, {"from": accounts.at(contracts.agent, force=True)})
+    fill_deposit_buffer(300)
+    oracle_report()
 
     # get accidentally unaccounted stETH shares on WQ contract
     uncounted_steth_shares = contracts.lido.sharesOf(contracts.withdrawal_queue)
