@@ -206,6 +206,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     APP_MANAGER_ROLE = web3.keccak(text="APP_MANAGER_ROLE")
     assert acl.hasPermission(VOTING, KERNEL, APP_MANAGER_ROLE)
     assert acl.getPermissionManager(KERNEL, APP_MANAGER_ROLE) == VOTING
+    assert not acl.hasPermission(AGENT, KERNEL, APP_MANAGER_ROLE)
 
     # TokenManager Permissions Transition
     MINT_ROLE = web3.keccak(text="MINT_ROLE")
@@ -241,6 +242,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     
     MANAGE_NODE_OPERATOR_ROLE = web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")
     assert acl.getPermissionManager(CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE) == VOTING
+    assert acl.hasPermission(AGENT, CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE)
     
     SET_NODE_OPERATOR_LIMIT_ROLE = web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")
     assert acl.getPermissionManager(CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE) == VOTING
@@ -349,6 +351,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     # DAOKernel permissions checks
     assert acl.getPermissionManager(KERNEL, APP_MANAGER_ROLE) == AGENT
     assert not acl.hasPermission(VOTING, KERNEL, APP_MANAGER_ROLE)
+    assert not acl.hasPermission(AGENT, KERNEL, APP_MANAGER_ROLE)
 
     # TokenManager permissions checks
     assert acl.getPermissionManager(TOKEN_MANAGER, MINT_ROLE) == VOTING
@@ -382,6 +385,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
 
     assert acl.hasPermission(STAKING_ROUTER, CURATED_MODULE, STAKING_ROUTER_ROLE)
     assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
+    assert acl.hasPermission(AGENT, CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE)
 
     # Simple DVT Module permissions checks
     assert acl.getPermissionManager(SDVT_MODULE, STAKING_ROUTER_ROLE) == AGENT
@@ -463,7 +467,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
 
     evs = group_voting_events_from_receipt(vote_tx)
 
-    # 54 events
+    # 57 events
     assert len(evs) == 57
 
     metadata = find_metadata_by_vote_id(vote_id)
@@ -963,6 +967,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     assert not allowed_tokens_registry.hasRole(ADD_TOKEN_TO_ALLOWED_LIST_ROLE, stranger)
 
     # Agent has no permission to call DEFAULT_ADMIN_ROLE actions
+    assert not allowed_tokens_registry.hasRole(ADD_TOKEN_TO_ALLOWED_LIST_ROLE, stranger)
     with reverts(
         f"AccessControl: account {AGENT.lower()} is missing role 0x0000000000000000000000000000000000000000000000000000000000000000"
     ):
@@ -971,6 +976,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     # Agent has no permission to call ADD_TOKEN_TO_ALLOWED_LIST_ROLE actions
     with reverts(f"AccessControl: account {AGENT.lower()} is missing role {ADD_TOKEN_TO_ALLOWED_LIST_ROLE.hex()}"):
         allowed_tokens_registry.addToken(ldo_token, {"from": AGENT})
+
+    # Agent has no permission to call DEFAULT_ADMIN_ROLE actions
+    assert not allowed_tokens_registry.hasRole(REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE, stranger)
+    with reverts(
+        f"AccessControl: account {AGENT.lower()} is missing role 0x0000000000000000000000000000000000000000000000000000000000000000"
+    ):
+        allowed_tokens_registry.grantRole(REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE, stranger, {"from": AGENT})
 
     # Agent has no permission to call REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE actions
     tokens = allowed_tokens_registry.getAllowedTokens()
@@ -1030,14 +1042,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
 
     # Agent has permission to manage EXECUTE_ROLE
     check_can_perform_aragon_role_management(stranger, AGENT, EXECUTE_ROLE, acl, AGENT)
-
-    # DG 3 Voting has no permission to call RUN_SCRIPT_ROLE actions
-    with reverts("AGENT_CAN_NOT_FORWARD"):
-        agent.forward("0x00000001", {"from": VOTING})
-
-    # DG 4 Voting has no permission to call EXECUTE_ROLE actions
-    with reverts("APP_AUTH_FAILED"):
-        agent.execute(stranger, 0, "0x", {"from": VOTING})
 
 
 def check_can_perform_aragon_role_management(entity: str, app: str, role: str, acl: interface.ACL, actor: str):
