@@ -7,12 +7,14 @@ from utils.test.tx_tracing_helpers import *
 DUAL_GOVERNANCE = "0xcdF49b058D606AD34c5789FD8c3BF8B3E54bA2db"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
+VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
 
     # TODO arrange all variables neccessary for the test
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
+    voting = interface.Voting(VOTING)
     vote_events_count = <# of events emitted by the vote>
     dg_prposal_id = <order # of a dg proposal>
 
