@@ -10,7 +10,7 @@ from web3 import Web3
 
 from tests.conftest import Helpers
 from utils.config import contracts
-from utils.import_current_votes import start_and_execute_votes, is_there_any_vote_scripts
+from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
 from utils.test.snapshot_helpers import _chain_snapshot
 
 from .utils import get_slot
@@ -49,24 +49,8 @@ def test_first_slots(sandwich_upgrade: SandwichFn):
 def skip_slots() -> Sequence[tuple[str, int]]:
     """Slots that are not checked for equality"""
     return [
-        (
-            # new slot in the contract _nodeOperatorSummary
-            contracts.node_operators_registry.address,
-            0x01,
-        ),
-        (
-            # finance slot changing due to deposit bot funding
-            contracts.finance,
-            0x07,
-        ),
-        # new EasyTrack factory for CSM (EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY)
-        # evmScriptFactories array
-        (contracts.easy_track.address, 5),
-        # Set initial epoch for CSM hash consensus
-        (contracts.csm_hash_consensus.address, 0),
-        # change hash consensus members
-        (contracts.csm_hash_consensus.address, 2)
-
+        # reset slot in kernel
+        (contracts.kernel.address, 0x01),
     ]
 
 
@@ -145,6 +129,7 @@ def sandwich_upgrade(
     far_ts: int,
     helpers: Helpers,
     vote_ids_from_env: int,
+    dg_proposal_ids_from_env: int,
 ) -> SandwichFn:
     """Snapshot the state before and after the upgrade and return the two frames"""
 
@@ -156,10 +141,7 @@ def sandwich_upgrade(
         with _chain_snapshot():
             v1_frames = tuple(_actions_snaps())
 
-        if vote_ids_from_env:
-            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
-        else:
-            start_and_execute_votes(contracts.voting, helpers)
+        execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env)
 
         # do not call _chain_snapshot here to be able to interact with the environment in the test
         v2_frames = tuple(_actions_snaps())

@@ -13,7 +13,7 @@ from utils.config import (
     LDO_HOLDER_ADDRESS_FOR_TESTS,
     contracts,
 )
-from utils.import_current_votes import start_and_execute_votes
+from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
 
 
 @pytest.fixture(scope="module")
@@ -90,7 +90,7 @@ def steps(voting, call_target, vote_time) -> Dict[str, Dict[str, ValueChanged]]:
     return result
 
 
-def test_create_wait_enact(helpers, vote_time, call_target, vote_ids_from_env):
+def test_create_wait_enact(helpers, vote_time, call_target, vote_ids_from_env, dg_proposal_ids_from_env):
     """
     Run a smoke test before upgrade, then after upgrade, and compare snapshots at each step
     """
@@ -98,10 +98,7 @@ def test_create_wait_enact(helpers, vote_time, call_target, vote_ids_from_env):
     before: Dict[str, Dict[str, any]] = steps(contracts.voting, call_target, vote_time)
     chain.revert()
 
-    if vote_ids_from_env:
-        helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
-    else:
-        start_and_execute_votes(contracts.voting, helpers)
+    execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env)
     after: Dict[str, Dict[str, any]] = steps(contracts.voting, call_target, vote_time)
 
     step_diffs: Dict[str, Dict[str, ValueChanged]] = {}

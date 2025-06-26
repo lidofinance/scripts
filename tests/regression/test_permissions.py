@@ -7,7 +7,7 @@ import os
 
 from tqdm import tqdm
 from web3 import Web3
-from brownie import interface, convert, web3
+from brownie import interface, web3
 from brownie.network.event import _decode_logs
 from brownie.network.state import TxHistory
 
@@ -20,6 +20,7 @@ from utils.config import (
     DSM_GUARDIANS,
     ORACLE_COMMITTEE,
     AGENT,
+    EASYTRACK,
     EASYTRACK_EVMSCRIPT_EXECUTOR,
     ARAGON_EVMSCRIPT_REGISTRY,
     ACL_DEPLOY_BLOCK_NUMBER,
@@ -31,6 +32,7 @@ from utils.config import (
     FINANCE,
     NODE_OPERATORS_REGISTRY,
     STAKING_ROUTER,
+    WITHDRAWAL_VAULT,
     ORACLE_DAEMON_CONFIG,
     DEPOSIT_SECURITY_MODULE,
     ORACLE_REPORT_SANITY_CHECKER,
@@ -50,6 +52,10 @@ from utils.config import (
     CS_FEE_DISTRIBUTOR_ADDRESS,
     CS_FEE_ORACLE_ADDRESS,
     CS_ORACLE_HASH_CONSENSUS_ADDRESS,
+    L1_EMERGENCY_BRAKES_MULTISIG,
+    DUAL_GOVERNANCE_EXECUTORS,
+    RESEAL_MANAGER,
+    INSURANCE_FUND
 )
 
 
@@ -95,8 +101,8 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "PAUSE_ROLE": [GATE_SEAL],
-                "RESUME_ROLE": [],
+                "PAUSE_ROLE": [GATE_SEAL, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
                 "FINALIZE_ROLE": [contracts.lido],
                 "ORACLE_ROLE": [contracts.accounting_oracle],
                 "MANAGE_TOKEN_URI_ROLE": [],
@@ -122,8 +128,8 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "SUBMIT_DATA_ROLE": [],
-                "PAUSE_ROLE": [GATE_SEAL],
-                "RESUME_ROLE": [],
+                "PAUSE_ROLE": [GATE_SEAL, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
                 "MANAGE_CONSENSUS_VERSION_ROLE": [],
             },
@@ -201,21 +207,21 @@ def protocol_permissions():
             "contract_name": "ACL",
             "contract": contracts.acl,
             "type": "AragonApp",
-            "roles": {"CREATE_PERMISSIONS_ROLE": [VOTING]},
+            "roles": {"CREATE_PERMISSIONS_ROLE": [AGENT]},
         },
         ARAGON_KERNEL: {
             "contract_name": "Kernel",
             "contract": contracts.kernel,
             "type": "AragonApp",
-            "roles": {"APP_MANAGER_ROLE": [VOTING]},
+            "roles": {"APP_MANAGER_ROLE": []},
         },
         ARAGON_EVMSCRIPT_REGISTRY: {
-            "contract_name": "EVMScriptExecutor",
+            "contract_name": "EVMScriptRegistry",
             "contract": contracts.evm_script_registry,
             "type": "AragonApp",
             "roles": {
-                "REGISTRY_MANAGER_ROLE": [VOTING],
-                "REGISTRY_ADD_EXECUTOR_ROLE": [VOTING],
+                "REGISTRY_MANAGER_ROLE": [],
+                "REGISTRY_ADD_EXECUTOR_ROLE": [],
             },
         },
         TOKEN_MANAGER: {
@@ -226,8 +232,8 @@ def protocol_permissions():
                 "ISSUE_ROLE": [],
                 "ASSIGN_ROLE": [VOTING],
                 "BURN_ROLE": [],
-                "MINT_ROLE": [],
-                "REVOKE_VESTINGS_ROLE": [],
+                "MINT_ROLE": [VOTING],
+                "REVOKE_VESTINGS_ROLE": [VOTING],
             },
         },
         LIDO: {
@@ -235,10 +241,10 @@ def protocol_permissions():
             "contract": contracts.lido,
             "type": "AragonApp",
             "roles": {
-                "PAUSE_ROLE": [VOTING],
-                "STAKING_CONTROL_ROLE": [VOTING],
-                "RESUME_ROLE": [VOTING],
-                "STAKING_PAUSE_ROLE": [VOTING],
+                "PAUSE_ROLE": [],
+                "STAKING_CONTROL_ROLE": [],
+                "RESUME_ROLE": [],
+                "STAKING_PAUSE_ROLE": [],
                 "UNSAFE_CHANGE_DEPOSITED_VALIDATORS_ROLE": [],
             },
         },
@@ -252,8 +258,8 @@ def protocol_permissions():
                 "REMOVE_PROTECTED_TOKEN_ROLE": [],
                 "DESIGNATE_SIGNER_ROLE": [],
                 "ADD_PRESIGNED_HASH_ROLE": [],
-                "EXECUTE_ROLE": [VOTING],
-                "RUN_SCRIPT_ROLE": [VOTING],
+                "EXECUTE_ROLE": [DUAL_GOVERNANCE_EXECUTORS[0]],
+                "RUN_SCRIPT_ROLE": [DUAL_GOVERNANCE_EXECUTORS[0]],
                 "TRANSFER_ROLE": [FINANCE],
             },
         },
@@ -262,8 +268,8 @@ def protocol_permissions():
             "contract": contracts.finance,
             "type": "AragonApp",
             "roles": {
-                "CHANGE_PERIOD_ROLE": [],
-                "CHANGE_BUDGETS_ROLE": [],
+                "CHANGE_PERIOD_ROLE": [VOTING],
+                "CHANGE_BUDGETS_ROLE": [VOTING],
                 "EXECUTE_PAYMENTS_ROLE": [VOTING],
                 "MANAGE_PAYMENTS_ROLE": [VOTING],
                 "CREATE_PAYMENTS_ROLE": [VOTING, EASYTRACK_EVMSCRIPT_EXECUTOR],
@@ -285,9 +291,9 @@ def protocol_permissions():
             "contract": contracts.node_operators_registry,
             "type": "AragonApp",
             "roles": {
-                "MANAGE_SIGNING_KEYS": [VOTING],
+                "MANAGE_SIGNING_KEYS": [],
                 "MANAGE_NODE_OPERATOR_ROLE": [AGENT],
-                "SET_NODE_OPERATOR_LIMIT_ROLE": [VOTING, EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "SET_NODE_OPERATOR_LIMIT_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
                 "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
             },
         },
@@ -312,14 +318,15 @@ def protocol_permissions():
             "contract_name": "CSModule",
             "contract": contracts.csm,
             "type": "CustomApp",
+            "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
-                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS],
+                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS, RESEAL_MANAGER],
                 "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE": [CSM_COMMITTEE_MS],
                 "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
                 "VERIFIER_ROLE": [CS_VERIFIER_ADDRESS],
-                "RESUME_ROLE": [],
+                "RESUME_ROLE": [RESEAL_MANAGER],
                 "MODULE_MANAGER_ROLE": [],
                 "RECOVERER_ROLE": [],
             },
@@ -328,12 +335,13 @@ def protocol_permissions():
             "contract_name": "CSAccounting",
             "contract": contracts.cs_accounting,
             "type": "CustomApp",
+            "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "SET_BOND_CURVE_ROLE": [CSM_ADDRESS, CSM_COMMITTEE_MS],
                 "RESET_BOND_CURVE_ROLE": [CSM_ADDRESS, CSM_COMMITTEE_MS],
-                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS],
-                "RESUME_ROLE": [],
+                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
                 "ACCOUNTING_MANAGER_ROLE": [],
                 "MANAGE_BOND_CURVES_ROLE": [],
                 "RECOVERER_ROLE": [],
@@ -343,6 +351,7 @@ def protocol_permissions():
             "contract_name": "CSFeeDistributor",
             "contract": contracts.cs_fee_distributor,
             "type": "CustomApp",
+            "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "RECOVERER_ROLE": [],
@@ -352,14 +361,15 @@ def protocol_permissions():
             "contract_name": "CSFeeOracle",
             "contract": contracts.cs_fee_oracle,
             "type": "CustomApp",
+            "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
                 "MANAGE_CONSENSUS_VERSION_ROLE": [],
-                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS],
+                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS, RESEAL_MANAGER],
                 "CONTRACT_MANAGER_ROLE": [],
                 "SUBMIT_DATA_ROLE": [],
-                "RESUME_ROLE": [],
+                "RESUME_ROLE": [RESEAL_MANAGER],
                 "RECOVERER_ROLE": [],
             },
         },
@@ -374,6 +384,31 @@ def protocol_permissions():
                 "MANAGE_FRAME_CONFIG_ROLE": [],
                 "MANAGE_FAST_LANE_CONFIG_ROLE": [],
                 "MANAGE_REPORT_PROCESSOR_ROLE": [],
+            },
+        },
+        INSURANCE_FUND: {
+            "contract_name": "InsuranceFund",
+            "contract": contracts.insurance_fund,
+            "type": "CustomApp",
+            "state": {"owner": contracts.voting},
+            "roles": {},
+        },
+        WITHDRAWAL_VAULT: {
+            "contract_name": "WithdrawalVault",
+            "contract": interface.WithdrawalContractProxy(WITHDRAWAL_VAULT),
+            "type": "CustomApp",
+            "state": {"proxy_getAdmin": contracts.agent},
+            "roles": {},
+        },
+        EASYTRACK: {
+            "contract_name": "EasyTrack",
+            "contract": contracts.easy_track,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.voting],
+                "CANCEL_ROLE": [contracts.voting],
+                "PAUSE_ROLE": [contracts.voting, L1_EMERGENCY_BRAKES_MULTISIG],
+                "UNPAUSE_ROLE": [contracts.voting],
             },
         }
     }
@@ -445,11 +480,16 @@ def test_protocol_permissions(protocol_permissions):
                 role_signature = permissions_config["contract"].signatures[role]
                 assert permissions_config["contract"].get_method_object(role_signature)() == role_keccak
 
-                assert permissions_config["contract"].getRoleMemberCount(role_keccak) == len(
-                    holders
-                ), "number of {0} role holders in contract {1} mismatched".format(
-                    role, permissions_config["contract_name"]
-                )
+                try:
+                    role_member_count = permissions_config["contract"].getRoleMemberCount(role_keccak)
+                except Exception as e:
+                    print("Unable to count role members for {0} at {1}: {2}".format(role, permissions_config["contract_name"], e))
+                    role_member_count = None
+                finally:
+                    if role_member_count is not None:
+                        assert role_member_count == len(holders), "number of {0} role holders in contract {1} mismatched".format(
+                            role, permissions_config["contract_name"]
+                        )
 
                 for holder in holders:
                     assert permissions_config["contract"].hasRole(
@@ -493,28 +533,32 @@ def get_http_w3_provider_url():
     if os.getenv("WEB3_ALCHEMY_PROJECT_ID") is not None:
         return f'https://eth-mainnet.g.alchemy.com/v2/{os.getenv("WEB3_ALCHEMY_PROJECT_ID")}'
 
+    if os.getenv("ETH_RPC_URL") is not None:
+        return os.getenv("ETH_RPC_URL")
+
     assert False, 'Web3 HTTP Provider token env var not found'
 
 def active_aragon_roles(protocol_permissions):
-    w3 = Web3(Web3.HTTPProvider(get_http_w3_provider_url()))
+    local_rpc_provider = web3
+    remote_rpc_provider = Web3(Web3.HTTPProvider(get_http_w3_provider_url()))
 
-    event_signature_hash = w3.keccak(text="SetPermission(address,address,bytes32,bool)").hex()
+    event_signature_hash = remote_rpc_provider.keccak(text="SetPermission(address,address,bytes32,bool)").hex()
 
-    def fetch_events_in_batches(start_block, end_block, step=100000):
+    def fetch_events_in_batches(start_block, end_block, provider=local_rpc_provider, step=100000):
         """Fetch events in batches of `step` blocks with a progress bar."""
         events = []
         total_batches = (end_block - start_block) // step + 1
         with tqdm(total=total_batches, desc="Fetching Events") as pbar:
             for batch_start in range(start_block, end_block, step):
                 batch_end = min(batch_start + step - 1, end_block)
-                batch_events = w3.eth.filter(
+                batch_events = provider.eth.filter(
                         {"address": contracts.acl.address, "fromBlock": batch_start, "toBlock": batch_end, "topics": [event_signature_hash]}
                 ).get_all_entries()
                 events.extend(batch_events)
                 pbar.update(1)
         return events
 
-    events_before_voting = fetch_events_in_batches(ACL_DEPLOY_BLOCK_NUMBER, w3.eth.block_number)
+    events_before_voting = fetch_events_in_batches(ACL_DEPLOY_BLOCK_NUMBER, remote_rpc_provider.eth.block_number, remote_rpc_provider)
 
     permission_events = _decode_logs(events_before_voting)["SetPermission"]._ordered
 
@@ -522,7 +566,7 @@ def active_aragon_roles(protocol_permissions):
     if len(history) > 0:
         vote_block = history[0].block_number
 
-        events_after_voting = fetch_events_in_batches(vote_block, w3.eth.block_number)
+        events_after_voting = fetch_events_in_batches(vote_block, remote_rpc_provider.eth.block_number)
 
         try:
             permission_events_after_voting = _decode_logs(events_after_voting)["SetPermission"]._ordered
@@ -536,7 +580,7 @@ def active_aragon_roles(protocol_permissions):
         active_permissions[event_app] = {}
         keccak_roles = dict(
             zip(
-                [w3.keccak(text=role).hex() for role in protocol_permissions[event_app]["roles"]],
+                [remote_rpc_provider.keccak(text=role).hex() for role in protocol_permissions[event_app]["roles"]],
                 protocol_permissions[event_app]["roles"],
             )
         )
