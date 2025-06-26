@@ -1,4 +1,6 @@
 """
+Vote 2025_<MM>_<DD>
+
 <a list of vote items synced with Notion Omnibus checklist>
 """
 
@@ -16,8 +18,9 @@ from utils.config import (
 )
 from utils.mainnet_fork import pass_and_exec_dao_vote
 
+<list all contract addresses used in a vote>
 
-description = """
+IPFS_DESCRIPTION = """
 <IPFS description provided by DAO Comms>
 """
 
@@ -48,9 +51,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
 
     if silent:
-        desc_ipfs = calculate_vote_ipfs_description(description)
+        desc_ipfs = calculate_vote_ipfs_description(IPFS_DESCRIPTION)
     else:
-        desc_ipfs = upload_vote_ipfs_description(description)
+        desc_ipfs = upload_vote_ipfs_description(IPFS_DESCRIPTION)
 
     return confirm_vote_script(vote_items, silent, desc_ipfs) and list(
         create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
