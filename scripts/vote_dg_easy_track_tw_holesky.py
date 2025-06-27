@@ -17,14 +17,19 @@ from utils.config import (
     get_priority_fee,
     get_is_live
 )
+from utils.dg_decorators import forward_agent, forward_dg_admin, forward_voting, process_voting_items
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
-from utils.agent import dual_governance_agent_forward
 from utils.voting import confirm_vote_script, create_vote, bake_vote_items
 from utils.permissions import encode_oz_grant_role
 from utils.easy_track import (
     add_evmscript_factory,
     create_permissions,
 )
+from typing import Optional, Tuple, Dict
+from utils.config import contracts
+
+
+
 TRIGGERABLE_WITHDRAWALS_GATEWAY = "0x4FD4113f2B92856B59BC3be77f2943B7F4eaa9a5"
 
 EASYTRACK_EVMSCRIPT_EXECUTOR = "0x2819B65021E13CEEB9AC33E77DB32c7e64e7520D"
@@ -35,53 +40,53 @@ EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0x7A1c5af4625d
 DESCRIPTION = "Add Triggerable Withdrawals Gateway to Dual Governance and new Easy Tracks (HOLESKY)"
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[Any]]:
-    vote_desc_items, call_script_items = zip(
+    voting_unprepared_items = [
         (
             f"Grant SUBMIT_REPORT_HASH_ROLE on Validator Exit Bus Oracle to the EasyTrack EVM Script Executor",
-            encode_oz_grant_role(
-                contract=contracts.validators_exit_bus_oracle,
-                role_name="SUBMIT_REPORT_HASH_ROLE",
-                grant_to=EASYTRACK_EVMSCRIPT_EXECUTOR,
+            forward_agent(
+                *encode_oz_grant_role(
+                    contract=contracts.validators_exit_bus_oracle,
+                    role_name="SUBMIT_REPORT_HASH_ROLE",
+                    grant_to=EASYTRACK_EVMSCRIPT_EXECUTOR,
+                ),
             ),
         ),
         (
             "Connect TRIGGERABLE_WITHDRAWALS_GATEWAY to Dual Governance tiebreaker",
-            (
+            forward_dg_admin(
                 contracts.dual_governance.address,
                 contracts.dual_governance.addTiebreakerSealableWithdrawalBlocker.encode_input(
                     TRIGGERABLE_WITHDRAWALS_GATEWAY
                 ),
-                True
             )
         ),
-    )
-
-    plain_agent_item = bake_vote_items(
-        [
+        (
             f"Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory with address `{EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY}` to Easy Track `{contracts.easy_track.address}`",
+            forward_voting(
+                *add_evmscript_factory(
+                    factory=EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
+                    permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),
+                )
+            )
+        ),
+        (
             f"Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory with address `{EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY}` to Easy Track `{contracts.easy_track.address}`",
-        ],
-        [
-            add_evmscript_factory(
-                factory=EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
-                permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),
-            ),
-            add_evmscript_factory(
-                factory=EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
-                permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),
-            ),
-        ],
-    )
+            forward_voting(
+                *add_evmscript_factory(
+                    factory=EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
+                    permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),
+                )
+            )
+        )
+    ]
 
     if silent:
         desc_ipfs = calculate_vote_ipfs_description(DESCRIPTION)
     else:
         desc_ipfs = upload_vote_ipfs_description(DESCRIPTION)
 
-    dg_desc = "\n".join(vote_desc_items)
-    dg_vote = dual_governance_agent_forward(call_script_items, dg_desc)
-    vote_items = {dg_desc: dg_vote, **plain_agent_item}
 
+    vote_items = process_voting_items(voting_unprepared_items)
     assert confirm_vote_script(vote_items, silent, desc_ipfs)
 
     return create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
