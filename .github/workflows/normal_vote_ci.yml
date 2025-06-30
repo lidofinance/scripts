@@ -30,7 +30,7 @@ jobs:
 
       - name: Check that the fork is ready
         shell: bash
-        run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8545
+        run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8555
 
       - name: Execute vote
         uses: ./.github/actions/execute_vote
