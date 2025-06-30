@@ -17,6 +17,14 @@ jobs:
     runs-on: "ubuntu-latest"
     timeout-minutes: 100
 
+    services:
+      hardhat-node:
+        image: ghcr.io/lidofinance/hardhat-node:2.22.19.2-shanghai
+        ports:
+          - 8555:8545
+        env:
+          ETH_RPC_URL: "https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }}"
+
     steps:
       - uses: actions/checkout@v4
 
