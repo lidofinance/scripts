@@ -25,7 +25,7 @@ DUAL_GOVERNANCE_STATE = {
 }
 
 
-def is_there_any_active_proposals_from_env() -> bool:
+def is_there_any_proposals_from_env() -> bool:
     return len(get_active_proposals_from_env()) > 0
 
 
@@ -67,6 +67,8 @@ def process_proposals(proposal_ids):
         elif proposal_status == PROPOSAL_STATUS["scheduled"]:
             scheduled_proposals.append(proposal_id)
             proposals_to_be_processed.remove(proposal_id)
+        elif proposal_status in [PROPOSAL_STATUS["cancelled"], PROPOSAL_STATUS["executed"]]:
+            proposals_to_be_processed.remove(proposal_id)
 
     if len(submitted_proposals):
         chain.sleep(after_submit_delay + 1)
@@ -94,6 +96,21 @@ def process_proposals(proposal_ids):
 
     if len(proposals_to_be_processed):
         raise Exception(f"Unable to process proposals: {proposals_to_be_processed}. Proposals are already processed or cancelled.")
+
+
+def process_pending_proposals():
+    last_proposal_id = contracts.emergency_protected_timelock.getProposalsCount()
+
+    if is_proposal_executed(last_proposal_id):
+        return
+    
+    current_proposal_id = last_proposal_id
+    while is_proposal_executed(current_proposal_id):
+        current_proposal_id -= 1
+        if current_proposal_id == 1:
+            break
+    
+    process_proposals(list(range(current_proposal_id, last_proposal_id + 1)))
 
 
 def wait_for_normal_state(stranger):
@@ -140,3 +157,8 @@ def wait_for_noon_utc_to_satisfy_time_constrains():
         target_noon = today_noon
     
     chain.sleep(target_noon - current_time)
+
+
+def is_proposal_executed(proposal_id: int) -> bool:
+    (_, _, _, _, proposal_status) = contracts.emergency_protected_timelock.getProposalDetails(proposal_id)
+    return proposal_status == PROPOSAL_STATUS["executed"]
