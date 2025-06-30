@@ -49,4 +49,4 @@ runs:
       run: yarn test:integration
       env:
         FORK_RPC_URL: http://localhost:8555
-        LOG_LEVEL: debug
+        LOG_LEVEL: info
