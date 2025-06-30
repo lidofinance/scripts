@@ -40,11 +40,11 @@ cd scripts
 Run the container in the `scripts` directory and specify the ENV VARs:
 
 ```shell
-docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d ghcr.io/lidofinance/scripts:v18
+docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d ghcr.io/lidofinance/scripts:v18 && docker logs scripts -f
 
 ```
 
-Note: _It may take up to 1 minute for the container to initialize properly the first time._
+Note: _It may take up to 5 minutes for the container to initialize properly the first time: wait till container output stops and press CTRL/CMD+C to exit._
 
 #### Step 4. Now connect to the running container using tty:
 
@@ -62,6 +62,13 @@ You now have a fully functional environment to run scripts & tests in, which is 
 
 ```shell
 poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
+```
+
+or, to run core repository integrations tests on the Hardhat node run on default port 8545 (in a step above):
+
+```shell
+cd lido-core
+FORK_RPC_URL=http://localhost:8545 yarn test:integration
 ```
 
 If your container has been stopped (for example, by a system reboot), start it:
