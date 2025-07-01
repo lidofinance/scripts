@@ -1,4 +1,4 @@
-name: Normal vote CI
+name: Core tests
 
 on:
   push:

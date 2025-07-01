@@ -1,4 +1,4 @@
-name: Normal vote CI
+name: Scripts tests
 
 on:
   push:
@@ -38,11 +38,6 @@ jobs:
           vote: "normal"
           infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
           etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
-
-      - name: Core tests
-        uses: ./.github/actions/core_tests
-        with:
-          vote: "normal"
 
       - name: Scripts tests
         uses: ./.github/actions/scripts_tests
