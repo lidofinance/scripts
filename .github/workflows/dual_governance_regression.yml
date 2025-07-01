@@ -1,0 +1,39 @@
+name: Dual Governance Regression Test
+
+on:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout dual-governance repository
+        uses: actions/checkout@v4
+        with:
+          repository: lidofinance/dual-governance
+          ref: feat/fix-import-letter-case
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install forge dependencies
+        run: forge install
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run regression tests
+        run: npm run test:regressions
+        env:
+          MAINNET_RPC_URL: https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }}
+          DEPLOY_ARTIFACT_FILE_NAME: deploy-artifact-mainnet.toml
