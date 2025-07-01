@@ -66,18 +66,17 @@ def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participa
     """
     simple_dvt, staking_router = contracts.simple_dvt, contracts.staking_router
     lido, deposit_security_module = contracts.lido, contracts.deposit_security_module
-    voting = contracts.voting
 
     contracts.acl.grantPermission(
-        voting,
+        contracts.agent,
         simple_dvt,
         convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-        {"from": contracts.voting},
+        {"from": contracts.agent},
     )
 
     # deactivate all node operators in "Simple DVT" module for more precise testing
     for x in range(simple_dvt.getNodeOperatorsCount()):
-        simple_dvt.deactivateNodeOperator(x, {"from": voting})
+        simple_dvt.deactivateNodeOperator(x, {"from": contracts.agent})
 
     new_dvt_operator = cluster_participants[0]
 
