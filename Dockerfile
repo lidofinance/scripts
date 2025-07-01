@@ -310,4 +310,4 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.vvm/vyper-0.3.7 --version | grep
 
 
 # run init script and sleep to keep the container running
-CMD ["/bin/bash", "-c", "/root/init.sh feat/tests-from-scripts && sleep infinity"]
+CMD ["/bin/bash", "-c", "/root/init.sh develop && sleep infinity"]

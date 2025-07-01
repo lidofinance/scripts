@@ -13,13 +13,13 @@ on:
     - cron: "0 0 * * TUE"
 jobs:
   run-tests:
-    name: Run all tests on NORMAL runner
+    name: Run core repo integration tests
     runs-on: "ubuntu-latest"
     timeout-minutes: 100
 
     services:
       hardhat-node:
-        image: ghcr.io/lidofinance/hardhat-node:2.22.19.2-shanghai
+        image: ghcr.io/lidofinance/hardhat-node:2.24.3
         ports:
           - 8555:8545
         env:
