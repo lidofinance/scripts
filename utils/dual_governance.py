@@ -2,6 +2,7 @@ from brownie import accounts, chain
 from typing import Tuple, Sequence
 
 from utils.config import contracts
+from tests.conftest import get_active_proposals_from_env
 
 MAX_ITERATIONS = 1000
 
@@ -22,6 +23,10 @@ DUAL_GOVERNANCE_STATE = {
     "veto_cooldown": 4,
     "rage_quit": 5,
 }
+
+
+def is_there_any_proposals_from_env() -> bool:
+    return len(get_active_proposals_from_env()) > 0
 
 
 def submit_proposals(items: Sequence[Tuple[Sequence[Tuple[str, str]], str]]) -> Sequence[Tuple[str, str]]:
@@ -45,6 +50,7 @@ def submit_proposals(items: Sequence[Tuple[Sequence[Tuple[str, str]], str]]) -> 
 
 
 def process_proposals(proposal_ids):
+    proposals_to_be_processed = proposal_ids
     stranger = accounts[0]
 
     after_submit_delay = contracts.emergency_protected_timelock.getAfterSubmitDelay()
@@ -53,12 +59,16 @@ def process_proposals(proposal_ids):
     submitted_proposals = []
     scheduled_proposals = []
 
-    for proposal_id in proposal_ids:
+    for proposal_id in proposals_to_be_processed:
         (_, _, _, _, proposal_status) = contracts.emergency_protected_timelock.getProposalDetails(proposal_id)
         if proposal_status == PROPOSAL_STATUS["submitted"]:
             submitted_proposals.append(proposal_id)
+            proposals_to_be_processed.remove(proposal_id)
         elif proposal_status == PROPOSAL_STATUS["scheduled"]:
             scheduled_proposals.append(proposal_id)
+            proposals_to_be_processed.remove(proposal_id)
+        elif proposal_status in [PROPOSAL_STATUS["cancelled"], PROPOSAL_STATUS["executed"]]:
+            proposals_to_be_processed.remove(proposal_id)
 
     if len(submitted_proposals):
         chain.sleep(after_submit_delay + 1)
@@ -83,6 +93,24 @@ def process_proposals(proposal_ids):
             contracts.emergency_protected_timelock.execute(proposal_id, {"from": stranger})
             (_, _, _, _, proposal_status) = contracts.emergency_protected_timelock.getProposalDetails(proposal_id)
             assert proposal_status == PROPOSAL_STATUS["executed"], f"Proposal {proposal_id} execution failed"
+
+    if len(proposals_to_be_processed):
+        raise Exception(f"Unable to process proposals: {proposals_to_be_processed}. Proposals are already processed or cancelled.")
+
+
+def process_pending_proposals():
+    last_proposal_id = contracts.emergency_protected_timelock.getProposalsCount()
+
+    if is_proposal_executed(last_proposal_id):
+        return
+    
+    current_proposal_id = last_proposal_id
+    while is_proposal_executed(current_proposal_id):
+        current_proposal_id -= 1
+        if current_proposal_id == 1:
+            break
+    
+    process_proposals(list(range(current_proposal_id, last_proposal_id + 1)))
 
 
 def wait_for_normal_state(stranger):
@@ -129,3 +157,8 @@ def wait_for_noon_utc_to_satisfy_time_constrains():
         target_noon = today_noon
     
     chain.sleep(target_noon - current_time)
+
+
+def is_proposal_executed(proposal_id: int) -> bool:
+    (_, _, _, _, proposal_status) = contracts.emergency_protected_timelock.getProposalDetails(proposal_id)
+    return proposal_status == PROPOSAL_STATUS["executed"]

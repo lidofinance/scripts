@@ -31,17 +31,27 @@ git clone git@github.com:lidofinance/scripts.git
 cd scripts
 ```
 
-#### Step 2. Set up the ENV VARs, for example:
+#### Step 2. Set up the ENV VARs for Mainnet:
 
-- `WEB3_INFURA_PROJECT_ID` - **mandatory** for the execution of tests
+| ENV VAR       | RUN TESTS     | RUN VOTES     |
+| ------------- | ------------- | ------------- |
+| `ETH_RPC_URL` | **mandatory**     | **mandatory**     |
+| `ETH_RPC_URL2` | optional* | -     |
+| `ETH_RPC_URL3` | optional* | -     |
+| `PINATA_CLOUD_TOKEN`  | -     | **mandatory**     |
+| `DEPLOYER`            | -     | **mandatory**     |
+| `ETHERSCAN_TOKEN`     | **mandatory**     | **mandatory**     |
+| `ETHERSCAN_TOKEN2`     | optional*     | -     |
+| `ETHERSCAN_TOKEN3`     | optional*     | -     |
+
+_*may be optionally set when running tests asynchronously to reduce the risk of getting 529 error_
 
 #### Step 3. Run the container
 
 Run the container in the `scripts` directory and specify the ENV VARs:
 
 ```shell
-docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d ghcr.io/lidofinance/scripts:v18 && docker logs scripts -f
-
+docker run --name scripts -v "$(pwd)":/root/scripts -e ETH_RPC_URL -e ETH_RPC_URL2 -e ETH_RPC_URL3 -e PINATA_CLOUD_TOKEN -e DEPLOYER -e ETHERSCAN_TOKEN -e ETHERSCAN_TOKEN2 -e ETHERSCAN_TOKEN3 -d ghcr.io/lidofinance/scripts:v18 && docker logs scripts -f
 ```
 
 Note: _It may take up to 5 minutes for the container to initialize properly the first time: wait till container output stops and press CTRL/CMD+C to exit._
@@ -58,11 +68,26 @@ To run a Hardhat node inside a deployed Docker container:
 npx hardhat node --fork $ETH_RPC_URL
 ```
 
+Do not forget to add a DEPLOYER account:
+
+```shell
+poetry run brownie accounts new <id>
+```
+
 You now have a fully functional environment to run scripts & tests in, which is linked to your local scripts repo, for example:
 
 ```shell
 poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
 ```
+You can use the following shortcuts:
+- `make test` run all tests on Hardhat node
+- `make test vote=XXX` run all tests on Hardhat node with applied Vote #XXX
+- `make test dg=XX` run all tests with executed DG proposal #XX
+- `make test-1/2`, `make test-2/2` run tests divided into 2 parts (can be run asynchronously)
+- `make test-1/3`, `make test-2/3`, `make test-3/3` run tests divided into 3 parts (can be run asynchronously)
+- `make enact-fork vote=scripts/vote_01_01_0001.py` deploy vote and enact it on mainnet fork
+- `make docker` connect to the `scripts` docker container
+- `make node` start local mainnet node
 
 or, to run core repository integrations tests on the Hardhat node run on default port 8545 (in a step above):
 
