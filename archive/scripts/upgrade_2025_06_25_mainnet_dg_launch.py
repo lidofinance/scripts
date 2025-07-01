@@ -63,6 +63,9 @@ Dual Governance Launch on Mainnet
     5. Validate roles were updated correctly
 56. Verify Dual Governance launch state
 57. Set an "expiration deadline" after which the omnibus can no longer be enacted
+
+
+Vote passed & executed on June 30, 2025 at 14:04, block 22817714
 """
 
 from typing import Dict
