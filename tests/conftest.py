@@ -197,7 +197,7 @@ def vote_ids_from_env() -> [int]:
     return []
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def dg_proposal_ids_from_env() -> [int]:
     return get_active_proposals_from_env()
 

@@ -3,11 +3,13 @@ from utils.config import contracts
 from utils.import_current_votes import start_and_execute_votes
 from utils.dual_governance import process_proposals
 
+
 def execute_vote(helpers, vote_ids_from_env):
     if vote_ids_from_env:
         helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
     else:
         start_and_execute_votes(contracts.voting, helpers)
+
 
 def execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env):
     if vote_ids_from_env and dg_proposal_ids_from_env:
