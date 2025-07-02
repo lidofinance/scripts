@@ -1,39 +1,104 @@
-name: Dual Governance Regression Test
+name: Dual Governance CI
 
 on:
   push:
     branches:
-      - '**'
+      - "master"
+      - "feat/rc3"
+      - "feat/rc2"
+      - "feat/rc1"
+      - "feat/next-vote"
   workflow_dispatch:
 
 jobs:
-  test:
+  dual-governance-regression:
+    name: "Regression tests"
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout dual-governance repository
+      - name: Checkout scripts repository
         uses: actions/checkout@v4
         with:
-          repository: lidofinance/dual-governance
-          ref: feat/fix-import-letter-case
+          path: scripts
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+
+      - name: Install poetry
+        shell: bash
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        env:
+          POETRY_VERSION: "1.8.2"
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          path: scripts
+          python-version: "3.10"
+          cache: poetry
+
+      - name: Setup node.js version
+        uses: actions/setup-node@v3
+        with:
+          cache: yarn
+          node-version: 18.x
+          cache-dependency-path: scripts/yarn.lock
+
+      - name: Install poetry requirements
+        shell: bash
+        run: poetry install
+        working-directory: scripts
+
+      - name: Install ganache
+        shell: bash
+        run: yarn install --frozen-lockfile
+        working-directory: scripts
+
+      - name: Import network config to connect brownie with local Ganache
+        shell: bash
+        run: poetry run brownie networks import network-config.yaml True
+        working-directory: scripts
+
+      - name: Start Hardhat node
+        run: |
+          npx hardhat node --fork https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }} &
+          sleep 15
+        working-directory: scripts
+
+      - name: Prepare environment
+        run: poetry run brownie run scripts/ci/prepare_environment --network mainnet-fork
+        working-directory: scripts
+
+      - name: Checkout dual-governance repository
+        uses: actions/checkout@v4
+        with:
+          repository: lidofinance/dual-governance
+          path: dual-governance
+
+      - name: Install JS dependencies for dual-governance
+        run: npm ci
+        working-directory: dual-governance
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Install forge dependencies
         run: forge install
+        working-directory: dual-governance
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Start Anvil
+        run: |
+          anvil --fork-url http://127.0.0.1:8545 --port 8555 &
+          sleep 5
+        working-directory: dual-governance
 
       - name: Run regression tests
         run: npm run test:regressions
         env:
-          MAINNET_RPC_URL: https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }}
+          MAINNET_RPC_URL: http://127.0.0.1:8555
           DEPLOY_ARTIFACT_FILE_NAME: deploy-artifact-mainnet.toml
+        working-directory: dual-governance
