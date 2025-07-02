@@ -65,7 +65,7 @@ Vote 03/07/2025 [HOODI]
 52. Add Identified Community Stakers Gate Bond Curve
 53. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT
 54. Increase CSM share in Staking Router from 15% to 20%
-55. Add CSMSetVettedGateTree factory to EasyTrack with permissions
+55. Add CSSetVettedGateTree factory to EasyTrack with permissions
 """
 import time
 
@@ -93,8 +93,8 @@ from utils.easy_track import (
     add_evmscript_factory,
     create_permissions,
 )
-from utils.agent import dual_governance_agent_forward
-from utils.voting import  confirm_vote_script, create_vote
+from utils.vote_item_builder import VoteAction, build_executable_vote_items
+from utils.voting import confirm_vote_script, create_vote
 from utils.config import get_deployer_account, get_priority_fee, get_is_live
 
 DESCRIPTION = "Triggerable withdrawals and CSM v2 upgrade voting (HOODI)"
@@ -189,123 +189,123 @@ def to_percent(bp: int) -> float:
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[Any]]:
-    vote_desc_items, call_script_items = zip(
+    voting_items = [
         # --- locator
         (
-            f"1. Update locator implementation",
-            encode_proxy_upgrade_to(contracts.lido_locator, LIDO_LOCATOR_IMPL)
+            "1. Update locator implementation",
+            VoteAction.agent(*encode_proxy_upgrade_to(contracts.lido_locator, LIDO_LOCATOR_IMPL))
         ),
         # --- VEB
         (
-            f"2. Update VEBO implementation",
-            encode_proxy_upgrade_to(contracts.validators_exit_bus_oracle, VALIDATORS_EXIT_BUS_ORACLE_IMPL)
+            "2. Update VEBO implementation",
+            VoteAction.agent(*encode_proxy_upgrade_to(contracts.validators_exit_bus_oracle, VALIDATORS_EXIT_BUS_ORACLE_IMPL))
         ),
         (
-            f"3. Call finalizeUpgrade_v2 on VEBO",
-            (
+            "3. Call finalizeUpgrade_v2 on VEBO",
+            VoteAction.agent(
                 contracts.validators_exit_bus_oracle.address,
                 contracts.validators_exit_bus_oracle.finalizeUpgrade_v2.encode_input(600, 13000, 1, 48),
             )
         ),
         (
-            f"4. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
-            encode_oz_grant_role(
+            "4. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
+            VoteAction.agent(*encode_oz_grant_role(
                 contract=contracts.validators_exit_bus_oracle,
                 role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                 grant_to=contracts.agent,
-            )
+            ))
         ),
         (
-            f"5. Bump VEBO consensus version to `{VEBO_CONSENSUS_VERSION}`",
-            encode_oracle_upgrade_consensus(contracts.validators_exit_bus_oracle, VEBO_CONSENSUS_VERSION)
+            "5. Bump VEBO consensus version to `4`",
+            VoteAction.agent(*encode_oracle_upgrade_consensus(contracts.validators_exit_bus_oracle, VEBO_CONSENSUS_VERSION))
         ),
         (
-            f"6. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT",
-            encode_oz_revoke_role(
+            "6. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT",
+            VoteAction.agent(*encode_oz_revoke_role(
                 contract=contracts.validators_exit_bus_oracle,
                 role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                 revoke_from=contracts.agent,
-            )
+            ))
         ),
         # --- Triggerable Withdrawals Gateway (TWG)
         (
-            f"7. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector",
-            encode_oz_grant_role(
+            "7. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector",
+            VoteAction.admin(*encode_oz_grant_role(
                 contract=interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY),
                 role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
                 grant_to=CS_EJECTOR_ADDRESS,
-            )
+            ))
         ),
         (
-            f"8. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB",
-            encode_oz_grant_role(
+            "8. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB",
+            VoteAction.admin(*encode_oz_grant_role(
                 contract=interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY),
                 role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
                 grant_to=contracts.validators_exit_bus_oracle,
-            )
+            ))
         ),
         # --- WV
         (
-            f"9. Update WithdrawalVault implementation",
-            encode_wv_proxy_upgrade_to(contracts.withdrawal_vault, WITHDRAWAL_VAULT_IMPL)
+            "9. Update WithdrawalVault implementation",
+            VoteAction.agent(*encode_wv_proxy_upgrade_to(contracts.withdrawal_vault, WITHDRAWAL_VAULT_IMPL))
         ),
         (
-            f"10. Call finalizeUpgrade_v2 on WithdrawalVault",
-            (
+            "10. Call finalizeUpgrade_v2 on WithdrawalVault",
+            VoteAction.agent(
                 contracts.withdrawal_vault.address,
                 contracts.withdrawal_vault.finalizeUpgrade_v2.encode_input(),
             )
         ),
         # --- AO
         (
-            f"11. Update Accounting Oracle implementation",
-            encode_proxy_upgrade_to(contracts.accounting_oracle, ACCOUNTING_ORACLE_IMPL),
+            "11. Update Accounting Oracle implementation",
+            VoteAction.agent(*encode_proxy_upgrade_to(contracts.accounting_oracle, ACCOUNTING_ORACLE_IMPL))
         ),
         (
-            f"12. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
-            encode_oz_grant_role(
+            "12. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
+            VoteAction.agent(*encode_oz_grant_role(
                 contract=contracts.accounting_oracle,
                 role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                 grant_to=contracts.agent,
-            )
+            ))
         ),
         (
-            f"13. Bump AO consensus version to `{AO_CONSENSUS_VERSION}`",
-            encode_oracle_upgrade_consensus(contracts.accounting_oracle, AO_CONSENSUS_VERSION)
+            "13. Bump AO consensus version to `4`",
+            VoteAction.agent(*encode_oracle_upgrade_consensus(contracts.accounting_oracle, AO_CONSENSUS_VERSION))
         ),
         (
-            f"14. Revoke AO MANAGE_CONSENSUS_VERSION_ROLE from the AGENT",
-            encode_oz_revoke_role(
+            "14. Revoke AO MANAGE_CONSENSUS_VERSION_ROLE from the AGENT",
+            VoteAction.agent(*encode_oz_revoke_role(
                 contract=contracts.accounting_oracle,
                 role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                 revoke_from=contracts.agent,
-            )
+            ))
         ),
         # --- SR
         (
-            f"15. Update SR implementation",
-            encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)
+            "15. Update SR implementation",
+            VoteAction.agent(*encode_staking_router_proxy_update(STAKING_ROUTER_IMPL))
         ),
         (
-            f"16. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitDelayVerifier",
-            encode_oz_grant_role(
+            "16. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitDelayVerifier",
+            VoteAction.agent(*encode_oz_grant_role(
                 contract=contracts.staking_router,
                 role_name="REPORT_VALIDATOR_EXITING_STATUS_ROLE",
                 grant_to=VALIDATOR_EXIT_VERIFIER,
-            )
+            ))
         ),
         (
-            f"17. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG",
-            encode_oz_grant_role(
+            "17. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG",
+            VoteAction.agent(*encode_oz_grant_role(
                 contract=contracts.staking_router,
                 role_name="REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE",
                 grant_to=interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY),
-            )
+            ))
         ),
         # --- NOR and sDVT
         (
-            f"18. Grant APP_MANAGER_ROLE role to the AGENT",
-            (
+            "18. Grant APP_MANAGER_ROLE role to the AGENT",
+            VoteAction.agent(
                 contracts.acl.address,
                 contracts.acl.grantPermission.encode_input(
                     AGENT,
@@ -315,8 +315,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             )
         ),
         (
-            f"19. Update `NodeOperatorsRegistry` implementation",
-            (
+            "19. Update `NodeOperatorsRegistry` implementation",
+            VoteAction.agent(
                 contracts.kernel.address,
                 contracts.kernel.setApp.encode_input(
                     contracts.kernel.APP_BASES_NAMESPACE(),
@@ -326,8 +326,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             )
         ),
         (
-            f"20. Call finalizeUpgrade_v4 on NOR",
-            (
+            "20. Call finalizeUpgrade_v4 on NOR",
+            VoteAction.agent(
                 interface.NodeOperatorsRegistry(contracts.node_operators_registry).address,
                 interface.NodeOperatorsRegistry(contracts.node_operators_registry).finalizeUpgrade_v4.encode_input(
                     NOR_EXIT_DEADLINE_IN_SEC
@@ -335,8 +335,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             )
         ),
         (
-            f"21. Update `SDVT` implementation",
-            (
+            "21. Update `SDVT` implementation",
+            VoteAction.agent(
                 contracts.kernel.address,
                 contracts.kernel.setApp.encode_input(
                     contracts.kernel.APP_BASES_NAMESPACE(),
@@ -346,8 +346,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             )
         ),
         (
-            f"22. Call finalizeUpgrade_v4 on SDVT",
-            (
+            "22. Call finalizeUpgrade_v4 on SDVT",
+            VoteAction.agent(
                 interface.NodeOperatorsRegistry(contracts.simple_dvt).address,
                 interface.NodeOperatorsRegistry(contracts.simple_dvt).finalizeUpgrade_v4.encode_input(
                     NOR_EXIT_DEADLINE_IN_SEC
@@ -355,8 +355,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             )
         ),
         (
-            f"23. Revoke APP_MANAGER_ROLE role from the AGENT",
-            (
+            "23. Revoke APP_MANAGER_ROLE role from the AGENT",
+            VoteAction.agent(
                 contracts.acl.address,
                 contracts.acl.revokePermission.encode_input(
                     AGENT,
@@ -367,254 +367,252 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
         ),
         # --- Oracle configs ---
         (
-            f"24. Grant CONFIG_MANAGER_ROLE role to the AGENT",
-            encode_oz_grant_role(
+            "24. Grant CONFIG_MANAGER_ROLE role to the AGENT",
+            VoteAction.agent(*encode_oz_grant_role(
                 contract=contracts.oracle_daemon_config,
                 role_name="CONFIG_MANAGER_ROLE",
                 grant_to=contracts.agent,
+            ))
+        ),
+        (
+            "25. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig",
+            VoteAction.agent(
+                contracts.oracle_daemon_config.address,
+                contracts.oracle_daemon_config.unset.encode_input('NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP'),
             )
         ),
         (
-            f"25. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig",
-            (
-                contracts.oracle_daemon_config.address,
-                contracts.oracle_daemon_config.unset.encode_input('NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP'),
-            ),
-        ),
-        (
-            f"26. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
-            (
+            "26. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
+            VoteAction.agent(
                 contracts.oracle_daemon_config.address,
                 contracts.oracle_daemon_config.unset.encode_input('VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS'),
-            ),
+            )
         ),
         (
-            f"27. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
-            (
+            "27. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
+            VoteAction.agent(
                 contracts.oracle_daemon_config.address,
                 contracts.oracle_daemon_config.unset.encode_input('VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS'),
-            ),
+            )
         ),
         (
-            f"28. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig",
-            (
+            "28. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig",
+            VoteAction.agent(
                 contracts.oracle_daemon_config.address,
                 contracts.oracle_daemon_config.set.encode_input('EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS', EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS),
-            ),
+            )
         ),
         # --- CSM
         (
-            f"29. Upgrade CSM implementation on proxy",
-            encode_proxy_upgrade_to(
+            "29. Upgrade CSM implementation on proxy",
+            VoteAction.agent(*encode_proxy_upgrade_to(
                 contracts.csm,
                 CSM_IMPL_V2_ADDRESS,
-            )
+            ))
         ),
         (
-            f"30. Call `finalizeUpgradeV2()` on CSM contract",
-            (
+            "30. Call `finalizeUpgradeV2()` on CSM contract",
+            VoteAction.agent(
                 contracts.csm.address,
                 contracts.csm.finalizeUpgradeV2.encode_input(),
-            ),
+            )
         ),
         (
-            f"31. Upgrade CSAccounting implementation on proxy",
-            encode_proxy_upgrade_to(
+            "31. Upgrade CSAccounting implementation on proxy",
+            VoteAction.agent(*encode_proxy_upgrade_to(
                 contracts.cs_accounting,
                 CS_ACCOUNTING_IMPL_V2_ADDRESS,
-            )
+            ))
         ),
         (
-            f"32. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract",
-            (
+            "32. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract",
+            VoteAction.agent(
                 contracts.cs_accounting.address,
                 contracts.cs_accounting.finalizeUpgradeV2.encode_input(CS_CURVES),
-            ),
+            )
         ),
         (
-            f"33. Upgrade CSFeeOracle implementation on proxy",
-            encode_proxy_upgrade_to(
+            "33. Upgrade CSFeeOracle implementation on proxy",
+            VoteAction.agent(*encode_proxy_upgrade_to(
                 contracts.cs_fee_oracle,
                 CS_FEE_ORACLE_IMPL_V2_ADDRESS,
-            )
+            ))
         ),
         (
-            f"34. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract",
-            (
+            "34. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract",
+            VoteAction.agent(
                 contracts.cs_fee_oracle.address,
                 contracts.cs_fee_oracle.finalizeUpgradeV2.encode_input(CSM_CONSENSUS_VERSION),
-            ),
-        ),
-        (
-            f"35. Upgrade CSFeeDistributor implementation on proxy",
-            encode_proxy_upgrade_to(
-                contracts.cs_fee_distributor,
-                CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS,
             )
         ),
         (
-            f"36. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract",
-            (
-                contracts.cs_fee_distributor.address,
-                contracts.cs_fee_distributor.finalizeUpgradeV2.encode_input(contracts.agent),
-            ),
+            "35. Upgrade CSFeeDistributor implementation on proxy",
+            VoteAction.agent(*encode_proxy_upgrade_to(
+                contracts.cs_fee_distributor,
+                CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS,
+            ))
         ),
         (
-            f"37. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract",
-            encode_oz_revoke_role(
+            "36. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract",
+            VoteAction.agent(
+                contracts.cs_fee_distributor.address,
+                contracts.cs_fee_distributor.finalizeUpgradeV2.encode_input(contracts.agent),
+            )
+        ),
+        (
+            "37. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract",
+            VoteAction.agent(*encode_oz_revoke_role(
                 contract=contracts.cs_accounting,
                 role_name="SET_BOND_CURVE_ROLE",
                 revoke_from=contracts.csm,
-            )
+            ))
         ),
         (
-            f"38. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract",
-            encode_oz_revoke_role(
+            "38. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract",
+            VoteAction.agent(*encode_oz_revoke_role(
                 contract=contracts.cs_accounting,
                 role_name="RESET_BOND_CURVE_ROLE",
                 revoke_from=contracts.csm,
-            )
+            ))
         ),
         (
-            f"39. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee",
-            encode_oz_revoke_role(
+            "39. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee",
+            VoteAction.agent(*encode_oz_revoke_role(
                 contract=contracts.cs_accounting,
                 role_name="RESET_BOND_CURVE_ROLE",
                 revoke_from=CSM_COMMITTEE_MS,
-            )
+            ))
         ),
         (
-            f"40. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate",
-            encode_oz_grant_role(
+            "40. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate",
+            VoteAction.agent(*encode_oz_grant_role(
                 contract=contracts.csm,
                 role_name="CREATE_NODE_OPERATOR_ROLE",
                 grant_to=CS_PERMISSIONLESS_GATE_ADDRESS,
-            )
+            ))
         ),
         (
-            f"41. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate",
-            encode_oz_grant_role(
+            "41. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate",
+            VoteAction.agent(*encode_oz_grant_role(
                 contract=contracts.csm,
                 role_name="CREATE_NODE_OPERATOR_ROLE",
                 grant_to=CS_VETTED_GATE_ADDRESS,
-            )
+            ))
         ),
         (
-            f"42. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate",
-            encode_oz_grant_role(
+            "42. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate",
+            VoteAction.agent(*encode_oz_grant_role(
                 contract=contracts.cs_accounting,
                 role_name="SET_BOND_CURVE_ROLE",
                 grant_to=CS_VETTED_GATE_ADDRESS,
-            )
+            ))
         ),
         (
-            f"43. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract",
-            encode_oz_revoke_role(
+            "43. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract",
+            VoteAction.agent(*encode_oz_revoke_role(
                 contract=contracts.csm,
                 role_name="VERIFIER_ROLE",
                 revoke_from=contracts.cs_verifier,
-            )
+            ))
         ),
         (
-            f"44. Grant role VERIFIER_ROLE to the new instance of the Verifier contract",
-            encode_oz_grant_role(
+            "44. Grant role VERIFIER_ROLE to the new instance of the Verifier contract",
+            VoteAction.agent(*encode_oz_grant_role(
                 contract=contracts.csm,
                 role_name="VERIFIER_ROLE",
                 grant_to=CS_VERIFIER_V2_ADDRESS,
-            )
+            ))
         ),
         (
-            f"45. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance",
-            encode_oz_revoke_role(
+            "45. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance",
+            VoteAction.agent(*encode_oz_revoke_role(
                 contract=contracts.csm,
                 role_name="PAUSE_ROLE",
                 revoke_from=CS_GATE_SEAL_ADDRESS,
-            )
+            ))
         ),
         (
-            f"46. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance",
-            encode_oz_revoke_role(
+            "46. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance",
+            VoteAction.agent(*encode_oz_revoke_role(
                 contract=contracts.cs_accounting,
                 role_name="PAUSE_ROLE",
                 revoke_from=CS_GATE_SEAL_ADDRESS,
-            )
+            ))
         ),
         (
-            f"47. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance",
-            encode_oz_revoke_role(
+            "47. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance",
+            VoteAction.agent(*encode_oz_revoke_role(
                 contract=contracts.cs_fee_oracle,
                 role_name="PAUSE_ROLE",
                 revoke_from=CS_GATE_SEAL_ADDRESS,
-            )
+            ))
         ),
         (
-            f"48. Grant CSM role PAUSE_ROLE for the new GateSeal instance",
-            encode_oz_grant_role(
+            "48. Grant CSM role PAUSE_ROLE for the new GateSeal instance",
+            VoteAction.agent(*encode_oz_grant_role(
                 contract=contracts.csm,
                 role_name="PAUSE_ROLE",
                 grant_to=CS_GATE_SEAL_V2_ADDRESS,
-            )
+            ))
         ),
         (
-            f"49. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance",
-            encode_oz_grant_role(
+            "49. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance",
+            VoteAction.agent(*encode_oz_grant_role(
                 contract=contracts.cs_accounting,
                 role_name="PAUSE_ROLE",
                 grant_to=CS_GATE_SEAL_V2_ADDRESS,
-            )
+            ))
         ),
         (
-            f"50. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance",
-            encode_oz_grant_role(
+            "50. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance",
+            VoteAction.agent(*encode_oz_grant_role(
                 contract=contracts.cs_fee_oracle,
                 role_name="PAUSE_ROLE",
                 grant_to=CS_GATE_SEAL_V2_ADDRESS,
-            )
+            ))
         ),
         (
             "51. Grant MANAGE_BOND_CURVES_ROLE to the AGENT",
-            encode_oz_grant_role(
+            VoteAction.agent(*encode_oz_grant_role(
                 contract=contracts.cs_accounting,
                 role_name="MANAGE_BOND_CURVES_ROLE",
                 grant_to=contracts.agent,
-            )
+            ))
         ),
         (
             "52. Add Identified Community Stakers Gate Bond Curve",
-            (
+            VoteAction.agent(
                 contracts.cs_accounting.address,
                 contracts.cs_accounting.addBondCurve.encode_input(CS_ICS_GATE_BOND_CURVE),
-            ),
+            )
         ),
         (
             "53. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT",
-            encode_oz_revoke_role(
+            VoteAction.agent(*encode_oz_revoke_role(
                 contract=contracts.cs_accounting,
                 role_name="MANAGE_BOND_CURVES_ROLE",
                 revoke_from=contracts.agent,
-            )
+            ))
         ),
         (
-            "54. Increase CSM share in Staking Router from 3% to 5%",
-            encode_staking_router_update_csm_module_share()
+            "54. Increase CSM share in Staking Router from 15% to 20%",
+            VoteAction.agent(*encode_staking_router_update_csm_module_share())
         ),
-    )
-
-    dg_bypass_item = {
-        "55. Add CSSetVettedGateTree factory to EasyTrack with permissions": add_evmscript_factory(
+        (
+            "55. Add CSSetVettedGateTree factory to EasyTrack with permissions",
+            VoteAction.voting(*add_evmscript_factory(
                 factory=CS_SET_VETTED_GATE_TREE_FACTORY,
                 permissions=(create_permissions(interface.CSVettedGate(CS_VETTED_GATE_ADDRESS), "setTreeParams")),
-            )
-    }
+            ))
+        )
+    ]
 
     if silent:
         desc_ipfs = calculate_vote_ipfs_description(DESCRIPTION)
     else:
         desc_ipfs = upload_vote_ipfs_description(DESCRIPTION)
 
-    dg_desc = "\n".join(vote_desc_items)
-    dg_vote = dual_governance_agent_forward(call_script_items, dg_desc)
-    vote_items = {dg_desc: dg_vote, **dg_bypass_item}
+    vote_items = build_executable_vote_items(voting_items)
 
     assert confirm_vote_script(vote_items, silent, desc_ipfs)
 
