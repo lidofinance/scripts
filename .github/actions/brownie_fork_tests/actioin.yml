@@ -22,10 +22,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v4
-      with:
-        path: scripts
-
     - name: Install poetry
       shell: bash
       run: |
@@ -40,13 +36,21 @@ runs:
         python-version: "3.10"
         cache: poetry
 
+    - name: Setup node.js version
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+        cache: "yarn"
+
     - name: Install poetry requirements
-      working-directory: scripts
       shell: bash
       run: poetry install
 
+    - name: Install ganache
+      shell: bash
+      run: yarn install --frozen-lockfile
+
     - name: Import network config to connect brownie with local Ganache
-      working-directory: scripts
       shell: bash
       run: poetry run brownie networks import network-config.yaml True
 
@@ -66,7 +70,6 @@ runs:
         echo ${{ inputs.vote }}
 
     - name: Run tests
-      working-directory: scripts
       shell: bash
       run: >
         ${{ inputs.command }}
