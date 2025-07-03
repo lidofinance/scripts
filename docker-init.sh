@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 if [ ! -e /root/inited ]; then
-  touch /root/inited
 
   #
   # Initialize scripts repository
@@ -31,4 +30,6 @@ if [ ! -e /root/inited ]; then
   CI=true yarn --immutable
   yarn compile
   cp .env.example .env
+
+  touch /root/inited
 fi

@@ -36,6 +36,9 @@ test-2/3:
 test-3/3:
 	$(call run_3rd_test,brownie test -k 'not test_sanity_checks.py and not test_staking_router_stake_distribution.py' --network mfh-3)
 
+test-core:
+	cd /root/lido-core && yarn test:integration
+
 docker:
 	docker exec -it scripts /bin/bash
 
