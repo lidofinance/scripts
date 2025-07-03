@@ -7,10 +7,10 @@ from utils.evm_script import encode_call_script
 # ──────────────────────────────────────────────────────────────────────────
 
 # Raw vote action structure
-VoteActionDict = Dict[str, str]  # {"type": str, "address": str, "data": str}
+VoteItemDict = Dict[str, str]  # {"type": str, "address": str, "data": str}
 
 # Vote item with description and action
-VoteItem = Tuple[str, VoteActionDict]  # (description, action)
+VoteItem = Tuple[str, VoteItemDict]  # (description, action)
 
 # Executable call ready for blockchain execution
 ExecutableCall = Tuple[str, str]  # (target_address, encoded_data)
@@ -35,21 +35,21 @@ class ActionType:
 #  Vote Action Builders
 # ──────────────────────────────────────────────────────────────────────────
 
-class VoteAction:
+class VoteItem:
     """Factory for creating different types of vote actions."""
 
     @staticmethod
-    def agent(target_address: str, encoded_data: str) -> VoteActionDict:
+    def agent(target_address: str, encoded_data: str) -> VoteItemDict:
         """Create vote action that will be executed through the Agent."""
         return {"type": ActionType.AGENT, "address": target_address, "data": encoded_data}
 
     @staticmethod
-    def admin(target_address: str, encoded_data: str) -> VoteActionDict:
+    def admin(target_address: str, encoded_data: str) -> VoteItemDict:
         """Create vote action that will be executed through Dual Governance."""
         return {"type": ActionType.DUAL_GOVERNANCE_ADMIN, "address": target_address, "data": encoded_data}
 
     @staticmethod
-    def voting(target_address: str, encoded_data: str) -> VoteActionDict:
+    def voting(target_address: str, encoded_data: str) -> VoteItemDict:
         """Create vote action that will be executed directly by the Voting contract."""
         return {"type": ActionType.DIRECT_VOTING, "address": target_address, "data": encoded_data}
 
@@ -69,7 +69,7 @@ def encode_agent_forward_call(call_script: Sequence[Tuple[str, str]]) -> Executa
 
 def validate_and_aggregate_vote_items(
     vote_items: List[VoteItem]
-) -> Tuple[List[str], List[VoteActionDict]]:
+) -> Tuple[List[str], List[VoteItemDict]]:
     """
     Validates vote items ordering and separates descriptions from actions.
 
@@ -77,7 +77,7 @@ def validate_and_aggregate_vote_items(
     actions or after all other actions (not interleaved).
     """
     descriptions: List[str] = []
-    actions: List[VoteActionDict] = []
+    actions: List[VoteItemDict] = []
     action_types: List[str] = []
 
     for description, action in vote_items:
@@ -112,7 +112,7 @@ def validate_and_aggregate_vote_items(
 
 def categorize_vote_actions(
     descriptions: List[str],
-    actions: List[VoteActionDict]
+    actions: List[VoteItemDict]
 ) -> Tuple[List[VoteItem], List[VoteItem]]:
     """
     Categorizes vote actions into two groups:
@@ -169,7 +169,7 @@ def build_executable_vote_items(
     return executable_vote_items
 
 def encode_dual_governance_proposal(
-    actions: Sequence[VoteActionDict],
+    actions: Sequence[VoteItemDict],
     description: Optional[str] = "",
 ) -> ExecutableCall:
     """

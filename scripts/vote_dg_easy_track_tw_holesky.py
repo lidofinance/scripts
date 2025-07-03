@@ -17,7 +17,7 @@ from utils.config import (
     get_priority_fee,
     get_is_live
 )
-from utils.vote_item_builder import VoteAction, build_executable_vote_items
+from utils.vote_item_builder import VoteItem, build_executable_vote_items
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.voting import confirm_vote_script, create_vote, bake_vote_items
 from utils.permissions import encode_oz_grant_role
@@ -43,7 +43,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
     voting_unprepared_items = [
         (
             f"Grant SUBMIT_REPORT_HASH_ROLE on Validator Exit Bus Oracle to the EasyTrack EVM Script Executor",
-            VoteAction.agent(
+            VoteItem.agent(
                 *encode_oz_grant_role(
                     contract=contracts.validators_exit_bus_oracle,
                     role_name="SUBMIT_REPORT_HASH_ROLE",
@@ -53,7 +53,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
         ),
         (
             "Connect TRIGGERABLE_WITHDRAWALS_GATEWAY to Dual Governance tiebreaker",
-            VoteAction.admin(
+            VoteItem.admin(
                 contracts.dual_governance.address,
                 contracts.dual_governance.addTiebreakerSealableWithdrawalBlocker.encode_input(
                     TRIGGERABLE_WITHDRAWALS_GATEWAY
@@ -62,7 +62,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
         ),
         (
             f"Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory with address `{EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY}` to Easy Track `{contracts.easy_track.address}`",
-            VoteAction.voting(
+            VoteItem.voting(
                 *add_evmscript_factory(
                     factory=EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
                     permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),
@@ -71,7 +71,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
         ),
         (
             f"Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory with address `{EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY}` to Easy Track `{contracts.easy_track.address}`",
-            VoteAction.voting(
+            VoteItem.voting(
                 *add_evmscript_factory(
                     factory=EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
                     permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),
