@@ -11,8 +11,8 @@ from utils.config import (
 )
 
 @pytest.fixture
-def voting(accounts):
-    return accounts.at(contracts.voting.address, force=True)
+def agent(accounts):
+    return accounts.at(contracts.agent.address, force=True)
 
 def prep_ids_counts_payload(ids, counts):
     return {
@@ -24,8 +24,8 @@ def number_to_hex(n, byte_len=None):
     s = hex(n)[2:]  # Convert to hex and remove the '0x' prefix
     return s if byte_len is None else s.zfill(byte_len * 2)
 
-def update_target_validators_limits(staking_module, voting, stranger):
-    operator_id = add_node_operator(staking_module, voting, stranger)
+def update_target_validators_limits(staking_module, agent, stranger):
+    operator_id = add_node_operator(staking_module, agent, stranger)
 
     node_operator = staking_module.getNodeOperatorSummary(operator_id)
     assert node_operator["targetLimitMode"] == 0
@@ -38,7 +38,7 @@ def update_target_validators_limits(staking_module, voting, stranger):
         stranger,
         staking_module,
         convert.to_uint(Web3.keccak(text="STAKING_ROUTER_ROLE")),
-        {"from": voting},
+        {"from": agent},
     )
 
     with reverts("OUT_OF_RANGE"):
@@ -66,8 +66,8 @@ def update_target_validators_limits(staking_module, voting, stranger):
     assert node_operator["targetValidatorsCount"] == 0 # should be always 0 in disabled mode
 
 
-def decrease_vetted_signing_keys_count(staking_module, voting, stranger):
-    operator_id = add_node_operator(staking_module, voting, stranger)
+def decrease_vetted_signing_keys_count(staking_module, agent, stranger):
+    operator_id = add_node_operator(staking_module, agent, stranger)
     operator = staking_module.getNodeOperator(operator_id, True)
 
     keys_count = 10
@@ -83,7 +83,7 @@ def decrease_vetted_signing_keys_count(staking_module, voting, stranger):
         stranger,
         staking_module,
         convert.to_uint(Web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")),
-        {"from": voting},
+        {"from": agent},
     )
 
     staking_module.setNodeOperatorStakingLimit(operator_id, 8, {"from": stranger})
@@ -105,7 +105,7 @@ def decrease_vetted_signing_keys_count(staking_module, voting, stranger):
         stranger,
         staking_module,
         convert.to_uint(Web3.keccak(text="STAKING_ROUTER_ROLE")),
-        {"from": voting},
+        {"from": agent},
     )
 
     with reverts("OUT_OF_RANGE"):
@@ -166,18 +166,18 @@ def decrease_vetted_signing_keys_count(staking_module, voting, stranger):
     assert node_operator_after_unvetting["totalVettedValidators"] == 0
 
 
-def test_curated_module_update_target_validators_limits(voting, stranger):
+def test_curated_module_update_target_validators_limits(agent, stranger):
     staking_module = interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
-    update_target_validators_limits(staking_module, voting, stranger)
+    update_target_validators_limits(staking_module, agent, stranger)
 
-def test_simple_dvt_module_update_target_validators_limits(voting, stranger):
+def test_simple_dvt_module_update_target_validators_limits(agent, stranger):
     staking_module = interface.SimpleDVT(SIMPLE_DVT)
-    update_target_validators_limits(staking_module, voting, stranger)
+    update_target_validators_limits(staking_module, agent, stranger)
 
-def test_curated_module_decrease_vetted_signing_keys_count(voting, stranger):
+def test_curated_module_decrease_vetted_signing_keys_count(agent, stranger):
     staking_module = interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
-    decrease_vetted_signing_keys_count(staking_module, voting, stranger)
+    decrease_vetted_signing_keys_count(staking_module, agent, stranger)
 
-def test_simple_dvt_module_decrease_vetted_signing_keys_count(voting, stranger):
+def test_simple_dvt_module_decrease_vetted_signing_keys_count(agent, stranger):
     staking_module = interface.SimpleDVT(SIMPLE_DVT)
-    decrease_vetted_signing_keys_count(staking_module, voting, stranger)
+    decrease_vetted_signing_keys_count(staking_module, agent, stranger)

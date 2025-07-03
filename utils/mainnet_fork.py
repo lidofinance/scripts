@@ -1,8 +1,8 @@
 from contextlib import contextmanager
-from brownie import chain, accounts, interface
-
-from utils.config import VOTING
-
+from brownie import chain, interface, accounts
+from utils.config import VOTING, LDO_VOTE_EXECUTORS_FOR_TESTS, get_vote_duration
+from utils.dual_governance import process_proposals
+from utils.config import contracts
 
 @contextmanager
 def chain_snapshot():
@@ -15,7 +15,7 @@ def chain_snapshot():
         chain.revert()
 
 
-def pass_and_exec_dao_vote(vote_id):
+def pass_and_exec_dao_vote(vote_id, step_by_step=False):
     dao_voting = interface.Voting(VOTING)
 
     if dao_voting.getVote(vote_id)["executed"]:
@@ -27,28 +27,35 @@ def pass_and_exec_dao_vote(vote_id):
     if not dao_voting.canExecute(vote_id):
         print(f"Passing vote {vote_id}")
 
-        # together these accounts hold 15% of LDO total supply
-        ldo_holders = [
-            "0x3e40d73eb977dc6a537af587d48316fee66e9c8c",
-            "0xb8d83908aab38a159f3da47a59d84db8e1838712",
-            "0xa2dfc431297aee387c05beef507e5335e684fbcd",
-        ]
-
-        for holder_addr in ldo_holders:
+        for holder_addr in LDO_VOTE_EXECUTORS_FOR_TESTS:
             print(f"  voting from {holder_addr}")
             helper_acct.transfer(holder_addr, "1 ether", silent=True)
             account = accounts.at(holder_addr, force=True)
             dao_voting.vote(vote_id, True, False, {"from": account, "silent": True})
 
         # wait for the vote to end
-        chain.sleep(3 * 60 * 60 * 24)
+        time_to_end = dao_voting.getVote(vote_id)["startDate"] + get_vote_duration() - chain.time()
+        if time_to_end > 0:
+            chain.sleep(time_to_end)
+
         chain.mine()
 
         assert dao_voting.canExecute(vote_id)
 
     print(f"Executing vote {vote_id}")
 
+    proposals_count_before = contracts.emergency_protected_timelock.getProposalsCount()
     dao_voting.executeVote(vote_id, {"from": helper_acct, "silent": True})
     assert dao_voting.getVote(vote_id)["executed"]
-
     print(f"[ok] Vote {vote_id} executed")
+
+    proposals_count_after = contracts.emergency_protected_timelock.getProposalsCount()
+    if proposals_count_after > proposals_count_before:
+        if step_by_step:
+            input("Press Enter to execute DG proposals...")
+        new_proposal_ids = list(range(proposals_count_before + 1, proposals_count_after + 1))
+        process_proposals(new_proposal_ids)
+        print(f"[ok] DG proposals {new_proposal_ids} processed")
+
+    if step_by_step:
+        input("Press Enter to stop local node...")

@@ -102,6 +102,17 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       git checkout .; \git checkout .; \
       git checkout develop; \
       git clean -d -x -f; \
+      # build solc-v0.8.26
+      git checkout v0.8.26; \
+      # there is no sudo in the container, but we are under root so we do not need it
+      grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
+      # build solc faster
+      grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
+      ./scripts/build.sh; \
+      mv /usr/local/bin/solc /root/.solcx/solc-v0.8.26; \
+      git checkout .; \git checkout .; \
+      git checkout develop; \
+      git clean -d -x -f; \
       # build solc-v0.8.10
       git checkout v0.8.10; \
       # the compiler throws warnings when compiling this version, and the warnings are treated as errors.
@@ -265,14 +276,11 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 
 
 # init script that runs when the container is started for the very first time
-# it will install poetry, yarn libs and init brownie networks
+# it will install poetry, yarn libs, init brownie networks and core repository
 WORKDIR /root/scripts
-RUN touch /root/init.sh
-RUN echo "if [ ! -e /root/inited ]; then \n touch /root/inited \n poetry install \n yarn \n poetry run brownie networks import network-config.yaml True \n fi" > /root/init.sh
+
+COPY docker-init.sh /root/init.sh
 RUN chmod +x /root/init.sh
-
-
-# set default working dir for tty
 RUN echo "cd /root/scripts" >> /root/.bashrc
 
 
@@ -288,6 +296,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.5.14 --version | g
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.5.12 --version | grep 'Version: 0.5.12+commit.7709ece9' || (echo "Incorrect solc-v0.5.12 version" && exit 1) fi
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.6.12 --version | grep 'Version: 0.6.12+commit.27d51765' || (echo "Incorrect solc-v0.6.12 version" && exit 1) fi
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.28 --version | grep 'Version: 0.8.28+commit.7893614a' || (echo "Incorrect solc-v0.8.28 version" && exit 1) fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.26 --version | grep 'Version: 0.8.26+commit.8a97fa7' || (echo "Incorrect solc-v0.8.26 version" && exit 1) fi
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.10 --version | grep 'Version: 0.8.10+commit.fc410830' || (echo "Incorrect solc-v0.8.10 version" && exit 1) fi
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.9 --version | grep 'Version: 0.8.9+commit.e5eed63a' || (echo "Incorrect solc-v0.8.9 version" && exit 1) fi
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.4 --version | grep 'Version: 0.8.4+commit.c7e474f2' || (echo "Incorrect solc-v0.8.4 version" && exit 1) fi
@@ -301,4 +310,4 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.vvm/vyper-0.3.7 --version | grep
 
 
 # run init script and sleep to keep the container running
-CMD ["/bin/bash", "-c", "/root/init.sh && sleep infinity"]
+CMD ["/bin/bash", "-c", "/root/init.sh develop && sleep infinity"]

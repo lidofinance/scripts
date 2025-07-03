@@ -14,7 +14,7 @@ runs:
     - uses: actions/checkout@v4
       with:
         repository: lidofinance/core
-        ref: master
+        ref: develop
         path: core
 
     - name: Enable corepack
@@ -29,7 +29,14 @@ runs:
     - name: Install dependencies
       working-directory: core
       shell: bash
-      run: yarn install
+      run: yarn install --immutable
+      env:
+        CI: true
+
+    - name: Compile contracts
+      working-directory: core
+      shell: bash
+      run: yarn compile
 
     - name: Set env
       working-directory: core
@@ -39,6 +46,7 @@ runs:
     - name: Run integration tests
       working-directory: core
       shell: bash
-      run: yarn test:integration:fork:mainnet
+      run: yarn test:integration
       env:
-        LOG_LEVEL: debug
+        FORK_RPC_URL: http://localhost:8555
+        LOG_LEVEL: info
