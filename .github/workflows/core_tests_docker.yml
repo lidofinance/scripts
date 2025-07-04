@@ -35,6 +35,7 @@ jobs:
           --health-retries=60
           --health-start-period=20s
           --health-timeout=1s
+          --name=dev-container
 
     steps:
       - name: Check that the fork is ready
