@@ -10,9 +10,9 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 
 def main():
     process_pending_proposals()
-    execute_votings()
+    execute_votings_and_process_created_proposals()
 
-def execute_votings():
+def execute_votings_and_process_created_proposals():
     votings_in_flight = retrieve_votings_in_flight()
     vote_script = retrieve_vote_script()
 
@@ -70,6 +70,9 @@ def retrieve_vote_script() -> Tuple[Callable, Callable] | None:
 
     if not vote_files:
         return None
+
+    if len(vote_files) > 1:
+        raise RuntimeError("More than one vote script found.")
 
     script_path = sorted(vote_files)[0] # the expectation is that the only voting exists at the same time
     print(f"Found vote script: {script_path}")
