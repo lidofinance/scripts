@@ -3,7 +3,12 @@ name: Dual Governance tests CI
 on:
   push:
     branches:
-      - "**"
+      - "master"
+      - "feat/tests"
+      - "feat/rc3"
+      - "feat/rc2"
+      - "feat/rc1"
+      - "feat/next-vote"
   workflow_dispatch:
 
 jobs:
@@ -13,7 +18,7 @@ jobs:
     timeout-minutes: 100
 
     concurrency:
-      group: dual-governance-${{ github.ref }}
+      group: dual-governance-regression-${{ github.ref }}
       cancel-in-progress: true
 
     env:
@@ -22,11 +27,12 @@ jobs:
       POETRY_VERSION: '1.8.2'
       HARDHAT_NODE_URL: 'http://127.0.0.1:8545'
       ANVIL_NODE_URL: 'http://127.0.0.1:8555'
+      CURL_PARAMS: '-X POST -H "Content-Type: application/json" -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}"'
 
     steps:
 
       ################################################################
-      # Clone repositories
+      # Clone repositories`
       ################################################################
 
       - name: Checkout scripts repository
@@ -114,9 +120,16 @@ jobs:
       ################################################################
 
       - name: Start Hardhat node
+        shell: bash
         run: |
           npx hardhat node --fork https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }} &
-          for i in {1..30}; do curl -s ${{ env.HARDHAT_NODE_URL }} && break; sleep 1; done
+          for i in {1..30}; do
+            if curl -sf ${{ env.HARDHAT_NODE_URL }} ${{ env.CURL_PARAMS }} | grep -q '"result"'; then
+              echo "Hardhat node is ready"
+              break
+            fi
+            sleep 1
+          done
         working-directory: scripts
 
       - name: Prepare test environment with Brownie
@@ -126,7 +139,13 @@ jobs:
       - name: Start Anvil
         run: |
           anvil --fork-url ${{ env.HARDHAT_NODE_URL }} --port 8555 &
-          for i in {1..30}; do curl -s ${{ env.ANVIL_NODE_URL }} && break; sleep 1; done
+          for i in {1..30}; do
+            if curl -sf ${{ env.ANVIL_NODE_URL }} ${{ env.CURL_PARAMS }} | grep -q '"result"'; then
+              echo "Anvil node is ready"
+              break
+            fi
+            sleep 1
+          done
         working-directory: dual-governance
 
       - name: Run regression tests
