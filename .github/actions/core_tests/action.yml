@@ -48,5 +48,5 @@ runs:
       shell: bash
       run: yarn test:integration
       env:
-        FORK_RPC_URL: http://localhost:8555
+        FORK_RPC_URL: http://host.docker.internal:8555
         LOG_LEVEL: info
