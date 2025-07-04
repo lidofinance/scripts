@@ -120,7 +120,7 @@ jobs:
         working-directory: scripts
 
       - name: Prepare test environment with Brownie
-        run: poetry run brownie run scripts/ci/prepare_environment --network mainnet-fork --no-compile
+        run: poetry run brownie run scripts/ci/prepare_environment --network mainnet-fork
         working-directory: scripts
 
       - name: Start Anvil
