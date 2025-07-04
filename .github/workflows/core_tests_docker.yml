@@ -43,4 +43,5 @@ jobs:
         run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8555
 
       - name: Run core tests
-        run: docker exec dev-container make test-core
+        run: docker exec dev-container bash -c 'cd /root/lido-core && yarn test:integration'
+        # run: docker exec dev-container make test-core
