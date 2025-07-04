@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 100
 
     concurrency:
-      group: dual-governance-${{ github.ref }}
+      group: dual-governance-regression-${{ github.ref }}
       cancel-in-progress: true
 
     env:
@@ -114,9 +114,11 @@ jobs:
       ################################################################
 
       - name: Start Hardhat node
+        shell: bash
         run: |
-          npx hardhat node --fork https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }} &
-          for i in {1..30}; do curl -s ${{ env.HARDHAT_NODE_URL }} && break; sleep 1; done
+          npx hardhat node --fork https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }} > hardhat.log 2>&1 &
+          for i in {1..30}; do curl -sf ${{ env.HARDHAT_NODE_URL }} && break; sleep 1; done
+          tail -f hardhat.log
         working-directory: scripts
 
       - name: Prepare test environment with Brownie
@@ -126,7 +128,7 @@ jobs:
       - name: Start Anvil
         run: |
           anvil --fork-url ${{ env.HARDHAT_NODE_URL }} --port 8555 &
-          for i in {1..30}; do curl -s ${{ env.ANVIL_NODE_URL }} && break; sleep 1; done
+          for i in {1..30}; do curl -sf ${{ env.ANVIL_NODE_URL }} && break; sleep 1; done
         working-directory: dual-governance
 
       - name: Run regression tests
