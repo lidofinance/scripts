@@ -15,7 +15,7 @@ jobs:
   run-tests:
     name: Core repo tests in docker
     runs-on: "ubuntu-latest"
-    timeout-minutes: 60
+    timeout-minutes: 120
 
     services:
       hardhat-node:
