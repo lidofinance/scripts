@@ -21,7 +21,7 @@ class PermissionP(NamedTuple):
     params: str
 
 
-def validate_permission_create_event(event: EventDict, p: Permission, manager: str) -> None:
+def validate_permission_create_event(event: EventDict, p: Permission, manager: str, emitted_by: str = None) -> None:
     _events_chain = ["LogScriptCall", "SetPermission", "ChangePermissionManager"]
 
     validate_events_chain([e.name for e in event], _events_chain)
@@ -39,9 +39,21 @@ def validate_permission_create_event(event: EventDict, p: Permission, manager: s
     assert event["ChangePermissionManager"]["role"] == p.role, "Wrong role"
     assert event["ChangePermissionManager"]["manager"] == manager, "Wrong manager"
 
+    if emitted_by is not None:
+        assert convert.to_address(event["ChangePermissionManager"]["_emitted_by"]) == convert.to_address(
+            emitted_by
+        ), "Wrong event emitter"
+        assert convert.to_address(event["SetPermission"]["_emitted_by"]) == convert.to_address(
+            emitted_by
+        ), "Wrong event emitter"
 
-def validate_permission_revoke_event(event: EventDict, p: Permission) -> None:
-    _events_chain = ["LogScriptCall", "SetPermission"]
+
+def validate_permission_revoke_event(event: EventDict, p: Permission, emitted_by: str = None, granted_from_agent: bool = False) -> None:
+    if (granted_from_agent):
+        _events_chain = ["LogScriptCall", "LogScriptCall", "SetPermission", "ScriptResult"]
+    else:
+        _events_chain = ["LogScriptCall", "SetPermission"]
+        
 
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -51,10 +63,17 @@ def validate_permission_revoke_event(event: EventDict, p: Permission) -> None:
     assert event["SetPermission"]["app"] == p.app, "Wrong app address"
     assert event["SetPermission"]["role"] == p.role, "Wrong role"
     assert event["SetPermission"]["allowed"] is False, "Wrong role"
+    if emitted_by is not None:
+        assert convert.to_address(event["SetPermission"]["_emitted_by"]) == convert.to_address(
+            emitted_by
+        ), "Wrong event emitter"
 
 
-def validate_permission_grant_event(event: EventDict, p: Permission) -> None:
-    _events_chain = ["LogScriptCall", "SetPermission"]
+def validate_permission_grant_event(event: EventDict, p: Permission, emitted_by: str = None, granted_from_agent: bool = False) -> None:
+    if (granted_from_agent):
+        _events_chain = ["LogScriptCall", "LogScriptCall", "SetPermission", "ScriptResult"]
+    else:
+        _events_chain = ["LogScriptCall", "SetPermission"]
 
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -64,9 +83,13 @@ def validate_permission_grant_event(event: EventDict, p: Permission) -> None:
     assert event["SetPermission"]["app"] == p.app, "Wrong app address"
     assert event["SetPermission"]["role"] == p.role, "Wrong role"
     assert event["SetPermission"]["allowed"] is True, "Wrong allowed flag"
+    if emitted_by is not None:
+        assert convert.to_address(event["SetPermission"]["_emitted_by"]) == convert.to_address(
+            emitted_by
+        ), "Wrong event emitter"
 
 
-def validate_permission_grantp_event(event: EventDict, p: Permission, params: List[Param]) -> None:
+def validate_permission_grantp_event(event: EventDict, p: Permission, params: List[Param], emitted_by: str = None) -> None:
     _events_chain = ["LogScriptCall", "SetPermission", "SetPermissionParams"]
 
     validate_events_chain([e.name for e in event], _events_chain)
@@ -84,6 +107,14 @@ def validate_permission_grantp_event(event: EventDict, p: Permission, params: Li
     assert event["SetPermissionParams"]["app"] == p.app, "Wrong app address"
     assert event["SetPermissionParams"]["role"] == p.role, "Wrong role"
     assert event["SetPermissionParams"]["paramsHash"] == params_hash
+
+    if emitted_by is not None:
+        assert convert.to_address(event["SetPermissionParams"]["_emitted_by"]) == convert.to_address(
+            emitted_by
+        ), "Wrong event emitter"
+        assert convert.to_address(event["SetPermission"]["_emitted_by"]) == convert.to_address(
+            emitted_by
+        ), "Wrong event emitter"
 
 
 def validate_grant_role_event(events: EventDict, role: str, grant_to: str, sender: str, emitted_by: str = None) -> None:
@@ -120,7 +151,7 @@ def validate_revoke_role_event(
         assert convert.to_address(events["RoleRevoked"]["_emitted_by"]) == convert.to_address(emitted_by), "Wrong event emitter"
 
 
-def validate_set_permission_manager_event(event: EventDict, app: str, role: str, manager: str) -> None:
+def validate_set_permission_manager_event(event: EventDict, app: str, role: str, manager: str, emitted_by: str = None) -> None:
     _events_chain = ["LogScriptCall", "ChangePermissionManager"]
 
     validate_events_chain([e.name for e in event], _events_chain)
@@ -131,9 +162,13 @@ def validate_set_permission_manager_event(event: EventDict, app: str, role: str,
     assert event["ChangePermissionManager"]["app"] == app, "Wrong app address"
     assert event["ChangePermissionManager"]["role"] == role, "Wrong role"
     assert event["ChangePermissionManager"]["manager"] == manager, "Wrong manager"
+    if emitted_by is not None:
+        assert convert.to_address(event["ChangePermissionManager"]["_emitted_by"]) == convert.to_address(
+            emitted_by
+        ), "Wrong event emitter"
 
 
-def validate_dg_permission_revoke_event(event: EventDict, p: Permission) -> None:
+def validate_dg_permission_revoke_event(event: EventDict, p: Permission, emitted_by: str = None) -> None:
     _events_chain = ["LogScriptCall", "SetPermission", "ScriptResult", "Executed"]
 
     validate_events_chain([e.name for e in event], _events_chain)
@@ -147,3 +182,7 @@ def validate_dg_permission_revoke_event(event: EventDict, p: Permission) -> None
     assert event["SetPermission"]["app"] == p.app, "Wrong app address"
     assert event["SetPermission"]["role"] == p.role, "Wrong role"
     assert event["SetPermission"]["allowed"] is False, "Wrong role"
+    if emitted_by is not None:
+        assert convert.to_address(event["SetPermission"]["_emitted_by"]) == convert.to_address(
+            emitted_by
+        ), "Wrong event emitter"

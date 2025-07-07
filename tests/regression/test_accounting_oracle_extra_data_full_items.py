@@ -19,11 +19,6 @@ from utils.test.staking_router_helpers import increase_staking_module_share
 NEW_KEYS_PER_OPERATOR = 2
 
 @pytest.fixture(scope="module")
-def voting_eoa(accounts):
-    return accounts.at(contracts.voting.address, force=True)
-
-
-@pytest.fixture(scope="module")
 def agent_eoa(accounts):
     return accounts.at(contracts.agent.address, force=True)
 
@@ -44,11 +39,11 @@ def sdvt(interface):
 
 
 @pytest.fixture(scope="module")
-def prepare_modules(nor, sdvt, voting_eoa, agent_eoa, evm_script_executor_eoa):
+def prepare_modules(nor, sdvt, agent_eoa, evm_script_executor_eoa):
     # Fill NOR with new operators and keys
     (nor_count_before, added_nor_operators_count) = fill_nor_with_old_and_new_operators(
         nor,
-        voting_eoa,
+        agent_eoa,
         evm_script_executor_eoa,
         NEW_KEYS_PER_OPERATOR,
         MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
@@ -56,7 +51,7 @@ def prepare_modules(nor, sdvt, voting_eoa, agent_eoa, evm_script_executor_eoa):
 
     (sdvt_count_before, added_sdvt_operators_count) = fill_nor_with_old_and_new_operators(
         sdvt,
-        voting_eoa,
+        agent_eoa,
         evm_script_executor_eoa,
         NEW_KEYS_PER_OPERATOR,
         MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
@@ -300,7 +295,7 @@ def test_extra_data_most_expensive_report(extra_data_service):
 ############################################
 
 
-def add_nor_operators_with_keys(nor, voting_eoa: Account, evm_script_executor_eoa: Account, count: int, keys_per_operator: int):
+def add_nor_operators_with_keys(nor, agent_eoa: Account, evm_script_executor_eoa: Account, count: int, keys_per_operator: int):
     names = [f"Name {i}" for i in range(0, count)]
     base_address = int(nor.address, base=16) + 10_000
     reward_addresses = [hex(i + base_address) for i in range(0, count)]
@@ -309,7 +304,7 @@ def add_nor_operators_with_keys(nor, voting_eoa: Account, evm_script_executor_eo
         nor.addNodeOperator(
             names[i],
             reward_addresses[i],
-            {"from": voting_eoa}
+            {"from": agent_eoa}
         )
         no_id = nor.getNodeOperatorsCount() - 1
         pubkeys_batch = random_pubkeys_batch(keys_per_operator)
@@ -325,13 +320,13 @@ def add_nor_operators_with_keys(nor, voting_eoa: Account, evm_script_executor_eo
 
 
 def fill_nor_with_old_and_new_operators(
-    nor, voting_eoa, evm_script_executor_eoa, new_keys_per_operator, max_node_operators_per_item
+    nor, agent_eoa, evm_script_executor_eoa, new_keys_per_operator, max_node_operators_per_item
 ) -> tuple[int, int]:
     contracts.acl.grantPermission(
-        contracts.voting,
+        contracts.agent,
         nor.address,
         convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-        {"from": contracts.voting}
+        {"from": contracts.agent}
     )
 
     # Calculate new operators count
@@ -343,7 +338,7 @@ def fill_nor_with_old_and_new_operators(
     if operators_count_added > 0:
         add_nor_operators_with_keys(
             nor,
-            voting_eoa,
+            agent_eoa,
             evm_script_executor_eoa,
             operators_count_added,
             new_keys_per_operator
@@ -352,7 +347,7 @@ def fill_nor_with_old_and_new_operators(
     # Activate old deactivated node operators
     for i in range(0, operators_count_after):
         if not nor.getNodeOperatorIsActive(i):
-            nor.activateNodeOperator(i, {"from": voting_eoa})
+            nor.activateNodeOperator(i, {"from": agent_eoa})
 
     # Add keys to old node operators
     for i in range(0, operators_count_before):
@@ -387,7 +382,6 @@ def deposit_buffer_for_keys(staking_router, nor_keys_to_deposit, sdvt_keys_to_de
         (exited_keys, deposited_keys, depositable_keys) = summary
         total_depositable_keys += depositable_keys
 
-    contracts.lido.removeStakingLimit({"from": contracts.voting})
     fill_deposit_buffer(total_depositable_keys)
     keys_per_deposit = 50
     # Deposits for NOR

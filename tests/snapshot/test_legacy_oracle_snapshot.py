@@ -11,7 +11,7 @@ from typing_extensions import Protocol
 from tests.conftest import Helpers
 from utils.config import contracts, LDO_TOKEN
 from utils.evm_script import EMPTY_CALLSCRIPT
-from utils.import_current_votes import start_and_execute_votes, is_there_any_vote_scripts
+from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
 from utils.test.snapshot_helpers import _chain_snapshot
 
 from .utils import get_slot
@@ -73,7 +73,7 @@ def do_snapshot(
                 "getLastCompletedReportDelta": oracle.getLastCompletedReportDelta(),
                 "getLido": oracle.getLido(),
                 # AragonApp
-                "getRecoveryVault": oracle.getRecoveryVault(),
+                # "getRecoveryVault": oracle.getRecoveryVault(),
                 "kernel": oracle.kernel(),
                 "appId": oracle.appId(),
                 "getEVMScriptExecutor(nil)": oracle.getEVMScriptExecutor(EMPTY_CALLSCRIPT),
@@ -132,6 +132,7 @@ def sandwich_upgrade(
     far_ts: int,
     helpers: Helpers,
     vote_ids_from_env: Any,
+    dg_proposal_ids_from_env: Any
 ) -> SandwichFn:
     """Snapshot the state before and after the upgrade and return the two frames"""
 
@@ -155,10 +156,7 @@ def sandwich_upgrade(
         with _chain_snapshot():
             before = tuple(_actions_snaps())
 
-        if vote_ids_from_env:
-            helpers.execute_votes(accounts, vote_ids_from_env, contracts.voting)
-        else:
-            start_and_execute_votes(contracts.voting, helpers)
+        execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env)
 
         # do not call _chain_snapshot here to be able to interact with the environment in the test
         after = tuple(_actions_snaps())

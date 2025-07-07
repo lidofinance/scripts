@@ -31,17 +31,27 @@ git clone git@github.com:lidofinance/scripts.git
 cd scripts
 ```
 
-#### Step 2. Set up the ENV VARs, for example:
+#### Step 2. Set up the ENV VARs for Mainnet:
 
-- `WEB3_INFURA_PROJECT_ID` - **mandatory** for the execution of tests
+| ENV VAR       | RUN TESTS     | RUN VOTES     |
+| ------------- | ------------- | ------------- |
+| `ETH_RPC_URL` | **mandatory**     | **mandatory**     |
+| `ETH_RPC_URL2` | optional* | -     |
+| `ETH_RPC_URL3` | optional* | -     |
+| `PINATA_CLOUD_TOKEN`  | -     | **mandatory**     |
+| `DEPLOYER`            | -     | **mandatory**     |
+| `ETHERSCAN_TOKEN`     | **mandatory**     | **mandatory**     |
+| `ETHERSCAN_TOKEN2`     | optional*     | -     |
+| `ETHERSCAN_TOKEN3`     | optional*     | -     |
+
+_*may be optionally set when running tests asynchronously to reduce the risk of getting 529 error_
 
 #### Step 3. Run the container
 
 Run the container in the `scripts` directory and specify the ENV VARs:
 
 ```shell
-docker run --name scripts -v "$(pwd)":/root/scripts -e WEB3_INFURA_PROJECT_ID -d ghcr.io/lidofinance/scripts:v16
-
+docker run --name scripts -v "$(pwd)":/root/scripts -e ETH_RPC_URL -e ETH_RPC_URL2 -e ETH_RPC_URL3 -e PINATA_CLOUD_TOKEN -e DEPLOYER -e ETHERSCAN_TOKEN -e ETHERSCAN_TOKEN2 -e ETHERSCAN_TOKEN3 -d ghcr.io/lidofinance/scripts:v18
 ```
 
 Note: _It may take up to 1 minute for the container to initialize properly the first time._
@@ -58,11 +68,26 @@ To run a Hardhat node inside a deployed Docker container:
 npx hardhat node --fork $ETH_RPC_URL
 ```
 
+Do not forget to add a DEPLOYER account:
+
+```shell
+poetry run brownie accounts new <id>
+```
+
 You now have a fully functional environment to run scripts & tests in, which is linked to your local scripts repo, for example:
 
 ```shell
 poetry run brownie test tests/acceptance/test_accounting_oracle.py -s
 ```
+You can use the following shortcuts:
+- `make test` run all tests on Hardhat node
+- `make test vote=XXX` run all tests on Hardhat node with applied Vote #XXX
+- `make test dg=XX` run all tests with executed DG proposal #XX
+- `make test-1/2`, `make test-2/2` run tests divided into 2 parts (can be run asynchronously)
+- `make test-1/3`, `make test-2/3`, `make test-3/3` run tests divided into 3 parts (can be run asynchronously)
+- `make enact-fork vote=scripts/vote_01_01_0001.py` deploy vote and enact it on mainnet fork
+- `make docker` connect to the `scripts` docker container
+- `make node` start local mainnet node
 
 If your container has been stopped (for example, by a system reboot), start it:
 
@@ -230,6 +255,12 @@ To run tests with already started vote provide its id:
 export OMNIBUS_VOTE_IDS=156
 ```
 
+To run tests with already submitted DG proposals provide their ids comma-separated:
+
+```bash
+export DG_PROPOSAL_IDS=1,2,3
+```
+
 To use local ABIs for events decoding use:
 
 ```bash
@@ -286,8 +317,10 @@ See [here](tests/README.md) to learn more about tests
   in case of etherscan downtimes or usage of some unverified contracts (especially,
   on the Görli Testnet).
 - To re-use the already created `vote_id` you can pass the `OMNIBUS_VOTE_IDS`
-  environment variable (e.g. `OMNIBUS_VOTE_IDS=104`).
+  environment variable (e.g. `OMNIBUS_VOTE_IDS=104`)
 - To re-use multiple created votes list the ids comma-separated (e.g. `OMNIBUS_VOTE_IDS=104,105`)
+- To re-use the already submitted `proposal_id` you can pass the `DG_PROPOSAL_IDS`
+  environment variable comma-separated (e.g. `DG_PROPOSAL_IDS=13,14`)
 - To force the large CI runner usage, please name your branch with the `large-vote_` prefix.
 
 </br>

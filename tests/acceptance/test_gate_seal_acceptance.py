@@ -33,5 +33,5 @@ def test_gate_seal(contract: Contract, gate_seal_committee: Account):
 
 def _check_role(contract: Contract, role: str, holder: str):
     role_bytes = web3.keccak(text=role).hex()
-    assert contract.getRoleMemberCount(role_bytes) == 1, f"Role {role} on {contract} should have exactly one holder"
+    assert contract.getRoleMemberCount(role_bytes) == 2, f"Role {role} on {contract} should have exactly two holders"
     assert contract.getRoleMember(role_bytes, 0) == holder, f"Role {role} holder on {contract} should be {holder}"
