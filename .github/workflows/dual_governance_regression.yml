@@ -1,5 +1,9 @@
 name: Dual Governance tests CI
 
+permissions:
+  contents: read
+  issues: write
+
 on:
   push:
     branches:
@@ -39,12 +43,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: scripts
+          persist-credentials: false
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout dual-governance repository
         uses: actions/checkout@v4
         with:
           repository: lidofinance/dual-governance
           path: dual-governance
+          persist-credentials: false
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       ################################################################
       # Set up toolchain
