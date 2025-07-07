@@ -8,7 +8,6 @@ if [ ! -e /root/inited ]; then
 
   poetry install
   yarn
-
   poetry run brownie networks import network-config.yaml True
 
   #
@@ -16,20 +15,16 @@ if [ ! -e /root/inited ]; then
   #
 
   CORE_BRANCH="${1:-develop}"
-
   if [[ -z "${CORE_BRANCH}" ]]; then
     echo "Error: pass branch name as first argument"
     exit 1
   fi
 
-  cd /root
-  CORE_DIR=lido-core
+  CORE_DIR=${CORE_DIR:-lido-core} make init-core
 
-  git clone --depth 1 -b ${CORE_BRANCH}  https://github.com/lidofinance/core.git ${CORE_DIR}
-  cd ${CORE_DIR}
-  CI=true yarn --immutable
-  yarn compile
-  cp .env.example .env
+  #
+  # Prevent re-initialization
+  #
 
   touch /root/inited
 fi

@@ -1,4 +1,4 @@
-name: Core tests
+name: Core tests in docker
 
 on:
   push:
@@ -13,9 +13,9 @@ on:
     - cron: "0 0 * * TUE"
 jobs:
   run-tests:
-    name: Run core repo integration tests
+    name: Core repo tests in docker
     runs-on: "ubuntu-latest"
-    timeout-minutes: 100
+    timeout-minutes: 120
 
     services:
       hardhat-node:
@@ -25,14 +25,22 @@ jobs:
         env:
           ETH_RPC_URL: "https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }}"
 
-    steps:
-      - uses: actions/checkout@v4
+      dev-container:
+        image: ghcr.io/lidofinance/scripts:v19
+        env:
+          FORK_RPC_URL: "http://hardhat-node:8545"
+        options: >-
+          --health-cmd="test -f /root/inited || exit 1"
+          --health-interval=10s
+          --health-retries=60
+          --health-start-period=20s
+          --health-timeout=1s
+          --name=dev-container
 
+    steps:
       - name: Check that the fork is ready
         shell: bash
         run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8555
 
-      - name: Core tests
-        uses: ./.github/actions/core_tests
-        with:
-          vote: "normal"
+      - name: Run core tests
+        run: docker exec dev-container bash -c 'make test-core'

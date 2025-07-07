@@ -21,6 +21,10 @@ else
 endif
 endif
 
+CORE_BRANCH=${CORE_DIR:-develop}
+CORE_DIR=${CORE_DIR:-lido-core}
+
+
 test-1/2:
 	poetry run brownie test tests/*.py tests/regression/test_staking_router_stake_distribution.py --network mfh-1
 
@@ -36,8 +40,16 @@ test-2/3:
 test-3/3:
 	$(call run_3rd_test,brownie test -k 'not test_sanity_checks.py and not test_staking_router_stake_distribution.py' --network mfh-3)
 
+init-core:
+	git clone --depth 1 -b ${CORE_BRANCH} https://github.com/lidofinance/core.git ${CORE_DIR} && \
+	cd ${CORE_DIR} && \
+	CI=true yarn --immutable && \
+	yarn compile && \
+	cp .env.example .env
+
+# Need to be run
 test-core:
-	cd /root/lido-core && yarn test:integration
+	cd ${CORE_DIR} && yarn test:integration
 
 docker:
 	docker exec -it scripts /bin/bash
