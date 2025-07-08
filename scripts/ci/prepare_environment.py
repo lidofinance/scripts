@@ -1,6 +1,5 @@
 import os
 
-from decimal import Decimal
 from typing import Callable, Tuple, List
 
 from utils.config import contracts, get_deployer_account
@@ -64,7 +63,7 @@ def retrieve_votings_in_flight() -> List[int]:
 
         vote = contracts.voting.getVote(last_vote_id)
 
-        min_quorum = Decimal(vote["votingPower"]) / Decimal(contracts.voting.PCT_BASE()) * Decimal(vote["minAcceptQuorum"])
+        min_quorum = vote["votingPower"] * vote["minAcceptQuorum"] // contracts.voting.PCT_BASE()
         is_vote_passing = vote["yea"] > min_quorum and vote["yea"] > vote["nay"]
 
         if vote_phase == 0 or (vote_phase == 1 and is_vote_passing):
