@@ -7,7 +7,12 @@ permissions:
 on:
   push:
     branches:
-      - "**"
+      - "master"
+      - "feat/tests"
+      - "feat/rc3"
+      - "feat/rc2"
+      - "feat/rc1"
+      - "feat/next-vote"
   workflow_dispatch:
 
 jobs:

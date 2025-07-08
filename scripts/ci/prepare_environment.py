@@ -1,4 +1,6 @@
 import os
+
+from decimal import Decimal
 from typing import Callable, Tuple, List
 
 from utils.config import contracts, get_deployer_account
@@ -55,9 +57,18 @@ def retrieve_votings_in_flight() -> List[int]:
     last_vote_id = contracts.voting.votesLength() - 1
 
     while last_vote_id >= 0:
-        if contracts.voting.getVotePhase(last_vote_id) == 2:
+        vote_phase = contracts.voting.getVotePhase(last_vote_id)
+
+        if vote_phase == 2:
             break
-        votings_in_flight.insert(0, last_vote_id)
+
+        vote = contracts.voting.getVote(last_vote_id)
+
+        min_quorum = Decimal(vote["votingPower"]) / Decimal(contracts.voting.PCT_BASE()) * Decimal(vote["minAcceptQuorum"])
+        is_vote_passing = vote["yea"] > min_quorum and vote["yea"] > vote["nay"]
+
+        if vote_phase == 0 or (vote_phase == 1 and is_vote_passing):
+            votings_in_flight.insert(0, last_vote_id)
         last_vote_id -= 1
 
     if votings_in_flight:
