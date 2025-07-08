@@ -7,12 +7,7 @@ permissions:
 on:
   push:
     branches:
-      - "master"
-      - "feat/tests"
-      - "feat/rc3"
-      - "feat/rc2"
-      - "feat/rc1"
-      - "feat/next-vote"
+      - "**"
   workflow_dispatch:
 
 jobs:
@@ -146,21 +141,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Start Anvil
-        run: |
-          anvil --fork-url ${{ env.HARDHAT_NODE_URL }} --port 8555 &
-          for i in {1..30}; do
-            if curl -sf ${{ env.ANVIL_NODE_URL }} ${{ env.CURL_PARAMS }} | grep -q '"result"'; then
-              echo "Anvil node is ready"
-              break
-            fi
-            sleep 1
-          done
-        working-directory: dual-governance
-
       - name: Run regression tests
         run: npm run test:regressions -- --load-accounts
         env:
-          MAINNET_RPC_URL: ${{ env.ANVIL_NODE_URL }}
+          MAINNET_RPC_URL: ${{ env.HARDHAT_NODE_URL }}
           DEPLOY_ARTIFACT_FILE_NAME: deploy-artifact-mainnet.toml
         working-directory: dual-governance
