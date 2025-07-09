@@ -1,7 +1,7 @@
 """
-Vote 2025_<MM>_<DD>
+# TODO Vote 2025_<MM>_<DD>
 
-<a list of vote items synced with Notion Omnibus checklist>
+# TODO <a list of vote items synced with Notion Omnibus checklist>
 """
 
 
@@ -18,33 +18,33 @@ from utils.config import (
 )
 from utils.mainnet_fork import pass_and_exec_dao_vote
 
-<list all contract addresses used in a vote>
+# TODO <list all contract addresses used in a vote>
 
 IPFS_DESCRIPTION = """
-<IPFS description provided by DAO Ops>
+# TODO <IPFS description provided by DAO Ops>
 """
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False):
     vote_desc_items, call_script_items = zip(
-        # <vote items group 1>
+        # TODO <vote items group 1>
         (
-            "1. <vote item description 1>",
-            <vote item 1>,
+            "1. TODO <vote item description 1>",
+            # TODO <vote item 1>,
         ),
         (
-            "2. <vote item description 2>",
-            <vote item 2>,
+            "2. TODO <vote item description 2>",
+            # TODO <vote item 2>,
         ),
 
         # <vote items group 2>
         (
-            "3. <vote item description 3>",
-            <vote item 3>,
+            "3. TODO <vote item description 3>",
+            # TODO <vote item 3>,
         ),
         (
-            "4. <vote item description 4>",
-            <vote item 4>,
+            "4. TODO <vote item description 4>",
+            # TODO <vote item 4>,
         ),
     )
 
