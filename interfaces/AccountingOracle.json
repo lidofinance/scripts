@@ -51,6 +51,22 @@
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "itemIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "dataType",
+        "type": "uint256"
+      }
+    ],
+    "name": "DeprecatedExtraDataType",
+    "type": "error"
+  },
+  {
     "inputs": [],
     "name": "ExtraDataAlreadyProcessed",
     "type": "error"
@@ -332,11 +348,6 @@
       }
     ],
     "name": "UnexpectedExtraDataItemsCount",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "UnexpectedExtraDataLength",
     "type": "error"
   },
   {
@@ -830,6 +841,13 @@
       }
     ],
     "name": "finalizeUpgrade_v2",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "finalizeUpgrade_v3",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
