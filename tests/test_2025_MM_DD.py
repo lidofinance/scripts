@@ -15,8 +15,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
     voting = interface.Voting(VOTING)
-    vote_events_count = <# of events emitted by the vote>
-    dg_prposal_id = <order # of a dg proposal>
+    vote_events_count = # TODO <# of events emitted by the vote>
+    dg_prposal_id = # TODO (if DG proposal exists in vote) <order # of a dg proposal>
 
     # TODO run asserts that checks the "before" vote state
 
@@ -26,27 +26,28 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
 
     # TODO run asserts that checks the "after" vote state
 
-    # enact DG proposal
+    # TODO run vote happy path tests
+
+    # TODO (if DG proposal exists in vote) enact DG proposal
     chain.sleep(timelock.getAfterSubmitDelay() + 1)
     dual_governance.scheduleProposal(dg_prposal_id, {"from": stranger})
     chain.sleep(timelock.getAfterScheduleDelay() + 1)
     dg_tx: TransactionReceipt = timelock.execute(dg_prposal_id, {"from": stranger})
 
-    # TODO run asserts that checks the "after" DG proposals execution state
+    # TODO (if DG proposal exists in vote) run asserts that checks the "after" DG proposals execution state
 
-    # TODO run happy path tests
+    # TODO (if DG proposal exists in vote) run DG proposal happy path tests
 
     # TODO check IPFS description
     #metadata = find_metadata_by_vote_id(vote_id)
-    #assert get_lido_vote_cid_from_str(metadata) == "<expected_ipfs_hash>"
+    #assert get_lido_vote_cid_from_str(metadata) == "TODO <expected_ipfs_hash>"
 
-    # TODO validate event count
+    # validate event count
     evs = group_voting_events_from_receipt(vote_tx)
     assert len(evs) == vote_events_count
     assert count_vote_items_by_events(vote_tx, voting) == vote_events_count, "Incorrect voting items count"
 
     # TODO validate all events emitted during the vote
 
+    # TODO (if DG proposal exists in vote) validate all events emitted during the DG execution
     dg_evs = group_dg_events_from_receipt(dg_tx, timelock=EMERGENCY_PROTECTED_TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
-    # TODO validate all events emitted during the DG execution
-
