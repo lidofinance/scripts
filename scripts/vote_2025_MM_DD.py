@@ -21,7 +21,7 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 <list all contract addresses used in a vote>
 
 IPFS_DESCRIPTION = """
-<IPFS description provided by DAO Comms>
+<IPFS description provided by DAO Ops>
 """
 
 
