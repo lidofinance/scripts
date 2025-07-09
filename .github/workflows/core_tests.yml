@@ -27,17 +27,22 @@ jobs:
 
       dev-container:
         image: ghcr.io/lidofinance/scripts:v19
+        volumes:
+          - ${{ github.workspace }}:/root/scripts
         env:
           FORK_RPC_URL: "http://hardhat-node:8545"
-        options: >-
-          --health-cmd="test -f /root/inited || exit 1"
-          --health-interval=10s
-          --health-retries=60
-          --health-start-period=20s
-          --health-timeout=1s
-          --name=dev-container
 
     steps:
+      # TODO: run vote before the tests if present
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run init script
+        run: docker exec -w /root/scripts dev-container bash -c '/root/init.sh ${{ env.CORE_REPO_BRANCH }}'
+        env:
+          CORE_REPO_BRANCH: develop
+
       - name: Check that the fork is ready
         shell: bash
         run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8555
