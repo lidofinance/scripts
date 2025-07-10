@@ -64,7 +64,7 @@ def decode_evm_script(
     repeat_is_error: bool = True,
     is_encoded_script: Optional[Callable[[FuncInput], bool]] = None,
 ) -> List[Union[str, Call, EncodedCall]]:
-    """Decode EVM script to human-readable format."""
+    """Decode EVM script to human-readable format with automatic DG nested call detection."""
     if verbose:
         # Switch-on debug messages from evmscript-parser package.
         logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.DEBUG)
@@ -93,6 +93,7 @@ def decode_evm_script(
             # call_info = decode_function_call(call.address, call.method_id, call.encoded_call_data, abi_storage)
 
             if call_info is not None:
+                # Handle standard nested _evmScript parameters
                 for inp in filter(is_encoded_script, call_info.inputs):
                     script = inp.value
                     inp.value = decode_evm_script(
@@ -102,6 +103,65 @@ def decode_evm_script(
                         repeat_is_error=repeat_is_error,
                         is_encoded_script=is_encoded_script,
                     )
+
+                # Check for DG submitProposal calls and extract nested Agent scripts
+                if (hasattr(call_info, 'function_name') and call_info.function_name == "submitProposal" and
+                    hasattr(call_info, 'inputs') and len(call_info.inputs) >= 1):
+
+                    try:
+                        calls_input = call_info.inputs[0]
+
+                        if calls_input.name == "calls" and (calls_input.type.startswith("tuple[]") or calls_input.type.startswith("struct")):
+                            calls_data = calls_input.value
+                            if len(calls_data) > 0:
+                                first_call = calls_data[0]
+                                if len(first_call) >= 3:
+                                    nested_script_data = first_call[2]  # The calldata
+
+                                    # Convert to hex string if it's bytes
+                                    if isinstance(nested_script_data, bytes):
+                                        nested_script_hex = "0x" + nested_script_data.hex()
+                                    else:
+                                        nested_script_hex = nested_script_data
+
+                                    # Check if this looks like an Agent forward call
+                                    if nested_script_hex.startswith("0xd948d468"):  # Agent.forward signature
+                                        try:
+                                            from eth_abi import decode
+                                            # Agent.forward takes (bytes _evmScript)
+                                            if isinstance(nested_script_data, bytes):
+                                                # Skip the first 4 bytes (function selector)
+                                                decoded_params = decode(['bytes'], nested_script_data[4:])
+                                            else:
+                                                # Skip 0x + 4 bytes (8 hex chars for function selector)
+                                                decoded_params = decode(['bytes'], bytes.fromhex(nested_script_hex[10:]))
+
+                                            nested_script = decoded_params[0].hex()
+
+                                            if verbose:
+                                                print(f"\n Found nested Agent script in DG proposal:")
+                                                print(f"Nested script: 0x{nested_script}")
+                                                print(f"Decoding nested calls...\n")
+
+                                            # Recursively decode the nested script
+                                            nested_calls = decode_evm_script(
+                                                f"0x{nested_script}",
+                                                verbose=verbose,
+                                                specific_net=specific_net,
+                                                repeat_is_error=repeat_is_error,
+                                                is_encoded_script=is_encoded_script,
+                                            )
+
+                                            # Add nested calls as a custom attribute
+                                            call_info.nested_calls = nested_calls
+
+                                        except Exception as e:
+                                            if verbose:
+                                                print(f"  Failed to decode nested Agent script: {e}")
+
+                    except Exception as e:
+                        if verbose:
+                            print(f"  Failed to extract nested script from DG proposal: {e}")
 
         except (ABIEtherscanNetworkError, ABIEtherscanStatusCode, ABILocalNotFound) as err:
             call_info = repr(err)
@@ -139,7 +199,15 @@ def decode_evm_script(
 
 def calls_info_pretty_print(call: Union[str, Call, EncodedCall]) -> str:
     """Format printing for Call instance."""
-    return color.highlight(repr(call))
+    result = color.highlight(repr(call))
+
+    # Check if this call has nested calls (from DG script decoding)
+    if hasattr(call, 'nested_calls') and call.nested_calls:
+        result += f"\n{color('cyan')}Nested calls within this DG proposal:{color()}\n"
+        for i, nested_call in enumerate(call.nested_calls):
+            result += f"  {i+1}. {color.highlight(repr(nested_call))}\n"
+
+    return result
 
 
 def encode_error(error: str, values=None) -> str:

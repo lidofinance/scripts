@@ -74,6 +74,24 @@ def group_voting_events(tx: TransactionReceipt) -> List[EventDict]:
 
     return ret
 
+def group_dg_events(tx: TransactionReceipt) -> List[EventDict]:
+    events = tx_events_from_trace(tx)
+
+    # manually add event emitter address because it is dropped by EventDict class
+    events = [add_event_emitter(e) for e in events]
+
+    groups = [_vote_item_group, _service_item_group]
+
+    grouped_events = group_tx_events(events, EventDict(events), groups)
+    ret = [v for k, v in grouped_events if k == _vote_item_group]
+
+    assert ret, (
+        "Can't group DG events. Please check that `ETHERSCAN_TOKEN` env var is set "
+        "and all of the required brownie flags (e.g. --network mainnet-fork -s) are present"
+    )
+
+    return ret
+
 
 def group_voting_events_from_receipt(tx: TransactionReceipt) -> List[EventDict]:
     events = tx_events_from_receipt(tx)

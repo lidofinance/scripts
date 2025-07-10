@@ -53,7 +53,7 @@ def validate_permission_revoke_event(event: EventDict, p: Permission, emitted_by
         _events_chain = ["LogScriptCall", "LogScriptCall", "SetPermission", "ScriptResult"]
     else:
         _events_chain = ["LogScriptCall", "SetPermission"]
-        
+
 
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -123,6 +123,20 @@ def validate_grant_role_event(events: EventDict, role: str, grant_to: str, sende
 
     validate_events_chain([e.name for e in events], _events_chain)
 
+    assert events.count("RoleGranted") == 1
+
+    assert events["RoleGranted"]["role"] == role, "Wrong role"
+    assert events["RoleGranted"]["account"] == grant_to, "Wrong account"
+    assert events["RoleGranted"]["sender"] == sender, "Wrong sender"
+    if emitted_by is not None:
+        assert convert.to_address(events["RoleGranted"]["_emitted_by"]) == convert.to_address(
+            emitted_by
+        ), "Wrong event emitter"
+
+def validate_dual_governance_grant_role_event(events: EventDict, role: str, grant_to: str, sender: str, emitted_by: str = None) -> None:
+    _events_chain = ["LogScriptCall", "RoleGranted", "ScriptResult", "Executed", "ProposalExecuted"]
+
+    validate_events_chain([e.name for e in events], _events_chain)
     assert events.count("RoleGranted") == 1
 
     assert events["RoleGranted"]["role"] == role, "Wrong role"
