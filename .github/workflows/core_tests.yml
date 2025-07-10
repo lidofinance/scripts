@@ -27,6 +27,8 @@ jobs:
 
       dev-container:
         image: ghcr.io/lidofinance/scripts:v19
+        options: >-
+          --entrypoint "bash -c 'sleep infinity'"
         volumes:
           - ${{ github.workspace }}:/root/scripts
         env:
