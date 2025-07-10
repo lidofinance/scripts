@@ -50,7 +50,7 @@ jobs:
         run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8555
 
       - name: Run core tests
-        run: docker exec --workdir /root/scripts tests-runner bash -c 'make test-core'
+        run: docker exec -e CORE_DIR -e CORE_BRANCH tests-runner bash -c 'make test-core'
         env:
           CORE_DIR: /root/scripts/lido-core
           CORE_BRANCH: develop
