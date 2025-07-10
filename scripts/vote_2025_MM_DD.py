@@ -26,6 +26,8 @@ IPFS_DESCRIPTION = """
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False):
+    # TODO arrange all variables neccessary for the vote
+    
     vote_desc_items, call_script_items = zip(
         # TODO <vote items group 1>
         (
