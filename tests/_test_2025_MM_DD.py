@@ -29,7 +29,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
 
     # TODO run vote happy path tests
 
-    # TODO (if DG proposal exists in vote) enact DG proposal
+    # TODO (if DG proposal exists in vote) execute DG proposal
     chain.sleep(timelock.getAfterSubmitDelay() + 1)
     dual_governance.scheduleProposal(dg_prposal_id, {"from": stranger})
     chain.sleep(timelock.getAfterScheduleDelay() + 1)
