@@ -2,6 +2,8 @@
 # TODO Vote 2025_<MM>_<DD>
 
 # TODO <a list of vote items synced with Notion Omnibus checklist>
+
+# TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
 
 
@@ -39,7 +41,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
             # TODO <vote item 2>,
         ),
 
-        # <vote items group 2>
+        # TODO <vote items group 2>
         (
             "3. TODO <vote item description 3>",
             # TODO <vote item 3>,
