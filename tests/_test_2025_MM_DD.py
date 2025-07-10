@@ -3,7 +3,7 @@ from scripts.<vote_2025_MM_DD> import start_vote
 from brownie.network.transaction import TransactionReceipt
 from utils.test.tx_tracing_helpers import *
 
-# TODO list all contract addresses used in tests
+# TODO list all contract addresses used in tests - do not use imports from config!
 DUAL_GOVERNANCE = "0xcdF49b058D606AD34c5789FD8c3BF8B3E54bA2db"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
