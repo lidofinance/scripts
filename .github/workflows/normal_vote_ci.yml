@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 100
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Main action
         uses: ./.github/actions/brownie_fork_tests
         with:
@@ -31,7 +31,7 @@ jobs:
     timeout-minutes: 100
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Main action
         uses: ./.github/actions/brownie_fork_tests
         with:
@@ -46,7 +46,7 @@ jobs:
     timeout-minutes: 100
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Main action
         uses: ./.github/actions/brownie_fork_tests
         with:

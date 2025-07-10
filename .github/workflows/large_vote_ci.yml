@@ -29,7 +29,7 @@ jobs:
           sudo mkswap /swapfile
           sudo swapon /swapfile
           sudo swapon --show
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Main action
         uses: ./.github/actions/brownie_fork_tests
         with:
@@ -55,7 +55,7 @@ jobs:
           sudo mkswap /swapfile
           sudo swapon /swapfile
           sudo swapon --show
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Main action
         uses: ./.github/actions/brownie_fork_tests
         with:
@@ -81,7 +81,7 @@ jobs:
           sudo mkswap /swapfile
           sudo swapon /swapfile
           sudo swapon --show
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Main action
         uses: ./.github/actions/brownie_fork_tests
         with:
