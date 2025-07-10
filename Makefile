@@ -39,10 +39,10 @@ test-3/3:
 	$(call run_3rd_test,brownie test -k 'not test_sanity_checks.py and not test_staking_router_stake_distribution.py' --network mfh-3)
 
 init-core:
-	CORE_BRANCH=${CORE_BRANCH:-develop} \
-	CORE_DIR=${CORE_DIR:-lido-core} \
-	git clone --depth 1 -b ${CORE_BRANCH} https://github.com/lidofinance/core.git ${CORE_DIR} && \
-	cd ${CORE_DIR} && \
+	CORE_BRANCH=$${CORE_BRANCH:-develop} \
+	CORE_DIR=$${CORE_DIR:-lido-core} \
+	git clone --depth 1 -b $${CORE_BRANCH} https://github.com/lidofinance/core.git $${CORE_DIR} && \
+	cd $${CORE_DIR} && \
 	CI=true yarn --immutable && \
 	yarn compile && \
 	cp .env.example .env

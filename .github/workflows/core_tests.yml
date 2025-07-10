@@ -49,12 +49,6 @@ jobs:
         shell: bash
         run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8555
 
-      - name: Debug 1
-        run: docker exec tests-runner bash -c 'pwd && ls -la'
-
-      - name: Debug 2
-        run: docker exec --workdir /root/scripts tests-runner bash -c 'pwd && ls -la'
-
       - name: Run core tests
         run: docker exec --workdir /root/scripts tests-runner bash -c 'make test-core'
         env:
