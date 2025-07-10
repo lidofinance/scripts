@@ -136,6 +136,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     proposal_id = vote_tx.events["ProposalSubmitted"][1]["proposalId"]
     print(f"proposalId = {proposal_id}")
 
+    display_voting_events(vote_tx)
+
     voting_events = group_voting_events(vote_tx)
 
     # Uncomment when the IPFS description is defined
@@ -166,6 +168,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     dg_tx: TransactionReceipt = emergency_protected_timelock.execute(proposal_id, {"from": stranger})
 
+    display_dg_events(dg_tx)
     dg_events = group_dg_events(dg_tx)
 
     # 12 Vote items are going through DG

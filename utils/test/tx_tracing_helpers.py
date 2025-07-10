@@ -9,6 +9,14 @@ _vote_item_group = GroupBy(
     color="magenta",
 )
 
+_dg_item_group = GroupBy(
+    contract_name="CallsScript",
+    event_name="LogScriptCall",
+    group_title="DG item #",
+    show_counter=True,
+    color="magenta",
+)
+
 _service_item_group = GroupBy(
     contract_name="Voting",
     event_name="ScriptResult",
@@ -49,6 +57,12 @@ def display_voting_events(tx: TransactionReceipt) -> None:
     groups = [_vote_item_group, _service_item_group]
 
     display_tx_events(dict_events, "Events registered during the vote execution", groups)
+
+def display_dg_events(tx: TransactionReceipt) -> None:
+    dict_events = EventDict(tx_events_from_trace(tx))
+    groups = [_dg_item_group, _service_item_group]
+
+    display_tx_events(dict_events, "Events registered during the proposal execution", groups)
 
 
 def add_event_emitter(event):
