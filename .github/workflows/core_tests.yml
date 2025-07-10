@@ -57,3 +57,6 @@ jobs:
 
       - name: Run core tests
         run: docker exec --workdir /root/scripts tests-runner bash -c 'make test-core'
+        env:
+          CORE_DIR: /root/scripts/lido-core
+          CORE_BRANCH: develop
