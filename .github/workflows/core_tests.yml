@@ -25,12 +25,14 @@ jobs:
         env:
           ETH_RPC_URL: "https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }}"
 
-      dev-container:
+      tests-runner:
         image: ghcr.io/lidofinance/scripts:v19
         volumes:
           - ${{ github.workspace }}:/root/scripts
         env:
           FORK_RPC_URL: "http://hardhat-node:8545"
+        options: >-
+          --name=tests-runner
 
     steps:
       # TODO: run vote before the tests if present
@@ -39,7 +41,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run init script
-        run: docker exec -w /root/scripts dev-container bash -c '/root/init.sh ${{ env.CORE_REPO_BRANCH }}'
+        run: docker exec -w /root/scripts tests-runner bash -c '/root/init.sh ${{ env.CORE_REPO_BRANCH }}'
         env:
           CORE_REPO_BRANCH: develop
 
@@ -48,4 +50,4 @@ jobs:
         run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8555
 
       - name: Run core tests
-        run: docker exec -w /root/scripts dev-container bash -c 'make test-core'
+        run: docker exec -w /root/scripts tests-runner bash -c 'make test-core'
