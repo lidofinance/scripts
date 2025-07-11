@@ -42,7 +42,7 @@ jobs:
         run: docker exec -e CORE_BRANCH tests-runner bash -c 'make init'
 
       - name: Run node
-        run: docker exec tests-runner bash -c 'make node'
+        run: docker exec --detach tests-runner bash -c 'make node'
 
       - name: Check that the fork is ready
         shell: bash
