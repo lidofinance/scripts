@@ -23,7 +23,7 @@ jobs:
       hardhat-node:
         image: ghcr.io/lidofinance/hardhat-node:2.24.3
         ports:
-          - 8545:8555
+          - 8555:8545
         env:
           ETH_RPC_URL: "https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }}"
 
