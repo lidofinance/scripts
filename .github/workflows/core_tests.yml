@@ -16,6 +16,8 @@ jobs:
     name: Core repo tests in docker
     runs-on: "ubuntu-latest"
     timeout-minutes: 120
+    env:
+      CORE_REPO_BRANCH: develop
 
     services:
       hardhat-node:
@@ -41,16 +43,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run init script
-        run: docker exec -w /root/scripts tests-runner bash -c '/root/init.sh ${{ env.CORE_REPO_BRANCH }}'
-        env:
-          CORE_REPO_BRANCH: develop
+        run: docker exec -e CORE_BRANCH tests-runner bash -c 'make init-core'
 
       - name: Check that the fork is ready
         shell: bash
         run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8555
 
       - name: Run core tests
-        run: docker exec -e CORE_DIR -e CORE_BRANCH tests-runner bash -c 'make test-core'
-        env:
-          CORE_DIR: /root/scripts/lido-core
-          CORE_BRANCH: develop
+        run: docker exec tests-runner bash -c 'make test-core'

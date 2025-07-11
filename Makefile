@@ -21,6 +21,8 @@ else
 endif
 endif
 
+CORE_DIR ?= lido-core
+CORE_BRANCH ?= develop
 
 
 test-1/2:
@@ -38,18 +40,33 @@ test-2/3:
 test-3/3:
 	$(call run_3rd_test,brownie test -k 'not test_sanity_checks.py and not test_staking_router_stake_distribution.py' --network mfh-3)
 
+init: init-scripts init-core
+
+init-scripts:
+	poetry install && \
+	yarn && \
+	poetry run brownie networks import network-config.yaml True
+
 init-core:
-	CORE_BRANCH=$${CORE_BRANCH:-develop} && \
-	CORE_DIR=$${CORE_DIR:-lido-core} && \
-	git clone --depth 1 -b $${CORE_BRANCH} https://github.com/lidofinance/core.git $${CORE_DIR} && \
-	cd $${CORE_DIR} && \
+	if [ -d "$(CORE_DIR)" ]; then \
+		cd $(CORE_DIR) && \
+		git config pull.rebase false && \
+		git fetch origin $(CORE_BRANCH) && \
+		git checkout $(CORE_BRANCH); \
+	else \
+		git clone -b $(CORE_BRANCH) https://github.com/lidofinance/core.git $(CORE_DIR); \
+		cd $(CORE_DIR); \
+	fi && \
 	CI=true yarn --immutable && \
 	yarn compile && \
-	cp .env.example .env
+	if [ ! -f .env ]; then \
+		cp .env.example .env; \
+	fi
 
-# Need to be run
 test-core:
-	cd ${CORE_DIR} && yarn test:integration
+	cd $(CORE_DIR) && \
+	FORK_RPC_URL=$${ETH_RPC_URL} \
+	yarn test:integration
 
 docker:
 	docker exec -it scripts /bin/bash

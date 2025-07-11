@@ -279,8 +279,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 # it will install poetry, yarn libs, init brownie networks and core repository
 WORKDIR /root/scripts
 
-COPY init.sh /root/init.sh
-RUN chmod +x /root/init.sh
 RUN echo "cd /root/scripts" >> /root/.bashrc
 
 
