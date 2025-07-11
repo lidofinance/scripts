@@ -18,6 +18,7 @@ jobs:
     timeout-minutes: 120
     env:
       CORE_REPO_BRANCH: develop
+      HARDHAT_NODE_IN_DOCKER_PORT: 8545
 
     services:
       hardhat-node:
@@ -43,9 +44,9 @@ jobs:
 
       - name: Check that the fork is ready
         shell: bash
-        run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' hardhat-node 8555
+        run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' hardhat-node ${{ env.HARDHAT_NODE_IN_DOCKER_PORT }}
 
       - name: Run core tests
         env:
-          FORK_RPC_URL: "http://hardhat-node:8545"
+          FORK_RPC_URL: "http://hardhat-node:${{ env.HARDHAT_NODE_IN_DOCKER_PORT }}"
         run: docker exec -e FORK_RPC_URL tests-runner bash -c 'make test-core'
