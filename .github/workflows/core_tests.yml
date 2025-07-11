@@ -17,12 +17,13 @@ jobs:
     runs-on: "ubuntu-latest"
     timeout-minutes: 120
     env:
-      CORE_REPO_BRANCH: develop
-      HARDHAT_NODE_IN_DOCKER_PORT: 8545
+      CORE_BRANCH: develop
 
     services:
       hardhat-node:
         image: ghcr.io/lidofinance/hardhat-node:2.24.3
+        ports:
+          - 8545:8555
         env:
           ETH_RPC_URL: "https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }}"
 
@@ -44,9 +45,9 @@ jobs:
 
       - name: Check that the fork is ready
         shell: bash
-        run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' hardhat-node ${{ env.HARDHAT_NODE_IN_DOCKER_PORT }}
+        run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8555
 
       - name: Run core tests
         env:
-          FORK_RPC_URL: "http://hardhat-node:${{ env.HARDHAT_NODE_IN_DOCKER_PORT }}"
+          FORK_RPC_URL: "http://localhost:8555"
         run: docker exec -e FORK_RPC_URL tests-runner bash -c 'make test-core'
