@@ -14,9 +14,9 @@ jobs:
     name: Brownie fork NORMAL tests 1
     runs-on: "ubuntu-latest"
     timeout-minutes: 100
-    
+
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Main action
         uses: ./.github/actions/brownie_fork_tests
         with:
@@ -29,7 +29,7 @@ jobs:
     name: Brownie fork NORMAL tests 2
     runs-on: "ubuntu-latest"
     timeout-minutes: 100
-    
+
     steps:
       - uses: actions/checkout@v3
       - name: Main action

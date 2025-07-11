@@ -51,10 +51,18 @@ _*may be optionally set when running tests asynchronously to reduce the risk of 
 Run the container in the `scripts` directory and specify the ENV VARs:
 
 ```shell
-docker run --name scripts -v "$(pwd)":/root/scripts -e ETH_RPC_URL -e ETH_RPC_URL2 -e ETH_RPC_URL3 -e PINATA_CLOUD_TOKEN -e DEPLOYER -e ETHERSCAN_TOKEN -e ETHERSCAN_TOKEN2 -e ETHERSCAN_TOKEN3 -d ghcr.io/lidofinance/scripts:v18
+docker run --name scripts -v "$(pwd)":/root/scripts -e ETH_RPC_URL -e ETH_RPC_URL2 -e ETH_RPC_URL3 -e PINATA_CLOUD_TOKEN -e DEPLOYER -e ETHERSCAN_TOKEN -e ETHERSCAN_TOKEN2 -e ETHERSCAN_TOKEN3 -d ghcr.io/lidofinance/scripts:v19
 ```
 
-Note: _It may take up to 1 minute for the container to initialize properly the first time._
+#### Step 4. Initialize container
+
+Run:
+
+```shell
+docker exec -w /root/scripts scripts bash -c 'make init'
+```
+
+Note: _It may take up to 5 minutes for the container to initialize properly the first time._
 
 #### Step 4. Now connect to the running container using tty:
 
@@ -88,6 +96,13 @@ You can use the following shortcuts:
 - `make enact-fork vote=scripts/vote_01_01_0001.py` deploy vote and enact it on mainnet fork
 - `make docker` connect to the `scripts` docker container
 - `make node` start local mainnet node
+
+or, to run core repository integrations tests on the Hardhat node run on default port 8545 (in a step above):
+
+```shell
+cd lido-core
+FORK_RPC_URL=http://localhost:8545 yarn test:integration
+```
 
 If your container has been stopped (for example, by a system reboot), start it:
 
@@ -130,27 +145,15 @@ alternatively, you could proceed with `pipx`:
 pipx install poetry==1.8.2
 ```
 
-#### Step 2. Setup dependencies with poetry
+#### Step 2. Initialize the repository
 
 Ensure that poetry bin path is added to your `$PATH` env variable.
 Usually it's `$HOME/.local/bin` for most Unix-like systems.
 
-```shell
-poetry install
-```
-
-#### Step 3. Install Ganache locally
-
-Simply run the following command from the project's directory
+To initialize dependencies and lido-core repository for its integration tests run:
 
 ```shell
-yarn
-```
-
-#### Step 4. Import network config to connect brownie with local Ganache
-
-```shell
-poetry run brownie networks import network-config.yaml True
+make init
 ```
 
 #### Step 5. Activate virtual environment

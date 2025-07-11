@@ -16,7 +16,7 @@ jobs:
     name: Brownie fork LARGE tests 1
     runs-on: [protocol-heavy-runners]
     timeout-minutes: 150
-    
+
     steps:
       - name: Enabling swap
         run: |
@@ -29,7 +29,7 @@ jobs:
           sudo mkswap /swapfile
           sudo swapon /swapfile
           sudo swapon --show
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Main action
         uses: ./.github/actions/brownie_fork_tests
         with:
@@ -42,7 +42,7 @@ jobs:
     name: Brownie fork LARGE tests 2
     runs-on: [protocol-heavy-runners]
     timeout-minutes: 150
-    
+
     steps:
       - name: Enabling swap
         run: |
@@ -55,7 +55,7 @@ jobs:
           sudo mkswap /swapfile
           sudo swapon /swapfile
           sudo swapon --show
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Main action
         uses: ./.github/actions/brownie_fork_tests
         with:
@@ -68,7 +68,7 @@ jobs:
     name: Brownie fork LARGE tests 3
     runs-on: [protocol-heavy-runners]
     timeout-minutes: 150
-    
+
     steps:
       - name: Enabling swap
         run: |
@@ -81,7 +81,7 @@ jobs:
           sudo mkswap /swapfile
           sudo swapon /swapfile
           sudo swapon --show
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Main action
         uses: ./.github/actions/brownie_fork_tests
         with:
