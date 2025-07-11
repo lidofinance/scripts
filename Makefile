@@ -23,6 +23,8 @@ endif
 
 CORE_DIR ?= lido-core
 CORE_BRANCH ?= develop
+NODE_PORT ?= 9876
+CORE_TESTS_TARGET_RPC_URL ?= http://127.0.0.1:9876
 
 
 test-1/2:
@@ -65,14 +67,14 @@ init-core:
 
 test-core:
 	cd $(CORE_DIR) && \
-	FORK_RPC_URL=$${FORK_RPC_URL} && \
+	CORE_TESTS_TARGET_RPC_URL=$(CORE_TESTS_TARGET_RPC_URL) \
 	yarn test:integration
 
 docker:
 	docker exec -it scripts /bin/bash
 
 node:
-	npx hardhat node --fork ${ETH_RPC_URL}
+	npx hardhat node --fork $(ETH_RPC_URL) --port $(NODE_PORT)
 
 slots:
 	@echo "Input https://github.com/lidofinance/protocol-onchain-mon-bots/blob/main/bots/ethereum-steth-v2/src/utils/constants.ts file content (end with Enter and Ctrl+D):"

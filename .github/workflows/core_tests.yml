@@ -24,7 +24,7 @@ jobs:
       tests-runner:
         image: ghcr.io/lidofinance/scripts:v19
         ports:
-          - 8555:8545
+          - 9876:9876
         volumes:
           - ${{ github.workspace }}:/root/scripts
         options: >-
@@ -42,13 +42,13 @@ jobs:
         run: docker exec -e CORE_BRANCH tests-runner bash -c 'make init'
 
       - name: Run node
-        run: docker exec --detach tests-runner bash -c 'make node'
+        run: docker exec --detach tests-runner bash -c 'NODE_PORT=9876 make node'
 
       - name: Check that the fork is ready
         shell: bash
-        run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8555
+        run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 9876
 
       - name: Run core tests
         env:
-          FORK_RPC_URL: "http://host.docker.internal:8555"
+          FORK_RPC_URL: "http://127.0.0.1:9876"
         run: docker exec -e FORK_RPC_URL tests-runner bash -c 'make test-core'
