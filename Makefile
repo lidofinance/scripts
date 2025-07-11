@@ -65,7 +65,7 @@ init-core:
 
 test-core:
 	cd $(CORE_DIR) && \
-	FORK_RPC_URL=$${ETH_RPC_URL} \
+	FORK_RPC_URL=$${FORK_RPC_URL} && \
 	yarn test:integration
 
 docker:

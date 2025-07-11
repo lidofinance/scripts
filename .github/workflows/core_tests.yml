@@ -49,5 +49,5 @@ jobs:
 
       - name: Run core tests
         env:
-          ETH_RPC_URL: "http://host.docker.internal:8555"
+          FORK_RPC_URL: "http://host.docker.internal:8555"
         run: docker exec -e FORK_RPC_URL tests-runner bash -c 'make test-core'
