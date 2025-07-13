@@ -16,8 +16,6 @@ jobs:
     name: Core repo tests in docker
     runs-on: "ubuntu-latest"
     timeout-minutes: 120
-    env:
-      CORE_BRANCH: develop
 
     services:
 
@@ -33,13 +31,13 @@ jobs:
           ETH_RPC_URL: "https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }}"
 
     steps:
-      # TODO: run vote before the tests if present
-
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Run init script
         run: docker exec -e CORE_BRANCH tests-runner bash -c 'make init'
+        env:
+          CORE_BRANCH: develop
 
       - name: Run node
         run: docker exec --detach tests-runner bash -c 'NODE_PORT=9876 make node'
@@ -48,7 +46,13 @@ jobs:
         shell: bash
         run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 9876
 
-      - name: Run core tests
+      - name: Prepare test environment with Brownie
+        run: docker exec -e GITHUB_TOKEN -e ETH_RPC_URL tests-runner bash -c 'make ci-prepare-environment'
         env:
-          FORK_RPC_URL: "http://127.0.0.1:9876"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ETH_RPC_URL: http://127.0.0.1:9876
+
+      - name: Run core tests
         run: docker exec -e FORK_RPC_URL tests-runner bash -c 'make test-core'
+        env:
+          FORK_RPC_URL: http://127.0.0.1:9876

@@ -45,9 +45,16 @@ test-3/3:
 init: init-scripts init-core
 
 init-scripts:
+# NB: OpenZeppelin/openzeppelin-contracts@4.0.0 is a dirty copy paste from brownie-config.yml
+# because current brownie version does not support pm install from the config file
 	poetry install && \
 	yarn && \
+	poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0 && \
+	poetry run brownie compile && \
 	poetry run brownie networks import network-config.yaml True
+
+debug:
+	echo $(shell shell awk '/^\s*-/ { print substr($0, index($0,$2)) }' brownie-config.yml)
 
 init-core:
 	if [ -d "$(CORE_DIR)" ]; then \
@@ -83,6 +90,9 @@ slots:
 	@echo "Checking storage slots against 127.0.0.1:8545..."
 	@npx tsx slots.ts
 	@rm -f slots.ts
+
+make ci-prepare-environment:
+	poetry run brownie run scripts/ci/prepare_environment --network mainnet-fork
 
 enact-fork:
 	poetry run brownie run $(vote) start_and_execute_vote_on_fork_manual --network=mfh-1
