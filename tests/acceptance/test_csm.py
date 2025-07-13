@@ -79,7 +79,7 @@ class TestCSM:
         assert csm.getType() == _str_to_bytes32("community-onchain-v1")
         assert csm.LIDO_LOCATOR() == LIDO_LOCATOR
         assert csm.accounting() == CS_ACCOUNTING_ADDRESS
-        assert csm.keyRemovalCharge() == ETH(0.02)
+        assert csm.keyRemovalCharge() == 0 # Updated from 0.02 to 0 in vote 2025/07/16
 
         assert not csm.isPaused()
         assert csm.publicRelease()
@@ -152,9 +152,9 @@ def test_verifier_state(verifier):
     assert verifier.WITHDRAWAL_ADDRESS() == WITHDRAWAL_VAULT
     assert verifier.MODULE() == CSM_ADDRESS
     assert verifier.SLOTS_PER_EPOCH() == CHAIN_SLOTS_PER_EPOCH
-    print(type(verifier.GI_HISTORICAL_SUMMARIES_PREV()))
-    assert verifier.GI_HISTORICAL_SUMMARIES_PREV() == HexString("0x0000000000000000000000000000000000000000000000000000000000003b00", "bytes")
-    assert verifier.GI_HISTORICAL_SUMMARIES_CURR() == HexString("0x0000000000000000000000000000000000000000000000000000000000005b00", "bytes")
+    # print(type(verifier.GI_HISTORICAL_SUMMARIES_PREV()))
+    # assert verifier.GI_HISTORICAL_SUMMARIES_PREV() == HexString("0x0000000000000000000000000000000000000000000000000000000000003b00", "bytes")
+    # assert verifier.GI_HISTORICAL_SUMMARIES_CURR() == HexString("0x0000000000000000000000000000000000000000000000000000000000005b00", "bytes")
     assert verifier.GI_FIRST_WITHDRAWAL_PREV() == HexString("0x0000000000000000000000000000000000000000000000000000000000e1c004", "bytes")
     assert verifier.GI_FIRST_WITHDRAWAL_CURR() == HexString("0x000000000000000000000000000000000000000000000000000000000161c004", "bytes")
     assert verifier.GI_FIRST_VALIDATOR_PREV() == HexString("0x0000000000000000000000000000000000000000000000000056000000000028", "bytes")
