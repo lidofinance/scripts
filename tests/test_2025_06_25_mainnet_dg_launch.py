@@ -1,8 +1,7 @@
-from typing import NamedTuple, List
-from brownie import web3, chain, interface, ZERO_ADDRESS, reverts, convert
+from typing import NamedTuple
+from brownie import chain, interface, ZERO_ADDRESS, reverts, convert
 from hexbytes import HexBytes
-from scripts.upgrade_2025_06_25_mainnet_dg_launch import start_vote
-from brownie.network.transaction import TransactionReceipt
+from archive.scripts.upgrade_2025_06_25_mainnet_dg_launch import start_vote
 from utils.dual_governance import wait_for_noon_utc_to_satisfy_time_constrains
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.common import validate_events_chain
@@ -238,10 +237,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     STAKING_ROUTER_ROLE = web3.keccak(text="STAKING_ROUTER_ROLE")
     assert acl.getPermissionManager(CURATED_MODULE, STAKING_ROUTER_ROLE) == VOTING
     assert acl.hasPermission(STAKING_ROUTER, CURATED_MODULE, STAKING_ROUTER_ROLE)
-    
+
     MANAGE_NODE_OPERATOR_ROLE = web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")
     assert acl.getPermissionManager(CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE) == VOTING
-    
+
     SET_NODE_OPERATOR_LIMIT_ROLE = web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")
     assert acl.getPermissionManager(CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE) == VOTING
     assert acl.hasPermission(VOTING, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
@@ -283,7 +282,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     assert not withdrawal_queue.hasRole(PAUSE_ROLE, DUAL_GOVERNANCE_RESEAL_MANAGER)
     assert not withdrawal_queue.hasRole(RESUME_ROLE, DUAL_GOVERNANCE_RESEAL_MANAGER)
     assert withdrawal_queue.hasRole(PAUSE_ROLE, GATE_SEAL)
-    
+
     vebo = interface.ValidatorsExitBusOracle(VEBO)
     assert not vebo.hasRole(PAUSE_ROLE, DUAL_GOVERNANCE_RESEAL_MANAGER)
     assert not vebo.hasRole(RESUME_ROLE, DUAL_GOVERNANCE_RESEAL_MANAGER)
@@ -310,11 +309,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     DEFAULT_ADMIN_ROLE = HexBytes(0)
     assert allowed_tokens_registry.hasRole(DEFAULT_ADMIN_ROLE, AGENT)
     assert not allowed_tokens_registry.hasRole(DEFAULT_ADMIN_ROLE, VOTING)
-    
+
     ADD_TOKEN_TO_ALLOWED_LIST_ROLE = web3.keccak(text="ADD_TOKEN_TO_ALLOWED_LIST_ROLE")
     assert allowed_tokens_registry.hasRole(ADD_TOKEN_TO_ALLOWED_LIST_ROLE, AGENT)
     assert not allowed_tokens_registry.hasRole(ADD_TOKEN_TO_ALLOWED_LIST_ROLE, VOTING)
-    
+
     REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE = web3.keccak(text="REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE")
     assert allowed_tokens_registry.hasRole(REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE, AGENT)
     assert not allowed_tokens_registry.hasRole(REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE, VOTING)
@@ -340,7 +339,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     assert acl.getPermissionManager(LIDO, RESUME_ROLE) == AGENT
     assert acl.getPermissionManager(LIDO, PAUSE_ROLE) == AGENT
     assert acl.getPermissionManager(LIDO, STAKING_PAUSE_ROLE) == AGENT
-    
+
     assert not acl.hasPermission(VOTING, LIDO, STAKING_CONTROL_ROLE)
     assert not acl.hasPermission(VOTING, LIDO, RESUME_ROLE)
     assert not acl.hasPermission(VOTING, LIDO, PAUSE_ROLE)
@@ -353,21 +352,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     # TokenManager permissions checks
     assert acl.getPermissionManager(TOKEN_MANAGER, MINT_ROLE) == VOTING
     assert acl.getPermissionManager(TOKEN_MANAGER, REVOKE_VESTINGS_ROLE) == VOTING
-    
+
     assert acl.hasPermission(VOTING, TOKEN_MANAGER, MINT_ROLE)
     assert acl.hasPermission(VOTING, TOKEN_MANAGER, REVOKE_VESTINGS_ROLE)
 
     # Finance permissions checks
     assert acl.getPermissionManager(FINANCE, CHANGE_PERIOD_ROLE) == VOTING
     assert acl.getPermissionManager(FINANCE, CHANGE_BUDGETS_ROLE) == VOTING
-    
+
     assert acl.hasPermission(VOTING, FINANCE, CHANGE_PERIOD_ROLE)
     assert acl.hasPermission(VOTING, FINANCE, CHANGE_BUDGETS_ROLE)
 
     # EVMScriptRegistry permissions checks
     assert acl.getPermissionManager(EVM_SCRIPT_REGISTRY, REGISTRY_MANAGER_ROLE) == AGENT
     assert acl.getPermissionManager(EVM_SCRIPT_REGISTRY, REGISTRY_ADD_EXECUTOR_ROLE) == AGENT
-    
+
     assert not acl.hasPermission(VOTING, EVM_SCRIPT_REGISTRY, REGISTRY_MANAGER_ROLE)
     assert not acl.hasPermission(VOTING, EVM_SCRIPT_REGISTRY, REGISTRY_ADD_EXECUTOR_ROLE)
 
@@ -376,7 +375,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     assert acl.getPermissionManager(CURATED_MODULE, MANAGE_NODE_OPERATOR_ROLE) == AGENT
     assert acl.getPermissionManager(CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE) == AGENT
     assert acl.getPermissionManager(CURATED_MODULE, MANAGE_SIGNING_KEYS) == AGENT
-    
+
     assert not acl.hasPermission(VOTING, CURATED_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
     assert not acl.hasPermission(VOTING, CURATED_MODULE, MANAGE_SIGNING_KEYS)
 
@@ -392,7 +391,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, SDVT_MODULE, STAKING_ROUTER_ROLE)
     assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, SDVT_MODULE, MANAGE_NODE_OPERATOR_ROLE)
     assert acl.hasPermission(EVM_SCRIPT_EXECUTOR, SDVT_MODULE, SET_NODE_OPERATOR_LIMIT_ROLE)
-    
+
     # ACL permissions checks
     assert acl.getPermissionManager(ACL, CREATE_PERMISSIONS_ROLE) == AGENT
     assert not acl.hasPermission(VOTING, ACL, CREATE_PERMISSIONS_ROLE)
@@ -401,7 +400,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     # Agent permissions checks
     assert acl.getPermissionManager(AGENT, RUN_SCRIPT_ROLE) == AGENT
     assert acl.getPermissionManager(AGENT, EXECUTE_ROLE) == AGENT
-    
+
     assert acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, RUN_SCRIPT_ROLE)
     assert acl.hasPermission(DUAL_GOVERNANCE_ADMIN_EXECUTOR, AGENT, EXECUTE_ROLE)
 
@@ -432,13 +431,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     # AllowedTokensRegistry permissions checks
     assert not allowed_tokens_registry.hasRole(DEFAULT_ADMIN_ROLE, AGENT)
     assert allowed_tokens_registry.hasRole(DEFAULT_ADMIN_ROLE, VOTING)
-    
+
     assert not allowed_tokens_registry.hasRole(ADD_TOKEN_TO_ALLOWED_LIST_ROLE, AGENT)
     assert not allowed_tokens_registry.hasRole(REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE, AGENT)
 
     # Verify new admin of WithdrawalVault
     assert withdrawal_vault.proxy_getAdmin() == AGENT
-    
+
     # Verify InsuranceFund owner has been changed to VOTING
     assert insurance_fund.owner() == VOTING
 
@@ -588,7 +587,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     # InsuranceFund ownership Transition
     validate_ownership_transferred_event(evs[49], OwnershipTransferred(previous_owner_addr=AGENT, new_owner_addr=VOTING), emitted_by=INSURANCE_FUND)
 
-    # Resetting 
+    # Resetting
     validate_permission_grant_event(
         event=evs[50],
         emitted_by=ACL,
@@ -602,7 +601,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         granted_from_agent=True,
         p=Permission(entity=AGENT, app=KERNEL, role=APP_MANAGER_ROLE.hex()),
     )
-    
+
     validate_role_validated_event(
         evs[53],
         [
@@ -656,11 +655,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
             # CS Module (OZ)
             OZValidatedRole(CS_MODULE, "PAUSE_ROLE", [DUAL_GOVERNANCE_RESEAL_MANAGER, CS_GATE_SEAL], []),
             OZValidatedRole(CS_MODULE, "RESUME_ROLE", [DUAL_GOVERNANCE_RESEAL_MANAGER], []),
-            
+
             # CS Accounting (OZ)
             OZValidatedRole(CS_ACCOUNTING, "PAUSE_ROLE", [DUAL_GOVERNANCE_RESEAL_MANAGER, CS_GATE_SEAL], []),
             OZValidatedRole(CS_ACCOUNTING, "RESUME_ROLE", [DUAL_GOVERNANCE_RESEAL_MANAGER], []),
-            
+
             # CS Fee Oracle (OZ)
             OZValidatedRole(CS_FEE_ORACLE, "PAUSE_ROLE", [DUAL_GOVERNANCE_RESEAL_MANAGER, CS_GATE_SEAL], []),
             OZValidatedRole(CS_FEE_ORACLE, "RESUME_ROLE", [DUAL_GOVERNANCE_RESEAL_MANAGER], []),
@@ -668,18 +667,18 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
             # AllowedTokensRegistry (OZ)
             OZValidatedRole(ALLOWED_TOKENS_REGISTRY, "DEFAULT_ADMIN_ROLE", [VOTING], [AGENT]),
             OZValidatedRole(ALLOWED_TOKENS_REGISTRY, "ADD_TOKEN_TO_ALLOWED_LIST_ROLE", [], [AGENT]),
-            OZValidatedRole(ALLOWED_TOKENS_REGISTRY, "REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE", [], [AGENT]),   
+            OZValidatedRole(ALLOWED_TOKENS_REGISTRY, "REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE", [], [AGENT]),
         ],
         emitted_by=DUAL_GOVERNANCE_ROLES_VALIDATOR,
     )
-    
+
     # Submit first dual governance proposal
     to_be_executed_before_timestamp_proposal = 1754071200
     to_be_executed_from_time = 3600 * 6  # 06:00 UTC
     to_be_executed_to_time = 3600 * 18 # 18:00 UTC
-    
+
     validate_dual_governance_submit_event(
-        evs[54],    
+        evs[54],
         proposal_id=2,
         proposer=VOTING,
         executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
@@ -722,7 +721,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
 
     # Validate roles were transferred correctly
     validate_dual_governance_governance_launch_verification_event(evs[55], emitted_by=DUAL_GOVERNANCE_LAUNCH_VERIFIER)
-    
+
     # Verify state of the DG after launch
     to_be_executed_before_timestamp = 1753466400
     validate_time_constraints_executed_before_event(evs[56], to_be_executed_before_timestamp, emitted_by=DUAL_GOVERNANCE_TIME_CONSTRAINTS)
@@ -738,7 +737,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
 
     # Revoke RUN_SCRIPT_ROLE permission from Voting on Agent
     validate_dg_permission_revoke_event(dg_evs[2], Permission(entity=VOTING, app=AGENT, role=RUN_SCRIPT_ROLE.hex()), emitted_by=ACL)
-    
+
     # Revoke EXECUTE_ROLE permission from Voting on Agent
     validate_dg_permission_revoke_event(dg_evs[3], Permission(entity=VOTING, app=AGENT, role=EXECUTE_ROLE.hex()), emitted_by=ACL)
 
@@ -995,7 +994,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
 
     # Resetting RecoveryVaultAppId on DAOKernel is not working
     usdc = interface.ERC20(USDC_TOKEN)
-    
+
     for contract in RECOVERABLE_CONTRACTS:
         usdc.transfer(contract, 1, {"from": AGENT})
         contract = interface.Kernel(contract)

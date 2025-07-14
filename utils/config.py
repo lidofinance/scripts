@@ -228,6 +228,10 @@ class ContractsLazyLoader:
         return interface.CSAccounting(CS_ACCOUNTING_ADDRESS)
 
     @property
+    def cs_parameters_registry(self) -> interface.CSParametersRegistry:
+        return interface.CSParametersRegistry(CS_PARAMS_REGISTRY_ADDRESS)
+
+    @property
     def cs_fee_distributor(self) -> interface.CSFeeDistributor:
         return interface.CSFeeDistributor(CS_FEE_DISTRIBUTOR_ADDRESS)
 

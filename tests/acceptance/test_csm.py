@@ -67,11 +67,19 @@ def verifier():
 def lido():
     return interface.Lido(LIDO)
 
+
 def test_proxy(csm, accounting, fee_distributor, fee_oracle):
     assert interface.OssifiableProxy(csm).proxy__getAdmin() == contracts.agent.address
     assert interface.OssifiableProxy(accounting).proxy__getAdmin() == contracts.agent.address
     assert interface.OssifiableProxy(fee_distributor).proxy__getAdmin() == contracts.agent.address
     assert interface.OssifiableProxy(fee_oracle).proxy__getAdmin() == contracts.agent.address
+    # TODO: test v2 contracts
+    # TestCSParamsRegistry
+    # TestCSEjector
+    # TestCSExitPenalties
+    # TestCSStrikes
+    # TestVettedGate
+    # TestPermissionlessGate
 
 
 class TestCSM:
@@ -79,15 +87,15 @@ class TestCSM:
         assert csm.getType() == _str_to_bytes32("community-onchain-v1")
         assert csm.LIDO_LOCATOR() == LIDO_LOCATOR
         assert csm.accounting() == CS_ACCOUNTING_ADDRESS
-        assert csm.keyRemovalCharge() == ETH(0.02)
+        # assert csm.keyRemovalCharge() == ETH(0.02)
 
         assert not csm.isPaused()
-        assert csm.publicRelease()
+        #assert csm.publicRelease()
 
 
 class TestAccounting:
     def test_initial_state(self, accounting):
-        assert accounting.CSM() == CSM_ADDRESS
+        assert accounting.MODULE() == CSM_ADDRESS
         assert accounting.LIDO_LOCATOR() == LIDO_LOCATOR
         assert accounting.LIDO() == LIDO
         assert accounting.WITHDRAWAL_QUEUE() == WITHDRAWAL_QUEUE
@@ -115,11 +123,11 @@ class TestFeeOracle:
     def test_initial_state(self, fee_oracle):
         assert fee_oracle.SECONDS_PER_SLOT() == CHAIN_SECONDS_PER_SLOT
         assert fee_oracle.GENESIS_TIME() == CHAIN_GENESIS_TIME
-        assert fee_oracle.feeDistributor() == CS_FEE_DISTRIBUTOR_ADDRESS
-        assert fee_oracle.getContractVersion() == 1
+        assert fee_oracle.FEE_DISTRIBUTOR() == CS_FEE_DISTRIBUTOR_ADDRESS
+        # TODO: check STRIKES
+        assert fee_oracle.getContractVersion() == 2
         assert fee_oracle.getConsensusContract() == CS_ORACLE_HASH_CONSENSUS_ADDRESS
-        assert fee_oracle.getConsensusVersion() == 2
-        assert fee_oracle.avgPerfLeewayBP() == 500
+        assert fee_oracle.getConsensusVersion() == 3
         assert not fee_oracle.isPaused()
 
 class TestHashConsensus:
@@ -144,6 +152,15 @@ class TestHashConsensus:
 
         assert hash_consensus.getReportProcessor() == CS_FEE_ORACLE_ADDRESS
 
+
+# TODO: test v2 contracts
+# TestCSParamsRegistry
+# TestCSEjector
+# TestCSExitPenalties
+# TestCSStrikes
+# TestVettedGate
+# TestPermissionlessGate
+
 def test_early_adoption_state(early_adoption):
     assert early_adoption.MODULE() == CSM_ADDRESS
     assert early_adoption.CURVE_ID() == 1
@@ -153,6 +170,7 @@ def test_verifier_state(verifier):
     assert verifier.MODULE() == CSM_ADDRESS
     assert verifier.SLOTS_PER_EPOCH() == CHAIN_SLOTS_PER_EPOCH
     print(type(verifier.GI_HISTORICAL_SUMMARIES_PREV()))
+    # TODO: add historical roots gIndexes
     assert verifier.GI_HISTORICAL_SUMMARIES_PREV() == HexString("0x0000000000000000000000000000000000000000000000000000000000003b00", "bytes")
     assert verifier.GI_HISTORICAL_SUMMARIES_CURR() == HexString("0x0000000000000000000000000000000000000000000000000000000000005b00", "bytes")
     assert verifier.GI_FIRST_WITHDRAWAL_PREV() == HexString("0x0000000000000000000000000000000000000000000000000000000000e1c004", "bytes")

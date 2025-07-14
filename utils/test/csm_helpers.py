@@ -131,14 +131,33 @@ def get_ea_members():
     )
 
 
-def csm_add_node_operator(csm, accounting, node_operator, proof, keys_count=5, curve_id=0):
+def csm_add_node_operator(csm, permissionless_gate, accounting, node_operator, keys_count=5, curve_id=0):
     pubkeys_batch = random_pubkeys_batch(keys_count)
     signatures_batch = random_signatures_batch(keys_count)
 
-    value = accounting.getBondAmountByKeysCount['uint256,uint256'](keys_count, curve_id)
+    value = accounting.getBondAmountByKeysCount(keys_count, curve_id)
     set_balance_in_wei(node_operator, value + ETH(10))
 
-    csm.addNodeOperatorETH(
+    permissionless_gate.addNodeOperatorETH(
+        keys_count,
+        pubkeys_batch,
+        signatures_batch,
+        (ZERO_ADDRESS, ZERO_ADDRESS, False),
+        ZERO_ADDRESS,
+        {"from": node_operator, "value": value}
+    )
+
+    return csm.getNodeOperatorsCount() - 1
+
+
+def csm_add_ics_node_operator(csm, vetted_gate, accounting, node_operator, proof, keys_count=5, curve_id=0):
+    pubkeys_batch = random_pubkeys_batch(keys_count)
+    signatures_batch = random_signatures_batch(keys_count)
+
+    value = accounting.getBondAmountByKeysCount(keys_count, curve_id)
+    set_balance_in_wei(node_operator, value + ETH(10))
+
+    vetted_gate.addNodeOperatorETH(
         keys_count,
         pubkeys_batch,
         signatures_batch,
@@ -162,8 +181,9 @@ def csm_upload_keys(csm, accounting, no_id, keys_count=5):
         pubkeys_batch = random_pubkeys_batch(keys_batch)
         signatures_batch = random_signatures_batch(keys_batch)
         value = accounting.getRequiredBondForNextKeys(no_id, keys_count)
-        csm.addValidatorKeysETH(no_id, keys_batch, pubkeys_batch, signatures_batch, {
-            "from": csm.getNodeOperator(no_id)["managerAddress"],
+        address = csm.getNodeOperator(no_id)["managerAddress"]
+        csm.addValidatorKeysETH(address, no_id, keys_batch, pubkeys_batch, signatures_batch, {
+            "from": address,
             "value": value
         })
         remaining_keys -= keys_batch
@@ -179,7 +199,7 @@ def fill_csm_operators_with_keys(target_operators_count, keys_count):
             assert contracts.csm.getNodeOperator(no_id)["depositableValidatorsCount"] == keys_count
     while csm_node_operators_before + added_operators_count < target_operators_count:
         node_operator = f"0xbb{str(added_operators_count).zfill(38)}"
-        csm_add_node_operator(contracts.csm, contracts.cs_accounting, node_operator, [], keys_count=keys_count)
+        csm_add_node_operator(contracts.csm, contracts.cs_permissionless_gate, contracts.cs_accounting, node_operator, keys_count=keys_count)
         added_operators_count += 1
     return csm_node_operators_before, added_operators_count
 

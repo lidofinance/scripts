@@ -90,7 +90,7 @@ development:
     cmd_settings:
       accounts: 10
       chain_id: 17000
-      fork: holesky
+      fork: http://hr6vb81d1ndsx-rpc-5-holesky-geth.tooling-nodes.testnet.fi
       gas_limit: 30000000
       mnemonic: brownie
       port: 8545

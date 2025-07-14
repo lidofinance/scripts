@@ -127,6 +127,9 @@ def prepare_csm_report(node_operators_rewards: dict, ref_slot):
         str(tree_cid),
         str(log_cid),
         sum(shares.values()),
+        0,  # rebate
+        HexBytes(ZERO_HASH),  # strikesTreeRoot
+        "",  # strikesTreeCid
     )
     report_data = encode_data_from_abi(report, contracts.cs_fee_oracle.abi, "submitReportData")
     report_hash = web3.keccak(report_data)

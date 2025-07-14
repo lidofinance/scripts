@@ -7,6 +7,14 @@ class StakingModuleStatus(IntEnum):
     DepositsPaused = 1
     Stopped = 2
 
+
+def get_staking_module_status(module_id):
+    """
+    Returns the status of the staking module.
+    """
+    return contracts.staking_router.getStakingModuleStatus(module_id)
+
+
 def set_staking_module_status(module_id, staking_module_status: StakingModuleStatus):
     contracts.staking_router.setStakingModuleStatus(module_id, staking_module_status, {"from": contracts.agent})
 
