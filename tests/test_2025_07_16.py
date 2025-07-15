@@ -232,11 +232,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     chain.sleep(emergency_protected_timelock.getAfterScheduleDelay() + 1)
     dg_tx: TransactionReceipt = emergency_protected_timelock.execute(proposal_id, {"from": stranger})
 
-    # display_dg_events(dg_tx)
+    display_dg_events(dg_tx)
     dg_events = group_dg_events_from_receipt(dg_tx, timelock=EMERGENCY_PROTECTED_TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
-
-    # print(dg_events, '!!!')
-    # print(len(dg_events), '!!!')
 
     # =======================================================================
     # ================= After DG proposal execution tests ===================
