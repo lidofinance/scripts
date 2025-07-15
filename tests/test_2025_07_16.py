@@ -5,8 +5,7 @@ from scripts.vote_2025_07_16 import start_vote
 
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
-from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event, \
-    validate_dual_governance_grant_role_event
+from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 from utils.test.event_validators.csm import validate_set_key_removal_charge_event
 from utils.test.csm_helpers import csm_add_node_operator, get_ea_member
 
