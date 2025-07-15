@@ -26,6 +26,7 @@ IPFS_DESCRIPTION = """
 # TODO <IPFS description provided by DAO Ops>
 """
 
+# TODO <helper functions>
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False):
     # TODO arrange all variables neccessary for the vote
