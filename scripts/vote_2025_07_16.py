@@ -1,4 +1,6 @@
 """
+# Vote 2025_07_16
+
 I. PML, ATC, RCC ET Factories Removal
 1. Remove PML stablecoins factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
 2. Remove PML stETH factory 0xc5527396DDC353BD05bBA578aDAa1f5b6c721136 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
@@ -136,45 +138,57 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
 
 # Remove Kyber oracle member from AccountingOracle, ValidatorsExitBusOracle, CSFeeOracle
     remove_kyber_oracle_member_script = [
-        encode_remove_accounting_oracle_member(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM),
-        encode_remove_validators_exit_bus_oracle_member(KYBER_ORACLE_MEMBER,
-                                                        HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM),
-        encode_remove_validators_cs_fee_oracle_member(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM),
+        agent_forward([encode_remove_accounting_oracle_member(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM)]),
+        agent_forward([encode_remove_validators_exit_bus_oracle_member(KYBER_ORACLE_MEMBER,
+                                                                       HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM)]),
+        agent_forward([
+            encode_remove_validators_cs_fee_oracle_member(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM),
+        ])
     ]
 
     # Add Caliber oracle member to AccountingOracle, ValidatorsExitBusOracle, CSFeeOracle
     add_caliber_oracle_member_script = [
-        encode_add_accounting_oracle_member(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM),
-        encode_add_validators_exit_bus_oracle_member(CALIBER_ORACLE_MEMBER,
-                                                     HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM),
-        encode_add_cs_fee_oracle_member(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM),
+        agent_forward([encode_add_accounting_oracle_member(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM)]),
+        agent_forward([encode_add_validators_exit_bus_oracle_member(CALIBER_ORACLE_MEMBER,
+                                                                    HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM)]),
+        agent_forward([encode_add_cs_fee_oracle_member(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM)]),
     ]
 
     csm_params_change_script = [
-        encode_update_staking_module(
+        agent_forward([encode_update_staking_module(
             staking_module_id=3,
             stake_share_limit=300,
             priority_exit_share_threshold=375
-        ),
-        encode_oz_grant_role(contracts.csm, "MODULE_MANAGER_ROLE", contracts.agent),
-        (
-            contracts.csm.address,
-            contracts.csm.setKeyRemovalCharge.encode_input(NEW_KEY_REMOVAL_CHARGE),
-        ),
-        encode_oz_revoke_role(contracts.csm, "MODULE_MANAGER_ROLE", contracts.agent)
+        )]),
+        agent_forward([
+            encode_oz_grant_role(contracts.csm, "MODULE_MANAGER_ROLE", contracts.agent)
+        ]),
+        agent_forward([
+            (
+                contracts.csm.address,
+                contracts.csm.setKeyRemovalCharge.encode_input(NEW_KEY_REMOVAL_CHARGE),
+            )
+        ]),
+        agent_forward([
+            encode_oz_revoke_role(contracts.csm, "MODULE_MANAGER_ROLE", contracts.agent)
+        ])
     ]
 
     cs_verifier_rotation_script = [
-        encode_oz_revoke_role(
-            contract=contracts.csm,
-            role_name="VERIFIER_ROLE",
-            revoke_from=CS_VERIFIER_ADDRESS_OLD,
-        ),
-        encode_oz_grant_role(
-            contract=contracts.csm,
-            role_name="VERIFIER_ROLE",
-            grant_to=CS_VERIFIER_ADDRESS_NEW,
-        )
+        agent_forward([
+            encode_oz_revoke_role(
+                contract=contracts.csm,
+                role_name="VERIFIER_ROLE",
+                revoke_from=CS_VERIFIER_ADDRESS_OLD,
+            )
+        ]),
+        agent_forward([
+            encode_oz_grant_role(
+                contract=contracts.csm,
+                role_name="VERIFIER_ROLE",
+                grant_to=CS_VERIFIER_ADDRESS_NEW,
+            )
+        ])
     ]
 
     combined_call_script = [
@@ -185,8 +199,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     ]
 
     dual_governance_call_script = submit_proposals([
-        ([agent_forward(combined_call_script)],
-         "Oracle rotation and CSM parameter updates")
+        (combined_call_script, "Kyber Oracle Rotation, CSM Parameters Change, CS Verifier rotation")
     ])
 
     vote_desc_items, call_script_items = zip(
@@ -217,7 +230,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         ),
 
         (
-            "DG Items",
+            "Kyber Oracle Rotation, CSM Parameters Change, CS Verifier rotation",
             dual_governance_call_script[0]
         )
     )

@@ -117,9 +117,13 @@ def validate_permission_grantp_event(event: EventDict, p: Permission, params: Li
         ), "Wrong event emitter"
 
 
-def validate_grant_role_event(events: EventDict, role: str, grant_to: str, sender: str, emitted_by: str = None) -> None:
-    # this event chain is actual if grant role is forvarded through
-    _events_chain = ["LogScriptCall", "LogScriptCall", "RoleGranted", "ScriptResult"]
+def validate_grant_role_event(events: EventDict, role: str, grant_to: str, sender: str, emitted_by: str = None, is_dg_event: bool = False) -> None:
+    # this event chain is actual if grant role is forwarded through
+
+    if is_dg_event:
+        _events_chain = ["LogScriptCall", "LogScriptCall", "RoleGranted", "ScriptResult", "Executed"]
+    else:
+        _events_chain = ["LogScriptCall", "LogScriptCall", "RoleGranted", "ScriptResult"]
 
     validate_events_chain([e.name for e in events], _events_chain)
 
@@ -132,26 +136,15 @@ def validate_grant_role_event(events: EventDict, role: str, grant_to: str, sende
         assert convert.to_address(events["RoleGranted"]["_emitted_by"]) == convert.to_address(
             emitted_by
         ), "Wrong event emitter"
-
-def validate_dual_governance_grant_role_event(events: EventDict, role: str, grant_to: str, sender: str, emitted_by: str = None) -> None:
-    _events_chain = ["LogScriptCall", "RoleGranted", "ScriptResult", "Executed", "ProposalExecuted"]
-
-    validate_events_chain([e.name for e in events], _events_chain)
-    assert events.count("RoleGranted") == 1
-
-    assert events["RoleGranted"]["role"] == role, "Wrong role"
-    assert events["RoleGranted"]["account"] == grant_to, "Wrong account"
-    assert events["RoleGranted"]["sender"] == sender, "Wrong sender"
-    if emitted_by is not None:
-        assert convert.to_address(events["RoleGranted"]["_emitted_by"]) == convert.to_address(
-            emitted_by
-        ), "Wrong event emitter"
-
 
 def validate_revoke_role_event(
-    events: EventDict, role: str, revoke_from: str, sender: str, emitted_by: str = None
+    events: EventDict, role: str, revoke_from: str, sender: str, emitted_by: str = None, is_dg_event: bool = False
 ) -> None:
-    _events_chain = ["LogScriptCall", "LogScriptCall", "RoleRevoked", "ScriptResult"]
+
+    if is_dg_event:
+        _events_chain = ["LogScriptCall", "LogScriptCall", "RoleRevoked", "ScriptResult", "Executed"]
+    else:
+        _events_chain = ["LogScriptCall", "LogScriptCall", "RoleRevoked", "ScriptResult"]
 
     validate_events_chain([e.name for e in events], _events_chain)
 
