@@ -69,7 +69,7 @@ CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER = 375
 CSM_TREASURY_FEE_BEFORE = 400
 CSM_STAKING_MODULE_FEE_BEFORE = 600
 CSM_MAX_DEPOSITS_PER_BLOCK_BEFORE = 30
-CSM_MIN_DEPOSIT_BLOCK_DISTANCE = 25
+CSM_MIN_DEPOSIT_BLOCK_DISTANCE_BEFORE = 25
 
 EXPECTED_VOTE_EVENTS_COUNT = 7 # 6 events after the vote + ProposalSubmitted event
 EXPECTED_DG_EVENTS_COUNT = 12 # 12 vote items are going through DG
@@ -77,7 +77,7 @@ EXPECTED_TOTAL_EVENTS_COUNT = 19
 
 EXPECTED_DG_PROPOSAL_ID = 3
 
-# To be defined
+# TODO: To be defined
 IPFS_DESCRIPTION_HASH = ''
 
 
@@ -205,7 +205,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert staking_router.getStakingModule(CSM_MODULE_ID)["stakingModuleFee"] == CSM_STAKING_MODULE_FEE_BEFORE
     assert staking_router.getStakingModule(CSM_MODULE_ID)["treasuryFee"] == CSM_TREASURY_FEE_BEFORE
     assert staking_router.getStakingModule(CSM_MODULE_ID)["maxDepositsPerBlock"] == CSM_MAX_DEPOSITS_PER_BLOCK_BEFORE
-    assert staking_router.getStakingModule(CSM_MODULE_ID)["minDepositBlockDistance"] == CSM_MIN_DEPOSIT_BLOCK_DISTANCE
+    assert staking_router.getStakingModule(CSM_MODULE_ID)["minDepositBlockDistance"] == CSM_MIN_DEPOSIT_BLOCK_DISTANCE_BEFORE
 
     # Vote items 14, 16
     assert not csm.hasRole(csm_module_manager_role, agent)
@@ -256,7 +256,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert staking_router.getStakingModule(CSM_MODULE_ID)["stakingModuleFee"] == CSM_STAKING_MODULE_FEE_BEFORE
     assert staking_router.getStakingModule(CSM_MODULE_ID)["treasuryFee"] == CSM_TREASURY_FEE_BEFORE
     assert staking_router.getStakingModule(CSM_MODULE_ID)["maxDepositsPerBlock"] == CSM_MAX_DEPOSITS_PER_BLOCK_BEFORE
-    assert staking_router.getStakingModule(CSM_MODULE_ID)["minDepositBlockDistance"] == CSM_MIN_DEPOSIT_BLOCK_DISTANCE
+    assert staking_router.getStakingModule(CSM_MODULE_ID)["minDepositBlockDistance"] == CSM_MIN_DEPOSIT_BLOCK_DISTANCE_BEFORE
 
     # Vote item #15
     # Validate new keyRemovalCharge value
@@ -294,7 +294,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     # ======================== IPFS & events checks =========================
     # =======================================================================
 
-    # Uncomment when the IPFS description is defined
+    # TODO: Uncomment when the IPFS description is defined
     # metadata = find_metadata_by_vote_id(vote_id)
     # assert get_lido_vote_cid_from_str(metadata) == IPFS_DESCRIPTION_HASH
 
@@ -329,6 +329,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
         KYBER_ORACLE_MEMBER,
         5,
         new_total_members=8,
+        emitted_by=HASH_CONSENSUS_FOR_AO,
         is_dg_event=True
     )
     validate_hash_consensus_member_removed(
@@ -336,6 +337,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
         KYBER_ORACLE_MEMBER,
         5,
         new_total_members=8,
+        emitted_by=HASH_CONSENSUS_FOR_VEBO,
         is_dg_event=True
     )
     validate_hash_consensus_member_removed(
@@ -343,12 +345,14 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
         KYBER_ORACLE_MEMBER,
         5,
         new_total_members=8,
+        emitted_by=CS_FEE_HASH_CONSENSUS,
         is_dg_event=True
     )
     validate_hash_consensus_member_added(
         dg_events[3],
         CALIBER_ORACLE_MEMBER,
         5,
+        emitted_by=HASH_CONSENSUS_FOR_AO,
         new_total_members=9,
         is_dg_event=True
     )
@@ -357,6 +361,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
         CALIBER_ORACLE_MEMBER,
         5,
         new_total_members=9,
+        emitted_by=HASH_CONSENSUS_FOR_VEBO,
         is_dg_event=True
     )
     validate_hash_consensus_member_added(
@@ -364,6 +369,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
         CALIBER_ORACLE_MEMBER,
         5,
         new_total_members=9,
+        emitted_by=CS_FEE_HASH_CONSENSUS,
         is_dg_event=True
     )
 
@@ -377,21 +383,21 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
         treasury_fee=CSM_TREASURY_FEE_BEFORE,
         priority_exit_share=CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER,
     )
-    validate_staking_module_update_event(dg_events[6], expected_staking_module_item, is_dg_event=True)
+    validate_staking_module_update_event(dg_events[6], expected_staking_module_item, emitted_by=STAKING_ROUTER, is_dg_event=True)
 
     # Validate grant MODULE_MANAGER_ROLE event
-    validate_grant_role_event(dg_events[7], csm_module_manager_role, agent, agent.address, is_dg_event=True)
+    validate_grant_role_event(dg_events[7], csm_module_manager_role, agent, agent.address, emitted_by=CSM, is_dg_event=True)
 
     # Validate keyRemovalCharge update event
     validate_set_key_removal_charge_event(dg_events[8], KEY_REMOVAL_CHARGE_AFTER, emitted_by=CSM, is_dg_event=True)
 
     # Validate revoke MODULE_MANAGER_ROLE event
-    validate_revoke_role_event(dg_events[9], csm_module_manager_role, agent, agent.address, is_dg_event=True)
+    validate_revoke_role_event(dg_events[9], csm_module_manager_role, agent, agent.address, emitted_by=CSM, is_dg_event=True)
 
     # Validate old CS Verifier doesn't have VERIFIER_ROLE
-    validate_revoke_role_event(dg_events[10], csm_verifier_role, CS_VERIFIER_ADDRESS_OLD, agent, CSM, is_dg_event=True)
+    validate_revoke_role_event(dg_events[10], csm_verifier_role, CS_VERIFIER_ADDRESS_OLD, agent, emitted_by=CSM, is_dg_event=True)
 
     # Validate new CS Verifier has VERIFIER_ROLE
     validate_grant_role_event(dg_events[11], csm_verifier_role, CS_VERIFIER_ADDRESS_NEW, agent,
-                                              CSM, is_dg_event=True)
+                                              emitted_by=CSM, is_dg_event=True)
 

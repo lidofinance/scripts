@@ -1,11 +1,10 @@
 #!/usr/bin/python3
 
-from typing import NamedTuple, Tuple
+from typing import NamedTuple
 
-from brownie.convert.datatypes import ReturnValue
 from brownie.network.event import EventDict
+from brownie import convert
 from .common import validate_events_chain
-
 
 class StakingModuleItem(NamedTuple):
     id: int
@@ -50,7 +49,7 @@ def validate_staking_module_added_event(event: EventDict, module_item: StakingMo
     assert event["StakingModuleFeesSet"]["treasuryFee"] == module_item.treasury_fee
 
 
-def validate_staking_module_update_event(event: EventDict, module_item: StakingModuleItem, is_dg_event: bool = False):
+def validate_staking_module_update_event(event: EventDict, module_item: StakingModuleItem, emitted_by: str = None, is_dg_event: bool = False):
     if is_dg_event:
         _events_chain = [
             "LogScriptCall",
@@ -86,3 +85,8 @@ def validate_staking_module_update_event(event: EventDict, module_item: StakingM
     assert event["StakingModuleFeesSet"]["stakingModuleId"] == module_item.id
     assert event["StakingModuleFeesSet"]["stakingModuleFee"] == module_item.module_fee
     assert event["StakingModuleFeesSet"]["treasuryFee"] == module_item.treasury_fee
+
+    if emitted_by is not None:
+        assert convert.to_address(event["StakingModuleFeesSet"]["_emitted_by"]) == convert.to_address(
+            emitted_by
+        ), "Wrong event emitter"

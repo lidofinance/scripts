@@ -28,15 +28,17 @@ IV. CS Verifier rotation
 18. Grant VERIFIER_ROLE role on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F to new CS Verifier 0xeC6Cc185f671F627fb9b6f06C8772755F587b05d (addresses to be verified and checked)
 """
 
+import time
 import importlib
 import utils.voting
 importlib.reload(utils.voting)
 
-import time
-from typing import Dict, Tuple, Optional
+from typing import Dict
+
 from brownie import interface
 from brownie.network.transaction import TransactionReceipt
 
+from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.agent import agent_forward
 from utils.dual_governance import submit_proposals
 from utils.voting import create_vote, bake_vote_items, confirm_vote_script
@@ -63,118 +65,92 @@ CALIBER_ORACLE_MEMBER = "0x4118DAD7f348A4063bD15786c299De2f3B1333F3"
 
 NEW_KEY_REMOVAL_CHARGE = 0
 
-CS_VERIFIER_ADDRESS_OLD="0x0c345dFa318f9F4977cdd4f33d80F9D0ffA38e8B"
-CS_VERIFIER_ADDRESS_NEW="0xeC6Cc185f671F627fb9b6f06C8772755F587b05d"
+CS_VERIFIER_ADDRESS_OLD = "0x0c345dFa318f9F4977cdd4f33d80F9D0ffA38e8B"
+CS_VERIFIER_ADDRESS_NEW = "0xeC6Cc185f671F627fb9b6f06C8772755F587b05d"
 
-# To be defined
+STAKING_MODULE_ID = 3
+STAKE_SHARE_LIMIT_NEW = 300
+PRIORITY_EXIT_SHARE_THRESHOLD_NEW = 375
+
+# TODO: To be defined
 IPFS_DESCRIPTION = ""
-
-
-
-# AccountingOracle helpers
-def encode_remove_accounting_oracle_member(member: str, quorum: int) -> Tuple[str, str]:
-    hash_consensus: interface.LidoOracle = contracts.hash_consensus_for_accounting_oracle
-
-    return (hash_consensus.address, hash_consensus.removeMember.encode_input(member, quorum))
-
-
-def encode_add_accounting_oracle_member(member: str, quorum: int) -> Tuple[str, str]:
-    hash_consensus = contracts.hash_consensus_for_accounting_oracle
-
-    return (hash_consensus.address, hash_consensus.addMember.encode_input(member, quorum))
-
-
-# ValidatorsExitBusOracle helpers
-def encode_remove_validators_exit_bus_oracle_member(member: str, quorum: int) -> Tuple[str, str]:
-    hash_consensus: interface.LidoOracle = contracts.hash_consensus_for_validators_exit_bus_oracle
-
-    return (hash_consensus.address, hash_consensus.removeMember.encode_input(member, quorum))
-
-
-def encode_remove_validators_cs_fee_oracle_member(member: str, quorum: int) -> Tuple[str, str]:
-    hash_consensus = contracts.csm_hash_consensus
-
-    return (hash_consensus.address, hash_consensus.removeMember.encode_input(member, quorum))
-
-
-# CSFeeOracle helpers
-def encode_add_validators_exit_bus_oracle_member(member: str, quorum: int) -> Tuple[str, str]:
-    hash_consensus = contracts.hash_consensus_for_validators_exit_bus_oracle
-
-    return (hash_consensus.address, hash_consensus.addMember.encode_input(member, quorum))
-
-
-def encode_add_cs_fee_oracle_member(member: str, quorum: int) -> Tuple[str, str]:
-    hash_consensus = contracts.csm_hash_consensus
-
-    return (hash_consensus.address, hash_consensus.addMember.encode_input(member, quorum))
-
-
-# CSM Parameters change helper
-
-def encode_update_staking_module(
-    staking_module_id: int,
-    stake_share_limit: int,
-    priority_exit_share_threshold: int
-) -> Tuple[str, str]:
-    module = contracts.staking_router.getStakingModule(staking_module_id)
-
-    return (
-        contracts.staking_router.address,
-        contracts.staking_router.updateStakingModule.encode_input(
-            staking_module_id,
-            stake_share_limit,
-            priority_exit_share_threshold,
-            module["stakingModuleFee"],  # Preserve current fee
-            module["treasuryFee"],  # Preserve current treasury fee
-            module["maxDepositsPerBlock"],  # Preserve current max deposits per block
-            module["minDepositBlockDistance"]  # Preserve current min deposit block distance
-        )
-    )
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
     """Prepare and run voting"""
 
-# Remove Kyber oracle member from AccountingOracle, ValidatorsExitBusOracle, CSFeeOracle
-    remove_kyber_oracle_member_script = [
-        agent_forward([encode_remove_accounting_oracle_member(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM)]),
-        agent_forward([encode_remove_validators_exit_bus_oracle_member(KYBER_ORACLE_MEMBER,
-                                                                       HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM)]),
+    # Contracts definition
+    hash_consensus_for_accounting_oracle: interface.LidoOracle = contracts.hash_consensus_for_accounting_oracle
+    hash_consensus_for_validators_exit_bus_oracle: interface.LidoOracle = contracts.hash_consensus_for_validators_exit_bus_oracle
+    csm_hash_consensus: interface.CSHashConsensus = contracts.csm_hash_consensus
+    csm_module = contracts.staking_router.getStakingModule(STAKING_MODULE_ID)
+
+    combined_call_script = [
+        # Vote item #7
         agent_forward([
-            encode_remove_validators_cs_fee_oracle_member(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM),
-        ])
-    ]
-
-    # Add Caliber oracle member to AccountingOracle, ValidatorsExitBusOracle, CSFeeOracle
-    add_caliber_oracle_member_script = [
-        agent_forward([encode_add_accounting_oracle_member(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM)]),
-        agent_forward([encode_add_validators_exit_bus_oracle_member(CALIBER_ORACLE_MEMBER,
-                                                                    HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM)]),
-        agent_forward([encode_add_cs_fee_oracle_member(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM)]),
-    ]
-
-    csm_params_change_script = [
-        agent_forward([encode_update_staking_module(
-            staking_module_id=3,
-            stake_share_limit=300,
-            priority_exit_share_threshold=375
-        )]),
+            (hash_consensus_for_accounting_oracle.address,
+             hash_consensus_for_accounting_oracle.removeMember.encode_input(KYBER_ORACLE_MEMBER,
+                                                                            HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM))
+        ]),
+        # Vote item #8
+        agent_forward([
+            (hash_consensus_for_validators_exit_bus_oracle.address,
+             hash_consensus_for_validators_exit_bus_oracle.removeMember.encode_input(KYBER_ORACLE_MEMBER,
+                                                                                     HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM))
+        ]),
+        # Vote item #9
+        agent_forward([
+            (csm_hash_consensus.address,
+             csm_hash_consensus.removeMember.encode_input(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM))
+        ]),
+        # Vote item #10
+        agent_forward([
+            (hash_consensus_for_accounting_oracle.address,
+             hash_consensus_for_accounting_oracle.addMember.encode_input(CALIBER_ORACLE_MEMBER,
+                                                                         HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM))
+        ]),
+        # Vote item #11
+        agent_forward([
+            (hash_consensus_for_validators_exit_bus_oracle.address,
+             hash_consensus_for_validators_exit_bus_oracle.addMember.encode_input(CALIBER_ORACLE_MEMBER,
+                                                                                  HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM))
+        ]),
+        # Vote item #12
+        agent_forward([
+            (csm_hash_consensus.address,
+             csm_hash_consensus.addMember.encode_input(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM))
+        ]),
+        # Vote item #13
+        agent_forward([
+            (
+                contracts.staking_router.address,
+                contracts.staking_router.updateStakingModule.encode_input(
+                    STAKING_MODULE_ID,
+                    STAKE_SHARE_LIMIT_NEW,
+                    PRIORITY_EXIT_SHARE_THRESHOLD_NEW,
+                    csm_module["stakingModuleFee"],  # Preserve current fee
+                    csm_module["treasuryFee"],  # Preserve current treasury fee
+                    csm_module["maxDepositsPerBlock"],  # Preserve current max deposits per block
+                    csm_module["minDepositBlockDistance"]  # Preserve current min deposit block distance
+                )
+            )
+        ]),
+        # Vote item #14
         agent_forward([
             encode_oz_grant_role(contracts.csm, "MODULE_MANAGER_ROLE", contracts.agent)
         ]),
+        # Vote item #15
         agent_forward([
             (
                 contracts.csm.address,
                 contracts.csm.setKeyRemovalCharge.encode_input(NEW_KEY_REMOVAL_CHARGE),
             )
         ]),
+        # Vote item #16
         agent_forward([
             encode_oz_revoke_role(contracts.csm, "MODULE_MANAGER_ROLE", contracts.agent)
-        ])
-    ]
-
-    cs_verifier_rotation_script = [
+        ]),
+        # Vote item #17
         agent_forward([
             encode_oz_revoke_role(
                 contract=contracts.csm,
@@ -182,6 +158,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 revoke_from=CS_VERIFIER_ADDRESS_OLD,
             )
         ]),
+        # Vote item #18
         agent_forward([
             encode_oz_grant_role(
                 contract=contracts.csm,
@@ -189,13 +166,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 grant_to=CS_VERIFIER_ADDRESS_NEW,
             )
         ])
-    ]
-
-    combined_call_script = [
-        *remove_kyber_oracle_member_script,
-        *add_caliber_oracle_member_script,
-        *csm_params_change_script,
-        *cs_verifier_rotation_script
     ]
 
     dual_governance_call_script = submit_proposals([
@@ -256,3 +226,16 @@ def main():
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 
     time.sleep(5)  # hack for waiting thread #2.
+
+
+def start_and_execute_vote_on_fork_manual():
+    if get_is_live():
+        raise Exception("This script is for local testing only.")
+
+    tx_params = {"from": get_deployer_account()}
+    vote_id, _ = start_vote(tx_params=tx_params, silent=True)
+
+    time.sleep(5)  # hack for waiting thread #2.
+
+    print(f"Vote created: {vote_id}.")
+    pass_and_exec_dao_vote(int(vote_id), step_by_step=True)
