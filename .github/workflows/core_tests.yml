@@ -11,6 +11,7 @@ on:
       - "feat/next-vote"
   schedule:
     - cron: "0 0 * * TUE"
+
 jobs:
   run-tests:
     name: Core repo tests in docker

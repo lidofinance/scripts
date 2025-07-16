@@ -4,11 +4,6 @@ define run_2nd_test
 	poetry run $(1)
 endef
 
-define run_3rd_test
-	ETH_RPC_URL="$${ETH_RPC_URL3:-$$ETH_RPC_URL}" \
-	ETHERSCAN_TOKEN="$${ETHERSCAN_TOKEN3:-$$ETHERSCAN_TOKEN}" \
-	poetry run $(1)
-endef
 
 test:
 ifdef vote
@@ -21,10 +16,11 @@ else
 endif
 endif
 
+# Must be different from 8545 because core tests by default run its own fork on 8545
+CORE_TESTS_TARGET_RPC_URL ?= http://127.0.0.1:9876
 CORE_DIR ?= lido-core
 CORE_BRANCH ?= develop
-NODE_PORT ?= 9876
-CORE_TESTS_TARGET_RPC_URL ?= http://127.0.0.1:9876
+NODE_PORT ?= 8545
 
 
 test-1/2:
@@ -32,15 +28,6 @@ test-1/2:
 
 test-2/2:
 	$(call run_2nd_test,brownie test -k 'not test_staking_router_stake_distribution.py' --network mfh-2)
-
-test-1/3:
-	poetry run brownie test tests/*.py --network mfh-1
-
-test-2/3:
-	$(call run_2nd_test,brownie test tests/*.py tests/regression/test_staking_router_stake_distribution.py tests/regression/test_sanity_checks.py --network mfh-2)
-
-test-3/3:
-	$(call run_3rd_test,brownie test -k 'not test_sanity_checks.py and not test_staking_router_stake_distribution.py' --network mfh-3)
 
 init: init-scripts init-core
 
@@ -91,7 +78,7 @@ slots:
 	@npx tsx slots.ts
 	@rm -f slots.ts
 
-make ci-prepare-environment:
+ci-prepare-environment:
 	poetry run brownie run scripts/ci/prepare_environment --network mainnet-fork
 
 enact-fork:

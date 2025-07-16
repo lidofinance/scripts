@@ -92,10 +92,15 @@ You can use the following shortcuts:
 - `make test vote=XXX` run all tests on Hardhat node with applied Vote #XXX
 - `make test dg=XX` run all tests with executed DG proposal #XX
 - `make test-1/2`, `make test-2/2` run tests divided into 2 parts (can be run asynchronously)
-- `make test-1/3`, `make test-2/3`, `make test-3/3` run tests divided into 3 parts (can be run asynchronously)
 - `make enact-fork vote=scripts/vote_01_01_0001.py` deploy vote and enact it on mainnet fork
 - `make docker` connect to the `scripts` docker container
 - `make node` start local mainnet node
+- `make slots` check storage slots against local node
+- `make ci-prepare-environment` prepare environment for CI tests
+- `make init-scripts` initialize scripts repository
+- `make init-core` initialize core repository
+- `make test-core` run core repository tests
+
 
 or, to run core repository integrations tests on the Hardhat node run on default port 8545 (in a step above):
 
@@ -156,7 +161,7 @@ To initialize dependencies and lido-core repository for its integration tests ru
 make init
 ```
 
-#### Step 5. Activate virtual environment
+#### Step 3. Activate virtual environment
 
 📝 While previous steps needed only once to init the environment from scratch,
 the current step is used regularly to activate the environment every time you
