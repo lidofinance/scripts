@@ -158,7 +158,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 revoke_from=CS_VERIFIER_ADDRESS_OLD,
             )
         ]),
-        # Grant VERIFIER_ROLE role on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F to new CS Verifier 0xeC6Cc185f671F627fb9b6f06C8772755F587b05d (addresses to be verified and checked)
+        # 18. Grant VERIFIER_ROLE role on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F to new CS Verifier 0xeC6Cc185f671F627fb9b6f06C8772755F587b05d (addresses to be verified and checked)
         agent_forward([
             encode_oz_grant_role(
                 contract=contracts.csm,
