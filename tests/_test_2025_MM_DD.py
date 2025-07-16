@@ -75,7 +75,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     assert len(evs) == vote_events_count
     assert count_vote_items_by_events(vote_tx, voting) == vote_events_count, "Incorrect voting items count"
 
-    # TODO validate all events emitted during the vote
+    # TODO validate all events emitted during the vote (check the event emitter as well!)
 
-    # TODO (if DG proposal exists in vote) validate all events emitted during the DG execution
+    # TODO (if DG proposal exists in vote) validate all events emitted during the DG execution (check the event emitter as well!)
     dg_evs = group_dg_events_from_receipt(dg_tx, timelock=EMERGENCY_PROTECTED_TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
