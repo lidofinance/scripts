@@ -85,42 +85,42 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     csm_hash_consensus: interface.CSHashConsensus = contracts.csm_hash_consensus
     csm_module = contracts.staking_router.getStakingModule(STAKING_MODULE_ID)
 
-    combined_call_script = [
-        # Vote item #7
+    voting_call_script = [
+        # 7. Remove oracle set member with address 0xA7410857ABbf75043d61ea54e07D57A6EB6EF186 from HashConsensus 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288 for AccountingOracle 0x852deD011285fe67063a08005c71a85690503Cee
         agent_forward([
             (hash_consensus_for_accounting_oracle.address,
              hash_consensus_for_accounting_oracle.removeMember.encode_input(KYBER_ORACLE_MEMBER,
                                                                             HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM))
         ]),
-        # Vote item #8
+        # 8. Remove oracle set member with address 0xA7410857ABbf75043d61ea54e07D57A6EB6EF186 from HashConsensus 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a for ValidatorsExitBusOracle 0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e
         agent_forward([
             (hash_consensus_for_validators_exit_bus_oracle.address,
              hash_consensus_for_validators_exit_bus_oracle.removeMember.encode_input(KYBER_ORACLE_MEMBER,
                                                                                      HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM))
         ]),
-        # Vote item #9
+        # 9. Remove oracle set member with address 0xA7410857ABbf75043d61ea54e07D57A6EB6EF186 from CSHashConsensus 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4 for CSFeeOracle 0x4D4074628678Bd302921c20573EEa1ed38DdF7FB
         agent_forward([
             (csm_hash_consensus.address,
              csm_hash_consensus.removeMember.encode_input(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM))
         ]),
-        # Vote item #10
+        # 10. Add oracle set member with address 0x4118dad7f348a4063bd15786c299de2f3b1333f3 to HashConsensus 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288 for AccountingOracle 0x852deD011285fe67063a08005c71a85690503Cee
         agent_forward([
             (hash_consensus_for_accounting_oracle.address,
              hash_consensus_for_accounting_oracle.addMember.encode_input(CALIBER_ORACLE_MEMBER,
                                                                          HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM))
         ]),
-        # Vote item #11
+        # 11. Add oracle set member with address 0x4118dad7f348a4063bd15786c299de2f3b1333f3 to HashConsensus 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a for ValidatorsExitBusOracle 0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e
         agent_forward([
             (hash_consensus_for_validators_exit_bus_oracle.address,
              hash_consensus_for_validators_exit_bus_oracle.addMember.encode_input(CALIBER_ORACLE_MEMBER,
                                                                                   HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM))
         ]),
-        # Vote item #12
+        # 12. Add oracle set member with address 0x4118dad7f348a4063bd15786c299de2f3b1333f3 to CSHashConsensus 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4 for CSFeeOracle 0x4D4074628678Bd302921c20573EEa1ed38DdF7FB
         agent_forward([
             (csm_hash_consensus.address,
              csm_hash_consensus.addMember.encode_input(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM))
         ]),
-        # Vote item #13
+        # 13. Change stakeShareLimit from 200 BP to 300 BP and priorityExitShareThreshold from 250 to 375 on Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999 for CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F
         agent_forward([
             (
                 contracts.staking_router.address,
@@ -135,22 +135,22 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 )
             )
         ]),
-        # Vote item #14
+        # 14. Grant MODULE_MANAGER_ROLE on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F to Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c
         agent_forward([
             encode_oz_grant_role(contracts.csm, "MODULE_MANAGER_ROLE", contracts.agent)
         ]),
-        # Vote item #15
+        # 15. Reduce keyRemovalCharge from 0.02 to 0 ETH on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F
         agent_forward([
             (
                 contracts.csm.address,
                 contracts.csm.setKeyRemovalCharge.encode_input(NEW_KEY_REMOVAL_CHARGE),
             )
         ]),
-        # Vote item #16
+        # 16. Revoke MODULE_MANAGER_ROLE on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c
         agent_forward([
             encode_oz_revoke_role(contracts.csm, "MODULE_MANAGER_ROLE", contracts.agent)
         ]),
-        # Vote item #17
+        # 17. Revoke VERIFIER_ROLE role on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F from old CS Verifier 0x0c345dFa318f9F4977cdd4f33d80F9D0ffA38e8B (addresses to be verified and checked)
         agent_forward([
             encode_oz_revoke_role(
                 contract=contracts.csm,
@@ -158,7 +158,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 revoke_from=CS_VERIFIER_ADDRESS_OLD,
             )
         ]),
-        # Vote item #18
+        # Grant VERIFIER_ROLE role on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F to new CS Verifier 0xeC6Cc185f671F627fb9b6f06C8772755F587b05d (addresses to be verified and checked)
         agent_forward([
             encode_oz_grant_role(
                 contract=contracts.csm,
@@ -169,7 +169,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     ]
 
     dual_governance_call_script = submit_proposals([
-        (combined_call_script, "Kyber Oracle Rotation, CSM Parameters Change, CS Verifier rotation")
+        (voting_call_script, "Kyber Oracle Rotation, CSM Parameters Change, CS Verifier rotation")
     ])
 
     vote_desc_items, call_script_items = zip(
@@ -215,6 +215,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     return confirm_vote_script(vote_items, silent, desc_ipfs) and list(
         create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
     )
+
 
 def main():
     tx_params = {"from": get_deployer_account()}

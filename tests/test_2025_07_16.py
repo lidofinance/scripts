@@ -316,12 +316,12 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert count_vote_items_by_voting_events + count_vote_items_by_agent_events == EXPECTED_TOTAL_EVENTS_COUNT, "Incorrect voting items count"
 
     # Validate PML, ATC, RCC ET Factories removal events
-    validate_evmscript_factory_removed_event(voting_events[0], PML_STABLECOINS_FACTORY)
-    validate_evmscript_factory_removed_event(voting_events[1], PML_STETH_FACTORY)
-    validate_evmscript_factory_removed_event(voting_events[2], ATC_STABLECOINS_FACTORY)
-    validate_evmscript_factory_removed_event(voting_events[3], ATC_STETH_FACTORY)
-    validate_evmscript_factory_removed_event(voting_events[4], RCC_STABLECOINS_FACTORY)
-    validate_evmscript_factory_removed_event(voting_events[5], RCC_STETH_FACTORY)
+    validate_evmscript_factory_removed_event(voting_events[0], PML_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
+    validate_evmscript_factory_removed_event(voting_events[1], PML_STETH_FACTORY, emitted_by=EASY_TRACK)
+    validate_evmscript_factory_removed_event(voting_events[2], ATC_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
+    validate_evmscript_factory_removed_event(voting_events[3], ATC_STETH_FACTORY, emitted_by=EASY_TRACK)
+    validate_evmscript_factory_removed_event(voting_events[4], RCC_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
+    validate_evmscript_factory_removed_event(voting_events[5], RCC_STETH_FACTORY, emitted_by=EASY_TRACK)
 
     # Validate oracle rotation events
     validate_hash_consensus_member_removed(
