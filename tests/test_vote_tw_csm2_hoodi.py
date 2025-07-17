@@ -599,355 +599,453 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # --- VALIDATE EVENTS ---
 
-    # voting_events = group_voting_events_from_receipt(vote_tx)
-    # assert len(voting_events) == 2, "Unexpected number of voting events"
-    # dg_voting_event, dg_bypass_voting_event = voting_events
+    voting_events = group_voting_events_from_receipt(vote_tx)
+    dg_execution_events = group_dg_events_from_receipt(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_EXECUTORS[0])
 
-    # validate_dual_governance_submit_event(
-    #     dg_voting_event,
-    #     proposal_id,
-    #     proposer=VOTING,
-    #     executor=DUAL_GOVERNANCE_EXECUTORS[0],
-    # )
-    # dg_execution_events = group_dg_events_from_receipt(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_EXECUTORS[0])
-    # assert len(dg_execution_events) == 54, "Unexpected number of dual governance events"
+    # Validate voting events structure
+    assert len(voting_events) == 4, "Unexpected number of voting events"
+    dg_voting_event, dg_bypass_voting_event1, dg_bypass_voting_event2, dg_bypass_voting_event3 = voting_events
 
-    # # 1. Lido Locator upgrade events
-    # validate_proxy_upgrade_event(dg_execution_events[0], LIDO_LOCATOR_IMPL, emitted_by=contracts.lido_locator)
+    # Validate DG execution events structure
+    assert len(dg_execution_events) == 64, "Unexpected number of dual governance events"
 
-    # # 2. VEBO upgrade events
-    # validate_proxy_upgrade_event(dg_execution_events[1], VALIDATORS_EXIT_BUS_ORACLE_IMPL, emitted_by=contracts.validators_exit_bus_oracle)
+    # Main DG voting event validation
+    validate_dual_governance_submit_event(
+        dg_voting_event,
+        proposal_id,
+        proposer=VOTING,
+        executor=DUAL_GOVERNANCE_EXECUTORS[0],
+    )
 
-    # # 3. VEBO finalize upgrade events
-    # validate_contract_version_set_event(dg_execution_events[2], version=2, emitted_by=contracts.validators_exit_bus_oracle)
-    # assert 'ExitRequestsLimitSet' in dg_execution_events[2], "ExitRequestsLimitSet event not found"
-    # assert dg_execution_events[2]['ExitRequestsLimitSet'][0]['maxExitRequestsLimit'] == 13000, "Wrong maxExitRequestsLimit"
-    # assert dg_execution_events[2]['ExitRequestsLimitSet'][0]['exitsPerFrame'] == 1, "Wrong exitsPerFrame"
-    # assert dg_execution_events[2]['ExitRequestsLimitSet'][0]['frameDurationInSec'] == 48, "Wrong frameDurationInSec"
+    # Validate EasyTrack bypass events for new factories
+    validate_evmscript_factory_added_event(
+        event=dg_bypass_voting_event1,
+        p=EVMScriptFactoryAdded(
+            factory_addr=EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY,
+            permissions=create_permissions(interface.CSVettedGate(CS_VETTED_GATE_ADDRESS), "setTreeParams")
+        ),
+        emitted_by=contracts.easy_track,
+    )
 
-    # # 4. Grant VEBO MANAGE_CONSENSUS_VERSION_ROLE to Agent
-    # validate_role_grant_event(
-    #     dg_execution_events[3],
-    #     role_hash=web3.keccak(text="MANAGE_CONSENSUS_VERSION_ROLE").hex(),
-    #     account=contracts.agent.address,
-    #     emitted_by=contracts.validators_exit_bus_oracle
-    # )
+    validate_evmscript_factory_added_event(
+        event=dg_bypass_voting_event2,
+        p=EVMScriptFactoryAdded(
+            factory_addr=EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
+            permissions=create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")
+        ),
+        emitted_by=contracts.easy_track,
+    )
 
-    # # 5. Set VEBO consensus version to 4
-    # validate_consensus_version_set_event(
-    #     dg_execution_events[4],
-    #     new_version=4,
-    #     prev_version=3,
-    #     emitted_by=contracts.validators_exit_bus_oracle
-    # )
+    validate_evmscript_factory_added_event(
+        event=dg_bypass_voting_event3,
+        p=EVMScriptFactoryAdded(
+            factory_addr=EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
+            permissions=create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")
+        ),
+        emitted_by=contracts.easy_track,
+    )
 
-    # # 6. Revoke VEBO MANAGE_CONSENSUS_VERSION_ROLE from Agent
-    # validate_role_revoke_event(
-    #     dg_execution_events[5],
-    #     role_hash=web3.keccak(text="MANAGE_CONSENSUS_VERSION_ROLE").hex(),
-    #     account=contracts.agent.address,
-    #     emitted_by=contracts.validators_exit_bus_oracle
-    # )
+    # === DG EXECUTION EVENTS VALIDATION ===
 
-    # # 7. Grant TWG ADD_FULL_WITHDRAWAL_REQUEST_ROLE to CS Ejector
-    # validate_role_grant_event(
-    #     dg_execution_events[6],
-    #     role_hash=web3.keccak(text="ADD_FULL_WITHDRAWAL_REQUEST_ROLE").hex(),
-    #     account=cs_ejector.address,
-    #     emitted_by=triggerable_withdrawals_gateway
-    # )
+    # 0. Lido Locator upgrade events
+    validate_proxy_upgrade_event(dg_execution_events[0], LIDO_LOCATOR_IMPL, emitted_by=contracts.lido_locator)
 
-    # # 8. Grant TWG ADD_FULL_WITHDRAWAL_REQUEST_ROLE to VEBO
-    # validate_role_grant_event(
-    #     dg_execution_events[7],
-    #     role_hash=web3.keccak(text="ADD_FULL_WITHDRAWAL_REQUEST_ROLE").hex(),
-    #     account=contracts.validators_exit_bus_oracle.address,
-    #     emitted_by=triggerable_withdrawals_gateway
-    # )
+    # 1. VEBO upgrade events
+    validate_proxy_upgrade_event(dg_execution_events[1], VALIDATORS_EXIT_BUS_ORACLE_IMPL, emitted_by=contracts.validators_exit_bus_oracle)
 
-    # # 9. Update WithdrawalVault implementation
-    # validate_proxy_upgrade_event(dg_execution_events[8], WITHDRAWAL_VAULT_IMPL, emitted_by=contracts.withdrawal_vault)
+    # 2. VEBO finalize upgrade events
+    validate_contract_version_set_event(dg_execution_events[2], version=2, emitted_by=contracts.validators_exit_bus_oracle)
+    assert 'ExitRequestsLimitSet' in dg_execution_events[2], "ExitRequestsLimitSet event not found"
+    assert dg_execution_events[2]['ExitRequestsLimitSet'][0]['maxExitRequestsLimit'] == 13000, "Wrong maxExitRequestsLimit"
+    assert dg_execution_events[2]['ExitRequestsLimitSet'][0]['exitsPerFrame'] == 1, "Wrong exitsPerFrame"
+    assert dg_execution_events[2]['ExitRequestsLimitSet'][0]['frameDurationInSec'] == 48, "Wrong frameDurationInSec"
 
-    # # 10. Call finalizeUpgrade_v2 on WithdrawalVault
-    # validate_contract_version_set_event(dg_execution_events[9], version=2, emitted_by=contracts.withdrawal_vault)
+    # 3. Grant VEBO MANAGE_CONSENSUS_VERSION_ROLE to Agent
+    validate_role_grant_event(
+        dg_execution_events[3],
+        role_hash=web3.keccak(text="MANAGE_CONSENSUS_VERSION_ROLE").hex(),
+        account=contracts.agent.address,
+        emitted_by=contracts.validators_exit_bus_oracle
+    )
 
-    # # 11. Update AO implementation
-    # validate_proxy_upgrade_event(dg_execution_events[10], ACCOUNTING_ORACLE_IMPL, emitted_by=contracts.accounting_oracle)
+    # 4. Set VEBO consensus version to 4
+    validate_consensus_version_set_event(
+        dg_execution_events[4],
+        new_version=4,
+        prev_version=3,
+        emitted_by=contracts.validators_exit_bus_oracle
+    )
 
-    # # 12. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-    # validate_role_grant_event(
-    #     dg_execution_events[11],
-    #     role_hash=web3.keccak(text="MANAGE_CONSENSUS_VERSION_ROLE").hex(),
-    #     account=contracts.agent.address,
-    #     emitted_by=contracts.accounting_oracle
-    # )
+    # 5. Revoke VEBO MANAGE_CONSENSUS_VERSION_ROLE from Agent
+    validate_role_revoke_event(
+        dg_execution_events[5],
+        role_hash=web3.keccak(text="MANAGE_CONSENSUS_VERSION_ROLE").hex(),
+        account=contracts.agent.address,
+        emitted_by=contracts.validators_exit_bus_oracle
+    )
 
-    # # 13. Bump AO consensus version to 4
-    # validate_consensus_version_set_event(
-    #     dg_execution_events[12],
-    #     new_version=4,
-    #     prev_version=3,
-    #     emitted_by=contracts.accounting_oracle
-    # )
+    # 6. Grant TWG ADD_FULL_WITHDRAWAL_REQUEST_ROLE to CS Ejector
+    validate_role_grant_event(
+        dg_execution_events[6],
+        role_hash=web3.keccak(text="ADD_FULL_WITHDRAWAL_REQUEST_ROLE").hex(),
+        account=CS_EJECTOR_ADDRESS,
+        emitted_by=triggerable_withdrawals_gateway
+    )
 
-    # # 14. Revoke AO MANAGE_CONSENSUS_VERSION_ROLE from the AGENT
-    # validate_role_revoke_event(
-    #     dg_execution_events[13],
-    #     role_hash=web3.keccak(text="MANAGE_CONSENSUS_VERSION_ROLE").hex(),
-    #     account=contracts.agent.address,
-    #     emitted_by=contracts.accounting_oracle
-    # )
+    # 7. Grant TWG ADD_FULL_WITHDRAWAL_REQUEST_ROLE to VEBO
+    validate_role_grant_event(
+        dg_execution_events[7],
+        role_hash=web3.keccak(text="ADD_FULL_WITHDRAWAL_REQUEST_ROLE").hex(),
+        account=contracts.validators_exit_bus_oracle.address,
+        emitted_by=triggerable_withdrawals_gateway
+    )
 
-    # # 15. Update SR implementation
-    # validate_proxy_upgrade_event(dg_execution_events[14], STAKING_ROUTER_IMPL, emitted_by=contracts.staking_router)
+    # 8. Grant VEBO SUBMIT_REPORT_HASH_ROLE to EasyTrack executor
+    validate_role_grant_event(
+        dg_execution_events[8],
+        role_hash=web3.keccak(text="SUBMIT_REPORT_HASH_ROLE").hex(),
+        account=EASYTRACK_EVMSCRIPT_EXECUTOR,
+        emitted_by=contracts.validators_exit_bus_oracle
+    )
 
-    # # 16. Grant SR REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitVerifier
-    # validate_role_grant_event(
-    #     dg_execution_events[15],
-    #     role_hash=web3.keccak(text="REPORT_VALIDATOR_EXITING_STATUS_ROLE").hex(),
-    #     account=VALIDATOR_EXIT_VERIFIER,
-    #     emitted_by=contracts.staking_router
-    # )
+    # 9. Connect TWG to Dual Governance tiebreaker
+    assert 'SealableWithdrawalBlockerAdded' in dg_execution_events[9], "SealableWithdrawalBlockerAdded event not found"
+    assert dg_execution_events[9]['SealableWithdrawalBlockerAdded'][0]['sealable'] == TRIGGERABLE_WITHDRAWALS_GATEWAY, "Wrong sealableWithdrawalBlocker"
 
-    # # 17. Grant SR REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG
-    # validate_role_grant_event(
-    #     dg_execution_events[16],
-    #     role_hash=web3.keccak(text="REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE").hex(),
-    #     account=triggerable_withdrawals_gateway.address,
-    #     emitted_by=contracts.staking_router
-    # )
+    # 10. Update WithdrawalVault implementation
+    validate_proxy_upgrade_event(dg_execution_events[10], WITHDRAWAL_VAULT_IMPL, emitted_by=contracts.withdrawal_vault)
 
-    # # 18. Grant APP_MANAGER_ROLE on Kernel to Voting
-    # assert 'SetPermission' in dg_execution_events[17]
-    # assert dg_execution_events[17]['SetPermission'][0]['allowed'] is True
+    # 11. Call finalizeUpgrade_v2 on WithdrawalVault
+    validate_contract_version_set_event(dg_execution_events[11], version=2, emitted_by=contracts.withdrawal_vault)
 
-    # # 19. Set new implementation for NOR
-    # assert 'SetApp' in dg_execution_events[18]
+    # 12. Update AO implementation
+    validate_proxy_upgrade_event(dg_execution_events[12], ACCOUNTING_ORACLE_IMPL, emitted_by=contracts.accounting_oracle)
 
-    # # 20. Finalize upgrade for NOR
-    # validate_contract_version_set_event(dg_execution_events[19], version=4, emitted_by=contracts.node_operators_registry)
-    # assert 'ExitDeadlineThresholdChanged' in dg_execution_events[19]
-    # assert dg_execution_events[19]['ExitDeadlineThresholdChanged'][0]['threshold'] == 1800
+    # 13. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+    validate_role_grant_event(
+        dg_execution_events[13],
+        role_hash=web3.keccak(text="MANAGE_CONSENSUS_VERSION_ROLE").hex(),
+        account=contracts.agent.address,
+        emitted_by=contracts.accounting_oracle
+    )
 
-    # # 21. Set new implementation for sDVT
-    # assert 'SetApp' in dg_execution_events[20]
+    # 14. Bump AO consensus version to 4
+    validate_consensus_version_set_event(
+        dg_execution_events[14],
+        new_version=4,
+        prev_version=3,
+        emitted_by=contracts.accounting_oracle
+    )
 
-    # # 22. Finalize upgrade for sDVT
-    # validate_contract_version_set_event(dg_execution_events[21], version=4, emitted_by=contracts.simple_dvt)
-    # assert 'ExitDeadlineThresholdChanged' in dg_execution_events[21]
-    # assert dg_execution_events[21]['ExitDeadlineThresholdChanged'][0]['threshold'] == 1800
+    # 15. Revoke AO MANAGE_CONSENSUS_VERSION_ROLE from the AGENT
+    validate_role_revoke_event(
+        dg_execution_events[15],
+        role_hash=web3.keccak(text="MANAGE_CONSENSUS_VERSION_ROLE").hex(),
+        account=contracts.agent.address,
+        emitted_by=contracts.accounting_oracle
+    )
 
-    # # 23. Revoke APP_MANAGER_ROLE on Kernel from Voting
-    # assert 'SetPermission' in dg_execution_events[22]
-    # assert dg_execution_events[22]['SetPermission'][0]['allowed'] is False
+    # 16. Call finalizeUpgrade_v3() on AO
+    validate_contract_version_set_event(dg_execution_events[16], version=3, emitted_by=contracts.accounting_oracle)
 
-    # # 24. Grant CONFIG_MANAGER_ROLE on OracleDaemonConfig to Agent
-    # validate_role_grant_event(
-    #     dg_execution_events[23],
-    #     role_hash=contracts.oracle_daemon_config.CONFIG_MANAGER_ROLE().hex(),
-    #     account=contracts.agent.address,
-    #     emitted_by=contracts.oracle_daemon_config
-    # )
+    # 17. Update SR implementation
+    validate_proxy_upgrade_event(dg_execution_events[17], STAKING_ROUTER_IMPL, emitted_by=contracts.staking_router)
 
-    # # 25. Unset NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP
-    # assert 'ConfigValueUnset' in dg_execution_events[24]
-    # assert 'NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP' in dg_execution_events[24]['ConfigValueUnset'][0]['key']
+    # 18. Grant SR REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitVerifier
+    validate_role_grant_event(
+        dg_execution_events[18],
+        role_hash=web3.keccak(text="REPORT_VALIDATOR_EXITING_STATUS_ROLE").hex(),
+        account=VALIDATOR_EXIT_VERIFIER,
+        emitted_by=contracts.staking_router
+    )
 
-    # # 26. Unset VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS
-    # assert 'ConfigValueUnset' in dg_execution_events[25]
-    # assert 'VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS' in dg_execution_events[25]['ConfigValueUnset'][0]['key']
+    # 19. Grant SR REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG
+    validate_role_grant_event(
+        dg_execution_events[19],
+        role_hash=web3.keccak(text="REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE").hex(),
+        account=triggerable_withdrawals_gateway.address,
+        emitted_by=contracts.staking_router
+    )
 
-    # # 27. Unset VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS
-    # assert 'ConfigValueUnset' in dg_execution_events[26]
-    # assert 'VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS' in dg_execution_events[26]['ConfigValueUnset'][0]['key']
+    # 20. Grant APP_MANAGER_ROLE on Kernel to Voting
+    assert 'SetPermission' in dg_execution_events[20]
+    assert dg_execution_events[20]['SetPermission'][0]['allowed'] is True
 
-    # # 28. Set EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS
-    # assert 'ConfigValueSet' in dg_execution_events[27]
-    # assert 'EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS' in dg_execution_events[27]['ConfigValueSet'][0]['key']
-    # assert convert.to_int(dg_execution_events[27]['ConfigValueSet'][0]['value']) == EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS
+    # 21. Set new implementation for NOR
+    assert 'SetApp' in dg_execution_events[21]
 
-    # # 29. CSM implementation upgrade
-    # validate_proxy_upgrade_event(dg_execution_events[28], CSM_IMPL_V2_ADDRESS, emitted_by=contracts.csm)
+    # 22. Finalize upgrade for NOR
+    validate_contract_version_set_event(dg_execution_events[22], version=4, emitted_by=contracts.node_operators_registry)
+    assert 'ExitDeadlineThresholdChanged' in dg_execution_events[22]
+    assert dg_execution_events[22]['ExitDeadlineThresholdChanged'][0]['threshold'] == NOR_EXIT_DEADLINE_IN_SEC
 
-    # # 30. CSM finalize upgrade validation
-    # assert 'Initialized' in dg_execution_events[29]
-    # assert dg_execution_events[29]['Initialized'][0]['version'] == 2
+    # 23. Set new implementation for sDVT
+    assert 'SetApp' in dg_execution_events[23]
 
-    # # 31. CSAccounting implementation upgrade
-    # validate_proxy_upgrade_event(dg_execution_events[30], CS_ACCOUNTING_IMPL_V2_ADDRESS, emitted_by=contracts.cs_accounting)
+    # 24. Finalize upgrade for sDVT
+    validate_contract_version_set_event(dg_execution_events[24], version=4, emitted_by=contracts.simple_dvt)
+    assert 'ExitDeadlineThresholdChanged' in dg_execution_events[24]
+    assert dg_execution_events[24]['ExitDeadlineThresholdChanged'][0]['threshold'] == NOR_EXIT_DEADLINE_IN_SEC
 
-    # # 32. CSAccounting finalize upgrade with bond curves
-    # assert 'BondCurveAdded' in dg_execution_events[31]
-    # assert len(dg_execution_events[31]['BondCurveAdded']) == len(CS_CURVES)
-    # assert 'Initialized' in dg_execution_events[31]
-    # assert dg_execution_events[31]['Initialized'][0]['version'] == 2
+    # 25. Revoke APP_MANAGER_ROLE on Kernel from Voting
+    assert 'SetPermission' in dg_execution_events[25]
+    assert dg_execution_events[25]['SetPermission'][0]['allowed'] is False
 
-    # # 33. CSFeeOracle implementation upgrade
-    # validate_proxy_upgrade_event(dg_execution_events[32], CS_FEE_ORACLE_IMPL_V2_ADDRESS, emitted_by=contracts.cs_fee_oracle)
+    # 26. Grant CONFIG_MANAGER_ROLE on OracleDaemonConfig to Agent
+    validate_role_grant_event(
+        dg_execution_events[26],
+        role_hash=contracts.oracle_daemon_config.CONFIG_MANAGER_ROLE().hex(),
+        account=contracts.agent.address,
+        emitted_by=contracts.oracle_daemon_config
+    )
 
-    # # 34. CSFeeOracle finalize upgrade with consensus version
-    # validate_consensus_version_set_event(dg_execution_events[33], new_version=3, prev_version=2, emitted_by=contracts.cs_fee_oracle)
-    # validate_contract_version_set_event(dg_execution_events[33], version=2, emitted_by=contracts.cs_fee_oracle)
+    # 27. Unset NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP
+    assert 'ConfigValueUnset' in dg_execution_events[27]
+    assert 'NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP' in dg_execution_events[27]['ConfigValueUnset'][0]['key']
 
-    # # 35. CSFeeDistributor implementation upgrade
-    # validate_proxy_upgrade_event(dg_execution_events[34], CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS, emitted_by=contracts.cs_fee_distributor)
+    # 28. Unset VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS
+    assert 'ConfigValueUnset' in dg_execution_events[28]
+    assert 'VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS' in dg_execution_events[28]['ConfigValueUnset'][0]['key']
 
-    # # 36. CSFeeDistributor finalize upgrade
-    # assert 'RebateRecipientSet' in dg_execution_events[35]
-    # assert 'Initialized' in dg_execution_events[35]
-    # assert dg_execution_events[35]['Initialized'][0]['version'] == CS_FEE_DISTRIBUTOR_V2_VERSION
+    # 29. Unset VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS
+    assert 'ConfigValueUnset' in dg_execution_events[29]
+    assert 'VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS' in dg_execution_events[29]['ConfigValueUnset'][0]['key']
 
-    # # 37. Revoke SET_BOND_CURVE_ROLE from CSM on CSAccounting
-    # validate_role_revoke_event(
-    #     dg_execution_events[36],
-    #     role_hash=contracts.cs_accounting.SET_BOND_CURVE_ROLE().hex(),
-    #     account=contracts.csm.address,
-    #     emitted_by=contracts.cs_accounting
-    # )
+    # 30. Set EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS
+    assert 'ConfigValueSet' in dg_execution_events[30]
+    assert 'EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS' in dg_execution_events[30]['ConfigValueSet'][0]['key']
+    assert convert.to_int(dg_execution_events[30]['ConfigValueSet'][0]['value']) == EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS
 
-    # # 38. Revoke RESET_BOND_CURVE_ROLE from CSM on CSAccounting
-    # validate_role_revoke_event(
-    #     dg_execution_events[37],
-    #     role_hash=web3.keccak(text="RESET_BOND_CURVE_ROLE").hex(),
-    #     account=contracts.csm.address,
-    #     emitted_by=contracts.cs_accounting
-    # )
+    # 31. CSM implementation upgrade
+    validate_proxy_upgrade_event(dg_execution_events[31], CSM_IMPL_V2_ADDRESS, emitted_by=contracts.csm)
 
-    # # 39. Revoke RESET_BOND_CURVE_ROLE from CSM committee on CSAccounting
-    # validate_role_revoke_event(
-    #     dg_execution_events[38],
-    #     role_hash=web3.keccak(text="RESET_BOND_CURVE_ROLE").hex(),
-    #     account=CSM_COMMITTEE_MS,
-    #     emitted_by=contracts.cs_accounting
-    # )
+    # 32. CSM finalize upgrade validation
+    assert 'Initialized' in dg_execution_events[32]
+    assert dg_execution_events[32]['Initialized'][0]['version'] == CSM_V2_VERSION
 
-    # # 40. Grant CREATE_NODE_OPERATOR_ROLE to permissionless gate on CSM
-    # validate_role_grant_event(
-    #     dg_execution_events[39],
-    #     role_hash=contracts.csm.CREATE_NODE_OPERATOR_ROLE().hex(),
-    #     account=cs_permissionless_gate.address,
-    #     emitted_by=contracts.csm
-    # )
+    # 33. CSAccounting implementation upgrade
+    validate_proxy_upgrade_event(dg_execution_events[33], CS_ACCOUNTING_IMPL_V2_ADDRESS, emitted_by=contracts.cs_accounting)
 
-    # # 41. Grant CREATE_NODE_OPERATOR_ROLE to vetted gate on CSM
-    # validate_role_grant_event(
-    #     dg_execution_events[40],
-    #     role_hash=contracts.csm.CREATE_NODE_OPERATOR_ROLE().hex(),
-    #     account=cs_vetted_gate.address,
-    #     emitted_by=contracts.csm
-    # )
+    # 34. CSAccounting finalize upgrade with bond curves
+    assert 'BondCurveAdded' in dg_execution_events[34]
+    assert len(dg_execution_events[34]['BondCurveAdded']) == len(CS_CURVES)
+    assert 'Initialized' in dg_execution_events[34]
+    assert dg_execution_events[34]['Initialized'][0]['version'] == CS_ACCOUNTING_V2_VERSION
 
-    # # 42. Grant SET_BOND_CURVE_ROLE to vetted gate on CSAccounting
-    # validate_role_grant_event(
-    #     dg_execution_events[41],
-    #     role_hash=contracts.cs_accounting.SET_BOND_CURVE_ROLE().hex(),
-    #     account=cs_vetted_gate.address,
-    #     emitted_by=contracts.cs_accounting
-    # )
+    # 35. CSFeeOracle implementation upgrade
+    validate_proxy_upgrade_event(dg_execution_events[35], CS_FEE_ORACLE_IMPL_V2_ADDRESS, emitted_by=contracts.cs_fee_oracle)
 
-    # # 43. Revoke VERIFIER_ROLE from old verifier on CSM
-    # validate_role_revoke_event(
-    #     dg_execution_events[42],
-    #     role_hash=contracts.csm.VERIFIER_ROLE().hex(),
-    #     account=contracts.cs_verifier.address,
-    #     emitted_by=contracts.csm
-    # )
+    # 36. CSFeeOracle finalize upgrade with consensus version
+    validate_consensus_version_set_event(dg_execution_events[36], new_version=3, prev_version=2, emitted_by=contracts.cs_fee_oracle)
+    validate_contract_version_set_event(dg_execution_events[36], version=CS_FEE_ORACLE_V2_VERSION, emitted_by=contracts.cs_fee_oracle)
 
-    # # 44. Grant VERIFIER_ROLE to new verifier on CSM
-    # validate_role_grant_event(
-    #     dg_execution_events[43],
-    #     role_hash=contracts.csm.VERIFIER_ROLE().hex(),
-    #     account=cs_verifier_v2.address,
-    #     emitted_by=contracts.csm
-    # )
+    # 37. CSFeeDistributor implementation upgrade
+    validate_proxy_upgrade_event(dg_execution_events[37], CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS, emitted_by=contracts.cs_fee_distributor)
 
-    # # 45. Revoke PAUSE_ROLE from old GateSeal on CSM
-    # validate_role_revoke_event(
-    #     dg_execution_events[44],
-    #     role_hash=contracts.csm.PAUSE_ROLE().hex(),
-    #     account=CS_GATE_SEAL_ADDRESS,
-    #     emitted_by=contracts.csm
-    # )
+    # 38. CSFeeDistributor finalize upgrade
+    assert 'RebateRecipientSet' in dg_execution_events[38]
+    assert 'Initialized' in dg_execution_events[38]
+    assert dg_execution_events[38]['Initialized'][0]['version'] == CS_FEE_DISTRIBUTOR_V2_VERSION
 
-    # # 46. Revoke PAUSE_ROLE from old GateSeal on CSAccounting
-    # validate_role_revoke_event(
-    #     dg_execution_events[45],
-    #     role_hash=contracts.cs_accounting.PAUSE_ROLE().hex(),
-    #     account=CS_GATE_SEAL_ADDRESS,
-    #     emitted_by=contracts.cs_accounting
-    # )
+    # 39. Revoke SET_BOND_CURVE_ROLE from CSM on CSAccounting
+    validate_role_revoke_event(
+        dg_execution_events[39],
+        role_hash=contracts.cs_accounting.SET_BOND_CURVE_ROLE().hex(),
+        account=contracts.csm.address,
+        emitted_by=contracts.cs_accounting
+    )
 
-    # # 47. Revoke PAUSE_ROLE from old GateSeal on CSFeeOracle
-    # validate_role_revoke_event(
-    #     dg_execution_events[46],
-    #     role_hash=contracts.cs_fee_oracle.PAUSE_ROLE().hex(),
-    #     account=CS_GATE_SEAL_ADDRESS,
-    #     emitted_by=contracts.cs_fee_oracle
-    # )
+    # 40. Revoke RESET_BOND_CURVE_ROLE from CSM on CSAccounting
+    validate_role_revoke_event(
+        dg_execution_events[40],
+        role_hash=web3.keccak(text="RESET_BOND_CURVE_ROLE").hex(),
+        account=contracts.csm.address,
+        emitted_by=contracts.cs_accounting
+    )
 
-    # # 48. Grant PAUSE_ROLE to new GateSeal on CSM
-    # validate_role_grant_event(
-    #     dg_execution_events[47],
-    #     role_hash=contracts.csm.PAUSE_ROLE().hex(),
-    #     account=CS_GATE_SEAL_V2_ADDRESS,
-    #     emitted_by=contracts.csm
-    # )
+    # 41. Revoke RESET_BOND_CURVE_ROLE from CSM committee on CSAccounting
+    validate_role_revoke_event(
+        dg_execution_events[41],
+        role_hash=web3.keccak(text="RESET_BOND_CURVE_ROLE").hex(),
+        account=CSM_COMMITTEE_MS,
+        emitted_by=contracts.cs_accounting
+    )
 
-    # # 49. Grant PAUSE_ROLE to new GateSeal on CSAccounting
-    # validate_role_grant_event(
-    #     dg_execution_events[48],
-    #     role_hash=contracts.cs_accounting.PAUSE_ROLE().hex(),
-    #     account=CS_GATE_SEAL_V2_ADDRESS,
-    #     emitted_by=contracts.cs_accounting
-    # )
+    # 42. Grant CREATE_NODE_OPERATOR_ROLE to permissionless gate on CSM
+    validate_role_grant_event(
+        dg_execution_events[42],
+        role_hash=contracts.csm.CREATE_NODE_OPERATOR_ROLE().hex(),
+        account=CS_PERMISSIONLESS_GATE_ADDRESS,
+        emitted_by=contracts.csm
+    )
 
-    # # 50. Grant PAUSE_ROLE to new GateSeal on CSFeeOracle
-    # validate_role_grant_event(
-    #     dg_execution_events[49],
-    #     role_hash=contracts.cs_fee_oracle.PAUSE_ROLE().hex(),
-    #     account=CS_GATE_SEAL_V2_ADDRESS,
-    #     emitted_by=contracts.cs_fee_oracle
-    # )
+    # 43. Grant CREATE_NODE_OPERATOR_ROLE to vetted gate on CSM
+    validate_role_grant_event(
+        dg_execution_events[43],
+        role_hash=contracts.csm.CREATE_NODE_OPERATOR_ROLE().hex(),
+        account=CS_VETTED_GATE_ADDRESS,
+        emitted_by=contracts.csm
+    )
 
-    # # 51. Grant MANAGE_BOND_CURVES_ROLE to agent on CSAccounting
-    # validate_role_grant_event(
-    #     dg_execution_events[50],
-    #     role_hash=contracts.cs_accounting.MANAGE_BOND_CURVES_ROLE().hex(),
-    #     account=contracts.agent.address,
-    #     emitted_by=contracts.cs_accounting
-    # )
+    # 44. Grant SET_BOND_CURVE_ROLE to vetted gate on CSAccounting
+    validate_role_grant_event(
+        dg_execution_events[44],
+        role_hash=contracts.cs_accounting.SET_BOND_CURVE_ROLE().hex(),
+        account=CS_VETTED_GATE_ADDRESS,
+        emitted_by=contracts.cs_accounting
+    )
 
-    # # 52. Add ICS bond curve
-    # ics_curve_id = len(CS_CURVES)
-    # validate_bond_curve_added_event(dg_execution_events[51], curve_id=ics_curve_id, emitted_by=contracts.cs_accounting)
+    # 45. Revoke VERIFIER_ROLE from old verifier on CSM
+    validate_role_revoke_event(
+        dg_execution_events[45],
+        role_hash=contracts.csm.VERIFIER_ROLE().hex(),
+        account=contracts.cs_verifier.address,
+        emitted_by=contracts.csm
+    )
 
-    # # 53. Revoke MANAGE_BOND_CURVES_ROLE from agent on CSAccounting
-    # validate_role_revoke_event(
-    #     dg_execution_events[52],
-    #     role_hash=contracts.cs_accounting.MANAGE_BOND_CURVES_ROLE().hex(),
-    #     account=contracts.agent.address,
-    #     emitted_by=contracts.cs_accounting
-    # )
+    # 46. Grant VERIFIER_ROLE to new verifier on CSM
+    validate_role_grant_event(
+        dg_execution_events[46],
+        role_hash=contracts.csm.VERIFIER_ROLE().hex(),
+        account=CS_VERIFIER_V2_ADDRESS,
+        emitted_by=contracts.csm
+    )
 
-    # # 54. Increase CSM share in Staking Router
-    # validate_staking_module_update_event(
-    #     dg_execution_events[53],
-    #     module_id=CS_MODULE_ID,
-    #     share_limit=CS_MODULE_NEW_TARGET_SHARE_BP,
-    #     priority_share_threshold=CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP,
-    #     module_fee_points_bp=CS_MODULE_MODULE_FEE_BP,
-    #     treasury_fee_points_bp=CS_MODULE_TREASURY_FEE_BP,
-    #     max_deposits_per_block=CS_MODULE_MAX_DEPOSITS_PER_BLOCK,
-    #     min_deposit_block_distance=CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
-    #     emitted_by=contracts.staking_router
-    # )
+    # 47. Revoke PAUSE_ROLE from old GateSeal on CSM
+    validate_role_revoke_event(
+        dg_execution_events[47],
+        role_hash=contracts.csm.PAUSE_ROLE().hex(),
+        account=CS_GATE_SEAL_ADDRESS,
+        emitted_by=contracts.csm
+    )
 
-    # # 65. Add EasyTrack factory for CSSetVettedGateTree
-    # validate_evmscript_factory_added_event(
-    #     event=dg_bypass_voting_event,
-    #     p=EVMScriptFactoryAdded(
-    #         factory_addr=EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY,
-    #         permissions=create_permissions(cs_vetted_gate, "setTreeParams")
-    #     ),
-    #     emitted_by=contracts.easy_track,
-    # )
+    # 48. Revoke PAUSE_ROLE from old GateSeal on CSAccounting
+    validate_role_revoke_event(
+        dg_execution_events[48],
+        role_hash=contracts.cs_accounting.PAUSE_ROLE().hex(),
+        account=CS_GATE_SEAL_ADDRESS,
+        emitted_by=contracts.cs_accounting
+    )
+
+    # 49. Revoke PAUSE_ROLE from old GateSeal on CSFeeOracle
+    validate_role_revoke_event(
+        dg_execution_events[49],
+        role_hash=contracts.cs_fee_oracle.PAUSE_ROLE().hex(),
+        account=CS_GATE_SEAL_ADDRESS,
+        emitted_by=contracts.cs_fee_oracle
+    )
+
+    # 50. Grant PAUSE_ROLE to new GateSeal on CSM
+    validate_role_grant_event(
+        dg_execution_events[50],
+        role_hash=contracts.csm.PAUSE_ROLE().hex(),
+        account=CS_GATE_SEAL_V2_ADDRESS,
+        emitted_by=contracts.csm
+    )
+
+    # 51. Grant PAUSE_ROLE to new GateSeal on CSAccounting
+    validate_role_grant_event(
+        dg_execution_events[51],
+        role_hash=contracts.cs_accounting.PAUSE_ROLE().hex(),
+        account=CS_GATE_SEAL_V2_ADDRESS,
+        emitted_by=contracts.cs_accounting
+    )
+
+    # 52. Grant PAUSE_ROLE to new GateSeal on CSFeeOracle
+    validate_role_grant_event(
+        dg_execution_events[52],
+        role_hash=contracts.cs_fee_oracle.PAUSE_ROLE().hex(),
+        account=CS_GATE_SEAL_V2_ADDRESS,
+        emitted_by=contracts.cs_fee_oracle
+    )
+
+    # 53. Grant MANAGE_BOND_CURVES_ROLE to agent on CSAccounting
+    validate_role_grant_event(
+        dg_execution_events[53],
+        role_hash=contracts.cs_accounting.MANAGE_BOND_CURVES_ROLE().hex(),
+        account=contracts.agent.address,
+        emitted_by=contracts.cs_accounting
+    )
+
+    # 54. Add ICS bond curve
+    ics_curve_id = len(CS_CURVES)
+    validate_bond_curve_added_event(dg_execution_events[54], curve_id=ics_curve_id, emitted_by=contracts.cs_accounting)
+
+    # 55. Revoke MANAGE_BOND_CURVES_ROLE from agent on CSAccounting
+    validate_role_revoke_event(
+        dg_execution_events[55],
+        role_hash=contracts.cs_accounting.MANAGE_BOND_CURVES_ROLE().hex(),
+        account=contracts.agent.address,
+        emitted_by=contracts.cs_accounting
+    )
+
+    # 56. Increase CSM share in Staking Router
+    validate_staking_module_update_event(
+        dg_execution_events[56],
+        module_id=CS_MODULE_ID,
+        share_limit=CS_MODULE_NEW_TARGET_SHARE_BP,
+        priority_share_threshold=CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP,
+        module_fee_points_bp=CS_MODULE_MODULE_FEE_BP,
+        treasury_fee_points_bp=CS_MODULE_TREASURY_FEE_BP,
+        max_deposits_per_block=CS_MODULE_MAX_DEPOSITS_PER_BLOCK,
+        min_deposit_block_distance=CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
+        emitted_by=contracts.staking_router
+    )
+
+    # 57-63. Gate Seals and ResealManager role updates
+    # 57. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
+    validate_role_revoke_event(
+        dg_execution_events[57],
+        role_hash=contracts.withdrawal_queue.PAUSE_ROLE().hex(),
+        account=OLD_GATE_SEAL_ADDRESS,
+        emitted_by=contracts.withdrawal_queue
+    )
+
+    # 58. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal
+    validate_role_revoke_event(
+        dg_execution_events[58],
+        role_hash=contracts.validators_exit_bus_oracle.PAUSE_ROLE().hex(),
+        account=OLD_GATE_SEAL_ADDRESS,
+        emitted_by=contracts.validators_exit_bus_oracle
+    )
+
+    # 59. Grant PAUSE_ROLE on WithdrawalQueue to the new WithdrawalQueue GateSeal
+    validate_role_grant_event(
+        dg_execution_events[59],
+        role_hash=contracts.withdrawal_queue.PAUSE_ROLE().hex(),
+        account=NEW_WQ_GATE_SEAL,
+        emitted_by=contracts.withdrawal_queue
+    )
+
+    # 60. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new Triggerable Withdrawals GateSeal
+    validate_role_grant_event(
+        dg_execution_events[60],
+        role_hash=contracts.validators_exit_bus_oracle.PAUSE_ROLE().hex(),
+        account=NEW_TW_GATE_SEAL,
+        emitted_by=contracts.validators_exit_bus_oracle
+    )
+
+    # 61. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to the new Triggerable Withdrawals GateSeal
+    validate_role_grant_event(
+        dg_execution_events[61],
+        role_hash=triggerable_withdrawals_gateway.PAUSE_ROLE().hex(),
+        account=NEW_TW_GATE_SEAL,
+        emitted_by=triggerable_withdrawals_gateway
+    )
+
+    # 62. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager
+    validate_role_grant_event(
+        dg_execution_events[62],
+        role_hash=triggerable_withdrawals_gateway.PAUSE_ROLE().hex(),
+        account=RESEAL_MANAGER,
+        emitted_by=triggerable_withdrawals_gateway
+    )
+
+    # 63. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager
+    validate_role_grant_event(
+        dg_execution_events[63],
+        role_hash=triggerable_withdrawals_gateway.RESUME_ROLE().hex(),
+        account=RESEAL_MANAGER,
+        emitted_by=triggerable_withdrawals_gateway
+    )
+
