@@ -24,10 +24,10 @@ NODE_PORT ?= 8545
 
 
 test-1/2:
-	poetry run brownie test tests/*.py tests/regression/test_staking_router_stake_distribution.py --network mfh-1
+	poetry run brownie test tests/*.py tests/regression/test_staking_router_stake_distribution.py --durations=20 --network mfh-1
 
 test-2/2:
-	$(call run_2nd_test,brownie test -k 'not test_staking_router_stake_distribution.py' --network mfh-2)
+	$(call run_2nd_test,brownie test -k 'not test_staking_router_stake_distribution.py' --durations=20 --network mfh-2)
 
 init: init-scripts init-core
 
