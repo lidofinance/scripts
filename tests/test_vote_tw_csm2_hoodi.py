@@ -178,7 +178,7 @@ AO_CONSENSUS_VERSION = 4
 VEBO_CONSENSUS_VERSION = 4
 CSM_CONSENSUS_VERSION = 3
 
-EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 50400
+EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 14 * 7200
 
 NOR_EXIT_DEADLINE_IN_SEC = 172800
 
@@ -444,7 +444,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # Validate exit request limit parameters from finalizeUpgrade_v2 call
     exit_request_limits = contracts.validators_exit_bus_oracle.getExitRequestLimitFullInfo()
-    assert exit_request_limits[0] == 13000, "maxExitRequestsLimit should be 13000"
+    assert exit_request_limits[0] == 11200, "maxExitRequestsLimit should be 11200"
     assert exit_request_limits[1] == 1, "exitsPerFrame should be 1"
     assert exit_request_limits[2] == 48, "frameDurationInSec should be 48 hours in seconds"
 
@@ -657,7 +657,7 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     # 2. VEBO finalize upgrade events
     validate_contract_version_set_event(dg_execution_events[2], version=2, emitted_by=contracts.validators_exit_bus_oracle)
     assert 'ExitRequestsLimitSet' in dg_execution_events[2], "ExitRequestsLimitSet event not found"
-    assert dg_execution_events[2]['ExitRequestsLimitSet'][0]['maxExitRequestsLimit'] == 13000, "Wrong maxExitRequestsLimit"
+    assert dg_execution_events[2]['ExitRequestsLimitSet'][0]['maxExitRequestsLimit'] == 11200, "Wrong maxExitRequestsLimit"
     assert dg_execution_events[2]['ExitRequestsLimitSet'][0]['exitsPerFrame'] == 1, "Wrong exitsPerFrame"
     assert dg_execution_events[2]['ExitRequestsLimitSet'][0]['frameDurationInSec'] == 48, "Wrong frameDurationInSec"
 
