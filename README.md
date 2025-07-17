@@ -37,12 +37,10 @@ cd scripts
 | ------------- | ------------- | ------------- |
 | `ETH_RPC_URL` | **mandatory**     | **mandatory**     |
 | `ETH_RPC_URL2` | optional* | -     |
-| `ETH_RPC_URL3` | optional* | -     |
 | `PINATA_CLOUD_TOKEN`  | -     | **mandatory**     |
 | `DEPLOYER`            | -     | **mandatory**     |
 | `ETHERSCAN_TOKEN`     | **mandatory**     | **mandatory**     |
 | `ETHERSCAN_TOKEN2`     | optional*     | -     |
-| `ETHERSCAN_TOKEN3`     | optional*     | -     |
 
 _*may be optionally set when running tests asynchronously to reduce the risk of getting 529 error_
 
