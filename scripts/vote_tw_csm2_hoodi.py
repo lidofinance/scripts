@@ -749,7 +749,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "57. Increase CSM share in Staking Router from 15% to 20%",
+            "57. Increase CSM share in Staking Router from 15% to 16%",
             agent_forward([encode_staking_router_update_csm_module_share()])
         ),
         # --- Gate Seals
