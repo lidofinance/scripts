@@ -28,10 +28,10 @@ Vote 18/07/2025 [HOODI]
 19. Call finalizeUpgrade_v3() on SR
 20. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitVerifier
 21. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG
---- NOR
+--- Curated Staking Module
 22. Grant APP_MANAGER_ROLE role to the AGENT on Kernel
 23. Update `NodeOperatorsRegistry` implementation
-24. Call finalizeUpgrade_v4 on NOR
+24. Call finalizeUpgrade_v4 on Curated Staking Module
 --- sDVT
 25. Update `SimpleDVT` implementation
 26. Call finalizeUpgrade_v4 on sDVT
@@ -132,12 +132,12 @@ VEBO_CONSENSUS_VERSION = 4
 CSM_CONSENSUS_VERSION = 3
 
 # Fixed constants from Holesky version
-EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 7 * 7200  # 7 * 7200 in Holesky
-NOR_EXIT_DEADLINE_IN_SEC = 172800  # 172800 in Holesky (48 hours)
+EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 14 * 7200  # 14 days in slots (assuming 12 seconds per slot)
+NOR_EXIT_DEADLINE_IN_SEC = 172800  # 172800
 
 # VEB parameters from Holesky
 MAX_VALIDATORS_PER_REPORT = 600
-MAX_EXIT_REQUESTS_LIMIT = 13000
+MAX_EXIT_REQUESTS_LIMIT = 11200
 EXITS_PER_FRAME = 1
 FRAME_DURATION_IN_SEC = 48
 
@@ -390,7 +390,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
                 )
             ])
         ),
-        # --- NOR and sDVT
+        # --- Curated Staking Module and sDVT
         (
             "22. Grant APP_MANAGER_ROLE role to the AGENT",
             agent_forward([
@@ -418,7 +418,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "24. Call finalizeUpgrade_v4 on NOR",
+            "24. Call finalizeUpgrade_v4 on Curated Staking Module",
             agent_forward([
                 (
                     interface.NodeOperatorsRegistry(contracts.node_operators_registry).address,
