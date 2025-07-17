@@ -1048,4 +1048,3 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
         account=RESEAL_MANAGER,
         emitted_by=triggerable_withdrawals_gateway
     )
-
