@@ -211,11 +211,6 @@ class ContractsLazyLoader:
         return interface.CSModule(CSM_ADDRESS)
 
     @property
-    def cs_early_adoption(self) -> interface.CSEarlyAdoption:
-        """Deprecated"""
-        return interface.CSEarlyAdoption(CS_EARLY_ADOPTION_ADDRESS)
-
-    @property
     def cs_permissionless_gate(self) -> interface.CSPermissionlessGate:
         return interface.CSPermissionlessGate(CS_PERMISSIONLESS_GATE_ADDRESS)
 

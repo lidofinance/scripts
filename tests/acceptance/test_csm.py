@@ -3,6 +3,7 @@ import pytest
 from brownie import interface, web3, Wei  # type: ignore
 from brownie.convert.datatypes import HexString
 
+from configs.config_holesky import CS_PARAMS_REGISTRY_ADDRESS, CS_EXIT_PENALTIES_ADDRESS, CS_STRIKES_ADDRESS
 from utils.config import (
     contracts,
     ContractsLazyLoader,
@@ -25,7 +26,6 @@ from utils.config import (
     ORACLE_QUORUM,
     ORACLE_COMMITTEE,
 )
-from utils.test.helpers import ETH
 
 contracts: ContractsLazyLoader = contracts
 
@@ -38,25 +38,26 @@ def _str_to_bytes32(s: str) -> str:
 def csm():
     return contracts.csm
 
-@pytest.fixture(scope="module")
-def early_adoption():
-    return contracts.cs_early_adoption
 
 @pytest.fixture(scope="module")
 def fee_distributor():
     return contracts.cs_fee_distributor
 
+
 @pytest.fixture(scope="module")
 def fee_oracle():
     return contracts.cs_fee_oracle
+
 
 @pytest.fixture(scope="module")
 def hash_consensus():
     return contracts.csm_hash_consensus
 
+
 @pytest.fixture(scope="module")
 def accounting():
     return contracts.cs_accounting
+
 
 @pytest.fixture(scope="module")
 def verifier():
@@ -64,33 +65,67 @@ def verifier():
 
 
 @pytest.fixture(scope="module")
+def permissionless_gate():
+    return contracts.cs_permissionless_gate
+
+
+@pytest.fixture(scope="module")
+def vetted_gate():
+    return contracts.cs_vetted_gate
+
+
+@pytest.fixture(scope="module")
+def parameters_registry():
+    return contracts.cs_parameters_registry
+
+
+@pytest.fixture(scope="module")
+def ejector():
+    return contracts.cs_ejector
+
+
+@pytest.fixture(scope="module")
+def strikes():
+    return contracts.cs_strikes
+
+
+@pytest.fixture(scope="module")
+def exit_penalties():
+    return contracts.cs_exit_penalties
+
+
+@pytest.fixture(scope="module")
 def lido():
     return interface.Lido(LIDO)
 
 
-def test_proxy(csm, accounting, fee_distributor, fee_oracle):
+def test_proxy(
+    csm,
+    accounting,
+    fee_distributor,
+    fee_oracle,
+    vetted_gate,
+    strikes,
+    exit_penalties,
+):
     assert interface.OssifiableProxy(csm).proxy__getAdmin() == contracts.agent.address
     assert interface.OssifiableProxy(accounting).proxy__getAdmin() == contracts.agent.address
     assert interface.OssifiableProxy(fee_distributor).proxy__getAdmin() == contracts.agent.address
     assert interface.OssifiableProxy(fee_oracle).proxy__getAdmin() == contracts.agent.address
-    # TODO: test v2 contracts
-    # TestCSParamsRegistry
-    # TestCSEjector
-    # TestCSExitPenalties
-    # TestCSStrikes
-    # TestVettedGate
-    # TestPermissionlessGate
+    assert interface.OssifiableProxy(vetted_gate).proxy__getAdmin() == contracts.agent.address
+    assert interface.OssifiableProxy(strikes).proxy__getAdmin() == contracts.agent.address
+    assert interface.OssifiableProxy(exit_penalties).proxy__getAdmin() == contracts.agent.address
 
 
 class TestCSM:
     def test_init_state(self, csm):
         assert csm.getType() == _str_to_bytes32("community-onchain-v1")
         assert csm.LIDO_LOCATOR() == LIDO_LOCATOR
-        assert csm.accounting() == CS_ACCOUNTING_ADDRESS
-        # assert csm.keyRemovalCharge() == ETH(0.02)
+        assert csm.PARAMETERS_REGISTRY() == CS_PARAMS_REGISTRY_ADDRESS
+        assert csm.ACCOUNTING() == CS_ACCOUNTING_ADDRESS
+        assert csm.EXIT_PENALTIES() == CS_EXIT_PENALTIES_ADDRESS
 
         assert not csm.isPaused()
-        #assert csm.publicRelease()
 
 
 class TestAccounting:
@@ -100,7 +135,7 @@ class TestAccounting:
         assert accounting.LIDO() == LIDO
         assert accounting.WITHDRAWAL_QUEUE() == WITHDRAWAL_QUEUE
         assert accounting.WSTETH() == WSTETH_TOKEN
-        assert accounting.feeDistributor() == CS_FEE_DISTRIBUTOR_ADDRESS
+        assert accounting.FEE_DISTRIBUTOR() == CS_FEE_DISTRIBUTOR_ADDRESS
         assert accounting.chargePenaltyRecipient() == AGENT
         assert not accounting.isPaused()
 
@@ -109,6 +144,7 @@ class TestAccounting:
         assert lido.allowance(CS_ACCOUNTING_ADDRESS, WSTETH_TOKEN) == uin256_max
         assert lido.allowance(CS_ACCOUNTING_ADDRESS, WITHDRAWAL_QUEUE) == uin256_max
         assert lido.allowance(CS_ACCOUNTING_ADDRESS, BURNER) == uin256_max
+
 
 class TestFeeDistributor:
 
@@ -124,11 +160,12 @@ class TestFeeOracle:
         assert fee_oracle.SECONDS_PER_SLOT() == CHAIN_SECONDS_PER_SLOT
         assert fee_oracle.GENESIS_TIME() == CHAIN_GENESIS_TIME
         assert fee_oracle.FEE_DISTRIBUTOR() == CS_FEE_DISTRIBUTOR_ADDRESS
-        # TODO: check STRIKES
+        assert fee_oracle.STRIKES() == CS_STRIKES_ADDRESS
         assert fee_oracle.getContractVersion() == 2
         assert fee_oracle.getConsensusContract() == CS_ORACLE_HASH_CONSENSUS_ADDRESS
         assert fee_oracle.getConsensusVersion() == 3
         assert not fee_oracle.isPaused()
+
 
 class TestHashConsensus:
 
@@ -153,29 +190,45 @@ class TestHashConsensus:
         assert hash_consensus.getReportProcessor() == CS_FEE_ORACLE_ADDRESS
 
 
-# TODO: test v2 contracts
-# TestCSParamsRegistry
-# TestCSEjector
-# TestCSExitPenalties
-# TestCSStrikes
-# TestVettedGate
-# TestPermissionlessGate
+def test_permissionless_gate_state(permissionless_gate):
+    ...
 
-def test_early_adoption_state(early_adoption):
-    assert early_adoption.MODULE() == CSM_ADDRESS
-    assert early_adoption.CURVE_ID() == 1
+
+def test_vetted_gate_state(vetted_gate):
+    assert vetted_gate.MODULE() == CSM_ADDRESS
+    assert vetted_gate.CURVE_ID() == 1
+
+
+def test_ejector_state(ejector):
+    ...
+
+
+def test_strikes_state(strikes):
+    ...
+
+
+def test_exit_penalties_state(exit_penalties):
+    ...
+
+
+def test_parameters_registry_state(parameters_registry):
+    ...
+
 
 def test_verifier_state(verifier):
     assert verifier.WITHDRAWAL_ADDRESS() == WITHDRAWAL_VAULT
     assert verifier.MODULE() == CSM_ADDRESS
     assert verifier.SLOTS_PER_EPOCH() == CHAIN_SLOTS_PER_EPOCH
-    print(type(verifier.GI_HISTORICAL_SUMMARIES_PREV()))
-    # TODO: add historical roots gIndexes
-    assert verifier.GI_HISTORICAL_SUMMARIES_PREV() == HexString("0x0000000000000000000000000000000000000000000000000000000000003b00", "bytes")
-    assert verifier.GI_HISTORICAL_SUMMARIES_CURR() == HexString("0x0000000000000000000000000000000000000000000000000000000000005b00", "bytes")
+
     assert verifier.GI_FIRST_WITHDRAWAL_PREV() == HexString("0x0000000000000000000000000000000000000000000000000000000000e1c004", "bytes")
     assert verifier.GI_FIRST_WITHDRAWAL_CURR() == HexString("0x000000000000000000000000000000000000000000000000000000000161c004", "bytes")
     assert verifier.GI_FIRST_VALIDATOR_PREV() == HexString("0x0000000000000000000000000000000000000000000000000056000000000028", "bytes")
     assert verifier.GI_FIRST_VALIDATOR_CURR() == HexString("0x0000000000000000000000000000000000000000000000000096000000000028", "bytes")
+    assert verifier.GI_HISTORICAL_SUMMARY_PREV() == HexString("0x0000000000000000000000000000000000000000000000000000000000003b00", "bytes")
+    assert verifier.GI_HISTORICAL_SUMMARY_CURR() == HexString("0x0000000000000000000000000000000000000000000000000000000000005b00", "bytes")
+    assert verifier.GI_FIRST_BLOCK_ROOT_IN_SUMMARY_PREV() == HexString("0x", "bytes")
+    assert verifier.GI_FIRST_BLOCK_ROOT_IN_SUMMARY_CURR() == HexString("0x", "bytes")
+
     assert verifier.FIRST_SUPPORTED_SLOT() == 8626176
     assert verifier.PIVOT_SLOT() == 11649024
+    assert verifier.CAPELLA_SLOT() == 11649024
