@@ -104,7 +104,6 @@ from utils.config import (
     AGENT,
     contracts,
 )
-from utils.dual_governance import submit_proposals
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 from utils.easy_track import (
@@ -854,6 +853,25 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
 
     return create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
 
+def extract_as_dg_admin_call(call_script: Sequence[Tuple[str, str]]) -> Tuple[str, str]:
+    print(f"Extracting call script for dual governance admin: {call_script}")
+    return (call_script[0][0], call_script[0][1])
+
+def submit_proposals(
+    call_script: Sequence[Tuple],
+    description: Optional[str] = "",
+) -> Tuple[str, str]:
+    dual_governance = contracts.dual_governance
+    forwarded = []
+
+    for _call in call_script:
+        forwarded.append(extract_as_dg_admin_call([_call]))
+
+    print(f"Forwarding call script to dual governance: {forwarded}")
+    return (
+        contracts.dual_governance.address,
+        dual_governance.submitProposal.encode_input([(_call[0], 0, _call[1]) for _call in forwarded], description),
+    )
 
 def main():
     tx_params = {"from": get_deployer_account()}
