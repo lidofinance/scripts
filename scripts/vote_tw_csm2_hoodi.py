@@ -68,7 +68,7 @@ Vote 03/07/2025 [HOODI]
 54. Grant MANAGE_BOND_CURVES_ROLE to the AGENT
 55. Add Identified Community Stakers Gate Bond Curve
 56. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT
-57. Increase CSM share in Staking Router from 15% to 20%
+57. Increase CSM share in Staking Router from 15% to 16%
 --- Gate Seals ---
 58. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
 59. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal
@@ -79,9 +79,9 @@ Vote 03/07/2025 [HOODI]
 63. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager
 64. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager
 --- EasyTrack ---
-65. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
-66. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track
-67. Add CSSetVettedGateTree factory to EasyTrack with permissions
+65. Add CSSetVettedGateTree factory to EasyTrack with permissions
+66. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
+67. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track
 """
 import time
 
@@ -143,25 +143,23 @@ EXITS_PER_FRAME = 1
 FRAME_DURATION_IN_SEC = 48
 
 # CSM
-CS_MODULE_NEW_TARGET_SHARE_BP = 2000  # 20%
-CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP = 2500  # 25%
+CS_MODULE_NEW_TARGET_SHARE_BP = 1600  # 16%
+CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP = 2100  # 21%
 
-# TODO: Change to the correct addresses after deployment
-CS_ACCOUNTING_IMPL_V2_ADDRESS = "0x84eA74d481Ee0A5332c457a4d796187F6Ba67fEB"
-CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS = "0x1291Be112d480055DaFd8a610b7d1e203891C274"
-CS_FEE_ORACLE_IMPL_V2_ADDRESS = "0x7969c5eD335650692Bc04293B07F5BF2e7A673C0"
-CSM_IMPL_V2_ADDRESS = "0xCD8a1C3ba11CF5ECfa6267617243239504a98d90"
+CS_ACCOUNTING_IMPL_V2_ADDRESS = "0x9483b34504292a0E4f6509e5887D2c68f7129638"
+CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS = "0xe05F7Aab7177D73f26e62a5296120583F5F18031"
+CS_FEE_ORACLE_IMPL_V2_ADDRESS = "0x752fF00fcacdB66Bc512a067F15A5E0B0b50EADB"
+CSM_IMPL_V2_ADDRESS = "0x9aE387EB2abA80B9B1ebc145597D593EFAE61f31"
 
-CS_GATE_SEAL_V2_ADDRESS = "0x1568928F73E4F5e2f748dA36bc56eCcc2fb66457"
-CS_SET_VETTED_GATE_TREE_FACTORY = ZERO_ADDRESS
-CS_EJECTOR_ADDRESS = "0xcbEAF3BDe82155F56486Fb5a1072cb8baAf547cc"
-CS_PERMISSIONLESS_GATE_ADDRESS = "0x9E545E3C0baAB3E08CdfD552C960A1050f373042"
-CS_VETTED_GATE_ADDRESS = "0x9467A509DA43CB50EB332187602534991Be1fEa4"
-CS_VERIFIER_V2_ADDRESS = "0xB0D4afd8879eD9F52b28595d31B441D079B2Ca07"
+CS_GATE_SEAL_V2_ADDRESS = "0x94a3aEB0E9148F64CB453Be2BDe2Bc0148f6AC24"
+CS_EJECTOR_ADDRESS = "0x21e271cBa32672B106737AbeB3a45E53Fe9a0df4"
+CS_PERMISSIONLESS_GATE_ADDRESS = "0x5553077102322689876A6AdFd48D75014c28acfb"
+CS_VETTED_GATE_ADDRESS = "0x10a254E724fe2b7f305F76f3F116a3969c53845f"
+CS_VERIFIER_V2_ADDRESS = "0xf805b3711cBB48F15Ae2bb27095ddC38c5339968"
 
 CS_CURVES = [
-    ([1, 2 * 10**18], [2, 1.9 * 10**18], [3, 1.8 * 10**18], [4, 1.7 * 10**18], [5, 1.6 * 10**18], [6, 1.5 * 10**18]),  # Default Curve
-    ([1, 1.5 * 10**18], [2, 1.9 * 10**18], [3, 1.8 * 10**18], [4, 1.7 * 10**18], [5, 1.6 * 10**18], [6, 1.5 * 10**18]),  # Legacy EA Curve
+    ([1, 2.4 * 10**18], [2, 1.3 * 10**18]),  # Default Curve
+    ([1, 1.5 * 10**18], [2, 1.3 * 10**18]),  # Legacy EA Curve
 ]
 CS_ICS_GATE_BOND_CURVE = ([1, 1.5 * 10**18], [2, 1.3 * 10**18])  # Identified Community Stakers Gate Bond Curve
 
@@ -175,6 +173,7 @@ RESEAL_MANAGER = "0x05172CbCDb7307228F781436b327679e4DAE166B"
 EASYTRACK_EVMSCRIPT_EXECUTOR = "0x79a20FD0FA36453B2F45eAbab19bfef43575Ba9E"
 EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0xAa3D6A8B52447F272c1E8FAaA06EA06658bd95E2"
 EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0x397206ecdbdcb1A55A75e60Fc4D054feC72E5f63"
+EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY = "0xa890fc73e1b771Ee6073e2402E631c312FF92Cd9"
 
 
 def encode_staking_router_proxy_update(implementation: str) -> Tuple[str, str]:
@@ -829,7 +828,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
 
     dg_bypass_item = {
         "65. Add CSSetVettedGateTree factory to EasyTrack with permissions": add_evmscript_factory(
-                factory=CS_SET_VETTED_GATE_TREE_FACTORY,
+                factory=EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY,
                 permissions=(create_permissions(interface.CSVettedGate(CS_VETTED_GATE_ADDRESS), "setTreeParams")),
             ),
         "66. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track": add_evmscript_factory(

@@ -172,21 +172,19 @@ EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 7200
 NOR_EXIT_DEADLINE_IN_SEC = 172800
 
 # CSM
-CS_MODULE_NEW_TARGET_SHARE_BP = 2000  # 20%
-CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP = 3000  # 30%
+CS_MODULE_NEW_TARGET_SHARE_BP = 1600  # 16%
+CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP = 2100  # 21%
 
-# TODO: Change to the correct addresses after deployment
-CS_ACCOUNTING_IMPL_V2_ADDRESS = "0x84eA74d481Ee0A5332c457a4d796187F6Ba67fEB"
-CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS = "0x1291Be112d480055DaFd8a610b7d1e203891C274"
-CS_FEE_ORACLE_IMPL_V2_ADDRESS = "0x7969c5eD335650692Bc04293B07F5BF2e7A673C0"
-CSM_IMPL_V2_ADDRESS = "0xCD8a1C3ba11CF5ECfa6267617243239504a98d90"
+CS_ACCOUNTING_IMPL_V2_ADDRESS = "0x9483b34504292a0E4f6509e5887D2c68f7129638"
+CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS = "0xe05F7Aab7177D73f26e62a5296120583F5F18031"
+CS_FEE_ORACLE_IMPL_V2_ADDRESS = "0x752fF00fcacdB66Bc512a067F15A5E0B0b50EADB"
+CSM_IMPL_V2_ADDRESS = "0x9aE387EB2abA80B9B1ebc145597D593EFAE61f31"
 
-CS_GATE_SEAL_V2_ADDRESS = "0x1568928F73E4F5e2f748dA36bc56eCcc2fb66457"
-CS_SET_VETTED_GATE_TREE_FACTORY = ZERO_ADDRESS
-CS_EJECTOR_ADDRESS = "0xcbEAF3BDe82155F56486Fb5a1072cb8baAf547cc"
-CS_PERMISSIONLESS_GATE_ADDRESS = "0x9E545E3C0baAB3E08CdfD552C960A1050f373042"
-CS_VETTED_GATE_ADDRESS = "0x9467A509DA43CB50EB332187602534991Be1fEa4"
-CS_VERIFIER_V2_ADDRESS = "0xB0D4afd8879eD9F52b28595d31B441D079B2Ca07"
+CS_GATE_SEAL_V2_ADDRESS = "0x94a3aEB0E9148F64CB453Be2BDe2Bc0148f6AC24"
+CS_EJECTOR_ADDRESS = "0x21e271cBa32672B106737AbeB3a45E53Fe9a0df4"
+CS_PERMISSIONLESS_GATE_ADDRESS = "0x5553077102322689876A6AdFd48D75014c28acfb"
+CS_VETTED_GATE_ADDRESS = "0x10a254E724fe2b7f305F76f3F116a3969c53845f"
+CS_VERIFIER_V2_ADDRESS = "0xf805b3711cBB48F15Ae2bb27095ddC38c5339968"
 
 CS_CURVES = [
     ([1, 2.4 * 10**18], [2, 1.3 * 10**18]),  # Default Curve
@@ -199,6 +197,8 @@ CSM_V2_VERSION = 2
 CS_ACCOUNTING_V2_VERSION = 2
 CS_FEE_ORACLE_V2_VERSION = 2
 CS_FEE_DISTRIBUTOR_V2_VERSION = 2
+
+EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY = "0xa890fc73e1b771Ee6073e2402E631c312FF92Cd9"
 
 
 def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
@@ -372,9 +372,9 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert csm_share_before != CS_MODULE_NEW_TARGET_SHARE_BP, f"CSM share should not be {CS_MODULE_NEW_TARGET_SHARE_BP} before vote, current: {csm_share_before}"
     assert csm_priority_exit_threshold_before != CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP, f"CSM priority exit threshold should not be {CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP} before vote, current: {csm_priority_exit_threshold_before}"
 
-    # CSM Step 53: EasyTrack factories before vote (pre-vote state)
+    # CSM Step 65: EasyTrack factories before vote (pre-vote state)
     initial_factories = contracts.easy_track.getEVMScriptFactories()
-    assert CS_SET_VETTED_GATE_TREE_FACTORY not in initial_factories, "EasyTrack should not have CSMSetVettedGateTree factory before vote"
+    assert EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY not in initial_factories, "EasyTrack should not have CSMSetVettedGateTree factory before vote"
 
     # START VOTE
     if len(vote_ids_from_env) > 0:
@@ -530,9 +530,9 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
     csm_priority_exit_threshold_after = csm_module_after['priorityExitShareThreshold']
     assert csm_priority_exit_threshold_after == CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP, f"CSM priority exit threshold should be {CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP} after vote, but got {csm_priority_exit_threshold_after}"
 
-    # Step 54: Add EasyTrack factory for CSSetVettedGateTree
+    # Step 65: Add EasyTrack factory for CSSetVettedGateTree
     new_factories = contracts.easy_track.getEVMScriptFactories()
-    assert CS_SET_VETTED_GATE_TREE_FACTORY in new_factories, "EasyTrack should have CSSetVettedGateTree factory after vote"
+    assert EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY in new_factories, "EasyTrack should have CSSetVettedGateTree factory after vote"
 
     # --- VALIDATE EVENTS ---
 
@@ -879,11 +879,11 @@ def test_tw_vote(helpers, accounts, vote_ids_from_env, stranger):
         emitted_by=contracts.staking_router
     )
 
-    # 55. Add EasyTrack factory for CSSetVettedGateTree
+    # 65. Add EasyTrack factory for CSSetVettedGateTree
     validate_evmscript_factory_added_event(
         event=dg_bypass_voting_event,
         p=EVMScriptFactoryAdded(
-            factory_addr=CS_SET_VETTED_GATE_TREE_FACTORY,
+            factory_addr=EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY,
             permissions=create_permissions(cs_vetted_gate, "setTreeParams")
         ),
         emitted_by=contracts.easy_track,
