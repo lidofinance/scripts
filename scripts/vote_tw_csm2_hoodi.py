@@ -42,46 +42,47 @@ Vote 18/07/2025 [HOODI]
 30. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
 31. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
 32. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig
+33. Revoke CONFIG_MANAGER_ROLE role from the AGENT
 --- CSM ---
-33. Upgrade CSM implementation on proxy
-34. Call `finalizeUpgradeV2()` on CSM contract
-35. Upgrade CSAccounting implementation on proxy
-36. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract
-37. Upgrade CSFeeOracle implementation on proxy
-38. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract
-39. Upgrade CSFeeDistributor implementation on proxy
-40. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
-41. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
-42. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
-43. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
-44. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
-45. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
-46. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
-47. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
-48. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
-49. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
-50. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
-51. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
-52. Grant CSM role PAUSE_ROLE for the new GateSeal instance
-53. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
-54. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
-55. Grant MANAGE_BOND_CURVES_ROLE to the AGENT
-56. Add Identified Community Stakers Gate Bond Curve
-57. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT
-58. Increase CSM share in Staking Router from 15% to 16%
+34. Upgrade CSM implementation on proxy
+35. Call `finalizeUpgradeV2()` on CSM contract
+36. Upgrade CSAccounting implementation on proxy
+37. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract
+38. Upgrade CSFeeOracle implementation on proxy
+39. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract
+40. Upgrade CSFeeDistributor implementation on proxy
+41. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
+42. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
+43. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
+44. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
+45. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
+46. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
+47. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
+48. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
+49. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
+50. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
+51. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
+52. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
+53. Grant CSM role PAUSE_ROLE for the new GateSeal instance
+54. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
+55. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
+56. Grant MANAGE_BOND_CURVES_ROLE to the AGENT
+57. Add Identified Community Stakers Gate Bond Curve
+58. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT
+59. Increase CSM share in Staking Router from 15% to 16%
 --- Gate Seals ---
-59. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
-60. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal
-61. Grant PAUSE_ROLE on WithdrawalQueue to the new WithdrawalQueue GateSeal
-62. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new Triggerable Withdrawals GateSeal
-63. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to the new Triggerable Withdrawals GateSeal
+60. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
+61. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal
+62. Grant PAUSE_ROLE on WithdrawalQueue to the new WithdrawalQueue GateSeal
+63. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new Triggerable Withdrawals GateSeal
+64. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to the new Triggerable Withdrawals GateSeal
 --- ResealManager ---
-64. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager
-65. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager
+65. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager
+66. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager
 --- EasyTrack ---
-66. Add CSSetVettedGateTree factory to EasyTrack with permissions
-67. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
-68. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track
+67. Add CSSetVettedGateTree factory to EasyTrack with permissions
+68. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
+69. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track
 """
 import time
 
@@ -512,9 +513,19 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
                 )
             ])
         ),
+        (
+            "33. Revoke CONFIG_MANAGER_ROLE role from the AGENT",
+            agent_forward([
+                encode_oz_revoke_role(
+                    contract=contracts.oracle_daemon_config,
+                    role_name="CONFIG_MANAGER_ROLE",
+                    revoke_from=contracts.agent,
+                )
+            ])
+        ),
         # --- CSM
         (
-            "33. Upgrade CSM implementation on proxy",
+            "34. Upgrade CSM implementation on proxy",
             agent_forward([
                 encode_proxy_upgrade_to(
                     contracts.csm,
@@ -523,7 +534,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "34. Call `finalizeUpgradeV2()` on CSM contract",
+            "35. Call `finalizeUpgradeV2()` on CSM contract",
             agent_forward([
                 (
                     contracts.csm.address,
@@ -532,7 +543,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "35. Upgrade CSAccounting implementation on proxy",
+            "36. Upgrade CSAccounting implementation on proxy",
             agent_forward([
                 encode_proxy_upgrade_to(
                     contracts.cs_accounting,
@@ -541,7 +552,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "36. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract",
+            "37. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract",
             agent_forward([
                 (
                     contracts.cs_accounting.address,
@@ -550,7 +561,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "37. Upgrade CSFeeOracle implementation on proxy",
+            "38. Upgrade CSFeeOracle implementation on proxy",
             agent_forward([
                 encode_proxy_upgrade_to(
                     contracts.cs_fee_oracle,
@@ -559,7 +570,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "38. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract",
+            "39. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract",
             agent_forward([
                 (
                     contracts.cs_fee_oracle.address,
@@ -568,7 +579,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "39. Upgrade CSFeeDistributor implementation on proxy",
+            "40. Upgrade CSFeeDistributor implementation on proxy",
             agent_forward([
                 encode_proxy_upgrade_to(
                     contracts.cs_fee_distributor,
@@ -577,7 +588,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "40. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract",
+            "41. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract",
             agent_forward([
                 (
                     contracts.cs_fee_distributor.address,
@@ -586,7 +597,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "41. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract",
+            "42. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract",
             agent_forward([
                 encode_oz_revoke_role(
                     contract=contracts.cs_accounting,
@@ -596,7 +607,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "42. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract",
+            "43. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract",
             agent_forward([
                 encode_oz_revoke_role(
                     contract=contracts.cs_accounting,
@@ -606,7 +617,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "43. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee",
+            "44. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee",
             agent_forward([
                 encode_oz_revoke_role(
                     contract=contracts.cs_accounting,
@@ -616,7 +627,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "44. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate",
+            "45. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.csm,
@@ -626,7 +637,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "45. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate",
+            "46. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.csm,
@@ -636,7 +647,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "46. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate",
+            "47. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.cs_accounting,
@@ -646,7 +657,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "47. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract",
+            "48. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract",
             agent_forward([
                 encode_oz_revoke_role(
                     contract=contracts.csm,
@@ -656,7 +667,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "48. Grant role VERIFIER_ROLE to the new instance of the Verifier contract",
+            "49. Grant role VERIFIER_ROLE to the new instance of the Verifier contract",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.csm,
@@ -666,7 +677,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "49. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance",
+            "50. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance",
             agent_forward([
                 encode_oz_revoke_role(
                     contract=contracts.csm,
@@ -676,7 +687,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "50. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance",
+            "51. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance",
             agent_forward([
                 encode_oz_revoke_role(
                     contract=contracts.cs_accounting,
@@ -686,7 +697,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "51. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance",
+            "52. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance",
             agent_forward([
                 encode_oz_revoke_role(
                     contract=contracts.cs_fee_oracle,
@@ -696,7 +707,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "52. Grant CSM role PAUSE_ROLE for the new GateSeal instance",
+            "53. Grant CSM role PAUSE_ROLE for the new GateSeal instance",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.csm,
@@ -706,7 +717,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "53. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance",
+            "54. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.cs_accounting,
@@ -716,7 +727,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "54. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance",
+            "55. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.cs_fee_oracle,
@@ -726,7 +737,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "55. Grant MANAGE_BOND_CURVES_ROLE to the AGENT",
+            "56. Grant MANAGE_BOND_CURVES_ROLE to the AGENT",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.cs_accounting,
@@ -736,7 +747,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "56. Add Identified Community Stakers Gate Bond Curve",
+            "57. Add Identified Community Stakers Gate Bond Curve",
             agent_forward([
                 (
                     contracts.cs_accounting.address,
@@ -745,7 +756,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "57. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT",
+            "58. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT",
             agent_forward([
                 encode_oz_revoke_role(
                     contract=contracts.cs_accounting,
@@ -755,12 +766,12 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "58. Increase CSM share in Staking Router from 15% to 16%",
+            "59. Increase CSM share in Staking Router from 15% to 16%",
             agent_forward([encode_staking_router_update_csm_module_share()])
         ),
         # --- Gate Seals
         (
-            "59. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal",
+            "60. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal",
             agent_forward([
                 encode_oz_revoke_role(
                     contract=contracts.withdrawal_queue,
@@ -770,7 +781,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "60. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal",
+            "61. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal",
             agent_forward([
                 encode_oz_revoke_role(
                     contract=contracts.validators_exit_bus_oracle,
@@ -780,7 +791,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "61. Grant PAUSE_ROLE on WithdrawalQueue to the new WithdrawalQueue GateSeal",
+            "62. Grant PAUSE_ROLE on WithdrawalQueue to the new WithdrawalQueue GateSeal",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.withdrawal_queue,
@@ -790,7 +801,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "62. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new Triggerable Withdrawals GateSeal",
+            "63. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new Triggerable Withdrawals GateSeal",
             agent_forward([
                 encode_oz_grant_role(
                     contract=contracts.validators_exit_bus_oracle,
@@ -800,7 +811,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "63. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to the new Triggerable Withdrawals GateSeal",
+            "64. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to the new Triggerable Withdrawals GateSeal",
             agent_forward([
                 encode_oz_grant_role(
                     contract=interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY),
@@ -810,7 +821,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "64. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager",
+            "65. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager",
             agent_forward([
                 encode_oz_grant_role(
                     contract=interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY),
@@ -820,7 +831,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
             ])
         ),
         (
-            "65. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager",
+            "66. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager",
             agent_forward([
                 encode_oz_grant_role(
                     contract=interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY),
@@ -832,15 +843,15 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
     )
 
     dg_bypass_item = {
-        "66. Add CSSetVettedGateTree factory to EasyTrack with permissions": add_evmscript_factory(
+        "67. Add CSSetVettedGateTree factory to EasyTrack with permissions": add_evmscript_factory(
                 factory=EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY,
                 permissions=(create_permissions(interface.CSVettedGate(CS_VETTED_GATE_ADDRESS), "setTreeParams")),
             ),
-        "67. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track": add_evmscript_factory(
+        "68. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track": add_evmscript_factory(
                 factory=EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
                 permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),
             ),
-        "68. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track": add_evmscript_factory(
+        "69. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track": add_evmscript_factory(
                 factory=EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
                 permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),
             )
