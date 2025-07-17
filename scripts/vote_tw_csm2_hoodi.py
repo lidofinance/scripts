@@ -846,18 +846,15 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
         desc_ipfs = upload_vote_ipfs_description(DESCRIPTION)
 
     dg_desc = "\n".join(vote_desc_items)
-    dg_vote = submit_proposals(call_script_items, dg_desc)
+
+    dg_vote = prepare_proposal(call_script_items, dg_desc)
     vote_items = {dg_desc: dg_vote, **dg_bypass_item}
 
     assert confirm_vote_script(vote_items, silent, desc_ipfs)
 
     return create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
 
-def extract_as_dg_admin_call(call_script: Sequence[Tuple[str, str]]) -> Tuple[str, str]:
-    print(f"Extracting call script for dual governance admin: {call_script}")
-    return (call_script[0][0], call_script[0][1])
-
-def submit_proposals(
+def prepare_proposal(
     call_script: Sequence[Tuple],
     description: Optional[str] = "",
 ) -> Tuple[str, str]:
@@ -865,7 +862,7 @@ def submit_proposals(
     forwarded = []
 
     for _call in call_script:
-        forwarded.append(extract_as_dg_admin_call([_call]))
+        forwarded.append((_call[0], _call[1]))
 
     print(f"Forwarding call script to dual governance: {forwarded}")
     return (
