@@ -9,6 +9,13 @@ from utils.test.event_validators.permission import validate_grant_role_event, va
 from utils.test.event_validators.csm import validate_set_key_removal_charge_event
 from utils.test.csm_helpers import csm_add_node_operator, get_ea_member
 
+from utils.test.event_validators.node_operators_registry import (
+    validate_node_operator_name_set_event,
+    validate_node_operator_reward_address_set_event,
+    NodeOperatorNameSetItem,
+    NodeOperatorRewardAddressSetItem,
+)
+
 from utils.config import (
     LDO_HOLDER_ADDRESS_FOR_TESTS,
 )
@@ -53,6 +60,11 @@ CALIBER_ORACLE_MEMBER = "0x4118DAD7f348A4063bD15786c299De2f3B1333F3"
 CS_VERIFIER_ADDRESS_OLD = "0x0c345dFa318f9F4977cdd4f33d80F9D0ffA38e8B"
 CS_VERIFIER_ADDRESS_NEW = "0xeC6Cc185f671F627fb9b6f06C8772755F587b05d"
 
+NODE_OPERATORS_REGISTRY = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
+
+P2P_NO_STAKING_REWARDS_ADDRESS_OLD = "0x9a66fd7948a6834176fbb1c4127c61cb6d349561"
+P2P_NO_STAKING_REWARDS_ADDRESS_NEW = "0xfeef177E6168F9b7fd59e6C5b6c2d87FF398c6FD"
+
 # Parameters
 
 CSM_MODULE_ID = 3
@@ -71,9 +83,13 @@ CSM_STAKING_MODULE_FEE_BEFORE = 600
 CSM_MAX_DEPOSITS_PER_BLOCK_BEFORE = 30
 CSM_MIN_DEPOSIT_BLOCK_DISTANCE_BEFORE = 25
 
-EXPECTED_VOTE_EVENTS_COUNT = 7 # 6 events after the vote + ProposalSubmitted event
-EXPECTED_DG_EVENTS_COUNT = 12 # 12 vote items are going through DG
-EXPECTED_TOTAL_EVENTS_COUNT = 19
+P2P_NO_ID = 2
+P2P_NO_NAME_OLD = "P2P.ORG - P2P Validator"
+P2P_NO_NAME_NEW = "P2P.org"
+
+EXPECTED_VOTE_EVENTS_COUNT = 7  # 6 events after the vote + ProposalSubmitted event
+EXPECTED_DG_EVENTS_COUNT = 14  # 14 vote items are going through DG
+EXPECTED_TOTAL_EVENTS_COUNT = 21
 
 EXPECTED_DG_PROPOSAL_ID = 3
 
@@ -82,7 +98,6 @@ IPFS_DESCRIPTION_HASH = ''
 
 
 def test_vote(helpers, accounts, vote_ids_from_env, stranger):
-
     # =======================================================================
     # ========================= Arrange variables ===========================
     # =======================================================================
@@ -98,6 +113,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     emergency_protected_timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
     accounting = interface.CSAccounting(CS_ACCOUNTING)
+    no_registry = interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
 
     # CSM roles
     csm_verifier_role = csm.VERIFIER_ROLE()
@@ -164,6 +180,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert not RCC_STABLECOINS_FACTORY in evm_script_factories_after
     assert not RCC_STETH_FACTORY in evm_script_factories_after
 
+    assert len(evm_script_factories_after) == len(evm_script_factories_before) - 6
+
     # =======================================================================
     # ====================== Before DG Proposal tests =======================
     # =======================================================================
@@ -201,16 +219,18 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # Vote item 13
     assert staking_router.getStakingModule(CSM_MODULE_ID)["stakeShareLimit"] == CSM_STAKE_SHARE_LIMIT_BEFORE
-    assert staking_router.getStakingModule(CSM_MODULE_ID)["priorityExitShareThreshold"] == CSM_PRIORITY_EXIT_SHARE_THRESHOLD_BEFORE
+    assert staking_router.getStakingModule(CSM_MODULE_ID)[
+               "priorityExitShareThreshold"] == CSM_PRIORITY_EXIT_SHARE_THRESHOLD_BEFORE
     assert staking_router.getStakingModule(CSM_MODULE_ID)["stakingModuleFee"] == CSM_STAKING_MODULE_FEE_BEFORE
     assert staking_router.getStakingModule(CSM_MODULE_ID)["treasuryFee"] == CSM_TREASURY_FEE_BEFORE
     assert staking_router.getStakingModule(CSM_MODULE_ID)["maxDepositsPerBlock"] == CSM_MAX_DEPOSITS_PER_BLOCK_BEFORE
-    assert staking_router.getStakingModule(CSM_MODULE_ID)["minDepositBlockDistance"] == CSM_MIN_DEPOSIT_BLOCK_DISTANCE_BEFORE
+    assert staking_router.getStakingModule(CSM_MODULE_ID)[
+               "minDepositBlockDistance"] == CSM_MIN_DEPOSIT_BLOCK_DISTANCE_BEFORE
 
     # Vote items 14, 16
     assert not csm.hasRole(csm_module_manager_role, agent)
 
-    #Vote item #15
+    # Vote item #15
     assert csm.keyRemovalCharge() == KEY_REMOVAL_CHARGE_BEFORE
 
     """
@@ -221,6 +241,19 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert csm.hasRole(csm_verifier_role, CS_VERIFIER_ADDRESS_OLD)
     assert not csm.hasRole(csm_verifier_role, CS_VERIFIER_ADDRESS_NEW)
 
+    """
+    V. Change staking reward address and name for P2P.org Node Operator
+
+    Vote items #19, #20
+    """
+
+    p2p_no_data_before = no_registry.getNodeOperator(P2P_NO_ID, True)
+
+    # Vote item #19
+    assert p2p_no_data_before["rewardAddress"] == P2P_NO_STAKING_REWARDS_ADDRESS_OLD
+
+    # Vote item #20
+    assert p2p_no_data_before["name"] == P2P_NO_NAME_OLD
 
     # =======================================================================
     # ==================== DG Proposal Submit => Execute ====================
@@ -246,7 +279,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert hash_consensus_for_accounting_oracle.getIsMember(CALIBER_ORACLE_MEMBER)
     assert hash_consensus_for_validators_exit_bus_oracle.getIsMember(CALIBER_ORACLE_MEMBER)
     assert cs_fee_hash_consensus.getIsMember(CALIBER_ORACLE_MEMBER)
-
 
     """III. CSM Parameters Change (Vote items #13 - #16)"""
 
@@ -283,12 +315,26 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert "KeyRemovalChargeApplied" not in remove_keys_tx.events, "KeyRemovalChargeApplied should not be emitted when charge is 0"
     assert "BondCharged" not in remove_keys_tx.events, "BondCharged should not be emitted when charge is 0"
 
-
     """IV. CS Verifier rotation (Vote items #17 - #18)"""
 
     # Validate CS Verifier rotation
     assert not csm.hasRole(csm_verifier_role, CS_VERIFIER_ADDRESS_OLD)
     assert csm.hasRole(csm_verifier_role, CS_VERIFIER_ADDRESS_NEW)
+
+    """
+    V. Change staking reward address and name for P2P.org Node Operator
+
+    Vote items #19, #20
+    """
+
+    p2p_no_data_after = no_registry.getNodeOperator(P2P_NO_ID, True)
+
+    # Vote item #19
+    assert p2p_no_data_after["rewardAddress"] == P2P_NO_STAKING_REWARDS_ADDRESS_NEW
+
+    # Vote item #20
+    assert p2p_no_data_after["name"] == P2P_NO_NAME_NEW
+
 
     # =======================================================================
     # ======================== IPFS & events checks =========================
@@ -383,21 +429,40 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
         treasury_fee=CSM_TREASURY_FEE_BEFORE,
         priority_exit_share=CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER,
     )
-    validate_staking_module_update_event(dg_events[6], expected_staking_module_item, emitted_by=STAKING_ROUTER, is_dg_event=True)
+    validate_staking_module_update_event(dg_events[6], expected_staking_module_item, emitted_by=STAKING_ROUTER,
+                                         is_dg_event=True)
 
     # Validate grant MODULE_MANAGER_ROLE event
-    validate_grant_role_event(dg_events[7], csm_module_manager_role, agent, agent.address, emitted_by=CSM, is_dg_event=True)
+    validate_grant_role_event(dg_events[7], csm_module_manager_role, agent, agent.address, emitted_by=CSM,
+                              is_dg_event=True)
 
     # Validate keyRemovalCharge update event
     validate_set_key_removal_charge_event(dg_events[8], KEY_REMOVAL_CHARGE_AFTER, emitted_by=CSM, is_dg_event=True)
 
     # Validate revoke MODULE_MANAGER_ROLE event
-    validate_revoke_role_event(dg_events[9], csm_module_manager_role, agent, agent.address, emitted_by=CSM, is_dg_event=True)
+    validate_revoke_role_event(dg_events[9], csm_module_manager_role, agent, agent.address, emitted_by=CSM,
+                               is_dg_event=True)
 
     # Validate old CS Verifier doesn't have VERIFIER_ROLE
-    validate_revoke_role_event(dg_events[10], csm_verifier_role, CS_VERIFIER_ADDRESS_OLD, agent, emitted_by=CSM, is_dg_event=True)
+    validate_revoke_role_event(dg_events[10], csm_verifier_role, CS_VERIFIER_ADDRESS_OLD, agent, emitted_by=CSM,
+                               is_dg_event=True)
 
     # Validate new CS Verifier has VERIFIER_ROLE
     validate_grant_role_event(dg_events[11], csm_verifier_role, CS_VERIFIER_ADDRESS_NEW, agent,
-                                              emitted_by=CSM, is_dg_event=True)
+                              emitted_by=CSM, is_dg_event=True)
 
+    # Validate P2P NO rewards address change
+    validate_node_operator_reward_address_set_event(
+        dg_events[12],
+        NodeOperatorRewardAddressSetItem(
+            nodeOperatorId=P2P_NO_ID,
+            reward_address=P2P_NO_STAKING_REWARDS_ADDRESS_NEW
+        ),
+        emitted_by=no_registry,
+        is_dg_event=True
+    )
+
+    # Validate P2P NA name change
+    validate_node_operator_name_set_event(
+        dg_events[13], NodeOperatorNameSetItem(nodeOperatorId=P2P_NO_ID, name=P2P_NO_NAME_NEW), emitted_by=no_registry, is_dg_event=True
+    )

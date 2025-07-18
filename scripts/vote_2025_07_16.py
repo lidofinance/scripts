@@ -24,8 +24,12 @@ III. CSM Parameters Change
 16. Revoke MODULE_MANAGER_ROLE on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c
 
 IV. CS Verifier rotation
-17. Revoke VERIFIER_ROLE role on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F from old CS Verifier 0x0c345dFa318f9F4977cdd4f33d80F9D0ffA38e8B (addresses to be verified and checked)
-18. Grant VERIFIER_ROLE role on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F to new CS Verifier 0xeC6Cc185f671F627fb9b6f06C8772755F587b05d (addresses to be verified and checked)
+17. Revoke VERIFIER_ROLE role on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F from old CS Verifier 0x0c345dFa318f9F4977cdd4f33d80F9D0ffA38e8B
+18. Grant VERIFIER_ROLE role on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F to new CS Verifier 0xeC6Cc185f671F627fb9b6f06C8772755F587b05d
+
+V. Change staking reward address and name for P2P.org Node Operator
+19. Change staking reward address from 0x9a66fd7948a6834176fbb1c4127c61cb6d349561 to 0xfeef177E6168F9b7fd59e6C5b6c2d87FF398c6FD for node operator with id = 2 in Curated Module Node Operator Registry 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
+20. Change name from “P2P.ORG - P2P Validator” to “P2P.org” for node operator with id = 2 in Curated Module Node Operator Registry 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
 """
 
 import time
@@ -44,6 +48,10 @@ from utils.dual_governance import submit_proposals
 from utils.voting import create_vote, bake_vote_items, confirm_vote_script
 from utils.easy_track import remove_evmscript_factory
 from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_description
+from utils.node_operators import (
+    encode_set_node_operator_name,
+    encode_set_node_operator_reward_address
+)
 from utils.config import (
     contracts,
     get_deployer_account,
@@ -68,6 +76,10 @@ NEW_KEY_REMOVAL_CHARGE = 0
 CS_VERIFIER_ADDRESS_OLD = "0x0c345dFa318f9F4977cdd4f33d80F9D0ffA38e8B"
 CS_VERIFIER_ADDRESS_NEW = "0xeC6Cc185f671F627fb9b6f06C8772755F587b05d"
 
+P2P_NO_ID = 2
+P2P_NO_STAKING_REWARDS_ADDRESS_NEW = "0xfeef177E6168F9b7fd59e6C5b6c2d87FF398c6FD"
+P2P_NO_NAME_NEW = "P2P.org"
+
 STAKING_MODULE_ID = 3
 STAKE_SHARE_LIMIT_NEW = 300
 PRIORITY_EXIT_SHARE_THRESHOLD_NEW = 375
@@ -84,6 +96,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     hash_consensus_for_validators_exit_bus_oracle: interface.LidoOracle = contracts.hash_consensus_for_validators_exit_bus_oracle
     csm_hash_consensus: interface.CSHashConsensus = contracts.csm_hash_consensus
     csm_module = contracts.staking_router.getStakingModule(STAKING_MODULE_ID)
+    no_registry = contracts.node_operators_registry
 
     voting_call_script = [
         # 7. Remove oracle set member with address 0xA7410857ABbf75043d61ea54e07D57A6EB6EF186 from HashConsensus 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288 for AccountingOracle 0x852deD011285fe67063a08005c71a85690503Cee
@@ -150,7 +163,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         agent_forward([
             encode_oz_revoke_role(contracts.csm, "MODULE_MANAGER_ROLE", contracts.agent)
         ]),
-        # 17. Revoke VERIFIER_ROLE role on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F from old CS Verifier 0x0c345dFa318f9F4977cdd4f33d80F9D0ffA38e8B (addresses to be verified and checked)
+        # 17. Revoke VERIFIER_ROLE role on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F from old CS Verifier 0x0c345dFa318f9F4977cdd4f33d80F9D0ffA38e8B
         agent_forward([
             encode_oz_revoke_role(
                 contract=contracts.csm,
@@ -158,13 +171,26 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 revoke_from=CS_VERIFIER_ADDRESS_OLD,
             )
         ]),
-        # 18. Grant VERIFIER_ROLE role on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F to new CS Verifier 0xeC6Cc185f671F627fb9b6f06C8772755F587b05d (addresses to be verified and checked)
+        # 18. Grant VERIFIER_ROLE role on CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F to new CS Verifier 0xeC6Cc185f671F627fb9b6f06C8772755F587b05d
         agent_forward([
             encode_oz_grant_role(
                 contract=contracts.csm,
                 role_name="VERIFIER_ROLE",
                 grant_to=CS_VERIFIER_ADDRESS_NEW,
             )
+        ]),
+        # 19. Change staking reward address from 0x9a66fd7948a6834176fbb1c4127c61cb6d349561 to 0xfeef177E6168F9b7fd59e6C5b6c2d87FF398c6FD and name from “P2P.ORG - P2P Validator” to “P2P.org” for node operator with id = 2 in Curated Module Node Operator Registry 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
+        agent_forward(
+            [
+                encode_set_node_operator_reward_address(
+                    P2P_NO_ID,
+                    P2P_NO_STAKING_REWARDS_ADDRESS_NEW,
+                    no_registry
+                ),
+            ]
+        ),
+        agent_forward([
+            encode_set_node_operator_name(P2P_NO_ID, P2P_NO_NAME_NEW, no_registry),
         ])
     ]
 
