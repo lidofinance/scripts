@@ -11,6 +11,8 @@ import time
 from typing import Any, Dict
 from typing import Tuple, Optional
 from brownie import interface, web3, convert  # type: ignore
+from scripts.vote_tw_csm2_hoodi import prepare_proposal
+from utils.agent import agent_forward
 from utils.config import (
     ARAGON_KERNEL,
     AGENT,
@@ -20,7 +22,6 @@ from utils.config import (
     get_is_live
 )
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
-from utils.agent import dual_governance_agent_forward
 from utils.voting import confirm_vote_script, create_vote
 
 SANDBOX_APP_ID = "0x85d2fceef13a6c14c43527594f79fb91a8ef8f15024a43486efac8df2b11e632"
@@ -34,45 +35,45 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
        # --- Update Sandbox Module implementation [TESTNET ONLY] ---
         (
             f"1. Grant APP_MANAGER_ROLE role to the AGENT",
-            (
+            agent_forward([(
                 contracts.acl.address,
                 contracts.acl.grantPermission.encode_input(
                     AGENT,
                     ARAGON_KERNEL,
                     convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE"))
                 )
-            )
+            )])
         ),
         (
             f"2. Update `Sandbox Module` implementation",
-            (
+            agent_forward([(
                 contracts.kernel.address,
                 contracts.kernel.setApp.encode_input(
                     contracts.kernel.APP_BASES_NAMESPACE(),
                     SANDBOX_APP_ID,
                     NODE_OPERATORS_REGISTRY_IMPL
                 )
-            )
+            )])
         ),
         (
             f"3. Call finalizeUpgrade_v4 on `Sandbox Module`",
-            (
+            agent_forward([(
                 interface.NodeOperatorsRegistry(contracts.sandbox).address,
                 interface.NodeOperatorsRegistry(contracts.sandbox).finalizeUpgrade_v4.encode_input(
                     NOR_EXIT_DEADLINE_IN_SEC
                 )
-            )
+            )]),
         ),
         (
             f"4. Revoke APP_MANAGER_ROLE role from the AGENT",
-            (
+            agent_forward([(
                 contracts.acl.address,
                 contracts.acl.revokePermission.encode_input(
                     AGENT,
                     ARAGON_KERNEL,
                     convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE"))
                 )
-            )
+            )]),
         ),
     )
 
@@ -82,7 +83,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
         desc_ipfs = upload_vote_ipfs_description(DESCRIPTION)
 
     dg_desc = "\\n".join(vote_desc_items)
-    dg_vote = dual_governance_agent_forward(call_script_items, dg_desc)
+    dg_vote = prepare_proposal(call_script_items, dg_desc)
     vote_items = {dg_desc: dg_vote}
 
     assert confirm_vote_script(vote_items, silent, desc_ipfs)
