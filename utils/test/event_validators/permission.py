@@ -53,7 +53,7 @@ def validate_permission_revoke_event(event: EventDict, p: Permission, emitted_by
         _events_chain = ["LogScriptCall", "LogScriptCall", "SetPermission", "ScriptResult"]
     else:
         _events_chain = ["LogScriptCall", "SetPermission"]
-        
+
 
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -117,9 +117,13 @@ def validate_permission_grantp_event(event: EventDict, p: Permission, params: Li
         ), "Wrong event emitter"
 
 
-def validate_grant_role_event(events: EventDict, role: str, grant_to: str, sender: str, emitted_by: str = None) -> None:
-    # this event chain is actual if grant role is forvarded through
-    _events_chain = ["LogScriptCall", "LogScriptCall", "RoleGranted", "ScriptResult"]
+def validate_grant_role_event(events: EventDict, role: str, grant_to: str, sender: str, emitted_by: str = None, is_dg_event: bool = False) -> None:
+    # this event chain is actual if grant role is forwarded through
+
+    if is_dg_event:
+        _events_chain = ["LogScriptCall", "LogScriptCall", "RoleGranted", "ScriptResult", "Executed"]
+    else:
+        _events_chain = ["LogScriptCall", "LogScriptCall", "RoleGranted", "ScriptResult"]
 
     validate_events_chain([e.name for e in events], _events_chain)
 
@@ -133,11 +137,14 @@ def validate_grant_role_event(events: EventDict, role: str, grant_to: str, sende
             emitted_by
         ), "Wrong event emitter"
 
-
 def validate_revoke_role_event(
-    events: EventDict, role: str, revoke_from: str, sender: str, emitted_by: str = None
+    events: EventDict, role: str, revoke_from: str, sender: str, emitted_by: str = None, is_dg_event: bool = False
 ) -> None:
-    _events_chain = ["LogScriptCall", "LogScriptCall", "RoleRevoked", "ScriptResult"]
+
+    if is_dg_event:
+        _events_chain = ["LogScriptCall", "LogScriptCall", "RoleRevoked", "ScriptResult", "Executed"]
+    else:
+        _events_chain = ["LogScriptCall", "LogScriptCall", "RoleRevoked", "ScriptResult"]
 
     validate_events_chain([e.name for e in events], _events_chain)
 
