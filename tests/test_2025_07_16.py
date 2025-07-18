@@ -83,6 +83,16 @@ CSM_STAKING_MODULE_FEE_BEFORE = 600
 CSM_MAX_DEPOSITS_PER_BLOCK_BEFORE = 30
 CSM_MIN_DEPOSIT_BLOCK_DISTANCE_BEFORE = 25
 
+HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM = 5
+HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM = 5
+HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM = 5
+
+
+HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_NUMBER_OF_ORACLES = 9
+HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_NUMBER_OF_ORACLES = 9
+HASH_CONSENSUS_FOR_CS_FEE_ORACLE_NUMBER_OF_ORACLES = 9
+
+
 P2P_NO_ID = 2
 P2P_NO_NAME_OLD = "P2P.ORG - P2P Validator"
 P2P_NO_NAME_NEW = "P2P.org"
@@ -124,9 +134,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     # =======================================================================
 
     """
-    I. PML, ATC, RCC ET Factories Removal
+    V. PML, ATC, RCC ET Factories Removal
 
-    Vote items #1 - #6
+    Vote items #15 - #20
 
     Validate PML, ATC, RCC ET Factories existence before removal
     """
@@ -165,9 +175,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     # =======================================================================
 
     """
-    I. PML, ATC, RCC ET Factories Removal
+    V. PML, ATC, RCC ET Factories Removal
 
-    Vote items #1 - #6
+    Vote items #15 - #20
 
     Validate PML, ATC, RCC ET Factories don't exist after vote
     """
@@ -187,9 +197,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     # =======================================================================
 
     """
-    II. Kyber Oracle Rotation
+    I. Kyber Oracle Rotation
 
-    Vote items #7 - #12
+    Vote items #1 - #6
 
     Validate Kyber oracle member existence on:
     - HashConsensus(0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288) for AccountingOracle(0x852deD011285fe67063a08005c71a85690503Cee),
@@ -209,15 +219,31 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert not hash_consensus_for_validators_exit_bus_oracle.getIsMember(CALIBER_ORACLE_MEMBER)
     assert not cs_fee_hash_consensus.getIsMember(CALIBER_ORACLE_MEMBER)
 
-    """
-    III. CSM Parameters Change
+    hash_consensus_for_accounting_oracle_quorum_before = hash_consensus_for_accounting_oracle.getQuorum()
+    hash_consensus_for_validators_exit_bus_oracle_quorum_before = hash_consensus_for_validators_exit_bus_oracle.getQuorum()
+    cs_fee_hash_consensus_quorum_before = cs_fee_hash_consensus.getQuorum()
 
-    Vote item #13 - Validate parameters before changing on Staking Router for CSModule
-    Vote items #14, #16 - validate agent has no MODULE_MANAGER_ROLE on CSModule(0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F) before vote
-    Vote item #15 - validate keyRemovalCharge value on CSModule(0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F) before vote
+    assert hash_consensus_for_accounting_oracle_quorum_before == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
+    assert hash_consensus_for_validators_exit_bus_oracle_quorum_before == HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM
+    assert cs_fee_hash_consensus_quorum_before == HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM
+
+    hash_consensus_for_accounting_oracle_number_of_oracles_before = len(hash_consensus_for_accounting_oracle.getMembers()[0])
+    hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_before = len(hash_consensus_for_validators_exit_bus_oracle.getMembers()[0])
+    cs_fee_hash_consensus_quorum_before_number_of_oracles_before = len(cs_fee_hash_consensus.getMembers()[0])
+
+    assert hash_consensus_for_accounting_oracle_number_of_oracles_before == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_NUMBER_OF_ORACLES
+    assert hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_before == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_NUMBER_OF_ORACLES
+    assert cs_fee_hash_consensus_quorum_before_number_of_oracles_before == HASH_CONSENSUS_FOR_CS_FEE_ORACLE_NUMBER_OF_ORACLES
+
+    """
+    II. CSM Parameters Change
+
+    Vote item #7 - Validate parameters before changing on Staking Router for CSModule
+    Vote items #8, #10 - validate agent has no MODULE_MANAGER_ROLE on CSModule(0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F) before vote
+    Vote item #9 - validate keyRemovalCharge value on CSModule(0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F) before vote
     """
 
-    # Vote item 13
+    # Vote item 7
     assert staking_router.getStakingModule(CSM_MODULE_ID)["stakeShareLimit"] == CSM_STAKE_SHARE_LIMIT_BEFORE
     assert staking_router.getStakingModule(CSM_MODULE_ID)[
                "priorityExitShareThreshold"] == CSM_PRIORITY_EXIT_SHARE_THRESHOLD_BEFORE
@@ -227,32 +253,32 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert staking_router.getStakingModule(CSM_MODULE_ID)[
                "minDepositBlockDistance"] == CSM_MIN_DEPOSIT_BLOCK_DISTANCE_BEFORE
 
-    # Vote items 14, 16
+    # Vote items #8, #10
     assert not csm.hasRole(csm_module_manager_role, agent)
 
-    # Vote item #15
+    # Vote item #9
     assert csm.keyRemovalCharge() == KEY_REMOVAL_CHARGE_BEFORE
 
     """
-    IV. CS Verifier rotation
+    III. CS Verifier rotation
 
-    Vote items #17 - #18 - verify roles before vote
+    Vote items #11 - #12 - verify roles before vote
     """
     assert csm.hasRole(csm_verifier_role, CS_VERIFIER_ADDRESS_OLD)
     assert not csm.hasRole(csm_verifier_role, CS_VERIFIER_ADDRESS_NEW)
 
     """
-    V. Change staking reward address and name for P2P.org Node Operator
+    IV. Change staking reward address and name for P2P.org Node Operator
 
-    Vote items #19, #20
+    Vote items #13, #14
     """
 
     p2p_no_data_before = no_registry.getNodeOperator(P2P_NO_ID, True)
 
-    # Vote item #19
+    # Vote item #13
     assert p2p_no_data_before["rewardAddress"] == P2P_NO_STAKING_REWARDS_ADDRESS_OLD
 
-    # Vote item #20
+    # Vote item #14
     assert p2p_no_data_before["name"] == P2P_NO_NAME_OLD
 
     # =======================================================================
@@ -271,7 +297,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     # ================= After DG proposal execution tests ===================
     # =======================================================================
 
-    """II. Kyber Oracle Rotation"""
+    """I. Kyber Oracle Rotation"""
     assert not hash_consensus_for_accounting_oracle.getIsMember(KYBER_ORACLE_MEMBER)
     assert not hash_consensus_for_validators_exit_bus_oracle.getIsMember(KYBER_ORACLE_MEMBER)
     assert not cs_fee_hash_consensus.getIsMember(KYBER_ORACLE_MEMBER)
@@ -280,7 +306,23 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert hash_consensus_for_validators_exit_bus_oracle.getIsMember(CALIBER_ORACLE_MEMBER)
     assert cs_fee_hash_consensus.getIsMember(CALIBER_ORACLE_MEMBER)
 
-    """III. CSM Parameters Change (Vote items #13 - #16)"""
+    hash_consensus_for_accounting_oracle_quorum_after = hash_consensus_for_accounting_oracle.getQuorum()
+    hash_consensus_for_validators_exit_bus_oracle_quorum_after = hash_consensus_for_validators_exit_bus_oracle.getQuorum()
+    cs_fee_hash_consensus_quorum_after = cs_fee_hash_consensus.getQuorum()
+
+    assert hash_consensus_for_accounting_oracle_quorum_after == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
+    assert hash_consensus_for_validators_exit_bus_oracle_quorum_after == HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM
+    assert cs_fee_hash_consensus_quorum_after == HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM
+
+    hash_consensus_for_accounting_oracle_number_of_oracles_after = len(hash_consensus_for_accounting_oracle.getMembers()[0])
+    hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_after = len(hash_consensus_for_validators_exit_bus_oracle.getMembers()[0])
+    cs_fee_hash_consensus_quorum_before_number_of_oracles_after = len(cs_fee_hash_consensus.getMembers()[0])
+
+    assert hash_consensus_for_accounting_oracle_number_of_oracles_after == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_NUMBER_OF_ORACLES
+    assert hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_after == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_NUMBER_OF_ORACLES
+    assert cs_fee_hash_consensus_quorum_before_number_of_oracles_after == HASH_CONSENSUS_FOR_CS_FEE_ORACLE_NUMBER_OF_ORACLES
+
+    """II. CSM Parameters Change (Vote items #13 - #16)"""
 
     # stakeShareLimit and priorityExitShareThreshold updates
     assert staking_router.getStakingModule(CSM_MODULE_ID)["stakeShareLimit"] == CSM_STAKE_SHARE_LIMIT_AFTER
@@ -290,11 +332,11 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert staking_router.getStakingModule(CSM_MODULE_ID)["maxDepositsPerBlock"] == CSM_MAX_DEPOSITS_PER_BLOCK_BEFORE
     assert staking_router.getStakingModule(CSM_MODULE_ID)["minDepositBlockDistance"] == CSM_MIN_DEPOSIT_BLOCK_DISTANCE_BEFORE
 
-    # Vote item #15
+    # Vote item #9
     # Validate new keyRemovalCharge value
     assert csm.keyRemovalCharge() == KEY_REMOVAL_CHARGE_AFTER
 
-    # Vote item # 16
+    # Vote item # 10
     # Validate Agent doesn't have MODULE_MANAGER_ROLE on CSM
     assert not csm.hasRole(csm_module_manager_role, agent)
 
@@ -329,10 +371,10 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     p2p_no_data_after = no_registry.getNodeOperator(P2P_NO_ID, True)
 
-    # Vote item #19
+    # Vote item #13
     assert p2p_no_data_after["rewardAddress"] == P2P_NO_STAKING_REWARDS_ADDRESS_NEW
 
-    # Vote item #20
+    # Vote item #14
     assert p2p_no_data_after["name"] == P2P_NO_NAME_NEW
 
 
@@ -355,19 +397,19 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     # Validate after DG proposal execution events count
     count_vote_items_by_agent_events = count_vote_items_by_events(dg_tx, agent)
     assert count_vote_items_by_agent_events == EXPECTED_DG_EVENTS_COUNT
-    # 12 Vote items are going through DG
+    # 14 Vote items are going through DG
     assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
 
     # Validate total events count
     assert count_vote_items_by_voting_events + count_vote_items_by_agent_events == EXPECTED_TOTAL_EVENTS_COUNT, "Incorrect voting items count"
 
     # Validate PML, ATC, RCC ET Factories removal events
-    validate_evmscript_factory_removed_event(voting_events[0], PML_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
-    validate_evmscript_factory_removed_event(voting_events[1], PML_STETH_FACTORY, emitted_by=EASY_TRACK)
-    validate_evmscript_factory_removed_event(voting_events[2], ATC_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
-    validate_evmscript_factory_removed_event(voting_events[3], ATC_STETH_FACTORY, emitted_by=EASY_TRACK)
-    validate_evmscript_factory_removed_event(voting_events[4], RCC_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
-    validate_evmscript_factory_removed_event(voting_events[5], RCC_STETH_FACTORY, emitted_by=EASY_TRACK)
+    validate_evmscript_factory_removed_event(voting_events[1], PML_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
+    validate_evmscript_factory_removed_event(voting_events[2], PML_STETH_FACTORY, emitted_by=EASY_TRACK)
+    validate_evmscript_factory_removed_event(voting_events[3], ATC_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
+    validate_evmscript_factory_removed_event(voting_events[4], ATC_STETH_FACTORY, emitted_by=EASY_TRACK)
+    validate_evmscript_factory_removed_event(voting_events[5], RCC_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
+    validate_evmscript_factory_removed_event(voting_events[6], RCC_STETH_FACTORY, emitted_by=EASY_TRACK)
 
     # Validate oracle rotation events
     validate_hash_consensus_member_removed(
