@@ -179,18 +179,17 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
                 grant_to=CS_VERIFIER_ADDRESS_NEW,
             )
         ]),
-        # 19. Change staking reward address from 0x9a66fd7948a6834176fbb1c4127c61cb6d349561 to 0xfeef177E6168F9b7fd59e6C5b6c2d87FF398c6FD and name from “P2P.ORG - P2P Validator” to “P2P.org” for node operator with id = 2 in Curated Module Node Operator Registry 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
-        agent_forward(
-            [
-                encode_set_node_operator_reward_address(
-                    P2P_NO_ID,
-                    P2P_NO_STAKING_REWARDS_ADDRESS_NEW,
-                    no_registry
-                ),
-            ]
-        ),
+        # # 19. Change staking reward address from 0x9a66fd7948a6834176fbb1c4127c61cb6d349561 to 0xfeef177E6168F9b7fd59e6C5b6c2d87FF398c6FD for node operator with id = 2 in Curated Module Node Operator Registry 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
         agent_forward([
-            encode_set_node_operator_name(P2P_NO_ID, P2P_NO_NAME_NEW, no_registry),
+            encode_set_node_operator_reward_address(
+                P2P_NO_ID,
+                P2P_NO_STAKING_REWARDS_ADDRESS_NEW,
+                no_registry
+            )
+        ]),
+        # 20. Change name from “P2P.ORG - P2P Validator” to “P2P.org” for node operator with id = 2 in Curated Module Node Operator Registry 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
+        agent_forward([
+            encode_set_node_operator_name(P2P_NO_ID, P2P_NO_NAME_NEW, no_registry)
         ])
     ]
 
@@ -224,7 +223,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             "6. Remove RCC stETH factory 0xcD42Eb8a5db5a80Dc8f643745528DD77cf4C7D35 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory("0xcD42Eb8a5db5a80Dc8f643745528DD77cf4C7D35")
         ),
-
         (
             "Kyber Oracle Rotation, CSM Parameters Change, CS Verifier rotation",
             dual_governance_call_script[0]
