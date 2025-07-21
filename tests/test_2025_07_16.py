@@ -322,8 +322,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_after == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_NUMBER_OF_ORACLES
     assert cs_fee_hash_consensus_quorum_before_number_of_oracles_after == HASH_CONSENSUS_FOR_CS_FEE_ORACLE_NUMBER_OF_ORACLES
 
-    """II. CSM Parameters Change (Vote items #13 - #16)"""
+    """II. CSM Parameters Change (Vote items #7 - #10)"""
 
+    # Vote item #7
     # stakeShareLimit and priorityExitShareThreshold updates
     assert staking_router.getStakingModule(CSM_MODULE_ID)["stakeShareLimit"] == CSM_STAKE_SHARE_LIMIT_AFTER
     assert staking_router.getStakingModule(CSM_MODULE_ID)["priorityExitShareThreshold"] == CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER
@@ -336,7 +337,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     # Validate new keyRemovalCharge value
     assert csm.keyRemovalCharge() == KEY_REMOVAL_CHARGE_AFTER
 
-    # Vote item # 10
+    # Vote item #10
     # Validate Agent doesn't have MODULE_MANAGER_ROLE on CSM
     assert not csm.hasRole(csm_module_manager_role, agent)
 
@@ -357,7 +358,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert "KeyRemovalChargeApplied" not in remove_keys_tx.events, "KeyRemovalChargeApplied should not be emitted when charge is 0"
     assert "BondCharged" not in remove_keys_tx.events, "BondCharged should not be emitted when charge is 0"
 
-    """IV. CS Verifier rotation (Vote items #17 - #18)"""
+    """IV. CS Verifier rotation (Vote items #11 - #12)"""
 
     # Validate CS Verifier rotation
     assert not csm.hasRole(csm_verifier_role, CS_VERIFIER_ADDRESS_OLD)
@@ -366,7 +367,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     """
     V. Change staking reward address and name for P2P.org Node Operator
 
-    Vote items #19, #20
+    Vote items #13, #14
     """
 
     p2p_no_data_after = no_registry.getNodeOperator(P2P_NO_ID, True)
@@ -504,7 +505,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
         is_dg_event=True
     )
 
-    # Validate P2P NA name change
+    # Validate P2P NO name change
     validate_node_operator_name_set_event(
         dg_events[13], NodeOperatorNameSetItem(nodeOperatorId=P2P_NO_ID, name=P2P_NO_NAME_NEW), emitted_by=no_registry, is_dg_event=True
     )

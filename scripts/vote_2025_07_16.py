@@ -198,9 +198,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     ])
 
     vote_desc_items, call_script_items = zip(
-        # Vote items #1 - #15 are going through DG
+        # Vote items #1 - #14 are going through DG
         (
-            "Kyber Oracle Rotation, CSM Parameters Change, CS Verifier rotation",
+            "Kyber Oracle Rotation, CSM Parameters Change, CS Verifier rotation, Change staking reward address and name for P2P.org Node Operator",
             dual_governance_call_script[0]
         ),
         # V. PML, ATC, RCC ET Factories Removal
