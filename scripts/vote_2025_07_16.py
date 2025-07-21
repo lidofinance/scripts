@@ -205,27 +205,27 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
         ),
         # V. PML, ATC, RCC ET Factories Removal
         (
-            "1. Remove PML stablecoins factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
+            "15. Remove PML stablecoins factory 0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory("0x92a27C4e5e35cFEa112ACaB53851Ec70e2D99a8D")
         ),
         (
-            "2. Remove PML stETH factory 0xc5527396DDC353BD05bBA578aDAa1f5b6c721136 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
+            "16. Remove PML stETH factory 0xc5527396DDC353BD05bBA578aDAa1f5b6c721136 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory("0xc5527396DDC353BD05bBA578aDAa1f5b6c721136")
         ),
         (
-            "3. Remove ATC stablecoins factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
+            "17. Remove ATC stablecoins factory 0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory("0x1843Bc35d1fD15AbE1913b9f72852a79457C42Ab")
         ),
         (
-            "4. Remove ATC stETH factory 0x87b02dF27cd6ec128532Add7C8BC19f62E6f1fB9 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
+            "18. Remove ATC stETH factory 0x87b02dF27cd6ec128532Add7C8BC19f62E6f1fB9 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory("0x87b02dF27cd6ec128532Add7C8BC19f62E6f1fB9")
         ),
         (
-            "5. Remove RCC stablecoins factory 0x75bDecbb6453a901EBBB945215416561547dfDD4 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
+            "19. Remove RCC stablecoins factory 0x75bDecbb6453a901EBBB945215416561547dfDD4 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory("0x75bDecbb6453a901EBBB945215416561547dfDD4")
         ),
         (
-            "6. Remove RCC stETH factory 0xcD42Eb8a5db5a80Dc8f643745528DD77cf4C7D35 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
+            "20. Remove RCC stETH factory 0xcD42Eb8a5db5a80Dc8f643745528DD77cf4C7D35 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory("0xcD42Eb8a5db5a80Dc8f643745528DD77cf4C7D35")
         )
     )
