@@ -84,8 +84,14 @@ STAKING_MODULE_ID = 3
 STAKE_SHARE_LIMIT_NEW = 300
 PRIORITY_EXIT_SHARE_THRESHOLD_NEW = 375
 
-# TODO: To be defined
-IPFS_DESCRIPTION = ""
+IPFS_DESCRIPTION = """
+Rotate Lido on Ethereum Oracle Set member Kyber Network for Caliber, as per Snapshot decision. Items 1.1–1.6.
+Increase CSM stake share limit from 2% to 3%. Snapshot. Item 1.7.
+Enable a grace period for CSM Node Operators by setting keyRemovalCharge = 0. Proposed on the Forum. Items 1.8-1.10.
+Introduce a simplified CSVerifier for CSM. Proposed on the forum. Items 1.11, 1.12. Audit & deployment verification by MixBytes.
+Update the reward address and name for Node Operator ID 2 P2P.ORG - P2P Validator. Requested on the forum. Items 1.13, 1.14.
+Switch off Easy Track environment for PML, ATC, RCC entities, deprecated after Snapshot-approved transition to Lido Labs and Lido Ecosystem BORG Foundations. Items 2–7.
+"""
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
@@ -194,7 +200,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
     ]
 
     dual_governance_call_script = submit_proposals([
-        (voting_call_script, "Kyber Oracle Rotation, CSM Parameters Change, CS Verifier rotation")
+        (voting_call_script, "Kyber Oracle Rotation, CSM Parameters Change, CS Verifier rotation, Change staking reward address and name for P2P.org Node Operator")
     ])
 
     vote_desc_items, call_script_items = zip(

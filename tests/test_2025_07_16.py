@@ -8,6 +8,8 @@ from utils.test.event_validators.staking_router import validate_staking_module_u
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 from utils.test.event_validators.csm import validate_set_key_removal_charge_event
 from utils.test.csm_helpers import csm_add_node_operator, get_ea_member
+from utils.voting import find_metadata_by_vote_id
+from utils.ipfs import get_lido_vote_cid_from_str
 
 from utils.test.event_validators.node_operators_registry import (
     validate_node_operator_name_set_event,
@@ -103,8 +105,7 @@ EXPECTED_TOTAL_EVENTS_COUNT = 21
 
 EXPECTED_DG_PROPOSAL_ID = 3
 
-# TODO: To be defined
-IPFS_DESCRIPTION_HASH = ''
+IPFS_DESCRIPTION_HASH = 'bafkreiem3dnej6evmbpdejc7wuxzlmc4wd2ch4f6djoyi6t4kpna3mwwvi'
 
 
 def test_vote(helpers, accounts, vote_ids_from_env, stranger):
@@ -168,7 +169,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert proposal_id == EXPECTED_DG_PROPOSAL_ID
 
     display_voting_events(vote_tx)
-    voting_events = group_voting_events(vote_tx)
+    voting_events = group_voting_events_from_receipt(vote_tx)
 
     # =======================================================================
     # ========================= After voting tests ==========================
@@ -383,9 +384,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     # ======================== IPFS & events checks =========================
     # =======================================================================
 
-    # TODO: Uncomment when the IPFS description is defined
-    # metadata = find_metadata_by_vote_id(vote_id)
-    # assert get_lido_vote_cid_from_str(metadata) == IPFS_DESCRIPTION_HASH
+    metadata = find_metadata_by_vote_id(vote_id)
+    assert get_lido_vote_cid_from_str(metadata) == IPFS_DESCRIPTION_HASH
 
     """Validating events"""
 
