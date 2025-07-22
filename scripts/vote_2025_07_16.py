@@ -93,10 +93,7 @@ Update the reward address and name for Node Operator ID 2 P2P.ORG - P2P Validato
 Switch off Easy Track environment for PML, ATC, RCC entities, deprecated after Snapshot-approved transition to Lido Labs and Lido Ecosystem BORG Foundations. Items 2–7.
 """
 
-
-def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
-    """Prepare and run voting"""
-
+def get_vote_items():
     # Contracts definition
     hash_consensus_for_accounting_oracle: interface.LidoOracle = contracts.hash_consensus_for_accounting_oracle
     hash_consensus_for_validators_exit_bus_oracle: interface.LidoOracle = contracts.hash_consensus_for_validators_exit_bus_oracle
@@ -235,6 +232,14 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | Tra
             remove_evmscript_factory("0xcD42Eb8a5db5a80Dc8f643745528DD77cf4C7D35")
         )
     )
+
+    return vote_desc_items, list(call_script_items)
+
+
+def start_vote(tx_params: Dict[str, str], silent: bool) -> bool | list[int | TransactionReceipt | None]:
+    """Prepare and run voting"""
+
+    vote_desc_items, call_script_items = get_vote_items()
 
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
 
