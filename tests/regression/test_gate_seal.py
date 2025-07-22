@@ -5,8 +5,8 @@ from utils.test.oracle_report_helpers import oracle_report, ZERO_BYTES32
 from brownie.network.account import Account
 
 from utils.evm_script import encode_error
-from utils.finance import ZERO_ADDRESS
 from utils.test.helpers import almostEqEth, ETH
+from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.config import (
     GATE_SEAL_COMMITTEE,
     contracts,
@@ -45,11 +45,12 @@ def test_gate_seal_scenario(steth_holder, gate_seal_committee, eth_whale):
     """ finalize all requests """
     unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
 
-    if unfinalized_steth > 0:
-        submit_amount = min(unfinalized_steth * 2, contracts.lido.getCurrentStakeLimit())
-        contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale, "amount": submit_amount})
-    while contracts.withdrawal_queue.unfinalizedStETH():
+    while unfinalized_steth > 0:
+
+        fill_deposit_buffer(unfinalized_steth // ETH(32) + 1)
+
         oracle_report(silent=True)
+        unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
 
     """ requests to be finalized """
     contracts.lido.approve(contracts.withdrawal_queue.address, REQUESTS_SUM, {"from": steth_holder})

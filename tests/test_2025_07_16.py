@@ -2,11 +2,15 @@ from brownie import interface, chain, convert
 from brownie.network.transaction import TransactionReceipt
 
 from scripts.vote_2025_07_16 import start_vote
+from utils.agent import agent_forward
 
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 from utils.test.event_validators.csm import validate_set_key_removal_charge_event
+from utils.test.event_validators.dual_governance import (
+    validate_dual_governance_submit_event,
+)
 from utils.test.csm_helpers import csm_add_node_operator, get_ea_member
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
@@ -41,7 +45,6 @@ HASH_CONSENSUS_FOR_AO = "0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288"
 HASH_CONSENSUS_FOR_VEBO = "0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a"
 CS_FEE_HASH_CONSENSUS = "0x71093efF8D8599b5fA340D665Ad60fA7C80688e4"
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
-# CSM_IMPL = "0x8daEa53b17a629918CDFAB785C5c74077c1D895B"
 DUAL_GOVERNANCE = "0xcdF49b058D606AD34c5789FD8c3BF8B3E54bA2db"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 LIDO_AND_STETH = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
@@ -236,7 +239,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_before == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_NUMBER_OF_ORACLES
     assert cs_fee_hash_consensus_quorum_before_number_of_oracles_before == HASH_CONSENSUS_FOR_CS_FEE_ORACLE_NUMBER_OF_ORACLES
 
-    # TODO: add module address checks
     """
     II. CSM Parameters Change
 
@@ -334,6 +336,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert staking_router.getStakingModule(CSM_MODULE_ID)["treasuryFee"] == CSM_TREASURY_FEE_BEFORE
     assert staking_router.getStakingModule(CSM_MODULE_ID)["maxDepositsPerBlock"] == CSM_MAX_DEPOSITS_PER_BLOCK_BEFORE
     assert staking_router.getStakingModule(CSM_MODULE_ID)["minDepositBlockDistance"] == CSM_MIN_DEPOSIT_BLOCK_DISTANCE_BEFORE
+    assert staking_router.getStakingModule(CSM_MODULE_ID)["stakingModuleAddress"] == CSM
 
     # Vote item #9
     # Validate new keyRemovalCharge value
@@ -404,6 +407,165 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # Validate total events count
     assert count_vote_items_by_voting_events + count_vote_items_by_agent_events == EXPECTED_TOTAL_EVENTS_COUNT, "Incorrect voting items count"
+
+    # Validate DG Proposal Submit event
+    validate_dual_governance_submit_event(
+        voting_events[0],
+        proposal_id=3,
+        proposer=VOTING,
+        executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+        metadata="Kyber Oracle Rotation, CSM Parameters Change, CS Verifier rotation, Change staking reward address and name for P2P.org Node Operator",
+        proposal_calls=[
+            {
+                "target": AGENT,
+                "value": 0,
+                "data": agent_forward([
+                    (
+                        HASH_CONSENSUS_FOR_AO, interface.HashConsensus(HASH_CONSENSUS_FOR_AO).removeMember.encode_input(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM)
+                    )
+                ])[1]
+            },
+            {
+                "target": AGENT,
+                "value": 0,
+                "data": agent_forward([
+                    (
+                        HASH_CONSENSUS_FOR_VEBO, interface.HashConsensus(HASH_CONSENSUS_FOR_VEBO).removeMember.encode_input(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM)
+                    )
+                ])[1]
+            },
+            {
+                "target": AGENT,
+                "value": 0,
+                "data":
+                agent_forward([
+                    (
+                        CS_FEE_HASH_CONSENSUS, interface.HashConsensus(CS_FEE_HASH_CONSENSUS).removeMember.encode_input(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM)
+                    )
+                ])[1]
+            },
+            {
+                "target": AGENT,
+                "value": 0,
+                "data":
+                agent_forward([
+                    (
+                        HASH_CONSENSUS_FOR_AO, interface.HashConsensus(HASH_CONSENSUS_FOR_AO).addMember.encode_input(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM)
+                    )
+                ])[1]
+            },
+            {
+                "target": AGENT,
+                "value": 0,
+                "data":
+                agent_forward([
+                    (
+                        HASH_CONSENSUS_FOR_VEBO, interface.HashConsensus(HASH_CONSENSUS_FOR_VEBO).addMember.encode_input(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM)
+                    )
+                ])[1]
+            },
+            {
+                "target": AGENT,
+                "value": 0,
+                "data":
+                agent_forward([
+                    (
+                        CS_FEE_HASH_CONSENSUS, interface.HashConsensus(CS_FEE_HASH_CONSENSUS).addMember.encode_input(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM)
+                    )
+                ])[1]
+            },
+            {
+                "target": AGENT,
+                "value": 0,
+                "data":
+                agent_forward([
+                    (
+                        STAKING_ROUTER,
+                        interface.StakingRouter(STAKING_ROUTER).updateStakingModule.encode_input(
+                            CSM_MODULE_ID,
+                            CSM_STAKE_SHARE_LIMIT_AFTER,
+                            CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER,
+                            staking_router.getStakingModule(CSM_MODULE_ID)["stakingModuleFee"],
+                            staking_router.getStakingModule(CSM_MODULE_ID)["treasuryFee"],
+                            staking_router.getStakingModule(CSM_MODULE_ID)["maxDepositsPerBlock"],
+                            staking_router.getStakingModule(CSM_MODULE_ID)["minDepositBlockDistance"]
+                        )
+                    )
+                ])[1]
+            },
+            {
+                "target": AGENT,
+                "value": 0,
+                "data":
+                agent_forward([
+                    (
+                        CSM, interface.AccessControl(CSM).grantRole.encode_input(csm_module_manager_role, AGENT)
+                    )
+                ])[1]
+            },
+            {
+                "target": AGENT,
+                "value": 0,
+                "data":
+                agent_forward([
+                    (
+                        CSM, interface.CSModule(CSM).setKeyRemovalCharge.encode_input(KEY_REMOVAL_CHARGE_AFTER)
+                    )
+                ])[1]
+            },
+            {
+                "target": AGENT,
+                "value": 0,
+                "data":
+                agent_forward([
+                    (
+                        CSM, interface.AccessControl(CSM).revokeRole.encode_input(csm_module_manager_role, AGENT)
+                    )
+                ])[1]
+            },
+            {
+                "target": AGENT,
+                "value": 0,
+                "data":
+                agent_forward([
+                    (
+                        CSM, interface.AccessControl(CSM).revokeRole.encode_input(csm_verifier_role, CS_VERIFIER_ADDRESS_OLD)
+                    )
+                ])[1]
+            },
+            {
+                "target": AGENT,
+                "value": 0,
+                "data":
+                agent_forward([
+                    (
+                        CSM, interface.AccessControl(CSM).grantRole.encode_input(csm_verifier_role, CS_VERIFIER_ADDRESS_NEW)
+                    )
+                ])[1]
+            },
+            {
+                "target": AGENT,
+                "value": 0,
+                "data":
+                agent_forward([
+                    (
+                        NODE_OPERATORS_REGISTRY, interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY).setNodeOperatorRewardAddress.encode_input(P2P_NO_ID, P2P_NO_STAKING_REWARDS_ADDRESS_NEW)
+                    )
+                ])[1]
+            },
+            {
+                "target": AGENT,
+                "value": 0,
+                "data":
+                agent_forward([
+                    (
+                        NODE_OPERATORS_REGISTRY, interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY).setNodeOperatorName.encode_input(P2P_NO_ID, P2P_NO_NAME_NEW)
+                    )
+                ])[1]
+            },
+        ],
+        emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
+    )
 
     # Validate PML, ATC, RCC ET Factories removal events
     validate_evmscript_factory_removed_event(voting_events[1], PML_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
