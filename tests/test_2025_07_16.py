@@ -41,7 +41,7 @@ HASH_CONSENSUS_FOR_AO = "0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288"
 HASH_CONSENSUS_FOR_VEBO = "0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a"
 CS_FEE_HASH_CONSENSUS = "0x71093efF8D8599b5fA340D665Ad60fA7C80688e4"
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
-CSM_IMPL = "0x8daEa53b17a629918CDFAB785C5c74077c1D895B"
+# CSM_IMPL = "0x8daEa53b17a629918CDFAB785C5c74077c1D895B"
 DUAL_GOVERNANCE = "0xcdF49b058D606AD34c5789FD8c3BF8B3E54bA2db"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 LIDO_AND_STETH = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
@@ -105,7 +105,7 @@ EXPECTED_TOTAL_EVENTS_COUNT = 21
 
 EXPECTED_DG_PROPOSAL_ID = 3
 
-IPFS_DESCRIPTION_HASH = 'bafkreiem3dnej6evmbpdejc7wuxzlmc4wd2ch4f6djoyi6t4kpna3mwwvi'
+IPFS_DESCRIPTION_HASH = 'bafkreid43vbvkuiurc2p5gbx7p4xawfsjq7mcjggeoq3cr4eznztpmw76a'
 
 
 def test_vote(helpers, accounts, vote_ids_from_env, stranger):
@@ -236,6 +236,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_before == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_NUMBER_OF_ORACLES
     assert cs_fee_hash_consensus_quorum_before_number_of_oracles_before == HASH_CONSENSUS_FOR_CS_FEE_ORACLE_NUMBER_OF_ORACLES
 
+    # TODO: add module address checks
     """
     II. CSM Parameters Change
 
@@ -320,7 +321,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     cs_fee_hash_consensus_quorum_before_number_of_oracles_after = len(cs_fee_hash_consensus.getMembers()[0])
 
     assert hash_consensus_for_accounting_oracle_number_of_oracles_after == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_NUMBER_OF_ORACLES
-    assert hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_after == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_NUMBER_OF_ORACLES
+    assert hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_after == HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_NUMBER_OF_ORACLES
     assert cs_fee_hash_consensus_quorum_before_number_of_oracles_after == HASH_CONSENSUS_FOR_CS_FEE_ORACLE_NUMBER_OF_ORACLES
 
     """II. CSM Parameters Change (Vote items #7 - #10)"""

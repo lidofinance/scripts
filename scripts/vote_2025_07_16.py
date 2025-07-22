@@ -84,14 +84,12 @@ STAKING_MODULE_ID = 3
 STAKE_SHARE_LIMIT_NEW = 300
 PRIORITY_EXIT_SHARE_THRESHOLD_NEW = 375
 
-IPFS_DESCRIPTION = """
-Rotate Lido on Ethereum Oracle Set member Kyber Network for Caliber, as per Snapshot decision. Items 1.1–1.6.
-Increase CSM stake share limit from 2% to 3%. Snapshot. Item 1.7.
-Enable a grace period for CSM Node Operators by setting keyRemovalCharge = 0. Proposed on the Forum. Items 1.8-1.10.
-Introduce a simplified CSVerifier for CSM. Proposed on the forum. Items 1.11, 1.12. Audit & deployment verification by MixBytes.
-Update the reward address and name for Node Operator ID 2 P2P.ORG - P2P Validator. Requested on the forum. Items 1.13, 1.14.
-Switch off Easy Track environment for PML, ATC, RCC entities, deprecated after Snapshot-approved transition to Lido Labs and Lido Ecosystem BORG Foundations. Items 2–7.
-"""
+IPFS_DESCRIPTION = """1. **Rotate Lido on Ethereum Oracle Set member Kyber Network for Caliber**, as per [Snapshot decision](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xdc208507ca0f659c7f9e38056288aedb7610816ea4020ca751c3422434780de8). Items 1.1–1.6.
+2. **Increase CSM stake share limit from 2% to 3%**. [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xcd1c1a051888efd495d97458ae9fa4fe5198616eb3d92a71d3352d9f25e79c4e). Item 1.7.
+3. **Enable a grace period for CSM Node Operators** by setting `keyRemovalCharge = 0`. [Proposed on the Forum](https://research.lido.fi/t/community-staking-module/5917/133). Items 1.8-1.10.
+4. **Introduce a simplified CSVerifier for CSM**. [Proposed on the forum](https://research.lido.fi/t/community-staking-module/5917/143). Items 1.11, 1.12. Audit & deployment verification by [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20CSM%20Security%20Audit%20Report%2007-2025.pdf).
+5. **Update the reward address and name for Node Operator ID 2 `P2P.ORG - P2P Validator`**. [Requested on the forum](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/44). Items 1.13, 1.14.
+6. **Switch off Easy Track environment for PML, ATC, RCC entities**, deprecated after Snapshot-approved transition to [Lido Labs](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xdf648307e68415e7b5cf96c6afbabd696c1731839f4b4a7cf5cb7efbc44ee9d6) and [Lido Ecosystem](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x7f72f12d72643c20cd0455c603d344050248e75ed1074c8391fae4c30f09ca15) BORG Foundations. Items 2–7."""
 
 def get_vote_items():
     # Contracts definition
