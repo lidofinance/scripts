@@ -1,28 +1,18 @@
-import pytest
 from brownie import accounts  # type: ignore
-from utils.test.oracle_report_helpers import (
-    oracle_report,
-)
 
+from utils.test.oracle_report_helpers import oracle_report
+from utils.test.wq_helpers import finalize_all_wq_requests
 from utils.test.helpers import almostEqEth, almostEqWithDiff, steth_balance, ETH, ZERO_ADDRESS
-
-from utils.config import (
-    contracts,
-)
+from utils.config import contracts
 
 
-def test_withdraw(steth_holder, eth_whale):
+def test_withdraw(steth_holder):
     account = accounts.at(steth_holder, force=True)
     REQUESTS_COUNT = 10
     REQUEST_AMOUNT = ETH(1)
     REQUESTS_SUM = REQUESTS_COUNT * REQUEST_AMOUNT
 
-    """ report """
-    while contracts.withdrawal_queue.getLastRequestId() != contracts.withdrawal_queue.getLastFinalizedRequestId():
-        # finalize all current requests first
-        report_tx = oracle_report()[0]
-        # stake new ether to increase buffer
-        contracts.lido.submit(ZERO_ADDRESS, {"from": eth_whale.address, "value": ETH(10000)})
+    finalize_all_wq_requests()
 
     # get accidentally unaccounted stETH shares on WQ contract
     uncounted_steth_shares = contracts.lido.sharesOf(contracts.withdrawal_queue)

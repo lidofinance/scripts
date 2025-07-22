@@ -1,25 +1,28 @@
 import math
 
-from brownie import web3
+from brownie import ZERO_ADDRESS, accounts, web3
+
 from utils.test.helpers import ETH
 from utils.config import contracts
-from brownie import ZERO_ADDRESS, accounts
 
 NODE_OPERATORS_REGISTRY_ID = 1
 WEI_TOLERANCE = 5  # wei tolerance to avoid rounding issue
 
 
 def fill_deposit_buffer(deposits_count):
-    staking_router, lido, withdrawal_queue = contracts.staking_router, contracts.lido, contracts.withdrawal_queue
-
     deposit_size = ETH(32)
+    depositable_eth = deposits_count * deposit_size
+
+    cover_wq_demand_and_submit(depositable_eth)
+
+def cover_wq_demand_and_submit(depositable_eth):
+    staking_router, lido, withdrawal_queue = contracts.staking_router, contracts.lido, contracts.withdrawal_queue
 
     buffered_ether_before_submit = lido.getBufferedEther()
     withdrawal_unfinalized_steth = withdrawal_queue.unfinalizedStETH()
 
-    eth_to_deposit = deposits_count * deposit_size
     eth_debt = max(0, withdrawal_unfinalized_steth - buffered_ether_before_submit)
-    eth_to_submit = eth_to_deposit + eth_debt + WEI_TOLERANCE
+    eth_to_submit = depositable_eth + eth_debt + WEI_TOLERANCE
 
     eth_whale = accounts.at(staking_router.DEPOSIT_CONTRACT(), force=True)
 
@@ -60,8 +63,7 @@ def fill_deposit_buffer(deposits_count):
         {"from": contracts.agent}
     )
 
-    assert lido.getDepositableEther() >= eth_to_deposit
-
+    assert lido.getDepositableEther() > depositable_eth
 
 def drain_remained_buffered_ether():
     depositable_ether = math.floor(contracts.lido.getDepositableEther() / 10**18)
