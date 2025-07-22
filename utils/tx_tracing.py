@@ -109,7 +109,19 @@ def tx_events_from_receipt(tx: TransactionReceipt) -> List:
 
     result = web3.provider.make_request("eth_getTransactionReceipt", [tx.txid])
     validate_events_from_abis()
-    events = decode_logs(result["result"]["logs"], _topics, allow_undecoded=True)
+
+    # Process logs to ensure proper padding for string data
+    logs = result["result"]["logs"]
+    for log in logs:
+        if log["data"] and len(log["data"]) > 2:  # Skip empty data
+            data = log["data"]
+            # If data length is not a multiple of 64 chars (32 bytes) after 0x prefix
+            if (len(data) - 2) % 64 != 0:
+                # Pad to multiple of 32 bytes
+                missing_chars = 64 - ((len(data) - 2) % 64)
+                log["data"] = data + "0" * missing_chars
+
+    events = decode_logs(logs, _topics, allow_undecoded=True)
     return [format_event(i) for i in events]
 
 
