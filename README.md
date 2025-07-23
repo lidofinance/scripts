@@ -57,7 +57,7 @@ docker run --name scripts -v "$(pwd)":/root/scripts -e ETH_RPC_URL -e ETH_RPC_UR
 Run:
 
 ```shell
-docker exec -w /root/scripts scripts bash -c 'make init'
+make docker-init
 ```
 
 Note: _It may take up to 5 minutes for the container to initialize properly the first time._
