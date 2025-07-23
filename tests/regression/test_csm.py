@@ -432,11 +432,12 @@ def test_csm_remove_key(csm, node_operator):
     keys_before = no["totalAddedKeys"]
     manager_address = csm.getNodeOperator(node_operator)["managerAddress"]
     tx = csm.removeKeys(node_operator, 0, 1, {"from": manager_address})
-    assert "KeyRemovalChargeApplied" in tx.events
-    assert "BondCharged" in tx.events
-    expected_charge_amount = contracts.lido.getPooledEthByShares(
+    assert "KeyRemovalChargeApplied" not in tx.events
+    assert "BondCharged" not in tx.events
+    charge_amount = contracts.lido.getPooledEthByShares(
         contracts.lido.getSharesByPooledEth(csm.keyRemovalCharge())
     )
-    assert tx.events["BondCharged"]["toChargeAmount"] == expected_charge_amount
+
+    assert charge_amount == 0 # keyRemovalCharge is zero since vote 2025/07/16
     no = csm.getNodeOperator(node_operator)
     assert no["totalAddedKeys"] == keys_before - 1

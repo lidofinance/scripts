@@ -9,6 +9,14 @@ _vote_item_group = GroupBy(
     color="magenta",
 )
 
+_dg_item_group = GroupBy(
+    contract_name="CallsScript",
+    event_name="LogScriptCall",
+    group_title="DG item #",
+    show_counter=True,
+    color="magenta",
+)
+
 _service_item_group = GroupBy(
     contract_name="Voting",
     event_name="ScriptResult",
@@ -50,6 +58,12 @@ def display_voting_events(tx: TransactionReceipt) -> None:
 
     display_tx_events(dict_events, "Events registered during the vote execution", groups)
 
+def display_dg_events(tx: TransactionReceipt) -> None:
+    dict_events = EventDict(tx_events_from_trace(tx))
+    groups = [_dg_item_group, _service_item_group]
+
+    display_tx_events(dict_events, "Events registered during the proposal execution", groups)
+
 
 def add_event_emitter(event):
     event["data"].append({"name": "_emitted_by", "type": "address", "value": event["address"], "decoded": True})
@@ -69,6 +83,24 @@ def group_voting_events(tx: TransactionReceipt) -> List[EventDict]:
 
     assert ret, (
         "Can't group voting events. Please check that `ETHERSCAN_TOKEN` env var is set "
+        "and all of the required brownie flags (e.g. --network mainnet-fork -s) are present"
+    )
+
+    return ret
+
+def group_dg_events(tx: TransactionReceipt) -> List[EventDict]:
+    events = tx_events_from_trace(tx)
+
+    # manually add event emitter address because it is dropped by EventDict class
+    events = [add_event_emitter(e) for e in events]
+
+    groups = [_vote_item_group, _service_item_group]
+
+    grouped_events = group_tx_events(events, EventDict(events), groups)
+    ret = [v for k, v in grouped_events if k == _vote_item_group]
+
+    assert ret, (
+        "Can't group DG events. Please check that `ETHERSCAN_TOKEN` env var is set "
         "and all of the required brownie flags (e.g. --network mainnet-fork -s) are present"
     )
 
