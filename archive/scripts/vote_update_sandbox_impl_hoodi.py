@@ -1,10 +1,12 @@
 """
-Vote XX/07/2025 [HOODI]
+Vote 23/07/2025 [HOODI]
 
 1. Grant APP_MANAGER_ROLE role to the AGENT
 2. Update `Sandbox Module` implementation
 3. Call finalizeUpgrade_v4 on `Sandbox Module`
 4. Revoke APP_MANAGER_ROLE role from the AGENT
+
+Vote passed & executed on Jul-23-2025 01:29:48 PM UTC, block 862773
 """
 import time
 
@@ -82,7 +84,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
     else:
         desc_ipfs = upload_vote_ipfs_description(DESCRIPTION)
 
-    dg_desc = "\\n".join(vote_desc_items)
+    dg_desc = "\n".join(vote_desc_items)
     dg_vote = prepare_proposal(call_script_items, dg_desc)
     vote_items = {dg_desc: dg_vote}
 

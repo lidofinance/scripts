@@ -1,5 +1,5 @@
 """
-Vote 18/07/2025 [HOODI]
+Vote 23/07/2025 [HOODI]
 
 --- Locator
 1. Update locator implementation
@@ -83,6 +83,8 @@ Vote 18/07/2025 [HOODI]
 67. Add CSSetVettedGateTree factory to EasyTrack with permissions
 68. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
 69. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track
+
+Vote passed & executed on Jul-23-2025 12:54:36 PM UTC, block 862608
 """
 import time
 
