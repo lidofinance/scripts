@@ -28,8 +28,6 @@ jobs:
           - ${{ github.workspace }}:/root/scripts
         options: >-
           --name=tests-runner
-        env:
-          ETH_RPC_URL: "https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }}"
 
     steps:
       - name: Checkout
@@ -41,7 +39,9 @@ jobs:
           CORE_BRANCH: master
 
       - name: Run node
-        run: docker exec --detach tests-runner bash -c 'NODE_PORT=8546 make node'
+        run: docker exec -e ETH_RPC_URL --detach tests-runner bash -c 'NODE_PORT=8546 make node'
+        env:
+          ETH_RPC_URL: "https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }}"
 
       - name: Check that the fork is ready
         shell: bash
@@ -51,9 +51,8 @@ jobs:
         run: docker exec -e GITHUB_TOKEN -e ETH_RPC_URL tests-runner bash -c 'make ci-prepare-environment'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ETH_RPC_URL: http://127.0.0.1:8546
 
       - name: Run core tests
-        run: docker exec -e FORK_RPC_URL tests-runner bash -c 'make test-core'
+        run: docker exec -e CORE_TESTS_TARGET_RPC_URL tests-runner bash -c 'make test-core'
         env:
-          FORK_RPC_URL: http://127.0.0.1:8546
+          CORE_TESTS_TARGET_RPC_URL: http://127.0.0.1:8546
