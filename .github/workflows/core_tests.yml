@@ -23,7 +23,7 @@ jobs:
       tests-runner:
         image: ghcr.io/lidofinance/scripts:v19
         ports:
-          - 9876:9876
+          - 8546:8546
         volumes:
           - ${{ github.workspace }}:/root/scripts
         options: >-
@@ -41,19 +41,19 @@ jobs:
           CORE_BRANCH: master
 
       - name: Run node
-        run: docker exec --detach tests-runner bash -c 'NODE_PORT=9876 make node'
+        run: docker exec --detach tests-runner bash -c 'NODE_PORT=8546 make node'
 
       - name: Check that the fork is ready
         shell: bash
-        run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 9876
+        run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8546
 
       - name: Prepare test environment with Brownie
         run: docker exec -e GITHUB_TOKEN -e ETH_RPC_URL tests-runner bash -c 'make ci-prepare-environment'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ETH_RPC_URL: http://127.0.0.1:9876
+          ETH_RPC_URL: http://127.0.0.1:8546
 
       - name: Run core tests
         run: docker exec -e FORK_RPC_URL tests-runner bash -c 'make test-core'
         env:
-          FORK_RPC_URL: http://127.0.0.1:9876
+          FORK_RPC_URL: http://127.0.0.1:8546
