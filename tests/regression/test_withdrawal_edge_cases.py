@@ -1,6 +1,7 @@
 from brownie import ZERO_ADDRESS, chain
 
 from utils.test.oracle_report_helpers import oracle_report, wait_to_next_available_report_time
+from utils.test.wq_helpers import finalize_all_wq_requests
 from utils.test.helpers import ETH
 from utils.config import contracts
 
@@ -18,17 +19,8 @@ def check_all_requests_finalization(request_ids, holder):
         assert is_finalized
 
 
-def test_bunker_multiple_batches(stranger, eth_whale):
-    """ report """
-    while (
-        contracts.withdrawal_queue.getLastRequestId()
-            != contracts.withdrawal_queue.getLastFinalizedRequestId()
-    ):
-        # finalize all current requests first
-        report_tx = oracle_report()[0]
-        # stake new ether to increase buffer
-        contracts.lido.submit(ZERO_ADDRESS, { 'from': eth_whale.address, 'value': ETH(10000) })
-
+def test_bunker_multiple_batches(stranger):
+    finalize_all_wq_requests()
 
     amount = ETH(100)
     withdrawal_amount = ETH(10)
@@ -88,17 +80,8 @@ def test_bunker_multiple_batches(stranger, eth_whale):
     assert claims[1]["amountOfETH"] == withdrawal_amount
 
 
-def test_oracle_report_missed(stranger, eth_whale):
-    """ report """
-    while (
-        contracts.withdrawal_queue.getLastRequestId()
-            != contracts.withdrawal_queue.getLastFinalizedRequestId()
-    ):
-        # finalize all current requests first
-        report_tx = oracle_report()[0]
-        # stake new ether to increase buffer
-        contracts.lido.submit(ZERO_ADDRESS, { 'from': eth_whale.address, 'value': ETH(10000) })
-
+def test_oracle_report_missed(stranger):
+    finalize_all_wq_requests()
 
     amount = ETH(100)
 
@@ -141,17 +124,8 @@ def test_oracle_report_missed(stranger, eth_whale):
     assert claims[0]["amountOfETH"] == amount
 
 
-def test_several_rebases(stranger, eth_whale):
-    """ report """
-    while (
-        contracts.withdrawal_queue.getLastRequestId()
-            != contracts.withdrawal_queue.getLastFinalizedRequestId()
-    ):
-        # finalize all current requests first
-        report_tx = oracle_report()[0]
-        # stake new ether to increase buffer
-        contracts.lido.submit(ZERO_ADDRESS, { 'from': eth_whale.address, 'value': ETH(10000) })
-
+def test_several_rebases(stranger):
+    finalize_all_wq_requests()
 
     amount = ETH(100)
     withdrawal_amount = ETH(10)

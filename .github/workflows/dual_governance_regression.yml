@@ -1,0 +1,154 @@
+name: Dual Governance tests CI
+
+permissions:
+  contents: read
+  issues: write
+
+on:
+  push:
+    branches:
+      - "master"
+      - "feat/tests"
+      - "feat/rc3"
+      - "feat/rc2"
+      - "feat/rc1"
+      - "feat/next-vote"
+  workflow_dispatch:
+
+jobs:
+  dual-governance-regression:
+    name: "Regression tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+
+    concurrency:
+      group: dual-governance-regression-${{ github.ref }}
+      cancel-in-progress: true
+
+    env:
+      NODE_VERSION: '20'
+      PYTHON_VERSION: '3.10'
+      POETRY_VERSION: '1.8.2'
+      HARDHAT_NODE_URL: 'http://127.0.0.1:8545'
+      ANVIL_NODE_URL: 'http://127.0.0.1:8555'
+      CURL_PARAMS: '-X POST -H "Content-Type: application/json" -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}"'
+
+    steps:
+
+      ################################################################
+      # Clone repositories`
+      ################################################################
+
+      - name: Checkout scripts repository
+        uses: actions/checkout@v4
+        with:
+          path: scripts
+          persist-credentials: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout dual-governance repository
+        uses: actions/checkout@v4
+        with:
+          repository: lidofinance/dual-governance
+          path: dual-governance
+          persist-credentials: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      ################################################################
+      # Set up toolchain
+      ################################################################
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: scripts/yarn.lock
+
+      - name: Install Poetry
+        shell: bash
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        env:
+          POETRY_VERSION: ${{ env.POETRY_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "poetry"
+          cache-dependency-path: scripts/poetry.lock
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "v1.0.0"
+
+      ################################################################
+      # Setup cache for dependencies
+      ################################################################
+
+      - name: Cache Forge dependencies
+        uses: actions/cache@v4
+        with:
+          path: dual-governance/lib
+          key: forge-${{ hashFiles('dual-governance/foundry.toml') }}
+          restore-keys: forge-
+
+      - name: Cache npm for dual-governance
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ hashFiles('dual-governance/package-lock.json') }}
+          restore-keys: npm-
+
+      ################################################################
+      # Install dependencies
+      ################################################################
+
+      - name: Install Python dependencies with Poetry
+        run: poetry install
+        working-directory: scripts
+
+      - name: Install Yarn dependencies for scripts
+        run: yarn install --frozen-lockfile
+        working-directory: scripts
+
+      - name: Install Node.js dependencies for dual-governance
+        run: npm ci
+        working-directory: dual-governance
+
+      - name: Install Forge dependencies
+        run: forge install
+        working-directory: dual-governance
+
+      ################################################################
+      # Run tests
+      ################################################################
+
+      - name: Start Hardhat node
+        shell: bash
+        run: |
+          npx hardhat node --fork https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }} &
+          for i in {1..30}; do
+            if curl -sf ${{ env.HARDHAT_NODE_URL }} ${{ env.CURL_PARAMS }} | grep -q '"result"'; then
+              echo "Hardhat node is ready"
+              break
+            fi
+            sleep 1
+          done
+        working-directory: scripts
+
+      - name: Prepare test environment with Brownie
+        run: poetry run brownie run scripts/ci/prepare_environment --network mainnet-fork
+        working-directory: scripts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run regression tests
+        run: npm run test:regressions -- --load-accounts
+        env:
+          MAINNET_RPC_URL: ${{ env.HARDHAT_NODE_URL }}
+          DEPLOY_ARTIFACT_FILE_NAME: deploy-artifact-mainnet.toml
+        working-directory: dual-governance

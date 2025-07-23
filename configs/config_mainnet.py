@@ -176,8 +176,8 @@ CS_MODULE_ID = 3
 CS_MODULE_NAME = "Community Staking"
 CS_MODULE_MODULE_FEE_BP = 600
 CS_MODULE_TREASURY_FEE_BP = 400
-CS_MODULE_TARGET_SHARE_BP = 200
-CS_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD = 250
+CS_MODULE_TARGET_SHARE_BP = 300 # Updated from 200 to 300 in vote 2025/07/16
+CS_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD = 375 # Updated from 250 to 375 in vote 2025/07/16
 CS_MODULE_MAX_DEPOSITS_PER_BLOCK = 30
 CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 
@@ -254,7 +254,8 @@ ORACLE_COMMITTEE = (
     # "0x140Bd8FbDc884f48dA7cb1c09bE8A2fAdfea776E", Excluded from members in vote 2025/05/11
     # "0x1d0813bf088BE3047d827D98524fBf779Bc25F00", Excluded from members in vote 2024/01/16
     "0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12",  # Added into members in vote 2024/10/22, moved to the beginning in vote 2025/05/11
-    "0xA7410857ABbf75043d61ea54e07D57A6EB6EF186",
+    "0x285f8537e1dAeEdaf617e96C742F2Cf36d63CcfB",  # Added into members in vote 2025/05/11
+    # "0xA7410857ABbf75043d61ea54e07D57A6EB6EF186", Excluded from members in vote 2025/07/16
     "0x404335BcE530400a5814375E7Ec1FB55fAff3eA2",
     "0x946D3b081ed19173dC83Cd974fC69e1e760B7d78",
     "0x007DE4a5F7bc37E2F26c0cb2E8A95006EE9B89b5",
@@ -263,7 +264,7 @@ ORACLE_COMMITTEE = (
     "0x61c91ECd902EB56e314bB2D5c5C07785444Ea1c8",
     # "0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d",  Excluded from members in vote 2024/10/22
     "0xe57B3792aDCc5da47EF4fF588883F0ee0c9835C9",  # Added into members in vote 2024/08/06
-    "0x285f8537e1dAeEdaf617e96C742F2Cf36d63CcfB",  # Added into members in vote 2025/05/11
+    "0x4118dad7f348a4063bd15786c299de2f3b1333f3"  # Added into members in vote 2025/07/16
 )
 
 # WithdrawalQueueERC721
@@ -288,9 +289,9 @@ STAKING_ROUTER_VERSION = 2
 
 
 # Not a precise but still some estimation of the fees. Assume here that all modules are filled
-# SR_MODULES_FEE = 
-#   curated_module_fee * (100% - sdvt_module_share - cs_module_share) 
-#   + sdvt_module_fee * sdvt_module_share 
+# SR_MODULES_FEE =
+#   curated_module_fee * (100% - sdvt_module_share - cs_module_share)
+#   + sdvt_module_fee * sdvt_module_share
 #   + cs_module_fee * cs_module_share
 
 SR_MODULES_FEE_BP = (
@@ -377,7 +378,7 @@ CS_EARLY_ADOPTION_ADDRESS = "0x3D5148ad93e2ae5DedD1f7A8B3C19E7F67F90c0E"
 CS_FEE_DISTRIBUTOR_ADDRESS = "0xD99CC66fEC647E68294C6477B40fC7E0F6F618D0"
 CS_FEE_ORACLE_ADDRESS = "0x4D4074628678Bd302921c20573EEa1ed38DdF7FB"
 CS_GATE_SEAL_ADDRESS = "0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0"
-CS_VERIFIER_ADDRESS = "0x0c345dFa318f9F4977cdd4f33d80F9D0ffA38e8B"
+CS_VERIFIER_ADDRESS = "0xeC6Cc185f671F627fb9b6f06C8772755F587b05d" # Rotated from 0x0c345dFa318f9F4977cdd4f33d80F9D0ffA38e8B to 0xeC6Cc185f671F627fb9b6f06C8772755F587b05d in vote 2025/07/16
 CS_VERIFIER_ADDRESS_OLD = "0x3Dfc50f22aCA652a0a6F28a0F892ab62074b5583"
 
 # DualGovernance
@@ -467,7 +468,7 @@ TIEBREAKER_VALUES = {
                 "0x9A921867EbB579D137184b397E7D087f1ae716fd",
                 "0x81000e270B4f66B8666544E8FEc073e0a23FFf00",
                 "0xD8a9072D82a28307279aC0aD3c97Cb61bEe67952"
-            )   
+            )
         },
         {
             "ADDRESS": "0xb9d82E1A49f6a66E8a07260BA05Cf9Ac8a938B1C",

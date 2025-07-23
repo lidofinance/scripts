@@ -50,7 +50,7 @@ def submit_proposals(items: Sequence[Tuple[Sequence[Tuple[str, str]], str]]) -> 
 
 
 def process_proposals(proposal_ids):
-    proposals_to_be_processed = proposal_ids
+    proposals_to_be_processed = list(proposal_ids)
     stranger = accounts[0]
 
     after_submit_delay = contracts.emergency_protected_timelock.getAfterSubmitDelay()
