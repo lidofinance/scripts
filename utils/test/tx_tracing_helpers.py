@@ -128,8 +128,6 @@ def group_voting_events_from_receipt(tx: TransactionReceipt) -> List[EventDict]:
 def group_dg_events_from_receipt(receipt: TransactionReceipt, timelock: str, admin_executor: str) -> List[EventDict]:
     events = tx_events_from_receipt(receipt)
 
-    print(events[-1])
-
     assert len(events) >= 1, "Unexpected events count"
     assert (
         checksum_encode_str(events[-1]["address"]) == checksum_encode_str(timelock)
