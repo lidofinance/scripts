@@ -28,11 +28,6 @@ def checksum_encode(addr):  # Takes a 20-byte binary address as input
     return "0x" + checksummed_buffer
 
 
-def checksum_encode_str(address: str) -> str:
-    addr_bytes = to_bytes(hexstr=address)
-    return checksum_encode(addr_bytes)
-
-
 def checksum_verify(address: str) -> bool:
     addr_bytes = to_bytes(hexstr=address)
     checksum_encoded = ""

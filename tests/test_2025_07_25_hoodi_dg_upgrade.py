@@ -1,7 +1,7 @@
 import pytest
 import os
 
-from brownie import chain, interface, ZERO_ADDRESS, reverts
+from brownie import chain, interface, ZERO_ADDRESS, reverts, web3
 from scripts.vote_2025_07_25_hoodi_dg_upgrade import start_vote
 from utils.config import contracts
 from brownie.network.transaction import TransactionReceipt
@@ -24,14 +24,14 @@ TIEBREAKER_ACTIVATION_TIMEOUT = 900
 MIN_ASSETS_LOCK_DURATION = 1
 ACTIVE_CONFIG_PROVIDER = "0x2b685e6fB288bBb7A82533BAfb679FfDF6E5bb33"
 
-NEW_DUAL_GOVERNANCE = "0x0000000000000000000000000000000000000000"
-NEW_TIEBREAKER_COMMITTEE = "0x0000000000000000000000000000000000000000"
-CONFIG_PROVIDER_FOR_DISCONNECTED_DUAL_GOVERNANCE = "0x0000000000000000000000000000000000000000"
-DG_UPGRADE_STATE_VERIFIER = "0x0000000000000000000000000000000000000000"
+NEW_DUAL_GOVERNANCE = "0x9Ce4bA766C87cC87e507307163eA54C5003A3563"
+NEW_TIEBREAKER_COMMITTEE = "0xEd27F0d08630685A0cEFb1040596Cb264cf79f14"
+CONFIG_PROVIDER_FOR_DISCONNECTED_DUAL_GOVERNANCE = "0x9CAaCCc62c66d817CC59c44780D1b722359795bF"
+DG_UPGRADE_STATE_VERIFIER = "0x816E10812B63A3dAf531cC9A79eAf07a718b4007"
 
 EXPECTED_VOTE_EVENTS_COUNT = 1
 EXPECTED_DG_EVENTS_COUNT = 11
-IPFS_DESCRIPTION_HASH = "bafkreibirquv75og4pf2y2aak6rnuiylfypx33niaomoomgty373g7evw4"
+IPFS_DESCRIPTION_HASH = "bafkreibaqjqmhreqanbdrdiixodyrxzwcswdnsxonrjn2fnoidni4tupve"
 
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
@@ -108,9 +108,24 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         [WITHDRAWAL_QUEUE, VALIDATORS_EXIT_BUS_ORACLE, TRIGGERABLE_WITHDRAWALS_GATEWAY],
     )
 
+    some_proposal_calls = [
+        (
+            NEW_DUAL_GOVERNANCE,
+            0,
+            interface.DualGovernance(NEW_DUAL_GOVERNANCE).setTiebreakerActivationTimeout.encode_input(
+                TIEBREAKER_ACTIVATION_TIMEOUT - 1
+            ),
+        )
+    ]
+
     # Test that old DG can't submit proposals
-    with reverts("CallerIsNotGovernance: 0x4d12b9f6acab54ff6a3a776ba3b8724d9b77845f"):
-        dual_governance.submitProposal([], "This should revert", {"from": VOTING})
+    with reverts(f"CallerIsNotGovernance: {DUAL_GOVERNANCE.lower()}"):
+        dual_governance.submitProposal(some_proposal_calls, "This should revert", {"from": VOTING})
+
+    last_proposal_id_before = timelock.getProposalsCount()
+    # Test that new DG can submit proposals
+    new_dual_governance.submitProposal(some_proposal_calls, "This should not revert", {"from": VOTING})
+    assert timelock.getProposalsCount() == last_proposal_id_before + 1
 
     # Test that old escrow won't get into Rage Quit if lock amount above previous 2nd seal
     old_escrow = interface.DualGovernanceEscrow(contracts.dual_governance.getVetoSignallingEscrow())
@@ -145,6 +160,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     chain.sleep(old_escrow.MAX_MIN_ASSETS_LOCK_DURATION() + 1)
     old_escrow.unlockStETH({"from": steth_whale})
 
+    assert old_escrow.getRageQuitSupport() == old_dual_governance_rage_quit_support_before
+
     # =======================================================================
     # ======================== IPFS & events checks =========================
     # =======================================================================
@@ -164,7 +181,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         proposal_id=expected_dg_proposal_id,
         proposer=VOTING,
         executor=ADMIN_EXECUTOR,
-        metadata="1.1 - 1.10 Proposal to upgrade Dual Governance contract on Hoodi testnet (following a weakness reported through Immunefi)",
+        metadata="1.1 - 1.10 Proposal to upgrade Dual Governance contract on Hoodi testnet (Immunefi reported vulnerability fix)",
         proposal_calls=[
             {
                 "target": NEW_DUAL_GOVERNANCE,
@@ -315,6 +332,6 @@ def validate_dual_governance_state_verified_event(event: EventDict, emitted_by: 
 
     assert event.count("DGUpgradeConfigurationValidated") == 1
 
-    assert checksum_encode_str(event["DGUpgradeConfigurationValidated"]["_emitted_by"]) == checksum_encode_str(
-        emitted_by
-    ), "Wrong event emitter"
+    assert web3.to_checksum_address(
+        event["DGUpgradeConfigurationValidated"]["_emitted_by"]
+    ) == web3.to_checksum_address(emitted_by), "Wrong event emitter"

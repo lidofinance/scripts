@@ -1,6 +1,5 @@
 from brownie.network.event import EventDict
-from brownie import convert
-from utils.checksummed_address import checksum_encode_str
+from brownie import convert, web3
 from .common import validate_events_chain
 
 
@@ -53,7 +52,7 @@ def validate_dual_governance_tiebreaker_activation_timeout_set_event(
 
     assert event["TiebreakerActivationTimeoutSet"]["newTiebreakerActivationTimeout"] == timeout, "Wrong timeout"
 
-    assert checksum_encode_str(event["TiebreakerActivationTimeoutSet"]["_emitted_by"]) == checksum_encode_str(
+    assert web3.to_checksum_address(event["TiebreakerActivationTimeoutSet"]["_emitted_by"]) == web3.to_checksum_address(
         emitted_by
     ), "Wrong event emitter"
 
@@ -67,7 +66,7 @@ def validate_dual_governance_tiebreaker_committee_set_event(event: EventDict, co
 
     assert event["TiebreakerCommitteeSet"]["newTiebreakerCommittee"] == committee, "Wrong committee"
 
-    assert checksum_encode_str(event["TiebreakerCommitteeSet"]["_emitted_by"]) == checksum_encode_str(
+    assert web3.to_checksum_address(event["TiebreakerCommitteeSet"]["_emitted_by"]) == web3.to_checksum_address(
         emitted_by
     ), "Wrong event emitter"
 
@@ -83,7 +82,7 @@ def validate_dual_governance_tiebreaker_sealable_withdrawal_blocker_added_event(
 
     assert event["SealableWithdrawalBlockerAdded"]["sealable"] == blocker, "Wrong blocker"
 
-    assert checksum_encode_str(event["SealableWithdrawalBlockerAdded"]["_emitted_by"]) == checksum_encode_str(
+    assert web3.to_checksum_address(event["SealableWithdrawalBlockerAdded"]["_emitted_by"]) == web3.to_checksum_address(
         emitted_by
     ), "Wrong event emitter"
 
@@ -100,7 +99,7 @@ def validate_dual_governance_proposer_registered_event(
     assert event["ProposerRegistered"]["proposerAccount"] == proposer, "Wrong proposer"
     assert event["ProposerRegistered"]["executor"] == executor, "Wrong executor"
 
-    assert checksum_encode_str(event["ProposerRegistered"]["_emitted_by"]) == checksum_encode_str(
+    assert web3.to_checksum_address(event["ProposerRegistered"]["_emitted_by"]) == web3.to_checksum_address(
         emitted_by
     ), "Wrong event emitter"
 
@@ -114,7 +113,7 @@ def validate_dual_governance_proposals_canceller_set_event(event: EventDict, can
 
     assert event["ProposalsCancellerSet"]["proposalsCanceller"] == canceller, "Wrong canceller"
 
-    assert checksum_encode_str(event["ProposalsCancellerSet"]["_emitted_by"]) == checksum_encode_str(
+    assert web3.to_checksum_address(event["ProposalsCancellerSet"]["_emitted_by"]) == web3.to_checksum_address(
         emitted_by
     ), "Wrong event emitter"
 
@@ -128,7 +127,7 @@ def validate_dual_governance_reseal_committee_set_event(event: EventDict, commit
 
     assert event["ResealCommitteeSet"]["resealCommittee"] == committee, "Wrong committee"
 
-    assert checksum_encode_str(event["ResealCommitteeSet"]["_emitted_by"]) == checksum_encode_str(
+    assert web3.to_checksum_address(event["ResealCommitteeSet"]["_emitted_by"]) == web3.to_checksum_address(
         emitted_by
     ), "Wrong event emitter"
 
@@ -150,7 +149,7 @@ def validate_dual_governance_config_provider_set_event(
         event["MinAssetsLockDurationSet"]["newAssetsLockDuration"] == min_assets_lock_duration
     ), "Wrong minAssetsLockDuration"
 
-    assert checksum_encode_str(event["ConfigProviderSet"]["_emitted_by"]) == checksum_encode_str(
+    assert web3.to_checksum_address(event["ConfigProviderSet"]["_emitted_by"]) == web3.to_checksum_address(
         emitted_by
     ), "Wrong event emitter"
 
@@ -170,6 +169,6 @@ def validate_dual_governance_governance_set_event(
 
     assert event["ProposalsCancelledTill"]["proposalId"] == proposals_cancelled_till, "Wrong proposalsCancelledTill"
 
-    assert checksum_encode_str(event["GovernanceSet"]["_emitted_by"]) == checksum_encode_str(
+    assert web3.to_checksum_address(event["GovernanceSet"]["_emitted_by"]) == web3.to_checksum_address(
         emitted_by
     ), "Wrong event emitter"

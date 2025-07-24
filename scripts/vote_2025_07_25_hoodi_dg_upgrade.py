@@ -28,9 +28,7 @@ from utils.config import (
 )
 
 voting_contract = "0x0000000000000000000000000000000000000000"
-description = (
-    "Dual Governance updated version deployment on Hoodi testnet (following a weakness reported through Immunefi)"
-)
+description = "Proposal to upgrade Dual Governance contract on Hoodi testnet (Immunefi reported vulnerability fix)"
 
 
 def get_vote_items():
