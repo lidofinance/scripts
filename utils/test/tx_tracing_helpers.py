@@ -1,5 +1,6 @@
 from utils.tx_tracing import *
 from utils.config import VOTING
+from utils.checksummed_address import checksum_encode_str
 
 _vote_item_group = GroupBy(
     contract_name="CallsScript",
@@ -41,7 +42,7 @@ def count_vote_items_by_events(tx: TransactionReceipt, voting_addr: str) -> int:
     ev_dict = EventDict(events)
 
     calls_slice = ev_dict["LogScriptCall"]
-    return sum(map(lambda x: x["src"] == voting_addr, calls_slice))
+    return sum(map(lambda x: checksum_encode_str(x["src"]) == checksum_encode_str(voting_addr), calls_slice))
 
 
 def display_voting_events(tx: TransactionReceipt) -> None:
@@ -75,19 +76,43 @@ def group_voting_events(tx: TransactionReceipt) -> List[EventDict]:
     return ret
 
 
+_dg_item_group = GroupBy(
+    contract_name="CallsScript",
+    event_name="LogScriptCall",
+    group_title="DG item #",
+    show_counter=True,
+    color="magenta",
+)
+
+
+def display_dg_events(tx: TransactionReceipt) -> None:
+    dict_events = EventDict(tx_events_from_trace(tx))
+    groups = [_dg_item_group, _service_item_group]
+
+    display_tx_events(dict_events, "Events registered during the proposal execution", groups)
+
+
 def group_voting_events_from_receipt(tx: TransactionReceipt) -> List[EventDict]:
     events = tx_events_from_receipt(tx)
 
     # Validate "service" Voting events are in the log
     assert len(events) >= 2, "Unexpected events count"
-    assert events[-2]["address"] == VOTING and events[-2]["name"] == "ScriptResult", "Unexpected Voting service event"
-    assert events[-1]["address"] == VOTING and events[-1]["name"] == "ExecuteVote", "Unexpected Voting service event"
+    assert (
+        checksum_encode_str(events[-2]["address"]) == checksum_encode_str(VOTING)
+        and events[-2]["name"] == "ScriptResult"
+    ), "Unexpected Voting service event"
+    assert (
+        checksum_encode_str(events[-1]["address"]) == checksum_encode_str(VOTING)
+        and events[-1]["name"] == "ExecuteVote"
+    ), "Unexpected Voting service event"
 
     groups = []
     current_group = None
 
     for event in events[:-2]:
-        is_start_of_new_group = event["name"] == "LogScriptCall" and event["address"] == VOTING
+        is_start_of_new_group = event["name"] == "LogScriptCall" and checksum_encode_str(
+            event["address"]
+        ) == checksum_encode_str(VOTING)
 
         if is_start_of_new_group:
             current_group = []
@@ -103,9 +128,12 @@ def group_voting_events_from_receipt(tx: TransactionReceipt) -> List[EventDict]:
 def group_dg_events_from_receipt(receipt: TransactionReceipt, timelock: str, admin_executor: str) -> List[EventDict]:
     events = tx_events_from_receipt(receipt)
 
+    print(events[-1])
+
     assert len(events) >= 1, "Unexpected events count"
     assert (
-        events[-1]["address"] == timelock and events[-1]["name"] == "ProposalExecuted"
+        checksum_encode_str(events[-1]["address"]) == checksum_encode_str(timelock)
+        and events[-1]["name"] == "ProposalExecuted"
     ), "Unexpected Dual Governance service event"
 
     groups = []
@@ -114,7 +142,9 @@ def group_dg_events_from_receipt(receipt: TransactionReceipt, timelock: str, adm
     for event in events[:-1]:
         current_group.append(add_event_emitter(event))
 
-        is_end_of_group = event["name"] == "Executed" and event["address"] == admin_executor
+        is_end_of_group = event["name"] == "Executed" and checksum_encode_str(event["address"]) == checksum_encode_str(
+            admin_executor
+        )
 
         if is_end_of_group:
             groups.append(current_group)

@@ -137,9 +137,6 @@ class Helpers:
         for vote_id in vote_ids:
             assert dao_voting.canExecute(vote_id)
 
-        # try to instantiate script executor
-        # to deal with events parsing properly
-        # on fresh brownie setup cases (mostly for CI)
         executor_addr = dao_voting.getEVMScriptExecutor(EMPTY_CALLSCRIPT)
         try:
             _ = interface.CallsScript(executor_addr)
@@ -153,27 +150,12 @@ class Helpers:
             print(f"vote #{vote_id} executed")
             execution_transactions.append(tx)
 
-        Helpers._prefetch_contracts_from_etherscan()
-
         return execution_transactions
 
     @staticmethod
     def is_executed(vote_id, dao_voting):
         vote_status = dao_voting.getVote(vote_id)
         return vote_status[1]
-
-    @staticmethod
-    def _prefetch_contracts_from_etherscan():
-        if not Helpers._etherscan_is_fetched:
-            print(f"prefetch Lido V2 contracts from Etherscan to parse events")
-
-            Contract.from_explorer(VALIDATORS_EXIT_BUS_ORACLE)
-            Contract.from_explorer(WITHDRAWAL_QUEUE)
-            Contract.from_explorer(STAKING_ROUTER)
-            Contract.from_explorer(VOTING)
-            Contract.from_explorer(SIMPLE_DVT)
-
-            Helpers._etherscan_is_fetched = True
 
 
 @pytest.fixture(scope="session")
@@ -187,9 +169,9 @@ def vote_ids_from_env() -> [int]:
         try:
             vote_ids_str = os.getenv(ENV_OMNIBUS_VOTE_IDS)
             vote_ids = [int(s) for s in vote_ids_str.split(",")]
-            
+
             print(f"OMNIBUS_VOTE_IDS env var is set, using existing votes {vote_ids}")
-            
+
             return vote_ids
         except:
             pass
