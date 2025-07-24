@@ -27,7 +27,7 @@ from utils.config import (
     get_priority_fee,
 )
 
-voting_contract = "0xb24cf99Ba42108b973495e1417D3d9Ed3d343a15"
+voting_contract = "0x0000000000000000000000000000000000000000"
 description = (
     "Dual Governance updated version deployment on Hoodi testnet (following a weakness reported through Immunefi)"
 )

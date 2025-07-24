@@ -1,17 +1,13 @@
 import pytest
 import os
 
-from typing import NamedTuple, List
-from brownie import web3, chain, interface, ZERO_ADDRESS, accounts, reverts
-from hexbytes import HexBytes
+from brownie import chain, interface, ZERO_ADDRESS, reverts
 from scripts.vote_2025_07_25_hoodi_dg_upgrade import start_vote
 from utils.config import contracts
 from brownie.network.transaction import TransactionReceipt
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.dual_governance import *
-
-from utils.test.event_validators.proxy import validate_proxy_admin_changed
 
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
@@ -28,10 +24,10 @@ TIEBREAKER_ACTIVATION_TIMEOUT = 900
 MIN_ASSETS_LOCK_DURATION = 1
 ACTIVE_CONFIG_PROVIDER = "0x2b685e6fB288bBb7A82533BAfb679FfDF6E5bb33"
 
-NEW_DUAL_GOVERNANCE = "0x9Ce4bA766C87cC87e507307163eA54C5003A3563"
-NEW_TIEBREAKER_COMMITTEE = "0xEd27F0d08630685A0cEFb1040596Cb264cf79f14"
-CONFIG_PROVIDER_FOR_DISCONNECTED_DUAL_GOVERNANCE = "0x9CAaCCc62c66d817CC59c44780D1b722359795bF"
-DG_UPGRADE_STATE_VERIFIER = "0x816E10812B63A3dAf531cC9A79eAf07a718b4007"
+NEW_DUAL_GOVERNANCE = "0x0000000000000000000000000000000000000000"
+NEW_TIEBREAKER_COMMITTEE = "0x0000000000000000000000000000000000000000"
+CONFIG_PROVIDER_FOR_DISCONNECTED_DUAL_GOVERNANCE = "0x0000000000000000000000000000000000000000"
+DG_UPGRADE_STATE_VERIFIER = "0x0000000000000000000000000000000000000000"
 
 EXPECTED_VOTE_EVENTS_COUNT = 1
 EXPECTED_DG_EVENTS_COUNT = 11
