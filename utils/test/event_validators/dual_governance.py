@@ -154,7 +154,7 @@ def validate_dual_governance_config_provider_set_event(
     ), "Wrong event emitter"
 
 
-def validate_dual_governance_governance_set_event(
+def validate_timelock_governance_set_event(
     event: EventDict, governance: str, proposals_cancelled_till: int, emitted_by: str
 ) -> None:
     _events_chain = ["GovernanceSet", "ProposalsCancelledTill", "Executed"]

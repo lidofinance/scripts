@@ -150,12 +150,25 @@ class Helpers:
             print(f"vote #{vote_id} executed")
             execution_transactions.append(tx)
 
+        Helpers._prefetch_contracts_from_etherscan()
+
         return execution_transactions
 
     @staticmethod
     def is_executed(vote_id, dao_voting):
         vote_status = dao_voting.getVote(vote_id)
         return vote_status[1]
+
+    @staticmethod
+    def _prefetch_contracts_from_etherscan():
+        if not Helpers._etherscan_is_fetched:
+            print(f"prefetch contracts from Etherscan to parse events")
+            # In case of issue with events parsing from local abi
+            # add contracts here to fetch the abis from etherscan
+            # Use next format to fetch the abi:
+            # Contract.from_explorer(<contract_address>)
+
+            Helpers._etherscan_is_fetched = True
 
 
 @pytest.fixture(scope="session")

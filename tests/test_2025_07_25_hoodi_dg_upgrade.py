@@ -35,6 +35,7 @@ IPFS_DESCRIPTION_HASH = "bafkreibaqjqmhreqanbdrdiixodyrxzwcswdnsxonrjn2fnoidni4t
 
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
+
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
     steth_token = contracts.lido
@@ -128,12 +129,19 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     assert timelock.getProposalsCount() == last_proposal_id_before + 1
 
     # Test that old escrow won't get into Rage Quit if lock amount above previous 2nd seal
-    old_escrow = interface.DualGovernanceEscrow(contracts.dual_governance.getVetoSignallingEscrow())
+    old_escrow = interface.DualGovernanceEscrow(dual_governance.getVetoSignallingEscrow())
     new_escrow = interface.DualGovernanceEscrow(new_dual_governance.getVetoSignallingEscrow())
 
-    old_dual_governance_second_seal = interface.IDualGovernanceConfigProvider(
+    disconnected_dual_governance_second_seal = interface.IDualGovernanceConfigProvider(
         dual_governance.getConfigProvider()
     ).SECOND_SEAL_RAGE_QUIT_SUPPORT()
+    assert (
+        disconnected_dual_governance_second_seal
+        == interface.IDualGovernanceConfigProvider(
+            CONFIG_PROVIDER_FOR_DISCONNECTED_DUAL_GOVERNANCE
+        ).SECOND_SEAL_RAGE_QUIT_SUPPORT()
+    )
+
     new_dual_governance_second_seal = interface.IDualGovernanceConfigProvider(
         new_dual_governance.getConfigProvider()
     ).SECOND_SEAL_RAGE_QUIT_SUPPORT()
@@ -157,7 +165,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     assert old_escrow.getRageQuitSupport() < old_dual_governance_second_seal
     assert old_escrow.getRageQuitSupport() > new_dual_governance_second_seal
 
-    chain.sleep(old_escrow.MAX_MIN_ASSETS_LOCK_DURATION() + 1)
+    chain.sleep(1)
     old_escrow.unlockStETH({"from": steth_whale})
 
     assert old_escrow.getRageQuitSupport() == old_dual_governance_rage_quit_support_before
@@ -181,7 +189,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         proposal_id=expected_dg_proposal_id,
         proposer=VOTING,
         executor=ADMIN_EXECUTOR,
-        metadata="1.1 - 1.10 Proposal to upgrade Dual Governance contract on Hoodi testnet (Immunefi reported vulnerability fix)",
+        metadata="1.1 - 1.11 Proposal to upgrade Dual Governance contract on Hoodi testnet (Immunefi reported vulnerability fix)",
         proposal_calls=[
             {
                 "target": NEW_DUAL_GOVERNANCE,
@@ -305,7 +313,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         emitted_by=NEW_DUAL_GOVERNANCE,
     )
 
-    validate_dual_governance_governance_set_event(
+    validate_timelock_governance_set_event(
         dg_events[8],
         governance=NEW_DUAL_GOVERNANCE,
         proposals_cancelled_till=expected_dg_proposal_id,
