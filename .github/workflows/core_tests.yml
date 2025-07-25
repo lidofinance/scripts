@@ -1,0 +1,58 @@
+name: Core tests
+
+on:
+  push:
+    branches-ignore:
+      - "master"
+      - "feat/tests"
+      - "feat/rc3"
+      - "feat/rc2"
+      - "feat/rc1"
+      - "feat/next-vote"
+  schedule:
+    - cron: "0 0 * * TUE"
+
+jobs:
+  run-tests:
+    name: Core repo tests in docker
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 120
+
+    services:
+
+      tests-runner:
+        image: ghcr.io/lidofinance/scripts:v19
+        ports:
+          - 8546:8546
+        volumes:
+          - ${{ github.workspace }}:/root/scripts
+        options: >-
+          --name=tests-runner
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run init script
+        run: docker exec -e CORE_BRANCH tests-runner bash -c 'make init'
+        env:
+          CORE_BRANCH: master
+
+      - name: Run node
+        run: docker exec -e ETH_RPC_URL --detach tests-runner bash -c 'NODE_PORT=8546 make node'
+        env:
+          ETH_RPC_URL: "https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }}"
+
+      - name: Check that the fork is ready
+        shell: bash
+        run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8546
+
+      - name: Prepare test environment with Brownie
+        run: docker exec -e GITHUB_TOKEN -e ETH_RPC_URL tests-runner bash -c 'make ci-prepare-environment'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run core tests
+        run: docker exec -e CORE_TESTS_TARGET_RPC_URL tests-runner bash -c 'make test-core'
+        env:
+          CORE_TESTS_TARGET_RPC_URL: http://127.0.0.1:8546
