@@ -1,0 +1,8 @@
+[
+    {
+        "type": "event",
+        "name": "DGUpgradeConfigurationValidated",
+        "inputs": [],
+        "anonymous": false
+    }
+]
