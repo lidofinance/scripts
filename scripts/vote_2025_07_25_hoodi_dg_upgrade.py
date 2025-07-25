@@ -25,8 +25,9 @@ from utils.config import (
     get_is_live,
     get_priority_fee,
 )
+from utils.mainnet_fork import pass_and_exec_dao_vote
 
-omnibus_provider = "0x0000000000000000000000000000000000000000"
+omnibus_provider = "0x5ad3254119b12Cf8DEfDb3A9A2Cb04E58E00dca4"
 description = "Proposal to upgrade Dual Governance contract on Hoodi testnet (Immunefi reported vulnerability fix)"
 
 
