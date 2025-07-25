@@ -105,8 +105,7 @@ or, to run core repository integrations tests:
 ```shell
 NODE_PORT=8547 make node
 poetry run brownie test tests/vote_*.py -mfh-3
-cd lido-core
-FORK_RPC_URL=http://localhost:8547 yarn test:integration
+make test-core
 ```
 
 If your container has been stopped (for example, by a system reboot), start it:
