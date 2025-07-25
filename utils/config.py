@@ -59,6 +59,7 @@ def get_is_live() -> bool:
         "mainnet-fork",
         "mfh-1",
         "mfh-2",
+        "mfh-3",
         "holesky-fork",
         "sepolia-fork",
         "hoodi-fork",
