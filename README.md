@@ -100,11 +100,13 @@ You can use the following shortcuts:
 - `make test-core` run core repository tests
 
 
-or, to run core repository integrations tests on the Hardhat node run on default port 8545 (in a step above):
+or, to run core repository integrations tests:
 
 ```shell
+NODE_PORT=8547 make node
+poetry run brownie test tests/vote_*.py -mfh-3
 cd lido-core
-FORK_RPC_URL=http://localhost:8545 yarn test:integration
+FORK_RPC_URL=http://localhost:8547 yarn test:integration
 ```
 
 If your container has been stopped (for example, by a system reboot), start it:
