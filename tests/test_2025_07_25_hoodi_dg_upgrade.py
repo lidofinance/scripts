@@ -31,7 +31,7 @@ DG_UPGRADE_STATE_VERIFIER = "0x0000000000000000000000000000000000000000"
 
 EXPECTED_VOTE_EVENTS_COUNT = 1
 EXPECTED_DG_EVENTS_COUNT = 11
-IPFS_DESCRIPTION_HASH = "bafkreibaqjqmhreqanbdrdiixodyrxzwcswdnsxonrjn2fnoidni4tupve"
+IPFS_DESCRIPTION_HASH = "bafkreicfgpgqnj2lwerhweihnlze734t4iguw7jnqg7ylsos6ixoepn5vu"
 
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
@@ -162,10 +162,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     assert old_escrow.getRageQuitSupport() > old_dual_governance_rage_quit_support_before
     assert new_escrow.getRageQuitSupport() == new_dual_governance_rage_quit_support_before
 
-    assert old_escrow.getRageQuitSupport() < old_dual_governance_second_seal
+    assert old_escrow.getRageQuitSupport() < disconnected_dual_governance_second_seal
     assert old_escrow.getRageQuitSupport() > new_dual_governance_second_seal
 
-    chain.sleep(1)
+    chain.sleep(old_escrow.getMinAssetsLockDuration() + 1)
     old_escrow.unlockStETH({"from": steth_whale})
 
     assert old_escrow.getRageQuitSupport() == old_dual_governance_rage_quit_support_before
