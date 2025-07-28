@@ -34,13 +34,12 @@ def pass_and_exec_dao_vote(vote_id, step_by_step=False):
                 account = accounts.at(holder_addr, force=True)
                 dao_voting.vote(vote_id, True, False, {"from": account, "silent": True})
 
-        # wait for the vote to end
-        time_to_end = dao_voting.getVote(vote_id)["startDate"] + get_vote_duration() - chain.time()
-        if time_to_end > 0:
-            chain.sleep(time_to_end)
+        vote_end_timestamp = dao_voting.getVote(vote_id)["startDate"] + get_vote_duration()
 
-        chain.mine()
+        if vote_end_timestamp > chain.time():
+            chain.mine(1, vote_end_timestamp)
 
+        assert chain.time() >= vote_end_timestamp
         assert dao_voting.canExecute(vote_id)
 
     print(f"Executing vote {vote_id}")
