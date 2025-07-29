@@ -1,7 +1,7 @@
 from brownie import interface, chain, convert
 from brownie.network.transaction import TransactionReceipt
 
-from scripts.vote_2025_07_16 import start_vote
+from archive.scripts.vote_2025_07_16 import start_vote
 from utils.agent import agent_forward
 
 from utils.test.tx_tracing_helpers import *
