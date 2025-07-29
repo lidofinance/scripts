@@ -1,3 +1,5 @@
+import pytest
+
 from brownie import interface, chain, convert
 from brownie.network.transaction import TransactionReceipt
 
@@ -21,6 +23,8 @@ from utils.test.event_validators.node_operators_registry import (
     NodeOperatorNameSetItem,
     NodeOperatorRewardAddressSetItem,
 )
+
+from utils.voting_test import if_voting_script_in_archive
 
 from utils.config import (
     LDO_HOLDER_ADDRESS_FOR_TESTS,
@@ -111,29 +115,33 @@ EXPECTED_DG_PROPOSAL_ID = 3
 IPFS_DESCRIPTION_HASH = 'bafkreid43vbvkuiurc2p5gbx7p4xawfsjq7mcjggeoq3cr4eznztpmw76a'
 
 
-def test_vote(helpers, accounts, vote_ids_from_env, dg_proposal_ids_from_env, stranger):
+def test_vote(helpers, accounts, vote_ids_from_env, stranger):
+
     # =======================================================================
     # ========================= Arrange variables ===========================
     # =======================================================================
 
-    voting = interface.Voting(VOTING)
-    agent = interface.Agent(AGENT)
-    easy_track = interface.EasyTrack(EASY_TRACK)
-    csm = interface.CSModule(CSM)
     hash_consensus_for_accounting_oracle = interface.HashConsensus(HASH_CONSENSUS_FOR_AO)
     hash_consensus_for_validators_exit_bus_oracle = interface.HashConsensus(HASH_CONSENSUS_FOR_VEBO)
     cs_fee_hash_consensus = interface.HashConsensus(CS_FEE_HASH_CONSENSUS)
-    staking_router = interface.StakingRouter(STAKING_ROUTER)
+    agent = interface.Agent(AGENT)
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     emergency_protected_timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
     accounting = interface.CSAccounting(CS_ACCOUNTING)
     no_registry = interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
+    csm = interface.CSModule(CSM)
+    voting = interface.Voting(VOTING)
+    easy_track = interface.EasyTrack(EASY_TRACK)
 
     # CSM roles
     csm_verifier_role = csm.VERIFIER_ROLE()
     csm_module_manager_role = csm.MODULE_MANAGER_ROLE()
 
-    if not dg_proposal_ids_from_env:
+    evm_script_factories_before = easy_track.getEVMScriptFactories()
+
+    if not if_voting_script_in_archive(start_vote) or vote_ids_from_env:
+
         # =======================================================================
         # ========================= Before voting tests =========================
         # =======================================================================
@@ -145,7 +153,6 @@ def test_vote(helpers, accounts, vote_ids_from_env, dg_proposal_ids_from_env, st
 
         Validate PML, ATC, RCC ET Factories existence before removal
         """
-        evm_script_factories_before = easy_track.getEVMScriptFactories()
 
         assert PML_STABLECOINS_FACTORY in evm_script_factories_before
         assert PML_STETH_FACTORY in evm_script_factories_before
@@ -411,7 +418,7 @@ def test_vote(helpers, accounts, vote_ids_from_env, dg_proposal_ids_from_env, st
         validate_evmscript_factory_removed_event(voting_events[3], ATC_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
         validate_evmscript_factory_removed_event(voting_events[4], ATC_STETH_FACTORY, emitted_by=EASY_TRACK)
         validate_evmscript_factory_removed_event(voting_events[5], RCC_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
-        validate_evmscript_factory_removed_event(voting_events[6], RCC_STETH_FACTORY, emitted_by=EASY_TRACK)
+        validate_evmscript_factory_removed_event(voting_events[6], RCC_STETH_FACTORY, emitted_by=EASY_TRACK)    
 
     # =======================================================================
     # ====================== Before DG Proposal tests =======================
@@ -710,3 +717,8 @@ def test_vote(helpers, accounts, vote_ids_from_env, dg_proposal_ids_from_env, st
     validate_node_operator_name_set_event(
         dg_events[13], NodeOperatorNameSetItem(nodeOperatorId=P2P_NO_ID, name=P2P_NO_NAME_NEW), emitted_by=no_registry, is_dg_event=True
     )
+
+    
+
+    
+        
