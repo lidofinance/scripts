@@ -111,7 +111,7 @@ EXPECTED_DG_PROPOSAL_ID = 3
 IPFS_DESCRIPTION_HASH = 'bafkreid43vbvkuiurc2p5gbx7p4xawfsjq7mcjggeoq3cr4eznztpmw76a'
 
 
-def test_vote(helpers, accounts, vote_ids_from_env, stranger):
+def test_vote(helpers, accounts, vote_ids_from_env, dg_proposal_ids_from_env, stranger):
     # =======================================================================
     # ========================= Arrange variables ===========================
     # =======================================================================
@@ -133,68 +133,285 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     csm_verifier_role = csm.VERIFIER_ROLE()
     csm_module_manager_role = csm.MODULE_MANAGER_ROLE()
 
-    # =======================================================================
-    # ========================= Before voting tests =========================
-    # =======================================================================
+    if not dg_proposal_ids_from_env:
+        # =======================================================================
+        # ========================= Before voting tests =========================
+        # =======================================================================
 
-    """
-    V. PML, ATC, RCC ET Factories Removal
+        """
+        V. PML, ATC, RCC ET Factories Removal
 
-    Vote items #15 - #20
+        Vote items #15 - #20
 
-    Validate PML, ATC, RCC ET Factories existence before removal
-    """
-    evm_script_factories_before = easy_track.getEVMScriptFactories()
+        Validate PML, ATC, RCC ET Factories existence before removal
+        """
+        evm_script_factories_before = easy_track.getEVMScriptFactories()
 
-    assert PML_STABLECOINS_FACTORY in evm_script_factories_before
-    assert PML_STETH_FACTORY in evm_script_factories_before
-    assert ATC_STABLECOINS_FACTORY in evm_script_factories_before
-    assert ATC_STETH_FACTORY in evm_script_factories_before
-    assert RCC_STABLECOINS_FACTORY in evm_script_factories_before
-    assert RCC_STETH_FACTORY in evm_script_factories_before
+        assert PML_STABLECOINS_FACTORY in evm_script_factories_before
+        assert PML_STETH_FACTORY in evm_script_factories_before
+        assert ATC_STABLECOINS_FACTORY in evm_script_factories_before
+        assert ATC_STETH_FACTORY in evm_script_factories_before
+        assert RCC_STABLECOINS_FACTORY in evm_script_factories_before
+        assert RCC_STETH_FACTORY in evm_script_factories_before
 
-    # =======================================================================
-    # ============================== Voting =================================
-    # =======================================================================
+        # =======================================================================
+        # ============================== Voting =================================
+        # =======================================================================
 
-    if len(vote_ids_from_env) > 0:
-        (vote_id,) = vote_ids_from_env
-    else:
-        tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
-        vote_id, _ = start_vote(tx_params, silent=True)
+        if len(vote_ids_from_env) > 0:
+            (vote_id,) = vote_ids_from_env
+        else:
+            tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
+            vote_id, _ = start_vote(tx_params, silent=True)
 
-    vote_tx: TransactionReceipt = helpers.execute_vote(accounts, vote_id, voting)
-    print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
+        vote_tx: TransactionReceipt = helpers.execute_vote(accounts, vote_id, voting)
+        print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
 
-    proposal_id = vote_tx.events["ProposalSubmitted"][1]["proposalId"]
-    print(f"proposalId = {proposal_id}")
+        proposal_id = vote_tx.events["ProposalSubmitted"][1]["proposalId"]
+        print(f"proposalId = {proposal_id}")
 
-    assert proposal_id == EXPECTED_DG_PROPOSAL_ID
+        assert proposal_id == EXPECTED_DG_PROPOSAL_ID
 
-    display_voting_events(vote_tx)
-    voting_events = group_voting_events_from_receipt(vote_tx)
+        display_voting_events(vote_tx)
+        voting_events = group_voting_events_from_receipt(vote_tx)
 
-    # =======================================================================
-    # ========================= After voting tests ==========================
-    # =======================================================================
+        # =======================================================================
+        # ========================= After voting tests ==========================
+        # =======================================================================
 
-    """
-    V. PML, ATC, RCC ET Factories Removal
+        """
+        V. PML, ATC, RCC ET Factories Removal
 
-    Vote items #15 - #20
+        Vote items #15 - #20
 
-    Validate PML, ATC, RCC ET Factories don't exist after vote
-    """
-    evm_script_factories_after = easy_track.getEVMScriptFactories()
+        Validate PML, ATC, RCC ET Factories don't exist after vote
+        """
+        evm_script_factories_after = easy_track.getEVMScriptFactories()
 
-    assert not PML_STABLECOINS_FACTORY in evm_script_factories_after
-    assert not PML_STETH_FACTORY in evm_script_factories_after
-    assert not ATC_STABLECOINS_FACTORY in evm_script_factories_after
-    assert not ATC_STETH_FACTORY in evm_script_factories_after
-    assert not RCC_STABLECOINS_FACTORY in evm_script_factories_after
-    assert not RCC_STETH_FACTORY in evm_script_factories_after
+        assert not PML_STABLECOINS_FACTORY in evm_script_factories_after
+        assert not PML_STETH_FACTORY in evm_script_factories_after
+        assert not ATC_STABLECOINS_FACTORY in evm_script_factories_after
+        assert not ATC_STETH_FACTORY in evm_script_factories_after
+        assert not RCC_STABLECOINS_FACTORY in evm_script_factories_after
+        assert not RCC_STETH_FACTORY in evm_script_factories_after
 
-    assert len(evm_script_factories_after) == len(evm_script_factories_before) - 6
+        assert len(evm_script_factories_after) == len(evm_script_factories_before) - 6
+
+        metadata = find_metadata_by_vote_id(vote_id)
+        assert get_lido_vote_cid_from_str(metadata) == IPFS_DESCRIPTION_HASH
+
+        # =======================================================================
+        # ========================= Validate voting events ======================
+        # =======================================================================
+
+        # Validate after voting events count
+        count_vote_items_by_voting_events = count_vote_items_by_events(vote_tx, voting)
+        assert count_vote_items_by_voting_events == EXPECTED_VOTE_EVENTS_COUNT
+        # There's 6 vote items not going through DG + ProposalSubmitted event
+        assert len(voting_events) == EXPECTED_VOTE_EVENTS_COUNT
+
+        # Validate DG Proposal Submit event
+        validate_dual_governance_submit_event(
+            voting_events[0],
+            proposal_id=3,
+            proposer=VOTING,
+            executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+            metadata="Kyber Oracle Rotation, CSM Parameters Change, CS Verifier rotation, Change staking reward address and name for P2P.org Node Operator",
+            proposal_calls=[
+                {
+                    "target": AGENT,
+                    "value": 0,
+                    "data": agent_forward(
+                        [
+                            (
+                                HASH_CONSENSUS_FOR_AO,
+                                interface.HashConsensus(HASH_CONSENSUS_FOR_AO).removeMember.encode_input(
+                                    KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
+                                ),
+                            )
+                        ]
+                    )[1],
+                },
+                {
+                    "target": AGENT,
+                    "value": 0,
+                    "data": agent_forward(
+                        [
+                            (
+                                HASH_CONSENSUS_FOR_VEBO,
+                                interface.HashConsensus(HASH_CONSENSUS_FOR_VEBO).removeMember.encode_input(
+                                    KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM
+                                ),
+                            )
+                        ]
+                    )[1],
+                },
+                {
+                    "target": AGENT,
+                    "value": 0,
+                    "data": agent_forward(
+                        [
+                            (
+                                CS_FEE_HASH_CONSENSUS,
+                                interface.HashConsensus(CS_FEE_HASH_CONSENSUS).removeMember.encode_input(
+                                    KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM
+                                ),
+                            )
+                        ]
+                    )[1],
+                },
+                {
+                    "target": AGENT,
+                    "value": 0,
+                    "data": agent_forward(
+                        [
+                            (
+                                HASH_CONSENSUS_FOR_AO,
+                                interface.HashConsensus(HASH_CONSENSUS_FOR_AO).addMember.encode_input(
+                                    CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
+                                ),
+                            )
+                        ]
+                    )[1],
+                },
+                {
+                    "target": AGENT,
+                    "value": 0,
+                    "data": agent_forward(
+                        [
+                            (
+                                HASH_CONSENSUS_FOR_VEBO,
+                                interface.HashConsensus(HASH_CONSENSUS_FOR_VEBO).addMember.encode_input(
+                                    CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM
+                                ),
+                            )
+                        ]
+                    )[1],
+                },
+                {
+                    "target": AGENT,
+                    "value": 0,
+                    "data": agent_forward(
+                        [
+                            (
+                                CS_FEE_HASH_CONSENSUS,
+                                interface.HashConsensus(CS_FEE_HASH_CONSENSUS).addMember.encode_input(
+                                    CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM
+                                ),
+                            )
+                        ]
+                    )[1],
+                },
+                {
+                    "target": AGENT,
+                    "value": 0,
+                    "data": agent_forward(
+                        [
+                            (
+                                STAKING_ROUTER,
+                                interface.StakingRouter(STAKING_ROUTER).updateStakingModule.encode_input(
+                                    CSM_MODULE_ID,
+                                    CSM_STAKE_SHARE_LIMIT_AFTER,
+                                    CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER,
+                                    staking_router.getStakingModule(CSM_MODULE_ID)["stakingModuleFee"],
+                                    staking_router.getStakingModule(CSM_MODULE_ID)["treasuryFee"],
+                                    staking_router.getStakingModule(CSM_MODULE_ID)["maxDepositsPerBlock"],
+                                    staking_router.getStakingModule(CSM_MODULE_ID)["minDepositBlockDistance"],
+                                ),
+                            )
+                        ]
+                    )[1],
+                },
+                {
+                    "target": AGENT,
+                    "value": 0,
+                    "data": agent_forward(
+                        [(CSM, interface.AccessControl(CSM).grantRole.encode_input(csm_module_manager_role, AGENT))]
+                    )[1],
+                },
+                {
+                    "target": AGENT,
+                    "value": 0,
+                    "data": agent_forward(
+                        [(CSM, interface.CSModule(CSM).setKeyRemovalCharge.encode_input(KEY_REMOVAL_CHARGE_AFTER))]
+                    )[1],
+                },
+                {
+                    "target": AGENT,
+                    "value": 0,
+                    "data": agent_forward(
+                        [(CSM, interface.AccessControl(CSM).revokeRole.encode_input(csm_module_manager_role, AGENT))]
+                    )[1],
+                },
+                {
+                    "target": AGENT,
+                    "value": 0,
+                    "data": agent_forward(
+                        [
+                            (
+                                CSM,
+                                interface.AccessControl(CSM).revokeRole.encode_input(
+                                    csm_verifier_role, CS_VERIFIER_ADDRESS_OLD
+                                ),
+                            )
+                        ]
+                    )[1],
+                },
+                {
+                    "target": AGENT,
+                    "value": 0,
+                    "data": agent_forward(
+                        [
+                            (
+                                CSM,
+                                interface.AccessControl(CSM).grantRole.encode_input(
+                                    csm_verifier_role, CS_VERIFIER_ADDRESS_NEW
+                                ),
+                            )
+                        ]
+                    )[1],
+                },
+                {
+                    "target": AGENT,
+                    "value": 0,
+                    "data": agent_forward(
+                        [
+                            (
+                                NODE_OPERATORS_REGISTRY,
+                                interface.NodeOperatorsRegistry(
+                                    NODE_OPERATORS_REGISTRY
+                                ).setNodeOperatorRewardAddress.encode_input(
+                                    P2P_NO_ID, P2P_NO_STAKING_REWARDS_ADDRESS_NEW
+                                ),
+                            )
+                        ]
+                    )[1],
+                },
+                {
+                    "target": AGENT,
+                    "value": 0,
+                    "data": agent_forward(
+                        [
+                            (
+                                NODE_OPERATORS_REGISTRY,
+                                interface.NodeOperatorsRegistry(
+                                    NODE_OPERATORS_REGISTRY
+                                ).setNodeOperatorName.encode_input(P2P_NO_ID, P2P_NO_NAME_NEW),
+                            )
+                        ]
+                    )[1],
+                },
+            ],
+            emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
+        )
+
+        # Validate PML, ATC, RCC ET Factories removal events
+        validate_evmscript_factory_removed_event(voting_events[1], PML_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
+        validate_evmscript_factory_removed_event(voting_events[2], PML_STETH_FACTORY, emitted_by=EASY_TRACK)
+        validate_evmscript_factory_removed_event(voting_events[3], ATC_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
+        validate_evmscript_factory_removed_event(voting_events[4], ATC_STETH_FACTORY, emitted_by=EASY_TRACK)
+        validate_evmscript_factory_removed_event(voting_events[5], RCC_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
+        validate_evmscript_factory_removed_event(voting_events[6], RCC_STETH_FACTORY, emitted_by=EASY_TRACK)
 
     # =======================================================================
     # ====================== Before DG Proposal tests =======================
@@ -290,9 +507,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     # =======================================================================
 
     chain.sleep(emergency_protected_timelock.getAfterSubmitDelay() + 1)
-    dual_governance.scheduleProposal(proposal_id, {"from": stranger})
+    dual_governance.scheduleProposal(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
     chain.sleep(emergency_protected_timelock.getAfterScheduleDelay() + 1)
-    dg_tx: TransactionReceipt = emergency_protected_timelock.execute(proposal_id, {"from": stranger})
+    dg_tx: TransactionReceipt = emergency_protected_timelock.execute(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
 
     display_dg_events(dg_tx)
     dg_events = group_dg_events_from_receipt(dg_tx, timelock=EMERGENCY_PROTECTED_TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
@@ -385,195 +602,16 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
 
 
     # =======================================================================
-    # ======================== IPFS & events checks =========================
+    # ========================= DG Events checks ===============================
     # =======================================================================
 
-    metadata = find_metadata_by_vote_id(vote_id)
-    assert get_lido_vote_cid_from_str(metadata) == IPFS_DESCRIPTION_HASH
-
     """Validating events"""
-
-    # Validate after voting events count
-    count_vote_items_by_voting_events = count_vote_items_by_events(vote_tx, voting)
-    assert count_vote_items_by_voting_events == EXPECTED_VOTE_EVENTS_COUNT
-    # There's 6 vote items not going through DG + ProposalSubmitted event
-    assert len(voting_events) == EXPECTED_VOTE_EVENTS_COUNT
 
     # Validate after DG proposal execution events count
     count_vote_items_by_agent_events = count_vote_items_by_events(dg_tx, agent)
     assert count_vote_items_by_agent_events == EXPECTED_DG_EVENTS_COUNT
     # 14 Vote items are going through DG
     assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
-
-    # Validate total events count
-    assert count_vote_items_by_voting_events + count_vote_items_by_agent_events == EXPECTED_TOTAL_EVENTS_COUNT, "Incorrect voting items count"
-
-    # Validate DG Proposal Submit event
-    validate_dual_governance_submit_event(
-        voting_events[0],
-        proposal_id=3,
-        proposer=VOTING,
-        executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-        metadata="Kyber Oracle Rotation, CSM Parameters Change, CS Verifier rotation, Change staking reward address and name for P2P.org Node Operator",
-        proposal_calls=[
-            {
-                "target": AGENT,
-                "value": 0,
-                "data": agent_forward([
-                    (
-                        HASH_CONSENSUS_FOR_AO, interface.HashConsensus(HASH_CONSENSUS_FOR_AO).removeMember.encode_input(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data": agent_forward([
-                    (
-                        HASH_CONSENSUS_FOR_VEBO, interface.HashConsensus(HASH_CONSENSUS_FOR_VEBO).removeMember.encode_input(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        CS_FEE_HASH_CONSENSUS, interface.HashConsensus(CS_FEE_HASH_CONSENSUS).removeMember.encode_input(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        HASH_CONSENSUS_FOR_AO, interface.HashConsensus(HASH_CONSENSUS_FOR_AO).addMember.encode_input(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        HASH_CONSENSUS_FOR_VEBO, interface.HashConsensus(HASH_CONSENSUS_FOR_VEBO).addMember.encode_input(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        CS_FEE_HASH_CONSENSUS, interface.HashConsensus(CS_FEE_HASH_CONSENSUS).addMember.encode_input(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        STAKING_ROUTER,
-                        interface.StakingRouter(STAKING_ROUTER).updateStakingModule.encode_input(
-                            CSM_MODULE_ID,
-                            CSM_STAKE_SHARE_LIMIT_AFTER,
-                            CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER,
-                            staking_router.getStakingModule(CSM_MODULE_ID)["stakingModuleFee"],
-                            staking_router.getStakingModule(CSM_MODULE_ID)["treasuryFee"],
-                            staking_router.getStakingModule(CSM_MODULE_ID)["maxDepositsPerBlock"],
-                            staking_router.getStakingModule(CSM_MODULE_ID)["minDepositBlockDistance"]
-                        )
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        CSM, interface.AccessControl(CSM).grantRole.encode_input(csm_module_manager_role, AGENT)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        CSM, interface.CSModule(CSM).setKeyRemovalCharge.encode_input(KEY_REMOVAL_CHARGE_AFTER)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        CSM, interface.AccessControl(CSM).revokeRole.encode_input(csm_module_manager_role, AGENT)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        CSM, interface.AccessControl(CSM).revokeRole.encode_input(csm_verifier_role, CS_VERIFIER_ADDRESS_OLD)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        CSM, interface.AccessControl(CSM).grantRole.encode_input(csm_verifier_role, CS_VERIFIER_ADDRESS_NEW)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        NODE_OPERATORS_REGISTRY, interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY).setNodeOperatorRewardAddress.encode_input(P2P_NO_ID, P2P_NO_STAKING_REWARDS_ADDRESS_NEW)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        NODE_OPERATORS_REGISTRY, interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY).setNodeOperatorName.encode_input(P2P_NO_ID, P2P_NO_NAME_NEW)
-                    )
-                ])[1]
-            },
-        ],
-        emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
-    )
-
-    # Validate PML, ATC, RCC ET Factories removal events
-    validate_evmscript_factory_removed_event(voting_events[1], PML_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
-    validate_evmscript_factory_removed_event(voting_events[2], PML_STETH_FACTORY, emitted_by=EASY_TRACK)
-    validate_evmscript_factory_removed_event(voting_events[3], ATC_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
-    validate_evmscript_factory_removed_event(voting_events[4], ATC_STETH_FACTORY, emitted_by=EASY_TRACK)
-    validate_evmscript_factory_removed_event(voting_events[5], RCC_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
-    validate_evmscript_factory_removed_event(voting_events[6], RCC_STETH_FACTORY, emitted_by=EASY_TRACK)
 
     # Validate oracle rotation events
     validate_hash_consensus_member_removed(
