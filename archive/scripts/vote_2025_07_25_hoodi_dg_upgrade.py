@@ -12,6 +12,8 @@ Dual Governance Upgrade on Hoodi testnet
 1.9. Set Emergency Protected Timelock governance to new Dual Governance contract
 1.10. Set config provider for old Dual Governance contract
 1.11. Verify Dual Governance state
+
+Vote passed & executed on Jul-25-2025 03:11:48 PM UTC, block #876533.
 """
 
 import time

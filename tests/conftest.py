@@ -137,6 +137,9 @@ class Helpers:
         for vote_id in vote_ids:
             assert dao_voting.canExecute(vote_id)
 
+        # try to instantiate script executor
+        # to deal with events parsing properly
+        # on fresh brownie setup cases (mostly for CI)
         executor_addr = dao_voting.getEVMScriptExecutor(EMPTY_CALLSCRIPT)
         try:
             _ = interface.CallsScript(executor_addr)
