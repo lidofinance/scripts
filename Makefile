@@ -68,6 +68,15 @@ docker:
 node:
 	npx hardhat node --fork $(ETH_RPC_URL) --port $(NODE_PORT)
 
+node1:
+	npx hardhat node --fork $(ETH_RPC_URL) --port $(NODE_PORT)
+
+node2:
+	npx hardhat node --fork $(ETH_RPC_URL2) --port $(NODE_PORT)
+
+node3:
+	npx hardhat node --fork $(ETH_RPC_URL3) --port $(NODE_PORT)
+
 test-core:
 	cd $(CORE_DIR) && \
 	FORK_RPC_URL=$(CORE_TESTS_TARGET_RPC_URL) \
