@@ -1,7 +1,9 @@
-from brownie import interface, chain, convert
+import pytest
+
+from brownie import interface, chain
 from brownie.network.transaction import TransactionReceipt
 
-from scripts.vote_2025_07_16 import start_vote
+from archive.scripts.vote_2025_07_16 import start_vote, get_vote_items
 from utils.agent import agent_forward
 
 from utils.test.tx_tracing_helpers import *
@@ -14,6 +16,7 @@ from utils.test.event_validators.dual_governance import (
 from utils.test.csm_helpers import csm_add_node_operator, get_ea_member
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
+from utils.evm_script import encode_call_script
 
 from utils.test.event_validators.node_operators_registry import (
     validate_node_operator_name_set_event,
@@ -21,6 +24,8 @@ from utils.test.event_validators.node_operators_registry import (
     NodeOperatorNameSetItem,
     NodeOperatorRewardAddressSetItem,
 )
+
+from utils.voting_test import if_voting_script_in_archive
 
 from utils.config import (
     LDO_HOLDER_ADDRESS_FOR_TESTS,
@@ -71,10 +76,12 @@ P2P_NO_STAKING_REWARDS_ADDRESS_OLD = "0x9a66fd7948a6834176fbb1c4127c61cb6d349561
 P2P_NO_STAKING_REWARDS_ADDRESS_NEW = "0xfeef177E6168F9b7fd59e6C5b6c2d87FF398c6FD"
 
 # Parameters
+EXPECTED_EVM_SCRIPT_FACTORIES_COUNT_BEFORE = 36
+EXPECTED_EVM_SCRIPT_FACTORIES_COUNT_AFTER = 30
 
 CSM_MODULE_ID = 3
 
-KEY_REMOVAL_CHARGE_BEFORE = 0.02 * 10 ** 18
+KEY_REMOVAL_CHARGE_BEFORE = 0.02 * 10**18
 KEY_REMOVAL_CHARGE_AFTER = 0
 
 CSM_STAKE_SHARE_LIMIT_BEFORE = 200
@@ -102,77 +109,319 @@ P2P_NO_ID = 2
 P2P_NO_NAME_OLD = "P2P.ORG - P2P Validator"
 P2P_NO_NAME_NEW = "P2P.org"
 
+
 EXPECTED_VOTE_EVENTS_COUNT = 7  # 6 events after the vote + ProposalSubmitted event
 EXPECTED_DG_EVENTS_COUNT = 14  # 14 vote items are going through DG
 EXPECTED_TOTAL_EVENTS_COUNT = 21
 
+EXPECTED_VOTE_ID = 190
 EXPECTED_DG_PROPOSAL_ID = 3
 
-IPFS_DESCRIPTION_HASH = 'bafkreid43vbvkuiurc2p5gbx7p4xawfsjq7mcjggeoq3cr4eznztpmw76a'
+IPFS_DESCRIPTION_HASH = "bafkreid43vbvkuiurc2p5gbx7p4xawfsjq7mcjggeoq3cr4eznztpmw76a"
 
 
-def test_vote(helpers, accounts, vote_ids_from_env, stranger):
+@pytest.fixture(scope="module")
+def dual_governance_proposal_calls():    
+    csm = interface.CSModule(CSM)
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
+    csm_module_manager_role = csm.MODULE_MANAGER_ROLE()
+    csm_verifier_role = csm.VERIFIER_ROLE()
+
+    return [
+        {
+            "target": AGENT,
+            "value": 0,
+            "data": agent_forward(
+                [
+                    (
+                        HASH_CONSENSUS_FOR_AO,
+                        interface.HashConsensus(HASH_CONSENSUS_FOR_AO).removeMember.encode_input(
+                            KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
+                        ),
+                    )
+                ]
+            )[1],
+        },
+        {
+            "target": AGENT,
+            "value": 0,
+            "data": agent_forward(
+                [
+                    (
+                        HASH_CONSENSUS_FOR_VEBO,
+                        interface.HashConsensus(HASH_CONSENSUS_FOR_VEBO).removeMember.encode_input(
+                            KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM
+                        ),
+                    )
+                ]
+            )[1],
+        },
+        {
+            "target": AGENT,
+            "value": 0,
+            "data": agent_forward(
+                [
+                    (
+                        CS_FEE_HASH_CONSENSUS,
+                        interface.HashConsensus(CS_FEE_HASH_CONSENSUS).removeMember.encode_input(
+                            KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM
+                        ),
+                    )
+                ]
+            )[1],
+        },
+        {
+            "target": AGENT,
+            "value": 0,
+            "data": agent_forward(
+                [
+                    (
+                        HASH_CONSENSUS_FOR_AO,
+                        interface.HashConsensus(HASH_CONSENSUS_FOR_AO).addMember.encode_input(
+                            CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
+                        ),
+                    )
+                ]
+            )[1],
+        },
+        {
+            "target": AGENT,
+            "value": 0,
+            "data": agent_forward(
+                [
+                    (
+                        HASH_CONSENSUS_FOR_VEBO,
+                        interface.HashConsensus(HASH_CONSENSUS_FOR_VEBO).addMember.encode_input(
+                            CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM
+                        ),
+                    )
+                ]
+            )[1],
+        },
+        {
+            "target": AGENT,
+            "value": 0,
+            "data": agent_forward(
+                [
+                    (
+                        CS_FEE_HASH_CONSENSUS,
+                        interface.HashConsensus(CS_FEE_HASH_CONSENSUS).addMember.encode_input(
+                            CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM
+                        ),
+                    )
+                ]
+            )[1],
+        },
+        {
+            "target": AGENT,
+            "value": 0,
+            "data": agent_forward(
+                [
+                    (
+                        STAKING_ROUTER,
+                        interface.StakingRouter(STAKING_ROUTER).updateStakingModule.encode_input(
+                            CSM_MODULE_ID,
+                            CSM_STAKE_SHARE_LIMIT_AFTER,
+                            CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER,
+                            staking_router.getStakingModule(CSM_MODULE_ID)["stakingModuleFee"],
+                            staking_router.getStakingModule(CSM_MODULE_ID)["treasuryFee"],
+                            staking_router.getStakingModule(CSM_MODULE_ID)["maxDepositsPerBlock"],
+                            staking_router.getStakingModule(CSM_MODULE_ID)["minDepositBlockDistance"],
+                        ),
+                    )
+                ]
+            )[1],
+        },
+        {
+            "target": AGENT,
+            "value": 0,
+            "data": agent_forward(
+                [(CSM, interface.AccessControl(CSM).grantRole.encode_input(csm_module_manager_role, AGENT))]
+            )[1],
+        },
+        {
+            "target": AGENT,
+            "value": 0,
+            "data": agent_forward(
+                [(CSM, interface.CSModule(CSM).setKeyRemovalCharge.encode_input(KEY_REMOVAL_CHARGE_AFTER))]
+            )[1],
+        },
+        {
+            "target": AGENT,
+            "value": 0,
+            "data": agent_forward(
+                [(CSM, interface.AccessControl(CSM).revokeRole.encode_input(csm_module_manager_role, AGENT))]
+            )[1],
+        },
+        {
+            "target": AGENT,
+            "value": 0,
+            "data": agent_forward(
+                [
+                    (
+                        CSM,
+                        interface.AccessControl(CSM).revokeRole.encode_input(
+                            csm_verifier_role, CS_VERIFIER_ADDRESS_OLD
+                        ),
+                    )
+                ]
+            )[1],
+        },
+        {
+            "target": AGENT,
+            "value": 0,
+            "data": agent_forward(
+                [
+                    (
+                        CSM,
+                        interface.AccessControl(CSM).grantRole.encode_input(csm_verifier_role, CS_VERIFIER_ADDRESS_NEW),
+                    )
+                ]
+            )[1],
+        },
+        {
+            "target": AGENT,
+            "value": 0,
+            "data": agent_forward(
+                [
+                    (
+                        NODE_OPERATORS_REGISTRY,
+                        interface.NodeOperatorsRegistry(
+                            NODE_OPERATORS_REGISTRY
+                        ).setNodeOperatorRewardAddress.encode_input(P2P_NO_ID, P2P_NO_STAKING_REWARDS_ADDRESS_NEW),
+                    )
+                ]
+            )[1],
+        },
+        {
+            "target": AGENT,
+            "value": 0,
+            "data": agent_forward(
+                [
+                    (
+                        NODE_OPERATORS_REGISTRY,
+                        interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY).setNodeOperatorName.encode_input(
+                            P2P_NO_ID, P2P_NO_NAME_NEW
+                        ),
+                    )
+                ]
+            )[1],
+        },
+    ]
+
+
+def test_vote(helpers, accounts, vote_ids_from_env, stranger, dual_governance_proposal_calls):
+
     # =======================================================================
     # ========================= Arrange variables ===========================
     # =======================================================================
 
-    voting = interface.Voting(VOTING)
-    agent = interface.Agent(AGENT)
-    easy_track = interface.EasyTrack(EASY_TRACK)
-    csm = interface.CSModule(CSM)
     hash_consensus_for_accounting_oracle = interface.HashConsensus(HASH_CONSENSUS_FOR_AO)
     hash_consensus_for_validators_exit_bus_oracle = interface.HashConsensus(HASH_CONSENSUS_FOR_VEBO)
     cs_fee_hash_consensus = interface.HashConsensus(CS_FEE_HASH_CONSENSUS)
-    staking_router = interface.StakingRouter(STAKING_ROUTER)
+    agent = interface.Agent(AGENT)
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     emergency_protected_timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
     accounting = interface.CSAccounting(CS_ACCOUNTING)
     no_registry = interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
+    csm = interface.CSModule(CSM)
+    voting = interface.Voting(VOTING)
+    easy_track = interface.EasyTrack(EASY_TRACK)
 
     # CSM roles
     csm_verifier_role = csm.VERIFIER_ROLE()
     csm_module_manager_role = csm.MODULE_MANAGER_ROLE()
 
-    # =======================================================================
-    # ========================= Before voting tests =========================
-    # =======================================================================
-
-    """
-    V. PML, ATC, RCC ET Factories Removal
-
-    Vote items #15 - #20
-
-    Validate PML, ATC, RCC ET Factories existence before removal
-    """
     evm_script_factories_before = easy_track.getEVMScriptFactories()
 
-    assert PML_STABLECOINS_FACTORY in evm_script_factories_before
-    assert PML_STETH_FACTORY in evm_script_factories_before
-    assert ATC_STABLECOINS_FACTORY in evm_script_factories_before
-    assert ATC_STETH_FACTORY in evm_script_factories_before
-    assert RCC_STABLECOINS_FACTORY in evm_script_factories_before
-    assert RCC_STETH_FACTORY in evm_script_factories_before
-
     # =======================================================================
-    # ============================== Voting =================================
+    # ======================== Identifying voting ===========================
     # =======================================================================
 
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
+        assert vote_id == EXPECTED_VOTE_ID
+    elif voting.votesLength() > EXPECTED_VOTE_ID:
+        vote_id = EXPECTED_VOTE_ID
     else:
         tx_params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
         vote_id, _ = start_vote(tx_params, silent=True)
 
-    vote_tx: TransactionReceipt = helpers.execute_vote(accounts, vote_id, voting)
-    print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
+    vote_script_onchain = voting.getVote(vote_id)["script"]
+    _, call_script_items = get_vote_items()
+    assert vote_script_onchain == encode_call_script(call_script_items)
 
-    proposal_id = vote_tx.events["ProposalSubmitted"][1]["proposalId"]
-    print(f"proposalId = {proposal_id}")
+    is_voting_executed = voting.getVote(vote_id)["executed"]
 
-    assert proposal_id == EXPECTED_DG_PROPOSAL_ID
+    if is_voting_executed:
+        print("Voting already executed. Skipping Aragon Voting phase tests.")
 
-    display_voting_events(vote_tx)
-    voting_events = group_voting_events_from_receipt(vote_tx)
+    if not is_voting_executed:
+        # =======================================================================
+        # ========================= Before voting tests =========================
+        # =======================================================================
+
+        """
+        V. PML, ATC, RCC ET Factories Removal
+
+        Vote items #15 - #20
+
+        Validate PML, ATC, RCC ET Factories existence before removal
+        """
+
+        assert PML_STABLECOINS_FACTORY in evm_script_factories_before
+        assert PML_STETH_FACTORY in evm_script_factories_before
+        assert ATC_STABLECOINS_FACTORY in evm_script_factories_before
+        assert ATC_STETH_FACTORY in evm_script_factories_before
+        assert RCC_STABLECOINS_FACTORY in evm_script_factories_before
+        assert RCC_STETH_FACTORY in evm_script_factories_before
+
+        assert len(evm_script_factories_before) == EXPECTED_EVM_SCRIPT_FACTORIES_COUNT_BEFORE
+
+        # =======================================================================
+        # ======================== Voting Execution =============================
+        # =======================================================================
+
+        vote_tx: TransactionReceipt = helpers.execute_vote(accounts, vote_id, voting)
+        print(f"voteId = {vote_id}, gasUsed = {vote_tx.gas_used}")
+
+        proposal_id = vote_tx.events["ProposalSubmitted"][1]["proposalId"]
+        print(f"Dual Governance Proposal with id {proposal_id} was submitted")
+
+        assert proposal_id == EXPECTED_DG_PROPOSAL_ID
+
+        display_voting_events(vote_tx)
+        voting_events = group_voting_events_from_receipt(vote_tx)
+
+        # =======================================================================
+        # ========================= Validate voting events ======================
+        # =======================================================================
+
+        # Validate after voting events count
+        count_vote_items_by_voting_events = count_vote_items_by_events(vote_tx, voting)
+        assert count_vote_items_by_voting_events == EXPECTED_VOTE_EVENTS_COUNT
+        # There's 6 vote items not going through DG + ProposalSubmitted event
+        assert len(voting_events) == EXPECTED_VOTE_EVENTS_COUNT
+
+        # Validate DG Proposal Submit event
+        validate_dual_governance_submit_event(
+            voting_events[0],
+            proposal_id=3,
+            proposer=VOTING,
+            executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+            metadata="Kyber Oracle Rotation, CSM Parameters Change, CS Verifier rotation, Change staking reward address and name for P2P.org Node Operator",
+            proposal_calls=dual_governance_proposal_calls,
+            emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
+        )
+
+        # Validate PML, ATC, RCC ET Factories removal events
+        validate_evmscript_factory_removed_event(voting_events[1], PML_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
+        validate_evmscript_factory_removed_event(voting_events[2], PML_STETH_FACTORY, emitted_by=EASY_TRACK)
+        validate_evmscript_factory_removed_event(voting_events[3], ATC_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
+        validate_evmscript_factory_removed_event(voting_events[4], ATC_STETH_FACTORY, emitted_by=EASY_TRACK)
+        validate_evmscript_factory_removed_event(voting_events[5], RCC_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
+        validate_evmscript_factory_removed_event(voting_events[6], RCC_STETH_FACTORY, emitted_by=EASY_TRACK)
 
     # =======================================================================
     # ========================= After voting tests ==========================
@@ -194,108 +443,274 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert not RCC_STABLECOINS_FACTORY in evm_script_factories_after
     assert not RCC_STETH_FACTORY in evm_script_factories_after
 
-    assert len(evm_script_factories_after) == len(evm_script_factories_before) - 6
+    assert len(evm_script_factories_after) == EXPECTED_EVM_SCRIPT_FACTORIES_COUNT_AFTER
 
-    # =======================================================================
-    # ====================== Before DG Proposal tests =======================
-    # =======================================================================
+    metadata = find_metadata_by_vote_id(vote_id)
+    assert get_lido_vote_cid_from_str(metadata) == IPFS_DESCRIPTION_HASH
 
-    """
-    I. Kyber Oracle Rotation
+    dg_proposal_calls = emergency_protected_timelock.getProposalCalls(EXPECTED_DG_PROPOSAL_ID)
 
-    Vote items #1 - #6
+    # Convert expected calls from dict format into tuple format (target, value, data)
+    expected_calls = [(item["target"], item["value"], item["data"]) for item in dual_governance_proposal_calls]
+    assert dg_proposal_calls == expected_calls
 
-    Validate Kyber oracle member existence on:
-    - HashConsensus(0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288) for AccountingOracle(0x852deD011285fe67063a08005c71a85690503Cee),
-    - HashConsensus(0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a) for ValidatorsExitBusOracle(0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e),
-    - CSHashConsensus(0x71093efF8D8599b5fA340D665Ad60fA7C80688e4) for CSFeeOracle(0x4D4074628678Bd302921c20573EEa1ed38DdF7FB)
+    dg_proposal_details = emergency_protected_timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)
 
-    Validate Caliber oracle member doesn't exist on:
-    - HashConsensus(0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288) for AccountingOracle(0x852deD011285fe67063a08005c71a85690503Cee),
-    - HashConsensus(0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a) for ValidatorsExitBusOracle(0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e),
-    - CSHashConsensus(0x71093efF8D8599b5fA340D665Ad60fA7C80688e4) for CSFeeOracle(0x4D4074628678Bd302921c20573EEa1ed38DdF7FB)
-    """
-    assert hash_consensus_for_accounting_oracle.getIsMember(KYBER_ORACLE_MEMBER)
-    assert hash_consensus_for_validators_exit_bus_oracle.getIsMember(KYBER_ORACLE_MEMBER)
-    assert cs_fee_hash_consensus.getIsMember(KYBER_ORACLE_MEMBER)
+    if dg_proposal_details["status"] == 3:
+        print("DG proposal already executed. Skipping DG Proposal tests.")
 
-    assert not hash_consensus_for_accounting_oracle.getIsMember(CALIBER_ORACLE_MEMBER)
-    assert not hash_consensus_for_validators_exit_bus_oracle.getIsMember(CALIBER_ORACLE_MEMBER)
-    assert not cs_fee_hash_consensus.getIsMember(CALIBER_ORACLE_MEMBER)
+    # Check if DG proposal is not executed
+    if dg_proposal_details["status"] != 3:
 
-    hash_consensus_for_accounting_oracle_quorum_before = hash_consensus_for_accounting_oracle.getQuorum()
-    hash_consensus_for_validators_exit_bus_oracle_quorum_before = hash_consensus_for_validators_exit_bus_oracle.getQuorum()
-    cs_fee_hash_consensus_quorum_before = cs_fee_hash_consensus.getQuorum()
+        # =======================================================================
+        # ====================== Before DG Proposal tests =======================
+        # =======================================================================
 
-    assert hash_consensus_for_accounting_oracle_quorum_before == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
-    assert hash_consensus_for_validators_exit_bus_oracle_quorum_before == HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM
-    assert cs_fee_hash_consensus_quorum_before == HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM
+        """
+        I. Kyber Oracle Rotation
 
-    hash_consensus_for_accounting_oracle_number_of_oracles_before = len(hash_consensus_for_accounting_oracle.getMembers()[0])
-    hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_before = len(hash_consensus_for_validators_exit_bus_oracle.getMembers()[0])
-    cs_fee_hash_consensus_quorum_before_number_of_oracles_before = len(cs_fee_hash_consensus.getMembers()[0])
+        Vote items #1 - #6
 
-    assert hash_consensus_for_accounting_oracle_number_of_oracles_before == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_NUMBER_OF_ORACLES
-    assert hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_before == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_NUMBER_OF_ORACLES
-    assert cs_fee_hash_consensus_quorum_before_number_of_oracles_before == HASH_CONSENSUS_FOR_CS_FEE_ORACLE_NUMBER_OF_ORACLES
+        Validate Kyber oracle member existence on:
+        - HashConsensus(0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288) for AccountingOracle(0x852deD011285fe67063a08005c71a85690503Cee),
+        - HashConsensus(0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a) for ValidatorsExitBusOracle(0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e),
+        - CSHashConsensus(0x71093efF8D8599b5fA340D665Ad60fA7C80688e4) for CSFeeOracle(0x4D4074628678Bd302921c20573EEa1ed38DdF7FB)
 
-    """
-    II. CSM Parameters Change
+        Validate Caliber oracle member doesn't exist on:
+        - HashConsensus(0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288) for AccountingOracle(0x852deD011285fe67063a08005c71a85690503Cee),
+        - HashConsensus(0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a) for ValidatorsExitBusOracle(0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e),
+        - CSHashConsensus(0x71093efF8D8599b5fA340D665Ad60fA7C80688e4) for CSFeeOracle(0x4D4074628678Bd302921c20573EEa1ed38DdF7FB)
+        """
+        assert hash_consensus_for_accounting_oracle.getIsMember(KYBER_ORACLE_MEMBER)
+        assert hash_consensus_for_validators_exit_bus_oracle.getIsMember(KYBER_ORACLE_MEMBER)
+        assert cs_fee_hash_consensus.getIsMember(KYBER_ORACLE_MEMBER)
 
-    Vote item #7 - Validate parameters before changing on Staking Router for CSModule
-    Vote items #8, #10 - validate agent has no MODULE_MANAGER_ROLE on CSModule(0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F) before vote
-    Vote item #9 - validate keyRemovalCharge value on CSModule(0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F) before vote
-    """
+        assert not hash_consensus_for_accounting_oracle.getIsMember(CALIBER_ORACLE_MEMBER)
+        assert not hash_consensus_for_validators_exit_bus_oracle.getIsMember(CALIBER_ORACLE_MEMBER)
+        assert not cs_fee_hash_consensus.getIsMember(CALIBER_ORACLE_MEMBER)
 
-    # Vote item 7
-    assert staking_router.getStakingModule(CSM_MODULE_ID)["stakeShareLimit"] == CSM_STAKE_SHARE_LIMIT_BEFORE
-    assert staking_router.getStakingModule(CSM_MODULE_ID)[
-               "priorityExitShareThreshold"] == CSM_PRIORITY_EXIT_SHARE_THRESHOLD_BEFORE
-    assert staking_router.getStakingModule(CSM_MODULE_ID)["stakingModuleFee"] == CSM_STAKING_MODULE_FEE_BEFORE
-    assert staking_router.getStakingModule(CSM_MODULE_ID)["treasuryFee"] == CSM_TREASURY_FEE_BEFORE
-    assert staking_router.getStakingModule(CSM_MODULE_ID)["maxDepositsPerBlock"] == CSM_MAX_DEPOSITS_PER_BLOCK_BEFORE
-    assert staking_router.getStakingModule(CSM_MODULE_ID)[
-               "minDepositBlockDistance"] == CSM_MIN_DEPOSIT_BLOCK_DISTANCE_BEFORE
+        hash_consensus_for_accounting_oracle_quorum_before = hash_consensus_for_accounting_oracle.getQuorum()
+        hash_consensus_for_validators_exit_bus_oracle_quorum_before = (
+            hash_consensus_for_validators_exit_bus_oracle.getQuorum()
+        )
+        cs_fee_hash_consensus_quorum_before = cs_fee_hash_consensus.getQuorum()
 
-    # Vote items #8, #10
-    assert not csm.hasRole(csm_module_manager_role, agent)
+        assert hash_consensus_for_accounting_oracle_quorum_before == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
+        assert (
+            hash_consensus_for_validators_exit_bus_oracle_quorum_before
+            == HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM
+        )
+        assert cs_fee_hash_consensus_quorum_before == HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM
 
-    # Vote item #9
-    assert csm.keyRemovalCharge() == KEY_REMOVAL_CHARGE_BEFORE
+        hash_consensus_for_accounting_oracle_number_of_oracles_before = len(
+            hash_consensus_for_accounting_oracle.getMembers()[0]
+        )
+        hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_before = len(
+            hash_consensus_for_validators_exit_bus_oracle.getMembers()[0]
+        )
+        cs_fee_hash_consensus_quorum_before_number_of_oracles_before = len(cs_fee_hash_consensus.getMembers()[0])
 
-    """
-    III. CS Verifier rotation
+        assert (
+            hash_consensus_for_accounting_oracle_number_of_oracles_before
+            == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_NUMBER_OF_ORACLES
+        )
+        assert (
+            hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_before
+            == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_NUMBER_OF_ORACLES
+        )
+        assert (
+            cs_fee_hash_consensus_quorum_before_number_of_oracles_before
+            == HASH_CONSENSUS_FOR_CS_FEE_ORACLE_NUMBER_OF_ORACLES
+        )
 
-    Vote items #11 - #12 - verify roles before vote
-    """
-    assert csm.hasRole(csm_verifier_role, CS_VERIFIER_ADDRESS_OLD)
-    assert not csm.hasRole(csm_verifier_role, CS_VERIFIER_ADDRESS_NEW)
+        """
+        II. CSM Parameters Change
 
-    """
-    IV. Change staking reward address and name for P2P.org Node Operator
+        Vote item #7 - Validate parameters before changing on Staking Router for CSModule
+        Vote items #8, #10 - validate agent has no MODULE_MANAGER_ROLE on CSModule(0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F) before vote
+        Vote item #9 - validate keyRemovalCharge value on CSModule(0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F) before vote
+        """
 
-    Vote items #13, #14
-    """
+        # Vote item 7
+        assert staking_router.getStakingModule(CSM_MODULE_ID)["stakeShareLimit"] == CSM_STAKE_SHARE_LIMIT_BEFORE
+        assert (
+            staking_router.getStakingModule(CSM_MODULE_ID)["priorityExitShareThreshold"]
+            == CSM_PRIORITY_EXIT_SHARE_THRESHOLD_BEFORE
+        )
+        assert staking_router.getStakingModule(CSM_MODULE_ID)["stakingModuleFee"] == CSM_STAKING_MODULE_FEE_BEFORE
+        assert staking_router.getStakingModule(CSM_MODULE_ID)["treasuryFee"] == CSM_TREASURY_FEE_BEFORE
+        assert (
+            staking_router.getStakingModule(CSM_MODULE_ID)["maxDepositsPerBlock"] == CSM_MAX_DEPOSITS_PER_BLOCK_BEFORE
+        )
+        assert (
+            staking_router.getStakingModule(CSM_MODULE_ID)["minDepositBlockDistance"]
+            == CSM_MIN_DEPOSIT_BLOCK_DISTANCE_BEFORE
+        )
 
-    p2p_no_data_before = no_registry.getNodeOperator(P2P_NO_ID, True)
+        # Vote items #8, #10
+        assert not csm.hasRole(csm_module_manager_role, agent)
 
-    # Vote item #13
-    assert p2p_no_data_before["rewardAddress"] == P2P_NO_STAKING_REWARDS_ADDRESS_OLD
+        # Vote item #9
+        assert csm.keyRemovalCharge() == KEY_REMOVAL_CHARGE_BEFORE
 
-    # Vote item #14
-    assert p2p_no_data_before["name"] == P2P_NO_NAME_OLD
+        """
+        III. CS Verifier rotation
 
-    # =======================================================================
-    # ==================== DG Proposal Submit => Execute ====================
-    # =======================================================================
+        Vote items #11 - #12 - verify roles before vote
+        """
+        assert csm.hasRole(csm_verifier_role, CS_VERIFIER_ADDRESS_OLD)
+        assert not csm.hasRole(csm_verifier_role, CS_VERIFIER_ADDRESS_NEW)
 
-    chain.sleep(emergency_protected_timelock.getAfterSubmitDelay() + 1)
-    dual_governance.scheduleProposal(proposal_id, {"from": stranger})
-    chain.sleep(emergency_protected_timelock.getAfterScheduleDelay() + 1)
-    dg_tx: TransactionReceipt = emergency_protected_timelock.execute(proposal_id, {"from": stranger})
+        """
+        IV. Change staking reward address and name for P2P.org Node Operator
 
-    display_dg_events(dg_tx)
-    dg_events = group_dg_events_from_receipt(dg_tx, timelock=EMERGENCY_PROTECTED_TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
+        Vote items #13, #14
+        """
+
+        p2p_no_data_before = no_registry.getNodeOperator(P2P_NO_ID, True)
+
+        # Vote item #13
+        assert p2p_no_data_before["rewardAddress"] == P2P_NO_STAKING_REWARDS_ADDRESS_OLD
+
+        # Vote item #14
+        assert p2p_no_data_before["name"] == P2P_NO_NAME_OLD
+
+        # =======================================================================
+        # ======================== DG Proposal Execution ========================
+        # =======================================================================
+        if emergency_protected_timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == 1:
+            chain.sleep(emergency_protected_timelock.getAfterSubmitDelay() + 1)
+            dual_governance.scheduleProposal(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
+
+        if emergency_protected_timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == 2:
+            chain.sleep(emergency_protected_timelock.getAfterScheduleDelay() + 1)
+            dg_tx: TransactionReceipt = emergency_protected_timelock.execute(
+                EXPECTED_DG_PROPOSAL_ID, {"from": stranger}
+            )
+
+            display_dg_events(dg_tx)
+            dg_events = group_dg_events_from_receipt(
+                dg_tx, timelock=EMERGENCY_PROTECTED_TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR
+            )
+
+        assert emergency_protected_timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == 3
+
+        # =======================================================================
+        # ========================= DG Events checks ===============================
+        # =======================================================================
+
+        """Validating events"""
+
+        # Validate after DG proposal execution events count
+        count_vote_items_by_agent_events = count_vote_items_by_events(dg_tx, agent)
+        assert count_vote_items_by_agent_events == EXPECTED_DG_EVENTS_COUNT
+        # 14 Vote items are going through DG
+        assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
+
+        # Validate oracle rotation events
+        validate_hash_consensus_member_removed(
+            dg_events[0],
+            KYBER_ORACLE_MEMBER,
+            5,
+            new_total_members=8,
+            emitted_by=HASH_CONSENSUS_FOR_AO,
+            is_dg_event=True,
+        )
+        validate_hash_consensus_member_removed(
+            dg_events[1],
+            KYBER_ORACLE_MEMBER,
+            5,
+            new_total_members=8,
+            emitted_by=HASH_CONSENSUS_FOR_VEBO,
+            is_dg_event=True,
+        )
+        validate_hash_consensus_member_removed(
+            dg_events[2],
+            KYBER_ORACLE_MEMBER,
+            5,
+            new_total_members=8,
+            emitted_by=CS_FEE_HASH_CONSENSUS,
+            is_dg_event=True,
+        )
+        validate_hash_consensus_member_added(
+            dg_events[3],
+            CALIBER_ORACLE_MEMBER,
+            5,
+            emitted_by=HASH_CONSENSUS_FOR_AO,
+            new_total_members=9,
+            is_dg_event=True,
+        )
+        validate_hash_consensus_member_added(
+            dg_events[4],
+            CALIBER_ORACLE_MEMBER,
+            5,
+            new_total_members=9,
+            emitted_by=HASH_CONSENSUS_FOR_VEBO,
+            is_dg_event=True,
+        )
+        validate_hash_consensus_member_added(
+            dg_events[5],
+            CALIBER_ORACLE_MEMBER,
+            5,
+            new_total_members=9,
+            emitted_by=CS_FEE_HASH_CONSENSUS,
+            is_dg_event=True,
+        )
+
+        # Validate keyRemovalCharge update from 0.02 to 0 ETH
+        expected_staking_module_item = StakingModuleItem(
+            id=CSM_MODULE_ID,
+            name="Community Staking",
+            address=None,
+            target_share=CSM_STAKE_SHARE_LIMIT_AFTER,
+            module_fee=CSM_STAKING_MODULE_FEE_BEFORE,
+            treasury_fee=CSM_TREASURY_FEE_BEFORE,
+            priority_exit_share=CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER,
+        )
+        validate_staking_module_update_event(
+            dg_events[6], expected_staking_module_item, emitted_by=STAKING_ROUTER, is_dg_event=True
+        )
+
+        # Validate grant MODULE_MANAGER_ROLE event
+        validate_grant_role_event(
+            dg_events[7], csm_module_manager_role, agent, agent.address, emitted_by=CSM, is_dg_event=True
+        )
+
+        # Validate keyRemovalCharge update event
+        validate_set_key_removal_charge_event(dg_events[8], KEY_REMOVAL_CHARGE_AFTER, emitted_by=CSM, is_dg_event=True)
+
+        # Validate revoke MODULE_MANAGER_ROLE event
+        validate_revoke_role_event(
+            dg_events[9], csm_module_manager_role, agent, agent.address, emitted_by=CSM, is_dg_event=True
+        )
+
+        # Validate old CS Verifier doesn't have VERIFIER_ROLE
+        validate_revoke_role_event(
+            dg_events[10], csm_verifier_role, CS_VERIFIER_ADDRESS_OLD, agent, emitted_by=CSM, is_dg_event=True
+        )
+
+        # Validate new CS Verifier has VERIFIER_ROLE
+        validate_grant_role_event(
+            dg_events[11], csm_verifier_role, CS_VERIFIER_ADDRESS_NEW, agent, emitted_by=CSM, is_dg_event=True
+        )
+
+        # Validate P2P NO rewards address change
+        validate_node_operator_reward_address_set_event(
+            dg_events[12],
+            NodeOperatorRewardAddressSetItem(
+                nodeOperatorId=P2P_NO_ID, reward_address=P2P_NO_STAKING_REWARDS_ADDRESS_NEW
+            ),
+            emitted_by=no_registry,
+            is_dg_event=True,
+        )
+
+        # Validate P2P NO name change
+        validate_node_operator_name_set_event(
+            dg_events[13],
+            NodeOperatorNameSetItem(nodeOperatorId=P2P_NO_ID, name=P2P_NO_NAME_NEW),
+            emitted_by=no_registry,
+            is_dg_event=True,
+        )
 
     # =======================================================================
     # ================= After DG proposal execution tests ===================
@@ -311,31 +726,55 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert cs_fee_hash_consensus.getIsMember(CALIBER_ORACLE_MEMBER)
 
     hash_consensus_for_accounting_oracle_quorum_after = hash_consensus_for_accounting_oracle.getQuorum()
-    hash_consensus_for_validators_exit_bus_oracle_quorum_after = hash_consensus_for_validators_exit_bus_oracle.getQuorum()
+    hash_consensus_for_validators_exit_bus_oracle_quorum_after = (
+        hash_consensus_for_validators_exit_bus_oracle.getQuorum()
+    )
     cs_fee_hash_consensus_quorum_after = cs_fee_hash_consensus.getQuorum()
 
     assert hash_consensus_for_accounting_oracle_quorum_after == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM
-    assert hash_consensus_for_validators_exit_bus_oracle_quorum_after == HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM
+    assert (
+        hash_consensus_for_validators_exit_bus_oracle_quorum_after
+        == HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM
+    )
     assert cs_fee_hash_consensus_quorum_after == HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM
 
-    hash_consensus_for_accounting_oracle_number_of_oracles_after = len(hash_consensus_for_accounting_oracle.getMembers()[0])
-    hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_after = len(hash_consensus_for_validators_exit_bus_oracle.getMembers()[0])
+    hash_consensus_for_accounting_oracle_number_of_oracles_after = len(
+        hash_consensus_for_accounting_oracle.getMembers()[0]
+    )
+    hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_after = len(
+        hash_consensus_for_validators_exit_bus_oracle.getMembers()[0]
+    )
     cs_fee_hash_consensus_quorum_before_number_of_oracles_after = len(cs_fee_hash_consensus.getMembers()[0])
 
-    assert hash_consensus_for_accounting_oracle_number_of_oracles_after == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_NUMBER_OF_ORACLES
-    assert hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_after == HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_NUMBER_OF_ORACLES
-    assert cs_fee_hash_consensus_quorum_before_number_of_oracles_after == HASH_CONSENSUS_FOR_CS_FEE_ORACLE_NUMBER_OF_ORACLES
+    assert (
+        hash_consensus_for_accounting_oracle_number_of_oracles_after
+        == HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_NUMBER_OF_ORACLES
+    )
+    assert (
+        hash_consensus_for_validators_exit_bus_oracle_number_of_oracles_after
+        == HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_NUMBER_OF_ORACLES
+    )
+    assert (
+        cs_fee_hash_consensus_quorum_before_number_of_oracles_after
+        == HASH_CONSENSUS_FOR_CS_FEE_ORACLE_NUMBER_OF_ORACLES
+    )
 
     """II. CSM Parameters Change (Vote items #7 - #10)"""
 
     # Vote item #7
     # stakeShareLimit and priorityExitShareThreshold updates
     assert staking_router.getStakingModule(CSM_MODULE_ID)["stakeShareLimit"] == CSM_STAKE_SHARE_LIMIT_AFTER
-    assert staking_router.getStakingModule(CSM_MODULE_ID)["priorityExitShareThreshold"] == CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER
+    assert (
+        staking_router.getStakingModule(CSM_MODULE_ID)["priorityExitShareThreshold"]
+        == CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER
+    )
     assert staking_router.getStakingModule(CSM_MODULE_ID)["stakingModuleFee"] == CSM_STAKING_MODULE_FEE_BEFORE
     assert staking_router.getStakingModule(CSM_MODULE_ID)["treasuryFee"] == CSM_TREASURY_FEE_BEFORE
     assert staking_router.getStakingModule(CSM_MODULE_ID)["maxDepositsPerBlock"] == CSM_MAX_DEPOSITS_PER_BLOCK_BEFORE
-    assert staking_router.getStakingModule(CSM_MODULE_ID)["minDepositBlockDistance"] == CSM_MIN_DEPOSIT_BLOCK_DISTANCE_BEFORE
+    assert (
+        staking_router.getStakingModule(CSM_MODULE_ID)["minDepositBlockDistance"]
+        == CSM_MIN_DEPOSIT_BLOCK_DISTANCE_BEFORE
+    )
     assert staking_router.getStakingModule(CSM_MODULE_ID)["stakingModuleAddress"] == CSM
 
     # Vote item #9
@@ -360,7 +799,9 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
     assert "DepositableSigningKeysCountChanged" in remove_keys_tx.events
 
     # Verify charge-related events are NOT emitted when charge == 0
-    assert "KeyRemovalChargeApplied" not in remove_keys_tx.events, "KeyRemovalChargeApplied should not be emitted when charge is 0"
+    assert (
+        "KeyRemovalChargeApplied" not in remove_keys_tx.events
+    ), "KeyRemovalChargeApplied should not be emitted when charge is 0"
     assert "BondCharged" not in remove_keys_tx.events, "BondCharged should not be emitted when charge is 0"
 
     """IV. CS Verifier rotation (Vote items #11 - #12)"""
@@ -382,293 +823,3 @@ def test_vote(helpers, accounts, vote_ids_from_env, stranger):
 
     # Vote item #14
     assert p2p_no_data_after["name"] == P2P_NO_NAME_NEW
-
-
-    # =======================================================================
-    # ======================== IPFS & events checks =========================
-    # =======================================================================
-
-    metadata = find_metadata_by_vote_id(vote_id)
-    assert get_lido_vote_cid_from_str(metadata) == IPFS_DESCRIPTION_HASH
-
-    """Validating events"""
-
-    # Validate after voting events count
-    count_vote_items_by_voting_events = count_vote_items_by_events(vote_tx, voting)
-    assert count_vote_items_by_voting_events == EXPECTED_VOTE_EVENTS_COUNT
-    # There's 6 vote items not going through DG + ProposalSubmitted event
-    assert len(voting_events) == EXPECTED_VOTE_EVENTS_COUNT
-
-    # Validate after DG proposal execution events count
-    count_vote_items_by_agent_events = count_vote_items_by_events(dg_tx, agent)
-    assert count_vote_items_by_agent_events == EXPECTED_DG_EVENTS_COUNT
-    # 14 Vote items are going through DG
-    assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
-
-    # Validate total events count
-    assert count_vote_items_by_voting_events + count_vote_items_by_agent_events == EXPECTED_TOTAL_EVENTS_COUNT, "Incorrect voting items count"
-
-    # Validate DG Proposal Submit event
-    validate_dual_governance_submit_event(
-        voting_events[0],
-        proposal_id=3,
-        proposer=VOTING,
-        executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-        metadata="Kyber Oracle Rotation, CSM Parameters Change, CS Verifier rotation, Change staking reward address and name for P2P.org Node Operator",
-        proposal_calls=[
-            {
-                "target": AGENT,
-                "value": 0,
-                "data": agent_forward([
-                    (
-                        HASH_CONSENSUS_FOR_AO, interface.HashConsensus(HASH_CONSENSUS_FOR_AO).removeMember.encode_input(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data": agent_forward([
-                    (
-                        HASH_CONSENSUS_FOR_VEBO, interface.HashConsensus(HASH_CONSENSUS_FOR_VEBO).removeMember.encode_input(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        CS_FEE_HASH_CONSENSUS, interface.HashConsensus(CS_FEE_HASH_CONSENSUS).removeMember.encode_input(KYBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        HASH_CONSENSUS_FOR_AO, interface.HashConsensus(HASH_CONSENSUS_FOR_AO).addMember.encode_input(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        HASH_CONSENSUS_FOR_VEBO, interface.HashConsensus(HASH_CONSENSUS_FOR_VEBO).addMember.encode_input(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        CS_FEE_HASH_CONSENSUS, interface.HashConsensus(CS_FEE_HASH_CONSENSUS).addMember.encode_input(CALIBER_ORACLE_MEMBER, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        STAKING_ROUTER,
-                        interface.StakingRouter(STAKING_ROUTER).updateStakingModule.encode_input(
-                            CSM_MODULE_ID,
-                            CSM_STAKE_SHARE_LIMIT_AFTER,
-                            CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER,
-                            staking_router.getStakingModule(CSM_MODULE_ID)["stakingModuleFee"],
-                            staking_router.getStakingModule(CSM_MODULE_ID)["treasuryFee"],
-                            staking_router.getStakingModule(CSM_MODULE_ID)["maxDepositsPerBlock"],
-                            staking_router.getStakingModule(CSM_MODULE_ID)["minDepositBlockDistance"]
-                        )
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        CSM, interface.AccessControl(CSM).grantRole.encode_input(csm_module_manager_role, AGENT)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        CSM, interface.CSModule(CSM).setKeyRemovalCharge.encode_input(KEY_REMOVAL_CHARGE_AFTER)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        CSM, interface.AccessControl(CSM).revokeRole.encode_input(csm_module_manager_role, AGENT)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        CSM, interface.AccessControl(CSM).revokeRole.encode_input(csm_verifier_role, CS_VERIFIER_ADDRESS_OLD)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        CSM, interface.AccessControl(CSM).grantRole.encode_input(csm_verifier_role, CS_VERIFIER_ADDRESS_NEW)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        NODE_OPERATORS_REGISTRY, interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY).setNodeOperatorRewardAddress.encode_input(P2P_NO_ID, P2P_NO_STAKING_REWARDS_ADDRESS_NEW)
-                    )
-                ])[1]
-            },
-            {
-                "target": AGENT,
-                "value": 0,
-                "data":
-                agent_forward([
-                    (
-                        NODE_OPERATORS_REGISTRY, interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY).setNodeOperatorName.encode_input(P2P_NO_ID, P2P_NO_NAME_NEW)
-                    )
-                ])[1]
-            },
-        ],
-        emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
-    )
-
-    # Validate PML, ATC, RCC ET Factories removal events
-    validate_evmscript_factory_removed_event(voting_events[1], PML_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
-    validate_evmscript_factory_removed_event(voting_events[2], PML_STETH_FACTORY, emitted_by=EASY_TRACK)
-    validate_evmscript_factory_removed_event(voting_events[3], ATC_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
-    validate_evmscript_factory_removed_event(voting_events[4], ATC_STETH_FACTORY, emitted_by=EASY_TRACK)
-    validate_evmscript_factory_removed_event(voting_events[5], RCC_STABLECOINS_FACTORY, emitted_by=EASY_TRACK)
-    validate_evmscript_factory_removed_event(voting_events[6], RCC_STETH_FACTORY, emitted_by=EASY_TRACK)
-
-    # Validate oracle rotation events
-    validate_hash_consensus_member_removed(
-        dg_events[0],
-        KYBER_ORACLE_MEMBER,
-        5,
-        new_total_members=8,
-        emitted_by=HASH_CONSENSUS_FOR_AO,
-        is_dg_event=True
-    )
-    validate_hash_consensus_member_removed(
-        dg_events[1],
-        KYBER_ORACLE_MEMBER,
-        5,
-        new_total_members=8,
-        emitted_by=HASH_CONSENSUS_FOR_VEBO,
-        is_dg_event=True
-    )
-    validate_hash_consensus_member_removed(
-        dg_events[2],
-        KYBER_ORACLE_MEMBER,
-        5,
-        new_total_members=8,
-        emitted_by=CS_FEE_HASH_CONSENSUS,
-        is_dg_event=True
-    )
-    validate_hash_consensus_member_added(
-        dg_events[3],
-        CALIBER_ORACLE_MEMBER,
-        5,
-        emitted_by=HASH_CONSENSUS_FOR_AO,
-        new_total_members=9,
-        is_dg_event=True
-    )
-    validate_hash_consensus_member_added(
-        dg_events[4],
-        CALIBER_ORACLE_MEMBER,
-        5,
-        new_total_members=9,
-        emitted_by=HASH_CONSENSUS_FOR_VEBO,
-        is_dg_event=True
-    )
-    validate_hash_consensus_member_added(
-        dg_events[5],
-        CALIBER_ORACLE_MEMBER,
-        5,
-        new_total_members=9,
-        emitted_by=CS_FEE_HASH_CONSENSUS,
-        is_dg_event=True
-    )
-
-    # Validate keyRemovalCharge update from 0.02 to 0 ETH
-    expected_staking_module_item = StakingModuleItem(
-        id=CSM_MODULE_ID,
-        name="Community Staking",
-        address=None,
-        target_share=CSM_STAKE_SHARE_LIMIT_AFTER,
-        module_fee=CSM_STAKING_MODULE_FEE_BEFORE,
-        treasury_fee=CSM_TREASURY_FEE_BEFORE,
-        priority_exit_share=CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER,
-    )
-    validate_staking_module_update_event(dg_events[6], expected_staking_module_item, emitted_by=STAKING_ROUTER,
-                                         is_dg_event=True)
-
-    # Validate grant MODULE_MANAGER_ROLE event
-    validate_grant_role_event(dg_events[7], csm_module_manager_role, agent, agent.address, emitted_by=CSM,
-                              is_dg_event=True)
-
-    # Validate keyRemovalCharge update event
-    validate_set_key_removal_charge_event(dg_events[8], KEY_REMOVAL_CHARGE_AFTER, emitted_by=CSM, is_dg_event=True)
-
-    # Validate revoke MODULE_MANAGER_ROLE event
-    validate_revoke_role_event(dg_events[9], csm_module_manager_role, agent, agent.address, emitted_by=CSM,
-                               is_dg_event=True)
-
-    # Validate old CS Verifier doesn't have VERIFIER_ROLE
-    validate_revoke_role_event(dg_events[10], csm_verifier_role, CS_VERIFIER_ADDRESS_OLD, agent, emitted_by=CSM,
-                               is_dg_event=True)
-
-    # Validate new CS Verifier has VERIFIER_ROLE
-    validate_grant_role_event(dg_events[11], csm_verifier_role, CS_VERIFIER_ADDRESS_NEW, agent,
-                              emitted_by=CSM, is_dg_event=True)
-
-    # Validate P2P NO rewards address change
-    validate_node_operator_reward_address_set_event(
-        dg_events[12],
-        NodeOperatorRewardAddressSetItem(
-            nodeOperatorId=P2P_NO_ID,
-            reward_address=P2P_NO_STAKING_REWARDS_ADDRESS_NEW
-        ),
-        emitted_by=no_registry,
-        is_dg_event=True
-    )
-
-    # Validate P2P NO name change
-    validate_node_operator_name_set_event(
-        dg_events[13], NodeOperatorNameSetItem(nodeOperatorId=P2P_NO_ID, name=P2P_NO_NAME_NEW), emitted_by=no_registry, is_dg_event=True
-    )
