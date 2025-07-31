@@ -3,7 +3,6 @@ import pytest
 from brownie import interface, web3, Wei  # type: ignore
 from brownie.convert.datatypes import HexString
 
-from configs.config_holesky import CS_PARAMS_REGISTRY_ADDRESS, CS_EXIT_PENALTIES_ADDRESS, CS_STRIKES_ADDRESS
 from utils.config import (
     contracts,
     ContractsLazyLoader,
@@ -25,6 +24,10 @@ from utils.config import (
     CS_ORACLE_EPOCHS_PER_FRAME,
     ORACLE_QUORUM,
     ORACLE_COMMITTEE,
+    CS_PARAMS_REGISTRY_ADDRESS,
+    CS_EXIT_PENALTIES_ADDRESS,
+    CS_STRIKES_ADDRESS,
+    CS_EJECTOR_ADDRESS
 )
 
 contracts: ContractsLazyLoader = contracts
@@ -62,6 +65,11 @@ def accounting():
 @pytest.fixture(scope="module")
 def verifier():
     return contracts.cs_verifier
+
+
+@pytest.fixture(scope="module")
+def verifier_v2():
+    return contracts.cs_verifier_v2
 
 
 @pytest.fixture(scope="module")
@@ -152,6 +160,7 @@ class TestFeeDistributor:
         assert fee_distributor.STETH() == LIDO
         assert fee_distributor.ACCOUNTING() == CS_ACCOUNTING_ADDRESS
         assert fee_distributor.ORACLE() == CS_FEE_ORACLE_ADDRESS
+        assert fee_distributor.rebateRecipient() == AGENT
 
 
 class TestFeeOracle:
@@ -176,13 +185,13 @@ class TestHashConsensus:
         assert chain_config["genesisTime"] == CHAIN_GENESIS_TIME
 
         frame_config = hash_consensus.getFrameConfig()
-        assert frame_config["initialEpoch"] >= 326715
+        assert frame_config["initialEpoch"] >= 19775  # TODO: change back to mainnet value
         assert frame_config["epochsPerFrame"] == CS_ORACLE_EPOCHS_PER_FRAME
-        assert frame_config["fastLaneLengthSlots"] == 1800
+        assert frame_config["fastLaneLengthSlots"] == 32  # TODO: change back to mainnet value
 
         assert hash_consensus.getQuorum() == ORACLE_QUORUM
 
-        assert hash_consensus.getInitialRefSlot() >= 326715 * CHAIN_SLOTS_PER_EPOCH - 1
+        assert hash_consensus.getInitialRefSlot() >= 19775 * CHAIN_SLOTS_PER_EPOCH - 1  # TODO: change back to mainnet value
 
         members = hash_consensus.getMembers()
         assert sorted(members["addresses"]) == sorted(ORACLE_COMMITTEE)
@@ -191,44 +200,54 @@ class TestHashConsensus:
 
 
 def test_permissionless_gate_state(permissionless_gate):
-    ...
+    assert permissionless_gate.MODULE() == CSM_ADDRESS
+    assert permissionless_gate.CURVE_ID() == 0
 
 
 def test_vetted_gate_state(vetted_gate):
     assert vetted_gate.MODULE() == CSM_ADDRESS
-    assert vetted_gate.CURVE_ID() == 1
+    assert vetted_gate.curveId() == 2
 
 
 def test_ejector_state(ejector):
-    ...
+    assert ejector.MODULE() == CSM_ADDRESS
+    assert ejector.STRIKES() == CS_STRIKES_ADDRESS
+    assert ejector.STAKING_MODULE_ID() == 4  # TODO: change back to mainnet value
 
 
 def test_strikes_state(strikes):
-    ...
+    assert strikes.MODULE() == CSM_ADDRESS
+    assert strikes.EXIT_PENALTIES() == CS_EXIT_PENALTIES_ADDRESS
+    assert strikes.ORACLE() == CS_FEE_ORACLE_ADDRESS
+    assert strikes.PARAMETERS_REGISTRY() == CS_PARAMS_REGISTRY_ADDRESS
+    assert strikes.ejector() == CS_EJECTOR_ADDRESS
 
 
 def test_exit_penalties_state(exit_penalties):
-    ...
+    assert exit_penalties.MODULE() == CSM_ADDRESS
+    assert exit_penalties.PARAMETERS_REGISTRY() == CS_PARAMS_REGISTRY_ADDRESS
+    assert exit_penalties.STRIKES() == CS_STRIKES_ADDRESS
 
 
 def test_parameters_registry_state(parameters_registry):
-    ...
+    assert parameters_registry.QUEUE_LOWEST_PRIORITY() == 5
+    assert parameters_registry.QUEUE_LEGACY_PRIORITY() == 4
 
 
-def test_verifier_state(verifier):
-    assert verifier.WITHDRAWAL_ADDRESS() == WITHDRAWAL_VAULT
-    assert verifier.MODULE() == CSM_ADDRESS
-    assert verifier.SLOTS_PER_EPOCH() == CHAIN_SLOTS_PER_EPOCH
+def test_verifier_state(verifier_v2):
+    assert verifier_v2.WITHDRAWAL_ADDRESS() == WITHDRAWAL_VAULT
+    assert verifier_v2.MODULE() == CSM_ADDRESS
+    assert verifier_v2.SLOTS_PER_EPOCH() == CHAIN_SLOTS_PER_EPOCH
 
-    assert verifier.GI_FIRST_WITHDRAWAL_PREV() == HexString("0x0000000000000000000000000000000000000000000000000000000000e1c004", "bytes")
-    assert verifier.GI_FIRST_WITHDRAWAL_CURR() == HexString("0x000000000000000000000000000000000000000000000000000000000161c004", "bytes")
-    assert verifier.GI_FIRST_VALIDATOR_PREV() == HexString("0x0000000000000000000000000000000000000000000000000056000000000028", "bytes")
-    assert verifier.GI_FIRST_VALIDATOR_CURR() == HexString("0x0000000000000000000000000000000000000000000000000096000000000028", "bytes")
-    assert verifier.GI_HISTORICAL_SUMMARY_PREV() == HexString("0x0000000000000000000000000000000000000000000000000000000000003b00", "bytes")
-    assert verifier.GI_HISTORICAL_SUMMARY_CURR() == HexString("0x0000000000000000000000000000000000000000000000000000000000005b00", "bytes")
-    assert verifier.GI_FIRST_BLOCK_ROOT_IN_SUMMARY_PREV() == HexString("0x", "bytes")
-    assert verifier.GI_FIRST_BLOCK_ROOT_IN_SUMMARY_CURR() == HexString("0x", "bytes")
+    assert verifier_v2.GI_FIRST_WITHDRAWAL_PREV() == HexString("0x000000000000000000000000000000000000000000000000000000000161c004", "bytes")
+    assert verifier_v2.GI_FIRST_WITHDRAWAL_CURR() == HexString("0x000000000000000000000000000000000000000000000000000000000161c004", "bytes")
+    assert verifier_v2.GI_FIRST_VALIDATOR_PREV() == HexString("0x0000000000000000000000000000000000000000000000000096000000000028", "bytes")
+    assert verifier_v2.GI_FIRST_VALIDATOR_CURR() == HexString("0x0000000000000000000000000000000000000000000000000096000000000028", "bytes")
+    assert verifier_v2.GI_FIRST_HISTORICAL_SUMMARY_PREV() == HexString("0x000000000000000000000000000000000000000000000000000000b600000018", "bytes")
+    assert verifier_v2.GI_FIRST_HISTORICAL_SUMMARY_CURR() == HexString("0x000000000000000000000000000000000000000000000000000000b600000018", "bytes")
+    assert verifier_v2.GI_FIRST_BLOCK_ROOT_IN_SUMMARY_PREV() == HexString("0x000000000000000000000000000000000000000000000000000000000040000d", "bytes")
+    assert verifier_v2.GI_FIRST_BLOCK_ROOT_IN_SUMMARY_CURR() == HexString("0x000000000000000000000000000000000000000000000000000000000040000d", "bytes")
 
-    assert verifier.FIRST_SUPPORTED_SLOT() == 8626176
-    assert verifier.PIVOT_SLOT() == 11649024
-    assert verifier.CAPELLA_SLOT() == 11649024
+    assert verifier_v2.FIRST_SUPPORTED_SLOT() == 65536 # TODO: change back to mainnet value
+    assert verifier_v2.PIVOT_SLOT() == 65536
+    assert verifier_v2.CAPELLA_SLOT() == 0

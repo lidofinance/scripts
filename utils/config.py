@@ -248,7 +248,7 @@ class ContractsLazyLoader:
 
     @property
     def cs_exit_penalties(self) -> interface.CSExitPenalties:
-        return interface.CSExitPenalties(CS_EXIT_PENALTIES)
+        return interface.CSExitPenalties(CS_EXIT_PENALTIES_ADDRESS)
 
     @property
     def cs_ejector(self) -> interface.CSEjector:
