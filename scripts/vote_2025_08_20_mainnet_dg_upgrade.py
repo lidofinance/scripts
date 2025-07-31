@@ -1,17 +1,18 @@
 """
-Dual Governance Upgrade on Mainnet
+Dual Governance Upgrade on Mainnet and Token transfer to the Lido Labs BORG Foundation
 
 1.1. Set on new Dual Governance instance Tiebreaker activation timeout to 31536000 seconds (1 year) 
 1.2. Set on new Dual Governance instance Tiebreaker committee to 0x0000000000000000000000000000000000000000
 1.3. Add Withdrawal Queue (0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1) as Tiebreaker withdrawal blocker
 1.4. Add Validators Exit Bus Oracle (0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e) as Tiebreaker withdrawal blocker
-1.6. Register Aragon Voting (0x2e59A20f205bB85a89C53f1936454680651E618e) as admin proposer
-1.7. Set Aragon Voting (0x2e59A20f205bB85a89C53f1936454680651E618e) as proposals canceller
-1.8. Set on new Dual Governance instance Reseal committee to (0xFFe21561251c49AdccFad065C94Fb4931dF49081) 
-1.9. Set on Emergency Protected Timelock (0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316) governance to new Dual Governance contract (0x0000000000000000000000000000000000000000)
-1.10. Set config provider (0x0000000000000000000000000000000000000000) for old Dual Governance contract (0x4D12B9F6ACAB54FF6A3A776BA3B8724D9B77845F)
-1.11. Verify Dual Governance state
-1.12. Transferring MATIC tokens from DAO treasury to the Lido Labs BORG Foundation (0x95B521B4F55a447DB89f6a27f951713fC2035f3F)
+1.5. Register Aragon Voting (0x2e59A20f205bB85a89C53f1936454680651E618e) as admin proposer
+1.6. Set Aragon Voting (0x2e59A20f205bB85a89C53f1936454680651E618e) as proposals canceller
+1.7. Set on new Dual Governance instance Reseal committee to (0xFFe21561251c49AdccFad065C94Fb4931dF49081) 
+1.8. Set on Emergency Protected Timelock (0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316) governance to new Dual Governance contract (0x0000000000000000000000000000000000000000)
+1.9. Set config provider (0x0000000000000000000000000000000000000000) for old Dual Governance contract (0x4D12B9F6ACAB54FF6A3A776BA3B8724D9B77845F)
+1.10. Verify Dual Governance state
+
+2. Transferring MATIC tokens from DAO treasury to the Lido Labs BORG Foundation (0x95B521B4F55a447DB89f6a27f951713fC2035f3F)
 """
 
 import time
@@ -27,7 +28,7 @@ from utils.config import (
 )
 from utils.mainnet_fork import pass_and_exec_dao_vote
 
-omnibus_provider = "0x7f9B47A5Fc19EB27CD091edf2cc8e1018F650C75"
+omnibus_provider = "0x0000000000000000000000000000000000000000"
 description = "Proposal to upgrade Dual Governance contract on Mainnet (Immunefi reported vulnerability fix). Token transfer to the Lido Labs BORG Foundation"
 
 

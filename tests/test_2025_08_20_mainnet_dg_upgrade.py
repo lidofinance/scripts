@@ -7,6 +7,7 @@ from brownie.network.transaction import TransactionReceipt
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.dual_governance import *
+from utils.test.event_validators.finance import validate_new_immediate_payment_event
 from utils.evm_script import encode_call_script
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
@@ -16,6 +17,7 @@ from scripts.vote_2025_08_20_mainnet_dg_upgrade import start_vote, get_vote_item
 
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
+FINANCE = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
 DUAL_GOVERNANCE = "0xcdF49b058D606AD34c5789FD8c3BF8B3E54bA2db"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
@@ -27,10 +29,10 @@ CONFIG_PROVIDER_FOR_ACTIVE_DUAL_GOVERNANCE = "0xa1692Af6FDfdD1030E4E9c4Bc429986F
 
 MIN_ASSETS_LOCK_DURATION = 1
 
-NEW_DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
-NEW_TIEBREAKER_COMMITTEE = "0xf65614d73952Be91ce0aE7Dd9cFf25Ba15bEE2f5"
-CONFIG_PROVIDER_FOR_DISCONNECTED_DUAL_GOVERNANCE = "0xc934E90E76449F09f2369BB85DCEa056567A327a"
-DG_UPGRADE_STATE_VERIFIER = "0x6782e5c1e3D37b5ed5a076069B5b2438B9CED5B4"
+NEW_DUAL_GOVERNANCE = "0x0000000000000000000000000000000000000000"
+NEW_TIEBREAKER_COMMITTEE = "0x0000000000000000000000000000000000000000"
+CONFIG_PROVIDER_FOR_DISCONNECTED_DUAL_GOVERNANCE = "0x0000000000000000000000000000000000000000"
+DG_UPGRADE_STATE_VERIFIER = "0x0000000000000000000000000000000000000000"
 
 MATIC_TOKEN = "0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0"
 LABS_BORG_FOUNDATION = "0x95B521B4F55a447DB89f6a27f951713fC2035f3F"
@@ -38,8 +40,8 @@ MATIC_BALANCE_TO_TRANSFER = 508_106_165781175837137177
 
 EXPECTED_VOTE_ID = 191
 EXPECTED_DG_PROPOSAL_ID = 4
-EXPECTED_VOTE_EVENTS_COUNT = 1
-EXPECTED_DG_EVENTS_COUNT = 11
+EXPECTED_VOTE_EVENTS_COUNT = 2
+EXPECTED_DG_EVENTS_COUNT = 10
 IPFS_DESCRIPTION_HASH = "bafkreibwrhhgakpf5n676cee2x6kc62f7xikaj52dot5bylonoajhdbu7e"
 
 STETH_TOKEN = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
@@ -111,22 +113,6 @@ def dual_governance_proposal_calls():
             "value": 0,
             "data": interface.DGLaunchVerifier(DG_UPGRADE_STATE_VERIFIER).verify.encode_input(),
         },
-        {
-            "target": AGENT,
-            "value": 0,
-            "data": interface.Agent(AGENT).forward.encode_input(
-                encode_call_script(
-                    [
-                        (
-                            MATIC_TOKEN,
-                            interface.ERC20(MATIC_TOKEN).transfer.encode_input(
-                                LABS_BORG_FOUNDATION, MATIC_BALANCE_TO_TRANSFER
-                            ),
-                        )
-                    ]
-                )
-            ),
-        },
     ]
 
 
@@ -166,7 +152,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # ========================= Before voting tests =========================
         # =======================================================================
 
-        # No executable actions at Aragon Voting phase
+        assert interface.ERC20(MATIC_TOKEN).balanceOf(AGENT) == MATIC_BALANCE_TO_TRANSFER
+        assert interface.ERC20(MATIC_TOKEN).balanceOf(LABS_BORG_FOUNDATION) == 0
 
         # =======================================================================
         # ========================= Voting Execution ============================
@@ -199,9 +186,18 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             proposal_id=expected_dg_proposal_id,
             proposer=VOTING,
             executor=ADMIN_EXECUTOR,
-            metadata="1.1 - 1.10 Proposal to upgrade Dual Governance contract on Mainnet (Immunefi reported vulnerability fix), 1.11 DAO treasury management",
+            metadata="1.1 - 1.10 Proposal to upgrade Dual Governance contract on Mainnet (Immunefi reported vulnerability fix)",
             proposal_calls=dual_governance_proposal_calls,
             emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
+        )
+
+        validate_new_immediate_payment_event(
+            vote_events[1],
+            token=MATIC_TOKEN,
+            from_addr=AGENT,
+            to_addr=LABS_BORG_FOUNDATION,
+            amount=MATIC_BALANCE_TO_TRANSFER,
+            finance=FINANCE,
         )
 
     # =======================================================================
@@ -209,6 +205,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     # =======================================================================
     metadata = find_metadata_by_vote_id(vote_id)
     assert get_lido_vote_cid_from_str(metadata) == IPFS_DESCRIPTION_HASH
+
+    assert interface.ERC20(MATIC_TOKEN).balanceOf(AGENT) == 0
+    assert interface.ERC20(MATIC_TOKEN).balanceOf(LABS_BORG_FOUNDATION) == MATIC_BALANCE_TO_TRANSFER
 
     dg_proposal_calls = emergency_protected_timelock.getProposalCalls(EXPECTED_DG_PROPOSAL_ID)
 
@@ -323,14 +322,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         validate_dual_governance_state_verified_event(
             dg_events[9],
             emitted_by=DG_UPGRADE_STATE_VERIFIER,
-        )
-
-        validate_dual_governance_agent_forward_token_transfer_event(
-            dg_events[10],
-            amount=MATIC_BALANCE_TO_TRANSFER,
-            from_address=AGENT,
-            to_address=LABS_BORG_FOUNDATION,
-            emitted_by=MATIC_TOKEN,
         )
 
     # =======================================================================
