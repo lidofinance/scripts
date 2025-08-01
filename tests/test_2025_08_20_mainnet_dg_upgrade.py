@@ -12,6 +12,7 @@ from utils.evm_script import encode_call_script
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS
+from utils.dual_governance import PROPOSAL_STATUS
 
 from scripts.vote_2025_08_20_mainnet_dg_upgrade import start_vote, get_vote_items
 
@@ -152,6 +153,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # ========================= Before voting tests =========================
         # =======================================================================
 
+        metadata = find_metadata_by_vote_id(vote_id)
+        assert get_lido_vote_cid_from_str(metadata) == IPFS_DESCRIPTION_HASH
+
         assert interface.ERC20(MATIC_TOKEN).balanceOf(AGENT) == MATIC_BALANCE_TO_TRANSFER
         assert interface.ERC20(MATIC_TOKEN).balanceOf(LABS_BORG_FOUNDATION) == 0
 
@@ -159,20 +163,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # ========================= Voting Execution ============================
         # =======================================================================
 
-        vote_id = (
-            vote_ids_from_env[0]
-            if vote_ids_from_env
-            else start_vote({"from": ldo_holder, "force": True}, silent=True)[0]
-        )
-
-        last_dual_governance_proposal_id = emergency_protected_timelock.getProposalsCount()
         vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
 
         vote_events = group_voting_events_from_receipt(vote_tx)
 
-        expected_dg_proposal_id = last_dual_governance_proposal_id + 1
-
-        assert expected_dg_proposal_id == emergency_protected_timelock.getProposalsCount()
+        assert EXPECTED_DG_PROPOSAL_ID == emergency_protected_timelock.getProposalsCount()
 
         # =======================================================================
         # ========================= Validate voting events ======================
@@ -183,7 +178,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         validate_dual_governance_submit_event(
             vote_events[0],
-            proposal_id=expected_dg_proposal_id,
+            proposal_id=EXPECTED_DG_PROPOSAL_ID,
             proposer=VOTING,
             executor=ADMIN_EXECUTOR,
             metadata="1.1 - 1.10 Proposal to upgrade Dual Governance contract on Mainnet (Immunefi reported vulnerability fix)",
@@ -203,8 +198,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     # =======================================================================
     # ========================= After voting tests ==========================
     # =======================================================================
-    metadata = find_metadata_by_vote_id(vote_id)
-    assert get_lido_vote_cid_from_str(metadata) == IPFS_DESCRIPTION_HASH
 
     assert interface.ERC20(MATIC_TOKEN).balanceOf(AGENT) == 0
     assert interface.ERC20(MATIC_TOKEN).balanceOf(LABS_BORG_FOUNDATION) == MATIC_BALANCE_TO_TRANSFER
@@ -217,11 +210,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
     dg_proposal_details = emergency_protected_timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)
 
-    if dg_proposal_details["status"] == 3:
+    if dg_proposal_details["status"] == PROPOSAL_STATUS["executed"]:
         print("DG proposal already executed. Skipping DG Proposal tests.")
 
     # Check if DG proposal is not executed
-    if dg_proposal_details["status"] != 3:
+    if dg_proposal_details["status"] != PROPOSAL_STATUS["executed"]:
         # =======================================================================
         # ========================= Before DG Proposal tests ====================
         # =======================================================================
@@ -238,11 +231,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =======================================================================
         # ======================== DG Proposal Execution ========================
         # =======================================================================
-        if emergency_protected_timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == 1:
+        if (
+            emergency_protected_timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"]
+            == PROPOSAL_STATUS["submitted"]
+        ):
             chain.sleep(emergency_protected_timelock.getAfterSubmitDelay() + 1)
             dual_governance.scheduleProposal(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
 
-        if emergency_protected_timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == 2:
+        if (
+            emergency_protected_timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"]
+            == PROPOSAL_STATUS["scheduled"]
+        ):
             chain.sleep(emergency_protected_timelock.getAfterScheduleDelay() + 1)
             dg_tx: TransactionReceipt = emergency_protected_timelock.execute(
                 EXPECTED_DG_PROPOSAL_ID, {"from": stranger}
@@ -253,7 +252,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 dg_tx, timelock=EMERGENCY_PROTECTED_TIMELOCK, admin_executor=ADMIN_EXECUTOR
             )
 
-        assert emergency_protected_timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == 3
+        assert (
+            emergency_protected_timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"]
+            == PROPOSAL_STATUS["executed"]
+        )
 
         # =======================================================================
         # ========================= DG Events checks ============================
@@ -308,7 +310,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         validate_timelock_governance_set_event(
             dg_events[7],
             governance=NEW_DUAL_GOVERNANCE,
-            proposals_cancelled_till=expected_dg_proposal_id,
+            proposals_cancelled_till=EXPECTED_DG_PROPOSAL_ID,
             emitted_by=EMERGENCY_PROTECTED_TIMELOCK,
         )
 
@@ -406,24 +408,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     old_escrow.unlockStETH({"from": steth_whale})
 
     assert old_escrow.getRageQuitSupport() == old_dual_governance_rage_quit_support_before
-
-
-def validate_dual_governance_agent_forward_token_transfer_event(
-    event: EventDict, amount: int, from_address: str, to_address: str, emitted_by: str
-) -> None:
-    _events_chain = ["LogScriptCall", "Transfer", "ScriptResult", "Executed"]
-
-    validate_events_chain([e.name for e in event], _events_chain)
-
-    assert event.count("Transfer") == 1
-
-    assert event["Transfer"]["_from"] == from_address
-    assert event["Transfer"]["_to"] == to_address
-    assert event["Transfer"]["_amount"] == amount
-
-    assert web3.to_checksum_address(event["Transfer"]["_emitted_by"]) == web3.to_checksum_address(
-        emitted_by
-    ), "Wrong event emitter"
 
 
 def validate_dual_governance_state_verified_event(event: EventDict, emitted_by: str) -> None:
