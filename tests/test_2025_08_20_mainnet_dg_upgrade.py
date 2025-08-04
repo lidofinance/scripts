@@ -7,7 +7,6 @@ from brownie.network.transaction import TransactionReceipt
 from utils.test.tx_tracing_helpers import *
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.dual_governance import *
-from utils.test.event_validators.finance import validate_new_immediate_payment_event
 from utils.evm_script import encode_call_script
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
@@ -35,13 +34,9 @@ NEW_TIEBREAKER_COMMITTEE = "0x0000000000000000000000000000000000000000"
 CONFIG_PROVIDER_FOR_DISCONNECTED_DUAL_GOVERNANCE = "0x0000000000000000000000000000000000000000"
 DG_UPGRADE_STATE_VERIFIER = "0x0000000000000000000000000000000000000000"
 
-MATIC_TOKEN = "0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0"
-LABS_BORG_FOUNDATION = "0x95B521B4F55a447DB89f6a27f951713fC2035f3F"
-MATIC_BALANCE_TO_TRANSFER = 508_106_165781175837137177
-
 EXPECTED_VOTE_ID = 191
 EXPECTED_DG_PROPOSAL_ID = 4
-EXPECTED_VOTE_EVENTS_COUNT = 2
+EXPECTED_VOTE_EVENTS_COUNT = 1
 EXPECTED_DG_EVENTS_COUNT = 10
 IPFS_DESCRIPTION_HASH = "bafkreibwrhhgakpf5n676cee2x6kc62f7xikaj52dot5bylonoajhdbu7e"
 
@@ -156,9 +151,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         metadata = find_metadata_by_vote_id(vote_id)
         assert get_lido_vote_cid_from_str(metadata) == IPFS_DESCRIPTION_HASH
 
-        assert interface.ERC20(MATIC_TOKEN).balanceOf(AGENT) == MATIC_BALANCE_TO_TRANSFER
-        assert interface.ERC20(MATIC_TOKEN).balanceOf(LABS_BORG_FOUNDATION) == 0
-
         # =======================================================================
         # ========================= Voting Execution ============================
         # =======================================================================
@@ -186,21 +178,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
         )
 
-        validate_new_immediate_payment_event(
-            vote_events[1],
-            token=MATIC_TOKEN,
-            from_addr=AGENT,
-            to_addr=LABS_BORG_FOUNDATION,
-            amount=MATIC_BALANCE_TO_TRANSFER,
-            finance=FINANCE,
-        )
-
     # =======================================================================
     # ========================= After voting tests ==========================
     # =======================================================================
-
-    assert interface.ERC20(MATIC_TOKEN).balanceOf(AGENT) == 0
-    assert interface.ERC20(MATIC_TOKEN).balanceOf(LABS_BORG_FOUNDATION) == MATIC_BALANCE_TO_TRANSFER
 
     dg_proposal_calls = emergency_protected_timelock.getProposalCalls(EXPECTED_DG_PROPOSAL_ID)
 
