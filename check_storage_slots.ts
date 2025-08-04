@@ -33,6 +33,7 @@ function logStorageSlotChange(slot, newValue) {
     `🚨 Storage slot value changed\n\n` + 
     `Value of the storage slot ${slot.id}${slot.slotName !== null ? ': ' + slot.slotName : ''}\n` +
     `for contract ${slot.contractAddress} (${slot.contractName}) has changed!\n` +
+    `Slot Address: ${slot.slotAddress}\n\n` +
     `Prev value: ${slot.expected}\n\n` +
     `New value: ${newValue}`;
 
