@@ -37,12 +37,10 @@ cd scripts
 | ------------- | ------------- | ------------- |
 | `ETH_RPC_URL` | **mandatory**     | **mandatory**     |
 | `ETH_RPC_URL2` | optional* | -     |
-| `ETH_RPC_URL3` | optional* | -     |
 | `PINATA_CLOUD_TOKEN`  | -     | **mandatory**     |
 | `DEPLOYER`            | -     | **mandatory**     |
 | `ETHERSCAN_TOKEN`     | **mandatory**     | **mandatory**     |
 | `ETHERSCAN_TOKEN2`     | optional*     | -     |
-| `ETHERSCAN_TOKEN3`     | optional*     | -     |
 
 _*may be optionally set when running tests asynchronously to reduce the risk of getting 529 error_
 
@@ -51,10 +49,18 @@ _*may be optionally set when running tests asynchronously to reduce the risk of 
 Run the container in the `scripts` directory and specify the ENV VARs:
 
 ```shell
-docker run --name scripts -v "$(pwd)":/root/scripts -e ETH_RPC_URL -e ETH_RPC_URL2 -e ETH_RPC_URL3 -e PINATA_CLOUD_TOKEN -e DEPLOYER -e ETHERSCAN_TOKEN -e ETHERSCAN_TOKEN2 -e ETHERSCAN_TOKEN3 -d ghcr.io/lidofinance/scripts:v18
+docker run --name scripts -v "$(pwd)":/root/scripts -e ETH_RPC_URL -e ETH_RPC_URL2 -e ETH_RPC_URL3 -e PINATA_CLOUD_TOKEN -e DEPLOYER -e ETHERSCAN_TOKEN -e ETHERSCAN_TOKEN2 -e ETHERSCAN_TOKEN3 -d ghcr.io/lidofinance/scripts:v19
 ```
 
-Note: _It may take up to 1 minute for the container to initialize properly the first time._
+#### Step 4. Initialize container
+
+Run:
+
+```shell
+make docker-init
+```
+
+Note: _It may take up to 5 minutes for the container to initialize properly the first time._
 
 #### Step 4. Now connect to the running container using tty:
 
@@ -84,10 +90,23 @@ You can use the following shortcuts:
 - `make test vote=XXX` run all tests on Hardhat node with applied Vote #XXX
 - `make test dg=XX` run all tests with executed DG proposal #XX
 - `make test-1/2`, `make test-2/2` run tests divided into 2 parts (can be run asynchronously)
-- `make test-1/3`, `make test-2/3`, `make test-3/3` run tests divided into 3 parts (can be run asynchronously)
 - `make enact-fork vote=scripts/vote_01_01_0001.py` deploy vote and enact it on mainnet fork
 - `make docker` connect to the `scripts` docker container
 - `make node` start local mainnet node
+- `make slots` check storage slots against local node
+- `make ci-prepare-environment` prepare environment for CI tests
+- `make init-scripts` initialize scripts repository
+- `make init-core` initialize core repository
+- `make test-core` run core repository tests
+
+
+or, to run core repository integrations tests:
+
+```shell
+NODE_PORT=8547 make node
+poetry run brownie test tests/vote_*.py -mfh-3
+make test-core
+```
 
 If your container has been stopped (for example, by a system reboot), start it:
 
@@ -130,30 +149,18 @@ alternatively, you could proceed with `pipx`:
 pipx install poetry==1.8.2
 ```
 
-#### Step 2. Setup dependencies with poetry
+#### Step 2. Initialize the repository
 
 Ensure that poetry bin path is added to your `$PATH` env variable.
 Usually it's `$HOME/.local/bin` for most Unix-like systems.
 
-```shell
-poetry install
-```
-
-#### Step 3. Install Ganache locally
-
-Simply run the following command from the project's directory
+To initialize dependencies and lido-core repository for its integration tests run:
 
 ```shell
-yarn
+make init
 ```
 
-#### Step 4. Import network config to connect brownie with local Ganache
-
-```shell
-poetry run brownie networks import network-config.yaml True
-```
-
-#### Step 5. Activate virtual environment
+#### Step 3. Activate virtual environment
 
 📝 While previous steps needed only once to init the environment from scratch,
 the current step is used regularly to activate the environment every time you
