@@ -10,6 +10,8 @@ from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.helpers import ETH, GWEI, ZERO_ADDRESS, almostEqWithDiff, eth_balance, round_to_gwei
 from utils.test.oracle_report_helpers import ONE_DAY, SHARE_RATE_PRECISION, oracle_report
 from utils.test.csm_helpers import csm_add_node_operator, get_ea_member
+from utils.test.wq_helpers import finalize_all_wq_requests
+
 from utils.config import (
     AGENT,
     BURNER,
@@ -708,12 +710,7 @@ def test_accounting_shares_burn_above_limits(
 ):
     """Test shares burnt with amount above the limit"""
 
-    """ report """
-    while contracts.withdrawal_queue.getLastRequestId() != contracts.withdrawal_queue.getLastFinalizedRequestId():
-        # finalize all current requests first
-        report_tx = oracle_report()[0]
-        # stake new ether to increase buffer
-        lido.submit(ZERO_ADDRESS, {"from": eth_whale.address, "value": ETH(10000)})
+    finalize_all_wq_requests()
 
     shares_limit = _shares_burn_limit_no_pooled_ether_changes()
     excess_amount = 42
@@ -779,12 +776,7 @@ def test_accounting_overfill_both_vaults(
 ):
     """Test rebase with excess ETH amount on both vaults"""
 
-    """ report """
-    while contracts.withdrawal_queue.getLastRequestId() != contracts.withdrawal_queue.getLastFinalizedRequestId():
-        # finalize all current requests first
-        report_tx = oracle_report()[0]
-        # stake new ether to increase buffer
-        lido.submit(ZERO_ADDRESS, {"from": eth_whale.address, "value": ETH(10000)})
+    finalize_all_wq_requests()
 
     limit = _rebase_limit_wei(block_identifier=chain.height)
     excess = ETH(10)
