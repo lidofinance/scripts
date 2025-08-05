@@ -12,11 +12,11 @@ on:
   schedule:
     - cron: "0 0 * * TUE"
 jobs:
-  run-tests-large:
-    name: Brownie fork LARGE tests
+  run-tests-large-1:
+    name: Brownie fork LARGE tests 1
     runs-on: [protocol-heavy-runners]
     timeout-minutes: 150
-    
+
     steps:
       - name: Enabling swap
         run: |
@@ -29,11 +29,37 @@ jobs:
           sudo mkswap /swapfile
           sudo swapon /swapfile
           sudo swapon --show
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Main action
         uses: ./.github/actions/brownie_fork_tests
         with:
           vote: "large"
           infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
           etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
-          command: "poetry run brownie test --network mfh-1"
+          command: "make test-1/2"
+
+  run-tests-large-2:
+    name: Brownie fork LARGE tests 2
+    runs-on: [protocol-heavy-runners]
+    timeout-minutes: 150
+
+    steps:
+      - name: Enabling swap
+        run: |
+          sudo df -h
+          sudo swapon --show
+          sudo swapoff -a
+          sudo touch /swapfile
+          sudo fallocate -l 32G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          sudo swapon --show
+      - uses: actions/checkout@v4
+      - name: Main action
+        uses: ./.github/actions/brownie_fork_tests
+        with:
+          vote: "large"
+          infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
+          etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
+          command: "make test-2/2"

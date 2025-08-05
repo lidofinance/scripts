@@ -93,6 +93,7 @@ def decode_evm_script(
             # call_info = decode_function_call(call.address, call.method_id, call.encoded_call_data, abi_storage)
 
             if call_info is not None:
+                # Handle standard nested _evmScript parameters
                 for inp in filter(is_encoded_script, call_info.inputs):
                     script = inp.value
                     inp.value = decode_evm_script(
@@ -139,7 +140,15 @@ def decode_evm_script(
 
 def calls_info_pretty_print(call: Union[str, Call, EncodedCall]) -> str:
     """Format printing for Call instance."""
-    return color.highlight(repr(call))
+    result = color.highlight(repr(call))
+
+    # Check if this call has nested calls (from DG script decoding)
+    if hasattr(call, 'nested_calls') and call.nested_calls:
+        result += f"\n{color('cyan')}Nested calls within this DG proposal:{color()}\n"
+        for i, nested_call in enumerate(call.nested_calls):
+            result += f"  {i+1}. {color.highlight(repr(nested_call))}\n"
+
+    return result
 
 
 def encode_error(error: str, values=None) -> str:

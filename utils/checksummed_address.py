@@ -1,5 +1,6 @@
 from eth_utils import keccak, to_bytes, ValidationError
 
+
 # https://eips.ethereum.org/EIPS/eip-55
 def checksum_encode(addr):  # Takes a 20-byte binary address as input
     hex_addr = addr.hex()
