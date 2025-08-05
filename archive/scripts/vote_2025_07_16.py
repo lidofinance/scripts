@@ -30,6 +30,8 @@ V. PML, ATC, RCC ET Factories Removal
 18. Remove ATC stETH factory 0x87b02dF27cd6ec128532Add7C8BC19f62E6f1fB9 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
 19. Remove RCC stablecoins factory 0x75bDecbb6453a901EBBB945215416561547dfDD4 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
 20. Remove RCC stETH factory 0xcD42Eb8a5db5a80Dc8f643745528DD77cf4C7D35 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
+
+Vote passed & executed on Jul-28-2025 09:50:23 AM UTC, block #23016861.
 """
 
 import time
