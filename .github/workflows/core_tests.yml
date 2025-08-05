@@ -2,7 +2,7 @@ name: Core tests
 
 on:
   push:
-    branches-ignore:
+    branches:
       - "master"
       - "feat/tests"
       - "feat/rc3"
