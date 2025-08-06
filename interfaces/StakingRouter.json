@@ -79,11 +79,6 @@
   },
   {
     "inputs": [],
-    "name": "InvalidMaxDepositPerBlockValue",
-    "type": "error"
-  },
-  {
-    "inputs": [],
     "name": "InvalidMinDepositBlockDistance",
     "type": "error"
   },
@@ -218,25 +213,14 @@
         "internalType": "uint256",
         "name": "currentNodeOpExitedValidatorsCount",
         "type": "uint256"
-      }
-    ],
-    "name": "UnexpectedCurrentValidatorsCount",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "newModuleTotalExitedValidatorsCount",
-        "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "newModuleTotalExitedValidatorsCountInStakingRouter",
+        "name": "currentNodeOpStuckValidatorsCount",
         "type": "uint256"
       }
     ],
-    "name": "UnexpectedFinalExitedValidatorsCount",
+    "name": "UnexpectedCurrentValidatorsCount",
     "type": "error"
   },
   {
@@ -735,32 +719,6 @@
   },
   {
     "inputs": [],
-    "name": "REPORT_VALIDATOR_EXITING_STATUS_ROLE",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "STAKING_MODULE_MANAGE_ROLE",
     "outputs": [
       {
@@ -906,8 +864,24 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "finalizeUpgrade_v3",
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "_priorityExitShareThresholds",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_maxDepositsPerBlock",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_minDepositBlockDistances",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "finalizeUpgrade_v2",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -2191,39 +2165,6 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_stakingModuleId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_nodeOperatorId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes",
-        "name": "_publicKey",
-        "type": "bytes"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_withdrawalRequestPaidFee",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_exitType",
-        "type": "uint256"
-      }
-    ],
-    "name": "onValidatorExitTriggered",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [],
     "name": "onValidatorsCountsByNodeOperatorReportingFinished",
     "outputs": [],
@@ -2297,27 +2238,17 @@
         "type": "uint256"
       },
       {
-        "internalType": "uint256",
-        "name": "_nodeOperatorId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_proofSlotTimestamp",
-        "type": "uint256"
-      },
-      {
         "internalType": "bytes",
-        "name": "_publicKey",
+        "name": "_nodeOperatorIds",
         "type": "bytes"
       },
       {
-        "internalType": "uint256",
-        "name": "_eligibleToExitInSec",
-        "type": "uint256"
+        "internalType": "bytes",
+        "name": "_stuckValidatorsCounts",
+        "type": "bytes"
       }
     ],
-    "name": "reportValidatorExitDelay",
+    "name": "reportStakingModuleStuckValidatorsCountByNodeOperator",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -2421,12 +2352,22 @@
           },
           {
             "internalType": "uint256",
+            "name": "currentNodeOperatorStuckValidatorsCount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
             "name": "newModuleExitedValidatorsCount",
             "type": "uint256"
           },
           {
             "internalType": "uint256",
             "name": "newNodeOperatorExitedValidatorsCount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "newNodeOperatorStuckValidatorsCount",
             "type": "uint256"
           }
         ],
