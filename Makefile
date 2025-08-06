@@ -21,13 +21,13 @@ CORE_TESTS_TARGET_RPC_URL ?= http://127.0.0.1:8547
 CORE_DIR ?= lido-core
 CORE_BRANCH ?= master
 NODE_PORT ?= 8545
-
+SECONDARY_NETWORK ?= mfh-2
 
 test-1/2:
 	poetry run brownie test tests/*.py tests/regression/test_staking_router_stake_distribution.py --durations=20 --network mfh-1
 
 test-2/2:
-	$(call run_2nd_test,brownie test -k 'not test_staking_router_stake_distribution.py' --durations=20 --network mfh-2)
+	$(call run_2nd_test,brownie test -k 'not test_staking_router_stake_distribution.py' --durations=20 --network $(SECONDARY_NETWORK))
 
 init: init-scripts init-core
 
@@ -91,7 +91,7 @@ slots:
 	@rm -f slots.ts
 
 ci-prepare-environment:
-	poetry run brownie run scripts/ci/prepare_environment --network mfh-2
+	poetry run brownie run scripts/ci/prepare_environment --network $(SECONDARY_NETWORK)
 
 enact-fork:
 	poetry run brownie run $(vote) start_and_execute_vote_on_fork_manual --network=mfh-1
