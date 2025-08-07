@@ -99,9 +99,9 @@ def local_deployer() -> LocalAccount:
 
 def get_deployer_account() -> Union[LocalAccount, Account]:
     is_live = get_is_live()
-    deployer = os.environ.get("DEPLOYER")
 
     if is_live:
+        deployer = os.environ.get("DEPLOYER")
         if deployer is None:
             raise EnvironmentError("For live deployment please set DEPLOYER env variable to the deployer account name")
         return accounts.load(deployer)
@@ -212,7 +212,16 @@ class ContractsLazyLoader:
 
     @property
     def cs_early_adoption(self) -> interface.CSEarlyAdoption:
+        """Deprecated"""
         return interface.CSEarlyAdoption(CS_EARLY_ADOPTION_ADDRESS)
+
+    @property
+    def cs_permissionless_gate(self) -> interface.CSPermissionlessGate:
+        return interface.CSPermissionlessGate(CS_PERMISSIONLESS_GATE_ADDRESS)
+
+    @property
+    def cs_vetted_gate(self) -> interface.CSVettedGate:
+        return interface.CSVettedGate(CS_VETTED_GATE_ADDRESS)
 
     @property
     def cs_accounting(self) -> interface.CSAccounting:
@@ -233,6 +242,22 @@ class ContractsLazyLoader:
     @property
     def cs_verifier(self) -> interface.CSVerifier:
         return interface.CSVerifier(CS_VERIFIER_ADDRESS)
+
+    @property
+    def cs_verifier_v2(self) -> interface.CSVerifierV2:
+        return interface.CSVerifierV2(CS_VERIFIER_V2_ADDRESS)
+
+    @property
+    def cs_exit_penalties(self) -> interface.CSExitPenalties:
+        return interface.CSExitPenalties(CS_EXIT_PENALTIES)
+
+    @property
+    def cs_ejector(self) -> interface.CSEjector:
+        return interface.CSEjector(CS_EJECTOR_ADDRESS)
+
+    @property
+    def cs_strikes(self) -> interface.CSStrikes:
+        return interface.CSStrikes(CS_STRIKES_ADDRESS)
 
     @property
     def sandbox(self) -> interface.SimpleDVT:
@@ -285,6 +310,10 @@ class ContractsLazyLoader:
     @property
     def oracle_report_sanity_checker(self) -> interface.OracleReportSanityChecker:
         return interface.OracleReportSanityChecker(ORACLE_REPORT_SANITY_CHECKER)
+
+    @property
+    def triggerable_withdrawals_gateway(self):
+        return interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY)
 
     @property
     def withdrawal_queue(self) -> interface.WithdrawalQueueERC721:
@@ -405,6 +434,10 @@ class ContractsLazyLoader:
     @property
     def token_rate_notifier(self) -> interface.TokenRateNotifier:
         return interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)
+
+    @property
+    def validator_exit_verifier(self) -> interface.ValidatorsExitBusOracle:
+        return interface.ValidatorExitVerifier(VALIDATOR_EXIT_VERIFIER)
 
     @property
     def dual_governance(self) -> interface.DualGovernance:
