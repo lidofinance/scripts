@@ -88,7 +88,8 @@ import time
 
 from typing import TYPE_CHECKING, Any, Dict
 from typing import Tuple, Optional, Sequence
-from brownie import interface, web3, convert, ZERO_ADDRESS  # type: ignore
+from brownie import interface, web3, convert, ZERO_ADDRESS
+from brownie.convert.main import to_uint  # type: ignore
 from utils.agent import agent_forward
 from utils.config import (
     CSM_COMMITTEE_MS,
@@ -387,7 +388,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
                 encode_oz_grant_role(
                     contract=contracts.staking_router,
                     role_name="REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE",
-                    grant_to=interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY),
+                    grant_to=interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY), # FIXME: simply use the address
                 )
             ])
         ),
@@ -400,7 +401,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
                     contracts.acl.grantPermission.encode_input(
                         AGENT,
                         ARAGON_KERNEL,
-                        convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE"))
+                        convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE")) # FIXME: no need for to_uint I guess
                     )
                 )
             ])
@@ -461,7 +462,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
                     contracts.acl.revokePermission.encode_input(
                         AGENT,
                         ARAGON_KERNEL,
-                        convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE"))
+                        convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE")) # FIXME: remove to_uint
                     )
                 )
             ])
@@ -473,7 +474,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
                 encode_oz_grant_role(
                     contract=contracts.oracle_daemon_config,
                     role_name="CONFIG_MANAGER_ROLE",
-                    grant_to=contracts.agent,
+                    grant_to=contracts.agent, # FIXME: misleading usage of contract
                 )
             ])
         ),
@@ -519,7 +520,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool) -> Tuple[int, Optional[A
                 encode_oz_revoke_role(
                     contract=contracts.oracle_daemon_config,
                     role_name="CONFIG_MANAGER_ROLE",
-                    revoke_from=contracts.agent,
+                    revoke_from=contracts.agent, # FIXME: typing says its str
                 )
             ])
         ),
@@ -888,7 +889,7 @@ def prepare_proposal(
     )
 
 def main():
-    tx_params = {"from": get_deployer_account()}
+    tx_params: dict = {"from": get_deployer_account()}
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 
