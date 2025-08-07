@@ -2,21 +2,6 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "lidoLocator",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "lido",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "legacyOracle",
-        "type": "address"
-      },
-      {
         "internalType": "uint256",
         "name": "secondsPerSlot",
         "type": "uint256"
@@ -32,6 +17,27 @@
   },
   {
     "inputs": [],
+    "name": "AccessControlBadConfirmation",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "neededRole",
+        "type": "bytes32"
+      }
+    ],
+    "name": "AccessControlUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "AddressCannotBeSame",
     "type": "error"
   },
@@ -42,43 +48,12 @@
   },
   {
     "inputs": [],
-    "name": "AdminCannotBeZero",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "CannotSubmitExtraDataBeforeMainData",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "ExtraDataAlreadyProcessed",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "ExtraDataHashCannotBeZeroForNonEmptyData",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "ExtraDataItemsCountCannotBeZeroForNonEmptyData",
+    "name": "FailedToSendEther",
     "type": "error"
   },
   {
     "inputs": [],
     "name": "HashCannotBeZero",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "code",
-        "type": "uint256"
-      }
-    ],
-    "name": "IncorrectOracleMigration",
     "type": "error"
   },
   {
@@ -99,49 +74,22 @@
   },
   {
     "inputs": [],
+    "name": "InvalidContractVersion",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InvalidContractVersionIncrement",
     "type": "error"
   },
   {
     "inputs": [],
-    "name": "InvalidExitedValidatorsData",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "itemIndex",
-        "type": "uint256"
-      }
-    ],
-    "name": "InvalidExtraDataItem",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "itemIndex",
-        "type": "uint256"
-      }
-    ],
-    "name": "InvalidExtraDataSortOrder",
+    "name": "InvalidInitialization",
     "type": "error"
   },
   {
     "inputs": [],
-    "name": "LegacyOracleCannotBeZero",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "LidoCannotBeZero",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "LidoLocatorCannotBeZero",
+    "name": "InvalidPerfLeeway",
     "type": "error"
   },
   {
@@ -152,6 +100,26 @@
   {
     "inputs": [],
     "name": "NonZeroContractVersionOnInit",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotAllowedToRecover",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotInitializing",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PauseUntilMustBeInFuture",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PausedExpected",
     "type": "error"
   },
   {
@@ -200,6 +168,27 @@
       }
     ],
     "name": "RefSlotMustBeGreaterThanProcessingOne",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ResumedExpected",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "bits",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "SafeCastOverflowedUintDowncast",
     "type": "error"
   },
   {
@@ -274,75 +263,6 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "expectedFormat",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "receivedFormat",
-        "type": "uint256"
-      }
-    ],
-    "name": "UnexpectedExtraDataFormat",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "consensusHash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "receivedHash",
-        "type": "bytes32"
-      }
-    ],
-    "name": "UnexpectedExtraDataHash",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "expectedIndex",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "receivedIndex",
-        "type": "uint256"
-      }
-    ],
-    "name": "UnexpectedExtraDataIndex",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "expectedCount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "receivedCount",
-        "type": "uint256"
-      }
-    ],
-    "name": "UnexpectedExtraDataItemsCount",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "UnexpectedExtraDataLength",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
         "name": "consensusRefSlot",
         "type": "uint256"
       },
@@ -356,35 +276,28 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "format",
-        "type": "uint256"
-      }
-    ],
-    "name": "UnsupportedExtraDataFormat",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "itemIndex",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "dataType",
-        "type": "uint256"
-      }
-    ],
-    "name": "UnsupportedExtraDataType",
+    "inputs": [],
+    "name": "VersionCannotBeSame",
     "type": "error"
   },
   {
     "inputs": [],
-    "name": "VersionCannotBeSame",
+    "name": "VersionCannotBeZero",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroAdminAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroFeeDistributorAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroPauseDuration",
     "type": "error"
   },
   {
@@ -443,24 +356,151 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "uint256",
-        "name": "refSlot",
-        "type": "uint256"
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "itemsProcessed",
+        "name": "tokenId",
         "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "itemsCount",
+        "name": "amount",
         "type": "uint256"
       }
     ],
-    "name": "ExtraDataSubmitted",
+    "name": "ERC1155Recovered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "ERC20Recovered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      }
+    ],
+    "name": "ERC721Recovered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "EtherRecovered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "feeDistributorContract",
+        "type": "address"
+      }
+    ],
+    "name": "FeeDistributorContractSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "version",
+        "type": "uint64"
+      }
+    ],
+    "name": "Initialized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "duration",
+        "type": "uint256"
+      }
+    ],
+    "name": "Paused",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "valueBP",
+        "type": "uint256"
+      }
+    ],
+    "name": "PerfLeewaySet",
     "type": "event"
   },
   {
@@ -524,6 +564,12 @@
       }
     ],
     "name": "ReportSubmitted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [],
+    "name": "Resumed",
     "type": "event"
   },
   {
@@ -606,24 +652,18 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "uint256",
-        "name": "refSlot",
-        "type": "uint256"
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "processedItemsCount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "itemsCount",
+        "name": "shares",
         "type": "uint256"
       }
     ],
-    "name": "WarnExtraDataIncompleteProcessing",
+    "name": "StETHSharesRecovered",
     "type": "event"
   },
   {
@@ -641,6 +681,19 @@
   },
   {
     "inputs": [],
+    "name": "CONTRACT_MANAGER_ROLE",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "DEFAULT_ADMIN_ROLE",
     "outputs": [
       {
@@ -654,103 +707,12 @@
   },
   {
     "inputs": [],
-    "name": "EXTRA_DATA_FORMAT_EMPTY",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "EXTRA_DATA_FORMAT_LIST",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "EXTRA_DATA_TYPE_EXITED_VALIDATORS",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "EXTRA_DATA_TYPE_STUCK_VALIDATORS",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "GENESIS_TIME",
     "outputs": [
       {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "LEGACY_ORACLE",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "LIDO",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "LOCATOR",
-    "outputs": [
-      {
-        "internalType": "contract ILidoLocator",
-        "name": "",
-        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -772,6 +734,58 @@
   {
     "inputs": [],
     "name": "MANAGE_CONSENSUS_VERSION_ROLE",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PAUSE_INFINITELY",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PAUSE_ROLE",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "RECOVERER_ROLE",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "RESUME_ROLE",
     "outputs": [
       {
         "internalType": "bytes32",
@@ -809,6 +823,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "avgPerfLeewayBP",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -822,16 +849,16 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs": [],
+    "name": "feeDistributor",
+    "outputs": [
       {
-        "internalType": "uint256",
-        "name": "consensusVersion",
-        "type": "uint256"
+        "internalType": "contract ICSFeeDistributor",
+        "name": "",
+        "type": "address"
       }
     ],
-    "name": "finalizeUpgrade_v2",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -916,59 +943,12 @@
   },
   {
     "inputs": [],
-    "name": "getProcessingState",
+    "name": "getResumeSinceTimestamp",
     "outputs": [
       {
-        "components": [
-          {
-            "internalType": "uint256",
-            "name": "currentFrameRefSlot",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "processingDeadlineTime",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "mainDataHash",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "bool",
-            "name": "mainDataSubmitted",
-            "type": "bool"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "extraDataHash",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "uint256",
-            "name": "extraDataFormat",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "extraDataSubmitted",
-            "type": "bool"
-          },
-          {
-            "internalType": "uint256",
-            "name": "extraDataItemsCount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "extraDataItemsSubmitted",
-            "type": "uint256"
-          }
-        ],
-        "internalType": "struct AccountingOracle.ProcessingState",
-        "name": "result",
-        "type": "tuple"
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -1087,12 +1067,22 @@
       },
       {
         "internalType": "address",
+        "name": "feeDistributorContract",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "consensusContract",
         "type": "address"
       },
       {
         "internalType": "uint256",
         "name": "consensusVersion",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_avgPerfLeewayBP",
         "type": "uint256"
       }
     ],
@@ -1102,29 +1092,101 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "isPaused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "admin",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "consensusContract",
-        "type": "address"
-      },
-      {
         "internalType": "uint256",
-        "name": "consensusVersion",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "lastProcessingRefSlot",
+        "name": "duration",
         "type": "uint256"
       }
     ],
-    "name": "initializeWithoutMigration",
+    "name": "pauseFor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "pauseUntilInclusive",
+        "type": "uint256"
+      }
+    ],
+    "name": "pauseUntil",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "recoverERC1155",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "recoverERC20",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "recoverERC721",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "recoverEther",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1138,11 +1200,18 @@
       },
       {
         "internalType": "address",
-        "name": "account",
+        "name": "callerConfirmation",
         "type": "address"
       }
     ],
     "name": "renounceRole",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "resume",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1194,6 +1263,32 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "feeDistributorContract",
+        "type": "address"
+      }
+    ],
+    "name": "setFeeDistributorContract",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "valueBP",
+        "type": "uint256"
+      }
+    ],
+    "name": "setPerformanceLeeway",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes32",
         "name": "reportHash",
         "type": "bytes32"
@@ -1229,72 +1324,27 @@
             "type": "uint256"
           },
           {
-            "internalType": "uint256",
-            "name": "numValidators",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "clBalanceGwei",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256[]",
-            "name": "stakingModuleIdsWithNewlyExitedValidators",
-            "type": "uint256[]"
-          },
-          {
-            "internalType": "uint256[]",
-            "name": "numExitedValidatorsByStakingModule",
-            "type": "uint256[]"
-          },
-          {
-            "internalType": "uint256",
-            "name": "withdrawalVaultBalance",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "elRewardsVaultBalance",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "sharesRequestedToBurn",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256[]",
-            "name": "withdrawalFinalizationBatches",
-            "type": "uint256[]"
-          },
-          {
-            "internalType": "uint256",
-            "name": "simulatedShareRate",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "isBunkerMode",
-            "type": "bool"
-          },
-          {
-            "internalType": "uint256",
-            "name": "extraDataFormat",
-            "type": "uint256"
-          },
-          {
             "internalType": "bytes32",
-            "name": "extraDataHash",
+            "name": "treeRoot",
             "type": "bytes32"
           },
           {
+            "internalType": "string",
+            "name": "treeCid",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "logCid",
+            "type": "string"
+          },
+          {
             "internalType": "uint256",
-            "name": "extraDataItemsCount",
+            "name": "distributed",
             "type": "uint256"
           }
         ],
-        "internalType": "struct AccountingOracle.ReportData",
+        "internalType": "struct CSFeeOracle.ReportData",
         "name": "data",
         "type": "tuple"
       },
@@ -1305,26 +1355,6 @@
       }
     ],
     "name": "submitReportData",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "submitReportExtraDataEmpty",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes",
-        "name": "data",
-        "type": "bytes"
-      }
-    ],
-    "name": "submitReportExtraDataList",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

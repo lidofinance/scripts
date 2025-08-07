@@ -280,6 +280,11 @@ To make default report for acceptance and regression tests after voting executio
 export REPORT_AFTER_VOTE=1
 ```
 
+To run test-1/2 at default rpc node use:
+```bash
+export SECONDARY_NETWORK=mfh-1
+```
+
 </br>
 
 ## Tests structure
