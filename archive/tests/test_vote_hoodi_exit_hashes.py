@@ -1,5 +1,5 @@
 from typing import Optional
-from scripts.vote_hoodi_exit_hashes import start_vote, EXIT_HASH_TO_SUBMIT
+from archive.scripts.vote_hoodi_exit_hashes import start_vote, EXIT_HASH_TO_SUBMIT
 from brownie import interface, chain, convert, web3  # type: ignore
 from brownie.network.event import EventDict
 from utils.test.tx_tracing_helpers import group_voting_events_from_receipt, group_dg_events_from_receipt
@@ -52,7 +52,7 @@ def test_vote_hoodi_exit_hashes(helpers, accounts, vote_ids_from_env, stranger):
     SUBMIT_REPORT_HASH_ROLE = web3.keccak(text="SUBMIT_REPORT_HASH_ROLE")
     
     # Get contracts
-    validators_exit_bus = interface.ValidatorsExitBus(contracts.validators_exit_bus_oracle)
+    validators_exit_bus = interface.ValidatorsExitBusOracle(contracts.validators_exit_bus_oracle)
     timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     

@@ -21,13 +21,13 @@ from utils.agent import agent_forward
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 
 EXIT_HASH_TO_SUBMIT = "0x4e72449ac50f5fa83bc2d642f2c95a63f72f1b87ad292f52c0fe5c28f3cf6e47"
-VOTE_DESCRIPTION = "Grant and revoke SUBMIT_REPORT_HASH_ROLE for ValidatorsExitBus Oracle operations on Hoodi"
+VOTE_DESCRIPTION = "Grant and revoke SUBMIT_DATA_ROLE for ValidatorsExitBus Oracle operations on Hoodi"
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
     
     # Grant SUBMIT_REPORT_HASH_ROLE to agent, perform operations, then revoke
-    validators_exit_bus = interface.ValidatorsExitBus(contracts.validators_exit_bus_oracle)
+    validators_exit_bus = interface.ValidatorsExitBusOracle(contracts.validators_exit_bus_oracle)
     calldata = validators_exit_bus.submitExitRequestsHash.encode_input(EXIT_HASH_TO_SUBMIT)
 
     
