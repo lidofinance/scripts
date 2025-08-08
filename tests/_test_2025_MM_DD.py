@@ -1,0 +1,81 @@
+from brownie import chain, interface
+# TODO import voting script
+from scripts.<vote_2025_MM_DD> import start_vote
+from brownie.network.transaction import TransactionReceipt
+from utils.test.tx_tracing_helpers import *
+
+
+# TODO list all contract addresses used in tests - do not use imports from config!
+DUAL_GOVERNANCE = "0xcdF49b058D606AD34c5789FD8c3BF8B3E54bA2db"
+EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
+DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
+VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
+vote_events_count = # TODO <# of events emitted by the vote>
+dg_proposal_id = # TODO (if DG proposal exists in vote) <order # of a dg proposal>
+
+
+def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
+
+    # =======================================================================
+    # ========================= Arrange variables ===========================
+    # =======================================================================
+    # TODO arrange all variables necessary for the test
+    dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
+    timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
+    voting = interface.Voting(VOTING)
+
+    # =======================================================================
+    # ========================= Before voting tests =========================
+    # =======================================================================
+    # TODO run asserts that check the "before" vote state
+
+    # =======================================================================
+    # ============================== Voting =================================
+    # =======================================================================
+    vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
+    vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
+
+    # =======================================================================
+    # ========================= After voting tests ==========================
+    # =======================================================================
+    # TODO run asserts that check the "after" vote state
+
+    # TODO run vote happy path tests
+
+    # =======================================================================
+    # ====================== Before DG Proposal tests =======================
+    # =======================================================================
+    # TODO (if DG proposal exists in vote) run asserts that checks the "before" DG proposal execution state
+
+    # =======================================================================
+    # ==================== DG Proposal Submit => Execute ====================
+    # =======================================================================
+    # TODO (if DG proposal exists in vote) execute DG proposal
+    chain.sleep(timelock.getAfterSubmitDelay() + 1)
+    dual_governance.scheduleProposal(dg_proposal_id, {"from": stranger})
+    chain.sleep(timelock.getAfterScheduleDelay() + 1)
+    dg_tx: TransactionReceipt = timelock.execute(dg_proposal_id, {"from": stranger})
+
+    # =======================================================================
+    # ================= After DG proposal execution tests ===================
+    # =======================================================================
+    # TODO (if DG proposal exists in vote) run asserts that checks the "after" DG proposal execution state
+
+    # TODO (if DG proposal exists in vote) run DG proposal happy path tests
+
+    # =======================================================================
+    # ======================== IPFS & events checks =========================
+    # =======================================================================
+    # TODO check IPFS description
+    #metadata = find_metadata_by_vote_id(vote_id)
+    #assert get_lido_vote_cid_from_str(metadata) == "TODO <expected_ipfs_hash>"
+
+    # validate event count
+    evs = group_voting_events_from_receipt(vote_tx)
+    assert len(evs) == vote_events_count
+    assert count_vote_items_by_events(vote_tx, voting) == vote_events_count, "Incorrect voting items count"
+
+    # TODO validate all events emitted during the vote (check the event emitter as well!)
+
+    # TODO (if DG proposal exists in vote) validate all events emitted during the DG execution (check the event emitter as well!)
+    dg_evs = group_dg_events_from_receipt(dg_tx, timelock=EMERGENCY_PROTECTED_TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
