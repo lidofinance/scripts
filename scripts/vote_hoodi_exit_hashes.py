@@ -1,62 +1,82 @@
 """
-Vote [DATE] - Grant and Revoke SUBMIT_REPORT_HASH_ROLE for ValidatorsExitBus Oracle
+Vote [DATE] - Submit Exit Requests Hash to ValidatorsExitBus Oracle
 
-1. Grant SUBMIT_REPORT_HASH_ROLE to the agent
-2. Perform oracle operations with predefined data
-3. Revoke SUBMIT_REPORT_HASH_ROLE from the agent
+1. Upgrade Lido Locator implementation
+2. Grant REPORT_VALIDATOR_EXITING_STATUS_ROLE to new validator exit verifier
+3. Revoke REPORT_VALIDATOR_EXITING_STATUS_ROLE from old validator exit verifier  
+4. Grant SUBMIT_REPORT_HASH_ROLE to the agent
+5. Submit exit requests hash to ValidatorsExitBus Oracle
+6. Revoke SUBMIT_REPORT_HASH_ROLE from the agent
 
 Vote passed & executed on [DATE], block [BLOCK_NUMBER]
 """
 
-DESCRIPTION = "Update Sandbox Module Implementation (HOODI)"
-
 import time
-from typing import Dict, Tuple, Optional
-from brownie import interface, web3, convert
+from typing import Any, Dict, Tuple, Optional
+from brownie import interface, convert, web3
 from brownie.network.transaction import TransactionReceipt
 
-from utils.config import (
-    ARAGON_KERNEL,
-    AGENT,
-)
 from utils.config import contracts
-
 from utils.voting import confirm_vote_script, create_vote
-from utils.evm_script import encode_call_script
 from archive.scripts.vote_tw_csm2_hoodi import prepare_proposal
 from utils.config import get_deployer_account, get_is_live, get_priority_fee
 from utils.agent import agent_forward
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
-from utils.voting import confirm_vote_script, create_vote
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
+from utils.config import (
+    ARAGON_KERNEL,
+    AGENT,
+)
 
+OLD_VALIDATOR_EXIT_VERIFIER = "0xFd4386A8795956f4B6D01cbb6dB116749731D7bD"
 EXIT_HASH_TO_SUBMIT = "0x4e72449ac50f5fa83bc2d642f2c95a63f72f1b87ad292f52c0fe5c28f3cf6e47"
-VOTE_DESCRIPTION = "Run ValidatorsExitBus Oracle submitExitRequestsHash on Hoodi"
+LIDO_LOCATOR_IMPL = "0xA656983a6686615850BE018b7d42a7C3E46DcD71"
+
+DESCRIPTION = "Submit Exit Requests Hash to ValidatorsExitBus Oracle (HOODI)"
+
+
+def encode_proxy_upgrade_to(proxy: Any, implementation: str) -> Tuple[str, str]:
+    proxy = interface.OssifiableProxy(proxy)
+    return proxy.address, proxy.proxy__upgradeTo.encode_input(implementation)
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Optional[TransactionReceipt]]:
     """Prepare and run voting."""
 
-    # Grant SUBMIT_REPORT_HASH_ROLE to agent, perform operations, then revoke
     validators_exit_bus = interface.ValidatorsExitBusOracle(contracts.validators_exit_bus_oracle)
     calldata = validators_exit_bus.submitExitRequestsHash.encode_input(EXIT_HASH_TO_SUBMIT)
 
     vote_desc_items, call_script_items = zip(
         (
-            f"1. Grant APP_MANAGER_ROLE role to the AGENT",
+            "1. Upgrade Lido Locator implementation",
+            agent_forward([encode_proxy_upgrade_to(contracts.lido_locator, LIDO_LOCATOR_IMPL)]),
+        ),
+        (
+            "2. Grant REPORT_VALIDATOR_EXITING_STATUS_ROLE to new validator exit verifier",
             agent_forward(
                 [
-                    (
-                        contracts.acl.address,
-                        contracts.acl.grantPermission.encode_input(
-                            AGENT, ARAGON_KERNEL, convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE"))
-                        ),
+                    encode_oz_grant_role(
+                        contract=contracts.staking_router,
+                        role_name="REPORT_VALIDATOR_EXITING_STATUS_ROLE",
+                        grant_to=contracts.validator_exit_verifier,
                     )
                 ]
             ),
         ),
         (
-            "2. Grant SUBMIT_REPORT_HASH_ROLE to the agent",
+            "3. Revoke REPORT_VALIDATOR_EXITING_STATUS_ROLE from old validator exit verifier",
+            agent_forward(
+                [
+                    encode_oz_revoke_role(
+                        contract=contracts.staking_router,
+                        role_name="REPORT_VALIDATOR_EXITING_STATUS_ROLE",
+                        revoke_from=OLD_VALIDATOR_EXIT_VERIFIER
+                    )
+                ]
+            ),
+        ),
+        (
+            "4. Grant SUBMIT_REPORT_HASH_ROLE to the agent",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -66,11 +86,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
             ),
         ),
         (
-            "3. Perform your contract calls with predefined data",
+            "5. Submit exit requests hash to ValidatorsExitBus Oracle",
             agent_forward([(contracts.validators_exit_bus_oracle.address, calldata)]),
         ),
         (
-            "4. Revoke SUBMIT_REPORT_HASH_ROLE from the agent",
+            "6. Revoke SUBMIT_REPORT_HASH_ROLE from the agent",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -78,17 +98,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
                     )
                 ]
             ),
-        ),
-        (
-            f"5. Revoke APP_MANAGER_ROLE role from the AGENT",
-            agent_forward([(
-                contracts.acl.address,
-                contracts.acl.revokePermission.encode_input(
-                    AGENT,
-                    ARAGON_KERNEL,
-                    convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE"))
-                )
-            )]),
         ),
     )
 
@@ -101,9 +110,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     dg_vote = prepare_proposal(call_script_items, dg_desc)
     vote_items = {dg_desc: dg_vote}
 
-    return confirm_vote_script(vote_items, silent, desc_ipfs) and create_vote(
-        vote_items, tx_params, desc_ipfs=desc_ipfs
-    )
+    assert confirm_vote_script(vote_items, silent, desc_ipfs)
+    return create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
 
 
 def main():
