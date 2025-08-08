@@ -33,6 +33,7 @@ NEW_DUAL_GOVERNANCE = "0x0000000000000000000000000000000000000000"
 NEW_TIEBREAKER_COMMITTEE = "0x0000000000000000000000000000000000000000"
 CONFIG_PROVIDER_FOR_DISCONNECTED_DUAL_GOVERNANCE = "0x0000000000000000000000000000000000000000"
 DG_UPGRADE_STATE_VERIFIER = "0x0000000000000000000000000000000000000000"
+OMNIBUS_CONTRACT = "0x0000000000000000000000000000000000000000"
 
 EXPECTED_VOTE_ID = 191
 EXPECTED_DG_PROPOSAL_ID = 4
@@ -151,6 +152,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         metadata = find_metadata_by_vote_id(vote_id)
         assert get_lido_vote_cid_from_str(metadata) == IPFS_DESCRIPTION_HASH
 
+        assert interface.DGLaunchOmnibus(OMNIBUS_CONTRACT).isValidVoteScript(vote_id)
+
         # =======================================================================
         # ========================= Voting Execution ============================
         # =======================================================================
@@ -173,7 +176,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             proposal_id=EXPECTED_DG_PROPOSAL_ID,
             proposer=VOTING,
             executor=ADMIN_EXECUTOR,
-            metadata="1.1 - 1.10 Proposal to upgrade Dual Governance contract on Mainnet (Immunefi reported vulnerability fix)",
+            metadata="Upgrade the Dual Governance contract: fix for RageQuit ETH withdrawal delay",
             proposal_calls=dual_governance_proposal_calls,
             emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
         )

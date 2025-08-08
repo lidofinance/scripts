@@ -12,7 +12,7 @@ Dual Governance Upgrade on Mainnet and Token transfer to the Lido Labs BORG Foun
 1.9. Set config provider (0x0000000000000000000000000000000000000000) for old Dual Governance contract (0x4D12B9F6ACAB54FF6A3A776BA3B8724D9B77845F)
 1.10. Verify Dual Governance state
 
-2. Transferring MATIC tokens from DAO treasury to the Lido Labs BORG Foundation (0x95B521B4F55a447DB89f6a27f951713fC2035f3F)
+TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
 
 import time
@@ -75,7 +75,7 @@ def main():
     time.sleep(5)  # hack for waiting thread #2.
 
 
-def start_and_execute_vote_on_fork():
+def start_and_execute_vote_on_fork_manual():
     if get_is_live():
         raise Exception("This script is for local testing only.")
 
