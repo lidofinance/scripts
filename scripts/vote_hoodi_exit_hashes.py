@@ -13,7 +13,7 @@ Vote passed & executed on [DATE], block [BLOCK_NUMBER]
 
 import time
 from typing import Any, Dict, Tuple, Optional
-from brownie import interface, convert, web3
+from brownie import interface
 from brownie.network.transaction import TransactionReceipt
 
 from utils.config import contracts
@@ -23,10 +23,6 @@ from utils.config import get_deployer_account, get_is_live, get_priority_fee
 from utils.agent import agent_forward
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
-from utils.config import (
-    ARAGON_KERNEL,
-    AGENT,
-)
 
 OLD_VALIDATOR_EXIT_VERIFIER = "0xFd4386A8795956f4B6D01cbb6dB116749731D7bD"
 EXIT_HASH_TO_SUBMIT = "0x4e72449ac50f5fa83bc2d642f2c95a63f72f1b87ad292f52c0fe5c28f3cf6e47"
@@ -44,7 +40,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     """Prepare and run voting."""
 
     validators_exit_bus = interface.ValidatorsExitBusOracle(contracts.validators_exit_bus_oracle)
-    calldata = validators_exit_bus.submitExitRequestsHash.encode_input(EXIT_HASH_TO_SUBMIT)
 
     vote_desc_items, call_script_items = zip(
         (
@@ -70,7 +65,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
                     encode_oz_revoke_role(
                         contract=contracts.staking_router,
                         role_name="REPORT_VALIDATOR_EXITING_STATUS_ROLE",
-                        revoke_from=OLD_VALIDATOR_EXIT_VERIFIER
+                        revoke_from=OLD_VALIDATOR_EXIT_VERIFIER,
                     )
                 ]
             ),
@@ -80,21 +75,32 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
             agent_forward(
                 [
                     encode_oz_grant_role(
-                        contract=validators_exit_bus, role_name="SUBMIT_REPORT_HASH_ROLE", grant_to=contracts.agent
+                        contract=validators_exit_bus,
+                        role_name="SUBMIT_REPORT_HASH_ROLE",
+                        grant_to=contracts.agent,
                     )
                 ]
             ),
         ),
         (
             "5. Submit exit requests hash to ValidatorsExitBus Oracle",
-            agent_forward([(contracts.validators_exit_bus_oracle.address, calldata)]),
+            agent_forward(
+                [
+                    (
+                        contracts.validators_exit_bus_oracle.address,
+                        validators_exit_bus.submitExitRequestsHash.encode_input(EXIT_HASH_TO_SUBMIT),
+                    )
+                ]
+            ),
         ),
         (
             "6. Revoke SUBMIT_REPORT_HASH_ROLE from the agent",
             agent_forward(
                 [
                     encode_oz_revoke_role(
-                        contract=validators_exit_bus, role_name="SUBMIT_REPORT_HASH_ROLE", revoke_from=contracts.agent
+                        contract=validators_exit_bus,
+                        role_name="SUBMIT_REPORT_HASH_ROLE",
+                        revoke_from=contracts.agent,
                     )
                 ]
             ),
