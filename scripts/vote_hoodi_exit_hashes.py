@@ -12,8 +12,13 @@ DESCRIPTION = "Update Sandbox Module Implementation (HOODI)"
 
 import time
 from typing import Dict, Tuple, Optional
-from brownie import interface
+from brownie import interface, web3, convert
 from brownie.network.transaction import TransactionReceipt
+
+from utils.config import (
+    ARAGON_KERNEL,
+    AGENT,
+)
 from utils.config import contracts
 
 from utils.voting import confirm_vote_script, create_vote
@@ -26,7 +31,7 @@ from utils.voting import confirm_vote_script, create_vote
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 
 EXIT_HASH_TO_SUBMIT = "0x4e72449ac50f5fa83bc2d642f2c95a63f72f1b87ad292f52c0fe5c28f3cf6e47"
-VOTE_DESCRIPTION = "Grant and revoke SUBMIT_DATA_ROLE for ValidatorsExitBus Oracle operations on Hoodi"
+VOTE_DESCRIPTION = "Run ValidatorsExitBus Oracle submitExitRequestsHash on Hoodi"
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Optional[TransactionReceipt]]:
@@ -38,7 +43,20 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
 
     vote_desc_items, call_script_items = zip(
         (
-            "1. Grant SUBMIT_REPORT_HASH_ROLE to the agent",
+            f"1. Grant APP_MANAGER_ROLE role to the AGENT",
+            agent_forward(
+                [
+                    (
+                        contracts.acl.address,
+                        contracts.acl.grantPermission.encode_input(
+                            AGENT, ARAGON_KERNEL, convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE"))
+                        ),
+                    )
+                ]
+            ),
+        ),
+        (
+            "2. Grant SUBMIT_REPORT_HASH_ROLE to the agent",
             agent_forward(
                 [
                     encode_oz_grant_role(
@@ -48,11 +66,11 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
             ),
         ),
         (
-            "2. Perform your contract calls with predefined data",
+            "3. Perform your contract calls with predefined data",
             agent_forward([(contracts.validators_exit_bus_oracle.address, calldata)]),
         ),
         (
-            "3. Revoke SUBMIT_REPORT_HASH_ROLE from the agent",
+            "4. Revoke SUBMIT_REPORT_HASH_ROLE from the agent",
             agent_forward(
                 [
                     encode_oz_revoke_role(
@@ -60,6 +78,17 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
                     )
                 ]
             ),
+        ),
+        (
+            f"5. Revoke APP_MANAGER_ROLE role from the AGENT",
+            agent_forward([(
+                contracts.acl.address,
+                contracts.acl.revokePermission.encode_input(
+                    AGENT,
+                    ARAGON_KERNEL,
+                    convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE"))
+                )
+            )]),
         ),
     )
 
@@ -72,7 +101,9 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     dg_vote = prepare_proposal(call_script_items, dg_desc)
     vote_items = {dg_desc: dg_vote}
 
-    return confirm_vote_script(vote_items, silent, desc_ipfs) and create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
+    return confirm_vote_script(vote_items, silent, desc_ipfs) and create_vote(
+        vote_items, tx_params, desc_ipfs=desc_ipfs
+    )
 
 
 def main():
