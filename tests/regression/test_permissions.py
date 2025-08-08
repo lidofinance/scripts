@@ -538,19 +538,13 @@ def get_http_w3_provider_url():
 
     assert False, 'Web3 HTTP Provider token env var not found'
 
-def get_max_log_range():
-    if os.getenv("MAX_GET_LOGS_RANGE") is not None:
-        return int(os.getenv("MAX_GET_LOGS_RANGE"))
-    return 100000
-
 def active_aragon_roles(protocol_permissions):
     local_rpc_provider = web3
     remote_rpc_provider = Web3(Web3.HTTPProvider(get_http_w3_provider_url()))
-    max_range = get_max_log_range()
 
     event_signature_hash = remote_rpc_provider.keccak(text="SetPermission(address,address,bytes32,bool)").hex()
 
-    def fetch_events_in_batches(start_block, end_block, provider=local_rpc_provider, step=max_range):
+    def fetch_events_in_batches(start_block, end_block, provider=local_rpc_provider, step=100000):
         """Fetch events in batches of `step` blocks with a progress bar."""
         events = []
         total_batches = (end_block - start_block) // step + 1
