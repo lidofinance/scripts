@@ -3,7 +3,7 @@ Vote [DATE] - Submit Exit Requests Hash to ValidatorsExitBus Oracle
 
 1. Upgrade Lido Locator implementation
 2. Grant REPORT_VALIDATOR_EXITING_STATUS_ROLE to new validator exit verifier
-3. Revoke REPORT_VALIDATOR_EXITING_STATUS_ROLE from old validator exit verifier  
+3. Revoke REPORT_VALIDATOR_EXITING_STATUS_ROLE from old validator exit verifier
 4. Grant SUBMIT_REPORT_HASH_ROLE to the agent
 5. Submit exit requests hash to ValidatorsExitBus Oracle
 6. Revoke SUBMIT_REPORT_HASH_ROLE from the agent
@@ -25,6 +25,7 @@ from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_descrip
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 
 OLD_VALIDATOR_EXIT_VERIFIER = "0xFd4386A8795956f4B6D01cbb6dB116749731D7bD"
+# CID: bafkreidetdrrl3zjxer6tv6qqnsxdqrldntydluorllmetpsozl4yr7pva - validators data
 EXIT_HASH_TO_SUBMIT = "0x4e72449ac50f5fa83bc2d642f2c95a63f72f1b87ad292f52c0fe5c28f3cf6e47"
 LIDO_LOCATOR_IMPL = "0xA656983a6686615850BE018b7d42a7C3E46DcD71"
 
