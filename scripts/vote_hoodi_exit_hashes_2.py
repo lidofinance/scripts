@@ -21,7 +21,7 @@ from utils.agent import agent_forward
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 
-# CID: bafkreidetdrrl3zjxer6tv6qqnsxdqrldntydluorllmetpsozl4yr7pva - validators data
+# CID: bafkreihtr6nlijylmesqmsp3v2h7c3zbkx7bqwt5qu3jbahojnrt2qm2vy - validators data
 EXIT_HASH_TO_SUBMIT = "0xd76d7dd9cb2f102583d2bafbd6deb12473838e444d0d7226773895333fe32beb"
 
 DESCRIPTION = "Test for Validators Exiting via Voting (HOODI)"
