@@ -29,7 +29,7 @@ OLD_VALIDATOR_EXIT_VERIFIER = "0xFd4386A8795956f4B6D01cbb6dB116749731D7bD"
 EXIT_HASH_TO_SUBMIT = "0x4e72449ac50f5fa83bc2d642f2c95a63f72f1b87ad292f52c0fe5c28f3cf6e47"
 LIDO_LOCATOR_IMPL = "0xA656983a6686615850BE018b7d42a7C3E46DcD71"
 
-DESCRIPTION = "Submit Exit Requests Hash to ValidatorsExitBus Oracle (HOODI)"
+DESCRIPTION = "TW Upgrade & Test for Validators Exiting via Voting (HOODI)"
 
 
 def encode_proxy_upgrade_to(proxy: Any, implementation: str) -> Tuple[str, str]:
@@ -113,9 +113,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, Op
     else:
         desc_ipfs = upload_vote_ipfs_description(DESCRIPTION)
 
-    dg_desc = "\n".join(vote_desc_items)
-    dg_vote = prepare_proposal(call_script_items, dg_desc)
-    vote_items = {dg_desc: dg_vote}
+    dg_vote = prepare_proposal(call_script_items, DESCRIPTION)
+    vote_items = {DESCRIPTION: dg_vote}
 
     assert confirm_vote_script(vote_items, silent, desc_ipfs)
     return create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
