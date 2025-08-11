@@ -22,7 +22,7 @@ from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_descrip
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 
 # CID: bafkreidetdrrl3zjxer6tv6qqnsxdqrldntydluorllmetpsozl4yr7pva - validators data
-EXIT_HASH_TO_SUBMIT = "0x1d8bf8ee84e24434dc867897978e9d2f2195e8585615ab55a56dd4888abfe109"
+EXIT_HASH_TO_SUBMIT = "0xd76d7dd9cb2f102583d2bafbd6deb12473838e444d0d7226773895333fe32beb"
 
 DESCRIPTION = "Test for Validators Exiting via Voting (HOODI)"
 
