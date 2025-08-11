@@ -1,14 +1,11 @@
 """
-Vote 2025-08-11 - Submit Exit Requests Hash to ValidatorsExitBus Oracle
+Vote [TODO] - Submit Exit Requests Hash to ValidatorsExitBus Oracle
 
-1. Upgrade Lido Locator implementation
-2. Grant REPORT_VALIDATOR_EXITING_STATUS_ROLE to new validator exit verifier
-3. Revoke REPORT_VALIDATOR_EXITING_STATUS_ROLE from old validator exit verifier
-4. Grant SUBMIT_REPORT_HASH_ROLE to the agent
-5. Submit exit requests hash to ValidatorsExitBus Oracle
-6. Revoke SUBMIT_REPORT_HASH_ROLE from the agent
+1. Grant SUBMIT_REPORT_HASH_ROLE to the agent
+2. Submit exit requests hash to ValidatorsExitBus Oracle
+3. Revoke SUBMIT_REPORT_HASH_ROLE from the agent
 
-Vote passed & executed on 2025-08-11 04:09 PM GMT+2, block 985695
+Vote passed & executed on [TODO], block [TODO]
 """
 
 import time
