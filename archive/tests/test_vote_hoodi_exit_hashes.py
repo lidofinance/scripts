@@ -1,5 +1,5 @@
 from typing import Optional
-from scripts.vote_hoodi_exit_hashes import start_vote, EXIT_HASH_TO_SUBMIT, OLD_VALIDATOR_EXIT_VERIFIER, LIDO_LOCATOR_IMPL
+from archive.scripts.vote_hoodi_exit_hashes import start_vote, EXIT_HASH_TO_SUBMIT, OLD_VALIDATOR_EXIT_VERIFIER, LIDO_LOCATOR_IMPL
 from brownie import interface, chain, convert, web3  # type: ignore
 from brownie.network.event import EventDict
 from utils.test.tx_tracing_helpers import group_voting_events_from_receipt, group_dg_events_from_receipt
@@ -21,7 +21,7 @@ def validate_role_grant_event(event: EventDict, role_hash: str, account: str, em
     assert "RoleGranted" in event, "No RoleGranted event found"
     assert event["RoleGranted"][0]["role"] == role_hash, f"Wrong role hash. Expected: {role_hash}, Got: {event['RoleGranted'][0]['role']}"
     assert event["RoleGranted"][0]["account"] == convert.to_address(account), f"Wrong account. Expected: {account}, Got: {event['RoleGranted'][0]['account']}"
-    
+
     if emitted_by is not None:
         assert convert.to_address(event["RoleGranted"][0]["_emitted_by"]) == convert.to_address(emitted_by), "Wrong event emitter"
 
@@ -31,7 +31,7 @@ def validate_role_revoke_event(event: EventDict, role_hash: str, account: str, e
     assert "RoleRevoked" in event, "No RoleRevoked event found"
     assert event["RoleRevoked"][0]["role"] == role_hash, f"Wrong role hash. Expected: {role_hash}, Got: {event['RoleRevoked'][0]['role']}"
     assert event["RoleRevoked"][0]["account"] == convert.to_address(account), f"Wrong account. Expected: {account}, Got: {event['RoleRevoked'][0]['account']}"
-    
+
     if emitted_by is not None:
         assert convert.to_address(event["RoleRevoked"][0]["_emitted_by"]) == convert.to_address(emitted_by), "Wrong event emitter"
 
@@ -40,7 +40,7 @@ def validate_submit_exit_requests_hash_event(event: EventDict, expected_hash: st
     """Validates RequestsHashSubmitted event from ValidatorsExitBus"""
     assert "RequestsHashSubmitted" in event, "No RequestsHashSubmitted event found"
     assert event["RequestsHashSubmitted"][0]["exitRequestsHash"] == expected_hash, f"Wrong hash. Expected: {expected_hash}, Got: {event['RequestsHashSubmitted'][0]['exitRequestsHash']}"
-    
+
     if emitted_by is not None:
         assert convert.to_address(event["RequestsHashSubmitted"][0]["_emitted_by"]) == convert.to_address(emitted_by), "Wrong event emitter"
 
@@ -49,33 +49,33 @@ def validate_proxy_upgrade_event(event: EventDict, expected_implementation: str,
     """Validates Upgraded event from OssifiableProxy"""
     assert "Upgraded" in event, "No Upgraded event found"
     assert event["Upgraded"][0]["implementation"] == convert.to_address(expected_implementation), f"Wrong implementation. Expected: {expected_implementation}, Got: {event['Upgraded'][0]['implementation']}"
-    
+
     if emitted_by is not None:
         assert convert.to_address(event["Upgraded"][0]["_emitted_by"]) == convert.to_address(emitted_by), "Wrong event emitter"
 
 
 def test_vote_hoodi_exit_hashes(helpers, accounts, vote_ids_from_env, stranger):
     """Test the comprehensive vote that grants validator roles, submits exit hash, and manages permissions"""
-    
+
     # Calculate role hashes
     SUBMIT_REPORT_HASH_ROLE = web3.keccak(text="SUBMIT_REPORT_HASH_ROLE")
     REPORT_VALIDATOR_EXITING_STATUS_ROLE = web3.keccak(text="REPORT_VALIDATOR_EXITING_STATUS_ROLE")
-    
+
     # Get contracts
     validators_exit_bus = interface.ValidatorsExitBusOracle(contracts.validators_exit_bus_oracle)
     staking_router = interface.StakingRouter(contracts.staking_router)
     lido_locator_proxy = interface.OssifiableProxy(contracts.lido_locator)
     timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
-    
+
     # Check initial state
     initial_implementation = lido_locator_proxy.proxy__getImplementation()
     assert not validators_exit_bus.hasRole(SUBMIT_REPORT_HASH_ROLE, AGENT), "Agent should not have SUBMIT_REPORT_HASH_ROLE before vote"
-    
+
     # Check if old verifier currently has the role (to be revoked)
     old_verifier_has_role_before = staking_router.hasRole(REPORT_VALIDATOR_EXITING_STATUS_ROLE, OLD_VALIDATOR_EXIT_VERIFIER)
     new_verifier_has_role_before = staking_router.hasRole(REPORT_VALIDATOR_EXITING_STATUS_ROLE, contracts.validator_exit_verifier)
- 
+
     # START VOTE
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
