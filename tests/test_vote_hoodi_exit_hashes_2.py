@@ -138,14 +138,10 @@ def test_vote_hoodi_exit_hashes(helpers, accounts, vote_ids_from_env, stranger):
         (predefined_data, predefined_data_format),
         {"from": stranger}
     )
-    print(tx.events)
 
     # Validate ExitDataProcessing event
-
-
     matching_events = []
     target = web3.keccak(text="ExitDataProcessing(bytes32)").hex()
-    print(f'TARGET: {target}')
     for log in tx.logs:
         if log['topics'][0].hex() == target:
             matching_events.append(log)
