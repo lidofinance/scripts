@@ -15,11 +15,11 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 
 
 # ============================== Addresses ===================================
-# <a list of addresses that should be used in the voting>
+# TODO <a list of addresses that should be used in the voting>
 
 
 # ============================= Description ==================================
-# <a description for IPFS (will appear in the voting description on vote.lido.fi)>
+# TODO <a description for IPFS (will appear in the voting description on vote.lido.fi)>
 IPFS_DESCRIPTION = ""
 
 
@@ -27,7 +27,7 @@ IPFS_DESCRIPTION = ""
 def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
 
-    # TODO: in case of using smart-contract based omnibus, retrieve vote items from omnibus contract
+    # TODO in case of using smart-contract based omnibus, retrieve vote items from omnibus contract
     # voting_items = brownie.interface.SmartContractOmnibus(omnibus_contract).getVoteItems()
     # vote_desc_items = []
     # call_script_items = []
@@ -36,7 +36,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     #     call_script_items.append((call_script[0], call_script[1].hex()))
 
 
-    # TODO: in case of using script based omnibus, write vote items manually
+    # TODO in case of using script based omnibus, write vote items manually
     # vote_desc_items, call_script_items = zip(
     #     (
     #         "Item 1 description",
@@ -49,7 +49,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     # )
 
 
-    # return vote_desc_items, call_script_items
+    # TODO return vote_desc_items, call_script_items
     pass
 
 
