@@ -39,11 +39,11 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     # TODO in case of using script based omnibus, write vote items manually
     # vote_desc_items, call_script_items = zip(
     #     (
-    #         "Item 1 description",
+    #         "1. Voting item 1 description",
     #         calldata_1,
     #     ),
     #     (
-    #         "Item 2 description",
+    #         "2. Voting item 2 description",
     #         calldata_2,
     #     ),
     # )
