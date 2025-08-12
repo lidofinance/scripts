@@ -1,8 +1,3 @@
-"""
-TEMPLATE TEST — Aragon vote + optional DG proposal execution
-По одному примеру проверки на блок.
-"""
-
 from brownie import chain, interface
 from brownie.network.transaction import TransactionReceipt
 
@@ -19,21 +14,21 @@ from utils.dual_governance import PROPOSAL_STATUS
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-# TODO: import voting script
+# TODO import voting script
 # from scripts.vote_* import start_vote, get_vote_items
 
 
 # ============================================================================
 # ============================== Constants ===================================
 # ============================================================================
-# TODO: list all contract addresses used in tests - do not use imports from config!
+# TODO list all contract addresses used in tests - do not use imports from config!
 # NOTE: these addresses might have a different value on other chains
 
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 DUAL_GOVERNANCE = "0xcdF49b058D606AD34c5789FD8c3BF8B3E54bA2db"
 
-# Set variable to None if item is not presented
+# TODO Set variable to None if item is not presented
 EXPECTED_VOTE_ID = 1
 EXPECTED_DG_PROPOSAL_ID = 1
 EXPECTED_VOTE_EVENTS_COUNT = 1
@@ -76,7 +71,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         # =======================================================================
         # ========================= Before voting checks ========================
         # =======================================================================
-        # TODO: add before voting checks
+        # TODO add before voting checks
 
 
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
@@ -88,7 +83,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         # =======================================================================
         # ========================= After voting checks =========================
         # =======================================================================
-        # TODO: add after voting tests
+        # TODO add after voting tests
 
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
@@ -102,7 +97,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
             # =========================================================================
             # ================== DG before proposal executed checks ===================
             # =========================================================================
-            # TODO: add DG before proposal executed checks
+            # TODO add DG before proposal executed checks
 
 
             if details["status"] == PROPOSAL_STATUS["submitted"]:
@@ -123,4 +118,4 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         # =========================================================================
         # ==================== After DG proposal executed checks ==================
         # =========================================================================
-        # TODO: add DG after proposal executed checks
+        # TODO add DG after proposal executed checks
