@@ -9,6 +9,8 @@ from utils.evm_script import encode_call_script
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.dual_governance import PROPOSAL_STATUS
+from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
+)
 
 
 # ============================================================================
@@ -36,7 +38,31 @@ EXPECTED_DG_EVENTS_COUNT = 1
 IPFS_DESCRIPTION_HASH = ""
 
 
-def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
+@pytest.fixture(scope="module")
+def dual_governance_proposal_calls():
+    # TODO list all Dual Governance proposal calls for events checking
+    # csm = interface.CSModule(CSM)
+    # staking_router = interface.StakingRouter(STAKING_ROUTER)
+    # csm_module_manager_role = csm.MODULE_MANAGER_ROLE()
+    # csm_verifier_role = csm.VERIFIER_ROLE()
+    # 
+    # return [
+    #     {
+    #         "target": AGENT,
+    #         "value": 0,
+    #         "data": agent_forward(
+    #             [
+    #                 (
+    #                     dg_item_address_1, dg_item_encoded_input_1,
+    #                 )
+    #             ]
+    #         )[1],
+    #     },
+    # ]
+    pass
+
+
+def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
 
     # =======================================================================
     # ========================= Arrange variables ===========================
@@ -88,8 +114,22 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
 
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
+        assert count_vote_items_by_events(vote_tx, voting) == EXPECTED_VOTE_EVENTS_COUNT
         if EXPECTED_DG_PROPOSAL_ID is not None:
             assert EXPECTED_DG_PROPOSAL_ID == timelock.getProposalsCount()
+
+            # Validate DG Proposal Submit event
+            validate_dual_governance_submit_event(
+                vote_events[0],
+                proposal_id=EXPECTED_DG_PROPOSAL_ID,
+                proposer=VOTING,
+                executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+                metadata="TODO DG proposal description",
+                proposal_calls=dual_governance_proposal_calls,
+                emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
+            )
+
+            # TODO validate all other voting events
 
 
     if EXPECTED_DG_PROPOSAL_ID is not None:
@@ -114,7 +154,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
                     timelock=EMERGENCY_PROTECTED_TIMELOCK,
                     admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
                 )
+                assert count_vote_items_by_events(dg_tx, agent) == EXPECTED_DG_EVENTS_COUNT
                 assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
+
+                # TODO validate all DG events
 
 
         # =========================================================================
