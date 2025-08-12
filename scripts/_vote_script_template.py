@@ -12,6 +12,7 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.config import get_deployer_account, get_is_live, get_priority_fee
 from utils.mainnet_fork import pass_and_exec_dao_vote
+from utils.dual_governance import submit_proposals
 
 
 # ============================== Addresses ===================================
@@ -37,14 +38,33 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
 
     # TODO in case of using script based omnibus, write vote items manually
+    # dg_items = [
+    #     # TODO 1.1. DG voting item 1 description
+    #     agent_forward([
+    #         (dg_item_address_1, dg_item_encoded_input_1)
+    #     ]),
+    #     # TODO 1.2. DG voting item 2 description
+    #     agent_forward([
+    #         (dg_item_address_2, dg_item_encoded_input_2)
+    #     ]),
+    # ]
+    # 
+    # dg_call_script = submit_proposals([
+    #     (dg_items, "TODO DG proposal description")
+    # ])
+    # 
     # vote_desc_items, call_script_items = zip(
     #     (
-    #         "1. Voting item 1 description",
-    #         calldata_1,
+    #         "TODO 1. DG submission description",
+    #         dg_call_script[0]
     #     ),
     #     (
-    #         "2. Voting item 2 description",
+    #         "TODO 2. Voting item 2 description",
     #         calldata_2,
+    #     ),
+    #     (
+    #         "TODO 3. Voting item 3 description",
+    #         calldata_3,
     #     ),
     # )
 
