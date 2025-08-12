@@ -77,6 +77,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
 
         vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
+        display_voting_events(vote_tx)
         vote_events = group_voting_events_from_receipt(vote_tx)
 
 
@@ -107,6 +108,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
             if timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == PROPOSAL_STATUS["scheduled"]:
                 chain.sleep(timelock.getAfterScheduleDelay() + 1)
                 dg_tx: TransactionReceipt = timelock.execute(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
+                display_dg_events(dg_tx)
                 dg_events = group_dg_events_from_receipt(
                     dg_tx,
                     timelock=EMERGENCY_PROTECTED_TIMELOCK,
