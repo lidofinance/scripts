@@ -28,7 +28,7 @@ from utils.config import (
 )
 from utils.mainnet_fork import pass_and_exec_dao_vote
 
-omnibus_contract = "0x0000000000000000000000000000000000000000"
+omnibus_contract = "0x67988077f29FbA661911d9567E05cc52C51ca1B0"
 description = "Proposal to upgrade Dual Governance contract on Mainnet (Immunefi reported vulnerability fix). Token transfer to the Lido Labs BORG Foundation"
 
 
