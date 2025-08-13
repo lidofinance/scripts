@@ -276,14 +276,9 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 
 
 # init script that runs when the container is started for the very first time
-# it will install poetry, yarn libs and init brownie networks
+# it will install poetry, yarn libs, init brownie networks and core repository
 WORKDIR /root/scripts
-RUN touch /root/init.sh
-RUN echo "if [ ! -e /root/inited ]; then \n touch /root/inited \n poetry install \n yarn \n poetry run brownie networks import network-config.yaml True \n fi" > /root/init.sh
-RUN chmod +x /root/init.sh
 
-
-# set default working dir for tty
 RUN echo "cd /root/scripts" >> /root/.bashrc
 
 
@@ -313,4 +308,4 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.vvm/vyper-0.3.7 --version | grep
 
 
 # run init script and sleep to keep the container running
-CMD ["/bin/bash", "-c", "/root/init.sh && sleep infinity"]
+CMD ["/bin/bash", "-c", "sleep infinity"]
