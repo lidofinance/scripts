@@ -1,9 +1,8 @@
 from typing import Optional
 
 from eth_abi import encode
-from vyper.utils import keccak256
 
-from scripts.vote_hoodi_exit_hashes_2 import start_vote, EXIT_HASH_TO_SUBMIT
+from archive.scripts.vote_hoodi_exit_hashes_2 import start_vote, EXIT_HASH_TO_SUBMIT
 from brownie import interface, chain, convert, web3  # type: ignore
 from brownie.network.event import EventDict
 from utils.test.tx_tracing_helpers import group_voting_events_from_receipt, group_dg_events_from_receipt

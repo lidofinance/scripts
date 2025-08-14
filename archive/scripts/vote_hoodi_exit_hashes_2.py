@@ -1,11 +1,11 @@
 """
-Vote [TODO] - Submit Exit Requests Hash to ValidatorsExitBus Oracle
+Vote August 14, 2025 at 11:09 GMT+2 - Submit Exit Requests Hash to ValidatorsExitBus Oracle
 
 1. Grant SUBMIT_REPORT_HASH_ROLE to the agent
 2. Submit exit requests hash to ValidatorsExitBus Oracle
 3. Revoke SUBMIT_REPORT_HASH_ROLE from the agent
 
-Vote passed & executed on [TODO], block [TODO]
+Vote passed & executed on August 14, 2025 at 11:09 GMT+2, block 1003997
 """
 
 import time
