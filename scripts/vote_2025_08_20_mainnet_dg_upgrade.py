@@ -1,24 +1,26 @@
 """
-Dual Governance Upgrade on Mainnet and Token transfer to the Lido Labs BORG Foundation
+Vote 2025_08_20
 
-1.1. Set on new Dual Governance instance Tiebreaker activation timeout to 31536000 seconds (1 year)
-1.2. Set on new Dual Governance instance Tiebreaker committee to 0x0000000000000000000000000000000000000000
-1.3. Add Withdrawal Queue (0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1) as Tiebreaker withdrawal blocker
-1.4. Add Validators Exit Bus Oracle (0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e) as Tiebreaker withdrawal blocker
-1.5. Register Aragon Voting (0x2e59A20f205bB85a89C53f1936454680651E618e) as admin proposer
-1.6. Set Aragon Voting (0x2e59A20f205bB85a89C53f1936454680651E618e) as proposals canceller
-1.7. Set on new Dual Governance instance Reseal committee to (0xFFe21561251c49AdccFad065C94Fb4931dF49081)
-1.8. Set on Emergency Protected Timelock (0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316) governance to new Dual Governance contract (0x0000000000000000000000000000000000000000)
-1.9. Set config provider (0x0000000000000000000000000000000000000000) for old Dual Governance contract (0x4D12B9F6ACAB54FF6A3A776BA3B8724D9B77845F)
-1.10. Verify Dual Governance state
+I. Dual Governance Upgrade
+1. Set Tiebreaker activation timeout to 31536000 seconds (1 year) on the new Dual Governance instance 0xC1db28B3301331277e307FDCfF8DE28242A4486E
+2. Set Tiebreaker committee to 0xf65614d73952Be91ce0aE7Dd9cFf25Ba15bEE2f5 on the new Dual Governance instance 0xC1db28B3301331277e307FDCfF8DE28242A4486E
+3. Add Withdrawal Queue 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1 as Tiebreaker Sealable Withdrawal Blocker on the new Dual Governance instance 0xC1db28B3301331277e307FDCfF8DE28242A4486E
+4. Add Validators Exit Bus Oracle 0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e as Tiebreaker Sealable Withdrawal Blocker on the new Dual Governance instance 0xC1db28B3301331277e307FDCfF8DE28242A4486E
+5. Register Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e as Proposer on the new Dual Governance instance 0xC1db28B3301331277e307FDCfF8DE28242A4486E
+6. Set Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e as Proposals Canceller on the new Dual Governance instance 0xC1db28B3301331277e307FDCfF8DE28242A4486E
+7. Set Reseal committee to 0xFFe21561251c49AdccFad065C94Fb4931dF49081 on the new Dual Governance instance 0xC1db28B3301331277e307FDCfF8DE28242A4486E
+8. Set Governance address to the new Dual Governance contract 0xC1db28B3301331277e307FDCfF8DE28242A4486E on Emergency Protected Timelock 0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316
+9. Set new Config Provider 0xc934E90E76449F09f2369BB85DCEa056567A327a for the old Dual Governance contract 0xcdF49b058D606AD34c5789FD8c3BF8B3E54bA2db
+10. Verify the Dual Governance state using Dual Governance Upgrade State Verifier 0x487b764a2085ffd595D9141BAec0A766B7904786
 
 TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
 
 import time
 
-from typing import Dict
+from typing import Dict, Tuple, List    
 from brownie import interface
+from brownie.network.transaction import TransactionReceipt
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.config import (
@@ -28,11 +30,14 @@ from utils.config import (
 )
 from utils.mainnet_fork import pass_and_exec_dao_vote
 
+# ============================== Addresses ===================================
 omnibus_contract = "0x67988077f29FbA661911d9567E05cc52C51ca1B0"
-description = "Proposal to upgrade Dual Governance contract on Mainnet (Immunefi reported vulnerability fix). Token transfer to the Lido Labs BORG Foundation"
 
+# ============================= Description ==================================
+IPFS_DESCRIPTION = "Proposal to upgrade Dual Governance contract on Mainnet (Immunefi reported vulnerability fix)."
 
-def get_vote_items():
+# ================================ Main ======================================
+def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     voting_items = interface.DGLaunchOmnibus(omnibus_contract).getVoteItems()
 
     vote_desc_items = []
@@ -45,14 +50,14 @@ def get_vote_items():
     return vote_desc_items, call_script_items
 
 
-def start_vote(tx_params: Dict[str, str], silent: bool = False):
+def start_vote(tx_params: Dict[str, str], silent: bool = False) -> Tuple[int, TransactionReceipt]:
     vote_desc_items, call_script_items = get_vote_items()
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
 
     if silent:
-        desc_ipfs = calculate_vote_ipfs_description(description)
+        desc_ipfs = calculate_vote_ipfs_description(IPFS_DESCRIPTION)
     else:
-        desc_ipfs = upload_vote_ipfs_description(description)
+        desc_ipfs = upload_vote_ipfs_description(IPFS_DESCRIPTION)
 
     vote_id, tx = confirm_vote_script(vote_items, silent, desc_ipfs) and list(
         create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)

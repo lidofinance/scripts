@@ -13,7 +13,17 @@ from utils.ipfs import get_lido_vote_cid_from_str
 from utils.config import LDO_HOLDER_ADDRESS_FOR_TESTS
 from utils.dual_governance import PROPOSAL_STATUS
 
+
+# ============================================================================
+# ============================== Import vote =================================
+# ============================================================================
+
 from scripts.vote_2025_08_20_mainnet_dg_upgrade import start_vote, get_vote_items
+
+
+# ============================================================================
+# ============================== Constants ===================================
+# ============================================================================
 
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
@@ -39,7 +49,7 @@ EXPECTED_VOTE_ID = 191
 EXPECTED_DG_PROPOSAL_ID = 4
 EXPECTED_VOTE_EVENTS_COUNT = 1
 EXPECTED_DG_EVENTS_COUNT = 10
-IPFS_DESCRIPTION_HASH = "bafkreibwrhhgakpf5n676cee2x6kc62f7xikaj52dot5bylonoajhdbu7e"
+IPFS_DESCRIPTION_HASH = "bafkreidgyansngf3n5r3edl66gfauhsiw2ksnh2jbuuwsjo4uhpts5dwnq"
 
 STETH_TOKEN = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
 STETH_WHALE = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
@@ -115,6 +125,10 @@ def dual_governance_proposal_calls():
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
 
+    # =======================================================================
+    # ========================= Arrange variables ===========================
+    # =======================================================================
+
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     emergency_protected_timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
     voting = interface.Voting(VOTING)
@@ -122,9 +136,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
     new_dual_governance = interface.DualGovernance(NEW_DUAL_GOVERNANCE)
 
-    # =======================================================================
-    # ======================== Identifying voting ===========================
-    # =======================================================================
+    # =========================================================================
+    # ======================== Identify or Create vote ========================
+    # =========================================================================
 
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
@@ -139,6 +153,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     _, call_script_items = get_vote_items()
     assert vote_script_onchain == encode_call_script(call_script_items)
 
+
+    # =========================================================================
+    # ============================= Execute Vote ==============================
+    # =========================================================================
     is_voting_executed = voting.getVote(vote_id)["executed"]
 
     if is_voting_executed:
@@ -146,7 +164,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
     if not is_voting_executed:
         # =======================================================================
-        # ========================= Before voting tests =========================
+        # ========================= Before voting checks ========================
         # =======================================================================
 
         metadata = find_metadata_by_vote_id(vote_id)
@@ -182,7 +200,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         )
 
     # =======================================================================
-    # ========================= After voting tests ==========================
+    # ========================= After voting checks =========================
     # =======================================================================
 
     dg_proposal_calls = emergency_protected_timelock.getProposalCalls(EXPECTED_DG_PROPOSAL_ID)
@@ -198,9 +216,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
     # Check if DG proposal is not executed
     if dg_proposal_details["status"] != PROPOSAL_STATUS["executed"]:
-        # =======================================================================
-        # ========================= Before DG Proposal tests ====================
-        # =======================================================================
+        # =========================================================================
+        # ================== DG before proposal executed checks ===================
+        # =========================================================================
 
         assert emergency_protected_timelock.getGovernance() == DUAL_GOVERNANCE
         assert dual_governance.getConfigProvider() == CONFIG_PROVIDER_FOR_ACTIVE_DUAL_GOVERNANCE
@@ -309,9 +327,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             emitted_by=DG_UPGRADE_STATE_VERIFIER,
         )
 
-    # =======================================================================
-    # ================= After DG proposal execution tests ===================
-    # =======================================================================
+    # =========================================================================
+    # ==================== After DG proposal executed checks ==================
+    # =========================================================================
 
     assert emergency_protected_timelock.getGovernance() == NEW_DUAL_GOVERNANCE
     assert dual_governance.getConfigProvider() == CONFIG_PROVIDER_FOR_DISCONNECTED_DUAL_GOVERNANCE
