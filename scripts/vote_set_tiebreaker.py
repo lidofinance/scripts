@@ -12,8 +12,8 @@ from typing import Dict, List, Tuple
 
 from utils.test.helpers import ETH
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
-from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
-from utils.config import get_deployer_account, get_is_live, get_priority_fee
+from utils.ipfs import calculate_vote_ipfs_description
+from utils.config import get_deployer_account, get_is_live
 from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.dual_governance import submit_proposals
 from utils.balance import set_balance_in_wei
@@ -36,10 +36,6 @@ TEST_TIEBREAKER_PARTICIPANTS = [
     "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316",
     "0x2e59A20f205bB85a89C53f1936454680651E618e",
 ]
-
-
-# ============================= Description ==================================
-IPFS_DESCRIPTION = ""
 
 
 # ================================ Main ======================================
@@ -87,7 +83,7 @@ def set_tiebreaker_participants():
     vote_desc_items, call_script_items = get_vote_items()
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
 
-    desc_ipfs = calculate_vote_ipfs_description(IPFS_DESCRIPTION)
+    desc_ipfs = calculate_vote_ipfs_description("Set tiebreaker participants for testing")
 
     vote_id, _ = confirm_vote_script(vote_items, False, desc_ipfs) and list(
         create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
@@ -132,6 +128,8 @@ def pause_withdrawal_queue():
 
 
 def propose_some_dg_proposal():
+    if get_is_live():
+        raise Exception("This script is for local testing only.")
 
     tx_params = {"from": get_deployer_account()}
     dg_items = [
@@ -141,9 +139,9 @@ def propose_some_dg_proposal():
         ),
     ]
 
-    dg_call_script = submit_proposals([(dg_items, "Set tiebreaker participants")])
+    dg_call_script = submit_proposals([(dg_items, "Check DG state")])
 
-    vote_desc_items, call_script_items = zip(("Set tiebreaker participants for testing", dg_call_script[0]))
+    vote_desc_items, call_script_items = zip(("Check DG state", dg_call_script[0]))
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
 
     desc_ipfs = calculate_vote_ipfs_description("Test vote")
