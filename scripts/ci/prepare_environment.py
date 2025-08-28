@@ -1,4 +1,5 @@
 import os
+import importlib
 
 from typing import Callable, Tuple, List
 
@@ -91,8 +92,8 @@ def retrieve_vote_script() -> Tuple[Callable, Callable] | None:
     module_name = f"scripts.{script_name}"
 
     try:
-        exec(f"from {module_name} import start_vote, get_vote_items")
-        return locals()['start_vote'], locals()['get_vote_items']
+        module = importlib.import_module(module_name)
+        return module.start_vote, module.get_vote_items
     except ImportError:
         raise AttributeError(
             f"'start_vote' and/or 'get_vote_items' not found in {script_path}."
