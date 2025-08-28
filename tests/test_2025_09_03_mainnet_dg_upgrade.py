@@ -18,7 +18,7 @@ from utils.dual_governance import PROPOSAL_STATUS
 # ============================== Import vote =================================
 # ============================================================================
 
-from scripts.vote_2025_08_20_mainnet_dg_upgrade import start_vote, get_vote_items
+from scripts.vote_2025_09_03_mainnet_dg_upgrade import start_vote, get_vote_items
 
 
 # ============================================================================
@@ -153,7 +153,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     _, call_script_items = get_vote_items()
     assert vote_script_onchain == encode_call_script(call_script_items)
 
-
     # =========================================================================
     # ============================= Execute Vote ==============================
     # =========================================================================
@@ -172,6 +171,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         assert interface.DGLaunchOmnibus(OMNIBUS_CONTRACT).isValidVoteScript(vote_id)
 
+        assert emergency_protected_timelock.getProposalsCount() == EXPECTED_DG_PROPOSAL_ID - 1
+
         # =======================================================================
         # ========================= Voting Execution ============================
         # =======================================================================
@@ -180,7 +181,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         vote_events = group_voting_events_from_receipt(vote_tx)
 
-        assert EXPECTED_DG_PROPOSAL_ID == emergency_protected_timelock.getProposalsCount()
+        assert emergency_protected_timelock.getProposalsCount() == EXPECTED_DG_PROPOSAL_ID
 
         # =======================================================================
         # ========================= Validate voting events ======================

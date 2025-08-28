@@ -1,5 +1,5 @@
 """
-Vote 2025_08_20
+Vote 2025_09_03
 
 I. Dual Governance Upgrade
 1. Set Tiebreaker activation timeout to 31536000 seconds (1 year) on the new Dual Governance instance 0xC1db28B3301331277e307FDCfF8DE28242A4486E
@@ -18,7 +18,7 @@ TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block $
 
 import time
 
-from typing import Dict, Tuple, List    
+from typing import Dict, Tuple, List
 from brownie import interface
 from brownie.network.transaction import TransactionReceipt
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
@@ -35,6 +35,7 @@ omnibus_contract = "0x67988077f29FbA661911d9567E05cc52C51ca1B0"
 
 # ============================= Description ==================================
 IPFS_DESCRIPTION = "Proposal to upgrade Dual Governance contract on Mainnet (Immunefi reported vulnerability fix)."
+
 
 # ================================ Main ======================================
 def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
