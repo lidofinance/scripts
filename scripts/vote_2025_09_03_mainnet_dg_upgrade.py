@@ -34,7 +34,14 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 omnibus_contract = "0x67988077f29FbA661911d9567E05cc52C51ca1B0"
 
 # ============================= Description ==================================
-IPFS_DESCRIPTION = "Proposal to upgrade Dual Governance contract on Mainnet (Immunefi reported vulnerability fix)."
+IPFS_DESCRIPTION = """
+**Fix for the Dual Governance RageQuit mechanism**. Full context [on the forum](https://research.lido.fi/t/dual-governance-security-upgrade-plan-ragequit-eth-withdrawal-delay-fix/10543). Audited by [Certora](https://github.com/lidofinance/audits/blob/main/Certora%20Dual%20Governance%20v1.0.1%20Hotfix%20Review%20Report%2008-2025.pdf) and [Statemind](https://github.com/lidofinance/audits/blob/main/Statemind%20Dual%20Governance%20Escrow%20Fix%20Review%20Report%2008-2025.pdf).
+
+1. Finalize the configuration of the new Dual Governance (items 1-7).
+2. Set the Governance address in the EmergencyProtectedTimelock to the new Dual Governance (item 8).
+3. Replace the config provider in the old Dual Governance with the new ImmutableDualGovernanceConfigProvider to prevent re-entering the vulnerable state and enable free withdrawals from the old Escrow (item 9).
+4. Verify the resulting state of the new Dual Governance on-chain (item 10).
+"""
 
 
 # ================================ Main ======================================
