@@ -9,7 +9,7 @@ if network_name() not in ["mainnet", "mainnet-fork", "hoodi", "hoodi-fork", "mfh
 from utils.config import (
     contracts,
     # addresses
-    DUAL_GOVERNANCE,
+    PROPOSED_DUAL_GOVERNANCE,
     RESEAL_MANAGER,
     RESEAL_COMMITTEE,
     DUAL_GOVERNANCE_EXECUTORS,
@@ -35,7 +35,7 @@ ESCROW_STATES = {
 
 
 def test_dual_governance_acceptance():
-    dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
+    dual_governance = interface.DualGovernance(PROPOSED_DUAL_GOVERNANCE)
 
     assert dual_governance.getConfigProvider() == contracts.dual_governance_config_provider
     assert dual_governance.TIMELOCK() == contracts.emergency_protected_timelock
@@ -188,7 +188,7 @@ def test_tiebreaker_committees():
     assert tiebreaker_core_committee.getMembers() == TIEBREAKER_VALUES["CORE_COMMITTEE"]["MEMBERS"]
     assert tiebreaker_core_committee.getQuorum() == TIEBREAKER_VALUES["CORE_COMMITTEE"]["QUORUM"]
     assert tiebreaker_core_committee.getTimelockDuration() == TIEBREAKER_VALUES["CORE_COMMITTEE"]["TIMELOCK_DURATION"]
-    assert tiebreaker_core_committee.DUAL_GOVERNANCE() == DUAL_GOVERNANCE
+    assert tiebreaker_core_committee.DUAL_GOVERNANCE() == PROPOSED_DUAL_GOVERNANCE
 
     for i, sub_committee in enumerate(TIEBREAKER_VALUES["SUB_COMMITTEES"]):
         tiebreaker_sub_committee = interface.TiebreakerCommittee(sub_committee["ADDRESS"])
@@ -207,7 +207,7 @@ def test_escrow():
 
     for escrow in [escrow_master_copy, escrow_proxy]:
         assert escrow.ESCROW_MASTER_COPY() == ESCROW_MASTER_COPY
-        assert escrow.DUAL_GOVERNANCE() == DUAL_GOVERNANCE
+        assert escrow.DUAL_GOVERNANCE() == PROPOSED_DUAL_GOVERNANCE
         assert escrow.ST_ETH() == LIDO
         assert escrow.WST_ETH() == WSTETH_TOKEN
         assert escrow.WITHDRAWAL_QUEUE() == WITHDRAWAL_QUEUE
