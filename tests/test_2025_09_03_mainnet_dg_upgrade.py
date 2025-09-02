@@ -27,7 +27,6 @@ from scripts.vote_2025_09_03_mainnet_dg_upgrade import start_vote, get_vote_item
 
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
-FINANCE = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
 DUAL_GOVERNANCE = "0xcdF49b058D606AD34c5789FD8c3BF8B3E54bA2db"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
@@ -405,6 +404,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
     assert old_escrow.getRageQuitSupport() < disconnected_dual_governance_second_seal
     assert old_escrow.getRageQuitSupport() > new_dual_governance_second_seal
+
+    assert old_escrow.getMinAssetsLockDuration() == 1
 
     chain.sleep(old_escrow.getMinAssetsLockDuration() + 1)
     old_escrow.unlockStETH({"from": steth_whale})
