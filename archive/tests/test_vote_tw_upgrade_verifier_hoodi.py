@@ -1,5 +1,5 @@
 from typing import Optional
-from scripts.vote_tw_upgrade_verifier_hoodi import start_vote, OLD_VALIDATOR_EXIT_VERIFIER, LIDO_LOCATOR_IMPL
+from archive.scripts.vote_tw_upgrade_verifier_hoodi import start_vote, OLD_VALIDATOR_EXIT_VERIFIER, LIDO_LOCATOR_IMPL
 from brownie import interface, chain, convert, web3  # type: ignore
 from brownie.network.event import EventDict
 from utils.test.tx_tracing_helpers import group_voting_events_from_receipt, group_dg_events_from_receipt
@@ -58,7 +58,7 @@ def test_vote_tw_upgrade_verifier_hoodi(helpers, accounts, vote_ids_from_env, st
 
     # Check initial state
     initial_implementation = lido_locator_proxy.proxy__getImplementation()
-    
+
     # Check role states before vote
     old_verifier_has_role_before = staking_router.hasRole(REPORT_VALIDATOR_EXITING_STATUS_ROLE, OLD_VALIDATOR_EXIT_VERIFIER)
     new_verifier_has_role_before = staking_router.hasRole(REPORT_VALIDATOR_EXITING_STATUS_ROLE, contracts.validator_exit_verifier)
@@ -98,7 +98,7 @@ def test_vote_tw_upgrade_verifier_hoodi(helpers, accounts, vote_ids_from_env, st
     # 2. Verify validator roles were updated
     new_verifier_has_role_after = staking_router.hasRole(REPORT_VALIDATOR_EXITING_STATUS_ROLE, contracts.validator_exit_verifier)
     old_verifier_has_role_after = staking_router.hasRole(REPORT_VALIDATOR_EXITING_STATUS_ROLE, OLD_VALIDATOR_EXIT_VERIFIER)
-    
+
     assert new_verifier_has_role_after, f"New verifier ({contracts.validator_exit_verifier}) should have role after vote"
     assert not old_verifier_has_role_after, f"Old verifier ({OLD_VALIDATOR_EXIT_VERIFIER}) should not have role after vote"
 

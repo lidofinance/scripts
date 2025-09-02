@@ -5,7 +5,7 @@ Vote 2025-09-02 - TW Upgrade Validator Exit Verifier
 2. Grant REPORT_VALIDATOR_EXITING_STATUS_ROLE to new validator exit verifier
 3. Revoke REPORT_VALIDATOR_EXITING_STATUS_ROLE from old validator exit verifier
 
-Vote passed & executed on [TODO], block TODO
+Vote passed & executed on Sep 02, 2025, 03:47 PM GMT+2, block 1130827
 """
 
 import time
