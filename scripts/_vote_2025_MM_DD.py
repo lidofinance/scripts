@@ -27,7 +27,6 @@ IPFS_DESCRIPTION = ""
 # ================================ Main ======================================
 def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
-
     # TODO in case of using smart-contract based omnibus, retrieve vote items from omnibus contract
     # voting_items = brownie.interface.SmartContractOmnibus(omnibus_contract).getVoteItems()
     # vote_desc_items = []
@@ -70,7 +69,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
 
     # TODO return vote_desc_items, call_script_items
-    pass
+    return [], []
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False):
@@ -82,9 +81,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
         if silent else upload_vote_ipfs_description(IPFS_DESCRIPTION)
     )
 
-    vote_id, tx = confirm_vote_script(vote_items, silent, desc_ipfs) and list(
-        create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
-    )
+    confirm_vote_script(vote_items, silent, desc_ipfs)
+    vote_id, tx = create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
 
     return vote_id, tx
 
@@ -102,7 +100,7 @@ def start_and_execute_vote_on_fork_manual():
     if get_is_live():
         raise Exception("This script is for local testing only.")
 
-    tx_params = {"from": get_deployer_account()}
+    tx_params = {"from": get_deployer_account().address}
     vote_id, _ = start_vote(tx_params=tx_params, silent=True)
     print(f"Vote created: {vote_id}.")
     pass_and_exec_dao_vote(int(vote_id), step_by_step=True)
