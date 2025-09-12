@@ -18,7 +18,7 @@ from utils.dual_governance import PROPOSAL_STATUS
 # ============================== Import vote =================================
 # ============================================================================
 
-from scripts.vote_2025_09_03_mainnet_dg_upgrade import start_vote, get_vote_items
+from archive.scripts.vote_2025_09_03_mainnet_dg_upgrade import start_vote, get_vote_items
 
 
 # ============================================================================

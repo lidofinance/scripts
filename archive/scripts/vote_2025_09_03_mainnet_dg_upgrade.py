@@ -13,7 +13,7 @@ I. Dual Governance Upgrade
 9. Set new Config Provider 0xc934E90E76449F09f2369BB85DCEa056567A327a for the old Dual Governance contract 0xcdF49b058D606AD34c5789FD8c3BF8B3E54bA2db
 10. Verify the Dual Governance state using Dual Governance Upgrade State Verifier 0x487b764a2085ffd595D9141BAec0A766B7904786
 
-TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
+Vote 191 passed & executed on 3 days ago (Sep-08-2025 06:16:59 PM UTC), block 23320106.
 """
 
 import time
