@@ -122,15 +122,15 @@ from utils.config import get_deployer_account, get_priority_fee, get_is_live
 
 # ============================== Addresses ===================================
 # New core contracts implementations
-LIDO_LOCATOR_IMPL = "0x003f20CD17e7683A7F88A7AfF004f0C44F0cfB31"
-ACCOUNTING_ORACLE_IMPL = "0x2341c9BE0E639f262f8170f9ef1efeCC92cCF617"
-VALIDATORS_EXIT_BUS_ORACLE_IMPL = "0x7E6d9C9C44417bf2EaF69685981646e9752D623A"
-WITHDRAWAL_VAULT_IMPL = "0xfe7A58960Af333eAdeAeC39149F9d6A71dc3E668"
-STAKING_ROUTER_IMPL = "0xd5F04A81ac472B2cB32073CE9dDABa6FaF022827"
-NODE_OPERATORS_REGISTRY_IMPL = "0x95F00b016bB31b7182D96D25074684518246E42a"
+LIDO_LOCATOR_IMPL = "0x2C298963FB763f74765829722a1ebe0784f4F5Cf"
+ACCOUNTING_ORACLE_IMPL = "0xE9906E543274cebcd335d2C560094089e9547e8d"
+VALIDATORS_EXIT_BUS_ORACLE_IMPL = "0x905A211eD6830Cfc95643f0bE2ff64E7f3bf9b94"
+WITHDRAWAL_VAULT_IMPL = "0x7D2BAa6094E1C4B60Da4cbAF4A77C3f4694fD53D"
+STAKING_ROUTER_IMPL = "0x226f9265CBC37231882b7409658C18bB7738173A"
+NODE_OPERATORS_REGISTRY_IMPL = "0x6828b023e737f96B168aCd0b5c6351971a4F81aE"
 
-TRIGGERABLE_WITHDRAWALS_GATEWAY = "0x6679090D92b08a2a686eF8614feECD8cDFE209db"
-VALIDATOR_EXIT_VERIFIER = "0xFd4386A8795956f4B6D01cbb6dB116749731D7bD"
+TRIGGERABLE_WITHDRAWALS_GATEWAY = "0xDC00116a0D3E064427dA2600449cfD2566B3037B"
+VALIDATOR_EXIT_VERIFIER = "0xbDb567672c867DB533119C2dcD4FB9d8b44EC82f"
 
 # Oracle consensus versions
 AO_CONSENSUS_VERSION = 4
@@ -963,23 +963,6 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
     assert confirm_vote_script(vote_items, silent, desc_ipfs)
 
     return create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
-
-
-def prepare_proposal(
-    call_script: Sequence[Tuple],
-    description: Optional[str] = "",
-) -> Tuple[str, str]:
-    dual_governance = contracts.dual_governance
-    forwarded = []
-
-    for _call in call_script:
-        forwarded.append((_call[0], _call[1]))
-
-    print(f"Forwarding call script to dual governance: {forwarded}")
-    return (
-        contracts.dual_governance.address,
-        dual_governance.submitProposal.encode_input([(_call[0], 0, _call[1]) for _call in forwarded], description),
-    )
 
 
 def main():
