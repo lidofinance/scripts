@@ -79,10 +79,16 @@ Vote 2025_<MM>_<DD> [MAINNET]
 --- ResealManager ---
 65. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager
 66. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager
+--- Node Operators Registry rename and reward address change ---
+67. Rename Node Operator ID 25 from Nethermind to Twinstake
+68. Change Node Operator ID 25 reward address from 0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91 to 0x36201ed66DbC284132046ee8d99272F8eEeb24c8
+-- DSM rotate guardian ---
+69. Remove old Kiln guardian
+70. Add new Kiln guardian
 --- EasyTrack ---
-67. Add CSSetVettedGateTree factory to EasyTrack with permissions
-68. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
-69. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track
+71. Add CSSetVettedGateTree factory to EasyTrack with permissions
+72. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
+73. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
@@ -109,6 +115,7 @@ from utils.config import (
     AGENT,
     contracts,
 )
+from utils.dsm import encode_remove_guardian, encode_add_guardian
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 from utils.easy_track import (
@@ -119,6 +126,7 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.dual_governance import submit_proposals
 from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.config import get_deployer_account, get_priority_fee, get_is_live
+from utils.node_operators import encode_set_node_operator_name, encode_set_node_operator_reward_address
 
 # ============================== Addresses ===================================
 # New core contracts implementations
@@ -836,6 +844,30 @@ def get_vote_items():
                 )
             ]
         ),
+        # "67. Rename Node Operator ID 25 from Nethermind to Twinstake"
+        agent_forward(
+            [
+                encode_set_node_operator_name(id=25, name="Twinstake", registry=contracts.node_operators_registry),
+            ]
+        ),
+        # "68. Change Node Operator ID 25 reward address from 0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91 to 0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
+        agent_forward(
+            [
+                encode_set_node_operator_reward_address(id=17, rewardAddress="0x36201ed66DbC284132046ee8d99272F8eEeb24c8", registry=contracts.node_operators_registry),
+            ]
+        ),
+        # "69. Remove Kiln guardian"
+        #agent_forward(
+        #    [
+        #        encode_remove_guardian(guardian_address="", quorum_size=4),
+        #    ]
+        #),
+        # "70. Add new Kiln guardian"
+        #agent_forward(
+        #    [
+        #        encode_add_guardian(guardian_address="", quorum_size=4),
+        #    ]
+        #),
     ]
     dg_call_script = submit_proposals(
         [
@@ -847,7 +879,8 @@ def get_vote_items():
     )
 
     vote_desc_items, call_script_items = zip(
-        ("""
+        (
+            """
 --- Locator
 1. Update locator implementation
 --- VEB
@@ -925,23 +958,32 @@ def get_vote_items():
 64. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to the new Triggerable Withdrawals GateSeal
 --- ResealManager ---
 65. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager
-66. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager""", dg_call_script[0]),
+66. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager
+--- Node Operators Registry rename and reward address change ---
+67. Rename Node Operator ID 25 from Nethermind to Twinstake
+68. Change Node Operator ID 25 reward address from 0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91 to 0x36201ed66DbC284132046ee8d99272F8eEeb24c8
+--- EasyTrack ---
+69. Add CSSetVettedGateTree factory to EasyTrack with permissions
+70. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
+71. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track""",
+            dg_call_script[0],
+        ),
         (
-            "67. Add CSSetVettedGateTree factory to EasyTrack with permissions",
+            "69. Add CSSetVettedGateTree factory to EasyTrack with permissions",
             add_evmscript_factory(
                 factory=EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY,
                 permissions=(create_permissions(interface.CSVettedGate(CS_VETTED_GATE_ADDRESS), "setTreeParams")),
             ),
         ),
         (
-            "68. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track",
+            "70. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
                 permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),
             ),
         ),
         (
-            "69. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track",
+            "71. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
                 permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),

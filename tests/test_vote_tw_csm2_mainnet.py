@@ -23,14 +23,18 @@ from utils.evm_script import encode_call_script
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.dual_governance import PROPOSAL_STATUS
+from utils.test.event_validators.node_operators_registry import (
+    validate_node_operator_name_set_event,
+    validate_node_operator_reward_address_set_event,
+    NodeOperatorNameSetItem,
+    NodeOperatorRewardAddressSetItem,
+)
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 from utils.test.tx_tracing_helpers import group_voting_events_from_receipt, group_dg_events_from_receipt
 from utils.test.event_validators.easy_track import validate_evmscript_factory_added_event, EVMScriptFactoryAdded
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 from utils.dual_governance import wait_for_noon_utc_to_satisfy_time_constrains
 from utils.config import (
-    DUAL_GOVERNANCE_EXECUTORS,
-    LDO_HOLDER_ADDRESS_FOR_TESTS,
     CS_MODULE_ID,
     CS_MODULE_MODULE_FEE_BP,
     CS_MODULE_MAX_DEPOSITS_PER_BLOCK,
@@ -38,8 +42,6 @@ from utils.config import (
     CS_MODULE_TREASURY_FEE_BP,
     CS_GATE_SEAL_ADDRESS,
     CSM_COMMITTEE_MS,
-    ARAGON_KERNEL,
-    AGENT,
     contracts,
 )
 
@@ -182,8 +184,9 @@ from scripts.vote_tw_csm2_mainnet import start_vote, get_vote_items
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 DUAL_GOVERNANCE = "0xcdF49b058D606AD34c5789FD8c3BF8B3E54bA2db"
-DUAL_GOVERNANCE_ADMIN_EXECUTOR = ""
-AGENT = ""
+DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
+AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
+ARAGON_KERNEL = "0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc"
 
 # New core contracts implementations
 LIDO_LOCATOR_IMPL = "0x003f20CD17e7683A7F88A7AfF004f0C44F0cfB31"
@@ -251,6 +254,13 @@ EXPECTED_VOTE_EVENTS_COUNT = 66
 EXPECTED_DG_EVENTS_COUNT = 1
 IPFS_DESCRIPTION_HASH = ""
 
+NETHERMIND_NO_ID = 25
+NETHERMIND_NO_NAME_OLD = "Nethermind"
+NETHERMIND_NO_NAME_NEW = "Twinstake"
+NETHERMIND_NO_STAKING_REWARDS_ADDRESS_OLD = "0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91"
+NETHERMIND_NO_STAKING_REWARDS_ADDRESS_NEW = "0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
+NODE_OPERATORS_REGISTRY_ADDRESS = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
+
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
     # Save original implementations for comparison
@@ -275,6 +285,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     cs_permissionless_gate = interface.CSPermissionlessGate(CS_PERMISSIONLESS_GATE_ADDRESS)
     cs_vetted_gate = interface.CSVettedGate(CS_VETTED_GATE_ADDRESS)
     cs_verifier_v2 = interface.CSVerifierV2(CS_VERIFIER_V2_ADDRESS)
+
+    no_registry = interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY_ADDRESS)
 
     
     # START VOTE
@@ -481,6 +493,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         display_voting_events(vote_tx)
         vote_events = group_voting_events_from_receipt(vote_tx)
 
+        # Rename Nethermind NO
+        nethermind_no_data_before = no_registry.getNodeOperator(NETHERMIND_NO_ID, True)
+
+        assert nethermind_no_data_before["rewardAddress"] == NETHERMIND_NO_STAKING_REWARDS_ADDRESS_OLD
+        assert nethermind_no_data_before["name"] == NETHERMIND_NO_NAME_OLD
+
 
         # =======================================================================
         # ========================= After voting checks =========================
@@ -657,7 +675,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # --- VALIDATE EVENTS ---
 
         voting_events = group_voting_events_from_receipt(vote_tx)
-        dg_execution_events = group_dg_events_from_receipt(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_EXECUTORS[0])
+        dg_execution_events = group_dg_events_from_receipt(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR)
 
         # Validate voting events structure
         assert len(voting_events) == 4, "Unexpected number of voting events"
@@ -1145,4 +1163,22 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     role_hash=triggerable_withdrawals_gateway.RESUME_ROLE().hex(),
                     account=RESEAL_MANAGER,
                     emitted_by=triggerable_withdrawals_gateway
+                )
+
+                # Validate Nethermind NO name change
+                validate_node_operator_name_set_event(
+                    dg_events[66],
+                    NodeOperatorNameSetItem(nodeOperatorId=NETHERMIND_NO_ID, name=NETHERMIND_NO_NAME_NEW),
+                    emitted_by=no_registry,
+                    is_dg_event=True,
+                )
+
+                 # Validate Nethermind NO rewards address change
+                validate_node_operator_reward_address_set_event(
+                    dg_events[67],
+                    NodeOperatorRewardAddressSetItem(
+                        nodeOperatorId=NETHERMIND_NO_ID, reward_address=NETHERMIND_NO_STAKING_REWARDS_ADDRESS_NEW
+                    ),
+                    emitted_by=no_registry,
+                    is_dg_event=True,
                 )
