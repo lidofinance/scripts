@@ -99,6 +99,7 @@ from typing import Any, Dict
 from typing import Tuple
 from brownie import interface, web3, convert
 from brownie.convert.main import to_uint  # type: ignore
+
 from utils.agent import agent_forward
 from utils.config import (
     CSM_COMMITTEE_MS,
@@ -169,6 +170,7 @@ CS_PERMISSIONLESS_GATE_ADDRESS = "0xcF33a38111d0B1246A3F38a838fb41D626B454f0"
 CS_VETTED_GATE_ADDRESS = "0xB314D4A76C457c93150d308787939063F4Cc67E0"
 CS_VERIFIER_V2_ADDRESS = "0xdC5FE1782B6943f318E05230d688713a560063DC"
 
+CS_VERIFIER_ADDRESS_OLD = "0xeC6Cc185f671F627fb9b6f06C8772755F587b05d"
 CS_CURVES = [
     ([1, 2.4 * 10**18], [2, 1.3 * 10**18]),  # Default Curve
     ([1, 1.5 * 10**18], [2, 1.3 * 10**18]),  # Legacy EA Curve
@@ -181,11 +183,18 @@ NEW_WQ_GATE_SEAL = "0x8A854C4E750CDf24f138f34A9061b2f556066912"
 NEW_TW_GATE_SEAL = "0xA6BC802fAa064414AA62117B4a53D27fFfF741F1"
 RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
 
+NETHERMIND_NO_ID = 25
+NETHERMIND_NEW_REWARD_ADDRESS = "0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
+NETHERMIND_NEW_NO_NAME = "Twinstake"
+
 # Add EasyTrack constants
 EASYTRACK_EVMSCRIPT_EXECUTOR = "0x79a20FD0FA36453B2F45eAbab19bfef43575Ba9E"
 EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0xAa3D6A8B52447F272c1E8FAaA06EA06658bd95E2"
 EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0x397206ecdbdcb1A55A75e60Fc4D054feC72E5f63"
 EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY = "0xa890fc73e1b771Ee6073e2402E631c312FF92Cd9"  # TODO: replace with the real one
+
+OLD_KILN_ADDRESS = "0x14D5d5B71E048d2D75a39FfC5B407e3a3AB6F314"
+NEW_KILN_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" # todo: replace with the real one
 
 # ============================= Description ==================================
 IPFS_DESCRIPTION = "Triggerable withdrawals and CSM v2 upgrade voting"
@@ -667,7 +676,7 @@ def get_vote_items():
                 encode_oz_revoke_role(
                     contract=contracts.csm,
                     role_name="VERIFIER_ROLE",
-                    revoke_from=contracts.cs_verifier,
+                    revoke_from=CS_VERIFIER_ADDRESS_OLD,
                 )
             ]
         ),
@@ -846,27 +855,27 @@ def get_vote_items():
         # "67. Rename Node Operator ID 25 from Nethermind to Twinstake"
         agent_forward(
             [
-                encode_set_node_operator_name(id=25, name="Twinstake", registry=contracts.node_operators_registry),
+                encode_set_node_operator_name(id=NETHERMIND_NO_ID, name=NETHERMIND_NEW_NO_NAME, registry=contracts.node_operators_registry),
             ]
         ),
         # "68. Change Node Operator ID 25 reward address from 0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91 to 0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
         agent_forward(
             [
-                encode_set_node_operator_reward_address(id=17, rewardAddress="0x36201ed66DbC284132046ee8d99272F8eEeb24c8", registry=contracts.node_operators_registry),
+                encode_set_node_operator_reward_address(id=NETHERMIND_NO_ID, rewardAddress=NETHERMIND_NEW_REWARD_ADDRESS, registry=contracts.node_operators_registry),
             ]
         ),
         # "69. Remove Kiln guardian"
-        #agent_forward(
-        #    [
-        #        encode_remove_guardian(guardian_address="", quorum_size=4),
-        #    ]
-        #),
+        agent_forward(
+            [
+                encode_remove_guardian(dsm=contracts.deposit_security_module, guardian_address=OLD_KILN_ADDRESS, quorum_size=4),
+            ]
+        ),
         # "70. Add new Kiln guardian"
-        #agent_forward(
-        #    [
-        #        encode_add_guardian(guardian_address="", quorum_size=4),
-        #    ]
-        #),
+        agent_forward(
+            [
+                encode_add_guardian(dsm=contracts.deposit_security_module, guardian_address=NEW_KILN_ADDRESS, quorum_size=4),
+            ]
+        ),
     ]
     dg_call_script = submit_proposals(
         [
