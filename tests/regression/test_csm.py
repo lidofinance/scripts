@@ -433,10 +433,18 @@ def test_csm_remove_key(csm, parameters_registry, accounting, node_operator):
 def test_eject_bad_performer(csm, ejector, node_operator):
     eject_payment_value = get_sys_fee_to_eject()
 
+    index_to_eject = 0
     tx = ejector.ejectBadPerformer(
-        node_operator, 0, ZERO_ADDRESS, {"value": eject_payment_value, "from": contracts.cs_strikes}
+        node_operator, index_to_eject, ZERO_ADDRESS, {"value": eject_payment_value, "from": contracts.cs_strikes}
     )
+
     assert "TriggeredExitFeeRecorded" in tx.events
+    assert tx.events["TriggeredExitFeeRecorded"]["nodeOperatorId"] == node_operator
+    pubkey = csm.getSigningKeys(node_operator, index_to_eject, 1)
+    assert tx.events["TriggeredExitFeeRecorded"]["pubkey"] == pubkey
+    assert tx.events["TriggeredExitFeeRecorded"]["exitType"] == 1
+    assert tx.events["TriggeredExitFeeRecorded"]["withdrawalRequestPaidFee"] == eject_payment_value
+    assert tx.events["TriggeredExitFeeRecorded"]["withdrawalRequestRecordedFee"] == eject_payment_value
 
 
 @pytest.mark.usefixtures("deposits_to_csm")
@@ -451,16 +459,25 @@ def test_voluntary_eject(csm, ejector, node_operator):
 
 
 def test_report_validator_exit_delay(csm, node_operator):
-    key, *_ = csm.getSigningKeys(node_operator, 0, 1)
+    pubkey = csm.getSigningKeys(node_operator, 0, 1)
     day_in_seconds = 60 * 60 * 24
 
-    tx = csm.reportValidatorExitDelay(node_operator, 0, key, 7 * day_in_seconds, {"from": contracts.staking_router})
+    tx = csm.reportValidatorExitDelay(node_operator, 0, pubkey, 7 * day_in_seconds, {"from": contracts.staking_router})
     assert "ValidatorExitDelayProcessed" in tx.events
+    assert tx.events["ValidatorExitDelayProcessed"]["nodeOperatorId"] == node_operator
+    assert tx.events["ValidatorExitDelayProcessed"]["pubkey"] == pubkey
+    assert tx.events["ValidatorExitDelayProcessed"]["delayPenalty"] == 100000000000000000  # FIXME: should be taken from CSParametersRegistry
 
 
 def test_on_validator_exit_triggered(csm, node_operator):
-    key, *_ = csm.getSigningKeys(node_operator, 0, 1)
+    eject_payment_value = 1
+    pubkey = csm.getSigningKeys(node_operator, 0, 1)
     exit_type = 3
 
-    tx = csm.onValidatorExitTriggered(node_operator, key, 1, exit_type, {"from": contracts.staking_router})
+    tx = csm.onValidatorExitTriggered(node_operator, pubkey, 1, exit_type, {"from": contracts.staking_router})
     assert "TriggeredExitFeeRecorded" in tx.events
+    assert tx.events["TriggeredExitFeeRecorded"]["nodeOperatorId"] == node_operator
+    assert tx.events["TriggeredExitFeeRecorded"]["pubkey"] == pubkey
+    assert tx.events["TriggeredExitFeeRecorded"]["exitType"] == exit_type
+    assert tx.events["TriggeredExitFeeRecorded"]["withdrawalRequestPaidFee"] == eject_payment_value
+    assert tx.events["TriggeredExitFeeRecorded"]["withdrawalRequestRecordedFee"] == eject_payment_value
