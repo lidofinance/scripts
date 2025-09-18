@@ -95,9 +95,9 @@ Vote 2025_<MM>_<DD> [MAINNET]
 
 import time
 
-from typing import TYPE_CHECKING, Any, Dict
-from typing import Tuple, Optional, Sequence
-from brownie import interface, web3, convert, ZERO_ADDRESS
+from typing import Any, Dict
+from typing import Tuple
+from brownie import interface, web3, convert
 from brownie.convert.main import to_uint  # type: ignore
 from utils.agent import agent_forward
 from utils.config import (
@@ -107,7 +107,6 @@ from utils.config import (
     CS_MODULE_TREASURY_FEE_BP,
     CS_MODULE_MAX_DEPOSITS_PER_BLOCK,
     CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
-    CS_MODULE_TARGET_SHARE_BP,
     CS_GATE_SEAL_ADDRESS,
     NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
     SIMPLE_DVT_ARAGON_APP_ID,
