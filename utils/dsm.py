@@ -126,3 +126,16 @@ def set_single_guardian(dsm, agent, new_guardian):
 
     assert len(dsm.getGuardians()) == 1
     assert dsm.isGuardian(new_guardian.address)
+
+
+def encode_add_guardian(dsm, guardian_address, quorum_size):
+    return (
+        dsm.address,
+        dsm.addGuardian.encode_input(guardian_address, quorum_size)
+    )
+
+def encode_remove_guardian(dsm, guardian_address, quorum_size):
+    return (
+        dsm.address,
+        dsm.removeGuardian.encode_input(guardian_address, quorum_size)
+    )

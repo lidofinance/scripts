@@ -8,8 +8,8 @@
   "homepage": "https://mainnet.lido.fi",
   "dependencies": {
     "@lido-js/ganache": "=7.9.2-lido",
-    "hardhat": "^2.24.1",
     "bignumber.js": "^9.3.0",
+    "hardhat": "^2.24.1",
     "tsx": "^4.19.4",
     "web3": "^4.16.0"
   }
