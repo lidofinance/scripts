@@ -194,7 +194,7 @@ EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0x397206ecdbdc
 EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY = "0xBc5642bDD6F2a54b01A75605aAe9143525D97308"
 
 OLD_KILN_ADDRESS = "0x14D5d5B71E048d2D75a39FfC5B407e3a3AB6F314"
-NEW_KILN_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" # todo: replace with the real one
+NEW_KILN_ADDRESS = "0x6d22aE126eB2c37F67a1391B37FF4f2863e61389"
 
 # ============================= Description ==================================
 IPFS_DESCRIPTION = "Triggerable withdrawals and CSM v2 upgrade voting"
@@ -970,28 +970,31 @@ def get_vote_items():
 --- Node Operators Registry rename and reward address change ---
 67. Rename Node Operator ID 25 from Nethermind to Twinstake
 68. Change Node Operator ID 25 reward address from 0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91 to 0x36201ed66DbC284132046ee8d99272F8eEeb24c8
+--- Kiln DSM rotation ---
+69. Remove Kiln guardian
+70. Add new Kiln guardian
 --- EasyTrack ---
-69. Add CSSetVettedGateTree factory to EasyTrack with permissions
-70. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
-71. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track""",
+71. Add CSSetVettedGateTree factory to EasyTrack with permissions
+72. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
+73. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track""",
             dg_call_script[0],
         ),
         (
-            "69. Add CSSetVettedGateTree factory to EasyTrack with permissions",
+            "71. Add CSSetVettedGateTree factory to EasyTrack with permissions",
             add_evmscript_factory(
                 factory=EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY,
                 permissions=(create_permissions(interface.CSVettedGate(CS_VETTED_GATE_ADDRESS), "setTreeParams")),
             ),
         ),
         (
-            "70. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track",
+            "72. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
                 permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),
             ),
         ),
         (
-            "71. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track",
+            "73. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
                 permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),
