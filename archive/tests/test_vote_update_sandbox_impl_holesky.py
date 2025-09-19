@@ -134,3 +134,4 @@ def test_vote_update_sandbox_impl(helpers, accounts, vote_ids_from_env, stranger
 
     dg_execution_events = group_dg_events_from_receipt(dg_tx, timelock=TIMELOCK, admin_executor=DUAL_GOVERNANCE_EXECUTORS[0])
     assert len(dg_execution_events) == 4, "Unexpected number of dual governance events"
+

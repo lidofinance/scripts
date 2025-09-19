@@ -211,6 +211,11 @@ class ContractsLazyLoader:
         return interface.CSModule(CSM_ADDRESS)
 
     @property
+    def cs_early_adoption(self) -> interface.CSEarlyAdoption:
+        """Deprecated"""
+        return interface.CSEarlyAdoption(CS_EARLY_ADOPTION_ADDRESS)
+
+    @property
     def cs_permissionless_gate(self) -> interface.CSPermissionlessGate:
         return interface.CSPermissionlessGate(CS_PERMISSIONLESS_GATE_ADDRESS)
 
@@ -221,10 +226,6 @@ class ContractsLazyLoader:
     @property
     def cs_accounting(self) -> interface.CSAccounting:
         return interface.CSAccounting(CS_ACCOUNTING_ADDRESS)
-
-    @property
-    def cs_parameters_registry(self) -> interface.CSParametersRegistry:
-        return interface.CSParametersRegistry(CS_PARAMS_REGISTRY_ADDRESS)
 
     @property
     def cs_fee_distributor(self) -> interface.CSFeeDistributor:
@@ -240,11 +241,15 @@ class ContractsLazyLoader:
 
     @property
     def cs_verifier(self) -> interface.CSVerifier:
-        return interface.CSVerifier(CS_VERIFIER_V2_ADDRESS)
+        return interface.CSVerifier(CS_VERIFIER_ADDRESS)
+
+    @property
+    def cs_verifier_v2(self) -> interface.CSVerifierV2:
+        return interface.CSVerifierV2(CS_VERIFIER_V2_ADDRESS)
 
     @property
     def cs_exit_penalties(self) -> interface.CSExitPenalties:
-        return interface.CSExitPenalties(CS_EXIT_PENALTIES_ADDRESS)
+        return interface.CSExitPenalties(CS_EXIT_PENALTIES)
 
     @property
     def cs_ejector(self) -> interface.CSEjector:

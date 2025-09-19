@@ -1,5 +1,5 @@
 from typing import Optional
-from archive.scripts.vote_tw_csm2_hoodi import start_vote
+from scripts.vote_tw_csm2_hoodi import start_vote
 from brownie import interface, reverts, chain, convert, web3, ZERO_ADDRESS  # type: ignore
 from brownie.network.event import EventDict
 from utils.easy_track import create_permissions
