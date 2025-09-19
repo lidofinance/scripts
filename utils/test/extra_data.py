@@ -14,7 +14,6 @@ ZERO_HASH = bytes([0] * 32)
 
 
 class ItemType(Enum):
-    EXTRA_DATA_TYPE_STUCK_VALIDATORS = 1
     EXTRA_DATA_TYPE_EXITED_VALIDATORS = 2
     UNSUPPORTED = 3
 
@@ -61,14 +60,15 @@ class ItemPayload:
     node_operator_ids: Sequence[int]
     vals_counts: Sequence[int]
 
+
 class ExtraDataLengths:
-    NEXT_HASH = 32
     ITEM_INDEX = 3
     ITEM_TYPE = 2
     MODULE_ID = 3
     NODE_OPS_COUNT = 8
     NODE_OPERATOR_IDS = 8
     STUCK_OR_EXITED_VALS_COUNT = 16
+
 
 class ExtraDataService:
     """
@@ -88,14 +88,12 @@ class ExtraDataService:
     @classmethod
     def collect(
         cls,
-        stuck_validators: dict[NodeOperatorGlobalIndex, int],
         exited_validators: dict[NodeOperatorGlobalIndex, int],
         max_items_count: int,
         max_no_in_payload_count: int,
     ) -> ExtraData:
-        stuck_payloads = cls.build_validators_payloads(stuck_validators, max_no_in_payload_count)
         exited_payloads = cls.build_validators_payloads(exited_validators, max_no_in_payload_count)
-        items_count, txs = cls.build_extra_transactions_data(stuck_payloads, exited_payloads, max_items_count)
+        items_count, txs = cls.build_extra_transactions_data(exited_payloads, max_items_count)
         extra_data_hash_list, hashed_txs = cls.add_hashes_to_transactions(txs)
 
         if items_count:
@@ -142,12 +140,10 @@ class ExtraDataService:
     @classmethod
     def build_extra_transactions_data(
         cls,
-        stuck_payloads: list[ItemPayload],
         exited_payloads: list[ItemPayload],
         max_items_count: int,
     ) -> tuple[int, list[bytes]]:
         all_payloads = [
-            *[(ItemType.EXTRA_DATA_TYPE_STUCK_VALIDATORS, payload) for payload in stuck_payloads],
             *[(ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, payload) for payload in exited_payloads],
         ]
 
