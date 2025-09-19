@@ -1,4 +1,5 @@
-from archive.scripts.vote_dg_easy_track_tw_holesky import start_vote
+from typing import Optional
+from scripts.vote_dg_easy_track_tw_holesky import start_vote
 from brownie import interface, chain, web3  # type: ignore
 from utils.dual_governance import wait_for_noon_utc_to_satisfy_time_constrains
 from utils.config import (
