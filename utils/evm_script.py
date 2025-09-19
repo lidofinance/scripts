@@ -142,19 +142,11 @@ def calls_info_pretty_print(call: Union[str, Call, EncodedCall]) -> str:
     """Format printing for Call instance."""
     result = color.highlight(repr(call))
 
-    # NOTE: Enhanced handling of nested DualGovernance proposals.
-    # If the call targets DualGovernance.submitProposal(ExternalCall[],string) (selector 0x53e51f8b),
-    # attempt to decode each ExternalCall and append a human-readable list.
-    if call.function_signature == "0x53e51f8b":
-        result += f"{color('cyan')}Nested calls within this DG proposal:{color()}\n"
-        for i, nested_call in enumerate(call.inputs[0].value):
-            encoded_call = EncodedCall(
-                address=nested_call[0][2:],
-                method_id=nested_call[2][:4].hex(),
-                encoded_call_data=nested_call[2][4:].hex(),
-                call_data_length=len(nested_call[2]),
-            )
-            result += f"  {i+1}. {color.highlight(repr(decode_encoded_call(encoded_call)))}\n"
+    # Check if this call has nested calls (from DG script decoding)
+    if hasattr(call, 'nested_calls') and call.nested_calls:
+        result += f"\n{color('cyan')}Nested calls within this DG proposal:{color()}\n"
+        for i, nested_call in enumerate(call.nested_calls):
+            result += f"  {i+1}. {color.highlight(repr(nested_call))}\n"
 
     return result
 
