@@ -14,6 +14,10 @@ from utils.config import (
     VEBO_EPOCHS_PER_FRAME,
     VEBO_FAST_LANE_LENGTH_SLOTS,
     ORACLE_QUORUM,
+    MAX_VALIDATORS_PER_REPORT,
+    MAX_EXIT_REQUESTS_LIMIT,
+    EXITS_PER_FRAME,
+    FRAME_DURATION_IN_SEC,
     VEBO_CONSENSUS_VERSION,
 )
 from utils.evm_script import encode_error
@@ -38,7 +42,7 @@ def test_immutables(contract):
 
 
 def test_versioned(contract):
-    assert contract.getContractVersion() == 1
+    assert contract.getContractVersion() == 2
 
 
 def test_initialize(contract):
@@ -48,6 +52,10 @@ def test_initialize(contract):
             HASH_CONSENSUS_FOR_AO,
             1,
             1,
+            MAX_VALIDATORS_PER_REPORT,
+            MAX_EXIT_REQUESTS_LIMIT,
+            EXITS_PER_FRAME,
+            FRAME_DURATION_IN_SEC,
             {"from": contracts.voting},
         )
 
@@ -60,6 +68,10 @@ def test_petrified(contract):
             HASH_CONSENSUS_FOR_AO,
             1,
             1,
+            MAX_VALIDATORS_PER_REPORT,
+            MAX_EXIT_REQUESTS_LIMIT,
+            EXITS_PER_FRAME,
+            FRAME_DURATION_IN_SEC,
             {"from": contracts.voting},
         )
 

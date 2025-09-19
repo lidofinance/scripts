@@ -17,17 +17,18 @@ def test_proxy(contract):
 
 
 def test_versioned(contract):
-    assert contract.getContractVersion() == 1
+    assert contract.getContractVersion() == 2
 
 
 def test_initialize(contract):
-    with reverts(encode_error("NonZeroContractVersionOnInit()")):
+    with reverts(encode_error("UnexpectedContractVersion(uint256,uint256)", (2, 0))):
         contract.initialize({"from": contracts.voting})
 
 
 def test_petrified():
+    dummy_version = 115792089237316195423570985008687907853269984665640564039457584007913129639935
     impl = interface.WithdrawalVault(WITHDRAWAL_VAULT_IMPL)
-    with reverts(encode_error("NonZeroContractVersionOnInit()")):
+    with reverts(encode_error("UnexpectedContractVersion(uint256,uint256)", (dummy_version, 0))):
         impl.initialize({"from": contracts.voting})
 
 

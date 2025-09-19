@@ -4,6 +4,7 @@ from brownie import ZERO_ADDRESS, interface, web3, reverts  # type: ignore
 from utils.config import (
     contracts,
     NODE_OPERATORS_REGISTRY,
+    NOR_EXIT_DEADLINE_IN_SEC,
     NODE_OPERATORS_REGISTRY_IMPL,
     NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
     NODE_OPERATORS_REGISTRY_VERSION,
@@ -62,14 +63,8 @@ def test_initialize(contract):
 
 def test_finalize_upgrade(contract):
     with reverts("UNEXPECTED_CONTRACT_VERSION"):
-        contract.finalizeUpgrade_v2(
-            contracts.lido_locator,
-            CURATED_STAKING_MODULE_TYPE,
-            CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
-            {"from": contracts.voting},
-        )
-    with reverts("UNEXPECTED_CONTRACT_VERSION"):
-        contract.finalizeUpgrade_v3(
+        contract.finalizeUpgrade_v4(
+            NOR_EXIT_DEADLINE_IN_SEC,
             {"from": contracts.voting},
         )
 
@@ -85,16 +80,7 @@ def test_petrified():
         )
 
     with reverts("CONTRACT_NOT_INITIALIZED"):
-        contract.finalizeUpgrade_v2(
-            contracts.lido_locator,
-            CURATED_STAKING_MODULE_TYPE,
-            CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
-            {"from": contracts.voting},
-        )
-    with reverts("CONTRACT_NOT_INITIALIZED"):
-        contract.finalizeUpgrade_v3(
-            {"from": contracts.voting},
-        )
+        contract.finalizeUpgrade_v4(NOR_EXIT_DEADLINE_IN_SEC, {"from": contracts.voting})
 
 
 def test_nor_state(contract):

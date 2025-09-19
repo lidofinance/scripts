@@ -1,7 +1,7 @@
 from typing import Dict
 
 from utils.config import contracts
-from utils.test.csm_helpers import csm_add_node_operator, get_ea_member, fill_csm_operators_with_keys
+from utils.test.csm_helpers import csm_add_node_operator, fill_csm_operators_with_keys, get_ea_member
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
 from utils.test.staking_router_helpers import StakingModuleStatus

@@ -16,7 +16,7 @@ from utils.test.merkle_tree import Tree
 ZERO_HASH = bytes([0] * 32)
 ZERO_BYTES32 = HexBytes(ZERO_HASH)
 ONE_DAY = 1 * 24 * 60 * 60
-SHARE_RATE_PRECISION = 10**27
+SHARE_RATE_PRECISION = 10 ** 27
 EXTRA_DATA_FORMAT_EMPTY = 0
 EXTRA_DATA_FORMAT_LIST = 1
 
@@ -113,7 +113,7 @@ def prepare_csm_report(node_operators_rewards: dict, ref_slot):
     shares = node_operators_rewards.copy()
     if len(shares) < 2:
         # put a stone
-        shares[2**64 - 1] = 0
+        shares[2 ** 64 - 1] = 0
 
     tree = Tree.new(tuple((no_id, amount) for (no_id, amount) in shares.items()))
     # semi-random values
@@ -234,7 +234,7 @@ def push_oracle_report(
         extraDataItemsCount=extraDataItemsCount,
     )
     submitter = reach_consensus(refSlot, hash, consensusVersion, contracts.hash_consensus_for_accounting_oracle, silent)
-    accounts[0].transfer(submitter, 10**19)
+    accounts[0].transfer(submitter, 10 ** 19)
     # print(contracts.oracle_report_sanity_checker.getOracleReportLimits())
     report_tx = contracts.accounting_oracle.submitReportData(items, oracleVersion, {"from": submitter})
     if not silent:
@@ -290,7 +290,7 @@ def simulate_report(
             # The code is taken from the current production `lido-oracle` implementation
             # source: https://github.com/lidofinance/lido-oracle/blob/da393bf06250344a4d06dce6d1ac6a3ddcb9c7a3/src/providers/execution/contracts/lido.py#L93-L95
             "stateDiff": {
-                override_slot: refSlot,
+                override_slot: '0x' + refSlot.to_bytes(32, "big").hex(),
             },
         },
     }
