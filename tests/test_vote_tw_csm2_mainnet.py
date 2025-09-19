@@ -2,6 +2,7 @@ from typing import Optional
 from brownie.network.transaction import TransactionReceipt
 
 from utils.dsm import encode_remove_guardian, encode_add_guardian
+from utils.test.easy_track_helpers import _encode_calldata
 from utils.test.tx_tracing_helpers import (
     count_vote_items_by_events,
     display_dg_events,
@@ -178,6 +179,39 @@ def check_proxy_implementation(proxy_address, expected_impl):
     actual_impl = get_ossifiable_proxy_impl(proxy_address)
     assert actual_impl == expected_impl, f"Expected impl {expected_impl}, got {actual_impl}"
 
+
+def create_and_enact_csm_set_vetted_gate_tree_motion(
+    easy_track,
+    trusted_caller,
+    factory,
+    vetted_gate,
+    stranger
+):
+    motions_before = easy_track.getMotions()
+
+    new_tree_root = bytes.fromhex("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+    new_tree_cid = "QmTest123456789"
+    calldata = _encode_calldata(["bytes32","string"], [new_tree_root, new_tree_cid])
+
+    tx = easy_track.createMotion(factory, calldata, {"from": trusted_caller})
+
+    motions = easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 1
+
+    chain.sleep(60 * 60 * 24 * 3)
+    chain.mine()
+
+    easy_track.enactMotion(
+        motions[-1][0],
+        tx.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+
+    vetted_gate_tree_root_after = vetted_gate.treeRoot()
+    vetted_gate_tree_cid_after = vetted_gate.treeCid()
+
+    assert vetted_gate_tree_root_after == ("0x" + new_tree_root.hex()), "Tree root not updated"
+    assert vetted_gate_tree_cid_after == new_tree_cid, "Tree CID not updated"
 
 # ============================================================================
 # ============================== Import vote =================================
@@ -925,6 +959,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # Step 65: Add EasyTrack factory for CSSetVettedGateTree
         new_factories = contracts.easy_track.getEVMScriptFactories()
         assert EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY in new_factories, "EasyTrack should have CSSetVettedGateTree factory after vote"
+        create_and_enact_csm_set_vetted_gate_tree_motion(
+            contracts.easy_track,
+            trusted_caller=CSM_COMMITTEE_MS,
+            factory=EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY,
+            vetted_gate=cs_vetted_gate,
+            stranger=stranger
+        )
 
         # Steps 66-67: Validate EasyTrack factories for validator exit request hashes
         assert EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY in new_factories, "EasyTrack should have SDVT validator exit request hashes factory after vote"
