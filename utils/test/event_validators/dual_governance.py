@@ -8,8 +8,8 @@ def validate_dual_governance_submit_event(
     proposal_id: int,
     proposer: str,
     executor: str,
-    metadata: str = None,
-    proposal_calls: any = None,
+    metadata: str,
+    proposal_calls: any,
     emitted_by: list[str] = None,
 ) -> None:
     _events_chain = ["LogScriptCall", "ProposalSubmitted", "ProposalSubmitted"]
@@ -21,21 +21,20 @@ def validate_dual_governance_submit_event(
     assert event["ProposalSubmitted"][0]["id"] == proposal_id, "Wrong proposalId"
     assert event["ProposalSubmitted"][0]["executor"] == executor, "Wrong executor"
 
-    if proposal_calls:
-        assert len(event["ProposalSubmitted"][0]["calls"]) == len(proposal_calls), "Wrong callsCount"
-        for i in range(0, len(proposal_calls)):
-            assert event["ProposalSubmitted"][0]["calls"][i][0] == proposal_calls[i]["target"], f"Wrong target {i}: {event['ProposalSubmitted'][0]['calls'][i][0]} : {proposal_calls[i]['target']}"
-            assert event["ProposalSubmitted"][0]["calls"][i][1] == proposal_calls[i]["value"], f"Wrong value {i}"
-            assert event["ProposalSubmitted"][0]["calls"][i][2] == proposal_calls[i]["data"], f'Wrong data {i}'
+    assert len(event["ProposalSubmitted"][0]["calls"]) == len(proposal_calls), "Wrong callsCount"
+
+    for i in range(0, len(proposal_calls)):
+        assert event["ProposalSubmitted"][0]["calls"][i][0] == proposal_calls[i]["target"], "Wrong target"
+        assert event["ProposalSubmitted"][0]["calls"][i][1] == proposal_calls[i]["value"], "Wrong value"
+        assert event["ProposalSubmitted"][0]["calls"][i][2] == proposal_calls[i]["data"], "Wrong data"
 
     assert event["ProposalSubmitted"][1]["proposalId"] == proposal_id, "Wrong proposalId"
     assert event["ProposalSubmitted"][1]["proposerAccount"] == proposer, "Wrong proposer"
+    assert event["ProposalSubmitted"][1]["metadata"] == metadata, "Wrong metadata"
 
-    if metadata:
-        assert event["ProposalSubmitted"][1]["metadata"] == metadata, f"Wrong metadata {event['ProposalSubmitted'][1]['metadata']}"
+    assert len(event["ProposalSubmitted"]) == len(emitted_by), "Wrong emitted_by count"
 
     if emitted_by is not None:
-        assert len(event["ProposalSubmitted"]) == len(emitted_by), "Wrong emitted_by count"
         for i in range(0, len(emitted_by)):
             assert convert.to_address(event["ProposalSubmitted"][i]["_emitted_by"]) == convert.to_address(
                 emitted_by[i]
