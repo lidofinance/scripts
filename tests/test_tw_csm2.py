@@ -25,15 +25,14 @@ from utils.test.event_validators.node_operators_registry import (
 from utils.test.tx_tracing_helpers import group_voting_events_from_receipt, group_dg_events_from_receipt
 from utils.test.event_validators.easy_track import validate_evmscript_factory_added_event, EVMScriptFactoryAdded
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
-from utils.config import (
-    CS_MODULE_ID,
-    CS_MODULE_MODULE_FEE_BP,
-    CS_MODULE_MAX_DEPOSITS_PER_BLOCK,
-    CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
-    CS_MODULE_TREASURY_FEE_BP,
-    CS_GATE_SEAL_ADDRESS,
-    contracts,
-)
+from utils.config import contracts
+
+CS_MODULE_ID = 3
+CS_MODULE_MODULE_FEE_BP = 600
+CS_MODULE_MAX_DEPOSITS_PER_BLOCK = 30
+CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
+CS_MODULE_TREASURY_FEE_BP = 400
+CS_GATE_SEAL_ADDRESS = "0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0"
 
 
 def validate_proxy_upgrade_event(event: EventDict, implementation: str, emitted_by: Optional[str] = None):
@@ -955,7 +954,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 proposal_id=EXPECTED_DG_PROPOSAL_ID,
                 proposer=VOTING,
                 executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-                metadata="Upgrade to CSM v2 and Triggerable Withdrawals",
+                metadata="Upgrade to CSM v2, enable Triggerable Withdrawals, migrate Nethermind → Twinstake, rotate Kiln Guardian",
                 proposal_calls=dual_governance_proposal_calls,
                 emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
             )

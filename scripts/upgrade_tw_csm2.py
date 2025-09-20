@@ -103,20 +103,7 @@ from brownie import interface, web3, convert
 from brownie.convert.main import to_uint  # type: ignore
 
 from utils.agent import agent_forward
-from utils.config import (
-    CSM_COMMITTEE_MS,
-    CS_MODULE_ID,
-    CS_MODULE_MODULE_FEE_BP,
-    CS_MODULE_TREASURY_FEE_BP,
-    CS_MODULE_MAX_DEPOSITS_PER_BLOCK,
-    CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
-    CS_GATE_SEAL_ADDRESS,
-    NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
-    SIMPLE_DVT_ARAGON_APP_ID,
-    ARAGON_KERNEL,
-    AGENT,
-    contracts,
-)
+from utils.config import contracts
 from utils.dsm import encode_remove_guardian, encode_add_guardian
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
@@ -129,6 +116,20 @@ from utils.dual_governance import submit_proposals
 from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.config import get_deployer_account, get_priority_fee, get_is_live
 from utils.node_operators import encode_set_node_operator_name, encode_set_node_operator_reward_address
+
+# ============================= Constants ===================================
+AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
+ARAGON_KERNEL = "0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc"
+NODE_OPERATORS_REGISTRY_ARAGON_APP_ID = "0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d"
+SIMPLE_DVT_ARAGON_APP_ID = "0xe1635b63b5f7b5e545f2a637558a4029dea7905361a2f0fc28c66e9136cf86a4"
+
+CSM_COMMITTEE_MS = "0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f"
+CS_MODULE_ID = 3
+CS_MODULE_MODULE_FEE_BP = 600
+CS_MODULE_MAX_DEPOSITS_PER_BLOCK = 30
+CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
+CS_MODULE_TREASURY_FEE_BP = 400
+CS_GATE_SEAL_ADDRESS = "0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0"
 
 # ============================== Addresses ===================================
 # New core contracts implementations
