@@ -265,8 +265,8 @@ EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 14 * 7200
 NOR_EXIT_DEADLINE_IN_SEC = 172800
 
 # CSM
-CS_MODULE_NEW_TARGET_SHARE_BP = 3500  # 3.5%
-CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP = 3750  # 3.75%
+CS_MODULE_NEW_TARGET_SHARE_BP = 500  # 5%
+CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP = 625  # 6.25%
 
 CS_ACCOUNTING_IMPL_V2_ADDRESS = "0x6f09d2426c7405C5546413e6059F884D2D03f449"
 CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS = "0x5DCF7cF7c6645E9E822a379dF046a8b0390251A1"
@@ -800,7 +800,7 @@ def dual_governance_proposal_calls():
             )
         ]),
 
-        # 59. Increase CSM share in Staking Router from 15% to 16%
+        # 59. Increase CSM share in Staking Router from 3% to 5%
         agent_forward([
             (staking_router.address,
              staking_router.updateStakingModule.encode_input(

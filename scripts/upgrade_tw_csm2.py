@@ -69,7 +69,7 @@ Upgrade TW + CSMv2
 1.56. Grant MANAGE_BOND_CURVES_ROLE to the AGENT
 1.57. Add Identified Community Stakers Gate Bond Curve
 1.58. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT
-1.59. Increase CSM share in Staking Router from 15% to 16%
+1.59. Increase CSM share in Staking Router from 3% to 5%
 --- Gate Seals ---
 1.60. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
 1.61. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal
@@ -176,8 +176,8 @@ EXITS_PER_FRAME = 1
 FRAME_DURATION_IN_SEC = 48
 
 # CSM
-CS_MODULE_NEW_TARGET_SHARE_BP = 3500  # 3.5%
-CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP = 3750  # 3.75%
+CS_MODULE_NEW_TARGET_SHARE_BP = 500  # 5%
+CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP = 625  # 6.25%
 
 CS_ACCOUNTING_IMPL_V2_ADDRESS = "0x6f09d2426c7405C5546413e6059F884D2D03f449"
 CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS = "0x5DCF7cF7c6645E9E822a379dF046a8b0390251A1"
@@ -814,7 +814,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.59. Increase CSM share in Staking Router from 15% to 16%",
+        # "1.59. Increase CSM share in Staking Router from 3% to 5%",
         agent_forward([encode_staking_router_update_csm_module_share()]),
         # --- Gate Seals
         # "1.60. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal",
