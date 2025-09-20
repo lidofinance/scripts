@@ -866,7 +866,7 @@ def get_vote_items():
                 encode_set_node_operator_reward_address(id=NETHERMIND_NO_ID, rewardAddress=NETHERMIND_NEW_REWARD_ADDRESS, registry=contracts.node_operators_registry),
             ]
         ),
-        # "69. Remove Kiln guardian"
+        # "69. Remove old Kiln guardian"
         agent_forward(
             [
                 encode_remove_guardian(dsm=contracts.deposit_security_module, guardian_address=OLD_KILN_ADDRESS, quorum_size=4),
