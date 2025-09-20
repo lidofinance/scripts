@@ -2,95 +2,95 @@
 Upgrade TW + CSMv2
 
 --- Locator
-1. Update locator implementation
+1.1. Update locator implementation
 --- VEB
-2. Update VEBO implementation
-3. Call finalizeUpgrade_v2(maxValidatorsPerReport, maxExitRequestsLimit, exitsPerFrame, frameDurationInSec) on VEBO
-4. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-5. Bump VEBO consensus version to `4`
-6. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT
-7. Grant SUBMIT_REPORT_HASH_ROLE on Validator Exit Bus Oracle to the EasyTrack EVM Script Executor
+1.2. Update VEBO implementation
+1.3. Call finalizeUpgrade_v2(maxValidatorsPerReport, maxExitRequestsLimit, exitsPerFrame, frameDurationInSec) on VEBO
+1.4. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+1.5. Bump VEBO consensus version to `4`
+1.6. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT
+1.7. Grant SUBMIT_REPORT_HASH_ROLE on Validator Exit Bus Oracle to the EasyTrack EVM Script Executor
 --- Triggerable Withdrawals Gateway (TWG)
-8. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector
-9. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB
-10. Connect TRIGGERABLE_WITHDRAWALS_GATEWAY to Dual Governance tiebreaker
+1.8. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector
+1.9. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB
+1.10. Connect TRIGGERABLE_WITHDRAWALS_GATEWAY to Dual Governance tiebreaker
 --- WV
-11. Update WithdrawalVault implementation
-12. Call finalizeUpgrade_v2() on WithdrawalVault
+1.11. Update WithdrawalVault implementation
+1.12. Call finalizeUpgrade_v2() on WithdrawalVault
 --- AO
-13. Update Accounting Oracle implementation
-14. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-15. Bump AO consensus version to `4`
-16. Revoke AO MANAGE_CONSENSUS_VERSION_ROLE from the AGENT
-17. Call finalizeUpgrade_v3() on AO
+1.13. Update Accounting Oracle implementation
+1.14. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
+1.15. Bump AO consensus version to `4`
+1.16. Revoke AO MANAGE_CONSENSUS_VERSION_ROLE from the AGENT
+1.17. Call finalizeUpgrade_v3() on AO
 --- SR
-18. Update SR implementation
-19. Call finalizeUpgrade_v3() on SR
-20. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitDelayVerifier
-21. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG
+1.18. Update SR implementation
+1.19. Call finalizeUpgrade_v3() on SR
+1.20. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitDelayVerifier
+1.21. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG
 --- Curated Staking Module
-22. Grant APP_MANAGER_ROLE role to the AGENT on Kernel
-23. Update `NodeOperatorsRegistry` implementation
-24. Call finalizeUpgrade_v4 on Curated Staking Module
+1.22. Grant APP_MANAGER_ROLE role to the AGENT on Kernel
+1.23. Update `NodeOperatorsRegistry` implementation
+1.24. Call finalizeUpgrade_v4 on Curated Staking Module
 --- sDVT
-25. Update `SimpleDVT` implementation
-26. Call finalizeUpgrade_v4 on sDVT
-27. Revoke APP_MANAGER_ROLE role from the AGENT on Kernel
+1.25. Update `SimpleDVT` implementation
+1.26. Call finalizeUpgrade_v4 on sDVT
+1.27. Revoke APP_MANAGER_ROLE role from the AGENT on Kernel
 --- Oracle configs ---
-28. Grant CONFIG_MANAGER_ROLE role to the AGENT
-29. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig
-30. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-31. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-32. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig
-33. Revoke CONFIG_MANAGER_ROLE role from the AGENT
+1.28. Grant CONFIG_MANAGER_ROLE role to the AGENT
+1.29. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig
+1.30. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+1.31. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
+1.32. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig
+1.33. Revoke CONFIG_MANAGER_ROLE role from the AGENT
 --- CSM ---
-34. Upgrade CSM implementation on proxy
-35. Call `finalizeUpgradeV2()` on CSM contract
-36. Upgrade CSAccounting implementation on proxy
-37. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract
-38. Upgrade CSFeeOracle implementation on proxy
-39. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract
-40. Upgrade CSFeeDistributor implementation on proxy
-41. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
-42. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
-43. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
-44. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
-45. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
-46. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
-47. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
-48. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
-49. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
-50. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
-51. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
-52. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
-53. Grant CSM role PAUSE_ROLE for the new GateSeal instance
-54. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
-55. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
-56. Grant MANAGE_BOND_CURVES_ROLE to the AGENT
-57. Add Identified Community Stakers Gate Bond Curve
-58. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT
-59. Increase CSM share in Staking Router from 15% to 16%
+1.34. Upgrade CSM implementation on proxy
+1.35. Call `finalizeUpgradeV2()` on CSM contract
+1.36. Upgrade CSAccounting implementation on proxy
+1.37. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract
+1.38. Upgrade CSFeeOracle implementation on proxy
+1.39. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract
+1.40. Upgrade CSFeeDistributor implementation on proxy
+1.41. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
+1.42. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
+1.43. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
+1.44. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
+1.45. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
+1.46. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
+1.47. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
+1.48. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
+1.49. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
+1.50. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
+1.51. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
+1.52. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
+1.53. Grant CSM role PAUSE_ROLE for the new GateSeal instance
+1.54. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
+1.55. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
+1.56. Grant MANAGE_BOND_CURVES_ROLE to the AGENT
+1.57. Add Identified Community Stakers Gate Bond Curve
+1.58. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT
+1.59. Increase CSM share in Staking Router from 15% to 16%
 --- Gate Seals ---
-60. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
-61. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal
-62. Grant PAUSE_ROLE on WithdrawalQueue to the new WithdrawalQueue GateSeal
-63. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new Triggerable Withdrawals GateSeal
-64. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to the new Triggerable Withdrawals GateSeal
+1.60. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
+1.61. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal
+1.62. Grant PAUSE_ROLE on WithdrawalQueue to the new WithdrawalQueue GateSeal
+1.63. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new Triggerable Withdrawals GateSeal
+1.64. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to the new Triggerable Withdrawals GateSeal
 --- ResealManager ---
-65. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager
-66. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager
+1.65. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager
+1.66. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager
 --- Node Operators Registry rename and reward address change ---
-67. Rename Node Operator ID 25 from Nethermind to Twinstake
-68. Change Node Operator ID 25 reward address from 0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91 to 0x36201ed66DbC284132046ee8d99272F8eEeb24c8
+1.67. Rename Node Operator ID 25 from Nethermind to Twinstake
+1.68. Change Node Operator ID 25 reward address from 0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91 to 0x36201ed66DbC284132046ee8d99272F8eEeb24c8
 -- DSM rotate guardian ---
-69. Remove old Kiln guardian
-70. Add new Kiln guardian
---- Time Constraints ---
-71. Set time constraints for execution (13:00 to 19:00 UTC)
+1.69. Remove old Kiln guardian
+1.70. Add new Kiln guardian
+1.--- Time Constraints ---
+1.71. Set time constraints for execution (13:00 to 19:00 UTC)
 --- EasyTrack ---
-72. Add CSSetVettedGateTree factory to EasyTrack with permissions
-73. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
-74. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track
+2. Add CSSetVettedGateTree factory to EasyTrack with permissions
+3. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
+4. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
@@ -249,12 +249,12 @@ def to_percent(bp: int) -> float:
 def get_vote_items():
     dg_items = [
         # --- locator
-        # "1. Update locator implementation",
+        # "1.1. Update locator implementation",
         agent_forward([encode_proxy_upgrade_to(contracts.lido_locator, LIDO_LOCATOR_IMPL)]),
         # --- VEB
-        # "2. Update VEBO implementation",
+        # "1.2. Update VEBO implementation",
         agent_forward([encode_proxy_upgrade_to(contracts.validators_exit_bus_oracle, VALIDATORS_EXIT_BUS_ORACLE_IMPL)]),
-        # "3. Call finalizeUpgrade_v2 on VEBO",
+        # "1.3. Call finalizeUpgrade_v2 on VEBO",
         agent_forward(
             [
                 (
@@ -265,7 +265,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "4. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
+        # "1.4. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -275,9 +275,9 @@ def get_vote_items():
                 )
             ]
         ),
-        # "5. Bump VEBO consensus version to `4`",
+        # "1.5. Bump VEBO consensus version to `4`",
         agent_forward([encode_oracle_upgrade_consensus(contracts.validators_exit_bus_oracle, VEBO_CONSENSUS_VERSION)]),
-        # "6. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT",
+        # "1.6. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -287,7 +287,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "7. Grant SUBMIT_REPORT_HASH_ROLE on Validator Exit Bus Oracle to the EasyTrack EVM Script Executor",
+        # "1.7. Grant SUBMIT_REPORT_HASH_ROLE on Validator Exit Bus Oracle to the EasyTrack EVM Script Executor",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -298,7 +298,7 @@ def get_vote_items():
             ]
         ),
         # --- Triggerable Withdrawals Gateway (TWG)
-        # "8. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector",
+        # "1.8. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -308,7 +308,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "9. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB",
+        # "1.9. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -318,7 +318,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "10. Connect TRIGGERABLE_WITHDRAWALS_GATEWAY to Dual Governance tiebreaker",
+        # "1.10. Connect TRIGGERABLE_WITHDRAWALS_GATEWAY to Dual Governance tiebreaker",
         (
             contracts.dual_governance.address,
             contracts.dual_governance.addTiebreakerSealableWithdrawalBlocker.encode_input(
@@ -326,9 +326,9 @@ def get_vote_items():
             ),
         ),
         # --- WV
-        # "11. Update WithdrawalVault implementation",
+        # "1.11. Update WithdrawalVault implementation",
         agent_forward([encode_wv_proxy_upgrade_to(contracts.withdrawal_vault, WITHDRAWAL_VAULT_IMPL)]),
-        # "12. Call finalizeUpgrade_v2 on WithdrawalVault",
+        # "1.12. Call finalizeUpgrade_v2 on WithdrawalVault",
         agent_forward(
             [
                 (
@@ -338,9 +338,9 @@ def get_vote_items():
             ]
         ),
         # --- AO
-        # "13. Update Accounting Oracle implementation",
+        # "1.13. Update Accounting Oracle implementation",
         agent_forward([encode_proxy_upgrade_to(contracts.accounting_oracle, ACCOUNTING_ORACLE_IMPL)]),
-        # "14. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
+        # "1.14. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -350,9 +350,9 @@ def get_vote_items():
                 )
             ]
         ),
-        # "15. Bump AO consensus version to `4`",
+        # "1.15. Bump AO consensus version to `4`",
         agent_forward([encode_oracle_upgrade_consensus(contracts.accounting_oracle, AO_CONSENSUS_VERSION)]),
-        # "16. Revoke AO MANAGE_CONSENSUS_VERSION_ROLE from the AGENT",
+        # "1.16. Revoke AO MANAGE_CONSENSUS_VERSION_ROLE from the AGENT",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -362,7 +362,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "17. Call finalizeUpgrade_v3() on AO",
+        # "1.17. Call finalizeUpgrade_v3() on AO",
         agent_forward(
             [
                 (
@@ -372,9 +372,9 @@ def get_vote_items():
             ]
         ),
         # --- SR
-        # "18. Update SR implementation",
+        # "1.18. Update SR implementation",
         agent_forward([encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)]),
-        # "19. Call finalizeUpgrade_v3() on SR",
+        # "1.19. Call finalizeUpgrade_v3() on SR",
         agent_forward(
             [
                 (
@@ -383,7 +383,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "20. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitDelayVerifier",
+        # "1.20. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitDelayVerifier",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -393,7 +393,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "21. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG",
+        # "1.21. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -406,7 +406,7 @@ def get_vote_items():
             ]
         ),
         # --- Curated Staking Module and sDVT
-        # "22. Grant APP_MANAGER_ROLE role to the AGENT",
+        # "1.22. Grant APP_MANAGER_ROLE role to the AGENT",
         agent_forward(
             [
                 (
@@ -419,7 +419,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "23. Update `NodeOperatorsRegistry` implementation",
+        # "1.23. Update `NodeOperatorsRegistry` implementation",
         agent_forward(
             [
                 (
@@ -432,7 +432,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "24. Call finalizeUpgrade_v4 on Curated Staking Module",
+        # "1.24. Call finalizeUpgrade_v4 on Curated Staking Module",
         agent_forward(
             [
                 (
@@ -443,7 +443,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "25. Update `SimpleDVT` implementation",
+        # "1.25. Update `SimpleDVT` implementation",
         agent_forward(
             [
                 (
@@ -456,7 +456,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "26. Call finalizeUpgrade_v4 on SDVT",
+        # "1.26. Call finalizeUpgrade_v4 on SDVT",
         agent_forward(
             [
                 (
@@ -467,7 +467,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "27. Revoke APP_MANAGER_ROLE role from the AGENT on Kernel",
+        # "1.27. Revoke APP_MANAGER_ROLE role from the AGENT on Kernel",
         agent_forward(
             [
                 (
@@ -481,7 +481,7 @@ def get_vote_items():
             ]
         ),
         # --- Oracle configs
-        # "28. Grant CONFIG_MANAGER_ROLE role to the AGENT",
+        # "1.28. Grant CONFIG_MANAGER_ROLE role to the AGENT",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -491,7 +491,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "29. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig",
+        # "1.29. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig",
         agent_forward(
             [
                 (
@@ -500,7 +500,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "30. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
+        # "1.30. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
         agent_forward(
             [
                 (
@@ -509,7 +509,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "31. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
+        # "1.31. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
         agent_forward(
             [
                 (
@@ -518,7 +518,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "32. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig",
+        # "1.32. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig",
         agent_forward(
             [
                 (
@@ -529,7 +529,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "33. Revoke CONFIG_MANAGER_ROLE role from the AGENT",
+        # "1.33. Revoke CONFIG_MANAGER_ROLE role from the AGENT",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -540,7 +540,7 @@ def get_vote_items():
             ]
         ),
         # --- CSM
-        # "34. Upgrade CSM implementation on proxy",
+        # "1.34. Upgrade CSM implementation on proxy",
         agent_forward(
             [
                 encode_proxy_upgrade_to(
@@ -549,7 +549,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "35. Call `finalizeUpgradeV2()` on CSM contract",
+        # "1.35. Call `finalizeUpgradeV2()` on CSM contract",
         agent_forward(
             [
                 (
@@ -558,7 +558,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "36. Upgrade CSAccounting implementation on proxy",
+        # "1.36. Upgrade CSAccounting implementation on proxy",
         agent_forward(
             [
                 encode_proxy_upgrade_to(
@@ -567,7 +567,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "37. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract",
+        # "1.37. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract",
         agent_forward(
             [
                 (
@@ -576,7 +576,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "38. Upgrade CSFeeOracle implementation on proxy",
+        # "1.38. Upgrade CSFeeOracle implementation on proxy",
         agent_forward(
             [
                 encode_proxy_upgrade_to(
@@ -585,7 +585,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "39. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract",
+        # "1.39. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract",
         agent_forward(
             [
                 (
@@ -594,7 +594,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "40. Upgrade CSFeeDistributor implementation on proxy",
+        # "1.40. Upgrade CSFeeDistributor implementation on proxy",
         agent_forward(
             [
                 encode_proxy_upgrade_to(
@@ -603,7 +603,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "41. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract",
+        # "1.41. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract",
         agent_forward(
             [
                 (
@@ -612,7 +612,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "42. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract",
+        # "1.42. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -622,7 +622,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "43. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract",
+        # "1.43. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -632,7 +632,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "44. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee",
+        # "1.44. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -642,7 +642,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "45. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate",
+        # "1.45. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -652,7 +652,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "46. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate",
+        # "1.46. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -662,7 +662,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "47. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate",
+        # "1.47. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -672,7 +672,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "48. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract",
+        # "1.48. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -682,7 +682,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "49. Grant role VERIFIER_ROLE to the new instance of the Verifier contract",
+        # "1.49. Grant role VERIFIER_ROLE to the new instance of the Verifier contract",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -692,7 +692,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "50. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance",
+        # "1.50. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -702,7 +702,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "51. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance",
+        # "1.51. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -712,7 +712,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "52. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance",
+        # "1.52. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -722,7 +722,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "53. Grant CSM role PAUSE_ROLE for the new GateSeal instance",
+        # "1.53. Grant CSM role PAUSE_ROLE for the new GateSeal instance",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -732,7 +732,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "54. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance",
+        # "1.54. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -742,7 +742,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "55. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance",
+        # "1.55. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -752,7 +752,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "56. Grant MANAGE_BOND_CURVES_ROLE to the AGENT",
+        # "1.56. Grant MANAGE_BOND_CURVES_ROLE to the AGENT",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -762,7 +762,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "57. Add Identified Community Stakers Gate Bond Curve",
+        # "1.57. Add Identified Community Stakers Gate Bond Curve",
         agent_forward(
             [
                 (
@@ -771,7 +771,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "58. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT",
+        # "1.58. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -781,10 +781,10 @@ def get_vote_items():
                 )
             ]
         ),
-        # "59. Increase CSM share in Staking Router from 15% to 16%",
+        # "1.59. Increase CSM share in Staking Router from 15% to 16%",
         agent_forward([encode_staking_router_update_csm_module_share()]),
         # --- Gate Seals
-        # "60. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal",
+        # "1.60. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -794,7 +794,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "61. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal",
+        # "1.61. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -804,7 +804,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "62. Grant PAUSE_ROLE on WithdrawalQueue to the new WithdrawalQueue GateSeal",
+        # "1.62. Grant PAUSE_ROLE on WithdrawalQueue to the new WithdrawalQueue GateSeal",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -814,7 +814,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "63. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new Triggerable Withdrawals GateSeal",
+        # "1.63. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new Triggerable Withdrawals GateSeal",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -824,7 +824,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "64. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to the new Triggerable Withdrawals GateSeal",
+        # "1.64. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to the new Triggerable Withdrawals GateSeal",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -834,7 +834,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "65. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager",
+        # "1.65. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -844,7 +844,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "66. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager",
+        # "1.66. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -854,31 +854,31 @@ def get_vote_items():
                 )
             ]
         ),
-        # "67. Rename Node Operator ID 25 from Nethermind to Twinstake"
+        # "1.67. Rename Node Operator ID 25 from Nethermind to Twinstake"
         agent_forward(
             [
                 encode_set_node_operator_name(id=NETHERMIND_NO_ID, name=NETHERMIND_NEW_NO_NAME, registry=contracts.node_operators_registry),
             ]
         ),
-        # "68. Change Node Operator ID 25 reward address from 0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91 to 0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
+        # "1.68. Change Node Operator ID 25 reward address from 0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91 to 0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
         agent_forward(
             [
                 encode_set_node_operator_reward_address(id=NETHERMIND_NO_ID, rewardAddress=NETHERMIND_NEW_REWARD_ADDRESS, registry=contracts.node_operators_registry),
             ]
         ),
-        # "69. Remove old Kiln guardian"
+        # "1.69. Remove old Kiln guardian"
         agent_forward(
             [
                 encode_remove_guardian(dsm=contracts.deposit_security_module, guardian_address=OLD_KILN_ADDRESS, quorum_size=4),
             ]
         ),
-        # "70. Add new Kiln guardian"
+        # "1.70. Add new Kiln guardian"
         agent_forward(
             [
                 encode_add_guardian(dsm=contracts.deposit_security_module, guardian_address=NEW_KILN_ADDRESS, quorum_size=4),
             ]
         ),
-        # "71. Set time constraints for execution (13:00 to 19:00 UTC)"
+        # "1.71. Set time constraints for execution (13:00 to 19:00 UTC)"
         (
             DUAL_GOVERNANCE_TIME_CONSTRAINTS,
             interface.TimeConstraints(DUAL_GOVERNANCE_TIME_CONSTRAINTS).checkTimeWithinDayTimeAndEmit.encode_input(
