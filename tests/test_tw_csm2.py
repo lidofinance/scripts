@@ -1081,16 +1081,16 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             initial_vebo_consensus_version = validators_exit_bus_oracle.getConsensusVersion()
             assert initial_vebo_consensus_version < VEBO_CONSENSUS_VERSION, f"VEBO consensus version should be less than {VEBO_CONSENSUS_VERSION}"
 
-            # Step 7: Check TWG role for CS Ejector initial state
+            # Step 8: Check TWG role for CS Ejector initial state
             add_full_withdrawal_request_role = triggerable_withdrawals_gateway.ADD_FULL_WITHDRAWAL_REQUEST_ROLE()
             assert not triggerable_withdrawals_gateway.hasRole(add_full_withdrawal_request_role,
                                                                cs_ejector), "CS Ejector should not have ADD_FULL_WITHDRAWAL_REQUEST_ROLE before upgrade"
 
-            # Step 8: Check TWG role for VEB initial state
+            # Step 9: Check TWG role for VEB initial state
             assert not triggerable_withdrawals_gateway.hasRole(add_full_withdrawal_request_role,
                                                                vebo_proxy), "VEBO should not have ADD_FULL_WITHDRAWAL_REQUEST_ROLE before upgrade"
 
-            # Step 9: Check EasyTrack VEB SUBMIT_REPORT_HASH_ROLE initial state
+            # Step 7: Check EasyTrack VEB SUBMIT_REPORT_HASH_ROLE initial state
             submit_report_hash_role = web3.keccak(text="SUBMIT_REPORT_HASH_ROLE")
             assert not validators_exit_bus_oracle.hasRole(submit_report_hash_role,
                                           EASYTRACK_EVMSCRIPT_EXECUTOR), "EasyTrack executor should not have SUBMIT_REPORT_HASH_ROLE on VEBO before upgrade"
@@ -1100,16 +1100,16 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             initial_tiebreakers = tiebreaker_details[3]  # sealableWithdrawalBlockers
             assert TRIGGERABLE_WITHDRAWALS_GATEWAY not in initial_tiebreakers, "TWG should not be in tiebreaker list before upgrade"
 
-            # Step 9: Check Withdrawal Vault implementation initial state
+            # Step 11: Check Withdrawal Vault implementation initial state
             assert withdrawal_vault_impl_before != WITHDRAWAL_VAULT_IMPL, "Withdrawal Vault implementation should be different before upgrade"
 
-            # Step 10: Withdrawal Vault finalizeUpgrade_v2 check is done post-execution
+            # Step 12: Withdrawal Vault finalizeUpgrade_v2 check is done post-execution
             assert withdrawal_vault.getContractVersion() == 1, "Withdrawal Vault version should be 1 before upgrade"
 
-            # Step 11: Check Accounting Oracle implementation initial state
+            # Step 13: Check Accounting Oracle implementation initial state
             assert accounting_oracle_impl_before != ACCOUNTING_ORACLE_IMPL, "Accounting Oracle implementation should be different before upgrade"
 
-            # Steps 12-14: Check AO consensus version management
+            # Steps 14-16: Check AO consensus version management
             initial_ao_consensus_version = accounting_oracle.getConsensusVersion()
             assert initial_ao_consensus_version < AO_CONSENSUS_VERSION, f"AO consensus version should be less than {AO_CONSENSUS_VERSION}"
             assert not accounting_oracle.hasRole(accounting_oracle.MANAGE_CONSENSUS_VERSION_ROLE(),
@@ -1118,22 +1118,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # Step 17: Check AO version before finalizeUpgrade_v3
             assert accounting_oracle.getContractVersion() == 2, "AO contract version should be 2 before finalizeUpgrade_v3"
 
-            # Step 15: Check Staking Router implementation initial state
+            # Step 18: Check Staking Router implementation initial state
             assert staking_router_impl_before != STAKING_ROUTER_IMPL, "Staking Router implementation should be different before upgrade"
 
-            # Steps 16-17: Check SR roles initial state
-            try:
-                report_validator_exiting_status_role = staking_router.REPORT_VALIDATOR_EXITING_STATUS_ROLE()
-                report_validator_exit_triggered_role = staking_router.REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE()
-            except Exception as e:
-                assert "Unknown typed error: 0x" in str(e), f"Unexpected error: {e}"
-                report_validator_exiting_status_role = ZERO_ADDRESS
-                report_validator_exit_triggered_role = ZERO_ADDRESS
+            # Step 19: Check SR version (before finalizeUpgrade_v3)
+            assert staking_router.getContractVersion() == 2, "Staking Router version should be 2 before upgrade"
 
-            assert report_validator_exiting_status_role == ZERO_ADDRESS, "REPORT_VALIDATOR_EXITING_STATUS_ROLE should not exist before upgrade"
-            assert report_validator_exit_triggered_role == ZERO_ADDRESS, "REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE should not exist before upgrade"
-
-            # Step 18: Check APP_MANAGER_ROLE initial state
+            # Step 22: Check APP_MANAGER_ROLE initial state
             app_manager_role = web3.keccak(text="APP_MANAGER_ROLE")
             assert acl.getPermissionManager(ARAGON_KERNEL,
                                             app_manager_role) == AGENT, "AGENT should be the permission manager for APP_MANAGER_ROLE"
@@ -1143,18 +1134,18 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert not acl.hasPermission(AGENT, ARAGON_KERNEL,
                                          app_manager_role), "AGENT should not have APP_MANAGER_ROLE before the upgrade"
 
-            # Steps 19-23: Check NOR and sDVT initial state
+            # Steps 23-27: Check NOR and sDVT initial state
             assert not acl.hasPermission(agent, kernel,
                                          app_manager_role), "Agent should not have APP_MANAGER_ROLE before upgrade"
             assert nor.getContractVersion() == 3, "Node Operators Registry version should be 3 before upgrade"
             assert simple_dvt.getContractVersion() == 3, "Simple DVT version should be 3 before upgrade"
 
-            # Step 24: Check CONFIG_MANAGER_ROLE initial state
+            # Step 28: Check CONFIG_MANAGER_ROLE initial state
             config_manager_role = oracle_daemon_config.CONFIG_MANAGER_ROLE()
             assert not oracle_daemon_config.hasRole(config_manager_role,
                                                     agent), "Agent should not have CONFIG_MANAGER_ROLE on Oracle Daemon Config before upgrade"
 
-            # Steps 25-27: Check Oracle Daemon Config variables to be removed
+            # Steps 29-31: Check Oracle Daemon Config variables to be removed
             try:
                 oracle_daemon_config.get('NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP')
                 oracle_daemon_config.get('VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS')
@@ -1162,45 +1153,45 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             except Exception as e:
                 assert False, f"Expected variables to exist before removal: {e}"
 
-            # Step 28: Check that EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS doesn't exist yet
+            # Step 32: Check that EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS doesn't exist yet
             try:
                 oracle_daemon_config.get('EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS')
                 assert False, "EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS should not exist before vote"
             except Exception:
                 pass  # Expected to fail
 
-            # Step 29: Check CSM implementation initial state
+            # Step 34: Check CSM implementation initial state
             assert csm_impl_before != CSM_IMPL_V2_ADDRESS, "CSM implementation should be different before vote"
 
-            # Step 30: Check CSM finalizeUpgradeV2 initial state
+            # Step 35: Check CSM finalizeUpgradeV2 initial state
             with reverts():
                 # The function should not exist yet
                 csm.getInitializedVersion()
 
-            # CSM Step 32: Check CSAccounting implementation (pre-vote state)
+            # Step 36: Check CSAccounting implementation (pre-vote state)
             assert cs_accounting_impl_before != CS_ACCOUNTING_IMPL_V2_ADDRESS, "CSAccounting implementation should be different before vote"
 
-            # CSM Step 33: Check CSAccounting finalizeUpgradeV2 was not called (pre-vote state)
+            # Step 37: Check CSAccounting finalizeUpgradeV2 was not called (pre-vote state)
             with reverts():
                 # The function should not exist yet
                 cs_accounting.getInitializedVersion()
 
-            # CSM Step 34: Check CSFeeOracle implementation (pre-vote state)
+            # Step 38: Check CSFeeOracle implementation (pre-vote state)
             assert cs_fee_oracle_impl_before != CS_FEE_ORACLE_IMPL_V2_ADDRESS, "CSFeeOracle implementation should be different before vote"
 
-            # CSM Step 35: Check CSFeeOracle finalizeUpgradeV2 was not called (pre-vote state)
+            # Step 39: Check CSFeeOracle finalizeUpgradeV2 was not called (pre-vote state)
             assert cs_fee_oracle.getContractVersion() < CS_FEE_ORACLE_V2_VERSION, f"CSFeeOracle version should be less than {CS_FEE_ORACLE_V2_VERSION} before vote"
             assert cs_fee_oracle.getConsensusVersion() < 3, "CSFeeOracle consensus version should be less than 3 before vote"
 
-            # CSM Step 36: Check CSFeeDistributor implementation (pre-vote state)
+            # Step 40: Check CSFeeDistributor implementation (pre-vote state)
             assert cs_fee_distributor_impl_before != CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS, "CSFeeDistributor implementation should be different before vote"
 
-            # CSM Step 37: Check CSFeeDistributor finalizeUpgradeV2 was not called (pre-vote state)
+            # Step 41: Check CSFeeDistributor finalizeUpgradeV2 was not called (pre-vote state)
             with reverts():
                 # The function should not exist yet
                 cs_fee_distributor.getInitializedVersion()
 
-            # CSM Steps 38-40: CSAccounting roles (pre-vote state)
+            # Steps 42-44: CSAccounting roles (pre-vote state)
             assert cs_accounting.hasRole(cs_accounting.SET_BOND_CURVE_ROLE(),
                                          csm.address), "CSM should have SET_BOND_CURVE_ROLE on CSAccounting before vote"
             assert cs_accounting.hasRole(web3.keccak(text="RESET_BOND_CURVE_ROLE"),
@@ -1208,23 +1199,23 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert cs_accounting.hasRole(web3.keccak(text="RESET_BOND_CURVE_ROLE"),
                                          CSM_COMMITTEE_MS), "CSM committee should have RESET_BOND_CURVE_ROLE on CSAccounting before vote"
 
-            # CSM Steps 41-42: CSM roles (pre-vote state)
+            # Steps 45-46: CSM roles (pre-vote state)
             assert not csm.hasRole(web3.keccak(text="CREATE_NODE_OPERATOR_ROLE"),
                                    cs_permissionless_gate.address), "Permissionless gate should not have CREATE_NODE_OPERATOR_ROLE on CSM before vote"
             assert not csm.hasRole(web3.keccak(text="CREATE_NODE_OPERATOR_ROLE"),
                                    cs_vetted_gate.address), "Vetted gate should not have CREATE_NODE_OPERATOR_ROLE on CSM before vote"
 
-            # CSM Step 43: CSAccounting bond curve role for vetted gate (pre-vote state)
+            # Step 47: CSAccounting bond curve role for vetted gate (pre-vote state)
             assert not cs_accounting.hasRole(cs_accounting.SET_BOND_CURVE_ROLE(),
                                              cs_vetted_gate.address), "Vetted gate should not have SET_BOND_CURVE_ROLE on CSAccounting before vote"
 
-            # CSM Steps 44-45: Verifier roles (pre-vote state)
+            # Steps 48-49: Verifier roles (pre-vote state)
             assert csm.hasRole(csm.VERIFIER_ROLE(),
                                CS_VERIFIER_ADDRESS_OLD), "Old verifier should have VERIFIER_ROLE on CSM before vote"
             assert not csm.hasRole(csm.VERIFIER_ROLE(),
                                    cs_verifier_v2.address), "New verifier should not have VERIFIER_ROLE on CSM before vote"
 
-            # CSM Steps 46-51: GateSeal roles (pre-vote state)
+            # Steps 50-55: GateSeal roles (pre-vote state)
             assert csm.hasRole(csm.PAUSE_ROLE(),
                                CS_GATE_SEAL_ADDRESS), "Old GateSeal should have PAUSE_ROLE on CSM before vote"
             assert cs_accounting.hasRole(cs_accounting.PAUSE_ROLE(),
@@ -1239,28 +1230,34 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert not cs_fee_oracle.hasRole(cs_fee_oracle.PAUSE_ROLE(),
                                              CS_GATE_SEAL_V2_ADDRESS), "New GateSeal should not have PAUSE_ROLE on CSFeeOracle before vote"
 
-            # CSM Step 52: Staking Router CSM module state before vote (pre-vote state)
+            # Step 59: Staking Router CSM module state before vote (pre-vote state)
             csm_module_before = staking_router.getStakingModule(CS_MODULE_ID)
             csm_share_before = csm_module_before['stakeShareLimit']
             csm_priority_exit_threshold_before = csm_module_before['priorityExitShareThreshold']
             assert csm_share_before != CS_MODULE_NEW_TARGET_SHARE_BP, f"CSM share should not be {CS_MODULE_NEW_TARGET_SHARE_BP} before vote, current: {csm_share_before}"
             assert csm_priority_exit_threshold_before != CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP, f"CSM priority exit threshold should not be {CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP} before vote, current: {csm_priority_exit_threshold_before}"
 
-            # Gate Seals: Check initial states before vote
+            # Steps 60-64: Gate Seals - Check initial states before vote
             assert withdrawal_queue.hasRole(withdrawal_queue.PAUSE_ROLE(), OLD_GATE_SEAL_ADDRESS), "Old GateSeal should have PAUSE_ROLE on WithdrawalQueue before vote"
             assert validators_exit_bus_oracle.hasRole(validators_exit_bus_oracle.PAUSE_ROLE(), OLD_GATE_SEAL_ADDRESS), "Old GateSeal should have PAUSE_ROLE on VEBO before vote"
             assert not withdrawal_queue.hasRole(withdrawal_queue.PAUSE_ROLE(), NEW_WQ_GATE_SEAL), "New WQ GateSeal should not have PAUSE_ROLE on WithdrawalQueue before vote"
             assert not validators_exit_bus_oracle.hasRole(validators_exit_bus_oracle.PAUSE_ROLE(), NEW_TW_GATE_SEAL), "New TW GateSeal should not have PAUSE_ROLE on VEBO before vote"
             assert not triggerable_withdrawals_gateway.hasRole(triggerable_withdrawals_gateway.PAUSE_ROLE(), NEW_TW_GATE_SEAL), "New TW GateSeal should not have PAUSE_ROLE on TWG before vote"
 
-            # ResealManager: Check initial states before vote
+            # Steps 65-66: ResealManager - Check initial states before vote
             assert not triggerable_withdrawals_gateway.hasRole(triggerable_withdrawals_gateway.PAUSE_ROLE(), RESEAL_MANAGER), "ResealManager should not have PAUSE_ROLE on TWG before vote"
             assert not triggerable_withdrawals_gateway.hasRole(triggerable_withdrawals_gateway.RESUME_ROLE(), RESEAL_MANAGER), "ResealManager should not have RESUME_ROLE on TWG before vote"
-            # Rename Nethermind NO
+            # Steps 67-68: Rename Nethermind NO and change reward address
             nethermind_no_data_before = no_registry.getNodeOperator(NETHERMIND_NO_ID, True)
 
             assert nethermind_no_data_before["rewardAddress"] == NETHERMIND_NO_STAKING_REWARDS_ADDRESS_OLD
             assert nethermind_no_data_before["name"] == NETHERMIND_NO_NAME_OLD
+
+            # Steps 69-70: Check DSM guardians initial state
+            assert dsm.isGuardian(OLD_KILN_ADDRESS), "Old Kiln address should be in guardians before vote"
+            assert not dsm.isGuardian(NEW_KILN_ADDRESS), "New Kiln address should not be in guardians before vote"
+
+            # Step 71: Time constraints will be enforced during execution
 
             if details["status"] == PROPOSAL_STATUS["submitted"]:
                 chain.sleep(timelock.getAfterSubmitDelay() + 1)
