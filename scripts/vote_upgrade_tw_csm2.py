@@ -102,7 +102,6 @@ from typing import Tuple
 from brownie import interface, web3, convert
 from brownie.convert.main import to_uint  # type: ignore
 
-from tests.regression.test_oracle_report_with_notifier import withdrawal_queue
 from utils.agent import agent_forward
 from utils.dsm import encode_remove_guardian, encode_add_guardian
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
