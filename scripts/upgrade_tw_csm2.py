@@ -103,20 +103,6 @@ from brownie import interface, web3, convert
 from brownie.convert.main import to_uint  # type: ignore
 
 from utils.agent import agent_forward
-from utils.config import (
-    CSM_COMMITTEE_MS,
-    CS_MODULE_ID,
-    CS_MODULE_MODULE_FEE_BP,
-    CS_MODULE_TREASURY_FEE_BP,
-    CS_MODULE_MAX_DEPOSITS_PER_BLOCK,
-    CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
-    CS_GATE_SEAL_ADDRESS,
-    NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
-    SIMPLE_DVT_ARAGON_APP_ID,
-    ARAGON_KERNEL,
-    AGENT,
-    contracts,
-)
 from utils.dsm import encode_remove_guardian, encode_add_guardian
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
@@ -130,11 +116,43 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.config import get_deployer_account, get_priority_fee, get_is_live
 from utils.node_operators import encode_set_node_operator_name, encode_set_node_operator_reward_address
 
+# ============================= Constants ===================================
+AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
+ARAGON_KERNEL = "0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc"
+NODE_OPERATORS_REGISTRY_ARAGON_APP_ID = "0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d"
+SIMPLE_DVT_ARAGON_APP_ID = "0xe1635b63b5f7b5e545f2a637558a4029dea7905361a2f0fc28c66e9136cf86a4"
+
+CSM_COMMITTEE_MS = "0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f"
+CS_MODULE_ID = 3
+CS_MODULE_MODULE_FEE_BP = 600
+CS_MODULE_MAX_DEPOSITS_PER_BLOCK = 30
+CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
+CS_MODULE_TREASURY_FEE_BP = 400
+CS_GATE_SEAL_ADDRESS = "0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0"
+
 # ============================== Addresses ===================================
+
+LIDO_LOCATOR = "0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb"
+VALIDATORS_EXIT_BUS_ORACLE = "0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e"
+DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
+WITHDRAWAL_VAULT = "0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f"
+ACCOUNTING_ORACLE = "0x852deD011285fe67063a08005c71a85690503Cee"
+STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
+ACL = "0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb"
+NODE_OPERATORS_REGISTRY = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
+SIMPLE_DVT = "0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433"
+ORACLE_DAEMON_CONFIG = "0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09"
+CSM_ADDRESS = "0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F"
+DEPOSIT_SECURITY_MODULE = "0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD"
+WITHDRAWAL_QUEUE = "0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1"
+CS_ACCOUNTING_ADDRESS = "0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da"
+CS_FEE_ORACLE_ADDRESS = "0x4D4074628678Bd302921c20573EEa1ed38DdF7FB"
+CS_FEE_DISTRIBUTOR_ADDRESS = "0xD99CC66fEC647E68294C6477B40fC7E0F6F618D0"
+
 # New core contracts implementations
-LIDO_LOCATOR_IMPL = "0x2C298963FB763f74765829722a1ebe0784f4F5Cf"
+NEW_LIDO_LOCATOR_IMPL = "0x2C298963FB763f74765829722a1ebe0784f4F5Cf"
 ACCOUNTING_ORACLE_IMPL = "0xE9906E543274cebcd335d2C560094089e9547e8d"
-VALIDATORS_EXIT_BUS_ORACLE_IMPL = "0x905A211eD6830Cfc95643f0bE2ff64E7f3bf9b94"
+NEW_VALIDATORS_EXIT_BUS_ORACLE_IMPL = "0x905A211eD6830Cfc95643f0bE2ff64E7f3bf9b94"
 WITHDRAWAL_VAULT_IMPL = "0x7D2BAa6094E1C4B60Da4cbAF4A77C3f4694fD53D"
 STAKING_ROUTER_IMPL = "0x226f9265CBC37231882b7409658C18bB7738173A"
 NODE_OPERATORS_REGISTRY_IMPL = "0x6828b023e737f96B168aCd0b5c6351971a4F81aE"
@@ -203,7 +221,8 @@ IPFS_DESCRIPTION = "Triggerable withdrawals and CSM v2 upgrade voting"
 
 
 def encode_staking_router_proxy_update(implementation: str) -> Tuple[str, str]:
-    proxy = interface.OssifiableProxy(contracts.staking_router)
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
+    proxy = interface.OssifiableProxy(staking_router)
     return proxy.address, proxy.proxy__upgradeTo.encode_input(implementation)
 
 
@@ -225,9 +244,10 @@ def encode_oracle_upgrade_consensus(proxy: Any, consensus_version: int) -> Tuple
 
 def encode_staking_router_update_csm_module_share() -> Tuple[str, str]:
     """Encode call to update CSM share limit"""
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
     return (
-        contracts.staking_router.address,
-        contracts.staking_router.updateStakingModule.encode_input(
+        staking_router.address,
+        staking_router.updateStakingModule.encode_input(
             CS_MODULE_ID,
             CS_MODULE_NEW_TARGET_SHARE_BP,
             CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP,
@@ -247,19 +267,37 @@ def to_percent(bp: int) -> float:
 
 
 def get_vote_items():
+    lido_locator = interface.LidoLocator(LIDO_LOCATOR)
+    validator_exit_bus_oracle = interface.ValidatorsExitBusOracle(VALIDATORS_EXIT_BUS_ORACLE)
+    agent = interface.Agent(AGENT)
+    dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
+    withdrawal_vault = interface.WithdrawalVault(WITHDRAWAL_VAULT)
+    accounting_oracle = interface.AccountingOracle(ACCOUNTING_ORACLE)
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
+    acl = interface.ACL(ACL)
+    kernel = interface.Kernel(ARAGON_KERNEL)
+    nor = interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
+    simple_dvt = interface.SimpleDVT(SIMPLE_DVT)
+    oracle_daemon_config = interface.OracleDaemonConfig(ORACLE_DAEMON_CONFIG)
+    csm = interface.CSModule(CSM_ADDRESS)
+    dsm = interface.DepositSecurityModule(DEPOSIT_SECURITY_MODULE)
+    withdrawal_queue = interface.WithdrawalQueueERC721(WITHDRAWAL_QUEUE)
+    cs_accounting = interface.CSAccounting(CS_ACCOUNTING_ADDRESS)
+    cs_fee_oracle = interface.CSFeeOracle(CS_FEE_ORACLE_ADDRESS)
+    cs_fee_distributor = interface.CSFeeDistributor(CS_FEE_DISTRIBUTOR_ADDRESS)
     dg_items = [
         # --- locator
         # "1.1. Update locator implementation",
-        agent_forward([encode_proxy_upgrade_to(contracts.lido_locator, LIDO_LOCATOR_IMPL)]),
+        agent_forward([encode_proxy_upgrade_to(lido_locator, NEW_LIDO_LOCATOR_IMPL)]),
         # --- VEB
         # "1.2. Update VEBO implementation",
-        agent_forward([encode_proxy_upgrade_to(contracts.validators_exit_bus_oracle, VALIDATORS_EXIT_BUS_ORACLE_IMPL)]),
+        agent_forward([encode_proxy_upgrade_to(validator_exit_bus_oracle, NEW_VALIDATORS_EXIT_BUS_ORACLE_IMPL)]),
         # "1.3. Call finalizeUpgrade_v2 on VEBO",
         agent_forward(
             [
                 (
-                    contracts.validators_exit_bus_oracle.address,
-                    contracts.validators_exit_bus_oracle.finalizeUpgrade_v2.encode_input(
+                    VALIDATORS_EXIT_BUS_ORACLE,
+                    validator_exit_bus_oracle.finalizeUpgrade_v2.encode_input(
                         MAX_VALIDATORS_PER_REPORT, MAX_EXIT_REQUESTS_LIMIT, EXITS_PER_FRAME, FRAME_DURATION_IN_SEC
                     ),
                 )
@@ -269,21 +307,21 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=contracts.validators_exit_bus_oracle,
+                    contract=validator_exit_bus_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-                    grant_to=contracts.agent,
+                    grant_to=agent,
                 )
             ]
         ),
         # "1.5. Bump VEBO consensus version to `4`",
-        agent_forward([encode_oracle_upgrade_consensus(contracts.validators_exit_bus_oracle, VEBO_CONSENSUS_VERSION)]),
+        agent_forward([encode_oracle_upgrade_consensus(validator_exit_bus_oracle, VEBO_CONSENSUS_VERSION)]),
         # "1.6. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT",
         agent_forward(
             [
                 encode_oz_revoke_role(
-                    contract=contracts.validators_exit_bus_oracle,
+                    contract=validator_exit_bus_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-                    revoke_from=contracts.agent,
+                    revoke_from=agent,
                 )
             ]
         ),
@@ -291,7 +329,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=contracts.validators_exit_bus_oracle,
+                    contract=validator_exit_bus_oracle,
                     role_name="SUBMIT_REPORT_HASH_ROLE",
                     grant_to=EASYTRACK_EVMSCRIPT_EXECUTOR,
                 )
@@ -314,51 +352,51 @@ def get_vote_items():
                 encode_oz_grant_role(
                     contract=interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY),
                     role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
-                    grant_to=contracts.validators_exit_bus_oracle,
+                    grant_to=validator_exit_bus_oracle,
                 )
             ]
         ),
         # "1.10. Connect TRIGGERABLE_WITHDRAWALS_GATEWAY to Dual Governance tiebreaker",
         (
-            contracts.dual_governance.address,
-            contracts.dual_governance.addTiebreakerSealableWithdrawalBlocker.encode_input(
+            DUAL_GOVERNANCE,
+            dual_governance.addTiebreakerSealableWithdrawalBlocker.encode_input(
                 TRIGGERABLE_WITHDRAWALS_GATEWAY
             ),
         ),
         # --- WV
         # "1.11. Update WithdrawalVault implementation",
-        agent_forward([encode_wv_proxy_upgrade_to(contracts.withdrawal_vault, WITHDRAWAL_VAULT_IMPL)]),
+        agent_forward([encode_wv_proxy_upgrade_to(withdrawal_vault, WITHDRAWAL_VAULT_IMPL)]),
         # "1.12. Call finalizeUpgrade_v2 on WithdrawalVault",
         agent_forward(
             [
                 (
-                    contracts.withdrawal_vault.address,
-                    contracts.withdrawal_vault.finalizeUpgrade_v2.encode_input(),
+                    WITHDRAWAL_VAULT,
+                    withdrawal_vault.finalizeUpgrade_v2.encode_input(),
                 )
             ]
         ),
         # --- AO
         # "1.13. Update Accounting Oracle implementation",
-        agent_forward([encode_proxy_upgrade_to(contracts.accounting_oracle, ACCOUNTING_ORACLE_IMPL)]),
+        agent_forward([encode_proxy_upgrade_to(accounting_oracle, ACCOUNTING_ORACLE_IMPL)]),
         # "1.14. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=contracts.accounting_oracle,
+                    contract=accounting_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-                    grant_to=contracts.agent,
+                    grant_to=agent,
                 )
             ]
         ),
         # "1.15. Bump AO consensus version to `4`",
-        agent_forward([encode_oracle_upgrade_consensus(contracts.accounting_oracle, AO_CONSENSUS_VERSION)]),
+        agent_forward([encode_oracle_upgrade_consensus(accounting_oracle, AO_CONSENSUS_VERSION)]),
         # "1.16. Revoke AO MANAGE_CONSENSUS_VERSION_ROLE from the AGENT",
         agent_forward(
             [
                 encode_oz_revoke_role(
-                    contract=contracts.accounting_oracle,
+                    contract=accounting_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-                    revoke_from=contracts.agent,
+                    revoke_from=agent,
                 )
             ]
         ),
@@ -366,8 +404,8 @@ def get_vote_items():
         agent_forward(
             [
                 (
-                    contracts.accounting_oracle.address,
-                    contracts.accounting_oracle.finalizeUpgrade_v3.encode_input(),
+                    ACCOUNTING_ORACLE,
+                    accounting_oracle.finalizeUpgrade_v3.encode_input(),
                 )
             ]
         ),
@@ -378,8 +416,8 @@ def get_vote_items():
         agent_forward(
             [
                 (
-                    contracts.staking_router.address,
-                    contracts.staking_router.finalizeUpgrade_v3.encode_input(),
+                    STAKING_ROUTER,
+                    staking_router.finalizeUpgrade_v3.encode_input(),
                 )
             ]
         ),
@@ -387,7 +425,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=contracts.staking_router,
+                    contract=staking_router,
                     role_name="REPORT_VALIDATOR_EXITING_STATUS_ROLE",
                     grant_to=VALIDATOR_EXIT_VERIFIER,
                 )
@@ -397,11 +435,9 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=contracts.staking_router,
+                    contract=staking_router,
                     role_name="REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE",
-                    grant_to=interface.TriggerableWithdrawalsGateway(
-                        TRIGGERABLE_WITHDRAWALS_GATEWAY
-                    ),  # FIXME: simply use the address
+                    grant_to=TRIGGERABLE_WITHDRAWALS_GATEWAY,
                 )
             ]
         ),
@@ -410,8 +446,8 @@ def get_vote_items():
         agent_forward(
             [
                 (
-                    contracts.acl.address,
-                    contracts.acl.grantPermission.encode_input(
+                    acl.address,
+                    acl.grantPermission.encode_input(
                         AGENT,
                         ARAGON_KERNEL,
                         convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE")),  # FIXME: no need for to_uint I guess
@@ -423,9 +459,9 @@ def get_vote_items():
         agent_forward(
             [
                 (
-                    contracts.kernel.address,
-                    contracts.kernel.setApp.encode_input(
-                        contracts.kernel.APP_BASES_NAMESPACE(),
+                    kernel.address,
+                    kernel.setApp.encode_input(
+                        kernel.APP_BASES_NAMESPACE(),
                         NODE_OPERATORS_REGISTRY_ARAGON_APP_ID,
                         NODE_OPERATORS_REGISTRY_IMPL,
                     ),
@@ -436,8 +472,8 @@ def get_vote_items():
         agent_forward(
             [
                 (
-                    interface.NodeOperatorsRegistry(contracts.node_operators_registry).address,
-                    interface.NodeOperatorsRegistry(contracts.node_operators_registry).finalizeUpgrade_v4.encode_input(
+                    interface.NodeOperatorsRegistry(nor).address,
+                    interface.NodeOperatorsRegistry(nor).finalizeUpgrade_v4.encode_input(
                         NOR_EXIT_DEADLINE_IN_SEC
                     ),
                 )
@@ -447,9 +483,9 @@ def get_vote_items():
         agent_forward(
             [
                 (
-                    contracts.kernel.address,
-                    contracts.kernel.setApp.encode_input(
-                        contracts.kernel.APP_BASES_NAMESPACE(),
+                    kernel.address,
+                    kernel.setApp.encode_input(
+                        kernel.APP_BASES_NAMESPACE(),
                         SIMPLE_DVT_ARAGON_APP_ID,
                         NODE_OPERATORS_REGISTRY_IMPL,
                     ),
@@ -460,8 +496,8 @@ def get_vote_items():
         agent_forward(
             [
                 (
-                    interface.NodeOperatorsRegistry(contracts.simple_dvt).address,
-                    interface.NodeOperatorsRegistry(contracts.simple_dvt).finalizeUpgrade_v4.encode_input(
+                    interface.NodeOperatorsRegistry(simple_dvt).address,
+                    interface.NodeOperatorsRegistry(simple_dvt).finalizeUpgrade_v4.encode_input(
                         NOR_EXIT_DEADLINE_IN_SEC
                     ),
                 )
@@ -471,8 +507,8 @@ def get_vote_items():
         agent_forward(
             [
                 (
-                    contracts.acl.address,
-                    contracts.acl.revokePermission.encode_input(
+                    acl.address,
+                    acl.revokePermission.encode_input(
                         AGENT,
                         ARAGON_KERNEL,
                         convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE")),  # FIXME: remove to_uint
@@ -485,9 +521,9 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=contracts.oracle_daemon_config,
+                    contract=oracle_daemon_config,
                     role_name="CONFIG_MANAGER_ROLE",
-                    grant_to=contracts.agent,  # FIXME: misleading usage of contract
+                    grant_to=agent,  # FIXME: misleading usage of contract
                 )
             ]
         ),
@@ -495,8 +531,8 @@ def get_vote_items():
         agent_forward(
             [
                 (
-                    contracts.oracle_daemon_config.address,
-                    contracts.oracle_daemon_config.unset.encode_input("NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP"),
+                    oracle_daemon_config.address,
+                    oracle_daemon_config.unset.encode_input("NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP"),
                 )
             ]
         ),
@@ -504,8 +540,8 @@ def get_vote_items():
         agent_forward(
             [
                 (
-                    contracts.oracle_daemon_config.address,
-                    contracts.oracle_daemon_config.unset.encode_input("VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS"),
+                    oracle_daemon_config.address,
+                    oracle_daemon_config.unset.encode_input("VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS"),
                 )
             ]
         ),
@@ -513,8 +549,8 @@ def get_vote_items():
         agent_forward(
             [
                 (
-                    contracts.oracle_daemon_config.address,
-                    contracts.oracle_daemon_config.unset.encode_input("VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS"),
+                    oracle_daemon_config.address,
+                    oracle_daemon_config.unset.encode_input("VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS"),
                 )
             ]
         ),
@@ -522,8 +558,8 @@ def get_vote_items():
         agent_forward(
             [
                 (
-                    contracts.oracle_daemon_config.address,
-                    contracts.oracle_daemon_config.set.encode_input(
+                    oracle_daemon_config.address,
+                    oracle_daemon_config.set.encode_input(
                         "EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS", EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS
                     ),
                 )
@@ -533,9 +569,9 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_revoke_role(
-                    contract=contracts.oracle_daemon_config,
+                    contract=oracle_daemon_config,
                     role_name="CONFIG_MANAGER_ROLE",
-                    revoke_from=contracts.agent,  # FIXME: typing says its str
+                    revoke_from=agent,  # FIXME: typing says its str
                 )
             ]
         ),
@@ -543,18 +579,15 @@ def get_vote_items():
         # "1.34. Upgrade CSM implementation on proxy",
         agent_forward(
             [
-                encode_proxy_upgrade_to(
-                    contracts.csm,
-                    CSM_IMPL_V2_ADDRESS,
-                )
+                encode_proxy_upgrade_to(csm, CSM_IMPL_V2_ADDRESS)
             ]
         ),
         # "1.35. Call `finalizeUpgradeV2()` on CSM contract",
         agent_forward(
             [
                 (
-                    contracts.csm.address,
-                    contracts.csm.finalizeUpgradeV2.encode_input(),
+                    csm.address,
+                    csm.finalizeUpgradeV2.encode_input(),
                 )
             ]
         ),
@@ -562,7 +595,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_proxy_upgrade_to(
-                    contracts.cs_accounting,
+                    cs_accounting,
                     CS_ACCOUNTING_IMPL_V2_ADDRESS,
                 )
             ]
@@ -571,8 +604,8 @@ def get_vote_items():
         agent_forward(
             [
                 (
-                    contracts.cs_accounting.address,
-                    contracts.cs_accounting.finalizeUpgradeV2.encode_input(CS_CURVES),
+                    cs_accounting.address,
+                    cs_accounting.finalizeUpgradeV2.encode_input(CS_CURVES),
                 )
             ]
         ),
@@ -580,7 +613,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_proxy_upgrade_to(
-                    contracts.cs_fee_oracle,
+                    cs_fee_oracle,
                     CS_FEE_ORACLE_IMPL_V2_ADDRESS,
                 )
             ]
@@ -589,8 +622,8 @@ def get_vote_items():
         agent_forward(
             [
                 (
-                    contracts.cs_fee_oracle.address,
-                    contracts.cs_fee_oracle.finalizeUpgradeV2.encode_input(CSM_CONSENSUS_VERSION),
+                    cs_fee_oracle.address,
+                    cs_fee_oracle.finalizeUpgradeV2.encode_input(CSM_CONSENSUS_VERSION),
                 )
             ]
         ),
@@ -598,7 +631,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_proxy_upgrade_to(
-                    contracts.cs_fee_distributor,
+                    cs_fee_distributor,
                     CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS,
                 )
             ]
@@ -607,8 +640,8 @@ def get_vote_items():
         agent_forward(
             [
                 (
-                    contracts.cs_fee_distributor.address,
-                    contracts.cs_fee_distributor.finalizeUpgradeV2.encode_input(contracts.agent),
+                    cs_fee_distributor.address,
+                    cs_fee_distributor.finalizeUpgradeV2.encode_input(agent),
                 )
             ]
         ),
@@ -616,9 +649,9 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_revoke_role(
-                    contract=contracts.cs_accounting,
+                    contract=cs_accounting,
                     role_name="SET_BOND_CURVE_ROLE",
-                    revoke_from=contracts.csm,
+                    revoke_from=csm,
                 )
             ]
         ),
@@ -626,9 +659,9 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_revoke_role(
-                    contract=contracts.cs_accounting,
+                    contract=cs_accounting,
                     role_name="RESET_BOND_CURVE_ROLE",
-                    revoke_from=contracts.csm,
+                    revoke_from=csm,
                 )
             ]
         ),
@@ -636,7 +669,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_revoke_role(
-                    contract=contracts.cs_accounting,
+                    contract=cs_accounting,
                     role_name="RESET_BOND_CURVE_ROLE",
                     revoke_from=CSM_COMMITTEE_MS,
                 )
@@ -646,7 +679,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=contracts.csm,
+                    contract=csm,
                     role_name="CREATE_NODE_OPERATOR_ROLE",
                     grant_to=CS_PERMISSIONLESS_GATE_ADDRESS,
                 )
@@ -656,7 +689,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=contracts.csm,
+                    contract=csm,
                     role_name="CREATE_NODE_OPERATOR_ROLE",
                     grant_to=CS_VETTED_GATE_ADDRESS,
                 )
@@ -666,7 +699,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=contracts.cs_accounting,
+                    contract=cs_accounting,
                     role_name="SET_BOND_CURVE_ROLE",
                     grant_to=CS_VETTED_GATE_ADDRESS,
                 )
@@ -676,7 +709,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_revoke_role(
-                    contract=contracts.csm,
+                    contract=csm,
                     role_name="VERIFIER_ROLE",
                     revoke_from=CS_VERIFIER_ADDRESS_OLD,
                 )
@@ -686,7 +719,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=contracts.csm,
+                    contract=csm,
                     role_name="VERIFIER_ROLE",
                     grant_to=CS_VERIFIER_V2_ADDRESS,
                 )
@@ -696,7 +729,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_revoke_role(
-                    contract=contracts.csm,
+                    contract=csm,
                     role_name="PAUSE_ROLE",
                     revoke_from=CS_GATE_SEAL_ADDRESS,
                 )
@@ -706,7 +739,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_revoke_role(
-                    contract=contracts.cs_accounting,
+                    contract=cs_accounting,
                     role_name="PAUSE_ROLE",
                     revoke_from=CS_GATE_SEAL_ADDRESS,
                 )
@@ -716,7 +749,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_revoke_role(
-                    contract=contracts.cs_fee_oracle,
+                    contract=cs_fee_oracle,
                     role_name="PAUSE_ROLE",
                     revoke_from=CS_GATE_SEAL_ADDRESS,
                 )
@@ -726,7 +759,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=contracts.csm,
+                    contract=csm,
                     role_name="PAUSE_ROLE",
                     grant_to=CS_GATE_SEAL_V2_ADDRESS,
                 )
@@ -736,7 +769,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=contracts.cs_accounting,
+                    contract=cs_accounting,
                     role_name="PAUSE_ROLE",
                     grant_to=CS_GATE_SEAL_V2_ADDRESS,
                 )
@@ -746,7 +779,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=contracts.cs_fee_oracle,
+                    contract=cs_fee_oracle,
                     role_name="PAUSE_ROLE",
                     grant_to=CS_GATE_SEAL_V2_ADDRESS,
                 )
@@ -756,9 +789,9 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=contracts.cs_accounting,
+                    contract=cs_accounting,
                     role_name="MANAGE_BOND_CURVES_ROLE",
-                    grant_to=contracts.agent,
+                    grant_to=agent,
                 )
             ]
         ),
@@ -766,8 +799,8 @@ def get_vote_items():
         agent_forward(
             [
                 (
-                    contracts.cs_accounting.address,
-                    contracts.cs_accounting.addBondCurve.encode_input(CS_ICS_GATE_BOND_CURVE),
+                    cs_accounting.address,
+                    cs_accounting.addBondCurve.encode_input(CS_ICS_GATE_BOND_CURVE),
                 )
             ]
         ),
@@ -775,9 +808,9 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_revoke_role(
-                    contract=contracts.cs_accounting,
+                    contract=cs_accounting,
                     role_name="MANAGE_BOND_CURVES_ROLE",
-                    revoke_from=contracts.agent,
+                    revoke_from=agent,
                 )
             ]
         ),
@@ -788,7 +821,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_revoke_role(
-                    contract=contracts.withdrawal_queue,
+                    contract=withdrawal_queue,
                     role_name="PAUSE_ROLE",
                     revoke_from=OLD_GATE_SEAL_ADDRESS,
                 )
@@ -798,7 +831,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_revoke_role(
-                    contract=contracts.validators_exit_bus_oracle,
+                    contract=validator_exit_bus_oracle,
                     role_name="PAUSE_ROLE",
                     revoke_from=OLD_GATE_SEAL_ADDRESS,
                 )
@@ -808,7 +841,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=contracts.withdrawal_queue,
+                    contract=withdrawal_queue,
                     role_name="PAUSE_ROLE",
                     grant_to=NEW_WQ_GATE_SEAL,
                 )
@@ -818,7 +851,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=contracts.validators_exit_bus_oracle,
+                    contract=validator_exit_bus_oracle,
                     role_name="PAUSE_ROLE",
                     grant_to=NEW_TW_GATE_SEAL,
                 )
@@ -857,25 +890,25 @@ def get_vote_items():
         # "1.67. Rename Node Operator ID 25 from Nethermind to Twinstake"
         agent_forward(
             [
-                encode_set_node_operator_name(id=NETHERMIND_NO_ID, name=NETHERMIND_NEW_NO_NAME, registry=contracts.node_operators_registry),
+                encode_set_node_operator_name(id=NETHERMIND_NO_ID, name=NETHERMIND_NEW_NO_NAME, registry=nor),
             ]
         ),
         # "1.68. Change Node Operator ID 25 reward address from 0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91 to 0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
         agent_forward(
             [
-                encode_set_node_operator_reward_address(id=NETHERMIND_NO_ID, rewardAddress=NETHERMIND_NEW_REWARD_ADDRESS, registry=contracts.node_operators_registry),
+                encode_set_node_operator_reward_address(id=NETHERMIND_NO_ID, rewardAddress=NETHERMIND_NEW_REWARD_ADDRESS, registry=nor),
             ]
         ),
         # "1.69. Remove old Kiln guardian"
         agent_forward(
             [
-                encode_remove_guardian(dsm=contracts.deposit_security_module, guardian_address=OLD_KILN_ADDRESS, quorum_size=4),
+                encode_remove_guardian(dsm=dsm, guardian_address=OLD_KILN_ADDRESS, quorum_size=4),
             ]
         ),
         # "1.70. Add new Kiln guardian"
         agent_forward(
             [
-                encode_add_guardian(dsm=contracts.deposit_security_module, guardian_address=NEW_KILN_ADDRESS, quorum_size=4),
+                encode_add_guardian(dsm=dsm, guardian_address=NEW_KILN_ADDRESS, quorum_size=4),
             ]
         ),
         # "1.71. Set time constraints for execution (13:00 to 19:00 UTC)"
@@ -913,14 +946,14 @@ def get_vote_items():
             "3. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
-                permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),
+                permissions=(create_permissions(validator_exit_bus_oracle, "submitExitRequestsHash")),
             ),
         ),
         (
             "4. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
-                permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),
+                permissions=(create_permissions(validator_exit_bus_oracle, "submitExitRequestsHash")),
             ),
         ),
     )
