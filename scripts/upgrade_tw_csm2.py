@@ -85,10 +85,12 @@ Vote 2025_<MM>_<DD> [MAINNET]
 -- DSM rotate guardian ---
 69. Remove old Kiln guardian
 70. Add new Kiln guardian
+--- Time Constraints ---
+71. Set time constraints for execution (13:00 to 19:00 UTC)
 --- EasyTrack ---
-71. Add CSSetVettedGateTree factory to EasyTrack with permissions
-72. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
-73. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track
+72. Add CSSetVettedGateTree factory to EasyTrack with permissions
+73. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
+74. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
@@ -177,11 +179,11 @@ CS_CURVES = [
 ]
 CS_ICS_GATE_BOND_CURVE = ([1, 1.5 * 10**18], [2, 1.3 * 10**18])  # Identified Community Stakers Gate Bond Curve
 
-# Add missing constants
 OLD_GATE_SEAL_ADDRESS = "0xf9C9fDB4A5D2AA1D836D5370AB9b28BC1847e178"
 NEW_WQ_GATE_SEAL = "0x8A854C4E750CDf24f138f34A9061b2f556066912"
 NEW_TW_GATE_SEAL = "0xA6BC802fAa064414AA62117B4a53D27fFfF741F1"
 RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
+DUAL_GOVERNANCE_TIME_CONSTRAINTS = "0x2a30F5aC03187674553024296bed35Aa49749DDa"
 
 NETHERMIND_NO_ID = 25
 NETHERMIND_NEW_REWARD_ADDRESS = "0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
@@ -876,6 +878,14 @@ def get_vote_items():
                 encode_add_guardian(dsm=contracts.deposit_security_module, guardian_address=NEW_KILN_ADDRESS, quorum_size=4),
             ]
         ),
+        # "71. Set time constraints for execution (13:00 to 19:00 UTC)"
+        (
+            DUAL_GOVERNANCE_TIME_CONSTRAINTS,
+            interface.TimeConstraints(DUAL_GOVERNANCE_TIME_CONSTRAINTS).checkTimeWithinDayTimeAndEmit.encode_input(
+                3600 * 13,  # 13:00 UTC
+                3600 * 19   # 19:00 UTC
+            ),
+        ),
     ]
     dg_call_script = submit_proposals(
         [
@@ -973,28 +983,30 @@ def get_vote_items():
 --- Kiln DSM rotation ---
 69. Remove Kiln guardian
 70. Add new Kiln guardian
+--- Time Constraints ---
+71. Set time constraints for execution (13:00 to 19:00 UTC)
 --- EasyTrack ---
-71. Add CSSetVettedGateTree factory to EasyTrack with permissions
-72. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
-73. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track""",
+72. Add CSSetVettedGateTree factory to EasyTrack with permissions
+73. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
+74. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track""",
             dg_call_script[0],
         ),
         (
-            "71. Add CSSetVettedGateTree factory to EasyTrack with permissions",
+            "72. Add CSSetVettedGateTree factory to EasyTrack with permissions",
             add_evmscript_factory(
                 factory=EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY,
                 permissions=(create_permissions(interface.CSVettedGate(CS_VETTED_GATE_ADDRESS), "setTreeParams")),
             ),
         ),
         (
-            "72. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track",
+            "73. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
                 permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),
             ),
         ),
         (
-            "73. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track",
+            "74. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
                 permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),

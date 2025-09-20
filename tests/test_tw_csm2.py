@@ -15,7 +15,7 @@ from utils.evm_script import encode_call_script
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.test.tx_tracing_helpers import display_voting_events
-from utils.dual_governance import PROPOSAL_STATUS
+from utils.dual_governance import PROPOSAL_STATUS, wait_for_time_window
 from utils.test.event_validators.node_operators_registry import (
     validate_node_operator_name_set_event,
     validate_node_operator_reward_address_set_event,
@@ -212,6 +212,7 @@ OLD_GATE_SEAL_ADDRESS = "0xf9C9fDB4A5D2AA1D836D5370AB9b28BC1847e178"
 NEW_WQ_GATE_SEAL = "0x8A854C4E750CDf24f138f34A9061b2f556066912"
 NEW_TW_GATE_SEAL = "0xA6BC802fAa064414AA62117B4a53D27fFfF741F1"
 RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
+DUAL_GOVERNANCE_TIME_CONSTRAINTS = "0x2a30F5aC03187674553024296bed35Aa49749DDa"
 
 # Add EasyTrack constants
 EASYTRACK_EVMSCRIPT_EXECUTOR = "0x79a20FD0FA36453B2F45eAbab19bfef43575Ba9E"
@@ -287,7 +288,7 @@ EXPECTED_VOTE_ID = None
 EXPECTED_DG_PROPOSAL_ID = 5
 EXPECTED_VOTE_EVENTS_COUNT = 4
 EXPECTED_DG_EVENTS_FROM_AGENT = 69
-EXPECTED_DG_EVENTS_COUNT = 70
+EXPECTED_DG_EVENTS_COUNT = 71
 IPFS_DESCRIPTION_HASH = "bafkreih5app23xbevhswk56r6d2cjdqui5tckki6szo7loi7xe25bfgol4"
 
 NETHERMIND_NO_ID = 25
@@ -844,6 +845,14 @@ def dual_governance_proposal_calls():
         agent_forward([
             encode_add_guardian(dsm=contracts.deposit_security_module, guardian_address=NEW_KILN_ADDRESS, quorum_size=4),
         ]),
+        # "71. Set time constraints for execution (13:00 to 19:00 UTC)"
+        (
+            DUAL_GOVERNANCE_TIME_CONSTRAINTS,
+            interface.TimeConstraints(DUAL_GOVERNANCE_TIME_CONSTRAINTS).checkTimeWithinDayTimeAndEmit.encode_input(
+                3600 * 13,  # 13:00 UTC
+                3600 * 19   # 19:00 UTC
+            ),
+        ),
     ]
 
     # Convert each dg_item to the expected format
@@ -1174,6 +1183,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
             if timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == PROPOSAL_STATUS["scheduled"]:
                 chain.sleep(timelock.getAfterScheduleDelay() + 1)
+                # Wait for time window (13:00-19:00 UTC) to satisfy time constraints
+                wait_for_time_window(13, 19)
+
                 dg_tx: TransactionReceipt = timelock.execute(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
                 display_dg_events(dg_tx)
                 dg_events = group_dg_events_from_receipt(
@@ -1629,6 +1641,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     NEW_KILN_ADDRESS,
                     emitted_by=contracts.deposit_security_module.address,
                 )
+
+                # 70. Time constraints event validation
+                assert 'TimeWithinDayTimeChecked' in dg_events[70], "TimeWithinDayTimeChecked event not found"
+                assert dg_events[70]['TimeWithinDayTimeChecked'][0]['startDayTime'] == 3600 * 13, "Wrong startDayTime for time constraints (expected 13:00 UTC)"
+                assert dg_events[70]['TimeWithinDayTimeChecked'][0]['endDayTime'] == 3600 * 19, "Wrong endDayTime for time constraints (expected 19:00 UTC)"
+                assert convert.to_address(dg_events[70]['TimeWithinDayTimeChecked'][0]['_emitted_by']) == convert.to_address(DUAL_GOVERNANCE_TIME_CONSTRAINTS), "Wrong event emitter for time constraints"
+
         # Step 1: Validate Lido Locator implementation was updated
         assert get_ossifiable_proxy_impl(
             contracts.lido_locator) == LIDO_LOCATOR_IMPL, "Locator implementation should be updated to the new value"
