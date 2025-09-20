@@ -26,7 +26,7 @@ Upgrade TW + CSMv2
 --- SR
 18. Update SR implementation
 19. Call finalizeUpgrade_v3() on SR
-20. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitVerifier
+20. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitDelayVerifier
 21. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG
 --- Curated Staking Module
 22. Grant APP_MANAGER_ROLE role to the AGENT on Kernel
@@ -443,7 +443,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "25. Update `SDVT` implementation",
+        # "25. Update `SimpleDVT` implementation",
         agent_forward(
             [
                 (
@@ -467,7 +467,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "27. Revoke APP_MANAGER_ROLE role from the AGENT",
+        # "27. Revoke APP_MANAGER_ROLE role from the AGENT on Kernel",
         agent_forward(
             [
                 (
