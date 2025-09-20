@@ -891,7 +891,7 @@ def get_vote_items():
         [
             (
                 dg_items,
-                "Upgrade to CSM v2 and Triggerable Withdrawals",
+                "Upgrade to CSM v2, enable Triggerable Withdrawals, migrate Nethermind → Twinstake, rotate Kiln Guardian",
             )
         ]
     )
@@ -899,25 +899,25 @@ def get_vote_items():
     vote_desc_items, call_script_items = zip(
         # Vote items #1 - #71 are going through DG
         (
-            """CSM v2, Triggerable Withdrawals, Nethermind → Twinstake Migration, Kiln Guardian Rotation""",
+            "1. Submit a Dual Governance proposal to upgrade to CSM v2, enable Triggerable Withdrawals, migrate Nethermind → Twinstake, rotate Kiln Guardian",
             dg_call_script[0],
         ),
         (
-            "72. Add CSSetVettedGateTree factory to EasyTrack with permissions",
+            "2. Add CSSetVettedGateTree factory to EasyTrack with permissions",
             add_evmscript_factory(
                 factory=EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY,
                 permissions=(create_permissions(interface.CSVettedGate(CS_VETTED_GATE_ADDRESS), "setTreeParams")),
             ),
         ),
         (
-            "73. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track",
+            "3. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
                 permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),
             ),
         ),
         (
-            "74. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track",
+            "4. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
                 permissions=(create_permissions(contracts.validators_exit_bus_oracle, "submitExitRequestsHash")),
