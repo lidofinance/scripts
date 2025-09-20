@@ -1,5 +1,5 @@
 """
-Vote 2025_<MM>_<DD> [MAINNET]
+Upgrade TW + CSMv2
 
 --- Locator
 1. Update locator implementation
@@ -897,98 +897,9 @@ def get_vote_items():
     )
 
     vote_desc_items, call_script_items = zip(
+        # Vote items #1 - #71 are going through DG
         (
-            """
---- Locator
-1. Update locator implementation
---- VEB
-2. Update VEBO implementation
-3. Call finalizeUpgrade_v2(maxValidatorsPerReport, maxExitRequestsLimit, exitsPerFrame, frameDurationInSec) on VEBO
-4. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-5. Bump VEBO consensus version to `4`
-6. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT
-7. Grant SUBMIT_REPORT_HASH_ROLE on Validator Exit Bus Oracle to the EasyTrack EVM Script Executor
---- Triggerable Withdrawals Gateway (TWG)
-8. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector
-9. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB
-10. Connect TRIGGERABLE_WITHDRAWALS_GATEWAY to Dual Governance tiebreaker
---- WV
-11. Update WithdrawalVault implementation
-12. Call finalizeUpgrade_v2() on WithdrawalVault
---- AO
-13. Update Accounting Oracle implementation
-14. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-15. Bump AO consensus version to `4`
-16. Revoke AO MANAGE_CONSENSUS_VERSION_ROLE from the AGENT
-17. Call finalizeUpgrade_v3() on AO
---- SR
-18. Update SR implementation
-19. Call finalizeUpgrade_v3() on SR
-20. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitVerifier
-21. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG
---- Curated Staking Module
-22. Grant APP_MANAGER_ROLE role to the AGENT on Kernel
-23. Update `NodeOperatorsRegistry` implementation
-24. Call finalizeUpgrade_v4 on Curated Staking Module
---- sDVT
-25. Update `SimpleDVT` implementation
-26. Call finalizeUpgrade_v4 on sDVT
-27. Revoke APP_MANAGER_ROLE role from the AGENT on Kernel
---- Oracle configs ---
-28. Grant CONFIG_MANAGER_ROLE role to the AGENT
-29. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig
-30. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-31. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-32. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig
-33. Revoke CONFIG_MANAGER_ROLE role from the AGENT
---- CSM ---
-34. Upgrade CSM implementation on proxy
-35. Call `finalizeUpgradeV2()` on CSM contract
-36. Upgrade CSAccounting implementation on proxy
-37. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract
-38. Upgrade CSFeeOracle implementation on proxy
-39. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract
-40. Upgrade CSFeeDistributor implementation on proxy
-41. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
-42. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
-43. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
-44. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
-45. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
-46. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
-47. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
-48. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
-49. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
-50. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
-51. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
-52. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
-53. Grant CSM role PAUSE_ROLE for the new GateSeal instance
-54. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
-55. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
-56. Grant MANAGE_BOND_CURVES_ROLE to the AGENT
-57. Add Identified Community Stakers Gate Bond Curve
-58. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT
-59. Increase CSM share in Staking Router from 15% to 16%
---- Gate Seals ---
-60. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
-61. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal
-62. Grant PAUSE_ROLE on WithdrawalQueue to the new WithdrawalQueue GateSeal
-63. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new Triggerable Withdrawals GateSeal
-64. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to the new Triggerable Withdrawals GateSeal
---- ResealManager ---
-65. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager
-66. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager
---- Node Operators Registry rename and reward address change ---
-67. Rename Node Operator ID 25 from Nethermind to Twinstake
-68. Change Node Operator ID 25 reward address from 0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91 to 0x36201ed66DbC284132046ee8d99272F8eEeb24c8
---- Kiln DSM rotation ---
-69. Remove Kiln guardian
-70. Add new Kiln guardian
---- Time Constraints ---
-71. Set time constraints for execution (13:00 to 19:00 UTC)
---- EasyTrack ---
-72. Add CSSetVettedGateTree factory to EasyTrack with permissions
-73. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
-74. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track""",
+            """CSM v2, Triggerable Withdrawals, Nethermind → Twinstake Migration, Kiln Guardian Rotation""",
             dg_call_script[0],
         ),
         (
