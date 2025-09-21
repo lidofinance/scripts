@@ -11,8 +11,8 @@ Upgrade TW + CSMv2
 1.6. Revoke Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` role `MANAGE_CONSENSUS_VERSION_ROLE` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
 1.7. Grant Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` role `SUBMIT_REPORT_HASH_ROLE` to EasyTrack EVM Script Executor `0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977`
 --- Triggerable Withdrawals Gateway (TWG)
-1.8. Grant Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` role `ADD_FULL_WITHDRAWAL_REQUEST_ROLE` to the CS Ejector `0xc72b58aa02E0e98cF8A4a0E9Dce75e763800802C`
-1.9. Grant Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` role `ADD_FULL_WITHDRAWAL_REQUEST_ROLE` to the Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e`
+1.8. Grant Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` role `ADD_FULL_WITHDRAWAL_REQUEST_ROLE` to CS Ejector `0xc72b58aa02E0e98cF8A4a0E9Dce75e763800802C`
+1.9. Grant Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` role `ADD_FULL_WITHDRAWAL_REQUEST_ROLE` to Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e`
 1.10. Connect Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` to Dual Governance `0xC1db28B3301331277e307FDCfF8DE28242A4486E` Tiebreaker
 --- WV
 1.11. Update Withdrawal Vault `0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f` implementation to `0x7D2BAa6094E1C4B60Da4cbAF4A77C3f4694fD53D`
@@ -29,47 +29,47 @@ Upgrade TW + CSMv2
 1.20. Grant Staking Router `0xFdDf38947aFB03C621C71b06C9C70bce73f12999` role `REPORT_VALIDATOR_EXITING_STATUS_ROLE` to Validator Exit Delay Verifier `0xbDb567672c867DB533119C2dcD4FB9d8b44EC82f`
 1.21. Grant Staking Router `0xFdDf38947aFB03C621C71b06C9C70bce73f12999` role `REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE` to Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B`
 --- Curated Staking Module
-1.22. Grant `APP_MANAGER_ROLE` role to the Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c` on Lido DAO Kernel `0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc` via Aragon ACL `0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb`
+1.22. Grant `APP_MANAGER_ROLE` role to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c` on Lido DAO Kernel `0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc` via Aragon ACL `0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb`
 1.23. Update Node Operators Registry (Aragon APP ID = `0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d`) implementation to `0x6828b023e737f96B168aCd0b5c6351971a4F81aE` via Lido DAO Kernel `0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc`
 1.24. Call `finalizeUpgrade_v4(norExitDeadlineInSec = 172800)` on Curated Staking Module Node Operators Registry `0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5`
 --- sDVT
 1.25. Update Simple DVT (Aragon APP ID = `0xe1635b63b5f7b5e545f2a637558a4029dea7905361a2f0fc28c66e9136cf86a4`) implementation to `0x6828b023e737f96B168aCd0b5c6351971a4F81aE` via Lido DAO Kernel `0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc`
 1.26. Call `finalizeUpgrade_v4(norExitDeadlineInSec = 172800) on Simple DVT Staking Module Node Operators Registry `0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433`
-1.27. Revoke `APP_MANAGER_ROLE` role from the Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c` on Lido DAO Kernel `0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc` via Aragon ACL `0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb`
+1.27. Revoke `APP_MANAGER_ROLE` role from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c` on Lido DAO Kernel `0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc` via Aragon ACL `0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb`
 --- Oracle configs ---
-1.28. Grant Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09` role `CONFIG_MANAGER_ROLE` to the Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+1.28. Grant Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09` role `CONFIG_MANAGER_ROLE` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
 1.29. Remove `NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP` variable from Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09`
 1.30. Remove `VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS` variable from Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09`
 1.31. Remove `VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS` variable from Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09`
 1.32. Add `EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS=14 * 7200` variable to Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09`
-1.33. Revoke Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09` role `CONFIG_MANAGER_ROLE` from the Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+1.33. Revoke Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09` role `CONFIG_MANAGER_ROLE` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
 --- CSM ---
-1.34. Upgrade CSM implementation on proxy
-1.35. Call `finalizeUpgradeV2()` on CSM contract
-1.36. Upgrade CSAccounting implementation on proxy
-1.37. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract
-1.38. Upgrade CSFeeOracle implementation on proxy
-1.39. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract
-1.40. Upgrade CSFeeDistributor implementation on proxy
-1.41. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract
-1.42. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract
-1.43. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract
-1.44. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee
-1.45. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate
-1.46. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate
-1.47. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate
-1.48. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract
-1.49. Grant role VERIFIER_ROLE to the new instance of the Verifier contract
-1.50. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance
-1.51. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance
-1.52. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance
-1.53. Grant CSM role PAUSE_ROLE for the new GateSeal instance
-1.54. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
-1.55. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
-1.56. Grant MANAGE_BOND_CURVES_ROLE to the Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
-1.57. Add Identified Community Stakers Gate Bond Curve
-1.58. Revoke MANAGE_BOND_CURVES_ROLE from the Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
-1.59. Increase CSM share in Staking Router from 3% to 5%
+1.34. Update CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` implementation to `0x1eB6d4da13ca9566c17F526aE0715325d7a07665`
+1.35. Call `finalizeUpgradeV2()` on CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F`
+1.36. Update CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` implementation to `0x6f09d2426c7405C5546413e6059F884D2D03f449`
+1.37. Call `finalizeUpgradeV2(bondCurves=[ ([1, 2.4 * 10**18], [2, 1.3 * 10**18]), ([1, 1.5 * 10**18], [2, 1.3 * 10**18]) ])` on CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da`
+1.38. Update CSFeeOracle `0x4D4074628678Bd302921c20573EEa1ed38DdF7FB` implementation to `0xe0B234f99E413E27D9Bc31aBba9A49A3e570Da97`
+1.39. Call `finalizeUpgradeV2(consensusVersion=3)` on CSFeeOracle `0x4D4074628678Bd302921c20573EEa1ed38DdF7FB`
+1.40. Update CSFeeDistributor `0xD99CC66fEC647E68294C6477B40fC7E0F6F618D0` implementation to `0x5DCF7cF7c6645E9E822a379dF046a8b0390251A1`
+1.41. Call `finalizeUpgradeV2(admin=0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c)` on CSFeeDistributor `0xD99CC66fEC647E68294C6477B40fC7E0F6F618D0`
+1.42. Revoke CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `SET_BOND_CURVE_ROLE` from CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F`
+1.43. Revoke CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `RESET_BOND_CURVE_ROLE` from CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F`
+1.44. Revoke CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `RESET_BOND_CURVE_ROLE` from CSM Committee `0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f`
+1.45. Grant CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` role `CREATE_NODE_OPERATOR_ROLE` for CS Permissionless Gate `0xcF33a38111d0B1246A3F38a838fb41D626B454f0`
+1.46. Grant CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` role `CREATE_NODE_OPERATOR_ROLE` for CS Vetted Gate `0xB314D4A76C457c93150d308787939063F4Cc67E0`
+1.47. Grant CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `SET_BOND_CURVE_ROLE` for CS Vetted Gate `0xB314D4A76C457c93150d308787939063F4Cc67E0`
+1.48. Revoke CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` role `VERIFIER_ROLE` from the previous instance of CS Verifier `0xeC6Cc185f671F627fb9b6f06C8772755F587b05d`
+1.49. Grant CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` role `VERIFIER_ROLE` to the new instance of CS Verifier `0xdC5FE1782B6943f318E05230d688713a560063DC`
+1.50. Revoke CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` role `PAUSE_ROLE` from the previous GateSeal instance `0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0`
+1.51. Revoke CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `PAUSE_ROLE` from the previous GateSeal instance `0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0`
+1.52. Revoke CSFeeOracle `0x4D4074628678Bd302921c20573EEa1ed38DdF7FB` role `PAUSE_ROLE` from the previous GateSeal instance `0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0`
+1.53. Grant CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` role `PAUSE_ROLE` for the new GateSeal instance `0xE1686C2E90eb41a48356c1cC7FaA17629af3ADB3`
+1.54. Grant CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `PAUSE_ROLE` for the new GateSeal instance `0xE1686C2E90eb41a48356c1cC7FaA17629af3ADB3`
+1.55. Grant CSFeeOracle `0x4D4074628678Bd302921c20573EEa1ed38DdF7FB` role `PAUSE_ROLE` for the new GateSeal instance `0xE1686C2E90eb41a48356c1cC7FaA17629af3ADB3`
+1.56. Grant CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `MANAGE_BOND_CURVES_ROLE` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+1.57. Add Identified Community Stakers Gate Bond Curve `([1, 1.5 * 10**18], [2, 1.3 * 10**18])` to CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da`
+1.58. Revoke CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `MANAGE_BOND_CURVES_ROLE` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+1.59. Increase CSM (`MODULE_ID = 3`) share limit from `3%` to `5%` and priority exit threshold from `3.75%` to `6.25%` in Staking Router `0xFdDf38947aFB03C621C71b06C9C70bce73f12999`
 --- Gate Seals ---
 1.60. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
 1.61. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal
