@@ -796,31 +796,31 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.67. Rename Node Operator `ID 25` from `Nethermind` to `Twinstake`e"
+        # "1.67. Rename Node Operator `ID 25` from `Nethermind` to `Twinstake`"
         agent_forward(
             [
                 encode_set_node_operator_name(id=NETHERMIND_NO_ID, name=NETHERMIND_NEW_NO_NAME, registry=nor),
             ]
         ),
-        # "1.68. Change Node Operator `ID 25` reward address from `0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91` to `0x36201ed66DbC284132046ee8d99272F8eEeb24c8`8"
+        # "1.68. Change Node Operator `ID 25` reward address from `0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91` to `0x36201ed66DbC284132046ee8d99272F8eEeb24c8`"
         agent_forward(
             [
                 encode_set_node_operator_reward_address(id=NETHERMIND_NO_ID, rewardAddress=NETHERMIND_NEW_REWARD_ADDRESS, registry=nor),
             ]
         ),
-        # "1.69. Remove old `Kiln` address `0x14D5d5B71E048d2D75a39FfC5B407e3a3AB6F314` from Deposit Security Module `0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD` and keep quorum size as `4`n"
+        # "1.69. Remove old `Kiln` address `0x14D5d5B71E048d2D75a39FfC5B407e3a3AB6F314` from Deposit Security Module `0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD` and keep quorum size as `4`"
         agent_forward(
             [
                 encode_remove_guardian(dsm=dsm, guardian_address=OLD_KILN_ADDRESS, quorum_size=4),
             ]
         ),
-        # "1.70. Add new `Kiln` address `0x6d22aE126eB2c37F67a1391B37FF4f2863e61389` to Deposit Security Module `0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD` and keep quorum size as `4`n"
+        # "1.70. Add new `Kiln` address `0x6d22aE126eB2c37F67a1391B37FF4f2863e61389` to Deposit Security Module `0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD` and keep quorum size as `4`"
         agent_forward(
             [
                 encode_add_guardian(dsm=dsm, guardian_address=NEW_KILN_ADDRESS, quorum_size=4),
             ]
         ),
-        # "1.71. Set time constraints for Dual Governance Proposal execution (13:00 to 19:00 UTC) on Dual Governance Time Constraints `0x2a30F5aC03187674553024296bed35Aa49749DDa`)"
+        # "1.71. Set time constraints for Dual Governance Proposal execution (13:00 to 19:00 UTC) on Dual Governance Time Constraints `0x2a30F5aC03187674553024296bed35Aa49749DDa`"
         (
             DUAL_GOVERNANCE_TIME_CONSTRAINTS,
             interface.TimeConstraints(DUAL_GOVERNANCE_TIME_CONSTRAINTS).checkTimeWithinDayTimeAndEmit.encode_input(
