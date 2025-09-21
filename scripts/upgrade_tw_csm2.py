@@ -2,47 +2,47 @@
 Upgrade TW + CSMv2
 
 --- Locator
-1.1. Update locator implementation
+1.1. Update Lido Locator `0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb` implementation to `0x2C298963FB763f74765829722a1ebe0784f4F5Cf`
 --- VEB
-1.2. Update VEBO implementation
-1.3. Call finalizeUpgrade_v2(maxValidatorsPerReport, maxExitRequestsLimit, exitsPerFrame, frameDurationInSec) on VEBO
-1.4. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-1.5. Bump VEBO consensus version to `4`
-1.6. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT
-1.7. Grant SUBMIT_REPORT_HASH_ROLE on Validator Exit Bus Oracle to the EasyTrack EVM Script Executor
+1.2. Update Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` implementation to `0x905A211eD6830Cfc95643f0bE2ff64E7f3bf9b94`
+1.3. Call `finalizeUpgrade_v2(maxValidatorsPerReport = 600, maxExitRequestsLimit = 11200, exitsPerFrame = 1, frameDurationInSec = 48)` on Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e`
+1.4. Grant Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` role `MANAGE_CONSENSUS_VERSION_ROLE` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+1.5. Bump Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` consensus version to `4`
+1.6. Revoke Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` role `MANAGE_CONSENSUS_VERSION_ROLE` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+1.7. Grant Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` role `SUBMIT_REPORT_HASH_ROLE` to EasyTrack EVM Script Executor `0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977`
 --- Triggerable Withdrawals Gateway (TWG)
-1.8. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector
-1.9. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB
-1.10. Connect TRIGGERABLE_WITHDRAWALS_GATEWAY to Dual Governance tiebreaker
+1.8. Grant Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` role `ADD_FULL_WITHDRAWAL_REQUEST_ROLE` to the CS Ejector `0xc72b58aa02E0e98cF8A4a0E9Dce75e763800802C`
+1.9. Grant Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` role `ADD_FULL_WITHDRAWAL_REQUEST_ROLE` to the Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e`
+1.10. Connect Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` to Dual Governance `0xC1db28B3301331277e307FDCfF8DE28242A4486E` Tiebreaker
 --- WV
-1.11. Update WithdrawalVault implementation
-1.12. Call finalizeUpgrade_v2() on WithdrawalVault
+1.11. Update Withdrawal Vault `0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f` implementation to `0x7D2BAa6094E1C4B60Da4cbAF4A77C3f4694fD53D`
+1.12. Call `finalizeUpgrade_v2()` on Withdrawal Vault `0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f`
 --- AO
-1.13. Update Accounting Oracle implementation
-1.14. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT
-1.15. Bump AO consensus version to `4`
-1.16. Revoke AO MANAGE_CONSENSUS_VERSION_ROLE from the AGENT
-1.17. Call finalizeUpgrade_v3() on AO
+1.13. Update Accounting Oracle `0x852deD011285fe67063a08005c71a85690503Cee` implementation to `0xE9906E543274cebcd335d2C560094089e9547e8d`
+1.14. Grant Accounting Oracle `0x852deD011285fe67063a08005c71a85690503Cee` role `MANAGE_CONSENSUS_VERSION_ROLE` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+1.15. Bump Accounting Oracle `0x852deD011285fe67063a08005c71a85690503Cee` consensus version to `4`
+1.16. Revoke Accounting Oracle `0x852deD011285fe67063a08005c71a85690503Cee` role `MANAGE_CONSENSUS_VERSION_ROLE` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+1.17. Call `finalizeUpgrade_v3()` on Accounting Oracle `0x852deD011285fe67063a08005c71a85690503Cee`
 --- SR
-1.18. Update SR implementation
-1.19. Call finalizeUpgrade_v3() on SR
-1.20. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitDelayVerifier
-1.21. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG
+1.18. Update Staking Router `0xFdDf38947aFB03C621C71b06C9C70bce73f12999` implementation to `0x226f9265CBC37231882b7409658C18bB7738173A`
+1.19. Call `finalizeUpgrade_v3()` on Staking Router `0xFdDf38947aFB03C621C71b06C9C70bce73f12999`
+1.20. Grant Staking Router `0xFdDf38947aFB03C621C71b06C9C70bce73f12999` role `REPORT_VALIDATOR_EXITING_STATUS_ROLE` to Validator Exit Delay Verifier `0xbDb567672c867DB533119C2dcD4FB9d8b44EC82f`
+1.21. Grant Staking Router `0xFdDf38947aFB03C621C71b06C9C70bce73f12999` role `REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE` to Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B`
 --- Curated Staking Module
-1.22. Grant APP_MANAGER_ROLE role to the AGENT on Kernel
-1.23. Update `NodeOperatorsRegistry` implementation
-1.24. Call finalizeUpgrade_v4 on Curated Staking Module
+1.22. Grant `APP_MANAGER_ROLE` role to the Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c` on Lido DAO Kernel `0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc` via Aragon ACL `0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb`
+1.23. Update Node Operators Registry (Aragon APP ID = `0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d`) implementation to `0x6828b023e737f96B168aCd0b5c6351971a4F81aE` via Lido DAO Kernel `0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc`
+1.24. Call `finalizeUpgrade_v4(norExitDeadlineInSec = 172800)` on Curated Staking Module Node Operators Registry `0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5`
 --- sDVT
-1.25. Update `SimpleDVT` implementation
-1.26. Call finalizeUpgrade_v4 on sDVT
-1.27. Revoke APP_MANAGER_ROLE role from the AGENT on Kernel
+1.25. Update Simple DVT (Aragon APP ID = `0xe1635b63b5f7b5e545f2a637558a4029dea7905361a2f0fc28c66e9136cf86a4`) implementation to `0x6828b023e737f96B168aCd0b5c6351971a4F81aE` via Lido DAO Kernel `0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc`
+1.26. Call `finalizeUpgrade_v4(norExitDeadlineInSec = 172800) on Simple DVT Staking Module Node Operators Registry `0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433`
+1.27. Revoke `APP_MANAGER_ROLE` role from the Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c` on Lido DAO Kernel `0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc` via Aragon ACL `0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb`
 --- Oracle configs ---
-1.28. Grant CONFIG_MANAGER_ROLE role to the AGENT
-1.29. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig
-1.30. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-1.31. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig
-1.32. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig
-1.33. Revoke CONFIG_MANAGER_ROLE role from the AGENT
+1.28. Grant Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09` role `CONFIG_MANAGER_ROLE` to the Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+1.29. Remove `NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP` variable from Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09`
+1.30. Remove `VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS` variable from Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09`
+1.31. Remove `VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS` variable from Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09`
+1.32. Add `EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS=14 * 7200` variable to Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09`
+1.33. Revoke Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09` role `CONFIG_MANAGER_ROLE` from the Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
 --- CSM ---
 1.34. Upgrade CSM implementation on proxy
 1.35. Call `finalizeUpgradeV2()` on CSM contract
@@ -66,9 +66,9 @@ Upgrade TW + CSMv2
 1.53. Grant CSM role PAUSE_ROLE for the new GateSeal instance
 1.54. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance
 1.55. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance
-1.56. Grant MANAGE_BOND_CURVES_ROLE to the AGENT
+1.56. Grant MANAGE_BOND_CURVES_ROLE to the Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
 1.57. Add Identified Community Stakers Gate Bond Curve
-1.58. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT
+1.58. Revoke MANAGE_BOND_CURVES_ROLE from the Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
 1.59. Increase CSM share in Staking Router from 3% to 5%
 --- Gate Seals ---
 1.60. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
