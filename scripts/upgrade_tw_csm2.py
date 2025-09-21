@@ -1,5 +1,5 @@
 """
-Upgrade CSM v2, Triggerable Withdrawals, Nethermind → Twinstake Migration, Kiln Guardian Rotation
+CSM v2, Triggerable Withdrawals, Nethermind → Twinstake Validator Migration, Kiln DSC Address Rotation
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
@@ -833,14 +833,14 @@ def get_vote_items():
         [
             (
                 dg_items,
-                "Upgrade to CSM v2, enable Triggerable Withdrawals, migrate Nethermind → Twinstake, rotate Kiln Guardian",
+                "Upgrade to CSM v2, enable Triggerable Withdrawals, migrate Nethermind → Twinstake validator, rotate Kiln DSC address",
             )
         ]
     )
 
     vote_desc_items, call_script_items = zip(
         (
-            "1. Submit a Dual Governance proposal to upgrade to CSM v2, enable Triggerable Withdrawals, migrate Nethermind → Twinstake, rotate Kiln Guardian",
+            "1. Submit a Dual Governance proposal to upgrade to CSM v2, enable Triggerable Withdrawals, migrate Nethermind → Twinstake validator, rotate Kiln DSC address",
             dg_call_script[0],
         ),
         (
