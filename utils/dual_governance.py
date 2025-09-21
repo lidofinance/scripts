@@ -143,6 +143,29 @@ def wait_for_normal_state(stranger):
     contracts.dual_governance.activateNextState({"from": stranger})
 
 
+def wait_for_time_window(from_hour_utc: int, to_hour_utc: int):
+    """Wait until current time is within specified UTC hour window"""
+    current_time = chain.time()
+    seconds_per_day = 24 * 60 * 60
+
+    day_start = current_time - (current_time % seconds_per_day)
+    window_start = day_start + from_hour_utc * 60 * 60
+    window_end = day_start + to_hour_utc * 60 * 60
+
+    # If we're past the window end, wait for next day's window
+    if current_time >= window_end:
+        target_time = window_start + seconds_per_day
+    # If we're before the window start, wait until window starts
+    elif current_time < window_start:
+        target_time = window_start
+    else:
+        # We're already in the window
+        return
+
+    sleep_time = target_time - current_time + 1
+    chain.sleep(sleep_time)
+
+
 def wait_for_noon_utc_to_satisfy_time_constrains():
     current_time = chain.time()
     noon_offset = 12 * 60 * 60
