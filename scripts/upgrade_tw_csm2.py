@@ -82,10 +82,10 @@ Upgrade TW + CSMv2
 --- Node Operators Registry rename and reward address change ---
 1.67. Rename Node Operator `ID 25` from `Nethermind` to `Twinstake`
 1.68. Change Node Operator `ID 25` reward address from `0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91` to `0x36201ed66DbC284132046ee8d99272F8eEeb24c8`
--- DSM rotate guardian ---
+--- DSM rotate guardian ---
 1.69. Remove old `Kiln` address `0x14D5d5B71E048d2D75a39FfC5B407e3a3AB6F314` from Deposit Security Module `0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD` and keep quorum size as `4`
 1.70. Add new `Kiln` address `0x6d22aE126eB2c37F67a1391B37FF4f2863e61389` to Deposit Security Module `0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD` and keep quorum size as `4`
-1.--- Time Constraints ---
+--- Time Constraints ---
 1.71. Set time constraints for Dual Governance Proposal execution (13:00 to 19:00 UTC) on Dual Governance Time Constraints `0x2a30F5aC03187674553024296bed35Aa49749DDa`
 --- EasyTrack ---
 2. Add CSSetVettedGateTree factory `0xBc5642bDD6F2a54b01A75605aAe9143525D97308` to EasyTrack `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` with permissions `setTreeParams`
@@ -287,12 +287,12 @@ def get_vote_items():
     cs_fee_distributor = interface.CSFeeDistributor(CS_FEE_DISTRIBUTOR_ADDRESS)
     dg_items = [
         # --- locator
-        # "1.1. Update locator implementation",
+        # "1.1. Update Lido Locator `0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb` implementation to `0x2C298963FB763f74765829722a1ebe0784f4F5Cf`",
         agent_forward([encode_proxy_upgrade_to(lido_locator, NEW_LIDO_LOCATOR_IMPL)]),
         # --- VEB
-        # "1.2. Update VEBO implementation",
+        # "1.2. Update Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` implementation to `0x905A211eD6830Cfc95643f0bE2ff64E7f3bf9b94`",
         agent_forward([encode_proxy_upgrade_to(validator_exit_bus_oracle, NEW_VALIDATORS_EXIT_BUS_ORACLE_IMPL)]),
-        # "1.3. Call finalizeUpgrade_v2 on VEBO",
+        # "1.3. Call `finalizeUpgrade_v2(maxValidatorsPerReport = 600, maxExitRequestsLimit = 11200, exitsPerFrame = 1, frameDurationInSec = 48)` on Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e`",
         agent_forward(
             [
                 (
@@ -303,7 +303,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.4. Grant VEBO role MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
+        # "1.4. Grant Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` role `MANAGE_CONSENSUS_VERSION_ROLE` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -313,9 +313,9 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.5. Bump VEBO consensus version to `4`",
+        # "1.5. Bump Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` consensus version to `4`",
         agent_forward([encode_oracle_upgrade_consensus(validator_exit_bus_oracle, VEBO_CONSENSUS_VERSION)]),
-        # "1.6. Revoke VEBO role MANAGE_CONSENSUS_VERSION_ROLE from the AGENT",
+        # "1.6. Revoke Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` role `MANAGE_CONSENSUS_VERSION_ROLE` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -325,7 +325,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.7. Grant SUBMIT_REPORT_HASH_ROLE on Validator Exit Bus Oracle to the EasyTrack EVM Script Executor",
+        # "1.7. Grant Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` role `SUBMIT_REPORT_HASH_ROLE` to EasyTrack EVM Script Executor `0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -336,7 +336,7 @@ def get_vote_items():
             ]
         ),
         # --- Triggerable Withdrawals Gateway (TWG)
-        # "1.8. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the CS Ejector",
+        # "1.8. Grant Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` role `ADD_FULL_WITHDRAWAL_REQUEST_ROLE` to CS Ejector `0xc72b58aa02E0e98cF8A4a0E9Dce75e763800802C`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -346,7 +346,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.9. Grant TWG role ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the VEB",
+        # "1.9. Grant Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` role `ADD_FULL_WITHDRAWAL_REQUEST_ROLE` to Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -356,7 +356,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.10. Connect TRIGGERABLE_WITHDRAWALS_GATEWAY to Dual Governance tiebreaker",
+        # "1.10. Connect Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` to Dual Governance `0xC1db28B3301331277e307FDCfF8DE28242A4486E` Tiebreaker",
         (
             DUAL_GOVERNANCE,
             dual_governance.addTiebreakerSealableWithdrawalBlocker.encode_input(
@@ -364,9 +364,9 @@ def get_vote_items():
             ),
         ),
         # --- WV
-        # "1.11. Update WithdrawalVault implementation",
+        # "1.11. Update Withdrawal Vault `0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f` implementation to `0x7D2BAa6094E1C4B60Da4cbAF4A77C3f4694fD53D`",
         agent_forward([encode_wv_proxy_upgrade_to(withdrawal_vault, WITHDRAWAL_VAULT_IMPL)]),
-        # "1.12. Call finalizeUpgrade_v2 on WithdrawalVault",
+        # "1.12. Call `finalizeUpgrade_v2()` on Withdrawal Vault `0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f`",
         agent_forward(
             [
                 (
@@ -376,9 +376,9 @@ def get_vote_items():
             ]
         ),
         # --- AO
-        # "1.13. Update Accounting Oracle implementation",
+        # "1.13. Update Accounting Oracle `0x852deD011285fe67063a08005c71a85690503Cee` implementation to `0xE9906E543274cebcd335d2C560094089e9547e8d`",
         agent_forward([encode_proxy_upgrade_to(accounting_oracle, ACCOUNTING_ORACLE_IMPL)]),
-        # "1.14. Grant AO MANAGE_CONSENSUS_VERSION_ROLE to the AGENT",
+        # "1.14. Grant Accounting Oracle `0x852deD011285fe67063a08005c71a85690503Cee` role `MANAGE_CONSENSUS_VERSION_ROLE` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -388,9 +388,9 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.15. Bump AO consensus version to `4`",
+        # "1.15. Bump Accounting Oracle `0x852deD011285fe67063a08005c71a85690503Cee` consensus version to `4`",
         agent_forward([encode_oracle_upgrade_consensus(accounting_oracle, AO_CONSENSUS_VERSION)]),
-        # "1.16. Revoke AO MANAGE_CONSENSUS_VERSION_ROLE from the AGENT",
+        # "1.16. Revoke Accounting Oracle `0x852deD011285fe67063a08005c71a85690503Cee` role `MANAGE_CONSENSUS_VERSION_ROLE` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -400,7 +400,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.17. Call finalizeUpgrade_v3() on AO",
+        # "1.17. Call `finalizeUpgrade_v3()` on Accounting Oracle `0x852deD011285fe67063a08005c71a85690503Cee`",
         agent_forward(
             [
                 (
@@ -410,9 +410,9 @@ def get_vote_items():
             ]
         ),
         # --- SR
-        # "1.18. Update SR implementation",
+        # "1.18. Update Staking Router `0xFdDf38947aFB03C621C71b06C9C70bce73f12999` implementation to `0x226f9265CBC37231882b7409658C18bB7738173A`",
         agent_forward([encode_staking_router_proxy_update(STAKING_ROUTER_IMPL)]),
-        # "1.19. Call finalizeUpgrade_v3() on SR",
+        # "1.19. Call `finalizeUpgrade_v3()` on Staking Router `0xFdDf38947aFB03C621C71b06C9C70bce73f12999`",
         agent_forward(
             [
                 (
@@ -421,7 +421,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.20. Grant SR role REPORT_VALIDATOR_EXITING_STATUS_ROLE to ValidatorExitDelayVerifier",
+        # "1.20. Grant Staking Router `0xFdDf38947aFB03C621C71b06C9C70bce73f12999` role `REPORT_VALIDATOR_EXITING_STATUS_ROLE` to Validator Exit Delay Verifier `0xbDb567672c867DB533119C2dcD4FB9d8b44EC82f`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -431,7 +431,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.21. Grant SR role REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE to TWG",
+        # "1.21. Grant Staking Router `0xFdDf38947aFB03C621C71b06C9C70bce73f12999` role `REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE` to Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -442,7 +442,7 @@ def get_vote_items():
             ]
         ),
         # --- Curated Staking Module and sDVT
-        # "1.22. Grant APP_MANAGER_ROLE role to the AGENT",
+        # "1.22. Grant `APP_MANAGER_ROLE` role to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c` on Lido DAO Kernel `0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc` via Aragon ACL `0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb`",
         agent_forward(
             [
                 (
@@ -455,7 +455,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.23. Update `NodeOperatorsRegistry` implementation",
+        # "1.23. Update Node Operators Registry (Aragon APP ID = `0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d`) implementation to `0x6828b023e737f96B168aCd0b5c6351971a4F81aE` via Lido DAO Kernel `0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc`",
         agent_forward(
             [
                 (
@@ -468,7 +468,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.24. Call finalizeUpgrade_v4 on Curated Staking Module",
+        # "1.24. Call `finalizeUpgrade_v4(norExitDeadlineInSec = 172800)` on Curated Staking Module Node Operators Registry `0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5`",
         agent_forward(
             [
                 (
@@ -479,7 +479,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.25. Update `SimpleDVT` implementation",
+        # "1.25. Update Simple DVT (Aragon APP ID = `0xe1635b63b5f7b5e545f2a637558a4029dea7905361a2f0fc28c66e9136cf86a4`) implementation to `0x6828b023e737f96B168aCd0b5c6351971a4F81aE` via Lido DAO Kernel `0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc`",
         agent_forward(
             [
                 (
@@ -492,7 +492,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.26. Call finalizeUpgrade_v4 on SDVT",
+        # "1.26. Call `finalizeUpgrade_v4(norExitDeadlineInSec = 172800) on Simple DVT Staking Module Node Operators Registry `0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433`",
         agent_forward(
             [
                 (
@@ -503,7 +503,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.27. Revoke APP_MANAGER_ROLE role from the AGENT on Kernel",
+        # "1.27. Revoke `APP_MANAGER_ROLE` role from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c` on Lido DAO Kernel `0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc` via Aragon ACL `0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb`",
         agent_forward(
             [
                 (
@@ -517,7 +517,7 @@ def get_vote_items():
             ]
         ),
         # --- Oracle configs
-        # "1.28. Grant CONFIG_MANAGER_ROLE role to the AGENT",
+        # "1.28. Grant Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09` role `CONFIG_MANAGER_ROLE` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -527,7 +527,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.29. Remove NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP variable from OracleDaemonConfig",
+        # "1.29. Remove `NODE_OPERATOR_NETWORK_PENETRATION_THRESHOLD_BP` variable from Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09`",
         agent_forward(
             [
                 (
@@ -536,7 +536,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.30. Remove VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
+        # "1.30. Remove `VALIDATOR_DELAYED_TIMEOUT_IN_SLOTS` variable from Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09`",
         agent_forward(
             [
                 (
@@ -545,7 +545,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.31. Remove VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS variable from OracleDaemonConfig",
+        # "1.31. Remove `VALIDATOR_DELINQUENT_TIMEOUT_IN_SLOTS` variable from Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09`",
         agent_forward(
             [
                 (
@@ -554,7 +554,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.32. Add EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS variable to OracleDaemonConfig",
+        # "1.32. Add `EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS=14 * 7200` variable to Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09`",
         agent_forward(
             [
                 (
@@ -565,7 +565,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.33. Revoke CONFIG_MANAGER_ROLE role from the AGENT",
+        # "1.33. Revoke Oracle Daemon Config `0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09` role `CONFIG_MANAGER_ROLE` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -576,13 +576,13 @@ def get_vote_items():
             ]
         ),
         # --- CSM
-        # "1.34. Upgrade CSM implementation on proxy",
+        # "1.34. Update CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` implementation to `0x1eB6d4da13ca9566c17F526aE0715325d7a07665`",
         agent_forward(
             [
                 encode_proxy_upgrade_to(csm, CSM_IMPL_V2_ADDRESS)
             ]
         ),
-        # "1.35. Call `finalizeUpgradeV2()` on CSM contract",
+        # "1.35. Call `finalizeUpgradeV2()` on CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F`",
         agent_forward(
             [
                 (
@@ -591,7 +591,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.36. Upgrade CSAccounting implementation on proxy",
+        # "1.36. Update CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` implementation to `0x6f09d2426c7405C5546413e6059F884D2D03f449`",
         agent_forward(
             [
                 encode_proxy_upgrade_to(
@@ -600,7 +600,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.37. Call `finalizeUpgradeV2(bondCurves)` on CSAccounting contract",
+        # "1.37. Call `finalizeUpgradeV2(bondCurves=[ ([1, 2.4 * 10**18], [2, 1.3 * 10**18]), ([1, 1.5 * 10**18], [2, 1.3 * 10**18]) ])` on CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da`",
         agent_forward(
             [
                 (
@@ -609,7 +609,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.38. Upgrade CSFeeOracle implementation on proxy",
+        # "1.38. Update CSFeeOracle `0x4D4074628678Bd302921c20573EEa1ed38DdF7FB` implementation to `0xe0B234f99E413E27D9Bc31aBba9A49A3e570Da97`",
         agent_forward(
             [
                 encode_proxy_upgrade_to(
@@ -618,7 +618,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.39. Call `finalizeUpgradeV2(consensusVersion)` on CSFeeOracle contract",
+        # "1.39. Call `finalizeUpgradeV2(consensusVersion=3)` on CSFeeOracle `0x4D4074628678Bd302921c20573EEa1ed38DdF7FB`",
         agent_forward(
             [
                 (
@@ -627,7 +627,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.40. Upgrade CSFeeDistributor implementation on proxy",
+        # "1.40. Update CSFeeDistributor `0xD99CC66fEC647E68294C6477B40fC7E0F6F618D0` implementation to `0x5DCF7cF7c6645E9E822a379dF046a8b0390251A1`",
         agent_forward(
             [
                 encode_proxy_upgrade_to(
@@ -636,7 +636,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.41. Call `finalizeUpgradeV2(admin)` on CSFeeDistributor contract",
+        # "1.41. Call `finalizeUpgradeV2(admin=0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c)` on CSFeeDistributor `0xD99CC66fEC647E68294C6477B40fC7E0F6F618D0`",
         agent_forward(
             [
                 (
@@ -645,7 +645,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.42. Revoke CSAccounting role SET_BOND_CURVE_ROLE from the CSM contract",
+        # "1.42. Revoke CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `SET_BOND_CURVE_ROLE` from CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F`",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -655,7 +655,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.43. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM contract",
+        # "1.43. Revoke CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `RESET_BOND_CURVE_ROLE` from CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F`",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -665,7 +665,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.44. Revoke CSAccounting role RESET_BOND_CURVE_ROLE from the CSM committee",
+        # "1.44. Revoke CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `RESET_BOND_CURVE_ROLE` from CSM Committee `0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f`",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -675,7 +675,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.45. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the permissionless gate",
+        # "1.45. Grant CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` role `CREATE_NODE_OPERATOR_ROLE` for CS Permissionless Gate `0xcF33a38111d0B1246A3F38a838fb41D626B454f0`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -685,7 +685,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.46. Grant CSM role CREATE_NODE_OPERATOR_ROLE for the vetted gate",
+        # "1.46. Grant CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` role `CREATE_NODE_OPERATOR_ROLE` for CS Vetted Gate `0xB314D4A76C457c93150d308787939063F4Cc67E0`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -695,7 +695,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.47. Grant CSAccounting role SET_BOND_CURVE_ROLE for the vetted gate",
+        # "1.47. Grant CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `SET_BOND_CURVE_ROLE` for CS Vetted Gate `0xB314D4A76C457c93150d308787939063F4Cc67E0`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -705,7 +705,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.48. Revoke role VERIFIER_ROLE from the previous instance of the Verifier contract",
+        # "1.48. Revoke CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` role `VERIFIER_ROLE` from the previous instance of CS Verifier `0xeC6Cc185f671F627fb9b6f06C8772755F587b05d`",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -715,7 +715,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.49. Grant role VERIFIER_ROLE to the new instance of the Verifier contract",
+        # "1.49. Grant CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` role `VERIFIER_ROLE` to the new instance of CS Verifier `0xdC5FE1782B6943f318E05230d688713a560063DC`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -725,7 +725,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.50. Revoke CSM role PAUSE_ROLE from the previous GateSeal instance",
+        # "1.50. Revoke CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` role `PAUSE_ROLE` from the previous GateSeal instance `0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0`",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -735,7 +735,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.51. Revoke CSAccounting role PAUSE_ROLE from the previous GateSeal instance",
+        # "1.51. Revoke CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `PAUSE_ROLE` from the previous GateSeal instance `0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0`",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -745,7 +745,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.52. Revoke CSFeeOracle role PAUSE_ROLE from the previous GateSeal instance",
+        # "1.52. Revoke CSFeeOracle `0x4D4074628678Bd302921c20573EEa1ed38DdF7FB` role `PAUSE_ROLE` from the previous GateSeal instance `0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0`",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -755,7 +755,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.53. Grant CSM role PAUSE_ROLE for the new GateSeal instance",
+        # "1.53. Grant CSM `0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F` role `PAUSE_ROLE` for the new GateSeal instance `0xE1686C2E90eb41a48356c1cC7FaA17629af3ADB3`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -765,7 +765,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.54. Grant CSAccounting role PAUSE_ROLE for the new GateSeal instance",
+        # "1.54. Grant CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `PAUSE_ROLE` for the new GateSeal instance `0xE1686C2E90eb41a48356c1cC7FaA17629af3ADB3`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -775,7 +775,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.55. Grant CSFeeOracle role PAUSE_ROLE for the new GateSeal instance",
+        # "1.55. Grant CSFeeOracle `0x4D4074628678Bd302921c20573EEa1ed38DdF7FB` role `PAUSE_ROLE` for the new GateSeal instance `0xE1686C2E90eb41a48356c1cC7FaA17629af3ADB3`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -785,7 +785,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.56. Grant MANAGE_BOND_CURVES_ROLE to the AGENT",
+        # "1.56. Grant CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `MANAGE_BOND_CURVES_ROLE` to Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -795,7 +795,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.57. Add Identified Community Stakers Gate Bond Curve",
+        # "1.57. Add Identified Community Stakers Gate Bond Curve `([1, 1.5 * 10**18], [2, 1.3 * 10**18])` to CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da`",
         agent_forward(
             [
                 (
@@ -804,7 +804,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.58. Revoke MANAGE_BOND_CURVES_ROLE from the AGENT",
+        # "1.58. Revoke CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `MANAGE_BOND_CURVES_ROLE` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -814,10 +814,10 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.59. Increase CSM share in Staking Router from 3% to 5%",
+        # "1.59. Increase CSM (`MODULE_ID = 3`) share limit from `3%` to `5%` and priority exit threshold from `3.75%` to `6.25%` in Staking Router `0xFdDf38947aFB03C621C71b06C9C70bce73f12999`",
         agent_forward([encode_staking_router_update_csm_module_share()]),
         # --- Gate Seals
-        # "1.60. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal",
+        # "1.60. Revoke Withdrawal Queue `0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1` role `PAUSE_ROLE` from the old GateSeal `0xf9C9fDB4A5D2AA1D836D5370AB9b28BC1847e178`",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -827,7 +827,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.61. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal",
+        # "1.61. Revoke Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` role `PAUSE_ROLE` from the old GateSeal `0xf9C9fDB4A5D2AA1D836D5370AB9b28BC1847e178`",
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -837,7 +837,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.62. Grant PAUSE_ROLE on WithdrawalQueue to the new WithdrawalQueue GateSeal",
+        # "1.62. Grant Withdrawal Queue `0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1` role `PAUSE_ROLE` to the new Withdrawal Queue GateSeal `0x8A854C4E750CDf24f138f34A9061b2f556066912`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -847,7 +847,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.63. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new Triggerable Withdrawals GateSeal",
+        # "1.63. Grant Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` role `PAUSE_ROLE` to the new Triggerable Withdrawals GateSeal `0xA6BC802fAa064414AA62117B4a53D27fFfF741F1`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -857,7 +857,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.64. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to the new Triggerable Withdrawals GateSeal",
+        # "1.64. Grant Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` role `PAUSE_ROLE` to the new Triggerable Withdrawals GateSeal `0xA6BC802fAa064414AA62117B4a53D27fFfF741F1`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -867,7 +867,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.65. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager",
+        # "1.65. Grant Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` role `PAUSE_ROLE` to Reseal Manager `0x7914b5a1539b97Bd0bbd155757F25FD79A522d24`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -877,7 +877,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.66. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager",
+        # "1.66. Grant Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` role `RESUME_ROLE` to Reseal Manager `0x7914b5a1539b97Bd0bbd155757F25FD79A522d24`",
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -887,31 +887,31 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.67. Rename Node Operator ID 25 from Nethermind to Twinstake"
+        # "1.67. Rename Node Operator `ID 25` from `Nethermind` to `Twinstake`e"
         agent_forward(
             [
                 encode_set_node_operator_name(id=NETHERMIND_NO_ID, name=NETHERMIND_NEW_NO_NAME, registry=nor),
             ]
         ),
-        # "1.68. Change Node Operator ID 25 reward address from 0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91 to 0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
+        # "1.68. Change Node Operator `ID 25` reward address from `0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91` to `0x36201ed66DbC284132046ee8d99272F8eEeb24c8`8"
         agent_forward(
             [
                 encode_set_node_operator_reward_address(id=NETHERMIND_NO_ID, rewardAddress=NETHERMIND_NEW_REWARD_ADDRESS, registry=nor),
             ]
         ),
-        # "1.69. Remove old Kiln guardian"
+        # "1.69. Remove old `Kiln` address `0x14D5d5B71E048d2D75a39FfC5B407e3a3AB6F314` from Deposit Security Module `0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD` and keep quorum size as `4`n"
         agent_forward(
             [
                 encode_remove_guardian(dsm=dsm, guardian_address=OLD_KILN_ADDRESS, quorum_size=4),
             ]
         ),
-        # "1.70. Add new Kiln guardian"
+        # "1.70. Add new `Kiln` address `0x6d22aE126eB2c37F67a1391B37FF4f2863e61389` to Deposit Security Module `0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD` and keep quorum size as `4`n"
         agent_forward(
             [
                 encode_add_guardian(dsm=dsm, guardian_address=NEW_KILN_ADDRESS, quorum_size=4),
             ]
         ),
-        # "1.71. Set time constraints for execution (13:00 to 19:00 UTC)"
+        # "1.71. Set time constraints for Dual Governance Proposal execution (13:00 to 19:00 UTC) on Dual Governance Time Constraints `0x2a30F5aC03187674553024296bed35Aa49749DDa`)"
         (
             DUAL_GOVERNANCE_TIME_CONSTRAINTS,
             interface.TimeConstraints(DUAL_GOVERNANCE_TIME_CONSTRAINTS).checkTimeWithinDayTimeAndEmit.encode_input(
@@ -930,27 +930,26 @@ def get_vote_items():
     )
 
     vote_desc_items, call_script_items = zip(
-        # Vote items #1 - #71 are going through DG
         (
             "1. Submit a Dual Governance proposal to upgrade to CSM v2, enable Triggerable Withdrawals, migrate Nethermind → Twinstake, rotate Kiln Guardian",
             dg_call_script[0],
         ),
         (
-            "2. Add CSSetVettedGateTree factory to EasyTrack with permissions",
+            "2. Add CSSetVettedGateTree factory `0xBc5642bDD6F2a54b01A75605aAe9143525D97308` to EasyTrack `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` with permissions `setTreeParams`",
             add_evmscript_factory(
                 factory=EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY,
                 permissions=(create_permissions(interface.CSVettedGate(CS_VETTED_GATE_ADDRESS), "setTreeParams")),
             ),
         ),
         (
-            "3. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track",
+            "3. Add SubmitValidatorsExitRequestHashes (Simple DVT) EVM script factory `0xAa3D6A8B52447F272c1E8FAaA06EA06658bd95E2` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` with permissions `submitExitRequestsHash`",
             add_evmscript_factory(
                 factory=EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
                 permissions=(create_permissions(validator_exit_bus_oracle, "submitExitRequestsHash")),
             ),
         ),
         (
-            "4. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track",
+            "4. Add SubmitValidatorsExitRequestHashes (Curated Module) EVM script factory `0x397206ecdbdcb1A55A75e60Fc4D054feC72E5f63` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` with permissions `submitExitRequestsHash`",
             add_evmscript_factory(
                 factory=EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
                 permissions=(create_permissions(validator_exit_bus_oracle, "submitExitRequestsHash")),
