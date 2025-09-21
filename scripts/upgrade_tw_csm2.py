@@ -71,26 +71,26 @@ Upgrade TW + CSMv2
 1.58. Revoke CSAccounting `0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da` role `MANAGE_BOND_CURVES_ROLE` from Aragon Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
 1.59. Increase CSM (`MODULE_ID = 3`) share limit from `3%` to `5%` and priority exit threshold from `3.75%` to `6.25%` in Staking Router `0xFdDf38947aFB03C621C71b06C9C70bce73f12999`
 --- Gate Seals ---
-1.60. Revoke PAUSE_ROLE on WithdrawalQueue from the old GateSeal
-1.61. Revoke PAUSE_ROLE on ValidatorsExitBusOracle from the old GateSeal
-1.62. Grant PAUSE_ROLE on WithdrawalQueue to the new WithdrawalQueue GateSeal
-1.63. Grant PAUSE_ROLE on ValidatorsExitBusOracle to the new Triggerable Withdrawals GateSeal
-1.64. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to the new Triggerable Withdrawals GateSeal
+1.60. Revoke Withdrawal Queue `0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1` role `PAUSE_ROLE` from the old GateSeal `0xf9C9fDB4A5D2AA1D836D5370AB9b28BC1847e178`
+1.61. Revoke Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` role `PAUSE_ROLE` from the old GateSeal `0xf9C9fDB4A5D2AA1D836D5370AB9b28BC1847e178`
+1.62. Grant Withdrawal Queue `0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1` role `PAUSE_ROLE` to the new Withdrawal Queue GateSeal `0x8A854C4E750CDf24f138f34A9061b2f556066912`
+1.63. Grant Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` role `PAUSE_ROLE` to the new Triggerable Withdrawals GateSeal `0xA6BC802fAa064414AA62117B4a53D27fFfF741F1`
+1.64. Grant Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` role `PAUSE_ROLE` to the new Triggerable Withdrawals GateSeal `0xA6BC802fAa064414AA62117B4a53D27fFfF741F1`
 --- ResealManager ---
-1.65. Grant PAUSE_ROLE on TriggerableWithdrawalsGateway to ResealManager
-1.66. Grant RESUME_ROLE on TriggerableWithdrawalsGateway to ResealManager
+1.65. Grant Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` role `PAUSE_ROLE` to Reseal Manager `0x7914b5a1539b97Bd0bbd155757F25FD79A522d24`
+1.66. Grant Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` role `RESUME_ROLE` to Reseal Manager `0x7914b5a1539b97Bd0bbd155757F25FD79A522d24`
 --- Node Operators Registry rename and reward address change ---
-1.67. Rename Node Operator ID 25 from Nethermind to Twinstake
-1.68. Change Node Operator ID 25 reward address from 0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91 to 0x36201ed66DbC284132046ee8d99272F8eEeb24c8
+1.67. Rename Node Operator `ID 25` from `Nethermind` to `Twinstake`
+1.68. Change Node Operator `ID 25` reward address from `0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91` to `0x36201ed66DbC284132046ee8d99272F8eEeb24c8`
 -- DSM rotate guardian ---
-1.69. Remove old Kiln guardian
-1.70. Add new Kiln guardian
+1.69. Remove old `Kiln` address `0x14D5d5B71E048d2D75a39FfC5B407e3a3AB6F314` from Deposit Security Module `0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD` and keep quorum size as `4`
+1.70. Add new `Kiln` address `0x6d22aE126eB2c37F67a1391B37FF4f2863e61389` to Deposit Security Module `0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD` and keep quorum size as `4`
 1.--- Time Constraints ---
-1.71. Set time constraints for execution (13:00 to 19:00 UTC)
+1.71. Set time constraints for Dual Governance Proposal execution (13:00 to 19:00 UTC) on Dual Governance Time Constraints `0x2a30F5aC03187674553024296bed35Aa49749DDa`
 --- EasyTrack ---
-2. Add CSSetVettedGateTree factory to EasyTrack with permissions
-3. Add `SubmitValidatorsExitRequestHashes` (SDVT) EVM script factory to Easy Track
-4. Add `SubmitValidatorsExitRequestHashes` (Curated Module) EVM script factory to Easy Track
+2. Add CSSetVettedGateTree factory `0xBc5642bDD6F2a54b01A75605aAe9143525D97308` to EasyTrack `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` with permissions `setTreeParams`
+3. Add SubmitValidatorsExitRequestHashes (Simple DVT) EVM script factory `0xAa3D6A8B52447F272c1E8FAaA06EA06658bd95E2` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` with permissions `submitExitRequestsHash`
+4. Add SubmitValidatorsExitRequestHashes (Curated Module) EVM script factory `0x397206ecdbdcb1A55A75e60Fc4D054feC72E5f63` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` with permissions `submitExitRequestsHash`
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
