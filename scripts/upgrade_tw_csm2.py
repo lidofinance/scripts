@@ -9,7 +9,6 @@ import time
 from typing import Any, Dict
 from typing import Tuple
 from brownie import interface, web3, convert
-from brownie.convert.main import to_uint  # type: ignore
 
 from utils.agent import agent_forward
 from utils.dsm import encode_remove_guardian, encode_add_guardian
@@ -175,13 +174,6 @@ def encode_staking_router_update_csm_module_share() -> Tuple[str, str]:
             CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
         ),
     )
-
-
-def to_percent(bp: int) -> float:
-    """
-    Convert basis points to percentage.
-    """
-    return bp / 10000 * 100
 
 
 def get_vote_items():

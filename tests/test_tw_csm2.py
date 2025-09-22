@@ -200,7 +200,6 @@ def get_wv_contract_proxy_impl(proxy_address):
     return proxy.implementation()
 
 
-# FIXME: no method for WV?
 def check_proxy_implementation(proxy_address, expected_impl):
     """Check that proxy has expected implementation"""
     actual_impl = get_ossifiable_proxy_impl(proxy_address)
@@ -210,8 +209,7 @@ def check_proxy_implementation(proxy_address, expected_impl):
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.upgrade_tw_csm2 import start_vote, get_vote_items, encode_wv_proxy_upgrade_to, \
-    NETHERMIND_NEW_REWARD_ADDRESS
+from scripts.upgrade_tw_csm2 import start_vote, get_vote_items, encode_wv_proxy_upgrade_to
 
 # ============================================================================
 # ============================== Constants ===================================
@@ -339,6 +337,7 @@ IPFS_DESCRIPTION_HASH = "bafkreih5app23xbevhswk56r6d2cjdqui5tckki6szo7loi7xe25bf
 NETHERMIND_NO_ID = 25
 NETHERMIND_NO_NAME_OLD = "Nethermind"
 NETHERMIND_NO_NAME_NEW = "Twinstake"
+NETHERMIND_NEW_REWARD_ADDRESS = "0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
 NETHERMIND_NO_STAKING_REWARDS_ADDRESS_OLD = "0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91"
 NETHERMIND_NO_STAKING_REWARDS_ADDRESS_NEW = "0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
 NODE_OPERATORS_REGISTRY_ADDRESS = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
@@ -1085,12 +1084,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
             # Step 1.2: Check VEBO implementation initial state
             assert vebo_impl_before != VALIDATORS_EXIT_BUS_ORACLE_IMPL, "VEBO implementation should be different before upgrade"
-
-            # Step 1.3: Check VEBO finalizeUpgrade_v2 state
-            try:  # FIXME: with reverts
-                assert vebo_proxy.getMaxValidatorsPerReport() != 600, "VEBO max validators per report should not be 600 before upgrade"  # FIXME: magic number
-            except Exception:
-                pass  # Function might not exist yet
 
             # Steps 1.4-1.6: Check VEBO consensus version management
             initial_vebo_consensus_version = validators_exit_bus_oracle.getConsensusVersion()

@@ -1,12 +1,14 @@
 import pytest
 
 from brownie import reverts, accounts, chain, web3, Wei  # type: ignore
+from eth_hash.auto import keccak
 
 from utils.test.exit_bus_data import LidoValidator
 from utils.test.oracle_report_helpers import oracle_report, ZERO_BYTES32, wait_to_next_available_report_time, \
     prepare_exit_bus_report, reach_consensus
 from brownie.network.account import Account
 
+from eth_abi.abi import encode
 from utils.evm_script import encode_error
 from utils.test.helpers import almostEqEth, ETH
 from utils.test.deposits_helpers import fill_deposit_buffer
@@ -288,14 +290,29 @@ def test_gate_seal_twg_veb_scenario(steth_holder, gate_seal_committee, eth_whale
     ref_slot = _wait_for_next_ref_slot()
     report, report_hash = prepare_exit_bus_report([(no_global_index, validator)], ref_slot)
     consensus_version = contracts.validators_exit_bus_oracle.getConsensusVersion()
-    contract_version = contracts.validators_exit_bus_oracle.getContractVersion()
 
     submitter = reach_consensus(
         ref_slot, report_hash, consensus_version, contracts.hash_consensus_for_validators_exit_bus_oracle
     )
+    hash = web3.keccak(encode(['bytes', 'uint256'], [report[4], 1]))
+    (_,_,_, vebInitLimit1, vebInitLimit2) = contracts.validators_exit_bus_oracle.getExitRequestLimitFullInfo()
+    contracts.validators_exit_bus_oracle.submitExitRequestsHash(hash, {"from": "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"})
+    contracts.validators_exit_bus_oracle.submitExitRequestsData((report[4], 1), {"from": submitter})
+    (_,_,_, twgInitLimit1, twgInitLimit2) = contracts.triggerable_withdrawals_gateway.getExitRequestLimitFullInfo()
+    tx = contracts.validators_exit_bus_oracle.triggerExits((report[4], 1), [0], steth_holder, {"from": steth_holder, 'value': value})
 
-    contracts.validators_exit_bus_oracle.submitReportData(report, contract_version, {"from": submitter})
-    contracts.validators_exit_bus_oracle.triggerExits((report[4], 1), [0], steth_holder, {"from": steth_holder, 'value': value})
+    (_,_,_, twgLimit1, twgLimit2) = contracts.triggerable_withdrawals_gateway.getExitRequestLimitFullInfo()
+    (_,_,_, vebLimit1, vebLimit2) = contracts.validators_exit_bus_oracle.getExitRequestLimitFullInfo()
+    assert vebLimit1 < vebInitLimit1
+    assert vebLimit2 < vebInitLimit2
+    assert twgLimit1 < twgInitLimit1
+    assert twgLimit2 < twgInitLimit2
+    assert len(tx.events["WithdrawalRequestAdded"]['request']) == 56  # 48 + 8
+    pubkey_bytes = tx.events["WithdrawalRequestAdded"]['request'][:48]
+    _ = int.from_bytes(tx.events["WithdrawalRequestAdded"]['request'][48:], byteorder="big", signed=False)
+
+    pubkey_hex = "0x" + pubkey_bytes.hex()
+    assert validator_key == pubkey_hex
 
 def _wait_for_next_ref_slot():
     wait_to_next_available_report_time(contracts.hash_consensus_for_validators_exit_bus_oracle)
