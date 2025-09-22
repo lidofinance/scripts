@@ -131,7 +131,7 @@ jobs:
       - name: Start Hardhat node
         shell: bash
         run: |
-          npx hardhat node --fork https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }} &
+          npx hardhat node --fork ${{ secrets.ETH_RPC_URL }} &
           for i in {1..30}; do
             if curl -sf ${{ env.HARDHAT_NODE_URL }} ${{ env.CURL_PARAMS }} | grep -q '"result"'; then
               echo "Hardhat node is ready"
