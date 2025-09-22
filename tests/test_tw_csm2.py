@@ -1028,7 +1028,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 proposal_id=EXPECTED_DG_PROPOSAL_ID,
                 proposer=VOTING,
                 executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-                metadata="Upgrade to CSM v2, enable Triggerable Withdrawals, migrate Nethermind → Twinstake validator, rotate Kiln DSC address",
+                metadata="Upgrade to CSM v2, enable Triggerable Withdrawals, update the reward address and name for Node Operator ID 25 `Nethermind`, rotate Kiln Deposit Security Committee address",
                 proposal_calls=dual_governance_proposal_calls,
                 emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
             )
