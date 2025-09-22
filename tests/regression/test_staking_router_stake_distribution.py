@@ -29,6 +29,7 @@ class Module:
         self.maxDepositsPerBlock = maxDepositsPerBlock
         self.minDepositBlockDistance = minDepositBlockDistance
 
+
 def get_modules_info(staking_router):
     # collect the modules information
     module_digests = staking_router.getAllStakingModuleDigests()
@@ -36,7 +37,8 @@ def get_modules_info(staking_router):
 
     for digest in module_digests:
         (_, _, state, summary) = digest
-        (id, _, module_fee, treasury_fee, stake_share_limit, status, _, _, _, _, priorityExitShareThreshold, maxDepositsPerBlock, minDepositBlockDistance) = state
+        (id, _, module_fee, treasury_fee, stake_share_limit, status, _, _, _, _, priorityExitShareThreshold,
+         maxDepositsPerBlock, minDepositBlockDistance) = state
         (exited_keys, deposited_keys, depositable_keys) = summary
         if status != StakingModuleStatus.Active.value:
             # reset depositable keys in case of module is inactivated
@@ -65,7 +67,6 @@ def prep_modules_info(modules: Dict[int, Module]):
 
 
 def calc_allocation(modules: Dict[int, Module], keys_to_allocate: int, ignore_depositable: bool = False):
-
     total_active_keys = prep_modules_info(modules)
     # simulate target share distribution
     # https://github.com/lidofinance/lido-dao/blob/331ecec7fe3c8d57841fd73ccca7fb1cc9bc174e/contracts/0.8.9/StakingRouter.sol#L1266-L1268
@@ -127,6 +128,7 @@ def assure_depositable_keys(stranger):
             "0x617a04e701d0b1c8e0e96c278ba4caf00e2d787e4287e52fcc4b5f248d89c2b3"
         ]
         csm_add_node_operator(contracts.csm, contracts.cs_accounting, "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", fake_proof, curve_id=contracts.cs_early_adoption.CURVE_ID())
+
 
 def test_stake_distribution(stranger):
     """
