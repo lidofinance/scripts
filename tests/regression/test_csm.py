@@ -6,13 +6,18 @@ from utils.balance import set_balance_in_wei
 from utils.config import (
     contracts,
     ContractsLazyLoader,
+    CSM_COMMITTEE_MS,
+    EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY,
+    EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY,
 )
 from utils.dsm import UnvetArgs, to_bytes, set_single_guardian
 from utils.evm_script import encode_error
 from utils.staking_module import calc_module_reward_shares
 from utils.test.csm_helpers import csm_add_node_operator, csm_upload_keys, get_ics_members, csm_add_ics_node_operator
 from utils.test.deposits_helpers import fill_deposit_buffer
+from utils.test.easy_track_helpers import _encode_calldata
 from utils.test.helpers import ETH
+from utils.test.merkle_tree import StrikesTree
 from utils.test.oracle_report_helpers import (
     oracle_report,
     wait_to_next_available_report_time,
@@ -69,6 +74,11 @@ def fee_oracle():
 @pytest.fixture(scope="module")
 def ejector():
     return contracts.cs_ejector
+
+
+@pytest.fixture(scope="module")
+def strikes():
+    return contracts.cs_strikes
 
 
 @pytest.fixture
@@ -430,18 +440,41 @@ def test_csm_remove_key(csm, parameters_registry, accounting, node_operator):
 
 
 @pytest.mark.usefixtures("deposits_to_csm")
-def test_eject_bad_performer(csm, ejector, node_operator):
+def test_eject_bad_performer(csm, ejector, strikes, node_operator, stranger):
+    index_to_eject = 0
+    pubkey_to_eject = csm.getSigningKeys(node_operator, index_to_eject, 1)
+    leaf_to_eject = (node_operator, pubkey_to_eject, [1, 1, 1, 0, 0, 0])
+    another_pubkey = csm.getSigningKeys(node_operator, index_to_eject + 1, 1)
+    strikes_tree = StrikesTree.new(
+        [leaf_to_eject, (node_operator, another_pubkey, [1, 1, 0, 0, 0, 0])]
+    )
+    index_in_tree = strikes_tree.tree.find(strikes_tree.tree.leaf(leaf_to_eject))
+    proof, flags = strikes_tree.tree.get_multi_proof([index_in_tree])
+    strikes.processOracleReport(
+        strikes_tree.root,
+        "QmTest123456789",
+        {"from": contracts.cs_fee_oracle}
+    )
+
     eject_payment_value = get_sys_fee_to_eject()
 
-    index_to_eject = 0
-    tx = ejector.ejectBadPerformer(
-        node_operator, index_to_eject, ZERO_ADDRESS, {"value": eject_payment_value, "from": contracts.cs_strikes}
+    bad_performer = (node_operator, index_to_eject, [1, 1, 1, 0, 0, 0])
+    tx = strikes.processBadPerformanceProof(
+        [bad_performer],
+        proof,
+        flags,
+        ZERO_ADDRESS,
+        {"value": eject_payment_value, "from": stranger}
     )
+    assert "StrikesPenaltyProcessed" in tx.events
+    assert tx.events["StrikesPenaltyProcessed"]["nodeOperatorId"] == node_operator
+    assert tx.events["StrikesPenaltyProcessed"]["pubkey"] == pubkey_to_eject
+    penalty = contracts.cs_parameters_registry.defaultBadPerformancePenalty()
+    assert tx.events["StrikesPenaltyProcessed"]["strikesPenalty"] == penalty
 
     assert "TriggeredExitFeeRecorded" in tx.events
     assert tx.events["TriggeredExitFeeRecorded"]["nodeOperatorId"] == node_operator
-    pubkey = csm.getSigningKeys(node_operator, index_to_eject, 1)
-    assert tx.events["TriggeredExitFeeRecorded"]["pubkey"] == pubkey
+    assert tx.events["TriggeredExitFeeRecorded"]["pubkey"] == pubkey_to_eject
     assert tx.events["TriggeredExitFeeRecorded"]["exitType"] == 1
     assert tx.events["TriggeredExitFeeRecorded"]["withdrawalRequestPaidFee"] == eject_payment_value
     assert tx.events["TriggeredExitFeeRecorded"]["withdrawalRequestRecordedFee"] == eject_payment_value
@@ -466,7 +499,8 @@ def test_report_validator_exit_delay(csm, node_operator):
     assert "ValidatorExitDelayProcessed" in tx.events
     assert tx.events["ValidatorExitDelayProcessed"]["nodeOperatorId"] == node_operator
     assert tx.events["ValidatorExitDelayProcessed"]["pubkey"] == pubkey
-    assert tx.events["ValidatorExitDelayProcessed"]["delayPenalty"] == 100000000000000000  # FIXME: should be taken from CSParametersRegistry
+    penalty = contracts.cs_parameters_registry.defaultExitDelayPenalty()
+    assert tx.events["ValidatorExitDelayProcessed"]["delayPenalty"] == penalty
 
 
 def test_on_validator_exit_triggered(csm, node_operator):
@@ -481,3 +515,65 @@ def test_on_validator_exit_triggered(csm, node_operator):
     assert tx.events["TriggeredExitFeeRecorded"]["exitType"] == exit_type
     assert tx.events["TriggeredExitFeeRecorded"]["withdrawalRequestPaidFee"] == eject_payment_value
     assert tx.events["TriggeredExitFeeRecorded"]["withdrawalRequestRecordedFee"] == eject_payment_value
+
+
+@pytest.mark.usefixtures("deposits_to_csm")
+def test_easy_track_csm_settle_el_stealing_penalty(csm, accounting, node_operator, stranger):
+    manager_address = csm.getNodeOperator(node_operator)["managerAddress"]
+    set_balance_in_wei(manager_address, ETH(2))
+    accounting.depositETH(node_operator, {"from": manager_address, "value": ETH(1)})
+
+    csm.reportELRewardsStealingPenalty(node_operator, b'\x00' * 32, ETH(0.5), {"from": CSM_COMMITTEE_MS})
+
+    motions_before = contracts.easy_track.getMotions()
+
+    calldata = _encode_calldata(["uint256[]"], [[node_operator]])
+    tx = contracts.easy_track.createMotion(EASYTRACK_CSM_SETTLE_EL_REWARDS_STEALING_PENALTY_FACTORY, calldata, {"from": CSM_COMMITTEE_MS})
+
+    motions = contracts.easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 1
+
+    chain.sleep(60 * 60 * 24 * 3)
+    chain.mine()
+
+    bond_before = accounting.getBond(node_operator)
+
+    contracts.easy_track.enactMotion(
+        motions[-1][0],
+        tx.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+
+    bond_after = accounting.getBond(node_operator)
+
+    assert bond_before > bond_after, "Bond should be decreased after settling penalty"
+
+
+def test_easy_track_csm_set_vetted_gate_tree(
+    csm, accounting, node_operator, stranger
+):
+    motions_before = contracts.easy_track.getMotions()
+
+    new_tree_root = bytes.fromhex("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+    new_tree_cid = "QmTest123456789"
+    calldata = _encode_calldata(["bytes32", "string"], [new_tree_root, new_tree_cid])
+
+    tx = contracts.easy_track.createMotion(EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY, calldata, {"from": CSM_COMMITTEE_MS})
+
+    motions = contracts.easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 1
+
+    chain.sleep(60 * 60 * 24 * 3)
+    chain.mine()
+
+    contracts.easy_track.enactMotion(
+        motions[-1][0],
+        tx.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+
+    vetted_gate_tree_root_after = contracts.cs_vetted_gate.treeRoot()
+    vetted_gate_tree_cid_after = contracts.cs_vetted_gate.treeCid()
+
+    assert vetted_gate_tree_root_after == ("0x" + new_tree_root.hex()), "Tree root not updated"
+    assert vetted_gate_tree_cid_after == new_tree_cid, "Tree CID not updated"

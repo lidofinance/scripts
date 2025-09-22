@@ -11,7 +11,7 @@ from hexbytes import HexBytes
 from utils.config import contracts, AO_CONSENSUS_VERSION
 from utils.test.exit_bus_data import encode_data
 from utils.test.helpers import ETH, GWEI, eth_balance
-from utils.test.merkle_tree import Tree
+from utils.test.merkle_tree import RewardsTree
 
 ZERO_HASH = bytes([0] * 32)
 ZERO_BYTES32 = HexBytes(ZERO_HASH)
@@ -115,7 +115,7 @@ def prepare_csm_report(node_operators_rewards: dict, ref_slot):
         # put a stone
         shares[2 ** 64 - 1] = 0
 
-    tree = Tree.new(tuple((no_id, amount) for (no_id, amount) in shares.items()))
+    tree = RewardsTree.new(tuple((no_id, amount) for (no_id, amount) in shares.items()))
     # semi-random values
     log_cid = web3.keccak(tree.root)
     tree_cid = web3.keccak(log_cid)
