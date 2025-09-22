@@ -39,6 +39,9 @@ CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 CS_MODULE_TREASURY_FEE_BP = 400
 CS_GATE_SEAL_ADDRESS = "0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0"
 
+UTC13 = 60 * 60 * 13
+UTC19 = 60 * 60 * 19
+
 # ============================== Addresses ===================================
 
 LIDO_LOCATOR = "0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb"
@@ -61,7 +64,7 @@ CS_FEE_DISTRIBUTOR_ADDRESS = "0xD99CC66fEC647E68294C6477B40fC7E0F6F618D0"
 # New core contracts implementations
 NEW_LIDO_LOCATOR_IMPL = "0x2C298963FB763f74765829722a1ebe0784f4F5Cf"
 ACCOUNTING_ORACLE_IMPL = "0xE9906E543274cebcd335d2C560094089e9547e8d"
-NEW_VALIDATORS_EXIT_BUS_ORACLE_IMPL = "0x905A211eD6830Cfc95643f0bE2ff64E7f3bf9b94"
+VALIDATORS_EXIT_BUS_ORACLE_IMPL = "0x905A211eD6830Cfc95643f0bE2ff64E7f3bf9b94"
 WITHDRAWAL_VAULT_IMPL = "0x7D2BAa6094E1C4B60Da4cbAF4A77C3f4694fD53D"
 STAKING_ROUTER_IMPL = "0x226f9265CBC37231882b7409658C18bB7738173A"
 NODE_OPERATORS_REGISTRY_IMPL = "0x6828b023e737f96B168aCd0b5c6351971a4F81aE"
@@ -74,11 +77,11 @@ AO_CONSENSUS_VERSION = 4
 VEBO_CONSENSUS_VERSION = 4
 CSM_CONSENSUS_VERSION = 3
 
-# Fixed constants from Holesky version
+# Fixed constants
 EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 14 * 7200  # 14 days in slots (assuming 12 seconds per slot)
-NOR_EXIT_DEADLINE_IN_SEC = 172800  # 172800
+NOR_EXIT_DEADLINE_IN_SEC = 345600  # 28800 slots
 
-# VEB parameters from Holesky
+# VEB parameters
 MAX_VALIDATORS_PER_REPORT = 600
 MAX_EXIT_REQUESTS_LIMIT = 11200
 EXITS_PER_FRAME = 1
@@ -106,24 +109,30 @@ CS_CURVES = [
 ]
 CS_ICS_GATE_BOND_CURVE = ([1, 1.5 * 10**18], [2, 1.3 * 10**18])  # Identified Community Stakers Gate Bond Curve
 
+# GateSeals config
 OLD_GATE_SEAL_ADDRESS = "0xf9C9fDB4A5D2AA1D836D5370AB9b28BC1847e178"
 NEW_WQ_GATE_SEAL = "0x8A854C4E750CDf24f138f34A9061b2f556066912"
 NEW_TW_GATE_SEAL = "0xA6BC802fAa064414AA62117B4a53D27fFfF741F1"
 RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
+
+# Add EasyTrack constants
+EASYTRACK_EVMSCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
+EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0x8aa34dAaF0fC263203A15Bcfa0Ed926D466e59F3"
+EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0xB7668B5485d0f826B86a75b0115e088bB9ee03eE"
+EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY = "0xBc5642bDD6F2a54b01A75605aAe9143525D97308"
+
+# Vote enactment timeframe
 DUAL_GOVERNANCE_TIME_CONSTRAINTS = "0x2a30F5aC03187674553024296bed35Aa49749DDa"
 
+# NO changes
 NETHERMIND_NO_ID = 25
 NETHERMIND_NEW_REWARD_ADDRESS = "0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
 NETHERMIND_NEW_NO_NAME = "Twinstake"
 
-# Add EasyTrack constants
-EASYTRACK_EVMSCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
-EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0xAa3D6A8B52447F272c1E8FAaA06EA06658bd95E2"
-EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0x397206ecdbdcb1A55A75e60Fc4D054feC72E5f63"
-EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY = "0xBc5642bDD6F2a54b01A75605aAe9143525D97308"
-
+# DSM council rotation
 OLD_KILN_ADDRESS = "0x14D5d5B71E048d2D75a39FfC5B407e3a3AB6F314"
 NEW_KILN_ADDRESS = "0x6d22aE126eB2c37F67a1391B37FF4f2863e61389"
+DSM_QUORUM_SIZE = 4
 
 # ============================= Description ==================================
 IPFS_DESCRIPTION = "Triggerable withdrawals and CSM v2 upgrade voting"
@@ -194,13 +203,15 @@ def get_vote_items():
     cs_accounting = interface.CSAccounting(CS_ACCOUNTING_ADDRESS)
     cs_fee_oracle = interface.CSFeeOracle(CS_FEE_ORACLE_ADDRESS)
     cs_fee_distributor = interface.CSFeeDistributor(CS_FEE_DISTRIBUTOR_ADDRESS)
+    triggerable_withdrawal_gateway = interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY)
+
     dg_items = [
         # --- locator
         # "1.1. Update Lido Locator `0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb` implementation to `0x2C298963FB763f74765829722a1ebe0784f4F5Cf`",
         agent_forward([encode_proxy_upgrade_to(lido_locator, NEW_LIDO_LOCATOR_IMPL)]),
         # --- VEB
         # "1.2. Update Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e` implementation to `0x905A211eD6830Cfc95643f0bE2ff64E7f3bf9b94`",
-        agent_forward([encode_proxy_upgrade_to(validator_exit_bus_oracle, NEW_VALIDATORS_EXIT_BUS_ORACLE_IMPL)]),
+        agent_forward([encode_proxy_upgrade_to(validator_exit_bus_oracle, VALIDATORS_EXIT_BUS_ORACLE_IMPL)]),
         # "1.3. Call `finalizeUpgrade_v2(maxValidatorsPerReport = 600, maxExitRequestsLimit = 11200, exitsPerFrame = 1, frameDurationInSec = 48)` on Validators Exit Bus Oracle `0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e`",
         agent_forward(
             [
@@ -218,7 +229,7 @@ def get_vote_items():
                 encode_oz_grant_role(
                     contract=validator_exit_bus_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-                    grant_to=agent,
+                    grant_to=AGENT,
                 )
             ]
         ),
@@ -230,7 +241,7 @@ def get_vote_items():
                 encode_oz_revoke_role(
                     contract=validator_exit_bus_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-                    revoke_from=agent,
+                    revoke_from=AGENT,
                 )
             ]
         ),
@@ -261,7 +272,7 @@ def get_vote_items():
                 encode_oz_grant_role(
                     contract=interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY),
                     role_name="ADD_FULL_WITHDRAWAL_REQUEST_ROLE",
-                    grant_to=validator_exit_bus_oracle,
+                    grant_to=VALIDATORS_EXIT_BUS_ORACLE,
                 )
             ]
         ),
@@ -293,7 +304,7 @@ def get_vote_items():
                 encode_oz_grant_role(
                     contract=accounting_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-                    grant_to=agent,
+                    grant_to=AGENT,
                 )
             ]
         ),
@@ -305,7 +316,7 @@ def get_vote_items():
                 encode_oz_revoke_role(
                     contract=accounting_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
-                    revoke_from=agent,
+                    revoke_from=AGENT,
                 )
             ]
         ),
@@ -377,7 +388,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.24. Call `finalizeUpgrade_v4(norExitDeadlineInSec = 172800)` on Curated Staking Module Node Operators Registry `0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5`",
+        # "1.24. Call `finalizeUpgrade_v4(norExitDeadlineInSec = 345600)` on Curated Staking Module Node Operators Registry `0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5`",
         agent_forward(
             [
                 (
@@ -401,7 +412,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.26. Call `finalizeUpgrade_v4(norExitDeadlineInSec = 172800) on Simple DVT Staking Module Node Operators Registry `0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433`",
+        # "1.26. Call `finalizeUpgrade_v4(norExitDeadlineInSec = 345600) on Simple DVT Staking Module Node Operators Registry `0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433`",
         agent_forward(
             [
                 (
@@ -432,7 +443,7 @@ def get_vote_items():
                 encode_oz_grant_role(
                     contract=oracle_daemon_config,
                     role_name="CONFIG_MANAGER_ROLE",
-                    grant_to=agent,  # FIXME: misleading usage of contract
+                    grant_to=AGENT,
                 )
             ]
         ),
@@ -480,7 +491,7 @@ def get_vote_items():
                 encode_oz_revoke_role(
                     contract=oracle_daemon_config,
                     role_name="CONFIG_MANAGER_ROLE",
-                    revoke_from=agent,  # FIXME: typing says its str
+                    revoke_from=AGENT,
                 )
             ]
         ),
@@ -780,7 +791,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY),
+                    contract=triggerable_withdrawal_gateway,
                     role_name="PAUSE_ROLE",
                     grant_to=RESEAL_MANAGER,
                 )
@@ -790,7 +801,7 @@ def get_vote_items():
         agent_forward(
             [
                 encode_oz_grant_role(
-                    contract=interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY),
+                    contract=triggerable_withdrawal_gateway,
                     role_name="RESUME_ROLE",
                     grant_to=RESEAL_MANAGER,
                 )
@@ -811,21 +822,21 @@ def get_vote_items():
         # "1.69. Remove old `Kiln` address `0x14D5d5B71E048d2D75a39FfC5B407e3a3AB6F314` from Deposit Security Module `0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD` and keep quorum size as `4`"
         agent_forward(
             [
-                encode_remove_guardian(dsm=dsm, guardian_address=OLD_KILN_ADDRESS, quorum_size=4),
+                encode_remove_guardian(dsm=dsm, guardian_address=OLD_KILN_ADDRESS, quorum_size=DSM_QUORUM_SIZE),
             ]
         ),
         # "1.70. Add new `Kiln` address `0x6d22aE126eB2c37F67a1391B37FF4f2863e61389` to Deposit Security Module `0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD` and keep quorum size as `4`"
         agent_forward(
             [
-                encode_add_guardian(dsm=dsm, guardian_address=NEW_KILN_ADDRESS, quorum_size=4),
+                encode_add_guardian(dsm=dsm, guardian_address=NEW_KILN_ADDRESS, quorum_size=DSM_QUORUM_SIZE),
             ]
         ),
         # "1.71. Set time constraints for Dual Governance Proposal execution (13:00 to 19:00 UTC) on Dual Governance Time Constraints `0x2a30F5aC03187674553024296bed35Aa49749DDa`"
         (
             DUAL_GOVERNANCE_TIME_CONSTRAINTS,
             interface.TimeConstraints(DUAL_GOVERNANCE_TIME_CONSTRAINTS).checkTimeWithinDayTimeAndEmit.encode_input(
-                3600 * 13,  # 13:00 UTC
-                3600 * 19   # 19:00 UTC
+                UTC13,  # 13:00 UTC
+                UTC19,  # 19:00 UTC
             ),
         ),
     ]
