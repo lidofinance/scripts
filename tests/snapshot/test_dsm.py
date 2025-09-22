@@ -139,7 +139,8 @@ def do_snapshot(guardian: Account, some_eoa: Account):
                 "getGuardianIndex(negative)": dsm.getGuardianIndex(accounts[0].address),
                 "getGuardianIndex(changes)": dsm.getGuardianIndex(some_eoa.address),
                 "getGuardianQuorum": dsm.getGuardianQuorum(),
-                "getGuardians": dsm.getGuardians(),
+                # NOTE: Uncomment line below after 23.09.2025 vote enacted
+                # "getGuardians": dsm.getGuardians(),
                 "isGuardian(positive)": dsm.isGuardian(guardian.address),
                 "isGuardian(negative)": dsm.isGuardian(accounts[0].address),
                 "isGuardian(changes)": dsm.isGuardian(some_eoa.address),
@@ -147,12 +148,10 @@ def do_snapshot(guardian: Account, some_eoa: Account):
                 "getMaxOperatorsPerUnvetting": dsm.getMaxOperatorsPerUnvetting(),
                 "getLastDepositBlock": dsm.getLastDepositBlock(),
                 "isDepositsPaused": dsm.isDepositsPaused(),
-                # NOTE: unchecked views
-                # Implementation address changes
-                # "address": dsm.address,
+                "address": dsm.address,
                 # The following two fields are constant and built differently across versions
-                # "ATTEST_MESSAGE_PREFIX": dsm.ATTEST_MESSAGE_PREFIX(),
-                # "PAUSE_MESSAGE_PREFIX": dsm.PAUSE_MESSAGE_PREFIX(),
+                "ATTEST_MESSAGE_PREFIX": dsm.ATTEST_MESSAGE_PREFIX(),
+                "PAUSE_MESSAGE_PREFIX": dsm.PAUSE_MESSAGE_PREFIX(),
             }
 
     return _snap

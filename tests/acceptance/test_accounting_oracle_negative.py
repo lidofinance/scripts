@@ -3,8 +3,7 @@ from hexbytes import HexBytes
 from web3 import Web3
 
 import pytest
-from brownie import ZERO_ADDRESS, Contract, MockHashConsensus, accounts, chain, interface, reverts, \
-    chain  # type: ignore
+from brownie import ZERO_ADDRESS, Contract, MockHashConsensus, accounts, interface, reverts, chain  # type: ignore
 from brownie.network.account import Account
 from configs.config_mainnet import MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION
 
