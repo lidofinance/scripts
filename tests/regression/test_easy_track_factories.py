@@ -227,14 +227,11 @@ def submit_exit_hashes_sdvt(stranger):
         PUBKEYS[0]: ValidatorInfo(index=12345, pubkey=PUBKEYS[0], status="active_ongoing"),
     }, keys_index_mapping)
 
-    node_operator = contracts.node_operators_registry.getNodeOperator(no_id, False)
-    trusted_caller = accounts.at(node_operator["rewardAddress"], force=True)
-
     exit_data = encode_exit_requests_abi(exit_requests)
     calldata = "0x" + exit_data.hex()
 
     factory = interface.SDVTSubmitExitRequestHashes(EASYTRACK_SIMPLE_DVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY)
-    create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
+    create_and_enact_motion(contracts.easy_track, EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER, factory, calldata, stranger)
 
 
 def test_add_node_operators(stranger):
