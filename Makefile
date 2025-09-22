@@ -80,6 +80,7 @@ node3:
 test-core:
 	cd $(CORE_DIR) && \
 	FORK_RPC_URL=$(CORE_TESTS_TARGET_RPC_URL) \
+	RPC_URL=$(CORE_TESTS_TARGET_RPC_URL) \
 	yarn test:integration
 
 slots:
