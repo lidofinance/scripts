@@ -370,7 +370,7 @@ def get_vote_items():
                     acl.grantPermission.encode_input(
                         AGENT,
                         ARAGON_KERNEL,
-                        convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE")),  # FIXME: no need for to_uint I guess
+                        convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE")),
                     ),
                 )
             ]
@@ -431,7 +431,7 @@ def get_vote_items():
                     acl.revokePermission.encode_input(
                         AGENT,
                         ARAGON_KERNEL,
-                        convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE")),  # FIXME: remove to_uint
+                        convert.to_uint(web3.keccak(text="APP_MANAGER_ROLE")),
                     ),
                 )
             ]
