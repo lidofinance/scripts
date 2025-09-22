@@ -1,17 +1,17 @@
 import pytest
 from web3 import Web3
 import eth_abi
-from brownie import chain, ZERO_ADDRESS, web3
+from brownie import web3
 
 from utils.staking_module import calc_module_reward_shares
 from utils.test.extra_data import (
     ExtraDataService,
 )
-from utils.test.helpers import shares_balance, ETH, almostEqWithDiff
+from utils.test.helpers import shares_balance, ETH
 from utils.test.oracle_report_helpers import (
     oracle_report,
 )
-from utils.config import contracts, STAKING_ROUTER, EASYTRACK_EVMSCRIPT_EXECUTOR
+from utils.config import contracts, STAKING_ROUTER
 from utils.test.node_operators_helpers import distribute_reward, node_operator_gindex
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_keys
 from utils.test.staking_router_helpers import set_staking_module_status, StakingModuleStatus
@@ -107,22 +107,9 @@ def parse_exited_signing_keys_count_changed_logs(logs):
     return res
 
 
-def parse_stuck_penalty_state_changed_logs(logs):
-    res = []
-    for l in logs:
-        data = eth_abi.decode(["uint256", "uint256", "uint256"], l["data"])
-        res.append(
-            {
-                "nodeOperatorId": eth_abi.decode(["uint256"], l["topics"][1])[0],
-                "stuckValidatorsCount": data[0],
-                "refundedValidatorsCount": data[1],
-                "stuckPenaltyEndTimestamp": data[2],
-            }
-        )
-    return res
 
 
-def module_happy_path(staking_module, extra_data_service, impersonated_agent, eth_whale, stranger, helpers):
+def module_happy_path(staking_module, extra_data_service, impersonated_agent, stranger, helpers):
     nor_exited_count, _, _ = contracts.staking_router.getStakingModuleSummary(staking_module.module_id)
 
     # all_modules = contracts.staking_router.getStakingModules()
@@ -169,17 +156,12 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, et
 
     deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 30, impersonated_agent)
 
-    penalty_delay = staking_module.getStuckPenaltyDelay()
-
-    no1_summary = staking_module.getNodeOperatorSummary(no1_id)
     no1_reward_address = staking_module.getNodeOperator(no1_id, False)["rewardAddress"]
     no1_balance_shares_before = shares_balance(no1_reward_address)
 
-    no2_summary = staking_module.getNodeOperatorSummary(no2_id)
     no2_reward_address = staking_module.getNodeOperator(no2_id, False)["rewardAddress"]
     no2_balance_shares_before = shares_balance(no2_reward_address)
 
-    no3_summary = staking_module.getNodeOperatorSummary(no3_id)
     no3_reward_address = staking_module.getNodeOperator(no3_id, False)["rewardAddress"]
     no3_balance_shares_before = shares_balance(no3_reward_address)
 
@@ -208,13 +190,11 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, et
     assert no2_balance_shares_after - no2_balance_shares_before == no2_rewards_after_first_report
     assert no3_balance_shares_after - no3_balance_shares_before == no3_rewards_after_first_report
 
-    # Case 1
+    # Test Case: Basic Exit Handling
     # --- operator "1st" had 5 keys (exited)
     # --- operator "2nd" had 5 keys (exited)
     # - Send report
-    # - Check rewards shares for "3d" NO and tested NO (should be half of expected)
-    # - Check deposits (should be 0 for penalized NOs)
-    # - Check burned shares
+    # - Check rewards shares distribution
     # - Check NOs stats
     # - Check Report events
 
@@ -243,7 +223,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, et
         numExitedValidatorsByStakingModule=[nor_exited_count + 10],
         stakingModuleIdsWithNewlyExitedValidators=[staking_module.module_id],
     )
-    distribute_reward_tx = distribute_reward(staking_module, stranger.address)
+    distribute_reward(staking_module, stranger.address)
 
     # shares after report
     no1_summary = staking_module.getNodeOperatorSummary(no1_id)
@@ -269,21 +249,8 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, et
 
     # NO stats
     assert no1_summary["totalExitedValidators"] == 5
-    assert no1_summary["refundedValidatorsCount"] == 0
-    assert no1_summary["stuckPenaltyEndTimestamp"] == 0
-
     assert no2_summary["totalExitedValidators"] == 5
-    assert no2_summary["refundedValidatorsCount"] == 0
-    assert no2_summary["stuckPenaltyEndTimestamp"] == 0
-
-    assert no3_summary["stuckValidatorsCount"] == 0
     assert no3_summary["totalExitedValidators"] == 0
-    assert no3_summary["refundedValidatorsCount"] == 0
-    assert no3_summary["stuckPenaltyEndTimestamp"] == 0
-
-    assert staking_module.isOperatorPenalized(no1_id)
-    assert staking_module.isOperatorPenalized(no2_id)
-    assert not staking_module.isOperatorPenalized(no3_id)
 
     # Events
     exited_signing_keys_count_events = parse_exited_signing_keys_count_changed_logs(
@@ -296,386 +263,15 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, et
     assert exited_signing_keys_count_events[1]["exitedValidatorsCount"][0] == 5
 
     # Deposit keys
-    (
-        no1_deposited_keys_before,
-        no2_deposited_keys_before,
-        no3_deposited_keys_before,
-        no1_deposited_keys_after,
-        no2_deposited_keys_after,
-        no3_deposited_keys_after,
-    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_agent)
-
-    # check don't change deposited keys for penalized NO
-    assert no1_deposited_keys_before == no1_deposited_keys_after
-    assert no2_deposited_keys_before == no2_deposited_keys_after
-    assert no3_deposited_keys_before != no3_deposited_keys_after
-
-    # Case 2
-    # --- "1st" NO exited the keys (exited increased by the number of stacks)
-    # --- BUT the penalty still affects both
-    # - Send report
-    # - Check rewards shares for NO3 and tested NO (should be half of expected)
-    # - Check burned shares
-    # - Check NOs stats
-    # - Check Report events
-
-    vals_exited_non_zero = {
-        node_operator_gindex(staking_module.module_id, no1_id): 7,
-    }
-    extra_data = extra_data_service.collect(vals_exited_non_zero, 10, 10)
-
-    # shares before report
-    no1_balance_shares_before = shares_balance(no1_reward_address)
-    no2_balance_shares_before = shares_balance(no2_reward_address)
-    no3_balance_shares_before = shares_balance(no3_reward_address)
-
-    # Third report - first NO: increase stuck to 0, desc exited to 7 = 5 + 2
-    # Second NO: same as prev report
-    module_shares_dust = shares_balance(staking_module)
-    (report_tx, extra_report_tx_list) = oracle_report(
-        cl_diff=ETH(10),
-        exclude_vaults_balances=True,
-        extraDataFormat=1,
-        extraDataHashList=extra_data.extra_data_hash_list,
-        extraDataItemsCount=extra_data.items_count,
-        extraDataList=extra_data.extra_data_list,
-        numExitedValidatorsByStakingModule=[nor_exited_count + 12],
-        stakingModuleIdsWithNewlyExitedValidators=[staking_module.module_id],
-    )
-    distribute_reward_tx= distribute_reward(staking_module, stranger.address)
-
-    no1_summary = staking_module.getNodeOperatorSummary(no1_id)
-    no2_summary = staking_module.getNodeOperatorSummary(no2_id)
-    no3_summary = staking_module.getNodeOperatorSummary(no3_id)
-
-    # shares after report
-    no1_balance_shares_after = shares_balance(no1_reward_address)
-    no2_balance_shares_after = shares_balance(no2_reward_address)
-    no3_balance_shares_after = shares_balance(no3_reward_address)
-
-    # expected shares
-    minted_share = (
-        calc_module_reward_shares(staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"])
-        + module_shares_dust
-    )
-    no1_rewards_after_third_report = calc_no_rewards(staking_module, no_id=no1_id, minted_shares=minted_share)
-    no2_rewards_after_third_report = calc_no_rewards(staking_module, no_id=no2_id, minted_shares=minted_share)
-    no3_rewards_after_third_report = calc_no_rewards(staking_module, no_id=no3_id, minted_shares=minted_share)
-
-    # first NO has penalty has a penalty until stuckPenaltyEndTimestamp
-    # check shares by report with penalty
-    # diff by 1 share because of rounding
-    assert no1_balance_shares_after - no1_balance_shares_before == no1_rewards_after_third_report // 2
-    assert no2_balance_shares_after - no2_balance_shares_before == no2_rewards_after_third_report // 2
-    assert no3_balance_shares_after - no3_balance_shares_before == no3_rewards_after_third_report
-
-    # Check burn shares
-    no1_amount_penalty = no1_rewards_after_third_report // 2
-    no2_amount_penalty = no2_rewards_after_third_report // 2
-    penalty_shares = no1_amount_penalty + no2_amount_penalty
-    # diff by 2 share because of rounding
-    # TODO: Fix below check when nor contains other penalized node operators
-    # assert almostEqWithDiff(extra_report_tx_list[0].events["StETHBurnRequested"]["amountOfShares"], penalty_shares, 2)
-    assert distribute_reward_tx.events["StETHBurnRequested"]["amountOfShares"] >= penalty_shares
-
-    # NO stats
-    assert no3_summary["stuckPenaltyEndTimestamp"] == 0
-
-    assert no1_summary["stuckValidatorsCount"] == 0
-    assert no1_summary["totalExitedValidators"] == 7
-    assert no1_summary["refundedValidatorsCount"] == 0
-    # first NO has penalty has a penalty until stuckPenaltyEndTimestamp
-    assert no1_summary["stuckPenaltyEndTimestamp"] > chain.time()
-
-    assert no2_summary["stuckValidatorsCount"] == 2
-    assert no2_summary["totalExitedValidators"] == 5
-    assert no2_summary["refundedValidatorsCount"] == 0
-    assert no2_summary["stuckPenaltyEndTimestamp"] == 0
-
-    assert staking_module.isOperatorPenalized(no1_id) == True
-    assert staking_module.isOperatorPenalized(no2_id) == True
-    assert staking_module.isOperatorPenalized(no3_id) == False
-
-    # events
-    exited_signing_keys_count_events = parse_exited_signing_keys_count_changed_logs(
-        filter_transfer_logs(extra_report_tx_list[0].logs, web3.keccak(text="ExitedSigningKeysCountChanged(uint256,uint256)"))
-    )
-    assert exited_signing_keys_count_events[0]["nodeOperatorId"] == no1_id
-    assert exited_signing_keys_count_events[0]["exitedValidatorsCount"][0] == 7
-
-    stuck_penalty_state_changed_events = parse_stuck_penalty_state_changed_logs(
-        filter_transfer_logs(
-            extra_report_tx_list[0].logs, web3.keccak(text="StuckPenaltyStateChanged(uint256,uint256,uint256,uint256)")
-        )
-    )
-    assert stuck_penalty_state_changed_events[0]["nodeOperatorId"] == no1_id
-    assert stuck_penalty_state_changed_events[0]["stuckValidatorsCount"] == 0
-
-    # Case 3
-    # -- PENALTY_DELAY time passes
-    # -- A new report comes in and says "2nd" NO still has a stuck of keys
-    # -- "1st" NO is fine
-    # - Wait PENALTY_DELAY time
-    # - Send report
-    # - Check rewards shares for "3d" NO and tested NO (should be half for "2nd" NO)
-    # - Check deposits (should be 0 for "2nd" NO)
-    # - Check burned shares
-    # - Check NOs stats
-
-    # sleep PENALTY_DELAY time
-    chain.sleep(penalty_delay + 1)
-    chain.mine()
-
-    # Clear penalty for first NO after penalty delay
-    staking_module.clearNodeOperatorPenalty(no1_id, {"from": impersonated_agent})
-
-    # Prepare extra data for report by second NO
-    vals_stuck_non_zero = {
-        node_operator_gindex(staking_module.module_id, no2_id): 2,
-    }
-    vals_exited_non_zero = {
-        node_operator_gindex(staking_module.module_id, no2_id): 5,
-    }
-    extra_data = extra_data_service.collect(vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
-
-    # shares before report
-    no1_balance_shares_before = shares_balance(no1_reward_address)
-    no2_balance_shares_before = shares_balance(no2_reward_address)
-    no3_balance_shares_before = shares_balance(no3_reward_address)
-
-    # Fourth report - second NO: has stuck 2 keys
-    module_shares_dust = shares_balance(staking_module)
-    (report_tx, extra_report_tx_list) = oracle_report(
-        exclude_vaults_balances=True,
-        extraDataFormat=1,
-        extraDataHashList=extra_data.extra_data_hash_list,
-        extraDataItemsCount=2,
-        extraDataList=extra_data.extra_data_list,
-        numExitedValidatorsByStakingModule=[nor_exited_count + 12],
-        stakingModuleIdsWithNewlyExitedValidators=[staking_module.module_id],
-    )
-    distribute_reward_tx = distribute_reward(staking_module, stranger.address)
-
-    no1_summary = staking_module.getNodeOperatorSummary(no1_id)
-    no2_summary = staking_module.getNodeOperatorSummary(no2_id)
-    no3_summary = staking_module.getNodeOperatorSummary(no3_id)
-
-    # shares after report
-    no1_balance_shares_after = shares_balance(no1_reward_address)
-    no2_balance_shares_after = shares_balance(no2_reward_address)
-    no3_balance_shares_after = shares_balance(no3_reward_address)
-
-    # expected shares
-    minted_share = (
-        calc_module_reward_shares(staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"])
-        + module_shares_dust
-    )
-    no1_rewards_after_fourth_report = calc_no_rewards(staking_module, no_id=no1_id, minted_shares=minted_share)
-    no2_rewards_after_fourth_report = calc_no_rewards(staking_module, no_id=no2_id, minted_shares=minted_share)
-    no3_rewards_after_fourth_report = calc_no_rewards(staking_module, no_id=no3_id, minted_shares=minted_share)
-
-    # Penalty ended for first operator
-    # check shares by report with penalty for second NO
-    # diff by 1 share because of rounding
-    assert no1_balance_shares_after - no1_balance_shares_before == no1_rewards_after_fourth_report
-    assert no2_balance_shares_after - no2_balance_shares_before == no2_rewards_after_fourth_report // 2
-    assert no3_balance_shares_after - no3_balance_shares_before == no3_rewards_after_fourth_report
-
-    # Check burn shares
-    no2_amount_penalty = no2_rewards_after_fourth_report // 2
-    # diff by 2 share because of rounding
-    # TODO: Fix below check when nor contains other penalized node operators
-    # assert almostEqWithDiff(extra_report_tx_list[0].events["StETHBurnRequested"]["amountOfShares"], amount_penalty_second_no, 1)
-    assert distribute_reward_tx.events["StETHBurnRequested"]["amountOfShares"] >= no2_amount_penalty
-
-    assert no3_summary["stuckPenaltyEndTimestamp"] == 0
-
-    assert no1_summary["stuckValidatorsCount"] == 0
-    assert no1_summary["totalExitedValidators"] == 7
-    assert no1_summary["refundedValidatorsCount"] == 0
-    # Penalty ended for first operator
-    assert no1_summary["stuckPenaltyEndTimestamp"] < chain.time()
-
-    assert no2_summary["stuckValidatorsCount"] == 2
-    assert no2_summary["totalExitedValidators"] == 5
-    assert no2_summary["refundedValidatorsCount"] == 0
-    assert no2_summary["stuckPenaltyEndTimestamp"] == 0
-
-    assert not staking_module.isOperatorPenalized(no1_id)
-    assert staking_module.isOperatorPenalized(no2_id)
-    assert not staking_module.isOperatorPenalized(no3_id)
-
-    # Deposit
-    (
-        no1_deposited_keys_before,
-        no2_deposited_keys_before,
-        no3_deposited_keys_before,
-        no1_deposited_keys_after,
-        no2_deposited_keys_after,
-        no3_deposited_keys_after,
-    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_agent)
-
-    # check don't change deposited keys for penalized NO (only second NO)
-    assert no1_deposited_keys_before != no1_deposited_keys_after
-    assert no2_deposited_keys_before == no2_deposited_keys_after
-    assert no3_deposited_keys_before != no3_deposited_keys_after
-
-    # Case 4
-    # -- Do key refend (redunded == stuck) for X2
-    # -- A new report arrives and says that everything remains the same
-    # _ Refund 2 keys Second NO
-    # - Send report
-    # - Check rewards shares for "3d" NO and tested NO (should be half for "2nd" NO)
-    # - Check burned shares
-    # - Check NOs stats
-
-    # # Refund 2 keys Second NO
-    contracts.staking_router.updateRefundedValidatorsCount(
-        staking_module.module_id, no2_id, 2, {"from": impersonated_agent}
-    )
-
-    # shares before report
-    no1_balance_shares_before = shares_balance(no1_reward_address)
-    no2_balance_shares_before = shares_balance(no2_reward_address)
-    no3_balance_shares_before = shares_balance(no3_reward_address)
-
-    # Fifth report
-    module_shares_dust = shares_balance(staking_module)
-    (report_tx, extra_report_tx_list) = oracle_report(exclude_vaults_balances=True)
-    distribute_reward_tx = distribute_reward(staking_module, stranger.address)
-
-    # shares after report
-    no1_balance_shares_after = shares_balance(no1_reward_address)
-    no2_balance_shares_after = shares_balance(no2_reward_address)
-    no3_balance_shares_after = shares_balance(no3_reward_address)
-
-    no1_summary = staking_module.getNodeOperatorSummary(no1_id)
-    no2_summary = staking_module.getNodeOperatorSummary(no2_id)
-    no3_summary = staking_module.getNodeOperatorSummary(no3_id)
-
-    # expected shares
-    minted_share = (
-        calc_module_reward_shares(staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"])
-        + module_shares_dust
-    )
-    no1_rewards_after_fifth_report = calc_no_rewards(staking_module, no_id=no1_id, minted_shares=minted_share)
-    no2_rewards_after_fifth_report = calc_no_rewards(staking_module, no_id=no2_id, minted_shares=minted_share)
-    no3_rewards_after_fifth_report = calc_no_rewards(staking_module, no_id=no3_id, minted_shares=minted_share)
-
-    # Penalty only for second operator
-    # diff by 1 share because of rounding
-    assert no1_balance_shares_after - no1_balance_shares_before == no1_rewards_after_fifth_report
-    assert no2_balance_shares_after - no2_balance_shares_before == no2_rewards_after_fifth_report // 2
-    assert no3_balance_shares_after - no3_balance_shares_before == no3_rewards_after_fifth_report
-
-    # Check burn shares
-    no2_amount_penalty = no2_rewards_after_fifth_report // 2
-    # diff by 2 share because of rounding
-    # TODO: Fix below check when nor contains other penalized node operators
-    # assert almostEqWithDiff(extra_report_tx_list[0].events["StETHBurnRequested"]["amountOfShares"], amount_penalty_second_no, 1)
-    assert distribute_reward_tx.events["StETHBurnRequested"]["amountOfShares"] >= no2_amount_penalty
-
-    assert no3_summary["stuckPenaltyEndTimestamp"] == 0
-
-    assert no1_summary["stuckValidatorsCount"] == 0
-    assert no1_summary["totalExitedValidators"] == 7
-    assert no1_summary["refundedValidatorsCount"] == 0
-    assert no1_summary["stuckPenaltyEndTimestamp"] < chain.time()
-
-    assert no2_summary["stuckValidatorsCount"] == 2
-    assert no2_summary["totalExitedValidators"] == 5
-    assert no2_summary["refundedValidatorsCount"] == 2
-    assert no2_summary["stuckPenaltyEndTimestamp"] > chain.time()
-
-    assert staking_module.isOperatorPenaltyCleared(no1_id) == True
-    assert staking_module.isOperatorPenaltyCleared(no2_id) == False
-
-    # Case 5
-    # -- PENALTY_DELAY time passes
-    # -- A new report arrives
-    # - Wait for penalty delay time
-    # - Send report
-    # - Check rewards shares for "3d" NO and tested NO (should be full for all NOs)
-    # - Check deposits (should be full for all NOs)
-    # - Check NOs stats
-
-    # Wait for penalty delay time
-    chain.sleep(penalty_delay + 1)
-    chain.mine()
-
-    # Clear penalty for second NO after penalty delay
-    staking_module.clearNodeOperatorPenalty(no2_id, {"from": impersonated_agent})
-
-    # shares before report
-    no1_balance_shares_before = shares_balance(no1_reward_address)
-    no2_balance_shares_before = shares_balance(no2_reward_address)
-    no3_balance_shares_before = shares_balance(no3_reward_address)
-
-    # Seventh report
-    module_shares_dust = shares_balance(staking_module)
-    (report_tx, extra_report_tx_list) = oracle_report()
-    distribute_reward(staking_module, stranger.address)
-
-    assert not staking_module.isOperatorPenalized(no1_id)
-    assert not staking_module.isOperatorPenalized(no2_id)
-    assert not staking_module.isOperatorPenalized(no3_id)
-
-    # shares after report
-    no1_balance_shares_after = shares_balance(no1_reward_address)
-    no2_balance_shares_after = shares_balance(no2_reward_address)
-    no3_balance_shares_after = shares_balance(no3_reward_address)
-
-    assert staking_module.isOperatorPenaltyCleared(no1_id)
-    assert staking_module.isOperatorPenaltyCleared(no2_id)
-
-    no1_summary = staking_module.getNodeOperatorSummary(no1_id)
-    no2_summary = staking_module.getNodeOperatorSummary(no2_id)
-
-    # expected shares
-    minted_share = (
-        calc_module_reward_shares(staking_module.module_id, report_tx.events["TokenRebased"]["sharesMintedAsFees"])
-        + module_shares_dust
-    )
-    no1_rewards_after_sixth_report = calc_no_rewards(staking_module, no_id=no1_id, minted_shares=minted_share)
-    no2_rewards_after_sixth_report = calc_no_rewards(staking_module, no_id=no2_id, minted_shares=minted_share)
-    no3_rewards_after_sixth_report = calc_no_rewards(staking_module, no_id=no3_id, minted_shares=minted_share)
-
-    # No penalty
-    # diff by 1 share because of rounding
-    assert no1_balance_shares_after - no1_balance_shares_before == no1_rewards_after_sixth_report
-    assert no2_balance_shares_after - no2_balance_shares_before == no2_rewards_after_sixth_report
-    assert no3_balance_shares_after - no3_balance_shares_before == no3_rewards_after_sixth_report
-
-    assert no1_summary["stuckValidatorsCount"] == 0
-    assert no1_summary["totalExitedValidators"] == 7
-    assert no1_summary["refundedValidatorsCount"] == 0
-    assert no1_summary["stuckPenaltyEndTimestamp"] < chain.time()
-
-    assert no2_summary["stuckValidatorsCount"] == 2
-    assert no2_summary["totalExitedValidators"] == 5
-    assert no2_summary["refundedValidatorsCount"] == 2
-    assert no2_summary["stuckPenaltyEndTimestamp"] < chain.time()
-
-    # Deposit
-    (
-        no1_deposited_keys_before,
-        no2_deposited_keys_before,
-        no3_deposited_keys_before,
-        no1_deposited_keys_after,
-        no2_deposited_keys_after,
-        no3_deposited_keys_after,
-    ) = deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_agent)
-
-    # check deposit is applied for all NOs
-    assert no1_deposited_keys_before != no1_deposited_keys_after
-    assert no2_deposited_keys_before != no2_deposited_keys_after
-    assert no3_deposited_keys_before != no3_deposited_keys_after
+    deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_agent)
 
     for op_index in (no1_id, no2_id, no3_id):
         no = staking_module.getNodeOperator(op_index, False)
         staking_module.setNodeOperatorStakingLimit(
             op_index, no["totalDepositedValidators"] + 10, {"from": impersonated_agent}
         )
+
+
 
     # Case 6
     # -- SActivate target limit for "1st" NO
@@ -756,17 +352,17 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, et
 @pytest.mark.skip(
     "TODO: fix the test assumptions about the state of the chain (no exited validators, depositable ETH amount)"
 )
-def test_node_operator_registry(impersonated_agent, stranger, eth_whale, helpers):
+def test_node_operator_registry(impersonated_agent, stranger, helpers):
     nor = contracts.node_operators_registry
     nor.module_id = 1
     nor.testing_node_operator_ids = [35, 36, 37]
-    module_happy_path(nor, ExtraDataService(), impersonated_agent, eth_whale, stranger, helpers)
+    module_happy_path(nor, ExtraDataService(), impersonated_agent, stranger, helpers)
 
 
-def test_sdvt(impersonated_agent, stranger, eth_whale, helpers):
+def test_sdvt(impersonated_agent, stranger, helpers):
     sdvt = contracts.simple_dvt
     sdvt.module_id = 2
     sdvt.testing_node_operator_ids = [0, 1, 2]
     fill_simple_dvt_ops_keys(stranger, 3, 100)
 
-    module_happy_path(sdvt, ExtraDataService(), impersonated_agent, eth_whale, stranger, helpers)
+    module_happy_path(sdvt, ExtraDataService(), impersonated_agent, stranger, helpers)
