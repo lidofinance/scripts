@@ -55,6 +55,9 @@ from utils.config import (
     CS_ORACLE_HASH_CONSENSUS_ADDRESS,
     CS_PERMISSIONLESS_GATE_ADDRESS,
     CS_VETTED_GATE_ADDRESS,
+    CS_PARAMS_REGISTRY_ADDRESS,
+    CS_STRIKES_ADDRESS,
+    CS_EJECTOR_ADDRESS,
     L1_EMERGENCY_BRAKES_MULTISIG,
     DUAL_GOVERNANCE_EXECUTORS,
     RESEAL_MANAGER,
@@ -389,6 +392,69 @@ def protocol_permissions():
                 "MANAGE_FAST_LANE_CONFIG_ROLE": [],
                 "MANAGE_REPORT_PROCESSOR_ROLE": [],
             },
+        },
+        CS_VERIFIER_V2_ADDRESS: {
+            "contract_name": "CSVerifier",
+            "contract": contracts.cs_verifier,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "PAUSE_ROLE": [CS_GATE_SEAL_V2_ADDRESS, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+            }
+        },
+        CS_PARAMS_REGISTRY_ADDRESS: {
+            "contract_name": "CSParametersRegistry",
+            "contract": contracts.cs_parameters_registry,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+            },
+        },
+        CS_STRIKES_ADDRESS: {
+            "contract_name": "CSStrikes",
+            "contract": contracts.cs_strikes,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+            },
+        },
+        CS_EJECTOR_ADDRESS: {
+            "contract_name": "CSEjector",
+            "contract": contracts.cs_ejector,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "PAUSE_ROLE": [CS_GATE_SEAL_V2_ADDRESS, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+                "RECOVERER_ROLE": [],
+            }
+        },
+        CS_VETTED_GATE_ADDRESS: {
+            "contract_name": "VettedGate",
+            "contract": contracts.cs_vetted_gate,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "PAUSE_ROLE": [CS_GATE_SEAL_V2_ADDRESS, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+                "RECOVERER_ROLE": [],
+                "SET_TREE_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "START_REFERRAL_SEASON_ROLE": [contracts.agent],
+                "END_REFERRAL_SEASON_ROLE": [CSM_COMMITTEE_MS],
+            }
+        },
+        CS_PERMISSIONLESS_GATE_ADDRESS: {
+            "contract_name": "PermissionlessGate",
+            "contract": contracts.cs_permissionless_gate,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "RECOVERER_ROLE": [],
+            }
         },
         INSURANCE_FUND: {
             "contract_name": "InsuranceFund",
