@@ -261,8 +261,8 @@ DUAL_GOVERNANCE_TIME_CONSTRAINTS = "0x2a30F5aC03187674553024296bed35Aa49749DDa"
 
 # Add EasyTrack constants
 EASYTRACK_EVMSCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
-EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0xAa3D6A8B52447F272c1E8FAaA06EA06658bd95E2"
-EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0x397206ecdbdcb1A55A75e60Fc4D054feC72E5f63"
+EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0xB7668B5485d0f826B86a75b0115e088bB9ee03eE"
+EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0x8aa34dAaF0fC263203A15Bcfa0Ed926D466e59F3"
 
 # Oracle consensus versions
 AO_CONSENSUS_VERSION = 4
@@ -271,7 +271,7 @@ CSM_CONSENSUS_VERSION = 3
 
 EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 14 * 7200
 
-NOR_EXIT_DEADLINE_IN_SEC = 172800
+NOR_EXIT_DEADLINE_IN_SEC = 345600  # 28800 slots
 
 # CSM
 CS_MODULE_NEW_TARGET_SHARE_BP = 500  # 5%
@@ -348,6 +348,10 @@ SIMPLE_DVT_ARAGON_APP_ID = "0xe1635b63b5f7b5e545f2a637558a4029dea7905361a2f0fc28
 
 OLD_KILN_ADDRESS = "0x14D5d5B71E048d2D75a39FfC5B407e3a3AB6F314"
 NEW_KILN_ADDRESS = "0x6d22aE126eB2c37F67a1391B37FF4f2863e61389"
+DSM_QUORUM_SIZE = 4
+
+UTC13 = 60 * 60 * 13
+UTC19 = 60 * 60 * 19
 MAX_VALIDATORS_PER_REPORT = 600
 MAX_EXIT_REQUESTS_LIMIT = 11200
 EXITS_PER_FRAME = 1
@@ -898,18 +902,18 @@ def dual_governance_proposal_calls():
                                                                registry=nor)]),
         # 1.69. Remove Kiln guardian
         agent_forward([
-            encode_remove_guardian(dsm=dsm, guardian_address=OLD_KILN_ADDRESS, quorum_size=4),
+            encode_remove_guardian(dsm=dsm, guardian_address=OLD_KILN_ADDRESS, quorum_size=DSM_QUORUM_SIZE),
         ]),
         # 1.70. Add new Kiln guardian
         agent_forward([
-            encode_add_guardian(dsm=dsm, guardian_address=NEW_KILN_ADDRESS, quorum_size=4),
+            encode_add_guardian(dsm=dsm, guardian_address=NEW_KILN_ADDRESS, quorum_size=DSM_QUORUM_SIZE),
         ]),
         # 1.71. Set time constraints for execution (13:00 to 19:00 UTC)
         (
             DUAL_GOVERNANCE_TIME_CONSTRAINTS,
             interface.TimeConstraints(DUAL_GOVERNANCE_TIME_CONSTRAINTS).checkTimeWithinDayTimeAndEmit.encode_input(
-                3600 * 13,  # 13:00 UTC
-                3600 * 19  # 19:00 UTC
+                UTC13,  # 13:00 UTC
+                UTC19  # 19:00 UTC
             ),
         ),
     ]
@@ -1740,8 +1744,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # 70. Time constraints event validation
                 assert 'TimeWithinDayTimeChecked' in dg_events[70], "TimeWithinDayTimeChecked event not found"
-                assert dg_events[70]['TimeWithinDayTimeChecked'][0]['startDayTime'] == 3600 * 13, "Wrong startDayTime for time constraints (expected 13:00 UTC)"
-                assert dg_events[70]['TimeWithinDayTimeChecked'][0]['endDayTime'] == 3600 * 19, "Wrong endDayTime for time constraints (expected 19:00 UTC)"
+                assert dg_events[70]['TimeWithinDayTimeChecked'][0]['startDayTime'] == UTC13, "Wrong startDayTime for time constraints (expected 13:00 UTC)"
+                assert dg_events[70]['TimeWithinDayTimeChecked'][0]['endDayTime'] == UTC19, "Wrong endDayTime for time constraints (expected 19:00 UTC)"
                 assert convert.to_address(
                     dg_events[70]['TimeWithinDayTimeChecked'][0]['_emitted_by']) == convert.to_address(
                     DUAL_GOVERNANCE_TIME_CONSTRAINTS), "Wrong event emitter for time constraints"
