@@ -1,8 +1,10 @@
 import pytest
 
-from brownie import reverts, accounts, chain  # type: ignore
+from brownie import reverts, accounts, chain, web3, Wei  # type: ignore
 
-from utils.test.oracle_report_helpers import oracle_report, ZERO_BYTES32
+from utils.test.exit_bus_data import LidoValidator
+from utils.test.oracle_report_helpers import oracle_report, ZERO_BYTES32, wait_to_next_available_report_time, \
+    prepare_exit_bus_report, reach_consensus
 from brownie.network.account import Account
 
 from utils.evm_script import encode_error
@@ -249,54 +251,53 @@ def test_gate_seal_twg_veb_scenario(steth_holder, gate_seal_committee, eth_whale
         contracts.validators_exit_bus_oracle.getResumeSinceTimestamp() == seal_tx.timestamp + GATE_SEAL_PAUSE_DURATION
     )
 
+    value = Wei('1 ether')
     # reverts on VEBO report
     with reverts(encode_error("ResumedExpected()")):
         contracts.validators_exit_bus_oracle.submitReportData((1, 1, 1, 1, ZERO_BYTES32), 1, {"from": steth_holder})
 
+    # reverts on VEBO triggerExits
+    with reverts(encode_error("ResumedExpected()")):
+        contracts.validators_exit_bus_oracle.triggerExits(("0x0000000000000000000000000000000000000000000", 1), [1, 2, 3], steth_holder, {"from": steth_holder, 'value': value})
+
     """ claim """
     assert contracts.triggerable_withdrawals_gateway.isPaused()
     assert contracts.validators_exit_bus_oracle.isPaused()
-
-    lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
-    hints = contracts.withdrawal_queue.findCheckpointHints(claimable_request_ids, 1, lastCheckpointIndex)
-    claim_balance_before = account.balance()
-    claim_tx = contracts.withdrawal_queue.claimWithdrawals(claimable_request_ids, hints, {"from": steth_holder})
-    claim_balance_after = account.balance()
-
-    assert contracts.triggerable_withdrawals_gateway.isPaused()
-    assert contracts.validators_exit_bus_oracle.isPaused()
-
-    assert almostEqEth(
-        claim_balance_after - claim_balance_before + claim_tx.gas_used * claim_tx.gas_price, REQUESTS_SUM
-    )
-    assert claim_tx.events.count("WithdrawalClaimed") == REQUESTS_COUNT
 
     """ accounting oracle reports until we pass pause and claim"""
     MAX_REPORTS_UNTIL_RESUME = (
         GATE_SEAL_PAUSE_DURATION // (CHAIN_SECONDS_PER_SLOT * CHAIN_SLOTS_PER_EPOCH * AO_EPOCHS_PER_FRAME) + 2
     )
     reports_passed = 0
-    while True:
-        (report_tx, _) = oracle_report(silent=True)
-        reports_passed += 1
+    for i in range(MAX_REPORTS_UNTIL_RESUME):
+        (report_tx, _) = oracle_report(silent=False)
         print(
             f"Oracle report {reports_passed} at {report_tx.timestamp}/{seal_tx.timestamp + GATE_SEAL_PAUSE_DURATION} seconds to resume"
         )
-        if report_tx.events.count("WithdrawalsFinalized") == 1:
-            break
-        assert reports_passed <= MAX_REPORTS_UNTIL_RESUME
 
     assert not contracts.triggerable_withdrawals_gateway.isPaused()
     assert not contracts.validators_exit_bus_oracle.isPaused()
 
-    """ post seal claim """
-    lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
-    hints = contracts.withdrawal_queue.findCheckpointHints(pending_request_ids, 1, lastCheckpointIndex)
-    claim_balance_before = account.balance()
-    claim_tx = contracts.withdrawal_queue.claimWithdrawals(pending_request_ids, hints, {"from": steth_holder})
-    claim_balance_after = account.balance()
+    """ post seal """
+    unreachable_cl_validator_index = 100_000_000
+    no_global_index = (module_id, no_id) = (1, 33)
+    validator_key = contracts.node_operators_registry.getSigningKey(no_id, 1)[0]
 
-    assert almostEqEth(
-        claim_balance_after - claim_balance_before + claim_tx.gas_used * claim_tx.gas_price, REQUESTS_SUM
+    validator = LidoValidator(index=unreachable_cl_validator_index, pubkey=validator_key)
+
+    ref_slot = _wait_for_next_ref_slot()
+    report, report_hash = prepare_exit_bus_report([(no_global_index, validator)], ref_slot)
+    consensus_version = contracts.validators_exit_bus_oracle.getConsensusVersion()
+    contract_version = contracts.validators_exit_bus_oracle.getContractVersion()
+
+    submitter = reach_consensus(
+        ref_slot, report_hash, consensus_version, contracts.hash_consensus_for_validators_exit_bus_oracle
     )
-    assert claim_tx.events.count("WithdrawalClaimed") == REQUESTS_COUNT
+
+    contracts.validators_exit_bus_oracle.submitReportData(report, contract_version, {"from": submitter})
+    contracts.validators_exit_bus_oracle.triggerExits((report[4], 1), [0], steth_holder, {"from": steth_holder, 'value': value})
+
+def _wait_for_next_ref_slot():
+    wait_to_next_available_report_time(contracts.hash_consensus_for_validators_exit_bus_oracle)
+    ref_slot, _ = contracts.hash_consensus_for_validators_exit_bus_oracle.getCurrentFrame()
+    return ref_slot
