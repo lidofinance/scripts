@@ -99,15 +99,24 @@ def validate_contract_version_set_event(event: EventDict, version: int, emitted_
             emitted_by), "Wrong event emitter"
 
 
-def validate_bond_curve_added_event(event: EventDict, curve_id: int, emitted_by: Optional[str] = None):
+def validate_bond_curve_added_event(event: EventDict, curve_id: int, curve_intervals: tuple[list[int], list[int]], emitted_by: Optional[str] = None):
     assert "BondCurveAdded" in event, "No BondCurveAdded event found"
 
     assert event["BondCurveAdded"][0]["curveId"] == curve_id, "Wrong curve ID"
-    # FIXME: Where is the intervals check?
+    assert event["BondCurveAdded"][0]["bondCurveIntervals"] == curve_intervals, "Wrong curve intervals"
 
     if emitted_by is not None:
         assert convert.to_address(event["BondCurveAdded"][0]["_emitted_by"]) == convert.to_address(
             emitted_by), "Wrong event emitter"
+
+
+def validate_added_bond_curve(curve: list[tuple[int, int, int]], expected_curve: tuple[list[int], list[int]]):
+    assert len(curve) == len(expected_curve), "Bond curve should have correct number of intervals"
+    for i, interval in enumerate(curve):
+        keys, _, trend = interval
+        expected_keys, expected_trend = expected_curve[i]
+        assert keys == expected_keys, f"Curve interval {i} keys should be {expected_keys}"
+        assert trend == expected_trend, f"Curve interval {i} trend should be {expected_trend}"
 
 
 def validate_remove_guardian_event(event: EventDict, guardian_address: str, emitted_by: Optional[str] = None):
@@ -201,7 +210,7 @@ def check_proxy_implementation(proxy_address, expected_impl):
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.vote_upgrade_tw_csm2 import start_vote, get_vote_items, encode_wv_proxy_upgrade_to, \
+from scripts.upgrade_tw_csm2 import start_vote, get_vote_items, encode_wv_proxy_upgrade_to, \
     NETHERMIND_NEW_REWARD_ADDRESS
 
 # ============================================================================
@@ -262,7 +271,7 @@ CSM_CONSENSUS_VERSION = 3
 
 EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 14 * 7200
 
-NOR_EXIT_DEADLINE_IN_SEC = 172800
+NOR_EXIT_DEADLINE_IN_SEC = 345600  # 28800 slots
 
 # CSM
 CS_MODULE_NEW_TARGET_SHARE_BP = 500  # 5%
@@ -339,6 +348,10 @@ SIMPLE_DVT_ARAGON_APP_ID = "0xe1635b63b5f7b5e545f2a637558a4029dea7905361a2f0fc28
 
 OLD_KILN_ADDRESS = "0x14D5d5B71E048d2D75a39FfC5B407e3a3AB6F314"
 NEW_KILN_ADDRESS = "0x6d22aE126eB2c37F67a1391B37FF4f2863e61389"
+DSM_QUORUM_SIZE = 4
+
+UTC13 = 60 * 60 * 13
+UTC19 = 60 * 60 * 19
 MAX_VALIDATORS_PER_REPORT = 600
 MAX_EXIT_REQUESTS_LIMIT = 11200
 EXITS_PER_FRAME = 1
@@ -889,18 +902,18 @@ def dual_governance_proposal_calls():
                                                                registry=nor)]),
         # 1.69. Remove Kiln guardian
         agent_forward([
-            encode_remove_guardian(dsm=dsm, guardian_address=OLD_KILN_ADDRESS, quorum_size=4),
+            encode_remove_guardian(dsm=dsm, guardian_address=OLD_KILN_ADDRESS, quorum_size=DSM_QUORUM_SIZE),
         ]),
         # 1.70. Add new Kiln guardian
         agent_forward([
-            encode_add_guardian(dsm=dsm, guardian_address=NEW_KILN_ADDRESS, quorum_size=4),
+            encode_add_guardian(dsm=dsm, guardian_address=NEW_KILN_ADDRESS, quorum_size=DSM_QUORUM_SIZE),
         ]),
         # 1.71. Set time constraints for execution (13:00 to 19:00 UTC)
         (
             DUAL_GOVERNANCE_TIME_CONSTRAINTS,
             interface.TimeConstraints(DUAL_GOVERNANCE_TIME_CONSTRAINTS).checkTimeWithinDayTimeAndEmit.encode_input(
-                3600 * 13,  # 13:00 UTC
-                3600 * 19  # 19:00 UTC
+                UTC13,  # 13:00 UTC
+                UTC19  # 19:00 UTC
             ),
         ),
     ]
@@ -1028,7 +1041,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 proposal_id=EXPECTED_DG_PROPOSAL_ID,
                 proposer=VOTING,
                 executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-                metadata="Upgrade to CSM v2, enable Triggerable Withdrawals, migrate Nethermind → Twinstake, rotate Kiln Guardian",
+                metadata="Upgrade to CSM v2, enable Triggerable Withdrawals, update the reward address and name for Node Operator ID 25 `Nethermind`, rotate Kiln Deposit Security Committee address",
                 proposal_calls=dual_governance_proposal_calls,
                 emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
             )
@@ -1619,8 +1632,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # 56. Add ICS bond curve
                 ics_curve_id = len(CS_CURVES)
-                validate_bond_curve_added_event(dg_events[56], curve_id=ics_curve_id,
-                                                emitted_by=cs_accounting)
+                validate_bond_curve_added_event(dg_events[56], curve_id=ics_curve_id, curve_intervals=CS_ICS_GATE_BOND_CURVE, emitted_by=cs_accounting)
 
                 # 57. Revoke MANAGE_BOND_CURVES_ROLE from agent on CSAccounting
                 validate_role_revoke_event(
@@ -1732,8 +1744,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # 70. Time constraints event validation
                 assert 'TimeWithinDayTimeChecked' in dg_events[70], "TimeWithinDayTimeChecked event not found"
-                assert dg_events[70]['TimeWithinDayTimeChecked'][0]['startDayTime'] == 3600 * 13, "Wrong startDayTime for time constraints (expected 13:00 UTC)"
-                assert dg_events[70]['TimeWithinDayTimeChecked'][0]['endDayTime'] == 3600 * 19, "Wrong endDayTime for time constraints (expected 19:00 UTC)"
+                assert dg_events[70]['TimeWithinDayTimeChecked'][0]['startDayTime'] == UTC13, "Wrong startDayTime for time constraints (expected 13:00 UTC)"
+                assert dg_events[70]['TimeWithinDayTimeChecked'][0]['endDayTime'] == UTC19, "Wrong endDayTime for time constraints (expected 19:00 UTC)"
                 assert convert.to_address(
                     dg_events[70]['TimeWithinDayTimeChecked'][0]['_emitted_by']) == convert.to_address(
                     DUAL_GOVERNANCE_TIME_CONSTRAINTS), "Wrong event emitter for time constraints"
@@ -1818,7 +1830,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         # Step 1.37: Validate CSAccounting finalizeUpgradeV2 was called with bond curves
         assert cs_accounting.getInitializedVersion() == CS_ACCOUNTING_V2_VERSION, f"CSAccounting version should be {CS_ACCOUNTING_V2_VERSION} after vote"
-        # FIXME: check bond curves
+        for curve_id in range(len(CS_CURVES)):
+            curve = cs_accounting.getCurveInfo(curve_id)[0]
+            validate_added_bond_curve(curve, CS_CURVES[curve_id])
 
         # Step 1.38: Validate CSFeeOracle implementation upgrade
         check_proxy_implementation(cs_fee_oracle.address, CS_FEE_ORACLE_IMPL_V2_ADDRESS)
@@ -1895,7 +1909,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                                          agent), "Agent should not have MANAGE_BOND_CURVES_ROLE on CSAccounting after vote"
         assert cs_accounting.getCurvesCount() == len(
             CS_CURVES) + 1, "CSAccounting should have legacy bond curves and ICS Bond Curve after vote"
-        # FIXME: Check curves?
+        ics_curve = cs_accounting.getCurveInfo(ics_curve_id)[0]
+        validate_added_bond_curve(ics_curve, CS_ICS_GATE_BOND_CURVE)
 
         # Step 1.53: Increase CSM share in Staking Router
         csm_module_after = staking_router.getStakingModule(CS_MODULE_ID)
