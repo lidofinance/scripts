@@ -209,8 +209,8 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, et
     assert no3_balance_shares_after - no3_balance_shares_before == no3_rewards_after_first_report
 
     # Case 1
-    # --- operator "1st" had 5 keys (exited), and 2 keys got stuck (stuck)
-    # --- operator "2nd" had 5 keys (exited), and 2 keys got stuck (stuck)
+    # --- operator "1st" had 5 keys (exited)
+    # --- operator "2nd" had 5 keys (exited)
     # - Send report
     # - Check rewards shares for "3d" NO and tested NO (should be half of expected)
     # - Check deposits (should be 0 for penalized NOs)
@@ -219,15 +219,11 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, et
     # - Check Report events
 
     # Prepare extra data
-    vals_stuck_non_zero = {
-        node_operator_gindex(staking_module.module_id, no1_id): 2,
-        node_operator_gindex(staking_module.module_id, no2_id): 2,
-    }
     vals_exited_non_zero = {
         node_operator_gindex(staking_module.module_id, no1_id): 5,
         node_operator_gindex(staking_module.module_id, no2_id): 5,
     }
-    extra_data = extra_data_service.collect(vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
+    extra_data = extra_data_service.collect(vals_exited_non_zero, 10, 10)
 
     # shares before report
     no1_balance_shares_before = shares_balance(no1_reward_address)
@@ -237,12 +233,12 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, et
     deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 30, impersonated_agent)
 
     module_shares_dust = shares_balance(staking_module)
-    # Second report - first NO and second NO has stuck/exited
+    # Second report - first NO and second NO has exited
     (report_tx, extra_report_tx_list) = oracle_report(
         exclude_vaults_balances=True,
         extraDataFormat=1,
         extraDataHashList=extra_data.extra_data_hash_list,
-        extraDataItemsCount=2,
+        extraDataItemsCount=extra_data.items_count,
         extraDataList=extra_data.extra_data_list,
         numExitedValidatorsByStakingModule=[nor_exited_count + 10],
         stakingModuleIdsWithNewlyExitedValidators=[staking_module.module_id],
@@ -267,26 +263,15 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, et
     no2_balance_shares_after = shares_balance(no2_reward_address)
     no3_balance_shares_after = shares_balance(no3_reward_address)
 
-    # check shares by report with penalty
-    assert no1_balance_shares_after - no1_balance_shares_before == no1_rewards_after_second_report // 2
-    assert no2_balance_shares_after - no2_balance_shares_before == no2_rewards_after_second_report // 2
+    assert no1_balance_shares_after - no1_balance_shares_before == no1_rewards_after_second_report
+    assert no2_balance_shares_after - no2_balance_shares_before == no2_rewards_after_second_report
     assert no3_balance_shares_after - no3_balance_shares_before == no3_rewards_after_second_report
 
-
-    # Check burn shares
-    no1_amount_penalty = no1_rewards_after_second_report // 2
-    no2_amount_penalty = no2_rewards_after_second_report // 2
-    penalty_shares = no1_amount_penalty + no2_amount_penalty
-
-    assert distribute_reward_tx.events["StETHBurnRequested"]["amountOfShares"] >= penalty_shares
-
     # NO stats
-    assert no1_summary["stuckValidatorsCount"] == 2
     assert no1_summary["totalExitedValidators"] == 5
     assert no1_summary["refundedValidatorsCount"] == 0
     assert no1_summary["stuckPenaltyEndTimestamp"] == 0
 
-    assert no2_summary["stuckValidatorsCount"] == 2
     assert no2_summary["totalExitedValidators"] == 5
     assert no2_summary["refundedValidatorsCount"] == 0
     assert no2_summary["stuckPenaltyEndTimestamp"] == 0
@@ -310,17 +295,6 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, et
     assert exited_signing_keys_count_events[1]["nodeOperatorId"] == no2_id
     assert exited_signing_keys_count_events[1]["exitedValidatorsCount"][0] == 5
 
-    stuck_penalty_state_changed_events = parse_stuck_penalty_state_changed_logs(
-        filter_transfer_logs(
-            extra_report_tx_list[0].logs, web3.keccak(text="StuckPenaltyStateChanged(uint256,uint256,uint256,uint256)")
-        )
-    )
-    assert stuck_penalty_state_changed_events[0]["nodeOperatorId"] == no1_id
-    assert stuck_penalty_state_changed_events[0]["stuckValidatorsCount"] == 2
-
-    assert stuck_penalty_state_changed_events[1]["nodeOperatorId"] == no2_id
-    assert stuck_penalty_state_changed_events[1]["stuckValidatorsCount"] == 2
-
     # Deposit keys
     (
         no1_deposited_keys_before,
@@ -337,7 +311,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, et
     assert no3_deposited_keys_before != no3_deposited_keys_after
 
     # Case 2
-    # --- "1st" NO exited the keys (stuck == 0, exited increased by the number of stacks)
+    # --- "1st" NO exited the keys (exited increased by the number of stacks)
     # --- BUT the penalty still affects both
     # - Send report
     # - Check rewards shares for NO3 and tested NO (should be half of expected)
@@ -345,14 +319,10 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, et
     # - Check NOs stats
     # - Check Report events
 
-    # Prepare extra data - first node operator has exited 2 + 5 keys an stuck 0
-    vals_stuck_non_zero = {
-        node_operator_gindex(staking_module.module_id, no1_id): 0,
-    }
     vals_exited_non_zero = {
         node_operator_gindex(staking_module.module_id, no1_id): 7,
     }
-    extra_data = extra_data_service.collect(vals_stuck_non_zero, vals_exited_non_zero, 10, 10)
+    extra_data = extra_data_service.collect(vals_exited_non_zero, 10, 10)
 
     # shares before report
     no1_balance_shares_before = shares_balance(no1_reward_address)
@@ -367,7 +337,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, et
         exclude_vaults_balances=True,
         extraDataFormat=1,
         extraDataHashList=extra_data.extra_data_hash_list,
-        extraDataItemsCount=2,
+        extraDataItemsCount=extra_data.items_count,
         extraDataList=extra_data.extra_data_list,
         numExitedValidatorsByStakingModule=[nor_exited_count + 12],
         stakingModuleIdsWithNewlyExitedValidators=[staking_module.module_id],

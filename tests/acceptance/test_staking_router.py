@@ -72,12 +72,9 @@ def test_initialize(contract):
 def test_finalize_upgrade(contract):
     with reverts(encode_error(
                 "UnexpectedContractVersion(uint256,uint256)",
-                [2, 1],
+                [3, 2],
             )):
-        contract.finalizeUpgrade_v2(
-            [10_000, 10_000],
-            [50, 50],
-            [25, 25],
+        contract.finalizeUpgrade_v3(
             {"from": contracts.voting},
         )
 

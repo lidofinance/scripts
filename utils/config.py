@@ -239,8 +239,8 @@ class ContractsLazyLoader:
         return interface.CSHashConsensus(CS_ORACLE_HASH_CONSENSUS_ADDRESS)
 
     @property
-    def cs_verifier(self) -> interface.CSVerifier:
-        return interface.CSVerifier(CS_VERIFIER_V2_ADDRESS)
+    def cs_verifier(self) -> interface.CSVerifierV2:
+        return interface.CSVerifierV2(CS_VERIFIER_V2_ADDRESS)
 
     @property
     def cs_exit_penalties(self) -> interface.CSExitPenalties:
@@ -397,6 +397,10 @@ class ContractsLazyLoader:
     @property
     def gate_seal(self) -> interface.GateSeal:
         return interface.GateSeal(GATE_SEAL)
+
+    @property
+    def veb_twg_gate_seal(self) -> interface.GateSeal:
+        return interface.GateSeal(VEB_TWG_GATE_SEAL)
 
     @property
     def evm_script_registry(self) -> interface.EVMScriptRegistry:

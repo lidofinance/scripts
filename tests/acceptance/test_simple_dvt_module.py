@@ -9,6 +9,7 @@ from utils.config import (
     SIMPLE_DVT_ARAGON_APP_ID,
     SIMPLE_DVT_MODULE_STUCK_PENALTY_DELAY,
     SIMPLE_DVT_MODULE_TYPE,
+    NOR_EXIT_DEADLINE_IN_SEC,
     EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER,
     EASYTRACK_EVMSCRIPT_EXECUTOR,
     EASYTRACK_SIMPLE_DVT_ADD_NODE_OPERATORS_FACTORY,
@@ -20,7 +21,6 @@ from utils.config import (
     EASYTRACK_SIMPLE_DVT_UPDATE_TARGET_VALIDATOR_LIMITS_FACTORY,
     EASYTRACK_SIMPLE_DVT_CHANGE_NODE_OPERATOR_MANAGERS_FACTORY,
 )
-
 
 REQUEST_BURN_SHARES_ROLE = "0x4be29e0e4eb91f98f709d98803cba271592782e293b84a625e025cbb40197ba8"
 STAKING_ROUTER_ROLE = "0xbb75b874360e0bfd87f964eadd8276d8efb7c942134fc329b513032d0803e0c6"
@@ -70,10 +70,8 @@ def test_initialize(contract):
 
 def test_finalize_upgrade(contract):
     with reverts("UNEXPECTED_CONTRACT_VERSION"):
-        contract.finalizeUpgrade_v2(
-            contracts.lido_locator,
-            SIMPLE_DVT_MODULE_TYPE,
-            SIMPLE_DVT_MODULE_STUCK_PENALTY_DELAY,
+        contract.finalizeUpgrade_v4(
+            NOR_EXIT_DEADLINE_IN_SEC,
             {"from": contracts.voting},
         )
 
@@ -89,10 +87,8 @@ def test_petrified():
         )
 
     with reverts("CONTRACT_NOT_INITIALIZED"):
-        contract.finalizeUpgrade_v2(
-            contracts.lido_locator,
-            SIMPLE_DVT_MODULE_TYPE,
-            SIMPLE_DVT_MODULE_STUCK_PENALTY_DELAY,
+        contract.finalizeUpgrade_v4(
+            NOR_EXIT_DEADLINE_IN_SEC,
             {"from": contracts.voting},
         )
 
@@ -178,7 +174,6 @@ def test_simple_dvt_permissions(contract):
 
 
 def test_simple_dvt_easytrack(contract):
-
     easy_track = contracts.easy_track
 
     add_node_operators_evm_script_factory = EASYTRACK_SIMPLE_DVT_ADD_NODE_OPERATORS_FACTORY
