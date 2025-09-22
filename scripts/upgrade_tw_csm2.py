@@ -276,7 +276,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.10. Connect Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` to Dual Governance `0xC1db28B3301331277e307FDCfF8DE28242A4486E` Tiebreaker",
+        # "Add Triggerable Withdrawals Gateway `0xDC00116a0D3E064427dA2600449cfD2566B3037B` as a sealable withdrawals blocker to Dual Governance `0xC1db28B3301331277e307FDCfF8DE28242A4486E`",
         (
             DUAL_GOVERNANCE,
             dual_governance.addTiebreakerSealableWithdrawalBlocker.encode_input(
