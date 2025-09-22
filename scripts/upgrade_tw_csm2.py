@@ -545,7 +545,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.41. Call `finalizeUpgradeV2(admin=0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c)` on CSFeeDistributor `0xD99CC66fEC647E68294C6477B40fC7E0F6F618D0`",
+        # "1.41. Call `finalizeUpgradeV2(_rebateRecipient=0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c)` on CSFeeDistributor `0xD99CC66fEC647E68294C6477B40fC7E0F6F618D0`",
         agent_forward(
             [
                 (
