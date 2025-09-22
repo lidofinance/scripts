@@ -150,21 +150,29 @@ def wait_for_time_window(from_hour_utc: int, to_hour_utc: int):
     current_time = chain.time()
     seconds_per_day = 24 * 60 * 60
 
-    day_start = current_time - (current_time % seconds_per_day)
+    # Get current UTC hour
+    current_utc_seconds = current_time % seconds_per_day
+    current_utc_hour = current_utc_seconds // 3600
+
+    # Check if we're already in the window
+    if from_hour_utc <= current_utc_hour < to_hour_utc:
+        print(f"Already in time window ({from_hour_utc}:00-{to_hour_utc}:00 UTC)")
+        return
+
+    # Calculate when to sleep until
+    day_start = current_time - current_utc_seconds
     window_start = day_start + from_hour_utc * 60 * 60
     window_end = day_start + to_hour_utc * 60 * 60
 
-    # If we're past the window end, wait for next day's window
+    # If we're past today's window, wait for tomorrow's window
     if current_time >= window_end:
         target_time = window_start + seconds_per_day
-    # If we're before the window start, wait until window starts
-    elif current_time < window_start:
-        target_time = window_start
     else:
-        # We're already in the window
-        return
+        # Wait for today's window
+        target_time = window_start
 
     sleep_time = target_time - current_time + 1
+    print(f"Sleeping {sleep_time} seconds to reach time window ({from_hour_utc}:00-{to_hour_utc}:00 UTC)")
     chain.sleep(sleep_time)
 
 
