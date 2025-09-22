@@ -99,15 +99,24 @@ def validate_contract_version_set_event(event: EventDict, version: int, emitted_
             emitted_by), "Wrong event emitter"
 
 
-def validate_bond_curve_added_event(event: EventDict, curve_id: int, emitted_by: Optional[str] = None):
+def validate_bond_curve_added_event(event: EventDict, curve_id: int, curve_intervals: tuple[list[int], list[int]], emitted_by: Optional[str] = None):
     assert "BondCurveAdded" in event, "No BondCurveAdded event found"
 
     assert event["BondCurveAdded"][0]["curveId"] == curve_id, "Wrong curve ID"
-    # FIXME: Where is the intervals check?
+    assert event["BondCurveAdded"][0]["bondCurveIntervals"] == curve_intervals, "Wrong curve intervals"
 
     if emitted_by is not None:
         assert convert.to_address(event["BondCurveAdded"][0]["_emitted_by"]) == convert.to_address(
             emitted_by), "Wrong event emitter"
+
+
+def validate_added_bond_curve(curve: list[tuple[int, int, int]], expected_curve: tuple[list[int], list[int]]):
+    assert len(curve) == len(expected_curve), "Bond curve should have correct number of intervals"
+    for i, interval in enumerate(curve):
+        keys, _, trend = interval
+        expected_keys, expected_trend = expected_curve[i]
+        assert keys == expected_keys, f"Curve interval {i} keys should be {expected_keys}"
+        assert trend == expected_trend, f"Curve interval {i} trend should be {expected_trend}"
 
 
 def validate_remove_guardian_event(event: EventDict, guardian_address: str, emitted_by: Optional[str] = None):
@@ -1619,8 +1628,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # 56. Add ICS bond curve
                 ics_curve_id = len(CS_CURVES)
-                validate_bond_curve_added_event(dg_events[56], curve_id=ics_curve_id,
-                                                emitted_by=cs_accounting)
+                validate_bond_curve_added_event(dg_events[56], curve_id=ics_curve_id, curve_intervals=CS_ICS_GATE_BOND_CURVE, emitted_by=cs_accounting)
 
                 # 57. Revoke MANAGE_BOND_CURVES_ROLE from agent on CSAccounting
                 validate_role_revoke_event(
@@ -1818,7 +1826,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         # Step 1.37: Validate CSAccounting finalizeUpgradeV2 was called with bond curves
         assert cs_accounting.getInitializedVersion() == CS_ACCOUNTING_V2_VERSION, f"CSAccounting version should be {CS_ACCOUNTING_V2_VERSION} after vote"
-        # FIXME: check bond curves
+        for curve_id in range(len(CS_CURVES)):
+            curve = cs_accounting.getCurveInfo(curve_id)[0]
+            validate_added_bond_curve(curve, CS_CURVES[curve_id])
 
         # Step 1.38: Validate CSFeeOracle implementation upgrade
         check_proxy_implementation(cs_fee_oracle.address, CS_FEE_ORACLE_IMPL_V2_ADDRESS)
@@ -1895,7 +1905,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                                          agent), "Agent should not have MANAGE_BOND_CURVES_ROLE on CSAccounting after vote"
         assert cs_accounting.getCurvesCount() == len(
             CS_CURVES) + 1, "CSAccounting should have legacy bond curves and ICS Bond Curve after vote"
-        # FIXME: Check curves?
+        ics_curve = cs_accounting.getCurveInfo(ics_curve_id)[0]
+        validate_added_bond_curve(ics_curve, CS_ICS_GATE_BOND_CURVE)
 
         # Step 1.53: Increase CSM share in Staking Router
         csm_module_after = staking_router.getStakingModule(CS_MODULE_ID)
