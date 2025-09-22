@@ -39,6 +39,7 @@ from utils.config import (
     HASH_CONSENSUS_FOR_VEBO,
     HASH_CONSENSUS_FOR_AO,
     VALIDATORS_EXIT_BUS_ORACLE,
+    VEB_TWG_GATE_SEAL,
     ACCOUNTING_ORACLE,
     WITHDRAWAL_QUEUE,
     BURNER,
@@ -92,6 +93,8 @@ def protocol_permissions():
                 "REPORT_EXITED_VALIDATORS_ROLE": [contracts.accounting_oracle],
                 "UNSAFE_SET_EXITED_VALIDATORS_ROLE": [],
                 "REPORT_REWARDS_MINTED_ROLE": [contracts.lido],
+                "REPORT_VALIDATOR_EXITING_STATUS_ROLE": [contracts.validator_exit_verifier],
+                "REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE": [contracts.triggerable_withdrawals_gateway],
             },
         },
         WITHDRAWAL_QUEUE: {
@@ -128,10 +131,12 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "SUBMIT_DATA_ROLE": [],
-                "PAUSE_ROLE": [GATE_SEAL, RESEAL_MANAGER],
+                "PAUSE_ROLE": [VEB_TWG_GATE_SEAL, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
                 "MANAGE_CONSENSUS_VERSION_ROLE": [],
+                "EXIT_REQUEST_LIMIT_MANAGER_ROLE": [],
+                "SUBMIT_REPORT_HASH_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
             },
         },
         HASH_CONSENSUS_FOR_AO: {
@@ -538,10 +543,12 @@ def get_http_w3_provider_url():
 
     assert False, 'Web3 HTTP Provider token env var not found'
 
+
 def get_max_log_range():
     if os.getenv("MAX_GET_LOGS_RANGE") is not None:
         return int(os.getenv("MAX_GET_LOGS_RANGE"))
     return 100000
+
 
 def active_aragon_roles(protocol_permissions):
     local_rpc_provider = web3

@@ -226,7 +226,7 @@ def test_gate_seal_twg_veb_scenario(steth_holder, gate_seal_committee, eth_whale
 
     assert seal_tx.events.count("Sealed") == 2
     for i, seal_event in enumerate(seal_tx.events["Sealed"]):
-        assert seal_event["gate_seal"] == GATE_SEAL
+        assert seal_event["gate_seal"] == contracts.veb_twg_gate_seal.address
         assert seal_event["sealed_for"] == GATE_SEAL_PAUSE_DURATION
         assert seal_event["sealed_by"] == gate_seal_committee
         assert seal_event["sealable"] == sealables[i]
@@ -237,9 +237,9 @@ def test_gate_seal_twg_veb_scenario(steth_holder, gate_seal_committee, eth_whale
     for pause_event in seal_tx.events["Paused"]:
         assert pause_event["duration"] == GATE_SEAL_PAUSE_DURATION
 
-    assert contracts.gate_seal.is_expired()
+    assert contracts.veb_twg_gate_seal.is_expired()
     with reverts("gate seal: expired"):
-        seal_tx = contracts.gate_seal.seal(sealables, {"from": gate_seal_committee})
+        seal_tx = contracts.veb_twg_gate_seal.seal(sealables, {"from": gate_seal_committee})
 
     assert contracts.triggerable_withdrawals_gateway.isPaused()
     assert contracts.triggerable_withdrawals_gateway.getResumeSinceTimestamp() == seal_tx.timestamp + GATE_SEAL_PAUSE_DURATION
@@ -249,23 +249,12 @@ def test_gate_seal_twg_veb_scenario(steth_holder, gate_seal_committee, eth_whale
         contracts.validators_exit_bus_oracle.getResumeSinceTimestamp() == seal_tx.timestamp + GATE_SEAL_PAUSE_DURATION
     )
 
-    # reverts on requestWithdrawals
-    contracts.lido.approve(contracts.withdrawal_queue.address, REQUESTS_SUM, {"from": steth_holder})
-    with reverts(encode_error("ResumedExpected()")):
-        contracts.withdrawal_queue.requestWithdrawals(
-            [REQUEST_AMOUNT for _ in range(REQUESTS_COUNT)], steth_holder, {"from": steth_holder}
-        )
-
     # reverts on VEBO report
     with reverts(encode_error("ResumedExpected()")):
         contracts.validators_exit_bus_oracle.submitReportData((1, 1, 1, 1, ZERO_BYTES32), 1, {"from": steth_holder})
 
-    # reverts on finalization attempt
-    with reverts(encode_error("ResumedExpected()")):
-        contracts.withdrawal_queue.finalize(1, 1, {"from": steth_holder})
-
     """ claim """
-    assert contracts.withdrawal_queue.isPaused()
+    assert contracts.triggerable_withdrawals_gateway.isPaused()
     assert contracts.validators_exit_bus_oracle.isPaused()
 
     lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
@@ -274,7 +263,7 @@ def test_gate_seal_twg_veb_scenario(steth_holder, gate_seal_committee, eth_whale
     claim_tx = contracts.withdrawal_queue.claimWithdrawals(claimable_request_ids, hints, {"from": steth_holder})
     claim_balance_after = account.balance()
 
-    assert contracts.withdrawal_queue.isPaused()
+    assert contracts.triggerable_withdrawals_gateway.isPaused()
     assert contracts.validators_exit_bus_oracle.isPaused()
 
     assert almostEqEth(
@@ -297,7 +286,7 @@ def test_gate_seal_twg_veb_scenario(steth_holder, gate_seal_committee, eth_whale
             break
         assert reports_passed <= MAX_REPORTS_UNTIL_RESUME
 
-    assert not contracts.withdrawal_queue.isPaused()
+    assert not contracts.triggerable_withdrawals_gateway.isPaused()
     assert not contracts.validators_exit_bus_oracle.isPaused()
 
     """ post seal claim """

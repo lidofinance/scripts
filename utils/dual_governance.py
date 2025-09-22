@@ -87,7 +87,9 @@ def process_proposals(proposal_ids: Sequence[int]):
 
     if len(scheduled_proposals):
         chain.sleep(after_schedule_delay + 1)
-        wait_for_noon_utc_to_satisfy_time_constrains()
+        # wait_for_noon_utc_to_satisfy_time_constrains()
+        # 13 - 19 UTC is the time window for TW deploy
+        wait_for_time_window(13, 19)
 
         for proposal_id in scheduled_proposals:
             contracts.emergency_protected_timelock.execute(proposal_id, {"from": stranger})
@@ -103,13 +105,13 @@ def process_pending_proposals():
 
     if is_proposal_executed(last_proposal_id):
         return
-    
+
     current_proposal_id = last_proposal_id
     while is_proposal_executed(current_proposal_id):
         current_proposal_id -= 1
         if current_proposal_id == 1:
             break
-    
+
     process_proposals(list(range(current_proposal_id, last_proposal_id + 1)))
 
 
@@ -139,7 +141,7 @@ def wait_for_normal_state(stranger):
 
         if remaining_time > 0:
             chain.sleep(remaining_time + 1)
-        
+
     contracts.dual_governance.activateNextState({"from": stranger})
 
 
@@ -170,15 +172,15 @@ def wait_for_noon_utc_to_satisfy_time_constrains():
     current_time = chain.time()
     noon_offset = 12 * 60 * 60
     seconds_per_day = noon_offset * 2
-    
+
     day_start = current_time - (current_time % seconds_per_day)
     today_noon = day_start + noon_offset
-    
+
     if current_time >= today_noon:
         target_noon = today_noon + seconds_per_day
     else:
         target_noon = today_noon
-    
+
     chain.sleep(target_noon - current_time)
 
 
