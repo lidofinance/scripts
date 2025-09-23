@@ -64,7 +64,11 @@ def test_veb_twg_gate_seal(veb_twg_contract: Contract, gate_seal_committee: Acco
     assert not veb_twg_contract.is_expired()
 
 
-def _check_role(contract: Contract, role: str, holder: str):
+    _check_role(contracts.validators_exit_bus_oracle, "RESUME_ROLE", reseal_manager.address, 1)
+    _check_role(contracts.triggerable_withdrawals_gateway, "RESUME_ROLE", reseal_manager.address, 1)
+
+
+def _check_role(contract: Contract, role: str, holder: str, holders_count: int = 2):
     role_bytes = web3.keccak(text=role).hex()
-    assert contract.getRoleMemberCount(role_bytes) == 2, f"Role {role} on {contract} should have exactly two holders"
+    assert contract.getRoleMemberCount(role_bytes) == holders_count, f"Role {role} on {contract} should have exactly '{holders_count}' holders"
     assert contract.getRoleMember(role_bytes, 0) == holder, f"Role {role} holder on {contract} should be {holder}"

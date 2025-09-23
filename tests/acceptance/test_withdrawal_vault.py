@@ -37,3 +37,5 @@ def test_withdrawals_vault(contract):
     assert contract.TREASURY() == contracts.agent
     assert contract.LIDO() == contracts.lido_locator.lido()
     assert contract.TREASURY() == contracts.lido_locator.treasury()
+    assert contract.TRIGGERABLE_WITHDRAWALS_GATEWAY() == contracts.triggerable_withdrawals_gateway.address
+    assert contract.TRIGGERABLE_WITHDRAWALS_GATEWAY() == contracts.lido_locator.triggerableWithdrawalsGateway()

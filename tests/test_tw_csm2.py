@@ -14,7 +14,6 @@ from utils.easy_track import create_permissions
 from utils.evm_script import encode_call_script
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
-from utils.test.tx_tracing_helpers import display_voting_events
 from utils.dual_governance import PROPOSAL_STATUS, wait_for_time_window
 from utils.test.event_validators.node_operators_registry import (
     validate_node_operator_name_set_event,
@@ -25,8 +24,16 @@ from utils.test.event_validators.node_operators_registry import (
 from utils.test.tx_tracing_helpers import group_voting_events_from_receipt, group_dg_events_from_receipt
 from utils.test.event_validators.easy_track import validate_evmscript_factory_added_event, EVMScriptFactoryAdded
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
+from utils.test.event_validators.common import validate_events_chain
 
-def validate_proxy_upgrade_event(event: EventDict, implementation: str, emitted_by: Optional[str] = None):
+
+def validate_proxy_upgrade_event(event: EventDict, implementation: str, emitted_by: Optional[str] = None, events_chain: Optional[list] = None):
+    _events_chain = events_chain or ["LogScriptCall", "Upgraded", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("Upgraded") == 1
+
     assert "Upgraded" in event, "No Upgraded event found"
 
     assert event["Upgraded"][0]["implementation"] == implementation, "Wrong implementation address"
@@ -37,7 +44,13 @@ def validate_proxy_upgrade_event(event: EventDict, implementation: str, emitted_
 
 
 def validate_consensus_version_set_event(event: EventDict, new_version: int, prev_version: int,
-                                         emitted_by: Optional[str] = None):
+                                         emitted_by: Optional[str] = None, events_chain: Optional[list] = None):
+    _events_chain = events_chain or ["LogScriptCall", "ConsensusVersionSet", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("ConsensusVersionSet") == 1
+
     assert "ConsensusVersionSet" in event, "No ConsensusVersionSet event found"
 
     assert event["ConsensusVersionSet"][0]["version"] == new_version, "Wrong new version"
@@ -50,6 +63,12 @@ def validate_consensus_version_set_event(event: EventDict, new_version: int, pre
 
 
 def validate_role_grant_event(event: EventDict, role_hash: str, account: str, emitted_by: Optional[str] = None):
+    _events_chain = ["LogScriptCall", "RoleGranted", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("RoleGranted") == 1
+
     assert "RoleGranted" in event, "No RoleGranted event found"
 
     # Strip 0x prefix for consistent comparison
@@ -66,6 +85,12 @@ def validate_role_grant_event(event: EventDict, role_hash: str, account: str, em
 
 
 def validate_role_revoke_event(event: EventDict, role_hash: str, account: str, emitted_by: Optional[str] = None):
+    _events_chain = ["LogScriptCall", "RoleRevoked", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("RoleRevoked") == 1
+
     assert "RoleRevoked" in event, "No RoleRevoked event found"
 
     # Strip 0x prefix for consistent comparison
@@ -81,7 +106,13 @@ def validate_role_revoke_event(event: EventDict, role_hash: str, account: str, e
             emitted_by), "Wrong event emitter"
 
 
-def validate_contract_version_set_event(event: EventDict, version: int, emitted_by: Optional[str] = None):
+def validate_contract_version_set_event(event: EventDict, version: int, emitted_by: Optional[str] = None, events_chain: Optional[list] = None):
+    _events_chain = events_chain or ["LogScriptCall", "ContractVersionSet", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("ContractVersionSet") == 1
+
     assert "ContractVersionSet" in event, "No ContractVersionSet event found"
 
     assert event["ContractVersionSet"][0]["version"] == version, "Wrong version"
@@ -92,6 +123,12 @@ def validate_contract_version_set_event(event: EventDict, version: int, emitted_
 
 
 def validate_bond_curve_added_event(event: EventDict, curve_id: int, curve_intervals: tuple[list[int], list[int]], emitted_by: Optional[str] = None):
+    _events_chain = ["LogScriptCall", "BondCurveAdded", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("BondCurveAdded") == 1
+
     assert "BondCurveAdded" in event, "No BondCurveAdded event found"
 
     assert event["BondCurveAdded"][0]["curveId"] == curve_id, "Wrong curve ID"
@@ -134,6 +171,12 @@ def validate_added_bond_curve(curve: list[tuple[int, int, int]], expected_curve:
 
 
 def validate_remove_guardian_event(event: EventDict, guardian_address: str, emitted_by: Optional[str] = None):
+    _events_chain = ["LogScriptCall", "GuardianRemoved", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("GuardianRemoved") == 1
+
     assert "GuardianRemoved" in event, "No GuardianRemoved event found"
 
     assert event["GuardianRemoved"][0]["guardian"] == guardian_address, "Wrong guardian address"
@@ -144,6 +187,12 @@ def validate_remove_guardian_event(event: EventDict, guardian_address: str, emit
 
 
 def validate_add_guardian_event(event: EventDict, guardian_address: str, emitted_by: Optional[str] = None):
+    _events_chain = ["LogScriptCall", "GuardianAdded", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("GuardianAdded") == 1
+
     assert "GuardianAdded" in event, "No GuardianAdded event found"
 
     assert event["GuardianAdded"][0]["guardian"] == guardian_address, "Wrong guardian address"
@@ -164,6 +213,15 @@ def validate_staking_module_update_event(
         min_deposit_block_distance: int,
         emitted_by: Optional[str] = None
 ):
+    _events_chain = ["LogScriptCall", "StakingModuleShareLimitSet", "StakingModuleFeesSet", "StakingModuleMaxDepositsPerBlockSet", "StakingModuleMinDepositBlockDistanceSet", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("StakingModuleShareLimitSet") == 1
+    assert event.count("StakingModuleFeesSet") == 1
+    assert event.count("StakingModuleMaxDepositsPerBlockSet") == 1
+    assert event.count("StakingModuleMinDepositBlockDistanceSet") == 1
+
     assert "StakingModuleShareLimitSet" in event, "No StakingModuleShareLimitSet event found"
     assert "StakingModuleFeesSet" in event, "No StakingModuleFeesSet event found"
     assert "StakingModuleMaxDepositsPerBlockSet" in event, "No StakingModuleMaxDepositsPerBlockSet event found"
@@ -343,10 +401,8 @@ IPFS_DESCRIPTION_HASH = "bafkreih5app23xbevhswk56r6d2cjdqui5tckki6szo7loi7xe25bf
 NETHERMIND_NO_ID = 25
 NETHERMIND_NO_NAME_OLD = "Nethermind"
 NETHERMIND_NO_NAME_NEW = "Twinstake"
-NETHERMIND_NEW_REWARD_ADDRESS = "0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
 NETHERMIND_NO_STAKING_REWARDS_ADDRESS_OLD = "0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91"
 NETHERMIND_NO_STAKING_REWARDS_ADDRESS_NEW = "0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
-NODE_OPERATORS_REGISTRY_ADDRESS = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
 
 NODE_OPERATORS_REGISTRY_ARAGON_APP_ID = "0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d"
 SIMPLE_DVT_ARAGON_APP_ID = "0xe1635b63b5f7b5e545f2a637558a4029dea7905361a2f0fc28c66e9136cf86a4"
@@ -899,12 +955,14 @@ def dual_governance_proposal_calls():
         # Node operator changes
         # 1.67. Rename Node Operator ID 25 from Nethermind to Twinstake
         agent_forward(
-            [encode_set_node_operator_name(id=25, name="Twinstake", registry=nor)]),
+            [encode_set_node_operator_name(id=25, name=NETHERMIND_NO_NAME_NEW, registry=nor)]),
+        # 1.68. Change Node Operator ID 25 reward address
+        agent_forward([encode_set_node_operator_reward_address(
+            id=25,
+            rewardAddress=NETHERMIND_NO_STAKING_REWARDS_ADDRESS_NEW,
+            registry=nor,
+        )]),
 
-        # 1.68. Change Node Operator ID 17 reward address
-        agent_forward([encode_set_node_operator_reward_address(id=25,
-                                                               rewardAddress="0x36201ed66DbC284132046ee8d99272F8eEeb24c8",
-                                                               registry=nor)]),
         # 1.69. Remove Kiln guardian
         agent_forward([
             encode_remove_guardian(dsm=dsm, guardian_address=OLD_KILN_ADDRESS, quorum_size=DSM_QUORUM_SIZE),
@@ -981,7 +1039,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     cs_vetted_gate = interface.CSVettedGate(CS_VETTED_GATE_ADDRESS)
     cs_verifier_v2 = interface.CSVerifierV2(CS_VERIFIER_V2_ADDRESS)
 
-    no_registry = interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY_ADDRESS)
+    no_registry = interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
 
     # START VOTE
     if vote_ids_from_env:
@@ -1016,8 +1074,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
 
         vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
-        # display_voting_events(vote_tx)
-        vote_events = group_voting_events_from_receipt(vote_tx)
 
         # =======================================================================
         # ========================= After voting checks =========================
@@ -1031,9 +1087,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY in new_factories, "EasyTrack should have Curated validator exit request hashes factory after vote"
 
         # --- VALIDATE EVENTS ---
-        voting_events = group_voting_events_from_receipt(vote_tx)
+        vote_events = group_voting_events_from_receipt(vote_tx)
         # Validate voting events structure
-        dg_voting_event, dg_bypass_voting_event1, dg_bypass_voting_event2, dg_bypass_voting_event3 = voting_events
+        dg_voting_event, dg_bypass_voting_event1, dg_bypass_voting_event2, dg_bypass_voting_event3 = vote_events
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT, "Unexpected number of dual governance events"
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
@@ -1095,6 +1151,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             initial_vebo_consensus_version = validators_exit_bus_oracle.getConsensusVersion()
             assert initial_vebo_consensus_version < VEBO_CONSENSUS_VERSION, f"VEBO consensus version should be less than {VEBO_CONSENSUS_VERSION}"
 
+            manage_consensus_role = validators_exit_bus_oracle.MANAGE_CONSENSUS_VERSION_ROLE()
+            assert not validators_exit_bus_oracle.hasRole(manage_consensus_role, agent), "Agent should not have MANAGE_CONSENSUS_ROLE before upgrade"
+
+            # Step 1.7: Check EasyTrack VEB SUBMIT_REPORT_HASH_ROLE initial state
+            submit_report_hash_role = web3.keccak(text="SUBMIT_REPORT_HASH_ROLE")
+            assert not validators_exit_bus_oracle.hasRole(submit_report_hash_role,
+                                          EASYTRACK_EVMSCRIPT_EXECUTOR), "EasyTrack executor should not have SUBMIT_REPORT_HASH_ROLE on VEBO before upgrade"
+
             # Step 1.8: Check TWG role for CS Ejector initial state
             add_full_withdrawal_request_role = triggerable_withdrawals_gateway.ADD_FULL_WITHDRAWAL_REQUEST_ROLE()
             assert not triggerable_withdrawals_gateway.hasRole(add_full_withdrawal_request_role,
@@ -1103,11 +1167,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # Step 1.9: Check TWG role for VEB initial state
             assert not triggerable_withdrawals_gateway.hasRole(add_full_withdrawal_request_role,
                                                                vebo_proxy), "VEBO should not have ADD_FULL_WITHDRAWAL_REQUEST_ROLE before upgrade"
-
-            # Step 1.7: Check EasyTrack VEB SUBMIT_REPORT_HASH_ROLE initial state
-            submit_report_hash_role = web3.keccak(text="SUBMIT_REPORT_HASH_ROLE")
-            assert not validators_exit_bus_oracle.hasRole(submit_report_hash_role,
-                                          EASYTRACK_EVMSCRIPT_EXECUTOR), "EasyTrack executor should not have SUBMIT_REPORT_HASH_ROLE on VEBO before upgrade"
 
             # Step 1.10: Check DualGovernance tiebreaker initial state
             tiebreaker_details = dual_governance.getTiebreakerDetails()
@@ -1309,7 +1368,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 validate_proxy_upgrade_event(dg_events[1], VALIDATORS_EXIT_BUS_ORACLE_IMPL, emitted_by=vebo_proxy)
 
                 # 2. VEBO finalize upgrade events
-                validate_contract_version_set_event(dg_events[2], version=2, emitted_by=validators_exit_bus_oracle)
+                validate_contract_version_set_event(dg_events[2], version=2, emitted_by=validators_exit_bus_oracle,
+                                                   events_chain=["LogScriptCall", "ContractVersionSet", "SetMaxValidatorsPerReport", "ExitRequestsLimitSet", "ScriptResult", "Executed"])
                 assert 'ExitRequestsLimitSet' in dg_events[2], "ExitRequestsLimitSet event not found"
                 assert dg_events[2]['ExitRequestsLimitSet'][0]['maxExitRequestsLimit'] == MAX_EXIT_REQUESTS_LIMIT, "Wrong maxExitRequestsLimit"
                 assert dg_events[2]['ExitRequestsLimitSet'][0]['exitsPerFrame'] == EXITS_PER_FRAME, "Wrong exitsPerFrame"
@@ -1433,7 +1493,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert 'SetApp' in dg_events[22]
 
                 # 23. Finalize upgrade for NOR
-                validate_contract_version_set_event(dg_events[23], version=4, emitted_by=nor)
+                validate_contract_version_set_event(dg_events[23], version=4, emitted_by=nor,
+                                                   events_chain=["LogScriptCall", "Approval", "ContractVersionSet", "ExitDeadlineThresholdChanged", "ScriptResult", "Executed"])
                 assert 'ExitDeadlineThresholdChanged' in dg_events[23]
                 assert dg_events[23]['ExitDeadlineThresholdChanged'][0]['threshold'] == NOR_EXIT_DEADLINE_IN_SEC
 
@@ -1441,7 +1502,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert 'SetApp' in dg_events[24]
 
                 # 25. Finalize upgrade for sDVT
-                validate_contract_version_set_event(dg_events[25], version=4, emitted_by=simple_dvt)
+                validate_contract_version_set_event(dg_events[25], version=4, emitted_by=simple_dvt,
+                                                   events_chain=["LogScriptCall", "Approval", "ContractVersionSet", "ExitDeadlineThresholdChanged", "ScriptResult", "Executed"])
                 assert 'ExitDeadlineThresholdChanged' in dg_events[25]
                 assert dg_events[25]['ExitDeadlineThresholdChanged'][0]['threshold'] == NOR_EXIT_DEADLINE_IN_SEC
 
@@ -1506,9 +1568,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # 38. CSFeeOracle finalize upgrade with consensus version
                 validate_consensus_version_set_event(dg_events[38], new_version=CSM_CONSENSUS_NEW_VERSION, prev_version=CSM_CONSENSUS_OLD_VERSION,
-                                                     emitted_by=cs_fee_oracle)
+                                                     emitted_by=cs_fee_oracle,
+                                                     events_chain=["LogScriptCall", "ConsensusVersionSet", "ContractVersionSet", "ScriptResult", "Executed"])
                 validate_contract_version_set_event(dg_events[38], version=CS_FEE_ORACLE_V2_VERSION,
-                                                    emitted_by=cs_fee_oracle)
+                                                    emitted_by=cs_fee_oracle,
+                                                    events_chain=["LogScriptCall", "ConsensusVersionSet", "ContractVersionSet", "ScriptResult", "Executed"])
 
                 # 39. CSFeeDistributor implementation upgrade
                 validate_proxy_upgrade_event(dg_events[39], CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS,
@@ -1941,14 +2005,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert csm_module_after['maxDepositsPerBlock'] == csm_module_before['maxDepositsPerBlock']
         assert csm_module_after['minDepositBlockDistance'] == csm_module_before['minDepositBlockDistance']
 
-        # Steps 1.58-1.62: Validate Gate Seals updates
+        # Steps 1.60-1.64: Validate Gate Seals updates
         assert not withdrawal_queue.hasRole(withdrawal_queue.PAUSE_ROLE(), OLD_GATE_SEAL_ADDRESS), "Old GateSeal should not have PAUSE_ROLE on WithdrawalQueue after vote"
         assert not validators_exit_bus_oracle.hasRole(validators_exit_bus_oracle.PAUSE_ROLE(), OLD_GATE_SEAL_ADDRESS), "Old GateSeal should not have PAUSE_ROLE on VEBO after vote"
         assert withdrawal_queue.hasRole(withdrawal_queue.PAUSE_ROLE(), NEW_WQ_GATE_SEAL), "New WQ GateSeal should have PAUSE_ROLE on WithdrawalQueue after vote"
         assert validators_exit_bus_oracle.hasRole(validators_exit_bus_oracle.PAUSE_ROLE(),NEW_TW_GATE_SEAL), "New TW GateSeal should have PAUSE_ROLE on VEBO after vote"
         assert triggerable_withdrawals_gateway.hasRole(triggerable_withdrawals_gateway.PAUSE_ROLE(), NEW_TW_GATE_SEAL), "New TW GateSeal should have PAUSE_ROLE on TWG after vote"
 
-        # Steps 1.63-1.64: Validate ResealManager roles
+        # Steps 1.64-1.66: Validate ResealManager roles
         assert triggerable_withdrawals_gateway.hasRole(triggerable_withdrawals_gateway.PAUSE_ROLE(),
                                                        RESEAL_MANAGER), "ResealManager should have PAUSE_ROLE on TWG after vote"
         assert triggerable_withdrawals_gateway.hasRole(triggerable_withdrawals_gateway.RESUME_ROLE(),
@@ -1960,7 +2024,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert no[1] == NETHERMIND_NO_NAME_NEW
 
         # Step 1.68: Change Node Operator ID 25 reward address from 0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91 to 0x36201ed66DbC284132046ee8d99272F8eEeb24c8
-        assert no[2] == NETHERMIND_NEW_REWARD_ADDRESS
+        assert no[2] == NETHERMIND_NO_STAKING_REWARDS_ADDRESS_NEW
 
         # Step 1.69: Remove old Kiln guardian
         assert dsm.isGuardian(
@@ -1969,3 +2033,4 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # Step 1.70: Add new Kiln guardian
         assert dsm.isGuardian(
             NEW_KILN_ADDRESS) is True, "New Kiln address should be added to guardians"
+        assert dsm.getGuardianQuorum() == DSM_QUORUM_SIZE, "Guardians quorum should be 2"
