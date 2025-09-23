@@ -134,7 +134,11 @@ NEW_KILN_ADDRESS = "0x6d22aE126eB2c37F67a1391B37FF4f2863e61389"
 DSM_QUORUM_SIZE = 4
 
 # ============================= Description ==================================
-IPFS_DESCRIPTION = "Triggerable withdrawals and CSM v2 upgrade voting"
+IPFS_DESCRIPTION = """
+1. **Upgrade to CSM v2 and increase CSM stake share limit from 3% to 5%**, as per [Snapshot decision](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xc3f92bcdf8926cfa7528ca6a979c0fdce1e4d0cfaaa72dd6410a76a2e1e55766). Items 1.34-1.59. Audit & deployment verification by: [Statemind](https://github.com/lidofinance/audits/blob/main/Statemind%20Triggerable%20Withdrawals%20and%20CSM%20v2%20Audit%20Report%2009-2025.pdf) | [Ackee](https://github.com/lidofinance/audits/blob/main/Ackee%20Blockchain%20Community%20Staking%20Module%20v2%20Audit%20Report%2009-2025.pdf).
+2. **Activate Triggerable Withdrawals**, as per [Snapshot decision](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x7d7f0e1a6d181310f8752af37e20515a9be258f30b211872f9acca99bc478851). Items 1.1-1.33, 1.60-1.66, 2-4. Audit & deployment verification by [Statemind](https://github.com/lidofinance/audits/blob/main/Statemind%20Triggerable%20Withdrawals%20and%20CSM%20v2%20Audit%20Report%2009-2025.pdf) | Audit by [Ackee](https://github.com/lidofinance/audits/blob/main/Ackee%20Blockchain%20Lido%20Triggerable%20Withdrawals%20Audit%20Report%2009-25.pdf).
+3. **Update the reward address and name for Node Operator ID 25 `Nethermind`**, as per [Snapshot decision](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x3f68e9bc69850da419211c3d9f0a76d006ed044abc0f8bc845bc1d1cf3db0a8d). Items 1.67, 1.68.
+4. **Rotate Deposit Security Committee address for `Kiln`**. [Requested on the forum](https://research.lido.fi/t/security-disclosure-kiln-precautionary-out-of-order-exits-in-response-security-incident/10654/3). Items 1.69, 1.70."""
 
 
 def encode_staking_router_proxy_update(implementation: str) -> Tuple[str, str]:
