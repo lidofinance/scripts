@@ -25,6 +25,7 @@ from utils.test.event_validators.node_operators_registry import (
 from utils.test.tx_tracing_helpers import group_voting_events_from_receipt, group_dg_events_from_receipt
 from utils.test.event_validators.easy_track import validate_evmscript_factory_added_event, EVMScriptFactoryAdded
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
+from utils.test.event_validators.common import validate_events_chain
 
 CS_MODULE_ID = 3
 CS_MODULE_MODULE_FEE_BP = 600
@@ -34,7 +35,13 @@ CS_MODULE_TREASURY_FEE_BP = 400
 CS_GATE_SEAL_ADDRESS = "0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0"
 
 
-def validate_proxy_upgrade_event(event: EventDict, implementation: str, emitted_by: Optional[str] = None):
+def validate_proxy_upgrade_event(event: EventDict, implementation: str, emitted_by: Optional[str] = None, events_chain: Optional[list] = None):
+    _events_chain = events_chain or ["LogScriptCall", "Upgraded", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("Upgraded") == 1
+
     assert "Upgraded" in event, "No Upgraded event found"
 
     assert event["Upgraded"][0]["implementation"] == implementation, "Wrong implementation address"
@@ -45,7 +52,13 @@ def validate_proxy_upgrade_event(event: EventDict, implementation: str, emitted_
 
 
 def validate_consensus_version_set_event(event: EventDict, new_version: int, prev_version: int,
-                                         emitted_by: Optional[str] = None):
+                                         emitted_by: Optional[str] = None, events_chain: Optional[list] = None):
+    _events_chain = events_chain or ["LogScriptCall", "ConsensusVersionSet", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("ConsensusVersionSet") == 1
+
     assert "ConsensusVersionSet" in event, "No ConsensusVersionSet event found"
 
     assert event["ConsensusVersionSet"][0]["version"] == new_version, "Wrong new version"
@@ -58,6 +71,12 @@ def validate_consensus_version_set_event(event: EventDict, new_version: int, pre
 
 
 def validate_role_grant_event(event: EventDict, role_hash: str, account: str, emitted_by: Optional[str] = None):
+    _events_chain = ["LogScriptCall", "RoleGranted", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("RoleGranted") == 1
+
     assert "RoleGranted" in event, "No RoleGranted event found"
 
     # Strip 0x prefix for consistent comparison
@@ -74,6 +93,12 @@ def validate_role_grant_event(event: EventDict, role_hash: str, account: str, em
 
 
 def validate_role_revoke_event(event: EventDict, role_hash: str, account: str, emitted_by: Optional[str] = None):
+    _events_chain = ["LogScriptCall", "RoleRevoked", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("RoleRevoked") == 1
+
     assert "RoleRevoked" in event, "No RoleRevoked event found"
 
     # Strip 0x prefix for consistent comparison
@@ -89,7 +114,13 @@ def validate_role_revoke_event(event: EventDict, role_hash: str, account: str, e
             emitted_by), "Wrong event emitter"
 
 
-def validate_contract_version_set_event(event: EventDict, version: int, emitted_by: Optional[str] = None):
+def validate_contract_version_set_event(event: EventDict, version: int, emitted_by: Optional[str] = None, events_chain: Optional[list] = None):
+    _events_chain = events_chain or ["LogScriptCall", "ContractVersionSet", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("ContractVersionSet") == 1
+
     assert "ContractVersionSet" in event, "No ContractVersionSet event found"
 
     assert event["ContractVersionSet"][0]["version"] == version, "Wrong version"
@@ -100,6 +131,12 @@ def validate_contract_version_set_event(event: EventDict, version: int, emitted_
 
 
 def validate_bond_curve_added_event(event: EventDict, curve_id: int, curve_intervals: tuple[list[int], list[int]], emitted_by: Optional[str] = None):
+    _events_chain = ["LogScriptCall", "BondCurveAdded", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("BondCurveAdded") == 1
+
     assert "BondCurveAdded" in event, "No BondCurveAdded event found"
 
     assert event["BondCurveAdded"][0]["curveId"] == curve_id, "Wrong curve ID"
@@ -120,6 +157,12 @@ def validate_added_bond_curve(curve: list[tuple[int, int, int]], expected_curve:
 
 
 def validate_remove_guardian_event(event: EventDict, guardian_address: str, emitted_by: Optional[str] = None):
+    _events_chain = ["LogScriptCall", "GuardianRemoved", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("GuardianRemoved") == 1
+
     assert "GuardianRemoved" in event, "No GuardianRemoved event found"
 
     assert event["GuardianRemoved"][0]["guardian"] == guardian_address, "Wrong guardian address"
@@ -130,6 +173,12 @@ def validate_remove_guardian_event(event: EventDict, guardian_address: str, emit
 
 
 def validate_add_guardian_event(event: EventDict, guardian_address: str, emitted_by: Optional[str] = None):
+    _events_chain = ["LogScriptCall", "GuardianAdded", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("GuardianAdded") == 1
+
     assert "GuardianAdded" in event, "No GuardianAdded event found"
 
     assert event["GuardianAdded"][0]["guardian"] == guardian_address, "Wrong guardian address"
@@ -150,6 +199,15 @@ def validate_staking_module_update_event(
         min_deposit_block_distance: int,
         emitted_by: Optional[str] = None
 ):
+    _events_chain = ["LogScriptCall", "StakingModuleShareLimitSet", "StakingModuleFeesSet", "StakingModuleMaxDepositsPerBlockSet", "StakingModuleMinDepositBlockDistanceSet", "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("StakingModuleShareLimitSet") == 1
+    assert event.count("StakingModuleFeesSet") == 1
+    assert event.count("StakingModuleMaxDepositsPerBlockSet") == 1
+    assert event.count("StakingModuleMinDepositBlockDistanceSet") == 1
+
     assert "StakingModuleShareLimitSet" in event, "No StakingModuleShareLimitSet event found"
     assert "StakingModuleFeesSet" in event, "No StakingModuleFeesSet event found"
     assert "StakingModuleMaxDepositsPerBlockSet" in event, "No StakingModuleMaxDepositsPerBlockSet event found"
@@ -1294,7 +1352,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 validate_proxy_upgrade_event(dg_events[1], VALIDATORS_EXIT_BUS_ORACLE_IMPL, emitted_by=vebo_proxy)
 
                 # 2. VEBO finalize upgrade events
-                validate_contract_version_set_event(dg_events[2], version=2, emitted_by=validators_exit_bus_oracle)
+                validate_contract_version_set_event(dg_events[2], version=2, emitted_by=validators_exit_bus_oracle,
+                                                   events_chain=["LogScriptCall", "ContractVersionSet", "SetMaxValidatorsPerReport", "ExitRequestsLimitSet", "ScriptResult", "Executed"])
                 assert 'ExitRequestsLimitSet' in dg_events[2], "ExitRequestsLimitSet event not found"
                 assert dg_events[2]['ExitRequestsLimitSet'][0]['maxExitRequestsLimit'] == MAX_EXIT_REQUESTS_LIMIT, "Wrong maxExitRequestsLimit"
                 assert dg_events[2]['ExitRequestsLimitSet'][0]['exitsPerFrame'] == EXITS_PER_FRAME, "Wrong exitsPerFrame"
@@ -1418,7 +1477,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert 'SetApp' in dg_events[22]
 
                 # 23. Finalize upgrade for NOR
-                validate_contract_version_set_event(dg_events[23], version=4, emitted_by=nor)
+                validate_contract_version_set_event(dg_events[23], version=4, emitted_by=nor,
+                                                   events_chain=["LogScriptCall", "Approval", "ContractVersionSet", "ExitDeadlineThresholdChanged", "ScriptResult", "Executed"])
                 assert 'ExitDeadlineThresholdChanged' in dg_events[23]
                 assert dg_events[23]['ExitDeadlineThresholdChanged'][0]['threshold'] == NOR_EXIT_DEADLINE_IN_SEC
 
@@ -1426,7 +1486,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert 'SetApp' in dg_events[24]
 
                 # 25. Finalize upgrade for sDVT
-                validate_contract_version_set_event(dg_events[25], version=4, emitted_by=simple_dvt)
+                validate_contract_version_set_event(dg_events[25], version=4, emitted_by=simple_dvt,
+                                                   events_chain=["LogScriptCall", "Approval", "ContractVersionSet", "ExitDeadlineThresholdChanged", "ScriptResult", "Executed"])
                 assert 'ExitDeadlineThresholdChanged' in dg_events[25]
                 assert dg_events[25]['ExitDeadlineThresholdChanged'][0]['threshold'] == NOR_EXIT_DEADLINE_IN_SEC
 
@@ -1490,9 +1551,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # 38. CSFeeOracle finalize upgrade with consensus version
                 validate_consensus_version_set_event(dg_events[38], new_version=3, prev_version=2,
-                                                     emitted_by=cs_fee_oracle)
+                                                     emitted_by=cs_fee_oracle,
+                                                     events_chain=["LogScriptCall", "ConsensusVersionSet", "ContractVersionSet", "ScriptResult", "Executed"])
                 validate_contract_version_set_event(dg_events[38], version=CS_FEE_ORACLE_V2_VERSION,
-                                                    emitted_by=cs_fee_oracle)
+                                                    emitted_by=cs_fee_oracle,
+                                                    events_chain=["LogScriptCall", "ConsensusVersionSet", "ContractVersionSet", "ScriptResult", "Executed"])
 
                 # 39. CSFeeDistributor implementation upgrade
                 validate_proxy_upgrade_event(dg_events[39], CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS,
