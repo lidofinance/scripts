@@ -91,14 +91,36 @@ def validate_contract_version_set_event(event: EventDict, version: int, emitted_
             emitted_by), "Wrong event emitter"
 
 
-def validate_bond_curve_added_event(event: EventDict, curve_id: int, curve_intervals: tuple[list[int], list[int]], emitted_by: Optional[str] = None, event_index: Optional[int] = 0):
+def validate_bond_curve_added_event(event: EventDict, curve_id: int, curve_intervals: tuple[list[int], list[int]], emitted_by: Optional[str] = None):
     assert "BondCurveAdded" in event, "No BondCurveAdded event found"
 
-    assert event["BondCurveAdded"][event_index]["curveId"] == curve_id, "Wrong curve ID"
-    assert event["BondCurveAdded"][event_index]["bondCurveIntervals"] == curve_intervals, "Wrong curve intervals"
+    assert event["BondCurveAdded"][0]["curveId"] == curve_id, "Wrong curve ID"
+    assert event["BondCurveAdded"][0]["bondCurveIntervals"] == curve_intervals, "Wrong curve intervals"
 
     if emitted_by is not None:
-        assert convert.to_address(event["BondCurveAdded"][event_index]["_emitted_by"]) == convert.to_address(
+        assert convert.to_address(event["BondCurveAdded"][0]["_emitted_by"]) == convert.to_address(
+            emitted_by), "Wrong event emitter"
+
+
+def validate_bond_curve_added_on_init_v2_events(event: EventDict, curves_intervals: list[tuple[list[int], list[int]]], emitted_by: Optional[str] = None):
+    _events_chain = ["LogScriptCall", "BondCurveAdded", "BondCurveAdded", 'Initialized', "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("BondCurveAdded") == 2
+
+    assert "BondCurveAdded" in event, "No BondCurveAdded event found"
+
+    for curve_id, curve_intervals in enumerate(curves_intervals):
+        found = False
+        for e in event["BondCurveAdded"]:
+            if e["curveId"] == curve_id and e["bondCurveIntervals"] == curve_intervals:
+                found = True
+                break
+        assert found, f"Curve with ID {curve_id} and intervals {curve_intervals} not found"
+
+    if emitted_by is not None:
+        assert convert.to_address(event["BondCurveAdded"][0]["_emitted_by"]) == convert.to_address(
             emitted_by), "Wrong event emitter"
 
 
@@ -1474,8 +1496,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 # 36. CSAccounting finalize upgrade with bond curves
                 assert 'BondCurveAdded' in dg_events[36]
                 assert len(dg_events[36]['BondCurveAdded']) == len(CS_CURVES)
-                for i, curve in enumerate(CS_CURVES):
-                    validate_bond_curve_added_event(dg_events[36], i, curve, emitted_by=cs_accounting, event_index=i)
+                validate_bond_curve_added_on_init_v2_events(dg_events[36], CS_CURVES, emitted_by=cs_accounting)
                 assert 'Initialized' in dg_events[36]
                 assert dg_events[36]['Initialized'][0]['version'] == CS_ACCOUNTING_V2_VERSION
 
