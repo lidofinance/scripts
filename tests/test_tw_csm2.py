@@ -2038,4 +2038,4 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # Step 1.70: Add new Kiln guardian
         assert dsm.isGuardian(
             NEW_KILN_ADDRESS) is True, "New Kiln address should be added to guardians"
-        assert dsm.getGuardianQuorum() == DSM_QUORUM_SIZE, "Guardians quorum should be 2"
+        assert dsm.getGuardianQuorum() == DSM_QUORUM_SIZE, "Guardians quorum should be 4"

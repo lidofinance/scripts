@@ -67,7 +67,7 @@ class ExtraDataLengths:
     MODULE_ID = 3
     NODE_OPS_COUNT = 8
     NODE_OPERATOR_IDS = 8
-    STUCK_OR_EXITED_VALS_COUNT = 16
+    EXITED_VALS_COUNT = 16
 
 
 class ExtraDataService:
@@ -162,7 +162,7 @@ class ExtraDataService:
                     for no_id in payload.node_operator_ids
                 )
                 tx += b''.join(
-                    count.to_bytes(ExtraDataLengths.STUCK_OR_EXITED_VALS_COUNT, byteorder='big')
+                    count.to_bytes(ExtraDataLengths.EXITED_VALS_COUNT, byteorder='big')
                     for count in payload.vals_counts
                 )
 

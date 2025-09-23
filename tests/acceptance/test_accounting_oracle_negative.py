@@ -15,7 +15,6 @@ from utils.test.oracle_report_helpers import (
     ZERO_BYTES32,
     AccountingReport,
     oracle_report,
-    EXTRA_DATA_FORMAT_EMPTY,
     EXTRA_DATA_FORMAT_LIST,
 )
 
@@ -209,10 +208,82 @@ class TestSubmitReportExtraDataList:
         (_, _, _, _, _, exited_keys, _, _) = nor.getNodeOperatorSummary(operator_id)
         return exited_keys
 
-    def get_nor_operator_stuck_keys(self, operator_id: int) -> int:
-        nor = contracts.node_operators_registry
-        (_, _, stuck_keys, _, _, _, _, _) = nor.getNodeOperatorSummary(operator_id)
-        return stuck_keys
+    def test_too_short_extra_data_item(self):
+        extra_data = self.build_extra_data(
+            [
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 2, [2], [2])[:36],
+            ]
+        )
+
+        (_, _, _, _, _, totalExitedValidators, _, _) = contracts.node_operators_registry.getNodeOperatorSummary(2)
+        with reverts(encode_error("InvalidExtraDataItem(uint256)", [0])):
+            self.report(extra_data)
+
+        extra_data = self.build_extra_data(
+            [
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2, 3, 4, 5], [totalExitedValidators]),
+                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 2, [2], [totalExitedValidators]),
+            ]
+        )
+
+        with reverts(encode_error("InvalidExtraDataItem(uint256)", [0])):
+            self.report(extra_data)
+
+    def test_nos_count_zero(self):
+        extra_data = self.build_extra_data(
+            [
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 2, [], [1]),
+            ]
+        )
+
+        with reverts(encode_error("InvalidExtraDataItem(uint256)", [0])):
+            self.report(extra_data)
+
+    def test_module_id_zero(self):
+        extra_data = self.build_extra_data(
+            [
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 0, [2], [1]),
+                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 0, [2], [2]),
+            ]
+        )
+
+        with reverts(encode_error("InvalidExtraDataItem(uint256)", [0])):
+            self.report(extra_data)
+
+    def test_unexpected_extra_data_index(self):
+        extra_data = self.build_extra_data(
+            [
+                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2], [1]),
+                build_extra_data_item(2, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 2, [2], [1]),
+            ]
+        )
+
+        with reverts(encode_error("UnexpectedExtraDataIndex(uint256,uint256)", [0, 1])):
+            self.report(extra_data)
+
+        totalExitedValidators = self.get_nor_operator_exited_keys(2)
+
+        extra_data = self.build_extra_data(
+            [
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2], [totalExitedValidators]),
+                build_extra_data_item(3, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2], [totalExitedValidators]),
+            ]
+        )
+
+        with reverts(encode_error("UnexpectedExtraDataIndex(uint256,uint256)", [1, 3])):
+            self.report(extra_data)
+
+        totalExitedValidators = self.get_nor_operator_exited_keys(2)
+
+        extra_data = self.build_extra_data(
+            [
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2], [totalExitedValidators]),
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2], [totalExitedValidators]),
+            ]
+        )
+
+        with reverts(encode_error("UnexpectedExtraDataIndex(uint256,uint256)", [1, 0])):
+            self.report(extra_data)
 
     def test_unsupported_extra_data_type(self):
         extra_data = self.build_extra_data([build_extra_data_item(0, ItemType.UNSUPPORTED, 1, [1], [1])])
@@ -224,6 +295,24 @@ class TestSubmitReportExtraDataList:
             )
         ):
             self.report(extra_data, items_count=1)
+
+    def test_invalid_extra_data_sort_order_on_same_items(self):
+        module_id = 1
+        operator_id = 2
+        current_exited_keys = self.get_nor_operator_exited_keys(operator_id)
+        new_exited_keys = current_exited_keys + 1
+
+        extra_data = self.build_extra_data(
+            [
+                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, module_id, [operator_id],
+                                      [new_exited_keys]),
+                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, module_id, [operator_id],
+                                      [new_exited_keys]),
+            ]
+        )
+
+        with reverts(encode_error("InvalidExtraDataSortOrder(uint256)", [1])):
+            self.report(extra_data)
 
     def test_invalid_extra_data_sort_order_on_same_operator(self):
         module_id = 1
@@ -255,6 +344,37 @@ class TestSubmitReportExtraDataList:
         with reverts(encode_error("InvalidExtraDataSortOrder(uint256)", [0])):
             self.report(extra_data)
 
+    def test_unexpected_extra_data_item(self, extra_data_service: ExtraDataService) -> None:
+        extra_data = extra_data_service.collect(
+            {
+                (1, 2): self.get_nor_operator_exited_keys(2) + 1,
+                (1, 3): self.get_nor_operator_exited_keys(3) + 1,
+                (1, 4): self.get_nor_operator_exited_keys(4) + 1,
+                (1, 5): self.get_nor_operator_exited_keys(5) + 1,
+                (1, 6): self.get_nor_operator_exited_keys(6) + 1,
+                (1, 7): self.get_nor_operator_exited_keys(7) + 1,
+                (1, 8): self.get_nor_operator_exited_keys(8) + 1,
+                (1, 9): self.get_nor_operator_exited_keys(9) + 1,
+                (1, 10): self.get_nor_operator_exited_keys(10) + 1,
+            },
+            MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
+            1,
+        )
+
+        with reverts(
+            encode_error(
+                "UnexpectedExtraDataItemsCount(uint256,uint256)",
+                [
+                    extra_data.items_count - 1, # expected count
+                    extra_data.items_count - 1, # index of the item that makes the count mismatch
+                ],
+            )
+        ):
+            self.report(
+                extra_data.extra_data_list[0],
+                items_count=extra_data.items_count - 1,
+            )
+
     def test_already_processed(
         self,
         accounting_oracle: Contract,
@@ -263,6 +383,7 @@ class TestSubmitReportExtraDataList:
     ):
         module_id = 1
         exited_keys_operator_id = 33
+
         current_exited_keys = self.get_nor_operator_exited_keys(exited_keys_operator_id)
 
         extra_data = extra_data_service.collect(
@@ -619,6 +740,6 @@ def build_extra_data_item(
             module_id.to_bytes(FIELDS_WIDTH.MODULE_ID, **opts),
             len(nos_ids).to_bytes(FIELDS_WIDTH.NODE_OPS_COUNT, **opts),
             b"".join(i.to_bytes(FIELDS_WIDTH.NODE_OPERATOR_IDS, **opts) for i in nos_ids),
-            b"".join(i.to_bytes(FIELDS_WIDTH.STUCK_OR_EXITED_VALS_COUNT, **opts) for i in vals_count),
+            b"".join(i.to_bytes(FIELDS_WIDTH.EXITED_VALS_COUNT, **opts) for i in vals_count),
         )
     )
