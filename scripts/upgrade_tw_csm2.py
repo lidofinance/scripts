@@ -367,7 +367,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.23. Update Node Operators Registry (Aragon APP ID = `0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d`) implementation to `0x6828b023e737f96B168aCd0b5c6351971a4F81aE` via Lido DAO Kernel `0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc`",
+        # "1.23. Update Curated Module (Aragon APP ID = `0x7071f283424072341f856ac9e947e7ec0eb68719f757a7e785979b6b8717579d`) implementation to `0x6828b023e737f96B168aCd0b5c6351971a4F81aE` via Lido DAO Kernel `0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc`",
         agent_forward(
             [
                 (
