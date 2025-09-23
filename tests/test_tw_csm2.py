@@ -99,14 +99,14 @@ def validate_contract_version_set_event(event: EventDict, version: int, emitted_
             emitted_by), "Wrong event emitter"
 
 
-def validate_bond_curve_added_event(event: EventDict, curve_id: int, curve_intervals: tuple[list[int], list[int]], emitted_by: Optional[str] = None):
+def validate_bond_curve_added_event(event: EventDict, curve_id: int, curve_intervals: tuple[list[int], list[int]], emitted_by: Optional[str] = None, event_index: Optional[int] = 0):
     assert "BondCurveAdded" in event, "No BondCurveAdded event found"
 
-    assert event["BondCurveAdded"][0]["curveId"] == curve_id, "Wrong curve ID"
-    assert event["BondCurveAdded"][0]["bondCurveIntervals"] == curve_intervals, "Wrong curve intervals"
+    assert event["BondCurveAdded"][event_index]["curveId"] == curve_id, "Wrong curve ID"
+    assert event["BondCurveAdded"][event_index]["bondCurveIntervals"] == curve_intervals, "Wrong curve intervals"
 
     if emitted_by is not None:
-        assert convert.to_address(event["BondCurveAdded"][0]["_emitted_by"]) == convert.to_address(
+        assert convert.to_address(event["BondCurveAdded"][event_index]["_emitted_by"]) == convert.to_address(
             emitted_by), "Wrong event emitter"
 
 
@@ -1481,6 +1481,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 # 36. CSAccounting finalize upgrade with bond curves
                 assert 'BondCurveAdded' in dg_events[36]
                 assert len(dg_events[36]['BondCurveAdded']) == len(CS_CURVES)
+                for i, curve in enumerate(CS_CURVES):
+                    validate_bond_curve_added_event(dg_events[36], i, curve, emitted_by=cs_accounting, event_index=i)
                 assert 'Initialized' in dg_events[36]
                 assert dg_events[36]['Initialized'][0]['version'] == CS_ACCOUNTING_V2_VERSION
 
@@ -1912,6 +1914,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         csm_priority_exit_threshold_after = csm_module_after['priorityExitShareThreshold']
         assert csm_priority_exit_threshold_after == CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP, f"CSM priority exit threshold should be {CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP} after vote, but got {csm_priority_exit_threshold_after}"
+
+        assert csm_module_after['stakingModuleAddress'] == csm_module_before['stakingModuleAddress']
+        assert csm_module_after['stakingModuleFee'] == csm_module_before['stakingModuleFee']
+        assert csm_module_after['treasuryFee'] == csm_module_before['treasuryFee']
+        assert csm_module_after['status'] == csm_module_before['status']
+        assert csm_module_after['name'] == csm_module_before['name']
+        assert csm_module_after['lastDepositAt'] == csm_module_before['lastDepositAt']
+        assert csm_module_after['lastDepositBlock'] == csm_module_before['lastDepositBlock']
+        assert csm_module_after['exitedValidatorsCount'] == csm_module_before['exitedValidatorsCount']
+        assert csm_module_after['maxDepositsPerBlock'] == csm_module_before['maxDepositsPerBlock']
+        assert csm_module_after['minDepositBlockDistance'] == csm_module_before['minDepositBlockDistance']
 
         # Steps 1.58-1.62: Validate Gate Seals updates
         assert not withdrawal_queue.hasRole(withdrawal_queue.PAUSE_ROLE(), OLD_GATE_SEAL_ADDRESS), "Old GateSeal should not have PAUSE_ROLE on WithdrawalQueue after vote"
