@@ -30,7 +30,7 @@ def grant_roles(voting_eoa, agent_eoa):
         contracts.voting,
         contracts.node_operators_registry,
         convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-        {"from": contracts.voting},
+        {"from": contracts.agent},
     )
 
 
