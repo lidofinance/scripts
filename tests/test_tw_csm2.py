@@ -1296,6 +1296,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert not cs_fee_oracle.hasRole(cs_fee_oracle.PAUSE_ROLE(),
                                              CS_GATE_SEAL_V2_ADDRESS), "New GateSeal should not have PAUSE_ROLE on CSFeeOracle before vote"
 
+            # Step 1.56-1.58: No Identified Community Stakers Gate Bond Curve before vote
+            assert not cs_accounting.hasRole(cs_accounting.MANAGE_BOND_CURVES_ROLE(), agent.address)
+            with reverts():
+                cs_accounting.getCurveInfo(len(CS_CURVES))
+
             # Step 1.59: Staking Router CSM module state before vote (pre-vote state)
             csm_module_before = staking_router.getStakingModule(CS_MODULE_ID)
             csm_share_before = csm_module_before['stakeShareLimit']
@@ -1960,7 +1965,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert cs_fee_oracle.hasRole(cs_fee_oracle.PAUSE_ROLE(),
                                      CS_GATE_SEAL_V2_ADDRESS), "New GateSeal should have PAUSE_ROLE on CSFeeOracle after vote"
 
-        # Step 1.50-1.52: Check add ICS Bond Curve to CSAccounting
+        # Step 1.56-1.58: Check add ICS Bond Curve to CSAccounting
         assert not cs_accounting.hasRole(cs_accounting.MANAGE_BOND_CURVES_ROLE(),
                                          agent), "Agent should not have MANAGE_BOND_CURVES_ROLE on CSAccounting after vote"
         assert cs_accounting.getCurvesCount() == len(
@@ -1968,7 +1973,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         ics_curve = cs_accounting.getCurveInfo(ics_curve_id)[0]
         validate_added_bond_curve(ics_curve, CS_ICS_GATE_BOND_CURVE)
 
-        # Step 1.53: Increase CSM share in Staking Router
+        # Step 1.59: Increase CSM share in Staking Router
         csm_module_after = staking_router.getStakingModule(CS_MODULE_ID)
         csm_share_after = csm_module_after['stakeShareLimit']
         assert csm_share_after == CS_MODULE_NEW_TARGET_SHARE_BP, f"CSM share should be {CS_MODULE_NEW_TARGET_SHARE_BP} after vote, but got {csm_share_after}"
@@ -1983,7 +1988,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert validators_exit_bus_oracle.hasRole(validators_exit_bus_oracle.PAUSE_ROLE(),NEW_TW_GATE_SEAL), "New TW GateSeal should have PAUSE_ROLE on VEBO after vote"
         assert triggerable_withdrawals_gateway.hasRole(triggerable_withdrawals_gateway.PAUSE_ROLE(), NEW_TW_GATE_SEAL), "New TW GateSeal should have PAUSE_ROLE on TWG after vote"
 
-        # Steps 1.64-1.66: Validate ResealManager roles
+        # Steps 1.65-1.66: Validate ResealManager roles
         assert triggerable_withdrawals_gateway.hasRole(triggerable_withdrawals_gateway.PAUSE_ROLE(),
                                                        RESEAL_MANAGER), "ResealManager should have PAUSE_ROLE on TWG after vote"
         assert triggerable_withdrawals_gateway.hasRole(triggerable_withdrawals_gateway.RESUME_ROLE(),
