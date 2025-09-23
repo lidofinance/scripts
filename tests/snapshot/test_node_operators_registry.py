@@ -255,7 +255,11 @@ def assert_rewards_distribution(before, after):
     rewards_distribution_after = after["rewards_distribution"].dict()
 
     for i in range(after["active_node_operators_count"]):
-        assert rewards_distribution_before["recipients"][i] == rewards_distribution_after["recipients"][i]
+        if rewards_distribution_before["recipients"][i] == "0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91":
+            assert rewards_distribution_after["recipients"][i] == "0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
+        else:
+            assert rewards_distribution_before["recipients"][i] == rewards_distribution_after["recipients"][i]
+
         assert almost_eq(
             rewards_distribution_before["shares"][i],
             rewards_distribution_after["shares"][i],
