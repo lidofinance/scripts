@@ -56,7 +56,7 @@ def test_initialize(contract):
         contract.initialize(
             contracts.lido_locator,
             CURATED_STAKING_MODULE_TYPE,
-            CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
+            NOR_EXIT_DEADLINE_IN_SEC,
             {"from": contracts.voting},
         )
 
@@ -75,7 +75,7 @@ def test_petrified():
         contract.initialize(
             contracts.lido_locator,
             CURATED_STAKING_MODULE_TYPE,
-            CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY,
+            NOR_EXIT_DEADLINE_IN_SEC,
             {"from": contracts.voting},
         )
 

@@ -454,6 +454,10 @@ class ContractsLazyLoader:
     def emergency_governance(self) -> interface.EmergencyGovernance:
         return interface.EmergencyGovernance(DAO_EMERGENCY_GOVERNANCE)
 
+    @property
+    def triggerable_withdrawals_gateway(self) -> interface.TriggerableWithdrawalsGateway:
+        return interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY)
+
 
 def __getattr__(name: str) -> Any:
     if name == "contracts":
