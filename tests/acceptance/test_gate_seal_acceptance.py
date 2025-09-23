@@ -63,6 +63,9 @@ def test_veb_twg_gate_seal(veb_twg_contract: Contract, gate_seal_committee: Acco
     assert veb_twg_contract.get_expiry_timestamp() == GATE_SEAL_EXPIRY_TIMESTAMP
     assert not veb_twg_contract.is_expired()
 
+    _check_role(contracts.validators_exit_bus_oracle, "RESUME_ROLE", reseal_manager.address)
+    _check_role(contracts.triggerable_withdrawals_gateway, "RESUME_ROLE", reseal_manager.address)
+
 
 def _check_role(contract: Contract, role: str, holder: str):
     role_bytes = web3.keccak(text=role).hex()
