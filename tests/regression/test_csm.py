@@ -11,7 +11,6 @@ from utils.config import (
     EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY,
 )
 from utils.dsm import UnvetArgs, to_bytes, set_single_guardian
-from utils.evm_script import encode_error
 from utils.staking_module import calc_module_reward_shares
 from utils.test.csm_helpers import csm_add_node_operator, csm_upload_keys, get_ics_members, csm_add_ics_node_operator
 from utils.test.deposits_helpers import fill_deposit_buffer
@@ -82,9 +81,28 @@ def strikes():
 
 
 @pytest.fixture
-def node_operator(csm, permissionless_gate, accounting, accounts) -> int:
-    address = accounts[7].address
-    return csm_add_node_operator(csm, permissionless_gate, accounting, address)
+def depositable_node_operator(csm, accounting, permissionless_gate, stranger):
+    increase_staking_module_share(module_id=CSM_MODULE_ID, share_multiplier=2)
+    csm.cleanDepositQueue(2 * csm.getNonce(), {"from": stranger.address})
+    for queue_priority in range(1, 6):
+        deposit_batch = csm.depositQueueItem(queue_priority, csm.depositQueuePointers(queue_priority)["head"])
+        if deposit_batch:
+            node_operator_id = (deposit_batch >> 192) & ((1 << 64) - 1)
+            keys_count = (deposit_batch >> 128) & ((1 << 64) - 1)
+            break
+    else:
+        address = accounts[7].address
+        keys_count = 5
+        node_operator_id = csm_add_node_operator(csm, permissionless_gate, accounting, address, keys_count=keys_count)
+    return node_operator_id, keys_count
+
+
+@pytest.fixture
+def node_operator(depositable_node_operator, csm, accounting) -> int:
+    node_operator, keys_count = depositable_node_operator
+    fill_deposit_buffer(keys_count)
+    contracts.lido.deposit(keys_count, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
+    return node_operator
 
 
 @pytest.fixture
@@ -104,28 +122,6 @@ def remove_stake_limit():
 
 
 @pytest.fixture
-def deposits_to_csm(csm, pause_modules, node_operator, remove_stake_limit):
-    (_, _, depositable) = csm.getStakingModuleSummary()
-    fill_deposit_buffer(depositable)
-    increase_staking_module_share(module_id=CSM_MODULE_ID, share_multiplier=2)
-
-    if contracts.withdrawal_queue.isBunkerModeActive():
-        # Disable bunker mode to allow deposits
-        web3.provider.make_request(
-            "hardhat_setStorageAt",
-            [
-                contracts.withdrawal_queue.address,
-                web3.keccak(text="lido.WithdrawalQueue.bunkerModeSinceTimestamp").hex(),
-                web3.to_hex(2**256 - 1)  # type(uint256).max
-            ],
-        )
-        assert not contracts.withdrawal_queue.isBunkerModeActive()
-
-    for i in range(0, depositable, MAX_DEPOSITS):
-        contracts.lido.deposit(MAX_DEPOSITS, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
-
-
-@pytest.fixture
 def ref_slot():
     wait_to_next_available_report_time(contracts.csm_hash_consensus)
     ref_slot, _ = contracts.csm_hash_consensus.getCurrentFrame()
@@ -135,14 +131,15 @@ def ref_slot():
 def distribute_reward_tree(node_operator, ref_slot):
     consensus_version = contracts.cs_fee_oracle.getConsensusVersion()
     oracle_version = contracts.cs_fee_oracle.getContractVersion()
-    claimable_shares = contracts.cs_fee_distributor.totalClaimableShares()
+    distributed_before = contracts.lido.sharesOf(contracts.cs_fee_distributor)
+    claimed_before = contracts.cs_fee_distributor.distributedShares(node_operator)
 
     rewards = ETH(0.05)
     oracle_report(cl_diff=rewards)
-    distributed_shares = contracts.lido.sharesOf(contracts.cs_fee_distributor) - claimable_shares
+    distributed_shares = contracts.lido.sharesOf(contracts.cs_fee_distributor) - distributed_before
     assert distributed_shares > 0
 
-    report, report_hash, tree = prepare_csm_report({node_operator: distributed_shares}, ref_slot)
+    report, report_hash, tree = prepare_csm_report({node_operator: claimed_before + distributed_shares}, ref_slot, distributed_shares)
 
     submitter = reach_consensus(
         ref_slot,
@@ -152,7 +149,7 @@ def distribute_reward_tree(node_operator, ref_slot):
     )
 
     contracts.cs_fee_oracle.submitReportData(report, oracle_version, {"from": submitter})
-    return tree
+    return distributed_shares, tree.tree
 
 
 def get_sys_fee_to_eject():
@@ -185,20 +182,16 @@ def test_add_node_operator_permissionless(csm, permissionless_gate, accounting, 
 
 
 @pytest.mark.usefixtures("pause_modules")
-def test_deposit(node_operator, csm, remove_stake_limit):
-    (_, _, depositable_validators_count) = csm.getStakingModuleSummary()
-    deposits_count = depositable_validators_count
-    fill_deposit_buffer(deposits_count)
-    increase_staking_module_share(module_id=CSM_MODULE_ID, share_multiplier=2)
-
-    for i in range(0, deposits_count, MAX_DEPOSITS):
-        contracts.lido.deposit(MAX_DEPOSITS, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
+def test_deposit(depositable_node_operator, csm, remove_stake_limit):
+    (node_operator, keys_count) = depositable_node_operator
+    fill_deposit_buffer(keys_count)
+    total_deposited_before = csm.getNodeOperator(node_operator)["totalDepositedKeys"]
+    contracts.lido.deposit(keys_count, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
 
     no = csm.getNodeOperator(node_operator)
-    assert no["totalDepositedKeys"] == no["totalAddedKeys"]
+    assert no["totalDepositedKeys"] == total_deposited_before + keys_count
 
 
-@pytest.mark.usefixtures("deposits_to_csm")
 def test_mint_rewards_happy_path(csm, fee_distributor):
     csm_shares_before = contracts.lido.sharesOf(csm)
     fee_distributor_shares_before = contracts.lido.sharesOf(fee_distributor)
@@ -222,7 +215,6 @@ def test_csm_target_limits(csm, node_operator):
     assert no["targetLimit"] == target_limit
 
 
-@pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_report_exited(csm, node_operator, extra_data_service):
     total_exited = csm.getStakingModuleSummary()["totalExitedValidators"]
     exited_keys = 5
@@ -240,7 +232,6 @@ def test_csm_report_exited(csm, node_operator, extra_data_service):
     assert no["totalExitedKeys"] == exited_keys
 
 
-@pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_get_staking_module_summary(csm, accounting, node_operator, extra_data_service, remove_stake_limit):
     (exited_before, deposited_before, depositable_before) = contracts.staking_router.getStakingModuleSummary(
         CSM_MODULE_ID
@@ -276,11 +267,10 @@ def test_csm_get_staking_module_summary(csm, accounting, node_operator, extra_da
     assert depositable_after == depositable_before + new_depositable
 
 
-@pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_get_node_operator_summary(csm, node_operator, extra_data_service):
     total_exited = csm.getStakingModuleSummary()["totalExitedValidators"]
     no = csm.getNodeOperator(node_operator)
-    exited_keys = 1
+    exited_keys = no["totalExitedKeys"] + 1
     extra_data = extra_data_service.collect(
         {(CSM_MODULE_ID, node_operator): exited_keys}, exited_keys, exited_keys
     )
@@ -294,8 +284,8 @@ def test_csm_get_node_operator_summary(csm, node_operator, extra_data_service):
     )
 
     summary = contracts.staking_router.getNodeOperatorSummary(CSM_MODULE_ID, node_operator)
-    assert summary["targetLimitMode"] == 0
-    assert summary["targetValidatorsCount"] == 0
+    assert summary["targetLimitMode"] == no["targetLimitMode"]
+    assert summary["targetValidatorsCount"] == no["targetLimit"]
     # DEPRECATED #
     assert summary["stuckValidatorsCount"] == 0
     assert summary["refundedValidatorsCount"] == 0
@@ -303,10 +293,12 @@ def test_csm_get_node_operator_summary(csm, node_operator, extra_data_service):
     ##############
     assert summary["totalExitedValidators"] == exited_keys
     assert summary["totalDepositedValidators"] == no["totalDepositedKeys"]
-    assert summary["depositableValidatorsCount"] == 0
+    assert summary["depositableValidatorsCount"] == no["depositableValidatorsCount"]
 
 
-def test_csm_decrease_vetted_keys(csm, node_operator, stranger):
+def test_csm_decrease_vetted_keys(csm, depositable_node_operator, stranger):
+    (node_operator, keys_count) = depositable_node_operator
+    total_added_keys = csm.getNodeOperator(node_operator)["totalAddedKeys"]
     block_number = web3.eth.get_block_number()
     block = web3.eth.get_block(block_number)
     staking_module_nonce = contracts.staking_router.getStakingModuleNonce(CSM_MODULE_ID)
@@ -316,7 +308,7 @@ def test_csm_decrease_vetted_keys(csm, node_operator, stranger):
         staking_module_id=CSM_MODULE_ID,
         nonce=staking_module_nonce,
         node_operator_ids=to_bytes(node_operator, 16),
-        vetted_signing_keys_counts=to_bytes(1, 32),
+        vetted_signing_keys_counts=to_bytes(total_added_keys - keys_count, 32),
     )
 
     set_single_guardian(contracts.deposit_security_module, contracts.agent, stranger)
@@ -324,10 +316,9 @@ def test_csm_decrease_vetted_keys(csm, node_operator, stranger):
     contracts.deposit_security_module.unvetSigningKeys(*unvet_args.to_tuple(), (0, 0), {"from": stranger.address})
 
     no = csm.getNodeOperator(node_operator)
-    assert no["totalVettedKeys"] == 1
+    assert no["totalVettedKeys"] == total_added_keys - keys_count
 
 
-@pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_penalize_node_operator(csm, accounting, node_operator, helpers):
     bond_shares_before = accounting.getBondShares(node_operator)
     withdrawal_info = (node_operator, 0, ETH(30))
@@ -337,7 +328,6 @@ def test_csm_penalize_node_operator(csm, accounting, node_operator, helpers):
     assert accounting.getBondShares(node_operator) == bond_shares_before - burnt_shares
 
 
-@pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_eth_bond(csm, accounting, node_operator):
     manager_address = csm.getNodeOperator(node_operator)["managerAddress"]
     set_balance_in_wei(manager_address, ETH(2))
@@ -348,7 +338,6 @@ def test_csm_eth_bond(csm, accounting, node_operator):
     assert accounting.getBondShares(node_operator) == bond_shares_before + shares
 
 
-@pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_steth_bond(csm, accounting, node_operator):
     manager_address = csm.getNodeOperator(node_operator)["managerAddress"]
     set_balance_in_wei(manager_address, ETH(2))
@@ -362,7 +351,6 @@ def test_csm_steth_bond(csm, accounting, node_operator):
     assert accounting.getBondShares(node_operator) == bond_shares_before + shares
 
 
-@pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_wsteth_bond(csm, accounting, node_operator):
     manager_address = csm.getNodeOperator(node_operator)["managerAddress"]
     set_balance_in_wei(manager_address, ETH(2))
@@ -381,25 +369,23 @@ def test_csm_wsteth_bond(csm, accounting, node_operator):
     assert accounting.getBondShares(node_operator) == bond_shares_before + shares
 
 
-@pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_claim_rewards_steth(csm, accounting, node_operator, ref_slot):
     reward_address = csm.getNodeOperator(node_operator)["rewardAddress"]
     shares_before = contracts.lido.sharesOf(reward_address)
-    accounting_shares_before = contracts.lido.sharesOf(contracts.cs_accounting)
 
-    tree = distribute_reward_tree(node_operator, ref_slot).tree
-    shares = tree.values[0]["value"][1]
-    proof = list(tree.get_proof(tree.find(tree.leaf((node_operator, shares)))))
+    distributed_shares, tree = distribute_reward_tree(node_operator, ref_slot)
+    cumulative_shares = tree.values[0]["value"][1]
+    proof = list(tree.get_proof(tree.find(tree.leaf((node_operator, cumulative_shares)))))
+    claimable_bond_shares_before = accounting.getClaimableBondShares(node_operator)
 
-    accounting.claimRewardsStETH(node_operator, ETH(1), shares, proof, {"from": reward_address})
+    accounting.claimRewardsStETH(node_operator, ETH(999), cumulative_shares, proof, {"from": reward_address})
+
     shares_after = contracts.lido.sharesOf(reward_address)
-    accounting_shares_after = contracts.lido.sharesOf(contracts.cs_accounting)
-    assert shares_after == shares_before + (accounting_shares_before + shares - accounting_shares_after)
+    assert shares_after == shares_before + distributed_shares + claimable_bond_shares_before
 
 
-@pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_claim_rewards_wsteth(csm, accounting, node_operator, ref_slot):
-    tree = distribute_reward_tree(node_operator, ref_slot).tree
+    _, tree = distribute_reward_tree(node_operator, ref_slot)
     shares = tree.values[0]["value"][1]
     proof = list(tree.get_proof(tree.find(tree.leaf((node_operator, shares)))))
     reward_address = csm.getNodeOperator(node_operator)["rewardAddress"]
@@ -409,9 +395,8 @@ def test_csm_claim_rewards_wsteth(csm, accounting, node_operator, ref_slot):
     assert contracts.wsteth.balanceOf(reward_address) > wsteth_before
 
 
-@pytest.mark.usefixtures("deposits_to_csm")
 def test_csm_claim_rewards_eth(csm, accounting, node_operator, ref_slot):
-    tree = distribute_reward_tree(node_operator, ref_slot).tree
+    _, tree = distribute_reward_tree(node_operator, ref_slot)
     shares = tree.values[0]["value"][1]
     proof = list(tree.get_proof(tree.find(tree.leaf((node_operator, shares)))))
     reward_address = csm.getNodeOperator(node_operator)["rewardAddress"]
@@ -423,10 +408,12 @@ def test_csm_claim_rewards_eth(csm, accounting, node_operator, ref_slot):
 
 
 def test_csm_remove_key(csm, parameters_registry, accounting, node_operator):
+    csm_upload_keys(csm, accounting, node_operator, 1)
+
     no = csm.getNodeOperator(node_operator)
     keys_before = no["totalAddedKeys"]
     manager_address = csm.getNodeOperator(node_operator)["managerAddress"]
-    tx = csm.removeKeys(node_operator, 0, 1, {"from": manager_address})
+    tx = csm.removeKeys(node_operator, keys_before - 1, 1, {"from": manager_address})
 
     assert "KeyRemovalChargeApplied" in tx.events
     assert "BondCharged" in tx.events
@@ -439,7 +426,6 @@ def test_csm_remove_key(csm, parameters_registry, accounting, node_operator):
     assert no["totalAddedKeys"] == keys_before - 1
 
 
-@pytest.mark.usefixtures("deposits_to_csm")
 def test_eject_bad_performer(csm, ejector, strikes, node_operator, stranger):
     index_to_eject = 0
     pubkey_to_eject = csm.getSigningKeys(node_operator, index_to_eject, 1)
@@ -480,7 +466,6 @@ def test_eject_bad_performer(csm, ejector, strikes, node_operator, stranger):
     assert tx.events["TriggeredExitFeeRecorded"]["withdrawalRequestRecordedFee"] == eject_payment_value
 
 
-@pytest.mark.usefixtures("deposits_to_csm")
 def test_voluntary_eject(csm, ejector, node_operator):
     eject_payment_value = get_sys_fee_to_eject()
     operator_address = csm.getNodeOperator(node_operator)["rewardAddress"]
@@ -517,7 +502,6 @@ def test_on_validator_exit_triggered(csm, node_operator):
     assert tx.events["TriggeredExitFeeRecorded"]["withdrawalRequestRecordedFee"] == eject_payment_value
 
 
-@pytest.mark.usefixtures("deposits_to_csm")
 def test_easy_track_csm_settle_el_stealing_penalty(csm, accounting, node_operator, stranger):
     manager_address = csm.getNodeOperator(node_operator)["managerAddress"]
     set_balance_in_wei(manager_address, ETH(2))
