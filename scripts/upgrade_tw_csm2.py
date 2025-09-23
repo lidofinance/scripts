@@ -404,7 +404,7 @@ def get_vote_items():
                 )
             ]
         ),
-        # "1.26. Call `finalizeUpgrade_v4(norExitDeadlineInSec = 345600) on Simple DVT Staking Module Node Operators Registry `0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433`",
+        # "1.26. Call `finalizeUpgrade_v4(norExitDeadlineInSec = 345600)` on Simple DVT Staking Module Node Operators Registry `0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433`",
         agent_forward(
             [
                 (
