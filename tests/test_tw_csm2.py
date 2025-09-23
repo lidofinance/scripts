@@ -26,13 +26,6 @@ from utils.test.event_validators.easy_track import validate_evmscript_factory_ad
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 from utils.test.event_validators.common import validate_events_chain
 
-CS_MODULE_ID = 3
-CS_MODULE_MODULE_FEE_BP = 600
-CS_MODULE_MAX_DEPOSITS_PER_BLOCK = 30
-CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
-CS_MODULE_TREASURY_FEE_BP = 400
-CS_GATE_SEAL_ADDRESS = "0x16Dbd4B85a448bE564f1742d5c8cCdD2bB3185D0"
-
 
 def validate_proxy_upgrade_event(event: EventDict, implementation: str, emitted_by: Optional[str] = None, events_chain: Optional[list] = None):
     _events_chain = events_chain or ["LogScriptCall", "Upgraded", "ScriptResult", "Executed"]
@@ -140,6 +133,28 @@ def validate_bond_curve_added_event(event: EventDict, curve_id: int, curve_inter
 
     assert event["BondCurveAdded"][0]["curveId"] == curve_id, "Wrong curve ID"
     assert event["BondCurveAdded"][0]["bondCurveIntervals"] == curve_intervals, "Wrong curve intervals"
+
+    if emitted_by is not None:
+        assert convert.to_address(event["BondCurveAdded"][0]["_emitted_by"]) == convert.to_address(
+            emitted_by), "Wrong event emitter"
+
+
+def validate_bond_curve_added_on_init_v2_events(event: EventDict, curves_intervals: list[tuple[list[int], list[int]]], emitted_by: Optional[str] = None):
+    _events_chain = ["LogScriptCall", "BondCurveAdded", "BondCurveAdded", 'Initialized', "ScriptResult", "Executed"]
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1
+    assert event.count("BondCurveAdded") == 2
+
+    assert "BondCurveAdded" in event, "No BondCurveAdded event found"
+
+    for curve_id, curve_intervals in enumerate(curves_intervals):
+        found = False
+        for e in event["BondCurveAdded"]:
+            if e["curveId"] == curve_id and e["bondCurveIntervals"] == curve_intervals:
+                found = True
+                break
+        assert found, f"Curve with ID {curve_id} and intervals {curve_intervals} not found"
 
     if emitted_by is not None:
         assert convert.to_address(event["BondCurveAdded"][0]["_emitted_by"]) == convert.to_address(
@@ -322,7 +337,9 @@ EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY = "0x8aa34dAaF0fC
 # Oracle consensus versions
 AO_CONSENSUS_VERSION = 4
 VEBO_CONSENSUS_VERSION = 4
-CSM_CONSENSUS_VERSION = 3
+
+CSM_CONSENSUS_OLD_VERSION = 2
+CSM_CONSENSUS_NEW_VERSION = 3
 
 EXIT_EVENTS_LOOKBACK_WINDOW_IN_SLOTS = 14 * 7200
 
@@ -337,10 +354,12 @@ CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS = "0x5DCF7cF7c6645E9E822a379dF046a8b0390251A1
 CS_FEE_ORACLE_IMPL_V2_ADDRESS = "0xe0B234f99E413E27D9Bc31aBba9A49A3e570Da97"
 CSM_IMPL_V2_ADDRESS = "0x1eB6d4da13ca9566c17F526aE0715325d7a07665"
 
+CS_EJECTOR_ADDRESS = "0xc72b58aa02E0e98cF8A4a0E9Dce75e763800802C"
+CS_PERMISSIONLESS_GATE_ADDRESS = "0xcF33a38111d0B1246A3F38a838fb41D626B454f0"
+CS_VETTED_GATE_ADDRESS = "0xB314D4A76C457c93150d308787939063F4Cc67E0"
+CS_VERIFIER_V2_ADDRESS = "0xdC5FE1782B6943f318E05230d688713a560063DC"
+CS_VERIFIER_ADDRESS_OLD = "0xeC6Cc185f671F627fb9b6f06C8772755F587b05d"
 CS_GATE_SEAL_V2_ADDRESS = "0xE1686C2E90eb41a48356c1cC7FaA17629af3ADB3"
-
-# CSM consensus version
-CSM_CONSENSUS_VERSION = 3
 
 # Bond curves for CS Accounting
 CS_CURVES = [
@@ -363,18 +382,6 @@ CS_MODULE_TARGET_SHARE_BP = 300  # Updated from 200 to 300 in vote 2025/07/16
 CS_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD = 375  # Updated from 250 to 375 in vote 2025/07/16
 CS_MODULE_MAX_DEPOSITS_PER_BLOCK = 30
 CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
-CS_EJECTOR_ADDRESS = "0xc72b58aa02E0e98cF8A4a0E9Dce75e763800802C"
-CS_PERMISSIONLESS_GATE_ADDRESS = "0xcF33a38111d0B1246A3F38a838fb41D626B454f0"
-CS_VETTED_GATE_ADDRESS = "0xB314D4A76C457c93150d308787939063F4Cc67E0"
-CS_VERIFIER_V2_ADDRESS = "0xdC5FE1782B6943f318E05230d688713a560063DC"
-
-CS_VERIFIER_ADDRESS_OLD = "0xeC6Cc185f671F627fb9b6f06C8772755F587b05d"
-
-CS_CURVES = [
-    ([1, 2.4 * 10 ** 18], [2, 1.3 * 10 ** 18]),  # Default Curve
-    ([1, 1.5 * 10 ** 18], [2, 1.3 * 10 ** 18]),  # Legacy EA Curve
-]
-CS_ICS_GATE_BOND_CURVE = ([1, 1.5 * 10 ** 18], [2, 1.3 * 10 ** 18])  # Identified Community Stakers Gate Bond Curve
 
 # Contract versions expected after upgrade
 CSM_V2_VERSION = 2
@@ -707,7 +714,7 @@ def dual_governance_proposal_calls():
 
         # 1.39. Call finalizeUpgradeV2(consensusVersion) on CSFeeOracle contract
         agent_forward([
-            (cs_fee_oracle.address, cs_fee_oracle.finalizeUpgradeV2.encode_input(CSM_CONSENSUS_VERSION))
+            (cs_fee_oracle.address, cs_fee_oracle.finalizeUpgradeV2.encode_input(CSM_CONSENSUS_NEW_VERSION))
         ]),
 
         # 1.40. Upgrade CSFeeDistributor implementation on proxy
@@ -1306,7 +1313,16 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             csm_share_before = csm_module_before['stakeShareLimit']
             csm_priority_exit_threshold_before = csm_module_before['priorityExitShareThreshold']
             assert csm_share_before != CS_MODULE_NEW_TARGET_SHARE_BP, f"CSM share should not be {CS_MODULE_NEW_TARGET_SHARE_BP} before vote, current: {csm_share_before}"
+            assert csm_share_before == CS_MODULE_TARGET_SHARE_BP, f"CSM share should be {CS_MODULE_TARGET_SHARE_BP} before vote, current: {csm_share_before}"
             assert csm_priority_exit_threshold_before != CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP, f"CSM priority exit threshold should not be {CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP} before vote, current: {csm_priority_exit_threshold_before}"
+            assert csm_priority_exit_threshold_before == CS_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD, f"CSM priority exit threshold should be {CS_MODULE_PRIORITY_EXIT_THRESHOLD_BP} before vote, current: {csm_priority_exit_threshold_before}"
+
+            assert csm_module_before['name'] == CS_MODULE_NAME, "CSM module name should not change before vote"
+            assert csm_module_before['stakingModuleAddress'] == CSM_ADDRESS, "CSM module address should not change before vote"
+            assert csm_module_before['stakingModuleFee'] == CS_MODULE_MODULE_FEE_BP, "CSM module fee should not change before vote"
+            assert csm_module_before['treasuryFee'] == CS_MODULE_TREASURY_FEE_BP, "CSM treasury fee should not change before vote"
+            assert csm_module_before['maxDepositsPerBlock'] == CS_MODULE_MAX_DEPOSITS_PER_BLOCK, "CSM max deposits per block should not change before vote"
+            assert csm_module_before['minDepositBlockDistance'] == CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE, "CSM min deposit block distance should not change before vote"
 
             # Steps 1.60-1.64: Gate Seals - Check initial states before vote
             assert withdrawal_queue.hasRole(withdrawal_queue.PAUSE_ROLE(), OLD_GATE_SEAL_ADDRESS), "Old GateSeal should have PAUSE_ROLE on WithdrawalQueue before vote"
@@ -1547,6 +1563,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 # 36. CSAccounting finalize upgrade with bond curves
                 assert 'BondCurveAdded' in dg_events[36]
                 assert len(dg_events[36]['BondCurveAdded']) == len(CS_CURVES)
+                validate_bond_curve_added_on_init_v2_events(dg_events[36], CS_CURVES, emitted_by=cs_accounting)
                 assert 'Initialized' in dg_events[36]
                 assert dg_events[36]['Initialized'][0]['version'] == CS_ACCOUNTING_V2_VERSION
 
@@ -1555,7 +1572,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                                              emitted_by=cs_fee_oracle)
 
                 # 38. CSFeeOracle finalize upgrade with consensus version
-                validate_consensus_version_set_event(dg_events[38], new_version=3, prev_version=2,
+                validate_consensus_version_set_event(dg_events[38], new_version=CSM_CONSENSUS_NEW_VERSION, prev_version=CSM_CONSENSUS_OLD_VERSION,
                                                      emitted_by=cs_fee_oracle,
                                                      events_chain=["LogScriptCall", "ConsensusVersionSet", "ContractVersionSet", "ScriptResult", "Executed"])
                 validate_contract_version_set_event(dg_events[38], version=CS_FEE_ORACLE_V2_VERSION,
@@ -1568,6 +1585,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # 40. CSFeeDistributor finalize upgrade
                 assert 'RebateRecipientSet' in dg_events[40]
+                assert dg_events[40]['RebateRecipientSet'][0]['recipient'] == agent.address
                 assert 'Initialized' in dg_events[40]
                 assert dg_events[40]['Initialized'][0]['version'] == CS_FEE_DISTRIBUTOR_V2_VERSION
 
@@ -1900,7 +1918,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         # Step 1.39: Validate CSFeeOracle finalizeUpgradeV2 was called with consensus version 3
         assert cs_fee_oracle.getContractVersion() == CS_FEE_ORACLE_V2_VERSION, f"CSFeeOracle version should be {CS_FEE_ORACLE_V2_VERSION} after vote"
-        assert cs_fee_oracle.getConsensusVersion() == CSM_CONSENSUS_VERSION, "CSFeeOracle consensus version should be 3 after vote"
+        assert cs_fee_oracle.getConsensusVersion() == CSM_CONSENSUS_NEW_VERSION, "CSFeeOracle consensus version should be 3 after vote"
 
         # Step 1.40: Validate CSFeeDistributor implementation upgrade
         check_proxy_implementation(cs_fee_distributor.address, CS_FEE_DISTRIBUTOR_IMPL_V2_ADDRESS)
@@ -1980,6 +1998,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         csm_priority_exit_threshold_after = csm_module_after['priorityExitShareThreshold']
         assert csm_priority_exit_threshold_after == CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP, f"CSM priority exit threshold should be {CS_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP} after vote, but got {csm_priority_exit_threshold_after}"
+
+        assert csm_module_after['stakingModuleAddress'] == csm_module_before['stakingModuleAddress']
+        assert csm_module_after['stakingModuleFee'] == csm_module_before['stakingModuleFee']
+        assert csm_module_after['treasuryFee'] == csm_module_before['treasuryFee']
+        assert csm_module_after['status'] == csm_module_before['status']
+        assert csm_module_after['name'] == csm_module_before['name']
+        assert csm_module_after['lastDepositAt'] == csm_module_before['lastDepositAt']
+        assert csm_module_after['lastDepositBlock'] == csm_module_before['lastDepositBlock']
+        assert csm_module_after['exitedValidatorsCount'] == csm_module_before['exitedValidatorsCount']
+        assert csm_module_after['maxDepositsPerBlock'] == csm_module_before['maxDepositsPerBlock']
+        assert csm_module_after['minDepositBlockDistance'] == csm_module_before['minDepositBlockDistance']
 
         # Steps 1.60-1.64: Validate Gate Seals updates
         assert not withdrawal_queue.hasRole(withdrawal_queue.PAUSE_ROLE(), OLD_GATE_SEAL_ADDRESS), "Old GateSeal should not have PAUSE_ROLE on WithdrawalQueue after vote"
