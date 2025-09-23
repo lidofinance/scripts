@@ -858,14 +858,14 @@ def get_vote_items():
             ),
         ),
         (
-            "3. Add SubmitValidatorsExitRequestHashes (Simple DVT) EVM script factory `0xAa3D6A8B52447F272c1E8FAaA06EA06658bd95E2` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` with permissions `submitExitRequestsHash`",
+            "3. Add SubmitValidatorsExitRequestHashes (Simple DVT) EVM script factory `0xB7668B5485d0f826B86a75b0115e088bB9ee03eE` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` with permissions `submitExitRequestsHash`",
             add_evmscript_factory(
                 factory=EASYTRACK_SDVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
                 permissions=(create_permissions(validator_exit_bus_oracle, "submitExitRequestsHash")),
             ),
         ),
         (
-            "4. Add SubmitValidatorsExitRequestHashes (Curated Module) EVM script factory `0x397206ecdbdcb1A55A75e60Fc4D054feC72E5f63` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` with permissions `submitExitRequestsHash`",
+            "4. Add SubmitValidatorsExitRequestHashes (Curated Module) EVM script factory `0x8aa34dAaF0fC263203A15Bcfa0Ed926D466e59F3` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` with permissions `submitExitRequestsHash`",
             add_evmscript_factory(
                 factory=EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY,
                 permissions=(create_permissions(validator_exit_bus_oracle, "submitExitRequestsHash")),
