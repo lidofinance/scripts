@@ -108,7 +108,7 @@ def prepare_exit_bus_report(validators_to_exit, ref_slot):
     return report, report_hash
 
 
-def prepare_csm_report(node_operators_rewards: dict, ref_slot):
+def prepare_csm_report(node_operators_rewards: dict, ref_slot, distributed_shares):
     consensus_version = contracts.cs_fee_oracle.getConsensusVersion()
     shares = node_operators_rewards.copy()
     if len(shares) < 2:
@@ -126,7 +126,7 @@ def prepare_csm_report(node_operators_rewards: dict, ref_slot):
         tree.root,
         str(tree_cid),
         str(log_cid),
-        sum(shares.values()),
+        distributed_shares,
         0,  # rebate
         HexBytes(ZERO_HASH),  # strikesTreeRoot
         "",  # strikesTreeCid
