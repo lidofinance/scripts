@@ -281,7 +281,7 @@ def check_proxy_implementation(proxy_address, expected_impl):
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.upgrade_tw_csm2 import start_vote, get_vote_items, encode_wv_proxy_upgrade_to
+from archive.scripts.upgrade_tw_csm2 import start_vote, get_vote_items, encode_wv_proxy_upgrade_to
 
 # ============================================================================
 # ============================== Constants ===================================

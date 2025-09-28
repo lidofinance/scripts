@@ -1,7 +1,7 @@
 """
 Upgrade to CSM v2, enable Triggerable Withdrawals, update the reward address and name for Node Operator ID 25 `Nethermind`, rotate Kiln Deposit Security Committee address
 
-# TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
+Vote passed & executed on Sep-28-2025 03:34:35 PM UTC, block 23462419
 """
 
 import time
