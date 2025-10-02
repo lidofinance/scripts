@@ -87,9 +87,7 @@ def process_proposals(proposal_ids: Sequence[int]):
 
     if len(scheduled_proposals):
         chain.sleep(after_schedule_delay + 1)
-        # wait_for_noon_utc_to_satisfy_time_constrains()
-        # 13 - 19 UTC is the time window for TW deploy
-        wait_for_time_window(13, 19)
+        wait_for_noon_utc_to_satisfy_time_constrains()
 
         for proposal_id in scheduled_proposals:
             contracts.emergency_protected_timelock.execute(proposal_id, {"from": stranger})
