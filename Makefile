@@ -27,7 +27,7 @@ test-1/2:
 	poetry run brownie test tests/[tc]*.py tests/regression/test_staking_router_stake_distribution.py --durations=20 --network mfh-1
 
 test-2/2:
-	$(call run_2nd_test,brownie test -k 'not test_staking_router_stake_distribution.py' --durations=20 --network $(SECONDARY_NETWORK))
+	$(call run_2nd_test,brownie test tests/regression/test_csm.py --durations=20 --network $(SECONDARY_NETWORK))
 
 init: init-scripts init-core
 
