@@ -170,6 +170,7 @@ class Helpers:
             # add contracts here to fetch the abis from etherscan
             # Use next format to fetch the abi:
             # Contract.from_explorer(<contract_address>)
+            Contract.from_explorer(contracts.cs_exit_penalties.address)
 
             Helpers._etherscan_is_fetched = True
 

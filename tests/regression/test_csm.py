@@ -468,7 +468,7 @@ def test_eject_bad_performer(csm, ejector, strikes, node_operator, stranger):
 
 def test_voluntary_eject(csm, ejector, node_operator):
     eject_payment_value = get_sys_fee_to_eject()
-    operator_address = csm.getNodeOperator(node_operator)["rewardAddress"]
+    operator_address = csm.getNodeOperatorOwner(node_operator)
 
     tx = ejector.voluntaryEject(
         node_operator, 0, 1, ZERO_ADDRESS, {"value": eject_payment_value, "from": operator_address}
