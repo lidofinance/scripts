@@ -22,7 +22,7 @@ def cover_wq_demand_and_submit(depositable_eth):
     withdrawal_unfinalized_steth = withdrawal_queue.unfinalizedStETH()
 
     eth_debt = max(0, withdrawal_unfinalized_steth - buffered_ether_before_submit)
-    eth_to_submit = depositable_eth + 12 + eth_debt + WEI_TOLERANCE
+    eth_to_submit = depositable_eth + eth_debt + WEI_TOLERANCE
 
     eth_whale = accounts.at(staking_router.DEPOSIT_CONTRACT(), force=True)
 
