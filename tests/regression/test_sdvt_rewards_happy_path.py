@@ -108,8 +108,7 @@ def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participa
 
     # fill the deposit buffer
     deposits_count = 10
-    fill_deposit_buffer(deposits_count)
-
+    fill_deposit_buffer(deposits_count, heuristic=10000)
     # deposit to simple dvt
     module_summary_before = staking_router.getStakingModuleSummary(simple_dvt_module_id)
     lido.deposit(deposits_count, simple_dvt_module_id, "0x", {"from": deposit_security_module})

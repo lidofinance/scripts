@@ -304,6 +304,7 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, st
     assert first_no_summary_after["depositableValidatorsCount"] == 0
     assert first_no_summary_after["targetLimitMode"] == 1
 
+    fill_deposit_buffer(50, heuristic=10000)
     # Deposit
     (
         no1_deposited_keys_before,
