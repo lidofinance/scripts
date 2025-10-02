@@ -255,10 +255,7 @@ def assert_rewards_distribution(before, after):
     rewards_distribution_after = after["rewards_distribution"].dict()
 
     for i in range(after["active_node_operators_count"]):
-        if rewards_distribution_before["recipients"][i] == "0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91":
-            assert rewards_distribution_after["recipients"][i] == "0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
-        else:
-            assert rewards_distribution_before["recipients"][i] == rewards_distribution_after["recipients"][i]
+        assert rewards_distribution_before["recipients"][i] == rewards_distribution_after["recipients"][i]
 
         assert almost_eq(
             rewards_distribution_before["shares"][i],
@@ -273,14 +270,8 @@ def assert_node_operators(before: Dict[str, ReturnValue], after: Dict[str, Retur
         node_operator_before = node_operators_pair[0]
         node_operator_after = node_operators_pair[1]
         assert node_operator_before["active"] == node_operator_after["active"]
-        if id == 25:
-            assert node_operator_before["name"] == "Nethermind"
-            assert node_operator_after["name"] == "Twinstake"
-            assert node_operator_before["rewardAddress"] == "0x237DeE529A47750bEcdFa8A59a1D766e3e7B5F91"
-            assert node_operator_after["rewardAddress"] == "0x36201ed66DbC284132046ee8d99272F8eEeb24c8"
-        else:
-            assert node_operator_before["name"] == node_operator_after["name"]
-            assert node_operator_before["rewardAddress"] == node_operator_after["rewardAddress"]
+        assert node_operator_before["name"] == node_operator_after["name"]
+        assert node_operator_before["rewardAddress"] == node_operator_after["rewardAddress"]
         assert node_operator_before["totalDepositedValidators"] == node_operator_after["totalDepositedValidators"]
         assert node_operator_before["totalExitedValidators"] == node_operator_after["totalExitedValidators"]
         assert node_operator_before["totalAddedValidators"] == node_operator_after["totalAddedValidators"]

@@ -139,8 +139,7 @@ def do_snapshot(guardian: Account, some_eoa: Account):
                 "getGuardianIndex(negative)": dsm.getGuardianIndex(accounts[0].address),
                 "getGuardianIndex(changes)": dsm.getGuardianIndex(some_eoa.address),
                 "getGuardianQuorum": dsm.getGuardianQuorum(),
-                # NOTE: Uncomment line below after 23.09.2025 vote enacted
-                # "getGuardians": dsm.getGuardians(),
+                "getGuardians": dsm.getGuardians(),
                 "isGuardian(positive)": dsm.isGuardian(guardian.address),
                 "isGuardian(negative)": dsm.isGuardian(accounts[0].address),
                 "isGuardian(changes)": dsm.isGuardian(some_eoa.address),
