@@ -2,6 +2,7 @@ import pytest
 
 from brownie import reverts, web3, ZERO_ADDRESS, accounts, chain
 
+from tests.conftest import Helpers
 from utils.balance import set_balance_in_wei
 from utils.config import (
     contracts,
@@ -33,6 +34,11 @@ contracts: ContractsLazyLoader = contracts
 
 CSM_MODULE_ID = 3
 MAX_DEPOSITS = 50
+
+
+@pytest.fixture(scope="module", autouse=True)
+def prefetch_contracts_from_etherscan():
+    Helpers.prefetch_contracts_from_etherscan()
 
 
 @pytest.fixture(scope="module")
@@ -468,7 +474,7 @@ def test_eject_bad_performer(csm, ejector, strikes, node_operator, stranger):
 
 def test_voluntary_eject(csm, ejector, node_operator):
     eject_payment_value = get_sys_fee_to_eject()
-    operator_address = csm.getNodeOperator(node_operator)["rewardAddress"]
+    operator_address = csm.getNodeOperatorOwner(node_operator)
 
     tx = ejector.voluntaryEject(
         node_operator, 0, 1, ZERO_ADDRESS, {"value": eject_payment_value, "from": operator_address}
