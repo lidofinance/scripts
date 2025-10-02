@@ -2,6 +2,7 @@ import pytest
 
 from brownie import reverts, web3, ZERO_ADDRESS, accounts, chain
 
+from tests.conftest import Helpers
 from utils.balance import set_balance_in_wei
 from utils.config import (
     contracts,
@@ -33,6 +34,11 @@ contracts: ContractsLazyLoader = contracts
 
 CSM_MODULE_ID = 3
 MAX_DEPOSITS = 50
+
+
+@pytest.fixture(scope="module", autouse=True)
+def prefetch_contracts_from_etherscan():
+    Helpers.prefetch_contracts_from_etherscan()
 
 
 @pytest.fixture(scope="module")

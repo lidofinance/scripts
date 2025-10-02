@@ -153,7 +153,7 @@ class Helpers:
             print(f"vote #{vote_id} executed")
             execution_transactions.append(tx)
 
-        Helpers._prefetch_contracts_from_etherscan()
+        Helpers.prefetch_contracts_from_etherscan()
 
         return execution_transactions
 
@@ -163,7 +163,7 @@ class Helpers:
         return vote_status[1]
 
     @staticmethod
-    def _prefetch_contracts_from_etherscan():
+    def prefetch_contracts_from_etherscan():
         if not Helpers._etherscan_is_fetched:
             print(f"prefetch contracts from Etherscan to parse events")
             # In case of issue with events parsing from local abi
