@@ -13,7 +13,10 @@ from utils.config import (
 )
 from utils.dsm import UnvetArgs, to_bytes, set_single_guardian
 from utils.staking_module import calc_module_reward_shares
-from utils.test.csm_helpers import csm_add_node_operator, csm_upload_keys, get_ics_members, csm_add_ics_node_operator
+from utils.test.csm_helpers import (
+    csm_add_node_operator, csm_upload_keys, csm_add_ics_node_operator,
+    csm_set_ics_tree_members,
+)
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.easy_track_helpers import _encode_calldata
 from utils.test.helpers import ETH
@@ -90,7 +93,7 @@ def strikes():
 def depositable_node_operator(csm, accounting, permissionless_gate, stranger):
     increase_staking_module_share(module_id=CSM_MODULE_ID, share_multiplier=2)
     csm.cleanDepositQueue(2 * csm.getNonce(), {"from": stranger.address})
-    for queue_priority in range(1, 6):
+    for queue_priority in range(0, 6):
         deposit_batch = csm.depositQueueItem(queue_priority, csm.depositQueuePointers(queue_priority)["head"])
         if deposit_batch:
             node_operator_id = (deposit_batch >> 192) & ((1 << 64) - 1)
@@ -167,14 +170,17 @@ def get_sys_fee_to_eject():
     return int.from_bytes(val, "big")
 
 
-@pytest.mark.parametrize("address, proof", get_ics_members())
-def test_add_node_operator_ics(csm, vetted_gate, accounting, address, proof):
-    no_id = csm_add_ics_node_operator(csm, vetted_gate, accounting, address, proof)
-    no = csm.getNodeOperator(no_id)
+def test_add_node_operators_ics(csm, vetted_gate, accounting, accounts):
+    members = [account.address for account in accounts[3:5]]
+    tree = csm_set_ics_tree_members(members)
+    for address in members:
+        proof = list(tree.tree.get_proof(tree.tree.find(tree.tree.leaf([address]))))
+        no_id = csm_add_ics_node_operator(csm, vetted_gate, accounting, address, proof)
+        no = csm.getNodeOperator(no_id)
 
-    assert no["managerAddress"] == address
-    assert no["rewardAddress"] == address
-    assert accounting.getBondCurveId(no_id) == vetted_gate.curveId()
+        assert no["managerAddress"] == address
+        assert no["rewardAddress"] == address
+        assert accounting.getBondCurveId(no_id) == vetted_gate.curveId()
 
 
 def test_add_node_operator_permissionless(csm, permissionless_gate, accounting, accounts):
@@ -424,18 +430,19 @@ def test_csm_remove_key(csm, parameters_registry, accounting, node_operator):
     assert "KeyRemovalChargeApplied" in tx.events
     assert "BondCharged" in tx.events
 
+    curve_id = accounting.getBondCurveId(node_operator)
     expected_charge_amount = contracts.lido.getPooledEthByShares(
-        contracts.lido.getSharesByPooledEth(parameters_registry.getKeyRemovalCharge(accounting.DEFAULT_BOND_CURVE_ID()))
+        contracts.lido.getSharesByPooledEth(parameters_registry.getKeyRemovalCharge(curve_id))
     )
     assert tx.events["BondCharged"]["toChargeAmount"] == expected_charge_amount
     no = csm.getNodeOperator(node_operator)
     assert no["totalAddedKeys"] == keys_before - 1
 
 
-def test_eject_bad_performer(csm, ejector, strikes, node_operator, stranger):
+def test_eject_bad_performer(csm, accounting, ejector, strikes, node_operator, stranger):
     index_to_eject = 0
     pubkey_to_eject = csm.getSigningKeys(node_operator, index_to_eject, 1)
-    leaf_to_eject = (node_operator, pubkey_to_eject, [1, 1, 1, 0, 0, 0])
+    leaf_to_eject = (node_operator, pubkey_to_eject, [1, 1, 1, 1, 1, 1])
     another_pubkey = csm.getSigningKeys(node_operator, index_to_eject + 1, 1)
     strikes_tree = StrikesTree.new(
         [leaf_to_eject, (node_operator, another_pubkey, [1, 1, 0, 0, 0, 0])]
@@ -450,7 +457,7 @@ def test_eject_bad_performer(csm, ejector, strikes, node_operator, stranger):
 
     eject_payment_value = get_sys_fee_to_eject()
 
-    bad_performer = (node_operator, index_to_eject, [1, 1, 1, 0, 0, 0])
+    bad_performer = (node_operator, index_to_eject, [1, 1, 1, 1, 1, 1])
     tx = strikes.processBadPerformanceProof(
         [bad_performer],
         proof,
@@ -461,7 +468,9 @@ def test_eject_bad_performer(csm, ejector, strikes, node_operator, stranger):
     assert "StrikesPenaltyProcessed" in tx.events
     assert tx.events["StrikesPenaltyProcessed"]["nodeOperatorId"] == node_operator
     assert tx.events["StrikesPenaltyProcessed"]["pubkey"] == pubkey_to_eject
-    penalty = contracts.cs_parameters_registry.defaultBadPerformancePenalty()
+
+    curve_id = accounting.getBondCurveId(node_operator)
+    penalty = contracts.cs_parameters_registry.getBadPerformancePenalty(curve_id)
     assert tx.events["StrikesPenaltyProcessed"]["strikesPenalty"] == penalty
 
     assert "TriggeredExitFeeRecorded" in tx.events
@@ -482,7 +491,7 @@ def test_voluntary_eject(csm, ejector, node_operator):
     assert "TriggeredExitFeeRecorded" not in tx.events
 
 
-def test_report_validator_exit_delay(csm, node_operator):
+def test_report_validator_exit_delay(csm, accounting, parameters_registry, node_operator):
     pubkey = csm.getSigningKeys(node_operator, 0, 1)
     day_in_seconds = 60 * 60 * 24
 
@@ -490,7 +499,9 @@ def test_report_validator_exit_delay(csm, node_operator):
     assert "ValidatorExitDelayProcessed" in tx.events
     assert tx.events["ValidatorExitDelayProcessed"]["nodeOperatorId"] == node_operator
     assert tx.events["ValidatorExitDelayProcessed"]["pubkey"] == pubkey
-    penalty = contracts.cs_parameters_registry.defaultExitDelayPenalty()
+
+    curve_id = accounting.getBondCurveId(node_operator)
+    penalty = parameters_registry.getExitDelayPenalty(curve_id)
     assert tx.events["ValidatorExitDelayProcessed"]["delayPenalty"] == penalty
 
 
