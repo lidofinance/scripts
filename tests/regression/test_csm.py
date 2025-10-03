@@ -430,18 +430,19 @@ def test_csm_remove_key(csm, parameters_registry, accounting, node_operator):
     assert "KeyRemovalChargeApplied" in tx.events
     assert "BondCharged" in tx.events
 
+    curve_id = accounting.getBondCurveId(node_operator)
     expected_charge_amount = contracts.lido.getPooledEthByShares(
-        contracts.lido.getSharesByPooledEth(parameters_registry.getKeyRemovalCharge(accounting.DEFAULT_BOND_CURVE_ID()))
+        contracts.lido.getSharesByPooledEth(parameters_registry.getKeyRemovalCharge(curve_id))
     )
     assert tx.events["BondCharged"]["toChargeAmount"] == expected_charge_amount
     no = csm.getNodeOperator(node_operator)
     assert no["totalAddedKeys"] == keys_before - 1
 
 
-def test_eject_bad_performer(csm, ejector, strikes, node_operator, stranger):
+def test_eject_bad_performer(csm, accounting, ejector, strikes, node_operator, stranger):
     index_to_eject = 0
     pubkey_to_eject = csm.getSigningKeys(node_operator, index_to_eject, 1)
-    leaf_to_eject = (node_operator, pubkey_to_eject, [1, 1, 1, 0, 0, 0])
+    leaf_to_eject = (node_operator, pubkey_to_eject, [1, 1, 1, 1, 1, 1])
     another_pubkey = csm.getSigningKeys(node_operator, index_to_eject + 1, 1)
     strikes_tree = StrikesTree.new(
         [leaf_to_eject, (node_operator, another_pubkey, [1, 1, 0, 0, 0, 0])]
@@ -456,7 +457,7 @@ def test_eject_bad_performer(csm, ejector, strikes, node_operator, stranger):
 
     eject_payment_value = get_sys_fee_to_eject()
 
-    bad_performer = (node_operator, index_to_eject, [1, 1, 1, 0, 0, 0])
+    bad_performer = (node_operator, index_to_eject, [1, 1, 1, 1, 1, 1])
     tx = strikes.processBadPerformanceProof(
         [bad_performer],
         proof,
@@ -467,7 +468,9 @@ def test_eject_bad_performer(csm, ejector, strikes, node_operator, stranger):
     assert "StrikesPenaltyProcessed" in tx.events
     assert tx.events["StrikesPenaltyProcessed"]["nodeOperatorId"] == node_operator
     assert tx.events["StrikesPenaltyProcessed"]["pubkey"] == pubkey_to_eject
-    penalty = contracts.cs_parameters_registry.defaultBadPerformancePenalty()
+
+    curve_id = accounting.getBondCurveId(node_operator)
+    penalty = contracts.cs_parameters_registry.getBadPerformancePenalty(curve_id)
     assert tx.events["StrikesPenaltyProcessed"]["strikesPenalty"] == penalty
 
     assert "TriggeredExitFeeRecorded" in tx.events
@@ -488,7 +491,7 @@ def test_voluntary_eject(csm, ejector, node_operator):
     assert "TriggeredExitFeeRecorded" not in tx.events
 
 
-def test_report_validator_exit_delay(csm, node_operator):
+def test_report_validator_exit_delay(csm, accounting, parameters_registry, node_operator):
     pubkey = csm.getSigningKeys(node_operator, 0, 1)
     day_in_seconds = 60 * 60 * 24
 
@@ -496,7 +499,9 @@ def test_report_validator_exit_delay(csm, node_operator):
     assert "ValidatorExitDelayProcessed" in tx.events
     assert tx.events["ValidatorExitDelayProcessed"]["nodeOperatorId"] == node_operator
     assert tx.events["ValidatorExitDelayProcessed"]["pubkey"] == pubkey
-    penalty = contracts.cs_parameters_registry.defaultExitDelayPenalty()
+
+    curve_id = accounting.getBondCurveId(node_operator)
+    penalty = parameters_registry.getExitDelayPenalty(curve_id)
     assert tx.events["ValidatorExitDelayProcessed"]["delayPenalty"] == penalty
 
 
