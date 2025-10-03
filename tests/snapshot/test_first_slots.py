@@ -90,14 +90,13 @@ def do_snapshot(skip_slots: Sequence[tuple[str, int]]) -> SnapshotFn:
         res = {}
 
         for contract in (
-            # NOTE: Uncomment lines below after 23.09.2025 vote enacted
-            # contracts.lido,  # upgrade impl
-            # contracts.node_operators_registry,  # upgrade impl
+            contracts.lido,
+            contracts.node_operators_registry,
             contracts.legacy_oracle,
-            # contracts.deposit_security_module,  # rotate guardian
+            contracts.deposit_security_module,
             contracts.execution_layer_rewards_vault,
-            # contracts.withdrawal_vault,  # upgrade impl
-            # contracts.oracle_daemon_config,  # upgrade impl
+            contracts.withdrawal_vault,
+            contracts.oracle_daemon_config,
             contracts.burner,
             contracts.relay_allowed_list,
             contracts.ldo_token,
@@ -106,14 +105,14 @@ def do_snapshot(skip_slots: Sequence[tuple[str, int]]) -> SnapshotFn:
             contracts.acl,
             contracts.agent,
             contracts.kernel,
-            # contracts.easy_track,  # add easy track fabrics
+            contracts.easy_track,
             contracts.wsteth,
-            # contracts.csm,
-            # contracts.cs_accounting,
-            # contracts.cs_fee_distributor,
-            # contracts.cs_fee_oracle,  # upgrade impl
+            contracts.csm,
+            contracts.cs_accounting,
+            contracts.cs_fee_distributor,
+            contracts.cs_fee_oracle,
             contracts.csm_hash_consensus,
-            # contracts.cs_verifier,  # upgrade impl
+            contracts.cs_verifier,
         ):
             res |= _get_slots(contract, block)
 
