@@ -13,7 +13,10 @@ from utils.config import (
 )
 from utils.dsm import UnvetArgs, to_bytes, set_single_guardian
 from utils.staking_module import calc_module_reward_shares
-from utils.test.csm_helpers import csm_add_node_operator, csm_upload_keys, get_ics_members, csm_add_ics_node_operator
+from utils.test.csm_helpers import (
+    csm_add_node_operator, csm_upload_keys, csm_add_ics_node_operator,
+    csm_set_ics_tree_members,
+)
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.easy_track_helpers import _encode_calldata
 from utils.test.helpers import ETH
@@ -90,7 +93,7 @@ def strikes():
 def depositable_node_operator(csm, accounting, permissionless_gate, stranger):
     increase_staking_module_share(module_id=CSM_MODULE_ID, share_multiplier=2)
     csm.cleanDepositQueue(2 * csm.getNonce(), {"from": stranger.address})
-    for queue_priority in range(1, 6):
+    for queue_priority in range(0, 6):
         deposit_batch = csm.depositQueueItem(queue_priority, csm.depositQueuePointers(queue_priority)["head"])
         if deposit_batch:
             node_operator_id = (deposit_batch >> 192) & ((1 << 64) - 1)
@@ -167,14 +170,17 @@ def get_sys_fee_to_eject():
     return int.from_bytes(val, "big")
 
 
-@pytest.mark.parametrize("address, proof", get_ics_members())
-def test_add_node_operator_ics(csm, vetted_gate, accounting, address, proof):
-    no_id = csm_add_ics_node_operator(csm, vetted_gate, accounting, address, proof)
-    no = csm.getNodeOperator(no_id)
+def test_add_node_operators_ics(csm, vetted_gate, accounting, accounts):
+    members = [account.address for account in accounts[3:5]]
+    tree = csm_set_ics_tree_members(members)
+    for address in members:
+        proof = list(tree.tree.get_proof(tree.tree.find(tree.tree.leaf([address]))))
+        no_id = csm_add_ics_node_operator(csm, vetted_gate, accounting, address, proof)
+        no = csm.getNodeOperator(no_id)
 
-    assert no["managerAddress"] == address
-    assert no["rewardAddress"] == address
-    assert accounting.getBondCurveId(no_id) == vetted_gate.curveId()
+        assert no["managerAddress"] == address
+        assert no["rewardAddress"] == address
+        assert accounting.getBondCurveId(no_id) == vetted_gate.curveId()
 
 
 def test_add_node_operator_permissionless(csm, permissionless_gate, accounting, accounts):

@@ -16,6 +16,7 @@ Pubkey: TypeAlias = bytes
 Strikes: TypeAlias = list[int]
 RewardTreeLeaf: TypeAlias = tuple[NodeOperatorId, Shares]
 StrikesTreeLeaf: TypeAlias = tuple[NodeOperatorId, Pubkey, Strikes]
+ICSTreeLeaf: TypeAlias = str
 
 
 class TreeJSONEncoder(json.JSONEncoder):
@@ -316,3 +317,45 @@ class StrikesTree:
     def new(cls, values: Sequence[StrikesTreeLeaf]):
         """Create new instance around the wrapped tree out of the given values"""
         return cls(StandardMerkleTree(values, ("uint256", "bytes", "uint256[]")))
+
+
+@dataclass
+class ICSTree:
+    """A wrapper around StandardMerkleTree to cover use cases of the CSM ICS Vetted Gate"""
+
+    tree: StandardMerkleTree[ICSTreeLeaf]
+
+    @property
+    def root(self) -> HexBytes:
+        return HexBytes(self.tree.root)
+
+    @classmethod
+    def decode(cls, content: bytes):
+        """Restore a tree from a supported binary representation"""
+
+        try:
+            return cls(StandardMerkleTree.load(json.loads(content)))
+        except json.JSONDecodeError as e:
+            raise ValueError("Unsupported tree format") from e
+
+    def encode(self) -> bytes:
+        """Convert the underlying StandardMerkleTree to a binary representation"""
+
+        return (
+            TreeJSONEncoder(
+                indent=None,
+                separators=(',', ':'),
+                sort_keys=True,
+            )
+            .encode(self.dump())
+            .encode()
+        )
+
+    def dump(self) -> Dump[ICSTreeLeaf]:
+        return self.tree.dump()
+
+    @classmethod
+    def new(cls, values: Sequence[ICSTreeLeaf]):
+        """Create new instance around the wrapped tree out of the given values"""
+        values = [[value] for value in values]
+        return cls(StandardMerkleTree(values, ("address",)))
