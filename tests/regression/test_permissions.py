@@ -54,6 +54,8 @@ from utils.config import (
     CS_FEE_ORACLE_ADDRESS,
     CS_ORACLE_HASH_CONSENSUS_ADDRESS,
     CS_PERMISSIONLESS_GATE_ADDRESS,
+    TRIGGERABLE_WITHDRAWALS_GATEWAY,
+    VEB_TWG_GATE_SEAL,
     CS_VETTED_GATE_ADDRESS,
     CS_PARAMS_REGISTRY_ADDRESS,
     CS_STRIKES_ADDRESS,
@@ -454,6 +456,18 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "RECOVERER_ROLE": [],
+            }
+        },
+        TRIGGERABLE_WITHDRAWALS_GATEWAY: {
+            "contract_name": "TriggerableWithdrawalsGateway",
+            "contract": contracts.triggerable_withdrawals_gateway,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "ADD_FULL_WITHDRAWAL_REQUEST_ROLE": [VALIDATORS_EXIT_BUS_ORACLE, CS_EJECTOR_ADDRESS],
+                "PAUSE_ROLE": [VEB_TWG_GATE_SEAL, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+                "TW_EXIT_LIMIT_MANAGER_ROLE": [],
             }
         },
         INSURANCE_FUND: {
