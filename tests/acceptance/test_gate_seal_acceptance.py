@@ -34,6 +34,7 @@ def test_gate_seal(contract: Contract, gate_seal_committee: Account, reseal_mana
     assert contracts.withdrawal_queue.address in sealables
 
     _check_role(contracts.withdrawal_queue, "PAUSE_ROLE", reseal_manager.address)
+    _check_role(contracts.withdrawal_queue, "RESUME_ROLE", reseal_manager.address)
 
     assert contract.get_seal_duration_seconds() == GATE_SEAL_PAUSE_DURATION
     assert contract.get_expiry_timestamp() == GATE_SEAL_EXPIRY_TIMESTAMP
