@@ -643,20 +643,13 @@ def active_aragon_roles(protocol_permissions):
         with tqdm(total=total_batches, desc="Fetching Events") as pbar:
             for batch_start in range(start_block, end_block, step):
                 batch_end = min(batch_start + step - 1, end_block)
-                filter_params = {
+
+                batch_events = provider.eth.get_logs({
                     "address": contracts.acl.address,
                     "fromBlock": batch_start,
                     "toBlock": batch_end,
                     "topics": [event_signature_hash],
-                }
-
-                # Web3.py: provider.eth.get_logs expects block numbers or 'latest'
-                try:
-                    batch_events = provider.eth.get_logs(filter_params)
-                except Exception as e:
-                    # Some providers may reject very large ranges; raise with context
-                    print(f"get_logs failed for range {batch_start}-{batch_end}: {e}")
-                    raise
+                })
 
                 events.extend(batch_events)
                 pbar.update(1)
