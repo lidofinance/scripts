@@ -643,9 +643,14 @@ def active_aragon_roles(protocol_permissions):
         with tqdm(total=total_batches, desc="Fetching Events") as pbar:
             for batch_start in range(start_block, end_block, step):
                 batch_end = min(batch_start + step - 1, end_block)
-                batch_events = provider.eth.filter(
-                        {"address": contracts.acl.address, "fromBlock": batch_start, "toBlock": batch_end, "topics": [event_signature_hash]}
-                ).get_all_entries()
+
+                batch_events = provider.eth.get_logs({
+                    "address": contracts.acl.address,
+                    "fromBlock": batch_start,
+                    "toBlock": batch_end,
+                    "topics": [event_signature_hash],
+                })
+
                 events.extend(batch_events)
                 pbar.update(1)
         return events
