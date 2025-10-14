@@ -99,9 +99,9 @@ def local_deployer() -> LocalAccount:
 
 def get_deployer_account() -> Union[LocalAccount, Account]:
     is_live = get_is_live()
-    deployer = os.environ.get("DEPLOYER")
 
     if is_live:
+        deployer = os.environ.get("DEPLOYER")
         if deployer is None:
             raise EnvironmentError("For live deployment please set DEPLOYER env variable to the deployer account name")
         return accounts.load(deployer)
@@ -211,12 +211,20 @@ class ContractsLazyLoader:
         return interface.CSModule(CSM_ADDRESS)
 
     @property
-    def cs_early_adoption(self) -> interface.CSEarlyAdoption:
-        return interface.CSEarlyAdoption(CS_EARLY_ADOPTION_ADDRESS)
+    def cs_permissionless_gate(self) -> interface.CSPermissionlessGate:
+        return interface.CSPermissionlessGate(CS_PERMISSIONLESS_GATE_ADDRESS)
+
+    @property
+    def cs_vetted_gate(self) -> interface.CSVettedGate:
+        return interface.CSVettedGate(CS_VETTED_GATE_ADDRESS)
 
     @property
     def cs_accounting(self) -> interface.CSAccounting:
         return interface.CSAccounting(CS_ACCOUNTING_ADDRESS)
+
+    @property
+    def cs_parameters_registry(self) -> interface.CSParametersRegistry:
+        return interface.CSParametersRegistry(CS_PARAMS_REGISTRY_ADDRESS)
 
     @property
     def cs_fee_distributor(self) -> interface.CSFeeDistributor:
@@ -231,8 +239,20 @@ class ContractsLazyLoader:
         return interface.CSHashConsensus(CS_ORACLE_HASH_CONSENSUS_ADDRESS)
 
     @property
-    def cs_verifier(self) -> interface.CSVerifier:
-        return interface.CSVerifier(CS_VERIFIER_ADDRESS)
+    def cs_verifier(self) -> interface.CSVerifierV2:
+        return interface.CSVerifierV2(CS_VERIFIER_V2_ADDRESS)
+
+    @property
+    def cs_exit_penalties(self) -> interface.CSExitPenalties:
+        return interface.CSExitPenalties(CS_EXIT_PENALTIES_ADDRESS)
+
+    @property
+    def cs_ejector(self) -> interface.CSEjector:
+        return interface.CSEjector(CS_EJECTOR_ADDRESS)
+
+    @property
+    def cs_strikes(self) -> interface.CSStrikes:
+        return interface.CSStrikes(CS_STRIKES_ADDRESS)
 
     @property
     def sandbox(self) -> interface.SimpleDVT:
@@ -285,6 +305,10 @@ class ContractsLazyLoader:
     @property
     def oracle_report_sanity_checker(self) -> interface.OracleReportSanityChecker:
         return interface.OracleReportSanityChecker(ORACLE_REPORT_SANITY_CHECKER)
+
+    @property
+    def triggerable_withdrawals_gateway(self):
+        return interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY)
 
     @property
     def withdrawal_queue(self) -> interface.WithdrawalQueueERC721:
@@ -375,6 +399,10 @@ class ContractsLazyLoader:
         return interface.GateSeal(GATE_SEAL)
 
     @property
+    def veb_twg_gate_seal(self) -> interface.GateSeal:
+        return interface.GateSeal(VEB_TWG_GATE_SEAL)
+
+    @property
     def evm_script_registry(self) -> interface.EVMScriptRegistry:
         return interface.EVMScriptRegistry(ARAGON_EVMSCRIPT_REGISTRY)
 
@@ -407,6 +435,10 @@ class ContractsLazyLoader:
         return interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)
 
     @property
+    def validator_exit_verifier(self) -> interface.ValidatorsExitBusOracle:
+        return interface.ValidatorExitVerifier(VALIDATOR_EXIT_VERIFIER)
+
+    @property
     def dual_governance(self) -> interface.DualGovernance:
         return interface.DualGovernance(DUAL_GOVERNANCE)
 
@@ -421,6 +453,10 @@ class ContractsLazyLoader:
     @property
     def emergency_governance(self) -> interface.EmergencyGovernance:
         return interface.EmergencyGovernance(DAO_EMERGENCY_GOVERNANCE)
+
+    @property
+    def triggerable_withdrawals_gateway(self) -> interface.TriggerableWithdrawalsGateway:
+        return interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY)
 
 
 def __getattr__(name: str) -> Any:

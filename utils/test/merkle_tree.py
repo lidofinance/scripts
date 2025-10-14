@@ -12,7 +12,11 @@ from eth_typing import TypeStr
 
 Shares: TypeAlias = int
 NodeOperatorId: TypeAlias = int
+Pubkey: TypeAlias = bytes
+Strikes: TypeAlias = list[int]
 RewardTreeLeaf: TypeAlias = tuple[NodeOperatorId, Shares]
+StrikesTreeLeaf: TypeAlias = tuple[NodeOperatorId, Pubkey, Strikes]
+ICSTreeLeaf: TypeAlias = str
 
 
 class TreeJSONEncoder(json.JSONEncoder):
@@ -33,6 +37,9 @@ class MerkleTree(ABC):
 
     @abstractmethod
     def get_proof(self, index: int) -> Iterable[bytes]: ...
+
+    @abstractmethod
+    def get_multi_proof(self, indices: Collection[int]) -> tuple[Iterable[bytes], Iterable[bool]]: ...
 
     @classmethod
     @abstractmethod
@@ -82,9 +89,81 @@ class CompleteBinaryMerkleTree(MerkleTree):
             yield self.tree[i - (-1) ** (i % 2)]
             i = (i - 1) // 2
 
+    def get_multi_proof(self, indices: Collection[int]) -> tuple[Iterable[bytes], Iterable[bool]]:
+        if not indices:
+            return [], []
+
+        indices = sorted(set(indices))
+        n = len(self.tree)
+        leaves_count = (n + 1) // 2
+
+        proof = []
+        flags = []
+
+        def collect_proof_and_flags(idx: int) -> bool:
+            if idx >= n:
+                return False
+            if idx >= n - leaves_count:
+                return idx in indices
+
+            left = 2 * idx + 1
+            right = 2 * idx + 2
+            left_needed = collect_proof_and_flags(left) if left < n else False
+            right_needed = collect_proof_and_flags(right) if right < n else False
+
+            if left_needed and right_needed:
+                flags.append(True)
+                return True
+            elif left_needed:
+                if right < n:
+                    proof.append(self.tree[right])
+                flags.append(False)
+                return True
+            elif right_needed:
+                if left < n:
+                    proof.append(self.tree[left])
+                flags.append(False)
+                return True
+
+            return False
+
+        collect_proof_and_flags(0)
+        return proof, flags
+
     @classmethod
     def verify(cls, root: bytes, leaf: bytes, proof: Iterable[bytes]) -> bool:
         return reduce(lambda a, b: cls.__hash_node__(a, b), proof, leaf) == root
+
+    @classmethod
+    def verify_multi_proof(cls, root: bytes, leaves: list[bytes], proof: list[bytes], flags: list[bool]) -> bool:
+        if not leaves:
+            return True
+
+        if len(leaves) + len(proof) - 1 != len(flags):
+            return False
+
+        queue = list(leaves)
+        proof_idx = 0
+
+        for flag in flags:
+            if flag:
+                if len(queue) < 2:
+                    return False
+                a = queue.pop(0)
+                b = queue.pop(0)
+            else:
+                if len(queue) < 1 or proof_idx >= len(proof):
+                    return False
+                a = queue.pop(0)
+                b = proof[proof_idx]
+                proof_idx += 1
+
+            queue.append(cls.__hash_node__(a, b))
+
+        if proof_idx != len(proof):
+            return False
+
+        return len(queue) == 1 and queue[0] == root
 
 
 T = TypeVar("T", bound=Iterable)
@@ -159,10 +238,10 @@ class StandardMerkleTree(Generic[T], CompleteBinaryMerkleTree):
 
 
 @dataclass
-class Tree:
+class RewardsTree:
     """A wrapper around StandardMerkleTree to cover use cases of the CSM oracle"""
 
-    tree: StandardMerkleTree[tuple[int, int]]
+    tree: StandardMerkleTree[RewardTreeLeaf]
 
     @property
     def root(self) -> HexBytes:
@@ -197,3 +276,86 @@ class Tree:
     def new(cls, values: Sequence[RewardTreeLeaf]):
         """Create new instance around the wrapped tree out of the given values"""
         return cls(StandardMerkleTree(values, ("uint256", "uint256")))
+
+
+@dataclass
+class StrikesTree:
+    """A wrapper around StandardMerkleTree to cover use cases of the CSM oracle"""
+
+    tree: StandardMerkleTree[StrikesTreeLeaf]
+
+    @property
+    def root(self) -> HexBytes:
+        return HexBytes(self.tree.root)
+
+    @classmethod
+    def decode(cls, content: bytes):
+        """Restore a tree from a supported binary representation"""
+
+        try:
+            return cls(StandardMerkleTree.load(json.loads(content)))
+        except json.JSONDecodeError as e:
+            raise ValueError("Unsupported tree format") from e
+
+    def encode(self) -> bytes:
+        """Convert the underlying StandardMerkleTree to a binary representation"""
+
+        return (
+            TreeJSONEncoder(
+                indent=None,
+                separators=(',', ':'),
+                sort_keys=True,
+            )
+            .encode(self.dump())
+            .encode()
+        )
+
+    def dump(self) -> Dump[StrikesTreeLeaf]:
+        return self.tree.dump()
+
+    @classmethod
+    def new(cls, values: Sequence[StrikesTreeLeaf]):
+        """Create new instance around the wrapped tree out of the given values"""
+        return cls(StandardMerkleTree(values, ("uint256", "bytes", "uint256[]")))
+
+
+@dataclass
+class ICSTree:
+    """A wrapper around StandardMerkleTree to cover use cases of the CSM ICS Vetted Gate"""
+
+    tree: StandardMerkleTree[ICSTreeLeaf]
+
+    @property
+    def root(self) -> HexBytes:
+        return HexBytes(self.tree.root)
+
+    @classmethod
+    def decode(cls, content: bytes):
+        """Restore a tree from a supported binary representation"""
+
+        try:
+            return cls(StandardMerkleTree.load(json.loads(content)))
+        except json.JSONDecodeError as e:
+            raise ValueError("Unsupported tree format") from e
+
+    def encode(self) -> bytes:
+        """Convert the underlying StandardMerkleTree to a binary representation"""
+
+        return (
+            TreeJSONEncoder(
+                indent=None,
+                separators=(',', ':'),
+                sort_keys=True,
+            )
+            .encode(self.dump())
+            .encode()
+        )
+
+    def dump(self) -> Dump[ICSTreeLeaf]:
+        return self.tree.dump()
+
+    @classmethod
+    def new(cls, values: Sequence[ICSTreeLeaf]):
+        """Create new instance around the wrapped tree out of the given values"""
+        values = [[value] for value in values]
+        return cls(StandardMerkleTree(values, ("address",)))

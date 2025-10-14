@@ -80,7 +80,7 @@ def test_steth(contract):
     assert contract.getTotalShares() > contract.sharesOf(INITIAL_DEAD_TOKEN_HOLDER)
     # unlimited allowance for burner to burn shares from withdrawal queue
     assert contract.allowance(contracts.withdrawal_queue, contracts.burner) == 2**256 - 1
-    assert contract.allowance(contracts.node_operators_registry, contracts.burner) == 2**256 - 1
+    assert contract.allowance(contracts.node_operators_registry, contracts.burner) == 0
 
 
 def test_lido_state(contract):
@@ -88,7 +88,7 @@ def test_lido_state(contract):
 
     modules = contracts.staking_router.getStakingModules()
     total_exited_validators = sum(
-        contracts.staking_router.getStakingModuleSummary(module[0])[0] 
+        contracts.staking_router.getStakingModuleSummary(module[0])[0]
         for module in modules
     )
 

@@ -108,7 +108,6 @@ def do_snapshot(skip_slots: Sequence[tuple[str, int]]) -> SnapshotFn:
             contracts.easy_track,
             contracts.wsteth,
             contracts.csm,
-            contracts.cs_early_adoption,
             contracts.cs_accounting,
             contracts.cs_fee_distributor,
             contracts.cs_fee_oracle,

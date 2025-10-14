@@ -30,14 +30,6 @@ def ref_slot():
     return ref_slot
 
 
-def test_get_last_requested_validator_indices(contract):
-    with reverts():  # ArgumentOutOfBounds()
-        contract.getLastRequestedValidatorIndices(2**24 + 1, [])
-
-    with reverts():  # ArgumentOutOfBounds()
-        contract.getLastRequestedValidatorIndices(1, [2**40 + 1])
-
-
 def test_submit_report_data_checks(contract, ref_slot, stranger):
     contract_version = contract.getContractVersion()
     consensus_version = contract.getConsensusVersion()
@@ -216,71 +208,7 @@ def test_handle_consensus_report_data_wrong_module_id(contract, ref_slot):
         contracts.hash_consensus_for_validators_exit_bus_oracle,
     )
 
-    with reverts(encode_error("InvalidRequestsData()")):
-        contract.submitReportData(report, contract_version, {"from": submitter})
-
-
-def test_handle_consensus_report_data_second_exit(contract, ref_slot):
-    unreachable_cl_validator_index = 100_000_000
-    no_global_index = (module_id, no_id) = (1, 33)
-    validator_key = contracts.node_operators_registry.getSigningKey(no_id, 1)[0]
-
-    # set validator index to the next one to avoid NodeOpValidatorIndexMustIncrease error
-    validator = LidoValidator(index=unreachable_cl_validator_index, pubkey=validator_key)
-
-    contract_version = contract.getContractVersion()
-    consensus_version = contract.getConsensusVersion()
-
-    data, data_format = encode_data([(no_global_index, validator)])
-    report = (
-        consensus_version,
-        ref_slot,
-        len([(no_global_index, validator)]),
-        data_format,
-        data,
-    )
-    report_data = encode_data_from_abi(report, contracts.validators_exit_bus_oracle.abi, "submitReportData")
-    report_hash = web3.keccak(report_data)
-    submitter = reach_consensus(
-        ref_slot,
-        report_hash,
-        consensus_version,
-        contracts.hash_consensus_for_validators_exit_bus_oracle,
-    )
-
-    contract.submitReportData(report, contract_version, {"from": submitter})
-
-    wait_to_next_available_report_time(contracts.hash_consensus_for_validators_exit_bus_oracle)
-    ref_slot, _ = contracts.hash_consensus_for_validators_exit_bus_oracle.getCurrentFrame()
-
-    data, data_format = encode_data([(no_global_index, validator)])
-    report = (
-        consensus_version,
-        ref_slot,
-        len([(no_global_index, validator)]),
-        data_format,
-        data,
-    )
-    report_data = encode_data_from_abi(report, contracts.validators_exit_bus_oracle.abi, "submitReportData")
-    report_hash = web3.keccak(report_data)
-    submitter = reach_consensus(
-        ref_slot,
-        report_hash,
-        consensus_version,
-        contracts.hash_consensus_for_validators_exit_bus_oracle,
-    )
-
-    with reverts(
-        encode_error(
-            "NodeOpValidatorIndexMustIncrease(uint256,uint256,uint256,uint256)",
-            (
-                module_id,
-                no_id,
-                unreachable_cl_validator_index,
-                unreachable_cl_validator_index,
-            ),
-        )
-    ):
+    with reverts(encode_error("InvalidModuleId()")):
         contract.submitReportData(report, contract_version, {"from": submitter})
 
 

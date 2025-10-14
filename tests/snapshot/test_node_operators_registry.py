@@ -7,10 +7,7 @@ from brownie import ZERO_ADDRESS, Wei, convert, chain, multicall
 from brownie.convert.datatypes import ReturnValue
 from tests.snapshot.utils import get_slot
 
-from utils.config import (
-    contracts,
-    DEPOSIT_SECURITY_MODULE
-)
+from utils.config import contracts, DEPOSIT_SECURITY_MODULE
 from utils.mainnet_fork import chain_snapshot
 from utils.test.snapshot_helpers import dict_zip
 from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
@@ -30,7 +27,13 @@ def grant_roles(voting_eoa, agent_eoa):
         contracts.voting,
         contracts.node_operators_registry,
         convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-        {"from": contracts.voting},
+        {"from": agent_eoa},
+    )
+    contracts.acl.grantPermission(
+        agent_eoa,
+        contracts.node_operators_registry,
+        convert.to_uint(Web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")),
+        {"from": agent_eoa},
     )
 
 
@@ -101,7 +104,7 @@ def test_node_operator_basic_flow(
                 new_node_operator["id"],
                 new_node_operator["staking_limit"],
                 1,
-                {"from": manager_eoa},
+                {"from": new_node_operator["reward_address"]},
             ),
             "deactivate_node_operator": lambda: contracts.node_operators_registry.deactivateNodeOperator(
                 new_node_operator["id"], {"from": manager_eoa}
@@ -121,7 +124,9 @@ def test_node_operator_basic_flow(
     make_snapshot(contracts.node_operators_registry)
 
     with chain_snapshot():
-        snapshot_before_update = run_scenario(actions=create_actions(new_deposit_security_module_eoa, voting_eoa), snapshooter=make_snapshot)
+        snapshot_before_update = run_scenario(
+            actions=create_actions(new_deposit_security_module_eoa, agent_eoa), snapshooter=make_snapshot
+        )
 
     with chain_snapshot():
         execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env)
@@ -130,22 +135,24 @@ def test_node_operator_basic_flow(
             contracts.agent,
             contracts.node_operators_registry,
             convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-            {"from": contracts.agent}
+            {"from": contracts.agent},
         )
         contracts.acl.grantPermission(
             contracts.agent,
             contracts.node_operators_registry,
             convert.to_uint(Web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")),
-            {"from": contracts.agent}
+            {"from": contracts.agent},
         )
         contracts.acl.grantPermission(
             contracts.agent,
             contracts.node_operators_registry,
             convert.to_uint(Web3.keccak(text="MANAGE_SIGNING_KEYS")),
-            {"from": contracts.agent}
+            {"from": contracts.agent},
         )
 
-        snapshot_after_update = run_scenario(actions=create_actions(new_deposit_security_module_eoa, agent_eoa), snapshooter=make_snapshot)
+        snapshot_after_update = run_scenario(
+            actions=create_actions(new_deposit_security_module_eoa, agent_eoa), snapshooter=make_snapshot
+        )
 
     assert snapshot_before_update.keys() == snapshot_after_update.keys()
 
@@ -249,6 +256,7 @@ def assert_rewards_distribution(before, after):
 
     for i in range(after["active_node_operators_count"]):
         assert rewards_distribution_before["recipients"][i] == rewards_distribution_after["recipients"][i]
+
         assert almost_eq(
             rewards_distribution_before["shares"][i],
             rewards_distribution_after["shares"][i],

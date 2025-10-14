@@ -41,7 +41,7 @@ def test_constants(contract):
 
 
 def test_versioned(contract):
-    assert contract.getContractVersion() == 2
+    assert contract.getContractVersion() == 3
 
 
 def test_initialize(contract):

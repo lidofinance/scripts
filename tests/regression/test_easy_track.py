@@ -22,8 +22,8 @@ from utils.test.simple_dvt_helpers import (
 )
 from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
 
-
 MANAGE_SIGNING_KEYS = "0x75abc64490e17b40ea1e66691c3eb493647b24430b358bd87ec3e5127f1621ee"
+
 
 def test_increase_nop_staking_limit(
     stranger,
@@ -35,8 +35,10 @@ def test_increase_nop_staking_limit(
     new_staking_limit = node_operator["totalVettedValidators"] + 1
 
     if node_operator["totalAddedValidators"] < new_staking_limit:
-        if not contracts.acl.hasPermission(contracts.agent, contracts.node_operators_registry, web3.keccak(text="MANAGE_SIGNING_KEYS")):
-            contracts.acl.grantPermission(contracts.agent, contracts.node_operators_registry, web3.keccak(text="MANAGE_SIGNING_KEYS"), {"from": contracts.agent})
+        if not contracts.acl.hasPermission(contracts.agent, contracts.node_operators_registry,
+                                           web3.keccak(text="MANAGE_SIGNING_KEYS")):
+            contracts.acl.grantPermission(contracts.agent, contracts.node_operators_registry,
+                                          web3.keccak(text="MANAGE_SIGNING_KEYS"), {"from": contracts.agent})
         contracts.node_operators_registry.addSigningKeys(
             no_id,
             1,
@@ -45,7 +47,7 @@ def test_increase_nop_staking_limit(
             {"from": contracts.agent},
         )
 
-    calldata = _encode_calldata(("uint256","uint256"), [no_id, new_staking_limit])
+    calldata = _encode_calldata(("uint256", "uint256"), [no_id, new_staking_limit])
 
     create_and_enact_motion(contracts.easy_track, trusted_caller, factory, calldata, stranger)
 

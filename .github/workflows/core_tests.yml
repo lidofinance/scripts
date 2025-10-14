@@ -41,7 +41,7 @@ jobs:
       - name: Run node
         run: docker exec -e ETH_RPC_URL --detach tests-runner bash -c 'NODE_PORT=8546 make node'
         env:
-          ETH_RPC_URL: "https://mainnet.infura.io/v3/${{ secrets.WEB3_INFURA_PROJECT_ID }}"
+          ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
 
       - name: Check that the fork is ready
         shell: bash

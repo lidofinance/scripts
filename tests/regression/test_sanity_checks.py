@@ -218,7 +218,7 @@ def test_accounting_oracle_too_much_extra_data(extra_data_service):
             operators[(nor_module_id, i)] = total_exited_validators_count + 1
         i = i + 1
 
-    extra_data = extra_data_service.collect({}, operators, item_count, 1)
+    extra_data = extra_data_service.collect(operators, item_count, 1)
 
     with reverts(
         encode_error(
