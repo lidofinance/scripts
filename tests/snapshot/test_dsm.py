@@ -147,12 +147,10 @@ def do_snapshot(guardian: Account, some_eoa: Account):
                 "getMaxOperatorsPerUnvetting": dsm.getMaxOperatorsPerUnvetting(),
                 "getLastDepositBlock": dsm.getLastDepositBlock(),
                 "isDepositsPaused": dsm.isDepositsPaused(),
-                # NOTE: unchecked views
-                # Implementation address changes
-                # "address": dsm.address,
+                "address": dsm.address,
                 # The following two fields are constant and built differently across versions
-                # "ATTEST_MESSAGE_PREFIX": dsm.ATTEST_MESSAGE_PREFIX(),
-                # "PAUSE_MESSAGE_PREFIX": dsm.PAUSE_MESSAGE_PREFIX(),
+                "ATTEST_MESSAGE_PREFIX": dsm.ATTEST_MESSAGE_PREFIX(),
+                "PAUSE_MESSAGE_PREFIX": dsm.PAUSE_MESSAGE_PREFIX(),
             }
 
     return _snap

@@ -822,6 +822,6 @@ def build_extra_data_item(
             module_id.to_bytes(FIELDS_WIDTH.MODULE_ID, **opts),
             len(nos_ids).to_bytes(FIELDS_WIDTH.NODE_OPS_COUNT, **opts),
             b"".join(i.to_bytes(FIELDS_WIDTH.NODE_OPERATOR_IDS, **opts) for i in nos_ids),
-            b"".join(i.to_bytes(FIELDS_WIDTH.STUCK_OR_EXITED_VALS_COUNT, **opts) for i in vals_count),
+            b"".join(i.to_bytes(FIELDS_WIDTH.EXITED_VALS_COUNT, **opts) for i in vals_count),
         )
     )

@@ -9,9 +9,9 @@ NODE_OPERATORS_REGISTRY_ID = 1
 WEI_TOLERANCE = 5  # wei tolerance to avoid rounding issue
 
 
-def fill_deposit_buffer(deposits_count):
+def fill_deposit_buffer(deposits_count, heuristic=1):
     deposit_size = ETH(32)
-    depositable_eth = deposits_count * deposit_size
+    depositable_eth = deposits_count * deposit_size * heuristic
 
     cover_wq_demand_and_submit(depositable_eth)
 

@@ -39,6 +39,7 @@ from utils.config import (
     HASH_CONSENSUS_FOR_VEBO,
     HASH_CONSENSUS_FOR_AO,
     VALIDATORS_EXIT_BUS_ORACLE,
+    VEB_TWG_GATE_SEAL,
     ACCOUNTING_ORACLE,
     WITHDRAWAL_QUEUE,
     BURNER,
@@ -47,11 +48,18 @@ from utils.config import (
     SIMPLE_DVT,
     CSM_ADDRESS,
     CS_ACCOUNTING_ADDRESS,
-    CS_GATE_SEAL_ADDRESS,
-    CS_VERIFIER_ADDRESS,
+    CS_GATE_SEAL_V2_ADDRESS,
+    CS_VERIFIER_V2_ADDRESS,
     CS_FEE_DISTRIBUTOR_ADDRESS,
     CS_FEE_ORACLE_ADDRESS,
     CS_ORACLE_HASH_CONSENSUS_ADDRESS,
+    CS_PERMISSIONLESS_GATE_ADDRESS,
+    TRIGGERABLE_WITHDRAWALS_GATEWAY,
+    VEB_TWG_GATE_SEAL,
+    CS_VETTED_GATE_ADDRESS,
+    CS_PARAMS_REGISTRY_ADDRESS,
+    CS_STRIKES_ADDRESS,
+    CS_EJECTOR_ADDRESS,
     L1_EMERGENCY_BRAKES_MULTISIG,
     DUAL_GOVERNANCE_EXECUTORS,
     RESEAL_MANAGER,
@@ -92,6 +100,8 @@ def protocol_permissions():
                 "REPORT_EXITED_VALIDATORS_ROLE": [contracts.accounting_oracle],
                 "UNSAFE_SET_EXITED_VALIDATORS_ROLE": [],
                 "REPORT_REWARDS_MINTED_ROLE": [contracts.lido],
+                "REPORT_VALIDATOR_EXITING_STATUS_ROLE": [contracts.validator_exit_verifier],
+                "REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE": [contracts.triggerable_withdrawals_gateway],
             },
         },
         WITHDRAWAL_QUEUE: {
@@ -128,10 +138,12 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "SUBMIT_DATA_ROLE": [],
-                "PAUSE_ROLE": [GATE_SEAL, RESEAL_MANAGER],
+                "PAUSE_ROLE": [VEB_TWG_GATE_SEAL, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
                 "MANAGE_CONSENSUS_VERSION_ROLE": [],
+                "EXIT_REQUEST_LIMIT_MANAGER_ROLE": [],
+                "SUBMIT_REPORT_HASH_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
             },
         },
         HASH_CONSENSUS_FOR_AO: {
@@ -322,12 +334,12 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
-                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS, RESEAL_MANAGER],
+                "PAUSE_ROLE": [CS_GATE_SEAL_V2_ADDRESS, RESEAL_MANAGER],
                 "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE": [CSM_COMMITTEE_MS],
                 "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
-                "VERIFIER_ROLE": [CS_VERIFIER_ADDRESS],
+                "CREATE_NODE_OPERATOR_ROLE": [CS_PERMISSIONLESS_GATE_ADDRESS, CS_VETTED_GATE_ADDRESS],
+                "VERIFIER_ROLE": [CS_VERIFIER_V2_ADDRESS],
                 "RESUME_ROLE": [RESEAL_MANAGER],
-                "MODULE_MANAGER_ROLE": [],
                 "RECOVERER_ROLE": [],
             },
         },
@@ -338,11 +350,9 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "SET_BOND_CURVE_ROLE": [CSM_ADDRESS, CSM_COMMITTEE_MS],
-                "RESET_BOND_CURVE_ROLE": [CSM_ADDRESS, CSM_COMMITTEE_MS],
-                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS, RESEAL_MANAGER],
+                "SET_BOND_CURVE_ROLE": [CS_VETTED_GATE_ADDRESS, CSM_COMMITTEE_MS],
+                "PAUSE_ROLE": [CS_GATE_SEAL_V2_ADDRESS, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
-                "ACCOUNTING_MANAGER_ROLE": [],
                 "MANAGE_BOND_CURVES_ROLE": [],
                 "RECOVERER_ROLE": [],
             },
@@ -366,8 +376,7 @@ def protocol_permissions():
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
                 "MANAGE_CONSENSUS_VERSION_ROLE": [],
-                "PAUSE_ROLE": [CS_GATE_SEAL_ADDRESS, RESEAL_MANAGER],
-                "CONTRACT_MANAGER_ROLE": [],
+                "PAUSE_ROLE": [CS_GATE_SEAL_V2_ADDRESS, RESEAL_MANAGER],
                 "SUBMIT_DATA_ROLE": [],
                 "RESUME_ROLE": [RESEAL_MANAGER],
                 "RECOVERER_ROLE": [],
@@ -385,6 +394,81 @@ def protocol_permissions():
                 "MANAGE_FAST_LANE_CONFIG_ROLE": [],
                 "MANAGE_REPORT_PROCESSOR_ROLE": [],
             },
+        },
+        CS_VERIFIER_V2_ADDRESS: {
+            "contract_name": "CSVerifier",
+            "contract": contracts.cs_verifier,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "PAUSE_ROLE": [CS_GATE_SEAL_V2_ADDRESS, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+            }
+        },
+        CS_PARAMS_REGISTRY_ADDRESS: {
+            "contract_name": "CSParametersRegistry",
+            "contract": contracts.cs_parameters_registry,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+            },
+        },
+        CS_STRIKES_ADDRESS: {
+            "contract_name": "CSStrikes",
+            "contract": contracts.cs_strikes,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+            },
+        },
+        CS_EJECTOR_ADDRESS: {
+            "contract_name": "CSEjector",
+            "contract": contracts.cs_ejector,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "PAUSE_ROLE": [CS_GATE_SEAL_V2_ADDRESS, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+                "RECOVERER_ROLE": [],
+            }
+        },
+        CS_VETTED_GATE_ADDRESS: {
+            "contract_name": "VettedGate",
+            "contract": contracts.cs_vetted_gate,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "PAUSE_ROLE": [CS_GATE_SEAL_V2_ADDRESS, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+                "RECOVERER_ROLE": [],
+                "SET_TREE_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "START_REFERRAL_SEASON_ROLE": [contracts.agent],
+                "END_REFERRAL_SEASON_ROLE": [CSM_COMMITTEE_MS],
+            }
+        },
+        CS_PERMISSIONLESS_GATE_ADDRESS: {
+            "contract_name": "PermissionlessGate",
+            "contract": contracts.cs_permissionless_gate,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "RECOVERER_ROLE": [],
+            }
+        },
+        TRIGGERABLE_WITHDRAWALS_GATEWAY: {
+            "contract_name": "TriggerableWithdrawalsGateway",
+            "contract": contracts.triggerable_withdrawals_gateway,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "ADD_FULL_WITHDRAWAL_REQUEST_ROLE": [VALIDATORS_EXIT_BUS_ORACLE, CS_EJECTOR_ADDRESS],
+                "PAUSE_ROLE": [VEB_TWG_GATE_SEAL, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+                "TW_EXIT_LIMIT_MANAGER_ROLE": [],
+            }
         },
         INSURANCE_FUND: {
             "contract_name": "InsuranceFund",
@@ -538,10 +622,12 @@ def get_http_w3_provider_url():
 
     assert False, 'Web3 HTTP Provider token env var not found'
 
+
 def get_max_log_range():
     if os.getenv("MAX_GET_LOGS_RANGE") is not None:
         return int(os.getenv("MAX_GET_LOGS_RANGE"))
     return 100000
+
 
 def active_aragon_roles(protocol_permissions):
     local_rpc_provider = web3

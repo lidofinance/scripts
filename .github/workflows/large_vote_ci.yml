@@ -34,7 +34,7 @@ jobs:
         uses: ./.github/actions/brownie_fork_tests
         with:
           vote: "large"
-          infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
+          rpc_url: ${{ secrets.ETH_RPC_URL }}
           etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
           command: "make test-1/2"
 
@@ -60,6 +60,6 @@ jobs:
         uses: ./.github/actions/brownie_fork_tests
         with:
           vote: "large"
-          infura: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
+          rpc_url: ${{ secrets.ETH_RPC_URL }}
           etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
           command: "make test-2/2"

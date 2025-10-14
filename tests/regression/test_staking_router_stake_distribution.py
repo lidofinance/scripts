@@ -1,7 +1,7 @@
 from typing import Dict
 
 from utils.config import contracts
-from utils.test.csm_helpers import csm_add_node_operator, get_ea_member, fill_csm_operators_with_keys
+from utils.test.csm_helpers import csm_add_node_operator, fill_csm_operators_with_keys
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
 from utils.test.staking_router_helpers import StakingModuleStatus
@@ -29,6 +29,7 @@ class Module:
         self.maxDepositsPerBlock = maxDepositsPerBlock
         self.minDepositBlockDistance = minDepositBlockDistance
 
+
 def get_modules_info(staking_router):
     # collect the modules information
     module_digests = staking_router.getAllStakingModuleDigests()
@@ -36,7 +37,8 @@ def get_modules_info(staking_router):
 
     for digest in module_digests:
         (_, _, state, summary) = digest
-        (id, _, module_fee, treasury_fee, stake_share_limit, status, _, _, _, _, priorityExitShareThreshold, maxDepositsPerBlock, minDepositBlockDistance) = state
+        (id, _, module_fee, treasury_fee, stake_share_limit, status, _, _, _, _, priorityExitShareThreshold,
+         maxDepositsPerBlock, minDepositBlockDistance) = state
         (exited_keys, deposited_keys, depositable_keys) = summary
         if status != StakingModuleStatus.Active.value:
             # reset depositable keys in case of module is inactivated
@@ -65,7 +67,6 @@ def prep_modules_info(modules: Dict[int, Module]):
 
 
 def calc_allocation(modules: Dict[int, Module], keys_to_allocate: int, ignore_depositable: bool = False):
-
     total_active_keys = prep_modules_info(modules)
     # simulate target share distribution
     # https://github.com/lidofinance/lido-dao/blob/331ecec7fe3c8d57841fd73ccca7fb1cc9bc174e/contracts/0.8.9/StakingRouter.sol#L1266-L1268
@@ -110,8 +111,8 @@ def assure_depositable_keys(stranger):
     if not modules[2].depositable_keys:
         fill_simple_dvt_ops_vetted_keys(stranger, 3, 5)
     if not modules[3].depositable_keys:
-        address, proof = get_ea_member()
-        csm_add_node_operator(contracts.csm, contracts.cs_accounting, address, proof, curve_id=contracts.cs_early_adoption.CURVE_ID())
+        csm_add_node_operator(contracts.csm, contracts.cs_permissionless_gate, contracts.cs_accounting, stranger)
+
 
 def test_stake_distribution(stranger):
     """

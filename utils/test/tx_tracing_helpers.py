@@ -54,13 +54,13 @@ def count_vote_items_by_events(tx: TransactionReceipt, voting_addr: str) -> int:
 
 
 def display_voting_events(tx: TransactionReceipt) -> None:
-    dict_events = EventDict(tx_events_from_trace(tx))
+    dict_events = EventDict(tx_events_from_receipt(tx))
     groups = [_vote_item_group, _service_item_group]
 
     display_tx_events(dict_events, "Events registered during the vote execution", groups)
 
 def display_dg_events(tx: TransactionReceipt) -> None:
-    dict_events = EventDict(tx_events_from_trace(tx))
+    dict_events = EventDict(tx_events_from_receipt(tx))
     groups = [_dg_item_group, _service_item_group]
 
     display_tx_events(dict_events, "Events registered during the proposal execution", groups)
@@ -72,7 +72,7 @@ def add_event_emitter(event):
 
 
 def group_voting_events(tx: TransactionReceipt) -> List[EventDict]:
-    events = tx_events_from_trace(tx)
+    events = tx_events_from_receipt(tx)
 
     # manually add event emitter address because it is dropped by EventDict class
     events = [add_event_emitter(e) for e in events]
@@ -90,7 +90,7 @@ def group_voting_events(tx: TransactionReceipt) -> List[EventDict]:
     return ret
 
 def group_dg_events(tx: TransactionReceipt) -> List[EventDict]:
-    events = tx_events_from_trace(tx)
+    events = tx_events_from_receipt(tx)
 
     # manually add event emitter address because it is dropped by EventDict class
     events = [add_event_emitter(e) for e in events]
@@ -115,13 +115,6 @@ _dg_item_group = GroupBy(
     show_counter=True,
     color="magenta",
 )
-
-
-def display_dg_events(tx: TransactionReceipt) -> None:
-    dict_events = EventDict(tx_events_from_trace(tx))
-    groups = [_dg_item_group, _service_item_group]
-
-    display_tx_events(dict_events, "Events registered during the proposal execution", groups)
 
 
 def group_voting_events_from_receipt(tx: TransactionReceipt) -> List[EventDict]:

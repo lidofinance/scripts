@@ -211,11 +211,6 @@ class ContractsLazyLoader:
         return interface.CSModule(CSM_ADDRESS)
 
     @property
-    def cs_early_adoption(self) -> interface.CSEarlyAdoption:
-        """Deprecated"""
-        return interface.CSEarlyAdoption(CS_EARLY_ADOPTION_ADDRESS)
-
-    @property
     def cs_permissionless_gate(self) -> interface.CSPermissionlessGate:
         return interface.CSPermissionlessGate(CS_PERMISSIONLESS_GATE_ADDRESS)
 
@@ -226,6 +221,10 @@ class ContractsLazyLoader:
     @property
     def cs_accounting(self) -> interface.CSAccounting:
         return interface.CSAccounting(CS_ACCOUNTING_ADDRESS)
+
+    @property
+    def cs_parameters_registry(self) -> interface.CSParametersRegistry:
+        return interface.CSParametersRegistry(CS_PARAMS_REGISTRY_ADDRESS)
 
     @property
     def cs_fee_distributor(self) -> interface.CSFeeDistributor:
@@ -240,16 +239,12 @@ class ContractsLazyLoader:
         return interface.CSHashConsensus(CS_ORACLE_HASH_CONSENSUS_ADDRESS)
 
     @property
-    def cs_verifier(self) -> interface.CSVerifier:
-        return interface.CSVerifier(CS_VERIFIER_ADDRESS)
-
-    @property
-    def cs_verifier_v2(self) -> interface.CSVerifierV2:
+    def cs_verifier(self) -> interface.CSVerifierV2:
         return interface.CSVerifierV2(CS_VERIFIER_V2_ADDRESS)
 
     @property
     def cs_exit_penalties(self) -> interface.CSExitPenalties:
-        return interface.CSExitPenalties(CS_EXIT_PENALTIES)
+        return interface.CSExitPenalties(CS_EXIT_PENALTIES_ADDRESS)
 
     @property
     def cs_ejector(self) -> interface.CSEjector:
@@ -404,6 +399,10 @@ class ContractsLazyLoader:
         return interface.GateSeal(GATE_SEAL)
 
     @property
+    def veb_twg_gate_seal(self) -> interface.GateSeal:
+        return interface.GateSeal(VEB_TWG_GATE_SEAL)
+
+    @property
     def evm_script_registry(self) -> interface.EVMScriptRegistry:
         return interface.EVMScriptRegistry(ARAGON_EVMSCRIPT_REGISTRY)
 
@@ -454,6 +453,10 @@ class ContractsLazyLoader:
     @property
     def emergency_governance(self) -> interface.EmergencyGovernance:
         return interface.EmergencyGovernance(DAO_EMERGENCY_GOVERNANCE)
+
+    @property
+    def triggerable_withdrawals_gateway(self) -> interface.TriggerableWithdrawalsGateway:
+        return interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY)
 
 
 def __getattr__(name: str) -> Any:

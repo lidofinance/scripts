@@ -1,13 +1,19 @@
 import pytest
 
-from brownie import reverts, accounts, chain  # type: ignore
-from utils.test.oracle_report_helpers import oracle_report, ZERO_BYTES32
+from brownie import reverts, accounts, chain, web3, Wei  # type: ignore
+from eth_hash.auto import keccak
+
+from utils.test.exit_bus_data import LidoValidator
+from utils.test.oracle_report_helpers import oracle_report, ZERO_BYTES32, wait_to_next_available_report_time, \
+    prepare_exit_bus_report, reach_consensus
 from brownie.network.account import Account
 
+from eth_abi.abi import encode
 from utils.evm_script import encode_error
 from utils.test.helpers import almostEqEth, ETH
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.config import (
+    TRIGGERABLE_WITHDRAWALS_GATEWAY,
     GATE_SEAL_COMMITTEE,
     contracts,
     WITHDRAWAL_QUEUE,
@@ -33,10 +39,20 @@ def test_gate_seal_expiration(gate_seal_committee):
     chain.mine(1)
     assert contracts.gate_seal.is_expired()
     with reverts("gate seal: expired"):
-        contracts.gate_seal.seal([WITHDRAWAL_QUEUE, VALIDATORS_EXIT_BUS_ORACLE], {"from": gate_seal_committee})
+        contracts.gate_seal.seal([WITHDRAWAL_QUEUE], {"from": gate_seal_committee})
 
 
-def test_gate_seal_scenario(steth_holder, gate_seal_committee, eth_whale):
+def test_gate_seal_twg_veb_expiration(gate_seal_committee):
+    assert not contracts.veb_twg_gate_seal.is_expired()
+    time = chain.time()
+    chain.sleep(GATE_SEAL_EXPIRY_TIMESTAMP - time + 1)
+    chain.mine(1)
+    assert contracts.veb_twg_gate_seal.is_expired()
+    with reverts("gate seal: expired"):
+        contracts.gate_seal.seal([TRIGGERABLE_WITHDRAWALS_GATEWAY, VALIDATORS_EXIT_BUS_ORACLE], {"from": gate_seal_committee})
+
+
+def test_gate_seal_wq_scenario(steth_holder, gate_seal_committee, eth_whale):
     account = accounts.at(steth_holder, force=True)
     REQUESTS_COUNT = 2
     REQUEST_AMOUNT = ETH(1)
@@ -46,7 +62,6 @@ def test_gate_seal_scenario(steth_holder, gate_seal_committee, eth_whale):
     unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
 
     while unfinalized_steth > 0:
-
         fill_deposit_buffer(unfinalized_steth // ETH(32) + 1)
 
         oracle_report(silent=True)
@@ -84,10 +99,10 @@ def test_gate_seal_scenario(steth_holder, gate_seal_committee, eth_whale):
     pending_request_ids = [event["requestId"] for event in request_tx.events["WithdrawalRequested"]]
 
     """ sealing """
-    sealables = [WITHDRAWAL_QUEUE, VALIDATORS_EXIT_BUS_ORACLE]
+    sealables = [WITHDRAWAL_QUEUE]
     seal_tx = contracts.gate_seal.seal(sealables, {"from": gate_seal_committee})
 
-    assert seal_tx.events.count("Sealed") == 2
+    assert seal_tx.events.count("Sealed") == 1
     for i, seal_event in enumerate(seal_tx.events["Sealed"]):
         assert seal_event["gate_seal"] == GATE_SEAL
         assert seal_event["sealed_for"] == GATE_SEAL_PAUSE_DURATION
@@ -107,11 +122,6 @@ def test_gate_seal_scenario(steth_holder, gate_seal_committee, eth_whale):
     assert contracts.withdrawal_queue.isPaused()
     assert contracts.withdrawal_queue.getResumeSinceTimestamp() == seal_tx.timestamp + GATE_SEAL_PAUSE_DURATION
 
-    assert contracts.validators_exit_bus_oracle.isPaused()
-    assert (
-        contracts.validators_exit_bus_oracle.getResumeSinceTimestamp() == seal_tx.timestamp + GATE_SEAL_PAUSE_DURATION
-    )
-
     # reverts on requestWithdrawals
     contracts.lido.approve(contracts.withdrawal_queue.address, REQUESTS_SUM, {"from": steth_holder})
     with reverts(encode_error("ResumedExpected()")):
@@ -119,18 +129,12 @@ def test_gate_seal_scenario(steth_holder, gate_seal_committee, eth_whale):
             [REQUEST_AMOUNT for _ in range(REQUESTS_COUNT)], steth_holder, {"from": steth_holder}
         )
 
-    # reverts on VEBO report
-    with reverts(encode_error("ResumedExpected()")):
-        contracts.validators_exit_bus_oracle.submitReportData((1, 1, 1, 1, ZERO_BYTES32), 1, {"from": steth_holder})
-
     # reverts on finalization attempt
     with reverts(encode_error("ResumedExpected()")):
         contracts.withdrawal_queue.finalize(1, 1, {"from": steth_holder})
 
     """ claim """
     assert contracts.withdrawal_queue.isPaused()
-    assert contracts.validators_exit_bus_oracle.isPaused()
-
     lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
     hints = contracts.withdrawal_queue.findCheckpointHints(claimable_request_ids, 1, lastCheckpointIndex)
     claim_balance_before = account.balance()
@@ -138,7 +142,6 @@ def test_gate_seal_scenario(steth_holder, gate_seal_committee, eth_whale):
     claim_balance_after = account.balance()
 
     assert contracts.withdrawal_queue.isPaused()
-    assert contracts.validators_exit_bus_oracle.isPaused()
 
     assert almostEqEth(
         claim_balance_after - claim_balance_before + claim_tx.gas_used * claim_tx.gas_price, REQUESTS_SUM
@@ -161,7 +164,6 @@ def test_gate_seal_scenario(steth_holder, gate_seal_committee, eth_whale):
         assert reports_passed <= MAX_REPORTS_UNTIL_RESUME
 
     assert not contracts.withdrawal_queue.isPaused()
-    assert not contracts.validators_exit_bus_oracle.isPaused()
 
     """ post seal claim """
     lastCheckpointIndex = contracts.withdrawal_queue.getLastCheckpointIndex()
@@ -174,3 +176,145 @@ def test_gate_seal_scenario(steth_holder, gate_seal_committee, eth_whale):
         claim_balance_after - claim_balance_before + claim_tx.gas_used * claim_tx.gas_price, REQUESTS_SUM
     )
     assert claim_tx.events.count("WithdrawalClaimed") == REQUESTS_COUNT
+
+
+def test_gate_seal_twg_veb_scenario(steth_holder, gate_seal_committee, eth_whale):
+    account = accounts.at(steth_holder, force=True)
+    REQUESTS_COUNT = 2
+    REQUEST_AMOUNT = ETH(1)
+    REQUESTS_SUM = REQUESTS_COUNT * REQUEST_AMOUNT
+
+    """ finalize all requests """
+    unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
+
+    while unfinalized_steth > 0:
+        fill_deposit_buffer(unfinalized_steth // ETH(32) + 1)
+
+        oracle_report(silent=True)
+        unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
+
+    """ requests to be finalized """
+    contracts.lido.approve(contracts.withdrawal_queue.address, REQUESTS_SUM, {"from": steth_holder})
+    request_tx = contracts.withdrawal_queue.requestWithdrawals(
+        [REQUEST_AMOUNT for _ in range(REQUESTS_COUNT)], steth_holder, {"from": steth_holder}
+    )
+    claimable_request_ids = [event["requestId"] for event in request_tx.events["WithdrawalRequested"]]
+
+    """ finalization """
+    report_tx = oracle_report(silent=True)[0]
+
+    # on second report requests will get finalized for sure
+    if not report_tx.events.count("WithdrawalsFinalized") == 1:
+        report_tx = oracle_report(silent=True)[0]
+
+    while report_tx.events["WithdrawalsFinalized"][0]["to"] != claimable_request_ids[-1]:
+        report_tx = oracle_report(silent=True)[0]
+        assert report_tx.events.count("WithdrawalsFinalized") == 1
+
+    post_report_statuses = contracts.withdrawal_queue.getWithdrawalStatus(claimable_request_ids, {"from": steth_holder})
+    for i, _ in enumerate(claimable_request_ids):
+        (_, _, _, _, isFinalized, isClaimed) = post_report_statuses[i]
+        assert isFinalized
+        assert not isClaimed
+
+    """ requests to be left pending """
+    contracts.lido.approve(contracts.withdrawal_queue.address, REQUESTS_SUM, {"from": steth_holder})
+    request_tx = contracts.withdrawal_queue.requestWithdrawals(
+        [REQUEST_AMOUNT for _ in range(REQUESTS_COUNT)], steth_holder, {"from": steth_holder}
+    )
+    pending_request_ids = [event["requestId"] for event in request_tx.events["WithdrawalRequested"]]
+
+    """ sealing """
+    sealables = [TRIGGERABLE_WITHDRAWALS_GATEWAY, VALIDATORS_EXIT_BUS_ORACLE]
+    seal_tx = contracts.veb_twg_gate_seal.seal(sealables, {"from": gate_seal_committee})
+
+    assert seal_tx.events.count("Sealed") == 2
+    for i, seal_event in enumerate(seal_tx.events["Sealed"]):
+        assert seal_event["gate_seal"] == contracts.veb_twg_gate_seal.address
+        assert seal_event["sealed_for"] == GATE_SEAL_PAUSE_DURATION
+        assert seal_event["sealed_by"] == gate_seal_committee
+        assert seal_event["sealable"] == sealables[i]
+        assert seal_event["sealed_at"] == seal_tx.timestamp
+
+    # brownie for some reason fails to decode second event
+    # assert seal_tx.events.count("Paused") == 2
+    for pause_event in seal_tx.events["Paused"]:
+        assert pause_event["duration"] == GATE_SEAL_PAUSE_DURATION
+
+    assert contracts.veb_twg_gate_seal.is_expired()
+    with reverts("gate seal: expired"):
+        seal_tx = contracts.veb_twg_gate_seal.seal(sealables, {"from": gate_seal_committee})
+
+    assert contracts.triggerable_withdrawals_gateway.isPaused()
+    assert contracts.triggerable_withdrawals_gateway.getResumeSinceTimestamp() == seal_tx.timestamp + GATE_SEAL_PAUSE_DURATION
+
+    assert contracts.validators_exit_bus_oracle.isPaused()
+    assert (
+        contracts.validators_exit_bus_oracle.getResumeSinceTimestamp() == seal_tx.timestamp + GATE_SEAL_PAUSE_DURATION
+    )
+
+    value = Wei('1 ether')
+    # reverts on VEBO report
+    with reverts(encode_error("ResumedExpected()")):
+        contracts.validators_exit_bus_oracle.submitReportData((1, 1, 1, 1, ZERO_BYTES32), 1, {"from": steth_holder})
+
+    # reverts on VEBO triggerExits
+    with reverts(encode_error("ResumedExpected()")):
+        contracts.validators_exit_bus_oracle.triggerExits(("0x0000000000000000000000000000000000000000000", 1), [1, 2, 3], steth_holder, {"from": steth_holder, 'value': value})
+
+    """ claim """
+    assert contracts.triggerable_withdrawals_gateway.isPaused()
+    assert contracts.validators_exit_bus_oracle.isPaused()
+
+    """ accounting oracle reports until we pass pause and claim"""
+    MAX_REPORTS_UNTIL_RESUME = (
+        GATE_SEAL_PAUSE_DURATION // (CHAIN_SECONDS_PER_SLOT * CHAIN_SLOTS_PER_EPOCH * AO_EPOCHS_PER_FRAME) + 2
+    )
+    reports_passed = 0
+    for i in range(MAX_REPORTS_UNTIL_RESUME):
+        (report_tx, _) = oracle_report(silent=False)
+        print(
+            f"Oracle report {reports_passed} at {report_tx.timestamp}/{seal_tx.timestamp + GATE_SEAL_PAUSE_DURATION} seconds to resume"
+        )
+
+    assert not contracts.triggerable_withdrawals_gateway.isPaused()
+    assert not contracts.validators_exit_bus_oracle.isPaused()
+
+    """ post seal """
+    unreachable_cl_validator_index = 100_000_000
+    no_global_index = (module_id, no_id) = (1, 33)
+    validator_key = contracts.node_operators_registry.getSigningKey(no_id, 1)[0]
+
+    validator = LidoValidator(index=unreachable_cl_validator_index, pubkey=validator_key)
+
+    ref_slot = _wait_for_next_ref_slot()
+    report, report_hash = prepare_exit_bus_report([(no_global_index, validator)], ref_slot)
+    consensus_version = contracts.validators_exit_bus_oracle.getConsensusVersion()
+
+    submitter = reach_consensus(
+        ref_slot, report_hash, consensus_version, contracts.hash_consensus_for_validators_exit_bus_oracle
+    )
+    hash = web3.keccak(encode(['bytes', 'uint256'], [report[4], 1]))
+    (_,_,_, vebInitLimit1, vebInitLimit2) = contracts.validators_exit_bus_oracle.getExitRequestLimitFullInfo()
+    contracts.validators_exit_bus_oracle.submitExitRequestsHash(hash, {"from": "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"})
+    contracts.validators_exit_bus_oracle.submitExitRequestsData((report[4], 1), {"from": submitter})
+    (_,_,_, twgInitLimit1, twgInitLimit2) = contracts.triggerable_withdrawals_gateway.getExitRequestLimitFullInfo()
+    tx = contracts.validators_exit_bus_oracle.triggerExits((report[4], 1), [0], steth_holder, {"from": steth_holder, 'value': value})
+
+    (_,_,_, twgLimit1, twgLimit2) = contracts.triggerable_withdrawals_gateway.getExitRequestLimitFullInfo()
+    (_,_,_, vebLimit1, vebLimit2) = contracts.validators_exit_bus_oracle.getExitRequestLimitFullInfo()
+    assert vebLimit1 < vebInitLimit1
+    assert vebLimit2 < vebInitLimit2
+    assert twgLimit1 < twgInitLimit1
+    assert twgLimit2 < twgInitLimit2
+    assert len(tx.events["WithdrawalRequestAdded"]['request']) == 56  # 48 + 8
+    pubkey_bytes = tx.events["WithdrawalRequestAdded"]['request'][:48]
+    _ = int.from_bytes(tx.events["WithdrawalRequestAdded"]['request'][48:], byteorder="big", signed=False)
+
+    pubkey_hex = "0x" + pubkey_bytes.hex()
+    assert validator_key == pubkey_hex
+
+def _wait_for_next_ref_slot():
+    wait_to_next_available_report_time(contracts.hash_consensus_for_validators_exit_bus_oracle)
+    ref_slot, _ = contracts.hash_consensus_for_validators_exit_bus_oracle.getCurrentFrame()
+    return ref_slot

@@ -6,8 +6,8 @@ inputs:
     description: "vote type: normal or large"
     required: false
     default: "normal"
-  infura:
-    description: "infura JSON-RPC provider"
+  rpc_url:
+    description: "Ethereum RPC URL (any provider: Infura, Alchemy, custom)"
     required: true
     default: ""
   etherscan:
@@ -74,6 +74,5 @@ runs:
       run: >
         ${{ inputs.command }}
       env:
-        WEB3_INFURA_PROJECT_ID: ${{ inputs.infura }}
         ETHERSCAN_TOKEN: ${{ inputs.etherscan }}
-        ETH_RPC_URL: "https://mainnet.infura.io/v3/${{ inputs.infura }}"
+        ETH_RPC_URL: ${{ inputs.rpc_url }}

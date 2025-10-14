@@ -230,24 +230,24 @@ def test_lido_dao_ops_snapshot(sandwich_upgrade: SandwichFn):
 
     def get_actions(from_address: Account | None = None):
         return (
-        _call(lido.pauseStaking, {"from": from_address}),
-        _call(lido.stop, {"from": from_address}),
-        _call(lido.resumeStaking, {"from": from_address}),
-        _call(lido.pauseStaking, {"from": from_address}),
-        _call(lido.removeStakingLimit, {"from": from_address}),
-        _call(lido.resumeStaking, {"from": from_address}),
-        _call(
-            lido.receiveELRewards,
-            {
-                "from": el_vault,
-                "value": _1ETH,
-            },
-        ),
-        _call(lido.pauseStaking, {"from": from_address}),
-        _call(lido.setStakingLimit, 17, 3, {"from": from_address}),
-        _call(lido.resume, {"from": from_address}),
-        _call(lido.stop, {"from": from_address}),
-    ) 
+            _call(lido.pauseStaking, {"from": from_address}),
+            _call(lido.stop, {"from": from_address}),
+            _call(lido.resumeStaking, {"from": from_address}),
+            _call(lido.pauseStaking, {"from": from_address}),
+            _call(lido.removeStakingLimit, {"from": from_address}),
+            _call(lido.resumeStaking, {"from": from_address}),
+            _call(
+                lido.receiveELRewards,
+                {
+                    "from": el_vault,
+                    "value": _1ETH,
+                },
+            ),
+            _call(lido.pauseStaking, {"from": from_address}),
+            _call(lido.setStakingLimit, 17, 3, {"from": from_address}),
+            _call(lido.resume, {"from": from_address}),
+            _call(lido.stop, {"from": from_address}),
+        )
 
     stacks = sandwich_upgrade(get_actions)
     _stacks_equal(stacks)
@@ -406,11 +406,6 @@ def sandwich_upgrade(
                     func=repr(action_fn),
                 )
 
-        with _chain_snapshot():
-            v1_frames = tuple(_actions_snaps(contracts.voting))
-
-        execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env)
-
         contracts.acl.grantPermission(
             contracts.agent,
             contracts.lido,
@@ -435,7 +430,12 @@ def sandwich_upgrade(
             contracts.lido.STAKING_CONTROL_ROLE(),
             {"from": contracts.agent},
         )
-        
+
+        with _chain_snapshot():
+            v1_frames = tuple(_actions_snaps(contracts.agent))
+
+        execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env)
+
         v2_frames = tuple(_actions_snaps(contracts.agent))
 
         return v1_frames, v2_frames

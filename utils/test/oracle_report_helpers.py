@@ -11,12 +11,12 @@ from hexbytes import HexBytes
 from utils.config import contracts, AO_CONSENSUS_VERSION
 from utils.test.exit_bus_data import encode_data
 from utils.test.helpers import ETH, GWEI, eth_balance
-from utils.test.merkle_tree import Tree
+from utils.test.merkle_tree import RewardsTree
 
 ZERO_HASH = bytes([0] * 32)
 ZERO_BYTES32 = HexBytes(ZERO_HASH)
 ONE_DAY = 1 * 24 * 60 * 60
-SHARE_RATE_PRECISION = 10**27
+SHARE_RATE_PRECISION = 10 ** 27
 EXTRA_DATA_FORMAT_EMPTY = 0
 EXTRA_DATA_FORMAT_LIST = 1
 
@@ -108,14 +108,14 @@ def prepare_exit_bus_report(validators_to_exit, ref_slot):
     return report, report_hash
 
 
-def prepare_csm_report(node_operators_rewards: dict, ref_slot):
+def prepare_csm_report(node_operators_rewards: dict, ref_slot, distributed_shares):
     consensus_version = contracts.cs_fee_oracle.getConsensusVersion()
     shares = node_operators_rewards.copy()
     if len(shares) < 2:
         # put a stone
-        shares[2**64 - 1] = 0
+        shares[2 ** 64 - 1] = 0
 
-    tree = Tree.new(tuple((no_id, amount) for (no_id, amount) in shares.items()))
+    tree = RewardsTree.new(tuple((no_id, amount) for (no_id, amount) in shares.items()))
     # semi-random values
     log_cid = web3.keccak(tree.root)
     tree_cid = web3.keccak(log_cid)
@@ -126,7 +126,10 @@ def prepare_csm_report(node_operators_rewards: dict, ref_slot):
         tree.root,
         str(tree_cid),
         str(log_cid),
-        sum(shares.values()),
+        distributed_shares,
+        0,  # rebate
+        HexBytes(ZERO_HASH),  # strikesTreeRoot
+        "",  # strikesTreeCid
     )
     report_data = encode_data_from_abi(report, contracts.cs_fee_oracle.abi, "submitReportData")
     report_hash = web3.keccak(report_data)
@@ -231,7 +234,7 @@ def push_oracle_report(
         extraDataItemsCount=extraDataItemsCount,
     )
     submitter = reach_consensus(refSlot, hash, consensusVersion, contracts.hash_consensus_for_accounting_oracle, silent)
-    accounts[0].transfer(submitter, 10**19)
+    accounts[0].transfer(submitter, 10 ** 19)
     # print(contracts.oracle_report_sanity_checker.getOracleReportLimits())
     report_tx = contracts.accounting_oracle.submitReportData(items, oracleVersion, {"from": submitter})
     if not silent:
@@ -287,7 +290,7 @@ def simulate_report(
             # The code is taken from the current production `lido-oracle` implementation
             # source: https://github.com/lidofinance/lido-oracle/blob/da393bf06250344a4d06dce6d1ac6a3ddcb9c7a3/src/providers/execution/contracts/lido.py#L93-L95
             "stateDiff": {
-                override_slot: refSlot,
+                override_slot: '0x' + refSlot.to_bytes(32, "big").hex(),
             },
         },
     }
@@ -347,7 +350,9 @@ def wait_to_next_available_report_time(consensus_contract):
             (refSlot, _) = consensus_contract.getCurrentFrame()
         else:
             raise
-    time = web3.eth.get_block("latest").timestamp
+
+    # Use chain.time() instead of block timestamp for consistency
+    time = chain.time()
     (_, EPOCHS_PER_FRAME, _) = consensus_contract.getFrameConfig()
     frame_start_with_offset = GENESIS_TIME + (refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME + 1) * SECONDS_PER_SLOT
     chain.sleep(frame_start_with_offset - time)
