@@ -6,6 +6,7 @@ from utils.config import (
     LIDO,
     WETH_TOKEN,
     DAI_TOKEN,
+    MATIC_TOKEN,
 )
 
 
@@ -70,6 +71,19 @@ def make_dai_payout(*not_specified, target_address: str, dai_in_wei: int, refere
         token_address=DAI_TOKEN,
         recipient=target_address,
         amount=dai_in_wei,
+        reference=reference,
+        finance=contracts.finance,
+    )
+
+def make_matic_payout(*not_specified, target_address: str, matic_in_wei: int, reference: str) -> Tuple[str, str]:
+    """Encode MATIC payout."""
+    if not_specified:
+        raise ValueError("Please, specify all arguments with keywords.")
+
+    return _encode_token_transfer(
+        token_address=MATIC_TOKEN,
+        recipient=target_address,
+        amount=matic_in_wei,
         reference=reference,
         finance=contracts.finance,
     )
