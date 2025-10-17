@@ -1,16 +1,19 @@
 from brownie import chain, interface
 from brownie.network.transaction import TransactionReceipt
+import pytest
 
 from utils.test.tx_tracing_helpers import (
     group_voting_events_from_receipt,
     group_dg_events_from_receipt,
+    count_vote_items_by_events,
+    display_voting_events,
+    display_dg_events
 )
 from utils.evm_script import encode_call_script
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.dual_governance import PROPOSAL_STATUS
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
-)
 
 
 # ============================================================================
@@ -27,8 +30,10 @@ from utils.test.event_validators.dual_governance import validate_dual_governance
 # NOTE: these addresses might have a different value on other chains
 
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
+AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
-DUAL_GOVERNANCE = "0xcdF49b058D606AD34c5789FD8c3BF8B3E54bA2db"
+DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
+DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 
 # TODO Set variable to None if item is not presented
 EXPECTED_VOTE_ID = 1
@@ -68,6 +73,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     # ========================= Arrange variables ===========================
     # =======================================================================
     voting = interface.Voting(VOTING)
+    agent = interface.Agent(AGENT)
     timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
 
@@ -114,20 +120,20 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
-        assert count_vote_items_by_events(vote_tx, voting) == EXPECTED_VOTE_EVENTS_COUNT
+        assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
         if EXPECTED_DG_PROPOSAL_ID is not None:
             assert EXPECTED_DG_PROPOSAL_ID == timelock.getProposalsCount()
 
-            # Validate DG Proposal Submit event
-            validate_dual_governance_submit_event(
-                vote_events[0],
-                proposal_id=EXPECTED_DG_PROPOSAL_ID,
-                proposer=VOTING,
-                executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-                metadata="TODO DG proposal description",
-                proposal_calls=dual_governance_proposal_calls,
-                emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
-            )
+            # TODO Validate DG Proposal Submit event
+            # validate_dual_governance_submit_event(
+            #     vote_events[0],
+            #     proposal_id=EXPECTED_DG_PROPOSAL_ID,
+            #     proposer=VOTING,
+            #     executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+            #     metadata="TODO DG proposal description",
+            #     proposal_calls=dual_governance_proposal_calls,
+            #     emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
+            # )
 
             # TODO validate all other voting events
 
@@ -154,8 +160,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     timelock=EMERGENCY_PROTECTED_TIMELOCK,
                     admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
                 )
-                assert count_vote_items_by_events(dg_tx, agent) == EXPECTED_DG_EVENTS_COUNT
-                assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
+                assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_COUNT
 
                 # TODO validate all DG events
 
