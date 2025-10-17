@@ -45,26 +45,27 @@ IPFS_DESCRIPTION_HASH = ""
 
 @pytest.fixture(scope="module")
 def dual_governance_proposal_calls():
-    # TODO list all Dual Governance proposal calls for events checking
-    # csm = interface.CSModule(CSM)
-    # staking_router = interface.StakingRouter(STAKING_ROUTER)
-    # csm_module_manager_role = csm.MODULE_MANAGER_ROLE()
-    # csm_verifier_role = csm.VERIFIER_ROLE()
-    # 
-    # return [
-    #     {
-    #         "target": AGENT,
-    #         "value": 0,
-    #         "data": agent_forward(
-    #             [
-    #                 (
-    #                     dg_item_address_1, dg_item_encoded_input_1,
-    #                 )
-    #             ]
-    #         )[1],
-    #     },
-    # ]
-    pass
+    # TODO Create all the dual governance calls that match the voting script
+    dg_items = [
+        # agent_forward([
+        #     # TODO 1.1. DG voting item 1 description
+        #     (dg_item_address_1, dg_item_encoded_input_1),
+        #     # TODO 1.2. DG voting item 2 description
+        #     (dg_item_address_2, dg_item_encoded_input_2),
+        # ])
+    ]
+
+    # Convert each dg_item to the expected format
+    proposal_calls = []
+    for dg_item in dg_items:
+        target, data = dg_item  # agent_forward returns (target, data)
+        proposal_calls.append({
+            "target": target,
+            "value": 0,
+            "data": data
+        })
+
+    return proposal_calls
 
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
