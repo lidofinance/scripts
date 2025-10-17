@@ -21,12 +21,11 @@ def validate_dual_governance_submit_event(
     assert event["ProposalSubmitted"][0]["id"] == proposal_id, "Wrong proposalId"
     assert event["ProposalSubmitted"][0]["executor"] == executor, "Wrong executor"
 
-    if proposal_calls:
-        assert len(event["ProposalSubmitted"][0]["calls"]) == len(proposal_calls), "Wrong callsCount"
-        for i in range(0, len(proposal_calls)):
-            assert event["ProposalSubmitted"][0]["calls"][i][0] == proposal_calls[i]["target"], f"Wrong target {i}: {event['ProposalSubmitted'][0]['calls'][i][0]} : {proposal_calls[i]['target']}"
-            assert event["ProposalSubmitted"][0]["calls"][i][1] == proposal_calls[i]["value"], f"Wrong value {i}"
-            assert event["ProposalSubmitted"][0]["calls"][i][2] == proposal_calls[i]["data"], f'Wrong data {i}'
+    assert len(event["ProposalSubmitted"][0]["calls"]) == len(proposal_calls), "Wrong callsCount"
+    for i in range(0, len(proposal_calls)):
+        assert event["ProposalSubmitted"][0]["calls"][i][0] == proposal_calls[i]["target"], f"Wrong target {i}: {event['ProposalSubmitted'][0]['calls'][i][0]} : {proposal_calls[i]['target']}"
+        assert event["ProposalSubmitted"][0]["calls"][i][1] == proposal_calls[i]["value"], f"Wrong value {i}"
+        assert event["ProposalSubmitted"][0]["calls"][i][2] == proposal_calls[i]["data"], f'Wrong data {i}'
 
     assert event["ProposalSubmitted"][1]["proposalId"] == proposal_id, "Wrong proposalId"
     assert event["ProposalSubmitted"][1]["proposerAccount"] == proposer, "Wrong proposer"
