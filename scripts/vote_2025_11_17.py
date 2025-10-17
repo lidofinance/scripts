@@ -61,37 +61,31 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     staking_router = interface.StakingRouter(STAKING_ROUTER)
 
     dg_items = [
-        # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
-        agent_forward(
-            [update_spent_amount(spent_amount=0, registry_address=ET_TRP_REGISTRY)]
-        ),
-        # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
-        agent_forward(
-            [
-                set_limit_parameters(
-                    limit=11_000_000 * 10**18,
-                    period_duration_months=12,
-                    registry_address=ET_TRP_REGISTRY,
+        agent_forward([
+            # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
+            update_spent_amount(spent_amount=0, registry_address=ET_TRP_REGISTRY),
+            
+            # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
+            set_limit_parameters(
+                limit=11_000_000 * 10**18,
+                period_duration_months=12,
+                registry_address=ET_TRP_REGISTRY,
+            ),
+
+            # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 410 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+            (
+                staking_router.address,
+                staking_router.updateStakingModule.encode_input(
+                    SDVT_MODULE_ID,
+                    SDVT_MODULE_NEW_TARGET_SHARE_BP,
+                    SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP,
+                    SDVT_MODULE_MODULE_FEE_BP,
+                    SDVT_MODULE_TREASURY_FEE_BP,
+                    SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK,
+                    SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
                 ),
-            ]
-        ),
-        # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 410 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
-        agent_forward(
-            [
-                (
-                    staking_router.address,
-                    staking_router.updateStakingModule.encode_input(
-                        SDVT_MODULE_ID,
-                        SDVT_MODULE_NEW_TARGET_SHARE_BP,
-                        SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP,
-                        SDVT_MODULE_MODULE_FEE_BP,
-                        SDVT_MODULE_TREASURY_FEE_BP,
-                        SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK,
-                        SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
-                    ),
-                )
-            ]
-        ),
+            ),
+        ])
     ]
     
     dg_call_script = submit_proposals([
