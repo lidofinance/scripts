@@ -27,7 +27,7 @@ from utils.dual_governance import submit_proposals
 from utils.agent import agent_forward
 from brownie import interface
 from utils.allowed_recipients_registry import (
-    update_spent_amount,
+    unsafe_set_spent_amount,
     set_limit_parameters,
 )
 
@@ -65,7 +65,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     dg_items = [
         agent_forward([
             # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
-            update_spent_amount(spent_amount=0, registry_address=ET_TRP_REGISTRY),
+            unsafe_set_spent_amount(spent_amount=0, registry_address=ET_TRP_REGISTRY),
         ]),
         agent_forward([
             # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX

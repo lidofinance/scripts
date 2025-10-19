@@ -1,4 +1,4 @@
-from brownie import chain, interface
+from brownie import chain, interface, reverts, accounts
 from brownie.network.transaction import TransactionReceipt
 import pytest
 from brownie.network.account import LocalAccount
@@ -10,6 +10,7 @@ from utils.test.tx_tracing_helpers import (
     display_voting_events,
     display_dg_events
 )
+from utils.test.easy_track_helpers import create_and_enact_payment_motion
 from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
 from utils.evm_script import encode_call_script
 from utils.voting import find_metadata_by_vote_id
@@ -17,7 +18,7 @@ from utils.ipfs import get_lido_vote_cid_from_str
 from utils.dual_governance import PROPOSAL_STATUS
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 from utils.allowed_recipients_registry import (
-    update_spent_amount,
+    unsafe_set_spent_amount,
     set_limit_parameters,
 )
 from utils.agent import agent_forward
@@ -26,6 +27,10 @@ from utils.test.event_validators.payout import (
     Payout,
 )
 from utils.test.deposits_helpers import fill_deposit_buffer, drain_remained_buffered_ether
+from utils.test.event_validators.allowed_recipients_registry import (
+    validate_set_limit_parameter_event,
+    validate_set_spent_amount_event,
+)
 
 
 # ============================================================================
@@ -53,6 +58,10 @@ ET_EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 DEPOSIT_SECURITY_MODULE = "0xffa96d84def2ea035c7ab153d8b991128e3d72fd"
 LIDO = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
 SDVT = "0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433"
+EASY_TRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
+TRP_COMMITTEE = "0x834560F580764Bc2e0B16925F8bF229bb00cB759"
+TRP_TOP_UP_EVM_SCRIPT_FACTORY = "0xBd2b6dC189EefD51B273F5cb2d99BA1ce565fb8C"
+LDO_TOKEN = "0x5a98fcbea516cf06857215779fd812ca3bef1b32"
 
 # TODO Set variable to None if item is not presented
 EXPECTED_VOTE_ID = 194
@@ -75,7 +84,15 @@ MATIC_TOKEN = "0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0"
 MATIC_IN_TREASURY_BEFORE = 508_106_165_781_175_837_137_177
 MATIC_IN_TREASURY_AFTER = 165_781_175_837_137_177
 MATIC_IN_LIDO_LABS_BEFORE = 0
-MATIC_IN_LIDO_LABS_AFTER = 508_106_000_000_000_000_000_000
+MATIC_IN_LIDO_LABS_AFTER = 508_106 * 10**18
+
+TRP_LIMIT_BEFORE = 9_178_284.42 * 10**18
+TRP_ALREADY_SPENT_BEFORE = 2_676_801 * 10**18
+TRP_ALREADY_SPENT_AFTER = 0
+TRP_LIMIT_AFTER = 11_000_000 * 10**18
+TRP_PERIOD_START_TIMESTAMP = 1735689600  # January 1, 2025 UTC
+TRP_PERIOD_END_TIMESTAMP = 1767225600  # January 1, 2026 UTC
+TRP_PERIOD_DURATION_MONTHS = 12
 
 
 @pytest.fixture(scope="module")
@@ -86,11 +103,11 @@ def dual_governance_proposal_calls():
     # Create all the dual governance calls that match the voting script
     dg_items = [
         agent_forward([
-            update_spent_amount(spent_amount=0, registry_address=ET_TRP_REGISTRY),
+            unsafe_set_spent_amount(spent_amount=0, registry_address=ET_TRP_REGISTRY),
         ]),
         agent_forward([
             set_limit_parameters(
-                limit=11_000_000 * 10**18,
+                limit=TRP_LIMIT_AFTER,
                 period_duration_months=12,
                 registry_address=ET_TRP_REGISTRY,
             ),
@@ -136,6 +153,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     matic_token = interface.ERC20(MATIC_TOKEN)
     staking_router = interface.StakingRouter(STAKING_ROUTER)
+    et_trp_registry = interface.AllowedRecipientRegistry(ET_TRP_REGISTRY)
 
 
     # =========================================================================
@@ -232,6 +250,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # =========================================================================
             # TODO add DG before proposal executed checks
 
+            # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
+            # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
+            trp_limit_before, trp_period_duration_months_before = et_trp_registry.getLimitParameters()
+            trp_already_spent_amount_before, trp_spendable_balance_before, trp_period_start_before, trp_period_end_before = et_trp_registry.getPeriodState()
+            assert trp_limit_before == TRP_LIMIT_BEFORE
+            assert trp_period_duration_months_before == TRP_PERIOD_DURATION_MONTHS
+            assert trp_already_spent_amount_before == TRP_ALREADY_SPENT_BEFORE
+            assert trp_spendable_balance_before == TRP_LIMIT_BEFORE - TRP_ALREADY_SPENT_BEFORE
+            assert trp_period_start_before == TRP_PERIOD_START_TIMESTAMP
+            assert trp_period_end_before == TRP_PERIOD_END_TIMESTAMP
+
             # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 410 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
             sdvt_module_before = staking_router.getStakingModule(SDVT_MODULE_ID)
             assert sdvt_module_before['stakeShareLimit'] == SDVT_MODULE_OLD_TARGET_SHARE_BP
@@ -262,6 +291,22 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # TODO validate all DG events
 
+                validate_set_spent_amount_event(
+                    dg_events[0],
+                    new_spent_amount=0,
+                    emitted_by=ET_TRP_REGISTRY,
+                    is_dg_event=True,
+                )
+
+                validate_set_limit_parameter_event(
+                    dg_events[1],
+                    limit=TRP_LIMIT_AFTER,
+                    period_duration_month=TRP_PERIOD_DURATION_MONTHS,
+                    period_start_timestamp=TRP_PERIOD_START_TIMESTAMP,
+                    emitted_by=ET_TRP_REGISTRY,
+                    is_dg_event=True,
+                )
+
                 validate_staking_module_update_event(
                     event=dg_events[2],
                     module_item=StakingModuleItem(
@@ -280,6 +325,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # ==================== After DG proposal executed checks ==================
         # =========================================================================
         # TODO add DG after proposal executed checks
+
+        # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
+        # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
+        trp_limit_after, trp_period_duration_months_after = et_trp_registry.getLimitParameters()
+        trp_already_spent_amount_after, trp_spendable_balance_after, trp_period_start_after, trp_period_end_after = et_trp_registry.getPeriodState()
+        assert trp_limit_after == TRP_LIMIT_AFTER
+        assert trp_period_duration_months_after == TRP_PERIOD_DURATION_MONTHS
+        assert trp_already_spent_amount_after == TRP_ALREADY_SPENT_AFTER
+        assert trp_spendable_balance_after == TRP_LIMIT_AFTER - TRP_ALREADY_SPENT_AFTER
+        assert trp_period_start_after == TRP_PERIOD_START_TIMESTAMP
+        assert trp_period_end_after == TRP_PERIOD_END_TIMESTAMP
 
         # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 410 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
         sdvt_module_after = staking_router.getStakingModule(SDVT_MODULE_ID)
@@ -303,9 +359,62 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert sdvt_module_after['exitedValidatorsCount'] == sdvt_module_before['exitedValidatorsCount']
         assert sdvt_module_after['maxDepositsPerBlock'] == sdvt_module_before['maxDepositsPerBlock']
         assert sdvt_module_after['minDepositBlockDistance'] == sdvt_module_before['minDepositBlockDistance']
+        assert sdvt_module_after['priorityExitShareThreshold'] == sdvt_module_before['priorityExitShareThreshold']
         assert len(sdvt_module_after.items()) == len(sdvt_module_before.items())
         assert len(sdvt_module_after.items()) == 13
 
+        # additional test for TRP ET factory behavior after the vote
+        trp_limit_test(stranger)
+
+
+def trp_limit_test(stranger):
+
+    easy_track = interface.EasyTrack(EASY_TRACK)
+    ldo_token = interface.ERC20(LDO_TOKEN)
+    to_spend = TRP_LIMIT_AFTER - TRP_ALREADY_SPENT_AFTER
+    max_spend_at_once = 5_000_000 * 10**18
+    trp_committee_account = accounts.at(TRP_COMMITTEE, force=True)
+
+    chain.snapshot()
+
+    # check that there is no way to spend more then expected
+    with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
+        create_and_enact_payment_motion(
+            easy_track,
+            TRP_COMMITTEE,
+            TRP_TOP_UP_EVM_SCRIPT_FACTORY,
+            ldo_token,
+            [trp_committee_account],
+            [to_spend + 1],
+            stranger,
+        )
+    
+    # spend all step by step
+    while to_spend > 0:
+        create_and_enact_payment_motion(
+            easy_track,
+            TRP_COMMITTEE,
+            TRP_TOP_UP_EVM_SCRIPT_FACTORY,
+            ldo_token,
+            [trp_committee_account],
+            [min(max_spend_at_once, to_spend)],
+            stranger,
+        )
+        to_spend -= min(max_spend_at_once, to_spend)
+
+    # make sure there is nothing left so that you can't spend anymore
+    with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
+        create_and_enact_payment_motion(
+            easy_track,
+            TRP_COMMITTEE,
+            TRP_TOP_UP_EVM_SCRIPT_FACTORY,
+            ldo_token,
+            [trp_committee_account],
+            [1],
+            stranger,
+        )
+
+    chain.revert()
 
 # additional tests for SDVT module behavior after the vote
 # TODO fix test and enable
