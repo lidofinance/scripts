@@ -11,7 +11,7 @@ II. Increase SDVT target share
 
 === NON-DG ITEMS ===
 III. Transfer MATIC from Lido Treasury to Lido Labs Foundation
-2. Transfer all 508,106.165781175837137177 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Lido Labs Foundation 0x95B521B4F55a447DB89f6a27f951713fC2035f3F
+2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Lido Labs Foundation 0x95B521B4F55a447DB89f6a27f951713fC2035f3F
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
@@ -40,19 +40,21 @@ LIDO_LABS_MS = "0x95B521B4F55a447DB89f6a27f951713fC2035f3F"
 
 # ============================== Constants ===================================
 SDVT_MODULE_ID = 2
-SDVT_MODULE_NEW_TARGET_SHARE_BP = 410 # 4.1%
+SDVT_MODULE_NEW_TARGET_SHARE_BP = 410
 SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP = 444
 SDVT_MODULE_MODULE_FEE_BP = 800
 SDVT_MODULE_TREASURY_FEE_BP = 200
 SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK = 150
 SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 
-MATIC_AMOUNT_FOR_TRANSFER = 508_106.165781175837137177 * 10**18
+NODE_OPERATORS_REGISTRY_ID = 1
+
+MATIC_FOR_TRANSFER = 508_106 * 10**18
 
 
 # ============================= Description ==================================
 # TODO <a description for IPFS (will appear in the voting description on vote.lido.fi)>
-IPFS_DESCRIPTION = ""
+IPFS_DESCRIPTION = "omni nov 2025"
 
 
 # ================================ Main ======================================
@@ -64,14 +66,16 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         agent_forward([
             # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
             update_spent_amount(spent_amount=0, registry_address=ET_TRP_REGISTRY),
-            
+        ]),
+        agent_forward([
             # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
             set_limit_parameters(
                 limit=11_000_000 * 10**18,
                 period_duration_months=12,
                 registry_address=ET_TRP_REGISTRY,
             ),
-
+        ]),
+        agent_forward([
             # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 410 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
             (
                 staking_router.address,
@@ -98,11 +102,11 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             dg_call_script[0]
         ),
         (
-            "2. Transfer all 508,106.165781175837137177 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Lido Labs Foundation 0x95B521B4F55a447DB89f6a27f951713fC2035f3F",
+            "2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Lido Labs Foundation 0x95B521B4F55a447DB89f6a27f951713fC2035f3F",
             make_matic_payout(
                 target_address=LIDO_LABS_MS,
-                matic_in_wei=MATIC_AMOUNT_FOR_TRANSFER,
-                reference="Transfer 508,106.165781175837137177 MATIC from Treasury to Lido Labs Foundation multisig",
+                matic_in_wei=MATIC_FOR_TRANSFER,
+                reference="Transfer 508,106 MATIC from Treasury to Lido Labs Foundation multisig",
             ),
         )
     )

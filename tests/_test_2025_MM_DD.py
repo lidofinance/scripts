@@ -47,12 +47,14 @@ IPFS_DESCRIPTION_HASH = ""
 def dual_governance_proposal_calls():
     # TODO Create all the dual governance calls that match the voting script
     dg_items = [
-        # agent_forward([
-        #     # TODO 1.1. DG voting item 1 description
-        #     (dg_item_address_1, dg_item_encoded_input_1),
-        #     # TODO 1.2. DG voting item 2 description
-        #     (dg_item_address_2, dg_item_encoded_input_2),
-        # ])
+    #     # TODO 1.1. DG voting item 1 description
+    #     agent_forward([
+    #         (dg_item_address_1, dg_item_encoded_input_1)
+    #     ]),
+    #     # TODO 1.2. DG voting item 2 description
+    #     agent_forward([
+    #         (dg_item_address_2, dg_item_encoded_input_2)
+    #     ]),
     ]
 
     # Convert each dg_item to the expected format
@@ -162,6 +164,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
                 )
                 assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_COUNT
+                assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
 
                 # TODO validate all DG events
 

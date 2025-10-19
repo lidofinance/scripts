@@ -1,6 +1,7 @@
 from brownie import chain, interface
 from brownie.network.transaction import TransactionReceipt
 import pytest
+from brownie.network.account import LocalAccount
 
 from utils.test.tx_tracing_helpers import (
     group_voting_events_from_receipt,
@@ -9,6 +10,7 @@ from utils.test.tx_tracing_helpers import (
     display_voting_events,
     display_dg_events
 )
+from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
 from utils.evm_script import encode_call_script
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
@@ -19,6 +21,11 @@ from utils.allowed_recipients_registry import (
     set_limit_parameters,
 )
 from utils.agent import agent_forward
+from utils.test.event_validators.payout import (
+    validate_token_payout_event,
+    Payout,
+)
+from utils.test.deposits_helpers import fill_deposit_buffer, drain_remained_buffered_ether
 
 
 # ============================================================================
@@ -40,21 +47,35 @@ DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 ET_TRP_REGISTRY = "0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8"
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
+LIDO_LABS_MS = "0x95B521B4F55a447DB89f6a27f951713fC2035f3F"
+DEV_GAS_STORE = "0x7FEa69d107A77B5817379d1254cc80D9671E171b"
+ET_EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
+DEPOSIT_SECURITY_MODULE = "0xffa96d84def2ea035c7ab153d8b991128e3d72fd"
+LIDO = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
+SDVT = "0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433"
 
 # TODO Set variable to None if item is not presented
 EXPECTED_VOTE_ID = 194
 EXPECTED_DG_PROPOSAL_ID = 6
 EXPECTED_VOTE_EVENTS_COUNT = 2
 EXPECTED_DG_EVENTS_COUNT = 3
-IPFS_DESCRIPTION_HASH = ""
+IPFS_DESCRIPTION_HASH = "bafkreigs2dewxxu7rj6eifpxsqvib23nsiw2ywsmh3lhewyqlmyn46obnm"
 
 SDVT_MODULE_ID = 2
-SDVT_MODULE_NEW_TARGET_SHARE_BP = 410 # 4.1%
+SDVT_MODULE_OLD_TARGET_SHARE_BP = 400
+SDVT_MODULE_NEW_TARGET_SHARE_BP = 410
 SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP = 444
 SDVT_MODULE_MODULE_FEE_BP = 800
 SDVT_MODULE_TREASURY_FEE_BP = 200
 SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK = 150
 SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
+SDVT_MODULE_NAME = "SimpleDVT"
+
+MATIC_TOKEN = "0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0"
+MATIC_IN_TREASURY_BEFORE = 508_106_165_781_175_837_137_177
+MATIC_IN_TREASURY_AFTER = 165_781_175_837_137_177
+MATIC_IN_LIDO_LABS_BEFORE = 0
+MATIC_IN_LIDO_LABS_AFTER = 508_106_000_000_000_000_000_000
 
 
 @pytest.fixture(scope="module")
@@ -65,17 +86,16 @@ def dual_governance_proposal_calls():
     # Create all the dual governance calls that match the voting script
     dg_items = [
         agent_forward([
-            # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
             update_spent_amount(spent_amount=0, registry_address=ET_TRP_REGISTRY),
-            
-            # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
+        ]),
+        agent_forward([
             set_limit_parameters(
                 limit=11_000_000 * 10**18,
                 period_duration_months=12,
                 registry_address=ET_TRP_REGISTRY,
             ),
-
-            # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 410 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+        ]),
+        agent_forward([
             (
                 staking_router.address,
                 staking_router.updateStakingModule.encode_input(
@@ -114,6 +134,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     agent = interface.Agent(AGENT)
     timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
+    matic_token = interface.ERC20(MATIC_TOKEN)
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
 
 
     # =========================================================================
@@ -143,6 +165,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =======================================================================
         # TODO add before voting checks
 
+        # 2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Lido Labs Foundation 0x95B521B4F55a447DB89f6a27f951713fC2035f3F
+        matic_treasury_balance_before = matic_token.balanceOf(agent.address)
+        assert matic_treasury_balance_before == MATIC_IN_TREASURY_BEFORE
+        matic_labs_balance_before = matic_token.balanceOf(LIDO_LABS_MS)
+        assert matic_labs_balance_before == MATIC_IN_LIDO_LABS_BEFORE
+
 
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
 
@@ -156,6 +184,15 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =======================================================================
         # TODO add after voting tests
 
+        # 2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Lido Labs Foundation 0x95B521B4F55a447DB89f6a27f951713fC2035f3F
+        matic_treasury_balance_after = matic_token.balanceOf(agent.address)
+        assert matic_treasury_balance_after == MATIC_IN_TREASURY_AFTER
+        matic_labs_balance_after = matic_token.balanceOf(LIDO_LABS_MS)
+        assert matic_labs_balance_after == MATIC_IN_LIDO_LABS_AFTER
+        # make sure Lido Labs can actually spend the received MATIC
+        matic_token.transfer(DEV_GAS_STORE, MATIC_IN_LIDO_LABS_AFTER / 2, {"from": LIDO_LABS_MS})
+        assert matic_token.balanceOf(LIDO_LABS_MS) == MATIC_IN_LIDO_LABS_AFTER / 2
+        assert matic_token.balanceOf(DEV_GAS_STORE) == MATIC_IN_LIDO_LABS_AFTER / 2
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
@@ -175,6 +212,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
             # TODO validate all other voting events
 
+            validate_token_payout_event(
+                event=vote_events[1],
+                p=Payout(
+                    token_addr=MATIC_TOKEN,
+                    from_addr=AGENT,
+                    to_addr=LIDO_LABS_MS,
+                    amount=MATIC_IN_LIDO_LABS_AFTER),
+                is_steth=False,
+                emitted_by=AGENT
+            )
+
 
     if EXPECTED_DG_PROPOSAL_ID is not None:
         details = timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)
@@ -183,6 +231,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # ================== DG before proposal executed checks ===================
             # =========================================================================
             # TODO add DG before proposal executed checks
+
+            # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 410 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+            sdvt_module_before = staking_router.getStakingModule(SDVT_MODULE_ID)
+            assert sdvt_module_before['stakeShareLimit'] == SDVT_MODULE_OLD_TARGET_SHARE_BP
+            assert sdvt_module_before['id'] == SDVT_MODULE_ID
+            assert sdvt_module_before['priorityExitShareThreshold'] == SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP
+            assert sdvt_module_before['stakingModuleFee'] == SDVT_MODULE_MODULE_FEE_BP
+            assert sdvt_module_before['treasuryFee'] == SDVT_MODULE_TREASURY_FEE_BP
+            assert sdvt_module_before['maxDepositsPerBlock'] == SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK
+            assert sdvt_module_before['minDepositBlockDistance'] == SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE
+            assert sdvt_module_before['name'] == SDVT_MODULE_NAME
 
 
             if details["status"] == PROPOSAL_STATUS["submitted"]:
@@ -199,11 +258,206 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
                 )
                 assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_COUNT
+                assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
 
                 # TODO validate all DG events
 
+                validate_staking_module_update_event(
+                    event=dg_events[2],
+                    module_item=StakingModuleItem(
+                        id=SDVT_MODULE_ID,
+                        name=SDVT_MODULE_NAME,
+                        address=None,
+                        target_share=SDVT_MODULE_NEW_TARGET_SHARE_BP,
+                        module_fee=SDVT_MODULE_MODULE_FEE_BP,
+                        treasury_fee=SDVT_MODULE_TREASURY_FEE_BP,
+                        priority_exit_share=SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP),
+                    emitted_by=STAKING_ROUTER,
+                    is_dg_event=True
+                )
 
         # =========================================================================
         # ==================== After DG proposal executed checks ==================
         # =========================================================================
         # TODO add DG after proposal executed checks
+
+        # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 410 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+        sdvt_module_after = staking_router.getStakingModule(SDVT_MODULE_ID)
+        assert sdvt_module_after['stakeShareLimit'] == SDVT_MODULE_NEW_TARGET_SHARE_BP
+        assert sdvt_module_after['id'] == SDVT_MODULE_ID
+        assert sdvt_module_after['priorityExitShareThreshold'] == SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP
+        assert sdvt_module_after['stakingModuleFee'] == SDVT_MODULE_MODULE_FEE_BP
+        assert sdvt_module_after['treasuryFee'] == SDVT_MODULE_TREASURY_FEE_BP
+        assert sdvt_module_after['maxDepositsPerBlock'] == SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK
+        assert sdvt_module_after['minDepositBlockDistance'] == SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE
+        assert sdvt_module_after['name'] == SDVT_MODULE_NAME
+        # additional checks to make sure no other fields were changed
+        assert sdvt_module_after['id'] == sdvt_module_before['id']
+        assert sdvt_module_after['stakingModuleAddress'] == sdvt_module_before['stakingModuleAddress']
+        assert sdvt_module_after['stakingModuleFee'] == sdvt_module_before['stakingModuleFee']
+        assert sdvt_module_after['treasuryFee'] == sdvt_module_before['treasuryFee']
+        assert sdvt_module_after['status'] == sdvt_module_before['status']
+        assert sdvt_module_after['name'] == sdvt_module_before['name']
+        assert sdvt_module_after['lastDepositAt'] == sdvt_module_before['lastDepositAt']
+        assert sdvt_module_after['lastDepositBlock'] == sdvt_module_before['lastDepositBlock']
+        assert sdvt_module_after['exitedValidatorsCount'] == sdvt_module_before['exitedValidatorsCount']
+        assert sdvt_module_after['maxDepositsPerBlock'] == sdvt_module_before['maxDepositsPerBlock']
+        assert sdvt_module_after['minDepositBlockDistance'] == sdvt_module_before['minDepositBlockDistance']
+        assert len(sdvt_module_after.items()) == len(sdvt_module_before.items())
+        assert len(sdvt_module_after.items()) == 13
+
+
+# additional tests for SDVT module behavior after the vote
+# TODO fix test and enable
+def _test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_from_env):
+    evm_script_executor: LocalAccount = accounts.at(ET_EVM_SCRIPT_EXECUTOR, force=True)
+    sdvt_remaining_cap_before: int = get_staking_module_remaining_cap(SDVT_MODULE_ID)
+    check_alloc_keys = sdvt_remaining_cap_before
+
+    # Fill the module with keys. Keep last nop_id to add more keys to other node operators later
+    last_nop_id = fill_sdvt_module_with_keys(
+        evm_script_executor=evm_script_executor, total_keys=sdvt_remaining_cap_before
+    )
+
+    _, sdvt_allocation_percentage_after_filling = get_allocation_percentage(check_alloc_keys)
+
+    assert sdvt_allocation_percentage_after_filling == 0.5  # 0.5% of total allocated keys — current target share
+
+    # add more keys to the module to check that percentage wasn't changed
+    last_nop_id = fill_sdvt_module_with_keys(
+        evm_script_executor=evm_script_executor, total_keys=200, start_nop_id=last_nop_id - 1
+    )
+
+    _, sdvt_allocation_percentage_after = get_allocation_percentage(check_alloc_keys + 200)
+
+    assert (
+        sdvt_allocation_percentage_after == sdvt_allocation_percentage_after_filling
+    )  # share percentage should not change after second filling
+
+    # VOTE!
+    vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
+    helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=VOTING, skip_time=3 * 60 * 60 * 24)
+
+    # add more keys to the module
+    fill_sdvt_module_with_keys(evm_script_executor=evm_script_executor, total_keys=300, start_nop_id=last_nop_id - 1)
+
+    sdvt_remaining_cap_after_vote = get_staking_module_remaining_cap(SDVT_MODULE_ID)
+
+    assert sdvt_remaining_cap_after_vote > sdvt_remaining_cap_before  # remaining cap should increase after the vote
+
+    _, sdvt_allocation_percentage_after_vote = get_allocation_percentage(sdvt_remaining_cap_after_vote)
+
+    assert (
+        sdvt_allocation_percentage_after_vote > sdvt_allocation_percentage_after_filling
+    )  # allocation percentage should increase after the vote
+
+
+def fill_sdvt_module():
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
+    lido = interface.Lido(LIDO)
+
+    sdvt_module_stats = staking_router.getStakingModuleSummary(SDVT_MODULE_ID)
+    keys_to_allocate = sdvt_module_stats["depositableValidatorsCount"]
+    fill_deposit_buffer(keys_to_allocate)
+    lido.deposit(keys_to_allocate, SDVT_MODULE_ID, "0x0", {"from": DEPOSIT_SECURITY_MODULE})
+
+# TODO fix test and enable
+def _test_sdvt_stake_allocation(accounts, helpers, ldo_holder, vote_ids_from_env):
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
+    lido = interface.Lido(LIDO)
+
+    evm_script_executor: LocalAccount = accounts.at(ET_EVM_SCRIPT_EXECUTOR, force=True)
+    new_sdvt_keys_amount = 60
+
+    # prepare initial state
+    fill_sdvt_module()
+    drain_remained_buffered_ether()
+    fill_deposit_buffer(200)
+
+    nor_module_stats_before = staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
+    sdvt_module_stats_before = staking_router.getStakingModuleSummary(SDVT_MODULE_ID)
+
+    # VOTE!
+    vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
+    helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=VOTING, skip_time=3 * 60 * 60 * 24)
+
+    # No new keys in the SDVT module
+    lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": DEPOSIT_SECURITY_MODULE})
+    lido.deposit(100, SDVT_MODULE_ID, "0x0", {"from": DEPOSIT_SECURITY_MODULE})
+    nor_module_stats_after_vote = staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
+    sdvt_module_stats_after_vote = staking_router.getStakingModuleSummary(SDVT_MODULE_ID)
+
+    assert (
+        sdvt_module_stats_after_vote["totalDepositedValidators"] - sdvt_module_stats_before["totalDepositedValidators"]
+        == 0
+    ), "No new keys should go to the SDVT module"
+    assert (
+        nor_module_stats_after_vote["totalDepositedValidators"] - nor_module_stats_before["totalDepositedValidators"]
+        == 100
+    ), "All keys should go to the NOR module"
+
+    # Add new keys to the SDVT module
+    fill_sdvt_module_with_keys(evm_script_executor=evm_script_executor, total_keys=new_sdvt_keys_amount)
+
+    lido.deposit(100, SDVT_MODULE_ID, "0x0", {"from": DEPOSIT_SECURITY_MODULE})
+    lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": DEPOSIT_SECURITY_MODULE})
+    nor_module_stats_after = staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
+    sdvt_module_stats_after = staking_router.getStakingModuleSummary(SDVT_MODULE_ID)
+
+    assert sdvt_module_stats_after["depositableValidatorsCount"] == 0, "All accessible keys should be deposited"
+    assert (
+        sdvt_module_stats_after["totalDepositedValidators"]
+        == sdvt_module_stats_after_vote["totalDepositedValidators"] + new_sdvt_keys_amount
+    ), f"{new_sdvt_keys_amount} keys should go to the SDVT module"
+    assert nor_module_stats_after["totalDepositedValidators"] == nor_module_stats_after_vote[
+        "totalDepositedValidators"
+    ] + (100 - new_sdvt_keys_amount), "All other keys should go to the NOR module"
+
+
+def fill_sdvt_module_with_keys(evm_script_executor: LocalAccount, total_keys: int, start_nop_id: int = 0) -> int:
+    simple_dvt = interface.SimpleDVT(SDVT)
+
+    if start_nop_id == 0:
+        start_nop_id = simple_dvt.getNodeOperatorsCount() - 1
+    nop_id = start_nop_id
+
+    keys_to_allocate = (
+        total_keys if total_keys < 100 else 100
+    )  # keys to allocate to each node operator, base batch is 100 keys per operator
+    steps = 1 if keys_to_allocate == total_keys else (total_keys // keys_to_allocate) + 1
+    for idx in range(steps):
+        nop_id = start_nop_id - idx
+        simple_dvt_add_keys(simple_dvt, nop_id, keys_to_allocate)
+        simple_dvt.setNodeOperatorStakingLimit(nop_id, keys_to_allocate, {"from": evm_script_executor})
+
+    return nop_id
+
+
+def get_staking_module_remaining_cap(staking_module_id: int) -> int:
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
+
+    module_summary = staking_router.getStakingModuleSummary(staking_module_id)
+    module_active_keys = module_summary["totalDepositedValidators"] - module_summary["totalExitedValidators"]
+
+    all_modules_summary = [
+        staking_router.getStakingModuleSummary(module_id)
+        for module_id in [NODE_OPERATORS_REGISTRY_ID, SDVT_MODULE_ID]
+    ]
+    total_active_keys = sum(
+        module_summary["totalDepositedValidators"] - module_summary["totalExitedValidators"]
+        for module_summary in all_modules_summary
+    )
+
+    target_share = staking_router.getStakingModule(staking_module_id)["targetShare"]
+
+    return math.ceil((target_share * total_active_keys) / TOTAL_BASIS_POINTS) - module_active_keys
+
+
+def get_allocation_percentage(keys_to_allocate: int) -> (float, float):
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
+
+    allocation = staking_router.getDepositsAllocation(keys_to_allocate)
+    total_allocated = sum(allocation["allocations"])
+    return (round((allocation["allocations"][0] / total_allocated) * TOTAL_BASIS_POINTS) / 100), (
+        round((allocation["allocations"][1] / total_allocated) * TOTAL_BASIS_POINTS) / 100
+    )

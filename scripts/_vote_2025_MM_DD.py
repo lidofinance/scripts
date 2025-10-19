@@ -39,12 +39,14 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
     # TODO in case of using script based omnibus, write vote items manually
     # dg_items = [
+    #     # TODO 1.1. DG voting item 1 description
     #     agent_forward([
-    #         # TODO 1.1. DG voting item 1 description
-    #         (dg_item_address_1, dg_item_encoded_input_1),
-    #         # TODO 1.2. DG voting item 2 description
-    #         (dg_item_address_2, dg_item_encoded_input_2),
-    #     ])
+    #         (dg_item_address_1, dg_item_encoded_input_1)
+    #     ]),
+    #     # TODO 1.2. DG voting item 2 description
+    #     agent_forward([
+    #         (dg_item_address_2, dg_item_encoded_input_2)
+    #     ]),
     # ]
     # 
     # dg_call_script = submit_proposals([
