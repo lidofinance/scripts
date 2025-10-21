@@ -351,8 +351,7 @@ def wait_to_next_available_report_time(consensus_contract):
         else:
             raise
 
-    # Use chain.time() instead of block timestamp for consistency
-    time = chain.time()
+    time = web3.eth.get_block("latest").timestamp
     (_, EPOCHS_PER_FRAME, _) = consensus_contract.getFrameConfig()
     frame_start_with_offset = GENESIS_TIME + (refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME + 1) * SECONDS_PER_SLOT
     chain.sleep(frame_start_with_offset - time)
