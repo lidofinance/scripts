@@ -212,11 +212,16 @@ def test_accounting_oracle_too_much_extra_data(extra_data_service):
     nor_module_id = 1
     nor_operators_count = contracts.node_operators_registry.getNodeOperatorsCount()
     i = 0
-    while len(operators) < item_count and i < nor_operators_count:
-        (active, _, _, _, total_exited_validators_count, _, _) = contracts.node_operators_registry.getNodeOperator(i, True)
-        if(active):
-            operators[(nor_module_id, i)] = total_exited_validators_count + 1
-        i = i + 1
+
+    for no_id in range(nor_operators_count):
+        (active, _, _, _, total_exited_validators_count, _, total_deposited_validators_count) = contracts.node_operators_registry.getNodeOperator(no_id, True)
+
+        if active and total_exited_validators_count != total_deposited_validators_count:
+            operators[(nor_module_id, no_id)] = total_exited_validators_count + 1
+            i += 1
+
+            if i == item_count:
+                break
 
     extra_data = extra_data_service.collect(operators, item_count, 1)
 
