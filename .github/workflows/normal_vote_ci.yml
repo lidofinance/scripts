@@ -15,6 +15,15 @@ jobs:
     runs-on: "ubuntu-latest"
     timeout-minutes: 100
 
+    services:
+      hardhat-node:
+        image: ghcr.io/lidofinance/hardhat-node:2.26.0
+        ports:
+          - 8545:8545
+        env:
+          ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
+          HARDFORK: "cancun"
+
     steps:
       - uses: actions/checkout@v4
       - name: Main action
@@ -29,6 +38,15 @@ jobs:
     name: Brownie fork NORMAL tests 2
     runs-on: "ubuntu-latest"
     timeout-minutes: 100
+
+    services:
+      hardhat-node:
+        image: ghcr.io/lidofinance/hardhat-node:2.26.0
+        ports:
+          - 8545:8546
+        env:
+          ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
+          HARDFORK: "cancun"
 
     steps:
       - uses: actions/checkout@v4
