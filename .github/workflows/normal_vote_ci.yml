@@ -43,7 +43,7 @@ jobs:
       hardhat-node:
         image: ghcr.io/lidofinance/hardhat-node:2.26.0
         ports:
-          - 8545:8546
+          - 8546:8545
         env:
           ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
           HARDFORK: "cancun"
