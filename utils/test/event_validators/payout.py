@@ -22,8 +22,6 @@ def validate_token_payout_event(event: EventDict, p: Payout, is_steth: bool = Fa
 
     _token_events_chain += ["VaultTransfer"]
 
-    print (event)
-
     validate_events_chain([e.name for e in event], _token_events_chain)
 
     assert event.count("VaultTransfer") == 1
