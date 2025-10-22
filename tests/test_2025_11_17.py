@@ -1,6 +1,7 @@
 from brownie import chain, interface, reverts, accounts
 from brownie.network.transaction import TransactionReceipt
 import pytest
+import math
 from brownie.network.account import LocalAccount
 
 from utils.test.tx_tracing_helpers import (
@@ -15,6 +16,7 @@ from utils.test.event_validators.staking_router import validate_staking_module_u
 from utils.evm_script import encode_call_script
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
+from utils.test.simple_dvt_helpers import simple_dvt_add_keys
 from utils.dual_governance import PROPOSAL_STATUS
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 from utils.allowed_recipients_registry import (
@@ -79,6 +81,8 @@ SDVT_MODULE_TREASURY_FEE_BP = 200
 SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK = 150
 SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 SDVT_MODULE_NAME = "SimpleDVT"
+NODE_OPERATORS_REGISTRY_ID = 1
+TOTAL_BASIS_POINTS = 10_000
 
 MATIC_TOKEN = "0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0"
 MATIC_IN_TREASURY_BEFORE = 508_106_165_781_175_837_137_177
@@ -416,6 +420,35 @@ def trp_limit_test(stranger):
 
     chain.revert()
 
+def execute_vote():
+    if vote_ids_from_env:
+        vote_id = vote_ids_from_env[0]
+        if EXPECTED_VOTE_ID is not None:
+            assert vote_id == EXPECTED_VOTE_ID
+    elif EXPECTED_VOTE_ID is not None and voting.votesLength() > EXPECTED_VOTE_ID:
+        vote_id = EXPECTED_VOTE_ID
+    else:
+        vote_id, _ = start_vote({"from": ldo_holder}, silent=True)
+    _, call_script_items = get_vote_items()
+    onchain_script = voting.getVote(vote_id)["script"]
+    assert onchain_script == encode_call_script(call_script_items)
+    is_executed = voting.getVote(vote_id)["executed"]
+    if not is_executed:
+        vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
+        display_voting_events(vote_tx)
+        vote_events = group_voting_events_from_receipt(vote_tx)
+        if EXPECTED_DG_PROPOSAL_ID is not None:
+            assert EXPECTED_DG_PROPOSAL_ID == timelock.getProposalsCount()
+    if EXPECTED_DG_PROPOSAL_ID is not None:
+        details = timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)
+        if details["status"] != PROPOSAL_STATUS["executed"]:
+            if details["status"] == PROPOSAL_STATUS["submitted"]:
+                chain.sleep(timelock.getAfterSubmitDelay() + 1)
+                dual_governance.scheduleProposal(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
+            if timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == PROPOSAL_STATUS["scheduled"]:
+                chain.sleep(timelock.getAfterScheduleDelay() + 1)
+                dg_tx: TransactionReceipt = timelock.execute(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
+
 # additional tests for SDVT module behavior after the vote
 # TODO fix test and enable
 def _test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_from_env):
@@ -444,8 +477,7 @@ def _test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_
     )  # share percentage should not change after second filling
 
     # VOTE!
-    vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
-    helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=VOTING, skip_time=3 * 60 * 60 * 24)
+    execute_vote()
 
     # add more keys to the module
     fill_sdvt_module_with_keys(evm_script_executor=evm_script_executor, total_keys=300, start_nop_id=last_nop_id - 1)
@@ -487,8 +519,7 @@ def _test_sdvt_stake_allocation(accounts, helpers, ldo_holder, vote_ids_from_env
     sdvt_module_stats_before = staking_router.getStakingModuleSummary(SDVT_MODULE_ID)
 
     # VOTE!
-    vote_id = vote_ids_from_env[0] if vote_ids_from_env else start_vote({"from": ldo_holder}, silent=True)[0]
-    helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=VOTING, skip_time=3 * 60 * 60 * 24)
+    execute_vote()
 
     # No new keys in the SDVT module
     lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": DEPOSIT_SECURITY_MODULE})
@@ -557,7 +588,7 @@ def get_staking_module_remaining_cap(staking_module_id: int) -> int:
         for module_summary in all_modules_summary
     )
 
-    target_share = staking_router.getStakingModule(staking_module_id)["targetShare"]
+    target_share = staking_router.getStakingModule(staking_module_id)["stakeShareLimit"]
 
     return math.ceil((target_share * total_active_keys) / TOTAL_BASIS_POINTS) - module_active_keys
 
