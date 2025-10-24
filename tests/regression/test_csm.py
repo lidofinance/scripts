@@ -106,7 +106,6 @@ def _depositable_node_operator(keys_count, csm, accounting, permissionless_gate,
         if deposit_batch:
             node_operator_id = (deposit_batch >> 192) & ((1 << 64) - 1)
             batch_keys_count = (deposit_batch >> 128) & ((1 << 64) - 1)
-            keys_to_deposit += batch_keys_count
             if batch_keys_count >= keys_count:
                 break
     else:
@@ -124,9 +123,10 @@ def node_operator(keys_count, csm, accounting, permissionless_gate, stranger) ->
             return no_id
 
     # Fallback: use _depositable_node_operator
-    node_operator, keys_count = _depositable_node_operator(keys_count, csm, accounting, permissionless_gate, stranger)
-    fill_deposit_buffer(keys_count)
-    contracts.lido.deposit(keys_count, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
+    node_operator, required_deposits = _depositable_node_operator(keys_count, csm, accounting, permissionless_gate, stranger)
+    to_deposit = required_deposits + keys_count
+    fill_deposit_buffer(to_deposit)
+    contracts.lido.deposit(to_deposit, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
     return node_operator
 
 
@@ -210,16 +210,15 @@ def test_add_node_operator_permissionless(csm, permissionless_gate, accounting, 
 
 
 @pytest.mark.usefixtures("pause_modules")
-def test_deposit(depositable_node_operator, csm, remove_stake_limit):
-    (node_operator, keys_to_deposit) = depositable_node_operator
-    no = csm.getNodeOperator(node_operator)
-    depositable_keys = no["depositableValidatorsCount"] - no["totalWithdrawnKeys"]
-    fill_deposit_buffer(keys_to_deposit)
+def test_deposit(depositable_node_operator, csm, remove_stake_limit, keys_count):
+    (node_operator, required_deposits) = depositable_node_operator
+    to_deposit = required_deposits + keys_count
+    fill_deposit_buffer(to_deposit)
     total_deposited_before = csm.getNodeOperator(node_operator)["totalDepositedKeys"]
-    contracts.lido.deposit(keys_to_deposit, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
+    contracts.lido.deposit(to_deposit, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
 
     no = csm.getNodeOperator(node_operator)
-    assert no["totalDepositedKeys"] == total_deposited_before + depositable_keys
+    assert no["totalDepositedKeys"] == total_deposited_before + keys_count
 
 
 def test_mint_rewards_happy_path(csm, fee_distributor):
@@ -264,11 +263,9 @@ def test_csm_report_exited(csm, node_operator, extra_data_service):
 
 
 def test_csm_get_staking_module_summary(csm, accounting, node_operator, extra_data_service, remove_stake_limit, permissionless_gate, stranger):
-    (exited_before, deposited_before, depositable_before) = contracts.staking_router.getStakingModuleSummary(
-        CSM_MODULE_ID
-    )
 
     # Assure there are new exited keys
+    (exited_before, _, _) = contracts.staking_router.getStakingModuleSummary(CSM_MODULE_ID)
     no = csm.getNodeOperator(node_operator)
     exited_keys = no["totalExitedKeys"] + 1
     extra_data = extra_data_service.collect({(CSM_MODULE_ID, node_operator): exited_keys}, exited_keys, exited_keys)
@@ -283,19 +280,23 @@ def test_csm_get_staking_module_summary(csm, accounting, node_operator, extra_da
 
     # Assure there are new deposited keys
     keys_to_deposit = 2
-    depositable_no, deposits_count = _depositable_node_operator(keys_to_deposit, csm, accounting, permissionless_gate, stranger)
+    depositable_no, required_deposits = _depositable_node_operator(keys_to_deposit, csm, accounting, permissionless_gate, stranger)
+    (_, deposited_before, _) = contracts.staking_router.getStakingModuleSummary(CSM_MODULE_ID)
+    to_deposit = required_deposits + keys_to_deposit
+    fill_deposit_buffer(to_deposit)
+    contracts.lido.deposit(to_deposit, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
 
-    fill_deposit_buffer(deposits_count)
-    contracts.lido.deposit(deposits_count, CSM_MODULE_ID, "0x", {"from": contracts.deposit_security_module})
 
+    # Assure there are new depositable keys
+    (_, _, depositable_before) = contracts.staking_router.getStakingModuleSummary(CSM_MODULE_ID)
     new_depositable = 5
     csm_upload_keys(csm, accounting, node_operator, new_depositable)
 
     (exited_after, deposited_after, depositable_after) = contracts.staking_router.getStakingModuleSummary(CSM_MODULE_ID)
 
     assert exited_after == exited_before + exited_keys
-    assert deposited_after == deposited_before + deposits_count
-    assert depositable_after == depositable_before - deposits_count + new_depositable
+    assert deposited_after == deposited_before + to_deposit
+    assert depositable_after == depositable_before + new_depositable
 
 
 def test_csm_get_node_operator_summary(csm, node_operator, extra_data_service):
