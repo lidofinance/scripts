@@ -7,7 +7,7 @@ I. Decrease Easy Track TRP limit
 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
 
 II. Increase SDVT target share
-1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 410 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
 
 === NON-DG ITEMS ===
 III. Transfer MATIC from Lido Treasury to Lido Labs Foundation
@@ -40,7 +40,7 @@ LIDO_LABS_MS = "0x95B521B4F55a447DB89f6a27f951713fC2035f3F"
 
 # ============================== Constants ===================================
 SDVT_MODULE_ID = 2
-SDVT_MODULE_NEW_TARGET_SHARE_BP = 410
+SDVT_MODULE_NEW_TARGET_SHARE_BP = 430
 SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP = 444
 SDVT_MODULE_MODULE_FEE_BP = 800
 SDVT_MODULE_TREASURY_FEE_BP = 200
@@ -74,7 +74,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ]),
         agent_forward([
-            # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 410 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+            # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
             (
                 staking_router.address,
                 staking_router.updateStakingModule.encode_input(

@@ -74,7 +74,7 @@ IPFS_DESCRIPTION_HASH = "bafkreigs2dewxxu7rj6eifpxsqvib23nsiw2ywsmh3lhewyqlmyn46
 
 SDVT_MODULE_ID = 2
 SDVT_MODULE_OLD_TARGET_SHARE_BP = 400
-SDVT_MODULE_NEW_TARGET_SHARE_BP = 410
+SDVT_MODULE_NEW_TARGET_SHARE_BP = 430
 SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP = 444
 SDVT_MODULE_MODULE_FEE_BP = 800
 SDVT_MODULE_TREASURY_FEE_BP = 200
@@ -265,7 +265,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert trp_period_start_before == TRP_PERIOD_START_TIMESTAMP
             assert trp_period_end_before == TRP_PERIOD_END_TIMESTAMP
 
-            # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 410 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+            # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
             sdvt_module_before = staking_router.getStakingModule(SDVT_MODULE_ID)
             assert sdvt_module_before['stakeShareLimit'] == SDVT_MODULE_OLD_TARGET_SHARE_BP
             assert sdvt_module_before['id'] == SDVT_MODULE_ID
@@ -341,7 +341,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert trp_period_start_after == TRP_PERIOD_START_TIMESTAMP
         assert trp_period_end_after == TRP_PERIOD_END_TIMESTAMP
 
-        # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 410 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+        # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
         sdvt_module_after = staking_router.getStakingModule(SDVT_MODULE_ID)
         assert sdvt_module_after['stakeShareLimit'] == SDVT_MODULE_NEW_TARGET_SHARE_BP
         assert sdvt_module_after['id'] == SDVT_MODULE_ID
