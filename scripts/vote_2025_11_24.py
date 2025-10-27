@@ -1,5 +1,5 @@
 """
-# Vote 2025_11_17
+# Vote 2025_11_24
 
 === 1. DG PROPOPSAL ===
 I. Decrease Easy Track TRP limit

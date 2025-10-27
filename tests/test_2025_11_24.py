@@ -38,7 +38,7 @@ from utils.test.event_validators.allowed_recipients_registry import (
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.vote_2025_11_17 import start_vote, get_vote_items
+from scripts.vote_2025_11_24 import start_vote, get_vote_items
 
 
 # ============================================================================
