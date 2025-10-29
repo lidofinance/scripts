@@ -1,8 +1,6 @@
 from brownie import chain, interface, reverts, accounts
 from brownie.network.transaction import TransactionReceipt
 import pytest
-import math
-from brownie.network.account import LocalAccount
 
 from utils.test.tx_tracing_helpers import (
     group_voting_events_from_receipt,
@@ -16,7 +14,6 @@ from utils.test.event_validators.staking_router import validate_staking_module_u
 from utils.evm_script import encode_call_script
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
-from utils.test.simple_dvt_helpers import simple_dvt_add_keys
 from utils.dual_governance import PROPOSAL_STATUS
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 from utils.allowed_recipients_registry import (
@@ -28,7 +25,6 @@ from utils.test.event_validators.payout import (
     validate_token_payout_event,
     Payout,
 )
-from utils.test.deposits_helpers import fill_deposit_buffer, drain_remained_buffered_ether
 from utils.test.event_validators.allowed_recipients_registry import (
     validate_set_limit_parameter_event,
     validate_set_spent_amount_event,
@@ -81,8 +77,6 @@ SDVT_MODULE_TREASURY_FEE_BP = 200
 SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK = 150
 SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 SDVT_MODULE_NAME = "SimpleDVT"
-NODE_OPERATORS_REGISTRY_ID = 1
-TOTAL_BASIS_POINTS = 10_000
 
 MATIC_TOKEN = "0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0"
 MATIC_IN_TREASURY_BEFORE = 508_106_165_781_175_837_137_177
@@ -93,7 +87,7 @@ MATIC_IN_LIDO_LABS_AFTER = 508_106 * 10**18
 TRP_LIMIT_BEFORE = 9_178_284.42 * 10**18
 TRP_ALREADY_SPENT_BEFORE = 2_676_801 * 10**18
 TRP_ALREADY_SPENT_AFTER = 0
-TRP_LIMIT_AFTER = 11_000_000 * 10**18
+TRP_LIMIT_AFTER = 15_000_000 * 10**18
 TRP_PERIOD_START_TIMESTAMP = 1735689600  # January 1, 2025 UTC
 TRP_PERIOD_END_TIMESTAMP = 1767225600  # January 1, 2026 UTC
 TRP_PERIOD_DURATION_MONTHS = 12
@@ -112,7 +106,7 @@ def dual_governance_proposal_calls():
         agent_forward([
             set_limit_parameters(
                 limit=TRP_LIMIT_AFTER,
-                period_duration_months=12,
+                period_duration_months=TRP_PERIOD_DURATION_MONTHS,
                 registry_address=ET_TRP_REGISTRY,
             ),
         ]),
@@ -254,8 +248,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # =========================================================================
             # TODO add DG before proposal executed checks
 
-            # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
-            # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
+            # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
+            # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
             trp_limit_before, trp_period_duration_months_before = et_trp_registry.getLimitParameters()
             trp_already_spent_amount_before, trp_spendable_balance_before, trp_period_start_before, trp_period_end_before = et_trp_registry.getPeriodState()
             assert trp_limit_before == TRP_LIMIT_BEFORE
@@ -330,8 +324,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =========================================================================
         # TODO add DG after proposal executed checks
 
-        # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
-        # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
+        # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
+        # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
         trp_limit_after, trp_period_duration_months_after = et_trp_registry.getLimitParameters()
         trp_already_spent_amount_after, trp_spendable_balance_after, trp_period_start_after, trp_period_end_after = et_trp_registry.getPeriodState()
         assert trp_limit_after == TRP_LIMIT_AFTER
@@ -419,185 +413,3 @@ def trp_limit_test(stranger):
         )
 
     chain.revert()
-
-def execute_vote():
-    if vote_ids_from_env:
-        vote_id = vote_ids_from_env[0]
-        if EXPECTED_VOTE_ID is not None:
-            assert vote_id == EXPECTED_VOTE_ID
-    elif EXPECTED_VOTE_ID is not None and voting.votesLength() > EXPECTED_VOTE_ID:
-        vote_id = EXPECTED_VOTE_ID
-    else:
-        vote_id, _ = start_vote({"from": ldo_holder}, silent=True)
-    _, call_script_items = get_vote_items()
-    onchain_script = voting.getVote(vote_id)["script"]
-    assert onchain_script == encode_call_script(call_script_items)
-    is_executed = voting.getVote(vote_id)["executed"]
-    if not is_executed:
-        vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
-        display_voting_events(vote_tx)
-        vote_events = group_voting_events_from_receipt(vote_tx)
-        if EXPECTED_DG_PROPOSAL_ID is not None:
-            assert EXPECTED_DG_PROPOSAL_ID == timelock.getProposalsCount()
-    if EXPECTED_DG_PROPOSAL_ID is not None:
-        details = timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)
-        if details["status"] != PROPOSAL_STATUS["executed"]:
-            if details["status"] == PROPOSAL_STATUS["submitted"]:
-                chain.sleep(timelock.getAfterSubmitDelay() + 1)
-                dual_governance.scheduleProposal(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
-            if timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == PROPOSAL_STATUS["scheduled"]:
-                chain.sleep(timelock.getAfterScheduleDelay() + 1)
-                dg_tx: TransactionReceipt = timelock.execute(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
-
-# additional tests for SDVT module behavior after the vote
-# TODO fix test and enable
-def _test_stake_allocation_after_voting(accounts, helpers, ldo_holder, vote_ids_from_env):
-    evm_script_executor: LocalAccount = accounts.at(ET_EVM_SCRIPT_EXECUTOR, force=True)
-    sdvt_remaining_cap_before: int = get_staking_module_remaining_cap(SDVT_MODULE_ID)
-    check_alloc_keys = sdvt_remaining_cap_before
-
-    # Fill the module with keys. Keep last nop_id to add more keys to other node operators later
-    last_nop_id = fill_sdvt_module_with_keys(
-        evm_script_executor=evm_script_executor, total_keys=sdvt_remaining_cap_before
-    )
-
-    _, sdvt_allocation_percentage_after_filling = get_allocation_percentage(check_alloc_keys)
-
-    assert sdvt_allocation_percentage_after_filling == 0.5  # 0.5% of total allocated keys — current target share
-
-    # add more keys to the module to check that percentage wasn't changed
-    last_nop_id = fill_sdvt_module_with_keys(
-        evm_script_executor=evm_script_executor, total_keys=200, start_nop_id=last_nop_id - 1
-    )
-
-    _, sdvt_allocation_percentage_after = get_allocation_percentage(check_alloc_keys + 200)
-
-    assert (
-        sdvt_allocation_percentage_after == sdvt_allocation_percentage_after_filling
-    )  # share percentage should not change after second filling
-
-    # VOTE!
-    execute_vote()
-
-    # add more keys to the module
-    fill_sdvt_module_with_keys(evm_script_executor=evm_script_executor, total_keys=300, start_nop_id=last_nop_id - 1)
-
-    sdvt_remaining_cap_after_vote = get_staking_module_remaining_cap(SDVT_MODULE_ID)
-
-    assert sdvt_remaining_cap_after_vote > sdvt_remaining_cap_before  # remaining cap should increase after the vote
-
-    _, sdvt_allocation_percentage_after_vote = get_allocation_percentage(sdvt_remaining_cap_after_vote)
-
-    assert (
-        sdvt_allocation_percentage_after_vote > sdvt_allocation_percentage_after_filling
-    )  # allocation percentage should increase after the vote
-
-
-def fill_sdvt_module():
-    staking_router = interface.StakingRouter(STAKING_ROUTER)
-    lido = interface.Lido(LIDO)
-
-    sdvt_module_stats = staking_router.getStakingModuleSummary(SDVT_MODULE_ID)
-    keys_to_allocate = sdvt_module_stats["depositableValidatorsCount"]
-    fill_deposit_buffer(keys_to_allocate)
-    lido.deposit(keys_to_allocate, SDVT_MODULE_ID, "0x0", {"from": DEPOSIT_SECURITY_MODULE})
-
-# TODO fix test and enable
-def _test_sdvt_stake_allocation(accounts, helpers, ldo_holder, vote_ids_from_env):
-    staking_router = interface.StakingRouter(STAKING_ROUTER)
-    lido = interface.Lido(LIDO)
-
-    evm_script_executor: LocalAccount = accounts.at(ET_EVM_SCRIPT_EXECUTOR, force=True)
-    new_sdvt_keys_amount = 60
-
-    # prepare initial state
-    fill_sdvt_module()
-    drain_remained_buffered_ether()
-    fill_deposit_buffer(200)
-
-    nor_module_stats_before = staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
-    sdvt_module_stats_before = staking_router.getStakingModuleSummary(SDVT_MODULE_ID)
-
-    # VOTE!
-    execute_vote()
-
-    # No new keys in the SDVT module
-    lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": DEPOSIT_SECURITY_MODULE})
-    lido.deposit(100, SDVT_MODULE_ID, "0x0", {"from": DEPOSIT_SECURITY_MODULE})
-    nor_module_stats_after_vote = staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
-    sdvt_module_stats_after_vote = staking_router.getStakingModuleSummary(SDVT_MODULE_ID)
-
-    assert (
-        sdvt_module_stats_after_vote["totalDepositedValidators"] - sdvt_module_stats_before["totalDepositedValidators"]
-        == 0
-    ), "No new keys should go to the SDVT module"
-    assert (
-        nor_module_stats_after_vote["totalDepositedValidators"] - nor_module_stats_before["totalDepositedValidators"]
-        == 100
-    ), "All keys should go to the NOR module"
-
-    # Add new keys to the SDVT module
-    fill_sdvt_module_with_keys(evm_script_executor=evm_script_executor, total_keys=new_sdvt_keys_amount)
-
-    lido.deposit(100, SDVT_MODULE_ID, "0x0", {"from": DEPOSIT_SECURITY_MODULE})
-    lido.deposit(100, NODE_OPERATORS_REGISTRY_ID, "0x0", {"from": DEPOSIT_SECURITY_MODULE})
-    nor_module_stats_after = staking_router.getStakingModuleSummary(NODE_OPERATORS_REGISTRY_ID)
-    sdvt_module_stats_after = staking_router.getStakingModuleSummary(SDVT_MODULE_ID)
-
-    assert sdvt_module_stats_after["depositableValidatorsCount"] == 0, "All accessible keys should be deposited"
-    assert (
-        sdvt_module_stats_after["totalDepositedValidators"]
-        == sdvt_module_stats_after_vote["totalDepositedValidators"] + new_sdvt_keys_amount
-    ), f"{new_sdvt_keys_amount} keys should go to the SDVT module"
-    assert nor_module_stats_after["totalDepositedValidators"] == nor_module_stats_after_vote[
-        "totalDepositedValidators"
-    ] + (100 - new_sdvt_keys_amount), "All other keys should go to the NOR module"
-
-
-def fill_sdvt_module_with_keys(evm_script_executor: LocalAccount, total_keys: int, start_nop_id: int = 0) -> int:
-    simple_dvt = interface.SimpleDVT(SDVT)
-
-    if start_nop_id == 0:
-        start_nop_id = simple_dvt.getNodeOperatorsCount() - 1
-    nop_id = start_nop_id
-
-    keys_to_allocate = (
-        total_keys if total_keys < 100 else 100
-    )  # keys to allocate to each node operator, base batch is 100 keys per operator
-    steps = 1 if keys_to_allocate == total_keys else (total_keys // keys_to_allocate) + 1
-    for idx in range(steps):
-        nop_id = start_nop_id - idx
-        simple_dvt_add_keys(simple_dvt, nop_id, keys_to_allocate)
-        simple_dvt.setNodeOperatorStakingLimit(nop_id, keys_to_allocate, {"from": evm_script_executor})
-
-    return nop_id
-
-
-def get_staking_module_remaining_cap(staking_module_id: int) -> int:
-    staking_router = interface.StakingRouter(STAKING_ROUTER)
-
-    module_summary = staking_router.getStakingModuleSummary(staking_module_id)
-    module_active_keys = module_summary["totalDepositedValidators"] - module_summary["totalExitedValidators"]
-
-    all_modules_summary = [
-        staking_router.getStakingModuleSummary(module_id)
-        for module_id in [NODE_OPERATORS_REGISTRY_ID, SDVT_MODULE_ID]
-    ]
-    total_active_keys = sum(
-        module_summary["totalDepositedValidators"] - module_summary["totalExitedValidators"]
-        for module_summary in all_modules_summary
-    )
-
-    target_share = staking_router.getStakingModule(staking_module_id)["stakeShareLimit"]
-
-    return math.ceil((target_share * total_active_keys) / TOTAL_BASIS_POINTS) - module_active_keys
-
-
-def get_allocation_percentage(keys_to_allocate: int) -> (float, float):
-    staking_router = interface.StakingRouter(STAKING_ROUTER)
-
-    allocation = staking_router.getDepositsAllocation(keys_to_allocate)
-    total_allocated = sum(allocation["allocations"])
-    return (round((allocation["allocations"][0] / total_allocated) * TOTAL_BASIS_POINTS) / 100), (
-        round((allocation["allocations"][1] / total_allocated) * TOTAL_BASIS_POINTS) / 100
-    )

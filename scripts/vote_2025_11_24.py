@@ -3,8 +3,8 @@
 
 === 1. DG PROPOPSAL ===
 I. Decrease Easy Track TRP limit
-1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
-1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
+1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
+1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
 
 II. Increase SDVT target share
 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
@@ -47,6 +47,10 @@ SDVT_MODULE_TREASURY_FEE_BP = 200
 SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK = 150
 SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 
+TRP_PERIOD_DURATION_MONTHS = 12
+TRP_NEW_LIMIT = 15_000_000 * 10**18
+TRP_NEW_SPENT_AMOUNT = 0
+
 MATIC_FOR_TRANSFER = 508_106 * 10**18
 
 
@@ -62,14 +66,14 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
     dg_items = [
         agent_forward([
-            # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
-            unsafe_set_spent_amount(spent_amount=0, registry_address=ET_TRP_REGISTRY),
+            # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
+            unsafe_set_spent_amount(spent_amount=TRP_NEW_SPENT_AMOUNT, registry_address=ET_TRP_REGISTRY),
         ]),
         agent_forward([
-            # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to TODO XXX
+            # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
             set_limit_parameters(
-                limit=11_000_000 * 10**18,
-                period_duration_months=12,
+                limit=TRP_NEW_LIMIT,
+                period_duration_months=TRP_PERIOD_DURATION_MONTHS,
                 registry_address=ET_TRP_REGISTRY,
             ),
         ]),
