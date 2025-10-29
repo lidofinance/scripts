@@ -2,7 +2,7 @@
 # Vote 2025_11_24
 
 === 1. DG PROPOPSAL ===
-I. Decrease Easy Track TRP limit
+I. Change Easy Track TRP limit
 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
 
