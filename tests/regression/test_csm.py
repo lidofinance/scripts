@@ -262,6 +262,7 @@ def test_csm_report_exited(csm, node_operator, extra_data_service):
     assert no["totalExitedKeys"] == exited_keys
 
 
+@pytest.mark.usefixtures("pause_modules")
 def test_csm_get_staking_module_summary(csm, accounting, node_operator, extra_data_service, remove_stake_limit, permissionless_gate, stranger):
 
     # Assure there are new exited keys
