@@ -1,7 +1,26 @@
 """
-# TODO Vote 2025_<MM>_<DD>
+Vote 2025_11_24 - Mainnet V3 Upgrade
 
-# TODO <a list of vote items synced with Notion Omnibus checklist>
+=== 1. DG PROPOSAL ===
+I. Lido V3 Upgrade
+1.1. Call UpgradeTemplateV3.startUpgrade
+1.2. Upgrade LidoLocator implementation
+1.3. Grant APP_MANAGER_ROLE to the AGENT
+1.4. Set Lido implementation in Kernel
+1.5. Revoke APP_MANAGER_ROLE from the AGENT on Kernel
+1.6. Revoke REQUEST_BURN_SHARES_ROLE from Lido
+1.7. Revoke REQUEST_BURN_SHARES_ROLE from Curated staking modules (NodeOperatorsRegistry)
+1.8. Revoke REQUEST_BURN_SHARES_ROLE from SimpleDVT
+1.9. Revoke REQUEST_BURN_SHARES_ROLE from CS Accounting
+1.10. Upgrade AccountingOracle implementation
+1.11. Revoke REPORT_REWARDS_MINTED_ROLE from Lido
+1.12. Grant REPORT_REWARDS_MINTED_ROLE to Accounting
+1.13. Call UpgradeTemplateV3.finishUpgrade
+1.14. Revoke REQUEST_BURN_SHARES_ROLE from Hoodi Sandbox module (only on Hoodi)
+
+=== NON-DG ITEMS ===
+II. Easy Track factories for Lido V3
+2. Add Lido V3 factories to Easy Track registry
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
@@ -13,64 +32,41 @@ from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_descrip
 from utils.config import get_deployer_account, get_is_live, get_priority_fee
 from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.dual_governance import submit_proposals
+from brownie import interface
 
 
 # ============================== Addresses ===================================
-# TODO <a list of addresses that should be used in the voting>
+omnibus_contract = "0x67988077f29FbA661911d9567E05cc52C51ca1B0" # TODO replace with the actual omnibus contract address
 
 
 # ============================= Description ==================================
 # TODO <a description for IPFS (will appear in the voting description on vote.lido.fi)>
-IPFS_DESCRIPTION = ""
+IPFS_DESCRIPTION = "TODO description for IPFS"
 
 
 # ================================ Main ======================================
 def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
+    vote_desc_items = []
+    call_script_items = []
 
+    # receive DG vote items from omnibus contract
+    dg_items = interface.V3LaunchOmnibus(omnibus_contract).getVoteItems()
 
-    # TODO in case of using smart-contract based omnibus, retrieve vote items from omnibus contract
-    # voting_items = brownie.interface.SmartContractOmnibus(omnibus_contract).getVoteItems()
-    # vote_desc_items = []
-    # call_script_items = []
-    # for desc, call_script in voting_items:
-    #     vote_desc_items.append(desc)
-    #     call_script_items.append((call_script[0], call_script[1].hex()))
+    dg_call_script = submit_proposals([
+        (dg_items, "TODO DG proposal description")
+    ])
 
+    vote_desc_items.append("TODO DG submission description")
+    call_script_items.append(dg_call_script)
 
-    # TODO in case of using script based omnibus, write vote items manually
-    # dg_items = [
-    #     # TODO 1.1. DG voting item 1 description
-    #     agent_forward([
-    #         (dg_item_address_1, dg_item_encoded_input_1)
-    #     ]),
-    #     # TODO 1.2. DG voting item 2 description
-    #     agent_forward([
-    #         (dg_item_address_2, dg_item_encoded_input_2)
-    #     ]),
-    # ]
-    # 
-    # dg_call_script = submit_proposals([
-    #     (dg_items, "TODO DG proposal description")
-    # ])
-    # 
-    # vote_desc_items, call_script_items = zip(
-    #     (
-    #         "TODO 1. DG submission description",
-    #         dg_call_script[0]
-    #     ),
-    #     (
-    #         "TODO 2. Voting item 2 description",
-    #         calldata_2,
-    #     ),
-    #     (
-    #         "TODO 3. Voting item 3 description",
-    #         calldata_3,
-    #     ),
-    # )
+    # receive non-DG vote items from omnibus contract
+    voting_items = interface.V3LaunchOmnibus(omnibus_contract).getVotingVoteItems()
 
+    for desc, call_script in voting_items:
+        vote_desc_items.append(desc)
+        call_script_items.append((call_script[0], call_script[1].hex()))
 
-    # TODO return vote_desc_items, call_script_items
-    pass
+    return vote_desc_items, call_script_items
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False):
