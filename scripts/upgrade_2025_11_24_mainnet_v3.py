@@ -82,6 +82,8 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
         create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
     )
 
+    assert interface.V3LaunchOmnibus(omnibus_contract).isValidVoteScript(vote_id)
+
     return vote_id, tx
 
 
