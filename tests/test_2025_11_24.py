@@ -50,7 +50,7 @@ DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 ET_TRP_REGISTRY = "0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8"
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
-LIDO_LABS_MS = "0x95B521B4F55a447DB89f6a27f951713fC2035f3F"
+LOL_MS = "0x87D93d9B2C672bf9c9642d853a8682546a5012B5"
 DEV_GAS_STORE = "0x7FEa69d107A77B5817379d1254cc80D9671E171b"
 ET_EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 DEPOSIT_SECURITY_MODULE = "0xffa96d84def2ea035c7ab153d8b991128e3d72fd"
@@ -181,10 +181,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =======================================================================
         # TODO add before voting checks
 
-        # 2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Lido Labs Foundation 0x95B521B4F55a447DB89f6a27f951713fC2035f3F
+        # 2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Liquidity Observation Lab (LOL) Multisig 0x87D93d9B2C672bf9c9642d853a8682546a5012B5
         matic_treasury_balance_before = matic_token.balanceOf(agent.address)
         assert matic_treasury_balance_before == MATIC_IN_TREASURY_BEFORE
-        matic_labs_balance_before = matic_token.balanceOf(LIDO_LABS_MS)
+        matic_labs_balance_before = matic_token.balanceOf(LOL_MS)
         assert matic_labs_balance_before == MATIC_IN_LIDO_LABS_BEFORE
 
 
@@ -200,14 +200,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =======================================================================
         # TODO add after voting tests
 
-        # 2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Lido Labs Foundation 0x95B521B4F55a447DB89f6a27f951713fC2035f3F
+        # 2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Liquidity Observation Lab (LOL) Multisig 0x87D93d9B2C672bf9c9642d853a8682546a5012B5
         matic_treasury_balance_after = matic_token.balanceOf(agent.address)
         assert matic_treasury_balance_after == MATIC_IN_TREASURY_AFTER
-        matic_labs_balance_after = matic_token.balanceOf(LIDO_LABS_MS)
+        matic_labs_balance_after = matic_token.balanceOf(LOL_MS)
         assert matic_labs_balance_after == MATIC_IN_LIDO_LABS_AFTER
-        # make sure Lido Labs can actually spend the received MATIC
-        matic_token.transfer(DEV_GAS_STORE, MATIC_IN_LIDO_LABS_AFTER / 2, {"from": LIDO_LABS_MS})
-        assert matic_token.balanceOf(LIDO_LABS_MS) == MATIC_IN_LIDO_LABS_AFTER / 2
+        # make sure LOL can actually spend the received MATIC
+        matic_token.transfer(DEV_GAS_STORE, MATIC_IN_LIDO_LABS_AFTER / 2, {"from": LOL_MS})
+        assert matic_token.balanceOf(LOL_MS) == MATIC_IN_LIDO_LABS_AFTER / 2
         assert matic_token.balanceOf(DEV_GAS_STORE) == MATIC_IN_LIDO_LABS_AFTER / 2
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
@@ -233,7 +233,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 p=Payout(
                     token_addr=MATIC_TOKEN,
                     from_addr=AGENT,
-                    to_addr=LIDO_LABS_MS,
+                    to_addr=LOL_MS,
                     amount=MATIC_IN_LIDO_LABS_AFTER),
                 is_steth=False,
                 emitted_by=AGENT

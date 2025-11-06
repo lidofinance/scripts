@@ -10,8 +10,8 @@ II. Increase SDVT target share
 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
 
 === NON-DG ITEMS ===
-III. Transfer MATIC from Lido Treasury to Lido Labs Foundation
-2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Lido Labs Foundation 0x95B521B4F55a447DB89f6a27f951713fC2035f3F
+III. Transfer MATIC from Lido Treasury to Liquidity Observation Lab (LOL) Multisig
+2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Liquidity Observation Lab (LOL) Multisig 0x87D93d9B2C672bf9c9642d853a8682546a5012B5
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
@@ -35,7 +35,7 @@ from utils.allowed_recipients_registry import (
 # ============================== Addresses ===================================
 ET_TRP_REGISTRY = "0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8"
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
-LIDO_LABS_MS = "0x95B521B4F55a447DB89f6a27f951713fC2035f3F"
+LOL_MS = "0x87D93d9B2C672bf9c9642d853a8682546a5012B5"
 
 
 # ============================== Constants ===================================
@@ -104,11 +104,11 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             dg_call_script[0]
         ),
         (
-            "2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Lido Labs Foundation 0x95B521B4F55a447DB89f6a27f951713fC2035f3F",
+            "2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Liquidity Observation Lab (LOL) Multisig 0x87D93d9B2C672bf9c9642d853a8682546a5012B5",
             make_matic_payout(
-                target_address=LIDO_LABS_MS,
+                target_address=LOL_MS,
                 matic_in_wei=MATIC_FOR_TRANSFER,
-                reference="Transfer 508,106 MATIC from Treasury to Lido Labs Foundation multisig",
+                reference="Transfer 508,106 MATIC from Treasury to Liquidity Observation Lab (LOL) Multisig",
             ),
         )
     )
