@@ -54,13 +54,14 @@ REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE = "REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE"
 CREATE_PAYMENTS_ROLE = "CREATE_PAYMENTS_ROLE"
 
 AMOUNT_LIMITS_LEN_BEFORE = 0
-AMOUNT_LIMITS_LEN_AFTER = 13
+AMOUNT_LIMITS_LEN_AFTER = 16
 
 SUSDS_TOKEN = "0xDaE6a7669f9aB8b2C4E52464AA6FB7F9402aDc70"
 USDC_TOKEN = "0x97bb030B93faF4684eAC76bA0bf3be5ec7140F36"
 USDT_TOKEN = "0x64f1904d1b419c6889BDf3238e31A138E258eA68"
 DAI_TOKEN = "0x17fc691f6EF57D2CA719d30b8fe040123d4ee319"
 STETH_TOKEN = "0x3508a952176b3c15387c97be809eaffb1982176a"
+WSTETH_TOKEN = "0x7E99eE3C66636DE415D2d7C880938F2f40f94De4"
 
 ET_SANDBOX_STABLES_LIMIT = 500
 FINANCE_SANDBOX_STABLES_LIMIT = 1_000
@@ -68,6 +69,7 @@ USDC_LIMIT = TokenLimit(USDC_TOKEN, FINANCE_SANDBOX_STABLES_LIMIT * 10**6)
 USDT_LIMIT = TokenLimit(USDT_TOKEN, FINANCE_SANDBOX_STABLES_LIMIT * 10**6)
 DAI_LIMIT = TokenLimit(DAI_TOKEN, FINANCE_SANDBOX_STABLES_LIMIT * 10**18)
 SUSDS_LIMIT = TokenLimit(SUSDS_TOKEN, FINANCE_SANDBOX_STABLES_LIMIT * 10**18)
+STETH_LIMIT = TokenLimit(STETH_TOKEN, 200 * 10**18)
 
 def amount_limits() -> List[Param]:
     token_arg_index = 0
@@ -110,7 +112,16 @@ def amount_limits() -> List[Param]:
         # 11: { return _amount <= 1_000 }
         Param(amount_arg_index, Op.LTE, ArgumentValue(SUSDS_LIMIT.limit)),
         #
-        # 12: else { return false }
+        # 12: else if (13) then (14) else (15)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=13, success=14, failure=15),
+        ),
+        # 13: (_token == STETH)
+        Param(token_arg_index, Op.EQ, ArgumentValue(STETH_LIMIT.address)),
+        # 14: { return _amount <= 200 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(STETH_LIMIT.limit)),
+        #
+        # 15: else { return false }
         Param(SpecialArgumentID.PARAM_VALUE_PARAM_ID, Op.RET, ArgumentValue(0)),
     ]
 
@@ -311,7 +322,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
                 interface.EasyTrack(EASY_TRACK),
                 SANDBOX_STABLES_TRUSTED_CALLER,
                 SANDBOX_STABLES_TOP_UP_EVM_SCRIPT_FACTORY,
-                interface.ERC20(STETH_TOKEN),
+                interface.ERC20(SUSDS_TOKEN),
                 [accounts.at(SANDBOX_STABLES_TRUSTED_CALLER, force=True)],
                 [1 * 10**18],
                stranger,
@@ -339,18 +350,18 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
             VOTING,
             {"from": VOTING}
         )
-        assert not sandbox_stables_allowed_tokens_registry.isTokenAllowed(STETH_TOKEN)
+        assert not sandbox_stables_allowed_tokens_registry.isTokenAllowed(WSTETH_TOKEN)
         sandbox_stables_allowed_tokens_registry.addToken(
-            STETH_TOKEN,
+            WSTETH_TOKEN,
             {"from": VOTING}
         )
-        assert sandbox_stables_allowed_tokens_registry.isTokenAllowed(STETH_TOKEN)
+        assert sandbox_stables_allowed_tokens_registry.isTokenAllowed(WSTETH_TOKEN)
         with reverts("APP_AUTH_FAILED"):
             create_and_enact_payment_motion(
                 interface.EasyTrack(EASY_TRACK),
                 SANDBOX_STABLES_TRUSTED_CALLER,
                 SANDBOX_STABLES_TOP_UP_EVM_SCRIPT_FACTORY,
-                interface.ERC20(STETH_TOKEN),
+                interface.ERC20(WSTETH_TOKEN),
                 [accounts.at(SANDBOX_STABLES_TRUSTED_CALLER, force=True)],
                 [1 * 10**18],
                stranger,

@@ -30,6 +30,7 @@ SUSDS_TOKEN = "0xDaE6a7669f9aB8b2C4E52464AA6FB7F9402aDc70"
 USDC_TOKEN = "0x97bb030B93faF4684eAC76bA0bf3be5ec7140F36"
 USDT_TOKEN = "0x64f1904d1b419c6889BDf3238e31A138E258eA68"
 DAI_TOKEN = "0x17fc691f6EF57D2CA719d30b8fe040123d4ee319"
+STETH_TOKEN = "0x3508a952176b3c15387c97be809eaffb1982176a"
 
 SANDBOX_STABLES_ALLOWED_TOKENS_REGISTRY = "0x40Db7E8047C487bD8359289272c717eA3C34D1D3"
 VOTING = "0x49B3512c44891bef83F8967d075121Bd1b07a01B"
@@ -43,6 +44,7 @@ USDC_LIMIT = TokenLimit(USDC_TOKEN, STABLES_LIMIT * 10**6)
 USDT_LIMIT = TokenLimit(USDT_TOKEN, STABLES_LIMIT * 10**6)
 DAI_LIMIT = TokenLimit(DAI_TOKEN, STABLES_LIMIT * 10**18)
 SUSDS_LIMIT = TokenLimit(SUSDS_TOKEN, STABLES_LIMIT * 10**18)
+STETH_LIMIT = TokenLimit(STETH_TOKEN, 200 * 10**18)
 
 def amount_limits() -> List[Param]:
     token_arg_index = 0
@@ -85,7 +87,16 @@ def amount_limits() -> List[Param]:
         # 11: { return _amount <= 1_000 }
         Param(amount_arg_index, Op.LTE, ArgumentValue(SUSDS_LIMIT.limit)),
         #
-        # 12: else { return false }
+        # 12: else if (13) then (14) else (15)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=13, success=14, failure=15),
+        ),
+        # 13: (_token == STETH)
+        Param(token_arg_index, Op.EQ, ArgumentValue(STETH_LIMIT.address)),
+        # 14: { return _amount <= 200 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(STETH_LIMIT.limit)),
+        #
+        # 15: else { return false }
         Param(SpecialArgumentID.PARAM_VALUE_PARAM_ID, Op.RET, ArgumentValue(0)),
     ]
 
