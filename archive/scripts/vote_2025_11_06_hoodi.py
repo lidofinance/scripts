@@ -7,7 +7,8 @@ Vote 2025_11_06 (HOODI)
 4. Remove CREATE_PAYMENTS_ROLE from EVMScriptExecutor on Aragon Finance
 5. Grant CREATE_PAYMENTS_ROLE to EVMScriptExecutor on Aragon Finance with amount limits
 
-# TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
+# Vote #45 passed & executed on Nov-07-2025 02:14:24 PM UTC, block 1573439
+.
 """
 
 from typing import Dict, List, Tuple, NamedTuple
