@@ -101,16 +101,6 @@ def dual_governance_proposal_calls():
     # Create all the dual governance calls that match the voting script
     dg_items = [
         agent_forward([
-            unsafe_set_spent_amount(spent_amount=0, registry_address=ET_TRP_REGISTRY),
-        ]),
-        agent_forward([
-            set_limit_parameters(
-                limit=TRP_LIMIT_AFTER,
-                period_duration_months=TRP_PERIOD_DURATION_MONTHS,
-                registry_address=ET_TRP_REGISTRY,
-            ),
-        ]),
-        agent_forward([
             (
                 staking_router.address,
                 staking_router.updateStakingModule.encode_input(
@@ -123,7 +113,17 @@ def dual_governance_proposal_calls():
                     SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
                 ),
             ),
-        ])
+        ]),
+        agent_forward([
+            unsafe_set_spent_amount(spent_amount=0, registry_address=ET_TRP_REGISTRY),
+        ]),
+        agent_forward([
+            set_limit_parameters(
+                limit=TRP_LIMIT_AFTER,
+                period_duration_months=TRP_PERIOD_DURATION_MONTHS,
+                registry_address=ET_TRP_REGISTRY,
+            ),
+        ]),
     ]
         
     
@@ -221,7 +221,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 proposal_id=EXPECTED_DG_PROPOSAL_ID,
                 proposer=VOTING,
                 executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-                metadata="TODO DG proposal description",
+                metadata="Upgrade Lido Protocol to V3, raise SDVT stake share limit and reset Easy Track TRP limit",
                 proposal_calls=dual_governance_proposal_calls,
                 emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
             )
@@ -248,18 +248,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # =========================================================================
             # TODO add DG before proposal executed checks
 
-            # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
-            # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
-            trp_limit_before, trp_period_duration_months_before = et_trp_registry.getLimitParameters()
-            trp_already_spent_amount_before, trp_spendable_balance_before, trp_period_start_before, trp_period_end_before = et_trp_registry.getPeriodState()
-            assert trp_limit_before == TRP_LIMIT_BEFORE
-            assert trp_period_duration_months_before == TRP_PERIOD_DURATION_MONTHS
-            assert trp_already_spent_amount_before == TRP_ALREADY_SPENT_BEFORE
-            assert trp_spendable_balance_before == TRP_LIMIT_BEFORE - TRP_ALREADY_SPENT_BEFORE
-            assert trp_period_start_before == TRP_PERIOD_START_TIMESTAMP
-            assert trp_period_end_before == TRP_PERIOD_END_TIMESTAMP
-
-            # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+            # 1.1. Raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
             sdvt_module_before = staking_router.getStakingModule(SDVT_MODULE_ID)
             assert sdvt_module_before['stakeShareLimit'] == SDVT_MODULE_OLD_TARGET_SHARE_BP
             assert sdvt_module_before['id'] == SDVT_MODULE_ID
@@ -269,6 +258,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert sdvt_module_before['maxDepositsPerBlock'] == SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK
             assert sdvt_module_before['minDepositBlockDistance'] == SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE
             assert sdvt_module_before['name'] == SDVT_MODULE_NAME
+
+            # 1.2. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
+            # 1.3. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
+            trp_limit_before, trp_period_duration_months_before = et_trp_registry.getLimitParameters()
+            trp_already_spent_amount_before, trp_spendable_balance_before, trp_period_start_before, trp_period_end_before = et_trp_registry.getPeriodState()
+            assert trp_limit_before == TRP_LIMIT_BEFORE
+            assert trp_period_duration_months_before == TRP_PERIOD_DURATION_MONTHS
+            assert trp_already_spent_amount_before == TRP_ALREADY_SPENT_BEFORE
+            assert trp_spendable_balance_before == TRP_LIMIT_BEFORE - TRP_ALREADY_SPENT_BEFORE
+            assert trp_period_start_before == TRP_PERIOD_START_TIMESTAMP
+            assert trp_period_end_before == TRP_PERIOD_END_TIMESTAMP
 
 
             if details["status"] == PROPOSAL_STATUS["submitted"]:
@@ -289,24 +289,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # TODO validate all DG events
 
-                validate_set_spent_amount_event(
-                    dg_events[0],
-                    new_spent_amount=0,
-                    emitted_by=ET_TRP_REGISTRY,
-                    is_dg_event=True,
-                )
-
-                validate_set_limit_parameter_event(
-                    dg_events[1],
-                    limit=TRP_LIMIT_AFTER,
-                    period_duration_month=TRP_PERIOD_DURATION_MONTHS,
-                    period_start_timestamp=TRP_PERIOD_START_TIMESTAMP,
-                    emitted_by=ET_TRP_REGISTRY,
-                    is_dg_event=True,
-                )
-
                 validate_staking_module_update_event(
-                    event=dg_events[2],
+                    event=dg_events[0],
                     module_item=StakingModuleItem(
                         id=SDVT_MODULE_ID,
                         name=SDVT_MODULE_NAME,
@@ -319,23 +303,28 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     is_dg_event=True
                 )
 
+                validate_set_spent_amount_event(
+                    dg_events[1],
+                    new_spent_amount=0,
+                    emitted_by=ET_TRP_REGISTRY,
+                    is_dg_event=True,
+                )
+
+                validate_set_limit_parameter_event(
+                    dg_events[2],
+                    limit=TRP_LIMIT_AFTER,
+                    period_duration_month=TRP_PERIOD_DURATION_MONTHS,
+                    period_start_timestamp=TRP_PERIOD_START_TIMESTAMP,
+                    emitted_by=ET_TRP_REGISTRY,
+                    is_dg_event=True,
+                )
+
         # =========================================================================
         # ==================== After DG proposal executed checks ==================
         # =========================================================================
         # TODO add DG after proposal executed checks
 
-        # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
-        # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
-        trp_limit_after, trp_period_duration_months_after = et_trp_registry.getLimitParameters()
-        trp_already_spent_amount_after, trp_spendable_balance_after, trp_period_start_after, trp_period_end_after = et_trp_registry.getPeriodState()
-        assert trp_limit_after == TRP_LIMIT_AFTER
-        assert trp_period_duration_months_after == TRP_PERIOD_DURATION_MONTHS
-        assert trp_already_spent_amount_after == TRP_ALREADY_SPENT_AFTER
-        assert trp_spendable_balance_after == TRP_LIMIT_AFTER - TRP_ALREADY_SPENT_AFTER
-        assert trp_period_start_after == TRP_PERIOD_START_TIMESTAMP
-        assert trp_period_end_after == TRP_PERIOD_END_TIMESTAMP
-
-        # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+        # 1.1. Raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
         sdvt_module_after = staking_router.getStakingModule(SDVT_MODULE_ID)
         assert sdvt_module_after['stakeShareLimit'] == SDVT_MODULE_NEW_TARGET_SHARE_BP
         assert sdvt_module_after['id'] == SDVT_MODULE_ID
@@ -360,6 +349,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert sdvt_module_after['priorityExitShareThreshold'] == sdvt_module_before['priorityExitShareThreshold']
         assert len(sdvt_module_after.items()) == len(sdvt_module_before.items())
         assert len(sdvt_module_after.items()) == 13
+
+        # 1.2. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
+        # 1.3. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
+        trp_limit_after, trp_period_duration_months_after = et_trp_registry.getLimitParameters()
+        trp_already_spent_amount_after, trp_spendable_balance_after, trp_period_start_after, trp_period_end_after = et_trp_registry.getPeriodState()
+        assert trp_limit_after == TRP_LIMIT_AFTER
+        assert trp_period_duration_months_after == TRP_PERIOD_DURATION_MONTHS
+        assert trp_already_spent_amount_after == TRP_ALREADY_SPENT_AFTER
+        assert trp_spendable_balance_after == TRP_LIMIT_AFTER - TRP_ALREADY_SPENT_AFTER
+        assert trp_period_start_after == TRP_PERIOD_START_TIMESTAMP
+        assert trp_period_end_after == TRP_PERIOD_END_TIMESTAMP
 
         # additional test for TRP ET factory behavior after the vote
         trp_limit_test(stranger)

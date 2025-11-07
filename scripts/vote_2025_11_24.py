@@ -2,12 +2,12 @@
 # Vote 2025_11_24
 
 === 1. DG PROPOPSAL ===
-I. Decrease Easy Track TRP limit
-1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
-1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
+I. raise SDVT stake share limit
+1.1. raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
 
-II. Increase SDVT target share
-1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+II. Reset Easy Track TRP limit
+1.2. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
+1.3. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
 
 === NON-DG ITEMS ===
 III. Transfer MATIC from Lido Treasury to Liquidity Observation Lab (LOL) Multisig
@@ -66,19 +66,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
     dg_items = [
         agent_forward([
-            # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
-            unsafe_set_spent_amount(spent_amount=TRP_NEW_SPENT_AMOUNT, registry_address=ET_TRP_REGISTRY),
-        ]),
-        agent_forward([
-            # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
-            set_limit_parameters(
-                limit=TRP_NEW_LIMIT,
-                period_duration_months=TRP_PERIOD_DURATION_MONTHS,
-                registry_address=ET_TRP_REGISTRY,
-            ),
-        ]),
-        agent_forward([
-            # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+            # 1.1. raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
             (
                 staking_router.address,
                 staking_router.updateStakingModule.encode_input(
@@ -91,16 +79,28 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
                     SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
                 ),
             ),
-        ])
+        ]),
+        agent_forward([
+            # 1.2. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
+            unsafe_set_spent_amount(spent_amount=TRP_NEW_SPENT_AMOUNT, registry_address=ET_TRP_REGISTRY),
+        ]),
+        agent_forward([
+            # 1.3. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
+            set_limit_parameters(
+                limit=TRP_NEW_LIMIT,
+                period_duration_months=TRP_PERIOD_DURATION_MONTHS,
+                registry_address=ET_TRP_REGISTRY,
+            ),
+        ]),
     ]
     
     dg_call_script = submit_proposals([
-        (dg_items, "TODO DG proposal description")
+        (dg_items, "Upgrade Lido Protocol to V3, raise SDVT stake share limit and reset Easy Track TRP limit")
     ])
     
     vote_desc_items, call_script_items = zip(
         (
-            "TODO 1. DG submission description",
+            "1. Submit a Dual Governance proposal to upgrade Lido Protocol to V3, raise SDVT stake share limit and reset Easy Track TRP limit",
             dg_call_script[0]
         ),
         (
