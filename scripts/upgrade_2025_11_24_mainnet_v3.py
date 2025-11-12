@@ -69,11 +69,11 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     contract_dg_items = interface.V3LaunchOmnibus(OMNIBUS_CONTRACT).getVoteItems()
 
     dg_items = []
-    for desc, call_script in contract_dg_items: # TODO looks like this descriptions are not used
+    for desc, call_script in contract_dg_items:
         dg_items.append((call_script[0], '0x' + call_script[1].hex()))
 
     dg_call_script = submit_proposals([
-        (dg_items, "TODO DG proposal description") # TODO looks like this description is not used
+        (dg_items, "TODO DG proposal description")# TODO take from next-vote
     ])
 
     vote_desc_items.append("TODO DG submission description")

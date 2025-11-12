@@ -92,7 +92,6 @@ def do_snapshot(skip_slots: Sequence[tuple[str, int]]) -> SnapshotFn:
         for contract in (
             contracts.lido,
             contracts.node_operators_registry,
-            contracts.legacy_oracle,
             contracts.deposit_security_module,
             contracts.execution_layer_rewards_vault,
             contracts.withdrawal_vault,

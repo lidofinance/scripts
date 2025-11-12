@@ -236,7 +236,6 @@ def parse_events_from_local_abi():
             HASH_CONSENSUS_FOR_AO,
             HASH_CONSENSUS_FOR_VEBO,
         ],
-        "LegacyOracle": [LEGACY_ORACLE, LEGACY_ORACLE_IMPL],
         "Lido": [LIDO, LIDO_IMPL],
         "LidoLocator": [LIDO_LOCATOR],
         "LidoExecutionLayerRewardsVault": [EXECUTION_LAYER_REWARDS_VAULT],

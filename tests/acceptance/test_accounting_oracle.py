@@ -31,7 +31,6 @@ def test_proxy(contract):
 def test_constants(contract):
     assert contract.LIDO() == contracts.lido
     assert contract.LOCATOR() == contracts.lido_locator
-    assert contract.LEGACY_ORACLE() == contracts.legacy_oracle
     assert contract.EXTRA_DATA_FORMAT_EMPTY() == 0
     assert contract.EXTRA_DATA_FORMAT_LIST() == 1
     assert contract.EXTRA_DATA_TYPE_STUCK_VALIDATORS() == 1

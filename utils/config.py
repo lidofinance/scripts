@@ -259,14 +259,6 @@ class ContractsLazyLoader:
         return interface.Sandbox(SANDBOX)
 
     @property
-    def legacy_oracle(self) -> interface.LegacyOracle:
-        return interface.LegacyOracle(LEGACY_ORACLE)
-
-    @property
-    def token_rate_notifier(self) -> interface.TokenRateNotifier:
-        return interface.LegacyOracle(L1_TOKEN_RATE_NOTIFIER)
-
-    @property
     def deposit_security_module_v1(self) -> interface.DepositSecurityModule:
         return interface.DepositSecurityModuleV1(DEPOSIT_SECURITY_MODULE_V1)
 
@@ -313,6 +305,10 @@ class ContractsLazyLoader:
     @property
     def withdrawal_queue(self) -> interface.WithdrawalQueueERC721:
         return interface.WithdrawalQueueERC721(WITHDRAWAL_QUEUE)
+
+    @property
+    def vault_hub(self) -> interface.VaultHub:
+        return interface.VaultHub(VAULT_HUB)
 
     @property
     def lido_locator(self) -> interface.LidoLocator:

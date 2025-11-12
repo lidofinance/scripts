@@ -44,7 +44,6 @@ from utils.config import (
     WITHDRAWAL_QUEUE,
     BURNER,
     LIDO_LOCATOR,
-    LEGACY_ORACLE,
     SIMPLE_DVT,
     CSM_ADDRESS,
     CS_ACCOUNTING_ADDRESS,
@@ -319,12 +318,6 @@ def protocol_permissions():
                 "SET_NODE_OPERATOR_LIMIT_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
                 "STAKING_ROUTER_ROLE": [STAKING_ROUTER, EASYTRACK_EVMSCRIPT_EXECUTOR],
             },
-        },
-        LEGACY_ORACLE: {
-            "contract_name": "LegacyOracle",
-            "contract": contracts.legacy_oracle,
-            "type": "AragonApp",
-            "roles": {},
         },
         CSM_ADDRESS: {
             "contract_name": "CSModule",
