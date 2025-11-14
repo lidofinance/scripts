@@ -24,11 +24,11 @@ def validate_set_limit_parameter_event(
     assert event.count("LimitsParametersChanged") == 1
     assert event["LimitsParametersChanged"]["_limit"] == limit
     assert event["LimitsParametersChanged"]["_periodDurationMonths"] == period_duration_month
-    if emitted_by is not None:
-        event_emitted_by = convert.to_address(event["LimitsParametersChanged"]["_emitted_by"])
-        assert event_emitted_by == convert.to_address(
-            emitted_by
-        ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
+
+    event_emitted_by = convert.to_address(event["LimitsParametersChanged"]["_emitted_by"])
+    assert event_emitted_by == convert.to_address(
+        emitted_by
+    ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
 
 
 def validate_update_spent_amount_event(
@@ -73,8 +73,8 @@ def validate_set_spent_amount_event(
 
     assert event.count("SpentAmountChanged") == 1
     assert event["SpentAmountChanged"]["_newSpentAmount"] == new_spent_amount
-    if emitted_by is not None:
-        event_emitted_by = convert.to_address(event["SpentAmountChanged"]["_emitted_by"])
-        assert event_emitted_by == convert.to_address(
-            emitted_by
-        ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
+
+    event_emitted_by = convert.to_address(event["SpentAmountChanged"]["_emitted_by"])
+    assert event_emitted_by == convert.to_address(
+        emitted_by
+    ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
