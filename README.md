@@ -22,7 +22,6 @@ Lido DAO Aragon omnibus voting scripts.
 
 ## 🐳 Docker: quick and easy environment setup
 
-
 **The no-brainer workflow for running scripts & tests from Docker**
 
 #### Step 1. Clone the fresh repo:
