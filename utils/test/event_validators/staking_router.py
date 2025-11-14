@@ -49,28 +49,17 @@ def validate_staking_module_added_event(event: EventDict, module_item: StakingMo
     assert event["StakingModuleFeesSet"]["treasuryFee"] == module_item.treasury_fee
 
 
-def validate_staking_module_update_event(event: EventDict, module_item: StakingModuleItem, emitted_by: str = None, is_dg_event: bool = False):
-    if is_dg_event:
-        _events_chain = [
-            "LogScriptCall",
-            "LogScriptCall",
-            "StakingModuleShareLimitSet",
-            "StakingModuleFeesSet",
-            "StakingModuleMaxDepositsPerBlockSet",
-            "StakingModuleMinDepositBlockDistanceSet",
-            "ScriptResult",
-            "Executed"
-        ]
-    else:
-        _events_chain = [
-            "LogScriptCall",
-            "LogScriptCall",
-            "StakingModuleShareLimitSet",
-            "StakingModuleFeesSet",
-            "StakingModuleMaxDepositsPerBlockSet",
-            "StakingModuleMinDepositBlockDistanceSet",
-            "ScriptResult",
-        ]
+def validate_staking_module_update_event(event: EventDict, module_item: StakingModuleItem, emitted_by: str = None):
+    _events_chain = [
+        "LogScriptCall",
+        "LogScriptCall",
+        "StakingModuleShareLimitSet",
+        "StakingModuleFeesSet",
+        "StakingModuleMaxDepositsPerBlockSet",
+        "StakingModuleMinDepositBlockDistanceSet",
+        "ScriptResult",
+        "Executed"
+    ]
 
 
     validate_events_chain([e.name for e in event], _events_chain)

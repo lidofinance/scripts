@@ -60,12 +60,9 @@ def validate_node_operator_staking_limit_set_event(
 
 
 def validate_node_operator_name_set_event(
-    event: EventDict, node_operator_name_item: NodeOperatorNameSetItem, emitted_by: str = None, is_dg_event=False
+    event: EventDict, node_operator_name_item: NodeOperatorNameSetItem, emitted_by: str = None
 ):
-    if is_dg_event:
-        _events_chain = ["LogScriptCall", "LogScriptCall", "NodeOperatorNameSet", "ScriptResult", "Executed"]
-    else:
-        _events_chain = ["LogScriptCall", "LogScriptCall", "NodeOperatorNameSet", "ScriptResult"]
+    _events_chain = ["LogScriptCall", "LogScriptCall", "NodeOperatorNameSet", "ScriptResult", "Executed"]
 
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -79,12 +76,9 @@ def validate_node_operator_name_set_event(
     ), "Wrong event emitter"
 
 def validate_node_operator_reward_address_set_event(
-    event: EventDict, node_operator_reward_address_item: NodeOperatorRewardAddressSetItem, emitted_by: str = None, is_dg_event=False
+    event: EventDict, node_operator_reward_address_item: NodeOperatorRewardAddressSetItem, emitted_by: str = None
 ):
-    if is_dg_event:
-        _events_chain = ["LogScriptCall", "LogScriptCall", "NodeOperatorRewardAddressSet", "ScriptResult", "Executed"]
-    else:
-        _events_chain = ["LogScriptCall", "LogScriptCall", "NodeOperatorRewardAddressSet", "ScriptResult"]
+    _events_chain = ["LogScriptCall", "LogScriptCall", "NodeOperatorRewardAddressSet", "ScriptResult", "Executed"]
 
     validate_events_chain([e.name for e in event], _events_chain)
 

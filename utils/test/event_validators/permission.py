@@ -115,13 +115,10 @@ def validate_permission_grantp_event(event: EventDict, p: Permission, params: Li
     ), "Wrong event emitter"
 
 
-def validate_grant_role_event(events: EventDict, role: str, grant_to: str, sender: str, emitted_by: str = None, is_dg_event: bool = False) -> None:
+def validate_grant_role_event(events: EventDict, role: str, grant_to: str, sender: str, emitted_by: str = None) -> None:
     # this event chain is actual if grant role is forwarded through
 
-    if is_dg_event:
-        _events_chain = ["LogScriptCall", "LogScriptCall", "RoleGranted", "ScriptResult", "Executed"]
-    else:
-        _events_chain = ["LogScriptCall", "LogScriptCall", "RoleGranted", "ScriptResult"]
+    _events_chain = ["LogScriptCall", "LogScriptCall", "RoleGranted", "ScriptResult", "Executed"]
 
     validate_events_chain([e.name for e in events], _events_chain)
 
@@ -136,13 +133,10 @@ def validate_grant_role_event(events: EventDict, role: str, grant_to: str, sende
     ), "Wrong event emitter"
 
 def validate_revoke_role_event(
-    events: EventDict, role: str, revoke_from: str, sender: str, emitted_by: str = None, is_dg_event: bool = False
+    events: EventDict, role: str, revoke_from: str, sender: str, emitted_by: str = None
 ) -> None:
 
-    if is_dg_event:
-        _events_chain = ["LogScriptCall", "LogScriptCall", "RoleRevoked", "ScriptResult", "Executed"]
-    else:
-        _events_chain = ["LogScriptCall", "LogScriptCall", "RoleRevoked", "ScriptResult"]
+    _events_chain = ["LogScriptCall", "LogScriptCall", "RoleRevoked", "ScriptResult", "Executed"]
 
     validate_events_chain([e.name for e in events], _events_chain)
 

@@ -4,7 +4,7 @@ from brownie import convert
 
 
 def validate_set_limit_parameter_event(
-    event: EventDict, limit: int, period_duration_month: int, period_start_timestamp: int, emitted_by: str | None = None, is_dg_event: bool = False
+    event: EventDict, limit: int, period_duration_month: int, period_start_timestamp: int, emitted_by: str | None = None
 ):
     _events_chain = [
         "LogScriptCall",
@@ -12,9 +12,8 @@ def validate_set_limit_parameter_event(
         "CurrentPeriodAdvanced",
         "LimitsParametersChanged",
         "ScriptResult",
+        "Executed",
     ]
-    if is_dg_event:
-        _events_chain += ["Executed"]
 
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -63,11 +62,8 @@ def validate_set_spent_amount_event(
     event: EventDict,
     new_spent_amount: int,
     emitted_by: str | None = None,
-    is_dg_event: bool = False
 ):
-    _events_chain = ["LogScriptCall", "LogScriptCall", "SpentAmountChanged", "ScriptResult"]
-    if is_dg_event:
-        _events_chain += ["Executed"]
+    _events_chain = ["LogScriptCall", "LogScriptCall", "SpentAmountChanged", "ScriptResult", "Executed"]
 
     validate_events_chain([e.name for e in event], _events_chain)
 
