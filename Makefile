@@ -21,6 +21,7 @@ CORE_TESTS_TARGET_RPC_URL ?= http://127.0.0.1:8547
 CORE_DIR ?= lido-core
 CORE_BRANCH ?= master
 NODE_PORT ?= 8545
+
 SECONDARY_NETWORK ?= mfh-2
 
 test-1/2:
