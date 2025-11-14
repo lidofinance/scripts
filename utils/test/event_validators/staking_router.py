@@ -86,7 +86,6 @@ def validate_staking_module_update_event(event: EventDict, module_item: StakingM
     assert event["StakingModuleFeesSet"]["stakingModuleFee"] == module_item.module_fee
     assert event["StakingModuleFeesSet"]["treasuryFee"] == module_item.treasury_fee
 
-    if emitted_by is not None:
-        assert convert.to_address(event["StakingModuleFeesSet"]["_emitted_by"]) == convert.to_address(
-            emitted_by
-        ), "Wrong event emitter"
+    assert convert.to_address(event["StakingModuleFeesSet"]["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), "Wrong event emitter"

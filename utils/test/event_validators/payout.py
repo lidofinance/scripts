@@ -50,10 +50,9 @@ def validate_token_payout_event(event: EventDict, p: Payout, is_steth: bool = Fa
     assert event["NewTransaction"]["entity"] == p.to_addr
     assert event["NewTransaction"]["amount"] == p.amount
 
-    if emitted_by is not None:
-        assert convert.to_address(event["VaultTransfer"]["_emitted_by"]) == convert.to_address(
-            emitted_by
-        ), "Wrong event emitter"
+    assert convert.to_address(event["VaultTransfer"]["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), "Wrong event emitter"
 
 
 def validate_ether_payout_event(event: EventDict, p: Payout):

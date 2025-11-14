@@ -33,12 +33,11 @@ def validate_dual_governance_submit_event(
     if metadata:
         assert event["ProposalSubmitted"][1]["metadata"] == metadata, f"Wrong metadata {event['ProposalSubmitted'][1]['metadata']}"
 
-    if emitted_by is not None:
-        assert len(event["ProposalSubmitted"]) == len(emitted_by), "Wrong emitted_by count"
-        for i in range(0, len(emitted_by)):
-            assert convert.to_address(event["ProposalSubmitted"][i]["_emitted_by"]) == convert.to_address(
-                emitted_by[i]
-            ), "Wrong event emitter"
+    assert len(event["ProposalSubmitted"]) == len(emitted_by), "Wrong emitted_by count"
+    for i in range(0, len(emitted_by)):
+        assert convert.to_address(event["ProposalSubmitted"][i]["_emitted_by"]) == convert.to_address(
+            emitted_by[i]
+        ), "Wrong event emitter"
 
 
 def validate_dual_governance_tiebreaker_activation_timeout_set_event(

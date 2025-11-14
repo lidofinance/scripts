@@ -24,8 +24,7 @@ def validate_set_key_removal_charge_event(
     assert event.count("KeyRemovalChargeSet") == 1
     assert event["KeyRemovalChargeSet"]["amount"] == key_removal_charge
 
-    if emitted_by is not None:
-        event_emitted_by = convert.to_address(event["KeyRemovalChargeSet"]["_emitted_by"])
-        assert event_emitted_by == convert.to_address(
-            emitted_by
-        ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
+    event_emitted_by = convert.to_address(event["KeyRemovalChargeSet"]["_emitted_by"])
+    assert event_emitted_by == convert.to_address(
+        emitted_by
+    ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
