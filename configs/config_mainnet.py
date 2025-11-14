@@ -523,5 +523,10 @@ DUAL_GOVERNANCE_VALUES = {
     }
 }
 
-# Lido V3 - stVaults
+# Lido V3 - stVaults ----------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 VAULT_HUB = "0xe3c5C1fb61C6c81cb305D4580c53Cfa4BcB7899b" # TODO fix after mainnet deployment
+
+ACCOUNTING = "0x939dE020A9242b6f632BB6A47F9CE8Db897F8C38" # TODO fix after mainnet deployment
+ACCOUNTING_IMPL = "0x242f9504864776Be37752050EdA0F4ac33a565C4" # TODO fix after mainnet deployment

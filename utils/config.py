@@ -311,6 +311,10 @@ class ContractsLazyLoader:
         return interface.VaultHub(VAULT_HUB)
 
     @property
+    def accounting(self) -> interface.Accounting:
+        return interface.Accounting(ACCOUNTING)
+
+    @property
     def lido_locator(self) -> interface.LidoLocator:
         return interface.LidoLocator(LIDO_LOCATOR)
 
