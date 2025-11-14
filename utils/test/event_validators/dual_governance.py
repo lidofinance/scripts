@@ -1,6 +1,7 @@
 from brownie.network.event import EventDict
 from brownie import convert, web3
 from .common import validate_events_chain
+from utils.config import DUAL_GOVERNANCE, TIMELOCK
 
 
 def validate_dual_governance_submit_event(
@@ -10,7 +11,6 @@ def validate_dual_governance_submit_event(
     executor: str,
     metadata: str = None,
     proposal_calls: any = None,
-    emitted_by: list[str] = None,
 ) -> None:
     _events_chain = ["LogScriptCall", "ProposalSubmitted", "ProposalSubmitted"]
 
@@ -33,11 +33,13 @@ def validate_dual_governance_submit_event(
     if metadata:
         assert event["ProposalSubmitted"][1]["metadata"] == metadata, f"Wrong metadata {event['ProposalSubmitted'][1]['metadata']}"
 
-    assert len(event["ProposalSubmitted"]) == len(emitted_by), "Wrong emitted_by count"
-    for i in range(0, len(emitted_by)):
-        assert convert.to_address(event["ProposalSubmitted"][i]["_emitted_by"]) == convert.to_address(
-            emitted_by[i]
-        ), "Wrong event emitter"
+    assert len(event["ProposalSubmitted"]) == 2, "Wrong emitted_by count"
+    assert convert.to_address(event["ProposalSubmitted"][0]["_emitted_by"]) == convert.to_address(
+        TIMELOCK
+    ), "Wrong event emitter"
+    assert convert.to_address(event["ProposalSubmitted"][1]["_emitted_by"]) == convert.to_address(
+        DUAL_GOVERNANCE
+    ), "Wrong event emitter"
 
 
 def validate_dual_governance_tiebreaker_activation_timeout_set_event(

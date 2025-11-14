@@ -223,7 +223,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
                 metadata="Upgrade Lido Protocol to V3, raise SDVT stake share limit and reset Easy Track TRP limit",
                 proposal_calls=dual_governance_proposal_calls,
-                emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
             )
 
             # TODO validate all other voting events
