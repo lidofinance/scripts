@@ -21,7 +21,7 @@ from brownie import interface
 
 
 # ============================== Addresses ===================================
-OMNIBUS_CONTRACT = "0xA3710716965497e62bC3165Eb7DD2a1B1437f8Af" # TODO replace with the actual omnibus contract address
+OMNIBUS_CONTRACT = "0xda9D35b108f9538F8025f1c692265b9451D42f8b" # TODO replace with the actual omnibus contract address
 
 
 # ============================= Description ==================================

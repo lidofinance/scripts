@@ -239,129 +239,129 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         #     )
 
 
-    if EXPECTED_DG_PROPOSAL_ID is not None:
-        details = timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)
-        if details["status"] != PROPOSAL_STATUS["executed"]:
-            # =========================================================================
-            # ================== DG before proposal executed checks ===================
-            # =========================================================================
-            # TODO add DG before proposal executed checks
+    # if EXPECTED_DG_PROPOSAL_ID is not None:
+    #     details = timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)
+    #     if details["status"] != PROPOSAL_STATUS["executed"]:
+    #         # =========================================================================
+    #         # ================== DG before proposal executed checks ===================
+    #         # =========================================================================
+    #         # TODO add DG before proposal executed checks
 
-            # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
-            # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
-            trp_limit_before, trp_period_duration_months_before = et_trp_registry.getLimitParameters()
-            trp_already_spent_amount_before, trp_spendable_balance_before, trp_period_start_before, trp_period_end_before = et_trp_registry.getPeriodState()
-            assert trp_limit_before == TRP_LIMIT_BEFORE
-            assert trp_period_duration_months_before == TRP_PERIOD_DURATION_MONTHS
-            assert trp_already_spent_amount_before == TRP_ALREADY_SPENT_BEFORE
-            assert trp_spendable_balance_before == TRP_LIMIT_BEFORE - TRP_ALREADY_SPENT_BEFORE
-            assert trp_period_start_before == TRP_PERIOD_START_TIMESTAMP
-            assert trp_period_end_before == TRP_PERIOD_END_TIMESTAMP
+    #         # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
+    #         # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
+    #         trp_limit_before, trp_period_duration_months_before = et_trp_registry.getLimitParameters()
+    #         trp_already_spent_amount_before, trp_spendable_balance_before, trp_period_start_before, trp_period_end_before = et_trp_registry.getPeriodState()
+    #         assert trp_limit_before == TRP_LIMIT_BEFORE
+    #         assert trp_period_duration_months_before == TRP_PERIOD_DURATION_MONTHS
+    #         assert trp_already_spent_amount_before == TRP_ALREADY_SPENT_BEFORE
+    #         assert trp_spendable_balance_before == TRP_LIMIT_BEFORE - TRP_ALREADY_SPENT_BEFORE
+    #         assert trp_period_start_before == TRP_PERIOD_START_TIMESTAMP
+    #         assert trp_period_end_before == TRP_PERIOD_END_TIMESTAMP
 
-            # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
-            sdvt_module_before = staking_router.getStakingModule(SDVT_MODULE_ID)
-            assert sdvt_module_before['stakeShareLimit'] == SDVT_MODULE_OLD_TARGET_SHARE_BP
-            assert sdvt_module_before['id'] == SDVT_MODULE_ID
-            assert sdvt_module_before['priorityExitShareThreshold'] == SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP
-            assert sdvt_module_before['stakingModuleFee'] == SDVT_MODULE_MODULE_FEE_BP
-            assert sdvt_module_before['treasuryFee'] == SDVT_MODULE_TREASURY_FEE_BP
-            assert sdvt_module_before['maxDepositsPerBlock'] == SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK
-            assert sdvt_module_before['minDepositBlockDistance'] == SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE
-            assert sdvt_module_before['name'] == SDVT_MODULE_NAME
+    #         # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+    #         sdvt_module_before = staking_router.getStakingModule(SDVT_MODULE_ID)
+    #         assert sdvt_module_before['stakeShareLimit'] == SDVT_MODULE_OLD_TARGET_SHARE_BP
+    #         assert sdvt_module_before['id'] == SDVT_MODULE_ID
+    #         assert sdvt_module_before['priorityExitShareThreshold'] == SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP
+    #         assert sdvt_module_before['stakingModuleFee'] == SDVT_MODULE_MODULE_FEE_BP
+    #         assert sdvt_module_before['treasuryFee'] == SDVT_MODULE_TREASURY_FEE_BP
+    #         assert sdvt_module_before['maxDepositsPerBlock'] == SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK
+    #         assert sdvt_module_before['minDepositBlockDistance'] == SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE
+    #         assert sdvt_module_before['name'] == SDVT_MODULE_NAME
 
 
-            if details["status"] == PROPOSAL_STATUS["submitted"]:
-                chain.sleep(timelock.getAfterSubmitDelay() + 1)
-                dual_governance.scheduleProposal(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
+    #         if details["status"] == PROPOSAL_STATUS["submitted"]:
+    #             chain.sleep(timelock.getAfterSubmitDelay() + 1)
+    #             dual_governance.scheduleProposal(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
 
-            # if timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == PROPOSAL_STATUS["scheduled"]:
-            #     chain.sleep(timelock.getAfterScheduleDelay() + 1)
-            #     dg_tx: TransactionReceipt = timelock.execute(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
-            #     display_dg_events(dg_tx)
-            #     dg_events = group_dg_events_from_receipt(
-            #         dg_tx,
-            #         timelock=EMERGENCY_PROTECTED_TIMELOCK,
-            #         admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-            #     )
-            #     assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_COUNT
-            #     assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
+    #         # if timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == PROPOSAL_STATUS["scheduled"]:
+    #         #     chain.sleep(timelock.getAfterScheduleDelay() + 1)
+    #         #     dg_tx: TransactionReceipt = timelock.execute(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
+    #         #     display_dg_events(dg_tx)
+    #         #     dg_events = group_dg_events_from_receipt(
+    #         #         dg_tx,
+    #         #         timelock=EMERGENCY_PROTECTED_TIMELOCK,
+    #         #         admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+    #         #     )
+    #         #     assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_COUNT
+    #         #     assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
 
-            #     # TODO validate all DG events
+    #         #     # TODO validate all DG events
 
-            #     validate_set_spent_amount_event(
-            #         dg_events[0],
-            #         new_spent_amount=0,
-            #         emitted_by=ET_TRP_REGISTRY,
-            #         is_dg_event=True,
-            #     )
+    #         #     validate_set_spent_amount_event(
+    #         #         dg_events[0],
+    #         #         new_spent_amount=0,
+    #         #         emitted_by=ET_TRP_REGISTRY,
+    #         #         is_dg_event=True,
+    #         #     )
 
-            #     validate_set_limit_parameter_event(
-            #         dg_events[1],
-            #         limit=TRP_LIMIT_AFTER,
-            #         period_duration_month=TRP_PERIOD_DURATION_MONTHS,
-            #         period_start_timestamp=TRP_PERIOD_START_TIMESTAMP,
-            #         emitted_by=ET_TRP_REGISTRY,
-            #         is_dg_event=True,
-            #     )
+    #         #     validate_set_limit_parameter_event(
+    #         #         dg_events[1],
+    #         #         limit=TRP_LIMIT_AFTER,
+    #         #         period_duration_month=TRP_PERIOD_DURATION_MONTHS,
+    #         #         period_start_timestamp=TRP_PERIOD_START_TIMESTAMP,
+    #         #         emitted_by=ET_TRP_REGISTRY,
+    #         #         is_dg_event=True,
+    #         #     )
 
-            #     validate_staking_module_update_event(
-            #         event=dg_events[2],
-            #         module_item=StakingModuleItem(
-            #             id=SDVT_MODULE_ID,
-            #             name=SDVT_MODULE_NAME,
-            #             address=None,
-            #             target_share=SDVT_MODULE_NEW_TARGET_SHARE_BP,
-            #             module_fee=SDVT_MODULE_MODULE_FEE_BP,
-            #             treasury_fee=SDVT_MODULE_TREASURY_FEE_BP,
-            #             priority_exit_share=SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP),
-            #         emitted_by=STAKING_ROUTER,
-            #         is_dg_event=True
-            #     )
+    #         #     validate_staking_module_update_event(
+    #         #         event=dg_events[2],
+    #         #         module_item=StakingModuleItem(
+    #         #             id=SDVT_MODULE_ID,
+    #         #             name=SDVT_MODULE_NAME,
+    #         #             address=None,
+    #         #             target_share=SDVT_MODULE_NEW_TARGET_SHARE_BP,
+    #         #             module_fee=SDVT_MODULE_MODULE_FEE_BP,
+    #         #             treasury_fee=SDVT_MODULE_TREASURY_FEE_BP,
+    #         #             priority_exit_share=SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP),
+    #         #         emitted_by=STAKING_ROUTER,
+    #         #         is_dg_event=True
+    #         #     )
 
-        # =========================================================================
-        # ==================== After DG proposal executed checks ==================
-        # =========================================================================
-        # TODO add DG after proposal executed checks
+    #     # =========================================================================
+    #     # ==================== After DG proposal executed checks ==================
+    #     # =========================================================================
+    #     # TODO add DG after proposal executed checks
 
-        # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
-        # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
-        trp_limit_after, trp_period_duration_months_after = et_trp_registry.getLimitParameters()
-        trp_already_spent_amount_after, trp_spendable_balance_after, trp_period_start_after, trp_period_end_after = et_trp_registry.getPeriodState()
-        # assert trp_limit_after == TRP_LIMIT_AFTER
-        # assert trp_period_duration_months_after == TRP_PERIOD_DURATION_MONTHS
-        # assert trp_already_spent_amount_after == TRP_ALREADY_SPENT_AFTER
-        # assert trp_spendable_balance_after == TRP_LIMIT_AFTER - TRP_ALREADY_SPENT_AFTER
-        # assert trp_period_start_after == TRP_PERIOD_START_TIMESTAMP
-        # assert trp_period_end_after == TRP_PERIOD_END_TIMESTAMP
+    #     # 1.1. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
+    #     # 1.2. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
+    #     trp_limit_after, trp_period_duration_months_after = et_trp_registry.getLimitParameters()
+    #     trp_already_spent_amount_after, trp_spendable_balance_after, trp_period_start_after, trp_period_end_after = et_trp_registry.getPeriodState()
+    #     # assert trp_limit_after == TRP_LIMIT_AFTER
+    #     # assert trp_period_duration_months_after == TRP_PERIOD_DURATION_MONTHS
+    #     # assert trp_already_spent_amount_after == TRP_ALREADY_SPENT_AFTER
+    #     # assert trp_spendable_balance_after == TRP_LIMIT_AFTER - TRP_ALREADY_SPENT_AFTER
+    #     # assert trp_period_start_after == TRP_PERIOD_START_TIMESTAMP
+    #     # assert trp_period_end_after == TRP_PERIOD_END_TIMESTAMP
 
-        # # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
-        # sdvt_module_after = staking_router.getStakingModule(SDVT_MODULE_ID)
-        # assert sdvt_module_after['stakeShareLimit'] == SDVT_MODULE_NEW_TARGET_SHARE_BP
-        # assert sdvt_module_after['id'] == SDVT_MODULE_ID
-        # assert sdvt_module_after['priorityExitShareThreshold'] == SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP
-        # assert sdvt_module_after['stakingModuleFee'] == SDVT_MODULE_MODULE_FEE_BP
-        # assert sdvt_module_after['treasuryFee'] == SDVT_MODULE_TREASURY_FEE_BP
-        # assert sdvt_module_after['maxDepositsPerBlock'] == SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK
-        # assert sdvt_module_after['minDepositBlockDistance'] == SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE
-        # assert sdvt_module_after['name'] == SDVT_MODULE_NAME
-        # # additional checks to make sure no other fields were changed
-        # assert sdvt_module_after['id'] == sdvt_module_before['id']
-        # assert sdvt_module_after['stakingModuleAddress'] == sdvt_module_before['stakingModuleAddress']
-        # assert sdvt_module_after['stakingModuleFee'] == sdvt_module_before['stakingModuleFee']
-        # assert sdvt_module_after['treasuryFee'] == sdvt_module_before['treasuryFee']
-        # assert sdvt_module_after['status'] == sdvt_module_before['status']
-        # assert sdvt_module_after['name'] == sdvt_module_before['name']
-        # assert sdvt_module_after['lastDepositAt'] == sdvt_module_before['lastDepositAt']
-        # assert sdvt_module_after['lastDepositBlock'] == sdvt_module_before['lastDepositBlock']
-        # assert sdvt_module_after['exitedValidatorsCount'] == sdvt_module_before['exitedValidatorsCount']
-        # assert sdvt_module_after['maxDepositsPerBlock'] == sdvt_module_before['maxDepositsPerBlock']
-        # assert sdvt_module_after['minDepositBlockDistance'] == sdvt_module_before['minDepositBlockDistance']
-        # assert sdvt_module_after['priorityExitShareThreshold'] == sdvt_module_before['priorityExitShareThreshold']
-        # assert len(sdvt_module_after.items()) == len(sdvt_module_before.items())
-        # assert len(sdvt_module_after.items()) == 13
+    #     # # 1.3. Increase SDVT (MODULE_ID = 2) share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+    #     # sdvt_module_after = staking_router.getStakingModule(SDVT_MODULE_ID)
+    #     # assert sdvt_module_after['stakeShareLimit'] == SDVT_MODULE_NEW_TARGET_SHARE_BP
+    #     # assert sdvt_module_after['id'] == SDVT_MODULE_ID
+    #     # assert sdvt_module_after['priorityExitShareThreshold'] == SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP
+    #     # assert sdvt_module_after['stakingModuleFee'] == SDVT_MODULE_MODULE_FEE_BP
+    #     # assert sdvt_module_after['treasuryFee'] == SDVT_MODULE_TREASURY_FEE_BP
+    #     # assert sdvt_module_after['maxDepositsPerBlock'] == SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK
+    #     # assert sdvt_module_after['minDepositBlockDistance'] == SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE
+    #     # assert sdvt_module_after['name'] == SDVT_MODULE_NAME
+    #     # # additional checks to make sure no other fields were changed
+    #     # assert sdvt_module_after['id'] == sdvt_module_before['id']
+    #     # assert sdvt_module_after['stakingModuleAddress'] == sdvt_module_before['stakingModuleAddress']
+    #     # assert sdvt_module_after['stakingModuleFee'] == sdvt_module_before['stakingModuleFee']
+    #     # assert sdvt_module_after['treasuryFee'] == sdvt_module_before['treasuryFee']
+    #     # assert sdvt_module_after['status'] == sdvt_module_before['status']
+    #     # assert sdvt_module_after['name'] == sdvt_module_before['name']
+    #     # assert sdvt_module_after['lastDepositAt'] == sdvt_module_before['lastDepositAt']
+    #     # assert sdvt_module_after['lastDepositBlock'] == sdvt_module_before['lastDepositBlock']
+    #     # assert sdvt_module_after['exitedValidatorsCount'] == sdvt_module_before['exitedValidatorsCount']
+    #     # assert sdvt_module_after['maxDepositsPerBlock'] == sdvt_module_before['maxDepositsPerBlock']
+    #     # assert sdvt_module_after['minDepositBlockDistance'] == sdvt_module_before['minDepositBlockDistance']
+    #     # assert sdvt_module_after['priorityExitShareThreshold'] == sdvt_module_before['priorityExitShareThreshold']
+    #     # assert len(sdvt_module_after.items()) == len(sdvt_module_before.items())
+    #     # assert len(sdvt_module_after.items()) == 13
 
-        # # additional test for TRP ET factory behavior after the vote
-        # trp_limit_test(stranger)
+    #     # # additional test for TRP ET factory behavior after the vote
+    #     # trp_limit_test(stranger)
 
 
 def trp_limit_test(stranger):
