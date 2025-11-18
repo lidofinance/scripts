@@ -218,18 +218,15 @@ def test_stopped_lido_cant_deposit():
         contracts.lido.deposit(1, 1, "0x", {"from": contracts.deposit_security_module}),
 
 
-@pytest.mark.usefixtures("stopped_lido")
 def test_resumed_staking_can_stake(stranger):
+    contracts.lido.pauseStaking({"from": contracts.agent})
     contracts.lido.resumeStaking({"from": contracts.agent})
     stranger.transfer(contracts.lido, DEPOSIT_AMOUNT)
 
-
 @pytest.mark.usefixtures("stopped_lido")
 def test_resumed_staking_cant_deposit():
-    contracts.lido.resumeStaking({"from": contracts.agent})
-
-    with brownie.reverts("CAN_NOT_DEPOSIT"):
-        contracts.lido.deposit(1, 1, "0x", {"from": contracts.deposit_security_module}),
+    with brownie.reverts("CONTRACT_IS_STOPPED"):
+        contracts.lido.resumeStaking({"from": contracts.agent}),
 
 
 @pytest.mark.usefixtures("stopped_lido")

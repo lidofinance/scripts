@@ -21,7 +21,7 @@ jobs:
     services:
 
       tests-runner:
-        image: ghcr.io/lidofinance/scripts:v19
+        image: ghcr.io/lidofinance/scripts:v20
         ports:
           - 8546:8546
         volumes:
