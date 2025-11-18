@@ -22,11 +22,11 @@ def validate_evmscript_factory_added_event(
 
     assert event["EVMScriptFactoryAdded"]["_evmScriptFactory"] == p.factory_addr
     assert event["EVMScriptFactoryAdded"]["_permissions"] == p.permissions
-    if emitted_by is not None:
-        event_emitted_by = convert.to_address(event["EVMScriptFactoryAdded"]["_emitted_by"])
-        assert event_emitted_by == convert.to_address(
-            emitted_by
-        ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
+
+    event_emitted_by = convert.to_address(event["EVMScriptFactoryAdded"]["_emitted_by"])
+    assert event_emitted_by == convert.to_address(
+        emitted_by
+    ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
 
 
 def validate_evmscript_factory_removed_event(event: EventDict, factory_addr: str, emitted_by: str | None = None):
@@ -37,11 +37,11 @@ def validate_evmscript_factory_removed_event(event: EventDict, factory_addr: str
     assert event.count("EVMScriptFactoryRemoved") == 1
 
     assert event["EVMScriptFactoryRemoved"]["_evmScriptFactory"] == factory_addr
-    if emitted_by is not None:
-        event_emitted_by = convert.to_address(event["EVMScriptFactoryRemoved"]["_emitted_by"])
-        assert event_emitted_by == convert.to_address(
-            emitted_by
-        ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
+
+    event_emitted_by = convert.to_address(event["EVMScriptFactoryRemoved"]["_emitted_by"])
+    assert event_emitted_by == convert.to_address(
+        emitted_by
+    ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
 
 
 def validate_motions_count_limit_changed_event(
@@ -54,8 +54,8 @@ def validate_motions_count_limit_changed_event(
     assert event.count("MotionsCountLimitChanged") == 1
 
     assert event["MotionsCountLimitChanged"]["_newMotionsCountLimit"] == motions_count_limit
-    if emitted_by is not None:
-        event_emitted_by = convert.to_address(event["MotionsCountLimitChanged"]["_emitted_by"])
-        assert event_emitted_by == convert.to_address(
-            emitted_by
-        ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
+
+    event_emitted_by = convert.to_address(event["MotionsCountLimitChanged"]["_emitted_by"])
+    assert event_emitted_by == convert.to_address(
+        emitted_by
+    ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"

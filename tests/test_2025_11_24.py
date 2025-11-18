@@ -223,7 +223,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
                 metadata="Upgrade Lido Protocol to V3, raise SDVT stake share limit and reset Easy Track TRP limit",
                 proposal_calls=dual_governance_proposal_calls,
-                emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
             )
 
             # TODO validate all other voting events
@@ -299,15 +298,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                         module_fee=SDVT_MODULE_MODULE_FEE_BP,
                         treasury_fee=SDVT_MODULE_TREASURY_FEE_BP,
                         priority_exit_share=SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP),
-                    emitted_by=STAKING_ROUTER,
-                    is_dg_event=True
+                    emitted_by=STAKING_ROUTER
                 )
 
                 validate_set_spent_amount_event(
                     dg_events[1],
                     new_spent_amount=0,
                     emitted_by=ET_TRP_REGISTRY,
-                    is_dg_event=True,
                 )
 
                 validate_set_limit_parameter_event(
@@ -316,7 +313,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     period_duration_month=TRP_PERIOD_DURATION_MONTHS,
                     period_start_timestamp=TRP_PERIOD_START_TIMESTAMP,
                     emitted_by=ET_TRP_REGISTRY,
-                    is_dg_event=True,
                 )
 
         # =========================================================================

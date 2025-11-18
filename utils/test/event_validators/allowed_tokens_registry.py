@@ -19,8 +19,7 @@ def validate_add_token_event(
         token
     ), f"Wrong token address {event['TokenAdded']['_token']} but expected {token}"
 
-    if emitted_by is not None:
-        event_emitted_by = convert.to_address(event["TokenAdded"]["_emitted_by"])
-        assert event_emitted_by == convert.to_address(
-            emitted_by
-        ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
+    event_emitted_by = convert.to_address(event["TokenAdded"]["_emitted_by"])
+    assert event_emitted_by == convert.to_address(
+        emitted_by
+    ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"

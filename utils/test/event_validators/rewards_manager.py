@@ -17,7 +17,7 @@ def validate_ownership_transferred_event(event: EventDict, ot: OwnershipTransfer
 
     assert event['OwnershipTransferred']['previousOwner'] == ot.previous_owner_addr
     assert event['OwnershipTransferred']['newOwner'] == ot.new_owner_addr
-    if emitted_by is not None:
-        assert convert.to_address(event["OwnershipTransferred"]["_emitted_by"]) == convert.to_address(
-            emitted_by
-        ), "Wrong event emitter"
+
+    assert convert.to_address(event["OwnershipTransferred"]["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), "Wrong event emitter"
