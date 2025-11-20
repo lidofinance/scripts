@@ -41,12 +41,14 @@ def first_report():
 
 def test_cant_report_more_validators_than_deposited():
     (deposited, clValidators, _) = contracts.lido.getBeaconStat()
-    with reverts("REPORTED_MORE_DEPOSITED"):
+    with reverts("IncorrectReportValidators: " + str(deposited + 1) + ", " + str(clValidators) + ", " + str(deposited)):
         oracle_report(cl_appeared_validators=deposited - clValidators + 1, skip_withdrawals=True, silent=True)
 
 
 def test_validators_cant_decrease():
-    with reverts("REPORTED_LESS_VALIDATORS"):
+    # panic code 0x11 (Arithmetic overflow)
+    # Brownie sometimes fails to decode panic codes and throws AttributeError
+    with pytest.raises((Exception, AttributeError)):
         oracle_report(cl_appeared_validators=-1, skip_withdrawals=True, silent=True)
 
 
