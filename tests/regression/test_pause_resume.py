@@ -272,27 +272,37 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
     contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.DepositsPaused, {"from": stranger})
 
     (report_tx, _) = oracle_report()
-    print(report_tx.events["Transfer"])
+    # Note: why we use TransferShares event in this test - https://github.com/lidofinance/core/issues/1565
+    # print(report_tx.events["TransferShares"])
     module_index = 0
     simple_dvt_index = 1
     csm_index = 2
 
-    if report_tx.events["Transfer"][module_index]["to"] == burner.address:
+    if report_tx.events["TransferShares"][module_index]["to"] == burner.address:
         module_index += 1
         simple_dvt_index += 1
         csm_index += 1
 
     agent_index = module_index + 3
-    assert report_tx.events["Transfer"][module_index]["to"] == module_address
-    assert report_tx.events["Transfer"][module_index]["from"] == ZERO_ADDRESS
-    assert report_tx.events["Transfer"][agent_index]["to"] == contracts.agent
-    assert report_tx.events["Transfer"][agent_index]["from"] == ZERO_ADDRESS
+    assert report_tx.events["TransferShares"][module_index]["to"] == module_address
+    assert report_tx.events["TransferShares"][module_index]["from"] == ZERO_ADDRESS
+    assert report_tx.events["TransferShares"][agent_index]["to"] == contracts.agent
+    assert report_tx.events["TransferShares"][agent_index]["from"] == ZERO_ADDRESS
 
-    # the staking modules ids starts from 1, so SDVT has id = 2
+
+    # the staking modules ids starts from 1
+    module_stats = contracts.staking_router.getStakingModule(1)
+    # module_treasury_fee = module_share / share_pct * treasury_pct
+    module_treasury_fee = (
+        report_tx.events["TransferShares"][module_index]["sharesValue"]
+        * 100_00
+        // module_stats["stakingModuleFee"]
+        * module_stats["treasuryFee"]
+        // 100_00
+    )
     simple_dvt_stats = contracts.staking_router.getStakingModule(2)
-    # simple_dvt_treasury_fee = sdvt_share / share_pct * treasury_pct
     simple_dvt_treasury_fee = (
-        report_tx.events["Transfer"][simple_dvt_index]["value"]
+        report_tx.events["TransferShares"][simple_dvt_index]["sharesValue"]
         * 100_00
         // simple_dvt_stats["stakingModuleFee"]
         * simple_dvt_stats["treasuryFee"]
@@ -300,18 +310,19 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
     )
     csm_stats = contracts.staking_router.getStakingModule(3)
     csm_treasury_fee = (
-        report_tx.events["Transfer"][csm_index]["value"]
+        report_tx.events["TransferShares"][csm_index]["sharesValue"]
         * 100_00
         // csm_stats["stakingModuleFee"]
         * csm_stats["treasuryFee"]
         // 100_00
     )
+
     assert almostEqWithDiff(
-        report_tx.events["Transfer"][module_index]["value"] + simple_dvt_treasury_fee + csm_treasury_fee,
-        report_tx.events["Transfer"][agent_index]["value"],
+        module_treasury_fee + simple_dvt_treasury_fee + csm_treasury_fee,
+        report_tx.events["TransferShares"][agent_index]["sharesValue"],
         100,
     )
-    assert report_tx.events["Transfer"][module_index]["value"] > 0
+    assert report_tx.events["TransferShares"][module_index]["sharesValue"] > 0
 
 
 def test_stopped_staking_module_cant_stake(stranger):
