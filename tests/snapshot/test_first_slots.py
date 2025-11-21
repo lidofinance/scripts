@@ -49,8 +49,8 @@ def test_first_slots(sandwich_upgrade: SandwichFn):
 def skip_slots() -> Sequence[tuple[str, int]]:
     """Slots that are not checked for equality"""
     return [
-        # reset slot in kernel
-        (contracts.kernel.address, 0x01),
+        # adding 9 new easy track factories
+        (contracts.easy_track.address, 0x05),
     ]
 
 
