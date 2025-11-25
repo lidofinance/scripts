@@ -1,7 +1,9 @@
-from brownie import chain, interface, reverts, accounts
+from brownie import chain, interface, reverts, accounts, ZERO_ADDRESS, convert, web3
 from brownie.network.transaction import TransactionReceipt
 import pytest
+from typing import List, NamedTuple
 
+from utils.permission_parameters import Param, SpecialArgumentID, encode_argument_value_if, ArgumentValue, Op
 from utils.test.tx_tracing_helpers import (
     group_voting_events_from_receipt,
     group_dg_events_from_receipt,
@@ -29,12 +31,24 @@ from utils.test.event_validators.allowed_recipients_registry import (
     validate_set_limit_parameter_event,
     validate_set_spent_amount_event,
 )
+from utils.test.event_validators.permission import (
+    validate_grant_role_event,
+    validate_revoke_role_event,
+    Permission,
+    validate_permission_grantp_event,
+    validate_permission_revoke_event,
+)
+from utils.test.event_validators.allowed_tokens_registry import validate_add_token_event
+
+class TokenLimit(NamedTuple):
+    address: str
+    limit: int
 
 
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.vote_2025_11_24 import start_vote, get_vote_items
+from scripts.vote_2025_12_10 import start_vote, get_vote_items
 
 
 # ============================================================================
@@ -60,13 +74,14 @@ EASY_TRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 TRP_COMMITTEE = "0x834560F580764Bc2e0B16925F8bF229bb00cB759"
 TRP_TOP_UP_EVM_SCRIPT_FACTORY = "0xBd2b6dC189EefD51B273F5cb2d99BA1ce565fb8C"
 LDO_TOKEN = "0x5a98fcbea516cf06857215779fd812ca3bef1b32"
-
-# TODO Set variable to None if item is not presented
-EXPECTED_VOTE_ID = 194
-EXPECTED_DG_PROPOSAL_ID = 6
-EXPECTED_VOTE_EVENTS_COUNT = 2
-EXPECTED_DG_EVENTS_COUNT = 3
-IPFS_DESCRIPTION_HASH = "bafkreigs2dewxxu7rj6eifpxsqvib23nsiw2ywsmh3lhewyqlmyn46obnm"
+FINANCE = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
+CREATE_PAYMENTS_ROLE = "CREATE_PAYMENTS_ROLE"
+ACL = "0x9895f0f17cc1d1891b6f18ee0b483b6f221b37bb"
+ALLOWED_TOKENS_REGISTRY = "0x4AC40c34f8992bb1e5E856A448792158022551ca"
+ADD_TOKEN_TO_ALLOWED_LIST_ROLE = "ADD_TOKEN_TO_ALLOWED_LIST_ROLE"
+LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY = "0xE1f6BaBb445F809B97e3505Ea91749461050F780"
+LIDO_LABS_TRUSTED_CALLER = "0x95B521B4F55a447DB89f6a27f951713fC2035f3F"
+LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY = "0x68267f3D310E9f0FF53a37c141c90B738E1133c2"
 
 SDVT_MODULE_ID = 2
 SDVT_MODULE_OLD_TARGET_SHARE_BP = 400
@@ -91,6 +106,202 @@ TRP_LIMIT_AFTER = 15_000_000 * 10**18
 TRP_PERIOD_START_TIMESTAMP = 1735689600  # January 1, 2025 UTC
 TRP_PERIOD_END_TIMESTAMP = 1767225600  # January 1, 2026 UTC
 TRP_PERIOD_DURATION_MONTHS = 12
+
+SUSDS_TOKEN = "0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD"
+USDC_TOKEN = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+USDT_TOKEN = "0xdac17f958d2ee523a2206206994597c13d831ec7"
+DAI_TOKEN = "0x6b175474e89094c44da98b954eedeac495271d0f"
+ALLOWED_TOKENS_BEFORE = 3
+ALLOWED_TOKENS_AFTER = 4
+
+
+EXPECTED_VOTE_ID = 194
+EXPECTED_DG_PROPOSAL_ID = 6
+EXPECTED_VOTE_EVENTS_COUNT = 7
+EXPECTED_DG_EVENTS_COUNT = 3
+IPFS_DESCRIPTION_HASH = "bafkreigs2dewxxu7rj6eifpxsqvib23nsiw2ywsmh3lhewyqlmyn46obnm"
+
+
+AMOUNT_LIMITS_LEN_BEFORE = 19
+def amount_limits_before() -> List[Param]:
+    ldo_limit = TokenLimit(LDO_TOKEN, 5_000_000 * (10**18))
+    eth_limit = TokenLimit(ZERO_ADDRESS, 1_000 * 10**18)
+    steth_limit = TokenLimit(LIDO, 1_000 * (10**18))
+    dai_limit = TokenLimit(DAI_TOKEN, 2_000_000 * (10**18))
+    usdc_limit = TokenLimit(USDC_TOKEN, 2_000_000 * (10**6))
+    usdt_limit = TokenLimit(USDT_TOKEN, 2_000_000 * (10**6))
+
+    token_arg_index = 0
+    amount_arg_index = 2
+
+    limits = [
+        # 0: if (1) then (2) else (3)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=1, success=2, failure=3)
+        ),
+        # 1: (_token == stETH)
+        Param(token_arg_index, Op.EQ, ArgumentValue(steth_limit.address)),
+        # 2: { return _amount <= 1_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(steth_limit.limit)),
+        #
+        # 3: else if (4) then (5) else (6)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=4, success=5, failure=6)
+        ),
+        # 4: (_token == DAI)
+        Param(token_arg_index, Op.EQ, ArgumentValue(dai_limit.address)),
+        # 5: { return _amount <= 2_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(dai_limit.limit)),
+        #
+        # 6: else if (7) then (8) else (9)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=7, success=8, failure=9)
+        ),
+        # 7: (_token == LDO)
+        Param(token_arg_index, Op.EQ, ArgumentValue(ldo_limit.address)),
+        # 8: { return _amount <= 5_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(ldo_limit.limit)),
+        #
+        # 9: else if (10) then (11) else (12)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID,
+            Op.IF_ELSE,
+            encode_argument_value_if(condition=10, success=11, failure=12),
+        ),
+        # 10: (_token == USDC)
+        Param(token_arg_index, Op.EQ, ArgumentValue(usdc_limit.address)),
+        # 11: { return _amount <= 2_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(usdc_limit.limit)),
+        #
+        # 12: else if (13) then (14) else (15)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID,
+            Op.IF_ELSE,
+            encode_argument_value_if(condition=13, success=14, failure=15),
+        ),
+        # 13: (_token == USDT)
+        Param(token_arg_index, Op.EQ, ArgumentValue(usdt_limit.address)),
+        # 14: { return _amount <= 2_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(usdt_limit.limit)),
+        #
+        # 15: else if (16) then (17) else (18)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID,
+            Op.IF_ELSE,
+            encode_argument_value_if(condition=16, success=17, failure=18),
+        ),
+        # 16: (_token == ETH)
+        Param(token_arg_index, Op.EQ, ArgumentValue(eth_limit.address)),
+        # 17: { return _amount <= 1000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(eth_limit.limit)),
+        #
+        # 18: else { return false }
+        Param(SpecialArgumentID.PARAM_VALUE_PARAM_ID, Op.RET, ArgumentValue(0)),
+    ]
+
+    assert len(limits) == AMOUNT_LIMITS_LEN_BEFORE
+
+    return limits
+
+
+AMOUNT_LIMITS_LEN_AFTER = 22
+ldo_limit_after = TokenLimit(LDO_TOKEN, 5_000_000 * (10**18))
+eth_limit_after = TokenLimit(ZERO_ADDRESS, 1_000 * 10**18)
+steth_limit_after = TokenLimit(LIDO, 1_000 * (10**18))
+dai_limit_after = TokenLimit(DAI_TOKEN, 2_000_000 * (10**18))
+usdc_limit_after = TokenLimit(USDC_TOKEN, 2_000_000 * (10**6))
+usdt_limit_after = TokenLimit(USDT_TOKEN, 2_000_000 * (10**6))
+susds_limit_after = TokenLimit(SUSDS_TOKEN, 2_000_000 * (10**18))
+def amount_limits_after() -> List[Param]:
+
+    token_arg_index = 0
+    amount_arg_index = 2
+
+    limits = [
+        # 0: if (1) then (2) else (3)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=1, success=2, failure=3)
+        ),
+        # 1: (_token == stETH)
+        Param(token_arg_index, Op.EQ, ArgumentValue(steth_limit_after.address)),
+        # 2: { return _amount <= 1_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(steth_limit_after.limit)),
+        #
+        # 3: else if (4) then (5) else (6)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=4, success=5, failure=6)
+        ),
+        # 4: (_token == DAI)
+        Param(token_arg_index, Op.EQ, ArgumentValue(dai_limit_after.address)),
+        # 5: { return _amount <= 2_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(dai_limit_after.limit)),
+        #
+        # 6: else if (7) then (8) else (9)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID, Op.IF_ELSE, encode_argument_value_if(condition=7, success=8, failure=9)
+        ),
+        # 7: (_token == LDO)
+        Param(token_arg_index, Op.EQ, ArgumentValue(ldo_limit_after.address)),
+        # 8: { return _amount <= 5_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(ldo_limit_after.limit)),
+        #
+        # 9: else if (10) then (11) else (12)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID,
+            Op.IF_ELSE,
+            encode_argument_value_if(condition=10, success=11, failure=12),
+        ),
+        # 10: (_token == USDC)
+        Param(token_arg_index, Op.EQ, ArgumentValue(usdc_limit_after.address)),
+        # 11: { return _amount <= 2_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(usdc_limit_after.limit)),
+        #
+        # 12: else if (13) then (14) else (15)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID,
+            Op.IF_ELSE,
+            encode_argument_value_if(condition=13, success=14, failure=15),
+        ),
+        # 13: (_token == USDT)
+        Param(token_arg_index, Op.EQ, ArgumentValue(usdt_limit_after.address)),
+        # 14: { return _amount <= 2_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(usdt_limit_after.limit)),
+        #
+        # 15: else if (16) then (17) else (18)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID,
+            Op.IF_ELSE,
+            encode_argument_value_if(condition=16, success=17, failure=18),
+        ),
+        # 16: (_token == ETH)
+        Param(token_arg_index, Op.EQ, ArgumentValue(eth_limit_after.address)),
+        # 17: { return _amount <= 1000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(eth_limit_after.limit)),
+        #
+        # 18: else if (19) then (20) else (21)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID,
+            Op.IF_ELSE,
+            encode_argument_value_if(condition=19, success=20, failure=21),
+        ),
+        # 19: (_token == sUSDS)
+        Param(token_arg_index, Op.EQ, ArgumentValue(susds_limit_after.address)),
+        # 20: { return _amount <= 2_000_000 }
+        Param(amount_arg_index, Op.LTE, ArgumentValue(susds_limit_after.limit)),
+        #
+        # 21: else { return false }
+        Param(SpecialArgumentID.PARAM_VALUE_PARAM_ID, Op.RET, ArgumentValue(0)),
+    ]
+
+    # Verify that the first part of the after_limits matches the before_limits
+    for i in range(AMOUNT_LIMITS_LEN_BEFORE - 1):
+        assert limits[i].id == amount_limits_before()[i].id
+        assert limits[i].op.value == amount_limits_before()[i].op.value
+        assert limits[i].value == amount_limits_before()[i].value
+
+    assert len(limits) == AMOUNT_LIMITS_LEN_AFTER
+
+    return limits
 
 
 @pytest.fixture(scope="module")
@@ -152,6 +363,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     matic_token = interface.ERC20(MATIC_TOKEN)
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     et_trp_registry = interface.AllowedRecipientRegistry(ET_TRP_REGISTRY)
+    acl = interface.ACL(ACL)
+    allowed_tokens_registry = interface.AllowedTokensRegistry(ALLOWED_TOKENS_REGISTRY)
 
 
     # =========================================================================
@@ -181,11 +394,42 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =======================================================================
         # TODO add before voting checks
 
-        # 2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Liquidity Observation Lab (LOL) Multisig 0x87D93d9B2C672bf9c9642d853a8682546a5012B5
+        # Item 2
         matic_treasury_balance_before = matic_token.balanceOf(agent.address)
         assert matic_treasury_balance_before == MATIC_IN_TREASURY_BEFORE
         matic_labs_balance_before = matic_token.balanceOf(LOL_MS)
         assert matic_labs_balance_before == MATIC_IN_LIDO_LABS_BEFORE
+
+        # Items 3,5
+        assert not allowed_tokens_registry.hasRole(
+            convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
+            VOTING
+        )
+
+        # Item 4
+        assert not allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
+        allowed_tokens_before = allowed_tokens_registry.getAllowedTokens()
+        assert len(allowed_tokens_before) == ALLOWED_TOKENS_BEFORE
+        assert allowed_tokens_before[0] == DAI_TOKEN
+        assert allowed_tokens_before[1] == USDT_TOKEN
+        assert allowed_tokens_before[2] == USDC_TOKEN
+
+        # Items 6,7
+        assert acl.getPermissionParamsLength(
+            ET_EVM_SCRIPT_EXECUTOR,
+            FINANCE,
+            convert.to_uint(web3.keccak(text=CREATE_PAYMENTS_ROLE))
+        ) == AMOUNT_LIMITS_LEN_BEFORE
+        for i in range(AMOUNT_LIMITS_LEN_BEFORE):
+            id, op, val = acl.getPermissionParam(
+                ET_EVM_SCRIPT_EXECUTOR,
+                FINANCE,
+                convert.to_uint(web3.keccak(text=CREATE_PAYMENTS_ROLE)),
+                i
+            )
+            assert id == amount_limits_before()[i].id
+            assert op == amount_limits_before()[i].op.value
+            assert val == amount_limits_before()[i].value
 
 
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
@@ -200,7 +444,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =======================================================================
         # TODO add after voting tests
 
-        # 2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Liquidity Observation Lab (LOL) Multisig 0x87D93d9B2C672bf9c9642d853a8682546a5012B5
+        # Item 2
         matic_treasury_balance_after = matic_token.balanceOf(agent.address)
         assert matic_treasury_balance_after == MATIC_IN_TREASURY_AFTER
         matic_labs_balance_after = matic_token.balanceOf(LOL_MS)
@@ -209,6 +453,39 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         matic_token.transfer(DEV_GAS_STORE, MATIC_IN_LIDO_LABS_AFTER / 2, {"from": LOL_MS})
         assert matic_token.balanceOf(LOL_MS) == MATIC_IN_LIDO_LABS_AFTER / 2
         assert matic_token.balanceOf(DEV_GAS_STORE) == MATIC_IN_LIDO_LABS_AFTER / 2
+
+        # Items 3,5
+        assert not allowed_tokens_registry.hasRole(
+            convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
+            VOTING
+        )
+
+        # Item 4
+        assert allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
+        allowed_tokens_before = allowed_tokens_registry.getAllowedTokens()
+        assert len(allowed_tokens_before) == ALLOWED_TOKENS_AFTER
+        assert allowed_tokens_before[0] == DAI_TOKEN
+        assert allowed_tokens_before[1] == USDT_TOKEN
+        assert allowed_tokens_before[2] == USDC_TOKEN
+        assert allowed_tokens_before[3] == SUSDS_TOKEN
+
+        # Items 6,7
+        assert acl.getPermissionParamsLength(
+            ET_EVM_SCRIPT_EXECUTOR,
+            FINANCE,
+            convert.to_uint(web3.keccak(text=CREATE_PAYMENTS_ROLE))
+        ) == AMOUNT_LIMITS_LEN_AFTER
+        for i in range(AMOUNT_LIMITS_LEN_AFTER):
+            id, op, val = acl.getPermissionParam(
+                ET_EVM_SCRIPT_EXECUTOR,
+                FINANCE,
+                convert.to_uint(web3.keccak(text=CREATE_PAYMENTS_ROLE)),
+                i
+            )
+            assert id == amount_limits_after()[i].id
+            assert op == amount_limits_after()[i].op.value
+            assert val == amount_limits_after()[i].value
+        
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
@@ -226,7 +503,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             )
 
             # TODO validate all other voting events
-
             validate_token_payout_event(
                 event=vote_events[1],
                 p=Payout(
@@ -237,6 +513,60 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 is_steth=False,
                 emitted_by=AGENT
             )
+            validate_grant_role_event(
+                events=vote_events[2],
+                role=web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE).hex(),
+                grant_to=VOTING,
+                sender=VOTING,
+                emitted_by=ALLOWED_TOKENS_REGISTRY,
+            )
+            validate_add_token_event(
+                event=vote_events[3],
+                token=SUSDS_TOKEN,
+                emitted_by=ALLOWED_TOKENS_REGISTRY
+            )
+            validate_revoke_role_event(
+                events=vote_events[4],
+                role=web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE).hex(),
+                revoke_from=VOTING,
+                sender=VOTING,
+                emitted_by=ALLOWED_TOKENS_REGISTRY,
+            )
+            validate_permission_revoke_event(
+                event=vote_events[5],
+                p=Permission(
+                    app=FINANCE,
+                    entity=ET_EVM_SCRIPT_EXECUTOR,
+                    role=web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
+                ),
+                emitted_by=ACL,
+            )
+            validate_permission_grantp_event(
+                event=vote_events[6],
+                p=Permission(
+                    app=FINANCE,
+                    entity=ET_EVM_SCRIPT_EXECUTOR,
+                    role=web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
+                ),
+                params=amount_limits_after(),
+                emitted_by=ACL,
+            )
+
+            # =======================================================================
+            # =========================== Scenario checks ===========================
+            # =======================================================================
+
+            # check ET limits
+            #et_limit_test(stranger, interface.ERC20(SUSDS_TOKEN), susds_limit_after.limit, ET_SANDBOX_STABLES_LIMIT * 10**18)
+            #et_limit_test(stranger, interface.ERC20(USDC_TOKEN), usdc_limit_after.limit, ET_SANDBOX_STABLES_LIMIT * 10**6)
+            #et_limit_test(stranger, interface.ERC20(DAI_TOKEN), dai_limit_after.limit, ET_SANDBOX_STABLES_LIMIT * 10**18)
+            #et_limit_test(stranger, interface.ERC20(USDT_TOKEN), usdt_limit_after.limit, ET_SANDBOX_STABLES_LIMIT * 10**6)
+
+            # check Finance limits
+            #finance_limit_test(stranger, interface.ERC20(SUSDS_TOKEN), susds_limit_after.limit, 18)
+            #finance_limit_test(stranger, interface.ERC20(USDC_TOKEN), usdc_limit_after.limit, 6)
+            #finance_limit_test(stranger, interface.ERC20(DAI_TOKEN), dai_limit_after.limit, 18)
+            #finance_limit_test(stranger, interface.ERC20(USDT_TOKEN), usdt_limit_after.limit, 6)
 
 
     if EXPECTED_DG_PROPOSAL_ID is not None:
@@ -407,5 +737,91 @@ def trp_limit_test(stranger):
             [1],
             stranger,
         )
+
+    chain.revert()
+
+def et_limit_test(stranger, token, max_spend_at_once, to_spend):
+
+    easy_track = interface.EasyTrack(EASY_TRACK)
+    trusted_caller_account = accounts.at(LIDO_LABS_TRUSTED_CALLER, force=True)
+
+    chain.snapshot()
+
+    # check that there is no way to spend more then expected
+    with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
+        create_and_enact_payment_motion(
+            easy_track,
+            LIDO_LABS_TRUSTED_CALLER,
+            LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+            token,
+            [trusted_caller_account],
+            [to_spend + 1],
+            stranger,
+        )
+    
+    # spend all step by step
+    while to_spend > 0:
+        create_and_enact_payment_motion(
+            easy_track,
+            LIDO_LABS_TRUSTED_CALLER,
+            LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+            token,
+            [trusted_caller_account],
+            [min(max_spend_at_once, to_spend)],
+            stranger,
+        )
+        to_spend -= min(max_spend_at_once, to_spend)
+
+    # make sure there is nothing left so that you can't spend anymore
+    with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
+        create_and_enact_payment_motion(
+            easy_track,
+            LIDO_LABS_TRUSTED_CALLER,
+            LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+            token,
+            [trusted_caller_account],
+            [1],
+            stranger,
+        )
+
+    chain.revert()
+
+
+def finance_limit_test(stranger, token, to_spend, decimals):
+
+    easy_track = interface.EasyTrack(EASY_TRACK)
+    trusted_caller_account = accounts.at(LIDO_LABS_TRUSTED_CALLER, force=True)
+
+    chain.snapshot()
+
+    # for Finance limit check - we first raise ET limits to 2 x finance_limit to be able to spend via Finance
+    interface.AllowedRecipientRegistry(LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY).setLimitParameters(
+        (to_spend / (10**decimals) * 10**18) * 2, # 2 x finance_limit
+        3, # 3 months
+        {"from": AGENT}
+    )
+
+    # check that there is no way to spend more then expected
+    with reverts("APP_AUTH_FAILED"):
+        create_and_enact_payment_motion(
+            easy_track,
+            LIDO_LABS_TRUSTED_CALLER,
+            LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+            token,
+            [trusted_caller_account],
+            [to_spend + 1],
+            stranger,
+        )
+    
+    # spend the allowed balance
+    create_and_enact_payment_motion(
+        easy_track,
+        LIDO_LABS_TRUSTED_CALLER,
+        LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+        token,
+        [trusted_caller_account],
+        [to_spend],
+        stranger,
+    )
 
     chain.revert()
