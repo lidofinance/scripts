@@ -2,10 +2,18 @@
 # Vote 2025_12_10
 
 === 1. DG PROPOPSAL ===
-I. Lido V3 upgrade - stVaults
+1. Lido V3 upgrade - stVaults
 
 === NON-DG ITEMS ===
-II. Lido V3 ET factories rights
+2. Add AlterTiersInOperatorGrid factory to EasyTrack (permissions: operatorGrid, alterTiers);
+3. Add RegisterGroupsInOperatorGrid factory to EasyTrack (permissions: operatorGrid, registerGroup + registerTiers);
+4. Add RegisterTiersInOperatorGrid factory to EasyTrack (permissions: operatorGrid, registerTiers);
+5. Add UpdateGroupsShareLimitInOperatorGrid factory to EasyTrack (permissions: operatorGrid, updateGroupShareLimit);
+6. Add SetJailStatusInOperatorGrid factory to EasyTrack (permissions: vaultsAdapter, setVaultJailStatus);
+7. Add UpdateVaultsFeesInOperatorGrid factory to EasyTrack (permissions: vaultsAdapter, updateVaultFees);
+8. Add ForceValidatorExitsInVaultHub factory to EasyTrack (permissions: vaultsAdapter, forceValidatorExit);
+9. Add SetLiabilitySharesTargetInVaultHub factory to EasyTrack (permissions: vaultsAdapter, setLiabilitySharesTarget);
+10. Add SocializeBadDebtInVaultHub factory to EasyTrack (permissions: vaultsAdapter, socializeBadDebt).
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
@@ -28,7 +36,7 @@ OMNIBUS_CONTRACT = "0xda9D35b108f9538F8025f1c692265b9451D42f8b" # TODO replace w
 # TODO <a description for IPFS (will appear in the voting description on vote.lido.fi)>
 IPFS_DESCRIPTION = "omni dec 2025"
 DG_PROPOSAL_DESCRIPTION = "TODO DG proposal description"
-DG_SUBMISSION_DESCRIPTION = "TODO DG submission description"
+DG_SUBMISSION_DESCRIPTION = "1. TODO DG submission description"
 
 
 # ================================ Main ======================================
