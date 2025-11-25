@@ -32,10 +32,17 @@ SandwichFn = Callable[..., tuple[Stack, Stack]]
 
 UINT256_MAX = 2**256 - 1
 _1ETH = Wei(10**18)
+ZERO_BYTES32 = b'\x00' * 32
+
 
 EXPECTED_SNAPSHOT_DIFFS: dict[str, Any] = {
     "canPerform()": (True, False),
-    "getRecoveryVault": (AGENT, ZERO_ADDRESS)
+    "getRecoveryVault": (AGENT, ZERO_ADDRESS),
+    "lido.Lido.beaconBalance": ZERO_BYTES32,
+    "lido.Lido.beaconValidators": ZERO_BYTES32,
+    "lido.Lido.bufferedEther": ZERO_BYTES32,
+    "lido.Lido.depositedValidators": ZERO_BYTES32,
+    "lido.StETH.totalShares": ZERO_BYTES32,
 }
 
 def test_lido_no_changes_in_views(sandwich_upgrade: SandwichFn):
@@ -232,7 +239,7 @@ def test_lido_dao_ops_snapshot(sandwich_upgrade: SandwichFn):
         return (
             _call(lido.pauseStaking, {"from": from_address}),
             _call(lido.stop, {"from": from_address}),
-            _call(lido.resumeStaking, {"from": from_address}),
+            _call(lido.resume, {"from": from_address}),
             _call(lido.pauseStaking, {"from": from_address}),
             _call(lido.removeStakingLimit, {"from": from_address}),
             _call(lido.resumeStaking, {"from": from_address}),
@@ -245,7 +252,6 @@ def test_lido_dao_ops_snapshot(sandwich_upgrade: SandwichFn):
             ),
             _call(lido.pauseStaking, {"from": from_address}),
             _call(lido.setStakingLimit, 17, 3, {"from": from_address}),
-            _call(lido.resume, {"from": from_address}),
             _call(lido.stop, {"from": from_address}),
         )
 
@@ -294,7 +300,6 @@ def do_snapshot(
                 "getCurrentStakeLimit": lido.getCurrentStakeLimit(),
                 "getFeeDistribution": lido.getFeeDistribution(),
                 "getFee": lido.getFee(),
-                "getOracle": lido.getOracle(),
                 "getStakeLimitFullInfo": lido.getStakeLimitFullInfo(),
                 "getTotalELRewardsCollected": lido.getTotalELRewardsCollected(),
                 "getTotalShares": lido.getTotalShares(),

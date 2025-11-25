@@ -87,6 +87,8 @@ def test_blocked_huge_negative_rebase(oracle_report_sanity_checker):
     locator = contracts.lido_locator
     assert oracle_report_sanity_checker.address == locator.oracleReportSanityChecker()
 
+    oracle_report()
+
     # Advance the chain 60 days more without accounting oracle reports
     # The idea is to simplify the calculation of the exited validators for 18 and 54 days ago
     chain.sleep(60 * 24 * 60 * 60)

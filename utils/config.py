@@ -259,6 +259,14 @@ class ContractsLazyLoader:
         return interface.Sandbox(SANDBOX)
 
     @property
+    def legacy_oracle(self) -> interface.LegacyOracle:
+        return interface.LegacyOracle(LEGACY_ORACLE)
+
+    @property
+    def token_rate_notifier(self) -> interface.TokenRateNotifier:
+        return interface.LegacyOracle(L1_TOKEN_RATE_NOTIFIER)
+
+    @property
     def deposit_security_module_v1(self) -> interface.DepositSecurityModule:
         return interface.DepositSecurityModuleV1(DEPOSIT_SECURITY_MODULE_V1)
 

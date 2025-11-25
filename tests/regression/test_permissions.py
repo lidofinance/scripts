@@ -44,6 +44,7 @@ from utils.config import (
     WITHDRAWAL_QUEUE,
     BURNER,
     LIDO_LOCATOR,
+    LEGACY_ORACLE,
     SIMPLE_DVT,
     CSM_ADDRESS,
     CS_ACCOUNTING_ADDRESS,
@@ -82,8 +83,8 @@ def protocol_permissions():
             "type": "CustomApp",
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "REQUEST_BURN_MY_STETH_ROLE": [contracts.agent],
-                "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry, contracts.simple_dvt, contracts.csm.accounting()],
+                "REQUEST_BURN_MY_STETH_ROLE": [],
+                "REQUEST_BURN_SHARES_ROLE": [contracts.accounting, contracts.csm.accounting()],
             },
         },
         STAKING_ROUTER: {
@@ -98,7 +99,7 @@ def protocol_permissions():
                 "STAKING_MODULE_MANAGE_ROLE": [contracts.agent],
                 "REPORT_EXITED_VALIDATORS_ROLE": [contracts.accounting_oracle],
                 "UNSAFE_SET_EXITED_VALIDATORS_ROLE": [],
-                "REPORT_REWARDS_MINTED_ROLE": [contracts.lido],
+                "REPORT_REWARDS_MINTED_ROLE": [contracts.accounting],
                 "REPORT_VALIDATOR_EXITING_STATUS_ROLE": [contracts.validator_exit_verifier],
                 "REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE": [contracts.triggerable_withdrawals_gateway],
             },
@@ -318,6 +319,12 @@ def protocol_permissions():
                 "SET_NODE_OPERATOR_LIMIT_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
                 "STAKING_ROUTER_ROLE": [STAKING_ROUTER, EASYTRACK_EVMSCRIPT_EXECUTOR],
             },
+        },
+        LEGACY_ORACLE: {
+            "contract_name": "LegacyOracle",
+            "contract": contracts.legacy_oracle,
+            "type": "AragonApp",
+            "roles": {},
         },
         CSM_ADDRESS: {
             "contract_name": "CSModule",

@@ -21,7 +21,7 @@ def test_addresses(contract):
     assert contract.elRewardsVault() == contracts.execution_layer_rewards_vault
     assert contract.lido() == contracts.lido
     assert contract.oracleReportSanityChecker() == contracts.oracle_report_sanity_checker
-    assert contract.postTokenRebaseReceiver() == "0x0000000000000000000000000000000000000000" # TODO contracts.token_rate_notifier
+    assert contract.postTokenRebaseReceiver() == contracts.token_rate_notifier
     assert contract.burner() == contracts.burner
     assert contract.stakingRouter() == contracts.staking_router
     assert contract.treasury() == contracts.agent
