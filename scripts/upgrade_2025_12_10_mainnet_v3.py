@@ -45,7 +45,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         (dg_items, "TODO DG proposal description")# TODO take from next-vote
     ])
 
-    vote_desc_items.append("TODO DG submission description")
+    vote_desc_items.append("TODO DG submission description") # TODO looks like this description is not used  # TODO take from next-vote
     call_script_items.append(dg_call_script[0])
 
     # receive non-DG vote items from omnibus contract
