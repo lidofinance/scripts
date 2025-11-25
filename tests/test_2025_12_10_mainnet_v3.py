@@ -39,7 +39,7 @@ EXPECTED_VOTE_ID = 194
 EXPECTED_DG_PROPOSAL_ID = 6
 EXPECTED_VOTE_EVENTS_COUNT = 10
 EXPECTED_DG_EVENTS_COUNT = 17
-IPFS_DESCRIPTION_HASH = "bafkreigs2dewxxu7rj6eifpxsqvib23nsiw2ywsmh3lhewyqlmyn46obnm"
+IPFS_DESCRIPTION_HASH = "bafkreic4xuaowfowt7faxnngnzynv7biuo7guv4s4jrngngjzzxyz3up2i"
 
 
 @pytest.fixture(scope="module")
