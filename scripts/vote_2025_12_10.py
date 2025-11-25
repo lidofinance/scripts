@@ -67,6 +67,14 @@ SDVT_MODULE_TREASURY_FEE_BP = 200
 SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK = 150
 SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 
+CURATED_MODULE_ID = 1
+CURATED_MODULE_TARGET_SHARE_BP = 10000
+CURATED_MODULE_PRIORITY_EXIT_THRESHOLD_BP = 10000
+CURATED_MODULE_NEW_MODULE_FEE_BP = 350
+CURATED_MODULE_NEW_TREASURY_FEE_BP = 650
+CURATED_MODULE_MAX_DEPOSITS_PER_BLOCK = 150
+CURATED_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
+
 TRP_PERIOD_DURATION_MONTHS = 12
 TRP_NEW_LIMIT = 15_000_000 * 10**18
 TRP_NEW_SPENT_AMOUNT = 0
@@ -175,7 +183,22 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
     dg_items = [
         agent_forward([
-            # 1.1. raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+            # 1.1. change curated module
+            (
+                staking_router.address,
+                staking_router.updateStakingModule.encode_input(
+                    CURATED_MODULE_ID,
+                    CURATED_MODULE_TARGET_SHARE_BP,
+                    CURATED_MODULE_PRIORITY_EXIT_THRESHOLD_BP,
+                    CURATED_MODULE_NEW_MODULE_FEE_BP,
+                    CURATED_MODULE_NEW_TREASURY_FEE_BP,
+                    CURATED_MODULE_MAX_DEPOSITS_PER_BLOCK,
+                    CURATED_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
+                ),
+            ),
+        ]),
+        agent_forward([
+            # 1.2. raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
             (
                 staking_router.address,
                 staking_router.updateStakingModule.encode_input(
@@ -190,11 +213,11 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ]),
         agent_forward([
-            # 1.2. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
+            # 1.3. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
             unsafe_set_spent_amount(spent_amount=TRP_NEW_SPENT_AMOUNT, registry_address=ET_TRP_REGISTRY),
         ]),
         agent_forward([
-            # 1.3. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
+            # 1.4. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
             set_limit_parameters(
                 limit=TRP_NEW_LIMIT,
                 period_duration_months=TRP_PERIOD_DURATION_MONTHS,

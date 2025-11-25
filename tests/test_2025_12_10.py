@@ -82,6 +82,20 @@ ADD_TOKEN_TO_ALLOWED_LIST_ROLE = "ADD_TOKEN_TO_ALLOWED_LIST_ROLE"
 LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY = "0xE1f6BaBb445F809B97e3505Ea91749461050F780"
 LIDO_LABS_TRUSTED_CALLER = "0x95B521B4F55a447DB89f6a27f951713fC2035f3F"
 LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY = "0x68267f3D310E9f0FF53a37c141c90B738E1133c2"
+REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE = "REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE"
+WSTETH_TOKEN = "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0"
+PSM_VARIANT1_ACTIONS = "0xd0A61F2963622e992e6534bde4D52fd0a89F39E0"
+
+CURATED_MODULE_ID = 1
+CURATED_MODULE_TARGET_SHARE_BP = 10000
+CURATED_MODULE_PRIORITY_EXIT_THRESHOLD_BP = 10000
+CURATED_MODULE_OLD_MODULE_FEE_BP = 500
+CURATED_MODULE_NEW_MODULE_FEE_BP = 350
+CURATED_MODULE_OLD_TREASURY_FEE_BP = 500
+CURATED_MODULE_NEW_TREASURY_FEE_BP = 650
+CURATED_MODULE_MAX_DEPOSITS_PER_BLOCK = 150
+CURATED_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
+CURATED_MODULE_NAME = "curated-onchain-v1"
 
 SDVT_MODULE_ID = 2
 SDVT_MODULE_OLD_TARGET_SHARE_BP = 400
@@ -113,12 +127,13 @@ USDT_TOKEN = "0xdac17f958d2ee523a2206206994597c13d831ec7"
 DAI_TOKEN = "0x6b175474e89094c44da98b954eedeac495271d0f"
 ALLOWED_TOKENS_BEFORE = 3
 ALLOWED_TOKENS_AFTER = 4
+ET_LIDO_LABS_STABLES_LIMIT = 15_000_000
 
 
 EXPECTED_VOTE_ID = 194
 EXPECTED_DG_PROPOSAL_ID = 6
 EXPECTED_VOTE_EVENTS_COUNT = 7
-EXPECTED_DG_EVENTS_COUNT = 3
+EXPECTED_DG_EVENTS_COUNT = 4
 IPFS_DESCRIPTION_HASH = "bafkreigs2dewxxu7rj6eifpxsqvib23nsiw2ywsmh3lhewyqlmyn46obnm"
 
 
@@ -312,6 +327,21 @@ def dual_governance_proposal_calls():
     # Create all the dual governance calls that match the voting script
     dg_items = [
         agent_forward([
+            # 1.1. change curated module
+            (
+                staking_router.address,
+                staking_router.updateStakingModule.encode_input(
+                    CURATED_MODULE_ID,
+                    CURATED_MODULE_TARGET_SHARE_BP,
+                    CURATED_MODULE_PRIORITY_EXIT_THRESHOLD_BP,
+                    CURATED_MODULE_NEW_MODULE_FEE_BP,
+                    CURATED_MODULE_NEW_TREASURY_FEE_BP,
+                    CURATED_MODULE_MAX_DEPOSITS_PER_BLOCK,
+                    CURATED_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
+                ),
+            ),
+        ]),
+        agent_forward([
             (
                 staking_router.address,
                 staking_router.updateStakingModule.encode_input(
@@ -485,7 +515,69 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert id == amount_limits_after()[i].id
             assert op == amount_limits_after()[i].op.value
             assert val == amount_limits_after()[i].value
-        
+
+        assert acl.hasPermission["address,address,bytes32,uint[]"](
+            ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
+            [convert.to_uint(susds_limit_after.address), convert.to_uint(stranger.address), susds_limit_after.limit],
+        )
+        assert not acl.hasPermission["address,address,bytes32,uint[]"](
+            ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
+            [convert.to_uint(susds_limit_after.address), convert.to_uint(stranger.address), susds_limit_after.limit + 1],
+        )
+
+        assert acl.hasPermission["address,address,bytes32,uint[]"](
+            ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
+            [convert.to_uint(usdt_limit_after.address), convert.to_uint(stranger.address), usdt_limit_after.limit],
+        )
+        assert not acl.hasPermission["address,address,bytes32,uint[]"](
+            ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
+            [convert.to_uint(usdt_limit_after.address), convert.to_uint(stranger.address), usdt_limit_after.limit + 1],
+        )
+
+        assert acl.hasPermission["address,address,bytes32,uint[]"](
+            ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
+            [convert.to_uint(usdc_limit_after.address), convert.to_uint(stranger.address), usdc_limit_after.limit],
+        )
+        assert not acl.hasPermission["address,address,bytes32,uint[]"](
+            ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
+            [convert.to_uint(usdc_limit_after.address), convert.to_uint(stranger.address), usdc_limit_after.limit + 1],
+        )
+
+        assert acl.hasPermission["address,address,bytes32,uint[]"](
+            ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
+            [convert.to_uint(dai_limit_after.address), convert.to_uint(stranger.address), dai_limit_after.limit],
+        )
+        assert not acl.hasPermission["address,address,bytes32,uint[]"](
+            ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
+            [convert.to_uint(dai_limit_after.address), convert.to_uint(stranger.address), dai_limit_after.limit + 1],
+        ) 
+
+        assert acl.hasPermission["address,address,bytes32,uint[]"](
+            ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
+            [convert.to_uint(steth_limit_after.address), convert.to_uint(stranger.address), steth_limit_after.limit],
+        )
+        assert not acl.hasPermission["address,address,bytes32,uint[]"](
+            ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
+            [convert.to_uint(steth_limit_after.address), convert.to_uint(stranger.address), steth_limit_after.limit + 1],
+        ) 
+
+        assert acl.hasPermission["address,address,bytes32,uint[]"](
+            ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
+            [convert.to_uint(eth_limit_after.address), convert.to_uint(stranger.address), eth_limit_after.limit],
+        )
+        assert not acl.hasPermission["address,address,bytes32,uint[]"](
+            ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
+            [convert.to_uint(eth_limit_after.address), convert.to_uint(stranger.address), eth_limit_after.limit + 1],
+        ) 
+
+        assert acl.hasPermission["address,address,bytes32,uint[]"](
+            ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
+            [convert.to_uint(ldo_limit_after.address), convert.to_uint(stranger.address), ldo_limit_after.limit],
+        )
+        assert not acl.hasPermission["address,address,bytes32,uint[]"](
+            ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
+            [convert.to_uint(ldo_limit_after.address), convert.to_uint(stranger.address), ldo_limit_after.limit + 1],
+        ) 
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
@@ -556,17 +648,98 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # =========================== Scenario checks ===========================
             # =======================================================================
 
+            # put a lot of tokens into Agent to check limits
+            prepare_agent_for_dai_payment(30_000_000 * 10**18)
+            prepare_agent_for_usdt_payment(30_000_000 * 10**6)
+            prepare_agent_for_usdc_payment(30_000_000 * 10**6)
+            prepare_agent_for_susds_payment(30_000_000 * 10**18)
+            prepare_agent_for_ldo_payment(10_000_000 * 10**18)
+            prepare_agent_for_steth_payment(2_000 * 10**18)
+
+
             # check ET limits
-            #et_limit_test(stranger, interface.ERC20(SUSDS_TOKEN), susds_limit_after.limit, ET_SANDBOX_STABLES_LIMIT * 10**18)
-            #et_limit_test(stranger, interface.ERC20(USDC_TOKEN), usdc_limit_after.limit, ET_SANDBOX_STABLES_LIMIT * 10**6)
-            #et_limit_test(stranger, interface.ERC20(DAI_TOKEN), dai_limit_after.limit, ET_SANDBOX_STABLES_LIMIT * 10**18)
-            #et_limit_test(stranger, interface.ERC20(USDT_TOKEN), usdt_limit_after.limit, ET_SANDBOX_STABLES_LIMIT * 10**6)
+            et_limit_test(stranger, interface.ERC20(SUSDS_TOKEN), susds_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
+            et_limit_test(stranger, interface.ERC20(USDC_TOKEN), usdc_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
+            et_limit_test(stranger, interface.ERC20(DAI_TOKEN), dai_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
+            et_limit_test(stranger, interface.ERC20(USDT_TOKEN), usdt_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
+            et_limit_test(stranger, interface.ERC20(LDO_TOKEN), ldo_limit_after.limit, 1_000_000 * 10**18, "0x12a43b049A7D330cB8aEAB5113032D18AE9a9030", "0x00caAeF11EC545B192f16313F53912E453c91458")
+            et_limit_test(stranger, interface.ERC20(LIDO), steth_limit_after.limit, 1_000 * 10**18, "0x5181d5D56Af4f823b96FE05f062D7a09761a5a53", "0x200dA0b6a9905A377CF8D469664C65dB267009d1")
+
 
             # check Finance limits
-            #finance_limit_test(stranger, interface.ERC20(SUSDS_TOKEN), susds_limit_after.limit, 18)
-            #finance_limit_test(stranger, interface.ERC20(USDC_TOKEN), usdc_limit_after.limit, 6)
-            #finance_limit_test(stranger, interface.ERC20(DAI_TOKEN), dai_limit_after.limit, 18)
-            #finance_limit_test(stranger, interface.ERC20(USDT_TOKEN), usdt_limit_after.limit, 6)
+            finance_limit_test(stranger, interface.ERC20(SUSDS_TOKEN), susds_limit_after.limit, 18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
+            finance_limit_test(stranger, interface.ERC20(USDC_TOKEN), usdc_limit_after.limit, 6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
+            finance_limit_test(stranger, interface.ERC20(DAI_TOKEN), dai_limit_after.limit, 18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
+            finance_limit_test(stranger, interface.ERC20(USDT_TOKEN), usdt_limit_after.limit, 6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
+            finance_limit_test(stranger, interface.ERC20(LDO_TOKEN), ldo_limit_after.limit, 18, "0x12a43b049A7D330cB8aEAB5113032D18AE9a9030", "0x00caAeF11EC545B192f16313F53912E453c91458", "0x97615f72c3428A393d65A84A3ea6BBD9ad6C0D74")
+            finance_limit_test(stranger, interface.ERC20(LIDO), steth_limit_after.limit, 18, "0x5181d5D56Af4f823b96FE05f062D7a09761a5a53", "0x200dA0b6a9905A377CF8D469664C65dB267009d1", "0x49d1363016aA899bba09ae972a1BF200dDf8C55F")
+
+            # sUSDS can be removed after being added to the allowed list
+            chain.snapshot()
+            allowed_tokens_registry.grantRole(
+                convert.to_uint(web3.keccak(text=REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE)),
+                VOTING,
+                {"from": VOTING}
+            )
+            assert allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
+            allowed_tokens_registry.removeToken(
+                SUSDS_TOKEN,
+                {"from": VOTING}
+            )
+            assert not allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
+            with reverts("TOKEN_NOT_ALLOWED"):
+                create_and_enact_payment_motion(
+                    interface.EasyTrack(EASY_TRACK),
+                    LIDO_LABS_TRUSTED_CALLER,
+                    LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+                    interface.ERC20(SUSDS_TOKEN),
+                    [accounts.at(LIDO_LABS_TRUSTED_CALLER, force=True)],
+                    [1 * 10**18],
+                stranger,
+                )
+            chain.revert()
+
+            # spending tokens not from the allowed list should fail
+            chain.snapshot()
+            with reverts("TOKEN_NOT_ALLOWED"):
+                create_and_enact_payment_motion(
+                    interface.EasyTrack(EASY_TRACK),
+                    LIDO_LABS_TRUSTED_CALLER,
+                    LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+                    interface.ERC20(WSTETH_TOKEN),
+                    [accounts.at(LIDO_LABS_TRUSTED_CALLER, force=True)],
+                    [1 * 10**18],
+                    stranger,
+                )
+            chain.revert()
+
+            # spending the allowed token not from the Finance CREATE_PAYMENTS_ROLE's list should fail
+            chain.snapshot()
+            allowed_tokens_registry.grantRole(
+                convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
+                VOTING,
+                {"from": VOTING}
+            )
+            assert not allowed_tokens_registry.isTokenAllowed(WSTETH_TOKEN)
+            allowed_tokens_registry.addToken(
+                WSTETH_TOKEN,
+                {"from": VOTING}
+            )
+            assert allowed_tokens_registry.isTokenAllowed(WSTETH_TOKEN)
+            with reverts("APP_AUTH_FAILED"):
+                create_and_enact_payment_motion(
+                    interface.EasyTrack(EASY_TRACK),
+                    LIDO_LABS_TRUSTED_CALLER,
+                    LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+                    interface.ERC20(WSTETH_TOKEN),
+                    [accounts.at(LIDO_LABS_TRUSTED_CALLER, force=True)],
+                    [1 * 10**18],
+                stranger,
+                )
+            chain.revert()
+
+            # happy path
+            usds_wrap_happy_path(stranger)
 
 
     if EXPECTED_DG_PROPOSAL_ID is not None:
@@ -577,7 +750,18 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # =========================================================================
             # TODO add DG before proposal executed checks
 
-            # 1.1. Raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+            # 1.1. curated changes
+            curated_module_before = staking_router.getStakingModule(CURATED_MODULE_ID)
+            assert curated_module_before['stakeShareLimit'] == CURATED_MODULE_TARGET_SHARE_BP
+            assert curated_module_before['id'] == CURATED_MODULE_ID
+            assert curated_module_before['priorityExitShareThreshold'] == CURATED_MODULE_PRIORITY_EXIT_THRESHOLD_BP
+            assert curated_module_before['stakingModuleFee'] == CURATED_MODULE_OLD_MODULE_FEE_BP
+            assert curated_module_before['treasuryFee'] == CURATED_MODULE_OLD_TREASURY_FEE_BP
+            assert curated_module_before['maxDepositsPerBlock'] == CURATED_MODULE_MAX_DEPOSITS_PER_BLOCK
+            assert curated_module_before['minDepositBlockDistance'] == CURATED_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE
+            assert curated_module_before['name'] == CURATED_MODULE_NAME
+
+            # 1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
             sdvt_module_before = staking_router.getStakingModule(SDVT_MODULE_ID)
             assert sdvt_module_before['stakeShareLimit'] == SDVT_MODULE_OLD_TARGET_SHARE_BP
             assert sdvt_module_before['id'] == SDVT_MODULE_ID
@@ -621,6 +805,19 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 validate_staking_module_update_event(
                     event=dg_events[0],
                     module_item=StakingModuleItem(
+                        id=CURATED_MODULE_ID,
+                        name=CURATED_MODULE_NAME,
+                        address=None,
+                        target_share=CURATED_MODULE_TARGET_SHARE_BP,
+                        module_fee=CURATED_MODULE_NEW_MODULE_FEE_BP,
+                        treasury_fee=CURATED_MODULE_NEW_TREASURY_FEE_BP,
+                        priority_exit_share=CURATED_MODULE_PRIORITY_EXIT_THRESHOLD_BP),
+                    emitted_by=STAKING_ROUTER
+                )
+
+                validate_staking_module_update_event(
+                    event=dg_events[1],
+                    module_item=StakingModuleItem(
                         id=SDVT_MODULE_ID,
                         name=SDVT_MODULE_NAME,
                         address=None,
@@ -632,13 +829,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 )
 
                 validate_set_spent_amount_event(
-                    dg_events[1],
+                    dg_events[2],
                     new_spent_amount=0,
                     emitted_by=ET_TRP_REGISTRY,
                 )
 
                 validate_set_limit_parameter_event(
-                    dg_events[2],
+                    dg_events[3],
                     limit=TRP_LIMIT_AFTER,
                     period_duration_month=TRP_PERIOD_DURATION_MONTHS,
                     period_start_timestamp=TRP_PERIOD_START_TIMESTAMP,
@@ -650,7 +847,32 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =========================================================================
         # TODO add DG after proposal executed checks
 
-        # 1.1. Raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+        # 1.1. curated changes
+        curated_module_after = staking_router.getStakingModule(CURATED_MODULE_ID)
+        assert curated_module_after['stakingModuleFee'] == CURATED_MODULE_NEW_MODULE_FEE_BP
+        assert curated_module_after['treasuryFee'] == CURATED_MODULE_NEW_TREASURY_FEE_BP
+        assert curated_module_after['id'] == CURATED_MODULE_ID
+        assert curated_module_after['stakeShareLimit'] == CURATED_MODULE_TARGET_SHARE_BP
+        assert curated_module_after['priorityExitShareThreshold'] == CURATED_MODULE_PRIORITY_EXIT_THRESHOLD_BP
+        assert curated_module_after['maxDepositsPerBlock'] == CURATED_MODULE_MAX_DEPOSITS_PER_BLOCK
+        assert curated_module_after['minDepositBlockDistance'] == CURATED_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE
+        assert curated_module_after['name'] == CURATED_MODULE_NAME
+        # additional checks to make sure no other fields were changed
+        assert curated_module_after['id'] == curated_module_before['id']
+        assert curated_module_after['stakingModuleAddress'] == curated_module_before['stakingModuleAddress']
+        assert curated_module_after['stakeShareLimit'] == curated_module_before['stakeShareLimit']
+        assert curated_module_after['status'] == curated_module_before['status']
+        assert curated_module_after['name'] == curated_module_before['name']
+        assert curated_module_after['lastDepositAt'] == curated_module_before['lastDepositAt']
+        assert curated_module_after['lastDepositBlock'] == curated_module_before['lastDepositBlock']
+        assert curated_module_after['exitedValidatorsCount'] == curated_module_before['exitedValidatorsCount']
+        assert curated_module_after['maxDepositsPerBlock'] == curated_module_before['maxDepositsPerBlock']
+        assert curated_module_after['minDepositBlockDistance'] == curated_module_before['minDepositBlockDistance']
+        assert curated_module_after['priorityExitShareThreshold'] == curated_module_before['priorityExitShareThreshold']
+        assert len(curated_module_after.items()) == len(curated_module_before.items())
+        assert len(curated_module_after.items()) == 13
+
+        # 1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
         sdvt_module_after = staking_router.getStakingModule(SDVT_MODULE_ID)
         assert sdvt_module_after['stakeShareLimit'] == SDVT_MODULE_NEW_TARGET_SHARE_BP
         assert sdvt_module_after['id'] == SDVT_MODULE_ID
@@ -714,17 +936,22 @@ def trp_limit_test(stranger):
         )
     
     # spend all step by step
+    recipients = []
+    amounts = []
     while to_spend > 0:
-        create_and_enact_payment_motion(
-            easy_track,
-            TRP_COMMITTEE,
-            TRP_TOP_UP_EVM_SCRIPT_FACTORY,
-            ldo_token,
-            [trp_committee_account],
-            [min(max_spend_at_once, to_spend)],
-            stranger,
-        )
+        recipients.append(trp_committee_account)
+        amounts.append(min(max_spend_at_once, to_spend))
         to_spend -= min(max_spend_at_once, to_spend)
+
+    create_and_enact_payment_motion(
+        easy_track,
+        TRP_COMMITTEE,
+        TRP_TOP_UP_EVM_SCRIPT_FACTORY,
+        ldo_token,
+        recipients,
+        amounts,
+        stranger,
+    )
 
     # make sure there is nothing left so that you can't spend anymore
     with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
@@ -740,10 +967,10 @@ def trp_limit_test(stranger):
 
     chain.revert()
 
-def et_limit_test(stranger, token, max_spend_at_once, to_spend):
+def et_limit_test(stranger, token, max_spend_at_once, to_spend, TRUSTED_CALLER, TOP_UP_ALLOWED_RECIPIENTS_FACTORY):
 
     easy_track = interface.EasyTrack(EASY_TRACK)
-    trusted_caller_account = accounts.at(LIDO_LABS_TRUSTED_CALLER, force=True)
+    trusted_caller_account = accounts.at(TRUSTED_CALLER, force=True)
 
     chain.snapshot()
 
@@ -751,8 +978,8 @@ def et_limit_test(stranger, token, max_spend_at_once, to_spend):
     with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
         create_and_enact_payment_motion(
             easy_track,
-            LIDO_LABS_TRUSTED_CALLER,
-            LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+            TRUSTED_CALLER,
+            TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
             token,
             [trusted_caller_account],
             [to_spend + 1],
@@ -760,24 +987,29 @@ def et_limit_test(stranger, token, max_spend_at_once, to_spend):
         )
     
     # spend all step by step
+    recipients = []
+    amounts = []
     while to_spend > 0:
-        create_and_enact_payment_motion(
-            easy_track,
-            LIDO_LABS_TRUSTED_CALLER,
-            LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
-            token,
-            [trusted_caller_account],
-            [min(max_spend_at_once, to_spend)],
-            stranger,
-        )
+        recipients.append(trusted_caller_account)
+        amounts.append(min(max_spend_at_once, to_spend))
         to_spend -= min(max_spend_at_once, to_spend)
+
+    create_and_enact_payment_motion(
+        easy_track,
+        TRUSTED_CALLER,
+        TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+        token,
+        recipients,
+        amounts,
+        stranger,
+    )
 
     # make sure there is nothing left so that you can't spend anymore
     with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
         create_and_enact_payment_motion(
             easy_track,
-            LIDO_LABS_TRUSTED_CALLER,
-            LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+            TRUSTED_CALLER,
+            TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
             token,
             [trusted_caller_account],
             [1],
@@ -787,16 +1019,16 @@ def et_limit_test(stranger, token, max_spend_at_once, to_spend):
     chain.revert()
 
 
-def finance_limit_test(stranger, token, to_spend, decimals):
+def finance_limit_test(stranger, token, to_spend, decimals, TRUSTED_CALLER, TOP_UP_ALLOWED_RECIPIENTS_FACTORY, ALLOWED_RECIPIENTS_REGISTRY):
 
     easy_track = interface.EasyTrack(EASY_TRACK)
-    trusted_caller_account = accounts.at(LIDO_LABS_TRUSTED_CALLER, force=True)
+    trusted_caller_account = accounts.at(TRUSTED_CALLER, force=True)
 
     chain.snapshot()
 
-    # for Finance limit check - we first raise ET limits to 2 x finance_limit to be able to spend via Finance
-    interface.AllowedRecipientRegistry(LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY).setLimitParameters(
-        (to_spend / (10**decimals) * 10**18) * 2, # 2 x finance_limit
+    # for Finance limit check - we first raise ET limits to 10 x finance_limit to be able to spend via Finance
+    interface.AllowedRecipientRegistry(ALLOWED_RECIPIENTS_REGISTRY).setLimitParameters(
+        (to_spend / (10**decimals) * 10**18) * 10, # 10 x finance_limit
         3, # 3 months
         {"from": AGENT}
     )
@@ -805,8 +1037,8 @@ def finance_limit_test(stranger, token, to_spend, decimals):
     with reverts("APP_AUTH_FAILED"):
         create_and_enact_payment_motion(
             easy_track,
-            LIDO_LABS_TRUSTED_CALLER,
-            LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+            TRUSTED_CALLER,
+            TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
             token,
             [trusted_caller_account],
             [to_spend + 1],
@@ -816,12 +1048,142 @@ def finance_limit_test(stranger, token, to_spend, decimals):
     # spend the allowed balance
     create_and_enact_payment_motion(
         easy_track,
-        LIDO_LABS_TRUSTED_CALLER,
-        LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+        TRUSTED_CALLER,
+        TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
         token,
         [trusted_caller_account],
         [to_spend],
         stranger,
     )
+
+    chain.revert()
+
+
+def prepare_agent_for_dai_payment(amount: int):
+    agent, dai = interface.Agent(AGENT), interface.Dai(DAI_TOKEN)
+    if dai.balanceOf(agent) < amount:
+        dai_ward_impersonated = accounts.at("0x9759A6Ac90977b93B58547b4A71c78317f391A28", force=True)
+        dai.mint(agent, amount, {"from": dai_ward_impersonated})
+
+    assert dai.balanceOf(agent) >= amount, f"Insufficient DAI balance"
+
+
+def prepare_agent_for_usdc_payment(amount: int):
+    agent, usdc = interface.Agent(AGENT), interface.Usdc(USDC_TOKEN)
+    if usdc.balanceOf(agent) < amount:
+        usdc_minter = accounts.at("0x5B6122C109B78C6755486966148C1D70a50A47D7", force=True)
+        usdc_controller = accounts.at("0x79E0946e1C186E745f1352d7C21AB04700C99F71", force=True)
+        usdc_master_minter = interface.UsdcMasterMinter("0xE982615d461DD5cD06575BbeA87624fda4e3de17")
+        usdc_master_minter.incrementMinterAllowance(amount, {"from": usdc_controller})
+        usdc.mint(agent, amount, {"from": usdc_minter})
+
+    assert usdc.balanceOf(agent) >= amount, "Insufficient USDC balance"
+
+
+def prepare_agent_for_usdt_payment(amount: int):
+    agent, usdt = interface.Agent(AGENT), interface.Usdt(USDT_TOKEN)
+    if usdt.balanceOf(agent) < amount:
+        usdt_owner = accounts.at("0xC6CDE7C39eB2f0F0095F41570af89eFC2C1Ea828", force=True)
+        usdt.issue(amount, {"from": usdt_owner})
+        usdt.transfer(agent, amount, {"from": usdt_owner})
+
+    assert usdt.balanceOf(agent) >= amount, "Insufficient USDT balance"
+
+
+def prepare_agent_for_susds_payment(amount: int):
+    agent, susds = interface.Agent(AGENT), interface.ERC20(SUSDS_TOKEN)
+    if susds.balanceOf(agent) < amount:
+        susds_whale = accounts.at("0xBc65ad17c5C0a2A4D159fa5a503f4992c7B545FE", force=True)
+        susds.transfer(agent, amount, {"from": susds_whale})
+
+    assert susds.balanceOf(agent) >= amount, "Insufficient sUSDS balance"
+
+
+def prepare_agent_for_ldo_payment(amount: int):
+    agent, ldo = interface.Agent(AGENT), interface.ERC20(LDO_TOKEN)
+    assert ldo.balanceOf(agent) >= amount, "Insufficient LDO balance 🫡"
+
+
+def prepare_agent_for_steth_payment(amount: int):
+    STETH_TRANSFER_MAX_DELTA = 2
+
+    agent, steth = interface.Agent(AGENT), interface.Lido(LIDO)
+    eth_whale = accounts.at("0x00000000219ab540356cBB839Cbe05303d7705Fa", force=True)
+    if steth.balanceOf(agent) < amount:
+        steth.submit(ZERO_ADDRESS, {"from": eth_whale, "value": amount + 2 * STETH_TRANSFER_MAX_DELTA})
+        steth.transfer(agent, amount + STETH_TRANSFER_MAX_DELTA, {"from": eth_whale})
+    assert steth.balanceOf(agent) >= amount, "Insufficient stETH balance"
+
+
+def usds_wrap_happy_path(stranger):
+    USDC_FOR_TRANSFER = 1000
+    USDS_TOKEN = "0xdC035D45d973E3EC169d2276DDab16f1e407384F"
+    
+    easy_track = interface.EasyTrack(EASY_TRACK)
+    usdc = interface.Usdc(USDC_TOKEN)     
+    psmVariant1Actions = interface.PSMVariant1Actions(PSM_VARIANT1_ACTIONS)
+    usds_token = interface.Usds(USDS_TOKEN)
+    susds_token = interface.Susds(SUSDS_TOKEN)
+    
+    eoa = accounts[0]
+
+    chain.snapshot()
+
+    initial_susds_agent_balance = susds_token.balanceOf(AGENT)
+
+    # fund EOA with USDC from Treasury
+    interface.AllowedRecipientRegistry(LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY).addRecipient(
+        eoa.address,
+        "EOA_test",
+        {"from": AGENT}
+    )
+    create_and_enact_payment_motion(
+        easy_track,
+        LIDO_LABS_TRUSTED_CALLER,
+        LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+        usdc,
+        [eoa],
+        [USDC_FOR_TRANSFER * 10**6],
+        stranger,
+    )
+    assert usdc.balanceOf(eoa.address) == USDC_FOR_TRANSFER * 10**6
+    assert usds_token.balanceOf(eoa.address) == 0
+    assert susds_token.balanceOf(eoa.address) == 0
+
+    # wrap USDC to sUSDS via PSM
+    usdc.approve(PSM_VARIANT1_ACTIONS, USDC_FOR_TRANSFER * 10**6, {"from": eoa})
+    psmVariant1Actions.swapAndDeposit(eoa.address, USDC_FOR_TRANSFER * 10**6, USDC_FOR_TRANSFER * 10**18, {"from": eoa})
+    assert usdc.balanceOf(eoa.address) == 0
+    assert usds_token.balanceOf(eoa.address) == 0
+    susds_balance = susds_token.balanceOf(eoa.address)
+    assert susds_balance <= USDC_FOR_TRANSFER * 10**18
+    assert susds_balance >= USDC_FOR_TRANSFER * 10**18 * 0.9
+
+    # send sUSDS back to Treasury
+    susds_token.transfer(AGENT, susds_balance, {"from": eoa})
+    assert susds_token.balanceOf(eoa.address) == 0
+    assert susds_token.balanceOf(AGENT) == susds_balance + initial_susds_agent_balance
+    print("swapped", USDC_FOR_TRANSFER, "USDC to", susds_balance / 10**18, "sUSDS")
+
+    # send sUSDS again to EOA via Easy Track payment from Treasury
+    create_and_enact_payment_motion(
+        easy_track,
+        LIDO_LABS_TRUSTED_CALLER,
+        LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+        susds_token,
+        [eoa],
+        [susds_balance],
+        stranger,
+    )
+    assert susds_token.balanceOf(eoa.address) == susds_balance
+    assert susds_token.balanceOf(AGENT) == initial_susds_agent_balance
+
+    # unwrap sUSDS to USDC
+    susds_token.approve(PSM_VARIANT1_ACTIONS, susds_balance, {"from": eoa})
+    psmVariant1Actions.withdrawAndSwap(eoa.address, USDC_FOR_TRANSFER * 10**6, USDC_FOR_TRANSFER * 10**18, {"from": eoa})
+    usdc_balance = usdc.balanceOf(eoa.address)
+    print("swapped", susds_balance / 10**18, "sUSDS to", usdc_balance / 10**6, "USDC")
+    assert susds_token.balanceOf(eoa.address) < 1.0 * 10**18 # dust
+    assert usdc.balanceOf(eoa.address) == USDC_FOR_TRANSFER * 10**6
 
     chain.revert()
