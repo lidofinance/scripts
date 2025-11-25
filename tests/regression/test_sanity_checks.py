@@ -241,20 +241,39 @@ def test_accounting_oracle_too_much_extra_data(extra_data_service):
         )
 
 
-@pytest.mark.skip("ganache throws 'RPCRequestError: Invalid string length' on such long extra data")
 def test_accounting_oracle_too_node_ops_per_extra_data_item(extra_data_service):
-    item_count = MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM * 10
-    extra_data = extra_data_service.collect({(1, i): i for i in range(item_count)}, {}, 1, item_count)
+    node_ops_count = MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM + 1
+
+    # Collect real operators with their current exited validators count
+    operators = {}
+    nor_module_id = 1
+    nor_operators_count = contracts.node_operators_registry.getNodeOperatorsCount()
+    i = 0
+
+    for no_id in range(nor_operators_count):
+        (active, _, _, _, total_exited_validators_count, _, total_deposited_validators_count) = contracts.node_operators_registry.getNodeOperator(no_id, True)
+
+        if active and total_exited_validators_count != total_deposited_validators_count:
+            operators[(nor_module_id, no_id)] = total_exited_validators_count + 1
+            i += 1
+
+            if i == node_ops_count:
+                break
+
+    # Create extra data with too many node operators in a single item
+    # by setting max_no_in_payload_count to a large value
+    extra_data = extra_data_service.collect(operators, 1, node_ops_count)
+
     with reverts(
         encode_error(
             "TooManyNodeOpsPerExtraDataItem(uint256,uint256)",
-            [MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM, item_count],
+            [0, node_ops_count],  # itemIndex=0, nodeOpsCount=25
         )
     ):
         oracle_report(
             extraDataFormat=1,
             extraDataHashList=extra_data.extra_data_hash_list,
-            extraDataItemsCount=1,
+            extraDataItemsCount=extra_data.items_count,
             extraDataList=extra_data.extra_data_list,
         )
 
