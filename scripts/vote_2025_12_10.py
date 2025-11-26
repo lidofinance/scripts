@@ -59,7 +59,7 @@ STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
 LOL_MS = "0x87D93d9B2C672bf9c9642d853a8682546a5012B5"
 FINANCE = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
 ET_EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
-ALLOWED_TOKENS_REGISTRY = "0x4AC40c34f8992bb1e5E856A448792158022551ca"
+STABLECOINS_ALLOWED_TOKENS_REGISTRY = "0x4AC40c34f8992bb1e5E856A448792158022551ca"
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 
 
@@ -74,7 +74,7 @@ USDC_TOKEN = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 USDT_TOKEN = "0xdac17f958d2ee523a2206206994597c13d831ec7"
 DAI_TOKEN = "0x6b175474e89094c44da98b954eedeac495271d0f"
 LDO_TOKEN = "0x5a98fcbea516cf06857215779fd812ca3bef1b32"
-LIDO = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
+STETH_TOKEN = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
 
 
 # ============================== Constants ===================================
@@ -103,7 +103,7 @@ MATIC_FOR_TRANSFER = 508_106 * 10**18
 def amount_limits() -> List[Param]:
     ldo_limit = TokenLimit(LDO_TOKEN, 5_000_000 * (10**18))
     eth_limit = TokenLimit(ZERO_ADDRESS, 1_000 * 10**18)
-    steth_limit = TokenLimit(LIDO, 1_000 * (10**18))
+    steth_limit = TokenLimit(STETH_TOKEN, 1_000 * (10**18))
     dai_limit = TokenLimit(DAI_TOKEN, 2_000_000 * (10**18))
     usdc_limit = TokenLimit(USDC_TOKEN, 2_000_000 * (10**6))
     usdt_limit = TokenLimit(USDT_TOKEN, 2_000_000 * (10**6))
@@ -198,7 +198,7 @@ IPFS_DESCRIPTION = "omni nov 2025"
 def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
     staking_router = interface.StakingRouter(STAKING_ROUTER)
-    allowed_tokens_registry = interface.AllowedTokensRegistry(ALLOWED_TOKENS_REGISTRY)
+    stablecoins_allowed_tokens_registry = interface.AllowedTokensRegistry(STABLECOINS_ALLOWED_TOKENS_REGISTRY)
 
     dg_items = [
         agent_forward([
@@ -265,7 +265,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         (
             "3. Termporarily grant ADD_TOKEN_TO_ALLOWED_LIST_ROLE to Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e",
             (
-                allowed_tokens_registry.address, allowed_tokens_registry.grantRole.encode_input(
+                stablecoins_allowed_tokens_registry.address, stablecoins_allowed_tokens_registry.grantRole.encode_input(
                     convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
                     VOTING,
                 )
@@ -273,12 +273,12 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         ),
         (
             "4. Add sUSDS token 0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD to stablecoins Allowed Tokens Registry 0x4AC40c34f8992bb1e5E856A448792158022551ca",
-            (allowed_tokens_registry.address, allowed_tokens_registry.addToken.encode_input(SUSDS_TOKEN))
+            (stablecoins_allowed_tokens_registry.address, stablecoins_allowed_tokens_registry.addToken.encode_input(SUSDS_TOKEN))
         ),
         (
             "5. Revoke ADD_TOKEN_TO_ALLOWED_LIST_ROLE from Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e",
             (
-                allowed_tokens_registry.address, allowed_tokens_registry.revokeRole.encode_input(
+                stablecoins_allowed_tokens_registry.address, stablecoins_allowed_tokens_registry.revokeRole.encode_input(
                     convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
                     VOTING,
                 )

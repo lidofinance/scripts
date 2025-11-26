@@ -1,9 +1,18 @@
-from brownie import chain, interface, reverts, accounts, ZERO_ADDRESS, convert, web3
-from brownie.network.transaction import TransactionReceipt
 import pytest
 from typing import List, NamedTuple
 
+from brownie import chain, interface, reverts, accounts, ZERO_ADDRESS, convert, web3
+from brownie.network.transaction import TransactionReceipt
 from utils.permission_parameters import Param, SpecialArgumentID, encode_argument_value_if, ArgumentValue, Op
+from utils.test.easy_track_helpers import create_and_enact_payment_motion
+from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
+from utils.evm_script import encode_call_script
+from utils.voting import find_metadata_by_vote_id
+from utils.agent import agent_forward
+from utils.ipfs import get_lido_vote_cid_from_str
+from utils.dual_governance import PROPOSAL_STATUS
+from utils.test.event_validators.allowed_tokens_registry import validate_add_token_event
+from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 from utils.test.tx_tracing_helpers import (
     group_voting_events_from_receipt,
     group_dg_events_from_receipt,
@@ -11,18 +20,10 @@ from utils.test.tx_tracing_helpers import (
     display_voting_events,
     display_dg_events
 )
-from utils.test.easy_track_helpers import create_and_enact_payment_motion
-from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
-from utils.evm_script import encode_call_script
-from utils.voting import find_metadata_by_vote_id
-from utils.ipfs import get_lido_vote_cid_from_str
-from utils.dual_governance import PROPOSAL_STATUS
-from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 from utils.allowed_recipients_registry import (
     unsafe_set_spent_amount,
     set_limit_parameters,
 )
-from utils.agent import agent_forward
 from utils.test.event_validators.payout import (
     validate_token_payout_event,
     Payout,
@@ -38,25 +39,18 @@ from utils.test.event_validators.permission import (
     validate_permission_grantp_event,
     validate_permission_revoke_event,
 )
-from utils.test.event_validators.allowed_tokens_registry import validate_add_token_event
+
 
 class TokenLimit(NamedTuple):
     address: str
     limit: int
 
 
-# ============================================================================
 # ============================== Import vote =================================
-# ============================================================================
 from scripts.vote_2025_12_10 import start_vote, get_vote_items
 
 
-# ============================================================================
-# ============================== Constants ===================================
-# ============================================================================
-# TODO list all contract addresses used in tests - do not use imports from config!
-# NOTE: these addresses might have a different value on other chains
-
+# ============================== Addresses ===================================
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
@@ -64,28 +58,41 @@ DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 ET_TRP_REGISTRY = "0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8"
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
-LOL_MS = "0x87D93d9B2C672bf9c9642d853a8682546a5012B5"
-DEV_GAS_STORE = "0x7FEa69d107A77B5817379d1254cc80D9671E171b"
 ET_EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 DEPOSIT_SECURITY_MODULE = "0xffa96d84def2ea035c7ab153d8b991128e3d72fd"
-LIDO = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
-SDVT = "0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433"
 EASY_TRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
+FINANCE = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
+ACL = "0x9895f0f17cc1d1891b6f18ee0b483b6f221b37bb"
+
 TRP_COMMITTEE = "0x834560F580764Bc2e0B16925F8bF229bb00cB759"
 TRP_TOP_UP_EVM_SCRIPT_FACTORY = "0xBd2b6dC189EefD51B273F5cb2d99BA1ce565fb8C"
-LDO_TOKEN = "0x5a98fcbea516cf06857215779fd812ca3bef1b32"
-FINANCE = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
-CREATE_PAYMENTS_ROLE = "CREATE_PAYMENTS_ROLE"
-ACL = "0x9895f0f17cc1d1891b6f18ee0b483b6f221b37bb"
-ALLOWED_TOKENS_REGISTRY = "0x4AC40c34f8992bb1e5E856A448792158022551ca"
-ADD_TOKEN_TO_ALLOWED_LIST_ROLE = "ADD_TOKEN_TO_ALLOWED_LIST_ROLE"
+
+STABLECOINS_ALLOWED_TOKENS_REGISTRY = "0x4AC40c34f8992bb1e5E856A448792158022551ca"
 LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY = "0xE1f6BaBb445F809B97e3505Ea91749461050F780"
 LIDO_LABS_TRUSTED_CALLER = "0x95B521B4F55a447DB89f6a27f951713fC2035f3F"
 LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY = "0x68267f3D310E9f0FF53a37c141c90B738E1133c2"
-REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE = "REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE"
-WSTETH_TOKEN = "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0"
+
+LEGO_LDO_TRUSTED_CALLER = "0x12a43b049A7D330cB8aEAB5113032D18AE9a9030"
+LEGO_LDO_TOP_UP_ALLOWED_RECIPIENTS_FACTORY = "0x00caAeF11EC545B192f16313F53912E453c91458"
+LEGO_LDO_ALLOWED_RECIPIENTS_REGISTRY = "0x97615f72c3428A393d65A84A3ea6BBD9ad6C0D74"
+
+GAS_SUPPLY_STETH_TRUSTED_CALLER = "0x5181d5D56Af4f823b96FE05f062D7a09761a5a53"
+GAS_SUPPLY_STETH_TOP_UP_ALLOWED_RECIPIENTS_FACTORY = "0x200dA0b6a9905A377CF8D469664C65dB267009d1"
+GAS_SUPPLY_STETH_ALLOWED_RECIPIENTS_REGISTRY = "0x49d1363016aA899bba09ae972a1BF200dDf8C55F"
+
+LOL_MS = "0x87D93d9B2C672bf9c9642d853a8682546a5012B5"
+SDVT = "0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433"
+DEV_GAS_STORE = "0x7FEa69d107A77B5817379d1254cc80D9671E171b"
 PSM_VARIANT1_ACTIONS = "0xd0A61F2963622e992e6534bde4D52fd0a89F39E0"
 
+
+# ============================== Roles ===================================
+CREATE_PAYMENTS_ROLE = "CREATE_PAYMENTS_ROLE"
+ADD_TOKEN_TO_ALLOWED_LIST_ROLE = "ADD_TOKEN_TO_ALLOWED_LIST_ROLE"
+REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE = "REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE"
+
+
+# ============================== Constants ===================================
 CURATED_MODULE_ID = 1
 CURATED_MODULE_TARGET_SHARE_BP = 10000
 CURATED_MODULE_PRIORITY_EXIT_THRESHOLD_BP = 10000
@@ -107,7 +114,6 @@ SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK = 150
 SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 SDVT_MODULE_NAME = "SimpleDVT"
 
-MATIC_TOKEN = "0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0"
 MATIC_IN_TREASURY_BEFORE = 508_106_165_781_175_837_137_177
 MATIC_IN_TREASURY_AFTER = 165_781_175_837_137_177
 MATIC_IN_LIDO_LABS_BEFORE = 0
@@ -121,15 +127,23 @@ TRP_PERIOD_START_TIMESTAMP = 1735689600  # January 1, 2025 UTC
 TRP_PERIOD_END_TIMESTAMP = 1767225600  # January 1, 2026 UTC
 TRP_PERIOD_DURATION_MONTHS = 12
 
-SUSDS_TOKEN = "0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD"
-USDC_TOKEN = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
-USDT_TOKEN = "0xdac17f958d2ee523a2206206994597c13d831ec7"
-DAI_TOKEN = "0x6b175474e89094c44da98b954eedeac495271d0f"
 ALLOWED_TOKENS_BEFORE = 3
 ALLOWED_TOKENS_AFTER = 4
 ET_LIDO_LABS_STABLES_LIMIT = 15_000_000
 
 
+# ============================== Tokens ===================================
+MATIC_TOKEN = "0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0"
+LDO_TOKEN = "0x5a98fcbea516cf06857215779fd812ca3bef1b32"
+STETH_TOKEN = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
+WSTETH_TOKEN = "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0"
+SUSDS_TOKEN = "0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD"
+USDC_TOKEN = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+USDT_TOKEN = "0xdac17f958d2ee523a2206206994597c13d831ec7"
+DAI_TOKEN = "0x6b175474e89094c44da98b954eedeac495271d0f"
+
+
+# ============================== Voting ===================================
 EXPECTED_VOTE_ID = 194
 EXPECTED_DG_PROPOSAL_ID = 6
 EXPECTED_VOTE_EVENTS_COUNT = 7
@@ -137,11 +151,12 @@ EXPECTED_DG_EVENTS_COUNT = 4
 IPFS_DESCRIPTION_HASH = "bafkreigs2dewxxu7rj6eifpxsqvib23nsiw2ywsmh3lhewyqlmyn46obnm"
 
 
+# ============================== Finance Limits ===================================
 AMOUNT_LIMITS_LEN_BEFORE = 19
 def amount_limits_before() -> List[Param]:
     ldo_limit = TokenLimit(LDO_TOKEN, 5_000_000 * (10**18))
     eth_limit = TokenLimit(ZERO_ADDRESS, 1_000 * 10**18)
-    steth_limit = TokenLimit(LIDO, 1_000 * (10**18))
+    steth_limit = TokenLimit(STETH_TOKEN, 1_000 * (10**18))
     dai_limit = TokenLimit(DAI_TOKEN, 2_000_000 * (10**18))
     usdc_limit = TokenLimit(USDC_TOKEN, 2_000_000 * (10**6))
     usdt_limit = TokenLimit(USDT_TOKEN, 2_000_000 * (10**6))
@@ -218,11 +233,10 @@ def amount_limits_before() -> List[Param]:
 
     return limits
 
-
 AMOUNT_LIMITS_LEN_AFTER = 22
 ldo_limit_after = TokenLimit(LDO_TOKEN, 5_000_000 * (10**18))
 eth_limit_after = TokenLimit(ZERO_ADDRESS, 1_000 * 10**18)
-steth_limit_after = TokenLimit(LIDO, 1_000 * (10**18))
+steth_limit_after = TokenLimit(STETH_TOKEN, 1_000 * (10**18))
 dai_limit_after = TokenLimit(DAI_TOKEN, 2_000_000 * (10**18))
 usdc_limit_after = TokenLimit(USDC_TOKEN, 2_000_000 * (10**6))
 usdt_limit_after = TokenLimit(USDT_TOKEN, 2_000_000 * (10**6))
@@ -324,10 +338,8 @@ def dual_governance_proposal_calls():
 
     staking_router = interface.StakingRouter(STAKING_ROUTER)
 
-    # Create all the dual governance calls that match the voting script
     dg_items = [
         agent_forward([
-            # 1.1. change curated module
             (
                 staking_router.address,
                 staking_router.updateStakingModule.encode_input(
@@ -366,8 +378,7 @@ def dual_governance_proposal_calls():
             ),
         ]),
     ]
-        
-    
+
     # Convert each dg_item to the expected format
     proposal_calls = []
     for dg_item in dg_items:
@@ -394,7 +405,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     et_trp_registry = interface.AllowedRecipientRegistry(ET_TRP_REGISTRY)
     acl = interface.ACL(ACL)
-    allowed_tokens_registry = interface.AllowedTokensRegistry(ALLOWED_TOKENS_REGISTRY)
+    stablecoins_allowed_tokens_registry = interface.AllowedTokensRegistry(STABLECOINS_ALLOWED_TOKENS_REGISTRY)
 
 
     # =========================================================================
@@ -422,7 +433,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =======================================================================
         # ========================= Before voting checks ========================
         # =======================================================================
-        # TODO add before voting checks
+
+        # Item 1 is DG - skipped here
 
         # Item 2
         matic_treasury_balance_before = matic_token.balanceOf(agent.address)
@@ -431,14 +443,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert matic_labs_balance_before == MATIC_IN_LIDO_LABS_BEFORE
 
         # Items 3,5
-        assert not allowed_tokens_registry.hasRole(
+        assert not stablecoins_allowed_tokens_registry.hasRole(
             convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
             VOTING
         )
 
         # Item 4
-        assert not allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
-        allowed_tokens_before = allowed_tokens_registry.getAllowedTokens()
+        assert not stablecoins_allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
+        allowed_tokens_before = stablecoins_allowed_tokens_registry.getAllowedTokens()
         assert len(allowed_tokens_before) == ALLOWED_TOKENS_BEFORE
         assert allowed_tokens_before[0] == DAI_TOKEN
         assert allowed_tokens_before[1] == USDT_TOKEN
@@ -472,27 +484,29 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =======================================================================
         # ========================= After voting checks =========================
         # =======================================================================
-        # TODO add after voting tests
+
+        # Item 1 is DG - skipped here
 
         # Item 2
         matic_treasury_balance_after = matic_token.balanceOf(agent.address)
         assert matic_treasury_balance_after == MATIC_IN_TREASURY_AFTER
         matic_labs_balance_after = matic_token.balanceOf(LOL_MS)
         assert matic_labs_balance_after == MATIC_IN_LIDO_LABS_AFTER
+
         # make sure LOL can actually spend the received MATIC
         matic_token.transfer(DEV_GAS_STORE, MATIC_IN_LIDO_LABS_AFTER / 2, {"from": LOL_MS})
         assert matic_token.balanceOf(LOL_MS) == MATIC_IN_LIDO_LABS_AFTER / 2
         assert matic_token.balanceOf(DEV_GAS_STORE) == MATIC_IN_LIDO_LABS_AFTER / 2
 
         # Items 3,5
-        assert not allowed_tokens_registry.hasRole(
+        assert not stablecoins_allowed_tokens_registry.hasRole(
             convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
             VOTING
         )
 
         # Item 4
-        assert allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
-        allowed_tokens_before = allowed_tokens_registry.getAllowedTokens()
+        assert stablecoins_allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
+        allowed_tokens_before = stablecoins_allowed_tokens_registry.getAllowedTokens()
         assert len(allowed_tokens_before) == ALLOWED_TOKENS_AFTER
         assert allowed_tokens_before[0] == DAI_TOKEN
         assert allowed_tokens_before[1] == USDT_TOKEN
@@ -516,6 +530,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert op == amount_limits_after()[i].op.value
             assert val == amount_limits_after()[i].value
 
+        # check Finance create payment permissions with limits for all allowed tokens
         assert acl.hasPermission["address,address,bytes32,uint[]"](
             ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
             [convert.to_uint(susds_limit_after.address), convert.to_uint(stranger.address), susds_limit_after.limit],
@@ -584,17 +599,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         if EXPECTED_DG_PROPOSAL_ID is not None:
             assert EXPECTED_DG_PROPOSAL_ID == timelock.getProposalsCount()
 
-            # Validate DG Proposal Submit event
+            # validate DG Proposal Submit event
             validate_dual_governance_submit_event(
                 vote_events[0],
                 proposal_id=EXPECTED_DG_PROPOSAL_ID,
                 proposer=VOTING,
                 executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-                metadata="Upgrade Lido Protocol to V3, raise SDVT stake share limit and reset Easy Track TRP limit",
+                metadata="Upgrade Lido Protocol to change Curated Module fees, raise SDVT stake share limit and reset Easy Track TRP limit",
                 proposal_calls=dual_governance_proposal_calls,
             )
 
-            # TODO validate all other voting events
+            # validate all other voting events
             validate_token_payout_event(
                 event=vote_events[1],
                 p=Payout(
@@ -610,19 +625,19 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 role=web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE).hex(),
                 grant_to=VOTING,
                 sender=VOTING,
-                emitted_by=ALLOWED_TOKENS_REGISTRY,
+                emitted_by=STABLECOINS_ALLOWED_TOKENS_REGISTRY,
             )
             validate_add_token_event(
                 event=vote_events[3],
                 token=SUSDS_TOKEN,
-                emitted_by=ALLOWED_TOKENS_REGISTRY
+                emitted_by=STABLECOINS_ALLOWED_TOKENS_REGISTRY
             )
             validate_revoke_role_event(
                 events=vote_events[4],
                 role=web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE).hex(),
                 revoke_from=VOTING,
                 sender=VOTING,
-                emitted_by=ALLOWED_TOKENS_REGISTRY,
+                emitted_by=STABLECOINS_ALLOWED_TOKENS_REGISTRY,
             )
             validate_permission_revoke_event(
                 event=vote_events[5],
@@ -645,10 +660,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             )
 
             # =======================================================================
-            # =========================== Scenario checks ===========================
+            # =========================== Scenario tests ============================
             # =======================================================================
 
-            # put a lot of tokens into Agent to check limits
+            # put a lot of tokens into Agent to check Finance/ET limits
             prepare_agent_for_dai_payment(30_000_000 * 10**18)
             prepare_agent_for_usdt_payment(30_000_000 * 10**6)
             prepare_agent_for_usdc_payment(30_000_000 * 10**6)
@@ -656,37 +671,35 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             prepare_agent_for_ldo_payment(10_000_000 * 10**18)
             prepare_agent_for_steth_payment(2_000 * 10**18)
 
-
-            # check ET limits
+            # check ET limits via Easy Track motion
             et_limit_test(stranger, interface.ERC20(SUSDS_TOKEN), susds_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
             et_limit_test(stranger, interface.ERC20(USDC_TOKEN), usdc_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
             et_limit_test(stranger, interface.ERC20(DAI_TOKEN), dai_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
             et_limit_test(stranger, interface.ERC20(USDT_TOKEN), usdt_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
-            et_limit_test(stranger, interface.ERC20(LDO_TOKEN), ldo_limit_after.limit, 1_000_000 * 10**18, "0x12a43b049A7D330cB8aEAB5113032D18AE9a9030", "0x00caAeF11EC545B192f16313F53912E453c91458")
-            et_limit_test(stranger, interface.ERC20(LIDO), steth_limit_after.limit, 1_000 * 10**18, "0x5181d5D56Af4f823b96FE05f062D7a09761a5a53", "0x200dA0b6a9905A377CF8D469664C65dB267009d1")
+            et_limit_test(stranger, interface.ERC20(LDO_TOKEN), ldo_limit_after.limit, 1_000_000 * 10**18, LEGO_LDO_TRUSTED_CALLER, LEGO_LDO_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
+            et_limit_test(stranger, interface.ERC20(STETH_TOKEN), steth_limit_after.limit, 1_000 * 10**18, GAS_SUPPLY_STETH_TRUSTED_CALLER, GAS_SUPPLY_STETH_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
 
-
-            # check Finance limits
+            # check Finance limits via Easy Track motion
             finance_limit_test(stranger, interface.ERC20(SUSDS_TOKEN), susds_limit_after.limit, 18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
             finance_limit_test(stranger, interface.ERC20(USDC_TOKEN), usdc_limit_after.limit, 6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
             finance_limit_test(stranger, interface.ERC20(DAI_TOKEN), dai_limit_after.limit, 18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
             finance_limit_test(stranger, interface.ERC20(USDT_TOKEN), usdt_limit_after.limit, 6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
-            finance_limit_test(stranger, interface.ERC20(LDO_TOKEN), ldo_limit_after.limit, 18, "0x12a43b049A7D330cB8aEAB5113032D18AE9a9030", "0x00caAeF11EC545B192f16313F53912E453c91458", "0x97615f72c3428A393d65A84A3ea6BBD9ad6C0D74")
-            finance_limit_test(stranger, interface.ERC20(LIDO), steth_limit_after.limit, 18, "0x5181d5D56Af4f823b96FE05f062D7a09761a5a53", "0x200dA0b6a9905A377CF8D469664C65dB267009d1", "0x49d1363016aA899bba09ae972a1BF200dDf8C55F")
+            finance_limit_test(stranger, interface.ERC20(LDO_TOKEN), ldo_limit_after.limit, 18, LEGO_LDO_TRUSTED_CALLER, LEGO_LDO_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LEGO_LDO_ALLOWED_RECIPIENTS_REGISTRY)
+            finance_limit_test(stranger, interface.ERC20(STETH_TOKEN), steth_limit_after.limit, 18, GAS_SUPPLY_STETH_TRUSTED_CALLER, GAS_SUPPLY_STETH_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, GAS_SUPPLY_STETH_ALLOWED_RECIPIENTS_REGISTRY)
 
             # sUSDS can be removed after being added to the allowed list
             chain.snapshot()
-            allowed_tokens_registry.grantRole(
+            stablecoins_allowed_tokens_registry.grantRole(
                 convert.to_uint(web3.keccak(text=REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE)),
                 VOTING,
                 {"from": VOTING}
             )
-            assert allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
-            allowed_tokens_registry.removeToken(
+            assert stablecoins_allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
+            stablecoins_allowed_tokens_registry.removeToken(
                 SUSDS_TOKEN,
                 {"from": VOTING}
             )
-            assert not allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
+            assert not stablecoins_allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
             with reverts("TOKEN_NOT_ALLOWED"):
                 create_and_enact_payment_motion(
                     interface.EasyTrack(EASY_TRACK),
@@ -715,17 +728,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
             # spending the allowed token not from the Finance CREATE_PAYMENTS_ROLE's list should fail
             chain.snapshot()
-            allowed_tokens_registry.grantRole(
+            stablecoins_allowed_tokens_registry.grantRole(
                 convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
                 VOTING,
                 {"from": VOTING}
             )
-            assert not allowed_tokens_registry.isTokenAllowed(WSTETH_TOKEN)
-            allowed_tokens_registry.addToken(
+            assert not stablecoins_allowed_tokens_registry.isTokenAllowed(WSTETH_TOKEN)
+            stablecoins_allowed_tokens_registry.addToken(
                 WSTETH_TOKEN,
                 {"from": VOTING}
             )
-            assert allowed_tokens_registry.isTokenAllowed(WSTETH_TOKEN)
+            assert stablecoins_allowed_tokens_registry.isTokenAllowed(WSTETH_TOKEN)
             with reverts("APP_AUTH_FAILED"):
                 create_and_enact_payment_motion(
                     interface.EasyTrack(EASY_TRACK),
@@ -748,9 +761,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # =========================================================================
             # ================== DG before proposal executed checks ===================
             # =========================================================================
-            # TODO add DG before proposal executed checks
 
-            # 1.1. curated changes
+            # Item 1.1
             curated_module_before = staking_router.getStakingModule(CURATED_MODULE_ID)
             assert curated_module_before['stakeShareLimit'] == CURATED_MODULE_TARGET_SHARE_BP
             assert curated_module_before['id'] == CURATED_MODULE_ID
@@ -761,7 +773,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert curated_module_before['minDepositBlockDistance'] == CURATED_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE
             assert curated_module_before['name'] == CURATED_MODULE_NAME
 
-            # 1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+            # Item 1.2
             sdvt_module_before = staking_router.getStakingModule(SDVT_MODULE_ID)
             assert sdvt_module_before['stakeShareLimit'] == SDVT_MODULE_OLD_TARGET_SHARE_BP
             assert sdvt_module_before['id'] == SDVT_MODULE_ID
@@ -772,8 +784,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert sdvt_module_before['minDepositBlockDistance'] == SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE
             assert sdvt_module_before['name'] == SDVT_MODULE_NAME
 
-            # 1.2. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
-            # 1.3. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
+            # Items 1.3,1.4
             trp_limit_before, trp_period_duration_months_before = et_trp_registry.getLimitParameters()
             trp_already_spent_amount_before, trp_spendable_balance_before, trp_period_start_before, trp_period_end_before = et_trp_registry.getPeriodState()
             assert trp_limit_before == TRP_LIMIT_BEFORE
@@ -800,8 +811,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_COUNT
                 assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
 
-                # TODO validate all DG events
-
+                # validate all DG events
                 validate_staking_module_update_event(
                     event=dg_events[0],
                     module_item=StakingModuleItem(
@@ -814,7 +824,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                         priority_exit_share=CURATED_MODULE_PRIORITY_EXIT_THRESHOLD_BP),
                     emitted_by=STAKING_ROUTER
                 )
-
                 validate_staking_module_update_event(
                     event=dg_events[1],
                     module_item=StakingModuleItem(
@@ -827,13 +836,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                         priority_exit_share=SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP),
                     emitted_by=STAKING_ROUTER
                 )
-
                 validate_set_spent_amount_event(
                     dg_events[2],
                     new_spent_amount=0,
                     emitted_by=ET_TRP_REGISTRY,
                 )
-
                 validate_set_limit_parameter_event(
                     dg_events[3],
                     limit=TRP_LIMIT_AFTER,
@@ -845,9 +852,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =========================================================================
         # ==================== After DG proposal executed checks ==================
         # =========================================================================
-        # TODO add DG after proposal executed checks
 
-        # 1.1. curated changes
+        # Item 1.1
         curated_module_after = staking_router.getStakingModule(CURATED_MODULE_ID)
         assert curated_module_after['stakingModuleFee'] == CURATED_MODULE_NEW_MODULE_FEE_BP
         assert curated_module_after['treasuryFee'] == CURATED_MODULE_NEW_TREASURY_FEE_BP
@@ -872,7 +878,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert len(curated_module_after.items()) == len(curated_module_before.items())
         assert len(curated_module_after.items()) == 13
 
-        # 1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+        # Item 1.2
         sdvt_module_after = staking_router.getStakingModule(SDVT_MODULE_ID)
         assert sdvt_module_after['stakeShareLimit'] == SDVT_MODULE_NEW_TARGET_SHARE_BP
         assert sdvt_module_after['id'] == SDVT_MODULE_ID
@@ -898,8 +904,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert len(sdvt_module_after.items()) == len(sdvt_module_before.items())
         assert len(sdvt_module_after.items()) == 13
 
-        # 1.2. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
-        # 1.3. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
+        # Items 1.3,1.4
         trp_limit_after, trp_period_duration_months_after = et_trp_registry.getLimitParameters()
         trp_already_spent_amount_after, trp_spendable_balance_after, trp_period_start_after, trp_period_end_after = et_trp_registry.getPeriodState()
         assert trp_limit_after == TRP_LIMIT_AFTER
@@ -909,7 +914,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert trp_period_start_after == TRP_PERIOD_START_TIMESTAMP
         assert trp_period_end_after == TRP_PERIOD_END_TIMESTAMP
 
-        # additional test for TRP ET factory behavior after the vote
+        # scenraio test for TRP ET factory behavior after the vote
         trp_limit_test(stranger)
 
 
@@ -935,7 +940,7 @@ def trp_limit_test(stranger):
             stranger,
         )
     
-    # spend all step by step
+    # spend all in several transfers
     recipients = []
     amounts = []
     while to_spend > 0:
@@ -986,7 +991,7 @@ def et_limit_test(stranger, token, max_spend_at_once, to_spend, TRUSTED_CALLER, 
             stranger,
         )
     
-    # spend all step by step
+    # spend all in several transfers
     recipients = []
     amounts = []
     while to_spend > 0:
@@ -1057,62 +1062,6 @@ def finance_limit_test(stranger, token, to_spend, decimals, TRUSTED_CALLER, TOP_
     )
 
     chain.revert()
-
-
-def prepare_agent_for_dai_payment(amount: int):
-    agent, dai = interface.Agent(AGENT), interface.Dai(DAI_TOKEN)
-    if dai.balanceOf(agent) < amount:
-        dai_ward_impersonated = accounts.at("0x9759A6Ac90977b93B58547b4A71c78317f391A28", force=True)
-        dai.mint(agent, amount, {"from": dai_ward_impersonated})
-
-    assert dai.balanceOf(agent) >= amount, f"Insufficient DAI balance"
-
-
-def prepare_agent_for_usdc_payment(amount: int):
-    agent, usdc = interface.Agent(AGENT), interface.Usdc(USDC_TOKEN)
-    if usdc.balanceOf(agent) < amount:
-        usdc_minter = accounts.at("0x5B6122C109B78C6755486966148C1D70a50A47D7", force=True)
-        usdc_controller = accounts.at("0x79E0946e1C186E745f1352d7C21AB04700C99F71", force=True)
-        usdc_master_minter = interface.UsdcMasterMinter("0xE982615d461DD5cD06575BbeA87624fda4e3de17")
-        usdc_master_minter.incrementMinterAllowance(amount, {"from": usdc_controller})
-        usdc.mint(agent, amount, {"from": usdc_minter})
-
-    assert usdc.balanceOf(agent) >= amount, "Insufficient USDC balance"
-
-
-def prepare_agent_for_usdt_payment(amount: int):
-    agent, usdt = interface.Agent(AGENT), interface.Usdt(USDT_TOKEN)
-    if usdt.balanceOf(agent) < amount:
-        usdt_owner = accounts.at("0xC6CDE7C39eB2f0F0095F41570af89eFC2C1Ea828", force=True)
-        usdt.issue(amount, {"from": usdt_owner})
-        usdt.transfer(agent, amount, {"from": usdt_owner})
-
-    assert usdt.balanceOf(agent) >= amount, "Insufficient USDT balance"
-
-
-def prepare_agent_for_susds_payment(amount: int):
-    agent, susds = interface.Agent(AGENT), interface.ERC20(SUSDS_TOKEN)
-    if susds.balanceOf(agent) < amount:
-        susds_whale = accounts.at("0xBc65ad17c5C0a2A4D159fa5a503f4992c7B545FE", force=True)
-        susds.transfer(agent, amount, {"from": susds_whale})
-
-    assert susds.balanceOf(agent) >= amount, "Insufficient sUSDS balance"
-
-
-def prepare_agent_for_ldo_payment(amount: int):
-    agent, ldo = interface.Agent(AGENT), interface.ERC20(LDO_TOKEN)
-    assert ldo.balanceOf(agent) >= amount, "Insufficient LDO balance 🫡"
-
-
-def prepare_agent_for_steth_payment(amount: int):
-    STETH_TRANSFER_MAX_DELTA = 2
-
-    agent, steth = interface.Agent(AGENT), interface.Lido(LIDO)
-    eth_whale = accounts.at("0x00000000219ab540356cBB839Cbe05303d7705Fa", force=True)
-    if steth.balanceOf(agent) < amount:
-        steth.submit(ZERO_ADDRESS, {"from": eth_whale, "value": amount + 2 * STETH_TRANSFER_MAX_DELTA})
-        steth.transfer(agent, amount + STETH_TRANSFER_MAX_DELTA, {"from": eth_whale})
-    assert steth.balanceOf(agent) >= amount, "Insufficient stETH balance"
 
 
 def usds_wrap_happy_path(stranger):
@@ -1187,3 +1136,59 @@ def usds_wrap_happy_path(stranger):
     assert usdc.balanceOf(eoa.address) == USDC_FOR_TRANSFER * 10**6
 
     chain.revert()
+
+
+def prepare_agent_for_dai_payment(amount: int):
+    agent, dai = interface.Agent(AGENT), interface.Dai(DAI_TOKEN)
+    if dai.balanceOf(agent) < amount:
+        dai_ward_impersonated = accounts.at("0x9759A6Ac90977b93B58547b4A71c78317f391A28", force=True)
+        dai.mint(agent, amount, {"from": dai_ward_impersonated})
+
+    assert dai.balanceOf(agent) >= amount, f"Insufficient DAI balance"
+
+
+def prepare_agent_for_usdc_payment(amount: int):
+    agent, usdc = interface.Agent(AGENT), interface.Usdc(USDC_TOKEN)
+    if usdc.balanceOf(agent) < amount:
+        usdc_minter = accounts.at("0x5B6122C109B78C6755486966148C1D70a50A47D7", force=True)
+        usdc_controller = accounts.at("0x79E0946e1C186E745f1352d7C21AB04700C99F71", force=True)
+        usdc_master_minter = interface.UsdcMasterMinter("0xE982615d461DD5cD06575BbeA87624fda4e3de17")
+        usdc_master_minter.incrementMinterAllowance(amount, {"from": usdc_controller})
+        usdc.mint(agent, amount, {"from": usdc_minter})
+
+    assert usdc.balanceOf(agent) >= amount, "Insufficient USDC balance"
+
+
+def prepare_agent_for_usdt_payment(amount: int):
+    agent, usdt = interface.Agent(AGENT), interface.Usdt(USDT_TOKEN)
+    if usdt.balanceOf(agent) < amount:
+        usdt_owner = accounts.at("0xC6CDE7C39eB2f0F0095F41570af89eFC2C1Ea828", force=True)
+        usdt.issue(amount, {"from": usdt_owner})
+        usdt.transfer(agent, amount, {"from": usdt_owner})
+
+    assert usdt.balanceOf(agent) >= amount, "Insufficient USDT balance"
+
+
+def prepare_agent_for_susds_payment(amount: int):
+    agent, susds = interface.Agent(AGENT), interface.ERC20(SUSDS_TOKEN)
+    if susds.balanceOf(agent) < amount:
+        susds_whale = accounts.at("0xBc65ad17c5C0a2A4D159fa5a503f4992c7B545FE", force=True)
+        susds.transfer(agent, amount, {"from": susds_whale})
+
+    assert susds.balanceOf(agent) >= amount, "Insufficient sUSDS balance"
+
+
+def prepare_agent_for_ldo_payment(amount: int):
+    agent, ldo = interface.Agent(AGENT), interface.ERC20(LDO_TOKEN)
+    assert ldo.balanceOf(agent) >= amount, "Insufficient LDO balance 🫡"
+
+
+def prepare_agent_for_steth_payment(amount: int):
+    STETH_TRANSFER_MAX_DELTA = 2
+
+    agent, steth = interface.Agent(AGENT), interface.Lido(STETH_TOKEN)
+    eth_whale = accounts.at("0x00000000219ab540356cBB839Cbe05303d7705Fa", force=True)
+    if steth.balanceOf(agent) < amount:
+        steth.submit(ZERO_ADDRESS, {"from": eth_whale, "value": amount + 2 * STETH_TRANSFER_MAX_DELTA})
+        steth.transfer(agent, amount + STETH_TRANSFER_MAX_DELTA, {"from": eth_whale})
+    assert steth.balanceOf(agent) >= amount, "Insufficient stETH balance"
