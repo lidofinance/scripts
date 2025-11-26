@@ -17,6 +17,7 @@ III. Transfer MATIC from Lido Treasury to Liquidity Observation Lab (LOL) Multis
 """
 
 from typing import Dict, List, Tuple, NamedTuple
+from brownie import interface, ZERO_ADDRESS, convert, web3
 
 from utils.permission_parameters import Param, SpecialArgumentID, encode_argument_value_if, ArgumentValue, Op
 from utils.finance import make_matic_payout
@@ -27,13 +28,13 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.dual_governance import submit_proposals
 from utils.agent import agent_forward
 from utils.permissions import encode_permission_revoke, encode_permission_grant_p
-from brownie import interface, ZERO_ADDRESS, convert, web3
 from utils.allowed_recipients_registry import (
     unsafe_set_spent_amount,
     set_limit_parameters,
 )
 
 
+# ============================== Types ===================================
 class TokenLimit(NamedTuple):
     address: str
     limit: int
@@ -46,10 +47,15 @@ LOL_MS = "0x87D93d9B2C672bf9c9642d853a8682546a5012B5"
 FINANCE = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
 ET_EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 ALLOWED_TOKENS_REGISTRY = "0x4AC40c34f8992bb1e5E856A448792158022551ca"
-CREATE_PAYMENTS_ROLE = "CREATE_PAYMENTS_ROLE"
-ADD_TOKEN_TO_ALLOWED_LIST_ROLE = "ADD_TOKEN_TO_ALLOWED_LIST_ROLE"
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 
+
+# ============================== Roles ===================================
+CREATE_PAYMENTS_ROLE = "CREATE_PAYMENTS_ROLE"
+ADD_TOKEN_TO_ALLOWED_LIST_ROLE = "ADD_TOKEN_TO_ALLOWED_LIST_ROLE"
+
+
+# ============================== Tokens ===================================
 SUSDS_TOKEN = "0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD"
 USDC_TOKEN = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 USDT_TOKEN = "0xdac17f958d2ee523a2206206994597c13d831ec7"
@@ -59,14 +65,6 @@ LIDO = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
 
 
 # ============================== Constants ===================================
-SDVT_MODULE_ID = 2
-SDVT_MODULE_NEW_TARGET_SHARE_BP = 430
-SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP = 444
-SDVT_MODULE_MODULE_FEE_BP = 800
-SDVT_MODULE_TREASURY_FEE_BP = 200
-SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK = 150
-SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
-
 CURATED_MODULE_ID = 1
 CURATED_MODULE_TARGET_SHARE_BP = 10000
 CURATED_MODULE_PRIORITY_EXIT_THRESHOLD_BP = 10000
@@ -74,6 +72,14 @@ CURATED_MODULE_NEW_MODULE_FEE_BP = 350
 CURATED_MODULE_NEW_TREASURY_FEE_BP = 650
 CURATED_MODULE_MAX_DEPOSITS_PER_BLOCK = 150
 CURATED_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
+
+SDVT_MODULE_ID = 2
+SDVT_MODULE_NEW_TARGET_SHARE_BP = 430
+SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP = 444
+SDVT_MODULE_MODULE_FEE_BP = 800
+SDVT_MODULE_TREASURY_FEE_BP = 200
+SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK = 150
+SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 
 TRP_PERIOD_DURATION_MONTHS = 12
 TRP_NEW_LIMIT = 15_000_000 * 10**18
@@ -183,7 +189,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
     dg_items = [
         agent_forward([
-            # 1.1. change curated module
+            # 1.1. Change Curated Module (MODULE_ID = 1) module fee from 500 BP to 350 BP and Treasury fee from 500 BP to 650 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
             (
                 staking_router.address,
                 staking_router.updateStakingModule.encode_input(
@@ -198,7 +204,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ]),
         agent_forward([
-            # 1.2. raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+            # 1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
             (
                 staking_router.address,
                 staking_router.updateStakingModule.encode_input(
@@ -227,12 +233,12 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     ]
     
     dg_call_script = submit_proposals([
-        (dg_items, "Upgrade Lido Protocol to V3, raise SDVT stake share limit and reset Easy Track TRP limit")
+        (dg_items, "Upgrade Lido Protocol to change Curated Module fees, raise SDVT stake share limit and reset Easy Track TRP limit")
     ])
     
     vote_desc_items, call_script_items = zip(
         (
-            "1. Submit a Dual Governance proposal to upgrade Lido Protocol to V3, raise SDVT stake share limit and reset Easy Track TRP limit",
+            "1. Submit a Dual Governance proposal to change Curated Module fees, raise SDVT stake share limit and reset Easy Track TRP limit",
             dg_call_script[0]
         ),
         (
@@ -244,7 +250,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "1. Termporarily grant ADD_TOKEN_TO_ALLOWED_LIST_ROLE to Aragon Voting",
+            "3. Termporarily grant ADD_TOKEN_TO_ALLOWED_LIST_ROLE to Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e",
             (
                 allowed_tokens_registry.address, allowed_tokens_registry.grantRole.encode_input(
                     convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
@@ -253,11 +259,11 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "4343. TODO",
+            "4. Add sUSDS token 0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD to stablecoins Allowed Tokens Registry 0x4AC40c34f8992bb1e5E856A448792158022551ca",
             (allowed_tokens_registry.address, allowed_tokens_registry.addToken.encode_input(SUSDS_TOKEN))
         ),
         (
-            "3. Revoke ADD_TOKEN_TO_ALLOWED_LIST_ROLE from Aragon Voting",
+            "5. Revoke ADD_TOKEN_TO_ALLOWED_LIST_ROLE from Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e",
             (
                 allowed_tokens_registry.address, allowed_tokens_registry.revokeRole.encode_input(
                     convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
@@ -266,7 +272,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             )
         ),
         (
-            "3. TODO",
+            "6. Revoke CREATE_PAYMENTS_ROLE from Easy Track EVM Script Executor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Aragon Finance 0xB9E5CBB9CA5b0d659238807E84D0176930753d86",
             encode_permission_revoke(
                 target_app=FINANCE,
                 permission_name=CREATE_PAYMENTS_ROLE,
@@ -274,7 +280,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "4. TODO",
+            "7. Grant CREATE_PAYMENTS_ROLE to Easy Track EVM Script Executor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Aragon Finance 0xB9E5CBB9CA5b0d659238807E84D0176930753d86 with appended transfer limit of 2,000,000 sUSDS",
             encode_permission_grant_p(
                 target_app=FINANCE,
                 permission_name=CREATE_PAYMENTS_ROLE,
