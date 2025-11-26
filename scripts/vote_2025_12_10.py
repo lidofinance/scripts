@@ -2,16 +2,29 @@
 # Vote 2025_12_10
 
 === 1. DG PROPOPSAL ===
-I. raise SDVT stake share limit
-1.1. raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+I. Change Curated Module fees
+1.1. Change Curated Module (MODULE_ID = 1) module fee from 500 BP to 350 BP and Treasury fee from 500 BP to 650 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
 
-II. Reset Easy Track TRP limit
-1.2. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
-1.3. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
+II. Raise SDVT stake share limit
+1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+
+III. Reset Easy Track TRP limit
+# 1.3. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
+# 1.4. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
 
 === NON-DG ITEMS ===
-III. Transfer MATIC from Lido Treasury to Liquidity Observation Lab (LOL) Multisig
+IV. Transfer MATIC from Lido Treasury to Liquidity Observation Lab (LOL) Multisig
 2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Liquidity Observation Lab (LOL) Multisig 0x87D93d9B2C672bf9c9642d853a8682546a5012B5
+
+V. Add sUSDS to stablecoins Allowed Tokens Registry
+3. Termporarily grant ADD_TOKEN_TO_ALLOWED_LIST_ROLE to Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
+4. Add sUSDS token 0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD to stablecoins Allowed Tokens Registry 0x4AC40c34f8992bb1e5E856A448792158022551ca
+5. Revoke ADD_TOKEN_TO_ALLOWED_LIST_ROLE from Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
+
+VI. Add sUSDS transfer permission to Easy Track EVM Script Executor in Aragon Finance
+6. Revoke CREATE_PAYMENTS_ROLE from Easy Track EVM Script Executor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Aragon Finance 0xB9E5CBB9CA5b0d659238807E84D0176930753d86
+7. Grant CREATE_PAYMENTS_ROLE to Easy Track EVM Script Executor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Aragon Finance 0xB9E5CBB9CA5b0d659238807E84D0176930753d86 with appended transfer limit of 2,000,000 sUSDS
+
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
