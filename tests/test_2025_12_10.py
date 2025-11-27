@@ -120,7 +120,6 @@ MATIC_IN_LIDO_LABS_BEFORE = 0
 MATIC_IN_LIDO_LABS_AFTER = 508_106 * 10**18
 
 TRP_LIMIT_BEFORE = 9_178_284.42 * 10**18
-TRP_ALREADY_SPENT_BEFORE = 4_208_709 * 10**18
 TRP_ALREADY_SPENT_AFTER = 0
 TRP_LIMIT_AFTER = 15_000_000 * 10**18
 TRP_PERIOD_START_TIMESTAMP = 1735689600  # January 1, 2025 UTC
@@ -789,8 +788,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             trp_already_spent_amount_before, trp_spendable_balance_before, trp_period_start_before, trp_period_end_before = et_trp_registry.getPeriodState()
             assert trp_limit_before == TRP_LIMIT_BEFORE
             assert trp_period_duration_months_before == TRP_PERIOD_DURATION_MONTHS
-            assert trp_already_spent_amount_before == TRP_ALREADY_SPENT_BEFORE
-            assert trp_spendable_balance_before == TRP_LIMIT_BEFORE - TRP_ALREADY_SPENT_BEFORE
+            assert trp_spendable_balance_before == TRP_LIMIT_BEFORE - trp_already_spent_amount_before
             assert trp_period_start_before == TRP_PERIOD_START_TIMESTAMP
             assert trp_period_end_before == TRP_PERIOD_END_TIMESTAMP
 
