@@ -77,9 +77,15 @@ def create_and_enact_payment_motion(
     create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger)
 
     recievers_balance_after = [balance_of(reciever, token) for reciever in recievers]
+    recievers_total_amounts = {}
     for i in range(len(recievers)):
+        reciever_address = recievers[i].address
+        recievers_total_amounts[reciever_address] = recievers_total_amounts.get(reciever_address, 0) + transfer_amounts[i]
+    
+    for i in range(len(recievers)):
+        reciever_address = recievers[i].address
         assert almostEqWithDiff(
-            recievers_balance_after[i], recievers_balance_before[i] + transfer_amounts[i], STETH_ERROR_MARGIN_WEI
+            recievers_balance_after[i], recievers_balance_before[i] + recievers_total_amounts[reciever_address], STETH_ERROR_MARGIN_WEI
         )
 
     agent_balance_after = balance_of(agent, token)
