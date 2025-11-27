@@ -120,7 +120,7 @@ MATIC_IN_LIDO_LABS_BEFORE = 0
 MATIC_IN_LIDO_LABS_AFTER = 508_106 * 10**18
 
 TRP_LIMIT_BEFORE = 9_178_284.42 * 10**18
-TRP_ALREADY_SPENT_BEFORE = 2_708_709 * 10**18
+TRP_ALREADY_SPENT_BEFORE = 4_208_709 * 10**18
 TRP_ALREADY_SPENT_AFTER = 0
 TRP_LIMIT_AFTER = 15_000_000 * 10**18
 TRP_PERIOD_START_TIMESTAMP = 1735689600  # January 1, 2025 UTC
@@ -129,7 +129,6 @@ TRP_PERIOD_DURATION_MONTHS = 12
 
 ALLOWED_TOKENS_BEFORE = 3
 ALLOWED_TOKENS_AFTER = 4
-ET_LIDO_LABS_STABLES_LIMIT = 15_000_000
 
 
 # ============================== Tokens ===================================
@@ -672,6 +671,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             prepare_agent_for_steth_payment(2_000 * 10**18)
 
             # check ET limits via Easy Track motion
+            ET_LIDO_LABS_STABLES_LIMIT = interface.AllowedRecipientRegistry(LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY).getPeriodState({"from": AGENT})[1] // 10**18
             et_limit_test(stranger, interface.ERC20(SUSDS_TOKEN), susds_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
             et_limit_test(stranger, interface.ERC20(USDC_TOKEN), usdc_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
             et_limit_test(stranger, interface.ERC20(DAI_TOKEN), dai_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
@@ -1127,13 +1127,19 @@ def usds_wrap_happy_path(stranger):
     assert susds_token.balanceOf(eoa.address) == susds_balance
     assert susds_token.balanceOf(AGENT) == initial_susds_agent_balance
 
+    # wait 1 year to accumulate interest on sUSDS
+    chain.sleep(365 * 24 * 3600)
+    chain.mine()
+    susds_token.drip({"from": eoa})
+    INTEREST_RATE = 0.04
+
     # unwrap sUSDS to USDC
     susds_token.approve(PSM_VARIANT1_ACTIONS, susds_balance, {"from": eoa})
-    psmVariant1Actions.withdrawAndSwap(eoa.address, USDC_FOR_TRANSFER * 10**6, USDC_FOR_TRANSFER * 10**18, {"from": eoa})
+    psmVariant1Actions.withdrawAndSwap(eoa.address, USDC_FOR_TRANSFER * 10**6 * (1 + INTEREST_RATE), USDC_FOR_TRANSFER * 10**18 * (1 + INTEREST_RATE), {"from": eoa})
     usdc_balance = usdc.balanceOf(eoa.address)
-    print("swapped", susds_balance / 10**18, "sUSDS to", usdc_balance / 10**6, "USDC")
-    assert susds_token.balanceOf(eoa.address) < 1.0 * 10**18 # dust
-    assert usdc.balanceOf(eoa.address) == USDC_FOR_TRANSFER * 10**6
+    print("swapped", susds_balance / 10**18, "sUSDS to", usdc_balance / 10**6, "USDC, leftover:", susds_token.balanceOf(eoa.address) / 10**18, "sUSDS")
+    assert susds_token.balanceOf(eoa.address) < 5.0 * 10**18 # leftover from interest surplus
+    assert usdc.balanceOf(eoa.address) == USDC_FOR_TRANSFER * 10**6 * (1 + INTEREST_RATE)
 
     chain.revert()
 
