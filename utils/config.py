@@ -319,6 +319,18 @@ class ContractsLazyLoader:
         return interface.Accounting(ACCOUNTING)
 
     @property
+    def operator_grid(self) -> interface.OperatorGrid:
+        return interface.OperatorGrid(OPERATOR_GRID)
+
+    @property
+    def lazy_oracle(self) -> interface.LazyOracle:
+        return interface.LazyOracle(LAZY_ORACLE)
+
+    @property
+    def predeposit_guarantee(self) -> interface.PredepositGuarantee:
+        return interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
+
+    @property
     def lido_locator(self) -> interface.LidoLocator:
         return interface.LidoLocator(LIDO_LOCATOR)
 
