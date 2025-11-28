@@ -269,20 +269,26 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
     (report_tx, _) = oracle_report()
     # Note: why we use TransferShares event in this test - https://github.com/lidofinance/core/issues/1565
     # print(report_tx.events["TransferShares"])
-    module_index = 0
-    simple_dvt_index = 1
-    csm_index = 2
 
-    if report_tx.events["TransferShares"][module_index]["to"] == burner.address:
+    # zero index - mint to accounting contract, 1 index - module, 2 index - simple dvt, 3 index - csm
+    module_index = 1
+    simple_dvt_index = 2
+    csm_index = 3
+
+    if report_tx.events["TransferShares"][module_index-1]["to"] == burner.address:
         module_index += 1
         simple_dvt_index += 1
         csm_index += 1
 
     agent_index = module_index + 3
     assert report_tx.events["TransferShares"][module_index]["to"] == module_address
-    assert report_tx.events["TransferShares"][module_index]["from"] == ZERO_ADDRESS
+    assert report_tx.events["TransferShares"][module_index]["from"] == contracts.accounting.address
+    assert report_tx.events["TransferShares"][simple_dvt_index]["to"] == contracts.simple_dvt.address
+    assert report_tx.events["TransferShares"][simple_dvt_index]["from"] == contracts.accounting.address
+    assert report_tx.events["TransferShares"][csm_index]["to"] == contracts.csm.address
+    assert report_tx.events["TransferShares"][csm_index]["from"] == contracts.accounting.address
     assert report_tx.events["TransferShares"][agent_index]["to"] == contracts.agent
-    assert report_tx.events["TransferShares"][agent_index]["from"] == ZERO_ADDRESS
+    assert report_tx.events["TransferShares"][agent_index]["from"] == contracts.accounting.address
 
 
     # the staking modules ids starts from 1
