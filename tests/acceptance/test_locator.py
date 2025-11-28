@@ -44,7 +44,7 @@ def test_addresses(contract):
         contracts.oracle_report_sanity_checker,
         contracts.burner,
         contracts.withdrawal_queue,
-        "0x0000000000000000000000000000000000000000", # TODO contracts.postTokenRebaseReceiver,
+        contracts.token_rate_notifier,
         contracts.staking_router,
         contracts.vault_hub,
     )

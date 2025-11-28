@@ -12,7 +12,7 @@ from utils.test.tx_tracing_helpers import (
 from utils.evm_script import encode_call_script
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
-from utils.dual_governance import PROPOSAL_STATUS
+from utils.dual_governance import PROPOSAL_STATUS, wait_for_target_time_to_satisfy_time_constrains
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 
 
@@ -38,7 +38,8 @@ DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 EXPECTED_VOTE_ID = 194
 EXPECTED_DG_PROPOSAL_ID = 6
 EXPECTED_VOTE_EVENTS_COUNT = 10
-EXPECTED_DG_EVENTS_COUNT = 17
+EXPECTED_DG_EVENTS_COUNT = 18
+EXPECTED_DG_AGENT_EVENTS_COUNT = 17  # Events from Agent (excluding first DG submission event)
 IPFS_DESCRIPTION_HASH = "bafkreic4xuaowfowt7faxnngnzynv7biuo7guv4s4jrngngjzzxyz3up2i"
 
 
@@ -155,6 +156,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
             if timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == PROPOSAL_STATUS["scheduled"]:
                 chain.sleep(timelock.getAfterScheduleDelay() + 1)
+
+                wait_for_target_time_to_satisfy_time_constrains()
+
                 dg_tx: TransactionReceipt = timelock.execute(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
                 display_dg_events(dg_tx)
                 dg_events = group_dg_events_from_receipt(
@@ -162,7 +166,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     timelock=EMERGENCY_PROTECTED_TIMELOCK,
                     admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
                 )
-                assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_COUNT
+                assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_AGENT_EVENTS_COUNT
                 assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
 
                 # TODO validate all DG events
