@@ -25,6 +25,11 @@ VI. Add sUSDS transfer permission to Easy Track EVM Script Executor in Aragon Fi
 6. Revoke CREATE_PAYMENTS_ROLE from Easy Track EVM Script Executor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Aragon Finance 0xB9E5CBB9CA5b0d659238807E84D0176930753d86
 7. Grant CREATE_PAYMENTS_ROLE to Easy Track EVM Script Executor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Aragon Finance 0xB9E5CBB9CA5b0d659238807E84D0176930753d86 with appended transfer limit of 2,000,000 sUSDS
 
+VII. Add allowed recipients management factories for Stonks to Easy Track
+8. Add Stonks stETH AddAllowedRecipient Factory 0x8b18e9b7c17c20Ae2f4F825429e9b5e788194E22 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with addRecipient permission on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0
+9. Add Stonks stETH RemoveAllowedRecipient Factory 0x5F6Db5A060Ac5145Af3C5590a4E1eaB080A8143A to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with removeRecipient permission on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0
+10. Add Stonks stablecoins AddAllowedRecipient Factory 0x56bcff69e1d06e18C46B65C00D41B4ae82890184 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with addRecipient permission on Stonks stablecoins AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368
+11. Add Stonks stablecoins RemoveAllowedRecipient Factory 0x4C75070Aa6e7f89fd5Cb6Ce77544e9cB2AC585DD to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with removeRecipient permission on Stonks stablecoins AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
@@ -41,6 +46,7 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.dual_governance import submit_proposals
 from utils.agent import agent_forward
 from utils.permissions import encode_permission_revoke, encode_permission_grant_p
+from utils.easy_track import add_evmscript_factory, create_permissions
 from utils.allowed_recipients_registry import (
     unsafe_set_spent_amount,
     set_limit_parameters,
@@ -61,6 +67,14 @@ FINANCE = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
 ET_EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 STABLECOINS_ALLOWED_TOKENS_REGISTRY = "0x4AC40c34f8992bb1e5E856A448792158022551ca"
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
+
+STONKS_STETH_ADD_ALLOWED_RECIPIENT_FACTORY = "0x8b18e9b7c17c20Ae2f4F825429e9b5e788194E22"
+STONKS_STETH_REM_ALLOWED_RECIPIENT_FACTORY = "0x5F6Db5A060Ac5145Af3C5590a4E1eaB080A8143A"
+STONKS_STETH_ALLOWED_RECIPIENTS_REGISTRY = "0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0"
+
+STONKS_STABLECOINS_ADD_ALLOWED_RECIPIENT_FACTORY = "0x56bcff69e1d06e18C46B65C00D41B4ae82890184"
+STONKS_STABLECOINS_REM_ALLOWED_RECIPIENT_FACTORY = "0x4C75070Aa6e7f89fd5Cb6Ce77544e9cB2AC585DD"
+STONKS_STABLECOINS_ALLOWED_RECIPIENTS_REGISTRY = "0x3f0534CCcFb952470775C516DC2eff8396B8A368"
 
 
 # ============================== Roles ===================================
@@ -200,6 +214,9 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     stablecoins_allowed_tokens_registry = interface.AllowedTokensRegistry(STABLECOINS_ALLOWED_TOKENS_REGISTRY)
 
+    stonks_steth_allowed_recipients_registry = interface.AllowedRecipientRegistry(STONKS_STETH_ALLOWED_RECIPIENTS_REGISTRY)
+    stonks_stablescoints_allowed_recipients_registry = interface.AllowedRecipientRegistry(STONKS_STABLECOINS_ALLOWED_RECIPIENTS_REGISTRY)
+
     dg_items = [
         agent_forward([
             # 1.1. Change Curated Module (MODULE_ID = 1) module fee from 500 BP to 350 BP and Treasury fee from 500 BP to 650 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
@@ -299,6 +316,34 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
                 permission_name=CREATE_PAYMENTS_ROLE,
                 grant_to=ET_EVM_SCRIPT_EXECUTOR,
                 params=amount_limits(),
+            ),
+        ),
+        (
+            "8. Add Stonks stETH AddAllowedRecipient Factory 0x8b18e9b7c17c20Ae2f4F825429e9b5e788194E22 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with addRecipient permission on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0",
+            add_evmscript_factory(
+                factory=STONKS_STETH_ADD_ALLOWED_RECIPIENT_FACTORY,
+                permissions=create_permissions(stonks_steth_allowed_recipients_registry, "addRecipient"),
+            ),
+        ),
+        (
+            "9. Add Stonks stETH RemoveAllowedRecipient Factory 0x5F6Db5A060Ac5145Af3C5590a4E1eaB080A8143A to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with removeRecipient permission on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0",
+            add_evmscript_factory(
+                factory=STONKS_STETH_REM_ALLOWED_RECIPIENT_FACTORY,
+                permissions=create_permissions(stonks_steth_allowed_recipients_registry, "removeRecipient"),
+            ),
+        ),
+        (
+            "10. Add Stonks stablecoins AddAllowedRecipient Factory 0x56bcff69e1d06e18C46B65C00D41B4ae82890184 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with addRecipient permission on Stonks stablecoins AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368",
+            add_evmscript_factory(
+                factory=STONKS_STABLECOINS_ADD_ALLOWED_RECIPIENT_FACTORY,
+                permissions=create_permissions(stonks_stablescoints_allowed_recipients_registry, "addRecipient"),
+            ),
+        ),
+        (
+            "11. Add Stonks stablecoins RemoveAllowedRecipient Factory 0x4C75070Aa6e7f89fd5Cb6Ce77544e9cB2AC585DD to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with removeRecipient permission on Stonks stablecoins AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368",
+            add_evmscript_factory(
+                factory=STONKS_STABLECOINS_REM_ALLOWED_RECIPIENT_FACTORY,
+                permissions=create_permissions(stonks_stablescoints_allowed_recipients_registry, "removeRecipient"),
             ),
         ),
     )

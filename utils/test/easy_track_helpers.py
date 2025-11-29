@@ -146,26 +146,25 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
 
     assert not registry.isRecipientAllowed(recipient_candidate)
 
-    call_script_items = [
-        agent_forward(
-            [
-                (
-                    registry.address,
-                    registry.addRecipient.encode_input(recipient_candidate, title),
-                )
-            ]
+    vote_input = [
+        (
+            registry.address,
+            registry.addRecipient.encode_input(recipient_candidate, title),
         )
     ]
+
+    call_script_items = submit_proposals([([agent_forward(vote_input)], "")])
     vote_desc_items = ["Add recipient"]
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
 
     vote_id = create_vote(vote_items, {"from": ldo_holder})[0]
 
-    helpers.execute_vote(
+    vote_tx = helpers.execute_vote(
         vote_id=vote_id,
         accounts=accounts,
         dao_voting=dao_voting,
     )
+    process_proposals([vote_tx.events["ProposalSubmitted"][1]["proposalId"]])
 
     assert registry.isRecipientAllowed(recipient_candidate)
     assert len(registry.getAllowedRecipients()) == recipients_length_before + 1, "Wrong whitelist length"
