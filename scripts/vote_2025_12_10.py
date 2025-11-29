@@ -86,6 +86,8 @@ STONKS_STABLECOINS_ALLOWED_RECIPIENTS_REGISTRY = "0x3f0534CCcFb952470775C516DC2e
 # ============================== Roles ===================================
 CREATE_PAYMENTS_ROLE = "CREATE_PAYMENTS_ROLE"
 ADD_TOKEN_TO_ALLOWED_LIST_ROLE = "ADD_TOKEN_TO_ALLOWED_LIST_ROLE"
+ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE = "ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE"
+REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE = "REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE"
 
 
 # ============================== Tokens ===================================
@@ -270,7 +272,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             # 1.5 Grant ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0
             (
                 stonks_steth_allowed_recipients_registry.address, stonks_steth_allowed_recipients_registry.grantRole.encode_input(
-                    convert.to_uint(web3.keccak(text="ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE")),
+                    convert.to_uint(web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE)),
                     ET_EVM_SCRIPT_EXECUTOR,
                 )
             ),
@@ -279,7 +281,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             # 1.6 Grant ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Stonks Stablecoins AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368
             (
                 stonks_stablecoins_allowed_recipients_registry.address, stonks_stablecoins_allowed_recipients_registry.grantRole.encode_input(
-                    convert.to_uint(web3.keccak(text="ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE")),
+                    convert.to_uint(web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE)),
                     ET_EVM_SCRIPT_EXECUTOR,
                 )
             ),
@@ -288,7 +290,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             # 1.7 Grant REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0
             (
                 stonks_steth_allowed_recipients_registry.address, stonks_steth_allowed_recipients_registry.grantRole.encode_input(
-                    convert.to_uint(web3.keccak(text="REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE")),
+                    convert.to_uint(web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE)),
                     ET_EVM_SCRIPT_EXECUTOR,
                 )
             ),
@@ -297,7 +299,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             # 1.8 Grant REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Stonks Stablecoins AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368
             (
                 stonks_stablecoins_allowed_recipients_registry.address, stonks_stablecoins_allowed_recipients_registry.grantRole.encode_input(
-                    convert.to_uint(web3.keccak(text="REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE")),
+                    convert.to_uint(web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE)),
                     ET_EVM_SCRIPT_EXECUTOR,
                 )
             ),

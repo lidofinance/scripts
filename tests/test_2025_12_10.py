@@ -113,6 +113,8 @@ PSM_VARIANT1_ACTIONS = "0xd0A61F2963622e992e6534bde4D52fd0a89F39E0"
 CREATE_PAYMENTS_ROLE = "CREATE_PAYMENTS_ROLE"
 ADD_TOKEN_TO_ALLOWED_LIST_ROLE = "ADD_TOKEN_TO_ALLOWED_LIST_ROLE"
 REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE = "REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE"
+ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE = "ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE"
+REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE = "REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE"
 
 
 # ============================== Constants ===================================
@@ -406,7 +408,7 @@ def dual_governance_proposal_calls():
         agent_forward([
             (
                 stonks_steth_allowed_recipients_registry.address, stonks_steth_allowed_recipients_registry.grantRole.encode_input(
-                    convert.to_uint(web3.keccak(text="ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE")),
+                    convert.to_uint(web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE)),
                     ET_EVM_SCRIPT_EXECUTOR,
                 )
             ),
@@ -414,7 +416,7 @@ def dual_governance_proposal_calls():
         agent_forward([
             (
                 stonks_stablecoins_allowed_recipients_registry.address, stonks_stablecoins_allowed_recipients_registry.grantRole.encode_input(
-                    convert.to_uint(web3.keccak(text="ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE")),
+                    convert.to_uint(web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE)),
                     ET_EVM_SCRIPT_EXECUTOR,
                 )
             ),
@@ -422,7 +424,7 @@ def dual_governance_proposal_calls():
         agent_forward([
             (
                 stonks_steth_allowed_recipients_registry.address, stonks_steth_allowed_recipients_registry.grantRole.encode_input(
-                    convert.to_uint(web3.keccak(text="REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE")),
+                    convert.to_uint(web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE)),
                     ET_EVM_SCRIPT_EXECUTOR,
                 )
             ),
@@ -430,7 +432,7 @@ def dual_governance_proposal_calls():
         agent_forward([
             (
                 stonks_stablecoins_allowed_recipients_registry.address, stonks_stablecoins_allowed_recipients_registry.grantRole.encode_input(
-                    convert.to_uint(web3.keccak(text="REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE")),
+                    convert.to_uint(web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE)),
                     ET_EVM_SCRIPT_EXECUTOR,
                 )
             ),
@@ -909,6 +911,24 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert trp_period_start_before == TRP_PERIOD_START_TIMESTAMP
             assert trp_period_end_before == TRP_PERIOD_END_TIMESTAMP
 
+            # Items 1.5-1.8
+            assert not stonks_steth_allowed_recipients_registry.hasRole(
+                convert.to_uint(web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE)),
+                ET_EVM_SCRIPT_EXECUTOR
+            )
+            assert not stonks_stablecoins_allowed_recipients_registry.hasRole(
+                convert.to_uint(web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE)),
+                ET_EVM_SCRIPT_EXECUTOR
+            )
+            assert not stonks_steth_allowed_recipients_registry.hasRole(
+                convert.to_uint(web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE)),
+                ET_EVM_SCRIPT_EXECUTOR
+            )
+            assert not stonks_stablecoins_allowed_recipients_registry.hasRole(
+                convert.to_uint(web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE)),
+                ET_EVM_SCRIPT_EXECUTOR
+            )
+
 
             if details["status"] == PROPOSAL_STATUS["submitted"]:
                 chain.sleep(timelock.getAfterSubmitDelay() + 1)
@@ -962,6 +982,34 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     period_duration_month=TRP_PERIOD_DURATION_MONTHS,
                     period_start_timestamp=TRP_PERIOD_START_TIMESTAMP,
                     emitted_by=ET_TRP_REGISTRY,
+                )
+                validate_grant_role_event(
+                    events=dg_events[4],
+                    role=web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE).hex(),
+                    grant_to=ET_EVM_SCRIPT_EXECUTOR,
+                    sender=AGENT,
+                    emitted_by=STONKS_STETH_ALLOWED_RECIPIENTS_REGISTRY,
+                )
+                validate_grant_role_event(
+                    events=dg_events[5],
+                    role=web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE).hex(),
+                    grant_to=ET_EVM_SCRIPT_EXECUTOR,
+                    sender=AGENT,
+                    emitted_by=STONKS_STABLECOINS_ALLOWED_RECIPIENTS_REGISTRY,
+                )
+                validate_grant_role_event(
+                    events=dg_events[6],
+                    role=web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE).hex(),
+                    grant_to=ET_EVM_SCRIPT_EXECUTOR,
+                    sender=AGENT,
+                    emitted_by=STONKS_STETH_ALLOWED_RECIPIENTS_REGISTRY,
+                )
+                validate_grant_role_event(
+                    events=dg_events[7],
+                    role=web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE).hex(),
+                    grant_to=ET_EVM_SCRIPT_EXECUTOR,
+                    sender=AGENT,
+                    emitted_by=STONKS_STABLECOINS_ALLOWED_RECIPIENTS_REGISTRY,
                 )
 
         # =========================================================================
@@ -1028,6 +1076,25 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert trp_spendable_balance_after == TRP_LIMIT_AFTER - TRP_ALREADY_SPENT_AFTER
         assert trp_period_start_after == TRP_PERIOD_START_TIMESTAMP
         assert trp_period_end_after == TRP_PERIOD_END_TIMESTAMP
+
+        # Items 1.5-1.8
+        assert stonks_steth_allowed_recipients_registry.hasRole(
+            convert.to_uint(web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE)),
+            ET_EVM_SCRIPT_EXECUTOR
+        )
+        assert stonks_stablecoins_allowed_recipients_registry.hasRole(
+            convert.to_uint(web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE)),
+            ET_EVM_SCRIPT_EXECUTOR
+        )
+        assert stonks_steth_allowed_recipients_registry.hasRole(
+            convert.to_uint(web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE)),
+            ET_EVM_SCRIPT_EXECUTOR
+        )
+        assert stonks_stablecoins_allowed_recipients_registry.hasRole(
+            convert.to_uint(web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE)),
+            ET_EVM_SCRIPT_EXECUTOR
+        )
+
 
         # scenario tests for new factories
         chain.snapshot()
