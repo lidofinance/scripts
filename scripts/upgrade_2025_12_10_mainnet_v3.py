@@ -2,7 +2,24 @@
 # Vote 2025_12_10
 
 === 1. DG PROPOPSAL ===
-1. Lido V3 upgrade - stVaults
+1.1. Check DG voting enactment is within daily time window (14:00 UTC - 23:00 UTC)
+1.2. Call UpgradeTemplateV3.startUpgrade
+1.3. Upgrade LidoLocator implementation
+1.4. Grant Aragon APP_MANAGER_ROLE to the AGENT
+1.5. Set Lido implementation in Kernel
+1.6. Revoke Aragon APP_MANAGER_ROLE from the AGENT
+1.7. Revoke REQUEST_BURN_SHARES_ROLE from Lido
+1.8. Revoke REQUEST_BURN_SHARES_ROLE from Curated staking module
+1.9. Revoke REQUEST_BURN_SHARES_ROLE from SimpleDVT
+1.10. Revoke REQUEST_BURN_SHARES_ROLE from Community Staking Accounting
+1.11. Upgrade AccountingOracle implementation
+1.12. Revoke REPORT_REWARDS_MINTED_ROLE from Lido
+1.13. Grant REPORT_REWARDS_MINTED_ROLE to Accounting
+1.14. Grant OracleDaemonConfig's CONFIG_MANAGER_ROLE to Agent
+1.15. Set SLASHING_RESERVE_WE_RIGHT_SHIFT to 0x2000 at OracleDaemonConfig
+1.16. Set SLASHING_RESERVE_WE_LEFT_SHIFT to 0x2000 at OracleDaemonConfig
+1.17. Revoke OracleDaemonConfig's CONFIG_MANAGER_ROLE from Agent
+1.18. Call UpgradeTemplateV3.finishUpgrade
 
 === NON-DG ITEMS ===
 2. Add AlterTiersInOperatorGrid factory to EasyTrack (permissions: operatorGrid, alterTiers);
