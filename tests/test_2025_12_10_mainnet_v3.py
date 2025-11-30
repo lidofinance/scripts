@@ -358,6 +358,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     easy_track = interface.EasyTrack(EASYTRACK)
+    kernel = interface.Kernel(ARAGON_KERNEL)
+    acl = interface.ACL(ACL)
 
     vault_hub = interface.VaultHub(VAULT_HUB)
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
@@ -569,6 +571,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         report_rewards_minted_role = web3.keccak(text="REPORT_REWARDS_MINTED_ROLE")
         request_burn_shares_role = web3.keccak(text="REQUEST_BURN_SHARES_ROLE")
         config_manager_role = web3.keccak(text="CONFIG_MANAGER_ROLE")
+        app_manager_role = web3.keccak(text="APP_MANAGER_ROLE")
 
         details = timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)
         if details["status"] != PROPOSAL_STATUS["executed"]:
@@ -578,6 +581,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
             # Step 1.3: Check Lido Locator implementation initial state
             assert locator_impl_before != LIDO_LOCATOR_IMPL, "Locator implementation should be different before upgrade"
+
+            # Step 1.4. Grant Aragon APP_MANAGER_ROLE to the AGENT
+            assert not acl.hasPermission(AGENT, ARAGON_KERNEL, app_manager_role), "AGENT should not have APP_MANAGER_ROLE before upgrade"
+
+            # Step 1.5. Set Lido implementation in Kernel
+            assert not kernel.getApp(kernel.APP_BASES_NAMESPACE(), LIDO_APP_ID) == LIDO_IMPL, "Lido implementation should be different before upgrade"
 
             # Step 1.7. Revoke REQUEST_BURN_SHARES_ROLE from Lido
             assert old_burner.hasRole(request_burn_shares_role, STETH), "Old Burner should have REQUEST_BURN_SHARES_ROLE on Lido before upgrade"
@@ -640,6 +649,26 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # 1.3. Lido Locator upgrade events
                 validate_proxy_upgrade_event(dg_events[2], LIDO_LOCATOR_IMPL, emitted_by=lido_locator_proxy)
+
+                # 1.4. Grant Aragon APP_MANAGER_ROLE to the AGENT
+                assert 'SetPermission' in dg_events[3]
+                assert dg_events[3]['SetPermission'][0]['allowed'] is True
+                assert dg_events[3]['SetPermission'][0]['_emitted_by'] == ACL
+                assert dg_events[3]['SetPermission'][0]['entity'] == AGENT
+                assert dg_events[3]['SetPermission'][0]['role'] == app_manager_role.hex()
+
+                # 1.5. Set Lido implementation in Kernel
+                assert 'SetApp' in dg_events[4]
+                assert dg_events[4]['SetApp'][0]['appId'] == LIDO_APP_ID
+                assert dg_events[4]['SetApp'][0]['_emitted_by'] == ARAGON_KERNEL
+                assert dg_events[4]['SetApp'][0]['app'] == LIDO_IMPL
+
+                # 1.6. Revoke Aragon APP_MANAGER_ROLE from the AGENT
+                assert 'SetPermission' in dg_events[5]
+                assert dg_events[5]['SetPermission'][0]['allowed'] is False
+                assert dg_events[5]['SetPermission'][0]['_emitted_by'] == ACL
+                assert dg_events[5]['SetPermission'][0]['entity'] == AGENT
+                assert dg_events[5]['SetPermission'][0]['role'] == app_manager_role.hex()
 
                 # 1.7. Revoke REQUEST_BURN_SHARES_ROLE from Lido
                 validate_role_revoke_event(
@@ -725,6 +754,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         # Step 1.3: Validate Lido Locator implementation was updated
         assert get_ossifiable_proxy_impl(lido_locator_proxy) == LIDO_LOCATOR_IMPL, "Locator implementation should be updated to the new value"
+
+        # Step 1.5. Set Lido implementation in Kernel
+        assert kernel.getApp(kernel.APP_BASES_NAMESPACE(), LIDO_APP_ID) == LIDO_IMPL, "Lido implementation should be updated to the new value"
+
+        # Step 1.6. Revoke Aragon APP_MANAGER_ROLE from the AGENT
+        assert not acl.hasPermission(AGENT, ARAGON_KERNEL, app_manager_role), "AGENT should not have APP_MANAGER_ROLE after upgrade"
 
         # Step 1.7. Revoke REQUEST_BURN_SHARES_ROLE from Lido
         assert not old_burner.hasRole(request_burn_shares_role, STETH), "Old Burner should not have REQUEST_BURN_SHARES_ROLE on Lido after upgrade"
