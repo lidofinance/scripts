@@ -6,7 +6,7 @@ I. Change Curated Module fees
 1.1. Change Curated Module (MODULE_ID = 1) module fee from 500 BP to 350 BP and Treasury fee from 500 BP to 650 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
 
 II. Raise SDVT stake share limit
-1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 BP to 430 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
 
 III. Reset Easy Track TRP limit
 1.3. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
@@ -242,7 +242,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ]),
         agent_forward([
-            # 1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+            # 1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 BP to 430 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
             (
                 staking_router.address,
                 staking_router.updateStakingModule.encode_input(
