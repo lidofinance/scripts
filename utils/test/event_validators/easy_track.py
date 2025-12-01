@@ -13,9 +13,9 @@ class EVMScriptFactoryAdded(NamedTuple):
 def validate_evmscript_factory_added_event(
     event: EventDict,
     p: EVMScriptFactoryAdded,
-    _events_chain=["LogScriptCall", "EVMScriptFactoryAdded"],
-    emitted_by: str | None = None,
+    emitted_by: str,
 ):
+    _events_chain=["LogScriptCall", "EVMScriptFactoryAdded"]
     validate_events_chain([e.name for e in event], _events_chain)
 
     assert event.count("EVMScriptFactoryAdded") == 1

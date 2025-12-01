@@ -4,12 +4,18 @@ from typing import List, NamedTuple
 from brownie import chain, interface, reverts, accounts, ZERO_ADDRESS, convert, web3
 from brownie.network.transaction import TransactionReceipt
 from utils.permission_parameters import Param, SpecialArgumentID, encode_argument_value_if, ArgumentValue, Op
-from utils.test.easy_track_helpers import create_and_enact_payment_motion
+from utils.test.easy_track_helpers import (
+    create_and_enact_payment_motion,
+    create_and_enact_add_recipient_motion,
+    create_and_enact_remove_recipient_motion,
+    check_add_and_remove_recipient_with_voting,
+)
 from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
 from utils.evm_script import encode_call_script
 from utils.voting import find_metadata_by_vote_id
 from utils.agent import agent_forward
 from utils.ipfs import get_lido_vote_cid_from_str
+from utils.easy_track import create_permissions
 from utils.dual_governance import PROPOSAL_STATUS
 from utils.test.event_validators.allowed_tokens_registry import validate_add_token_event
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
@@ -38,6 +44,10 @@ from utils.test.event_validators.permission import (
     Permission,
     validate_permission_grantp_event,
     validate_permission_revoke_event,
+)
+from utils.test.event_validators.easy_track import (
+    validate_evmscript_factory_added_event,
+    EVMScriptFactoryAdded,
 )
 
 
@@ -75,10 +85,23 @@ LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY = "0x68267f3D310E9f0FF53a37c141c90B738E113
 LEGO_LDO_TRUSTED_CALLER = "0x12a43b049A7D330cB8aEAB5113032D18AE9a9030"
 LEGO_LDO_TOP_UP_ALLOWED_RECIPIENTS_FACTORY = "0x00caAeF11EC545B192f16313F53912E453c91458"
 LEGO_LDO_ALLOWED_RECIPIENTS_REGISTRY = "0x97615f72c3428A393d65A84A3ea6BBD9ad6C0D74"
+LEGO_LDO_SPENDABLE_BALANCE = 1_000_000 * 10**18
 
 GAS_SUPPLY_STETH_TRUSTED_CALLER = "0x5181d5D56Af4f823b96FE05f062D7a09761a5a53"
 GAS_SUPPLY_STETH_TOP_UP_ALLOWED_RECIPIENTS_FACTORY = "0x200dA0b6a9905A377CF8D469664C65dB267009d1"
 GAS_SUPPLY_STETH_ALLOWED_RECIPIENTS_REGISTRY = "0x49d1363016aA899bba09ae972a1BF200dDf8C55F"
+GAS_SUPPLY_STETH_SPENDABLE_BALANCE = 1_000 * 10**18
+
+STONKS_STETH_ADD_ALLOWED_RECIPIENT_FACTORY = "0x8b18e9b7c17c20Ae2f4F825429e9b5e788194E22"
+STONKS_STETH_REM_ALLOWED_RECIPIENT_FACTORY = "0x5F6Db5A060Ac5145Af3C5590a4E1eaB080A8143A"
+STONKS_STETH_ALLOWED_RECIPIENTS_REGISTRY = "0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0"
+STONKS_STETH_TOPUP_FACTORY = "0x6e04aED774B7c89BB43721AcDD7D03C872a51B69"
+STONKS_MS = "0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647"
+
+STONKS_STABLECOINS_ADD_ALLOWED_RECIPIENT_FACTORY = "0x56bcff69e1d06e18C46B65C00D41B4ae82890184"
+STONKS_STABLECOINS_REM_ALLOWED_RECIPIENT_FACTORY = "0x4C75070Aa6e7f89fd5Cb6Ce77544e9cB2AC585DD"
+STONKS_STABLECOINS_ALLOWED_RECIPIENTS_REGISTRY = "0x3f0534CCcFb952470775C516DC2eff8396B8A368"
+STONKS_STABLECOINS_TOPUP_FACTORY = "0x0d2aefA542aFa8d9D1Ec35376068B88042FEF5f6"
 
 LOL_MS = "0x87D93d9B2C672bf9c9642d853a8682546a5012B5"
 SDVT = "0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433"
@@ -90,6 +113,8 @@ PSM_VARIANT1_ACTIONS = "0xd0A61F2963622e992e6534bde4D52fd0a89F39E0"
 CREATE_PAYMENTS_ROLE = "CREATE_PAYMENTS_ROLE"
 ADD_TOKEN_TO_ALLOWED_LIST_ROLE = "ADD_TOKEN_TO_ALLOWED_LIST_ROLE"
 REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE = "REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE"
+ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE = "ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE"
+REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE = "REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE"
 
 
 # ============================== Constants ===================================
@@ -129,6 +154,9 @@ TRP_PERIOD_DURATION_MONTHS = 12
 ALLOWED_TOKENS_BEFORE = 3
 ALLOWED_TOKENS_AFTER = 4
 
+ET_FACTORIES_LEN_BEFORE = 33
+ET_FACTORIES_LEN_AFTER = ET_FACTORIES_LEN_BEFORE + 4
+
 
 # ============================== Tokens ===================================
 MATIC_TOKEN = "0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0"
@@ -144,8 +172,8 @@ DAI_TOKEN = "0x6b175474e89094c44da98b954eedeac495271d0f"
 # ============================== Voting ===================================
 EXPECTED_VOTE_ID = 194
 EXPECTED_DG_PROPOSAL_ID = 6
-EXPECTED_VOTE_EVENTS_COUNT = 7
-EXPECTED_DG_EVENTS_COUNT = 4
+EXPECTED_VOTE_EVENTS_COUNT = 11
+EXPECTED_DG_EVENTS_COUNT = 8
 IPFS_DESCRIPTION_HASH = "bafkreigs2dewxxu7rj6eifpxsqvib23nsiw2ywsmh3lhewyqlmyn46obnm"
 
 
@@ -335,6 +363,8 @@ def amount_limits_after() -> List[Param]:
 def dual_governance_proposal_calls():
 
     staking_router = interface.StakingRouter(STAKING_ROUTER)
+    stonks_steth_allowed_recipients_registry = interface.AllowedRecipientRegistry(STONKS_STETH_ALLOWED_RECIPIENTS_REGISTRY)
+    stonks_stablecoins_allowed_recipients_registry = interface.AllowedRecipientRegistry(STONKS_STABLECOINS_ALLOWED_RECIPIENTS_REGISTRY)
 
     dg_items = [
         agent_forward([
@@ -375,6 +405,38 @@ def dual_governance_proposal_calls():
                 registry_address=ET_TRP_REGISTRY,
             ),
         ]),
+        agent_forward([
+            (
+                stonks_steth_allowed_recipients_registry.address, stonks_steth_allowed_recipients_registry.grantRole.encode_input(
+                    convert.to_uint(web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE)),
+                    ET_EVM_SCRIPT_EXECUTOR,
+                )
+            ),
+        ]),
+        agent_forward([
+            (
+                stonks_stablecoins_allowed_recipients_registry.address, stonks_stablecoins_allowed_recipients_registry.grantRole.encode_input(
+                    convert.to_uint(web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE)),
+                    ET_EVM_SCRIPT_EXECUTOR,
+                )
+            ),
+        ]),
+        agent_forward([
+            (
+                stonks_steth_allowed_recipients_registry.address, stonks_steth_allowed_recipients_registry.grantRole.encode_input(
+                    convert.to_uint(web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE)),
+                    ET_EVM_SCRIPT_EXECUTOR,
+                )
+            ),
+        ]),
+        agent_forward([
+            (
+                stonks_stablecoins_allowed_recipients_registry.address, stonks_stablecoins_allowed_recipients_registry.grantRole.encode_input(
+                    convert.to_uint(web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE)),
+                    ET_EVM_SCRIPT_EXECUTOR,
+                )
+            ),
+        ]),
     ]
 
     # Convert each dg_item to the expected format
@@ -404,6 +466,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     et_trp_registry = interface.AllowedRecipientRegistry(ET_TRP_REGISTRY)
     acl = interface.ACL(ACL)
     stablecoins_allowed_tokens_registry = interface.AllowedTokensRegistry(STABLECOINS_ALLOWED_TOKENS_REGISTRY)
+    stonks_steth_allowed_recipients_registry = interface.AllowedRecipientRegistry(STONKS_STETH_ALLOWED_RECIPIENTS_REGISTRY)
+    stonks_stablecoins_allowed_recipients_registry = interface.AllowedRecipientRegistry(STONKS_STABLECOINS_ALLOWED_RECIPIENTS_REGISTRY)
+    easy_track = interface.EasyTrack(EASY_TRACK)
 
 
     # =========================================================================
@@ -470,6 +535,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert id == amount_limits_before()[i].id
             assert op == amount_limits_before()[i].op.value
             assert val == amount_limits_before()[i].value
+
+        # Items 8-11
+        et_factories_before = easy_track.getEVMScriptFactories()
+        assert len(et_factories_before) == ET_FACTORIES_LEN_BEFORE
+        assert STONKS_STETH_ADD_ALLOWED_RECIPIENT_FACTORY not in et_factories_before
+        assert STONKS_STETH_REM_ALLOWED_RECIPIENT_FACTORY not in et_factories_before
+        assert STONKS_STABLECOINS_ADD_ALLOWED_RECIPIENT_FACTORY not in et_factories_before
+        assert STONKS_STABLECOINS_REM_ALLOWED_RECIPIENT_FACTORY not in et_factories_before
 
 
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
@@ -592,6 +665,20 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             [convert.to_uint(ldo_limit_after.address), convert.to_uint(stranger.address), ldo_limit_after.limit + 1],
         ) 
 
+        # Items 8-11
+        et_factories_after = easy_track.getEVMScriptFactories()
+        assert len(et_factories_after) == ET_FACTORIES_LEN_AFTER
+        assert STONKS_STETH_ADD_ALLOWED_RECIPIENT_FACTORY in et_factories_after
+        assert STONKS_STETH_REM_ALLOWED_RECIPIENT_FACTORY in et_factories_after
+        assert STONKS_STABLECOINS_ADD_ALLOWED_RECIPIENT_FACTORY in et_factories_after
+        assert STONKS_STABLECOINS_REM_ALLOWED_RECIPIENT_FACTORY in et_factories_after
+
+        # scenario tests for new factories
+        chain.snapshot()
+        check_add_and_remove_recipient_with_voting(stonks_steth_allowed_recipients_registry, helpers, ldo_holder, voting)
+        check_add_and_remove_recipient_with_voting(stonks_stablecoins_allowed_recipients_registry, helpers, ldo_holder, voting)
+        chain.revert()
+
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
         if EXPECTED_DG_PROPOSAL_ID is not None:
@@ -603,7 +690,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 proposal_id=EXPECTED_DG_PROPOSAL_ID,
                 proposer=VOTING,
                 executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-                metadata="Upgrade Lido Protocol to change Curated Module fees, raise SDVT stake share limit and reset Easy Track TRP limit",
+                metadata="Change Curated Module fees, raise SDVT stake share limit, reset Easy Track TRP limit and grant Stonks allowed recipients management permissions to Easy Track EVM Script Executor",
                 proposal_calls=dual_governance_proposal_calls,
             )
 
@@ -656,6 +743,38 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 params=amount_limits_after(),
                 emitted_by=ACL,
             )
+            validate_evmscript_factory_added_event(
+                event=vote_events[7],
+                p=EVMScriptFactoryAdded(
+                    factory_addr=STONKS_STETH_ADD_ALLOWED_RECIPIENT_FACTORY,
+                    permissions=create_permissions(stonks_steth_allowed_recipients_registry, "addRecipient"),
+                ),
+                emitted_by=EASY_TRACK,
+            )
+            validate_evmscript_factory_added_event(
+                event=vote_events[8],
+                p=EVMScriptFactoryAdded(
+                    factory_addr=STONKS_STETH_REM_ALLOWED_RECIPIENT_FACTORY,
+                    permissions=create_permissions(stonks_steth_allowed_recipients_registry, "removeRecipient"),
+                ),
+                emitted_by=EASY_TRACK,
+            )
+            validate_evmscript_factory_added_event(
+                event=vote_events[9],
+                p=EVMScriptFactoryAdded(
+                    factory_addr=STONKS_STABLECOINS_ADD_ALLOWED_RECIPIENT_FACTORY,
+                    permissions=create_permissions(stonks_stablecoins_allowed_recipients_registry, "addRecipient"),
+                ),
+                emitted_by=EASY_TRACK,
+            )
+            validate_evmscript_factory_added_event(
+                event=vote_events[10],
+                p=EVMScriptFactoryAdded(
+                    factory_addr=STONKS_STABLECOINS_REM_ALLOWED_RECIPIENT_FACTORY,
+                    permissions=create_permissions(stonks_stablecoins_allowed_recipients_registry, "removeRecipient"),
+                ),
+                emitted_by=EASY_TRACK,
+            )
 
             # =======================================================================
             # =========================== Scenario tests ============================
@@ -675,8 +794,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             et_limit_test(stranger, interface.ERC20(USDC_TOKEN), usdc_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
             et_limit_test(stranger, interface.ERC20(DAI_TOKEN), dai_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
             et_limit_test(stranger, interface.ERC20(USDT_TOKEN), usdt_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
-            et_limit_test(stranger, interface.ERC20(LDO_TOKEN), ldo_limit_after.limit, 1_000_000 * 10**18, LEGO_LDO_TRUSTED_CALLER, LEGO_LDO_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
-            et_limit_test(stranger, interface.ERC20(STETH_TOKEN), steth_limit_after.limit, 1_000 * 10**18, GAS_SUPPLY_STETH_TRUSTED_CALLER, GAS_SUPPLY_STETH_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
+            et_limit_test(stranger, interface.ERC20(LDO_TOKEN), ldo_limit_after.limit, LEGO_LDO_SPENDABLE_BALANCE, LEGO_LDO_TRUSTED_CALLER, LEGO_LDO_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
+            et_limit_test(stranger, interface.ERC20(STETH_TOKEN), steth_limit_after.limit, GAS_SUPPLY_STETH_SPENDABLE_BALANCE, GAS_SUPPLY_STETH_TRUSTED_CALLER, GAS_SUPPLY_STETH_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
 
             # check Finance limits via Easy Track motion
             finance_limit_test(stranger, interface.ERC20(SUSDS_TOKEN), susds_limit_after.limit, 18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
@@ -792,6 +911,24 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert trp_period_start_before == TRP_PERIOD_START_TIMESTAMP
             assert trp_period_end_before == TRP_PERIOD_END_TIMESTAMP
 
+            # Items 1.5-1.8
+            assert not stonks_steth_allowed_recipients_registry.hasRole(
+                convert.to_uint(web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE)),
+                ET_EVM_SCRIPT_EXECUTOR
+            )
+            assert not stonks_stablecoins_allowed_recipients_registry.hasRole(
+                convert.to_uint(web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE)),
+                ET_EVM_SCRIPT_EXECUTOR
+            )
+            assert not stonks_steth_allowed_recipients_registry.hasRole(
+                convert.to_uint(web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE)),
+                ET_EVM_SCRIPT_EXECUTOR
+            )
+            assert not stonks_stablecoins_allowed_recipients_registry.hasRole(
+                convert.to_uint(web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE)),
+                ET_EVM_SCRIPT_EXECUTOR
+            )
+
 
             if details["status"] == PROPOSAL_STATUS["submitted"]:
                 chain.sleep(timelock.getAfterSubmitDelay() + 1)
@@ -845,6 +982,34 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     period_duration_month=TRP_PERIOD_DURATION_MONTHS,
                     period_start_timestamp=TRP_PERIOD_START_TIMESTAMP,
                     emitted_by=ET_TRP_REGISTRY,
+                )
+                validate_grant_role_event(
+                    events=dg_events[4],
+                    role=web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE).hex(),
+                    grant_to=ET_EVM_SCRIPT_EXECUTOR,
+                    sender=AGENT,
+                    emitted_by=STONKS_STETH_ALLOWED_RECIPIENTS_REGISTRY,
+                )
+                validate_grant_role_event(
+                    events=dg_events[5],
+                    role=web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE).hex(),
+                    grant_to=ET_EVM_SCRIPT_EXECUTOR,
+                    sender=AGENT,
+                    emitted_by=STONKS_STABLECOINS_ALLOWED_RECIPIENTS_REGISTRY,
+                )
+                validate_grant_role_event(
+                    events=dg_events[6],
+                    role=web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE).hex(),
+                    grant_to=ET_EVM_SCRIPT_EXECUTOR,
+                    sender=AGENT,
+                    emitted_by=STONKS_STETH_ALLOWED_RECIPIENTS_REGISTRY,
+                )
+                validate_grant_role_event(
+                    events=dg_events[7],
+                    role=web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE).hex(),
+                    grant_to=ET_EVM_SCRIPT_EXECUTOR,
+                    sender=AGENT,
+                    emitted_by=STONKS_STABLECOINS_ALLOWED_RECIPIENTS_REGISTRY,
                 )
 
         # =========================================================================
@@ -911,6 +1076,82 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert trp_spendable_balance_after == TRP_LIMIT_AFTER - TRP_ALREADY_SPENT_AFTER
         assert trp_period_start_after == TRP_PERIOD_START_TIMESTAMP
         assert trp_period_end_after == TRP_PERIOD_END_TIMESTAMP
+
+        # Items 1.5-1.8
+        assert stonks_steth_allowed_recipients_registry.hasRole(
+            convert.to_uint(web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE)),
+            ET_EVM_SCRIPT_EXECUTOR
+        )
+        assert stonks_stablecoins_allowed_recipients_registry.hasRole(
+            convert.to_uint(web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE)),
+            ET_EVM_SCRIPT_EXECUTOR
+        )
+        assert stonks_steth_allowed_recipients_registry.hasRole(
+            convert.to_uint(web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE)),
+            ET_EVM_SCRIPT_EXECUTOR
+        )
+        assert stonks_stablecoins_allowed_recipients_registry.hasRole(
+            convert.to_uint(web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE)),
+            ET_EVM_SCRIPT_EXECUTOR
+        )
+
+
+        # scenario tests for new factories
+        chain.snapshot()
+        create_and_enact_add_recipient_motion(
+            easy_track,
+            STONKS_MS,
+            stonks_steth_allowed_recipients_registry,
+            STONKS_STETH_ADD_ALLOWED_RECIPIENT_FACTORY,
+            stranger,
+            "New recipient",
+            ldo_holder,
+        )
+        create_and_enact_payment_motion(
+            easy_track,
+            STONKS_MS,
+            interface.AllowedRecipientRegistry(STONKS_STETH_TOPUP_FACTORY),
+            interface.Lido(STETH_TOKEN),
+            [stranger],
+            [10 * 10**18],
+            stranger,
+        )
+        create_and_enact_remove_recipient_motion(
+            easy_track,
+            STONKS_MS,
+            stonks_steth_allowed_recipients_registry,
+            STONKS_STETH_REM_ALLOWED_RECIPIENT_FACTORY,
+            stranger,
+            ldo_holder,
+        )
+
+        create_and_enact_add_recipient_motion(
+            easy_track,
+            STONKS_MS,
+            stonks_stablecoins_allowed_recipients_registry,
+            STONKS_STABLECOINS_ADD_ALLOWED_RECIPIENT_FACTORY,
+            stranger,
+            "New recipient",
+            ldo_holder,
+        )
+        create_and_enact_payment_motion(
+            easy_track,
+            STONKS_MS,
+            interface.AllowedRecipientRegistry(STONKS_STABLECOINS_TOPUP_FACTORY),
+            interface.ERC20(USDC_TOKEN),
+            [stranger],
+            [10 * 10**6],
+            stranger,
+        )
+        create_and_enact_remove_recipient_motion(
+            easy_track,
+            STONKS_MS,
+            stonks_stablecoins_allowed_recipients_registry,
+            STONKS_STABLECOINS_REM_ALLOWED_RECIPIENT_FACTORY,
+            stranger,
+            ldo_holder,
+        )
+        chain.revert()
 
         # scenraio test for TRP ET factory behavior after the vote
         trp_limit_test(stranger)
