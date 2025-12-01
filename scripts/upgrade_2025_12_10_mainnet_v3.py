@@ -2,8 +2,8 @@
 # Vote 2025_12_10
 
 === 1. DG PROPOPSAL ===
-1.1. Check DG voting enactment is within daily time window (14:00 UTC - 23:00 UTC)
-1.2. Call UpgradeTemplateV3.startUpgrade
+1.1. Ensure DG proposal execution is within daily time window (14:00 UTC - 23:00 UTC)
+1.2. Call V3Template.startUpgrade
 1.3. Upgrade LidoLocator implementation
 1.4. Grant Aragon APP_MANAGER_ROLE to the AGENT
 1.5. Set Lido implementation in Kernel
@@ -16,21 +16,21 @@
 1.12. Revoke REPORT_REWARDS_MINTED_ROLE from Lido
 1.13. Grant REPORT_REWARDS_MINTED_ROLE to Accounting
 1.14. Grant OracleDaemonConfig's CONFIG_MANAGER_ROLE to Agent
-1.15. Set SLASHING_RESERVE_WE_RIGHT_SHIFT to 0x2000 at OracleDaemonConfig
-1.16. Set SLASHING_RESERVE_WE_LEFT_SHIFT to 0x2000 at OracleDaemonConfig
+1.15. Set SLASHING_RESERVE_WE_RIGHT_SHIFT at OracleDaemonConfig
+1.16. Set SLASHING_RESERVE_WE_LEFT_SHIFT at OracleDaemonConfig
 1.17. Revoke OracleDaemonConfig's CONFIG_MANAGER_ROLE from Agent
-1.18. Call UpgradeTemplateV3.finishUpgrade
+1.18. Call V3Template.finishUpgrade
 
 === NON-DG ITEMS ===
-2. Add AlterTiersInOperatorGrid factory to EasyTrack (permissions: operatorGrid, alterTiers);
-3. Add RegisterGroupsInOperatorGrid factory to EasyTrack (permissions: operatorGrid, registerGroup + registerTiers);
-4. Add RegisterTiersInOperatorGrid factory to EasyTrack (permissions: operatorGrid, registerTiers);
-5. Add UpdateGroupsShareLimitInOperatorGrid factory to EasyTrack (permissions: operatorGrid, updateGroupShareLimit);
-6. Add SetJailStatusInOperatorGrid factory to EasyTrack (permissions: vaultsAdapter, setVaultJailStatus);
-7. Add UpdateVaultsFeesInOperatorGrid factory to EasyTrack (permissions: vaultsAdapter, updateVaultFees);
-8. Add ForceValidatorExitsInVaultHub factory to EasyTrack (permissions: vaultsAdapter, forceValidatorExit);
-9. Add SetLiabilitySharesTargetInVaultHub factory to EasyTrack (permissions: vaultsAdapter, setLiabilitySharesTarget);
-10. Add SocializeBadDebtInVaultHub factory to EasyTrack (permissions: vaultsAdapter, socializeBadDebt).
+2. Add AlterTiersInOperatorGrid factory to Easy Track (permissions: operatorGrid, alterTiers)
+3. Add RegisterGroupsInOperatorGrid factory to Easy Track (permissions: operatorGrid, registerGroup + registerTiers)
+4. Add RegisterTiersInOperatorGrid factory to Easy Track (permissions: operatorGrid, registerTiers)
+5. Add UpdateGroupsShareLimitInOperatorGrid factory to Easy Track (permissions: operatorGrid, updateGroupShareLimit)
+6. Add SetJailStatusInOperatorGrid factory to Easy Track (permissions: vaultsAdapter, setVaultJailStatus)
+7. Add UpdateVaultsFeesInOperatorGrid factory to Easy Track (permissions: vaultsAdapter, updateVaultFees)
+8. Add ForceValidatorExitsInVaultHub factory to Easy Track (permissions: vaultsAdapter, forceValidatorExit)
+9. Add SetLiabilitySharesTargetInVaultHub factory to Easy Track (permissions: vaultsAdapter, setLiabilitySharesTarget)
+10. Add SocializeBadDebtInVaultHub factory to Easy Track (permissions: vaultsAdapter, socializeBadDebt)
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """

@@ -191,7 +191,7 @@ def dual_governance_proposal_calls():
     staking_router = interface.StakingRouter(STAKING_ROUTER)
 
     dg_items = [
-        # 1.1. Check DG voting enactment is within daily time window (14:00 UTC - 23:00 UTC)
+        # 1.1. Ensure DG proposal execution is within daily time window (14:00 UTC - 23:00 UTC)
         (
             DUAL_GOVERNANCE_TIME_CONSTRAINTS,
             interface.TimeConstraints(DUAL_GOVERNANCE_TIME_CONSTRAINTS).checkTimeWithinDayTimeAndEmit.encode_input(
@@ -200,7 +200,7 @@ def dual_governance_proposal_calls():
             ),
         ),
 
-        # 1.2. Call UpgradeTemplateV3.startUpgrade
+        # 1.2. Call V3Template.startUpgrade
         agent_forward([
             (upgradeTemplate.address, upgradeTemplate.startUpgrade.encode_input())
         ]),
@@ -329,7 +329,7 @@ def dual_governance_proposal_calls():
             )
         ]),
 
-        # 1.18. Call UpgradeTemplateV3.finishUpgrade
+        # 1.18. Call V3Template.finishUpgrade
         agent_forward([
             (upgradeTemplate.address, upgradeTemplate.finishUpgrade.encode_input())
         ]),
@@ -752,7 +752,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # ==================== After DG proposal executed checks ==================
         # =========================================================================
 
-        # Step 1.3: Validate Lido Locator implementation was updated
+        # Step 1.3: Upgrade LidoLocator implementation
         assert get_ossifiable_proxy_impl(lido_locator_proxy) == LIDO_LOCATOR_IMPL, "Locator implementation should be updated to the new value"
 
         # Step 1.5. Set Lido implementation in Kernel
@@ -773,7 +773,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # Step 1.10. Revoke REQUEST_BURN_SHARES_ROLE from Community Staking Accounting
         assert not old_burner.hasRole(request_burn_shares_role, CSM_ACCOUNTING), "Old Burner should not have REQUEST_BURN_SHARES_ROLE on Community Staking Accounting after upgrade"
 
-        # Step 1.11: Validate Accounting Oracle implementation was updated
+        # Step 1.11: Upgrade AccountingOracle implementation
         assert get_ossifiable_proxy_impl(accounting_oracle_proxy) == ACCOUNTING_ORACLE_IMPL, "Accounting Oracle implementation should be updated to the new value"
 
         # Step 1.12. Revoke REPORT_REWARDS_MINTED_ROLE from Lido
