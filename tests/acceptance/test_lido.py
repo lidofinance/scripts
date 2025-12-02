@@ -63,7 +63,10 @@ def test_petrified():
     with reverts("INIT_ALREADY_INITIALIZED"):
         impl.initialize(contracts.lido_locator, contracts.eip712_steth, {"from": contracts.voting})
 
-    with reverts("NOT_INITIALIZED"): # TODO: UNEXPECTED_CONTRACT_VERSION
+    # For petrified implementation, hasInitialized() returns false because
+    # AragonApp (LIDO) sets initializationBlock to PETRIFIED_BLOCK = uint256(-1)
+    # and hasInitialized() requires getBlockNumber() >= initializationBlock.
+    with reverts("NOT_INITIALIZED"):
         impl.finalizeUpgrade_v3(contracts.burner, [contracts.eip712_steth], 0, {"from": contracts.voting})
 
 

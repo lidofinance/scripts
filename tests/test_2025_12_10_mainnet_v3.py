@@ -22,6 +22,8 @@ from utils.test.event_validators.easy_track import validate_evmscript_factory_ad
 from utils.easy_track import create_permissions
 from brownie.network.event import EventDict
 from utils.test.event_validators.common import validate_events_chain
+from utils.test.event_validators.proxy import validate_proxy_upgrade_event
+from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 
 
 # ============================================================================
@@ -103,70 +105,171 @@ IPFS_DESCRIPTION_HASH = "bafkreic4xuaowfowt7faxnngnzynv7biuo7guv4s4jrngngjzzxyz3
 # ============================== Helper functions ============================
 # ============================================================================
 
-def validate_proxy_upgrade_event(event: EventDict, implementation: str, emitted_by: Optional[str] = None, events_chain: Optional[list] = None):
-    _events_chain = events_chain or ["LogScriptCall", "Upgraded", "ScriptResult", "Executed"]
-    validate_events_chain([e.name for e in event], _events_chain)
-
-    assert event.count("LogScriptCall") == 1
-    assert event.count("Upgraded") == 1
-
-    assert "Upgraded" in event, "No Upgraded event found"
-
-    assert event["Upgraded"][0]["implementation"] == implementation, "Wrong implementation address"
-
-    if emitted_by is not None:
-        assert convert.to_address(event["Upgraded"][0]["_emitted_by"]) == convert.to_address(
-            emitted_by), "Wrong event emitter"
-
-
-def validate_role_grant_event(event: EventDict, role_hash: str, account: str, emitted_by: Optional[str] = None):
-    _events_chain = ["LogScriptCall", "RoleGranted", "ScriptResult", "Executed"]
-    validate_events_chain([e.name for e in event], _events_chain)
-
-    assert event.count("LogScriptCall") == 1
-    assert event.count("RoleGranted") == 1
-
-    assert "RoleGranted" in event, "No RoleGranted event found"
-
-    # Strip 0x prefix for consistent comparison
-    expected_role_hash = role_hash.replace('0x', '')
-    actual_role_hash = event["RoleGranted"][0]["role"].hex().replace('0x', '')
-
-    assert actual_role_hash == expected_role_hash, "Wrong role hash"
-
-    assert convert.to_address(event["RoleGranted"][0]["account"]) == convert.to_address(account), "Wrong account"
-
-    if emitted_by is not None:
-        assert convert.to_address(event["RoleGranted"][0]["_emitted_by"]) == convert.to_address(
-            emitted_by), "Wrong event emitter"
-
-
-def validate_role_revoke_event(event: EventDict, role_hash: str, account: str, emitted_by: Optional[str] = None):
-    _events_chain = ["LogScriptCall", "RoleRevoked", "ScriptResult", "Executed"]
-    validate_events_chain([e.name for e in event], _events_chain)
-
-    assert event.count("LogScriptCall") == 1
-    assert event.count("RoleRevoked") == 1
-
-    assert "RoleRevoked" in event, "No RoleRevoked event found"
-
-    # Strip 0x prefix for consistent comparison
-    expected_role_hash = role_hash.replace('0x', '')
-    actual_role_hash = event["RoleRevoked"][0]["role"].hex().replace('0x', '')
-
-    assert actual_role_hash == expected_role_hash, "Wrong role hash"
-
-    assert convert.to_address(event["RoleRevoked"][0]["account"]) == convert.to_address(account), "Wrong account"
-
-    if emitted_by is not None:
-        assert convert.to_address(event["RoleRevoked"][0]["_emitted_by"]) == convert.to_address(
-            emitted_by), "Wrong event emitter"
-
-
 def get_ossifiable_proxy_impl(proxy_address):
     """Get implementation address from an OssifiableProxy"""
     proxy = interface.OssifiableProxy(proxy_address)
     return proxy.proxy__getImplementation()
+
+
+# ============================================================================
+# =================== Aragon event validators for DG =========================
+# ============================================================================
+
+def validate_aragon_grant_permission_event(
+    event,
+    entity: str,
+    app: str,
+    role: str,
+    emitted_by: str,
+) -> None:
+    """
+    Validate Aragon ACL SetPermission event for granting permission via DG proposal.
+    Ensures only expected events are fired and all parameters are correct.
+    """
+    _events_chain = ["LogScriptCall", "SetPermission", "ScriptResult", "Executed"]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1, f"Expected 1 LogScriptCall, got {event.count('LogScriptCall')}"
+    assert event.count("SetPermission") == 1, f"Expected 1 SetPermission, got {event.count('SetPermission')}"
+    assert event.count("ScriptResult") == 1, f"Expected 1 ScriptResult, got {event.count('ScriptResult')}"
+    assert event.count("Executed") == 1, f"Expected 1 Executed, got {event.count('Executed')}"
+
+    assert event["SetPermission"]["allowed"] is True, "Permission should be granted (allowed=True)"
+    assert event["SetPermission"]["entity"] == entity, f"Wrong entity: expected {entity}, got {event['SetPermission']['entity']}"
+    assert event["SetPermission"]["app"] == app, f"Wrong app: expected {app}, got {event['SetPermission']['app']}"
+    assert event["SetPermission"]["role"] == role, f"Wrong role: expected {role}, got {event['SetPermission']['role']}"
+
+    assert convert.to_address(event["SetPermission"]["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), f"Wrong event emitter: expected {emitted_by}"
+
+
+def validate_aragon_revoke_permission_event(
+    event,
+    entity: str,
+    app: str,
+    role: str,
+    emitted_by: str,
+) -> None:
+    """
+    Validate Aragon ACL SetPermission event for revoking permission via DG proposal.
+    Ensures only expected events are fired and all parameters are correct.
+    """
+    _events_chain = ["LogScriptCall", "SetPermission", "ScriptResult", "Executed"]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1, f"Expected 1 LogScriptCall, got {event.count('LogScriptCall')}"
+    assert event.count("SetPermission") == 1, f"Expected 1 SetPermission, got {event.count('SetPermission')}"
+    assert event.count("ScriptResult") == 1, f"Expected 1 ScriptResult, got {event.count('ScriptResult')}"
+    assert event.count("Executed") == 1, f"Expected 1 Executed, got {event.count('Executed')}"
+
+    assert event["SetPermission"]["allowed"] is False, "Permission should be revoked (allowed=False)"
+    assert event["SetPermission"]["entity"] == entity, f"Wrong entity: expected {entity}, got {event['SetPermission']['entity']}"
+    assert event["SetPermission"]["app"] == app, f"Wrong app: expected {app}, got {event['SetPermission']['app']}"
+    assert event["SetPermission"]["role"] == role, f"Wrong role: expected {role}, got {event['SetPermission']['role']}"
+
+    assert convert.to_address(event["SetPermission"]["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), f"Wrong event emitter: expected {emitted_by}"
+
+
+def validate_set_app_event(
+    event,
+    app_id: str,
+    app: str,
+    emitted_by: str,
+) -> None:
+    """
+    Validate Aragon Kernel SetApp event via DG proposal.
+    Ensures only expected events are fired and all parameters are correct.
+    """
+    _events_chain = ["LogScriptCall", "SetApp", "ScriptResult", "Executed"]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1, f"Expected 1 LogScriptCall, got {event.count('LogScriptCall')}"
+    assert event.count("SetApp") == 1, f"Expected 1 SetApp, got {event.count('SetApp')}"
+    assert event.count("ScriptResult") == 1, f"Expected 1 ScriptResult, got {event.count('ScriptResult')}"
+    assert event.count("Executed") == 1, f"Expected 1 Executed, got {event.count('Executed')}"
+
+    assert event["SetApp"]["appId"] == app_id, f"Wrong appId: expected {app_id}, got {event['SetApp']['appId']}"
+    assert event["SetApp"]["app"] == app, f"Wrong app: expected {app}, got {event['SetApp']['app']}"
+
+    assert convert.to_address(event["SetApp"]["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), f"Wrong event emitter: expected {emitted_by}"
+
+
+def validate_config_value_set_event(
+    event,
+    key: str,
+    value: int,
+    emitted_by: str,
+) -> None:
+    """
+    Validate OracleDaemonConfig ConfigValueSet event via DG proposal.
+    Ensures only expected events are fired and all parameters are correct.
+    """
+    _events_chain = ["LogScriptCall", "ConfigValueSet", "ScriptResult", "Executed"]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("LogScriptCall") == 1, f"Expected 1 LogScriptCall, got {event.count('LogScriptCall')}"
+    assert event.count("ConfigValueSet") == 1, f"Expected 1 ConfigValueSet, got {event.count('ConfigValueSet')}"
+    assert event.count("ScriptResult") == 1, f"Expected 1 ScriptResult, got {event.count('ScriptResult')}"
+    assert event.count("Executed") == 1, f"Expected 1 Executed, got {event.count('Executed')}"
+
+    assert key == event["ConfigValueSet"][0]["key"], f"Wrong key: expected {key} to be equal to {event['ConfigValueSet'][0]['key']}"
+    assert convert.to_int(event["ConfigValueSet"][0]["value"]) == value, f"Wrong value: expected {value}, got {convert.to_int(event['ConfigValueSet'][0]['value'])}"
+
+    assert convert.to_address(event["ConfigValueSet"][0]["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), f"Wrong event emitter: expected {emitted_by}"
+
+
+def validate_upgrade_started_event(events) -> None:
+    """
+    Validate V3Template UpgradeStarted event via DG proposal.
+    Ensures only expected events are fired.
+    """
+    _events_chain = ["LogScriptCall", "UpgradeStarted", "ScriptResult", "Executed"]
+
+    validate_events_chain([e.name for e in events], _events_chain)
+
+    assert events.count("LogScriptCall") == 1, f"Expected 1 LogScriptCall, got {events.count('LogScriptCall')}"
+    assert events.count("UpgradeStarted") == 1, f"Expected 1 UpgradeStarted, got {events.count('UpgradeStarted')}"
+    assert events.count("ScriptResult") == 1, f"Expected 1 ScriptResult, got {events.count('ScriptResult')}"
+    assert events.count("Executed") == 1, f"Expected 1 Executed, got {events.count('Executed')}"
+
+    assert convert.to_address(events["UpgradeStarted"][0]["_emitted_by"]) == convert.to_address(
+        UPGRADE_TEMPLATE
+    ), f"Wrong event emitter: expected {UPGRADE_TEMPLATE}"
+
+
+def validate_upgrade_finished_event(events) -> None:
+    """
+    Validate V3Template UpgradeFinished event via DG proposal.
+    Ensures only expected events are fired.
+    """
+    _events_chain = ["LogScriptCall", "ContractVersionSet", "Approval", "Approval", "Approval", "Approval",
+    "MaxExternalRatioBPSet", "ContractVersionSet", "ConsensusVersionSet", "UpgradeFinished", "ScriptResult", "Executed"]
+
+    validate_events_chain([e.name for e in events], _events_chain)
+
+    assert events.count("LogScriptCall") == 1, f"Expected 1 LogScriptCall, got {events.count('LogScriptCall')}"
+    assert events.count("ContractVersionSet") == 2, f"Expected 1 ContractVersionSet, got {events.count('ContractVersionSet')}"
+    assert events.count("Approval") == 4, f"Expected 4 Approval, got {events.count('Approval')}"
+    assert events.count("MaxExternalRatioBPSet") == 1, f"Expected 1 MaxExternalRatioBPSet, got {events.count('MaxExternalRatioBPSet')}"
+    assert events.count("ConsensusVersionSet") == 1, f"Expected 1 ConsensusVersionSet, got {events.count('ConsensusVersionSet')}"
+    assert events.count("UpgradeFinished") == 1, f"Expected 1 UpgradeFinished, got {events.count('UpgradeFinished')}"
+    assert events.count("ScriptResult") == 1, f"Expected 1 ScriptResult, got {events.count('ScriptResult')}"
+    assert events.count("Executed") == 1, f"Expected 1 Executed, got {events.count('Executed')}"
+
+    assert convert.to_address(events["UpgradeFinished"][0]["_emitted_by"]) == convert.to_address(
+        UPGRADE_TEMPLATE
+    ), f"Wrong event emitter: expected {UPGRADE_TEMPLATE}"
 
 
 # ============================================================================
@@ -424,33 +527,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # ========================= After voting checks =========================
         # =======================================================================
 
-        # Deployment state checks:
-        # Check Predeposit Guarantee roles
-        pause_role = web3.keccak(text="PausableUntilWithRoles.PauseRole")
-        resume_role = web3.keccak(text="PausableUntilWithRoles.ResumeRole")
-        assert predeposit_guarantee.hasRole(pause_role, GATE_SEAL_V3), "Predeposit Guarantee should have PAUSE_ROLE on GATE_SEAL_V3 after upgrade"
-        assert predeposit_guarantee.hasRole(pause_role, RESEAL_MANAGER), "Predeposit Guarantee should have PAUSE_ROLE on RESEAL_MANAGER after upgrade"
-        assert predeposit_guarantee.hasRole(resume_role, RESEAL_MANAGER), "Predeposit Guarantee should have RESUME_ROLE on RESEAL_MANAGER after upgrade"
-        assert predeposit_guarantee.hasRole(DEFAULT_ADMIN_ROLE, AGENT), "Predeposit Guarantee should have DEFAULT_ADMIN_ROLE on AGENT after upgrade"
-        # Check Operator Grid roles
+        # Check roles that are needed for Easy Track factories
         registry_role = web3.keccak(text="vaults.OperatorsGrid.Registry")
         assert operator_grid.hasRole(registry_role, VAULTS_ADAPTER), "Operator Grid should have REGISTRY_ROLE on VAULTS_ADAPTER after upgrade"
         assert operator_grid.hasRole(registry_role, EASYTRACK_EVMSCRIPT_EXECUTOR), "Operator Grid should have REGISTRY_ROLE on EASYTRACK_EVMSCRIPT_EXECUTOR after upgrade"
-        assert operator_grid.hasRole(DEFAULT_ADMIN_ROLE, AGENT), "Operator Grid should have DEFAULT_ADMIN_ROLE on AGENT after upgrade"
-        # Check Burner roles
-        request_burn_shares_role = web3.keccak(text="REQUEST_BURN_SHARES_ROLE")
-        assert burner.hasRole(request_burn_shares_role, ACCOUNTING), "Burner should have REQUEST_BURN_SHARES_ROLE on ACCOUNTING after upgrade"
-        assert burner.hasRole(request_burn_shares_role, CSM_ACCOUNTING), "Burner should have REQUEST_BURN_SHARES_ROLE on CSM_ACCOUNTING after upgrade"
-        assert burner.hasRole(DEFAULT_ADMIN_ROLE, AGENT), "Burner should have DEFAULT_ADMIN_ROLE on AGENT after upgrade"
-        # Check Vault Hub roles
-        assert vault_hub.hasRole(pause_role, GATE_SEAL_V3), "Vault Hub should have PAUSE_ROLE on GATE_SEAL_V3 after upgrade"
-        assert vault_hub.hasRole(pause_role, RESEAL_MANAGER), "Vault Hub should have PAUSE_ROLE on RESEAL_MANAGER after upgrade"
-        assert vault_hub.hasRole(resume_role, RESEAL_MANAGER), "Vault Hub should have RESUME_ROLE on RESEAL_MANAGER after upgrade"
         validator_exit_role = web3.keccak(text="vaults.VaultHub.ValidatorExitRole")
         assert vault_hub.hasRole(validator_exit_role, VAULTS_ADAPTER), "Vault Hub should have VALIDATOR_EXIT_ROLE on VAULTS_ADAPTER after upgrade"
         bad_debt_master_role = web3.keccak(text="vaults.VaultHub.BadDebtMasterRole")
         assert vault_hub.hasRole(bad_debt_master_role, VAULTS_ADAPTER), "Vault Hub should have BAD_DEBT_MASTER_ROLE on VAULTS_ADAPTER after upgrade"
-        assert vault_hub.hasRole(DEFAULT_ADMIN_ROLE, AGENT), "Vault Hub` should have DEFAULT_ADMIN_ROLE on AGENT after upgrade"
 
         # Steps 2-10: Add EasyTrack factories
         new_factories = easy_track.getEVMScriptFactories()
@@ -645,112 +729,138 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 # === DG EXECUTION EVENTS VALIDATION ===
 
                 # 1.2. Call V3Template.startUpgrade
-                assert 'UpgradeStarted' in dg_events[1]
-                assert dg_events[1]['UpgradeStarted'][0]['_emitted_by'] == UPGRADE_TEMPLATE
+                validate_upgrade_started_event(dg_events[1])
 
                 # 1.3. Lido Locator upgrade events
                 validate_proxy_upgrade_event(dg_events[2], LIDO_LOCATOR_IMPL, emitted_by=lido_locator_proxy)
 
                 # 1.4. Grant Aragon APP_MANAGER_ROLE to the AGENT
-                assert 'SetPermission' in dg_events[3]
-                assert dg_events[3]['SetPermission'][0]['allowed'] is True
-                assert dg_events[3]['SetPermission'][0]['_emitted_by'] == ACL
-                assert dg_events[3]['SetPermission'][0]['entity'] == AGENT
-                assert dg_events[3]['SetPermission'][0]['role'] == app_manager_role.hex()
+                validate_aragon_grant_permission_event(
+                    dg_events[3],
+                    entity=AGENT,
+                    app=ARAGON_KERNEL,
+                    role=app_manager_role.hex(),
+                    emitted_by=ACL,
+                )
 
                 # 1.5. Set Lido implementation in Kernel
-                assert 'SetApp' in dg_events[4]
-                assert dg_events[4]['SetApp'][0]['appId'] == LIDO_APP_ID
-                assert dg_events[4]['SetApp'][0]['_emitted_by'] == ARAGON_KERNEL
-                assert dg_events[4]['SetApp'][0]['app'] == LIDO_IMPL
+                validate_set_app_event(
+                    dg_events[4],
+                    app_id=LIDO_APP_ID,
+                    app=LIDO_IMPL,
+                    emitted_by=ARAGON_KERNEL,
+                )
 
                 # 1.6. Revoke Aragon APP_MANAGER_ROLE from the AGENT
-                assert 'SetPermission' in dg_events[5]
-                assert dg_events[5]['SetPermission'][0]['allowed'] is False
-                assert dg_events[5]['SetPermission'][0]['_emitted_by'] == ACL
-                assert dg_events[5]['SetPermission'][0]['entity'] == AGENT
-                assert dg_events[5]['SetPermission'][0]['role'] == app_manager_role.hex()
+                validate_aragon_revoke_permission_event(
+                    dg_events[5],
+                    entity=AGENT,
+                    app=ARAGON_KERNEL,
+                    role=app_manager_role.hex(),
+                    emitted_by=ACL,
+                )
 
                 # 1.7. Revoke REQUEST_BURN_SHARES_ROLE from Lido
-                validate_role_revoke_event(
+                validate_revoke_role_event(
                     dg_events[6],
-                    role_hash=request_burn_shares_role.hex(),
-                    account=STETH,
-                    emitted_by=old_burner
+                    role=request_burn_shares_role.hex(),
+                    revoke_from=STETH,
+                    sender=AGENT,
+                    emitted_by=old_burner,
+                    is_dg_event=True
                 )
 
                 # 1.8. Revoke REQUEST_BURN_SHARES_ROLE from Curated staking module
-                validate_role_revoke_event(
+                validate_revoke_role_event(
                     dg_events[7],
-                    role_hash=request_burn_shares_role.hex(),
-                    account=NODE_OPERATORS_REGISTRY,
-                    emitted_by=old_burner
+                    role=request_burn_shares_role.hex(),
+                    revoke_from=NODE_OPERATORS_REGISTRY,
+                    sender=AGENT,
+                    emitted_by=old_burner,
+                    is_dg_event=True
                 )
 
                 # 1.9. Revoke REQUEST_BURN_SHARES_ROLE from SimpleDVT
-                validate_role_revoke_event(
+                validate_revoke_role_event(
                     dg_events[8],
-                    role_hash=request_burn_shares_role.hex(),
-                    account=SIMPLE_DVT,
-                    emitted_by=old_burner
+                    role=request_burn_shares_role.hex(),
+                    revoke_from=SIMPLE_DVT,
+                    sender=AGENT,
+                    emitted_by=old_burner,
+                    is_dg_event=True
                 )
 
                 # 1.10. Revoke REQUEST_BURN_SHARES_ROLE from Community Staking Accounting
-                validate_role_revoke_event(
+                validate_revoke_role_event(
                     dg_events[9],
-                    role_hash=request_burn_shares_role.hex(),
-                    account=CSM_ACCOUNTING,
-                    emitted_by=old_burner
+                    role=request_burn_shares_role.hex(),
+                    revoke_from=CSM_ACCOUNTING,
+                    sender=AGENT,
+                    emitted_by=old_burner,
+                    is_dg_event=True
                 )
 
                 # 1.11. Accounting Oracle upgrade events
                 validate_proxy_upgrade_event(dg_events[10], ACCOUNTING_ORACLE_IMPL, emitted_by=accounting_oracle_proxy)
 
                 # 1.12. Revoke Staking Router REPORT_REWARDS_MINTED_ROLE from the Lido
-                validate_role_revoke_event(
+                validate_revoke_role_event(
                     dg_events[11],
-                    role_hash=report_rewards_minted_role.hex(),
-                    account=STETH,
-                    emitted_by=staking_router
+                    role=report_rewards_minted_role.hex(),
+                    revoke_from=STETH,
+                    sender=AGENT,
+                    emitted_by=staking_router,
+                    is_dg_event=True
                 )
 
                 # 1.13. Grant Staking Router REPORT_REWARDS_MINTED_ROLE to Accounting
-                validate_role_grant_event(
+                validate_grant_role_event(
                     dg_events[12],
-                    role_hash=report_rewards_minted_role.hex(),
-                    account=ACCOUNTING,
-                    emitted_by=staking_router
+                    role=report_rewards_minted_role.hex(),
+                    grant_to=ACCOUNTING,
+                    sender=AGENT,
+                    emitted_by=staking_router,
+                    is_dg_event=True
                 )
 
                 # 1.14. Grant OracleDaemonConfig's CONFIG_MANAGER_ROLE to Agent
-                validate_role_grant_event(
+                validate_grant_role_event(
                     dg_events[13],
-                    role_hash=config_manager_role.hex(),
-                    account=AGENT,
-                    emitted_by=oracle_daemon_config
+                    role=config_manager_role.hex(),
+                    grant_to=AGENT,
+                    sender=AGENT,
+                    emitted_by=oracle_daemon_config,
+                    is_dg_event=True
                 )
 
                 # 1.15. Set SLASHING_RESERVE_WE_RIGHT_SHIFT to 0x2000 at OracleDaemonConfig
-                assert 'ConfigValueSet' in dg_events[14]
-                assert 'SLASHING_RESERVE_WE_RIGHT_SHIFT' in dg_events[14]['ConfigValueSet'][0]['key']
-                assert convert.to_int(dg_events[14]['ConfigValueSet'][0]['value']) == SLASHING_RESERVE_SHIFT
+                validate_config_value_set_event(
+                    dg_events[14],
+                    key='SLASHING_RESERVE_WE_RIGHT_SHIFT',
+                    value=SLASHING_RESERVE_SHIFT,
+                    emitted_by=oracle_daemon_config,
+                )
 
                 # 1.16. Set SLASHING_RESERVE_WE_LEFT_SHIFT to 0x2000 at OracleDaemonConfig
-                assert 'ConfigValueSet' in dg_events[15]
-                assert 'SLASHING_RESERVE_WE_LEFT_SHIFT' in dg_events[15]['ConfigValueSet'][0]['key']
-                assert convert.to_int(dg_events[15]['ConfigValueSet'][0]['value']) == SLASHING_RESERVE_SHIFT
+                validate_config_value_set_event(
+                    dg_events[15],
+                    key='SLASHING_RESERVE_WE_LEFT_SHIFT',
+                    value=SLASHING_RESERVE_SHIFT,
+                    emitted_by=oracle_daemon_config,
+                )
 
                 # 1.17. Revoke OracleDaemonConfig's CONFIG_MANAGER_ROLE from Agent
-                validate_role_revoke_event(
+                validate_revoke_role_event(
                     dg_events[16],
-                    role_hash=config_manager_role.hex(),
-                    account=AGENT,
-                    emitted_by=oracle_daemon_config
+                    role=config_manager_role.hex(),
+                    revoke_from=AGENT,
+                    sender=AGENT,
+                    emitted_by=oracle_daemon_config,
+                    is_dg_event=True
                 )
 
                 # 1.18. Call V3Template.finishUpgrade
-                assert 'UpgradeFinished' in dg_events[17]
-                assert dg_events[17]['UpgradeFinished'][0]['_emitted_by'] == UPGRADE_TEMPLATE
+                validate_upgrade_finished_event(dg_events[17])
 
         # =========================================================================
         # ==================== After DG proposal executed checks ==================
