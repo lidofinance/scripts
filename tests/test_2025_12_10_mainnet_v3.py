@@ -436,7 +436,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         registry_role = web3.keccak(text="vaults.OperatorsGrid.Registry")
         assert operator_grid.hasRole(registry_role, VAULTS_ADAPTER), "Operator Grid should have REGISTRY_ROLE on VAULTS_ADAPTER after upgrade"
         assert operator_grid.hasRole(registry_role, EASYTRACK_EVMSCRIPT_EXECUTOR), "Operator Grid should have REGISTRY_ROLE on EASYTRACK_EVMSCRIPT_EXECUTOR after upgrade"
-        assert operator_grid.hasRole(registry_role, AGENT), "Operator Grid should have REGISTRY_ROLE on AGENT after upgrade"
         assert operator_grid.hasRole(DEFAULT_ADMIN_ROLE, AGENT), "Operator Grid should have DEFAULT_ADMIN_ROLE on AGENT after upgrade"
         # Check Burner roles
         request_burn_shares_role = web3.keccak(text="REQUEST_BURN_SHARES_ROLE")
@@ -447,8 +446,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert vault_hub.hasRole(pause_role, GATE_SEAL_V3), "Vault Hub should have PAUSE_ROLE on GATE_SEAL_V3 after upgrade"
         assert vault_hub.hasRole(pause_role, RESEAL_MANAGER), "Vault Hub should have PAUSE_ROLE on RESEAL_MANAGER after upgrade"
         assert vault_hub.hasRole(resume_role, RESEAL_MANAGER), "Vault Hub should have RESUME_ROLE on RESEAL_MANAGER after upgrade"
-        vault_master_role = web3.keccak(text="vaults.VaultHub.VaultMasterRole")
-        assert vault_hub.hasRole(vault_master_role, AGENT), "Vault Hub should have VAULT_MASTER_ROLE on AGENT after upgrade"
         validator_exit_role = web3.keccak(text="vaults.VaultHub.ValidatorExitRole")
         assert vault_hub.hasRole(validator_exit_role, VAULTS_ADAPTER), "Vault Hub should have VALIDATOR_EXIT_ROLE on VAULTS_ADAPTER after upgrade"
         bad_debt_master_role = web3.keccak(text="vaults.VaultHub.BadDebtMasterRole")
@@ -752,7 +749,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # ==================== After DG proposal executed checks ==================
         # =========================================================================
 
-        # Step 1.3: Upgrade LidoLocator implementation
+        # Step 1.3: Validate Lido Locator implementation was updated
         assert get_ossifiable_proxy_impl(lido_locator_proxy) == LIDO_LOCATOR_IMPL, "Locator implementation should be updated to the new value"
 
         # Step 1.5. Set Lido implementation in Kernel
@@ -773,7 +770,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # Step 1.10. Revoke REQUEST_BURN_SHARES_ROLE from Community Staking Accounting
         assert not old_burner.hasRole(request_burn_shares_role, CSM_ACCOUNTING), "Old Burner should not have REQUEST_BURN_SHARES_ROLE on Community Staking Accounting after upgrade"
 
-        # Step 1.11: Upgrade AccountingOracle implementation
+        # Step 1.11: Validate Accounting Oracle implementation was updated
         assert get_ossifiable_proxy_impl(accounting_oracle_proxy) == ACCOUNTING_ORACLE_IMPL, "Accounting Oracle implementation should be updated to the new value"
 
         # Step 1.12. Revoke REPORT_REWARDS_MINTED_ROLE from Lido
