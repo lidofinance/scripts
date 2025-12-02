@@ -240,7 +240,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ]),
         agent_forward([
-            # 1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+            # 1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 BP to 430 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
             (
                 staking_router.address,
                 staking_router.updateStakingModule.encode_input(
