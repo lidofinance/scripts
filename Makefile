@@ -22,6 +22,7 @@ CORE_DIR ?= lido-core
 CORE_BRANCH ?= master
 NODE_PORT ?= 8545
 SECONDARY_NETWORK ?= mfh-2
+NETWORK_STATE_FILE ?= deployed-mainnet.json
 
 test-1/2:
 	poetry run brownie test tests/[tc]*.py tests/regression/test_staking_router_stake_distribution.py --durations=20 --network mfh-1
@@ -81,6 +82,7 @@ test-core:
 	cd $(CORE_DIR) && \
 	FORK_RPC_URL=$(CORE_TESTS_TARGET_RPC_URL) \
 	RPC_URL=$(CORE_TESTS_TARGET_RPC_URL) \
+	NETWORK_STATE_FILE=$(NETWORK_STATE_FILE) \
 	yarn test:integration
 
 slots:
