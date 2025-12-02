@@ -3,39 +3,37 @@
 
 === 1. DG PROPOPSAL ===
 I. Change Curated Module fees
-1.1. Change Curated Module (MODULE_ID = 1) module fee from 500 BP to 350 BP and Treasury fee from 500 BP to 650 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+1.1. Change Curated Module (MODULE_ID = 1) fees in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999: Module fee from 500 BP to 350 BP and Treasury fee from 500 BP to 650 BP
 
-II. Raise SDVT stake share limit
-1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 bps to 430 bps in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+II. Raise SDVT module stake share limit
+1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 BP to 430 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
 
 III. Reset Easy Track TRP limit
 1.3. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
 1.4. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
 
-IV. Grant Stonks allowed recipients management permissions to Easy Track EVM Script Executor
+IV. Grant Easy Track EVM Script Executor permissions to add and remove recipients for stETH and stablecoin Stonks Easy Tracks
 1.5 Grant ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0
 1.6 Grant ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Stonks Stablecoins AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368
 1.7 Grant REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0
 1.8 Grant REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Stonks Stablecoins AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368
 
 === NON-DG ITEMS ===
-V. Transfer MATIC from Lido Treasury to Liquidity Observation Lab (LOL) Multisig
-2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Liquidity Observation Lab (LOL) Multisig 0x87D93d9B2C672bf9c9642d853a8682546a5012B5
+V. Add Easy Track factories for managing recipients of Stonks stETH and stablecoins top-up factories
+2. Add AddAllowedRecipient Factory 0x8b18e9b7c17c20Ae2f4F825429e9b5e788194E22 for Stonks stETH to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with addRecipient permission on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0
+3. Add RemoveAllowedRecipient Factory 0x5F6Db5A060Ac5145Af3C5590a4E1eaB080A8143A for Stonks stETH to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with removeRecipient permission on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0
+4. Add AddAllowedRecipient Factory 0x56bcff69e1d06e18C46B65C00D41B4ae82890184 for Stonks stablecoins to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with addRecipient permission on Stonks stablecoins AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368
+5. Add RemoveAllowedRecipient Factory 0x4C75070Aa6e7f89fd5Cb6Ce77544e9cB2AC585DD for Stonks stablecoins to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with removeRecipient permission on Stonks stablecoins AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368
 
-VI. Add sUSDS to stablecoins Allowed Tokens Registry
-3. Termporarily grant ADD_TOKEN_TO_ALLOWED_LIST_ROLE to Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
-4. Add sUSDS token 0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD to stablecoins Allowed Tokens Registry 0x4AC40c34f8992bb1e5E856A448792158022551ca
-5. Revoke ADD_TOKEN_TO_ALLOWED_LIST_ROLE from Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
+VI. Add sUSDS token to stablecoins Allowed Tokens Registry and sUSDS transfer permission to Easy Track EVM Script Executor in Aragon Finance
+6. Termporarily grant ADD_TOKEN_TO_ALLOWED_LIST_ROLE to Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
+7. Add sUSDS token 0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD to stablecoins Allowed Tokens Registry 0x4AC40c34f8992bb1e5E856A448792158022551ca
+8. Revoke ADD_TOKEN_TO_ALLOWED_LIST_ROLE from Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
+9. Revoke CREATE_PAYMENTS_ROLE from Easy Track EVM Script Executor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Aragon Finance 0xB9E5CBB9CA5b0d659238807E84D0176930753d86
+10. Grant CREATE_PAYMENTS_ROLE to Easy Track EVM Script Executor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Aragon Finance 0xB9E5CBB9CA5b0d659238807E84D0176930753d86 with appended transfer limit of 2,000,000 sUSDS
 
-VII. Add sUSDS transfer permission to Easy Track EVM Script Executor in Aragon Finance
-6. Revoke CREATE_PAYMENTS_ROLE from Easy Track EVM Script Executor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Aragon Finance 0xB9E5CBB9CA5b0d659238807E84D0176930753d86
-7. Grant CREATE_PAYMENTS_ROLE to Easy Track EVM Script Executor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Aragon Finance 0xB9E5CBB9CA5b0d659238807E84D0176930753d86 with appended transfer limit of 2,000,000 sUSDS
-
-VIII. Add Stonks allowed recipients management factories to Easy Track
-8. Add Stonks stETH AddAllowedRecipient Factory 0x8b18e9b7c17c20Ae2f4F825429e9b5e788194E22 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with addRecipient permission on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0
-9. Add Stonks stETH RemoveAllowedRecipient Factory 0x5F6Db5A060Ac5145Af3C5590a4E1eaB080A8143A to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with removeRecipient permission on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0
-10. Add Stonks stablecoins AddAllowedRecipient Factory 0x56bcff69e1d06e18C46B65C00D41B4ae82890184 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with addRecipient permission on Stonks stablecoins AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368
-11. Add Stonks stablecoins RemoveAllowedRecipient Factory 0x4C75070Aa6e7f89fd5Cb6Ce77544e9cB2AC585DD to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with removeRecipient permission on Stonks stablecoins AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368
+VII. Transfer MATIC from Lido Treasury to Liquidity Observation Lab (LOL) Multisig
+11. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Liquidity Observation Lab (LOL) Multisig 0x87D93d9B2C672bf9c9642d853a8682546a5012B5
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
@@ -316,15 +314,35 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             dg_call_script[0]
         ),
         (
-            "2. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Liquidity Observation Lab (LOL) Multisig 0x87D93d9B2C672bf9c9642d853a8682546a5012B5",
-            make_matic_payout(
-                target_address=LOL_MS,
-                matic_in_wei=MATIC_FOR_TRANSFER,
-                reference="Transfer 508,106 MATIC from Treasury to Liquidity Observation Lab (LOL) Multisig",
+            "2. Add AddAllowedRecipient Factory 0x8b18e9b7c17c20Ae2f4F825429e9b5e788194E22 for Stonks stETH to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with addRecipient permission on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0",
+            add_evmscript_factory(
+                factory=STONKS_STETH_ADD_ALLOWED_RECIPIENT_FACTORY,
+                permissions=create_permissions(stonks_steth_allowed_recipients_registry, "addRecipient"),
             ),
         ),
         (
-            "3. Termporarily grant ADD_TOKEN_TO_ALLOWED_LIST_ROLE to Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e",
+            "3. Add RemoveAllowedRecipient Factory 0x5F6Db5A060Ac5145Af3C5590a4E1eaB080A8143A for Stonks stETH to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with removeRecipient permission on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0",
+            add_evmscript_factory(
+                factory=STONKS_STETH_REM_ALLOWED_RECIPIENT_FACTORY,
+                permissions=create_permissions(stonks_steth_allowed_recipients_registry, "removeRecipient"),
+            ),
+        ),
+        (
+            "4. Add AddAllowedRecipient Factory 0x56bcff69e1d06e18C46B65C00D41B4ae82890184 for Stonks stablecoins to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with addRecipient permission on Stonks stablecoins AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368",
+            add_evmscript_factory(
+                factory=STONKS_STABLECOINS_ADD_ALLOWED_RECIPIENT_FACTORY,
+                permissions=create_permissions(stonks_stablecoins_allowed_recipients_registry, "addRecipient"),
+            ),
+        ),
+        (
+            "5. Add RemoveAllowedRecipient Factory 0x4C75070Aa6e7f89fd5Cb6Ce77544e9cB2AC585DD for Stonks stablecoins to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with removeRecipient permission on Stonks stablecoins AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368",
+            add_evmscript_factory(
+                factory=STONKS_STABLECOINS_REM_ALLOWED_RECIPIENT_FACTORY,
+                permissions=create_permissions(stonks_stablecoins_allowed_recipients_registry, "removeRecipient"),
+            ),
+        ),
+        (
+            "6. Termporarily grant ADD_TOKEN_TO_ALLOWED_LIST_ROLE to Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e",
             (
                 stablecoins_allowed_tokens_registry.address, stablecoins_allowed_tokens_registry.grantRole.encode_input(
                     convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
@@ -333,11 +351,11 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "4. Add sUSDS token 0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD to stablecoins Allowed Tokens Registry 0x4AC40c34f8992bb1e5E856A448792158022551ca",
+            "7. Add sUSDS token 0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD to stablecoins Allowed Tokens Registry 0x4AC40c34f8992bb1e5E856A448792158022551ca",
             (stablecoins_allowed_tokens_registry.address, stablecoins_allowed_tokens_registry.addToken.encode_input(SUSDS_TOKEN))
         ),
         (
-            "5. Revoke ADD_TOKEN_TO_ALLOWED_LIST_ROLE from Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e",
+            "8. Revoke ADD_TOKEN_TO_ALLOWED_LIST_ROLE from Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e",
             (
                 stablecoins_allowed_tokens_registry.address, stablecoins_allowed_tokens_registry.revokeRole.encode_input(
                     convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
@@ -346,7 +364,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             )
         ),
         (
-            "6. Revoke CREATE_PAYMENTS_ROLE from Easy Track EVM Script Executor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Aragon Finance 0xB9E5CBB9CA5b0d659238807E84D0176930753d86",
+            "9. Revoke CREATE_PAYMENTS_ROLE from Easy Track EVM Script Executor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Aragon Finance 0xB9E5CBB9CA5b0d659238807E84D0176930753d86",
             encode_permission_revoke(
                 target_app=FINANCE,
                 permission_name=CREATE_PAYMENTS_ROLE,
@@ -354,7 +372,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "7. Grant CREATE_PAYMENTS_ROLE to Easy Track EVM Script Executor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Aragon Finance 0xB9E5CBB9CA5b0d659238807E84D0176930753d86 with appended transfer limit of 2,000,000 sUSDS",
+            "10. Grant CREATE_PAYMENTS_ROLE to Easy Track EVM Script Executor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Aragon Finance 0xB9E5CBB9CA5b0d659238807E84D0176930753d86 with appended transfer limit of 2,000,000 sUSDS",
             encode_permission_grant_p(
                 target_app=FINANCE,
                 permission_name=CREATE_PAYMENTS_ROLE,
@@ -363,31 +381,11 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "8. Add Stonks stETH AddAllowedRecipient Factory 0x8b18e9b7c17c20Ae2f4F825429e9b5e788194E22 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with addRecipient permission on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0",
-            add_evmscript_factory(
-                factory=STONKS_STETH_ADD_ALLOWED_RECIPIENT_FACTORY,
-                permissions=create_permissions(stonks_steth_allowed_recipients_registry, "addRecipient"),
-            ),
-        ),
-        (
-            "9. Add Stonks stETH RemoveAllowedRecipient Factory 0x5F6Db5A060Ac5145Af3C5590a4E1eaB080A8143A to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with removeRecipient permission on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0",
-            add_evmscript_factory(
-                factory=STONKS_STETH_REM_ALLOWED_RECIPIENT_FACTORY,
-                permissions=create_permissions(stonks_steth_allowed_recipients_registry, "removeRecipient"),
-            ),
-        ),
-        (
-            "10. Add Stonks stablecoins AddAllowedRecipient Factory 0x56bcff69e1d06e18C46B65C00D41B4ae82890184 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with addRecipient permission on Stonks stablecoins AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368",
-            add_evmscript_factory(
-                factory=STONKS_STABLECOINS_ADD_ALLOWED_RECIPIENT_FACTORY,
-                permissions=create_permissions(stonks_stablecoins_allowed_recipients_registry, "addRecipient"),
-            ),
-        ),
-        (
-            "11. Add Stonks stablecoins RemoveAllowedRecipient Factory 0x4C75070Aa6e7f89fd5Cb6Ce77544e9cB2AC585DD to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea with removeRecipient permission on Stonks stablecoins AllowedRecipientsRegistry 0x3f0534CCcFb952470775C516DC2eff8396B8A368",
-            add_evmscript_factory(
-                factory=STONKS_STABLECOINS_REM_ALLOWED_RECIPIENT_FACTORY,
-                permissions=create_permissions(stonks_stablecoins_allowed_recipients_registry, "removeRecipient"),
+            "11. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Liquidity Observation Lab (LOL) Multisig 0x87D93d9B2C672bf9c9642d853a8682546a5012B5",
+            make_matic_payout(
+                target_address=LOL_MS,
+                matic_in_wei=MATIC_FOR_TRANSFER,
+                reference="Transfer 508,106 MATIC from Treasury to Liquidity Observation Lab (LOL) Multisig",
             ),
         ),
     )
