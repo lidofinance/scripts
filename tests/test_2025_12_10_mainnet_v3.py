@@ -644,6 +644,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # === DG EXECUTION EVENTS VALIDATION ===
 
+                # 1.2. Call V3Template.startUpgrade
+                assert 'UpgradeStarted' in dg_events[1]
+                assert dg_events[1]['UpgradeStarted'][0]['_emitted_by'] == UPGRADE_TEMPLATE
+
                 # 1.3. Lido Locator upgrade events
                 validate_proxy_upgrade_event(dg_events[2], LIDO_LOCATOR_IMPL, emitted_by=lido_locator_proxy)
 
@@ -744,6 +748,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=oracle_daemon_config
                 )
 
+                # 1.18. Call V3Template.finishUpgrade
+                assert 'UpgradeFinished' in dg_events[17]
+                assert dg_events[17]['UpgradeFinished'][0]['_emitted_by'] == UPGRADE_TEMPLATE
 
         # =========================================================================
         # ==================== After DG proposal executed checks ==================
