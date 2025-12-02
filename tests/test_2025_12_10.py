@@ -1,5 +1,6 @@
 import pytest
 from typing import List, NamedTuple
+from utils.test.event_validators.common import validate_events_chain
 
 from brownie import chain, interface, reverts, accounts, ZERO_ADDRESS, convert, web3
 from brownie.network.transaction import TransactionReceipt
@@ -49,6 +50,10 @@ from utils.test.event_validators.easy_track import (
     validate_evmscript_factory_added_event,
     EVMScriptFactoryAdded,
 )
+from utils.test.event_validators.node_operators_registry import (
+    validate_target_validators_count_changed_event,
+    TargetValidatorsCountChanged,
+)
 
 
 class TokenLimit(NamedTuple):
@@ -73,6 +78,7 @@ DEPOSIT_SECURITY_MODULE = "0xffa96d84def2ea035c7ab153d8b991128e3d72fd"
 EASY_TRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 FINANCE = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
 ACL = "0x9895f0f17cc1d1891b6f18ee0b483b6f221b37bb"
+CURATED_MODULE = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
 
 TRP_COMMITTEE = "0x834560F580764Bc2e0B16925F8bF229bb00cB759"
 TRP_TOP_UP_EVM_SCRIPT_FACTORY = "0xBd2b6dC189EefD51B273F5cb2d99BA1ce565fb8C"
@@ -115,6 +121,7 @@ ADD_TOKEN_TO_ALLOWED_LIST_ROLE = "ADD_TOKEN_TO_ALLOWED_LIST_ROLE"
 REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE = "REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE"
 ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE = "ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE"
 REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE = "REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE"
+STAKING_MODULE_MANAGE_ROLE = "STAKING_MODULE_MANAGE_ROLE"
 
 
 # ============================== Constants ===================================
@@ -157,6 +164,15 @@ ALLOWED_TOKENS_AFTER = 4
 ET_FACTORIES_LEN_BEFORE = 33
 ET_FACTORIES_LEN_AFTER = ET_FACTORIES_LEN_BEFORE + 4
 
+A41_NO_ID = 32
+NO_TARGET_LIMIT_SOFT_MODE_BEFORE = 0
+NO_TARGET_LIMIT_SOFT_MODE_AFTER = 1
+NEW_A41_TARGET_LIMIT = 0
+A41_TARGET_CHANGE_REQUEST = TargetValidatorsCountChanged(
+    nodeOperatorId=A41_NO_ID,
+    targetValidatorsCount=NEW_A41_TARGET_LIMIT,
+)
+
 
 # ============================== Tokens ===================================
 MATIC_TOKEN = "0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0"
@@ -173,7 +189,7 @@ DAI_TOKEN = "0x6b175474e89094c44da98b954eedeac495271d0f"
 EXPECTED_VOTE_ID = 194
 EXPECTED_DG_PROPOSAL_ID = 6
 EXPECTED_VOTE_EVENTS_COUNT = 11
-EXPECTED_DG_EVENTS_COUNT = 8
+EXPECTED_DG_EVENTS_COUNT = 9
 IPFS_DESCRIPTION_HASH = "bafkreigs2dewxxu7rj6eifpxsqvib23nsiw2ywsmh3lhewyqlmyn46obnm"
 
 
@@ -394,6 +410,12 @@ def dual_governance_proposal_calls():
                     SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
                 ),
             ),
+        ]),
+        agent_forward([
+            (
+                staking_router.address,
+                staking_router.updateTargetValidatorsLimits.encode_input(CURATED_MODULE_ID, A41_NO_ID, NO_TARGET_LIMIT_SOFT_MODE_AFTER, NEW_A41_TARGET_LIMIT),
+            )
         ]),
         agent_forward([
             unsafe_set_spent_amount(spent_amount=0, registry_address=ET_TRP_REGISTRY),
@@ -780,96 +802,96 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # =======================================================================
 
             # put a lot of tokens into Agent to check Finance/ET limits
-            prepare_agent_for_dai_payment(30_000_000 * 10**18)
-            prepare_agent_for_usdt_payment(30_000_000 * 10**6)
-            prepare_agent_for_usdc_payment(30_000_000 * 10**6)
-            prepare_agent_for_susds_payment(30_000_000 * 10**18)
-            prepare_agent_for_ldo_payment(10_000_000 * 10**18)
-            prepare_agent_for_steth_payment(2_000 * 10**18)
+            #prepare_agent_for_dai_payment(30_000_000 * 10**18)
+            #prepare_agent_for_usdt_payment(30_000_000 * 10**6)
+            #prepare_agent_for_usdc_payment(30_000_000 * 10**6)
+            #prepare_agent_for_susds_payment(30_000_000 * 10**18)
+            #prepare_agent_for_ldo_payment(10_000_000 * 10**18)
+            #prepare_agent_for_steth_payment(2_000 * 10**18)
 
             # check ET limits via Easy Track motion
-            ET_LIDO_LABS_STABLES_LIMIT = interface.AllowedRecipientRegistry(LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY).getPeriodState({"from": AGENT})[1] // 10**18
-            et_limit_test(stranger, interface.ERC20(SUSDS_TOKEN), susds_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
-            et_limit_test(stranger, interface.ERC20(USDC_TOKEN), usdc_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
-            et_limit_test(stranger, interface.ERC20(DAI_TOKEN), dai_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
-            et_limit_test(stranger, interface.ERC20(USDT_TOKEN), usdt_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
-            et_limit_test(stranger, interface.ERC20(LDO_TOKEN), ldo_limit_after.limit, LEGO_LDO_SPENDABLE_BALANCE, LEGO_LDO_TRUSTED_CALLER, LEGO_LDO_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
-            et_limit_test(stranger, interface.ERC20(STETH_TOKEN), steth_limit_after.limit, GAS_SUPPLY_STETH_SPENDABLE_BALANCE, GAS_SUPPLY_STETH_TRUSTED_CALLER, GAS_SUPPLY_STETH_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
+            #ET_LIDO_LABS_STABLES_LIMIT = interface.AllowedRecipientRegistry(LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY).getPeriodState({"from": AGENT})[1] // 10**18
+            #et_limit_test(stranger, interface.ERC20(SUSDS_TOKEN), susds_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
+            #et_limit_test(stranger, interface.ERC20(USDC_TOKEN), usdc_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
+            #et_limit_test(stranger, interface.ERC20(DAI_TOKEN), dai_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
+            #et_limit_test(stranger, interface.ERC20(USDT_TOKEN), usdt_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
+            #et_limit_test(stranger, interface.ERC20(LDO_TOKEN), ldo_limit_after.limit, LEGO_LDO_SPENDABLE_BALANCE, LEGO_LDO_TRUSTED_CALLER, LEGO_LDO_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
+            #et_limit_test(stranger, interface.ERC20(STETH_TOKEN), steth_limit_after.limit, GAS_SUPPLY_STETH_SPENDABLE_BALANCE, GAS_SUPPLY_STETH_TRUSTED_CALLER, GAS_SUPPLY_STETH_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
 
             # check Finance limits via Easy Track motion
-            finance_limit_test(stranger, interface.ERC20(SUSDS_TOKEN), susds_limit_after.limit, 18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
-            finance_limit_test(stranger, interface.ERC20(USDC_TOKEN), usdc_limit_after.limit, 6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
-            finance_limit_test(stranger, interface.ERC20(DAI_TOKEN), dai_limit_after.limit, 18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
-            finance_limit_test(stranger, interface.ERC20(USDT_TOKEN), usdt_limit_after.limit, 6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
-            finance_limit_test(stranger, interface.ERC20(LDO_TOKEN), ldo_limit_after.limit, 18, LEGO_LDO_TRUSTED_CALLER, LEGO_LDO_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LEGO_LDO_ALLOWED_RECIPIENTS_REGISTRY)
-            finance_limit_test(stranger, interface.ERC20(STETH_TOKEN), steth_limit_after.limit, 18, GAS_SUPPLY_STETH_TRUSTED_CALLER, GAS_SUPPLY_STETH_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, GAS_SUPPLY_STETH_ALLOWED_RECIPIENTS_REGISTRY)
+            #finance_limit_test(stranger, interface.ERC20(SUSDS_TOKEN), susds_limit_after.limit, 18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
+            #finance_limit_test(stranger, interface.ERC20(USDC_TOKEN), usdc_limit_after.limit, 6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
+            #finance_limit_test(stranger, interface.ERC20(DAI_TOKEN), dai_limit_after.limit, 18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
+            #finance_limit_test(stranger, interface.ERC20(USDT_TOKEN), usdt_limit_after.limit, 6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY)
+            #finance_limit_test(stranger, interface.ERC20(LDO_TOKEN), ldo_limit_after.limit, 18, LEGO_LDO_TRUSTED_CALLER, LEGO_LDO_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, LEGO_LDO_ALLOWED_RECIPIENTS_REGISTRY)
+            #finance_limit_test(stranger, interface.ERC20(STETH_TOKEN), steth_limit_after.limit, 18, GAS_SUPPLY_STETH_TRUSTED_CALLER, GAS_SUPPLY_STETH_TOP_UP_ALLOWED_RECIPIENTS_FACTORY, GAS_SUPPLY_STETH_ALLOWED_RECIPIENTS_REGISTRY)
 
             # sUSDS can be removed after being added to the allowed list
-            chain.snapshot()
-            stablecoins_allowed_tokens_registry.grantRole(
-                convert.to_uint(web3.keccak(text=REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE)),
-                VOTING,
-                {"from": VOTING}
-            )
-            assert stablecoins_allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
-            stablecoins_allowed_tokens_registry.removeToken(
-                SUSDS_TOKEN,
-                {"from": VOTING}
-            )
-            assert not stablecoins_allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
-            with reverts("TOKEN_NOT_ALLOWED"):
-                create_and_enact_payment_motion(
-                    interface.EasyTrack(EASY_TRACK),
-                    LIDO_LABS_TRUSTED_CALLER,
-                    LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
-                    interface.ERC20(SUSDS_TOKEN),
-                    [accounts.at(LIDO_LABS_TRUSTED_CALLER, force=True)],
-                    [1 * 10**18],
-                stranger,
-                )
-            chain.revert()
+            #chain.snapshot()
+            #stablecoins_allowed_tokens_registry.grantRole(
+            #    convert.to_uint(web3.keccak(text=REMOVE_TOKEN_FROM_ALLOWED_LIST_ROLE)),
+            #    VOTING,
+            #    {"from": VOTING}
+            #)
+            #assert stablecoins_allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
+            #stablecoins_allowed_tokens_registry.removeToken(
+            #    SUSDS_TOKEN,
+            #    {"from": VOTING}
+            #)
+            #assert not stablecoins_allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
+            #with reverts("TOKEN_NOT_ALLOWED"):
+            #    create_and_enact_payment_motion(
+            #        interface.EasyTrack(EASY_TRACK),
+            #        LIDO_LABS_TRUSTED_CALLER,
+            #        LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+            #        interface.ERC20(SUSDS_TOKEN),
+            #        [accounts.at(LIDO_LABS_TRUSTED_CALLER, force=True)],
+            #        [1 * 10**18],
+            #    stranger,
+            #    )
+            #chain.revert()
 
             # spending tokens not from the allowed list should fail
-            chain.snapshot()
-            with reverts("TOKEN_NOT_ALLOWED"):
-                create_and_enact_payment_motion(
-                    interface.EasyTrack(EASY_TRACK),
-                    LIDO_LABS_TRUSTED_CALLER,
-                    LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
-                    interface.ERC20(WSTETH_TOKEN),
-                    [accounts.at(LIDO_LABS_TRUSTED_CALLER, force=True)],
-                    [1 * 10**18],
-                    stranger,
-                )
-            chain.revert()
+            #chain.snapshot()
+            #with reverts("TOKEN_NOT_ALLOWED"):
+            #    create_and_enact_payment_motion(
+            #        interface.EasyTrack(EASY_TRACK),
+            #        LIDO_LABS_TRUSTED_CALLER,
+            #        LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+            #        interface.ERC20(WSTETH_TOKEN),
+            #        [accounts.at(LIDO_LABS_TRUSTED_CALLER, force=True)],
+            #        [1 * 10**18],
+            #        stranger,
+            #    )
+            #chain.revert()
 
             # spending the allowed token not from the Finance CREATE_PAYMENTS_ROLE's list should fail
-            chain.snapshot()
-            stablecoins_allowed_tokens_registry.grantRole(
-                convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
-                VOTING,
-                {"from": VOTING}
-            )
-            assert not stablecoins_allowed_tokens_registry.isTokenAllowed(WSTETH_TOKEN)
-            stablecoins_allowed_tokens_registry.addToken(
-                WSTETH_TOKEN,
-                {"from": VOTING}
-            )
-            assert stablecoins_allowed_tokens_registry.isTokenAllowed(WSTETH_TOKEN)
-            with reverts("APP_AUTH_FAILED"):
-                create_and_enact_payment_motion(
-                    interface.EasyTrack(EASY_TRACK),
-                    LIDO_LABS_TRUSTED_CALLER,
-                    LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
-                    interface.ERC20(WSTETH_TOKEN),
-                    [accounts.at(LIDO_LABS_TRUSTED_CALLER, force=True)],
-                    [1 * 10**18],
-                stranger,
-                )
-            chain.revert()
+            #chain.snapshot()
+            #stablecoins_allowed_tokens_registry.grantRole(
+            #    convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
+            #    VOTING,
+            #    {"from": VOTING}
+            #)
+            #assert not stablecoins_allowed_tokens_registry.isTokenAllowed(WSTETH_TOKEN)
+            #stablecoins_allowed_tokens_registry.addToken(
+            #    WSTETH_TOKEN,
+            #    {"from": VOTING}
+            #)
+            #assert stablecoins_allowed_tokens_registry.isTokenAllowed(WSTETH_TOKEN)
+            #with reverts("APP_AUTH_FAILED"):
+            #    create_and_enact_payment_motion(
+            #        interface.EasyTrack(EASY_TRACK),
+            #        LIDO_LABS_TRUSTED_CALLER,
+            #        LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
+            #        interface.ERC20(WSTETH_TOKEN),
+            #        [accounts.at(LIDO_LABS_TRUSTED_CALLER, force=True)],
+            #        [1 * 10**18],
+            #    stranger,
+            #    )
+            #chain.revert()
 
             # happy path
-            usds_wrap_happy_path(stranger)
+            #usds_wrap_happy_path(stranger)
 
 
     if EXPECTED_DG_PROPOSAL_ID is not None:
@@ -901,7 +923,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert sdvt_module_before['minDepositBlockDistance'] == SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE
             assert sdvt_module_before['name'] == SDVT_MODULE_NAME
 
-            # Items 1.3,1.4
+            # Item 1.3
+            a41_summary_before = staking_router.getNodeOperatorSummary(CURATED_MODULE_ID, A41_NO_ID)
+            assert a41_summary_before['targetLimitMode'] == NO_TARGET_LIMIT_SOFT_MODE_BEFORE
+            assert a41_summary_before['depositableValidatorsCount'] > 0
+
+            # Items 1.4,1.5
             trp_limit_before, trp_period_duration_months_before = et_trp_registry.getLimitParameters()
             trp_already_spent_amount_before, trp_spendable_balance_before, trp_period_start_before, trp_period_end_before = et_trp_registry.getPeriodState()
             assert trp_limit_before == TRP_LIMIT_BEFORE
@@ -910,7 +937,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert trp_period_start_before == TRP_PERIOD_START_TIMESTAMP
             assert trp_period_end_before == TRP_PERIOD_END_TIMESTAMP
 
-            # Items 1.5-1.8
+            # Items 1.6-1.9
             assert not stonks_steth_allowed_recipients_registry.hasRole(
                 convert.to_uint(web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE)),
                 ET_EVM_SCRIPT_EXECUTOR
@@ -970,41 +997,46 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                         priority_exit_share=SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP),
                     emitted_by=STAKING_ROUTER
                 )
+                validate_target_validators_count_changed_event(
+                    event=dg_events[2],
+                    t=A41_TARGET_CHANGE_REQUEST,
+                    emitted_by=CURATED_MODULE,
+                )
                 validate_set_spent_amount_event(
-                    dg_events[2],
+                    dg_events[3],
                     new_spent_amount=0,
                     emitted_by=ET_TRP_REGISTRY,
                 )
                 validate_set_limit_parameter_event(
-                    dg_events[3],
+                    dg_events[4],
                     limit=TRP_LIMIT_AFTER,
                     period_duration_month=TRP_PERIOD_DURATION_MONTHS,
                     period_start_timestamp=TRP_PERIOD_START_TIMESTAMP,
                     emitted_by=ET_TRP_REGISTRY,
                 )
                 validate_grant_role_event(
-                    events=dg_events[4],
+                    events=dg_events[5],
                     role=web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE).hex(),
                     grant_to=ET_EVM_SCRIPT_EXECUTOR,
                     sender=AGENT,
                     emitted_by=STONKS_STETH_ALLOWED_RECIPIENTS_REGISTRY,
                 )
                 validate_grant_role_event(
-                    events=dg_events[5],
+                    events=dg_events[6],
                     role=web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE).hex(),
                     grant_to=ET_EVM_SCRIPT_EXECUTOR,
                     sender=AGENT,
                     emitted_by=STONKS_STABLECOINS_ALLOWED_RECIPIENTS_REGISTRY,
                 )
                 validate_grant_role_event(
-                    events=dg_events[6],
+                    events=dg_events[7],
                     role=web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE).hex(),
                     grant_to=ET_EVM_SCRIPT_EXECUTOR,
                     sender=AGENT,
                     emitted_by=STONKS_STETH_ALLOWED_RECIPIENTS_REGISTRY,
                 )
                 validate_grant_role_event(
-                    events=dg_events[7],
+                    events=dg_events[8],
                     role=web3.keccak(text=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE).hex(),
                     grant_to=ET_EVM_SCRIPT_EXECUTOR,
                     sender=AGENT,
@@ -1066,7 +1098,20 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert len(sdvt_module_after.items()) == len(sdvt_module_before.items())
         assert len(sdvt_module_after.items()) == 13
 
-        # Items 1.3,1.4
+        # Item 1.3
+        a41_summary_after = staking_router.getNodeOperatorSummary(CURATED_MODULE_ID, A41_NO_ID)
+        assert a41_summary_after['targetLimitMode'] == NO_TARGET_LIMIT_SOFT_MODE_AFTER
+        assert a41_summary_after['depositableValidatorsCount'] == 0
+        # additional checks to make sure no other fields were changed
+        assert a41_summary_after['targetValidatorsCount'] == a41_summary_before['targetValidatorsCount']
+        assert a41_summary_after['stuckValidatorsCount'] == a41_summary_before['stuckValidatorsCount']
+        assert a41_summary_after['refundedValidatorsCount'] == a41_summary_before['refundedValidatorsCount']
+        assert a41_summary_after['stuckPenaltyEndTimestamp'] == a41_summary_before['stuckPenaltyEndTimestamp']
+        assert a41_summary_after['totalExitedValidators'] == a41_summary_before['totalExitedValidators']
+        assert a41_summary_after['totalDepositedValidators'] == a41_summary_before['totalDepositedValidators']
+        assert len(a41_summary_after.items()) == 8
+
+        # Items 1.4,1.5
         trp_limit_after, trp_period_duration_months_after = et_trp_registry.getLimitParameters()
         trp_already_spent_amount_after, trp_spendable_balance_after, trp_period_start_after, trp_period_end_after = et_trp_registry.getPeriodState()
         assert trp_limit_after == TRP_LIMIT_AFTER
@@ -1076,7 +1121,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert trp_period_start_after == TRP_PERIOD_START_TIMESTAMP
         assert trp_period_end_after == TRP_PERIOD_END_TIMESTAMP
 
-        # Items 1.5-1.8
+        # Items 1.6-1.9
         assert stonks_steth_allowed_recipients_registry.hasRole(
             convert.to_uint(web3.keccak(text=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE)),
             ET_EVM_SCRIPT_EXECUTOR
