@@ -499,19 +499,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         # Item 1 is DG - skipped here
 
-        # Item 2
-        matic_treasury_balance_before = matic_token.balanceOf(agent.address)
-        assert matic_treasury_balance_before == MATIC_IN_TREASURY_BEFORE
-        matic_labs_balance_before = matic_token.balanceOf(LOL_MS)
-        assert matic_labs_balance_before == MATIC_IN_LIDO_LABS_BEFORE
+        # Items 2-5
+        et_factories_before = easy_track.getEVMScriptFactories()
+        assert len(et_factories_before) == ET_FACTORIES_LEN_BEFORE
+        assert STONKS_STETH_ADD_ALLOWED_RECIPIENT_FACTORY not in et_factories_before
+        assert STONKS_STETH_REM_ALLOWED_RECIPIENT_FACTORY not in et_factories_before
+        assert STONKS_STABLECOINS_ADD_ALLOWED_RECIPIENT_FACTORY not in et_factories_before
+        assert STONKS_STABLECOINS_REM_ALLOWED_RECIPIENT_FACTORY not in et_factories_before
 
-        # Items 3,5
+        # Items 6,8
         assert not stablecoins_allowed_tokens_registry.hasRole(
             convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
             VOTING
         )
 
-        # Item 4
+        # Item 7
         assert not stablecoins_allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
         allowed_tokens_before = stablecoins_allowed_tokens_registry.getAllowedTokens()
         assert len(allowed_tokens_before) == ALLOWED_TOKENS_BEFORE
@@ -519,7 +521,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert allowed_tokens_before[1] == USDT_TOKEN
         assert allowed_tokens_before[2] == USDC_TOKEN
 
-        # Items 6,7
+        # Items 9,10
         assert acl.getPermissionParamsLength(
             ET_EVM_SCRIPT_EXECUTOR,
             FINANCE,
@@ -536,13 +538,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert op == amount_limits_before()[i].op.value
             assert val == amount_limits_before()[i].value
 
-        # Items 8-11
-        et_factories_before = easy_track.getEVMScriptFactories()
-        assert len(et_factories_before) == ET_FACTORIES_LEN_BEFORE
-        assert STONKS_STETH_ADD_ALLOWED_RECIPIENT_FACTORY not in et_factories_before
-        assert STONKS_STETH_REM_ALLOWED_RECIPIENT_FACTORY not in et_factories_before
-        assert STONKS_STABLECOINS_ADD_ALLOWED_RECIPIENT_FACTORY not in et_factories_before
-        assert STONKS_STABLECOINS_REM_ALLOWED_RECIPIENT_FACTORY not in et_factories_before
+        # Item 11
+        matic_treasury_balance_before = matic_token.balanceOf(agent.address)
+        assert matic_treasury_balance_before == MATIC_IN_TREASURY_BEFORE
+        matic_labs_balance_before = matic_token.balanceOf(LOL_MS)
+        assert matic_labs_balance_before == MATIC_IN_LIDO_LABS_BEFORE
 
 
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
@@ -558,24 +558,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         # Item 1 is DG - skipped here
 
-        # Item 2
-        matic_treasury_balance_after = matic_token.balanceOf(agent.address)
-        assert matic_treasury_balance_after == MATIC_IN_TREASURY_AFTER
-        matic_labs_balance_after = matic_token.balanceOf(LOL_MS)
-        assert matic_labs_balance_after == MATIC_IN_LIDO_LABS_AFTER
+        # Items 2-5
+        et_factories_after = easy_track.getEVMScriptFactories()
+        assert len(et_factories_after) == ET_FACTORIES_LEN_AFTER
+        assert STONKS_STETH_ADD_ALLOWED_RECIPIENT_FACTORY in et_factories_after
+        assert STONKS_STETH_REM_ALLOWED_RECIPIENT_FACTORY in et_factories_after
+        assert STONKS_STABLECOINS_ADD_ALLOWED_RECIPIENT_FACTORY in et_factories_after
+        assert STONKS_STABLECOINS_REM_ALLOWED_RECIPIENT_FACTORY in et_factories_after
 
-        # make sure LOL can actually spend the received MATIC
-        matic_token.transfer(DEV_GAS_STORE, MATIC_IN_LIDO_LABS_AFTER / 2, {"from": LOL_MS})
-        assert matic_token.balanceOf(LOL_MS) == MATIC_IN_LIDO_LABS_AFTER / 2
-        assert matic_token.balanceOf(DEV_GAS_STORE) == MATIC_IN_LIDO_LABS_AFTER / 2
-
-        # Items 3,5
+        # Items 6,8
         assert not stablecoins_allowed_tokens_registry.hasRole(
             convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
             VOTING
         )
 
-        # Item 4
+        # Item 7
         assert stablecoins_allowed_tokens_registry.isTokenAllowed(SUSDS_TOKEN)
         allowed_tokens_before = stablecoins_allowed_tokens_registry.getAllowedTokens()
         assert len(allowed_tokens_before) == ALLOWED_TOKENS_AFTER
@@ -584,7 +581,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert allowed_tokens_before[2] == USDC_TOKEN
         assert allowed_tokens_before[3] == SUSDS_TOKEN
 
-        # Items 6,7
+        # Items 9,10
         assert acl.getPermissionParamsLength(
             ET_EVM_SCRIPT_EXECUTOR,
             FINANCE,
@@ -665,13 +662,15 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             [convert.to_uint(ldo_limit_after.address), convert.to_uint(stranger.address), ldo_limit_after.limit + 1],
         ) 
 
-        # Items 8-11
-        et_factories_after = easy_track.getEVMScriptFactories()
-        assert len(et_factories_after) == ET_FACTORIES_LEN_AFTER
-        assert STONKS_STETH_ADD_ALLOWED_RECIPIENT_FACTORY in et_factories_after
-        assert STONKS_STETH_REM_ALLOWED_RECIPIENT_FACTORY in et_factories_after
-        assert STONKS_STABLECOINS_ADD_ALLOWED_RECIPIENT_FACTORY in et_factories_after
-        assert STONKS_STABLECOINS_REM_ALLOWED_RECIPIENT_FACTORY in et_factories_after
+        # Item 11
+        matic_treasury_balance_after = matic_token.balanceOf(agent.address)
+        assert matic_treasury_balance_after == MATIC_IN_TREASURY_AFTER
+        matic_labs_balance_after = matic_token.balanceOf(LOL_MS)
+        assert matic_labs_balance_after == MATIC_IN_LIDO_LABS_AFTER
+        # make sure LOL can actually spend the received MATIC
+        matic_token.transfer(DEV_GAS_STORE, MATIC_IN_LIDO_LABS_AFTER / 2, {"from": LOL_MS})
+        assert matic_token.balanceOf(LOL_MS) == MATIC_IN_LIDO_LABS_AFTER / 2
+        assert matic_token.balanceOf(DEV_GAS_STORE) == MATIC_IN_LIDO_LABS_AFTER / 2
 
         # scenario tests for new factories
         chain.snapshot()
@@ -695,37 +694,59 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             )
 
             # validate all other voting events
-            validate_token_payout_event(
+            validate_evmscript_factory_added_event(
                 event=vote_events[1],
-                p=Payout(
-                    token_addr=MATIC_TOKEN,
-                    from_addr=AGENT,
-                    to_addr=LOL_MS,
-                    amount=MATIC_IN_LIDO_LABS_AFTER),
-                is_steth=False,
-                emitted_by=AGENT
+                p=EVMScriptFactoryAdded(
+                    factory_addr=STONKS_STETH_ADD_ALLOWED_RECIPIENT_FACTORY,
+                    permissions=create_permissions(stonks_steth_allowed_recipients_registry, "addRecipient"),
+                ),
+                emitted_by=EASY_TRACK,
+            )
+            validate_evmscript_factory_added_event(
+                event=vote_events[2],
+                p=EVMScriptFactoryAdded(
+                    factory_addr=STONKS_STETH_REM_ALLOWED_RECIPIENT_FACTORY,
+                    permissions=create_permissions(stonks_steth_allowed_recipients_registry, "removeRecipient"),
+                ),
+                emitted_by=EASY_TRACK,
+            )
+            validate_evmscript_factory_added_event(
+                event=vote_events[3],
+                p=EVMScriptFactoryAdded(
+                    factory_addr=STONKS_STABLECOINS_ADD_ALLOWED_RECIPIENT_FACTORY,
+                    permissions=create_permissions(stonks_stablecoins_allowed_recipients_registry, "addRecipient"),
+                ),
+                emitted_by=EASY_TRACK,
+            )
+            validate_evmscript_factory_added_event(
+                event=vote_events[4],
+                p=EVMScriptFactoryAdded(
+                    factory_addr=STONKS_STABLECOINS_REM_ALLOWED_RECIPIENT_FACTORY,
+                    permissions=create_permissions(stonks_stablecoins_allowed_recipients_registry, "removeRecipient"),
+                ),
+                emitted_by=EASY_TRACK,
             )
             validate_grant_role_event(
-                events=vote_events[2],
+                events=vote_events[5],
                 role=web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE).hex(),
                 grant_to=VOTING,
                 sender=VOTING,
                 emitted_by=STABLECOINS_ALLOWED_TOKENS_REGISTRY,
             )
             validate_add_token_event(
-                event=vote_events[3],
+                event=vote_events[6],
                 token=SUSDS_TOKEN,
                 emitted_by=STABLECOINS_ALLOWED_TOKENS_REGISTRY
             )
             validate_revoke_role_event(
-                events=vote_events[4],
+                events=vote_events[7],
                 role=web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE).hex(),
                 revoke_from=VOTING,
                 sender=VOTING,
                 emitted_by=STABLECOINS_ALLOWED_TOKENS_REGISTRY,
             )
             validate_permission_revoke_event(
-                event=vote_events[5],
+                event=vote_events[8],
                 p=Permission(
                     app=FINANCE,
                     entity=ET_EVM_SCRIPT_EXECUTOR,
@@ -734,7 +755,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 emitted_by=ACL,
             )
             validate_permission_grantp_event(
-                event=vote_events[6],
+                event=vote_events[9],
                 p=Permission(
                     app=FINANCE,
                     entity=ET_EVM_SCRIPT_EXECUTOR,
@@ -743,37 +764,15 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 params=amount_limits_after(),
                 emitted_by=ACL,
             )
-            validate_evmscript_factory_added_event(
-                event=vote_events[7],
-                p=EVMScriptFactoryAdded(
-                    factory_addr=STONKS_STETH_ADD_ALLOWED_RECIPIENT_FACTORY,
-                    permissions=create_permissions(stonks_steth_allowed_recipients_registry, "addRecipient"),
-                ),
-                emitted_by=EASY_TRACK,
-            )
-            validate_evmscript_factory_added_event(
-                event=vote_events[8],
-                p=EVMScriptFactoryAdded(
-                    factory_addr=STONKS_STETH_REM_ALLOWED_RECIPIENT_FACTORY,
-                    permissions=create_permissions(stonks_steth_allowed_recipients_registry, "removeRecipient"),
-                ),
-                emitted_by=EASY_TRACK,
-            )
-            validate_evmscript_factory_added_event(
-                event=vote_events[9],
-                p=EVMScriptFactoryAdded(
-                    factory_addr=STONKS_STABLECOINS_ADD_ALLOWED_RECIPIENT_FACTORY,
-                    permissions=create_permissions(stonks_stablecoins_allowed_recipients_registry, "addRecipient"),
-                ),
-                emitted_by=EASY_TRACK,
-            )
-            validate_evmscript_factory_added_event(
+            validate_token_payout_event(
                 event=vote_events[10],
-                p=EVMScriptFactoryAdded(
-                    factory_addr=STONKS_STABLECOINS_REM_ALLOWED_RECIPIENT_FACTORY,
-                    permissions=create_permissions(stonks_stablecoins_allowed_recipients_registry, "removeRecipient"),
-                ),
-                emitted_by=EASY_TRACK,
+                p=Payout(
+                    token_addr=MATIC_TOKEN,
+                    from_addr=AGENT,
+                    to_addr=LOL_MS,
+                    amount=MATIC_IN_LIDO_LABS_AFTER),
+                is_steth=False,
+                emitted_by=AGENT
             )
 
             # =======================================================================
