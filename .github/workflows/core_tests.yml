@@ -36,7 +36,7 @@ jobs:
       - name: Run init script
         run: docker exec -e CORE_BRANCH tests-runner bash -c 'make init'
         env:
-          CORE_BRANCH: feat/vaults-scripts
+          CORE_BRANCH: develop
 
       - name: Run node
         run: docker exec -e ETH_RPC_URL --detach tests-runner bash -c 'NODE_PORT=8546 make node'
