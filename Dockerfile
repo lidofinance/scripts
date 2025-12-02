@@ -1,4 +1,4 @@
-FROM nikolaik/python-nodejs:python3.10-nodejs22-slim
+FROM nikolaik/python-nodejs:python3.10-nodejs24-slim
 USER root
 ARG TARGETARCH
 
