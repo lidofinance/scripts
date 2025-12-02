@@ -4,6 +4,12 @@ define run_2nd_test
 	poetry run $(1)
 endef
 
+__get_rpc_latest_block_number:
+	@curl -s -X POST $(CORE_TESTS_TARGET_RPC_URL) \
+	  -H "Content-Type: application/json" \
+	  --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+	  | sed -E 's/.*"result":"([^"]+)".*/\1/' \
+	  | xargs printf "%d"
 
 test:
 ifdef vote
@@ -79,10 +85,12 @@ node3:
 	npx hardhat node --fork $(ETH_RPC_URL3) --port $(NODE_PORT)
 
 test-core:
+	FORKING_BLOCK_NUMBER=$$($(MAKE) --no-print-directory __get_rpc_latest_block_number) && \
 	cd $(CORE_DIR) && \
-	FORK_RPC_URL=$(CORE_TESTS_TARGET_RPC_URL) \
+	echo "FORKING_BLOCK_NUMBER: $$FORKING_BLOCK_NUMBER" && \
 	RPC_URL=$(CORE_TESTS_TARGET_RPC_URL) \
 	NETWORK_STATE_FILE=$(NETWORK_STATE_FILE) \
+	FORKING_BLOCK_NUMBER=$$FORKING_BLOCK_NUMBER \
 	yarn test:integration:trace
 
 slots:
