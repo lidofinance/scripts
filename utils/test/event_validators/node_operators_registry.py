@@ -91,8 +91,8 @@ def validate_node_operator_reward_address_set_event(
         emitted_by
     ), "Wrong event emitter"
 
-def validate_target_validators_count_changed_event(event: EventDict, t: TargetValidatorsCountChanged):
-    _events_chain = ["LogScriptCall", "LogScriptCall", "TargetValidatorsCountChanged", "KeysOpIndexSet", "NonceChanged", "ScriptResult"]
+def validate_target_validators_count_changed_event(event: EventDict, t: TargetValidatorsCountChanged, emitted_by: str):
+    _events_chain = ['LogScriptCall', 'TargetValidatorsCountChanged', 'KeysOpIndexSet', 'NonceChanged', 'ScriptResult', 'Executed']
 
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -100,6 +100,9 @@ def validate_target_validators_count_changed_event(event: EventDict, t: TargetVa
 
     assert event["TargetValidatorsCountChanged"]["nodeOperatorId"] == t.nodeOperatorId
     assert event["TargetValidatorsCountChanged"]["targetValidatorsCount"] == t.targetValidatorsCount
+    assert convert.to_address(event["TargetValidatorsCountChanged"]["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), "Wrong event emitter"
 
 def validate_node_operator_deactivated(event: EventDict, node_operator_id: int):
     _events_chain = [
