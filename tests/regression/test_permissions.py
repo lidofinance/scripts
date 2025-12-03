@@ -509,7 +509,7 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "VAULT_MASTER_ROLE": [contracts.agent],
+                "VAULT_MASTER_ROLE": [],
                 "REDEMPTION_MASTER_ROLE": [],
                 "VALIDATOR_EXIT_ROLE": [VAULTS_ADAPTER],
                 "BAD_DEBT_MASTER_ROLE": [VAULTS_ADAPTER],
@@ -532,7 +532,7 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "REGISTRY_ROLE": [contracts.agent, EASYTRACK_EVMSCRIPT_EXECUTOR, VAULTS_ADAPTER],
+                "REGISTRY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR, VAULTS_ADAPTER],
             },
             "role_preimages": {
                 "REGISTRY_ROLE": "vaults.OperatorsGrid.Registry",
