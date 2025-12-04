@@ -4,7 +4,7 @@ from brownie import convert
 
 
 def validate_set_limit_parameter_event(
-    event: EventDict, limit: int, period_duration_month: int, period_start_timestamp: int, emitted_by: str | None = None, is_dg_event: bool = False
+    event: EventDict, limit: int, period_duration_month: int, period_start_timestamp: int, emitted_by: str | None = None
 ):
     _events_chain = [
         "LogScriptCall",
@@ -12,9 +12,8 @@ def validate_set_limit_parameter_event(
         "CurrentPeriodAdvanced",
         "LimitsParametersChanged",
         "ScriptResult",
+        "Executed",
     ]
-    if is_dg_event:
-        _events_chain += ["Executed"]
 
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -24,11 +23,11 @@ def validate_set_limit_parameter_event(
     assert event.count("LimitsParametersChanged") == 1
     assert event["LimitsParametersChanged"]["_limit"] == limit
     assert event["LimitsParametersChanged"]["_periodDurationMonths"] == period_duration_month
-    if emitted_by is not None:
-        event_emitted_by = convert.to_address(event["LimitsParametersChanged"]["_emitted_by"])
-        assert event_emitted_by == convert.to_address(
-            emitted_by
-        ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
+
+    event_emitted_by = convert.to_address(event["LimitsParametersChanged"]["_emitted_by"])
+    assert event_emitted_by == convert.to_address(
+        emitted_by
+    ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
 
 
 def validate_update_spent_amount_event(
@@ -63,18 +62,15 @@ def validate_set_spent_amount_event(
     event: EventDict,
     new_spent_amount: int,
     emitted_by: str | None = None,
-    is_dg_event: bool = False
 ):
-    _events_chain = ["LogScriptCall", "LogScriptCall", "SpentAmountChanged", "ScriptResult"]
-    if is_dg_event:
-        _events_chain += ["Executed"]
+    _events_chain = ["LogScriptCall", "LogScriptCall", "SpentAmountChanged", "ScriptResult", "Executed"]
 
     validate_events_chain([e.name for e in event], _events_chain)
 
     assert event.count("SpentAmountChanged") == 1
     assert event["SpentAmountChanged"]["_newSpentAmount"] == new_spent_amount
-    if emitted_by is not None:
-        event_emitted_by = convert.to_address(event["SpentAmountChanged"]["_emitted_by"])
-        assert event_emitted_by == convert.to_address(
-            emitted_by
-        ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
+
+    event_emitted_by = convert.to_address(event["SpentAmountChanged"]["_emitted_by"])
+    assert event_emitted_by == convert.to_address(
+        emitted_by
+    ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"

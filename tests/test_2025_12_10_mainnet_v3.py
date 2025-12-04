@@ -562,7 +562,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
                 metadata="TODO DG proposal description",
                 proposal_calls=dual_governance_proposal_calls,
-                emitted_by=[EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE],
             )
 
             # Validate EasyTrack bypass events for new factories
@@ -758,7 +757,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     revoke_from=STETH,
                     sender=AGENT,
                     emitted_by=old_burner,
-                    is_dg_event=True
                 )
 
                 # 1.8. Revoke REQUEST_BURN_SHARES_ROLE from Curated staking module
@@ -768,7 +766,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     revoke_from=NODE_OPERATORS_REGISTRY,
                     sender=AGENT,
                     emitted_by=old_burner,
-                    is_dg_event=True
                 )
 
                 # 1.9. Revoke REQUEST_BURN_SHARES_ROLE from SimpleDVT
@@ -778,7 +775,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     revoke_from=SIMPLE_DVT,
                     sender=AGENT,
                     emitted_by=old_burner,
-                    is_dg_event=True
                 )
 
                 # 1.10. Revoke REQUEST_BURN_SHARES_ROLE from Community Staking Accounting
@@ -788,7 +784,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     revoke_from=CSM_ACCOUNTING,
                     sender=AGENT,
                     emitted_by=old_burner,
-                    is_dg_event=True
                 )
 
                 # 1.11. Accounting Oracle upgrade events
@@ -801,7 +796,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     revoke_from=STETH,
                     sender=AGENT,
                     emitted_by=staking_router,
-                    is_dg_event=True
                 )
 
                 # 1.13. Grant Staking Router REPORT_REWARDS_MINTED_ROLE to Accounting
@@ -811,7 +805,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     grant_to=ACCOUNTING,
                     sender=AGENT,
                     emitted_by=staking_router,
-                    is_dg_event=True
                 )
 
                 # 1.14. Grant OracleDaemonConfig's CONFIG_MANAGER_ROLE to Agent
@@ -821,7 +814,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     grant_to=AGENT,
                     sender=AGENT,
                     emitted_by=oracle_daemon_config,
-                    is_dg_event=True
                 )
 
                 # 1.15. Set SLASHING_RESERVE_WE_RIGHT_SHIFT to 0x2000 at OracleDaemonConfig
@@ -847,7 +839,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     revoke_from=AGENT,
                     sender=AGENT,
                     emitted_by=oracle_daemon_config,
-                    is_dg_event=True
                 )
 
                 # 1.18. Call V3Template.finishUpgrade

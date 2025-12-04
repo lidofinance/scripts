@@ -60,12 +60,9 @@ def validate_node_operator_staking_limit_set_event(
 
 
 def validate_node_operator_name_set_event(
-    event: EventDict, node_operator_name_item: NodeOperatorNameSetItem, emitted_by: str = None, is_dg_event=False
+    event: EventDict, node_operator_name_item: NodeOperatorNameSetItem, emitted_by: str = None
 ):
-    if is_dg_event:
-        _events_chain = ["LogScriptCall", "LogScriptCall", "NodeOperatorNameSet", "ScriptResult", "Executed"]
-    else:
-        _events_chain = ["LogScriptCall", "LogScriptCall", "NodeOperatorNameSet", "ScriptResult"]
+    _events_chain = ["LogScriptCall", "LogScriptCall", "NodeOperatorNameSet", "ScriptResult", "Executed"]
 
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -74,18 +71,14 @@ def validate_node_operator_name_set_event(
     assert event["NodeOperatorNameSet"]["nodeOperatorId"] == node_operator_name_item.nodeOperatorId
     assert event["NodeOperatorNameSet"]["name"] == node_operator_name_item.name
 
-    if emitted_by is not None:
-        assert convert.to_address(event["NodeOperatorNameSet"]["_emitted_by"]) == convert.to_address(
-            emitted_by
-        ), "Wrong event emitter"
+    assert convert.to_address(event["NodeOperatorNameSet"]["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), "Wrong event emitter"
 
 def validate_node_operator_reward_address_set_event(
-    event: EventDict, node_operator_reward_address_item: NodeOperatorRewardAddressSetItem, emitted_by: str = None, is_dg_event=False
+    event: EventDict, node_operator_reward_address_item: NodeOperatorRewardAddressSetItem, emitted_by: str = None
 ):
-    if is_dg_event:
-        _events_chain = ["LogScriptCall", "LogScriptCall", "NodeOperatorRewardAddressSet", "ScriptResult", "Executed"]
-    else:
-        _events_chain = ["LogScriptCall", "LogScriptCall", "NodeOperatorRewardAddressSet", "ScriptResult"]
+    _events_chain = ["LogScriptCall", "LogScriptCall", "NodeOperatorRewardAddressSet", "ScriptResult", "Executed"]
 
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -94,13 +87,12 @@ def validate_node_operator_reward_address_set_event(
     assert event["NodeOperatorRewardAddressSet"]["nodeOperatorId"] == node_operator_reward_address_item.nodeOperatorId
     assert event["NodeOperatorRewardAddressSet"]["rewardAddress"] == node_operator_reward_address_item.reward_address
 
-    if emitted_by is not None:
-        assert convert.to_address(event["NodeOperatorRewardAddressSet"]["_emitted_by"]) == convert.to_address(
-            emitted_by
-        ), "Wrong event emitter"
+    assert convert.to_address(event["NodeOperatorRewardAddressSet"]["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), "Wrong event emitter"
 
-def validate_target_validators_count_changed_event(event: EventDict, t: TargetValidatorsCountChanged):
-    _events_chain = ["LogScriptCall", "LogScriptCall", "TargetValidatorsCountChanged", "KeysOpIndexSet", "NonceChanged", "ScriptResult"]
+def validate_target_validators_count_changed_event(event: EventDict, t: TargetValidatorsCountChanged, emitted_by: str):
+    _events_chain = ['LogScriptCall', 'TargetValidatorsCountChanged', 'KeysOpIndexSet', 'NonceChanged', 'ScriptResult', 'Executed']
 
     validate_events_chain([e.name for e in event], _events_chain)
 
@@ -108,6 +100,9 @@ def validate_target_validators_count_changed_event(event: EventDict, t: TargetVa
 
     assert event["TargetValidatorsCountChanged"]["nodeOperatorId"] == t.nodeOperatorId
     assert event["TargetValidatorsCountChanged"]["targetValidatorsCount"] == t.targetValidatorsCount
+    assert convert.to_address(event["TargetValidatorsCountChanged"]["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), "Wrong event emitter"
 
 def validate_node_operator_deactivated(event: EventDict, node_operator_id: int):
     _events_chain = [
