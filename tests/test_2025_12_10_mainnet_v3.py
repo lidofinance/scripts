@@ -95,13 +95,6 @@ UTC14 = 60 * 60 * 14
 UTC23 = 60 * 60 * 23
 SLASHING_RESERVE_SHIFT = 8192
 
-EXPECTED_VOTE_ID = 194
-EXPECTED_DG_PROPOSAL_ID = 6
-EXPECTED_VOTE_EVENTS_COUNT = 9
-EXPECTED_DG_EVENTS_FROM_AGENT = 17
-EXPECTED_DG_EVENTS_COUNT = 18
-IPFS_DESCRIPTION_HASH = "bafkreic4xuaowfowt7faxnngnzynv7biuo7guv4s4jrngngjzzxyz3up2i"
-
 
 # ============================================================================
 # ============================== Helper functions ============================
@@ -453,43 +446,41 @@ def dual_governance_proposal_calls():
     return proposal_calls
 
 
-def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
+def enact_and_test_voting(
+    helpers,
+    accounts,
+    ldo_holder,
+    vote_ids_from_env,
+    dual_governance_proposal_calls,
+    expected_vote_id,
+    expected_dg_proposal_id,
+):
+    """
+    Submit, enact and test the voting proposal.
+    Includes all before/after voting checks and event validation.
+    """
+    EXPECTED_VOTE_EVENTS_COUNT = 9
+    IPFS_DESCRIPTION_HASH = "bafkreic4xuaowfowt7faxnngnzynv7biuo7guv4s4jrngngjzzxyz3up2i"
 
     # =======================================================================
     # ========================= Arrange variables ===========================
     # =======================================================================
     voting = interface.Voting(VOTING)
-    agent = interface.Agent(AGENT)
     timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
-    dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     easy_track = interface.EasyTrack(EASYTRACK)
-    kernel = interface.Kernel(ARAGON_KERNEL)
-    acl = interface.ACL(ACL)
 
     vault_hub = interface.VaultHub(VAULT_HUB)
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
-    predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
-    burner = interface.Burner(BURNER)
-
-    lido_locator_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
-    accounting_oracle_proxy = interface.OssifiableProxy(ACCOUNTING_ORACLE)
-    staking_router = interface.StakingRouter(STAKING_ROUTER)
-    old_burner = interface.Burner(OLD_BURNER)
-    oracle_daemon_config = interface.OracleDaemonConfig(ORACLE_DAEMON_CONFIG)
-
-    # Save original implementations for comparison
-    locator_impl_before = get_ossifiable_proxy_impl(LIDO_LOCATOR)
-    accounting_oracle_impl_before = get_ossifiable_proxy_impl(ACCOUNTING_ORACLE)
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
     # =========================================================================
     if vote_ids_from_env:
         vote_id = vote_ids_from_env[0]
-        if EXPECTED_VOTE_ID is not None:
-            assert vote_id == EXPECTED_VOTE_ID
-    elif EXPECTED_VOTE_ID is not None and voting.votesLength() > EXPECTED_VOTE_ID:
-        vote_id = EXPECTED_VOTE_ID
+        if expected_vote_id is not None:
+            assert vote_id == expected_vote_id
+    elif expected_vote_id is not None and voting.votesLength() > expected_vote_id:
+        vote_id = expected_vote_id
     else:
         vote_id, _ = start_vote({"from": ldo_holder}, silent=True)
 
@@ -552,12 +543,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
 
-        if EXPECTED_DG_PROPOSAL_ID is not None:
-            assert EXPECTED_DG_PROPOSAL_ID == timelock.getProposalsCount()
+        if expected_dg_proposal_id is not None:
+            assert expected_dg_proposal_id == timelock.getProposalsCount()
 
             validate_dual_governance_submit_event(
                 vote_events[0],
-                proposal_id=EXPECTED_DG_PROPOSAL_ID,
+                proposal_id=expected_dg_proposal_id,
                 proposer=VOTING,
                 executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
                 metadata="TODO DG proposal description",
@@ -638,251 +629,300 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             )
 
 
-    if EXPECTED_DG_PROPOSAL_ID is not None:
-        report_rewards_minted_role = web3.keccak(text="REPORT_REWARDS_MINTED_ROLE")
-        request_burn_shares_role = web3.keccak(text="REQUEST_BURN_SHARES_ROLE")
-        config_manager_role = web3.keccak(text="CONFIG_MANAGER_ROLE")
-        app_manager_role = web3.keccak(text="APP_MANAGER_ROLE")
+def enact_and_test_dg(stranger, expected_dg_proposal_id):
+    """
+    Enact and test the dual governance proposal.
+    Includes all before/after DG checks and event validation.
+    """
+    if expected_dg_proposal_id is None:
+        return
 
-        details = timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)
-        if details["status"] != PROPOSAL_STATUS["executed"]:
-            # =========================================================================
-            # ================== DG before proposal executed checks ===================
-            # =========================================================================
+    EXPECTED_DG_EVENTS_FROM_AGENT = 17
+    EXPECTED_DG_EVENTS_COUNT = 18
 
-            # Step 1.3: Check Lido Locator implementation initial state
-            assert locator_impl_before != LIDO_LOCATOR_IMPL, "Locator implementation should be different before upgrade"
+    # =======================================================================
+    # ========================= Arrange variables ===========================
+    # =======================================================================
+    agent = interface.Agent(AGENT)
+    timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
+    dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
+    kernel = interface.Kernel(ARAGON_KERNEL)
+    acl = interface.ACL(ACL)
 
-            # Step 1.4. Grant Aragon APP_MANAGER_ROLE to the AGENT
-            assert not acl.hasPermission(AGENT, ARAGON_KERNEL, app_manager_role), "AGENT should not have APP_MANAGER_ROLE before upgrade"
+    lido_locator_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
+    accounting_oracle_proxy = interface.OssifiableProxy(ACCOUNTING_ORACLE)
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
+    old_burner = interface.Burner(OLD_BURNER)
+    oracle_daemon_config = interface.OracleDaemonConfig(ORACLE_DAEMON_CONFIG)
 
-            # Step 1.5. Set Lido implementation in Kernel
-            assert not kernel.getApp(kernel.APP_BASES_NAMESPACE(), LIDO_APP_ID) == LIDO_IMPL, "Lido implementation should be different before upgrade"
+    # Save original implementations for comparison
+    locator_impl_before = get_ossifiable_proxy_impl(LIDO_LOCATOR)
+    accounting_oracle_impl_before = get_ossifiable_proxy_impl(ACCOUNTING_ORACLE)
 
-            # Step 1.7. Revoke REQUEST_BURN_SHARES_ROLE from Lido
-            assert old_burner.hasRole(request_burn_shares_role, STETH), "Old Burner should have REQUEST_BURN_SHARES_ROLE on Lido before upgrade"
+    report_rewards_minted_role = web3.keccak(text="REPORT_REWARDS_MINTED_ROLE")
+    request_burn_shares_role = web3.keccak(text="REQUEST_BURN_SHARES_ROLE")
+    config_manager_role = web3.keccak(text="CONFIG_MANAGER_ROLE")
+    app_manager_role = web3.keccak(text="APP_MANAGER_ROLE")
 
-            # Step 1.8. Revoke REQUEST_BURN_SHARES_ROLE from Curated staking module
-            assert old_burner.hasRole(request_burn_shares_role, NODE_OPERATORS_REGISTRY), "Old Burner should have REQUEST_BURN_SHARES_ROLE on Curated staking module before upgrade"
-
-            # Step 1.9. Revoke REQUEST_BURN_SHARES_ROLE from SimpleDVT
-            assert old_burner.hasRole(request_burn_shares_role, SIMPLE_DVT), "Old Burner should have REQUEST_BURN_SHARES_ROLE on SimpleDVT before upgrade"
-
-            # Step 1.10. Revoke REQUEST_BURN_SHARES_ROLE from Community Staking Accounting
-            assert old_burner.hasRole(request_burn_shares_role, CSM_ACCOUNTING), "Old Burner should have REQUEST_BURN_SHARES_ROLE on Community Staking Accounting before upgrade"
-
-            # Step 1.11: Check Accounting Oracle implementation initial state
-            assert accounting_oracle_impl_before != ACCOUNTING_ORACLE_IMPL, "Accounting Oracle implementation should be different before upgrade"
-
-            # Step 1.12. Revoke REPORT_REWARDS_MINTED_ROLE from Lido
-            assert staking_router.hasRole(report_rewards_minted_role, STETH), "Staking Router should have REPORT_REWARDS_MINTED_ROLE on Lido before upgrade"
-
-            # Step 1.13. Grant REPORT_REWARDS_MINTED_ROLE to Accounting
-            assert not staking_router.hasRole(report_rewards_minted_role, ACCOUNTING), "Staking Router should not have REPORT_REWARDS_MINTED_ROLE on Accounting before upgrade"
-
-            # Step 1.14. Grant OracleDaemonConfig's CONFIG_MANAGER_ROLE to Agent
-            assert not oracle_daemon_config.hasRole(config_manager_role, AGENT), "OracleDaemonConfig should not have CONFIG_MANAGER_ROLE on Agent before upgrade"
-
-            # Step 1.15. Set SLASHING_RESERVE_WE_RIGHT_SHIFT to 0x2000 at OracleDaemonConfig
-            try:
-                oracle_daemon_config.get('SLASHING_RESERVE_WE_RIGHT_SHIFT')
-                assert False, "SLASHING_RESERVE_WE_RIGHT_SHIFT should not exist before vote"
-            except Exception:
-                pass  # Expected to fail
-
-            # Step 1.16. Set SLASHING_RESERVE_WE_LEFT_SHIFT to 0x2000 at OracleDaemonConfig
-            try:
-                oracle_daemon_config.get('SLASHING_RESERVE_WE_LEFT_SHIFT')
-                assert False, "SLASHING_RESERVE_WE_LEFT_SHIFT should not exist before vote"
-            except Exception:
-                pass  # Expected to fail
-
-            if details["status"] == PROPOSAL_STATUS["submitted"]:
-                chain.sleep(timelock.getAfterSubmitDelay() + 1)
-                dual_governance.scheduleProposal(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
-
-            if timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == PROPOSAL_STATUS["scheduled"]:
-                chain.sleep(timelock.getAfterScheduleDelay() + 1)
-
-                wait_for_target_time_to_satisfy_time_constrains()
-
-                dg_tx: TransactionReceipt = timelock.execute(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
-                display_dg_events(dg_tx)
-                dg_events = group_dg_events_from_receipt(
-                    dg_tx,
-                    timelock=EMERGENCY_PROTECTED_TIMELOCK,
-                    admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-                )
-                assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_FROM_AGENT
-                assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
-
-                # === DG EXECUTION EVENTS VALIDATION ===
-
-                # 1.2. Call V3Template.startUpgrade
-                validate_upgrade_started_event(dg_events[1])
-
-                # 1.3. Lido Locator upgrade events
-                validate_proxy_upgrade_event(dg_events[2], LIDO_LOCATOR_IMPL, emitted_by=lido_locator_proxy)
-
-                # 1.4. Grant Aragon APP_MANAGER_ROLE to the AGENT
-                validate_aragon_grant_permission_event(
-                    dg_events[3],
-                    entity=AGENT,
-                    app=ARAGON_KERNEL,
-                    role=app_manager_role.hex(),
-                    emitted_by=ACL,
-                )
-
-                # 1.5. Set Lido implementation in Kernel
-                validate_set_app_event(
-                    dg_events[4],
-                    app_id=LIDO_APP_ID,
-                    app=LIDO_IMPL,
-                    emitted_by=ARAGON_KERNEL,
-                )
-
-                # 1.6. Revoke Aragon APP_MANAGER_ROLE from the AGENT
-                validate_aragon_revoke_permission_event(
-                    dg_events[5],
-                    entity=AGENT,
-                    app=ARAGON_KERNEL,
-                    role=app_manager_role.hex(),
-                    emitted_by=ACL,
-                )
-
-                # 1.7. Revoke REQUEST_BURN_SHARES_ROLE from Lido
-                validate_revoke_role_event(
-                    dg_events[6],
-                    role=request_burn_shares_role.hex(),
-                    revoke_from=STETH,
-                    sender=AGENT,
-                    emitted_by=old_burner,
-                )
-
-                # 1.8. Revoke REQUEST_BURN_SHARES_ROLE from Curated staking module
-                validate_revoke_role_event(
-                    dg_events[7],
-                    role=request_burn_shares_role.hex(),
-                    revoke_from=NODE_OPERATORS_REGISTRY,
-                    sender=AGENT,
-                    emitted_by=old_burner,
-                )
-
-                # 1.9. Revoke REQUEST_BURN_SHARES_ROLE from SimpleDVT
-                validate_revoke_role_event(
-                    dg_events[8],
-                    role=request_burn_shares_role.hex(),
-                    revoke_from=SIMPLE_DVT,
-                    sender=AGENT,
-                    emitted_by=old_burner,
-                )
-
-                # 1.10. Revoke REQUEST_BURN_SHARES_ROLE from Community Staking Accounting
-                validate_revoke_role_event(
-                    dg_events[9],
-                    role=request_burn_shares_role.hex(),
-                    revoke_from=CSM_ACCOUNTING,
-                    sender=AGENT,
-                    emitted_by=old_burner,
-                )
-
-                # 1.11. Accounting Oracle upgrade events
-                validate_proxy_upgrade_event(dg_events[10], ACCOUNTING_ORACLE_IMPL, emitted_by=accounting_oracle_proxy)
-
-                # 1.12. Revoke Staking Router REPORT_REWARDS_MINTED_ROLE from the Lido
-                validate_revoke_role_event(
-                    dg_events[11],
-                    role=report_rewards_minted_role.hex(),
-                    revoke_from=STETH,
-                    sender=AGENT,
-                    emitted_by=staking_router,
-                )
-
-                # 1.13. Grant Staking Router REPORT_REWARDS_MINTED_ROLE to Accounting
-                validate_grant_role_event(
-                    dg_events[12],
-                    role=report_rewards_minted_role.hex(),
-                    grant_to=ACCOUNTING,
-                    sender=AGENT,
-                    emitted_by=staking_router,
-                )
-
-                # 1.14. Grant OracleDaemonConfig's CONFIG_MANAGER_ROLE to Agent
-                validate_grant_role_event(
-                    dg_events[13],
-                    role=config_manager_role.hex(),
-                    grant_to=AGENT,
-                    sender=AGENT,
-                    emitted_by=oracle_daemon_config,
-                )
-
-                # 1.15. Set SLASHING_RESERVE_WE_RIGHT_SHIFT to 0x2000 at OracleDaemonConfig
-                validate_config_value_set_event(
-                    dg_events[14],
-                    key='SLASHING_RESERVE_WE_RIGHT_SHIFT',
-                    value=SLASHING_RESERVE_SHIFT,
-                    emitted_by=oracle_daemon_config,
-                )
-
-                # 1.16. Set SLASHING_RESERVE_WE_LEFT_SHIFT to 0x2000 at OracleDaemonConfig
-                validate_config_value_set_event(
-                    dg_events[15],
-                    key='SLASHING_RESERVE_WE_LEFT_SHIFT',
-                    value=SLASHING_RESERVE_SHIFT,
-                    emitted_by=oracle_daemon_config,
-                )
-
-                # 1.17. Revoke OracleDaemonConfig's CONFIG_MANAGER_ROLE from Agent
-                validate_revoke_role_event(
-                    dg_events[16],
-                    role=config_manager_role.hex(),
-                    revoke_from=AGENT,
-                    sender=AGENT,
-                    emitted_by=oracle_daemon_config,
-                )
-
-                # 1.18. Call V3Template.finishUpgrade
-                validate_upgrade_finished_event(dg_events[17])
-
+    details = timelock.getProposalDetails(expected_dg_proposal_id)
+    if details["status"] != PROPOSAL_STATUS["executed"]:
         # =========================================================================
-        # ==================== After DG proposal executed checks ==================
+        # ================== DG before proposal executed checks ===================
         # =========================================================================
 
-        # Step 1.3: Validate Lido Locator implementation was updated
-        assert get_ossifiable_proxy_impl(lido_locator_proxy) == LIDO_LOCATOR_IMPL, "Locator implementation should be updated to the new value"
+        # Step 1.3: Check Lido Locator implementation initial state
+        assert locator_impl_before != LIDO_LOCATOR_IMPL, "Locator implementation should be different before upgrade"
+
+        # Step 1.4. Grant Aragon APP_MANAGER_ROLE to the AGENT
+        assert not acl.hasPermission(AGENT, ARAGON_KERNEL, app_manager_role), "AGENT should not have APP_MANAGER_ROLE before upgrade"
 
         # Step 1.5. Set Lido implementation in Kernel
-        assert kernel.getApp(kernel.APP_BASES_NAMESPACE(), LIDO_APP_ID) == LIDO_IMPL, "Lido implementation should be updated to the new value"
-
-        # Step 1.6. Revoke Aragon APP_MANAGER_ROLE from the AGENT
-        assert not acl.hasPermission(AGENT, ARAGON_KERNEL, app_manager_role), "AGENT should not have APP_MANAGER_ROLE after upgrade"
+        assert not kernel.getApp(kernel.APP_BASES_NAMESPACE(), LIDO_APP_ID) == LIDO_IMPL, "Lido implementation should be different before upgrade"
 
         # Step 1.7. Revoke REQUEST_BURN_SHARES_ROLE from Lido
-        assert not old_burner.hasRole(request_burn_shares_role, STETH), "Old Burner should not have REQUEST_BURN_SHARES_ROLE on Lido after upgrade"
+        assert old_burner.hasRole(request_burn_shares_role, STETH), "Old Burner should have REQUEST_BURN_SHARES_ROLE on Lido before upgrade"
 
         # Step 1.8. Revoke REQUEST_BURN_SHARES_ROLE from Curated staking module
-        assert not old_burner.hasRole(request_burn_shares_role, NODE_OPERATORS_REGISTRY), "Old Burner should not have REQUEST_BURN_SHARES_ROLE on Curated staking module after upgrade"
+        assert old_burner.hasRole(request_burn_shares_role, NODE_OPERATORS_REGISTRY), "Old Burner should have REQUEST_BURN_SHARES_ROLE on Curated staking module before upgrade"
 
         # Step 1.9. Revoke REQUEST_BURN_SHARES_ROLE from SimpleDVT
-        assert not old_burner.hasRole(request_burn_shares_role, SIMPLE_DVT), "Old Burner should not have REQUEST_BURN_SHARES_ROLE on SimpleDVT after upgrade"
+        assert old_burner.hasRole(request_burn_shares_role, SIMPLE_DVT), "Old Burner should have REQUEST_BURN_SHARES_ROLE on SimpleDVT before upgrade"
 
         # Step 1.10. Revoke REQUEST_BURN_SHARES_ROLE from Community Staking Accounting
-        assert not old_burner.hasRole(request_burn_shares_role, CSM_ACCOUNTING), "Old Burner should not have REQUEST_BURN_SHARES_ROLE on Community Staking Accounting after upgrade"
+        assert old_burner.hasRole(request_burn_shares_role, CSM_ACCOUNTING), "Old Burner should have REQUEST_BURN_SHARES_ROLE on Community Staking Accounting before upgrade"
 
-        # Step 1.11: Validate Accounting Oracle implementation was updated
-        assert get_ossifiable_proxy_impl(accounting_oracle_proxy) == ACCOUNTING_ORACLE_IMPL, "Accounting Oracle implementation should be updated to the new value"
+        # Step 1.11: Check Accounting Oracle implementation initial state
+        assert accounting_oracle_impl_before != ACCOUNTING_ORACLE_IMPL, "Accounting Oracle implementation should be different before upgrade"
 
         # Step 1.12. Revoke REPORT_REWARDS_MINTED_ROLE from Lido
-        assert not staking_router.hasRole(report_rewards_minted_role, STETH), "Staking Router should not have REPORT_REWARDS_MINTED_ROLE on Lido after upgrade"
+        assert staking_router.hasRole(report_rewards_minted_role, STETH), "Staking Router should have REPORT_REWARDS_MINTED_ROLE on Lido before upgrade"
 
         # Step 1.13. Grant REPORT_REWARDS_MINTED_ROLE to Accounting
-        assert staking_router.hasRole(report_rewards_minted_role, ACCOUNTING), "Staking Router should have REPORT_REWARDS_MINTED_ROLE on Accounting after upgrade"
+        assert not staking_router.hasRole(report_rewards_minted_role, ACCOUNTING), "Staking Router should not have REPORT_REWARDS_MINTED_ROLE on Accounting before upgrade"
+
+        # Step 1.14. Grant OracleDaemonConfig's CONFIG_MANAGER_ROLE to Agent
+        assert not oracle_daemon_config.hasRole(config_manager_role, AGENT), "OracleDaemonConfig should not have CONFIG_MANAGER_ROLE on Agent before upgrade"
 
         # Step 1.15. Set SLASHING_RESERVE_WE_RIGHT_SHIFT to 0x2000 at OracleDaemonConfig
-        assert convert.to_uint(oracle_daemon_config.get("SLASHING_RESERVE_WE_RIGHT_SHIFT")) == SLASHING_RESERVE_SHIFT, "OracleDaemonConfig should have SLASHING_RESERVE_WE_RIGHT_SHIFT set to 0x2000 after upgrade"
+        try:
+            oracle_daemon_config.get('SLASHING_RESERVE_WE_RIGHT_SHIFT')
+            assert False, "SLASHING_RESERVE_WE_RIGHT_SHIFT should not exist before vote"
+        except Exception:
+            pass  # Expected to fail
 
         # Step 1.16. Set SLASHING_RESERVE_WE_LEFT_SHIFT to 0x2000 at OracleDaemonConfig
-        assert convert.to_uint(oracle_daemon_config.get("SLASHING_RESERVE_WE_LEFT_SHIFT")) == SLASHING_RESERVE_SHIFT, "OracleDaemonConfig should have SLASHING_RESERVE_WE_LEFT_SHIFT set to 0x2000 after upgrade"
+        try:
+            oracle_daemon_config.get('SLASHING_RESERVE_WE_LEFT_SHIFT')
+            assert False, "SLASHING_RESERVE_WE_LEFT_SHIFT should not exist before vote"
+        except Exception:
+            pass  # Expected to fail
 
-        # Step 1.17. Revoke OracleDaemonConfig's CONFIG_MANAGER_ROLE from Agent
-        assert not oracle_daemon_config.hasRole(config_manager_role, AGENT), "OracleDaemonConfig should not have CONFIG_MANAGER_ROLE on Agent after upgrade"
+        if details["status"] == PROPOSAL_STATUS["submitted"]:
+            chain.sleep(timelock.getAfterSubmitDelay() + 1)
+            dual_governance.scheduleProposal(expected_dg_proposal_id, {"from": stranger})
+
+        if timelock.getProposalDetails(expected_dg_proposal_id)["status"] == PROPOSAL_STATUS["scheduled"]:
+            chain.sleep(timelock.getAfterScheduleDelay() + 1)
+
+            wait_for_target_time_to_satisfy_time_constrains()
+
+            dg_tx: TransactionReceipt = timelock.execute(expected_dg_proposal_id, {"from": stranger})
+            display_dg_events(dg_tx)
+            dg_events = group_dg_events_from_receipt(
+                dg_tx,
+                timelock=EMERGENCY_PROTECTED_TIMELOCK,
+                admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+            )
+            assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_FROM_AGENT
+            assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
+
+            # === DG EXECUTION EVENTS VALIDATION ===
+
+            # 1.2. Call V3Template.startUpgrade
+            validate_upgrade_started_event(dg_events[1])
+
+            # 1.3. Lido Locator upgrade events
+            validate_proxy_upgrade_event(dg_events[2], LIDO_LOCATOR_IMPL, emitted_by=lido_locator_proxy)
+
+            # 1.4. Grant Aragon APP_MANAGER_ROLE to the AGENT
+            validate_aragon_grant_permission_event(
+                dg_events[3],
+                entity=AGENT,
+                app=ARAGON_KERNEL,
+                role=app_manager_role.hex(),
+                emitted_by=ACL,
+            )
+
+            # 1.5. Set Lido implementation in Kernel
+            validate_set_app_event(
+                dg_events[4],
+                app_id=LIDO_APP_ID,
+                app=LIDO_IMPL,
+                emitted_by=ARAGON_KERNEL,
+            )
+
+            # 1.6. Revoke Aragon APP_MANAGER_ROLE from the AGENT
+            validate_aragon_revoke_permission_event(
+                dg_events[5],
+                entity=AGENT,
+                app=ARAGON_KERNEL,
+                role=app_manager_role.hex(),
+                emitted_by=ACL,
+            )
+
+            # 1.7. Revoke REQUEST_BURN_SHARES_ROLE from Lido
+            validate_revoke_role_event(
+                dg_events[6],
+                role=request_burn_shares_role.hex(),
+                revoke_from=STETH,
+                sender=AGENT,
+                emitted_by=old_burner,
+            )
+
+            # 1.8. Revoke REQUEST_BURN_SHARES_ROLE from Curated staking module
+            validate_revoke_role_event(
+                dg_events[7],
+                role=request_burn_shares_role.hex(),
+                revoke_from=NODE_OPERATORS_REGISTRY,
+                sender=AGENT,
+                emitted_by=old_burner,
+            )
+
+            # 1.9. Revoke REQUEST_BURN_SHARES_ROLE from SimpleDVT
+            validate_revoke_role_event(
+                dg_events[8],
+                role=request_burn_shares_role.hex(),
+                revoke_from=SIMPLE_DVT,
+                sender=AGENT,
+                emitted_by=old_burner,
+            )
+
+            # 1.10. Revoke REQUEST_BURN_SHARES_ROLE from Community Staking Accounting
+            validate_revoke_role_event(
+                dg_events[9],
+                role=request_burn_shares_role.hex(),
+                revoke_from=CSM_ACCOUNTING,
+                sender=AGENT,
+                emitted_by=old_burner,
+            )
+
+            # 1.11. Accounting Oracle upgrade events
+            validate_proxy_upgrade_event(dg_events[10], ACCOUNTING_ORACLE_IMPL, emitted_by=accounting_oracle_proxy)
+
+            # 1.12. Revoke Staking Router REPORT_REWARDS_MINTED_ROLE from the Lido
+            validate_revoke_role_event(
+                dg_events[11],
+                role=report_rewards_minted_role.hex(),
+                revoke_from=STETH,
+                sender=AGENT,
+                emitted_by=staking_router,
+            )
+
+            # 1.13. Grant Staking Router REPORT_REWARDS_MINTED_ROLE to Accounting
+            validate_grant_role_event(
+                dg_events[12],
+                role=report_rewards_minted_role.hex(),
+                grant_to=ACCOUNTING,
+                sender=AGENT,
+                emitted_by=staking_router,
+            )
+
+            # 1.14. Grant OracleDaemonConfig's CONFIG_MANAGER_ROLE to Agent
+            validate_grant_role_event(
+                dg_events[13],
+                role=config_manager_role.hex(),
+                grant_to=AGENT,
+                sender=AGENT,
+                emitted_by=oracle_daemon_config,
+            )
+
+            # 1.15. Set SLASHING_RESERVE_WE_RIGHT_SHIFT to 0x2000 at OracleDaemonConfig
+            validate_config_value_set_event(
+                dg_events[14],
+                key='SLASHING_RESERVE_WE_RIGHT_SHIFT',
+                value=SLASHING_RESERVE_SHIFT,
+                emitted_by=oracle_daemon_config,
+            )
+
+            # 1.16. Set SLASHING_RESERVE_WE_LEFT_SHIFT to 0x2000 at OracleDaemonConfig
+            validate_config_value_set_event(
+                dg_events[15],
+                key='SLASHING_RESERVE_WE_LEFT_SHIFT',
+                value=SLASHING_RESERVE_SHIFT,
+                emitted_by=oracle_daemon_config,
+            )
+
+            # 1.17. Revoke OracleDaemonConfig's CONFIG_MANAGER_ROLE from Agent
+            validate_revoke_role_event(
+                dg_events[16],
+                role=config_manager_role.hex(),
+                revoke_from=AGENT,
+                sender=AGENT,
+                emitted_by=oracle_daemon_config,
+            )
+
+            # 1.18. Call V3Template.finishUpgrade
+            validate_upgrade_finished_event(dg_events[17])
+
+    # =========================================================================
+    # ==================== After DG proposal executed checks ==================
+    # =========================================================================
+
+    # Step 1.3: Validate Lido Locator implementation was updated
+    assert get_ossifiable_proxy_impl(lido_locator_proxy) == LIDO_LOCATOR_IMPL, "Locator implementation should be updated to the new value"
+
+    # Step 1.5. Set Lido implementation in Kernel
+    assert kernel.getApp(kernel.APP_BASES_NAMESPACE(), LIDO_APP_ID) == LIDO_IMPL, "Lido implementation should be updated to the new value"
+
+    # Step 1.6. Revoke Aragon APP_MANAGER_ROLE from the AGENT
+    assert not acl.hasPermission(AGENT, ARAGON_KERNEL, app_manager_role), "AGENT should not have APP_MANAGER_ROLE after upgrade"
+
+    # Step 1.7. Revoke REQUEST_BURN_SHARES_ROLE from Lido
+    assert not old_burner.hasRole(request_burn_shares_role, STETH), "Old Burner should not have REQUEST_BURN_SHARES_ROLE on Lido after upgrade"
+
+    # Step 1.8. Revoke REQUEST_BURN_SHARES_ROLE from Curated staking module
+    assert not old_burner.hasRole(request_burn_shares_role, NODE_OPERATORS_REGISTRY), "Old Burner should not have REQUEST_BURN_SHARES_ROLE on Curated staking module after upgrade"
+
+    # Step 1.9. Revoke REQUEST_BURN_SHARES_ROLE from SimpleDVT
+    assert not old_burner.hasRole(request_burn_shares_role, SIMPLE_DVT), "Old Burner should not have REQUEST_BURN_SHARES_ROLE on SimpleDVT after upgrade"
+
+    # Step 1.10. Revoke REQUEST_BURN_SHARES_ROLE from Community Staking Accounting
+    assert not old_burner.hasRole(request_burn_shares_role, CSM_ACCOUNTING), "Old Burner should not have REQUEST_BURN_SHARES_ROLE on Community Staking Accounting after upgrade"
+
+    # Step 1.11: Validate Accounting Oracle implementation was updated
+    assert get_ossifiable_proxy_impl(accounting_oracle_proxy) == ACCOUNTING_ORACLE_IMPL, "Accounting Oracle implementation should be updated to the new value"
+
+    # Step 1.12. Revoke REPORT_REWARDS_MINTED_ROLE from Lido
+    assert not staking_router.hasRole(report_rewards_minted_role, STETH), "Staking Router should not have REPORT_REWARDS_MINTED_ROLE on Lido after upgrade"
+
+    # Step 1.13. Grant REPORT_REWARDS_MINTED_ROLE to Accounting
+    assert staking_router.hasRole(report_rewards_minted_role, ACCOUNTING), "Staking Router should have REPORT_REWARDS_MINTED_ROLE on Accounting after upgrade"
+
+    # Step 1.15. Set SLASHING_RESERVE_WE_RIGHT_SHIFT to 0x2000 at OracleDaemonConfig
+    assert convert.to_uint(oracle_daemon_config.get("SLASHING_RESERVE_WE_RIGHT_SHIFT")) == SLASHING_RESERVE_SHIFT, "OracleDaemonConfig should have SLASHING_RESERVE_WE_RIGHT_SHIFT set to 0x2000 after upgrade"
+
+    # Step 1.16. Set SLASHING_RESERVE_WE_LEFT_SHIFT to 0x2000 at OracleDaemonConfig
+    assert convert.to_uint(oracle_daemon_config.get("SLASHING_RESERVE_WE_LEFT_SHIFT")) == SLASHING_RESERVE_SHIFT, "OracleDaemonConfig should have SLASHING_RESERVE_WE_LEFT_SHIFT set to 0x2000 after upgrade"
+
+    # Step 1.17. Revoke OracleDaemonConfig's CONFIG_MANAGER_ROLE from Agent
+    assert not oracle_daemon_config.hasRole(config_manager_role, AGENT), "OracleDaemonConfig should not have CONFIG_MANAGER_ROLE on Agent after upgrade"
+
+
+def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
+    EXPECTED_VOTE_ID = 194
+    EXPECTED_DG_PROPOSAL_ID = 6
+
+    enact_and_test_voting(
+        helpers,
+        accounts,
+        ldo_holder,
+        vote_ids_from_env,
+        dual_governance_proposal_calls,
+        expected_vote_id=EXPECTED_VOTE_ID,
+        expected_dg_proposal_id=EXPECTED_DG_PROPOSAL_ID,
+    )
+
+    enact_and_test_dg(
+        stranger,
+        expected_dg_proposal_id=EXPECTED_DG_PROPOSAL_ID,
+    )

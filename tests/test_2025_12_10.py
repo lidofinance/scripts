@@ -157,14 +157,6 @@ USDT_TOKEN = "0xdac17f958d2ee523a2206206994597c13d831ec7"
 DAI_TOKEN = "0x6b175474e89094c44da98b954eedeac495271d0f"
 
 
-# ============================== Voting ===================================
-EXPECTED_VOTE_ID = 194
-EXPECTED_DG_PROPOSAL_ID = 6
-EXPECTED_VOTE_EVENTS_COUNT = 7
-EXPECTED_DG_EVENTS_COUNT = 5
-IPFS_DESCRIPTION_HASH = "bafkreigs2dewxxu7rj6eifpxsqvib23nsiw2ywsmh3lhewyqlmyn46obnm"
-
-
 # ============================== Finance Limits ===================================
 AMOUNT_LIMITS_LEN_BEFORE = 19
 def amount_limits_before() -> List[Param]:
@@ -412,7 +404,18 @@ def dual_governance_proposal_calls():
     return proposal_calls
 
 
-def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
+def enact_and_test_voting(
+    helpers,
+    accounts,
+    ldo_holder,
+    vote_ids_from_env,
+    stranger,
+    dual_governance_proposal_calls,
+    EXPECTED_VOTE_ID,
+    EXPECTED_DG_PROPOSAL_ID,
+):
+    EXPECTED_VOTE_EVENTS_COUNT = 7
+    IPFS_DESCRIPTION_HASH = "bafkreigs2dewxxu7rj6eifpxsqvib23nsiw2ywsmh3lhewyqlmyn46obnm"
 
     # =======================================================================
     # ========================= Arrange variables ===========================
@@ -420,14 +423,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     voting = interface.Voting(VOTING)
     agent = interface.Agent(AGENT)
     timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
-    dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     matic_token = interface.ERC20(MATIC_TOKEN)
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     et_trp_registry = interface.AllowedRecipientRegistry(ET_TRP_REGISTRY)
     acl = interface.ACL(ACL)
     stablecoins_allowed_tokens_registry = interface.AllowedTokensRegistry(STABLECOINS_ALLOWED_TOKENS_REGISTRY)
     curated_module = interface.NodeOperatorsRegistry(CURATED_MODULE)
-
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -444,7 +445,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     _, call_script_items = get_vote_items()
     onchain_script = voting.getVote(vote_id)["script"]
     assert onchain_script == encode_call_script(call_script_items)
-
 
     # =========================================================================
     # ============================= Execute Vote ==============================
@@ -494,13 +494,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         matic_labs_balance_before = matic_token.balanceOf(LOL_MS)
         assert matic_labs_balance_before == MATIC_IN_LIDO_LABS_BEFORE
 
-
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
 
         vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
         display_voting_events(vote_tx)
         vote_events = group_voting_events_from_receipt(vote_tx)
-
 
         # =======================================================================
         # ========================= After voting checks =========================
@@ -575,7 +573,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert not acl.hasPermission["address,address,bytes32,uint[]"](
             ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
             [convert.to_uint(dai_limit_after.address), convert.to_uint(stranger.address), dai_limit_after.limit + 1],
-        ) 
+        )
 
         assert acl.hasPermission["address,address,bytes32,uint[]"](
             ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
@@ -584,7 +582,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert not acl.hasPermission["address,address,bytes32,uint[]"](
             ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
             [convert.to_uint(steth_limit_after.address), convert.to_uint(stranger.address), steth_limit_after.limit + 1],
-        ) 
+        )
 
         assert acl.hasPermission["address,address,bytes32,uint[]"](
             ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
@@ -593,7 +591,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert not acl.hasPermission["address,address,bytes32,uint[]"](
             ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
             [convert.to_uint(eth_limit_after.address), convert.to_uint(stranger.address), eth_limit_after.limit + 1],
-        ) 
+        )
 
         assert acl.hasPermission["address,address,bytes32,uint[]"](
             ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
@@ -602,7 +600,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert not acl.hasPermission["address,address,bytes32,uint[]"](
             ET_EVM_SCRIPT_EXECUTOR, FINANCE, web3.keccak(text=CREATE_PAYMENTS_ROLE).hex(),
             [convert.to_uint(ldo_limit_after.address), convert.to_uint(stranger.address), ldo_limit_after.limit + 1],
-        ) 
+        )
 
         # Item 7
         matic_treasury_balance_after = matic_token.balanceOf(agent.address)
@@ -729,7 +727,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     interface.ERC20(SUSDS_TOKEN),
                     [accounts.at(LIDO_LABS_TRUSTED_CALLER, force=True)],
                     [1 * 10**18],
-                stranger,
+                    stranger,
                 )
             chain.revert()
 
@@ -768,13 +766,27 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     interface.ERC20(WSTETH_TOKEN),
                     [accounts.at(LIDO_LABS_TRUSTED_CALLER, force=True)],
                     [1 * 10**18],
-                stranger,
+                    stranger,
                 )
             chain.revert()
 
             # happy path
             usds_wrap_happy_path(stranger)
 
+
+def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
+    EXPECTED_DG_EVENTS_COUNT = 5
+
+    # =======================================================================
+    # ========================= Arrange variables ===========================
+    # =======================================================================
+    voting = interface.Voting(VOTING)
+    agent = interface.Agent(AGENT)
+    timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
+    dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
+    et_trp_registry = interface.AllowedRecipientRegistry(ET_TRP_REGISTRY)
+    curated_module = interface.NodeOperatorsRegistry(CURATED_MODULE)
 
     if EXPECTED_DG_PROPOSAL_ID is not None:
         details = timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)
@@ -819,7 +831,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert trp_spendable_balance_before == TRP_LIMIT_BEFORE - trp_already_spent_amount_before
             assert trp_period_start_before == TRP_PERIOD_START_TIMESTAMP
             assert trp_period_end_before == TRP_PERIOD_END_TIMESTAMP
-
 
             if details["status"] == PROPOSAL_STATUS["submitted"]:
                 chain.sleep(timelock.getAfterSubmitDelay() + 1)
@@ -962,9 +973,28 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert trp_period_start_after == TRP_PERIOD_START_TIMESTAMP
         assert trp_period_end_after == TRP_PERIOD_END_TIMESTAMP
 
-
         # scenraio test for TRP ET factory behavior after the vote
         trp_limit_test(stranger)
+
+def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
+    EXPECTED_VOTE_ID = 194
+    EXPECTED_DG_PROPOSAL_ID = 6
+
+    enact_and_test_voting(
+        helpers,
+        accounts,
+        ldo_holder,
+        vote_ids_from_env,
+        stranger,
+        dual_governance_proposal_calls,
+        EXPECTED_VOTE_ID,
+        EXPECTED_DG_PROPOSAL_ID,
+    )
+
+    enact_and_test_dg(
+        stranger,
+        EXPECTED_DG_PROPOSAL_ID,
+    )
 
 
 def trp_limit_test(stranger):
@@ -988,7 +1018,7 @@ def trp_limit_test(stranger):
             [to_spend + 1],
             stranger,
         )
-    
+
     # spend all in several transfers
     recipients = []
     amounts = []
@@ -1039,7 +1069,7 @@ def et_limit_test(stranger, token, max_spend_at_once, to_spend, TRUSTED_CALLER, 
             [to_spend + 1],
             stranger,
         )
-    
+
     # spend all in several transfers
     recipients = []
     amounts = []
@@ -1098,7 +1128,7 @@ def finance_limit_test(stranger, token, to_spend, decimals, TRUSTED_CALLER, TOP_
             [to_spend + 1],
             stranger,
         )
-    
+
     # spend the allowed balance
     create_and_enact_payment_motion(
         easy_track,
@@ -1116,13 +1146,13 @@ def finance_limit_test(stranger, token, to_spend, decimals, TRUSTED_CALLER, TOP_
 def usds_wrap_happy_path(stranger):
     USDC_FOR_TRANSFER = 1000
     USDS_TOKEN = "0xdC035D45d973E3EC169d2276DDab16f1e407384F"
-    
+
     easy_track = interface.EasyTrack(EASY_TRACK)
-    usdc = interface.Usdc(USDC_TOKEN)     
+    usdc = interface.Usdc(USDC_TOKEN)
     psmVariant1Actions = interface.PSMVariant1Actions(PSM_VARIANT1_ACTIONS)
     usds_token = interface.Usds(USDS_TOKEN)
     susds_token = interface.Susds(SUSDS_TOKEN)
-    
+
     eoa = accounts[0]
 
     chain.snapshot()

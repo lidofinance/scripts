@@ -29,8 +29,7 @@
 6. Add SetJailStatusInOperatorGrid factory to Easy Track (permissions: vaultsAdapter, setVaultJailStatus)
 7. Add UpdateVaultsFeesInOperatorGrid factory to Easy Track (permissions: vaultsAdapter, updateVaultFees)
 8. Add ForceValidatorExitsInVaultHub factory to Easy Track (permissions: vaultsAdapter, forceValidatorExit)
-9. Add SetLiabilitySharesTargetInVaultHub factory to Easy Track (permissions: vaultsAdapter, setLiabilitySharesTarget)
-10. Add SocializeBadDebtInVaultHub factory to Easy Track (permissions: vaultsAdapter, socializeBadDebt)
+9. Add SocializeBadDebtInVaultHub factory to Easy Track (permissions: vaultsAdapter, socializeBadDebt)
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
