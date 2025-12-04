@@ -6,7 +6,7 @@ I. Change Curated Module fees
 1.1. Change Curated Module (MODULE_ID = 1) fees in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999: Module fee from 500 BP to 350 BP and Treasury fee from 500 BP to 650 BP
 
 II. Raise SDVT module stake share limit
-1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 BP to 430 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 BP to 430 BP and priority exit threshold from 444 BP to 478 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
 
 III. Set A41 soft target validator limit to 0
 1.3. Set soft-mode target validators limit to 0 for Node operator A41 (ID = 32) in Curated Module (MODULE_ID = 1) in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
@@ -221,7 +221,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ]),
         agent_forward([
-            # 1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 BP to 430 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+            # 1.2. Raise SDVT (MODULE_ID = 2) stake share limit from 400 BP to 430 BP and priority exit threshold from 444 BP to 478 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
             (
                 staking_router.address,
                 staking_router.updateStakingModule.encode_input(
