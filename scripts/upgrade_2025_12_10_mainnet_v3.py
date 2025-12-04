@@ -1,7 +1,7 @@
 """
 # Vote 2025_12_10
 
-=== 1. DG PROPOPSAL ===
+=== 1. DG PROPOSAL ===
 1.1. Ensure DG proposal execution is within daily time window (14:00 UTC - 23:00 UTC)
 1.2. Call V3Template.startUpgrade
 1.3. Upgrade LidoLocator implementation

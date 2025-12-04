@@ -88,7 +88,6 @@ GAS_SUPPLY_STETH_SPENDABLE_BALANCE = 1_000 * 10**18
 
 LOL_MS = "0x87D93d9B2C672bf9c9642d853a8682546a5012B5"
 SDVT = "0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433"
-DEV_GAS_STORE = "0x7FEa69d107A77B5817379d1254cc80D9671E171b"
 PSM_VARIANT1_ACTIONS = "0xd0A61F2963622e992e6534bde4D52fd0a89F39E0"
 
 
@@ -113,7 +112,8 @@ CURATED_MODULE_NAME = "curated-onchain-v1"
 SDVT_MODULE_ID = 2
 SDVT_MODULE_OLD_TARGET_SHARE_BP = 400
 SDVT_MODULE_NEW_TARGET_SHARE_BP = 430
-SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP = 444
+SDVT_MODULE_OLD_PRIORITY_EXIT_THRESHOLD_BP = 444
+SDVT_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP = 478
 SDVT_MODULE_MODULE_FEE_BP = 800
 SDVT_MODULE_TREASURY_FEE_BP = 200
 SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK = 150
@@ -125,7 +125,7 @@ MATIC_IN_TREASURY_AFTER = 165_781_175_837_137_177
 MATIC_IN_LIDO_LABS_BEFORE = 0
 MATIC_IN_LIDO_LABS_AFTER = 508_106 * 10**18
 
-TRP_LIMIT_BEFORE = 9_178_284.42 * 10**18
+TRP_LIMIT_BEFORE = 9_178_284_420 * 10**15 # == 9_178_284.42 * 10**18
 TRP_ALREADY_SPENT_AFTER = 0
 TRP_LIMIT_AFTER = 15_000_000 * 10**18
 TRP_PERIOD_START_TIMESTAMP = 1735689600  # January 1, 2025 UTC
@@ -363,7 +363,7 @@ def dual_governance_proposal_calls():
                 staking_router.updateStakingModule.encode_input(
                     SDVT_MODULE_ID,
                     SDVT_MODULE_NEW_TARGET_SHARE_BP,
-                    SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP,
+                    SDVT_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP,
                     SDVT_MODULE_MODULE_FEE_BP,
                     SDVT_MODULE_TREASURY_FEE_BP,
                     SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK,
@@ -602,9 +602,9 @@ def enact_and_test_voting(
         matic_labs_balance_after = matic_token.balanceOf(LOL_MS)
         assert matic_labs_balance_after == MATIC_IN_LIDO_LABS_AFTER
         # make sure LOL can actually spend the received MATIC
-        matic_token.transfer(DEV_GAS_STORE, MATIC_IN_LIDO_LABS_AFTER / 2, {"from": LOL_MS})
+        matic_token.transfer(stranger.address, MATIC_IN_LIDO_LABS_AFTER / 2, {"from": LOL_MS})
         assert matic_token.balanceOf(LOL_MS) == MATIC_IN_LIDO_LABS_AFTER / 2
-        assert matic_token.balanceOf(DEV_GAS_STORE) == MATIC_IN_LIDO_LABS_AFTER / 2
+        assert matic_token.balanceOf(stranger.address) == MATIC_IN_LIDO_LABS_AFTER / 2
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
@@ -807,7 +807,7 @@ def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
             sdvt_module_before = staking_router.getStakingModule(SDVT_MODULE_ID)
             assert sdvt_module_before['stakeShareLimit'] == SDVT_MODULE_OLD_TARGET_SHARE_BP
             assert sdvt_module_before['id'] == SDVT_MODULE_ID
-            assert sdvt_module_before['priorityExitShareThreshold'] == SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP
+            assert sdvt_module_before['priorityExitShareThreshold'] == SDVT_MODULE_OLD_PRIORITY_EXIT_THRESHOLD_BP
             assert sdvt_module_before['stakingModuleFee'] == SDVT_MODULE_MODULE_FEE_BP
             assert sdvt_module_before['treasuryFee'] == SDVT_MODULE_TREASURY_FEE_BP
             assert sdvt_module_before['maxDepositsPerBlock'] == SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK
@@ -867,7 +867,7 @@ def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
                         target_share=SDVT_MODULE_NEW_TARGET_SHARE_BP,
                         module_fee=SDVT_MODULE_MODULE_FEE_BP,
                         treasury_fee=SDVT_MODULE_TREASURY_FEE_BP,
-                        priority_exit_share=SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP),
+                        priority_exit_share=SDVT_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP),
                     emitted_by=STAKING_ROUTER
                 )
                 validate_target_validators_count_changed_event(
@@ -922,7 +922,7 @@ def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
         sdvt_module_after = staking_router.getStakingModule(SDVT_MODULE_ID)
         assert sdvt_module_after['stakeShareLimit'] == SDVT_MODULE_NEW_TARGET_SHARE_BP
         assert sdvt_module_after['id'] == SDVT_MODULE_ID
-        assert sdvt_module_after['priorityExitShareThreshold'] == SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP
+        assert sdvt_module_after['priorityExitShareThreshold'] == SDVT_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP
         assert sdvt_module_after['stakingModuleFee'] == SDVT_MODULE_MODULE_FEE_BP
         assert sdvt_module_after['treasuryFee'] == SDVT_MODULE_TREASURY_FEE_BP
         assert sdvt_module_after['maxDepositsPerBlock'] == SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK
@@ -941,7 +941,6 @@ def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
             assert sdvt_module_after['exitedValidatorsCount'] == sdvt_module_before['exitedValidatorsCount']
             assert sdvt_module_after['maxDepositsPerBlock'] == sdvt_module_before['maxDepositsPerBlock']
             assert sdvt_module_after['minDepositBlockDistance'] == sdvt_module_before['minDepositBlockDistance']
-            assert sdvt_module_after['priorityExitShareThreshold'] == sdvt_module_before['priorityExitShareThreshold']
             assert len(sdvt_module_after.items()) == len(sdvt_module_before.items())
             assert len(sdvt_module_after.items()) == 13
 

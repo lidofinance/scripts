@@ -1,7 +1,7 @@
 """
 # Vote 2025_12_10
 
-=== 1. DG PROPOPSAL ===
+=== 1. DG PROPOSAL ===
 I. Change Curated Module fees
 1.1. Change Curated Module (MODULE_ID = 1) fees in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999: Module fee from 500 BP to 350 BP and Treasury fee from 500 BP to 650 BP
 
@@ -17,7 +17,7 @@ IV. Reset Easy Track TRP limit
 
 === NON-DG ITEMS ===
 V. Add sUSDS token to stablecoins Allowed Tokens Registry and sUSDS transfer permission to Easy Track EVM Script Executor in Aragon Finance
-2. Termporarily grant ADD_TOKEN_TO_ALLOWED_LIST_ROLE to Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
+2. Temporarily grant ADD_TOKEN_TO_ALLOWED_LIST_ROLE to Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
 3. Add sUSDS token 0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD to stablecoins Allowed Tokens Registry 0x4AC40c34f8992bb1e5E856A448792158022551ca
 4. Revoke ADD_TOKEN_TO_ALLOWED_LIST_ROLE from Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e
 5. Revoke CREATE_PAYMENTS_ROLE from Easy Track EVM Script Executor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Aragon Finance 0xB9E5CBB9CA5b0d659238807E84D0176930753d86
@@ -88,7 +88,7 @@ CURATED_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 
 SDVT_MODULE_ID = 2
 SDVT_MODULE_NEW_TARGET_SHARE_BP = 430
-SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP = 444
+SDVT_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP = 478
 SDVT_MODULE_MODULE_FEE_BP = 800
 SDVT_MODULE_TREASURY_FEE_BP = 200
 SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK = 150
@@ -227,7 +227,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
                 staking_router.updateStakingModule.encode_input(
                     SDVT_MODULE_ID,
                     SDVT_MODULE_NEW_TARGET_SHARE_BP,
-                    SDVT_MODULE_PRIORITY_EXIT_THRESHOLD_BP,
+                    SDVT_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP,
                     SDVT_MODULE_MODULE_FEE_BP,
                     SDVT_MODULE_TREASURY_FEE_BP,
                     SDVT_MODULE_MAX_DEPOSITS_PER_BLOCK,
@@ -266,7 +266,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             dg_call_script[0]
         ),
         (
-            "2. Termporarily grant ADD_TOKEN_TO_ALLOWED_LIST_ROLE to Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e",
+            "2. Temporarily grant ADD_TOKEN_TO_ALLOWED_LIST_ROLE to Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e",
             (
                 stablecoins_allowed_tokens_registry.address, stablecoins_allowed_tokens_registry.grantRole.encode_input(
                     convert.to_uint(web3.keccak(text=ADD_TOKEN_TO_ALLOWED_LIST_ROLE)),
