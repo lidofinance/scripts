@@ -43,6 +43,7 @@ EXPECTED_SNAPSHOT_DIFFS: dict[str, Any] = {
     "lido.Lido.bufferedEther": ZERO_BYTES32,
     "lido.Lido.depositedValidators": ZERO_BYTES32,
     "lido.StETH.totalShares": ZERO_BYTES32,
+    "getFeeDistribution": ((5165, 0, 4834), (3783, 0, 6216)),
 }
 
 def test_lido_no_changes_in_views(sandwich_upgrade: SandwichFn):
