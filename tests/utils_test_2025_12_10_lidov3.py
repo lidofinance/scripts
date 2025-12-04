@@ -1,7 +1,5 @@
-from typing import Optional
 from brownie import chain, interface, web3, convert
 from brownie.network.transaction import TransactionReceipt
-import pytest
 
 from utils.test.tx_tracing_helpers import (
     group_voting_events_from_receipt,
@@ -20,7 +18,6 @@ from utils.agent import agent_forward
 from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 from utils.test.event_validators.easy_track import validate_evmscript_factory_added_event, EVMScriptFactoryAdded
 from utils.easy_track import create_permissions
-from brownie.network.event import EventDict
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.proxy import validate_proxy_upgrade_event
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
@@ -271,7 +268,6 @@ def validate_upgrade_finished_event(events) -> None:
 # ============================== Test functions ==============================
 # ============================================================================
 
-@pytest.fixture(scope="module")
 def dual_governance_proposal_calls():
     """Returns list of dual governance proposal calls for events checking"""
 
@@ -451,7 +447,6 @@ def enact_and_test_voting(
     accounts,
     ldo_holder,
     vote_ids_from_env,
-    dual_governance_proposal_calls,
     expected_vote_id,
     expected_dg_proposal_id,
 ):
@@ -552,7 +547,7 @@ def enact_and_test_voting(
                 proposer=VOTING,
                 executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
                 metadata="TODO DG proposal description",
-                proposal_calls=dual_governance_proposal_calls,
+                proposal_calls=dual_governance_proposal_calls(),
             )
 
             # Validate EasyTrack bypass events for new factories
@@ -907,22 +902,3 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     # Step 1.17. Revoke OracleDaemonConfig's CONFIG_MANAGER_ROLE from Agent
     assert not oracle_daemon_config.hasRole(config_manager_role, AGENT), "OracleDaemonConfig should not have CONFIG_MANAGER_ROLE on Agent after upgrade"
 
-
-def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
-    EXPECTED_VOTE_ID = 194
-    EXPECTED_DG_PROPOSAL_ID = 6
-
-    enact_and_test_voting(
-        helpers,
-        accounts,
-        ldo_holder,
-        vote_ids_from_env,
-        dual_governance_proposal_calls,
-        expected_vote_id=EXPECTED_VOTE_ID,
-        expected_dg_proposal_id=EXPECTED_DG_PROPOSAL_ID,
-    )
-
-    enact_and_test_dg(
-        stranger,
-        expected_dg_proposal_id=EXPECTED_DG_PROPOSAL_ID,
-    )
