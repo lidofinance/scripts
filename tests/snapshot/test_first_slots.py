@@ -51,6 +51,10 @@ def skip_slots() -> Sequence[tuple[str, int]]:
     return [
         # adding 9 new easy track factories
         (contracts.easy_track.address, 0x05),
+        # new slot in the contract _nodeOperatorSummary
+        (contracts.node_operators_registry.address, 0x01),
+        # finance slot changing due to deposit bot funding / limits updates
+        (contracts.finance.address, 0x07),
     ]
 
 
@@ -156,7 +160,7 @@ def far_block() -> int:
 
 @pytest.fixture(scope="module")
 def far_ts() -> int:
-    return chain.time() + 14 * 24 * 60 * 60  # 14 days
+    return chain.time() + 30 * 24 * 60 * 60  # 30 days
 
 
 def _sleep_till_block(block: int, ts: int) -> None:

@@ -19,10 +19,7 @@ from utils.test.tx_tracing_helpers import (
     display_voting_events,
     display_dg_events
 )
-from utils.allowed_recipients_registry import (
-    unsafe_set_spent_amount,
-    set_limit_parameters,
-)
+from utils.allowed_recipients_registry import set_limit_parameters
 from utils.test.event_validators.payout import (
     validate_token_payout_event,
     Payout,
@@ -126,7 +123,7 @@ MATIC_IN_LIDO_LABS_BEFORE = 0
 MATIC_IN_LIDO_LABS_AFTER = 508_106 * 10**18
 
 TRP_LIMIT_BEFORE = 9_178_284_420 * 10**15 # == 9_178_284.42 * 10**18
-TRP_ALREADY_SPENT_AFTER = 0
+TRP_ALREADY_SPENT_AFTER = 4208709 * 10**18
 TRP_LIMIT_AFTER = 15_000_000 * 10**18
 TRP_PERIOD_START_TIMESTAMP = 1735689600  # January 1, 2025 UTC
 TRP_PERIOD_END_TIMESTAMP = 1767225600  # January 1, 2026 UTC
@@ -378,9 +375,6 @@ def dual_governance_proposal_calls():
             )
         ]),
         agent_forward([
-            unsafe_set_spent_amount(spent_amount=0, registry_address=ET_TRP_REGISTRY),
-        ]),
-        agent_forward([
             set_limit_parameters(
                 limit=TRP_LIMIT_AFTER,
                 period_duration_months=TRP_PERIOD_DURATION_MONTHS,
@@ -617,7 +611,7 @@ def enact_and_test_voting(
                 proposal_id=EXPECTED_DG_PROPOSAL_ID,
                 proposer=VOTING,
                 executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-                metadata="Change Curated Module fees, raise SDVT stake share limit, set A41 soft target validator limit to 0, reset Easy Track TRP limit",
+                metadata="Change Curated Module fees, raise SDVT stake share limit, set A41 soft target validator limit to 0, set Easy Track TRP limit",
                 proposal_calls=dual_governance_proposal_calls(),
             )
 
@@ -769,7 +763,7 @@ def enact_and_test_voting(
 
 
 def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
-    EXPECTED_DG_EVENTS_COUNT = 5
+    EXPECTED_DG_EVENTS_COUNT = 4
 
     # =======================================================================
     # ========================= Arrange variables ===========================
@@ -820,7 +814,7 @@ def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
             assert a41_summary_before['depositableValidatorsCount'] > 0
             assert curated_module.getNodeOperator(A41_NO_ID, True)['name'] == "A41"
 
-            # Items 1.4,1.5
+            # Items 1.4
             trp_limit_before, trp_period_duration_months_before = et_trp_registry.getLimitParameters()
             trp_already_spent_amount_before, trp_spendable_balance_before, trp_period_start_before, trp_period_end_before = et_trp_registry.getPeriodState()
             assert trp_limit_before == TRP_LIMIT_BEFORE
@@ -875,13 +869,8 @@ def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
                     t=A41_TARGET_CHANGE_REQUEST,
                     emitted_by=CURATED_MODULE,
                 )
-                validate_set_spent_amount_event(
-                    dg_events[3],
-                    new_spent_amount=0,
-                    emitted_by=ET_TRP_REGISTRY,
-                )
                 validate_set_limit_parameter_event(
-                    dg_events[4],
+                    dg_events[3],
                     limit=TRP_LIMIT_AFTER,
                     period_duration_month=TRP_PERIOD_DURATION_MONTHS,
                     period_start_timestamp=TRP_PERIOD_START_TIMESTAMP,
@@ -959,7 +948,7 @@ def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
             assert a41_summary_after['totalDepositedValidators'] == a41_summary_before['totalDepositedValidators']
             assert len(a41_summary_after.items()) == 8
 
-        # Items 1.4,1.5
+        # Items 1.4
         trp_limit_after, trp_period_duration_months_after = et_trp_registry.getLimitParameters()
         trp_already_spent_amount_after, trp_spendable_balance_after, trp_period_start_after, trp_period_end_after = et_trp_registry.getPeriodState()
         assert trp_limit_after == TRP_LIMIT_AFTER
