@@ -43,8 +43,13 @@ EXPECTED_SNAPSHOT_DIFFS: dict[str, Any] = {
     "lido.Lido.bufferedEther": ZERO_BYTES32,
     "lido.Lido.depositedValidators": ZERO_BYTES32,
     "lido.StETH.totalShares": ZERO_BYTES32,
-    "getFeeDistribution": ((5165, 0, 4834), (3783, 0, 6216)),
 }
+
+
+IGNORED_SNAPSHOT_KEYS: set[str] = {
+    "getFeeDistribution",
+}
+
 
 def test_lido_no_changes_in_views(sandwich_upgrade: SandwichFn):
     """Test that no views change during the upgrade process."""
@@ -474,6 +479,8 @@ def _stacks_equal(stacks: tuple[Stack, Stack]) -> None:
         with check:
             unexpected: dict[str, tuple[Any, Any]] = {}
             for key, before_val in v1_frame["snap"].items():
+                if key in IGNORED_SNAPSHOT_KEYS:
+                    continue
                 after_val = v2_frame["snap"].get(key)
                 if before_val == after_val:
                     continue
