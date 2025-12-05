@@ -11,9 +11,8 @@ II. Raise SDVT module stake share limit
 III. Set A41 soft target validator limit to 0
 1.3. Set soft-mode target validators limit to 0 for Node operator A41 (ID = 32) in Curated Module (MODULE_ID = 1) in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
 
-IV. Reset Easy Track TRP limit
-1.4. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
-1.5. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
+IV. Set Easy Track TRP limit
+1.4. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
 
 === NON-DG ITEMS ===
 V. Add sUSDS token to stablecoins Allowed Tokens Registry and sUSDS transfer permission to Easy Track EVM Script Executor in Aragon Finance
@@ -41,10 +40,7 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.dual_governance import submit_proposals
 from utils.agent import agent_forward
 from utils.permissions import encode_permission_revoke, encode_permission_grant_p
-from utils.allowed_recipients_registry import (
-    unsafe_set_spent_amount,
-    set_limit_parameters,
-)
+from utils.allowed_recipients_registry import set_limit_parameters
 
 
 # ============================== Types ===================================
@@ -96,7 +92,6 @@ SDVT_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 
 TRP_PERIOD_DURATION_MONTHS = 12
 TRP_NEW_LIMIT = 15_000_000 * 10**18
-TRP_NEW_SPENT_AMOUNT = 0
 
 MATIC_FOR_TRANSFER = 508_106 * 10**18
 
@@ -243,11 +238,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             )
         ]),
         agent_forward([
-            # 1.4. Set spent amount for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 0 LDO
-            unsafe_set_spent_amount(spent_amount=TRP_NEW_SPENT_AMOUNT, registry_address=ET_TRP_REGISTRY),
-        ]),
-        agent_forward([
-            # 1.5. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
+            # 1.4. Set limit for Easy Track TRP registry 0x231Ac69A1A37649C6B06a71Ab32DdD92158C80b8 to 15'000'000 LDO with unchanged period duration of 12 months
             set_limit_parameters(
                 limit=TRP_NEW_LIMIT,
                 period_duration_months=TRP_PERIOD_DURATION_MONTHS,
@@ -257,12 +248,12 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     ]
     
     dg_call_script = submit_proposals([
-        (dg_items, "Change Curated Module fees, raise SDVT stake share limit, set A41 soft target validator limit to 0, reset Easy Track TRP limit")
+        (dg_items, "Change Curated Module fees, raise SDVT stake share limit, set A41 soft target validator limit to 0, set Easy Track TRP limit")
     ])
     
     vote_desc_items, call_script_items = zip(
         (
-            "1. Submit a Dual Governance proposal to change Curated Module fees, raise SDVT stake share limit, set A41 soft target validator limit to 0, reset Easy Track TRP limit",
+            "1. Submit a Dual Governance proposal to change Curated Module fees, raise SDVT stake share limit, set A41 soft target validator limit to 0, set Easy Track TRP limit",
             dg_call_script[0]
         ),
         (
