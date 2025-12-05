@@ -98,8 +98,11 @@ def validate_target_validators_count_changed_event(event: EventDict, t: TargetVa
 
     assert event.count("TargetValidatorsCountChanged") == 1
 
-    assert event["TargetValidatorsCountChanged"]["nodeOperatorId"] == t.nodeOperatorId
-    assert event["TargetValidatorsCountChanged"]["targetValidatorsCount"] == t.targetValidatorsCount
+    #assert event["TargetValidatorsCountChanged"]["nodeOperatorId"] == t.nodeOperatorId
+    #assert event["TargetValidatorsCountChanged"]["targetValidatorsCount"] == t.targetValidatorsCount
+    assert event["TargetValidatorsCountChanged"]["ARG0_VALUE"] == t.nodeOperatorId
+    assert event["TargetValidatorsCountChanged"]["ARG1_VALUE"] == t.targetValidatorsCount
+
     assert convert.to_address(event["TargetValidatorsCountChanged"]["_emitted_by"]) == convert.to_address(
         emitted_by
     ), "Wrong event emitter"
