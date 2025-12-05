@@ -21,6 +21,7 @@ from utils.easy_track import create_permissions
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.proxy import validate_proxy_upgrade_event
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
+from utils.test.event_validators.aragon import validate_aragon_set_app_event, validate_aragon_grant_permission_event, validate_aragon_revoke_permission_event
 
 
 # ============================================================================
@@ -48,17 +49,21 @@ EASYTRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 EASYTRACK_EVMSCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 
 # Old Lido addresses
-STETH = "0xAE7ab96520DE3A18E5e111B5EaAb095312D7fE84"
 LIDO_LOCATOR = "0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb"
 ACCOUNTING_ORACLE = "0x852deD011285fe67063a08005c71a85690503Cee"
+HASH_CONSENSUS = "0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288" # HashConsensus for AccountingOracle
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
 ACL = "0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb"
-NODE_OPERATORS_REGISTRY = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
-SIMPLE_DVT = "0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433"
 ORACLE_DAEMON_CONFIG = "0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09"
 CSM_ACCOUNTING = "0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da"
 OLD_BURNER = "0xD15a672319Cf0352560eE76d9e89eAB0889046D3"
 LIDO_APP_ID = "0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320"
+WITHDRAWAL_QUEUE = "0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1"
+
+# Our custom Aragon apps
+LIDO = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
+NODE_OPERATORS_REGISTRY = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
+SIMPLE_DVT = "0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433"
 
 # New Lido V3 addresses
 VAULT_HUB = "0x1d201BE093d847f6446530Efb0E8Fb426d176709"
@@ -76,6 +81,7 @@ ACCOUNTING_ORACLE_IMPL = "0x1455B96780A93e08abFE41243Db92E2fCbb0141c"
 RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
 BURNER = "0xE76c52750019b80B43E36DF30bf4060EB73F573a"
 
+# New Easy Track factories
 ALTER_TIERS_IN_OPERATOR_GRID_FACTORY = "0xa29173C7BCf39dA48D5E404146A652d7464aee14"
 REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY = "0x194A46DA1947E98c9D79af13E06Cfbee0D8610cC"
 REGISTER_TIERS_IN_OPERATOR_GRID_FACTORY = "0x5292A1284e4695B95C0840CF8ea25A818751C17F"
@@ -85,12 +91,16 @@ FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY = "0x6C968cD89CA358fbAf57B18e77a8973F
 UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY = "0x8Bdc726a3147D8187820391D7c6F9F942606aEe6"
 UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY = "0x5C3bDFa3E7f312d8cf72F56F2b797b026f6B471c"
 
+# New versions of apps after upgrade
 NEW_LIDO_VERSION = 3
 NEW_ACCOUNTING_ORACLE_VERSION = 4
+NEW_HASH_CONSENSUS_VERSION = 5
 
 UTC14 = 60 * 60 * 14
 UTC23 = 60 * 60 * 23
 SLASHING_RESERVE_SHIFT = 8192
+MAX_EXTERNAL_RATIO_BP = 300 # 3%
+INFINITE_ALLOWANCE = 2**256 - 1 # type(uint256).max
 
 
 # ============================================================================
@@ -106,93 +116,6 @@ def get_ossifiable_proxy_impl(proxy_address):
 # ============================================================================
 # =================== Aragon event validators for DG =========================
 # ============================================================================
-
-def validate_aragon_grant_permission_event(
-    event,
-    entity: str,
-    app: str,
-    role: str,
-    emitted_by: str,
-) -> None:
-    """
-    Validate Aragon ACL SetPermission event for granting permission via DG proposal.
-    Ensures only expected events are fired and all parameters are correct.
-    """
-    _events_chain = ["LogScriptCall", "SetPermission", "ScriptResult", "Executed"]
-
-    validate_events_chain([e.name for e in event], _events_chain)
-
-    assert event.count("LogScriptCall") == 1, f"Expected 1 LogScriptCall, got {event.count('LogScriptCall')}"
-    assert event.count("SetPermission") == 1, f"Expected 1 SetPermission, got {event.count('SetPermission')}"
-    assert event.count("ScriptResult") == 1, f"Expected 1 ScriptResult, got {event.count('ScriptResult')}"
-    assert event.count("Executed") == 1, f"Expected 1 Executed, got {event.count('Executed')}"
-
-    assert event["SetPermission"]["allowed"] is True, "Permission should be granted (allowed=True)"
-    assert event["SetPermission"]["entity"] == entity, f"Wrong entity: expected {entity}, got {event['SetPermission']['entity']}"
-    assert event["SetPermission"]["app"] == app, f"Wrong app: expected {app}, got {event['SetPermission']['app']}"
-    assert event["SetPermission"]["role"] == role, f"Wrong role: expected {role}, got {event['SetPermission']['role']}"
-
-    assert convert.to_address(event["SetPermission"]["_emitted_by"]) == convert.to_address(
-        emitted_by
-    ), f"Wrong event emitter: expected {emitted_by}"
-
-
-def validate_aragon_revoke_permission_event(
-    event,
-    entity: str,
-    app: str,
-    role: str,
-    emitted_by: str,
-) -> None:
-    """
-    Validate Aragon ACL SetPermission event for revoking permission via DG proposal.
-    Ensures only expected events are fired and all parameters are correct.
-    """
-    _events_chain = ["LogScriptCall", "SetPermission", "ScriptResult", "Executed"]
-
-    validate_events_chain([e.name for e in event], _events_chain)
-
-    assert event.count("LogScriptCall") == 1, f"Expected 1 LogScriptCall, got {event.count('LogScriptCall')}"
-    assert event.count("SetPermission") == 1, f"Expected 1 SetPermission, got {event.count('SetPermission')}"
-    assert event.count("ScriptResult") == 1, f"Expected 1 ScriptResult, got {event.count('ScriptResult')}"
-    assert event.count("Executed") == 1, f"Expected 1 Executed, got {event.count('Executed')}"
-
-    assert event["SetPermission"]["allowed"] is False, "Permission should be revoked (allowed=False)"
-    assert event["SetPermission"]["entity"] == entity, f"Wrong entity: expected {entity}, got {event['SetPermission']['entity']}"
-    assert event["SetPermission"]["app"] == app, f"Wrong app: expected {app}, got {event['SetPermission']['app']}"
-    assert event["SetPermission"]["role"] == role, f"Wrong role: expected {role}, got {event['SetPermission']['role']}"
-
-    assert convert.to_address(event["SetPermission"]["_emitted_by"]) == convert.to_address(
-        emitted_by
-    ), f"Wrong event emitter: expected {emitted_by}"
-
-
-def validate_set_app_event(
-    event,
-    app_id: str,
-    app: str,
-    emitted_by: str,
-) -> None:
-    """
-    Validate Aragon Kernel SetApp event via DG proposal.
-    Ensures only expected events are fired and all parameters are correct.
-    """
-    _events_chain = ["LogScriptCall", "SetApp", "ScriptResult", "Executed"]
-
-    validate_events_chain([e.name for e in event], _events_chain)
-
-    assert event.count("LogScriptCall") == 1, f"Expected 1 LogScriptCall, got {event.count('LogScriptCall')}"
-    assert event.count("SetApp") == 1, f"Expected 1 SetApp, got {event.count('SetApp')}"
-    assert event.count("ScriptResult") == 1, f"Expected 1 ScriptResult, got {event.count('ScriptResult')}"
-    assert event.count("Executed") == 1, f"Expected 1 Executed, got {event.count('Executed')}"
-
-    assert event["SetApp"]["appId"] == app_id, f"Wrong appId: expected {app_id}, got {event['SetApp']['appId']}"
-    assert event["SetApp"]["app"] == app, f"Wrong app: expected {app}, got {event['SetApp']['app']}"
-
-    assert convert.to_address(event["SetApp"]["_emitted_by"]) == convert.to_address(
-        emitted_by
-    ), f"Wrong event emitter: expected {emitted_by}"
-
 
 def validate_config_value_set_event(
     event,
@@ -240,12 +163,12 @@ def validate_upgrade_started_event(events) -> None:
     ), f"Wrong event emitter: expected {UPGRADE_TEMPLATE}"
 
 
-def validate_upgrade_finished_event(events) -> None:
+def validate_upgrade_finished_events(events) -> None:
     """
-    Validate V3Template UpgradeFinished event via DG proposal.
+    Validate V3Template UpgradeFinished events via DG proposal.
     Ensures only expected events are fired.
     """
-    _events_chain = ["LogScriptCall", "ContractVersionSet", "Approval", "Approval", "Approval", "Approval",
+    _events_chain = ["LogScriptCall", "ContractVersionSet", "Transfer", "TransferShares", "Approval", "Approval", "Approval", "Approval",
     "MaxExternalRatioBPSet", "ContractVersionSet", "ConsensusVersionSet", "UpgradeFinished", "ScriptResult", "Executed"]
 
     validate_events_chain([e.name for e in events], _events_chain)
@@ -258,6 +181,51 @@ def validate_upgrade_finished_event(events) -> None:
     assert events.count("UpgradeFinished") == 1, f"Expected 1 UpgradeFinished, got {events.count('UpgradeFinished')}"
     assert events.count("ScriptResult") == 1, f"Expected 1 ScriptResult, got {events.count('ScriptResult')}"
     assert events.count("Executed") == 1, f"Expected 1 Executed, got {events.count('Executed')}"
+
+    lido_version = events["ContractVersionSet"][0]["version"]
+    assert lido_version == NEW_LIDO_VERSION, f"Wrong version: expected {NEW_LIDO_VERSION}, got {lido_version}"
+    assert convert.to_address(events["ContractVersionSet"][0]["_emitted_by"]) == LIDO, f"Wrong event emitter: expected {LIDO}"
+
+    # Transfer and TransferShares events are emitted only if old Burner has some shares on balance
+    if events.count("Transfer") > 0:
+        assert convert.to_address(events["Transfer"][0]["from"]) == OLD_BURNER, f"Wrong from: expected {OLD_BURNER}"
+        assert convert.to_address(events["Transfer"][0]["to"]) == BURNER, f"Wrong to: expected {BURNER}"
+        assert convert.to_address(events["Transfer"][0]["_emitted_by"]) == LIDO, f"Wrong event emitter: expected {LIDO}"
+        assert convert.to_address(events["TransferShares"][0]["from"]) == OLD_BURNER, f"Wrong from: expected {OLD_BURNER}"
+        assert convert.to_address(events["TransferShares"][0]["to"]) == BURNER, f"Wrong to: expected {BURNER}"
+        assert convert.to_address(events["TransferShares"][0]["_emitted_by"]) == LIDO, f"Wrong event emitter: expected {LIDO}"
+
+    assert convert.to_address(events["Approval"][0]["owner"]) == WITHDRAWAL_QUEUE, f"Wrong owner: expected {WITHDRAWAL_QUEUE}"
+    assert convert.to_address(events["Approval"][0]["spender"]) == OLD_BURNER, f"Wrong spender: expected {OLD_BURNER}"
+    assert convert.to_uint(events["Approval"][0]["value"]) == 0, f"Wrong value: expected {0}"
+    assert convert.to_address(events["Approval"][0]["_emitted_by"]) == LIDO, f"Wrong event emitter: expected {LIDO}"
+
+    assert convert.to_address(events["Approval"][1]["owner"]) == WITHDRAWAL_QUEUE, f"Wrong owner: expected {WITHDRAWAL_QUEUE}"
+    assert convert.to_address(events["Approval"][1]["spender"]) == BURNER, f"Wrong spender: expected {BURNER}"
+    assert convert.to_uint(events["Approval"][1]["value"]) == INFINITE_ALLOWANCE, f"Wrong value: expected {INFINITE_ALLOWANCE}"
+    assert convert.to_address(events["Approval"][1]["_emitted_by"]) == LIDO, f"Wrong event emitter: expected {LIDO}"
+
+    assert convert.to_address(events["Approval"][2]["owner"]) == CSM_ACCOUNTING, f"Wrong owner: expected {CSM_ACCOUNTING}"
+    assert convert.to_address(events["Approval"][2]["spender"]) == OLD_BURNER, f"Wrong spender: expected {OLD_BURNER}"
+    assert convert.to_uint(events["Approval"][2]["value"]) == 0, f"Wrong value: expected {0}"
+    assert convert.to_address(events["Approval"][2]["_emitted_by"]) == LIDO, f"Wrong event emitter: expected {LIDO}"
+
+    assert convert.to_address(events["Approval"][3]["owner"]) == CSM_ACCOUNTING, f"Wrong owner: expected {CSM_ACCOUNTING}"
+    assert convert.to_address(events["Approval"][3]["spender"]) == BURNER, f"Wrong spender: expected {BURNER}"
+    assert convert.to_uint(events["Approval"][3]["value"]) == INFINITE_ALLOWANCE, f"Wrong value: expected {INFINITE_ALLOWANCE}"
+    assert convert.to_address(events["Approval"][3]["_emitted_by"]) == LIDO, f"Wrong event emitter: expected {LIDO}"
+
+    max_external_ratio_bp = events["MaxExternalRatioBPSet"][0]["maxExternalRatioBP"]
+    assert max_external_ratio_bp == MAX_EXTERNAL_RATIO_BP, f"Wrong max external ratio: expected {MAX_EXTERNAL_RATIO_BP}, got {max_external_ratio_bp}"
+    assert convert.to_address(events["MaxExternalRatioBPSet"][0]["_emitted_by"]) == LIDO, f"Wrong event emitter: expected {LIDO}"
+
+    oracle_version = events["ContractVersionSet"][1]["version"]
+    assert oracle_version == NEW_ACCOUNTING_ORACLE_VERSION, f"Wrong version: expected {NEW_ACCOUNTING_ORACLE_VERSION}, got {oracle_version}"
+    assert convert.to_address(events["ContractVersionSet"][1]["_emitted_by"]) == ACCOUNTING_ORACLE, f"Wrong event emitter: expected {ACCOUNTING_ORACLE}"
+
+    consensus_version = events["ConsensusVersionSet"][0]["version"]
+    assert consensus_version == NEW_HASH_CONSENSUS_VERSION, f"Wrong version: expected {NEW_HASH_CONSENSUS_VERSION}, got {consensus_version}"
+    assert convert.to_address(events["ConsensusVersionSet"][0]["_emitted_by"]) == ACCOUNTING_ORACLE, f"Wrong event emitter: expected {ACCOUNTING_ORACLE}"
 
     assert convert.to_address(events["UpgradeFinished"][0]["_emitted_by"]) == convert.to_address(
         UPGRADE_TEMPLATE
@@ -337,7 +305,7 @@ def dual_governance_proposal_calls():
             encode_oz_revoke_role(
                 contract=old_burner,
                 role_name="REQUEST_BURN_SHARES_ROLE",
-                revoke_from=STETH # Lido
+                revoke_from=LIDO
             )
         ]),
 
@@ -376,7 +344,7 @@ def dual_governance_proposal_calls():
             encode_oz_revoke_role(
                 contract=staking_router,
                 role_name="REPORT_REWARDS_MINTED_ROLE",
-                revoke_from=STETH # Lido
+                revoke_from=LIDO
             )
         ]),
 
@@ -675,7 +643,7 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
         assert not kernel.getApp(kernel.APP_BASES_NAMESPACE(), LIDO_APP_ID) == LIDO_IMPL, "Lido implementation should be different before upgrade"
 
         # Step 1.7. Revoke REQUEST_BURN_SHARES_ROLE from Lido
-        assert old_burner.hasRole(request_burn_shares_role, STETH), "Old Burner should have REQUEST_BURN_SHARES_ROLE on Lido before upgrade"
+        assert old_burner.hasRole(request_burn_shares_role, LIDO), "Old Burner should have REQUEST_BURN_SHARES_ROLE on Lido before upgrade"
 
         # Step 1.8. Revoke REQUEST_BURN_SHARES_ROLE from Curated staking module
         assert old_burner.hasRole(request_burn_shares_role, NODE_OPERATORS_REGISTRY), "Old Burner should have REQUEST_BURN_SHARES_ROLE on Curated staking module before upgrade"
@@ -690,7 +658,7 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
         assert accounting_oracle_impl_before != ACCOUNTING_ORACLE_IMPL, "Accounting Oracle implementation should be different before upgrade"
 
         # Step 1.12. Revoke REPORT_REWARDS_MINTED_ROLE from Lido
-        assert staking_router.hasRole(report_rewards_minted_role, STETH), "Staking Router should have REPORT_REWARDS_MINTED_ROLE on Lido before upgrade"
+        assert staking_router.hasRole(report_rewards_minted_role, LIDO), "Staking Router should have REPORT_REWARDS_MINTED_ROLE on Lido before upgrade"
 
         # Step 1.13. Grant REPORT_REWARDS_MINTED_ROLE to Accounting
         assert not staking_router.hasRole(report_rewards_minted_role, ACCOUNTING), "Staking Router should not have REPORT_REWARDS_MINTED_ROLE on Accounting before upgrade"
@@ -711,6 +679,18 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
             assert False, "SLASHING_RESERVE_WE_LEFT_SHIFT should not exist before vote"
         except Exception:
             pass  # Expected to fail
+
+        # Step 1.18. Call V3Template.finishUpgrade
+        lido = interface.Lido(LIDO)
+        assert lido.getContractVersion() == NEW_LIDO_VERSION - 1, "LIDO should have version 2 before finishUpgrade"
+        assert lido.allowance(CSM_ACCOUNTING, BURNER) == 0, "No allowance from CSM_ACCOUNTING to BURNER before finishUpgrade"
+        assert lido.allowance(CSM_ACCOUNTING, OLD_BURNER) == INFINITE_ALLOWANCE, "Infinite allowance from CSM_ACCOUNTING to OLD_BURNER before finishUpgrade"
+        assert lido.allowance(WITHDRAWAL_QUEUE, BURNER) == 0, "No allowance from WITHDRAWAL_QUEUE to BURNER before finishUpgrade"
+        assert lido.allowance(WITHDRAWAL_QUEUE, OLD_BURNER) == INFINITE_ALLOWANCE, "Infinite allowance from WITHDRAWAL_QUEUE to OLD_BURNER before finishUpgrade"
+
+        accounting_oracle = interface.AccountingOracle(ACCOUNTING_ORACLE)
+        assert accounting_oracle.getContractVersion() == NEW_ACCOUNTING_ORACLE_VERSION - 1, "AccountingOracle should have version 3 before finishUpgrade"
+        assert accounting_oracle.getConsensusVersion() == NEW_HASH_CONSENSUS_VERSION - 1, "HashConsensus should have version 4 before finishUpgrade"
 
         if details["status"] == PROPOSAL_STATUS["submitted"]:
             chain.sleep(timelock.getAfterSubmitDelay() + 1)
@@ -749,7 +729,7 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
             )
 
             # 1.5. Set Lido implementation in Kernel
-            validate_set_app_event(
+            validate_aragon_set_app_event(
                 dg_events[4],
                 app_id=LIDO_APP_ID,
                 app=LIDO_IMPL,
@@ -769,7 +749,7 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
             validate_revoke_role_event(
                 dg_events[6],
                 role=request_burn_shares_role.hex(),
-                revoke_from=STETH,
+                revoke_from=LIDO,
                 sender=AGENT,
                 emitted_by=old_burner,
             )
@@ -808,7 +788,7 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
             validate_revoke_role_event(
                 dg_events[11],
                 role=report_rewards_minted_role.hex(),
-                revoke_from=STETH,
+                revoke_from=LIDO,
                 sender=AGENT,
                 emitted_by=staking_router,
             )
@@ -857,7 +837,7 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
             )
 
             # 1.18. Call V3Template.finishUpgrade
-            validate_upgrade_finished_event(dg_events[17])
+            validate_upgrade_finished_events(dg_events[17])
 
     # =========================================================================
     # ==================== After DG proposal executed checks ==================
@@ -873,7 +853,7 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     assert not acl.hasPermission(AGENT, ARAGON_KERNEL, app_manager_role), "AGENT should not have APP_MANAGER_ROLE after upgrade"
 
     # Step 1.7. Revoke REQUEST_BURN_SHARES_ROLE from Lido
-    assert not old_burner.hasRole(request_burn_shares_role, STETH), "Old Burner should not have REQUEST_BURN_SHARES_ROLE on Lido after upgrade"
+    assert not old_burner.hasRole(request_burn_shares_role, LIDO), "Old Burner should not have REQUEST_BURN_SHARES_ROLE on Lido after upgrade"
 
     # Step 1.8. Revoke REQUEST_BURN_SHARES_ROLE from Curated staking module
     assert not old_burner.hasRole(request_burn_shares_role, NODE_OPERATORS_REGISTRY), "Old Burner should not have REQUEST_BURN_SHARES_ROLE on Curated staking module after upgrade"
@@ -888,7 +868,7 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     assert get_ossifiable_proxy_impl(accounting_oracle_proxy) == ACCOUNTING_ORACLE_IMPL, "Accounting Oracle implementation should be updated to the new value"
 
     # Step 1.12. Revoke REPORT_REWARDS_MINTED_ROLE from Lido
-    assert not staking_router.hasRole(report_rewards_minted_role, STETH), "Staking Router should not have REPORT_REWARDS_MINTED_ROLE on Lido after upgrade"
+    assert not staking_router.hasRole(report_rewards_minted_role, LIDO), "Staking Router should not have REPORT_REWARDS_MINTED_ROLE on Lido after upgrade"
 
     # Step 1.13. Grant REPORT_REWARDS_MINTED_ROLE to Accounting
     assert staking_router.hasRole(report_rewards_minted_role, ACCOUNTING), "Staking Router should have REPORT_REWARDS_MINTED_ROLE on Accounting after upgrade"
@@ -902,3 +882,15 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     # Step 1.17. Revoke OracleDaemonConfig's CONFIG_MANAGER_ROLE from Agent
     assert not oracle_daemon_config.hasRole(config_manager_role, AGENT), "OracleDaemonConfig should not have CONFIG_MANAGER_ROLE on Agent after upgrade"
 
+    # Step 1.18. Call V3Template.finishUpgrade
+    lido = interface.Lido(LIDO)
+    assert lido.getContractVersion() == NEW_LIDO_VERSION, "LIDO should have version 3 after finishUpgrade"
+    assert lido.getMaxExternalRatioBP() == MAX_EXTERNAL_RATIO_BP, "LIDO should have max external ratio 3% after finishUpgrade"
+    assert lido.allowance(CSM_ACCOUNTING, OLD_BURNER) == 0, "No allowance from CSM_ACCOUNTING to OLD_BURNER after finishUpgrade"
+    assert lido.allowance(CSM_ACCOUNTING, BURNER) == INFINITE_ALLOWANCE, "Infinite allowance from CSM_ACCOUNTING to BURNER after finishUpgrade"
+    assert lido.allowance(WITHDRAWAL_QUEUE, OLD_BURNER) == 0, "No allowance from WITHDRAWAL_QUEUE to OLD_BURNER after finishUpgrade"
+    assert lido.allowance(WITHDRAWAL_QUEUE, BURNER) == INFINITE_ALLOWANCE, "Infinite allowance from WITHDRAWAL_QUEUE to BURNER after finishUpgrade"
+
+    accounting_oracle = interface.AccountingOracle(ACCOUNTING_ORACLE)
+    assert accounting_oracle.getContractVersion() == NEW_ACCOUNTING_ORACLE_VERSION, "AccountingOracle should have version 4 after finishUpgrade"
+    assert accounting_oracle.getConsensusVersion() == NEW_HASH_CONSENSUS_VERSION, "HashConsensus should have version 5 after finishUpgrade"
