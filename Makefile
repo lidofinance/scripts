@@ -4,6 +4,7 @@ define run_2nd_test
 	poetry run $(1)
 endef
 
+# Get the latest block number from the target RPC node to use as FORKING_BLOCK_NUMBER for core tests
 __get_rpc_latest_block_number:
 	@curl -s -X POST $(CORE_TESTS_TARGET_RPC_URL) \
 	  -H "Content-Type: application/json" \
@@ -86,11 +87,10 @@ node3:
 
 test-core:
 	FORKING_BLOCK_NUMBER=$$($(MAKE) --no-print-directory __get_rpc_latest_block_number) && \
-	cd $(CORE_DIR) && \
 	echo "FORKING_BLOCK_NUMBER: $$FORKING_BLOCK_NUMBER" && \
+	cd $(CORE_DIR) && \
 	RPC_URL=$(CORE_TESTS_TARGET_RPC_URL) \
 	NETWORK_STATE_FILE=$(NETWORK_STATE_FILE) \
-	FORKING_BLOCK_NUMBER=$$FORKING_BLOCK_NUMBER \
 	yarn test:integration
 
 slots:
