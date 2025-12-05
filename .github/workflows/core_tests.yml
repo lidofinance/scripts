@@ -56,4 +56,4 @@ jobs:
         run: docker exec -e CORE_TESTS_TARGET_RPC_URL -e NETWORK_STATE_FILE tests-runner bash -c 'make test-core'
         env:
           CORE_TESTS_TARGET_RPC_URL: http://127.0.0.1:8546
-          NETWORK_STATE_FILE: deployed-mainnet-v3.json
+          NETWORK_STATE_FILE: deployed-mainnet.json
