@@ -129,9 +129,8 @@ class Helpers:
                     dao_voting.vote(vote_id, True, False, {"from": account})
 
         # wait for the vote to end
-        time_to_end = dao_voting.getVote(vote_id)["startDate"] + get_vote_duration() - chain.time()
-        if time_to_end > 0:
-            chain.sleep(time_to_end)
+        # time_to_end = dao_voting.getVote(vote_id)["startDate"] + get_vote_duration() - chain.time()
+        chain.sleep(get_vote_duration())
         chain.mine()
 
         for vote_id in vote_ids:

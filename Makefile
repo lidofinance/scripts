@@ -4,6 +4,13 @@ define run_2nd_test
 	poetry run $(1)
 endef
 
+# Get the latest block number from the target RPC node to use as FORKING_BLOCK_NUMBER for core tests
+__get_rpc_latest_block_number:
+	@curl -s -X POST $(CORE_TESTS_TARGET_RPC_URL) \
+	  -H "Content-Type: application/json" \
+	  --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+	  | sed -E 's/.*"result":"([^"]+)".*/\1/' \
+	  | xargs printf "%d"
 
 test:
 ifdef vote
@@ -22,6 +29,7 @@ CORE_DIR ?= lido-core
 CORE_BRANCH ?= master
 NODE_PORT ?= 8545
 SECONDARY_NETWORK ?= mfh-2
+NETWORK_STATE_FILE ?= deployed-mainnet.json
 
 test-1/2:
 	poetry run brownie test tests/[tc]*.py tests/regression/test_staking_router_stake_distribution.py --durations=20 --network mfh-1
@@ -78,9 +86,12 @@ node3:
 	npx hardhat node --fork $(ETH_RPC_URL3) --port $(NODE_PORT)
 
 test-core:
+	LATEST_BLOCK_NUMBER=$$($(MAKE) --no-print-directory __get_rpc_latest_block_number) && \
+	echo "LATEST_BLOCK_NUMBER: $$LATEST_BLOCK_NUMBER" && \
 	cd $(CORE_DIR) && \
-	FORK_RPC_URL=$(CORE_TESTS_TARGET_RPC_URL) \
 	RPC_URL=$(CORE_TESTS_TARGET_RPC_URL) \
+	NETWORK_STATE_FILE=$(NETWORK_STATE_FILE) \
+	FORKING_BLOCK_NUMBER=$$LATEST_BLOCK_NUMBER \
 	yarn test:integration
 
 slots:
@@ -92,7 +103,7 @@ slots:
 	@rm -f slots.ts
 
 ci-prepare-environment:
-	poetry run brownie run scripts/ci/prepare_environment --network $(SECONDARY_NETWORK)
+	poetry run brownie run scripts/ci/prepare_environment --network mfh-1
 
 enact-fork:
 	poetry run brownie run $(vote) start_and_execute_vote_on_fork_manual --network=mfh-1
