@@ -141,6 +141,10 @@ jobs:
           done
         working-directory: scripts
 
+      - name: Import network config for brownie
+        shell: bash
+        run: poetry run brownie networks import network-config.yaml True
+
       - name: Prepare test environment with Brownie
         run: poetry run brownie run scripts/ci/prepare_environment --network mfh-1
         working-directory: scripts
