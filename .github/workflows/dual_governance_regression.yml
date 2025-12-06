@@ -151,6 +151,7 @@ jobs:
         working-directory: scripts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
 
       - name: Run regression tests
         run: npm run test:regressions -- --load-accounts
