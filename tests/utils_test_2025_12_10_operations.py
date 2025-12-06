@@ -139,6 +139,7 @@ NEW_A41_TARGET_LIMIT = 0
 A41_TARGET_CHANGE_REQUEST = TargetValidatorsCountChanged(
     nodeOperatorId=A41_NO_ID,
     targetValidatorsCount=NEW_A41_TARGET_LIMIT,
+    targetLimitMode=NO_TARGET_LIMIT_SOFT_MODE_AFTER,
 )
 
 
@@ -937,10 +938,10 @@ def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
         a41_summary_after = staking_router.getNodeOperatorSummary(CURATED_MODULE_ID, A41_NO_ID)
         assert a41_summary_after['targetLimitMode'] == NO_TARGET_LIMIT_SOFT_MODE_AFTER
         assert a41_summary_after['depositableValidatorsCount'] == 0
+        assert a41_summary_after['targetValidatorsCount'] == 0
         assert curated_module.getNodeOperator(A41_NO_ID, True)['name'] == "A41"
         # additional checks to make sure no other fields were changed (if before state is available)
         if a41_summary_before is not None:
-            assert a41_summary_after['targetValidatorsCount'] == a41_summary_before['targetValidatorsCount']
             assert a41_summary_after['stuckValidatorsCount'] == a41_summary_before['stuckValidatorsCount']
             assert a41_summary_after['refundedValidatorsCount'] == a41_summary_before['refundedValidatorsCount']
             assert a41_summary_after['stuckPenaltyEndTimestamp'] == a41_summary_before['stuckPenaltyEndTimestamp']
