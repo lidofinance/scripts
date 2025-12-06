@@ -514,7 +514,7 @@ def enact_and_test_voting(
                 proposal_id=expected_dg_proposal_id,
                 proposer=VOTING,
                 executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-                metadata="TODO DG proposal description",
+                metadata="Activate Lido V3",
                 proposal_calls=dual_governance_proposal_calls(),
             )
 
