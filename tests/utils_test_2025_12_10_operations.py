@@ -406,7 +406,7 @@ def enact_and_test_voting(
     EXPECTED_DG_PROPOSAL_ID,
 ):
     EXPECTED_VOTE_EVENTS_COUNT = 7
-    IPFS_DESCRIPTION_HASH = "bafkreigs2dewxxu7rj6eifpxsqvib23nsiw2ywsmh3lhewyqlmyn46obnm"
+    IPFS_DESCRIPTION_HASH = "bafkreieptki4mrkhpd22ij3cym777l4iivrdknwtglchdtvptujz2dgn7u"
 
     # =======================================================================
     # ========================= Arrange variables ===========================
