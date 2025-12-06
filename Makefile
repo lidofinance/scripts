@@ -103,7 +103,7 @@ slots:
 	@rm -f slots.ts
 
 ci-prepare-environment:
-	poetry run brownie run scripts/ci/prepare_environment --network $(SECONDARY_NETWORK)
+	poetry run brownie run scripts/ci/prepare_environment --network mfh-1
 
 enact-fork:
 	poetry run brownie run $(vote) start_and_execute_vote_on_fork_manual --network=mfh-1

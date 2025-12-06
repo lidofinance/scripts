@@ -24,7 +24,7 @@ jobs:
       tests-runner:
         image: ghcr.io/lidofinance/scripts:v21
         ports:
-          - 8546:8546
+          - 8545:8545
         volumes:
           - ${{ github.workspace }}:/root/scripts
         options: >-
@@ -40,16 +40,16 @@ jobs:
           CORE_BRANCH: develop
 
       - name: Run node
-        run: docker exec -e ETH_RPC_URL --detach tests-runner bash -c 'NODE_PORT=8546 make node'
+        run: docker exec -e ETH_RPC_URL --detach tests-runner bash -c 'NODE_PORT=8545 make node'
         env:
           ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
 
       - name: Check that the fork is ready
         shell: bash
         run: |
-          echo "Waiting for fork node on 127.0.0.1:8546..."
+          echo "Waiting for fork node on 127.0.0.1:8545..."
           for i in {1..30}; do
-            if (echo > /dev/tcp/127.0.0.1/8546) >/dev/null 2>&1; then
+            if (echo > /dev/tcp/127.0.0.1/8545) >/dev/null 2>&1; then
               echo "Fork is ready ✅"
               exit 0
             fi
@@ -68,4 +68,4 @@ jobs:
       - name: Run core tests
         run: docker exec -e CORE_TESTS_TARGET_RPC_URL tests-runner bash -c 'make test-core'
         env:
-          CORE_TESTS_TARGET_RPC_URL: http://127.0.0.1:8546
+          CORE_TESTS_TARGET_RPC_URL: http://127.0.0.1:8545
