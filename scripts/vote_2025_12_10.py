@@ -189,8 +189,13 @@ def amount_limits() -> List[Param]:
 
 
 # ============================= Description ==================================
-# TODO <a description for IPFS (will appear in the voting description on vote.lido.fi)>
-IPFS_DESCRIPTION = "omni nov 2025"
+IPFS_DESCRIPTION = """
+1. **Change Curated Staking Module fee to 3.5%**, as per [Snapshot decision](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x3a5d10fcd3fad6d5ccf05f5bd49244046600ad9cbed9a5e07845200b3ae97e09). Item 1.1.
+2. **Raise SDVT Staking Module stake share limit to 4.3% and priority exit threshold to 4.78%**, as [proposed on the Forum](https://research.lido.fi/t/staking-router-module-proposal-simple-dvt/5625/127). Item 1.2.
+3. **Set A41 Node Operator soft target validators limit to 0**, as [requested on the Forum](https://research.lido.fi/t/a41-node-operator-intention-to-wind-down-operations-request-for-dao-vote/10954). Item 1.3.
+4. **Set Easy Track TRP limit to 15'000'000 LDO**, as per [Snapshot decision](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x16ecb51631d67213d44629444fcc6275bc2abe4d7e955bebaf15c60a42cba471). Item 1.4.
+5. **Add sUSDS token to stablecoins Allowed Tokens Registry and sUSDS transfer permission to Easy Track EVM Script Executor in Aragon Finance**, as proposed in [TMC-6 on the Forum](https://research.lido.fi/t/tmc-6-convert-dao-treasury-stablecoins-into-susds-and-update-config-on-easy-track-and-aragon-finance-accordingly/10868). Items 2-6.
+6. **Transfer MATIC from Lido Treasury to Liquidity Observation Lab (LOL) Multisig**, as proposed in [TMC-5 on the Forum](https://research.lido.fi/t/tmc-5-convert-matic-to-usdc/10814). Item 7."""
 
 
 # ================================ Main ======================================
