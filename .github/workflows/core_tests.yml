@@ -9,6 +9,7 @@ on:
       - "feat/rc2"
       - "feat/rc1"
       - "feat/next-vote"
+      - "feat/v3-vote"
       - "feat/v3-vote-ci"
   schedule:
     - cron: "0 0 * * TUE"
@@ -36,7 +37,7 @@ jobs:
       - name: Run init script
         run: docker exec -e CORE_BRANCH tests-runner bash -c 'make init'
         env:
-          CORE_BRANCH: chore/test-ci
+          CORE_BRANCH: develop
 
       - name: Run node
         run: docker exec -e ETH_RPC_URL --detach tests-runner bash -c 'NODE_PORT=8546 make node'
