@@ -26,7 +26,6 @@ from utils.test.event_validators.payout import (
 )
 from utils.test.event_validators.allowed_recipients_registry import (
     validate_set_limit_parameter_event,
-    validate_set_spent_amount_event,
 )
 from utils.test.event_validators.permission import (
     validate_grant_role_event,
@@ -76,7 +75,6 @@ LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY = "0x68267f3D310E9f0FF53a37c141c90B738E113
 LEGO_LDO_TRUSTED_CALLER = "0x12a43b049A7D330cB8aEAB5113032D18AE9a9030"
 LEGO_LDO_TOP_UP_ALLOWED_RECIPIENTS_FACTORY = "0x00caAeF11EC545B192f16313F53912E453c91458"
 LEGO_LDO_ALLOWED_RECIPIENTS_REGISTRY = "0x97615f72c3428A393d65A84A3ea6BBD9ad6C0D74"
-LEGO_LDO_SPENDABLE_BALANCE = 1_000_000 * 10**18
 
 GAS_SUPPLY_STETH_TRUSTED_CALLER = "0x5181d5D56Af4f823b96FE05f062D7a09761a5a53"
 GAS_SUPPLY_STETH_TOP_UP_ALLOWED_RECIPIENTS_FACTORY = "0x200dA0b6a9905A377CF8D469664C65dB267009d1"
@@ -680,6 +678,7 @@ def enact_and_test_voting(
 
             # check ET limits via Easy Track motion
             ET_LIDO_LABS_STABLES_LIMIT = interface.AllowedRecipientRegistry(LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY).getPeriodState({"from": AGENT})[1] // 10**18
+            LEGO_LDO_SPENDABLE_BALANCE = interface.AllowedRecipientRegistry(LEGO_LDO_ALLOWED_RECIPIENTS_REGISTRY).getPeriodState({"from": AGENT})[1]
             et_limit_test(stranger, interface.ERC20(SUSDS_TOKEN), susds_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
             et_limit_test(stranger, interface.ERC20(USDC_TOKEN), usdc_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
             et_limit_test(stranger, interface.ERC20(DAI_TOKEN), dai_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
