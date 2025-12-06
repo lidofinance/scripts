@@ -27,6 +27,7 @@ class NodeOperatorRewardAddressSetItem(NamedTuple):
 class TargetValidatorsCountChanged(NamedTuple):
     nodeOperatorId: int
     targetValidatorsCount: int
+    targetLimitMode: int
 
 def validate_node_operator_added_event(
     event: EventDict, node_operator_item: NodeOperatorItem
@@ -98,8 +99,16 @@ def validate_target_validators_count_changed_event(event: EventDict, t: TargetVa
 
     assert event.count("TargetValidatorsCountChanged") == 1
 
-    assert event["TargetValidatorsCountChanged"]["nodeOperatorId"] == t.nodeOperatorId
-    assert event["TargetValidatorsCountChanged"]["targetValidatorsCount"] == t.targetValidatorsCount
+    #assert event["TargetValidatorsCountChanged"]["nodeOperatorId"] == t.nodeOperatorId
+    #assert event["TargetValidatorsCountChanged"]["targetValidatorsCount"] == t.targetValidatorsCount
+
+    # validate arguments based on their positional order
+    # NodeOperatorsRegistry
+    # event TargetValidatorsCountChanged(uint256 indexed nodeOperatorId, uint256 targetValidatorsCount, uint256 targetLimitMode)
+    assert event["TargetValidatorsCountChanged"]["ARG0_VALUE"] == t.nodeOperatorId
+    assert event["TargetValidatorsCountChanged"]["ARG1_VALUE"] == t.targetValidatorsCount
+    assert event["TargetValidatorsCountChanged"]["ARG2_VALUE"] == t.targetLimitMode
+
     assert convert.to_address(event["TargetValidatorsCountChanged"]["_emitted_by"]) == convert.to_address(
         emitted_by
     ), "Wrong event emitter"
