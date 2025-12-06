@@ -133,13 +133,13 @@ ALLOWED_TOKENS_BEFORE = 3
 ALLOWED_TOKENS_AFTER = 4
 
 A41_NO_ID = 32
-NO_TARGET_LIMIT_SOFT_MODE_BEFORE = 0
-NO_TARGET_LIMIT_SOFT_MODE_AFTER = 1
+NO_TARGET_LIMIT_MODE_BEFORE = 0
+NO_TARGET_LIMIT_MODE_AFTER = 1
 NEW_A41_TARGET_LIMIT = 0
 A41_TARGET_CHANGE_REQUEST = TargetValidatorsCountChanged(
     nodeOperatorId=A41_NO_ID,
     targetValidatorsCount=NEW_A41_TARGET_LIMIT,
-    targetLimitMode=NO_TARGET_LIMIT_SOFT_MODE_AFTER,
+    targetLimitMode=NO_TARGET_LIMIT_MODE_AFTER,
 )
 
 
@@ -372,7 +372,7 @@ def dual_governance_proposal_calls():
         agent_forward([
             (
                 staking_router.address,
-                staking_router.updateTargetValidatorsLimits.encode_input(CURATED_MODULE_ID, A41_NO_ID, NO_TARGET_LIMIT_SOFT_MODE_AFTER, NEW_A41_TARGET_LIMIT),
+                staking_router.updateTargetValidatorsLimits.encode_input(CURATED_MODULE_ID, A41_NO_ID, NO_TARGET_LIMIT_MODE_AFTER, NEW_A41_TARGET_LIMIT),
             )
         ]),
         agent_forward([
@@ -811,7 +811,7 @@ def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
 
             # Item 1.3
             a41_summary_before = staking_router.getNodeOperatorSummary(CURATED_MODULE_ID, A41_NO_ID)
-            assert a41_summary_before['targetLimitMode'] == NO_TARGET_LIMIT_SOFT_MODE_BEFORE
+            assert a41_summary_before['targetLimitMode'] == NO_TARGET_LIMIT_MODE_BEFORE
             assert a41_summary_before['depositableValidatorsCount'] > 0
             assert curated_module.getNodeOperator(A41_NO_ID, True)['name'] == "A41"
 
@@ -936,9 +936,9 @@ def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
 
         # Item 1.3
         a41_summary_after = staking_router.getNodeOperatorSummary(CURATED_MODULE_ID, A41_NO_ID)
-        assert a41_summary_after['targetLimitMode'] == NO_TARGET_LIMIT_SOFT_MODE_AFTER
+        assert a41_summary_after['targetLimitMode'] == NO_TARGET_LIMIT_MODE_AFTER
         assert a41_summary_after['depositableValidatorsCount'] == 0
-        assert a41_summary_after['targetValidatorsCount'] == 0
+        assert a41_summary_after['targetValidatorsCount'] == NEW_A41_TARGET_LIMIT
         assert curated_module.getNodeOperator(A41_NO_ID, True)['name'] == "A41"
         # additional checks to make sure no other fields were changed (if before state is available)
         if a41_summary_before is not None:

@@ -140,6 +140,7 @@ def fix_duplicate_events(formatted_events, logs):
         if len(topics) == 0:
             continue
         if topics[0].lower() == TARGET_TOPIC:
+            target_events.append(i)
     
     for ev_index in target_events:
         # 1st (indexed) uint256 argument value
