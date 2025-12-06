@@ -49,11 +49,11 @@ def test_first_slots(sandwich_upgrade: SandwichFn):
 def skip_slots() -> Sequence[tuple[str, int]]:
     """Slots that are not checked for equality"""
     return [
-        # adding 9 new easy track factories
+        # Adding 8 new easy track factories - steps 2-9 of V3 upgrade
         (contracts.easy_track.address, 0x05),
-        # new slot in the contract _nodeOperatorSummary
+        # Set soft-mode target validators limit to 0 for operator A41 - step 1.3 of operations voting
         (contracts.node_operators_registry.address, 0x01),
-        # finance slot changing due to deposit bot funding / limits updates
+        # Transfer MATIC from Treasury to LOL Multisig - step 7 of operations voting
         (contracts.finance.address, 0x07),
     ]
 
