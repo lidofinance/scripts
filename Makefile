@@ -86,11 +86,12 @@ node3:
 	npx hardhat node --fork $(ETH_RPC_URL3) --port $(NODE_PORT)
 
 test-core:
-	FORKING_BLOCK_NUMBER=$$($(MAKE) --no-print-directory __get_rpc_latest_block_number) && \
-	echo "FORKING_BLOCK_NUMBER: $$FORKING_BLOCK_NUMBER" && \
+	LATEST_BLOCK_NUMBER=$$($(MAKE) --no-print-directory __get_rpc_latest_block_number) && \
+	echo "LATEST_BLOCK_NUMBER: $$LATEST_BLOCK_NUMBER" && \
 	cd $(CORE_DIR) && \
 	RPC_URL=$(CORE_TESTS_TARGET_RPC_URL) \
 	NETWORK_STATE_FILE=$(NETWORK_STATE_FILE) \
+	FORKING_BLOCK_NUMBER=$$LATEST_BLOCK_NUMBER \
 	yarn test:integration
 
 slots:
