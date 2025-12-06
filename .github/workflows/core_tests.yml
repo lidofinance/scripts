@@ -48,6 +48,7 @@ jobs:
         shell: bash
         run: |
           echo "Waiting for fork node on 127.0.0.1:8545..."
+          sleep 10
           for i in {1..30}; do
             if (echo > /dev/tcp/127.0.0.1/8545) >/dev/null 2>&1; then
               echo "Fork is ready ✅"
