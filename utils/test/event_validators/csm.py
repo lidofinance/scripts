@@ -13,19 +13,14 @@ def validate_set_key_removal_charge_event(
     event: EventDict,
     key_removal_charge: int,
     emitted_by: str | None = None,
-    is_dg_event: bool = False,
 ):
-    if is_dg_event:
-        _events_chain = ["LogScriptCall", "LogScriptCall", "KeyRemovalChargeSet", "ScriptResult", "Executed"]
-    else:
-        _events_chain = ["LogScriptCall", "LogScriptCall", "KeyRemovalChargeSet", "ScriptResult"]
+    _events_chain = ["LogScriptCall", "LogScriptCall", "KeyRemovalChargeSet", "ScriptResult", "Executed"]
 
     validate_events_chain([e.name for e in event], _events_chain)
     assert event.count("KeyRemovalChargeSet") == 1
     assert event["KeyRemovalChargeSet"]["amount"] == key_removal_charge
 
-    if emitted_by is not None:
-        event_emitted_by = convert.to_address(event["KeyRemovalChargeSet"]["_emitted_by"])
-        assert event_emitted_by == convert.to_address(
-            emitted_by
-        ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
+    event_emitted_by = convert.to_address(event["KeyRemovalChargeSet"]["_emitted_by"])
+    assert event_emitted_by == convert.to_address(
+        emitted_by
+    ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"

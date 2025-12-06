@@ -1,36 +1,35 @@
 """
 # Vote 2025_12_10
 
-=== 1. DG PROPOPSAL ===
-1.1. Ensure DG proposal execution is within daily time window (14:00 UTC - 23:00 UTC)
-1.2. Call V3Template.startUpgrade
+=== 1. DG PROPOSAL ===
+1.1. Check execution time window (14:00–23:00 UTC)
+1.2. Call V3Template.startUpgrade()
 1.3. Upgrade LidoLocator implementation
-1.4. Grant Aragon APP_MANAGER_ROLE to the AGENT
-1.5. Set Lido implementation in Kernel
-1.6. Revoke Aragon APP_MANAGER_ROLE from the AGENT
-1.7. Revoke REQUEST_BURN_SHARES_ROLE from Lido
-1.8. Revoke REQUEST_BURN_SHARES_ROLE from Curated staking module
-1.9. Revoke REQUEST_BURN_SHARES_ROLE from SimpleDVT
-1.10. Revoke REQUEST_BURN_SHARES_ROLE from Community Staking Accounting
+1.4. Grant APP_MANAGER_ROLE to Agent
+1.5. Set Lido implementation in Aragon Kernel
+1.6. Revoke APP_MANAGER_ROLE from Agent
+1.7. Revoke REQUEST_BURN_SHARES_ROLE from Lido on old Burner
+1.8. Revoke REQUEST_BURN_SHARES_ROLE from Curated Module on old Burner
+1.9. Revoke REQUEST_BURN_SHARES_ROLE from SimpleDVT on old Burner
+1.10. Revoke REQUEST_BURN_SHARES_ROLE from CSM Accounting on old Burner
 1.11. Upgrade AccountingOracle implementation
-1.12. Revoke REPORT_REWARDS_MINTED_ROLE from Lido
-1.13. Grant REPORT_REWARDS_MINTED_ROLE to Accounting
-1.14. Grant OracleDaemonConfig's CONFIG_MANAGER_ROLE to Agent
-1.15. Set SLASHING_RESERVE_WE_RIGHT_SHIFT at OracleDaemonConfig
-1.16. Set SLASHING_RESERVE_WE_LEFT_SHIFT at OracleDaemonConfig
-1.17. Revoke OracleDaemonConfig's CONFIG_MANAGER_ROLE from Agent
-1.18. Call V3Template.finishUpgrade
+1.12. Revoke REPORT_REWARDS_MINTED_ROLE from Lido on StakingRouter
+1.13. Grant REPORT_REWARDS_MINTED_ROLE to Accounting on StakingRouter
+1.14. Grant CONFIG_MANAGER_ROLE to Agent on OracleDaemonConfig
+1.15. Set SLASHING_RESERVE_WE_RIGHT_SHIFT in OracleDaemonConfig
+1.16. Set SLASHING_RESERVE_WE_LEFT_SHIFT in OracleDaemonConfig
+1.17. Revoke CONFIG_MANAGER_ROLE from Agent on OracleDaemonConfig
+1.18. Call V3Template.finishUpgrade()
 
 === NON-DG ITEMS ===
-2. Add AlterTiersInOperatorGrid factory to Easy Track (permissions: operatorGrid, alterTiers)
-3. Add RegisterGroupsInOperatorGrid factory to Easy Track (permissions: operatorGrid, registerGroup + registerTiers)
-4. Add RegisterTiersInOperatorGrid factory to Easy Track (permissions: operatorGrid, registerTiers)
-5. Add UpdateGroupsShareLimitInOperatorGrid factory to Easy Track (permissions: operatorGrid, updateGroupShareLimit)
-6. Add SetJailStatusInOperatorGrid factory to Easy Track (permissions: vaultsAdapter, setVaultJailStatus)
-7. Add UpdateVaultsFeesInOperatorGrid factory to Easy Track (permissions: vaultsAdapter, updateVaultFees)
-8. Add ForceValidatorExitsInVaultHub factory to Easy Track (permissions: vaultsAdapter, forceValidatorExit)
-9. Add SetLiabilitySharesTargetInVaultHub factory to Easy Track (permissions: vaultsAdapter, setLiabilitySharesTarget)
-10. Add SocializeBadDebtInVaultHub factory to Easy Track (permissions: vaultsAdapter, socializeBadDebt)
+2. Add AlterTiersInOperatorGrid factory to Easy Track (permissions: operatorGrid.alterTiers)
+3. Add RegisterGroupsInOperatorGrid factory to Easy Track (permissions: operatorGrid.registerGroup, operatorGrid.registerTiers)
+4. Add RegisterTiersInOperatorGrid factory to Easy Track (permissions: operatorGrid.registerTiers)
+5. Add UpdateGroupsShareLimitInOperatorGrid factory to Easy Track (permissions: operatorGrid.updateGroupShareLimit)
+6. Add SetJailStatusInOperatorGrid factory to Easy Track (permissions: vaultsAdapter.setVaultJailStatus)
+7. Add UpdateVaultsFeesInOperatorGrid factory to Easy Track (permissions: vaultsAdapter.updateVaultFees)
+8. Add ForceValidatorExitsInVaultHub factory to Easy Track (permissions: vaultsAdapter.forceValidatorExit)
+9. Add SocializeBadDebtInVaultHub factory to Easy Track (permissions: vaultsAdapter.socializeBadDebt)
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
@@ -46,14 +45,14 @@ from brownie import interface
 
 
 # ============================== Addresses ===================================
-OMNIBUS_CONTRACT = "0x7e2ef38FeDFEc1e768E55D63cb0273a726d0a318" # TODO replace with the actual omnibus contract address
+OMNIBUS_CONTRACT = "0xa47Ca1d2029D8e735237ea4E74c607426d4aA07e"
 
 
 # ============================= Description ==================================
 # TODO <a description for IPFS (will appear in the voting description on vote.lido.fi)>
 IPFS_DESCRIPTION = "omni dec 2025"
-DG_PROPOSAL_DESCRIPTION = "TODO DG proposal description"
-DG_SUBMISSION_DESCRIPTION = "1. TODO DG submission description"
+DG_PROPOSAL_DESCRIPTION = "Activate Lido V3"
+DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to activate Lido V3"
 
 
 # ================================ Main ======================================

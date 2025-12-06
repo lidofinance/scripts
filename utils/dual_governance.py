@@ -59,7 +59,8 @@ def process_proposals(proposal_ids: Sequence[int]):
     submitted_proposals = []
     scheduled_proposals = []
 
-    for proposal_id in proposals_to_be_processed:
+    copy_proposals_to_be_processed = proposals_to_be_processed.copy()
+    for proposal_id in copy_proposals_to_be_processed:
         (_, _, _, _, proposal_status) = contracts.emergency_protected_timelock.getProposalDetails(proposal_id)
         if proposal_status == PROPOSAL_STATUS["submitted"]:
             submitted_proposals.append(proposal_id)

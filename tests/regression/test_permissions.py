@@ -509,7 +509,7 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "VAULT_MASTER_ROLE": [contracts.agent],
+                "VAULT_MASTER_ROLE": [],
                 "REDEMPTION_MASTER_ROLE": [],
                 "VALIDATOR_EXIT_ROLE": [VAULTS_ADAPTER],
                 "BAD_DEBT_MASTER_ROLE": [VAULTS_ADAPTER],
@@ -532,7 +532,7 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "REGISTRY_ROLE": [contracts.agent, EASYTRACK_EVMSCRIPT_EXECUTOR, VAULTS_ADAPTER],
+                "REGISTRY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR, VAULTS_ADAPTER],
             },
             "role_preimages": {
                 "REGISTRY_ROLE": "vaults.OperatorsGrid.Registry",
@@ -706,6 +706,17 @@ def get_http_w3_provider_url():
     assert False, 'Web3 HTTP Provider token env var not found'
 
 
+def get_http_provider_timeout():
+    """
+    HTTP provider timeout in seconds for remote RPC calls.
+    Can be overridden via WEB3_HTTP_PROVIDER_TIMEOUT env var.
+    """
+    if os.getenv("WEB3_HTTP_PROVIDER_TIMEOUT") is not None:
+        return float(os.getenv("WEB3_HTTP_PROVIDER_TIMEOUT"))
+    # use higher default than requests' 10s to reduce flaky ReadTimeouts in CI
+    return 60.0
+
+
 def get_max_log_range():
     if os.getenv("MAX_GET_LOGS_RANGE") is not None:
         return int(os.getenv("MAX_GET_LOGS_RANGE"))
@@ -714,7 +725,12 @@ def get_max_log_range():
 
 def active_aragon_roles(protocol_permissions):
     local_rpc_provider = web3
-    remote_rpc_provider = Web3(Web3.HTTPProvider(get_http_w3_provider_url()))
+    remote_rpc_provider = Web3(
+        Web3.HTTPProvider(
+            get_http_w3_provider_url(),
+            request_kwargs={"timeout": get_http_provider_timeout()},
+        )
+    )
     max_range = get_max_log_range()
 
     event_signature_hash = remote_rpc_provider.keccak(text="SetPermission(address,address,bytes32,bool)").hex()

@@ -7,6 +7,7 @@ from brownie import ZERO_ADDRESS, web3, chain, Contract
 from utils.config import contracts
 from utils.evm_script import encode_error
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
+from utils.staking_module import calc_module_reward_shares
 from utils.test.oracle_report_helpers import oracle_report, prepare_exit_bus_report
 from utils.test.helpers import almostEqEth, almostEqWithDiff
 
@@ -324,6 +325,8 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
         100,
     )
     assert report_tx.events["TransferShares"][module_index]["sharesValue"] > 0
+    assert report_tx.events["TransferShares"][simple_dvt_index]["sharesValue"] > 0
+    assert report_tx.events["TransferShares"][csm_index]["sharesValue"] > 0
 
 
 def test_stopped_staking_module_cant_stake(stranger):
