@@ -92,7 +92,7 @@ test-core:
 	RPC_URL=$(CORE_TESTS_TARGET_RPC_URL) \
 	NETWORK_STATE_FILE=$(NETWORK_STATE_FILE) \
 	FORKING_BLOCK_NUMBER=$$LATEST_BLOCK_NUMBER \
-	yarn test:integration
+	yarn test:integration:trace
 
 slots:
 	@echo "Input https://github.com/lidofinance/protocol-onchain-mon-bots/blob/main/bots/ethereum-steth-v2/src/utils/constants.ts file content (end with Enter and Ctrl+D):"
