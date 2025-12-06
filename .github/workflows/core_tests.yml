@@ -46,7 +46,18 @@ jobs:
 
       - name: Check that the fork is ready
         shell: bash
-        run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8546
+        run: |
+          echo "Waiting for fork node on 127.0.0.1:8546..."
+          for i in {1..30}; do
+            if (echo > /dev/tcp/127.0.0.1/8546) >/dev/null 2>&1; then
+              echo "Fork is ready ✅"
+              exit 0
+            fi
+            echo "Not ready yet... ($i/30)"
+            sleep 1
+          done
+          echo "❌ Fork was not ready after 30 seconds" >&2
+          exit 1
 
       - name: Prepare test environment with Brownie
         run: docker exec -e GITHUB_TOKEN -e ETH_RPC_URL -e ETHERSCAN_TOKEN tests-runner bash -c 'make ci-prepare-environment'
