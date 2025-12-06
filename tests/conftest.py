@@ -129,10 +129,14 @@ class Helpers:
                     dao_voting.vote(vote_id, True, False, {"from": account})
 
         # wait for the vote to end
+        print("HERE1", dao_voting.getVote(vote_id)["startDate"], get_vote_duration(), chain.time())
         time_to_end = dao_voting.getVote(vote_id)["startDate"] + get_vote_duration() - chain.time()
+        print("HERE2", time_to_end)
         if time_to_end > 0:
+            print("HERE3", "sleep")
             chain.sleep(time_to_end)
         chain.mine()
+        print("HERE4", "mine", vote_ids)
 
         for vote_id in vote_ids:
             assert dao_voting.canExecute(vote_id)
