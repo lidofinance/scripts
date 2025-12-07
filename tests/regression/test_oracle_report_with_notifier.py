@@ -1,22 +1,16 @@
 import pytest
 from brownie import Contract, accounts, chain, interface, OpStackTokenRatePusherWithSomeErrorStub, web3, reverts
 from utils.test.oracle_report_helpers import oracle_report
-from utils.config import (
-    contracts,
-    get_deployer_account,
-    network_name,
-    L1_TOKEN_RATE_NOTIFIER,
-    WSTETH_TOKEN,
-    ACCOUNTING_ORACLE,
-    L1_OPTIMISM_CROSS_DOMAIN_MESSENGER,
-    L2_OPTIMISM_TOKEN_RATE_ORACLE,
-)
+from utils.config import contracts, get_deployer_account, network_name
 from utils.test.helpers import ZERO_ADDRESS, eth_balance
 from utils.evm_script import encode_error
 from typing import TypedDict, TypeVar, Any
 
-# Use as mock for L2 TokenRateOracle
-L2_TOKEN_RATE_ORACLE = WSTETH_TOKEN
+WST_ETH = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
+ACCOUNTING_ORACLE = "0x852deD011285fe67063a08005c71a85690503Cee"
+L1_TOKEN_RATE_NOTIFIER = "0xe6793B9e4FbA7DE0ee833F9D02bba7DB5EB27823"
+L1_CROSS_DOMAIN_MESSENGER = "0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1"
+L2_TOKEN_RATE_ORACLE = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
 
 
 @pytest.fixture(scope="module")
@@ -43,8 +37,8 @@ def test_oracle_report_revert():
     """Test oracle report reverts when messenger is empty"""
     interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)  # load TokenRateNotifier contract ABI to catch correct error
 
-    web3.provider.make_request("hardhat_setCode", [L1_OPTIMISM_CROSS_DOMAIN_MESSENGER, "0x"])
-    web3.provider.make_request("evm_setAccountCode", [L1_OPTIMISM_CROSS_DOMAIN_MESSENGER, "0x"])
+    web3.provider.make_request("hardhat_setCode", [L1_CROSS_DOMAIN_MESSENGER, "0x"])
+    web3.provider.make_request("evm_setAccountCode", [L1_CROSS_DOMAIN_MESSENGER, "0x"])
 
     with reverts(encode_error("ErrorTokenRateNotifierRevertedWithNoData()")):
         oracle_report(cl_diff=0, report_el_vault=True, report_withdrawals_vault=False)
@@ -61,7 +55,7 @@ def test_oracle_report_pushes_rate():
 
     tokenRateOracle = interface.ITokenRateUpdatable(L2_TOKEN_RATE_ORACLE)
 
-    wstETH = interface.WstETH(WSTETH_TOKEN)
+    wstETH = interface.WstETH(WST_ETH)
     accountingOracle = interface.AccountingOracle(ACCOUNTING_ORACLE)
 
     tokenRate = wstETH.getStETHByWstETH(10**27)

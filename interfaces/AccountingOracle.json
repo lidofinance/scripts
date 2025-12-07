@@ -7,6 +7,16 @@
         "type": "address"
       },
       {
+        "internalType": "address",
+        "name": "lido",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "legacyOracle",
+        "type": "address"
+      },
+      {
         "internalType": "uint256",
         "name": "secondsPerSlot",
         "type": "uint256"
@@ -133,6 +143,11 @@
       }
     ],
     "name": "InvalidExtraDataSortOrder",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "LegacyOracleCannotBeZero",
     "type": "error"
   },
   {
@@ -715,6 +730,32 @@
   },
   {
     "inputs": [],
+    "name": "LEGACY_ORACLE",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "LIDO",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "LOCATOR",
     "outputs": [
       {
@@ -799,7 +840,14 @@
         "type": "uint256"
       }
     ],
-    "name": "finalizeUpgrade_v4",
+    "name": "finalizeUpgrade_v2",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "finalizeUpgrade_v3",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1064,6 +1112,29 @@
         "internalType": "uint256",
         "name": "consensusVersion",
         "type": "uint256"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "admin",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "consensusContract",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "consensusVersion",
+        "type": "uint256"
       },
       {
         "internalType": "uint256",
@@ -1071,7 +1142,7 @@
         "type": "uint256"
       }
     ],
-    "name": "initialize",
+    "name": "initializeWithoutMigration",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1224,16 +1295,6 @@
             "internalType": "bool",
             "name": "isBunkerMode",
             "type": "bool"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "vaultsDataTreeRoot",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "string",
-            "name": "vaultsDataTreeCid",
-            "type": "string"
           },
           {
             "internalType": "uint256",

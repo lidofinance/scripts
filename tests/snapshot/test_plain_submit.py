@@ -45,6 +45,7 @@ def snapshot() -> Dict[str, any]:
         "allowRecoverability(LDO)": lido.allowRecoverability(LDO_TOKEN),
         "allowRecoverability(StETH)": lido.allowRecoverability(LIDO),
         "appId": lido.appId(),
+        "getOracle()": lido.getOracle(),
         "getInitializationBlock()": lido.getInitializationBlock(),
         "symbol": lido.symbol(),
         "getEVMScriptRegistry": lido.getEVMScriptRegistry(),
@@ -79,7 +80,7 @@ def test_submit_snapshot(helpers, staker, vote_ids_from_env, dg_proposal_ids_fro
 
     before: Dict[str, Dict[str, any]] = steps()
     chain.revert()
-
+    
     execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env)
 
     after: Dict[str, Dict[str, any]] = steps()
@@ -87,13 +88,13 @@ def test_submit_snapshot(helpers, staker, vote_ids_from_env, dg_proposal_ids_fro
 
     expected_diffs = {
         "canPerform()": ValueChanged(from_val=True, to_val=False),
-        "getRecoveryVault()": ValueChanged(from_val=contracts.agent.address, to_val=ZERO_ADDRESS),
+        "getRecoveryVault()": ValueChanged(from_val=contracts.agent.address, to_val=ZERO_ADDRESS),   
     }
 
     for step, pair_of_snapshots in dict_zip(before, after).items():
         (before, after) = pair_of_snapshots
         step_diffs[step] = dict_diff(before, after)
-
+        
         for key in expected_diffs:
             if key in step_diffs[step] and step_diffs[step][key] == expected_diffs[key]:
                 del step_diffs[step][key]

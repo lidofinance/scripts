@@ -29,7 +29,9 @@ def test_proxy(contract):
 
 
 def test_constants(contract):
+    assert contract.LIDO() == contracts.lido
     assert contract.LOCATOR() == contracts.lido_locator
+    assert contract.LEGACY_ORACLE() == contracts.legacy_oracle
     assert contract.EXTRA_DATA_FORMAT_EMPTY() == 0
     assert contract.EXTRA_DATA_FORMAT_LIST() == 1
     assert contract.EXTRA_DATA_TYPE_STUCK_VALIDATORS() == 1
@@ -39,15 +41,22 @@ def test_constants(contract):
 
 
 def test_versioned(contract):
-    assert contract.getContractVersion() == 4
+    assert contract.getContractVersion() == 3
 
 
 def test_initialize(contract):
-    with reverts("NonZeroContractVersionOnInit: "):
+    with reverts(encode_error("IncorrectOracleMigration(uint256)", [2])):
         contract.initialize(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
             HASH_CONSENSUS_FOR_AO,
-            AO_CONSENSUS_VERSION,
+            1,
+            {"from": contracts.voting},
+        )
+    with reverts(encode_error("NonZeroContractVersionOnInit()")):
+        contract.initializeWithoutMigration(
+            contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
+            HASH_CONSENSUS_FOR_AO,
+            1,
             1,
             {"from": contracts.voting},
         )
@@ -55,11 +64,18 @@ def test_initialize(contract):
 
 def test_petrified(contract):
     impl = interface.AccountingOracle(ACCOUNTING_ORACLE_IMPL)
-    with reverts("NonZeroContractVersionOnInit: "):
+    with reverts(encode_error("IncorrectOracleMigration(uint256)", [2])):
         impl.initialize(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
             HASH_CONSENSUS_FOR_AO,
-            AO_CONSENSUS_VERSION,
+            1,
+            {"from": contracts.voting},
+        )
+    with reverts(encode_error("NonZeroContractVersionOnInit()")):
+        impl.initializeWithoutMigration(
+            contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
+            HASH_CONSENSUS_FOR_AO,
+            1,
             1,
             {"from": contracts.voting},
         )

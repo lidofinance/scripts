@@ -223,7 +223,7 @@ def far_block() -> int:
 
 @pytest.fixture(scope="module")
 def far_ts() -> int:
-    return chain.time() + 30 * 24 * 60 * 60  # 30 days
+    return chain.time() + 14 * 24 * 60 * 60  # 14 days
 
 
 def _sleep_till_block(block: int, ts: int) -> None:

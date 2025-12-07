@@ -45,7 +45,7 @@ def test_pausable(contract):
 
 
 def test_versioned(contract):
-    assert contract.getContractVersion() == 3
+    assert contract.getContractVersion() == 2
 
 
 def test_initialize(contract):
@@ -55,7 +55,7 @@ def test_initialize(contract):
 
 def test_finalize_upgrade(contract):
     with reverts("UNEXPECTED_CONTRACT_VERSION"):
-        contract.finalizeUpgrade_v3(contracts.burner, [contracts.eip712_steth], 0, {"from": contracts.voting})
+        contract.finalizeUpgrade_v2(contracts.lido_locator, contracts.eip712_steth, {"from": contracts.voting})
 
 
 def test_petrified():
@@ -63,11 +63,8 @@ def test_petrified():
     with reverts("INIT_ALREADY_INITIALIZED"):
         impl.initialize(contracts.lido_locator, contracts.eip712_steth, {"from": contracts.voting})
 
-    # For petrified implementation, hasInitialized() returns false because
-    # AragonApp (LIDO) sets initializationBlock to PETRIFIED_BLOCK = uint256(-1)
-    # and hasInitialized() requires getBlockNumber() >= initializationBlock.
-    with reverts("NOT_INITIALIZED"):
-        impl.finalizeUpgrade_v3(contracts.burner, [contracts.eip712_steth], 0, {"from": contracts.voting})
+    with reverts("UNEXPECTED_CONTRACT_VERSION"):
+        impl.finalizeUpgrade_v2(contracts.lido_locator, contracts.eip712_steth, {"from": contracts.voting})
 
 
 def test_links(contract):
@@ -95,7 +92,7 @@ def test_lido_state(contract):
         for module in modules
     )
 
-    assert stake_limit["isStakingPaused_"] == False
+    assert stake_limit["isStakingPaused"] == False
     assert stake_limit["isStakingLimitSet"] == True
     assert stake_limit["maxStakeLimit"] == LIDO_MAX_STAKE_LIMIT_ETH * ONE_ETH
 

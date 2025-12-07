@@ -29,7 +29,7 @@ def execute_vote(helpers, vote_ids_from_env):
 
 def execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env):
 
-    sequence_key = "v2_dg2"
+    sequence_key = "v1_dg1"
     print("ACTION_SEQUENCE:", sequence_key)
 
     state = {
