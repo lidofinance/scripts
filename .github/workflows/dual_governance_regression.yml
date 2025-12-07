@@ -13,7 +13,7 @@ on:
       - "feat/rc2"
       - "feat/rc1"
       - "feat/next-vote"
-      - "feat/v3-vote"
+      - "v2_v1_dg2_dg1"
   workflow_dispatch:
 
 jobs:
