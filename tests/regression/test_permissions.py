@@ -63,7 +63,14 @@ from utils.config import (
     L1_EMERGENCY_BRAKES_MULTISIG,
     DUAL_GOVERNANCE_EXECUTORS,
     RESEAL_MANAGER,
-    INSURANCE_FUND
+    INSURANCE_FUND,
+    VAULT_HUB,
+    OPERATOR_GRID,
+    LAZY_ORACLE,
+    ACCOUNTING,
+    PREDEPOSIT_GUARANTEE,
+    VAULTS_ADAPTER,
+    GATE_SEAL_V3
 )
 
 
@@ -83,8 +90,8 @@ def protocol_permissions():
             "type": "CustomApp",
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "REQUEST_BURN_MY_STETH_ROLE": [contracts.agent],
-                "REQUEST_BURN_SHARES_ROLE": [contracts.lido, contracts.node_operators_registry, contracts.simple_dvt, contracts.csm.accounting()],
+                "REQUEST_BURN_MY_STETH_ROLE": [],
+                "REQUEST_BURN_SHARES_ROLE": [contracts.accounting, contracts.csm.accounting()],
             },
         },
         STAKING_ROUTER: {
@@ -99,7 +106,7 @@ def protocol_permissions():
                 "STAKING_MODULE_MANAGE_ROLE": [contracts.agent],
                 "REPORT_EXITED_VALIDATORS_ROLE": [contracts.accounting_oracle],
                 "UNSAFE_SET_EXITED_VALIDATORS_ROLE": [],
-                "REPORT_REWARDS_MINTED_ROLE": [contracts.lido],
+                "REPORT_REWARDS_MINTED_ROLE": [contracts.accounting],
                 "REPORT_VALIDATOR_EXITING_STATUS_ROLE": [contracts.validator_exit_verifier],
                 "REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE": [contracts.triggerable_withdrawals_gateway],
             },
@@ -494,6 +501,77 @@ def protocol_permissions():
                 "PAUSE_ROLE": [contracts.voting, L1_EMERGENCY_BRAKES_MULTISIG],
                 "UNPAUSE_ROLE": [contracts.voting],
             },
+        },
+        VAULT_HUB: {
+            "contract_name": "VaultHub",
+            "contract": contracts.vault_hub,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "VAULT_MASTER_ROLE": [],
+                "REDEMPTION_MASTER_ROLE": [],
+                "VALIDATOR_EXIT_ROLE": [VAULTS_ADAPTER],
+                "BAD_DEBT_MASTER_ROLE": [VAULTS_ADAPTER],
+                "PAUSE_ROLE": [GATE_SEAL_V3, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+            },
+            "role_preimages": {
+                "VAULT_MASTER_ROLE": "vaults.VaultHub.VaultMasterRole",
+                "REDEMPTION_MASTER_ROLE": "vaults.VaultHub.RedemptionMasterRole",
+                "VALIDATOR_EXIT_ROLE": "vaults.VaultHub.ValidatorExitRole",
+                "BAD_DEBT_MASTER_ROLE": "vaults.VaultHub.BadDebtMasterRole",
+                "PAUSE_ROLE": "PausableUntilWithRoles.PauseRole",
+                "RESUME_ROLE": "PausableUntilWithRoles.ResumeRole",
+            },
+        },
+        OPERATOR_GRID: {
+            "contract_name": "OperatorGrid",
+            "contract": contracts.operator_grid,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "REGISTRY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR, VAULTS_ADAPTER],
+            },
+            "role_preimages": {
+                "REGISTRY_ROLE": "vaults.OperatorsGrid.Registry",
+            },
+        },
+        LAZY_ORACLE: {
+            "contract_name": "LazyOracle",
+            "contract": contracts.lazy_oracle,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "UPDATE_SANITY_PARAMS_ROLE": [],
+            },
+            "role_preimages": {
+                "UPDATE_SANITY_PARAMS_ROLE": "vaults.LazyOracle.UpdateSanityParams",
+            },
+        },
+        ACCOUNTING: {
+            "contract_name": "Accounting",
+            "contract": contracts.accounting,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {},
+        },
+        PREDEPOSIT_GUARANTEE: {
+            "contract_name": "PredepositGuarantee",
+            "contract": contracts.predeposit_guarantee,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "PAUSE_ROLE": [GATE_SEAL_V3, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+            },
+            "role_preimages": {
+                "PAUSE_ROLE": "PausableUntilWithRoles.PauseRole",
+                "RESUME_ROLE": "PausableUntilWithRoles.ResumeRole",
+            },
         }
     }
 
@@ -559,7 +637,12 @@ def test_protocol_permissions(protocol_permissions):
                 )
 
             for role, holders in permissions_config["roles"].items():
-                role_keccak = web3.keccak(text=role).hex() if role != "DEFAULT_ADMIN_ROLE" else ZERO_BYTES32.hex()
+                # Use custom preimage if specified, otherwise use role name
+                role_preimage = role
+                if "role_preimages" in permissions_config and role in permissions_config["role_preimages"]:
+                    role_preimage = permissions_config["role_preimages"][role]
+
+                role_keccak = web3.keccak(text=role_preimage).hex() if role != "DEFAULT_ADMIN_ROLE" else ZERO_BYTES32.hex()
 
                 role_signature = permissions_config["contract"].signatures[role]
                 assert permissions_config["contract"].get_method_object(role_signature)() == role_keccak
@@ -623,6 +706,17 @@ def get_http_w3_provider_url():
     assert False, 'Web3 HTTP Provider token env var not found'
 
 
+def get_http_provider_timeout():
+    """
+    HTTP provider timeout in seconds for remote RPC calls.
+    Can be overridden via WEB3_HTTP_PROVIDER_TIMEOUT env var.
+    """
+    if os.getenv("WEB3_HTTP_PROVIDER_TIMEOUT") is not None:
+        return float(os.getenv("WEB3_HTTP_PROVIDER_TIMEOUT"))
+    # use higher default than requests' 10s to reduce flaky ReadTimeouts in CI
+    return 60.0
+
+
 def get_max_log_range():
     if os.getenv("MAX_GET_LOGS_RANGE") is not None:
         return int(os.getenv("MAX_GET_LOGS_RANGE"))
@@ -631,7 +725,12 @@ def get_max_log_range():
 
 def active_aragon_roles(protocol_permissions):
     local_rpc_provider = web3
-    remote_rpc_provider = Web3(Web3.HTTPProvider(get_http_w3_provider_url()))
+    remote_rpc_provider = Web3(
+        Web3.HTTPProvider(
+            get_http_w3_provider_url(),
+            request_kwargs={"timeout": get_http_provider_timeout()},
+        )
+    )
     max_range = get_max_log_range()
 
     event_signature_hash = remote_rpc_provider.keccak(text="SetPermission(address,address,bytes32,bool)").hex()

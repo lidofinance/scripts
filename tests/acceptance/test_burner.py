@@ -15,5 +15,5 @@ def contract() -> interface.Burner:
 
 
 def test_links(contract):
-    assert contract.STETH() == contracts.lido
-    assert contract.TREASURY() == contracts.agent
+    assert contract.LIDO() == contracts.lido
+    assert contract.LOCATOR() == contracts.lido_locator

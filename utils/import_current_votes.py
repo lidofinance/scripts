@@ -42,7 +42,7 @@ def is_there_any_upgrade_scripts() -> bool:
     return len(get_upgrade_script_files()) > 0
 
 
-def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[TransactionReceipt]]:
+def start_and_execute_votes(dao_voting, helpers, vote_file_index = None) -> tuple[List[str], List[TransactionReceipt]]:
     vote_files = get_vote_script_files()
     upgrade_files = get_upgrade_script_files()
     vote_files.extend(upgrade_files)
@@ -50,7 +50,9 @@ def start_and_execute_votes(dao_voting, helpers) -> tuple[List[str], List[Transa
 
     vote_ids = []
     vote_transactions = []
-    for vote_file in sorted(vote_files):
+    for current_vote_file_index, vote_file in enumerate(sorted(vote_files)):
+        if vote_file_index is not None and current_vote_file_index != vote_file_index:
+            continue
         script_name = os.path.splitext(os.path.basename(vote_file))[0]
         print(f"Starting voting from script '{script_name}'...")
         name_for_import = "scripts." + script_name

@@ -48,11 +48,11 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     #         (dg_item_address_2, dg_item_encoded_input_2)
     #     ]),
     # ]
-    # 
+    #
     # dg_call_script = submit_proposals([
     #     (dg_items, "TODO DG proposal description")
     # ])
-    # 
+    #
     # vote_desc_items, call_script_items = zip(
     #     (
     #         "TODO 1. DG submission description",

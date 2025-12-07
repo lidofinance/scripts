@@ -103,6 +103,72 @@ def validate_events_from_abis():
                     raise Exception(f"Event {topic} has different inputs in ABI")
 
 
+def fix_duplicate_events(formatted_events, logs):
+    """
+    Brownie's `_topics` object does not reliably handle events that share the same
+    signature across multiple interface files. When this happens, Brownie treats
+    them as indistinguishable:
+    
+    TargetValidatorsCountChanged event is populated over 4 contracts:
+    NodeOperatorsRegistry:
+        event TargetValidatorsCountChanged(uint256 indexed nodeOperatorId, uint256 targetValidatorsCount, uint256 targetLimitMode);
+    SDVT:
+        event TargetValidatorsCountChanged(uint256 indexed nodeOperatorId, uint256 targetValidatorsCount, uint256 targetLimitMode);
+    Sandbox:
+        event TargetValidatorsCountChanged(uint256 indexed nodeOperatorId, uint256 targetValidatorsCount, uint256 targetLimitMode);
+    CSModule:
+        event TargetValidatorsCountChanged(uint256 indexed nodeOperatorId, uint256 targetLimitMode, uint256 targetValidatorsCount);
+
+    Although these ABIs define the same event name and signature, Brownie collects
+    only one version of the event in its internal `_topics` map. Because ABI
+    parsing order is undefined and environment-dependent (verified experimentally),
+    the version that ends up in `_topics` may differ between runs. As a result,
+    the argument order inferred by Brownie for `TargetValidatorsCountChanged`
+    becomes inconsistent, breaking `eth_event.decode_logs` when decoding logs.
+
+    To mitigate this, we explicitly append ordered parameters for each
+    encountered `TargetValidatorsCountChanged` event. This allows us to
+    validate arguments based on their positional order rather than relying
+    on potentially incorrect parameter names.
+    """
+
+    TARGET_TOPIC = web3.keccak(text='TargetValidatorsCountChanged(uint256,uint256,uint256)').hex().lower()
+    target_events = []
+
+    for i, log in enumerate(logs):
+        topics = log['topics'] or []
+        if len(topics) == 0:
+            continue
+        if topics[0].lower() == TARGET_TOPIC:
+            target_events.append(i)
+    
+    for ev_index in target_events:
+        # 1st (indexed) uint256 argument value
+        formatted_events[ev_index]['data'].append({
+            "name": "ARG0_VALUE",
+            "type": "uint256",
+            "value": int(logs[ev_index]['topics'][1], 16),
+        })
+
+        data_hex = logs[ev_index]['data']
+        if data_hex.startswith("0x"):
+            data_hex = data_hex[2:]
+
+        # 2nd (unindexed) uint256 argument value
+        formatted_events[ev_index]['data'].append({
+            "name": "ARG1_VALUE",
+            "type": "uint256",
+            "value": int(data_hex[0:64], 16),
+        })
+
+        # 3rd (unindexed) uint256 argument value
+        formatted_events[ev_index]['data'].append({
+            "name": "ARG2_VALUE",
+            "type": "uint256",
+            "value": int(data_hex[64:128], 16),
+        })
+
+
 def tx_events_from_receipt(tx: TransactionReceipt) -> List:
     if not tx.status:
         raise "Tx has reverted status (set to 0)"
@@ -122,7 +188,12 @@ def tx_events_from_receipt(tx: TransactionReceipt) -> List:
                 log["data"] = data + "0" * missing_chars
 
     events = decode_logs(logs, _topics, allow_undecoded=True)
-    return [format_event(i) for i in events]
+    
+    formatted_events = [format_event(i) for i in events]
+
+    fix_duplicate_events(formatted_events, logs)
+    
+    return formatted_events
 
 
 def tx_events_from_trace(tx: TransactionReceipt) -> Optional[List]:
