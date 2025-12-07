@@ -9,7 +9,7 @@ on:
       - "feat/rc2"
       - "feat/rc1"
       - "feat/next-vote"
-      - "feat/v3-vote"
+      - "v2_dg2"
   schedule:
     - cron: "0 0 * * TUE"
 
