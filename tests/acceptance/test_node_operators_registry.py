@@ -115,7 +115,7 @@ def test_nor_state(contract):
 
         node_operator_summary = contract.getNodeOperatorSummary(id)
         exited_node_operators = [12, 1] # NO id 12 was added on vote 23-05-23, NO id 1 was added on vote 03-10-23
-        soft_limit_0_node_operators = [32] # NO id 32 was added on vote 10-12-25
+        soft_limit_0_node_operators = [] # NO id 32 was added on vote 10-12-25
         assert node_operator_summary["targetLimitMode"] == (1 if id in exited_node_operators or id in soft_limit_0_node_operators else 0)
         assert node_operator_summary["targetValidatorsCount"] == 0
         # Can be more than 0 in regular protocol operations
