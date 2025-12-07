@@ -18,6 +18,10 @@ inputs:
     description: "command to execute tests"
     required: true
     default: ""
+  action_sequence:
+    description: "Action sequence to execute (v1_dg1_v2_dg2, v1_v2_dg1_dg2, etc.)"
+    required: false
+    default: "v1_dg1_v2_dg2"
 
 runs:
   using: "composite"
@@ -76,3 +80,4 @@ runs:
       env:
         ETHERSCAN_TOKEN: ${{ inputs.etherscan }}
         ETH_RPC_URL: ${{ inputs.rpc_url }}
+        ACTION_SEQUENCE: ${{ inputs.action_sequence }}

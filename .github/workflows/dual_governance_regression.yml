@@ -1,4 +1,4 @@
-name: Dual Governance tests CI
+name: DG tests
 
 permissions:
   contents: read
@@ -13,12 +13,12 @@ on:
       - "feat/rc2"
       - "feat/rc1"
       - "feat/next-vote"
-      - "feat/v3-vote"
+      - "feat/dec-votes"
   workflow_dispatch:
 
 jobs:
   dual-governance-regression:
-    name: "Regression tests"
+    name: "Regression"
     runs-on: ubuntu-latest
     timeout-minutes: 100
 

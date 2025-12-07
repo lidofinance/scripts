@@ -2,6 +2,7 @@ from brownie import accounts
 from utils.config import contracts
 from utils.import_current_votes import start_and_execute_votes
 from utils.dual_governance import process_proposals
+import os
 
 
 def execute_vote(helpers, vote_ids_from_env):
@@ -29,20 +30,31 @@ def execute_vote(helpers, vote_ids_from_env):
 
 def execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env):
 
-    # V1
-    proposals_count_before1 = contracts.emergency_protected_timelock.getProposalsCount()
-    start_and_execute_votes(contracts.voting, helpers, 0)
-    proposals_count_after1 = contracts.emergency_protected_timelock.getProposalsCount()
-    new_proposal_ids1 = list(range(proposals_count_before1 + 1, proposals_count_after1 + 1))
-    
-    # DG1
-    process_proposals(new_proposal_ids1)
+    sequence_key = os.environ.get("ACTION_SEQUENCE", "v1_dg1_v2_dg2")
+    print("ACTION_SEQUENCE:", sequence_key)
+    steps = sequence_key.split("_")
 
-    # V2
-    proposals_count_before2 = contracts.emergency_protected_timelock.getProposalsCount()
-    start_and_execute_votes(contracts.voting, helpers, 1)
-    proposals_count_after2 = contracts.emergency_protected_timelock.getProposalsCount()
-    new_proposal_ids2 = list(range(proposals_count_before2 + 1, proposals_count_after2 + 1))
-    
-    # DG2
-    process_proposals(new_proposal_ids2)
+    state = {
+        "v1_ids": None,
+        "v2_ids": None,
+    }
+
+    def vote(id):
+        proposals_count_before1 = contracts.emergency_protected_timelock.getProposalsCount()
+        start_and_execute_votes(contracts.voting, helpers, id)
+        proposals_count_after1 = contracts.emergency_protected_timelock.getProposalsCount()
+        state[f"v{id+1}_ids"] = list(range(proposals_count_before1 + 1, proposals_count_after1 + 1))
+
+    def dual_governance(ids):
+        process_proposals(ids)
+
+    actions = {
+        "v1": lambda: vote(0),
+        "dg1": lambda: dual_governance(state["v1_ids"]),
+        "v2": lambda: vote(1),
+        "dg2": lambda: dual_governance(state["v2_ids"]),
+    }
+
+    for action in steps:
+        actions[action]()
+

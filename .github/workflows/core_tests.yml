@@ -9,13 +9,13 @@ on:
       - "feat/rc2"
       - "feat/rc1"
       - "feat/next-vote"
-      - "feat/v3-vote"
+      - "feat/dec-votes"
   schedule:
     - cron: "0 0 * * TUE"
 
 jobs:
   run-tests:
-    name: Core repo tests in docker
+    name: All
     runs-on: "ubuntu-latest"
     timeout-minutes: 120
 
