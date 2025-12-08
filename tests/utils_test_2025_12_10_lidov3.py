@@ -79,6 +79,7 @@ LIDO_LOCATOR_IMPL = "0x2f8779042EFaEd4c53db2Ce293eB6B3f7096C72d"
 ACCOUNTING_ORACLE_IMPL = "0x1455B96780A93e08abFE41243Db92E2fCbb0141c"
 RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
 BURNER = "0xE76c52750019b80B43E36DF30bf4060EB73F573a"
+VAULTS_FACTORY = "0x02Ca7772FF14a9F6c1a08aF385aA96bb1b34175A"
 
 # New Easy Track factories
 ALTER_TIERS_IN_OPERATOR_GRID_FACTORY = "0xa29173C7BCf39dA48D5E404146A652d7464aee14"
@@ -416,6 +417,7 @@ def enact_and_test_voting(
     accounts,
     ldo_holder,
     vote_ids_from_env,
+    stranger,
     expected_vote_id,
     expected_dg_proposal_id,
 ):
@@ -502,6 +504,10 @@ def enact_and_test_voting(
         assert FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY in new_factories, "EasyTrack should have FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY factory after vote"
         assert UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY in new_factories, "EasyTrack should have UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY factory after vote"
         assert UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY in new_factories, "EasyTrack should have UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY factory after vote"
+
+        # Check that after the Aragon vote has passed, creation of the vaults via VaultFactory still reverts
+        with reverts():
+            interface.VaultFactory(VAULTS_FACTORY).createVaultWithDashboard(stranger, stranger, stranger, 100, 100, [], {"from": stranger})
 
         vote_events = group_voting_events_from_receipt(vote_tx)
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT

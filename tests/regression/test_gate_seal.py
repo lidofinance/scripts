@@ -1,6 +1,6 @@
 import pytest
 
-from brownie import reverts, accounts, chain, web3, Wei  # type: ignore
+from brownie import reverts, accounts, chain, web3, Wei, interface  # type: ignore
 from eth_hash.auto import keccak
 
 from utils.test.exit_bus_data import LidoValidator
@@ -24,6 +24,9 @@ from utils.config import (
     CHAIN_SLOTS_PER_EPOCH,
     CHAIN_SECONDS_PER_SLOT,
     AO_EPOCHS_PER_FRAME,
+    VAULT_HUB,
+    PREDEPOSIT_GUARANTEE,
+    GATE_SEAL_V3,
 )
 
 
@@ -40,6 +43,20 @@ def test_gate_seal_expiration(gate_seal_committee):
     assert contracts.gate_seal.is_expired()
     with reverts("gate seal: expired"):
         contracts.gate_seal.seal([WITHDRAWAL_QUEUE], {"from": gate_seal_committee})
+
+
+def test_gate_seal_v3_expiration(gate_seal_committee):
+    gate_seal_v3 = interface.GateSeal(GATE_SEAL_V3)
+
+    assert not gate_seal_v3.is_expired()
+    time = chain.time()
+    expiry = gate_seal_v3.get_expiry_timestamp()
+    chain.sleep(expiry - time + 1)
+    chain.mine(1)
+
+    assert gate_seal_v3.is_expired()
+    with reverts("gate seal: expired"):
+        gate_seal_v3.seal(gate_seal_v3.get_sealables(), {"from": gate_seal_committee})
 
 
 def test_gate_seal_twg_veb_expiration(gate_seal_committee):
@@ -325,6 +342,57 @@ def test_gate_seal_twg_veb_scenario(steth_holder, gate_seal_committee, eth_whale
 
     pubkey_hex = "0x" + pubkey_bytes.hex()
     assert validator_key == pubkey_hex
+
+
+def test_gate_seal_v3_vaults_scenario(gate_seal_committee):
+    gate_seal_v3 = interface.GateSeal(GATE_SEAL_V3)
+
+    assert not gate_seal_v3.is_expired()
+
+    sealables = gate_seal_v3.get_sealables()
+    assert len(sealables) == 2
+    assert contracts.vault_hub.address in sealables
+    assert contracts.predeposit_guarantee.address in sealables
+
+    pause_duration = gate_seal_v3.get_seal_duration_seconds()
+
+    assert not contracts.vault_hub.isPaused()
+    assert not contracts.predeposit_guarantee.isPaused()
+
+    seal_tx = gate_seal_v3.seal(sealables, {"from": gate_seal_committee})
+
+    assert seal_tx.events.count("Sealed") == len(sealables)
+    for seal_event in seal_tx.events["Sealed"]:
+        assert seal_event["gate_seal"] == gate_seal_v3.address
+        assert seal_event["sealed_for"] == pause_duration
+        assert seal_event["sealed_by"] == gate_seal_committee
+        assert seal_event["sealable"] in sealables
+        assert seal_event["sealed_at"] == seal_tx.timestamp
+
+    for pause_event in seal_tx.events["Paused"]:
+        assert pause_event["duration"] == pause_duration
+
+    assert gate_seal_v3.is_expired()
+    with reverts("gate seal: expired"):
+        gate_seal_v3.seal(sealables, {"from": gate_seal_committee})
+
+    assert contracts.vault_hub.isPaused()
+    assert (
+        contracts.vault_hub.getResumeSinceTimestamp()
+        == seal_tx.timestamp + pause_duration
+    )
+
+    assert contracts.predeposit_guarantee.isPaused()
+    assert (
+        contracts.predeposit_guarantee.getResumeSinceTimestamp()
+        == seal_tx.timestamp + pause_duration
+    )
+
+    chain.sleep(pause_duration + 1)
+    chain.mine(1)
+
+    assert not contracts.vault_hub.isPaused()
+    assert not contracts.predeposit_guarantee.isPaused()
 
 def _wait_for_next_ref_slot():
     wait_to_next_available_report_time(contracts.hash_consensus_for_validators_exit_bus_oracle)
