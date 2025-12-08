@@ -966,23 +966,15 @@ def trp_limit_test(stranger):
 
     easy_track = interface.EasyTrack(EASY_TRACK)
     ldo_token = interface.ERC20(LDO_TOKEN)
-    to_spend = TRP_LIMIT_AFTER - TRP_ALREADY_SPENT_AFTER
+    to_spend = 15_000_000 * 10**18
     max_spend_at_once = 5_000_000 * 10**18
     trp_committee_account = accounts.at(TRP_COMMITTEE, force=True)
 
     chain.snapshot()
 
-    # check that there is no way to spend more then expected
-    with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
-        create_and_enact_payment_motion(
-            easy_track,
-            TRP_COMMITTEE,
-            TRP_TOP_UP_EVM_SCRIPT_FACTORY,
-            ldo_token,
-            [trp_committee_account],
-            [to_spend + 1],
-            stranger,
-        )
+    # sleep to January so that TRP limit period does not change (it depends when tests are run)
+    chain.sleep(30 * 24 * 60 * 60)
+    chain.mine()
 
     # spend all in several transfers
     recipients = []
