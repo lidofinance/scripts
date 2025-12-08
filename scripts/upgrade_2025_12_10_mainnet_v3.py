@@ -45,7 +45,7 @@ from brownie import interface
 
 
 # ============================== Addresses ===================================
-OMNIBUS_CONTRACT = "0xa47Ca1d2029D8e735237ea4E74c607426d4aA07e"
+OMNIBUS_CONTRACT = "0xf2BeCc7aF0AA50DaD54781e06d5ce1A7eAD59AfA"
 
 
 # ============================= Description ==================================
