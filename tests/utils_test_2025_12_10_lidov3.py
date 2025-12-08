@@ -1,4 +1,4 @@
-from brownie import chain, interface, web3, convert
+from brownie import chain, interface, web3, convert, accounts, reverts
 from brownie.network.transaction import TransactionReceipt
 
 from utils.test.tx_tracing_helpers import (
@@ -8,7 +8,7 @@ from utils.test.tx_tracing_helpers import (
     display_voting_events,
     display_dg_events
 )
-from utils.evm_script import encode_call_script
+from utils.evm_script import encode_call_script, encode_error
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.dual_governance import PROPOSAL_STATUS, wait_for_target_time_to_satisfy_time_constrains
@@ -53,7 +53,6 @@ LIDO_LOCATOR = "0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb"
 ACCOUNTING_ORACLE = "0x852deD011285fe67063a08005c71a85690503Cee"
 HASH_CONSENSUS = "0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288" # HashConsensus for AccountingOracle
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
-ACL = "0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb"
 ORACLE_DAEMON_CONFIG = "0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09"
 CSM_ACCOUNTING = "0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da"
 OLD_BURNER = "0xD15a672319Cf0352560eE76d9e89eAB0889046D3"
@@ -188,6 +187,8 @@ def validate_upgrade_finished_events(events) -> None:
 
     # Transfer and TransferShares events are emitted only if old Burner has some shares on balance
     if events.count("Transfer") > 0:
+        assert events.count("Transfer") == 1, "Transfer event should be emitted only once"
+        assert events.count("TransferShares") == 1, "TransferShares event should be emitted only once"
         assert convert.to_address(events["Transfer"][0]["from"]) == OLD_BURNER, f"Wrong from: expected {OLD_BURNER}"
         assert convert.to_address(events["Transfer"][0]["to"]) == BURNER, f"Wrong to: expected {BURNER}"
         assert convert.to_address(events["Transfer"][0]["_emitted_by"]) == LIDO, f"Wrong event emitter: expected {LIDO}"
@@ -699,6 +700,8 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
         assert accounting_oracle.getContractVersion() == NEW_ACCOUNTING_ORACLE_VERSION - 1, "AccountingOracle should have version 3 before finishUpgrade"
         assert accounting_oracle.getConsensusVersion() == NEW_HASH_CONSENSUS_VERSION - 1, "HashConsensus should have version 4 before finishUpgrade"
 
+        assert upgradeTemplate.isUpgradeFinished() == False, "V3Template should have isUpgradeFinished False before finishUpgrade"
+
         if details["status"] == PROPOSAL_STATUS["submitted"]:
             chain.sleep(timelock.getAfterSubmitDelay() + 1)
             dual_governance.scheduleProposal(expected_dg_proposal_id, {"from": stranger})
@@ -906,3 +909,9 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     accounting_oracle = interface.AccountingOracle(ACCOUNTING_ORACLE)
     assert accounting_oracle.getContractVersion() == NEW_ACCOUNTING_ORACLE_VERSION, "AccountingOracle should have version 4 after finishUpgrade"
     assert accounting_oracle.getConsensusVersion() == NEW_HASH_CONSENSUS_VERSION, "HashConsensus should have version 5 after finishUpgrade"
+    assert upgradeTemplate.isUpgradeFinished() == True, "V3Template should have isUpgradeFinished True after finishUpgrade"
+
+    # Check that a second call to finishUpgrade reverts
+    agent_account = accounts.at(AGENT, force=True)
+    with reverts(encode_error("UpgradeAlreadyFinished()")):
+        upgradeTemplate.finishUpgrade({"from": agent_account})

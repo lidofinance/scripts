@@ -36,8 +36,6 @@ ZERO_BYTES32 = b'\x00' * 32
 
 
 EXPECTED_SNAPSHOT_DIFFS: dict[str, Any] = {
-    "canPerform()": (True, False),
-    "getRecoveryVault": (AGENT, ZERO_ADDRESS),
     "lido.Lido.beaconBalance": ZERO_BYTES32,
     "lido.Lido.beaconValidators": ZERO_BYTES32,
     "lido.Lido.bufferedEther": ZERO_BYTES32,
