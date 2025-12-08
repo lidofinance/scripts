@@ -617,6 +617,7 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     old_burner = interface.Burner(OLD_BURNER)
     oracle_daemon_config = interface.OracleDaemonConfig(ORACLE_DAEMON_CONFIG)
+    upgradeTemplate = interface.UpgradeTemplateV3(UPGRADE_TEMPLATE)
 
     # Save original implementations for comparison
     locator_impl_before = get_ossifiable_proxy_impl(LIDO_LOCATOR)
@@ -632,6 +633,12 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
         # =========================================================================
         # ================== DG before proposal executed checks ===================
         # =========================================================================
+
+        # Step 1.2. Call V3Template.startUpgrade
+        assert upgradeTemplate.upgradeBlockNumber() == 0, "V3Template should have upgradeBlockNumber 0 before startUpgrade"
+        assert upgradeTemplate.initialTotalShares() == 0, "V3Template should have initialTotalShares 0 before startUpgrade"
+        assert upgradeTemplate.initialTotalPooledEther() == 0, "V3Template should have initialTotalPooledEther 0 before startUpgrade"
+        assert upgradeTemplate.initialOldBurnerStethSharesBalance() == 0, "V3Template should have initialOldBurnerStethSharesBalance 0 before startUpgrade"
 
         # Step 1.3: Check Lido Locator implementation initial state
         assert locator_impl_before != LIDO_LOCATOR_IMPL, "Locator implementation should be different before upgrade"
@@ -842,6 +849,11 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     # =========================================================================
     # ==================== After DG proposal executed checks ==================
     # =========================================================================
+
+    # Step 1.2. Call V3Template.startUpgrade
+    assert upgradeTemplate.upgradeBlockNumber() != 0, "V3Template should have upgradeBlockNumber not 0 after startUpgrade"
+    assert upgradeTemplate.initialTotalShares() != 0, "V3Template should have initialTotalShares not 0 after startUpgrade"
+    assert upgradeTemplate.initialTotalPooledEther() != 0, "V3Template should have initialTotalPooledEther not 0 after startUpgrade"
 
     # Step 1.3: Validate Lido Locator implementation was updated
     assert get_ossifiable_proxy_impl(lido_locator_proxy) == LIDO_LOCATOR_IMPL, "Locator implementation should be updated to the new value"
