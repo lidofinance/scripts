@@ -362,11 +362,11 @@ def test_gate_seal_v3_vaults_scenario(gate_seal_committee):
     seal_tx = gate_seal_v3.seal(sealables, {"from": gate_seal_committee})
 
     assert seal_tx.events.count("Sealed") == len(sealables)
-    for seal_event in seal_tx.events["Sealed"]:
+    for i, seal_event in enumerate(seal_tx.events["Sealed"]):
         assert seal_event["gate_seal"] == gate_seal_v3.address
         assert seal_event["sealed_for"] == pause_duration
         assert seal_event["sealed_by"] == gate_seal_committee
-        assert seal_event["sealable"] in sealables
+        assert seal_event["sealable"] == sealables[i]
         assert seal_event["sealed_at"] == seal_tx.timestamp
 
     for pause_event in seal_tx.events["Paused"]:
