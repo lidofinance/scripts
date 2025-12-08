@@ -55,6 +55,8 @@ def skip_slots() -> Sequence[tuple[str, int]]:
         (contracts.node_operators_registry.address, 0x01),
         # Transfer MATIC from Treasury to LOL Multisig - step 7 of operations voting
         (contracts.finance.address, 0x07),
+        # periodsLength var - step 7 of operations voting can trigger _newPeriod in Finance
+        (contracts.finance.address, 0x09),
     ]
 
 
