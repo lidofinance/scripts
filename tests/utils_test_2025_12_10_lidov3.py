@@ -540,7 +540,7 @@ def enact_and_test_voting(
                 event=vote_events[1],
                 p=EVMScriptFactoryAdded(
                     factory_addr=ALTER_TIERS_IN_OPERATOR_GRID_FACTORY,
-                    permissions=create_permissions(interface.OperatorGrid(OPERATOR_GRID), "alterTiers")
+                    permissions=create_permissions(operator_grid, "alterTiers")
                 ),
                 emitted_by=easy_track,
             )
@@ -549,7 +549,7 @@ def enact_and_test_voting(
                 event=vote_events[2],
                 p=EVMScriptFactoryAdded(
                     factory_addr=REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY,
-                    permissions=create_permissions(interface.OperatorGrid(OPERATOR_GRID), "registerGroup") + create_permissions(interface.OperatorGrid(OPERATOR_GRID), "registerTiers")[2:]
+                    permissions=create_permissions(operator_grid, "registerGroup") + create_permissions(operator_grid, "registerTiers")[2:]
                 ),
                 emitted_by=easy_track,
             )
@@ -558,7 +558,7 @@ def enact_and_test_voting(
                 event=vote_events[3],
                 p=EVMScriptFactoryAdded(
                     factory_addr=REGISTER_TIERS_IN_OPERATOR_GRID_FACTORY,
-                    permissions=create_permissions(interface.OperatorGrid(OPERATOR_GRID), "registerTiers")
+                    permissions=create_permissions(operator_grid, "registerTiers")
                 ),
                 emitted_by=easy_track,
             )
@@ -567,16 +567,17 @@ def enact_and_test_voting(
                 event=vote_events[4],
                 p=EVMScriptFactoryAdded(
                     factory_addr=UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY,
-                    permissions=create_permissions(interface.OperatorGrid(OPERATOR_GRID), "updateGroupShareLimit")
+                    permissions=create_permissions(operator_grid, "updateGroupShareLimit")
                 ),
                 emitted_by=easy_track,
             )
 
+            vaults_adapter = interface.IVaultsAdapter(VAULTS_ADAPTER)
             validate_evmscript_factory_added_event(
                 event=vote_events[5],
                 p=EVMScriptFactoryAdded(
                     factory_addr=SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY,
-                    permissions=create_permissions(interface.IVaultsAdapter(VAULTS_ADAPTER), "setVaultJailStatus")
+                    permissions=create_permissions(vaults_adapter, "setVaultJailStatus")
                 ),
                 emitted_by=easy_track,
             )
@@ -585,7 +586,7 @@ def enact_and_test_voting(
                 event=vote_events[6],
                 p=EVMScriptFactoryAdded(
                     factory_addr=UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY,
-                    permissions=create_permissions(interface.IVaultsAdapter(VAULTS_ADAPTER), "updateVaultFees")
+                    permissions=create_permissions(vaults_adapter, "updateVaultFees")
                 ),
                 emitted_by=easy_track,
             )
@@ -594,7 +595,7 @@ def enact_and_test_voting(
                 event=vote_events[7],
                 p=EVMScriptFactoryAdded(
                     factory_addr=FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY,
-                    permissions=create_permissions(interface.IVaultsAdapter(VAULTS_ADAPTER), "forceValidatorExit")
+                    permissions=create_permissions(vaults_adapter, "forceValidatorExit")
                 ),
                 emitted_by=easy_track,
             )
@@ -603,13 +604,13 @@ def enact_and_test_voting(
                 event=vote_events[8],
                 p=EVMScriptFactoryAdded(
                     factory_addr=SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY,
-                    permissions=create_permissions(interface.IVaultsAdapter(VAULTS_ADAPTER), "socializeBadDebt")
+                    permissions=create_permissions(vaults_adapter, "socializeBadDebt")
                 ),
                 emitted_by=easy_track,
             )
 
 
-def enact_and_test_dg(stranger, expected_dg_proposal_id):
+def enact_and_test_dg(stranger, expected_dg_proposal_id, run_et_tests=False):
     """
     Enact and test the dual governance proposal.
     Includes all before/after DG checks and event validation.
@@ -636,6 +637,11 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     oracle_daemon_config = interface.OracleDaemonConfig(ORACLE_DAEMON_CONFIG)
     upgradeTemplate = interface.UpgradeTemplateV3(UPGRADE_TEMPLATE)
     lido = interface.Lido(LIDO)
+
+    vault_hub = interface.VaultHub(VAULT_HUB)
+    operator_grid = interface.OperatorGrid(OPERATOR_GRID)
+    lazy_oracle = interface.LazyOracle(LAZY_ORACLE)
+    vault_factory = interface.VaultFactory(VAULTS_FACTORY)
 
     # Save original implementations for comparison
     locator_impl_before = get_ossifiable_proxy_impl(LIDO_LOCATOR)
@@ -935,7 +941,7 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
         upgradeTemplate.finishUpgrade({"from": agent_account})
 
     # Check that after the DG proposal has passed, creation of the vaults via VaultFactory can be done
-    creation_tx = interface.VaultFactory(VAULTS_FACTORY).createVaultWithDashboard(
+    creation_tx = vault_factory.createVaultWithDashboard(
         stranger,
         stranger,
         stranger,
@@ -948,22 +954,22 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     assert creation_tx.events.count("DashboardCreated") == 1
 
     # Scenario tests for Easy Track factories behavior after the vote
-    trusted_address = accounts.at(ST_VAULTS_COMMITTEE, force=True)
-    easy_track = interface.EasyTrack(EASYTRACK)
-    test_register_groups_in_operator_grid(easy_track, trusted_address, stranger)
-    test_register_tiers_in_operator_grid(easy_track, trusted_address, stranger)
-    test_alter_tiers_in_operator_grid(easy_track, trusted_address, stranger)
-    test_update_groups_share_limit_in_operator_grid(easy_track, trusted_address, stranger)
-    test_set_jail_status_in_operator_grid(easy_track, trusted_address, stranger)
-    test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, stranger)
-    test_force_validator_exits_in_vault_hub(easy_track, trusted_address, stranger)
-    test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger)
+    if run_et_tests:
+        trusted_address = accounts.at(ST_VAULTS_COMMITTEE, force=True)
+        easy_track = interface.EasyTrack(EASYTRACK)
+        chain.snapshot()
+        test_register_groups_in_operator_grid(easy_track, trusted_address, stranger, operator_grid)
+        test_register_tiers_in_operator_grid(easy_track, trusted_address, stranger, operator_grid)
+        test_alter_tiers_in_operator_grid(easy_track, trusted_address, stranger, operator_grid)
+        test_update_groups_share_limit_in_operator_grid(easy_track, trusted_address, stranger, operator_grid)
+        test_set_jail_status_in_operator_grid(easy_track, trusted_address, stranger, operator_grid, vault_factory)
+        test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory)
+        test_force_validator_exits_in_vault_hub(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory)
+        test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger, operator_grid, lazy_oracle, vault_hub, vault_factory)
+        chain.revert()
 
 
-def test_register_groups_in_operator_grid(easy_track, trusted_address, stranger):
-    operator_grid = interface.OperatorGrid(OPERATOR_GRID)
-
-    chain.snapshot()
+def test_register_groups_in_operator_grid(easy_track, trusted_address, stranger, operator_grid):
 
     operator_addresses = [
         "0x0000000000000000000000000000000000000001",
@@ -1006,13 +1012,8 @@ def test_register_groups_in_operator_grid(easy_track, trusted_address, stranger)
             assert tier[6] == tiers_params_array[i][j][4]  # liquidityFeeBP
             assert tier[7] == tiers_params_array[i][j][5]  # reservationFeeBP
 
-    chain.revert()
 
-
-def test_register_tiers_in_operator_grid(easy_track, trusted_address, stranger):
-    operator_grid = interface.OperatorGrid(OPERATOR_GRID)
-
-    chain.snapshot()
+def test_register_tiers_in_operator_grid(easy_track, trusted_address, stranger, operator_grid):
 
     # Define operator addresses
     operator_addresses = [
@@ -1064,13 +1065,8 @@ def test_register_tiers_in_operator_grid(easy_track, trusted_address, stranger):
             assert tier[6] == tiers_params_array[i][j][4]  # liquidityFeeBP
             assert tier[7] == tiers_params_array[i][j][5]  # reservationFeeBP
 
-    chain.revert()
 
-
-def test_alter_tiers_in_operator_grid(easy_track, trusted_address, stranger):
-    operator_grid = interface.OperatorGrid(OPERATOR_GRID)
-
-    chain.snapshot()
+def test_alter_tiers_in_operator_grid(easy_track, trusted_address, stranger, operator_grid):
 
     # Define new tier parameters
     # (shareLimit, reserveRatioBP, forcedRebalanceThresholdBP, infraFeeBP, liquidityFeeBP, reservationFeeBP)
@@ -1110,13 +1106,8 @@ def test_alter_tiers_in_operator_grid(easy_track, trusted_address, stranger):
         assert tier[6] == new_tier_params[i][4]  # liquidityFeeBP
         assert tier[7] == new_tier_params[i][5]  # reservationFeeBP
 
-    chain.revert()
 
-
-def test_update_groups_share_limit_in_operator_grid(easy_track, trusted_address, stranger):
-    operator_grid = interface.OperatorGrid(OPERATOR_GRID)
-
-    chain.snapshot()
+def test_update_groups_share_limit_in_operator_grid(easy_track, trusted_address, stranger, operator_grid):
 
     operator_addresses = ["0x0000000000000000000000000000000000000006", "0x0000000000000000000000000000000000000007"]
     new_share_limits = [2000, 3000]
@@ -1145,18 +1136,13 @@ def test_update_groups_share_limit_in_operator_grid(easy_track, trusted_address,
         assert group[0] == operator_address  # operator
         assert group[1] == new_share_limits[i] # shareLimit
 
-    chain.revert()
 
-
-def test_set_jail_status_in_operator_grid(easy_track, trusted_address, stranger):
-    operator_grid = interface.OperatorGrid(OPERATOR_GRID)
-
-    chain.snapshot()
+def test_set_jail_status_in_operator_grid(easy_track, trusted_address, stranger, operator_grid, vault_factory):
 
     # First create the vaults
     vaults = []
     for i in range(2):
-        creation_tx = interface.VaultFactory(VAULTS_FACTORY).createVaultWithDashboard(
+        creation_tx = vault_factory.createVaultWithDashboard(
             stranger,
             stranger,
             stranger,
@@ -1181,16 +1167,11 @@ def test_set_jail_status_in_operator_grid(easy_track, trusted_address, stranger)
         is_in_jail = operator_grid.isVaultInJail(vault)
         assert is_in_jail == True
 
-    chain.revert()
 
-
-def test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, stranger):
-    vault_hub = interface.VaultHub(VAULT_HUB)
-
-    chain.snapshot()
+def test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory):
 
     # First create the vault
-    creation_tx = interface.VaultFactory(VAULTS_FACTORY).createVaultWithDashboard(
+    creation_tx = vault_factory.createVaultWithDashboard(
         stranger,
         stranger,
         stranger,
@@ -1231,14 +1212,14 @@ def test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, strang
     # bring fresh report for vault
     current_time = chain.time()
     accounting_oracle = accounts.at(ACCOUNTING_ORACLE, force=True)
-    interface.LazyOracle(LAZY_ORACLE).updateReportData(
+    lazy_oracle.updateReportData(
         current_time,
         1000,
         "0x00",
         "0x00",
         {"from": accounting_oracle})
 
-    lazy_oracle = accounts.at(LAZY_ORACLE, force=True)
+    lazy_oracle_account = accounts.at(LAZY_ORACLE, force=True)
     vault_hub.applyVaultReport(
         vault,
         current_time,
@@ -1248,7 +1229,7 @@ def test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, strang
         0,
         0,
         0,
-        {"from": lazy_oracle})
+        {"from": lazy_oracle_account})
 
     easy_track.enactMotion(
         motion_id,
@@ -1262,20 +1243,15 @@ def test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, strang
     assert connection[7] == 1 # liquidityFeeBP
     assert connection[8] == 0 # reservationFeeBP
 
-    chain.revert()
 
-
-def test_force_validator_exits_in_vault_hub(easy_track, trusted_address, stranger):
-    vault_hub = interface.VaultHub(VAULT_HUB)
-
-    chain.snapshot()
+def test_force_validator_exits_in_vault_hub(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory):
 
     # top up VAULTS_ADAPTER
     stranger.transfer(VAULTS_ADAPTER, 2 * 10**18)
 
     pubkey = b"01" * 48
     # First create the vault
-    creation_tx = interface.VaultFactory(VAULTS_FACTORY).createVaultWithDashboard(
+    creation_tx = vault_factory.createVaultWithDashboard(
         stranger,
         stranger,
         stranger,
@@ -1310,7 +1286,7 @@ def test_force_validator_exits_in_vault_hub(easy_track, trusted_address, strange
     # bring fresh report for vault
     current_time = chain.time()
     accounting_oracle = accounts.at(ACCOUNTING_ORACLE, force=True)
-    interface.LazyOracle(LAZY_ORACLE).updateReportData(
+    lazy_oracle.updateReportData(
         current_time,
         1000,
         "0x00",
@@ -1318,7 +1294,7 @@ def test_force_validator_exits_in_vault_hub(easy_track, trusted_address, strange
         {"from": accounting_oracle})
 
     # make vault unhealthy
-    lazy_oracle = accounts.at(LAZY_ORACLE, force=True)
+    lazy_oracle_account = accounts.at(LAZY_ORACLE, force=True)
     vault_hub.applyVaultReport(
         vault,
         current_time,
@@ -1328,7 +1304,7 @@ def test_force_validator_exits_in_vault_hub(easy_track, trusted_address, strange
         0,
         0,
         0,
-        {"from": lazy_oracle})
+        {"from": lazy_oracle_account})
 
     tx = easy_track.enactMotion(
         motion_id,
@@ -1343,21 +1319,15 @@ def test_force_validator_exits_in_vault_hub(easy_track, trusted_address, strange
     assert event["pubkeys"] == "0x" + pubkey.hex()
     assert event["refundRecipient"] == VAULTS_ADAPTER
 
-    chain.revert()
 
-
-def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger):
-    vault_hub = interface.VaultHub(VAULT_HUB)
-    operator_grid = interface.OperatorGrid(OPERATOR_GRID)
-
-    chain.snapshot()
+def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger, operator_grid, lazy_oracle, vault_hub, vault_factory):
 
     # Enable minting in default group
     executor = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
     operator_grid.alterTiers([0], [(100_000 * 10**18, 300, 250, 50, 40, 10)], {"from": executor})
 
     # First create the vaults
-    creation_tx = interface.VaultFactory(VAULTS_FACTORY).createVaultWithDashboard(
+    creation_tx = vault_factory.createVaultWithDashboard(
         stranger,
         stranger,
         stranger,
@@ -1371,8 +1341,8 @@ def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger):
     # Fresh report for bad debt vault
     current_time = chain.time()
     accounting_oracle = accounts.at(ACCOUNTING_ORACLE, force=True)
-    interface.LazyOracle(LAZY_ORACLE).updateReportData(current_time, 1000, "0x00", "0x00", {"from": accounting_oracle})
-    lazy_oracle = accounts.at(LAZY_ORACLE, force=True)
+    lazy_oracle.updateReportData(current_time, 1000, "0x00", "0x00", {"from": accounting_oracle})
+    lazy_oracle_account = accounts.at(LAZY_ORACLE, force=True)
     vault_hub.applyVaultReport(
         bad_debt_vault,
         current_time,
@@ -1382,12 +1352,12 @@ def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger):
         0,
         0,
         0,
-        {"from": lazy_oracle})
+        {"from": lazy_oracle_account})
 
     bad_debt_dashboard = accounts.at(creation_tx.events["DashboardCreated"][0]["dashboard"], force=True)
     vault_hub.mintShares(bad_debt_vault, stranger, 5 * 10**17, {"from": bad_debt_dashboard})
 
-    creation_tx = interface.VaultFactory(VAULTS_FACTORY).createVaultWithDashboard(
+    creation_tx = vault_factory.createVaultWithDashboard(
         stranger,
         stranger,
         stranger,
@@ -1423,7 +1393,7 @@ def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger):
 
     # Bring fresh report for vaults
     current_time = chain.time()
-    interface.LazyOracle(LAZY_ORACLE).updateReportData(current_time, 1000, "0x00", "0x00", {"from": accounting_oracle})
+    lazy_oracle.updateReportData(current_time, 1000, "0x00", "0x00", {"from": accounting_oracle})
 
     # Fresh report for acceptor vault
     vault_hub.applyVaultReport(
@@ -1435,7 +1405,7 @@ def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger):
         0,
         0,
         0,
-        {"from": lazy_oracle})
+        {"from": lazy_oracle_account})
 
     # Make bad debt on second vault
     vault_hub.applyVaultReport(
@@ -1447,7 +1417,7 @@ def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger):
         2 * 10**18,
         0,
         0,
-        {"from": lazy_oracle})
+        {"from": lazy_oracle_account})
 
     bad_debt_record_before = vault_hub.vaultRecord(bad_debt_vault)
     bad_liability_before = bad_debt_record_before[2]
@@ -1474,5 +1444,3 @@ def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger):
     assert event["vaultDonor"] == bad_debt_vault
     assert event["vaultAcceptor"] == vault_acceptor
     assert event["badDebtShares"] == max_shares_to_socialize
-
-    chain.revert()
