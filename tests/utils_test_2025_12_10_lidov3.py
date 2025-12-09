@@ -1183,6 +1183,7 @@ def test_set_jail_status_in_operator_grid(easy_track, trusted_address, stranger)
 
     chain.revert()
 
+
 def test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, stranger):
     vault_hub = interface.VaultHub(VAULT_HUB)
 
@@ -1347,3 +1348,131 @@ def test_force_validator_exits_in_vault_hub(easy_track, trusted_address, strange
 
 def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger):
     vault_hub = interface.VaultHub(VAULT_HUB)
+    operator_grid = interface.OperatorGrid(OPERATOR_GRID)
+
+    chain.snapshot()
+
+    # Enable minting in default group
+    executor = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
+    operator_grid.alterTiers([0], [(100_000 * 10**18, 300, 250, 50, 40, 10)], {"from": executor})
+
+    # First create the vaults
+    creation_tx = interface.VaultFactory(VAULTS_FACTORY).createVaultWithDashboard(
+        stranger,
+        stranger,
+        stranger,
+        100,
+        3600, # 1 hour
+        [],
+        {"from": stranger, "value": "2 ether"},
+    )
+    bad_debt_vault = creation_tx.events["VaultCreated"][0]["vault"]
+
+    # Fresh report for bad debt vault
+    current_time = chain.time()
+    accounting_oracle = accounts.at(ACCOUNTING_ORACLE, force=True)
+    interface.LazyOracle(LAZY_ORACLE).updateReportData(current_time, 1000, "0x00", "0x00", {"from": accounting_oracle})
+    lazy_oracle = accounts.at(LAZY_ORACLE, force=True)
+    vault_hub.applyVaultReport(
+        bad_debt_vault,
+        current_time,
+        2 * 10**18,
+        2 * 10**18,
+        0,
+        0,
+        0,
+        0,
+        {"from": lazy_oracle})
+
+    bad_debt_dashboard = accounts.at(creation_tx.events["DashboardCreated"][0]["dashboard"], force=True)
+    vault_hub.mintShares(bad_debt_vault, stranger, 5 * 10**17, {"from": bad_debt_dashboard})
+
+    creation_tx = interface.VaultFactory(VAULTS_FACTORY).createVaultWithDashboard(
+        stranger,
+        stranger,
+        stranger,
+        100,
+        3600, # 1 hour
+        [],
+        {"from": stranger, "value": "2 ether"},
+    )
+    vault_acceptor = creation_tx.events["VaultCreated"][0]["vault"]
+
+    max_shares_to_socialize = 1 * 10**16
+
+    calldata = _encode_calldata(["address[]", "address[]", "uint256[]"], [[bad_debt_vault], [vault_acceptor], [max_shares_to_socialize]])
+
+    motions_before = easy_track.getMotions()
+    tx = easy_track.createMotion(SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY, calldata, {"from": trusted_address})
+    motions = easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 1
+
+    (
+        motion_id,
+        _,
+        _,
+        motion_duration,
+        motion_start_date,
+        _,
+        _,
+        _,
+        _,
+    ) = motions[-1]
+
+    chain.mine(1, motion_start_date + motion_duration + 1)
+
+    # Bring fresh report for vaults
+    current_time = chain.time()
+    interface.LazyOracle(LAZY_ORACLE).updateReportData(current_time, 1000, "0x00", "0x00", {"from": accounting_oracle})
+
+    # Fresh report for acceptor vault
+    vault_hub.applyVaultReport(
+        vault_acceptor,
+        current_time,
+        2 * 10**18,
+        2 * 10**18,
+        0,
+        0,
+        0,
+        0,
+        {"from": lazy_oracle})
+
+    # Make bad debt on second vault
+    vault_hub.applyVaultReport(
+        bad_debt_vault,
+        current_time,
+        1 * 10**17,
+        2 * 10**18,
+        0,
+        2 * 10**18,
+        0,
+        0,
+        {"from": lazy_oracle})
+
+    bad_debt_record_before = vault_hub.vaultRecord(bad_debt_vault)
+    bad_liability_before = bad_debt_record_before[2]
+    acceptor_record_before = vault_hub.vaultRecord(vault_acceptor)
+    acceptor_liability_before = acceptor_record_before[2]
+
+    tx = easy_track.enactMotion(
+        motion_id,
+        tx.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+
+    bad_debt_record_after = vault_hub.vaultRecord(bad_debt_vault)
+    bad_liability_after = bad_debt_record_after[2]
+    acceptor_record_after = vault_hub.vaultRecord(vault_acceptor)
+    acceptor_liability_after = acceptor_record_after[2]
+
+    assert bad_liability_after == bad_liability_before - max_shares_to_socialize
+    assert acceptor_liability_after == acceptor_liability_before + max_shares_to_socialize
+
+    # Check that events were emitted for failed socializations
+    assert len(tx.events["BadDebtSocialized"]) == 1
+    event = tx.events["BadDebtSocialized"][0]
+    assert event["vaultDonor"] == bad_debt_vault
+    assert event["vaultAcceptor"] == vault_acceptor
+    assert event["badDebtShares"] == max_shares_to_socialize
+
+    chain.revert()
