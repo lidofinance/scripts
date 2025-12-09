@@ -963,6 +963,8 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
 def test_register_groups_in_operator_grid(easy_track, trusted_address, stranger):
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
 
+    chain.snapshot()
+
     operator_addresses = [
         "0x0000000000000000000000000000000000000001",
         "0x0000000000000000000000000000000000000002",
@@ -1004,9 +1006,13 @@ def test_register_groups_in_operator_grid(easy_track, trusted_address, stranger)
             assert tier[6] == tiers_params_array[i][j][4]  # liquidityFeeBP
             assert tier[7] == tiers_params_array[i][j][5]  # reservationFeeBP
 
+    chain.revert()
+
 
 def test_register_tiers_in_operator_grid(easy_track, trusted_address, stranger):
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
+
+    chain.snapshot()
 
     # Define operator addresses
     operator_addresses = [
@@ -1058,9 +1064,13 @@ def test_register_tiers_in_operator_grid(easy_track, trusted_address, stranger):
             assert tier[6] == tiers_params_array[i][j][4]  # liquidityFeeBP
             assert tier[7] == tiers_params_array[i][j][5]  # reservationFeeBP
 
+    chain.revert()
+
 
 def test_alter_tiers_in_operator_grid(easy_track, trusted_address, stranger):
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
+
+    chain.snapshot()
 
     # Define new tier parameters
     # (shareLimit, reserveRatioBP, forcedRebalanceThresholdBP, infraFeeBP, liquidityFeeBP, reservationFeeBP)
@@ -1100,9 +1110,13 @@ def test_alter_tiers_in_operator_grid(easy_track, trusted_address, stranger):
         assert tier[6] == new_tier_params[i][4]  # liquidityFeeBP
         assert tier[7] == new_tier_params[i][5]  # reservationFeeBP
 
+    chain.revert()
+
 
 def test_update_groups_share_limit_in_operator_grid(easy_track, trusted_address, stranger):
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
+
+    chain.snapshot()
 
     operator_addresses = ["0x0000000000000000000000000000000000000006", "0x0000000000000000000000000000000000000007"]
     new_share_limits = [2000, 3000]
@@ -1131,9 +1145,13 @@ def test_update_groups_share_limit_in_operator_grid(easy_track, trusted_address,
         assert group[0] == operator_address  # operator
         assert group[1] == new_share_limits[i] # shareLimit
 
+    chain.revert()
+
 
 def test_set_jail_status_in_operator_grid(easy_track, trusted_address, stranger):
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
+
+    chain.snapshot()
 
     # First create the vaults
     vaults = []
@@ -1163,9 +1181,12 @@ def test_set_jail_status_in_operator_grid(easy_track, trusted_address, stranger)
         is_in_jail = operator_grid.isVaultInJail(vault)
         assert is_in_jail == True
 
+    chain.revert()
 
 def test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, stranger):
     vault_hub = interface.VaultHub(VAULT_HUB)
+
+    chain.snapshot()
 
     # First create the vault
     creation_tx = interface.VaultFactory(VAULTS_FACTORY).createVaultWithDashboard(
@@ -1240,9 +1261,14 @@ def test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, strang
     assert connection[7] == 1 # liquidityFeeBP
     assert connection[8] == 0 # reservationFeeBP
 
+    chain.revert()
+
 
 def test_force_validator_exits_in_vault_hub(easy_track, trusted_address, stranger):
     vault_hub = interface.VaultHub(VAULT_HUB)
+
+    chain.snapshot()
+
     # top up VAULTS_ADAPTER
     stranger.transfer(VAULTS_ADAPTER, 2 * 10**18)
 
@@ -1315,6 +1341,8 @@ def test_force_validator_exits_in_vault_hub(easy_track, trusted_address, strange
     assert event["vault"] == vault
     assert event["pubkeys"] == "0x" + pubkey.hex()
     assert event["refundRecipient"] == VAULTS_ADAPTER
+
+    chain.revert()
 
 
 def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger):
