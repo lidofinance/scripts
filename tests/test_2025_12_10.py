@@ -17,7 +17,7 @@ def test_vote_v1_v2_dg1_dg2(helpers, accounts, ldo_holder, vote_ids_from_env, st
         195, 7,
     )
 
-    lidov3.enact_and_test_dg(stranger, 6, True)
+    lidov3.enact_and_test_dg(stranger, 6)
 
     ops.enact_and_test_dg(stranger, 7)
 

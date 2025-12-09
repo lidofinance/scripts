@@ -610,7 +610,7 @@ def enact_and_test_voting(
             )
 
 
-def enact_and_test_dg(stranger, expected_dg_proposal_id, run_et_tests=False):
+def enact_and_test_dg(stranger, expected_dg_proposal_id):
     """
     Enact and test the dual governance proposal.
     Includes all before/after DG checks and event validation.
@@ -954,19 +954,18 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id, run_et_tests=False):
     assert creation_tx.events.count("DashboardCreated") == 1
 
     # Scenario tests for Easy Track factories behavior after the vote
-    if run_et_tests:
-        trusted_address = accounts.at(ST_VAULTS_COMMITTEE, force=True)
-        easy_track = interface.EasyTrack(EASYTRACK)
-        chain.snapshot()
-        test_register_groups_in_operator_grid(easy_track, trusted_address, stranger, operator_grid)
-        test_register_tiers_in_operator_grid(easy_track, trusted_address, stranger, operator_grid)
-        test_alter_tiers_in_operator_grid(easy_track, trusted_address, stranger, operator_grid)
-        test_update_groups_share_limit_in_operator_grid(easy_track, trusted_address, stranger, operator_grid)
-        test_set_jail_status_in_operator_grid(easy_track, trusted_address, stranger, operator_grid, vault_factory)
-        test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory)
-        test_force_validator_exits_in_vault_hub(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory)
-        test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger, operator_grid, lazy_oracle, vault_hub, vault_factory)
-        chain.revert()
+    trusted_address = accounts.at(ST_VAULTS_COMMITTEE, force=True)
+    easy_track = interface.EasyTrack(EASYTRACK)
+    chain.snapshot()
+    test_register_groups_in_operator_grid(easy_track, trusted_address, stranger, operator_grid)
+    test_register_tiers_in_operator_grid(easy_track, trusted_address, stranger, operator_grid)
+    test_alter_tiers_in_operator_grid(easy_track, trusted_address, stranger, operator_grid)
+    test_update_groups_share_limit_in_operator_grid(easy_track, trusted_address, stranger, operator_grid)
+    test_set_jail_status_in_operator_grid(easy_track, trusted_address, stranger, operator_grid, vault_factory)
+    test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory)
+    test_force_validator_exits_in_vault_hub(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory)
+    test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger, operator_grid, lazy_oracle, vault_hub, vault_factory)
+    chain.revert()
 
 
 def test_register_groups_in_operator_grid(easy_track, trusted_address, stranger, operator_grid):
