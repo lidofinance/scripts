@@ -1,4 +1,4 @@
-from brownie import chain, interface, web3, convert
+from brownie import chain, interface, web3, convert, accounts, reverts, ZERO_ADDRESS
 from brownie.network.transaction import TransactionReceipt
 
 from utils.test.tx_tracing_helpers import (
@@ -8,7 +8,7 @@ from utils.test.tx_tracing_helpers import (
     display_voting_events,
     display_dg_events
 )
-from utils.evm_script import encode_call_script
+from utils.evm_script import encode_call_script, encode_error
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.dual_governance import PROPOSAL_STATUS, wait_for_target_time_to_satisfy_time_constrains
@@ -22,12 +22,15 @@ from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.proxy import validate_proxy_upgrade_event
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 from utils.test.event_validators.aragon import validate_aragon_set_app_event, validate_aragon_grant_permission_event, validate_aragon_revoke_permission_event
+from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
+from utils.test.event_validators.unpause import validate_pause_for_event
+from utils.test.event_validators.time_constraints import validate_dg_time_constraints_executed_within_day_time_event
 
 
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.upgrade_2025_12_10_mainnet_v3 import start_vote, get_vote_items
+from scripts.upgrade_2025_12_15_mainnet_v3 import start_vote, get_vote_items
 
 
 # ============================================================================
@@ -53,7 +56,6 @@ LIDO_LOCATOR = "0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb"
 ACCOUNTING_ORACLE = "0x852deD011285fe67063a08005c71a85690503Cee"
 HASH_CONSENSUS = "0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288" # HashConsensus for AccountingOracle
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
-ACL = "0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb"
 ORACLE_DAEMON_CONFIG = "0xbf05A929c3D7885a6aeAd833a992dA6E5ac23b09"
 CSM_ACCOUNTING = "0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da"
 OLD_BURNER = "0xD15a672319Cf0352560eE76d9e89eAB0889046D3"
@@ -80,8 +82,10 @@ LIDO_LOCATOR_IMPL = "0x2f8779042EFaEd4c53db2Ce293eB6B3f7096C72d"
 ACCOUNTING_ORACLE_IMPL = "0x1455B96780A93e08abFE41243Db92E2fCbb0141c"
 RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
 BURNER = "0xE76c52750019b80B43E36DF30bf4060EB73F573a"
+VAULTS_FACTORY = "0x02Ca7772FF14a9F6c1a08aF385aA96bb1b34175A"
 
 # New Easy Track factories
+ST_VAULTS_COMMITTEE = "0x18A1065c81b0Cc356F1b1C843ddd5E14e4AefffF"
 ALTER_TIERS_IN_OPERATOR_GRID_FACTORY = "0xa29173C7BCf39dA48D5E404146A652d7464aee14"
 REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY = "0x194A46DA1947E98c9D79af13E06Cfbee0D8610cC"
 REGISTER_TIERS_IN_OPERATOR_GRID_FACTORY = "0x5292A1284e4695B95C0840CF8ea25A818751C17F"
@@ -101,6 +105,7 @@ UTC23 = 60 * 60 * 23
 SLASHING_RESERVE_SHIFT = 8192
 MAX_EXTERNAL_RATIO_BP = 300 # 3%
 INFINITE_ALLOWANCE = 2**256 - 1 # type(uint256).max
+PAUSE_INFINITELY = 2**256 - 1 # type(uint256).max
 
 
 # ============================================================================
@@ -188,6 +193,8 @@ def validate_upgrade_finished_events(events) -> None:
 
     # Transfer and TransferShares events are emitted only if old Burner has some shares on balance
     if events.count("Transfer") > 0:
+        assert events.count("Transfer") == 1, "Transfer event should be emitted only once"
+        assert events.count("TransferShares") == 1, "TransferShares event should be emitted only once"
         assert convert.to_address(events["Transfer"][0]["from"]) == OLD_BURNER, f"Wrong from: expected {OLD_BURNER}"
         assert convert.to_address(events["Transfer"][0]["to"]) == BURNER, f"Wrong to: expected {BURNER}"
         assert convert.to_address(events["Transfer"][0]["_emitted_by"]) == LIDO, f"Wrong event emitter: expected {LIDO}"
@@ -251,6 +258,7 @@ def dual_governance_proposal_calls():
     kernel = interface.Kernel(ARAGON_KERNEL)
     acl = interface.ACL(ACL)
     staking_router = interface.StakingRouter(STAKING_ROUTER)
+    predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
 
     dg_items = [
         # 1.1. Ensure DG proposal execution is within daily time window (14:00 UTC - 23:00 UTC)
@@ -391,7 +399,30 @@ def dual_governance_proposal_calls():
             )
         ]),
 
-        # 1.18. Call V3Template.finishUpgrade
+        # 1.18. Grant PredepositGuarantee's PAUSE_ROLE to Agent
+        agent_forward([
+            encode_oz_grant_role(
+                contract=predeposit_guarantee,
+                role_name="PausableUntilWithRoles.PauseRole",
+                grant_to=AGENT
+            )
+        ]),
+
+        # 1.19. Pause PredepositGuarantee
+        agent_forward([
+            (predeposit_guarantee.address, predeposit_guarantee.pauseFor.encode_input(PAUSE_INFINITELY))
+        ]),
+
+        # 1.20. Revoke PredepositGuarantee's PAUSE_ROLE from Agent
+        agent_forward([
+            encode_oz_revoke_role(
+                contract=predeposit_guarantee,
+                role_name="PausableUntilWithRoles.PauseRole",
+                revoke_from=AGENT
+            )
+        ]),
+
+        # 1.21. Call V3Template.finishUpgrade
         agent_forward([
             (upgradeTemplate.address, upgradeTemplate.finishUpgrade.encode_input())
         ]),
@@ -415,6 +446,7 @@ def enact_and_test_voting(
     accounts,
     ldo_holder,
     vote_ids_from_env,
+    stranger,
     expected_vote_id,
     expected_dg_proposal_id,
 ):
@@ -502,6 +534,18 @@ def enact_and_test_voting(
         assert UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY in new_factories, "EasyTrack should have UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY factory after vote"
         assert UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY in new_factories, "EasyTrack should have UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY factory after vote"
 
+        # Check that after the Aragon vote has passed, creation of the vaults via VaultFactory still reverts
+        with reverts():
+            interface.VaultFactory(VAULTS_FACTORY).createVaultWithDashboard(
+                stranger,
+                stranger,
+                stranger,
+                100,
+                3600,
+                [],
+                {"from": stranger, "value": "1 ether"},
+            )
+
         vote_events = group_voting_events_from_receipt(vote_tx)
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
@@ -523,7 +567,7 @@ def enact_and_test_voting(
                 event=vote_events[1],
                 p=EVMScriptFactoryAdded(
                     factory_addr=ALTER_TIERS_IN_OPERATOR_GRID_FACTORY,
-                    permissions=create_permissions(interface.OperatorGrid(OPERATOR_GRID), "alterTiers")
+                    permissions=create_permissions(operator_grid, "alterTiers")
                 ),
                 emitted_by=easy_track,
             )
@@ -532,7 +576,7 @@ def enact_and_test_voting(
                 event=vote_events[2],
                 p=EVMScriptFactoryAdded(
                     factory_addr=REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY,
-                    permissions=create_permissions(interface.OperatorGrid(OPERATOR_GRID), "registerGroup") + create_permissions(interface.OperatorGrid(OPERATOR_GRID), "registerTiers")[2:]
+                    permissions=create_permissions(operator_grid, "registerGroup") + create_permissions(operator_grid, "registerTiers")[2:]
                 ),
                 emitted_by=easy_track,
             )
@@ -541,7 +585,7 @@ def enact_and_test_voting(
                 event=vote_events[3],
                 p=EVMScriptFactoryAdded(
                     factory_addr=REGISTER_TIERS_IN_OPERATOR_GRID_FACTORY,
-                    permissions=create_permissions(interface.OperatorGrid(OPERATOR_GRID), "registerTiers")
+                    permissions=create_permissions(operator_grid, "registerTiers")
                 ),
                 emitted_by=easy_track,
             )
@@ -550,16 +594,17 @@ def enact_and_test_voting(
                 event=vote_events[4],
                 p=EVMScriptFactoryAdded(
                     factory_addr=UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY,
-                    permissions=create_permissions(interface.OperatorGrid(OPERATOR_GRID), "updateGroupShareLimit")
+                    permissions=create_permissions(operator_grid, "updateGroupShareLimit")
                 ),
                 emitted_by=easy_track,
             )
 
+            vaults_adapter = interface.IVaultsAdapter(VAULTS_ADAPTER)
             validate_evmscript_factory_added_event(
                 event=vote_events[5],
                 p=EVMScriptFactoryAdded(
                     factory_addr=SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY,
-                    permissions=create_permissions(interface.IVaultsAdapter(VAULTS_ADAPTER), "setVaultJailStatus")
+                    permissions=create_permissions(vaults_adapter, "setVaultJailStatus")
                 ),
                 emitted_by=easy_track,
             )
@@ -568,7 +613,7 @@ def enact_and_test_voting(
                 event=vote_events[6],
                 p=EVMScriptFactoryAdded(
                     factory_addr=UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY,
-                    permissions=create_permissions(interface.IVaultsAdapter(VAULTS_ADAPTER), "updateVaultFees")
+                    permissions=create_permissions(vaults_adapter, "updateVaultFees")
                 ),
                 emitted_by=easy_track,
             )
@@ -577,7 +622,7 @@ def enact_and_test_voting(
                 event=vote_events[7],
                 p=EVMScriptFactoryAdded(
                     factory_addr=FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY,
-                    permissions=create_permissions(interface.IVaultsAdapter(VAULTS_ADAPTER), "forceValidatorExit")
+                    permissions=create_permissions(vaults_adapter, "forceValidatorExit")
                 ),
                 emitted_by=easy_track,
             )
@@ -586,7 +631,7 @@ def enact_and_test_voting(
                 event=vote_events[8],
                 p=EVMScriptFactoryAdded(
                     factory_addr=SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY,
-                    permissions=create_permissions(interface.IVaultsAdapter(VAULTS_ADAPTER), "socializeBadDebt")
+                    permissions=create_permissions(vaults_adapter, "socializeBadDebt")
                 ),
                 emitted_by=easy_track,
             )
@@ -600,8 +645,8 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     if expected_dg_proposal_id is None:
         return
 
-    EXPECTED_DG_EVENTS_FROM_AGENT = 17
-    EXPECTED_DG_EVENTS_COUNT = 18
+    EXPECTED_DG_EVENTS_FROM_AGENT = 20
+    EXPECTED_DG_EVENTS_COUNT = 21
 
     # =======================================================================
     # ========================= Arrange variables ===========================
@@ -617,6 +662,14 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     old_burner = interface.Burner(OLD_BURNER)
     oracle_daemon_config = interface.OracleDaemonConfig(ORACLE_DAEMON_CONFIG)
+    upgradeTemplate = interface.UpgradeTemplateV3(UPGRADE_TEMPLATE)
+    lido = interface.Lido(LIDO)
+
+    vault_hub = interface.VaultHub(VAULT_HUB)
+    operator_grid = interface.OperatorGrid(OPERATOR_GRID)
+    lazy_oracle = interface.LazyOracle(LAZY_ORACLE)
+    vault_factory = interface.VaultFactory(VAULTS_FACTORY)
+    predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
 
     # Save original implementations for comparison
     locator_impl_before = get_ossifiable_proxy_impl(LIDO_LOCATOR)
@@ -626,12 +679,22 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     request_burn_shares_role = web3.keccak(text="REQUEST_BURN_SHARES_ROLE")
     config_manager_role = web3.keccak(text="CONFIG_MANAGER_ROLE")
     app_manager_role = web3.keccak(text="APP_MANAGER_ROLE")
+    pdg_pause_role = web3.keccak(text="PausableUntilWithRoles.PauseRole")
 
     details = timelock.getProposalDetails(expected_dg_proposal_id)
     if details["status"] != PROPOSAL_STATUS["executed"]:
         # =========================================================================
         # ================== DG before proposal executed checks ===================
         # =========================================================================
+
+        # Step 1.2. Call V3Template.startUpgrade
+        assert upgradeTemplate.upgradeBlockNumber() == 0, "V3Template should have upgradeBlockNumber 0 before startUpgrade"
+        assert upgradeTemplate.initialTotalShares() == 0, "V3Template should have initialTotalShares 0 before startUpgrade"
+        assert upgradeTemplate.initialTotalPooledEther() == 0, "V3Template should have initialTotalPooledEther 0 before startUpgrade"
+        assert upgradeTemplate.initialOldBurnerStethSharesBalance() == 0, "V3Template should have initialOldBurnerStethSharesBalance 0 before startUpgrade"
+        initial_total_shares_before = lido.getTotalShares()
+        initial_total_pooled_ether_before = lido.getTotalPooledEther()
+        initial_burner_steth_shares_balance_before = lido.sharesOf(OLD_BURNER)
 
         # Step 1.3: Check Lido Locator implementation initial state
         assert locator_impl_before != LIDO_LOCATOR_IMPL, "Locator implementation should be different before upgrade"
@@ -680,8 +743,14 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
         except Exception:
             pass  # Expected to fail
 
-        # Step 1.18. Call V3Template.finishUpgrade
-        lido = interface.Lido(LIDO)
+        # Step 1.18. Grant PredepositGuarantee's PAUSE_ROLE to Agent
+        assert not predeposit_guarantee.hasRole(pdg_pause_role, AGENT), "PredepositGuarantee should not have PAUSE_ROLE on Agent before upgrade"
+
+        # Step 1.19. Pause PredepositGuarantee
+        assert predeposit_guarantee.isPaused() == False, "PredepositGuarantee should not be paused before upgrade"
+        assert predeposit_guarantee.getResumeSinceTimestamp() == 0, "PredepositGuarantee should have getResumeSinceTimestamp 0 before upgrade"
+
+        # Step 1.21. Call V3Template.finishUpgrade
         assert lido.getContractVersion() == NEW_LIDO_VERSION - 1, "LIDO should have version 2 before finishUpgrade"
         assert lido.allowance(CSM_ACCOUNTING, BURNER) == 0, "No allowance from CSM_ACCOUNTING to BURNER before finishUpgrade"
         assert lido.allowance(CSM_ACCOUNTING, OLD_BURNER) == INFINITE_ALLOWANCE, "Infinite allowance from CSM_ACCOUNTING to OLD_BURNER before finishUpgrade"
@@ -691,6 +760,8 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
         accounting_oracle = interface.AccountingOracle(ACCOUNTING_ORACLE)
         assert accounting_oracle.getContractVersion() == NEW_ACCOUNTING_ORACLE_VERSION - 1, "AccountingOracle should have version 3 before finishUpgrade"
         assert accounting_oracle.getConsensusVersion() == NEW_HASH_CONSENSUS_VERSION - 1, "HashConsensus should have version 4 before finishUpgrade"
+
+        assert upgradeTemplate.isUpgradeFinished() == False, "V3Template should have isUpgradeFinished False before finishUpgrade"
 
         if details["status"] == PROPOSAL_STATUS["submitted"]:
             chain.sleep(timelock.getAfterSubmitDelay() + 1)
@@ -712,6 +783,14 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
             assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
 
             # === DG EXECUTION EVENTS VALIDATION ===
+
+            # 1.1. Check execution time window (14:00–23:00 UTC)
+            validate_dg_time_constraints_executed_within_day_time_event(
+                dg_events[0],
+                UTC14,
+                UTC23,
+                emitted_by=DUAL_GOVERNANCE_TIME_CONSTRAINTS
+            )
 
             # 1.2. Call V3Template.startUpgrade
             validate_upgrade_started_event(dg_events[1])
@@ -836,12 +915,44 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
                 emitted_by=oracle_daemon_config,
             )
 
-            # 1.18. Call V3Template.finishUpgrade
-            validate_upgrade_finished_events(dg_events[17])
+            # 1.18. Grant PredepositGuarantee's PAUSE_ROLE to Agent
+            validate_grant_role_event(
+                dg_events[17],
+                role=pdg_pause_role.hex(),
+                grant_to=AGENT,
+                sender=AGENT,
+                emitted_by=predeposit_guarantee,
+            )
+
+            # 1.19. Pause PredepositGuarantee
+            validate_pause_for_event(
+                dg_events[18],
+                pause_for=PAUSE_INFINITELY,
+                sender=AGENT,
+                emitted_by=predeposit_guarantee,
+            )
+
+            # 1.20. Revoke PredepositGuarantee's PAUSE_ROLE from Agent
+            validate_revoke_role_event(
+                dg_events[19],
+                role=pdg_pause_role.hex(),
+                revoke_from=AGENT,
+                sender=AGENT,
+                emitted_by=predeposit_guarantee,
+            )
+
+            # 1.21. Call V3Template.finishUpgrade
+            validate_upgrade_finished_events(dg_events[20])
 
     # =========================================================================
     # ==================== After DG proposal executed checks ==================
     # =========================================================================
+
+    # Step 1.2. Call V3Template.startUpgrade
+    assert upgradeTemplate.upgradeBlockNumber() != 0, "V3Template should have upgradeBlockNumber not 0 after startUpgrade"
+    assert upgradeTemplate.initialTotalShares() == initial_total_shares_before, "V3Template should have initialTotalShares equal to the initial total shares before upgrade"
+    assert upgradeTemplate.initialTotalPooledEther() == initial_total_pooled_ether_before, "V3Template should have initialTotalPooledEther equal to the initial total pooled ether before upgrade"
+    assert upgradeTemplate.initialOldBurnerStethSharesBalance() == initial_burner_steth_shares_balance_before, "V3Template should have initialOldBurnerStethSharesBalance equal to the initial burner steth shares balance before upgrade"
 
     # Step 1.3: Validate Lido Locator implementation was updated
     assert get_ossifiable_proxy_impl(lido_locator_proxy) == LIDO_LOCATOR_IMPL, "Locator implementation should be updated to the new value"
@@ -882,7 +993,14 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     # Step 1.17. Revoke OracleDaemonConfig's CONFIG_MANAGER_ROLE from Agent
     assert not oracle_daemon_config.hasRole(config_manager_role, AGENT), "OracleDaemonConfig should not have CONFIG_MANAGER_ROLE on Agent after upgrade"
 
-    # Step 1.18. Call V3Template.finishUpgrade
+    # Step 1.19. Pause PredepositGuarantee
+    assert predeposit_guarantee.isPaused() == True, "PredepositGuarantee should be paused after upgrade"
+    assert predeposit_guarantee.getResumeSinceTimestamp() == PAUSE_INFINITELY, "PredepositGuarantee should have getResumeSinceTimestamp PAUSE_INFINITELY after upgrade"
+
+    # Step 1.20. Revoke PredepositGuarantee's PAUSE_ROLE from Agent
+    assert not predeposit_guarantee.hasRole(pdg_pause_role, AGENT), "PredepositGuarantee should not have PAUSE_ROLE on Agent after upgrade"
+
+    # Step 1.21. Call V3Template.finishUpgrade
     lido = interface.Lido(LIDO)
     assert lido.getContractVersion() == NEW_LIDO_VERSION, "LIDO should have version 3 after finishUpgrade"
     assert lido.getMaxExternalRatioBP() == MAX_EXTERNAL_RATIO_BP, "LIDO should have max external ratio 3% after finishUpgrade"
@@ -894,3 +1012,518 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     accounting_oracle = interface.AccountingOracle(ACCOUNTING_ORACLE)
     assert accounting_oracle.getContractVersion() == NEW_ACCOUNTING_ORACLE_VERSION, "AccountingOracle should have version 4 after finishUpgrade"
     assert accounting_oracle.getConsensusVersion() == NEW_HASH_CONSENSUS_VERSION, "HashConsensus should have version 5 after finishUpgrade"
+    assert upgradeTemplate.isUpgradeFinished() == True, "V3Template should have isUpgradeFinished True after finishUpgrade"
+
+    # Check that a second call to finishUpgrade reverts
+    agent_account = accounts.at(AGENT, force=True)
+    with reverts(encode_error("UpgradeAlreadyFinished()")):
+        upgradeTemplate.finishUpgrade({"from": agent_account})
+
+    # Check that after the DG proposal has passed, creation of the vaults via VaultFactory can be done
+    creation_tx = vault_factory.createVaultWithDashboard(
+        stranger,
+        stranger,
+        stranger,
+        100,
+        3600, # 1 hour
+        [],
+        {"from": stranger, "value": "1 ether"},
+    )
+    assert creation_tx.events.count("VaultCreated") == 1
+    assert creation_tx.events.count("DashboardCreated") == 1
+
+    # Scenario tests for Easy Track factories behavior after the vote
+    trusted_address = accounts.at(ST_VAULTS_COMMITTEE, force=True)
+    easy_track = interface.EasyTrack(EASYTRACK)
+    chain.snapshot()
+    test_register_groups_in_operator_grid(easy_track, trusted_address, stranger, operator_grid)
+    test_register_tiers_in_operator_grid(easy_track, trusted_address, stranger, operator_grid)
+    test_alter_tiers_in_operator_grid(easy_track, trusted_address, stranger, operator_grid)
+    test_update_groups_share_limit_in_operator_grid(easy_track, trusted_address, stranger, operator_grid)
+    test_set_jail_status_in_operator_grid(easy_track, trusted_address, stranger, operator_grid, vault_factory)
+    test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory)
+    test_force_validator_exits_in_vault_hub(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory)
+    test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger, operator_grid, lazy_oracle, vault_hub, vault_factory)
+    chain.revert()
+
+
+def test_register_groups_in_operator_grid(easy_track, trusted_address, stranger, operator_grid):
+
+    operator_addresses = [
+        "0x0000000000000000000000000000000000000001",
+        "0x0000000000000000000000000000000000000002",
+    ]
+    share_limits = [1000, 5000]
+    tiers_params_array = [
+        [(500, 200, 100, 50, 40, 10), (800, 200, 100, 50, 40, 10)],
+        [(800, 200, 100, 50, 40, 10), (800, 200, 100, 50, 40, 10)],
+    ]
+
+    calldata = _encode_calldata(
+        ["address[]", "uint256[]", "(uint256,uint256,uint256,uint256,uint256,uint256)[][]"],
+        [operator_addresses, share_limits, tiers_params_array]
+    )
+
+    # Check initial state
+    for i, operator_address in enumerate(operator_addresses):
+        group = operator_grid.group(operator_address)
+        assert group[0] == ZERO_ADDRESS  # operator
+        assert group[1] == 0  # shareLimit
+        assert len(group[3]) == 0  # tiersId array should be empty
+
+    create_and_enact_motion(easy_track, trusted_address, REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
+
+    # Check final state
+    for i, operator_address in enumerate(operator_addresses):
+        group = operator_grid.group(operator_address)
+        assert group[0] == operator_address  # operator
+        assert group[1] == share_limits[i]  # shareLimit
+        assert len(group[3]) == len(tiers_params_array[i])  # tiersId array should have the same length as tiers_params
+
+        # Check tier details
+        for j, tier_id in enumerate(group[3]):
+            tier = operator_grid.tier(tier_id)
+            assert tier[1] == tiers_params_array[i][j][0]  # shareLimit
+            assert tier[3] == tiers_params_array[i][j][1]  # reserveRatioBP
+            assert tier[4] == tiers_params_array[i][j][2]  # forcedRebalanceThresholdBP
+            assert tier[5] == tiers_params_array[i][j][3]  # infraFeeBP
+            assert tier[6] == tiers_params_array[i][j][4]  # liquidityFeeBP
+            assert tier[7] == tiers_params_array[i][j][5]  # reservationFeeBP
+
+
+def test_register_tiers_in_operator_grid(easy_track, trusted_address, stranger, operator_grid):
+
+    # Define operator addresses
+    operator_addresses = [
+        "0x0000000000000000000000000000000000000003",
+        "0x0000000000000000000000000000000000000004"
+    ]
+
+    # Define tier parameters for each operator
+    tiers_params_array = [
+        [  # Tiers for operator 1
+            (500, 200, 100, 50, 40, 10),
+            (300, 150, 75, 25, 20, 5),
+        ],
+        [  # Tiers for operator 2
+            (800, 250, 125, 60, 50, 15),
+            (400, 180, 90, 30, 25, 8),
+        ]
+    ]
+
+    # First register the groups to add tiers to
+    executor = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
+    for operator_address in operator_addresses:
+        operator_grid.registerGroup(operator_address, 1000, {"from": executor})
+
+    # Check initial state - no tiers
+    for operator_address in operator_addresses:
+        group = operator_grid.group(operator_address)
+        assert len(group[3]) == 0  # tiersId array should be empty
+
+    calldata = _encode_calldata(
+        ["address[]", "(uint256,uint256,uint256,uint256,uint256,uint256)[][]"],
+        [operator_addresses, tiers_params_array]
+    )
+
+    create_and_enact_motion(easy_track, trusted_address, REGISTER_TIERS_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
+
+    # Check final state - tiers should be registered
+    for i, operator_address in enumerate(operator_addresses):
+        group = operator_grid.group(operator_address)
+        assert len(group[3]) == len(tiers_params_array[i])  # tiersId array should have the same length as tiers_params
+
+        # Check tier details
+        for j, tier_id in enumerate(group[3]):
+            tier = operator_grid.tier(tier_id)
+            assert tier[1] == tiers_params_array[i][j][0]  # shareLimit
+            assert tier[3] == tiers_params_array[i][j][1]  # reserveRatioBP
+            assert tier[4] == tiers_params_array[i][j][2]  # forcedRebalanceThresholdBP
+            assert tier[5] == tiers_params_array[i][j][3]  # infraFeeBP
+            assert tier[6] == tiers_params_array[i][j][4]  # liquidityFeeBP
+            assert tier[7] == tiers_params_array[i][j][5]  # reservationFeeBP
+
+
+def test_alter_tiers_in_operator_grid(easy_track, trusted_address, stranger, operator_grid):
+
+    # Define new tier parameters
+    # (shareLimit, reserveRatioBP, forcedRebalanceThresholdBP, infraFeeBP, liquidityFeeBP, reservationFeeBP)
+    new_tier_params = [(2000, 300, 150, 75, 60, 20), (3000, 400, 200, 100, 80, 30)]
+
+    # First register a group and tier to alter
+    executor = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
+    operator_address = "0x0000000000000000000000000000000000000005"
+    operator_grid.registerGroup(operator_address, 10000, {"from": executor})
+    initial_tier_params = [(1000, 200, 100, 50, 40, 10), (1000, 200, 100, 50, 40, 10)]
+    operator_grid.registerTiers(operator_address, initial_tier_params, {"from": executor})
+
+    tiers_count = operator_grid.tiersCount()
+    tier_ids = [tiers_count - 2, tiers_count - 1]
+
+    # Check initial state
+    for i, tier_id in enumerate(tier_ids):
+        tier = operator_grid.tier(tier_id)
+        assert tier[1] == initial_tier_params[i][0]  # shareLimit
+        assert tier[3] == initial_tier_params[i][1]  # reserveRatioBP
+        assert tier[4] == initial_tier_params[i][2]  # forcedRebalanceThresholdBP
+        assert tier[5] == initial_tier_params[i][3]  # infraFeeBP
+        assert tier[6] == initial_tier_params[i][4]  # liquidityFeeBP
+        assert tier[7] == initial_tier_params[i][5]  # reservationFeeBP
+
+    calldata = _encode_calldata(["uint256[]", "(uint256,uint256,uint256,uint256,uint256,uint256)[]"], [tier_ids, new_tier_params])
+
+    create_and_enact_motion(easy_track, trusted_address, ALTER_TIERS_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
+
+    # Check final state
+    for i, tier_id in enumerate(tier_ids):
+        tier = operator_grid.tier(tier_id)
+        assert tier[1] == new_tier_params[i][0]  # shareLimit
+        assert tier[3] == new_tier_params[i][1]  # reserveRatioBP
+        assert tier[4] == new_tier_params[i][2]  # forcedRebalanceThresholdBP
+        assert tier[5] == new_tier_params[i][3]  # infraFeeBP
+        assert tier[6] == new_tier_params[i][4]  # liquidityFeeBP
+        assert tier[7] == new_tier_params[i][5]  # reservationFeeBP
+
+
+def test_update_groups_share_limit_in_operator_grid(easy_track, trusted_address, stranger, operator_grid):
+
+    operator_addresses = ["0x0000000000000000000000000000000000000006", "0x0000000000000000000000000000000000000007"]
+    new_share_limits = [2000, 3000]
+
+    # First register the group to update
+    executor = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
+    for i, operator_address in enumerate(operator_addresses):
+        operator_grid.registerGroup(operator_address, new_share_limits[i]*2, {"from": executor})
+
+    # Check initial state
+    for i, operator_address in enumerate(operator_addresses):
+        group = operator_grid.group(operator_address)
+        assert group[0] == operator_address  # operator
+        assert group[1] == new_share_limits[i]*2  # shareLimit
+
+    calldata = _encode_calldata(
+        ["address[]", "uint256[]"],
+        [operator_addresses, new_share_limits]
+    )
+
+    create_and_enact_motion(easy_track, trusted_address, UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
+
+    # Check final state
+    for i, operator_address in enumerate(operator_addresses):
+        group = operator_grid.group(operator_address)
+        assert group[0] == operator_address  # operator
+        assert group[1] == new_share_limits[i] # shareLimit
+
+
+def test_set_jail_status_in_operator_grid(easy_track, trusted_address, stranger, operator_grid, vault_factory):
+
+    # First create the vaults
+    vaults = []
+    for i in range(2):
+        creation_tx = vault_factory.createVaultWithDashboard(
+            stranger,
+            stranger,
+            stranger,
+            100,
+            3600, # 1 hour
+            [],
+            {"from": stranger, "value": "1 ether"},
+        )
+        vaults.append(creation_tx.events["VaultCreated"][0]["vault"])
+
+    # Check initial state
+    for vault in vaults:
+        is_in_jail = operator_grid.isVaultInJail(vault)
+        assert is_in_jail == False
+
+    calldata = _encode_calldata(["address[]", "bool[]"], [vaults, [True, True]])
+
+    create_and_enact_motion(easy_track, trusted_address, SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
+
+    # Check final state
+    for i, vault in enumerate(vaults):
+        is_in_jail = operator_grid.isVaultInJail(vault)
+        assert is_in_jail == True
+
+
+def test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory):
+
+    initial_total_value = 2 * 10**18
+
+    # First create the vault
+    creation_tx = vault_factory.createVaultWithDashboard(
+        stranger,
+        stranger,
+        stranger,
+        100,
+        3600, # 1 hour
+        [],
+        {"from": stranger, "value": initial_total_value},
+    )
+    vault = creation_tx.events["VaultCreated"][0]["vault"]
+
+    # Check initial state
+    connection = vault_hub.vaultConnection(vault)
+    assert connection[6] != 1 # infraFeeBP
+    assert connection[7] != 1 # liquidityFeeBP
+    assert connection[8] == 0 # reservationFeeBP
+
+    calldata = _encode_calldata(["address[]", "uint256[]", "uint256[]", "uint256[]"], [[vault], [1], [1], [0]])
+
+    motions_before = easy_track.getMotions()
+    tx = easy_track.createMotion(UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY, calldata, {"from": trusted_address})
+    motions = easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 1
+
+    (
+        motion_id,
+        _,
+        _,
+        motion_duration,
+        motion_start_date,
+        _,
+        _,
+        _,
+        _,
+    ) = motions[-1]
+
+    chain.mine(1, motion_start_date + motion_duration + 1)
+
+    # bring fresh report for vault
+    current_time = chain.time()
+    accounting_oracle = accounts.at(ACCOUNTING_ORACLE, force=True)
+    lazy_oracle.updateReportData(
+        current_time,
+        1000,
+        "0x00",
+        "0x00",
+        {"from": accounting_oracle})
+
+    lazy_oracle_account = accounts.at(LAZY_ORACLE, force=True)
+    vault_hub.applyVaultReport(
+        vault,
+        current_time,
+        initial_total_value,
+        initial_total_value,
+        0,
+        0,
+        0,
+        0,
+        {"from": lazy_oracle_account})
+
+    easy_track.enactMotion(
+        motion_id,
+        tx.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+
+    # Check final state
+    connection = vault_hub.vaultConnection(vault)
+    assert connection[6] == 1 # infraFeeBP
+    assert connection[7] == 1 # liquidityFeeBP
+    assert connection[8] == 0 # reservationFeeBP
+
+
+def test_force_validator_exits_in_vault_hub(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory):
+
+    initial_total_value = 2 * 10**18
+
+    # top up VAULTS_ADAPTER
+    stranger.transfer(VAULTS_ADAPTER, 10**18)
+
+    pubkey = b"01" * 48
+    # First create the vault
+    creation_tx = vault_factory.createVaultWithDashboard(
+        stranger,
+        stranger,
+        stranger,
+        100,
+        3600, # 1 hour
+        [],
+        {"from": stranger, "value": initial_total_value},
+    )
+    vault = creation_tx.events["VaultCreated"][0]["vault"]
+
+    calldata = _encode_calldata(["address[]", "bytes[]"], [[vault], [pubkey]])
+
+    motions_before = easy_track.getMotions()
+    tx = easy_track.createMotion(FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY, calldata, {"from": trusted_address})
+    motions = easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 1
+
+    (
+        motion_id,
+        _,
+        _,
+        motion_duration,
+        motion_start_date,
+        _,
+        _,
+        _,
+        _,
+    ) = motions[-1]
+
+    chain.mine(1, motion_start_date + motion_duration + 1)
+
+    # bring fresh report for vault
+    current_time = chain.time()
+    accounting_oracle = accounts.at(ACCOUNTING_ORACLE, force=True)
+    lazy_oracle.updateReportData(
+        current_time,
+        1000,
+        "0x00",
+        "0x00",
+        {"from": accounting_oracle})
+
+    # make vault unhealthy
+    lazy_oracle_account = accounts.at(LAZY_ORACLE, force=True)
+    vault_hub.applyVaultReport(
+        vault,
+        current_time,
+        initial_total_value,
+        initial_total_value,
+        4 * initial_total_value,
+        0,
+        0,
+        0,
+        {"from": lazy_oracle_account})
+
+    tx = easy_track.enactMotion(
+        motion_id,
+        tx.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+
+    # Check event was emitted
+    assert len(tx.events["ForcedValidatorExitTriggered"]) == 1
+    event = tx.events["ForcedValidatorExitTriggered"][0]
+    assert event["vault"] == vault
+    assert event["pubkeys"] == "0x" + pubkey.hex()
+    assert event["refundRecipient"] == VAULTS_ADAPTER
+
+
+def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger, operator_grid, lazy_oracle, vault_hub, vault_factory):
+
+    initial_total_value = 2 * 10**18
+    max_shares_to_socialize = 2 * 10**16
+
+    # Enable minting in default group
+    executor = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
+    operator_grid.alterTiers([0], [(100_000 * 10**18, 300, 250, 50, 40, 10)], {"from": executor})
+
+    # First create the vaults
+    creation_tx = vault_factory.createVaultWithDashboard(
+        stranger,
+        stranger,
+        stranger,
+        100,
+        3600, # 1 hour
+        [],
+        {"from": stranger, "value": initial_total_value},
+    )
+    bad_debt_vault = creation_tx.events["VaultCreated"][0]["vault"]
+
+    # Fresh report for bad debt vault
+    current_time = chain.time()
+    accounting_oracle = accounts.at(ACCOUNTING_ORACLE, force=True)
+    lazy_oracle.updateReportData(current_time, 1000, "0x00", "0x00", {"from": accounting_oracle})
+    lazy_oracle_account = accounts.at(LAZY_ORACLE, force=True)
+    vault_hub.applyVaultReport(
+        bad_debt_vault,
+        current_time,
+        initial_total_value,
+        initial_total_value,
+        0,
+        0,
+        0,
+        0,
+        {"from": lazy_oracle_account})
+
+    bad_debt_dashboard = accounts.at(creation_tx.events["DashboardCreated"][0]["dashboard"], force=True)
+    vault_hub.mintShares(bad_debt_vault, stranger, 10 * max_shares_to_socialize, {"from": bad_debt_dashboard})
+
+    creation_tx = vault_factory.createVaultWithDashboard(
+        stranger,
+        stranger,
+        stranger,
+        100,
+        3600, # 1 hour
+        [],
+        {"from": stranger, "value": initial_total_value},
+    )
+    vault_acceptor = creation_tx.events["VaultCreated"][0]["vault"]
+
+    calldata = _encode_calldata(["address[]", "address[]", "uint256[]"], [[bad_debt_vault], [vault_acceptor], [max_shares_to_socialize]])
+
+    motions_before = easy_track.getMotions()
+    tx = easy_track.createMotion(SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY, calldata, {"from": trusted_address})
+    motions = easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 1
+
+    (
+        motion_id,
+        _,
+        _,
+        motion_duration,
+        motion_start_date,
+        _,
+        _,
+        _,
+        _,
+    ) = motions[-1]
+
+    chain.mine(1, motion_start_date + motion_duration + 1)
+
+    # Bring fresh report for vaults
+    current_time = chain.time()
+    lazy_oracle.updateReportData(current_time, 1000, "0x00", "0x00", {"from": accounting_oracle})
+
+    # Fresh report for acceptor vault
+    vault_hub.applyVaultReport(
+        vault_acceptor,
+        current_time,
+        initial_total_value,
+        initial_total_value,
+        0,
+        0,
+        0,
+        0,
+        {"from": lazy_oracle_account})
+
+    # Make bad debt on second vault
+    vault_hub.applyVaultReport(
+        bad_debt_vault,
+        current_time,
+        10 * max_shares_to_socialize,
+        initial_total_value,
+        0,
+        initial_total_value,
+        0,
+        0,
+        {"from": lazy_oracle_account})
+
+    bad_debt_record_before = vault_hub.vaultRecord(bad_debt_vault)
+    bad_liability_before = bad_debt_record_before[2]
+    acceptor_record_before = vault_hub.vaultRecord(vault_acceptor)
+    acceptor_liability_before = acceptor_record_before[2]
+
+    tx = easy_track.enactMotion(
+        motion_id,
+        tx.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+
+    bad_debt_record_after = vault_hub.vaultRecord(bad_debt_vault)
+    bad_liability_after = bad_debt_record_after[2]
+    acceptor_record_after = vault_hub.vaultRecord(vault_acceptor)
+    acceptor_liability_after = acceptor_record_after[2]
+
+    assert bad_liability_after == bad_liability_before - max_shares_to_socialize
+    assert acceptor_liability_after == acceptor_liability_before + max_shares_to_socialize
+
+    # Check that events were emitted for failed socializations
+    assert len(tx.events["BadDebtSocialized"]) == 1
+    event = tx.events["BadDebtSocialized"][0]
+    assert event["vaultDonor"] == bad_debt_vault
+    assert event["vaultAcceptor"] == vault_acceptor
+    assert event["badDebtShares"] == max_shares_to_socialize

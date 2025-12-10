@@ -32,7 +32,7 @@ jobs:
           vote: "normal"
           rpc_url: ${{ secrets.ETH_RPC_URL }}
           etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
-          command: "make test-1/2"
+          command: "PYTHONPATH=$PWD make test-1/2"
 
   run-tests-normal-2:
     name: Brownie fork NORMAL tests 2
@@ -56,4 +56,4 @@ jobs:
           vote: "normal"
           rpc_url: ${{ secrets.ETH_RPC_URL }}
           etherscan: ${{ secrets.ETHERSCAN_TOKEN }}
-          command: "make test-2/2"
+          command: "PYTHONPATH=$PWD make test-2/2"
