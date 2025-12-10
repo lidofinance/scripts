@@ -3,7 +3,7 @@ import tests.utils_test_2025_12_10_lidov3 as lidov3
 
 def test_vote_v1_dg1(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
 
-    lidov3.enact_and_test_voting(helpers, accounts, ldo_holder, vote_ids_from_env,
+    lidov3.enact_and_test_voting(helpers, accounts, ldo_holder, vote_ids_from_env, stranger,
         194, 6,
     )
 

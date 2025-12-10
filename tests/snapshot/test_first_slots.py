@@ -55,6 +55,8 @@ def skip_slots() -> Sequence[tuple[str, int]]:
         (contracts.node_operators_registry.address, 0x01),
         # Transfer MATIC from Treasury to LOL Multisig - step 7 of operations voting
         (contracts.finance.address, 0x07),
+        # periodsLength var - step 7 of operations voting can trigger _newPeriod in Finance
+        (contracts.finance.address, 0x09),
     ]
 
 
@@ -160,7 +162,7 @@ def far_block() -> int:
 
 @pytest.fixture(scope="module")
 def far_ts() -> int:
-    return chain.time() + 30 * 24 * 60 * 60  # 30 days
+    return chain.time() + 21 * 24 * 60 * 60  # 21 days
 
 
 def _sleep_till_block(block: int, ts: int) -> None:
