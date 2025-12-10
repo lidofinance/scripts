@@ -56,7 +56,7 @@ runs:
 
     - name: Replace old solc binaries host
       shell: bash
-      run: echo 104.21.58.145 solc-bin.ethereum.org | sudo tee -a /etc/hosts
+      run: echo 185.199.108.153 solc-bin.ethereum.org | sudo tee -a /etc/hosts
 
     - name: Run tests
       shell: bash
