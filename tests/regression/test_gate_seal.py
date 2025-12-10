@@ -27,6 +27,7 @@ from utils.config import (
     VAULT_HUB,
     PREDEPOSIT_GUARANTEE,
     GATE_SEAL_V3,
+    RESEAL_MANAGER,
 )
 
 
@@ -355,6 +356,10 @@ def test_gate_seal_v3_vaults_scenario(gate_seal_committee):
     assert contracts.predeposit_guarantee.address in sealables
 
     pause_duration = gate_seal_v3.get_seal_duration_seconds()
+
+    # TODO remove this after PDG unpause
+    reseal_manager_account = accounts.at(RESEAL_MANAGER, force=True)
+    contracts.predeposit_guarantee.resume({"from": reseal_manager_account})
 
     assert not contracts.vault_hub.isPaused()
     assert not contracts.predeposit_guarantee.isPaused()

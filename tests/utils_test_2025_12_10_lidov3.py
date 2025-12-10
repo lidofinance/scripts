@@ -23,6 +23,7 @@ from utils.test.event_validators.proxy import validate_proxy_upgrade_event
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 from utils.test.event_validators.aragon import validate_aragon_set_app_event, validate_aragon_grant_permission_event, validate_aragon_revoke_permission_event
 from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
+from utils.test.event_validators.unpause import validate_pause_for_event
 
 
 # ============================================================================
@@ -103,6 +104,7 @@ UTC23 = 60 * 60 * 23
 SLASHING_RESERVE_SHIFT = 8192
 MAX_EXTERNAL_RATIO_BP = 300 # 3%
 INFINITE_ALLOWANCE = 2**256 - 1 # type(uint256).max
+PAUSE_INFINITELY = 2**256 - 1 # type(uint256).max
 
 
 # ============================================================================
@@ -255,6 +257,7 @@ def dual_governance_proposal_calls():
     kernel = interface.Kernel(ARAGON_KERNEL)
     acl = interface.ACL(ACL)
     staking_router = interface.StakingRouter(STAKING_ROUTER)
+    predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
 
     dg_items = [
         # 1.1. Ensure DG proposal execution is within daily time window (14:00 UTC - 23:00 UTC)
@@ -395,7 +398,32 @@ def dual_governance_proposal_calls():
             )
         ]),
 
-        # 1.18. Call V3Template.finishUpgrade
+        # 1.18. Grant PredepositGuarantee's PAUSE_ROLE to Agent
+        agent_forward([
+            encode_oz_grant_role(
+                contract=predeposit_guarantee,
+                role_name="PausableUntilWithRoles.PauseRole",
+                grant_to=AGENT
+            )
+        ]),
+
+        # 1.19. Pause PredepositGuarantee
+        agent_forward([
+            (predeposit_guarantee.address, predeposit_guarantee.pauseFor.encode_input(
+                web3.codec.encode(['uint256'], [PAUSE_INFINITELY])
+            ))
+        ]),
+
+        # 1.20. Revoke PredepositGuarantee's PAUSE_ROLE from Agent
+        agent_forward([
+            encode_oz_revoke_role(
+                contract=predeposit_guarantee,
+                role_name="PausableUntilWithRoles.PauseRole",
+                revoke_from=AGENT
+            )
+        ]),
+
+        # 1.21. Call V3Template.finishUpgrade
         agent_forward([
             (upgradeTemplate.address, upgradeTemplate.finishUpgrade.encode_input())
         ]),
@@ -618,8 +646,8 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     if expected_dg_proposal_id is None:
         return
 
-    EXPECTED_DG_EVENTS_FROM_AGENT = 17
-    EXPECTED_DG_EVENTS_COUNT = 18
+    EXPECTED_DG_EVENTS_FROM_AGENT = 20
+    EXPECTED_DG_EVENTS_COUNT = 21
 
     # =======================================================================
     # ========================= Arrange variables ===========================
@@ -642,6 +670,7 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
     lazy_oracle = interface.LazyOracle(LAZY_ORACLE)
     vault_factory = interface.VaultFactory(VAULTS_FACTORY)
+    predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
 
     # Save original implementations for comparison
     locator_impl_before = get_ossifiable_proxy_impl(LIDO_LOCATOR)
@@ -651,6 +680,7 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     request_burn_shares_role = web3.keccak(text="REQUEST_BURN_SHARES_ROLE")
     config_manager_role = web3.keccak(text="CONFIG_MANAGER_ROLE")
     app_manager_role = web3.keccak(text="APP_MANAGER_ROLE")
+    pdg_pause_role = web3.keccak(text="PausableUntilWithRoles.PauseRole")
 
     details = timelock.getProposalDetails(expected_dg_proposal_id)
     if details["status"] != PROPOSAL_STATUS["executed"]:
@@ -713,7 +743,13 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
         except Exception:
             pass  # Expected to fail
 
-        # Step 1.18. Call V3Template.finishUpgrade
+        # Step 1.18. Grant PredepositGuarantee's PAUSE_ROLE to Agent
+        assert not predeposit_guarantee.hasRole(pdg_pause_role, AGENT), "PredepositGuarantee should not have PAUSE_ROLE on Agent before upgrade"
+
+        # Step 1.19. Pause PredepositGuarantee
+        assert predeposit_guarantee.isPaused() == False, "PredepositGuarantee should not be paused before upgrade"
+
+        # Step 1.21. Call V3Template.finishUpgrade
         assert lido.getContractVersion() == NEW_LIDO_VERSION - 1, "LIDO should have version 2 before finishUpgrade"
         assert lido.allowance(CSM_ACCOUNTING, BURNER) == 0, "No allowance from CSM_ACCOUNTING to BURNER before finishUpgrade"
         assert lido.allowance(CSM_ACCOUNTING, OLD_BURNER) == INFINITE_ALLOWANCE, "Infinite allowance from CSM_ACCOUNTING to OLD_BURNER before finishUpgrade"
@@ -870,8 +906,34 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
                 emitted_by=oracle_daemon_config,
             )
 
-            # 1.18. Call V3Template.finishUpgrade
-            validate_upgrade_finished_events(dg_events[17])
+            # 1.18. Grant PredepositGuarantee's PAUSE_ROLE to Agent
+            validate_grant_role_event(
+                dg_events[17],
+                role=pdg_pause_role.hex(),
+                grant_to=AGENT,
+                sender=AGENT,
+                emitted_by=predeposit_guarantee,
+            )
+
+            # 1.19. Pause PredepositGuarantee
+            validate_pause_for_event(
+                dg_events[18],
+                pause_for=PAUSE_INFINITELY,
+                sender=AGENT,
+                emitted_by=predeposit_guarantee,
+            )
+
+            # 1.20. Revoke PredepositGuarantee's PAUSE_ROLE from Agent
+            validate_revoke_role_event(
+                dg_events[19],
+                role=pdg_pause_role.hex(),
+                revoke_from=AGENT,
+                sender=AGENT,
+                emitted_by=predeposit_guarantee,
+            )
+
+            # 1.21. Call V3Template.finishUpgrade
+            validate_upgrade_finished_events(dg_events[20])
 
     # =========================================================================
     # ==================== After DG proposal executed checks ==================
@@ -921,7 +983,13 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     # Step 1.17. Revoke OracleDaemonConfig's CONFIG_MANAGER_ROLE from Agent
     assert not oracle_daemon_config.hasRole(config_manager_role, AGENT), "OracleDaemonConfig should not have CONFIG_MANAGER_ROLE on Agent after upgrade"
 
-    # Step 1.18. Call V3Template.finishUpgrade
+    # Step 1.19. Pause PredepositGuarantee
+    assert predeposit_guarantee.isPaused() == True, "PredepositGuarantee should be paused after upgrade"
+
+    # Step 1.20. Revoke PredepositGuarantee's PAUSE_ROLE from Agent
+    assert not predeposit_guarantee.hasRole(pdg_pause_role, AGENT), "PredepositGuarantee should not have PAUSE_ROLE on Agent after upgrade"
+
+    # Step 1.21. Call V3Template.finishUpgrade
     lido = interface.Lido(LIDO)
     assert lido.getContractVersion() == NEW_LIDO_VERSION, "LIDO should have version 3 after finishUpgrade"
     assert lido.getMaxExternalRatioBP() == MAX_EXTERNAL_RATIO_BP, "LIDO should have max external ratio 3% after finishUpgrade"
