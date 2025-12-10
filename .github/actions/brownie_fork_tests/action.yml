@@ -54,11 +54,6 @@ runs:
       shell: bash
       run: poetry run brownie networks import network-config.yaml True
 
-    - name: Install solc
-      shell: bash
-      run: |
-        bash ./install-solc.sh
-
     - name: Run tests
       shell: bash
       run: >
