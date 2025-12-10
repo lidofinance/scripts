@@ -23,6 +23,7 @@ SOLC_VERSIONS=(
   "0.8.21+commit.d9974bed"
   "0.6.11+commit.5ef660b1"
   "0.8.26+commit.8a97fa7a"
+  "0.8.31+commit.fd3a2265"
 )
 
 for version in "${SOLC_VERSIONS[@]}"; do
