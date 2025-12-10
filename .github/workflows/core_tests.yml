@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run init script
-        run: docker exec -e CORE_BRANCH tests-runner bash -c 'make init'
+        run: docker exec -e CORE_BRANCH tests-runner bash -c 'PYTHONPATH=$PWD make init'
         env:
           CORE_BRANCH: develop
 
