@@ -1248,6 +1248,8 @@ def test_set_jail_status_in_operator_grid(easy_track, trusted_address, stranger,
 
 def test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory):
 
+    initial_total_value = 2 * 10**18
+
     # First create the vault
     creation_tx = vault_factory.createVaultWithDashboard(
         stranger,
@@ -1256,7 +1258,7 @@ def test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, strang
         100,
         3600, # 1 hour
         [],
-        {"from": stranger, "value": "1 ether"},
+        {"from": stranger, "value": initial_total_value},
     )
     vault = creation_tx.events["VaultCreated"][0]["vault"]
 
@@ -1301,8 +1303,8 @@ def test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, strang
     vault_hub.applyVaultReport(
         vault,
         current_time,
-        2 * 10**18,
-        2 * 10**18,
+        initial_total_value,
+        initial_total_value,
         0,
         0,
         0,
@@ -1324,8 +1326,10 @@ def test_update_vaults_fees_in_operator_grid(easy_track, trusted_address, strang
 
 def test_force_validator_exits_in_vault_hub(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory):
 
+    initial_total_value = 2 * 10**18
+
     # top up VAULTS_ADAPTER
-    stranger.transfer(VAULTS_ADAPTER, 2 * 10**18)
+    stranger.transfer(VAULTS_ADAPTER, 10**18)
 
     pubkey = b"01" * 48
     # First create the vault
@@ -1336,7 +1340,7 @@ def test_force_validator_exits_in_vault_hub(easy_track, trusted_address, strange
         100,
         3600, # 1 hour
         [],
-        {"from": stranger, "value": "1 ether"},
+        {"from": stranger, "value": initial_total_value},
     )
     vault = creation_tx.events["VaultCreated"][0]["vault"]
 
@@ -1376,9 +1380,9 @@ def test_force_validator_exits_in_vault_hub(easy_track, trusted_address, strange
     vault_hub.applyVaultReport(
         vault,
         current_time,
-        2 * 10**18,
-        2 * 10**18,
-        7 * 10**18,
+        initial_total_value,
+        initial_total_value,
+        4 * initial_total_value,
         0,
         0,
         0,
@@ -1400,6 +1404,9 @@ def test_force_validator_exits_in_vault_hub(easy_track, trusted_address, strange
 
 def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger, operator_grid, lazy_oracle, vault_hub, vault_factory):
 
+    initial_total_value = 2 * 10**18
+    max_shares_to_socialize = 2 * 10**16
+
     # Enable minting in default group
     executor = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
     operator_grid.alterTiers([0], [(100_000 * 10**18, 300, 250, 50, 40, 10)], {"from": executor})
@@ -1412,7 +1419,7 @@ def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger, 
         100,
         3600, # 1 hour
         [],
-        {"from": stranger, "value": "2 ether"},
+        {"from": stranger, "value": initial_total_value},
     )
     bad_debt_vault = creation_tx.events["VaultCreated"][0]["vault"]
 
@@ -1424,8 +1431,8 @@ def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger, 
     vault_hub.applyVaultReport(
         bad_debt_vault,
         current_time,
-        2 * 10**18,
-        2 * 10**18,
+        initial_total_value,
+        initial_total_value,
         0,
         0,
         0,
@@ -1433,7 +1440,7 @@ def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger, 
         {"from": lazy_oracle_account})
 
     bad_debt_dashboard = accounts.at(creation_tx.events["DashboardCreated"][0]["dashboard"], force=True)
-    vault_hub.mintShares(bad_debt_vault, stranger, 5 * 10**17, {"from": bad_debt_dashboard})
+    vault_hub.mintShares(bad_debt_vault, stranger, 10 * max_shares_to_socialize, {"from": bad_debt_dashboard})
 
     creation_tx = vault_factory.createVaultWithDashboard(
         stranger,
@@ -1442,11 +1449,9 @@ def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger, 
         100,
         3600, # 1 hour
         [],
-        {"from": stranger, "value": "2 ether"},
+        {"from": stranger, "value": initial_total_value},
     )
     vault_acceptor = creation_tx.events["VaultCreated"][0]["vault"]
-
-    max_shares_to_socialize = 1 * 10**16
 
     calldata = _encode_calldata(["address[]", "address[]", "uint256[]"], [[bad_debt_vault], [vault_acceptor], [max_shares_to_socialize]])
 
@@ -1477,8 +1482,8 @@ def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger, 
     vault_hub.applyVaultReport(
         vault_acceptor,
         current_time,
-        2 * 10**18,
-        2 * 10**18,
+        initial_total_value,
+        initial_total_value,
         0,
         0,
         0,
@@ -1489,10 +1494,10 @@ def test_socialize_bad_debt_in_vault_hub(easy_track, trusted_address, stranger, 
     vault_hub.applyVaultReport(
         bad_debt_vault,
         current_time,
-        1 * 10**17,
-        2 * 10**18,
+        10 * max_shares_to_socialize,
+        initial_total_value,
         0,
-        2 * 10**18,
+        initial_total_value,
         0,
         0,
         {"from": lazy_oracle_account})
