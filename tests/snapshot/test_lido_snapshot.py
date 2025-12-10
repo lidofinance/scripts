@@ -158,7 +158,8 @@ def test_lido_send_ether_snapshot(
 
     assert lido.balanceOf(eth_whale) == 0
     assert eth_whale.balance() >= _1ETH
-    assert el_vault.balance() >= _1ETH
+    if el_vault.balance() < _1ETH:
+        eth_whale.transfer(el_vault.address, _1ETH)
 
     def get_actions(from_address: Account | None = None):
         return (
@@ -219,13 +220,14 @@ def test_lido_send_ether_snapshot(
     _stacks_equal(stacks)
 
 
-def test_lido_dao_ops_snapshot(sandwich_upgrade: SandwichFn):
+def test_lido_dao_ops_snapshot(sandwich_upgrade: SandwichFn, eth_whale: Account):
     el_vault = contracts.execution_layer_rewards_vault
     lido = contracts.lido
 
     assert lido.getCurrentStakeLimit() > 0
     assert lido.isStakingPaused() is False
-    assert el_vault.balance() >= _1ETH
+    if el_vault.balance() < _1ETH:
+        eth_whale.transfer(el_vault.address, _1ETH)
     assert lido.isStopped() is False
 
     def get_actions(from_address: Account | None = None):
