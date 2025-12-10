@@ -54,10 +54,6 @@ runs:
       shell: bash
       run: poetry run brownie networks import network-config.yaml True
 
-    - name: Replace old solc binaries host
-      shell: bash
-      run: echo 188.114.96.1 solc-bin.ethereum.org | sudo tee -a /etc/hosts
-
     - name: Run tests
       shell: bash
       run: >
