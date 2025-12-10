@@ -54,6 +54,21 @@ runs:
       shell: bash
       run: poetry run brownie networks import network-config.yaml True
 
+    - name: Show system info
+      shell: bash
+      run: |
+        echo "Memory and swap:"
+        free -h
+        echo
+        swapon --show
+        echo
+        df -h
+        echo
+        echo "CPU units"
+        nproc --all
+        echo "Vote type"
+        echo ${{ inputs.vote }}
+
     - name: Run tests
       shell: bash
       run: >
