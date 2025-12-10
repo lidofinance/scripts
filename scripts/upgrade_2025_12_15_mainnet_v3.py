@@ -1,5 +1,5 @@
 """
-# Vote 2025_12_10
+# Vote 2025_12_15
 
 === 1. DG PROPOSAL ===
 1.1. Check execution time window (14:00–23:00 UTC)
