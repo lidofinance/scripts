@@ -1,5 +1,5 @@
 """
-# Vote 2025_12_10
+# Vote 2025_12_15
 
 === 1. DG PROPOSAL ===
 I. Change Curated Module fees
@@ -251,11 +251,11 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ]),
     ]
-    
+
     dg_call_script = submit_proposals([
         (dg_items, "Change Curated Module fees, raise SDVT stake share limit, set A41 soft target validator limit to 0, set Easy Track TRP limit")
     ])
-    
+
     vote_desc_items, call_script_items = zip(
         (
             "1. Submit a Dual Governance proposal to change Curated Module fees, raise SDVT stake share limit, set A41 soft target validator limit to 0, set Easy Track TRP limit",

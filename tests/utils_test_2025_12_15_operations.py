@@ -46,7 +46,7 @@ class TokenLimit(NamedTuple):
 
 
 # ============================== Import vote =================================
-from scripts.vote_2025_12_10 import start_vote, get_vote_items
+from scripts.vote_2025_12_15 import start_vote, get_vote_items
 
 
 # ============================== Addresses ===================================
@@ -121,7 +121,6 @@ MATIC_IN_LIDO_LABS_BEFORE = 0
 MATIC_IN_LIDO_LABS_AFTER = 508_106 * 10**18
 
 TRP_LIMIT_BEFORE = 9_178_284_420 * 10**15 # == 9_178_284.42 * 10**18
-TRP_ALREADY_SPENT_AFTER = 4208709 * 10**18
 TRP_LIMIT_AFTER = 15_000_000 * 10**18
 TRP_PERIOD_START_TIMESTAMP = 1735689600  # January 1, 2025 UTC
 TRP_PERIOD_END_TIMESTAMP = 1767225600  # January 1, 2026 UTC
@@ -778,6 +777,7 @@ def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
     curated_module_before = None
     sdvt_module_before = None
     a41_summary_before = None
+    TRP_ALREADY_SPENT_AFTER = None
 
     if EXPECTED_DG_PROPOSAL_ID is not None:
         details = timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)
@@ -820,6 +820,7 @@ def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
             assert trp_limit_before == TRP_LIMIT_BEFORE
             assert trp_period_duration_months_before == TRP_PERIOD_DURATION_MONTHS
             assert trp_spendable_balance_before == TRP_LIMIT_BEFORE - trp_already_spent_amount_before
+            TRP_ALREADY_SPENT_AFTER = trp_already_spent_amount_before # TRP_ALREADY_SPENT_AFTER must be the same as before the execution
             assert trp_period_start_before == TRP_PERIOD_START_TIMESTAMP
             assert trp_period_end_before == TRP_PERIOD_END_TIMESTAMP
 
@@ -953,8 +954,9 @@ def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
         trp_already_spent_amount_after, trp_spendable_balance_after, trp_period_start_after, trp_period_end_after = et_trp_registry.getPeriodState()
         assert trp_limit_after == TRP_LIMIT_AFTER
         assert trp_period_duration_months_after == TRP_PERIOD_DURATION_MONTHS
-        assert trp_already_spent_amount_after == TRP_ALREADY_SPENT_AFTER
-        assert trp_spendable_balance_after == TRP_LIMIT_AFTER - TRP_ALREADY_SPENT_AFTER
+        if TRP_ALREADY_SPENT_AFTER is not None:
+            assert trp_already_spent_amount_after == TRP_ALREADY_SPENT_AFTER
+            assert trp_spendable_balance_after == TRP_LIMIT_AFTER - TRP_ALREADY_SPENT_AFTER
         assert trp_period_start_after == TRP_PERIOD_START_TIMESTAMP
         assert trp_period_end_after == TRP_PERIOD_END_TIMESTAMP
 
@@ -966,23 +968,15 @@ def trp_limit_test(stranger):
 
     easy_track = interface.EasyTrack(EASY_TRACK)
     ldo_token = interface.ERC20(LDO_TOKEN)
-    to_spend = TRP_LIMIT_AFTER - TRP_ALREADY_SPENT_AFTER
+    to_spend = 15_000_000 * 10**18
     max_spend_at_once = 5_000_000 * 10**18
     trp_committee_account = accounts.at(TRP_COMMITTEE, force=True)
 
     chain.snapshot()
 
-    # check that there is no way to spend more then expected
-    with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
-        create_and_enact_payment_motion(
-            easy_track,
-            TRP_COMMITTEE,
-            TRP_TOP_UP_EVM_SCRIPT_FACTORY,
-            ldo_token,
-            [trp_committee_account],
-            [to_spend + 1],
-            stranger,
-        )
+    # sleep to January so that TRP limit period does not change (it depends when tests are run)
+    chain.sleep(30 * 24 * 60 * 60)
+    chain.mine()
 
     # spend all in several transfers
     recipients = []

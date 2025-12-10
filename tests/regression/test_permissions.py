@@ -70,7 +70,9 @@ from utils.config import (
     ACCOUNTING,
     PREDEPOSIT_GUARANTEE,
     VAULTS_ADAPTER,
-    GATE_SEAL_V3
+    GATE_SEAL_V3,
+    L1_TOKEN_RATE_NOTIFIER,
+    STAKING_VAULT_BEACON
 )
 
 
@@ -572,7 +574,21 @@ def protocol_permissions():
                 "PAUSE_ROLE": "PausableUntilWithRoles.PauseRole",
                 "RESUME_ROLE": "PausableUntilWithRoles.ResumeRole",
             },
-        }
+        },
+        L1_TOKEN_RATE_NOTIFIER: {
+            "contract_name": "TokenRateNotifier",
+            "contract": contracts.token_rate_notifier,
+            "type": "CustomApp",
+            "state": {"owner": contracts.agent},
+            "roles": {},
+        },
+        STAKING_VAULT_BEACON: {
+            "contract_name": "UpgradeableBeacon",
+            "contract": contracts.staking_vault_beacon,
+            "type": "CustomApp",
+            "state": {"owner": contracts.agent},
+            "roles": {},
+        },
     }
 
 
