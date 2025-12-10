@@ -54,48 +54,10 @@ runs:
       shell: bash
       run: poetry run brownie networks import network-config.yaml True
 
-    - name: Show system info
-      shell: bash
-      run: |
-        echo "Memory and swap:"
-        free -h
-        echo
-        swapon --show
-        echo
-        df -h
-        echo
-        echo "CPU units"
-        nproc --all
-        echo "Vote type"
-        echo ${{ inputs.vote }}
-
     - name: Install solc
       shell: bash
       run: |
-        set -e
-
-        mkdir -p /home/runner/.solcx
-
-        echo "Downloading solc..."
-        curl -L "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.6.11+commit.5ef660b1" -o /home/runner/.solcx/solc-v0.8.28
-
-        chmod +x /home/runner/.solcx/solc-v0.8.28
-
-        echo "Checking solc version..."
-        output="$( /home/runner/.solcx/solc-v0.8.28 --version )"
-        echo "$output"
-
-        expected="Version: 0.6.11+commit.5ef660b1"
-
-        if [[ "$output" != *"$expected"* ]]; then
-          echo "❌ solc version mismatch!"
-          echo "Expected: $expected"
-          echo "Got: $output"
-          exit 1
-        fi
-
-        echo "✔ solc version is correct"
-
+        install-solc-versions.sh
 
     - name: Run tests
       shell: bash
