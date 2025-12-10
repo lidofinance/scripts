@@ -1,5 +1,5 @@
 """
-# Vote 2025_12_10
+# Vote 2025_12_15
 
 === 1. DG PROPOSAL ===
 1.1. Check execution time window (14:00–23:00 UTC)
@@ -19,7 +19,10 @@
 1.15. Set SLASHING_RESERVE_WE_RIGHT_SHIFT in OracleDaemonConfig
 1.16. Set SLASHING_RESERVE_WE_LEFT_SHIFT in OracleDaemonConfig
 1.17. Revoke CONFIG_MANAGER_ROLE from Agent on OracleDaemonConfig
-1.18. Call V3Template.finishUpgrade()
+1.18. Grant PAUSE_ROLE to Agent
+1.19. Pause PredepositGuarantee
+1.20. Revoke PAUSE_ROLE from Agent
+1.21. Call V3Template.finishUpgrade()
 
 === NON-DG ITEMS ===
 2. Add AlterTiersInOperatorGrid factory to Easy Track (permissions: operatorGrid.alterTiers)
@@ -45,7 +48,7 @@ from brownie import interface
 
 
 # ============================== Addresses ===================================
-OMNIBUS_CONTRACT = "0xa47Ca1d2029D8e735237ea4E74c607426d4aA07e"
+OMNIBUS_CONTRACT = "0xE1F4c16908fCE6935b5Ad38C6e3d58830fe86442"
 
 
 # ============================= Description ==================================

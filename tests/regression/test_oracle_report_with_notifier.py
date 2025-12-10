@@ -50,6 +50,24 @@ def test_oracle_report_revert():
         oracle_report(cl_diff=0, report_el_vault=True, report_withdrawals_vault=False)
 
 
+def test_only_accounting_can_call_handle_post_token_rebase():
+    """Test that only Accounting can call TokenRateNotifier.handlePostTokenRebase"""
+
+    # Any non-Accounting address should not be allowed to call handlePostTokenRebase
+    # Use some sane values for the call; the exact numbers are irrelevant, it should revert on caller
+    with reverts(encode_error("ErrorNotAuthorizedRebaseCaller()")):
+        contracts.token_rate_notifier.handlePostTokenRebase(
+            0, # report_timestamp,
+            0, # time_elapsed,
+            0, # pre_total_shares,
+            0, # pre_total_ether,
+            0, # post_total_shares,
+            0, # post_total_ether,
+            0, # shares_minted_as_fees,
+            {"from": accounts[0]},
+        )
+
+
 def test_oracle_report_pushes_rate():
     """Test oracle report emits cross domain messenger event"""
 

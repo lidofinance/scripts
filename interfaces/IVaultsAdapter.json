@@ -10,34 +10,11 @@
           "internalType": "bytes",
           "name": "_pubkeys",
           "type": "bytes"
-        },
-        {
-          "internalType": "address",
-          "name": "_feeRecipient",
-          "type": "address"
         }
       ],
       "name": "forceValidatorExit",
       "outputs": [],
       "stateMutability": "payable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_vault",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_liabilitySharesTarget",
-          "type": "uint256"
-        }
-      ],
-      "name": "setLiabilitySharesTarget",
-      "outputs": [],
-      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -89,19 +66,19 @@
           "type": "address"
         },
         {
-          "internalType": "uint16",
+          "internalType": "uint256",
           "name": "_infrastructureFeeBP",
-          "type": "uint16"
+          "type": "uint256"
         },
         {
-          "internalType": "uint16",
+          "internalType": "uint256",
           "name": "_liquidityFeeBP",
-          "type": "uint16"
+          "type": "uint256"
         },
         {
-          "internalType": "uint16",
+          "internalType": "uint256",
           "name": "_reservationFeeBP",
-          "type": "uint16"
+          "type": "uint256"
         }
       ],
       "name": "updateVaultFees",
