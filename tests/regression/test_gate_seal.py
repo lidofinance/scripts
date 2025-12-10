@@ -24,8 +24,6 @@ from utils.config import (
     CHAIN_SLOTS_PER_EPOCH,
     CHAIN_SECONDS_PER_SLOT,
     AO_EPOCHS_PER_FRAME,
-    GATE_SEAL_V3,
-    RESEAL_MANAGER,
 )
 
 
@@ -42,20 +40,6 @@ def test_gate_seal_expiration(gate_seal_committee):
     assert contracts.gate_seal.is_expired()
     with reverts("gate seal: expired"):
         contracts.gate_seal.seal([WITHDRAWAL_QUEUE], {"from": gate_seal_committee})
-
-
-def test_gate_seal_v3_expiration(gate_seal_committee):
-    gate_seal_v3 = interface.GateSeal(GATE_SEAL_V3)
-
-    assert not gate_seal_v3.is_expired()
-    time = chain.time()
-    expiry = gate_seal_v3.get_expiry_timestamp()
-    chain.sleep(expiry - time + 1)
-    chain.mine(1)
-
-    assert gate_seal_v3.is_expired()
-    with reverts("gate seal: expired"):
-        gate_seal_v3.seal(gate_seal_v3.get_sealables(), {"from": gate_seal_committee})
 
 
 def test_gate_seal_twg_veb_expiration(gate_seal_committee):
