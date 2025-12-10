@@ -86,8 +86,6 @@ def test_submit_snapshot(helpers, staker, vote_ids_from_env, dg_proposal_ids_fro
     step_diffs: Dict[str, Dict[str, ValueChanged]] = {}
 
     expected_diffs = {
-        "canPerform()": ValueChanged(from_val=True, to_val=False),
-        "getRecoveryVault()": ValueChanged(from_val=contracts.agent.address, to_val=ZERO_ADDRESS),
     }
 
     for step, pair_of_snapshots in dict_zip(before, after).items():
