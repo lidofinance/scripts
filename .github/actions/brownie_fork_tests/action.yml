@@ -57,7 +57,7 @@ runs:
     - name: Install solc
       shell: bash
       run: |
-        install-solc-versions.sh
+        bash ./install-solc-versions.sh
 
     - name: Run tests
       shell: bash
