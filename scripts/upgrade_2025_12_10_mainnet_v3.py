@@ -19,7 +19,10 @@
 1.15. Set SLASHING_RESERVE_WE_RIGHT_SHIFT in OracleDaemonConfig
 1.16. Set SLASHING_RESERVE_WE_LEFT_SHIFT in OracleDaemonConfig
 1.17. Revoke CONFIG_MANAGER_ROLE from Agent on OracleDaemonConfig
-1.18. Call V3Template.finishUpgrade()
+1.18. Grant PAUSE_ROLE to Agent
+1.19. Pause PredepositGuarantee
+1.20. Revoke PAUSE_ROLE from Agent
+1.21. Call V3Template.finishUpgrade()
 
 === NON-DG ITEMS ===
 2. Add AlterTiersInOperatorGrid factory to Easy Track (permissions: operatorGrid.alterTiers)

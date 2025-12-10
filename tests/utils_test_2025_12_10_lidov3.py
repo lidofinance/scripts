@@ -24,6 +24,7 @@ from utils.test.event_validators.permission import validate_grant_role_event, va
 from utils.test.event_validators.aragon import validate_aragon_set_app_event, validate_aragon_grant_permission_event, validate_aragon_revoke_permission_event
 from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
 from utils.test.event_validators.unpause import validate_pause_for_event
+from utils.test.event_validators.time_constraints import validate_dg_time_constraints_executed_within_day_time_event
 
 
 # ============================================================================
@@ -409,9 +410,7 @@ def dual_governance_proposal_calls():
 
         # 1.19. Pause PredepositGuarantee
         agent_forward([
-            (predeposit_guarantee.address, predeposit_guarantee.pauseFor.encode_input(
-                web3.codec.encode(['uint256'], [PAUSE_INFINITELY])
-            ))
+            (predeposit_guarantee.address, predeposit_guarantee.pauseFor.encode_input(PAUSE_INFINITELY))
         ]),
 
         # 1.20. Revoke PredepositGuarantee's PAUSE_ROLE from Agent
@@ -695,6 +694,7 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
         assert upgradeTemplate.initialOldBurnerStethSharesBalance() == 0, "V3Template should have initialOldBurnerStethSharesBalance 0 before startUpgrade"
         initial_total_shares_before = lido.getTotalShares()
         initial_total_pooled_ether_before = lido.getTotalPooledEther()
+        initial_burner_steth_shares_balance_before = lido.sharesOf(OLD_BURNER)
 
         # Step 1.3: Check Lido Locator implementation initial state
         assert locator_impl_before != LIDO_LOCATOR_IMPL, "Locator implementation should be different before upgrade"
@@ -748,6 +748,7 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
 
         # Step 1.19. Pause PredepositGuarantee
         assert predeposit_guarantee.isPaused() == False, "PredepositGuarantee should not be paused before upgrade"
+        assert predeposit_guarantee.getResumeSinceTimestamp() == 0, "PredepositGuarantee should have getResumeSinceTimestamp 0 before upgrade"
 
         # Step 1.21. Call V3Template.finishUpgrade
         assert lido.getContractVersion() == NEW_LIDO_VERSION - 1, "LIDO should have version 2 before finishUpgrade"
@@ -782,6 +783,14 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
             assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
 
             # === DG EXECUTION EVENTS VALIDATION ===
+
+            # 1.1. Check execution time window (14:00–23:00 UTC)
+            validate_dg_time_constraints_executed_within_day_time_event(
+                dg_events[0],
+                UTC14,
+                UTC23,
+                emitted_by=DUAL_GOVERNANCE_TIME_CONSTRAINTS
+            )
 
             # 1.2. Call V3Template.startUpgrade
             validate_upgrade_started_event(dg_events[1])
@@ -943,6 +952,7 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
     assert upgradeTemplate.upgradeBlockNumber() != 0, "V3Template should have upgradeBlockNumber not 0 after startUpgrade"
     assert upgradeTemplate.initialTotalShares() == initial_total_shares_before, "V3Template should have initialTotalShares equal to the initial total shares before upgrade"
     assert upgradeTemplate.initialTotalPooledEther() == initial_total_pooled_ether_before, "V3Template should have initialTotalPooledEther equal to the initial total pooled ether before upgrade"
+    assert upgradeTemplate.initialOldBurnerStethSharesBalance() == initial_burner_steth_shares_balance_before, "V3Template should have initialOldBurnerStethSharesBalance equal to the initial burner steth shares balance before upgrade"
 
     # Step 1.3: Validate Lido Locator implementation was updated
     assert get_ossifiable_proxy_impl(lido_locator_proxy) == LIDO_LOCATOR_IMPL, "Locator implementation should be updated to the new value"
@@ -985,6 +995,7 @@ def enact_and_test_dg(stranger, expected_dg_proposal_id):
 
     # Step 1.19. Pause PredepositGuarantee
     assert predeposit_guarantee.isPaused() == True, "PredepositGuarantee should be paused after upgrade"
+    assert predeposit_guarantee.getResumeSinceTimestamp() == PAUSE_INFINITELY, "PredepositGuarantee should have getResumeSinceTimestamp PAUSE_INFINITELY after upgrade"
 
     # Step 1.20. Revoke PredepositGuarantee's PAUSE_ROLE from Agent
     assert not predeposit_guarantee.hasRole(pdg_pause_role, AGENT), "PredepositGuarantee should not have PAUSE_ROLE on Agent after upgrade"
