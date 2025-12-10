@@ -9,7 +9,7 @@ networks:
   live:
     priority_fee: auto
 
-autofetch_sources: true
+autofetch_sources: false
 
 hypothesis:
   max_examples: 10
