@@ -324,51 +324,6 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
     assert report_tx.events["Transfer"][simple_dvt_index]["value"] > 0
     assert report_tx.events["Transfer"][csm_index]["value"] > 0
 
-    # do the same checks for Transfer event -------------------------------------------------------
-
-    assert report_tx.events["Transfer"][module_index]["to"] == module_address
-    assert report_tx.events["Transfer"][module_index]["from"] == contracts.accounting.address
-    assert report_tx.events["Transfer"][simple_dvt_index]["to"] == contracts.simple_dvt.address
-    assert report_tx.events["Transfer"][simple_dvt_index]["from"] == contracts.accounting.address
-    assert report_tx.events["Transfer"][csm_index]["to"] == contracts.csm.address
-    assert report_tx.events["Transfer"][csm_index]["from"] == contracts.accounting.address
-    assert report_tx.events["Transfer"][agent_index]["to"] == contracts.agent
-    assert report_tx.events["Transfer"][agent_index]["from"] == contracts.accounting.address
-
-    # module_treasury_fee = module_share / share_pct * treasury_pct
-    module_treasury_fee = (
-        report_tx.events["Transfer"][module_index]["value"]
-        * 100_00
-        // module_stats["stakingModuleFee"]
-        * module_stats["treasuryFee"]
-        // 100_00
-    )
-    simple_dvt_stats = contracts.staking_router.getStakingModule(2)
-    simple_dvt_treasury_fee = (
-        report_tx.events["Transfer"][simple_dvt_index]["value"]
-        * 100_00
-        // simple_dvt_stats["stakingModuleFee"]
-        * simple_dvt_stats["treasuryFee"]
-        // 100_00
-    )
-    csm_stats = contracts.staking_router.getStakingModule(3)
-    csm_treasury_fee = (
-        report_tx.events["Transfer"][csm_index]["value"]
-        * 100_00
-        // csm_stats["stakingModuleFee"]
-        * csm_stats["treasuryFee"]
-        // 100_00
-    )
-
-    assert almostEqWithDiff(
-        module_treasury_fee + simple_dvt_treasury_fee + csm_treasury_fee,
-        report_tx.events["Transfer"][agent_index]["value"],
-        100,
-    )
-    assert report_tx.events["Transfer"][module_index]["value"] > 0
-    assert report_tx.events["Transfer"][simple_dvt_index]["value"] > 0
-    assert report_tx.events["Transfer"][csm_index]["value"] > 0
-
 
 def test_stopped_staking_module_cant_stake(stranger):
     contracts.staking_router.grantRole(
