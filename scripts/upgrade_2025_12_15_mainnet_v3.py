@@ -52,10 +52,22 @@ OMNIBUS_CONTRACT = "0xE1F4c16908fCE6935b5Ad38C6e3d58830fe86442"
 
 
 # ============================= Description ==================================
-# TODO <a description for IPFS (will appear in the voting description on vote.lido.fi)>
-IPFS_DESCRIPTION = "omni dec 2025"
-DG_PROPOSAL_DESCRIPTION = "Activate Lido V3"
-DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to activate Lido V3"
+IPFS_DESCRIPTION = """
+**Activate Lido V3: Phase 1 (Soft Launch)** — a major upgrade to the Lido protocol introduces non-custodial, over-collateralized staking vaults (“stVaults”) that enable stakers to opt into specific operators or strategies while still minting stETH.  The Lido V3 design and implementation follow the DAO-approved [Snapshot](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x01cd474645cc7c3ddf68314d475d421ef833499297f508fee5f7411fafff3954). Phase 1 is intentionally [proposed in a constrained soft launch](https://research.lido.fi/t/lido-v3-design-implementation-proposal/10665/8) mode to enable early adopters and partners while maintaining a conservative security posture.
+
+Deployment verification: [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20V3%20Security%20Audit%20Report%20-%2012-2025.pdf) | Formal verification: [Certora](https://github.com/lidofinance/audits/blob/main/Certora%20Lido%20V3%20Formal%20Verification%20Report%20-%2012-2025.pdf) | Audits: [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20V3%20Security%20Audit%20Report%20-%2012-2025.pdf), [Certora](https://github.com/lidofinance/audits/blob/main/Certora%20Lido%20V3%20Audit%20Report%20-%2012-2025.pdf), [Consensys Diligence](https://github.com/lidofinance/audits/blob/main/Consensys%20Diligence%20Lido%20V3%20Security%20Audit%20-%2011-2025.pdf) | Offchain audits: [Certora](https://github.com/lidofinance/audits/blob/main/Certora%20Lido%20V3%20Oracle%20V7%20Audit%20Report%20-%2012-2025.pdf), [Composable Security](https://github.com/lidofinance/audits/blob/main/Composable%20Security%20Lido%20V3%20Oracle%20V7%20Audit%20Report%20-%2012-2025.pdf)
+
+[Dual Governance Items](https://research.lido.fi/t/lido-v3-design-implementation-proposal/10665/5#p-23638-part-2-dual-governance-items-21-items-subject-to-dg-veto-period-27)
+- Ensure DG proposal execution occurs during the monitored time window and aligns with oracle reports. Item 1.1.
+- Lock upgrade window and validate network state. Item 1.2.
+- Upgrade proxy implementations, reassign roles and permissions, configure oracle slashing parameters. Items 1.3-1.17.
+- Disable Predeposit Guarantee guided deposit flows as a part of [Soft Launch](https://research.lido.fi/t/lido-v3-design-implementation-proposal/10665/9). Items 1.18-1.20.
+- Finalize upgrade and validate Lido V3 activation state. Item 1.21.
+
+[Voting Items](https://research.lido.fi/t/lido-v3-design-implementation-proposal/10665/5#p-23638-part-1-voting-items-8-items-execute-immediately-26)
+- Add Easy Track factories enabling [stVault Committee](https://docs.lido.fi/multisigs/committees#216-stvaults-committee) to configure VaultHub and OperatorGrid contracts. Items 2–9."""
+DG_PROPOSAL_DESCRIPTION = "Activate Lido V3: Phase 1 (Soft Launch)"
+DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to activate Lido V3: Phase 1 (Soft Launch)"
 
 
 # ================================ Main ======================================

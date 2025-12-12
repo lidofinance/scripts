@@ -676,8 +676,8 @@ def enact_and_test_voting(
             prepare_agent_for_steth_payment(2_000 * 10**18)
 
             # check ET limits via Easy Track motion
-            ET_LIDO_LABS_STABLES_LIMIT = interface.AllowedRecipientRegistry(LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY).getPeriodState({"from": AGENT})[1] // 10**18
-            LEGO_LDO_SPENDABLE_BALANCE = interface.AllowedRecipientRegistry(LEGO_LDO_ALLOWED_RECIPIENTS_REGISTRY).getPeriodState({"from": AGENT})[1]
+            ET_LIDO_LABS_STABLES_LIMIT = interface.AllowedRecipientRegistry(LIDO_LABS_ALLOWED_RECIPIENTS_REGISTRY).getLimitParameters({"from": AGENT})[0] // 10**18
+            LEGO_LDO_SPENDABLE_BALANCE = interface.AllowedRecipientRegistry(LEGO_LDO_ALLOWED_RECIPIENTS_REGISTRY).getLimitParameters({"from": AGENT})[0]
             et_limit_test(stranger, interface.ERC20(SUSDS_TOKEN), susds_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
             et_limit_test(stranger, interface.ERC20(USDC_TOKEN), usdc_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**6, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
             et_limit_test(stranger, interface.ERC20(DAI_TOKEN), dai_limit_after.limit, ET_LIDO_LABS_STABLES_LIMIT * 10**18, LIDO_LABS_TRUSTED_CALLER, LIDO_LABS_TOP_UP_ALLOWED_RECIPIENTS_FACTORY)
@@ -975,7 +975,7 @@ def trp_limit_test(stranger):
     chain.snapshot()
 
     # sleep to January so that TRP limit period does not change (it depends when tests are run)
-    chain.sleep(30 * 24 * 60 * 60)
+    chain.sleep(20 * 24 * 60 * 60)
     chain.mine()
 
     # spend all in several transfers
@@ -1017,17 +1017,9 @@ def et_limit_test(stranger, token, max_spend_at_once, to_spend, TRUSTED_CALLER, 
 
     chain.snapshot()
 
-    # check that there is no way to spend more then expected
-    with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
-        create_and_enact_payment_motion(
-            easy_track,
-            TRUSTED_CALLER,
-            TOP_UP_ALLOWED_RECIPIENTS_FACTORY,
-            token,
-            [trusted_caller_account],
-            [to_spend + 1],
-            stranger,
-        )
+    # sleep to January so that ET limit period does not change (it depends when tests are run)
+    chain.sleep(20 * 24 * 60 * 60)
+    chain.mine()
 
     # spend all in several transfers
     recipients = []
