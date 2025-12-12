@@ -455,7 +455,7 @@ def enact_and_test_voting(
     Includes all before/after voting checks and event validation.
     """
     EXPECTED_VOTE_EVENTS_COUNT = 9
-    IPFS_DESCRIPTION_HASH = "bafkreic4xuaowfowt7faxnngnzynv7biuo7guv4s4jrngngjzzxyz3up2i"
+    IPFS_DESCRIPTION_HASH = "bafkreibvblxc6urod5fefbfadebtr5fy26ixeliyzctcn6lnwlfk6xxvmm"
 
     # =======================================================================
     # ========================= Arrange variables ===========================
@@ -558,7 +558,7 @@ def enact_and_test_voting(
                 proposal_id=expected_dg_proposal_id,
                 proposer=VOTING,
                 executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-                metadata="Activate Lido V3",
+                metadata="Activate Lido V3: Phase 1 (Soft Launch)",
                 proposal_calls=dual_governance_proposal_calls(),
             )
 
