@@ -44,8 +44,8 @@ init-scripts:
 # because current brownie version does not support pm install from the config file
 	poetry install && \
 	yarn && \
-	PYTHONPATH=$PWD poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0 && \
-	PYTHONPATH=$PWD poetry run brownie compile && \
+	PYTHONPATH=$$PWD poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0 && \
+	PYTHONPATH=$$PWD poetry run brownie compile && \
 	poetry run brownie networks import network-config.yaml True
 
 debug:
