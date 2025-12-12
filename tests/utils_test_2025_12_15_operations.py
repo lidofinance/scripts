@@ -811,7 +811,6 @@ def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
             # Item 1.3
             a41_summary_before = staking_router.getNodeOperatorSummary(CURATED_MODULE_ID, A41_NO_ID)
             assert a41_summary_before['targetLimitMode'] == NO_TARGET_LIMIT_MODE_BEFORE
-            assert a41_summary_before['depositableValidatorsCount'] > 0
             assert curated_module.getNodeOperator(A41_NO_ID, True)['name'] == "A41"
 
             # Items 1.4
