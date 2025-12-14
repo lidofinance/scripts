@@ -126,6 +126,18 @@ TRP_PERIOD_START_TIMESTAMP = 1735689600  # January 1, 2025 UTC
 TRP_PERIOD_END_TIMESTAMP = 1767225600  # January 1, 2026 UTC
 TRP_PERIOD_DURATION_MONTHS = 12
 
+def get_trp_period_start():
+    period_start_timestamp_for_trp = TRP_PERIOD_START_TIMESTAMP
+    if chain.time() >= 1767225600: # Thu Jan 01 2026 00:00:00 GMT+0000
+        period_start_timestamp_for_trp = 1767225600 # Thu Jan 01 2026 00:00:00 GMT+0000
+    return period_start_timestamp_for_trp
+
+def get_trp_period_end():
+    period_end_timestamp_for_trp = TRP_PERIOD_END_TIMESTAMP
+    if chain.time() >= 1767225600: # Thu Jan 01 2026 00:00:00 GMT+0000
+        period_end_timestamp_for_trp = 1798761600 # Fri Jan 01 2027 00:00:00 GMT+0000
+    return period_end_timestamp_for_trp
+
 ALLOWED_TOKENS_BEFORE = 3
 ALLOWED_TOKENS_AFTER = 4
 
@@ -873,7 +885,7 @@ def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
                     dg_events[3],
                     limit=TRP_LIMIT_AFTER,
                     period_duration_month=TRP_PERIOD_DURATION_MONTHS,
-                    period_start_timestamp=TRP_PERIOD_START_TIMESTAMP,
+                    period_start_timestamp=get_trp_period_start(),
                     emitted_by=ET_TRP_REGISTRY,
                 )
 
@@ -956,8 +968,8 @@ def enact_and_test_dg(stranger, EXPECTED_DG_PROPOSAL_ID):
         if TRP_ALREADY_SPENT_AFTER is not None:
             assert trp_already_spent_amount_after == TRP_ALREADY_SPENT_AFTER
             assert trp_spendable_balance_after == TRP_LIMIT_AFTER - TRP_ALREADY_SPENT_AFTER
-        assert trp_period_start_after == TRP_PERIOD_START_TIMESTAMP
-        assert trp_period_end_after == TRP_PERIOD_END_TIMESTAMP
+        assert trp_period_start_after == get_trp_period_start()
+        assert trp_period_end_after == get_trp_period_end()
 
         # scenraio test for TRP ET factory behavior after the vote
         trp_limit_test(stranger)
@@ -967,7 +979,6 @@ def trp_limit_test(stranger):
 
     easy_track = interface.EasyTrack(EASY_TRACK)
     ldo_token = interface.ERC20(LDO_TOKEN)
-    to_spend = 15_000_000 * 10**18
     max_spend_at_once = 5_000_000 * 10**18
     trp_committee_account = accounts.at(TRP_COMMITTEE, force=True)
 
@@ -976,6 +987,11 @@ def trp_limit_test(stranger):
     # sleep to January so that TRP limit period does not change (it depends when tests are run)
     chain.sleep(20 * 24 * 60 * 60)
     chain.mine()
+
+    _, spendableBalanceInPeriod, periodStartTimestamp, periodEndTimestamp = interface.AllowedRecipientRegistry(ET_TRP_REGISTRY).getPeriodState({"from": AGENT})
+    to_spend = interface.AllowedRecipientRegistry(ET_TRP_REGISTRY).getLimitParameters({"from": AGENT})[0]
+    if chain.time() >= periodStartTimestamp and chain.time() < periodEndTimestamp:
+        to_spend = spendableBalanceInPeriod
 
     # spend all in several transfers
     recipients = []
