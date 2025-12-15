@@ -110,14 +110,14 @@ class Helpers:
 
     # TODO remove vote_id_for_vote
     @staticmethod
-    def execute_vote(accounts, vote_id, vote_id_for_vote, dao_voting, topup="10 ether"):
-        (tx,) = Helpers.execute_votes(accounts, [vote_id], vote_id_for_vote, dao_voting, topup)
+    def execute_vote(accounts, vote_id, dao_voting, topup="10 ether", vote_id_for_vote=[]):
+        (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup, vote_id_for_vote)
         return tx
 
     @staticmethod
-    def execute_votes(accounts, vote_ids, vote_id_for_vote, dao_voting, topup="10 ether"):
+    def execute_votes(accounts, vote_ids, dao_voting, topup="10 ether", vote_id_for_vote=[]):
         OBJECTION_PHASE_ID = 1
-        for vote_id in vote_ids + [vote_id_for_vote]:
+        for vote_id in vote_ids + vote_id_for_vote:
             print(f"Vote #{vote_id}")
             if dao_voting.canVote(vote_id, LDO_VOTE_EXECUTORS_FOR_TESTS[0]) and (
                 dao_voting.getVotePhase(vote_id) != OBJECTION_PHASE_ID
