@@ -449,6 +449,7 @@ def enact_and_test_voting(
     stranger,
     expected_vote_id,
     expected_dg_proposal_id,
+    vote_id_for_vote
 ):
     """
     Submit, enact and test the voting proposal.
@@ -506,7 +507,7 @@ def enact_and_test_voting(
 
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
 
-        vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
+        vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting, vote_id_for_vote=[vote_id_for_vote])
         display_voting_events(vote_tx)
 
 

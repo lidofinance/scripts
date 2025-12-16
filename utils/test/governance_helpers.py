@@ -1,4 +1,4 @@
-from brownie import accounts
+from brownie import accounts, interface
 from utils.config import contracts
 from utils.import_current_votes import start_and_execute_votes
 from utils.dual_governance import process_proposals
@@ -29,9 +29,12 @@ def execute_vote(helpers, vote_ids_from_env):
 
 def execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env):
 
+    voting = interface.Voting("0x2e59A20f205bB85a89C53f1936454680651E618e")
+
     # V1
     proposals_count_before1 = contracts.emergency_protected_timelock.getProposalsCount()
-    start_and_execute_votes(contracts.voting, helpers, 0)
+    #start_and_execute_votes(contracts.voting, helpers, 0)
+    helpers.execute_vote(vote_id=194, accounts=accounts, dao_voting=voting, vote_id_for_vote=[195])
     proposals_count_after1 = contracts.emergency_protected_timelock.getProposalsCount()
     new_proposal_ids1 = list(range(proposals_count_before1 + 1, proposals_count_after1 + 1))
     
@@ -40,7 +43,8 @@ def execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposa
 
     # V2
     proposals_count_before2 = contracts.emergency_protected_timelock.getProposalsCount()
-    start_and_execute_votes(contracts.voting, helpers, 1)
+    #start_and_execute_votes(contracts.voting, helpers, 1)
+    helpers.execute_vote(vote_id=195, accounts=accounts, dao_voting=voting, vote_id_for_vote=[194])
     proposals_count_after2 = contracts.emergency_protected_timelock.getProposalsCount()
     new_proposal_ids2 = list(range(proposals_count_before2 + 1, proposals_count_after2 + 1))
     

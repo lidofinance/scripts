@@ -414,6 +414,7 @@ def enact_and_test_voting(
     stranger,
     EXPECTED_VOTE_ID,
     EXPECTED_DG_PROPOSAL_ID,
+    vote_id_for_vote
 ):
     EXPECTED_VOTE_EVENTS_COUNT = 7
     IPFS_DESCRIPTION_HASH = "bafkreieptki4mrkhpd22ij3cym777l4iivrdknwtglchdtvptujz2dgn7u"
@@ -494,7 +495,7 @@ def enact_and_test_voting(
 
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
 
-        vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
+        vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting, vote_id_for_vote=[vote_id_for_vote])
         display_voting_events(vote_tx)
         vote_events = group_voting_events_from_receipt(vote_tx)
 
