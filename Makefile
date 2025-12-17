@@ -95,12 +95,24 @@ test-core:
 	yarn test:integration
 
 slots:
-	@echo "Input https://github.com/lidofinance/protocol-onchain-mon-bots/blob/main/bots/ethereum-steth-v2/src/utils/constants.ts file content (end with Enter and Ctrl+D):"
-	@cat | grep -v "import { StorageSlot } from '../entity/storage_slot'" | sed 's/StorageSlot/any/g' > slots.ts
+	@echo "Input https://github.com/lidofinance/protocol-onchain-mon-bots/blob/main/bots/ethereum-steth-v2/src/utils/constants.mainnet.ts file content (end with Enter and Ctrl+D):"
+	@cat | grep -v "import { ERC20 } from './constants'" | sed 's/ERC20/any/g' > slots2.ts
+	@cat \
+	| grep -v "import { ERC20 } from './constants'" \
+	| sed 's/ERC20/any/g' \
+	> slots.ts
+
+	@echo "Input https://github.com/lidofinance/protocol-onchain-mon-bots/blob/main/bots/ethereum-steth-v2/src/services/storage-watcher/constants.ts file content (end with Enter and Ctrl+D):"
+	@cat \
+	| grep -v "import { StorageSlot } from '../../entity/storage_slot'" \
+	| sed "s|import { Address } from '../../utils/constants.mainnet'|import { Address } from './slots2.ts'|g" \
+	| sed 's/StorageSlot/any/g' \
+	> slots.ts
 	@cat check_storage_slots.ts >> slots.ts
 	@echo "Checking storage slots against 127.0.0.1:8545..."
 	@npx tsx slots.ts
 	@rm -f slots.ts
+	@rm -f slots2.ts
 
 ci-prepare-environment:
 	poetry run brownie run scripts/ci/prepare_environment --network mfh-1
