@@ -9,6 +9,7 @@ on:
       - "feat/rc2"
       - "feat/rc1"
       - "feat/next-vote"
+      - "omni-2025-12-19"
   schedule:
     - cron: "0 0 * * TUE"
 jobs:
