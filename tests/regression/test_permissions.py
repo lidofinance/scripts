@@ -241,11 +241,11 @@ def protocol_permissions():
             "contract": contracts.token_manager,
             "type": "AragonApp",
             "roles": {
-                "ISSUE_ROLE": [],
+                "ISSUE_ROLE": ["0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f"],
                 "ASSIGN_ROLE": [VOTING, "0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f"],
-                "BURN_ROLE": [],
-                "MINT_ROLE": [VOTING, "0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f"],
-                "REVOKE_VESTINGS_ROLE": [VOTING, "0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f"],
+                "BURN_ROLE": ["0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f"],
+                "MINT_ROLE": [VOTING],
+                "REVOKE_VESTINGS_ROLE": [VOTING],
             },
         },
         LIDO: {

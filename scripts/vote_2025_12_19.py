@@ -2,7 +2,7 @@
 Vote 2025_12_19
 
 1. Grant role BURN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 for contract `Y` TODO
-2. Grant role MINT_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 for contract `Y` TODO
+2. Grant role ISSUE_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 for contract `Y` TODO
 3. Grant role ASSIGN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 for contract `Y` TODO
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
@@ -39,10 +39,10 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "2. Grant role MINT_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 for contract `Y` TODO",
+            "2. Grant role ISSUE_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 for contract `Y` TODO",
             encode_permission_grant(
                 target_app=TOKEN_MANAGER,
-                permission_name="MINT_ROLE",
+                permission_name="ISSUE_ROLE",
                 grant_to=VESTING_CONTRACT,
             ),
         ),
