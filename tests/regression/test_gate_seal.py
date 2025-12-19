@@ -1,6 +1,6 @@
 import pytest
 
-from brownie import reverts, accounts, chain, web3, Wei  # type: ignore
+from brownie import reverts, accounts, chain, web3, Wei, interface  # type: ignore
 from eth_hash.auto import keccak
 
 from utils.test.exit_bus_data import LidoValidator
@@ -298,15 +298,27 @@ def test_gate_seal_twg_veb_scenario(steth_holder, gate_seal_committee, eth_whale
     (_,_,_, vebInitLimit1, vebInitLimit2) = contracts.validators_exit_bus_oracle.getExitRequestLimitFullInfo()
     contracts.validators_exit_bus_oracle.submitExitRequestsHash(hash, {"from": "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"})
     contracts.validators_exit_bus_oracle.submitExitRequestsData((report[4], 1), {"from": submitter})
-    (_,_,_, twgInitLimit1, twgInitLimit2) = contracts.triggerable_withdrawals_gateway.getExitRequestLimitFullInfo()
+    (
+        twgInitMaxExitRequestLimit1,
+        twgInitExitsPerFrameLimit1,
+        twgInitFrameDurationInSeconds1,
+        twgInitPrevExitRequestsLimit1,
+        twgInitCurrentRequestLimit2
+    ) = contracts.triggerable_withdrawals_gateway.getExitRequestLimitFullInfo()
     tx = contracts.validators_exit_bus_oracle.triggerExits((report[4], 1), [0], steth_holder, {"from": steth_holder, 'value': value})
 
-    (_,_,_, twgLimit1, twgLimit2) = contracts.triggerable_withdrawals_gateway.getExitRequestLimitFullInfo()
+    (
+        twgMaxExitRequestLimit1,
+        twgExitsPerFrameLimit1,
+        twgFrameDurationInSeconds1,
+        twgPrevExitRequestsLimit1,
+        twgCurrentRequestLimit2
+    ) = contracts.triggerable_withdrawals_gateway.getExitRequestLimitFullInfo()
     (_,_,_, vebLimit1, vebLimit2) = contracts.validators_exit_bus_oracle.getExitRequestLimitFullInfo()
     assert vebLimit1 < vebInitLimit1
     assert vebLimit2 < vebInitLimit2
-    assert twgLimit1 < twgInitLimit1
-    assert twgLimit2 < twgInitLimit2
+    assert twgPrevExitRequestsLimit1 == twgCurrentRequestLimit2
+    assert twgCurrentRequestLimit2 < twgInitCurrentRequestLimit2
     assert len(tx.events["WithdrawalRequestAdded"]['request']) == 56  # 48 + 8
     pubkey_bytes = tx.events["WithdrawalRequestAdded"]['request'][:48]
     _ = int.from_bytes(tx.events["WithdrawalRequestAdded"]['request'][48:], byteorder="big", signed=False)
