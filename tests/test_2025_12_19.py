@@ -78,8 +78,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         assert not acl.hasPermission(VESTING_MANAGER, TOKEN_MANAGER, web3.keccak(text=MINT_ROLE).hex())
         assert not acl.hasPermission(VESTING_MANAGER, TOKEN_MANAGER, web3.keccak(text=ASSIGN_ROLE).hex())
 
-        # TODO more before tests
-
 
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
 
