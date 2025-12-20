@@ -23,7 +23,7 @@ REVESTING_CONTRACT = "0xc2f50d3277539fbd54346278e7b92faa76dc7364"
 
 
 # ============================= Description ==================================
-IPFS_DESCRIPTION = "Enable a dedicated vesting contract to apply vesting schedules to LDO tokens held on contributor addresses, where the contract can only remint the same amount of tokens that were previously held on the address, but under vesting."
+IPFS_DESCRIPTION = "Add a limited mechanism for applying vesting to the certain contributors’ LDO tokens."
 
 
 # ================================ Main ======================================
