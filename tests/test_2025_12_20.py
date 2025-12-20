@@ -201,7 +201,7 @@ def revest_happy_path(ldo_holder, eoa, ldo_token, revesting_contract, eoa2):
 
     vesting = token_manager.getVesting(eoa, vestings_length_before)
     assert vesting["amount"] == LDO_49M
-    assert vesting["start"] >= chain.time() - 60 and vesting["start"] <= chain.time()  # allow up to 1 minute time difference because of Hardhat time issues
+    assert vesting["start"] >= web3.eth.get_block(web3.eth.block_number).timestamp  # allow up to 1 minute time difference because of Hardhat time issues
     assert vesting["cliff"] == vesting["start"] + 365 * 24 * 60 * 60
     assert vesting["vesting"] == vesting["start"] + 365 * 24 * 60 * 60 * 2
     assert vesting["revokable"]
@@ -335,7 +335,7 @@ def cannot_revest_more_than_global_limit_cumulative_2_addresses(ldo_holder, eoa,
 
     vesting = token_manager.getVesting(eoa, vestings_length_before_eoa)
     assert vesting["amount"] == LDO_49M
-    assert vesting["start"] >= chain.time() - 60 and vesting["start"] <= chain.time()  # allow up to 1 minute time difference because of Hardhat time issues
+    assert vesting["start"] >= web3.eth.get_block(web3.eth.block_number).timestamp  # allow up to 1 minute time difference because of Hardhat time issues
     assert vesting["cliff"] == vesting["start"] + 365 * 24 * 60 * 60
     assert vesting["vesting"] == vesting["start"] + 365 * 24 * 60 * 60 * 2
     assert vesting["revokable"]
@@ -357,7 +357,7 @@ def cannot_revest_more_than_global_limit_cumulative_2_addresses(ldo_holder, eoa,
 
     vesting = token_manager.getVesting(eoa2, vestings_length_before_eoa2)
     assert vesting["amount"] == LDO_1M
-    assert vesting["start"] >= chain.time() - 60 and vesting["start"] <= chain.time()  # allow up to 1 minute time difference because of Hardhat time issues
+    assert vesting["start"] >= web3.eth.get_block(web3.eth.block_number).timestamp  # allow up to 1 minute time difference because of Hardhat time issues
     assert vesting["cliff"] == vesting["start"] + 365 * 24 * 60 * 60
     assert vesting["vesting"] == vesting["start"] + 365 * 24 * 60 * 60 * 2
     assert vesting["revokable"]
@@ -420,14 +420,14 @@ def can_vote_with_vesting(ldo_holder, eoa, ldo_token, revesting_contract, voting
     assert ldo_token.balanceOf(eoa) == LDO_50M + LDO_1M
     assert token_manager.spendableBalanceOf(eoa) == LDO_1M
 
+    old_block = web3.eth.block_number
+    chain.mine(5)
+    assert web3.eth.block_number == old_block + 5
+
     vote_items = {
         "Test vote for vesting": ("0x0000000000000000000000000000000000000000", "0x")  # dummy call
     }
     new_vote_id, _ = create_vote(vote_items, {"from": ldo_holder}, verbose=False)
-
-    old_block = web3.eth.block_number
-    chain.mine(5)
-    assert web3.eth.block_number == old_block + 5
 
     voting.vote(new_vote_id, True, False, {"from": eoa})
 
