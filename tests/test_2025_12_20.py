@@ -3,7 +3,7 @@ from brownie.network.transaction import TransactionReceipt
 
 from utils.test.tx_tracing_helpers import group_voting_events_from_receipt
 from utils.evm_script import encode_call_script
-from utils.voting import find_metadata_by_vote_id
+from utils.voting import find_metadata_by_vote_id, create_vote
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.test.tx_tracing_helpers import (
     group_voting_events_from_receipt,
@@ -144,6 +144,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         revest_disallowed_fails(revesting_contract)
         revest_afterlife_fails(eoa, revesting_contract)
         can_renounce(eoa, revesting_contract)
+        can_vote_with_vesting(ldo_holder, eoa, ldo_token, revesting_contract, voting, eoa2)
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
@@ -400,6 +401,36 @@ def can_renounce(eoa, revesting_contract):
         revesting_contract.renounceOwnership({"from": eoa})
 
     revesting_contract.renounceOwnership({"from": TRP_COMMITTEE})
+
+    chain.revert()
+
+
+def can_vote_with_vesting(ldo_holder, eoa, ldo_token, revesting_contract, voting, eoa2):
+
+    token_manager = interface.TokenManager(TOKEN_MANAGER)
+
+    chain.snapshot()
+
+    ldo_token.transfer(eoa, LDO_50M + LDO_1M, {"from": ldo_holder})
+    assert ldo_token.balanceOf(eoa) == LDO_50M + LDO_1M
+    assert token_manager.spendableBalanceOf(eoa) == LDO_50M + LDO_1M
+
+    revesting_contract.revestSpendableBalance(eoa, {"from": TRP_COMMITTEE})
+
+    assert ldo_token.balanceOf(eoa) == LDO_50M + LDO_1M
+    assert token_manager.spendableBalanceOf(eoa) == LDO_1M
+
+    vote_items = {
+        "Test vote for vesting": ("0x0000000000000000000000000000000000000000", "0x")  # dummy call
+    }
+    new_vote_id, _ = create_vote(vote_items, {"from": ldo_holder}, verbose=False)
+
+    voting.vote(new_vote_id, True, False, {"from": eoa})
+
+    chain.sleep(24 * 60 * 60 * 5)
+    chain.mine()
+
+    voting.executeVote(new_vote_id, {"from": eoa2})
 
     chain.revert()
 
