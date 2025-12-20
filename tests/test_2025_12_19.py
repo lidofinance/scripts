@@ -126,7 +126,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         with reverts("OwnableUnauthorizedAccount: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"):
             revesting_contract.revestSpendableBalance(eoa, {"from": eoa})
 
-        revest_happy_path(ldo_holder, eoa, ldo_token, revesting_contract)
+        revest_happy_path(ldo_holder, eoa, ldo_token, revesting_contract, accounts[1])
         cannot_revest_more_than_global_limit(ldo_holder, eoa, ldo_token, revesting_contract)
         cannot_revest_more_than_global_limit_cumulative(ldo_holder, eoa, ldo_token, revesting_contract)
         revest_disallowed_fails(revesting_contract)
@@ -164,7 +164,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         )
 
 
-def revest_happy_path(ldo_holder, eoa, ldo_token, revesting_contract):
+def revest_happy_path(ldo_holder, eoa, ldo_token, revesting_contract, eoa2):
 
     token_manager = interface.TokenManager(TOKEN_MANAGER)
 
@@ -192,8 +192,11 @@ def revest_happy_path(ldo_holder, eoa, ldo_token, revesting_contract):
     assert vesting["vesting"] == vesting["start"] + 365 * 24 * 60 * 60 * 2
     assert vesting["revokable"]
 
+    with reverts():
+        ldo_token.transfer(eoa2, LDO_49M, {"from": eoa})
+
     assert token_manager.spendableBalanceOf(eoa) == 0
-    chain.sleep(365 * 24 * 60 * 60)  # sleep for 1 year
+    chain.sleep(365 * 24 * 60 * 60 - (chain.time() - vesting["start"]))  # sleep for 1 year
     chain.mine()
     assert token_manager.spendableBalanceOf(eoa) == LDO_49M // 2
     chain.sleep(365 * 24 * 60 * 60 // 2)  # sleep for 0.5 year
@@ -202,6 +205,10 @@ def revest_happy_path(ldo_holder, eoa, ldo_token, revesting_contract):
     chain.sleep(365 * 24 * 60 * 60 // 2)  # sleep for 0.5 year
     chain.mine()
     assert token_manager.spendableBalanceOf(eoa) == LDO_49M
+
+    ldo_token.transfer(eoa2, LDO_49M, {"from": eoa})
+    assert ldo_token.balanceOf(eoa) == 0
+    assert ldo_token.balanceOf(eoa2) == LDO_49M
 
     chain.revert()
 
