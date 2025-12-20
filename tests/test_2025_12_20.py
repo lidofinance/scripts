@@ -425,6 +425,10 @@ def can_vote_with_vesting(ldo_holder, eoa, ldo_token, revesting_contract, voting
     }
     new_vote_id, _ = create_vote(vote_items, {"from": ldo_holder}, verbose=False)
 
+    old_block = web3.eth.block_number
+    chain.mine(5)
+    assert web3.eth.block_number == old_block + 5
+
     voting.vote(new_vote_id, True, False, {"from": eoa})
 
     chain.sleep(24 * 60 * 60 * 5)
