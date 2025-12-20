@@ -31,7 +31,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     
     vote_desc_items, call_script_items = zip(
         (
-            "1. Grant role BURN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
+            "1. Grant role 0xe97b137254058bd94f28d2f3eb79e2d34074ffb488d042e3bc958e0a57d2fa22 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
             encode_permission_grant(
                 target_app=TOKEN_MANAGER,
                 permission_name="BURN_ROLE",
@@ -39,7 +39,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "2. Grant role ISSUE_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
+            "2. Grant role 0x2406f1e99f79cea012fb88c5c36566feaeefee0f4b98d3a376b49310222b53c4 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
             encode_permission_grant(
                 target_app=TOKEN_MANAGER,
                 permission_name="ISSUE_ROLE",
@@ -47,7 +47,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "3. Grant role ASSIGN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
+            "3. Grant role 0xf5a08927c847d7a29dc35e105208dbde5ce951392105d712761cc5d17440e2ff on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
             encode_permission_grant(
                 target_app=TOKEN_MANAGER,
                 permission_name="ASSIGN_ROLE",
