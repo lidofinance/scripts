@@ -64,6 +64,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
     ldo_token = interface.ERC20(LDO_TOKEN)
     revesting_contract = interface.LDORevesting(REVESTING_CONTRACT)
     eoa = accounts[0]
+    eoa2 = accounts[1]
 
 
     # =========================================================================
@@ -136,11 +137,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         with reverts("OwnableUnauthorizedAccount: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"):
             revesting_contract.revestAmount(eoa, 1, {"from": eoa})
 
-        revest_happy_path(ldo_holder, eoa, ldo_token, revesting_contract, accounts[1])
+        revest_happy_path(ldo_holder, eoa, ldo_token, revesting_contract, eoa2)
         cannot_revest_more_than_global_limit(ldo_holder, eoa, ldo_token, revesting_contract)
         cannot_revest_more_than_global_limit_cumulative(ldo_holder, eoa, ldo_token, revesting_contract)
+        cannot_revest_more_than_global_limit_cumulative_2_addresses(ldo_holder, eoa, ldo_token, revesting_contract, eoa2)
         revest_disallowed_fails(revesting_contract)
         revest_afterlife_fails(eoa, revesting_contract)
+        can_renounce(eoa, revesting_contract)
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
@@ -307,6 +310,60 @@ def cannot_revest_more_than_global_limit_cumulative(ldo_holder, eoa, ldo_token, 
 
     chain.revert()
 
+
+def cannot_revest_more_than_global_limit_cumulative_2_addresses(ldo_holder, eoa, ldo_token, revesting_contract, eoa2):
+    
+    token_manager = interface.TokenManager(TOKEN_MANAGER)
+    
+    chain.snapshot()
+
+    ldo_token.transfer(eoa, LDO_49M, {"from": ldo_holder})
+    assert ldo_token.balanceOf(eoa) == LDO_49M
+
+    tm_before = ldo_token.balanceOf(TOKEN_MANAGER)
+    supply_before = ldo_token.totalSupply()
+    vestings_length_before_eoa = token_manager.vestingsLengths(eoa)
+
+    revesting_contract.revestSpendableBalance(eoa, {"from": TRP_COMMITTEE})
+
+    assert revesting_contract.totalRevested() == LDO_49M
+    assert ldo_token.balanceOf(eoa) == LDO_49M
+    assert ldo_token.balanceOf(TOKEN_MANAGER) == tm_before
+    assert ldo_token.totalSupply() == supply_before
+    assert token_manager.vestingsLengths(eoa) == vestings_length_before_eoa + 1
+
+    vesting = token_manager.getVesting(eoa, vestings_length_before_eoa)
+    assert vesting["amount"] == LDO_49M
+    assert vesting["start"] >= chain.time() - 60 and vesting["start"] <= chain.time()  # allow up to 1 minute time difference because of Hardhat time issues
+    assert vesting["cliff"] == vesting["start"] + 365 * 24 * 60 * 60
+    assert vesting["vesting"] == vesting["start"] + 365 * 24 * 60 * 60 * 2
+    assert vesting["revokable"]
+    assert token_manager.spendableBalanceOf(eoa) == 0
+
+
+    ldo_token.transfer(eoa2, LDO_1M + 1, {"from": ldo_holder})
+    assert ldo_token.balanceOf(eoa2) == LDO_1M + 1
+    vestings_length_before_eoa2 = token_manager.vestingsLengths(eoa2)
+
+    revesting_contract.revestSpendableBalance(eoa2, {"from": TRP_COMMITTEE})
+
+    assert token_manager.spendableBalanceOf(eoa2) == 1
+    assert revesting_contract.totalRevested() == LDO_50M
+    assert ldo_token.balanceOf(eoa2) == LDO_1M + 1
+    assert ldo_token.balanceOf(TOKEN_MANAGER) == tm_before
+    assert ldo_token.totalSupply() == supply_before
+    assert token_manager.vestingsLengths(eoa2) == vestings_length_before_eoa2 + 1
+
+    vesting = token_manager.getVesting(eoa2, vestings_length_before_eoa2)
+    assert vesting["amount"] == LDO_1M
+    assert vesting["start"] >= chain.time() - 60 and vesting["start"] <= chain.time()  # allow up to 1 minute time difference because of Hardhat time issues
+    assert vesting["cliff"] == vesting["start"] + 365 * 24 * 60 * 60
+    assert vesting["vesting"] == vesting["start"] + 365 * 24 * 60 * 60 * 2
+    assert vesting["revokable"]
+
+    chain.revert()
+
+
 def revest_disallowed_fails(revesting_contract):
 
     chain.snapshot()
@@ -331,5 +388,17 @@ def revest_afterlife_fails(eoa, revesting_contract):
 
     with reverts("Expired: "):
         revesting_contract.revestSpendableBalance(eoa, {"from": TRP_COMMITTEE})
+
+    chain.revert()
+
+
+def can_renounce(eoa, revesting_contract):
+
+    chain.snapshot()
+
+    with reverts():
+        revesting_contract.renounceOwnership({"from": eoa})
+
+    revesting_contract.renounceOwnership({"from": TRP_COMMITTEE})
 
     chain.revert()
