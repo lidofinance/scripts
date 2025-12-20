@@ -341,15 +341,15 @@ def cannot_revest_more_than_global_limit_cumulative_2_addresses(ldo_holder, eoa,
     assert token_manager.spendableBalanceOf(eoa) == 0
 
 
-    ldo_token.transfer(eoa2, LDO_1M + 1, {"from": ldo_holder})
-    assert ldo_token.balanceOf(eoa2) == LDO_1M + 1
+    ldo_token.transfer(eoa2, LDO_49M, {"from": ldo_holder})
+    assert ldo_token.balanceOf(eoa2) == LDO_49M
     vestings_length_before_eoa2 = token_manager.vestingsLengths(eoa2)
 
     revesting_contract.revestSpendableBalance(eoa2, {"from": TRP_COMMITTEE})
 
-    assert token_manager.spendableBalanceOf(eoa2) == 1
+    assert token_manager.spendableBalanceOf(eoa2) == LDO_49M - 1_000_000 * 10**18
     assert revesting_contract.totalRevested() == LDO_50M
-    assert ldo_token.balanceOf(eoa2) == LDO_1M + 1
+    assert ldo_token.balanceOf(eoa2) == LDO_49M
     assert ldo_token.balanceOf(TOKEN_MANAGER) == tm_before
     assert ldo_token.totalSupply() == supply_before
     assert token_manager.vestingsLengths(eoa2) == vestings_length_before_eoa2 + 1
@@ -402,3 +402,4 @@ def can_renounce(eoa, revesting_contract):
     revesting_contract.renounceOwnership({"from": TRP_COMMITTEE})
 
     chain.revert()
+
