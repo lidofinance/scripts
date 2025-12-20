@@ -106,10 +106,12 @@ def process_pending_proposals():
         return
 
     current_proposal_id = last_proposal_id
-    while is_proposal_executed(current_proposal_id):
+    while not is_proposal_executed(current_proposal_id):
         current_proposal_id -= 1
         if current_proposal_id == 1:
             break
+
+    current_proposal_id += 1
 
     process_proposals(list(range(current_proposal_id, last_proposal_id + 1)))
 

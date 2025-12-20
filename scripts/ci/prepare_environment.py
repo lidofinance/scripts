@@ -16,7 +16,7 @@ def main():
     process_pending_proposals()
     # TODO revert after December Aragon
     #execute_votings_and_process_created_proposals()
-    execute_vote_and_process_dg_proposals(Helpers, -1, -1)
+    #execute_vote_and_process_dg_proposals(Helpers, -1, -1)
 
 def execute_votings_and_process_created_proposals():
     votings_in_flight = retrieve_votings_in_flight()
