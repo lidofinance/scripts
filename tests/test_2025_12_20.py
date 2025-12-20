@@ -19,7 +19,7 @@ from utils.test.event_validators.permission import (
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.vote_2025_12_19 import start_vote, get_vote_items
+from scripts.vote_2025_12_20 import start_vote, get_vote_items
 
 
 # ============================================================================
@@ -100,6 +100,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         assert revesting_contract.IS_REVOKABLE()
         assert revesting_contract.REVESTING_LIMIT() == 50_000_000 * 10**18  # 50 million LDO
         assert revesting_contract.VESTED_DURATION() == 365 * 24 * 60 * 60 * 2  # 2 years in seconds
+        assert revesting_contract.totalRevested() == 0
 
         # make sure revesting with no granted roles fails
         chain.snapshot()
@@ -121,10 +122,19 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         assert acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=BURN_ROLE).hex())
         assert acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=ISSUE_ROLE).hex())
         assert acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=ASSIGN_ROLE).hex())
+        assert revesting_contract.owner() == TRP_COMMITTEE
+        assert revesting_contract.LIFETIME() == 90 * 24 * 60 * 60  # 90 days in seconds
+        assert revesting_contract.CLIFF_DURATION() == 365 * 24 * 60 * 60  # 365 days in seconds 
+        assert revesting_contract.IS_REVOKABLE()
+        assert revesting_contract.REVESTING_LIMIT() == 50_000_000 * 10**18  # 50 million LDO
+        assert revesting_contract.VESTED_DURATION() == 365 * 24 * 60 * 60 * 2  # 2 years in seconds
+        assert revesting_contract.totalRevested() == 0
 
         # make sure revesting called by non-owner fails
         with reverts("OwnableUnauthorizedAccount: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"):
             revesting_contract.revestSpendableBalance(eoa, {"from": eoa})
+        with reverts("OwnableUnauthorizedAccount: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"):
+            revesting_contract.revestAmount(eoa, 1, {"from": eoa})
 
         revest_happy_path(ldo_holder, eoa, ldo_token, revesting_contract, accounts[1])
         cannot_revest_more_than_global_limit(ldo_holder, eoa, ldo_token, revesting_contract)
@@ -194,6 +204,8 @@ def revest_happy_path(ldo_holder, eoa, ldo_token, revesting_contract, eoa2):
 
     with reverts():
         ldo_token.transfer(eoa2, LDO_49M, {"from": eoa})
+    with reverts():
+        ldo_token.transfer(eoa2, 1, {"from": eoa})
 
     assert token_manager.spendableBalanceOf(eoa) == 0
     chain.sleep(365 * 24 * 60 * 60 - (chain.time() - vesting["start"]))  # sleep for 1 year
@@ -271,6 +283,7 @@ def cannot_revest_more_than_global_limit_cumulative(ldo_holder, eoa, ldo_token, 
     assert vesting["cliff"] == vesting["start"] + 365 * 24 * 60 * 60
     assert vesting["vesting"] == vesting["start"] + 365 * 24 * 60 * 60 * 2
     assert vesting["revokable"]
+    assert token_manager.spendableBalanceOf(eoa) == 0
 
 
     ldo_token.transfer(eoa, LDO_1M + 1, {"from": ldo_holder})
@@ -278,6 +291,7 @@ def cannot_revest_more_than_global_limit_cumulative(ldo_holder, eoa, ldo_token, 
 
     revesting_contract.revestSpendableBalance(eoa, {"from": TRP_COMMITTEE})
 
+    assert token_manager.spendableBalanceOf(eoa) == 1
     assert revesting_contract.totalRevested() == LDO_50M
     assert ldo_token.balanceOf(eoa) == LDO_49M + LDO_1M + 1
     assert ldo_token.balanceOf(TOKEN_MANAGER) == tm_before

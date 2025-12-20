@@ -241,9 +241,9 @@ def protocol_permissions():
             "contract": contracts.token_manager,
             "type": "AragonApp",
             "roles": {
-                "ISSUE_ROLE": ["0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f"],
-                "ASSIGN_ROLE": [VOTING, "0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f"],
-                "BURN_ROLE": ["0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f"],
+                "ISSUE_ROLE": ["0xc2f50d3277539fbd54346278e7b92faa76dc7364"],
+                "ASSIGN_ROLE": [VOTING, "0xc2f50d3277539fbd54346278e7b92faa76dc7364"],
+                "BURN_ROLE": ["0xc2f50d3277539fbd54346278e7b92faa76dc7364"],
                 "MINT_ROLE": [VOTING],
                 "REVOKE_VESTINGS_ROLE": [VOTING],
             },
