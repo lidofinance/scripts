@@ -51,7 +51,7 @@ LDO_50M = 50_000_000 * 10**18
 
 EXPECTED_VOTE_ID = 196
 EXPECTED_VOTE_EVENTS_COUNT = 3
-IPFS_DESCRIPTION_HASH = "bafkreic2vwidwtcp3vx2zcz2ye2vadw245jlo26x3fhhqmcu2o34y55mgm"
+IPFS_DESCRIPTION_HASH = "bafkreihzyfzevw5jk3lqbhcjpj446wy34xdeypulncr27ul2ozzgukgrjy"
 
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
