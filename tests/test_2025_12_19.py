@@ -29,15 +29,25 @@ from scripts.vote_2025_12_19 import start_vote, get_vote_items
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 TOKEN_MANAGER = "0xf73a1260d222f447210581DDf212D915c09a3249"
 ACL = "0x9895f0f17cc1d1891b6f18ee0b483b6f221b37bb"
+TRP_COMMITTEE = "0x834560F580764Bc2e0B16925F8bF229bb00cB759"
 
-VESTING_MANAGER = "0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f" # TODO replace with actual address
-VESTING_MANAGER_OWNER = "0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f" # TODO replace with actual address
+REVESTING_CONTRACT = "0xc2f50d3277539fbd54346278e7b92faa76dc7364"
+DISALLOWED_CONTRACTS = [
+    "0xF977814e90dA44bFA03b6295A0616a897441aceC",
+    "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c",
+    "0x8Fa129F87B8a11ee1ca35Abd46674F8b66984d4a",
+    "0x611f7bF868a6212f871e89F7e44684045DdFB09d",
+]
 
 BURN_ROLE = "BURN_ROLE"
 ISSUE_ROLE = "ISSUE_ROLE"
 ASSIGN_ROLE = "ASSIGN_ROLE"
 
 LDO_TOKEN = "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32"
+
+LDO_1M = 1_000_000 * 10**18
+LDO_49M = 49_000_000 * 10**18
+LDO_50M = 50_000_000 * 10**18
 
 EXPECTED_VOTE_ID = 196
 EXPECTED_VOTE_EVENTS_COUNT = 3
@@ -52,7 +62,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
     voting = interface.Voting(VOTING)
     acl = interface.ACL(ACL)
     ldo_token = interface.ERC20(LDO_TOKEN)
-    #vesting_contract = interface.VestingContract(VESTING_MANAGER)
+    revesting_contract = interface.LDORevesting(REVESTING_CONTRACT)
+    eoa = accounts[0]
 
 
     # =========================================================================
@@ -80,15 +91,25 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         # =======================================================================
         # ========================= Before voting checks ========================
         # =======================================================================
-        assert not acl.hasPermission(VESTING_MANAGER, TOKEN_MANAGER, web3.keccak(text=BURN_ROLE).hex())
-        assert not acl.hasPermission(VESTING_MANAGER, TOKEN_MANAGER, web3.keccak(text=ISSUE_ROLE).hex())
-        assert not acl.hasPermission(VESTING_MANAGER, TOKEN_MANAGER, web3.keccak(text=ASSIGN_ROLE).hex())
+        assert not acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=BURN_ROLE).hex())
+        assert not acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=ISSUE_ROLE).hex())
+        assert not acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=ASSIGN_ROLE).hex())
+        assert revesting_contract.owner() == TRP_COMMITTEE
+        assert revesting_contract.LIFETIME() == 90 * 24 * 60 * 60  # 90 days in seconds
+        assert revesting_contract.CLIFF_DURATION() == 365 * 24 * 60 * 60  # 365 days in seconds 
+        assert revesting_contract.IS_REVOKABLE()
+        assert revesting_contract.REVESTING_LIMIT() == 50_000_000 * 10**18  # 50 million LDO
+        assert revesting_contract.VESTED_DURATION() == 365 * 24 * 60 * 60 * 2  # 2 years in seconds
 
-        # TODO make sure vesting_contract.vestTokens() called with correct params fails before roles are granted
-
+        # make sure revesting with no granted roles fails
+        chain.snapshot()
+        ldo_token.transfer(eoa, LDO_1M, {"from": ldo_holder})
+        assert ldo_token.balanceOf(eoa) == LDO_1M
+        with reverts("APP_AUTH_FAILED"):
+            revesting_contract.revestSpendableBalance(eoa, {"from": TRP_COMMITTEE})
+        chain.revert()
 
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
-
         vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
         display_voting_events(vote_tx)
         vote_events = group_voting_events_from_receipt(vote_tx)
@@ -97,15 +118,19 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         # =======================================================================
         # ========================= After voting checks =========================
         # =======================================================================
-        assert acl.hasPermission(VESTING_MANAGER, TOKEN_MANAGER, web3.keccak(text=BURN_ROLE).hex())
-        assert acl.hasPermission(VESTING_MANAGER, TOKEN_MANAGER, web3.keccak(text=ISSUE_ROLE).hex())
-        assert acl.hasPermission(VESTING_MANAGER, TOKEN_MANAGER, web3.keccak(text=ASSIGN_ROLE).hex())
+        assert acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=BURN_ROLE).hex())
+        assert acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=ISSUE_ROLE).hex())
+        assert acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=ASSIGN_ROLE).hex())
 
-        # TODO make sure vesting_contract.vestTokens() reverts if called by EOA (non-owner)
+        # make sure revesting called by non-owner fails
+        with reverts("OwnableUnauthorizedAccount: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"):
+            revesting_contract.revestSpendableBalance(eoa, {"from": eoa})
 
-        #eoa = accounts[0]
-        #test_vest_flow_burn_issue_assign(ldo_holder, eoa, ldo_token, vesting_contract, VESTING_MANAGER_OWNER)
-        #test_cannot_vest_more_than_global_limit
+        revest_happy_path(ldo_holder, eoa, ldo_token, revesting_contract)
+        cannot_revest_more_than_global_limit(ldo_holder, eoa, ldo_token, revesting_contract)
+        cannot_revest_more_than_global_limit_cumulative(ldo_holder, eoa, ldo_token, revesting_contract)
+        revest_disallowed_fails(revesting_contract)
+        revest_afterlife_fails(eoa, revesting_contract)
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
@@ -114,7 +139,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
             event=vote_events[0],
             p=Permission(
                 app=TOKEN_MANAGER,
-                entity=VESTING_MANAGER,
+                entity=REVESTING_CONTRACT,
                 role=web3.keccak(text=BURN_ROLE).hex(),
             ),
             emitted_by=ACL,
@@ -123,7 +148,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
             event=vote_events[1],
             p=Permission(
                 app=TOKEN_MANAGER,
-                entity=VESTING_MANAGER,
+                entity=REVESTING_CONTRACT,
                 role=web3.keccak(text=ISSUE_ROLE).hex(),
             ),
             emitted_by=ACL,
@@ -132,65 +157,158 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
             event=vote_events[2],
             p=Permission(
                 app=TOKEN_MANAGER,
-                entity=VESTING_MANAGER,
+                entity=REVESTING_CONTRACT,
                 role=web3.keccak(text=ASSIGN_ROLE).hex(),
             ),
             emitted_by=ACL,
         )
 
 
-#def test_vest_flow_burn_issue_assign(ldo_whale, eoa, ldo_token, vesting_contract, owner):
-#
-#    chain.snapshot()
-#
-#    LDO_49M = 49_000_000 * 10**18
-#
-#    ldo_token.transfer(eoa, LDO_49M, {"from": ldo_whale})
-#    assert ldo_token.balanceOf(eoa) == LDO_49M
-#
-#    tm_before = ldo_token.balanceOf(TOKEN_MANAGER)
-#    supply_before = ldo_token.totalSupply()
-#
-#    vesting_contract.vestTokens(eoa, {"from": owner})
-#
-#    assert ldo_token.balanceOf(eoa) == LDO_49M
-#    assert ldo_token.balanceOf(TOKEN_MANAGER) == tm_before
-#    assert ldo_token.totalSupply() == supply_before
-#
-#    chain.revert()
-#
-#
-#def test_cannot_vest_more_than_global_limit(ldo_whale, eoa, ldo_token, vesting_contract, owner):
-#    LDO_50M = 50_000_000 * 10**18
-#
-#    ldo_token.transfer(eoa, LDO_50M + 1, {"from": ldo_whale})
-#    assert ldo_token.balanceOf(eoa) == LDO_50M + 1
-#
-#    with reverts("GLOBAL_LIMIT_EXCEEDED"):
-#        vesting_contract.vestTokens(eoa, {"from": owner})
-#
-#
-#def test_global_limit_is_cumulative(ldo_whale, eoa, ldo_token, vesting_contract, owner):
-#    LDO_50M = 50_000_000 * 10**18
-#    
-#    ldo_token.transfer(eoa, LDO_50M + 1, {"from": ldo_whale})
-#    assert ldo_token.balanceOf(eoa) == LDO_50M + 1
-#
-#    vesting_contract.vestTokens(eoa, {"from": owner})
-#    vesting_contract.vestTokens(eoa, {"from": owner})
-#
-#    with reverts("GLOBAL_LIMIT_EXCEEDED"):
-#        vesting_contract.vestTokens(eoa, {"from": owner})
-#
-#def test_vesting_params_match_expected(owner, alice, ldo, vesting_forwarder, chain):
-#    x = 1000 * 10**18
-#    ldo.mint(alice, x, {"from": owner})
-#
-#    now = chain.time()
-#    tx = vesting_forwarder.vestTokens(alice, {"from": owner})
-#
-#    # use TokenManager.getVesting
-#
-#    assert start == now  # if you use block timestamp as start
-#    assert cliff == start + 365 * 24 * 60 * 60
-#    assert vested == start + 2 * 365 * 24 * 60 * 60
+def revest_happy_path(ldo_holder, eoa, ldo_token, revesting_contract):
+
+    token_manager = interface.TokenManager(TOKEN_MANAGER)
+
+    chain.snapshot()
+
+    ldo_token.transfer(eoa, LDO_49M, {"from": ldo_holder})
+    assert ldo_token.balanceOf(eoa) == LDO_49M
+
+    tm_before = ldo_token.balanceOf(TOKEN_MANAGER)
+    supply_before = ldo_token.totalSupply()
+    vestings_length_before = token_manager.vestingsLengths(eoa)
+
+    revesting_contract.revestSpendableBalance(eoa, {"from": TRP_COMMITTEE})
+
+    assert revesting_contract.totalRevested() == LDO_49M
+    assert ldo_token.balanceOf(eoa) == LDO_49M
+    assert ldo_token.balanceOf(TOKEN_MANAGER) == tm_before
+    assert ldo_token.totalSupply() == supply_before
+    assert token_manager.vestingsLengths(eoa) == vestings_length_before + 1
+
+    vesting = token_manager.getVesting(eoa, vestings_length_before)
+    assert vesting["amount"] == LDO_49M
+    assert vesting["start"] >= chain.time() - 60 and vesting["start"] <= chain.time()  # allow up to 1 minute time difference because of Hardhat time issues
+    assert vesting["cliff"] == vesting["start"] + 365 * 24 * 60 * 60
+    assert vesting["vesting"] == vesting["start"] + 365 * 24 * 60 * 60 * 2
+    assert vesting["revokable"]
+
+    assert token_manager.spendableBalanceOf(eoa) == 0
+    chain.sleep(365 * 24 * 60 * 60)  # sleep for 1 year
+    chain.mine()
+    assert token_manager.spendableBalanceOf(eoa) == LDO_49M // 2
+    chain.sleep(365 * 24 * 60 * 60 // 2)  # sleep for 0.5 year
+    chain.mine()
+    assert token_manager.spendableBalanceOf(eoa) == LDO_49M * 3 // 4
+    chain.sleep(365 * 24 * 60 * 60 // 2)  # sleep for 0.5 year
+    chain.mine()
+    assert token_manager.spendableBalanceOf(eoa) == LDO_49M
+
+    chain.revert()
+
+
+def cannot_revest_more_than_global_limit(ldo_holder, eoa, ldo_token, revesting_contract):
+
+    token_manager = interface.TokenManager(TOKEN_MANAGER)
+    
+    chain.snapshot()
+
+    ldo_token.transfer(eoa, LDO_50M + 1, {"from": ldo_holder})
+    assert ldo_token.balanceOf(eoa) == LDO_50M + 1
+
+    tm_before = ldo_token.balanceOf(TOKEN_MANAGER)
+    supply_before = ldo_token.totalSupply()
+    vestings_length_before = token_manager.vestingsLengths(eoa)
+
+    revesting_contract.revestSpendableBalance(eoa, {"from": TRP_COMMITTEE})
+
+    assert revesting_contract.totalRevested() == LDO_50M
+    assert ldo_token.balanceOf(eoa) == LDO_50M + 1
+    assert ldo_token.balanceOf(TOKEN_MANAGER) == tm_before
+    assert ldo_token.totalSupply() == supply_before
+    assert token_manager.vestingsLengths(eoa) == vestings_length_before + 1
+
+    vesting = token_manager.getVesting(eoa, vestings_length_before)
+    assert vesting["amount"] == LDO_50M
+    assert vesting["start"] >= chain.time() - 60 and vesting["start"] <= chain.time()  # allow up to 1 minute time difference because of Hardhat time issues
+    assert vesting["cliff"] == vesting["start"] + 365 * 24 * 60 * 60
+    assert vesting["vesting"] == vesting["start"] + 365 * 24 * 60 * 60 * 2
+    assert vesting["revokable"]
+
+    chain.revert()
+
+
+def cannot_revest_more_than_global_limit_cumulative(ldo_holder, eoa, ldo_token, revesting_contract):
+    
+    token_manager = interface.TokenManager(TOKEN_MANAGER)
+    
+    chain.snapshot()
+
+    ldo_token.transfer(eoa, LDO_49M, {"from": ldo_holder})
+    assert ldo_token.balanceOf(eoa) == LDO_49M
+
+    tm_before = ldo_token.balanceOf(TOKEN_MANAGER)
+    supply_before = ldo_token.totalSupply()
+    vestings_length_before = token_manager.vestingsLengths(eoa)
+
+    revesting_contract.revestSpendableBalance(eoa, {"from": TRP_COMMITTEE})
+
+    assert revesting_contract.totalRevested() == LDO_49M
+    assert ldo_token.balanceOf(eoa) == LDO_49M
+    assert ldo_token.balanceOf(TOKEN_MANAGER) == tm_before
+    assert ldo_token.totalSupply() == supply_before
+    assert token_manager.vestingsLengths(eoa) == vestings_length_before + 1
+
+    vesting = token_manager.getVesting(eoa, vestings_length_before)
+    assert vesting["amount"] == LDO_49M
+    assert vesting["start"] >= chain.time() - 60 and vesting["start"] <= chain.time()  # allow up to 1 minute time difference because of Hardhat time issues
+    assert vesting["cliff"] == vesting["start"] + 365 * 24 * 60 * 60
+    assert vesting["vesting"] == vesting["start"] + 365 * 24 * 60 * 60 * 2
+    assert vesting["revokable"]
+
+
+    ldo_token.transfer(eoa, LDO_1M + 1, {"from": ldo_holder})
+    assert ldo_token.balanceOf(eoa) == LDO_49M + LDO_1M + 1
+
+    revesting_contract.revestSpendableBalance(eoa, {"from": TRP_COMMITTEE})
+
+    assert revesting_contract.totalRevested() == LDO_50M
+    assert ldo_token.balanceOf(eoa) == LDO_49M + LDO_1M + 1
+    assert ldo_token.balanceOf(TOKEN_MANAGER) == tm_before
+    assert ldo_token.totalSupply() == supply_before
+    assert token_manager.vestingsLengths(eoa) == vestings_length_before + 2
+
+    vesting = token_manager.getVesting(eoa, vestings_length_before+1)
+    assert vesting["amount"] == LDO_1M
+    assert vesting["start"] >= chain.time() - 60 and vesting["start"] <= chain.time()  # allow up to 1 minute time difference because of Hardhat time issues
+    assert vesting["cliff"] == vesting["start"] + 365 * 24 * 60 * 60
+    assert vesting["vesting"] == vesting["start"] + 365 * 24 * 60 * 60 * 2
+    assert vesting["revokable"]
+
+    chain.revert()
+
+def revest_disallowed_fails(revesting_contract):
+
+    chain.snapshot()
+    
+    for disallowed in DISALLOWED_CONTRACTS:
+        with reverts(f"AccountDisallowed: {disallowed.lower()}"):
+            revesting_contract.revestSpendableBalance(disallowed, {"from": TRP_COMMITTEE})
+
+    chain.revert()
+
+
+def revest_afterlife_fails(eoa, revesting_contract):
+
+    chain.snapshot()
+
+    assert not revesting_contract.isExpired()
+
+    chain.sleep(revesting_contract.LIFETIME() + 1)
+    chain.mine()
+
+    assert revesting_contract.isExpired()
+
+    with reverts("Expired: "):
+        revesting_contract.revestSpendableBalance(eoa, {"from": TRP_COMMITTEE})
+
+    chain.revert()

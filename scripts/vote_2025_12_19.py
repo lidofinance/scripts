@@ -1,9 +1,9 @@
 """
 Vote 2025_12_19
 
-1. Grant role BURN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract `Y` TODO
-2. Grant role ISSUE_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract `Y` TODO
-3. Grant role ASSIGN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract `Y` TODO
+1. Grant role BURN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364
+2. Grant role ISSUE_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364
+3. Grant role ASSIGN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
@@ -19,7 +19,7 @@ from utils.permissions import encode_permission_grant
 
 # ============================== Addresses ===================================
 TOKEN_MANAGER = "0xf73a1260d222f447210581DDf212D915c09a3249"
-VESTING_CONTRACT = "0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f" # TODO replace with actual address
+REVESTING_CONTRACT = "0xc2f50d3277539fbd54346278e7b92faa76dc7364"
 
 
 # ============================= Description ==================================
@@ -31,27 +31,27 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     
     vote_desc_items, call_script_items = zip(
         (
-            "1. Grant role BURN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract `Y` TODO",
+            "1. Grant role BURN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
             encode_permission_grant(
                 target_app=TOKEN_MANAGER,
                 permission_name="BURN_ROLE",
-                grant_to=VESTING_CONTRACT,
+                grant_to=REVESTING_CONTRACT,
             ),
         ),
         (
-            "2. Grant role ISSUE_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract `Y` TODO",
+            "2. Grant role ISSUE_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
             encode_permission_grant(
                 target_app=TOKEN_MANAGER,
                 permission_name="ISSUE_ROLE",
-                grant_to=VESTING_CONTRACT,
+                grant_to=REVESTING_CONTRACT,
             ),
         ),
         (
-            "3. Grant role ASSIGN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract `Y` TODO",
+            "3. Grant role ASSIGN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
             encode_permission_grant(
                 target_app=TOKEN_MANAGER,
                 permission_name="ASSIGN_ROLE",
-                grant_to=VESTING_CONTRACT,
+                grant_to=REVESTING_CONTRACT,
             ),
         ),
     )
