@@ -46,7 +46,7 @@ class TokenLimit(NamedTuple):
 
 
 # ============================== Import vote =================================
-from scripts.vote_2025_12_15 import start_vote, get_vote_items
+from archive.scripts.vote_2025_12_15 import start_vote, get_vote_items
 
 
 # ============================== Addresses ===================================
