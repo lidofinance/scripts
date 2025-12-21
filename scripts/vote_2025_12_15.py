@@ -25,7 +25,7 @@ V. Add sUSDS token to stablecoins Allowed Tokens Registry and sUSDS transfer per
 VI. Transfer MATIC from Lido Treasury to Liquidity Observation Lab (LOL) Multisig
 7. Transfer 508,106 MATIC 0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Liquidity Observation Lab (LOL) Multisig 0x87D93d9B2C672bf9c9642d853a8682546a5012B5
 
-# TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
+Vote #195 passed & executed on Dec-20-2025 02:19:23 PM UTC, block 24054365.
 """
 
 from typing import Dict, List, Tuple, NamedTuple

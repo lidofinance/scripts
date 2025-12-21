@@ -34,7 +34,7 @@
 8. Add ForceValidatorExitsInVaultHub factory to Easy Track (permissions: vaultsAdapter.forceValidatorExit)
 9. Add SocializeBadDebtInVaultHub factory to Easy Track (permissions: vaultsAdapter.socializeBadDebt)
 
-# TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
+Vote #194 passed & executed on Dec-20-2025 02:01:35 PM UTC, block 24054276.
 """
 
 from typing import Dict, List, Tuple
