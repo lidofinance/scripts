@@ -13,7 +13,6 @@ on:
       - "feat/rc2"
       - "feat/rc1"
       - "feat/next-vote"
-      - "fix-dg"
   workflow_dispatch:
 
 jobs:
