@@ -30,7 +30,7 @@ from utils.test.event_validators.time_constraints import validate_dg_time_constr
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.upgrade_2025_12_15_mainnet_v3 import start_vote, get_vote_items
+from archive.scripts.upgrade_2025_12_15_mainnet_v3 import start_vote, get_vote_items
 
 
 # ============================================================================
