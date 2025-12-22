@@ -114,8 +114,9 @@ def test_nor_state(contract):
         assert node_operator["totalVettedValidators"] <= node_operator["totalAddedValidators"]
 
         node_operator_summary = contract.getNodeOperatorSummary(id)
-        exited_node_operators = [12, 1]  # NO id 12 was added on vote 23-05-23, NO id 1 was added on vote 03-10-23
-        assert node_operator_summary["targetLimitMode"] == (1 if id in exited_node_operators else 0)
+        exited_node_operators = [12, 1] # NO id 12 was added on vote 23-05-23, NO id 1 was added on vote 03-10-23
+        soft_limit_0_node_operators = [32] # NO id 32 was added on vote 10-12-25
+        assert node_operator_summary["targetLimitMode"] == (1 if id in exited_node_operators or id in soft_limit_0_node_operators else 0)
         assert node_operator_summary["targetValidatorsCount"] == 0
         # Can be more than 0 in regular protocol operations
         # assert node_operator_summary["stuckValidatorsCount"] == 0
@@ -133,11 +134,13 @@ def test_nor_state(contract):
         assert node_operator["totalExitedValidators"] == node_operator_summary["totalExitedValidators"]
         assert node_operator["totalDepositedValidators"] == node_operator_summary["totalDepositedValidators"]
 
-        no_depositable_validators_count = (
-            node_operator["totalVettedValidators"] - node_operator["totalDepositedValidators"]
-        )
-
-        assert node_operator_summary["depositableValidatorsCount"] == no_depositable_validators_count
+        if id in soft_limit_0_node_operators:
+            assert node_operator_summary["depositableValidatorsCount"] == 0
+        else:
+            no_depositable_validators_count = (
+                node_operator["totalVettedValidators"] - node_operator["totalDepositedValidators"]
+            )
+            assert node_operator_summary["depositableValidatorsCount"] == no_depositable_validators_count
 
 def _str_to_bytes32(s: str) -> str:
     return "0x{:0<64}".format(s.encode("utf-8").hex())
