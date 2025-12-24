@@ -201,7 +201,7 @@ def revest_happy_path(ldo_holder, eoa, ldo_token, revesting_contract, eoa2):
 
     vesting = token_manager.getVesting(eoa, vestings_length_before)
     assert vesting["amount"] == LDO_49M
-    assert vesting["start"] >= web3.eth.get_block(web3.eth.block_number).timestamp  # allow up to 1 minute time difference because of Hardhat time issues
+    assert vesting["start"] == web3.eth.get_block(web3.eth.block_number).timestamp
     assert vesting["cliff"] == vesting["start"] + 365 * 24 * 60 * 60
     assert vesting["vesting"] == vesting["start"] + 365 * 24 * 60 * 60 * 2
     assert vesting["revokable"]
@@ -215,7 +215,7 @@ def revest_happy_path(ldo_holder, eoa, ldo_token, revesting_contract, eoa2):
     chain.sleep(365 * 24 * 60 * 60 - (chain.time() - vesting["start"]))  # sleep for 1 year
     chain.mine()
     assert token_manager.spendableBalanceOf(eoa) == LDO_49M // 2
-    chain.sleep(365 * 24 * 60 * 60 // 2)  # sleep for 0.5 year
+    chain.sleep(365 * 24 * 60 * 60 // 2 - (chain.time() - vesting["start"] - 365 * 24 * 60 * 60))  # sleep for 0.5 year
     chain.mine()
     assert token_manager.spendableBalanceOf(eoa) == LDO_49M * 3 // 4
     chain.sleep(365 * 24 * 60 * 60 // 2)  # sleep for 0.5 year
