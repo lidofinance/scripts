@@ -5,6 +5,7 @@ from typing import NamedTuple
 from brownie.network.event import EventDict
 from .common import validate_events_chain
 from utils.finance import ZERO_ADDRESS
+from brownie import convert
 
 
 class Payout(NamedTuple):
@@ -14,8 +15,8 @@ class Payout(NamedTuple):
     amount: int
 
 
-def validate_token_payout_event(event: EventDict, p: Payout, is_steth: bool = False):
-    _token_events_chain = ["LogScriptCall", "NewPeriod", "NewTransaction", "Transfer"]
+def validate_token_payout_event(event: EventDict, p: Payout, is_steth: bool = False, emitted_by: str = None):
+    _token_events_chain = ["LogScriptCall", "NewPeriod", "NewPeriod", "NewTransaction", "Transfer"]
     if is_steth:
         _token_events_chain += ["TransferShares"]
 
@@ -48,6 +49,10 @@ def validate_token_payout_event(event: EventDict, p: Payout, is_steth: bool = Fa
 
     assert event["NewTransaction"]["entity"] == p.to_addr
     assert event["NewTransaction"]["amount"] == p.amount
+
+    assert convert.to_address(event["VaultTransfer"]["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), "Wrong event emitter"
 
 
 def validate_ether_payout_event(event: EventDict, p: Payout):

@@ -198,10 +198,15 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, st
     # - Check NOs stats
     # - Check Report events
 
-    # Prepare extra data
+    # Get current exited validators count for operators
+    no1_exited_before = staking_module.getNodeOperatorSummary(no1_id)["totalExitedValidators"]
+    no2_exited_before = staking_module.getNodeOperatorSummary(no2_id)["totalExitedValidators"]
+    no3_exited_before = staking_module.getNodeOperatorSummary(no3_id)["totalExitedValidators"]
+
+    # Prepare extra data - set 5 more exited validators for each operator
     vals_exited_non_zero = {
-        node_operator_gindex(staking_module.module_id, no1_id): 5,
-        node_operator_gindex(staking_module.module_id, no2_id): 5,
+        node_operator_gindex(staking_module.module_id, no1_id): no1_exited_before + 5,
+        node_operator_gindex(staking_module.module_id, no2_id): no2_exited_before + 5,
     }
     extra_data = extra_data_service.collect(vals_exited_non_zero, 10, 10)
 
@@ -247,20 +252,20 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, st
     assert no2_balance_shares_after - no2_balance_shares_before == no2_rewards_after_second_report
     assert no3_balance_shares_after - no3_balance_shares_before == no3_rewards_after_second_report
 
-    # NO stats
-    assert no1_summary["totalExitedValidators"] == 5
-    assert no2_summary["totalExitedValidators"] == 5
-    assert no3_summary["totalExitedValidators"] == 0
+    # NO stats - check that exited validators increased by 5 for no1 and no2, and stayed the same for no3
+    assert no1_summary["totalExitedValidators"] == no1_exited_before + 5
+    assert no2_summary["totalExitedValidators"] == no2_exited_before + 5
+    assert no3_summary["totalExitedValidators"] == no3_exited_before
 
     # Events
     exited_signing_keys_count_events = parse_exited_signing_keys_count_changed_logs(
         filter_transfer_logs(extra_report_tx_list[0].logs, web3.keccak(text="ExitedSigningKeysCountChanged(uint256,uint256)"))
     )
     assert exited_signing_keys_count_events[0]["nodeOperatorId"] == no1_id
-    assert exited_signing_keys_count_events[0]["exitedValidatorsCount"][0] == 5
+    assert exited_signing_keys_count_events[0]["exitedValidatorsCount"][0] == no1_exited_before + 5
 
     assert exited_signing_keys_count_events[1]["nodeOperatorId"] == no2_id
-    assert exited_signing_keys_count_events[1]["exitedValidatorsCount"][0] == 5
+    assert exited_signing_keys_count_events[1]["exitedValidatorsCount"][0] == no2_exited_before + 5
 
     # Deposit keys
     deposit_and_check_keys(staking_module, no1_id, no2_id, no3_id, 50, impersonated_agent)
@@ -350,9 +355,6 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, st
     assert no3_deposited_keys_before != no3_deposited_keys_after
 
 
-@pytest.mark.skip(
-    "TODO: fix the test assumptions about the state of the chain (no exited validators, depositable ETH amount)"
-)
 def test_node_operator_registry(impersonated_agent, stranger, helpers):
     nor = contracts.node_operators_registry
     nor.module_id = 1

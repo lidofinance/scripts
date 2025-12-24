@@ -25,10 +25,6 @@ def add_implementation_to_voting_app_repo(version, address, content_uri):
     return _add_implementation_to_repo(contracts.voting_app_repo, version, address, content_uri)
 
 
-def add_implementation_to_oracle_app_repo(version, address, content_uri):
-    return _add_implementation_to_repo(contracts.oracle_app_repo, version, address, content_uri)
-
-
 def create_new_app_repo(name, manager, version, address, content_uri):
     apm_registry = contracts.apm_registry
 

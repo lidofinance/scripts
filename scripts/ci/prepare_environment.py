@@ -2,16 +2,21 @@ import os
 
 from typing import Callable, Tuple, List
 
+from tests.conftest import Helpers
+
 from utils.config import contracts, get_deployer_account
 from utils.voting import bake_vote_items
 from utils.dual_governance import process_pending_proposals
 from utils.evm_script import encode_call_script
 from utils.import_current_votes import get_vote_script_files, get_upgrade_script_files
 from utils.mainnet_fork import pass_and_exec_dao_vote
+from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
 
 def main():
     process_pending_proposals()
-    execute_votings_and_process_created_proposals()
+    # TODO revert after December Aragon
+    #execute_votings_and_process_created_proposals()
+    #execute_vote_and_process_dg_proposals(Helpers, -1, -1)
 
 def execute_votings_and_process_created_proposals():
     votings_in_flight = retrieve_votings_in_flight()

@@ -77,9 +77,15 @@ def create_and_enact_payment_motion(
     create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger)
 
     recievers_balance_after = [balance_of(reciever, token) for reciever in recievers]
+    recievers_total_amounts = {}
     for i in range(len(recievers)):
+        reciever_address = recievers[i].address
+        recievers_total_amounts[reciever_address] = recievers_total_amounts.get(reciever_address, 0) + transfer_amounts[i]
+    
+    for i in range(len(recievers)):
+        reciever_address = recievers[i].address
         assert almostEqWithDiff(
-            recievers_balance_after[i], recievers_balance_before[i] + transfer_amounts[i], STETH_ERROR_MARGIN_WEI
+            recievers_balance_after[i], recievers_balance_before[i] + recievers_total_amounts[reciever_address], STETH_ERROR_MARGIN_WEI
         )
 
     agent_balance_after = balance_of(agent, token)
@@ -140,26 +146,25 @@ def check_add_and_remove_recipient_with_voting(registry, helpers, ldo_holder, da
 
     assert not registry.isRecipientAllowed(recipient_candidate)
 
-    call_script_items = [
-        agent_forward(
-            [
-                (
-                    registry.address,
-                    registry.addRecipient.encode_input(recipient_candidate, title),
-                )
-            ]
+    vote_input = [
+        (
+            registry.address,
+            registry.addRecipient.encode_input(recipient_candidate, title),
         )
     ]
+
+    call_script_items = submit_proposals([([agent_forward(vote_input)], "")])
     vote_desc_items = ["Add recipient"]
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
 
     vote_id = create_vote(vote_items, {"from": ldo_holder})[0]
 
-    helpers.execute_vote(
+    vote_tx = helpers.execute_vote(
         vote_id=vote_id,
         accounts=accounts,
         dao_voting=dao_voting,
     )
+    process_proposals([vote_tx.events["ProposalSubmitted"][1]["proposalId"]])
 
     assert registry.isRecipientAllowed(recipient_candidate)
     assert len(registry.getAllowedRecipients()) == recipients_length_before + 1, "Wrong whitelist length"

@@ -15,15 +15,14 @@ on:
 jobs:
   run-tests:
     name: Core repo tests in docker
-    runs-on: "ubuntu-latest"
+    runs-on: [voting-private-runners]
     timeout-minutes: 120
 
     services:
-
       tests-runner:
-        image: ghcr.io/lidofinance/scripts:v19
+        image: ghcr.io/lidofinance/scripts:v21
         ports:
-          - 8546:8546
+          - 8545:8545
         volumes:
           - ${{ github.workspace }}:/root/scripts
         options: >-
@@ -34,25 +33,38 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run init script
-        run: docker exec -e CORE_BRANCH tests-runner bash -c 'make init'
+        run: docker exec -e CORE_BRANCH tests-runner bash -c 'PYTHONPATH=$PWD make init'
         env:
-          CORE_BRANCH: master
+          CORE_BRANCH: develop
 
       - name: Run node
-        run: docker exec -e ETH_RPC_URL --detach tests-runner bash -c 'NODE_PORT=8546 make node'
+        run: docker exec -e ETH_RPC_URL --detach tests-runner bash -c 'NODE_PORT=8545 make node'
         env:
           ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
 
       - name: Check that the fork is ready
         shell: bash
-        run: timeout 30 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 8546
+        run: |
+          echo "Waiting for fork node on 127.0.0.1:8545..."
+          sleep 10
+          for i in {1..30}; do
+            if (echo > /dev/tcp/127.0.0.1/8545) >/dev/null 2>&1; then
+              echo "Fork is ready ✅"
+              exit 0
+            fi
+            echo "Not ready yet... ($i/30)"
+            sleep 1
+          done
+          echo "❌ Fork was not ready after 30 seconds" >&2
+          exit 1
 
       - name: Prepare test environment with Brownie
-        run: docker exec -e GITHUB_TOKEN -e ETH_RPC_URL tests-runner bash -c 'make ci-prepare-environment'
+        run: docker exec -e GITHUB_TOKEN -e ETH_RPC_URL -e ETHERSCAN_TOKEN tests-runner bash -c 'make ci-prepare-environment'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
 
       - name: Run core tests
         run: docker exec -e CORE_TESTS_TARGET_RPC_URL tests-runner bash -c 'make test-core'
         env:
-          CORE_TESTS_TARGET_RPC_URL: http://127.0.0.1:8546
+          CORE_TESTS_TARGET_RPC_URL: http://127.0.0.1:8545

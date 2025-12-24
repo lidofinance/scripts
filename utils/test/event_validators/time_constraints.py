@@ -12,10 +12,9 @@ def validate_time_constraints_executed_before_event(event: EventDict, timestamp,
     assert event.count("TimeBeforeTimestampChecked") == 1
     assert event["TimeBeforeTimestampChecked"][0]["timestamp"] == timestamp
 
-    if emitted_by is not None:
-        assert convert.to_address(event["TimeBeforeTimestampChecked"][0]["_emitted_by"]) == convert.to_address(
-            emitted_by
-        ), "Wrong event emitter"
+    assert convert.to_address(event["TimeBeforeTimestampChecked"][0]["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), "Wrong event emitter"
 
 
 def validate_dg_time_constraints_executed_before_event(event: EventDict, timestamp, emitted_by: str = None) -> None:
@@ -26,10 +25,9 @@ def validate_dg_time_constraints_executed_before_event(event: EventDict, timesta
     assert event.count("TimeBeforeTimestampChecked") == 1
     assert event["TimeBeforeTimestampChecked"][0]["timestamp"] == timestamp
 
-    if emitted_by is not None:
-        assert convert.to_address(event["TimeBeforeTimestampChecked"][0]["_emitted_by"]) == convert.to_address(
-            emitted_by
-        ), "Wrong event emitter"
+    assert convert.to_address(event["TimeBeforeTimestampChecked"][0]["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), "Wrong event emitter"
 
 
 def validate_dg_time_constraints_executed_within_day_time_event(event: EventDict, start_day_time, end_day_time, emitted_by: str = None) -> None:
@@ -41,7 +39,6 @@ def validate_dg_time_constraints_executed_within_day_time_event(event: EventDict
     assert event["TimeWithinDayTimeChecked"][0]["startDayTime"] == start_day_time
     assert event["TimeWithinDayTimeChecked"][0]["endDayTime"] == end_day_time
 
-    if emitted_by is not None:
-        assert convert.to_address(event["TimeWithinDayTimeChecked"][0]["_emitted_by"]) == convert.to_address(
-            emitted_by
-        ), "Wrong event emitter"
+    assert convert.to_address(event["TimeWithinDayTimeChecked"][0]["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), "Wrong event emitter"
