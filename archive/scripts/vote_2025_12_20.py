@@ -5,7 +5,7 @@ Vote 2025_12_20
 2. Grant role ISSUE_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364
 3. Grant role ASSIGN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364
 
-# TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
+Vote #196 passed & executed on Dec-25-2025 01:14:59 PM UTC, block 24089870.
 """
 
 from typing import Dict, List, Tuple
