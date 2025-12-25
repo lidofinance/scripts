@@ -214,7 +214,6 @@ def test_accounting_oracle_too_much_extra_data(extra_data_service):
     nor_module_id = 1
     nor_operators_count = contracts.node_operators_registry.getNodeOperatorsCount()
     i = 0
-
     for no_id in range(nor_operators_count):
         (active, _, _, _, total_exited_validators_count, _, total_deposited_validators_count) = contracts.node_operators_registry.getNodeOperator(no_id, True)
 

@@ -1,0 +1,94 @@
+"""
+Vote 2025_12_20
+
+1. Grant role BURN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364
+2. Grant role ISSUE_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364
+3. Grant role ASSIGN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364
+
+Vote #196 passed & executed on Dec-25-2025 01:14:59 PM UTC, block 24089870.
+"""
+
+from typing import Dict, List, Tuple
+
+from utils.voting import bake_vote_items, confirm_vote_script, create_vote
+from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
+from utils.config import get_deployer_account, get_is_live, get_priority_fee
+from utils.mainnet_fork import pass_and_exec_dao_vote
+from utils.permissions import encode_permission_grant
+
+
+# ============================== Addresses ===================================
+TOKEN_MANAGER = "0xf73a1260d222f447210581DDf212D915c09a3249"
+REVESTING_CONTRACT = "0xc2f50d3277539fbd54346278e7b92faa76dc7364"
+
+
+# ============================= Description ==================================
+IPFS_DESCRIPTION = "Add a limited mechanism for applying vesting to the certain contributors’ LDO tokens."
+
+
+# ================================ Main ======================================
+def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
+    
+    vote_desc_items, call_script_items = zip(
+        (
+            "1. Grant role 0xe97b137254058bd94f28d2f3eb79e2d34074ffb488d042e3bc958e0a57d2fa22 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
+            encode_permission_grant(
+                target_app=TOKEN_MANAGER,
+                permission_name="BURN_ROLE",
+                grant_to=REVESTING_CONTRACT,
+            ),
+        ),
+        (
+            "2. Grant role 0x2406f1e99f79cea012fb88c5c36566feaeefee0f4b98d3a376b49310222b53c4 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
+            encode_permission_grant(
+                target_app=TOKEN_MANAGER,
+                permission_name="ISSUE_ROLE",
+                grant_to=REVESTING_CONTRACT,
+            ),
+        ),
+        (
+            "3. Grant role 0xf5a08927c847d7a29dc35e105208dbde5ce951392105d712761cc5d17440e2ff on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
+            encode_permission_grant(
+                target_app=TOKEN_MANAGER,
+                permission_name="ASSIGN_ROLE",
+                grant_to=REVESTING_CONTRACT,
+            ),
+        ),
+    )
+
+    return vote_desc_items, call_script_items
+
+
+def start_vote(tx_params: Dict[str, str], silent: bool = False):
+    vote_desc_items, call_script_items = get_vote_items()
+    vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
+
+    desc_ipfs = (
+        calculate_vote_ipfs_description(IPFS_DESCRIPTION)
+        if silent else upload_vote_ipfs_description(IPFS_DESCRIPTION)
+    )
+
+    vote_id, tx = confirm_vote_script(vote_items, silent, desc_ipfs) and list(
+        create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
+    )
+
+    return vote_id, tx
+
+
+def main():
+    tx_params: Dict[str, str] = {"from": get_deployer_account().address}
+    if get_is_live():
+        tx_params["priority_fee"] = get_priority_fee()
+
+    vote_id, _ = start_vote(tx_params=tx_params, silent=False)
+    vote_id >= 0 and print(f"Vote created: {vote_id}.")
+
+
+def start_and_execute_vote_on_fork_manual():
+    if get_is_live():
+        raise Exception("This script is for local testing only.")
+
+    tx_params = {"from": get_deployer_account()}
+    vote_id, _ = start_vote(tx_params=tx_params, silent=True)
+    print(f"Vote created: {vote_id}.")
+    pass_and_exec_dao_vote(int(vote_id), step_by_step=True)

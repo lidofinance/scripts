@@ -12,7 +12,7 @@ on:
 jobs:
   run-tests-normal-1:
     name: Brownie fork NORMAL tests 1
-    runs-on: "ubuntu-latest"
+    runs-on: [voting-private-runners]
     timeout-minutes: 150
 
     services:
@@ -36,7 +36,7 @@ jobs:
 
   run-tests-normal-2:
     name: Brownie fork NORMAL tests 2
-    runs-on: "ubuntu-latest"
+    runs-on: [voting-private-runners]
     timeout-minutes: 150
 
     services:
