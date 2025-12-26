@@ -32,6 +32,7 @@ from scripts.vote_2025_12_26 import start_vote, get_vote_items
 # ============================== Constants ===================================
 # ============================================================================
 
+AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 TOKEN_MANAGER = "0xf73a1260d222f447210581DDf212D915c09a3249"
 ACL = "0x9895f0f17cc1d1891b6f18ee0b483b6f221b37bb"
@@ -42,24 +43,33 @@ SOURCE_ADDRESS = "0xa8107de483f9623390d543b77c8e4bbb6f7af752"
 SOURCE_ADDRESS_VESTING_ID = 0
 SOURCE_LDO = 48_934_690_0011 * 10**14  # 48,934,690.0011 LDO
 
-# TODO update targets and amounts
 TARGET_ADDRESSES = [
-    "0x396343362be2a4da1ce0c1c210945346fb82aa49",
-    "0xbcb61ad7b2d7949ecaefc77adbd5914813aeeffa",
-    "0x1b5662b2a1831cc9f743101d15ab5900512c82a4",
-    "0xb79645264d73ad520a1ba87e5d69a15342a6270f",
-    "0x28c61ce51e4c3ada729a903628090fa90dc21d60",
+    "0xED3D9bAC1B26610A6f8C42F4Fd2c741a16647056",
+    "0x7bd77405a7c28F50a1010e2185297A25165FD5C6",
+    "0x7E363142293cc25F96F94d5621ea01bCCe2890E8",
+    "0xECE4e341EbcC2B57c40FCf74f47bc61DfDC87fe2",
+    "0x7F514FC631Cca86303e20575592143DD2E253175",
+    "0xdCdeC1fce45e76fE82E036344DE19061d1f0aA31",
+    "0x3d56d86a60b92132b37f226EA5A23F84C805Ce29",
+    "0x28562FBe6d078d2526A0A8d1489245fF74fcA7eB",
+    "0xf930e6d88ecd10788361517fc45C986c0a1b10e5",
+    "0x00E78b7770D8a41A0f37f2d206e65f9Cd391cf0a",
 ]
 TARGET_LDOS = [
     10_000_000 * 10**18,
-    10_000_000 * 10**18,
-    10_000_000 * 10**18,
-    10_000_000 * 10**18,
-    8_934_690_0011 * 10**14,
+    5_000_000 * 10**18,
+    5_000_000 * 10**18,
+    5_000_000 * 10**18,
+    5_000_000 * 10**18,
+    5_000_000 * 10**18,
+    5_000_000 * 10**18,
+    5_000_000 * 10**18,
+    2_000_000 * 10**18,
+    1_934_690_0011 * 10**14,
 ]
 
-VESTING_START = 1767200400 # Wed Dec 31 2025 17:00:00 GMT+0000
-VESTING_CLIFF = 1798736400 # Thu Dec 31 2026 17:00:00 GMT+0000
+VESTING_START = 1767225600 # Thu Jan 01 2026 00:00:00 GMT+0000
+VESTING_CLIFF = 1798761600 # Fri Jan 01 2027 00:00:00 GMT+0000
 VESTING_TOTAL = VESTING_CLIFF
 IS_REVOKABLE = True
 
@@ -70,9 +80,8 @@ ASSIGN_ROLE = "ASSIGN_ROLE"
 LDO_TOKEN = "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32"
 
 EXPECTED_VOTE_ID = 197
-EXPECTED_VOTE_EVENTS_COUNT = 9
-# TODO update description hash
-IPFS_DESCRIPTION_HASH = "bafkreigx3ltavpe45fqk723ikgxlfom36icba5zyrojlflclf6h2vn5tw4"
+EXPECTED_VOTE_EVENTS_COUNT = 14
+IPFS_DESCRIPTION_HASH = "bafkreihistgxpm5srj3t3qr5tj5k5pyehf4ddnwswzrzfexu65ecvakjry"
 
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
@@ -124,29 +133,57 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         assert ldo_token.balanceOf(SOURCE_ADDRESS) == SOURCE_LDO
         assert ldo_token.totalSupply() == 1_000_000_000 * 10**18
         token_manager_ldo_balance_before = ldo_token.balanceOf(TOKEN_MANAGER)
+        agent_ldo_balance_before = ldo_token.balanceOf(AGENT)
 
-        # Items 2-6
-        target_address_0_ldo_balance_before = ldo_token.balanceOf(TARGET_ADDRESSES[0])
-        target_address_1_ldo_balance_before = ldo_token.balanceOf(TARGET_ADDRESSES[1])
-        target_address_2_ldo_balance_before = ldo_token.balanceOf(TARGET_ADDRESSES[2])
-        target_address_3_ldo_balance_before = ldo_token.balanceOf(TARGET_ADDRESSES[3])
-        target_address_4_ldo_balance_before = ldo_token.balanceOf(TARGET_ADDRESSES[4])
-        target_address_0_vestings_length_before = token_manager.vestingsLengths(TARGET_ADDRESSES[0])
-        target_address_1_vestings_length_before = token_manager.vestingsLengths(TARGET_ADDRESSES[1])
-        target_address_2_vestings_length_before = token_manager.vestingsLengths(TARGET_ADDRESSES[2])
-        target_address_3_vestings_length_before = token_manager.vestingsLengths(TARGET_ADDRESSES[3])
-        target_address_4_vestings_length_before = token_manager.vestingsLengths(TARGET_ADDRESSES[4])
-        target_address_0_spendable_balance_before = token_manager.spendableBalanceOf(TARGET_ADDRESSES[0])
-        target_address_1_spendable_balance_before = token_manager.spendableBalanceOf(TARGET_ADDRESSES[1])
-        target_address_2_spendable_balance_before = token_manager.spendableBalanceOf(TARGET_ADDRESSES[2])
-        target_address_3_spendable_balance_before = token_manager.spendableBalanceOf(TARGET_ADDRESSES[3])
-        target_address_4_spendable_balance_before = token_manager.spendableBalanceOf(TARGET_ADDRESSES[4])
+        # Items 2-11
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[0]) == 0
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[1]) == 0
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[2]) == 0
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[3]) == 0
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[4]) == 0
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[5]) == 0
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[6]) == 0
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[7]) == 0
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[8]) == 0
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[9]) == 0
 
-        # Items 7-9
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[0]) == 0
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[1]) == 0
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[2]) == 0
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[3]) == 0
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[4]) == 0
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[5]) == 0
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[6]) == 0
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[7]) == 0
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[8]) == 0
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[9]) == 0
+
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[0]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[1]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[2]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[3]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[4]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[5]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[6]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[7]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[8]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[9]) == 0
+
+        assert accounts.at(TARGET_ADDRESSES[0], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[1], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[2], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[3], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[4], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[5], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[6], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[7], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[8], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[9], force=True).nonce == 1
+
+        # Items 12-14
         assert acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=ISSUE_ROLE).hex())
         assert acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=BURN_ROLE).hex())
         assert acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=ASSIGN_ROLE).hex())
-
 
 
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
@@ -163,23 +200,53 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         assert ldo_token.balanceOf(SOURCE_ADDRESS) == 0
         assert ldo_token.totalSupply() == 1_000_000_000 * 10**18
         assert ldo_token.balanceOf(TOKEN_MANAGER) == token_manager_ldo_balance_before
+        assert ldo_token.balanceOf(AGENT) == agent_ldo_balance_before
 
-        # Items 2-6
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[0]) == target_address_0_ldo_balance_before + TARGET_LDOS[0]
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[1]) == target_address_1_ldo_balance_before + TARGET_LDOS[1]
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[2]) == target_address_2_ldo_balance_before + TARGET_LDOS[2]
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[3]) == target_address_3_ldo_balance_before + TARGET_LDOS[3]
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[4]) == target_address_4_ldo_balance_before + TARGET_LDOS[4]
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[0]) == target_address_0_vestings_length_before + 1
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[1]) == target_address_1_vestings_length_before + 1
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[2]) == target_address_2_vestings_length_before + 1
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[3]) == target_address_3_vestings_length_before + 1
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[4]) == target_address_4_vestings_length_before + 1
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[0]) == target_address_0_spendable_balance_before
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[1]) == target_address_1_spendable_balance_before
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[2]) == target_address_2_spendable_balance_before
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[3]) == target_address_3_spendable_balance_before
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[4]) == target_address_4_spendable_balance_before
+        # Items 2-11
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[0]) == TARGET_LDOS[0]
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[1]) == TARGET_LDOS[1]
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[2]) == TARGET_LDOS[2]
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[3]) == TARGET_LDOS[3]
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[4]) == TARGET_LDOS[4]
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[5]) == TARGET_LDOS[5]
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[6]) == TARGET_LDOS[6]
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[7]) == TARGET_LDOS[7]
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[8]) == TARGET_LDOS[8]
+        assert ldo_token.balanceOf(TARGET_ADDRESSES[9]) == TARGET_LDOS[9]
+
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[0]) == 1
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[1]) == 1
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[2]) == 1
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[3]) == 1
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[4]) == 1
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[5]) == 1
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[6]) == 1
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[7]) == 1
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[8]) == 1
+        assert token_manager.vestingsLengths(TARGET_ADDRESSES[9]) == 1
+
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[0]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[1]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[2]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[3]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[4]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[5]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[6]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[7]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[8]) == 0
+        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[9]) == 0
+
+        assert accounts.at(TARGET_ADDRESSES[0], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[1], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[2], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[3], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[4], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[5], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[6], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[7], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[8], force=True).nonce == 1
+        assert accounts.at(TARGET_ADDRESSES[9], force=True).nonce == 1
+
         for idx, target_address in enumerate(TARGET_ADDRESSES):
             vesting = token_manager.getVesting(target_address, token_manager.vestingsLengths(target_address) - 1)
             assert vesting["amount"] == TARGET_LDOS[idx]
@@ -188,7 +255,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
             assert vesting["vesting"] == VESTING_TOTAL
             assert vesting["revokable"] == IS_REVOKABLE
 
-        # Items 7-9
+        # Items 12-14
         assert not acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=ISSUE_ROLE).hex())
         assert not acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=BURN_ROLE).hex())
         assert not acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=ASSIGN_ROLE).hex())
@@ -204,9 +271,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
             interface.LDORevesting(REVESTING_CONTRACT).revestSpendableBalance(stranger, {"from": TRP_COMMITTEE})
         chain.revert()
 
+
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
-
 
         validate_ldo_revoke_vested_event(
             event=vote_events[0],
@@ -277,8 +344,68 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
             ),
             emitted_by=TOKEN_MANAGER,
         )
-        validate_permission_revoke_event(
+        validate_ldo_vested_event(
             event=vote_events[6],
+            v=Vested(
+                destination_addr=TARGET_ADDRESSES[5],
+                amount=TARGET_LDOS[5],
+                start=VESTING_START,
+                cliff=VESTING_CLIFF,
+                vesting=VESTING_TOTAL,
+                revokable=IS_REVOKABLE,
+            ),
+            emitted_by=TOKEN_MANAGER,
+        )
+        validate_ldo_vested_event(
+            event=vote_events[7],
+            v=Vested(
+                destination_addr=TARGET_ADDRESSES[6],
+                amount=TARGET_LDOS[6],
+                start=VESTING_START,
+                cliff=VESTING_CLIFF,
+                vesting=VESTING_TOTAL,
+                revokable=IS_REVOKABLE,
+            ),
+            emitted_by=TOKEN_MANAGER,
+        )
+        validate_ldo_vested_event(
+            event=vote_events[8],
+            v=Vested(
+                destination_addr=TARGET_ADDRESSES[7],
+                amount=TARGET_LDOS[7],
+                start=VESTING_START,
+                cliff=VESTING_CLIFF,
+                vesting=VESTING_TOTAL,
+                revokable=IS_REVOKABLE,
+            ),
+            emitted_by=TOKEN_MANAGER,
+        )
+        validate_ldo_vested_event(
+            event=vote_events[9],
+            v=Vested(
+                destination_addr=TARGET_ADDRESSES[8],
+                amount=TARGET_LDOS[8],
+                start=VESTING_START,
+                cliff=VESTING_CLIFF,
+                vesting=VESTING_TOTAL,
+                revokable=IS_REVOKABLE,
+            ),
+            emitted_by=TOKEN_MANAGER,
+        )
+        validate_ldo_vested_event(
+            event=vote_events[10],
+            v=Vested(
+                destination_addr=TARGET_ADDRESSES[9],
+                amount=TARGET_LDOS[9],
+                start=VESTING_START,
+                cliff=VESTING_CLIFF,
+                vesting=VESTING_TOTAL,
+                revokable=IS_REVOKABLE,
+            ),
+            emitted_by=TOKEN_MANAGER,
+        )
+        validate_permission_revoke_event(
+            event=vote_events[11],
             p=Permission(
                 app=TOKEN_MANAGER,
                 entity=REVESTING_CONTRACT,
@@ -287,7 +414,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
             emitted_by=ACL,
         )
         validate_permission_revoke_event(
-            event=vote_events[7],
+            event=vote_events[12],
             p=Permission(
                 app=TOKEN_MANAGER,
                 entity=REVESTING_CONTRACT,
@@ -296,7 +423,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
             emitted_by=ACL,
         )
         validate_permission_revoke_event(
-            event=vote_events[8],
+            event=vote_events[13],
             p=Permission(
                 app=TOKEN_MANAGER,
                 entity=REVESTING_CONTRACT,

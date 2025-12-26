@@ -1,12 +1,22 @@
 """
-TODO change date and filename
-Vote 2025_12_26
+Vote 2025_12_27
 
-1. TODO
-2. TODO
-3. TODO
+1. Revoke vesting (ID = 0) from 0xa8107de483f9623390d543b77c8e4bbb6f7af752 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249
+2. Vest 10,000,000 LDO to 0xED3D9bAC1B26610A6f8C42F4Fd2c741a16647056 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)
+3. Vest 5,000,000 LDO to 0x7bd77405a7c28F50a1010e2185297A25165FD5C6 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)
+4. Vest 5,000,000 LDO to 0x7E363142293cc25F96F94d5621ea01bCCe2890E8 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)
+5. Vest 5,000,000 LDO to 0xECE4e341EbcC2B57c40FCf74f47bc61DfDC87fe2 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)
+6. Vest 5,000,000 LDO to 0x7F514FC631Cca86303e20575592143DD2E253175 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)
+7. Vest 5,000,000 LDO to 0xdCdeC1fce45e76fE82E036344DE19061d1f0aA31 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)
+8. Vest 5,000,000 LDO to 0x3d56d86a60b92132b37f226EA5A23F84C805Ce29 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)
+9. Vest 5,000,000 LDO to 0x28562FBe6d078d2526A0A8d1489245fF74fcA7eB via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)
+10. Vest 2,000,000 LDO to 0xf930e6d88ecd10788361517fc45C986c0a1b10e5 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)
+11. Vest 1,934,690.0011 LDO to 0x00E78b7770D8a41A0f37f2d206e65f9Cd391cf0a via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)
+12. Revoke role 0xe97b137254058bd94f28d2f3eb79e2d34074ffb488d042e3bc958e0a57d2fa22 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 from contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364
+13. Revoke role 0x2406f1e99f79cea012fb88c5c36566feaeefee0f4b98d3a376b49310222b53c4 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 from contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364
+14. Revoke role 0xf5a08927c847d7a29dc35e105208dbde5ce951392105d712761cc5d17440e2ff on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 from contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364
 
-Vote #196 passed & executed on Dec-25-2025 01:14:59 PM UTC, block 24089870.
+TODO Vote #{vote_num} passed & executed on ${date+time}, block ${block}.
 """
 
 from typing import Dict, List, Tuple
@@ -28,32 +38,39 @@ SOURCE_ADDRESS = "0xa8107de483f9623390d543b77c8e4bbb6f7af752"
 SOURCE_ADDRESS_VESTING_ID = 0
 SOURCE_LDO = 48_934_690_0011 * 10**14  # 48,934,690.0011 LDO
 
-# TODO update targets and amounts
 TARGET_ADDRESSES = [
-    "0x396343362be2a4da1ce0c1c210945346fb82aa49",
-    "0xbcb61ad7b2d7949ecaefc77adbd5914813aeeffa",
-    "0x1b5662b2a1831cc9f743101d15ab5900512c82a4",
-    "0xb79645264d73ad520a1ba87e5d69a15342a6270f",
-    "0x28c61ce51e4c3ada729a903628090fa90dc21d60",
+    "0xED3D9bAC1B26610A6f8C42F4Fd2c741a16647056",
+    "0x7bd77405a7c28F50a1010e2185297A25165FD5C6",
+    "0x7E363142293cc25F96F94d5621ea01bCCe2890E8",
+    "0xECE4e341EbcC2B57c40FCf74f47bc61DfDC87fe2",
+    "0x7F514FC631Cca86303e20575592143DD2E253175",
+    "0xdCdeC1fce45e76fE82E036344DE19061d1f0aA31",
+    "0x3d56d86a60b92132b37f226EA5A23F84C805Ce29",
+    "0x28562FBe6d078d2526A0A8d1489245fF74fcA7eB",
+    "0xf930e6d88ecd10788361517fc45C986c0a1b10e5",
+    "0x00E78b7770D8a41A0f37f2d206e65f9Cd391cf0a",
 ]
 TARGET_LDOS = [
     10_000_000 * 10**18,
-    10_000_000 * 10**18,
-    10_000_000 * 10**18,
-    10_000_000 * 10**18,
-    8_934_690_0011 * 10**14,
+    5_000_000 * 10**18,
+    5_000_000 * 10**18,
+    5_000_000 * 10**18,
+    5_000_000 * 10**18,
+    5_000_000 * 10**18,
+    5_000_000 * 10**18,
+    5_000_000 * 10**18,
+    2_000_000 * 10**18,
+    1_934_690_0011 * 10**14,
 ]
 
-# TODO update vesting timestamps
-VESTING_START = 1767200400 # Wed Dec 31 2025 17:00:00 GMT+0000
-VESTING_CLIFF = 1798736400 # Thu Dec 31 2026 17:00:00 GMT+0000
+VESTING_START = 1767225600 # Thu Jan 01 2026 00:00:00 GMT+0000
+VESTING_CLIFF = 1798761600 # Fri Jan 01 2027 00:00:00 GMT+0000
 VESTING_TOTAL = VESTING_CLIFF
 IS_REVOKABLE = True
 
 
 # ============================= Description ==================================
-# TODO: update description
-IPFS_DESCRIPTION = "Redistribute LDO under vesting to a different set of addresses"
+IPFS_DESCRIPTION = "Execute asset recovery proposal with a 1-year long cliff"
 
 
 # ================================ Main ======================================
@@ -73,7 +90,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             )
         ),
         (
-            "2. Vest 10,000,000 LDO to 0x396343362be2a4da1ce0c1c210945346fb82aa49 (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
+            "2. Vest 10,000,000 LDO to 0xED3D9bAC1B26610A6f8C42F4Fd2c741a16647056 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)",
             (
                 token_manager.address,
                 token_manager.assignVested.encode_input(
@@ -87,7 +104,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "3. Vest 10,000,000 LDO to 0xbcb61ad7b2d7949ecaefc77adbd5914813aeeffa (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
+            "3. Vest 5,000,000 LDO to 0x7bd77405a7c28F50a1010e2185297A25165FD5C6 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)",
             (
                 token_manager.address,
                 token_manager.assignVested.encode_input(
@@ -101,7 +118,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "4. Vest 10,000,000 LDO to 0x1b5662b2a1831cc9f743101d15ab5900512c82a4 (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
+            "4. Vest 5,000,000 LDO to 0x7E363142293cc25F96F94d5621ea01bCCe2890E8 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)",
             (
                 token_manager.address,
                 token_manager.assignVested.encode_input(
@@ -115,7 +132,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "5. Vest 10,000,000 LDO to 0xb79645264d73ad520a1ba87e5d69a15342a6270f (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
+            "5. Vest 5,000,000 LDO to 0xECE4e341EbcC2B57c40FCf74f47bc61DfDC87fe2 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)",
             (
                 token_manager.address,
                 token_manager.assignVested.encode_input(
@@ -129,7 +146,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "6. Vest 8,934,690.0011 LDO to 0x28c61ce51e4c3ada729a903628090fa90dc21d60 (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
+            "6. Vest 5,000,000 LDO to 0x7F514FC631Cca86303e20575592143DD2E253175 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)",
             (
                 token_manager.address,
                 token_manager.assignVested.encode_input(
@@ -143,7 +160,77 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "7. Revoke role 0xe97b137254058bd94f28d2f3eb79e2d34074ffb488d042e3bc958e0a57d2fa22 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 from contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
+            "7. Vest 5,000,000 LDO to 0xdCdeC1fce45e76fE82E036344DE19061d1f0aA31 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)",
+            (
+                token_manager.address,
+                token_manager.assignVested.encode_input(
+                    TARGET_ADDRESSES[5],
+                    TARGET_LDOS[5],
+                    VESTING_START,
+                    VESTING_CLIFF,
+                    VESTING_TOTAL,
+                    IS_REVOKABLE
+                )
+            ),
+        ),
+        (
+            "8. Vest 5,000,000 LDO to 0x3d56d86a60b92132b37f226EA5A23F84C805Ce29 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)",
+            (
+                token_manager.address,
+                token_manager.assignVested.encode_input(
+                    TARGET_ADDRESSES[6],
+                    TARGET_LDOS[6],
+                    VESTING_START,
+                    VESTING_CLIFF,
+                    VESTING_TOTAL,
+                    IS_REVOKABLE
+                )
+            ),
+        ),
+        (
+            "9. Vest 5,000,000 LDO to 0x28562FBe6d078d2526A0A8d1489245fF74fcA7eB via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)",
+            (
+                token_manager.address,
+                token_manager.assignVested.encode_input(
+                    TARGET_ADDRESSES[7],
+                    TARGET_LDOS[7],
+                    VESTING_START,
+                    VESTING_CLIFF,
+                    VESTING_TOTAL,
+                    IS_REVOKABLE
+                )
+            ),
+        ),
+        (
+            "10. Vest 2,000,000 LDO to 0xf930e6d88ecd10788361517fc45C986c0a1b10e5 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)",
+            (
+                token_manager.address,
+                token_manager.assignVested.encode_input(
+                    TARGET_ADDRESSES[8],
+                    TARGET_LDOS[8],
+                    VESTING_START,
+                    VESTING_CLIFF,
+                    VESTING_TOTAL,
+                    IS_REVOKABLE
+                )
+            ),
+        ),
+        (
+            "11. Vest 1,934,690.0011 LDO to 0x00E78b7770D8a41A0f37f2d206e65f9Cd391cf0a via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)",
+            (
+                token_manager.address,
+                token_manager.assignVested.encode_input(
+                    TARGET_ADDRESSES[9],
+                    TARGET_LDOS[9],
+                    VESTING_START,
+                    VESTING_CLIFF,
+                    VESTING_TOTAL,
+                    IS_REVOKABLE
+                )
+            ),
+        ),
+        (
+            "12. Revoke role 0xe97b137254058bd94f28d2f3eb79e2d34074ffb488d042e3bc958e0a57d2fa22 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 from contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
             encode_permission_revoke(
                 target_app=TOKEN_MANAGER,
                 permission_name="BURN_ROLE",
@@ -151,7 +238,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "8. Revoke role 0x2406f1e99f79cea012fb88c5c36566feaeefee0f4b98d3a376b49310222b53c4 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 from contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
+            "13. Revoke role 0x2406f1e99f79cea012fb88c5c36566feaeefee0f4b98d3a376b49310222b53c4 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 from contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
             encode_permission_revoke(
                 target_app=TOKEN_MANAGER,
                 permission_name="ISSUE_ROLE",
@@ -159,7 +246,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "9. Revoke role 0xf5a08927c847d7a29dc35e105208dbde5ce951392105d712761cc5d17440e2ff on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 from contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
+            "14. Revoke role 0xf5a08927c847d7a29dc35e105208dbde5ce951392105d712761cc5d17440e2ff on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 from contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
             encode_permission_revoke(
                 target_app=TOKEN_MANAGER,
                 permission_name="ASSIGN_ROLE",
