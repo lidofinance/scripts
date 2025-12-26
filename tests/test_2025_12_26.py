@@ -320,11 +320,16 @@ def move_ldo_test(stranger, ldo_token, token_manager):
 
     chain.snapshot()
 
-    # scenario tests: cannot spend vested LDOs before vesting time
+    # cannot spend vested LDOs before vesting time
     for idx, target_address in enumerate(TARGET_ADDRESSES):
         # spend all initial LDOs non-vested (if any)
-        if token_manager.spendableBalanceOf(target_address) > 0:
-            ldo_token.transfer(stranger, token_manager.spendableBalanceOf(target_address), {"from": target_address})
+        target_address_spendable_balance = token_manager.spendableBalanceOf(target_address)
+        if target_address_spendable_balance > 0:
+            stranger_balance_before = ldo_token.balanceOf(stranger)
+            ldo_token.transfer(stranger, target_address_spendable_balance, {"from": target_address})
+            assert token_manager.spendableBalanceOf(target_address) == 0
+            assert ldo_token.balanceOf(stranger) == stranger_balance_before + target_address_spendable_balance
+            assert ldo_token.balanceOf(target_address) == TARGET_LDOS[idx]   
 
         # cannot spend vested LDOs before vesting time
         with reverts():
@@ -336,11 +341,15 @@ def move_ldo_test(stranger, ldo_token, token_manager):
     chain.sleep(365 * 24 * 60 * 60 - (chain.time() - VESTING_START))
     chain.mine()
 
-    # scenario tests: spend vested LDOs after vesting time
+    # spend vested LDOs after vesting time
     for idx, target_address in enumerate(TARGET_ADDRESSES):
         assert token_manager.spendableBalanceOf(target_address) == TARGET_LDOS[idx]
+        stranger_balance_before = ldo_token.balanceOf(stranger)
         ldo_token.transfer(stranger, 1, {"from": target_address})
         ldo_token.transfer(stranger, TARGET_LDOS[idx] - 1, {"from": target_address})
+        assert token_manager.spendableBalanceOf(target_address) == 0
+        assert ldo_token.balanceOf(target_address) == 0
+        assert ldo_token.balanceOf(stranger) == stranger_balance_before + TARGET_LDOS[idx]
 
     chain.revert()
 
