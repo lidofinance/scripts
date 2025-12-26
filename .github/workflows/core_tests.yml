@@ -35,7 +35,7 @@ jobs:
       - name: Run init script
         run: docker exec -e CORE_BRANCH tests-runner bash -c 'PYTHONPATH=$PWD make init'
         env:
-          CORE_BRANCH: develop
+          CORE_BRANCH: master
 
       - name: Run node
         run: docker exec -e ETH_RPC_URL --detach tests-runner bash -c 'NODE_PORT=8545 make node'

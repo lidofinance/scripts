@@ -108,16 +108,15 @@ class Helpers:
         else:
             raise AssertionError(f"Event {evt_name} was fired")
 
-    # TODO remove vote_id_for_vote
     @staticmethod
-    def execute_vote(accounts, vote_id, dao_voting, topup="10 ether", vote_id_for_vote=[]):
-        (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup, vote_id_for_vote)
+    def execute_vote(accounts, vote_id, dao_voting, topup="10 ether"):
+        (tx,) = Helpers.execute_votes(accounts, [vote_id], dao_voting, topup)
         return tx
 
     @staticmethod
-    def execute_votes(accounts, vote_ids, dao_voting, topup="10 ether", vote_id_for_vote=[]):
+    def execute_votes(accounts, vote_ids, dao_voting, topup="10 ether"):
         OBJECTION_PHASE_ID = 1
-        for vote_id in vote_ids + vote_id_for_vote:
+        for vote_id in vote_ids:
             print(f"Vote #{vote_id}")
             if dao_voting.canVote(vote_id, LDO_VOTE_EXECUTORS_FOR_TESTS[0]) and (
                 dao_voting.getVotePhase(vote_id) != OBJECTION_PHASE_ID
