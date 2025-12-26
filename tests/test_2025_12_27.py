@@ -131,7 +131,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         assert token_manager.getVesting(SOURCE_ADDRESS, SOURCE_ADDRESS_VESTING_ID)["amount"] == SOURCE_LDO
         assert ldo_token.balanceOf(SOURCE_ADDRESS) == SOURCE_LDO
         assert ldo_token.totalSupply() == 1_000_000_000 * 10**18
-        token_manager_ldo_balance_before = ldo_token.balanceOf(TOKEN_MANAGER)
+        assert ldo_token.balanceOf(TOKEN_MANAGER) == 0
         agent_ldo_balance_before = ldo_token.balanceOf(AGENT)
 
         # Items 2-11
@@ -161,7 +161,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         assert token_manager.getVesting(SOURCE_ADDRESS, SOURCE_ADDRESS_VESTING_ID)["amount"] == 0
         assert ldo_token.balanceOf(SOURCE_ADDRESS) == 0
         assert ldo_token.totalSupply() == 1_000_000_000 * 10**18
-        assert ldo_token.balanceOf(TOKEN_MANAGER) == token_manager_ldo_balance_before
+        assert ldo_token.balanceOf(TOKEN_MANAGER) == 0
         assert ldo_token.balanceOf(AGENT) == agent_ldo_balance_before
 
         # Items 2-11
