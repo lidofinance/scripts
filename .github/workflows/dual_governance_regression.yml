@@ -13,6 +13,7 @@ on:
       - "feat/rc2"
       - "feat/rc1"
       - "feat/next-vote"
+      - "external-ci"
   workflow_dispatch:
 
 jobs:
@@ -49,7 +50,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: lidofinance/dual-governance
-          ref: feature/report-simulation
+          ref: feature/escrow-mainnet-deploy
           path: dual-governance
           persist-credentials: false
           token: ${{ secrets.GITHUB_TOKEN }}

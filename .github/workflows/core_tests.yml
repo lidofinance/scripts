@@ -9,6 +9,7 @@ on:
       - "feat/rc2"
       - "feat/rc1"
       - "feat/next-vote"
+      - "external-ci"
   schedule:
     - cron: "0 0 * * TUE"
 
@@ -35,7 +36,7 @@ jobs:
       - name: Run init script
         run: docker exec -e CORE_BRANCH tests-runner bash -c 'PYTHONPATH=$PWD make init'
         env:
-          CORE_BRANCH: develop
+          CORE_BRANCH: master
 
       - name: Run node
         run: docker exec -e ETH_RPC_URL --detach tests-runner bash -c 'NODE_PORT=8545 make node'
