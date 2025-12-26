@@ -1,9 +1,9 @@
 """
 Vote 2025_12_26
 
-1. Grant role BURN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364
-2. Grant role ISSUE_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364
-3. Grant role ASSIGN_ROLE on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364
+1. TODO
+2. TODO
+3. TODO
 
 Vote #196 passed & executed on Dec-25-2025 01:14:59 PM UTC, block 24089870.
 """
@@ -25,6 +25,7 @@ TOKEN_MANAGER = "0xf73a1260d222f447210581DDf212D915c09a3249"
 SOURCE_ADDRESS = "0xa8107de483f9623390d543b77c8e4bbb6f7af752"
 SOURCE_LDO = 48_934_690_0011 * 10**14  # 48,934,690.0011 LDO
 
+# TODO update targets and amounts
 TARGET_ADDRESSES = [
     "0x396343362be2a4da1ce0c1c210945346fb82aa49",
     "0xbcb61ad7b2d7949ecaefc77adbd5914813aeeffa",
@@ -47,7 +48,8 @@ IS_REVOKABLE = False
 
 
 # ============================= Description ==================================
-IPFS_DESCRIPTION = "Add a limited mechanism for applying vesting to the certain contributors’ LDO tokens."
+# TODO: update description
+IPFS_DESCRIPTION = "some desc for voting 197"
 
 
 # ================================ Main ======================================
