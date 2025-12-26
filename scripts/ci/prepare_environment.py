@@ -10,13 +10,10 @@ from utils.dual_governance import process_pending_proposals
 from utils.evm_script import encode_call_script
 from utils.import_current_votes import get_vote_script_files, get_upgrade_script_files
 from utils.mainnet_fork import pass_and_exec_dao_vote
-from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
 
 def main():
     process_pending_proposals()
-    # TODO revert after December Aragon
-    #execute_votings_and_process_created_proposals()
-    #execute_vote_and_process_dg_proposals(Helpers, -1, -1)
+    execute_votings_and_process_created_proposals()
 
 def execute_votings_and_process_created_proposals():
     votings_in_flight = retrieve_votings_in_flight()
