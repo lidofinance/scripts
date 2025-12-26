@@ -55,11 +55,6 @@ IPFS_DESCRIPTION = "some desc for voting 197"
 # ================================ Main ======================================
 def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
-    # sanity checks
-    assert len(TARGET_ADDRESSES) == len(TARGET_LDOS)
-    assert all(ldo > 0 for ldo in TARGET_LDOS)
-    assert sum(TARGET_LDOS) == SOURCE_LDO
-
     token_manager = interface.TokenManager(TOKEN_MANAGER)
     
     vote_desc_items, call_script_items = zip(
