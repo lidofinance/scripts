@@ -9,7 +9,6 @@ from utils.config import (
     WSTETH_TOKEN,
     ACCOUNTING_ORACLE,
     L1_OPTIMISM_CROSS_DOMAIN_MESSENGER,
-    L2_OPTIMISM_TOKEN_RATE_ORACLE,
 )
 from utils.test.helpers import ZERO_ADDRESS, eth_balance
 from utils.evm_script import encode_error
@@ -70,6 +69,9 @@ def test_only_accounting_can_call_handle_post_token_rebase():
 
 def test_oracle_report_pushes_rate():
     """Test oracle report emits cross domain messenger event"""
+
+    # Load OpCrossDomainMessenger interface to register SentMessage event
+    interface.OpCrossDomainMessenger(L1_OPTIMISM_CROSS_DOMAIN_MESSENGER)
 
     tx, _ = oracle_report(
         cl_diff=0,
