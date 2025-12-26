@@ -61,7 +61,7 @@ TARGET_LDOS = [
 VESTING_START = 1767200400 # Wed Dec 31 2025 17:00:00 GMT+0000
 VESTING_CLIFF = 1798736400 # Thu Dec 31 2026 17:00:00 GMT+0000
 VESTING_TOTAL = VESTING_CLIFF
-IS_REVOKABLE = False
+IS_REVOKABLE = True
 
 BURN_ROLE = "BURN_ROLE"
 ISSUE_ROLE = "ISSUE_ROLE"
@@ -112,6 +112,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         # ========================= Before voting checks ========================
         # =======================================================================
 
+        # sanity checks
         assert len(TARGET_ADDRESSES) == len(TARGET_LDOS)
         assert all(ldo > 0 for ldo in TARGET_LDOS)
         assert sum(TARGET_LDOS) == SOURCE_LDO
@@ -195,7 +196,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
             assert vesting["revokable"] == IS_REVOKABLE
 
         # scenario tests
-        happy_path_test(stranger, ldo_token, token_manager)
+        move_ldo_test(stranger, ldo_token, token_manager)
         can_vote_with_vesting(ldo_holder, ldo_token, stranger, voting)
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
@@ -308,7 +309,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         )
 
 
-def happy_path_test(stranger, ldo_token, token_manager):
+def move_ldo_test(stranger, ldo_token, token_manager):
 
     chain.snapshot()
 
@@ -352,7 +353,6 @@ def can_vote_with_vesting(ldo_holder, ldo_token, stranger, voting):
 
     for target_address in TARGET_ADDRESSES:
         voting.vote(new_vote_id, True, False, {"from": target_address})
-
     assert voting.getVote(new_vote_id)["yea"] == sum(ldo_token.balanceOf(a) for a in TARGET_ADDRESSES)
 
     voting.vote(new_vote_id, True, False, {"from": ldo_holder})

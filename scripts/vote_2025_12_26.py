@@ -44,7 +44,7 @@ TARGET_LDOS = [
 VESTING_START = 1767200400 # Wed Dec 31 2025 17:00:00 GMT+0000
 VESTING_CLIFF = 1798736400 # Thu Dec 31 2026 17:00:00 GMT+0000
 VESTING_TOTAL = VESTING_CLIFF
-IS_REVOKABLE = False
+IS_REVOKABLE = True
 
 
 # ============================= Description ==================================
