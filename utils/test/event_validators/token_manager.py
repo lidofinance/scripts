@@ -4,6 +4,8 @@ from brownie import ZERO_ADDRESS, convert
 from brownie.network.event import EventDict
 from .common import validate_events_chain
 
+from utils.config import contracts
+
 class Burn(NamedTuple):
     holder_addr: str
     amount: int
@@ -21,6 +23,12 @@ class Vested(NamedTuple):
     cliff: int
     vesting: int
     revokable: bool
+
+
+class VestedRevoke(NamedTuple):
+    revoke_from: str
+    vesting_id: int
+    amount: int
 
 
 def validate_ldo_issue_event(event: EventDict, i: Issue, emitted_by: str):
@@ -56,6 +64,28 @@ def validate_ldo_vested_event(event: EventDict, v: Vested, emitted_by: str):
     assert event['NewVesting']['amount'] == v.amount
 
     assert convert.to_address(event["NewVesting"]["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), "Wrong event emitter"
+
+
+def validate_ldo_revoke_vested_event(event: EventDict, v: VestedRevoke, emitted_by: str):
+    _events_chain = ['LogScriptCall', 'Transfer', 'RevokeVesting']
+
+    assert event.count('LogScriptCall') == 1
+    assert event.count('Transfer') == 1
+    assert event.count('RevokeVesting') == 1
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event['Transfer']['from'] == v.revoke_from
+    assert event['Transfer']['to'] == contracts.token_manager.address
+    assert event['Transfer']['value'] == v.amount
+
+    assert event['RevokeVesting']['receiver'] == v.revoke_from
+    assert event['RevokeVesting']['nonVestedAmount'] == v.amount
+    assert event['RevokeVesting']['vestingId'] == v.vesting_id
+
+    assert convert.to_address(event["RevokeVesting"]["_emitted_by"]) == convert.to_address(
         emitted_by
     ), "Wrong event emitter"
 

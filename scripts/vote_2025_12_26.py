@@ -16,14 +16,16 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.config import get_deployer_account, get_is_live, get_priority_fee
 from utils.mainnet_fork import pass_and_exec_dao_vote
-from utils.permissions import encode_permission_grant, encode_permission_revoke
+from utils.permissions import encode_permission_revoke
 
 
 # ============================== Addresses ===================================
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 TOKEN_MANAGER = "0xf73a1260d222f447210581DDf212D915c09a3249"
+REVESTING_CONTRACT = "0xc2f50d3277539fbd54346278e7b92faa76dc7364"
 
 SOURCE_ADDRESS = "0xa8107de483f9623390d543b77c8e4bbb6f7af752"
+SOURCE_ADDRESS_VESTING_ID = 0
 SOURCE_LDO = 48_934_690_0011 * 10**14  # 48,934,690.0011 LDO
 
 # TODO update targets and amounts
@@ -61,57 +63,17 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     
     vote_desc_items, call_script_items = zip(
         (
-            "1. Temporarily grant role 0xe97b137254058bd94f28d2f3eb79e2d34074ffb488d042e3bc958e0a57d2fa22 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e",
-            encode_permission_grant(
-                target_app=TOKEN_MANAGER,
-                permission_name="BURN_ROLE",
-                grant_to=VOTING,
-            ),
-        ),
-        (
-            "2. Burn 48,934,690.0011 LDO from address 0xa8107de483f9623390d543b77c8e4bbb6f7af752 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249",
+            "1. Revoke vesting (ID = 0) from 0xa8107de483f9623390d543b77c8e4bbb6f7af752 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249",
             (
                 token_manager.address,
-                token_manager.burn.encode_input(
-                    SOURCE_ADDRESS, SOURCE_LDO
-                )
-            ),
-        ),
-        (
-            "3. Revoke role 0xe97b137254058bd94f28d2f3eb79e2d34074ffb488d042e3bc958e0a57d2fa22 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 from Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e",
-            encode_permission_revoke(
-                target_app=TOKEN_MANAGER,
-                permission_name="BURN_ROLE",
-                revoke_from=VOTING,
-            ),
-        ),
-        (
-            "4. Temporarily grant role 0x2406f1e99f79cea012fb88c5c36566feaeefee0f4b98d3a376b49310222b53c4 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 to Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e",
-            encode_permission_grant(
-                target_app=TOKEN_MANAGER,
-                permission_name="ISSUE_ROLE",
-                grant_to=VOTING,
-            ),
-        ),
-        (
-            "5. Issue 48,934,690.0011 LDO via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249",
-            (
-                token_manager.address,
-                token_manager.issue.encode_input(
-                    SOURCE_LDO
+                token_manager.revokeVesting.encode_input(
+                    SOURCE_ADDRESS,
+                    SOURCE_ADDRESS_VESTING_ID,
                 )
             )
         ),
         (
-            "6. Revoke role 0x2406f1e99f79cea012fb88c5c36566feaeefee0f4b98d3a376b49310222b53c4 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 from Aragon Voting 0x2e59A20f205bB85a89C53f1936454680651E618e",
-            encode_permission_revoke(
-                target_app=TOKEN_MANAGER,
-                permission_name="ISSUE_ROLE",
-                revoke_from=VOTING,
-            ),
-        ),
-        (
-            "7. Vest 10,000,000 LDO to 0x396343362be2a4da1ce0c1c210945346fb82aa49 (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
+            "2. Vest 10,000,000 LDO to 0x396343362be2a4da1ce0c1c210945346fb82aa49 (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
             (
                 token_manager.address,
                 token_manager.assignVested.encode_input(
@@ -125,7 +87,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "8. Vest 10,000,000 LDO to 0xbcb61ad7b2d7949ecaefc77adbd5914813aeeffa (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
+            "3. Vest 10,000,000 LDO to 0xbcb61ad7b2d7949ecaefc77adbd5914813aeeffa (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
             (
                 token_manager.address,
                 token_manager.assignVested.encode_input(
@@ -139,7 +101,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "9. Vest 10,000,000 LDO to 0x1b5662b2a1831cc9f743101d15ab5900512c82a4 (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
+            "4. Vest 10,000,000 LDO to 0x1b5662b2a1831cc9f743101d15ab5900512c82a4 (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
             (
                 token_manager.address,
                 token_manager.assignVested.encode_input(
@@ -153,7 +115,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "10. Vest 10,000,000 LDO to 0xb79645264d73ad520a1ba87e5d69a15342a6270f (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
+            "5. Vest 10,000,000 LDO to 0xb79645264d73ad520a1ba87e5d69a15342a6270f (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
             (
                 token_manager.address,
                 token_manager.assignVested.encode_input(
@@ -167,7 +129,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "11. Vest 8,934,690.0011 LDO to 0x28c61ce51e4c3ada729a903628090fa90dc21d60 (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
+            "6. Vest 8,934,690.0011 LDO to 0x28c61ce51e4c3ada729a903628090fa90dc21d60 (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
             (
                 token_manager.address,
                 token_manager.assignVested.encode_input(
@@ -178,6 +140,30 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
                     VESTING_TOTAL,
                     IS_REVOKABLE
                 )
+            ),
+        ),
+        (
+            "7. Revoke role 0xe97b137254058bd94f28d2f3eb79e2d34074ffb488d042e3bc958e0a57d2fa22 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 from contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
+            encode_permission_revoke(
+                target_app=TOKEN_MANAGER,
+                permission_name="BURN_ROLE",
+                revoke_from=REVESTING_CONTRACT,
+            ),
+        ),
+        (
+            "8. Revoke role 0x2406f1e99f79cea012fb88c5c36566feaeefee0f4b98d3a376b49310222b53c4 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 from contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
+            encode_permission_revoke(
+                target_app=TOKEN_MANAGER,
+                permission_name="ISSUE_ROLE",
+                revoke_from=REVESTING_CONTRACT,
+            ),
+        ),
+        (
+            "9. Revoke role 0xf5a08927c847d7a29dc35e105208dbde5ce951392105d712761cc5d17440e2ff on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 from contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364",
+            encode_permission_revoke(
+                target_app=TOKEN_MANAGER,
+                permission_name="ASSIGN_ROLE",
+                revoke_from=REVESTING_CONTRACT,
             ),
         ),
     )

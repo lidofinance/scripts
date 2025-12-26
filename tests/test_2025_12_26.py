@@ -12,15 +12,12 @@ from utils.test.tx_tracing_helpers import (
 )
 from utils.test.event_validators.permission import (
     Permission,
-    validate_permission_grant_event,
     validate_permission_revoke_event,
 )
 from utils.test.event_validators.token_manager import (
-    Burn,
-    validate_ldo_burn_event,
-    Issue,
-    validate_ldo_issue_event,
     Vested,
+    VestedRevoke,
+    validate_ldo_revoke_vested_event,
     validate_ldo_vested_event,
 )
 
@@ -38,8 +35,11 @@ from scripts.vote_2025_12_26 import start_vote, get_vote_items
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 TOKEN_MANAGER = "0xf73a1260d222f447210581DDf212D915c09a3249"
 ACL = "0x9895f0f17cc1d1891b6f18ee0b483b6f221b37bb"
+REVESTING_CONTRACT = "0xc2f50d3277539fbd54346278e7b92faa76dc7364"
+TRP_COMMITTEE = "0x834560F580764Bc2e0B16925F8bF229bb00cB759"
 
 SOURCE_ADDRESS = "0xa8107de483f9623390d543b77c8e4bbb6f7af752"
+SOURCE_ADDRESS_VESTING_ID = 0
 SOURCE_LDO = 48_934_690_0011 * 10**14  # 48,934,690.0011 LDO
 
 # TODO update targets and amounts
@@ -65,11 +65,12 @@ IS_REVOKABLE = True
 
 BURN_ROLE = "BURN_ROLE"
 ISSUE_ROLE = "ISSUE_ROLE"
+ASSIGN_ROLE = "ASSIGN_ROLE"
 
 LDO_TOKEN = "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32"
 
 EXPECTED_VOTE_ID = 197
-EXPECTED_VOTE_EVENTS_COUNT = 11
+EXPECTED_VOTE_EVENTS_COUNT = 9
 # TODO update description hash
 IPFS_DESCRIPTION_HASH = "bafkreigx3ltavpe45fqk723ikgxlfom36icba5zyrojlflclf6h2vn5tw4"
 
@@ -117,21 +118,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         assert all(ldo > 0 for ldo in TARGET_LDOS)
         assert sum(TARGET_LDOS) == SOURCE_LDO
 
-        # Items 1,3
-        assert not acl.hasPermission(VOTING, TOKEN_MANAGER, web3.keccak(text=BURN_ROLE).hex())
-
-        # Item 2
+        # Items 1
+        assert token_manager.vestingsLengths(SOURCE_ADDRESS) == 1
+        assert token_manager.getVesting(SOURCE_ADDRESS, SOURCE_ADDRESS_VESTING_ID)["amount"] == SOURCE_LDO
         assert ldo_token.balanceOf(SOURCE_ADDRESS) == SOURCE_LDO
-
-        # Items 4,6
-        assert not acl.hasPermission(VOTING, TOKEN_MANAGER, web3.keccak(text=ISSUE_ROLE).hex())
-
-        # Item 5
+        assert ldo_token.totalSupply() == 1_000_000_000 * 10**18
         token_manager_ldo_balance_before = ldo_token.balanceOf(TOKEN_MANAGER)
-        tm_ldo_balance_before = ldo_token.balanceOf(TOKEN_MANAGER)
-        ldo_supply_before = ldo_token.totalSupply()
 
-        # Items 7-11
+        # Items 2-6
         target_address_0_ldo_balance_before = ldo_token.balanceOf(TARGET_ADDRESSES[0])
         target_address_1_ldo_balance_before = ldo_token.balanceOf(TARGET_ADDRESSES[1])
         target_address_2_ldo_balance_before = ldo_token.balanceOf(TARGET_ADDRESSES[2])
@@ -148,6 +142,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         target_address_3_spendable_balance_before = token_manager.spendableBalanceOf(TARGET_ADDRESSES[3])
         target_address_4_spendable_balance_before = token_manager.spendableBalanceOf(TARGET_ADDRESSES[4])
 
+        # Items 7-9
+        assert acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=ISSUE_ROLE).hex())
+        assert acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=BURN_ROLE).hex())
+        assert acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=ASSIGN_ROLE).hex())
+
+
+
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
         vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
         display_voting_events(vote_tx)
@@ -157,21 +158,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         # =======================================================================
         # ========================= After voting checks =========================
         # =======================================================================
-        # Items 1,3
-        assert not acl.hasPermission(VOTING, TOKEN_MANAGER, web3.keccak(text=BURN_ROLE).hex())
-
-        # Item 2
+        # Items 1
+        assert token_manager.vestingsLengths(SOURCE_ADDRESS) == 1
         assert ldo_token.balanceOf(SOURCE_ADDRESS) == 0
-
-        # Items 4,6
-        assert not acl.hasPermission(VOTING, TOKEN_MANAGER, web3.keccak(text=ISSUE_ROLE).hex())
-
-        # Item 5
+        assert ldo_token.totalSupply() == 1_000_000_000 * 10**18
         assert ldo_token.balanceOf(TOKEN_MANAGER) == token_manager_ldo_balance_before
-        assert ldo_token.totalSupply() == ldo_supply_before
-        assert ldo_token.balanceOf(TOKEN_MANAGER) == tm_ldo_balance_before
 
-        # Items 7-11
+        # Items 2-6
         assert ldo_token.balanceOf(TARGET_ADDRESSES[0]) == target_address_0_ldo_balance_before + TARGET_LDOS[0]
         assert ldo_token.balanceOf(TARGET_ADDRESSES[1]) == target_address_1_ldo_balance_before + TARGET_LDOS[1]
         assert ldo_token.balanceOf(TARGET_ADDRESSES[2]) == target_address_2_ldo_balance_before + TARGET_LDOS[2]
@@ -195,67 +188,37 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
             assert vesting["vesting"] == VESTING_TOTAL
             assert vesting["revokable"] == IS_REVOKABLE
 
+        # Items 7-9
+        assert not acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=ISSUE_ROLE).hex())
+        assert not acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=BURN_ROLE).hex())
+        assert not acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=ASSIGN_ROLE).hex())
+
         # scenario tests
         move_ldo_test(stranger, ldo_token, token_manager)
         can_vote_with_vesting(ldo_holder, ldo_token, stranger, voting)
+        # make sure revesting with no granted roles fails
+        chain.snapshot()
+        ldo_token.transfer(stranger, 100_000 * 10**18, {"from": ldo_holder})
+        assert ldo_token.balanceOf(stranger) == 100_000 * 10**18
+        with reverts("APP_AUTH_FAILED"):
+            interface.LDORevesting(REVESTING_CONTRACT).revestSpendableBalance(stranger, {"from": TRP_COMMITTEE})
+        chain.revert()
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
 
-        validate_permission_grant_event(
+
+        validate_ldo_revoke_vested_event(
             event=vote_events[0],
-            p=Permission(
-                app=TOKEN_MANAGER,
-                entity=VOTING,
-                role=web3.keccak(text=BURN_ROLE).hex(),
-            ),
-            emitted_by=ACL,
-        )
-        validate_ldo_burn_event(
-            event=vote_events[1],
-            b=Burn(
-                holder_addr=SOURCE_ADDRESS,
+            v=VestedRevoke(
+                revoke_from=SOURCE_ADDRESS,
+                vesting_id=SOURCE_ADDRESS_VESTING_ID,
                 amount=SOURCE_LDO,
             ),
-            emitted_by=LDO_TOKEN,
-        )
-        validate_permission_revoke_event(
-            event=vote_events[2],
-            p=Permission(
-                app=TOKEN_MANAGER,
-                entity=VOTING,
-                role=web3.keccak(text=BURN_ROLE).hex(),
-            ),
-            emitted_by=ACL,
-        )
-        validate_permission_grant_event(
-            event=vote_events[3],
-            p=Permission(
-                app=TOKEN_MANAGER,
-                entity=VOTING,
-                role=web3.keccak(text=ISSUE_ROLE).hex(),
-            ),
-            emitted_by=ACL,
-        )
-        validate_ldo_issue_event(
-            event=vote_events[4],
-            i=Issue(
-                token_manager_addr=TOKEN_MANAGER,
-                amount=SOURCE_LDO,
-            ),
-            emitted_by=LDO_TOKEN,
-        )
-        validate_permission_revoke_event(
-            event=vote_events[5],
-            p=Permission(
-                app=TOKEN_MANAGER,
-                entity=VOTING,
-                role=web3.keccak(text=ISSUE_ROLE).hex(),
-            ),
-            emitted_by=ACL,
+            emitted_by=TOKEN_MANAGER,
         )
         validate_ldo_vested_event(
-            event=vote_events[6],
+            event=vote_events[1],
             v=Vested(
                 destination_addr=TARGET_ADDRESSES[0],
                 amount=TARGET_LDOS[0],
@@ -267,7 +230,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
             emitted_by=TOKEN_MANAGER,
         )
         validate_ldo_vested_event(
-            event=vote_events[7],
+            event=vote_events[2],
             v=Vested(
                 destination_addr=TARGET_ADDRESSES[1],
                 amount=TARGET_LDOS[1],
@@ -279,7 +242,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
             emitted_by=TOKEN_MANAGER,
         )
         validate_ldo_vested_event(
-            event=vote_events[8],
+            event=vote_events[3],
             v=Vested(
                 destination_addr=TARGET_ADDRESSES[2],
                 amount=TARGET_LDOS[2],
@@ -291,7 +254,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
             emitted_by=TOKEN_MANAGER,
         )
         validate_ldo_vested_event(
-            event=vote_events[9],
+            event=vote_events[4],
             v=Vested(
                 destination_addr=TARGET_ADDRESSES[3],
                 amount=TARGET_LDOS[3],
@@ -303,7 +266,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
             emitted_by=TOKEN_MANAGER,
         )
         validate_ldo_vested_event(
-            event=vote_events[10],
+            event=vote_events[5],
             v=Vested(
                 destination_addr=TARGET_ADDRESSES[4],
                 amount=TARGET_LDOS[4],
@@ -313,6 +276,33 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
                 revokable=IS_REVOKABLE,
             ),
             emitted_by=TOKEN_MANAGER,
+        )
+        validate_permission_revoke_event(
+            event=vote_events[6],
+            p=Permission(
+                app=TOKEN_MANAGER,
+                entity=REVESTING_CONTRACT,
+                role=web3.keccak(text=BURN_ROLE).hex(),
+            ),
+            emitted_by=ACL,
+        )
+        validate_permission_revoke_event(
+            event=vote_events[7],
+            p=Permission(
+                app=TOKEN_MANAGER,
+                entity=REVESTING_CONTRACT,
+                role=web3.keccak(text=ISSUE_ROLE).hex(),
+            ),
+            emitted_by=ACL,
+        )
+        validate_permission_revoke_event(
+            event=vote_events[8],
+            p=Permission(
+                app=TOKEN_MANAGER,
+                entity=REVESTING_CONTRACT,
+                role=web3.keccak(text=ASSIGN_ROLE).hex(),
+            ),
+            emitted_by=ACL,
         )
 
 
