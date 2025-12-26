@@ -71,7 +71,7 @@ LDO_TOKEN = "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32"
 EXPECTED_VOTE_ID = 197
 EXPECTED_VOTE_EVENTS_COUNT = 11
 # TODO update description hash
-IPFS_DESCRIPTION_HASH = "bafkreigvay7pmx2av55sucubl7scfkq7sj2im4gx4dne6e3ingpi4farhu"
+IPFS_DESCRIPTION_HASH = "bafkreigx3ltavpe45fqk723ikgxlfom36icba5zyrojlflclf6h2vn5tw4"
 
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
@@ -217,6 +217,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
                 holder_addr=SOURCE_ADDRESS,
                 amount=SOURCE_LDO,
             ),
+            emitted_by=LDO_TOKEN,
         )
         validate_permission_revoke_event(
             event=vote_events[2],
@@ -242,6 +243,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
                 token_manager_addr=TOKEN_MANAGER,
                 amount=SOURCE_LDO,
             ),
+            emitted_by=LDO_TOKEN,
         )
         validate_permission_revoke_event(
             event=vote_events[5],
@@ -262,6 +264,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
                 vesting=VESTING_TOTAL,
                 revokable=IS_REVOKABLE,
             ),
+            emitted_by=TOKEN_MANAGER,
         )
         validate_ldo_vested_event(
             event=vote_events[7],
@@ -273,6 +276,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
                 vesting=VESTING_TOTAL,
                 revokable=IS_REVOKABLE,
             ),
+            emitted_by=TOKEN_MANAGER,
         )
         validate_ldo_vested_event(
             event=vote_events[8],
@@ -284,6 +288,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
                 vesting=VESTING_TOTAL,
                 revokable=IS_REVOKABLE,
             ),
+            emitted_by=TOKEN_MANAGER,
         )
         validate_ldo_vested_event(
             event=vote_events[9],
@@ -295,6 +300,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
                 vesting=VESTING_TOTAL,
                 revokable=IS_REVOKABLE,
             ),
+            emitted_by=TOKEN_MANAGER,
         )
         validate_ldo_vested_event(
             event=vote_events[10],
@@ -306,6 +312,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
                 vesting=VESTING_TOTAL,
                 revokable=IS_REVOKABLE,
             ),
+            emitted_by=TOKEN_MANAGER,
         )
 
 

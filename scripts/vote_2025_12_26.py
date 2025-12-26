@@ -1,4 +1,5 @@
 """
+TODO change date and filename
 Vote 2025_12_26
 
 1. TODO
@@ -41,6 +42,7 @@ TARGET_LDOS = [
     8_934_690_0011 * 10**14,
 ]
 
+# TODO update vesting timestamps
 VESTING_START = 1767200400 # Wed Dec 31 2025 17:00:00 GMT+0000
 VESTING_CLIFF = 1798736400 # Thu Dec 31 2026 17:00:00 GMT+0000
 VESTING_TOTAL = VESTING_CLIFF
@@ -49,7 +51,7 @@ IS_REVOKABLE = True
 
 # ============================= Description ==================================
 # TODO: update description
-IPFS_DESCRIPTION = "some desc for voting 197"
+IPFS_DESCRIPTION = "Redistribute LDO under vesting to a different set of addresses"
 
 
 # ================================ Main ======================================
