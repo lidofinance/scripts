@@ -1,7 +1,6 @@
 from brownie import web3, interface, chain, reverts
 from brownie.network.transaction import TransactionReceipt
 
-from utils.test.tx_tracing_helpers import group_voting_events_from_receipt
 from utils.evm_script import encode_call_script
 from utils.voting import find_metadata_by_vote_id, create_vote
 from utils.ipfs import get_lido_vote_cid_from_str
@@ -25,7 +24,7 @@ from utils.test.event_validators.token_manager import (
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.vote_2025_12_26 import start_vote, get_vote_items
+from scripts.vote_2025_12_27 import start_vote, get_vote_items
 
 
 # ============================================================================
@@ -93,7 +92,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
     acl = interface.ACL(ACL)
     ldo_token = interface.ERC20(LDO_TOKEN)
     token_manager = interface.TokenManager(TOKEN_MANAGER)
-    stranger = accounts[0]
+    eoa = accounts[0]
 
 
     # =========================================================================
@@ -136,49 +135,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         agent_ldo_balance_before = ldo_token.balanceOf(AGENT)
 
         # Items 2-11
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[0]) == 0
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[1]) == 0
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[2]) == 0
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[3]) == 0
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[4]) == 0
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[5]) == 0
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[6]) == 0
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[7]) == 0
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[8]) == 0
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[9]) == 0
-
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[0]) == 0
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[1]) == 0
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[2]) == 0
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[3]) == 0
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[4]) == 0
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[5]) == 0
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[6]) == 0
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[7]) == 0
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[8]) == 0
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[9]) == 0
-
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[0]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[1]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[2]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[3]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[4]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[5]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[6]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[7]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[8]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[9]) == 0
-
-        assert accounts.at(TARGET_ADDRESSES[0], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[1], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[2], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[3], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[4], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[5], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[6], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[7], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[8], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[9], force=True).nonce == 1
+        for target_address in TARGET_ADDRESSES:
+            assert ldo_token.balanceOf(target_address) == 0
+            assert token_manager.vestingsLengths(target_address) == 0
+            assert token_manager.spendableBalanceOf(target_address) == 0
+            assert accounts.at(target_address, force=True).nonce == 1
 
         # Items 12-14
         assert acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=ISSUE_ROLE).hex())
@@ -197,57 +158,18 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         # =======================================================================
         # Items 1
         assert token_manager.vestingsLengths(SOURCE_ADDRESS) == 1
+        assert token_manager.getVesting(SOURCE_ADDRESS, SOURCE_ADDRESS_VESTING_ID)["amount"] == 0
         assert ldo_token.balanceOf(SOURCE_ADDRESS) == 0
         assert ldo_token.totalSupply() == 1_000_000_000 * 10**18
         assert ldo_token.balanceOf(TOKEN_MANAGER) == token_manager_ldo_balance_before
         assert ldo_token.balanceOf(AGENT) == agent_ldo_balance_before
 
         # Items 2-11
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[0]) == TARGET_LDOS[0]
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[1]) == TARGET_LDOS[1]
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[2]) == TARGET_LDOS[2]
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[3]) == TARGET_LDOS[3]
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[4]) == TARGET_LDOS[4]
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[5]) == TARGET_LDOS[5]
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[6]) == TARGET_LDOS[6]
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[7]) == TARGET_LDOS[7]
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[8]) == TARGET_LDOS[8]
-        assert ldo_token.balanceOf(TARGET_ADDRESSES[9]) == TARGET_LDOS[9]
-
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[0]) == 1
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[1]) == 1
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[2]) == 1
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[3]) == 1
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[4]) == 1
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[5]) == 1
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[6]) == 1
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[7]) == 1
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[8]) == 1
-        assert token_manager.vestingsLengths(TARGET_ADDRESSES[9]) == 1
-
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[0]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[1]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[2]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[3]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[4]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[5]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[6]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[7]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[8]) == 0
-        assert token_manager.spendableBalanceOf(TARGET_ADDRESSES[9]) == 0
-
-        assert accounts.at(TARGET_ADDRESSES[0], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[1], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[2], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[3], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[4], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[5], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[6], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[7], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[8], force=True).nonce == 1
-        assert accounts.at(TARGET_ADDRESSES[9], force=True).nonce == 1
-
         for idx, target_address in enumerate(TARGET_ADDRESSES):
+            assert ldo_token.balanceOf(target_address) == TARGET_LDOS[idx]
+            assert token_manager.vestingsLengths(target_address) == 1
+            assert token_manager.spendableBalanceOf(target_address) == 0
+            assert accounts.at(target_address, force=True).nonce == 1
             vesting = token_manager.getVesting(target_address, token_manager.vestingsLengths(target_address) - 1)
             assert vesting["amount"] == TARGET_LDOS[idx]
             assert vesting["start"] == VESTING_START
@@ -261,14 +183,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         assert not acl.hasPermission(REVESTING_CONTRACT, TOKEN_MANAGER, web3.keccak(text=ASSIGN_ROLE).hex())
 
         # scenario tests
-        move_ldo_test(stranger, ldo_token, token_manager)
-        can_vote_with_vesting(ldo_holder, ldo_token, stranger, voting)
+        move_ldo_test(eoa, ldo_token, token_manager)
+        can_vote_with_vesting(ldo_holder, ldo_token, eoa, voting)
         # make sure revesting with no granted roles fails
         chain.snapshot()
-        ldo_token.transfer(stranger, 100_000 * 10**18, {"from": ldo_holder})
-        assert ldo_token.balanceOf(stranger) == 100_000 * 10**18
+        ldo_token.transfer(eoa, 100_000 * 10**18, {"from": ldo_holder})
+        assert ldo_token.balanceOf(eoa) == 100_000 * 10**18
         with reverts("APP_AUTH_FAILED"):
-            interface.LDORevesting(REVESTING_CONTRACT).revestSpendableBalance(stranger, {"from": TRP_COMMITTEE})
+            interface.LDORevesting(REVESTING_CONTRACT).revestSpendableBalance(eoa, {"from": TRP_COMMITTEE})
         chain.revert()
 
 
@@ -433,7 +355,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         )
 
 
-def move_ldo_test(stranger, ldo_token, token_manager):
+def move_ldo_test(eoa, ldo_token, token_manager):
 
     chain.snapshot()
 
@@ -442,36 +364,38 @@ def move_ldo_test(stranger, ldo_token, token_manager):
         # spend all initial LDOs non-vested (if any)
         target_address_spendable_balance = token_manager.spendableBalanceOf(target_address)
         if target_address_spendable_balance > 0:
-            stranger_balance_before = ldo_token.balanceOf(stranger)
-            ldo_token.transfer(stranger, target_address_spendable_balance, {"from": target_address})
+            eoa_balance_before = ldo_token.balanceOf(eoa)
+            ldo_token.transfer(eoa, target_address_spendable_balance, {"from": target_address})
             assert token_manager.spendableBalanceOf(target_address) == 0
-            assert ldo_token.balanceOf(stranger) == stranger_balance_before + target_address_spendable_balance
+            assert ldo_token.balanceOf(eoa) == eoa_balance_before + target_address_spendable_balance
             assert ldo_token.balanceOf(target_address) == TARGET_LDOS[idx]   
 
         # cannot spend vested LDOs before vesting time
         with reverts():
-            ldo_token.transfer(stranger, 1, {"from": target_address})
+            ldo_token.transfer(eoa, 1, {"from": target_address})
         with reverts():
-            ldo_token.transfer(stranger, TARGET_LDOS[idx], {"from": target_address})
+            ldo_token.transfer(eoa, TARGET_LDOS[idx], {"from": target_address})
 
     # sleep until cliff/total
-    chain.sleep(365 * 24 * 60 * 60 - (chain.time() - VESTING_START))
-    chain.mine()
+    time_to_cliff = VESTING_CLIFF - chain.time()
+    if time_to_cliff > 0:
+        chain.sleep(time_to_cliff)
+        chain.mine()
 
     # spend vested LDOs after vesting time
     for idx, target_address in enumerate(TARGET_ADDRESSES):
         assert token_manager.spendableBalanceOf(target_address) == TARGET_LDOS[idx]
-        stranger_balance_before = ldo_token.balanceOf(stranger)
-        ldo_token.transfer(stranger, 1, {"from": target_address})
-        ldo_token.transfer(stranger, TARGET_LDOS[idx] - 1, {"from": target_address})
+        eoa_balance_before = ldo_token.balanceOf(eoa)
+        ldo_token.transfer(eoa, 1, {"from": target_address})
+        ldo_token.transfer(eoa, TARGET_LDOS[idx] - 1, {"from": target_address})
         assert token_manager.spendableBalanceOf(target_address) == 0
         assert ldo_token.balanceOf(target_address) == 0
-        assert ldo_token.balanceOf(stranger) == stranger_balance_before + TARGET_LDOS[idx]
+        assert ldo_token.balanceOf(eoa) == eoa_balance_before + TARGET_LDOS[idx]
 
     chain.revert()
 
 
-def can_vote_with_vesting(ldo_holder, ldo_token, stranger, voting):
+def can_vote_with_vesting(ldo_holder, ldo_token, eoa, voting):
 
     chain.snapshot()
 
@@ -494,6 +418,6 @@ def can_vote_with_vesting(ldo_holder, ldo_token, stranger, voting):
     chain.sleep(24 * 60 * 60 * 5)
     chain.mine()
     
-    voting.executeVote(new_vote_id, {"from": stranger})
+    voting.executeVote(new_vote_id, {"from": eoa})
 
     chain.revert()

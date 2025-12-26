@@ -1,7 +1,7 @@
 """
 Vote 2025_12_27
 
-1. Revoke vesting (ID = 0) from 0xa8107de483f9623390d543b77c8e4bbb6f7af752 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249
+1. Revoke vesting (ID = 0) of 48,934,690.0011 LDO from 0xa8107de483f9623390d543b77c8e4bbb6f7af752 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249
 2. Vest 10,000,000 LDO to 0xED3D9bAC1B26610A6f8C42F4Fd2c741a16647056 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)
 3. Vest 5,000,000 LDO to 0x7bd77405a7c28F50a1010e2185297A25165FD5C6 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)
 4. Vest 5,000,000 LDO to 0x7E363142293cc25F96F94d5621ea01bCCe2890E8 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Jan 01 2026 00:00:00 GMT+0; cliff = total = Jan 01 2027 00:00:00 GMT+0; revokable)
@@ -80,7 +80,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     
     vote_desc_items, call_script_items = zip(
         (
-            "1. Revoke vesting (ID = 0) from 0xa8107de483f9623390d543b77c8e4bbb6f7af752 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249",
+            "1. Revoke vesting (ID = 0) of 48,934,690.0011 LDO from 0xa8107de483f9623390d543b77c8e4bbb6f7af752 via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249",
             (
                 token_manager.address,
                 token_manager.revokeVesting.encode_input(
