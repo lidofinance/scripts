@@ -48,16 +48,7 @@ def test_first_slots(sandwich_upgrade: SandwichFn):
 @pytest.fixture(scope="module")
 def skip_slots() -> Sequence[tuple[str, int]]:
     """Slots that are not checked for equality"""
-    return [
-        # Adding 8 new easy track factories - steps 2-9 of V3 upgrade
-        (contracts.easy_track.address, 0x05),
-        # Set soft-mode target validators limit to 0 for operator A41 - step 1.3 of operations voting
-        (contracts.node_operators_registry.address, 0x01),
-        # Transfer MATIC from Treasury to LOL Multisig - step 7 of operations voting
-        (contracts.finance.address, 0x07),
-        # periodsLength var - step 7 of operations voting can trigger _newPeriod in Finance
-        (contracts.finance.address, 0x09),
-    ]
+    return []
 
 
 @pytest.fixture(scope="module")
@@ -162,7 +153,7 @@ def far_block() -> int:
 
 @pytest.fixture(scope="module")
 def far_ts() -> int:
-    return chain.time() + 21 * 24 * 60 * 60  # 21 days
+    return chain.time() + 14 * 24 * 60 * 60  # 14 days
 
 
 def _sleep_till_block(block: int, ts: int) -> None:
