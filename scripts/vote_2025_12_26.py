@@ -111,7 +111,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "7. Vest 10,000,000 LDO to 0x396343362be2a4da1ce0c1c210945346fb82aa49 (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; non-revokable)",
+            "7. Vest 10,000,000 LDO to 0x396343362be2a4da1ce0c1c210945346fb82aa49 (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
             (
                 token_manager.address,
                 token_manager.assignVested.encode_input(
@@ -125,7 +125,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "8. Vest 10,000,000 LDO to 0xbcb61ad7b2d7949ecaefc77adbd5914813aeeffa (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; non-revokable)",
+            "8. Vest 10,000,000 LDO to 0xbcb61ad7b2d7949ecaefc77adbd5914813aeeffa (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
             (
                 token_manager.address,
                 token_manager.assignVested.encode_input(
@@ -139,7 +139,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "9. Vest 10,000,000 LDO to 0x1b5662b2a1831cc9f743101d15ab5900512c82a4 (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; non-revokable)",
+            "9. Vest 10,000,000 LDO to 0x1b5662b2a1831cc9f743101d15ab5900512c82a4 (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
             (
                 token_manager.address,
                 token_manager.assignVested.encode_input(
@@ -153,7 +153,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "10. Vest 10,000,000 LDO to 0xb79645264d73ad520a1ba87e5d69a15342a6270f (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; non-revokable)",
+            "10. Vest 10,000,000 LDO to 0xb79645264d73ad520a1ba87e5d69a15342a6270f (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
             (
                 token_manager.address,
                 token_manager.assignVested.encode_input(
@@ -167,7 +167,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "11. Vest 8,934,690.0011 LDO to 0x28c61ce51e4c3ada729a903628090fa90dc21d60 (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; non-revokable)",
+            "11. Vest 8,934,690.0011 LDO to 0x28c61ce51e4c3ada729a903628090fa90dc21d60 (TBD) via TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 (start = Wed Dec 31 2025 17:00:00 GMT+0000; cliff = total = Thu Dec 31 2026 17:00:00 GMT+0000; revokable)",
             (
                 token_manager.address,
                 token_manager.assignVested.encode_input(
