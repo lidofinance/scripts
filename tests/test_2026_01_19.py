@@ -63,7 +63,6 @@ OLD_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY = "0x5C3bDFa3E7f312d8cf72F56F2b7
 VAULTS_ADAPTER = "0xe2DE6d2DefF15588a71849c0429101F8ca9FB14D"  # TODO update address after deployment
 ALTER_TIERS_IN_OPERATOR_GRID_FACTORY = "0xa29173C7BCf39dA48D5E404146A652d7464aee14"  # TODO update address after deployment
 REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY = "0x194A46DA1947E98c9D79af13E06Cfbee0D8610cC"  # TODO update address after deployment
-REGISTER_TIERS_IN_OPERATOR_GRID_FACTORY = "0x5292A1284e4695B95C0840CF8ea25A818751C17F"
 UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY = "0x8Bdc726a3147D8187820391D7c6F9F942606aEe6"  # TODO update address after deployment
 SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY = "0x93F1DEE4473Ee9F42c8257C201e33a6Da30E5d67"  # TODO update address after deployment
 SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY = "0x1dF50522A1D868C12bF71747Bb6F24A18Fe6d32C"  # TODO update address after deployment
@@ -493,3 +492,444 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         # Step 1.6. Check new VaultsAdapter has BAD_DEBT_MASTER_ROLE on VaultHub
         assert vault_hub.hasRole(bad_debt_master_role, VAULTS_ADAPTER), "New VaultsAdapter should have BAD_DEBT_MASTER_ROLE on VaultHub after upgrade"
+
+        # Scenario tests for Easy Track factories behavior after the vote
+        trusted_address = accounts.at(ST_VAULTS_COMMITTEE, force=True)
+        chain.snapshot()
+        register_groups_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid)
+        alter_tiers_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid)
+        update_groups_share_limit_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid)
+        set_jail_status_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid, vault_factory)
+        update_vaults_fees_in_operator_grid_test(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory)
+        force_validator_exits_in_vault_hub_test(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory)
+        socialize_bad_debt_in_vault_hub_test(easy_track, trusted_address, stranger, operator_grid, lazy_oracle, vault_hub, vault_factory)
+        chain.revert()
+
+
+def register_groups_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid):
+
+    operator_addresses = [
+        "0x0000000000000000000000000000000000000001",
+        "0x0000000000000000000000000000000000000002",
+    ]
+    share_limits = [1000, 5000]
+    tiers_params_array = [
+        [(500, 200, 100, 50, 40, 10), (800, 200, 100, 50, 40, 10)],
+        [(800, 200, 100, 50, 40, 10), (800, 200, 100, 50, 40, 10)],
+    ]
+
+    calldata = _encode_calldata(
+        ["address[]", "uint256[]", "(uint256,uint256,uint256,uint256,uint256,uint256)[][]"],
+        [operator_addresses, share_limits, tiers_params_array]
+    )
+
+    # Check initial state
+    for i, operator_address in enumerate(operator_addresses):
+        group = operator_grid.group(operator_address)
+        assert group[0] == ZERO_ADDRESS  # operator
+        assert group[1] == 0  # shareLimit
+        assert len(group[3]) == 0  # tiersId array should be empty
+
+    create_and_enact_motion(easy_track, trusted_address, REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
+
+    # Check final state
+    for i, operator_address in enumerate(operator_addresses):
+        group = operator_grid.group(operator_address)
+        assert group[0] == operator_address  # operator
+        assert group[1] == share_limits[i]  # shareLimit
+        assert len(group[3]) == len(tiers_params_array[i])  # tiersId array should have the same length as tiers_params
+
+        # Check tier details
+        for j, tier_id in enumerate(group[3]):
+            tier = operator_grid.tier(tier_id)
+            assert tier[1] == tiers_params_array[i][j][0]  # shareLimit
+            assert tier[3] == tiers_params_array[i][j][1]  # reserveRatioBP
+            assert tier[4] == tiers_params_array[i][j][2]  # forcedRebalanceThresholdBP
+            assert tier[5] == tiers_params_array[i][j][3]  # infraFeeBP
+            assert tier[6] == tiers_params_array[i][j][4]  # liquidityFeeBP
+            assert tier[7] == tiers_params_array[i][j][5]  # reservationFeeBP
+
+
+def alter_tiers_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid):
+
+    # Define new tier parameters
+    # (shareLimit, reserveRatioBP, forcedRebalanceThresholdBP, infraFeeBP, liquidityFeeBP, reservationFeeBP)
+    new_tier_params = [(2000, 300, 150, 75, 60, 20), (3000, 400, 200, 100, 80, 30)]
+
+    # First register a group and tier to alter
+    executor = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
+    operator_address = "0x0000000000000000000000000000000000000005"
+    operator_grid.registerGroup(operator_address, 10000, {"from": executor})
+    initial_tier_params = [(1000, 200, 100, 50, 40, 10), (1000, 200, 100, 50, 40, 10)]
+    operator_grid.registerTiers(operator_address, initial_tier_params, {"from": executor})
+
+    tiers_count = operator_grid.tiersCount()
+    tier_ids = [tiers_count - 2, tiers_count - 1]
+
+    # Check initial state
+    for i, tier_id in enumerate(tier_ids):
+        tier = operator_grid.tier(tier_id)
+        assert tier[1] == initial_tier_params[i][0]  # shareLimit
+        assert tier[3] == initial_tier_params[i][1]  # reserveRatioBP
+        assert tier[4] == initial_tier_params[i][2]  # forcedRebalanceThresholdBP
+        assert tier[5] == initial_tier_params[i][3]  # infraFeeBP
+        assert tier[6] == initial_tier_params[i][4]  # liquidityFeeBP
+        assert tier[7] == initial_tier_params[i][5]  # reservationFeeBP
+
+    calldata = _encode_calldata(["uint256[]", "(uint256,uint256,uint256,uint256,uint256,uint256)[]"], [tier_ids, new_tier_params])
+
+    create_and_enact_motion(easy_track, trusted_address, ALTER_TIERS_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
+
+    # Check final state
+    for i, tier_id in enumerate(tier_ids):
+        tier = operator_grid.tier(tier_id)
+        assert tier[1] == new_tier_params[i][0]  # shareLimit
+        assert tier[3] == new_tier_params[i][1]  # reserveRatioBP
+        assert tier[4] == new_tier_params[i][2]  # forcedRebalanceThresholdBP
+        assert tier[5] == new_tier_params[i][3]  # infraFeeBP
+        assert tier[6] == new_tier_params[i][4]  # liquidityFeeBP
+        assert tier[7] == new_tier_params[i][5]  # reservationFeeBP
+
+
+def update_groups_share_limit_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid):
+
+    operator_addresses = ["0x0000000000000000000000000000000000000006", "0x0000000000000000000000000000000000000007"]
+    new_share_limits = [2000, 3000]
+
+    # First register the group to update
+    executor = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
+    for i, operator_address in enumerate(operator_addresses):
+        operator_grid.registerGroup(operator_address, new_share_limits[i]*2, {"from": executor})
+
+    # Check initial state
+    for i, operator_address in enumerate(operator_addresses):
+        group = operator_grid.group(operator_address)
+        assert group[0] == operator_address  # operator
+        assert group[1] == new_share_limits[i]*2  # shareLimit
+
+    calldata = _encode_calldata(
+        ["address[]", "uint256[]"],
+        [operator_addresses, new_share_limits]
+    )
+
+    create_and_enact_motion(easy_track, trusted_address, UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
+
+    # Check final state
+    for i, operator_address in enumerate(operator_addresses):
+        group = operator_grid.group(operator_address)
+        assert group[0] == operator_address  # operator
+        assert group[1] == new_share_limits[i] # shareLimit
+
+
+def set_jail_status_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid, vault_factory):
+
+    # First create the vaults
+    vaults = []
+    for i in range(2):
+        creation_tx = vault_factory.createVaultWithDashboard(
+            stranger,
+            stranger,
+            stranger,
+            100,
+            3600, # 1 hour
+            [],
+            {"from": stranger, "value": "1 ether"},
+        )
+        vaults.append(creation_tx.events["VaultCreated"][0]["vault"])
+
+    # Check initial state
+    for vault in vaults:
+        is_in_jail = operator_grid.isVaultInJail(vault)
+        assert is_in_jail == False
+
+    calldata = _encode_calldata(["address[]", "bool[]"], [vaults, [True, True]])
+
+    create_and_enact_motion(easy_track, trusted_address, SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
+
+    # Check final state
+    for i, vault in enumerate(vaults):
+        is_in_jail = operator_grid.isVaultInJail(vault)
+        assert is_in_jail == True
+
+
+def update_vaults_fees_in_operator_grid_test(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory):
+
+    initial_total_value = 2 * 10**18
+
+    # First create the vault
+    creation_tx = vault_factory.createVaultWithDashboard(
+        stranger,
+        stranger,
+        stranger,
+        100,
+        3600, # 1 hour
+        [],
+        {"from": stranger, "value": initial_total_value},
+    )
+    vault = creation_tx.events["VaultCreated"][0]["vault"]
+
+    # Check initial state
+    connection = vault_hub.vaultConnection(vault)
+    assert connection[6] != 1 # infraFeeBP
+    assert connection[7] != 1 # liquidityFeeBP
+    assert connection[8] == 0 # reservationFeeBP
+
+    calldata = _encode_calldata(["address[]", "uint256[]", "uint256[]", "uint256[]"], [[vault], [1], [1], [0]])
+
+    motions_before = easy_track.getMotions()
+    tx = easy_track.createMotion(UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY, calldata, {"from": trusted_address})
+    motions = easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 1
+
+    (
+        motion_id,
+        _,
+        _,
+        motion_duration,
+        motion_start_date,
+        _,
+        _,
+        _,
+        _,
+    ) = motions[-1]
+
+    chain.mine(1, motion_start_date + motion_duration + 1)
+
+    # bring fresh report for vault
+    current_time = chain.time()
+    accounting_oracle = accounts.at(ACCOUNTING_ORACLE, force=True)
+    lazy_oracle.updateReportData(
+        current_time,
+        1000,
+        "0x00",
+        "0x00",
+        {"from": accounting_oracle})
+
+    lazy_oracle_account = accounts.at(LAZY_ORACLE, force=True)
+    vault_hub.applyVaultReport(
+        vault,
+        current_time,
+        initial_total_value,
+        initial_total_value,
+        0,
+        0,
+        0,
+        0,
+        {"from": lazy_oracle_account})
+
+    easy_track.enactMotion(
+        motion_id,
+        tx.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+
+    # Check final state
+    connection = vault_hub.vaultConnection(vault)
+    assert connection[6] == 1 # infraFeeBP
+    assert connection[7] == 1 # liquidityFeeBP
+    assert connection[8] == 0 # reservationFeeBP
+
+
+def force_validator_exits_in_vault_hub_test(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory):
+
+    initial_total_value = 2 * 10**18
+
+    # top up VAULTS_ADAPTER
+    stranger.transfer(VAULTS_ADAPTER, 10**18)
+
+    pubkey = b"01" * 48
+    # First create the vault
+    creation_tx = vault_factory.createVaultWithDashboard(
+        stranger,
+        stranger,
+        stranger,
+        100,
+        3600, # 1 hour
+        [],
+        {"from": stranger, "value": initial_total_value},
+    )
+    vault = creation_tx.events["VaultCreated"][0]["vault"]
+
+    calldata = _encode_calldata(["address[]", "bytes[]"], [[vault], [pubkey]])
+
+    motions_before = easy_track.getMotions()
+    tx = easy_track.createMotion(FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY, calldata, {"from": trusted_address})
+    motions = easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 1
+
+    (
+        motion_id,
+        _,
+        _,
+        motion_duration,
+        motion_start_date,
+        _,
+        _,
+        _,
+        _,
+    ) = motions[-1]
+
+    chain.mine(1, motion_start_date + motion_duration + 1)
+
+    # bring fresh report for vault
+    current_time = chain.time()
+    accounting_oracle = accounts.at(ACCOUNTING_ORACLE, force=True)
+    lazy_oracle.updateReportData(
+        current_time,
+        1000,
+        "0x00",
+        "0x00",
+        {"from": accounting_oracle})
+
+    # make vault unhealthy
+    lazy_oracle_account = accounts.at(LAZY_ORACLE, force=True)
+    vault_hub.applyVaultReport(
+        vault,
+        current_time,
+        initial_total_value,
+        initial_total_value,
+        4 * initial_total_value,
+        0,
+        0,
+        0,
+        {"from": lazy_oracle_account})
+
+    tx = easy_track.enactMotion(
+        motion_id,
+        tx.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+
+    # Check event was emitted
+    assert len(tx.events["ForcedValidatorExitTriggered"]) == 1
+    event = tx.events["ForcedValidatorExitTriggered"][0]
+    assert event["vault"] == vault
+    assert event["pubkeys"] == "0x" + pubkey.hex()
+    assert event["refundRecipient"] == VAULTS_ADAPTER
+
+
+def socialize_bad_debt_in_vault_hub_test(easy_track, trusted_address, stranger, operator_grid, lazy_oracle, vault_hub, vault_factory):
+
+    initial_total_value = 2 * 10**18
+    max_shares_to_socialize = 2 * 10**16
+
+    # Enable minting in default group
+    executor = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
+    operator_grid.alterTiers([0], [(100_000 * 10**18, 300, 250, 50, 40, 10)], {"from": executor})
+
+    # First create the vaults
+    creation_tx = vault_factory.createVaultWithDashboard(
+        stranger,
+        stranger,
+        stranger,
+        100,
+        3600, # 1 hour
+        [],
+        {"from": stranger, "value": initial_total_value},
+    )
+    bad_debt_vault = creation_tx.events["VaultCreated"][0]["vault"]
+
+    # Fresh report for bad debt vault
+    current_time = chain.time()
+    accounting_oracle = accounts.at(ACCOUNTING_ORACLE, force=True)
+    lazy_oracle.updateReportData(current_time, 1000, "0x00", "0x00", {"from": accounting_oracle})
+    lazy_oracle_account = accounts.at(LAZY_ORACLE, force=True)
+    vault_hub.applyVaultReport(
+        bad_debt_vault,
+        current_time,
+        initial_total_value,
+        initial_total_value,
+        0,
+        0,
+        0,
+        0,
+        {"from": lazy_oracle_account})
+
+    bad_debt_dashboard = accounts.at(creation_tx.events["DashboardCreated"][0]["dashboard"], force=True)
+    vault_hub.mintShares(bad_debt_vault, stranger, 10 * max_shares_to_socialize, {"from": bad_debt_dashboard})
+
+    creation_tx = vault_factory.createVaultWithDashboard(
+        stranger,
+        stranger,
+        stranger,
+        100,
+        3600, # 1 hour
+        [],
+        {"from": stranger, "value": initial_total_value},
+    )
+    vault_acceptor = creation_tx.events["VaultCreated"][0]["vault"]
+
+    calldata = _encode_calldata(["address[]", "address[]", "uint256[]"], [[bad_debt_vault], [vault_acceptor], [max_shares_to_socialize]])
+
+    motions_before = easy_track.getMotions()
+    tx = easy_track.createMotion(SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY, calldata, {"from": trusted_address})
+    motions = easy_track.getMotions()
+    assert len(motions) == len(motions_before) + 1
+
+    (
+        motion_id,
+        _,
+        _,
+        motion_duration,
+        motion_start_date,
+        _,
+        _,
+        _,
+        _,
+    ) = motions[-1]
+
+    chain.mine(1, motion_start_date + motion_duration + 1)
+
+    # Bring fresh report for vaults
+    current_time = chain.time()
+    lazy_oracle.updateReportData(current_time, 1000, "0x00", "0x00", {"from": accounting_oracle})
+
+    # Fresh report for acceptor vault
+    vault_hub.applyVaultReport(
+        vault_acceptor,
+        current_time,
+        initial_total_value,
+        initial_total_value,
+        0,
+        0,
+        0,
+        0,
+        {"from": lazy_oracle_account})
+
+    # Make bad debt on second vault
+    vault_hub.applyVaultReport(
+        bad_debt_vault,
+        current_time,
+        10 * max_shares_to_socialize,
+        initial_total_value,
+        0,
+        initial_total_value,
+        0,
+        0,
+        {"from": lazy_oracle_account})
+
+    bad_debt_record_before = vault_hub.vaultRecord(bad_debt_vault)
+    bad_liability_before = bad_debt_record_before[2]
+    acceptor_record_before = vault_hub.vaultRecord(vault_acceptor)
+    acceptor_liability_before = acceptor_record_before[2]
+
+    tx = easy_track.enactMotion(
+        motion_id,
+        tx.events["MotionCreated"]["_evmScriptCallData"],
+        {"from": stranger},
+    )
+
+    bad_debt_record_after = vault_hub.vaultRecord(bad_debt_vault)
+    bad_liability_after = bad_debt_record_after[2]
+    acceptor_record_after = vault_hub.vaultRecord(vault_acceptor)
+    acceptor_liability_after = acceptor_record_after[2]
+
+    assert bad_liability_after == bad_liability_before - max_shares_to_socialize
+    assert acceptor_liability_after == acceptor_liability_before + max_shares_to_socialize
+
+    # Check that events were emitted for failed socializations
+    assert len(tx.events["BadDebtSocialized"]) == 1
+    event = tx.events["BadDebtSocialized"][0]
+    assert event["vaultDonor"] == bad_debt_vault
+    assert event["vaultAcceptor"] == vault_acceptor
+    assert event["badDebtShares"] == max_shares_to_socialize
