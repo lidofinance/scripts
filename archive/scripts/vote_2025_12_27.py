@@ -16,7 +16,7 @@ Vote 2025_12_27
 13. Revoke role 0x2406f1e99f79cea012fb88c5c36566feaeefee0f4b98d3a376b49310222b53c4 on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 from contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364
 14. Revoke role 0xf5a08927c847d7a29dc35e105208dbde5ce951392105d712761cc5d17440e2ff on TokenManager 0xf73a1260d222f447210581DDf212D915c09a3249 from contract 0xc2f50d3277539fbd54346278e7b92faa76dc7364
 
-TODO Vote #{vote_num} passed & executed on ${date+time}, block ${block}.
+Vote #197 passed & executed on Jan-01-2026 02:10:47 PM UTC, block 24140293.
 """
 
 from typing import Dict, List, Tuple
