@@ -2,6 +2,10 @@ from brownie import chain, interface, web3, convert, accounts, reverts, ZERO_ADD
 from brownie.network.transaction import TransactionReceipt
 import pytest
 
+from brownie.network import state
+from brownie.network.contract import Contract
+import json
+
 from utils.test.tx_tracing_helpers import (
     group_voting_events_from_receipt,
     group_dg_events_from_receipt,
@@ -494,14 +498,23 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # Step 1.6. Check new VaultsAdapter has BAD_DEBT_MASTER_ROLE on VaultHub
         assert vault_hub.hasRole(bad_debt_master_role, VAULTS_ADAPTER), "New VaultsAdapter should have BAD_DEBT_MASTER_ROLE on VaultHub after upgrade"
 
-        # Scenario tests for Easy Track factories behavior after the vote
+        # Scenario tests for Easy Track factories behavior after the vote ----------------------------------------------------
+        # --------------------------------------------------------------------------------------------------------------------
         trusted_address = accounts.at(ST_VAULTS_COMMITTEE, force=True)
+
         chain.snapshot()
         register_groups_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid)
         alter_tiers_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid)
         update_groups_share_limit_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid)
         set_jail_status_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid, vault_factory)
         update_vaults_fees_in_operator_grid_test(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory)
+
+        # Register VaultHub contract for event decoding - brownie will not find ForcedValidatorExitTriggered and BadDebtSocialized events otherwise
+        with open("interfaces/VaultHub.json") as fp:
+            abi = json.load(fp)
+        vault_hub_for_events = Contract.from_abi("VaultHub", VAULT_HUB, abi)
+        state._add_contract(vault_hub_for_events)
+
         force_validator_exits_in_vault_hub_test(easy_track, trusted_address, stranger, lazy_oracle, vault_hub, vault_factory)
         socialize_bad_debt_in_vault_hub_test(easy_track, trusted_address, stranger, operator_grid, lazy_oracle, vault_hub, vault_factory)
         chain.revert()
