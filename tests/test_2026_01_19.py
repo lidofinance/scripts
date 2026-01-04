@@ -801,12 +801,12 @@ def force_validator_exits_in_vault_hub_test(easy_track, trusted_address, strange
         {"from": stranger},
     )
 
-    # TODO Check event was emitted
-    # assert len(tx.events["ForcedValidatorExitTriggered"]) == 1
-    # event = tx.events["ForcedValidatorExitTriggered"][0]
-    # assert event["vault"] == vault
-    # assert event["pubkeys"] == "0x" + pubkey.hex()
-    # assert event["refundRecipient"] == VAULTS_ADAPTER
+    # Check event was emitted
+    assert len(tx.events["ForcedValidatorExitTriggered"]) == 1
+    event = tx.events["ForcedValidatorExitTriggered"][0]
+    assert event["vault"] == vault
+    assert event["pubkeys"] == "0x" + pubkey.hex()
+    assert event["refundRecipient"] == VAULTS_ADAPTER
 
 
 def socialize_bad_debt_in_vault_hub_test(easy_track, trusted_address, stranger, operator_grid, lazy_oracle, vault_hub, vault_factory):
@@ -928,9 +928,9 @@ def socialize_bad_debt_in_vault_hub_test(easy_track, trusted_address, stranger, 
     assert bad_liability_after == bad_liability_before - max_shares_to_socialize
     assert acceptor_liability_after == acceptor_liability_before + max_shares_to_socialize
 
-    # TODO Check that events were emitted for failed socializations
-    # assert len(tx.events["BadDebtSocialized"]) == 1
-    # event = tx.events["BadDebtSocialized"][0]
-    # assert event["vaultDonor"] == bad_debt_vault
-    # assert event["vaultAcceptor"] == vault_acceptor
-    # assert event["badDebtShares"] == max_shares_to_socialize
+    # Check that events were emitted for failed socializations
+    assert len(tx.events["BadDebtSocialized"]) == 1
+    event = tx.events["BadDebtSocialized"][0]
+    assert event["vaultDonor"] == bad_debt_vault
+    assert event["vaultAcceptor"] == vault_acceptor
+    assert event["badDebtShares"] == max_shares_to_socialize
