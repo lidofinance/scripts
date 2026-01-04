@@ -252,6 +252,9 @@ def parse_events_from_local_abi():
         "Voting": [VOTING_IMPL],
         "WithdrawalQueueERC721": [WITHDRAWAL_QUEUE, WITHDRAWAL_QUEUE_IMPL],
         "WithdrawalVault": [WITHDRAWAL_VAULT, WITHDRAWAL_VAULT_IMPL],
+        "VaultHub": [VAULT_HUB],
+        "OperatorGrid": [OPERATOR_GRID],
+        "LazyOracle": [LAZY_ORACLE],
     }
 
     interface_path_template = "interfaces/{}.json"
