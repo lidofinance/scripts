@@ -23,6 +23,7 @@ from utils.agent import agent_forward
 # ============================== Addresses ===================================
 
 # Lido addresses
+STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
 OPERATOR_GRID = "0xC69685E89Cefc327b43B7234AC646451B27c544d"
 VAULT_HUB = "0x1d201BE093d847f6446530Efb0E8Fb426d176709"
 
@@ -47,6 +48,15 @@ SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY = "0x1dF50522A1D868C12bF71747Bb6F24A18Fe
 FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY = "0x6C968cD89CA358fbAf57B18e77a8973Fa869a6aA" # TODO update address after deployment
 UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY = "0x5C3bDFa3E7f312d8cf72F56F2b797b026f6B471c" # TODO update address after deployment
 
+# CSM module parameters
+CSM_MODULE_ID = 3
+CSM_MODULE_NEW_TARGET_SHARE_BP = 750  # increase from 500 BP to 750 BP (7.5%)
+CSM_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP = 900  # increase from 625 BP to 900 BP (9%)
+CSM_MODULE_MODULE_FEE_BP = 600 # Unchanged
+CSM_MODULE_TREASURY_FEE_BP = 400 # Unchanged
+CSM_MODULE_MAX_DEPOSITS_PER_BLOCK = 30 # Unchanged
+CSM_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25 # Unchanged
+
 
 # ============================= Description ==================================
 # TODO <a description for IPFS (will appear in the voting description on vote.lido.fi)>
@@ -56,6 +66,7 @@ IPFS_DESCRIPTION = ""
 # ================================ Main ======================================
 def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
     vault_hub = interface.VaultHub(VAULT_HUB)
     vaults_adapter = interface.IVaultsAdapter(VAULTS_ADAPTER)
@@ -89,6 +100,22 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         # 1.6. Grant BAD_DEBT_MASTER_ROLE on VaultHub to new VaultsAdapter
         agent_forward([
             encode_oz_grant_role(vault_hub, "vaults.VaultHub.BadDebtMasterRole", VAULTS_ADAPTER)
+        ]),
+
+        # 1.7. Raise CSM (MODULE_ID = 3) stake share limit from 500 BP to 750 BP and priority exit threshold from 625 BP to 900 BP
+        agent_forward([
+            (
+                staking_router.address,
+                staking_router.updateStakingModule.encode_input(
+                    CSM_MODULE_ID,
+                    CSM_MODULE_NEW_TARGET_SHARE_BP,
+                    CSM_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP,
+                    CSM_MODULE_MODULE_FEE_BP,
+                    CSM_MODULE_TREASURY_FEE_BP,
+                    CSM_MODULE_MAX_DEPOSITS_PER_BLOCK,
+                    CSM_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
+                ),
+            ),
         ]),
     ]
 
