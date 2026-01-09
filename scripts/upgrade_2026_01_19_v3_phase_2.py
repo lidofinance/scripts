@@ -120,6 +120,15 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
                 ),
             ),
         ]),
+
+        # 1.8. Grant MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus to TwoPhaseFrameConfigUpdate
+        agent_forward([
+            encode_oz_grant_role(
+                contract=cs_hash_consensus,
+                role_name="MANAGE_FRAME_CONFIG_ROLE",
+                grant_to=TWO_PHASE_FRAME_CONFIG_UPDATE,
+            )
+        ]),
     ]
 
     dg_call_script = submit_proposals([
@@ -189,14 +198,6 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         (
             "15. Add new UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY factory to Easy Track",
             add_evmscript_factory(UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY, create_permissions(vaults_adapter, "updateVaultFees"))
-        ),
-        (
-            "16. Grant MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus to TwoPhaseFrameConfigUpdate",
-            encode_oz_grant_role(
-                contract=cs_hash_consensus,
-                role_name="MANAGE_FRAME_CONFIG_ROLE",
-                grant_to=TWO_PHASE_FRAME_CONFIG_UPDATE,
-            )
         ),
     )
 
