@@ -47,11 +47,25 @@ EASYTRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 EASYTRACK_EVMSCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 
 # Lido addresses
+STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
 OPERATOR_GRID = "0xC69685E89Cefc327b43B7234AC646451B27c544d"
 VAULT_HUB = "0x1d201BE093d847f6446530Efb0E8Fb426d176709"
 LAZY_ORACLE = "0x5DB427080200c235F2Ae8Cd17A7be87921f7AD6c"
 ACCOUNTING_ORACLE = "0x852deD011285fe67063a08005c71a85690503Cee"
 VAULTS_FACTORY = "0x02Ca7772FF14a9F6c1a08aF385aA96bb1b34175A"
+CS_HASH_CONSENSUS = "0x71093efF8D8599b5fA340D665Ad60fA7C80688e4"
+TWO_PHASE_FRAME_CONFIG_UPDATE = "0xb2B4DB1491cbe949ae85EfF01E0d3ee239f110C1"
+
+# CSM module parameters
+CSM_MODULE_ID = 3
+CSM_MODULE_OLD_TARGET_SHARE_BP = 500  # 5%
+CSM_MODULE_OLD_PRIORITY_EXIT_THRESHOLD_BP = 625  # 6.25%
+CSM_MODULE_NEW_TARGET_SHARE_BP = 750  # 7.5%
+CSM_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP = 900  # 9%
+CSM_MODULE_MODULE_FEE_BP = 600
+CSM_MODULE_TREASURY_FEE_BP = 400
+CSM_MODULE_MAX_DEPOSITS_PER_BLOCK = 30
+CSM_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 
 # Old Easy Track factories
 ST_VAULTS_COMMITTEE = "0x18A1065c81b0Cc356F1b1C843ddd5E14e4AefffF"
@@ -78,8 +92,8 @@ UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY = "0x5C3bDFa3E7f312d8cf72F56F2b797b0
 EXPECTED_VOTE_ID = 198
 EXPECTED_DG_PROPOSAL_ID = 8
 EXPECTED_VOTE_EVENTS_COUNT = 15
-EXPECTED_DG_EVENTS_FROM_AGENT = 6
-EXPECTED_DG_EVENTS_COUNT = 6
+EXPECTED_DG_EVENTS_FROM_AGENT = 8  # 6 role revoke/grant + 1 CSM update + 1 CS HashConsensus role grant
+EXPECTED_DG_EVENTS_COUNT = 8
 IPFS_DESCRIPTION_HASH = ""  # TODO: Update after IPFS upload
 
 
@@ -87,8 +101,10 @@ IPFS_DESCRIPTION_HASH = ""  # TODO: Update after IPFS upload
 def dual_governance_proposal_calls():
     """Returns list of dual governance proposal calls for events checking"""
 
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
     vault_hub = interface.VaultHub(VAULT_HUB)
+    cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
 
     dg_items = [
         # 1.1. Revoke REGISTRY_ROLE on OperatorGrid from old VaultsAdapter
@@ -120,6 +136,31 @@ def dual_governance_proposal_calls():
         agent_forward([
             encode_oz_grant_role(vault_hub, "vaults.VaultHub.BadDebtMasterRole", VAULTS_ADAPTER)
         ]),
+
+        # 1.7. Raise CSM (MODULE_ID = 3) stake share limit from 500 BP to 750 BP and priority exit threshold from 625 BP to 900 BP
+        agent_forward([
+            (
+                staking_router.address,
+                staking_router.updateStakingModule.encode_input(
+                    CSM_MODULE_ID,
+                    CSM_MODULE_NEW_TARGET_SHARE_BP,
+                    CSM_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP,
+                    CSM_MODULE_MODULE_FEE_BP,
+                    CSM_MODULE_TREASURY_FEE_BP,
+                    CSM_MODULE_MAX_DEPOSITS_PER_BLOCK,
+                    CSM_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
+                ),
+            ),
+        ]),
+
+        # 1.8. Grant MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus to TwoPhaseFrameConfigUpdate
+        agent_forward([
+            encode_oz_grant_role(
+                contract=cs_hash_consensus,
+                role_name="MANAGE_FRAME_CONFIG_ROLE",
+                grant_to=TWO_PHASE_FRAME_CONFIG_UPDATE,
+            )
+        ]),
     ]
 
     # Convert each dg_item to the expected format
@@ -150,10 +191,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
     lazy_oracle = interface.LazyOracle(LAZY_ORACLE)
     vault_factory = interface.VaultFactory(VAULTS_FACTORY)
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
+    cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
 
     registry_role = web3.keccak(text="vaults.OperatorsGrid.Registry")
     validator_exit_role = web3.keccak(text="vaults.VaultHub.ValidatorExitRole")
     bad_debt_master_role = web3.keccak(text="vaults.VaultHub.BadDebtMasterRole")
+    manage_frame_config_role = web3.keccak(text="MANAGE_FRAME_CONFIG_ROLE")
 
 
     # =========================================================================
@@ -402,6 +446,18 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             if VAULTS_ADAPTER != OLD_VAULTS_ADAPTER:
                 assert not vault_hub.hasRole(bad_debt_master_role, VAULTS_ADAPTER), "New VaultsAdapter should not have BAD_DEBT_MASTER_ROLE on VaultHub before upgrade"
 
+            # Step 1.7. Check CSM module parameters before upgrade
+            csm_module_before = staking_router.getStakingModule(CSM_MODULE_ID)
+            assert csm_module_before["stakeShareLimit"] == CSM_MODULE_OLD_TARGET_SHARE_BP, "CSM module should have old stake share limit before upgrade"
+            assert csm_module_before["priorityExitShareThreshold"] == CSM_MODULE_OLD_PRIORITY_EXIT_THRESHOLD_BP, "CSM module should have old priority exit threshold before upgrade"
+            assert csm_module_before["stakingModuleFee"] == CSM_MODULE_MODULE_FEE_BP, "CSM module fee should be unchanged before upgrade"
+            assert csm_module_before["treasuryFee"] == CSM_MODULE_TREASURY_FEE_BP, "CSM treasury fee should be unchanged before upgrade"
+            assert csm_module_before["maxDepositsPerBlock"] == CSM_MODULE_MAX_DEPOSITS_PER_BLOCK, "CSM max deposits per block should be unchanged before upgrade"
+            assert csm_module_before["minDepositBlockDistance"] == CSM_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE, "CSM min deposit block distance should be unchanged before upgrade"
+
+            # Step 1.8. Check TwoPhaseFrameConfigUpdate does not have MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus before upgrade
+            assert not cs_hash_consensus.hasRole(manage_frame_config_role, TWO_PHASE_FRAME_CONFIG_UPDATE), "TwoPhaseFrameConfigUpdate should not have MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus before upgrade"
+
             if details["status"] == PROPOSAL_STATUS["submitted"]:
                 chain.sleep(timelock.getAfterSubmitDelay() + 1)
                 dual_governance.scheduleProposal(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
@@ -475,6 +531,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=vault_hub,
                 )
 
+                # 1.7. Validate CSM staking module update events
+                assert "StakingModuleShareLimitSet" in dg_events[6], "No StakingModuleShareLimitSet event found"
+                assert dg_events[6]["StakingModuleShareLimitSet"]["stakingModuleId"] == CSM_MODULE_ID
+                assert dg_events[6]["StakingModuleShareLimitSet"]["stakeShareLimit"] == CSM_MODULE_NEW_TARGET_SHARE_BP
+                assert dg_events[6]["StakingModuleShareLimitSet"]["priorityExitShareThreshold"] == CSM_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP
+
+                # 1.8. Grant MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus to TwoPhaseFrameConfigUpdate
+                validate_grant_role_event(
+                    dg_events[7],
+                    role=manage_frame_config_role.hex(),
+                    grant_to=TWO_PHASE_FRAME_CONFIG_UPDATE,
+                    sender=AGENT,
+                    emitted_by=cs_hash_consensus,
+                )
+
 
         # =========================================================================
         # ==================== After DG proposal executed checks ==================
@@ -497,6 +568,18 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         # Step 1.6. Check new VaultsAdapter has BAD_DEBT_MASTER_ROLE on VaultHub
         assert vault_hub.hasRole(bad_debt_master_role, VAULTS_ADAPTER), "New VaultsAdapter should have BAD_DEBT_MASTER_ROLE on VaultHub after upgrade"
+
+        # Step 1.7. Check CSM module parameters after upgrade
+        csm_module_after = staking_router.getStakingModule(CSM_MODULE_ID)
+        assert csm_module_after["stakeShareLimit"] == CSM_MODULE_NEW_TARGET_SHARE_BP, "CSM module should have new stake share limit after upgrade"
+        assert csm_module_after["priorityExitShareThreshold"] == CSM_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP, "CSM module should have new priority exit threshold after upgrade"
+        assert csm_module_after["stakingModuleFee"] == CSM_MODULE_MODULE_FEE_BP, "CSM module fee should be unchanged after upgrade"
+        assert csm_module_after["treasuryFee"] == CSM_MODULE_TREASURY_FEE_BP, "CSM treasury fee should be unchanged after upgrade"
+        assert csm_module_after["maxDepositsPerBlock"] == CSM_MODULE_MAX_DEPOSITS_PER_BLOCK, "CSM max deposits per block should be unchanged after upgrade"
+        assert csm_module_after["minDepositBlockDistance"] == CSM_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE, "CSM min deposit block distance should be unchanged after upgrade"
+
+        # Step 1.8. Check TwoPhaseFrameConfigUpdate has MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus after upgrade
+        assert cs_hash_consensus.hasRole(manage_frame_config_role, TWO_PHASE_FRAME_CONFIG_UPDATE), "TwoPhaseFrameConfigUpdate should have MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus after upgrade"
 
         # Scenario tests for Easy Track factories behavior after the vote ----------------------------------------------------
         # --------------------------------------------------------------------------------------------------------------------
