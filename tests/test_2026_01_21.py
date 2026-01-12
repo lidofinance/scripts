@@ -479,6 +479,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     # =========================================================================
     # ======================= Execute DG Proposal =============================
     # =========================================================================
+    csm_module_before = None
     if EXPECTED_DG_PROPOSAL_ID is not None:
         details = timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)
         if details["status"] != PROPOSAL_STATUS["executed"]:
@@ -650,10 +651,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         csm_module_after = staking_router.getStakingModule(CSM_MODULE_ID)
         assert csm_module_after["stakeShareLimit"] == CSM_MODULE_NEW_TARGET_SHARE_BP, "CSM module should have new stake share limit after upgrade"
         assert csm_module_after["priorityExitShareThreshold"] == CSM_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP, "CSM module should have new priority exit threshold after upgrade"
-        assert csm_module_after["stakingModuleFee"] == CSM_MODULE_MODULE_FEE_BP, "CSM module fee should be unchanged after upgrade"
-        assert csm_module_after["treasuryFee"] == CSM_MODULE_TREASURY_FEE_BP, "CSM treasury fee should be unchanged after upgrade"
-        assert csm_module_after["maxDepositsPerBlock"] == CSM_MODULE_MAX_DEPOSITS_PER_BLOCK, "CSM max deposits per block should be unchanged after upgrade"
-        assert csm_module_after["minDepositBlockDistance"] == CSM_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE, "CSM min deposit block distance should be unchanged after upgrade"
+
+        # Compare all fields with before values, except for the two that must differ
+        if csm_module_before is not None:
+            changed_fields = {"stakeShareLimit", "priorityExitShareThreshold"}
+            for key in csm_module_before.keys():
+                if key not in changed_fields:
+                    assert csm_module_after[key] == csm_module_before[key], f"CSM module {key} should be unchanged after upgrade"
 
         # Step 1.8. Check TwoPhaseFrameConfigUpdate has MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus after upgrade
         assert cs_hash_consensus.hasRole(manage_frame_config_role, TWO_PHASE_FRAME_CONFIG_UPDATE), "TwoPhaseFrameConfigUpdate should have MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus after upgrade"
