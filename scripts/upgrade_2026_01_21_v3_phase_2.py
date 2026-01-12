@@ -1,5 +1,5 @@
 """
-# TODO Vote 2025_<MM>_<DD>
+Vote 2026_01_21
 
 # TODO <a list of vote items synced with Notion Omnibus checklist>
 
@@ -28,6 +28,8 @@ OPERATOR_GRID = "0xC69685E89Cefc327b43B7234AC646451B27c544d"
 VAULT_HUB = "0x1d201BE093d847f6446530Efb0E8Fb426d176709"
 CS_HASH_CONSENSUS = "0x71093efF8D8599b5fA340D665Ad60fA7C80688e4"
 TWO_PHASE_FRAME_CONFIG_UPDATE = "0xb2B4DB1491cbe949ae85EfF01E0d3ee239f110C1"
+PREDEPOSIT_GUARANTEE = "0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3"
+PREDEPOSIT_GUARANTEE_NEW_IMPL = "0x0000000000000000000000000000000000000001"  # TODO update address after deployment
 
 # Old Easy Track factories
 ST_VAULTS_COMMITTEE = "0x18A1065c81b0Cc356F1b1C843ddd5E14e4AefffF"
@@ -73,6 +75,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     vault_hub = interface.VaultHub(VAULT_HUB)
     vaults_adapter = interface.IVaultsAdapter(VAULTS_ADAPTER)
     cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
+    predeposit_guarantee_proxy = interface.OssifiableProxy(PREDEPOSIT_GUARANTEE)
 
     dg_items = [
         # 1.1. Revoke REGISTRY_ROLE on OperatorGrid from old VaultsAdapter
@@ -127,6 +130,14 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
                 contract=cs_hash_consensus,
                 role_name="MANAGE_FRAME_CONFIG_ROLE",
                 grant_to=TWO_PHASE_FRAME_CONFIG_UPDATE,
+            )
+        ]),
+
+        # 1.9. Update PredepositGuarantee implementation
+        agent_forward([
+            (
+                predeposit_guarantee_proxy.address,
+                predeposit_guarantee_proxy.proxy__upgradeTo.encode_input(PREDEPOSIT_GUARANTEE_NEW_IMPL),
             )
         ]),
     ]

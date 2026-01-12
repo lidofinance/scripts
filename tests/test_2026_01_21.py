@@ -30,7 +30,7 @@ from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_mot
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.upgrade_2026_01_19_v3_phase_2 import start_vote, get_vote_items
+from scripts.upgrade_2026_01_21_v3_phase_2 import start_vote, get_vote_items
 
 
 # ============================================================================
@@ -55,6 +55,8 @@ ACCOUNTING_ORACLE = "0x852deD011285fe67063a08005c71a85690503Cee"
 VAULTS_FACTORY = "0x02Ca7772FF14a9F6c1a08aF385aA96bb1b34175A"
 CS_HASH_CONSENSUS = "0x71093efF8D8599b5fA340D665Ad60fA7C80688e4"
 TWO_PHASE_FRAME_CONFIG_UPDATE = "0xb2B4DB1491cbe949ae85EfF01E0d3ee239f110C1"
+PREDEPOSIT_GUARANTEE = "0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3"
+PREDEPOSIT_GUARANTEE_NEW_IMPL = "0x0000000000000000000000000000000000000001"  # TODO update address after deployment
 
 # CSM module parameters
 CSM_MODULE_ID = 3
@@ -89,11 +91,11 @@ FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY = "0x6C968cD89CA358fbAf57B18e77a8973F
 UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY = "0x5C3bDFa3E7f312d8cf72F56F2b797b026f6B471c"  # TODO update address after deployment
 
 # Test parameters
-EXPECTED_VOTE_ID = 198
+EXPECTED_VOTE_ID = None  # Set to None to create a new vote each test run
 EXPECTED_DG_PROPOSAL_ID = 8
 EXPECTED_VOTE_EVENTS_COUNT = 15
-EXPECTED_DG_EVENTS_FROM_AGENT = 8  # 6 role revoke/grant + 1 CSM update + 1 CS HashConsensus role grant
-EXPECTED_DG_EVENTS_COUNT = 8
+EXPECTED_DG_EVENTS_FROM_AGENT = 9  # 6 role revoke/grant + 1 CSM update + 1 CS HashConsensus role grant + 1 PDG impl upgrade
+EXPECTED_DG_EVENTS_COUNT = 9
 IPFS_DESCRIPTION_HASH = ""  # TODO: Update after IPFS upload
 
 
@@ -105,6 +107,7 @@ def dual_governance_proposal_calls():
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
     vault_hub = interface.VaultHub(VAULT_HUB)
     cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
+    predeposit_guarantee_proxy = interface.OssifiableProxy(PREDEPOSIT_GUARANTEE)
 
     dg_items = [
         # 1.1. Revoke REGISTRY_ROLE on OperatorGrid from old VaultsAdapter
@@ -161,6 +164,14 @@ def dual_governance_proposal_calls():
                 grant_to=TWO_PHASE_FRAME_CONFIG_UPDATE,
             )
         ]),
+
+        # 1.9. Update PredepositGuarantee implementation
+        agent_forward([
+            (
+                predeposit_guarantee_proxy.address,
+                predeposit_guarantee_proxy.proxy__upgradeTo.encode_input(PREDEPOSIT_GUARANTEE_NEW_IMPL),
+            )
+        ]),
     ]
 
     # Convert each dg_item to the expected format
@@ -214,7 +225,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
     _, call_script_items = get_vote_items()
     onchain_script = voting.getVote(vote_id)["script"]
-    assert onchain_script == encode_call_script(call_script_items)
+    assert str(onchain_script).lower() == encode_call_script(call_script_items).lower()
 
 
     # =========================================================================
@@ -458,6 +469,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # Step 1.8. Check TwoPhaseFrameConfigUpdate does not have MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus before upgrade
             assert not cs_hash_consensus.hasRole(manage_frame_config_role, TWO_PHASE_FRAME_CONFIG_UPDATE), "TwoPhaseFrameConfigUpdate should not have MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus before upgrade"
 
+            # Step 1.9. Check PredepositGuarantee implementation before upgrade
+            predeposit_guarantee_proxy = interface.OssifiableProxy(PREDEPOSIT_GUARANTEE)
+            predeposit_guarantee_impl_before = str(predeposit_guarantee_proxy.proxy__getImplementation()).lower()
+            assert predeposit_guarantee_impl_before != PREDEPOSIT_GUARANTEE_NEW_IMPL.lower(), "PredepositGuarantee should have old implementation before upgrade"
+
             if details["status"] == PROPOSAL_STATUS["submitted"]:
                 chain.sleep(timelock.getAfterSubmitDelay() + 1)
                 dual_governance.scheduleProposal(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
@@ -546,6 +562,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=cs_hash_consensus,
                 )
 
+                # 1.9. Validate PredepositGuarantee implementation upgrade
+                assert "Upgraded" in dg_events[8], "No Upgraded event found for PredepositGuarantee"
+                assert str(dg_events[8]["Upgraded"]["implementation"]).lower() == PREDEPOSIT_GUARANTEE_NEW_IMPL.lower()
+
 
         # =========================================================================
         # ==================== After DG proposal executed checks ==================
@@ -580,6 +600,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         # Step 1.8. Check TwoPhaseFrameConfigUpdate has MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus after upgrade
         assert cs_hash_consensus.hasRole(manage_frame_config_role, TWO_PHASE_FRAME_CONFIG_UPDATE), "TwoPhaseFrameConfigUpdate should have MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus after upgrade"
+
+        # Step 1.9. Check PredepositGuarantee implementation after upgrade
+        predeposit_guarantee_proxy = interface.OssifiableProxy(PREDEPOSIT_GUARANTEE)
+        assert str(predeposit_guarantee_proxy.proxy__getImplementation()).lower() == PREDEPOSIT_GUARANTEE_NEW_IMPL.lower(), "PredepositGuarantee should have new implementation after upgrade"
 
         # Scenario tests for Easy Track factories behavior after the vote ----------------------------------------------------
         # --------------------------------------------------------------------------------------------------------------------
