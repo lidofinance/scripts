@@ -134,12 +134,24 @@ def test_oracle_report_success_when_observer_reverts(accounting_oracle: Contract
         block_identifier=block_after_report
     ), "TotalELRewardsCollected change mismatch"
 
+    pre_total_pooled = lido.getTotalPooledEther(block_identifier=block_before_report)
+    pre_external_ether = lido.getExternalEther(block_identifier=block_before_report)
+    pre_internal_ether = pre_total_pooled - pre_external_ether
+
+    post_total_shares = lido.getTotalShares(block_identifier=block_after_report)
+    post_external_shares = lido.getExternalShares(block_identifier=block_after_report)
+    post_internal_shares = post_total_shares - post_external_shares
+
+    expected_post_internal_ether = (
+        pre_internal_ether + el_rewards - withdrawals_finalized["amountOfETHLocked"]
+    )
+    expected_post_total_pooled = expected_post_internal_ether + (
+        post_external_shares * expected_post_internal_ether // post_internal_shares
+    )
+
     assert (
-        lido.getTotalPooledEther(block_identifier=block_before_report) + el_rewards
-        == lido.getTotalPooledEther(
-            block_identifier=block_after_report,
-        )
-        + withdrawals_finalized["amountOfETHLocked"]
+        lido.getTotalPooledEther(block_identifier=block_after_report)
+        == expected_post_total_pooled
     ), "TotalPooledEther change mismatch"
 
     assert (
