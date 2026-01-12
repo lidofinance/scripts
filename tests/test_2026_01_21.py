@@ -95,8 +95,8 @@ UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY = "0x5C3bDFa3E7f312d8cf72F56F2b797b0
 EXPECTED_VOTE_ID = None  # Set to None to create a new vote each test run
 EXPECTED_DG_PROPOSAL_ID = 8
 EXPECTED_VOTE_EVENTS_COUNT = 15
-EXPECTED_DG_EVENTS_FROM_AGENT = 9  # 6 role revoke/grant + 1 CSM update + 1 CS HashConsensus role grant + 1 PDG impl upgrade
-EXPECTED_DG_EVENTS_COUNT = 9
+EXPECTED_DG_EVENTS_FROM_AGENT = 12  # 6 role revoke/grant + 1 CSM update + 1 CS HashConsensus role grant + 1 PDG impl upgrade + 3 PDG unpause (grant RESUME_ROLE, resume, revoke RESUME_ROLE)
+EXPECTED_DG_EVENTS_COUNT = 12
 IPFS_DESCRIPTION_HASH = ""  # TODO: Update after IPFS upload
 
 
@@ -158,6 +158,7 @@ def dual_governance_proposal_calls():
     vault_hub = interface.VaultHub(VAULT_HUB)
     cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
     predeposit_guarantee_proxy = interface.OssifiableProxy(PREDEPOSIT_GUARANTEE)
+    predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
 
     dg_items = [
         # 1.1. Revoke REGISTRY_ROLE on OperatorGrid from old VaultsAdapter
@@ -221,6 +222,24 @@ def dual_governance_proposal_calls():
                 predeposit_guarantee_proxy.address,
                 predeposit_guarantee_proxy.proxy__upgradeTo.encode_input(PREDEPOSIT_GUARANTEE_NEW_IMPL),
             )
+        ]),
+
+        # 1.10. Grant RESUME_ROLE on PredepositGuarantee to Agent
+        agent_forward([
+            encode_oz_grant_role(predeposit_guarantee, "PausableUntilWithRoles.ResumeRole", AGENT)
+        ]),
+
+        # 1.11. Unpause PredepositGuarantee
+        agent_forward([
+            (
+                PREDEPOSIT_GUARANTEE,
+                predeposit_guarantee.resume.encode_input(),
+            )
+        ]),
+
+        # 1.12. Revoke RESUME_ROLE on PredepositGuarantee from Agent
+        agent_forward([
+            encode_oz_revoke_role(predeposit_guarantee, "PausableUntilWithRoles.ResumeRole", AGENT)
         ]),
     ]
 
@@ -525,6 +544,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             predeposit_guarantee_impl_before = str(predeposit_guarantee_proxy.proxy__getImplementation()).lower()
             assert predeposit_guarantee_impl_before != PREDEPOSIT_GUARANTEE_NEW_IMPL.lower(), "PredepositGuarantee should have old implementation before upgrade"
 
+            # Step 1.10-1.12. Check PredepositGuarantee is paused before upgrade
+            predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
+            assert predeposit_guarantee.isPaused(), "PredepositGuarantee should be paused before upgrade"
+
             if details["status"] == PROPOSAL_STATUS["submitted"]:
                 chain.sleep(timelock.getAfterSubmitDelay() + 1)
                 dual_governance.scheduleProposal(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
@@ -624,6 +647,28 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert "Upgraded" in dg_events[8], "No Upgraded event found for PredepositGuarantee"
                 assert str(dg_events[8]["Upgraded"]["implementation"]).lower() == PREDEPOSIT_GUARANTEE_NEW_IMPL.lower()
 
+                # 1.10. Validate grant RESUME_ROLE on PredepositGuarantee to Agent
+                resume_role = web3.keccak(text="PausableUntilWithRoles.ResumeRole")
+                validate_grant_role_event(
+                    dg_events[9],
+                    role=resume_role.hex(),
+                    grant_to=AGENT,
+                    sender=AGENT,
+                    emitted_by=predeposit_guarantee,
+                )
+
+                # 1.11. Validate PredepositGuarantee unpause (Resumed event)
+                assert "Resumed" in dg_events[10], "No Resumed event found for PredepositGuarantee"
+
+                # 1.12. Validate revoke RESUME_ROLE on PredepositGuarantee from Agent
+                validate_revoke_role_event(
+                    dg_events[11],
+                    role=resume_role.hex(),
+                    revoke_from=AGENT,
+                    sender=AGENT,
+                    emitted_by=predeposit_guarantee,
+                )
+
 
         # =========================================================================
         # ==================== After DG proposal executed checks ==================
@@ -665,6 +710,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # Step 1.9. Check PredepositGuarantee implementation after upgrade
         predeposit_guarantee_proxy = interface.OssifiableProxy(PREDEPOSIT_GUARANTEE)
         assert str(predeposit_guarantee_proxy.proxy__getImplementation()).lower() == PREDEPOSIT_GUARANTEE_NEW_IMPL.lower(), "PredepositGuarantee should have new implementation after upgrade"
+
+        # Step 1.10-1.12. Check PredepositGuarantee is unpaused after upgrade and Agent does not have RESUME_ROLE
+        predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
+        assert not predeposit_guarantee.isPaused(), "PredepositGuarantee should be unpaused after upgrade"
+        resume_role = web3.keccak(text="PausableUntilWithRoles.ResumeRole")
+        assert not predeposit_guarantee.hasRole(resume_role, AGENT), "Agent should not have RESUME_ROLE on PredepositGuarantee after upgrade"
 
         # Scenario tests for Easy Track factories behavior after the vote ----------------------------------------------------
         # --------------------------------------------------------------------------------------------------------------------

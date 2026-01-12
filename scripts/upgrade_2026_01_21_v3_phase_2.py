@@ -22,6 +22,9 @@ from utils.agent import agent_forward
 
 # ============================== Addresses ===================================
 
+# DAO addresses
+AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
+
 # Lido addresses
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
 OPERATOR_GRID = "0xC69685E89Cefc327b43B7234AC646451B27c544d"
@@ -76,6 +79,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     vaults_adapter = interface.IVaultsAdapter(VAULTS_ADAPTER)
     cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
     predeposit_guarantee_proxy = interface.OssifiableProxy(PREDEPOSIT_GUARANTEE)
+    predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
 
     dg_items = [
         # 1.1. Revoke REGISTRY_ROLE on OperatorGrid from old VaultsAdapter
@@ -139,6 +143,24 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
                 predeposit_guarantee_proxy.address,
                 predeposit_guarantee_proxy.proxy__upgradeTo.encode_input(PREDEPOSIT_GUARANTEE_NEW_IMPL),
             )
+        ]),
+
+        # 1.10. Grant RESUME_ROLE on PredepositGuarantee to Agent
+        agent_forward([
+            encode_oz_grant_role(predeposit_guarantee, "PausableUntilWithRoles.ResumeRole", AGENT)
+        ]),
+
+        # 1.11. Unpause PredepositGuarantee
+        agent_forward([
+            (
+                predeposit_guarantee_proxy.address,
+                predeposit_guarantee.resume.encode_input(),
+            )
+        ]),
+
+        # 1.12. Revoke RESUME_ROLE on PredepositGuarantee from Agent
+        agent_forward([
+            encode_oz_revoke_role(predeposit_guarantee, "PausableUntilWithRoles.ResumeRole", AGENT)
         ]),
     ]
 
