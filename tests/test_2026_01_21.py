@@ -254,6 +254,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     vault_factory = interface.VaultFactory(VAULTS_FACTORY)
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
+    vaults_adapter = interface.IVaultsAdapter(VAULTS_ADAPTER)
 
     registry_role = web3.keccak(text="vaults.OperatorsGrid.Registry")
     validator_exit_role = web3.keccak(text="vaults.VaultHub.ValidatorExitRole")
@@ -338,6 +339,35 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY in new_factories, "EasyTrack should have new FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY factory after vote"
         assert UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY in new_factories, "EasyTrack should have new UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY factory after vote"
 
+        # Since we remove 7 and add 7, the count should remain the same
+        assert len(initial_factories) == len(new_factories), f"Factory count changed: {len(initial_factories)} -> {len(new_factories)}"
+
+        # Check that all old factories (except the ones being replaced) are still present
+        # Use sets because order of vaults' factories changes when removing and adding
+        old_factories_to_remove = {
+            OLD_ALTER_TIERS_IN_OPERATOR_GRID_FACTORY,
+            OLD_REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY,
+            OLD_UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY,
+            OLD_SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY,
+            OLD_SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY,
+            OLD_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY,
+            OLD_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY,
+        }
+        new_factories_added = {
+            ALTER_TIERS_IN_OPERATOR_GRID_FACTORY,
+            REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY,
+            UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY,
+            SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY,
+            SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY,
+            FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY,
+            UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY,
+        }
+
+        # Check that all other factories remained
+        factories_that_should_remain = set(initial_factories) - old_factories_to_remove
+        factories_in_new_list = set(new_factories) - new_factories_added
+        assert factories_that_should_remain == factories_in_new_list, "All other factories should remain unchanged"
+
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
 
@@ -354,8 +384,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             )
 
             # Validate EasyTrack factory removal/addition events
-            vaults_adapter = interface.IVaultsAdapter(VAULTS_ADAPTER)
-
             # 2. Remove old ALTER_TIERS_IN_OPERATOR_GRID_FACTORY
             validate_evmscript_factory_removed_event(
                 vote_events[1],
