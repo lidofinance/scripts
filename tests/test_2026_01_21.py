@@ -1211,6 +1211,8 @@ def two_phase_frame_config_update_test(stranger):
     - call executeRestorePhase
     - assert changes are applied
     - assert role was renounced from TWO_PHASE_FRAME_CONFIG_UPDATE
+
+    To avoid the hassle of simulating oracle reports, we set lastProcessingRefSlot in CSFeeOracle to match expected slots.
     """
     cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
     cs_fee_oracle = interface.CSFeeOracle(CS_FEE_ORACLE)
