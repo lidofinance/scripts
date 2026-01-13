@@ -24,6 +24,7 @@ from utils.test.event_validators.permission import validate_grant_role_event, va
 from utils.test.event_validators.aragon import validate_aragon_grant_permission_event, validate_aragon_revoke_permission_event
 from utils.test.event_validators.easy_track import validate_evmscript_factory_added_event, validate_evmscript_factory_removed_event, EVMScriptFactoryAdded
 from utils.test.event_validators.common import validate_events_chain
+from utils.test.event_validators.proxy import validate_proxy_upgrade_event
 from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
 from utils.test.rpc_helpers import set_storage_at
 
@@ -702,8 +703,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 )
 
                 # 1.9. Validate PredepositGuarantee implementation upgrade
-                assert "Upgraded" in dg_events[8], "No Upgraded event found for PredepositGuarantee"
-                assert str(dg_events[8]["Upgraded"]["implementation"]).lower() == PREDEPOSIT_GUARANTEE_NEW_IMPL.lower()
+                validate_proxy_upgrade_event(
+                    dg_events[8],
+                    implementation=PREDEPOSIT_GUARANTEE_NEW_IMPL,
+                    emitted_by=PREDEPOSIT_GUARANTEE,
+                )
 
                 # 1.10. Validate grant RESUME_ROLE on PredepositGuarantee to Agent
                 resume_role = web3.keccak(text="PausableUntilWithRoles.ResumeRole")
