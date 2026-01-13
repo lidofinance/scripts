@@ -26,6 +26,7 @@ from utils.test.event_validators.permission import validate_grant_role_event, va
 from utils.test.event_validators.easy_track import validate_evmscript_factory_added_event, validate_evmscript_factory_removed_event, EVMScriptFactoryAdded
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
+from utils.test.rpc_helpers import set_storage_at
 
 
 # ============================================================================
@@ -55,6 +56,7 @@ LAZY_ORACLE = "0x5DB427080200c235F2Ae8Cd17A7be87921f7AD6c"
 ACCOUNTING_ORACLE = "0x852deD011285fe67063a08005c71a85690503Cee"
 VAULTS_FACTORY = "0x02Ca7772FF14a9F6c1a08aF385aA96bb1b34175A"
 CS_HASH_CONSENSUS = "0x71093efF8D8599b5fA340D665Ad60fA7C80688e4"
+CS_FEE_ORACLE = "0x4D4074628678Bd302921c20573EEa1ed38DdF7FB"
 TWO_PHASE_FRAME_CONFIG_UPDATE = "0xb2B4DB1491cbe949ae85EfF01E0d3ee239f110C1"
 PREDEPOSIT_GUARANTEE = "0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3"
 PREDEPOSIT_GUARANTEE_NEW_IMPL = "0x85cBc70D06CfD02D176c7e8474636cF9fCa414eA"  # Placeholder, TODO update address after deployment
@@ -766,6 +768,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         socialize_bad_debt_in_vault_hub_test(easy_track, trusted_address, stranger, operator_grid, lazy_oracle, vault_hub, vault_factory)
         chain.revert()
 
+        # Scenario test for TwoPhaseFrameConfigUpdate contract
+        chain.snapshot()
+        two_phase_frame_config_update_test(stranger)
+        chain.revert()
+
 
 def register_groups_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid):
 
@@ -1194,3 +1201,86 @@ def socialize_bad_debt_in_vault_hub_test(easy_track, trusted_address, stranger, 
     assert event["vaultDonor"] == bad_debt_vault
     assert event["vaultAcceptor"] == vault_acceptor
     assert event["badDebtShares"] == max_shares_to_socialize
+
+
+def two_phase_frame_config_update_test(stranger):
+    """
+    Test scenario for TwoPhaseFrameConfigUpdate contract:
+    - call executeOffsetPhase
+    - assert changes are applied
+    - call executeRestorePhase
+    - assert changes are applied
+    - assert role was renounced from TWO_PHASE_FRAME_CONFIG_UPDATE
+    """
+    cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
+    cs_fee_oracle = interface.CSFeeOracle(CS_FEE_ORACLE)
+    two_phase_update = interface.TwoPhaseFrameConfigUpdate(TWO_PHASE_FRAME_CONFIG_UPDATE)
+
+    manage_frame_config_role = cs_hash_consensus.MANAGE_FRAME_CONFIG_ROLE()
+
+    # Storage slot for lastProcessingRefSlot in CSFeeOracle
+    last_processing_ref_slot_key = web3.keccak(text="lido.BaseOracle.lastProcessingRefSlot").hex()
+
+    # Get chain config
+    seconds_per_slot = two_phase_update.SECONDS_PER_SLOT()
+    genesis_time = two_phase_update.GENESIS_TIME()
+
+    # Get phase configs from the contract
+    offset_phase = two_phase_update.offsetPhase()
+    restore_phase = two_phase_update.restorePhase()
+
+    [offset_expected_ref_slot, _, offset_epochs_per_frame, offset_fast_lane_length, is_offset_phase_executed] = offset_phase
+    [restore_expected_ref_slot, _, restore_epochs_per_frame, restore_fast_lane_length, is_restore_phase_executed] = restore_phase
+
+    assert cs_hash_consensus.hasRole(manage_frame_config_role, TWO_PHASE_FRAME_CONFIG_UPDATE), "TwoPhaseFrameConfigUpdate should have MANAGE_FRAME_CONFIG_ROLE"
+    assert is_offset_phase_executed == False, "Offset phase should not be executed yet"
+    assert is_restore_phase_executed == False, "Restore phase should not be executed yet"
+
+    # =========================================================================
+    # Phase 1: Execute Offset Phase
+    # =========================================================================
+
+    # Set lastProcessingRefSlot in CSFeeOracle to match offset phase expected slot
+    set_storage_at(cs_fee_oracle.address, last_processing_ref_slot_key, "0x" + offset_expected_ref_slot.to_bytes(32, "big").hex())
+    assert cs_fee_oracle.getLastProcessingRefSlot() == offset_expected_ref_slot, "CSFeeOracle lastProcessingRefSlot should be set to offset phase expected slot"
+    assert two_phase_update.isReadyForOffsetPhase(), "Should be ready for offset phase"
+
+    offset_tx = two_phase_update.executeOffsetPhase({"from": stranger})
+    assert len(offset_tx.events["OffsetPhaseExecuted"]) == 1, "OffsetPhaseExecuted event should be emitted"
+
+    # Check offset phase changes are applied
+    assert two_phase_update.offsetPhase()[4] == True, "Offset phase should be marked as executed"
+    [_, frame_config_epochs_per_frame, frame_config_fast_lane_length] = cs_hash_consensus.getFrameConfig()
+    assert frame_config_epochs_per_frame == offset_epochs_per_frame, f"Epochs per frame should be {offset_epochs_per_frame} after offset phase"
+    assert frame_config_fast_lane_length == offset_fast_lane_length, f"Fast lane length should be {offset_fast_lane_length} after offset phase"
+
+    # =========================================================================
+    # Phase 2: Execute Restore Phase
+    # =========================================================================
+
+    # Set lastProcessingRefSlot in CSFeeOracle to match restore phase expected slot
+    set_storage_at(cs_fee_oracle.address, last_processing_ref_slot_key, "0x" + restore_expected_ref_slot.to_bytes(32, "big").hex())
+    assert cs_fee_oracle.getLastProcessingRefSlot() == restore_expected_ref_slot, "CSFeeOracle lastProcessingRefSlot should be set to restore phase expected slot"
+    assert two_phase_update.isReadyForRestorePhase(), "Should be ready for restore phase"
+
+    restore_tx = two_phase_update.executeRestorePhase({"from": stranger})
+    assert len(restore_tx.events["RestorePhaseExecuted"]) == 1, "RestorePhaseExecuted event should be emitted"
+
+    # Check restore phase changes are applied
+    assert two_phase_update.restorePhase()[4] == True, "Restore phase should be marked as executed"
+    [_, frame_config_epochs_per_frame, frame_config_fast_lane_length] = cs_hash_consensus.getFrameConfig()
+    assert frame_config_epochs_per_frame == restore_epochs_per_frame, f"Epochs per frame should be {restore_epochs_per_frame} after restore phase"
+    assert frame_config_fast_lane_length == restore_fast_lane_length, f"Fast lane length should be {restore_fast_lane_length} after restore phase"
+
+    # =========================================================================
+    # Role renouncement
+    # =========================================================================
+
+    # Check MANAGE_FRAME_CONFIG_ROLE was renounced from TwoPhaseFrameConfigUpdate
+    assert not cs_hash_consensus.hasRole(manage_frame_config_role, TWO_PHASE_FRAME_CONFIG_UPDATE), "TwoPhaseFrameConfigUpdate should NOT have MANAGE_FRAME_CONFIG_ROLE after restore phase"
+
+    # Check RoleRevoked event was emitted for the renouncement
+    assert len(restore_tx.events["RoleRevoked"]) == 1, "RoleRevoked event should be emitted"
+    role_revoked_event = restore_tx.events["RoleRevoked"][0]
+    assert role_revoked_event["role"] == manage_frame_config_role, "Role revoked should be MANAGE_FRAME_CONFIG_ROLE"
+    assert convert.to_address(role_revoked_event["account"]) == convert.to_address(TWO_PHASE_FRAME_CONFIG_UPDATE), "Account should be TwoPhaseFrameConfigUpdate"
