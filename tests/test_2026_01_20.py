@@ -61,7 +61,7 @@ CS_HASH_CONSENSUS = "0x71093efF8D8599b5fA340D665Ad60fA7C80688e4"
 CS_FEE_ORACLE = "0x4D4074628678Bd302921c20573EEa1ed38DdF7FB"
 TWO_PHASE_FRAME_CONFIG_UPDATE = "0xb2B4DB1491cbe949ae85EfF01E0d3ee239f110C1"
 PREDEPOSIT_GUARANTEE = "0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3"
-PREDEPOSIT_GUARANTEE_NEW_IMPL = "0x85cBc70D06CfD02D176c7e8474636cF9fCa414eA"  # Placeholder, TODO update address after deployment
+PREDEPOSIT_GUARANTEE_NEW_IMPL = "0xE78717192C45736DF0E4be55c0219Ee7f9aDdd0D"
 
 # CSM module parameters
 CSM_MODULE_ID = 3
@@ -89,17 +89,17 @@ OLD_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY = "0x6C968cD89CA358fbAf57B18e77a8
 OLD_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY = "0x5C3bDFa3E7f312d8cf72F56F2b797b026f6B471c"
 
 # New Easy Track factories
-VAULTS_ADAPTER = "0xe2DE6d2DefF15588a71849c0429101F8ca9FB14D"  # TODO update address after deployment
+VAULTS_ADAPTER = "0x28F9Ac198C4E0FA6A9Ad2c2f97CB38F1A3120f27"
 ALTER_TIERS_IN_OPERATOR_GRID_FACTORY = "0x73f80240ad9363d5d3C5C3626953C351cA36Bfe9"
 REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY = "0xE73842AEbEC99Dacf2aAEec61409fD01A033f478"
 UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY = "0xf23559De8ab37fF7a154384B0822dA867Cfa7Eac"
-SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY = "0x93F1DEE4473Ee9F42c8257C201e33a6Da30E5d67"  # TODO update address after deployment
-SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY = "0x1dF50522A1D868C12bF71747Bb6F24A18Fe6d32C"  # TODO update address after deployment
-FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY = "0x6C968cD89CA358fbAf57B18e77a8973Fa869a6aA"  # TODO update address after deployment
-UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY = "0x5C3bDFa3E7f312d8cf72F56F2b797b026f6B471c"  # TODO update address after deployment
+SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY = "0x6a4f33F05E7412A11100353724Bb6a152Cf0D305"
+SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY = "0xaf35A63a4114B7481589fDD9FDB3e35Fd65fAed7"
+FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY = "0x6F5c0A5a824773E8f8285bC5aA59ea0Aab2A6400"
+UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY = "0xDfA0bc38113B6d53c2881573FD764CEEFf468610"
 
 # Test parameters
-EXPECTED_VOTE_ID = 198  # Set to None to create a new vote each test run
+EXPECTED_VOTE_ID = None  # Set to None to create a new vote each test run
 EXPECTED_DG_PROPOSAL_ID = 8
 EXPECTED_VOTE_EVENTS_COUNT = 15
 EXPECTED_DG_EVENTS_FROM_AGENT = 15  # 6 role revoke/grant + 1 CSM update + 1 CS HashConsensus role grant + 1 PDG impl upgrade + 3 PDG unpause (grant RESUME_ROLE, resume, revoke RESUME_ROLE) + 3 set max external ratio (grant STAKING_CONTROL_ROLE, set ratio, revoke STAKING_CONTROL_ROLE)
@@ -346,14 +346,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert OLD_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY in initial_factories, "EasyTrack should have OLD_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY factory before vote"
         assert OLD_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY in initial_factories, "EasyTrack should have OLD_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY factory before vote"
 
-        # TODO Check new factories are not present yet (uncomment when new addresses are deployed)
+        # Check new factories are not present yet
         assert ALTER_TIERS_IN_OPERATOR_GRID_FACTORY not in initial_factories
         assert REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY not in initial_factories
         assert UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY not in initial_factories
-        # assert SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY not in initial_factories
-        # assert SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY not in initial_factories
-        # assert FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY not in initial_factories
-        # assert UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY not in initial_factories
+        assert SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY not in initial_factories
+        assert SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY not in initial_factories
+        assert FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY not in initial_factories
+        assert UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY not in initial_factories
 
         # TODO Check IPFS description hash
         # assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
@@ -369,14 +369,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         new_factories = easy_track.getEVMScriptFactories()
 
-        # TODO Check old factories are removed (uncomment when testing on real vote)
+        # Check old factories are removed
         assert OLD_ALTER_TIERS_IN_OPERATOR_GRID_FACTORY not in new_factories
         assert OLD_REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY not in new_factories
         assert OLD_UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY not in new_factories
-        # assert OLD_SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY not in new_factories
-        # assert OLD_SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY not in new_factories
-        # assert OLD_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY not in new_factories
-        # assert OLD_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY not in new_factories
+        assert OLD_SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY not in new_factories
+        assert OLD_SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY not in new_factories
+        assert OLD_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY not in new_factories
+        assert OLD_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY not in new_factories
 
         # Check new factories are added
         assert ALTER_TIERS_IN_OPERATOR_GRID_FACTORY in new_factories, "EasyTrack should have new ALTER_TIERS_IN_OPERATOR_GRID_FACTORY factory after vote"
