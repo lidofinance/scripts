@@ -1,4 +1,4 @@
-from brownie import chain, interface, web3, convert, accounts, reverts, ZERO_ADDRESS
+from brownie import chain, interface, web3, convert, accounts, ZERO_ADDRESS
 from brownie.network.transaction import TransactionReceipt
 import pytest
 
@@ -14,15 +14,14 @@ from utils.test.tx_tracing_helpers import (
     display_dg_events
 )
 from utils.evm_script import encode_call_script
-from utils.voting import find_metadata_by_vote_id
-from utils.ipfs import get_lido_vote_cid_from_str
 from utils.dual_governance import PROPOSAL_STATUS
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 
 from utils.agent import agent_forward
-from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
+from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role, encode_permission_grant, encode_permission_revoke
 from utils.easy_track import create_permissions
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
+from utils.test.event_validators.aragon import validate_aragon_grant_permission_event, validate_aragon_revoke_permission_event
 from utils.test.event_validators.easy_track import validate_evmscript_factory_added_event, validate_evmscript_factory_removed_event, EVMScriptFactoryAdded
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
@@ -49,6 +48,8 @@ EASYTRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 EASYTRACK_EVMSCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 
 # Lido addresses
+LIDO = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
+ACL = "0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb"
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
 OPERATOR_GRID = "0xC69685E89Cefc327b43B7234AC646451B27c544d"
 VAULT_HUB = "0x1d201BE093d847f6446530Efb0E8Fb426d176709"
@@ -71,6 +72,9 @@ CSM_MODULE_MODULE_FEE_BP = 600
 CSM_MODULE_TREASURY_FEE_BP = 400
 CSM_MODULE_MAX_DEPOSITS_PER_BLOCK = 30
 CSM_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25
+
+# Lido max external ratio
+MAX_EXTERNAL_RATIO_BP = 3000  # 30%
 
 # Old Easy Track factories
 ST_VAULTS_COMMITTEE = "0x18A1065c81b0Cc356F1b1C843ddd5E14e4AefffF"
@@ -97,8 +101,8 @@ UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY = "0x5C3bDFa3E7f312d8cf72F56F2b797b0
 EXPECTED_VOTE_ID = None  # Set to None to create a new vote each test run
 EXPECTED_DG_PROPOSAL_ID = 8
 EXPECTED_VOTE_EVENTS_COUNT = 15
-EXPECTED_DG_EVENTS_FROM_AGENT = 12  # 6 role revoke/grant + 1 CSM update + 1 CS HashConsensus role grant + 1 PDG impl upgrade + 3 PDG unpause (grant RESUME_ROLE, resume, revoke RESUME_ROLE)
-EXPECTED_DG_EVENTS_COUNT = 12
+EXPECTED_DG_EVENTS_FROM_AGENT = 15  # 6 role revoke/grant + 1 CSM update + 1 CS HashConsensus role grant + 1 PDG impl upgrade + 3 PDG unpause (grant RESUME_ROLE, resume, revoke RESUME_ROLE) + 3 set max external ratio (grant STAKING_CONTROL_ROLE, set ratio, revoke STAKING_CONTROL_ROLE)
+EXPECTED_DG_EVENTS_COUNT = 15
 IPFS_DESCRIPTION_HASH = ""  # TODO: Update after IPFS upload
 
 
@@ -155,6 +159,7 @@ def validate_dg_staking_module_update_event(
 def dual_governance_proposal_calls():
     """Returns list of dual governance proposal calls for events checking"""
 
+    lido = interface.Lido(LIDO)
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
     vault_hub = interface.VaultHub(VAULT_HUB)
@@ -243,6 +248,24 @@ def dual_governance_proposal_calls():
         agent_forward([
             encode_oz_revoke_role(predeposit_guarantee, "PausableUntilWithRoles.ResumeRole", AGENT)
         ]),
+
+        # 1.13. Grant STAKING_CONTROL_ROLE on Lido to Agent
+        agent_forward([
+            encode_permission_grant(lido, "STAKING_CONTROL_ROLE", AGENT)
+        ]),
+
+        # 1.14. Set max external ratio to 30%
+        agent_forward([
+            (
+                lido.address,
+                lido.setMaxExternalRatioBP.encode_input(MAX_EXTERNAL_RATIO_BP),
+            )
+        ]),
+
+        # 1.15. Revoke STAKING_CONTROL_ROLE on Lido from Agent
+        agent_forward([
+            encode_permission_revoke(lido, "STAKING_CONTROL_ROLE", AGENT)
+        ]),
     ]
 
     # Convert each dg_item to the expected format
@@ -269,6 +292,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     easy_track = interface.EasyTrack(EASYTRACK)
 
+    lido = interface.Lido(LIDO)
     vault_hub = interface.VaultHub(VAULT_HUB)
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
     lazy_oracle = interface.LazyOracle(LAZY_ORACLE)
@@ -578,6 +602,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
             assert predeposit_guarantee.isPaused(), "PredepositGuarantee should be paused before upgrade"
 
+            # Step 1.13. Check max external ratio before upgrade
+            max_external_ratio_before = lido.getMaxExternalRatioBP()
+            assert max_external_ratio_before == 300, "Lido max external ratio should be 3% (300 BP) before upgrade"
+
             if details["status"] == PROPOSAL_STATUS["submitted"]:
                 chain.sleep(timelock.getAfterSubmitDelay() + 1)
                 dual_governance.scheduleProposal(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
@@ -699,6 +727,30 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=predeposit_guarantee,
                 )
 
+                # 1.13. Validate grant STAKING_CONTROL_ROLE on Lido to Agent
+                staking_control_role = web3.keccak(text="STAKING_CONTROL_ROLE")
+                validate_aragon_grant_permission_event(
+                    dg_events[12],
+                    entity=AGENT,
+                    app=LIDO,
+                    role=staking_control_role.hex(),
+                    emitted_by=ACL,
+                )
+
+                # 1.14. Validate MaxExternalRatioBPSet event
+                assert "MaxExternalRatioBPSet" in dg_events[13], "No MaxExternalRatioBPSet event found"
+                assert dg_events[13]["MaxExternalRatioBPSet"]["maxExternalRatioBP"] == MAX_EXTERNAL_RATIO_BP, "Wrong max external ratio in event"
+                assert convert.to_address(dg_events[13]["MaxExternalRatioBPSet"]["_emitted_by"]) == convert.to_address(LIDO), "Wrong event emitter for MaxExternalRatioBPSet"
+
+                # 1.15. Validate revoke STAKING_CONTROL_ROLE on Lido from Agent
+                validate_aragon_revoke_permission_event(
+                    dg_events[14],
+                    entity=AGENT,
+                    app=LIDO,
+                    role=staking_control_role.hex(),
+                    emitted_by=ACL,
+                )
+
 
         # =========================================================================
         # ==================== After DG proposal executed checks ==================
@@ -746,6 +798,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert not predeposit_guarantee.isPaused(), "PredepositGuarantee should be unpaused after upgrade"
         resume_role = web3.keccak(text="PausableUntilWithRoles.ResumeRole")
         assert not predeposit_guarantee.hasRole(resume_role, AGENT), "Agent should not have RESUME_ROLE on PredepositGuarantee after upgrade"
+
+        # Step 1.13. Check max external ratio after upgrade
+        assert lido.getMaxExternalRatioBP() == MAX_EXTERNAL_RATIO_BP, "Lido max external ratio should be 30% after upgrade"
 
         # Scenario tests for Easy Track factories behavior after the vote ----------------------------------------------------
         # --------------------------------------------------------------------------------------------------------------------

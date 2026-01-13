@@ -17,7 +17,7 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.dual_governance import submit_proposals
 from utils.easy_track import remove_evmscript_factory, add_evmscript_factory, create_permissions
 
-from utils.permissions import encode_oz_revoke_role, encode_oz_grant_role
+from utils.permissions import encode_oz_revoke_role, encode_oz_grant_role, encode_permission_grant, encode_permission_revoke
 from utils.agent import agent_forward
 
 # ============================== Addresses ===================================
@@ -26,6 +26,7 @@ from utils.agent import agent_forward
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 
 # Lido addresses
+LIDO = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
 OPERATOR_GRID = "0xC69685E89Cefc327b43B7234AC646451B27c544d"
 VAULT_HUB = "0x1d201BE093d847f6446530Efb0E8Fb426d176709"
@@ -64,6 +65,9 @@ CSM_MODULE_TREASURY_FEE_BP = 400 # Unchanged
 CSM_MODULE_MAX_DEPOSITS_PER_BLOCK = 30 # Unchanged
 CSM_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE = 25 # Unchanged
 
+# Lido max external ratio
+MAX_EXTERNAL_RATIO_BP = 3000  # 30%
+
 
 # ============================= Description ==================================
 # TODO <a description for IPFS (will appear in the voting description on vote.lido.fi)>
@@ -73,6 +77,7 @@ IPFS_DESCRIPTION = ""
 # ================================ Main ======================================
 def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
+    lido = interface.Lido(LIDO)
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
     vault_hub = interface.VaultHub(VAULT_HUB)
@@ -161,6 +166,24 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         # 1.12. Revoke RESUME_ROLE on PredepositGuarantee from Agent
         agent_forward([
             encode_oz_revoke_role(predeposit_guarantee, "PausableUntilWithRoles.ResumeRole", AGENT)
+        ]),
+
+        # 1.13. Grant STAKING_CONTROL_ROLE on Lido to Agent
+        agent_forward([
+            encode_permission_grant(lido, "STAKING_CONTROL_ROLE", AGENT)
+        ]),
+
+        # 1.14. Set max external ratio to 30%
+        agent_forward([
+            (
+                lido.address,
+                lido.setMaxExternalRatioBP.encode_input(MAX_EXTERNAL_RATIO_BP),
+            )
+        ]),
+
+        # 1.15. Revoke STAKING_CONTROL_ROLE on Lido from Agent
+        agent_forward([
+            encode_permission_revoke(lido, "STAKING_CONTROL_ROLE", AGENT)
         ]),
     ]
 
