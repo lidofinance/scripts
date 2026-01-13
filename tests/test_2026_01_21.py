@@ -306,6 +306,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     validator_exit_role = web3.keccak(text="vaults.VaultHub.ValidatorExitRole")
     bad_debt_master_role = web3.keccak(text="vaults.VaultHub.BadDebtMasterRole")
     manage_frame_config_role = web3.keccak(text="MANAGE_FRAME_CONFIG_ROLE")
+    resume_role = web3.keccak(text="PausableUntilWithRoles.ResumeRole")
+    staking_control_role = web3.keccak(text="STAKING_CONTROL_ROLE")
 
 
     # =========================================================================
@@ -710,7 +712,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 )
 
                 # 1.10. Validate grant RESUME_ROLE on PredepositGuarantee to Agent
-                resume_role = web3.keccak(text="PausableUntilWithRoles.ResumeRole")
                 validate_grant_role_event(
                     dg_events[9],
                     role=resume_role.hex(),
@@ -721,6 +722,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # 1.11. Validate PredepositGuarantee unpause (Resumed event)
                 assert "Resumed" in dg_events[10], "No Resumed event found for PredepositGuarantee"
+                assert dg_events[10]["Resumed"][0]["_emitted_by"] == PREDEPOSIT_GUARANTEE, "Wrong emitter for Resumed event"
 
                 # 1.12. Validate revoke RESUME_ROLE on PredepositGuarantee from Agent
                 validate_revoke_role_event(
@@ -732,7 +734,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 )
 
                 # 1.13. Validate grant STAKING_CONTROL_ROLE on Lido to Agent
-                staking_control_role = web3.keccak(text="STAKING_CONTROL_ROLE")
                 validate_aragon_grant_permission_event(
                     dg_events[12],
                     entity=AGENT,
@@ -800,7 +801,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # Step 1.10-1.12. Check PredepositGuarantee is unpaused after upgrade and Agent does not have RESUME_ROLE
         predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
         assert not predeposit_guarantee.isPaused(), "PredepositGuarantee should be unpaused after upgrade"
-        resume_role = web3.keccak(text="PausableUntilWithRoles.ResumeRole")
         assert not predeposit_guarantee.hasRole(resume_role, AGENT), "Agent should not have RESUME_ROLE on PredepositGuarantee after upgrade"
 
         # Step 1.13. Check max external ratio after upgrade
