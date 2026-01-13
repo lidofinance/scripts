@@ -1,4 +1,4 @@
-from brownie import chain, interface, web3, convert, accounts, ZERO_ADDRESS
+from brownie import chain, interface, web3, accounts, ZERO_ADDRESS
 from brownie.network.transaction import TransactionReceipt
 import pytest
 
@@ -150,10 +150,10 @@ def validate_dg_staking_module_update_event(
     assert event["StakingModuleMinDepositBlockDistanceSet"]["minDepositBlockDistance"] == min_deposit_block_distance, "Wrong min deposit block distance"
 
     if emitted_by is not None:
-        assert convert.to_address(event["StakingModuleShareLimitSet"]["_emitted_by"]) == convert.to_address(emitted_by), "Wrong event emitter"
-        assert convert.to_address(event["StakingModuleFeesSet"]["_emitted_by"]) == convert.to_address(emitted_by), "Wrong event emitter"
-        assert convert.to_address(event["StakingModuleMaxDepositsPerBlockSet"]["_emitted_by"]) == convert.to_address(emitted_by), "Wrong event emitter"
-        assert convert.to_address(event["StakingModuleMinDepositBlockDistanceSet"]["_emitted_by"]) == convert.to_address(emitted_by), "Wrong event emitter"
+        assert event["StakingModuleShareLimitSet"]["_emitted_by"] == emitted_by, "Wrong event emitter"
+        assert event["StakingModuleFeesSet"]["_emitted_by"] == emitted_by, "Wrong event emitter"
+        assert event["StakingModuleMaxDepositsPerBlockSet"]["_emitted_by"] == emitted_by, "Wrong event emitter"
+        assert event["StakingModuleMinDepositBlockDistanceSet"]["_emitted_by"] == emitted_by, "Wrong event emitter"
 
 
 @pytest.fixture(scope="module")
@@ -745,7 +745,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 # 1.14. Validate MaxExternalRatioBPSet event
                 assert "MaxExternalRatioBPSet" in dg_events[13], "No MaxExternalRatioBPSet event found"
                 assert dg_events[13]["MaxExternalRatioBPSet"]["maxExternalRatioBP"] == MAX_EXTERNAL_RATIO_BP, "Wrong max external ratio in event"
-                assert convert.to_address(dg_events[13]["MaxExternalRatioBPSet"]["_emitted_by"]) == convert.to_address(LIDO), "Wrong event emitter for MaxExternalRatioBPSet"
+                assert dg_events[13]["MaxExternalRatioBPSet"]["_emitted_by"] == LIDO, "Wrong event emitter for MaxExternalRatioBPSet"
 
                 # 1.15. Validate revoke STAKING_CONTROL_ROLE on Lido from Agent
                 validate_aragon_revoke_permission_event(
@@ -1344,4 +1344,4 @@ def two_phase_frame_config_update_test(stranger):
     assert len(restore_tx.events["RoleRevoked"]) == 1, "RoleRevoked event should be emitted"
     role_revoked_event = restore_tx.events["RoleRevoked"][0]
     assert role_revoked_event["role"] == manage_frame_config_role, "Role revoked should be MANAGE_FRAME_CONFIG_ROLE"
-    assert convert.to_address(role_revoked_event["account"]) == convert.to_address(TWO_PHASE_FRAME_CONFIG_UPDATE), "Account should be TwoPhaseFrameConfigUpdate"
+    assert role_revoked_event["account"] == TWO_PHASE_FRAME_CONFIG_UPDATE, "Account should be TwoPhaseFrameConfigUpdate"
