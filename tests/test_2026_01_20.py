@@ -427,7 +427,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 proposal_id=EXPECTED_DG_PROPOSAL_ID,
                 proposer=VOTING,
                 executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-                metadata="TODO DG proposal description",
+                metadata="Activate Lido V3 Phase 2, raise CSM stake share limit to 7.5% and priority exit threshold from 9%, grant MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus to TwoPhaseFrameConfigUpdate contract",
                 proposal_calls=dual_governance_proposal_calls,
             )
 

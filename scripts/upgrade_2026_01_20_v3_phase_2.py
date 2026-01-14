@@ -87,32 +87,32 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
 
     dg_items = [
-        # 1.1. Revoke REGISTRY_ROLE on OperatorGrid from old VaultsAdapter
+        # 1.1. Revoke "vaults.OperatorsGrid.Registry" role a495a3428837724c7f7648cda02eb83c9c4c778c8688d6f254c7f3f80c154d55 on OperatorGrid 0xC69685E89Cefc327b43B7234AC646451B27c544d from old VaultsAdapter 0xe2DE6d2DefF15588a71849c0429101F8ca9FB14D
         agent_forward([
             encode_oz_revoke_role(operator_grid, "vaults.OperatorsGrid.Registry", OLD_VAULTS_ADAPTER)
         ]),
 
-        # 1.2. Grant REGISTRY_ROLE on OperatorGrid to new VaultsAdapter
+        # 1.2. Grant "vaults.OperatorsGrid.Registry" role a495a3428837724c7f7648cda02eb83c9c4c778c8688d6f254c7f3f80c154d55 on OperatorGrid 0xC69685E89Cefc327b43B7234AC646451B27c544d to new VaultsAdapter 0x28F9Ac198C4E0FA6A9Ad2c2f97CB38F1A3120f27
         agent_forward([
             encode_oz_grant_role(operator_grid, "vaults.OperatorsGrid.Registry", VAULTS_ADAPTER)
         ]),
 
-        # 1.3. Revoke VALIDATOR_EXIT_ROLE on VaultHub from old VaultsAdapter
+        # 1.3. Revoke "vaults.VaultHub.ValidatorExitRole" role 2159c5943234d9f3a7225b9a743ea06e4a0d0ba5ed82889e867759a8a9eb7883 on VaultHub 0x1d201BE093d847f6446530Efb0E8Fb426d176709 from old VaultsAdapter 0xe2DE6d2DefF15588a71849c0429101F8ca9FB14D
         agent_forward([
             encode_oz_revoke_role(vault_hub, "vaults.VaultHub.ValidatorExitRole", OLD_VAULTS_ADAPTER)
         ]),
 
-        # 1.4. Grant VALIDATOR_EXIT_ROLE on VaultHub to new VaultsAdapter
+        # 1.4. Grant "vaults.VaultHub.ValidatorExitRole" role 2159c5943234d9f3a7225b9a743ea06e4a0d0ba5ed82889e867759a8a9eb7883 on VaultHub 0x1d201BE093d847f6446530Efb0E8Fb426d176709 to new VaultsAdapter 0x28F9Ac198C4E0FA6A9Ad2c2f97CB38F1A3120f27
         agent_forward([
             encode_oz_grant_role(vault_hub, "vaults.VaultHub.ValidatorExitRole", VAULTS_ADAPTER)
         ]),
 
-        # 1.5. Revoke BAD_DEBT_MASTER_ROLE on VaultHub from old VaultsAdapter
+        # 1.5. Revoke "vaults.VaultHub.BadDebtMasterRole" role a85bab4b576ca359fa6ae02ab8744b5c85c7e7ed4d7e0bca7b5b64580ac5d17d on VaultHub 0x1d201BE093d847f6446530Efb0E8Fb426d176709 from old VaultsAdapter 0xe2DE6d2DefF15588a71849c0429101F8ca9FB14D
         agent_forward([
             encode_oz_revoke_role(vault_hub, "vaults.VaultHub.BadDebtMasterRole", OLD_VAULTS_ADAPTER)
         ]),
 
-        # 1.6. Grant BAD_DEBT_MASTER_ROLE on VaultHub to new VaultsAdapter
+        # 1.6. Grant "vaults.VaultHub.BadDebtMasterRole" role a85bab4b576ca359fa6ae02ab8744b5c85c7e7ed4d7e0bca7b5b64580ac5d17d on VaultHub 0x1d201BE093d847f6446530Efb0E8Fb426d176709 to new VaultsAdapter 0x28F9Ac198C4E0FA6A9Ad2c2f97CB38F1A3120f27
         agent_forward([
             encode_oz_grant_role(vault_hub, "vaults.VaultHub.BadDebtMasterRole", VAULTS_ADAPTER)
         ]),
@@ -133,7 +133,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ]),
 
-        # 1.8. Grant MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus to TwoPhaseFrameConfigUpdate
+        # 1.8. Grant MANAGE_FRAME_CONFIG_ROLE 921f40f434e049d23969cbe68d9cf3ac1013fbe8945da07963af6f3142de6afe on CS HashConsensus 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4 to TwoPhaseFrameConfigUpdate contract 0xb2B4DB1491cbe949ae85EfF01E0d3ee239f110C1
         agent_forward([
             encode_oz_grant_role(
                 contract=cs_hash_consensus,
@@ -142,7 +142,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             )
         ]),
 
-        # 1.9. Update PredepositGuarantee implementation
+        # 1.9. Update PredepositGuarantee proxy 0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3 implementation to 0xE78717192C45736DF0E4be55c0219Ee7f9aDdd0D
         agent_forward([
             (
                 predeposit_guarantee_proxy.address,
@@ -150,12 +150,12 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             )
         ]),
 
-        # 1.10. Grant RESUME_ROLE on PredepositGuarantee to Agent
+        # 1.10. Temporarily grant "PausableUntilWithRoles.ResumeRole" a79a6aede309e0d48bf2ef0f71355c06ad317956d4c0da2deb0dc47cc34f826c on PredepositGuarantee 0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3 to Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c
         agent_forward([
             encode_oz_grant_role(predeposit_guarantee, "PausableUntilWithRoles.ResumeRole", AGENT)
         ]),
 
-        # 1.11. Unpause PredepositGuarantee
+        # 1.11. Unpause PredepositGuarantee 0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3
         agent_forward([
             (
                 predeposit_guarantee_proxy.address,
@@ -163,17 +163,17 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             )
         ]),
 
-        # 1.12. Revoke RESUME_ROLE on PredepositGuarantee from Agent
+        # 1.12. Revoke "PausableUntilWithRoles.ResumeRole" a79a6aede309e0d48bf2ef0f71355c06ad317956d4c0da2deb0dc47cc34f826c on PredepositGuarantee 0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3 from Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c
         agent_forward([
             encode_oz_revoke_role(predeposit_guarantee, "PausableUntilWithRoles.ResumeRole", AGENT)
         ]),
 
-        # 1.13. Grant STAKING_CONTROL_ROLE on Lido to Agent
+        # 1.13. Temporarily grant STAKING_CONTROL_ROLE a42eee1333c0758ba72be38e728b6dadb32ea767de5b4ddbaea1dae85b1b051f on Lido 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84 to Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c
         agent_forward([
             encode_permission_grant(lido, "STAKING_CONTROL_ROLE", AGENT)
         ]),
 
-        # 1.14. Set max external ratio to 30%
+        # 1.14. Set max external ratio to 30% on Lido 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84
         agent_forward([
             (
                 lido.address,
@@ -181,19 +181,19 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             )
         ]),
 
-        # 1.15. Revoke STAKING_CONTROL_ROLE on Lido from Agent
+        # 1.15. Revoke STAKING_CONTROL_ROLE a42eee1333c0758ba72be38e728b6dadb32ea767de5b4ddbaea1dae85b1b051f on Lido 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84 from Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c
         agent_forward([
             encode_permission_revoke(lido, "STAKING_CONTROL_ROLE", AGENT)
         ]),
     ]
 
     dg_call_script = submit_proposals([
-        (dg_items, "TODO DG proposal description")
+        (dg_items, "Activate Lido V3 Phase 2, raise CSM stake share limit to 7.5% and priority exit threshold from 9%, grant MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus to TwoPhaseFrameConfigUpdate contract")
     ])
 
     vote_desc_items, call_script_items = zip(
         (
-            "TODO 1. DG submission description",
+            "1. Submit a Dual Governance proposal to activate Lido V3 Phase 2, raise CSM stake share limit to 7.5% and priority exit threshold from 9%, grant MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus to TwoPhaseFrameConfigUpdate contract",
             dg_call_script[0]
         ),
         (
