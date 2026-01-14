@@ -197,62 +197,62 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             dg_call_script[0]
         ),
         (
-            "2. Remove old ALTER_TIERS_IN_OPERATOR_GRID_FACTORY factory from Easy Track",
+            "2. Remove old ALTER_TIERS_IN_OPERATOR_GRID_FACTORY 0xa29173C7BCf39dA48D5E404146A652d7464aee14 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory(OLD_ALTER_TIERS_IN_OPERATOR_GRID_FACTORY)
         ),
         (
-            "3. Add new ALTER_TIERS_IN_OPERATOR_GRID_FACTORY factory to Easy Track",
+            "3. Add new ALTER_TIERS_IN_OPERATOR_GRID_FACTORY 0x73f80240ad9363d5d3C5C3626953C351cA36Bfe9 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: operatorGrid.alterTiers 0xc69685e89cefc327b43b7234ac646451b27c544d54544bcb)",
             add_evmscript_factory(ALTER_TIERS_IN_OPERATOR_GRID_FACTORY, create_permissions(operator_grid, "alterTiers"))
         ),
         (
-            "4. Remove old REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY factory from Easy Track",
+            "4. Remove old REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY 0x194A46DA1947E98c9D79af13E06Cfbee0D8610cC from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory(OLD_REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY)
         ),
         (
-            "5. Add new REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY factory to Easy Track",
+            "5. Add new REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY 0xE73842AEbEC99Dacf2aAEec61409fD01A033f478 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: operatorGrid.registerGroup, operatorGrid.registerTiers 0xc69685e89cefc327b43b7234ac646451b27c544de37a7c0bc69685e89cefc327b43b7234ac646451b27c544d552b91da)",
             add_evmscript_factory(
                 REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY,
                 create_permissions(operator_grid, "registerGroup") + create_permissions(operator_grid, "registerTiers")[2:]
             )
         ),
         (
-            "6. Remove old UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY factory from Easy Track",
+            "6. Remove old UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY 0x8Bdc726a3147D8187820391D7c6F9F942606aEe6 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory(OLD_UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY)
         ),
         (
-            "7. Add new UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY factory to Easy Track",
+            "7. Add new UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY 0xf23559De8ab37fF7a154384B0822dA867Cfa7Eac to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: operatorGrid.updateGroupShareLimit 0xc69685e89cefc327b43b7234ac646451b27c544de52b6085)",
             add_evmscript_factory(UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY, create_permissions(operator_grid, "updateGroupShareLimit"))
         ),
         (
-            "8. Remove old SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY factory from Easy Track",
+            "8. Remove old SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY 0x93F1DEE4473Ee9F42c8257C201e33a6Da30E5d67 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory(OLD_SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY)
         ),
         (
-            "9. Add new SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY factory to Easy Track",
+            "9. Add new SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY 0x6a4f33F05E7412A11100353724Bb6a152Cf0D305 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: vaults_adapter.setVaultJailStatus 0x28f9ac198c4e0fa6a9ad2c2f97cb38f1a3120f27285f591c)",
             add_evmscript_factory(SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY, create_permissions(vaults_adapter, "setVaultJailStatus"))
         ),
         (
-            "10. Remove old SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY factory from Easy Track",
+            "10. Remove old SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY 0x1dF50522A1D868C12bF71747Bb6F24A18Fe6d32C from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory(OLD_SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY)
         ),
         (
-            "11. Add new SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY factory to Easy Track",
+            "11. Add new SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY 0xaf35A63a4114B7481589fDD9FDB3e35Fd65fAed7 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: vaults_adapter.socializeBadDebt 0x28f9ac198c4e0fa6a9ad2c2f97cb38f1a3120f2796c4d514)",
             add_evmscript_factory(SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY, create_permissions(vaults_adapter, "socializeBadDebt"))
         ),
         (
-            "12. Remove old FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY factory from Easy Track",
+            "12. Remove old FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY 0x6C968cD89CA358fbAf57B18e77a8973Fa869a6aA from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory(OLD_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY)
         ),
         (
-            "13. Add new FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY factory to Easy Track",
+            "13. Add new FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY 0x6F5c0A5a824773E8f8285bC5aA59ea0Aab2A6400 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: vaults_adapter.forceValidatorExit 0x28f9ac198c4e0fa6a9ad2c2f97cb38f1a3120f2733eb1f1a)",
             add_evmscript_factory(FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY, create_permissions(vaults_adapter, "forceValidatorExit"))
         ),
         (
-            "14. Remove old UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY factory from Easy Track",
+            "14. Remove old UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY 0x5C3bDFa3E7f312d8cf72F56F2b797b026f6B471c from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory(OLD_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY)
         ),
         (
-            "15. Add new UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY factory to Easy Track",
+            "15. Add new UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY 0xDfA0bc38113B6d53c2881573FD764CEEFf468610 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: vaults_adapter.updateVaultFees 0x28f9ac198c4e0fa6a9ad2c2f97cb38f1a3120f27ed7139a7)",
             add_evmscript_factory(UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY, create_permissions(vaults_adapter, "updateVaultFees"))
         ),
     )
