@@ -121,6 +121,7 @@ def dual_governance_proposal_calls():
     predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
 
     dg_items = [
+        # ======================== EasyTrack ========================
         # 1.1. Revoke REGISTRY_ROLE on OperatorGrid from old VaultsAdapter
         agent_forward([
             encode_oz_revoke_role(operator_grid, "vaults.OperatorsGrid.Registry", OLD_VAULTS_ADAPTER)
@@ -151,7 +152,54 @@ def dual_governance_proposal_calls():
             encode_oz_grant_role(vault_hub, "vaults.VaultHub.BadDebtMasterRole", VAULTS_ADAPTER)
         ]),
 
-        # 1.7. Raise CSM (MODULE_ID = 3) stake share limit from 500 BP to 750 BP and priority exit threshold from 625 BP to 900 BP
+        # ======================== PDG ========================
+        # 1.7. Update PredepositGuarantee implementation
+        agent_forward([
+            (
+                predeposit_guarantee_proxy.address,
+                predeposit_guarantee_proxy.proxy__upgradeTo.encode_input(PREDEPOSIT_GUARANTEE_NEW_IMPL),
+            )
+        ]),
+
+        # 1.8. Grant RESUME_ROLE on PredepositGuarantee to Agent
+        agent_forward([
+            encode_oz_grant_role(predeposit_guarantee, "PausableUntilWithRoles.ResumeRole", AGENT)
+        ]),
+
+        # 1.9. Unpause PredepositGuarantee
+        agent_forward([
+            (
+                PREDEPOSIT_GUARANTEE,
+                predeposit_guarantee.resume.encode_input(),
+            )
+        ]),
+
+        # 1.10. Revoke RESUME_ROLE on PredepositGuarantee from Agent
+        agent_forward([
+            encode_oz_revoke_role(predeposit_guarantee, "PausableUntilWithRoles.ResumeRole", AGENT)
+        ]),
+
+        # ======================== Lido ========================
+        # 1.11. Grant STAKING_CONTROL_ROLE on Lido to Agent
+        agent_forward([
+            encode_permission_grant(lido, "STAKING_CONTROL_ROLE", AGENT)
+        ]),
+
+        # 1.12. Set max external ratio to 30%
+        agent_forward([
+            (
+                lido.address,
+                lido.setMaxExternalRatioBP.encode_input(MAX_EXTERNAL_RATIO_BP),
+            )
+        ]),
+
+        # 1.13. Revoke STAKING_CONTROL_ROLE on Lido from Agent
+        agent_forward([
+            encode_permission_revoke(lido, "STAKING_CONTROL_ROLE", AGENT)
+        ]),
+
+        # ======================== CSM ========================
+        # 1.14. Raise CSM (MODULE_ID = 3) stake share limit from 500 BP to 750 BP and priority exit threshold from 625 BP to 900 BP
         agent_forward([
             (
                 staking_router.address,
@@ -167,57 +215,13 @@ def dual_governance_proposal_calls():
             ),
         ]),
 
-        # 1.8. Grant MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus to TwoPhaseFrameConfigUpdate
+        # 1.15. Grant MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus to TwoPhaseFrameConfigUpdate
         agent_forward([
             encode_oz_grant_role(
                 contract=cs_hash_consensus,
                 role_name="MANAGE_FRAME_CONFIG_ROLE",
                 grant_to=TWO_PHASE_FRAME_CONFIG_UPDATE,
             )
-        ]),
-
-        # 1.9. Update PredepositGuarantee implementation
-        agent_forward([
-            (
-                predeposit_guarantee_proxy.address,
-                predeposit_guarantee_proxy.proxy__upgradeTo.encode_input(PREDEPOSIT_GUARANTEE_NEW_IMPL),
-            )
-        ]),
-
-        # 1.10. Grant RESUME_ROLE on PredepositGuarantee to Agent
-        agent_forward([
-            encode_oz_grant_role(predeposit_guarantee, "PausableUntilWithRoles.ResumeRole", AGENT)
-        ]),
-
-        # 1.11. Unpause PredepositGuarantee
-        agent_forward([
-            (
-                PREDEPOSIT_GUARANTEE,
-                predeposit_guarantee.resume.encode_input(),
-            )
-        ]),
-
-        # 1.12. Revoke RESUME_ROLE on PredepositGuarantee from Agent
-        agent_forward([
-            encode_oz_revoke_role(predeposit_guarantee, "PausableUntilWithRoles.ResumeRole", AGENT)
-        ]),
-
-        # 1.13. Grant STAKING_CONTROL_ROLE on Lido to Agent
-        agent_forward([
-            encode_permission_grant(lido, "STAKING_CONTROL_ROLE", AGENT)
-        ]),
-
-        # 1.14. Set max external ratio to 30%
-        agent_forward([
-            (
-                lido.address,
-                lido.setMaxExternalRatioBP.encode_input(MAX_EXTERNAL_RATIO_BP),
-            )
-        ]),
-
-        # 1.15. Revoke STAKING_CONTROL_ROLE on Lido from Agent
-        agent_forward([
-            encode_permission_revoke(lido, "STAKING_CONTROL_ROLE", AGENT)
         ]),
     ]
 
@@ -580,6 +584,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # === DG EXECUTION EVENTS VALIDATION ===
 
+                # ======================== EasyTrack items ========================
                 # 1.1. Revoke REGISTRY_ROLE on OperatorGrid from old VaultsAdapter
                 validate_revoke_role_event(
                     dg_events[0],
@@ -634,9 +639,64 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=vault_hub,
                 )
 
-                # 1.7. Validate CSM staking module update events
+                # ======================== PDG items ========================
+                # 1.7. Validate PredepositGuarantee implementation upgrade
+                validate_proxy_upgrade_event(
+                    dg_events[6],
+                    implementation=PREDEPOSIT_GUARANTEE_NEW_IMPL,
+                    emitted_by=PREDEPOSIT_GUARANTEE,
+                )
+
+                # 1.8. Validate grant RESUME_ROLE on PredepositGuarantee to Agent
+                validate_grant_role_event(
+                    dg_events[7],
+                    role=resume_role.hex(),
+                    grant_to=AGENT,
+                    sender=AGENT,
+                    emitted_by=predeposit_guarantee,
+                )
+
+                # 1.9. Validate PredepositGuarantee unpause (Resumed event)
+                assert "Resumed" in dg_events[8], "No Resumed event found for PredepositGuarantee"
+                assert dg_events[8]["Resumed"][0]["_emitted_by"] == PREDEPOSIT_GUARANTEE, "Wrong emitter for Resumed event"
+
+                # 1.10. Validate revoke RESUME_ROLE on PredepositGuarantee from Agent
+                validate_revoke_role_event(
+                    dg_events[9],
+                    role=resume_role.hex(),
+                    revoke_from=AGENT,
+                    sender=AGENT,
+                    emitted_by=predeposit_guarantee,
+                )
+
+                # ======================== External share items ========================
+                # 1.11. Validate grant STAKING_CONTROL_ROLE on Lido to Agent
+                validate_aragon_grant_permission_event(
+                    dg_events[10],
+                    entity=AGENT,
+                    app=LIDO,
+                    role=staking_control_role.hex(),
+                    emitted_by=ACL,
+                )
+
+                # 1.12. Validate MaxExternalRatioBPSet event
+                assert "MaxExternalRatioBPSet" in dg_events[11], "No MaxExternalRatioBPSet event found"
+                assert dg_events[11]["MaxExternalRatioBPSet"]["maxExternalRatioBP"] == MAX_EXTERNAL_RATIO_BP, "Wrong max external ratio in event"
+                assert dg_events[11]["MaxExternalRatioBPSet"]["_emitted_by"] == LIDO, "Wrong event emitter for MaxExternalRatioBPSet"
+
+                # 1.13. Validate revoke STAKING_CONTROL_ROLE on Lido from Agent
+                validate_aragon_revoke_permission_event(
+                    dg_events[12],
+                    entity=AGENT,
+                    app=LIDO,
+                    role=staking_control_role.hex(),
+                    emitted_by=ACL,
+                )
+
+                # ======================== CSM items ========================
+                # 1.14. Validate CSM staking module update events
                 validate_staking_module_update_event(
-                    event=dg_events[6],
+                    event=dg_events[13],
                     module_item=StakingModuleItem(
                         id=CSM_MODULE_ID,
                         address=None,
@@ -649,65 +709,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=STAKING_ROUTER,
                 )
 
-                # 1.8. Grant MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus to TwoPhaseFrameConfigUpdate
+                # 1.15. Grant MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus to TwoPhaseFrameConfigUpdate
                 validate_grant_role_event(
-                    dg_events[7],
+                    dg_events[14],
                     role=manage_frame_config_role.hex(),
                     grant_to=TWO_PHASE_FRAME_CONFIG_UPDATE,
                     sender=AGENT,
                     emitted_by=cs_hash_consensus,
-                )
-
-                # 1.9. Validate PredepositGuarantee implementation upgrade
-                validate_proxy_upgrade_event(
-                    dg_events[8],
-                    implementation=PREDEPOSIT_GUARANTEE_NEW_IMPL,
-                    emitted_by=PREDEPOSIT_GUARANTEE,
-                )
-
-                # 1.10. Validate grant RESUME_ROLE on PredepositGuarantee to Agent
-                validate_grant_role_event(
-                    dg_events[9],
-                    role=resume_role.hex(),
-                    grant_to=AGENT,
-                    sender=AGENT,
-                    emitted_by=predeposit_guarantee,
-                )
-
-                # 1.11. Validate PredepositGuarantee unpause (Resumed event)
-                assert "Resumed" in dg_events[10], "No Resumed event found for PredepositGuarantee"
-                assert dg_events[10]["Resumed"][0]["_emitted_by"] == PREDEPOSIT_GUARANTEE, "Wrong emitter for Resumed event"
-
-                # 1.12. Validate revoke RESUME_ROLE on PredepositGuarantee from Agent
-                validate_revoke_role_event(
-                    dg_events[11],
-                    role=resume_role.hex(),
-                    revoke_from=AGENT,
-                    sender=AGENT,
-                    emitted_by=predeposit_guarantee,
-                )
-
-                # 1.13. Validate grant STAKING_CONTROL_ROLE on Lido to Agent
-                validate_aragon_grant_permission_event(
-                    dg_events[12],
-                    entity=AGENT,
-                    app=LIDO,
-                    role=staking_control_role.hex(),
-                    emitted_by=ACL,
-                )
-
-                # 1.14. Validate MaxExternalRatioBPSet event
-                assert "MaxExternalRatioBPSet" in dg_events[13], "No MaxExternalRatioBPSet event found"
-                assert dg_events[13]["MaxExternalRatioBPSet"]["maxExternalRatioBP"] == MAX_EXTERNAL_RATIO_BP, "Wrong max external ratio in event"
-                assert dg_events[13]["MaxExternalRatioBPSet"]["_emitted_by"] == LIDO, "Wrong event emitter for MaxExternalRatioBPSet"
-
-                # 1.15. Validate revoke STAKING_CONTROL_ROLE on Lido from Agent
-                validate_aragon_revoke_permission_event(
-                    dg_events[14],
-                    entity=AGENT,
-                    app=LIDO,
-                    role=staking_control_role.hex(),
-                    emitted_by=ACL,
                 )
 
 

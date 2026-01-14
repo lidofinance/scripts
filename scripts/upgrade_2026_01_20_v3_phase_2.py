@@ -87,6 +87,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
 
     dg_items = [
+        # ======================== EasyTrack ========================
         # 1.1. Revoke `vaults.OperatorsGrid.Registry` role `a495a3428837724c7f7648cda02eb83c9c4c778c8688d6f254c7f3f80c154d55` on OperatorGrid `0xC69685E89Cefc327b43B7234AC646451B27c544d` from old VaultsAdapter `0xe2DE6d2DefF15588a71849c0429101F8ca9FB14D`
         agent_forward([
             encode_oz_revoke_role(operator_grid, "vaults.OperatorsGrid.Registry", OLD_VAULTS_ADAPTER)
@@ -117,7 +118,54 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             encode_oz_grant_role(vault_hub, "vaults.VaultHub.BadDebtMasterRole", VAULTS_ADAPTER)
         ]),
 
-        # 1.7. Raise CSM (MODULE_ID = `3`) stake share limit from `500 BP` to `750 BP` and priority exit threshold from `625 BP` to `900 BP`
+        # ======================== PDG ========================
+        # 1.7. Update PredepositGuarantee proxy `0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3` implementation to `0xE78717192C45736DF0E4be55c0219Ee7f9aDdd0D`
+        agent_forward([
+            (
+                predeposit_guarantee_proxy.address,
+                predeposit_guarantee_proxy.proxy__upgradeTo.encode_input(PREDEPOSIT_GUARANTEE_NEW_IMPL),
+            )
+        ]),
+
+        # 1.8. Temporarily grant `PausableUntilWithRoles.ResumeRole` `a79a6aede309e0d48bf2ef0f71355c06ad317956d4c0da2deb0dc47cc34f826c` on PredepositGuarantee `0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3` to Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+        agent_forward([
+            encode_oz_grant_role(predeposit_guarantee, "PausableUntilWithRoles.ResumeRole", AGENT)
+        ]),
+
+        # 1.9. Unpause PredepositGuarantee `0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3`
+        agent_forward([
+            (
+                predeposit_guarantee_proxy.address,
+                predeposit_guarantee.resume.encode_input(),
+            )
+        ]),
+
+        # 1.10. Revoke `PausableUntilWithRoles.ResumeRole` `a79a6aede309e0d48bf2ef0f71355c06ad317956d4c0da2deb0dc47cc34f826c` on PredepositGuarantee `0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3` from Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+        agent_forward([
+            encode_oz_revoke_role(predeposit_guarantee, "PausableUntilWithRoles.ResumeRole", AGENT)
+        ]),
+
+        # ======================== Lido ========================
+        # 1.11. Temporarily grant `STAKING_CONTROL_ROLE` `a42eee1333c0758ba72be38e728b6dadb32ea767de5b4ddbaea1dae85b1b051f` on Lido `0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84` to Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+        agent_forward([
+            encode_permission_grant(lido, "STAKING_CONTROL_ROLE", AGENT)
+        ]),
+
+        # 1.12. Set max external ratio to `30%` on Lido `0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84`
+        agent_forward([
+            (
+                lido.address,
+                lido.setMaxExternalRatioBP.encode_input(MAX_EXTERNAL_RATIO_BP),
+            )
+        ]),
+
+        # 1.13. Revoke `STAKING_CONTROL_ROLE` a42eee1333c0758ba72be38e728b6dadb32ea767de5b4ddbaea1dae85b1b051f on Lido `0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84` from Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
+        agent_forward([
+            encode_permission_revoke(lido, "STAKING_CONTROL_ROLE", AGENT)
+        ]),
+
+        # ======================== CSM ========================
+        # 1.14. Raise CSM (MODULE_ID = `3`) stake share limit from `500 BP` to `750 BP` and priority exit threshold from `625 BP` to `900 BP`
         agent_forward([
             (
                 staking_router.address,
@@ -133,57 +181,13 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ]),
 
-        # 1.8. Grant `MANAGE_FRAME_CONFIG_ROLE` `921f40f434e049d23969cbe68d9cf3ac1013fbe8945da07963af6f3142de6afe` on CS HashConsensus `0x71093efF8D8599b5fA340D665Ad60fA7C80688e4` to TwoPhaseFrameConfigUpdate contract `0xb2B4DB1491cbe949ae85EfF01E0d3ee239f110C1`
+        # 1.15. Grant `MANAGE_FRAME_CONFIG_ROLE` `921f40f434e049d23969cbe68d9cf3ac1013fbe8945da07963af6f3142de6afe` on CS HashConsensus `0x71093efF8D8599b5fA340D665Ad60fA7C80688e4` to TwoPhaseFrameConfigUpdate contract `0xb2B4DB1491cbe949ae85EfF01E0d3ee239f110C1`
         agent_forward([
             encode_oz_grant_role(
                 contract=cs_hash_consensus,
                 role_name="MANAGE_FRAME_CONFIG_ROLE",
                 grant_to=TWO_PHASE_FRAME_CONFIG_UPDATE,
             )
-        ]),
-
-        # 1.9. Update PredepositGuarantee proxy `0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3` implementation to `0xE78717192C45736DF0E4be55c0219Ee7f9aDdd0D`
-        agent_forward([
-            (
-                predeposit_guarantee_proxy.address,
-                predeposit_guarantee_proxy.proxy__upgradeTo.encode_input(PREDEPOSIT_GUARANTEE_NEW_IMPL),
-            )
-        ]),
-
-        # 1.10. Temporarily grant `PausableUntilWithRoles.ResumeRole` `a79a6aede309e0d48bf2ef0f71355c06ad317956d4c0da2deb0dc47cc34f826c` on PredepositGuarantee `0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3` to Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
-        agent_forward([
-            encode_oz_grant_role(predeposit_guarantee, "PausableUntilWithRoles.ResumeRole", AGENT)
-        ]),
-
-        # 1.11. Unpause PredepositGuarantee `0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3`
-        agent_forward([
-            (
-                predeposit_guarantee_proxy.address,
-                predeposit_guarantee.resume.encode_input(),
-            )
-        ]),
-
-        # 1.12. Revoke `PausableUntilWithRoles.ResumeRole` `a79a6aede309e0d48bf2ef0f71355c06ad317956d4c0da2deb0dc47cc34f826c` on PredepositGuarantee `0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3` from Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
-        agent_forward([
-            encode_oz_revoke_role(predeposit_guarantee, "PausableUntilWithRoles.ResumeRole", AGENT)
-        ]),
-
-        # 1.13. Temporarily grant `STAKING_CONTROL_ROLE` `a42eee1333c0758ba72be38e728b6dadb32ea767de5b4ddbaea1dae85b1b051f` on Lido `0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84` to Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
-        agent_forward([
-            encode_permission_grant(lido, "STAKING_CONTROL_ROLE", AGENT)
-        ]),
-
-        # 1.14. Set max external ratio to `30%` on Lido `0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84`
-        agent_forward([
-            (
-                lido.address,
-                lido.setMaxExternalRatioBP.encode_input(MAX_EXTERNAL_RATIO_BP),
-            )
-        ]),
-
-        # 1.15. Revoke `STAKING_CONTROL_ROLE` a42eee1333c0758ba72be38e728b6dadb32ea767de5b4ddbaea1dae85b1b051f on Lido `0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84` from Agent `0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c`
-        agent_forward([
-            encode_permission_revoke(lido, "STAKING_CONTROL_ROLE", AGENT)
         ]),
     ]
 
