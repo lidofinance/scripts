@@ -23,8 +23,8 @@ from utils.easy_track import create_permissions
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 from utils.test.event_validators.aragon import validate_aragon_grant_permission_event, validate_aragon_revoke_permission_event
 from utils.test.event_validators.easy_track import validate_evmscript_factory_added_event, validate_evmscript_factory_removed_event, EVMScriptFactoryAdded
-from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.proxy import validate_proxy_upgrade_event
+from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
 from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
 from utils.test.rpc_helpers import set_storage_at
 
@@ -65,6 +65,7 @@ PREDEPOSIT_GUARANTEE_NEW_IMPL = "0xE78717192C45736DF0E4be55c0219Ee7f9aDdd0D"
 
 # CSM module parameters
 CSM_MODULE_ID = 3
+CSM_MODULE_NAME = "Community Staking"
 CSM_MODULE_OLD_TARGET_SHARE_BP = 500  # 5%
 CSM_MODULE_OLD_PRIORITY_EXIT_THRESHOLD_BP = 625  # 6.25%
 CSM_MODULE_NEW_TARGET_SHARE_BP = 750  # 7.5%
@@ -105,55 +106,6 @@ EXPECTED_VOTE_EVENTS_COUNT = 15
 EXPECTED_DG_EVENTS_FROM_AGENT = 15  # 6 role revoke/grant + 1 CSM update + 1 CS HashConsensus role grant + 1 PDG impl upgrade + 3 PDG unpause (grant RESUME_ROLE, resume, revoke RESUME_ROLE) + 3 set max external ratio (grant STAKING_CONTROL_ROLE, set ratio, revoke STAKING_CONTROL_ROLE)
 EXPECTED_DG_EVENTS_COUNT = 15
 IPFS_DESCRIPTION_HASH = ""  # TODO: Update after IPFS upload
-
-
-def validate_dg_staking_module_update_event(
-    event,
-    module_id: int,
-    share_limit: int,
-    priority_share_threshold: int,
-    module_fee_bp: int,
-    treasury_fee_bp: int,
-    max_deposits_per_block: int,
-    min_deposit_block_distance: int,
-    emitted_by: str = None,
-):
-    _events_chain = [
-        "LogScriptCall",
-        "StakingModuleShareLimitSet",
-        "StakingModuleFeesSet",
-        "StakingModuleMaxDepositsPerBlockSet",
-        "StakingModuleMinDepositBlockDistanceSet",
-        "ScriptResult",
-        "Executed",
-    ]
-    validate_events_chain([e.name for e in event], _events_chain)
-
-    assert event.count("LogScriptCall") == 1
-    assert event.count("StakingModuleShareLimitSet") == 1
-    assert event.count("StakingModuleFeesSet") == 1
-    assert event.count("StakingModuleMaxDepositsPerBlockSet") == 1
-    assert event.count("StakingModuleMinDepositBlockDistanceSet") == 1
-
-    assert event["StakingModuleShareLimitSet"]["stakingModuleId"] == module_id, "Wrong module ID"
-    assert event["StakingModuleShareLimitSet"]["stakeShareLimit"] == share_limit, "Wrong share limit"
-    assert event["StakingModuleShareLimitSet"]["priorityExitShareThreshold"] == priority_share_threshold, "Wrong priority threshold"
-
-    assert event["StakingModuleFeesSet"]["stakingModuleId"] == module_id, "Wrong module ID"
-    assert event["StakingModuleFeesSet"]["stakingModuleFee"] == module_fee_bp, "Wrong module fee"
-    assert event["StakingModuleFeesSet"]["treasuryFee"] == treasury_fee_bp, "Wrong treasury fee"
-
-    assert event["StakingModuleMaxDepositsPerBlockSet"]["stakingModuleId"] == module_id, "Wrong module ID"
-    assert event["StakingModuleMaxDepositsPerBlockSet"]["maxDepositsPerBlock"] == max_deposits_per_block, "Wrong max deposits per block"
-
-    assert event["StakingModuleMinDepositBlockDistanceSet"]["stakingModuleId"] == module_id, "Wrong module ID"
-    assert event["StakingModuleMinDepositBlockDistanceSet"]["minDepositBlockDistance"] == min_deposit_block_distance, "Wrong min deposit block distance"
-
-    if emitted_by is not None:
-        assert event["StakingModuleShareLimitSet"]["_emitted_by"] == emitted_by, "Wrong event emitter"
-        assert event["StakingModuleFeesSet"]["_emitted_by"] == emitted_by, "Wrong event emitter"
-        assert event["StakingModuleMaxDepositsPerBlockSet"]["_emitted_by"] == emitted_by, "Wrong event emitter"
-        assert event["StakingModuleMinDepositBlockDistanceSet"]["_emitted_by"] == emitted_by, "Wrong event emitter"
 
 
 @pytest.fixture(scope="module")
@@ -683,15 +635,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 )
 
                 # 1.7. Validate CSM staking module update events
-                validate_dg_staking_module_update_event(
-                    dg_events[6],
-                    module_id=CSM_MODULE_ID,
-                    share_limit=CSM_MODULE_NEW_TARGET_SHARE_BP,
-                    priority_share_threshold=CSM_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP,
-                    module_fee_bp=CSM_MODULE_MODULE_FEE_BP,
-                    treasury_fee_bp=CSM_MODULE_TREASURY_FEE_BP,
-                    max_deposits_per_block=CSM_MODULE_MAX_DEPOSITS_PER_BLOCK,
-                    min_deposit_block_distance=CSM_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
+                validate_staking_module_update_event(
+                    event=dg_events[6],
+                    module_item=StakingModuleItem(
+                        id=CSM_MODULE_ID,
+                        address=None,
+                        name=CSM_MODULE_NAME,
+                        target_share=CSM_MODULE_NEW_TARGET_SHARE_BP,
+                        module_fee=CSM_MODULE_MODULE_FEE_BP,
+                        treasury_fee=CSM_MODULE_TREASURY_FEE_BP,
+                        priority_exit_share=CSM_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP,
+                    ),
                     emitted_by=STAKING_ROUTER,
                 )
 
