@@ -244,7 +244,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             remove_evmscript_factory(OLD_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY)
         ),
         (
-            "13. Add new `FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY `0x6F5c0A5a824773E8f8285bC5aA59ea0Aab2A6400` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` (permissions: vaults_adapter.forceValidatorExit `0x28f9ac198c4e0fa6a9ad2c2f97cb38f1a3120f2733eb1f1a`)",
+            "13. Add new `FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY` `0x6F5c0A5a824773E8f8285bC5aA59ea0Aab2A6400` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` (permissions: vaults_adapter.forceValidatorExit `0x28f9ac198c4e0fa6a9ad2c2f97cb38f1a3120f2733eb1f1a`)",
             add_evmscript_factory(FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY, create_permissions(vaults_adapter, "forceValidatorExit"))
         ),
         (
