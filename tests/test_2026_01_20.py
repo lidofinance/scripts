@@ -1244,10 +1244,6 @@ def two_phase_frame_config_update_test(stranger):
     # Storage slot for lastProcessingRefSlot in CSFeeOracle
     last_processing_ref_slot_key = web3.keccak(text="lido.BaseOracle.lastProcessingRefSlot").hex()
 
-    # Get chain config
-    seconds_per_slot = two_phase_update.SECONDS_PER_SLOT()
-    genesis_time = two_phase_update.GENESIS_TIME()
-
     # Get phase configs from the contract
     offset_phase = two_phase_update.offsetPhase()
     restore_phase = two_phase_update.restorePhase()
