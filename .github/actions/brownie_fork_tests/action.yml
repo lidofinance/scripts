@@ -76,3 +76,4 @@ runs:
       env:
         ETHERSCAN_TOKEN: ${{ inputs.etherscan }}
         ETH_RPC_URL: ${{ inputs.rpc_url }}
+        PARSE_EVENTS_FROM_LOCAL_ABI: 1
