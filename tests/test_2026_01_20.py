@@ -1,4 +1,4 @@
-from brownie import chain, interface, web3, accounts, ZERO_ADDRESS
+from brownie import chain, interface, web3, accounts, ZERO_ADDRESS, reverts
 from brownie.network.transaction import TransactionReceipt
 import pytest
 
@@ -13,7 +13,7 @@ from utils.test.tx_tracing_helpers import (
     display_voting_events,
     display_dg_events
 )
-from utils.evm_script import encode_call_script
+from utils.evm_script import encode_call_script, encode_error
 from utils.dual_governance import PROPOSAL_STATUS
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 
@@ -106,6 +106,9 @@ EXPECTED_VOTE_EVENTS_COUNT = 15
 EXPECTED_DG_EVENTS_FROM_AGENT = 15  # 6 role revoke/grant + 1 CSM update + 1 CS HashConsensus role grant + 1 PDG impl upgrade + 3 PDG unpause (grant RESUME_ROLE, resume, revoke RESUME_ROLE) + 3 set max external ratio (grant STAKING_CONTROL_ROLE, set ratio, revoke STAKING_CONTROL_ROLE)
 EXPECTED_DG_EVENTS_COUNT = 15
 IPFS_DESCRIPTION_HASH = ""  # TODO: Update after IPFS upload
+
+# Storage slot for lastProcessingRefSlot in CSFeeOracle
+LAST_PROCESSING_REF_SLOT_STORAGE_KEY = web3.keccak(text="lido.BaseOracle.lastProcessingRefSlot").hex()
 
 
 @pytest.fixture(scope="module")
@@ -552,6 +555,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # Step 1.8. Check TwoPhaseFrameConfigUpdate does not have MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus before upgrade
             assert not cs_hash_consensus.hasRole(manage_frame_config_role, TWO_PHASE_FRAME_CONFIG_UPDATE), "TwoPhaseFrameConfigUpdate should not have MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus before upgrade"
 
+            # Test that executeOffsetPhase reverts with permission denied error before enactment
+            chain.snapshot()
+            two_phase_frame_config_update_revert_no_permission_test(stranger)
+            chain.revert()
+
             # Step 1.9. Check PredepositGuarantee implementation before upgrade
             predeposit_guarantee_proxy = interface.OssifiableProxy(PREDEPOSIT_GUARANTEE)
             predeposit_guarantee_impl_before = str(predeposit_guarantee_proxy.proxy__getImplementation()).lower()
@@ -792,6 +800,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # Scenario test for TwoPhaseFrameConfigUpdate contract
         chain.snapshot()
         two_phase_frame_config_update_test(stranger)
+        chain.revert()
+
+        # Test that executeOffsetPhase reverts with wrong slot error after enactment
+        chain.snapshot()
+        two_phase_frame_config_update_revert_wrong_slot_test(stranger)
         chain.revert()
 
 
@@ -1241,9 +1254,6 @@ def two_phase_frame_config_update_test(stranger):
 
     manage_frame_config_role = cs_hash_consensus.MANAGE_FRAME_CONFIG_ROLE()
 
-    # Storage slot for lastProcessingRefSlot in CSFeeOracle
-    last_processing_ref_slot_key = web3.keccak(text="lido.BaseOracle.lastProcessingRefSlot").hex()
-
     # Get phase configs from the contract
     offset_phase = two_phase_update.offsetPhase()
     restore_phase = two_phase_update.restorePhase()
@@ -1260,7 +1270,7 @@ def two_phase_frame_config_update_test(stranger):
     # =========================================================================
 
     # Set lastProcessingRefSlot in CSFeeOracle to match offset phase expected slot
-    set_storage_at(cs_fee_oracle.address, last_processing_ref_slot_key, "0x" + offset_expected_ref_slot.to_bytes(32, "big").hex())
+    set_storage_at(cs_fee_oracle.address, LAST_PROCESSING_REF_SLOT_STORAGE_KEY, "0x" + offset_expected_ref_slot.to_bytes(32, "big").hex())
     assert cs_fee_oracle.getLastProcessingRefSlot() == offset_expected_ref_slot, "CSFeeOracle lastProcessingRefSlot should be set to offset phase expected slot"
     assert two_phase_update.isReadyForOffsetPhase(), "Should be ready for offset phase"
 
@@ -1278,7 +1288,7 @@ def two_phase_frame_config_update_test(stranger):
     # =========================================================================
 
     # Set lastProcessingRefSlot in CSFeeOracle to match restore phase expected slot
-    set_storage_at(cs_fee_oracle.address, last_processing_ref_slot_key, "0x" + restore_expected_ref_slot.to_bytes(32, "big").hex())
+    set_storage_at(cs_fee_oracle.address, LAST_PROCESSING_REF_SLOT_STORAGE_KEY, "0x" + restore_expected_ref_slot.to_bytes(32, "big").hex())
     assert cs_fee_oracle.getLastProcessingRefSlot() == restore_expected_ref_slot, "CSFeeOracle lastProcessingRefSlot should be set to restore phase expected slot"
     assert two_phase_update.isReadyForRestorePhase(), "Should be ready for restore phase"
 
@@ -1303,3 +1313,60 @@ def two_phase_frame_config_update_test(stranger):
     role_revoked_event = restore_tx.events["RoleRevoked"][0]
     assert role_revoked_event["role"] == manage_frame_config_role, "Role revoked should be MANAGE_FRAME_CONFIG_ROLE"
     assert role_revoked_event["account"] == TWO_PHASE_FRAME_CONFIG_UPDATE, "Account should be TwoPhaseFrameConfigUpdate"
+
+
+def two_phase_frame_config_update_revert_wrong_slot_test(stranger):
+    cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
+    cs_fee_oracle = interface.CSFeeOracle(CS_FEE_ORACLE)
+    two_phase_update = interface.TwoPhaseFrameConfigUpdate(TWO_PHASE_FRAME_CONFIG_UPDATE)
+
+    # Verify the contract has the role (after DG proposal execution)
+    manage_frame_config_role = cs_hash_consensus.MANAGE_FRAME_CONFIG_ROLE()
+    assert cs_hash_consensus.hasRole(manage_frame_config_role, TWO_PHASE_FRAME_CONFIG_UPDATE), "TwoPhaseFrameConfigUpdate should have MANAGE_FRAME_CONFIG_ROLE"
+
+    # Get required slots and current slot
+    offset_expected_ref_slot = two_phase_update.offsetPhase()[0]
+    restore_expected_ref_slot = two_phase_update.restorePhase()[0]
+    current_slot = cs_fee_oracle.getLastProcessingRefSlot()
+
+    # Check that current slot is lower than required slots
+    assert current_slot < offset_expected_ref_slot, f"Current slot {current_slot} should be lower than offset required slot {offset_expected_ref_slot}"
+    assert current_slot < restore_expected_ref_slot, f"Current slot {current_slot} should be lower than restore required slot {restore_expected_ref_slot}"
+
+    # executeOffsetPhase should revert with UnexpectedLastProcessingRefSlot
+    assert not two_phase_update.isReadyForOffsetPhase(), "Should not be ready for offset phase without correct slot"
+
+    with reverts(f"UnexpectedLastProcessingRefSlot: {current_slot}, {offset_expected_ref_slot}"):
+        two_phase_update.executeOffsetPhase({"from": stranger})
+
+    # Execute offset phase first (restore phase requires offset to be done first)
+    set_storage_at(cs_fee_oracle.address, LAST_PROCESSING_REF_SLOT_STORAGE_KEY, "0x" + offset_expected_ref_slot.to_bytes(32, "big").hex())
+    two_phase_update.executeOffsetPhase({"from": stranger})
+
+    # Reset to a slot lower than restore expected slot to test the wrong slot error
+    set_storage_at(cs_fee_oracle.address, LAST_PROCESSING_REF_SLOT_STORAGE_KEY, "0x" + current_slot.to_bytes(32, "big").hex())
+
+    # Without setting the correct slot, executeRestorePhase should revert with UnexpectedLastProcessingRefSlot
+    assert not two_phase_update.isReadyForRestorePhase(), "Should not be ready for restore phase without correct slot"
+
+    with reverts(f"UnexpectedLastProcessingRefSlot: {current_slot}, {restore_expected_ref_slot}"):
+        two_phase_update.executeRestorePhase({"from": stranger})
+
+
+def two_phase_frame_config_update_revert_no_permission_test(stranger):
+    cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
+    cs_fee_oracle = interface.CSFeeOracle(CS_FEE_ORACLE)
+    two_phase_update = interface.TwoPhaseFrameConfigUpdate(TWO_PHASE_FRAME_CONFIG_UPDATE)
+
+    manage_frame_config_role = cs_hash_consensus.MANAGE_FRAME_CONFIG_ROLE()
+
+    # Verify the contract does NOT have the role (before DG proposal execution)
+    assert not cs_hash_consensus.hasRole(manage_frame_config_role, TWO_PHASE_FRAME_CONFIG_UPDATE), "TwoPhaseFrameConfigUpdate should NOT have MANAGE_FRAME_CONFIG_ROLE before enactment"
+
+    # Test offset phase: set the correct slot manually
+    offset_expected_ref_slot = two_phase_update.offsetPhase()[0]
+    set_storage_at(cs_fee_oracle.address, LAST_PROCESSING_REF_SLOT_STORAGE_KEY, "0x" + offset_expected_ref_slot.to_bytes(32, "big").hex())
+
+    # Even with correct slot, should revert due to missing permission (AccessControlUnauthorizedAccount)
+    with reverts(encode_error("AccessControlUnauthorizedAccount(address,bytes32)", [TWO_PHASE_FRAME_CONFIG_UPDATE.lower(), bytes(manage_frame_config_role)])):
+        two_phase_update.executeOffsetPhase({"from": stranger})
