@@ -658,6 +658,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         two_phase_frame_config_update_revert_wrong_slot_test(stranger)
         chain.revert()
 
+        # Test external share limit
+        chain.snapshot()
+        external_share_limit_test(stranger)
+        chain.revert()
+
 
 def register_groups_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid):
 
@@ -1221,3 +1226,30 @@ def two_phase_frame_config_update_revert_no_permission_test(stranger):
     # Even with correct slot, should revert due to missing permission (AccessControlUnauthorizedAccount)
     with reverts(encode_error("AccessControlUnauthorizedAccount(address,bytes32)", [C.TWO_PHASE_FRAME_CONFIG_UPDATE.lower(), bytes(manage_frame_config_role)])):
         two_phase_update.executeOffsetPhase({"from": stranger})
+
+
+def external_share_limit_test(stranger):
+    lido = interface.Lido(C.LIDO)
+
+    # Verify max external ratio is 30%
+    max_external_ratio_bp = lido.getMaxExternalRatioBP()
+    assert max_external_ratio_bp == 3000, f"Max external ratio should be 30% (3000 BP), got {max_external_ratio_bp}"
+
+    # Get current shares state
+    total_shares = lido.getTotalShares()
+    external_shares = lido.getExternalShares()
+
+    # Calculate max mintable:
+    # (external_shares + x) / (total_shares + x) <= max_external_ratio_bp / 10000
+    # Solving for x: x <= (total_shares * max_external_ratio_bp - external_shares * 10000) / (10000 - max_external_ratio_bp)
+    max_mintable = (total_shares * max_external_ratio_bp - external_shares * 10000) // (10000 - max_external_ratio_bp)
+    assert max_mintable == lido.getMaxMintableExternalShares(), "External calculation should match internal calculation"
+
+    # Impersonate VaultHub address (which has permission to mint external shares)
+    vault_hub_account = accounts.at(C.VAULT_HUB, force=True)
+
+    # Attempting to mint more than allowed should revert
+    excessive_amount = max_mintable + 1
+
+    with reverts("EXTERNAL_BALANCE_LIMIT_EXCEEDED"):
+        lido.mintExternalShares(stranger, excessive_amount, {"from": vault_hub_account})
