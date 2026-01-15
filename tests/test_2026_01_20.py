@@ -731,20 +731,20 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # ==================== After DG proposal executed checks ==================
         # =========================================================================
 
-        # TODO Step 1.1. Check old VaultsAdapter does not have REGISTRY_ROLE on OperatorGrid
-        # assert not operator_grid.hasRole(registry_role, OLD_VAULTS_ADAPTER), "Old VaultsAdapter should not have REGISTRY_ROLE on OperatorGrid after upgrade"
+        # Step 1.1. Check old VaultsAdapter does not have REGISTRY_ROLE on OperatorGrid
+        assert not operator_grid.hasRole(registry_role, OLD_VAULTS_ADAPTER), "Old VaultsAdapter should not have REGISTRY_ROLE on OperatorGrid after upgrade"
 
         # Step 1.2. Check new VaultsAdapter has REGISTRY_ROLE on OperatorGrid
         assert operator_grid.hasRole(registry_role, NEW_VAULTS_ADAPTER), "New VaultsAdapter should have REGISTRY_ROLE on OperatorGrid after upgrade"
 
-        # TODO Step 1.3. Check old VaultsAdapter does not have VALIDATOR_EXIT_ROLE on VaultHub
-        # assert not vault_hub.hasRole(validator_exit_role, OLD_VAULTS_ADAPTER), "Old VaultsAdapter should not have VALIDATOR_EXIT_ROLE on VaultHub after upgrade"
+        # Step 1.3. Check old VaultsAdapter does not have VALIDATOR_EXIT_ROLE on VaultHub
+        assert not vault_hub.hasRole(validator_exit_role, OLD_VAULTS_ADAPTER), "Old VaultsAdapter should not have VALIDATOR_EXIT_ROLE on VaultHub after upgrade"
 
         # Step 1.4. Check new VaultsAdapter has VALIDATOR_EXIT_ROLE on VaultHub
         assert vault_hub.hasRole(validator_exit_role, NEW_VAULTS_ADAPTER), "New VaultsAdapter should have VALIDATOR_EXIT_ROLE on VaultHub after upgrade"
 
-        # TODO Step 1.5. Check old VaultsAdapter does not have BAD_DEBT_MASTER_ROLE on VaultHub
-        # assert not vault_hub.hasRole(bad_debt_master_role, OLD_VAULTS_ADAPTER), "Old VaultsAdapter should not have BAD_DEBT_MASTER_ROLE on VaultHub after upgrade"
+        # Step 1.5. Check old VaultsAdapter does not have BAD_DEBT_MASTER_ROLE on VaultHub
+        assert not vault_hub.hasRole(bad_debt_master_role, OLD_VAULTS_ADAPTER), "Old VaultsAdapter should not have BAD_DEBT_MASTER_ROLE on VaultHub after upgrade"
 
         # Step 1.6. Check new VaultsAdapter has BAD_DEBT_MASTER_ROLE on VaultHub
         assert vault_hub.hasRole(bad_debt_master_role, NEW_VAULTS_ADAPTER), "New VaultsAdapter should have BAD_DEBT_MASTER_ROLE on VaultHub after upgrade"
