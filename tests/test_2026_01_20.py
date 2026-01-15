@@ -90,14 +90,14 @@ OLD_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY = "0x6C968cD89CA358fbAf57B18e77a8
 OLD_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY = "0x5C3bDFa3E7f312d8cf72F56F2b797b026f6B471c"
 
 # New Easy Track factories
-VAULTS_ADAPTER = "0x28F9Ac198C4E0FA6A9Ad2c2f97CB38F1A3120f27"
-ALTER_TIERS_IN_OPERATOR_GRID_FACTORY = "0x73f80240ad9363d5d3C5C3626953C351cA36Bfe9"
-REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY = "0xE73842AEbEC99Dacf2aAEec61409fD01A033f478"
-UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY = "0xf23559De8ab37fF7a154384B0822dA867Cfa7Eac"
-SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY = "0x6a4f33F05E7412A11100353724Bb6a152Cf0D305"
-SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY = "0xaf35A63a4114B7481589fDD9FDB3e35Fd65fAed7"
-FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY = "0x6F5c0A5a824773E8f8285bC5aA59ea0Aab2A6400"
-UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY = "0xDfA0bc38113B6d53c2881573FD764CEEFf468610"
+NEW_VAULTS_ADAPTER = "0x28F9Ac198C4E0FA6A9Ad2c2f97CB38F1A3120f27"
+NEW_ALTER_TIERS_IN_OPERATOR_GRID_FACTORY = "0x73f80240ad9363d5d3C5C3626953C351cA36Bfe9"
+NEW_REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY = "0xE73842AEbEC99Dacf2aAEec61409fD01A033f478"
+NEW_UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY = "0xf23559De8ab37fF7a154384B0822dA867Cfa7Eac"
+NEW_SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY = "0x6a4f33F05E7412A11100353724Bb6a152Cf0D305"
+NEW_SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY = "0xaf35A63a4114B7481589fDD9FDB3e35Fd65fAed7"
+NEW_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY = "0x6F5c0A5a824773E8f8285bC5aA59ea0Aab2A6400"
+NEW_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY = "0xDfA0bc38113B6d53c2881573FD764CEEFf468610"
 
 # Test parameters
 EXPECTED_VOTE_ID = None  # Set to None to create a new vote each test run
@@ -132,7 +132,7 @@ def dual_governance_proposal_calls():
 
         # 1.2. Grant REGISTRY_ROLE on OperatorGrid to new VaultsAdapter
         agent_forward([
-            encode_oz_grant_role(operator_grid, "vaults.OperatorsGrid.Registry", VAULTS_ADAPTER)
+            encode_oz_grant_role(operator_grid, "vaults.OperatorsGrid.Registry", NEW_VAULTS_ADAPTER)
         ]),
 
         # 1.3. Revoke VALIDATOR_EXIT_ROLE on VaultHub from old VaultsAdapter
@@ -142,7 +142,7 @@ def dual_governance_proposal_calls():
 
         # 1.4. Grant VALIDATOR_EXIT_ROLE on VaultHub to new VaultsAdapter
         agent_forward([
-            encode_oz_grant_role(vault_hub, "vaults.VaultHub.ValidatorExitRole", VAULTS_ADAPTER)
+            encode_oz_grant_role(vault_hub, "vaults.VaultHub.ValidatorExitRole", NEW_VAULTS_ADAPTER)
         ]),
 
         # 1.5. Revoke BAD_DEBT_MASTER_ROLE on VaultHub from old VaultsAdapter
@@ -152,7 +152,7 @@ def dual_governance_proposal_calls():
 
         # 1.6. Grant BAD_DEBT_MASTER_ROLE on VaultHub to new VaultsAdapter
         agent_forward([
-            encode_oz_grant_role(vault_hub, "vaults.VaultHub.BadDebtMasterRole", VAULTS_ADAPTER)
+            encode_oz_grant_role(vault_hub, "vaults.VaultHub.BadDebtMasterRole", NEW_VAULTS_ADAPTER)
         ]),
 
         # ======================== PDG ========================
@@ -259,7 +259,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     vault_factory = interface.VaultFactory(VAULTS_FACTORY)
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
-    vaults_adapter = interface.IVaultsAdapter(VAULTS_ADAPTER)
+    vaults_adapter = interface.IVaultsAdapter(NEW_VAULTS_ADAPTER)
 
     registry_role = web3.keccak(text="vaults.OperatorsGrid.Registry")
     validator_exit_role = web3.keccak(text="vaults.VaultHub.ValidatorExitRole")
@@ -306,13 +306,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert OLD_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY in initial_factories, "EasyTrack should have OLD_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY factory before vote"
 
         # Check new factories are not present yet
-        assert ALTER_TIERS_IN_OPERATOR_GRID_FACTORY not in initial_factories
-        assert REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY not in initial_factories
-        assert UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY not in initial_factories
-        assert SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY not in initial_factories
-        assert SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY not in initial_factories
-        assert FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY not in initial_factories
-        assert UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY not in initial_factories
+        assert NEW_ALTER_TIERS_IN_OPERATOR_GRID_FACTORY not in initial_factories
+        assert NEW_REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY not in initial_factories
+        assert NEW_UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY not in initial_factories
+        assert NEW_SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY not in initial_factories
+        assert NEW_SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY not in initial_factories
+        assert NEW_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY not in initial_factories
+        assert NEW_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY not in initial_factories
 
         # TODO Check IPFS description hash
         # assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
@@ -338,13 +338,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert OLD_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY not in new_factories
 
         # Check new factories are added
-        assert ALTER_TIERS_IN_OPERATOR_GRID_FACTORY in new_factories, "EasyTrack should have new ALTER_TIERS_IN_OPERATOR_GRID_FACTORY factory after vote"
-        assert REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY in new_factories, "EasyTrack should have new REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY factory after vote"
-        assert UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY in new_factories, "EasyTrack should have new UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY factory after vote"
-        assert SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY in new_factories, "EasyTrack should have new SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY factory after vote"
-        assert SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY in new_factories, "EasyTrack should have new SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY factory after vote"
-        assert FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY in new_factories, "EasyTrack should have new FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY factory after vote"
-        assert UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY in new_factories, "EasyTrack should have new UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY factory after vote"
+        assert NEW_ALTER_TIERS_IN_OPERATOR_GRID_FACTORY in new_factories, "EasyTrack should have new ALTER_TIERS_IN_OPERATOR_GRID_FACTORY factory after vote"
+        assert NEW_REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY in new_factories, "EasyTrack should have new REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY factory after vote"
+        assert NEW_UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY in new_factories, "EasyTrack should have new UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY factory after vote"
+        assert NEW_SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY in new_factories, "EasyTrack should have new SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY factory after vote"
+        assert NEW_SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY in new_factories, "EasyTrack should have new SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY factory after vote"
+        assert NEW_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY in new_factories, "EasyTrack should have new FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY factory after vote"
+        assert NEW_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY in new_factories, "EasyTrack should have new UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY factory after vote"
 
         # Since we remove 7 and add 7, the count should remain the same
         assert len(initial_factories) == len(new_factories), f"Factory count changed: {len(initial_factories)} -> {len(new_factories)}"
@@ -361,13 +361,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             OLD_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY,
         }
         new_factories_added = {
-            ALTER_TIERS_IN_OPERATOR_GRID_FACTORY,
-            REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY,
-            UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY,
-            SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY,
-            SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY,
-            FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY,
-            UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY,
+            NEW_ALTER_TIERS_IN_OPERATOR_GRID_FACTORY,
+            NEW_REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY,
+            NEW_UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY,
+            NEW_SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY,
+            NEW_SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY,
+            NEW_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY,
+            NEW_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY,
         }
 
         # Check that all other factories remained
@@ -402,7 +402,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             validate_evmscript_factory_added_event(
                 event=vote_events[2],
                 p=EVMScriptFactoryAdded(
-                    factory_addr=ALTER_TIERS_IN_OPERATOR_GRID_FACTORY,
+                    factory_addr=NEW_ALTER_TIERS_IN_OPERATOR_GRID_FACTORY,
                     permissions=create_permissions(operator_grid, "alterTiers")
                 ),
                 emitted_by=easy_track,
@@ -419,7 +419,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             validate_evmscript_factory_added_event(
                 event=vote_events[4],
                 p=EVMScriptFactoryAdded(
-                    factory_addr=REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY,
+                    factory_addr=NEW_REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY,
                     permissions=create_permissions(operator_grid, "registerGroup") + create_permissions(operator_grid, "registerTiers")[2:]
                 ),
                 emitted_by=easy_track,
@@ -436,7 +436,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             validate_evmscript_factory_added_event(
                 event=vote_events[6],
                 p=EVMScriptFactoryAdded(
-                    factory_addr=UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY,
+                    factory_addr=NEW_UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY,
                     permissions=create_permissions(operator_grid, "updateGroupShareLimit")
                 ),
                 emitted_by=easy_track,
@@ -453,7 +453,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             validate_evmscript_factory_added_event(
                 event=vote_events[8],
                 p=EVMScriptFactoryAdded(
-                    factory_addr=SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY,
+                    factory_addr=NEW_SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY,
                     permissions=create_permissions(vaults_adapter, "setVaultJailStatus")
                 ),
                 emitted_by=easy_track,
@@ -470,7 +470,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             validate_evmscript_factory_added_event(
                 event=vote_events[10],
                 p=EVMScriptFactoryAdded(
-                    factory_addr=SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY,
+                    factory_addr=NEW_SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY,
                     permissions=create_permissions(vaults_adapter, "socializeBadDebt")
                 ),
                 emitted_by=easy_track,
@@ -487,7 +487,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             validate_evmscript_factory_added_event(
                 event=vote_events[12],
                 p=EVMScriptFactoryAdded(
-                    factory_addr=FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY,
+                    factory_addr=NEW_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY,
                     permissions=create_permissions(vaults_adapter, "forceValidatorExit")
                 ),
                 emitted_by=easy_track,
@@ -504,7 +504,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             validate_evmscript_factory_added_event(
                 event=vote_events[14],
                 p=EVMScriptFactoryAdded(
-                    factory_addr=UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY,
+                    factory_addr=NEW_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY,
                     permissions=create_permissions(vaults_adapter, "updateVaultFees")
                 ),
                 emitted_by=easy_track,
@@ -526,22 +526,22 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert operator_grid.hasRole(registry_role, OLD_VAULTS_ADAPTER), "Old VaultsAdapter should have REGISTRY_ROLE on OperatorGrid before upgrade"
 
             # Step 1.2. Check new VaultsAdapter does not have REGISTRY_ROLE on OperatorGrid
-            if VAULTS_ADAPTER != OLD_VAULTS_ADAPTER:
-                assert not operator_grid.hasRole(registry_role, VAULTS_ADAPTER), "New VaultsAdapter should not have REGISTRY_ROLE on OperatorGrid before upgrade"
+            if NEW_VAULTS_ADAPTER != OLD_VAULTS_ADAPTER:
+                assert not operator_grid.hasRole(registry_role, NEW_VAULTS_ADAPTER), "New VaultsAdapter should not have REGISTRY_ROLE on OperatorGrid before upgrade"
 
             # Step 1.3. Check old VaultsAdapter has VALIDATOR_EXIT_ROLE on VaultHub
             assert vault_hub.hasRole(validator_exit_role, OLD_VAULTS_ADAPTER), "Old VaultsAdapter should have VALIDATOR_EXIT_ROLE on VaultHub before upgrade"
 
             # Step 1.4. Check new VaultsAdapter does not have VALIDATOR_EXIT_ROLE on VaultHub
-            if VAULTS_ADAPTER != OLD_VAULTS_ADAPTER:
-                assert not vault_hub.hasRole(validator_exit_role, VAULTS_ADAPTER), "New VaultsAdapter should not have VALIDATOR_EXIT_ROLE on VaultHub before upgrade"
+            if NEW_VAULTS_ADAPTER != OLD_VAULTS_ADAPTER:
+                assert not vault_hub.hasRole(validator_exit_role, NEW_VAULTS_ADAPTER), "New VaultsAdapter should not have VALIDATOR_EXIT_ROLE on VaultHub before upgrade"
 
             # Step 1.5. Check old VaultsAdapter has BAD_DEBT_MASTER_ROLE on VaultHub
             assert vault_hub.hasRole(bad_debt_master_role, OLD_VAULTS_ADAPTER), "Old VaultsAdapter should have BAD_DEBT_MASTER_ROLE on VaultHub before upgrade"
 
             # Step 1.6. Check new VaultsAdapter does not have BAD_DEBT_MASTER_ROLE on VaultHub
-            if VAULTS_ADAPTER != OLD_VAULTS_ADAPTER:
-                assert not vault_hub.hasRole(bad_debt_master_role, VAULTS_ADAPTER), "New VaultsAdapter should not have BAD_DEBT_MASTER_ROLE on VaultHub before upgrade"
+            if NEW_VAULTS_ADAPTER != OLD_VAULTS_ADAPTER:
+                assert not vault_hub.hasRole(bad_debt_master_role, NEW_VAULTS_ADAPTER), "New VaultsAdapter should not have BAD_DEBT_MASTER_ROLE on VaultHub before upgrade"
 
             # Step 1.7. Check CSM module parameters before upgrade
             csm_module_before = staking_router.getStakingModule(CSM_MODULE_ID)
@@ -606,7 +606,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 validate_grant_role_event(
                     dg_events[1],
                     role=registry_role.hex(),
-                    grant_to=VAULTS_ADAPTER,
+                    grant_to=NEW_VAULTS_ADAPTER,
                     sender=AGENT,
                     emitted_by=operator_grid,
                 )
@@ -624,7 +624,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 validate_grant_role_event(
                     dg_events[3],
                     role=validator_exit_role.hex(),
-                    grant_to=VAULTS_ADAPTER,
+                    grant_to=NEW_VAULTS_ADAPTER,
                     sender=AGENT,
                     emitted_by=vault_hub,
                 )
@@ -642,7 +642,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 validate_grant_role_event(
                     dg_events[5],
                     role=bad_debt_master_role.hex(),
-                    grant_to=VAULTS_ADAPTER,
+                    grant_to=NEW_VAULTS_ADAPTER,
                     sender=AGENT,
                     emitted_by=vault_hub,
                 )
@@ -735,19 +735,19 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # assert not operator_grid.hasRole(registry_role, OLD_VAULTS_ADAPTER), "Old VaultsAdapter should not have REGISTRY_ROLE on OperatorGrid after upgrade"
 
         # Step 1.2. Check new VaultsAdapter has REGISTRY_ROLE on OperatorGrid
-        assert operator_grid.hasRole(registry_role, VAULTS_ADAPTER), "New VaultsAdapter should have REGISTRY_ROLE on OperatorGrid after upgrade"
+        assert operator_grid.hasRole(registry_role, NEW_VAULTS_ADAPTER), "New VaultsAdapter should have REGISTRY_ROLE on OperatorGrid after upgrade"
 
         # TODO Step 1.3. Check old VaultsAdapter does not have VALIDATOR_EXIT_ROLE on VaultHub
         # assert not vault_hub.hasRole(validator_exit_role, OLD_VAULTS_ADAPTER), "Old VaultsAdapter should not have VALIDATOR_EXIT_ROLE on VaultHub after upgrade"
 
         # Step 1.4. Check new VaultsAdapter has VALIDATOR_EXIT_ROLE on VaultHub
-        assert vault_hub.hasRole(validator_exit_role, VAULTS_ADAPTER), "New VaultsAdapter should have VALIDATOR_EXIT_ROLE on VaultHub after upgrade"
+        assert vault_hub.hasRole(validator_exit_role, NEW_VAULTS_ADAPTER), "New VaultsAdapter should have VALIDATOR_EXIT_ROLE on VaultHub after upgrade"
 
         # TODO Step 1.5. Check old VaultsAdapter does not have BAD_DEBT_MASTER_ROLE on VaultHub
         # assert not vault_hub.hasRole(bad_debt_master_role, OLD_VAULTS_ADAPTER), "Old VaultsAdapter should not have BAD_DEBT_MASTER_ROLE on VaultHub after upgrade"
 
         # Step 1.6. Check new VaultsAdapter has BAD_DEBT_MASTER_ROLE on VaultHub
-        assert vault_hub.hasRole(bad_debt_master_role, VAULTS_ADAPTER), "New VaultsAdapter should have BAD_DEBT_MASTER_ROLE on VaultHub after upgrade"
+        assert vault_hub.hasRole(bad_debt_master_role, NEW_VAULTS_ADAPTER), "New VaultsAdapter should have BAD_DEBT_MASTER_ROLE on VaultHub after upgrade"
 
         # Step 1.7. Check CSM module parameters after upgrade
         csm_module_after = staking_router.getStakingModule(CSM_MODULE_ID)
@@ -832,7 +832,7 @@ def register_groups_in_operator_grid_test(easy_track, trusted_address, stranger,
         assert group[1] == 0  # shareLimit
         assert len(group[3]) == 0  # tiersId array should be empty
 
-    create_and_enact_motion(easy_track, trusted_address, REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
+    create_and_enact_motion(easy_track, trusted_address, NEW_REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
 
     # Check final state
     for i, operator_address in enumerate(operator_addresses):
@@ -880,7 +880,7 @@ def alter_tiers_in_operator_grid_test(easy_track, trusted_address, stranger, ope
 
     calldata = _encode_calldata(["uint256[]", "(uint256,uint256,uint256,uint256,uint256,uint256)[]"], [tier_ids, new_tier_params])
 
-    create_and_enact_motion(easy_track, trusted_address, ALTER_TIERS_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
+    create_and_enact_motion(easy_track, trusted_address, NEW_ALTER_TIERS_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
 
     # Check final state
     for i, tier_id in enumerate(tier_ids):
@@ -914,7 +914,7 @@ def update_groups_share_limit_in_operator_grid_test(easy_track, trusted_address,
         [operator_addresses, new_share_limits]
     )
 
-    create_and_enact_motion(easy_track, trusted_address, UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
+    create_and_enact_motion(easy_track, trusted_address, NEW_UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
 
     # Check final state
     for i, operator_address in enumerate(operator_addresses):
@@ -946,7 +946,7 @@ def set_jail_status_in_operator_grid_test(easy_track, trusted_address, stranger,
 
     calldata = _encode_calldata(["address[]", "bool[]"], [vaults, [True, True]])
 
-    create_and_enact_motion(easy_track, trusted_address, SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
+    create_and_enact_motion(easy_track, trusted_address, NEW_SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY, calldata, stranger)
 
     # Check final state
     for i, vault in enumerate(vaults):
@@ -979,7 +979,7 @@ def update_vaults_fees_in_operator_grid_test(easy_track, trusted_address, strang
     calldata = _encode_calldata(["address[]", "uint256[]", "uint256[]", "uint256[]"], [[vault], [1], [1], [0]])
 
     motions_before = easy_track.getMotions()
-    tx = easy_track.createMotion(UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY, calldata, {"from": trusted_address})
+    tx = easy_track.createMotion(NEW_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY, calldata, {"from": trusted_address})
     motions = easy_track.getMotions()
     assert len(motions) == len(motions_before) + 1
 
@@ -1037,7 +1037,7 @@ def force_validator_exits_in_vault_hub_test(easy_track, trusted_address, strange
     initial_total_value = 2 * 10**18
 
     # top up VAULTS_ADAPTER
-    stranger.transfer(VAULTS_ADAPTER, 10**18)
+    stranger.transfer(NEW_VAULTS_ADAPTER, 10**18)
 
     pubkey = b"01" * 48
     # First create the vault
@@ -1055,7 +1055,7 @@ def force_validator_exits_in_vault_hub_test(easy_track, trusted_address, strange
     calldata = _encode_calldata(["address[]", "bytes[]"], [[vault], [pubkey]])
 
     motions_before = easy_track.getMotions()
-    tx = easy_track.createMotion(FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY, calldata, {"from": trusted_address})
+    tx = easy_track.createMotion(NEW_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY, calldata, {"from": trusted_address})
     motions = easy_track.getMotions()
     assert len(motions) == len(motions_before) + 1
 
@@ -1107,7 +1107,7 @@ def force_validator_exits_in_vault_hub_test(easy_track, trusted_address, strange
     event = tx.events["ForcedValidatorExitTriggered"][0]
     assert event["vault"] == vault
     assert event["pubkeys"] == "0x" + pubkey.hex()
-    assert event["refundRecipient"] == VAULTS_ADAPTER
+    assert event["refundRecipient"] == NEW_VAULTS_ADAPTER
 
 
 def socialize_bad_debt_in_vault_hub_test(easy_track, trusted_address, stranger, operator_grid, lazy_oracle, vault_hub, vault_factory):
@@ -1164,7 +1164,7 @@ def socialize_bad_debt_in_vault_hub_test(easy_track, trusted_address, stranger, 
     calldata = _encode_calldata(["address[]", "address[]", "uint256[]"], [[bad_debt_vault], [vault_acceptor], [max_shares_to_socialize]])
 
     motions_before = easy_track.getMotions()
-    tx = easy_track.createMotion(SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY, calldata, {"from": trusted_address})
+    tx = easy_track.createMotion(NEW_SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY, calldata, {"from": trusted_address})
     motions = easy_track.getMotions()
     assert len(motions) == len(motions_before) + 1
 

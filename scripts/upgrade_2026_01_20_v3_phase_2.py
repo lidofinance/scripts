@@ -81,14 +81,14 @@ OLD_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY = "0x6C968cD89CA358fbAf57B18e77a8
 OLD_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY = "0x5C3bDFa3E7f312d8cf72F56F2b797b026f6B471c"
 
 # New Easy Track factories
-VAULTS_ADAPTER = "0x28F9Ac198C4E0FA6A9Ad2c2f97CB38F1A3120f27"
-ALTER_TIERS_IN_OPERATOR_GRID_FACTORY = "0x73f80240ad9363d5d3C5C3626953C351cA36Bfe9"
-REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY = "0xE73842AEbEC99Dacf2aAEec61409fD01A033f478"
-UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY = "0xf23559De8ab37fF7a154384B0822dA867Cfa7Eac"
-SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY = "0x6a4f33F05E7412A11100353724Bb6a152Cf0D305"
-SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY = "0xaf35A63a4114B7481589fDD9FDB3e35Fd65fAed7"
-FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY = "0x6F5c0A5a824773E8f8285bC5aA59ea0Aab2A6400"
-UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY = "0xDfA0bc38113B6d53c2881573FD764CEEFf468610"
+NEW_VAULTS_ADAPTER = "0x28F9Ac198C4E0FA6A9Ad2c2f97CB38F1A3120f27"
+NEW_ALTER_TIERS_IN_OPERATOR_GRID_FACTORY = "0x73f80240ad9363d5d3C5C3626953C351cA36Bfe9"
+NEW_REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY = "0xE73842AEbEC99Dacf2aAEec61409fD01A033f478"
+NEW_UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY = "0xf23559De8ab37fF7a154384B0822dA867Cfa7Eac"
+NEW_SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY = "0x6a4f33F05E7412A11100353724Bb6a152Cf0D305"
+NEW_SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY = "0xaf35A63a4114B7481589fDD9FDB3e35Fd65fAed7"
+NEW_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY = "0x6F5c0A5a824773E8f8285bC5aA59ea0Aab2A6400"
+NEW_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY = "0xDfA0bc38113B6d53c2881573FD764CEEFf468610"
 
 # CSM module parameters
 CSM_MODULE_ID = 3
@@ -115,7 +115,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
     vault_hub = interface.VaultHub(VAULT_HUB)
-    vaults_adapter = interface.IVaultsAdapter(VAULTS_ADAPTER)
+    vaults_adapter = interface.IVaultsAdapter(NEW_VAULTS_ADAPTER)
     cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
     predeposit_guarantee_proxy = interface.OssifiableProxy(PREDEPOSIT_GUARANTEE)
     predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
@@ -129,7 +129,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
         # 1.2. Grant `vaults.OperatorsGrid.Registry` role `a495a3428837724c7f7648cda02eb83c9c4c778c8688d6f254c7f3f80c154d55` on OperatorGrid `0xC69685E89Cefc327b43B7234AC646451B27c544d` to new VaultsAdapter `0x28F9Ac198C4E0FA6A9Ad2c2f97CB38F1A3120f27`
         agent_forward([
-            encode_oz_grant_role(operator_grid, "vaults.OperatorsGrid.Registry", VAULTS_ADAPTER)
+            encode_oz_grant_role(operator_grid, "vaults.OperatorsGrid.Registry", NEW_VAULTS_ADAPTER)
         ]),
 
         # 1.3. Revoke `vaults.VaultHub.ValidatorExitRole` role `2159c5943234d9f3a7225b9a743ea06e4a0d0ba5ed82889e867759a8a9eb7883` on VaultHub `0x1d201BE093d847f6446530Efb0E8Fb426d176709` from old VaultsAdapter `0xe2DE6d2DefF15588a71849c0429101F8ca9FB14D`
@@ -139,7 +139,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
         # 1.4. Grant `vaults.VaultHub.ValidatorExitRole` role `2159c5943234d9f3a7225b9a743ea06e4a0d0ba5ed82889e867759a8a9eb7883` on VaultHub `0x1d201BE093d847f6446530Efb0E8Fb426d176709` to new VaultsAdapter `0x28F9Ac198C4E0FA6A9Ad2c2f97CB38F1A3120f27`
         agent_forward([
-            encode_oz_grant_role(vault_hub, "vaults.VaultHub.ValidatorExitRole", VAULTS_ADAPTER)
+            encode_oz_grant_role(vault_hub, "vaults.VaultHub.ValidatorExitRole", NEW_VAULTS_ADAPTER)
         ]),
 
         # 1.5. Revoke `vaults.VaultHub.BadDebtMasterRole` role `a85bab4b576ca359fa6ae02ab8744b5c85c7e7ed4d7e0bca7b5b64580ac5d17d` on VaultHub `0x1d201BE093d847f6446530Efb0E8Fb426d176709` from old VaultsAdapter `0xe2DE6d2DefF15588a71849c0429101F8ca9FB14D`
@@ -149,7 +149,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
         # 1.6. Grant `vaults.VaultHub.BadDebtMasterRole` role `a85bab4b576ca359fa6ae02ab8744b5c85c7e7ed4d7e0bca7b5b64580ac5d17d` on VaultHub `0x1d201BE093d847f6446530Efb0E8Fb426d176709` to new VaultsAdapter `0x28F9Ac198C4E0FA6A9Ad2c2f97CB38F1A3120f27`
         agent_forward([
-            encode_oz_grant_role(vault_hub, "vaults.VaultHub.BadDebtMasterRole", VAULTS_ADAPTER)
+            encode_oz_grant_role(vault_hub, "vaults.VaultHub.BadDebtMasterRole", NEW_VAULTS_ADAPTER)
         ]),
 
         # ======================== PDG ========================
@@ -240,7 +240,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         ),
         (
             "3. Add new `ALTER_TIERS_IN_OPERATOR_GRID_FACTORY` `0x73f80240ad9363d5d3C5C3626953C351cA36Bfe9` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` (permissions: operatorGrid.alterTiers `0xc69685e89cefc327b43b7234ac646451b27c544d54544bcb`)",
-            add_evmscript_factory(ALTER_TIERS_IN_OPERATOR_GRID_FACTORY, create_permissions(operator_grid, "alterTiers"))
+            add_evmscript_factory(NEW_ALTER_TIERS_IN_OPERATOR_GRID_FACTORY, create_permissions(operator_grid, "alterTiers"))
         ),
         (
             "4. Remove old `REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY` `0x194A46DA1947E98c9D79af13E06Cfbee0D8610cC` from Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea`",
@@ -249,7 +249,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         (
             "5. Add new `REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY` `0xE73842AEbEC99Dacf2aAEec61409fD01A033f478` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` (permissions: operatorGrid.registerGroup, operatorGrid.registerTiers `0xc69685e89cefc327b43b7234ac646451b27c544de37a7c0bc69685e89cefc327b43b7234ac646451b27c544d552b91da`)",
             add_evmscript_factory(
-                REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY,
+                NEW_REGISTER_GROUPS_IN_OPERATOR_GRID_FACTORY,
                 create_permissions(operator_grid, "registerGroup") + create_permissions(operator_grid, "registerTiers")[2:]
             )
         ),
@@ -259,7 +259,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         ),
         (
             "7. Add new `UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY` `0xf23559De8ab37fF7a154384B0822dA867Cfa7Eac` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` (permissions: operatorGrid.updateGroupShareLimit `0xc69685e89cefc327b43b7234ac646451b27c544de52b6085`)",
-            add_evmscript_factory(UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY, create_permissions(operator_grid, "updateGroupShareLimit"))
+            add_evmscript_factory(NEW_UPDATE_GROUPS_SHARE_LIMIT_IN_OPERATOR_GRID_FACTORY, create_permissions(operator_grid, "updateGroupShareLimit"))
         ),
         (
             "8. Remove old `SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY` `0x93F1DEE4473Ee9F42c8257C201e33a6Da30E5d67` from Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea`",
@@ -267,7 +267,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         ),
         (
             "9. Add new `SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY` `0x6a4f33F05E7412A11100353724Bb6a152Cf0D305` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` (permissions: vaults_adapter.setVaultJailStatus `0x28f9ac198c4e0fa6a9ad2c2f97cb38f1a3120f27285f591c`)",
-            add_evmscript_factory(SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY, create_permissions(vaults_adapter, "setVaultJailStatus"))
+            add_evmscript_factory(NEW_SET_JAIL_STATUS_IN_OPERATOR_GRID_FACTORY, create_permissions(vaults_adapter, "setVaultJailStatus"))
         ),
         (
             "10. Remove old `SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY` `0x1dF50522A1D868C12bF71747Bb6F24A18Fe6d32C` from Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea`",
@@ -275,7 +275,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         ),
         (
             "11. Add new `SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY` `0xaf35A63a4114B7481589fDD9FDB3e35Fd65fAed7` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` (permissions: vaults_adapter.socializeBadDebt `0x28f9ac198c4e0fa6a9ad2c2f97cb38f1a3120f2796c4d514`)",
-            add_evmscript_factory(SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY, create_permissions(vaults_adapter, "socializeBadDebt"))
+            add_evmscript_factory(NEW_SOCIALIZE_BAD_DEBT_IN_VAULT_HUB_FACTORY, create_permissions(vaults_adapter, "socializeBadDebt"))
         ),
         (
             "12. Remove old `FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY` `0x6C968cD89CA358fbAf57B18e77a8973Fa869a6aA` from Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea`",
@@ -283,7 +283,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         ),
         (
             "13. Add new `FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY` `0x6F5c0A5a824773E8f8285bC5aA59ea0Aab2A6400` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` (permissions: vaults_adapter.forceValidatorExit `0x28f9ac198c4e0fa6a9ad2c2f97cb38f1a3120f2733eb1f1a`)",
-            add_evmscript_factory(FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY, create_permissions(vaults_adapter, "forceValidatorExit"))
+            add_evmscript_factory(NEW_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY, create_permissions(vaults_adapter, "forceValidatorExit"))
         ),
         (
             "14. Remove old `UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY` `0x5C3bDFa3E7f312d8cf72F56F2b797b026f6B471c` from Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea`",
@@ -291,7 +291,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         ),
         (
             "15. Add new `UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY` `0xDfA0bc38113B6d53c2881573FD764CEEFf468610` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` (permissions: vaults_adapter.updateVaultFees `0x28f9ac198c4e0fa6a9ad2c2f97cb38f1a3120f27ed7139a7`)",
-            add_evmscript_factory(UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY, create_permissions(vaults_adapter, "updateVaultFees"))
+            add_evmscript_factory(NEW_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY, create_permissions(vaults_adapter, "updateVaultFees"))
         ),
     )
 
