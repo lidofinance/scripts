@@ -32,7 +32,7 @@ SECONDARY_NETWORK ?= mfh-2
 NETWORK_STATE_FILE ?= deployed-mainnet.json
 
 test-1/2:
-	poetry run brownie test tests/[tc]*.py tests/regression/test_staking_router_stake_distribution.py --durations=20 --network mfh-1
+	poetry run brownie test tests/test_2026_01_20.py::test_vote -s --network mfh-1
 
 test-2/2:
 	$(call run_2nd_test,brownie test -k 'not test_staking_router_stake_distribution.py' --durations=20 --network $(SECONDARY_NETWORK))

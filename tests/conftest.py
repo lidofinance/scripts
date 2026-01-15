@@ -216,11 +216,15 @@ def autodeploy_contract(accounts):
 
 @pytest.fixture(scope="session", autouse=True)
 def parse_events_from_local_abi():
+    print("os.getenv(ENV_PARSE_EVENTS_FROM_LOCAL_ABI):", os.getenv(ENV_PARSE_EVENTS_FROM_LOCAL_ABI))
+
     if os.getenv(ENV_OMNIBUS_BYPASS_EVENTS_DECODING):
         return
 
     if not os.getenv(ENV_PARSE_EVENTS_FROM_LOCAL_ABI):
         return
+
+    print("parse_events_from_local_abi...")
 
     # Used if env variable PARSE_EVENTS_FROM_LOCAL_ABI is set
     # Needed to enable events checking if ABI from Etherscan not available for any reason
