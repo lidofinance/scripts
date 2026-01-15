@@ -1248,8 +1248,35 @@ def external_share_limit_test(stranger):
     # Impersonate VaultHub address (which has permission to mint external shares)
     vault_hub_account = accounts.at(C.VAULT_HUB, force=True)
 
-    # Attempting to mint more than allowed should revert
-    excessive_amount = max_mintable + 1
+    # Verify VaultHub CAN mint up to the 30% limit
+    # Mint in chunks to avoid hitting staking limit
+    (_, _, _, _, maxStakeLimitGrowthBlocks, _, _) = lido.getStakeLimitFullInfo()
 
+    remaining = max_mintable
+
+    while remaining > 0:
+        current_limit_eth = lido.getCurrentStakeLimit()
+        current_limit_shares = lido.getSharesByPooledEth(current_limit_eth)
+        mint_amount = min(remaining, current_limit_shares)
+
+        if mint_amount > 0:
+            lido.mintExternalShares(stranger, mint_amount, {"from": vault_hub_account})
+            remaining -= mint_amount
+
+        if remaining > 0:
+            # Mine blocks to restore stake limit to max
+            chain.mine(maxStakeLimitGrowthBlocks + 1)
+
+    # Verify state after minting up to limit
+    new_total_shares = lido.getTotalShares()
+    new_external_shares = lido.getExternalShares()
+    assert new_total_shares == total_shares + max_mintable, "Total shares should increase by max_mintable"
+    assert new_external_shares == external_shares + max_mintable, "External shares should increase by max_mintable"
+
+    # Verify we're at the 30% limit
+    external_ratio = new_external_shares * 10000 // new_total_shares
+    assert external_ratio <= max_external_ratio_bp, f"External ratio {external_ratio} should not exceed {max_external_ratio_bp}"
+
+    # Verify no more can be minted (even 1 share should fail)
     with reverts("EXTERNAL_BALANCE_LIMIT_EXCEEDED"):
-        lido.mintExternalShares(stranger, excessive_amount, {"from": vault_hub_account})
+        lido.mintExternalShares(stranger, 1, {"from": vault_hub_account})
