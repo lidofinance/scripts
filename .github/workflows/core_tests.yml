@@ -16,7 +16,7 @@ on:
 jobs:
   run-tests:
     name: Core repo tests in docker
-    runs-on: [voting-private-runners]
+    runs-on: [ubuntu-latest]
     timeout-minutes: 120
 
     services:
