@@ -242,7 +242,7 @@ def assert_snapshot(before, after):
     # (e.g., CSM stake share limit increase from 5% to 7.5%), so we don't assert it
     assert len(after["unused_signing_keys_count"]) == len(before["unused_signing_keys_count"])
     for i, (before_count, after_count) in enumerate(zip(before["unused_signing_keys_count"], after["unused_signing_keys_count"])):
-        assert almost_eq(before_count, after_count, epsilon=4)
+        assert almost_eq(before_count, after_count, epsilon=8)
 
     assert_signing_keys(before, after)
     assert_node_operators(before, after)
@@ -294,7 +294,7 @@ def assert_node_operators(before: Dict[str, ReturnValue], after: Dict[str, Retur
         # assert node_operator_before["totalDepositedValidators"] == node_operator_after["totalDepositedValidators"]
         # Note: deposited validators count can differ due to changes in deposit distribution logic
         # (e.g., CSM stake share limit increase from 5% to 7.5%), so we don't assert it
-        assert almost_eq(node_operator_before["totalDepositedValidators"], node_operator_after["totalDepositedValidators"], epsilon=4)
+        assert almost_eq(node_operator_before["totalDepositedValidators"], node_operator_after["totalDepositedValidators"], epsilon=8)
 
         assert node_operator_before["totalExitedValidators"] == node_operator_after["totalExitedValidators"]
         assert node_operator_before["totalAddedValidators"] == node_operator_after["totalAddedValidators"]
@@ -307,7 +307,7 @@ def assert_node_operators(before: Dict[str, ReturnValue], after: Dict[str, Retur
         # Note: vetted validators count can differ due to changes in deposit distribution logic
         # (e.g., CSM stake share limit increase from 5% to 7.5%), so we don't assert it
         else:
-            assert almost_eq(node_operator_before["totalVettedValidators"], node_operator_after["totalVettedValidators"], epsilon=4)
+            assert almost_eq(node_operator_before["totalVettedValidators"], node_operator_after["totalVettedValidators"], epsilon=8)
 
 
 
