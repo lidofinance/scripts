@@ -124,8 +124,15 @@ DG_PROPOSAL_METADATA = "Activate Lido V3 Phase 2, raise CSM stake share limit to
 
 
 # ============================= Description ==================================
-# TODO <a description for IPFS (will appear in the voting description on vote.lido.fi)>
-IPFS_DESCRIPTION = ""
+IPFS_DESCRIPTION = """
+1. **Activate Lido V3: Phase 2 (Full Launch)**, as [proposed on the Forum](https://research.lido.fi/t/lido-v3-design-implementation-proposal/10665/15). Updated audits: [Consensys Diligence](https://github.com/lidofinance/audits/blob/main/Consensys%20Diligence%20Lido%20V3%20Security%20Audit%20-%2011-2025.pdf), [Certora](https://github.com/lidofinance/audits/blob/main/Certora%20Lido%20V3%20Audit%20Report%20-%2012-2025.pdf), [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20V3%20Security%20Audit%20Report%20-%2012-2025.pdf). BLS Library audit: [Sigma Prime](https://github.com/lidofinance/audits/blob/main/Sigma%20Prime%20-%20Lido%20BLS%20Library%20Security%20Assessment%20Report%20v2.0%20-%2001-2026.pdf).
+    1. Revoke OperatorsGrid & VaultHub configuration roles from Lido V3 Phase 1 VaultsAdapter contract and grant them to Phase 2 VaultsAdapter contract. Items 1.1-1.6.
+    2. Enable Predeposit Guarantee guided deposit flows as a part of Full Launch. 1.7-1.10.
+    3. Raise the maximum allowed stETH external shares ratio to 30%. Items 1.11-1.13.
+    4. Remove Lido V3 Phase 1 Easy Track factories and add Phase 2 factories enabling [stVault Committee](https://docs.lido.fi/multisigs/committees/#216-stvaults-committee) to configure VaultHub and OperatorGrid contracts. Items 2-15.
+2. **Raise Community Staking Module stake share limit to 7.5% and priority exit threshold to 9%**, as [proposed on the Forum](https://research.lido.fi/t/community-staking-module/5917/182). Item 1.14.
+3. **Grant `MANAGE_FRAME_CONFIG_ROLE` on CS HashConsensus to [TwoPhaseFrameConfigUpdate contract](https://etherscan.io/address/0xb2b4db1491cbe949ae85eff01e0d3ee239f110c1)**, as [proposed on the Forum](https://research.lido.fi/t/offset-csm-performance-oracle-report-weekday/11077). Audit & deployment verification: [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20CSM%20Performance%20Oracle%20Security%20Audit%20Report%2001-26.pdf). Item 1.15.
+"""
 
 
 # ================================ Main ======================================

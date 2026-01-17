@@ -26,6 +26,9 @@ from utils.test.event_validators.staking_router import validate_staking_module_u
 from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
 from utils.test.rpc_helpers import set_storage_at
 
+from utils.voting import find_metadata_by_vote_id
+from utils.ipfs import get_lido_vote_cid_from_str
+
 
 # ============================================================================
 # ============================== Import vote =================================
@@ -134,7 +137,7 @@ EXPECTED_DG_PROPOSAL_ID = 8
 EXPECTED_VOTE_EVENTS_COUNT = 15
 EXPECTED_DG_EVENTS_FROM_AGENT = 15  # 6 role revoke/grant + 1 CSM update + 1 CS HashConsensus role grant + 1 PDG impl upgrade + 3 PDG unpause (grant RESUME_ROLE, resume, revoke RESUME_ROLE) + 3 set max external ratio (grant STAKING_CONTROL_ROLE, set ratio, revoke STAKING_CONTROL_ROLE)
 EXPECTED_DG_EVENTS_COUNT = 15
-IPFS_DESCRIPTION_HASH = ""  # TODO: Update after IPFS upload
+IPFS_DESCRIPTION_HASH = "bafkreifgql6otl5jmnyyusvapdhvycyino7rysp54f4cjucm6l34se67dm"
 
 # Storage slot for lastProcessingRefSlot in CSFeeOracle
 LAST_PROCESSING_REF_SLOT_STORAGE_KEY = web3.keccak(text="lido.BaseOracle.lastProcessingRefSlot").hex()
@@ -231,8 +234,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert NEW_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY not in initial_factories, "NEW_FORCE_VALIDATOR_EXITS_IN_VAULT_HUB_FACTORY should not be present before vote"
         assert NEW_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY not in initial_factories, "NEW_UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY should not be present before vote"
 
-        # TODO Check IPFS description hash
-        # assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
+        assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
 
         vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
         display_voting_events(vote_tx)
