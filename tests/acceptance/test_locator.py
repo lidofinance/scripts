@@ -19,7 +19,6 @@ def test_addresses(contract):
     assert contract.accountingOracle() == contracts.accounting_oracle
     assert contract.depositSecurityModule() == contracts.deposit_security_module
     assert contract.elRewardsVault() == contracts.execution_layer_rewards_vault
-    assert contract.legacyOracle() == contracts.legacy_oracle
     assert contract.lido() == contracts.lido
     assert contract.oracleReportSanityChecker() == contracts.oracle_report_sanity_checker
     assert contract.postTokenRebaseReceiver() == contracts.token_rate_notifier
@@ -40,12 +39,12 @@ def test_addresses(contract):
         contracts.withdrawal_vault,
     )
 
-    assert contract.oracleReportComponentsForLido() == (
+    assert contract.oracleReportComponents() == (
         contracts.accounting_oracle,
-        contracts.execution_layer_rewards_vault,
         contracts.oracle_report_sanity_checker,
         contracts.burner,
         contracts.withdrawal_queue,
-        contracts.withdrawal_vault,
         contracts.token_rate_notifier,
+        contracts.staking_router,
+        contracts.vault_hub,
     )

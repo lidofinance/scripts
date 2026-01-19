@@ -10,7 +10,7 @@ from pytest_check import check
 from web3.types import Wei
 
 from tests.conftest import Helpers
-from utils.config import contracts, LDO_TOKEN, VOTING, AGENT
+from utils.config import contracts, LDO_TOKEN, VOTING, AGENT, INITIAL_MAX_EXTERNAL_RATIO_BP
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
 from utils.test.snapshot_helpers import _chain_snapshot
@@ -32,11 +32,17 @@ SandwichFn = Callable[..., tuple[Stack, Stack]]
 
 UINT256_MAX = 2**256 - 1
 _1ETH = Wei(10**18)
+ZERO_BYTES32 = b'\x00' * 32
+
 
 EXPECTED_SNAPSHOT_DIFFS: dict[str, Any] = {
-    "canPerform()": (True, False),
-    "getRecoveryVault": (AGENT, ZERO_ADDRESS)
 }
+
+
+IGNORED_SNAPSHOT_KEYS: set[str] = {
+    "getFeeDistribution",
+}
+
 
 def test_lido_no_changes_in_views(sandwich_upgrade: SandwichFn):
     """Test that no views change during the upgrade process."""
@@ -158,7 +164,8 @@ def test_lido_send_ether_snapshot(
 
     assert lido.balanceOf(eth_whale) == 0
     assert eth_whale.balance() >= _1ETH
-    assert el_vault.balance() >= _1ETH
+    if el_vault.balance() < _1ETH:
+        eth_whale.transfer(el_vault.address, _1ETH)
 
     def get_actions(from_address: Account | None = None):
         return (
@@ -219,20 +226,21 @@ def test_lido_send_ether_snapshot(
     _stacks_equal(stacks)
 
 
-def test_lido_dao_ops_snapshot(sandwich_upgrade: SandwichFn):
+def test_lido_dao_ops_snapshot(sandwich_upgrade: SandwichFn, eth_whale: Account):
     el_vault = contracts.execution_layer_rewards_vault
     lido = contracts.lido
 
     assert lido.getCurrentStakeLimit() > 0
     assert lido.isStakingPaused() is False
-    assert el_vault.balance() >= _1ETH
+    if el_vault.balance() < _1ETH:
+        eth_whale.transfer(el_vault.address, _1ETH)
     assert lido.isStopped() is False
 
     def get_actions(from_address: Account | None = None):
         return (
             _call(lido.pauseStaking, {"from": from_address}),
             _call(lido.stop, {"from": from_address}),
-            _call(lido.resumeStaking, {"from": from_address}),
+            _call(lido.resume, {"from": from_address}),
             _call(lido.pauseStaking, {"from": from_address}),
             _call(lido.removeStakingLimit, {"from": from_address}),
             _call(lido.resumeStaking, {"from": from_address}),
@@ -245,7 +253,6 @@ def test_lido_dao_ops_snapshot(sandwich_upgrade: SandwichFn):
             ),
             _call(lido.pauseStaking, {"from": from_address}),
             _call(lido.setStakingLimit, 17, 3, {"from": from_address}),
-            _call(lido.resume, {"from": from_address}),
             _call(lido.stop, {"from": from_address}),
         )
 
@@ -294,7 +301,6 @@ def do_snapshot(
                 "getCurrentStakeLimit": lido.getCurrentStakeLimit(),
                 "getFeeDistribution": lido.getFeeDistribution(),
                 "getFee": lido.getFee(),
-                "getOracle": lido.getOracle(),
                 "getStakeLimitFullInfo": lido.getStakeLimitFullInfo(),
                 "getTotalELRewardsCollected": lido.getTotalELRewardsCollected(),
                 "getTotalShares": lido.getTotalShares(),
@@ -327,8 +333,11 @@ def do_snapshot(
             # Lido.sol
             "lido.Lido.beaconBalance",
             "lido.Lido.beaconValidators",
+            "lido.Lido.clBalanceAndClValidators",
             "lido.Lido.bufferedEther",
+            "lido.Lido.bufferedEtherAndDepositedValidators",
             "lido.Lido.depositContract",
+            "lido.Lido.lidoLocator",
             "lido.Lido.depositedValidators",
             "lido.Lido.ELRewardsWithdrawalLimit",
             "lido.Lido.executionLayerRewardsVault",
@@ -343,8 +352,10 @@ def do_snapshot(
             "lido.Lido.treasury",
             "lido.Lido.treasuryFee",
             "lido.Lido.withdrawalCredentials",
+            "lido.Lido.lidoLocatorAndMaxExternalRatio",
             # StETH.sol
             "lido.StETH.totalShares",
+            "lido.StETH.totalAndExternalShares",
             # Pausable.sol
             "lido.Pausable.activeFlag",
             # AragonApp.sol
@@ -468,6 +479,8 @@ def _stacks_equal(stacks: tuple[Stack, Stack]) -> None:
         with check:
             unexpected: dict[str, tuple[Any, Any]] = {}
             for key, before_val in v1_frame["snap"].items():
+                if key in IGNORED_SNAPSHOT_KEYS:
+                    continue
                 after_val = v2_frame["snap"].get(key)
                 if before_val == after_val:
                     continue

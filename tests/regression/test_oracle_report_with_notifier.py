@@ -1,16 +1,21 @@
 import pytest
 from brownie import Contract, accounts, chain, interface, OpStackTokenRatePusherWithSomeErrorStub, web3, reverts
 from utils.test.oracle_report_helpers import oracle_report
-from utils.config import contracts, get_deployer_account, network_name
+from utils.config import (
+    contracts,
+    get_deployer_account,
+    network_name,
+    L1_TOKEN_RATE_NOTIFIER,
+    WSTETH_TOKEN,
+    ACCOUNTING_ORACLE,
+    L1_OPTIMISM_CROSS_DOMAIN_MESSENGER,
+)
 from utils.test.helpers import ZERO_ADDRESS, eth_balance
 from utils.evm_script import encode_error
 from typing import TypedDict, TypeVar, Any
 
-WST_ETH = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
-ACCOUNTING_ORACLE = "0x852deD011285fe67063a08005c71a85690503Cee"
-L1_TOKEN_RATE_NOTIFIER = "0xe6793B9e4FbA7DE0ee833F9D02bba7DB5EB27823"
-L1_CROSS_DOMAIN_MESSENGER = "0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1"
-L2_TOKEN_RATE_ORACLE = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
+# Use as mock for L2 TokenRateOracle
+L2_TOKEN_RATE_ORACLE = WSTETH_TOKEN
 
 
 @pytest.fixture(scope="module")
@@ -37,15 +42,36 @@ def test_oracle_report_revert():
     """Test oracle report reverts when messenger is empty"""
     interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)  # load TokenRateNotifier contract ABI to catch correct error
 
-    web3.provider.make_request("hardhat_setCode", [L1_CROSS_DOMAIN_MESSENGER, "0x"])
-    web3.provider.make_request("evm_setAccountCode", [L1_CROSS_DOMAIN_MESSENGER, "0x"])
+    web3.provider.make_request("hardhat_setCode", [L1_OPTIMISM_CROSS_DOMAIN_MESSENGER, "0x"])
+    web3.provider.make_request("evm_setAccountCode", [L1_OPTIMISM_CROSS_DOMAIN_MESSENGER, "0x"])
 
     with reverts(encode_error("ErrorTokenRateNotifierRevertedWithNoData()")):
         oracle_report(cl_diff=0, report_el_vault=True, report_withdrawals_vault=False)
 
 
+def test_only_accounting_can_call_handle_post_token_rebase():
+    """Test that only Accounting can call TokenRateNotifier.handlePostTokenRebase"""
+
+    # Any non-Accounting address should not be allowed to call handlePostTokenRebase
+    # Use some sane values for the call; the exact numbers are irrelevant, it should revert on caller
+    with reverts(encode_error("ErrorNotAuthorizedRebaseCaller()")):
+        contracts.token_rate_notifier.handlePostTokenRebase(
+            0, # report_timestamp,
+            0, # time_elapsed,
+            0, # pre_total_shares,
+            0, # pre_total_ether,
+            0, # post_total_shares,
+            0, # post_total_ether,
+            0, # shares_minted_as_fees,
+            {"from": accounts[0]},
+        )
+
+
 def test_oracle_report_pushes_rate():
     """Test oracle report emits cross domain messenger event"""
+
+    # Load OpCrossDomainMessenger interface to register SentMessage event
+    interface.OpCrossDomainMessenger(L1_OPTIMISM_CROSS_DOMAIN_MESSENGER)
 
     tx, _ = oracle_report(
         cl_diff=0,
@@ -55,7 +81,7 @@ def test_oracle_report_pushes_rate():
 
     tokenRateOracle = interface.ITokenRateUpdatable(L2_TOKEN_RATE_ORACLE)
 
-    wstETH = interface.WstETH(WST_ETH)
+    wstETH = interface.WstETH(WSTETH_TOKEN)
     accountingOracle = interface.AccountingOracle(ACCOUNTING_ORACLE)
 
     tokenRate = wstETH.getStETHByWstETH(10**27)
@@ -108,12 +134,24 @@ def test_oracle_report_success_when_observer_reverts(accounting_oracle: Contract
         block_identifier=block_after_report
     ), "TotalELRewardsCollected change mismatch"
 
+    pre_total_pooled = lido.getTotalPooledEther(block_identifier=block_before_report)
+    pre_external_ether = lido.getExternalEther(block_identifier=block_before_report)
+    pre_internal_ether = pre_total_pooled - pre_external_ether
+
+    post_total_shares = lido.getTotalShares(block_identifier=block_after_report)
+    post_external_shares = lido.getExternalShares(block_identifier=block_after_report)
+    post_internal_shares = post_total_shares - post_external_shares
+
+    expected_post_internal_ether = (
+        pre_internal_ether + el_rewards - withdrawals_finalized["amountOfETHLocked"]
+    )
+    expected_post_total_pooled = expected_post_internal_ether + (
+        post_external_shares * expected_post_internal_ether // post_internal_shares
+    )
+
     assert (
-        lido.getTotalPooledEther(block_identifier=block_before_report) + el_rewards
-        == lido.getTotalPooledEther(
-            block_identifier=block_after_report,
-        )
-        + withdrawals_finalized["amountOfETHLocked"]
+        lido.getTotalPooledEther(block_identifier=block_after_report)
+        == expected_post_total_pooled
     ), "TotalPooledEther change mismatch"
 
     assert (

@@ -7,6 +7,7 @@ from brownie import ZERO_ADDRESS, web3, chain, Contract
 from utils.config import contracts
 from utils.evm_script import encode_error
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
+from utils.staking_module import calc_module_reward_shares
 from utils.test.oracle_report_helpers import oracle_report, prepare_exit_bus_report
 from utils.test.helpers import almostEqEth, almostEqWithDiff
 
@@ -135,11 +136,6 @@ class TestRevertedSecondCalls:
         with brownie.reverts("CONTRACT_IS_ACTIVE"):
             contracts.lido.resume({"from": contracts.agent})
 
-    @pytest.mark.skip(
-        reason="Second call of pause/resume staking is not reverted right now."
-        "It maybe should be fixed in the future to be consistent, "
-        "there's not a real problem with it."
-    )
     def test_revert_second_pause_resume_staking(self):
         contracts.lido.pauseStaking({"from": contracts.agent})
 
@@ -148,7 +144,7 @@ class TestRevertedSecondCalls:
 
         contracts.lido.resumeStaking({"from": contracts.agent})
 
-        with brownie.reverts(""):
+        with brownie.reverts("ALREADY_RESUMED"):
             contracts.lido.resumeStaking({"from": contracts.agent})
 
     def test_revert_second_stop_staking_module(self, helpers, stranger):
@@ -218,18 +214,15 @@ def test_stopped_lido_cant_deposit():
         contracts.lido.deposit(1, 1, "0x", {"from": contracts.deposit_security_module}),
 
 
-@pytest.mark.usefixtures("stopped_lido")
 def test_resumed_staking_can_stake(stranger):
+    contracts.lido.pauseStaking({"from": contracts.agent})
     contracts.lido.resumeStaking({"from": contracts.agent})
     stranger.transfer(contracts.lido, DEPOSIT_AMOUNT)
 
-
 @pytest.mark.usefixtures("stopped_lido")
-def test_resumed_staking_cant_deposit():
-    contracts.lido.resumeStaking({"from": contracts.agent})
-
-    with brownie.reverts("CAN_NOT_DEPOSIT"):
-        contracts.lido.deposit(1, 1, "0x", {"from": contracts.deposit_security_module}),
+def test_cant_resume_staking_on_stopped_lido():
+    with brownie.reverts("CONTRACT_IS_STOPPED"):
+        contracts.lido.resumeStaking({"from": contracts.agent}),
 
 
 @pytest.mark.usefixtures("stopped_lido")
@@ -275,25 +268,85 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
     contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.DepositsPaused, {"from": stranger})
 
     (report_tx, _) = oracle_report()
-    print(report_tx.events["Transfer"])
-    module_index = 0
-    simple_dvt_index = 1
-    csm_index = 2
+    # print(report_tx.events["TransferShares"])
 
-    if report_tx.events["Transfer"][module_index]["to"] == burner.address:
+    # zero index - mint to accounting contract, 1 index - module, 2 index - simple dvt, 3 index - csm
+    module_index = 1
+    simple_dvt_index = 2
+    csm_index = 3
+
+    if report_tx.events["TransferShares"][module_index-1]["to"] == burner.address:
         module_index += 1
         simple_dvt_index += 1
         csm_index += 1
 
     agent_index = module_index + 3
-    assert report_tx.events["Transfer"][module_index]["to"] == module_address
-    assert report_tx.events["Transfer"][module_index]["from"] == ZERO_ADDRESS
-    assert report_tx.events["Transfer"][agent_index]["to"] == contracts.agent
-    assert report_tx.events["Transfer"][agent_index]["from"] == ZERO_ADDRESS
+    assert report_tx.events["TransferShares"][module_index]["to"] == module_address
+    assert report_tx.events["TransferShares"][module_index]["from"] == contracts.accounting.address
+    assert report_tx.events["TransferShares"][simple_dvt_index]["to"] == contracts.simple_dvt.address
+    assert report_tx.events["TransferShares"][simple_dvt_index]["from"] == contracts.accounting.address
+    assert report_tx.events["TransferShares"][csm_index]["to"] == contracts.csm.address
+    assert report_tx.events["TransferShares"][csm_index]["from"] == contracts.accounting.address
+    assert report_tx.events["TransferShares"][agent_index]["to"] == contracts.agent
+    assert report_tx.events["TransferShares"][agent_index]["from"] == contracts.accounting.address
 
-    # the staking modules ids starts from 1, so SDVT has id = 2
+
+    # the staking modules ids starts from 1
+    module_stats = contracts.staking_router.getStakingModule(1)
+    # module_treasury_fee = module_share / share_pct * treasury_pct
+    module_treasury_fee = (
+        report_tx.events["TransferShares"][module_index]["sharesValue"]
+        * 100_00
+        // module_stats["stakingModuleFee"]
+        * module_stats["treasuryFee"]
+        // 100_00
+    )
     simple_dvt_stats = contracts.staking_router.getStakingModule(2)
-    # simple_dvt_treasury_fee = sdvt_share / share_pct * treasury_pct
+    simple_dvt_treasury_fee = (
+        report_tx.events["TransferShares"][simple_dvt_index]["sharesValue"]
+        * 100_00
+        // simple_dvt_stats["stakingModuleFee"]
+        * simple_dvt_stats["treasuryFee"]
+        // 100_00
+    )
+    csm_stats = contracts.staking_router.getStakingModule(3)
+    csm_treasury_fee = (
+        report_tx.events["TransferShares"][csm_index]["sharesValue"]
+        * 100_00
+        // csm_stats["stakingModuleFee"]
+        * csm_stats["treasuryFee"]
+        // 100_00
+    )
+
+    assert almostEqWithDiff(
+        module_treasury_fee + simple_dvt_treasury_fee + csm_treasury_fee,
+        report_tx.events["TransferShares"][agent_index]["sharesValue"],
+        100,
+    )
+    assert report_tx.events["TransferShares"][module_index]["sharesValue"] > 0
+    assert report_tx.events["TransferShares"][simple_dvt_index]["sharesValue"] > 0
+    assert report_tx.events["TransferShares"][csm_index]["sharesValue"] > 0
+
+    # do the same checks for Transfer event -------------------------------------------------------
+
+    assert report_tx.events["Transfer"][module_index]["to"] == module_address
+    assert report_tx.events["Transfer"][module_index]["from"] == contracts.accounting.address
+    assert report_tx.events["Transfer"][simple_dvt_index]["to"] == contracts.simple_dvt.address
+    assert report_tx.events["Transfer"][simple_dvt_index]["from"] == contracts.accounting.address
+    assert report_tx.events["Transfer"][csm_index]["to"] == contracts.csm.address
+    assert report_tx.events["Transfer"][csm_index]["from"] == contracts.accounting.address
+    assert report_tx.events["Transfer"][agent_index]["to"] == contracts.agent
+    assert report_tx.events["Transfer"][agent_index]["from"] == contracts.accounting.address
+
+    # module_treasury_fee = module_share / share_pct * treasury_pct
+    module_treasury_fee = (
+        report_tx.events["Transfer"][module_index]["value"]
+        * 100_00
+        // module_stats["stakingModuleFee"]
+        * module_stats["treasuryFee"]
+        // 100_00
+    )
+    simple_dvt_stats = contracts.staking_router.getStakingModule(2)
     simple_dvt_treasury_fee = (
         report_tx.events["Transfer"][simple_dvt_index]["value"]
         * 100_00
@@ -309,12 +362,15 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
         * csm_stats["treasuryFee"]
         // 100_00
     )
+
     assert almostEqWithDiff(
-        report_tx.events["Transfer"][module_index]["value"] + simple_dvt_treasury_fee + csm_treasury_fee,
+        module_treasury_fee + simple_dvt_treasury_fee + csm_treasury_fee,
         report_tx.events["Transfer"][agent_index]["value"],
         100,
     )
     assert report_tx.events["Transfer"][module_index]["value"] > 0
+    assert report_tx.events["Transfer"][simple_dvt_index]["value"] > 0
+    assert report_tx.events["Transfer"][csm_index]["value"] > 0
 
 
 def test_stopped_staking_module_cant_stake(stranger):

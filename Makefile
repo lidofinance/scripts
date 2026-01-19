@@ -4,6 +4,13 @@ define run_2nd_test
 	poetry run $(1)
 endef
 
+# Get the latest block number from the target RPC node to use as FORKING_BLOCK_NUMBER for core tests
+__get_rpc_latest_block_number:
+	@curl -s -X POST $(CORE_TESTS_TARGET_RPC_URL) \
+	  -H "Content-Type: application/json" \
+	  --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+	  | sed -E 's/.*"result":"([^"]+)".*/\1/' \
+	  | xargs printf "%d"
 
 test:
 ifdef vote
@@ -22,6 +29,7 @@ CORE_DIR ?= lido-core
 CORE_BRANCH ?= master
 NODE_PORT ?= 8545
 SECONDARY_NETWORK ?= mfh-2
+NETWORK_STATE_FILE ?= deployed-mainnet.json
 
 test-1/2:
 	poetry run brownie test tests/[tc]*.py tests/regression/test_staking_router_stake_distribution.py --durations=20 --network mfh-1
@@ -36,8 +44,8 @@ init-scripts:
 # because current brownie version does not support pm install from the config file
 	poetry install && \
 	yarn && \
-	poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0 && \
-	poetry run brownie compile && \
+	PYTHONPATH=$$PWD poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0 && \
+	PYTHONPATH=$$PWD poetry run brownie compile && \
 	poetry run brownie networks import network-config.yaml True
 
 debug:
@@ -78,21 +86,36 @@ node3:
 	npx hardhat node --fork $(ETH_RPC_URL3) --port $(NODE_PORT)
 
 test-core:
+	LATEST_BLOCK_NUMBER=$$($(MAKE) --no-print-directory __get_rpc_latest_block_number) && \
+	echo "LATEST_BLOCK_NUMBER: $$LATEST_BLOCK_NUMBER" && \
 	cd $(CORE_DIR) && \
-	FORK_RPC_URL=$(CORE_TESTS_TARGET_RPC_URL) \
 	RPC_URL=$(CORE_TESTS_TARGET_RPC_URL) \
+	NETWORK_STATE_FILE=$(NETWORK_STATE_FILE) \
+	FORKING_BLOCK_NUMBER=$$LATEST_BLOCK_NUMBER \
 	yarn test:integration
 
 slots:
-	@echo "Input https://github.com/lidofinance/protocol-onchain-mon-bots/blob/main/bots/ethereum-steth-v2/src/utils/constants.ts file content (end with Enter and Ctrl+D):"
-	@cat | grep -v "import { StorageSlot } from '../entity/storage_slot'" | sed 's/StorageSlot/any/g' > slots.ts
+	@echo "Input https://github.com/lidofinance/protocol-onchain-mon-bots/blob/main/bots/ethereum-steth-v2/src/utils/constants.mainnet.ts file content (end with Enter and Ctrl+D):"
+	@cat | grep -v "import { ERC20 } from './constants'" | sed 's/ERC20/any/g' > slots2.ts
+	@cat \
+	| grep -v "import { ERC20 } from './constants'" \
+	| sed 's/ERC20/any/g' \
+	> slots.ts
+
+	@echo "Input https://github.com/lidofinance/protocol-onchain-mon-bots/blob/main/bots/ethereum-steth-v2/src/services/storage-watcher/constants.ts file content (end with Enter and Ctrl+D):"
+	@cat \
+	| grep -v "import { StorageSlot } from '../../entity/storage_slot'" \
+	| sed "s|import { Address } from '../../utils/constants.mainnet'|import { Address } from './slots2.ts'|g" \
+	| sed 's/StorageSlot/any/g' \
+	> slots.ts
 	@cat check_storage_slots.ts >> slots.ts
 	@echo "Checking storage slots against 127.0.0.1:8545..."
 	@npx tsx slots.ts
 	@rm -f slots.ts
+	@rm -f slots2.ts
 
 ci-prepare-environment:
-	poetry run brownie run scripts/ci/prepare_environment --network $(SECONDARY_NETWORK)
+	poetry run brownie run scripts/ci/prepare_environment --network mfh-1
 
 enact-fork:
 	poetry run brownie run $(vote) start_and_execute_vote_on_fork_manual --network=mfh-1

@@ -20,6 +20,9 @@ SHARE_RATE_PRECISION = 10 ** 27
 EXTRA_DATA_FORMAT_EMPTY = 0
 EXTRA_DATA_FORMAT_LIST = 1
 
+MOCK_VAULTS_DATA_TREE_ROOT = HexBytes(ZERO_HASH)
+MOCK_VAULTS_DATA_TREE_CID = "test_vaults_data_tree_cid"
+
 
 @dataclass
 class AccountingReport:
@@ -37,6 +40,8 @@ class AccountingReport:
     withdrawalFinalizationBatches: list[int]
     simulatedShareRate: int
     isBunkerMode: bool
+    vaultsDataTreeRoot: HexBytes
+    vaultsDataTreeCid: str
     extraDataFormat: int
     extraDataHash: HexBytes
     extraDataItemsCount: int
@@ -90,6 +95,8 @@ def prepare_accounting_report(
         [int(i) for i in withdrawalFinalizationBatches],
         int(simulatedShareRate),
         bool(isBunkerMode),
+        MOCK_VAULTS_DATA_TREE_ROOT,
+        MOCK_VAULTS_DATA_TREE_CID,
         int(extraDataFormat),
         extraDataHashList[0],
         int(extraDataItemsCount),
@@ -296,20 +303,23 @@ def simulate_report(
     }
 
     try:
-        return contracts.lido.handleOracleReport.call(
-            reportTime,
-            ONE_DAY,
-            beaconValidators,
-            postCLBalance,
-            withdrawalVaultBalance,
-            elRewardsVaultBalance,
-            0,
-            [],
-            0,
+        calculatedValues = contracts.accounting.simulateOracleReport.call(
+            [
+                reportTime,
+                ONE_DAY,
+                beaconValidators,
+                postCLBalance,
+                withdrawalVaultBalance,
+                elRewardsVaultBalance,
+                0,
+                [],
+                0,
+            ],
             {"from": contracts.accounting_oracle.address},
             block_identifier=block_identifier,
             override=state_override,
         )
+        return (calculatedValues[14], calculatedValues[13], calculatedValues[0], calculatedValues[1])
     except VirtualMachineError:
         # workaround for empty revert message from ganache on eth_call
 
@@ -321,16 +331,8 @@ def simulate_report(
             [contracts.accounting_oracle.address, override_slot, refSlot],
         )
 
-        contracts.lido.handleOracleReport(
-            reportTime,
-            ONE_DAY,
-            beaconValidators,
-            postCLBalance,
-            withdrawalVaultBalance,
-            elRewardsVaultBalance,
-            0,
-            [],
-            0,
+        contracts.accounting.handleOracleReport(
+            [reportTime, ONE_DAY, beaconValidators, postCLBalance, withdrawalVaultBalance, elRewardsVaultBalance, 0, [], 0],
             {"from": contracts.accounting_oracle.address},
         )
         raise  # unreachable, for static analysis only
@@ -351,8 +353,7 @@ def wait_to_next_available_report_time(consensus_contract):
         else:
             raise
 
-    # Use chain.time() instead of block timestamp for consistency
-    time = chain.time()
+    time = web3.eth.get_block("latest").timestamp
     (_, EPOCHS_PER_FRAME, _) = consensus_contract.getFrameConfig()
     frame_start_with_offset = GENESIS_TIME + (refSlot + SLOTS_PER_EPOCH * EPOCHS_PER_FRAME + 1) * SECONDS_PER_SLOT
     chain.sleep(frame_start_with_offset - time)
@@ -520,6 +521,8 @@ def oracle_report(
             withdrawalFinalizationBatches=withdrawalFinalizationBatches,
             simulatedShareRate=simulatedShareRate,
             isBunkerMode=is_bunker,
+            vaultsDataTreeRoot=MOCK_VAULTS_DATA_TREE_ROOT,
+            vaultsDataTreeCid=MOCK_VAULTS_DATA_TREE_CID,
             extraDataFormat=extraDataFormat,
             extraDataHash=extraDataHashList[0],
             extraDataItemsCount=extraDataItemsCount,

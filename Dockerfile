@@ -234,6 +234,40 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     fi
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
+      # build solc-v0.8.25
+      git checkout v0.8.25; \
+      # the compiler throws warnings when compiling this version, and the warnings are treated as errors.
+      # we disable treating the warnings as errors, unless the build doesn't succeed
+      grep -rl '\-Werror' ./cmake/EthCompilerSettings.cmake | xargs sed -i 's/\-Werror/\-Wno\-error/g'; \
+      # there is no sudo in the container, but we are under root so we do not need it
+      grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
+      # build solc faster
+      grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
+      ./scripts/build.sh; \
+      mv /usr/local/bin/solc /root/.solcx/solc-v0.8.25; \
+      git checkout .; \
+      git checkout develop; \
+      git clean -d -x -f; \
+    fi
+
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+      # build solc-v0.8.21
+      git checkout v0.8.21; \
+      # the compiler throws warnings when compiling this version, and the warnings are treated as errors.
+      # we disable treating the warnings as errors, unless the build doesn't succeed
+      grep -rl '\-Werror' ./cmake/EthCompilerSettings.cmake | xargs sed -i 's/\-Werror/\-Wno\-error/g'; \
+      # there is no sudo in the container, but we are under root so we do not need it
+      grep -rl 'sudo make install' ./scripts/build.sh | xargs sed -i 's/sudo make install/make install/g'; \
+      # build solc faster
+      grep -rl 'make -j2' ./scripts/build.sh | xargs sed -i 's/make -j2/make -j4/g'; \
+      ./scripts/build.sh; \
+      mv /usr/local/bin/solc /root/.solcx/solc-v0.8.21; \
+      git checkout .; \
+      git checkout develop; \
+      git clean -d -x -f; \
+    fi
+
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
      # build solc-v0.6.11
      git checkout v0.6.11; \
      grep -rl '\-Werror' ./cmake/EthCompilerSettings.cmake | xargs sed -i 's/\-Werror/\-Wno\-error/g'; \
@@ -303,6 +337,8 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.7.6 --version | gr
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.15 --version | grep 'Version: 0.8.15+commit.e14f2714' || (echo "Incorrect solc-v0.8.15 version" && exit 1) fi
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.19 --version | grep 'Version: 0.8.19+commit.7dd6d404' || (echo "Incorrect solc-v0.8.19 version" && exit 1) fi
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.24 --version | grep 'Version: 0.8.24+commit.e11b9ed9' || (echo "Incorrect solc-v0.8.24 version" && exit 1) fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.25 --version | grep 'Version: 0.8.25+commit.b61c2a91' || (echo "Incorrect solc-v0.8.25 version" && exit 1) fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.8.21 --version | grep 'Version: 0.8.21+commit.d9974bed' || (echo "Incorrect solc-v0.8.21 version" && exit 1) fi
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.solcx/solc-v0.6.11 --version | grep 'Version: 0.6.11+commit.5ef660b1' || (echo "Incorrect solc-v0.6.11 version" && exit 1) fi
 RUN if [ "$TARGETARCH" = "arm64" ]; then /root/.vvm/vyper-0.3.7 --version | grep '0.3.7+' || (echo "Incorrect vyper-0.3.7 version" && exit 1) fi
 

@@ -59,7 +59,8 @@ def process_proposals(proposal_ids: Sequence[int]):
     submitted_proposals = []
     scheduled_proposals = []
 
-    for proposal_id in proposals_to_be_processed:
+    copy_proposals_to_be_processed = proposals_to_be_processed.copy()
+    for proposal_id in copy_proposals_to_be_processed:
         (_, _, _, _, proposal_status) = contracts.emergency_protected_timelock.getProposalDetails(proposal_id)
         if proposal_status == PROPOSAL_STATUS["submitted"]:
             submitted_proposals.append(proposal_id)
@@ -87,7 +88,7 @@ def process_proposals(proposal_ids: Sequence[int]):
 
     if len(scheduled_proposals):
         chain.sleep(after_schedule_delay + 1)
-        wait_for_noon_utc_to_satisfy_time_constrains()
+        wait_for_target_time_to_satisfy_time_constrains()
 
         for proposal_id in scheduled_proposals:
             contracts.emergency_protected_timelock.execute(proposal_id, {"from": stranger})
@@ -105,10 +106,12 @@ def process_pending_proposals():
         return
 
     current_proposal_id = last_proposal_id
-    while is_proposal_executed(current_proposal_id):
+    while not is_proposal_executed(current_proposal_id):
         current_proposal_id -= 1
         if current_proposal_id == 1:
             break
+
+    current_proposal_id += 1
 
     process_proposals(list(range(current_proposal_id, last_proposal_id + 1)))
 
@@ -174,20 +177,20 @@ def wait_for_time_window(from_hour_utc: int, to_hour_utc: int):
     chain.sleep(sleep_time)
 
 
-def wait_for_noon_utc_to_satisfy_time_constrains():
+def wait_for_target_time_to_satisfy_time_constrains():
     current_time = chain.time()
-    noon_offset = 12 * 60 * 60
-    seconds_per_day = noon_offset * 2
+    target_time = 16 * 60 * 60 # 16:00 UTC
+    seconds_per_day = 24 * 60 * 60
 
     day_start = current_time - (current_time % seconds_per_day)
-    today_noon = day_start + noon_offset
+    today_target_time = day_start + target_time
 
-    if current_time >= today_noon:
-        target_noon = today_noon + seconds_per_day
+    if current_time >= today_target_time:
+        target_time = today_target_time + seconds_per_day
     else:
-        target_noon = today_noon
+        target_time = today_target_time
 
-    chain.sleep(target_noon - current_time)
+    chain.sleep(target_time - current_time)
 
 
 def is_proposal_executed(proposal_id: int) -> bool:

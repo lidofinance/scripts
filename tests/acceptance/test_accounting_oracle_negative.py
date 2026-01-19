@@ -184,12 +184,12 @@ def test_setConsensusContract(accounting_oracle: Contract, aragon_agent: Account
 
 def test_finalize_upgrade(accounting_oracle: Contract, stranger: Account):
     with reverts(encode_error("InvalidContractVersionIncrement()")):
-        accounting_oracle.finalizeUpgrade_v2(
+        accounting_oracle.finalizeUpgrade_v4(
             1,
             {"from": stranger},
         )
     with reverts(encode_error("InvalidContractVersionIncrement()")):
-        accounting_oracle.finalizeUpgrade_v2(
+        accounting_oracle.finalizeUpgrade_v4(
             2,
             {"from": stranger},
         )
@@ -353,15 +353,16 @@ class TestSubmitReportExtraDataList:
                 (1, 5): self.get_nor_operator_exited_keys(5) + 1,
                 (1, 6): self.get_nor_operator_exited_keys(6) + 1,
                 (1, 7): self.get_nor_operator_exited_keys(7) + 1,
-                (1, 8): self.get_nor_operator_exited_keys(8) + 1,
                 (1, 9): self.get_nor_operator_exited_keys(9) + 1,
                 (1, 10): self.get_nor_operator_exited_keys(10) + 1,
+                (1, 11): self.get_nor_operator_exited_keys(11) + 1,
             },
             MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
             1,
         )
 
         with reverts(
+            # In case of OUT_OF_RANGE error just remove exited NO (with all validators exited) from list above ^^^
             encode_error(
                 "UnexpectedExtraDataItemsCount(uint256,uint256)",
                 [

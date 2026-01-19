@@ -48,10 +48,7 @@ def test_first_slots(sandwich_upgrade: SandwichFn):
 @pytest.fixture(scope="module")
 def skip_slots() -> Sequence[tuple[str, int]]:
     """Slots that are not checked for equality"""
-    return [
-        # reset slot in kernel
-        (contracts.kernel.address, 0x01),
-    ]
+    return []
 
 
 @pytest.fixture(scope="module")
@@ -92,7 +89,6 @@ def do_snapshot(skip_slots: Sequence[tuple[str, int]]) -> SnapshotFn:
         for contract in (
             contracts.lido,
             contracts.node_operators_registry,
-            contracts.legacy_oracle,
             contracts.deposit_security_module,
             contracts.execution_layer_rewards_vault,
             contracts.withdrawal_vault,
