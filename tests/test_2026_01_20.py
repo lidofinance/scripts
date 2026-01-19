@@ -180,6 +180,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
     vaults_adapter = interface.IVaultsAdapter(NEW_VAULTS_ADAPTER)
+    predeposit_guarantee_proxy = interface.OssifiableProxy(PREDEPOSIT_GUARANTEE)
+    predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
 
     registry_role = web3.keccak(text=OPERATOR_GRID_REGISTRY_ROLE)
     validator_exit_role = web3.keccak(text=VAULT_HUB_VALIDATOR_EXIT_ROLE)
@@ -441,6 +443,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # ================== DG before proposal executed checks ===================
             # =========================================================================
 
+            # ======================== EasyTrack items ========================
             # Step 1.1. Check old VaultsAdapter has REGISTRY_ROLE on OperatorGrid
             assert operator_grid.hasRole(registry_role, OLD_VAULTS_ADAPTER), "Old VaultsAdapter should have REGISTRY_ROLE on OperatorGrid before upgrade"
 
@@ -462,7 +465,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             if NEW_VAULTS_ADAPTER != OLD_VAULTS_ADAPTER:
                 assert not vault_hub.hasRole(bad_debt_master_role, NEW_VAULTS_ADAPTER), "New VaultsAdapter should not have BAD_DEBT_MASTER_ROLE on VaultHub before upgrade"
 
-            # Step 1.7. Check CSM module parameters before upgrade
+            # ======================== PDG items ========================
+            # Step 1.7. Check PredepositGuarantee implementation before upgrade
+            predeposit_guarantee_impl_before = str(predeposit_guarantee_proxy.proxy__getImplementation()).lower()
+            assert predeposit_guarantee_impl_before != PREDEPOSIT_GUARANTEE_NEW_IMPL.lower(), "PredepositGuarantee should have old implementation before upgrade"
+
+            # Step 1.8-1.10. Check PredepositGuarantee is paused before upgrade
+            assert predeposit_guarantee.isPaused(), "PredepositGuarantee should be paused before upgrade"
+
+            # ======================== Lido items ========================
+            # Step 1.11-1.13. Check max external ratio before upgrade
+            max_external_ratio_before = lido.getMaxExternalRatioBP()
+            assert max_external_ratio_before == 300, "Lido max external ratio should be 3% (300 BP) before upgrade"
+
+            # ======================== CSM items ========================
+            # Step 1.14. Check CSM module parameters before upgrade
             csm_module_before = staking_router.getStakingModule(CSM_MODULE_ID)
             assert csm_module_before["stakeShareLimit"] == CSM_MODULE_OLD_TARGET_SHARE_BP, "CSM module should have old stake share limit before upgrade"
             assert csm_module_before["priorityExitShareThreshold"] == CSM_MODULE_OLD_PRIORITY_EXIT_THRESHOLD_BP, "CSM module should have old priority exit threshold before upgrade"
@@ -471,26 +488,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert csm_module_before["maxDepositsPerBlock"] == CSM_MODULE_MAX_DEPOSITS_PER_BLOCK, "CSM max deposits per block should be unchanged before upgrade"
             assert csm_module_before["minDepositBlockDistance"] == CSM_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE, "CSM min deposit block distance should be unchanged before upgrade"
 
-            # Step 1.8. Check TwoPhaseFrameConfigUpdate does not have MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus before upgrade
+            # Step 1.15. Check TwoPhaseFrameConfigUpdate does not have MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus before upgrade
             assert not cs_hash_consensus.hasRole(manage_frame_config_role, TWO_PHASE_FRAME_CONFIG_UPDATE), "TwoPhaseFrameConfigUpdate should not have MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus before upgrade"
 
             # Test that executeOffsetPhase reverts with permission denied error before enactment
             chain.snapshot()
             two_phase_frame_config_update_revert_no_permission_test(stranger)
             chain.revert()
-
-            # Step 1.9. Check PredepositGuarantee implementation before upgrade
-            predeposit_guarantee_proxy = interface.OssifiableProxy(PREDEPOSIT_GUARANTEE)
-            predeposit_guarantee_impl_before = str(predeposit_guarantee_proxy.proxy__getImplementation()).lower()
-            assert predeposit_guarantee_impl_before != PREDEPOSIT_GUARANTEE_NEW_IMPL.lower(), "PredepositGuarantee should have old implementation before upgrade"
-
-            # Step 1.10-1.12. Check PredepositGuarantee is paused before upgrade
-            predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
-            assert predeposit_guarantee.isPaused(), "PredepositGuarantee should be paused before upgrade"
-
-            # Step 1.13. Check max external ratio before upgrade
-            max_external_ratio_before = lido.getMaxExternalRatioBP()
-            assert max_external_ratio_before == 300, "Lido max external ratio should be 3% (300 BP) before upgrade"
 
             if details["status"] == PROPOSAL_STATUS["submitted"]:
                 chain.sleep(timelock.getAfterSubmitDelay() + 1)
@@ -596,7 +600,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=predeposit_guarantee,
                 )
 
-                # ======================== External share items ========================
+                # ======================== Lido items ========================
                 # 1.11. Validate grant STAKING_CONTROL_ROLE on Lido to Agent
                 validate_aragon_grant_permission_event(
                     dg_events[10],
@@ -650,6 +654,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # ==================== After DG proposal executed checks ==================
         # =========================================================================
 
+        # ======================== EasyTrack items ========================
         # Step 1.1. Check old VaultsAdapter does not have REGISTRY_ROLE on OperatorGrid
         assert not operator_grid.hasRole(registry_role, OLD_VAULTS_ADAPTER), "Old VaultsAdapter should not have REGISTRY_ROLE on OperatorGrid after upgrade"
 
@@ -668,7 +673,20 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # Step 1.6. Check new VaultsAdapter has BAD_DEBT_MASTER_ROLE on VaultHub
         assert vault_hub.hasRole(bad_debt_master_role, NEW_VAULTS_ADAPTER), "New VaultsAdapter should have BAD_DEBT_MASTER_ROLE on VaultHub after upgrade"
 
-        # Step 1.7. Check CSM module parameters after upgrade
+        # ======================== PDG items ========================
+        # Step 1.7. Check PredepositGuarantee implementation after upgrade
+        assert str(predeposit_guarantee_proxy.proxy__getImplementation()).lower() == PREDEPOSIT_GUARANTEE_NEW_IMPL.lower(), "PredepositGuarantee should have new implementation after upgrade"
+
+        # Step 1.8-1.10. Check PredepositGuarantee is unpaused after upgrade and Agent does not have RESUME_ROLE
+        assert not predeposit_guarantee.isPaused(), "PredepositGuarantee should be unpaused after upgrade"
+        assert not predeposit_guarantee.hasRole(resume_role, AGENT), "Agent should not have RESUME_ROLE on PredepositGuarantee after upgrade"
+
+        # ======================== Lido items ========================
+        # Step 1.11-1.13. Check max external ratio after upgrade and Agent does not have STAKING_CONTROL_ROLE
+        assert lido.getMaxExternalRatioBP() == MAX_EXTERNAL_RATIO_BP, "Lido max external ratio should be 30% after upgrade"
+
+        # ======================== CSM items ========================
+        # Step 1.14. Check CSM module parameters after upgrade
         csm_module_after = staking_router.getStakingModule(CSM_MODULE_ID)
         assert csm_module_after["stakeShareLimit"] == CSM_MODULE_NEW_TARGET_SHARE_BP, "CSM module should have new stake share limit after upgrade"
         assert csm_module_after["priorityExitShareThreshold"] == CSM_MODULE_NEW_PRIORITY_EXIT_THRESHOLD_BP, "CSM module should have new priority exit threshold after upgrade"
@@ -680,20 +698,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 if key not in changed_fields:
                     assert csm_module_after[key] == csm_module_before[key], f"CSM module {key} should be unchanged after upgrade"
 
-        # Step 1.8. Check TwoPhaseFrameConfigUpdate has MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus after upgrade
+        # Step 1.15. Check TwoPhaseFrameConfigUpdate has MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus after upgrade
         assert cs_hash_consensus.hasRole(manage_frame_config_role, TWO_PHASE_FRAME_CONFIG_UPDATE), "TwoPhaseFrameConfigUpdate should have MANAGE_FRAME_CONFIG_ROLE on CS HashConsensus after upgrade"
 
-        # Step 1.9. Check PredepositGuarantee implementation after upgrade
-        predeposit_guarantee_proxy = interface.OssifiableProxy(PREDEPOSIT_GUARANTEE)
-        assert str(predeposit_guarantee_proxy.proxy__getImplementation()).lower() == PREDEPOSIT_GUARANTEE_NEW_IMPL.lower(), "PredepositGuarantee should have new implementation after upgrade"
-
-        # Step 1.10-1.12. Check PredepositGuarantee is unpaused after upgrade and Agent does not have RESUME_ROLE
-        predeposit_guarantee = interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
-        assert not predeposit_guarantee.isPaused(), "PredepositGuarantee should be unpaused after upgrade"
-        assert not predeposit_guarantee.hasRole(resume_role, AGENT), "Agent should not have RESUME_ROLE on PredepositGuarantee after upgrade"
-
-        # Step 1.13. Check max external ratio after upgrade
-        assert lido.getMaxExternalRatioBP() == MAX_EXTERNAL_RATIO_BP, "Lido max external ratio should be 30% after upgrade"
+        
 
         # Scenario tests for Easy Track factories behavior after the vote ----------------------------------------------------
         # --------------------------------------------------------------------------------------------------------------------
