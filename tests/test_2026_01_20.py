@@ -132,7 +132,7 @@ CSM_MODULE_OLD_TARGET_SHARE_BP = 500  # 5%
 CSM_MODULE_OLD_PRIORITY_EXIT_THRESHOLD_BP = 625  # 6.25%
 
 # Test parameters
-EXPECTED_VOTE_ID = None  # Set to None to create a new vote each test run
+EXPECTED_VOTE_ID = 198
 EXPECTED_DG_PROPOSAL_ID = 8
 EXPECTED_VOTE_EVENTS_COUNT = 15
 EXPECTED_DG_EVENTS_FROM_AGENT = 15  # 6 role revoke/grant + 1 CSM update + 1 CS HashConsensus role grant + 1 PDG impl upgrade + 3 PDG unpause (grant RESUME_ROLE, resume, revoke RESUME_ROLE) + 3 set max external ratio (grant STAKING_CONTROL_ROLE, set ratio, revoke STAKING_CONTROL_ROLE)
