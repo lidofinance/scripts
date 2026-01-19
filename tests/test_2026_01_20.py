@@ -172,6 +172,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     easy_track = interface.EasyTrack(EASYTRACK)
 
+    acl = interface.ACL(ACL)
     lido = interface.Lido(LIDO)
     vault_hub = interface.VaultHub(VAULT_HUB)
     operator_grid = interface.OperatorGrid(OPERATOR_GRID)
@@ -472,11 +473,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
             # Step 1.8-1.10. Check PredepositGuarantee is paused before upgrade
             assert predeposit_guarantee.isPaused(), "PredepositGuarantee should be paused before upgrade"
+            assert not predeposit_guarantee.hasRole(resume_role, AGENT), "Agent should not have RESUME_ROLE on PredepositGuarantee before upgrade"
 
             # ======================== Lido items ========================
             # Step 1.11-1.13. Check max external ratio before upgrade
             max_external_ratio_before = lido.getMaxExternalRatioBP()
             assert max_external_ratio_before == 300, "Lido max external ratio should be 3% (300 BP) before upgrade"
+            assert not acl.hasPermission(AGENT, LIDO, staking_control_role), "Agent should not have STAKING_CONTROL_ROLE on Lido before upgrade"
 
             # ======================== CSM items ========================
             # Step 1.14. Check CSM module parameters before upgrade
@@ -684,6 +687,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # ======================== Lido items ========================
         # Step 1.11-1.13. Check max external ratio after upgrade and Agent does not have STAKING_CONTROL_ROLE
         assert lido.getMaxExternalRatioBP() == MAX_EXTERNAL_RATIO_BP, "Lido max external ratio should be 30% after upgrade"
+        assert not acl.hasPermission(AGENT, LIDO, staking_control_role), "Agent should not have STAKING_CONTROL_ROLE on Lido after upgrade"
 
         # ======================== CSM items ========================
         # Step 1.14. Check CSM module parameters after upgrade
