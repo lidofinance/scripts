@@ -1,0 +1,94 @@
+name: CSM Tests
+
+on:
+  pull_request:  # TODO remove after testing is complete
+  workflow_dispatch:
+  push:
+    branches:
+      - "master"
+      - "feat/tests"
+      - "feat/rc3"
+      - "feat/rc2"
+      - "feat/rc1"
+      - "feat/next-vote"
+  schedule:
+    - cron: "0 0 * * TUE"
+
+jobs:
+  csm-regression:
+    name: CSM Regression tests
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 120
+
+    concurrency:
+      group: csm-regression-${{ github.ref }}
+      cancel-in-progress: true
+
+    env:
+      NODE_VERSION: '20'
+      PYTHON_VERSION: '3.10'
+      POETRY_VERSION: '1.8.2'
+      HARDHAT_NODE_URL: 'http://127.0.0.1:8545'
+      CURL_PARAMS: '-X POST -H "Content-Type: application/json" -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}"'
+
+    steps:
+      - name: Checkout scripts repository
+        uses: actions/checkout@v4
+        with:
+          path: scripts
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: scripts/yarn.lock
+
+      - name: Install Poetry
+        shell: bash
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        env:
+          POETRY_VERSION: ${{ env.POETRY_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "poetry"
+          cache-dependency-path: scripts/poetry.lock
+
+      - name: Install Python dependencies with Poetry
+        run: poetry install
+        working-directory: scripts
+
+      - name: Install Yarn dependencies for scripts
+        run: yarn install --frozen-lockfile
+        working-directory: scripts
+
+      - name: Start Hardhat node
+        shell: bash
+        run: |
+          npx hardhat node --fork ${{ secrets.ETH_RPC_URL }} &
+          for i in {1..30}; do
+            if curl -sf ${{ env.HARDHAT_NODE_URL }} ${{ env.CURL_PARAMS }} | grep -q '"result"'; then
+              echo "Hardhat node is ready"
+              break
+            fi
+            sleep 1
+          done
+        working-directory: scripts
+
+      - name: Prepare test environment with Brownie
+        run: poetry run brownie run scripts/ci/prepare_environment --network mainnet-fork
+        working-directory: scripts
+
+      - name: Run CSM regression tests
+        uses: lidofinance/community-staking-module/.github/actions/regression-tests@regression-gh-action
+        with:
+          repository: lidofinance/community-staking-module
+          ref: main
+          path: community-staking-module
+          rpc_url: ${{ env.HARDHAT_NODE_URL }}

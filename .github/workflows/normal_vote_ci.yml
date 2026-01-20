@@ -9,6 +9,7 @@ on:
       - "feat/rc2"
       - "feat/rc1"
       - "feat/next-vote"
+      - "csm-tests-wokrflow"  # TODO remove after testing is complete
 jobs:
   run-tests-normal-1:
     name: Brownie fork NORMAL tests 1
