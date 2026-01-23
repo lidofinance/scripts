@@ -25,6 +25,7 @@ ACL = "0x78780e70Eae33e2935814a327f7dB6c01136cc62"
 NEW_MANAGER_ADDRESS = "0xc8195bb2851d7129D9100af9d65Bd448A6dE11eF"
 MANAGE_SIGNING_KEYS = web3.keccak(text="MANAGE_SIGNING_KEYS").hex()
 OPERATOR_ID = 1
+EXPECTED_REWARD_ADDRESS = "0x031624fAD4E9BFC2524e7a87336C4b190E70BCA8"
 
 EXPECTED_VOTE_ID = 56
 EXPECTED_VOTE_EVENTS_COUNT = 1
@@ -63,6 +64,7 @@ def test_vote_acceptance(helpers, accounts, ldo_holder, vote_ids_from_env):
         # =====================================================================
         
         # Item 1
+        assert no.getNodeOperator(OPERATOR_ID, True)["rewardAddress"] == EXPECTED_REWARD_ADDRESS
         assert not no.canPerform(NEW_MANAGER_ADDRESS, MANAGE_SIGNING_KEYS, [perm_param_uint])
         # scenario reassurance tests
         add_signing_keys_fails_before_vote(accounts)
