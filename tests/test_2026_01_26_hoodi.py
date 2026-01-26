@@ -32,9 +32,11 @@ EXPECTED_VOTE_EVENTS_COUNT = 1
 IPFS_DESCRIPTION_HASH = "bafkreies4yycczkmfgwexirpnogbzlo7j262svtrwcj5k2x7ashyvhnaqm"
 
 
-def test_vote_acceptance(helpers, accounts, ldo_holder, vote_ids_from_env):
+def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
     voting = interface.Voting(VOTING)
     no = interface.NodeOperatorsRegistry(TARGET_NO_REGISTRY)
+    perm_param = Param(0, Op.EQ, ArgumentValue(OPERATOR_ID))
+    perm_param_uint = perm_param.to_uint256()
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -51,9 +53,6 @@ def test_vote_acceptance(helpers, accounts, ldo_holder, vote_ids_from_env):
     onchain_script = voting.getVote(vote_id)["script"]
     assert str(onchain_script).lower() == encode_call_script(call_script_items).lower()
 
-    perm_param = Param(0, Op.EQ, ArgumentValue(OPERATOR_ID))
-    perm_param_uint = perm_param.to_uint256()
-
     # =========================================================================
     # ============================= Execute Vote ==============================
     # =========================================================================
@@ -66,7 +65,7 @@ def test_vote_acceptance(helpers, accounts, ldo_holder, vote_ids_from_env):
         # Item 1
         assert no.getNodeOperator(OPERATOR_ID, True)["rewardAddress"] == EXPECTED_REWARD_ADDRESS
         assert not no.canPerform(NEW_MANAGER_ADDRESS, MANAGE_SIGNING_KEYS, [perm_param_uint])
-        # scenario reassurance tests
+        # scenario test
         add_signing_keys_fails_before_vote(accounts)
 
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
@@ -89,9 +88,28 @@ def test_vote_acceptance(helpers, accounts, ldo_holder, vote_ids_from_env):
         permission = Permission(entity=NEW_MANAGER_ADDRESS, app=no, role=MANAGE_SIGNING_KEYS)
         validate_permission_grantp_event(vote_events[0], permission, [perm_param], emitted_by=ACL)
 
-        # scenario happy path tests
+        # scenario tests
         manager_adds_signing_keys(accounts)
         add_signing_keys_to_notallowed_operator_fails(accounts)
+
+
+def add_signing_keys_fails_before_vote(accounts):
+    no = interface.SimpleDVT(TARGET_NO_REGISTRY)
+
+    manager = accounts.at(NEW_MANAGER_ADDRESS, force=True)
+    set_balance(manager, 10)
+
+    pubkeys = random_pubkeys_batch(1)
+    signatures = random_signatures_batch(1)
+
+    with reverts():
+        no.addSigningKeys(
+            OPERATOR_ID,
+            1,
+            pubkeys,
+            signatures,
+            {"from": manager},
+        )
 
 
 def manager_adds_signing_keys(accounts):
@@ -114,25 +132,6 @@ def manager_adds_signing_keys(accounts):
 
     total_keys_after = no.getTotalSigningKeyCount(OPERATOR_ID)
     assert total_keys_after == total_keys_before + 1
-
-
-def add_signing_keys_fails_before_vote(accounts):
-    no = interface.SimpleDVT(TARGET_NO_REGISTRY)
-
-    manager = accounts.at(NEW_MANAGER_ADDRESS, force=True)
-    set_balance(manager, 10)
-
-    pubkeys = random_pubkeys_batch(1)
-    signatures = random_signatures_batch(1)
-
-    with reverts():
-        no.addSigningKeys(
-            OPERATOR_ID,
-            1,
-            pubkeys,
-            signatures,
-            {"from": manager},
-        )
 
 
 def add_signing_keys_to_notallowed_operator_fails(accounts):

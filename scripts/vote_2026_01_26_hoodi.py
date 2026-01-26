@@ -1,7 +1,7 @@
 """
 Voting 26/01/2026. Hoodi network.
 
-1. Grant MANAGE_SIGNING_KEYS role for operator 0x031624fAD4E9BFC2524e7a87336C4b190E70BCA8 to 0xc8195bb2851d7129D9100af9d65Bd448A6dE11eF on Hoodi
+1. Grant MANAGE_SIGNING_KEYS role for operator ID = 1 to 0xc8195bb2851d7129D9100af9d65Bd448A6dE11eF on Hoodi
 
 # TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
 """
@@ -23,7 +23,7 @@ OPERATOR_ID = 1
 
 
 # ============================= Description ==================================
-IPFS_DESCRIPTION = "Grant MANAGE_SIGNING_KEYS role for operator 0x031624fAD4E9BFC2524e7a87336C4b190E70BCA8 to 0xc8195bb2851d7129D9100af9d65Bd448A6dE11eF on Hoodi"
+IPFS_DESCRIPTION = "Grant MANAGE_SIGNING_KEYS role for operator ID = 1 to 0xc8195bb2851d7129D9100af9d65Bd448A6dE11eF on Hoodi"
 
 
 def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
@@ -31,7 +31,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
     vote_desc_items, call_script_items = zip(
         (
-            "1. Grant MANAGE_SIGNING_KEYS role for operator 0x031624fAD4E9BFC2524e7a87336C4b190E70BCA8 to 0xc8195bb2851d7129D9100af9d65Bd448A6dE11eF on Hoodi",
+            "1. Grant MANAGE_SIGNING_KEYS role for operator ID = 1 to 0xc8195bb2851d7129D9100af9d65Bd448A6dE11eF on Hoodi",
             encode_permission_grant_p(
                 target_app=TARGET_NO_REGISTRY,
                 permission_name="MANAGE_SIGNING_KEYS",
