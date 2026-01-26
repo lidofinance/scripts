@@ -37,7 +37,7 @@ Vote 2026_01_20
 14. Remove old `UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY` `0x5C3bDFa3E7f312d8cf72F56F2b797b026f6B471c` from Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea`
 15. Add new `UPDATE_VAULTS_FEES_IN_OPERATOR_GRID_FACTORY` `0xDfA0bc38113B6d53c2881573FD764CEEFf468610` to Easy Track `0xF0211b7660680B49De1A7E9f25C65660F0a13Fea` (permissions: vaults_adapter.updateVaultFees `0x28f9ac198c4e0fa6a9ad2c2f97cb38f1a3120f27ed7139a7`)
 
-# TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
+# Vote #198 passed & executed on Jan-20-2026 11:09:11 AM UTC, block 24275593.
 """
 
 from brownie import interface
