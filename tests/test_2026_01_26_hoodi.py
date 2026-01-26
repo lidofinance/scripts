@@ -29,7 +29,7 @@ EXPECTED_REWARD_ADDRESS = "0x031624fAD4E9BFC2524e7a87336C4b190E70BCA8"
 
 EXPECTED_VOTE_ID = 56
 EXPECTED_VOTE_EVENTS_COUNT = 1
-IPFS_DESCRIPTION_HASH = "bafkreies4yycczkmfgwexirpnogbzlo7j262svtrwcj5k2x7ashyvhnaqm"
+IPFS_DESCRIPTION_HASH = "bafkreibcmwxupju2hx54awwjh7fpbybkmcxban5v36go4nsnrem2fwipgq"
 
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
