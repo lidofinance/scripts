@@ -3,7 +3,7 @@ Voting 26/01/2026. Hoodi network.
 
 1. Grant MANAGE_SIGNING_KEYS role for operator ID = 1 to 0xc8195bb2851d7129D9100af9d65Bd448A6dE11eF on Hoodi
 
-# TODO (after vote) Vote #{vote number} passed & executed on ${date+time}, block ${blockNumber}.
+Vote #56 passed & executed on Jan-26-2026 12:52:36 PM UTC, block 2108630.
 """
 
 from typing import Dict, List, Tuple

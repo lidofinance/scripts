@@ -13,7 +13,7 @@ from utils.test.tx_tracing_helpers import (
 from utils.balance import set_balance
 from utils.voting import find_metadata_by_vote_id
 
-from scripts.vote_2026_01_26_hoodi import (
+from archive.scripts.vote_2026_01_26_hoodi import (
     start_vote,
     get_vote_items,
 )
