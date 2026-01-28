@@ -72,7 +72,8 @@ from utils.config import (
     VAULTS_ADAPTER,
     GATE_SEAL_V3,
     L1_TOKEN_RATE_NOTIFIER,
-    STAKING_VAULT_BEACON
+    STAKING_VAULT_BEACON,
+    TWO_PHASE_FRAME_CONFIG_UPDATE
 )
 
 
@@ -399,7 +400,7 @@ def protocol_permissions():
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_MEMBERS_AND_QUORUM_ROLE": [contracts.agent],
                 "DISABLE_CONSENSUS_ROLE": [],
-                "MANAGE_FRAME_CONFIG_ROLE": [],
+                "MANAGE_FRAME_CONFIG_ROLE": [TWO_PHASE_FRAME_CONFIG_UPDATE],
                 "MANAGE_FAST_LANE_CONFIG_ROLE": [],
                 "MANAGE_REPORT_PROCESSOR_ROLE": [],
             },

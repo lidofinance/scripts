@@ -6,6 +6,7 @@ import brownie
 import pytest
 from brownie import ZERO_ADDRESS, chain, web3, accounts
 from brownie.network.account import Account
+from hexbytes import HexBytes
 from pytest_check import check
 from web3.types import Wei
 
@@ -36,6 +37,11 @@ ZERO_BYTES32 = b'\x00' * 32
 
 
 EXPECTED_SNAPSHOT_DIFFS: dict[str, Any] = {
+    # Max external ratio is changed from 3% (300 BP) to 30% (3000 BP) in the upgrade
+    "lido.Lido.lidoLocatorAndMaxExternalRatio": (
+        HexBytes("0x00000000000000000000012cc1d0b3de6792bf6b4b37eccdcc24e45978cfd2eb"),
+        HexBytes("0x000000000000000000000bb8c1d0b3de6792bf6b4b37eccdcc24e45978cfd2eb"),
+    ),
 }
 
 
@@ -417,35 +423,42 @@ def sandwich_upgrade(
                     func=repr(action_fn),
                 )
 
-        contracts.acl.grantPermission(
-            contracts.agent,
-            contracts.lido,
-            contracts.lido.PAUSE_ROLE(),
-            {"from": contracts.agent},
-        )
-        contracts.acl.grantPermission(
-            contracts.agent,
-            contracts.lido,
-            contracts.lido.RESUME_ROLE(),
-            {"from": contracts.agent},
-        )
-        contracts.acl.grantPermission(
-            contracts.agent,
-            contracts.lido,
-            contracts.lido.STAKING_PAUSE_ROLE(),
-            {"from": contracts.agent},
-        )
-        contracts.acl.grantPermission(
-            contracts.agent,
-            contracts.lido,
-            contracts.lido.STAKING_CONTROL_ROLE(),
-            {"from": contracts.agent},
-        )
+        def _grant_lido_permissions():
+            """Grant necessary permissions to agent for Lido operations"""
+            contracts.acl.grantPermission(
+                contracts.agent,
+                contracts.lido,
+                contracts.lido.PAUSE_ROLE(),
+                {"from": contracts.agent},
+            )
+            contracts.acl.grantPermission(
+                contracts.agent,
+                contracts.lido,
+                contracts.lido.RESUME_ROLE(),
+                {"from": contracts.agent},
+            )
+            contracts.acl.grantPermission(
+                contracts.agent,
+                contracts.lido,
+                contracts.lido.STAKING_PAUSE_ROLE(),
+                {"from": contracts.agent},
+            )
+            contracts.acl.grantPermission(
+                contracts.agent,
+                contracts.lido,
+                contracts.lido.STAKING_CONTROL_ROLE(),
+                {"from": contracts.agent},
+            )
+
+        _grant_lido_permissions()
 
         with _chain_snapshot():
             v1_frames = tuple(_actions_snaps(contracts.agent))
 
         execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env)
+
+        # Re-grant permissions after upgrade as some may have been revoked
+        _grant_lido_permissions()
 
         v2_frames = tuple(_actions_snaps(contracts.agent))
 

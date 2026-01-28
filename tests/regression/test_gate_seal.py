@@ -357,10 +357,6 @@ def test_gate_seal_v3_vaults_scenario(gate_seal_committee):
 
     pause_duration = gate_seal_v3.get_seal_duration_seconds()
 
-    # TODO remove this after PDG unpause
-    reseal_manager_account = accounts.at(RESEAL_MANAGER, force=True)
-    contracts.predeposit_guarantee.resume({"from": reseal_manager_account})
-
     assert not contracts.vault_hub.isPaused()
     assert not contracts.predeposit_guarantee.isPaused()
 
