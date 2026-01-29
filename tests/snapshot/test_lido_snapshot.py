@@ -6,7 +6,6 @@ import brownie
 import pytest
 from brownie import ZERO_ADDRESS, chain, web3, accounts
 from brownie.network.account import Account
-from hexbytes import HexBytes
 from pytest_check import check
 from web3.types import Wei
 
@@ -37,11 +36,6 @@ ZERO_BYTES32 = b'\x00' * 32
 
 
 EXPECTED_SNAPSHOT_DIFFS: dict[str, Any] = {
-    # Max external ratio is changed from 3% (300 BP) to 30% (3000 BP) in the upgrade
-    "lido.Lido.lidoLocatorAndMaxExternalRatio": (
-        HexBytes("0x00000000000000000000012cc1d0b3de6792bf6b4b37eccdcc24e45978cfd2eb"),
-        HexBytes("0x000000000000000000000bb8c1d0b3de6792bf6b4b37eccdcc24e45978cfd2eb"),
-    ),
 }
 
 
