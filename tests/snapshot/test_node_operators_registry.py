@@ -273,8 +273,10 @@ def assert_node_operators(before: Dict[str, ReturnValue], after: Dict[str, Retur
         assert node_operator_before["name"] == node_operator_after["name"]
         assert node_operator_before["rewardAddress"] == node_operator_after["rewardAddress"]
         assert node_operator_before["totalDepositedValidators"] == node_operator_after["totalDepositedValidators"]
+
         assert node_operator_before["totalExitedValidators"] == node_operator_after["totalExitedValidators"]
         assert node_operator_before["totalAddedValidators"] == node_operator_after["totalAddedValidators"]
+
         if not node_operator_before["active"]:
             assert node_operator_after["totalVettedValidators"] == node_operator_after["totalDepositedValidators"]
         else:

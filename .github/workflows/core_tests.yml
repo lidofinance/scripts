@@ -9,13 +9,14 @@ on:
       - "feat/rc2"
       - "feat/rc1"
       - "feat/next-vote"
+      - "feat/v3-phase-2"
   schedule:
     - cron: "0 0 * * TUE"
 
 jobs:
   run-tests:
     name: Core repo tests in docker
-    runs-on: [voting-private-runners]
+    runs-on: [ubuntu-latest]
     timeout-minutes: 120
 
     services:
@@ -35,7 +36,7 @@ jobs:
       - name: Run init script
         run: docker exec -e CORE_BRANCH tests-runner bash -c 'PYTHONPATH=$PWD make init'
         env:
-          CORE_BRANCH: master
+          CORE_BRANCH: develop
 
       - name: Run node
         run: docker exec -e ETH_RPC_URL --detach tests-runner bash -c 'NODE_PORT=8545 make node'
