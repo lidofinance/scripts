@@ -173,8 +173,8 @@ def decode_encoded_call(encoded_call: EncodedCall) -> Optional[Call]:
     Decodes an encoded contract call using Brownie's Contract API.
 
     This function replaces AVotesParser.decode_function_call() and converts the provided
-    EncodedCall into a Call object or returns None if the decoding wasn't successfull.
-    Unsuccessfull deconding usually happens when the contract is not verified contract on etherscan
+    EncodedCall into a Call object or returns None if the decoding wasn't successful.
+    Unsuccessful decoding usually happens when the contract is not verified contract on etherscan
 
     Parameters:
         encoded_call (EncodedCall): An object containing the target contract address, method id,
