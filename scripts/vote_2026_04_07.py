@@ -30,14 +30,21 @@ NEW_CHORUS_ADDRESS = "0x8dB977C13CAA938BC58464bFD622DF0570564b78"
 
 HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE = "0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288"
 HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE = "0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a"
+HASH_CONSENSUS_FOR_CS_FEE_ORACLE = "0x71093efF8D8599b5fA340D665Ad60fA7C80688e4"
 
 HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM = 5
 HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM = 5
+HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM = 5
 
 def encode_remove_accounting_oracle_member(member: str) -> Tuple[str, str]:
     hash_consensus = interface.HashConsensus(HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE)
 
     return (hash_consensus.address, hash_consensus.removeMember.encode_input(member, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM))
+
+def encode_remove_cs_fee_oracle_member(member: str) -> Tuple[str, str]:
+    hash_consensus = interface.CSHashConsensus(HASH_CONSENSUS_FOR_CS_FEE_ORACLE)
+
+    return (hash_consensus.address, hash_consensus.removeMember.encode_input(member, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM))
 
 def encode_remove_validators_exit_bus_oracle_member(member: str) -> Tuple[str, str]:
     hash_consensus = interface.HashConsensus(HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE)
@@ -49,12 +56,15 @@ def encode_add_accounting_oracle_member(member: str) -> Tuple[str, str]:
 
     return (hash_consensus.address, hash_consensus.addMember.encode_input(member, HASH_CONSENSUS_FOR_ACCOUNTING_ORACLE_QUORUM))
 
+def encode_add_cs_fee_oracle_member(member: str) -> Tuple[str, str]:
+    hash_consensus = interface.CSHashConsensus(HASH_CONSENSUS_FOR_CS_FEE_ORACLE)
+
+    return (hash_consensus.address, hash_consensus.addMember.encode_input(member, HASH_CONSENSUS_FOR_CS_FEE_ORACLE_QUORUM))
 
 def encode_add_validators_exit_bus_oracle_member(member: str) -> Tuple[str, str]:
     hash_consensus = interface.HashConsensus(HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE)
 
     return (hash_consensus.address, hash_consensus.addMember.encode_input(member, HASH_CONSENSUS_FOR_VALIDATORS_EXIT_BUS_ORACLE_QUORUM))
-
 
 
 # ============================= IPFS Description ==================================
@@ -71,8 +81,10 @@ def get_dg_items() -> List[Tuple[str, str]]:
         # TODO 1.1. item description
         agent_forward([
             encode_remove_accounting_oracle_member(OLD_CHORUS_ADDRESS),
+            encode_remove_cs_fee_oracle_member(OLD_CHORUS_ADDRESS),
             encode_remove_validators_exit_bus_oracle_member(OLD_CHORUS_ADDRESS),
             encode_add_accounting_oracle_member(NEW_CHORUS_ADDRESS),
+            encode_add_cs_fee_oracle_member(NEW_CHORUS_ADDRESS),
             encode_add_validators_exit_bus_oracle_member(NEW_CHORUS_ADDRESS),
         ]),
     ]
