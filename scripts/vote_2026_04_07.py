@@ -70,10 +70,10 @@ def get_dg_items() -> List[Tuple[str, str]]:
     return [
         # TODO 1.1. item description
         agent_forward([
-            encode_remove_accounting_oracle_member(rated_labs_oracle_member),
-            encode_remove_validators_exit_bus_oracle_member(rated_labs_oracle_member),
-            encode_add_accounting_oracle_member(matrixed_link_oracle_member),
-            encode_add_validators_exit_bus_oracle_member(matrixed_link_oracle_member),
+            encode_remove_accounting_oracle_member(OLD_CHORUS_ADDRESS),
+            encode_remove_validators_exit_bus_oracle_member(OLD_CHORUS_ADDRESS),
+            encode_add_accounting_oracle_member(NEW_CHORUS_ADDRESS),
+            encode_add_validators_exit_bus_oracle_member(NEW_CHORUS_ADDRESS),
         ]),
     ]
 
