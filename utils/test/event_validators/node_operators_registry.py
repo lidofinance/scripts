@@ -121,6 +121,7 @@ def validate_node_operator_deactivated(event: EventDict, node_operator_id: int):
         "KeysOpIndexSet",
         "NonceChanged",
         "ScriptResult",
+        "Executed",
     ]
 
     validate_events_chain([e.name for e in event], _events_chain)
