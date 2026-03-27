@@ -400,7 +400,7 @@ def protocol_permissions():
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_MEMBERS_AND_QUORUM_ROLE": [contracts.agent],
                 "DISABLE_CONSENSUS_ROLE": [],
-                "MANAGE_FRAME_CONFIG_ROLE": [TWO_PHASE_FRAME_CONFIG_UPDATE],
+                "MANAGE_FRAME_CONFIG_ROLE": [],
                 "MANAGE_FAST_LANE_CONFIG_ROLE": [],
                 "MANAGE_REPORT_PROCESSOR_ROLE": [],
             },
