@@ -35,6 +35,7 @@ from utils.test.event_validators.hash_consensus import (
 from utils.test.event_validators.proxy import validate_proxy_upgrade_event
 from utils.test.event_validators.permission import Permission, validate_permission_grantp_event
 from utils.test.event_validators.allowed_recipients_registry import validate_set_limit_parameter_event
+from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 
@@ -82,6 +83,9 @@ HASH_CONSENSUS_FOR_AO = "0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288"
 CS_HASH_CONSENSUS = "0x71093efF8D8599b5fA340D665Ad60fA7C80688e4"
 HASH_CONSENSUS_FOR_VEBO = "0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a"
 
+# Staking Router
+STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
+
 # Node operators
 A41_NO_ID = 32
 STAKIN_NO_ID = 14
@@ -97,6 +101,17 @@ GAS_SUPPLY_ALLOWED_RECIPIENTS_REGISTRY = "0x49d1363016aA899bba09ae972a1BF200dDf8
 GAS_SUPPLY_NEW_LIMIT = 150 * 10**18
 GAS_SUPPLY_PERIOD_DURATION_MONTHS = 12
 GAS_SUPPLY_PERIOD_START = 1767225600
+
+# CSM staking module update
+CSM_MODULE_ID = 3
+CSM_STAKE_SHARE_LIMIT_BEFORE = 750
+CSM_STAKE_SHARE_LIMIT_AFTER = 850
+CSM_PRIORITY_EXIT_SHARE_THRESHOLD_BEFORE = 900
+CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER = 1020
+CSM_MODULE_FEE_BP = 600
+CSM_TREASURY_FEE_BP = 400
+CSM_MAX_DEPOSITS_PER_BLOCK = 30
+CSM_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 
 # Easy Track factories
 OLD_SDVT_SUBMIT_EXIT_HASHES_FACTORY = "0xB7668B5485d0f826B86a75b0115e088bB9ee03eE"
@@ -122,11 +137,11 @@ SUBMIT_EXIT_REQUESTS = "submitExitRequestsHash"
 # ============================================================================
 EXPECTED_VOTE_ID = 199
 EXPECTED_DG_PROPOSAL_ID = 9
-EXPECTED_VOTE_EVENTS_COUNT = 11  # 1 DG submit + 7 factory removes + 3 factory adds
-EXPECTED_DG_EVENTS_FROM_AGENT = 16
-EXPECTED_DG_EVENTS_COUNT = 16
+EXPECTED_VOTE_EVENTS_COUNT = 11  # 1 DG submit + 5 factory removes + 5 factory adds
+EXPECTED_DG_EVENTS_FROM_AGENT = 17
+EXPECTED_DG_EVENTS_COUNT = 17
 IPFS_DESCRIPTION_HASH = ""  # TODO: add
-DG_PROPOSAL_METADATA = "Deactivate A41, update Stakin, upgrade LazyOracle/VaultHub/ZKSync bridge, rotate Chorus One oracle member, set Chorus One target limit, grant MANAGE_SIGNING_KEYS to Consensys, decrease Gas Supply limit"
+DG_PROPOSAL_METADATA = "Deactivate A41, update Stakin, upgrade LazyOracle/VaultHub/ZKSync bridge, rotate Chorus One oracle member, set Chorus One target limit, grant MANAGE_SIGNING_KEYS to Consensys, decrease Gas Supply limit, raise CSM stake share limit and priority exit threshold"
 
 
 @pytest.fixture(scope="module")
@@ -162,6 +177,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
     hash_consensus_for_vebo = interface.HashConsensus(HASH_CONSENSUS_FOR_VEBO)
     gas_supply_registry = interface.AllowedRecipientRegistry(GAS_SUPPLY_ALLOWED_RECIPIENTS_REGISTRY)
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
     vebo = interface.ValidatorsExitBusOracle(VEBO)
 
     perm_param = Param(0, Op.EQ, ArgumentValue(CONSENSYS_NO_ID))
@@ -360,6 +376,15 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert limit_before != GAS_SUPPLY_NEW_LIMIT
             assert duration_before == GAS_SUPPLY_PERIOD_DURATION_MONTHS
 
+            # 1.16 CSM stake share limit and priority exit threshold before
+            csm_module_before = staking_router.getStakingModule(CSM_MODULE_ID)
+            assert csm_module_before["stakeShareLimit"] == CSM_STAKE_SHARE_LIMIT_BEFORE
+            assert csm_module_before["priorityExitShareThreshold"] == CSM_PRIORITY_EXIT_SHARE_THRESHOLD_BEFORE
+            assert csm_module_before["stakingModuleFee"] == CSM_MODULE_FEE_BP
+            assert csm_module_before["treasuryFee"] == CSM_TREASURY_FEE_BP
+            assert csm_module_before["maxDepositsPerBlock"] == CSM_MAX_DEPOSITS_PER_BLOCK
+            assert csm_module_before["minDepositBlockDistance"] == CSM_MIN_DEPOSIT_BLOCK_DISTANCE
+
             ao_quorum_before = hash_consensus_for_ao.getQuorum()
             ao_members_before = len(hash_consensus_for_ao.getMembers()[0])
             csm_quorum_before = cs_hash_consensus.getQuorum()
@@ -503,6 +528,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=GAS_SUPPLY_ALLOWED_RECIPIENTS_REGISTRY,
                 )
 
+                # 1.16. CSM stake share limit and priority exit threshold update
+                validate_staking_module_update_event(
+                    dg_events[16],
+                    StakingModuleItem(
+                        id=CSM_MODULE_ID,
+                        name="Community Staking",
+                        address=None,
+                        target_share=CSM_STAKE_SHARE_LIMIT_AFTER,
+                        module_fee=CSM_MODULE_FEE_BP,
+                        treasury_fee=CSM_TREASURY_FEE_BP,
+                        priority_exit_share=CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER,
+                    ),
+                    emitted_by=STAKING_ROUTER,
+                )
+
         # =========================================================================
         # ==================== After DG proposal executed checks ==================
         # =========================================================================
@@ -551,6 +591,15 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         limit_after, duration_after = gas_supply_registry.getLimitParameters()
         assert limit_after == GAS_SUPPLY_NEW_LIMIT
         assert duration_after == GAS_SUPPLY_PERIOD_DURATION_MONTHS
+
+        # 1.16 CSM stake share limit and priority exit threshold raised
+        csm_module_after = staking_router.getStakingModule(CSM_MODULE_ID)
+        assert csm_module_after["stakeShareLimit"] == CSM_STAKE_SHARE_LIMIT_AFTER
+        assert csm_module_after["priorityExitShareThreshold"] == CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER
+        assert csm_module_after["stakingModuleFee"] == CSM_MODULE_FEE_BP
+        assert csm_module_after["treasuryFee"] == CSM_TREASURY_FEE_BP
+        assert csm_module_after["maxDepositsPerBlock"] == CSM_MAX_DEPOSITS_PER_BLOCK
+        assert csm_module_after["minDepositBlockDistance"] == CSM_MIN_DEPOSIT_BLOCK_DISTANCE
 
         ao_quorum_after = hash_consensus_for_ao.getQuorum()
         ao_members_after = len(hash_consensus_for_ao.getMembers()[0])

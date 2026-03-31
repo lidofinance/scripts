@@ -17,6 +17,7 @@ Vote 2026_04_08
 1.13 Set soft-mode target validators limit to 0 for Node Operator Chorus One (ID = 3) in Curated Module (MODULE_ID = 1) in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
 1.14 Grant MANAGE_SIGNING_KEYS role for Node Operator Consensys (ID = 21) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5 to address 0xF45C77EadD434612fCD93db978B3E36B0D58eC99
 1.15 Decrease the limit from 1000 to 150 stETH per 12 months on Gas Supply AllowedRecipientsRegistry 0x49d1363016aA899bba09ae972a1BF200dDf8C55F
+1.16 Raise CSM (MODULE_ID = 3) stake share limit from 750 BP to 850 BP and priority exit threshold from 900 BP to 1020 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
 
 === NON-DG ITEMS ===
 2. Remove old Simple DVT SubmitValidatorsExitRequestHashes factory 0xB7668B5485d0f826B86a75b0115e088bB9ee03eE from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
@@ -110,6 +111,14 @@ CONSENSYS_NO_ID = 21
 
 GAS_SUPPLY_NEW_LIMIT = 150 * 10**18
 GAS_SUPPLY_PERIOD_DURATION_MONTHS = 12
+
+CSM_MODULE_ID = 3
+CSM_STAKE_SHARE_LIMIT_NEW = 850
+CSM_PRIORITY_EXIT_SHARE_THRESHOLD_NEW = 1020
+CSM_MODULE_FEE_BP = 600
+CSM_TREASURY_FEE_BP = 400
+CSM_MAX_DEPOSITS_PER_BLOCK = 30
+CSM_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 
 AO_HASH_CONSENSUS_QUORUM = 5
 CS_HASH_CONSENSUS_QUORUM = 5
@@ -236,7 +245,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 (
                     hash_consensus_for_vebo.address,
                     hash_consensus_for_vebo.addMember.encode_input(
-                        CHORUS_ONE_ORACLE_MEMBER_NEW, CS_HASH_CONSENSUS_QUORUM
+                        CHORUS_ONE_ORACLE_MEMBER_NEW, VEBO_HASH_CONSENSUS_QUORUM
                     ),
                 )
             ]
@@ -273,6 +282,23 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 ),
             ]
         ),
+        # 1.16 Raise CSM (MODULE_ID = 3) stake share limit from 750 BP to 850 BP and priority exit threshold from 900 BP to 1020 BP
+        agent_forward(
+            [
+                (
+                    staking_router.address,
+                    staking_router.updateStakingModule.encode_input(
+                        CSM_MODULE_ID,
+                        CSM_STAKE_SHARE_LIMIT_NEW,
+                        CSM_PRIORITY_EXIT_SHARE_THRESHOLD_NEW,
+                        CSM_MODULE_FEE_BP,
+                        CSM_TREASURY_FEE_BP,
+                        CSM_MAX_DEPOSITS_PER_BLOCK,
+                        CSM_MIN_DEPOSIT_BLOCK_DISTANCE,
+                    ),
+                )
+            ]
+        ),
     ]
 
 
@@ -286,7 +312,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         [
             (
                 dg_items,
-                "Deactivate A41, update Stakin, upgrade LazyOracle/VaultHub/ZKSync bridge, rotate Chorus One oracle member, set Chorus One target limit, grant MANAGE_SIGNING_KEYS to Consensys, decrease Gas Supply limit",
+                "Deactivate A41, update Stakin, upgrade LazyOracle/VaultHub/ZKSync bridge, rotate Chorus One oracle member, set Chorus One target limit, grant MANAGE_SIGNING_KEYS to Consensys, decrease Gas Supply limit, raise CSM stake share limit and priority exit threshold",
             )
         ]
     )
