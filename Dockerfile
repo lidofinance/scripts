@@ -7,9 +7,8 @@ ARG TARGETARCH
 COPY --from=node /usr/local /usr/local
 
 # install common prerequisites
-RUN pip install poetry
+RUN pip install poetry==1.8.2
 RUN rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg && npm install -g yarn@1.22.22
-RUN poetry self update 1.8.2
 
 
 # if running on arm64 - build solc
@@ -322,7 +321,6 @@ RUN echo "cd /root/scripts" >> /root/.bashrc
 
 # verify prerequisites versions
 RUN python --version | grep 'Python 3.10.' || (echo "Incorrect python version" && exit 1)
-RUN pip --version | grep 'pip 2' || (echo "Incorrect pip version" && exit 1)
 RUN node --version | grep 'v18.' || (echo "Incorrect node version" && exit 1)
 RUN npm --version | grep '10.' || (echo "Incorrect npm version" && exit 1)
 RUN poetry --version | grep 'Poetry (version 1.8.2)' || (echo "Incorrect poetry version" && exit 1)
