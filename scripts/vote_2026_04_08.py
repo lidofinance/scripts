@@ -5,7 +5,7 @@ Vote 2026_04_08
 1.1 Deactivate Node Operator A41 (id = 32) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
 1.2 Change name to "Stakin by The Tie" and reward address to 0x3e97EC699191bEfc63EF4E4275204B03E7465f30 for Node Operator Stakin (id = 14) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
 1.3 Upgrade LazyOracle proxy 0x5DB427080200c235F2Ae8Cd17A7be87921f7AD6c implementation to 0x96c9a897D116ef660086d3aA67b3af653324aB37
-1.4 Upgrade VaultHub proxy 0x1d201BE093d847f6446530Efb0E8Fb426d176709 implementation to 0x77c017EBB74037E593F3552596dEb75565F01294
+1.4 Upgrade VaultHub proxy 0x1d201BE093d847f6446530Efb0E8Fb426d176709 implementation to 0x6330fE7756FBE8649adfb9A541d61C5edB8B4D70
 1.5 Upgrade ZKSync L1ERC20Bridge proxy 0x41527B2d03844dB6b0945f25702cB958b6d55989 implementation to 0x43a66b32c9adca1a59b273e69b61da5197c21ccd
 1.6 Call enableDeposits on ZKSync L1ERC20Bridge proxy 0x41527B2d03844dB6b0945f25702cB958b6d55989
 1.7 Remove Chorus One member 0x285f8537e1daeedaf617e96c742f2cf36d63ccfb from Accounting Oracle HashConsensus 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
@@ -69,7 +69,7 @@ LAZY_ORACLE_PROXY = "0x5DB427080200c235F2Ae8Cd17A7be87921f7AD6c"
 LAZY_ORACLE_IMPL_NEW = "0x96c9a897D116ef660086d3aA67b3af653324aB37"
 
 VAULT_HUB_PROXY = "0x1d201BE093d847f6446530Efb0E8Fb426d176709"
-VAULT_HUB_IMPL_NEW = "0x77c017EBB74037E593F3552596dEb75565F01294"
+VAULT_HUB_IMPL_NEW = "0x6330fE7756FBE8649adfb9A541d61C5edB8B4D70"
 
 ZKSYNC_L1_ERC20_BRIDGE = "0x41527B2d03844dB6b0945f25702cB958b6d55989"
 ZKSYNC_L1_ERC20_BRIDGE_IMPL_NEW = "0x43a66b32c9adca1a59b273e69b61da5197c21ccd"
@@ -164,7 +164,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 )
             ]
         ),
-        # 1.4 Upgrade VaultHub proxy 0x1d201BE093d847f6446530Efb0E8Fb426d176709 implementation to 0x77c017EBB74037E593F3552596dEb75565F01294
+        # 1.4 Upgrade VaultHub proxy 0x1d201BE093d847f6446530Efb0E8Fb426d176709 implementation to 0x6330fE7756FBE8649adfb9A541d61C5edB8B4D70
         agent_forward(
             [
                 (
@@ -200,9 +200,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
             [
                 (
                     cs_hash_consensus.address,
-                    cs_hash_consensus.removeMember.encode_input(
-                        CHORUS_ONE_ORACLE_MEMBER_OLD, CS_HASH_CONSENSUS_QUORUM
-                    ),
+                    cs_hash_consensus.removeMember.encode_input(CHORUS_ONE_ORACLE_MEMBER_OLD, CS_HASH_CONSENSUS_QUORUM),
                 )
             ]
         ),
@@ -233,9 +231,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
             [
                 (
                     cs_hash_consensus.address,
-                    cs_hash_consensus.addMember.encode_input(
-                        CHORUS_ONE_ORACLE_MEMBER_NEW, CS_HASH_CONSENSUS_QUORUM
-                    ),
+                    cs_hash_consensus.addMember.encode_input(CHORUS_ONE_ORACLE_MEMBER_NEW, CS_HASH_CONSENSUS_QUORUM),
                 )
             ]
         ),
@@ -320,27 +316,22 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     vote_desc_items, call_script_items = zip(
         # 1. DG proposal submission
         (
-            "1. Submit a Dual Governance proposal to deactivate A41, update Stakin, "
-            "upgrade LazyOracle/VaultHub/ZKSync bridge, rotate Chorus One oracle member, "
-            "set Chorus One target limit, grant MANAGE_SIGNING_KEYS to Consensys, decrease Gas Supply limit",
+            "1. Submit a Dual Governance proposal to deactivate A41, update Stakin, upgrade LazyOracle/VaultHub/ZKSync bridge, rotate Chorus One oracle member, set Chorus One target limit, grant MANAGE_SIGNING_KEYS to Consensys, decrease Gas Supply limit",
             dg_call_script[0],
         ),
         # 2. Remove old Simple DVT SubmitValidatorsExitRequestHashes factory
         (
-            "2. Remove old Simple DVT SubmitValidatorsExitRequestHashes factory "
-            "0xB7668B5485d0f826B86a75b0115e088bB9ee03eE from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
+            "2. Remove old Simple DVT SubmitValidatorsExitRequestHashes factory 0xB7668B5485d0f826B86a75b0115e088bB9ee03eE from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory(OLD_SDVT_SUBMIT_EXIT_HASHES_FACTORY),
         ),
         # 3. Remove old Curated Module SubmitValidatorsExitRequestHashes factory
         (
-            "3. Remove old Curated Module SubmitValidatorsExitRequestHashes factory "
-            "0x8aa34dAaF0fC263203A15Bcfa0Ed926D466e59F3 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
+            "3. Remove old Curated Module SubmitValidatorsExitRequestHashes factory 0x8aa34dAaF0fC263203A15Bcfa0Ed926D466e59F3 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory(OLD_CURATED_SUBMIT_EXIT_HASHES_FACTORY),
         ),
         # 4. Add new Simple DVT SubmitValidatorsExitRequestHashes factory
         (
-            f"4. Add new Simple DVT SubmitValidatorsExitRequestHashes factory "
-            f"{NEW_SDVT_SUBMIT_EXIT_HASHES_FACTORY} to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
+            "4. Add new Simple DVT SubmitValidatorsExitRequestHashes factory 0x58A59dDC6Aea9b1D5743D024E15DfA4badB56E37 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             add_evmscript_factory(
                 NEW_SDVT_SUBMIT_EXIT_HASHES_FACTORY,
                 create_permissions(validators_exit_bus_oracle, SUBMIT_EXIT_REQUESTS),
@@ -348,8 +339,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         ),
         # 5. Add new Curated Module SubmitValidatorsExitRequestHashes factory
         (
-            f"5. Add new Curated Module SubmitValidatorsExitRequestHashes factory "
-            f"{NEW_CURATED_SUBMIT_EXIT_HASHES_FACTORY} to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
+            "5. Add new Curated Module SubmitValidatorsExitRequestHashes factory 0x4F716AD3Cc7A3A5cdA2359e5B2c84335c171dCde to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             add_evmscript_factory(
                 NEW_CURATED_SUBMIT_EXIT_HASHES_FACTORY,
                 create_permissions(validators_exit_bus_oracle, SUBMIT_EXIT_REQUESTS),
@@ -357,20 +347,17 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         ),
         # 6. Remove old RegisterGroupsInOperatorGrid factory
         (
-            "6. Remove old RegisterGroupsInOperatorGrid factory "
-            "0xE73842AEbEC99Dacf2aAEec61409fD01A033f478 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
+            "6. Remove old RegisterGroupsInOperatorGrid factory 0xE73842AEbEC99Dacf2aAEec61409fD01A033f478 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory(OLD_REGISTER_GROUPS_FACTORY),
         ),
         # 7. Remove old RegisterTiersInOperatorGrid factory
         (
-            "7. Remove old RegisterTiersInOperatorGrid factory "
-            "0x5292A1284e4695B95C0840CF8ea25A818751C17F from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
+            "7. Remove old RegisterTiersInOperatorGrid factory 0x5292A1284e4695B95C0840CF8ea25A818751C17F from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory(OLD_REGISTER_TIERS_FACTORY),
         ),
         # 8. Remove old AlterTiersInOperatorGrid factory
         (
-            "8. Remove old AlterTiersInOperatorGrid factory "
-            "0x73f80240ad9363d5d3C5C3626953C351cA36Bfe9 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
+            "8. Remove old AlterTiersInOperatorGrid factory 0x73f80240ad9363d5d3C5C3626953C351cA36Bfe9 from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory(OLD_ALTER_TIERS_FACTORY),
         ),
         # 9. Add new RegisterGroupsInOperatorGrid factory
