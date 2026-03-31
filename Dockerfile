@@ -1,18 +1,21 @@
-FROM nikolaik/python-nodejs:python3.10-nodejs18
+FROM node:18-bookworm-slim AS node
+FROM python:3.10-slim-bookworm
 USER root
 ARG TARGETARCH
 
+# copy Node.js 18 from the official node image
+COPY --from=node /usr/local /usr/local
 
 # install common prerequisites
-RUN corepack prepare yarn@1.22 --activate
-RUN poetry self update 1.8.2
+RUN pip install poetry==1.8.2
+RUN rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg && npm install -g yarn@1.22.22
 
 
 # if running on arm64 - build solc
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
       # install cmake
       apt update; \
-      apt install cmake -y; \
+      apt install cmake git wget build-essential -y; \
     fi
 
 WORKDIR /root/
@@ -318,7 +321,6 @@ RUN echo "cd /root/scripts" >> /root/.bashrc
 
 # verify prerequisites versions
 RUN python --version | grep 'Python 3.10.' || (echo "Incorrect python version" && exit 1)
-RUN pip --version | grep 'pip 2' || (echo "Incorrect pip version" && exit 1)
 RUN node --version | grep 'v18.' || (echo "Incorrect node version" && exit 1)
 RUN npm --version | grep '10.' || (echo "Incorrect npm version" && exit 1)
 RUN poetry --version | grep 'Poetry (version 1.8.2)' || (echo "Incorrect poetry version" && exit 1)
