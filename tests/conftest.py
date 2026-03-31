@@ -152,7 +152,7 @@ class Helpers:
             print(f"vote #{vote_id} executed")
             execution_transactions.append(tx)
 
-        # Helpers.prefetch_contracts_from_etherscan()
+        Helpers.prefetch_contracts_from_etherscan()
 
         return execution_transactions
 
