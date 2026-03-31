@@ -1,10 +1,14 @@
-FROM nikolaik/python-nodejs:python3.10-nodejs18
+FROM node:18-bookworm-slim AS node
+FROM python:3.10-slim-bookworm
 USER root
 ARG TARGETARCH
 
+# copy Node.js 18 from the official node image
+COPY --from=node /usr/local /usr/local
 
 # install common prerequisites
-RUN corepack prepare yarn@1.22 --activate
+RUN pip install poetry
+RUN rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg && npm install -g yarn@1.22.22
 RUN poetry self update 1.8.2
 
 
