@@ -15,7 +15,7 @@ RUN rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg && npm install -g yarn@1.22
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
       # install cmake
       apt update; \
-      apt install cmake -y; \
+      apt install cmake git wget build-essential -y; \
     fi
 
 WORKDIR /root/
