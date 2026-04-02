@@ -14,10 +14,16 @@ Vote 2026_04_08
 1.10 Add new Chorus One member 0x8dB977C13CAA938BC58464bFD622DF0570564b78 to Accounting Oracle HashConsensus 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
 1.11 Add new Chorus One member 0x8dB977C13CAA938BC58464bFD622DF0570564b78 to CSM Oracle HashConsensus 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
 1.12 Add new Chorus One member 0x8dB977C13CAA938BC58464bFD622DF0570564b78 to VEB Oracle HashConsensus 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
-1.13 Set soft-mode target validators limit to 0 for Node Operator Chorus One (ID = 3) in Curated Module (MODULE_ID = 1) in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
-1.14 Grant MANAGE_SIGNING_KEYS role for Node Operator Consensys (ID = 21) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5 to address 0xF45C77EadD434612fCD93db978B3E36B0D58eC99
-1.15 Decrease the limit from 1000 to 150 stETH per 12 months on Gas Supply AllowedRecipientsRegistry 0x49d1363016aA899bba09ae972a1BF200dDf8C55F
-1.16 Raise CSM (MODULE_ID = 3) stake share limit from 750 BP to 850 BP and priority exit threshold from 900 BP to 1020 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+1.13 Remove Stakefish member 0x946D3b081ed19173dC83Cd974fC69e1e760B7d78 from Accounting Oracle HashConsensus 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.14 Remove Stakefish member 0x946D3b081ed19173dC83Cd974fC69e1e760B7d78 from CSM Oracle HashConsensus 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.15 Remove Stakefish member 0x946D3b081ed19173dC83Cd974fC69e1e760B7d78 from VEB Oracle HashConsensus 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.16 Add new Stakefish member 0x042a9e5acCfa17e28300F1b5967f20891E973922 to Accounting Oracle HashConsensus 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.17 Add new Stakefish member 0x042a9e5acCfa17e28300F1b5967f20891E973922 to CSM Oracle HashConsensus 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.18 Add new Stakefish member 0x042a9e5acCfa17e28300F1b5967f20891E973922 to VEB Oracle HashConsensus 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.19 Set soft-mode target validators limit to 0 for Node Operator Chorus One (ID = 3) in Curated Module (MODULE_ID = 1) in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+1.20 Grant MANAGE_SIGNING_KEYS role for Node Operator Consensys (ID = 21) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5 to address 0xF45C77EadD434612fCD93db978B3E36B0D58eC99
+1.21 Decrease the limit from 1000 to 150 stETH per 12 months on Gas Supply AllowedRecipientsRegistry 0x49d1363016aA899bba09ae972a1BF200dDf8C55F
+1.22 Raise CSM (MODULE_ID = 3) stake share limit from 750 BP to 850 BP and priority exit threshold from 900 BP to 1020 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
 
 === NON-DG ITEMS ===
 2. Remove old Simple DVT SubmitValidatorsExitRequestHashes factory 0xB7668B5485d0f826B86a75b0115e088bB9ee03eE from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
@@ -76,6 +82,9 @@ ZKSYNC_L1_ERC20_BRIDGE_IMPL_NEW = "0x43a66b32c9adca1a59b273e69b61da5197c21ccd"
 
 CHORUS_ONE_ORACLE_MEMBER_OLD = "0x285f8537e1daeedaf617e96c742f2cf36d63ccfb"
 CHORUS_ONE_ORACLE_MEMBER_NEW = "0x8dB977C13CAA938BC58464bFD622DF0570564b78"
+
+STAKEFISH_ORACLE_MEMBER_OLD = "0x946D3b081ed19173dC83Cd974fC69e1e760B7d78"
+STAKEFISH_ORACLE_MEMBER_NEW = "0x042a9e5acCfa17e28300F1b5967f20891E973922"
 
 HASH_CONSENSUS_FOR_AO = "0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288"
 CS_HASH_CONSENSUS = "0x71093efF8D8599b5fA340D665Ad60fA7C80688e4"
@@ -246,7 +255,69 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 )
             ]
         ),
-        # 1.13 Set soft-mode target validators limit to 0 for Node Operator Chorus One (ID = 3) in Curated Module (MODULE_ID = 1)
+        # 1.13 Remove Stakefish member 0x946D3b081ed19173dC83Cd974fC69e1e760B7d78 from Accounting Oracle HashConsensus
+        agent_forward(
+            [
+                (
+                    hash_consensus_for_accounting_oracle.address,
+                    hash_consensus_for_accounting_oracle.removeMember.encode_input(
+                        STAKEFISH_ORACLE_MEMBER_OLD, AO_HASH_CONSENSUS_QUORUM
+                    ),
+                )
+            ]
+        ),
+        # 1.14 Remove Stakefish member 0x946D3b081ed19173dC83Cd974fC69e1e760B7d78 from CSM Oracle HashConsensus
+        agent_forward(
+            [
+                (
+                    cs_hash_consensus.address,
+                    cs_hash_consensus.removeMember.encode_input(STAKEFISH_ORACLE_MEMBER_OLD, CS_HASH_CONSENSUS_QUORUM),
+                )
+            ]
+        ),
+        # 1.15 Remove Stakefish member 0x946D3b081ed19173dC83Cd974fC69e1e760B7d78 from VEB Oracle HashConsensus
+        agent_forward(
+            [
+                (
+                    hash_consensus_for_vebo.address,
+                    hash_consensus_for_vebo.removeMember.encode_input(
+                        STAKEFISH_ORACLE_MEMBER_OLD, VEBO_HASH_CONSENSUS_QUORUM
+                    ),
+                )
+            ]
+        ),
+        # 1.16 Add new Stakefish member 0x042a9e5acCfa17e28300F1b5967f20891E973922 to Accounting Oracle HashConsensus
+        agent_forward(
+            [
+                (
+                    hash_consensus_for_accounting_oracle.address,
+                    hash_consensus_for_accounting_oracle.addMember.encode_input(
+                        STAKEFISH_ORACLE_MEMBER_NEW, AO_HASH_CONSENSUS_QUORUM
+                    ),
+                )
+            ]
+        ),
+        # 1.17 Add new Stakefish member 0x042a9e5acCfa17e28300F1b5967f20891E973922 to CSM Oracle HashConsensus
+        agent_forward(
+            [
+                (
+                    cs_hash_consensus.address,
+                    cs_hash_consensus.addMember.encode_input(STAKEFISH_ORACLE_MEMBER_NEW, CS_HASH_CONSENSUS_QUORUM),
+                )
+            ]
+        ),
+        # 1.18 Add new Stakefish member 0x042a9e5acCfa17e28300F1b5967f20891E973922 to VEB Oracle HashConsensus
+        agent_forward(
+            [
+                (
+                    hash_consensus_for_vebo.address,
+                    hash_consensus_for_vebo.addMember.encode_input(
+                        STAKEFISH_ORACLE_MEMBER_NEW, VEBO_HASH_CONSENSUS_QUORUM
+                    ),
+                )
+            ]
+        ),
+        # 1.19 Set soft-mode target validators limit to 0 for Node Operator Chorus One (ID = 3) in Curated Module (MODULE_ID = 1)
         agent_forward(
             [
                 (
@@ -257,7 +328,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 )
             ]
         ),
-        # 1.14 Grant MANAGE_SIGNING_KEYS role for Node Operator Consensys (ID = 21) in Curated Module to address 0xF45C77EadD434612fCD93db978B3E36B0D58eC99
+        # 1.20 Grant MANAGE_SIGNING_KEYS role for Node Operator Consensys (ID = 21) in Curated Module to address 0xF45C77EadD434612fCD93db978B3E36B0D58eC99
         agent_forward(
             [
                 encode_permission_grant_p(
@@ -268,7 +339,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 ),
             ]
         ),
-        # 1.15 Decrease the limit from 1000 to 150 stETH per 12 months on Gas Supply AllowedRecipientsRegistry
+        # 1.21 Decrease the limit from 1000 to 150 stETH per 12 months on Gas Supply AllowedRecipientsRegistry
         agent_forward(
             [
                 set_limit_parameters(
@@ -278,7 +349,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 ),
             ]
         ),
-        # 1.16 Raise CSM (MODULE_ID = 3) stake share limit from 750 BP to 850 BP and priority exit threshold from 900 BP to 1020 BP
+        # 1.22 Raise CSM (MODULE_ID = 3) stake share limit from 750 BP to 850 BP and priority exit threshold from 900 BP to 1020 BP
         agent_forward(
             [
                 (
@@ -308,7 +379,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         [
             (
                 dg_items,
-                "Deactivate A41, update Stakin, upgrade LazyOracle/VaultHub/ZKSync bridge, rotate Chorus One oracle member, set Chorus One target limit, grant MANAGE_SIGNING_KEYS to Consensys, decrease Gas Supply limit, raise CSM stake share limit and priority exit threshold",
+                "Deactivate A41, update Stakin, upgrade LazyOracle/VaultHub/ZKSync bridge, rotate Chorus One oracle member, rotate Stakefish oracle member, set Chorus One target limit, grant MANAGE_SIGNING_KEYS to Consensys, decrease Gas Supply limit, raise CSM stake share limit and priority exit threshold",
             )
         ]
     )
@@ -316,7 +387,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     vote_desc_items, call_script_items = zip(
         # 1. DG proposal submission
         (
-            "1. Submit a Dual Governance proposal to deactivate A41, update Stakin, upgrade LazyOracle/VaultHub/ZKSync bridge, rotate Chorus One oracle member, set Chorus One target limit, grant MANAGE_SIGNING_KEYS to Consensys, decrease Gas Supply limit",
+            "1. Submit a Dual Governance proposal to deactivate A41, update Stakin, upgrade LazyOracle/VaultHub/ZKSync bridge, rotate Chorus One oracle member, rotate Stakefish oracle member, set Chorus One target limit, grant MANAGE_SIGNING_KEYS to Consensys, decrease Gas Supply limit, raise CSM stake share limit and priority exit threshold",
             dg_call_script[0],
         ),
         # 2. Remove old Simple DVT SubmitValidatorsExitRequestHashes factory
