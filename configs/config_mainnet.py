@@ -273,7 +273,8 @@ ORACLE_COMMITTEE = (
     "0x4118dad7f348a4063bd15786c299de2f3b1333f3",  # Added into members in vote 2025/07/16, moved to slot 1 in vote 2026/04/08
     # "0xA7410857ABbf75043d61ea54e07D57A6EB6EF186", Excluded from members in vote 2025/07/16
     "0x404335BcE530400a5814375E7Ec1FB55fAff3eA2",
-    "0x946D3b081ed19173dC83Cd974fC69e1e760B7d78",
+    # "0x946D3b081ed19173dC83Cd974fC69e1e760B7d78", Excluded from members in vote 2026/04/08
+    "0x042a9e5acCfa17e28300F1b5967f20891E973922",  # Added into members in vote 2026/04/08 (Stakefish rotation)
     "0x007DE4a5F7bc37E2F26c0cb2E8A95006EE9B89b5",
     "0xc79F702202E3A6B0B6310B537E786B9ACAA19BAf",  # Added into members in vote 2024/01/16
     # "0xEC4BfbAF681eb505B94E4a7849877DC6c600Ca3A", Excluded from members in vote 2024/08/06
