@@ -113,7 +113,7 @@ def validate_target_validators_count_changed_event(event: EventDict, t: TargetVa
         emitted_by
     ), "Wrong event emitter"
 
-def validate_node_operator_deactivated(event: EventDict, node_operator_id: int):
+def validate_node_operator_deactivated(event: EventDict, node_operator_id: int, emitted_by=None):
     _events_chain = [
         "LogScriptCall",
         "LogScriptCall",
@@ -130,3 +130,8 @@ def validate_node_operator_deactivated(event: EventDict, node_operator_id: int):
 
     assert event["NodeOperatorActiveSet"]["nodeOperatorId"] == node_operator_id
     assert not event["NodeOperatorActiveSet"]["active"]
+
+    if emitted_by is not None:
+        assert convert.to_address(event["NodeOperatorActiveSet"]["_emitted_by"]) == convert.to_address(
+            emitted_by
+        ), "Wrong event emitter"

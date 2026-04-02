@@ -1,4 +1,4 @@
-from brownie import chain, interface, web3
+from brownie import chain, interface, web3, reverts
 from brownie.network.transaction import TransactionReceipt
 import pytest
 
@@ -38,6 +38,7 @@ from utils.test.event_validators.allowed_recipients_registry import validate_set
 from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
+from utils.test.easy_track_helpers import create_and_enact_payment_motion, create_and_enact_motion, _encode_calldata
 
 
 # ============================================================================
@@ -69,10 +70,13 @@ OPERATOR_GRID = "0xC69685E89Cefc327b43B7234AC646451B27c544d"
 
 # Proxy upgrades
 LAZY_ORACLE_PROXY = "0x5DB427080200c235F2Ae8Cd17A7be87921f7AD6c"
+LAZY_ORACLE_IMPL_OLD = "0x47f3a6b1E70F7Ec7dBC3CB510B1fdB948C863a5B"
 LAZY_ORACLE_IMPL_NEW = "0x96c9a897D116ef660086d3aA67b3af653324aB37"
 VAULT_HUB_PROXY = "0x1d201BE093d847f6446530Efb0E8Fb426d176709"
+VAULT_HUB_IMPL_OLD = "0x7c7d957D0752AB732E73400624C4a1eb1cb6CF50"
 VAULT_HUB_IMPL_NEW = "0x6330fE7756FBE8649adfb9A541d61C5edB8B4D70"
 ZKSYNC_L1_ERC20_BRIDGE = "0x41527B2d03844dB6b0945f25702cB958b6d55989"
+ZKSYNC_L1_ERC20_BRIDGE_IMPL_OLD = "0x9a810469F4a451Ebb7ef53672142053b4971587c"
 ZKSYNC_L1_ERC20_BRIDGE_IMPL_NEW = "0x43a66b32c9adca1a59b273e69b61da5197c21ccd"
 VEBO = "0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e"
 
@@ -88,22 +92,49 @@ STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
 
 # Node operators
 A41_NO_ID = 32
+A41_NAME = "A41"
 STAKIN_NO_ID = 14
+STAKIN_NAME_OLD = "Stakin"
 STAKIN_NAME_NEW = "Stakin by The Tie"
+STAKIN_REWARD_ADDRESS_OLD = "0xf6b0a1B771633DB40A3e21Cc49fD2FE35669eF46"
 STAKIN_REWARD_ADDRESS_NEW = "0x3e97EC699191bEfc63EF4E4275204B03E7465f30"
 CHORUS_ONE_NO_ID = 3
+CHORUS_ONE_NAME = "Chorus One"
 CONSENSYS_NO_ID = 21
+CONSENSYS_NAME = "Consensys"
 CONSENSYS_MANAGE_SIGNING_KEYS_ADDRESS = "0xF45C77EadD434612fCD93db978B3E36B0D58eC99"
 MANAGE_SIGNING_KEYS = web3.keccak(text="MANAGE_SIGNING_KEYS").hex()
 
 # Gas Supply
+STETH_TOKEN = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
+GAS_SUPPLY_TRUSTED_CALLER = "0x5181d5D56Af4f823b96FE05f062D7a09761a5a53"
+GAS_SUPPLY_TOP_UP_FACTORY = "0x200dA0b6a9905A377CF8D469664C65dB267009d1"
 GAS_SUPPLY_ALLOWED_RECIPIENTS_REGISTRY = "0x49d1363016aA899bba09ae972a1BF200dDf8C55F"
 GAS_SUPPLY_NEW_LIMIT = 150 * 10**18
 GAS_SUPPLY_PERIOD_DURATION_MONTHS = 12
-GAS_SUPPLY_PERIOD_START = 1767225600
+GAS_SUPPLY_PERIOD_START = 1704067200  # Jan 1, 2024 00:00:00 UTC
+
+
+def get_gas_supply_period_start():
+    period_start = GAS_SUPPLY_PERIOD_START
+    if chain.time() >= 1767225600:  # Jan 1, 2026 00:00:00 UTC
+        period_start = 1767225600
+    return period_start
+
+
+def get_gas_supply_period_end():
+    period_end = 1767225600  # Jan 1, 2026 00:00:00 UTC
+    if chain.time() >= 1767225600:  # Jan 1, 2026 00:00:00 UTC
+        period_end = 1798761600  # Jan 1, 2027 00:00:00 UTC
+    return period_end
+
+# Target limit mode
+NO_TARGET_LIMIT_SOFT_MODE = 1
 
 # CSM staking module update
 CSM_MODULE_ID = 3
+CSM_MODULE_NAME = "Community Staking"
+CSM_MODULE_ADDRESS = "0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F"
 CSM_STAKE_SHARE_LIMIT_BEFORE = 750
 CSM_STAKE_SHARE_LIMIT_AFTER = 850
 CSM_PRIORITY_EXIT_SHARE_THRESHOLD_BEFORE = 900
@@ -112,6 +143,10 @@ CSM_MODULE_FEE_BP = 600
 CSM_TREASURY_FEE_BP = 400
 CSM_MAX_DEPOSITS_PER_BLOCK = 30
 CSM_MIN_DEPOSIT_BLOCK_DISTANCE = 25
+
+# Easy Track
+ST_VAULTS_COMMITTEE = "0x18A1065c81b0Cc356F1b1C843ddd5E14e4AefffF"
+EASYTRACK_EVMSCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 
 # Easy Track factories
 OLD_SDVT_SUBMIT_EXIT_HASHES_FACTORY = "0xB7668B5485d0f826B86a75b0115e088bB9ee03eE"
@@ -156,6 +191,171 @@ def dual_governance_proposal_calls():
     return proposal_calls
 
 
+def register_groups_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid):
+    operator_addresses = [
+        "0x0000000000000000000000000000000000000001",
+        "0x0000000000000000000000000000000000000002",
+    ]
+    share_limits = [1000, 5000]
+    tiers_params_array = [
+        [(500, 200, 100, 50, 40, 10), (800, 200, 100, 50, 40, 10)],
+        [(800, 200, 100, 50, 40, 10), (800, 200, 100, 50, 40, 10)],
+    ]
+
+    # Check initial state
+    for operator_address in operator_addresses:
+        group = operator_grid.group(operator_address)
+        assert group[0] == "0x0000000000000000000000000000000000000000"  # operator
+        assert group[1] == 0  # shareLimit
+        assert len(group[3]) == 0  # tiersId array should be empty
+
+    create_and_enact_motion(
+        easy_track,
+        trusted_address,
+        NEW_REGISTER_GROUPS_FACTORY,
+        _encode_calldata(
+            ["address[]", "uint256[]", "(uint256,uint256,uint256,uint256,uint256,uint256)[][]"],
+            [operator_addresses, share_limits, tiers_params_array],
+        ),
+        stranger,
+    )
+
+    # Check final state
+    for i, operator_address in enumerate(operator_addresses):
+        group = operator_grid.group(operator_address)
+        assert group[0] == operator_address  # operator
+        assert group[1] == share_limits[i]  # shareLimit
+        assert len(group[3]) == len(tiers_params_array[i])  # tiersId array should match tiers_params
+        for j, tier_id in enumerate(group[3]):
+            tier = operator_grid.tier(tier_id)
+            assert tier[1] == tiers_params_array[i][j][0]  # shareLimit
+            assert tier[3] == tiers_params_array[i][j][1]  # reserveRatioBP
+            assert tier[4] == tiers_params_array[i][j][2]  # forcedRebalanceThresholdBP
+            assert tier[5] == tiers_params_array[i][j][3]  # infraFeeBP
+            assert tier[6] == tiers_params_array[i][j][4]  # liquidityFeeBP
+            assert tier[7] == tiers_params_array[i][j][5]  # reservationFeeBP
+
+
+def register_tiers_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid, accounts):
+    operator_addresses = [
+        "0x0000000000000000000000000000000000000003",
+        "0x0000000000000000000000000000000000000004",
+    ]
+    tiers_params_array = [
+        [(500, 200, 100, 50, 40, 10), (300, 150, 75, 25, 20, 5)],
+        [(800, 250, 125, 60, 50, 15), (400, 180, 90, 30, 25, 8)],
+    ]
+
+    executor = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
+    for operator_address in operator_addresses:
+        operator_grid.registerGroup(operator_address, 1000, {"from": executor})
+        group = operator_grid.group(operator_address)
+        assert len(group[3]) == 0  # no tiers yet
+
+    create_and_enact_motion(
+        easy_track,
+        trusted_address,
+        NEW_REGISTER_TIERS_FACTORY,
+        _encode_calldata(
+            ["address[]", "(uint256,uint256,uint256,uint256,uint256,uint256)[][]"],
+            [operator_addresses, tiers_params_array],
+        ),
+        stranger,
+    )
+
+    for i, operator_address in enumerate(operator_addresses):
+        group = operator_grid.group(operator_address)
+        assert len(group[3]) == len(tiers_params_array[i])
+        for j, tier_id in enumerate(group[3]):
+            tier = operator_grid.tier(tier_id)
+            assert tier[1] == tiers_params_array[i][j][0]  # shareLimit
+            assert tier[3] == tiers_params_array[i][j][1]  # reserveRatioBP
+            assert tier[4] == tiers_params_array[i][j][2]  # forcedRebalanceThresholdBP
+            assert tier[5] == tiers_params_array[i][j][3]  # infraFeeBP
+            assert tier[6] == tiers_params_array[i][j][4]  # liquidityFeeBP
+            assert tier[7] == tiers_params_array[i][j][5]  # reservationFeeBP
+
+
+def alter_tiers_in_operator_grid_test(easy_track, trusted_address, stranger, operator_grid, accounts):
+    initial_tier_params = [(1000, 200, 100, 50, 40, 10), (1000, 200, 100, 50, 40, 10)]
+    new_tier_params = [(2000, 300, 150, 75, 60, 20), (3000, 400, 200, 100, 80, 30)]
+
+    executor = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
+    operator_address = "0x0000000000000000000000000000000000000005"
+    operator_grid.registerGroup(operator_address, 10000, {"from": executor})
+    operator_grid.registerTiers(operator_address, initial_tier_params, {"from": executor})
+
+    tiers_count = operator_grid.tiersCount()
+    tier_ids = [tiers_count - 2, tiers_count - 1]
+
+    # Check initial state
+    for i, tier_id in enumerate(tier_ids):
+        tier = operator_grid.tier(tier_id)
+        assert tier[1] == initial_tier_params[i][0]  # shareLimit
+        assert tier[3] == initial_tier_params[i][1]  # reserveRatioBP
+        assert tier[4] == initial_tier_params[i][2]  # forcedRebalanceThresholdBP
+        assert tier[5] == initial_tier_params[i][3]  # infraFeeBP
+        assert tier[6] == initial_tier_params[i][4]  # liquidityFeeBP
+        assert tier[7] == initial_tier_params[i][5]  # reservationFeeBP
+
+    create_and_enact_motion(
+        easy_track,
+        trusted_address,
+        NEW_ALTER_TIERS_FACTORY,
+        _encode_calldata(
+            ["uint256[]", "(uint256,uint256,uint256,uint256,uint256,uint256)[]"],
+            [tier_ids, new_tier_params],
+        ),
+        stranger,
+    )
+
+    # Check final state
+    for i, tier_id in enumerate(tier_ids):
+        tier = operator_grid.tier(tier_id)
+        assert tier[1] == new_tier_params[i][0]  # shareLimit
+        assert tier[3] == new_tier_params[i][1]  # reserveRatioBP
+        assert tier[4] == new_tier_params[i][2]  # forcedRebalanceThresholdBP
+        assert tier[5] == new_tier_params[i][3]  # infraFeeBP
+        assert tier[6] == new_tier_params[i][4]  # liquidityFeeBP
+        assert tier[7] == new_tier_params[i][5]  # reservationFeeBP
+
+
+def et_gas_supply_limit_test(easy_track, gas_supply_registry, stranger, accounts):
+    trusted_caller_account = accounts.at(GAS_SUPPLY_TRUSTED_CALLER, force=True)
+    steth = interface.ERC20(STETH_TOKEN)
+
+    # sleep past the current period end. Leaves the current period with 0 spendable
+    _, _, period_start, period_end = gas_supply_registry.getPeriodState()
+    chain.sleep(period_end - chain.time() + 1)
+    chain.mine()
+
+    _, spendable, period_start, period_end = gas_supply_registry.getPeriodState()
+    to_spend = gas_supply_registry.getLimitParameters()[0]
+    if chain.time() >= period_start and chain.time() < period_end:
+        to_spend = spendable
+
+    create_and_enact_payment_motion(
+        easy_track,
+        GAS_SUPPLY_TRUSTED_CALLER,
+        GAS_SUPPLY_TOP_UP_FACTORY,
+        steth,
+        [trusted_caller_account],
+        [to_spend],
+        stranger,
+    )
+
+    with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
+        create_and_enact_payment_motion(
+            easy_track,
+            GAS_SUPPLY_TRUSTED_CALLER,
+            GAS_SUPPLY_TOP_UP_FACTORY,
+            steth,
+            [trusted_caller_account],
+            [1],
+            stranger,
+        )
+
+
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
 
     # =======================================================================
@@ -163,6 +363,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     # =======================================================================
     voting = interface.Voting(VOTING)
     agent = interface.Agent(AGENT)
+    acl = interface.ACL(ACL)
     timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     easy_track = interface.EasyTrack(EASYTRACK)
@@ -246,6 +447,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert NEW_REGISTER_GROUPS_FACTORY in new_factories
         assert NEW_REGISTER_TIERS_FACTORY in new_factories
         assert NEW_ALTER_TIERS_FACTORY in new_factories
+
+        # Happy path: new OperatorGrid ET factories work correctly
+        st_vaults_trusted_caller = accounts.at(ST_VAULTS_COMMITTEE, force=True)
+        chain.snapshot()
+        register_groups_in_operator_grid_test(easy_track, st_vaults_trusted_caller, stranger, operator_grid)
+        register_tiers_in_operator_grid_test(easy_track, st_vaults_trusted_caller, stranger, operator_grid, accounts)
+        alter_tiers_in_operator_grid_test(easy_track, st_vaults_trusted_caller, stranger, operator_grid, accounts)
+        chain.revert()
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
@@ -333,21 +542,22 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
             # 1.1 A41 should be active before
             a41_data_before = no_registry.getNodeOperator(A41_NO_ID, True)
+            assert a41_data_before["name"] == A41_NAME
             assert a41_data_before["active"]
 
             # 1.2 Stakin name and reward address before
             stakin_data_before = no_registry.getNodeOperator(STAKIN_NO_ID, True)
-            assert stakin_data_before["name"] != STAKIN_NAME_NEW
-            assert stakin_data_before["rewardAddress"] != STAKIN_REWARD_ADDRESS_NEW
+            assert stakin_data_before["name"] == STAKIN_NAME_OLD
+            assert stakin_data_before["rewardAddress"] == STAKIN_REWARD_ADDRESS_OLD
 
             # 1.3 LazyOracle proxy implementation before
-            assert lazy_oracle_proxy.proxy__getImplementation() != LAZY_ORACLE_IMPL_NEW
+            assert lazy_oracle_proxy.proxy__getImplementation() == LAZY_ORACLE_IMPL_OLD
 
             # 1.4 VaultHub proxy implementation before
-            assert vault_hub_proxy.proxy__getImplementation() != VAULT_HUB_IMPL_NEW
+            assert vault_hub_proxy.proxy__getImplementation() == VAULT_HUB_IMPL_OLD
 
             # 1.5 ZKSync bridge proxy implementation before
-            assert zksync_bridge_proxy.proxy__getImplementation() != ZKSYNC_L1_ERC20_BRIDGE_IMPL_NEW
+            assert zksync_bridge_proxy.proxy__getImplementation() == ZKSYNC_L1_ERC20_BRIDGE_IMPL_OLD
 
             # 1.6 ZKSync bridge deposits disabled before
             assert not zksync_bridge.isDepositsEnabled()
@@ -363,10 +573,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert not hash_consensus_for_vebo.getIsMember(CHORUS_ONE_ORACLE_MEMBER_NEW)
 
             # 1.13 Chorus One target limit mode before
+            chorus_one_data_before = no_registry.getNodeOperator(CHORUS_ONE_NO_ID, True)
+            assert chorus_one_data_before["name"] == CHORUS_ONE_NAME
             chorus_one_summary_before = no_registry.getNodeOperatorSummary(CHORUS_ONE_NO_ID)
-            assert chorus_one_summary_before["targetLimitMode"] != 1
+            assert chorus_one_summary_before["targetLimitMode"] != NO_TARGET_LIMIT_SOFT_MODE
 
             # 1.14 Consensys MANAGE_SIGNING_KEYS role not granted
+            consensys_data_before = no_registry.getNodeOperator(CONSENSYS_NO_ID, True)
+            assert consensys_data_before["name"] == CONSENSYS_NAME
+            assert not acl.hasPermission["address,address,bytes32,uint[]"](
+                CONSENSYS_MANAGE_SIGNING_KEYS_ADDRESS, CURATED_MODULE, MANAGE_SIGNING_KEYS, [perm_param_uint]
+            )
             assert not no_registry.canPerform(
                 CONSENSYS_MANAGE_SIGNING_KEYS_ADDRESS, MANAGE_SIGNING_KEYS, [perm_param_uint]
             )
@@ -375,9 +592,19 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             limit_before, duration_before = gas_supply_registry.getLimitParameters()
             assert limit_before != GAS_SUPPLY_NEW_LIMIT
             assert duration_before == GAS_SUPPLY_PERIOD_DURATION_MONTHS
+            (
+                gs_already_spent_before,
+                gs_spendable_before,
+                gs_period_start_before,
+                _,
+            ) = gas_supply_registry.getPeriodState()
+            assert gs_spendable_before == limit_before - gs_already_spent_before
+            assert gs_period_start_before == GAS_SUPPLY_PERIOD_START
 
             # 1.16 CSM stake share limit and priority exit threshold before
             csm_module_before = staking_router.getStakingModule(CSM_MODULE_ID)
+            assert csm_module_before["name"] == CSM_MODULE_NAME
+            assert csm_module_before["stakingModuleAddress"] == CSM_MODULE_ADDRESS
             assert csm_module_before["stakeShareLimit"] == CSM_STAKE_SHARE_LIMIT_BEFORE
             assert csm_module_before["priorityExitShareThreshold"] == CSM_PRIORITY_EXIT_SHARE_THRESHOLD_BEFORE
             assert csm_module_before["stakingModuleFee"] == CSM_MODULE_FEE_BP
@@ -411,7 +638,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # Validate all DG events
                 # 1.1. Deactivate A41
-                validate_node_operator_deactivated(dg_events[0], A41_NO_ID)
+                validate_node_operator_deactivated(dg_events[0], A41_NO_ID, emitted_by=CURATED_MODULE)
 
                 # 1.2. Stakin name change
                 validate_node_operator_name_set_event(
@@ -441,6 +668,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # 1.6. enableDeposits on ZKSync bridge
                 assert "DepositsEnabled" in dg_events[6]
+                assert dg_events[6]["DepositsEnabled"]["_emitted_by"].lower() == ZKSYNC_L1_ERC20_BRIDGE.lower()
 
                 # 1.7. Remove Chorus One from AO HashConsensus
                 validate_hash_consensus_member_removed(
@@ -502,7 +730,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     TargetValidatorsCountChanged(
                         nodeOperatorId=CHORUS_ONE_NO_ID,
                         targetValidatorsCount=0,
-                        targetLimitMode=1,
+                        targetLimitMode=NO_TARGET_LIMIT_SOFT_MODE,
                     ),
                     emitted_by=CURATED_MODULE,
                 )
@@ -524,7 +752,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     dg_events[15],
                     limit=GAS_SUPPLY_NEW_LIMIT,
                     period_duration_month=GAS_SUPPLY_PERIOD_DURATION_MONTHS,
-                    period_start_timestamp=GAS_SUPPLY_PERIOD_START,
+                    period_start_timestamp=get_gas_supply_period_start(),
                     emitted_by=GAS_SUPPLY_ALLOWED_RECIPIENTS_REGISTRY,
                 )
 
@@ -533,8 +761,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     dg_events[16],
                     StakingModuleItem(
                         id=CSM_MODULE_ID,
-                        name="Community Staking",
-                        address=None,
+                        name=CSM_MODULE_NAME,
+                        address=CSM_MODULE_ADDRESS,
                         target_share=CSM_STAKE_SHARE_LIMIT_AFTER,
                         module_fee=CSM_MODULE_FEE_BP,
                         treasury_fee=CSM_TREASURY_FEE_BP,
@@ -581,16 +809,31 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         # 1.13 Chorus One target validators limit set to 0
         chorus_one_summary = no_registry.getNodeOperatorSummary(CHORUS_ONE_NO_ID)
-        assert chorus_one_summary["targetLimitMode"] == 1
+        assert chorus_one_summary["targetLimitMode"] == NO_TARGET_LIMIT_SOFT_MODE
         assert chorus_one_summary["targetValidatorsCount"] == 0
 
         # 1.14 Consensys MANAGE_SIGNING_KEYS granted
+        assert acl.hasPermission["address,address,bytes32,uint[]"](
+            CONSENSYS_MANAGE_SIGNING_KEYS_ADDRESS, CURATED_MODULE, MANAGE_SIGNING_KEYS, [perm_param_uint]
+        )
         assert no_registry.canPerform(CONSENSYS_MANAGE_SIGNING_KEYS_ADDRESS, MANAGE_SIGNING_KEYS, [perm_param_uint])
 
         # 1.15 Gas Supply limit decreased
         limit_after, duration_after = gas_supply_registry.getLimitParameters()
         assert limit_after == GAS_SUPPLY_NEW_LIMIT
         assert duration_after == GAS_SUPPLY_PERIOD_DURATION_MONTHS
+        (
+            gs_already_spent_after,
+            _,
+            gs_period_start_after,
+            gs_period_end_after,
+        ) = gas_supply_registry.getPeriodState()
+        assert gs_already_spent_after == gs_already_spent_before
+        assert gs_period_start_after == get_gas_supply_period_start()
+        assert gs_period_end_after == get_gas_supply_period_end()
+        chain.snapshot()
+        et_gas_supply_limit_test(easy_track, gas_supply_registry, stranger, accounts)
+        chain.revert()
 
         # 1.16 CSM stake share limit and priority exit threshold raised
         csm_module_after = staking_router.getStakingModule(CSM_MODULE_ID)
