@@ -156,7 +156,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
     lazy_oracle_proxy = interface.OssifiableProxy(LAZY_ORACLE_PROXY)
     vault_hub_proxy = interface.OssifiableProxy(VAULT_HUB_PROXY)
     zksync_bridge_proxy = interface.OssifiableProxy(ZKSYNC_L1_ERC20_BRIDGE)
-    zksync_bridge = interface.L1LidoTokensBridge(ZKSYNC_L1_ERC20_BRIDGE)
+    zksync_bridge = interface.ZkSyncL1ERC20Bridge(ZKSYNC_L1_ERC20_BRIDGE)
 
     return [
         # 1.1 Deactivate Node Operator A41 (id = 32) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5

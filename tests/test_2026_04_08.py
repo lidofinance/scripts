@@ -78,6 +78,10 @@ VAULT_HUB_IMPL_NEW = "0x6330fE7756FBE8649adfb9A541d61C5edB8B4D70"
 ZKSYNC_L1_ERC20_BRIDGE = "0x41527B2d03844dB6b0945f25702cB958b6d55989"
 ZKSYNC_L1_ERC20_BRIDGE_IMPL_OLD = "0x9a810469F4a451Ebb7ef53672142053b4971587c"
 ZKSYNC_L1_ERC20_BRIDGE_IMPL_NEW = "0x43a66b32c9adca1a59b273e69b61da5197c21ccd"
+WSTETH = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
+ZKSYNC_L2_GAS_PRICE = 800  # ZkSync constant: minimum gas price per pubdata byte for L1→L2 txs
+ZKSYNC_L2_BRIDGE = "0xE1D6A50E7101c8f8db77352897Ee3f1AC53f782B"
+ZKSYNC_L2_TOKEN = "0x703b52F2b28fEbcB60E1372858AF5b18849FE867"
 VEBO = "0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e"
 
 # Chorus One oracle member rotation
@@ -316,6 +320,44 @@ def alter_tiers_in_operator_grid_test(easy_track, trusted_address, stranger, ope
         assert tier[7] == new_tier_params[i][5]  # reservationFeeBP
 
 
+def zksync_bridge_smoke_test(stranger, bridge):
+    l1_token = bridge.l1Token()
+    assert l1_token == WSTETH
+    l2_bridge = bridge.l2Bridge()
+    assert l2_bridge == ZKSYNC_L2_BRIDGE
+    l2_token = bridge.l2Token()
+    assert l2_token == ZKSYNC_L2_TOKEN
+    l1_wsteth = interface.WstETH(l1_token)
+    deposit_amount = 10**15  # 0.001 wstETH
+
+    chain.snapshot()
+
+    stranger.transfer(l1_token, "0.01 ether")
+    assert l1_wsteth.balanceOf(stranger) >= deposit_amount
+
+    l1_wsteth.approve(ZKSYNC_L1_ERC20_BRIDGE, deposit_amount, {"from": stranger})
+    bridge_balance_before = l1_wsteth.balanceOf(ZKSYNC_L1_ERC20_BRIDGE)
+
+    deposit_tx = bridge.deposit(
+        stranger.address,
+        l1_token,
+        deposit_amount,
+        300_000, # gas limit
+        ZKSYNC_L2_GAS_PRICE,
+        {"from": stranger, "value": "0.01 ether"},
+    )
+
+    assert "DepositInitiated" in deposit_tx.events
+    deposit_evt = deposit_tx.events["DepositInitiated"]
+    assert deposit_evt["from"] == stranger.address
+    assert deposit_evt["to"] == stranger.address
+    assert deposit_evt["l1Token"] == l1_token
+    assert deposit_evt["amount"] == deposit_amount
+    assert l1_wsteth.balanceOf(ZKSYNC_L1_ERC20_BRIDGE) == bridge_balance_before + deposit_amount
+
+    chain.revert()
+
+
 def et_gas_supply_limit_test(easy_track, gas_supply_registry, stranger, accounts):
     chain.snapshot()
     trusted_caller_account = accounts.at(GAS_SUPPLY_TRUSTED_CALLER, force=True)
@@ -374,7 +416,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     lazy_oracle_proxy = interface.OssifiableProxy(LAZY_ORACLE_PROXY)
     vault_hub_proxy = interface.OssifiableProxy(VAULT_HUB_PROXY)
     zksync_bridge_proxy = interface.OssifiableProxy(ZKSYNC_L1_ERC20_BRIDGE)
-    zksync_bridge = interface.L1LidoTokensBridge(ZKSYNC_L1_ERC20_BRIDGE)
+    zksync_bridge = interface.ZkSyncL1ERC20Bridge(ZKSYNC_L1_ERC20_BRIDGE)
     hash_consensus_for_ao = interface.HashConsensus(HASH_CONSENSUS_FOR_AO)
     cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
     hash_consensus_for_vebo = interface.HashConsensus(HASH_CONSENSUS_FOR_VEBO)
@@ -562,6 +604,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
             # 1.6 ZKSync bridge deposits disabled before
             assert not zksync_bridge.isDepositsEnabled()
+            zksync_bridge_withdrawals_enabled = zksync_bridge.isWithdrawalsEnabled()
+            assert zksync_bridge_withdrawals_enabled
 
             # 1.7-1.9 Chorus One old member is present in all hash consensus contracts
             assert hash_consensus_for_ao.getIsMember(CHORUS_ONE_ORACLE_MEMBER_OLD)
@@ -866,9 +910,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # 1.5 ZKSync bridge proxy upgraded
         assert zksync_bridge_proxy.proxy__getImplementation() == ZKSYNC_L1_ERC20_BRIDGE_IMPL_NEW
 
-        # 1.6 ZKSync bridge deposits enabled
-        zksync_bridge = interface.L1LidoTokensBridge(ZKSYNC_L1_ERC20_BRIDGE)
+        # 1.6 ZKSync bridge deposits enabled; withdrawals unaffected by the upgrade
+        zksync_bridge = interface.ZkSyncL1ERC20Bridge(ZKSYNC_L1_ERC20_BRIDGE)
         assert zksync_bridge.isDepositsEnabled()
+        assert zksync_bridge.isWithdrawalsEnabled() == zksync_bridge_withdrawals_enabled
+        zksync_bridge_smoke_test(stranger, zksync_bridge)
 
         # 1.7-1.9 Old Chorus One member removed
         assert not hash_consensus_for_ao.getIsMember(CHORUS_ONE_ORACLE_MEMBER_OLD)
