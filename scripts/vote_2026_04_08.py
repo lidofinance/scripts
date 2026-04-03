@@ -23,7 +23,8 @@ Vote 2026_04_08
 1.19 Set soft-mode target validators limit to 0 for Node Operator Chorus One (ID = 3) in Curated Module (MODULE_ID = 1) in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
 1.20 Grant MANAGE_SIGNING_KEYS role for Node Operator Consensys (ID = 21) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5 to address 0xF45C77EadD434612fCD93db978B3E36B0D58eC99
 1.21 Decrease the limit from 1000 to 150 stETH per 12 months on Gas Supply AllowedRecipientsRegistry 0x49d1363016aA899bba09ae972a1BF200dDf8C55F
-1.22 Raise CSM (MODULE_ID = 3) stake share limit from 750 BP to 850 BP and priority exit threshold from 900 BP to 1020 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+1.22 Set the amount spent on Gas Supply AllowedRecipientsRegistry 0x49d1363016aA899bba09ae972a1BF200dDf8C55F to 0
+1.23 Raise CSM (MODULE_ID = 3) stake share limit from 750 BP to 850 BP and priority exit threshold from 900 BP to 1020 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
 
 === NON-DG ITEMS ===
 2. Remove old Simple DVT SubmitValidatorsExitRequestHashes factory 0xB7668B5485d0f826B86a75b0115e088bB9ee03eE from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
@@ -58,7 +59,7 @@ from utils.node_operators import (
     encode_set_node_operator_name,
     encode_set_node_operator_reward_address,
 )
-from utils.allowed_recipients_registry import set_limit_parameters
+from utils.allowed_recipients_registry import set_limit_parameters, unsafe_set_spent_amount
 from utils.permissions import encode_permission_grant_p
 from utils.permission_parameters import Param, Op, ArgumentValue
 
@@ -349,7 +350,13 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 ),
             ]
         ),
-        # 1.22 Raise CSM (MODULE_ID = 3) stake share limit from 750 BP to 850 BP and priority exit threshold from 900 BP to 1020 BP
+        # 1.22 Set the amount spent on Gas Supply AllowedRecipientsRegistry 0x49d1363016aA899bba09ae972a1BF200dDf8C55F to 0
+        agent_forward(
+            [
+                unsafe_set_spent_amount(spent_amount=0, registry_address=GAS_SUPPLY_ALLOWED_RECIPIENTS_REGISTRY),
+            ]
+        ),
+        # 1.23 Raise CSM (MODULE_ID = 3) stake share limit from 750 BP to 850 BP and priority exit threshold from 900 BP to 1020 BP
         agent_forward(
             [
                 (

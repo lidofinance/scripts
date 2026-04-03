@@ -34,7 +34,7 @@ from utils.test.event_validators.hash_consensus import (
 )
 from utils.test.event_validators.proxy import validate_proxy_upgrade_event
 from utils.test.event_validators.permission import Permission, validate_permission_grantp_event
-from utils.test.event_validators.allowed_recipients_registry import validate_set_limit_parameter_event
+from utils.test.event_validators.allowed_recipients_registry import validate_set_limit_parameter_event, validate_set_spent_amount_event
 from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
@@ -114,23 +114,15 @@ STETH_TOKEN = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
 GAS_SUPPLY_TRUSTED_CALLER = "0x5181d5D56Af4f823b96FE05f062D7a09761a5a53"
 GAS_SUPPLY_TOP_UP_FACTORY = "0x200dA0b6a9905A377CF8D469664C65dB267009d1"
 GAS_SUPPLY_ALLOWED_RECIPIENTS_REGISTRY = "0x49d1363016aA899bba09ae972a1BF200dDf8C55F"
+GAS_SUPPLY_OLD_LIMIT = 1000 * 10**18
 GAS_SUPPLY_NEW_LIMIT = 150 * 10**18
 GAS_SUPPLY_PERIOD_DURATION_MONTHS = 12
 GAS_SUPPLY_PERIOD_START = 1704067200  # Jan 1, 2024 00:00:00 UTC
+GAS_SUPPLY_PERIOD_END = 1735689600  # Jan 1, 2025 00:00:00 UTC
 
-
-def get_gas_supply_period_start():
-    period_start = GAS_SUPPLY_PERIOD_START
-    if chain.time() >= 1767225600:  # Jan 1, 2026 00:00:00 UTC
-        period_start = 1767225600
-    return period_start
-
-
-def get_gas_supply_period_end():
-    period_end = 1767225600  # Jan 1, 2026 00:00:00 UTC
-    if chain.time() >= 1767225600:  # Jan 1, 2026 00:00:00 UTC
-        period_end = 1798761600  # Jan 1, 2027 00:00:00 UTC
-    return period_end
+GAS_SUPPLY_PERIOD_START_AFTER = 1767225600 # Jan 1, 2026 00:00:00 UTC
+GAS_SUPPLY_PERIOD_END_AFTER = 1798761600 # Jan 1, 2027 00:00:00 UTC
+GAS_SUPPLY_SPENT_AMOUNT_EXPECTED = 0
 
 # Target limit mode
 NO_TARGET_LIMIT_SOFT_MODE = 1
@@ -177,8 +169,8 @@ SUBMIT_EXIT_REQUESTS = "submitExitRequestsHash"
 EXPECTED_VOTE_ID = 199
 EXPECTED_DG_PROPOSAL_ID = 9
 EXPECTED_VOTE_EVENTS_COUNT = 11  # 1 DG submit + 5 factory removes + 5 factory adds
-EXPECTED_DG_EVENTS_FROM_AGENT = 23
-EXPECTED_DG_EVENTS_COUNT = 23
+EXPECTED_DG_EVENTS_FROM_AGENT = 24
+EXPECTED_DG_EVENTS_COUNT = 24
 IPFS_DESCRIPTION_HASH = ""  # TODO: add
 DG_PROPOSAL_METADATA = "Deactivate A41, update Stakin, upgrade LazyOracle/VaultHub/ZKSync bridge, rotate Chorus One oracle member, rotate Stakefish oracle member, set Chorus One target limit, grant MANAGE_SIGNING_KEYS to Consensys, decrease Gas Supply limit, raise CSM stake share limit and priority exit threshold"
 
@@ -325,18 +317,11 @@ def alter_tiers_in_operator_grid_test(easy_track, trusted_address, stranger, ope
 
 
 def et_gas_supply_limit_test(easy_track, gas_supply_registry, stranger, accounts):
+    chain.snapshot()
     trusted_caller_account = accounts.at(GAS_SUPPLY_TRUSTED_CALLER, force=True)
     steth = interface.ERC20(STETH_TOKEN)
-
-    # sleep past the current period end. Leaves the current period with 0 spendable
-    _, _, period_start, period_end = gas_supply_registry.getPeriodState()
-    chain.sleep(period_end - chain.time() + 1)
-    chain.mine()
-
-    _, spendable, period_start, period_end = gas_supply_registry.getPeriodState()
-    to_spend = gas_supply_registry.getLimitParameters()[0]
-    if chain.time() >= period_start and chain.time() < period_end:
-        to_spend = spendable
+    spendable_left = 10  # wei
+    to_spend = GAS_SUPPLY_NEW_LIMIT - spendable_left  # leave 10 wei to check spendable balance after motion enact
 
     create_and_enact_payment_motion(
         easy_track,
@@ -348,6 +333,17 @@ def et_gas_supply_limit_test(easy_track, gas_supply_registry, stranger, accounts
         stranger,
     )
 
+    (
+        gas_supply_already_spent,
+        gas_supply_spendable,
+        gas_supply_period_start,
+        gas_supply_period_end,
+    ) = gas_supply_registry.getPeriodState()
+    assert gas_supply_already_spent == to_spend
+    assert gas_supply_spendable == spendable_left
+    assert gas_supply_period_start == GAS_SUPPLY_PERIOD_START_AFTER
+    assert gas_supply_period_end == GAS_SUPPLY_PERIOD_END_AFTER
+
     with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
         create_and_enact_payment_motion(
             easy_track,
@@ -355,9 +351,10 @@ def et_gas_supply_limit_test(easy_track, gas_supply_registry, stranger, accounts
             GAS_SUPPLY_TOP_UP_FACTORY,
             steth,
             [trusted_caller_account],
-            [1],
+            [spendable_left + 1],  # try to spend more than the spendable balance
             stranger,
         )
+    chain.revert()
 
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
@@ -602,20 +599,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 CONSENSYS_MANAGE_SIGNING_KEYS_ADDRESS, MANAGE_SIGNING_KEYS, [perm_param_uint]
             )
 
-            # 1.21 Gas Supply limit before
+            # 1.21-1.22 Gas Supply limit before
             limit_before, duration_before = gas_supply_registry.getLimitParameters()
-            assert limit_before != GAS_SUPPLY_NEW_LIMIT
+            assert limit_before == GAS_SUPPLY_OLD_LIMIT
             assert duration_before == GAS_SUPPLY_PERIOD_DURATION_MONTHS
             (
-                gs_already_spent_before,
-                gs_spendable_before,
-                gs_period_start_before,
-                _,
+                gas_supply_already_spent_before,
+                gas_supply_spendable_before,
+                gas_supply_period_start_before,
+                gas_supply_period_end_before,
             ) = gas_supply_registry.getPeriodState()
-            assert gs_spendable_before == limit_before - gs_already_spent_before
-            assert gs_period_start_before == GAS_SUPPLY_PERIOD_START
+            assert gas_supply_spendable_before == limit_before - gas_supply_already_spent_before
+            assert gas_supply_period_start_before == GAS_SUPPLY_PERIOD_START
+            assert gas_supply_period_end_before == GAS_SUPPLY_PERIOD_END
 
-            # 1.22 CSM stake share limit and priority exit threshold before
+            # 1.23 CSM stake share limit and priority exit threshold before
             csm_module_before = staking_router.getStakingModule(CSM_MODULE_ID)
             assert csm_module_before["name"] == CSM_MODULE_NAME
             assert csm_module_before["stakingModuleAddress"] == CSM_MODULE_ADDRESS
@@ -820,13 +818,20 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     dg_events[21],
                     limit=GAS_SUPPLY_NEW_LIMIT,
                     period_duration_month=GAS_SUPPLY_PERIOD_DURATION_MONTHS,
-                    period_start_timestamp=get_gas_supply_period_start(),
+                    period_start_timestamp=GAS_SUPPLY_PERIOD_START_AFTER,
                     emitted_by=GAS_SUPPLY_ALLOWED_RECIPIENTS_REGISTRY,
                 )
 
-                # 1.22. CSM stake share limit and priority exit threshold update
-                validate_staking_module_update_event(
+                # 1.22. Gas Supply spent amount reset
+                validate_set_spent_amount_event(
                     dg_events[22],
+                    new_spent_amount=GAS_SUPPLY_SPENT_AMOUNT_EXPECTED,
+                    emitted_by=GAS_SUPPLY_ALLOWED_RECIPIENTS_REGISTRY,
+                )
+
+                # 1.23. CSM stake share limit and priority exit threshold update
+                validate_staking_module_update_event(
+                    dg_events[23],
                     StakingModuleItem(
                         id=CSM_MODULE_ID,
                         name=CSM_MODULE_NAME,
@@ -896,24 +901,23 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         )
         assert no_registry.canPerform(CONSENSYS_MANAGE_SIGNING_KEYS_ADDRESS, MANAGE_SIGNING_KEYS, [perm_param_uint])
 
-        # 1.21 Gas Supply limit decreased
+        # 1.21-1.22 Gas Supply limit decreased
         limit_after, duration_after = gas_supply_registry.getLimitParameters()
         assert limit_after == GAS_SUPPLY_NEW_LIMIT
         assert duration_after == GAS_SUPPLY_PERIOD_DURATION_MONTHS
         (
-            gs_already_spent_after,
-            _,
-            gs_period_start_after,
-            gs_period_end_after,
+            gas_supply_already_spent_after,
+            gas_supply_spendable_after,
+            gas_supply_period_start_after,
+            gas_supply_period_end_after,
         ) = gas_supply_registry.getPeriodState()
-        assert gs_already_spent_after == gs_already_spent_before
-        assert gs_period_start_after == get_gas_supply_period_start()
-        assert gs_period_end_after == get_gas_supply_period_end()
-        chain.snapshot()
+        assert gas_supply_already_spent_after == GAS_SUPPLY_SPENT_AMOUNT_EXPECTED
+        assert gas_supply_spendable_after == GAS_SUPPLY_NEW_LIMIT
+        assert gas_supply_period_start_after == GAS_SUPPLY_PERIOD_START_AFTER
+        assert gas_supply_period_end_after == GAS_SUPPLY_PERIOD_END_AFTER
         et_gas_supply_limit_test(easy_track, gas_supply_registry, stranger, accounts)
-        chain.revert()
 
-        # 1.22 CSM stake share limit and priority exit threshold raised
+        # 1.23 CSM stake share limit and priority exit threshold raised
         csm_module_after = staking_router.getStakingModule(CSM_MODULE_ID)
         assert csm_module_after["stakeShareLimit"] == CSM_STAKE_SHARE_LIMIT_AFTER
         assert csm_module_after["priorityExitShareThreshold"] == CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER
