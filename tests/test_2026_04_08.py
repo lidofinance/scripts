@@ -18,7 +18,6 @@ from utils.test.event_validators.easy_track import (
     validate_evmscript_factory_removed_event,
     EVMScriptFactoryAdded,
 )
-from utils.permission_parameters import Param, Op, ArgumentValue
 from utils.test.event_validators.node_operators_registry import (
     validate_node_operator_deactivated,
     validate_node_operator_name_set_event,
@@ -33,8 +32,10 @@ from utils.test.event_validators.hash_consensus import (
     validate_hash_consensus_member_added,
 )
 from utils.test.event_validators.proxy import validate_proxy_upgrade_event
-from utils.test.event_validators.permission import Permission, validate_permission_grantp_event
-from utils.test.event_validators.allowed_recipients_registry import validate_set_limit_parameter_event, validate_set_spent_amount_event
+from utils.test.event_validators.allowed_recipients_registry import (
+    validate_set_limit_parameter_event,
+    validate_set_spent_amount_event,
+)
 from utils.test.event_validators.staking_router import validate_staking_module_update_event, StakingModuleItem
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
@@ -58,7 +59,6 @@ from scripts.vote_2026_04_08 import (
 # DAO addresses
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
-ACL = "0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
@@ -108,11 +108,6 @@ STAKIN_REWARD_ADDRESS_OLD = "0xf6b0a1B771633DB40A3e21Cc49fD2FE35669eF46"
 STAKIN_REWARD_ADDRESS_NEW = "0x3e97EC699191bEfc63EF4E4275204B03E7465f30"
 CHORUS_ONE_NO_ID = 3
 CHORUS_ONE_NAME = "Chorus One"
-CONSENSYS_NO_ID = 21
-CONSENSYS_NAME = "Consensys"
-CONSENSYS_MANAGE_SIGNING_KEYS_ADDRESS = "0xF45C77EadD434612fCD93db978B3E36B0D58eC99"
-MANAGE_SIGNING_KEYS = web3.keccak(text="MANAGE_SIGNING_KEYS").hex()
-
 # Gas Supply
 STETH_TOKEN = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
 GAS_SUPPLY_TRUSTED_CALLER = "0x5181d5D56Af4f823b96FE05f062D7a09761a5a53"
@@ -124,8 +119,8 @@ GAS_SUPPLY_PERIOD_DURATION_MONTHS = 12
 GAS_SUPPLY_PERIOD_START = 1704067200  # Jan 1, 2024 00:00:00 UTC
 GAS_SUPPLY_PERIOD_END = 1735689600  # Jan 1, 2025 00:00:00 UTC
 
-GAS_SUPPLY_PERIOD_START_AFTER = 1767225600 # Jan 1, 2026 00:00:00 UTC
-GAS_SUPPLY_PERIOD_END_AFTER = 1798761600 # Jan 1, 2027 00:00:00 UTC
+GAS_SUPPLY_PERIOD_START_AFTER = 1767225600  # Jan 1, 2026 00:00:00 UTC
+GAS_SUPPLY_PERIOD_END_AFTER = 1798761600  # Jan 1, 2027 00:00:00 UTC
 GAS_SUPPLY_SPENT_AMOUNT_EXPECTED = 0
 
 # Target limit mode
@@ -173,10 +168,10 @@ SUBMIT_EXIT_REQUESTS = "submitExitRequestsHash"
 EXPECTED_VOTE_ID = 199
 EXPECTED_DG_PROPOSAL_ID = 9
 EXPECTED_VOTE_EVENTS_COUNT = 11  # 1 DG submit + 5 factory removes + 5 factory adds
-EXPECTED_DG_EVENTS_FROM_AGENT = 24
-EXPECTED_DG_EVENTS_COUNT = 24
+EXPECTED_DG_EVENTS_FROM_AGENT = 23
+EXPECTED_DG_EVENTS_COUNT = 23
 IPFS_DESCRIPTION_HASH = ""  # TODO: add
-DG_PROPOSAL_METADATA = "Deactivate A41, update Stakin, upgrade LazyOracle/VaultHub/ZKSync bridge, rotate Chorus One oracle member, rotate Stakefish oracle member, set Chorus One target limit, grant MANAGE_SIGNING_KEYS to Consensys, decrease Gas Supply limit, raise CSM stake share limit and priority exit threshold"
+DG_PROPOSAL_METADATA = "Deactivate A41, update Stakin, upgrade LazyOracle/VaultHub/ZKSync bridge, rotate Chorus One oracle address, rotate Stakefish oracle address, reset Chorus One target validators limit, decrease limit and reset spent amount for Gas Supply factory, raise CSM stake share limit and priority exit threshold"
 
 
 @pytest.fixture(scope="module")
@@ -342,7 +337,7 @@ def zksync_bridge_smoke_test(stranger, bridge):
         stranger.address,
         l1_token,
         deposit_amount,
-        300_000, # gas limit
+        300_000,  # gas limit
         ZKSYNC_L2_GAS_PRICE,
         {"from": stranger, "value": "0.01 ether"},
     )
@@ -406,7 +401,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     # =======================================================================
     voting = interface.Voting(VOTING)
     agent = interface.Agent(AGENT)
-    acl = interface.ACL(ACL)
     timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     easy_track = interface.EasyTrack(EASYTRACK)
@@ -423,9 +417,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     gas_supply_registry = interface.AllowedRecipientRegistry(GAS_SUPPLY_ALLOWED_RECIPIENTS_REGISTRY)
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     vebo = interface.ValidatorsExitBusOracle(VEBO)
-
-    perm_param = Param(0, Op.EQ, ArgumentValue(CONSENSYS_NO_ID))
-    perm_param_uint = perm_param.to_uint256()
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -583,67 +574,58 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # ================== DG before proposal executed checks ===================
             # =========================================================================
 
-            # 1.1 A41 should be active before
+            # 1.1. A41 should be active before
             a41_data_before = no_registry.getNodeOperator(A41_NO_ID, True)
             assert a41_data_before["name"] == A41_NAME
             assert a41_data_before["active"]
 
-            # 1.2 Stakin name and reward address before
+            # 1.2. Stakin name before
             stakin_data_before = no_registry.getNodeOperator(STAKIN_NO_ID, True)
             assert stakin_data_before["name"] == STAKIN_NAME_OLD
+            # 1.3. Stakin reward address before
             assert stakin_data_before["rewardAddress"] == STAKIN_REWARD_ADDRESS_OLD
 
-            # 1.3 LazyOracle proxy implementation before
+            # 1.4. LazyOracle proxy implementation before
             assert lazy_oracle_proxy.proxy__getImplementation() == LAZY_ORACLE_IMPL_OLD
 
-            # 1.4 VaultHub proxy implementation before
+            # 1.5. VaultHub proxy implementation before
             assert vault_hub_proxy.proxy__getImplementation() == VAULT_HUB_IMPL_OLD
 
-            # 1.5 ZKSync bridge proxy implementation before
+            # 1.6. ZKSync bridge proxy implementation before
             assert zksync_bridge_proxy.proxy__getImplementation() == ZKSYNC_L1_ERC20_BRIDGE_IMPL_OLD
 
-            # 1.6 ZKSync bridge deposits disabled before
+            # 1.7. ZKSync bridge deposits disabled before
             assert not zksync_bridge.isDepositsEnabled()
             zksync_bridge_withdrawals_enabled = zksync_bridge.isWithdrawalsEnabled()
             assert zksync_bridge_withdrawals_enabled
 
-            # 1.7-1.9 Chorus One old member is present in all hash consensus contracts
+            # 1.8-1.10. Chorus One old member is present in all hash consensus contracts
             assert hash_consensus_for_ao.getIsMember(CHORUS_ONE_ORACLE_MEMBER_OLD)
             assert cs_hash_consensus.getIsMember(CHORUS_ONE_ORACLE_MEMBER_OLD)
             assert hash_consensus_for_vebo.getIsMember(CHORUS_ONE_ORACLE_MEMBER_OLD)
 
-            # 1.10-1.12 Chorus One new member is not present
+            # 1.11-1.13. Chorus One new member is not present
             assert not hash_consensus_for_ao.getIsMember(CHORUS_ONE_ORACLE_MEMBER_NEW)
             assert not cs_hash_consensus.getIsMember(CHORUS_ONE_ORACLE_MEMBER_NEW)
             assert not hash_consensus_for_vebo.getIsMember(CHORUS_ONE_ORACLE_MEMBER_NEW)
 
-            # 1.13-1.15 Stakefish old member is present in all hash consensus contracts
+            # 1.14-1.16. Stakefish old member is present in all hash consensus contracts
             assert hash_consensus_for_ao.getIsMember(STAKEFISH_ORACLE_MEMBER_OLD)
             assert cs_hash_consensus.getIsMember(STAKEFISH_ORACLE_MEMBER_OLD)
             assert hash_consensus_for_vebo.getIsMember(STAKEFISH_ORACLE_MEMBER_OLD)
 
-            # 1.16-1.18 Stakefish new member is not present
+            # 1.17-1.19. Stakefish new member is not present
             assert not hash_consensus_for_ao.getIsMember(STAKEFISH_ORACLE_MEMBER_NEW)
             assert not cs_hash_consensus.getIsMember(STAKEFISH_ORACLE_MEMBER_NEW)
             assert not hash_consensus_for_vebo.getIsMember(STAKEFISH_ORACLE_MEMBER_NEW)
 
-            # 1.19 Chorus One target limit mode before
+            # 1.20. Chorus One target limit mode before
             chorus_one_data_before = no_registry.getNodeOperator(CHORUS_ONE_NO_ID, True)
             assert chorus_one_data_before["name"] == CHORUS_ONE_NAME
             chorus_one_summary_before = no_registry.getNodeOperatorSummary(CHORUS_ONE_NO_ID)
             assert chorus_one_summary_before["targetLimitMode"] != NO_TARGET_LIMIT_SOFT_MODE
 
-            # 1.20 Consensys MANAGE_SIGNING_KEYS role not granted
-            consensys_data_before = no_registry.getNodeOperator(CONSENSYS_NO_ID, True)
-            assert consensys_data_before["name"] == CONSENSYS_NAME
-            assert not acl.hasPermission["address,address,bytes32,uint[]"](
-                CONSENSYS_MANAGE_SIGNING_KEYS_ADDRESS, CURATED_MODULE, MANAGE_SIGNING_KEYS, [perm_param_uint]
-            )
-            assert not no_registry.canPerform(
-                CONSENSYS_MANAGE_SIGNING_KEYS_ADDRESS, MANAGE_SIGNING_KEYS, [perm_param_uint]
-            )
-
-            # 1.21-1.22 Gas Supply limit before
+            # 1.21-1.22. Gas Supply limit before
             limit_before, duration_before = gas_supply_registry.getLimitParameters()
             assert limit_before == GAS_SUPPLY_OLD_LIMIT
             assert duration_before == GAS_SUPPLY_PERIOD_DURATION_MONTHS
@@ -702,7 +684,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     NodeOperatorNameSetItem(nodeOperatorId=STAKIN_NO_ID, name=STAKIN_NAME_NEW),
                     emitted_by=CURATED_MODULE,
                 )
-                # 1.2. Stakin reward address change
+                # 1.3. Stakin reward address change
                 validate_node_operator_reward_address_set_event(
                     dg_events[2],
                     NodeOperatorRewardAddressSetItem(
@@ -711,22 +693,22 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=CURATED_MODULE,
                 )
 
-                # 1.3. LazyOracle proxy upgrade
+                # 1.4. LazyOracle proxy upgrade
                 validate_proxy_upgrade_event(dg_events[3], LAZY_ORACLE_IMPL_NEW, emitted_by=LAZY_ORACLE_PROXY)
 
-                # 1.4. VaultHub proxy upgrade
+                # 1.5. VaultHub proxy upgrade
                 validate_proxy_upgrade_event(dg_events[4], VAULT_HUB_IMPL_NEW, emitted_by=VAULT_HUB_PROXY)
 
-                # 1.5. ZKSync bridge proxy upgrade
+                # 1.6. ZKSync bridge proxy upgrade
                 validate_proxy_upgrade_event(
                     dg_events[5], ZKSYNC_L1_ERC20_BRIDGE_IMPL_NEW, emitted_by=ZKSYNC_L1_ERC20_BRIDGE
                 )
 
-                # 1.6. enableDeposits on ZKSync bridge
+                # 1.7. enableDeposits on ZKSync bridge
                 assert "DepositsEnabled" in dg_events[6]
                 assert dg_events[6]["DepositsEnabled"]["_emitted_by"].lower() == ZKSYNC_L1_ERC20_BRIDGE.lower()
 
-                # 1.7. Remove Chorus One from AO HashConsensus
+                # 1.8. Remove Chorus One from AO HashConsensus
                 validate_hash_consensus_member_removed(
                     dg_events[7],
                     CHORUS_ONE_ORACLE_MEMBER_OLD,
@@ -735,7 +717,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=HASH_CONSENSUS_FOR_AO,
                 )
 
-                # 1.8. Remove Chorus One from CSM HashConsensus
+                # 1.9. Remove Chorus One from CSM HashConsensus
                 validate_hash_consensus_member_removed(
                     dg_events[8],
                     CHORUS_ONE_ORACLE_MEMBER_OLD,
@@ -744,7 +726,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=CS_HASH_CONSENSUS,
                 )
 
-                # 1.9. Remove Chorus One from VEB HashConsensus
+                # 1.10. Remove Chorus One from VEB HashConsensus
                 validate_hash_consensus_member_removed(
                     dg_events[9],
                     CHORUS_ONE_ORACLE_MEMBER_OLD,
@@ -753,7 +735,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=HASH_CONSENSUS_FOR_VEBO,
                 )
 
-                # 1.10. Add new Chorus One to AO HashConsensus
+                # 1.11. Add new Chorus One to AO HashConsensus
                 validate_hash_consensus_member_added(
                     dg_events[10],
                     CHORUS_ONE_ORACLE_MEMBER_NEW,
@@ -762,7 +744,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=HASH_CONSENSUS_FOR_AO,
                 )
 
-                # 1.11. Add new Chorus One to CSM HashConsensus
+                # 1.12. Add new Chorus One to CSM HashConsensus
                 validate_hash_consensus_member_added(
                     dg_events[11],
                     CHORUS_ONE_ORACLE_MEMBER_NEW,
@@ -771,7 +753,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=CS_HASH_CONSENSUS,
                 )
 
-                # 1.12. Add new Chorus One to VEB HashConsensus
+                # 1.13. Add new Chorus One to VEB HashConsensus
                 validate_hash_consensus_member_added(
                     dg_events[12],
                     CHORUS_ONE_ORACLE_MEMBER_NEW,
@@ -780,7 +762,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=HASH_CONSENSUS_FOR_VEBO,
                 )
 
-                # 1.13. Remove Stakefish from AO HashConsensus
+                # 1.14. Remove Stakefish from AO HashConsensus
                 validate_hash_consensus_member_removed(
                     dg_events[13],
                     STAKEFISH_ORACLE_MEMBER_OLD,
@@ -789,7 +771,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=HASH_CONSENSUS_FOR_AO,
                 )
 
-                # 1.14. Remove Stakefish from CSM HashConsensus
+                # 1.15. Remove Stakefish from CSM HashConsensus
                 validate_hash_consensus_member_removed(
                     dg_events[14],
                     STAKEFISH_ORACLE_MEMBER_OLD,
@@ -798,7 +780,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=CS_HASH_CONSENSUS,
                 )
 
-                # 1.15. Remove Stakefish from VEB HashConsensus
+                # 1.16. Remove Stakefish from VEB HashConsensus
                 validate_hash_consensus_member_removed(
                     dg_events[15],
                     STAKEFISH_ORACLE_MEMBER_OLD,
@@ -807,7 +789,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=HASH_CONSENSUS_FOR_VEBO,
                 )
 
-                # 1.16. Add new Stakefish to AO HashConsensus
+                # 1.17. Add new Stakefish to AO HashConsensus
                 validate_hash_consensus_member_added(
                     dg_events[16],
                     STAKEFISH_ORACLE_MEMBER_NEW,
@@ -816,7 +798,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=HASH_CONSENSUS_FOR_AO,
                 )
 
-                # 1.17. Add new Stakefish to CSM HashConsensus
+                # 1.18. Add new Stakefish to CSM HashConsensus
                 validate_hash_consensus_member_added(
                     dg_events[17],
                     STAKEFISH_ORACLE_MEMBER_NEW,
@@ -825,7 +807,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=CS_HASH_CONSENSUS,
                 )
 
-                # 1.18. Add new Stakefish to VEB HashConsensus
+                # 1.19. Add new Stakefish to VEB HashConsensus
                 validate_hash_consensus_member_added(
                     dg_events[18],
                     STAKEFISH_ORACLE_MEMBER_NEW,
@@ -834,7 +816,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=HASH_CONSENSUS_FOR_VEBO,
                 )
 
-                # 1.19. Set Chorus One target validators limit
+                # 1.20. Set Chorus One target validators limit
                 validate_target_validators_count_changed_event(
                     dg_events[19],
                     TargetValidatorsCountChanged(
@@ -845,21 +827,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=CURATED_MODULE,
                 )
 
-                # 1.20. Grant MANAGE_SIGNING_KEYS to Consensys
-                validate_permission_grantp_event(
-                    dg_events[20],
-                    p=Permission(
-                        entity=CONSENSYS_MANAGE_SIGNING_KEYS_ADDRESS,
-                        app=CURATED_MODULE,
-                        role=MANAGE_SIGNING_KEYS,
-                    ),
-                    params=[perm_param],
-                    emitted_by=ACL,
-                )
-
                 # 1.21. Gas Supply limit decrease
                 validate_set_limit_parameter_event(
-                    dg_events[21],
+                    dg_events[20],
                     limit=GAS_SUPPLY_NEW_LIMIT,
                     period_duration_month=GAS_SUPPLY_PERIOD_DURATION_MONTHS,
                     period_start_timestamp=GAS_SUPPLY_PERIOD_START_AFTER,
@@ -868,14 +838,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # 1.22. Gas Supply spent amount reset
                 validate_set_spent_amount_event(
-                    dg_events[22],
+                    dg_events[21],
                     new_spent_amount=GAS_SUPPLY_SPENT_AMOUNT_EXPECTED,
                     emitted_by=GAS_SUPPLY_ALLOWED_RECIPIENTS_REGISTRY,
                 )
 
                 # 1.23. CSM stake share limit and priority exit threshold update
                 validate_staking_module_update_event(
-                    dg_events[23],
+                    dg_events[22],
                     StakingModuleItem(
                         id=CSM_MODULE_ID,
                         name=CSM_MODULE_NAME,
@@ -892,62 +862,57 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # ==================== After DG proposal executed checks ==================
         # =========================================================================
 
-        # 1.1 A41 deactivated
+        # 1.1. A41 deactivated
         a41_data_after = no_registry.getNodeOperator(A41_NO_ID, True)
         assert not a41_data_after["active"]
 
-        # 1.2 Stakin name and reward address updated
+        # 1.2. Stakin name updated
         stakin_data_after = no_registry.getNodeOperator(STAKIN_NO_ID, True)
         assert stakin_data_after["name"] == STAKIN_NAME_NEW
+        # 1.3. Stakin reward address updated
         assert stakin_data_after["rewardAddress"] == STAKIN_REWARD_ADDRESS_NEW
 
-        # 1.3 LazyOracle proxy upgraded
+        # 1.4. LazyOracle proxy upgraded
         assert lazy_oracle_proxy.proxy__getImplementation() == LAZY_ORACLE_IMPL_NEW
 
-        # 1.4 VaultHub proxy upgraded
+        # 1.5. VaultHub proxy upgraded
         assert vault_hub_proxy.proxy__getImplementation() == VAULT_HUB_IMPL_NEW
 
-        # 1.5 ZKSync bridge proxy upgraded
+        # 1.6. ZKSync bridge proxy upgraded
         assert zksync_bridge_proxy.proxy__getImplementation() == ZKSYNC_L1_ERC20_BRIDGE_IMPL_NEW
 
-        # 1.6 ZKSync bridge deposits enabled; withdrawals unaffected by the upgrade
+        # 1.7. ZKSync bridge deposits enabled; withdrawals unaffected by the upgrade
         zksync_bridge = interface.ZkSyncL1ERC20Bridge(ZKSYNC_L1_ERC20_BRIDGE)
         assert zksync_bridge.isDepositsEnabled()
         assert zksync_bridge.isWithdrawalsEnabled() == zksync_bridge_withdrawals_enabled
         zksync_bridge_smoke_test(stranger, zksync_bridge)
 
-        # 1.7-1.9 Old Chorus One member removed
+        # 1.8-1.10. Old Chorus One member removed
         assert not hash_consensus_for_ao.getIsMember(CHORUS_ONE_ORACLE_MEMBER_OLD)
         assert not cs_hash_consensus.getIsMember(CHORUS_ONE_ORACLE_MEMBER_OLD)
         assert not hash_consensus_for_vebo.getIsMember(CHORUS_ONE_ORACLE_MEMBER_OLD)
 
-        # 1.10-1.12 New Chorus One member added
+        # 1.11-1.13. New Chorus One member added
         assert hash_consensus_for_ao.getIsMember(CHORUS_ONE_ORACLE_MEMBER_NEW)
         assert cs_hash_consensus.getIsMember(CHORUS_ONE_ORACLE_MEMBER_NEW)
         assert hash_consensus_for_vebo.getIsMember(CHORUS_ONE_ORACLE_MEMBER_NEW)
 
-        # 1.13-1.15 Old Stakefish member removed
+        # 1.14-1.16. Old Stakefish member removed
         assert not hash_consensus_for_ao.getIsMember(STAKEFISH_ORACLE_MEMBER_OLD)
         assert not cs_hash_consensus.getIsMember(STAKEFISH_ORACLE_MEMBER_OLD)
         assert not hash_consensus_for_vebo.getIsMember(STAKEFISH_ORACLE_MEMBER_OLD)
 
-        # 1.16-1.18 New Stakefish member added
+        # 1.17-1.19. New Stakefish member added
         assert hash_consensus_for_ao.getIsMember(STAKEFISH_ORACLE_MEMBER_NEW)
         assert cs_hash_consensus.getIsMember(STAKEFISH_ORACLE_MEMBER_NEW)
         assert hash_consensus_for_vebo.getIsMember(STAKEFISH_ORACLE_MEMBER_NEW)
 
-        # 1.19 Chorus One target validators limit set to 0
+        # 1.20. Chorus One target validators limit set to 0
         chorus_one_summary = no_registry.getNodeOperatorSummary(CHORUS_ONE_NO_ID)
         assert chorus_one_summary["targetLimitMode"] == NO_TARGET_LIMIT_SOFT_MODE
         assert chorus_one_summary["targetValidatorsCount"] == 0
 
-        # 1.20 Consensys MANAGE_SIGNING_KEYS granted
-        assert acl.hasPermission["address,address,bytes32,uint[]"](
-            CONSENSYS_MANAGE_SIGNING_KEYS_ADDRESS, CURATED_MODULE, MANAGE_SIGNING_KEYS, [perm_param_uint]
-        )
-        assert no_registry.canPerform(CONSENSYS_MANAGE_SIGNING_KEYS_ADDRESS, MANAGE_SIGNING_KEYS, [perm_param_uint])
-
-        # 1.21-1.22 Gas Supply limit decreased
+        # 1.21-1.22. Gas Supply limit decreased
         limit_after, duration_after = gas_supply_registry.getLimitParameters()
         assert limit_after == GAS_SUPPLY_NEW_LIMIT
         assert duration_after == GAS_SUPPLY_PERIOD_DURATION_MONTHS
@@ -963,7 +928,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert gas_supply_period_end_after == GAS_SUPPLY_PERIOD_END_AFTER
         et_gas_supply_limit_test(easy_track, gas_supply_registry, stranger, accounts)
 
-        # 1.23 CSM stake share limit and priority exit threshold raised
+        # 1.23. CSM stake share limit and priority exit threshold raised
         csm_module_after = staking_router.getStakingModule(CSM_MODULE_ID)
         assert csm_module_after["stakeShareLimit"] == CSM_STAKE_SHARE_LIMIT_AFTER
         assert csm_module_after["priorityExitShareThreshold"] == CSM_PRIORITY_EXIT_SHARE_THRESHOLD_AFTER
