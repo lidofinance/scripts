@@ -9,7 +9,7 @@ from utils.test.tx_tracing_helpers import (
     display_voting_events,
     display_dg_events,
 )
-from utils.evm_script import encode_call_script
+from utils.evm_script import encode_call_script, encode_error
 from utils.dual_governance import PROPOSAL_STATUS
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 from utils.easy_track import create_permissions
@@ -333,6 +333,7 @@ def zksync_bridge_smoke_test(stranger, bridge):
     l1_wsteth.approve(ZKSYNC_L1_ERC20_BRIDGE, deposit_amount, {"from": stranger})
     bridge_balance_before = l1_wsteth.balanceOf(ZKSYNC_L1_ERC20_BRIDGE)
 
+    # Perform a deposit and check that the event is emitted with correct parameters and the bridge balance is updated
     deposit_tx = bridge.deposit(
         stranger.address,
         l1_token,
@@ -349,6 +350,21 @@ def zksync_bridge_smoke_test(stranger, bridge):
     assert deposit_evt["l1Token"] == l1_token
     assert deposit_evt["amount"] == deposit_amount
     assert l1_wsteth.balanceOf(ZKSYNC_L1_ERC20_BRIDGE) == bridge_balance_before + deposit_amount
+
+    # Verify claimFailedDeposit reverts with ErrorUnsupportedL1Token for wrong token
+    unsupported_token = "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32"
+    dummy_tx_hash = "0x" + "00" * 32
+    with reverts(encode_error("ErrorUnsupportedL1Token()")):
+        bridge.claimFailedDeposit(
+            stranger.address,
+            unsupported_token,
+            dummy_tx_hash,
+            0,  # _l2BlockNumber
+            0,  # _l2MessageIndex
+            0,  # _l2TxNumberInBlock
+            [],  # _merkleProof
+            {"from": stranger},
+        )
 
     chain.revert()
 
