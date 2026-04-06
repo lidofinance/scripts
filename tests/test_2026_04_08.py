@@ -170,8 +170,8 @@ EXPECTED_DG_PROPOSAL_ID = 9
 EXPECTED_VOTE_EVENTS_COUNT = 11  # 1 DG submit + 5 factory removes + 5 factory adds
 EXPECTED_DG_EVENTS_FROM_AGENT = 23
 EXPECTED_DG_EVENTS_COUNT = 23
-IPFS_DESCRIPTION_HASH = ""  # TODO: add
-DG_PROPOSAL_METADATA = "Deactivate A41, update Stakin, upgrade LazyOracle/VaultHub/ZKSync bridge, rotate Chorus One oracle address, rotate Stakefish oracle address, reset Chorus One target validators limit, decrease limit and reset spent amount for Gas Supply factory, raise CSM stake share limit and priority exit threshold"
+IPFS_DESCRIPTION_HASH = "bafkreic2fhcjelgdwpiiy7vxm7kf4g3kuhmmbaerfyoxkns2x5jzovqvaa"
+DG_PROPOSAL_METADATA = "Deactivate A41, change name and reward address for Stakin, upgrade Lazy Oracle, Vault Hub and ZKSync Bridge, rotate addresses for Chorus One and Stakefish oracle set members, set Chorus One target validators limit, decrease Gas Supply ET limit and reset spent amount, raise CSM stake share limit and priority exit threshold"
 
 
 @pytest.fixture(scope="module")
@@ -474,7 +474,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert NEW_REGISTER_TIERS_FACTORY not in initial_factories
         assert NEW_ALTER_TIERS_FACTORY not in initial_factories
 
-        # assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH  # TODO: uncomment after IPFS upload
+        assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
 
         vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
         display_voting_events(vote_tx)
