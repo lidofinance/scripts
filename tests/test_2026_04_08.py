@@ -40,6 +40,7 @@ from utils.test.event_validators.staking_router import validate_staking_module_u
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.test.easy_track_helpers import create_and_enact_payment_motion, create_and_enact_motion, _encode_calldata
+from tests.regression.test_easy_track_factories import ExitRequestInput, encode_exit_requests_easy_track
 
 
 # ============================================================================
@@ -64,12 +65,14 @@ DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 EASYTRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 ST_VAULTS_COMMITTEE = "0x18A1065c81b0Cc356F1b1C843ddd5E14e4AefffF"
+SIMPLE_DVT_COMMITTEE = "0x08637515E85A4633E23dfc7861e2A9f53af640f7"
 EASYTRACK_EVMSCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 
 STETH_TOKEN = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
 WSTETH_TOKEN = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
 CURATED_MODULE = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
+SIMPLE_DVT_MODULE = "0xaE7B191A31f627b4eB1d4DaC64eaB9976995b433"
 OPERATOR_GRID = "0xC69685E89Cefc327b43B7234AC646451B27c544d"
 HASH_CONSENSUS_FOR_AO = "0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288"
 CS_HASH_CONSENSUS = "0x71093efF8D8599b5fA340D665Ad60fA7C80688e4"
@@ -161,6 +164,12 @@ OPERATOR_GRID_REGISTER_GROUP = "registerGroup"
 OPERATOR_GRID_REGISTER_TIERS = "registerTiers"
 OPERATOR_GRID_ALTER_TIERS = "alterTiers"
 SUBMIT_EXIT_REQUESTS = "submitExitRequestsHash"
+
+# Submit exit hashes smoke test parameters
+CURATED_MODULE_ID = 1
+CURATED_PUBKEY = "0xb3e9f4e915f9fb9ef9c55da1815071f3f728cc6fc434fba2c11e08db5b5fa22b71d5975cec30ef97e7fc901e5a04ee5b"
+SDVT_MODULE_ID = 2
+SDVT_PUBKEY = "0x80e7ad4457002894ddfcc41f6589c578c965f769cf971d3fefd8d8ed59a41cb98d27c9faad9886b5492a3afbb4217ea6"
 
 
 # ============================================================================
@@ -411,6 +420,52 @@ def et_gas_supply_limit_test(easy_track, gas_supply_registry, stranger, accounts
     chain.revert()
 
 
+def curated_submit_exit_hashes_smoke_test(easy_track, stranger):
+    factory = interface.CuratedSubmitExitRequestHashes(NEW_CURATED_SUBMIT_EXIT_HASHES_FACTORY)
+    assert factory.nodeOperatorsRegistry() == CURATED_MODULE
+    assert factory.validatorsExitBusOracle() == VEBO
+    assert factory.stakingRouter() == STAKING_ROUTER
+
+    no_id = 1
+    no_registry = interface.NodeOperatorsRegistry(CURATED_MODULE)
+    node_operator = no_registry.getNodeOperator(no_id, False)
+
+    exit_request = ExitRequestInput(
+        moduleId=CURATED_MODULE_ID,
+        nodeOpId=no_id,
+        valIndex=12345,
+        valPubkey=CURATED_PUBKEY,
+        valPubKeyIndex=1,
+    )
+    calldata = "0x" + encode_exit_requests_easy_track([exit_request]).hex()
+
+    create_and_enact_motion(
+        easy_track, node_operator["rewardAddress"], NEW_CURATED_SUBMIT_EXIT_HASHES_FACTORY, calldata, stranger
+    )
+
+
+def sdvt_submit_exit_hashes_smoke_test(easy_track, stranger, accounts):
+    factory = interface.SDVTSubmitExitRequestHashes(NEW_SDVT_SUBMIT_EXIT_HASHES_FACTORY)
+    assert factory.nodeOperatorsRegistry() == SIMPLE_DVT_MODULE
+    assert factory.validatorsExitBusOracle() == VEBO
+    assert factory.stakingRouter() == STAKING_ROUTER
+
+    trusted_caller = accounts.at(factory.trustedCaller(), force=True)
+    assert trusted_caller.address == SIMPLE_DVT_COMMITTEE
+
+    exit_request = ExitRequestInput(
+        moduleId=SDVT_MODULE_ID,
+        nodeOpId=1,
+        valIndex=12345,
+        valPubkey=SDVT_PUBKEY,
+        valPubKeyIndex=1,
+    )
+
+    calldata = "0x" + encode_exit_requests_easy_track([exit_request]).hex()
+
+    create_and_enact_motion(easy_track, trusted_caller, NEW_SDVT_SUBMIT_EXIT_HASHES_FACTORY, calldata, stranger)
+
+
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
 
     # =======================================================================
@@ -498,6 +553,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert NEW_REGISTER_GROUPS_FACTORY in new_factories
         assert NEW_REGISTER_TIERS_FACTORY in new_factories
         assert NEW_ALTER_TIERS_FACTORY in new_factories
+
+        # Happy path: new SubmitValidatorsExitRequestHashes ET factories work correctly
+        chain.snapshot()
+        curated_submit_exit_hashes_smoke_test(easy_track, stranger)
+        sdvt_submit_exit_hashes_smoke_test(easy_track, stranger, accounts)
+        chain.revert()
 
         # Happy path: new OperatorGrid ET factories work correctly
         st_vaults_trusted_caller = accounts.at(ST_VAULTS_COMMITTEE, force=True)
