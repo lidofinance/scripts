@@ -26,7 +26,7 @@ Vote 2026_04_08
 1.22. Set spent amount to 0 on Gas Supply AllowedRecipientsRegistry 0x49d1363016aA899bba09ae972a1BF200dDf8C55F
 1.23. Raise CSM (MODULE_ID = 3) stake share limit from 750 BP to 850 BP and priority exit threshold from 900 BP to 1020 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
 1.24. Remove Stakefish council daemon 0xd4EF84b638B334699bcf5AF4B0410B8CCD71943f from Deposit Security Module 0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD and keep quorum size as 4
-1.25. Add new Stakefish council daemon 0xPLACEHOLDER_NEW to Deposit Security Module 0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD and keep quorum size as 4
+1.25. Add new Stakefish council daemon 0x4B87F16B8d32cb5a859a4C48a88edB5adBe3498E to Deposit Security Module 0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD and keep quorum size as 4
 
 === NON-DG ITEMS ===
 2. Remove old Simple DVT SubmitValidatorsExitRequestHashes factory 0xB7668B5485d0f826B86a75b0115e088bB9ee03eE from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
@@ -377,13 +377,13 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 )
             ]
         ),
-        # 1.24. Remove Stakefish council daemon 0xPLACEHOLDER_OLD from Deposit Security Module 0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD and keep quorum size as 4
+        # 1.24. Remove Stakefish council daemon 0xd4EF84b638B334699bcf5AF4B0410B8CCD71943f from Deposit Security Module 0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD and keep quorum size as 4
         agent_forward(
             [
                 encode_remove_guardian(dsm=dsm, guardian_address=STAKEFISH_DSM_GUARDIAN_OLD, quorum_size=DSM_QUORUM_SIZE),
             ]
         ),
-        # 1.25. Add new Stakefish council daemon 0xPLACEHOLDER_NEW to Deposit Security Module 0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD and keep quorum size as 4
+        # 1.25. Add new Stakefish council daemon 0x4B87F16B8d32cb5a859a4C48a88edB5adBe3498E to Deposit Security Module 0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD and keep quorum size as 4
         agent_forward(
             [
                 encode_add_guardian(dsm=dsm, guardian_address=STAKEFISH_DSM_GUARDIAN_NEW, quorum_size=DSM_QUORUM_SIZE),
