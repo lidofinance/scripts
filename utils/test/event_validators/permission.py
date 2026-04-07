@@ -89,7 +89,7 @@ def validate_permission_grant_event(event: EventDict, p: Permission, emitted_by:
 
 
 def validate_permission_grantp_event(event: EventDict, p: Permission, params: List[Param], emitted_by: str = None) -> None:
-    _events_chain = ["LogScriptCall", "SetPermission", "SetPermissionParams"]
+    _events_chain = ["LogScriptCall", "SetPermission", "SetPermissionParams", "ScriptResult", "Executed"]
 
     validate_events_chain([e.name for e in event], _events_chain)
 

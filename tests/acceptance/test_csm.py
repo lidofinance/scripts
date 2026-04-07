@@ -180,13 +180,13 @@ class TestHashConsensus:
         assert chain_config["genesisTime"] == CHAIN_GENESIS_TIME
 
         frame_config = hash_consensus.getFrameConfig()
-        assert frame_config["initialEpoch"] == 326715
+        assert frame_config["initialEpoch"] == 434490
         assert frame_config["epochsPerFrame"] == CS_ORACLE_EPOCHS_PER_FRAME
-        assert frame_config["fastLaneLengthSlots"] == 1800
+        assert frame_config["fastLaneLengthSlots"] == 300
 
         assert hash_consensus.getQuorum() == ORACLE_QUORUM
 
-        assert hash_consensus.getInitialRefSlot() == 10454879
+        assert hash_consensus.getInitialRefSlot() == 13903679
 
         members = hash_consensus.getMembers()
         assert sorted(members["addresses"]) == sorted(ORACLE_COMMITTEE)
