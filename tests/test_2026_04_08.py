@@ -105,6 +105,12 @@ CHORUS_ONE_ORACLE_MEMBER_NEW = "0x8dB977C13CAA938BC58464bFD622DF0570564b78"
 STAKEFISH_ORACLE_MEMBER_OLD = "0x946D3b081ed19173dC83Cd974fC69e1e760B7d78"
 STAKEFISH_ORACLE_MEMBER_NEW = "0x042a9e5acCfa17e28300F1b5967f20891E973922"
 
+# Stakefish DSM council daemon rotation
+DEPOSIT_SECURITY_MODULE = "0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD"
+STAKEFISH_DSM_GUARDIAN_OLD = "0xd4EF84b638B334699bcf5AF4B0410B8CCD71943f"
+STAKEFISH_DSM_GUARDIAN_NEW = "0x4B87F16B8d32cb5a859a4C48a88edB5adBe3498E"
+DSM_QUORUM_SIZE = 4
+
 # Node operators
 A41_NO_ID = 32
 A41_NAME = "A41"
@@ -178,10 +184,10 @@ SDVT_PUBKEY = "0x80e7ad4457002894ddfcc41f6589c578c965f769cf971d3fefd8d8ed59a41cb
 EXPECTED_VOTE_ID = 199
 EXPECTED_DG_PROPOSAL_ID = 9
 EXPECTED_VOTE_EVENTS_COUNT = 11  # 1 DG submit + 5 factory removes + 5 factory adds
-EXPECTED_DG_EVENTS_FROM_AGENT = 23
-EXPECTED_DG_EVENTS_COUNT = 23
+EXPECTED_DG_EVENTS_FROM_AGENT = 25
+EXPECTED_DG_EVENTS_COUNT = 25
 IPFS_DESCRIPTION_HASH = "bafkreic2fhcjelgdwpiiy7vxm7kf4g3kuhmmbaerfyoxkns2x5jzovqvaa"
-DG_PROPOSAL_METADATA = "Deactivate A41, change name and reward address for Stakin, upgrade Lazy Oracle, Vault Hub and ZKSync Bridge, rotate addresses for Chorus One and Stakefish oracle set members, set Chorus One target validators limit, decrease Gas Supply ET limit and reset spent amount, raise CSM stake share limit and priority exit threshold"
+DG_PROPOSAL_METADATA = "Deactivate A41, change name and reward address for Stakin, upgrade Lazy Oracle, Vault Hub and ZKSync Bridge, rotate addresses for Chorus One and Stakefish oracle set members, set Chorus One target validators limit, decrease Gas Supply ET limit and reset spent amount, raise CSM stake share limit and priority exit threshold, rotate Stakefish council daemon in DSM"
 
 
 @pytest.fixture(scope="module")
@@ -489,6 +495,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     gas_supply_registry = interface.AllowedRecipientRegistry(GAS_SUPPLY_ALLOWED_RECIPIENTS_REGISTRY)
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     vebo = interface.ValidatorsExitBusOracle(VEBO)
+    dsm = interface.DepositSecurityModule(DEPOSIT_SECURITY_MODULE)
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -728,6 +735,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             assert csm_module_before["maxDepositsPerBlock"] == CSM_MAX_DEPOSITS_PER_BLOCK
             assert csm_module_before["minDepositBlockDistance"] == CSM_MIN_DEPOSIT_BLOCK_DISTANCE
 
+            # 1.24-1.25. Stakefish DSM guardian rotation before
+            assert dsm.isGuardian(STAKEFISH_DSM_GUARDIAN_OLD)
+            assert not dsm.isGuardian(STAKEFISH_DSM_GUARDIAN_NEW)
+            dsm_guardians_before = dsm.getGuardians()
+            dsm_quorum_before = dsm.getGuardianQuorum()
+
             ao_quorum_before = hash_consensus_for_ao.getQuorum()
             ao_members_before = len(hash_consensus_for_ao.getMembers()[0])
             csm_quorum_before = cs_hash_consensus.getQuorum()
@@ -936,6 +949,16 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=STAKING_ROUTER,
                 )
 
+                # 1.24. Remove Stakefish council daemon from DSM
+                assert "GuardianRemoved" in dg_events[23]
+                assert dg_events[23]["GuardianRemoved"]["guardian"].lower() == STAKEFISH_DSM_GUARDIAN_OLD.lower()
+                assert dg_events[23]["GuardianRemoved"]["_emitted_by"].lower() == DEPOSIT_SECURITY_MODULE.lower()
+
+                # 1.25. Add new Stakefish council daemon to DSM
+                assert "GuardianAdded" in dg_events[24]
+                assert dg_events[24]["GuardianAdded"]["guardian"].lower() == STAKEFISH_DSM_GUARDIAN_NEW.lower()
+                assert dg_events[24]["GuardianAdded"]["_emitted_by"].lower() == DEPOSIT_SECURITY_MODULE.lower()
+
         # =========================================================================
         # ==================== After DG proposal executed checks ==================
         # =========================================================================
@@ -1014,6 +1037,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert csm_module_after["treasuryFee"] == CSM_TREASURY_FEE_BP
         assert csm_module_after["maxDepositsPerBlock"] == CSM_MAX_DEPOSITS_PER_BLOCK
         assert csm_module_after["minDepositBlockDistance"] == CSM_MIN_DEPOSIT_BLOCK_DISTANCE
+
+        # 1.24-1.25. Stakefish DSM guardian rotation after
+        assert not dsm.isGuardian(STAKEFISH_DSM_GUARDIAN_OLD)
+        assert dsm.isGuardian(STAKEFISH_DSM_GUARDIAN_NEW)
+        assert len(dsm.getGuardians()) == len(dsm_guardians_before)
+        assert dsm.getGuardianQuorum() == dsm_quorum_before
+        assert dsm.getGuardianQuorum() == DSM_QUORUM_SIZE
 
         ao_quorum_after = hash_consensus_for_ao.getQuorum()
         ao_members_after = len(hash_consensus_for_ao.getMembers()[0])
