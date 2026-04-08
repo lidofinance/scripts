@@ -186,7 +186,7 @@ EXPECTED_DG_PROPOSAL_ID = 9
 EXPECTED_VOTE_EVENTS_COUNT = 11  # 1 DG submit + 5 factory removes + 5 factory adds
 EXPECTED_DG_EVENTS_FROM_AGENT = 25
 EXPECTED_DG_EVENTS_COUNT = 25
-IPFS_DESCRIPTION_HASH = "bafkreic2fhcjelgdwpiiy7vxm7kf4g3kuhmmbaerfyoxkns2x5jzovqvaa"
+IPFS_DESCRIPTION_HASH = "bafkreighlr7xyy7ptew2qxpyta4jyyaqh3ra63q3ge7cemrzoajvcr5ytq"
 DG_PROPOSAL_METADATA = "Deactivate A41, change name and reward address for Stakin, upgrade Lazy Oracle, Vault Hub and ZKSync Bridge, rotate addresses for Chorus One and Stakefish oracle set members, set Chorus One target validators limit, decrease Gas Supply ET limit and reset spent amount, raise CSM stake share limit and priority exit threshold, rotate DSC address for Stakefish"
 
 
