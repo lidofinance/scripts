@@ -377,7 +377,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 )
             ]
         ),
-        # 1.24. Remove Stakefish address 0xd4EF84b638B334699bcf5AF4B0410B8CCD71943f from Deposit Security Module 0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD and keep quorum size as 4
+        # 1.24. Remove old Stakefish address 0xd4EF84b638B334699bcf5AF4B0410B8CCD71943f from Deposit Security Module 0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD and keep quorum size as 4
         agent_forward(
             [
                 encode_remove_guardian(dsm=dsm, guardian_address=STAKEFISH_DSM_GUARDIAN_OLD, quorum_size=DSM_QUORUM_SIZE),
