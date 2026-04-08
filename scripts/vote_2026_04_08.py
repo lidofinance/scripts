@@ -25,6 +25,8 @@ Vote 2026_04_08
 1.21. Decrease limit from 1000 to 150 stETH per 12 months on Gas Supply AllowedRecipientsRegistry 0x49d1363016aA899bba09ae972a1BF200dDf8C55F
 1.22. Set spent amount to 0 on Gas Supply AllowedRecipientsRegistry 0x49d1363016aA899bba09ae972a1BF200dDf8C55F
 1.23. Raise CSM (MODULE_ID = 3) stake share limit from 750 BP to 850 BP and priority exit threshold from 900 BP to 1020 BP in Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+1.24. Remove old Stakefish address 0xd4EF84b638B334699bcf5AF4B0410B8CCD71943f from Deposit Security Module 0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD and keep quorum size as 4
+1.25. Add new Stakefish address 0x4B87F16B8d32cb5a859a4C48a88edB5adBe3498E to Deposit Security Module 0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD and keep quorum size as 4
 
 === NON-DG ITEMS ===
 2. Remove old Simple DVT SubmitValidatorsExitRequestHashes factory 0xB7668B5485d0f826B86a75b0115e088bB9ee03eE from Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
@@ -53,6 +55,7 @@ from utils.config import (
 from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.dual_governance import submit_proposals
 from utils.agent import agent_forward
+from utils.dsm import encode_remove_guardian, encode_add_guardian
 from utils.easy_track import add_evmscript_factory, remove_evmscript_factory, create_permissions
 from utils.node_operators import (
     deactivate_node_operator,
@@ -88,6 +91,12 @@ STAKEFISH_ORACLE_MEMBER_NEW = "0x042a9e5acCfa17e28300F1b5967f20891E973922"
 HASH_CONSENSUS_FOR_AO = "0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288"
 CS_HASH_CONSENSUS = "0x71093efF8D8599b5fA340D665Ad60fA7C80688e4"
 HASH_CONSENSUS_FOR_VEBO = "0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a"
+
+DEPOSIT_SECURITY_MODULE = "0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD"
+
+STAKEFISH_DSM_GUARDIAN_OLD = "0xd4EF84b638B334699bcf5AF4B0410B8CCD71943f"
+STAKEFISH_DSM_GUARDIAN_NEW = "0x4B87F16B8d32cb5a859a4C48a88edB5adBe3498E"
+DSM_QUORUM_SIZE = 4
 
 GAS_SUPPLY_ALLOWED_RECIPIENTS_REGISTRY = "0x49d1363016aA899bba09ae972a1BF200dDf8C55F"
 
@@ -146,14 +155,16 @@ IPFS_DESCRIPTION = """
 8. **Set Node Operator Chorus One soft target validators limit to 0**, [as requested on the forum](https://research.lido.fi/t/chorus-one-joins-bitwise/11250/3). Item 1.20.
 9. **Decrease Gas Supply Easy Track limit from 1000 to 150 stETH per year and reset spent amount for the 2026 period**, [as proposed on the forum](https://research.lido.fi/t/nominate-the-gas-supply-committee-as-a-supervisor-for-gas-expenditure/4724/14). Items 1.21, 1.22.
 10. **Raise Community Staking Module stake share limit to 8.5% and priority exit threshold to 10.2%**, [as per Snapshot decision](https://snapshot.org/#/s:lido-snapshot.eth/proposal/0xc3f92bcdf8926cfa7528ca6a979c0fdce1e4d0cfaaa72dd6410a76a2e1e55766). Details in the [forum post](https://research.lido.fi/t/community-staking-module/5917/201). Item 1.23.
-11. **Upgrade Curated and SDVT Staking Modules Easy Track factories for validator exit request hashes submission**, [as proposed on the forum](https://research.lido.fi/t/security-bulletin-batched-immunefi-reported-weakness-disclosure-march-2026-funds-not-at-risk/11342/3). Audit & deployment verification: [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Easy%20Track%20Security%20Audit%20Report%2003-26.pdf). Items 2-5.
-12. **Upgrade stVaults Easy Track factories to register groups and register & alter tiers in Operator Grid**, [as proposed on the forum](https://research.lido.fi/t/stvaults-committee-proposal/10608/15). Audit & deployment verification: [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Easy%20Track%20stVaults%20Security%20Audit%20Report%2003-26.pdf). Items 6-11.
+11. **Rotate Deposit Security Committee address for Stakefish**, [as requested on the forum](https://research.lido.fi/t/stakefish-is-updating-the-address-for-council-daemon/11394). Items 1.24, 1.25.
+12. **Upgrade Curated and SDVT Staking Modules Easy Track factories for validator exit request hashes submission**, [as proposed on the forum](https://research.lido.fi/t/security-bulletin-batched-immunefi-reported-weakness-disclosure-march-2026-funds-not-at-risk/11342/3). Audit & deployment verification: [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Easy%20Track%20Security%20Audit%20Report%2003-26.pdf). Items 2-5.
+13. **Upgrade stVaults Easy Track factories to register groups and register & alter tiers in Operator Grid**, [as proposed on the forum](https://research.lido.fi/t/stvaults-committee-proposal/10608/15). Audit & deployment verification: [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Easy%20Track%20stVaults%20Security%20Audit%20Report%2003-26.pdf). Items 6-11.
 """
 
 
 # ================================ Main ======================================
 def get_dg_items() -> List[Tuple[str, str]]:
     staking_router = interface.StakingRouter(STAKING_ROUTER)
+    dsm = interface.DepositSecurityModule(DEPOSIT_SECURITY_MODULE)
     no_registry = interface.NodeOperatorsRegistry(CURATED_MODULE)
     hash_consensus_for_accounting_oracle = interface.HashConsensus(HASH_CONSENSUS_FOR_AO)
     cs_hash_consensus = interface.CSHashConsensus(CS_HASH_CONSENSUS)
@@ -367,6 +378,18 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 )
             ]
         ),
+        # 1.24. Remove old Stakefish address 0xd4EF84b638B334699bcf5AF4B0410B8CCD71943f from Deposit Security Module 0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD and keep quorum size as 4
+        agent_forward(
+            [
+                encode_remove_guardian(dsm=dsm, guardian_address=STAKEFISH_DSM_GUARDIAN_OLD, quorum_size=DSM_QUORUM_SIZE),
+            ]
+        ),
+        # 1.25. Add new Stakefish address 0x4B87F16B8d32cb5a859a4C48a88edB5adBe3498E to Deposit Security Module 0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD and keep quorum size as 4
+        agent_forward(
+            [
+                encode_add_guardian(dsm=dsm, guardian_address=STAKEFISH_DSM_GUARDIAN_NEW, quorum_size=DSM_QUORUM_SIZE),
+            ]
+        ),
     ]
 
 
@@ -380,14 +403,14 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         [
             (
                 dg_items,
-                "Deactivate A41, change name and reward address for Stakin, upgrade Lazy Oracle, Vault Hub and ZKSync Bridge, rotate addresses for Chorus One and Stakefish oracle set members, set Chorus One target validators limit, decrease Gas Supply ET limit and reset spent amount, raise CSM stake share limit and priority exit threshold",
+                "Deactivate A41, change name and reward address for Stakin, upgrade Lazy Oracle, Vault Hub and ZKSync Bridge, rotate addresses for Chorus One and Stakefish oracle set members, set Chorus One target validators limit, decrease Gas Supply ET limit and reset spent amount, raise CSM stake share limit and priority exit threshold, rotate DSC address for Stakefish",
             )
         ]
     )
 
     vote_desc_items, call_script_items = zip(
         (
-            "1. Submit a Dual Governance proposal to deactivate A41, change name and reward address for Stakin, upgrade Lazy Oracle, Vault Hub and ZKSync Bridge, rotate addresses for Chorus One and Stakefish oracle set members, set Chorus One target validators limit, decrease Gas Supply ET limit and reset spent amount, raise CSM stake share limit and priority exit threshold",
+            "1. Submit a Dual Governance proposal to deactivate A41, change name and reward address for Stakin, upgrade Lazy Oracle, Vault Hub and ZKSync Bridge, rotate addresses for Chorus One and Stakefish oracle set members, set Chorus One target validators limit, decrease Gas Supply ET limit and reset spent amount, raise CSM stake share limit and priority exit threshold, rotate DSC address for Stakefish",
             dg_call_script[0],
         ),
         (
