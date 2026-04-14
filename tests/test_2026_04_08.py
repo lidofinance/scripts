@@ -46,7 +46,7 @@ from tests.regression.test_easy_track_factories import ExitRequestInput, encode_
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.vote_2026_04_08 import (
+from archive.scripts.vote_2026_04_08 import (
     start_vote,
     get_vote_items,
     get_dg_items,
