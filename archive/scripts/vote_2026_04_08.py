@@ -39,6 +39,8 @@ Vote 2026_04_08
 9. Add new RegisterGroupsInOperatorGrid factory 0x17305dB55c908e84C58BbDCa57258A7D1f7eEa7c to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: operatorGrid.registerGroup, operatorGrid.registerTiers 0xc69685e89cefc327b43b7234ac646451b27c544de37a7c0bc69685e89cefc327b43b7234ac646451b27c544d552b91da)
 10. Add new RegisterTiersInOperatorGrid factory 0x6b535F441F95046562406F4E2518D9AD7Db2dc0D to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: operatorGrid.registerTiers 0xc69685e89cefc327b43b7234ac646451b27c544d552b91da)
 11. Add new AlterTiersInOperatorGrid factory 0x37d9B09EDA477a84E3913fCB4d032EFb0BF9B62E to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: operatorGrid.alterTiers 0xc69685e89cefc327b43b7234ac646451b27c544d54544bcb)
+
+Vote passed & executed on Apr-13-2026 04:40:47 PM UTC, block #24872110.
 """
 
 from typing import Dict, List, Tuple
@@ -381,7 +383,9 @@ def get_dg_items() -> List[Tuple[str, str]]:
         # 1.24. Remove old Stakefish address 0xd4EF84b638B334699bcf5AF4B0410B8CCD71943f from Deposit Security Module 0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD and keep quorum size as 4
         agent_forward(
             [
-                encode_remove_guardian(dsm=dsm, guardian_address=STAKEFISH_DSM_GUARDIAN_OLD, quorum_size=DSM_QUORUM_SIZE),
+                encode_remove_guardian(
+                    dsm=dsm, guardian_address=STAKEFISH_DSM_GUARDIAN_OLD, quorum_size=DSM_QUORUM_SIZE
+                ),
             ]
         ),
         # 1.25. Add new Stakefish address 0x4B87F16B8d32cb5a859a4C48a88edB5adBe3498E to Deposit Security Module 0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD and keep quorum size as 4
