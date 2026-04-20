@@ -17,6 +17,8 @@ jobs:
     name: Core repo tests in docker
     runs-on: [ubuntu-latest]
     timeout-minutes: 120
+    env:
+      NODE_OPTIONS: --max_old_space_size=7200
 
     services:
       tests-runner:
@@ -38,7 +40,7 @@ jobs:
           CORE_BRANCH: develop
 
       - name: Run node
-        run: docker exec -e ETH_RPC_URL --detach tests-runner bash -c 'NODE_PORT=8545 make node'
+        run: docker exec -e ETH_RPC_URL -e NODE_OPTIONS --detach tests-runner bash -c 'NODE_PORT=8545 make node'
         env:
           ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
 
