@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import List, Dict
 
 import eth_abi
-from brownie import interface, accounts, Wei
+from brownie import interface, accounts, Wei, web3
 from brownie.exceptions import VirtualMachineError
 from eth_typing import HexStr
 from eth_abi.abi import encode
@@ -11,12 +11,14 @@ from eth_abi.abi import encode
 from configs.config_mainnet import *
 from utils.config import contracts, EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER
 from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
+from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
 from utils.test.simple_dvt_helpers import (
     fill_simple_dvt_ops_keys,
     get_managers_address,
     get_operator_address,
     get_operator_name,
     simple_dvt_add_node_operators,
+    simple_dvt_add_keys,
 )
 
 NODE_OPERATORS = [
@@ -585,3 +587,74 @@ def test_sdvt_exit_hashes(
 
     pubkey_hex = "0x" + pubkey_bytes.hex()
     assert pubkey == pubkey_hex
+
+
+def test_curated_reverts_on_unused_key(stranger):
+    CURATED_MODULE_ID = 1
+    no_id = 1
+
+    # Agent can self-grant MANAGE_SIGNING_KEYS via ACL and add keys
+    agent = accounts.at(contracts.agent.address, force=True)
+    manage_signing_keys_role = web3.keccak(text="MANAGE_SIGNING_KEYS")
+    if not contracts.acl.hasPermission(contracts.agent, contracts.node_operators_registry, manage_signing_keys_role):
+        contracts.acl.grantPermission(
+            contracts.agent, contracts.node_operators_registry, manage_signing_keys_role, {"from": agent}
+        )
+
+    total_keys_before = contracts.node_operators_registry.getTotalSigningKeyCount(no_id)
+    contracts.node_operators_registry.addSigningKeys(
+        no_id, 1, random_pubkeys_batch(1), random_signatures_batch(1), {"from": agent}
+    )
+
+    pubkey, _, is_used = contracts.node_operators_registry.getSigningKey(no_id, total_keys_before)
+    assert not is_used, "Expected newly added key to be unused"
+
+    node_operator = contracts.node_operators_registry.getNodeOperator(no_id, False)
+    caller = node_operator["rewardAddress"]
+
+    exit_request = ExitRequestInput(
+        moduleId=CURATED_MODULE_ID,
+        nodeOpId=no_id,
+        valIndex=12345,
+        valPubkey=str(pubkey),
+        valPubKeyIndex=total_keys_before,
+    )
+    easy_track_exit_data = encode_exit_requests_easy_track([exit_request])
+    calldata = "0x" + easy_track_exit_data.hex()
+
+    factory = interface.CuratedSubmitExitRequestHashes(EASYTRACK_CURATED_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY)
+
+    try:
+        contracts.easy_track.createMotion(factory, calldata, {"from": caller})
+        assert False, "Expected UNUSED_PUBKEY revert"
+    except VirtualMachineError as error:
+        assert "UNUSED_PUBKEY" in error.message
+
+
+def test_sdvt_reverts_on_unused_key(stranger):
+    SDVT_MODULE_ID = 2
+    no_id = 1
+
+    total_keys_before = contracts.simple_dvt.getTotalSigningKeyCount(no_id)
+    simple_dvt_add_keys(contracts.simple_dvt, no_id, 1)
+
+    pubkey, _, is_used = contracts.simple_dvt.getSigningKey(no_id, total_keys_before)
+    assert not is_used, "Expected newly added key to be unused"
+
+    exit_request = ExitRequestInput(
+        moduleId=SDVT_MODULE_ID,
+        nodeOpId=no_id,
+        valIndex=12345,
+        valPubkey=str(pubkey),
+        valPubKeyIndex=total_keys_before,
+    )
+    easy_track_exit_data = encode_exit_requests_easy_track([exit_request])
+    calldata = "0x" + easy_track_exit_data.hex()
+
+    factory = interface.SDVTSubmitExitRequestHashes(EASYTRACK_SIMPLE_DVT_SUBMIT_VALIDATOR_EXIT_REQUEST_HASHES_FACTORY)
+
+    try:
+        contracts.easy_track.createMotion(factory, calldata, {"from": EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER})
+        assert False, "Expected UNUSED_PUBKEY revert"
+    except VirtualMachineError as error:
+        assert "UNUSED_PUBKEY" in error.message

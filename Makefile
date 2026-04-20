@@ -102,10 +102,10 @@ slots:
 	| sed 's/ERC20/any/g' \
 	> slots.ts
 
-	@echo "Input https://github.com/lidofinance/protocol-onchain-mon-bots/blob/main/bots/ethereum-steth-v2/src/services/storage-watcher/constants.ts file content (end with Enter and Ctrl+D):"
+	@echo "Input https://github.com/lidofinance/protocol-onchain-mon-bots/blob/main/bots/ethereum-steth-v2/src/services/protocol/storage-watcher/constants.ts file content (end with Enter and Ctrl+D):"
 	@cat \
-	| grep -v "import { StorageSlot } from '../../entity/storage_slot'" \
-	| sed "s|import { Address } from '../../utils/constants.mainnet'|import { Address } from './slots2.ts'|g" \
+	| grep -v "import { StorageSlot } from '../../../entity/storage_slot'" \
+	| sed "s|import { Address } from '../../../utils/constants.mainnet'|import { Address } from './slots2.ts'|g" \
 	| sed 's/StorageSlot/any/g' \
 	> slots.ts
 	@cat check_storage_slots.ts >> slots.ts

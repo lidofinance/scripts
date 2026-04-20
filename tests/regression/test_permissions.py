@@ -11,8 +11,9 @@ from brownie import interface, web3
 from brownie.network.event import _decode_logs
 from brownie.network.state import TxHistory
 
-from configs.config_mainnet import CSM_COMMITTEE_MS
+from configs.config_mainnet import CSM_COMMITTEE_MS, CURATED_MANAGE_SIGNING_KEYS_HOLDERS
 from utils.test.helpers import ZERO_BYTES32
+from utils.permission_parameters import ArgumentValue, Op, Param
 from brownie.exceptions import EventLookupError
 from utils.config import (
     contracts,
@@ -400,7 +401,7 @@ def protocol_permissions():
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_MEMBERS_AND_QUORUM_ROLE": [contracts.agent],
                 "DISABLE_CONSENSUS_ROLE": [],
-                "MANAGE_FRAME_CONFIG_ROLE": [TWO_PHASE_FRAME_CONFIG_UPDATE],
+                "MANAGE_FRAME_CONFIG_ROLE": [],
                 "MANAGE_FAST_LANE_CONFIG_ROLE": [],
                 "MANAGE_REPORT_PROCESSOR_ROLE": [],
             },
@@ -626,25 +627,15 @@ def test_protocol_permissions(protocol_permissions):
                     else []
                 )
 
-                # temp ugly hack to exclude parametrized role members (OP managers) for SIMPLE_DVT
+                if contract_address == NODE_OPERATORS_REGISTRY and role == "MANAGE_SIGNING_KEYS":
+                    assert_curated_manage_signing_keys_permission(permissions_config, current_holders)
+                    continue
+
                 if contract_address == SIMPLE_DVT and role == "MANAGE_SIGNING_KEYS":
-                    current_holders = [h for h in current_holders if h == EASYTRACK_EVMSCRIPT_EXECUTOR]
+                    assert_sdvt_manage_signing_keys_permission(permissions_config, holders, current_holders)
+                    continue
 
-                assert len(current_holders) == len(
-                    holders
-                ), "number of {} role holders in contract {} mismatched expected {} , actual {} ".format(
-                    role, permissions_config["contract_name"], holders, current_holders
-                )
-
-                for holder in holders:
-                    assert holder in current_holders, "Entity {} has no role {} at {}".format(
-                        holder, role, permissions_config["contract_name"]
-                    )
-
-                for holder in current_holders:
-                    assert holder in holders, "Unexpected entity {} has role {} at {}".format(
-                        holder, role, permissions_config["contract_name"]
-                    )
+                assert_expected_role_holders(role, holders, current_holders, permissions_config["contract_name"])
 
         elif permissions_config["type"] == "CustomApp":
             if "proxy_owner" in permissions_config:
@@ -693,6 +684,64 @@ def has_permissions(app, role, entity):
     return (
         contracts.acl.hasPermission(entity, app, role) or contracts.acl.getPermissionParamsLength(entity, app, role) > 0
     )
+
+
+def assert_expected_role_holders(role, expected_holders, current_holders, contract_name):
+    assert len(current_holders) == len(
+        expected_holders
+    ), "number of {} role holders in contract {} mismatched expected {} , actual {} ".format(
+        role, contract_name, expected_holders, current_holders
+    )
+
+    for holder in expected_holders:
+        assert holder in current_holders, "Entity {} has no role {} at {}".format(holder, role, contract_name)
+
+    for holder in current_holders:
+        assert holder in expected_holders, "Unexpected entity {} has role {} at {}".format(holder, role, contract_name)
+
+
+def get_acl_permission_params(entity, app, role):
+    params_length = contracts.acl.getPermissionParamsLength(entity, app, role)
+    return [
+        Param(param_id, Op(op), ArgumentValue(value))
+        for index in range(params_length)
+        for param_id, op, value in [contracts.acl.getPermissionParam(entity, app, role, index)]
+    ]
+
+
+def assert_curated_manage_signing_keys_permission(permissions_config, current_holders):
+    role = "MANAGE_SIGNING_KEYS"
+    role_hash = web3.keccak(text=role).hex()
+    contract_address = permissions_config["contract"].address
+    contract_name = permissions_config["contract_name"]
+
+    expected_holders = list(CURATED_MANAGE_SIGNING_KEYS_HOLDERS.values())
+    assert_expected_role_holders(role, expected_holders, current_holders, contract_name)
+
+    for holder in current_holders:
+        assert not contracts.acl.hasPermission(holder, contract_address, role_hash), (
+            "Unexpected unparameterized {} holder {} at {}".format(role, holder, contract_name)
+        )
+
+    for node_operator_id, holder in CURATED_MANAGE_SIGNING_KEYS_HOLDERS.items():
+        expected_params = [Param(0, Op.EQ, ArgumentValue(node_operator_id))]
+        actual_params = get_acl_permission_params(holder, contract_address, role_hash)
+        assert actual_params == expected_params, (
+            "Unexpected params for {} holder {} at {}. expected {}, actual {}".format(
+                role, holder, contract_name, expected_params, actual_params
+            )
+        )
+
+
+def assert_sdvt_manage_signing_keys_permission(permissions_config, regular_holders, current_holders):
+    """Validate regular holders, skip per-operator parametrized holders managed via EasyTrack."""
+    role = "MANAGE_SIGNING_KEYS"
+    contract_name = permissions_config["contract_name"]
+
+    normalized_regular_holders = {holder.lower() for holder in regular_holders}
+    current_regular_holders = [holder for holder in current_holders if holder.lower() in normalized_regular_holders]
+
+    assert_expected_role_holders(role, regular_holders, current_regular_holders, contract_name)
 
 
 def collect_permissions_from_events(permission_events):
