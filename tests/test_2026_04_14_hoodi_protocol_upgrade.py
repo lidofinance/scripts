@@ -2,16 +2,12 @@ from typing import NamedTuple, Optional
 
 import pytest
 
-from brownie import chain, convert, interface
+from brownie import chain, convert, interface, web3
 from brownie.network.event import EventDict
 from brownie.network.transaction import TransactionReceipt
 
 from utils.config import network_name
 from utils.hoodi_upgrade import (
-    get_consolidation_migrator_address,
-    get_easy_track_new_factories,
-    get_meta_registry_address,
-    get_state_address,
     get_upgrade_vote_script_address,
 )
 from utils.test.tx_tracing_helpers import (
@@ -50,96 +46,37 @@ from scripts.upgrade_2026_04_14_hoodi_protocol_upgrade import (
 # ============================================================================
 # ============================== Constants ===================================
 # ============================================================================
-VOTING = "0x49B3512c44891bef83F8967d075121Bd1b07a01B"
-AGENT = "0x0534aA41907c9631fae990960bCC72d75fA7cfeD"
 EMERGENCY_PROTECTED_TIMELOCK = "0x0A5E22782C0Bd4AddF10D771f0bF0406B038282d"
-DUAL_GOVERNANCE = "0x9CAaCCc62c66d817CC59c44780D1b722359795bF"
-DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x0eCc17597D292271836691358B22340b78F3035B"
-ACL = "0x78780e70Eae33e2935814a327f7dB6c01136cc62"
-ARAGON_KERNEL = "0xA48DF029Fd2e5FCECB3886c5c2F60e3625A1E87d"
-LIDO = "0x3508A952176b3c15387C97BE809eaffB1982176a"
-LIDO_LOCATOR = "0xe2EF9536DAAAEBFf5b1c130957AB3E80056b06D8"
-STAKING_ROUTER = "0xCc820558B39ee15C7C45B59390B503b83fb499A8"
-ACCOUNTING_ORACLE = "0xcb883B1bD0a41512b42D2dB267F2A2cd919FB216"
-VALIDATORS_EXIT_BUS_ORACLE = "0x8664d394C2B3278F26A1B44B967aEf99707eeAB2"
-ACCOUNTING = "0x9b5b78D1C9A3238bF24662067e34c57c83E8c354"
-WITHDRAWAL_VAULT = "0x4473dCDDbf77679A643BdB654dbd86D67F8d32f2"
-TRIGGERABLE_WITHDRAWALS_GATEWAY = "0x6679090D92b08a2a686eF8614feECD8cDFE209db"
-VALIDATOR_EXIT_DELAY_VERIFIER = "0xa5F5A9360275390fF9728262a29384399f38d2f0"
-EASYTRACK_EVMSCRIPT_EXECUTOR = "0x79a20FD0FA36453B2F45eAbab19bfef43575Ba9E"
-LIDO_IMPL = "0x6147270470A9Ee5b55c33EA71e32000E5d6D8E6B"
-LIDO_APP_ID = "0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320"
-CIRCUIT_BREAKER = "0x44a5789dFeDa59cD176Ab5709ec2F4829dE4d555"
-CONSOLIDATION_GATEWAY = "0xce93710b849e0dC202AaC513837e05bEA9D7DdFD"
-CURATED_MODULE_COMMITTEE = "0x84DffcfB232594975C608DE92544Ff239a24c9E9"
-CSM = "0x79CEf36D84743222f37765204Bec41E92a93E59d"
-CS_PARAMETERS_REGISTRY = "0xA4aD5236963f9Fe4229864712269D8d79B65C5Ad"
-CS_FEE_ORACLE = "0xe7314f561B2e72f9543F1004e741bab6Fc51028B"
-CS_VETTED_GATE = "0x10a254E724fe2b7f305F76f3F116a3969c53845f"
-CS_ACCOUNTING = "0xA54b90BA34C5f326BC1485054080994e38FB4C60"
-CS_FEE_DISTRIBUTOR = "0xaCd9820b0A2229a82dc1A0770307ce5522FF3582"
-CS_EXIT_PENALTIES = "0xD259b31083Be841E5C85b2D481Cfc17C14276800"
-CS_VALIDATOR_STRIKES = "0x8fBA385C3c334D251eE413e79d4D3890db98693c"
-VERIFIER_V3 = "0xC96406b0eADdAC5708aFCa04DcCA67BAdC9642Fd"
-OLD_VERIFIER = "0x1773b2Ff99A030F6000554Cb8A5Ec93145650cbA"
-OLD_PERMISSIONLESS_GATE = "0x5553077102322689876A6AdFd48D75014c28acfb"
-NEW_PERMISSIONLESS_GATE = "0xd7bD8D2A9888D1414c770B35ACF55890B15de26a"
-OLD_DEPOSIT_SECURITY_MODULE = "0x2F0303F20E0795E6CCd17BD5efE791A586f28E03"
-NEW_DEPOSIT_SECURITY_MODULE = "0x1a629bB7C0563650e46406Eb6764A2ba207a0eFE"
 HOODI_LEGACY_STAKING_MODULE_MANAGER = "0xE28f573b732632fdE03BD5507A7d475383e8512E"
-ICS_MANAGER = "0x4AF43Ee34a6fcD1fEcA1e1F832124C763561dA53"
-CSM_GENERAL_DELAYED_PENALTY_REPORTER = ICS_MANAGER
-CSM_PENALTIES_MANAGER = ICS_MANAGER
-BURNER = "0xb2c99cd38a2636a6281a849C8de938B3eF4A7C3D"
-OLD_CSM_EJECTOR = "0x777bd76326E4aDcD353b03AD45b33BAF41048476"
-CSM_EJECTOR = "0xCAe028378d69D54dc8bF809e6C44CF751F997b80"
-CURATED_MODULE = "0x87EB69Ae51317405FD285efD2326a4a11f6173b9"
-CURATED_ACCOUNTING = "0x7f7356D29aCd915F1934220956c3305808ceB235"
-CURATED_EJECTOR = "0xfDbde2B3554B69C84e0f8d7daB68D390Ff0f4394"
-CURATED_HASH_CONSENSUS = "0x920883908A78c1554f682006a8aB32E62Be09F33"
-LIDO_LOCATOR_IMPL = "0x9b110E022a13583679536B303d0C22467d1b567A"
-STAKING_ROUTER_IMPL = "0x44d0b2B95d2C2bDF73FE4f5cD7E3A930494E5B1f"
-ACCOUNTING_ORACLE_IMPL = "0x41bF10F28A1312f2241f86A2537A04b08e343C0a"
-VALIDATORS_EXIT_BUS_ORACLE_IMPL = "0x86aeA211B30174b3ee5d294ECeaDbD7f1C575eF3"
-ACCOUNTING_IMPL = "0xDB47544d5813f15116bf95c1cF2ff4dEdb2226fD"
-WITHDRAWAL_VAULT_IMPL = "0xB97e67CC20bd2970E30341c0ECc7497d8A5b7342"
-CSM_IMPL = "0x161b1DAa658fD0D78a4603860edd8Ed06f98F4cA"
-CS_PARAMETERS_REGISTRY_IMPL = "0x58376D8B192813E85532b25685D948EB49c2A8B5"
-CS_FEE_ORACLE_IMPL = "0x27d1Ff0353AF6b7480CBc902169d0F89b49334B5"
-CS_VETTED_GATE_IMPL = "0x3b834c6d043F4CE5C61d84723bA737D405B2e276"
-CS_ACCOUNTING_IMPL = "0x3a18675fFB2C37A4296dD794A7Ed94644225F881"
-CS_FEE_DISTRIBUTOR_IMPL = "0x74c5be19CcD1a264899FbCf8dB1a64C1e3fb73Ac"
-CS_EXIT_PENALTIES_IMPL = "0xf38A3DA25B417D83182EEDD30d00557d78c35C96"
-CS_VALIDATOR_STRIKES_IMPL = "0x47F96DCD5cf3e94492CD050c00C9F6e33b3ca677"
 DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000"
-APP_MANAGER_ROLE = "0xb6d92708f3d4817afc106147d969e229ced5c46e65e0a5002a0d391287762bd0"
-BUFFER_RESERVE_MANAGER_ROLE = "0x33969636f1fbf3d7d062d4de4a08e7bd3c46606ec28b3a4398d2665be559b921"
-STAKING_MODULE_MANAGE_ROLE = "0x3105bcbf19d4417b73ae0e58d508a65ecf75665e46c2622d8521732de6080c48"
-STAKING_MODULE_UNVETTING_ROLE = "0x240525496a9dc32284b17ce03b43e539e4bd81414634ee54395030d793463b57"
-STAKING_MODULE_SHARE_MANAGE_ROLE = "0x43bf0e13900cfaa1b03ed5681dc143266597e29a1d6f9cbd84114f0ac21cd208"
-REPORT_EXITED_VALIDATORS_ROLE = "0xc23292b191d95d2a7dd94fc6436eb44338fda9e1307d9394fd27c28157c1b33c"
-REPORT_VALIDATOR_EXITING_STATUS_ROLE = "0xbe1bd143a0dde8a867d58aab054bfdb25250951665c4570e39abc3b3de3c2d6c"
-REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE = "0x0766e72e5c008b3df8129fb356d9176eef8544f6241e078b7d61aff604f8812b"
-REPORT_REWARDS_MINTED_ROLE = "0x779e5c23cb7a5bcb9bfe1e9a5165a00057f12bcdfd13e374540fdf1a1cd91137"
-TW_EXIT_LIMIT_MANAGER_ROLE = "0x03c30da9b9e4d4789ac88a294d39a63058ca4a498804c2aa823e381df59d0cf4"
-REPORT_GENERAL_DELAYED_PENALTY_ROLE = "0xa2c92d51d5647473735e9dfd5e2edf65bcf2fc2c139c95cbed53c19dc227c0b5"
-SETTLE_GENERAL_DELAYED_PENALTY_ROLE = "0xe4c6f42648e5067520394b287613558d8b8a48bc7a320523da96c04d46253bda"
-REPORT_EL_REWARDS_STEALING_PENALTY_ROLE = "0x59911a6aa08a72fe3824aec4500dc42335c6d0702b6d5c5c72ceb265a0de9302"
-SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE = "0xe85fdec10fe0f93d0792364051df7c3d73e37c17b3a954bffe593960e3cd3012"
-VERIFIER_ROLE = "0x0ce23c3e399818cfee81a7ab0880f714e53d7672b08df0fa62f2843416e1ea09"
-REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE = "0xb169cb0459e6d91326174ff566a2fcc3c7bb31ef3d4d83bec1d5679c611ab094"
-REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE = "0x2dba60a7b2c6bc437f1868d48dc8e53a95d71e78cef88de0aff6d952ecff8daa"
-CREATE_NODE_OPERATOR_ROLE = "0xc72a21b38830f4d6418a239e17db78b945cc7cfee674bac97fd596eaf0438478"
-RESUME_ROLE = "0x2fc10cc8ae19568712f7a176fb4978616a610650813c9d05326c34abb62749c7"
-START_REFERRAL_SEASON_ROLE = "0xc0bd4bb446c4ce6fd2289aa78c8ea233de3ad2b870bc787b2ba154e19c271f12"
-END_REFERRAL_SEASON_ROLE = "0x4a1304957825c6a76938ccf907b92b9b872c8348083e23dae57e7e6111105d0c"
-MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE = "0x00b6097bf7ad894f88f786cd383df3190b971af96510047737d0cb2e9bd25558"
-REQUEST_BURN_SHARES_ROLE = "0x4be29e0e4eb91f98f709d98803cba271592782e293b84a625e025cbb40197ba8"
-REQUEST_BURN_MY_STETH_ROLE = "0x28186f938b759084eea36948ef1cd8b40ec8790a98d5f1a09b70879fe054e5cc"
-ADD_FULL_WITHDRAWAL_REQUEST_ROLE = "0x15fac8ba7fe8dd5344b88c1915452ce66976f270d1cd793c3b0ab579cecd33c0"
-EXIT_BALANCE_LIMIT_SET_TOPIC = "0x28a59cb43d86267095565f85c40c9110eb77192a738ef87891ba3696c423a531"
-CIRCUIT_BREAKER_BLOCKER_ADDED_TOPIC = "0xd92c3c28ed17463268f864776463c4c2154f89b18156d3edf77c0e37d0476913"
-CIRCUIT_BREAKER_COMMITTEE_ACTIVATED_TOPIC = "0x4ea9e94baeeb3668b47d8d9b4cc8f5a1784d783dd263d7d76f8c10d6a10aed44"
+APP_MANAGER_ROLE = web3.keccak(text="APP_MANAGER_ROLE").hex()
+BUFFER_RESERVE_MANAGER_ROLE = web3.keccak(text="BUFFER_RESERVE_MANAGER_ROLE").hex()
+STAKING_MODULE_MANAGE_ROLE = web3.keccak(text="STAKING_MODULE_MANAGE_ROLE").hex()
+STAKING_MODULE_UNVETTING_ROLE = web3.keccak(text="STAKING_MODULE_UNVETTING_ROLE").hex()
+STAKING_MODULE_SHARE_MANAGE_ROLE = web3.keccak(text="STAKING_MODULE_SHARE_MANAGE_ROLE").hex()
+REPORT_EXITED_VALIDATORS_ROLE = web3.keccak(text="REPORT_EXITED_VALIDATORS_ROLE").hex()
+REPORT_VALIDATOR_EXITING_STATUS_ROLE = web3.keccak(text="REPORT_VALIDATOR_EXITING_STATUS_ROLE").hex()
+REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE = web3.keccak(text="REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE").hex()
+REPORT_REWARDS_MINTED_ROLE = web3.keccak(text="REPORT_REWARDS_MINTED_ROLE").hex()
+TW_EXIT_LIMIT_MANAGER_ROLE = web3.keccak(text="TW_EXIT_LIMIT_MANAGER_ROLE").hex()
+REPORT_GENERAL_DELAYED_PENALTY_ROLE = web3.keccak(text="REPORT_GENERAL_DELAYED_PENALTY_ROLE").hex()
+SETTLE_GENERAL_DELAYED_PENALTY_ROLE = web3.keccak(text="SETTLE_GENERAL_DELAYED_PENALTY_ROLE").hex()
+REPORT_EL_REWARDS_STEALING_PENALTY_ROLE = web3.keccak(text="REPORT_EL_REWARDS_STEALING_PENALTY_ROLE").hex()
+SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE = web3.keccak(text="SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE").hex()
+VERIFIER_ROLE = web3.keccak(text="VERIFIER_ROLE").hex()
+REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE = web3.keccak(text="REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE").hex()
+REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE = web3.keccak(text="REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE").hex()
+CREATE_NODE_OPERATOR_ROLE = web3.keccak(text="CREATE_NODE_OPERATOR_ROLE").hex()
+RESUME_ROLE = web3.keccak(text="RESUME_ROLE").hex()
+START_REFERRAL_SEASON_ROLE = web3.keccak(text="START_REFERRAL_SEASON_ROLE").hex()
+END_REFERRAL_SEASON_ROLE = web3.keccak(text="END_REFERRAL_SEASON_ROLE").hex()
+MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE = web3.keccak(text="MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE").hex()
+REQUEST_BURN_SHARES_ROLE = web3.keccak(text="REQUEST_BURN_SHARES_ROLE").hex()
+REQUEST_BURN_MY_STETH_ROLE = web3.keccak(text="REQUEST_BURN_MY_STETH_ROLE").hex()
+ADD_FULL_WITHDRAWAL_REQUEST_ROLE = web3.keccak(text="ADD_FULL_WITHDRAWAL_REQUEST_ROLE").hex()
+EXIT_BALANCE_LIMIT_SET_TOPIC = web3.keccak(text="ExitBalanceLimitSet(uint256,uint256,uint256)").hex()
+CIRCUIT_BREAKER_PAUSER_SET_TOPIC = web3.keccak(text="PauserSet(address,address,address)").hex()
+CIRCUIT_BREAKER_HEARTBEAT_UPDATED_TOPIC = web3.keccak(text="HeartbeatUpdated(address,uint256)").hex()
 AO_CONTRACT_VERSION = 5
 AO_CONSENSUS_VERSION = 6
 AO_PREV_CONSENSUS_VERSION = 5
@@ -156,13 +93,6 @@ TW_MAX_EXIT_REQUESTS = 250
 TW_EXITS_PER_FRAME = 1
 TW_FRAME_DURATION_IN_SEC = 240
 CURATED_MODULE_ID = 5
-CURATED_MODULE_NAME = "curated-onchain-v2"
-CURATED_STAKE_SHARE_LIMIT = 2000
-CURATED_PRIORITY_EXIT_SHARE_THRESHOLD = 2500
-CURATED_STAKING_MODULE_FEE = 800
-CURATED_TREASURY_FEE = 200
-CURATED_MAX_DEPOSITS_PER_BLOCK = 30
-CURATED_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 CURATED_INITIAL_EPOCH = 47480
 CURATED_EPOCHS_PER_FRAME = 1575
 # TODO: restore Easy Track checks when full ET flow is enabled again.
@@ -197,19 +127,6 @@ class StakingModuleItem(NamedTuple):
     priority_exit_share_threshold: int
     max_deposits_per_block: int
     min_deposit_block_distance: int
-
-
-CURATED_MODULE_V2 = StakingModuleItem(
-    id=CURATED_MODULE_ID,
-    staking_module_address=CURATED_MODULE,
-    name=CURATED_MODULE_NAME,
-    staking_module_fee=CURATED_STAKING_MODULE_FEE,
-    stake_share_limit=CURATED_STAKE_SHARE_LIMIT,
-    treasury_fee=CURATED_TREASURY_FEE,
-    priority_exit_share_threshold=CURATED_PRIORITY_EXIT_SHARE_THRESHOLD,
-    max_deposits_per_block=CURATED_MAX_DEPOSITS_PER_BLOCK,
-    min_deposit_block_distance=CURATED_MIN_DEPOSIT_BLOCK_DISTANCE,
-)
 
 
 def _is_placeholder_address(value: str) -> bool:
@@ -271,12 +188,16 @@ def _normalize_hex_data(data_hex) -> str:
     return normalized.replace("0x", "")
 
 
-def _group_raw_dg_events_from_receipt(receipt: TransactionReceipt) -> list[list[dict]]:
+def _group_raw_dg_events_from_receipt(
+    receipt: TransactionReceipt,
+    timelock: str,
+    admin_executor: str,
+) -> list[list[dict]]:
     events = tx_events_from_receipt(receipt)
 
     assert len(events) >= 1, "Unexpected raw DG events count"
     assert (
-        convert.to_address(events[-1]["address"]) == convert.to_address(EMERGENCY_PROTECTED_TIMELOCK)
+        convert.to_address(events[-1]["address"]) == convert.to_address(timelock)
         and events[-1]["name"] == "ProposalExecuted"
     ), "Unexpected raw DG service event"
 
@@ -287,7 +208,7 @@ def _group_raw_dg_events_from_receipt(receipt: TransactionReceipt) -> list[list[
         current_group.append(event)
 
         is_end_of_group = event["name"] == "Executed" and convert.to_address(event["address"]) == convert.to_address(
-            DUAL_GOVERNANCE_ADMIN_EXECUTOR
+            admin_executor
         )
         if is_end_of_group:
             groups.append(current_group)
@@ -355,6 +276,7 @@ def validate_role_grant_event(
     event: EventDict,
     role_hash: str,
     account: str,
+    sender: str,
     emitted_by: Optional[str] = None,
 ) -> None:
     validate_events_chain([e.name for e in event], ["LogScriptCall", "RoleGranted", "ScriptResult", "Executed"])
@@ -363,7 +285,7 @@ def validate_role_grant_event(
     role_granted_event = _single_event(event, "RoleGranted")
     assert _normalize_role(role_granted_event["role"]) == role_hash.replace("0x", ""), "Wrong role hash"
     assert convert.to_address(role_granted_event["account"]) == convert.to_address(account), "Wrong granted account"
-    assert convert.to_address(role_granted_event["sender"]) == convert.to_address(AGENT), "Wrong role grant sender"
+    assert convert.to_address(role_granted_event["sender"]) == convert.to_address(sender), "Wrong role grant sender"
 
     if emitted_by is not None:
         _assert_emitted_by(role_granted_event, emitted_by)
@@ -373,6 +295,7 @@ def validate_role_revoke_event(
     event: EventDict,
     role_hash: str,
     account: str,
+    sender: str,
     emitted_by: Optional[str] = None,
 ) -> None:
     validate_events_chain([e.name for e in event], ["LogScriptCall", "RoleRevoked", "ScriptResult", "Executed"])
@@ -381,7 +304,7 @@ def validate_role_revoke_event(
     role_revoked_event = _single_event(event, "RoleRevoked")
     assert _normalize_role(role_revoked_event["role"]) == role_hash.replace("0x", ""), "Wrong role hash"
     assert convert.to_address(role_revoked_event["account"]) == convert.to_address(account), "Wrong revoked account"
-    assert convert.to_address(role_revoked_event["sender"]) == convert.to_address(AGENT), "Wrong role revoke sender"
+    assert convert.to_address(role_revoked_event["sender"]) == convert.to_address(sender), "Wrong role revoke sender"
 
     if emitted_by is not None:
         _assert_emitted_by(role_revoked_event, emitted_by)
@@ -392,7 +315,7 @@ def validate_dg_noop_event(event: EventDict) -> None:
     assert event.count("ScriptResult") == 1
     assert event.count("Executed") == 1
 
-def validate_module_add(event: EventDict, module: StakingModuleItem, emitted_by: str) -> None:
+def validate_module_add(event: EventDict, module: StakingModuleItem, emitted_by: str, sender: str) -> None:
     validate_events_chain(
         [e.name for e in event],
         [
@@ -412,33 +335,33 @@ def validate_module_add(event: EventDict, module: StakingModuleItem, emitted_by:
     assert module_added_event["stakingModuleId"] == module.id
     assert convert.to_address(module_added_event["stakingModule"]) == convert.to_address(module.staking_module_address)
     assert module_added_event["name"] == module.name
-    assert convert.to_address(module_added_event["createdBy"]) == convert.to_address(AGENT)
+    assert convert.to_address(module_added_event["createdBy"]) == convert.to_address(sender)
     _assert_emitted_by(module_added_event, emitted_by)
 
     module_share_limit_event = _single_event(event, "StakingModuleShareLimitSet")
     assert module_share_limit_event["stakingModuleId"] == module.id
     assert module_share_limit_event["stakeShareLimit"] == module.stake_share_limit
     assert module_share_limit_event["priorityExitShareThreshold"] == module.priority_exit_share_threshold
-    assert convert.to_address(module_share_limit_event["setBy"]) == convert.to_address(AGENT)
+    assert convert.to_address(module_share_limit_event["setBy"]) == convert.to_address(sender)
     _assert_emitted_by(module_share_limit_event, emitted_by)
 
     module_fees_event = _single_event(event, "StakingModuleFeesSet")
     assert module_fees_event["stakingModuleId"] == module.id
     assert module_fees_event["stakingModuleFee"] == module.staking_module_fee
     assert module_fees_event["treasuryFee"] == module.treasury_fee
-    assert convert.to_address(module_fees_event["setBy"]) == convert.to_address(AGENT)
+    assert convert.to_address(module_fees_event["setBy"]) == convert.to_address(sender)
     _assert_emitted_by(module_fees_event, emitted_by)
 
     max_deposits_event = _single_event(event, "StakingModuleMaxDepositsPerBlockSet")
     assert max_deposits_event["stakingModuleId"] == module.id
     assert max_deposits_event["maxDepositsPerBlock"] == module.max_deposits_per_block
-    assert convert.to_address(max_deposits_event["setBy"]) == convert.to_address(AGENT)
+    assert convert.to_address(max_deposits_event["setBy"]) == convert.to_address(sender)
     _assert_emitted_by(max_deposits_event, emitted_by)
 
     min_distance_event = _single_event(event, "StakingModuleMinDepositBlockDistanceSet")
     assert min_distance_event["stakingModuleId"] == module.id
     assert min_distance_event["minDepositBlockDistance"] == module.min_deposit_block_distance
-    assert convert.to_address(min_distance_event["setBy"]) == convert.to_address(AGENT)
+    assert convert.to_address(min_distance_event["setBy"]) == convert.to_address(sender)
     _assert_emitted_by(min_distance_event, emitted_by)
 
     deposited_event = _single_event(event, "StakingRouterETHDeposited")
@@ -447,7 +370,7 @@ def validate_module_add(event: EventDict, module: StakingModuleItem, emitted_by:
     _assert_emitted_by(deposited_event, emitted_by)
 
 
-def validate_exit_balance_limit_set_raw_group(raw_group: list[dict]) -> None:
+def validate_exit_balance_limit_set_raw_group(raw_group: list[dict], validators_exit_bus_oracle: str) -> None:
     validate_events_chain(
         [event["name"] for event in raw_group],
         [
@@ -464,7 +387,7 @@ def validate_exit_balance_limit_set_raw_group(raw_group: list[dict]) -> None:
 
     unknown_event = raw_group[5]
     unknown_event_values = _raw_event_values(unknown_event)
-    assert convert.to_address(unknown_event["address"]) == convert.to_address(VALIDATORS_EXIT_BUS_ORACLE)
+    assert convert.to_address(unknown_event["address"]) == convert.to_address(validators_exit_bus_oracle)
     assert unknown_event_values["topic1"] == EXIT_BALANCE_LIMIT_SET_TOPIC
 
     decoded_words = _decode_uint256_words(unknown_event_values["data"])
@@ -475,7 +398,12 @@ def validate_exit_balance_limit_set_raw_group(raw_group: list[dict]) -> None:
     ]
 
 
-def validate_circuit_breaker_registration_raw_group(raw_group: list[dict]) -> None:
+def validate_circuit_breaker_registration_raw_group(
+    raw_group: list[dict],
+    circuit_breaker: str,
+    consolidation_gateway: str,
+    curated_module_committee: str,
+) -> None:
     validate_events_chain(
         [event["name"] for event in raw_group],
         ["LogScriptCall", "(unknown)", "(unknown)", "ScriptResult", "Executed"],
@@ -484,58 +412,147 @@ def validate_circuit_breaker_registration_raw_group(raw_group: list[dict]) -> No
     first_unknown_event = raw_group[1]
     second_unknown_event = raw_group[2]
 
-    assert convert.to_address(first_unknown_event["address"]) == convert.to_address(CIRCUIT_BREAKER)
+    assert convert.to_address(first_unknown_event["address"]) == convert.to_address(circuit_breaker)
     first_unknown_event_values = _raw_event_values(first_unknown_event)
-    assert first_unknown_event_values["topic1"] == CIRCUIT_BREAKER_BLOCKER_ADDED_TOPIC
-    assert first_unknown_event_values["topic2"] == _address_to_topic(CONSOLIDATION_GATEWAY)
+    assert first_unknown_event_values["topic1"] == CIRCUIT_BREAKER_PAUSER_SET_TOPIC
+    assert first_unknown_event_values["topic2"] == _address_to_topic(consolidation_gateway)
     assert first_unknown_event_values["topic3"] == _address_to_topic("0x0000000000000000000000000000000000000000")
-    assert first_unknown_event_values["topic4"] == _address_to_topic(CURATED_MODULE_COMMITTEE)
+    assert first_unknown_event_values["topic4"] == _address_to_topic(curated_module_committee)
     assert _normalize_hex_data(first_unknown_event_values["data"]) == "00"
 
-    assert convert.to_address(second_unknown_event["address"]) == convert.to_address(CIRCUIT_BREAKER)
+    assert convert.to_address(second_unknown_event["address"]) == convert.to_address(circuit_breaker)
     second_unknown_event_values = _raw_event_values(second_unknown_event)
-    assert second_unknown_event_values["topic1"] == CIRCUIT_BREAKER_COMMITTEE_ACTIVATED_TOPIC
-    assert second_unknown_event_values["topic2"] == _address_to_topic(CURATED_MODULE_COMMITTEE)
+    assert second_unknown_event_values["topic1"] == CIRCUIT_BREAKER_HEARTBEAT_UPDATED_TOPIC
+    assert second_unknown_event_values["topic2"] == _address_to_topic(curated_module_committee)
     assert int(_normalize_hex_data(second_unknown_event_values["data"]), 16) > 0
 
 
 @pytest.fixture(scope="module")
-def runtime_upgrade_addresses():
+def runtime_upgrade_context():
     if network_name() != "hoodi-fork":
         pytest.skip("Run the dedicated Hoodi upgrade test on --network hoodi-fork.")
 
     upgrade_vote_script = get_upgrade_vote_script_address()
-    factories = get_easy_track_new_factories()
-    update_staking_module_share_limits_factory = factories["UpdateStakingModuleShareLimits"]
-    allow_consolidation_pair_factory = factories["AllowConsolidationPair"]
-    create_or_update_operator_group_factory = factories["CreateOrUpdateOperatorGroup"]
-    consolidation_migrator = get_consolidation_migrator_address()
-    meta_registry = get_meta_registry_address()
-
     if (
         _is_placeholder_address(upgrade_vote_script)
-        or _is_placeholder_address(update_staking_module_share_limits_factory)
-        or _is_placeholder_address(allow_consolidation_pair_factory)
-        or _is_placeholder_address(create_or_update_operator_group_factory)
-        or _is_placeholder_address(consolidation_migrator)
-        or _is_placeholder_address(meta_registry)
         or _is_placeholder_text(DG_PROPOSAL_METADATA)
         or _is_placeholder_text(get_ipfs_description(dg_only=DG_ONLY_MODE))
     ):
         pytest.skip("Local Hoodi upgrade artifacts are missing. Run the lido-core deploy flow first.")
 
+    vote_script = interface.UpgradeVoteScript(upgrade_vote_script)
+    upgrade_template = vote_script.TEMPLATE()
+    upgrade_config = interface.UpgradeConfig(vote_script.CONFIG())
+    locator_impl = interface.LidoLocator(upgrade_config.getCoreUpgradeConfig()["newLocatorImpl"])
+
+    global_config = upgrade_config.getGlobalConfig()
+    core_config = upgrade_config.getCoreUpgradeConfig()
+    csm_config = upgrade_config.getCSMUpgradeConfig()
+    curated_config = upgrade_config.getCuratedModuleConfig()
+    easy_track_new_factories, _ = upgrade_config.getEasyTrackConfig()
+
+    dual_governance = interface.DualGovernance(upgrade_config.DUAL_GOVERNANCE())
+    dual_governance_admin_executor = None
+    for proposer in dual_governance.getProposers():
+        try:
+            proposer_account = proposer["account"]
+            proposer_executor = proposer["executor"]
+        except (KeyError, TypeError):
+            proposer_account = proposer[0]
+            proposer_executor = proposer[1]
+
+        if convert.to_address(proposer_account) == convert.to_address(upgrade_config.VOTING()):
+            dual_governance_admin_executor = proposer_executor
+            break
+
+    assert dual_governance_admin_executor is not None, "Voting proposer is not registered in Dual Governance"
+
+    validator_strikes = interface.IValidatorStrikesV3(csm_config["strikes"])
+    old_csm_ejector = validator_strikes.ejector()
+
     return {
         "upgrade_vote_script": upgrade_vote_script,
-        "update_staking_module_share_limits_factory": update_staking_module_share_limits_factory,
-        "allow_consolidation_pair_factory": allow_consolidation_pair_factory,
-        "create_or_update_operator_group_factory": create_or_update_operator_group_factory,
-        "consolidation_migrator": consolidation_migrator,
-        "meta_registry": meta_registry,
+        "upgrade_template": upgrade_template,
+        "voting": upgrade_config.VOTING(),
+        "agent": upgrade_config.AGENT(),
+        "dual_governance": upgrade_config.DUAL_GOVERNANCE(),
+        "dual_governance_admin_executor": dual_governance_admin_executor,
+        "acl": core_config["acl"],
+        "aragon_kernel": core_config["kernel"],
+        "lido": global_config["lido"],
+        "lido_app_id": core_config["lidoAppId"],
+        "lido_impl": core_config["newLidoImpl"],
+        "lido_locator": core_config["locator"],
+        "lido_locator_impl": core_config["newLocatorImpl"],
+        "staking_router": global_config["stakingRouter"],
+        "staking_router_impl": core_config["newStakingRouterImpl"],
+        "accounting_oracle": core_config["accountingOracle"],
+        "accounting_oracle_impl": core_config["newAccountingOracleImpl"],
+        "validators_exit_bus_oracle": core_config["validatorsExitBusOracle"],
+        "validators_exit_bus_oracle_impl": core_config["newValidatorsExitBusOracleImpl"],
+        "accounting": core_config["accounting"],
+        "accounting_impl": core_config["newAccountingImpl"],
+        "withdrawal_vault": core_config["withdrawalVault"],
+        "withdrawal_vault_impl": core_config["newWithdrawalVaultImpl"],
+        "validator_exit_delay_verifier": locator_impl.validatorExitDelayVerifier(),
+        "easytrack_evm_script_executor": global_config["easyTrackEVMScriptExecutor"],
+        "circuit_breaker": global_config["circuitBreaker"],
+        "consolidation_gateway": core_config["consolidationGateway"],
+        "curated_module_committee": core_config["curatedModuleCommittee"],
+        "old_deposit_security_module": core_config["oldDepositSecurityModule"],
+        "new_deposit_security_module": core_config["newDepositSecurityModule"],
+        "triggerable_withdrawals_gateway": global_config["triggerableWithdrawalsGateway"],
+        "burner": global_config["burner"],
+        "csm": csm_config["csm"],
+        "csm_impl": csm_config["csmImpl"],
+        "cs_parameters_registry": csm_config["parametersRegistry"],
+        "cs_parameters_registry_impl": csm_config["parametersRegistryImpl"],
+        "cs_fee_oracle": csm_config["feeOracle"],
+        "cs_fee_oracle_impl": csm_config["feeOracleImpl"],
+        "cs_vetted_gate": csm_config["vettedGate"],
+        "cs_vetted_gate_impl": csm_config["vettedGateImpl"],
+        "cs_accounting": csm_config["accounting"],
+        "cs_accounting_impl": csm_config["accountingImpl"],
+        "cs_fee_distributor": csm_config["feeDistributor"],
+        "cs_fee_distributor_impl": csm_config["feeDistributorImpl"],
+        "cs_exit_penalties": csm_config["exitPenalties"],
+        "cs_exit_penalties_impl": csm_config["exitPenaltiesImpl"],
+        "cs_validator_strikes": csm_config["strikes"],
+        "cs_validator_strikes_impl": csm_config["strikesImpl"],
+        "old_verifier": csm_config["verifier"],
+        "verifier_v3": csm_config["verifierV3"],
+        "old_permissionless_gate": csm_config["oldPermissionlessGate"],
+        "new_permissionless_gate": csm_config["permissionlessGate"],
+        "ics_manager": csm_config["identifiedCommunityStakersGateManager"],
+        "csm_general_delayed_penalty_reporter": csm_config["generalDelayedPenaltyReporter"],
+        "csm_penalties_manager": csm_config["penaltiesManager"],
+        "old_csm_ejector": old_csm_ejector,
+        "csm_ejector": csm_config["ejector"],
+        "curated_module": curated_config["module"],
+        "curated_accounting": curated_config["accounting"],
+        "curated_ejector": curated_config["ejector"],
+        "curated_hash_consensus": curated_config["hashConsensus"],
+        "curated_module_item": StakingModuleItem(
+            id=CURATED_MODULE_ID,
+            staking_module_address=curated_config["module"],
+            name=curated_config["moduleName"],
+            staking_module_fee=curated_config["stakingModuleFee"],
+            stake_share_limit=curated_config["stakeShareLimit"],
+            treasury_fee=curated_config["treasuryFee"],
+            priority_exit_share_threshold=curated_config["priorityExitShareThreshold"],
+            max_deposits_per_block=curated_config["maxDepositsPerBlock"],
+            min_deposit_block_distance=curated_config["minDepositBlockDistance"],
+        ),
+        "update_staking_module_share_limits_factory": easy_track_new_factories["UpdateStakingModuleShareLimits"],
+        "allow_consolidation_pair_factory": easy_track_new_factories["AllowConsolidationPair"],
+        "create_or_update_operator_group_factory": easy_track_new_factories["CreateOrUpdateOperatorGroup"],
+        "consolidation_migrator": core_config["consolidationMigrator"],
+        "meta_registry": curated_config["metaRegistry"],
     }
 
 
 @pytest.fixture(scope="module")
-def dual_governance_proposal_calls(runtime_upgrade_addresses):
+def dual_governance_proposal_calls(runtime_upgrade_context):
     dg_items = get_dg_items()
 
     proposal_calls = []
@@ -551,11 +568,13 @@ def dual_governance_proposal_calls(runtime_upgrade_addresses):
     return proposal_calls
 
 
-def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
-    voting = interface.Voting(VOTING)
-    agent = interface.Agent(AGENT)
+def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls, runtime_upgrade_context):
+    ctx = runtime_upgrade_context
+
+    voting = interface.Voting(ctx["voting"])
+    agent = interface.Agent(ctx["agent"])
     timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
-    dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
+    dual_governance = interface.DualGovernance(ctx["dual_governance"])
     # TODO: restore once Easy Track items are enabled in the vote again.
     # easy_track = interface.EasyTrack(EASYTRACK)
     # staking_router = interface.StakingRouter(STAKING_ROUTER)
@@ -564,7 +583,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
     vote_desc_items, call_script_items = get_vote_items(dg_only=DG_ONLY_MODE)
     dg_items = get_dg_items()
-    upgrade_template = get_state_address("upgradeTemplate")
+    upgrade_template = ctx["upgrade_template"]
 
     expected_vote_events_count = EXPECTED_VOTE_EVENTS_COUNT or len(call_script_items)
     expected_dg_events_from_agent = EXPECTED_DG_EVENTS_FROM_AGENT or len(dg_items)
@@ -633,8 +652,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         validate_dual_governance_submit_event(
             vote_events[0],
             proposal_id=expected_dg_proposal_id,
-            proposer=VOTING,
-            executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+            proposer=ctx["voting"],
+            executor=ctx["dual_governance_admin_executor"],
             metadata=DG_PROPOSAL_METADATA,
             proposal_calls=dual_governance_proposal_calls,
         )
@@ -695,9 +714,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 dg_events = group_dg_events_from_receipt(
                     dg_tx,
                     timelock=EMERGENCY_PROTECTED_TIMELOCK,
-                    admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+                    admin_executor=ctx["dual_governance_admin_executor"],
                 )
-                raw_dg_events = _group_raw_dg_events_from_receipt(dg_tx)
+                raw_dg_events = _group_raw_dg_events_from_receipt(
+                    dg_tx,
+                    timelock=EMERGENCY_PROTECTED_TIMELOCK,
+                    admin_executor=ctx["dual_governance_admin_executor"],
+                )
                 assert count_vote_items_by_events(dg_tx, agent.address) == expected_dg_events_from_agent
                 assert len(dg_events) == expected_dg_events_count
                 assert len(raw_dg_events) == expected_dg_events_count
@@ -710,13 +733,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 _assert_emitted_by(upgrade_started_event, upgrade_template)
 
                 # 2. Upgrade LidoLocator proxy
-                validate_proxy_upgrade_event(dg_events[1], LIDO_LOCATOR_IMPL, emitted_by=LIDO_LOCATOR)
+                validate_proxy_upgrade_event(dg_events[1], ctx["lido_locator_impl"], emitted_by=ctx["lido_locator"])
 
                 # 3. Upgrade and finalize StakingRouter
                 validate_proxy_upgrade_event(
                     dg_events[2],
-                    STAKING_ROUTER_IMPL,
-                    emitted_by=STAKING_ROUTER,
+                    ctx["staking_router_impl"],
+                    emitted_by=ctx["staking_router"],
                     events_chain=[
                         "LogScriptCall",
                         "Upgraded",
@@ -738,29 +761,29 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 for role_granted_event, (role_hash, account) in zip(
                     role_grants,
                     [
-                        (DEFAULT_ADMIN_ROLE, AGENT),
-                        (STAKING_MODULE_MANAGE_ROLE, AGENT),
+                        (DEFAULT_ADMIN_ROLE, ctx["agent"]),
+                        (STAKING_MODULE_MANAGE_ROLE, ctx["agent"]),
                         (STAKING_MODULE_MANAGE_ROLE, HOODI_LEGACY_STAKING_MODULE_MANAGER),
-                        (STAKING_MODULE_UNVETTING_ROLE, OLD_DEPOSIT_SECURITY_MODULE),
-                        (REPORT_EXITED_VALIDATORS_ROLE, ACCOUNTING_ORACLE),
-                        (REPORT_VALIDATOR_EXITING_STATUS_ROLE, VALIDATOR_EXIT_DELAY_VERIFIER),
-                        (REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE, TRIGGERABLE_WITHDRAWALS_GATEWAY),
-                        (REPORT_REWARDS_MINTED_ROLE, ACCOUNTING),
+                        (STAKING_MODULE_UNVETTING_ROLE, ctx["old_deposit_security_module"]),
+                        (REPORT_EXITED_VALIDATORS_ROLE, ctx["accounting_oracle"]),
+                        (REPORT_VALIDATOR_EXITING_STATUS_ROLE, ctx["validator_exit_delay_verifier"]),
+                        (REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE, ctx["triggerable_withdrawals_gateway"]),
+                        (REPORT_REWARDS_MINTED_ROLE, ctx["accounting"]),
                     ],
                 ):
                     assert _normalize_role(role_granted_event["role"]) == role_hash.replace("0x", "")
                     assert convert.to_address(role_granted_event["account"]) == convert.to_address(account)
-                    assert convert.to_address(role_granted_event["sender"]) == convert.to_address(AGENT)
-                    _assert_emitted_by(role_granted_event, STAKING_ROUTER)
+                    assert convert.to_address(role_granted_event["sender"]) == convert.to_address(ctx["agent"])
+                    _assert_emitted_by(role_granted_event, ctx["staking_router"])
                 initialized_event = _single_event(dg_events[2], "Initialized")
                 assert initialized_event["version"] == 4
-                _assert_emitted_by(initialized_event, STAKING_ROUTER)
+                _assert_emitted_by(initialized_event, ctx["staking_router"])
 
                 # 4. Upgrade and finalize AccountingOracle
                 validate_proxy_upgrade_event(
                     dg_events[3],
-                    ACCOUNTING_ORACLE_IMPL,
-                    emitted_by=ACCOUNTING_ORACLE,
+                    ctx["accounting_oracle_impl"],
+                    emitted_by=ctx["accounting_oracle"],
                     events_chain=[
                         "LogScriptCall",
                         "Upgraded",
@@ -773,7 +796,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 validate_contract_version_set_event(
                     dg_events[3],
                     AO_CONTRACT_VERSION,
-                    emitted_by=ACCOUNTING_ORACLE,
+                    emitted_by=ctx["accounting_oracle"],
                     events_chain=[
                         "LogScriptCall",
                         "Upgraded",
@@ -787,7 +810,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     dg_events[3],
                     AO_CONSENSUS_VERSION,
                     AO_PREV_CONSENSUS_VERSION,
-                    emitted_by=ACCOUNTING_ORACLE,
+                    emitted_by=ctx["accounting_oracle"],
                     events_chain=[
                         "LogScriptCall",
                         "Upgraded",
@@ -801,8 +824,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 # 5. Upgrade and finalize ValidatorsExitBusOracle
                 validate_proxy_upgrade_event(
                     dg_events[4],
-                    VALIDATORS_EXIT_BUS_ORACLE_IMPL,
-                    emitted_by=VALIDATORS_EXIT_BUS_ORACLE,
+                    ctx["validators_exit_bus_oracle_impl"],
+                    emitted_by=ctx["validators_exit_bus_oracle"],
                     events_chain=[
                         "LogScriptCall",
                         "Upgraded",
@@ -817,7 +840,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 validate_contract_version_set_event(
                     dg_events[4],
                     VEBO_CONTRACT_VERSION,
-                    emitted_by=VALIDATORS_EXIT_BUS_ORACLE,
+                    emitted_by=ctx["validators_exit_bus_oracle"],
                     events_chain=[
                         "LogScriptCall",
                         "Upgraded",
@@ -833,7 +856,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     dg_events[4],
                     VEBO_CONSENSUS_VERSION,
                     VEBO_PREV_CONSENSUS_VERSION,
-                    emitted_by=VALIDATORS_EXIT_BUS_ORACLE,
+                    emitted_by=ctx["validators_exit_bus_oracle"],
                     events_chain=[
                         "LogScriptCall",
                         "Upgraded",
@@ -847,50 +870,50 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 )
                 set_max_validators_event = _single_event(dg_events[4], "SetMaxValidatorsPerReport")
                 assert set_max_validators_event["maxValidatorsPerReport"] == VEBO_MAX_VALIDATORS_PER_REPORT
-                _assert_emitted_by(set_max_validators_event, VALIDATORS_EXIT_BUS_ORACLE)
-                validate_exit_balance_limit_set_raw_group(raw_dg_events[4])
+                _assert_emitted_by(set_max_validators_event, ctx["validators_exit_bus_oracle"])
+                validate_exit_balance_limit_set_raw_group(raw_dg_events[4], ctx["validators_exit_bus_oracle"])
 
                 # 6. Upgrade Accounting implementation
-                validate_proxy_upgrade_event(dg_events[5], ACCOUNTING_IMPL, emitted_by=ACCOUNTING)
+                validate_proxy_upgrade_event(dg_events[5], ctx["accounting_impl"], emitted_by=ctx["accounting"])
 
                 # 7. Upgrade and finalize WithdrawalVault
                 validate_proxy_upgrade_event(
                     dg_events[6],
-                    WITHDRAWAL_VAULT_IMPL,
-                    emitted_by=WITHDRAWAL_VAULT,
+                    ctx["withdrawal_vault_impl"],
+                    emitted_by=ctx["withdrawal_vault"],
                     events_chain=["LogScriptCall", "Upgraded", "ContractVersionSet", "ScriptResult", "Executed"],
                 )
                 validate_contract_version_set_event(
                     dg_events[6],
                     WITHDRAWAL_VAULT_CONTRACT_VERSION,
-                    emitted_by=WITHDRAWAL_VAULT,
+                    emitted_by=ctx["withdrawal_vault"],
                     events_chain=["LogScriptCall", "Upgraded", "ContractVersionSet", "ScriptResult", "Executed"],
                 )
 
                 # 8. Grant APP_MANAGER_ROLE on Kernel to Agent
                 validate_aragon_grant_permission_event(
                     dg_events[7],
-                    entity=AGENT,
-                    app=ARAGON_KERNEL,
+                    entity=ctx["agent"],
+                    app=ctx["aragon_kernel"],
                     role=APP_MANAGER_ROLE,
-                    emitted_by=ACL,
+                    emitted_by=ctx["acl"],
                 )
 
                 # 9. Set new Lido implementation in Kernel
                 validate_aragon_set_app_event(
                     dg_events[8],
-                    app_id=LIDO_APP_ID,
-                    app=LIDO_IMPL,
-                    emitted_by=ARAGON_KERNEL,
+                    app_id=ctx["lido_app_id"],
+                    app=ctx["lido_impl"],
+                    emitted_by=ctx["aragon_kernel"],
                 )
 
                 # 10. Revoke APP_MANAGER_ROLE on Kernel from Agent
                 validate_aragon_revoke_permission_event(
                     dg_events[9],
-                    entity=AGENT,
-                    app=ARAGON_KERNEL,
+                    entity=ctx["agent"],
+                    app=ctx["aragon_kernel"],
                     role=APP_MANAGER_ROLE,
-                    emitted_by=ACL,
+                    emitted_by=ctx["acl"],
                 )
 
                 # 11. Grant BUFFER_RESERVE_MANAGER_ROLE on Lido and transfer permission manager to Agent
@@ -899,50 +922,54 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     ["LogScriptCall", "SetPermission", "ChangePermissionManager", "ScriptResult", "Executed"],
                 )
                 set_permission_event = _single_event(dg_events[10], "SetPermission")
-                assert convert.to_address(set_permission_event["entity"]) == convert.to_address(AGENT)
-                assert convert.to_address(set_permission_event["app"]) == convert.to_address(LIDO)
+                assert convert.to_address(set_permission_event["entity"]) == convert.to_address(ctx["agent"])
+                assert convert.to_address(set_permission_event["app"]) == convert.to_address(ctx["lido"])
                 assert set_permission_event["role"] == BUFFER_RESERVE_MANAGER_ROLE
                 assert set_permission_event["allowed"] is True
-                _assert_emitted_by(set_permission_event, ACL)
+                _assert_emitted_by(set_permission_event, ctx["acl"])
                 change_permission_manager_event = _single_event(dg_events[10], "ChangePermissionManager")
-                assert convert.to_address(change_permission_manager_event["app"]) == convert.to_address(LIDO)
+                assert convert.to_address(change_permission_manager_event["app"]) == convert.to_address(ctx["lido"])
                 assert change_permission_manager_event["role"] == BUFFER_RESERVE_MANAGER_ROLE
-                assert convert.to_address(change_permission_manager_event["manager"]) == convert.to_address(AGENT)
-                _assert_emitted_by(change_permission_manager_event, ACL)
+                assert convert.to_address(change_permission_manager_event["manager"]) == convert.to_address(ctx["agent"])
+                _assert_emitted_by(change_permission_manager_event, ctx["acl"])
 
                 # 12. Finalize Lido contract version
-                validate_contract_version_set_event(dg_events[11], LIDO_CONTRACT_VERSION, emitted_by=LIDO)
+                validate_contract_version_set_event(dg_events[11], LIDO_CONTRACT_VERSION, emitted_by=ctx["lido"])
 
                 # 13. Grant STAKING_MODULE_SHARE_MANAGE_ROLE to EasyTrack executor
                 validate_role_grant_event(
                     dg_events[12],
                     STAKING_MODULE_SHARE_MANAGE_ROLE,
-                    EASYTRACK_EVMSCRIPT_EXECUTOR,
-                    emitted_by=STAKING_ROUTER,
+                    ctx["easytrack_evm_script_executor"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["staking_router"],
                 )
 
                 # 14. Revoke STAKING_MODULE_UNVETTING_ROLE from old DSM
                 validate_role_revoke_event(
                     dg_events[13],
                     STAKING_MODULE_UNVETTING_ROLE,
-                    OLD_DEPOSIT_SECURITY_MODULE,
-                    emitted_by=STAKING_ROUTER,
+                    ctx["old_deposit_security_module"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["staking_router"],
                 )
 
                 # 15. Grant STAKING_MODULE_UNVETTING_ROLE to new DSM
                 validate_role_grant_event(
                     dg_events[14],
                     STAKING_MODULE_UNVETTING_ROLE,
-                    NEW_DEPOSIT_SECURITY_MODULE,
-                    emitted_by=STAKING_ROUTER,
+                    ctx["new_deposit_security_module"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["staking_router"],
                 )
 
                 # 16. Grant TW_EXIT_LIMIT_MANAGER_ROLE to Agent
                 validate_role_grant_event(
                     dg_events[15],
                     TW_EXIT_LIMIT_MANAGER_ROLE,
-                    AGENT,
-                    emitted_by=TRIGGERABLE_WITHDRAWALS_GATEWAY,
+                    ctx["agent"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["triggerable_withdrawals_gateway"],
                 )
 
                 # 17. Set TWG exit limits
@@ -954,169 +981,184 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert exit_requests_limit_set_event["maxExitRequestsLimit"] == TW_MAX_EXIT_REQUESTS
                 assert exit_requests_limit_set_event["exitsPerFrame"] == TW_EXITS_PER_FRAME
                 assert exit_requests_limit_set_event["frameDurationInSec"] == TW_FRAME_DURATION_IN_SEC
-                _assert_emitted_by(exit_requests_limit_set_event, TRIGGERABLE_WITHDRAWALS_GATEWAY)
+                _assert_emitted_by(exit_requests_limit_set_event, ctx["triggerable_withdrawals_gateway"])
 
                 # 18. Register CircuitBreaker integration
-                validate_circuit_breaker_registration_raw_group(raw_dg_events[17])
+                validate_circuit_breaker_registration_raw_group(
+                    raw_dg_events[17],
+                    circuit_breaker=ctx["circuit_breaker"],
+                    consolidation_gateway=ctx["consolidation_gateway"],
+                    curated_module_committee=ctx["curated_module_committee"],
+                )
 
                 # 19. Upgrade and initialize CSM
                 validate_proxy_upgrade_event(
                     dg_events[18],
-                    CSM_IMPL,
-                    emitted_by=CSM,
+                    ctx["csm_impl"],
+                    emitted_by=ctx["csm"],
                     events_chain=["LogScriptCall", "Upgraded", "Initialized", "ScriptResult", "Executed"],
                 )
                 initialized_event = _single_event(dg_events[18], "Initialized")
                 assert initialized_event["version"] == 3
-                _assert_emitted_by(initialized_event, CSM)
+                _assert_emitted_by(initialized_event, ctx["csm"])
 
                 # 20. Upgrade and initialize CSParametersRegistry
                 validate_proxy_upgrade_event(
                     dg_events[19],
-                    CS_PARAMETERS_REGISTRY_IMPL,
-                    emitted_by=CS_PARAMETERS_REGISTRY,
+                    ctx["cs_parameters_registry_impl"],
+                    emitted_by=ctx["cs_parameters_registry"],
                     events_chain=["LogScriptCall", "Upgraded", "Initialized", "ScriptResult", "Executed"],
                 )
                 initialized_event = _single_event(dg_events[19], "Initialized")
                 assert initialized_event["version"] == 3
-                _assert_emitted_by(initialized_event, CS_PARAMETERS_REGISTRY)
+                _assert_emitted_by(initialized_event, ctx["cs_parameters_registry"])
 
                 # 21. Upgrade and finalize CSFeeOracle
                 validate_proxy_upgrade_event(
                     dg_events[20],
-                    CS_FEE_ORACLE_IMPL,
-                    emitted_by=CS_FEE_ORACLE,
+                    ctx["cs_fee_oracle_impl"],
+                    emitted_by=ctx["cs_fee_oracle"],
                     events_chain=["LogScriptCall", "Upgraded", "ConsensusVersionSet", "ContractVersionSet", "ScriptResult", "Executed"],
                 )
                 validate_consensus_version_set_event(
                     dg_events[20],
                     4,
                     3,
-                    emitted_by=CS_FEE_ORACLE,
+                    emitted_by=ctx["cs_fee_oracle"],
                     events_chain=["LogScriptCall", "Upgraded", "ConsensusVersionSet", "ContractVersionSet", "ScriptResult", "Executed"],
                 )
                 validate_contract_version_set_event(
                     dg_events[20],
                     3,
-                    emitted_by=CS_FEE_ORACLE,
+                    emitted_by=ctx["cs_fee_oracle"],
                     events_chain=["LogScriptCall", "Upgraded", "ConsensusVersionSet", "ContractVersionSet", "ScriptResult", "Executed"],
                 )
 
                 # 22. Upgrade CSVettedGate
-                validate_proxy_upgrade_event(dg_events[21], CS_VETTED_GATE_IMPL, emitted_by=CS_VETTED_GATE)
+                validate_proxy_upgrade_event(dg_events[21], ctx["cs_vetted_gate_impl"], emitted_by=ctx["cs_vetted_gate"])
 
                 # 23. Upgrade and initialize CSAccounting
                 validate_proxy_upgrade_event(
                     dg_events[22],
-                    CS_ACCOUNTING_IMPL,
-                    emitted_by=CS_ACCOUNTING,
+                    ctx["cs_accounting_impl"],
+                    emitted_by=ctx["cs_accounting"],
                     events_chain=["LogScriptCall", "Upgraded", "Initialized", "ScriptResult", "Executed"],
                 )
                 initialized_event = _single_event(dg_events[22], "Initialized")
                 assert initialized_event["version"] == 3
-                _assert_emitted_by(initialized_event, CS_ACCOUNTING)
+                _assert_emitted_by(initialized_event, ctx["cs_accounting"])
 
                 # 24. Upgrade and initialize CSFeeDistributor
                 validate_proxy_upgrade_event(
                     dg_events[23],
-                    CS_FEE_DISTRIBUTOR_IMPL,
-                    emitted_by=CS_FEE_DISTRIBUTOR,
+                    ctx["cs_fee_distributor_impl"],
+                    emitted_by=ctx["cs_fee_distributor"],
                     events_chain=["LogScriptCall", "Upgraded", "Initialized", "ScriptResult", "Executed"],
                 )
                 initialized_event = _single_event(dg_events[23], "Initialized")
                 assert initialized_event["version"] == 3
-                _assert_emitted_by(initialized_event, CS_FEE_DISTRIBUTOR)
+                _assert_emitted_by(initialized_event, ctx["cs_fee_distributor"])
 
                 # 25. Upgrade CSExitPenalties
-                validate_proxy_upgrade_event(dg_events[24], CS_EXIT_PENALTIES_IMPL, emitted_by=CS_EXIT_PENALTIES)
+                validate_proxy_upgrade_event(dg_events[24], ctx["cs_exit_penalties_impl"], emitted_by=ctx["cs_exit_penalties"])
 
                 # 26. Upgrade CSValidatorStrikes
-                validate_proxy_upgrade_event(dg_events[25], CS_VALIDATOR_STRIKES_IMPL, emitted_by=CS_VALIDATOR_STRIKES)
+                validate_proxy_upgrade_event(dg_events[25], ctx["cs_validator_strikes_impl"], emitted_by=ctx["cs_validator_strikes"])
 
                 # 27. Set CSM ejector
                 validate_events_chain([e.name for e in dg_events[26]], ["LogScriptCall", "EjectorSet", "ScriptResult", "Executed"])
                 ejector_set_event = _single_event(dg_events[26], "EjectorSet")
-                assert convert.to_address(ejector_set_event["ejector"]) == convert.to_address(CSM_EJECTOR)
-                _assert_emitted_by(ejector_set_event, CS_VALIDATOR_STRIKES)
+                assert convert.to_address(ejector_set_event["ejector"]) == convert.to_address(ctx["csm_ejector"])
+                _assert_emitted_by(ejector_set_event, ctx["cs_validator_strikes"])
 
                 # 28. Grant REPORT_GENERAL_DELAYED_PENALTY_ROLE
                 validate_role_grant_event(
                     dg_events[27],
                     REPORT_GENERAL_DELAYED_PENALTY_ROLE,
-                    CSM_GENERAL_DELAYED_PENALTY_REPORTER,
-                    emitted_by=CSM,
+                    ctx["csm_general_delayed_penalty_reporter"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["csm"],
                 )
 
                 # 29. Grant SETTLE_GENERAL_DELAYED_PENALTY_ROLE
                 validate_role_grant_event(
                     dg_events[28],
                     SETTLE_GENERAL_DELAYED_PENALTY_ROLE,
-                    EASYTRACK_EVMSCRIPT_EXECUTOR,
-                    emitted_by=CSM,
+                    ctx["easytrack_evm_script_executor"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["csm"],
                 )
 
                 # 30. Revoke REPORT_EL_REWARDS_STEALING_PENALTY_ROLE
                 validate_role_revoke_event(
                     dg_events[29],
                     REPORT_EL_REWARDS_STEALING_PENALTY_ROLE,
-                    CSM_GENERAL_DELAYED_PENALTY_REPORTER,
-                    emitted_by=CSM,
+                    ctx["csm_general_delayed_penalty_reporter"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["csm"],
                 )
 
                 # 31. Revoke SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE
                 validate_role_revoke_event(
                     dg_events[30],
                     SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE,
-                    EASYTRACK_EVMSCRIPT_EXECUTOR,
-                    emitted_by=CSM,
+                    ctx["easytrack_evm_script_executor"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["csm"],
                 )
 
                 # 32. Revoke VERIFIER_ROLE from old verifier
                 validate_role_revoke_event(
                     dg_events[31],
                     VERIFIER_ROLE,
-                    OLD_VERIFIER,
-                    emitted_by=CSM,
+                    ctx["old_verifier"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["csm"],
                 )
 
                 # 33. Grant VERIFIER_ROLE to verifier v3
                 validate_role_grant_event(
                     dg_events[32],
                     VERIFIER_ROLE,
-                    VERIFIER_V3,
-                    emitted_by=CSM,
+                    ctx["verifier_v3"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["csm"],
                 )
 
                 # 34. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE
                 validate_role_grant_event(
                     dg_events[33],
                     REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE,
-                    VERIFIER_V3,
-                    emitted_by=CSM,
+                    ctx["verifier_v3"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["csm"],
                 )
 
                 # 35. Grant REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE
                 validate_role_grant_event(
                     dg_events[34],
                     REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE,
-                    EASYTRACK_EVMSCRIPT_EXECUTOR,
-                    emitted_by=CSM,
+                    ctx["easytrack_evm_script_executor"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["csm"],
                 )
 
                 # 36. Revoke CREATE_NODE_OPERATOR_ROLE from old permissionless gate
                 validate_role_revoke_event(
                     dg_events[35],
                     CREATE_NODE_OPERATOR_ROLE,
-                    OLD_PERMISSIONLESS_GATE,
-                    emitted_by=CSM,
+                    ctx["old_permissionless_gate"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["csm"],
                 )
 
                 # 37. Grant CREATE_NODE_OPERATOR_ROLE to new permissionless gate
                 validate_role_grant_event(
                     dg_events[36],
                     CREATE_NODE_OPERATOR_ROLE,
-                    NEW_PERMISSIONLESS_GATE,
-                    emitted_by=CSM,
+                    ctx["new_permissionless_gate"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["csm"],
                 )
 
                 # 38. No-op DG item
@@ -1135,16 +1177,18 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 validate_role_revoke_event(
                     dg_events[41],
                     START_REFERRAL_SEASON_ROLE,
-                    AGENT,
-                    emitted_by=CS_VETTED_GATE,
+                    ctx["agent"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["cs_vetted_gate"],
                 )
 
                 # 43. Revoke END_REFERRAL_SEASON_ROLE from ICS manager
                 validate_role_revoke_event(
                     dg_events[42],
                     END_REFERRAL_SEASON_ROLE,
-                    ICS_MANAGER,
-                    emitted_by=CS_VETTED_GATE,
+                    ctx["ics_manager"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["cs_vetted_gate"],
                 )
 
                 # 44. No-op DG item
@@ -1163,80 +1207,89 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 validate_role_grant_event(
                     dg_events[47],
                     MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE,
-                    CSM_PENALTIES_MANAGER,
-                    emitted_by=CS_PARAMETERS_REGISTRY,
+                    ctx["csm_penalties_manager"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["cs_parameters_registry"],
                 )
 
                 # 49. Revoke REQUEST_BURN_SHARES_ROLE from CSAccounting
                 validate_role_revoke_event(
                     dg_events[48],
                     REQUEST_BURN_SHARES_ROLE,
-                    CS_ACCOUNTING,
-                    emitted_by=BURNER,
+                    ctx["cs_accounting"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["burner"],
                 )
 
                 # 50. Grant REQUEST_BURN_MY_STETH_ROLE to CSAccounting
                 validate_role_grant_event(
                     dg_events[49],
                     REQUEST_BURN_MY_STETH_ROLE,
-                    CS_ACCOUNTING,
-                    emitted_by=BURNER,
+                    ctx["cs_accounting"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["burner"],
                 )
 
                 # 51. Revoke ADD_FULL_WITHDRAWAL_REQUEST_ROLE from old CSM ejector
                 validate_role_revoke_event(
                     dg_events[50],
                     ADD_FULL_WITHDRAWAL_REQUEST_ROLE,
-                    OLD_CSM_EJECTOR,
-                    emitted_by=TRIGGERABLE_WITHDRAWALS_GATEWAY,
+                    ctx["old_csm_ejector"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["triggerable_withdrawals_gateway"],
                 )
 
                 # 52. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE to CSM ejector
                 validate_role_grant_event(
                     dg_events[51],
                     ADD_FULL_WITHDRAWAL_REQUEST_ROLE,
-                    CSM_EJECTOR,
-                    emitted_by=TRIGGERABLE_WITHDRAWALS_GATEWAY,
+                    ctx["csm_ejector"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["triggerable_withdrawals_gateway"],
                 )
 
                 # 53. Add curated-onchain-v2 module
-                validate_module_add(dg_events[52], CURATED_MODULE_V2, emitted_by=STAKING_ROUTER)
+                validate_module_add(dg_events[52], ctx["curated_module_item"], emitted_by=ctx["staking_router"], sender=ctx["agent"])
 
                 # 54. Grant REQUEST_BURN_MY_STETH_ROLE to curated accounting
                 validate_role_grant_event(
                     dg_events[53],
                     REQUEST_BURN_MY_STETH_ROLE,
-                    CURATED_ACCOUNTING,
-                    emitted_by=BURNER,
+                    ctx["curated_accounting"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["burner"],
                 )
 
                 # 55. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE to curated ejector
                 validate_role_grant_event(
                     dg_events[54],
                     ADD_FULL_WITHDRAWAL_REQUEST_ROLE,
-                    CURATED_EJECTOR,
-                    emitted_by=TRIGGERABLE_WITHDRAWALS_GATEWAY,
+                    ctx["curated_ejector"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["triggerable_withdrawals_gateway"],
                 )
 
                 # 56. Grant RESUME_ROLE on curated module to Agent
                 validate_role_grant_event(
                     dg_events[55],
                     RESUME_ROLE,
-                    AGENT,
-                    emitted_by=CURATED_MODULE,
+                    ctx["agent"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["curated_module"],
                 )
 
                 # 57. Resume curated module
                 validate_events_chain([e.name for e in dg_events[56]], ["LogScriptCall", "Resumed", "ScriptResult", "Executed"])
                 resumed_event = _single_event(dg_events[56], "Resumed")
-                _assert_emitted_by(resumed_event, CURATED_MODULE)
+                _assert_emitted_by(resumed_event, ctx["curated_module"])
 
                 # 58. Revoke RESUME_ROLE from Agent
                 validate_role_revoke_event(
                     dg_events[57],
                     RESUME_ROLE,
-                    AGENT,
-                    emitted_by=CURATED_MODULE,
+                    ctx["agent"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["curated_module"],
                 )
 
                 # 59. Set curated HashConsensus frame config
@@ -1244,7 +1297,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 frame_config_set_event = _single_event(dg_events[58], "FrameConfigSet")
                 assert frame_config_set_event["newInitialEpoch"] == CURATED_INITIAL_EPOCH
                 assert frame_config_set_event["newEpochsPerFrame"] == CURATED_EPOCHS_PER_FRAME
-                _assert_emitted_by(frame_config_set_event, CURATED_HASH_CONSENSUS)
+                _assert_emitted_by(frame_config_set_event, ctx["curated_hash_consensus"])
 
                 # 60. Call UpgradeTemplate.finishUpgrade
                 validate_events_chain([e.name for e in dg_events[59]], ["LogScriptCall", "UpgradeFinished", "ScriptResult", "Executed"])
