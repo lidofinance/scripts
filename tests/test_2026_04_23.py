@@ -47,8 +47,7 @@ PAYMENT_AMOUNT = 2500 * 10**18
 EXPECTED_VOTE_ID = 200
 EXPECTED_VOTE_EVENTS_COUNT = 1
 
-# TODO Update CID hash when the description will be ready
-IPFS_DESCRIPTION_HASH = ""
+IPFS_DESCRIPTION_HASH = "bafkreidq5uylzwlkr4pahs2pmxwekglv5shmhmvaol7vio6g2sdwkp4efi"
 
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
@@ -97,8 +96,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         lido_labs_multisig_steth_balance_before = steth.balanceOf(LIDO_LABS_MULTISIG)
         other_treasury_token_balances_before = [token.balanceOf(AGENT) for token in treasury_tokens]
 
-        # TODO Uncomment when CID will be ready
-        # assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
+        assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
 
         assert treasury_steth_balance_before >= PAYMENT_AMOUNT, "Not enough stETH in treasury"
 
@@ -133,7 +131,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env):
         steth.transfer(AGENT, PAYMENT_AMOUNT // 2, {"from": LIDO_LABS_MULTISIG})
         assert almostEqWithDiff(steth.balanceOf(LIDO_LABS_MULTISIG), lido_labs_multisig_steth_balance_before, diff=2)
         assert almostEqWithDiff(steth.balanceOf(AGENT), treasury_steth_balance_before, diff=2)
-        
+
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
 

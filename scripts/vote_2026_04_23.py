@@ -1,7 +1,7 @@
 """
 Vote 2026_04_23
 
-1. Transfer 2500 stETH 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Lido Labs Multisig 0x95B521B4F55a447DB89f6a27f951713fC2035f3F
+1. Transfer 2500 stETH 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Lido Labs Foundation operational multisig 0x95B521B4F55a447DB89f6a27f951713fC2035f3F
 
 TODO (after vote) Vote #{vote number} passed & executed on {date+time}, block {blockNumber}.
 """
@@ -20,9 +20,8 @@ PAYMENT_AMOUNT = 2500 * 10**18
 LIDO_LABS_MULTISIG = "0x95B521B4F55a447DB89f6a27f951713fC2035f3F"
 
 # ============================= IPFS Description ==================================
-# TODO IPFS description text
 IPFS_DESCRIPTION = """
-
+Transfer 2500 stETH from Aragon Agent to Lido Labs Foundation operational multisig, [as proposed on the forum](https://research.lido.fi/t/lido-dao-contribution-to-coordinated-rseth-relief-effort/11483).
 """
 
 
@@ -31,11 +30,11 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         make_steth_payout(
             target_address=LIDO_LABS_MULTISIG,
             steth_in_wei=PAYMENT_AMOUNT,
-            reference="Transfer 2500 stETH from Lido Treasury to the Lido Labs Multisig",
+            reference="Transfer 2500 stETH from Aragon Agent to Lido Labs Foundation operational multisig",
         )
     ]
     vote_desc_items = [
-        "1. Transfer 2500 stETH 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Lido Labs Multisig 0x95B521B4F55a447DB89f6a27f951713fC2035f3F"
+        "1. Transfer 2500 stETH 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Lido Labs Foundation operational multisig 0x95B521B4F55a447DB89f6a27f951713fC2035f3F"
     ]
 
     return vote_desc_items, call_script_items
