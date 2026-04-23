@@ -7,9 +7,6 @@ from brownie.network.event import EventDict
 from brownie.network.transaction import TransactionReceipt
 
 from utils.config import network_name
-from utils.hoodi_upgrade import (
-    get_upgrade_vote_script_address,
-)
 from utils.test.tx_tracing_helpers import (
     count_vote_items_by_events,
     display_dg_events,
@@ -40,6 +37,7 @@ from scripts.upgrade_2026_04_14_hoodi_protocol_upgrade import (
     get_vote_items,
     get_dg_items,
     DG_PROPOSAL_METADATA,
+    UPGRADE_VOTE_SCRIPT,
 )
 
 
@@ -432,13 +430,17 @@ def runtime_upgrade_context():
     if network_name() != "hoodi-fork":
         pytest.skip("Run the dedicated Hoodi upgrade test on --network hoodi-fork.")
 
-    upgrade_vote_script = get_upgrade_vote_script_address()
+    upgrade_vote_script = UPGRADE_VOTE_SCRIPT
+
     if (
         _is_placeholder_address(upgrade_vote_script)
         or _is_placeholder_text(DG_PROPOSAL_METADATA)
         or _is_placeholder_text(get_ipfs_description(dg_only=DG_ONLY_MODE))
     ):
-        pytest.skip("Local Hoodi upgrade artifacts are missing. Run the lido-core deploy flow first.")
+        pytest.skip(
+            "Upgrade vote script address is missing. Set UPGRADE_VOTE_SCRIPT in "
+            "scripts/upgrade_2026_04_14_hoodi_protocol_upgrade.py first."
+        )
 
     vote_script = interface.UpgradeVoteScript(upgrade_vote_script)
     upgrade_template = vote_script.TEMPLATE()
@@ -553,7 +555,7 @@ def runtime_upgrade_context():
 
 @pytest.fixture(scope="module")
 def dual_governance_proposal_calls(runtime_upgrade_context):
-    dg_items = get_dg_items()
+    dg_items = get_dg_items(runtime_upgrade_context["upgrade_vote_script"])
 
     proposal_calls = []
     for target, data in dg_items:
@@ -581,8 +583,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     # consolidation_migrator = interface.ConsolidationMigrator(CONSOLIDATION_MIGRATOR)
     # meta_registry = interface.IMetaRegistry(META_REGISTRY)
 
-    vote_desc_items, call_script_items = get_vote_items(dg_only=DG_ONLY_MODE)
-    dg_items = get_dg_items()
+    vote_desc_items, call_script_items = get_vote_items(
+        dg_only=DG_ONLY_MODE,
+        upgrade_vote_script=ctx["upgrade_vote_script"],
+    )
+    dg_items = get_dg_items(ctx["upgrade_vote_script"])
     upgrade_template = ctx["upgrade_template"]
 
     expected_vote_events_count = EXPECTED_VOTE_EVENTS_COUNT or len(call_script_items)
@@ -602,7 +607,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     elif EXPECTED_VOTE_ID is not None and voting.votesLength() > EXPECTED_VOTE_ID:
         vote_id = EXPECTED_VOTE_ID
     else:
-        vote_id, _ = start_vote({"from": ldo_holder}, silent=True, dg_only=DG_ONLY_MODE)
+        vote_id, _ = start_vote(
+            {"from": ldo_holder},
+            silent=True,
+            dg_only=DG_ONLY_MODE,
+            upgrade_vote_script=ctx["upgrade_vote_script"],
+        )
 
     onchain_script = voting.getVote(vote_id)["script"]
     assert str(onchain_script).lower() == encode_call_script(call_script_items).lower()

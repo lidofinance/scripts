@@ -15,7 +15,6 @@ from typing import Dict, List, Optional, Tuple
 from brownie import interface
 
 from utils.config import get_deployer_account, get_is_live, get_priority_fee
-from utils.hoodi_upgrade import get_optional_upgrade_vote_script_address, get_upgrade_vote_script_address
 from utils.dual_governance import submit_proposals
 from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_description
 from utils.mainnet_fork import pass_and_exec_dao_vote
@@ -23,7 +22,7 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
 
 # ============================== Addresses ===================================
-UPGRADE_VOTE_SCRIPT = get_optional_upgrade_vote_script_address()
+UPGRADE_VOTE_SCRIPT = "0xfaAddC93baf78e89DCf37bA67943E1bE8F37Bb8c"
 HOODI_DG_ONLY_ENV = "HOODI_DG_ONLY"
 
 
@@ -167,8 +166,6 @@ DG_ONLY_IPFS_DESCRIPTION = """
 
 
 # ================================ Main ======================================
-def _get_upgrade_vote_script():
-    return interface.UpgradeVoteScript(get_upgrade_vote_script_address())
 
 
 def is_dg_only_mode() -> bool:
@@ -180,8 +177,15 @@ def get_ipfs_description(dg_only: Optional[bool] = None) -> str:
     return DG_ONLY_IPFS_DESCRIPTION if dg_only else IPFS_DESCRIPTION
 
 
-def get_dg_items() -> List[Tuple[str, str]]:
-    omnibus = _get_upgrade_vote_script()
+def get_dg_items(upgrade_vote_script: Optional[str] = None) -> List[Tuple[str, str]]:
+    vote_script_address = (upgrade_vote_script or UPGRADE_VOTE_SCRIPT).strip()
+    if vote_script_address.lower() in ("", "0x0000000000000000000000000000000000000000"):
+        raise ValueError(
+            "UpgradeVoteScript address is not configured. "
+            "Pass upgrade_vote_script explicitly or set UPGRADE_VOTE_SCRIPT at the top of this file."
+        )
+
+    omnibus = interface.UpgradeVoteScript(vote_script_address)
     dg_items: List[Tuple[str, str]] = []
 
     for _, call_script in omnibus.getVoteItems():
@@ -190,14 +194,24 @@ def get_dg_items() -> List[Tuple[str, str]]:
     return dg_items
 
 
-def get_vote_items(dg_only: Optional[bool] = None) -> Tuple[List[str], List[Tuple[str, str]]]:
+def get_vote_items(
+    dg_only: Optional[bool] = None,
+    upgrade_vote_script: Optional[str] = None,
+) -> Tuple[List[str], List[Tuple[str, str]]]:
     dg_only = is_dg_only_mode() if dg_only is None else dg_only
-    omnibus = _get_upgrade_vote_script()
+    vote_script_address = (upgrade_vote_script or UPGRADE_VOTE_SCRIPT).strip()
+    if vote_script_address.lower() in ("", "0x0000000000000000000000000000000000000000"):
+        raise ValueError(
+            "UpgradeVoteScript address is not configured. "
+            "Pass upgrade_vote_script explicitly or set UPGRADE_VOTE_SCRIPT at the top of this file."
+        )
+
+    omnibus = interface.UpgradeVoteScript(vote_script_address)
 
     vote_desc_items: List[str] = []
     call_script_items: List[Tuple[str, str]] = []
 
-    dg_items = get_dg_items()
+    dg_items = get_dg_items(upgrade_vote_script)
 
     dg_call_script = submit_proposals([(dg_items, DG_PROPOSAL_METADATA)])
     vote_desc_items.append(DG_SUBMISSION_DESCRIPTION)
@@ -212,9 +226,17 @@ def get_vote_items(dg_only: Optional[bool] = None) -> Tuple[List[str], List[Tupl
     return vote_desc_items, call_script_items
 
 
-def start_vote(tx_params: Dict[str, str], silent: bool = False, dg_only: Optional[bool] = None):
+def start_vote(
+    tx_params: Dict[str, str],
+    silent: bool = False,
+    dg_only: Optional[bool] = None,
+    upgrade_vote_script: Optional[str] = None,
+):
     dg_only = is_dg_only_mode() if dg_only is None else dg_only
-    vote_desc_items, call_script_items = get_vote_items(dg_only=dg_only)
+    vote_desc_items, call_script_items = get_vote_items(
+        dg_only=dg_only,
+        upgrade_vote_script=upgrade_vote_script,
+    )
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
     ipfs_description = get_ipfs_description(dg_only=dg_only)
 
@@ -229,25 +251,37 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False, dg_only: Optiona
     )
 
     if not dg_only:
-        assert _get_upgrade_vote_script().isValidVoteScript(vote_id, DG_PROPOSAL_METADATA)
+        vote_script_address = (upgrade_vote_script or UPGRADE_VOTE_SCRIPT).strip()
+        assert interface.UpgradeVoteScript(vote_script_address).isValidVoteScript(
+            vote_id,
+            DG_PROPOSAL_METADATA,
+        )
 
     return vote_id, tx
 
 
-def main():
+def main(upgrade_vote_script: Optional[str] = None):
     tx_params: Dict[str, str] = {"from": get_deployer_account().address}
     if get_is_live():
         tx_params["priority_fee"] = get_priority_fee()
 
-    vote_id, _ = start_vote(tx_params=tx_params, silent=False)
+    vote_id, _ = start_vote(
+        tx_params=tx_params,
+        silent=False,
+        upgrade_vote_script=upgrade_vote_script,
+    )
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 
 
-def start_and_execute_vote_on_fork_manual():
+def start_and_execute_vote_on_fork_manual(upgrade_vote_script: Optional[str] = None):
     if get_is_live():
         raise Exception("This script is for local testing only.")
 
     tx_params = {"from": get_deployer_account()}
-    vote_id, _ = start_vote(tx_params=tx_params, silent=True)
+    vote_id, _ = start_vote(
+        tx_params=tx_params,
+        silent=True,
+        upgrade_vote_script=upgrade_vote_script,
+    )
     print(f"Vote created: {vote_id}.")
     pass_and_exec_dao_vote(int(vote_id), step_by_step=True)
