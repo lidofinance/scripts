@@ -526,6 +526,7 @@ def runtime_upgrade_context():
         "easytrack_evm_script_executor": global_config["easyTrackEVMScriptExecutor"],
         "circuit_breaker": global_config["circuitBreaker"],
         "consolidation_gateway": core_config["consolidationGateway"],
+        "consolidation_gateway_pauser": core_config["consolidationGatewayPauser"],
         "curated_module_committee": core_config["curatedModuleCommittee"],
         "old_deposit_security_module": core_config["oldDepositSecurityModule"],
         "new_deposit_security_module": core_config["newDepositSecurityModule"],
@@ -1128,12 +1129,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert exit_requests_limit_set_event["frameDurationInSec"] == TW_FRAME_DURATION_IN_SEC
                 _assert_emitted_by(exit_requests_limit_set_event, ctx["triggerable_withdrawals_gateway"])
 
-                # 18. Register CircuitBreaker integration
+                # 18. Register CircuitBreaker pauser for ConsolidationGateway
                 validate_circuit_breaker_registration_event(
                     dg_events[17],
                     circuit_breaker=ctx["circuit_breaker"],
                     pausable=ctx["consolidation_gateway"],
-                    pauser=ctx["curated_module_committee"],
+                    pauser=ctx["consolidation_gateway_pauser"],
                 )
 
                 # 19. Upgrade and initialize CSM
