@@ -86,7 +86,7 @@ jobs:
         working-directory: scripts
 
       - name: Run CSM regression tests
-        uses: lidofinance/community-staking-module/.github/actions/regression-tests@regression-gh-action
+        uses: lidofinance/community-staking-module/.github/actions/regression-tests@develop
         with:
           repository: lidofinance/community-staking-module
           ref: main
