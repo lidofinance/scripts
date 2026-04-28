@@ -8,6 +8,7 @@ from brownie.network.transaction import TransactionReceipt
 
 from utils.config import network_name
 from utils.test.tx_tracing_helpers import (
+    add_event_emitter,
     count_vote_items_by_events,
     display_dg_events,
     display_voting_events,
@@ -17,13 +18,13 @@ from utils.test.tx_tracing_helpers import (
 from utils.tx_tracing import tx_events_from_receipt
 from utils.evm_script import encode_call_script
 from utils.dual_governance import PROPOSAL_STATUS
-from utils.test.event_validators.aragon import (
-    validate_aragon_grant_permission_event,
-    validate_aragon_revoke_permission_event,
-    validate_aragon_set_app_event,
-)
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
+from utils.test.event_validators.easy_track import (
+    EVMScriptFactoryAdded,
+    validate_evmscript_factory_added_event,
+    validate_evmscript_factory_removed_event,
+)
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import calculate_vote_ipfs_description, get_lido_vote_cid_from_str
 
@@ -44,6 +45,11 @@ from scripts.upgrade_2026_04_14_hoodi_protocol_upgrade import (
 # ============================================================================
 # ============================== Constants ===================================
 # ============================================================================
+def _selector(signature: str) -> str:
+    return web3.keccak(text=signature).hex()[:10]
+
+
+ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 EMERGENCY_PROTECTED_TIMELOCK = "0x0A5E22782C0Bd4AddF10D771f0bF0406B038282d"
 HOODI_LEGACY_STAKING_MODULE_MANAGER = "0xE28f573b732632fdE03BD5507A7d475383e8512E"
 DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000"
@@ -65,6 +71,9 @@ VERIFIER_ROLE = web3.keccak(text="VERIFIER_ROLE").hex()
 REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE = web3.keccak(text="REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE").hex()
 REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE = web3.keccak(text="REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE").hex()
 CREATE_NODE_OPERATOR_ROLE = web3.keccak(text="CREATE_NODE_OPERATOR_ROLE").hex()
+SET_BOND_CURVE_ROLE = web3.keccak(text="SET_BOND_CURVE_ROLE").hex()
+MANAGE_BOND_CURVES_ROLE = web3.keccak(text="MANAGE_BOND_CURVES_ROLE").hex()
+MANAGE_CURVE_PARAMETERS_ROLE = web3.keccak(text="MANAGE_CURVE_PARAMETERS_ROLE").hex()
 RESUME_ROLE = web3.keccak(text="RESUME_ROLE").hex()
 START_REFERRAL_SEASON_ROLE = web3.keccak(text="START_REFERRAL_SEASON_ROLE").hex()
 END_REFERRAL_SEASON_ROLE = web3.keccak(text="END_REFERRAL_SEASON_ROLE").hex()
@@ -72,9 +81,17 @@ MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE = web3.keccak(text="MANAGE_GENERAL_PEN
 REQUEST_BURN_SHARES_ROLE = web3.keccak(text="REQUEST_BURN_SHARES_ROLE").hex()
 REQUEST_BURN_MY_STETH_ROLE = web3.keccak(text="REQUEST_BURN_MY_STETH_ROLE").hex()
 ADD_FULL_WITHDRAWAL_REQUEST_ROLE = web3.keccak(text="ADD_FULL_WITHDRAWAL_REQUEST_ROLE").hex()
-EXIT_BALANCE_LIMIT_SET_TOPIC = web3.keccak(text="ExitBalanceLimitSet(uint256,uint256,uint256)").hex()
-CIRCUIT_BREAKER_PAUSER_SET_TOPIC = web3.keccak(text="PauserSet(address,address,address)").hex()
-CIRCUIT_BREAKER_HEARTBEAT_UPDATED_TOPIC = web3.keccak(text="HeartbeatUpdated(address,uint256)").hex()
+VALIDATE_STAKING_MODULE_SHARE_PARAMS_SELECTOR = _selector("validateParams((uint16,uint16,uint16,uint16))")
+UPDATE_MODULE_SHARES_SELECTOR = _selector("updateModuleShares(uint256,uint16,uint16)")
+ALLOW_CONSOLIDATION_PAIR_SELECTOR = _selector("allowPair(uint256,uint256,address)")
+SET_TREE_PARAMS_SELECTOR = _selector("setTreeParams(bytes32,string)")
+REPORT_SLASHED_WITHDRAWN_VALIDATORS_SELECTOR = _selector(
+    "reportSlashedWithdrawnValidators((uint256,uint256,uint256,uint256,bool)[])"
+)
+SETTLE_GENERAL_DELAYED_PENALTY_SELECTOR = _selector("settleGeneralDelayedPenalty(uint256[],uint256[])")
+CREATE_OR_UPDATE_OPERATOR_GROUP_SELECTOR = _selector(
+    "createOrUpdateOperatorGroup(uint256,((uint64,uint16)[],(bytes)[]))"
+)
 AO_CONTRACT_VERSION = 5
 AO_CONSENSUS_VERSION = 6
 AO_PREV_CONSENSUS_VERSION = 5
@@ -93,15 +110,14 @@ TW_FRAME_DURATION_IN_SEC = 240
 CURATED_MODULE_ID = 5
 CURATED_INITIAL_EPOCH = 47480
 CURATED_EPOCHS_PER_FRAME = 1575
-# TODO: restore Easy Track checks when full ET flow is enabled again.
-# EASYTRACK = "0x284D91a7D47850d21A6DEaaC6E538AC7E5E6fc2a"
-# STAKING_ROUTER = "0xCc820558B39ee15C7C45B59390B503b83fb499A8"
-# UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY = "0x0000000000000000000000000000000000000000"
-# ALLOW_CONSOLIDATION_PAIR_FACTORY = "0x0000000000000000000000000000000000000000"
-# CREATE_OR_UPDATE_OPERATOR_GROUP_FACTORY = "0x0000000000000000000000000000000000000000"
-# CONSOLIDATION_MIGRATOR = "0x0000000000000000000000000000000000000000"
-# META_REGISTRY = "0x0000000000000000000000000000000000000000"
-
+IDVT_BOND_CURVE = [[1, 1500000000000000000], [2, 500000000000000000]]
+IDVT_KEY_REMOVAL_CHARGE = 10000000000000000
+IDVT_GENERAL_DELAYED_PENALTY_FINE = 50000000000000000
+IDVT_QUEUE_PRIORITY = 1
+IDVT_QUEUE_MAX_DEPOSITS = 40
+IDVT_REWARD_SHARE_DATA = [[1, 5834], [65, 3334]]
+IDVT_ALLOWED_EXIT_DELAY = 432000
+IDVT_EXIT_DELAY_FEE = 50000000000000000
 
 # ============================================================================
 # ============================= Test params ==================================
@@ -109,10 +125,10 @@ CURATED_EPOCHS_PER_FRAME = 1575
 EXPECTED_VOTE_ID = None
 EXPECTED_DG_PROPOSAL_ID = None
 EXPECTED_VOTE_EVENTS_COUNT = None
-EXPECTED_DG_EVENTS_FROM_AGENT = 60
-EXPECTED_DG_EVENTS_COUNT = 60
+EXPECTED_DG_EVENTS_FROM_AGENT = 65
+EXPECTED_DG_EVENTS_COUNT = 65
 IPFS_DESCRIPTION_HASH = None
-DG_ONLY_MODE = True
+DG_ONLY_MODE = False
 
 
 class StakingModuleItem(NamedTuple):
@@ -162,28 +178,17 @@ def _assert_emitted_by(event_item, emitted_by: str) -> None:
     ), f"Wrong event emitter: expected {emitted_by}, got {event_item['_emitted_by']}"
 
 
-def _address_to_topic(address: str) -> str:
-    return "0x" + "0" * 24 + address.lower().replace("0x", "")
+def _permission(contract_address: str, selector: str) -> str:
+    return convert.to_address(contract_address).lower() + selector.lower().replace("0x", "")
+
+
+def _concat_permissions(*permissions: str) -> str:
+    assert permissions, "Expected at least one permission"
+    return permissions[0] + "".join(permission.replace("0x", "") for permission in permissions[1:])
 
 
 def _raw_event_values(raw_event: dict) -> dict:
     return {item["name"]: item["value"] for item in raw_event["data"]}
-
-
-def _decode_uint256_words(data_hex) -> list[int]:
-    normalized = _normalize_hex_data(data_hex)
-    return [int(normalized[i : i + 64], 16) for i in range(0, len(normalized), 64) if normalized[i : i + 64]]
-
-
-def _normalize_hex_data(data_hex) -> str:
-    if isinstance(data_hex, bytes):
-        normalized = data_hex.hex()
-    elif hasattr(data_hex, "hex") and callable(data_hex.hex):
-        normalized = data_hex.hex()
-    else:
-        normalized = str(data_hex)
-
-    return normalized.replace("0x", "")
 
 
 def _group_raw_dg_events_from_receipt(
@@ -215,13 +220,69 @@ def _group_raw_dg_events_from_receipt(
     return groups
 
 
+def _group_agent_dg_events_from_receipt(receipt: TransactionReceipt, timelock: str, agent: str) -> list[EventDict]:
+    events = tx_events_from_receipt(receipt)
+
+    assert len(events) >= 1, "Unexpected events count"
+    assert (
+        convert.to_address(events[-1]["address"]) == convert.to_address(timelock)
+        and events[-1]["name"] == "ProposalExecuted"
+    ), "Unexpected Dual Governance service event"
+
+    groups = []
+    current_group = None
+
+    for event in events[:-1]:
+        event_values = _raw_event_values(event) if event["name"] == "LogScriptCall" else {}
+        is_start_of_new_group = event["name"] == "LogScriptCall" and convert.to_address(
+            event_values["src"]
+        ) == convert.to_address(agent)
+
+        if is_start_of_new_group:
+            current_group = []
+            groups.append(current_group)
+
+        assert current_group is not None, "Unexpected DG events chain"
+        current_group.append(add_event_emitter(event))
+
+    return [EventDict(group) for group in groups]
+
+
+def _group_raw_agent_dg_events_from_receipt(receipt: TransactionReceipt, timelock: str, agent: str) -> list[list[dict]]:
+    events = tx_events_from_receipt(receipt)
+
+    assert len(events) >= 1, "Unexpected raw DG events count"
+    assert (
+        convert.to_address(events[-1]["address"]) == convert.to_address(timelock)
+        and events[-1]["name"] == "ProposalExecuted"
+    ), "Unexpected raw DG service event"
+
+    groups = []
+    current_group = None
+
+    for event in events[:-1]:
+        event_values = _raw_event_values(event) if event["name"] == "LogScriptCall" else {}
+        is_start_of_new_group = event["name"] == "LogScriptCall" and convert.to_address(
+            event_values["src"]
+        ) == convert.to_address(agent)
+
+        if is_start_of_new_group:
+            current_group = []
+            groups.append(current_group)
+
+        assert current_group is not None, "Unexpected raw DG events chain"
+        current_group.append(event)
+
+    return groups
+
+
 def validate_proxy_upgrade_event(
     event: EventDict,
     implementation: str,
     emitted_by: Optional[str] = None,
     events_chain: Optional[list[str]] = None,
 ) -> None:
-    _events_chain = events_chain or ["LogScriptCall", "Upgraded", "ScriptResult", "Executed"]
+    _events_chain = events_chain or ["LogScriptCall", "Upgraded"]
     validate_events_chain([e.name for e in event], _events_chain)
 
     assert event.count("LogScriptCall") == 1
@@ -240,7 +301,7 @@ def validate_contract_version_set_event(
     emitted_by: Optional[str] = None,
     events_chain: Optional[list[str]] = None,
 ) -> None:
-    _events_chain = events_chain or ["LogScriptCall", "ContractVersionSet", "ScriptResult", "Executed"]
+    _events_chain = events_chain or ["LogScriptCall", "ContractVersionSet"]
     validate_events_chain([e.name for e in event], _events_chain)
 
     assert event.count("ContractVersionSet") == 1
@@ -258,7 +319,7 @@ def validate_consensus_version_set_event(
     emitted_by: Optional[str] = None,
     events_chain: Optional[list[str]] = None,
 ) -> None:
-    _events_chain = events_chain or ["LogScriptCall", "ConsensusVersionSet", "ScriptResult", "Executed"]
+    _events_chain = events_chain or ["LogScriptCall", "ConsensusVersionSet"]
     validate_events_chain([e.name for e in event], _events_chain)
 
     assert event.count("ConsensusVersionSet") == 1
@@ -277,7 +338,7 @@ def validate_role_grant_event(
     sender: str,
     emitted_by: Optional[str] = None,
 ) -> None:
-    validate_events_chain([e.name for e in event], ["LogScriptCall", "RoleGranted", "ScriptResult", "Executed"])
+    validate_events_chain([e.name for e in event], ["LogScriptCall", "RoleGranted"])
 
     assert event.count("RoleGranted") == 1
     role_granted_event = _single_event(event, "RoleGranted")
@@ -296,7 +357,7 @@ def validate_role_revoke_event(
     sender: str,
     emitted_by: Optional[str] = None,
 ) -> None:
-    validate_events_chain([e.name for e in event], ["LogScriptCall", "RoleRevoked", "ScriptResult", "Executed"])
+    validate_events_chain([e.name for e in event], ["LogScriptCall", "RoleRevoked"])
 
     assert event.count("RoleRevoked") == 1
     role_revoked_event = _single_event(event, "RoleRevoked")
@@ -306,12 +367,6 @@ def validate_role_revoke_event(
 
     if emitted_by is not None:
         _assert_emitted_by(role_revoked_event, emitted_by)
-
-def validate_dg_noop_event(event: EventDict) -> None:
-    validate_events_chain([e.name for e in event], ["LogScriptCall", "ScriptResult", "Executed"])
-    assert event.count("LogScriptCall") == 1
-    assert event.count("ScriptResult") == 1
-    assert event.count("Executed") == 1
 
 def validate_module_add(event: EventDict, module: StakingModuleItem, emitted_by: str, sender: str) -> None:
     validate_events_chain(
@@ -324,8 +379,6 @@ def validate_module_add(event: EventDict, module: StakingModuleItem, emitted_by:
             "StakingModuleMaxDepositsPerBlockSet",
             "StakingModuleMinDepositBlockDistanceSet",
             "StakingRouterETHDeposited",
-            "ScriptResult",
-            "Executed",
         ],
     )
 
@@ -368,61 +421,27 @@ def validate_module_add(event: EventDict, module: StakingModuleItem, emitted_by:
     _assert_emitted_by(deposited_event, emitted_by)
 
 
-def validate_exit_balance_limit_set_raw_group(raw_group: list[dict], validators_exit_bus_oracle: str) -> None:
-    validate_events_chain(
-        [event["name"] for event in raw_group],
-        [
-            "LogScriptCall",
-            "Upgraded",
-            "ContractVersionSet",
-            "ConsensusVersionSet",
-            "SetMaxValidatorsPerReport",
-            "(unknown)",
-            "ScriptResult",
-            "Executed",
-        ],
-    )
-
-    unknown_event = raw_group[5]
-    unknown_event_values = _raw_event_values(unknown_event)
-    assert convert.to_address(unknown_event["address"]) == convert.to_address(validators_exit_bus_oracle)
-    assert unknown_event_values["topic1"] == EXIT_BALANCE_LIMIT_SET_TOPIC
-
-    decoded_words = _decode_uint256_words(unknown_event_values["data"])
-    assert decoded_words == [
-        VALIDATORS_EXIT_BUS_MAX_EXIT_BALANCE_ETH,
-        VALIDATORS_EXIT_BUS_BALANCE_PER_FRAME_ETH,
-        VALIDATORS_EXIT_BUS_FRAME_DURATION_IN_SEC,
-    ]
-
-
-def validate_circuit_breaker_registration_raw_group(
-    raw_group: list[dict],
+def validate_circuit_breaker_registration_event(
+    event: EventDict,
     circuit_breaker: str,
-    consolidation_gateway: str,
-    curated_module_committee: str,
+    pausable: str,
+    pauser: str,
 ) -> None:
     validate_events_chain(
-        [event["name"] for event in raw_group],
-        ["LogScriptCall", "(unknown)", "(unknown)", "ScriptResult", "Executed"],
+        [e.name for e in event],
+        ["LogScriptCall", "PauserSet", "HeartbeatUpdated"],
     )
 
-    first_unknown_event = raw_group[1]
-    second_unknown_event = raw_group[2]
+    pauser_set_event = _single_event(event, "PauserSet")
+    assert convert.to_address(pauser_set_event["pausable"]) == convert.to_address(pausable)
+    assert convert.to_address(pauser_set_event["previousPauser"]) == convert.to_address(ZERO_ADDRESS)
+    assert convert.to_address(pauser_set_event["newPauser"]) == convert.to_address(pauser)
+    _assert_emitted_by(pauser_set_event, circuit_breaker)
 
-    assert convert.to_address(first_unknown_event["address"]) == convert.to_address(circuit_breaker)
-    first_unknown_event_values = _raw_event_values(first_unknown_event)
-    assert first_unknown_event_values["topic1"] == CIRCUIT_BREAKER_PAUSER_SET_TOPIC
-    assert first_unknown_event_values["topic2"] == _address_to_topic(consolidation_gateway)
-    assert first_unknown_event_values["topic3"] == _address_to_topic("0x0000000000000000000000000000000000000000")
-    assert first_unknown_event_values["topic4"] == _address_to_topic(curated_module_committee)
-    assert _normalize_hex_data(first_unknown_event_values["data"]) == "00"
-
-    assert convert.to_address(second_unknown_event["address"]) == convert.to_address(circuit_breaker)
-    second_unknown_event_values = _raw_event_values(second_unknown_event)
-    assert second_unknown_event_values["topic1"] == CIRCUIT_BREAKER_HEARTBEAT_UPDATED_TOPIC
-    assert second_unknown_event_values["topic2"] == _address_to_topic(curated_module_committee)
-    assert int(_normalize_hex_data(second_unknown_event_values["data"]), 16) > 0
+    heartbeat_updated_event = _single_event(event, "HeartbeatUpdated")
+    assert convert.to_address(heartbeat_updated_event["pauser"]) == convert.to_address(pauser)
+    assert heartbeat_updated_event["newHeartbeatExpiry"] > 0
+    _assert_emitted_by(heartbeat_updated_event, circuit_breaker)
 
 
 @pytest.fixture(scope="module")
@@ -451,7 +470,13 @@ def runtime_upgrade_context():
     core_config = upgrade_config.getCoreUpgradeConfig()
     csm_config = upgrade_config.getCSMUpgradeConfig()
     curated_config = upgrade_config.getCuratedModuleConfig()
-    easy_track_new_factories, _ = upgrade_config.getEasyTrackConfig()
+    easy_track_new_factories, easy_track_old_factories = upgrade_config.getEasyTrackConfig()
+
+    # Load ABIs for Brownie receipt event decoding.
+    interface.CircuitBreaker(global_config["circuitBreaker"])
+    interface.ValidatorsExitBusOracle(core_config["validatorsExitBusOracle"])
+    interface.CSParametersRegistry(csm_config["parametersRegistry"])
+    interface.OneShotCurveSetup(csm_config["identifiedDVTClusterCurveSetup"])
 
     dual_governance = interface.DualGovernance(upgrade_config.DUAL_GOVERNANCE())
     dual_governance_admin_executor = None
@@ -482,6 +507,7 @@ def runtime_upgrade_context():
         "acl": core_config["acl"],
         "aragon_kernel": core_config["kernel"],
         "lido": global_config["lido"],
+        "easy_track": global_config["easyTrack"],
         "lido_app_id": core_config["lidoAppId"],
         "lido_impl": core_config["newLidoImpl"],
         "lido_locator": core_config["locator"],
@@ -521,18 +547,23 @@ def runtime_upgrade_context():
         "cs_exit_penalties_impl": csm_config["exitPenaltiesImpl"],
         "cs_validator_strikes": csm_config["strikes"],
         "cs_validator_strikes_impl": csm_config["strikesImpl"],
-        "old_verifier": csm_config["verifier"],
-        "verifier_v3": csm_config["verifierV3"],
+        "old_verifier": csm_config["oldVerifier"],
+        "verifier_v3": csm_config["newVerifier"],
         "old_permissionless_gate": csm_config["oldPermissionlessGate"],
-        "new_permissionless_gate": csm_config["permissionlessGate"],
-        "ics_manager": csm_config["identifiedCommunityStakersGateManager"],
-        "csm_general_delayed_penalty_reporter": csm_config["generalDelayedPenaltyReporter"],
-        "csm_penalties_manager": csm_config["penaltiesManager"],
+        "new_permissionless_gate": csm_config["newPermissionlessGate"],
+        "identified_dvt_cluster_gate": csm_config["identifiedDVTClusterGate"],
+        "identified_dvt_cluster_curve_setup": csm_config["identifiedDVTClusterCurveSetup"],
+        "identified_dvt_cluster_bond_curve_id": csm_config["identifiedDVTClusterBondCurveId"],
         "old_csm_ejector": old_csm_ejector,
         "csm_ejector": csm_config["ejector"],
+        "csm_committee": csm_config["csmCommittee"],
         "curated_module": curated_config["module"],
+        "curated_gates": curated_config["curatedGates"],
         "curated_accounting": curated_config["accounting"],
         "curated_ejector": curated_config["ejector"],
+        "curated_fee_oracle": curated_config["feeOracle"],
+        "curated_verifier": curated_config["verifier"],
+        "curated_circuit_breaker_pauser": curated_config["circuitBreakerPauser"],
         "curated_hash_consensus": curated_config["hashConsensus"],
         "curated_module_item": StakingModuleItem(
             id=CURATED_MODULE_ID,
@@ -547,7 +578,23 @@ def runtime_upgrade_context():
         ),
         "update_staking_module_share_limits_factory": easy_track_new_factories["UpdateStakingModuleShareLimits"],
         "allow_consolidation_pair_factory": easy_track_new_factories["AllowConsolidationPair"],
-        "create_or_update_operator_group_factory": easy_track_new_factories["CreateOrUpdateOperatorGroup"],
+        "set_merkle_gate_tree_for_csm_factory": easy_track_new_factories["SetMerkleGateTreeForCSM"],
+        "report_withdrawals_for_slashed_validators_for_csm_factory": easy_track_new_factories[
+            "ReportWithdrawalsForSlashedValidatorsForCSM"
+        ],
+        "settle_general_delayed_penalty_for_csm_factory": easy_track_new_factories[
+            "SettleGeneralDelayedPenaltyForCSM"
+        ],
+        "set_merkle_gate_tree_for_cm_factory": easy_track_new_factories["SetMerkleGateTreeForCM"],
+        "report_withdrawals_for_slashed_validators_for_cm_factory": easy_track_new_factories[
+            "ReportWithdrawalsForSlashedValidatorsForCM"
+        ],
+        "settle_general_delayed_penalty_for_cm_factory": easy_track_new_factories[
+            "SettleGeneralDelayedPenaltyForCM"
+        ],
+        "create_or_update_operator_group_factory": easy_track_new_factories["CreateOrUpdateOperatorGroupForCM"],
+        "old_csm_settle_el_stealing_penalty_factory": easy_track_old_factories["CSMSettleElStealingPenalty"],
+        "old_csm_set_vetted_gate_tree_factory": easy_track_old_factories["CSMSetVettedGateTree"],
         "consolidation_migrator": core_config["consolidationMigrator"],
         "meta_registry": curated_config["metaRegistry"],
     }
@@ -577,11 +624,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     agent = interface.Agent(ctx["agent"])
     timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
     dual_governance = interface.DualGovernance(ctx["dual_governance"])
-    # TODO: restore once Easy Track items are enabled in the vote again.
-    # easy_track = interface.EasyTrack(EASYTRACK)
-    # staking_router = interface.StakingRouter(STAKING_ROUTER)
-    # consolidation_migrator = interface.ConsolidationMigrator(CONSOLIDATION_MIGRATOR)
-    # meta_registry = interface.IMetaRegistry(META_REGISTRY)
+    easy_track = interface.EasyTrack(ctx["easy_track"])
 
     vote_desc_items, call_script_items = get_vote_items(
         dg_only=DG_ONLY_MODE,
@@ -596,6 +639,28 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     expected_ipfs_description_hash = IPFS_DESCRIPTION_HASH or calculate_vote_ipfs_description(
         get_ipfs_description(dg_only=DG_ONLY_MODE)
     )["cid"]
+    old_easy_track_factories = [
+        ctx["old_csm_settle_el_stealing_penalty_factory"],
+        ctx["old_csm_set_vetted_gate_tree_factory"],
+    ]
+    new_easy_track_factories = [
+        ctx["update_staking_module_share_limits_factory"],
+        ctx["allow_consolidation_pair_factory"],
+        ctx["set_merkle_gate_tree_for_csm_factory"],
+        ctx["report_withdrawals_for_slashed_validators_for_csm_factory"],
+        ctx["settle_general_delayed_penalty_for_csm_factory"],
+        ctx["set_merkle_gate_tree_for_cm_factory"],
+        ctx["report_withdrawals_for_slashed_validators_for_cm_factory"],
+        ctx["settle_general_delayed_penalty_for_cm_factory"],
+        ctx["create_or_update_operator_group_factory"],
+    ]
+    csm_tree_gate_permissions = _concat_permissions(
+        _permission(ctx["cs_vetted_gate"], SET_TREE_PARAMS_SELECTOR),
+        _permission(ctx["identified_dvt_cluster_gate"], SET_TREE_PARAMS_SELECTOR),
+    )
+    curated_tree_gate_permissions = _concat_permissions(
+        *[_permission(gate, SET_TREE_PARAMS_SELECTOR) for gate in ctx["curated_gates"]]
+    )
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -629,11 +694,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # ========================= Before voting checks ========================
         # =======================================================================
 
-        # TODO: restore Easy Track pre-vote checks together with full ET flow.
-        # initial_factories = easy_track.getEVMScriptFactories()
-        # assert UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY not in initial_factories
-        # assert ALLOW_CONSOLIDATION_PAIR_FACTORY not in initial_factories
-        # assert CREATE_OR_UPDATE_OPERATOR_GROUP_FACTORY not in initial_factories
+        initial_factories = easy_track.getEVMScriptFactories()
+        for factory in old_easy_track_factories:
+            assert factory in initial_factories
+        for factory in new_easy_track_factories:
+            assert factory not in initial_factories
 
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == expected_ipfs_description_hash
 
@@ -645,11 +710,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # ========================= After voting checks =========================
         # =======================================================================
 
-        # TODO: restore Easy Track post-vote checks together with full ET flow.
-        # new_factories = easy_track.getEVMScriptFactories()
-        # assert UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY in new_factories
-        # assert ALLOW_CONSOLIDATION_PAIR_FACTORY in new_factories
-        # assert CREATE_OR_UPDATE_OPERATOR_GROUP_FACTORY in new_factories
+        new_factories = easy_track.getEVMScriptFactories()
+        for factory in old_easy_track_factories:
+            assert factory not in new_factories
+        for factory in new_easy_track_factories:
+            assert factory in new_factories
 
         assert len(vote_events) == expected_vote_events_count
         assert count_vote_items_by_events(vote_tx, voting.address) == expected_vote_events_count
@@ -668,33 +733,116 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             proposal_calls=dual_governance_proposal_calls,
         )
 
-        # TODO: restore ET event validation when full ET flow is enabled again.
-        # validate_evmscript_factory_added_event(
-        #     event=vote_events[1],
-        #     p=EVMScriptFactoryAdded(
-        #         factory_addr=UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY,
-        #         permissions=create_permissions(staking_router, "updateModuleShares"),
-        #     ),
-        #     emitted_by=easy_track,
-        # )
-        #
-        # validate_evmscript_factory_added_event(
-        #     event=vote_events[2],
-        #     p=EVMScriptFactoryAdded(
-        #         factory_addr=ALLOW_CONSOLIDATION_PAIR_FACTORY,
-        #         permissions=create_permissions(consolidation_migrator, "allowPair"),
-        #     ),
-        #     emitted_by=easy_track,
-        # )
-        #
-        # validate_evmscript_factory_added_event(
-        #     event=vote_events[3],
-        #     p=EVMScriptFactoryAdded(
-        #         factory_addr=CREATE_OR_UPDATE_OPERATOR_GROUP_FACTORY,
-        #         permissions=create_permissions(meta_registry, "createOrUpdateOperatorGroup"),
-        #     ),
-        #     emitted_by=easy_track,
-        # )
+        # Validate EasyTrack factory removal/addition events
+        # 2. Remove old CSMSettleElStealingPenalty factory
+        validate_evmscript_factory_removed_event(
+            vote_events[1],
+            factory_addr=ctx["old_csm_settle_el_stealing_penalty_factory"],
+            emitted_by=easy_track,
+        )
+
+        # 3. Remove old CSMSetVettedGateTree factory
+        validate_evmscript_factory_removed_event(
+            vote_events[2],
+            factory_addr=ctx["old_csm_set_vetted_gate_tree_factory"],
+            emitted_by=easy_track,
+        )
+
+        # 4. Add UpdateStakingModuleShareLimits factory
+        validate_evmscript_factory_added_event(
+            event=vote_events[3],
+            p=EVMScriptFactoryAdded(
+                factory_addr=ctx["update_staking_module_share_limits_factory"],
+                permissions=_concat_permissions(
+                    _permission(
+                        ctx["update_staking_module_share_limits_factory"],
+                        VALIDATE_STAKING_MODULE_SHARE_PARAMS_SELECTOR,
+                    ),
+                    _permission(ctx["staking_router"], UPDATE_MODULE_SHARES_SELECTOR),
+                ),
+            ),
+            emitted_by=easy_track,
+        )
+
+        # 5. Add AllowConsolidationPair factory
+        validate_evmscript_factory_added_event(
+            event=vote_events[4],
+            p=EVMScriptFactoryAdded(
+                factory_addr=ctx["allow_consolidation_pair_factory"],
+                permissions=_permission(ctx["consolidation_migrator"], ALLOW_CONSOLIDATION_PAIR_SELECTOR),
+            ),
+            emitted_by=easy_track,
+        )
+
+        # 6. Add SetMerkleGateTree CSM factory
+        validate_evmscript_factory_added_event(
+            event=vote_events[5],
+            p=EVMScriptFactoryAdded(
+                factory_addr=ctx["set_merkle_gate_tree_for_csm_factory"],
+                permissions=csm_tree_gate_permissions,
+            ),
+            emitted_by=easy_track,
+        )
+
+        # 7. Add ReportWithdrawalsForSlashedValidators CSM factory
+        validate_evmscript_factory_added_event(
+            event=vote_events[6],
+            p=EVMScriptFactoryAdded(
+                factory_addr=ctx["report_withdrawals_for_slashed_validators_for_csm_factory"],
+                permissions=_permission(ctx["csm"], REPORT_SLASHED_WITHDRAWN_VALIDATORS_SELECTOR),
+            ),
+            emitted_by=easy_track,
+        )
+
+        # 8. Add SettleGeneralDelayedPenalty CSM factory
+        validate_evmscript_factory_added_event(
+            event=vote_events[7],
+            p=EVMScriptFactoryAdded(
+                factory_addr=ctx["settle_general_delayed_penalty_for_csm_factory"],
+                permissions=_permission(ctx["csm"], SETTLE_GENERAL_DELAYED_PENALTY_SELECTOR),
+            ),
+            emitted_by=easy_track,
+        )
+
+        # 9. Add SetMerkleGateTree CM factory
+        validate_evmscript_factory_added_event(
+            event=vote_events[8],
+            p=EVMScriptFactoryAdded(
+                factory_addr=ctx["set_merkle_gate_tree_for_cm_factory"],
+                permissions=curated_tree_gate_permissions,
+            ),
+            emitted_by=easy_track,
+        )
+
+        # 10. Add ReportWithdrawalsForSlashedValidators CM factory
+        validate_evmscript_factory_added_event(
+            event=vote_events[9],
+            p=EVMScriptFactoryAdded(
+                factory_addr=ctx["report_withdrawals_for_slashed_validators_for_cm_factory"],
+                permissions=_permission(ctx["curated_module"], REPORT_SLASHED_WITHDRAWN_VALIDATORS_SELECTOR),
+            ),
+            emitted_by=easy_track,
+        )
+
+        # 11. Add SettleGeneralDelayedPenalty CM factory
+        validate_evmscript_factory_added_event(
+            event=vote_events[10],
+            p=EVMScriptFactoryAdded(
+                factory_addr=ctx["settle_general_delayed_penalty_for_cm_factory"],
+                permissions=_permission(ctx["curated_module"], SETTLE_GENERAL_DELAYED_PENALTY_SELECTOR),
+            ),
+            emitted_by=easy_track,
+        )
+
+        # 12. Add CreateOrUpdateOperatorGroup CM factory
+        validate_evmscript_factory_added_event(
+            event=vote_events[11],
+            p=EVMScriptFactoryAdded(
+                factory_addr=ctx["create_or_update_operator_group_factory"],
+                permissions=_permission(ctx["meta_registry"], CREATE_OR_UPDATE_OPERATOR_GROUP_SELECTOR),
+            ),
+            emitted_by=easy_track,
+        )
     elif expected_dg_proposal_id is None:
         pytest.skip("Fill EXPECTED_DG_PROPOSAL_ID to run the DG part against an already executed live Hoodi vote.")
 
@@ -704,14 +852,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     if expected_dg_proposal_id is not None:
         details = timelock.getProposalDetails(expected_dg_proposal_id)
         if details["status"] != PROPOSAL_STATUS["executed"]:
-            # =========================================================================
-            # ================== DG before proposal executed checks ===================
-            # =========================================================================
-
-            # TODO Acceptance tests (before DG state)
-
-            # TODO Scenario tests (before DG state)
-
             if details["status"] == PROPOSAL_STATUS["submitted"]:
                 chain.sleep(timelock.getAfterSubmitDelay() + 1)
                 dual_governance.scheduleProposal(expected_dg_proposal_id, {"from": stranger})
@@ -721,24 +861,30 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 dg_tx: TransactionReceipt = timelock.execute(expected_dg_proposal_id, {"from": stranger})
                 display_dg_events(dg_tx)
-                dg_events = group_dg_events_from_receipt(
+                outer_dg_events = group_dg_events_from_receipt(
                     dg_tx,
                     timelock=EMERGENCY_PROTECTED_TIMELOCK,
                     admin_executor=ctx["dual_governance_admin_executor"],
                 )
-                raw_dg_events = _group_raw_dg_events_from_receipt(
+                dg_events = _group_agent_dg_events_from_receipt(
                     dg_tx,
                     timelock=EMERGENCY_PROTECTED_TIMELOCK,
-                    admin_executor=ctx["dual_governance_admin_executor"],
+                    agent=agent.address,
+                )
+                raw_dg_events = _group_raw_agent_dg_events_from_receipt(
+                    dg_tx,
+                    timelock=EMERGENCY_PROTECTED_TIMELOCK,
+                    agent=agent.address,
                 )
                 assert count_vote_items_by_events(dg_tx, agent.address) == expected_dg_events_from_agent
+                assert len(outer_dg_events) == 1
                 assert len(dg_events) == expected_dg_events_count
                 assert len(raw_dg_events) == expected_dg_events_count
 
                 # === DG EXECUTION EVENTS VALIDATION ===
 
                 # 1. Call UpgradeTemplate.startUpgrade
-                validate_events_chain([e.name for e in dg_events[0]], ["LogScriptCall", "UpgradeStarted", "ScriptResult", "Executed"])
+                validate_events_chain([e.name for e in dg_events[0]], ["LogScriptCall", "UpgradeStarted"])
                 upgrade_started_event = _single_event(dg_events[0], "UpgradeStarted")
                 _assert_emitted_by(upgrade_started_event, upgrade_template)
 
@@ -762,8 +908,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                         "RoleGranted",
                         "RoleGranted",
                         "Initialized",
-                        "ScriptResult",
-                        "Executed",
                     ],
                 )
                 role_grants = _event_list(dg_events[2], "RoleGranted")
@@ -799,8 +943,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                         "Upgraded",
                         "ContractVersionSet",
                         "ConsensusVersionSet",
-                        "ScriptResult",
-                        "Executed",
                     ],
                 )
                 validate_contract_version_set_event(
@@ -812,8 +954,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                         "Upgraded",
                         "ContractVersionSet",
                         "ConsensusVersionSet",
-                        "ScriptResult",
-                        "Executed",
                     ],
                 )
                 validate_consensus_version_set_event(
@@ -826,8 +966,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                         "Upgraded",
                         "ContractVersionSet",
                         "ConsensusVersionSet",
-                        "ScriptResult",
-                        "Executed",
                     ],
                 )
 
@@ -842,9 +980,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                         "ContractVersionSet",
                         "ConsensusVersionSet",
                         "SetMaxValidatorsPerReport",
-                        "(unknown)",
-                        "ScriptResult",
-                        "Executed",
+                        "ExitBalanceLimitSet",
                     ],
                 )
                 validate_contract_version_set_event(
@@ -857,9 +993,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                         "ContractVersionSet",
                         "ConsensusVersionSet",
                         "SetMaxValidatorsPerReport",
-                        "(unknown)",
-                        "ScriptResult",
-                        "Executed",
+                        "ExitBalanceLimitSet",
                     ],
                 )
                 validate_consensus_version_set_event(
@@ -873,15 +1007,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                         "ContractVersionSet",
                         "ConsensusVersionSet",
                         "SetMaxValidatorsPerReport",
-                        "(unknown)",
-                        "ScriptResult",
-                        "Executed",
+                        "ExitBalanceLimitSet",
                     ],
                 )
                 set_max_validators_event = _single_event(dg_events[4], "SetMaxValidatorsPerReport")
                 assert set_max_validators_event["maxValidatorsPerReport"] == VEBO_MAX_VALIDATORS_PER_REPORT
                 _assert_emitted_by(set_max_validators_event, ctx["validators_exit_bus_oracle"])
-                validate_exit_balance_limit_set_raw_group(raw_dg_events[4], ctx["validators_exit_bus_oracle"])
+                exit_balance_limit_event = _single_event(dg_events[4], "ExitBalanceLimitSet")
+                assert exit_balance_limit_event["maxExitBalanceEth"] == VALIDATORS_EXIT_BUS_MAX_EXIT_BALANCE_ETH
+                assert exit_balance_limit_event["balancePerFrameEth"] == VALIDATORS_EXIT_BUS_BALANCE_PER_FRAME_ETH
+                assert exit_balance_limit_event["frameDurationInSec"] == VALIDATORS_EXIT_BUS_FRAME_DURATION_IN_SEC
+                _assert_emitted_by(exit_balance_limit_event, ctx["validators_exit_bus_oracle"])
 
                 # 6. Upgrade Accounting implementation
                 validate_proxy_upgrade_event(dg_events[5], ctx["accounting_impl"], emitted_by=ctx["accounting"])
@@ -891,45 +1027,44 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     dg_events[6],
                     ctx["withdrawal_vault_impl"],
                     emitted_by=ctx["withdrawal_vault"],
-                    events_chain=["LogScriptCall", "Upgraded", "ContractVersionSet", "ScriptResult", "Executed"],
+                    events_chain=["LogScriptCall", "Upgraded", "ContractVersionSet"],
                 )
                 validate_contract_version_set_event(
                     dg_events[6],
                     WITHDRAWAL_VAULT_CONTRACT_VERSION,
                     emitted_by=ctx["withdrawal_vault"],
-                    events_chain=["LogScriptCall", "Upgraded", "ContractVersionSet", "ScriptResult", "Executed"],
+                    events_chain=["LogScriptCall", "Upgraded", "ContractVersionSet"],
                 )
 
                 # 8. Grant APP_MANAGER_ROLE on Kernel to Agent
-                validate_aragon_grant_permission_event(
-                    dg_events[7],
-                    entity=ctx["agent"],
-                    app=ctx["aragon_kernel"],
-                    role=APP_MANAGER_ROLE,
-                    emitted_by=ctx["acl"],
-                )
+                validate_events_chain([e.name for e in dg_events[7]], ["LogScriptCall", "SetPermission"])
+                set_permission_event = _single_event(dg_events[7], "SetPermission")
+                assert convert.to_address(set_permission_event["entity"]) == convert.to_address(ctx["agent"])
+                assert convert.to_address(set_permission_event["app"]) == convert.to_address(ctx["aragon_kernel"])
+                assert set_permission_event["role"] == APP_MANAGER_ROLE
+                assert set_permission_event["allowed"] is True
+                _assert_emitted_by(set_permission_event, ctx["acl"])
 
                 # 9. Set new Lido implementation in Kernel
-                validate_aragon_set_app_event(
-                    dg_events[8],
-                    app_id=ctx["lido_app_id"],
-                    app=ctx["lido_impl"],
-                    emitted_by=ctx["aragon_kernel"],
-                )
+                validate_events_chain([e.name for e in dg_events[8]], ["LogScriptCall", "SetApp"])
+                set_app_event = _single_event(dg_events[8], "SetApp")
+                assert set_app_event["appId"] == ctx["lido_app_id"]
+                assert convert.to_address(set_app_event["app"]) == convert.to_address(ctx["lido_impl"])
+                _assert_emitted_by(set_app_event, ctx["aragon_kernel"])
 
                 # 10. Revoke APP_MANAGER_ROLE on Kernel from Agent
-                validate_aragon_revoke_permission_event(
-                    dg_events[9],
-                    entity=ctx["agent"],
-                    app=ctx["aragon_kernel"],
-                    role=APP_MANAGER_ROLE,
-                    emitted_by=ctx["acl"],
-                )
+                validate_events_chain([e.name for e in dg_events[9]], ["LogScriptCall", "SetPermission"])
+                set_permission_event = _single_event(dg_events[9], "SetPermission")
+                assert convert.to_address(set_permission_event["entity"]) == convert.to_address(ctx["agent"])
+                assert convert.to_address(set_permission_event["app"]) == convert.to_address(ctx["aragon_kernel"])
+                assert set_permission_event["role"] == APP_MANAGER_ROLE
+                assert set_permission_event["allowed"] is False
+                _assert_emitted_by(set_permission_event, ctx["acl"])
 
                 # 11. Grant BUFFER_RESERVE_MANAGER_ROLE on Lido and transfer permission manager to Agent
                 validate_events_chain(
                     [e.name for e in dg_events[10]],
-                    ["LogScriptCall", "SetPermission", "ChangePermissionManager", "ScriptResult", "Executed"],
+                    ["LogScriptCall", "SetPermission", "ChangePermissionManager"],
                 )
                 set_permission_event = _single_event(dg_events[10], "SetPermission")
                 assert convert.to_address(set_permission_event["entity"]) == convert.to_address(ctx["agent"])
@@ -985,7 +1120,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 # 17. Set TWG exit limits
                 validate_events_chain(
                     [e.name for e in dg_events[16]],
-                    ["LogScriptCall", "ExitRequestsLimitSet", "ScriptResult", "Executed"],
+                    ["LogScriptCall", "ExitRequestsLimitSet"],
                 )
                 exit_requests_limit_set_event = _single_event(dg_events[16], "ExitRequestsLimitSet")
                 assert exit_requests_limit_set_event["maxExitRequestsLimit"] == TW_MAX_EXIT_REQUESTS
@@ -994,11 +1129,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 _assert_emitted_by(exit_requests_limit_set_event, ctx["triggerable_withdrawals_gateway"])
 
                 # 18. Register CircuitBreaker integration
-                validate_circuit_breaker_registration_raw_group(
-                    raw_dg_events[17],
+                validate_circuit_breaker_registration_event(
+                    dg_events[17],
                     circuit_breaker=ctx["circuit_breaker"],
-                    consolidation_gateway=ctx["consolidation_gateway"],
-                    curated_module_committee=ctx["curated_module_committee"],
+                    pausable=ctx["consolidation_gateway"],
+                    pauser=ctx["curated_module_committee"],
                 )
 
                 # 19. Upgrade and initialize CSM
@@ -1006,7 +1141,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     dg_events[18],
                     ctx["csm_impl"],
                     emitted_by=ctx["csm"],
-                    events_chain=["LogScriptCall", "Upgraded", "Initialized", "ScriptResult", "Executed"],
+                    events_chain=["LogScriptCall", "Upgraded", "Initialized"],
                 )
                 initialized_event = _single_event(dg_events[18], "Initialized")
                 assert initialized_event["version"] == 3
@@ -1017,7 +1152,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     dg_events[19],
                     ctx["cs_parameters_registry_impl"],
                     emitted_by=ctx["cs_parameters_registry"],
-                    events_chain=["LogScriptCall", "Upgraded", "Initialized", "ScriptResult", "Executed"],
+                    events_chain=["LogScriptCall", "Upgraded", "Initialized"],
                 )
                 initialized_event = _single_event(dg_events[19], "Initialized")
                 assert initialized_event["version"] == 3
@@ -1028,20 +1163,20 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     dg_events[20],
                     ctx["cs_fee_oracle_impl"],
                     emitted_by=ctx["cs_fee_oracle"],
-                    events_chain=["LogScriptCall", "Upgraded", "ConsensusVersionSet", "ContractVersionSet", "ScriptResult", "Executed"],
+                    events_chain=["LogScriptCall", "Upgraded", "ConsensusVersionSet", "ContractVersionSet"],
                 )
                 validate_consensus_version_set_event(
                     dg_events[20],
                     4,
                     3,
                     emitted_by=ctx["cs_fee_oracle"],
-                    events_chain=["LogScriptCall", "Upgraded", "ConsensusVersionSet", "ContractVersionSet", "ScriptResult", "Executed"],
+                    events_chain=["LogScriptCall", "Upgraded", "ConsensusVersionSet", "ContractVersionSet"],
                 )
                 validate_contract_version_set_event(
                     dg_events[20],
                     3,
                     emitted_by=ctx["cs_fee_oracle"],
-                    events_chain=["LogScriptCall", "Upgraded", "ConsensusVersionSet", "ContractVersionSet", "ScriptResult", "Executed"],
+                    events_chain=["LogScriptCall", "Upgraded", "ConsensusVersionSet", "ContractVersionSet"],
                 )
 
                 # 22. Upgrade CSVettedGate
@@ -1052,7 +1187,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     dg_events[22],
                     ctx["cs_accounting_impl"],
                     emitted_by=ctx["cs_accounting"],
-                    events_chain=["LogScriptCall", "Upgraded", "Initialized", "ScriptResult", "Executed"],
+                    events_chain=["LogScriptCall", "Upgraded", "Initialized"],
                 )
                 initialized_event = _single_event(dg_events[22], "Initialized")
                 assert initialized_event["version"] == 3
@@ -1063,7 +1198,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     dg_events[23],
                     ctx["cs_fee_distributor_impl"],
                     emitted_by=ctx["cs_fee_distributor"],
-                    events_chain=["LogScriptCall", "Upgraded", "Initialized", "ScriptResult", "Executed"],
+                    events_chain=["LogScriptCall", "Upgraded", "Initialized"],
                 )
                 initialized_event = _single_event(dg_events[23], "Initialized")
                 assert initialized_event["version"] == 3
@@ -1076,42 +1211,42 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 validate_proxy_upgrade_event(dg_events[25], ctx["cs_validator_strikes_impl"], emitted_by=ctx["cs_validator_strikes"])
 
                 # 27. Set CSM ejector
-                validate_events_chain([e.name for e in dg_events[26]], ["LogScriptCall", "EjectorSet", "ScriptResult", "Executed"])
+                validate_events_chain([e.name for e in dg_events[26]], ["LogScriptCall", "EjectorSet"])
                 ejector_set_event = _single_event(dg_events[26], "EjectorSet")
                 assert convert.to_address(ejector_set_event["ejector"]) == convert.to_address(ctx["csm_ejector"])
                 _assert_emitted_by(ejector_set_event, ctx["cs_validator_strikes"])
 
-                # 28. Grant REPORT_GENERAL_DELAYED_PENALTY_ROLE
-                validate_role_grant_event(
+                # 28. Revoke REPORT_EL_REWARDS_STEALING_PENALTY_ROLE
+                validate_role_revoke_event(
                     dg_events[27],
-                    REPORT_GENERAL_DELAYED_PENALTY_ROLE,
-                    ctx["csm_general_delayed_penalty_reporter"],
+                    REPORT_EL_REWARDS_STEALING_PENALTY_ROLE,
+                    ctx["csm_committee"],
                     sender=ctx["agent"],
                     emitted_by=ctx["csm"],
                 )
 
-                # 29. Grant SETTLE_GENERAL_DELAYED_PENALTY_ROLE
+                # 29. Grant REPORT_GENERAL_DELAYED_PENALTY_ROLE
                 validate_role_grant_event(
                     dg_events[28],
-                    SETTLE_GENERAL_DELAYED_PENALTY_ROLE,
+                    REPORT_GENERAL_DELAYED_PENALTY_ROLE,
+                    ctx["csm_committee"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["csm"],
+                )
+
+                # 30. Revoke SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE
+                validate_role_revoke_event(
+                    dg_events[29],
+                    SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE,
                     ctx["easytrack_evm_script_executor"],
                     sender=ctx["agent"],
                     emitted_by=ctx["csm"],
                 )
 
-                # 30. Revoke REPORT_EL_REWARDS_STEALING_PENALTY_ROLE
-                validate_role_revoke_event(
-                    dg_events[29],
-                    REPORT_EL_REWARDS_STEALING_PENALTY_ROLE,
-                    ctx["csm_general_delayed_penalty_reporter"],
-                    sender=ctx["agent"],
-                    emitted_by=ctx["csm"],
-                )
-
-                # 31. Revoke SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE
-                validate_role_revoke_event(
+                # 31. Grant SETTLE_GENERAL_DELAYED_PENALTY_ROLE
+                validate_role_grant_event(
                     dg_events[30],
-                    SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE,
+                    SETTLE_GENERAL_DELAYED_PENALTY_ROLE,
                     ctx["easytrack_evm_script_executor"],
                     sender=ctx["agent"],
                     emitted_by=ctx["csm"],
@@ -1171,53 +1306,160 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["csm"],
                 )
 
-                # 38. No-op DG item
-                validate_dg_noop_event(dg_events[37])
-
-                # 39. No-op DG item
-                validate_dg_noop_event(dg_events[38])
-
-                # 40. No-op DG item
-                validate_dg_noop_event(dg_events[39])
-
-                # 41. No-op DG item
-                validate_dg_noop_event(dg_events[40])
-
-                # 42. Revoke START_REFERRAL_SEASON_ROLE from Agent
+                # 38. Revoke START_REFERRAL_SEASON_ROLE from Agent
                 validate_role_revoke_event(
-                    dg_events[41],
+                    dg_events[37],
                     START_REFERRAL_SEASON_ROLE,
                     ctx["agent"],
                     sender=ctx["agent"],
                     emitted_by=ctx["cs_vetted_gate"],
                 )
 
-                # 43. Revoke END_REFERRAL_SEASON_ROLE from ICS manager
+                # 39. Revoke END_REFERRAL_SEASON_ROLE from CSM committee
                 validate_role_revoke_event(
-                    dg_events[42],
+                    dg_events[38],
                     END_REFERRAL_SEASON_ROLE,
-                    ctx["ics_manager"],
+                    ctx["csm_committee"],
                     sender=ctx["agent"],
                     emitted_by=ctx["cs_vetted_gate"],
                 )
 
-                # 44. No-op DG item
-                validate_dg_noop_event(dg_events[43])
+                # 40. Register CircuitBreaker pauser for CSM new verifier
+                validate_circuit_breaker_registration_event(
+                    dg_events[39],
+                    circuit_breaker=ctx["circuit_breaker"],
+                    pausable=ctx["verifier_v3"],
+                    pauser=ctx["csm_committee"],
+                )
 
-                # 45. No-op DG item
-                validate_dg_noop_event(dg_events[44])
+                # 41. Register CircuitBreaker pauser for CSM ejector
+                validate_circuit_breaker_registration_event(
+                    dg_events[40],
+                    circuit_breaker=ctx["circuit_breaker"],
+                    pausable=ctx["csm_ejector"],
+                    pauser=ctx["csm_committee"],
+                )
 
-                # 46. No-op DG item
-                validate_dg_noop_event(dg_events[45])
+                # 42. Register CircuitBreaker pauser for identified DVT cluster gate
+                validate_circuit_breaker_registration_event(
+                    dg_events[41],
+                    circuit_breaker=ctx["circuit_breaker"],
+                    pausable=ctx["identified_dvt_cluster_gate"],
+                    pauser=ctx["csm_committee"],
+                )
 
-                # 47. No-op DG item
-                validate_dg_noop_event(dg_events[46])
+                # 43. Grant CREATE_NODE_OPERATOR_ROLE to identified DVT cluster gate
+                validate_role_grant_event(
+                    dg_events[42],
+                    CREATE_NODE_OPERATOR_ROLE,
+                    ctx["identified_dvt_cluster_gate"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["csm"],
+                )
+
+                # 44. Grant SET_BOND_CURVE_ROLE to identified DVT cluster gate
+                validate_role_grant_event(
+                    dg_events[43],
+                    SET_BOND_CURVE_ROLE,
+                    ctx["identified_dvt_cluster_gate"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["cs_accounting"],
+                )
+
+                # 45. Grant MANAGE_BOND_CURVES_ROLE to identified DVT cluster curve setup
+                validate_role_grant_event(
+                    dg_events[44],
+                    MANAGE_BOND_CURVES_ROLE,
+                    ctx["identified_dvt_cluster_curve_setup"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["cs_accounting"],
+                )
+
+                # 46. Grant MANAGE_CURVE_PARAMETERS_ROLE to identified DVT cluster curve setup
+                validate_role_grant_event(
+                    dg_events[45],
+                    MANAGE_CURVE_PARAMETERS_ROLE,
+                    ctx["identified_dvt_cluster_curve_setup"],
+                    sender=ctx["agent"],
+                    emitted_by=ctx["cs_parameters_registry"],
+                )
+
+                # 47. Execute identified DVT cluster curve setup
+                validate_events_chain(
+                    [e.name for e in dg_events[46]],
+                    [
+                        "LogScriptCall",
+                        "BondCurveAdded",
+                        "KeyRemovalChargeSet",
+                        "GeneralDelayedPenaltyAdditionalFineSet",
+                        "QueueConfigSet",
+                        "RewardShareDataSet",
+                        "AllowedExitDelaySet",
+                        "ExitDelayFeeSet",
+                        "RoleRevoked",
+                        "RoleRevoked",
+                        "BondCurveDeployed",
+                    ],
+                )
+                bond_curve_added_event = _single_event(dg_events[46], "BondCurveAdded")
+                assert bond_curve_added_event["curveId"] == ctx["identified_dvt_cluster_bond_curve_id"]
+                assert bond_curve_added_event["bondCurveIntervals"] == IDVT_BOND_CURVE
+                _assert_emitted_by(bond_curve_added_event, ctx["cs_accounting"])
+                key_removal_charge_set_event = _single_event(dg_events[46], "KeyRemovalChargeSet")
+                assert key_removal_charge_set_event["curveId"] == ctx["identified_dvt_cluster_bond_curve_id"]
+                assert key_removal_charge_set_event["keyRemovalCharge"] == IDVT_KEY_REMOVAL_CHARGE
+                _assert_emitted_by(key_removal_charge_set_event, ctx["cs_parameters_registry"])
+                general_delayed_penalty_fine_event = _single_event(
+                    dg_events[46],
+                    "GeneralDelayedPenaltyAdditionalFineSet",
+                )
+                assert general_delayed_penalty_fine_event["curveId"] == ctx["identified_dvt_cluster_bond_curve_id"]
+                assert general_delayed_penalty_fine_event["fine"] == IDVT_GENERAL_DELAYED_PENALTY_FINE
+                _assert_emitted_by(general_delayed_penalty_fine_event, ctx["cs_parameters_registry"])
+                queue_config_set_event = _single_event(dg_events[46], "QueueConfigSet")
+                assert queue_config_set_event["curveId"] == ctx["identified_dvt_cluster_bond_curve_id"]
+                assert queue_config_set_event["priority"] == IDVT_QUEUE_PRIORITY
+                assert queue_config_set_event["maxDeposits"] == IDVT_QUEUE_MAX_DEPOSITS
+                _assert_emitted_by(queue_config_set_event, ctx["cs_parameters_registry"])
+                reward_share_data_set_event = _single_event(dg_events[46], "RewardShareDataSet")
+                assert reward_share_data_set_event["curveId"] == ctx["identified_dvt_cluster_bond_curve_id"]
+                assert reward_share_data_set_event["data"] == IDVT_REWARD_SHARE_DATA
+                _assert_emitted_by(reward_share_data_set_event, ctx["cs_parameters_registry"])
+                allowed_exit_delay_set_event = _single_event(dg_events[46], "AllowedExitDelaySet")
+                assert allowed_exit_delay_set_event["curveId"] == ctx["identified_dvt_cluster_bond_curve_id"]
+                assert allowed_exit_delay_set_event["delay"] == IDVT_ALLOWED_EXIT_DELAY
+                _assert_emitted_by(allowed_exit_delay_set_event, ctx["cs_parameters_registry"])
+                exit_delay_fee_event = _single_event(dg_events[46], "ExitDelayFeeSet")
+                assert exit_delay_fee_event["curveId"] == ctx["identified_dvt_cluster_bond_curve_id"]
+                assert exit_delay_fee_event["penalty"] == IDVT_EXIT_DELAY_FEE
+                _assert_emitted_by(exit_delay_fee_event, ctx["cs_parameters_registry"])
+                role_revokes = _event_list(dg_events[46], "RoleRevoked")
+                assert len(role_revokes) == 2
+                assert _normalize_role(role_revokes[0]["role"]) == MANAGE_BOND_CURVES_ROLE.replace("0x", "")
+                assert convert.to_address(role_revokes[0]["account"]) == convert.to_address(
+                    ctx["identified_dvt_cluster_curve_setup"]
+                )
+                assert convert.to_address(role_revokes[0]["sender"]) == convert.to_address(
+                    ctx["identified_dvt_cluster_curve_setup"]
+                )
+                _assert_emitted_by(role_revokes[0], ctx["cs_accounting"])
+                assert _normalize_role(role_revokes[1]["role"]) == MANAGE_CURVE_PARAMETERS_ROLE.replace("0x", "")
+                assert convert.to_address(role_revokes[1]["account"]) == convert.to_address(
+                    ctx["identified_dvt_cluster_curve_setup"]
+                )
+                assert convert.to_address(role_revokes[1]["sender"]) == convert.to_address(
+                    ctx["identified_dvt_cluster_curve_setup"]
+                )
+                _assert_emitted_by(role_revokes[1], ctx["cs_parameters_registry"])
+                bond_curve_deployed_event = _single_event(dg_events[46], "BondCurveDeployed")
+                assert bond_curve_deployed_event["curveId"] == ctx["identified_dvt_cluster_bond_curve_id"]
+                _assert_emitted_by(bond_curve_deployed_event, ctx["identified_dvt_cluster_curve_setup"])
 
                 # 48. Grant MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE
                 validate_role_grant_event(
                     dg_events[47],
                     MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE,
-                    ctx["csm_penalties_manager"],
+                    ctx["csm_committee"],
                     sender=ctx["agent"],
                     emitted_by=ctx["cs_parameters_registry"],
                 )
@@ -1289,7 +1531,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 )
 
                 # 57. Resume curated module
-                validate_events_chain([e.name for e in dg_events[56]], ["LogScriptCall", "Resumed", "ScriptResult", "Executed"])
+                validate_events_chain([e.name for e in dg_events[56]], ["LogScriptCall", "Resumed"])
                 resumed_event = _single_event(dg_events[56], "Resumed")
                 _assert_emitted_by(resumed_event, ctx["curated_module"])
 
@@ -1303,21 +1545,53 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 )
 
                 # 59. Set curated HashConsensus frame config
-                validate_events_chain([e.name for e in dg_events[58]], ["LogScriptCall", "FrameConfigSet", "ScriptResult", "Executed"])
+                validate_events_chain([e.name for e in dg_events[58]], ["LogScriptCall", "FrameConfigSet"])
                 frame_config_set_event = _single_event(dg_events[58], "FrameConfigSet")
                 assert frame_config_set_event["newInitialEpoch"] == CURATED_INITIAL_EPOCH
                 assert frame_config_set_event["newEpochsPerFrame"] == CURATED_EPOCHS_PER_FRAME
                 _assert_emitted_by(frame_config_set_event, ctx["curated_hash_consensus"])
 
-                # 60. Call UpgradeTemplate.finishUpgrade
-                validate_events_chain([e.name for e in dg_events[59]], ["LogScriptCall", "UpgradeFinished", "ScriptResult", "Executed"])
-                upgrade_finished_event = _single_event(dg_events[59], "UpgradeFinished")
+                # 60. Register CircuitBreaker pauser for Curated module
+                validate_circuit_breaker_registration_event(
+                    dg_events[59],
+                    circuit_breaker=ctx["circuit_breaker"],
+                    pausable=ctx["curated_module"],
+                    pauser=ctx["curated_circuit_breaker_pauser"],
+                )
+
+                # 61. Register CircuitBreaker pauser for Curated accounting
+                validate_circuit_breaker_registration_event(
+                    dg_events[60],
+                    circuit_breaker=ctx["circuit_breaker"],
+                    pausable=ctx["curated_accounting"],
+                    pauser=ctx["curated_circuit_breaker_pauser"],
+                )
+
+                # 62. Register CircuitBreaker pauser for Curated fee oracle
+                validate_circuit_breaker_registration_event(
+                    dg_events[61],
+                    circuit_breaker=ctx["circuit_breaker"],
+                    pausable=ctx["curated_fee_oracle"],
+                    pauser=ctx["curated_circuit_breaker_pauser"],
+                )
+
+                # 63. Register CircuitBreaker pauser for Curated verifier
+                validate_circuit_breaker_registration_event(
+                    dg_events[62],
+                    circuit_breaker=ctx["circuit_breaker"],
+                    pausable=ctx["curated_verifier"],
+                    pauser=ctx["curated_circuit_breaker_pauser"],
+                )
+
+                # 64. Register CircuitBreaker pauser for Curated ejector
+                validate_circuit_breaker_registration_event(
+                    dg_events[63],
+                    circuit_breaker=ctx["circuit_breaker"],
+                    pausable=ctx["curated_ejector"],
+                    pauser=ctx["curated_circuit_breaker_pauser"],
+                )
+
+                # 65. Call UpgradeTemplate.finishUpgrade
+                validate_events_chain([e.name for e in dg_events[64]], ["LogScriptCall", "UpgradeFinished", "ScriptResult", "Executed"])
+                upgrade_finished_event = _single_event(dg_events[64], "UpgradeFinished")
                 _assert_emitted_by(upgrade_finished_event, upgrade_template)
-
-        # =========================================================================
-        # ==================== After DG proposal executed checks ==================
-        # =========================================================================
-
-        # TODO Acceptance tests (after DG state)
-
-        # TODO Scenario tests (after DG state)
