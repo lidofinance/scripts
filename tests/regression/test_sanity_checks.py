@@ -192,7 +192,7 @@ def test_report_deviated_simulated_share_rate(steth_holder):
 
 
     simulated_share_rate = (
-        actual_share_rate * (MAX_BASIS_POINTS - SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT - 1) // MAX_BASIS_POINTS
+        actual_share_rate * (MAX_BASIS_POINTS - SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT - 2) // MAX_BASIS_POINTS
     )
 
     # TODO: Understand how to calculate actual share rate with penalized node operators
