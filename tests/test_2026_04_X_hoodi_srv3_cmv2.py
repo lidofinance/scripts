@@ -1,3 +1,5 @@
+import os
+
 from typing import NamedTuple, Optional
 
 import pytest
@@ -32,7 +34,7 @@ from utils.ipfs import calculate_vote_ipfs_description, get_lido_vote_cid_from_s
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.upgrade_2026_04_14_hoodi_protocol_upgrade import (
+from scripts.upgrade_2026_04_X_hoodi_srv3_cmv2 import (
     get_ipfs_description,
     start_vote,
     get_vote_items,
@@ -129,6 +131,7 @@ EXPECTED_DG_EVENTS_FROM_AGENT = 65
 EXPECTED_DG_EVENTS_COUNT = 65
 IPFS_DESCRIPTION_HASH = None
 DG_ONLY_MODE = False
+UPGRADE_VOTE_SCRIPT_ENV = "HOODI_UPGRADE_VOTE_SCRIPT"
 
 
 class StakingModuleItem(NamedTuple):
@@ -145,7 +148,7 @@ class StakingModuleItem(NamedTuple):
 
 def _is_placeholder_address(value: str) -> bool:
     normalized = str(value).lower()
-    return normalized in ("", "0x0000000000000000000000000000000000000000")
+    return normalized in ("", "0x0000000000000000000000000000000000000000") or normalized.startswith("todo")
 
 
 def _is_placeholder_text(value: str) -> bool:
@@ -449,7 +452,7 @@ def runtime_upgrade_context():
     if network_name() != "hoodi-fork":
         pytest.skip("Run the dedicated Hoodi upgrade test on --network hoodi-fork.")
 
-    upgrade_vote_script = UPGRADE_VOTE_SCRIPT
+    upgrade_vote_script = os.getenv(UPGRADE_VOTE_SCRIPT_ENV, UPGRADE_VOTE_SCRIPT)
 
     if (
         _is_placeholder_address(upgrade_vote_script)
@@ -457,8 +460,8 @@ def runtime_upgrade_context():
         or _is_placeholder_text(get_ipfs_description(dg_only=DG_ONLY_MODE))
     ):
         pytest.skip(
-            "Upgrade vote script address is missing. Set UPGRADE_VOTE_SCRIPT in "
-            "scripts/upgrade_2026_04_14_hoodi_protocol_upgrade.py first."
+            "Upgrade vote script address is missing. Set HOODI_UPGRADE_VOTE_SCRIPT "
+            "or UPGRADE_VOTE_SCRIPT in scripts/upgrade_2026_04_X_hoodi_srv3_cmv2.py first."
         )
 
     vote_script = interface.UpgradeVoteScript(upgrade_vote_script)
