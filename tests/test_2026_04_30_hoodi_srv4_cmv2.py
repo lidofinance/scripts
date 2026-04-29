@@ -34,8 +34,8 @@ from utils.ipfs import calculate_vote_ipfs_description, get_lido_vote_cid_from_s
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.upgrade_2026_04_X_hoodi_srv3_cmv2 import (
-    get_ipfs_description,
+from scripts.upgrade_2026_04_30_hoodi_srv4_cmv2 import (
+    IPFS_DESCRIPTION,
     start_vote,
     get_vote_items,
     get_dg_items,
@@ -130,7 +130,6 @@ EXPECTED_VOTE_EVENTS_COUNT = None
 EXPECTED_DG_EVENTS_FROM_AGENT = 65
 EXPECTED_DG_EVENTS_COUNT = 65
 IPFS_DESCRIPTION_HASH = None
-DG_ONLY_MODE = False
 UPGRADE_VOTE_SCRIPT_ENV = "HOODI_UPGRADE_VOTE_SCRIPT"
 
 
@@ -192,35 +191,6 @@ def _concat_permissions(*permissions: str) -> str:
 
 def _raw_event_values(raw_event: dict) -> dict:
     return {item["name"]: item["value"] for item in raw_event["data"]}
-
-
-def _group_raw_dg_events_from_receipt(
-    receipt: TransactionReceipt,
-    timelock: str,
-    admin_executor: str,
-) -> list[list[dict]]:
-    events = tx_events_from_receipt(receipt)
-
-    assert len(events) >= 1, "Unexpected raw DG events count"
-    assert (
-        convert.to_address(events[-1]["address"]) == convert.to_address(timelock)
-        and events[-1]["name"] == "ProposalExecuted"
-    ), "Unexpected raw DG service event"
-
-    groups = []
-    current_group = []
-
-    for event in events[:-1]:
-        current_group.append(event)
-
-        is_end_of_group = event["name"] == "Executed" and convert.to_address(event["address"]) == convert.to_address(
-            admin_executor
-        )
-        if is_end_of_group:
-            groups.append(current_group)
-            current_group = []
-
-    return groups
 
 
 def _group_agent_dg_events_from_receipt(receipt: TransactionReceipt, timelock: str, agent: str) -> list[EventDict]:
@@ -457,11 +427,11 @@ def runtime_upgrade_context():
     if (
         _is_placeholder_address(upgrade_vote_script)
         or _is_placeholder_text(DG_PROPOSAL_METADATA)
-        or _is_placeholder_text(get_ipfs_description(dg_only=DG_ONLY_MODE))
+        or _is_placeholder_text(IPFS_DESCRIPTION)
     ):
         pytest.skip(
             "Upgrade vote script address is missing. Set HOODI_UPGRADE_VOTE_SCRIPT "
-            "or UPGRADE_VOTE_SCRIPT in scripts/upgrade_2026_04_X_hoodi_srv3_cmv2.py first."
+            "or UPGRADE_VOTE_SCRIPT in scripts/upgrade_2026_04_30_hoodi_srv4_cmv2.py first."
         )
 
     vote_script = interface.UpgradeVoteScript(upgrade_vote_script)
@@ -630,19 +600,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     dual_governance = interface.DualGovernance(ctx["dual_governance"])
     easy_track = interface.EasyTrack(ctx["easy_track"])
 
-    vote_desc_items, call_script_items = get_vote_items(
-        dg_only=DG_ONLY_MODE,
-        upgrade_vote_script=ctx["upgrade_vote_script"],
-    )
+    _, call_script_items = get_vote_items(upgrade_vote_script=ctx["upgrade_vote_script"])
     dg_items = get_dg_items(ctx["upgrade_vote_script"])
     upgrade_template = ctx["upgrade_template"]
 
     expected_vote_events_count = EXPECTED_VOTE_EVENTS_COUNT or len(call_script_items)
     expected_dg_events_from_agent = EXPECTED_DG_EVENTS_FROM_AGENT or len(dg_items)
     expected_dg_events_count = EXPECTED_DG_EVENTS_COUNT or len(dg_items)
-    expected_ipfs_description_hash = IPFS_DESCRIPTION_HASH or calculate_vote_ipfs_description(
-        get_ipfs_description(dg_only=DG_ONLY_MODE)
-    )["cid"]
+    expected_ipfs_description_hash = IPFS_DESCRIPTION_HASH or calculate_vote_ipfs_description(IPFS_DESCRIPTION)["cid"]
     old_easy_track_factories = [
         ctx["old_csm_settle_el_stealing_penalty_factory"],
         ctx["old_csm_set_vetted_gate_tree_factory"],
@@ -679,7 +644,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         vote_id, _ = start_vote(
             {"from": ldo_holder},
             silent=True,
-            dg_only=DG_ONLY_MODE,
             upgrade_vote_script=ctx["upgrade_vote_script"],
         )
 
@@ -728,6 +692,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         assert expected_dg_proposal_id == timelock.getProposalsCount()
 
+        # 1. Submit a Dual Governance proposal to activate Staking Router v4 + Curated Module v2 + Community Staking Module v3
         validate_dual_governance_submit_event(
             vote_events[0],
             proposal_id=expected_dg_proposal_id,
@@ -737,22 +702,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             proposal_calls=dual_governance_proposal_calls,
         )
 
-        # Validate EasyTrack factory removal/addition events
-        # 2. Remove old CSMSettleElStealingPenalty factory
+        # 2. Remove CSMSettleElStealingPenalty ET factory
         validate_evmscript_factory_removed_event(
             vote_events[1],
             factory_addr=ctx["old_csm_settle_el_stealing_penalty_factory"],
             emitted_by=easy_track,
         )
 
-        # 3. Remove old CSMSetVettedGateTree factory
+        # 3. Remove CSMSetVettedGateTree ET factory
         validate_evmscript_factory_removed_event(
             vote_events[2],
             factory_addr=ctx["old_csm_set_vetted_gate_tree_factory"],
             emitted_by=easy_track,
         )
 
-        # 4. Add UpdateStakingModuleShareLimits factory
+        # 4. Add UpdateStakingModuleShareLimits ET factory
         validate_evmscript_factory_added_event(
             event=vote_events[3],
             p=EVMScriptFactoryAdded(
@@ -768,7 +732,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             emitted_by=easy_track,
         )
 
-        # 5. Add AllowConsolidationPair factory
+        # 5. Add AllowConsolidationPair ET factory
         validate_evmscript_factory_added_event(
             event=vote_events[4],
             p=EVMScriptFactoryAdded(
@@ -778,7 +742,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             emitted_by=easy_track,
         )
 
-        # 6. Add SetMerkleGateTree CSM factory
+        # 6. Add SetMerkleGateTree CSM ET factory
         validate_evmscript_factory_added_event(
             event=vote_events[5],
             p=EVMScriptFactoryAdded(
@@ -788,7 +752,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             emitted_by=easy_track,
         )
 
-        # 7. Add ReportWithdrawalsForSlashedValidators CSM factory
+        # 7. Add ReportWithdrawalsForSlashedValidators CSM ET factory
         validate_evmscript_factory_added_event(
             event=vote_events[6],
             p=EVMScriptFactoryAdded(
@@ -798,7 +762,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             emitted_by=easy_track,
         )
 
-        # 8. Add SettleGeneralDelayedPenalty CSM factory
+        # 8. Add SettleGeneralDelayedPenalty CSM ET factory
         validate_evmscript_factory_added_event(
             event=vote_events[7],
             p=EVMScriptFactoryAdded(
@@ -808,7 +772,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             emitted_by=easy_track,
         )
 
-        # 9. Add SetMerkleGateTree CM factory
+        # 9. Add SetMerkleGateTree CM ET factory
         validate_evmscript_factory_added_event(
             event=vote_events[8],
             p=EVMScriptFactoryAdded(
@@ -818,7 +782,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             emitted_by=easy_track,
         )
 
-        # 10. Add ReportWithdrawalsForSlashedValidators CM factory
+        # 10. Add ReportWithdrawalsForSlashedValidators CM ET factory
         validate_evmscript_factory_added_event(
             event=vote_events[9],
             p=EVMScriptFactoryAdded(
@@ -828,7 +792,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             emitted_by=easy_track,
         )
 
-        # 11. Add SettleGeneralDelayedPenalty CM factory
+        # 11. Add SettleGeneralDelayedPenalty CM ET factory
         validate_evmscript_factory_added_event(
             event=vote_events[10],
             p=EVMScriptFactoryAdded(
@@ -838,7 +802,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             emitted_by=easy_track,
         )
 
-        # 12. Add CreateOrUpdateOperatorGroup CM factory
+        # 12. Add CreateOrUpdateOperatorGroup CM ET factory
         validate_evmscript_factory_added_event(
             event=vote_events[11],
             p=EVMScriptFactoryAdded(
@@ -887,15 +851,15 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
                 # === DG EXECUTION EVENTS VALIDATION ===
 
-                # 1. Call UpgradeTemplate.startUpgrade
+                # 1.1. Call UpgradeTemplate.startUpgrade
                 validate_events_chain([e.name for e in dg_events[0]], ["LogScriptCall", "UpgradeStarted"])
                 upgrade_started_event = _single_event(dg_events[0], "UpgradeStarted")
                 _assert_emitted_by(upgrade_started_event, upgrade_template)
 
-                # 2. Upgrade LidoLocator proxy
+                # 1.2. Upgrade LidoLocator implementation
                 validate_proxy_upgrade_event(dg_events[1], ctx["lido_locator_impl"], emitted_by=ctx["lido_locator"])
 
-                # 3. Upgrade and finalize StakingRouter
+                # 1.3. Upgrade and finalize StakingRouter
                 validate_proxy_upgrade_event(
                     dg_events[2],
                     ctx["staking_router_impl"],
@@ -937,7 +901,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert initialized_event["version"] == 4
                 _assert_emitted_by(initialized_event, ctx["staking_router"])
 
-                # 4. Upgrade and finalize AccountingOracle
+                # 1.4. Upgrade and finalize AccountingOracle
                 validate_proxy_upgrade_event(
                     dg_events[3],
                     ctx["accounting_oracle_impl"],
@@ -973,7 +937,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     ],
                 )
 
-                # 5. Upgrade and finalize ValidatorsExitBusOracle
+                # 1.5. Upgrade and finalize ValidatorsExitBusOracle
                 validate_proxy_upgrade_event(
                     dg_events[4],
                     ctx["validators_exit_bus_oracle_impl"],
@@ -1023,10 +987,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert exit_balance_limit_event["frameDurationInSec"] == VALIDATORS_EXIT_BUS_FRAME_DURATION_IN_SEC
                 _assert_emitted_by(exit_balance_limit_event, ctx["validators_exit_bus_oracle"])
 
-                # 6. Upgrade Accounting implementation
+                # 1.6. Upgrade Accounting implementation
                 validate_proxy_upgrade_event(dg_events[5], ctx["accounting_impl"], emitted_by=ctx["accounting"])
 
-                # 7. Upgrade and finalize WithdrawalVault
+                # 1.7. Upgrade WithdrawalVault implementation
                 validate_proxy_upgrade_event(
                     dg_events[6],
                     ctx["withdrawal_vault_impl"],
@@ -1040,7 +1004,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     events_chain=["LogScriptCall", "Upgraded", "ContractVersionSet"],
                 )
 
-                # 8. Grant APP_MANAGER_ROLE on Kernel to Agent
+                # 1.8. Grant Aragon APP_MANAGER_ROLE to the AGENT
                 validate_events_chain([e.name for e in dg_events[7]], ["LogScriptCall", "SetPermission"])
                 set_permission_event = _single_event(dg_events[7], "SetPermission")
                 assert convert.to_address(set_permission_event["entity"]) == convert.to_address(ctx["agent"])
@@ -1049,14 +1013,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert set_permission_event["allowed"] is True
                 _assert_emitted_by(set_permission_event, ctx["acl"])
 
-                # 9. Set new Lido implementation in Kernel
+                # 1.9. Set Lido implementation in Kernel
                 validate_events_chain([e.name for e in dg_events[8]], ["LogScriptCall", "SetApp"])
                 set_app_event = _single_event(dg_events[8], "SetApp")
                 assert set_app_event["appId"] == ctx["lido_app_id"]
                 assert convert.to_address(set_app_event["app"]) == convert.to_address(ctx["lido_impl"])
                 _assert_emitted_by(set_app_event, ctx["aragon_kernel"])
 
-                # 10. Revoke APP_MANAGER_ROLE on Kernel from Agent
+                # 1.10. Revoke Aragon APP_MANAGER_ROLE from the AGENT
                 validate_events_chain([e.name for e in dg_events[9]], ["LogScriptCall", "SetPermission"])
                 set_permission_event = _single_event(dg_events[9], "SetPermission")
                 assert convert.to_address(set_permission_event["entity"]) == convert.to_address(ctx["agent"])
@@ -1065,7 +1029,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert set_permission_event["allowed"] is False
                 _assert_emitted_by(set_permission_event, ctx["acl"])
 
-                # 11. Grant BUFFER_RESERVE_MANAGER_ROLE on Lido and transfer permission manager to Agent
+                # 1.11. Create and grant Aragon BUFFER_RESERVE_MANAGER_ROLE to the AGENT
                 validate_events_chain(
                     [e.name for e in dg_events[10]],
                     ["LogScriptCall", "SetPermission", "ChangePermissionManager"],
@@ -1082,10 +1046,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert convert.to_address(change_permission_manager_event["manager"]) == convert.to_address(ctx["agent"])
                 _assert_emitted_by(change_permission_manager_event, ctx["acl"])
 
-                # 12. Finalize Lido contract version
+                # 1.12. Call finalizeUpgrade_v4 on Lido
                 validate_contract_version_set_event(dg_events[11], LIDO_CONTRACT_VERSION, emitted_by=ctx["lido"])
 
-                # 13. Grant STAKING_MODULE_SHARE_MANAGE_ROLE to EasyTrack executor
+                # 1.13. Grant STAKING_MODULE_SHARE_MANAGE_ROLE to EasyTrack executor
                 validate_role_grant_event(
                     dg_events[12],
                     STAKING_MODULE_SHARE_MANAGE_ROLE,
@@ -1094,7 +1058,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["staking_router"],
                 )
 
-                # 14. Revoke STAKING_MODULE_UNVETTING_ROLE from old DSM
+                # 1.14. Revoke STAKING_MODULE_UNVETTING_ROLE from old DSM
                 validate_role_revoke_event(
                     dg_events[13],
                     STAKING_MODULE_UNVETTING_ROLE,
@@ -1103,7 +1067,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["staking_router"],
                 )
 
-                # 15. Grant STAKING_MODULE_UNVETTING_ROLE to new DSM
+                # 1.15. Grant STAKING_MODULE_UNVETTING_ROLE to new DSM
                 validate_role_grant_event(
                     dg_events[14],
                     STAKING_MODULE_UNVETTING_ROLE,
@@ -1112,7 +1076,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["staking_router"],
                 )
 
-                # 16. Grant TW_EXIT_LIMIT_MANAGER_ROLE to Agent
+                # 1.16. Grant TW_EXIT_LIMIT_MANAGER_ROLE to Agent on TWGateway
                 validate_role_grant_event(
                     dg_events[15],
                     TW_EXIT_LIMIT_MANAGER_ROLE,
@@ -1121,7 +1085,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["triggerable_withdrawals_gateway"],
                 )
 
-                # 17. Set TWG exit limits
+                # 1.17. Set TWGateway exit request limits
                 validate_events_chain(
                     [e.name for e in dg_events[16]],
                     ["LogScriptCall", "ExitRequestsLimitSet"],
@@ -1132,7 +1096,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert exit_requests_limit_set_event["frameDurationInSec"] == TW_FRAME_DURATION_IN_SEC
                 _assert_emitted_by(exit_requests_limit_set_event, ctx["triggerable_withdrawals_gateway"])
 
-                # 18. Register CircuitBreaker pauser for ConsolidationGateway
+                # 1.18. Register CircuitBreaker pauser for ConsolidationGateway
                 validate_circuit_breaker_registration_event(
                     dg_events[17],
                     circuit_breaker=ctx["circuit_breaker"],
@@ -1140,7 +1104,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     pauser=ctx["consolidation_gateway_pauser"],
                 )
 
-                # 19. Upgrade and initialize CSM
+                # 1.19. Upgrade and finalize CSM v3
                 validate_proxy_upgrade_event(
                     dg_events[18],
                     ctx["csm_impl"],
@@ -1151,7 +1115,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert initialized_event["version"] == 3
                 _assert_emitted_by(initialized_event, ctx["csm"])
 
-                # 20. Upgrade and initialize CSParametersRegistry
+                # 1.20. Upgrade and finalize ParametersRegistry v3
                 validate_proxy_upgrade_event(
                     dg_events[19],
                     ctx["cs_parameters_registry_impl"],
@@ -1162,7 +1126,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert initialized_event["version"] == 3
                 _assert_emitted_by(initialized_event, ctx["cs_parameters_registry"])
 
-                # 21. Upgrade and finalize CSFeeOracle
+                # 1.21. Upgrade and finalize FeeOracle v3
                 validate_proxy_upgrade_event(
                     dg_events[20],
                     ctx["cs_fee_oracle_impl"],
@@ -1183,10 +1147,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     events_chain=["LogScriptCall", "Upgraded", "ConsensusVersionSet", "ContractVersionSet"],
                 )
 
-                # 22. Upgrade CSVettedGate
+                # 1.22. Upgrade CSVettedGate implementation
                 validate_proxy_upgrade_event(dg_events[21], ctx["cs_vetted_gate_impl"], emitted_by=ctx["cs_vetted_gate"])
 
-                # 23. Upgrade and initialize CSAccounting
+                # 1.23. Upgrade and finalize Accounting v3
                 validate_proxy_upgrade_event(
                     dg_events[22],
                     ctx["cs_accounting_impl"],
@@ -1197,7 +1161,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert initialized_event["version"] == 3
                 _assert_emitted_by(initialized_event, ctx["cs_accounting"])
 
-                # 24. Upgrade and initialize CSFeeDistributor
+                # 1.24. Upgrade and finalize FeeDistributor v3
                 validate_proxy_upgrade_event(
                     dg_events[23],
                     ctx["cs_fee_distributor_impl"],
@@ -1208,19 +1172,19 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert initialized_event["version"] == 3
                 _assert_emitted_by(initialized_event, ctx["cs_fee_distributor"])
 
-                # 25. Upgrade CSExitPenalties
+                # 1.25. Upgrade ExitPenalties implementation
                 validate_proxy_upgrade_event(dg_events[24], ctx["cs_exit_penalties_impl"], emitted_by=ctx["cs_exit_penalties"])
 
-                # 26. Upgrade CSValidatorStrikes
+                # 1.26. Upgrade ValidatorStrikes implementation
                 validate_proxy_upgrade_event(dg_events[25], ctx["cs_validator_strikes_impl"], emitted_by=ctx["cs_validator_strikes"])
 
-                # 27. Set CSM ejector
+                # 1.27. Point ValidatorStrikes to the new Ejector
                 validate_events_chain([e.name for e in dg_events[26]], ["LogScriptCall", "EjectorSet"])
                 ejector_set_event = _single_event(dg_events[26], "EjectorSet")
                 assert convert.to_address(ejector_set_event["ejector"]) == convert.to_address(ctx["csm_ejector"])
                 _assert_emitted_by(ejector_set_event, ctx["cs_validator_strikes"])
 
-                # 28. Revoke REPORT_EL_REWARDS_STEALING_PENALTY_ROLE
+                # 1.28. Revoke REPORT_EL_REWARDS_STEALING_PENALTY_ROLE
                 validate_role_revoke_event(
                     dg_events[27],
                     REPORT_EL_REWARDS_STEALING_PENALTY_ROLE,
@@ -1229,7 +1193,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["csm"],
                 )
 
-                # 29. Grant REPORT_GENERAL_DELAYED_PENALTY_ROLE
+                # 1.29. Grant REPORT_GENERAL_DELAYED_PENALTY_ROLE
                 validate_role_grant_event(
                     dg_events[28],
                     REPORT_GENERAL_DELAYED_PENALTY_ROLE,
@@ -1238,7 +1202,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["csm"],
                 )
 
-                # 30. Revoke SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE
+                # 1.30. Revoke SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE
                 validate_role_revoke_event(
                     dg_events[29],
                     SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE,
@@ -1247,7 +1211,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["csm"],
                 )
 
-                # 31. Grant SETTLE_GENERAL_DELAYED_PENALTY_ROLE
+                # 1.31. Grant SETTLE_GENERAL_DELAYED_PENALTY_ROLE
                 validate_role_grant_event(
                     dg_events[30],
                     SETTLE_GENERAL_DELAYED_PENALTY_ROLE,
@@ -1256,7 +1220,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["csm"],
                 )
 
-                # 32. Revoke VERIFIER_ROLE from old verifier
+                # 1.32. Revoke VERIFIER_ROLE from old verifier
                 validate_role_revoke_event(
                     dg_events[31],
                     VERIFIER_ROLE,
@@ -1265,7 +1229,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["csm"],
                 )
 
-                # 33. Grant VERIFIER_ROLE to verifier v3
+                # 1.33. Grant VERIFIER_ROLE to new verifier
                 validate_role_grant_event(
                     dg_events[32],
                     VERIFIER_ROLE,
@@ -1274,7 +1238,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["csm"],
                 )
 
-                # 34. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE
+                # 1.34. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE to VerifierV3
                 validate_role_grant_event(
                     dg_events[33],
                     REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE,
@@ -1283,7 +1247,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["csm"],
                 )
 
-                # 35. Grant REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE
+                # 1.35. Grant REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE to Easy Track
                 validate_role_grant_event(
                     dg_events[34],
                     REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE,
@@ -1292,7 +1256,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["csm"],
                 )
 
-                # 36. Revoke CREATE_NODE_OPERATOR_ROLE from old permissionless gate
+                # 1.36. Revoke CREATE_NODE_OPERATOR_ROLE from old PermissionlessGate
                 validate_role_revoke_event(
                     dg_events[35],
                     CREATE_NODE_OPERATOR_ROLE,
@@ -1301,7 +1265,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["csm"],
                 )
 
-                # 37. Grant CREATE_NODE_OPERATOR_ROLE to new permissionless gate
+                # 1.37. Grant CREATE_NODE_OPERATOR_ROLE to new PermissionlessGate
                 validate_role_grant_event(
                     dg_events[36],
                     CREATE_NODE_OPERATOR_ROLE,
@@ -1310,7 +1274,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["csm"],
                 )
 
-                # 38. Revoke START_REFERRAL_SEASON_ROLE from Agent
+                # 1.38. Revoke START_REFERRAL_SEASON_ROLE
                 validate_role_revoke_event(
                     dg_events[37],
                     START_REFERRAL_SEASON_ROLE,
@@ -1319,7 +1283,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["cs_vetted_gate"],
                 )
 
-                # 39. Revoke END_REFERRAL_SEASON_ROLE from CSM committee
+                # 1.39. Revoke END_REFERRAL_SEASON_ROLE
                 validate_role_revoke_event(
                     dg_events[38],
                     END_REFERRAL_SEASON_ROLE,
@@ -1328,7 +1292,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["cs_vetted_gate"],
                 )
 
-                # 40. Register CircuitBreaker pauser for CSM new verifier
+                # 1.40. Register CircuitBreaker pauser for CSM new verifier
                 validate_circuit_breaker_registration_event(
                     dg_events[39],
                     circuit_breaker=ctx["circuit_breaker"],
@@ -1336,7 +1300,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     pauser=ctx["csm_committee"],
                 )
 
-                # 41. Register CircuitBreaker pauser for CSM ejector
+                # 1.41. Register CircuitBreaker pauser for CSM Ejector
                 validate_circuit_breaker_registration_event(
                     dg_events[40],
                     circuit_breaker=ctx["circuit_breaker"],
@@ -1344,7 +1308,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     pauser=ctx["csm_committee"],
                 )
 
-                # 42. Register CircuitBreaker pauser for identified DVT cluster gate
+                # 1.42. Register CircuitBreaker pauser for CSM identified DVT cluster gate
                 validate_circuit_breaker_registration_event(
                     dg_events[41],
                     circuit_breaker=ctx["circuit_breaker"],
@@ -1352,7 +1316,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     pauser=ctx["csm_committee"],
                 )
 
-                # 43. Grant CREATE_NODE_OPERATOR_ROLE to identified DVT cluster gate
+                # 1.43. Grant CREATE_NODE_OPERATOR_ROLE to identified DVT cluster gate
                 validate_role_grant_event(
                     dg_events[42],
                     CREATE_NODE_OPERATOR_ROLE,
@@ -1361,7 +1325,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["csm"],
                 )
 
-                # 44. Grant SET_BOND_CURVE_ROLE to identified DVT cluster gate
+                # 1.44. Grant SET_BOND_CURVE_ROLE to identified DVT cluster gate
                 validate_role_grant_event(
                     dg_events[43],
                     SET_BOND_CURVE_ROLE,
@@ -1370,7 +1334,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["cs_accounting"],
                 )
 
-                # 45. Grant MANAGE_BOND_CURVES_ROLE to identified DVT cluster curve setup
+                # 1.45. Grant MANAGE_BOND_CURVES_ROLE to identified DVT cluster curve setup
                 validate_role_grant_event(
                     dg_events[44],
                     MANAGE_BOND_CURVES_ROLE,
@@ -1379,7 +1343,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["cs_accounting"],
                 )
 
-                # 46. Grant MANAGE_CURVE_PARAMETERS_ROLE to identified DVT cluster curve setup
+                # 1.46. Grant MANAGE_CURVE_PARAMETERS_ROLE to identified DVT cluster curve setup
                 validate_role_grant_event(
                     dg_events[45],
                     MANAGE_CURVE_PARAMETERS_ROLE,
@@ -1388,7 +1352,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["cs_parameters_registry"],
                 )
 
-                # 47. Execute identified DVT cluster curve setup
+                # 1.47. Execute identified DVT cluster curve setup
                 validate_events_chain(
                     [e.name for e in dg_events[46]],
                     [
@@ -1459,7 +1423,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert bond_curve_deployed_event["curveId"] == ctx["identified_dvt_cluster_bond_curve_id"]
                 _assert_emitted_by(bond_curve_deployed_event, ctx["identified_dvt_cluster_curve_setup"])
 
-                # 48. Grant MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE
+                # 1.48. Grant MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE to CSM Committee
                 validate_role_grant_event(
                     dg_events[47],
                     MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE,
@@ -1468,7 +1432,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["cs_parameters_registry"],
                 )
 
-                # 49. Revoke REQUEST_BURN_SHARES_ROLE from CSAccounting
+                # 1.49. Revoke REQUEST_BURN_SHARES_ROLE from CSM Accounting
                 validate_role_revoke_event(
                     dg_events[48],
                     REQUEST_BURN_SHARES_ROLE,
@@ -1477,7 +1441,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["burner"],
                 )
 
-                # 50. Grant REQUEST_BURN_MY_STETH_ROLE to CSAccounting
+                # 1.50. Grant REQUEST_BURN_MY_STETH_ROLE to CSM Accounting
                 validate_role_grant_event(
                     dg_events[49],
                     REQUEST_BURN_MY_STETH_ROLE,
@@ -1486,7 +1450,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["burner"],
                 )
 
-                # 51. Revoke ADD_FULL_WITHDRAWAL_REQUEST_ROLE from old CSM ejector
+                # 1.51. Revoke TWG full-withdrawal role from old Ejector
                 validate_role_revoke_event(
                     dg_events[50],
                     ADD_FULL_WITHDRAWAL_REQUEST_ROLE,
@@ -1495,7 +1459,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["triggerable_withdrawals_gateway"],
                 )
 
-                # 52. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE to CSM ejector
+                # 1.52. Grant TWG full-withdrawal role to new Ejector
                 validate_role_grant_event(
                     dg_events[51],
                     ADD_FULL_WITHDRAWAL_REQUEST_ROLE,
@@ -1504,10 +1468,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["triggerable_withdrawals_gateway"],
                 )
 
-                # 53. Add curated-onchain-v2 module
+                # 1.53. Add Curated module to StakingRouter
                 validate_module_add(dg_events[52], ctx["curated_module_item"], emitted_by=ctx["staking_router"], sender=ctx["agent"])
 
-                # 54. Grant REQUEST_BURN_MY_STETH_ROLE to curated accounting
+                # 1.54. Grant REQUEST_BURN_MY_STETH_ROLE to Curated Accounting
                 validate_role_grant_event(
                     dg_events[53],
                     REQUEST_BURN_MY_STETH_ROLE,
@@ -1516,7 +1480,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["burner"],
                 )
 
-                # 55. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE to curated ejector
+                # 1.55. Grant TWG full-withdrawal role to Curated Ejector
                 validate_role_grant_event(
                     dg_events[54],
                     ADD_FULL_WITHDRAWAL_REQUEST_ROLE,
@@ -1525,7 +1489,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["triggerable_withdrawals_gateway"],
                 )
 
-                # 56. Grant RESUME_ROLE on curated module to Agent
+                # 1.56. Grant RESUME_ROLE to agent on Curated module
                 validate_role_grant_event(
                     dg_events[55],
                     RESUME_ROLE,
@@ -1534,12 +1498,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["curated_module"],
                 )
 
-                # 57. Resume curated module
+                # 1.57. Resume Curated module
                 validate_events_chain([e.name for e in dg_events[56]], ["LogScriptCall", "Resumed"])
                 resumed_event = _single_event(dg_events[56], "Resumed")
                 _assert_emitted_by(resumed_event, ctx["curated_module"])
 
-                # 58. Revoke RESUME_ROLE from Agent
+                # 1.58. Revoke RESUME_ROLE from agent on Curated module
                 validate_role_revoke_event(
                     dg_events[57],
                     RESUME_ROLE,
@@ -1548,14 +1512,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ctx["curated_module"],
                 )
 
-                # 59. Set curated HashConsensus frame config
+                # 1.59. Update Curated HashConsensus frame config
                 validate_events_chain([e.name for e in dg_events[58]], ["LogScriptCall", "FrameConfigSet"])
                 frame_config_set_event = _single_event(dg_events[58], "FrameConfigSet")
                 assert frame_config_set_event["newInitialEpoch"] == CURATED_INITIAL_EPOCH
                 assert frame_config_set_event["newEpochsPerFrame"] == CURATED_EPOCHS_PER_FRAME
                 _assert_emitted_by(frame_config_set_event, ctx["curated_hash_consensus"])
 
-                # 60. Register CircuitBreaker pauser for Curated module
+                # 1.60. Register CircuitBreaker pauser for Curated module
                 validate_circuit_breaker_registration_event(
                     dg_events[59],
                     circuit_breaker=ctx["circuit_breaker"],
@@ -1563,7 +1527,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     pauser=ctx["curated_circuit_breaker_pauser"],
                 )
 
-                # 61. Register CircuitBreaker pauser for Curated accounting
+                # 1.61. Register CircuitBreaker pauser for Curated Accounting
                 validate_circuit_breaker_registration_event(
                     dg_events[60],
                     circuit_breaker=ctx["circuit_breaker"],
@@ -1571,7 +1535,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     pauser=ctx["curated_circuit_breaker_pauser"],
                 )
 
-                # 62. Register CircuitBreaker pauser for Curated fee oracle
+                # 1.62. Register CircuitBreaker pauser for Curated FeeOracle
                 validate_circuit_breaker_registration_event(
                     dg_events[61],
                     circuit_breaker=ctx["circuit_breaker"],
@@ -1579,7 +1543,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     pauser=ctx["curated_circuit_breaker_pauser"],
                 )
 
-                # 63. Register CircuitBreaker pauser for Curated verifier
+                # 1.63. Register CircuitBreaker pauser for Curated Verifier
                 validate_circuit_breaker_registration_event(
                     dg_events[62],
                     circuit_breaker=ctx["circuit_breaker"],
@@ -1587,7 +1551,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     pauser=ctx["curated_circuit_breaker_pauser"],
                 )
 
-                # 64. Register CircuitBreaker pauser for Curated ejector
+                # 1.64. Register CircuitBreaker pauser for Curated Ejector
                 validate_circuit_breaker_registration_event(
                     dg_events[63],
                     circuit_breaker=ctx["circuit_breaker"],
@@ -1595,7 +1559,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     pauser=ctx["curated_circuit_breaker_pauser"],
                 )
 
-                # 65. Call UpgradeTemplate.finishUpgrade
+                # 1.65. Call UpgradeTemplate.finishUpgrade
                 validate_events_chain([e.name for e in dg_events[64]], ["LogScriptCall", "UpgradeFinished", "ScriptResult", "Executed"])
                 upgrade_finished_event = _single_event(dg_events[64], "UpgradeFinished")
                 _assert_emitted_by(upgrade_finished_event, upgrade_template)

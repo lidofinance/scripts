@@ -1,44 +1,13 @@
 """
-TODO Vote 2026_04_14
+Vote 2026_04_30
 
-Uses deployed `UpgradeVoteScript` as the source of truth for both:
-1. DG items returned by `getVoteItems()`
-2. Immediate voting items returned by `getVotingVoteItems()`
-
-Replace the TODO values below after the Hoodi deployment.
-"""
-
-import os
-
-from typing import Dict, List, Optional, Tuple
-
-from brownie import interface
-
-from utils.config import get_deployer_account, get_is_live, get_priority_fee
-from utils.dual_governance import submit_proposals
-from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_description
-from utils.mainnet_fork import pass_and_exec_dao_vote
-from utils.voting import bake_vote_items, confirm_vote_script, create_vote
-
-
-# ============================== Addresses ===================================
-UPGRADE_VOTE_SCRIPT = "TODO: set deployed UpgradeVoteScript address"
-HOODI_DG_ONLY_ENV = "HOODI_DG_ONLY"
-
-
-# ============================= Description ==================================
-DG_PROPOSAL_METADATA = "Upgrade Lido protocol contracts on Ethereum Hoodi testnet"
-DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal for the Lido protocol upgrade on Ethereum Hoodi testnet"
-DG_IPFS_DESCRIPTION = """
-**Lido protocol upgrade on Ethereum Hoodi testnet**
-
-**Dual Governance proposal**
-1. Submit a Dual Governance proposal for the Lido protocol upgrade on Ethereum Hoodi testnet.
+1. Submit a Dual Governance proposal to activate Staking Router v4 + Curated Module v2 + Community Staking Module v3
+# ======================== Core ========================
 1.1. Call UpgradeTemplate.startUpgrade
 1.2. Upgrade LidoLocator implementation
-1.3. Upgrade StakingRouter implementation
-1.4. Upgrade AccountingOracle implementation
-1.5. Upgrade ValidatorsExitBusOracle implementation
+1.3. Upgrade and finalize StakingRouter
+1.4. Upgrade and finalize AccountingOracle
+1.5. Upgrade and finalize ValidatorsExitBusOracle
 1.6. Upgrade Accounting implementation
 1.7. Upgrade WithdrawalVault implementation
 1.8. Grant Aragon APP_MANAGER_ROLE to the AGENT
@@ -52,10 +21,11 @@ DG_IPFS_DESCRIPTION = """
 1.16. Grant TW_EXIT_LIMIT_MANAGER_ROLE to Agent on TWGateway
 1.17. Set TWGateway exit request limits
 1.18. Register CircuitBreaker pauser for ConsolidationGateway
+# ======================== CSM ========================
 1.19. Upgrade and finalize CSM v3
 1.20. Upgrade and finalize ParametersRegistry v3
 1.21. Upgrade and finalize FeeOracle v3
-1.22. Upgrade VettedGate implementation
+1.22. Upgrade CSVettedGate implementation
 1.23. Upgrade and finalize Accounting v3
 1.24. Upgrade and finalize FeeDistributor v3
 1.25. Upgrade ExitPenalties implementation
@@ -86,22 +56,23 @@ DG_IPFS_DESCRIPTION = """
 1.50. Grant REQUEST_BURN_MY_STETH_ROLE to CSM Accounting
 1.51. Revoke TWG full-withdrawal role from old Ejector
 1.52. Grant TWG full-withdrawal role to new Ejector
+# ======================== Curated Module ========================
 1.53. Add Curated module to StakingRouter
 1.54. Grant REQUEST_BURN_MY_STETH_ROLE to Curated Accounting
 1.55. Grant TWG full-withdrawal role to Curated Ejector
 1.56. Grant RESUME_ROLE to agent on Curated module
 1.57. Resume Curated module
 1.58. Revoke RESUME_ROLE from agent on Curated module
-1.59. Update Curated HashConsensus initial epoch
-1.60. Register CircuitBreaker pauser for CuratedModule
+1.59. Update Curated HashConsensus frame config
+1.60. Register CircuitBreaker pauser for Curated module
 1.61. Register CircuitBreaker pauser for Curated Accounting
 1.62. Register CircuitBreaker pauser for Curated FeeOracle
 1.63. Register CircuitBreaker pauser for Curated Verifier
 1.64. Register CircuitBreaker pauser for Curated Ejector
+# ======================== Finish Upgrade ========================
 1.65. Call UpgradeTemplate.finishUpgrade
-"""
 
-IMMEDIATE_VOTING_IPFS_DESCRIPTION = """**Immediate voting items**
+# ======================== EasyTrack ========================
 2. Remove CSMSettleElStealingPenalty ET factory
 3. Remove CSMSetVettedGateTree ET factory
 4. Add UpdateStakingModuleShareLimits ET factory
@@ -113,26 +84,39 @@ IMMEDIATE_VOTING_IPFS_DESCRIPTION = """**Immediate voting items**
 10. Add ReportWithdrawalsForSlashedValidators CM ET factory
 11. Add SettleGeneralDelayedPenalty CM ET factory
 12. Add CreateOrUpdateOperatorGroup CM ET factory
+
 """
 
-IPFS_DESCRIPTION = DG_IPFS_DESCRIPTION + "\n" + IMMEDIATE_VOTING_IPFS_DESCRIPTION
+from typing import Dict, List, Optional, Tuple
+
+from brownie import interface
+
+from utils.config import get_deployer_account, get_is_live, get_priority_fee
+from utils.dual_governance import submit_proposals
+from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_description
+from utils.mainnet_fork import pass_and_exec_dao_vote
+from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
 
-# ================================ Main ======================================
+# ============================== Addresses ===================================
+UPGRADE_VOTE_SCRIPT = "TODO: set deployed UpgradeVoteScript address"
 
 
-def is_dg_only_mode() -> bool:
-    return os.getenv(HOODI_DG_ONLY_ENV, "").lower() in ("1", "true", "yes", "on")
+# ============================= Description ==================================
+DG_PROPOSAL_METADATA = "Activate Staking Router v4 + Curated Module v2 + Community Staking Module v3"
+DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to activate Staking Router v4 + Curated Module v2 + Community Staking Module v3"
+IPFS_DESCRIPTION = """
+1. **Activate Staking Router v4**, including protocol contract upgrades and Dual Governance execution setup. Items 1.1-1.18.
+2. **Upgrade Community Staking Module to v3**, including CSM contract upgrades, role updates, identified DVT cluster setup, and triggerable withdrawals support. Items 1.19-1.52.
+3. **Add and configure Curated Module v2**. Items 1.53-1.64.
+4. **Finalize the protocol upgrade**. Item 1.65.
+5. **Update Easy Track factories for CSM v3 and Curated Module v2 operations**. Items 2-12.
+"""
 
 
 def is_placeholder_vote_script_address(value: str) -> bool:
     normalized = value.strip().lower()
     return normalized in ("", "0x0000000000000000000000000000000000000000") or normalized.startswith("todo")
-
-
-def get_ipfs_description(dg_only: Optional[bool] = None) -> str:
-    dg_only = is_dg_only_mode() if dg_only is None else dg_only
-    return DG_IPFS_DESCRIPTION if dg_only else IPFS_DESCRIPTION
 
 
 def get_dg_items(upgrade_vote_script: Optional[str] = None) -> List[Tuple[str, str]]:
@@ -153,10 +137,8 @@ def get_dg_items(upgrade_vote_script: Optional[str] = None) -> List[Tuple[str, s
 
 
 def get_vote_items(
-    dg_only: Optional[bool] = None,
     upgrade_vote_script: Optional[str] = None,
 ) -> Tuple[List[str], List[Tuple[str, str]]]:
-    dg_only = is_dg_only_mode() if dg_only is None else dg_only
     vote_script_address = (upgrade_vote_script or UPGRADE_VOTE_SCRIPT).strip()
     if is_placeholder_vote_script_address(vote_script_address):
         raise ValueError(
@@ -175,11 +157,10 @@ def get_vote_items(
     vote_desc_items.append(DG_SUBMISSION_DESCRIPTION)
     call_script_items.append(dg_call_script[0])
 
-    if not dg_only:
-        voting_items = omnibus.getVotingVoteItems()
-        for desc, call_script in voting_items:
-            vote_desc_items.append(desc)
-            call_script_items.append((call_script[0], call_script[1].hex()))
+    voting_items = omnibus.getVotingVoteItems()
+    for desc, call_script in voting_items:
+        vote_desc_items.append(desc)
+        call_script_items.append((call_script[0], call_script[1].hex()))
 
     return vote_desc_items, call_script_items
 
@@ -187,33 +168,27 @@ def get_vote_items(
 def start_vote(
     tx_params: Dict[str, str],
     silent: bool = False,
-    dg_only: Optional[bool] = None,
     upgrade_vote_script: Optional[str] = None,
 ):
-    dg_only = is_dg_only_mode() if dg_only is None else dg_only
     vote_desc_items, call_script_items = get_vote_items(
-        dg_only=dg_only,
         upgrade_vote_script=upgrade_vote_script,
     )
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
-    ipfs_description = get_ipfs_description(dg_only=dg_only)
-
     desc_ipfs = (
-        calculate_vote_ipfs_description(ipfs_description)
+        calculate_vote_ipfs_description(IPFS_DESCRIPTION)
         if silent
-        else upload_vote_ipfs_description(ipfs_description)
+        else upload_vote_ipfs_description(IPFS_DESCRIPTION)
     )
 
     vote_id, tx = confirm_vote_script(vote_items, silent, desc_ipfs) and list(
         create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
     )
 
-    if not dg_only:
-        vote_script_address = (upgrade_vote_script or UPGRADE_VOTE_SCRIPT).strip()
-        assert interface.UpgradeVoteScript(vote_script_address).isValidVoteScript(
-            vote_id,
-            DG_PROPOSAL_METADATA,
-        )
+    vote_script_address = (upgrade_vote_script or UPGRADE_VOTE_SCRIPT).strip()
+    assert interface.UpgradeVoteScript(vote_script_address).isValidVoteScript(
+        vote_id,
+        DG_PROPOSAL_METADATA,
+    )
 
     return vote_id, tx
 
