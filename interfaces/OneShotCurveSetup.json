@@ -1,0 +1,15 @@
+[
+  {
+    "type": "event",
+    "name": "BondCurveDeployed",
+    "inputs": [
+      {
+        "name": "curveId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  }
+]
