@@ -107,7 +107,7 @@ DG_PROPOSAL_METADATA = "Activate Staking Router v3 + Curated Module v2 + Communi
 DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to activate Staking Router v3 + Curated Module v2 + Community Staking Module v3"
 IPFS_DESCRIPTION = """
 1. **Activate Staking Router v3**, including protocol contract upgrades and Dual Governance execution setup. Items 1.1-1.18.
-2. **Upgrade Community Staking Module to v3**, including CSM contract upgrades, role updates, identified DVT cluster setup, and triggerable withdrawals support. Items 1.19-1.52.
+2. **Upgrade Community Staking Module to v3**, including CSM contract upgrades, role updates and identified DVT cluster setup. Items 1.19-1.52.
 3. **Add and configure Curated Module v2**. Items 1.53-1.64.
 4. **Finalize the protocol upgrade**. Item 1.65.
 5. **Update Easy Track factories for CSM v3 and Curated Module v2 operations**. Items 2-12.

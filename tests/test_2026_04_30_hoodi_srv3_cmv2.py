@@ -110,6 +110,7 @@ TW_MAX_EXIT_REQUESTS = 250
 TW_EXITS_PER_FRAME = 1
 TW_FRAME_DURATION_IN_SEC = 240
 CURATED_MODULE_ID = 5
+# TODO update
 CURATED_INITIAL_EPOCH = 47480
 CURATED_EPOCHS_PER_FRAME = 1575
 IDVT_BOND_CURVE = [[1, 1500000000000000000], [2, 500000000000000000]]
@@ -219,34 +220,6 @@ def _group_agent_dg_events_from_receipt(receipt: TransactionReceipt, timelock: s
         current_group.append(add_event_emitter(event))
 
     return [EventDict(group) for group in groups]
-
-
-def _group_raw_agent_dg_events_from_receipt(receipt: TransactionReceipt, timelock: str, agent: str) -> list[list[dict]]:
-    events = tx_events_from_receipt(receipt)
-
-    assert len(events) >= 1, "Unexpected raw DG events count"
-    assert (
-        convert.to_address(events[-1]["address"]) == convert.to_address(timelock)
-        and events[-1]["name"] == "ProposalExecuted"
-    ), "Unexpected raw DG service event"
-
-    groups = []
-    current_group = None
-
-    for event in events[:-1]:
-        event_values = _raw_event_values(event) if event["name"] == "LogScriptCall" else {}
-        is_start_of_new_group = event["name"] == "LogScriptCall" and convert.to_address(
-            event_values["src"]
-        ) == convert.to_address(agent)
-
-        if is_start_of_new_group:
-            current_group = []
-            groups.append(current_group)
-
-        assert current_group is not None, "Unexpected raw DG events chain"
-        current_group.append(event)
-
-    return groups
 
 
 def validate_proxy_upgrade_event(
@@ -511,6 +484,7 @@ def runtime_upgrade_context():
         "cs_parameters_registry_impl": csm_config["parametersRegistryImpl"],
         "cs_fee_oracle": csm_config["feeOracle"],
         "cs_fee_oracle_impl": csm_config["feeOracleImpl"],
+        "cs_fee_oracle_consensus_version": csm_config["feeOracleConsensusVersion"],
         "cs_vetted_gate": csm_config["vettedGate"],
         "cs_vetted_gate_impl": csm_config["vettedGateImpl"],
         "cs_accounting": csm_config["accounting"],
@@ -818,6 +792,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     # ======================= Execute DG Proposal =============================
     # =========================================================================
     if expected_dg_proposal_id is not None:
+        initial_cs_fee_oracle_consensus_version = interface.CSFeeOracle(ctx["cs_fee_oracle"]).getConsensusVersion()
         details = timelock.getProposalDetails(expected_dg_proposal_id)
         if details["status"] != PROPOSAL_STATUS["executed"]:
             if details["status"] == PROPOSAL_STATUS["submitted"]:
@@ -839,15 +814,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     timelock=EMERGENCY_PROTECTED_TIMELOCK,
                     agent=agent.address,
                 )
-                raw_dg_events = _group_raw_agent_dg_events_from_receipt(
-                    dg_tx,
-                    timelock=EMERGENCY_PROTECTED_TIMELOCK,
-                    agent=agent.address,
-                )
                 assert count_vote_items_by_events(dg_tx, agent.address) == expected_dg_events_from_agent
                 assert len(outer_dg_events) == 1
                 assert len(dg_events) == expected_dg_events_count
-                assert len(raw_dg_events) == expected_dg_events_count
 
                 # === DG EXECUTION EVENTS VALIDATION ===
 
@@ -1135,8 +1104,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 )
                 validate_consensus_version_set_event(
                     dg_events[20],
-                    4,
-                    3,
+                    ctx["cs_fee_oracle_consensus_version"],
+                    initial_cs_fee_oracle_consensus_version,
                     emitted_by=ctx["cs_fee_oracle"],
                     events_chain=["LogScriptCall", "Upgraded", "ConsensusVersionSet", "ContractVersionSet"],
                 )
