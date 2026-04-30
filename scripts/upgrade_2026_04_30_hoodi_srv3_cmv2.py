@@ -99,7 +99,7 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
 
 # ============================== Addresses ===================================
-UPGRADE_VOTE_SCRIPT = "0x256c4eece96b79584A705D8dbFBf29cC876b41b6"
+UPGRADE_VOTE_SCRIPT = "0xaC83987948dB29c54b91B9a3Bd7a5cA99fA7F1D1"
 
 
 # ============================= Description ==================================
