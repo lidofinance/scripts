@@ -1,7 +1,7 @@
 """
 Vote 2026_04_30
 
-1. Submit a Dual Governance proposal to activate Staking Router v4 + Curated Module v2 + Community Staking Module v3
+1. Submit a Dual Governance proposal to activate Staking Router v3 + Curated Module v2 + Community Staking Module v3
 # ======================== Core ========================
 1.1. Call UpgradeTemplate.startUpgrade
 1.2. Upgrade LidoLocator implementation
@@ -103,10 +103,10 @@ UPGRADE_VOTE_SCRIPT = "TODO: set deployed UpgradeVoteScript address"
 
 
 # ============================= Description ==================================
-DG_PROPOSAL_METADATA = "Activate Staking Router v4 + Curated Module v2 + Community Staking Module v3"
-DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to activate Staking Router v4 + Curated Module v2 + Community Staking Module v3"
+DG_PROPOSAL_METADATA = "Activate Staking Router v3 + Curated Module v2 + Community Staking Module v3"
+DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to activate Staking Router v3 + Curated Module v2 + Community Staking Module v3"
 IPFS_DESCRIPTION = """
-1. **Activate Staking Router v4**, including protocol contract upgrades and Dual Governance execution setup. Items 1.1-1.18.
+1. **Activate Staking Router v3**, including protocol contract upgrades and Dual Governance execution setup. Items 1.1-1.18.
 2. **Upgrade Community Staking Module to v3**, including CSM contract upgrades, role updates, identified DVT cluster setup, and triggerable withdrawals support. Items 1.19-1.52.
 3. **Add and configure Curated Module v2**. Items 1.53-1.64.
 4. **Finalize the protocol upgrade**. Item 1.65.

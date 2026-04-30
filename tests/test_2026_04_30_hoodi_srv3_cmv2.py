@@ -34,7 +34,7 @@ from utils.ipfs import calculate_vote_ipfs_description, get_lido_vote_cid_from_s
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.upgrade_2026_04_30_hoodi_srv4_cmv2 import (
+from scripts.upgrade_2026_04_30_hoodi_srv3_cmv2 import (
     IPFS_DESCRIPTION,
     start_vote,
     get_vote_items,
@@ -431,7 +431,7 @@ def runtime_upgrade_context():
     ):
         pytest.skip(
             "Upgrade vote script address is missing. Set HOODI_UPGRADE_VOTE_SCRIPT "
-            "or UPGRADE_VOTE_SCRIPT in scripts/upgrade_2026_04_30_hoodi_srv4_cmv2.py first."
+            "or UPGRADE_VOTE_SCRIPT in scripts/upgrade_2026_04_30_hoodi_srv3_cmv2.py first."
         )
 
     vote_script = interface.UpgradeVoteScript(upgrade_vote_script)
@@ -692,7 +692,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         assert expected_dg_proposal_id == timelock.getProposalsCount()
 
-        # 1. Submit a Dual Governance proposal to activate Staking Router v4 + Curated Module v2 + Community Staking Module v3
+        # 1. Submit a Dual Governance proposal to activate Staking Router v3 + Curated Module v2 + Community Staking Module v3
         validate_dual_governance_submit_event(
             vote_events[0],
             proposal_id=expected_dg_proposal_id,
