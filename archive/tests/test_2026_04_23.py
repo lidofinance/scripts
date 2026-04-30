@@ -16,7 +16,7 @@ from utils.test.event_validators.payout import Payout, validate_token_payout_eve
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.vote_2026_04_23 import (
+from archive.scripts.vote_2026_04_23 import (
     start_vote,
     get_vote_items,
 )

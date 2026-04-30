@@ -3,7 +3,7 @@ Vote 2026_04_23
 
 1. Transfer 2500 stETH 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84 from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c to Lido Labs Foundation operational multisig 0x95B521B4F55a447DB89f6a27f951713fC2035f3F
 
-TODO (after vote) Vote #{vote number} passed & executed on {date+time}, block {blockNumber}.
+Vote #200 passed & executed on Apr-28-2026 08:09:59 PM UTC, block 24980862.
 """
 
 from typing import Dict, List, Tuple
