@@ -65,6 +65,8 @@ ALLIANCE_OPS_LIMIT_BEFORE = 250_000 * 10**18
 ALLIANCE_OPS_PERIOD_DURATION_MONTHS_BEFORE = 3
 ALLIANCE_OPS_LIMIT_AFTER = 5_000_000 * 10**18
 ALLIANCE_OPS_PERIOD_DURATION_MONTHS_AFTER = 6
+ALLIANCE_OPS_PERIOD_START_AFTER = 1767225600  # Thu Jan 01 2026 00:00:00 GMT+0000
+ALLIANCE_OPS_PERIOD_END_AFTER = 1782864000  # Wed Jul 01 2026 00:00:00 GMT+0000
 DAI_TOKEN = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
 
 
@@ -107,10 +109,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     nor = interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
     alliance_ops_registry = interface.AllowedRecipientRegistry(ALLIANCE_OPS_STABLECOINS_REGISTRY)
     agent = interface.Agent(AGENT)
+    acl = interface.ACL(ACL)
 
     consensys_perm_param = Param(0, Op.EQ, ArgumentValue(CONSENSYS_NO_ID))
     consensys_perm_param_uint = consensys_perm_param.to_uint256()
     other_no_perm_param_uint = Param(0, Op.EQ, ArgumentValue(CONSENSYS_NO_ID + 1)).to_uint256()
+
+    alliance_ops_spent_before = None  # captured in the DG-before block when first-running the test
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -137,26 +142,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # ========================= Before voting checks ========================
         # =======================================================================
 
-        # 1.1. Emergency Protection end date — current value before the vote
-        protection_details_before = timelock.getEmergencyProtectionDetails()
-        assert protection_details_before["emergencyProtectionEndsAfter"] == EMERGENCY_PROTECTION_END_DATE_BEFORE
-
-        # 1.2. Consensys cannot manage signing keys yet
-        assert not nor.canPerform(CONSENSYS_NEW_MANAGER, MANAGE_SIGNING_KEYS_HASH, [consensys_perm_param_uint])
-        add_signing_keys_fails_for_consensys_manager(accounts)
-
-        # 1.3. Alliance Ops registry — current limit before the vote
-        assert alliance_ops_registry.getLimitParameters() == (
-            ALLIANCE_OPS_LIMIT_BEFORE,
-            ALLIANCE_OPS_PERIOD_DURATION_MONTHS_BEFORE,
-        )
-        (
-            alliance_ops_already_spent_before,
-            alliance_ops_spendable_before,
-            alliance_ops_period_start_before,
-            alliance_ops_period_end_before,
-        ) = alliance_ops_registry.getPeriodState()
-
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
 
         vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
@@ -166,25 +151,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =======================================================================
         # ========================= After voting checks =========================
         # =======================================================================
-
-        # 1.1. DG proposal submitted but not yet executed — EPT end date unchanged
-        protection_details_after_vote = timelock.getEmergencyProtectionDetails()
-        assert protection_details_after_vote["emergencyProtectionEndsAfter"] == EMERGENCY_PROTECTION_END_DATE_BEFORE
-
-        # 1.2. DG proposal submitted but not yet executed — permission not yet granted
-        assert not nor.canPerform(CONSENSYS_NEW_MANAGER, MANAGE_SIGNING_KEYS_HASH, [consensys_perm_param_uint])
-
-        # 1.3. DG proposal submitted but not yet executed — limit and period state unchanged
-        assert alliance_ops_registry.getLimitParameters() == (
-            ALLIANCE_OPS_LIMIT_BEFORE,
-            ALLIANCE_OPS_PERIOD_DURATION_MONTHS_BEFORE,
-        )
-        assert alliance_ops_registry.getPeriodState() == (
-            alliance_ops_already_spent_before,
-            alliance_ops_spendable_before,
-            alliance_ops_period_start_before,
-            alliance_ops_period_end_before,
-        )
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
@@ -212,9 +178,23 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # ================== DG before proposal executed checks ===================
             # =========================================================================
 
-            # 1.1. Emergency Protection end date still the old value before DG execution
+            # 1.1. Emergency Protection end date — current value before DG execution
             protection_details_before_dg = timelock.getEmergencyProtectionDetails()
             assert protection_details_before_dg["emergencyProtectionEndsAfter"] == EMERGENCY_PROTECTION_END_DATE_BEFORE
+
+            # 1.2. Consensys cannot manage signing keys yet
+            assert not acl.hasPermission["address,address,bytes32,uint[]"](
+                CONSENSYS_NEW_MANAGER, NODE_OPERATORS_REGISTRY, MANAGE_SIGNING_KEYS_HASH, [consensys_perm_param_uint]
+            )
+            assert not nor.canPerform(CONSENSYS_NEW_MANAGER, MANAGE_SIGNING_KEYS_HASH, [consensys_perm_param_uint])
+            add_signing_keys_fails_for_consensys_manager(accounts)
+
+            # 1.3. Alliance Ops registry — current limit before DG execution
+            assert alliance_ops_registry.getLimitParameters() == (
+                ALLIANCE_OPS_LIMIT_BEFORE,
+                ALLIANCE_OPS_PERIOD_DURATION_MONTHS_BEFORE,
+            )
+            alliance_ops_spent_before, _, _, _ = alliance_ops_registry.getPeriodState()
 
             if details["status"] == PROPOSAL_STATUS["submitted"]:
                 chain.sleep(timelock.getAfterSubmitDelay() + 1)
@@ -279,6 +259,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert protection_details_after_dg["emergencyProtectionEndsAfter"] == EMERGENCY_PROTECTION_END_DATE_AFTER
 
         # 1.2. Consensys can manage signing keys for operator 21 only — param restriction holds
+        assert acl.hasPermission["address,address,bytes32,uint[]"](
+            CONSENSYS_NEW_MANAGER, NODE_OPERATORS_REGISTRY, MANAGE_SIGNING_KEYS_HASH, [consensys_perm_param_uint]
+        )
+        assert not acl.hasPermission["address,address,bytes32,uint[]"](
+            CONSENSYS_NEW_MANAGER, NODE_OPERATORS_REGISTRY, MANAGE_SIGNING_KEYS_HASH, [other_no_perm_param_uint]
+        )
         assert nor.canPerform(CONSENSYS_NEW_MANAGER, MANAGE_SIGNING_KEYS_HASH, [consensys_perm_param_uint])
         assert not nor.canPerform(CONSENSYS_NEW_MANAGER, MANAGE_SIGNING_KEYS_HASH, [other_no_perm_param_uint])
         consensys_manager_adds_signing_keys(accounts)
@@ -289,6 +275,23 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             ALLIANCE_OPS_LIMIT_AFTER,
             ALLIANCE_OPS_PERIOD_DURATION_MONTHS_AFTER,
         )
+        # The new 6-month window (Jan-Jul 2026) encompasses the old 3-month one (Apr-Jul 2026),
+        # so `_currentPeriodAdvanced` does not trigger and the spent counter carries over.
+        # The period boundaries snap to the new 6-month calendar window covering the current chain time.
+        (
+            alliance_ops_spent_after,
+            alliance_ops_spendable_after,
+            alliance_ops_period_start_after,
+            alliance_ops_period_end_after,
+        ) = alliance_ops_registry.getPeriodState()
+        assert alliance_ops_period_start_after == ALLIANCE_OPS_PERIOD_START_AFTER
+        assert alliance_ops_period_end_after == ALLIANCE_OPS_PERIOD_END_AFTER
+        # Invariant: spent + spendable == limit. Holds even on re-runs where pre-state wasn't captured.
+        assert alliance_ops_spent_after + alliance_ops_spendable_after == ALLIANCE_OPS_LIMIT_AFTER
+        # On a first-run we additionally verify the spent counter was preserved through the change.
+        if alliance_ops_spent_before is not None:
+            assert alliance_ops_spent_after == alliance_ops_spent_before
+
         alliance_ops_payment_motion_test(stranger, accounts)
 
 
