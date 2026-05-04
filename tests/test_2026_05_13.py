@@ -11,7 +11,14 @@ from utils.test.tx_tracing_helpers import (
 )
 from utils.evm_script import encode_call_script
 from utils.dual_governance import PROPOSAL_STATUS
-from utils.permission_parameters import Param, Op, ArgumentValue
+from utils.permission_parameters import (
+    Param,
+    Op,
+    ArgumentValue,
+    SpecialArgumentID,
+    encode_argument_value_if,
+    encode_permission_params,
+)
 from utils.test.event_validators.allowed_recipients_registry import validate_set_limit_parameter_event
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
@@ -45,6 +52,7 @@ AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 EASYTRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 NODE_OPERATORS_REGISTRY = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
+EMERGENCY_ACTIVATION_COMMITTEE = "0x8B7854488Fde088d686Ea672B6ba1A5242515f45"  # configs/config_mainnet.py:429
 DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 
@@ -68,6 +76,9 @@ ALLIANCE_OPS_PERIOD_DURATION_MONTHS_AFTER = 6
 ALLIANCE_OPS_PERIOD_START_AFTER = 1767225600  # Thu Jan 01 2026 00:00:00 GMT+0000
 ALLIANCE_OPS_PERIOD_END_AFTER = 1782864000  # Wed Jul 01 2026 00:00:00 GMT+0000
 DAI_TOKEN = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+DAI_WARD = "0x9759A6Ac90977b93B58547b4A71c78317f391A28"  # authorized DAI minter, used to fund the Agent on a fork
+FINANCE = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
+EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 
 
 # ============================================================================
@@ -110,12 +121,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     alliance_ops_registry = interface.AllowedRecipientRegistry(ALLIANCE_OPS_STABLECOINS_REGISTRY)
     agent = interface.Agent(AGENT)
     acl = interface.ACL(ACL)
+    easy_track = interface.EasyTrack(EASYTRACK)
 
     consensys_perm_param = Param(0, Op.EQ, ArgumentValue(CONSENSYS_NO_ID))
     consensys_perm_param_uint = consensys_perm_param.to_uint256()
     other_no_perm_param_uint = Param(0, Op.EQ, ArgumentValue(CONSENSYS_NO_ID + 1)).to_uint256()
-
-    alliance_ops_spent_before = None  # captured in the DG-before block when first-running the test
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -181,6 +191,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # 1.1. Emergency Protection end date — current value before DG execution
             protection_details_before_dg = timelock.getEmergencyProtectionDetails()
             assert protection_details_before_dg["emergencyProtectionEndsAfter"] == EMERGENCY_PROTECTION_END_DATE_BEFORE
+            # Emergency Activation Committee can veto just before the old end date
+            emergency_committee_can_veto_at(EMERGENCY_PROTECTION_END_DATE_BEFORE - 1, accounts)
+            # Emergency Activation Committee cannot veto past the old end date
+            emergency_committee_cannot_veto_at(EMERGENCY_PROTECTION_END_DATE_BEFORE + 1, accounts)
 
             # 1.2. Consensys cannot manage signing keys yet
             assert not acl.hasPermission["address,address,bytes32,uint[]"](
@@ -194,7 +208,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 ALLIANCE_OPS_LIMIT_BEFORE,
                 ALLIANCE_OPS_PERIOD_DURATION_MONTHS_BEFORE,
             )
-            alliance_ops_spent_before, _, _, _ = alliance_ops_registry.getPeriodState()
 
             if details["status"] == PROPOSAL_STATUS["submitted"]:
                 chain.sleep(timelock.getAfterSubmitDelay() + 1)
@@ -257,6 +270,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # 1.1. Emergency Protection end date extended by one year
         protection_details_after_dg = timelock.getEmergencyProtectionDetails()
         assert protection_details_after_dg["emergencyProtectionEndsAfter"] == EMERGENCY_PROTECTION_END_DATE_AFTER
+        # Emergency Activation Committee can veto just before the old end date (still inside the original window)
+        emergency_committee_can_veto_at(EMERGENCY_PROTECTION_END_DATE_BEFORE - 1, accounts)
+        # Emergency Activation Committee can veto in the gap between the old and new end dates —
+        emergency_committee_can_veto_at(EMERGENCY_PROTECTION_END_DATE_BEFORE + 1, accounts)
+        # Emergency Activation Committee cannot veto past the new end date
+        emergency_committee_cannot_veto_at(EMERGENCY_PROTECTION_END_DATE_AFTER + 1, accounts)
 
         # 1.2. Consensys can manage signing keys for operator 21 only — param restriction holds
         assert acl.hasPermission["address,address,bytes32,uint[]"](
@@ -275,24 +294,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             ALLIANCE_OPS_LIMIT_AFTER,
             ALLIANCE_OPS_PERIOD_DURATION_MONTHS_AFTER,
         )
-        # The new 6-month window (Jan-Jul 2026) encompasses the old 3-month one (Apr-Jul 2026),
-        # so `_currentPeriodAdvanced` does not trigger and the spent counter carries over.
-        # The period boundaries snap to the new 6-month calendar window covering the current chain time.
-        (
-            alliance_ops_spent_after,
-            alliance_ops_spendable_after,
-            alliance_ops_period_start_after,
-            alliance_ops_period_end_after,
-        ) = alliance_ops_registry.getPeriodState()
-        assert alliance_ops_period_start_after == ALLIANCE_OPS_PERIOD_START_AFTER
-        assert alliance_ops_period_end_after == ALLIANCE_OPS_PERIOD_END_AFTER
-        # Invariant: spent + spendable == limit. Holds even on re-runs where pre-state wasn't captured.
-        assert alliance_ops_spent_after + alliance_ops_spendable_after == ALLIANCE_OPS_LIMIT_AFTER
-        # On a first-run we additionally verify the spent counter was preserved through the change.
-        if alliance_ops_spent_before is not None:
-            assert alliance_ops_spent_after == alliance_ops_spent_before
-
-        alliance_ops_payment_motion_test(stranger, accounts)
+        alliance_ops_limit_test(easy_track, alliance_ops_registry, stranger, accounts)
 
 
 # ============================================================================
@@ -335,27 +337,121 @@ def add_signing_keys_to_other_no_fails(accounts):
         nor.addSigningKeys(other_no_id, 1, pubkeys, signatures, {"from": manager})
 
 
-def alliance_ops_payment_motion_test(stranger, accounts):
-    """Post-DG scenario: an Alliance Ops top-up motion enacts under the new limit and increments spent."""
+def alliance_ops_limit_test(easy_track, registry, stranger, accounts):
+    """Post-DG scenario: spend down to a small remainder under the new 5M / 6-month limit and
+    assert the next motion that would exceed the spendable balance reverts.
+    """
     chain.snapshot()
-    easy_track = interface.EasyTrack(EASYTRACK)
-    alliance_ops_registry = interface.AllowedRecipientRegistry(ALLIANCE_OPS_STABLECOINS_REGISTRY)
     multisig = accounts.at(ALLIANCE_OPS_TRUSTED_CALLER, force=True)
     dai_token = interface.ERC20(DAI_TOKEN)
-    transfer_amount = 1_000 * 10**18
 
-    spent_before, _, _, _ = alliance_ops_registry.getPeriodState()
+    spent_at_entry, spendable_at_entry, _, _ = registry.getPeriodState()
+    # Sanity: we are operating against the new 6-month / 5M limit
+    assert spent_at_entry + spendable_at_entry == ALLIANCE_OPS_LIMIT_AFTER
+    spendable_left = 10  # wei — leave a tiny remainder to verify the post-spend state
+    to_spend = spendable_at_entry - spendable_left
 
+    prepare_agent_for_dai_payment(spendable_at_entry, accounts)
+    bump_create_payments_role_dai_cap(spendable_at_entry, accounts)
+
+    # 1) we can spend the entire remaining budget for the current period
     create_and_enact_payment_motion(
         easy_track,
         ALLIANCE_OPS_TRUSTED_CALLER,
         ALLIANCE_OPS_TOP_UP_FACTORY,
         dai_token,
         [multisig],
-        [transfer_amount],
+        [to_spend],
         stranger,
     )
 
-    spent_after, _, _, _ = alliance_ops_registry.getPeriodState()
-    assert spent_after == spent_before + transfer_amount
+    (
+        spent_after,
+        spendable_after,
+        period_start_after,
+        period_end_after,
+    ) = registry.getPeriodState()
+    assert spent_after == spent_at_entry + to_spend
+    assert spendable_after == spendable_left
+    assert period_start_after == ALLIANCE_OPS_PERIOD_START_AFTER
+    assert period_end_after == ALLIANCE_OPS_PERIOD_END_AFTER
+
+    # 2) we cannot spend more than what remains in the current period
+    with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
+        create_and_enact_payment_motion(
+            easy_track,
+            ALLIANCE_OPS_TRUSTED_CALLER,
+            ALLIANCE_OPS_TOP_UP_FACTORY,
+            dai_token,
+            [multisig],
+            [spendable_left + 1],
+            stranger,
+        )
+
+    chain.revert()
+
+
+def prepare_agent_for_dai_payment(amount: int, accounts) -> None:
+    dai = interface.Dai(DAI_TOKEN)
+    if dai.balanceOf(AGENT) < amount:
+        dai_ward = accounts.at(DAI_WARD, force=True)
+        dai.mint(AGENT, amount, {"from": dai_ward})
+    assert dai.balanceOf(AGENT) >= amount
+
+
+def bump_create_payments_role_dai_cap(max_per_call: int, accounts) -> None:
+    """Re-grant CREATE_PAYMENTS_ROLE to the EVM_SCRIPT_EXECUTOR with a DAI per-call cap that fits
+    the new period budget.
+    """
+    acl = interface.ACL(ACL)
+    create_payments_role = web3.keccak(text="CREATE_PAYMENTS_ROLE")
+    perm_manager = acl.getPermissionManager(FINANCE, create_payments_role)
+    dai_only_amount_limits = [
+        # if (token == DAI) then (amount <= max_per_call) else (deny)
+        Param(
+            SpecialArgumentID.LOGIC_OP_PARAM_ID,
+            Op.IF_ELSE,
+            encode_argument_value_if(condition=1, success=2, failure=3),
+        ),
+        Param(0, Op.EQ, ArgumentValue(DAI_TOKEN)),
+        Param(2, Op.LTE, ArgumentValue(max_per_call)),
+        Param(SpecialArgumentID.PARAM_VALUE_PARAM_ID, Op.RET, ArgumentValue(0)),
+    ]
+    acl.grantPermissionP(
+        EVM_SCRIPT_EXECUTOR,
+        FINANCE,
+        create_payments_role,
+        encode_permission_params(dai_only_amount_limits),
+        {"from": accounts.at(perm_manager, force=True)},
+    )
+
+
+def emergency_committee_can_veto_at(timestamp: int, accounts) -> None:
+    """Snapshot, fast-forward to `timestamp` (if in the future), then assert the Emergency Activation
+    Committee can call activateEmergencyMode.
+    """
+    chain.snapshot()
+    if timestamp > chain.time():
+        chain.sleep(timestamp - chain.time())
+    timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
+    committee = accounts.at(EMERGENCY_ACTIVATION_COMMITTEE, force=True)
+    set_balance(committee, 10)
+    assert not timelock.isEmergencyModeActive()
+    timelock.activateEmergencyMode({"from": committee})
+    assert timelock.isEmergencyModeActive()
+    chain.revert()
+
+
+def emergency_committee_cannot_veto_at(timestamp: int, accounts) -> None:
+    """Snapshot, fast-forward to `timestamp`, then assert activateEmergencyMode reverts because the
+    Emergency Protection has expired (timestamp >= emergencyProtectionEndsAfter).
+    """
+    chain.snapshot()
+    if timestamp > chain.time():
+        chain.sleep(timestamp - chain.time())
+    timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
+    committee = accounts.at(EMERGENCY_ACTIVATION_COMMITTEE, force=True)
+    set_balance(committee, 10)
+    with reverts():  # EmergencyProtectionExpired(protectedTill)
+        timelock.activateEmergencyMode({"from": committee})
     chain.revert()

@@ -4,11 +4,11 @@ Vote 2026_05_13.
 I. Extend Dual Governance Emergency Protection for one additional year
     1.1. Call setEmergencyProtectionEndDate(1813449600) on Emergency Protected Timelock 0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316
 
-II. Grant MANAGE_SIGNING_KEYS role to Consensys (NO ID = 21)
-    1.2. Grant MANAGE_SIGNING_KEYS role for operator ID = 21 to 0xF45C77EadD434612fCD93db978B3E36B0D58eC99 on Curated Node Operators Registry
+II. Grant MANAGE_SIGNING_KEYS role to Consensys
+    1.2. Grant MANAGE_SIGNING_KEYS 75abc64490e17b40ea1e66691c3eb493647b24430b358bd87ec3e5127f1621ee role to 0xF45C77EadD434612fCD93db978B3E36B0D58eC99 for Node Operator Consensys (ID = 21)
 
-III. Increase limit on Alliance Ops stablecoins Easy Track factory
-    1.3. Set limit to 5,000,000 stETH per 6 months on Alliance Ops AllowedRecipientsRegistry 0x3B525F4c059F246Ca4aa995D21087204F30c9E2F
+III. Increase limit from $250K per 3 months to $5M per 6 months on Alliance Ops stablecoins Easy Track factory
+    1.3. Set limit to 5,000,000 stETH per 6 months on Alliance Ops stablecoins AllowedRecipientsRegistry 0x3B525F4c059F246Ca4aa995D21087204F30c9E2F
 
 IV. Change number of epochs in VEBO reporting frame
     1.4. Grant MANAGE_FRAME_CONFIG_ROLE 0x921f40f434e049d23969cbe68d9cf3ac1013fbe8945da07963af6f3142de6afe role to Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c on the VEBO Hash Consensus 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
@@ -63,7 +63,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
             timelock.address,
             timelock.setEmergencyProtectionEndDate.encode_input(NEW_EMERGENCY_PROTECTION_END_DATE),
         ),
-        # 1.2. Grant MANAGE_SIGNING_KEYS role for operator ID = 21 to 0xF45C77EadD434612fCD93db978B3E36B0D58eC99 on Curated Node Operators Registry 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
+        # 1.2. Grant MANAGE_SIGNING_KEYS 75abc64490e17b40ea1e66691c3eb493647b24430b358bd87ec3e5127f1621ee role to 0xF45C77EadD434612fCD93db978B3E36B0D58eC99 for Node Operator Consensys (ID = 21)
         agent_forward([
             encode_permission_grant_p(
                 target_app=NODE_OPERATORS_REGISTRY,
@@ -72,7 +72,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 params=[Param(0, Op.EQ, ArgumentValue(CONSENSYS_NO_ID))],
             ),
         ]),
-        # 1.3. Set limit to 5,000,000 stETH per 6 months on Alliance Ops AllowedRecipientsRegistry 0x3B525F4c059F246Ca4aa995D21087204F30c9E2F
+        # 1.3. Set limit to 5,000,000 stETH per 6 months on Alliance Ops stablecoins AllowedRecipientsRegistry 0x3B525F4c059F246Ca4aa995D21087204F30c9E2F
         agent_forward([
             set_limit_parameters(
                 registry_address=ALLIANCE_OPS_STABLECOINS_REGISTRY,
