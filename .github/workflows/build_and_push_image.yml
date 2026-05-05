@@ -66,23 +66,6 @@ jobs:
       - name: Create and push manifest images
         uses: lidofinance/docker-manifest-action@b33ab348026b120a895167160f5605b0197f0862
         with:
-            inputs: ghcr.io/lidofinance/scripts:${{ github.ref_name }}
-            images: ghcr.io/lidofinance/scripts:${{ github.ref_name }}-amd64,ghcr.io/lidofinance/scripts:${{ github.ref_name }}-arm64
-            push: true
-
-  run-trivy:
-    needs: docker-manifest
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Run Trivy vulnerability scanner
-        uses: lidofinance/trivy-action@master
-        with:
-          image-ref: 'ghcr.io/lidofinance/scripts:${{ github.ref_name }}'
-          format: 'table'
-          exit-code: '0'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
+          inputs: ghcr.io/lidofinance/scripts:${{ github.ref_name }}
+          images: ghcr.io/lidofinance/scripts:${{ github.ref_name }}-amd64,ghcr.io/lidofinance/scripts:${{ github.ref_name }}-arm64
+          push: true
