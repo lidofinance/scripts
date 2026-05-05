@@ -294,6 +294,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             ALLIANCE_OPS_LIMIT_AFTER,
             ALLIANCE_OPS_PERIOD_DURATION_MONTHS_AFTER,
         )
+        spent_after_dg, spendable_after_dg, period_start_after_dg, period_end_after_dg = (
+            alliance_ops_registry.getPeriodState()
+        )
+        assert spent_after_dg + spendable_after_dg == ALLIANCE_OPS_LIMIT_AFTER
+        assert period_start_after_dg == ALLIANCE_OPS_PERIOD_START_AFTER
+        assert period_end_after_dg == ALLIANCE_OPS_PERIOD_END_AFTER
         alliance_ops_limit_test(easy_track, alliance_ops_registry, stranger, accounts)
 
 
@@ -346,8 +352,6 @@ def alliance_ops_limit_test(easy_track, registry, stranger, accounts):
     dai_token = interface.ERC20(DAI_TOKEN)
 
     spent_at_entry, spendable_at_entry, _, _ = registry.getPeriodState()
-    # Sanity: we are operating against the new 6-month / 5M limit
-    assert spent_at_entry + spendable_at_entry == ALLIANCE_OPS_LIMIT_AFTER
     spendable_left = 10  # wei — leave a tiny remainder to verify the post-spend state
     to_spend = spendable_at_entry - spendable_left
 
@@ -365,16 +369,9 @@ def alliance_ops_limit_test(easy_track, registry, stranger, accounts):
         stranger,
     )
 
-    (
-        spent_after,
-        spendable_after,
-        period_start_after,
-        period_end_after,
-    ) = registry.getPeriodState()
+    spent_after, spendable_after, _, _ = registry.getPeriodState()
     assert spent_after == spent_at_entry + to_spend
     assert spendable_after == spendable_left
-    assert period_start_after == ALLIANCE_OPS_PERIOD_START_AFTER
-    assert period_end_after == ALLIANCE_OPS_PERIOD_END_AFTER
 
     # 2) we cannot spend more than what remains in the current period
     with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
@@ -452,6 +449,7 @@ def emergency_committee_cannot_veto_at(timestamp: int, accounts) -> None:
     timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
     committee = accounts.at(EMERGENCY_ACTIVATION_COMMITTEE, force=True)
     set_balance(committee, 10)
+    assert not timelock.isEmergencyModeActive()
     with reverts():  # EmergencyProtectionExpired(protectedTill)
         timelock.activateEmergencyMode({"from": committee})
     chain.revert()
