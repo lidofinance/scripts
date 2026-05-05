@@ -4,19 +4,6 @@ from .common import validate_events_chain
 from utils.config import DUAL_GOVERNANCE, TIMELOCK
 
 
-def _normalize_hex_data(value: any) -> str:
-    if isinstance(value, (bytes, bytearray)):
-        return "0x" + bytes(value).hex()
-
-    if hasattr(value, "hex"):
-        hex_value = value.hex()
-        if isinstance(hex_value, str):
-            return hex_value.lower() if hex_value.startswith("0x") else f"0x{hex_value.lower()}"
-
-    value_str = str(value).lower()
-    return value_str if value_str.startswith("0x") else f"0x{value_str}"
-
-
 def validate_dual_governance_submit_event(
     event: EventDict,
     proposal_id: int,
@@ -36,13 +23,9 @@ def validate_dual_governance_submit_event(
 
     assert len(event["ProposalSubmitted"][0]["calls"]) == len(proposal_calls), "Wrong callsCount"
     for i in range(0, len(proposal_calls)):
-        assert convert.to_address(event["ProposalSubmitted"][0]["calls"][i][0]) == convert.to_address(
-            proposal_calls[i]["target"]
-        ), f"Wrong target {i}: {event['ProposalSubmitted'][0]['calls'][i][0]} : {proposal_calls[i]['target']}"
+        assert event["ProposalSubmitted"][0]["calls"][i][0] == proposal_calls[i]["target"], f"Wrong target {i}: {event['ProposalSubmitted'][0]['calls'][i][0]} : {proposal_calls[i]['target']}"
         assert event["ProposalSubmitted"][0]["calls"][i][1] == proposal_calls[i]["value"], f"Wrong value {i}"
-        assert _normalize_hex_data(event["ProposalSubmitted"][0]["calls"][i][2]) == _normalize_hex_data(
-            proposal_calls[i]["data"]
-        ), f"Wrong data {i}"
+        assert event["ProposalSubmitted"][0]["calls"][i][2] == proposal_calls[i]["data"], f'Wrong data {i}'
 
     assert event["ProposalSubmitted"][1]["proposalId"] == proposal_id, "Wrong proposalId"
     assert event["ProposalSubmitted"][1]["proposerAccount"] == proposer, "Wrong proposer"
