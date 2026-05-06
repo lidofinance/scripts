@@ -29,6 +29,12 @@ from utils.balance import set_balance
 
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
+from utils.config import contracts
+from utils.test.oracle_report_helpers import (
+    wait_to_next_available_report_time,
+    reach_consensus,
+    prepare_exit_bus_report,
+)
 
 
 # ============================================================================
@@ -97,7 +103,7 @@ TIME_WINDOW_TO = 16.5 * 3600
 EXPECTED_VOTE_ID = 201
 EXPECTED_DG_PROPOSAL_ID = 10
 EXPECTED_VOTE_EVENTS_COUNT = 1  # 1 DG submit
-EXPECTED_DG_EVENTS_COUNT = 4  # 1.1, 1.2, 1.3, (1.4, 1.5, 1.6, 1.7)
+EXPECTED_DG_EVENTS_COUNT = 7  # 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7
 EXPECTED_DG_EVENTS_FROM_AGENT = 6  # 1.2 + 1.3 + 1.4 + 1.5 + 1.6 + 1.7
 IPFS_DESCRIPTION_HASH = "bafkreiabxjdrtsaln7urdmeru7afcjfwj3xm5fsobhafr34ptac5vssunm"
 DG_PROPOSAL_METADATA = (
@@ -298,31 +304,46 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ALLIANCE_OPS_STABLECOINS_REGISTRY,
                 )
 
-                # IV. Change the number of epochs in the VEBO reporting frame
+                # 1.4. GrantRole(MANAGE_FRAME_CONFIG_ROLE, ARAGON_AGENT)
                 validate_events_chain(
                     [e.name for e in dg_events[3]],
-                    ['LogScriptCall', 'RoleGranted', 'LogScriptCall', 'FrameConfigSet', 'LogScriptCall', 'RoleRevoked', 'LogScriptCall', 'TimeWithinDayTimeChecked', 'ScriptResult', 'Executed'],
+                    ['LogScriptCall', 'RoleGranted', 'ScriptResult', 'Executed'],
                 )
                 assert dg_events[3]["RoleGranted"]["role"] == MANAGE_FRAME_CONFIG_ROLE
                 assert dg_events[3]["RoleGranted"]["account"] == AGENT
                 assert web3.to_checksum_address(dg_events[3]["RoleGranted"]["_emitted_by"]) == web3.to_checksum_address(
                     VEBO_HASH_CONSENSUS
                 )
-                # Assert new initial epoch should be exactly at 12:00 UTC
-                assert dg_events[3]["FrameConfigSet"]["newInitialEpoch"] % 225 == 0
-                assert dg_events[3]["FrameConfigSet"]["newEpochsPerFrame"] == VEBO_NEW_EPOCHS_PER_FRAME
-                assert web3.to_checksum_address(dg_events[3]["FrameConfigSet"]["_emitted_by"]) == web3.to_checksum_address(
+
+                # 1.5. SetFrameConfig(45, fast_lane_length_slots)
+                validate_events_chain(
+                    [e.name for e in dg_events[4]],
+                    ['LogScriptCall', 'FrameConfigSet', 'ScriptResult', 'Executed'],
+                )
+                assert dg_events[4]["FrameConfigSet"]["newInitialEpoch"] % 225 == 0
+                assert dg_events[4]["FrameConfigSet"]["newEpochsPerFrame"] == VEBO_NEW_EPOCHS_PER_FRAME
+                assert web3.to_checksum_address(dg_events[4]["FrameConfigSet"]["_emitted_by"]) == web3.to_checksum_address(
                     VEBO_HASH_CONSENSUS
                 )
 
-                assert dg_events[3]["RoleRevoked"]["role"] == MANAGE_FRAME_CONFIG_ROLE
-                assert dg_events[3]["RoleRevoked"]["account"] == AGENT
-                assert web3.to_checksum_address(dg_events[3]["RoleRevoked"]["_emitted_by"]) == web3.to_checksum_address(VEBO_HASH_CONSENSUS)
+                # 1.6. RevokeRole(MANAGE_FRAME_CONFIG_ROLE, ARAGON_AGENT)
+                validate_events_chain(
+                    [e.name for e in dg_events[5]],
+                    ['LogScriptCall', 'RoleRevoked', 'ScriptResult', 'Executed'],
+                )
+                assert dg_events[5]["RoleRevoked"]["role"] == MANAGE_FRAME_CONFIG_ROLE
+                assert dg_events[5]["RoleRevoked"]["account"] == AGENT
+                assert web3.to_checksum_address(dg_events[5]["RoleRevoked"]["_emitted_by"]) == web3.to_checksum_address(VEBO_HASH_CONSENSUS)
 
-                assert dg_events[3]["TimeWithinDayTimeChecked"]["startDayTime"] == TIME_WINDOW_FROM
-                assert dg_events[3]["TimeWithinDayTimeChecked"]["endDayTime"] == TIME_WINDOW_TO
+                # 1.7. TimeWithinDayTimeChecked
+                validate_events_chain(
+                    [e.name for e in dg_events[6]],
+                    ['LogScriptCall', 'TimeWithinDayTimeChecked', 'ScriptResult', 'Executed'],
+                )
+                assert dg_events[6]["TimeWithinDayTimeChecked"]["startDayTime"] == TIME_WINDOW_FROM
+                assert dg_events[6]["TimeWithinDayTimeChecked"]["endDayTime"] == TIME_WINDOW_TO
                 assert web3.to_checksum_address(
-                    dg_events[3]["TimeWithinDayTimeChecked"]["_emitted_by"]
+                    dg_events[6]["TimeWithinDayTimeChecked"]["_emitted_by"]
                 ) == web3.to_checksum_address(DUAL_GOVERNANCE_TIME_CONSTRAINTS)
 
         # =========================================================================
@@ -369,6 +390,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert epochs_per_frame_after == VEBO_NEW_EPOCHS_PER_FRAME
         assert fast_lane_length_slots_after == fast_lane_length_slots
         assert not vebo_hash_consensus.hasRole(MANAGE_FRAME_CONFIG_ROLE, AGENT)
+
+        send_vebo_report_in_45_epoches(helpers)
+
 
 
 # ============================================================================
@@ -521,3 +545,24 @@ def emergency_committee_cannot_veto_at(timestamp: int, accounts) -> None:
     with reverts():  # EmergencyProtectionExpired(protectedTill)
         timelock.activateEmergencyMode({"from": committee})
     chain.revert()
+
+
+def send_vebo_report_in_45_epoches(helpers):
+    wait_to_next_available_report_time(contracts.hash_consensus_for_validators_exit_bus_oracle)
+    ref_slot, _ = contracts.hash_consensus_for_validators_exit_bus_oracle.getCurrentFrame()
+    report, report_hash = prepare_exit_bus_report([], ref_slot)
+
+    consensus_version = contracts.validators_exit_bus_oracle.getConsensusVersion()
+    contract_version = contracts.validators_exit_bus_oracle.getContractVersion()
+
+    submitter = reach_consensus(
+        ref_slot, report_hash, consensus_version, contracts.hash_consensus_for_validators_exit_bus_oracle
+    )
+
+    tx = contracts.validators_exit_bus_oracle.submitReportData(report, contract_version, {"from": submitter})
+
+    helpers.assert_single_event_named("ProcessingStarted", tx, {"refSlot": ref_slot, "hash": report_hash.hex()})
+
+    assert contracts.validators_exit_bus_oracle.getLastProcessingRefSlot() == ref_slot
+    # Make sure this is first report after enactment in 45 epoches after prev slot
+    assert (ref_slot + 1) // 32 % 225 == VEBO_NEW_EPOCHS_PER_FRAME
