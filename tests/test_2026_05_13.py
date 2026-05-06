@@ -80,6 +80,16 @@ DAI_WARD = "0x9759A6Ac90977b93B58547b4A71c78317f391A28"  # authorized DAI minter
 FINANCE = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
 EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 
+# 1.4 - 1.6. Change the number of epochs in the VEBO reporting frame
+VEBO_HASH_CONSENSUS = "0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a"
+VEBO_NEW_EPOCHS_PER_FRAME = 45
+MANAGE_FRAME_CONFIG_ROLE = "0x921f40f434e049d23969cbe68d9cf3ac1013fbe8945da07963af6f3142de6afe"
+
+# 1.7. Set time window constraint
+DUAL_GOVERNANCE_TIME_CONSTRAINTS = "0x2a30F5aC03187674553024296bed35Aa49749DDa"
+TIME_WINDOW_FROM = 13 * 3600
+TIME_WINDOW_TO = 16.5 * 3600
+
 
 # ============================================================================
 # ============================= Test params ==================================
@@ -87,13 +97,15 @@ EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 EXPECTED_VOTE_ID = 201
 EXPECTED_DG_PROPOSAL_ID = 10
 EXPECTED_VOTE_EVENTS_COUNT = 1  # 1 DG submit
-EXPECTED_DG_EVENTS_COUNT = 3  # 1.1 + 1.2 + 1.3
-EXPECTED_DG_EVENTS_FROM_AGENT = 2  # 1.2 + 1.3 (1.1 is direct, no agent_forward)
+EXPECTED_DG_EVENTS_COUNT = 4  # 1.1, 1.2, 1.3, (1.4, 1.5, 1.6, 1.7)
+EXPECTED_DG_EVENTS_FROM_AGENT = 6  # 1.2 + 1.3 + 1.4 + 1.5 + 1.6 + 1.7
 IPFS_DESCRIPTION_HASH = "bafkreiabxjdrtsaln7urdmeru7afcjfwj3xm5fsobhafr34ptac5vssunm"
 DG_PROPOSAL_METADATA = (
     "Extend DG Emergency Protection by one year, "
-    "grant MANAGE_SIGNING_KEYS for Consensys (NO ID = 21), and "
-    "raise Alliance Ops stablecoins Easy Track limit to 5M stETH / 6 months"
+    "grant MANAGE_SIGNING_KEYS for Consensys (NO ID = 21), "
+    "raise Alliance Ops stablecoins Easy Track limit to 5M stETH / 6 months, "
+    "change number of epochs in VEBO reporting frame to 45, and "
+    "set time window constraint (13:00 - 16:30 UTC) for DG Proposal execution"
 )
 
 
@@ -119,6 +131,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     nor = interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
     alliance_ops_registry = interface.AllowedRecipientRegistry(ALLIANCE_OPS_STABLECOINS_REGISTRY)
+    vebo_hash_consensus = interface.HashConsensus(VEBO_HASH_CONSENSUS)
     agent = interface.Agent(AGENT)
     acl = interface.ACL(ACL)
     easy_track = interface.EasyTrack(EASYTRACK)
@@ -126,6 +139,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     consensys_perm_param = Param(0, Op.EQ, ArgumentValue(CONSENSYS_NO_ID))
     consensys_perm_param_uint = consensys_perm_param.to_uint256()
     other_no_perm_param_uint = Param(0, Op.EQ, ArgumentValue(CONSENSYS_NO_ID + 1)).to_uint256()
+
+    # Fetch current VEBO frame
+    (current_ref_slot, _) = vebo_hash_consensus.getCurrentFrame()
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -209,14 +225,33 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 ALLIANCE_OPS_PERIOD_DURATION_MONTHS_BEFORE,
             )
 
+            # 1.4 - 1.6. VEBO frame config before DG execution
+            (initial_epoch_before, epochs_per_frame_before, fast_lane_length_slots) = vebo_hash_consensus.getFrameConfig()
+            assert epochs_per_frame_before != VEBO_NEW_EPOCHS_PER_FRAME
+            assert epochs_per_frame_before == 75  # Current frame size
+            assert not vebo_hash_consensus.hasRole(MANAGE_FRAME_CONFIG_ROLE, AGENT)
+
             if details["status"] == PROPOSAL_STATUS["submitted"]:
                 chain.sleep(timelock.getAfterSubmitDelay() + 1)
                 dual_governance.scheduleProposal(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
 
             if timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == PROPOSAL_STATUS["scheduled"]:
                 chain.sleep(timelock.getAfterScheduleDelay() + 1)
+                chain.mine()
 
-                dg_tx: TransactionReceipt = timelock.execute(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
+                # 1.7. Time constraints window before DG execution
+                # Check DG execution reverts with DayTimeOutOfRange outside [13:00, 16:30] window
+                day_start = (chain.time() // 86400 + 1) * 86400
+                out_of_range_time = 12 * 3600
+                chain.mine(timestamp=day_start + out_of_range_time)  # 12:00 UTC
+
+                with reverts(f"DayTimeOutOfRange: {out_of_range_time + 1}, {int(TIME_WINDOW_FROM)}, {int(TIME_WINDOW_TO)}"):
+                    timelock.execute(EXPECTED_DG_PROPOSAL_ID, {"from": DUAL_GOVERNANCE_ADMIN_EXECUTOR})
+
+                # Move to 14:00 UTC to allow execution
+                chain.mine(timestamp=day_start + 16 * 3600)
+
+                dg_tx: TransactionReceipt = timelock.execute(EXPECTED_DG_PROPOSAL_ID, {"from": DUAL_GOVERNANCE_ADMIN_EXECUTOR})
                 display_dg_events(dg_tx)
                 dg_events = group_dg_events_from_receipt(
                     dg_tx,
@@ -263,6 +298,33 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=ALLIANCE_OPS_STABLECOINS_REGISTRY,
                 )
 
+                # IV. Change the number of epochs in the VEBO reporting frame
+                validate_events_chain(
+                    [e.name for e in dg_events[3]],
+                    ['LogScriptCall', 'RoleGranted', 'LogScriptCall', 'FrameConfigSet', 'LogScriptCall', 'RoleRevoked', 'LogScriptCall', 'TimeWithinDayTimeChecked', 'ScriptResult', 'Executed'],
+                )
+                assert dg_events[3]["RoleGranted"]["role"] == MANAGE_FRAME_CONFIG_ROLE
+                assert dg_events[3]["RoleGranted"]["account"] == AGENT
+                assert web3.to_checksum_address(dg_events[3]["RoleGranted"]["_emitted_by"]) == web3.to_checksum_address(
+                    VEBO_HASH_CONSENSUS
+                )
+                # Assert new initial epoch should be exactly at 12:00 UTC
+                assert dg_events[3]["FrameConfigSet"]["newInitialEpoch"] % 225 == 0
+                assert dg_events[3]["FrameConfigSet"]["newEpochsPerFrame"] == VEBO_NEW_EPOCHS_PER_FRAME
+                assert web3.to_checksum_address(dg_events[3]["FrameConfigSet"]["_emitted_by"]) == web3.to_checksum_address(
+                    VEBO_HASH_CONSENSUS
+                )
+
+                assert dg_events[3]["RoleRevoked"]["role"] == MANAGE_FRAME_CONFIG_ROLE
+                assert dg_events[3]["RoleRevoked"]["account"] == AGENT
+                assert web3.to_checksum_address(dg_events[3]["RoleRevoked"]["_emitted_by"]) == web3.to_checksum_address(VEBO_HASH_CONSENSUS)
+
+                assert dg_events[3]["TimeWithinDayTimeChecked"]["startDayTime"] == TIME_WINDOW_FROM
+                assert dg_events[3]["TimeWithinDayTimeChecked"]["endDayTime"] == TIME_WINDOW_TO
+                assert web3.to_checksum_address(
+                    dg_events[3]["TimeWithinDayTimeChecked"]["_emitted_by"]
+                ) == web3.to_checksum_address(DUAL_GOVERNANCE_TIME_CONSTRAINTS)
+
         # =========================================================================
         # ==================== After DG proposal executed checks ==================
         # =========================================================================
@@ -301,6 +363,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert period_start_after_dg == ALLIANCE_OPS_PERIOD_START_AFTER
         assert period_end_after_dg == ALLIANCE_OPS_PERIOD_END_AFTER
         alliance_ops_limit_test(easy_track, alliance_ops_registry, stranger, accounts)
+
+        # 1.4 - 1.6. VEBO frame config after DG execution
+        (initial_epoch_after, epochs_per_frame_after, fast_lane_length_slots_after) = vebo_hash_consensus.getFrameConfig()
+        assert epochs_per_frame_after == VEBO_NEW_EPOCHS_PER_FRAME
+        assert fast_lane_length_slots_after == fast_lane_length_slots
+        assert not vebo_hash_consensus.hasRole(MANAGE_FRAME_CONFIG_ROLE, AGENT)
 
 
 # ============================================================================

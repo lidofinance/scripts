@@ -14,7 +14,7 @@ IV. Change number of epochs in VEBO reporting frame
     1.4. Grant MANAGE_FRAME_CONFIG_ROLE 0x921f40f434e049d23969cbe68d9cf3ac1013fbe8945da07963af6f3142de6afe role to Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c on the VEBO Hash Consensus 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
     1.5. Set number of epochs in reporting frame to 45 on the VEBO Hash Consensus 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
     1.6. Revoke MANAGE_FRAME_CONFIG_ROLE 0x921f40f434e049d23969cbe68d9cf3ac1013fbe8945da07963af6f3142de6afe role from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c on the VEBO Hash Consensus 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
-    1.7. Set time window constraint (13:00 - 20:00 UTC) for Dual Governance Proposal execution on Dual Governance Time Constraints 0x2a30F5aC03187674553024296bed35Aa49749DDa
+    1.7. Set time window constraint (13:00 - 16:30 UTC) for Dual Governance Proposal execution on Dual Governance Time Constraints 0x2a30F5aC03187674553024296bed35Aa49749DDa
 """
 
 from brownie import interface
@@ -35,6 +35,9 @@ from utils.agent import agent_forward
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 NODE_OPERATORS_REGISTRY = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
 ALLIANCE_OPS_STABLECOINS_REGISTRY = "0x3B525F4c059F246Ca4aa995D21087204F30c9E2F"
+VEBO_HASH_CONSENSUS = "0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a"
+DUAL_GOVERNANCE_TIME_CONSTRAINTS = "0x2a30F5aC03187674553024296bed35Aa49749DDa"
+ARAGON_AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 
 
 # ============================== Constants ===================================
@@ -46,6 +49,11 @@ CONSENSYS_NEW_MANAGER = "0xF45C77EadD434612fCD93db978B3E36B0D58eC99"
 ALLIANCE_OPS_NEW_LIMIT = 5_000_000 * 10**18
 ALLIANCE_OPS_NEW_PERIOD_DURATION_MONTHS = 6
 
+VEBO_NEW_EPOCHS_PER_FRAME = 45
+
+# HashConsensus roles
+MANAGE_FRAME_CONFIG_ROLE = "0x921f40f434e049d23969cbe68d9cf3ac1013fbe8945da07963af6f3142de6afe"
+
 
 # ============================= IPFS Description ==================================
 # TODO IPFS description text
@@ -56,6 +64,10 @@ IPFS_DESCRIPTION = """
 # ================================ Main ======================================
 def get_dg_items() -> List[Tuple[str, str]]:
     timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
+    vebo_hash_consensus = interface.HashConsensus(VEBO_HASH_CONSENSUS)
+    time_constraints = interface.TimeConstraints(DUAL_GOVERNANCE_TIME_CONSTRAINTS)
+
+    (_, _, fast_lane_length_slots) = vebo_hash_consensus.getFrameConfig()
 
     return [
         # 1.1. Call setEmergencyProtectionEndDate(1813449600) on Emergency Protected Timelock 0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316
@@ -80,6 +92,28 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 period_duration_months=ALLIANCE_OPS_NEW_PERIOD_DURATION_MONTHS,
             ),
         ]),
+        agent_forward([
+            # 1.4. Grant MANAGE_FRAME_CONFIG_ROLE 0x921f40f434e049d23969cbe68d9cf3ac1013fbe8945da07963af6f3142de6afe role to Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c on the VEBO Hash Consensus 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+            (
+                vebo_hash_consensus.address,
+                vebo_hash_consensus.grantRole.encode_input(MANAGE_FRAME_CONFIG_ROLE, ARAGON_AGENT),
+            ),
+            # 1.5. Set number of epochs in reporting frame to 45 on the VEBO Hash Consensus 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+            (
+                vebo_hash_consensus.address,
+                vebo_hash_consensus.setFrameConfig.encode_input(VEBO_NEW_EPOCHS_PER_FRAME, fast_lane_length_slots),
+            ),
+            # 1.6. Revoke MANAGE_FRAME_CONFIG_ROLE 0x921f40f434e049d23969cbe68d9cf3ac1013fbe8945da07963af6f3142de6afe role from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c on the VEBO Hash Consensus 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+            (
+                vebo_hash_consensus.address,
+                vebo_hash_consensus.revokeRole.encode_input(MANAGE_FRAME_CONFIG_ROLE, ARAGON_AGENT),
+            ),
+            # 1.7. Set time window constraint (13:00 - 16:30 UTC) for Dual Governance Proposal execution on Dual Governance Time Constraints 0x2a30F5aC03187674553024296bed35Aa49749DDa
+            (
+                time_constraints.address,
+                time_constraints.checkTimeWithinDayTimeAndEmit.encode_input(13 * 3600, 16.5 * 3600),
+            ),
+        ]),
     ]
 
 
@@ -90,16 +124,20 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         (
             dg_items,
             "Extend DG Emergency Protection by one year, "
-            "grant MANAGE_SIGNING_KEYS for Consensys (NO ID = 21), and "
-            "raise Alliance Ops stablecoins Easy Track limit to 5M stETH / 6 months",
+            "grant MANAGE_SIGNING_KEYS for Consensys (NO ID = 21), "
+            "raise Alliance Ops stablecoins Easy Track limit to 5M stETH / 6 months, "
+            "change number of epochs in VEBO reporting frame to 45, and "
+            "set time window constraint (13:00 - 16:30 UTC) for DG Proposal execution",
         )
     ])
 
     vote_desc_items, call_script_items = zip(
         (
             "1. Submit a Dual Governance proposal to extend DG Emergency Protection by one year, "
-            "grant MANAGE_SIGNING_KEYS for Consensys (NO ID = 21), and "
-            "raise Alliance Ops stablecoins Easy Track limit to 5M stETH / 6 months",
+            "grant MANAGE_SIGNING_KEYS for Consensys (NO ID = 21), "
+            "raise Alliance Ops stablecoins Easy Track limit to 5M stETH / 6 months, "
+            "change number of epochs in VEBO reporting frame to 45, and "
+            "set time window constraint (13:00 - 16:30 UTC) for DG Proposal execution",
             dg_call_script[0]
         ),
     )
