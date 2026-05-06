@@ -154,9 +154,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     consensys_perm_param_uint = consensys_perm_param.to_uint256()
     other_no_perm_param_uint = Param(0, Op.EQ, ArgumentValue(CONSENSYS_NO_ID + 1)).to_uint256()
 
-    # Fetch current VEBO frame
-    (current_ref_slot, _) = vebo_hash_consensus.getCurrentFrame()
-
     # =========================================================================
     # ======================== Identify or Create vote ========================
     # =========================================================================
@@ -240,7 +237,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             )
 
             # 1.4 - 1.6. VEBO frame config before DG execution
-            (initial_epoch_before, epochs_per_frame_before, fast_lane_length_slots) = vebo_hash_consensus.getFrameConfig()
+            (_, epochs_per_frame_before, fast_lane_length_slots) = vebo_hash_consensus.getFrameConfig()
             assert epochs_per_frame_before != VEBO_NEW_EPOCHS_PER_FRAME
             assert epochs_per_frame_before == 75  # Current frame size
             assert not vebo_hash_consensus.hasRole(MANAGE_FRAME_CONFIG_ROLE, AGENT)
@@ -389,7 +386,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         alliance_ops_limit_test(easy_track, alliance_ops_registry, stranger, accounts)
 
         # 1.4 - 1.6. VEBO frame config after DG execution
-        (initial_epoch_after, epochs_per_frame_after, fast_lane_length_slots_after) = vebo_hash_consensus.getFrameConfig()
+        (initial_epoch, epochs_per_frame_after, fast_lane_length_slots_after) = vebo_hash_consensus.getFrameConfig()
+        assert initial_epoch % 225 == 0
         assert epochs_per_frame_after == VEBO_NEW_EPOCHS_PER_FRAME
         assert fast_lane_length_slots_after == fast_lane_length_slots
         assert not vebo_hash_consensus.hasRole(MANAGE_FRAME_CONFIG_ROLE, AGENT)
