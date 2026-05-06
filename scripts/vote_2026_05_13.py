@@ -114,12 +114,13 @@ def get_dg_items() -> List[Tuple[str, str]]:
             ),
         ]),
         # 1.7. Set time window constraint (13:00 - 16:30 UTC) for Dual Governance Proposal execution on Dual Governance Time Constraints 0x2a30F5aC03187674553024296bed35Aa49749DDa
-        agent_forward([
-            (
-                time_constraints.address,
-                time_constraints.checkTimeWithinDayTimeAndEmit.encode_input(13 * 3600, 16.5 * 3600),
+        (
+            DUAL_GOVERNANCE_TIME_CONSTRAINTS,
+            time_constraints.checkTimeWithinDayTimeAndEmit.encode_input(
+                13 * 3600,
+                16.5 * 3600,
             ),
-        ]),
+        ),
     ]
 
 

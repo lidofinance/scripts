@@ -22,7 +22,15 @@ from utils.permission_parameters import (
 from utils.test.event_validators.allowed_recipients_registry import validate_set_limit_parameter_event
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
-from utils.test.event_validators.permission import Permission, validate_permission_grantp_event
+from utils.test.event_validators.permission import (
+    Permission,
+    validate_permission_grantp_event,
+    validate_grant_role_event,
+    validate_revoke_role_event,
+)
+from utils.test.event_validators.time_constraints import (
+    validate_dg_time_constraints_executed_within_day_time_event,
+)
 from utils.test.easy_track_helpers import create_and_enact_payment_motion
 from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
 from utils.balance import set_balance
@@ -104,7 +112,7 @@ EXPECTED_VOTE_ID = 201
 EXPECTED_DG_PROPOSAL_ID = 10
 EXPECTED_VOTE_EVENTS_COUNT = 1  # 1 DG submit
 EXPECTED_DG_EVENTS_COUNT = 7  # 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7
-EXPECTED_DG_EVENTS_FROM_AGENT = 6  # 1.2 + 1.3 + 1.4 + 1.5 + 1.6 + 1.7
+EXPECTED_DG_EVENTS_FROM_AGENT = 5  # 1.2 + 1.3 + 1.4 + 1.5 + 1.6
 IPFS_DESCRIPTION_HASH = "bafkreiabxjdrtsaln7urdmeru7afcjfwj3xm5fsobhafr34ptac5vssunm"
 DG_PROPOSAL_METADATA = (
     "Extend DG Emergency Protection by one year, "
@@ -305,14 +313,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 )
 
                 # 1.4. GrantRole(MANAGE_FRAME_CONFIG_ROLE, ARAGON_AGENT)
-                validate_events_chain(
-                    [e.name for e in dg_events[3]],
-                    ['LogScriptCall', 'RoleGranted', 'ScriptResult', 'Executed'],
-                )
-                assert dg_events[3]["RoleGranted"]["role"] == MANAGE_FRAME_CONFIG_ROLE
-                assert dg_events[3]["RoleGranted"]["account"] == AGENT
-                assert web3.to_checksum_address(dg_events[3]["RoleGranted"]["_emitted_by"]) == web3.to_checksum_address(
-                    VEBO_HASH_CONSENSUS
+                validate_grant_role_event(
+                    dg_events[3],
+                    role=MANAGE_FRAME_CONFIG_ROLE,
+                    grant_to=AGENT,
+                    sender=AGENT,
+                    emitted_by=VEBO_HASH_CONSENSUS,
                 )
 
                 # 1.5. SetFrameConfig(45, fast_lane_length_slots)
@@ -327,24 +333,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 )
 
                 # 1.6. RevokeRole(MANAGE_FRAME_CONFIG_ROLE, ARAGON_AGENT)
-                validate_events_chain(
-                    [e.name for e in dg_events[5]],
-                    ['LogScriptCall', 'RoleRevoked', 'ScriptResult', 'Executed'],
+                validate_revoke_role_event(
+                    dg_events[5],
+                    role=MANAGE_FRAME_CONFIG_ROLE,
+                    revoke_from=AGENT,
+                    sender=AGENT,
+                    emitted_by=VEBO_HASH_CONSENSUS,
                 )
-                assert dg_events[5]["RoleRevoked"]["role"] == MANAGE_FRAME_CONFIG_ROLE
-                assert dg_events[5]["RoleRevoked"]["account"] == AGENT
-                assert web3.to_checksum_address(dg_events[5]["RoleRevoked"]["_emitted_by"]) == web3.to_checksum_address(VEBO_HASH_CONSENSUS)
 
                 # 1.7. TimeWithinDayTimeChecked
-                validate_events_chain(
-                    [e.name for e in dg_events[6]],
-                    ['LogScriptCall', 'TimeWithinDayTimeChecked', 'ScriptResult', 'Executed'],
+                validate_dg_time_constraints_executed_within_day_time_event(
+                    dg_events[6],
+                    start_day_time=TIME_WINDOW_FROM,
+                    end_day_time=TIME_WINDOW_TO,
+                    emitted_by=DUAL_GOVERNANCE_TIME_CONSTRAINTS,
                 )
-                assert dg_events[6]["TimeWithinDayTimeChecked"]["startDayTime"] == TIME_WINDOW_FROM
-                assert dg_events[6]["TimeWithinDayTimeChecked"]["endDayTime"] == TIME_WINDOW_TO
-                assert web3.to_checksum_address(
-                    dg_events[6]["TimeWithinDayTimeChecked"]["_emitted_by"]
-                ) == web3.to_checksum_address(DUAL_GOVERNANCE_TIME_CONSTRAINTS)
 
         # =========================================================================
         # ==================== After DG proposal executed checks ==================
