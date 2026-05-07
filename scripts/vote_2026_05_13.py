@@ -41,7 +41,7 @@ ARAGON_AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 
 
 # ============================== Constants ===================================
-NEW_EMERGENCY_PROTECTION_END_DATE = 1813449600  # 2027-05-19 00:00:00 UTC
+NEW_EMERGENCY_PROTECTION_END_DATE = 1813449600  # 2027-06-20 00:00:00 UTC
 
 CONSENSYS_NO_ID = 21
 CONSENSYS_NEW_MANAGER = "0xF45C77EadD434612fCD93db978B3E36B0D58eC99"
@@ -56,8 +56,11 @@ MANAGE_FRAME_CONFIG_ROLE = "0x921f40f434e049d23969cbe68d9cf3ac1013fbe8945da07963
 
 
 # ============================= IPFS Description ==================================
-# TODO IPFS description text
 IPFS_DESCRIPTION = """
+1. **Extend Dual Governance Emergency Protection until June 20, 2027**, [as proposed on the forum](https://research.lido.fi/t/lip-28-dual-governance/10032/18). Item 1.1.
+2. **Grant MANAGE_SIGNING_KEYS role to Node Operator Consensys**, [as requested on the forum](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/54). Item 1.2.
+3. **Increase limit from $250K per 3 months to $5M per 6 months on Alliance Ops stablecoins Easy Track factory**, [as per Snapshot decision](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x429bdf30549800d3ed87ffa701802d267f6a1e06d1719c6f0a4cb2ecefde521e). Item 1.3.
+4. **Reduce VEBO Reporting Frame from 75 to 45 epochs**, [as proposed on the forum](https://research.lido.fi/t/proposal-reduce-vebo-reporting-frame-from-8h-to-4-8h-75-45-epochs/11524). Items 1.4–1.7.
 """
 
 
@@ -130,21 +133,19 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     dg_call_script = submit_proposals([
         (
             dg_items,
-            "Extend DG Emergency Protection by one year, "
-            "grant MANAGE_SIGNING_KEYS for Consensys (NO ID = 21), "
-            "raise Alliance Ops stablecoins Easy Track limit to 5M stETH / 6 months, "
-            "change number of epochs in VEBO reporting frame to 45, and "
-            "set time window constraint (13:00 - 16:30 UTC) for DG Proposal execution",
+            "Extend Dual Governance Emergency Protection until June 20 2027, "
+            "grant MANAGE_SIGNING_KEYS role to Node Operator Consensys, "
+            "increase limit from $250K per 3 months to $5M per 6 months on Alliance Ops stablecoins Easy Track factory, "
+            "reduce VEBO Reporting Frame from 75 to 45 epochs",
         )
     ])
 
     vote_desc_items, call_script_items = zip(
         (
-            "1. Submit a Dual Governance proposal to extend DG Emergency Protection by one year, "
-            "grant MANAGE_SIGNING_KEYS for Consensys (NO ID = 21), "
-            "raise Alliance Ops stablecoins Easy Track limit to 5M stETH / 6 months, "
-            "change number of epochs in VEBO reporting frame to 45, and "
-            "set time window constraint (13:00 - 16:30 UTC) for DG Proposal execution",
+            "1. Submit a Dual Governance proposal to extend Dual Governance Emergency Protection until June 20 2027, "
+            "grant MANAGE_SIGNING_KEYS role to Node Operator Consensys, "
+            "increase limit from $250K per 3 months to $5M per 6 months on Alliance Ops stablecoins Easy Track factory, "
+            "reduce VEBO Reporting Frame from 75 to 45 epochs",
             dg_call_script[0]
         ),
     )

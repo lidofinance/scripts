@@ -72,7 +72,7 @@ DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 
 # 1.1. Emergency Protection end date
 EMERGENCY_PROTECTION_END_DATE_BEFORE = 1781913600  # 2026-05-19 00:00:00 UTC
-EMERGENCY_PROTECTION_END_DATE_AFTER = 1813449600  # 2027-05-19 00:00:00 UTC
+EMERGENCY_PROTECTION_END_DATE_AFTER = 1813449600  # 2027-06-20 00:00:00 UTC
 
 # 1.2. Grant MANAGE_SIGNING_KEYS for Consensys (NO ID = 21)
 CONSENSYS_NO_ID = 21
@@ -113,13 +113,12 @@ EXPECTED_DG_PROPOSAL_ID = 10
 EXPECTED_VOTE_EVENTS_COUNT = 1  # 1 DG submit
 EXPECTED_DG_EVENTS_COUNT = 7  # 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7
 EXPECTED_DG_EVENTS_FROM_AGENT = 5  # 1.2 + 1.3 + 1.4 + 1.5 + 1.6
-IPFS_DESCRIPTION_HASH = "bafkreiabxjdrtsaln7urdmeru7afcjfwj3xm5fsobhafr34ptac5vssunm"
+IPFS_DESCRIPTION_HASH = "bafkreibs4p67ee62vmgrlks2qmkacyvg75mf2uaba2isjsnqhjzkivqkpy"
 DG_PROPOSAL_METADATA = (
-    "Extend DG Emergency Protection by one year, "
-    "grant MANAGE_SIGNING_KEYS for Consensys (NO ID = 21), "
-    "raise Alliance Ops stablecoins Easy Track limit to 5M stETH / 6 months, "
-    "change number of epochs in VEBO reporting frame to 45, and "
-    "set time window constraint (13:00 - 16:30 UTC) for DG Proposal execution"
+    "Extend Dual Governance Emergency Protection until June 20 2027, "
+    "grant MANAGE_SIGNING_KEYS role to Node Operator Consensys, "
+    "increase limit from $250K per 3 months to $5M per 6 months on Alliance Ops stablecoins Easy Track factory, "
+    "reduce VEBO Reporting Frame from 75 to 45 epochs"
 )
 
 
@@ -235,6 +234,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 ALLIANCE_OPS_LIMIT_BEFORE,
                 ALLIANCE_OPS_PERIOD_DURATION_MONTHS_BEFORE,
             )
+            spent_before_dg, spendable_before_dg, _, _ = alliance_ops_registry.getPeriodState()
 
             # 1.4 - 1.6. VEBO frame config before DG execution
             (_, epochs_per_frame_before, fast_lane_length_slots) = vebo_hash_consensus.getFrameConfig()
@@ -380,7 +380,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         spent_after_dg, spendable_after_dg, period_start_after_dg, period_end_after_dg = (
             alliance_ops_registry.getPeriodState()
         )
-        assert spent_after_dg + spendable_after_dg == ALLIANCE_OPS_LIMIT_AFTER
+        assert spent_after_dg == spent_before_dg
+        assert spendable_after_dg == spendable_before_dg + (ALLIANCE_OPS_LIMIT_AFTER - ALLIANCE_OPS_LIMIT_BEFORE)
         assert period_start_after_dg == ALLIANCE_OPS_PERIOD_START_AFTER
         assert period_end_after_dg == ALLIANCE_OPS_PERIOD_END_AFTER
         alliance_ops_limit_test(easy_track, alliance_ops_registry, stranger, accounts)
