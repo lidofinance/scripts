@@ -113,11 +113,11 @@ EXPECTED_DG_PROPOSAL_ID = 10
 EXPECTED_VOTE_EVENTS_COUNT = 1  # 1 DG submit
 EXPECTED_DG_EVENTS_COUNT = 7  # 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7
 EXPECTED_DG_EVENTS_FROM_AGENT = 5  # 1.2 + 1.3 + 1.4 + 1.5 + 1.6
-IPFS_DESCRIPTION_HASH = "bafkreibs4p67ee62vmgrlks2qmkacyvg75mf2uaba2isjsnqhjzkivqkpy"
+IPFS_DESCRIPTION_HASH = "bafkreiay7vxccqbztfac2cpmi5l3gm62kl6foriikm4yzcmtxu6zv2uwlq"
 DG_PROPOSAL_METADATA = (
     "Extend Dual Governance Emergency Protection until June 20 2027, "
     "grant MANAGE_SIGNING_KEYS role to Node Operator Consensys, "
-    "increase limit from $250K per 3 months to $5M per 6 months on Alliance Ops stablecoins Easy Track factory, "
+    "increase Alliance Ops stablecoins Easy Track factory limit from $250K per 3 months to $5M per 6 months, "
     "reduce VEBO Reporting Frame from 75 to 45 epochs"
 )
 
