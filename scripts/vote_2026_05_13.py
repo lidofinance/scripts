@@ -59,7 +59,7 @@ MANAGE_FRAME_CONFIG_ROLE = "0x921f40f434e049d23969cbe68d9cf3ac1013fbe8945da07963
 IPFS_DESCRIPTION = """
 1. **Extend Dual Governance Emergency Protection until June 20, 2027**, [as proposed on the forum](https://research.lido.fi/t/lip-28-dual-governance/10032/18). Item 1.1.
 2. **Grant MANAGE_SIGNING_KEYS role to Node Operator Consensys**, [as requested on the forum](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/54). Item 1.2.
-3. **Increase limit from $250K per 3 months to $5M per 6 months on Alliance Ops stablecoins Easy Track factory**, [as per Snapshot decision](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x429bdf30549800d3ed87ffa701802d267f6a1e06d1719c6f0a4cb2ecefde521e). Item 1.3.
+3. **Increase Alliance Ops stablecoins Easy Track factory limit from $250K per 3 months to $5M per 6 months**, [as per Snapshot decision](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x429bdf30549800d3ed87ffa701802d267f6a1e06d1719c6f0a4cb2ecefde521e). Item 1.3.
 4. **Reduce VEBO Reporting Frame from 75 to 45 epochs**, [as proposed on the forum](https://research.lido.fi/t/proposal-reduce-vebo-reporting-frame-from-8h-to-4-8h-75-45-epochs/11524). Items 1.4–1.7.
 """
 
@@ -135,7 +135,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             dg_items,
             "Extend Dual Governance Emergency Protection until June 20 2027, "
             "grant MANAGE_SIGNING_KEYS role to Node Operator Consensys, "
-            "increase limit from $250K per 3 months to $5M per 6 months on Alliance Ops stablecoins Easy Track factory, "
+            "increase Alliance Ops stablecoins Easy Track factory limit from $250K per 3 months to $5M per 6 months, "
             "reduce VEBO Reporting Frame from 75 to 45 epochs",
         )
     ])
@@ -144,7 +144,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         (
             "1. Submit a Dual Governance proposal to extend Dual Governance Emergency Protection until June 20 2027, "
             "grant MANAGE_SIGNING_KEYS role to Node Operator Consensys, "
-            "increase limit from $250K per 3 months to $5M per 6 months on Alliance Ops stablecoins Easy Track factory, "
+            "increase Alliance Ops stablecoins Easy Track factory limit from $250K per 3 months to $5M per 6 months, "
             "reduce VEBO Reporting Frame from 75 to 45 epochs",
             dg_call_script[0]
         ),
