@@ -71,7 +71,7 @@ DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 
 # 1.1. Emergency Protection end date
-EMERGENCY_PROTECTION_END_DATE_BEFORE = 1781913600  # 2026-05-19 00:00:00 UTC
+EMERGENCY_PROTECTION_END_DATE_BEFORE = 1781913600  # 2026-06-20 00:00:00 UTC
 EMERGENCY_PROTECTION_END_DATE_AFTER = 1813449600  # 2027-06-20 00:00:00 UTC
 
 # 1.2. Grant MANAGE_SIGNING_KEYS for Consensys (NO ID = 21)
@@ -102,7 +102,7 @@ MANAGE_FRAME_CONFIG_ROLE = "0x921f40f434e049d23969cbe68d9cf3ac1013fbe8945da07963
 # 1.7. Set time window constraint
 DUAL_GOVERNANCE_TIME_CONSTRAINTS = "0x2a30F5aC03187674553024296bed35Aa49749DDa"
 TIME_WINDOW_FROM = 13 * 3600
-TIME_WINDOW_TO = 16.5 * 3600
+TIME_WINDOW_TO = 16 * 3600 + 30 * 60
 
 
 # ============================================================================
@@ -256,7 +256,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 out_of_range_time = 12 * 3600
                 chain.mine(timestamp=day_start + out_of_range_time)  # 12:00 UTC
 
-                with reverts(f"DayTimeOutOfRange: {out_of_range_time + 1}, {int(TIME_WINDOW_FROM)}, {int(TIME_WINDOW_TO)}"):
+                with reverts(f"DayTimeOutOfRange: {out_of_range_time + 1}, {TIME_WINDOW_FROM}, {TIME_WINDOW_TO}"):
                     timelock.execute(EXPECTED_DG_PROPOSAL_ID, {"from": DUAL_GOVERNANCE_ADMIN_EXECUTOR})
 
                 # Move to 14:00 UTC to allow execution
