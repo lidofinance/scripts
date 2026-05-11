@@ -259,7 +259,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 with reverts(f"DayTimeOutOfRange: {out_of_range_time + 1}, {TIME_WINDOW_FROM}, {TIME_WINDOW_TO}"):
                     timelock.execute(EXPECTED_DG_PROPOSAL_ID, {"from": DUAL_GOVERNANCE_ADMIN_EXECUTOR})
 
-                # Move to 14:00 UTC to allow execution
+                # Move to 16:00 UTC to allow execution
                 chain.mine(timestamp=day_start + 16 * 3600)
 
                 dg_tx: TransactionReceipt = timelock.execute(EXPECTED_DG_PROPOSAL_ID, {"from": DUAL_GOVERNANCE_ADMIN_EXECUTOR})
@@ -372,7 +372,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         consensys_manager_adds_signing_keys(accounts)
         add_signing_keys_to_other_no_fails(accounts)
 
-        # 1.3. Alliance Ops limit raised to 5,000,000 stETH per 6 months
+        # 1.3. Alliance Ops limit raised to 5,000,000 USD per 6 months
         assert alliance_ops_registry.getLimitParameters() == (
             ALLIANCE_OPS_LIMIT_AFTER,
             ALLIANCE_OPS_PERIOD_DURATION_MONTHS_AFTER,
@@ -393,7 +393,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert fast_lane_length_slots_after == fast_lane_length_slots
         assert not vebo_hash_consensus.hasRole(MANAGE_FRAME_CONFIG_ROLE, AGENT)
 
-        send_vebo_report_in_45_epoches(helpers)
+        send_vebo_report_in_45_epochs(helpers)
 
 
 
@@ -549,7 +549,7 @@ def emergency_committee_cannot_veto_at(timestamp: int, accounts) -> None:
     chain.revert()
 
 
-def send_vebo_report_in_45_epoches(helpers):
+def send_vebo_report_in_45_epochs(helpers):
     wait_to_next_available_report_time(contracts.hash_consensus_for_validators_exit_bus_oracle)
     ref_slot, _ = contracts.hash_consensus_for_validators_exit_bus_oracle.getCurrentFrame()
     report, report_hash = prepare_exit_bus_report([], ref_slot)
@@ -566,5 +566,6 @@ def send_vebo_report_in_45_epoches(helpers):
     helpers.assert_single_event_named("ProcessingStarted", tx, {"refSlot": ref_slot, "hash": report_hash.hex()})
 
     assert contracts.validators_exit_bus_oracle.getLastProcessingRefSlot() == ref_slot
-    # Make sure this is first report after enactment in 45 epoches after prev slot
+    # ref_slot lands at epoch 45 within the 225-epoch AO frame — confirms the new VEBO frame
+    # subdivides the AO frame exactly 5 times (225 / 45 = 5).
     assert (ref_slot + 1) // 32 % 225 == VEBO_NEW_EPOCHS_PER_FRAME
