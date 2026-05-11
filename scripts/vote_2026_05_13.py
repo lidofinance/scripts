@@ -121,7 +121,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
             DUAL_GOVERNANCE_TIME_CONSTRAINTS,
             time_constraints.checkTimeWithinDayTimeAndEmit.encode_input(
                 13 * 3600,
-                16.5 * 3600,
+                16 * 3600 + 30 * 60,
             ),
         ),
     ]
