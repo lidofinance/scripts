@@ -8,7 +8,7 @@ II. Grant MANAGE_SIGNING_KEYS role to Consensys
     1.2. Grant MANAGE_SIGNING_KEYS 75abc64490e17b40ea1e66691c3eb493647b24430b358bd87ec3e5127f1621ee role to 0xF45C77EadD434612fCD93db978B3E36B0D58eC99 for Node Operator Consensys (ID = 21)
 
 III. Increase limit from $250K per 3 months to $5M per 6 months on Alliance Ops stablecoins Easy Track factory
-    1.3. Set limit to 5,000,000 stETH per 6 months on Alliance Ops stablecoins AllowedRecipientsRegistry 0x3B525F4c059F246Ca4aa995D21087204F30c9E2F
+    1.3. Set limit to 5,000,000 USD per 6 months on Alliance Ops stablecoins AllowedRecipientsRegistry 0x3B525F4c059F246Ca4aa995D21087204F30c9E2F
 
 IV. Change number of epochs in VEBO reporting frame
     1.4. Grant MANAGE_FRAME_CONFIG_ROLE 0x921f40f434e049d23969cbe68d9cf3ac1013fbe8945da07963af6f3142de6afe role to Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c on the VEBO Hash Consensus 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
@@ -87,7 +87,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 params=[Param(0, Op.EQ, ArgumentValue(CONSENSYS_NO_ID))],
             ),
         ]),
-        # 1.3. Set limit to 5,000,000 stETH per 6 months on Alliance Ops stablecoins AllowedRecipientsRegistry 0x3B525F4c059F246Ca4aa995D21087204F30c9E2F
+        # 1.3. Set limit to 5,000,000 USD per 6 months on Alliance Ops stablecoins AllowedRecipientsRegistry 0x3B525F4c059F246Ca4aa995D21087204F30c9E2F
         agent_forward([
             set_limit_parameters(
                 registry_address=ALLIANCE_OPS_STABLECOINS_REGISTRY,
