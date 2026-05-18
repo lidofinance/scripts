@@ -15,6 +15,8 @@ IV. Change number of epochs in VEBO reporting frame
     1.5. Set number of epochs in reporting frame to 45 on the VEBO Hash Consensus 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
     1.6. Revoke MANAGE_FRAME_CONFIG_ROLE 0x921f40f434e049d23969cbe68d9cf3ac1013fbe8945da07963af6f3142de6afe role from Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c on the VEBO Hash Consensus 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
     1.7. Set time window constraint (13:00 - 16:30 UTC) for Dual Governance Proposal execution on Dual Governance Time Constraints 0x2a30F5aC03187674553024296bed35Aa49749DDa
+
+    Vote passed & executed on May-18-2026 02:51:11 PM UTC, block 25122802.
 """
 
 from brownie import interface
