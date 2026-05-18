@@ -48,7 +48,7 @@ from utils.test.oracle_report_helpers import (
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.vote_2026_05_13 import (
+from archive.scripts.vote_2026_05_13 import (
     start_vote,
     get_vote_items,
     get_dg_items,
