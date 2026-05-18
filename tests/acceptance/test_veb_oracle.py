@@ -86,11 +86,12 @@ def test_vebo_hash_consensus_synced_with_accounting_one(contract):
     frameConfig = consensus.getFrameConfig()
     accounting_consensus = interface.HashConsensus(HASH_CONSENSUS_FOR_AO)
 
-    assert frameConfig["initialEpoch"] == accounting_consensus.getFrameConfig()["initialEpoch"]
     assert frameConfig["epochsPerFrame"] == VEBO_EPOCHS_PER_FRAME
     assert frameConfig["fastLaneLengthSlots"] == VEBO_FAST_LANE_LENGTH_SLOTS
 
-    assert consensus.getInitialRefSlot() == accounting_consensus.getInitialRefSlot()
+    # After 2026_05_13 VEBO frame adjustment, it's not equal anymore
+    assert frameConfig["initialEpoch"] != accounting_consensus.getFrameConfig()["initialEpoch"]
+    assert consensus.getInitialRefSlot() != accounting_consensus.getInitialRefSlot()
 
 
 def test_vebo_hash_consensus(contract):
