@@ -25,12 +25,23 @@ META_REGISTRY_ADDRESS = "0x857289cCBFBc4C134Cc312022a104CD9b38d8AAE"
 META_REGISTRY_INTERMEDIATE_IMPL = "0x21050e0b934f486e5E587e5ee5Dd3C0C8D8D1A6c"
 META_REGISTRY_NEW_IMPL = "0x775a73fBAFa783aC8c04764b6875FC23BAEA5815"
 
-EASYTRACK_CREATE_OR_UPDATE_OPERATOR_GROUP_OLD_FACTORY = (
-    "0x44D9b39bBdc2182Aa1af6f16f8F55E0eA038294d"
+VETTED_GATE_ADDRESS = "0x10a254E724fe2b7f305F76f3F116a3969c53845f"
+VETTED_GATE_IMPL = "0x5Dd9dDC953f2a4352D9C8C42B8D5E2bf535e602F"
+VETTED_GATE_NAME = "Identified Community Stakers Gate"
+
+CURATED_GATE_IMPL = "0xA8347dD3fe2f0c8d100B7e224E2B243dF99bA941"
+CURATED_GATES = (
+    ("0xF1862d120831eBE31f7202378Ff3Ae63A5658ae3", "Professional Operator Gate"),
+    ("0x410A309dF81B782190188CDB3d215729cc6bC1f3", "Professional Trusted Operator Gate"),
+    ("0xa5A604b172787e017b1b118F02fE54fC1D696519", "Public Good Operator Gate"),
+    ("0xE966874cDB6A4282ED75Cd10439e3799e5531a2D", "Decentralization Operator Gate"),
+    ("0x5c063da03e3f21443716D75a2205EE16706e1153", "Extra Effort Operator Gate"),
+    ("0x1cD655Ac53CfE8269DE0DBfc0140B074623C4A6B", "Intra-Operator DVT Cluster Gate"),
+    ("0x28518be9894C20135F280a9539617783b08a04c7", "Intra-Operator DVT Cluster Plus Gate"),
 )
-EASYTRACK_CREATE_OR_UPDATE_OPERATOR_GROUP_NEW_FACTORY = (
-    "0x47DA6206965CD722591e87f5eC43604812705e88"
-)
+
+EASYTRACK_CREATE_OR_UPDATE_OPERATOR_GROUP_OLD_FACTORY = "0x44D9b39bBdc2182Aa1af6f16f8F55E0eA038294d"
+EASYTRACK_CREATE_OR_UPDATE_OPERATOR_GROUP_NEW_FACTORY = "0x47DA6206965CD722591e87f5eC43604812705e88"
 
 _OLD_GROUP_SIG = "createOrUpdateOperatorGroup(uint256,((uint64,uint16)[],(bytes)[]))"
 _NEW_GROUP_SIG = "createOrUpdateOperatorGroup(uint256,(string,(uint64,uint16)[],(bytes)[]))"
@@ -38,16 +49,18 @@ _OLD_GROUP_TUPLE_TYPE = "((uint64,uint16)[],(bytes)[])"
 _NEW_GROUP_TUPLE_TYPE = "(string,(uint64,uint16)[],(bytes)[])"
 _NO_GROUP_ID = 0
 
-DG_PROPOSAL_DESCRIPTION = "Hoodi MetaRegistry (CMv2) migration"
+DG_PROPOSAL_DESCRIPTION = "Hoodi named Gates and MetaRegistry (CMv2) migration"
 
 IPFS_DESCRIPTION = """
-# Hoodi MetaRegistry (CMv2) migration
+# Hoodi named Gates and MetaRegistry (CMv2) migration
 
-1. Wipe every operator group via OLD `createOrUpdateOperatorGroup`.
-2. Upgrade impl to the intermediate one and call `finalizeUpgrade()`.
-3. Upgrade impl to the final mapping-based one.
-4. Re-create every group with an empty name via NEW `createOrUpdateOperatorGroup`.
-5. Swap the `CreateOrUpdateOperatorGroup` Easy Track factory.
+1. Upgrade existing Vetted and Curated gate proxies to name-aware implementations.
+2. Set human-readable names for existing Vetted and Curated gates.
+3. Wipe every operator group via OLD `createOrUpdateOperatorGroup`.
+4. Upgrade impl to the intermediate one and call `finalizeUpgrade()`.
+5. Upgrade impl to the final mapping-based one.
+6. Re-create every group with an empty name via NEW `createOrUpdateOperatorGroup`.
+7. Swap the `CreateOrUpdateOperatorGroup` Easy Track factory.
 """
 
 
@@ -57,9 +70,15 @@ def _eth_call(selector_text: str, args_types: List[str] = (), args=()) -> bytes:
     return web3.eth.call({"to": META_REGISTRY_ADDRESS, "data": data})
 
 
-def _encode_proxy_upgrade_to(implementation: str) -> Tuple[str, str]:
-    proxy = interface.OssifiableProxy(META_REGISTRY_ADDRESS)
+def _encode_proxy_upgrade_to(proxy_address: str, implementation: str) -> Tuple[str, str]:
+    proxy = interface.OssifiableProxy(proxy_address)
     return proxy.address, proxy.proxy__upgradeTo.encode_input(implementation)
+
+
+def _encode_set_name(gate_address: str, name: str) -> Tuple[str, str]:
+    selector = web3.keccak(text="setName(string)")[:4]
+    args = eth_abi.encode(["string"], [name])
+    return gate_address, "0x" + (selector + args).hex()
 
 
 def _encode_finalize_upgrade() -> Tuple[str, str]:
@@ -95,9 +114,7 @@ def _new_factory_permissions() -> str:
     return META_REGISTRY_ADDRESS + selector_hex
 
 
-def _read_all_groups() -> List[
-    Tuple[int, List[Tuple[int, int]], List[Tuple[bytes]]]
-]:
+def _read_all_groups() -> List[Tuple[int, List[Tuple[int, int]], List[Tuple[bytes]]]]:
     (count,) = eth_abi.decode(["uint256"], _eth_call("getOperatorGroupsCount()"))
     groups = []
     for gid in range(1, count):
@@ -115,22 +132,34 @@ def _read_all_groups() -> List[
     return groups
 
 
+def _get_gate_upgrade_and_name_calls() -> List[Tuple[str, str]]:
+    calls = [
+        _encode_proxy_upgrade_to(VETTED_GATE_ADDRESS, VETTED_GATE_IMPL),
+        _encode_set_name(VETTED_GATE_ADDRESS, VETTED_GATE_NAME),
+    ]
+
+    for gate_address, name in CURATED_GATES:
+        calls.append(_encode_proxy_upgrade_to(gate_address, CURATED_GATE_IMPL))
+        calls.append(_encode_set_name(gate_address, name))
+
+    return calls
+
+
 def get_dg_items() -> List[Tuple[str, str]]:
     groups = _read_all_groups()
     assert groups, "MetaRegistry has no operator groups to migrate"
 
     clean_calls = [_encode_clean_group_old(gid) for gid, _, _ in groups]
-    recreate_calls = [
-        _encode_recreate_group_new(ops, pks) for _gid, ops, pks in groups
-    ]
+    recreate_calls = [_encode_recreate_group_new(ops, pks) for _gid, ops, pks in groups]
 
     meta_registry = interface.AccessControl(META_REGISTRY_ADDRESS)
     return [
+        agent_forward(_get_gate_upgrade_and_name_calls()),
         agent_forward([encode_oz_grant_role(meta_registry, "MANAGE_OPERATOR_GROUPS_ROLE", AGENT)]),
         agent_forward(clean_calls),
-        agent_forward([_encode_proxy_upgrade_to(META_REGISTRY_INTERMEDIATE_IMPL)]),
+        agent_forward([_encode_proxy_upgrade_to(META_REGISTRY_ADDRESS, META_REGISTRY_INTERMEDIATE_IMPL)]),
         agent_forward([_encode_finalize_upgrade()]),
-        agent_forward([_encode_proxy_upgrade_to(META_REGISTRY_NEW_IMPL)]),
+        agent_forward([_encode_proxy_upgrade_to(META_REGISTRY_ADDRESS, META_REGISTRY_NEW_IMPL)]),
         agent_forward(recreate_calls),
         agent_forward([encode_oz_revoke_role(meta_registry, "MANAGE_OPERATOR_GROUPS_ROLE", AGENT)]),
     ]
@@ -153,7 +182,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     dg_call_script = submit_proposals([(dg_items, DG_PROPOSAL_DESCRIPTION)])
 
     vote_desc_items = [
-        "1. Submit DG proposal: MetaRegistry migration",
+        "1. Submit DG proposal: named Gates and MetaRegistry migration",
         "2. Remove the OLD CreateOrUpdateOperatorGroup Easy Track factory",
         "3. Add the NEW CreateOrUpdateOperatorGroup Easy Track factory",
     ]
@@ -167,9 +196,7 @@ def start_vote(tx_params: Dict[str, str], silent: bool = False):
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
 
     desc_ipfs = (
-        calculate_vote_ipfs_description(IPFS_DESCRIPTION)
-        if silent
-        else upload_vote_ipfs_description(IPFS_DESCRIPTION)
+        calculate_vote_ipfs_description(IPFS_DESCRIPTION) if silent else upload_vote_ipfs_description(IPFS_DESCRIPTION)
     )
 
     vote_id, tx = confirm_vote_script(vote_items, silent, desc_ipfs) and list(
