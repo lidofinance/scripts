@@ -80,12 +80,68 @@ _META_REGISTRY_NEW_READ_ABI = [
         "inputs": [{"type": "uint256", "name": "nodeOperatorId"}],
         "outputs": [{"type": "uint256", "name": ""}],
     },
+    {
+        "name": "MODULE",
+        "type": "function",
+        "stateMutability": "view",
+        "inputs": [],
+        "outputs": [{"type": "address", "name": ""}],
+    },
+]
+
+_CURATED_MODULE_ALLOC_ABI = [
+    {
+        "name": "getDepositAllocationTargets",
+        "type": "function",
+        "stateMutability": "view",
+        "inputs": [],
+        "outputs": [
+            {"type": "uint256[]", "name": "currentValidators"},
+            {"type": "uint256[]", "name": "targetValidators"},
+        ],
+    },
+    {
+        "name": "getTopUpAllocationTargets",
+        "type": "function",
+        "stateMutability": "view",
+        "inputs": [],
+        "outputs": [
+            {"type": "uint256[]", "name": "currentAllocations"},
+            {"type": "uint256[]", "name": "targetAllocations"},
+        ],
+    },
+    {
+        "name": "getDepositsAllocation",
+        "type": "function",
+        "stateMutability": "view",
+        "inputs": [{"type": "uint256", "name": "maxDepositAmount"}],
+        "outputs": [
+            {"type": "uint256", "name": "allocated"},
+            {"type": "uint256[]", "name": "operatorIds"},
+            {"type": "uint256[]", "name": "allocations"},
+        ],
+    },
 ]
 
 
 def _mr() -> Contract:
     return Contract.from_abi(
         "MetaRegistryNew", voting_script.META_REGISTRY_ADDRESS, _META_REGISTRY_NEW_READ_ABI
+    )
+
+
+def _curated_module(mr: Contract) -> Contract:
+    return Contract.from_abi("CuratedModule", mr.MODULE(), _CURATED_MODULE_ALLOC_ABI)
+
+
+def _snapshot_allocations(module: Contract):
+    return (
+        tuple(tuple(x) for x in module.getDepositAllocationTargets()),
+        tuple(tuple(x) for x in module.getTopUpAllocationTargets()),
+        tuple(
+            (a, tuple(ops), tuple(vals))
+            for (a, ops, vals) in [module.getDepositsAllocation(32 * 10**18 * n) for n in (1, 32, 1024)]
+        ),
     )
 
 
@@ -108,6 +164,8 @@ def test_vote_sm_migrations_hoodi(helpers, accounts, vote_ids_from_env, stranger
         for _gid, subs, _exts in real_groups_before
         for op_id, _share in subs
     }
+    curated_module = _curated_module(mr)
+    allocations_before = _snapshot_allocations(curated_module)
 
     if len(vote_ids_from_env) > 0:
         (vote_id,) = vote_ids_from_env
@@ -158,4 +216,9 @@ def test_vote_sm_migrations_hoodi(helpers, accounts, vote_ids_from_env, stranger
     actual_perms = easy_track.evmScriptFactoryPermissions(new_factory).hex().removeprefix("0x").lower()
     assert actual_perms == expected_perms, (
         f"New factory permissions mismatch: expected {expected_perms}, got {actual_perms}"
+    )
+
+    # --- Curated Module deposit allocations must not have changed
+    assert _snapshot_allocations(curated_module) == allocations_before, (
+        "Curated Module allocation view changed after migration"
     )
