@@ -41,7 +41,19 @@ CURATED_GATES = (
 )
 
 EASYTRACK_CREATE_OR_UPDATE_OPERATOR_GROUP_OLD_FACTORY = "0x44D9b39bBdc2182Aa1af6f16f8F55E0eA038294d"
-EASYTRACK_CREATE_OR_UPDATE_OPERATOR_GROUP_NEW_FACTORY = "0x47DA6206965CD722591e87f5eC43604812705e88"
+EASYTRACK_CREATE_OR_UPDATE_OPERATOR_GROUP_NEW_FACTORY = "0xD3De4d7dCc0E81131032Fb4C32243f4b2B90e8b7"
+
+# ReportWithdrawalsForSlashedValidators factories. Target selector
+# `reportSlashedWithdrawnValidators((uint256,uint256,uint256,uint256,bool)[])`
+# (= 0x4412f7aa) is unchanged between OLD and NEW factories.
+CSM_ADDRESS = "0x79CEf36D84743222f37765204Bec41E92a93E59d"
+CURATED_MODULE_ADDRESS = "0x87EB69Ae51317405FD285efD2326a4a11f6173b9"
+EASYTRACK_REPORT_SLASHED_CSM_OLD_FACTORY = "0x4EaB04775837A6F0218750A10454119f349258FE"
+EASYTRACK_REPORT_SLASHED_CSM_NEW_FACTORY = "0x22dd4ca53Be286e3d4FE3D92082dfcE0C3b5bA66"
+EASYTRACK_REPORT_SLASHED_CM_OLD_FACTORY = "0x6E40FED7c28bAA93a798cA10f8A93965a19eC52e"
+EASYTRACK_REPORT_SLASHED_CM_NEW_FACTORY = "0x262E68B4A607b7fb705112C2a29df43727F8EE8e"
+
+_REPORT_SLASHED_SIG = "reportSlashedWithdrawnValidators((uint256,uint256,uint256,uint256,bool)[])"
 
 _OLD_GROUP_SIG = "createOrUpdateOperatorGroup(uint256,((uint64,uint16)[],(bytes)[]))"
 _NEW_GROUP_SIG = "createOrUpdateOperatorGroup(uint256,(string,(uint64,uint16)[],(bytes)[]))"
@@ -107,11 +119,16 @@ def _encode_recreate_group_new(
     return META_REGISTRY_ADDRESS, "0x" + (selector + args).hex()
 
 
-def _new_factory_permissions() -> str:
-    selector_hex = web3.keccak(text=_NEW_GROUP_SIG)[:4].hex()
-    if selector_hex.startswith("0x"):
-        selector_hex = selector_hex[2:]
-    return META_REGISTRY_ADDRESS + selector_hex
+def _selector_hex(sig: str) -> str:
+    return bytes(web3.keccak(text=sig)[:4]).hex()
+
+
+def _create_or_update_group_permissions() -> str:
+    return META_REGISTRY_ADDRESS + _selector_hex(_NEW_GROUP_SIG)
+
+
+def _report_slashed_permissions(target: str) -> str:
+    return target + _selector_hex(_REPORT_SLASHED_SIG)
 
 
 def _read_all_groups() -> List[Tuple[int, List[Tuple[int, int]], List[Tuple[bytes]]]]:
@@ -170,7 +187,17 @@ def get_easytrack_swap_items() -> List[Tuple[str, str]]:
         remove_evmscript_factory(EASYTRACK_CREATE_OR_UPDATE_OPERATOR_GROUP_OLD_FACTORY),
         add_evmscript_factory(
             factory=EASYTRACK_CREATE_OR_UPDATE_OPERATOR_GROUP_NEW_FACTORY,
-            permissions=_new_factory_permissions(),
+            permissions=_create_or_update_group_permissions(),
+        ),
+        remove_evmscript_factory(EASYTRACK_REPORT_SLASHED_CSM_OLD_FACTORY),
+        add_evmscript_factory(
+            factory=EASYTRACK_REPORT_SLASHED_CSM_NEW_FACTORY,
+            permissions=_report_slashed_permissions(CSM_ADDRESS),
+        ),
+        remove_evmscript_factory(EASYTRACK_REPORT_SLASHED_CM_OLD_FACTORY),
+        add_evmscript_factory(
+            factory=EASYTRACK_REPORT_SLASHED_CM_NEW_FACTORY,
+            permissions=_report_slashed_permissions(CURATED_MODULE_ADDRESS),
         ),
     ]
 
@@ -185,8 +212,12 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
         "1. Submit DG proposal: named Gates and MetaRegistry migration",
         "2. Remove the OLD CreateOrUpdateOperatorGroup Easy Track factory",
         "3. Add the NEW CreateOrUpdateOperatorGroup Easy Track factory",
+        "4. Remove the OLD ReportWithdrawalsForSlashedValidators (CSM) Easy Track factory",
+        "5. Add the NEW ReportWithdrawalsForSlashedValidators (CSM) Easy Track factory",
+        "6. Remove the OLD ReportWithdrawalsForSlashedValidators (CM) Easy Track factory",
+        "7. Add the NEW ReportWithdrawalsForSlashedValidators (CM) Easy Track factory",
     ]
-    call_script_items = [dg_call_script[0], et_items[0], et_items[1]]
+    call_script_items = [dg_call_script[0], *et_items]
 
     return vote_desc_items, call_script_items
 

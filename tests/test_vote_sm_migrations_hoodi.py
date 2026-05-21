@@ -8,9 +8,16 @@ from scripts import vote_sm_migrations_hoodi as voting_script
 from scripts.vote_sm_migrations_hoodi import (
     start_vote,
     _read_all_groups,
-    _new_factory_permissions,
+    _create_or_update_group_permissions,
+    _report_slashed_permissions,
+    CSM_ADDRESS,
+    CURATED_MODULE_ADDRESS,
     EASYTRACK_CREATE_OR_UPDATE_OPERATOR_GROUP_OLD_FACTORY,
     EASYTRACK_CREATE_OR_UPDATE_OPERATOR_GROUP_NEW_FACTORY,
+    EASYTRACK_REPORT_SLASHED_CSM_OLD_FACTORY,
+    EASYTRACK_REPORT_SLASHED_CSM_NEW_FACTORY,
+    EASYTRACK_REPORT_SLASHED_CM_OLD_FACTORY,
+    EASYTRACK_REPORT_SLASHED_CM_NEW_FACTORY,
 )
 from utils.config import (
     DUAL_GOVERNANCE,
@@ -175,8 +182,20 @@ def test_vote_sm_migrations_hoodi(helpers, accounts, vote_ids_from_env, stranger
     assert vetted_gate_proxy.proxy__getImplementation().lower() != voting_script.VETTED_GATE_IMPL.lower()
     for curated_gate_proxy, _name in curated_gate_proxies:
         assert curated_gate_proxy.proxy__getImplementation().lower() != voting_script.CURATED_GATE_IMPL.lower()
-    assert easy_track.isEVMScriptFactory(EASYTRACK_CREATE_OR_UPDATE_OPERATOR_GROUP_OLD_FACTORY)
-    assert not easy_track.isEVMScriptFactory(new_factory)
+    old_factories = (
+        EASYTRACK_CREATE_OR_UPDATE_OPERATOR_GROUP_OLD_FACTORY,
+        EASYTRACK_REPORT_SLASHED_CSM_OLD_FACTORY,
+        EASYTRACK_REPORT_SLASHED_CM_OLD_FACTORY,
+    )
+    new_factories_with_perms = (
+        (new_factory, _create_or_update_group_permissions()),
+        (EASYTRACK_REPORT_SLASHED_CSM_NEW_FACTORY, _report_slashed_permissions(CSM_ADDRESS)),
+        (EASYTRACK_REPORT_SLASHED_CM_NEW_FACTORY, _report_slashed_permissions(CURATED_MODULE_ADDRESS)),
+    )
+    for f in old_factories:
+        assert easy_track.isEVMScriptFactory(f), f"Old factory {f} must be registered before the vote"
+    for f, _p in new_factories_with_perms:
+        assert not easy_track.isEVMScriptFactory(f), f"New factory {f} must not be registered yet"
 
     real_groups_before = _read_all_groups()
     assert real_groups_before, "Nothing to migrate: MetaRegistry has no groups"
@@ -233,15 +252,16 @@ def test_vote_sm_migrations_hoodi(helpers, accounts, vote_ids_from_env, stranger
         for (ext_data,) in ext_before:
             assert mr.getExternalOperatorGroupId((ext_data,)) == gid
 
-    # --- Easy Track factory swap
-    assert not easy_track.isEVMScriptFactory(EASYTRACK_CREATE_OR_UPDATE_OPERATOR_GROUP_OLD_FACTORY)
-    assert easy_track.isEVMScriptFactory(new_factory)
-
-    expected_perms = _new_factory_permissions().removeprefix("0x").lower()
-    actual_perms = easy_track.evmScriptFactoryPermissions(new_factory).hex().removeprefix("0x").lower()
-    assert (
-        actual_perms == expected_perms
-    ), f"New factory permissions mismatch: expected {expected_perms}, got {actual_perms}"
+    # --- Easy Track factory swaps
+    for f in old_factories:
+        assert not easy_track.isEVMScriptFactory(f), f"Old factory {f} must be detached"
+    for f, expected in new_factories_with_perms:
+        assert easy_track.isEVMScriptFactory(f), f"New factory {f} must be registered"
+        actual = easy_track.evmScriptFactoryPermissions(f).hex().removeprefix("0x").lower()
+        expected_normalized = expected.removeprefix("0x").lower()
+        assert actual == expected_normalized, (
+            f"Factory {f} permissions mismatch: expected {expected_normalized}, got {actual}"
+        )
 
     # --- Curated Module deposit allocations must not have changed
     assert (
