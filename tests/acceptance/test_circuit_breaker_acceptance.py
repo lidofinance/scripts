@@ -28,11 +28,6 @@ from utils.config import (
 )
 
 
-
-
-# Steady-state configuration: every pausable governed by CircuitBreaker and the
-# multisig that may pause it. Pulled directly from LIP-34; no notion of "before
-# the migration vote" lives here.
 EXPECTED_PAUSABLES = [
     (WITHDRAWAL_QUEUE, GATE_SEAL_COMMITTEE),
     (VALIDATORS_EXIT_BUS_ORACLE, GATE_SEAL_COMMITTEE),
@@ -53,38 +48,58 @@ def circuit_breaker():
     return interface.CircuitBreaker(CIRCUIT_BREAKER)
 
 
-def test_admin(circuit_breaker):
-    assert circuit_breaker.ADMIN() == AGENT
+def test_initial_values(circuit_breaker):
+    assert circuit_breaker.ADMIN() == AGENT, (
+        f"ADMIN: expected {AGENT}, got {circuit_breaker.ADMIN()}"
+    )
 
+    assert circuit_breaker.MIN_PAUSE_DURATION() == CIRCUIT_BREAKER_MIN_PAUSE_DURATION, (
+        f"MIN_PAUSE_DURATION: expected {CIRCUIT_BREAKER_MIN_PAUSE_DURATION}, got {circuit_breaker.MIN_PAUSE_DURATION()}"
+    )
+    assert circuit_breaker.MAX_PAUSE_DURATION() == CIRCUIT_BREAKER_MAX_PAUSE_DURATION, (
+        f"MAX_PAUSE_DURATION: expected {CIRCUIT_BREAKER_MAX_PAUSE_DURATION}, got {circuit_breaker.MAX_PAUSE_DURATION()}"
+    )
+    assert circuit_breaker.MIN_HEARTBEAT_INTERVAL() == CIRCUIT_BREAKER_MIN_HEARTBEAT_INTERVAL, (
+        f"MIN_HEARTBEAT_INTERVAL: expected {CIRCUIT_BREAKER_MIN_HEARTBEAT_INTERVAL}, got {circuit_breaker.MIN_HEARTBEAT_INTERVAL()}"
+    )
+    assert circuit_breaker.MAX_HEARTBEAT_INTERVAL() == CIRCUIT_BREAKER_MAX_HEARTBEAT_INTERVAL, (
+        f"MAX_HEARTBEAT_INTERVAL: expected {CIRCUIT_BREAKER_MAX_HEARTBEAT_INTERVAL}, got {circuit_breaker.MAX_HEARTBEAT_INTERVAL()}"
+    )
+    assert circuit_breaker.pauseDuration() == CIRCUIT_BREAKER_PAUSE_DURATION, (
+        f"pauseDuration: expected {CIRCUIT_BREAKER_PAUSE_DURATION}, got {circuit_breaker.pauseDuration()}"
+    )
+    assert circuit_breaker.heartbeatInterval() == CIRCUIT_BREAKER_HEARTBEAT_INTERVAL, (
+        f"heartbeatInterval: expected {CIRCUIT_BREAKER_HEARTBEAT_INTERVAL}, got {circuit_breaker.heartbeatInterval()}"
+    )
 
-def test_bounds_and_initial_values(circuit_breaker):
-    min_pause = circuit_breaker.MIN_PAUSE_DURATION()
-    max_pause = circuit_breaker.MAX_PAUSE_DURATION()
-    min_heartbeat = circuit_breaker.MIN_HEARTBEAT_INTERVAL()
-    max_heartbeat = circuit_breaker.MAX_HEARTBEAT_INTERVAL()
-    pause_duration = circuit_breaker.pauseDuration()
-    heartbeat_interval = circuit_breaker.heartbeatInterval()
-
-    assert min_pause == CIRCUIT_BREAKER_MIN_PAUSE_DURATION
-    assert max_pause == CIRCUIT_BREAKER_MAX_PAUSE_DURATION
-    assert min_heartbeat == CIRCUIT_BREAKER_MIN_HEARTBEAT_INTERVAL
-    assert max_heartbeat == CIRCUIT_BREAKER_MAX_HEARTBEAT_INTERVAL
-    assert pause_duration == CIRCUIT_BREAKER_PAUSE_DURATION
-    assert heartbeat_interval == CIRCUIT_BREAKER_HEARTBEAT_INTERVAL
-
-    assert 0 < min_pause <= pause_duration <= max_pause
-    assert 0 < min_heartbeat <= heartbeat_interval <= max_heartbeat
+    assert 0 < CIRCUIT_BREAKER_MIN_PAUSE_DURATION <= CIRCUIT_BREAKER_PAUSE_DURATION <= CIRCUIT_BREAKER_MAX_PAUSE_DURATION, (
+        f"pause duration bounds broken: "
+        f"min={CIRCUIT_BREAKER_MIN_PAUSE_DURATION}, "
+        f"initial={CIRCUIT_BREAKER_PAUSE_DURATION}, "
+        f"max={CIRCUIT_BREAKER_MAX_PAUSE_DURATION}"
+    )
+    assert 0 < CIRCUIT_BREAKER_MIN_HEARTBEAT_INTERVAL <= CIRCUIT_BREAKER_HEARTBEAT_INTERVAL <= CIRCUIT_BREAKER_MAX_HEARTBEAT_INTERVAL, (
+        f"heartbeat interval bounds broken: "
+        f"min={CIRCUIT_BREAKER_MIN_HEARTBEAT_INTERVAL}, "
+        f"initial={CIRCUIT_BREAKER_HEARTBEAT_INTERVAL}, "
+        f"max={CIRCUIT_BREAKER_MAX_HEARTBEAT_INTERVAL}"
+    )
 
 
 def test_pausables_set(circuit_breaker):
-    on_chain = circuit_breaker.getPausables()
-    assert len(on_chain) == len(set(on_chain)), f"getPausables() has duplicates: {on_chain}"
-    assert {addr.lower() for addr in on_chain} == {p.lower() for p, _ in EXPECTED_PAUSABLES}
+    actual = sorted(addr.lower() for addr in circuit_breaker.getPausables())
+    expected = sorted(p.lower() for p, _ in EXPECTED_PAUSABLES)
+    assert actual == expected, (
+        f"pausables mismatch: missing {sorted(set(expected) - set(actual))}, "
+        f"extra {sorted(set(actual) - set(expected))}"
+    )
 
 
 @pytest.mark.parametrize("pausable, expected_pauser", EXPECTED_PAUSABLES)
 def test_pauser_assignment(circuit_breaker, pausable, expected_pauser):
-    assert circuit_breaker.getPauser(pausable).lower() == expected_pauser.lower()
+    assert circuit_breaker.getPauser(pausable).lower() == expected_pauser.lower(), (
+        f"pauser for {pausable}: expected {expected_pauser}, got {circuit_breaker.getPauser(pausable)}"
+    )
 
 
 def test_pausable_counts_per_pauser(circuit_breaker):
@@ -94,38 +109,44 @@ def test_pausable_counts_per_pauser(circuit_breaker):
 
     for pauser, expected in expected_counts.items():
         assert circuit_breaker.getPausableCount(pauser) == expected, (
-            f"getPausableCount({pauser}) expected {expected}"
+            f"pausable count for pauser {pauser}: expected {expected}, got {circuit_breaker.getPausableCount(pauser)}"
         )
-
-    total = sum(expected_counts.values())
-    assert total == len(EXPECTED_PAUSABLES)
 
 
 @pytest.mark.parametrize("pausable, _pauser", EXPECTED_PAUSABLES)
 def test_pause_role_holders(_pauser, pausable):
     pausable_contract = interface.IPausableUntilWithRoles(pausable)
     pause_role = str(pausable_contract.PAUSE_ROLE())
-    assert pausable_contract.getRoleMemberCount(pause_role) == 2
+    assert pausable_contract.getRoleMemberCount(pause_role) == 2, (
+        f"PAUSE_ROLE holder count on {pausable}: expected 2, got {pausable_contract.getRoleMemberCount(pause_role)}"
+    )
     holders = {
         pausable_contract.getRoleMember(pause_role, 0).lower(),
         pausable_contract.getRoleMember(pause_role, 1).lower(),
     }
-    assert holders == {CIRCUIT_BREAKER.lower(), RESEAL_MANAGER.lower()}
+    expected_holders = {CIRCUIT_BREAKER.lower(), RESEAL_MANAGER.lower()}
+    assert holders == expected_holders, (
+        f"PAUSE_ROLE holders on {pausable}: expected {sorted(expected_holders)}, got {sorted(holders)}"
+    )
 
 
 @pytest.mark.parametrize("pausable, _pauser", EXPECTED_PAUSABLES)
 def test_resume_role_holder(_pauser, pausable):
     pausable_contract = interface.IPausableUntilWithRoles(pausable)
     resume_role = str(pausable_contract.RESUME_ROLE())
-    assert pausable_contract.getRoleMemberCount(resume_role) == 1
-    assert pausable_contract.getRoleMember(resume_role, 0).lower() == RESEAL_MANAGER.lower()
+    assert pausable_contract.getRoleMemberCount(resume_role) == 1, (
+        f"RESUME_ROLE holder count on {pausable}: expected 1, got {pausable_contract.getRoleMemberCount(resume_role)}"
+    )
+    assert pausable_contract.getRoleMember(resume_role, 0).lower() == RESEAL_MANAGER.lower(), (
+        f"RESUME_ROLE holder on {pausable}: expected {RESEAL_MANAGER}, got {pausable_contract.getRoleMember(resume_role, 0)}"
+    )
 
 
 @pytest.mark.parametrize("pauser", sorted({p for _, p in EXPECTED_PAUSABLES}))
 def test_pauser_is_live(circuit_breaker, pauser):
-    assert circuit_breaker.isPauserLive(pauser), f"{pauser} not live"
+    assert circuit_breaker.isPauserLive(pauser), f"pauser {pauser} not live"
     expiry = circuit_breaker.heartbeatExpiry(pauser)
     block_timestamp = web3.eth.get_block("latest")["timestamp"]
     assert expiry > block_timestamp, (
-        f"heartbeatExpiry({pauser}) = {expiry} <= block.timestamp = {block_timestamp}"
+        f"pauser {pauser} heartbeat expired: expiry={expiry}, block.timestamp={block_timestamp}"
     )
