@@ -25,9 +25,11 @@ META_REGISTRY_ADDRESS = "0x857289cCBFBc4C134Cc312022a104CD9b38d8AAE"
 META_REGISTRY_INTERMEDIATE_IMPL = "0x21050e0b934f486e5E587e5ee5Dd3C0C8D8D1A6c"
 META_REGISTRY_NEW_IMPL = "0x775a73fBAFa783aC8c04764b6875FC23BAEA5815"
 
-VETTED_GATE_ADDRESS = "0x10a254E724fe2b7f305F76f3F116a3969c53845f"
 VETTED_GATE_IMPL = "0x5Dd9dDC953f2a4352D9C8C42B8D5E2bf535e602F"
-VETTED_GATE_NAME = "Identified Community Stakers Gate"
+VETTED_GATES = (
+    ("0x10a254E724fe2b7f305F76f3F116a3969c53845f", "Identified Community Stakers Gate"),
+    ("0x887F8512F9998045f4b5993e6eaa6BCfE5F02A94", "Identified DVT Cluster Gate"),
+)
 
 CURATED_GATE_IMPL = "0xA8347dD3fe2f0c8d100B7e224E2B243dF99bA941"
 CURATED_GATES = (
@@ -150,10 +152,11 @@ def _read_all_groups() -> List[Tuple[int, List[Tuple[int, int]], List[Tuple[byte
 
 
 def _get_gate_upgrade_and_name_calls() -> List[Tuple[str, str]]:
-    calls = [
-        _encode_proxy_upgrade_to(VETTED_GATE_ADDRESS, VETTED_GATE_IMPL),
-        _encode_set_name(VETTED_GATE_ADDRESS, VETTED_GATE_NAME),
-    ]
+    calls = []
+
+    for gate_address, name in VETTED_GATES:
+        calls.append(_encode_proxy_upgrade_to(gate_address, VETTED_GATE_IMPL))
+        calls.append(_encode_set_name(gate_address, name))
 
     for gate_address, name in CURATED_GATES:
         calls.append(_encode_proxy_upgrade_to(gate_address, CURATED_GATE_IMPL))

@@ -173,13 +173,16 @@ def test_vote_sm_migrations_hoodi(helpers, accounts, vote_ids_from_env, stranger
     easy_track = contracts.easy_track
     new_impl = voting_script.META_REGISTRY_NEW_IMPL
     new_factory = EASYTRACK_CREATE_OR_UPDATE_OPERATOR_GROUP_NEW_FACTORY
-    vetted_gate_proxy = interface.OssifiableProxy(voting_script.VETTED_GATE_ADDRESS)
+    vetted_gate_proxies = [
+        (interface.OssifiableProxy(gate_address), name) for gate_address, name in voting_script.VETTED_GATES
+    ]
     curated_gate_proxies = [
         (interface.OssifiableProxy(gate_address), name) for gate_address, name in voting_script.CURATED_GATES
     ]
 
     assert proxy.proxy__getImplementation().lower() != new_impl.lower()
-    assert vetted_gate_proxy.proxy__getImplementation().lower() != voting_script.VETTED_GATE_IMPL.lower()
+    for vetted_gate_proxy, _name in vetted_gate_proxies:
+        assert vetted_gate_proxy.proxy__getImplementation().lower() != voting_script.VETTED_GATE_IMPL.lower()
     for curated_gate_proxy, _name in curated_gate_proxies:
         assert curated_gate_proxy.proxy__getImplementation().lower() != voting_script.CURATED_GATE_IMPL.lower()
     old_factories = (
@@ -227,8 +230,9 @@ def test_vote_sm_migrations_hoodi(helpers, accounts, vote_ids_from_env, stranger
     timelock.execute(proposal_id, {"from": stranger})
 
     # --- gate implementations and names
-    assert vetted_gate_proxy.proxy__getImplementation().lower() == voting_script.VETTED_GATE_IMPL.lower()
-    assert _named_gate(voting_script.VETTED_GATE_ADDRESS).name() == voting_script.VETTED_GATE_NAME
+    for vetted_gate_proxy, expected_name in vetted_gate_proxies:
+        assert vetted_gate_proxy.proxy__getImplementation().lower() == voting_script.VETTED_GATE_IMPL.lower()
+        assert _named_gate(vetted_gate_proxy.address).name() == expected_name
 
     for curated_gate_proxy, expected_name in curated_gate_proxies:
         assert curated_gate_proxy.proxy__getImplementation().lower() == voting_script.CURATED_GATE_IMPL.lower()
