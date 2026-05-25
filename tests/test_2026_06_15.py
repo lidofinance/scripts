@@ -71,6 +71,41 @@ def dual_governance_proposal_calls():
     return [{"target": target, "value": 0, "data": data} for target, data in get_dg_items()]
 
 
+def validate_register_pauser(
+    register_group,
+    pausable_address: str,
+    expected_pauser: str,
+    emitted_by: str,
+):
+    assert "PauserSet" in register_group, (
+        f"No PauserSet event for {pausable_address}"
+    )
+    pauser_set = register_group["PauserSet"]
+    assert pauser_set["pausable"].lower() == pausable_address.lower(), (
+        f"Wrong pausable in PauserSet event for {pausable_address}"
+    )
+    assert pauser_set["previousPauser"] == ZERO_ADDRESS, (
+        f"PauserSet.previousPauser for {pausable_address} should be zero"
+    )
+    assert pauser_set["newPauser"].lower() == expected_pauser.lower(), (
+        f"PauserSet.newPauser for {pausable_address} should be {expected_pauser}"
+    )
+    assert pauser_set["_emitted_by"].lower() == emitted_by.lower(), (
+        f"PauserSet for {pausable_address} should be emitted by {emitted_by}"
+    )
+
+    assert "HeartbeatUpdated" in register_group, (
+        f"No HeartbeatUpdated event for {pausable_address}"
+    )
+    heartbeat_updated = register_group["HeartbeatUpdated"]
+    assert heartbeat_updated["pauser"].lower() == expected_pauser.lower(), (
+        f"HeartbeatUpdated.pauser for {pausable_address} should be {expected_pauser}"
+    )
+    assert heartbeat_updated["_emitted_by"].lower() == emitted_by.lower(), (
+        f"HeartbeatUpdated for {pausable_address} should be emitted by {emitted_by}"
+    )
+
+
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
     # =======================================================================
     # ========================= Arrange variables ===========================
@@ -81,8 +116,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     circuit_breaker = interface.CircuitBreaker(CIRCUIT_BREAKER)
 
-    # V3 targets use namespaced role names whose hashes differ from the legacy
-    # `keccak("PAUSE_ROLE")` / `keccak("RESUME_ROLE")` — resolve via the contract.
     pre_vote_resume_role_holders = {}
     pre_vote_cb_globals = {}
 
@@ -115,9 +148,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             pausable = interface.IPausableUntilWithRoles(target.pausable)
             pause_role_hash = str(pausable.PAUSE_ROLE())
 
-            # Hard prerequisites: if CircuitBreaker already holds the role or already
-            # has a pauser registered for this target, the migration was already
-            # applied (or partially applied) and re-running this vote is unsafe.
             assert not pausable.hasRole(pause_role_hash, CIRCUIT_BREAKER), (
                 f"CircuitBreaker should not have PAUSE_ROLE on {pausable.address} before vote"
             )
@@ -125,24 +155,16 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 f"CircuitBreaker should not have a pauser for {pausable.address} before vote"
             )
 
-            # Soft expectation: the legacy GateSeal currently holds PAUSE_ROLE. OZ
-            # revokeRole is idempotent, so the DG proposal will succeed either way —
-            # this is informational, not a precondition.
-            if not pausable.hasRole(pause_role_hash, target.gate_seal):
-                print(
-                    f"  [warn] GateSeal {target.gate_seal} does not hold PAUSE_ROLE "
-                    f"on {pausable.address} — revoke step will be a no-op"
-                )
+            assert pausable.hasRole(pause_role_hash, target.gate_seal), (
+                f"GateSeal {target.gate_seal} should hold PAUSE_ROLE on {pausable.address} before vote"
+            )
 
             resume_role_hash = str(pausable.RESUME_ROLE())
-            count = pausable.getRoleMemberCount(resume_role_hash)
-            pre_vote_resume_role_holders[pausable.address.lower()] = (
-                count,
-                tuple(
-                    pausable.getRoleMember(resume_role_hash, i).lower()
-                    for i in range(count)
-                ),
+            resume_role_holders = sorted(
+                pausable.getRoleMember(resume_role_hash, i).lower()
+                for i in range(pausable.getRoleMemberCount(resume_role_hash))
             )
+            pre_vote_resume_role_holders[pausable.address.lower()] = resume_role_holders
 
         # Snapshot CircuitBreaker globals that this vote MUST NOT change.
         pre_vote_cb_globals.update({
@@ -236,33 +258,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 event_index += 1
 
                 # registerPauser emits both PauserSet and HeartbeatUpdated
-                register_group = dg_events[event_index]
-                assert "PauserSet" in register_group, (
-                    f"No PauserSet event for {pausable.address}"
-                )
-                pauser_set = register_group["PauserSet"]
-                assert pauser_set["pausable"].lower() == pausable.address.lower(), (
-                    f"Wrong pausable in PauserSet event for {pausable.address}"
-                )
-                assert pauser_set["previousPauser"] == ZERO_ADDRESS, (
-                    f"PauserSet.previousPauser for {pausable.address} should be zero"
-                )
-                assert pauser_set["newPauser"].lower() == target.pauser.lower(), (
-                    f"PauserSet.newPauser for {pausable.address} should be {target.pauser}"
-                )
-                assert pauser_set["_emitted_by"].lower() == CIRCUIT_BREAKER.lower(), (
-                    f"PauserSet for {pausable.address} should be emitted by CircuitBreaker"
-                )
-
-                assert "HeartbeatUpdated" in register_group, (
-                    f"No HeartbeatUpdated event for {pausable.address}"
-                )
-                heartbeat_updated = register_group["HeartbeatUpdated"]
-                assert heartbeat_updated["pauser"].lower() == target.pauser.lower(), (
-                    f"HeartbeatUpdated.pauser for {pausable.address} should be {target.pauser}"
-                )
-                assert heartbeat_updated["_emitted_by"].lower() == CIRCUIT_BREAKER.lower(), (
-                    f"HeartbeatUpdated for {pausable.address} should be emitted by CircuitBreaker"
+                validate_register_pauser(
+                    dg_events[event_index],
+                    pausable_address=pausable.address,
+                    expected_pauser=target.pauser,
+                    emitted_by=CIRCUIT_BREAKER,
                 )
                 event_index += 1
 
@@ -284,7 +284,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         pausable = interface.IPausableUntilWithRoles(target.pausable)
         pause_role_hash = str(pausable.PAUSE_ROLE())
 
-        # PAUSE_ROLE: GateSeal out, CircuitBreaker in, count exactly 2 with ResealManager.
         assert not pausable.hasRole(pause_role_hash, target.gate_seal), (
             f"GateSeal {target.gate_seal} should not have PAUSE_ROLE on {pausable.address} after vote"
         )
@@ -294,28 +293,23 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert pausable.getRoleMemberCount(pause_role_hash) == 2, (
             f"{pausable.address} should have exactly 2 PAUSE_ROLE holders after vote"
         )
-        post_vote_pause_holders = {
+        assert {
             pausable.getRoleMember(pause_role_hash, 0).lower(),
             pausable.getRoleMember(pause_role_hash, 1).lower(),
-        }
-        assert post_vote_pause_holders == {CIRCUIT_BREAKER.lower(), RESEAL_MANAGER.lower()}, (
-            f"{pausable.address} PAUSE_ROLE holders {post_vote_pause_holders} != "
-            f"{{CircuitBreaker, ResealManager}}"
+        } == {CIRCUIT_BREAKER.lower(), RESEAL_MANAGER.lower()}, (
+            f"{pausable.address} PAUSE_ROLE holders do not match {{CircuitBreaker, ResealManager}}"
         )
 
         # RESUME_ROLE: untouched by the vote.
         if pre_vote_resume_role_holders:
             resume_role_hash = str(pausable.RESUME_ROLE())
-            count = pausable.getRoleMemberCount(resume_role_hash)
-            pre_count, pre_holders = pre_vote_resume_role_holders[pausable.address.lower()]
-            assert count == pre_count, (
-                f"{pausable.address} RESUME_ROLE holder count changed from {pre_count} to {count}"
+            post_vote_resume_role_holders = sorted(
+                pausable.getRoleMember(resume_role_hash, i).lower()
+                for i in range(pausable.getRoleMemberCount(resume_role_hash))
             )
-            post_holders = tuple(
-                pausable.getRoleMember(resume_role_hash, i).lower() for i in range(count)
-            )
-            assert post_holders == pre_holders, (
-                f"{pausable.address} RESUME_ROLE holders changed from {pre_holders} to {post_holders}"
+            pre_holders = pre_vote_resume_role_holders[pausable.address.lower()]
+            assert post_vote_resume_role_holders == pre_holders, (
+                f"{pausable.address} RESUME_ROLE holders changed from {pre_holders} to {post_vote_resume_role_holders}"
             )
 
         assert circuit_breaker.getPauser(pausable.address).lower() == target.pauser.lower(), (
