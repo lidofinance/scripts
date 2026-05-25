@@ -70,14 +70,14 @@ def withdrawal_queue():
 
 
 def _submit_dg_proposal_via_voting(calls, description, voting_acct):
-    """Submit a DG proposal directly via the Voting account (impersonated), bypassing the Aragon vote."""
+    """Submit a DG proposal directly from the impersonated Voting account, skipping the Aragon vote."""
     return contracts.dual_governance.submitProposal(
         [(addr, 0, data) for addr, data in calls], description, {"from": voting_acct}
     ).events["ProposalSubmitted"][0]["proposalId"]
 
 
 # ============================================================================
-# Per-pausable pause flow — event order, state transitions, auto-resume
+# Pause flow: events, state changes, auto-resume
 # ============================================================================
 def test_pause_flow(
     circuit_breaker, circuit_breaker_committee, withdrawal_queue
@@ -115,7 +115,7 @@ def test_pause_auto_resumes_after_pause_duration(
 
 
 # ============================================================================
-# Heartbeat side-effects from pause()
+# Heartbeat updates triggered by pause()
 # ============================================================================
 def test_pause_refreshes_heartbeat_when_pauser_has_more_pausables(
     circuit_breaker, csm_committee
@@ -180,11 +180,11 @@ def test_pause_reverts_when_sender_not_pauser(circuit_breaker, stranger, withdra
 def test_pauser_isolation(
     circuit_breaker, circuit_breaker_committee, csm_committee, withdrawal_queue
 ):
-    # CIRCUIT_BREAKER_COMMITTEE covers WithdrawalQueue, not CSModule.
+    # The circuit breaker committee can pause WithdrawalQueue but not CSModule.
     with reverts(encode_error("SenderNotPauser()")):
         circuit_breaker.pause(CSM_ADDRESS, {"from": circuit_breaker_committee})
 
-    # CSM_COMMITTEE_MS covers CSModule, not WithdrawalQueue.
+    # The CSM committee can pause CSModule but not WithdrawalQueue.
     with reverts(encode_error("SenderNotPauser()")):
         circuit_breaker.pause(withdrawal_queue.address, {"from": csm_committee})
 
@@ -317,7 +317,7 @@ def test_set_heartbeat_interval_within_bounds_succeeds(circuit_breaker, agent):
 
 
 def test_set_heartbeat_interval_does_not_retroact(circuit_breaker, agent, circuit_breaker_committee):
-    # Capture an existing registered pauser's expiry, change the interval, confirm it didn't move.
+    # Snapshot an existing pauser's expiry, change the interval, and check that the expiry stays the same.
     pre_expiry = circuit_breaker.heartbeatExpiry(circuit_breaker_committee.address)
     circuit_breaker.setHeartbeatInterval(
         CIRCUIT_BREAKER_MIN_HEARTBEAT_INTERVAL + 12345, {"from": agent}
@@ -327,7 +327,7 @@ def test_set_heartbeat_interval_does_not_retroact(circuit_breaker, agent, circui
 
 
 # ============================================================================
-# Admin re-registration via the full DG timelock flow
+# Admin re-registration through the full DG timelock
 # ============================================================================
 def test_register_pauser_via_dg(
     circuit_breaker, voting, stranger, withdrawal_queue, circuit_breaker_committee
@@ -343,7 +343,7 @@ def test_register_pauser_via_dg(
         voting,
     )
 
-    # Before timelocks elapse, the proposal is not executable.
+    # The proposal cannot be executed until the timelock has elapsed.
     with reverts():
         contracts.emergency_protected_timelock.execute(proposal_id, {"from": stranger})
 
@@ -383,7 +383,7 @@ def test_recovery_after_auto_resume(
     chain.mine(1)
     assert not withdrawal_queue.isPaused()
 
-    # Admin re-registers the pauser, restoring coverage and refreshing heartbeat.
+    # Admin re-registers the pauser; coverage is restored and the heartbeat is refreshed.
     circuit_breaker.registerPauser(
         withdrawal_queue.address, circuit_breaker_committee.address, {"from": agent}
     )
