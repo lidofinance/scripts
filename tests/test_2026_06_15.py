@@ -11,6 +11,7 @@ from utils.test.tx_tracing_helpers import (
 )
 from utils.evm_script import encode_call_script
 from utils.dual_governance import PROPOSAL_STATUS
+from utils.test.event_validators.circuit_breaker import validate_register_pauser_event
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 from utils.test.event_validators.permission import (
     validate_grant_role_event,
@@ -69,41 +70,6 @@ IPFS_DESCRIPTION_HASH = ""
 @pytest.fixture(scope="module")
 def dual_governance_proposal_calls():
     return [{"target": target, "value": 0, "data": data} for target, data in get_dg_items()]
-
-
-def validate_register_pauser(
-    register_group,
-    pausable_address: str,
-    expected_pauser: str,
-    emitted_by: str,
-):
-    assert "PauserSet" in register_group, (
-        f"No PauserSet event for {pausable_address}"
-    )
-    pauser_set = register_group["PauserSet"]
-    assert pauser_set["pausable"].lower() == pausable_address.lower(), (
-        f"Wrong pausable in PauserSet event for {pausable_address}"
-    )
-    assert pauser_set["previousPauser"] == ZERO_ADDRESS, (
-        f"PauserSet.previousPauser for {pausable_address} should be zero"
-    )
-    assert pauser_set["newPauser"].lower() == expected_pauser.lower(), (
-        f"PauserSet.newPauser for {pausable_address} should be {expected_pauser}"
-    )
-    assert pauser_set["_emitted_by"].lower() == emitted_by.lower(), (
-        f"PauserSet for {pausable_address} should be emitted by {emitted_by}"
-    )
-
-    assert "HeartbeatUpdated" in register_group, (
-        f"No HeartbeatUpdated event for {pausable_address}"
-    )
-    heartbeat_updated = register_group["HeartbeatUpdated"]
-    assert heartbeat_updated["pauser"].lower() == expected_pauser.lower(), (
-        f"HeartbeatUpdated.pauser for {pausable_address} should be {expected_pauser}"
-    )
-    assert heartbeat_updated["_emitted_by"].lower() == emitted_by.lower(), (
-        f"HeartbeatUpdated for {pausable_address} should be emitted by {emitted_by}"
-    )
 
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
@@ -258,7 +224,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 event_index += 1
 
                 # registerPauser emits both PauserSet and HeartbeatUpdated
-                validate_register_pauser(
+                validate_register_pauser_event(
                     dg_events[event_index],
                     pausable_address=pausable.address,
                     expected_pauser=target.pauser,
