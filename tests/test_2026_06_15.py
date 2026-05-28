@@ -311,3 +311,19 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         for key, value in pre_dg_cb_globals.items():
             current = getattr(circuit_breaker, key)()
             assert current == value, f"CircuitBreaker.{key} changed from {value} to {current}"
+
+
+    # =========================================================================
+    # ============== Happy path: each pauser can pause its pausable ===========
+    # =========================================================================
+    for target in MIGRATION_TARGETS:
+        pausable = interface.IPausableUntilWithRoles(target.pausable)
+        assert not pausable.isPaused(), f"{pausable.address} should not be paused before happy-path pause"
+
+        pauser = accounts.at(target.pauser, force=True)
+        tx = circuit_breaker.pause(target.pausable, {"from": pauser})
+
+        assert pausable.isPaused(), f"{pausable.address} should be paused after CircuitBreaker.pause"
+        assert pausable.getResumeSinceTimestamp() == tx.timestamp + CIRCUIT_BREAKER_PAUSE_DURATION, (
+            f"{pausable.address} resume-since timestamp should be tx.timestamp + pauseDuration"
+        )
