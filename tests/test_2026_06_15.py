@@ -32,7 +32,11 @@ from scripts.vote_2026_06_15 import (
     start_vote,
 )
 
+# ============================================================================
+# ============================== Constants ===================================
+# ============================================================================
 CIRCUIT_BREAKER = "0x6019CB557978296BA3C08a7B73225C0975DFB2F7"
+
 CIRCUIT_BREAKER_MIN_PAUSE_DURATION = 432000        # 5 days
 CIRCUIT_BREAKER_MAX_PAUSE_DURATION = 5184000       # 60 days
 CIRCUIT_BREAKER_PAUSE_DURATION = 1814400           # 21 days
@@ -40,18 +44,12 @@ CIRCUIT_BREAKER_MIN_HEARTBEAT_INTERVAL = 2592000   # 30 days
 CIRCUIT_BREAKER_MAX_HEARTBEAT_INTERVAL = 94608000  # 1095 days (~3 years)
 CIRCUIT_BREAKER_HEARTBEAT_INTERVAL = 31536000      # 1 year (365 days)
 
-RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
-
-
-# ============================================================================
-# ============================== Constants ===================================
-# ============================================================================
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
-
+RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
 
 # ============================================================================
 # ============================= Test params ==================================
@@ -82,8 +80,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     circuit_breaker = interface.CircuitBreaker(CIRCUIT_BREAKER)
 
-    pre_vote_resume_role_holders = {}
-    pre_vote_cb_globals = {}
+    pre_dg_resume_role_holders = {}
+    pre_dg_cb_globals = {}
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -107,42 +105,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     # =========================================================================
     is_executed = voting.getVote(vote_id)["executed"]
     if not is_executed:
-        # =======================================================================
-        # ========================= Before voting checks ========================
-        # =======================================================================
-        for target in MIGRATION_TARGETS:
-            pausable = interface.IPausableUntilWithRoles(target.pausable)
-            pause_role_hash = str(pausable.PAUSE_ROLE())
-
-            assert not pausable.hasRole(pause_role_hash, CIRCUIT_BREAKER), (
-                f"CircuitBreaker should not have PAUSE_ROLE on {pausable.address} before vote"
-            )
-            assert circuit_breaker.getPauser(pausable.address) == ZERO_ADDRESS, (
-                f"CircuitBreaker should not have a pauser for {pausable.address} before vote"
-            )
-
-            assert pausable.hasRole(pause_role_hash, target.gate_seal), (
-                f"GateSeal {target.gate_seal} should hold PAUSE_ROLE on {pausable.address} before vote"
-            )
-
-            resume_role_hash = str(pausable.RESUME_ROLE())
-            resume_role_holders = sorted(
-                pausable.getRoleMember(resume_role_hash, i).lower()
-                for i in range(pausable.getRoleMemberCount(resume_role_hash))
-            )
-            pre_vote_resume_role_holders[pausable.address.lower()] = resume_role_holders
-
-        # Snapshot CircuitBreaker globals that this vote MUST NOT change.
-        pre_vote_cb_globals.update({
-            "ADMIN": circuit_breaker.ADMIN(),
-            "pauseDuration": circuit_breaker.pauseDuration(),
-            "heartbeatInterval": circuit_breaker.heartbeatInterval(),
-            "MIN_PAUSE_DURATION": circuit_breaker.MIN_PAUSE_DURATION(),
-            "MAX_PAUSE_DURATION": circuit_breaker.MAX_PAUSE_DURATION(),
-            "MIN_HEARTBEAT_INTERVAL": circuit_breaker.MIN_HEARTBEAT_INTERVAL(),
-            "MAX_HEARTBEAT_INTERVAL": circuit_breaker.MAX_HEARTBEAT_INTERVAL(),
-        })
-
         if IPFS_DESCRIPTION_HASH:
             assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
 
@@ -178,6 +140,43 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
     dg_execution_timestamp = None
     if details["status"] != PROPOSAL_STATUS["executed"]:
+        # =======================================================================
+        # ======================= Before DG enactment checks ====================
+        # =======================================================================
+        for target in MIGRATION_TARGETS:
+            pausable = interface.IPausableUntilWithRoles(target.pausable)
+            pause_role_hash = str(pausable.PAUSE_ROLE())
+
+            assert not pausable.hasRole(pause_role_hash, CIRCUIT_BREAKER), (
+                f"CircuitBreaker should not have PAUSE_ROLE on {pausable.address} before DG enactment"
+            )
+            assert circuit_breaker.getPauser(pausable.address) == ZERO_ADDRESS, (
+                f"CircuitBreaker should not have a pauser for {pausable.address} before DG enactment"
+            )
+
+            assert pausable.hasRole(pause_role_hash, target.gate_seal), (
+                f"GateSeal {target.gate_seal} should hold PAUSE_ROLE on {pausable.address} before DG enactment"
+            )
+
+            resume_role_hash = str(pausable.RESUME_ROLE())
+            # not all pausables have `getRoleMembers`, so we have to use `getRoleMember` in a loop
+            resume_role_holders = sorted(
+                pausable.getRoleMember(resume_role_hash, i).lower()
+                for i in range(pausable.getRoleMemberCount(resume_role_hash))
+            )
+            pre_dg_resume_role_holders[pausable.address.lower()] = resume_role_holders
+
+        # Snapshot CircuitBreaker config that the DG proposal MUST NOT change.
+        pre_dg_cb_globals.update({
+            "ADMIN": circuit_breaker.ADMIN(),
+            "pauseDuration": circuit_breaker.pauseDuration(),
+            "heartbeatInterval": circuit_breaker.heartbeatInterval(),
+            "MIN_PAUSE_DURATION": circuit_breaker.MIN_PAUSE_DURATION(),
+            "MAX_PAUSE_DURATION": circuit_breaker.MAX_PAUSE_DURATION(),
+            "MIN_HEARTBEAT_INTERVAL": circuit_breaker.MIN_HEARTBEAT_INTERVAL(),
+            "MAX_HEARTBEAT_INTERVAL": circuit_breaker.MAX_HEARTBEAT_INTERVAL(),
+        })
+
         if details["status"] == PROPOSAL_STATUS["submitted"]:
             chain.sleep(timelock.getAfterSubmitDelay() + 1)
             dual_governance.scheduleProposal(dg_proposal_id, {"from": stranger})
@@ -266,23 +265,23 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             f"{pausable.address} PAUSE_ROLE holders do not match {{CircuitBreaker, ResealManager}}"
         )
 
-        # RESUME_ROLE: untouched by the vote.
-        if pre_vote_resume_role_holders:
+        # RESUME_ROLE: untouched by the DG proposal.
+        if pre_dg_resume_role_holders:
             resume_role_hash = str(pausable.RESUME_ROLE())
-            post_vote_resume_role_holders = sorted(
+            post_dg_resume_role_holders = sorted(
                 pausable.getRoleMember(resume_role_hash, i).lower()
                 for i in range(pausable.getRoleMemberCount(resume_role_hash))
             )
-            pre_holders = pre_vote_resume_role_holders[pausable.address.lower()]
-            assert post_vote_resume_role_holders == pre_holders, (
-                f"{pausable.address} RESUME_ROLE holders changed from {pre_holders} to {post_vote_resume_role_holders}"
+            pre_holders = pre_dg_resume_role_holders[pausable.address.lower()]
+            assert post_dg_resume_role_holders == pre_holders, (
+                f"{pausable.address} RESUME_ROLE holders changed from {pre_holders} to {post_dg_resume_role_holders}"
             )
 
         assert circuit_breaker.getPauser(pausable.address).lower() == target.pauser.lower(), (
             f"CircuitBreaker pauser for {pausable.address} should be {target.pauser} after vote"
         )
 
-    # Per-pauser checks (deduped across migrations that share a pauser)
+    # Per-pauser checks (deduped)
     for pauser, expected_count in expected_pausable_counts.items():
         assert circuit_breaker.getPausableCount(pauser) == expected_count, (
             f"getPausableCount mismatch for {pauser}"
@@ -299,7 +298,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 f"heartbeat interval"
             )
 
-    # CircuitBreaker globals — the vote must NOT touch these.
+    # CircuitBreaker globals — the DG proposal must NOT touch these.
     assert circuit_breaker.ADMIN() == AGENT
     assert circuit_breaker.pauseDuration() == CIRCUIT_BREAKER_PAUSE_DURATION
     assert circuit_breaker.heartbeatInterval() == CIRCUIT_BREAKER_HEARTBEAT_INTERVAL
@@ -308,7 +307,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     assert circuit_breaker.MIN_HEARTBEAT_INTERVAL() == CIRCUIT_BREAKER_MIN_HEARTBEAT_INTERVAL
     assert circuit_breaker.MAX_HEARTBEAT_INTERVAL() == CIRCUIT_BREAKER_MAX_HEARTBEAT_INTERVAL
 
-    if pre_vote_cb_globals:
-        for key, value in pre_vote_cb_globals.items():
+    if pre_dg_cb_globals:
+        for key, value in pre_dg_cb_globals.items():
             current = getattr(circuit_breaker, key)()
             assert current == value, f"CircuitBreaker.{key} changed from {value} to {current}"
