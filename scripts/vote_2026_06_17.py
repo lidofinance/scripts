@@ -1,5 +1,5 @@
 """
-Vote 2026_06_15
+Vote 2026_06_17
 
 1. Submit a Dual Governance proposal to migrate 11 pausable contracts from legacy GateSeals to CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7 per LIP-34
 
