@@ -1,7 +1,7 @@
 """
 Vote 2026_06_17
 
-1. Submit a Dual Governance proposal to migrate 11 pausable contracts from legacy GateSeals to CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7 per LIP-34
+1. Submit a Dual Governance proposal to migrate 11 pausable contracts from legacy GateSeals to CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7 per LIP-34, increase the Liquidity Observation Lab (LOL) stETH Easy Track limit to 8,000 stETH per 6 months, and change the name of Node Operator Pier Two to MAVAN
 
 # ===== WithdrawalQueue 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1 =====
 1.1. Revoke PAUSE_ROLE from GateSeal 0x8A854C4E750CDf24f138f34A9061b2f556066912 on WithdrawalQueue 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1
@@ -58,6 +58,10 @@ Vote 2026_06_17
 1.32. Grant PAUSE_ROLE to CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7 on CSEjector 0xc72b58aa02E0e98cF8A4a0E9Dce75e763800802C
 1.33. Register CSEjector 0xc72b58aa02E0e98cF8A4a0E9Dce75e763800802C on CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7 with pauser 0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f
 
+# ===== Operational items =====
+1.34. Increase limit from 6,000 to 8,000 stETH per 6 months on LOL stETH Easy Track AllowedRecipientsRegistry 0x48c4929630099b217136b64089E8543dB0E5163a
+1.35. Change the name to MAVAN for Node Operator Pier Two (id = 36) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
+
 Vote #{vote number} passed & executed on {date+time}, block {blockNumber}.
 """
 
@@ -66,6 +70,8 @@ from typing import Dict, List, NamedTuple, Tuple
 from brownie import interface
 
 from utils.agent import agent_forward
+from utils.allowed_recipients_registry import set_limit_parameters
+from utils.node_operators import encode_set_node_operator_name
 from utils.config import (
     CIRCUIT_BREAKER,
     CS_ACCOUNTING_ADDRESS,
@@ -97,11 +103,14 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 # ============================== Description =================================
 DG_PROPOSAL_METADATA = (
     "Migrate 11 pausable contracts from legacy GateSeals to CircuitBreaker "
-    "0x6019CB557978296BA3C08a7B73225C0975DFB2F7 per LIP-34"
+    "0x6019CB557978296BA3C08a7B73225C0975DFB2F7 per LIP-34, increase the Liquidity Observation Lab (LOL) "
+    "stETH Easy Track limit to 8,000 stETH per 6 months, and change the name of Node Operator Pier Two to MAVAN"
 )
 DG_SUBMISSION_DESCRIPTION = (
     "1. Submit a Dual Governance proposal to migrate 11 pausable contracts from "
-    "legacy GateSeals to CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7 per LIP-34"
+    "legacy GateSeals to CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7 per LIP-34, increase the "
+    "Liquidity Observation Lab (LOL) stETH Easy Track limit to 8,000 stETH per 6 months, and change the name "
+    "of Node Operator Pier Two to MAVAN"
 )
 
 IPFS_DESCRIPTION = """
@@ -118,6 +127,11 @@ Migrate 11 pausable contracts from legacy GateSeals to CircuitBreaker 0x6019CB55
 9. **CSVerifierV2 0xdC5FE1782B6943f318E05230d688713a560063DC**. Pauser: 0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f. Items 1.25-1.27.
 10. **CSVettedGate 0xB314D4A76C457c93150d308787939063F4Cc67E0**. Pauser: 0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f. Items 1.28-1.30.
 11. **CSEjector 0xc72b58aa02E0e98cF8A4a0E9Dce75e763800802C**. Pauser: 0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f. Items 1.31-1.33.
+
+Operational items:
+
+12. **Increase the Liquidity Observation Lab (LOL) stETH Easy Track limit** from 6,000 to 8,000 stETH per 6 months on AllowedRecipientsRegistry 0x48c4929630099b217136b64089E8543dB0E5163a. Item 1.34.
+13. **Change the name to MAVAN for Node Operator Pier Two** (id = 36) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5. Item 1.35.
 """
 
 # ============================== Migration ==============================
@@ -140,6 +154,19 @@ MIGRATION_TARGETS: List[MigrationTarget] = [
     MigrationTarget(CS_VETTED_GATE_ADDRESS,          CSM_COMMITTEE_MS,    CS_GATE_SEAL_V2_ADDRESS),
     MigrationTarget(CS_EJECTOR_ADDRESS,              CSM_COMMITTEE_MS,    CS_GATE_SEAL_V2_ADDRESS),
 ]
+
+
+# ===================== Operational items ===============
+CURATED_MODULE = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
+
+# Increase Liquidity Observation Lab (LOL) stETH Easy Track limit from 6,000 to 8,000 stETH per 6 months.
+LOL_ALLOWED_RECIPIENTS_REGISTRY = "0x48c4929630099b217136b64089E8543dB0E5163a"
+LOL_NEW_LIMIT = 8000 * 10**18
+LOL_PERIOD_DURATION_MONTHS = 6
+
+# Rename Node Operator Pier Two (id = 36) to MAVAN in the Curated Module.
+PIER_TWO_NO_ID = 36
+PIER_TWO_NEW_NAME = "MAVAN"
 
 
 # ============================== Call encoder ===============================
@@ -179,10 +206,28 @@ def assert_target_matches_chain(target: MigrationTarget) -> None:
 # ================================== Main ====================================
 def get_dg_items() -> List[Tuple[str, str]]:
     circuit_breaker = interface.CircuitBreaker(CIRCUIT_BREAKER)
+    curated_module = interface.NodeOperatorsRegistry(CURATED_MODULE)
+
     items: List[Tuple[str, str]] = []
     for target in MIGRATION_TARGETS:
         assert_target_matches_chain(target)
         items.extend(encode_migration_calls(target, circuit_breaker))
+
+    # Operational items
+    items += [
+        # 1.34. Increase limit from 6,000 to 8,000 stETH per 6 months on LOL stETH Easy Track AllowedRecipientsRegistry 0x48c4929630099b217136b64089E8543dB0E5163a
+        agent_forward(
+            [
+                set_limit_parameters(
+                    registry_address=LOL_ALLOWED_RECIPIENTS_REGISTRY,
+                    limit=LOL_NEW_LIMIT,
+                    period_duration_months=LOL_PERIOD_DURATION_MONTHS,
+                )
+            ]
+        ),
+        # 1.35. Change the name to MAVAN for Node Operator Pier Two (id = 36) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
+        agent_forward([encode_set_node_operator_name(PIER_TWO_NO_ID, PIER_TWO_NEW_NAME, curated_module)]),
+    ]
     return items
 
 

@@ -17,6 +17,11 @@ from utils.test.event_validators.permission import (
     validate_grant_role_event,
     validate_revoke_role_event,
 )
+from utils.test.event_validators.allowed_recipients_registry import validate_set_limit_parameter_event
+from utils.test.event_validators.node_operators_registry import (
+    validate_node_operator_name_set_event,
+    NodeOperatorNameSetItem,
+)
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 
@@ -51,6 +56,18 @@ DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
 
+# Operational items
+CURATED_MODULE = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
+
+LOL_ALLOWED_RECIPIENTS_REGISTRY = "0x48c4929630099b217136b64089E8543dB0E5163a"
+LOL_OLD_LIMIT = 6000 * 10**18
+LOL_NEW_LIMIT = 8000 * 10**18
+LOL_PERIOD_DURATION_MONTHS = 6
+
+PIER_TWO_NO_ID = 36
+PIER_TWO_NAME_OLD = "Pier Two"
+PIER_TWO_NAME_NEW = "MAVAN"
+
 # ============================================================================
 # ============================= Test params ==================================
 # ============================================================================
@@ -59,7 +76,8 @@ EXPECTED_DG_PROPOSAL_ID = None
 EXPECTED_VOTE_EVENTS_COUNT = 1
 
 # Per migration (one pausable each): revoke PAUSE_ROLE, grant PAUSE_ROLE, registerPauser.
-EXPECTED_DG_EVENTS_FROM_AGENT = len(MIGRATION_TARGETS) * 3
+# Plus 2 operational items: 1.34 LOL Easy Track limit increase, 1.35 Node Operator rename.
+EXPECTED_DG_EVENTS_FROM_AGENT = len(MIGRATION_TARGETS) * 3 + 2
 EXPECTED_DG_EVENTS_COUNT = EXPECTED_DG_EVENTS_FROM_AGENT
 
 IPFS_DESCRIPTION_HASH = ""
@@ -79,6 +97,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
     circuit_breaker = interface.CircuitBreaker(CIRCUIT_BREAKER)
+    lol_registry = interface.AllowedRecipientRegistry(LOL_ALLOWED_RECIPIENTS_REGISTRY)
+    curated_module = interface.NodeOperatorsRegistry(CURATED_MODULE)
 
     pre_dg_resume_role_holders = {}
     pre_dg_cb_globals = {}
@@ -177,6 +197,18 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             "MAX_HEARTBEAT_INTERVAL": circuit_breaker.MAX_HEARTBEAT_INTERVAL(),
         })
 
+        # Operational items pre-state (items 1.34, 1.35).
+        lol_limit_before, lol_period_before = lol_registry.getLimitParameters()
+        assert lol_limit_before == LOL_OLD_LIMIT, (
+            f"LOL limit before DG enactment should be {LOL_OLD_LIMIT}, got {lol_limit_before}"
+        )
+        assert lol_period_before == LOL_PERIOD_DURATION_MONTHS, (
+            f"LOL period before DG enactment should be {LOL_PERIOD_DURATION_MONTHS}, got {lol_period_before}"
+        )
+        assert curated_module.getNodeOperator(PIER_TWO_NO_ID, True)["name"] == PIER_TWO_NAME_OLD, (
+            f"Node Operator {PIER_TWO_NO_ID} name before DG enactment should be {PIER_TWO_NAME_OLD}"
+        )
+
         if details["status"] == PROPOSAL_STATUS["submitted"]:
             chain.sleep(timelock.getAfterSubmitDelay() + 1)
             dual_governance.scheduleProposal(dg_proposal_id, {"from": stranger})
@@ -230,6 +262,25 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     emitted_by=CIRCUIT_BREAKER,
                 )
                 event_index += 1
+
+            # 1.34. LOL Easy Track limit increase
+            _, _, lol_period_start_after, _ = lol_registry.getPeriodState()
+            validate_set_limit_parameter_event(
+                dg_events[event_index],
+                limit=LOL_NEW_LIMIT,
+                period_duration_month=LOL_PERIOD_DURATION_MONTHS,
+                period_start_timestamp=lol_period_start_after,
+                emitted_by=LOL_ALLOWED_RECIPIENTS_REGISTRY,
+            )
+            event_index += 1
+
+            # 1.35. Change Node Operator Pier Two name to MAVAN
+            validate_node_operator_name_set_event(
+                dg_events[event_index],
+                NodeOperatorNameSetItem(nodeOperatorId=PIER_TWO_NO_ID, name=PIER_TWO_NAME_NEW),
+                emitted_by=CURATED_MODULE,
+            )
+            event_index += 1
 
 
     # =========================================================================
@@ -311,6 +362,22 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         for key, value in pre_dg_cb_globals.items():
             current = getattr(circuit_breaker, key)()
             assert current == value, f"CircuitBreaker.{key} changed from {value} to {current}"
+
+
+    # =========================================================================
+    # ============= After DG: operational items (1.34, 1.35) ==================
+    # =========================================================================
+    lol_limit_after, lol_period_after = lol_registry.getLimitParameters()
+    assert lol_limit_after == LOL_NEW_LIMIT, (
+        f"LOL limit after vote should be {LOL_NEW_LIMIT}, got {lol_limit_after}"
+    )
+    assert lol_period_after == LOL_PERIOD_DURATION_MONTHS, (
+        f"LOL period after vote should be {LOL_PERIOD_DURATION_MONTHS}, got {lol_period_after}"
+    )
+
+    assert curated_module.getNodeOperator(PIER_TWO_NO_ID, True)["name"] == PIER_TWO_NAME_NEW, (
+        f"Node Operator {PIER_TWO_NO_ID} name after vote should be {PIER_TWO_NAME_NEW}"
+    )
 
 
     # =========================================================================
