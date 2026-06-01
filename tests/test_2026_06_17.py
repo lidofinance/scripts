@@ -71,8 +71,8 @@ PIER_TWO_NAME_NEW = "MAVAN"
 # ============================================================================
 # ============================= Test params ==================================
 # ============================================================================
-EXPECTED_VOTE_ID = None
-EXPECTED_DG_PROPOSAL_ID = None
+EXPECTED_VOTE_ID = 202
+EXPECTED_DG_PROPOSAL_ID = 11
 EXPECTED_VOTE_EVENTS_COUNT = 1
 
 # Per migration (one pausable each): revoke PAUSE_ROLE, grant PAUSE_ROLE, registerPauser.
