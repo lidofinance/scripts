@@ -68,8 +68,8 @@ LOL_ALLOWED_RECIPIENTS_REGISTRY = "0x48c4929630099b217136b64089E8543dB0E5163a"
 LOL_OLD_LIMIT = 6000 * 10**18
 LOL_NEW_LIMIT = 8000 * 10**18
 LOL_PERIOD_DURATION_MONTHS = 6
-LOL_PERIOD_START_AFTER = 1767225600  # 2026-01-01 00:00:00 UTC
-LOL_PERIOD_END_AFTER = 1782864000  # 2026-07-01 00:00:00 UTC
+LOL_PERIOD_START = 1767225600  # 2026-01-01 00:00:00 UTC
+LOL_PERIOD_END = 1782864000  # 2026-07-01 00:00:00 UTC
 LOL_TRUSTED_CALLER = "0x87D93d9B2C672bf9c9642d853a8682546a5012B5"
 LOL_TOP_UP_FACTORY = "0x1F2b79FE297B7098875930bBA6dd17068103897E"
 
@@ -109,10 +109,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     lol_registry = interface.AllowedRecipientRegistry(LOL_ALLOWED_RECIPIENTS_REGISTRY)
     curated_module = interface.NodeOperatorsRegistry(CURATED_MODULE)
     easy_track = interface.EasyTrack(EASYTRACK)
-
-    pre_dg_resume_role_holders = {}
-    pre_dg_cb_globals = {}
-    pre_dg_lol_period_state = {}
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -174,6 +170,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =======================================================================
         # ======================= Before DG enactment checks ====================
         # =======================================================================
+        
+        # 1.1-1.33. CircuitBreaker migration
         for target in MIGRATION_TARGETS:
             pausable = interface.IPausableUntilWithRoles(target.pausable)
             pause_role_hash = str(pausable.PAUSE_ROLE())
@@ -189,40 +187,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 f"GateSeal {target.gate_seal} should hold PAUSE_ROLE on {pausable.address} before DG enactment"
             )
 
-            resume_role_hash = str(pausable.RESUME_ROLE())
-            # not all pausables have `getRoleMembers`, so we have to use `getRoleMember` in a loop
-            resume_role_holders = sorted(
-                pausable.getRoleMember(resume_role_hash, i).lower()
-                for i in range(pausable.getRoleMemberCount(resume_role_hash))
-            )
-            pre_dg_resume_role_holders[pausable.address.lower()] = resume_role_holders
+        validate_circuit_breaker_globals(circuit_breaker)
 
-        # Snapshot CircuitBreaker config that the DG proposal MUST NOT change.
-        pre_dg_cb_globals.update({
-            "ADMIN": circuit_breaker.ADMIN(),
-            "pauseDuration": circuit_breaker.pauseDuration(),
-            "heartbeatInterval": circuit_breaker.heartbeatInterval(),
-            "MIN_PAUSE_DURATION": circuit_breaker.MIN_PAUSE_DURATION(),
-            "MAX_PAUSE_DURATION": circuit_breaker.MAX_PAUSE_DURATION(),
-            "MIN_HEARTBEAT_INTERVAL": circuit_breaker.MIN_HEARTBEAT_INTERVAL(),
-            "MAX_HEARTBEAT_INTERVAL": circuit_breaker.MAX_HEARTBEAT_INTERVAL(),
-        })
-
-        # Operational items pre-state (items 1.34, 1.35).
-        lol_limit_before, lol_period_before = lol_registry.getLimitParameters()
-        assert lol_limit_before == LOL_OLD_LIMIT, (
-            f"LOL limit before DG enactment should be {LOL_OLD_LIMIT}, got {lol_limit_before}"
-        )
-        assert lol_period_before == LOL_PERIOD_DURATION_MONTHS, (
-            f"LOL period before DG enactment should be {LOL_PERIOD_DURATION_MONTHS}, got {lol_period_before}"
-        )
-
-        # getPeriodState before enactment, to compare against the expected post-enactment change.
+        # 1.34. LOL config before enactment — old limit, period window unchanged by the vote.
+        validate_lol_config(lol_registry, LOL_OLD_LIMIT)
         lol_spent_before, lol_spendable_before, _, _ = lol_registry.getPeriodState()
-        pre_dg_lol_period_state.update(
-            {"already_spent": lol_spent_before, "spendable": lol_spendable_before}
-        )
 
+        # 1.35. Node Operator name before enactment.
         assert curated_module.getNodeOperator(PIER_TWO_NO_ID, True)["name"] == PIER_TWO_NAME_OLD, (
             f"Node Operator {PIER_TWO_NO_ID} name before DG enactment should be {PIER_TWO_NAME_OLD}"
         )
@@ -286,7 +257,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 dg_events[event_index],
                 limit=LOL_NEW_LIMIT,
                 period_duration_month=LOL_PERIOD_DURATION_MONTHS,
-                period_start_timestamp=LOL_PERIOD_START_AFTER,
+                period_start_timestamp=LOL_PERIOD_START,
                 emitted_by=LOL_ALLOWED_RECIPIENTS_REGISTRY,
             )
             event_index += 1
@@ -299,74 +270,90 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             )
             event_index += 1
 
+        # =====================================================================
+        # ================ After DG proposal executed checks ==================
+        # =====================================================================
 
-    # =========================================================================
-    # ==================== After DG proposal executed checks ==================
-    # =========================================================================
-    expected_pausables = {t.pausable.lower() for t in MIGRATION_TARGETS}
-    on_chain_pausables = {addr.lower() for addr in circuit_breaker.getPausables()}
-    assert on_chain_pausables == expected_pausables, (
-        f"CircuitBreaker.getPausables() mismatch: expected {expected_pausables}, got {on_chain_pausables}"
-    )
-
-    expected_pausable_counts = {}
-    for t in MIGRATION_TARGETS:
-        expected_pausable_counts[t.pauser.lower()] = expected_pausable_counts.get(t.pauser.lower(), 0) + 1
-
-    for target in MIGRATION_TARGETS:
-        pausable = interface.IPausableUntilWithRoles(target.pausable)
-        pause_role_hash = str(pausable.PAUSE_ROLE())
-
-        assert not pausable.hasRole(pause_role_hash, target.gate_seal), (
-            f"GateSeal {target.gate_seal} should not have PAUSE_ROLE on {pausable.address} after vote"
-        )
-        assert pausable.hasRole(pause_role_hash, CIRCUIT_BREAKER), (
-            f"CircuitBreaker should have PAUSE_ROLE on {pausable.address} after vote"
-        )
-        assert pausable.getRoleMemberCount(pause_role_hash) == 2, (
-            f"{pausable.address} should have exactly 2 PAUSE_ROLE holders after vote"
-        )
-        assert {
-            pausable.getRoleMember(pause_role_hash, 0).lower(),
-            pausable.getRoleMember(pause_role_hash, 1).lower(),
-        } == {CIRCUIT_BREAKER.lower(), RESEAL_MANAGER.lower()}, (
-            f"{pausable.address} PAUSE_ROLE holders do not match {{CircuitBreaker, ResealManager}}"
+        # 1.1-1.33. CircuitBreaker migration
+        expected_pausables = {t.pausable.lower() for t in MIGRATION_TARGETS}
+        on_chain_pausables = {addr.lower() for addr in circuit_breaker.getPausables()}
+        assert on_chain_pausables == expected_pausables, (
+            f"CircuitBreaker.getPausables() mismatch: expected {expected_pausables}, got {on_chain_pausables}"
         )
 
-        # RESUME_ROLE: untouched by the DG proposal.
-        if pre_dg_resume_role_holders:
-            resume_role_hash = str(pausable.RESUME_ROLE())
-            post_dg_resume_role_holders = sorted(
-                pausable.getRoleMember(resume_role_hash, i).lower()
-                for i in range(pausable.getRoleMemberCount(resume_role_hash))
+        expected_pausable_counts = {}
+        for t in MIGRATION_TARGETS:
+            expected_pausable_counts[t.pauser.lower()] = expected_pausable_counts.get(t.pauser.lower(), 0) + 1
+
+        for target in MIGRATION_TARGETS:
+            pausable = interface.IPausableUntilWithRoles(target.pausable)
+            pause_role_hash = str(pausable.PAUSE_ROLE())
+
+            assert not pausable.hasRole(pause_role_hash, target.gate_seal), (
+                f"GateSeal {target.gate_seal} should not have PAUSE_ROLE on {pausable.address} after vote"
             )
-            pre_holders = pre_dg_resume_role_holders[pausable.address.lower()]
-            assert post_dg_resume_role_holders == pre_holders, (
-                f"{pausable.address} RESUME_ROLE holders changed from {pre_holders} to {post_dg_resume_role_holders}"
+            assert pausable.hasRole(pause_role_hash, CIRCUIT_BREAKER), (
+                f"CircuitBreaker should have PAUSE_ROLE on {pausable.address} after vote"
+            )
+            assert pausable.getRoleMemberCount(pause_role_hash) == 2, (
+                f"{pausable.address} should have exactly 2 PAUSE_ROLE holders after vote"
+            )
+            assert {
+                pausable.getRoleMember(pause_role_hash, 0).lower(),
+                pausable.getRoleMember(pause_role_hash, 1).lower(),
+            } == {CIRCUIT_BREAKER.lower(), RESEAL_MANAGER.lower()}, (
+                f"{pausable.address} PAUSE_ROLE holders do not match {{CircuitBreaker, ResealManager}}"
             )
 
-        assert circuit_breaker.getPauser(pausable.address).lower() == target.pauser.lower(), (
-            f"CircuitBreaker pauser for {pausable.address} should be {target.pauser} after vote"
-        )
+            assert circuit_breaker.getPauser(pausable.address).lower() == target.pauser.lower(), (
+                f"CircuitBreaker pauser for {pausable.address} should be {target.pauser} after vote"
+            )
 
-    # Per-pauser checks (deduped)
-    for pauser, expected_count in expected_pausable_counts.items():
-        assert circuit_breaker.getPausableCount(pauser) == expected_count, (
-            f"getPausableCount mismatch for {pauser}"
-        )
-        assert circuit_breaker.isPauserLive(pauser), f"{pauser} should be live after vote"
-        if dg_execution_timestamp is not None:
-            # Exact equality is only meaningful when this test executed the DG proposal —
-            # otherwise the execution block was mined before this test ran (e.g. by the
-            # autoexecute_vote fixture) and we can't recover its timestamp.
+        # Per-pauser checks (deduped)
+        for pauser, expected_count in expected_pausable_counts.items():
+            assert circuit_breaker.getPausableCount(pauser) == expected_count, (
+                f"getPausableCount mismatch for {pauser}"
+            )
+            assert circuit_breaker.isPauserLive(pauser), f"{pauser} should be live after vote"
             assert circuit_breaker.heartbeatExpiry(pauser) == (
                 dg_execution_timestamp + CIRCUIT_BREAKER_HEARTBEAT_INTERVAL
             ), (
-                f"heartbeatExpiry({pauser}) should equal DG execution timestamp + "
-                f"heartbeat interval"
+                f"heartbeatExpiry({pauser}) should equal DG execution timestamp + heartbeat interval"
             )
 
-    # CircuitBreaker globals — the DG proposal must NOT touch these.
+        # CircuitBreaker config must NOT change
+        validate_circuit_breaker_globals(circuit_breaker)
+
+        # Happy path: each pauser can pause its pausable through the CircuitBreaker.
+        circuit_breaker_pause_happy_path_test(circuit_breaker, accounts)
+
+        # 1.34. LOL limit raised
+        validate_lol_config(lol_registry, LOL_NEW_LIMIT)
+        
+        lol_spent_after, lol_spendable_after, _, _ = lol_registry.getPeriodState()
+        assert lol_spent_after == lol_spent_before, (
+            f"LOL already-spent amount changed from {lol_spent_before} to {lol_spent_after}"
+        )
+        assert lol_spendable_after == lol_spendable_before + (LOL_NEW_LIMIT - LOL_OLD_LIMIT), (
+            f"LOL spendable balance should be "
+            f"{lol_spendable_before + (LOL_NEW_LIMIT - LOL_OLD_LIMIT)}, got {lol_spendable_after}"
+        )
+
+        # Happy path: the new 8,000 stETH / 6-month budget is spendable and the limit is enforced.
+        lol_limit_happy_path_test(easy_track, lol_registry, stranger, accounts)
+
+        # 1.35. Node Operator name changed to MAVAN.
+        assert curated_module.getNodeOperator(PIER_TWO_NO_ID, True)["name"] == PIER_TWO_NAME_NEW, (
+            f"Node Operator {PIER_TWO_NO_ID} name after vote should be {PIER_TWO_NAME_NEW}"
+        )
+
+
+# ============================================================================
+# ============================ Happy path tests ================================
+# ============================================================================
+
+
+def validate_circuit_breaker_globals(circuit_breaker):
     assert circuit_breaker.ADMIN() == AGENT
     assert circuit_breaker.pauseDuration() == CIRCUIT_BREAKER_PAUSE_DURATION
     assert circuit_breaker.heartbeatInterval() == CIRCUIT_BREAKER_HEARTBEAT_INTERVAL
@@ -375,58 +362,16 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     assert circuit_breaker.MIN_HEARTBEAT_INTERVAL() == CIRCUIT_BREAKER_MIN_HEARTBEAT_INTERVAL
     assert circuit_breaker.MAX_HEARTBEAT_INTERVAL() == CIRCUIT_BREAKER_MAX_HEARTBEAT_INTERVAL
 
-    if pre_dg_cb_globals:
-        for key, value in pre_dg_cb_globals.items():
-            current = getattr(circuit_breaker, key)()
-            assert current == value, f"CircuitBreaker.{key} changed from {value} to {current}"
 
-    # Happy path: each pauser can pause its pausable through the CircuitBreaker.
-    circuit_breaker_pause_happy_path_test(circuit_breaker, accounts)
-
-
-    # =========================================================================
-    # ============= After DG: operational items (1.34, 1.35) ==================
-    # =========================================================================
-    lol_limit_after, lol_period_after = lol_registry.getLimitParameters()
-    assert lol_limit_after == LOL_NEW_LIMIT, (
-        f"LOL limit after vote should be {LOL_NEW_LIMIT}, got {lol_limit_after}"
+def validate_lol_config(lol_registry, expected_limit):
+    limit, period_duration = lol_registry.getLimitParameters()
+    assert limit == expected_limit, f"LOL limit should be {expected_limit}, got {limit}"
+    assert period_duration == LOL_PERIOD_DURATION_MONTHS, (
+        f"LOL period duration should be {LOL_PERIOD_DURATION_MONTHS}, got {period_duration}"
     )
-    assert lol_period_after == LOL_PERIOD_DURATION_MONTHS, (
-        f"LOL period after vote should be {LOL_PERIOD_DURATION_MONTHS}, got {lol_period_after}"
-    )
-
-    (
-        lol_spent_after,
-        lol_spendable_after,
-        lol_period_start_after,
-        lol_period_end_after,
-    ) = lol_registry.getPeriodState()
-
-    assert lol_period_start_after == LOL_PERIOD_START_AFTER, (
-        f"LOL period start after vote should be {LOL_PERIOD_START_AFTER}, got {lol_period_start_after}"
-    )
-    assert lol_period_end_after == LOL_PERIOD_END_AFTER, (
-        f"LOL period end after vote should be {LOL_PERIOD_END_AFTER}, got {lol_period_end_after}"
-    )
-    assert lol_spent_after == pre_dg_lol_period_state["already_spent"], (
-        f"LOL already-spent amount changed from {pre_dg_lol_period_state['already_spent']} to {lol_spent_after}"
-    )
-    assert lol_spendable_after == pre_dg_lol_period_state["spendable"] + (LOL_NEW_LIMIT - LOL_OLD_LIMIT), (
-        f"LOL spendable balance should be "
-        f"{pre_dg_lol_period_state['spendable'] + (LOL_NEW_LIMIT - LOL_OLD_LIMIT)}, got {lol_spendable_after}"
-        )
-
-    # Happy path: the new 8,000 stETH / 6-month budget is spendable and the limit is enforced.
-    lol_limit_happy_path_test(easy_track, lol_registry, stranger, accounts)
-
-    assert curated_module.getNodeOperator(PIER_TWO_NO_ID, True)["name"] == PIER_TWO_NAME_NEW, (
-        f"Node Operator {PIER_TWO_NO_ID} name after vote should be {PIER_TWO_NAME_NEW}"
-    )
-
-
-# ============================================================================
-# ============================ Happy path tests ================================
-# ============================================================================
+    _, _, period_start, period_end = lol_registry.getPeriodState()
+    assert period_start == LOL_PERIOD_START, f"LOL period start should be {LOL_PERIOD_START}, got {period_start}"
+    assert period_end == LOL_PERIOD_END, f"LOL period end should be {LOL_PERIOD_END}, got {period_end}"
 
 
 def circuit_breaker_pause_happy_path_test(circuit_breaker, accounts):
