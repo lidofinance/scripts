@@ -13,6 +13,8 @@ from utils.config import (
     CHAIN_GENESIS_TIME,
     VEBO_EPOCHS_PER_FRAME,
     VEBO_FAST_LANE_LENGTH_SLOTS,
+    VEBO_INITIAL_EPOCH,
+    VEBO_INITIAL_REF_SLOT,
     ORACLE_QUORUM,
     MAX_VALIDATORS_PER_REPORT,
     MAX_EXIT_REQUESTS_LIMIT,
@@ -81,16 +83,15 @@ def test_consensus(contract):
     assert contract.getConsensusContract() == HASH_CONSENSUS_FOR_VEBO
 
 
-def test_vebo_hash_consensus_synced_with_accounting_one(contract):
+def test_vebo_hash_consensus_frame_config(contract):
     consensus = interface.HashConsensus(contract.getConsensusContract())
     frameConfig = consensus.getFrameConfig()
-    accounting_consensus = interface.HashConsensus(HASH_CONSENSUS_FOR_AO)
 
-    assert frameConfig["initialEpoch"] == accounting_consensus.getFrameConfig()["initialEpoch"]
+    assert frameConfig["initialEpoch"] == VEBO_INITIAL_EPOCH
     assert frameConfig["epochsPerFrame"] == VEBO_EPOCHS_PER_FRAME
     assert frameConfig["fastLaneLengthSlots"] == VEBO_FAST_LANE_LENGTH_SLOTS
 
-    assert consensus.getInitialRefSlot() == accounting_consensus.getInitialRefSlot()
+    assert consensus.getInitialRefSlot() == VEBO_INITIAL_REF_SLOT
 
 
 def test_vebo_hash_consensus(contract):

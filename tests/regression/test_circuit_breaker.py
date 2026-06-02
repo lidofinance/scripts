@@ -71,9 +71,13 @@ def withdrawal_queue():
 
 def _submit_dg_proposal_via_voting(calls, description, voting_acct):
     """Submit a DG proposal directly from the impersonated Voting account, skipping the Aragon vote."""
-    return contracts.dual_governance.submitProposal(
+    tx = contracts.dual_governance.submitProposal(
         [(addr, 0, data) for addr, data in calls], description, {"from": voting_acct}
-    ).events["ProposalSubmitted"][0]["proposalId"]
+    )
+    for event in tx.events["ProposalSubmitted"]:
+        if "proposalId" in event:
+            return event["proposalId"]
+    raise AssertionError("DualGovernance ProposalSubmitted event not found")
 
 
 # ============================================================================
@@ -144,7 +148,7 @@ def test_pause_zeroes_heartbeat_when_pausing_last_pausable(
     assert circuit_breaker.heartbeatExpiry(stranger.address) == 0
     assert not circuit_breaker.isPauserLive(stranger.address)
 
-    with reverts(encode_error("HeartbeatExpired()")):
+    with reverts(encode_error("SenderNotPauser()")):
         circuit_breaker.heartbeat({"from": stranger})
 
 
