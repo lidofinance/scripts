@@ -22,6 +22,7 @@ from utils.test.event_validators.node_operators_registry import (
     validate_node_operator_name_set_event,
     NodeOperatorNameSetItem,
 )
+from utils.test.easy_track_helpers import create_and_enact_payment_motion
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 
@@ -58,11 +59,19 @@ RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
 
 # Operational items
 CURATED_MODULE = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
+EASYTRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
+STETH = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
+STETH_TRANSFER_MAX_DELTA = 2
+ETH_WHALE = "0x00000000219ab540356cBB839Cbe05303d7705Fa"
 
 LOL_ALLOWED_RECIPIENTS_REGISTRY = "0x48c4929630099b217136b64089E8543dB0E5163a"
 LOL_OLD_LIMIT = 6000 * 10**18
 LOL_NEW_LIMIT = 8000 * 10**18
 LOL_PERIOD_DURATION_MONTHS = 6
+LOL_PERIOD_START_AFTER = 1767225600  # 2026-01-01 00:00:00 UTC
+LOL_PERIOD_END_AFTER = 1782864000  # 2026-07-01 00:00:00 UTC
+LOL_TRUSTED_CALLER = "0x87D93d9B2C672bf9c9642d853a8682546a5012B5"
+LOL_TOP_UP_FACTORY = "0x1F2b79FE297B7098875930bBA6dd17068103897E"
 
 PIER_TWO_NO_ID = 36
 PIER_TWO_NAME_OLD = "Pier Two"
@@ -99,9 +108,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     circuit_breaker = interface.CircuitBreaker(CIRCUIT_BREAKER)
     lol_registry = interface.AllowedRecipientRegistry(LOL_ALLOWED_RECIPIENTS_REGISTRY)
     curated_module = interface.NodeOperatorsRegistry(CURATED_MODULE)
+    easy_track = interface.EasyTrack(EASYTRACK)
 
     pre_dg_resume_role_holders = {}
     pre_dg_cb_globals = {}
+    pre_dg_lol_period_state = {}
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -205,6 +216,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert lol_period_before == LOL_PERIOD_DURATION_MONTHS, (
             f"LOL period before DG enactment should be {LOL_PERIOD_DURATION_MONTHS}, got {lol_period_before}"
         )
+
+        # getPeriodState before enactment, to compare against the expected post-enactment change.
+        lol_spent_before, lol_spendable_before, _, _ = lol_registry.getPeriodState()
+        pre_dg_lol_period_state.update(
+            {"already_spent": lol_spent_before, "spendable": lol_spendable_before}
+        )
+
         assert curated_module.getNodeOperator(PIER_TWO_NO_ID, True)["name"] == PIER_TWO_NAME_OLD, (
             f"Node Operator {PIER_TWO_NO_ID} name before DG enactment should be {PIER_TWO_NAME_OLD}"
         )
@@ -264,12 +282,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 event_index += 1
 
             # 1.34. LOL Easy Track limit increase
-            _, _, lol_period_start_after, _ = lol_registry.getPeriodState()
             validate_set_limit_parameter_event(
                 dg_events[event_index],
                 limit=LOL_NEW_LIMIT,
                 period_duration_month=LOL_PERIOD_DURATION_MONTHS,
-                period_start_timestamp=lol_period_start_after,
+                period_start_timestamp=LOL_PERIOD_START_AFTER,
                 emitted_by=LOL_ALLOWED_RECIPIENTS_REGISTRY,
             )
             event_index += 1
@@ -363,6 +380,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             current = getattr(circuit_breaker, key)()
             assert current == value, f"CircuitBreaker.{key} changed from {value} to {current}"
 
+    # Happy path: each pauser can pause its pausable through the CircuitBreaker.
+    circuit_breaker_pause_happy_path_test(circuit_breaker, accounts)
+
 
     # =========================================================================
     # ============= After DG: operational items (1.34, 1.35) ==================
@@ -375,14 +395,42 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         f"LOL period after vote should be {LOL_PERIOD_DURATION_MONTHS}, got {lol_period_after}"
     )
 
+    (
+        lol_spent_after,
+        lol_spendable_after,
+        lol_period_start_after,
+        lol_period_end_after,
+    ) = lol_registry.getPeriodState()
+
+    assert lol_period_start_after == LOL_PERIOD_START_AFTER, (
+        f"LOL period start after vote should be {LOL_PERIOD_START_AFTER}, got {lol_period_start_after}"
+    )
+    assert lol_period_end_after == LOL_PERIOD_END_AFTER, (
+        f"LOL period end after vote should be {LOL_PERIOD_END_AFTER}, got {lol_period_end_after}"
+    )
+    assert lol_spent_after == pre_dg_lol_period_state["already_spent"], (
+        f"LOL already-spent amount changed from {pre_dg_lol_period_state['already_spent']} to {lol_spent_after}"
+    )
+    assert lol_spendable_after == pre_dg_lol_period_state["spendable"] + (LOL_NEW_LIMIT - LOL_OLD_LIMIT), (
+        f"LOL spendable balance should be "
+        f"{pre_dg_lol_period_state['spendable'] + (LOL_NEW_LIMIT - LOL_OLD_LIMIT)}, got {lol_spendable_after}"
+        )
+
+    # Happy path: the new 8,000 stETH / 6-month budget is spendable and the limit is enforced.
+    lol_limit_happy_path_test(easy_track, lol_registry, stranger, accounts)
+
     assert curated_module.getNodeOperator(PIER_TWO_NO_ID, True)["name"] == PIER_TWO_NAME_NEW, (
         f"Node Operator {PIER_TWO_NO_ID} name after vote should be {PIER_TWO_NAME_NEW}"
     )
 
 
-    # =========================================================================
-    # ============== Happy path: each pauser can pause its pausable ===========
-    # =========================================================================
+# ============================================================================
+# ============================ Happy path tests ================================
+# ============================================================================
+
+
+def circuit_breaker_pause_happy_path_test(circuit_breaker, accounts):
+    chain.snapshot()
     for target in MIGRATION_TARGETS:
         pausable = interface.IPausableUntilWithRoles(target.pausable)
         assert not pausable.isPaused(), f"{pausable.address} should not be paused before happy-path pause"
@@ -394,3 +442,43 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert pausable.getResumeSinceTimestamp() == tx.timestamp + CIRCUIT_BREAKER_PAUSE_DURATION, (
             f"{pausable.address} resume-since timestamp should be tx.timestamp + pauseDuration"
         )
+    chain.revert()
+
+
+def lol_limit_happy_path_test(easy_track, registry, stranger, accounts):
+    chain.snapshot()
+    multisig = accounts.at(LOL_TRUSTED_CALLER, force=True)
+    steth = interface.StETH(STETH)
+    top_up_factory = interface.TopUpAllowedRecipients(LOL_TOP_UP_FACTORY)
+
+    spent_before, spendable_before, _, _ = registry.getPeriodState()
+    spend_amount = 1 * 10**18
+    assert spend_amount <= spendable_before
+
+    prepare_agent_for_steth_payment(spend_amount, accounts)
+
+    create_and_enact_payment_motion(
+        easy_track,
+        multisig,
+        top_up_factory,
+        steth,
+        [multisig],
+        [spend_amount],
+        stranger,
+    )
+
+    spent_after, spendable_after, _, _ = registry.getPeriodState()
+    assert spent_after == spent_before + spend_amount
+    assert spendable_after == spendable_before - spend_amount
+
+    chain.revert()
+
+
+def prepare_agent_for_steth_payment(amount: int, accounts) -> None:
+    """Ensure the Agent holds at least `amount` stETH."""
+    steth = interface.StETH(STETH)
+    if steth.balanceOf(AGENT) < amount:
+        eth_whale = accounts.at(ETH_WHALE, force=True)
+        steth.submit(ZERO_ADDRESS, {"from": eth_whale, "value": amount + 2 * STETH_TRANSFER_MAX_DELTA})
+        steth.transfer(AGENT, amount + STETH_TRANSFER_MAX_DELTA, {"from": eth_whale})
+    assert steth.balanceOf(AGENT) >= amount, "Insufficient stETH balance on Agent"
