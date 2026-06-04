@@ -1,4 +1,4 @@
-from brownie import ZERO_ADDRESS, chain, interface, web3
+from brownie import ZERO_ADDRESS, chain, interface, reverts, web3
 from brownie.network.transaction import TransactionReceipt
 import pytest
 
@@ -412,6 +412,18 @@ def lol_limit_happy_path_test(easy_track, registry, stranger, accounts):
     spent_after, spendable_after, _, _ = registry.getPeriodState()
     assert spent_after == spent_before + spend_amount
     assert spendable_after == spendable_before - spend_amount
+
+    # we cannot spend more than what remains in the current period
+    with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
+        create_and_enact_payment_motion(
+            easy_track,
+            multisig,
+            top_up_factory,
+            steth,
+            [multisig],
+            [spendable_after + 1],
+            stranger,
+        )
 
     chain.revert()
 
