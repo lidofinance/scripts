@@ -20,6 +20,7 @@ from utils.test.event_validators.permission import (
 from utils.test.event_validators.allowed_recipients_registry import validate_set_limit_parameter_event
 from utils.test.event_validators.node_operators_registry import (
     validate_node_operator_name_set_event,
+    validate_node_operator_deactivated,
     NodeOperatorNameSetItem,
 )
 from utils.test.easy_track_helpers import create_and_enact_payment_motion
@@ -77,6 +78,11 @@ PIER_TWO_NO_ID = 36
 PIER_TWO_NAME_OLD = "Pier Two"
 PIER_TWO_NAME_NEW = "MAVAN"
 
+CHORUS_ONE_NO_ID = 3
+CHORUS_ONE_NAME = "Chorus One"
+CURATED_MODULE_ACTIVE_NO_COUNT_BEFORE = 36
+CURATED_MODULE_TOTAL_NO_COUNT = 39
+
 # ============================================================================
 # ============================= Test params ==================================
 # ============================================================================
@@ -85,8 +91,8 @@ EXPECTED_DG_PROPOSAL_ID = 11
 EXPECTED_VOTE_EVENTS_COUNT = 1
 
 # Per migration (one pausable each): revoke PAUSE_ROLE, grant PAUSE_ROLE, registerPauser.
-# Plus 2 operational items: 1.34 LOL Easy Track limit increase, 1.35 Node Operator rename.
-EXPECTED_DG_EVENTS_FROM_AGENT = len(MIGRATION_TARGETS) * 3 + 2
+# Plus 3 operational items: 1.34 LOL Easy Track limit increase, 1.35 Node Operator rename, 1.36 Node Operator deactivation.
+EXPECTED_DG_EVENTS_FROM_AGENT = len(MIGRATION_TARGETS) * 3 + 3
 EXPECTED_DG_EVENTS_COUNT = EXPECTED_DG_EVENTS_FROM_AGENT
 
 IPFS_DESCRIPTION_HASH = ""
@@ -199,6 +205,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             f"Node Operator {PIER_TWO_NO_ID} name before DG enactment should be {PIER_TWO_NAME_OLD}"
         )
 
+        # 1.36. Node Operator Chorus One active before enactment.
+        chorus_one_before = curated_module.getNodeOperator(CHORUS_ONE_NO_ID, True)
+        assert chorus_one_before["name"] == CHORUS_ONE_NAME, (
+            f"Node Operator {CHORUS_ONE_NO_ID} name before DG enactment should be {CHORUS_ONE_NAME}"
+        )
+        assert chorus_one_before["active"], (
+            f"Node Operator {CHORUS_ONE_NO_ID} ({CHORUS_ONE_NAME}) should be active before DG enactment"
+        )
+        assert curated_module.getActiveNodeOperatorsCount() == CURATED_MODULE_ACTIVE_NO_COUNT_BEFORE, (
+            f"Active node operators count before DG enactment should be {CURATED_MODULE_ACTIVE_NO_COUNT_BEFORE}"
+        )
+        assert curated_module.getNodeOperatorsCount() == CURATED_MODULE_TOTAL_NO_COUNT, (
+            f"Total node operators count should be {CURATED_MODULE_TOTAL_NO_COUNT}"
+        )
+
         if details["status"] == PROPOSAL_STATUS["submitted"]:
             chain.sleep(timelock.getAfterSubmitDelay() + 1)
             dual_governance.scheduleProposal(dg_proposal_id, {"from": stranger})
@@ -271,6 +292,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             )
             event_index += 1
 
+            # 1.36. Deactivate Node Operator Chorus One
+            validate_node_operator_deactivated(
+                dg_events[event_index],
+                CHORUS_ONE_NO_ID,
+                emitted_by=CURATED_MODULE,
+            )
+            event_index += 1
+
         # =====================================================================
         # ================ After DG proposal executed checks ==================
         # =====================================================================
@@ -337,6 +366,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # 1.35. Node Operator name changed to MAVAN.
         assert curated_module.getNodeOperator(PIER_TWO_NO_ID, True)["name"] == PIER_TWO_NAME_NEW, (
             f"Node Operator {PIER_TWO_NO_ID} name after vote should be {PIER_TWO_NAME_NEW}"
+        )
+
+        # 1.36. Node Operator Chorus One deactivated.
+        chorus_one_after = curated_module.getNodeOperator(CHORUS_ONE_NO_ID, True)
+        assert not chorus_one_after["active"], (
+            f"Node Operator {CHORUS_ONE_NO_ID} ({CHORUS_ONE_NAME}) should be inactive after vote"
+        )
+        assert chorus_one_after["name"] == CHORUS_ONE_NAME, (
+            f"Node Operator {CHORUS_ONE_NO_ID} name should be unchanged after deactivation"
+        )
+        assert curated_module.getActiveNodeOperatorsCount() == CURATED_MODULE_ACTIVE_NO_COUNT_BEFORE - 1, (
+            "Active node operators count should decrease by exactly 1 after deactivation"
+        )
+        assert curated_module.getNodeOperatorsCount() == CURATED_MODULE_TOTAL_NO_COUNT, (
+            "Total node operators count should be unchanged after deactivation"
         )
 
 

@@ -1,7 +1,7 @@
 """
 Vote 2026_06_17
 
-1. Submit a Dual Governance proposal to migrate 11 pausable contracts from legacy GateSeals to CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7 per LIP-34, increase the Liquidity Observation Lab (LOL) stETH Easy Track limit to 8,000 stETH per 6 months, and change the name of Node Operator Pier Two to MAVAN
+1. Submit a Dual Governance proposal to migrate 11 pausable contracts from legacy GateSeals to CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7 per LIP-34, increase the Liquidity Observation Lab (LOL) stETH Easy Track limit to 8,000 stETH per 6 months, change the name of Node Operator Pier Two to MAVAN, and deactivate Node Operator Chorus One
 
 # ===== WithdrawalQueue 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1 =====
 1.1. Revoke PAUSE_ROLE from GateSeal 0x8A854C4E750CDf24f138f34A9061b2f556066912 on WithdrawalQueue 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1
@@ -61,6 +61,7 @@ Vote 2026_06_17
 # ===== Operational items =====
 1.34. Increase limit from 6,000 to 8,000 stETH per 6 months on LOL stETH Easy Track AllowedRecipientsRegistry 0x48c4929630099b217136b64089E8543dB0E5163a
 1.35. Change the name to MAVAN for Node Operator Pier Two (id = 36) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
+1.36. Deactivate Node Operator Chorus One (id = 3) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
 
 Vote #{vote number} passed & executed on {date+time}, block {blockNumber}.
 """
@@ -71,7 +72,7 @@ from brownie import interface
 
 from utils.agent import agent_forward
 from utils.allowed_recipients_registry import set_limit_parameters
-from utils.node_operators import encode_set_node_operator_name
+from utils.node_operators import deactivate_node_operator, encode_set_node_operator_name
 from utils.config import (
     CIRCUIT_BREAKER,
     CS_ACCOUNTING_ADDRESS,
@@ -104,13 +105,14 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 DG_PROPOSAL_METADATA = (
     "Migrate 11 pausable contracts from legacy GateSeals to CircuitBreaker "
     "0x6019CB557978296BA3C08a7B73225C0975DFB2F7 per LIP-34, increase the Liquidity Observation Lab (LOL) "
-    "stETH Easy Track limit to 8,000 stETH per 6 months, and change the name of Node Operator Pier Two to MAVAN"
+    "stETH Easy Track limit to 8,000 stETH per 6 months, change the name of Node Operator Pier Two to MAVAN, "
+    "and deactivate Node Operator Chorus One"
 )
 DG_SUBMISSION_DESCRIPTION = (
     "1. Submit a Dual Governance proposal to migrate 11 pausable contracts from "
     "legacy GateSeals to CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7 per LIP-34, increase the "
-    "Liquidity Observation Lab (LOL) stETH Easy Track limit to 8,000 stETH per 6 months, and change the name "
-    "of Node Operator Pier Two to MAVAN"
+    "Liquidity Observation Lab (LOL) stETH Easy Track limit to 8,000 stETH per 6 months, change the name "
+    "of Node Operator Pier Two to MAVAN, and deactivate Node Operator Chorus One"
 )
 
 IPFS_DESCRIPTION = """
@@ -132,6 +134,7 @@ Operational items:
 
 12. **Increase the Liquidity Observation Lab (LOL) stETH Easy Track limit** from 6,000 to 8,000 stETH per 6 months on AllowedRecipientsRegistry 0x48c4929630099b217136b64089E8543dB0E5163a. Item 1.34.
 13. **Change the name to MAVAN for Node Operator Pier Two** (id = 36) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5. Item 1.35.
+14. **Deactivate Node Operator Chorus One** (id = 3) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5. Item 1.36.
 """
 
 # ============================== Migration ==============================
@@ -167,6 +170,9 @@ LOL_PERIOD_DURATION_MONTHS = 6
 # Rename Node Operator Pier Two (id = 36) to MAVAN in the Curated Module.
 PIER_TWO_NO_ID = 36
 PIER_TWO_NEW_NAME = "MAVAN"
+
+# Deactivate Node Operator Chorus One (id = 3) in the Curated Module.
+CHORUS_ONE_NO_ID = 3
 
 
 # ============================== Call encoder ===============================
@@ -227,6 +233,8 @@ def get_dg_items() -> List[Tuple[str, str]]:
         ),
         # 1.35. Change the name to MAVAN for Node Operator Pier Two (id = 36) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
         agent_forward([encode_set_node_operator_name(PIER_TWO_NO_ID, PIER_TWO_NEW_NAME, curated_module)]),
+        # 1.36. Deactivate Node Operator Chorus One (id = 3) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
+        agent_forward([deactivate_node_operator(CHORUS_ONE_NO_ID)]),
     ]
     return items
 
