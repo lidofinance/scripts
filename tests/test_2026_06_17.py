@@ -11,6 +11,7 @@ from utils.test.tx_tracing_helpers import (
 )
 from utils.evm_script import encode_call_script
 from utils.dual_governance import PROPOSAL_STATUS
+from utils.permission_parameters import Param, Op, ArgumentValue, encode_permission_params
 from utils.test.event_validators.circuit_breaker import validate_register_pauser_event
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 from utils.test.event_validators.permission import (
@@ -64,6 +65,10 @@ EASYTRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 STETH = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
 STETH_TRANSFER_MAX_DELTA = 2
 ETH_WHALE = "0x00000000219ab540356cBB839Cbe05303d7705Fa"
+
+ACL = "0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb"
+FINANCE = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
+EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 
 LOL_ALLOWED_RECIPIENTS_REGISTRY = "0x48c4929630099b217136b64089E8543dB0E5163a"
 LOL_OLD_LIMIT = 6000 * 10**18
@@ -437,27 +442,29 @@ def lol_limit_happy_path_test(easy_track, registry, stranger, accounts):
     steth = interface.StETH(STETH)
     top_up_factory = interface.TopUpAllowedRecipients(LOL_TOP_UP_FACTORY)
 
-    spent_before, spendable_before, _, _ = registry.getPeriodState()
-    spend_amount = 1 * 10**18
-    assert spend_amount <= spendable_before
+    spent_at_entry, spendable_at_entry, _, _ = registry.getPeriodState()
+    spendable_left = 10  # wei — leave a tiny remainder to verify the post-spend state
+    to_spend = spendable_at_entry - spendable_left
 
-    prepare_agent_for_steth_payment(spend_amount, accounts)
+    prepare_agent_for_steth_payment(spendable_at_entry, accounts)
+    bump_create_payments_role_steth_cap(spendable_at_entry, accounts)
 
+    # 1) we can spend the entire remaining budget for the current period
     create_and_enact_payment_motion(
         easy_track,
         multisig,
         top_up_factory,
         steth,
         [multisig],
-        [spend_amount],
+        [to_spend],
         stranger,
     )
 
     spent_after, spendable_after, _, _ = registry.getPeriodState()
-    assert spent_after == spent_before + spend_amount
-    assert spendable_after == spendable_before - spend_amount
+    assert spent_after == spent_at_entry + to_spend
+    assert spendable_after == spendable_left
 
-    # we cannot spend more than what remains in the current period
+    # 2) we cannot spend more than what remains in the current period
     with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
         create_and_enact_payment_motion(
             easy_track,
@@ -465,11 +472,33 @@ def lol_limit_happy_path_test(easy_track, registry, stranger, accounts):
             top_up_factory,
             steth,
             [multisig],
-            [spendable_after + 1],
+            [spendable_left + 1],
             stranger,
         )
 
     chain.revert()
+
+
+def bump_create_payments_role_steth_cap(max_per_call: int, accounts) -> None:
+    """Re-grant CREATE_PAYMENTS_ROLE to the EVM_SCRIPT_EXECUTOR with a stETH per-call cap that fits
+    the new period budget, so the whole budget can be spent in a single motion.
+    """
+    acl = interface.ACL(ACL)
+    create_payments_role = web3.keccak(text="CREATE_PAYMENTS_ROLE")
+    perm_manager = acl.getPermissionManager(FINANCE, create_payments_role)
+    steth_only_amount_limits = [
+        # token == stETH
+        Param(0, Op.EQ, ArgumentValue(STETH)),
+        # amount <= max_per_call
+        Param(2, Op.LTE, ArgumentValue(max_per_call)),
+    ]
+    acl.grantPermissionP(
+        EVM_SCRIPT_EXECUTOR,
+        FINANCE,
+        create_payments_role,
+        encode_permission_params(steth_only_amount_limits),
+        {"from": accounts.at(perm_manager, force=True)},
+    )
 
 
 def prepare_agent_for_steth_payment(amount: int, accounts) -> None:
