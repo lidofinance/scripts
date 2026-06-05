@@ -61,8 +61,8 @@ init-core:
 		git clone -b $(CORE_BRANCH) https://github.com/lidofinance/core.git $(CORE_DIR); \
 		cd $(CORE_DIR); \
 	fi && \
-	CI=true yarn --immutable && \
-	yarn compile && \
+	CI=true corepack yarn --immutable && \
+	corepack yarn compile && \
 	if [ ! -f .env ]; then \
 		cp .env.example .env; \
 	fi
