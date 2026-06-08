@@ -29,21 +29,12 @@ def impersonated_agent(accounts):
 
 def calc_no_rewards(nor, no_id, minted_shares):
     operator_summary = nor.getNodeOperatorSummary(no_id)
+    module_summary = nor.getStakingModuleSummary()
 
     operator_total_active_keys = (
         operator_summary["totalDepositedValidators"] - operator_summary["totalExitedValidators"]
     )
-
-    # NodeOperatorsRegistry distributes rewards across the active validators of ACTIVE operators
-    # only (see getRewardsDistribution), whereas getStakingModuleSummary() aggregates every
-    # operator. The two diverge once an operator with live keys is deactivated (e.g. Chorus One),
-    # so the denominator must skip inactive operators to match the on-chain distribution.
-    module_total_active_keys = 0
-    for op_id in range(nor.getNodeOperatorsCount()):
-        op = nor.getNodeOperator(op_id, False)
-        if not op["active"]:
-            continue
-        module_total_active_keys += op["totalDepositedValidators"] - op["totalExitedValidators"]
+    module_total_active_keys = module_summary["totalDepositedValidators"] - module_summary["totalExitedValidators"]
 
     return minted_shares * operator_total_active_keys // module_total_active_keys
 
