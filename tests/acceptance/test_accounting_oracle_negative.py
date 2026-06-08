@@ -348,7 +348,6 @@ class TestSubmitReportExtraDataList:
         extra_data = extra_data_service.collect(
             {
                 (1, 2): self.get_nor_operator_exited_keys(2) + 1,
-                (1, 3): self.get_nor_operator_exited_keys(3) + 1,
                 (1, 4): self.get_nor_operator_exited_keys(4) + 1,
                 (1, 5): self.get_nor_operator_exited_keys(5) + 1,
                 (1, 6): self.get_nor_operator_exited_keys(6) + 1,
