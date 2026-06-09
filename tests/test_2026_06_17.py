@@ -179,7 +179,8 @@ EXPECTED_VOTE_EVENTS_COUNT = 1
 
 # Per migration (one pausable each): revoke PAUSE_ROLE, grant PAUSE_ROLE, registerPauser.
 # Plus 3 operational items: 1.34 LOL Easy Track limit increase, 1.35 Node Operator rename, 1.36 Node Operator deactivation.
-EXPECTED_DG_EVENTS_FROM_AGENT = len(MIGRATION_TARGETS) * 3 + 3
+# 11 migrations * 3 + 3 operational = 36.
+EXPECTED_DG_EVENTS_FROM_AGENT = 36
 EXPECTED_DG_EVENTS_COUNT = EXPECTED_DG_EVENTS_FROM_AGENT
 
 IPFS_DESCRIPTION_HASH = ""
