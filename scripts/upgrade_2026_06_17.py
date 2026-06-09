@@ -86,6 +86,8 @@ from utils.config import (
     GATE_SEAL,
     GATE_SEAL_COMMITTEE,
     GATE_SEAL_V3,
+    LOL_ALLOWED_RECIPIENTS_REGISTRY,
+    NODE_OPERATORS_REGISTRY,
     PREDEPOSIT_GUARANTEE,
     TRIGGERABLE_WITHDRAWALS_GATEWAY,
     VALIDATORS_EXIT_BUS_ORACLE,
@@ -160,10 +162,7 @@ MIGRATION_TARGETS: List[MigrationTarget] = [
 
 
 # ===================== Operational items ===============
-CURATED_MODULE = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
-
 # Increase Liquidity Observation Lab (LOL) stETH Easy Track limit from 6,000 to 8,000 stETH per 6 months.
-LOL_ALLOWED_RECIPIENTS_REGISTRY = "0x48c4929630099b217136b64089E8543dB0E5163a"
 LOL_NEW_LIMIT = 8000 * 10**18
 LOL_PERIOD_DURATION_MONTHS = 6
 
@@ -212,7 +211,7 @@ def assert_target_matches_chain(target: MigrationTarget) -> None:
 # ================================== Main ====================================
 def get_dg_items() -> List[Tuple[str, str]]:
     circuit_breaker = interface.CircuitBreaker(CIRCUIT_BREAKER)
-    curated_module = interface.NodeOperatorsRegistry(CURATED_MODULE)
+    curated_module = interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY)
 
     items: List[Tuple[str, str]] = []
     for target in MIGRATION_TARGETS:
