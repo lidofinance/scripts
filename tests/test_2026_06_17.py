@@ -1,3 +1,5 @@
+from typing import NamedTuple
+
 from brownie import ZERO_ADDRESS, chain, interface, reverts, web3
 from brownie.network.transaction import TransactionReceipt
 import pytest
@@ -28,29 +30,109 @@ from utils.test.easy_track_helpers import create_and_enact_payment_motion
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 
-
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
 from scripts.upgrade_2026_06_17 import (
     DG_PROPOSAL_METADATA,
-    MIGRATION_TARGETS,
     get_dg_items,
     get_vote_items,
     start_vote,
 )
+
+
+# ============================================================================
+# ===================== Migration targets (hardcoded) =======================
+# ============================================================================
+# Deliberately NOT imported from the vote script: the expected (pausable, pauser,
+# gate_seal) triples are hardcoded here as an independent cross-check, so a wrong
+# pairing or a missing/extra target in the vote is caught by the test.
+class MigrationTarget(NamedTuple):
+    pausable: str
+    pauser: str
+    gate_seal: str
+
+
+MIGRATION_TARGETS = [
+    # WithdrawalQueue
+    MigrationTarget(
+        "0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1",
+        "0x8772E3a2D86B9347A2688f9bc1808A6d8917760C",
+        "0x8A854C4E750CDf24f138f34A9061b2f556066912",
+    ),
+    # ValidatorsExitBusOracle
+    MigrationTarget(
+        "0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e",
+        "0x8772E3a2D86B9347A2688f9bc1808A6d8917760C",
+        "0xA6BC802fAa064414AA62117B4a53D27fFfF741F1",
+    ),
+    # TriggerableWithdrawalsGateway
+    MigrationTarget(
+        "0xDC00116a0D3E064427dA2600449cfD2566B3037B",
+        "0x8772E3a2D86B9347A2688f9bc1808A6d8917760C",
+        "0xA6BC802fAa064414AA62117B4a53D27fFfF741F1",
+    ),
+    # VaultHub
+    MigrationTarget(
+        "0x1d201BE093d847f6446530Efb0E8Fb426d176709",
+        "0x8772E3a2D86B9347A2688f9bc1808A6d8917760C",
+        "0x881dAd714679A6FeaA636446A0499101375A365c",
+    ),
+    # PredepositGuarantee
+    MigrationTarget(
+        "0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3",
+        "0x8772E3a2D86B9347A2688f9bc1808A6d8917760C",
+        "0x881dAd714679A6FeaA636446A0499101375A365c",
+    ),
+    # CSModule
+    MigrationTarget(
+        "0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F",
+        "0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f",
+        "0xE1686C2E90eb41a48356c1cC7FaA17629af3ADB3",
+    ),
+    # CSAccounting
+    MigrationTarget(
+        "0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da",
+        "0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f",
+        "0xE1686C2E90eb41a48356c1cC7FaA17629af3ADB3",
+    ),
+    # CSFeeOracle
+    MigrationTarget(
+        "0x4D4074628678Bd302921c20573EEa1ed38DdF7FB",
+        "0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f",
+        "0xE1686C2E90eb41a48356c1cC7FaA17629af3ADB3",
+    ),
+    # CSVerifierV2
+    MigrationTarget(
+        "0xdC5FE1782B6943f318E05230d688713a560063DC",
+        "0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f",
+        "0xE1686C2E90eb41a48356c1cC7FaA17629af3ADB3",
+    ),
+    # CSVettedGate
+    MigrationTarget(
+        "0xB314D4A76C457c93150d308787939063F4Cc67E0",
+        "0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f",
+        "0xE1686C2E90eb41a48356c1cC7FaA17629af3ADB3",
+    ),
+    # CSEjector
+    MigrationTarget(
+        "0xc72b58aa02E0e98cF8A4a0E9Dce75e763800802C",
+        "0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f",
+        "0xE1686C2E90eb41a48356c1cC7FaA17629af3ADB3",
+    ),
+]
 
 # ============================================================================
 # ============================== Constants ===================================
 # ============================================================================
 CIRCUIT_BREAKER = "0x6019CB557978296BA3C08a7B73225C0975DFB2F7"
 
-CIRCUIT_BREAKER_MIN_PAUSE_DURATION = 432000        # 5 days
-CIRCUIT_BREAKER_MAX_PAUSE_DURATION = 5184000       # 60 days
-CIRCUIT_BREAKER_PAUSE_DURATION = 1814400           # 21 days
-CIRCUIT_BREAKER_MIN_HEARTBEAT_INTERVAL = 2592000   # 30 days
+CIRCUIT_BREAKER_MIN_PAUSE_DURATION = 432000  # 5 days
+CIRCUIT_BREAKER_MAX_PAUSE_DURATION = 5184000  # 60 days
+CIRCUIT_BREAKER_PAUSE_DURATION = 1814400  # 21 days
+CIRCUIT_BREAKER_MIN_HEARTBEAT_INTERVAL = 2592000  # 30 days
 CIRCUIT_BREAKER_MAX_HEARTBEAT_INTERVAL = 94608000  # 1095 days (~3 years)
-CIRCUIT_BREAKER_HEARTBEAT_INTERVAL = 31536000      # 1 year (365 days)
+CIRCUIT_BREAKER_HEARTBEAT_INTERVAL = 31536000  # 1 year (365 days)
 
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
@@ -137,7 +219,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     onchain_script = voting.getVote(vote_id)["script"]
     assert str(onchain_script).lower() == encode_call_script(call_script_items).lower()
 
-
     # =========================================================================
     # ============================= Execute Vote ==============================
     # =========================================================================
@@ -150,7 +231,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         display_voting_events(vote_tx)
         vote_events = group_voting_events_from_receipt(vote_tx)
 
-
         # =======================================================================
         # ========================= After voting checks =========================
         # =======================================================================
@@ -162,13 +242,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         validate_dual_governance_submit_event(
             vote_events[0],
-            proposal_id=EXPECTED_DG_PROPOSAL_ID if EXPECTED_DG_PROPOSAL_ID is not None else timelock.getProposalsCount(),
+            proposal_id=(
+                EXPECTED_DG_PROPOSAL_ID if EXPECTED_DG_PROPOSAL_ID is not None else timelock.getProposalsCount()
+            ),
             proposer=VOTING,
             executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
             metadata=DG_PROPOSAL_METADATA,
             proposal_calls=dual_governance_proposal_calls,
         )
-
 
     # =========================================================================
     # ======================= Execute DG Proposal =============================
@@ -181,22 +262,22 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =======================================================================
         # ======================= Before DG enactment checks ====================
         # =======================================================================
-        
+
         # 1.1-1.33. CircuitBreaker migration
         for target in MIGRATION_TARGETS:
             pausable = interface.IPausableUntilWithRoles(target.pausable)
             pause_role_hash = str(pausable.PAUSE_ROLE())
 
-            assert not pausable.hasRole(pause_role_hash, CIRCUIT_BREAKER), (
-                f"CircuitBreaker should not have PAUSE_ROLE on {pausable.address} before DG enactment"
-            )
-            assert circuit_breaker.getPauser(pausable.address) == ZERO_ADDRESS, (
-                f"CircuitBreaker should not have a pauser for {pausable.address} before DG enactment"
-            )
+            assert not pausable.hasRole(
+                pause_role_hash, CIRCUIT_BREAKER
+            ), f"CircuitBreaker should not have PAUSE_ROLE on {pausable.address} before DG enactment"
+            assert (
+                circuit_breaker.getPauser(pausable.address) == ZERO_ADDRESS
+            ), f"CircuitBreaker should not have a pauser for {pausable.address} before DG enactment"
 
-            assert pausable.hasRole(pause_role_hash, target.gate_seal), (
-                f"GateSeal {target.gate_seal} should hold PAUSE_ROLE on {pausable.address} before DG enactment"
-            )
+            assert pausable.hasRole(
+                pause_role_hash, target.gate_seal
+            ), f"GateSeal {target.gate_seal} should hold PAUSE_ROLE on {pausable.address} before DG enactment"
 
         validate_circuit_breaker_globals(circuit_breaker)
 
@@ -206,24 +287,24 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         validate_lol_config(lol_registry, LOL_OLD_LIMIT, lol_spendable_before)
 
         # 1.35. Node Operator name before enactment.
-        assert curated_module.getNodeOperator(PIER_TWO_NO_ID, True)["name"] == PIER_TWO_NAME_OLD, (
-            f"Node Operator {PIER_TWO_NO_ID} name before DG enactment should be {PIER_TWO_NAME_OLD}"
-        )
+        assert (
+            curated_module.getNodeOperator(PIER_TWO_NO_ID, True)["name"] == PIER_TWO_NAME_OLD
+        ), f"Node Operator {PIER_TWO_NO_ID} name before DG enactment should be {PIER_TWO_NAME_OLD}"
 
         # 1.36. Node Operator Chorus One active before enactment.
         chorus_one_before = curated_module.getNodeOperator(CHORUS_ONE_NO_ID, True)
-        assert chorus_one_before["name"] == CHORUS_ONE_NAME, (
-            f"Node Operator {CHORUS_ONE_NO_ID} name before DG enactment should be {CHORUS_ONE_NAME}"
-        )
-        assert chorus_one_before["active"], (
-            f"Node Operator {CHORUS_ONE_NO_ID} ({CHORUS_ONE_NAME}) should be active before DG enactment"
-        )
-        assert curated_module.getActiveNodeOperatorsCount() == CURATED_MODULE_ACTIVE_NO_COUNT_BEFORE, (
-            f"Active node operators count before DG enactment should be {CURATED_MODULE_ACTIVE_NO_COUNT_BEFORE}"
-        )
-        assert curated_module.getNodeOperatorsCount() == CURATED_MODULE_TOTAL_NO_COUNT, (
-            f"Total node operators count should be {CURATED_MODULE_TOTAL_NO_COUNT}"
-        )
+        assert (
+            chorus_one_before["name"] == CHORUS_ONE_NAME
+        ), f"Node Operator {CHORUS_ONE_NO_ID} name before DG enactment should be {CHORUS_ONE_NAME}"
+        assert chorus_one_before[
+            "active"
+        ], f"Node Operator {CHORUS_ONE_NO_ID} ({CHORUS_ONE_NAME}) should be active before DG enactment"
+        assert (
+            curated_module.getActiveNodeOperatorsCount() == CURATED_MODULE_ACTIVE_NO_COUNT_BEFORE
+        ), f"Active node operators count before DG enactment should be {CURATED_MODULE_ACTIVE_NO_COUNT_BEFORE}"
+        assert (
+            curated_module.getNodeOperatorsCount() == CURATED_MODULE_TOTAL_NO_COUNT
+        ), f"Total node operators count should be {CURATED_MODULE_TOTAL_NO_COUNT}"
 
         if details["status"] == PROPOSAL_STATUS["submitted"]:
             chain.sleep(timelock.getAfterSubmitDelay() + 1)
@@ -242,7 +323,6 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             )
             assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_FROM_AGENT
             assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
-
 
             # =======================================================================
             # ============================ DG events checks =========================
@@ -312,9 +392,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # 1.1-1.33. CircuitBreaker migration
         expected_pausables = {t.pausable.lower() for t in MIGRATION_TARGETS}
         on_chain_pausables = {addr.lower() for addr in circuit_breaker.getPausables()}
-        assert on_chain_pausables == expected_pausables, (
-            f"CircuitBreaker.getPausables() mismatch: expected {expected_pausables}, got {on_chain_pausables}"
-        )
+        assert (
+            on_chain_pausables == expected_pausables
+        ), f"CircuitBreaker.getPausables() mismatch: expected {expected_pausables}, got {on_chain_pausables}"
 
         expected_pausable_counts = {}
         for t in MIGRATION_TARGETS:
@@ -324,37 +404,34 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             pausable = interface.IPausableUntilWithRoles(target.pausable)
             pause_role_hash = str(pausable.PAUSE_ROLE())
 
-            assert not pausable.hasRole(pause_role_hash, target.gate_seal), (
-                f"GateSeal {target.gate_seal} should not have PAUSE_ROLE on {pausable.address} after vote"
-            )
-            assert pausable.hasRole(pause_role_hash, CIRCUIT_BREAKER), (
-                f"CircuitBreaker should have PAUSE_ROLE on {pausable.address} after vote"
-            )
-            assert pausable.getRoleMemberCount(pause_role_hash) == 2, (
-                f"{pausable.address} should have exactly 2 PAUSE_ROLE holders after vote"
-            )
+            assert not pausable.hasRole(
+                pause_role_hash, target.gate_seal
+            ), f"GateSeal {target.gate_seal} should not have PAUSE_ROLE on {pausable.address} after vote"
+            assert pausable.hasRole(
+                pause_role_hash, CIRCUIT_BREAKER
+            ), f"CircuitBreaker should have PAUSE_ROLE on {pausable.address} after vote"
+            assert (
+                pausable.getRoleMemberCount(pause_role_hash) == 2
+            ), f"{pausable.address} should have exactly 2 PAUSE_ROLE holders after vote"
             assert {
                 pausable.getRoleMember(pause_role_hash, 0).lower(),
                 pausable.getRoleMember(pause_role_hash, 1).lower(),
-            } == {CIRCUIT_BREAKER.lower(), RESEAL_MANAGER.lower()}, (
-                f"{pausable.address} PAUSE_ROLE holders do not match {{CircuitBreaker, ResealManager}}"
-            )
+            } == {
+                CIRCUIT_BREAKER.lower(),
+                RESEAL_MANAGER.lower(),
+            }, f"{pausable.address} PAUSE_ROLE holders do not match {{CircuitBreaker, ResealManager}}"
 
-            assert circuit_breaker.getPauser(pausable.address).lower() == target.pauser.lower(), (
-                f"CircuitBreaker pauser for {pausable.address} should be {target.pauser} after vote"
-            )
+            assert (
+                circuit_breaker.getPauser(pausable.address).lower() == target.pauser.lower()
+            ), f"CircuitBreaker pauser for {pausable.address} should be {target.pauser} after vote"
 
         # Per-pauser checks (deduped)
         for pauser, expected_count in expected_pausable_counts.items():
-            assert circuit_breaker.getPausableCount(pauser) == expected_count, (
-                f"getPausableCount mismatch for {pauser}"
-            )
+            assert circuit_breaker.getPausableCount(pauser) == expected_count, f"getPausableCount mismatch for {pauser}"
             assert circuit_breaker.isPauserLive(pauser), f"{pauser} should be live after vote"
             assert circuit_breaker.heartbeatExpiry(pauser) == (
                 dg_execution_timestamp + CIRCUIT_BREAKER_HEARTBEAT_INTERVAL
-            ), (
-                f"heartbeatExpiry({pauser}) should equal DG execution timestamp + heartbeat interval"
-            )
+            ), f"heartbeatExpiry({pauser}) should equal DG execution timestamp + heartbeat interval"
 
         # CircuitBreaker config must NOT change
         validate_circuit_breaker_globals(circuit_breaker)
@@ -369,24 +446,24 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         lol_limit_happy_path_test(easy_track, lol_registry, stranger, accounts)
 
         # 1.35. Node Operator name changed to MAVAN.
-        assert curated_module.getNodeOperator(PIER_TWO_NO_ID, True)["name"] == PIER_TWO_NAME_NEW, (
-            f"Node Operator {PIER_TWO_NO_ID} name after vote should be {PIER_TWO_NAME_NEW}"
-        )
+        assert (
+            curated_module.getNodeOperator(PIER_TWO_NO_ID, True)["name"] == PIER_TWO_NAME_NEW
+        ), f"Node Operator {PIER_TWO_NO_ID} name after vote should be {PIER_TWO_NAME_NEW}"
 
         # 1.36. Node Operator Chorus One deactivated.
         chorus_one_after = curated_module.getNodeOperator(CHORUS_ONE_NO_ID, True)
-        assert not chorus_one_after["active"], (
-            f"Node Operator {CHORUS_ONE_NO_ID} ({CHORUS_ONE_NAME}) should be inactive after vote"
-        )
-        assert chorus_one_after["name"] == CHORUS_ONE_NAME, (
-            f"Node Operator {CHORUS_ONE_NO_ID} name should be unchanged after deactivation"
-        )
-        assert curated_module.getActiveNodeOperatorsCount() == CURATED_MODULE_ACTIVE_NO_COUNT_BEFORE - 1, (
-            "Active node operators count should decrease by exactly 1 after deactivation"
-        )
-        assert curated_module.getNodeOperatorsCount() == CURATED_MODULE_TOTAL_NO_COUNT, (
-            "Total node operators count should be unchanged after deactivation"
-        )
+        assert not chorus_one_after[
+            "active"
+        ], f"Node Operator {CHORUS_ONE_NO_ID} ({CHORUS_ONE_NAME}) should be inactive after vote"
+        assert (
+            chorus_one_after["name"] == CHORUS_ONE_NAME
+        ), f"Node Operator {CHORUS_ONE_NO_ID} name should be unchanged after deactivation"
+        assert (
+            curated_module.getActiveNodeOperatorsCount() == CURATED_MODULE_ACTIVE_NO_COUNT_BEFORE - 1
+        ), "Active node operators count should decrease by exactly 1 after deactivation"
+        assert (
+            curated_module.getNodeOperatorsCount() == CURATED_MODULE_TOTAL_NO_COUNT
+        ), "Total node operators count should be unchanged after deactivation"
 
 
 # ============================================================================
@@ -407,15 +484,15 @@ def validate_circuit_breaker_globals(circuit_breaker):
 def validate_lol_config(lol_registry, expected_limit, expected_spendable):
     limit, period_duration = lol_registry.getLimitParameters()
     assert limit == expected_limit, f"LOL limit should be {expected_limit}, got {limit}"
-    assert period_duration == LOL_PERIOD_DURATION_MONTHS, (
-        f"LOL period duration should be {LOL_PERIOD_DURATION_MONTHS}, got {period_duration}"
-    )
+    assert (
+        period_duration == LOL_PERIOD_DURATION_MONTHS
+    ), f"LOL period duration should be {LOL_PERIOD_DURATION_MONTHS}, got {period_duration}"
 
     spent, spendable, period_start, period_end = lol_registry.getPeriodState()
     assert spendable == expected_spendable, f"LOL spendable should be {expected_spendable}, got {spendable}"
-    assert spent == expected_limit - expected_spendable, (
-        f"LOL already-spent should be {expected_limit - expected_spendable}, got {spent}"
-    )
+    assert (
+        spent == expected_limit - expected_spendable
+    ), f"LOL already-spent should be {expected_limit - expected_spendable}, got {spent}"
     assert period_start == LOL_PERIOD_START, f"LOL period start should be {LOL_PERIOD_START}, got {period_start}"
     assert period_end == LOL_PERIOD_END, f"LOL period end should be {LOL_PERIOD_END}, got {period_end}"
 
@@ -430,9 +507,9 @@ def circuit_breaker_pause_happy_path_test(circuit_breaker, accounts):
         tx = circuit_breaker.pause(target.pausable, {"from": pauser})
 
         assert pausable.isPaused(), f"{pausable.address} should be paused after CircuitBreaker.pause"
-        assert pausable.getResumeSinceTimestamp() == tx.timestamp + CIRCUIT_BREAKER_PAUSE_DURATION, (
-            f"{pausable.address} resume-since timestamp should be tx.timestamp + pauseDuration"
-        )
+        assert (
+            pausable.getResumeSinceTimestamp() == tx.timestamp + CIRCUIT_BREAKER_PAUSE_DURATION
+        ), f"{pausable.address} resume-since timestamp should be tx.timestamp + pauseDuration"
     chain.revert()
 
 
