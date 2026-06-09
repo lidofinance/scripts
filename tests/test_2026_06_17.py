@@ -389,6 +389,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =====================================================================
         # ================ After DG proposal executed checks ==================
         # =====================================================================
+        # This block is only reached when the proposal was executed.
+        # This assert shouldn't fire; it's only here to narrow Optional[int] -> int for the type checker.
+        assert dg_execution_timestamp is not None, "DG proposal was not executed in this run"
 
         # 1.1-1.33. CircuitBreaker migration
         expected_pausables = {t.pausable.lower() for t in MIGRATION_TARGETS}
