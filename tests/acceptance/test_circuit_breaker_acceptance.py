@@ -24,7 +24,6 @@ from utils.config import (
     VALIDATORS_EXIT_BUS_ORACLE,
     VAULT_HUB,
     WITHDRAWAL_QUEUE,
-    contracts,
 )
 
 
