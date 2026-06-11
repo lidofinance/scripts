@@ -423,6 +423,10 @@ class ContractsLazyLoader:
         return interface.GateSeal(VEB_TWG_GATE_SEAL)
 
     @property
+    def circuit_breaker(self) -> interface.CircuitBreaker:
+        return interface.CircuitBreaker(CIRCUIT_BREAKER)
+
+    @property
     def evm_script_registry(self) -> interface.EVMScriptRegistry:
         return interface.EVMScriptRegistry(ARAGON_EVMSCRIPT_REGISTRY)
 

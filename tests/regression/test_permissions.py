@@ -17,6 +17,7 @@ from utils.permission_parameters import ArgumentValue, Op, Param
 from brownie.exceptions import EventLookupError
 from utils.config import (
     contracts,
+    CIRCUIT_BREAKER,
     GATE_SEAL,
     DSM_GUARDIANS,
     ORACLE_COMMITTEE,
@@ -122,7 +123,7 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "PAUSE_ROLE": [GATE_SEAL, RESEAL_MANAGER],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
                 "FINALIZE_ROLE": [contracts.lido],
                 "ORACLE_ROLE": [contracts.accounting_oracle],
@@ -149,7 +150,7 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "SUBMIT_DATA_ROLE": [],
-                "PAUSE_ROLE": [VEB_TWG_GATE_SEAL, RESEAL_MANAGER],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
                 "MANAGE_CONSENSUS_VERSION_ROLE": [],
@@ -345,7 +346,7 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
-                "PAUSE_ROLE": [CS_GATE_SEAL_V2_ADDRESS, RESEAL_MANAGER],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
                 "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE": [CSM_COMMITTEE_MS],
                 "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
                 "CREATE_NODE_OPERATOR_ROLE": [CS_PERMISSIONLESS_GATE_ADDRESS, CS_VETTED_GATE_ADDRESS],
@@ -362,7 +363,7 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "SET_BOND_CURVE_ROLE": [CS_VETTED_GATE_ADDRESS, CSM_COMMITTEE_MS],
-                "PAUSE_ROLE": [CS_GATE_SEAL_V2_ADDRESS, RESEAL_MANAGER],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
                 "MANAGE_BOND_CURVES_ROLE": [],
                 "RECOVERER_ROLE": [],
@@ -387,7 +388,7 @@ def protocol_permissions():
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
                 "MANAGE_CONSENSUS_VERSION_ROLE": [],
-                "PAUSE_ROLE": [CS_GATE_SEAL_V2_ADDRESS, RESEAL_MANAGER],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
                 "SUBMIT_DATA_ROLE": [],
                 "RESUME_ROLE": [RESEAL_MANAGER],
                 "RECOVERER_ROLE": [],
@@ -412,7 +413,7 @@ def protocol_permissions():
             "type": "CustomApp",
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "PAUSE_ROLE": [CS_GATE_SEAL_V2_ADDRESS, RESEAL_MANAGER],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
             }
         },
@@ -440,7 +441,7 @@ def protocol_permissions():
             "type": "CustomApp",
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "PAUSE_ROLE": [CS_GATE_SEAL_V2_ADDRESS, RESEAL_MANAGER],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
                 "RECOVERER_ROLE": [],
             }
@@ -452,7 +453,7 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "PAUSE_ROLE": [CS_GATE_SEAL_V2_ADDRESS, RESEAL_MANAGER],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
                 "RECOVERER_ROLE": [],
                 "SET_TREE_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
@@ -476,7 +477,7 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "ADD_FULL_WITHDRAWAL_REQUEST_ROLE": [VALIDATORS_EXIT_BUS_ORACLE, CS_EJECTOR_ADDRESS],
-                "PAUSE_ROLE": [VEB_TWG_GATE_SEAL, RESEAL_MANAGER],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
                 "TW_EXIT_LIMIT_MANAGER_ROLE": [],
             }
@@ -517,7 +518,7 @@ def protocol_permissions():
                 "REDEMPTION_MASTER_ROLE": [],
                 "VALIDATOR_EXIT_ROLE": [VAULTS_ADAPTER],
                 "BAD_DEBT_MASTER_ROLE": [VAULTS_ADAPTER],
-                "PAUSE_ROLE": [GATE_SEAL_V3, RESEAL_MANAGER],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
             },
             "role_preimages": {
@@ -569,7 +570,7 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "PAUSE_ROLE": [GATE_SEAL_V3, RESEAL_MANAGER],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
             },
             "role_preimages": {
