@@ -366,7 +366,7 @@ class TestSubmitReportExtraDataList:
                 "UnexpectedExtraDataItemsCount(uint256,uint256)",
                 [
                     extra_data.items_count - 1, # expected count
-                    extra_data.items_count - 1, # index of the item that makes the count mismatch
+                    extra_data.items_count, # received count (all items fit into a single chunk)
                 ],
             )
         ):

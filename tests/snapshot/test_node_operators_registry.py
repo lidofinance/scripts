@@ -233,7 +233,8 @@ def make_snapshot(node_operators_registry) -> Dict[str, Any]:
 def assert_snapshot(before, after):
     # assert after["keys_op_index"] == before["keys_op_index"]
     assert after["node_operators_count"] == before["node_operators_count"]
-    assert after["active_node_operators_count"] == before["active_node_operators_count"]
+    # NO id 3 (Chorus One) deactivated on vote 06-17-26
+    assert after["active_node_operators_count"] == before["active_node_operators_count"] - 1
     assert after["total_signing_keys_count"] == before["total_signing_keys_count"]
     assert after["unused_signing_keys_count"] == before["unused_signing_keys_count"]
 
@@ -254,11 +255,24 @@ def assert_rewards_distribution(before, after):
     rewards_distribution_before = before["rewards_distribution"].dict()
     rewards_distribution_after = after["rewards_distribution"].dict()
 
+    # NO id 3 (Chorus One) deactivated on vote 06-17-26: it drops out of the rewards
+    # distribution and its share is spread pro rata across the remaining operators
+    chorus_one_reward_address = before["node_operators"][3]["rewardAddress"]
+    recipients_before = list(rewards_distribution_before["recipients"])
+    shares_before = list(rewards_distribution_before["shares"])
+    chorus_one_index = recipients_before.index(chorus_one_reward_address)
+    recipients_before.pop(chorus_one_index)
+    chorus_one_share = shares_before.pop(chorus_one_index)
+    total_shares_before = sum(shares_before) + chorus_one_share
+    shares_before = [
+        share * total_shares_before // (total_shares_before - chorus_one_share) for share in shares_before
+    ]
+
     for i in range(after["active_node_operators_count"]):
-        assert rewards_distribution_before["recipients"][i] == rewards_distribution_after["recipients"][i]
+        assert recipients_before[i] == rewards_distribution_after["recipients"][i]
 
         assert almost_eq(
-            rewards_distribution_before["shares"][i],
+            shares_before[i],
             rewards_distribution_after["shares"][i],
             epsilon=200000,  # estimated divergence is number of deposited validators
         )
@@ -269,15 +283,27 @@ def assert_node_operators(before: Dict[str, ReturnValue], after: Dict[str, Retur
     for id, node_operators_pair in dict_zip(before["node_operators"], after["node_operators"]).items():
         node_operator_before = node_operators_pair[0]
         node_operator_after = node_operators_pair[1]
-        assert node_operator_before["active"] == node_operator_after["active"]
-        assert node_operator_before["name"] == node_operator_after["name"]
+        if id == 3:
+            # NO id 3 (Chorus One) deactivated on vote 06-17-26
+            assert node_operator_before["active"]
+            assert not node_operator_after["active"]
+        else:
+            assert node_operator_before["active"] == node_operator_after["active"]
+        if id == 36:
+            # NO id 36 (Pier Two) renamed to MAVAN on vote 06-17-26
+            assert node_operator_before["name"] == "Pier Two"
+            assert node_operator_after["name"] == "MAVAN"
+        else:
+            assert node_operator_before["name"] == node_operator_after["name"]
         assert node_operator_before["rewardAddress"] == node_operator_after["rewardAddress"]
         assert node_operator_before["totalDepositedValidators"] == node_operator_after["totalDepositedValidators"]
 
         assert node_operator_before["totalExitedValidators"] == node_operator_after["totalExitedValidators"]
         assert node_operator_before["totalAddedValidators"] == node_operator_after["totalAddedValidators"]
 
-        if not node_operator_before["active"]:
+        # after-state activity covers NO id 3 (Chorus One) deactivated on vote 06-17-26:
+        # deactivation resets the vetted keys count to the deposited keys count
+        if not node_operator_after["active"]:
             assert node_operator_after["totalVettedValidators"] == node_operator_after["totalDepositedValidators"]
         else:
             assert node_operator_before["totalVettedValidators"] == node_operator_after["totalVettedValidators"]
