@@ -104,39 +104,17 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
 # ============================== Description =================================
-DG_PROPOSAL_METADATA = (
-    "Migrate 11 pausable contracts from legacy GateSeals to CircuitBreaker "
-    "0x6019CB557978296BA3C08a7B73225C0975DFB2F7 per LIP-34, increase the Liquidity Observation Lab (LOL) "
-    "stETH Easy Track limit to 8,000 stETH per 6 months, change the name of Node Operator Pier Two to MAVAN, "
-    "and deactivate Node Operator Chorus One"
-)
-DG_SUBMISSION_DESCRIPTION = (
-    "1. Submit a Dual Governance proposal to migrate 11 pausable contracts from "
-    "legacy GateSeals to CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7 per LIP-34, increase the "
-    "Liquidity Observation Lab (LOL) stETH Easy Track limit to 8,000 stETH per 6 months, change the name "
-    "of Node Operator Pier Two to MAVAN, and deactivate Node Operator Chorus One"
-)
+DG_PROPOSAL_METADATA = "Enable CircuitBreaker on-chain, increase LOL stETH Easy Track factory limit from 6K stETH to 8K stETH per 6 months, rename Node Operator Pier Two to MAVAN, deactivate Node Operator Chorus One"
+
+DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to enable CircuitBreaker on-chain, increase LOL stETH Easy Track factory limit from 6K stETH to 8K stETH per 6 months, rename Node Operator Pier Two to MAVAN, deactivate Node Operator Chorus One"
 
 IPFS_DESCRIPTION = """
-Migrate 11 pausable contracts from legacy GateSeals to CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7 per [LIP-34](https://github.com/lidofinance/lido-improvement-proposals/blob/develop/LIPS/lip-34.md) ([forum](https://research.lido.fi/t/circuitbreaker-programmable-panic-layer/11400)). For each pausable: revoke `PAUSE_ROLE` from its legacy GateSeal, grant it to CircuitBreaker, register the pausable on CircuitBreaker with the previous sealing committee as pauser.
-
-1. **WithdrawalQueue 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1**. Pauser: 0x8772E3a2D86B9347A2688f9bc1808A6d8917760C. Items 1.1-1.3.
-2. **ValidatorsExitBusOracle 0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e**. Pauser: 0x8772E3a2D86B9347A2688f9bc1808A6d8917760C. Items 1.4-1.6.
-3. **TriggerableWithdrawalsGateway 0xDC00116a0D3E064427dA2600449cfD2566B3037B**. Pauser: 0x8772E3a2D86B9347A2688f9bc1808A6d8917760C. Items 1.7-1.9.
-4. **VaultHub 0x1d201BE093d847f6446530Efb0E8Fb426d176709**. Pauser: 0x8772E3a2D86B9347A2688f9bc1808A6d8917760C. Items 1.10-1.12.
-5. **PredepositGuarantee 0xF4bF42c6D6A0E38825785048124DBAD6c9eaaac3**. Pauser: 0x8772E3a2D86B9347A2688f9bc1808A6d8917760C. Items 1.13-1.15.
-6. **CSModule 0xdA7dE2ECdDfccC6c3AF10108Db212ACBBf9EA83F**. Pauser: 0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f. Items 1.16-1.18.
-7. **CSAccounting 0x4d72BFF1BeaC69925F8Bd12526a39BAAb069e5Da**. Pauser: 0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f. Items 1.19-1.21.
-8. **CSFeeOracle 0x4D4074628678Bd302921c20573EEa1ed38DdF7FB**. Pauser: 0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f. Items 1.22-1.24.
-9. **CSVerifierV2 0xdC5FE1782B6943f318E05230d688713a560063DC**. Pauser: 0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f. Items 1.25-1.27.
-10. **CSVettedGate 0xB314D4A76C457c93150d308787939063F4Cc67E0**. Pauser: 0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f. Items 1.28-1.30.
-11. **CSEjector 0xc72b58aa02E0e98cF8A4a0E9Dce75e763800802C**. Pauser: 0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f. Items 1.31-1.33.
-
-Operational items:
-
-12. **Increase the Liquidity Observation Lab (LOL) stETH Easy Track limit** from 6,000 to 8,000 stETH per 6 months on AllowedRecipientsRegistry 0x48c4929630099b217136b64089E8543dB0E5163a. Item 1.34.
-13. **Change the name to MAVAN for Node Operator Pier Two** (id = 36) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5. Item 1.35.
-14. **Deactivate Node Operator Chorus One** (id = 3) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5. Item 1.36.
+1. **Enable CircuitBreaker on-chain**: reassign the pause role from legacy GateSeals to CircuitBreaker and assign the respective pauser committee to the 11 pausable contracts in CircuitBreaker, [as per Snapshot decision](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x46d8df504c019be2be84a38c8705cd8bdbe4f5f4d2b141d4e8bd3e69af9ef5f3). Audit & deployment verification: [Cyfrin](https://github.com/lidofinance/audits/blob/main/Cyfrin CircuitBreaker Audit Report 04-2026.pdf), [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes CircuitBreaker Audit Report 04-2026.pdf) | Formal verification: [Cyfrin](https://github.com/lidofinance/audits/blob/main/Cyfrin CircuitBreaker Formal Verification Report 04-2026.pdf).
+    1. **Pauser [CircuitBreaker Committee](https://app.safe.global/home?safe=eth:0x8772E3a2D86B9347A2688f9bc1808A6d8917760C)**: WithdrawalQueue, ValidatorsExitBusOracle, TriggerableWithdrawalsGateway, VaultHub, PredepositGuarantee. Items 1.1 - 1.15.
+    2. **Pauser [CSM Committee](https://app.safe.global/home?safe=eth:0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f)**: CSModule, CSAccounting, CSFeeOracle, CSVerifierV2, CSVettedGate, CSEjector. Items 1.16 - 1.33.
+2. **Increase LOL stETH Easy Track factory limit from 6K stETH per 6 months to 8K stETH per 6 months**, [as per Snapshot decision](https://snapshot.org/#/s:lido-snapshot.eth/proposal/0x863859d857c7429a0dcb85a4b324de803e2f66ddd8f50e4c2f04a31c35c6ae6f). Item 1.34.
+3. **Rename Node Operator Pier Two to MAVAN**, [as requested on the forum](https://research.lido.fi/t/node-operator-registry-name-reward-address-change/4170/56). Item 1.35.
+4. **Deactivate Node Operator Chorus One**, [as proposed on the forum](https://research.lido.fi/t/chorus-one-joins-bitwise/11250/9). Item 1.36.
 """
 
 # ============================== Migration ==============================
