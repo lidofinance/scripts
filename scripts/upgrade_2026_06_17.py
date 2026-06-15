@@ -110,7 +110,6 @@ DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to enable Circ
 
 IPFS_DESCRIPTION = """
 # CircuitBreaker Activation, LOL stETH Limit Increase, Pier Two → MAVAN Name Change, Chorus One Deactivation
-
 1. **Enable CircuitBreaker on-chain**: reassign the pause role from legacy GateSeals to CircuitBreaker and assign the respective pauser committee to the 11 pausable contracts in CircuitBreaker, [as per Snapshot decision](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x46d8df504c019be2be84a38c8705cd8bdbe4f5f4d2b141d4e8bd3e69af9ef5f3). Audit & deployment verification: [Cyfrin](https://github.com/lidofinance/audits/blob/main/Cyfrin CircuitBreaker Audit Report 04-2026.pdf), [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes CircuitBreaker Audit Report 04-2026.pdf) | Formal verification: [Cyfrin](https://github.com/lidofinance/audits/blob/main/Cyfrin CircuitBreaker Formal Verification Report 04-2026.pdf).
     1. **Pauser [CircuitBreaker Committee](https://app.safe.global/home?safe=eth:0x8772E3a2D86B9347A2688f9bc1808A6d8917760C)**: WithdrawalQueue, ValidatorsExitBusOracle, TriggerableWithdrawalsGateway, VaultHub, PredepositGuarantee. Items 1.1 - 1.15.
     2. **Pauser [CSM Committee](https://app.safe.global/home?safe=eth:0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f)**: CSModule, CSAccounting, CSFeeOracle, CSVerifierV2, CSVettedGate, CSEjector. Items 1.16 - 1.33.
