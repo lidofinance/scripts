@@ -523,14 +523,19 @@ def lol_limit_happy_path_test(easy_track, registry, stranger, accounts):
     steth = interface.StETH(STETH)
     top_up_factory = interface.TopUpAllowedRecipients(LOL_TOP_UP_FACTORY)
 
-    spent_at_entry, spendable_at_entry, _, _ = registry.getPeriodState()
+    # Fast-forward to the start of a fresh spending period before exercising the budget.
+    # Because enacting the motions moves the chain time and can roll over to the next period
+    _, _, _, period_end = registry.getPeriodState()
+    now_ts = web3.eth.get_block("latest")["timestamp"]
+    chain.mine(1, max(now_ts, period_end) + 1)
+
     spendable_left = 10  # wei — leave a tiny remainder to verify the post-spend state
-    to_spend = spendable_at_entry - spendable_left
+    to_spend = LOL_NEW_LIMIT - spendable_left
 
-    prepare_agent_for_steth_payment(spendable_at_entry, accounts)
-    bump_create_payments_role_steth_cap(spendable_at_entry, accounts)
+    prepare_agent_for_steth_payment(LOL_NEW_LIMIT, accounts)
+    bump_create_payments_role_steth_cap(LOL_NEW_LIMIT, accounts)
 
-    # 1) we can spend the entire remaining budget for the current period
+    # 1) we can spend the entire budget for the fresh period (this also rolls the period over)
     create_and_enact_payment_motion(
         easy_track,
         multisig,
@@ -541,8 +546,9 @@ def lol_limit_happy_path_test(easy_track, registry, stranger, accounts):
         stranger,
     )
 
-    spent_after, spendable_after, _, _ = registry.getPeriodState()
-    assert spent_after == spent_at_entry + to_spend
+    spent_after, spendable_after, _, new_period_end = registry.getPeriodState()
+    assert new_period_end > period_end, "spending period should have rolled over to a fresh one"
+    assert spent_after == to_spend
     assert spendable_after == spendable_left
 
     # 2) we cannot spend more than what remains in the current period
