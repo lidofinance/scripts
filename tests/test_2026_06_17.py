@@ -183,7 +183,7 @@ EXPECTED_VOTE_EVENTS_COUNT = 1
 EXPECTED_DG_EVENTS_FROM_AGENT = 36
 EXPECTED_DG_EVENTS_COUNT = EXPECTED_DG_EVENTS_FROM_AGENT
 
-IPFS_DESCRIPTION_HASH = "bafkreiailinuihhlknzfct7tjgrxg5bvoijsxyz3wcdvf66vabufovm4te"
+IPFS_DESCRIPTION_HASH = ""
 
 
 @pytest.fixture(scope="module")
