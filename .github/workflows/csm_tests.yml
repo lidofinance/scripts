@@ -101,6 +101,6 @@ jobs:
         uses: lidofinance/staking-modules/.github/actions/regression-tests@develop
         with:
           repository: lidofinance/staking-modules
-          ref: main
+          ref: codex/backport-circuit-breaker-tests
           path: staking-modules
           rpc_url: ${{ env.HARDHAT_NODE_URL }}
