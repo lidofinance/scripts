@@ -158,6 +158,7 @@ LOL_NEW_LIMIT = 8000 * 10**18
 LOL_PERIOD_DURATION_MONTHS = 6
 LOL_PERIOD_START = 1767225600  # 2026-01-01 00:00:00 UTC
 LOL_PERIOD_END = 1782864000  # 2026-07-01 00:00:00 UTC
+LOL_NEXT_PERIOD_END = 1798761600  # 2027-01-01 00:00:00 UTC
 LOL_TRUSTED_CALLER = "0x87D93d9B2C672bf9c9642d853a8682546a5012B5"
 LOL_TOP_UP_FACTORY = "0x1F2b79FE297B7098875930bBA6dd17068103897E"
 
@@ -259,6 +260,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     details = timelock.getProposalDetails(dg_proposal_id)
 
     dg_execution_timestamp = None
+    expected_lol_period_start = LOL_PERIOD_START
+    expected_lol_period_end = LOL_PERIOD_END
     if details["status"] != PROPOSAL_STATUS["executed"]:
         # =======================================================================
         # ======================= Before DG enactment checks ====================
@@ -284,8 +287,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         # 1.34. LOL config before enactment
         # we can't predict the spendable before (state can change before the vote, so here we just pass the current value)
+        # the period hasn't rolled yet here, so it's still the original window.
         _, lol_spendable_before, _, _ = lol_registry.getPeriodState()
-        validate_lol_config(lol_registry, LOL_OLD_LIMIT, lol_spendable_before)
+        validate_lol_config(lol_registry, LOL_OLD_LIMIT, lol_spendable_before, LOL_PERIOD_START, LOL_PERIOD_END)
 
         # 1.35. Node Operator name before enactment.
         assert (
@@ -316,6 +320,11 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
             dg_tx: TransactionReceipt = timelock.execute(dg_proposal_id, {"from": stranger})
             dg_execution_timestamp = dg_tx.timestamp
+
+            # If the run advanced past LOL_PERIOD_END, setLimitParameters rolls into the next period.
+            if dg_execution_timestamp >= LOL_PERIOD_END:
+                expected_lol_period_start, expected_lol_period_end = LOL_PERIOD_END, LOL_NEXT_PERIOD_END
+
             display_dg_events(dg_tx)
             dg_events = group_dg_events_from_receipt(
                 dg_tx,
@@ -365,7 +374,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 dg_events[event_index],
                 limit=LOL_NEW_LIMIT,
                 period_duration_month=LOL_PERIOD_DURATION_MONTHS,
-                period_start_timestamp=LOL_PERIOD_START,
+                period_start_timestamp=expected_lol_period_start,
                 emitted_by=LOL_ALLOWED_RECIPIENTS_REGISTRY,
             )
             event_index += 1
@@ -444,7 +453,13 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         circuit_breaker_pause_happy_path_test(circuit_breaker, accounts)
 
         # 1.34. LOL limit raised; spent untouched, spendable grew by exactly the limit delta.
-        validate_lol_config(lol_registry, LOL_NEW_LIMIT, lol_spendable_before + (LOL_NEW_LIMIT - LOL_OLD_LIMIT))
+        validate_lol_config(
+            lol_registry,
+            LOL_NEW_LIMIT,
+            lol_spendable_before + (LOL_NEW_LIMIT - LOL_OLD_LIMIT),
+            expected_lol_period_start,
+            expected_lol_period_end,
+        )
 
         # Happy path: the new 8,000 stETH / 6-month budget is spendable and the limit is enforced.
         lol_limit_happy_path_test(easy_track, lol_registry, stranger, accounts)
@@ -485,7 +500,7 @@ def validate_circuit_breaker_globals(circuit_breaker):
     assert circuit_breaker.MAX_HEARTBEAT_INTERVAL() == CIRCUIT_BREAKER_MAX_HEARTBEAT_INTERVAL
 
 
-def validate_lol_config(lol_registry, expected_limit, expected_spendable):
+def validate_lol_config(lol_registry, expected_limit, expected_spendable, expected_period_start, expected_period_end):
     limit, period_duration = lol_registry.getLimitParameters()
     assert limit == expected_limit, f"LOL limit should be {expected_limit}, got {limit}"
     assert (
@@ -497,8 +512,10 @@ def validate_lol_config(lol_registry, expected_limit, expected_spendable):
     assert (
         spent == expected_limit - expected_spendable
     ), f"LOL already-spent should be {expected_limit - expected_spendable}, got {spent}"
-    assert period_start == LOL_PERIOD_START, f"LOL period start should be {LOL_PERIOD_START}, got {period_start}"
-    assert period_end == LOL_PERIOD_END, f"LOL period end should be {LOL_PERIOD_END}, got {period_end}"
+    assert (
+        period_start == expected_period_start
+    ), f"LOL period start should be {expected_period_start}, got {period_start}"
+    assert period_end == expected_period_end, f"LOL period end should be {expected_period_end}, got {period_end}"
 
 
 def circuit_breaker_pause_happy_path_test(circuit_breaker, accounts):
