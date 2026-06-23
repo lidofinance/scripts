@@ -1,7 +1,6 @@
-name: CSM Tests
+name: Staking Modules Tests
 
 on:
-  pull_request:  # TODO remove after testing is complete
   workflow_dispatch:
   push:
     branches:
@@ -15,13 +14,13 @@ on:
     - cron: "0 0 * * TUE"
 
 jobs:
-  csm-regression:
-    name: CSM Regression tests
+  staking-modules-regression:
+    name: Staking Modules regression tests
     runs-on: "ubuntu-latest"
     timeout-minutes: 120
 
     concurrency:
-      group: csm-regression-${{ github.ref }}
+      group: staking-modules-regression-${{ github.ref }}
       cancel-in-progress: true
 
     env:
@@ -97,7 +96,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
 
-      - name: Run CSM regression tests
+      - name: Run staking modules regression tests
         uses: lidofinance/staking-modules/.github/actions/regression-tests@develop
         with:
           repository: lidofinance/staking-modules
