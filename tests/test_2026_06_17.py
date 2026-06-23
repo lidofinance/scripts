@@ -33,7 +33,7 @@ from utils.ipfs import get_lido_vote_cid_from_str
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.upgrade_2026_06_17 import (
+from archive.scripts.upgrade_2026_06_17 import (
     DG_PROPOSAL_METADATA,
     get_dg_items,
     get_vote_items,

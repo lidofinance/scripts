@@ -63,7 +63,7 @@ Vote 2026_06_17
 1.35. Change the name to MAVAN for Node Operator Pier Two (id = 36) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
 1.36. Deactivate Node Operator Chorus One (id = 3) in Curated Module 0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5
 
-Vote #{vote number} passed & executed on {date+time}, block {blockNumber}.
+Vote #202 passed & executed on Jun-22-2026 02:10:23 PM +UTC, block 25373650.
 """
 
 from typing import Dict, List, NamedTuple, Tuple
