@@ -787,7 +787,7 @@ def get_http_provider_timeout():
 def get_max_log_range():
     if os.getenv("MAX_GET_LOGS_RANGE") is not None:
         return int(os.getenv("MAX_GET_LOGS_RANGE"))
-    return 50000
+    return 10000
 
 
 def active_aragon_roles(protocol_permissions):
