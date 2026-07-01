@@ -781,13 +781,13 @@ def get_http_provider_timeout():
     if os.getenv("WEB3_HTTP_PROVIDER_TIMEOUT") is not None:
         return float(os.getenv("WEB3_HTTP_PROVIDER_TIMEOUT"))
     # use higher default than requests' 10s to reduce flaky ReadTimeouts in CI
-    return 60.0
+    return 300.0
 
 
 def get_max_log_range():
     if os.getenv("MAX_GET_LOGS_RANGE") is not None:
         return int(os.getenv("MAX_GET_LOGS_RANGE"))
-    return 100000
+    return 50000
 
 
 def active_aragon_roles(protocol_permissions):
