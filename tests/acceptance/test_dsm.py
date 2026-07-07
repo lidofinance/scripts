@@ -20,14 +20,16 @@ def dsm() -> interface.DepositSecurityModule:
 def test_owner(dsm):
     assert dsm.getOwner() == contracts.agent
 
+
 def test_versioned(dsm):
-    assert dsm.VERSION() == 3
+    assert dsm.VERSION() == 4
+
 
 def test_deposit_paused(dsm):
     assert dsm.isDepositsPaused() == False
 
+
 def test_links(dsm):
-    assert dsm.LIDO() == contracts.lido
     assert dsm.STAKING_ROUTER() == contracts.staking_router
     assert dsm.DEPOSIT_CONTRACT() == CHAIN_DEPOSIT_CONTRACT
 

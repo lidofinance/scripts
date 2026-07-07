@@ -27,8 +27,10 @@ from utils.config import (
     CS_PARAMS_REGISTRY_ADDRESS,
     CS_EXIT_PENALTIES_ADDRESS,
     CS_STRIKES_ADDRESS,
-    CS_EJECTOR_ADDRESS
+    CS_EJECTOR_ADDRESS,
+    CS_FEE_ORACLE_CONSENSUS_VERSION,
 )
+from utils.evm_script import encode_error
 
 contracts: ContractsLazyLoader = contracts
 
@@ -143,14 +145,13 @@ class TestAccounting:
         assert not accounting.isPaused()
 
     def test_allowances(self, lido):
-        uin256_max = 2 ** 256 - 1
+        uin256_max = 2**256 - 1
         assert lido.allowance(CS_ACCOUNTING_ADDRESS, WSTETH_TOKEN) == uin256_max
         assert lido.allowance(CS_ACCOUNTING_ADDRESS, WITHDRAWAL_QUEUE) == uin256_max
         assert lido.allowance(CS_ACCOUNTING_ADDRESS, BURNER) == uin256_max
 
 
 class TestFeeDistributor:
-
     def test_initial_state(self, fee_distributor):
         assert fee_distributor.STETH() == LIDO
         assert fee_distributor.ACCOUNTING() == CS_ACCOUNTING_ADDRESS
@@ -159,20 +160,29 @@ class TestFeeDistributor:
 
 
 class TestFeeOracle:
-
     def test_initial_state(self, fee_oracle):
         assert fee_oracle.SECONDS_PER_SLOT() == CHAIN_SECONDS_PER_SLOT
         assert fee_oracle.GENESIS_TIME() == CHAIN_GENESIS_TIME
         assert fee_oracle.FEE_DISTRIBUTOR() == CS_FEE_DISTRIBUTOR_ADDRESS
         assert fee_oracle.STRIKES() == CS_STRIKES_ADDRESS
-        assert fee_oracle.getContractVersion() == 2
+        assert fee_oracle.getContractVersion() == 3  # SRv3: finalizeUpgradeV3 -> INITIALIZED_VERSION
         assert fee_oracle.getConsensusContract() == CS_ORACLE_HASH_CONSENSUS_ADDRESS
-        assert fee_oracle.getConsensusVersion() == 3
+        assert fee_oracle.getConsensusVersion() == CS_FEE_ORACLE_CONSENSUS_VERSION
         assert not fee_oracle.isPaused()
+
+    def test_finalize_upgrade_v3_reverts_when_already_finalized(self, fee_oracle):
+        # The vote already ran finalizeUpgradeV3, so the FeeOracle is at contract version 3.
+        # finalizeUpgradeV3 has no reinitializer/access-control guard; re-calling it must
+        # revert because _updateContractVersion(INITIALIZED_VERSION=3) rejects a bump when
+        # already at 3. Pass a different consensus version so we reach the contract-version
+        # check (the same version would revert earlier in _setConsensusVersion with
+        # VersionCannotBeSame). State rolls back on revert.
+        # .call() — anvil does not surface custom-error data for reverted txs.
+        with reverts(encode_error("InvalidContractVersionIncrement()")):
+            fee_oracle.finalizeUpgradeV3.call(CS_FEE_ORACLE_CONSENSUS_VERSION + 1, {"from": contracts.agent})
 
 
 class TestHashConsensus:
-
     def test_initial_state(self, hash_consensus):
         chain_config = hash_consensus.getChainConfig()
         assert chain_config["slotsPerEpoch"] == CHAIN_SLOTS_PER_EPOCH
@@ -207,7 +217,10 @@ def test_vetted_gate_state(vetted_gate):
 def test_ejector_state(ejector):
     assert ejector.MODULE() == CSM_ADDRESS
     assert ejector.STRIKES() == CS_STRIKES_ADDRESS
-    assert ejector.STAKING_MODULE_ID() == 3
+    # v3: the immutable STAKING_MODULE_ID() getter is gone. stakingModuleId is now a mutable
+    # storage slot lazily filled from StakingRouter on the first ejection (_getOrCacheStakingModuleId),
+    # so right after enactment it is still 0 (will resolve to CS_MODULE_ID == 3 on first use).
+    assert ejector.stakingModuleId() == 0
 
 
 def test_strikes_state(strikes):
@@ -226,7 +239,10 @@ def test_exit_penalties_state(exit_penalties):
 
 def test_parameters_registry_state(parameters_registry):
     assert parameters_registry.QUEUE_LOWEST_PRIORITY() == 5
-    assert parameters_registry.QUEUE_LEGACY_PRIORITY() == 4
+    # v3: QUEUE_LEGACY_PRIORITY was removed (chore: remove legacy code). Queue priority is now
+    # per-curve via defaultQueueConfig (priority, maxDeposits).
+    priority, _max_deposits = parameters_registry.defaultQueueConfig()
+    assert priority <= parameters_registry.QUEUE_LOWEST_PRIORITY()
 
 
 def test_verifier_state(verifier):
@@ -234,14 +250,30 @@ def test_verifier_state(verifier):
     assert verifier.MODULE() == CSM_ADDRESS
     assert verifier.SLOTS_PER_EPOCH() == CHAIN_SLOTS_PER_EPOCH
 
-    assert verifier.GI_FIRST_WITHDRAWAL_PREV() == HexString("0x000000000000000000000000000000000000000000000000000000000161c004", "bytes")
-    assert verifier.GI_FIRST_WITHDRAWAL_CURR() == HexString("0x000000000000000000000000000000000000000000000000000000000161c004", "bytes")
-    assert verifier.GI_FIRST_VALIDATOR_PREV() == HexString("0x0000000000000000000000000000000000000000000000000096000000000028", "bytes")
-    assert verifier.GI_FIRST_VALIDATOR_CURR() == HexString("0x0000000000000000000000000000000000000000000000000096000000000028", "bytes")
-    assert verifier.GI_FIRST_HISTORICAL_SUMMARY_PREV() == HexString("0x000000000000000000000000000000000000000000000000000000b600000018", "bytes")
-    assert verifier.GI_FIRST_HISTORICAL_SUMMARY_CURR() == HexString("0x000000000000000000000000000000000000000000000000000000b600000018", "bytes")
-    assert verifier.GI_FIRST_BLOCK_ROOT_IN_SUMMARY_PREV() == HexString("0x000000000000000000000000000000000000000000000000000000000040000d", "bytes")
-    assert verifier.GI_FIRST_BLOCK_ROOT_IN_SUMMARY_CURR() == HexString("0x000000000000000000000000000000000000000000000000000000000040000d", "bytes")
+    assert verifier.GI_FIRST_WITHDRAWAL_PREV() == HexString(
+        "0x000000000000000000000000000000000000000000000000000000000161c004", "bytes"
+    )
+    assert verifier.GI_FIRST_WITHDRAWAL_CURR() == HexString(
+        "0x000000000000000000000000000000000000000000000000000000000161c004", "bytes"
+    )
+    assert verifier.GI_FIRST_VALIDATOR_PREV() == HexString(
+        "0x0000000000000000000000000000000000000000000000000096000000000028", "bytes"
+    )
+    assert verifier.GI_FIRST_VALIDATOR_CURR() == HexString(
+        "0x0000000000000000000000000000000000000000000000000096000000000028", "bytes"
+    )
+    assert verifier.GI_FIRST_HISTORICAL_SUMMARY_PREV() == HexString(
+        "0x000000000000000000000000000000000000000000000000000000b600000018", "bytes"
+    )
+    assert verifier.GI_FIRST_HISTORICAL_SUMMARY_CURR() == HexString(
+        "0x000000000000000000000000000000000000000000000000000000b600000018", "bytes"
+    )
+    assert verifier.GI_FIRST_BLOCK_ROOT_IN_SUMMARY_PREV() == HexString(
+        "0x000000000000000000000000000000000000000000000000000000000040000d", "bytes"
+    )
+    assert verifier.GI_FIRST_BLOCK_ROOT_IN_SUMMARY_CURR() == HexString(
+        "0x000000000000000000000000000000000000000000000000000000000040000d", "bytes"
+    )
 
     assert verifier.FIRST_SUPPORTED_SLOT() == 364032 * CHAIN_SLOTS_PER_EPOCH
     assert verifier.PIVOT_SLOT() == verifier.FIRST_SUPPORTED_SLOT()

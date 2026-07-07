@@ -15,6 +15,21 @@
         "internalType": "address",
         "name": "_triggerableWithdrawalsGateway",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_consolidationGateway",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_withdrawalRequest",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_consolidationRequest",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -50,12 +65,12 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "providedFee",
+        "name": "requiredFee",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "requiredFee",
+        "name": "providedFee",
         "type": "uint256"
       }
     ],
@@ -68,8 +83,24 @@
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "pubkey",
+        "type": "bytes"
+      }
+    ],
+    "name": "InvalidPublicKeyLength",
+    "type": "error"
+  },
+  {
     "inputs": [],
     "name": "NonZeroContractVersionOnInit",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotConsolidationGateway",
     "type": "error"
   },
   {
@@ -151,6 +182,19 @@
     "inputs": [
       {
         "indexed": false,
+        "internalType": "bytes",
+        "name": "request",
+        "type": "bytes"
+      }
+    ],
+    "name": "ConsolidationRequestAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
         "internalType": "uint256",
         "name": "version",
         "type": "uint256"
@@ -224,6 +268,32 @@
   },
   {
     "inputs": [],
+    "name": "CONSOLIDATION_GATEWAY",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "CONSOLIDATION_REQUEST",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "LIDO",
     "outputs": [
       {
@@ -262,6 +332,37 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "WITHDRAWAL_REQUEST",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes[]",
+        "name": "sourcePubkeys",
+        "type": "bytes[]"
+      },
+      {
+        "internalType": "bytes[]",
+        "name": "targetPubkeys",
+        "type": "bytes[]"
+      }
+    ],
+    "name": "addConsolidationRequests",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "bytes[]",
@@ -281,9 +382,22 @@
   },
   {
     "inputs": [],
-    "name": "finalizeUpgrade_v2",
+    "name": "finalizeUpgrade_v3",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getConsolidationRequestFee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {

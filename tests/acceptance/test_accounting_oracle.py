@@ -17,6 +17,7 @@ from utils.config import (
 )
 from utils.evm_script import encode_error
 
+
 @pytest.fixture(scope="module")
 def contract() -> interface.AccountingOracle:
     return interface.AccountingOracle(ACCOUNTING_ORACLE)
@@ -39,7 +40,7 @@ def test_constants(contract):
 
 
 def test_versioned(contract):
-    assert contract.getContractVersion() == 4
+    assert contract.getContractVersion() == 5  # SRv3: finalizeUpgrade_v5
 
 
 def test_initialize(contract):
@@ -65,32 +66,51 @@ def test_petrified(contract):
         )
 
 
+def test_finalize_upgrade(contract):
+    # SRv3 (vote item 1.4) already bumped the contract version to 5 via
+    # finalizeUpgrade_v5; a repeated call must revert: 5 != current(5) + 1.
+    # .call() — anvil does not surface custom-error data for reverted txs.
+    with reverts(encode_error("InvalidContractVersionIncrement()")):
+        contract.finalizeUpgrade_v5.call(AO_CONSENSUS_VERSION, {"from": contracts.voting})
+
+
 def test_consensus(contract):
     assert contract.getConsensusVersion() == AO_CONSENSUS_VERSION
     assert contract.getConsensusContract() == HASH_CONSENSUS_FOR_AO
 
 
 def test_processing_state(contract):
+    # Absolute values (deadline, hashes, submitted flags) depend on whether a report
+    # has landed in the current frame — they change with the fork block / fixture
+    # timing, so only frame-independent invariants are asserted.
+    consensus = interface.HashConsensus(contract.getConsensusContract())
     state = contract.getProcessingState()
-    assert state["currentFrameRefSlot"] > 5254400
-    #assert state["processingDeadlineTime"] == 0
-    #assert state["mainDataHash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
-    #assert state["mainDataSubmitted"] is False
-    #assert state["extraDataHash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
-    #assert state["extraDataFormat"] == 0
-    #assert state["extraDataSubmitted"] is False
-    #assert state["extraDataItemsCount"] == 0
-    #assert state["extraDataItemsSubmitted"] == 0
 
+    # frame cross-check with the consensus contract
+    assert state["currentFrameRefSlot"] == consensus.getCurrentFrame()["refSlot"]
+    assert state["currentFrameRefSlot"] > 5254400
+
+    # processing never runs ahead of the current frame
     assert contract.getLastProcessingRefSlot() > 5254400
+    assert contract.getLastProcessingRefSlot() <= state["currentFrameRefSlot"]
+
+    if state["mainDataSubmitted"]:
+        # a submitted report implies processing of the current frame has started
+        assert state["mainDataHash"] != "0x" + "00" * 32
+        assert contract.getLastProcessingRefSlot() == state["currentFrameRefSlot"]
+
+    # extra data can only follow the main report
+    if state["extraDataSubmitted"]:
+        assert state["mainDataSubmitted"]
+    assert state["extraDataItemsSubmitted"] <= state["extraDataItemsCount"]
 
 
 def test_report(contract):
     report = contract.getConsensusReport()
-    #assert report["hash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
+    # assert report["hash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
     assert report["refSlot"] > 5254400
-    #assert report["processingDeadlineTime"] == 0
-    #assert report["processingStarted"] is False
+    # assert report["processingDeadlineTime"] == 0
+    # assert report["processingStarted"] is False
 
 
 def test_accounting_hash_consensus(contract):

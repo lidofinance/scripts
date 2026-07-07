@@ -5,6 +5,7 @@ dependencies:
 networks:
   default: mainnet-fork
   development:
+    gas_limit: auto
     priority_fee: auto
   live:
     priority_fee: auto

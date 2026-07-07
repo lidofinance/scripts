@@ -2,15 +2,22 @@ import pytest
 from brownie import interface, reverts  # type: ignore
 
 from configs.config_mainnet import (
-    CS_MODULE_ID, CS_MODULE_MODULE_FEE_BP,
-    CS_MODULE_TREASURY_FEE_BP, CS_MODULE_TARGET_SHARE_BP, CS_MODULE_NAME, CS_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD,
-    CS_MODULE_MAX_DEPOSITS_PER_BLOCK, CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
+    CS_MODULE_ID,
+    CS_MODULE_MODULE_FEE_BP,
+    CS_MODULE_TREASURY_FEE_BP,
+    CS_MODULE_TARGET_SHARE_BP,
+    CS_MODULE_NAME,
+    CS_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD,
+    CS_MODULE_MAX_DEPOSITS_PER_BLOCK,
+    CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
 )
 from utils.config import (
     contracts,
     STAKING_ROUTER,
     STAKING_ROUTER_IMPL,
     STAKING_ROUTER_VERSION,
+    STAKING_ROUTER_MAX_TOP_UP_PER_BLOCK_GWEI,
+    LIDO_LOCATOR,
     CHAIN_DEPOSIT_CONTRACT,
     WITHDRAWAL_VAULT,
     SR_MODULES_FEE_BP,
@@ -34,8 +41,16 @@ from utils.config import (
     SIMPLE_DVT_MODULE_TREASURY_FEE_BP,
     SIMPLE_DVT_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD,
     SIMPLE_DVT_MODULE_MAX_DEPOSITS_PER_BLOCK,
-    SIMPLE_DVT_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE
-
+    SIMPLE_DVT_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE,
+    CURATED_V2_STAKING_MODULE_ID,
+    CURATED_V2_STAKING_MODULE_ADDRESS,
+    CURATED_V2_STAKING_MODULE_NAME,
+    CURATED_V2_STAKING_MODULE_TARGET_SHARE_BP,
+    CURATED_V2_STAKING_MODULE_MODULE_FEE_BP,
+    CURATED_V2_STAKING_MODULE_TREASURY_FEE_BP,
+    CURATED_V2_STAKING_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD,
+    CURATED_V2_STAKING_MODULE_MAX_DEPOSITS_PER_BLOCK,
+    CURATED_V2_STAKING_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE,
 )
 from utils.evm_script import encode_error
 
@@ -52,8 +67,15 @@ def test_proxy(contract):
 
 
 def test_links(contract):
-    assert contract.getLido() == contracts.lido
     assert contract.DEPOSIT_CONTRACT() == CHAIN_DEPOSIT_CONTRACT
+    assert contract.LIDO() == contracts.lido
+    assert contract.LIDO_LOCATOR() == contracts.lido_locator
+    assert contract.LIDO_LOCATOR() == LIDO_LOCATOR
+
+
+def test_max_top_up_per_block(contract):
+    # Global per-block top-up cap set by finalizeUpgrade_v4
+    assert contract.getMaxTopUpPerBlockGwei() == STAKING_ROUTER_MAX_TOP_UP_PER_BLOCK_GWEI
 
 
 def test_versioned(contract):
@@ -61,30 +83,31 @@ def test_versioned(contract):
 
 
 def test_initialize(contract):
-    with reverts(encode_error("NonZeroContractVersionOnInit()")):
-        contract.initialize(
+    # NB: use .call() (eth_call) rather than a tx — anvil does not surface custom-error
+    # data for reverted transactions, so brownie's revert_msg would be None; eth_call does.
+    with reverts(encode_error("InvalidInitialization()")):
+        contract.initialize.call(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
-            contracts.lido,
             WITHDRAWAL_CREDENTIALS,
+            0,
             {"from": contracts.voting},
         )
 
+
 def test_finalize_upgrade(contract):
-    with reverts(encode_error(
-                "UnexpectedContractVersion(uint256,uint256)",
-                [3, 2],
-            )):
-        contract.finalizeUpgrade_v3(
-            {"from": contracts.voting},
-        )
+    # finalizeUpgrade_v4 is reinitializer(4); the upgrade already advanced _initialized to 4,
+    # so calling it again must revert. Use .call() (eth_call) — see test_initialize note.
+    with reverts(encode_error("InvalidInitialization()")):
+        contract.finalizeUpgrade_v4.call(0, {"from": contracts.voting})
+
 
 def test_petrified(contract):
     impl = interface.StakingRouter(STAKING_ROUTER_IMPL)
-    with reverts(encode_error("NonZeroContractVersionOnInit()")):
-        impl.initialize(
+    with reverts(encode_error("InvalidInitialization()")):
+        impl.initialize.call(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
-            contracts.lido,
             WITHDRAWAL_CREDENTIALS,
+            0,
             {"from": contracts.voting},
         )
 
@@ -97,9 +120,14 @@ def test_constants(contract):
 
 
 def test_staking_modules(contract):
-    assert contract.getStakingModulesCount() == 3
+    assert contract.getStakingModulesCount() == 4
 
-    assert contract.getStakingModuleIds() == [CURATED_STAKING_MODULE_ID, SIMPLE_DVT_MODULE_ID, CS_MODULE_ID]
+    assert contract.getStakingModuleIds() == [
+        CURATED_STAKING_MODULE_ID,
+        SIMPLE_DVT_MODULE_ID,
+        CS_MODULE_ID,
+        CURATED_V2_STAKING_MODULE_ID,
+    ]
     assert contract.getStakingModuleIsActive(CURATED_STAKING_MODULE_ID) == True
     assert contract.getStakingModuleIsStopped(CURATED_STAKING_MODULE_ID) == False
     assert contract.getStakingModuleIsDepositsPaused(CURATED_STAKING_MODULE_ID) == False
@@ -117,6 +145,12 @@ def test_staking_modules(contract):
     assert contract.getStakingModuleIsDepositsPaused(CS_MODULE_ID) == False
     assert contract.getStakingModuleNonce(CS_MODULE_ID) >= 0
     assert contract.getStakingModuleStatus(CS_MODULE_ID) == 0
+
+    assert contract.getStakingModuleIsActive(CURATED_V2_STAKING_MODULE_ID) == True
+    assert contract.getStakingModuleIsStopped(CURATED_V2_STAKING_MODULE_ID) == False
+    assert contract.getStakingModuleIsDepositsPaused(CURATED_V2_STAKING_MODULE_ID) == False
+    assert contract.getStakingModuleNonce(CURATED_V2_STAKING_MODULE_ID) >= 0
+    assert contract.getStakingModuleStatus(CURATED_V2_STAKING_MODULE_ID) == 0
 
     curated_module = contract.getStakingModule(CURATED_STAKING_MODULE_ID)
     assert curated_module["id"] == CURATED_STAKING_MODULE_ID
@@ -162,6 +196,23 @@ def test_staking_modules(contract):
     assert community_staking_module["priorityExitShareThreshold"] == CS_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD
     assert community_staking_module["maxDepositsPerBlock"] == CS_MODULE_MAX_DEPOSITS_PER_BLOCK
     assert community_staking_module["minDepositBlockDistance"] == CS_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE
+
+    curated_module_v2 = contract.getStakingModule(CURATED_V2_STAKING_MODULE_ID)
+    assert curated_module_v2["id"] == CURATED_V2_STAKING_MODULE_ID
+    assert curated_module_v2["stakingModuleAddress"] == CURATED_V2_STAKING_MODULE_ADDRESS
+    assert curated_module_v2["stakingModuleFee"] == CURATED_V2_STAKING_MODULE_MODULE_FEE_BP
+    assert curated_module_v2["treasuryFee"] == CURATED_V2_STAKING_MODULE_TREASURY_FEE_BP
+    assert curated_module_v2["stakeShareLimit"] == CURATED_V2_STAKING_MODULE_TARGET_SHARE_BP
+    assert curated_module_v2["status"] == 0
+    assert curated_module_v2["name"] == CURATED_V2_STAKING_MODULE_NAME
+    # Module was just added during the upgrade: addStakingModule() calls _updateModuleLastDepositState,
+    # which sets lastDepositAt/lastDepositBlock to the enact block.timestamp/block.number; exited = 0.
+    assert curated_module_v2["lastDepositAt"] > 0
+    assert curated_module_v2["lastDepositBlock"] > 0
+    assert curated_module_v2["exitedValidatorsCount"] == 0
+    assert curated_module_v2["priorityExitShareThreshold"] == CURATED_V2_STAKING_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD
+    assert curated_module_v2["maxDepositsPerBlock"] == CURATED_V2_STAKING_MODULE_MAX_DEPOSITS_PER_BLOCK
+    assert curated_module_v2["minDepositBlockDistance"] == CURATED_V2_STAKING_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE
 
     fee_aggregate_distribution = contract.getStakingFeeAggregateDistribution()
     assert fee_aggregate_distribution["modulesFee"] <= SR_MODULES_FEE_E20

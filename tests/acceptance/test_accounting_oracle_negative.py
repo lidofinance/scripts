@@ -3,7 +3,15 @@ from hexbytes import HexBytes
 from web3 import Web3
 
 import pytest
-from brownie import ZERO_ADDRESS, Contract, MockHashConsensus, accounts, interface, reverts, chain  # type: ignore
+from brownie import (
+    ZERO_ADDRESS,
+    Contract,
+    MockHashConsensus,
+    accounts,
+    interface,
+    reverts,
+    chain,
+)  # type: ignore
 from brownie.network.account import Account
 from configs.config_mainnet import MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION
 
@@ -26,7 +34,9 @@ def chain_time_with_offset(offset: int) -> int:
     return chain.time() + offset
 
 
-def test_sender_not_allowed(accounting_oracle: Contract, oracle_version: int, stranger: Account) -> None:
+def test_sender_not_allowed(
+    accounting_oracle: Contract, oracle_version: int, stranger: Account
+) -> None:
     report = oracle_report(dry_run=True)
 
     with reverts(encode_error("SenderNotAllowed()")):
@@ -36,16 +46,22 @@ def test_sender_not_allowed(accounting_oracle: Contract, oracle_version: int, st
         accounting_oracle.submitReportExtraDataList(b"", {"from": stranger})
 
     with reverts(encode_error("SenderNotAllowed()")):
-        accounting_oracle.submitReportData(report.items, oracle_version, {"from": stranger})
+        accounting_oracle.submitReportData(
+            report.items, oracle_version, {"from": stranger}
+        )
 
     with reverts(encode_error("SenderIsNotTheConsensusContract()")):
-        accounting_oracle.submitConsensusReport(report.hash, report.refSlot, chain.time(), {"from": stranger})
+        accounting_oracle.submitConsensusReport(
+            report.hash, report.refSlot, chain.time(), {"from": stranger}
+        )
 
     with reverts(encode_error("SenderIsNotTheConsensusContract()")):
         accounting_oracle.discardConsensusReport(report.refSlot, {"from": stranger})
 
 
-def test_submitConsensusReport(accounting_oracle: Contract, hash_consensus: Contract) -> None:
+def test_submitConsensusReport(
+    accounting_oracle: Contract, hash_consensus: Contract
+) -> None:
     report_if_processing_not_started(accounting_oracle)
     last_processing_ref_slot = accounting_oracle.getLastProcessingRefSlot()
 
@@ -93,7 +109,9 @@ def test_submitConsensusReport(accounting_oracle: Contract, hash_consensus: Cont
         )
 
 
-def test_discardConsensusReport(accounting_oracle: Contract, hash_consensus: Contract) -> None:
+def test_discardConsensusReport(
+    accounting_oracle: Contract, hash_consensus: Contract
+) -> None:
     report_if_processing_not_started(accounting_oracle)
     last_processing_ref_slot = accounting_oracle.getLastProcessingRefSlot()
 
@@ -115,7 +133,9 @@ def test_discardConsensusReport(accounting_oracle: Contract, hash_consensus: Con
         )
 
 
-def test_setConsensusVersion(accounting_oracle: Contract, aragon_agent: Account) -> None:
+def test_setConsensusVersion(
+    accounting_oracle: Contract, aragon_agent: Account
+) -> None:
     # There is no role holder after upgrade
     accounting_oracle.grantRole(
         accounting_oracle.MANAGE_CONSENSUS_VERSION_ROLE(),
@@ -130,7 +150,9 @@ def test_setConsensusVersion(accounting_oracle: Contract, aragon_agent: Account)
         )
 
 
-def test_setConsensusContract(accounting_oracle: Contract, aragon_agent: Account, deployer: Account) -> None:
+def test_setConsensusContract(
+    accounting_oracle: Contract, aragon_agent: Account, deployer: Account
+) -> None:
     # There is no role holder after upgrade
     accounting_oracle.grantRole(
         accounting_oracle.MANAGE_CONSENSUS_CONTRACT_ROLE(),
@@ -183,13 +205,15 @@ def test_setConsensusContract(accounting_oracle: Contract, aragon_agent: Account
 
 
 def test_finalize_upgrade(accounting_oracle: Contract, stranger: Account):
+    # SRv3: finalizeUpgrade_v4 was removed; the contract is already at version 5,
+    # so re-calling finalizeUpgrade_v5 reverts on the version bump (5 != 5 + 1)
     with reverts(encode_error("InvalidContractVersionIncrement()")):
-        accounting_oracle.finalizeUpgrade_v4(
+        accounting_oracle.finalizeUpgrade_v5(
             1,
             {"from": stranger},
         )
     with reverts(encode_error("InvalidContractVersionIncrement()")):
-        accounting_oracle.finalizeUpgrade_v4(
+        accounting_oracle.finalizeUpgrade_v5(
             2,
             {"from": stranger},
         )
@@ -211,18 +235,34 @@ class TestSubmitReportExtraDataList:
     def test_too_short_extra_data_item(self):
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 2, [2], [2])[:36],
+                build_extra_data_item(
+                    0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 2, [2], [2]
+                )[:36],
             ]
         )
 
-        (_, _, _, _, _, totalExitedValidators, _, _) = contracts.node_operators_registry.getNodeOperatorSummary(2)
+        (_, _, _, _, _, totalExitedValidators, _, _) = (
+            contracts.node_operators_registry.getNodeOperatorSummary(2)
+        )
         with reverts(encode_error("InvalidExtraDataItem(uint256)", [0])):
             self.report(extra_data)
 
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2, 3, 4, 5], [totalExitedValidators]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 2, [2], [totalExitedValidators]),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    1,
+                    [2, 3, 4, 5],
+                    [totalExitedValidators],
+                ),
+                build_extra_data_item(
+                    1,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    2,
+                    [2],
+                    [totalExitedValidators],
+                ),
             ]
         )
 
@@ -232,7 +272,9 @@ class TestSubmitReportExtraDataList:
     def test_nos_count_zero(self):
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 2, [], [1]),
+                build_extra_data_item(
+                    0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 2, [], [1]
+                ),
             ]
         )
 
@@ -242,8 +284,12 @@ class TestSubmitReportExtraDataList:
     def test_module_id_zero(self):
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 0, [2], [1]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 0, [2], [2]),
+                build_extra_data_item(
+                    0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 0, [2], [1]
+                ),
+                build_extra_data_item(
+                    1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 0, [2], [2]
+                ),
             ]
         )
 
@@ -253,8 +299,12 @@ class TestSubmitReportExtraDataList:
     def test_unexpected_extra_data_index(self):
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2], [1]),
-                build_extra_data_item(2, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 2, [2], [1]),
+                build_extra_data_item(
+                    1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2], [1]
+                ),
+                build_extra_data_item(
+                    2, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 2, [2], [1]
+                ),
             ]
         )
 
@@ -265,8 +315,20 @@ class TestSubmitReportExtraDataList:
 
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2], [totalExitedValidators]),
-                build_extra_data_item(3, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2], [totalExitedValidators]),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    1,
+                    [2],
+                    [totalExitedValidators],
+                ),
+                build_extra_data_item(
+                    3,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    1,
+                    [2],
+                    [totalExitedValidators],
+                ),
             ]
         )
 
@@ -277,8 +339,20 @@ class TestSubmitReportExtraDataList:
 
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2], [totalExitedValidators]),
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2], [totalExitedValidators]),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    1,
+                    [2],
+                    [totalExitedValidators],
+                ),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    1,
+                    [2],
+                    [totalExitedValidators],
+                ),
             ]
         )
 
@@ -286,7 +360,9 @@ class TestSubmitReportExtraDataList:
             self.report(extra_data)
 
     def test_unsupported_extra_data_type(self):
-        extra_data = self.build_extra_data([build_extra_data_item(0, ItemType.UNSUPPORTED, 1, [1], [1])])
+        extra_data = self.build_extra_data(
+            [build_extra_data_item(0, ItemType.UNSUPPORTED, 1, [1], [1])]
+        )
 
         with reverts(
             encode_error(
@@ -304,10 +380,20 @@ class TestSubmitReportExtraDataList:
 
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, module_id, [operator_id],
-                                      [new_exited_keys]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, module_id, [operator_id],
-                                      [new_exited_keys]),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    module_id,
+                    [operator_id],
+                    [new_exited_keys],
+                ),
+                build_extra_data_item(
+                    1,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    module_id,
+                    [operator_id],
+                    [new_exited_keys],
+                ),
             ]
         )
 
@@ -321,8 +407,20 @@ class TestSubmitReportExtraDataList:
 
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, module_id, [operator_id], [current_exited_keys + 2]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, module_id, [operator_id], [current_exited_keys + 1]),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    module_id,
+                    [operator_id],
+                    [current_exited_keys + 2],
+                ),
+                build_extra_data_item(
+                    1,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    module_id,
+                    [operator_id],
+                    [current_exited_keys + 1],
+                ),
             ]
         )
 
@@ -332,19 +430,30 @@ class TestSubmitReportExtraDataList:
     def test_invalid_extra_data_sort_order_on_exited(self):
         module_id = 1
         unsorted_operator_ids = [33, 35, 34]
-        current_exited_keys = [self.get_nor_operator_exited_keys(operator_id) for operator_id in unsorted_operator_ids]
+        current_exited_keys = [
+            self.get_nor_operator_exited_keys(operator_id)
+            for operator_id in unsorted_operator_ids
+        ]
         new_exited_keys = [keys + 1 for keys in current_exited_keys]
 
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, module_id, unsorted_operator_ids, new_exited_keys),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    module_id,
+                    unsorted_operator_ids,
+                    new_exited_keys,
+                ),
             ]
         )
 
         with reverts(encode_error("InvalidExtraDataSortOrder(uint256)", [0])):
             self.report(extra_data)
 
-    def test_unexpected_extra_data_item(self, extra_data_service: ExtraDataService) -> None:
+    def test_unexpected_extra_data_item(
+        self, extra_data_service: ExtraDataService
+    ) -> None:
         extra_data = extra_data_service.collect(
             {
                 (1, 2): self.get_nor_operator_exited_keys(2) + 1,
@@ -365,8 +474,8 @@ class TestSubmitReportExtraDataList:
             encode_error(
                 "UnexpectedExtraDataItemsCount(uint256,uint256)",
                 [
-                    extra_data.items_count - 1, # expected count
-                    extra_data.items_count, # received count (all items fit into a single chunk)
+                    extra_data.items_count - 1,  # expected count
+                    extra_data.items_count,  # received count (all items fit into a single chunk)
                 ],
             )
         ):
@@ -688,7 +797,9 @@ def hash_consensus() -> Contract:
 
 
 @pytest.fixture(scope="module")
-def push_report(accounting_oracle: Contract, hash_consensus: Contract) -> Callable[[AccountingReport], int]:
+def push_report(
+    accounting_oracle: Contract, hash_consensus: Contract
+) -> Callable[[AccountingReport], int]:
     def wrapped(report: AccountingReport) -> int:
         deadline = chain.time() + 100
         accounting_oracle.submitConsensusReport(
@@ -703,7 +814,9 @@ def push_report(accounting_oracle: Contract, hash_consensus: Contract) -> Callab
 
 
 @pytest.fixture(scope="module")
-def submit_main_data(accounting_oracle: Contract, consensus_member: Account) -> Callable[[AccountingReport], None]:
+def submit_main_data(
+    accounting_oracle: Contract, consensus_member: Account
+) -> Callable[[AccountingReport], None]:
     def wrapped(report: AccountingReport) -> None:
         accounting_oracle.submitReportData(
             report.items,
@@ -739,7 +852,11 @@ def build_extra_data_item(
             type_.value.to_bytes(FIELDS_WIDTH.ITEM_TYPE, **opts),
             module_id.to_bytes(FIELDS_WIDTH.MODULE_ID, **opts),
             len(nos_ids).to_bytes(FIELDS_WIDTH.NODE_OPS_COUNT, **opts),
-            b"".join(i.to_bytes(FIELDS_WIDTH.NODE_OPERATOR_IDS, **opts) for i in nos_ids),
-            b"".join(i.to_bytes(FIELDS_WIDTH.EXITED_VALS_COUNT, **opts) for i in vals_count),
+            b"".join(
+                i.to_bytes(FIELDS_WIDTH.NODE_OPERATOR_IDS, **opts) for i in nos_ids
+            ),
+            b"".join(
+                i.to_bytes(FIELDS_WIDTH.EXITED_VALS_COUNT, **opts) for i in vals_count
+            ),
         )
     )

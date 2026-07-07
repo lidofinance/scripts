@@ -25,19 +25,19 @@ def network_name() -> Optional[str]:
 
 
 if network_name() in ("goerli", "goerli-fork"):
-    print(f'Using {color("cyan")}config_goerli.py{color} addresses')
+    print(f"Using {color('cyan')}config_goerli.py{color} addresses")
     from configs.config_goerli import *
 elif network_name() in ("holesky", "holesky-fork"):
-    print(f'Using {color("cyan")}config_holesky.py{color} addresses')
+    print(f"Using {color('cyan')}config_holesky.py{color} addresses")
     from configs.config_holesky import *
 elif network_name() in ("sepolia", "sepolia-fork"):
-    print(f'Using {color("yellow")}config_sepolia.py{color} addresses')
+    print(f"Using {color('yellow')}config_sepolia.py{color} addresses")
     from configs.config_sepolia import *
 elif network_name() in ("hoodi", "hoodi-fork"):
-    print(f'Using {color("cyan")}config_hoodi.py{color} addresses')
+    print(f"Using {color('cyan')}config_hoodi.py{color} addresses")
     from configs.config_hoodi import *
 else:
-    print(f'Using {color("magenta")}config_mainnet.py{color} addresses')
+    print(f"Using {color('magenta')}config_mainnet.py{color} addresses")
     from configs.config_mainnet import *
 
 
@@ -479,8 +479,12 @@ class ContractsLazyLoader:
         return interface.EmergencyGovernance(DAO_EMERGENCY_GOVERNANCE)
 
     @property
-    def triggerable_withdrawals_gateway(self) -> interface.TriggerableWithdrawalsGateway:
-        return interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY)
+    def top_up_gateway(self) -> interface.TopUpGateway:
+        return interface.TopUpGateway(TOP_UP_GATEWAY)
+
+    @property
+    def consolidation_gateway(self) -> interface.ConsolidationGateway:
+        return interface.ConsolidationGateway(CONSOLIDATION_GATEWAY)
 
 
 def __getattr__(name: str) -> Any:
