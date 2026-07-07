@@ -1,5 +1,5 @@
 """
-Vote 2026_04_30
+Vote 2026_07_15
 
 1. Submit a Dual Governance proposal to activate Staking Router v3 + Curated Module v2 + Community Staking Module v3
 # ======================== Core ========================

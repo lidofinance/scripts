@@ -80,9 +80,6 @@ def test_consensus(contract):
 
 
 def test_processing_state(contract):
-    # Absolute values (deadline, hashes, submitted flags) depend on whether a report
-    # has landed in the current frame — they change with the fork block / fixture
-    # timing, so only frame-independent invariants are asserted.
     consensus = interface.HashConsensus(contract.getConsensusContract())
     state = contract.getProcessingState()
 

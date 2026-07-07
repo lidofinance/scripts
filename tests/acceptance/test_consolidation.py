@@ -1,16 +1,3 @@
-"""
-Acceptance tests for the consolidation pipeline added by the SRv3 upgrade:
-
-- ConsolidationGateway — entry point for consolidation requests; deployed directly
-  (no proxy), admin and limits are set in the constructor; wired into the upgraded
-  LidoLocator; the vote registers a CircuitBreaker pauser for it (item 1.18).
-- ConsolidationBus (OssifiableProxy) — queue/batch layer between the migrator and
-  the gateway.
-- ConsolidationMigrator (OssifiableProxy) — migrates Curated (module id 1)
-  validators into Curated Module v2 (id 4); pairs are allowed via the EasyTrack
-  AllowConsolidationPair factory and disallowed by the CMC committee.
-"""
-
 import pytest
 from brownie import interface, reverts, web3  # type: ignore
 from brownie.convert.datatypes import HexString
