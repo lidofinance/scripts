@@ -239,9 +239,7 @@ class ContractsLazyLoader:
         return interface.CSHashConsensus(CS_ORACLE_HASH_CONSENSUS_ADDRESS)
 
     @property
-    def cs_verifier(self):
-        if globals().get("CS_VERIFIER_V3_ADDRESS"):
-            return interface.Verifier(CS_VERIFIER_V3_ADDRESS)
+    def cs_verifier(self) -> interface.CSVerifierV2:
         return interface.CSVerifierV2(CS_VERIFIER_V2_ADDRESS)
 
     @property

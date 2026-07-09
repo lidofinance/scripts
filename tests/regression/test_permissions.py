@@ -100,11 +100,11 @@ def protocol_permissions():
     )
     cs_verifier_address = cs_verifier.address
     burner_request_burn_my_steth_holders = (
-        [contracts.csm.accounting(), CM_ACCOUNTING_ADDRESS] if is_csm_v3 else []
+        [CS_ACCOUNTING_ADDRESS, CM_ACCOUNTING_ADDRESS] if is_csm_v3 else []
     )
     burner_request_burn_shares_holders = [contracts.accounting]
     if not is_csm_v3:
-        burner_request_burn_shares_holders.append(contracts.csm.accounting())
+        burner_request_burn_shares_holders.append(CS_ACCOUNTING_ADDRESS)
     csm_create_node_operator_holders = [cs_permissionless_gate_address, CS_VETTED_GATE_ADDRESS]
     if is_csm_v3:
         csm_create_node_operator_holders.append(CS_IDENTIFIED_DVT_CLUSTER_GATE_ADDRESS)
@@ -135,6 +135,17 @@ def protocol_permissions():
             "REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE": [cs_verifier_address],
             "REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
         })
+    csm_ignored_abi_roles = set()
+    if not is_csm_v3:
+        csm_ignored_abi_roles.update({
+            "MANAGE_TOP_UP_QUEUE_ROLE",
+            "REWIND_TOP_UP_QUEUE_ROLE",
+            "OPERATOR_ADDRESSES_ADMIN_ROLE",
+            "REPORT_GENERAL_DELAYED_PENALTY_ROLE",
+            "SETTLE_GENERAL_DELAYED_PENALTY_ROLE",
+            "REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
+            "REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE",
+        })
     csm_role_preimages = {
         "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE": "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE",
         "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE": "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE",
@@ -158,6 +169,22 @@ def protocol_permissions():
             "START_REFERRAL_SEASON_ROLE": [contracts.agent],
             "END_REFERRAL_SEASON_ROLE": [CSM_COMMITTEE_MS],
         })
+    vetted_gate_role_preimages = {}
+    if not is_csm_v3:
+        vetted_gate_role_preimages.update({
+            "START_REFERRAL_SEASON_ROLE": "START_REFERRAL_SEASON_ROLE",
+            "END_REFERRAL_SEASON_ROLE": "END_REFERRAL_SEASON_ROLE",
+        })
+    cs_parameters_registry_roles = {
+        "DEFAULT_ADMIN_ROLE": [contracts.agent],
+        "MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE": [CSM_COMMITTEE_MS] if is_csm_v3 else [],
+        "MANAGE_KEYS_LIMIT_ROLE": [],
+        "MANAGE_QUEUE_CONFIG_ROLE": [],
+        "MANAGE_PERFORMANCE_PARAMETERS_ROLE": [],
+        "MANAGE_REWARD_SHARE_ROLE": [],
+        "MANAGE_VALIDATOR_EXIT_PARAMETERS_ROLE": [],
+        "MANAGE_CURVE_PARAMETERS_ROLE": [],
+    }
 
     return {
         LIDO_LOCATOR: {
@@ -423,6 +450,7 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": csm_roles,
             "role_preimages": csm_role_preimages,
+            "ignored_abi_roles": csm_ignored_abi_roles,
         },
         CS_ACCOUNTING_ADDRESS: {
             "contract_name": "Accounting",
@@ -491,9 +519,7 @@ def protocol_permissions():
             "contract": contracts.cs_parameters_registry,
             "type": "CustomApp",
             "proxy_owner": contracts.agent,
-            "roles": {
-                "DEFAULT_ADMIN_ROLE": [contracts.agent],
-            },
+            "roles": cs_parameters_registry_roles,
         },
         CS_STRIKES_ADDRESS: {
             "contract_name": "ValidatorStrikes",
@@ -521,6 +547,7 @@ def protocol_permissions():
             "type": "CustomApp",
             "proxy_owner": contracts.agent,
             "roles": vetted_gate_roles,
+            "role_preimages": vetted_gate_role_preimages,
         },
         cs_permissionless_gate_address: {
             "contract_name": "PermissionlessGate",
@@ -669,6 +696,7 @@ def test_protocol_permissions(protocol_permissions):
         abi_roles = set(abi_roles_list)
         configured_roles = set(permissions_config["roles"])
         custom_role_preimages = set(permissions_config.get("role_preimages", {}))
+        ignored_abi_roles = set(permissions_config.get("ignored_abi_roles", {}))
 
         if contract_address in [NODE_OPERATORS_REGISTRY, SIMPLE_DVT]:
             abi_roles_list.append("MANAGE_SIGNING_KEYS")
@@ -676,8 +704,10 @@ def test_protocol_permissions(protocol_permissions):
 
         roles = permissions_config["roles"]
 
-        assert abi_roles.issubset(configured_roles), "Contract {} has undescribed ABI roles {}".format(
-            permissions_config["contract_name"], abi_roles - configured_roles
+        assert (abi_roles - ignored_abi_roles).issubset(configured_roles), (
+            "Contract {} has undescribed ABI roles {}".format(
+                permissions_config["contract_name"], abi_roles - configured_roles - ignored_abi_roles
+            )
         )
         assert configured_roles.issubset(abi_roles | custom_role_preimages), (
             "Contract {} has configured roles absent from ABI and role_preimages {}".format(
