@@ -120,10 +120,10 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 DG_PROPOSAL_METADATA = "Activate Staking Router v3 + Curated Module v2 + Community Staking Module v3"
 DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to activate Staking Router v3 + Curated Module v2 + Community Staking Module v3"
 IPFS_DESCRIPTION = """
-1. **Activate Staking Router v3**, including protocol contract upgrades and Dual Governance execution setup. Items 1.1-1.18.
-2. **Upgrade Community Staking Module to v3**, including CSM contract upgrades, role updates and identified DVT cluster setup. Items 1.19-1.52.
-3. **Add and configure Curated Module v2**. Items 1.53-1.64.
-4. **Finalize the protocol upgrade**. Item 1.65.
+1. **Activate Staking Router v3**, including protocol contract upgrades and Dual Governance execution setup. Items 1.1-1.19.
+2. **Upgrade Community Staking Module to v3**, including CSM contract upgrades, role updates and identified DVT cluster setup. Items 1.20-1.56.
+3. **Add and configure Curated Module v2**. Items 1.57-1.68.
+4. **Finalize the protocol upgrade**. Item 1.69.
 5. **Update Easy Track factories for CSM v3 and Curated Module v2 operations**. Items 2-12.
 """
 
