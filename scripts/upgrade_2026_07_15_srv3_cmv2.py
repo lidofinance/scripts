@@ -2,90 +2,99 @@
 Vote 2026_07_15
 
 1. Submit a Dual Governance proposal to activate Staking Router v3 + Curated Module v2 + Community Staking Module v3
-# ======================== Core ========================
+
+# ======================== Start Upgrade ========================
 1.1. Call UpgradeTemplate.startUpgrade
+
+# ======================== Core ========================
 1.2. Upgrade LidoLocator implementation
-1.3. Upgrade and finalize StakingRouter
-1.4. Upgrade and finalize AccountingOracle
-1.5. Upgrade and finalize ValidatorsExitBusOracle
+1.3. Upgrade StakingRouter implementation and call finalizeUpgrade_v4
+1.4. Upgrade AccountingOracle implementation and call finalizeUpgrade_v5
+1.5. Upgrade ValidatorsExitBusOracle implementation and call finalizeUpgrade_v3
 1.6. Upgrade Accounting implementation
-1.7. Upgrade WithdrawalVault implementation
+1.7. Upgrade WithdrawalVault implementation and call finalizeUpgrade_v3
 1.8. Grant Aragon APP_MANAGER_ROLE to the AGENT
 1.9. Set Lido implementation in Kernel
 1.10. Revoke Aragon APP_MANAGER_ROLE from the AGENT
-1.11. Create and grant Aragon BUFFER_RESERVE_MANAGER_ROLE to the AGENT
+1.11. Create Aragon BUFFER_RESERVE_MANAGER_ROLE and grant role manager to the AGENT
 1.12. Call finalizeUpgrade_v4 on Lido
-1.13. Grant STAKING_MODULE_SHARE_MANAGE_ROLE to EasyTrack executor
-1.14. Revoke STAKING_MODULE_UNVETTING_ROLE from old DSM
-1.15. Grant STAKING_MODULE_UNVETTING_ROLE to new DSM
-1.16. Grant TW_EXIT_LIMIT_MANAGER_ROLE to Agent on TWGateway
-1.17. Set TWGateway exit request limits
+1.13. Grant Staking Router STAKING_MODULE_SHARE_MANAGE_ROLE to EasyTrack executor
+1.14. Revoke Staking Router STAKING_MODULE_UNVETTING_ROLE from old DSM
+1.15. Grant Staking Router STAKING_MODULE_UNVETTING_ROLE to new DSM
+1.16. Grant TWG TW_EXIT_LIMIT_MANAGER_ROLE to AGENT
+1.17. Set TWG exit request limits
 1.18. Register CircuitBreaker pauser for ConsolidationGateway
+1.19. Register CircuitBreaker pauser for TopUpGateway
+
 # ======================== CSM ========================
-1.19. Upgrade and finalize CSM v3
-1.20. Upgrade and finalize ParametersRegistry v3
-1.21. Upgrade and finalize FeeOracle v3
-1.22. Upgrade CSVettedGate implementation
-1.23. Upgrade and finalize Accounting v3
-1.24. Upgrade and finalize FeeDistributor v3
-1.25. Upgrade ExitPenalties implementation
-1.26. Upgrade ValidatorStrikes implementation
-1.27. Point ValidatorStrikes to the new Ejector
-1.28. Revoke REPORT_EL_REWARDS_STEALING_PENALTY_ROLE
-1.29. Grant REPORT_GENERAL_DELAYED_PENALTY_ROLE
-1.30. Revoke SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE
-1.31. Grant SETTLE_GENERAL_DELAYED_PENALTY_ROLE
-1.32. Revoke VERIFIER_ROLE from old verifier
-1.33. Grant VERIFIER_ROLE to new verifier
-1.34. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE to VerifierV3
-1.35. Grant REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE to Easy Track
-1.36. Revoke CREATE_NODE_OPERATOR_ROLE from old PermissionlessGate
-1.37. Grant CREATE_NODE_OPERATOR_ROLE to new PermissionlessGate
-1.38. Revoke START_REFERRAL_SEASON_ROLE
-1.39. Revoke END_REFERRAL_SEASON_ROLE
-1.40. Register CircuitBreaker pauser for CSM new verifier
-1.41. Register CircuitBreaker pauser for CSM Ejector
-1.42. Register CircuitBreaker pauser for CSM identified DVT cluster gate
-1.43. Grant CREATE_NODE_OPERATOR_ROLE to identified DVT cluster gate
-1.44. Grant SET_BOND_CURVE_ROLE to identified DVT cluster gate
-1.45. Grant MANAGE_BOND_CURVES_ROLE to identified DVT cluster curve setup
-1.46. Grant MANAGE_CURVE_PARAMETERS_ROLE to identified DVT cluster curve setup
-1.47. Execute identified DVT cluster curve setup
-1.48. Grant MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE to CSM Committee
-1.49. Revoke REQUEST_BURN_SHARES_ROLE from CSM Accounting
-1.50. Grant REQUEST_BURN_MY_STETH_ROLE to CSM Accounting
-1.51. Revoke TWG full-withdrawal role from old Ejector
-1.52. Grant TWG full-withdrawal role to new Ejector
+1.20. Upgrade CSM to v3 and call finalizeUpgradeV3
+1.21. Upgrade CSM ParametersRegistry to v3 and call finalizeUpgradeV3
+1.22. Upgrade CSM FeeOracle to v3 and call finalizeUpgradeV3
+1.23. Upgrade CSM VettedGate implementation
+1.24. Upgrade CSM Accounting to v3 and call finalizeUpgradeV3
+1.25. Upgrade CSM FeeDistributor to v3 and call finalizeUpgradeV3
+1.26. Upgrade CSM ExitPenalties implementation
+1.27. Upgrade CSM ValidatorStrikes implementation
+1.28. Point CSM ValidatorStrikes to the New CSM Ejector
+1.29. Revoke CSM REPORT_EL_REWARDS_STEALING_PENALTY_ROLE from CSM Committee
+1.30. Grant CSM REPORT_GENERAL_DELAYED_PENALTY_ROLE to CSM Committee
+1.31. Revoke CSM SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE from Easy Track executor
+1.32. Grant CSM SETTLE_GENERAL_DELAYED_PENALTY_ROLE to Easy Track executor
+1.33. Revoke CSM VERIFIER_ROLE from the Old CSM Verifier
+1.34. Grant CSM VERIFIER_ROLE to the New CSM Verifier
+1.35. Grant CSM REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE to the New CSM Verifier
+1.36. Grant CSM REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE to Easy Track executor
+1.37. Revoke CSM CREATE_NODE_OPERATOR_ROLE from the Old CSM PermissionlessGate
+1.38. Grant CSM CREATE_NODE_OPERATOR_ROLE to the New CSM PermissionlessGate
+1.39. Revoke VettedGate START_REFERRAL_SEASON_ROLE from AGENT
+1.40. Revoke VettedGate END_REFERRAL_SEASON_ROLE from CSM Committee
+1.41. Set name Identified Community Stakers for CSM VettedGate gate
+1.42. Unregister CircuitBreaker pauser for Old CSM Verifier
+1.43. Unregister CircuitBreaker pauser for Old CSM Ejector
+1.44. Register CircuitBreaker pauser for New CSM Verifier
+1.45. Register CircuitBreaker pauser for New CSM Ejector
+1.46. Register CircuitBreaker pauser for CSM Identified DVT Cluster gate
+1.47. Grant CSM CREATE_NODE_OPERATOR_ROLE to Identified DVT Cluster gate
+1.48. Grant CSM Accounting SET_BOND_CURVE_ROLE to Identified DVT Cluster gate
+1.49. Grant CSM Accounting MANAGE_BOND_CURVES_ROLE to Identified DVT Cluster curve setup
+1.50. Grant CSM ParametersRegistry MANAGE_CURVE_PARAMETERS_ROLE to Identified DVT Cluster curve setup
+1.51. Execute Identified DVT Cluster curve setup
+1.52. Grant CSM ParametersRegistry MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE to CSM Committee
+1.53. Revoke Burner REQUEST_BURN_SHARES_ROLE from CSM Accounting
+1.54. Grant Burner REQUEST_BURN_MY_STETH_ROLE to CSM Accounting
+1.55. Revoke TWG ADD_FULL_WITHDRAWAL_REQUEST_ROLE from the Old CSM Ejector
+1.56. Grant TWG ADD_FULL_WITHDRAWAL_REQUEST_ROLE to the New CSM Ejector
+
 # ======================== Curated Module ========================
-1.53. Add Curated module to StakingRouter
-1.54. Grant REQUEST_BURN_MY_STETH_ROLE to Curated Accounting
-1.55. Grant TWG full-withdrawal role to Curated Ejector
-1.56. Grant RESUME_ROLE to agent on Curated module
-1.57. Resume Curated module
-1.58. Revoke RESUME_ROLE from agent on Curated module
-1.59. Update Curated HashConsensus frame config
-1.60. Register CircuitBreaker pauser for Curated module
-1.61. Register CircuitBreaker pauser for Curated Accounting
-1.62. Register CircuitBreaker pauser for Curated FeeOracle
-1.63. Register CircuitBreaker pauser for Curated Verifier
-1.64. Register CircuitBreaker pauser for Curated Ejector
+1.57. Add Curated Module v2 to StakingRouter
+1.58. Grant Burner REQUEST_BURN_MY_STETH_ROLE to Curated Accounting
+1.59. Grant TWG ADD_FULL_WITHDRAWAL_REQUEST_ROLE to Curated Ejector
+1.60. Grant CM RESUME_ROLE to AGENT
+1.61. Resume Curated Module v2
+1.62. Revoke CM RESUME_ROLE from AGENT
+1.63. Update Curated HashConsensus initial epoch
+1.64. Register CircuitBreaker pauser for Curated Module v2
+1.65. Register CircuitBreaker pauser for Curated Accounting
+1.66. Register CircuitBreaker pauser for Curated FeeOracle
+1.67. Register CircuitBreaker pauser for Curated Verifier
+1.68. Register CircuitBreaker pauser for Curated Ejector
 # ======================== Finish Upgrade ========================
-1.65. Call UpgradeTemplate.finishUpgrade
+1.69. Call UpgradeTemplate.finishUpgrade
 
 # ======================== EasyTrack ========================
-2. Remove CSMSettleElStealingPenalty ET factory
-3. Remove CSMSetVettedGateTree ET factory
-4. Add UpdateStakingModuleShareLimits ET factory
-5. Add AllowConsolidationPair ET factory
-6. Add SetMerkleGateTree CSM ET factory
-7. Add ReportWithdrawalsForSlashedValidators CSM ET factory
-8. Add SettleGeneralDelayedPenalty CSM ET factory
-9. Add SetMerkleGateTree CM ET factory
-10. Add ReportWithdrawalsForSlashedValidators CM ET factory
-11. Add SettleGeneralDelayedPenalty CM ET factory
-12. Add CreateOrUpdateOperatorGroup CM ET factory
+2. Remove CSMSettleElStealingPenalty factory from Easy Track
+3. Remove CSMSetVettedGateTree factory from Easy Track
+4. Add UpdateStakingModuleShareLimits (for CSM) factory to Easy Track
+5. Add AllowConsolidationPair factory to Easy Track
+6. Add SetMerkleGateTree CSM factory to Easy Track
+7. Add ReportWithdrawalsForSlashedValidators CSM factory to Easy Track
+8. Add SettleGeneralDelayedPenalty CSM factory to Easy Track
+9. Add SetMerkleGateTree CM factory to Easy Track
+10. Add ReportWithdrawalsForSlashedValidators CM factory to Easy Track
+11. Add SettleGeneralDelayedPenalty CM factory to Easy Track
+12. Add CreateOrUpdateOperatorGroup CM factory to Easy Track
 
-Vote passed & executed on Apr-30-2026 02:04:12 PM +UTC, block 2721709.
+Vote passed & executed on [TBA] +UTC, block [TBA]
 
 """
 
@@ -104,9 +113,8 @@ from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_descrip
 from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
-
 # UPGRADE_VOTE_SCRIPT address lives in configs/config_mainnet.py and is synced
-# from core/deployed-local.json by sync_fork_addresses.py.
+# from core/deployed-mainnet.json.
 
 # ============================= Description ==================================
 DG_PROPOSAL_METADATA = "Activate Staking Router v3 + Curated Module v2 + Community Staking Module v3"
