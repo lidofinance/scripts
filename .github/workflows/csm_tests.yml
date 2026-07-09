@@ -93,17 +93,9 @@ jobs:
         id: modules-regression-vote-block
         shell: bash
         run: |
-          response=$(curl -sS --fail \
-            -X POST \
-            -H "Content-Type: application/json" \
-            --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
-            ${{ env.HARDHAT_NODE_URL }})
-          block_hex=$(printf "%s" "$response" | sed -E 's/.*"result":"([^"]+)".*/\1/')
-          if [ -z "$block_hex" ] || [ "$block_hex" = "$response" ]; then
-            echo "Unable to parse block number from response: $response" >&2
-            exit 1
-          fi
-          echo "vote_prev_block=$((16#${block_hex#0x}))" >> "$GITHUB_OUTPUT"
+          vote_prev_block=$(make --no-print-directory __get_rpc_latest_block_number CORE_TESTS_TARGET_RPC_URL=${{ env.HARDHAT_NODE_URL }})
+          echo "vote_prev_block=$vote_prev_block" >> "$GITHUB_OUTPUT"
+        working-directory: scripts
 
       - name: Prepare test environment with Brownie
         run: PYTHONPATH=$PWD poetry run brownie run scripts/ci/prepare_environment --network mfh-1
