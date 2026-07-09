@@ -20,6 +20,23 @@ from utils.config import (
 from utils.test.helpers import ONE_ETH
 from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
 
+IGNORED_SNAPSHOT_KEYS = {
+    # Lido v4 finalization requires an AccountingOracle report. The report rebases
+    # stETH and v4 changes CL-accounting representation, so these values cannot be
+    # compared directly between the pre- and post-upgrade scenarios.
+    "totalSupply",
+    "getTotalPooledEther()",
+    "getBufferedEther()",
+    "getBeaconStat()",
+    "getTotalShares()",
+    "getSharesByPooledEth(1 ETH)",
+    "getTotalELRewardsCollected()",
+    "balanceOf(TREASURY)",
+    "sharesOf(TREASURY)",
+    "balanceOf(accounts[0])",
+    "sharesOf(accounts[0])",
+}
+
 
 @pytest.fixture(scope="module")
 def staker():
@@ -85,8 +102,7 @@ def test_submit_snapshot(helpers, staker, vote_ids_from_env, dg_proposal_ids_fro
     after: Dict[str, Dict[str, any]] = steps()
     step_diffs: Dict[str, Dict[str, ValueChanged]] = {}
 
-    expected_diffs = {
-    }
+    expected_diffs = {}
 
     for step, pair_of_snapshots in dict_zip(before, after).items():
         (before, after) = pair_of_snapshots
@@ -95,6 +111,9 @@ def test_submit_snapshot(helpers, staker, vote_ids_from_env, dg_proposal_ids_fro
         for key in expected_diffs:
             if key in step_diffs[step] and step_diffs[step][key] == expected_diffs[key]:
                 del step_diffs[step][key]
+
+        for key in IGNORED_SNAPSHOT_KEYS:
+            step_diffs[step].pop(key, None)
 
     for step_name, diff in step_diffs.items():
         assert_no_diffs(step_name, diff)
