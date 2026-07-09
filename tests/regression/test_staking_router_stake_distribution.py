@@ -2,11 +2,9 @@ from typing import Dict
 
 from brownie import chain, interface
 
-from utils.config import EASYTRACK_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY, contracts
-from utils.evm_script import encode_call_script
+from utils.config import contracts
 from utils.test.csm_helpers import csm_add_node_operator, fill_csm_operators_with_keys
 from utils.test.deposits_helpers import fill_deposit_buffer
-from utils.test.easy_track_helpers import create_and_enact_motion
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
 from utils.test.staking_router_helpers import StakingModuleStatus
 
@@ -274,22 +272,15 @@ def test_target_share_distribution(stranger):
         elif module.id == 3:
             fill_csm_operators_with_keys(3, min_keys_cnt)
 
-    motion_calldata = encode_call_script(
-        [
-            (
-                contracts.staking_router.address,
-                contracts.staking_router.updateModuleShares.encode_input(
-                    module.id, target_share, module.priorityExitShareThreshold
-                ),
-            )
-        ]
-    )
-    create_and_enact_motion(
-        contracts.easy_track,
-        stranger,
-        EASYTRACK_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY,
-        motion_calldata,
-        stranger,
+    contracts.staking_router.updateStakingModule(
+        module.id,
+        target_share,
+        module.priorityExitShareThreshold,
+        module.module_fee,
+        module.treasury_fee,
+        module.maxDepositsPerBlock,
+        module.minDepositBlockDistance,
+        {"from": contracts.agent},
     )
 
     modules = get_modules_info(contracts.staking_router)
