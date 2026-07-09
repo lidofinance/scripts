@@ -36,10 +36,30 @@ ZERO_BYTES32 = b'\x00' * 32
 
 
 EXPECTED_SNAPSHOT_DIFFS: dict[str, Any] = {
+    # Lido v4 migrates these v3 packed slots to new storage locations and clears
+    # the legacy slots. They must stay cleared after every scenario action.
+    "lido.Lido.clBalanceAndClValidators": ZERO_BYTES32,
+    "lido.Lido.bufferedEtherAndDepositedValidators": ZERO_BYTES32,
 }
 
 
 IGNORED_SNAPSHOT_KEYS: set[str] = {
+    # The upgrade requires an AccountingOracle report before Lido v4 migration.
+    # That report rebases stETH; v4 also changes the representation returned by
+    # getBeaconStat. Their absolute values are therefore not comparable across
+    # the pre-upgrade and post-upgrade frames.
+    "totalSupply",
+    "balanceOf(eth_whale)",
+    "balanceOf(steth_whale)",
+    "sharesOf(eth_whale)",
+    "getBeaconStat",
+    "getBufferedEther",
+    "getTotalPooledEther",
+    "getTotalELRewardsCollected",
+    "getTotalShares",
+    "getSharesByPooledEth(1 ETH)",
+    "lido.Lido.totalELRewardsCollected",
+    "lido.StETH.totalAndExternalShares",
     "getFeeDistribution",
 }
 
