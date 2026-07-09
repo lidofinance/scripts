@@ -89,6 +89,22 @@ jobs:
         run: poetry run brownie networks import network-config.yaml True
         working-directory: scripts
 
+      - name: Capture pre-vote block for staking modules regression
+        id: modules-regression-vote-block
+        shell: bash
+        run: |
+          response=$(curl -sS --fail \
+            -X POST \
+            -H "Content-Type: application/json" \
+            --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+            ${{ env.HARDHAT_NODE_URL }})
+          block_hex=$(printf "%s" "$response" | sed -E 's/.*"result":"([^"]+)".*/\1/')
+          if [ -z "$block_hex" ] || [ "$block_hex" = "$response" ]; then
+            echo "Unable to parse block number from response: $response" >&2
+            exit 1
+          fi
+          echo "vote_prev_block=$((16#${block_hex#0x}))" >> "$GITHUB_OUTPUT"
+
       - name: Prepare test environment with Brownie
         run: PYTHONPATH=$PWD poetry run brownie run scripts/ci/prepare_environment --network mfh-1
         working-directory: scripts
@@ -97,9 +113,10 @@ jobs:
           ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
 
       - name: Run staking modules regression tests
-        uses: lidofinance/staking-modules/.github/actions/regression-tests@develop
+        uses: lidofinance/community-staking-module/.github/actions/regression-tests@agent/staking-modules-regression-action
         with:
-          repository: lidofinance/staking-modules
-          ref: main
-          path: staking-modules
+          repository: lidofinance/community-staking-module
+          ref: develop
+          path: community-staking-module
           rpc_url: ${{ env.HARDHAT_NODE_URL }}
+          vote_prev_block: ${{ steps.modules-regression-vote-block.outputs.vote_prev_block }}
