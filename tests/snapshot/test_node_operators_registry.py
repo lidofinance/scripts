@@ -3,7 +3,7 @@ import pytest
 from web3 import Web3
 from datetime import datetime
 from typing import Any, Dict, Callable
-from brownie import ZERO_ADDRESS, Wei, convert, chain, multicall
+from brownie import Contract, ZERO_ADDRESS, Wei, convert, chain, multicall
 from brownie.convert.datatypes import ReturnValue
 from tests.snapshot.utils import get_slot
 
@@ -16,6 +16,21 @@ PUBKEY_LENGTH = 48
 SIGNATURE_LENGTH = 96
 DEPOSIT_SIZE = Wei("32 ether")
 RANDOM_SEED = datetime.now().timestamp()
+NODE_OPERATORS_REGISTRY_MODULE_ID = 1
+
+LEGACY_LIDO_DEPOSIT_ABI = [
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "_maxDepositsCount", "type": "uint256"},
+            {"internalType": "uint256", "name": "_stakingModuleId", "type": "uint256"},
+            {"internalType": "bytes", "name": "_depositCalldata", "type": "bytes"},
+        ],
+        "name": "deposit",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    }
+]
 
 
 def grant_roles(voting_eoa, agent_eoa):
@@ -84,6 +99,26 @@ def test_node_operator_basic_flow(
     }
 
     def create_actions(dsm_eoa, manager_eoa):
+        def deposit():
+            if contracts.lido.getContractVersion() < 4:
+                # In Lido v3, DSM calls Lido, which forwards ETH and the request
+                # to the StakingRouter. The v4 Lido ABI no longer exposes it.
+                legacy_lido = Contract.from_abi("LegacyLidoDeposit", contracts.lido.address, LEGACY_LIDO_DEPOSIT_ABI)
+                return legacy_lido.deposit(
+                    deposits_count,
+                    NODE_OPERATORS_REGISTRY_MODULE_ID,
+                    "0x",
+                    {"from": dsm_eoa},
+                )
+
+            # In Lido v4, DSM calls the StakingRouter directly; it determines
+            # the actual deposit count from current allocation and module keys.
+            return contracts.staking_router.deposit(
+                NODE_OPERATORS_REGISTRY_MODULE_ID,
+                "0x",
+                {"from": dsm_eoa},
+            )
+
         actions = {
             "add_node_operator": lambda: contracts.node_operators_registry.addNodeOperator(
                 "new_node_operator", new_node_operator["reward_address"], {"from": manager_eoa}
@@ -99,7 +134,7 @@ def test_node_operator_basic_flow(
                 new_node_operator["id"], new_node_operator["staking_limit"], {"from": manager_eoa}
             ),
             "submit": lambda: contracts.lido.submit(ZERO_ADDRESS, {"from": staker, "amount": submit_amount}),
-            "deposit": lambda: contracts.lido.deposit(deposits_count, 1, "0x", {"from": dsm_eoa}),
+            "deposit": deposit,
             "remove_signing_keys": lambda: contracts.node_operators_registry.removeSigningKeys(
                 new_node_operator["id"],
                 new_node_operator["staking_limit"],
