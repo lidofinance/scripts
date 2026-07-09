@@ -1,24 +1,44 @@
 from typing import Dict
 
-from utils.config import contracts
+from brownie import chain, interface
+
+from utils.config import EASYTRACK_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY, contracts
+from utils.evm_script import encode_call_script
 from utils.test.csm_helpers import csm_add_node_operator, fill_csm_operators_with_keys
 from utils.test.deposits_helpers import fill_deposit_buffer
+from utils.test.easy_track_helpers import create_and_enact_motion
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
 from utils.test.staking_router_helpers import StakingModuleStatus
 
 TOTAL_BASIS_POINTS = 10000
+WC_TYPE_02 = 2
 
 
 class Module:
     def __init__(
-        self, id, stake_share_limit, module_fee, treasury_fee, deposited_keys, exited_keys, depositable_keys, status,
-        priorityExitShareThreshold, maxDepositsPerBlock, minDepositBlockDistance
+        self,
+        id,
+        address,
+        stake_share_limit,
+        module_fee,
+        treasury_fee,
+        deposited_keys,
+        exited_keys,
+        depositable_keys,
+        status,
+        priorityExitShareThreshold,
+        maxDepositsPerBlock,
+        minDepositBlockDistance,
+        withdrawal_credentials_type,
+        total_module_stake,
     ):
         self.id = id
+        self.address = address
         self.target_share = stake_share_limit
         self.status = status
         self.active_keys = 0
         self.depositable_keys = depositable_keys
+        self.current_allocation = 0
         self.allocated_keys = 0
         self.allocation_limit = 0
         self.module_fee = module_fee
@@ -28,6 +48,12 @@ class Module:
         self.priorityExitShareThreshold = priorityExitShareThreshold
         self.maxDepositsPerBlock = maxDepositsPerBlock
         self.minDepositBlockDistance = minDepositBlockDistance
+        self.withdrawal_credentials_type = withdrawal_credentials_type
+        self.total_module_stake = total_module_stake
+
+
+def ceil_div(a: int, b: int) -> int:
+    return -(-a // b)
 
 
 def get_modules_info(staking_router):
@@ -37,71 +63,107 @@ def get_modules_info(staking_router):
 
     for digest in module_digests:
         (_, _, state, summary) = digest
-        (id, _, module_fee, treasury_fee, stake_share_limit, status, _, _, _, _, priorityExitShareThreshold,
-         maxDepositsPerBlock, minDepositBlockDistance) = state
+        (
+            id,
+            address,
+            module_fee,
+            treasury_fee,
+            stake_share_limit,
+            status,
+            _,
+            _,
+            _,
+            exited_keys_stored,
+            priorityExitShareThreshold,
+            maxDepositsPerBlock,
+            minDepositBlockDistance,
+            withdrawalCredentialsType,
+            _,
+        ) = state
         (exited_keys, deposited_keys, depositable_keys) = summary
-        if status != StakingModuleStatus.Active.value:
-            # reset depositable keys in case of module is inactivated
-            # https://github.com/lidofinance/lido-dao/blob/331ecec7fe3c8d57841fd73ccca7fb1cc9bc174e/contracts/0.8.9/StakingRouter.sol#L1230-L1232
-            depositable_keys = 0
+
+        total_module_stake = 0
+        if withdrawalCredentialsType == WC_TYPE_02:
+            total_module_stake = interface.IStakingModuleV2(address).getTotalModuleStake()
 
         modules[id] = Module(
-            id, stake_share_limit, module_fee, treasury_fee, deposited_keys, exited_keys, depositable_keys, status,
-            priorityExitShareThreshold, maxDepositsPerBlock, minDepositBlockDistance
+            id,
+            address,
+            stake_share_limit,
+            module_fee,
+            treasury_fee,
+            deposited_keys,
+            max(exited_keys, exited_keys_stored),
+            depositable_keys,
+            status,
+            priorityExitShareThreshold,
+            maxDepositsPerBlock,
+            minDepositBlockDistance,
+            withdrawalCredentialsType,
+            total_module_stake,
         )
 
-    # total_active_keys = sum([module.active_keys for module in modules.values()])
     return modules
 
 
-def prep_modules_info(modules: Dict[int, Module]):
-    # reset keys counters
-    total_active_keys = 0
+def prep_modules_info(modules: Dict[int, Module], deposit_size: int):
+    # reset the allocation counters; a module's current allocation is measured in
+    # 32-ETH validator equivalents: active validators for WC 0x01 modules,
+    # ceil(total module stake / 32 ETH) for WC 0x02 modules
+    total_allocation = 0
 
     for module in modules.values():
         module.active_keys = module.deposited_keys - module.exited_keys
         assert module.active_keys >= 0
-        total_active_keys += module.active_keys
+        if module.withdrawal_credentials_type == WC_TYPE_02:
+            module.current_allocation = ceil_div(module.total_module_stake, deposit_size)
+        else:
+            module.current_allocation = module.active_keys
+        module.allocated_keys = 0
+        total_allocation += module.current_allocation
 
-    return total_active_keys
+    return total_allocation
 
 
-def calc_allocation(modules: Dict[int, Module], keys_to_allocate: int, ignore_depositable: bool = False):
-    total_active_keys = prep_modules_info(modules)
-    # simulate target share distribution
-    # https://github.com/lidofinance/lido-dao/blob/331ecec7fe3c8d57841fd73ccca7fb1cc9bc174e/contracts/0.8.9/StakingRouter.sol#L1266-L1268
+def calc_allocation(modules: Dict[int, Module], deposit_amount: int, is_top_up: bool = False):
+    # simulate SRLib._getDepositAllocations: everything is computed in 32-ETH
+    # validator-equivalent units, the results are returned in wei
+    deposit_size = contracts.staking_router.INITIAL_DEPOSIT_SIZE()
+    max_effective_balance = contracts.staking_router.MAX_EFFECTIVE_BALANCE_WC_TYPE_02()
+    units_to_allocate = deposit_amount // deposit_size
 
-    target_total_active_keys = total_active_keys + keys_to_allocate
+    total_validators = units_to_allocate + prep_modules_info(modules, deposit_size)
 
     for module in modules.values():
-        target_active_keys = module.target_share * target_total_active_keys // TOTAL_BASIS_POINTS
-        module.allocation_limit = (
-            target_active_keys
-            if ignore_depositable
-            else min(target_active_keys, module.active_keys + module.depositable_keys)
-        )
-        module.allocated_keys = 0
+        if module.status != StakingModuleStatus.Active.value:
+            module.allocation_limit = module.current_allocation
+            continue
+        if is_top_up and module.withdrawal_credentials_type == WC_TYPE_02:
+            capacity = module.active_keys * max_effective_balance // deposit_size
+        else:
+            capacity = module.current_allocation + module.depositable_keys
+        target_validators = module.target_share * total_validators // TOTAL_BASIS_POINTS
+        module.allocation_limit = min(target_validators, capacity)
 
-    # simulate min first strategy
-    # https://github.com/lidofinance/lido-dao/blob/331ecec7fe3c8d57841fd73ccca7fb1cc9bc174e/contracts/0.8.9/StakingRouter.sol#L1274
-
-    for _ in range(keys_to_allocate):
-        # find the module with the lowest active_keys
-        min_active_keys = modules[1].active_keys
-        min_active_keys_module = modules[1]
-
+    # simulate min first strategy: every unit goes to the least filled module
+    # that still has free capacity, first index wins the tie
+    for _ in range(units_to_allocate):
+        best_module = None
         for module in modules.values():
-            if module.active_keys < min_active_keys and module.active_keys < module.allocation_limit:
-                min_active_keys = module.active_keys
-                min_active_keys_module = module
+            filled = module.current_allocation + module.allocated_keys
+            if filled >= module.allocation_limit:
+                continue
+            if best_module is None or filled < best_module.current_allocation + best_module.allocated_keys:
+                best_module = module
+        if best_module is None:
+            break
+        best_module.allocated_keys += 1
 
-        # allocate one key to the module if possible
-        if min_active_keys_module.active_keys < min_active_keys_module.allocation_limit:
-            min_active_keys_module.active_keys += 1
-            min_active_keys_module.allocated_keys += 1
-
-    total_allocated_keys = sum([module.allocated_keys for module in modules.values()])
-    return total_allocated_keys, target_total_active_keys
+    allocated = [module.allocated_keys * deposit_size for module in modules.values()]
+    new_allocations = [
+        (module.current_allocation + module.allocated_keys) * deposit_size for module in modules.values()
+    ]
+    return sum(allocated), allocated, new_allocations
 
 
 def assure_depositable_keys(stranger):
@@ -117,28 +179,37 @@ def assure_depositable_keys(stranger):
 def test_stake_distribution(stranger):
     """
     Test stake distribution among the staking modules
-    1. checks that result of `getDepositsAllocation` matches the local allocation calculations
+    1. checks that result of `getDepositAllocations` matches the local allocation calculations
     2. checks that deposits to modules can be made according to the calculated allocation
     """
     assure_depositable_keys(stranger)
 
-    keys_to_allocate = 100  # keys to allocate to the modules
-    allocation_from_contract = contracts.staking_router.getDepositsAllocation(keys_to_allocate)
+    deposits_count = 100  # seed deposits to add to the buffer
+    fill_deposit_buffer(deposits_count)
+
+    deposit_amount = contracts.lido.getDepositableEther()
+    allocation_from_contract = contracts.staking_router.getDepositAllocations(deposit_amount, False)
 
     # collect the modules information
     modules = get_modules_info(contracts.staking_router)
-    total_allocated_keys, _ = calc_allocation(modules, keys_to_allocate)
+    total_allocated, allocated, new_allocations = calc_allocation(modules, deposit_amount)
 
     # check that local allocation matches the contract allocation
-    assert allocation_from_contract == (total_allocated_keys, [module.active_keys for module in modules.values()])
+    assert allocation_from_contract == (total_allocated, allocated, new_allocations)
 
-    # fill the deposit buffer
-    fill_deposit_buffer(total_allocated_keys)
-
-    # perform deposits to the modules
+    # perform deposits to the modules; the router computes the deposits count itself:
+    # min(maxDepositsPerBlock, module allocation / 32 ETH)
     for module in modules.values():
-        if module.allocated_keys > 0:
-            contracts.lido.deposit(module.allocated_keys, module.id, "0x", {"from": contracts.deposit_security_module})
+        expected_deposits = min(module.maxDepositsPerBlock, module.allocated_keys)
+        if expected_deposits == 0:
+            continue
+
+        (_, deposited_before, _) = contracts.staking_router.getStakingModuleSummary(module.id)
+        chain.mine(module.minDepositBlockDistance)
+        contracts.staking_router.deposit(module.id, "0x", {"from": contracts.deposit_security_module})
+        (_, deposited_after, _) = contracts.staking_router.getStakingModuleSummary(module.id)
+
+        assert deposited_after - deposited_before == expected_deposits
 
     # check that the new active keys in the modules match the expected values
     module_digests_after_deposit = contracts.staking_router.getAllStakingModuleDigests()
@@ -146,107 +217,120 @@ def test_stake_distribution(stranger):
 
     for digest in module_digests_after_deposit:
         (_, _, state, summary) = digest
-        (id, _, _, _, _, _, _, _, _, _, _, _, _) = state
+        (id, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = state
         (exited_keys, deposited_keys, _) = summary
 
         active_keys_after_deposit = deposited_keys - exited_keys
-        assert expected_modules_state[id].active_keys == active_keys_after_deposit
+        expected = expected_modules_state[id]
+        assert active_keys_after_deposit == expected.active_keys + min(
+            expected.maxDepositsPerBlock, expected.allocated_keys
+        )
 
 
 def test_target_share_distribution(stranger):
-    keys_to_allocate = 100  # keys to allocate to the modules
-    keys_to_allocate_double = keys_to_allocate * 2
+    """
+    Test that `stakeShareLimit` caps the deposit allocation of a module
+    1. sets a module a share limit that admits exactly `keys_to_allocate` more seed deposits
+    2. checks that the share limit is the binding constraint (the module has spare keys above it)
+    3. checks that on an oversized allocation the module fills up to the share limit and stops,
+       the rest spills over to the other modules
+    4. checks the contract allocation matches the local model and a real deposit follows it
+    """
+    deposit_size = contracts.staking_router.INITIAL_DEPOSIT_SIZE()
 
     modules = get_modules_info(contracts.staking_router)
-    min_target_share = 1  # 0.01% = 1 / 10000
-    nor_m_id = 1
-    nor_m = modules[nor_m_id]
+    total_allocation = prep_modules_info(modules, deposit_size)
 
-    cur_total_active_keys = prep_modules_info(modules)
+    # target module: the least filled active module which can be topped up with keys
+    # (no key onboarding helper for Curated Module v2 yet, so ids 2-3 only)
+    candidates = [m for m in modules.values() if m.status == StakingModuleStatus.Active.value and m.id in (2, 3)]
+    module = min(candidates, key=lambda m: m.current_allocation)
+    module_idx = list(modules.keys()).index(module.id)
 
-    module = sorted(modules.values(), key=lambda m: m.active_keys / cur_total_active_keys * TOTAL_BASIS_POINTS)[0]
+    # scenario size: must exceed the 1 bp share granularity (1 bp of the total)
+    keys_to_allocate = max(100, 2 * (total_allocation // TOTAL_BASIS_POINTS))
+    required_depositable_keys = 2 * keys_to_allocate
 
-    # calc some hypothetical module allocation share for testing
-    expected_active_keys_1 = module.active_keys + keys_to_allocate
-    expected_active_keys_2 = module.active_keys + keys_to_allocate_double
+    # a share limit that admits exactly +keys_to_allocate to the target module
+    target_share = (module.current_allocation + keys_to_allocate) * TOTAL_BASIS_POINTS // (
+        total_allocation + keys_to_allocate
+    ) + 1
+    assert target_share <= module.priorityExitShareThreshold
 
-    expected_total_active_keys = cur_total_active_keys + keys_to_allocate
-    expected_total_active_keys_2 = cur_total_active_keys + keys_to_allocate_double
-
-    # calc module share that is guaranteed to fit `keys_to_allocate` deposited keys amount (upper cap)
-    expected_target_share_1 = (expected_active_keys_1 * TOTAL_BASIS_POINTS // expected_total_active_keys) + 1
-    # calc module share for doubled `keys_to_allocate` keys amount, expected to overcome the 1st target share
-    expected_target_share_2 = expected_active_keys_2 * TOTAL_BASIS_POINTS // expected_total_active_keys_2
-
-    # ensure 2nd keys amount is enough to overcome the 1st target share (after 1st keys amount) at least by 1 basis point
-    assert expected_target_share_1 >= min_target_share
-    assert expected_target_share_2 > expected_target_share_1
-
-    # force update module `targetShare` value to simulate new allocation
-    module.target_share = expected_target_share_1
-
-    expected_total_allocated_keys, expected_total_active_keys = calc_allocation(modules, keys_to_allocate, True)
-    assert expected_total_allocated_keys == keys_to_allocate
-    assert module.active_keys >= expected_active_keys_1
-    assert module.allocated_keys == keys_to_allocate
-    assert nor_m.allocated_keys == 0
-
-    expected_total_allocated_keys, expected_total_active_keys = calc_allocation(modules, keys_to_allocate_double, True)
-    assert expected_total_allocated_keys == keys_to_allocate_double
-    assert module.active_keys < expected_active_keys_2
-    assert module.allocated_keys < keys_to_allocate_double
-    assert nor_m.allocated_keys <= keys_to_allocate_double
-
-    # set the new target share value, which will be reached after 1s deposit of `keys_to_allocate`` batch
-    contracts.staking_router.updateStakingModule(
-        module.id,
-        expected_target_share_1,
-        module.priorityExitShareThreshold,
-        module.module_fee,
-        module.treasury_fee,
-        module.maxDepositsPerBlock,
-        module.minDepositBlockDistance,
-        {"from": contracts.agent},
+    # the doubled amount must not fit into the target share (share granularity check)
+    doubled_share = (
+        (module.current_allocation + required_depositable_keys)
+        * TOTAL_BASIS_POINTS
+        // (total_allocation + required_depositable_keys)
     )
-    # add enough depositable keys to the target module to overcome the target share
-    # at least first 3 NOs, each with 1/3 of the `keys_to_allocate_double` available keys
-    if module.id == 2:
-        fill_simple_dvt_ops_vetted_keys(stranger, 3, (module.deposited_keys + keys_to_allocate_double + 3) // 3)
-    elif module.id == 3:
-        fill_csm_operators_with_keys(3, (module.deposited_keys + keys_to_allocate_double + 3) // 3)
+    assert doubled_share > target_share
 
-    # update the modules info and recalc the allocation according to the module limits
+    # the module must have more depositable keys than the share admits,
+    # so the share limit is the binding constraint, not the keys
+    if module.depositable_keys < required_depositable_keys:
+        min_keys_cnt = (required_depositable_keys + 2) // 3
+        if module.id == 2:
+            fill_simple_dvt_ops_vetted_keys(stranger, 3, min_keys_cnt)
+        elif module.id == 3:
+            fill_csm_operators_with_keys(3, min_keys_cnt)
+
+    motion_calldata = encode_call_script(
+        [
+            (
+                contracts.staking_router.address,
+                contracts.staking_router.updateModuleShares.encode_input(
+                    module.id, target_share, module.priorityExitShareThreshold
+                ),
+            )
+        ]
+    )
+    create_and_enact_motion(
+        contracts.easy_track,
+        stranger,
+        EASYTRACK_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY,
+        motion_calldata,
+        stranger,
+    )
+
     modules = get_modules_info(contracts.staking_router)
-    expected_total_allocated_keys, expected_total_active_keys = calc_allocation(modules, keys_to_allocate_double, False)
+    module = modules[module.id]
+    assert module.target_share == target_share
+    assert module.depositable_keys >= required_depositable_keys
 
-    assert expected_total_allocated_keys == keys_to_allocate_double
-    assert module.active_keys < expected_active_keys_2
-    assert module.allocated_keys < keys_to_allocate_double
-    assert nor_m.allocated_keys <= keys_to_allocate_double
+    # the share limit admits the base amount and the contract agrees with the model
+    deposit_amount = keys_to_allocate * deposit_size
+    allocations = calc_allocation(modules, deposit_amount)
+    assert contracts.staking_router.getDepositAllocations(deposit_amount, False) == allocations
+    assert module.allocation_limit >= module.current_allocation + keys_to_allocate
+    assert module.current_allocation + module.depositable_keys > module.allocation_limit
 
-    allocation_from_contract = contracts.staking_router.getDepositsAllocation(keys_to_allocate_double)
-    # check that local allocation matches the contract allocation
-    assert allocation_from_contract == (
-        expected_total_allocated_keys,
-        [module.active_keys for module in modules.values()],
+    # find an allocation amount that overflows the target module: the module fills up
+    # to its share limit and stops, no matter how close the other modules levels are
+    overflow_amount = required_depositable_keys * deposit_size
+    for _ in range(10):
+        total_allocated, allocated, new_allocations = calc_allocation(modules, overflow_amount)
+        if new_allocations[module_idx] == module.allocation_limit * deposit_size:
+            break
+        overflow_amount *= 2
+
+    assert new_allocations[module_idx] == module.allocation_limit * deposit_size
+    assert module.current_allocation + module.depositable_keys > module.allocation_limit
+    assert allocated[module_idx] < overflow_amount
+    assert contracts.staking_router.getDepositAllocations(overflow_amount, False) == (
+        total_allocated,
+        allocated,
+        new_allocations,
     )
 
-    # fill the deposit buffer
-    fill_deposit_buffer(keys_to_allocate_double)
+    # the new share limit applies to a real deposit as well
+    fill_deposit_buffer(keys_to_allocate)
+    (_, allocated, _) = calc_allocation(modules, contracts.lido.getDepositableEther())
 
-    # perform deposits to the modules
-    for module in modules.values():
-        if module.allocated_keys > 0:
-            contracts.lido.deposit(module.allocated_keys, module.id, "0x", {"from": contracts.deposit_security_module})
+    expected_deposits = min(module.maxDepositsPerBlock, allocated[module_idx] // deposit_size)
+    if expected_deposits > 0:
+        (_, deposited_before, _) = contracts.staking_router.getStakingModuleSummary(module.id)
+        chain.mine(module.minDepositBlockDistance)
+        contracts.staking_router.deposit(module.id, "0x", {"from": contracts.deposit_security_module})
+        (_, deposited_after, _) = contracts.staking_router.getStakingModuleSummary(module.id)
 
-    # check that the new active keys in the modules match the expected values
-    module_digests_after_deposit = contracts.staking_router.getAllStakingModuleDigests()
-    expected_modules_state = modules
-
-    for digest in module_digests_after_deposit:
-        (_, _, state, summary) = digest
-        (id, _, _, _, _, _, _, _, _, _, _, _, _) = state
-        (exited_keys, deposited_keys, _) = summary
-
-        active_keys_after_deposit = deposited_keys - exited_keys
-        assert expected_modules_state[id].active_keys == active_keys_after_deposit
+        assert deposited_after - deposited_before == expected_deposits
