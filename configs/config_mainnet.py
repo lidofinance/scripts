@@ -186,8 +186,8 @@ CURATED_V2_EJECTOR = "0xdC9058e6D8b71Adc71306De8d8E7335e414aB7A1"  # SRV3
 CURATED_V2_CIRCUIT_BREAKER_PAUSER = "0x2570e0b22AD904501dfB0d49575991ACB801dD91"  # SRV3
 
 # SRv3/CMv2 upgrade omnibus (UpgradeVoteScript) — the vote script reads its items
-# from this contract. Fork-deployed, synced from core/deployed-local.json.
-UPGRADE_VOTE_SCRIPT = "0xA2B2Fc588E2B69B781E9DdCE8d8671cd9CbbC224"  # SRV3
+# from this contract. Synced from core/deployed-mainnet.json.
+UPGRADE_VOTE_SCRIPT = "0xE6530830A2cf90773cB232748b2c674c27b6E0CA"  # SRV3
 
 # NodeOperatorsRegistry clone aka SimpleDVT
 SIMPLE_DVT_IMPL = "0x6828b023e737f96B168aCd0b5c6351971a4F81aE"
