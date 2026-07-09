@@ -35,6 +35,11 @@
   },
   {
     "inputs": [],
+    "name": "InvalidMerkleGateAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "CONFIG",
     "outputs": [
       {
