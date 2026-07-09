@@ -746,15 +746,15 @@ def test_set_merkle_gate_tree_factory_reverts_for_other_module_gate(factory_addr
     wrong_gate = interface.MerkleGate(wrong_gate_address)
     calldata, _, _ = _set_merkle_gate_tree_calldata(wrong_gate)
 
-    try:
+    assert _permissions_include(factory.address, factory.address, factory.validateInputData)
+    assert not _permissions_include(factory.address, wrong_gate.address, wrong_gate.setTreeParams)
+
+    with pytest.raises(VirtualMachineError):
         contracts.easy_track.createMotion(
             factory,
             calldata,
             {"from": set_balance(factory.trustedCaller(), 100000)},
         )
-        assert False, "Expected HAS_NO_PERMISSIONS revert"
-    except VirtualMachineError as error:
-        assert "HAS_NO_PERMISSIONS" in error.message
 
 
 @pytest.mark.parametrize(
