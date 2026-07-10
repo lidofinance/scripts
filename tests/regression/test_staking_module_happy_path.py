@@ -22,6 +22,7 @@ STAKING_MODULE_MANAGE_ROLE = Web3.keccak(text="STAKING_MODULE_MANAGE_ROLE")
 SET_NODE_OPERATOR_LIMIT_ROLE = Web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")
 STAKING_CONTROL_ROLE = Web3.keccak(text="STAKING_CONTROL_ROLE")
 
+
 @pytest.fixture(scope="function")
 def impersonated_agent(accounts):
     return accounts.at(contracts.agent.address, force=True)
@@ -61,13 +62,15 @@ def deposit_and_check_keys(nor, first_id, second_id, third_id, keys_count, imper
     deposited_keys_second_before = nor.getNodeOperatorSummary(second_id)["totalDepositedValidators"]
     deposited_keys_base_before = nor.getNodeOperatorSummary(third_id)["totalDepositedValidators"]
     validators_before = contracts.lido.getBeaconStat().dict()["depositedValidators"]
+    (_, _, deposited_since_report_before, _) = contracts.lido.getBalanceStats()
 
     module_total_deposited_keys_before = nor.getStakingModuleSummary()["totalDepositedValidators"]
 
     print(f"Deposit {keys_count} keys for module {nor.module_id}")
-    tx = contracts.lido.deposit(keys_count, nor.module_id, "0x", {"from": contracts.deposit_security_module.address})
+    tx = contracts.staking_router.deposit(nor.module_id, "0x", {"from": contracts.deposit_security_module.address})
 
     validators_after = contracts.lido.getBeaconStat().dict()["depositedValidators"]
+    (_, _, deposited_since_report_after, _) = contracts.lido.getBalanceStats()
     module_total_deposited_keys_after = nor.getStakingModuleSummary()["totalDepositedValidators"]
 
     just_deposited = validators_after - validators_before
@@ -75,6 +78,7 @@ def deposit_and_check_keys(nor, first_id, second_id, third_id, keys_count, imper
     if just_deposited:
         assert tx.events["DepositedValidatorsChanged"]["depositedValidators"] == validators_after
         assert tx.events["Unbuffered"]["amount"] == just_deposited * ETH(32)
+        assert deposited_since_report_after - deposited_since_report_before == just_deposited * ETH(32)
         assert module_total_deposited_keys_before + just_deposited == module_total_deposited_keys_after
 
     deposited_keys_first_after = nor.getNodeOperatorSummary(first_id)["totalDepositedValidators"]
@@ -107,12 +111,8 @@ def parse_exited_signing_keys_count_changed_logs(logs):
     return res
 
 
-
-
 def module_happy_path(staking_module, extra_data_service, impersonated_agent, stranger, helpers):
     nor_exited_count, _, _ = contracts.staking_router.getStakingModuleSummary(staking_module.module_id)
-
-    # all_modules = contracts.staking_router.getStakingModules()
 
     contracts.staking_router.grantRole(
         STAKING_MODULE_MANAGE_ROLE,
@@ -135,15 +135,16 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, st
     )
 
     contracts.acl.grantPermission(
-        impersonated_agent,
-        contracts.lido,
-        STAKING_CONTROL_ROLE,
-        {"from": impersonated_agent}
+        impersonated_agent, contracts.lido, STAKING_CONTROL_ROLE, {"from": impersonated_agent}
     )
 
     # pausing csm due to very high amount of keys in the queue
     csm_module_id = 3
     set_staking_module_status(csm_module_id, StakingModuleStatus.Stopped)
+    # stop Curated Module v2 as well: with depositable keys and zero stake it would
+    # become the min-first allocation target and steal deposits from the tested module
+    curated_v2_module_id = 4
+    set_staking_module_status(curated_v2_module_id, StakingModuleStatus.Stopped)
 
     # fill buffer enough to deposit 310 keys
     fill_deposit_buffer(310)
@@ -259,7 +260,9 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, st
 
     # Events
     exited_signing_keys_count_events = parse_exited_signing_keys_count_changed_logs(
-        filter_transfer_logs(extra_report_tx_list[0].logs, web3.keccak(text="ExitedSigningKeysCountChanged(uint256,uint256)"))
+        filter_transfer_logs(
+            extra_report_tx_list[0].logs, web3.keccak(text="ExitedSigningKeysCountChanged(uint256,uint256)")
+        )
     )
     assert exited_signing_keys_count_events[0]["nodeOperatorId"] == no1_id
     assert exited_signing_keys_count_events[0]["exitedValidatorsCount"][0] == no1_exited_before + 5
@@ -275,8 +278,6 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, st
         staking_module.setNodeOperatorStakingLimit(
             op_index, no["totalDepositedValidators"] + 10, {"from": impersonated_agent}
         )
-
-
 
     # Case 6
     # -- SActivate target limit for "1st" NO
@@ -296,13 +297,15 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, st
 
     assert first_no_summary_before["depositableValidatorsCount"] > 0
 
-    target_limit_tx = staking_module.updateTargetValidatorsLimits['uint256,uint256,uint256'](no1_id, 1, 0, {"from": STAKING_ROUTER})
+    target_limit_tx = staking_module.updateTargetValidatorsLimits["uint256,uint256,uint256"](
+        no1_id, 1, 0, {"from": STAKING_ROUTER}
+    )
 
     helpers.assert_single_event_named(
-            "TargetValidatorsCountChanged",
-            target_limit_tx,
-            {"nodeOperatorId": no1_id, "targetValidatorsCount": 0, "targetLimitMode": 1},
-        )
+        "TargetValidatorsCountChanged",
+        target_limit_tx,
+        {"nodeOperatorId": no1_id, "targetValidatorsCount": 0, "targetLimitMode": 1},
+    )
 
     first_no_summary_after = staking_module.getNodeOperatorSummary(no1_id)
 
@@ -326,7 +329,9 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, st
     assert no3_deposited_keys_before != no3_deposited_keys_after
 
     # Disable target limit
-    target_limit_tx = staking_module.updateTargetValidatorsLimits['uint256,uint256,uint256'](no1_id, 0, 0, {"from": STAKING_ROUTER})
+    target_limit_tx = staking_module.updateTargetValidatorsLimits["uint256,uint256,uint256"](
+        no1_id, 0, 0, {"from": STAKING_ROUTER}
+    )
 
     helpers.assert_single_event_named(
         "TargetValidatorsCountChanged",
