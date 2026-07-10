@@ -14,6 +14,10 @@ from utils.config import (
     contracts,
 )
 from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
+from utils.balance import set_balance
+
+
+SENDER_BALANCE_IN_ETH = 10
 
 
 @pytest.fixture(scope="module")
@@ -65,6 +69,11 @@ def snapshot(voting, vote_id):
 
 def steps(voting, call_target, vote_time) -> Dict[str, Dict[str, ValueChanged]]:
     result = {}
+
+    # Snapshot tests disable the implicit balance middleware. Fund every sender
+    # explicitly on both sides of chain.revert() so the two runs start alike.
+    for sender in {LDO_HOLDER_ADDRESS_FOR_TESTS, *LDO_VOTE_EXECUTORS_FOR_TESTS}:
+        set_balance(sender, SENDER_BALANCE_IN_ETH)
 
     params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
     vote_items = [(call_target.address, call_target.perform_call.encode_input())]

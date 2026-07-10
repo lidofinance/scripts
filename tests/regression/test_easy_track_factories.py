@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import List, Dict
 
 import pytest
-from brownie import interface, accounts, web3
+from brownie import interface, accounts, web3, ZERO_ADDRESS
 from brownie.exceptions import VirtualMachineError
 from eth_typing import HexStr
 from eth_abi.abi import encode
@@ -13,6 +13,12 @@ from utils.balance import set_balance
 from utils.config import contracts, EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER
 from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
 from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
+from utils.test.curated_v2_helpers import (
+    DEFAULT_OPERATOR_WEIGHT,
+    _get_fresh_node_operator,
+    _get_role_member_or_grant,
+    curated_v2_add_node_operator,
+)
 from utils.test.simple_dvt_helpers import (
     fill_simple_dvt_ops_keys,
     get_managers_address,
@@ -919,3 +925,202 @@ def test_update_staking_module_share_limits_factory(stranger):
     module_after = contracts.staking_router.getStakingModule(module_id)
     assert module_after["stakeShareLimit"] == new_share
     assert module_after["priorityExitShareThreshold"] == new_priority_exit_threshold
+
+
+# ---------------------------------------------------------------------------
+# AllowConsolidationPair
+# ---------------------------------------------------------------------------
+
+CONSOLIDATION_GROUP_NAME = "scripts-regression-consolidation"
+
+
+def _encode_nor_external_operator_data(module_id, node_operator_id):
+    # ExternalOperatorLib NOR entry: bytes1(OperatorType.NOR == 0) + uint8(moduleId) + uint64(nodeOperatorId)
+    return b"\x00" + int(module_id).to_bytes(1, "big") + int(node_operator_id).to_bytes(8, "big")
+
+
+def _find_active_source_operator():
+    nor = contracts.node_operators_registry
+    for no_id in range(nor.getNodeOperatorsCount()):
+        if nor.getNodeOperatorIsActive(no_id):
+            return no_id
+    raise AssertionError("No active operator found in the curated (source) module")
+
+
+def _split_operator_shares(count):
+    # MetaRegistry requires sub-operator shares to sum to MAX_BP (10000); the factory ignores the actual split
+    share = DEFAULT_OPERATOR_WEIGHT // count
+    shares = [share] * count
+    shares[0] += DEFAULT_OPERATOR_WEIGHT - sum(shares)
+    return shares
+
+
+def _link_consolidation_pair(stranger, targets_count=1):
+    """Link a curated (source, module 1) operator with `targets_count` fresh CM (target, module 4) operators.
+
+    Mirrors the precondition the factory validates on-chain: source and target operators must belong to the
+    same MetaRegistry group — the source registered as an `externalOperators` NOR entry and each target as a
+    `subNodeOperators` entry. Returns (source_operator_id, source_reward_address, sorted target_operator_ids).
+    """
+    source_id = _find_active_source_operator()
+    reward_address = contracts.node_operators_registry.getNodeOperator(source_id, False)["rewardAddress"]
+
+    # fresh CM operators have no bonded keys but are enough for the allowlist; each starts in its own group.
+    # the professional gate consumes an address on use, so rotate to an unconsumed one before each creation.
+    target_ids = []
+    node_operator = stranger
+    for _ in range(targets_count):
+        node_operator = _get_fresh_node_operator(node_operator)
+        target_ids.append(curated_v2_add_node_operator(node_operator, 0))
+    for target_id in target_ids:
+        assert contracts.cm.getNodeOperatorIsActive(target_id)
+
+    meta_registry = contracts.cm_meta_registry
+    group_manager = _get_role_member_or_grant(meta_registry, meta_registry.MANAGE_OPERATOR_GROUPS_ROLE())
+
+    # dissolve the singleton groups the fresh operators were auto-assigned to, so they can be regrouped together
+    for target_id in target_ids:
+        singleton_group_id = meta_registry.getNodeOperatorGroupId(target_id)
+        if singleton_group_id != meta_registry.NO_GROUP_ID():
+            meta_registry.createOrUpdateOperatorGroup(singleton_group_id, ("", [], []), {"from": group_manager})
+
+    # one group links the source operator (external NOR entry) with all target operators
+    external_operator_data = _encode_nor_external_operator_data(CONSOLIDATION_SOURCE_MODULE_ID, source_id)
+    sub_node_operators = list(zip(target_ids, _split_operator_shares(len(target_ids))))
+    meta_registry.createOrUpdateOperatorGroup(
+        meta_registry.NO_GROUP_ID(),
+        (CONSOLIDATION_GROUP_NAME, sub_node_operators, [(external_operator_data,)]),
+        {"from": group_manager},
+    )
+
+    group_id = meta_registry.getNodeOperatorGroupId(target_ids[0])
+    assert group_id != meta_registry.NO_GROUP_ID()
+    for target_id in target_ids:
+        assert meta_registry.getNodeOperatorGroupId(target_id) == group_id
+
+    return source_id, reward_address, sorted(target_ids)
+
+
+def _assert_create_evm_script_reverts(factory, creator, calldata, reason):
+    try:
+        factory.createEVMScript(creator, calldata)
+    except VirtualMachineError as error:
+        assert reason in error.message, f"expected {reason}, got: {error.message}"
+        return
+    raise AssertionError(f"Expected {reason} revert")
+
+
+def test_allow_consolidation_pair_factory():
+    factory = interface.AllowConsolidationPair(EASYTRACK_ALLOW_CONSOLIDATION_PAIR_FACTORY)
+    migrator = interface.ConsolidationMigrator(CONSOLIDATION_MIGRATOR)
+
+    assert factory.consolidationMigrator() == migrator.address
+    assert factory.stakingRouter() == STAKING_ROUTER
+    assert factory.sourceModuleId() == CONSOLIDATION_SOURCE_MODULE_ID
+    assert factory.targetModuleId() == CONSOLIDATION_TARGET_MODULE_ID
+    assert _permissions_include(factory.address, migrator.address, migrator.allowPair)
+
+    submitter = "0x0000000000000000000000000000000000001234"
+    calldata = _encode_calldata(["address", "uint256", "uint256[]"], [submitter, 3, [1, 2, 5]])
+    decoded = factory.decodeEVMScriptCallData(calldata)
+    assert decoded[0] == submitter
+    assert decoded[1] == 3
+    assert list(decoded[2]) == [1, 2, 5]
+
+
+def test_allow_consolidation_pair_factory_input_validation(stranger):
+    factory = interface.AllowConsolidationPair(EASYTRACK_ALLOW_CONSOLIDATION_PAIR_FACTORY)
+    nor = contracts.node_operators_registry
+
+    source_id = _find_active_source_operator()
+    reward_address = nor.getNodeOperator(source_id, False)["rewardAddress"]
+    source_count = nor.getNodeOperatorsCount()
+
+    # submitter must be non-zero
+    _assert_create_evm_script_reverts(
+        factory,
+        reward_address,
+        _encode_calldata(["address", "uint256", "uint256[]"], [ZERO_ADDRESS, source_id, [0]]),
+        "ZERO_SUBMITTER",
+    )
+
+    # source operator must exist in the curated module
+    _assert_create_evm_script_reverts(
+        factory,
+        reward_address,
+        _encode_calldata(["address", "uint256", "uint256[]"], [stranger.address, source_count + 1000, [0]]),
+        "SOURCE_OPERATOR_ID_DOES_NOT_EXIST",
+    )
+
+    # creator must be the source operator reward address (or its manager)
+    _assert_create_evm_script_reverts(
+        factory,
+        stranger,
+        _encode_calldata(["address", "uint256", "uint256[]"], [stranger.address, source_id, [0]]),
+        "CALLER_IS_NOT_SOURCE_OPERATOR_OWNER_OR_MANAGER",
+    )
+
+    # source operator is not linked to any target group in the MetaRegistry
+    _assert_create_evm_script_reverts(
+        factory,
+        reward_address,
+        _encode_calldata(["address", "uint256", "uint256[]"], [stranger.address, source_id, [0]]),
+        "OPERATORS_ARE_NOT_LINKED_BY_META_REGISTRY",
+    )
+
+
+def test_allow_consolidation_pair_via_motion(stranger):
+    factory = interface.AllowConsolidationPair(EASYTRACK_ALLOW_CONSOLIDATION_PAIR_FACTORY)
+    migrator = interface.ConsolidationMigrator(CONSOLIDATION_MIGRATOR)
+
+    source_id, reward_address, target_ids = _link_consolidation_pair(stranger)
+    submitter = stranger.address
+
+    for target_id in target_ids:
+        assert not migrator.isPairAllowed(source_id, target_id)
+
+    calldata = _encode_calldata(["address", "uint256", "uint256[]"], [submitter, source_id, target_ids])
+
+    create_and_enact_motion(
+        contracts.easy_track,
+        set_balance(reward_address, 100000),
+        factory,
+        calldata,
+        stranger,
+    )
+
+    allowed_targets = list(migrator.getAllowedTargets(source_id))
+    for target_id in target_ids:
+        assert migrator.isPairAllowed(source_id, target_id)
+        assert migrator.getSubmitter(source_id, target_id) == submitter
+        assert target_id in allowed_targets
+
+
+def test_allow_consolidation_pair_via_motion_multiple_targets(stranger):
+    factory = interface.AllowConsolidationPair(EASYTRACK_ALLOW_CONSOLIDATION_PAIR_FACTORY)
+    migrator = interface.ConsolidationMigrator(CONSOLIDATION_MIGRATOR)
+
+    source_id, reward_address, target_ids = _link_consolidation_pair(stranger, targets_count=2)
+    submitter = stranger.address
+
+    # the factory enforces a strictly ascending target list; several targets share one source group
+    assert len(target_ids) == 2
+    assert target_ids == sorted(set(target_ids))
+    for target_id in target_ids:
+        assert not migrator.isPairAllowed(source_id, target_id)
+
+    calldata = _encode_calldata(["address", "uint256", "uint256[]"], [submitter, source_id, target_ids])
+
+    create_and_enact_motion(
+        contracts.easy_track,
+        set_balance(reward_address, 100000),
+        factory,
+        calldata,
+        stranger,
+    )
+
+    allowed_targets = list(migrator.getAllowedTargets(source_id))
+    for target_id in target_ids:
+        assert migrator.isPairAllowed(source_id, target_id)
+        assert migrator.getSubmitter(source_id, target_id) == submitter
+        assert target_id in allowed_targets
