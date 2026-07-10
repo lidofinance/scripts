@@ -10,9 +10,11 @@ from pytest_check import check
 from web3.types import Wei
 
 from tests.conftest import Helpers
+from utils.balance import set_balance
 from utils.config import contracts, LDO_TOKEN, VOTING, AGENT, INITIAL_MAX_EXTERNAL_RATIO_BP
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
+from utils.test.helpers import ETH
 from utils.test.snapshot_helpers import _chain_snapshot
 
 from .utils import get_slot
@@ -64,6 +66,16 @@ IGNORED_SNAPSHOT_KEYS: set[str] = {
 }
 
 
+@pytest.fixture(scope="function", autouse=True)
+def fund_lido_snapshot_senders(eth_whale: Account, some_contract: Account, stranger: Account):
+    """Fund impersonated external senders without relying on balance middleware."""
+    funding_balance = ETH(100_000)
+    set_balance(eth_whale.address, funding_balance)
+    set_balance(some_contract.address, funding_balance)
+    set_balance(stranger.address, funding_balance)
+    set_balance(contracts.execution_layer_rewards_vault.address, funding_balance)
+
+
 def test_lido_no_changes_in_views(sandwich_upgrade: SandwichFn):
     """Test that no views change during the upgrade process."""
 
@@ -88,12 +100,9 @@ def test_lido_end_user_snapshot(
     actions = (
         # send ether to Lido to mint stETH
         _call(
-            web3.eth.send_transaction,
-            {
-                "from": eth_whale.address,
-                "to": lido.address,
-                "value": Wei(eth_amount // 2),
-            },
+            eth_whale.transfer,
+            lido.address,
+            Wei(eth_amount // 2),
         ),
         _call(
             lido.submit,

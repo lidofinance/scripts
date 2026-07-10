@@ -1,4 +1,5 @@
 import json
+from contextlib import contextmanager
 from typing import List
 
 import brownie.exceptions
@@ -126,7 +127,10 @@ class Helpers:
                     if accounts.at(holder_addr, force=True).balance() < topup:
                         accounts[0].transfer(holder_addr, topup)
                     account = accounts.at(holder_addr, force=True)
-                    dao_voting.vote(vote_id, True, False, {"from": account})
+                    # Voting accounts are topped up above, so bypass the middleware
+                    # that temporarily replaces their balances and then restores them.
+                    with without_balance_check_middleware():
+                        dao_voting.vote(vote_id, True, False, {"from": account})
 
         # wait for the vote to end
         # time_to_end = dao_voting.getVote(vote_id)["startDate"] + get_vote_duration() - chain.time()
@@ -325,6 +329,20 @@ def balance_check_middleware(make_request, web3):
         return result
 
     return middleware
+
+
+@contextmanager
+def without_balance_check_middleware():
+    middleware = web3.middleware_onion.get("balance_check")
+    if middleware is None:
+        yield
+        return
+
+    web3.middleware_onion.remove("balance_check")
+    try:
+        yield
+    finally:
+        web3.middleware_onion.add(middleware, name="balance_check")
 
 
 def get_active_proposals_from_env() -> [int]:
