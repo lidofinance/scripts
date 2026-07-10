@@ -211,6 +211,26 @@ class ContractsLazyLoader:
         return interface.CSModule(CSM_ADDRESS)
 
     @property
+    def cm(self) -> interface.CuratedModule:
+        return interface.CuratedModule(CM_MODULE_ADDRESS)
+
+    @property
+    def cm_accounting(self) -> interface.ModuleAccounting:
+        return interface.ModuleAccounting(self.cm.ACCOUNTING())
+
+    @property
+    def cm_meta_registry(self) -> interface.MetaRegistry:
+        return interface.MetaRegistry(self.cm.META_REGISTRY())
+
+    @property
+    def cm_professional_operator_gate(self) -> interface.CuratedGate:
+        return interface.CuratedGate(CM_PROFESSIONAL_OPERATOR_GATE_ADDRESS)
+
+    @property
+    def cm_parameters_registry(self) -> interface.ParametersRegistry:
+        return interface.ParametersRegistry(self.cm.PARAMETERS_REGISTRY())
+
+    @property
     def cs_permissionless_gate(self) -> interface.PermissionlessGate:
         return interface.PermissionlessGate(CS_PERMISSIONLESS_GATE_ADDRESS)
 

@@ -5,12 +5,12 @@ from utils.test.easy_track_helpers import _encode_calldata
 from utils.test.helpers import ETH
 from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
 from utils.config import contracts, CSM_COMMITTEE_MS, EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY
-from utils.test.merkle_tree import ICSTree
+from utils.test.merkle_tree import AddressTree
 
 
 
 def csm_set_ics_tree_members(members):
-    tree = ICSTree.new(members)
+    tree = AddressTree.new(members)
     calldata = _encode_calldata(["bytes32", "string"], [tree.root, "0xabc"])
     tx = contracts.easy_track.createMotion(EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY, calldata, {"from": CSM_COMMITTEE_MS})
     chain.sleep(60 * 60 * 24 * 3)

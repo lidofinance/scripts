@@ -2,8 +2,15 @@ from typing import Dict
 
 from brownie import chain, interface
 
-from utils.config import contracts
+from utils.config import (
+    CS_MODULE_ID,
+    CURATED_STAKING_MODULE_ID,
+    CURATED_V2_STAKING_MODULE_ID,
+    SIMPLE_DVT_MODULE_ID,
+    contracts,
+)
 from utils.test.csm_helpers import csm_add_node_operator, fill_csm_operators_with_keys
+from utils.test.curated_v2_helpers import ensure_curated_v2_depositable_keys
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_vetted_keys
 from utils.test.staking_router_helpers import StakingModuleStatus
@@ -166,12 +173,14 @@ def calc_allocation(modules: Dict[int, Module], deposit_amount: int, is_top_up: 
 
 def assure_depositable_keys(stranger):
     modules = get_modules_info(contracts.staking_router)
-    if not modules[1].depositable_keys:
+    if not modules[CURATED_STAKING_MODULE_ID].depositable_keys:
         pass
-    if not modules[2].depositable_keys:
+    if not modules[SIMPLE_DVT_MODULE_ID].depositable_keys:
         fill_simple_dvt_ops_vetted_keys(stranger, 3, 5)
-    if not modules[3].depositable_keys:
+    if not modules[CS_MODULE_ID].depositable_keys:
         csm_add_node_operator(contracts.csm, contracts.cs_permissionless_gate, contracts.cs_accounting, stranger)
+    if not modules[CURATED_V2_STAKING_MODULE_ID].depositable_keys:
+        ensure_curated_v2_depositable_keys(5, stranger)
 
 
 def test_stake_distribution(stranger):
@@ -240,8 +249,12 @@ def test_target_share_distribution(stranger):
     total_allocation = prep_modules_info(modules, deposit_size)
 
     # target module: the least filled active module which can be topped up with keys
-    # (no key onboarding helper for Curated Module v2 yet, so ids 2-3 only)
-    candidates = [m for m in modules.values() if m.status == StakingModuleStatus.Active.value and m.id in (2, 3)]
+    candidates = [
+        m
+        for m in modules.values()
+        if m.status == StakingModuleStatus.Active.value
+        and m.id in (SIMPLE_DVT_MODULE_ID, CS_MODULE_ID, CURATED_V2_STAKING_MODULE_ID)
+    ]
     module = min(candidates, key=lambda m: m.current_allocation)
     module_idx = list(modules.keys()).index(module.id)
 
@@ -267,10 +280,12 @@ def test_target_share_distribution(stranger):
     # so the share limit is the binding constraint, not the keys
     if module.depositable_keys < required_depositable_keys:
         min_keys_cnt = (required_depositable_keys + 2) // 3
-        if module.id == 2:
+        if module.id == SIMPLE_DVT_MODULE_ID:
             fill_simple_dvt_ops_vetted_keys(stranger, 3, min_keys_cnt)
-        elif module.id == 3:
+        elif module.id == CS_MODULE_ID:
             fill_csm_operators_with_keys(3, min_keys_cnt)
+        elif module.id == CURATED_V2_STAKING_MODULE_ID:
+            ensure_curated_v2_depositable_keys(required_depositable_keys, stranger)
 
     contracts.staking_router.updateStakingModule(
         module.id,
