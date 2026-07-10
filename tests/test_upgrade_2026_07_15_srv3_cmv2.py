@@ -541,9 +541,9 @@ def runtime_upgrade_context():
     # Load ABIs for Brownie receipt event decoding.
     interface.CircuitBreaker(global_config["circuitBreaker"])
     interface.ValidatorsExitBusOracle(core_config["validatorsExitBusOracle"])
-    interface.CSParametersRegistry(csm_config["parametersRegistry"])
+    interface.ParametersRegistry(csm_config["parametersRegistry"])
     interface.OneShotCurveSetup(csm_config["identifiedDVTClusterCurveSetup"])
-    interface.CSAccounting(csm_config["accounting"])  # BondCurveAdded (curve setup item)
+    interface.ModuleAccounting(csm_config["accounting"])  # BondCurveAdded (curve setup item)
     # ExitBalanceLimitSet exists only in the new ValidatorsExitBusOracle impl ABI (not in the
     # local interfaces/*.json), so fetch that impl from the explorer to make it decodable.
     Contract.from_explorer(convert.to_address(core_config["newValidatorsExitBusOracleImpl"]))
@@ -969,7 +969,7 @@ def test_vote(
     # =========================================================================
     if expected_dg_proposal_id is not None:
         # --- pre-DG state snapshots used by the after-DG acceptance checks ---
-        initial_cs_fee_oracle_consensus_version = interface.CSFeeOracle(ctx["cs_fee_oracle"]).getConsensusVersion()
+        initial_cs_fee_oracle_consensus_version = interface.FeeOracle(ctx["cs_fee_oracle"]).getConsensusVersion()
 
         details = timelock.getProposalDetails(expected_dg_proposal_id)
         if details["status"] != PROPOSAL_STATUS["executed"]:
@@ -1614,7 +1614,7 @@ def test_vote(
         )
         assert interface.WithdrawalVault(ctx["withdrawal_vault"]).getContractVersion() == WITHDRAWAL_VAULT_CONTRACT_VERSION
         assert interface.Lido(ctx["lido"]).getContractVersion() == LIDO_CONTRACT_VERSION
-        assert interface.CSFeeOracle(ctx["cs_fee_oracle"]).getConsensusVersion() == ctx["cs_fee_oracle_consensus_version"]
+        assert interface.FeeOracle(ctx["cs_fee_oracle"]).getConsensusVersion() == ctx["cs_fee_oracle_consensus_version"]
 
         # Staking Router role migration & new roles.
         assert staking_router.hasRole(STAKING_MODULE_SHARE_MANAGE_ROLE, ctx["easytrack_evm_script_executor"])
