@@ -19,12 +19,6 @@ RANDOM_SEED = datetime.now().timestamp()
 NODE_OPERATORS_REGISTRY_MODULE_ID = 1
 
 def grant_roles(agent_eoa):
-    # contracts.acl.grantPermission(
-    #     contracts.agent,
-    #     contracts.node_operators_registry,
-    #     convert.to_uint(Web3.keccak(text="MANAGE_SIGNING_KEYS")),
-    #     {"from": contracts.agent},
-    # )
     contracts.acl.grantPermission(
         agent_eoa,
         contracts.node_operators_registry,
@@ -68,8 +62,6 @@ def test_node_operator_basic_flow(
     submit_amount = deposits_count * DEPOSIT_SIZE
 
     staker, _ = accounts[0], accounts[1]
-    # new_node_operator_id = contracts.node_operators_registry_v1.getNodeOperatorsCount()
-    # new_node_operator_validators_count = 10
     new_node_operator = {
         "id": contracts.node_operators_registry.getNodeOperatorsCount(),
         "reward_address": accounts[3].address,
