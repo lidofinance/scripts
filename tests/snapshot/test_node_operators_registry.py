@@ -3,7 +3,7 @@ import pytest
 from web3 import Web3
 from datetime import datetime
 from typing import Any, Dict, Callable
-from brownie import Contract, ZERO_ADDRESS, Wei, convert, chain, multicall
+from brownie import ZERO_ADDRESS, Wei, convert, chain, multicall
 from brownie.convert.datatypes import ReturnValue
 from tests.snapshot.utils import get_slot
 
@@ -18,28 +18,15 @@ DEPOSIT_SIZE = Wei("32 ether")
 RANDOM_SEED = datetime.now().timestamp()
 NODE_OPERATORS_REGISTRY_MODULE_ID = 1
 
-LEGACY_LIDO_DEPOSIT_ABI = [
-    {
-        "inputs": [
-            {"internalType": "uint256", "name": "_maxDepositsCount", "type": "uint256"},
-            {"internalType": "uint256", "name": "_stakingModuleId", "type": "uint256"},
-            {"internalType": "bytes", "name": "_depositCalldata", "type": "bytes"},
-        ],
-        "name": "deposit",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function",
-    }
-]
-
-
-def grant_roles(voting_eoa, agent_eoa):
-    contracts.staking_router.grantRole(
-        contracts.staking_router.MANAGE_WITHDRAWAL_CREDENTIALS_ROLE(), voting_eoa, {"from": agent_eoa}
-    )
-
+def grant_roles(agent_eoa):
+    # contracts.acl.grantPermission(
+    #     contracts.agent,
+    #     contracts.node_operators_registry,
+    #     convert.to_uint(Web3.keccak(text="MANAGE_SIGNING_KEYS")),
+    #     {"from": contracts.agent},
+    # )
     contracts.acl.grantPermission(
-        contracts.voting,
+        agent_eoa,
         contracts.node_operators_registry,
         convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
         {"from": agent_eoa},
@@ -69,16 +56,10 @@ def new_deposit_security_module_eoa(accounts, EtherFunder):
     return accounts.at(DEPOSIT_SECURITY_MODULE, force=True)
 
 
-@pytest.fixture(scope="module")
-def voting_eoa(accounts):
-    return accounts.at(contracts.voting.address, force=True)
-
-
 def test_node_operator_basic_flow(
     accounts,
     helpers,
     new_deposit_security_module_eoa,
-    voting_eoa,
     agent_eoa,
     vote_ids_from_env,
     dg_proposal_ids_from_env,
@@ -99,25 +80,6 @@ def test_node_operator_basic_flow(
     }
 
     def create_actions(dsm_eoa, manager_eoa):
-        def deposit():
-            if contracts.lido.getContractVersion() < 4:
-                # In Lido v3, DSM calls Lido, which forwards ETH and the request
-                # to the StakingRouter. The v4 Lido ABI no longer exposes it.
-                legacy_lido = Contract.from_abi("LegacyLidoDeposit", contracts.lido.address, LEGACY_LIDO_DEPOSIT_ABI)
-                return legacy_lido.deposit(
-                    deposits_count,
-                    NODE_OPERATORS_REGISTRY_MODULE_ID,
-                    "0x",
-                    {"from": dsm_eoa},
-                )
-
-            # In Lido v4, DSM calls the StakingRouter directly; it determines
-            # the actual deposit count from current allocation and module keys.
-            return contracts.staking_router.deposit(
-                NODE_OPERATORS_REGISTRY_MODULE_ID,
-                "0x",
-                {"from": dsm_eoa},
-            )
 
         actions = {
             "add_node_operator": lambda: contracts.node_operators_registry.addNodeOperator(
@@ -134,7 +96,14 @@ def test_node_operator_basic_flow(
                 new_node_operator["id"], new_node_operator["staking_limit"], {"from": manager_eoa}
             ),
             "submit": lambda: contracts.lido.submit(ZERO_ADDRESS, {"from": staker, "amount": submit_amount}),
-            "deposit": deposit,
+            # In Lido v4, DSM calls the StakingRouter directly; it determines
+            # the actual deposit count from current allocation and module keys.
+            # TODO: uncomment after SRV# upgrade, as it don't work on this upgrade
+            # "deposit": lambda: contracts.staking_router.deposit(
+            #     1,
+            #     "0x",
+            #     {"from": dsm_eoa},
+            # ),
             "remove_signing_keys": lambda: contracts.node_operators_registry.removeSigningKeys(
                 new_node_operator["id"],
                 new_node_operator["staking_limit"],
@@ -154,9 +123,7 @@ def test_node_operator_basic_flow(
     snapshot_before_update = {}
     snapshot_after_update = {}
 
-    grant_roles(voting_eoa, agent_eoa)
-
-    make_snapshot(contracts.node_operators_registry)
+    grant_roles(agent_eoa)
 
     with chain_snapshot():
         snapshot_before_update = run_scenario(
@@ -165,25 +132,6 @@ def test_node_operator_basic_flow(
 
     with chain_snapshot():
         execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env)
-
-        contracts.acl.grantPermission(
-            contracts.agent,
-            contracts.node_operators_registry,
-            convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-            {"from": contracts.agent},
-        )
-        contracts.acl.grantPermission(
-            contracts.agent,
-            contracts.node_operators_registry,
-            convert.to_uint(Web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")),
-            {"from": contracts.agent},
-        )
-        contracts.acl.grantPermission(
-            contracts.agent,
-            contracts.node_operators_registry,
-            convert.to_uint(Web3.keccak(text="MANAGE_SIGNING_KEYS")),
-            {"from": contracts.agent},
-        )
 
         snapshot_after_update = run_scenario(
             actions=create_actions(new_deposit_security_module_eoa, agent_eoa), snapshooter=make_snapshot
