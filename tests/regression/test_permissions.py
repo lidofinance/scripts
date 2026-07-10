@@ -54,18 +54,15 @@ from utils.config import (
     CS_GATE_SEAL_V2_ADDRESS,
     CS_IDENTIFIED_DVT_CLUSTER_GATE_ADDRESS,
     CS_PERMISSIONLESS_GATE_V3_ADDRESS,
-    CS_VERIFIER_V2_ADDRESS,
     CS_VERIFIER_V3_ADDRESS,
     CS_FEE_DISTRIBUTOR_ADDRESS,
     CS_FEE_ORACLE_ADDRESS,
     CS_ORACLE_HASH_CONSENSUS_ADDRESS,
-    CS_PERMISSIONLESS_GATE_ADDRESS,
     TRIGGERABLE_WITHDRAWALS_GATEWAY,
     VEB_TWG_GATE_SEAL,
     CS_VETTED_GATE_ADDRESS,
     CS_PARAMS_REGISTRY_ADDRESS,
     CS_STRIKES_ADDRESS,
-    CS_EJECTOR_ADDRESS,
     CM_ACCOUNTING_ADDRESS,
     CM_EJECTOR_ADDRESS,
     L1_EMERGENCY_BRAKES_MULTISIG,
@@ -87,76 +84,54 @@ from utils.config import (
 
 @pytest.fixture(scope="function")
 def protocol_permissions():
-    is_csm_v3 = contracts.csm.getInitializedVersion() >= 3
     csm_pause_manager = CIRCUIT_BREAKER
-    cs_ejector_address = CS_EJECTOR_V3_ADDRESS if is_csm_v3 else CS_EJECTOR_ADDRESS
-    cs_permissionless_gate_address = (
-        CS_PERMISSIONLESS_GATE_V3_ADDRESS if is_csm_v3 else CS_PERMISSIONLESS_GATE_ADDRESS
-    )
-    cs_verifier = (
-        interface.Verifier(CS_VERIFIER_V3_ADDRESS)
-        if is_csm_v3
-        else interface.CSVerifierV2(CS_VERIFIER_V2_ADDRESS)
-    )
+    cs_ejector_address = CS_EJECTOR_V3_ADDRESS
+    cs_permissionless_gate_address = CS_PERMISSIONLESS_GATE_V3_ADDRESS
+    cs_verifier = interface.Verifier(CS_VERIFIER_V3_ADDRESS)
     cs_verifier_address = cs_verifier.address
-    burner_request_burn_my_steth_holders = (
-        [CS_ACCOUNTING_ADDRESS, CM_ACCOUNTING_ADDRESS] if is_csm_v3 else []
-    )
+    burner_request_burn_my_steth_holders = [CS_ACCOUNTING_ADDRESS, CM_ACCOUNTING_ADDRESS]
     burner_request_burn_shares_holders = [contracts.accounting]
-    if not is_csm_v3:
-        burner_request_burn_shares_holders.append(CS_ACCOUNTING_ADDRESS)
-    csm_create_node_operator_holders = [cs_permissionless_gate_address, CS_VETTED_GATE_ADDRESS]
-    if is_csm_v3:
-        csm_create_node_operator_holders.append(CS_IDENTIFIED_DVT_CLUSTER_GATE_ADDRESS)
-    cs_accounting_set_bond_curve_holders = [CS_VETTED_GATE_ADDRESS, CSM_COMMITTEE_MS]
-    if is_csm_v3:
-        cs_accounting_set_bond_curve_holders.append(CS_IDENTIFIED_DVT_CLUSTER_GATE_ADDRESS)
-    twg_full_withdrawal_request_holders = [VALIDATORS_EXIT_BUS_ORACLE, cs_ejector_address]
-    if is_csm_v3:
-        twg_full_withdrawal_request_holders.append(CM_EJECTOR_ADDRESS)
+    csm_create_node_operator_holders = [
+        cs_permissionless_gate_address,
+        CS_VETTED_GATE_ADDRESS,
+        CS_IDENTIFIED_DVT_CLUSTER_GATE_ADDRESS,
+    ]
+    cs_accounting_set_bond_curve_holders = [
+        CS_VETTED_GATE_ADDRESS,
+        CSM_COMMITTEE_MS,
+        CS_IDENTIFIED_DVT_CLUSTER_GATE_ADDRESS,
+    ]
+    twg_full_withdrawal_request_holders = [
+        VALIDATORS_EXIT_BUS_ORACLE,
+        cs_ejector_address,
+        CM_EJECTOR_ADDRESS,
+    ]
     csm_roles = {
         "DEFAULT_ADMIN_ROLE": [contracts.agent],
         "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
         "PAUSE_ROLE": [csm_pause_manager, RESEAL_MANAGER],
-        "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE": [] if is_csm_v3 else [CSM_COMMITTEE_MS],
-        "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE": [] if is_csm_v3 else [EASYTRACK_EVMSCRIPT_EXECUTOR],
+        "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE": [],
+        "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE": [],
         "CREATE_NODE_OPERATOR_ROLE": csm_create_node_operator_holders,
         "VERIFIER_ROLE": [cs_verifier_address],
         "RESUME_ROLE": [RESEAL_MANAGER],
         "RECOVERER_ROLE": [],
+        "MANAGE_TOP_UP_QUEUE_ROLE": [],
+        "REWIND_TOP_UP_QUEUE_ROLE": [],
+        "OPERATOR_ADDRESSES_ADMIN_ROLE": [],
+        "REPORT_GENERAL_DELAYED_PENALTY_ROLE": [CSM_COMMITTEE_MS],
+        "SETTLE_GENERAL_DELAYED_PENALTY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+        "REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE": [cs_verifier_address],
+        "REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
     }
-    if is_csm_v3:
-        csm_roles.update({
-            "MANAGE_TOP_UP_QUEUE_ROLE": [],
-            "REWIND_TOP_UP_QUEUE_ROLE": [],
-            "OPERATOR_ADDRESSES_ADMIN_ROLE": [],
-            "REPORT_GENERAL_DELAYED_PENALTY_ROLE": [CSM_COMMITTEE_MS],
-            "SETTLE_GENERAL_DELAYED_PENALTY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
-            "REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE": [cs_verifier_address],
-            "REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
-        })
-    csm_ignored_abi_roles = set()
-    if not is_csm_v3:
-        csm_ignored_abi_roles.update({
-            "MANAGE_TOP_UP_QUEUE_ROLE",
-            "REWIND_TOP_UP_QUEUE_ROLE",
-            "OPERATOR_ADDRESSES_ADMIN_ROLE",
-            "REPORT_GENERAL_DELAYED_PENALTY_ROLE",
-            "SETTLE_GENERAL_DELAYED_PENALTY_ROLE",
-            "REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
-            "REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE",
-        })
     csm_role_preimages = {
         "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE": "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE",
         "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE": "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE",
+        "REPORT_GENERAL_DELAYED_PENALTY_ROLE": "REPORT_GENERAL_DELAYED_PENALTY_ROLE",
+        "SETTLE_GENERAL_DELAYED_PENALTY_ROLE": "SETTLE_GENERAL_DELAYED_PENALTY_ROLE",
+        "REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE": "REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
+        "REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE": "REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE",
     }
-    if is_csm_v3:
-        csm_role_preimages.update({
-            "REPORT_GENERAL_DELAYED_PENALTY_ROLE": "REPORT_GENERAL_DELAYED_PENALTY_ROLE",
-            "SETTLE_GENERAL_DELAYED_PENALTY_ROLE": "SETTLE_GENERAL_DELAYED_PENALTY_ROLE",
-            "REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE": "REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
-            "REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE": "REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE",
-        })
     vetted_gate_roles = {
         "DEFAULT_ADMIN_ROLE": [contracts.agent],
         "PAUSE_ROLE": [csm_pause_manager, RESEAL_MANAGER],
@@ -164,20 +139,9 @@ def protocol_permissions():
         "RECOVERER_ROLE": [],
         "SET_TREE_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
     }
-    if not is_csm_v3:
-        vetted_gate_roles.update({
-            "START_REFERRAL_SEASON_ROLE": [contracts.agent],
-            "END_REFERRAL_SEASON_ROLE": [CSM_COMMITTEE_MS],
-        })
-    vetted_gate_role_preimages = {}
-    if not is_csm_v3:
-        vetted_gate_role_preimages.update({
-            "START_REFERRAL_SEASON_ROLE": "START_REFERRAL_SEASON_ROLE",
-            "END_REFERRAL_SEASON_ROLE": "END_REFERRAL_SEASON_ROLE",
-        })
     cs_parameters_registry_roles = {
         "DEFAULT_ADMIN_ROLE": [contracts.agent],
-        "MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE": [CSM_COMMITTEE_MS] if is_csm_v3 else [],
+        "MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE": [CSM_COMMITTEE_MS],
         "MANAGE_KEYS_LIMIT_ROLE": [],
         "MANAGE_QUEUE_CONFIG_ROLE": [],
         "MANAGE_PERFORMANCE_PARAMETERS_ROLE": [],
@@ -450,7 +414,6 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": csm_roles,
             "role_preimages": csm_role_preimages,
-            "ignored_abi_roles": csm_ignored_abi_roles,
         },
         CS_ACCOUNTING_ADDRESS: {
             "contract_name": "Accounting",
@@ -547,7 +510,6 @@ def protocol_permissions():
             "type": "CustomApp",
             "proxy_owner": contracts.agent,
             "roles": vetted_gate_roles,
-            "role_preimages": vetted_gate_role_preimages,
         },
         cs_permissionless_gate_address: {
             "contract_name": "PermissionlessGate",
@@ -696,7 +658,6 @@ def test_protocol_permissions(protocol_permissions):
         abi_roles = set(abi_roles_list)
         configured_roles = set(permissions_config["roles"])
         custom_role_preimages = set(permissions_config.get("role_preimages", {}))
-        ignored_abi_roles = set(permissions_config.get("ignored_abi_roles", {}))
 
         if contract_address in [NODE_OPERATORS_REGISTRY, SIMPLE_DVT]:
             abi_roles_list.append("MANAGE_SIGNING_KEYS")
@@ -704,9 +665,9 @@ def test_protocol_permissions(protocol_permissions):
 
         roles = permissions_config["roles"]
 
-        assert (abi_roles - ignored_abi_roles).issubset(configured_roles), (
+        assert abi_roles.issubset(configured_roles), (
             "Contract {} has undescribed ABI roles {}".format(
-                permissions_config["contract_name"], abi_roles - configured_roles - ignored_abi_roles
+                permissions_config["contract_name"], abi_roles - configured_roles
             )
         )
         assert configured_roles.issubset(abi_roles | custom_role_preimages), (
