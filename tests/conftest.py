@@ -270,8 +270,8 @@ def preregister_unparseable_contracts():
     # `eth-brownie` pins `py-solc-ast==1.2.10` (its latest release), which crashes on the
     # contract-level function-list directive `using {func} for Type;` (valid since Solidity
     # 0.8.13) with `AttributeError: 'UsingForDirective' object has no attribute 'libraryName'`.
-    # CSVerifierV2's verified source has one (`using { amountWei } for Withdrawal;` inside
-    # `contract CSVerifier`), so resolving it from Etherscan during event tracing
+    # CSVerifier's verified source has one (`using { amountWei } for Withdrawal;` inside
+    # `contract CSVerifier`), so resolving v2/v3 from Etherscan during event tracing
     # (e.g. display_dg_events) crashes. Pre-registering it from a local ABI makes
     # state._find_contract short-circuit before the Etherscan source fetch / solcast parse.
     #
@@ -279,6 +279,7 @@ def preregister_unparseable_contracts():
     # where PARSE_EVENTS_FROM_LOCAL_ABI is not set.
     unparseable_contracts = {
         "CSVerifierV2": globals().get("CS_VERIFIER_V2_ADDRESS"),
+        "Verifier": globals().get("CS_VERIFIER_V3_ADDRESS"),
     }
     for contract_name, addr in unparseable_contracts.items():
         if not addr:

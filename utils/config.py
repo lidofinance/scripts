@@ -211,28 +211,48 @@ class ContractsLazyLoader:
         return interface.CSModule(CSM_ADDRESS)
 
     @property
-    def cs_permissionless_gate(self) -> interface.CSPermissionlessGate:
-        return interface.CSPermissionlessGate(CS_PERMISSIONLESS_GATE_ADDRESS)
+    def cm(self) -> interface.CuratedModule:
+        return interface.CuratedModule(CM_MODULE_ADDRESS)
 
     @property
-    def cs_vetted_gate(self) -> interface.CSVettedGate:
-        return interface.CSVettedGate(CS_VETTED_GATE_ADDRESS)
+    def cm_accounting(self) -> interface.ModuleAccounting:
+        return interface.ModuleAccounting(self.cm.ACCOUNTING())
 
     @property
-    def cs_accounting(self) -> interface.CSAccounting:
-        return interface.CSAccounting(CS_ACCOUNTING_ADDRESS)
+    def cm_meta_registry(self) -> interface.MetaRegistry:
+        return interface.MetaRegistry(self.cm.META_REGISTRY())
 
     @property
-    def cs_parameters_registry(self) -> interface.CSParametersRegistry:
-        return interface.CSParametersRegistry(CS_PARAMS_REGISTRY_ADDRESS)
+    def cm_professional_operator_gate(self) -> interface.CuratedGate:
+        return interface.CuratedGate(CM_PROFESSIONAL_OPERATOR_GATE_ADDRESS)
 
     @property
-    def cs_fee_distributor(self) -> interface.CSFeeDistributor:
-        return interface.CSFeeDistributor(CS_FEE_DISTRIBUTOR_ADDRESS)
+    def cm_parameters_registry(self) -> interface.ParametersRegistry:
+        return interface.ParametersRegistry(self.cm.PARAMETERS_REGISTRY())
 
     @property
-    def cs_fee_oracle(self) -> interface.CSFeeOracle:
-        return interface.CSFeeOracle(CS_FEE_ORACLE_ADDRESS)
+    def cs_permissionless_gate(self) -> interface.PermissionlessGate:
+        return interface.PermissionlessGate(CS_PERMISSIONLESS_GATE_ADDRESS)
+
+    @property
+    def cs_vetted_gate(self) -> interface.VettedGate:
+        return interface.VettedGate(CS_VETTED_GATE_ADDRESS)
+
+    @property
+    def cs_accounting(self) -> interface.ModuleAccounting:
+        return interface.ModuleAccounting(CS_ACCOUNTING_ADDRESS)
+
+    @property
+    def cs_parameters_registry(self) -> interface.ParametersRegistry:
+        return interface.ParametersRegistry(CS_PARAMS_REGISTRY_ADDRESS)
+
+    @property
+    def cs_fee_distributor(self) -> interface.FeeDistributor:
+        return interface.FeeDistributor(CS_FEE_DISTRIBUTOR_ADDRESS)
+
+    @property
+    def cs_fee_oracle(self) -> interface.FeeOracle:
+        return interface.FeeOracle(CS_FEE_ORACLE_ADDRESS)
 
     @property
     def csm_hash_consensus(self) -> interface.CSHashConsensus:
@@ -243,16 +263,16 @@ class ContractsLazyLoader:
         return interface.CSVerifierV2(CS_VERIFIER_V2_ADDRESS)
 
     @property
-    def cs_exit_penalties(self) -> interface.CSExitPenalties:
-        return interface.CSExitPenalties(CS_EXIT_PENALTIES_ADDRESS)
+    def cs_exit_penalties(self) -> interface.ExitPenalties:
+        return interface.ExitPenalties(CS_EXIT_PENALTIES_ADDRESS)
 
     @property
-    def cs_ejector(self) -> interface.CSEjector:
-        return interface.CSEjector(CS_EJECTOR_ADDRESS)
+    def cs_ejector(self) -> interface.Ejector:
+        return interface.Ejector(CS_EJECTOR_ADDRESS)
 
     @property
-    def cs_strikes(self) -> interface.CSStrikes:
-        return interface.CSStrikes(CS_STRIKES_ADDRESS)
+    def cs_strikes(self) -> interface.ValidatorStrikes:
+        return interface.ValidatorStrikes(CS_STRIKES_ADDRESS)
 
     @property
     def sandbox(self) -> interface.SimpleDVT:

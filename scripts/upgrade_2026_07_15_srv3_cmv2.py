@@ -104,6 +104,7 @@ from brownie import interface
 
 from utils.config import (
     UPGRADE_VOTE_SCRIPT,
+    contracts,
     get_deployer_account,
     get_is_live,
     get_priority_fee,
@@ -221,6 +222,15 @@ def main(upgrade_vote_script: Optional[str] = None):
     vote_id >= 0 and print(f"Vote created: {vote_id}.")
 
 
+def post_vote_on_fork():
+    if get_is_live():
+        raise Exception("This hook is for local testing only.")
+
+    print("Rebuilding CSM total withdrawn validators after vote...")
+    contracts.csm.rebuildTotalWithdrawnValidators({"from": get_deployer_account(), "silent": True})
+    print("[ok] CSM total withdrawn validators rebuilt")
+
+
 def start_and_execute_vote_on_fork_manual(upgrade_vote_script: Optional[str] = None):
     if get_is_live():
         raise Exception("This script is for local testing only.")
@@ -232,4 +242,8 @@ def start_and_execute_vote_on_fork_manual(upgrade_vote_script: Optional[str] = N
         upgrade_vote_script=upgrade_vote_script,
     )
     print(f"Vote created: {vote_id}.")
-    pass_and_exec_dao_vote(int(vote_id), step_by_step=True)
+    pass_and_exec_dao_vote(
+        int(vote_id),
+        step_by_step=True,
+    )
+    post_vote_on_fork()

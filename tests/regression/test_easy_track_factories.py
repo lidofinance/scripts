@@ -2,13 +2,14 @@ import random
 from dataclasses import dataclass
 from typing import List, Dict
 
-import eth_abi
-from brownie import interface, accounts, Wei, web3
+import pytest
+from brownie import interface, accounts, web3
 from brownie.exceptions import VirtualMachineError
 from eth_typing import HexStr
 from eth_abi.abi import encode
 
 from configs.config_mainnet import *
+from utils.balance import set_balance
 from utils.config import contracts, EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER
 from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
 from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
@@ -28,6 +29,22 @@ NODE_OPERATORS = [
         "name": get_operator_name(i, 2),
     }
     for i in range(1, 11)
+]
+
+CSM_FACTORY_NAME = "CSM"
+CM_FACTORY_NAME = "CM"
+CSM_MERKLE_GATE_ADDRESSES = [
+    CS_VETTED_GATE_ADDRESS,
+    CS_IDENTIFIED_DVT_CLUSTER_GATE_ADDRESS,
+]
+CM_MERKLE_GATE_ADDRESSES = [
+    CM_PROFESSIONAL_OPERATOR_GATE_ADDRESS,
+    "0x8c002c6eE10cf8adb78D1F9EB2e134FdaF8A7C1a",
+    "0x207798e6fD1aa7Ee8a63782A64c959cD6727b78C",
+    "0xeF273Ca4A21Ba7B414Ae3C9f9b443038cb133F72",
+    "0x3BbBb175f7F07954DE00052b20E1c5572223F24D",
+    "0x86A8d4E0db5938D21d98047544668FCCB1A9ADc8",
+    "0x773933F9db8964A17d62fb808f2EC7A2de4247CC",
 ]
 
 
@@ -658,3 +675,247 @@ def test_sdvt_reverts_on_unused_key(stranger):
         assert False, "Expected UNUSED_PUBKEY revert"
     except VirtualMachineError as error:
         assert "UNUSED_PUBKEY" in error.message
+
+
+def _permissions_include(factory_address, target_address, method):
+    return _permission_call(target_address, method) in _permission_entries(factory_address)
+
+
+def _permission_entries(factory_address):
+    permissions = bytes(contracts.easy_track.evmScriptFactoryPermissions(factory_address))
+    assert len(permissions) % 24 == 0
+    entries = [permissions[i : i + 24] for i in range(0, len(permissions), 24)]
+    assert len(entries) == len(set(entries))
+    return set(entries)
+
+
+def _permission_call(target_address, method):
+    return bytes.fromhex(str(target_address)[2:]) + bytes.fromhex(method.signature[2:])
+
+
+def _bytes32_hex(value):
+    if isinstance(value, (bytes, bytearray)):
+        return "0x" + bytes(value).hex()
+    return str(value).lower()
+
+
+def _set_merkle_gate_tree_calldata(gate):
+    current_root = gate.treeRoot()
+    current_cid = gate.treeCid()
+    new_root = web3.keccak(text=f"scripts-regression-{gate.address}")
+    new_cid = f"ipfs://scripts-regression-{gate.address[-8:]}"
+    if _bytes32_hex(new_root) == _bytes32_hex(current_root):
+        new_root = web3.keccak(text=f"scripts-regression-{gate.address}-next")
+    if new_cid == current_cid:
+        new_cid = f"{new_cid}-next"
+
+    calldata = _encode_calldata(
+        ["address", "bytes32", "string", "bytes32", "string"],
+        [gate.address, current_root, current_cid, new_root, new_cid],
+    )
+    return calldata, _bytes32_hex(new_root), new_cid
+
+
+@pytest.mark.parametrize(
+    "factory_address,allowed_gate_addresses",
+    [
+        (EASYTRACK_CSM_SET_MERKLE_GATE_TREE_FACTORY, CSM_MERKLE_GATE_ADDRESSES),
+        (EASYTRACK_CM_SET_MERKLE_GATE_TREE_FACTORY, CM_MERKLE_GATE_ADDRESSES),
+    ],
+)
+def test_set_merkle_gate_tree_factory_permissions(factory_address, allowed_gate_addresses):
+    factory = interface.SetMerkleGateTree(factory_address)
+    expected_permissions = {_permission_call(factory.address, factory.validateInputData)}
+
+    for gate_address in allowed_gate_addresses:
+        gate = interface.MerkleGate(gate_address)
+        expected_permissions.add(_permission_call(gate.address, gate.setTreeParams))
+
+    assert _permission_entries(factory.address) == expected_permissions
+
+
+@pytest.mark.parametrize(
+    "factory_address,wrong_gate_address",
+    [
+        (EASYTRACK_CM_SET_MERKLE_GATE_TREE_FACTORY, CS_VETTED_GATE_ADDRESS),
+        (EASYTRACK_CSM_SET_MERKLE_GATE_TREE_FACTORY, CM_PROFESSIONAL_OPERATOR_GATE_ADDRESS),
+    ],
+)
+def test_set_merkle_gate_tree_factory_reverts_for_other_module_gate(factory_address, wrong_gate_address):
+    factory = interface.SetMerkleGateTree(factory_address)
+    wrong_gate = interface.MerkleGate(wrong_gate_address)
+    calldata, _, _ = _set_merkle_gate_tree_calldata(wrong_gate)
+
+    assert _permissions_include(factory.address, factory.address, factory.validateInputData)
+    assert not _permissions_include(factory.address, wrong_gate.address, wrong_gate.setTreeParams)
+
+    with pytest.raises(VirtualMachineError):
+        contracts.easy_track.createMotion(
+            factory,
+            calldata,
+            {"from": set_balance(factory.trustedCaller(), 100000)},
+        )
+
+
+@pytest.mark.parametrize(
+    "factory_address,expected_name,gate_address",
+    [
+        (
+            EASYTRACK_CSM_SET_MERKLE_GATE_TREE_FACTORY,
+            CSM_FACTORY_NAME,
+            CS_VETTED_GATE_ADDRESS,
+        ),
+        (
+            EASYTRACK_CM_SET_MERKLE_GATE_TREE_FACTORY,
+            CM_FACTORY_NAME,
+            CM_PROFESSIONAL_OPERATOR_GATE_ADDRESS,
+        ),
+    ],
+)
+def test_set_merkle_gate_tree_factories(factory_address, expected_name, gate_address, stranger):
+    factory = interface.SetMerkleGateTree(factory_address)
+    gate = interface.MerkleGate(gate_address)
+    assert factory.name() == expected_name
+    calldata, new_root, new_cid = _set_merkle_gate_tree_calldata(gate)
+
+    create_and_enact_motion(
+        contracts.easy_track,
+        set_balance(factory.trustedCaller(), 100000),
+        factory,
+        calldata,
+        stranger,
+    )
+
+    assert _bytes32_hex(gate.treeRoot()) == new_root
+    assert gate.treeCid() == new_cid
+
+
+def test_csm_report_withdrawals_for_slashed_validators_factory():
+    factory = interface.ReportWithdrawalsForSlashedValidators(
+        EASYTRACK_CSM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY
+    )
+    module = interface.BaseModule(CSM_ADDRESS)
+
+    assert factory.module() == module.address
+    assert factory.name() == CSM_FACTORY_NAME
+    assert _permissions_include(factory.address, module.address, module.reportSlashedWithdrawnValidators)
+
+    calldata = _encode_calldata(["(uint256,uint256,uint256,uint256,bool)[]"], [[]])
+    try:
+        factory.createEVMScript(factory.trustedCaller(), calldata)
+        assert False, "Expected EMPTY_VALIDATOR_INFO_LIST revert"
+    except VirtualMachineError as error:
+        assert "EMPTY_VALIDATOR_INFO_LIST" in error.message
+
+
+def test_cm_report_withdrawals_for_slashed_validators_factory():
+    factory = interface.ReportWithdrawalsForSlashedValidators(
+        EASYTRACK_CM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY
+    )
+    module = interface.BaseModule(CM_MODULE_ADDRESS)
+
+    assert factory.module() == module.address
+    assert factory.name() == CM_FACTORY_NAME
+    assert _permissions_include(factory.address, module.address, module.reportSlashedWithdrawnValidators)
+
+    calldata = _encode_calldata(["(uint256,uint256,uint256,uint256,bool)[]"], [[]])
+    try:
+        factory.createEVMScript(factory.trustedCaller(), calldata)
+        assert False, "Expected EMPTY_VALIDATOR_INFO_LIST revert"
+    except VirtualMachineError as error:
+        assert "EMPTY_VALIDATOR_INFO_LIST" in error.message
+
+
+def test_csm_settle_general_delayed_penalty_factory():
+    factory = interface.SettleGeneralDelayedPenalty(EASYTRACK_CSM_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY)
+    module = interface.BaseModule(CSM_ADDRESS)
+
+    assert factory.module() == module.address
+    assert factory.accounting() == module.ACCOUNTING()
+    assert factory.name() == CSM_FACTORY_NAME
+    assert _permissions_include(factory.address, module.address, module.settleGeneralDelayedPenalty)
+
+    calldata = _encode_calldata(["(uint256,uint256)[]"], [[]])
+    try:
+        factory.createEVMScript(factory.trustedCaller(), calldata)
+        assert False, "Expected EMPTY_LOCK_INFO_LIST revert"
+    except VirtualMachineError as error:
+        assert "EMPTY_LOCK_INFO_LIST" in error.message
+
+
+def test_cm_settle_general_delayed_penalty_factory():
+    factory = interface.SettleGeneralDelayedPenalty(EASYTRACK_CM_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY)
+    module = interface.BaseModule(CM_MODULE_ADDRESS)
+
+    assert factory.module() == module.address
+    assert factory.accounting() == module.ACCOUNTING()
+    assert factory.name() == CM_FACTORY_NAME
+    assert _permissions_include(factory.address, module.address, module.settleGeneralDelayedPenalty)
+
+    calldata = _encode_calldata(["(uint256,uint256)[]"], [[]])
+    try:
+        factory.createEVMScript(factory.trustedCaller(), calldata)
+        assert False, "Expected EMPTY_LOCK_INFO_LIST revert"
+    except VirtualMachineError as error:
+        assert "EMPTY_LOCK_INFO_LIST" in error.message
+
+
+def test_cm_create_or_update_operator_group_factory():
+    module = interface.CuratedModule(CM_MODULE_ADDRESS)
+    meta_registry = interface.MetaRegistry(module.META_REGISTRY())
+    factory = interface.CreateOrUpdateOperatorGroup(EASYTRACK_CM_CREATE_OR_UPDATE_OPERATOR_GROUP_FACTORY)
+    assert factory.module() == module.address
+    assert factory.metaRegistry() == meta_registry.address
+    assert factory.name() == CM_FACTORY_NAME
+    assert factory.allowedExternalModuleId() == CURATED_STAKING_MODULE_ID
+    assert _permissions_include(factory.address, factory.address, factory.validateInputData)
+    assert _permissions_include(factory.address, meta_registry.address, meta_registry.createOrUpdateOperatorGroup)
+
+    external_operator_data = factory.encodeNORExtOperatorData(CURATED_STAKING_MODULE_ID, 1)
+    module_id, node_operator_id = factory.decodeNORExtOperatorData(external_operator_data)
+    assert module_id == CURATED_STAKING_MODULE_ID
+    assert node_operator_id == 1
+
+
+def test_update_staking_module_share_limits_factory(stranger):
+    factory = interface.UpdateStakingModuleShareLimits(EASYTRACK_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY)
+    assert factory.stakingRouter() == STAKING_ROUTER
+    assert factory.stakingModuleId() == CS_MODULE_ID
+    assert _permissions_include(factory.address, factory.address, factory.validateParams)
+    assert _permissions_include(factory.address, STAKING_ROUTER, contracts.staking_router.updateModuleShares)
+
+    module_id = factory.stakingModuleId()
+    module = contracts.staking_router.getStakingModule(module_id)
+    current_share = module["stakeShareLimit"]
+    current_priority_exit_threshold = module["priorityExitShareThreshold"]
+
+    new_share = current_share
+    new_priority_exit_threshold = current_priority_exit_threshold
+
+    if current_share > 0 and factory.maxStakeShareLimitDecrease() > 0:
+        new_share = current_share - 1
+    elif current_share < current_priority_exit_threshold and factory.maxStakeShareLimitIncrease() > 0:
+        new_share = current_share + 1
+    elif current_priority_exit_threshold < 10000 and factory.maxPriorityExitShareThresholdIncrease() > 0:
+        new_priority_exit_threshold = current_priority_exit_threshold + 1
+    elif current_priority_exit_threshold > current_share and factory.maxPriorityExitShareThresholdDecrease() > 0:
+        new_priority_exit_threshold = current_priority_exit_threshold - 1
+    else:
+        pytest.skip("No safe one-basis-point share-limits update is possible with current factory caps")
+
+    calldata = _encode_calldata(
+        ["uint16", "uint16", "uint16", "uint16"],
+        [current_share, new_share, current_priority_exit_threshold, new_priority_exit_threshold],
+    )
+
+    create_and_enact_motion(
+        contracts.easy_track,
+        set_balance(factory.trustedCaller(), 100000),
+        factory,
+        calldata,
+        stranger,
+    )
+
+    module_after = contracts.staking_router.getStakingModule(module_id)
+    assert module_after["stakeShareLimit"] == new_share
+    assert module_after["priorityExitShareThreshold"] == new_priority_exit_threshold
