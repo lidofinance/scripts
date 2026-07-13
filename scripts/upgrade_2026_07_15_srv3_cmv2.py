@@ -114,8 +114,9 @@ from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_descrip
 from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
-# UPGRADE_VOTE_SCRIPT address lives in configs/config_mainnet.py and is synced
-# from core/deployed-mainnet.json.
+# SRv3/CMv2 upgrade omnibus (UpgradeVoteScript) — the vote script reads its items
+# from this contract. Synced from core/deployed-mainnet.json.
+UPGRADE_VOTE_SCRIPT = "0xE6530830A2cf90773cB232748b2c674c27b6E0CA"
 
 # ============================= Description ==================================
 DG_PROPOSAL_METADATA = "Activate Staking Router v3 + Curated Module v2 + Community Staking Module v3"
