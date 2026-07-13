@@ -299,6 +299,7 @@ CSM_INITIALIZED_VERSION = 3
 CS_FEE_ORACLE_CONTRACT_VERSION = 3
 DSM_VERSION = 4
 CS_PARAMETERS_REGISTRY_INITIALIZED_VERSION = 3
+CS_PARAMETERS_REGISTRY_PRE_UPGRADE_INITIALIZED_VERSION = 1
 CS_ACCOUNTING_INITIALIZED_VERSION = 3
 CS_FEE_DISTRIBUTOR_INITIALIZED_VERSION = 3
 CS_VALIDATOR_STRIKES_INITIALIZED_VERSION = 1
@@ -316,6 +317,7 @@ CURATED_MODULE_STATUS_ACTIVE = 0
 CURATED_MODULE_WITHDRAWAL_CREDENTIALS_TYPE = 2
 
 STAKING_ROUTER_MODULES_COUNT = 4
+PRE_UPGRADE_STAKING_ROUTER_MODULES_COUNT = STAKING_ROUTER_MODULES_COUNT - 1
 
 # --- Triggerable withdrawals exit-limit config ---
 TW_MAX_EXIT_REQUESTS = 250
@@ -390,6 +392,10 @@ def _assert_emitted_by(event_item, emitted_by: str) -> None:
 
 def _assert_address(actual, expected) -> None:
     assert convert.to_address(actual) == convert.to_address(expected)
+
+
+def _assert_not_address(actual, unexpected) -> None:
+    assert convert.to_address(actual) != convert.to_address(unexpected)
 
 
 def _assert_oz_role_members(contract_address: str, role: str, expected_members) -> None:
@@ -688,44 +694,57 @@ def _expected_sr_role_migration_grants(staking_router: str):
     finalizeUpgrade_v4 re-grants each pre-upgrade member of the migrated roles in
     role order, member index order — this is what the RoleGranted events reflect.
     """
+    # DG item 1.3: read the role holders that StakingRouter.finalizeUpgrade_v4
+    # will migrate while upgrading the StakingRouter implementation.
     sr = interface.StakingRouter(staking_router)
     grants = []
     for role in SR_MIGRATED_ROLES_ORDER:
         count = sr.getRoleMemberCount(role)
         for i in range(count):
+            # DG item 1.3 emits one RoleGranted event for every existing member,
+            # preserving the role order and the member index order.
             grants.append((role, sr.getRoleMember(role, i)))
     return grants
 
 
 def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
     """Mirror UpgradeTemplate.finishUpgrade() final-state assertions via public getters."""
+    # DG items 1.1 and 1.69 start and finish UpgradeTemplate respectively.
     upgrade_template = interface.UpgradeTemplate(UPGRADE_TEMPLATE)
     assert upgrade_template.isUpgradeFinished() is True
     assert upgrade_template.upgradeBlockNumber() > 0
 
+    # DG item 1.2 upgrades LidoLocator and switches it to the new DSM-aware implementation.
     locator = interface.LidoLocator(LIDO_LOCATOR)
     _assert_ossifiable_proxy(LIDO_LOCATOR, LIDO_LOCATOR_IMPL)
     _assert_address(locator.depositSecurityModule(), NEW_DEPOSIT_SECURITY_MODULE)
 
+    # DG items 1.8-1.10 temporarily grant APP_MANAGER_ROLE, install Lido v4, and revoke the role.
     kernel = interface.Kernel(ARAGON_KERNEL)
     _assert_address(kernel.getApp(kernel.APP_BASES_NAMESPACE(), LIDO_ARAGON_APP_ID), LIDO_IMPL)
     acl = interface.ACL(ACL)
     assert not acl.hasPermission(AGENT, ARAGON_KERNEL, APP_MANAGER_ROLE)
+
+    # DG item 1.11 creates BUFFER_RESERVE_MANAGER_ROLE with AGENT as holder and manager.
     assert acl.hasPermission(AGENT, LIDO, BUFFER_RESERVE_MANAGER_ROLE)
     _assert_address(acl.getPermissionManager(LIDO, BUFFER_RESERVE_MANAGER_ROLE), AGENT)
 
+    # DG item 1.12 finalizes Lido v4 and sets the deposits reserve target.
     lido = interface.Lido(LIDO)
     assert lido.getContractVersion() == LIDO_CONTRACT_VERSION
     assert lido.getDepositsReserveTarget() == LIDO_DEPOSITS_RESERVE_TARGET
 
+    # DG item 1.6 upgrades Accounting.
     _assert_ossifiable_proxy(ACCOUNTING, ACCOUNTING_IMPL)
 
+    # DG item 1.4 upgrades and finalizes AccountingOracle.
     accounting_oracle = interface.AccountingOracle(ACCOUNTING_ORACLE)
     _assert_ossifiable_proxy(ACCOUNTING_ORACLE, ACCOUNTING_ORACLE_IMPL)
     assert accounting_oracle.getContractVersion() == AO_CONTRACT_VERSION
     assert accounting_oracle.getConsensusVersion() == AO_CONSENSUS_VERSION
     _assert_oz_role_members(ACCOUNTING_ORACLE, DEFAULT_ADMIN_ROLE, [AGENT])
 
+    # DG item 1.5 upgrades and finalizes ValidatorsExitBusOracle with the new exit limits.
     validators_exit_bus = interface.ValidatorsExitBusOracle(VALIDATORS_EXIT_BUS_ORACLE)
     _assert_ossifiable_proxy(VALIDATORS_EXIT_BUS_ORACLE, VALIDATORS_EXIT_BUS_ORACLE_IMPL)
     assert validators_exit_bus.getContractVersion() == VEBO_CONTRACT_VERSION
@@ -739,21 +758,30 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
     )
     _assert_oz_role_members(VALIDATORS_EXIT_BUS_ORACLE, DEFAULT_ADMIN_ROLE, [AGENT])
 
+    # DG item 1.7 upgrades and finalizes WithdrawalVault v3.
     withdrawal_vault = interface.WithdrawalVault(WITHDRAWAL_VAULT)
     _assert_withdrawals_manager_proxy(WITHDRAWAL_VAULT, WITHDRAWAL_VAULT_IMPL)
     assert withdrawal_vault.getContractVersion() == WITHDRAWAL_VAULT_CONTRACT_VERSION
     _assert_address(withdrawal_vault.CONSOLIDATION_GATEWAY(), CONSOLIDATION_GATEWAY)
     _assert_address(withdrawal_vault.TRIGGERABLE_WITHDRAWALS_GATEWAY(), TRIGGERABLE_WITHDRAWALS_GATEWAY)
 
+    # DG item 1.3 upgrades and finalizes StakingRouter v4.
     _assert_ossifiable_proxy(STAKING_ROUTER, STAKING_ROUTER_IMPL)
     assert staking_router.getContractVersion() == SR_INITIALIZED_VERSION
     assert staking_router.getMaxTopUpPerBlockGwei() == MAX_TOP_UP_PER_BLOCK_GWEI
     _assert_oz_role_members(STAKING_ROUTER, DEFAULT_ADMIN_ROLE, [AGENT])
     _assert_oz_role_members(STAKING_ROUTER, STAKING_MODULE_MANAGE_ROLE, [AGENT])
+
+    # DG items 1.14-1.15 move STAKING_MODULE_UNVETTING_ROLE from the old DSM to the new DSM.
     _assert_oz_role_members(STAKING_ROUTER, STAKING_MODULE_UNVETTING_ROLE, [NEW_DEPOSIT_SECURITY_MODULE])
+
+    # DG item 1.13 grants STAKING_MODULE_SHARE_MANAGE_ROLE to the Easy Track executor.
     _assert_oz_role_members(STAKING_ROUTER, STAKING_MODULE_SHARE_MANAGE_ROLE, [EASYTRACK_EVMSCRIPT_EXECUTOR])
+
+    # DG item 1.69 validates that no account can directly change withdrawal credentials.
     _assert_oz_role_members(STAKING_ROUTER, MANAGE_WITHDRAWAL_CREDENTIALS_ROLE, [])
 
+    # DG item 1.69 validates the deployment-time ConsolidationBus configuration used by SR v3.
     consolidation_bus = interface.ConsolidationBus(CONSOLIDATION_BUS)
     _assert_ossifiable_proxy(CONSOLIDATION_BUS, CONSOLIDATION_BUS_IMPL)
     _assert_oz_role_members(CONSOLIDATION_BUS, DEFAULT_ADMIN_ROLE, [AGENT])
@@ -762,6 +790,7 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
     _assert_oz_role_members(CONSOLIDATION_BUS, REMOVE_ROLE, [CONSOLIDATION_COMMITTEE])
     _assert_address(consolidation_bus.getConsolidationGateway(), CONSOLIDATION_GATEWAY)
 
+    # DG items 1.57 and 1.69 validate the migrator source/target module pair for Curated Module v2.
     consolidation_migrator = interface.ConsolidationMigrator(CONSOLIDATION_MIGRATOR)
     _assert_ossifiable_proxy(CONSOLIDATION_MIGRATOR, CONSOLIDATION_MIGRATOR_IMPL)
     _assert_oz_role_members(CONSOLIDATION_MIGRATOR, DEFAULT_ADMIN_ROLE, [AGENT])
@@ -771,6 +800,7 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
     assert consolidation_migrator.sourceModuleId() == CONSOLIDATION_SOURCE_MODULE_ID
     assert consolidation_migrator.targetModuleId() == CONSOLIDATION_TARGET_MODULE_ID
 
+    # DG items 1.2 and 1.18 expose ConsolidationGateway through Locator and register its CB pauser.
     _assert_address(locator.consolidationGateway(), CONSOLIDATION_GATEWAY)
     _assert_oz_role_members(CONSOLIDATION_GATEWAY, DEFAULT_ADMIN_ROLE, [AGENT])
     _assert_oz_role_members(CONSOLIDATION_GATEWAY, PAUSE_ROLE, [CIRCUIT_BREAKER, RESEAL_MANAGER])
@@ -778,6 +808,7 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
     _assert_oz_role_members(CONSOLIDATION_GATEWAY, ADD_CONSOLIDATION_REQUEST_ROLE, [CONSOLIDATION_BUS])
     _assert_circuit_breaker_pauser(CONSOLIDATION_GATEWAY, CIRCUIT_BREAKER_COMMITTEE)
 
+    # DG items 1.2 and 1.19 expose TopUpGateway through Locator and register its CB pauser.
     _assert_ossifiable_proxy(TOP_UP_GATEWAY, TOP_UP_GATEWAY_IMPL)
     _assert_address(locator.topUpGateway(), TOP_UP_GATEWAY)
     _assert_oz_role_members(TOP_UP_GATEWAY, DEFAULT_ADMIN_ROLE, [AGENT])
@@ -786,11 +817,14 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
     _assert_oz_role_members(TOP_UP_GATEWAY, TOP_UP_ROLE, [TOP_UP_GATEWAY_DEPOSITOR])
     _assert_circuit_breaker_pauser(TOP_UP_GATEWAY, CIRCUIT_BREAKER_COMMITTEE)
 
+    # DG items 1.16-1.17 grant the limit manager role and set TWG exit request limits.
     triggerable_withdrawals = interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY)
     _assert_oz_role_members(TRIGGERABLE_WITHDRAWALS_GATEWAY, TW_EXIT_LIMIT_MANAGER_ROLE, [AGENT])
     tw_limit = triggerable_withdrawals.getExitRequestLimitFullInfo()
     assert tuple(tw_limit[0:3]) == (TW_MAX_EXIT_REQUESTS, TW_EXITS_PER_FRAME, TW_FRAME_DURATION_IN_SEC)
 
+    # DG item 1.69 validates the OracleReportSanityChecker selected by the upgraded Locator
+    # and the final role cleanup performed as part of the core upgrade.
     sanity_checker_roles = (
         ALL_LIMITS_MANAGER_ROLE,
         ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE,
@@ -806,16 +840,16 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
     for role in sanity_checker_roles:
         _assert_oz_role_members(ORACLE_REPORT_SANITY_CHECKER, role, [])
 
-    # Community Staking Module v3.
+    # DG items 1.20-1.27 upgrade the Community Staking Module proxy implementations.
     csm_proxies = (
-        (CSM, CSM_IMPL),
-        (CS_PARAMETERS_REGISTRY, CS_PARAMETERS_REGISTRY_IMPL),
-        (CS_FEE_ORACLE, CS_FEE_ORACLE_IMPL),
-        (CS_VETTED_GATE, CS_VETTED_GATE_IMPL),
-        (CS_ACCOUNTING, CS_ACCOUNTING_IMPL),
-        (CS_FEE_DISTRIBUTOR, CS_FEE_DISTRIBUTOR_IMPL),
-        (CS_EXIT_PENALTIES, CS_EXIT_PENALTIES_IMPL),
-        (CS_VALIDATOR_STRIKES, CS_VALIDATOR_STRIKES_IMPL),
+        (CSM, CSM_IMPL),  # DG item 1.20
+        (CS_PARAMETERS_REGISTRY, CS_PARAMETERS_REGISTRY_IMPL),  # DG item 1.21
+        (CS_FEE_ORACLE, CS_FEE_ORACLE_IMPL),  # DG item 1.22
+        (CS_VETTED_GATE, CS_VETTED_GATE_IMPL),  # DG item 1.23
+        (CS_ACCOUNTING, CS_ACCOUNTING_IMPL),  # DG item 1.24
+        (CS_FEE_DISTRIBUTOR, CS_FEE_DISTRIBUTOR_IMPL),  # DG item 1.25
+        (CS_EXIT_PENALTIES, CS_EXIT_PENALTIES_IMPL),  # DG item 1.26
+        (CS_VALIDATOR_STRIKES, CS_VALIDATOR_STRIKES_IMPL),  # DG item 1.27
     )
     for proxy, implementation in csm_proxies:
         _assert_ossifiable_proxy(proxy, implementation)
@@ -827,29 +861,51 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
     cs_accounting = interface.ModuleAccounting(CS_ACCOUNTING)
     cs_fee_distributor = interface.FeeDistributor(CS_FEE_DISTRIBUTOR)
     cs_validator_strikes = interface.ValidatorStrikes(CS_VALIDATOR_STRIKES)
+
+    # DG item 1.20 finalizes CSModule v3.
     assert csm.getInitializedVersion() == CSM_INITIALIZED_VERSION
+
+    # DG item 1.21 finalizes ParametersRegistry v3.
     assert cs_parameters_registry.getInitializedVersion() == CS_PARAMETERS_REGISTRY_INITIALIZED_VERSION
+
+    # DG item 1.23 upgrades VettedGate while preserving its initialized version.
     assert cs_vetted_gate.getInitializedVersion() == CS_VETTED_GATE_INITIALIZED_VERSION
+
+    # DG item 1.24 finalizes CSM Accounting v3.
     assert cs_accounting.getInitializedVersion() == CS_ACCOUNTING_INITIALIZED_VERSION
+
+    # DG item 1.25 finalizes FeeDistributor v3.
     assert cs_fee_distributor.getInitializedVersion() == CS_FEE_DISTRIBUTOR_INITIALIZED_VERSION
+
+    # DG item 1.27 upgrades ValidatorStrikes while preserving its initialized version.
     assert cs_validator_strikes.getInitializedVersion() == CS_VALIDATOR_STRIKES_INITIALIZED_VERSION
+
+    # DG item 1.22 upgrades FeeOracle and advances its contract and consensus versions.
     assert cs_fee_oracle.getContractVersion() == CS_FEE_ORACLE_CONTRACT_VERSION
     assert cs_fee_oracle.getConsensusVersion() == CS_FEE_ORACLE_CONSENSUS_VERSION
 
+    # DG items 1.29-1.32 replace the legacy EL-stealing penalty roles with general penalty roles.
     _assert_oz_role_members(CSM, REPORT_EL_REWARDS_STEALING_PENALTY_ROLE, [])
     _assert_oz_role_members(CSM, SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE, [])
     _assert_oz_role_members(CSM, REPORT_GENERAL_DELAYED_PENALTY_ROLE, [CSM_COMMITTEE])
     _assert_oz_role_members(CSM, SETTLE_GENERAL_DELAYED_PENALTY_ROLE, [EASYTRACK_EVMSCRIPT_EXECUTOR])
+
+    # DG items 1.33-1.36 install the new verifier and withdrawal reporting role holders.
     _assert_oz_role_members(CSM, VERIFIER_ROLE, [VERIFIER_V3])
     _assert_oz_role_members(CSM, REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, [VERIFIER_V3])
     _assert_oz_role_members(CSM, REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE, [EASYTRACK_EVMSCRIPT_EXECUTOR])
+
+    # DG item 1.69 validates the final CSM pausing setup inherited by the upgraded contracts.
     _assert_oz_role_members(CSM, PAUSE_ROLE, [CIRCUIT_BREAKER, RESEAL_MANAGER])
+
+    # DG items 1.37-1.38 and 1.47 set the final CSM node-operator creation role holders.
     _assert_oz_role_members(
         CSM,
         CREATE_NODE_OPERATOR_ROLE,
         [CS_VETTED_GATE, NEW_PERMISSIONLESS_GATE, IDENTIFIED_DVT_CLUSTER_GATE],
     )
 
+    # DG item 1.69 validates PAUSE_ROLE on every CSM pausable used by the upgrade.
     for pausable in (
         CS_ACCOUNTING,
         CS_FEE_ORACLE,
@@ -859,23 +915,35 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
         NEW_CSM_EJECTOR,
     ):
         _assert_oz_role_members(pausable, PAUSE_ROLE, [CIRCUIT_BREAKER, RESEAL_MANAGER])
+
+    # DG items 1.42-1.46 unregister the old CSM contracts and register the new CB pausers.
     _assert_circuit_breaker_pauser(IDENTIFIED_DVT_CLUSTER_GATE, CSM_COMMITTEE)
     _assert_circuit_breaker_pauser(VERIFIER_V3, CSM_COMMITTEE)
     _assert_circuit_breaker_pauser(NEW_CSM_EJECTOR, CSM_COMMITTEE)
     _assert_circuit_breaker_pauser(OLD_VERIFIER, ZERO_ADDRESS)
     _assert_circuit_breaker_pauser(CONFIG_OLD_CSM_EJECTOR, ZERO_ADDRESS)
 
+    # DG items 1.39-1.40 revoke the obsolete VettedGate referral-season roles.
     _assert_has_no_oz_role(CS_VETTED_GATE, START_REFERRAL_SEASON_ROLE, AGENT)
     _assert_has_no_oz_role(CS_VETTED_GATE, END_REFERRAL_SEASON_ROLE, CSM_COMMITTEE)
+
+    # DG items 1.47-1.51 configure and execute the one-shot identified-DVT bond curve setup.
     _assert_has_oz_role(CS_ACCOUNTING, SET_BOND_CURVE_ROLE, IDENTIFIED_DVT_CLUSTER_GATE)
     _assert_has_no_oz_role(CS_ACCOUNTING, MANAGE_BOND_CURVES_ROLE, IDENTIFIED_DVT_CLUSTER_CURVE_SETUP)
     _assert_has_no_oz_role(CS_PARAMETERS_REGISTRY, MANAGE_CURVE_PARAMETERS_ROLE, IDENTIFIED_DVT_CLUSTER_CURVE_SETUP)
+
+    # DG item 1.52 grants the CSM Committee general penalties and charges management.
     _assert_oz_role_members(CS_PARAMETERS_REGISTRY, MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE, [CSM_COMMITTEE])
+
+    # DG items 1.53-1.54 migrate CSM Accounting from share burns to stETH burns.
     _assert_has_no_oz_role(BURNER, REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING)
     _assert_has_oz_role(BURNER, REQUEST_BURN_MY_STETH_ROLE, CS_ACCOUNTING)
+
+    # DG items 1.55-1.56 move the withdrawal request role to the new CSM Ejector.
     _assert_has_no_oz_role(TRIGGERABLE_WITHDRAWALS_GATEWAY, ADD_FULL_WITHDRAWAL_REQUEST_ROLE, CONFIG_OLD_CSM_EJECTOR)
     _assert_has_oz_role(TRIGGERABLE_WITHDRAWALS_GATEWAY, ADD_FULL_WITHDRAWAL_REQUEST_ROLE, NEW_CSM_EJECTOR)
 
+    # DG item 1.51 writes the identified-DVT curve and all of its explicit parameter values.
     curve_setup = interface.OneShotCurveSetup(IDENTIFIED_DVT_CLUSTER_CURVE_SETUP)
     assert curve_setup.executed() is True
     assert curve_setup.deployedCurveId() == IDENTIFIED_DVT_CLUSTER_BOND_CURVE_ID
@@ -894,7 +962,7 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
     assert cs_parameters_registry.getAllowedExitDelay(IDENTIFIED_DVT_CLUSTER_BOND_CURVE_ID) == IDVT_ALLOWED_EXIT_DELAY
     assert cs_parameters_registry.getExitDelayFee(IDENTIFIED_DVT_CLUSTER_BOND_CURVE_ID) == IDVT_EXIT_DELAY_FEE
 
-    # Curated Module v2.
+    # DG item 1.69 validates ownership of every predeployed Curated Module v2 proxy.
     curated_module = interface.CuratedModule(CURATED_MODULE)
     curated_exit_penalties = curated_module.EXIT_PENALTIES()
     for proxy in (
@@ -909,13 +977,15 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
     ):
         _assert_proxy_admin(proxy)
 
+    # DG item 1.69 validates the initialized versions of the predeployed Curated contracts.
     assert curated_module.getInitializedVersion() == CURATED_MODULE_INITIALIZED_VERSION
     assert (
         interface.ParametersRegistry(CURATED_PARAMETERS_REGISTRY).getInitializedVersion()
         == CURATED_PARAMETERS_REGISTRY_INITIALIZED_VERSION
     )
     assert (
-        interface.ModuleAccounting(CURATED_ACCOUNTING).getInitializedVersion() == CURATED_ACCOUNTING_INITIALIZED_VERSION
+        interface.ModuleAccounting(CURATED_ACCOUNTING).getInitializedVersion()
+        == CURATED_ACCOUNTING_INITIALIZED_VERSION
     )
     assert (
         interface.FeeDistributor(CURATED_FEE_DISTRIBUTOR).getInitializedVersion()
@@ -928,20 +998,33 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
     assert interface.FeeOracle(CURATED_FEE_ORACLE).getContractVersion() == CS_FEE_ORACLE_CONTRACT_VERSION
     assert interface.FeeOracle(CURATED_FEE_ORACLE).getConsensusVersion() == CS_FEE_ORACLE_CONSENSUS_VERSION
 
+    # DG item 1.58 grants Curated Accounting permission to request stETH burns.
     _assert_has_oz_role(BURNER, REQUEST_BURN_MY_STETH_ROLE, CURATED_ACCOUNTING)
+
+    # DG item 1.59 grants Curated Ejector permission to request full withdrawals.
     _assert_has_oz_role(TRIGGERABLE_WITHDRAWALS_GATEWAY, ADD_FULL_WITHDRAWAL_REQUEST_ROLE, CURATED_EJECTOR)
+
+    # DG item 1.69 validates the Curated Module administrator and pausing setup.
     _assert_oz_role_members(CURATED_MODULE, DEFAULT_ADMIN_ROLE, [AGENT])
+
+    # DG items 1.64-1.68 register the Curated Module contracts with their CircuitBreaker pauser.
     for pausable in (CURATED_MODULE, CURATED_ACCOUNTING, CURATED_FEE_ORACLE, CURATED_VERIFIER, CURATED_EJECTOR):
         _assert_oz_role_members(pausable, PAUSE_ROLE, [CIRCUIT_BREAKER, RESEAL_MANAGER])
         _assert_circuit_breaker_pauser(pausable, CURATED_CIRCUIT_BREAKER_PAUSER)
+
+    # DG items 1.60-1.62 temporarily grant RESUME_ROLE, resume Curated Module, and revoke the role.
     _assert_has_no_oz_role(CURATED_MODULE, RESUME_ROLE, AGENT)
     assert curated_module.isPaused() is False
+
+    # DG item 1.63 updates the Curated HashConsensus initial epoch.
     frame_config = interface.HashConsensus(CURATED_HASH_CONSENSUS).getFrameConfig()
     assert frame_config["initialEpoch"] == CURATED_HASH_CONSENSUS_INITIAL_EPOCH
     assert frame_config["epochsPerFrame"] == ctx["curated_epochs_per_frame"]
 
-    # StakingRouter, Lido, and DSM migration invariants.
+    # DG items 1.3 and 1.69 validate that the StakingRouter withdrawal credentials are preserved.
     assert staking_router.getWithdrawalCredentials() == WITHDRAWAL_CREDENTIALS
+
+    # DG items 1.57 and 1.69 add Curated Module v2 as module 4 and validate its full configuration.
     module_ids = staking_router.getStakingModuleIds()
     assert len(module_ids) == STAKING_ROUTER_MODULES_COUNT
     curated_module_id = module_ids[-1]
@@ -958,6 +1041,7 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
     assert module["status"] == CURATED_MODULE_STATUS_ACTIVE
     assert module["withdrawalCredentialsType"] == CURATED_MODULE_WITHDRAWAL_CREDENTIALS_TYPE
 
+    # DG items 1.2, 1.14-1.15, and 1.69 switch to the new DSM and validate its guardian migration.
     dsm = interface.DepositSecurityModule(NEW_DEPOSIT_SECURITY_MODULE)
     old_dsm = interface.DepositSecurityModule(OLD_DEPOSIT_SECURITY_MODULE)
     assert dsm.VERSION() == DSM_VERSION
@@ -1129,14 +1213,164 @@ def test_vote(
         # ======================= Before voting checks ========================
         # =====================================================================
         initial_factories = easy_track.getEVMScriptFactories()
+
+        # Vote items 2-3 remove the legacy CSM Easy Track factories.
         for factory in old_easy_track_factories:
             assert factory in initial_factories, "Old Easy Track factory unexpectedly absent before the vote"
+
+        # Vote items 4-12 add the SR v3, CSM v3, and Curated Module v2 factories.
         for factory in new_easy_track_factories:
             assert factory not in initial_factories, "New Easy Track factory unexpectedly present before the vote"
 
-        # Curated Module v2 is not registered in the Staking Router yet.
-        assert staking_router.getStakingModulesCount() == ctx["curated_module_item"].id - 1
+        # DG item 1.57 adds Curated Module v2 as module 4.
+        initial_module_ids = staking_router.getStakingModuleIds()
+        assert staking_router.getStakingModulesCount() == PRE_UPGRADE_STAKING_ROUTER_MODULES_COUNT
+        assert len(initial_module_ids) == PRE_UPGRADE_STAKING_ROUTER_MODULES_COUNT
+        assert CURATED_MODULE_ID not in initial_module_ids
 
+        # DG items 1.1 and 1.69 start and finish UpgradeTemplate respectively.
+        upgrade_template = interface.UpgradeTemplate(UPGRADE_TEMPLATE)
+        assert upgrade_template.upgradeBlockNumber() == 0
+        assert upgrade_template.isUpgradeFinished() is False
+
+        # DG item 1.9 installs the new Lido implementation in the Aragon Kernel.
+        kernel = interface.Kernel(ARAGON_KERNEL)
+        _assert_not_address(kernel.getApp(kernel.APP_BASES_NAMESPACE(), LIDO_ARAGON_APP_ID), LIDO_IMPL)
+
+        # DG items 1.2-1.6 upgrade the core OssifiableProxy implementations.
+        for proxy_address, new_implementation in (
+            (LIDO_LOCATOR, LIDO_LOCATOR_IMPL),  # DG item 1.2
+            (STAKING_ROUTER, STAKING_ROUTER_IMPL),  # DG item 1.3
+            (ACCOUNTING_ORACLE, ACCOUNTING_ORACLE_IMPL),  # DG item 1.4
+            (VALIDATORS_EXIT_BUS_ORACLE, VALIDATORS_EXIT_BUS_ORACLE_IMPL),  # DG item 1.5
+            (ACCOUNTING, ACCOUNTING_IMPL),  # DG item 1.6
+        ):
+            _assert_not_address(
+                interface.OssifiableProxy(proxy_address).proxy__getImplementation(),
+                new_implementation,
+            )
+
+        # DG item 1.7 upgrades and finalizes WithdrawalVault.
+        _assert_not_address(
+            interface.WithdrawalsManagerProxy(WITHDRAWAL_VAULT).implementation(),
+            WITHDRAWAL_VAULT_IMPL,
+        )
+
+        # DG item 1.12 finalizes Lido v4.
+        assert interface.Lido(LIDO).getContractVersion() == LIDO_CONTRACT_VERSION - 1
+
+        # DG item 1.3 upgrades and finalizes StakingRouter v4.
+        assert staking_router.getContractVersion() == SR_INITIALIZED_VERSION - 1
+
+        # DG item 1.4 upgrades AccountingOracle and advances both versions.
+        assert interface.AccountingOracle(ACCOUNTING_ORACLE).getContractVersion() == AO_CONTRACT_VERSION - 1
+        assert interface.AccountingOracle(ACCOUNTING_ORACLE).getConsensusVersion() == AO_CONSENSUS_VERSION - 1
+
+        # DG item 1.5 upgrades ValidatorsExitBusOracle and advances both versions.
+        assert (
+            interface.ValidatorsExitBusOracle(VALIDATORS_EXIT_BUS_ORACLE).getContractVersion()
+            == VEBO_CONTRACT_VERSION - 1
+        )
+        assert (
+            interface.ValidatorsExitBusOracle(VALIDATORS_EXIT_BUS_ORACLE).getConsensusVersion()
+            == VEBO_CONSENSUS_VERSION - 1
+        )
+
+        # DG item 1.7 finalizes WithdrawalVault v3.
+        assert (
+            interface.WithdrawalVault(WITHDRAWAL_VAULT).getContractVersion()
+            == WITHDRAWAL_VAULT_CONTRACT_VERSION - 1
+        )
+
+        # DG item 1.2 switches LidoLocator to the implementation using the new DSM.
+        _assert_address(interface.LidoLocator(LIDO_LOCATOR).depositSecurityModule(), OLD_DEPOSIT_SECURITY_MODULE)
+
+        acl = interface.ACL(ACL)
+
+        # DG items 1.8-1.10 temporarily grant and then revoke APP_MANAGER_ROLE.
+        assert not acl.hasPermission(AGENT, ARAGON_KERNEL, APP_MANAGER_ROLE)
+
+        # DG item 1.11 creates and grants BUFFER_RESERVE_MANAGER_ROLE.
+        assert not acl.hasPermission(AGENT, LIDO, BUFFER_RESERVE_MANAGER_ROLE)
+
+        # DG items 1.20-1.27 upgrade the CSM proxy implementations.
+        for proxy_address, new_implementation in (
+            (CSM, CSM_IMPL),  # DG item 1.20
+            (CS_PARAMETERS_REGISTRY, CS_PARAMETERS_REGISTRY_IMPL),  # DG item 1.21
+            (CS_FEE_ORACLE, CS_FEE_ORACLE_IMPL),  # DG item 1.22
+            (CS_VETTED_GATE, CS_VETTED_GATE_IMPL),  # DG item 1.23
+            (CS_ACCOUNTING, CS_ACCOUNTING_IMPL),  # DG item 1.24
+            (CS_FEE_DISTRIBUTOR, CS_FEE_DISTRIBUTOR_IMPL),  # DG item 1.25
+            (CS_EXIT_PENALTIES, CS_EXIT_PENALTIES_IMPL),  # DG item 1.26
+            (CS_VALIDATOR_STRIKES, CS_VALIDATOR_STRIKES_IMPL),  # DG item 1.27
+        ):
+            _assert_not_address(
+                interface.OssifiableProxy(proxy_address).proxy__getImplementation(),
+                new_implementation,
+            )
+
+        # DG item 1.20 finalizes CSModule v3.
+        assert interface.CSModule(CSM).getInitializedVersion() == CSM_INITIALIZED_VERSION - 1
+
+        # DG item 1.21 finalizes ParametersRegistry v3 (its pre-upgrade version is 1).
+        assert (
+            interface.ParametersRegistry(CS_PARAMETERS_REGISTRY).getInitializedVersion()
+            == CS_PARAMETERS_REGISTRY_PRE_UPGRADE_INITIALIZED_VERSION
+        )
+
+        # DG item 1.24 finalizes CSM Accounting v3.
+        assert (
+            interface.ModuleAccounting(CS_ACCOUNTING).getInitializedVersion()
+            == CS_ACCOUNTING_INITIALIZED_VERSION - 1
+        )
+
+        # DG item 1.25 finalizes FeeDistributor v3.
+        assert (
+            interface.FeeDistributor(CS_FEE_DISTRIBUTOR).getInitializedVersion()
+            == CS_FEE_DISTRIBUTOR_INITIALIZED_VERSION - 1
+        )
+
+        # DG item 1.22 upgrades FeeOracle and advances both versions.
+        assert interface.FeeOracle(CS_FEE_ORACLE).getContractVersion() == CS_FEE_ORACLE_CONTRACT_VERSION - 1
+        assert (
+            interface.FeeOracle(CS_FEE_ORACLE).getConsensusVersion()
+            == CS_FEE_ORACLE_CONSENSUS_VERSION - 1
+        )
+
+        # DG items 1.33-1.34 replace the CSM verifier role holder.
+        _assert_has_oz_role(CSM, VERIFIER_ROLE, OLD_VERIFIER)
+        _assert_has_no_oz_role(CSM, VERIFIER_ROLE, VERIFIER_V3)
+
+        # DG items 1.37-1.38 replace the permissionless gate role holder.
+        _assert_has_oz_role(CSM, CREATE_NODE_OPERATOR_ROLE, OLD_PERMISSIONLESS_GATE)
+        _assert_has_no_oz_role(CSM, CREATE_NODE_OPERATOR_ROLE, NEW_PERMISSIONLESS_GATE)
+
+        # DG items 1.55-1.56 move the withdrawal request role to the new CSM Ejector.
+        _assert_has_oz_role(
+            TRIGGERABLE_WITHDRAWALS_GATEWAY,
+            ADD_FULL_WITHDRAWAL_REQUEST_ROLE,
+            CONFIG_OLD_CSM_EJECTOR,
+        )
+        _assert_has_no_oz_role(
+            TRIGGERABLE_WITHDRAWALS_GATEWAY,
+            ADD_FULL_WITHDRAWAL_REQUEST_ROLE,
+            NEW_CSM_EJECTOR,
+        )
+
+        # DG items 1.60-1.62 temporarily grant RESUME_ROLE, resume Curated Module, and revoke the role.
+        assert interface.CuratedModule(CURATED_MODULE).isPaused() is True
+
+        # DG item 1.58 grants Curated Accounting permission to request stETH burns.
+        _assert_has_no_oz_role(BURNER, REQUEST_BURN_MY_STETH_ROLE, CURATED_ACCOUNTING)
+
+        # DG item 1.59 grants Curated Ejector permission to request full withdrawals.
+        _assert_has_no_oz_role(
+            TRIGGERABLE_WITHDRAWALS_GATEWAY,
+            ADD_FULL_WITHDRAWAL_REQUEST_ROLE,
+            CURATED_EJECTOR,
+        )
+
+        # Vote item 1 submits the DG proposal described by this IPFS metadata.
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
 
         vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
