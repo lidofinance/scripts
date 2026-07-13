@@ -112,22 +112,40 @@ def curated_v2_upload_keys(node_operator_id, keys_count):
         remaining_keys -= batch_size
 
 
-def curated_v2_add_node_operator(node_operator, keys_count):
-    module = contracts.cm
-    gate, proof = _prepare_curated_gate(node_operator)
-
+def curated_v2_create_node_operator(
+    module,
+    gate,
+    node_operator,
+    proof,
+    manager_address=ZERO_ADDRESS,
+    reward_address=ZERO_ADDRESS,
+    name="test",
+    description="test",
+):
     node_operators_count_before = module.getNodeOperatorsCount()
     gate.createNodeOperator(
-        "test",
-        "test",
-        ZERO_ADDRESS,
-        ZERO_ADDRESS,
+        name,
+        description,
+        manager_address,
+        reward_address,
         proof,
         {"from": node_operator},
     )
     assert module.getNodeOperatorsCount() == node_operators_count_before + 1
+    return node_operators_count_before
 
-    node_operator_id = node_operators_count_before
+
+def curated_v2_add_node_operator(node_operator, keys_count):
+    module = contracts.cm
+    gate, proof = _prepare_curated_gate(node_operator)
+
+    node_operator_id = curated_v2_create_node_operator(
+        module,
+        gate,
+        node_operator,
+        proof,
+    )
+
     _ensure_meta_registry_setup(node_operator_id)
     curated_v2_upload_keys(node_operator_id, keys_count)
     assert module.getNodeOperator(node_operator_id)["depositableValidatorsCount"] >= keys_count
