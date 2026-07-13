@@ -103,7 +103,6 @@ from typing import Dict, List, Optional, Tuple
 from brownie import interface
 
 from utils.config import (
-    UPGRADE_VOTE_SCRIPT,
     contracts,
     get_deployer_account,
     get_is_live,
@@ -114,8 +113,9 @@ from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_descrip
 from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
-# UPGRADE_VOTE_SCRIPT address lives in configs/config_mainnet.py and is synced
-# from core/deployed-mainnet.json.
+# SRv3/CMv2 upgrade omnibus (UpgradeVoteScript) — the vote script reads its items
+# from this contract. Synced from core/deployed-mainnet.json.
+UPGRADE_VOTE_SCRIPT = "0xE6530830A2cf90773cB232748b2c674c27b6E0CA"
 
 # ============================= Description ==================================
 DG_PROPOSAL_METADATA = "Activate Staking Router v3 + Curated Module v2 + Community Staking Module v3"
@@ -129,22 +129,8 @@ IPFS_DESCRIPTION = """
 """
 
 
-def is_placeholder_vote_script_address(value: str) -> bool:
-    normalized = value.strip().lower()
-    return normalized in (
-        "",
-        "0x0000000000000000000000000000000000000000",
-    ) or normalized.startswith("todo")
-
-
 def get_dg_items(upgrade_vote_script: Optional[str] = None) -> List[Tuple[str, str]]:
     vote_script_address = (upgrade_vote_script or UPGRADE_VOTE_SCRIPT).strip()
-    if is_placeholder_vote_script_address(vote_script_address):
-        raise ValueError(
-            "UpgradeVoteScript address is not configured. "
-            "Pass upgrade_vote_script explicitly or set UPGRADE_VOTE_SCRIPT at the top of this file."
-        )
-
     omnibus = interface.UpgradeVoteScript(vote_script_address)
     dg_items: List[Tuple[str, str]] = []
 
@@ -158,12 +144,6 @@ def get_vote_items(
     upgrade_vote_script: Optional[str] = None,
 ) -> Tuple[List[str], List[Tuple[str, str]]]:
     vote_script_address = (upgrade_vote_script or UPGRADE_VOTE_SCRIPT).strip()
-    if is_placeholder_vote_script_address(vote_script_address):
-        raise ValueError(
-            "UpgradeVoteScript address is not configured. "
-            "Pass upgrade_vote_script explicitly or set UPGRADE_VOTE_SCRIPT at the top of this file."
-        )
-
     omnibus = interface.UpgradeVoteScript(vote_script_address)
 
     vote_desc_items: List[str] = []

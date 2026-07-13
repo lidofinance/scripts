@@ -199,10 +199,6 @@ CM_EJECTOR_ADDRESS = CURATED_V2_EJECTOR
 # for all five CM v2 pausables on the CircuitBreaker
 CURATED_V2_CIRCUIT_BREAKER_PAUSER = "0x2570e0b22AD904501dfB0d49575991ACB801dD91"  # SRV3
 
-# SRv3/CMv2 upgrade omnibus (UpgradeVoteScript) — the vote script reads its items
-# from this contract. Synced from core/deployed-mainnet.json.
-UPGRADE_VOTE_SCRIPT = "0xE6530830A2cf90773cB232748b2c674c27b6E0CA"  # SRV3
-
 # NodeOperatorsRegistry clone aka SimpleDVT
 SIMPLE_DVT_IMPL = "0x6828b023e737f96B168aCd0b5c6351971a4F81aE"
 SIMPLE_DVT_REPO = "0x2325b0a607808dE42D918DB07F925FFcCfBb2968"
@@ -381,9 +377,6 @@ TOP_UP_GATEWAY_TARGET_BALANCE_GWEI = 2_046_750_000_000  # 2046.75 ETH (1.25 ETH 
 TOP_UP_GATEWAY_MIN_TOP_UP_GWEI = 2_000_000_000  # 2 ETH
 # sole TOP_UP_ROLE holder (coreUpgrade.topUpGatewayDepositor, stable deploy input)
 TOP_UP_GATEWAY_DEPOSITOR = "0xF82aC5937A20dC862F9bc0668779031E06000f17"
-
-# CircuitBreaker — TW-upgrade pause hub; the SRv3 vote registers it as pauser for the new gateways
-CIRCUIT_BREAKER = "0x6019CB557978296BA3C08a7B73225C0975DFB2F7"
 
 # ConsolidationGateway — deployed directly (no proxy), admin/limits set in the constructor
 CONSOLIDATION_GATEWAY = "0x17be979344f2c2cC806229a532D92f8742C10462"  # SRV3
