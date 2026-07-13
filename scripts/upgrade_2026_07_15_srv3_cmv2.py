@@ -130,22 +130,8 @@ IPFS_DESCRIPTION = """
 """
 
 
-def is_placeholder_vote_script_address(value: str) -> bool:
-    normalized = value.strip().lower()
-    return normalized in (
-        "",
-        "0x0000000000000000000000000000000000000000",
-    ) or normalized.startswith("todo")
-
-
 def get_dg_items(upgrade_vote_script: Optional[str] = None) -> List[Tuple[str, str]]:
     vote_script_address = (upgrade_vote_script or UPGRADE_VOTE_SCRIPT).strip()
-    if is_placeholder_vote_script_address(vote_script_address):
-        raise ValueError(
-            "UpgradeVoteScript address is not configured. "
-            "Pass upgrade_vote_script explicitly or set UPGRADE_VOTE_SCRIPT at the top of this file."
-        )
-
     omnibus = interface.UpgradeVoteScript(vote_script_address)
     dg_items: List[Tuple[str, str]] = []
 
@@ -159,12 +145,6 @@ def get_vote_items(
     upgrade_vote_script: Optional[str] = None,
 ) -> Tuple[List[str], List[Tuple[str, str]]]:
     vote_script_address = (upgrade_vote_script or UPGRADE_VOTE_SCRIPT).strip()
-    if is_placeholder_vote_script_address(vote_script_address):
-        raise ValueError(
-            "UpgradeVoteScript address is not configured. "
-            "Pass upgrade_vote_script explicitly or set UPGRADE_VOTE_SCRIPT at the top of this file."
-        )
-
     omnibus = interface.UpgradeVoteScript(vote_script_address)
 
     vote_desc_items: List[str] = []
