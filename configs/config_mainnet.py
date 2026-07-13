@@ -199,10 +199,6 @@ CM_EJECTOR_ADDRESS = CURATED_V2_EJECTOR
 # for all five CM v2 pausables on the CircuitBreaker
 CURATED_V2_CIRCUIT_BREAKER_PAUSER = "0x2570e0b22AD904501dfB0d49575991ACB801dD91"  # SRV3
 
-# SRv3/CMv2 upgrade omnibus (UpgradeVoteScript) — the vote script reads its items
-# from this contract. Synced from core/deployed-mainnet.json.
-UPGRADE_VOTE_SCRIPT = "0xE6530830A2cf90773cB232748b2c674c27b6E0CA"  # SRV3
-
 # NodeOperatorsRegistry clone aka SimpleDVT
 SIMPLE_DVT_IMPL = "0x6828b023e737f96B168aCd0b5c6351971a4F81aE"
 SIMPLE_DVT_REPO = "0x2325b0a607808dE42D918DB07F925FFcCfBb2968"
