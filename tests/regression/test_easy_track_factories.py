@@ -12,12 +12,16 @@ from configs.config_mainnet import *
 from utils.balance import set_balance
 from utils.config import contracts, EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER
 from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
+from utils.test.csm_helpers import csm_add_ics_node_operator, csm_add_node_operator
+from utils.test.helpers import ETH
 from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
+from utils.test.merkle_tree import AddressTree
 from utils.test.curated_v2_helpers import (
     DEFAULT_OPERATOR_WEIGHT,
     _get_fresh_node_operator,
     _get_role_member_or_grant,
     curated_v2_add_node_operator,
+    curated_v2_create_node_operator,
 )
 from utils.test.simple_dvt_helpers import (
     fill_simple_dvt_ops_keys,
@@ -699,232 +703,468 @@ def _permission_call(target_address, method):
     return bytes.fromhex(str(target_address)[2:]) + bytes.fromhex(method.signature[2:])
 
 
-def _bytes32_hex(value):
-    if isinstance(value, (bytes, bytearray)):
-        return "0x" + bytes(value).hex()
-    return str(value).lower()
+class TestSetMerkleGateTree:
+    def _bytes32_hex(self, value):
+        if isinstance(value, (bytes, bytearray)):
+            return "0x" + bytes(value).hex()
+        return str(value).lower()
 
+    def _set_merkle_gate_tree_calldata(self, gate):
+        current_root = gate.treeRoot()
+        current_cid = gate.treeCid()
+        new_root = web3.keccak(text=f"scripts-regression-{gate.address}")
+        new_cid = f"ipfs://scripts-regression-{gate.address[-8:]}"
+        if self._bytes32_hex(new_root) == self._bytes32_hex(current_root):
+            new_root = web3.keccak(text=f"scripts-regression-{gate.address}-next")
+        if new_cid == current_cid:
+            new_cid = f"{new_cid}-next"
 
-def _set_merkle_gate_tree_calldata(gate):
-    current_root = gate.treeRoot()
-    current_cid = gate.treeCid()
-    new_root = web3.keccak(text=f"scripts-regression-{gate.address}")
-    new_cid = f"ipfs://scripts-regression-{gate.address[-8:]}"
-    if _bytes32_hex(new_root) == _bytes32_hex(current_root):
-        new_root = web3.keccak(text=f"scripts-regression-{gate.address}-next")
-    if new_cid == current_cid:
-        new_cid = f"{new_cid}-next"
+        calldata = _encode_calldata(
+            ["address", "bytes32", "string", "bytes32", "string"],
+            [gate.address, current_root, current_cid, new_root, new_cid],
+        )
+        return calldata, self._bytes32_hex(new_root), new_cid
 
-    calldata = _encode_calldata(
-        ["address", "bytes32", "string", "bytes32", "string"],
-        [gate.address, current_root, current_cid, new_root, new_cid],
-    )
-    return calldata, _bytes32_hex(new_root), new_cid
-
-
-@pytest.mark.parametrize(
-    "factory_address,allowed_gate_addresses",
-    [
-        (EASYTRACK_CSM_SET_MERKLE_GATE_TREE_FACTORY, CSM_MERKLE_GATE_ADDRESSES),
-        (EASYTRACK_CM_SET_MERKLE_GATE_TREE_FACTORY, CM_MERKLE_GATE_ADDRESSES),
-    ],
-)
-def test_set_merkle_gate_tree_factory_permissions(factory_address, allowed_gate_addresses):
-    factory = interface.SetMerkleGateTree(factory_address)
-    expected_permissions = {_permission_call(factory.address, factory.validateInputData)}
-
-    for gate_address in allowed_gate_addresses:
-        gate = interface.MerkleGate(gate_address)
-        expected_permissions.add(_permission_call(gate.address, gate.setTreeParams))
-
-    assert _permission_entries(factory.address) == expected_permissions
-
-
-@pytest.mark.parametrize(
-    "factory_address,wrong_gate_address",
-    [
-        (EASYTRACK_CM_SET_MERKLE_GATE_TREE_FACTORY, CS_VETTED_GATE_ADDRESS),
-        (EASYTRACK_CSM_SET_MERKLE_GATE_TREE_FACTORY, CM_PROFESSIONAL_OPERATOR_GATE_ADDRESS),
-    ],
-)
-def test_set_merkle_gate_tree_factory_reverts_for_other_module_gate(factory_address, wrong_gate_address):
-    factory = interface.SetMerkleGateTree(factory_address)
-    wrong_gate = interface.MerkleGate(wrong_gate_address)
-    calldata, _, _ = _set_merkle_gate_tree_calldata(wrong_gate)
-
-    assert _permissions_include(factory.address, factory.address, factory.validateInputData)
-    assert not _permissions_include(factory.address, wrong_gate.address, wrong_gate.setTreeParams)
-
-    with pytest.raises(VirtualMachineError):
-        contracts.easy_track.createMotion(
-            factory,
-            calldata,
-            {"from": set_balance(factory.trustedCaller(), 100000)},
+    def _set_merkle_gate_tree_via_factory(self, factory, gate, tree, tree_cid, stranger):
+        calldata = _encode_calldata(
+            ["address", "bytes32", "string", "bytes32", "string"],
+            [gate.address, gate.treeRoot(), gate.treeCid(), tree.root, tree_cid],
         )
 
+        create_and_enact_motion(
+            contracts.easy_track,
+            set_balance(factory.trustedCaller(), 100000),
+            factory,
+            calldata,
+            stranger,
+        )
 
-@pytest.mark.parametrize(
-    "factory_address,expected_name,gate_address",
-    [
-        (
-            EASYTRACK_CSM_SET_MERKLE_GATE_TREE_FACTORY,
-            CSM_FACTORY_NAME,
-            CS_VETTED_GATE_ADDRESS,
-        ),
-        (
-            EASYTRACK_CM_SET_MERKLE_GATE_TREE_FACTORY,
-            CM_FACTORY_NAME,
-            CM_PROFESSIONAL_OPERATOR_GATE_ADDRESS,
-        ),
-    ],
-)
-def test_set_merkle_gate_tree_factories(factory_address, expected_name, gate_address, stranger):
-    factory = interface.SetMerkleGateTree(factory_address)
-    gate = interface.MerkleGate(gate_address)
-    assert factory.name() == expected_name
-    calldata, new_root, new_cid = _set_merkle_gate_tree_calldata(gate)
+        assert self._bytes32_hex(gate.treeRoot()) == self._bytes32_hex(tree.root)
+        assert gate.treeCid() == tree_cid
 
-    create_and_enact_motion(
-        contracts.easy_track,
-        set_balance(factory.trustedCaller(), 100000),
-        factory,
-        calldata,
-        stranger,
+    @pytest.mark.parametrize(
+        "factory_address,allowed_gate_addresses",
+        [
+            (EASYTRACK_CSM_SET_MERKLE_GATE_TREE_FACTORY, CSM_MERKLE_GATE_ADDRESSES),
+            (EASYTRACK_CM_SET_MERKLE_GATE_TREE_FACTORY, CM_MERKLE_GATE_ADDRESSES),
+        ],
     )
+    def test_permissions(self, factory_address, allowed_gate_addresses):
+        factory = interface.SetMerkleGateTree(factory_address)
+        expected_permissions = {_permission_call(factory.address, factory.validateInputData)}
 
-    assert _bytes32_hex(gate.treeRoot()) == new_root
-    assert gate.treeCid() == new_cid
+        for gate_address in allowed_gate_addresses:
+            gate = interface.MerkleGate(gate_address)
+            expected_permissions.add(_permission_call(gate.address, gate.setTreeParams))
 
+        assert _permission_entries(factory.address) == expected_permissions
 
-def test_csm_report_withdrawals_for_slashed_validators_factory():
-    factory = interface.ReportWithdrawalsForSlashedValidators(
-        EASYTRACK_CSM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY
+    @pytest.mark.parametrize(
+        "factory_address,wrong_gate_address",
+        [
+            (EASYTRACK_CM_SET_MERKLE_GATE_TREE_FACTORY, CS_VETTED_GATE_ADDRESS),
+            (EASYTRACK_CSM_SET_MERKLE_GATE_TREE_FACTORY, CM_PROFESSIONAL_OPERATOR_GATE_ADDRESS),
+        ],
     )
-    module = interface.BaseModule(CSM_ADDRESS)
+    def test_reverts_for_other_module_gate(self, factory_address, wrong_gate_address):
+        factory = interface.SetMerkleGateTree(factory_address)
+        wrong_gate = interface.MerkleGate(wrong_gate_address)
+        calldata, _, _ = self._set_merkle_gate_tree_calldata(wrong_gate)
 
-    assert factory.module() == module.address
-    assert factory.name() == CSM_FACTORY_NAME
-    assert _permissions_include(factory.address, module.address, module.reportSlashedWithdrawnValidators)
+        assert _permissions_include(factory.address, factory.address, factory.validateInputData)
+        assert not _permissions_include(factory.address, wrong_gate.address, wrong_gate.setTreeParams)
 
-    calldata = _encode_calldata(["(uint256,uint256,uint256,uint256,bool)[]"], [[]])
-    try:
-        factory.createEVMScript(factory.trustedCaller(), calldata)
-        assert False, "Expected EMPTY_VALIDATOR_INFO_LIST revert"
-    except VirtualMachineError as error:
-        assert "EMPTY_VALIDATOR_INFO_LIST" in error.message
+        with pytest.raises(VirtualMachineError):
+            contracts.easy_track.createMotion(
+                factory,
+                calldata,
+                {"from": set_balance(factory.trustedCaller(), 100000)},
+            )
+
+    def test_csm_scenario(self, stranger):
+        factory = interface.SetMerkleGateTree(EASYTRACK_CSM_SET_MERKLE_GATE_TREE_FACTORY)
+        gate = interface.VettedGate(CS_VETTED_GATE_ADDRESS)
+        member = accounts[5]
+        manager = accounts[7]
+        reward = accounts[8]
+        tree = AddressTree.new([member.address, accounts[6].address])
+        tree_cid = f"ipfs://scripts-regression-csm-{contracts.csm.getNodeOperatorsCount()}"
+
+        assert factory.name() == CSM_FACTORY_NAME
+        self._set_merkle_gate_tree_via_factory(factory, gate, tree, tree_cid, stranger)
+
+        proof = tree.get_proof(member.address)
+        assert gate.verifyProof(member, proof)
+
+        node_operator_id = csm_add_ics_node_operator(
+            contracts.csm,
+            gate,
+            contracts.cs_accounting,
+            member,
+            proof,
+            keys_count=1,
+            management_properties=(manager.address, reward.address, True),
+        )
+
+        node_operator = contracts.csm.getNodeOperator(node_operator_id)
+        assert node_operator["managerAddress"] == manager.address
+        assert node_operator["rewardAddress"] == reward.address
+        assert node_operator["extendedManagerPermissions"] is True
+        assert gate.isConsumed(member)
+
+    def test_cm_scenario(self, stranger):
+        factory = interface.SetMerkleGateTree(EASYTRACK_CM_SET_MERKLE_GATE_TREE_FACTORY)
+        gate = interface.CuratedGate(CM_PROFESSIONAL_OPERATOR_GATE_ADDRESS)
+        member = accounts[5]
+        manager = accounts[7]
+        reward = accounts[8]
+        tree = AddressTree.new([member.address, accounts[6].address])
+        tree_cid = f"ipfs://scripts-regression-cm-{contracts.cm.getNodeOperatorsCount()}"
+
+        assert factory.name() == CM_FACTORY_NAME
+        self._set_merkle_gate_tree_via_factory(factory, gate, tree, tree_cid, stranger)
+
+        proof = tree.get_proof(member.address)
+        assert gate.verifyProof(member, proof)
+
+        node_operator_id = curated_v2_create_node_operator(
+            contracts.cm,
+            gate,
+            member,
+            proof,
+            manager_address=manager.address,
+            reward_address=reward.address,
+            name="Scripts regression operator",
+            description="Created through the updated professional operator gate tree",
+        )
+
+        node_operator = contracts.cm.getNodeOperator(node_operator_id)
+        assert node_operator["managerAddress"] == manager.address
+        assert node_operator["rewardAddress"] == reward.address
+        assert node_operator["extendedManagerPermissions"] is True
+        assert gate.isConsumed(member)
 
 
-def test_cm_report_withdrawals_for_slashed_validators_factory():
-    factory = interface.ReportWithdrawalsForSlashedValidators(
-        EASYTRACK_CM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY
+class TestReportWithdrawalsForSlashedValidators:
+    def _find_unwithdrawn_unslashed_validator(self, module):
+        for node_operator_id in reversed(range(module.getNodeOperatorsCount())):
+            node_operator = module.getNodeOperator(node_operator_id)
+            for key_index in reversed(range(node_operator["totalDepositedKeys"])):
+                if not module.isValidatorWithdrawn(node_operator_id, key_index) and not module.isValidatorSlashed(
+                    node_operator_id, key_index
+                ):
+                    return node_operator_id, key_index
+        return None
+
+    def _get_csm_unwithdrawn_unslashed_validator(self):
+        module = interface.BaseModule(CSM_ADDRESS)
+        validator = self._find_unwithdrawn_unslashed_validator(module)
+        if validator is None:
+            csm_add_node_operator(
+                contracts.csm,
+                contracts.cs_permissionless_gate,
+                contracts.cs_accounting,
+                set_balance(accounts[5], 100),
+                keys_count=1,
+            )
+            module.obtainDepositData(1, "0x", {"from": set_balance(STAKING_ROUTER, 100)})
+            validator = self._find_unwithdrawn_unslashed_validator(module)
+        return validator
+
+    def _get_cm_unwithdrawn_unslashed_validator(self):
+        module = interface.BaseModule(CM_MODULE_ADDRESS)
+        validator = self._find_unwithdrawn_unslashed_validator(module)
+        if validator is None:
+            node_operator = _get_fresh_node_operator(set_balance(accounts[5], 100))
+            curated_v2_add_node_operator(node_operator, 1)
+            module.obtainDepositData(1, "0x", {"from": set_balance(STAKING_ROUTER, 100)})
+            validator = self._find_unwithdrawn_unslashed_validator(module)
+        return validator
+
+    def _mark_validator_slashed(self, module, node_operator_id, key_index):
+        verifier_role = module.VERIFIER_ROLE()
+        assert module.getRoleMemberCount(verifier_role) == 1
+        verifier = set_balance(module.getRoleMember(verifier_role, 0), 100)
+        module.reportValidatorSlashing(node_operator_id, key_index, {"from": verifier})
+        assert module.isValidatorSlashed(node_operator_id, key_index)
+
+    def _report_slashed_withdrawal_via_factory(self, factory, node_operator_id, key_index, stranger):
+        create_and_enact_motion(
+            contracts.easy_track,
+            set_balance(factory.trustedCaller(), 100),
+            factory,
+            _encode_calldata(
+                ["(uint256,uint256,uint256,uint256,bool)[]"],
+                [[(node_operator_id, key_index, ETH(32), 1, True)]],
+            ),
+            stranger,
+        )
+
+    @pytest.mark.parametrize(
+        "factory_address,module_address,factory_name",
+        [
+            (EASYTRACK_CSM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY, CSM_ADDRESS, CSM_FACTORY_NAME),
+            (EASYTRACK_CM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY, CM_MODULE_ADDRESS, CM_FACTORY_NAME),
+        ],
+        ids=["csm", "cm"],
     )
-    module = interface.BaseModule(CM_MODULE_ADDRESS)
+    def test_configuration(self, factory_address, module_address, factory_name):
+        factory = interface.ReportWithdrawalsForSlashedValidators(factory_address)
+        module = interface.BaseModule(module_address)
 
-    assert factory.module() == module.address
-    assert factory.name() == CM_FACTORY_NAME
-    assert _permissions_include(factory.address, module.address, module.reportSlashedWithdrawnValidators)
+        assert factory.module() == module.address
+        assert factory.name() == factory_name
+        assert _permissions_include(factory.address, module.address, module.reportSlashedWithdrawnValidators)
 
-    calldata = _encode_calldata(["(uint256,uint256,uint256,uint256,bool)[]"], [[]])
-    try:
-        factory.createEVMScript(factory.trustedCaller(), calldata)
-        assert False, "Expected EMPTY_VALIDATOR_INFO_LIST revert"
-    except VirtualMachineError as error:
-        assert "EMPTY_VALIDATOR_INFO_LIST" in error.message
+    def test_csm_reverts_for_unslashed_validator(self):
+        factory = interface.ReportWithdrawalsForSlashedValidators(
+            EASYTRACK_CSM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY
+        )
+        node_operator_id, key_index = self._get_csm_unwithdrawn_unslashed_validator()
+
+        with pytest.raises(VirtualMachineError, match="VALIDATOR_NOT_SLASHED"):
+            factory.createEVMScript(
+                factory.trustedCaller(),
+                _encode_calldata(
+                    ["(uint256,uint256,uint256,uint256,bool)[]"],
+                    [[(node_operator_id, key_index, ETH(32), 1, True)]],
+                ),
+            )
+
+    def test_cm_reverts_for_unslashed_validator(self):
+        factory = interface.ReportWithdrawalsForSlashedValidators(
+            EASYTRACK_CM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY
+        )
+        node_operator_id, key_index = self._get_cm_unwithdrawn_unslashed_validator()
+
+        with pytest.raises(VirtualMachineError, match="VALIDATOR_NOT_SLASHED"):
+            factory.createEVMScript(
+                factory.trustedCaller(),
+                _encode_calldata(
+                    ["(uint256,uint256,uint256,uint256,bool)[]"],
+                    [[(node_operator_id, key_index, ETH(32), 1, True)]],
+                ),
+            )
+
+    def test_csm_scenario(self, stranger):
+        module = interface.BaseModule(CSM_ADDRESS)
+        factory = interface.ReportWithdrawalsForSlashedValidators(
+            EASYTRACK_CSM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY
+        )
+        node_operator_id, key_index = self._get_csm_unwithdrawn_unslashed_validator()
+
+        self._mark_validator_slashed(module, node_operator_id, key_index)
+        node_operator_before = module.getNodeOperator(node_operator_id)
+        nonce_before = module.getNonce()
+
+        self._report_slashed_withdrawal_via_factory(factory, node_operator_id, key_index, stranger)
+
+        node_operator_after = module.getNodeOperator(node_operator_id)
+        assert module.isValidatorWithdrawn(node_operator_id, key_index)
+        assert node_operator_after["totalWithdrawnKeys"] == node_operator_before["totalWithdrawnKeys"] + 1
+        assert module.getNonce() == nonce_before + 1
+
+    def test_cm_scenario(self, stranger):
+        module = interface.BaseModule(CM_MODULE_ADDRESS)
+        factory = interface.ReportWithdrawalsForSlashedValidators(
+            EASYTRACK_CM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY
+        )
+        node_operator_id, key_index = self._get_cm_unwithdrawn_unslashed_validator()
+
+        self._mark_validator_slashed(module, node_operator_id, key_index)
+        node_operator_before = module.getNodeOperator(node_operator_id)
+        nonce_before = module.getNonce()
+
+        self._report_slashed_withdrawal_via_factory(factory, node_operator_id, key_index, stranger)
+
+        node_operator_after = module.getNodeOperator(node_operator_id)
+        assert module.isValidatorWithdrawn(node_operator_id, key_index)
+        assert node_operator_after["totalWithdrawnKeys"] == node_operator_before["totalWithdrawnKeys"] + 1
+        assert module.getNonce() == nonce_before + 1
 
 
-def test_csm_settle_general_delayed_penalty_factory():
-    factory = interface.SettleGeneralDelayedPenalty(EASYTRACK_CSM_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY)
-    module = interface.BaseModule(CSM_ADDRESS)
+class TestSettleGeneralDelayedPenalty:
+    def _report_general_delayed_penalty(self, module, node_operator_id):
+        reporter_role = module.REPORT_GENERAL_DELAYED_PENALTY_ROLE()
+        assert module.getRoleMemberCount(reporter_role) == 1
+        reporter = set_balance(module.getRoleMember(reporter_role, 0), 100)
+        penalty_amount = 1
+        accounting = interface.ModuleAccounting(module.ACCOUNTING())
+        parameters_registry = interface.ParametersRegistry(module.PARAMETERS_REGISTRY())
+        additional_fine = parameters_registry.getGeneralDelayedPenaltyAdditionalFine(
+            accounting.getBondCurveId(node_operator_id)
+        )
 
-    assert factory.module() == module.address
-    assert factory.accounting() == module.ACCOUNTING()
-    assert factory.name() == CSM_FACTORY_NAME
-    assert _permissions_include(factory.address, module.address, module.settleGeneralDelayedPenalty)
+        module.reportGeneralDelayedPenalty(
+            node_operator_id,
+            web3.keccak(text="scripts-regression-general-delayed-penalty"),
+            penalty_amount,
+            "Scripts regression penalty",
+            {"from": reporter},
+        )
+        return penalty_amount + additional_fine
 
-    calldata = _encode_calldata(["(uint256,uint256)[]"], [[]])
-    try:
-        factory.createEVMScript(factory.trustedCaller(), calldata)
-        assert False, "Expected EMPTY_LOCK_INFO_LIST revert"
-    except VirtualMachineError as error:
-        assert "EMPTY_LOCK_INFO_LIST" in error.message
+    def _settle_via_factory(self, factory, node_operator_id, nonce, stranger):
+        calldata = _encode_calldata(["(uint256,uint256)[]"], [[(node_operator_id, nonce)]])
+        create_and_enact_motion(
+            contracts.easy_track,
+            set_balance(factory.trustedCaller(), 100000),
+            factory,
+            calldata,
+            stranger,
+        )
+
+    def test_csm_factory(self):
+        factory = interface.SettleGeneralDelayedPenalty(EASYTRACK_CSM_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY)
+        module = interface.BaseModule(CSM_ADDRESS)
+
+        assert factory.module() == module.address
+        assert factory.accounting() == module.ACCOUNTING()
+        assert factory.name() == CSM_FACTORY_NAME
+        assert _permissions_include(factory.address, module.address, module.settleGeneralDelayedPenalty)
+
+    def test_cm_factory(self):
+        factory = interface.SettleGeneralDelayedPenalty(EASYTRACK_CM_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY)
+        module = interface.BaseModule(CM_MODULE_ADDRESS)
+
+        assert factory.module() == module.address
+        assert factory.accounting() == module.ACCOUNTING()
+        assert factory.name() == CM_FACTORY_NAME
+        assert _permissions_include(factory.address, module.address, module.settleGeneralDelayedPenalty)
+
+    def test_csm_scenario(self, stranger):
+        module = interface.BaseModule(CSM_ADDRESS)
+        accounting = contracts.cs_accounting
+        factory = interface.SettleGeneralDelayedPenalty(EASYTRACK_CSM_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY)
+        node_operator_id = csm_add_node_operator(
+            contracts.csm,
+            contracts.cs_permissionless_gate,
+            accounting,
+            set_balance(accounts[5], 100),
+            keys_count=1,
+        )
+        bond_shares_before = accounting.getBondSummaryShares(node_operator_id)[0]
+
+        penalty_amount = self._report_general_delayed_penalty(module, node_operator_id)
+
+        assert accounting.getLockedBond(node_operator_id) == penalty_amount
+        penalty_shares = contracts.lido.getSharesByPooledEth(penalty_amount)
+        nonce = accounting.getBondLockNonce(node_operator_id)
+
+        self._settle_via_factory(factory, node_operator_id, nonce, stranger)
+
+        assert accounting.getLockedBond(node_operator_id) == 0
+        assert accounting.getBondSummaryShares(node_operator_id)[0] == bond_shares_before - penalty_shares
+
+    def test_cm_scenario(self, stranger):
+        module = interface.BaseModule(CM_MODULE_ADDRESS)
+        accounting = contracts.cm_accounting
+        factory = interface.SettleGeneralDelayedPenalty(EASYTRACK_CM_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY)
+        node_operator = _get_fresh_node_operator(set_balance(accounts[5], 100))
+        node_operator_id = curated_v2_add_node_operator(node_operator, 1)
+        bond_shares_before = accounting.getBondSummaryShares(node_operator_id)[0]
+
+        penalty_amount = self._report_general_delayed_penalty(module, node_operator_id)
+
+        assert accounting.getLockedBond(node_operator_id) == penalty_amount
+        penalty_shares = contracts.lido.getSharesByPooledEth(penalty_amount)
+        nonce = accounting.getBondLockNonce(node_operator_id)
+
+        self._settle_via_factory(factory, node_operator_id, nonce, stranger)
+
+        assert accounting.getLockedBond(node_operator_id) == 0
+        assert accounting.getBondSummaryShares(node_operator_id)[0] == bond_shares_before - penalty_shares
 
 
-def test_cm_settle_general_delayed_penalty_factory():
-    factory = interface.SettleGeneralDelayedPenalty(EASYTRACK_CM_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY)
-    module = interface.BaseModule(CM_MODULE_ADDRESS)
+class TestCreateOrUpdateOperatorGroup:
+    def test_cm_factory(self):
+        module = interface.CuratedModule(CM_MODULE_ADDRESS)
+        meta_registry = interface.MetaRegistry(module.META_REGISTRY())
+        factory = interface.CreateOrUpdateOperatorGroup(EASYTRACK_CM_CREATE_OR_UPDATE_OPERATOR_GROUP_FACTORY)
+        assert factory.module() == module.address
+        assert factory.metaRegistry() == meta_registry.address
+        assert factory.name() == CM_FACTORY_NAME
+        assert factory.allowedExternalModuleId() == CURATED_STAKING_MODULE_ID
+        assert _permissions_include(factory.address, factory.address, factory.validateInputData)
+        assert _permissions_include(factory.address, meta_registry.address, meta_registry.createOrUpdateOperatorGroup)
 
-    assert factory.module() == module.address
-    assert factory.accounting() == module.ACCOUNTING()
-    assert factory.name() == CM_FACTORY_NAME
-    assert _permissions_include(factory.address, module.address, module.settleGeneralDelayedPenalty)
+        external_operator_data = factory.encodeNORExtOperatorData(CURATED_STAKING_MODULE_ID, 1)
+        module_id, node_operator_id = factory.decodeNORExtOperatorData(external_operator_data)
+        assert module_id == CURATED_STAKING_MODULE_ID
+        assert node_operator_id == 1
 
-    calldata = _encode_calldata(["(uint256,uint256)[]"], [[]])
-    try:
-        factory.createEVMScript(factory.trustedCaller(), calldata)
-        assert False, "Expected EMPTY_LOCK_INFO_LIST revert"
-    except VirtualMachineError as error:
-        assert "EMPTY_LOCK_INFO_LIST" in error.message
+    def test_cm_scenario(self, stranger):
+        factory = interface.CreateOrUpdateOperatorGroup(EASYTRACK_CM_CREATE_OR_UPDATE_OPERATOR_GROUP_FACTORY)
+        meta_registry = contracts.cm_meta_registry
+        node_operator = _get_fresh_node_operator(set_balance(accounts[5], 100))
+        node_operator_id = curated_v2_add_node_operator(node_operator, 0)
+        group_id = meta_registry.getNodeOperatorGroupId(node_operator_id)
+        current_group = meta_registry.getOperatorGroup(group_id)
+        current_name = current_group["name"]
+        new_name = f"scripts-regression-group-{group_id}"
+        sub_node_operators = list(current_group["subNodeOperators"])
+        external_operators = list(current_group["externalOperators"])
+        groups_count_before = meta_registry.getOperatorGroupsCount()
+        calldata = _encode_calldata(
+            [
+                "uint256",
+                "(string,(uint64,uint16)[],(bytes)[])",
+                "(string,(uint64,uint16)[],(bytes)[])",
+            ],
+            [
+                group_id,
+                (current_name, sub_node_operators, external_operators),
+                (new_name, sub_node_operators, external_operators),
+            ],
+        )
+
+        create_and_enact_motion(
+            contracts.easy_track,
+            set_balance(factory.trustedCaller(), 100000),
+            factory,
+            calldata,
+            stranger,
+        )
+
+        updated_group = meta_registry.getOperatorGroup(group_id)
+        assert meta_registry.getOperatorGroupsCount() == groups_count_before
+        assert updated_group["name"] == new_name
+        assert list(updated_group["subNodeOperators"]) == sub_node_operators
+        assert list(updated_group["externalOperators"]) == external_operators
+        assert meta_registry.getNodeOperatorGroupId(node_operator_id) == group_id
 
 
-def test_cm_create_or_update_operator_group_factory():
-    module = interface.CuratedModule(CM_MODULE_ADDRESS)
-    meta_registry = interface.MetaRegistry(module.META_REGISTRY())
-    factory = interface.CreateOrUpdateOperatorGroup(EASYTRACK_CM_CREATE_OR_UPDATE_OPERATOR_GROUP_FACTORY)
-    assert factory.module() == module.address
-    assert factory.metaRegistry() == meta_registry.address
-    assert factory.name() == CM_FACTORY_NAME
-    assert factory.allowedExternalModuleId() == CURATED_STAKING_MODULE_ID
-    assert _permissions_include(factory.address, factory.address, factory.validateInputData)
-    assert _permissions_include(factory.address, meta_registry.address, meta_registry.createOrUpdateOperatorGroup)
+class TestUpdateStakingModuleShareLimits:
+    def test_scenario(self, stranger):
+        factory = interface.UpdateStakingModuleShareLimits(EASYTRACK_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY)
+        assert factory.stakingRouter() == STAKING_ROUTER
+        assert factory.stakingModuleId() == CS_MODULE_ID
+        assert _permissions_include(factory.address, factory.address, factory.validateParams)
+        assert _permissions_include(factory.address, STAKING_ROUTER, contracts.staking_router.updateModuleShares)
 
-    external_operator_data = factory.encodeNORExtOperatorData(CURATED_STAKING_MODULE_ID, 1)
-    module_id, node_operator_id = factory.decodeNORExtOperatorData(external_operator_data)
-    assert module_id == CURATED_STAKING_MODULE_ID
-    assert node_operator_id == 1
+        module_id = factory.stakingModuleId()
+        module = contracts.staking_router.getStakingModule(module_id)
+        current_share = module["stakeShareLimit"]
+        current_priority_exit_threshold = module["priorityExitShareThreshold"]
 
-
-def test_update_staking_module_share_limits_factory(stranger):
-    factory = interface.UpdateStakingModuleShareLimits(EASYTRACK_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY)
-    assert factory.stakingRouter() == STAKING_ROUTER
-    assert factory.stakingModuleId() == CS_MODULE_ID
-    assert _permissions_include(factory.address, factory.address, factory.validateParams)
-    assert _permissions_include(factory.address, STAKING_ROUTER, contracts.staking_router.updateModuleShares)
-
-    module_id = factory.stakingModuleId()
-    module = contracts.staking_router.getStakingModule(module_id)
-    current_share = module["stakeShareLimit"]
-    current_priority_exit_threshold = module["priorityExitShareThreshold"]
-
-    new_share = current_share
-    new_priority_exit_threshold = current_priority_exit_threshold
-
-    if current_share > 0 and factory.maxStakeShareLimitDecrease() > 0:
         new_share = current_share - 1
-    elif current_share < current_priority_exit_threshold and factory.maxStakeShareLimitIncrease() > 0:
-        new_share = current_share + 1
-    elif current_priority_exit_threshold < 10000 and factory.maxPriorityExitShareThresholdIncrease() > 0:
-        new_priority_exit_threshold = current_priority_exit_threshold + 1
-    elif current_priority_exit_threshold > current_share and factory.maxPriorityExitShareThresholdDecrease() > 0:
-        new_priority_exit_threshold = current_priority_exit_threshold - 1
-    else:
-        pytest.skip("No safe one-basis-point share-limits update is possible with current factory caps")
 
-    calldata = _encode_calldata(
-        ["uint16", "uint16", "uint16", "uint16"],
-        [current_share, new_share, current_priority_exit_threshold, new_priority_exit_threshold],
-    )
+        calldata = _encode_calldata(
+            ["uint16", "uint16", "uint16", "uint16"],
+            [current_share, new_share, current_priority_exit_threshold, current_priority_exit_threshold],
+        )
 
-    create_and_enact_motion(
-        contracts.easy_track,
-        set_balance(factory.trustedCaller(), 100000),
-        factory,
-        calldata,
-        stranger,
-    )
+        create_and_enact_motion(
+            contracts.easy_track,
+            set_balance(factory.trustedCaller(), 100000),
+            factory,
+            calldata,
+            stranger,
+        )
 
-    module_after = contracts.staking_router.getStakingModule(module_id)
-    assert module_after["stakeShareLimit"] == new_share
-    assert module_after["priorityExitShareThreshold"] == new_priority_exit_threshold
+        module_after = contracts.staking_router.getStakingModule(module_id)
+        assert module_after["stakeShareLimit"] == new_share
+        assert module_after["priorityExitShareThreshold"] == current_priority_exit_threshold
 
 
 # ---------------------------------------------------------------------------
