@@ -103,7 +103,6 @@ from typing import Dict, List, Optional, Tuple
 from brownie import interface
 
 from utils.config import (
-    UPGRADE_VOTE_SCRIPT,
     contracts,
     get_deployer_account,
     get_is_live,

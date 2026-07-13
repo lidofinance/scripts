@@ -378,9 +378,6 @@ TOP_UP_GATEWAY_MIN_TOP_UP_GWEI = 2_000_000_000  # 2 ETH
 # sole TOP_UP_ROLE holder (coreUpgrade.topUpGatewayDepositor, stable deploy input)
 TOP_UP_GATEWAY_DEPOSITOR = "0xF82aC5937A20dC862F9bc0668779031E06000f17"
 
-# CircuitBreaker — TW-upgrade pause hub; the SRv3 vote registers it as pauser for the new gateways
-CIRCUIT_BREAKER = "0x6019CB557978296BA3C08a7B73225C0975DFB2F7"
-
 # ConsolidationGateway — deployed directly (no proxy), admin/limits set in the constructor
 CONSOLIDATION_GATEWAY = "0x17be979344f2c2cC806229a532D92f8742C10462"  # SRV3
 # constructor params — upgrade-params-mainnet.toml [consolidationGateway]
