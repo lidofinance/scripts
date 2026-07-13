@@ -744,16 +744,6 @@ def test_vote(
         ctx["settle_general_delayed_penalty_for_cm_factory"],
         ctx["create_or_update_operator_group_factory"],
     ]
-    # SetMerkleGateTree permissions = factory.validateInputData + each gate.setTreeParams
-    csm_tree_gate_permissions = _concat_permissions(
-        _permission(ctx["set_merkle_gate_tree_for_csm_factory"], SET_MERKLE_GATE_TREE_VALIDATE_INPUT_DATA_SELECTOR),
-        _permission(ctx["cs_vetted_gate"], SET_TREE_PARAMS_SELECTOR),
-        _permission(ctx["identified_dvt_cluster_gate"], SET_TREE_PARAMS_SELECTOR),
-    )
-    curated_tree_gate_permissions = _concat_permissions(
-        _permission(ctx["set_merkle_gate_tree_for_cm_factory"], SET_MERKLE_GATE_TREE_VALIDATE_INPUT_DATA_SELECTOR),
-        *[_permission(gate, SET_TREE_PARAMS_SELECTOR) for gate in ctx["curated_gates"]],
-    )
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -872,7 +862,14 @@ def test_vote(
             event=vote_events[5],
             p=EVMScriptFactoryAdded(
                 factory_addr=ctx["set_merkle_gate_tree_for_csm_factory"],
-                permissions=csm_tree_gate_permissions,
+                # SetMerkleGateTree permissions = factory.validateInputData + each gate.setTreeParams
+                permissions=_concat_permissions(
+                    _permission(
+                        ctx["set_merkle_gate_tree_for_csm_factory"], SET_MERKLE_GATE_TREE_VALIDATE_INPUT_DATA_SELECTOR
+                    ),
+                    _permission(ctx["cs_vetted_gate"], SET_TREE_PARAMS_SELECTOR),
+                    _permission(ctx["identified_dvt_cluster_gate"], SET_TREE_PARAMS_SELECTOR),
+                ),
             ),
             emitted_by=easy_track,
         )
@@ -902,7 +899,13 @@ def test_vote(
             event=vote_events[8],
             p=EVMScriptFactoryAdded(
                 factory_addr=ctx["set_merkle_gate_tree_for_cm_factory"],
-                permissions=curated_tree_gate_permissions,
+                # SetMerkleGateTree permissions = factory.validateInputData + each gate.setTreeParams
+                permissions=_concat_permissions(
+                    _permission(
+                        ctx["set_merkle_gate_tree_for_cm_factory"], SET_MERKLE_GATE_TREE_VALIDATE_INPUT_DATA_SELECTOR
+                    ),
+                    *[_permission(gate, SET_TREE_PARAMS_SELECTOR) for gate in ctx["curated_gates"]],
+                ),
             ),
             emitted_by=easy_track,
         )
