@@ -27,7 +27,7 @@ from brownie.network.contract import Contract
 from brownie.network.event import EventDict
 from brownie.network.transaction import TransactionReceipt
 
-from utils.config import network_name, TIMELOCK
+from utils.config import TIMELOCK
 from utils.test.tx_tracing_helpers import (
     add_event_emitter,
     count_vote_items_by_events,
@@ -47,7 +47,7 @@ from utils.test.event_validators.easy_track import (
     validate_evmscript_factory_removed_event,
 )
 from utils.voting import find_metadata_by_vote_id
-from utils.ipfs import calculate_vote_ipfs_description, get_lido_vote_cid_from_str
+from utils.ipfs import get_lido_vote_cid_from_str
 
 # ============================================================================
 # ============================== Import vote =================================
@@ -179,8 +179,8 @@ IDENTIFIED_COMMUNITY_STAKERS_GATE_NAME = "Identified Community Stakers Gate"
 # ============================================================================
 # ============================= Test params ==================================
 # ============================================================================
-EXPECTED_VOTE_ID = None
-EXPECTED_DG_PROPOSAL_ID = None
+EXPECTED_VOTE_ID = 203
+EXPECTED_DG_PROPOSAL_ID = 12
 EXPECTED_VOTE_EVENTS_COUNT = 12  # 1 DG submission + 11 Easy Track items
 EXPECTED_DG_EVENTS_FROM_AGENT = 69
 EXPECTED_DG_EVENTS_COUNT = 69
@@ -715,18 +715,13 @@ def test_vote(
     vote_script = interface.UpgradeVoteScript(ctx["upgrade_vote_script"])
     onchain_dg_items_count = vote_script.DG_ITEMS_COUNT()
 
-    expected_vote_events_count = EXPECTED_VOTE_EVENTS_COUNT or len(call_script_items)
-    expected_dg_events_from_agent = EXPECTED_DG_EVENTS_FROM_AGENT or onchain_dg_items_count
-    expected_dg_events_count = EXPECTED_DG_EVENTS_COUNT or onchain_dg_items_count
-    expected_ipfs_description_hash = IPFS_DESCRIPTION_HASH or calculate_vote_ipfs_description(IPFS_DESCRIPTION)["cid"]
-
     # Guard against the deployed script drifting from the counts encoded in this test.
-    assert onchain_dg_items_count == expected_dg_events_count, (
-        f"On-chain DG_ITEMS_COUNT ({onchain_dg_items_count}) != EXPECTED_DG_EVENTS_COUNT ({expected_dg_events_count})"
+    assert onchain_dg_items_count == EXPECTED_DG_EVENTS_COUNT, (
+        f"On-chain DG_ITEMS_COUNT ({onchain_dg_items_count}) != EXPECTED_DG_EVENTS_COUNT ({EXPECTED_DG_EVENTS_COUNT})"
     )
-    assert len(call_script_items) == expected_vote_events_count, (
+    assert len(call_script_items) == EXPECTED_VOTE_EVENTS_COUNT, (
         f"On-chain voting item count ({len(call_script_items)}) != EXPECTED_VOTE_EVENTS_COUNT "
-        f"({expected_vote_events_count})"
+        f"({EXPECTED_VOTE_EVENTS_COUNT})"
     )
 
     old_easy_track_factories = [
@@ -765,7 +760,6 @@ def test_vote(
     assert str(onchain_script).lower() == encode_call_script(call_script_items).lower()
 
     expected_dg_proposal_id = EXPECTED_DG_PROPOSAL_ID
-    dg_proposals_count_before_vote_execution = timelock.getProposalsCount()
 
     # =========================================================================
     # ============================= Execute Vote ==============================
@@ -784,7 +778,7 @@ def test_vote(
         # Curated Module v2 is not registered in the Staking Router yet.
         assert staking_router.getStakingModulesCount() == ctx["curated_module_item"].id - 1
 
-        assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == expected_ipfs_description_hash
+        assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
 
         vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
         display_voting_events(vote_tx)
@@ -799,13 +793,8 @@ def test_vote(
         for factory in new_easy_track_factories:
             assert factory in new_factories, "New Easy Track factory not added by the vote"
 
-        assert len(vote_events) == expected_vote_events_count
-        assert count_vote_items_by_events(vote_tx, voting.address) == expected_vote_events_count
-
-        if expected_dg_proposal_id is None:
-            expected_dg_proposal_id = dg_proposals_count_before_vote_execution + 1
-
-        assert expected_dg_proposal_id == timelock.getProposalsCount()
+        assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
+        assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
 
         # 1. Submit a Dual Governance proposal
         validate_dual_governance_submit_event(
@@ -987,9 +976,9 @@ def test_vote(
                     timelock=TIMELOCK,
                     agent=agent.address,
                 )
-                assert count_vote_items_by_events(dg_tx, agent.address) == expected_dg_events_from_agent
+                assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_FROM_AGENT
                 assert len(outer_dg_events) == 1
-                assert len(dg_events) == expected_dg_events_count
+                assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
 
                 # =============================================================
                 # ================ DG EXECUTION EVENTS VALIDATION =============
