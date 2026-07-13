@@ -185,7 +185,6 @@ EXPECTED_VOTE_EVENTS_COUNT = 12  # 1 DG submission + 11 Easy Track items
 EXPECTED_DG_EVENTS_FROM_AGENT = 69
 EXPECTED_DG_EVENTS_COUNT = 69
 IPFS_DESCRIPTION_HASH = None
-UPGRADE_VOTE_SCRIPT_ENV = "UPGRADE_VOTE_SCRIPT"
 
 
 class StakingModuleItem(NamedTuple):
@@ -203,13 +202,6 @@ class StakingModuleItem(NamedTuple):
 # ============================================================================
 # ============================= Helpers ======================================
 # ============================================================================
-def _is_placeholder_address(value: str) -> bool:
-    normalized = str(value).lower()
-    return normalized in ("", ZERO_ADDRESS) or normalized.startswith("todo")
-
-
-def _is_placeholder_text(value: str) -> bool:
-    return "TODO:" in value
 
 
 def _event_list(events: EventDict, name: str):
@@ -512,22 +504,11 @@ def _expected_sr_role_migration_grants(staking_router: str):
 # ============================================================================
 @pytest.fixture(scope="module")
 def runtime_upgrade_context():
-    upgrade_vote_script = os.getenv(UPGRADE_VOTE_SCRIPT_ENV, UPGRADE_VOTE_SCRIPT)
-    print(f"Upgrade vote script: {upgrade_vote_script}")
+    print(f"Upgrade vote script: {UPGRADE_VOTE_SCRIPT}")
     print(f"DG_PROPOSAL_METADATA: {DG_PROPOSAL_METADATA}")
     print(f"IPFS_DESCRIPTION: {IPFS_DESCRIPTION}")
 
-    if (
-        _is_placeholder_address(upgrade_vote_script)
-        or _is_placeholder_text(DG_PROPOSAL_METADATA)
-        or _is_placeholder_text(IPFS_DESCRIPTION)
-    ):
-        pytest.skip(
-            "Upgrade vote script address is missing. Set env UPGRADE_VOTE_SCRIPT "
-            "or UPGRADE_VOTE_SCRIPT in scripts/upgrade_2026_07_15_srv3_cmv2.py first."
-        )
-
-    vote_script = interface.UpgradeVoteScript(upgrade_vote_script)
+    vote_script = interface.UpgradeVoteScript(UPGRADE_VOTE_SCRIPT)
     upgrade_template = vote_script.TEMPLATE()
     upgrade_config = interface.UpgradeConfig(vote_script.CONFIG())
     locator_impl = interface.LidoLocator(upgrade_config.getCoreUpgradeConfig()["newLocatorImpl"])
