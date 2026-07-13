@@ -15,8 +15,6 @@ Run:
     poetry run brownie test tests/test_upgrade_2026_07_15_srv3_cmv2.py --network=mfh-1 -v
 """
 
-import os
-
 from typing import NamedTuple, Optional
 
 import pytest
@@ -81,6 +79,9 @@ BURNER = "0xE76c52750019b80B43E36DF30bf4060EB73F573a"
 CIRCUIT_BREAKER = "0x6019CB557978296BA3C08a7B73225C0975DFB2F7"
 DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
+RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
+WITHDRAWAL_CREDENTIALS = "0x010000000000000000000000b9d7934878b5fb9610b3fe8a5e441e8fad7e293f"
+
 
 LIDO = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
 LIDO_IMPL = "0x028271E30a695c0527A0C50cA30603feD004cDb0"
@@ -103,9 +104,14 @@ ORACLE_REPORT_SANITY_CHECKER = "0x147f8d3cf3004FAf9Bf94E88B54b6C06De507be9"
 
 CIRCUIT_BREAKER_COMMITTEE = "0x8772E3a2D86B9347A2688f9bc1808A6d8917760C"
 CONSOLIDATION_GATEWAY = "0x17be979344f2c2cC806229a532D92f8742C10462"
+CONSOLIDATION_BUS = "0xd907CE33B4Be423823d1CFFe80BD147E8b8554C8"
+CONSOLIDATION_BUS_IMPL = "0xFfDe8Acab9D7037f29198Ad03ad6d05bac8B0a2E"
 CONSOLIDATION_COMMITTEE = "0x2570e0b22AD904501dfB0d49575991ACB801dD91"
 CONSOLIDATION_MIGRATOR = "0x9Dc70b5A4f4F5E4AF9058C983D560564F031f1D7"
+CONSOLIDATION_MIGRATOR_IMPL = "0x6Fb4c152F092373dD71f0C07C83c1E77406599aB"
 TOP_UP_GATEWAY = "0x3FC2C71579D80790Aaa3fc7Be8B66ac39dC57374"
+TOP_UP_GATEWAY_IMPL = "0xb08dBc68C521cD7A4318dc4C807a42bEB20f1106"
+TOP_UP_GATEWAY_DEPOSITOR = "0xF82aC5937A20dC862F9bc0668779031E06000f17"
 OLD_DEPOSIT_SECURITY_MODULE = "0xfFA96D84dEF2EA035c7AB153D8B991128e3d72fD"
 NEW_DEPOSIT_SECURITY_MODULE = "0xF573E9E3de1f86B085417ab294f56E7920B4e9Be"
 TRIGGERABLE_WITHDRAWALS_GATEWAY = "0xDC00116a0D3E064427dA2600449cfD2566B3037B"
@@ -151,7 +157,9 @@ CURATED_GATES = [
     "0x773933F9db8964A17d62fb808f2EC7A2de4247CC",
 ]
 CURATED_ACCOUNTING = "0x2F91e3A8C5d6593bf4F8403fCfeCcd62dF59f6F6"
+CURATED_PARAMETERS_REGISTRY = "0xffC1C5d59CeAC6F6c27E701F04a70cb50474607C"
 CURATED_EJECTOR = "0xe181A377A2d2BDE9A83f1474BC3DB7A412de091E"
+CURATED_FEE_DISTRIBUTOR = "0x367d23c756599c20DCc8D6943F4976E8F88D60d7"
 CURATED_FEE_ORACLE = "0x8EeFCdbD984c30E472BcbF545783D051CB5114e5"
 CURATED_VERIFIER = "0xC392F457960f1B13Ebaf1aa6C065479dD507E1E3"
 CURATED_CIRCUIT_BREAKER_PAUSER = "0x2570e0b22AD904501dfB0d49575991ACB801dD91"
@@ -186,6 +194,16 @@ OLD_CSM_SET_VETTED_GATE_TREE_FACTORY = "0xBc5642bDD6F2a54b01A75605aAe9143525D973
 # --- Aragon roles ---
 APP_MANAGER_ROLE = web3.keccak(text="APP_MANAGER_ROLE").hex()
 BUFFER_RESERVE_MANAGER_ROLE = web3.keccak(text="BUFFER_RESERVE_MANAGER_ROLE").hex()
+
+# --- Common OZ roles ---
+PAUSE_ROLE = web3.keccak(text="PAUSE_ROLE").hex()
+ALLOW_PAIR_ROLE = web3.keccak(text="ALLOW_PAIR_ROLE").hex()
+DISALLOW_PAIR_ROLE = web3.keccak(text="DISALLOW_PAIR_ROLE").hex()
+TOP_UP_ROLE = web3.keccak(text="TOP_UP_ROLE").hex()
+ADD_CONSOLIDATION_REQUEST_ROLE = web3.keccak(text="ADD_CONSOLIDATION_REQUEST_ROLE").hex()
+PUBLISH_ROLE = web3.keccak(text="PUBLISH_ROLE").hex()
+REMOVE_ROLE = web3.keccak(text="REMOVE_ROLE").hex()
+MANAGE_ROLE = web3.keccak(text="MANAGE_ROLE").hex()
 
 # --- StakingRouter roles (finalizeUpgrade_v4 migrates these, in this exact order) ---
 MANAGE_WITHDRAWAL_CREDENTIALS_ROLE = web3.keccak(text="MANAGE_WITHDRAWAL_CREDENTIALS_ROLE").hex()
@@ -236,6 +254,16 @@ REQUEST_BURN_SHARES_ROLE = web3.keccak(text="REQUEST_BURN_SHARES_ROLE").hex()
 REQUEST_BURN_MY_STETH_ROLE = web3.keccak(text="REQUEST_BURN_MY_STETH_ROLE").hex()
 RESUME_ROLE = web3.keccak(text="RESUME_ROLE").hex()
 
+# --- OracleReportSanityChecker roles cleared by the upgrade ---
+ALL_LIMITS_MANAGER_ROLE = web3.keccak(text="ALL_LIMITS_MANAGER_ROLE").hex()
+ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE = web3.keccak(text="ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE").hex()
+SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE = web3.keccak(text="SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE").hex()
+MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION_ROLE = web3.keccak(text="MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION_ROLE").hex()
+MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_ROLE = web3.keccak(text="MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_ROLE").hex()
+REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE = web3.keccak(text="REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE").hex()
+MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE = web3.keccak(text="MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE").hex()
+SECOND_OPINION_MANAGER_ROLE = web3.keccak(text="SECOND_OPINION_MANAGER_ROLE").hex()
+
 # --- EasyTrack factory permission selectors ---
 VALIDATE_STAKING_MODULE_SHARE_PARAMS_SELECTOR = _selector("validateParams((uint16,uint16,uint16,uint16))")
 UPDATE_MODULE_SHARES_SELECTOR = _selector("updateModuleShares(uint256,uint16,uint16)")
@@ -269,6 +297,25 @@ WITHDRAWAL_VAULT_CONTRACT_VERSION = 3
 LIDO_CONTRACT_VERSION = 4
 CSM_INITIALIZED_VERSION = 3
 CS_FEE_ORACLE_CONTRACT_VERSION = 3
+DSM_VERSION = 4
+CS_PARAMETERS_REGISTRY_INITIALIZED_VERSION = 3
+CS_ACCOUNTING_INITIALIZED_VERSION = 3
+CS_FEE_DISTRIBUTOR_INITIALIZED_VERSION = 3
+CS_VALIDATOR_STRIKES_INITIALIZED_VERSION = 1
+CS_VETTED_GATE_INITIALIZED_VERSION = 1
+CURATED_MODULE_ID = 4
+CURATED_MODULE_INITIALIZED_VERSION = 1
+CURATED_PARAMETERS_REGISTRY_INITIALIZED_VERSION = 3
+CURATED_ACCOUNTING_INITIALIZED_VERSION = 3
+CURATED_FEE_DISTRIBUTOR_INITIALIZED_VERSION = 3
+CURATED_VALIDATOR_STRIKES_INITIALIZED_VERSION = 1
+
+CONSOLIDATION_SOURCE_MODULE_ID = 1
+CONSOLIDATION_TARGET_MODULE_ID = CURATED_MODULE_ID
+CURATED_MODULE_STATUS_ACTIVE = 0
+CURATED_MODULE_WITHDRAWAL_CREDENTIALS_TYPE = 2
+
+STAKING_ROUTER_MODULES_COUNT = 4
 
 # --- Triggerable withdrawals exit-limit config ---
 TW_MAX_EXIT_REQUESTS = 250
@@ -339,6 +386,46 @@ def _assert_emitted_by(event_item, emitted_by: str) -> None:
     assert convert.to_address(event_item["_emitted_by"]) == convert.to_address(
         emitted_by
     ), f"Wrong event emitter: expected {emitted_by}, got {event_item['_emitted_by']}"
+
+
+def _assert_address(actual, expected) -> None:
+    assert convert.to_address(actual) == convert.to_address(expected)
+
+
+def _assert_oz_role_members(contract_address: str, role: str, expected_members) -> None:
+    contract = interface.AccessControlEnumerable(contract_address)
+    actual_members = [contract.getRoleMember(role, i) for i in range(contract.getRoleMemberCount(role))]
+    assert {convert.to_address(member) for member in actual_members} == {
+        convert.to_address(member) for member in expected_members
+    }
+
+
+def _assert_has_oz_role(contract_address: str, role: str, member: str) -> None:
+    assert interface.AccessControlEnumerable(contract_address).hasRole(role, member)
+
+
+def _assert_has_no_oz_role(contract_address: str, role: str, member: str) -> None:
+    assert not interface.AccessControlEnumerable(contract_address).hasRole(role, member)
+
+
+def _assert_ossifiable_proxy(proxy_address: str, implementation: str, admin: str = AGENT) -> None:
+    proxy = interface.OssifiableProxy(proxy_address)
+    _assert_address(proxy.proxy__getImplementation(), implementation)
+    _assert_address(proxy.proxy__getAdmin(), admin)
+
+
+def _assert_withdrawals_manager_proxy(proxy_address: str, implementation: str, admin: str = AGENT) -> None:
+    proxy = interface.WithdrawalsManagerProxy(proxy_address)
+    _assert_address(proxy.implementation(), implementation)
+    _assert_address(proxy.proxy_getAdmin(), admin)
+
+
+def _assert_proxy_admin(proxy_address: str, admin: str = AGENT) -> None:
+    _assert_address(interface.OssifiableProxy(proxy_address).proxy__getAdmin(), admin)
+
+
+def _assert_circuit_breaker_pauser(pausable: str, pauser: str) -> None:
+    _assert_address(interface.CircuitBreaker(CIRCUIT_BREAKER).getPauser(pausable), pauser)
 
 
 def _permission(contract_address: str, selector: str) -> str:
@@ -610,6 +697,277 @@ def _expected_sr_role_migration_grants(staking_router: str):
     return grants
 
 
+def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
+    """Mirror UpgradeTemplate.finishUpgrade() final-state assertions via public getters."""
+    upgrade_template = interface.UpgradeTemplate(UPGRADE_TEMPLATE)
+    assert upgrade_template.isUpgradeFinished() is True
+    assert upgrade_template.upgradeBlockNumber() > 0
+
+    locator = interface.LidoLocator(LIDO_LOCATOR)
+    _assert_ossifiable_proxy(LIDO_LOCATOR, LIDO_LOCATOR_IMPL)
+    _assert_address(locator.depositSecurityModule(), NEW_DEPOSIT_SECURITY_MODULE)
+
+    kernel = interface.Kernel(ARAGON_KERNEL)
+    _assert_address(kernel.getApp(kernel.APP_BASES_NAMESPACE(), LIDO_ARAGON_APP_ID), LIDO_IMPL)
+    acl = interface.ACL(ACL)
+    assert not acl.hasPermission(AGENT, ARAGON_KERNEL, APP_MANAGER_ROLE)
+    assert acl.hasPermission(AGENT, LIDO, BUFFER_RESERVE_MANAGER_ROLE)
+    _assert_address(acl.getPermissionManager(LIDO, BUFFER_RESERVE_MANAGER_ROLE), AGENT)
+
+    lido = interface.Lido(LIDO)
+    assert lido.getContractVersion() == LIDO_CONTRACT_VERSION
+    assert lido.getDepositsReserveTarget() == LIDO_DEPOSITS_RESERVE_TARGET
+
+    _assert_ossifiable_proxy(ACCOUNTING, ACCOUNTING_IMPL)
+
+    accounting_oracle = interface.AccountingOracle(ACCOUNTING_ORACLE)
+    _assert_ossifiable_proxy(ACCOUNTING_ORACLE, ACCOUNTING_ORACLE_IMPL)
+    assert accounting_oracle.getContractVersion() == AO_CONTRACT_VERSION
+    assert accounting_oracle.getConsensusVersion() == AO_CONSENSUS_VERSION
+    _assert_oz_role_members(ACCOUNTING_ORACLE, DEFAULT_ADMIN_ROLE, [AGENT])
+
+    validators_exit_bus = interface.ValidatorsExitBusOracle(VALIDATORS_EXIT_BUS_ORACLE)
+    _assert_ossifiable_proxy(VALIDATORS_EXIT_BUS_ORACLE, VALIDATORS_EXIT_BUS_ORACLE_IMPL)
+    assert validators_exit_bus.getContractVersion() == VEBO_CONTRACT_VERSION
+    assert validators_exit_bus.getConsensusVersion() == VEBO_CONSENSUS_VERSION
+    assert validators_exit_bus.getMaxValidatorsPerReport() == VEBO_MAX_VALIDATORS_PER_REPORT
+    exit_limit = validators_exit_bus.getExitRequestLimitFullInfo()
+    assert tuple(exit_limit[0:3]) == (
+        VALIDATORS_EXIT_BUS_MAX_EXIT_BALANCE_ETH,
+        VALIDATORS_EXIT_BUS_BALANCE_PER_FRAME_ETH,
+        VALIDATORS_EXIT_BUS_FRAME_DURATION_IN_SEC,
+    )
+    _assert_oz_role_members(VALIDATORS_EXIT_BUS_ORACLE, DEFAULT_ADMIN_ROLE, [AGENT])
+
+    withdrawal_vault = interface.WithdrawalVault(WITHDRAWAL_VAULT)
+    _assert_withdrawals_manager_proxy(WITHDRAWAL_VAULT, WITHDRAWAL_VAULT_IMPL)
+    assert withdrawal_vault.getContractVersion() == WITHDRAWAL_VAULT_CONTRACT_VERSION
+    _assert_address(withdrawal_vault.CONSOLIDATION_GATEWAY(), CONSOLIDATION_GATEWAY)
+    _assert_address(withdrawal_vault.TRIGGERABLE_WITHDRAWALS_GATEWAY(), TRIGGERABLE_WITHDRAWALS_GATEWAY)
+
+    _assert_ossifiable_proxy(STAKING_ROUTER, STAKING_ROUTER_IMPL)
+    assert staking_router.getContractVersion() == SR_INITIALIZED_VERSION
+    assert staking_router.getMaxTopUpPerBlockGwei() == MAX_TOP_UP_PER_BLOCK_GWEI
+    _assert_oz_role_members(STAKING_ROUTER, DEFAULT_ADMIN_ROLE, [AGENT])
+    _assert_oz_role_members(STAKING_ROUTER, STAKING_MODULE_MANAGE_ROLE, [AGENT])
+    _assert_oz_role_members(STAKING_ROUTER, STAKING_MODULE_UNVETTING_ROLE, [NEW_DEPOSIT_SECURITY_MODULE])
+    _assert_oz_role_members(STAKING_ROUTER, STAKING_MODULE_SHARE_MANAGE_ROLE, [EASYTRACK_EVMSCRIPT_EXECUTOR])
+    _assert_oz_role_members(STAKING_ROUTER, MANAGE_WITHDRAWAL_CREDENTIALS_ROLE, [])
+
+    consolidation_bus = interface.ConsolidationBus(CONSOLIDATION_BUS)
+    _assert_ossifiable_proxy(CONSOLIDATION_BUS, CONSOLIDATION_BUS_IMPL)
+    _assert_oz_role_members(CONSOLIDATION_BUS, DEFAULT_ADMIN_ROLE, [AGENT])
+    _assert_oz_role_members(CONSOLIDATION_BUS, PUBLISH_ROLE, [CONSOLIDATION_MIGRATOR])
+    _assert_oz_role_members(CONSOLIDATION_BUS, MANAGE_ROLE, [])
+    _assert_oz_role_members(CONSOLIDATION_BUS, REMOVE_ROLE, [CONSOLIDATION_COMMITTEE])
+    _assert_address(consolidation_bus.getConsolidationGateway(), CONSOLIDATION_GATEWAY)
+
+    consolidation_migrator = interface.ConsolidationMigrator(CONSOLIDATION_MIGRATOR)
+    _assert_ossifiable_proxy(CONSOLIDATION_MIGRATOR, CONSOLIDATION_MIGRATOR_IMPL)
+    _assert_oz_role_members(CONSOLIDATION_MIGRATOR, DEFAULT_ADMIN_ROLE, [AGENT])
+    _assert_oz_role_members(CONSOLIDATION_MIGRATOR, ALLOW_PAIR_ROLE, [EASYTRACK_EVMSCRIPT_EXECUTOR])
+    _assert_oz_role_members(CONSOLIDATION_MIGRATOR, DISALLOW_PAIR_ROLE, [CONSOLIDATION_COMMITTEE])
+    _assert_address(consolidation_migrator.getConsolidationBus(), CONSOLIDATION_BUS)
+    assert consolidation_migrator.sourceModuleId() == CONSOLIDATION_SOURCE_MODULE_ID
+    assert consolidation_migrator.targetModuleId() == CONSOLIDATION_TARGET_MODULE_ID
+
+    _assert_address(locator.consolidationGateway(), CONSOLIDATION_GATEWAY)
+    _assert_oz_role_members(CONSOLIDATION_GATEWAY, DEFAULT_ADMIN_ROLE, [AGENT])
+    _assert_oz_role_members(CONSOLIDATION_GATEWAY, PAUSE_ROLE, [CIRCUIT_BREAKER, RESEAL_MANAGER])
+    _assert_oz_role_members(CONSOLIDATION_GATEWAY, RESUME_ROLE, [RESEAL_MANAGER])
+    _assert_oz_role_members(CONSOLIDATION_GATEWAY, ADD_CONSOLIDATION_REQUEST_ROLE, [CONSOLIDATION_BUS])
+    _assert_circuit_breaker_pauser(CONSOLIDATION_GATEWAY, CIRCUIT_BREAKER_COMMITTEE)
+
+    _assert_ossifiable_proxy(TOP_UP_GATEWAY, TOP_UP_GATEWAY_IMPL)
+    _assert_address(locator.topUpGateway(), TOP_UP_GATEWAY)
+    _assert_oz_role_members(TOP_UP_GATEWAY, DEFAULT_ADMIN_ROLE, [AGENT])
+    _assert_oz_role_members(TOP_UP_GATEWAY, PAUSE_ROLE, [CIRCUIT_BREAKER, RESEAL_MANAGER])
+    _assert_oz_role_members(TOP_UP_GATEWAY, RESUME_ROLE, [RESEAL_MANAGER])
+    _assert_oz_role_members(TOP_UP_GATEWAY, TOP_UP_ROLE, [TOP_UP_GATEWAY_DEPOSITOR])
+    _assert_circuit_breaker_pauser(TOP_UP_GATEWAY, CIRCUIT_BREAKER_COMMITTEE)
+
+    triggerable_withdrawals = interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY)
+    _assert_oz_role_members(TRIGGERABLE_WITHDRAWALS_GATEWAY, TW_EXIT_LIMIT_MANAGER_ROLE, [AGENT])
+    tw_limit = triggerable_withdrawals.getExitRequestLimitFullInfo()
+    assert tuple(tw_limit[0:3]) == (TW_MAX_EXIT_REQUESTS, TW_EXITS_PER_FRAME, TW_FRAME_DURATION_IN_SEC)
+
+    sanity_checker_roles = (
+        ALL_LIMITS_MANAGER_ROLE,
+        ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE,
+        SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE,
+        MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION_ROLE,
+        MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_ROLE,
+        REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE,
+        MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE,
+        SECOND_OPINION_MANAGER_ROLE,
+    )
+    _assert_address(locator.oracleReportSanityChecker(), ORACLE_REPORT_SANITY_CHECKER)
+    _assert_oz_role_members(ORACLE_REPORT_SANITY_CHECKER, DEFAULT_ADMIN_ROLE, [AGENT])
+    for role in sanity_checker_roles:
+        _assert_oz_role_members(ORACLE_REPORT_SANITY_CHECKER, role, [])
+
+    # Community Staking Module v3.
+    csm_proxies = (
+        (CSM, CSM_IMPL),
+        (CS_PARAMETERS_REGISTRY, CS_PARAMETERS_REGISTRY_IMPL),
+        (CS_FEE_ORACLE, CS_FEE_ORACLE_IMPL),
+        (CS_VETTED_GATE, CS_VETTED_GATE_IMPL),
+        (CS_ACCOUNTING, CS_ACCOUNTING_IMPL),
+        (CS_FEE_DISTRIBUTOR, CS_FEE_DISTRIBUTOR_IMPL),
+        (CS_EXIT_PENALTIES, CS_EXIT_PENALTIES_IMPL),
+        (CS_VALIDATOR_STRIKES, CS_VALIDATOR_STRIKES_IMPL),
+    )
+    for proxy, implementation in csm_proxies:
+        _assert_ossifiable_proxy(proxy, implementation)
+
+    csm = interface.CSModule(CSM)
+    cs_parameters_registry = interface.ParametersRegistry(CS_PARAMETERS_REGISTRY)
+    cs_fee_oracle = interface.FeeOracle(CS_FEE_ORACLE)
+    cs_vetted_gate = interface.VettedGate(CS_VETTED_GATE)
+    cs_accounting = interface.ModuleAccounting(CS_ACCOUNTING)
+    cs_fee_distributor = interface.FeeDistributor(CS_FEE_DISTRIBUTOR)
+    cs_validator_strikes = interface.ValidatorStrikes(CS_VALIDATOR_STRIKES)
+    assert csm.getInitializedVersion() == CSM_INITIALIZED_VERSION
+    assert cs_parameters_registry.getInitializedVersion() == CS_PARAMETERS_REGISTRY_INITIALIZED_VERSION
+    assert cs_vetted_gate.getInitializedVersion() == CS_VETTED_GATE_INITIALIZED_VERSION
+    assert cs_accounting.getInitializedVersion() == CS_ACCOUNTING_INITIALIZED_VERSION
+    assert cs_fee_distributor.getInitializedVersion() == CS_FEE_DISTRIBUTOR_INITIALIZED_VERSION
+    assert cs_validator_strikes.getInitializedVersion() == CS_VALIDATOR_STRIKES_INITIALIZED_VERSION
+    assert cs_fee_oracle.getContractVersion() == CS_FEE_ORACLE_CONTRACT_VERSION
+    assert cs_fee_oracle.getConsensusVersion() == CS_FEE_ORACLE_CONSENSUS_VERSION
+
+    _assert_oz_role_members(CSM, REPORT_EL_REWARDS_STEALING_PENALTY_ROLE, [])
+    _assert_oz_role_members(CSM, SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE, [])
+    _assert_oz_role_members(CSM, REPORT_GENERAL_DELAYED_PENALTY_ROLE, [CSM_COMMITTEE])
+    _assert_oz_role_members(CSM, SETTLE_GENERAL_DELAYED_PENALTY_ROLE, [EASYTRACK_EVMSCRIPT_EXECUTOR])
+    _assert_oz_role_members(CSM, VERIFIER_ROLE, [VERIFIER_V3])
+    _assert_oz_role_members(CSM, REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, [VERIFIER_V3])
+    _assert_oz_role_members(CSM, REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE, [EASYTRACK_EVMSCRIPT_EXECUTOR])
+    _assert_oz_role_members(CSM, PAUSE_ROLE, [CIRCUIT_BREAKER, RESEAL_MANAGER])
+    _assert_oz_role_members(
+        CSM,
+        CREATE_NODE_OPERATOR_ROLE,
+        [CS_VETTED_GATE, NEW_PERMISSIONLESS_GATE, IDENTIFIED_DVT_CLUSTER_GATE],
+    )
+
+    for pausable in (
+        CS_ACCOUNTING,
+        CS_FEE_ORACLE,
+        CS_VETTED_GATE,
+        IDENTIFIED_DVT_CLUSTER_GATE,
+        VERIFIER_V3,
+        NEW_CSM_EJECTOR,
+    ):
+        _assert_oz_role_members(pausable, PAUSE_ROLE, [CIRCUIT_BREAKER, RESEAL_MANAGER])
+    _assert_circuit_breaker_pauser(IDENTIFIED_DVT_CLUSTER_GATE, CSM_COMMITTEE)
+    _assert_circuit_breaker_pauser(VERIFIER_V3, CSM_COMMITTEE)
+    _assert_circuit_breaker_pauser(NEW_CSM_EJECTOR, CSM_COMMITTEE)
+    _assert_circuit_breaker_pauser(OLD_VERIFIER, ZERO_ADDRESS)
+    _assert_circuit_breaker_pauser(CONFIG_OLD_CSM_EJECTOR, ZERO_ADDRESS)
+
+    _assert_has_no_oz_role(CS_VETTED_GATE, START_REFERRAL_SEASON_ROLE, AGENT)
+    _assert_has_no_oz_role(CS_VETTED_GATE, END_REFERRAL_SEASON_ROLE, CSM_COMMITTEE)
+    _assert_has_oz_role(CS_ACCOUNTING, SET_BOND_CURVE_ROLE, IDENTIFIED_DVT_CLUSTER_GATE)
+    _assert_has_no_oz_role(CS_ACCOUNTING, MANAGE_BOND_CURVES_ROLE, IDENTIFIED_DVT_CLUSTER_CURVE_SETUP)
+    _assert_has_no_oz_role(CS_PARAMETERS_REGISTRY, MANAGE_CURVE_PARAMETERS_ROLE, IDENTIFIED_DVT_CLUSTER_CURVE_SETUP)
+    _assert_oz_role_members(CS_PARAMETERS_REGISTRY, MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE, [CSM_COMMITTEE])
+    _assert_has_no_oz_role(BURNER, REQUEST_BURN_SHARES_ROLE, CS_ACCOUNTING)
+    _assert_has_oz_role(BURNER, REQUEST_BURN_MY_STETH_ROLE, CS_ACCOUNTING)
+    _assert_has_no_oz_role(TRIGGERABLE_WITHDRAWALS_GATEWAY, ADD_FULL_WITHDRAWAL_REQUEST_ROLE, CONFIG_OLD_CSM_EJECTOR)
+    _assert_has_oz_role(TRIGGERABLE_WITHDRAWALS_GATEWAY, ADD_FULL_WITHDRAWAL_REQUEST_ROLE, NEW_CSM_EJECTOR)
+
+    curve_setup = interface.OneShotCurveSetup(IDENTIFIED_DVT_CLUSTER_CURVE_SETUP)
+    assert curve_setup.executed() is True
+    assert curve_setup.deployedCurveId() == IDENTIFIED_DVT_CLUSTER_BOND_CURVE_ID
+    assert interface.MerkleGate(IDENTIFIED_DVT_CLUSTER_GATE).curveId() == IDENTIFIED_DVT_CLUSTER_BOND_CURVE_ID
+    assert cs_parameters_registry.getKeyRemovalCharge(IDENTIFIED_DVT_CLUSTER_BOND_CURVE_ID) == IDVT_KEY_REMOVAL_CHARGE
+    assert (
+        cs_parameters_registry.getGeneralDelayedPenaltyAdditionalFine(IDENTIFIED_DVT_CLUSTER_BOND_CURVE_ID)
+        == IDVT_GENERAL_DELAYED_PENALTY_FINE
+    )
+    assert tuple(cs_parameters_registry.getQueueConfig(IDENTIFIED_DVT_CLUSTER_BOND_CURVE_ID)) == (
+        IDVT_QUEUE_PRIORITY,
+        IDVT_QUEUE_MAX_DEPOSITS,
+    )
+    reward_share_data = cs_parameters_registry.getRewardShareData(IDENTIFIED_DVT_CLUSTER_BOND_CURVE_ID)
+    assert [list(item) for item in reward_share_data] == IDVT_REWARD_SHARE_DATA
+    assert cs_parameters_registry.getAllowedExitDelay(IDENTIFIED_DVT_CLUSTER_BOND_CURVE_ID) == IDVT_ALLOWED_EXIT_DELAY
+    assert cs_parameters_registry.getExitDelayFee(IDENTIFIED_DVT_CLUSTER_BOND_CURVE_ID) == IDVT_EXIT_DELAY_FEE
+
+    # Curated Module v2.
+    curated_module = interface.CuratedModule(CURATED_MODULE)
+    curated_exit_penalties = curated_module.EXIT_PENALTIES()
+    for proxy in (
+        CURATED_MODULE,
+        CURATED_PARAMETERS_REGISTRY,
+        CURATED_ACCOUNTING,
+        CURATED_FEE_DISTRIBUTOR,
+        CURATED_FEE_ORACLE,
+        curated_exit_penalties,
+        CURATED_STRIKES,
+        META_REGISTRY,
+    ):
+        _assert_proxy_admin(proxy)
+
+    assert curated_module.getInitializedVersion() == CURATED_MODULE_INITIALIZED_VERSION
+    assert (
+        interface.ParametersRegistry(CURATED_PARAMETERS_REGISTRY).getInitializedVersion()
+        == CURATED_PARAMETERS_REGISTRY_INITIALIZED_VERSION
+    )
+    assert (
+        interface.ModuleAccounting(CURATED_ACCOUNTING).getInitializedVersion() == CURATED_ACCOUNTING_INITIALIZED_VERSION
+    )
+    assert (
+        interface.FeeDistributor(CURATED_FEE_DISTRIBUTOR).getInitializedVersion()
+        == CURATED_FEE_DISTRIBUTOR_INITIALIZED_VERSION
+    )
+    assert (
+        interface.ValidatorStrikes(CURATED_STRIKES).getInitializedVersion()
+        == CURATED_VALIDATOR_STRIKES_INITIALIZED_VERSION
+    )
+    assert interface.FeeOracle(CURATED_FEE_ORACLE).getContractVersion() == CS_FEE_ORACLE_CONTRACT_VERSION
+    assert interface.FeeOracle(CURATED_FEE_ORACLE).getConsensusVersion() == CS_FEE_ORACLE_CONSENSUS_VERSION
+
+    _assert_has_oz_role(BURNER, REQUEST_BURN_MY_STETH_ROLE, CURATED_ACCOUNTING)
+    _assert_has_oz_role(TRIGGERABLE_WITHDRAWALS_GATEWAY, ADD_FULL_WITHDRAWAL_REQUEST_ROLE, CURATED_EJECTOR)
+    _assert_oz_role_members(CURATED_MODULE, DEFAULT_ADMIN_ROLE, [AGENT])
+    for pausable in (CURATED_MODULE, CURATED_ACCOUNTING, CURATED_FEE_ORACLE, CURATED_VERIFIER, CURATED_EJECTOR):
+        _assert_oz_role_members(pausable, PAUSE_ROLE, [CIRCUIT_BREAKER, RESEAL_MANAGER])
+        _assert_circuit_breaker_pauser(pausable, CURATED_CIRCUIT_BREAKER_PAUSER)
+    _assert_has_no_oz_role(CURATED_MODULE, RESUME_ROLE, AGENT)
+    assert curated_module.isPaused() is False
+    frame_config = interface.HashConsensus(CURATED_HASH_CONSENSUS).getFrameConfig()
+    assert frame_config["initialEpoch"] == CURATED_HASH_CONSENSUS_INITIAL_EPOCH
+    assert frame_config["epochsPerFrame"] == ctx["curated_epochs_per_frame"]
+
+    # StakingRouter, Lido, and DSM migration invariants.
+    assert staking_router.getWithdrawalCredentials() == WITHDRAWAL_CREDENTIALS
+    module_ids = staking_router.getStakingModuleIds()
+    assert len(module_ids) == STAKING_ROUTER_MODULES_COUNT
+    curated_module_id = module_ids[-1]
+    assert curated_module_id == CURATED_MODULE_ID
+    module = staking_router.getStakingModule(curated_module_id)
+    _assert_address(module["stakingModuleAddress"], CURATED_MODULE)
+    assert module["name"] == CURATED_MODULE_NAME
+    assert module["stakingModuleFee"] == CURATED_STAKING_MODULE_FEE
+    assert module["treasuryFee"] == CURATED_TREASURY_FEE
+    assert module["stakeShareLimit"] == CURATED_STAKE_SHARE_LIMIT
+    assert module["priorityExitShareThreshold"] == CURATED_PRIORITY_EXIT_SHARE_THRESHOLD
+    assert module["maxDepositsPerBlock"] == CURATED_MAX_DEPOSITS_PER_BLOCK
+    assert module["minDepositBlockDistance"] == CURATED_MIN_DEPOSIT_BLOCK_DISTANCE
+    assert module["status"] == CURATED_MODULE_STATUS_ACTIVE
+    assert module["withdrawalCredentialsType"] == CURATED_MODULE_WITHDRAWAL_CREDENTIALS_TYPE
+
+    dsm = interface.DepositSecurityModule(NEW_DEPOSIT_SECURITY_MODULE)
+    old_dsm = interface.DepositSecurityModule(OLD_DEPOSIT_SECURITY_MODULE)
+    assert dsm.VERSION() == DSM_VERSION
+    _assert_address(dsm.getOwner(), AGENT)
+    assert dsm.getGuardianQuorum() == old_dsm.getGuardianQuorum()
+    guardians = dsm.getGuardians()
+    assert len(guardians) == len(old_dsm.getGuardians())
+    assert all(old_dsm.isGuardian(guardian) for guardian in guardians)
+
+
 # ============================================================================
 # ============================== Fixtures ====================================
 # ============================================================================
@@ -650,7 +1008,6 @@ def runtime_upgrade_context():
     #  - new staking module id assigned to Curated Module v2
     #  - Curated HashConsensus epochsPerFrame preserved by updateInitialEpoch
     sr_role_migration_grants = _expected_sr_role_migration_grants(STAKING_ROUTER)
-    expected_curated_module_id = interface.StakingRouter(STAKING_ROUTER).getStakingModulesCount() + 1
     curated_epochs_per_frame = interface.HashConsensus(CURATED_HASH_CONSENSUS).getFrameConfig()[1]
 
     return {
@@ -658,7 +1015,7 @@ def runtime_upgrade_context():
         "sr_role_migration_grants": sr_role_migration_grants,
         "curated_epochs_per_frame": curated_epochs_per_frame,
         "curated_module_item": StakingModuleItem(
-            id=expected_curated_module_id,
+            id=CURATED_MODULE_ID,
             staking_module_address=CURATED_MODULE,
             name=CURATED_MODULE_NAME,
             staking_module_fee=CURATED_STAKING_MODULE_FEE,
@@ -892,9 +1249,7 @@ def test_vote(
                 factory_addr=SET_MERKLE_GATE_TREE_FOR_CM_FACTORY,
                 # SetMerkleGateTree permissions = factory.validateInputData + each gate.setTreeParams
                 permissions=_concat_permissions(
-                    _permission(
-                        SET_MERKLE_GATE_TREE_FOR_CM_FACTORY, SET_MERKLE_GATE_TREE_VALIDATE_INPUT_DATA_SELECTOR
-                    ),
+                    _permission(SET_MERKLE_GATE_TREE_FOR_CM_FACTORY, SET_MERKLE_GATE_TREE_VALIDATE_INPUT_DATA_SELECTOR),
                     *[_permission(gate, SET_TREE_PARAMS_SELECTOR) for gate in CURATED_GATES],
                 ),
             ),
@@ -951,9 +1306,7 @@ def test_vote(
             # =================================================================
             # ================ Before DG proposal executed checks =============
             # =================================================================
-            assert (
-                interface.AccountingOracle(ACCOUNTING_ORACLE).getConsensusVersion() == AO_CONSENSUS_VERSION - 1
-            )
+            assert interface.AccountingOracle(ACCOUNTING_ORACLE).getConsensusVersion() == AO_CONSENSUS_VERSION - 1
             assert (
                 interface.ValidatorsExitBusOracle(VALIDATORS_EXIT_BUS_ORACLE).getConsensusVersion()
                 == VEBO_CONSENSUS_VERSION - 1
@@ -1136,9 +1489,7 @@ def test_vote(
                 change_permission_manager_event = _single_event(dg_events[10], "ChangePermissionManager")
                 assert convert.to_address(change_permission_manager_event["app"]) == convert.to_address(LIDO)
                 assert change_permission_manager_event["role"] == BUFFER_RESERVE_MANAGER_ROLE
-                assert convert.to_address(change_permission_manager_event["manager"]) == convert.to_address(
-                    AGENT
-                )
+                assert convert.to_address(change_permission_manager_event["manager"]) == convert.to_address(AGENT)
                 _assert_emitted_by(change_permission_manager_event, ACL)
 
                 # 1.12. Call finalizeUpgrade_v4 on Lido
@@ -1251,9 +1602,7 @@ def test_vote(
                 )
 
                 # 1.23. Upgrade CSM VettedGate implementation
-                validate_proxy_upgrade_event(
-                    dg_events[22], CS_VETTED_GATE_IMPL, emitted_by=CS_VETTED_GATE
-                )
+                validate_proxy_upgrade_event(dg_events[22], CS_VETTED_GATE_IMPL, emitted_by=CS_VETTED_GATE)
 
                 # 1.24. Upgrade CSM Accounting to v3 and call finalizeUpgradeV3
                 validate_proxy_upgrade_event(
@@ -1276,14 +1625,10 @@ def test_vote(
                 _assert_emitted_by(_single_event(dg_events[24], "Initialized"), CS_FEE_DISTRIBUTOR)
 
                 # 1.26. Upgrade CSM ExitPenalties implementation
-                validate_proxy_upgrade_event(
-                    dg_events[25], CS_EXIT_PENALTIES_IMPL, emitted_by=CS_EXIT_PENALTIES
-                )
+                validate_proxy_upgrade_event(dg_events[25], CS_EXIT_PENALTIES_IMPL, emitted_by=CS_EXIT_PENALTIES)
 
                 # 1.27. Upgrade CSM ValidatorStrikes implementation
-                validate_proxy_upgrade_event(
-                    dg_events[26], CS_VALIDATOR_STRIKES_IMPL, emitted_by=CS_VALIDATOR_STRIKES
-                )
+                validate_proxy_upgrade_event(dg_events[26], CS_VALIDATOR_STRIKES_IMPL, emitted_by=CS_VALIDATOR_STRIKES)
 
                 # 1.28. Point CSM ValidatorStrikes to the New CSM Ejector
                 validate_events_chain([e.name for e in dg_events[27]], ["LogScriptCall", "EjectorSet"])
@@ -1598,9 +1943,7 @@ def test_vote(
 
                 # -------------------- Curated Module ------------------------
                 # 1.57. Add Curated Module v2 to StakingRouter
-                validate_module_add(
-                    dg_events[56], ctx["curated_module_item"], emitted_by=STAKING_ROUTER, sender=AGENT
-                )
+                validate_module_add(dg_events[56], ctx["curated_module_item"], emitted_by=STAKING_ROUTER, sender=AGENT)
 
                 # 1.58. Grant Burner REQUEST_BURN_MY_STETH_ROLE to Curated Accounting
                 validate_role_grant_event(
@@ -1705,27 +2048,9 @@ def test_vote(
         # =====================================================================
         assert timelock.getProposalDetails(expected_dg_proposal_id)["status"] == PROPOSAL_STATUS["executed"]
 
-        # Core upgrade landed.
-        assert interface.AccountingOracle(ACCOUNTING_ORACLE).getConsensusVersion() == AO_CONSENSUS_VERSION
-        assert (
-            interface.ValidatorsExitBusOracle(VALIDATORS_EXIT_BUS_ORACLE).getConsensusVersion()
-            == VEBO_CONSENSUS_VERSION
-        )
-        assert (
-            interface.WithdrawalVault(WITHDRAWAL_VAULT).getContractVersion() == WITHDRAWAL_VAULT_CONTRACT_VERSION
-        )
-        assert interface.Lido(LIDO).getContractVersion() == LIDO_CONTRACT_VERSION
-        assert interface.FeeOracle(CS_FEE_ORACLE).getConsensusVersion() == CS_FEE_ORACLE_CONSENSUS_VERSION
-
-        # Staking Router role migration & new roles.
-        assert staking_router.hasRole(STAKING_MODULE_SHARE_MANAGE_ROLE, EASYTRACK_EVMSCRIPT_EXECUTOR)
-        assert staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, NEW_DEPOSIT_SECURITY_MODULE)
-        assert not staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, OLD_DEPOSIT_SECURITY_MODULE)
-
-        # Curated Module v2 registered and resumed.
-        assert staking_router.getStakingModulesCount() == ctx["curated_module_item"].id
-        curated_module = interface.CSModule(CURATED_MODULE)
-        assert curated_module.isPaused() is False
+        # Mirror every final-state invariant enforced by UpgradeTemplate.finishUpgrade,
+        # and additionally pin the configured values exposed by public getters.
+        _assert_upgrade_template_final_state(ctx, staking_router)
 
         # Easy Track factory set updated (also checked right after the vote).
         current_factories = easy_track.getEVMScriptFactories()
