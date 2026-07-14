@@ -4,35 +4,59 @@ from brownie import interface  # type: ignore
 from utils.config import (
     contracts,
     ORACLE_REPORT_SANITY_CHECKER,
-    EXITED_VALIDATORS_PER_DAY_LIMIT,
-    APPEARED_VALIDATORS_PER_DAY_LIMIT,
     ANNUAL_BALANCE_INCREASE_BP_LIMIT,
     SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT,
-    MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT,
     MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
     MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
     REQUEST_TIMESTAMP_MARGIN,
     MAX_POSITIVE_TOKEN_REBASE,
-    INITIAL_SLASHING_AMOUNT_PWEI,
-    INACTIVITY_PENALTIES_AMOUNT_PWEI,
-    CL_BALANCE_ORACLES_ERROR_UPPER_BP_LIMIT
+    CL_BALANCE_ORACLES_ERROR_UPPER_BP_LIMIT,
+    EXITED_ETH_AMOUNT_PER_DAY_LIMIT,
+    APPEARED_ETH_AMOUNT_PER_DAY_LIMIT,
+    MAX_BALANCE_EXIT_REQUESTED_PER_REPORT_IN_ETH,
+    MAX_EFFECTIVE_BALANCE_WEIGHT_WC_TYPE_01,
+    MAX_EFFECTIVE_BALANCE_WEIGHT_WC_TYPE_02,
+    MAX_CL_BALANCE_DECREASE_BP,
+    CONSOLIDATION_ETH_AMOUNT_PER_DAY_LIMIT,
+    EXITED_VALIDATOR_ETH_AMOUNT_LIMIT,
+    EXTERNAL_PENDING_BALANCE_CAP_ETH,
 )
 from utils.test.helpers import ZERO_ADDRESS
 
 # Source of truth: https://hackmd.io/pdix1r4yR46fXUqiHaNKyw?view
+# expected_report_limits = {
+#     "exitedValidatorsPerDayLimit": EXITED_VALIDATORS_PER_DAY_LIMIT,
+#     "appearedValidatorsPerDayLimit": APPEARED_VALIDATORS_PER_DAY_LIMIT,
+#     "annualBalanceIncreaseBPLimit": ANNUAL_BALANCE_INCREASE_BP_LIMIT,
+#     "simulatedShareRateDeviationBPLimit": SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT,
+#     "maxValidatorExitRequestsPerReport": MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT,
+#     "maxAccountingExtraDataListItemsCount": MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
+#     "maxNodeOperatorsPerExtraDataItemCount": MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
+#     "requestTimestampMargin": REQUEST_TIMESTAMP_MARGIN,
+#     "maxPositiveTokenRebase": MAX_POSITIVE_TOKEN_REBASE,
+#     "initialSlashingAmountPWei": INITIAL_SLASHING_AMOUNT_PWEI,
+#     "inactivityPenaltiesAmountPWei": INACTIVITY_PENALTIES_AMOUNT_PWEI,
+#     "clBalanceOraclesErrorUpperBPLimit": CL_BALANCE_ORACLES_ERROR_UPPER_BP_LIMIT,
+# }
+
+
 expected_report_limits = {
-    "exitedValidatorsPerDayLimit": EXITED_VALIDATORS_PER_DAY_LIMIT,
-    "appearedValidatorsPerDayLimit": APPEARED_VALIDATORS_PER_DAY_LIMIT,
+    "exitedEthAmountPerDayLimit": EXITED_ETH_AMOUNT_PER_DAY_LIMIT,
+    "appearedEthAmountPerDayLimit": APPEARED_ETH_AMOUNT_PER_DAY_LIMIT,
     "annualBalanceIncreaseBPLimit": ANNUAL_BALANCE_INCREASE_BP_LIMIT,
     "simulatedShareRateDeviationBPLimit": SIMULATED_SHARE_RATE_DEVIATION_BP_LIMIT,
-    "maxValidatorExitRequestsPerReport": MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT,
-    "maxAccountingExtraDataListItemsCount": MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
-    "maxNodeOperatorsPerExtraDataItemCount": MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
+    "maxBalanceExitRequestedPerReportInEth": MAX_BALANCE_EXIT_REQUESTED_PER_REPORT_IN_ETH,
+    "maxEffectiveBalanceWeightWCType01": MAX_EFFECTIVE_BALANCE_WEIGHT_WC_TYPE_01,
+    "maxEffectiveBalanceWeightWCType02": MAX_EFFECTIVE_BALANCE_WEIGHT_WC_TYPE_02,
+    "maxItemsPerExtraDataTransaction": MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION,
+    "maxNodeOperatorsPerExtraDataItem": MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM,
     "requestTimestampMargin": REQUEST_TIMESTAMP_MARGIN,
     "maxPositiveTokenRebase": MAX_POSITIVE_TOKEN_REBASE,
-    "initialSlashingAmountPWei": INITIAL_SLASHING_AMOUNT_PWEI,
-    "inactivityPenaltiesAmountPWei": INACTIVITY_PENALTIES_AMOUNT_PWEI,
+    "maxCLBalanceDecreaseBP": MAX_CL_BALANCE_DECREASE_BP,
     "clBalanceOraclesErrorUpperBPLimit": CL_BALANCE_ORACLES_ERROR_UPPER_BP_LIMIT,
+    "consolidationEthAmountPerDayLimit": CONSOLIDATION_ETH_AMOUNT_PER_DAY_LIMIT,
+    "exitedValidatorEthAmountLimit": EXITED_VALIDATOR_ETH_AMOUNT_LIMIT,
+    "externalPendingBalanceCapEth": EXTERNAL_PENDING_BALANCE_CAP_ETH,
 }
 
 
@@ -50,6 +74,7 @@ def test_limits(contract):
     limits = contract.getOracleReportLimits()
 
     assert dict(zip(expected_report_limits.keys(), limits)) == expected_report_limits
+
 
 def test_second_opinion_is_empty(contract):
     assert contract.secondOpinionOracle() == ZERO_ADDRESS

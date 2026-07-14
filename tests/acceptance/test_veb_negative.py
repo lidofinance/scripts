@@ -44,14 +44,19 @@ def test_submit_report_data_checks(contract, ref_slot, stranger):
     )
 
     with reverts(encode_error("SenderNotAllowed()")):
-        contract.submitReportData(report, contract_version, {"from": stranger})
+        contract.submitReportData.call(report, contract_version, {"from": stranger})
 
-    with reverts(encode_error("UnexpectedContractVersion(uint256,uint256)", (contract_version, contract_version + 1))):
-        contract.submitReportData(report, contract_version + 1, {"from": submitter})
+    with reverts(
+        encode_error(
+            "UnexpectedContractVersion(uint256,uint256)",
+            (contract_version, contract_version + 1),
+        )
+    ):
+        contract.submitReportData.call(report, contract_version + 1, {"from": submitter})
 
     with reverts(encode_error("UnexpectedRefSlot(uint256,uint256)", (ref_slot, ref_slot - 1))):
         wrong_report = (report[0], ref_slot - 1, report[2], report[3], report[4])
-        contract.submitReportData(wrong_report, contract_version, {"from": submitter})
+        contract.submitReportData.call(wrong_report, contract_version, {"from": submitter})
 
     with reverts(
         encode_error(
@@ -59,10 +64,16 @@ def test_submit_report_data_checks(contract, ref_slot, stranger):
             (consensus_version, consensus_version + 1),
         )
     ):
-        wrong_report = (consensus_version + 1, report[1], report[2], report[3], report[4])
-        contract.submitReportData(wrong_report, contract_version, {"from": submitter})
+        wrong_report = (
+            consensus_version + 1,
+            report[1],
+            report[2],
+            report[3],
+            report[4],
+        )
+        contract.submitReportData.call(wrong_report, contract_version, {"from": submitter})
 
-    with reverts():  # encode_error("UnexpectedDataHash(bytes32,bytes32)",(report_hash, report_hash))
+    with (reverts()):  # encode_error("UnexpectedDataHash(bytes32,bytes32)",(report_hash, report_hash))
         wrong_report = (
             report[0],
             report[1],
@@ -70,7 +81,7 @@ def test_submit_report_data_checks(contract, ref_slot, stranger):
             report[3],
             HexBytes(42).hex(),
         )
-        contract.submitReportData(wrong_report, contract_version, {"from": submitter})
+        contract.submitReportData.call(wrong_report, contract_version, {"from": submitter})
 
 
 def test_submit_report_data_processing(contract, ref_slot):
@@ -89,14 +100,15 @@ def test_submit_report_data_processing(contract, ref_slot):
     contract.submitReportData(report, contract_version, {"from": submitter})
 
     with reverts(encode_error("RefSlotAlreadyProcessing()")):
-        contract.submitReportData(report, contract_version, {"from": submitter})
+        contract.submitReportData.call(report, contract_version, {"from": submitter})
 
 
 def test_handle_consensus_report_data_wrong_format(contract, ref_slot):
     no_global_index = (_, no_id) = (1, 1)
-    validator_id = 1
-    validator_key = contracts.node_operators_registry.getSigningKey(no_id, validator_id)[0]
-    validator = LidoValidator(validator_id, validator_key)
+    validator_index = 1  # mock value
+    key_index = 1
+    validator_key = contracts.node_operators_registry.getSigningKey(no_id, key_index)[0]
+    validator = LidoValidator(validator_index, validator_key, key_index)
 
     contract_version = contract.getContractVersion()
     consensus_version = contract.getConsensusVersion()
@@ -119,14 +131,15 @@ def test_handle_consensus_report_data_wrong_format(contract, ref_slot):
     )
 
     with reverts(encode_error("UnsupportedRequestsDataFormat(uint256)", [data_format + 1])):
-        contract.submitReportData(report, contract_version, {"from": submitter})
+        contract.submitReportData.call(report, contract_version, {"from": submitter})
 
 
 def test_handle_consensus_report_data_wrong_data_length(contract, ref_slot):
     no_global_index = (_, no_id) = (1, 1)
-    validator_id = 1
-    validator_key = contracts.node_operators_registry.getSigningKey(no_id, validator_id)[0]
-    validator = LidoValidator(validator_id, validator_key)
+    validator_index = 1  # mock value
+    key_index = 1
+    validator_key = contracts.node_operators_registry.getSigningKey(no_id, key_index)[0]
+    validator = LidoValidator(validator_index, validator_key, key_index)
 
     contract_version = contract.getContractVersion()
     consensus_version = contract.getConsensusVersion()
@@ -149,23 +162,25 @@ def test_handle_consensus_report_data_wrong_data_length(contract, ref_slot):
     )
 
     with reverts(encode_error("InvalidRequestsDataLength()")):
-        contract.submitReportData(report, contract_version, {"from": submitter})
+        contract.submitReportData.call(report, contract_version, {"from": submitter})
 
 
 def test_handle_consensus_report_data_wrong_request_length(contract, ref_slot):
     no_global_index = (_, no_id) = (1, 1)
-    validator_id = 1
-    validator_key = contracts.node_operators_registry.getSigningKey(no_id, validator_id)[0]
-    validator = LidoValidator(validator_id, validator_key)
+    validator_index = 1  # mock value
+    key_index = 1
+    validator_key = contracts.node_operators_registry.getSigningKey(no_id, key_index)[0]
+    validator = LidoValidator(validator_index, validator_key, key_index)
 
     contract_version = contract.getContractVersion()
     consensus_version = contract.getConsensusVersion()
 
     data, data_format = encode_data([(no_global_index, validator)])
+    requests_count = 0  # deliberately mismatched: data actually holds 1 request
     report = (
         consensus_version,
         ref_slot,
-        0,
+        requests_count,
         data_format,
         data,
     )
@@ -179,14 +194,15 @@ def test_handle_consensus_report_data_wrong_request_length(contract, ref_slot):
     )
 
     with reverts(encode_error("UnexpectedRequestsDataLength()")):
-        contract.submitReportData(report, contract_version, {"from": submitter})
+        contract.submitReportData.call(report, contract_version, {"from": submitter})
 
 
 def test_handle_consensus_report_data_wrong_module_id(contract, ref_slot):
     no_global_index = (_, no_id) = (0, 1)
-    validator_id = 1
-    validator_key = contracts.node_operators_registry.getSigningKey(no_id, validator_id)[0]
-    validator = LidoValidator(validator_id, validator_key)
+    validator_index = 1  # mock value
+    key_index = 1
+    validator_key = contracts.node_operators_registry.getSigningKey(no_id, key_index)[0]
+    validator = LidoValidator(validator_index, validator_key, key_index)
 
     contract_version = contract.getContractVersion()
     consensus_version = contract.getConsensusVersion()
@@ -209,7 +225,7 @@ def test_handle_consensus_report_data_wrong_module_id(contract, ref_slot):
     )
 
     with reverts(encode_error("InvalidModuleId()")):
-        contract.submitReportData(report, contract_version, {"from": submitter})
+        contract.submitReportData.call(report, contract_version, {"from": submitter})
 
 
 def test_handle_consensus_report_data_invalid_request_order(contract, ref_slot):
@@ -219,8 +235,10 @@ def test_handle_consensus_report_data_invalid_request_order(contract, ref_slot):
     validator_2_key = contracts.node_operators_registry.getSigningKey(no_id, 2)[0]
 
     # set validator index to the next one to avoid NodeOpValidatorIndexMustIncrease error
-    validator = LidoValidator(index=unreachable_cl_validator_index, pubkey=validator_key)
-    validator_2 = LidoValidator(index=unreachable_cl_validator_index + 1, pubkey=validator_2_key)
+    validator = LidoValidator(index=unreachable_cl_validator_index, pubkey=validator_key, key_index=1)
+    validator_2 = LidoValidator(index=unreachable_cl_validator_index + 1, pubkey=validator_2_key, key_index=2)
+
+    request_count = 2
 
     contract_version = contract.getContractVersion()
     consensus_version = contract.getConsensusVersion()
@@ -229,7 +247,7 @@ def test_handle_consensus_report_data_invalid_request_order(contract, ref_slot):
     report = (
         consensus_version,
         ref_slot,
-        2,
+        request_count,
         data_format,
         data,
     )
@@ -243,4 +261,4 @@ def test_handle_consensus_report_data_invalid_request_order(contract, ref_slot):
     )
 
     with reverts(encode_error("InvalidRequestsDataSortOrder()")):
-        contract.submitReportData(report, contract_version, {"from": submitter})
+        contract.submitReportData.call(report, contract_version, {"from": submitter})

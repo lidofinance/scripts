@@ -1,4 +1,5 @@
 import json
+from contextlib import contextmanager
 from typing import List
 
 import brownie.exceptions
@@ -126,7 +127,10 @@ class Helpers:
                     if accounts.at(holder_addr, force=True).balance() < topup:
                         accounts[0].transfer(holder_addr, topup)
                     account = accounts.at(holder_addr, force=True)
-                    dao_voting.vote(vote_id, True, False, {"from": account})
+                    # Voting accounts are topped up above, so bypass the middleware
+                    # that temporarily replaces their balances and then restores them.
+                    with without_balance_check_middleware():
+                        dao_voting.vote(vote_id, True, False, {"from": account})
 
         # wait for the vote to end
         # time_to_end = dao_voting.getVote(vote_id)["startDate"] + get_vote_duration() - chain.time()
@@ -270,8 +274,8 @@ def preregister_unparseable_contracts():
     # `eth-brownie` pins `py-solc-ast==1.2.10` (its latest release), which crashes on the
     # contract-level function-list directive `using {func} for Type;` (valid since Solidity
     # 0.8.13) with `AttributeError: 'UsingForDirective' object has no attribute 'libraryName'`.
-    # CSVerifierV2's verified source has one (`using { amountWei } for Withdrawal;` inside
-    # `contract CSVerifier`), so resolving it from Etherscan during event tracing
+    # CSVerifier's verified source has one (`using { amountWei } for Withdrawal;` inside
+    # `contract CSVerifier`), so resolving v2/v3 from Etherscan during event tracing
     # (e.g. display_dg_events) crashes. Pre-registering it from a local ABI makes
     # state._find_contract short-circuit before the Etherscan source fetch / solcast parse.
     #
@@ -279,6 +283,7 @@ def preregister_unparseable_contracts():
     # where PARSE_EVENTS_FROM_LOCAL_ABI is not set.
     unparseable_contracts = {
         "CSVerifierV2": globals().get("CS_VERIFIER_V2_ADDRESS"),
+        "Verifier": globals().get("CS_VERIFIER_V3_ADDRESS"),
     }
     for contract_name, addr in unparseable_contracts.items():
         if not addr:
@@ -324,6 +329,20 @@ def balance_check_middleware(make_request, web3):
         return result
 
     return middleware
+
+
+@contextmanager
+def without_balance_check_middleware():
+    middleware = web3.middleware_onion.get("balance_check")
+    if middleware is None:
+        yield
+        return
+
+    web3.middleware_onion.remove("balance_check")
+    try:
+        yield
+    finally:
+        web3.middleware_onion.add(middleware, name="balance_check")
 
 
 def get_active_proposals_from_env() -> [int]:

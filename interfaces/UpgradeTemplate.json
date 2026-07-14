@@ -1,0 +1,1211 @@
+[
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "locator",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "agent",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "voting",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "dualGovernance",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "circuitBreaker",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "circuitBreakerCommittee",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "easyTrack",
+            "type": "address"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "UpdateStakingModuleShareLimits",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "AllowConsolidationPair",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "SetMerkleGateTreeForCSM",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "ReportWithdrawalsForSlashedValidatorsForCSM",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "SettleGeneralDelayedPenaltyForCSM",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "SetMerkleGateTreeForCM",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "ReportWithdrawalsForSlashedValidatorsForCM",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "SettleGeneralDelayedPenaltyForCM",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "CreateOrUpdateOperatorGroupForCM",
+                "type": "address"
+              }
+            ],
+            "internalType": "struct EasyTrackNewFactories",
+            "name": "newFactories",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "CSMSettleElStealingPenalty",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "CSMSetVettedGateTree",
+                "type": "address"
+              }
+            ],
+            "internalType": "struct EasyTrackOldFactories",
+            "name": "oldFactories",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "newLocatorImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "newLidoImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "newAccountingImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "newAccountingOracleImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "newStakingRouterImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "newWithdrawalVaultImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "newValidatorsExitBusOracleImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "consolidationBusImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "consolidationMigratorImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "topUpGatewayImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "consolidationBus",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "consolidationMigrator",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "lidoDepositsReserveTarget",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "consolidationCommittee",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "topUpGatewayDepositor",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "twMaxExitRequestsLimit",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "twExitsPerFrame",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "twFrameDurationInSec",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "aoConsensusVersion",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "veboMaxValidatorsPerReport",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "veboMaxExitBalanceEth",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "veboBalancePerFrameEth",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "veboFrameDurationInSec",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "veboConsensusVersion",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "maxTopUpPerBlockGwei",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct CoreUpgradeParams",
+            "name": "coreUpgrade",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "csmProxy",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "csmImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "vettedGateProxy",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "identifiedDVTClusterGate",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "identifiedDVTClusterCurveSetup",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "identifiedDVTClusterBondCurveId",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "parametersRegistryImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "feeOracleImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "feeOracleConsensusVersion",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "vettedGateImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "accountingImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "feeDistributorImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "exitPenaltiesImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "strikesImpl",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "oldPermissionlessGate",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "newPermissionlessGate",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "oldVerifier",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "newVerifier",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "newEjector",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "csmCommittee",
+                "type": "address"
+              }
+            ],
+            "internalType": "struct CSMUpgradeParams",
+            "name": "csmUpgrade",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "module",
+                "type": "address"
+              },
+              {
+                "internalType": "address[]",
+                "name": "curatedGates",
+                "type": "address[]"
+              },
+              {
+                "internalType": "address",
+                "name": "verifier",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "circuitBreakerPauser",
+                "type": "address"
+              },
+              {
+                "internalType": "string",
+                "name": "moduleName",
+                "type": "string"
+              },
+              {
+                "internalType": "uint256",
+                "name": "stakeShareLimit",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "priorityExitShareThreshold",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "stakingModuleFee",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "treasuryFee",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "maxDepositsPerBlock",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "minDepositBlockDistance",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "feeOracleConsensusVersion",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "hashConsensusInitialEpoch",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct CuratedModuleParams",
+            "name": "curatedModule",
+            "type": "tuple"
+          }
+        ],
+        "internalType": "struct UpgradeParameters",
+        "name": "_params",
+        "type": "tuple"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_expireSinceInclusive",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "CMModuleIsPaused",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DSMMigrationIncorrectGuardianQuorum",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DSMMigrationIncorrectGuardians",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DSMMigrationIncorrectOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DSMMigrationIncorrectVersion",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Expired",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "curveSetup",
+        "type": "address"
+      }
+    ],
+    "name": "IdentifiedDVTClusterCurveSetupNotExecuted",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "kernel",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "implementation",
+        "type": "address"
+      }
+    ],
+    "name": "IncorrectAragonKernelImplementation",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "contractAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "role",
+        "type": "bytes32"
+      }
+    ],
+    "name": "IncorrectOZAccessControlRoleHolders",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "proxy",
+        "type": "address"
+      }
+    ],
+    "name": "IncorrectProxyAdmin",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "proxy",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "implementation",
+        "type": "address"
+      }
+    ],
+    "name": "IncorrectProxyImplementation",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "pausable",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "actualPauser",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expectedPauser",
+        "type": "address"
+      }
+    ],
+    "name": "InvalidCircuitBreakerPauser",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidConsolidationBusAddressInConsolidationMigrator",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidConsolidationGatewayAddressInConsolidationBus",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidConsolidationGatewayAddressInWithdrawalVault",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "contractAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "actualVersion",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidContractVersion",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "consensus",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "actualEpoch",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expectedEpoch",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidHashConsensusInitialEpoch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "contractAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "actualCurveId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expectedCurveId",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidIdentifiedDVTClusterCurveId",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "contractAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint64",
+        "name": "actualVersion",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "expectedVersion",
+        "type": "uint64"
+      }
+    ],
+    "name": "InvalidInitializedContractVersion",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "locatorAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "appAddress",
+        "type": "address"
+      }
+    ],
+    "name": "InvalidLocatorAppAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "oracle",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "actualVersion",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidOracleConsensusVersion",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidTriggerableWithdrawalsGatewayInWithdrawalVault",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "LidoMigrationIncorrectBeaconBalance",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "LidoMigrationIncorrectBufferedEther",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "LidoMigrationIncorrectDepositedSinceLastReport",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "LidoMigrationIncorrectDepositedValidators",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "contractAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "role",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "holder",
+        "type": "address"
+      }
+    ],
+    "name": "MissingAragonPermissionHolder",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "contractAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "role",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "holder",
+        "type": "address"
+      }
+    ],
+    "name": "MissingOZAccessControlRoleHolder",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyAgentCanUpgrade",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SRMigrationIncorrectAddStakingModule",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "newModuleId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "targetModuleId",
+        "type": "uint256"
+      }
+    ],
+    "name": "SRMigrationIncorrectConsolidationMigratorTargetModuleId",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SRMigrationIncorrectModulesCount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SRMigrationIncorrectWithdrawalCredentials",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StartAlreadyCalledInThisTx",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StartAndFinishMustBeInSameTx",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "contractAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "role",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "holder",
+        "type": "address"
+      }
+    ],
+    "name": "UnexpectedAragonPermissionHolder",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "contractAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "role",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "actualManager",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expectedManager",
+        "type": "address"
+      }
+    ],
+    "name": "UnexpectedAragonPermissionManager",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "contractAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "role",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "holder",
+        "type": "address"
+      }
+    ],
+    "name": "UnexpectedOZAccessControlRoleHolder",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "UpgradeAlreadyFinished",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "UpgradeAlreadyStarted",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [],
+    "name": "UpgradeFinished",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [],
+    "name": "UpgradeStarted",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "CONFIG",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_ACCOUNTING_ORACLE_CONSENSUS_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_ACCOUNTING_ORACLE_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_CM_ACCOUNTING_INITIALIZED_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_CM_FEE_DISTRIBUTOR_INITIALIZED_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_CM_MODULE_INITIALIZED_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_CM_PARAMETERS_REGISTRY_INITIALIZED_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_CM_VALIDATOR_STRIKES_INITIALIZED_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_COMMUNITY_FEE_ORACLE_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_CSM_ACCOUNTING_INITIALIZED_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_CSM_FEE_DISTRIBUTOR_INITIALIZED_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_CSM_MODULE_INITIALIZED_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_CSM_PARAMETERS_REGISTRY_INITIALIZED_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_CSM_VALIDATOR_STRIKES_INITIALIZED_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_CSM_VETTED_GATE_INITIALIZED_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_DSM_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_LIDO_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_STAKING_ROUTER_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_VALIDATORS_EXIT_BUS_ORACLE_CONSENSUS_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_VALIDATORS_EXIT_BUS_ORACLE_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPECTED_FINAL_WITHDRAWAL_VAULT_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPIRE_SINCE_INCLUSIVE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "finishUpgrade",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "isUpgradeFinished",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "startUpgrade",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "upgradeBlockNumber",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

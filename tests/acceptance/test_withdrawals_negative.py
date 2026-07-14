@@ -4,11 +4,15 @@ from brownie import Contract, interface, reverts, Wei, chain  # type: ignore
 
 from utils.config import WITHDRAWAL_QUEUE, contracts
 from utils.evm_script import encode_error
-from utils.test.oracle_report_helpers import oracle_report, wait_to_next_available_report_time
+from utils.test.oracle_report_helpers import (
+    oracle_report,
+    wait_to_next_available_report_time,
+)
 
 MIN_STETH_WITHDRAWAL_AMOUNT = Wei(100)
 MAX_STETH_WITHDRAWAL_AMOUNT = Wei(1000 * 10**18)
 UINT256_MAX = 2**256 - 1
+
 
 def test_request_withdrawals_steth(wq: Contract, steth_whale: Account):
     too_small_amount = MIN_STETH_WITHDRAWAL_AMOUNT - 10
@@ -21,7 +25,7 @@ def test_request_withdrawals_steth(wq: Contract, steth_whale: Account):
             [too_small_amount],
         )
     ):
-        wq.requestWithdrawals(
+        wq.requestWithdrawals.call(
             [
                 normal_amount,
                 too_small_amount,
@@ -36,7 +40,7 @@ def test_request_withdrawals_steth(wq: Contract, steth_whale: Account):
             [too_large_amount],
         )
     ):
-        wq.requestWithdrawals(
+        wq.requestWithdrawals.call(
             [
                 normal_amount,
                 too_large_amount,
@@ -57,7 +61,7 @@ def test_request_withdrawals_wsteth(wq: Contract, wsteth_whale: Account):
             [wsteth_to_steth(too_small_amount)],
         )
     ):
-        wq.requestWithdrawalsWstETH(
+        wq.requestWithdrawalsWstETH.call(
             [
                 normal_amount,
                 too_small_amount,
@@ -72,7 +76,7 @@ def test_request_withdrawals_wsteth(wq: Contract, wsteth_whale: Account):
             [wsteth_to_steth(too_large_amount)],
         )
     ):
-        wq.requestWithdrawalsWstETH(
+        wq.requestWithdrawalsWstETH.call(
             [
                 normal_amount,
                 too_large_amount,
@@ -100,7 +104,11 @@ def test_wq_prefinalize(wq: Contract, steth_whale: Account):
 
     with reverts(encode_error("ZeroShareRate()")):
         oracle_report(
-            withdrawalFinalizationBatches=[last_finalized_id + 1, last_finalized_id + 2], simulatedShareRate=0
+            withdrawalFinalizationBatches=[
+                last_finalized_id + 1,
+                last_finalized_id + 2,
+            ],
+            simulatedShareRate=0,
         )
 
 

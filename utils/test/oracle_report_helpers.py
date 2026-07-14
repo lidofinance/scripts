@@ -9,14 +9,14 @@ from eth_abi.abi import encode
 from hexbytes import HexBytes
 
 from utils.config import contracts, AO_CONSENSUS_VERSION
-from utils.test.exit_bus_data import encode_data
+from utils.test.exit_bus_data import encode_data, DATA_FORMAT_LIST_WITH_KEY_INDEX
 from utils.test.helpers import ETH, GWEI, eth_balance
 from utils.test.merkle_tree import RewardsTree
 
 ZERO_HASH = bytes([0] * 32)
 ZERO_BYTES32 = HexBytes(ZERO_HASH)
 ONE_DAY = 1 * 24 * 60 * 60
-SHARE_RATE_PRECISION = 10 ** 27
+SHARE_RATE_PRECISION = 10**27
 EXTRA_DATA_FORMAT_EMPTY = 0
 EXTRA_DATA_FORMAT_LIST = 1
 
@@ -26,14 +26,18 @@ MOCK_VAULTS_DATA_TREE_CID = "test_vaults_data_tree_cid"
 
 @dataclass
 class AccountingReport:
-    """Accounting oracle ReportData struct"""
+    """Accounting oracle ReportData struct (v5, SRv3): numValidators/clBalanceGwei were
+    replaced with clValidatorsBalanceGwei/clPendingBalanceGwei, plus two new arrays for
+    per-module balance updates"""
 
     consensusVersion: int
     refSlot: int
-    numValidators: int
-    clBalanceGwei: int
+    clValidatorsBalanceGwei: int
+    clPendingBalanceGwei: int
     stakingModuleIdsWithNewlyExitedValidators: list[int]
     numExitedValidatorsByStakingModule: list[int]
+    stakingModuleIdsWithUpdatedBalance: list[int]
+    validatorBalancesGweiByStakingModule: list[int]
     withdrawalVaultBalance: int
     elRewardsVaultBalance: int
     sharesRequestedToBurn: int
@@ -67,14 +71,16 @@ class AccountingReport:
 def prepare_accounting_report(
     *,
     refSlot,
-    clBalance,
-    numValidators,
+    clValidatorsBalance,  # wei; active validators balance (v5: replaces clBalance+numValidators)
+    clPendingBalance,  # wei; pending deposits balance on the CL
     withdrawalVaultBalance,
     elRewardsVaultBalance,
     sharesRequestedToBurn,
     simulatedShareRate,
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
+    stakingModuleIdsWithUpdatedBalance=[],
+    validatorBalancesGweiByStakingModule=[],
     consensusVersion=AO_CONSENSUS_VERSION,
     withdrawalFinalizationBatches=[],
     isBunkerMode=False,
@@ -85,10 +91,12 @@ def prepare_accounting_report(
     report = AccountingReport(
         int(consensusVersion),
         int(refSlot),
-        int(numValidators),
-        int(clBalance // GWEI),
+        int(clValidatorsBalance // GWEI),
+        int(clPendingBalance // GWEI),
         [int(i) for i in stakingModuleIdsWithNewlyExitedValidators],
         [int(i) for i in numExitedValidatorsByStakingModule],
+        [int(i) for i in stakingModuleIdsWithUpdatedBalance],
+        [int(i) for i in validatorBalancesGweiByStakingModule],
         int(withdrawalVaultBalance),
         int(elRewardsVaultBalance),
         int(sharesRequestedToBurn),
@@ -105,9 +113,9 @@ def prepare_accounting_report(
     return (report.items, report.hash)
 
 
-def prepare_exit_bus_report(validators_to_exit, ref_slot):
+def prepare_exit_bus_report(validators_to_exit, ref_slot, data_format=DATA_FORMAT_LIST_WITH_KEY_INDEX):
     consensus_version = contracts.validators_exit_bus_oracle.getConsensusVersion()
-    data, data_format = encode_data(validators_to_exit)
+    data, data_format = encode_data(validators_to_exit, data_format=data_format)
     report = (consensus_version, ref_slot, len(validators_to_exit), data_format, data)
     report_data = encode_data_from_abi(report, contracts.validators_exit_bus_oracle.abi, "submitReportData")
 
@@ -120,7 +128,7 @@ def prepare_csm_report(node_operators_rewards: dict, ref_slot, distributed_share
     shares = node_operators_rewards.copy()
     if len(shares) < 2:
         # put a stone
-        shares[2 ** 64 - 1] = 0
+        shares[2**64 - 1] = 0
 
     tree = RewardsTree.new(tuple((no_id, amount) for (no_id, amount) in shares.items()))
     # semi-random values
@@ -153,20 +161,9 @@ def encode_data_from_abi(data, abi, func_name):
 def get_finalization_batches(
     share_rate: int, limited_withdrawal_vault_balance, limited_el_rewards_vault_balance
 ) -> list[int]:
-    (
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        requestTimestampMargin,
-        _,
-        _,
-        _,
-        _,
-    ) = contracts.oracle_report_sanity_checker.getOracleReportLimits()
+    # access by field name — the LimitsList struct changes between upgrades (12 -> 16 fields in SRv3)
+    limits = contracts.oracle_report_sanity_checker.getOracleReportLimits()
+    requestTimestampMargin = limits["requestTimestampMargin"]
     buffered_ether = contracts.lido.getBufferedEther()
     unfinalized_steth = contracts.withdrawal_queue.unfinalizedStETH()
     reserved_buffer = min(buffered_ether, unfinalized_steth)
@@ -203,14 +200,16 @@ def reach_consensus(slot, report, version, oracle_contract, silent=False):
 def push_oracle_report(
     *,
     refSlot,
-    clBalance,
-    numValidators,
+    clValidatorsBalance,  # wei (v5: replaces clBalance+numValidators)
+    clPendingBalance=0,  # wei
     withdrawalVaultBalance,
     elRewardsVaultBalance,
     sharesRequestedToBurn,
     simulatedShareRate,
     stakingModuleIdsWithNewlyExitedValidators=[],
     numExitedValidatorsByStakingModule=[],
+    stakingModuleIdsWithUpdatedBalance=[],
+    validatorBalancesGweiByStakingModule=[],
     withdrawalFinalizationBatches=[],
     isBunkerMode=False,
     extraDataFormat=0,
@@ -225,14 +224,16 @@ def push_oracle_report(
     oracleVersion = contracts.accounting_oracle.getContractVersion()
     (items, hash) = prepare_accounting_report(
         refSlot=refSlot,
-        clBalance=clBalance,
-        numValidators=numValidators,
+        clValidatorsBalance=clValidatorsBalance,
+        clPendingBalance=clPendingBalance,
         withdrawalVaultBalance=withdrawalVaultBalance,
         elRewardsVaultBalance=elRewardsVaultBalance,
         sharesRequestedToBurn=sharesRequestedToBurn,
         simulatedShareRate=simulatedShareRate,
         stakingModuleIdsWithNewlyExitedValidators=stakingModuleIdsWithNewlyExitedValidators,
         numExitedValidatorsByStakingModule=numExitedValidatorsByStakingModule,
+        stakingModuleIdsWithUpdatedBalance=stakingModuleIdsWithUpdatedBalance,
+        validatorBalancesGweiByStakingModule=validatorBalancesGweiByStakingModule,
         consensusVersion=consensusVersion,
         withdrawalFinalizationBatches=withdrawalFinalizationBatches,
         isBunkerMode=isBunkerMode,
@@ -241,7 +242,7 @@ def push_oracle_report(
         extraDataItemsCount=extraDataItemsCount,
     )
     submitter = reach_consensus(refSlot, hash, consensusVersion, contracts.hash_consensus_for_accounting_oracle, silent)
-    accounts[0].transfer(submitter, 10 ** 19)
+    accounts[0].transfer(submitter, 10**19)
     # print(contracts.oracle_report_sanity_checker.getOracleReportLimits())
     report_tx = contracts.accounting_oracle.submitReportData(items, oracleVersion, {"from": submitter})
     if not silent:
@@ -282,8 +283,17 @@ def push_oracle_report(
 
 
 def simulate_report(
-    *, refSlot, beaconValidators, postCLBalance, withdrawalVaultBalance, elRewardsVaultBalance, block_identifier=None
+    *,
+    refSlot,
+    clValidatorsBalance,
+    clPendingBalance,
+    withdrawalVaultBalance,
+    elRewardsVaultBalance,
+    block_identifier=None,
 ):
+    """Dry-runs the report via Accounting.simulateOracleReport (v5 ReportValues:
+    balances instead of the validator count) and returns
+    (postTotalPooledEther, postTotalShares, withdrawalsVaultTransfer, elRewardsVaultTransfer)."""
     (_, SECONDS_PER_SLOT, GENESIS_TIME) = contracts.hash_consensus_for_accounting_oracle.getChainConfig()
     reportTime = GENESIS_TIME + refSlot * SECONDS_PER_SLOT
 
@@ -297,45 +307,34 @@ def simulate_report(
             # The code is taken from the current production `lido-oracle` implementation
             # source: https://github.com/lidofinance/lido-oracle/blob/da393bf06250344a4d06dce6d1ac6a3ddcb9c7a3/src/providers/execution/contracts/lido.py#L93-L95
             "stateDiff": {
-                override_slot: '0x' + refSlot.to_bytes(32, "big").hex(),
+                override_slot: "0x" + refSlot.to_bytes(32, "big").hex(),
             },
         },
     }
 
-    try:
-        calculatedValues = contracts.accounting.simulateOracleReport.call(
-            [
-                reportTime,
-                ONE_DAY,
-                beaconValidators,
-                postCLBalance,
-                withdrawalVaultBalance,
-                elRewardsVaultBalance,
-                0,
-                [],
-                0,
-            ],
-            {"from": contracts.accounting_oracle.address},
-            block_identifier=block_identifier,
-            override=state_override,
-        )
-        return (calculatedValues[14], calculatedValues[13], calculatedValues[0], calculatedValues[1])
-    except VirtualMachineError:
-        # workaround for empty revert message from ganache on eth_call
-
-        # override storage value of the processing reference slot to make the simulation sound
-        # Since it's not possible to pass an override as a part of the state-changing transaction
-        web3.provider.make_request(
-            # can assume ganache only here
-            "evm_setAccountStorageAt",
-            [contracts.accounting_oracle.address, override_slot, refSlot],
-        )
-
-        contracts.accounting.handleOracleReport(
-            [reportTime, ONE_DAY, beaconValidators, postCLBalance, withdrawalVaultBalance, elRewardsVaultBalance, 0, [], 0],
-            {"from": contracts.accounting_oracle.address},
-        )
-        raise  # unreachable, for static analysis only
+    calculated = contracts.accounting.simulateOracleReport.call(
+        [
+            reportTime,
+            ONE_DAY,
+            clValidatorsBalance,
+            clPendingBalance,
+            withdrawalVaultBalance,
+            elRewardsVaultBalance,
+            0,  # sharesRequestedToBurn
+            [],  # withdrawalFinalizationBatches
+            0,  # simulatedShareRate
+        ],
+        {"from": contracts.accounting_oracle.address},
+        block_identifier=block_identifier,
+        override=state_override,
+    )
+    # named access: the CalculatedValues struct layout changes between upgrades
+    return (
+        calculated["postTotalPooledEther"],
+        calculated["postTotalShares"],
+        calculated["withdrawalsVaultTransfer"],
+        calculated["elRewardsVaultTransfer"],
+    )
 
 
 def wait_to_next_available_report_time(consensus_contract):
@@ -384,6 +383,8 @@ def oracle_report(
     silent=False,
     sharesRequestedToBurn=None,
     withdrawalFinalizationBatches=[],
+    stakingModuleIdsWithUpdatedBalance=None,
+    validatorBalancesGweiByStakingModule=None,
     simulatedShareRate=None,
     dry_run: Literal[False] = False,
 ) -> tuple[TransactionReceipt, TransactionReceipt]:
@@ -412,6 +413,8 @@ def oracle_report(
     silent=False,
     sharesRequestedToBurn=None,
     withdrawalFinalizationBatches=[],
+    stakingModuleIdsWithUpdatedBalance=None,
+    validatorBalancesGweiByStakingModule=None,
     simulatedShareRate=None,
     refSlot=None,
     dry_run: Literal[True],
@@ -440,6 +443,8 @@ def oracle_report(
     silent=False,
     sharesRequestedToBurn=None,
     withdrawalFinalizationBatches=[],
+    stakingModuleIdsWithUpdatedBalance=None,
+    validatorBalancesGweiByStakingModule=None,
     simulatedShareRate=None,
     refSlot=None,
     dry_run=False,
@@ -450,10 +455,22 @@ def oracle_report(
     if refSlot is None:
         (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
 
-    (_, beaconValidators, beaconBalance) = contracts.lido.getBeaconStat()
+    # v5: the report carries CL balances, not validator counts. getBalanceStats returns
+    # the active/pending balances as of the last report plus the deposits made since.
+    (
+        clValidatorsBalance,
+        clPendingBalance,
+        _deposited_since_last_report,
+        deposited_for_current_report,
+    ) = contracts.lido.getBalanceStats()
 
-    postCLBalance = beaconBalance + cl_diff
-    postBeaconValidators = beaconValidators + cl_appeared_validators
+    postCLBalance = clValidatorsBalance + cl_diff
+    # deposits made since the last report and up to the refSlot surface as pending on the CL
+    postCLPendingBalance = clPendingBalance + deposited_for_current_report
+    if cl_appeared_validators:
+        # deprecated with SRv3: the v5 report format has no validator count field;
+        # kept in the signature so pre-SRv3 callers don't break at the call site
+        warnings.warn("cl_appeared_validators is a no-op since the SRv3 (v5) report format")
 
     elRewardsVaultBalance = (
         eth_balance(contracts.execution_layer_rewards_vault.address)
@@ -482,13 +499,30 @@ def oracle_report(
         (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()
         sharesRequestedToBurn = coverShares + nonCoverShares
 
+    # v5: the report must list balances for ALL modules in registration order, summing
+    # exactly to clValidatorsBalanceGwei (the checker validates the report against itself).
+    # SR-stored values are migration-seeded (32 ETH x active, overstated), so distribute
+    # the reported total proportionally to them instead of copying them.
+    if stakingModuleIdsWithUpdatedBalance is None:
+        stakingModuleIdsWithUpdatedBalance = list(contracts.staking_router.getStakingModuleIds())
+        target_gwei = postCLBalance // GWEI
+        stored_gwei = [
+            contracts.staking_router.getModuleValidatorsBalance(module_id) // GWEI
+            for module_id in stakingModuleIdsWithUpdatedBalance
+        ]
+        total_stored_gwei = sum(stored_gwei)
+        assert total_stored_gwei > 0, "staking router has no validator balances"
+        validatorBalancesGweiByStakingModule = [balance * target_gwei // total_stored_gwei for balance in stored_gwei]
+        # return the integer-division remainder to the first module: the sum must match exactly
+        validatorBalancesGweiByStakingModule[0] += target_gwei - sum(validatorBalancesGweiByStakingModule)
+
     is_bunker = False
 
     if not skip_withdrawals:
         (postTotalPooledEther, postTotalShares, withdrawals, elRewards) = simulate_report(
             refSlot=refSlot,
-            beaconValidators=postBeaconValidators,
-            postCLBalance=postCLBalance,
+            clValidatorsBalance=postCLBalance,
+            clPendingBalance=postCLPendingBalance,
             withdrawalVaultBalance=withdrawalVaultBalance,
             elRewardsVaultBalance=elRewardsVaultBalance,
             block_identifier=simulation_block_identifier,
@@ -511,10 +545,12 @@ def oracle_report(
         return AccountingReport(
             consensusVersion=contracts.accounting_oracle.getConsensusVersion(),
             refSlot=refSlot,
-            numValidators=postBeaconValidators,
-            clBalanceGwei=postCLBalance // GWEI,
+            clValidatorsBalanceGwei=postCLBalance // GWEI,
+            clPendingBalanceGwei=postCLPendingBalance // GWEI,
             stakingModuleIdsWithNewlyExitedValidators=stakingModuleIdsWithNewlyExitedValidators,
             numExitedValidatorsByStakingModule=numExitedValidatorsByStakingModule,
+            stakingModuleIdsWithUpdatedBalance=stakingModuleIdsWithUpdatedBalance,
+            validatorBalancesGweiByStakingModule=validatorBalancesGweiByStakingModule,
             withdrawalVaultBalance=withdrawalVaultBalance,
             elRewardsVaultBalance=elRewardsVaultBalance,
             sharesRequestedToBurn=sharesRequestedToBurn,
@@ -530,8 +566,8 @@ def oracle_report(
 
     return push_oracle_report(
         refSlot=refSlot,
-        clBalance=postCLBalance,
-        numValidators=postBeaconValidators,
+        clValidatorsBalance=postCLBalance,
+        clPendingBalance=postCLPendingBalance,
         withdrawalVaultBalance=withdrawalVaultBalance,
         sharesRequestedToBurn=sharesRequestedToBurn,
         withdrawalFinalizationBatches=withdrawalFinalizationBatches,
@@ -543,6 +579,8 @@ def oracle_report(
         extraDataList=extraDataList,
         stakingModuleIdsWithNewlyExitedValidators=stakingModuleIdsWithNewlyExitedValidators,
         numExitedValidatorsByStakingModule=numExitedValidatorsByStakingModule,
+        stakingModuleIdsWithUpdatedBalance=stakingModuleIdsWithUpdatedBalance,
+        validatorBalancesGweiByStakingModule=validatorBalancesGweiByStakingModule,
         silent=silent,
         isBunkerMode=is_bunker,
     )

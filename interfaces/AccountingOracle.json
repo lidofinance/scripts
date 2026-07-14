@@ -80,17 +80,6 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "code",
-        "type": "uint256"
-      }
-    ],
-    "name": "IncorrectOracleMigration",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
         "name": "initialRefSlot",
         "type": "uint256"
       },
@@ -133,11 +122,6 @@
       }
     ],
     "name": "InvalidExtraDataSortOrder",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "LidoCannotBeZero",
     "type": "error"
   },
   {
@@ -799,7 +783,7 @@
         "type": "uint256"
       }
     ],
-    "name": "finalizeUpgrade_v4",
+    "name": "finalizeUpgrade_v5",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -865,6 +849,24 @@
       {
         "internalType": "uint256",
         "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getCurrentFrame",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "refSlot",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "refSlotTimestamp",
         "type": "uint256"
       }
     ],
@@ -1177,12 +1179,12 @@
           },
           {
             "internalType": "uint256",
-            "name": "numValidators",
+            "name": "clValidatorsBalanceGwei",
             "type": "uint256"
           },
           {
             "internalType": "uint256",
-            "name": "clBalanceGwei",
+            "name": "clPendingBalanceGwei",
             "type": "uint256"
           },
           {
@@ -1193,6 +1195,16 @@
           {
             "internalType": "uint256[]",
             "name": "numExitedValidatorsByStakingModule",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "stakingModuleIdsWithUpdatedBalance",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "validatorBalancesGweiByStakingModule",
             "type": "uint256[]"
           },
           {

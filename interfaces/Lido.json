@@ -83,6 +83,20 @@
     "type": "function"
   },
   {
+    "constant": true,
+    "inputs": [],
+    "name": "BUFFER_RESERVE_MANAGER_ROLE",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "constant": false,
     "inputs": [
       {
@@ -117,6 +131,56 @@
     ],
     "payable": false,
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_newDepositsReserveTarget",
+        "type": "uint256"
+      }
+    ],
+    "name": "setDepositsReserveTarget",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "getDepositsReserveTarget",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_lidoLocator",
+        "type": "address"
+      },
+      {
+        "name": "_eip712StETH",
+        "type": "address"
+      },
+      {
+        "name": "_depositsReserveTarget",
+        "type": "uint256"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "payable": true,
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -210,6 +274,24 @@
     ],
     "payable": false,
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_amount",
+        "type": "uint256"
+      },
+      {
+        "name": "_seedDepositsCount",
+        "type": "uint256"
+      }
+    ],
+    "name": "withdrawDepositableEther",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -347,20 +429,6 @@
     "type": "function"
   },
   {
-    "constant": false,
-    "inputs": [
-      {
-        "name": "_newDepositedValidators",
-        "type": "uint256"
-      }
-    ],
-    "name": "unsafeChangeDepositedValidators",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "constant": true,
     "inputs": [],
     "name": "PAUSE_ROLE",
@@ -368,6 +436,32 @@
       {
         "name": "",
         "type": "bytes32"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "getBalanceStats",
+    "outputs": [
+      {
+        "name": "clValidatorsBalanceAtLastReport",
+        "type": "uint256"
+      },
+      {
+        "name": "clPendingBalanceAtLastReport",
+        "type": "uint256"
+      },
+      {
+        "name": "depositedSinceLastReport",
+        "type": "uint256"
+      },
+      {
+        "name": "depositedForCurrentReport",
+        "type": "uint256"
       }
     ],
     "payable": false,
@@ -441,24 +535,6 @@
   },
   {
     "constant": false,
-    "inputs": [
-      {
-        "name": "_lidoLocator",
-        "type": "address"
-      },
-      {
-        "name": "_eip712StETH",
-        "type": "address"
-      }
-    ],
-    "name": "initialize",
-    "outputs": [],
-    "payable": true,
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "constant": false,
     "inputs": [],
     "name": "receiveELRewards",
     "outputs": [],
@@ -506,15 +582,11 @@
         "type": "uint256"
       },
       {
-        "name": "_preClValidators",
+        "name": "_clValidatorsBalance",
         "type": "uint256"
       },
       {
-        "name": "_reportClValidators",
-        "type": "uint256"
-      },
-      {
-        "name": "_reportClBalance",
+        "name": "_clPendingBalance",
         "type": "uint256"
       }
     ],
@@ -830,31 +902,23 @@
     "type": "function"
   },
   {
-    "constant": false,
-    "inputs": [
+    "constant": true,
+    "inputs": [],
+    "name": "getMaxMintableExternalShares",
+    "outputs": [
       {
-        "name": "_oldBurner",
-        "type": "address"
-      },
-      {
-        "name": "_contractsWithBurnerAllowances",
-        "type": "address[]"
-      },
-      {
-        "name": "_initialMaxExternalRatioBP",
+        "name": "",
         "type": "uint256"
       }
     ],
-    "name": "finalizeUpgrade_v3",
-    "outputs": [],
     "payable": false,
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
     "constant": true,
     "inputs": [],
-    "name": "getMaxMintableExternalShares",
+    "name": "getWithdrawalsReserve",
     "outputs": [
       {
         "name": "",
@@ -891,6 +955,20 @@
     ],
     "payable": false,
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_depositsReserveTarget",
+        "type": "uint256"
+      }
+    ],
+    "name": "finalizeUpgrade_v4",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -1121,42 +1199,6 @@
     "type": "function"
   },
   {
-    "constant": false,
-    "inputs": [
-      {
-        "name": "_maxDepositsCount",
-        "type": "uint256"
-      },
-      {
-        "name": "_stakingModuleId",
-        "type": "uint256"
-      },
-      {
-        "name": "_depositCalldata",
-        "type": "bytes"
-      }
-    ],
-    "name": "deposit",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [],
-    "name": "UNSAFE_CHANGE_DEPOSITED_VALIDATORS_ROLE",
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "constant": true,
     "inputs": [],
     "name": "getBeaconStat",
@@ -1363,6 +1405,20 @@
   {
     "constant": true,
     "inputs": [],
+    "name": "getDepositsReserve",
+    "outputs": [
+      {
+        "name": "depositsReserve",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
     "name": "getDepositableEther",
     "outputs": [
       {
@@ -1480,16 +1536,28 @@
       },
       {
         "indexed": false,
-        "name": "preCLValidators",
+        "name": "clValidatorsBalance",
         "type": "uint256"
       },
       {
         "indexed": false,
-        "name": "postCLValidators",
+        "name": "clPendingBalance",
         "type": "uint256"
       }
     ],
-    "name": "CLValidatorsUpdated",
+    "name": "CLBalancesUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "name": "depositedPostReport",
+        "type": "uint256"
+      }
+    ],
+    "name": "DepositedPostReportUpdated",
     "type": "event"
   },
   {
@@ -1743,6 +1811,30 @@
       }
     ],
     "name": "ExternalBadDebtInternalized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "name": "depositsReserve",
+        "type": "uint256"
+      }
+    ],
+    "name": "DepositsReserveSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "name": "depositsReserveTarget",
+        "type": "uint256"
+      }
+    ],
+    "name": "DepositsReserveTargetSet",
     "type": "event"
   },
   {

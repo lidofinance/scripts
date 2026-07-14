@@ -20,9 +20,10 @@ def execute_votings_and_process_created_proposals():
     vote_script = retrieve_vote_script()
 
     votings_to_execute = list(votings_in_flight)
+    post_vote_on_fork = None
 
     if vote_script:
-        start_vote, get_vote_items = vote_script
+        start_vote, get_vote_items, post_vote_on_fork = vote_script
 
         is_already_in_flight = any(
             is_vote_script_equal_to_voting_in_flight(vote_id, get_vote_items)
@@ -41,6 +42,9 @@ def execute_votings_and_process_created_proposals():
     print(f"Passing and enacting votings: {votings_to_execute}")
     for vote_id in votings_to_execute:
         pass_and_exec_dao_vote(vote_id=vote_id)
+
+    if post_vote_on_fork:
+        post_vote_on_fork()
 
 def is_vote_script_equal_to_voting_in_flight(
     voting_id: int, get_vote_items: Callable[[], Tuple[List, List]]
@@ -76,7 +80,7 @@ def retrieve_votings_in_flight() -> List[int]:
         print(f"Found votings in flight: {votings_in_flight}")
     return votings_in_flight
 
-def retrieve_vote_script() -> Tuple[Callable, Callable] | None:
+def retrieve_vote_script() -> Tuple[Callable, Callable, Callable | None] | None:
     vote_files = get_vote_script_files()
     vote_files.extend(get_upgrade_script_files())
 
@@ -94,7 +98,11 @@ def retrieve_vote_script() -> Tuple[Callable, Callable] | None:
 
     try:
         exec(f"from {module_name} import start_vote, get_vote_items")
-        return locals()['start_vote'], locals()['get_vote_items']
+        try:
+            exec(f"from {module_name} import post_vote_on_fork")
+        except ImportError:
+            pass
+        return locals()['start_vote'], locals()['get_vote_items'], locals().get('post_vote_on_fork')
     except ImportError:
         raise AttributeError(
             f"'start_vote' and/or 'get_vote_items' not found in {script_path}."

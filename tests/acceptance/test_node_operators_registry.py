@@ -14,13 +14,16 @@ from utils.config import (
     CURATED_STAKING_MODULE_TYPE,
 )
 
+
 @pytest.fixture
 def voting(accounts):
     return accounts.at(contracts.voting.address, force=True)
 
+
 @pytest.fixture(scope="module")
 def agent_eoa(accounts):
     return accounts.at(contracts.agent.address, force=True)
+
 
 @pytest.fixture(scope="module")
 def contract() -> interface.NodeOperatorsRegistry:
@@ -41,10 +44,20 @@ def test_aragon(contract):
 
 
 def test_role_keccaks(contract):
-    assert contract.MANAGE_SIGNING_KEYS() == web3.keccak(text="MANAGE_SIGNING_KEYS").hex()
-    assert contract.SET_NODE_OPERATOR_LIMIT_ROLE() == web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE").hex()
-    assert contract.MANAGE_NODE_OPERATOR_ROLE() == web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE").hex()
-    assert contract.STAKING_ROUTER_ROLE() == web3.keccak(text="STAKING_ROUTER_ROLE").hex()
+    assert (
+        contract.MANAGE_SIGNING_KEYS() == web3.keccak(text="MANAGE_SIGNING_KEYS").hex()
+    )
+    assert (
+        contract.SET_NODE_OPERATOR_LIMIT_ROLE()
+        == web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE").hex()
+    )
+    assert (
+        contract.MANAGE_NODE_OPERATOR_ROLE()
+        == web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE").hex()
+    )
+    assert (
+        contract.STAKING_ROUTER_ROLE() == web3.keccak(text="STAKING_ROUTER_ROLE").hex()
+    )
 
 
 def test_versioned(contract):
@@ -52,8 +65,9 @@ def test_versioned(contract):
 
 
 def test_initialize(contract):
+    # .call() — anvil does not surface revert strings for reverted txs (see test_staking_router)
     with reverts("INIT_ALREADY_INITIALIZED"):
-        contract.initialize(
+        contract.initialize.call(
             contracts.lido_locator,
             CURATED_STAKING_MODULE_TYPE,
             NOR_EXIT_DEADLINE_IN_SEC,
@@ -63,7 +77,7 @@ def test_initialize(contract):
 
 def test_finalize_upgrade(contract):
     with reverts("UNEXPECTED_CONTRACT_VERSION"):
-        contract.finalizeUpgrade_v4(
+        contract.finalizeUpgrade_v4.call(
             NOR_EXIT_DEADLINE_IN_SEC,
             {"from": contracts.voting},
         )
@@ -72,7 +86,7 @@ def test_finalize_upgrade(contract):
 def test_petrified():
     contract = interface.NodeOperatorsRegistry(NODE_OPERATORS_REGISTRY_IMPL)
     with reverts("INIT_ALREADY_INITIALIZED"):
-        contract.initialize(
+        contract.initialize.call(
             contracts.lido_locator,
             CURATED_STAKING_MODULE_TYPE,
             NOR_EXIT_DEADLINE_IN_SEC,
@@ -80,13 +94,18 @@ def test_petrified():
         )
 
     with reverts("CONTRACT_NOT_INITIALIZED"):
-        contract.finalizeUpgrade_v4(NOR_EXIT_DEADLINE_IN_SEC, {"from": contracts.voting})
+        contract.finalizeUpgrade_v4.call(
+            NOR_EXIT_DEADLINE_IN_SEC, {"from": contracts.voting}
+        )
 
 
 def test_nor_state(contract):
     node_operators_count = contract.getNodeOperatorsCount()
     assert node_operators_count == CURATED_STAKING_MODULE_OPERATORS_COUNT
-    assert contract.getActiveNodeOperatorsCount() == CURATED_STAKING_MODULE_OPERATORS_ACTIVE_COUNT
+    assert (
+        contract.getActiveNodeOperatorsCount()
+        == CURATED_STAKING_MODULE_OPERATORS_ACTIVE_COUNT
+    )
     assert contract.getNonce() >= 7315
     assert contract.getStuckPenaltyDelay() == CURATED_STAKING_MODULE_STUCK_PENALTY_DELAY
     assert contract.getType() == _str_to_bytes32("curated-onchain-v1")
@@ -99,7 +118,12 @@ def test_nor_state(contract):
     for id in range(node_operators_count):
         node_operator = contract.getNodeOperator(id, True)
 
-        deactivated_node_operators = [12, 1, 32, 3] # on vote 24-01-16, NO id 32 deactivated on vote 26-04-08, NO id 3 (Chorus One) deactivated on vote 26-06-17
+        deactivated_node_operators = [
+            12,
+            1,
+            32,
+            3,
+        ]  # on vote 24-01-16, NO id 32 deactivated on vote 26-04-08, NO id 3 (Chorus One) deactivated on vote 26-06-17
 
         assert node_operator["active"] == (id not in deactivated_node_operators)
         assert node_operator["name"] is not None
@@ -109,14 +133,31 @@ def test_nor_state(contract):
         # Invariant check
         # https://github.com/lidofinance/lido-dao/blob/cadffa46a2b8ed6cfa1127fca2468bae1a82d6bf/contracts/0.4.24/nos/NodeOperatorsRegistry.sol#L168
         assert node_operator["totalExitedValidators"] >= 0
-        assert node_operator["totalExitedValidators"] <= node_operator["totalDepositedValidators"]
-        assert node_operator["totalDepositedValidators"] <= node_operator["totalVettedValidators"]
-        assert node_operator["totalVettedValidators"] <= node_operator["totalAddedValidators"]
+        assert (
+            node_operator["totalExitedValidators"]
+            <= node_operator["totalDepositedValidators"]
+        )
+        assert (
+            node_operator["totalDepositedValidators"]
+            <= node_operator["totalVettedValidators"]
+        )
+        assert (
+            node_operator["totalVettedValidators"]
+            <= node_operator["totalAddedValidators"]
+        )
 
         node_operator_summary = contract.getNodeOperatorSummary(id)
-        exited_node_operators = [12, 1] # NO id 12 was added on vote 23-05-23, NO id 1 was added on vote 23-10-03
-        soft_limit_0_node_operators = [32, 3] # NO id 32 was added on vote 25-12-15, NO id 3 was added on vote 26-04-08
-        assert node_operator_summary["targetLimitMode"] == (1 if id in exited_node_operators or id in soft_limit_0_node_operators else 0)
+        exited_node_operators = [
+            12,
+            1,
+        ]  # NO id 12 was added on vote 23-05-23, NO id 1 was added on vote 23-10-03
+        soft_limit_0_node_operators = [
+            32,
+            3,
+        ]  # NO id 32 was added on vote 25-12-15, NO id 3 was added on vote 26-04-08
+        assert node_operator_summary["targetLimitMode"] == (
+            1 if id in exited_node_operators or id in soft_limit_0_node_operators else 0
+        )
         assert node_operator_summary["targetValidatorsCount"] == 0
         # Can be more than 0 in regular protocol operations
         # assert node_operator_summary["stuckValidatorsCount"] == 0
@@ -127,20 +168,34 @@ def test_nor_state(contract):
         # Invariant check
         # https://github.com/lidofinance/lido-dao/blob/cadffa46a2b8ed6cfa1127fca2468bae1a82d6bf/contracts/0.4.24/nos/NodeOperatorsRegistry.sol#L168
         assert node_operator_summary["totalExitedValidators"] >= 0
-        assert node_operator_summary["totalExitedValidators"] <= node_operator_summary["totalDepositedValidators"]
+        assert (
+            node_operator_summary["totalExitedValidators"]
+            <= node_operator_summary["totalDepositedValidators"]
+        )
 
         assert node_operator_summary["depositableValidatorsCount"] is not None
 
-        assert node_operator["totalExitedValidators"] == node_operator_summary["totalExitedValidators"]
-        assert node_operator["totalDepositedValidators"] == node_operator_summary["totalDepositedValidators"]
+        assert (
+            node_operator["totalExitedValidators"]
+            == node_operator_summary["totalExitedValidators"]
+        )
+        assert (
+            node_operator["totalDepositedValidators"]
+            == node_operator_summary["totalDepositedValidators"]
+        )
 
         if id in soft_limit_0_node_operators:
             assert node_operator_summary["depositableValidatorsCount"] == 0
         else:
             no_depositable_validators_count = (
-                node_operator["totalVettedValidators"] - node_operator["totalDepositedValidators"]
+                node_operator["totalVettedValidators"]
+                - node_operator["totalDepositedValidators"]
             )
-            assert node_operator_summary["depositableValidatorsCount"] == no_depositable_validators_count
+            assert (
+                node_operator_summary["depositableValidatorsCount"]
+                == no_depositable_validators_count
+            )
+
 
 def _str_to_bytes32(s: str) -> str:
     return "0x{:0<64}".format(s.encode("utf-8").hex())

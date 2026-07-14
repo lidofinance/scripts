@@ -80,6 +80,11 @@
           },
           {
             "internalType": "address",
+            "name": "consolidationGateway",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
             "name": "accounting",
             "type": "address"
           },
@@ -111,6 +116,11 @@
           {
             "internalType": "address",
             "name": "operatorGrid",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "topUpGateway",
             "type": "address"
           }
         ],
@@ -156,6 +166,19 @@
   {
     "inputs": [],
     "name": "burner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "consolidationGateway",
     "outputs": [
       {
         "internalType": "address",
@@ -367,6 +390,19 @@
   {
     "inputs": [],
     "name": "stakingRouter",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "topUpGateway",
     "outputs": [
       {
         "internalType": "address",

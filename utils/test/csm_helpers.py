@@ -5,12 +5,12 @@ from utils.test.easy_track_helpers import _encode_calldata
 from utils.test.helpers import ETH
 from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
 from utils.config import contracts, CSM_COMMITTEE_MS, EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY
-from utils.test.merkle_tree import ICSTree
+from utils.test.merkle_tree import AddressTree
 
 
 
 def csm_set_ics_tree_members(members):
-    tree = ICSTree.new(members)
+    tree = AddressTree.new(members)
     calldata = _encode_calldata(["bytes32", "string"], [tree.root, "0xabc"])
     tx = contracts.easy_track.createMotion(EASYTRACK_CS_SET_VETTED_GATE_TREE_FACTORY, calldata, {"from": CSM_COMMITTEE_MS})
     chain.sleep(60 * 60 * 24 * 3)
@@ -45,18 +45,26 @@ def csm_add_node_operator(csm, permissionless_gate, accounting, node_operator, k
     return csm.getNodeOperatorsCount() - 1
 
 
-def csm_add_ics_node_operator(csm, vetted_gate, accounting, node_operator, proof, keys_count=5, curve_id=2):
+def csm_add_ics_node_operator(
+    csm,
+    vetted_gate,
+    accounting,
+    node_operator,
+    proof,
+    keys_count=5,
+    management_properties=(ZERO_ADDRESS, ZERO_ADDRESS, False),
+):
     pubkeys_batch = random_pubkeys_batch(keys_count)
     signatures_batch = random_signatures_batch(keys_count)
 
-    value = accounting.getBondAmountByKeysCount(keys_count, curve_id)
+    value = accounting.getBondAmountByKeysCount(keys_count, vetted_gate.curveId())
     set_balance_in_wei(node_operator, value + ETH(10))
 
     vetted_gate.addNodeOperatorETH(
         keys_count,
         pubkeys_batch,
         signatures_batch,
-        (ZERO_ADDRESS, ZERO_ADDRESS, False),
+        management_properties,
         proof,
         ZERO_ADDRESS,
         {"from": node_operator, "value": value}

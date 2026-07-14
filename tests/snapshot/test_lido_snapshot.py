@@ -10,9 +10,11 @@ from pytest_check import check
 from web3.types import Wei
 
 from tests.conftest import Helpers
+from utils.balance import set_balance
 from utils.config import contracts, LDO_TOKEN, VOTING, AGENT, INITIAL_MAX_EXTERNAL_RATIO_BP
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
+from utils.test.helpers import ETH
 from utils.test.snapshot_helpers import _chain_snapshot
 
 from .utils import get_slot
@@ -36,12 +38,49 @@ ZERO_BYTES32 = b'\x00' * 32
 
 
 EXPECTED_SNAPSHOT_DIFFS: dict[str, Any] = {
+    # Lido v4 migrates these v3 packed slots to new storage locations and clears
+    # the legacy slots. They must stay cleared after every scenario action.
+    "lido.Lido.clBalanceAndClValidators": ZERO_BYTES32,
+    "lido.Lido.bufferedEtherAndDepositedValidators": ZERO_BYTES32,
+}
+
+
+SNAPSHOT_ABS_TOLERANCES: dict[str, int] = {
+    # Conversion between shares and pooled ETH rounds down. Actions that slightly
+    # change the share rate may therefore shift this view by one or two wei.
+    "getPooledEthByShares(100)": 2,
 }
 
 
 IGNORED_SNAPSHOT_KEYS: set[str] = {
+    # The upgrade requires an AccountingOracle report before Lido v4 migration.
+    # That report rebases stETH; v4 also changes the representation returned by
+    # getBeaconStat. Their absolute values are therefore not comparable across
+    # the pre-upgrade and post-upgrade frames.
+    "totalSupply",
+    "balanceOf(eth_whale)",
+    "balanceOf(steth_whale)",
+    "sharesOf(eth_whale)",
+    "getBeaconStat",
+    "getBufferedEther",
+    "getTotalPooledEther",
+    "getTotalELRewardsCollected",
+    "getTotalShares",
+    "getSharesByPooledEth(1 ETH)",
+    "lido.Lido.totalELRewardsCollected",
+    "lido.StETH.totalAndExternalShares",
     "getFeeDistribution",
 }
+
+
+@pytest.fixture(scope="function", autouse=True)
+def fund_lido_snapshot_senders(eth_whale: Account, some_contract: Account, stranger: Account):
+    """Fund impersonated external senders without relying on balance middleware."""
+    funding_balance = ETH(100_000)
+    set_balance(eth_whale.address, funding_balance)
+    set_balance(some_contract.address, funding_balance)
+    set_balance(stranger.address, funding_balance)
+    set_balance(contracts.execution_layer_rewards_vault.address, funding_balance)
 
 
 def test_lido_no_changes_in_views(sandwich_upgrade: SandwichFn):
@@ -68,12 +107,9 @@ def test_lido_end_user_snapshot(
     actions = (
         # send ether to Lido to mint stETH
         _call(
-            web3.eth.send_transaction,
-            {
-                "from": eth_whale.address,
-                "to": lido.address,
-                "value": Wei(eth_amount // 2),
-            },
+            eth_whale.transfer,
+            lido.address,
+            Wei(eth_amount // 2),
         ),
         _call(
             lido.submit,
@@ -481,6 +517,13 @@ def _acceptable_change(key: str, before: Any, after: Any) -> bool:
     return after == exp
 
 
+def _within_snapshot_tolerance(key: str, before: Any, after: Any) -> bool:
+    tolerance = SNAPSHOT_ABS_TOLERANCES.get(key)
+    if tolerance is None or not isinstance(before, int) or not isinstance(after, int):
+        return False
+    return abs(before - after) <= tolerance
+
+
 def _stacks_equal(stacks: tuple[Stack, Stack]) -> None:
     for v1_frame, v2_frame in zip(*stacks, strict=True):
         with check:
@@ -490,6 +533,8 @@ def _stacks_equal(stacks: tuple[Stack, Stack]) -> None:
                     continue
                 after_val = v2_frame["snap"].get(key)
                 if before_val == after_val:
+                    continue
+                if _within_snapshot_tolerance(key, before_val, after_val):
                     continue
                 if _acceptable_change(key, before_val, after_val):
                     continue
