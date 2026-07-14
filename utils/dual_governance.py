@@ -1,5 +1,7 @@
-from brownie import accounts, chain
+from brownie import accounts, chain, web3
 from typing import Tuple, Sequence
+
+from eth_abi.abi import encode
 
 from utils.config import contracts
 from tests.conftest import get_active_proposals_from_env
@@ -41,9 +43,7 @@ def submit_proposals(items: Sequence[Tuple[Sequence[Tuple[str, str]], str]]) -> 
         proposal_list.append(
             (
                 contracts.dual_governance.address,
-                contracts.dual_governance.submitProposal.encode_input(
-                    proposal_calldata, description
-                ),
+                contracts.dual_governance.submitProposal.encode_input(proposal_calldata, description),
             )
         )
     return proposal_list
@@ -90,13 +90,105 @@ def process_proposals(proposal_ids: Sequence[int]):
         chain.sleep(after_schedule_delay + 1)
         wait_for_target_time_to_satisfy_time_constrains()
 
+        # The SRv3/CMv2 upgrade calls Lido.finalizeUpgrade_v4, which reverts with "NO_REPORT"
+        # unless the current AccountingOracle frame already has a submitted main report.
+        # The DG submit/schedule delays above advance time by ~4 days, rolling the oracle frame
+        # over and invalidating any prior report. On real mainnet a fresh daily report naturally
+        # exists by execution time; on a fork we reproduce that by pushing one right before execute.
+        # The report goes through the OLD (pre-upgrade, v4) oracle, so it is built in the legacy
+        # v4 format, self-contained below. Once the AO is at v5+ (the upgrade is already enacted
+        # on the forked chain / future votes), no report is needed at all.
+        # Test/fork-only scaffolding for this specific vote: delete together with archiving
+        # scripts/upgrade_2026_04_30_srv3_cmv2.py.
+        if contracts.accounting_oracle.getContractVersion() < 5:
+            # Mine a block first so the latest block timestamp absorbs the accumulated
+            # chain.sleep offset from the DG delays above; otherwise the frame math (which
+            # mixes a pending-state getCurrentFrame() with the latest mined block time)
+            # overshoots the frame.
+            chain.mine(1)
+            _push_legacy_v4_oracle_report()
+
         for proposal_id in scheduled_proposals:
             contracts.emergency_protected_timelock.execute(proposal_id, {"from": stranger})
             (_, _, _, _, proposal_status) = contracts.emergency_protected_timelock.getProposalDetails(proposal_id)
             assert proposal_status == PROPOSAL_STATUS["executed"], f"Proposal {proposal_id} execution failed"
 
     if len(proposals_to_be_processed):
-        raise Exception(f"Unable to process proposals: {proposals_to_be_processed}. Proposals are already processed or cancelled.")
+        raise Exception(
+            f"Unable to process proposals: {proposals_to_be_processed}. Proposals are already processed or cancelled."
+        )
+
+
+# Legacy (pre-SRv3) AccountingOracle ReportData tuple — 17 fields, v4 layout with
+# numValidators/clBalanceGwei. Hardcoded on purpose: interfaces/AccountingOracle.json
+# holds the v5 ABI, while this report targets the OLD implementation before the vote
+# is executed. Self-contained so the main oracle helpers can stay v5-only.
+# Delete together with archiving scripts/upgrade_2026_04_30_srv3_cmv2.py.
+_LEGACY_V4_REPORT_ABI = (
+    "(uint256,uint256,uint256,uint256,uint256[],uint256[],uint256,uint256,uint256,"
+    "uint256[],uint256,bool,bytes32,string,uint256,bytes32,uint256)"
+)
+
+
+def _push_legacy_v4_oracle_report():
+    """Push a minimal v4-format accounting report so the current frame has
+    mainDataSubmitted == true (required by Lido.finalizeUpgrade_v4). No withdrawal
+    finalization, no extra data — just enough for the NO_REPORT check to pass."""
+    from utils.test.helpers import eth_balance
+    from utils.test.oracle_report_helpers import (
+        ZERO_BYTES32,
+        MOCK_VAULTS_DATA_TREE_ROOT,
+        MOCK_VAULTS_DATA_TREE_CID,
+        reach_consensus,
+        wait_to_next_available_report_time,
+    )
+
+    consensus = contracts.hash_consensus_for_accounting_oracle
+    oracle = contracts.accounting_oracle
+
+    wait_to_next_available_report_time(consensus)
+    (ref_slot, _) = consensus.getCurrentFrame()
+
+    # version getters are identical in the v4 and v5 ABIs — safe via the interface
+    contract_version = oracle.getContractVersion()
+    consensus_version = oracle.getConsensusVersion()
+    (_, beacon_validators, beacon_balance) = contracts.lido.getBeaconStat()
+    (cover_shares, non_cover_shares) = contracts.burner.getSharesRequestedToBurn()
+
+    report = (
+        int(consensus_version),
+        int(ref_slot),
+        int(beacon_validators),
+        int(beacon_balance) // 10**9,  # clBalanceGwei
+        [],  # stakingModuleIdsWithNewlyExitedValidators
+        [],  # numExitedValidatorsByStakingModule
+        int(eth_balance(contracts.withdrawal_vault.address)),
+        int(eth_balance(contracts.execution_layer_rewards_vault.address)),
+        int(cover_shares + non_cover_shares),
+        [],  # withdrawalFinalizationBatches (skip withdrawals)
+        0,  # simulatedShareRate (unchecked when batches are empty)
+        False,  # isBunkerMode
+        bytes(MOCK_VAULTS_DATA_TREE_ROOT),
+        MOCK_VAULTS_DATA_TREE_CID,
+        0,  # extraDataFormat: EXTRA_DATA_FORMAT_EMPTY
+        bytes(ZERO_BYTES32),
+        0,  # extraDataItemsCount
+    )
+
+    encoded_report = encode([_LEGACY_V4_REPORT_ABI], [report])
+    report_hash = web3.keccak(encoded_report)
+
+    submitter = reach_consensus(ref_slot, report_hash, consensus_version, consensus, silent=True)
+    accounts[0].transfer(submitter, 10**19)
+
+    # raw calls: the loaded interface carries the v5 ABI, the old impl needs v4 encoding
+    submit_calldata = web3.keccak(text=f"submitReportData({_LEGACY_V4_REPORT_ABI},uint256)")[:4] + encode(
+        [_LEGACY_V4_REPORT_ABI, "uint256"], [report, int(contract_version)]
+    )
+    accounts.at(submitter, force=True).transfer(to=oracle.address, data=submit_calldata)
+
+    extra_data_calldata = web3.keccak(text="submitReportExtraDataEmpty()")[:4]
+    accounts.at(submitter, force=True).transfer(to=oracle.address, data=extra_data_calldata)
 
 
 def process_pending_proposals():
@@ -179,7 +271,7 @@ def wait_for_time_window(from_hour_utc: int, to_hour_utc: int):
 
 def wait_for_target_time_to_satisfy_time_constrains():
     current_time = chain.time()
-    target_time = 16 * 60 * 60 # 16:00 UTC
+    target_time = 16 * 60 * 60  # 16:00 UTC
     seconds_per_day = 24 * 60 * 60
 
     day_start = current_time - (current_time % seconds_per_day)

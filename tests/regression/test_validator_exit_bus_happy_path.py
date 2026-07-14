@@ -69,7 +69,7 @@ def test_send_zero_validators_to_exit(helpers):
     assert processing_state_before != processing_state_after
     assert processing_state_after.data_hash == report_hash_hex
     assert processing_state_after.data_submitted
-    assert processing_state_after.data_format == contracts.validators_exit_bus_oracle.DATA_FORMAT_LIST()
+    assert processing_state_after.data_format == contracts.validators_exit_bus_oracle.DATA_FORMAT_LIST_WITH_KEY_INDEX()
     assert processing_state_after.requests_count == processing_state_before.requests_count
     assert processing_state_after.requests_submitted == processing_state_before.requests_submitted
 
@@ -79,7 +79,7 @@ def test_send_validator_to_exit(helpers, web3):
     no_global_index = (module_id, no_id) = (1, 33)
     validator_key = contracts.node_operators_registry.getSigningKey(no_id, 1)[0]
 
-    validator = LidoValidator(index=unreachable_cl_validator_index, pubkey=validator_key)
+    validator = LidoValidator(index=unreachable_cl_validator_index, pubkey=validator_key, key_index=1)
 
     ref_slot = _wait_for_next_ref_slot()
     report, report_hash = prepare_exit_bus_report([(no_global_index, validator)], ref_slot)
@@ -119,7 +119,7 @@ def test_send_validator_to_exit(helpers, web3):
     assert processing_state_before != processing_state_after
     assert processing_state_after.data_hash == report_hash_hex
     assert processing_state_after.data_submitted
-    assert processing_state_after.data_format == contracts.validators_exit_bus_oracle.DATA_FORMAT_LIST()
+    assert processing_state_after.data_format == contracts.validators_exit_bus_oracle.DATA_FORMAT_LIST_WITH_KEY_INDEX()
     assert processing_state_after.requests_count == processing_state_before.requests_count + 1
     assert processing_state_after.requests_submitted == processing_state_before.requests_submitted + 1
 
@@ -149,9 +149,15 @@ def test_send_multiple_validators_to_exit(helpers, web3, stranger):
     first_validator_key = contracts.node_operators_registry.getSigningKey(first_no_id, first_validator_id)[0]
     second_validator_key = contracts.node_operators_registry.getSigningKey(second_no_id, second_validator_id)[0]
     third_validator_key = contracts.simple_dvt.getSigningKey(third_no_id, third_validator_id)[0]
-    first_validator = LidoValidator(index=first_validator_index, pubkey=first_validator_key)
-    second_validator = LidoValidator(index=second_validator_index, pubkey=second_validator_key)
-    third_validator = LidoValidator(index=third_validator_index, pubkey=third_validator_key)
+    first_validator = LidoValidator(
+        index=first_validator_index, pubkey=first_validator_key, key_index=first_validator_id
+    )
+    second_validator = LidoValidator(
+        index=second_validator_index, pubkey=second_validator_key, key_index=second_validator_id
+    )
+    third_validator = LidoValidator(
+        index=third_validator_index, pubkey=third_validator_key, key_index=third_validator_id
+    )
 
     ref_slot = _wait_for_next_ref_slot()
     report, report_hash = prepare_exit_bus_report(
@@ -211,6 +217,6 @@ def test_send_multiple_validators_to_exit(helpers, web3, stranger):
     assert processing_state_before != processing_state_after
     assert processing_state_after.data_hash == report_hash_hex
     assert processing_state_after.data_submitted
-    assert processing_state_after.data_format == contracts.validators_exit_bus_oracle.DATA_FORMAT_LIST()
+    assert processing_state_after.data_format == contracts.validators_exit_bus_oracle.DATA_FORMAT_LIST_WITH_KEY_INDEX()
     assert processing_state_after.requests_count == processing_state_before.requests_count + 3
     assert processing_state_after.requests_submitted == processing_state_before.requests_submitted + 3

@@ -16,7 +16,7 @@ Pubkey: TypeAlias = bytes
 Strikes: TypeAlias = list[int]
 RewardTreeLeaf: TypeAlias = tuple[NodeOperatorId, Shares]
 StrikesTreeLeaf: TypeAlias = tuple[NodeOperatorId, Pubkey, Strikes]
-ICSTreeLeaf: TypeAlias = str
+AddressTreeLeaf: TypeAlias = str
 
 
 class TreeJSONEncoder(json.JSONEncoder):
@@ -320,10 +320,10 @@ class StrikesTree:
 
 
 @dataclass
-class ICSTree:
-    """A wrapper around StandardMerkleTree to cover use cases of the CSM ICS Vetted Gate"""
+class AddressTree:
+    """A StandardMerkleTree wrapper for Merkle gates with address leaves."""
 
-    tree: StandardMerkleTree[ICSTreeLeaf]
+    tree: StandardMerkleTree[AddressTreeLeaf]
 
     @property
     def root(self) -> HexBytes:
@@ -351,11 +351,15 @@ class ICSTree:
             .encode()
         )
 
-    def dump(self) -> Dump[ICSTreeLeaf]:
+    def dump(self) -> Dump[AddressTreeLeaf]:
         return self.tree.dump()
 
+    def get_proof(self, value: AddressTreeLeaf) -> list[HexBytes]:
+        leaf = self.tree.leaf([value])
+        return [HexBytes(item) for item in self.tree.get_proof(self.tree.find(leaf))]
+
     @classmethod
-    def new(cls, values: Sequence[ICSTreeLeaf]):
+    def new(cls, values: Sequence[AddressTreeLeaf]):
         """Create new instance around the wrapped tree out of the given values"""
         values = [[value] for value in values]
         return cls(StandardMerkleTree(values, ("address",)))

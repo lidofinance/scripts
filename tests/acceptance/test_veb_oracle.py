@@ -19,6 +19,8 @@ from utils.config import (
     EXITS_PER_FRAME,
     FRAME_DURATION_IN_SEC,
     VEBO_CONSENSUS_VERSION,
+    VEBO_MAX_EXIT_BALANCE_ETH,
+    VEBO_BALANCE_PER_FRAME_ETH,
 )
 from utils.evm_script import encode_error
 
@@ -42,12 +44,12 @@ def test_immutables(contract):
 
 
 def test_versioned(contract):
-    assert contract.getContractVersion() == 2
+    assert contract.getContractVersion() == 3  # SRv3: finalizeUpgrade_v3
 
 
 def test_initialize(contract):
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
-        contract.initialize(
+        contract.initialize.call(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
             HASH_CONSENSUS_FOR_AO,
             1,
@@ -63,7 +65,7 @@ def test_initialize(contract):
 def test_petrified(contract):
     impl = interface.ValidatorsExitBusOracle(VALIDATORS_EXIT_BUS_ORACLE_IMPL)
     with reverts(encode_error("NonZeroContractVersionOnInit()")):
-        impl.initialize(
+        impl.initialize.call(
             contract.getRoleMember(contract.DEFAULT_ADMIN_ROLE(), 0),
             HASH_CONSENSUS_FOR_AO,
             1,
@@ -79,6 +81,23 @@ def test_petrified(contract):
 def test_consensus(contract):
     assert contract.getConsensusVersion() == VEBO_CONSENSUS_VERSION
     assert contract.getConsensusContract() == HASH_CONSENSUS_FOR_VEBO
+
+
+def test_finalize_upgrade_v3(contract):
+    # Values set by finalizeUpgrade_v3 (upgrade-params-mainnet.toml [validatorsExitBusOracle]).
+    # Version (3) and consensus version are covered by test_versioned / test_consensus.
+    assert contract.getMaxValidatorsPerReport() == MAX_VALIDATORS_PER_REPORT
+
+    (
+        max_exit_balance_eth,
+        balance_per_frame_eth,
+        frame_duration_in_sec,
+        _prev_exit_balance_eth,
+        _current_exit_balance_eth,
+    ) = contract.getExitRequestLimitFullInfo()
+    assert max_exit_balance_eth == VEBO_MAX_EXIT_BALANCE_ETH
+    assert balance_per_frame_eth == VEBO_BALANCE_PER_FRAME_ETH
+    assert frame_duration_in_sec == FRAME_DURATION_IN_SEC
 
 
 def test_vebo_hash_consensus_synced_with_accounting_one(contract):

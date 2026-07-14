@@ -59,8 +59,9 @@ def test_versioned(contract):
 
 
 def test_initialize(contract):
+    # .call() — anvil does not surface revert strings for reverted txs (see test_staking_router)
     with reverts("INIT_ALREADY_INITIALIZED"):
-        contract.initialize(
+        contract.initialize.call(
             contracts.lido_locator,
             SIMPLE_DVT_MODULE_TYPE,
             NOR_EXIT_DEADLINE_IN_SEC,
@@ -70,7 +71,7 @@ def test_initialize(contract):
 
 def test_finalize_upgrade(contract):
     with reverts("UNEXPECTED_CONTRACT_VERSION"):
-        contract.finalizeUpgrade_v4(
+        contract.finalizeUpgrade_v4.call(
             NOR_EXIT_DEADLINE_IN_SEC,
             {"from": contracts.voting},
         )
@@ -79,7 +80,7 @@ def test_finalize_upgrade(contract):
 def test_petrified():
     contract = interface.SimpleDVT(SIMPLE_DVT_IMPL)
     with reverts("INIT_ALREADY_INITIALIZED"):
-        contract.initialize(
+        contract.initialize.call(
             contracts.lido_locator,
             SIMPLE_DVT_MODULE_TYPE,
             NOR_EXIT_DEADLINE_IN_SEC,
@@ -87,7 +88,7 @@ def test_petrified():
         )
 
     with reverts("CONTRACT_NOT_INITIALIZED"):
-        contract.finalizeUpgrade_v4(
+        contract.finalizeUpgrade_v4.call(
             NOR_EXIT_DEADLINE_IN_SEC,
             {"from": contracts.voting},
         )
@@ -126,9 +127,7 @@ def test_simple_dvt_state(contract):
 
         node_operator_summary = contract.getNodeOperatorSummary(id)
         if id in exited_node_operators:
-            assert (
-                node_operator_summary["targetLimitMode"] > 0
-            ), f"targetLimitMode is 0 for exited node operator {id}"
+            assert node_operator_summary["targetLimitMode"] > 0, f"targetLimitMode is 0 for exited node operator {id}"
 
             assert node_operator_summary["depositableValidatorsCount"] == 0
 
@@ -164,9 +163,7 @@ def test_simple_dvt_permissions(contract):
     assert contracts.acl.getPermissionManager(contract.address, MANAGE_NODE_OPERATOR_ROLE) == contracts.agent.address
     assert contract.canPerform(EASYTRACK_EVMSCRIPT_EXECUTOR, MANAGE_NODE_OPERATOR_ROLE, [])
 
-    assert (
-        contracts.acl.getPermissionManager(contract.address, SET_NODE_OPERATOR_LIMIT_ROLE) == contracts.agent.address
-    )
+    assert contracts.acl.getPermissionManager(contract.address, SET_NODE_OPERATOR_LIMIT_ROLE) == contracts.agent.address
     assert contract.canPerform(EASYTRACK_EVMSCRIPT_EXECUTOR, SET_NODE_OPERATOR_LIMIT_ROLE, [])
 
     assert contracts.acl.getPermissionManager(contract.address, MANAGE_SIGNING_KEYS) == EASYTRACK_EVMSCRIPT_EXECUTOR

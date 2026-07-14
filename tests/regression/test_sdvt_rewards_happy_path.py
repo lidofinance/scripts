@@ -98,7 +98,6 @@ def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participa
     # vet operator keys
     simple_dvt_vet_keys(operator_id, new_dvt_operator)
 
-
     # pause deposit to all modules except simple dvt
     # to be sure that all deposits go to simple dvt
     modules = staking_router.getStakingModules()
@@ -111,7 +110,7 @@ def test_rewards_distribution_happy_path(simple_dvt_module_id, cluster_participa
     fill_deposit_buffer(deposits_count, heuristic=10000)
     # deposit to simple dvt
     module_summary_before = staking_router.getStakingModuleSummary(simple_dvt_module_id)
-    lido.deposit(deposits_count, simple_dvt_module_id, "0x", {"from": deposit_security_module})
+    staking_router.deposit(simple_dvt_module_id, "0x", {"from": deposit_security_module})
     module_summary_after = staking_router.getStakingModuleSummary(simple_dvt_module_id)
 
     assert (

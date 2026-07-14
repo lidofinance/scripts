@@ -29,6 +29,9 @@ def test_addresses(contract):
     assert contract.withdrawalQueue() == contracts.withdrawal_queue
     assert contract.withdrawalVault() == contracts.withdrawal_vault
     assert contract.oracleDaemonConfig() == contracts.oracle_daemon_config
+    assert contract.topUpGateway() == contracts.top_up_gateway
+    assert contract.consolidationGateway() == contracts.consolidation_gateway
+    assert contract.triggerableWithdrawalsGateway() == contracts.triggerable_withdrawals_gateway
 
     assert contract.coreComponents() == (
         contracts.execution_layer_rewards_vault,

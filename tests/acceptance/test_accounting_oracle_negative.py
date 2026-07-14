@@ -3,11 +3,19 @@ from hexbytes import HexBytes
 from web3 import Web3
 
 import pytest
-from brownie import ZERO_ADDRESS, Contract, MockHashConsensus, accounts, interface, reverts, chain  # type: ignore
+from brownie import (
+    ZERO_ADDRESS,
+    Contract,
+    MockHashConsensus,
+    accounts,
+    interface,
+    reverts,
+    chain,
+)  # type: ignore
 from brownie.network.account import Account
 from configs.config_mainnet import MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION
 
-from utils.config import contracts, ACCOUNTING_ORACLE
+from utils.config import contracts, ACCOUNTING_ORACLE, AO_CONSENSUS_VERSION
 from utils.evm_script import encode_error
 from utils.test.extra_data import ExtraDataService, ItemType, ExtraDataLengths
 from utils.test.oracle_report_helpers import (
@@ -183,14 +191,10 @@ def test_setConsensusContract(accounting_oracle: Contract, aragon_agent: Account
 
 
 def test_finalize_upgrade(accounting_oracle: Contract, stranger: Account):
+    # re-calling finalizeUpgrade_v5 reverts on the version bump (5 != 5 + 1)
     with reverts(encode_error("InvalidContractVersionIncrement()")):
-        accounting_oracle.finalizeUpgrade_v4(
-            1,
-            {"from": stranger},
-        )
-    with reverts(encode_error("InvalidContractVersionIncrement()")):
-        accounting_oracle.finalizeUpgrade_v4(
-            2,
+        accounting_oracle.finalizeUpgrade_v5(
+            AO_CONSENSUS_VERSION,
             {"from": stranger},
         )
 
@@ -221,8 +225,20 @@ class TestSubmitReportExtraDataList:
 
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2, 3, 4, 5], [totalExitedValidators]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 2, [2], [totalExitedValidators]),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    1,
+                    [2, 3, 4, 5],
+                    [totalExitedValidators],
+                ),
+                build_extra_data_item(
+                    1,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    2,
+                    [2],
+                    [totalExitedValidators],
+                ),
             ]
         )
 
@@ -265,8 +281,20 @@ class TestSubmitReportExtraDataList:
 
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2], [totalExitedValidators]),
-                build_extra_data_item(3, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2], [totalExitedValidators]),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    1,
+                    [2],
+                    [totalExitedValidators],
+                ),
+                build_extra_data_item(
+                    3,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    1,
+                    [2],
+                    [totalExitedValidators],
+                ),
             ]
         )
 
@@ -277,8 +305,20 @@ class TestSubmitReportExtraDataList:
 
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2], [totalExitedValidators]),
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, 1, [2], [totalExitedValidators]),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    1,
+                    [2],
+                    [totalExitedValidators],
+                ),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    1,
+                    [2],
+                    [totalExitedValidators],
+                ),
             ]
         )
 
@@ -304,10 +344,20 @@ class TestSubmitReportExtraDataList:
 
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, module_id, [operator_id],
-                                      [new_exited_keys]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, module_id, [operator_id],
-                                      [new_exited_keys]),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    module_id,
+                    [operator_id],
+                    [new_exited_keys],
+                ),
+                build_extra_data_item(
+                    1,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    module_id,
+                    [operator_id],
+                    [new_exited_keys],
+                ),
             ]
         )
 
@@ -321,8 +371,20 @@ class TestSubmitReportExtraDataList:
 
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, module_id, [operator_id], [current_exited_keys + 2]),
-                build_extra_data_item(1, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, module_id, [operator_id], [current_exited_keys + 1]),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    module_id,
+                    [operator_id],
+                    [current_exited_keys + 2],
+                ),
+                build_extra_data_item(
+                    1,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    module_id,
+                    [operator_id],
+                    [current_exited_keys + 1],
+                ),
             ]
         )
 
@@ -337,7 +399,13 @@ class TestSubmitReportExtraDataList:
 
         extra_data = self.build_extra_data(
             [
-                build_extra_data_item(0, ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS, module_id, unsorted_operator_ids, new_exited_keys),
+                build_extra_data_item(
+                    0,
+                    ItemType.EXTRA_DATA_TYPE_EXITED_VALIDATORS,
+                    module_id,
+                    unsorted_operator_ids,
+                    new_exited_keys,
+                ),
             ]
         )
 
@@ -365,8 +433,8 @@ class TestSubmitReportExtraDataList:
             encode_error(
                 "UnexpectedExtraDataItemsCount(uint256,uint256)",
                 [
-                    extra_data.items_count - 1, # expected count
-                    extra_data.items_count, # received count (all items fit into a single chunk)
+                    extra_data.items_count - 1,  # expected count
+                    extra_data.items_count,  # received count (all items fit into a single chunk)
                 ],
             )
         ):
