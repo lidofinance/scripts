@@ -223,10 +223,6 @@ class ContractsLazyLoader:
         return interface.MetaRegistry(self.cm.META_REGISTRY())
 
     @property
-    def cm_professional_operator_gate(self) -> interface.CuratedGate:
-        return interface.CuratedGate(CM_PROFESSIONAL_OPERATOR_GATE_ADDRESS)
-
-    @property
     def cm_parameters_registry(self) -> interface.ParametersRegistry:
         return interface.ParametersRegistry(self.cm.PARAMETERS_REGISTRY())
 

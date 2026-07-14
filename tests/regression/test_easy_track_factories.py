@@ -47,15 +47,6 @@ CSM_MERKLE_GATE_ADDRESSES = [
     CS_VETTED_GATE_ADDRESS,
     CS_IDENTIFIED_DVT_CLUSTER_GATE_ADDRESS,
 ]
-CM_MERKLE_GATE_ADDRESSES = [
-    CM_PROFESSIONAL_OPERATOR_GATE_ADDRESS,
-    "0x8c002c6eE10cf8adb78D1F9EB2e134FdaF8A7C1a",
-    "0x207798e6fD1aa7Ee8a63782A64c959cD6727b78C",
-    "0xeF273Ca4A21Ba7B414Ae3C9f9b443038cb133F72",
-    "0x3BbBb175f7F07954DE00052b20E1c5572223F24D",
-    "0x86A8d4E0db5938D21d98047544668FCCB1A9ADc8",
-    "0x773933F9db8964A17d62fb808f2EC7A2de4247CC",
-]
 
 
 def add_node_operators(operators, stranger):
@@ -763,7 +754,7 @@ class TestSetMerkleGateTree:
         "factory_address,wrong_gate_address",
         [
             (EASYTRACK_CM_SET_MERKLE_GATE_TREE_FACTORY, CS_VETTED_GATE_ADDRESS),
-            (EASYTRACK_CSM_SET_MERKLE_GATE_TREE_FACTORY, CM_PROFESSIONAL_OPERATOR_GATE_ADDRESS),
+            (EASYTRACK_CSM_SET_MERKLE_GATE_TREE_FACTORY, CM_MERKLE_GATE_ADDRESSES[0]),
         ],
     )
     def test_reverts_for_other_module_gate(self, factory_address, wrong_gate_address):
@@ -814,7 +805,7 @@ class TestSetMerkleGateTree:
 
     def test_cm_scenario(self, stranger):
         factory = interface.SetMerkleGateTree(EASYTRACK_CM_SET_MERKLE_GATE_TREE_FACTORY)
-        gate = interface.CuratedGate(CM_PROFESSIONAL_OPERATOR_GATE_ADDRESS)
+        gate = interface.CuratedGate(CM_MERKLE_GATE_ADDRESSES[0])
         member = accounts[5]
         manager = accounts[7]
         reward = accounts[8]
