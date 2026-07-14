@@ -1,6 +1,6 @@
 import pytest
 
-from typing import Dict
+from typing import Any, Dict
 
 from brownie import accounts, chain, ZERO_ADDRESS
 
@@ -19,6 +19,13 @@ from utils.config import (
 )
 from utils.test.helpers import ONE_ETH
 from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
+
+SNAPSHOT_ABS_TOLERANCES: dict[str, int] = {
+    # Conversion between shares and pooled ETH rounds down. A small share-rate
+    # change may therefore shift this view by one or two wei.
+    "getPooledEthByShares(100)": 2,
+}
+
 
 IGNORED_SNAPSHOT_KEYS = {
     # Lido v4 finalization requires an AccountingOracle report. The report rebases
@@ -87,6 +94,13 @@ def snapshot() -> Dict[str, any]:
     }
 
 
+def _within_snapshot_tolerance(key: str, before: Any, after: Any) -> bool:
+    tolerance = SNAPSHOT_ABS_TOLERANCES.get(key)
+    if tolerance is None or not isinstance(before, int) or not isinstance(after, int):
+        return False
+    return abs(before - after) <= tolerance
+
+
 def test_submit_snapshot(helpers, staker, vote_ids_from_env, dg_proposal_ids_from_env):
     def steps() -> Dict[str, Dict[str, any]]:
         track = {"init": snapshot()}
@@ -114,6 +128,10 @@ def test_submit_snapshot(helpers, staker, vote_ids_from_env, dg_proposal_ids_fro
 
         for key in IGNORED_SNAPSHOT_KEYS:
             step_diffs[step].pop(key, None)
+
+        for key, change in tuple(step_diffs[step].items()):
+            if _within_snapshot_tolerance(key, change.from_val, change.to_val):
+                del step_diffs[step][key]
 
     for step_name, diff in step_diffs.items():
         assert_no_diffs(step_name, diff)

@@ -45,6 +45,13 @@ EXPECTED_SNAPSHOT_DIFFS: dict[str, Any] = {
 }
 
 
+SNAPSHOT_ABS_TOLERANCES: dict[str, int] = {
+    # Conversion between shares and pooled ETH rounds down. Actions that slightly
+    # change the share rate may therefore shift this view by one or two wei.
+    "getPooledEthByShares(100)": 2,
+}
+
+
 IGNORED_SNAPSHOT_KEYS: set[str] = {
     # The upgrade requires an AccountingOracle report before Lido v4 migration.
     # That report rebases stETH; v4 also changes the representation returned by
@@ -510,6 +517,13 @@ def _acceptable_change(key: str, before: Any, after: Any) -> bool:
     return after == exp
 
 
+def _within_snapshot_tolerance(key: str, before: Any, after: Any) -> bool:
+    tolerance = SNAPSHOT_ABS_TOLERANCES.get(key)
+    if tolerance is None or not isinstance(before, int) or not isinstance(after, int):
+        return False
+    return abs(before - after) <= tolerance
+
+
 def _stacks_equal(stacks: tuple[Stack, Stack]) -> None:
     for v1_frame, v2_frame in zip(*stacks, strict=True):
         with check:
@@ -519,6 +533,8 @@ def _stacks_equal(stacks: tuple[Stack, Stack]) -> None:
                     continue
                 after_val = v2_frame["snap"].get(key)
                 if before_val == after_val:
+                    continue
+                if _within_snapshot_tolerance(key, before_val, after_val):
                     continue
                 if _acceptable_change(key, before_val, after_val):
                     continue
