@@ -9,6 +9,7 @@ from utils.config import (
     RESEAL_MANAGER,
     EASYTRACK_EVMSCRIPT_EXECUTOR,
     STAKING_ROUTER,
+    CURATED_STAKING_MODULE_ID,
     CURATED_V2_STAKING_MODULE_ID,
     CONSOLIDATION_GATEWAY,
     CONSOLIDATION_GATEWAY_MAX_REQUESTS_LIMIT,
@@ -205,6 +206,7 @@ class TestConsolidationMigrator:
         assert migrator.getStakingRouter() == STAKING_ROUTER
         assert migrator.getConsolidationBus() == CONSOLIDATION_BUS
         assert migrator.sourceModuleId() == CONSOLIDATION_SOURCE_MODULE_ID
+        assert migrator.sourceModuleId() == CURATED_STAKING_MODULE_ID
         # the template checks targetModuleId == the freshly added CMv2 module id
         assert migrator.targetModuleId() == CONSOLIDATION_TARGET_MODULE_ID
         assert migrator.targetModuleId() == CURATED_V2_STAKING_MODULE_ID

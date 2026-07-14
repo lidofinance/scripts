@@ -69,7 +69,6 @@ def test_proxy(contract):
 def test_links(contract):
     assert contract.DEPOSIT_CONTRACT() == CHAIN_DEPOSIT_CONTRACT
     assert contract.LIDO() == contracts.lido
-    assert contract.LIDO_LOCATOR() == contracts.lido_locator
     assert contract.LIDO_LOCATOR() == LIDO_LOCATOR
 
 
