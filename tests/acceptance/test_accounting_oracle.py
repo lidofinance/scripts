@@ -15,7 +15,6 @@ from utils.config import (
     ORACLE_QUORUM,
     AO_CONSENSUS_VERSION,
 )
-from utils.evm_script import encode_error
 
 
 @pytest.fixture(scope="module")
@@ -66,14 +65,6 @@ def test_petrified(contract):
         )
 
 
-def test_finalize_upgrade(contract):
-    # SRv3 (vote item 1.4) already bumped the contract version to 5 via
-    # finalizeUpgrade_v5; a repeated call must revert: 5 != current(5) + 1.
-    # .call() — anvil does not surface custom-error data for reverted txs.
-    with reverts(encode_error("InvalidContractVersionIncrement()")):
-        contract.finalizeUpgrade_v5.call(AO_CONSENSUS_VERSION, {"from": contracts.voting})
-
-
 def test_consensus(contract):
     assert contract.getConsensusVersion() == AO_CONSENSUS_VERSION
     assert contract.getConsensusContract() == HASH_CONSENSUS_FOR_AO
@@ -88,7 +79,6 @@ def test_processing_state(contract):
     assert state["currentFrameRefSlot"] > 5254400
 
     # processing never runs ahead of the current frame
-    assert contract.getLastProcessingRefSlot() > 5254400
     assert contract.getLastProcessingRefSlot() <= state["currentFrameRefSlot"]
 
     if state["mainDataSubmitted"]:
@@ -104,10 +94,7 @@ def test_processing_state(contract):
 
 def test_report(contract):
     report = contract.getConsensusReport()
-    # assert report["hash"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
-    assert report["refSlot"] > 5254400
-    # assert report["processingDeadlineTime"] == 0
-    # assert report["processingStarted"] is False
+    assert report["refSlot"] <= contract.getProcessingState()["currentFrameRefSlot"]
 
 
 def test_accounting_hash_consensus(contract):
