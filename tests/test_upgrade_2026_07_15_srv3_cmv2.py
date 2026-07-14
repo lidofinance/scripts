@@ -54,7 +54,6 @@ from scripts.upgrade_2026_07_15_srv3_cmv2 import (
     get_vote_items,
     get_dg_items,
     DG_PROPOSAL_METADATA,
-    UPGRADE_VOTE_SCRIPT,
 )
 
 
@@ -69,6 +68,7 @@ ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 UPGRADE_TEMPLATE = "0xD92b6303Ba39297Cb69a3a17A88b47586A6af14C"
+UPGRADE_VOTE_SCRIPT = "0xE6530830A2cf90773cB232748b2c674c27b6E0CA"
 
 # --- UpgradeConfig: protocol contracts and upgrade parameters ---
 ACL = "0x9895F0F17cc1d1891b6f18ee0b483B6f221b37Bb"
@@ -79,6 +79,7 @@ BURNER = "0xE76c52750019b80B43E36DF30bf4060EB73F573a"
 CIRCUIT_BREAKER = "0x6019CB557978296BA3C08a7B73225C0975DFB2F7"
 DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
+DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
 WITHDRAWAL_CREDENTIALS = "0x010000000000000000000000b9d7934878b5fb9610b3fe8a5e441e8fad7e293f"
 
@@ -94,6 +95,7 @@ STAKING_ROUTER_IMPL = "0xDD76927045435C7605cf6f5F978cfb8CABDb5F80"
 MAX_TOP_UP_PER_BLOCK_GWEI = 3_200_000_000_000
 ACCOUNTING_ORACLE = "0x852deD011285fe67063a08005c71a85690503Cee"
 ACCOUNTING_ORACLE_IMPL = "0xe4f03D1107d1905B6F2A28FCb6Af221E0CE19136"
+VALIDATOR_EXIT_VERIFIER = "0xbDb567672c867DB533119C2dcD4FB9d8b44EC82f"
 VALIDATORS_EXIT_BUS_ORACLE = "0x0De4Ea0184c2ad0BacA7183356Aea5B8d5Bf5c6e"
 VALIDATORS_EXIT_BUS_ORACLE_IMPL = "0x2C3386b39db89eef0F362A3BE0C05a6811E809E3"
 ACCOUNTING = "0x23ED611be0e1a820978875C0122F92260804cdDf"
@@ -166,6 +168,7 @@ CURATED_CIRCUIT_BREAKER_PAUSER = "0x2570e0b22AD904501dfB0d49575991ACB801dD91"
 CURATED_STRIKES = "0xf4618370a1fBf46905B16C10817c8CFaD924D6db"
 CURATED_HASH_CONSENSUS = "0x902D64c93F6595339aA46105627a085591051aFb"
 CURATED_HASH_CONSENSUS_INITIAL_EPOCH = 467_564
+CURATED_HASH_CONSENSUS_EPOCHS_PER_FRAME = 3_150
 META_REGISTRY = "0xA64b339eebD3dC3De848298B6a140955932901d8"
 CURATED_MODULE_NAME = "curated-onchain-v2"
 CURATED_STAKE_SHARE_LIMIT = 10_000
@@ -297,6 +300,7 @@ WITHDRAWAL_VAULT_CONTRACT_VERSION = 3
 LIDO_CONTRACT_VERSION = 4
 CSM_INITIALIZED_VERSION = 3
 CS_FEE_ORACLE_CONTRACT_VERSION = 3
+CS_FEE_ORACLE_PRE_UPGRADE_CONSENSUS_VERSION = 3
 DSM_VERSION = 4
 CS_PARAMETERS_REGISTRY_INITIALIZED_VERSION = 3
 CS_PARAMETERS_REGISTRY_PRE_UPGRADE_INITIALIZED_VERSION = 1
@@ -357,6 +361,29 @@ class StakingModuleItem(NamedTuple):
     priority_exit_share_threshold: int
     max_deposits_per_block: int
     min_deposit_block_distance: int
+
+
+CURATED_MODULE_ITEM = StakingModuleItem(
+    id=CURATED_MODULE_ID,
+    staking_module_address=CURATED_MODULE,
+    name=CURATED_MODULE_NAME,
+    staking_module_fee=CURATED_STAKING_MODULE_FEE,
+    stake_share_limit=CURATED_STAKE_SHARE_LIMIT,
+    treasury_fee=CURATED_TREASURY_FEE,
+    priority_exit_share_threshold=CURATED_PRIORITY_EXIT_SHARE_THRESHOLD,
+    max_deposits_per_block=CURATED_MAX_DEPOSITS_PER_BLOCK,
+    min_deposit_block_distance=CURATED_MIN_DEPOSIT_BLOCK_DISTANCE,
+)
+
+EXPECTED_SR_ROLE_MIGRATION_GRANTS = [
+    (DEFAULT_ADMIN_ROLE, AGENT),
+    (STAKING_MODULE_MANAGE_ROLE, AGENT),
+    (STAKING_MODULE_UNVETTING_ROLE, OLD_DEPOSIT_SECURITY_MODULE),
+    (REPORT_EXITED_VALIDATORS_ROLE, ACCOUNTING_ORACLE),
+    (REPORT_VALIDATOR_EXITING_STATUS_ROLE, VALIDATOR_EXIT_VERIFIER),
+    (REPORT_VALIDATOR_EXIT_TRIGGERED_ROLE, TRIGGERABLE_WITHDRAWALS_GATEWAY),
+    (REPORT_REWARDS_MINTED_ROLE, ACCOUNTING),
+]
 
 
 # ============================================================================
@@ -880,6 +907,9 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
     # DG item 1.27 upgrades ValidatorStrikes while preserving its initialized version.
     assert cs_validator_strikes.getInitializedVersion() == CS_VALIDATOR_STRIKES_INITIALIZED_VERSION
 
+    # DG item 1.28 points ValidatorStrikes to the new CSM Ejector.
+    _assert_address(cs_validator_strikes.ejector(), NEW_CSM_EJECTOR)
+
     # DG item 1.22 upgrades FeeOracle and advances its contract and consensus versions.
     assert cs_fee_oracle.getContractVersion() == CS_FEE_ORACLE_CONTRACT_VERSION
     assert cs_fee_oracle.getConsensusVersion() == CS_FEE_ORACLE_CONSENSUS_VERSION
@@ -926,6 +956,9 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
     # DG items 1.39-1.40 revoke the obsolete VettedGate referral-season roles.
     _assert_has_no_oz_role(CS_VETTED_GATE, START_REFERRAL_SEASON_ROLE, AGENT)
     _assert_has_no_oz_role(CS_VETTED_GATE, END_REFERRAL_SEASON_ROLE, CSM_COMMITTEE)
+
+    # DG item 1.41 assigns the public name to the identified-community-stakers gate.
+    assert cs_vetted_gate.name() == IDENTIFIED_COMMUNITY_STAKERS_GATE_NAME
 
     # DG items 1.47-1.51 configure and execute the one-shot identified-DVT bond curve setup.
     _assert_has_oz_role(CS_ACCOUNTING, SET_BOND_CURVE_ROLE, IDENTIFIED_DVT_CLUSTER_GATE)
@@ -984,8 +1017,7 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
         == CURATED_PARAMETERS_REGISTRY_INITIALIZED_VERSION
     )
     assert (
-        interface.ModuleAccounting(CURATED_ACCOUNTING).getInitializedVersion()
-        == CURATED_ACCOUNTING_INITIALIZED_VERSION
+        interface.ModuleAccounting(CURATED_ACCOUNTING).getInitializedVersion() == CURATED_ACCOUNTING_INITIALIZED_VERSION
     )
     assert (
         interface.FeeDistributor(CURATED_FEE_DISTRIBUTOR).getInitializedVersion()
@@ -1019,7 +1051,7 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
     # DG item 1.63 updates the Curated HashConsensus initial epoch.
     frame_config = interface.HashConsensus(CURATED_HASH_CONSENSUS).getFrameConfig()
     assert frame_config["initialEpoch"] == CURATED_HASH_CONSENSUS_INITIAL_EPOCH
-    assert frame_config["epochsPerFrame"] == ctx["curated_epochs_per_frame"]
+    assert frame_config["epochsPerFrame"] == CURATED_HASH_CONSENSUS_EPOCHS_PER_FRAME
 
     # DG items 1.3 and 1.69 validate that the StakingRouter withdrawal credentials are preserved.
     assert staking_router.getWithdrawalCredentials() == WITHDRAWAL_CREDENTIALS
@@ -1048,6 +1080,7 @@ def _assert_upgrade_template_final_state(ctx, staking_router) -> None:
     _assert_address(dsm.getOwner(), AGENT)
     assert dsm.getGuardianQuorum() == old_dsm.getGuardianQuorum()
     guardians = dsm.getGuardians()
+    assert len(guardians) > 0
     assert len(guardians) == len(old_dsm.getGuardians())
     assert all(old_dsm.isGuardian(guardian) for guardian in guardians)
 
@@ -1070,46 +1103,6 @@ def runtime_upgrade_context():
     # ExitBalanceLimitSet exists only in the new ValidatorsExitBusOracle impl ABI (not in the
     # local interfaces/*.json), so fetch that impl from the explorer to make it decodable.
     Contract.from_explorer(convert.to_address(VALIDATORS_EXIT_BUS_ORACLE_IMPL))
-
-    dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
-    dual_governance_admin_executor = None
-    for proposer in dual_governance.getProposers():
-        try:
-            proposer_account = proposer["account"]
-            proposer_executor = proposer["executor"]
-        except (KeyError, TypeError):
-            proposer_account = proposer[0]
-            proposer_executor = proposer[1]
-
-        if convert.to_address(proposer_account) == convert.to_address(VOTING):
-            dual_governance_admin_executor = proposer_executor
-            break
-
-    assert dual_governance_admin_executor is not None, "Voting proposer is not registered in Dual Governance"
-
-    # Pre-upgrade state used to build dynamic expectations (read before the vote runs):
-    #  - StakingRouter role migration performed by finalizeUpgrade_v4
-    #  - new staking module id assigned to Curated Module v2
-    #  - Curated HashConsensus epochsPerFrame preserved by updateInitialEpoch
-    sr_role_migration_grants = _expected_sr_role_migration_grants(STAKING_ROUTER)
-    curated_epochs_per_frame = interface.HashConsensus(CURATED_HASH_CONSENSUS).getFrameConfig()[1]
-
-    return {
-        "dual_governance_admin_executor": dual_governance_admin_executor,
-        "sr_role_migration_grants": sr_role_migration_grants,
-        "curated_epochs_per_frame": curated_epochs_per_frame,
-        "curated_module_item": StakingModuleItem(
-            id=CURATED_MODULE_ID,
-            staking_module_address=CURATED_MODULE,
-            name=CURATED_MODULE_NAME,
-            staking_module_fee=CURATED_STAKING_MODULE_FEE,
-            stake_share_limit=CURATED_STAKE_SHARE_LIMIT,
-            treasury_fee=CURATED_TREASURY_FEE,
-            priority_exit_share_threshold=CURATED_PRIORITY_EXIT_SHARE_THRESHOLD,
-            max_deposits_per_block=CURATED_MAX_DEPOSITS_PER_BLOCK,
-            min_deposit_block_distance=CURATED_MIN_DEPOSIT_BLOCK_DISTANCE,
-        ),
-    }
 
 
 @pytest.fixture(scope="module")
@@ -1142,8 +1135,6 @@ def test_vote(
     # =========================================================================
     # ========================= Arrange variables =============================
     # =========================================================================
-    ctx = runtime_upgrade_context
-
     voting = interface.Voting(VOTING)
     agent = interface.Agent(AGENT)
     timelock = interface.EmergencyProtectedTimelock(TIMELOCK)
@@ -1182,6 +1173,57 @@ def test_vote(
         SETTLE_GENERAL_DELAYED_PENALTY_FOR_CM_FACTORY,
         CREATE_OR_UPDATE_OPERATOR_GROUP_FACTORY,
     ]
+    expected_factory_permissions = {
+        UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY: _concat_permissions(
+            _permission(
+                UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY,
+                VALIDATE_STAKING_MODULE_SHARE_PARAMS_SELECTOR,
+            ),
+            _permission(STAKING_ROUTER, UPDATE_MODULE_SHARES_SELECTOR),
+        ),
+        ALLOW_CONSOLIDATION_PAIR_FACTORY: _permission(
+            CONSOLIDATION_MIGRATOR,
+            ALLOW_CONSOLIDATION_PAIR_SELECTOR,
+        ),
+        SET_MERKLE_GATE_TREE_FOR_CSM_FACTORY: _concat_permissions(
+            _permission(
+                SET_MERKLE_GATE_TREE_FOR_CSM_FACTORY,
+                SET_MERKLE_GATE_TREE_VALIDATE_INPUT_DATA_SELECTOR,
+            ),
+            _permission(CS_VETTED_GATE, SET_TREE_PARAMS_SELECTOR),
+            _permission(IDENTIFIED_DVT_CLUSTER_GATE, SET_TREE_PARAMS_SELECTOR),
+        ),
+        REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FOR_CSM_FACTORY: _permission(
+            CSM,
+            REPORT_SLASHED_WITHDRAWN_VALIDATORS_SELECTOR,
+        ),
+        SETTLE_GENERAL_DELAYED_PENALTY_FOR_CSM_FACTORY: _permission(
+            CSM,
+            SETTLE_GENERAL_DELAYED_PENALTY_SELECTOR,
+        ),
+        SET_MERKLE_GATE_TREE_FOR_CM_FACTORY: _concat_permissions(
+            _permission(
+                SET_MERKLE_GATE_TREE_FOR_CM_FACTORY,
+                SET_MERKLE_GATE_TREE_VALIDATE_INPUT_DATA_SELECTOR,
+            ),
+            *[_permission(gate, SET_TREE_PARAMS_SELECTOR) for gate in CURATED_GATES],
+        ),
+        REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FOR_CM_FACTORY: _permission(
+            CURATED_MODULE,
+            REPORT_SLASHED_WITHDRAWN_VALIDATORS_SELECTOR,
+        ),
+        SETTLE_GENERAL_DELAYED_PENALTY_FOR_CM_FACTORY: _permission(
+            CURATED_MODULE,
+            SETTLE_GENERAL_DELAYED_PENALTY_SELECTOR,
+        ),
+        CREATE_OR_UPDATE_OPERATOR_GROUP_FACTORY: _concat_permissions(
+            _permission(
+                CREATE_OR_UPDATE_OPERATOR_GROUP_FACTORY,
+                CREATE_OR_UPDATE_OPERATOR_GROUP_VALIDATE_INPUT_DATA_SELECTOR,
+            ),
+            _permission(META_REGISTRY, CREATE_OR_UPDATE_OPERATOR_GROUP_SELECTOR),
+        ),
+    }
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -1383,8 +1425,11 @@ def test_vote(
         new_factories = easy_track.getEVMScriptFactories()
         for factory in old_easy_track_factories:
             assert factory not in new_factories, "Old Easy Track factory not removed by the vote"
+            assert bytes(easy_track.evmScriptFactoryPermissions(factory)) == b""
         for factory in new_easy_track_factories:
             assert factory in new_factories, "New Easy Track factory not added by the vote"
+            expected_permissions = bytes.fromhex(expected_factory_permissions[factory].removeprefix("0x"))
+            assert bytes(easy_track.evmScriptFactoryPermissions(factory)) == expected_permissions
 
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
@@ -1394,7 +1439,7 @@ def test_vote(
             vote_events[0],
             proposal_id=expected_dg_proposal_id,
             proposer=VOTING,
-            executor=ctx["dual_governance_admin_executor"],
+            executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
             metadata=DG_PROPOSAL_METADATA,
             proposal_calls=dual_governance_proposal_calls,
         )
@@ -1560,7 +1605,7 @@ def test_vote(
                 outer_dg_events = group_dg_events_from_receipt(
                     dg_tx,
                     timelock=TIMELOCK,
-                    admin_executor=ctx["dual_governance_admin_executor"],
+                    admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
                 )
                 dg_events = _group_agent_dg_events_from_receipt(
                     dg_tx,
@@ -1586,7 +1631,7 @@ def test_vote(
                 # 1.3. Upgrade StakingRouter implementation and call finalizeUpgrade_v4.
                 #      finalizeUpgrade_v4 sets maxTopUpPerBlockGwei and re-grants each pre-upgrade
                 #      member of the migrated roles.
-                sr_grants = ctx["sr_role_migration_grants"]
+                sr_grants = EXPECTED_SR_ROLE_MIGRATION_GRANTS
                 validate_proxy_upgrade_event(
                     dg_events[2],
                     STAKING_ROUTER_IMPL,
@@ -1824,7 +1869,7 @@ def test_vote(
                 validate_consensus_version_set_event(
                     dg_events[21],
                     CS_FEE_ORACLE_CONSENSUS_VERSION,
-                    initial_cs_fee_oracle_consensus_version,
+                    CS_FEE_ORACLE_PRE_UPGRADE_CONSENSUS_VERSION,
                     emitted_by=CS_FEE_ORACLE,
                     events_chain=fo_chain,
                 )
@@ -2177,7 +2222,7 @@ def test_vote(
 
                 # -------------------- Curated Module ------------------------
                 # 1.57. Add Curated Module v2 to StakingRouter
-                validate_module_add(dg_events[56], ctx["curated_module_item"], emitted_by=STAKING_ROUTER, sender=AGENT)
+                validate_module_add(dg_events[56], CURATED_MODULE_ITEM, emitted_by=STAKING_ROUTER, sender=AGENT)
 
                 # 1.58. Grant Burner REQUEST_BURN_MY_STETH_ROLE to Curated Accounting
                 validate_role_grant_event(
@@ -2223,7 +2268,7 @@ def test_vote(
                 validate_events_chain([e.name for e in dg_events[62]], ["LogScriptCall", "FrameConfigSet"])
                 frame_config_set_event = _single_event(dg_events[62], "FrameConfigSet")
                 assert frame_config_set_event["newInitialEpoch"] == CURATED_HASH_CONSENSUS_INITIAL_EPOCH
-                assert frame_config_set_event["newEpochsPerFrame"] == ctx["curated_epochs_per_frame"]
+                assert frame_config_set_event["newEpochsPerFrame"] == CURATED_HASH_CONSENSUS_EPOCHS_PER_FRAME
                 _assert_emitted_by(frame_config_set_event, CURATED_HASH_CONSENSUS)
 
                 # 1.64. Register CircuitBreaker pauser for Curated Module v2
@@ -2284,7 +2329,7 @@ def test_vote(
 
         # Mirror every final-state invariant enforced by UpgradeTemplate.finishUpgrade,
         # and additionally pin the configured values exposed by public getters.
-        _assert_upgrade_template_final_state(ctx, staking_router)
+        _assert_upgrade_template_final_state(staking_router)
 
         # Easy Track factory set updated (also checked right after the vote).
         current_factories = easy_track.getEVMScriptFactories()
