@@ -119,14 +119,32 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 UPGRADE_VOTE_SCRIPT = "0xE6530830A2cf90773cB232748b2c674c27b6E0CA"
 
 # ============================= Description ==================================
-DG_PROPOSAL_METADATA = "Activate Staking Router v3, Curated Module v2 and Community Staking Module v3"
-DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to activate Staking Router v3, Curated Module v2 and Community Staking Module v3"
+DG_PROPOSAL_METADATA = "Activate Staking Router v3, Community Staking Module v3 and Curated Module v2"
+DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to activate Staking Router v3, Community Staking Module v3 and Curated Module v2"
 IPFS_DESCRIPTION = """
-1. **Activate Staking Router v3**, including protocol contract upgrades and Dual Governance execution setup. Items 1.1-1.19.
-2. **Upgrade Community Staking Module to v3**, including CSM contract upgrades, role updates and identified DVT cluster setup. Items 1.20-1.56.
-3. **Add and configure Curated Module v2**. Items 1.57-1.68.
-4. **Finalize the protocol upgrade**. Item 1.69.
-5. **Update Easy Track factories for CSM v3 and Curated Module v2 operations**. Items 2-12.
+# Staking Router v3, Community Staking Module v3 and Curated Module v2
+
+Upgrade the [Staking Router to v3 (SRv3)](https://research.lido.fi/t/staking-router-v3-design-implementation-proposal-lip-35/11621) to enable balance-based accounting and support for 0x02 validators, upgrade the [Community Staking Module to v3 (CSMv3)](https://github.com/lidofinance/lido-improvement-proposals/blob/develop/LIPS/lip-33.md#motivation) and add the [Curated Module v2 (CMv2)](https://research.lido.fi/t/future-of-the-curated-module-cmv2-landscape/10929) to the Staking Router. The changes follow the DAO-approved Snapshot proposals [LIP-35 (SRv3)](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x8fdec5d2cb70f8a266c4f5a269051fcfa985fab0f66cbe747702719d7433f606) and [LIP-33 (CMv2 and CSMv3)](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x7b07bc31f0b38b69a117473031bc126becc70b9fa37246b53d9fe5a841c814f5).
+
+Audits & deployment verification:
+- SRv3: [Certora](https://github.com/lidofinance/audits/blob/main/Certora%20Staking%20Router%20v3%20Audit%20Report%2007-2026.pdf), [Statemind](https://github.com/lidofinance/audits/blob/main/Statemind%20Staking%20Router%20v3%20Audit%20Report%2007-2026.pdf)
+- CSMv3 & CMv2: [Certora](https://github.com/lidofinance/audits/blob/main/Certora%20Lido%20CSM%20v3%20and%20CM%20v2%20Audit%20Report%20-%2006-2026.pdf), [Statemind](https://github.com/lidofinance/audits/blob/main/Statemind%20Lido%20CSM%20v3%20and%20CM%20v2%20Audit%20Report%2006-2026.pdf)
+- Upgrade voting contracts: [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Staking%20Router%20v3%20Upgrade%20Audit%20Report%2007-2026.pdf)
+- Easy Track factories: [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Easy%20Track%20Factories%20(SRv3%20CSMv3%20CMv2)%20Security%20Audit%20Report%2007-2026.pdf)
+- Off-chain Oracle: [Composable Security](https://github.com/lidofinance/audits/blob/main/Composable%20Security%20Lido%20Oracle%20V8_0_2%20Security%20Consultation%20Report.pdf)
+
+[Dual Governance Items](https://research.lido.fi/t/future-of-the-curated-module-cmv2-landscape/10929/33#p-25898-part-2-dual-governance-items-69-items-subject-to-dg-veto-period-3)
+
+* Lock the upgrade window and record initial protocol state. Item 1.1.
+* Upgrade Lido Core contracts, reassign roles and permissions, set Triggerable Withdrawals Gateway (TWG) exit limits, and register CircuitBreaker Committee as the pauser for the new Consolidation Gateway and TopUp Gateway contracts. Items 1.2 - 1.19.
+* Upgrade Community Staking Module contracts, reassign roles and permissions, enable Identified DVT Cluster type, and register [CSM Committee](https://docs.lido.fi/multisigs/committees/#29-community-staking-module-committee) as the pauser for the CSM contracts. Items 1.20 - 1.56.
+* Add Curated Module v2 to the Staking Router, assign roles and permissions, and register [CM Committee](https://docs.lido.fi/multisigs/committees/#220-curated-module-committee-cmc) as the pauser for the CMv2 contracts. Items 1.57 - 1.68.
+* Finalize the upgrade and perform final assertions. Item 1.69.
+
+[Voting Items](https://research.lido.fi/t/future-of-the-curated-module-cmv2-landscape/10929/33#p-25898-part-1-voting-items-11-items-execute-immediately-2)
+
+- Remove deprecated CSM Easy Track factories: CSMSettleElStealingPenalty and CSMSetVettedGateTree. Items 2 - 3.
+- Add 9 Easy Track factories supporting CSMv3, CMv2, and consolidation operations. Items 4 - 12.
 """
 
 
