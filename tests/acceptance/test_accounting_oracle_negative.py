@@ -15,7 +15,7 @@ from brownie import (
 from brownie.network.account import Account
 from configs.config_mainnet import MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION
 
-from utils.config import contracts, ACCOUNTING_ORACLE
+from utils.config import contracts, ACCOUNTING_ORACLE, AO_CONSENSUS_VERSION
 from utils.evm_script import encode_error
 from utils.test.extra_data import ExtraDataService, ItemType, ExtraDataLengths
 from utils.test.oracle_report_helpers import (
@@ -194,12 +194,7 @@ def test_finalize_upgrade(accounting_oracle: Contract, stranger: Account):
     # re-calling finalizeUpgrade_v5 reverts on the version bump (5 != 5 + 1)
     with reverts(encode_error("InvalidContractVersionIncrement()")):
         accounting_oracle.finalizeUpgrade_v5(
-            1,
-            {"from": stranger},
-        )
-    with reverts(encode_error("InvalidContractVersionIncrement()")):
-        accounting_oracle.finalizeUpgrade_v5(
-            2,
+            AO_CONSENSUS_VERSION,
             {"from": stranger},
         )
 
