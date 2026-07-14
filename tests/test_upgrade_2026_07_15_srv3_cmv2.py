@@ -1233,6 +1233,8 @@ def _assert_upgrade_template_final_state(staking_router) -> None:
     assert curve_setup.executed() is True
     assert curve_setup.deployedCurveId() == IDENTIFIED_DVT_CLUSTER_BOND_CURVE_ID
     assert interface.MerkleGate(IDENTIFIED_DVT_CLUSTER_GATE).curveId() == IDENTIFIED_DVT_CLUSTER_BOND_CURVE_ID
+    curve_intervals = cs_accounting.getCurveInfo(IDENTIFIED_DVT_CLUSTER_BOND_CURVE_ID)[0]
+    assert [[interval[0], interval[2]] for interval in curve_intervals] == IDVT_BOND_CURVE
     assert cs_parameters_registry.getKeyRemovalCharge(IDENTIFIED_DVT_CLUSTER_BOND_CURVE_ID) == IDVT_KEY_REMOVAL_CHARGE
     assert (
         cs_parameters_registry.getGeneralDelayedPenaltyAdditionalFine(IDENTIFIED_DVT_CLUSTER_BOND_CURVE_ID)
