@@ -356,7 +356,7 @@ EXPECTED_DG_PROPOSAL_ID = 12
 EXPECTED_VOTE_EVENTS_COUNT = 12  # 1 DG submission + 11 Easy Track items
 EXPECTED_DG_EVENTS_FROM_AGENT = 69
 EXPECTED_DG_EVENTS_COUNT = 69
-IPFS_DESCRIPTION_HASH = "bafkreihbfbtivfk4cebscu6xz4fhhe3bkiugjaaatrfqtqncvr2thb4npu"
+IPFS_DESCRIPTION_HASH = "bafkreicjsournhx2jqw6v2b4rovvncuje6aefbkrnnl43kh2cj7kqmi2ju"
 
 
 class StakingModuleItem(NamedTuple):
