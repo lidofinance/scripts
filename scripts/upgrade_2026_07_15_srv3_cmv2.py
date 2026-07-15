@@ -112,7 +112,12 @@ from utils.config import (
 from utils.dual_governance import submit_proposals
 from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_description
 from utils.mainnet_fork import pass_and_exec_dao_vote
-from utils.voting import bake_vote_items, confirm_vote_script, create_vote
+from utils.voting import (
+    assert_vote_script_matches_omnibus,
+    bake_vote_items,
+    confirm_vote_script,
+    create_vote,
+)
 
 # SRv3/CMv2 upgrade omnibus (UpgradeVoteScript) — the vote script reads its items
 # from this contract. Synced from core/deployed-mainnet.json.
@@ -169,9 +174,15 @@ def start_vote(
     silent: bool = False,
     upgrade_vote_script: Optional[str] = None,
 ):
+    vote_script_address = (upgrade_vote_script or UPGRADE_VOTE_SCRIPT).strip()
+    omnibus = interface.UpgradeVoteScript(vote_script_address)
+
     vote_desc_items, call_script_items = get_vote_items(
         upgrade_vote_script=upgrade_vote_script,
     )
+
+    assert_vote_script_matches_omnibus(omnibus, call_script_items, DG_PROPOSAL_METADATA)
+
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
     desc_ipfs = (
         calculate_vote_ipfs_description(IPFS_DESCRIPTION) if silent else upload_vote_ipfs_description(IPFS_DESCRIPTION)
@@ -181,8 +192,7 @@ def start_vote(
         create_vote(vote_items, tx_params, desc_ipfs=desc_ipfs)
     )
 
-    vote_script_address = (upgrade_vote_script or UPGRADE_VOTE_SCRIPT).strip()
-    assert interface.UpgradeVoteScript(vote_script_address).isValidVoteScript(
+    assert omnibus.isValidVoteScript(
         vote_id,
         DG_PROPOSAL_METADATA,
     )
