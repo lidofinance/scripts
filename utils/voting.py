@@ -31,6 +31,20 @@ def bake_vote_items(vote_desc_items: List[str], call_script_items: List[Tuple[st
     return dict(zip(vote_desc_items, call_script_items))
 
 
+def assert_vote_script_matches_omnibus(
+    omnibus: Contract,
+    call_script_items: List[Tuple[str, str]],
+    proposal_metadata: str,
+) -> None:
+    local_script = encode_call_script(call_script_items).lower()
+    canonical_script = omnibus.getEVMScript(proposal_metadata).hex().lower()
+    if not canonical_script.startswith("0x"):
+        # hexbytes>=1.0 returns hex() without the "0x" prefix
+        canonical_script = "0x" + canonical_script
+    assert local_script == canonical_script, "Locally built EVM script != omnibus.getEVMScript()"
+    print(f"{color('green')}[ok] Locally built EVM script matches omnibus.getEVMScript(){color}")
+
+
 def create_vote(
     vote_items: Dict[str, Tuple[str, str]],
     tx_params: Dict[str, str],
