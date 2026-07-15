@@ -1,6 +1,6 @@
 from brownie import ZERO_ADDRESS, interface
 
-from configs.config_mainnet import CM_MERKLE_GATE_ADDRESSES
+from configs.config_mainnet import CURATED_V2_MERKLE_GATE_ADDRESSES
 from utils.balance import set_balance_in_wei
 from utils.config import contracts
 from utils.test.helpers import ETH
@@ -47,7 +47,7 @@ def _ensure_meta_registry_setup(node_operator_id):
 
 
 def _prepare_curated_gate(node_operator):
-    gate = interface.CuratedGate(CM_MERKLE_GATE_ADDRESSES[0])
+    gate = interface.CuratedGate(CURATED_V2_MERKLE_GATE_ADDRESSES[0])
     tree_manager = _get_role_member_or_grant(gate, gate.SET_TREE_ROLE())
 
     nonce = contracts.cm.getNodeOperatorsCount()
@@ -62,7 +62,7 @@ def _prepare_curated_gate(node_operator):
 
 
 def _get_fresh_node_operator(node_operator):
-    gate = interface.CuratedGate(CM_MERKLE_GATE_ADDRESSES[0])
+    gate = interface.CuratedGate(CURATED_V2_MERKLE_GATE_ADDRESSES[0])
     if not gate.isConsumed(node_operator):
         return node_operator
 
@@ -185,7 +185,7 @@ def ensure_curated_v2_depositable_keys(required_depositable_keys, node_operator)
         if module_depositable_keys >= required_depositable_keys:
             return
 
-    gate_curve_id = interface.CuratedGate(CM_MERKLE_GATE_ADDRESSES[0]).curveId()
+    gate_curve_id = interface.CuratedGate(CURATED_V2_MERKLE_GATE_ADDRESSES[0]).curveId()
     keys_limit = contracts.cm_parameters_registry.getKeysLimit(gate_curve_id)
 
     while module_depositable_keys < required_depositable_keys:
