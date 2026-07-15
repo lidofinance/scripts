@@ -69,8 +69,18 @@ from utils.config import (
     CS_VETTED_GATE_ADDRESS,
     CS_PARAMS_REGISTRY_ADDRESS,
     CS_STRIKES_ADDRESS,
-    CM_ACCOUNTING_ADDRESS,
-    CM_EJECTOR_ADDRESS,
+    CURATED_V2_STAKING_MODULE_ADDRESS,
+    CURATED_V2_ACCOUNTING,
+    CURATED_V2_FEE_DISTRIBUTOR,
+    CURATED_V2_FEE_ORACLE,
+    CURATED_V2_HASH_CONSENSUS,
+    CURATED_V2_META_REGISTRY_ADDRESS,
+    CURATED_V2_PARAMETERS_REGISTRY,
+    CURATED_V2_STRIKES,
+    CURATED_V2_VERIFIER,
+    CURATED_V2_EJECTOR,
+    CURATED_V2_MERKLE_GATE_ADDRESSES,
+    CURATED_V2_COMMITTEE_MS,
     L1_EMERGENCY_BRAKES_MULTISIG,
     DUAL_GOVERNANCE_EXECUTORS,
     RESEAL_MANAGER,
@@ -95,7 +105,7 @@ def protocol_permissions():
     cs_permissionless_gate_address = CS_PERMISSIONLESS_GATE_V3_ADDRESS
     cs_verifier = interface.Verifier(CS_VERIFIER_V3_ADDRESS)
     cs_verifier_address = cs_verifier.address
-    burner_request_burn_my_steth_holders = [CS_ACCOUNTING_ADDRESS, CM_ACCOUNTING_ADDRESS]
+    burner_request_burn_my_steth_holders = [CS_ACCOUNTING_ADDRESS, CURATED_V2_ACCOUNTING]
     burner_request_burn_shares_holders = [contracts.accounting]
     csm_create_node_operator_holders = [
         cs_permissionless_gate_address,
@@ -110,7 +120,7 @@ def protocol_permissions():
     twg_full_withdrawal_request_holders = [
         VALIDATORS_EXIT_BUS_ORACLE,
         cs_ejector_address,
-        CM_EJECTOR_ADDRESS,
+        CURATED_V2_EJECTOR,
     ]
     csm_roles = {
         "DEFAULT_ADMIN_ROLE": [contracts.agent],
@@ -154,6 +164,37 @@ def protocol_permissions():
         "MANAGE_REWARD_SHARE_ROLE": [],
         "MANAGE_VALIDATOR_EXIT_PARAMETERS_ROLE": [],
         "MANAGE_CURVE_PARAMETERS_ROLE": [],
+    }
+    cm_roles = {
+        "DEFAULT_ADMIN_ROLE": [contracts.agent],
+        "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
+        "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+        "REPORT_GENERAL_DELAYED_PENALTY_ROLE": [CURATED_V2_COMMITTEE_MS],
+        "SETTLE_GENERAL_DELAYED_PENALTY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+        "CREATE_NODE_OPERATOR_ROLE": CURATED_V2_MERKLE_GATE_ADDRESSES,
+        "VERIFIER_ROLE": [CURATED_V2_VERIFIER],
+        "RESUME_ROLE": [RESEAL_MANAGER],
+        "RECOVERER_ROLE": [],
+        "OPERATOR_ADDRESSES_ADMIN_ROLE": [],
+        "REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE": [CURATED_V2_VERIFIER],
+        "REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+    }
+    cm_parameters_registry_roles = {
+        "DEFAULT_ADMIN_ROLE": [contracts.agent],
+        "MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE": [CURATED_V2_COMMITTEE_MS],
+        "MANAGE_KEYS_LIMIT_ROLE": [],
+        "MANAGE_QUEUE_CONFIG_ROLE": [],
+        "MANAGE_PERFORMANCE_PARAMETERS_ROLE": [],
+        "MANAGE_REWARD_SHARE_ROLE": [],
+        "MANAGE_VALIDATOR_EXIT_PARAMETERS_ROLE": [],
+        "MANAGE_CURVE_PARAMETERS_ROLE": [],
+    }
+    cm_gate_roles = {
+        "DEFAULT_ADMIN_ROLE": [contracts.agent],
+        "PAUSE_ROLE": [CURATED_V2_COMMITTEE_MS],
+        "RESUME_ROLE": [],
+        "RECOVERER_ROLE": [],
+        "SET_TREE_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
     }
 
     return {
@@ -531,7 +572,124 @@ def protocol_permissions():
                 "RECOVERER_ROLE": [],
             },
         },
-        # TODO: add Curated Module v2 permission matrix once scripts has CMv2 interfaces and config bindings.
+        CURATED_V2_STAKING_MODULE_ADDRESS: {
+            "contract_name": "CuratedModule",
+            "contract": contracts.cm,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": cm_roles,
+        },
+        CURATED_V2_ACCOUNTING: {
+            "contract_name": "CuratedAccounting",
+            "contract": contracts.cm_accounting,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "SET_BOND_CURVE_ROLE": CURATED_V2_MERKLE_GATE_ADDRESSES[1:],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+                "MANAGE_BOND_CURVES_ROLE": [],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CURATED_V2_FEE_DISTRIBUTOR: {
+            "contract_name": "CuratedFeeDistributor",
+            "contract": contracts.cm_fee_distributor,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CURATED_V2_FEE_ORACLE: {
+            "contract_name": "CuratedFeeOracle",
+            "contract": contracts.cm_fee_oracle,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
+                "MANAGE_CONSENSUS_VERSION_ROLE": [],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "SUBMIT_DATA_ROLE": [],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CURATED_V2_HASH_CONSENSUS: {
+            "contract_name": "CuratedHashConsensus",
+            "contract": contracts.cm_hash_consensus,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "MANAGE_MEMBERS_AND_QUORUM_ROLE": [contracts.agent],
+                "DISABLE_CONSENSUS_ROLE": [],
+                "MANAGE_FRAME_CONFIG_ROLE": [],
+                "MANAGE_FAST_LANE_CONFIG_ROLE": [],
+                "MANAGE_REPORT_PROCESSOR_ROLE": [],
+            },
+        },
+        CURATED_V2_VERIFIER: {
+            "contract_name": "CuratedVerifier",
+            "contract": contracts.cm_verifier,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+            },
+        },
+        CURATED_V2_PARAMETERS_REGISTRY: {
+            "contract_name": "CuratedParametersRegistry",
+            "contract": contracts.cm_parameters_registry,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": cm_parameters_registry_roles,
+        },
+        CURATED_V2_STRIKES: {
+            "contract_name": "CuratedValidatorStrikes",
+            "contract": contracts.cm_strikes,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+            },
+        },
+        CURATED_V2_EJECTOR: {
+            "contract_name": "CuratedEjector",
+            "contract": contracts.cm_ejector,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CURATED_V2_META_REGISTRY_ADDRESS: {
+            "contract_name": "CuratedMetaRegistry",
+            "contract": contracts.cm_meta_registry,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "MANAGE_OPERATOR_GROUPS_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "SET_OPERATOR_INFO_ROLE": [CURATED_V2_COMMITTEE_MS, *CURATED_V2_MERKLE_GATE_ADDRESSES],
+                "SET_BOND_CURVE_WEIGHT_ROLE": [],
+            },
+        },
+        **{
+            gate_address: {
+                "contract_name": "CuratedGate",
+                "contract": interface.CuratedGate(gate_address),
+                "type": "CustomApp",
+                "proxy_owner": contracts.agent,
+                "roles": cm_gate_roles,
+            }
+            for gate_address in CURATED_V2_MERKLE_GATE_ADDRESSES
+        },
         TOP_UP_GATEWAY: {
             "contract_name": "TopUpGateway",
             "contract": interface.TopUpGateway(TOP_UP_GATEWAY),

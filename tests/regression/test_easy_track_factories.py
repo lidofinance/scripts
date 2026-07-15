@@ -737,7 +737,7 @@ class TestSetMerkleGateTree:
         "factory_address,allowed_gate_addresses",
         [
             (EASYTRACK_CSM_SET_MERKLE_GATE_TREE_FACTORY, CSM_MERKLE_GATE_ADDRESSES),
-            (EASYTRACK_CM_SET_MERKLE_GATE_TREE_FACTORY, CM_MERKLE_GATE_ADDRESSES),
+            (EASYTRACK_CM_SET_MERKLE_GATE_TREE_FACTORY, CURATED_V2_MERKLE_GATE_ADDRESSES),
         ],
     )
     def test_permissions(self, factory_address, allowed_gate_addresses):
@@ -754,7 +754,7 @@ class TestSetMerkleGateTree:
         "factory_address,wrong_gate_address",
         [
             (EASYTRACK_CM_SET_MERKLE_GATE_TREE_FACTORY, CS_VETTED_GATE_ADDRESS),
-            (EASYTRACK_CSM_SET_MERKLE_GATE_TREE_FACTORY, CM_MERKLE_GATE_ADDRESSES[0]),
+            (EASYTRACK_CSM_SET_MERKLE_GATE_TREE_FACTORY, CURATED_V2_MERKLE_GATE_ADDRESSES[0]),
         ],
     )
     def test_reverts_for_other_module_gate(self, factory_address, wrong_gate_address):
@@ -805,7 +805,7 @@ class TestSetMerkleGateTree:
 
     def test_cm_scenario(self, stranger):
         factory = interface.SetMerkleGateTree(EASYTRACK_CM_SET_MERKLE_GATE_TREE_FACTORY)
-        gate = interface.CuratedGate(CM_MERKLE_GATE_ADDRESSES[0])
+        gate = interface.CuratedGate(CURATED_V2_MERKLE_GATE_ADDRESSES[0])
         member = accounts[5]
         manager = accounts[7]
         reward = accounts[8]
@@ -863,7 +863,7 @@ class TestReportWithdrawalsForSlashedValidators:
         return validator
 
     def _get_cm_unwithdrawn_unslashed_validator(self):
-        module = interface.BaseModule(CM_MODULE_ADDRESS)
+        module = interface.BaseModule(CURATED_V2_STAKING_MODULE_ADDRESS)
         validator = self._find_unwithdrawn_unslashed_validator(module)
         if validator is None:
             node_operator = _get_fresh_node_operator(set_balance(accounts[5], 100))
@@ -895,7 +895,7 @@ class TestReportWithdrawalsForSlashedValidators:
         "factory_address,module_address,factory_name",
         [
             (EASYTRACK_CSM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY, CSM_ADDRESS, CSM_FACTORY_NAME),
-            (EASYTRACK_CM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY, CM_MODULE_ADDRESS, CM_FACTORY_NAME),
+            (EASYTRACK_CM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY, CURATED_V2_STAKING_MODULE_ADDRESS, CM_FACTORY_NAME),
         ],
         ids=["csm", "cm"],
     )
@@ -956,7 +956,7 @@ class TestReportWithdrawalsForSlashedValidators:
         assert module.getNonce() == nonce_before + 1
 
     def test_cm_scenario(self, stranger):
-        module = interface.BaseModule(CM_MODULE_ADDRESS)
+        module = interface.BaseModule(CURATED_V2_STAKING_MODULE_ADDRESS)
         factory = interface.ReportWithdrawalsForSlashedValidators(
             EASYTRACK_CM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY
         )
@@ -1016,7 +1016,7 @@ class TestSettleGeneralDelayedPenalty:
 
     def test_cm_factory(self):
         factory = interface.SettleGeneralDelayedPenalty(EASYTRACK_CM_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY)
-        module = interface.BaseModule(CM_MODULE_ADDRESS)
+        module = interface.BaseModule(CURATED_V2_STAKING_MODULE_ADDRESS)
 
         assert factory.module() == module.address
         assert factory.accounting() == module.ACCOUNTING()
@@ -1048,7 +1048,7 @@ class TestSettleGeneralDelayedPenalty:
         assert accounting.getBondSummaryShares(node_operator_id)[0] == bond_shares_before - penalty_shares
 
     def test_cm_scenario(self, stranger):
-        module = interface.BaseModule(CM_MODULE_ADDRESS)
+        module = interface.BaseModule(CURATED_V2_STAKING_MODULE_ADDRESS)
         accounting = contracts.cm_accounting
         factory = interface.SettleGeneralDelayedPenalty(EASYTRACK_CM_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY)
         node_operator = _get_fresh_node_operator(set_balance(accounts[5], 100))
@@ -1069,7 +1069,7 @@ class TestSettleGeneralDelayedPenalty:
 
 class TestCreateOrUpdateOperatorGroup:
     def test_cm_factory(self):
-        module = interface.CuratedModule(CM_MODULE_ADDRESS)
+        module = interface.CuratedModule(CURATED_V2_STAKING_MODULE_ADDRESS)
         meta_registry = interface.MetaRegistry(module.META_REGISTRY())
         factory = interface.CreateOrUpdateOperatorGroup(EASYTRACK_CM_CREATE_OR_UPDATE_OPERATOR_GROUP_FACTORY)
         assert factory.module() == module.address
