@@ -212,19 +212,43 @@ class ContractsLazyLoader:
 
     @property
     def cm(self) -> interface.CuratedModule:
-        return interface.CuratedModule(CM_MODULE_ADDRESS)
+        return interface.CuratedModule(CURATED_V2_STAKING_MODULE_ADDRESS)
 
     @property
     def cm_accounting(self) -> interface.ModuleAccounting:
-        return interface.ModuleAccounting(self.cm.ACCOUNTING())
+        return interface.ModuleAccounting(CURATED_V2_ACCOUNTING)
+
+    @property
+    def cm_fee_distributor(self) -> interface.FeeDistributor:
+        return interface.FeeDistributor(CURATED_V2_FEE_DISTRIBUTOR)
+
+    @property
+    def cm_fee_oracle(self) -> interface.FeeOracle:
+        return interface.FeeOracle(CURATED_V2_FEE_ORACLE)
+
+    @property
+    def cm_hash_consensus(self) -> interface.HashConsensus:
+        return interface.HashConsensus(CURATED_V2_HASH_CONSENSUS)
 
     @property
     def cm_meta_registry(self) -> interface.MetaRegistry:
-        return interface.MetaRegistry(self.cm.META_REGISTRY())
+        return interface.MetaRegistry(CURATED_V2_META_REGISTRY_ADDRESS)
 
     @property
     def cm_parameters_registry(self) -> interface.ParametersRegistry:
-        return interface.ParametersRegistry(self.cm.PARAMETERS_REGISTRY())
+        return interface.ParametersRegistry(CURATED_V2_PARAMETERS_REGISTRY)
+
+    @property
+    def cm_strikes(self) -> interface.ValidatorStrikes:
+        return interface.ValidatorStrikes(CURATED_V2_STRIKES)
+
+    @property
+    def cm_verifier(self) -> interface.Verifier:
+        return interface.Verifier(CURATED_V2_VERIFIER)
+
+    @property
+    def cm_ejector(self) -> interface.Ejector:
+        return interface.Ejector(CURATED_V2_EJECTOR)
 
     @property
     def cs_permissionless_gate(self) -> interface.PermissionlessGate:
