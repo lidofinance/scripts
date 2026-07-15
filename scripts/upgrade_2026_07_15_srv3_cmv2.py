@@ -136,9 +136,9 @@ Audits & deployment verification:
 [Dual Governance Items](https://research.lido.fi/t/future-of-the-curated-module-cmv2-landscape/10929/33#p-25898-part-2-dual-governance-items-69-items-subject-to-dg-veto-period-3)
 
 * Lock the upgrade window and record initial protocol state. Item 1.1.
-* Upgrade Lido Core contracts, reassign roles and permissions, set Triggerable Withdrawals Gateway (TWG) exit limits, and register CircuitBreaker Committee as the pauser for the new Consolidation Gateway and TopUp Gateway contracts. Items 1.2 - 1.19.
-* Upgrade Community Staking Module contracts, reassign roles and permissions, enable Identified DVT Cluster type, and register [CSM Committee](https://docs.lido.fi/multisigs/committees/#29-community-staking-module-committee) as the pauser for the CSM contracts. Items 1.20 - 1.56.
-* Add Curated Module v2 to the Staking Router, assign roles and permissions, and register [CM Committee](https://docs.lido.fi/multisigs/committees/#220-curated-module-committee-cmc) as the pauser for the CMv2 contracts. Items 1.57 - 1.68.
+* Upgrade Lido Core contracts to enable SRv3, reassign roles and permissions, set Triggerable Withdrawals Gateway (TWG) exit limits, and register CircuitBreaker Committee as the pauser for the new Consolidation Gateway and TopUp Gateway sealables. Items 1.2 - 1.19.
+* Upgrade CSM contracts to v3, reassign roles and permissions, enable Identified DVT Cluster type, and register [CSM Committee](https://docs.lido.fi/multisigs/committees/#29-community-staking-module-committee) as the pauser for the CSM sealables. Items 1.20 - 1.56.
+* Add CMv2 to the Staking Router, assign roles and permissions, and register [CM Committee](https://docs.lido.fi/multisigs/committees/#220-curated-module-committee-cmc) as the pauser for the CMv2 sealables. Items 1.57 - 1.68.
 * Finalize the upgrade and perform final assertions. Item 1.69.
 
 [Voting Items](https://research.lido.fi/t/future-of-the-curated-module-cmv2-landscape/10929/33#p-25898-part-1-voting-items-11-items-execute-immediately-2)
