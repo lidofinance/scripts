@@ -30,6 +30,7 @@ CORE_BRANCH ?= master
 NODE_PORT ?= 8545
 SECONDARY_NETWORK ?= mfh-2
 NETWORK_STATE_FILE ?= deployed-mainnet.json
+STONKS_DIR ?= ../stonks
 
 test-1/2:
 	poetry run brownie test tests/[tc]*.py tests/regression/test_staking_router_stake_distribution.py --durations=20 --network mfh-1
@@ -93,6 +94,11 @@ test-core:
 	NETWORK_STATE_FILE=$(NETWORK_STATE_FILE) \
 	FORKING_BLOCK_NUMBER=$$LATEST_BLOCK_NUMBER \
 	yarn test:integration
+
+test-stonks-integration: ci-prepare-environment
+	cd $(STONKS_DIR) && \
+	{ [ -d node_modules ] || npm ci; } && \
+	RPC_URL=$(ETH_RPC_URL) npm run test:integration
 
 slots:
 	@echo "Input https://github.com/lidofinance/protocol-onchain-mon-bots/blob/main/bots/ethereum-steth-v2/src/utils/constants.mainnet.ts file content (end with Enter and Ctrl+D):"

@@ -1,0 +1,242 @@
+[
+  {
+    "inputs": [],
+    "name": "ErrorAddExistedObserver",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ErrorBadObserverInterface",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ErrorMaxObserversCountExceeded",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ErrorNoObserverToRemove",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ErrorNotAuthorizedRebaseCaller",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ErrorTokenRateNotifierRevertedWithNoData",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ErrorZeroAddressObserver",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ErrorZeroAddressOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ErrorZeroAddressTokenRateProvider",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "observer",
+        "type": "address"
+      }
+    ],
+    "name": "ObserverAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "observer",
+        "type": "address"
+      }
+    ],
+    "name": "ObserverRemoved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "observer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "lowLevelRevertData",
+        "type": "bytes"
+      }
+    ],
+    "name": "PushTokenRateFailed",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_OBSERVERS_COUNT",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "TOKEN_RATE_PROVIDER",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "observer_",
+        "type": "address"
+      },
+      {
+        "internalType": "enum ITokenRateNotifier.ObserverKind",
+        "name": "kind_",
+        "type": "uint8"
+      }
+    ],
+    "name": "addObserver",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_reportTimestamp",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_timeElapsed",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_preTotalShares",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_preTotalEther",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_postTotalShares",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_postTotalEther",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_sharesMintedAsFees",
+        "type": "uint256"
+      }
+    ],
+    "name": "handlePostTokenRebase",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      }
+    ],
+    "name": "observers",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "observer",
+        "type": "address"
+      },
+      {
+        "internalType": "enum ITokenRateNotifier.ObserverKind",
+        "name": "kind",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "observersLength",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "observer_",
+        "type": "address"
+      }
+    ],
+    "name": "removeObserver",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

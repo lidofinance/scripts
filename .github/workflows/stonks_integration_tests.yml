@@ -1,0 +1,73 @@
+name: Stonks integration tests
+
+on:
+  push:
+    branches:
+      - feat/next-vote
+  workflow_dispatch:
+
+env:
+  # Stonks branch carrying the NEST V2 integration tests.
+  # TODO: switch to `main/master` once the tests land there.
+  STONKS_REF: feature/dao-898-nest-v2-develop-the-protocol
+
+jobs:
+  run-tests:
+    name: Stonks integration tests in docker
+    runs-on: [ubuntu-latest]
+    timeout-minutes: 120
+    env:
+      NODE_OPTIONS: --max_old_space_size=7200
+
+    # Fork node on localhost:8545, same scripts image core_tests uses (has brownie + node/npm).
+    services:
+      tests-runner:
+        image: ghcr.io/lidofinance/scripts:v21
+        ports:
+          - 8545:8545
+        volumes:
+          - ${{ github.workspace }}:/root/scripts
+        options: >-
+          --name=tests-runner
+
+    steps:
+      - name: Checkout scripts
+        uses: actions/checkout@v4
+
+      - name: Checkout stonks (${{ env.STONKS_REF }})
+        uses: actions/checkout@v4
+        with:
+          repository: lidofinance/stonks
+          ref: ${{ env.STONKS_REF }}
+          path: stonks
+          persist-credentials: false
+
+      - name: Run init script
+        run: docker exec tests-runner bash -c 'PYTHONPATH=$PWD make init-scripts'
+
+      - name: Run node
+        run: docker exec -e ETH_RPC_URL -e NODE_OPTIONS --detach tests-runner bash -c 'NODE_PORT=8545 make node'
+        env:
+          ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
+
+      - name: Check that the fork is ready
+        shell: bash
+        run: |
+          echo "Waiting for fork node on 127.0.0.1:8545..."
+          sleep 10
+          for i in {1..30}; do
+            if (echo > /dev/tcp/127.0.0.1/8545) >/dev/null 2>&1; then
+              echo "Fork is ready ✅"
+              exit 0
+            fi
+            echo "Not ready yet... ($i/30)"
+            sleep 1
+          done
+          echo "❌ Fork was not ready after 30 seconds" >&2
+          exit 1
+
+      - name: Enact vote and run stonks integration tests
+        run: docker exec -e ETH_RPC_URL -e ETHERSCAN_TOKEN -e NODE_OPTIONS tests-runner bash -c 'make test-stonks-integration STONKS_DIR=stonks'
+        env:
+          ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
+          ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
