@@ -117,7 +117,11 @@ def test_create_wait_enact(helpers, vote_time, call_target, vote_ids_from_env, d
         step_diffs[step] = dict_diff(before, after)
 
     for step_name, diff in step_diffs.items():
-        if not vote_ids_from_env:
+        # A fresh vote is created in the "after" run only when the upgrade is
+        # started from scripts (start_and_execute_votes). When votes and/or DG
+        # proposals are supplied via env, no new vote is created, so votesLength
+        # stays identical across both runs and must not be expected to differ.
+        if not vote_ids_from_env and not dg_proposal_ids_from_env:
             assert_expected_diffs(
                 step_name, diff, {"votesLength": ValueChanged(from_val=votesLength + 1, to_val=votesLength + 2)}
             )
