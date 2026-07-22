@@ -176,4 +176,5 @@ jobs:
           DEPLOY_ARTIFACT_FILE_NAME: deploy-artifact-mainnet.toml
           FOUNDRY_ETH_RPC_TIMEOUT: "120"
           FOUNDRY_THREADS: "1"
+          DG_PROPOSAL_IDS: "12"
         working-directory: dual-governance
