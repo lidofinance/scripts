@@ -191,11 +191,11 @@ def _push_legacy_v4_oracle_report():
     accounts.at(submitter, force=True).transfer(to=oracle.address, data=extra_data_calldata)
 
 
-def process_pending_proposals():
+def process_pending_proposals() -> list[int]:
     last_proposal_id = contracts.emergency_protected_timelock.getProposalsCount()
 
     if is_proposal_executed(last_proposal_id):
-        return
+        return []
 
     current_proposal_id = last_proposal_id
     while not is_proposal_executed(current_proposal_id):
@@ -205,7 +205,9 @@ def process_pending_proposals():
 
     current_proposal_id += 1
 
-    process_proposals(list(range(current_proposal_id, last_proposal_id + 1)))
+    proposal_ids = list(range(current_proposal_id, last_proposal_id + 1))
+    process_proposals(proposal_ids)
+    return proposal_ids
 
 
 def wait_for_normal_state(stranger):
