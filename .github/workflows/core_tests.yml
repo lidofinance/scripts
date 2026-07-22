@@ -61,10 +61,11 @@ jobs:
           exit 1
 
       - name: Prepare test environment with Brownie
-        run: docker exec -e GITHUB_TOKEN -e ETH_RPC_URL -e ETHERSCAN_TOKEN tests-runner bash -c 'make ci-prepare-environment'
+        run: docker exec -e GITHUB_TOKEN -e ETH_RPC_URL -e ETHERSCAN_TOKEN -e DG_PROPOSAL_IDS tests-runner bash -c 'make ci-prepare-environment'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
+          DG_PROPOSAL_IDS: "12"
 
       - name: Run core tests
         run: docker exec -e CORE_TESTS_TARGET_RPC_URL -e NODE_OPTIONS -e DG_PROPOSAL_IDS tests-runner bash -c 'make test-core'
