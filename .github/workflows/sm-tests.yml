@@ -106,6 +106,8 @@ jobs:
 
       - name: Run staking modules regression tests
         uses: lidofinance/staking-modules/.github/actions/regression-tests@develop
+        env:
+          DG_PROPOSAL_IDS: "12"
         with:
           repository: lidofinance/staking-modules
           ref: post-vote-test
