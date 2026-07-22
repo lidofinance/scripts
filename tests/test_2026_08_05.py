@@ -219,13 +219,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =======================================================================
         # ========================= Before voting checks ========================
         # =======================================================================
+        # vote item 2
         assert oracle_router.manager() != TMC, "OracleRouter manager already set to TMC"
+        # vote item 3
         assert buyback_executor.stonks() == ZERO_ADDRESS, "BuybackExecutor stonks already set"
+        # vote item 4
         assert not buyback_executor.hasRole(ALLOCATOR_ROLE, BUYBACK_ALLOCATOR)
+        # vote item 5
         assert not buyback_executor.hasRole(MANAGER_ROLE, TMC)
+        # vote item 6
         assert not buyback_executor.hasRole(EMERGENCY_ROLE, TMC)
+        # vote item 7
         assert not buyback_executor.hasRole(EMERGENCY_ROLE, EMERGENCY_COMMITTEE)
+        # vote item 8
         assert not buyback_allocator.hasRole(MANAGER_ROLE, TMC)
+        # vote item 9
         assert buyback_allocator.activationTS() == 0, "BuybackAllocator already activated"
 
         if IPFS_DESCRIPTION_HASH:
@@ -239,24 +247,31 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =======================================================================
         # ========================= After voting checks =========================
         # =======================================================================
+        # vote item 2
         assert oracle_router.manager() == TMC, "OracleRouter manager not set to TMC"
+        # vote item 3
         assert buyback_executor.stonks() == BUYBACK_STONKS_TREASURY, "BuybackExecutor stonks not set"
+        # vote item 4
         assert buyback_executor.hasRole(ALLOCATOR_ROLE, BUYBACK_ALLOCATOR), "ALLOCATOR_ROLE not granted to allocator"
+        # vote item 5
         assert buyback_executor.hasRole(MANAGER_ROLE, TMC), "executor MANAGER_ROLE not granted to TMC"
+        # vote item 6
         assert buyback_executor.hasRole(EMERGENCY_ROLE, TMC), "executor EMERGENCY_ROLE not granted to TMC"
+        # vote item 7
         assert buyback_executor.hasRole(EMERGENCY_ROLE, EMERGENCY_COMMITTEE), "executor EMERGENCY_ROLE not granted to EC"
+        # vote item 8
         assert buyback_allocator.hasRole(MANAGER_ROLE, TMC), "allocator MANAGER_ROLE not granted to TMC"
-        # activate() records activationTS as midnight UTC of the execution day
+        # vote item 9: activate() records activationTS as midnight UTC of the execution day
         assert buyback_allocator.activationTS() == vote_tx.timestamp - (vote_tx.timestamp % ONE_DAY), \
             "BuybackAllocator not activated at the vote-execution day's midnight UTC"
 
-        # Check that stranger cannot grant roles to buyback contracts
+        # vote items 4-8: a non-admin (stranger) cannot grant the buyback roles
         with reverts():
             buyback_executor.grantRole(MANAGER_ROLE, stranger, {"from": stranger})
         with reverts():
             buyback_allocator.grantRole(MANAGER_ROLE, stranger, {"from": stranger})
 
-        # Check that buyback contracts point to the correct OracleRouter
+        # buyback contracts point to the correct OracleRouter
         assert buyback_executor.ORACLE_ROUTER() == ORACLE_ROUTER, "BuybackExecutor points at wrong OracleRouter"
         assert buyback_allocator.ORACLE_ROUTER() == ORACLE_ROUTER, "BuybackAllocator points at wrong OracleRouter"
 
@@ -276,29 +291,36 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 proposal_calls=dual_governance_proposal_calls,
             )
 
-        # Direct Aragon Voting items
+        # vote item 2
         validate_manager_set_event(vote_events[1], manager=TMC, emitted_by=ORACLE_ROUTER)
+        # vote item 3
         validate_stonks_set_event(vote_events[2], new_stonks=BUYBACK_STONKS_TREASURY, emitted_by=BUYBACK_EXECUTOR)
+        # vote item 4
         validate_grant_role_event(
             vote_events[3], role=ALLOCATOR_ROLE, grant_to=BUYBACK_ALLOCATOR, sender=VOTING,
             emitted_by=BUYBACK_EXECUTOR, event_chain=DIRECT_GRANT_ROLE_EVENTS_CHAIN,
         )
+        # vote item 5
         validate_grant_role_event(
             vote_events[4], role=MANAGER_ROLE, grant_to=TMC, sender=VOTING,
             emitted_by=BUYBACK_EXECUTOR, event_chain=DIRECT_GRANT_ROLE_EVENTS_CHAIN,
         )
+        # vote item 6
         validate_grant_role_event(
             vote_events[5], role=EMERGENCY_ROLE, grant_to=TMC, sender=VOTING,
             emitted_by=BUYBACK_EXECUTOR, event_chain=DIRECT_GRANT_ROLE_EVENTS_CHAIN,
         )
+        # vote item 7
         validate_grant_role_event(
             vote_events[6], role=EMERGENCY_ROLE, grant_to=EMERGENCY_COMMITTEE, sender=VOTING,
             emitted_by=BUYBACK_EXECUTOR, event_chain=DIRECT_GRANT_ROLE_EVENTS_CHAIN,
         )
+        # vote item 8
         validate_grant_role_event(
             vote_events[7], role=MANAGER_ROLE, grant_to=TMC, sender=VOTING,
             emitted_by=BUYBACK_ALLOCATOR, event_chain=DIRECT_GRANT_ROLE_EVENTS_CHAIN,
         )
+        # vote item 9
         validate_activated_event(vote_events[8], emitted_by=BUYBACK_ALLOCATOR)
 
 
@@ -311,19 +333,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # =========================================================================
             # ================== DG before proposal executed checks ===================
             # =========================================================================
-            assert lido_locator_proxy.proxy__getImplementation() != NEW_LIDO_LOCATOR_IMPL, "LidoLocator already upgraded"
-            assert not stonks_topup_registry.isRecipientAllowed(BUYBACK_ALLOCATOR), "Allocator already an allowed recipient"
-
+            # DG item 1.2
             new_notifier_observers_before = [
                 str(new_token_rate_notifier.observers(i)[0]).lower()
                 for i in range(new_token_rate_notifier.observersLength())
             ]
             assert str(STAKING_REVENUE_SOURCE).lower() not in new_notifier_observers_before, "Revenue source already registered"
 
-            # Check that LidoLocator still resolves to the old postTokenRebaseReceiver
+            # DG item 1.3: LidoLocator still uses the old implementation and still resolves to the old postTokenRebaseReceiver
+            assert lido_locator_proxy.proxy__getImplementation() != NEW_LIDO_LOCATOR_IMPL, "LidoLocator already upgraded"
             assert (
                 interface.LidoLocator(LIDO_LOCATOR).postTokenRebaseReceiver() != NEW_TOKEN_RATE_NOTIFIER
             ), "postTokenRebaseReceiver already repointed to the new notifier"
+
+            # DG item 1.4
+            assert not stonks_topup_registry.isRecipientAllowed(BUYBACK_ALLOCATOR), "Allocator already an allowed recipient"
 
 
             if details["status"] == PROPOSAL_STATUS["submitted"]:
@@ -348,16 +372,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 assert len(outer_dg_events) == EXPECTED_DG_EVENTS_COUNT
                 assert len(agent_dg_events) == EXPECTED_DG_EVENTS_FROM_AGENT
 
-                # 1.1-2: observers added to the new TokenRateNotifier
+                # DG item 1.1: OpStack rate pusher observer added to the new TokenRateNotifier
                 validate_observer_added_event(
                     agent_dg_events[0], observer=OP_STACK_TOKEN_RATE_PUSHER, emitted_by=NEW_TOKEN_RATE_NOTIFIER
                 )
+                # DG item 1.2: StakingRevenueSource observer added to the new TokenRateNotifier
                 validate_observer_added_event(
                     agent_dg_events[1], observer=STAKING_REVENUE_SOURCE, emitted_by=NEW_TOKEN_RATE_NOTIFIER
                 )
-                # 1.3: LidoLocator implementation upgrade
+                # DG item 1.3: LidoLocator implementation upgrade
                 validate_proxy_upgrade_event(agent_dg_events[2], NEW_LIDO_LOCATOR_IMPL, emitted_by=LIDO_LOCATOR)
-                # 1.4: BuybackAllocator added as an allowed recipient
+                # DG item 1.4: BuybackAllocator added as an allowed recipient
                 validate_recipient_added_event(
                     agent_dg_events[3],
                     recipient=BUYBACK_ALLOCATOR,
@@ -369,9 +394,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # =========================================================================
         # ==================== After DG proposal executed checks ==================
         # =========================================================================
-        assert lido_locator_proxy.proxy__getImplementation() == NEW_LIDO_LOCATOR_IMPL, "LidoLocator impl not upgraded"
-
-        # New TokenRateNotifier observers: OpStack rate pusher (NoArgs) + StakingRevenueSource (WithArgs).
+        # DG items 1.1-1.2: new TokenRateNotifier observers — OpStack pusher (NoArgs) + StakingRevenueSource (WithArgs)
         new_observers = [
             tuple(new_token_rate_notifier.observers(i))
             for i in range(new_token_rate_notifier.observersLength())
@@ -379,28 +402,28 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         new_observers_normalized = [(str(addr).lower(), kind) for addr, kind in new_observers]
         new_observer_addrs = [addr for addr, _ in new_observers_normalized]
 
+        # DG item 1.1
         assert (str(OP_STACK_TOKEN_RATE_PUSHER).lower(), OBSERVER_KIND_NO_ARGS) in new_observers_normalized, \
             "OpStack rate pusher not registered as NoArgs observer"
+        # DG item 1.2
         assert (str(STAKING_REVENUE_SOURCE).lower(), OBSERVER_KIND_WITH_ARGS) in new_observers_normalized, \
             "Revenue source not registered as WithArgs observer"
+        # DG item 1.2: the registered StakingRevenueSource observer is wired to the right OracleRouter and LidoLocator
+        staking_revenue_source = interface.StakingRevenueSource(STAKING_REVENUE_SOURCE)
+        assert staking_revenue_source.ORACLE_ROUTER() == ORACLE_ROUTER, "StakingRevenueSource points at wrong OracleRouter"
+        assert staking_revenue_source.LIDO_LOCATOR() == LIDO_LOCATOR, "StakingRevenueSource points at wrong LidoLocator"
 
-        # Dropped-observer guard: every observer on the old notifier must have been migrated to the
-        # new one before postTokenRebaseReceiver was repointed, or that downstream consumer goes dark.
+        # DG items 1.1-1.3: every old-notifier observer must be migrated to the new one before the repoint
         for i in range(old_token_rate_notifier.observersLength()):
             old_observer = str(old_token_rate_notifier.observers(i)).lower()
             assert old_observer in new_observer_addrs, \
                 f"Observer {old_observer} on the old notifier was not migrated to the new notifier"
 
-        assert stonks_topup_registry.isRecipientAllowed(BUYBACK_ALLOCATOR), "Allocator not an allowed recipient"
-
-        # Check that LidoLocator now resolves postTokenRebaseReceiver to the new notifier,
-        # so protocol rebases flow into it and reach the migrated observers.
+        # DG item 1.3: LidoLocator upgraded and postTokenRebaseReceiver repointed to the new notifier
+        assert lido_locator_proxy.proxy__getImplementation() == NEW_LIDO_LOCATOR_IMPL, "LidoLocator impl not upgraded"
         assert (
             interface.LidoLocator(LIDO_LOCATOR).postTokenRebaseReceiver() == NEW_TOKEN_RATE_NOTIFIER
         ), "postTokenRebaseReceiver not repointed to the new notifier"
 
-        # Check that registered StakingRevenueSource observer is itself connected to the
-        # shared OracleRouter and LidoLocator it will read from.
-        staking_revenue_source = interface.StakingRevenueSource(STAKING_REVENUE_SOURCE)
-        assert staking_revenue_source.ORACLE_ROUTER() == ORACLE_ROUTER, "StakingRevenueSource points at wrong OracleRouter"
-        assert staking_revenue_source.LIDO_LOCATOR() == LIDO_LOCATOR, "StakingRevenueSource points at wrong LidoLocator"
+        # DG item 1.4
+        assert stonks_topup_registry.isRecipientAllowed(BUYBACK_ALLOCATOR), "Allocator not an allowed recipient"
