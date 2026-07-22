@@ -17,6 +17,8 @@ from utils.dual_governance import PROPOSAL_STATUS
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 from utils.test.event_validators.proxy import validate_proxy_upgrade_event
+from utils.test.event_validators.permission import validate_grant_role_event
+from utils.test.event_validators.allowed_recipients_registry import validate_recipient_added_event
 
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
@@ -25,7 +27,7 @@ from utils.ipfs import get_lido_vote_cid_from_str
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.vote_2026_07_27 import (
+from scripts.upgrade_2026_08_05 import (
     start_vote,
     get_vote_items,
     get_dg_items,
@@ -71,6 +73,9 @@ OBSERVER_KIND_WITH_ARGS = 1
 
 ONE_DAY = 86400
 
+# The Buybacks role grants (vote items 4-8) are executed directly by Aragon Voting,
+# not forwarded through the Agent, so each grant emits a single LogScriptCall followed by RoleGranted.
+DIRECT_GRANT_ROLE_EVENTS_CHAIN = ["LogScriptCall", "RoleGranted"]
 
 # ============================================================================
 # ============================= Test params ==================================
@@ -78,7 +83,7 @@ ONE_DAY = 86400
 EXPECTED_VOTE_ID = 204
 EXPECTED_VOTE_ITEMS_COUNT = 9
 EXPECTED_VOTE_EVENTS_COUNT = 9
-EXPECTED_DG_PROPOSAL_ID = 12 # TODO: change to 13
+EXPECTED_DG_PROPOSAL_ID = 13
 EXPECTED_DG_EVENTS_FROM_AGENT = 4
 EXPECTED_DG_EVENTS_COUNT = 1
 
@@ -112,15 +117,6 @@ def validate_stonks_set_event(event: EventDict, new_stonks: str, emitted_by: str
     _assert_emitted_by(e, emitted_by)
 
 
-def validate_role_grant_event(event: EventDict, role_hash: str, account: str, sender: str, emitted_by: str) -> None:
-    validate_events_chain([e.name for e in event], ["LogScriptCall", "RoleGranted"])
-    e = _single_event(event, "RoleGranted")
-    assert str(e["role"]).lower().replace("0x", "") == role_hash.lower().replace("0x", ""), "Wrong role hash"
-    assert convert.to_address(e["account"]) == convert.to_address(account), "Wrong granted account"
-    assert convert.to_address(e["sender"]) == convert.to_address(sender), "Wrong role grant sender"
-    _assert_emitted_by(e, emitted_by)
-
-
 def validate_activated_event(event: EventDict, emitted_by: str) -> None:
     assert "LogScriptCall" in event, "No LogScriptCall event found"
     e = _single_event(event, "Activated")
@@ -132,14 +128,6 @@ def validate_observer_added_event(event: EventDict, observer: str, emitted_by: s
     validate_events_chain([e.name for e in event], ["LogScriptCall", "ObserverAdded", "ScriptResult", "Executed"])
     e = _single_event(event, "ObserverAdded")
     assert convert.to_address(e["observer"]) == convert.to_address(observer), "Wrong observer added"
-    _assert_emitted_by(e, emitted_by)
-
-
-def validate_recipient_added_event(event: EventDict, recipient: str, title: str, emitted_by: str) -> None:
-    validate_events_chain([e.name for e in event], ["LogScriptCall", "RecipientAdded", "ScriptResult", "Executed"])
-    e = _single_event(event, "RecipientAdded")
-    assert convert.to_address(e["_recipient"]) == convert.to_address(recipient), "Wrong recipient added"
-    assert e["_title"] == title, "Wrong recipient title"
     _assert_emitted_by(e, emitted_by)
 
 
@@ -291,20 +279,25 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # Direct Aragon Voting items
         validate_manager_set_event(vote_events[1], manager=TMC, emitted_by=ORACLE_ROUTER)
         validate_stonks_set_event(vote_events[2], new_stonks=BUYBACK_STONKS_TREASURY, emitted_by=BUYBACK_EXECUTOR)
-        validate_role_grant_event(
-            vote_events[3], role_hash=ALLOCATOR_ROLE, account=BUYBACK_ALLOCATOR, sender=VOTING, emitted_by=BUYBACK_EXECUTOR
+        validate_grant_role_event(
+            vote_events[3], role=ALLOCATOR_ROLE, grant_to=BUYBACK_ALLOCATOR, sender=VOTING,
+            emitted_by=BUYBACK_EXECUTOR, event_chain=DIRECT_GRANT_ROLE_EVENTS_CHAIN,
         )
-        validate_role_grant_event(
-            vote_events[4], role_hash=MANAGER_ROLE, account=TMC, sender=VOTING, emitted_by=BUYBACK_EXECUTOR
+        validate_grant_role_event(
+            vote_events[4], role=MANAGER_ROLE, grant_to=TMC, sender=VOTING,
+            emitted_by=BUYBACK_EXECUTOR, event_chain=DIRECT_GRANT_ROLE_EVENTS_CHAIN,
         )
-        validate_role_grant_event(
-            vote_events[5], role_hash=EMERGENCY_ROLE, account=TMC, sender=VOTING, emitted_by=BUYBACK_EXECUTOR
+        validate_grant_role_event(
+            vote_events[5], role=EMERGENCY_ROLE, grant_to=TMC, sender=VOTING,
+            emitted_by=BUYBACK_EXECUTOR, event_chain=DIRECT_GRANT_ROLE_EVENTS_CHAIN,
         )
-        validate_role_grant_event(
-            vote_events[6], role_hash=EMERGENCY_ROLE, account=EMERGENCY_COMMITTEE, sender=VOTING, emitted_by=BUYBACK_EXECUTOR
+        validate_grant_role_event(
+            vote_events[6], role=EMERGENCY_ROLE, grant_to=EMERGENCY_COMMITTEE, sender=VOTING,
+            emitted_by=BUYBACK_EXECUTOR, event_chain=DIRECT_GRANT_ROLE_EVENTS_CHAIN,
         )
-        validate_role_grant_event(
-            vote_events[7], role_hash=MANAGER_ROLE, account=TMC, sender=VOTING, emitted_by=BUYBACK_ALLOCATOR
+        validate_grant_role_event(
+            vote_events[7], role=MANAGER_ROLE, grant_to=TMC, sender=VOTING,
+            emitted_by=BUYBACK_ALLOCATOR, event_chain=DIRECT_GRANT_ROLE_EVENTS_CHAIN,
         )
         validate_activated_event(vote_events[8], emitted_by=BUYBACK_ALLOCATOR)
 
