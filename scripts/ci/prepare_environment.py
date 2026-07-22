@@ -6,7 +6,7 @@ from tests.conftest import Helpers
 
 from utils.config import contracts, get_deployer_account
 from utils.voting import bake_vote_items
-from utils.dual_governance import process_pending_proposals
+from utils.dual_governance import process_pending_proposals, is_there_any_proposals_from_env
 from utils.evm_script import encode_call_script
 from utils.import_current_votes import get_vote_script_files, get_upgrade_script_files
 from utils.mainnet_fork import pass_and_exec_dao_vote
@@ -17,10 +17,21 @@ def main():
 
 def execute_votings_and_process_created_proposals():
     votings_in_flight = retrieve_votings_in_flight()
-    vote_script = retrieve_vote_script()
 
     votings_to_execute = list(votings_in_flight)
     post_vote_on_fork = None
+
+    if is_there_any_proposals_from_env():
+        # DG_PROPOSAL_IDS is set: the proposal already exists on-chain and the vote that
+        # submitted it was already enacted (e.g. the fork is taken from mainnet while the
+        # proposal is still in its DG waiting period). Running the vote script again would
+        # start and enact a duplicate vote and revert on the already-applied state. The
+        # pending proposal itself is executed by process_pending_proposals() in main().
+        # Mirrors the test fixtures, which skip vote execution when proposal ids come from env.
+        print("DG_PROPOSAL_IDS is set, skipping vote script execution.")
+        vote_script = None
+    else:
+        vote_script = retrieve_vote_script()
 
     if vote_script:
         start_vote, get_vote_items, post_vote_on_fork = vote_script
