@@ -1,3 +1,4 @@
+from typing import List
 from brownie.network.event import EventDict
 from .common import validate_events_chain
 from brownie import convert
@@ -71,6 +72,29 @@ def validate_set_spent_amount_event(
     assert event["SpentAmountChanged"]["_newSpentAmount"] == new_spent_amount
 
     event_emitted_by = convert.to_address(event["SpentAmountChanged"]["_emitted_by"])
+    assert event_emitted_by == convert.to_address(
+        emitted_by
+    ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"
+
+
+def validate_recipient_added_event(
+    event: EventDict,
+    recipient: str,
+    title: str,
+    emitted_by: str | None = None,
+    event_chain: List[str] | None = None,
+):
+    _events_chain = event_chain or ["LogScriptCall", "RecipientAdded", "ScriptResult", "Executed"]
+
+    validate_events_chain([e.name for e in event], _events_chain)
+
+    assert event.count("RecipientAdded") == 1
+    assert convert.to_address(event["RecipientAdded"]["_recipient"]) == convert.to_address(
+        recipient
+    ), "Wrong recipient added"
+    assert event["RecipientAdded"]["_title"] == title, "Wrong recipient title"
+
+    event_emitted_by = convert.to_address(event["RecipientAdded"]["_emitted_by"])
     assert event_emitted_by == convert.to_address(
         emitted_by
     ), f"Wrong event emitter {event_emitted_by} but expected {emitted_by}"

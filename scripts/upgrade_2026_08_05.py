@@ -1,5 +1,5 @@
 """
-Vote 2026_07_27
+Vote 2026_08_05
 
 Launch of the NEST Automated Buybacks system in treasury-only mode (LIP-36).
 
