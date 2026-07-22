@@ -98,7 +98,7 @@ jobs:
         working-directory: scripts
 
       - name: Prepare test environment with Brownie
-        run: PYTHONPATH=$PWD poetry run brownie run scripts/ci/prepare_environment --network mfh-1
+        run: DG_PROPOSAL_IDS=12 PYTHONPATH=$PWD poetry run brownie run scripts/ci/prepare_environment --network mfh-1
         working-directory: scripts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
