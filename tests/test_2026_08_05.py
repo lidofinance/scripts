@@ -1,4 +1,4 @@
-from brownie import chain, convert, interface, web3, accounts, ZERO_ADDRESS, reverts
+from brownie import chain, convert, interface, web3, ZERO_ADDRESS, reverts
 from brownie.network.event import EventDict
 from brownie.network.transaction import TransactionReceipt
 import pytest
